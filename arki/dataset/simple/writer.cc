@@ -101,13 +101,19 @@ struct AppendSegment
         mft->lock = lock;
         mft->openRW();
 
-        for (auto& e: batch)
-        {
-            e->dataset_name.clear();
-            const types::source::Blob& new_source = segment->append(e->md);
-            add(e->md, new_source);
-            e->result = ACQ_OK;
-            e->dataset_name = config->name;
+        try {
+            for (auto& e: batch)
+            {
+                e->dataset_name.clear();
+                const types::source::Blob& new_source = segment->append(e->md);
+                add(e->md, new_source);
+                e->result = ACQ_OK;
+                e->dataset_name = config->name;
+            }
+        } catch (std::exception& e) {
+            // sqlite will take care of transaction consistency
+            batch.set_all_error("Failed to store in dataset '" + config->name + "': " + e.what());
+            return;
         }
 
         segment->commit();

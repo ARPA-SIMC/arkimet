@@ -138,19 +138,25 @@ struct AppendSegment
     {
         Pending p_idx = idx.begin_transaction();
 
-        for (auto& e: batch)
-        {
-            e->dataset_name.clear();
-
-            if (std::unique_ptr<types::source::Blob> old = idx.index(e->md, segment->segment().relpath, segment->next_offset()))
+        try {
+            for (auto& e: batch)
             {
-                e->md.add_note("Failed to store in dataset '" + config->name + "' because the dataset already has the data in " + old->filename + ":" + std::to_string(old->offset));
-                e->result = ACQ_ERROR_DUPLICATE;
-                continue;
+                e->dataset_name.clear();
+
+                if (std::unique_ptr<types::source::Blob> old = idx.index(e->md, segment->segment().relpath, segment->next_offset()))
+                {
+                    e->md.add_note("Failed to store in dataset '" + config->name + "' because the dataset already has the data in " + old->filename + ":" + std::to_string(old->offset));
+                    e->result = ACQ_ERROR_DUPLICATE;
+                    continue;
+                }
+                segment->append(e->md);
+                e->result = ACQ_OK;
+                e->dataset_name = config->name;
             }
-            segment->append(e->md);
-            e->result = ACQ_OK;
-            e->dataset_name = config->name;
+        } catch (std::exception& e) {
+            // sqlite will take care of transaction consistency
+            batch.set_all_error("Failed to store in dataset '" + config->name + "': " + e.what());
+            return;
         }
 
         segment->commit();
@@ -161,13 +167,19 @@ struct AppendSegment
     {
         Pending p_idx = idx.begin_transaction();
 
-        for (auto& e: batch)
-        {
-            e->dataset_name.clear();
-            idx.replace(e->md, segment->segment().relpath, segment->next_offset());
-            segment->append(e->md);
-            e->result = ACQ_OK;
-            e->dataset_name = config->name;
+        try {
+            for (auto& e: batch)
+            {
+                e->dataset_name.clear();
+                idx.replace(e->md, segment->segment().relpath, segment->next_offset());
+                segment->append(e->md);
+                e->result = ACQ_OK;
+                e->dataset_name = config->name;
+            }
+        } catch (std::exception& e) {
+            // sqlite will take care of transaction consistency
+            batch.set_all_error("Failed to store in dataset '" + config->name + "': " + e.what());
+            return;
         }
 
         segment->commit();
@@ -178,54 +190,60 @@ struct AppendSegment
     {
         Pending p_idx = idx.begin_transaction();
 
-        for (auto& e: batch)
-        {
-            e->dataset_name.clear();
-
-            // Try to acquire without replacing
-            if (std::unique_ptr<types::source::Blob> old = idx.index(e->md, segment->segment().relpath, segment->next_offset()))
+        try {
+            for (auto& e: batch)
             {
-                // Duplicate detected
+                e->dataset_name.clear();
 
-                // Read the update sequence number of the new BUFR
-                int new_usn;
-                if (!scan::Scanner::update_sequence_number(e->md, new_usn))
+                // Try to acquire without replacing
+                if (std::unique_ptr<types::source::Blob> old = idx.index(e->md, segment->segment().relpath, segment->next_offset()))
                 {
-                    e->md.add_note("Failed to store in dataset '" + config->name + "' because the dataset already has the data in " + segment->segment().relpath + ":" + std::to_string(old->offset) + " and there is no Update Sequence Number to compare");
-                    e->result = ACQ_ERROR_DUPLICATE;
-                    continue;
-                }
+                    // Duplicate detected
 
-                // Read the update sequence number of the old BUFR
-                auto reader = segs.get_reader(segment->segment().format, old->filename, lock);
-                old->lock(reader);
-                int old_usn;
-                if (!scan::Scanner::update_sequence_number(*old, old_usn))
-                {
-                    e->md.add_note("Failed to store in dataset '" + config->name + "': a similar element exists, the new element has an Update Sequence Number but the old one does not, so they cannot be compared");
-                    e->result = ACQ_ERROR;
-                    continue;
-                }
+                    // Read the update sequence number of the new BUFR
+                    int new_usn;
+                    if (!scan::Scanner::update_sequence_number(e->md, new_usn))
+                    {
+                        e->md.add_note("Failed to store in dataset '" + config->name + "' because the dataset already has the data in " + segment->segment().relpath + ":" + std::to_string(old->offset) + " and there is no Update Sequence Number to compare");
+                        e->result = ACQ_ERROR_DUPLICATE;
+                        continue;
+                    }
 
-                // If the new element has no higher Update Sequence Number, report a duplicate
-                if (old_usn > new_usn)
-                {
-                    e->md.add_note("Failed to store in dataset '" + config->name + "' because the dataset already has the data in " + segment->segment().relpath + ":" + std::to_string(old->offset) + " with a higher Update Sequence Number");
-                    e->result = ACQ_ERROR_DUPLICATE;
-                    continue;
-                }
+                    // Read the update sequence number of the old BUFR
+                    auto reader = segs.get_reader(segment->segment().format, old->filename, lock);
+                    old->lock(reader);
+                    int old_usn;
+                    if (!scan::Scanner::update_sequence_number(*old, old_usn))
+                    {
+                        e->md.add_note("Failed to store in dataset '" + config->name + "': a similar element exists, the new element has an Update Sequence Number but the old one does not, so they cannot be compared");
+                        e->result = ACQ_ERROR;
+                        continue;
+                    }
 
-                // Replace, reusing the pending datafile transaction from earlier
-                idx.replace(e->md, segment->segment().relpath, segment->next_offset());
-                segment->append(e->md);
-                e->result = ACQ_OK;
-                e->dataset_name = config->name;
-                continue;
-            } else {
-                segment->append(e->md);
-                e->result = ACQ_OK;
-                e->dataset_name = config->name;
+                    // If the new element has no higher Update Sequence Number, report a duplicate
+                    if (old_usn > new_usn)
+                    {
+                        e->md.add_note("Failed to store in dataset '" + config->name + "' because the dataset already has the data in " + segment->segment().relpath + ":" + std::to_string(old->offset) + " with a higher Update Sequence Number");
+                        e->result = ACQ_ERROR_DUPLICATE;
+                        continue;
+                    }
+
+                    // Replace, reusing the pending datafile transaction from earlier
+                    idx.replace(e->md, segment->segment().relpath, segment->next_offset());
+                    segment->append(e->md);
+                    e->result = ACQ_OK;
+                    e->dataset_name = config->name;
+                    continue;
+                } else {
+                    segment->append(e->md);
+                    e->result = ACQ_OK;
+                    e->dataset_name = config->name;
+                }
             }
+        } catch (std::exception& e) {
+            // sqlite will take care of transaction consistency
+            batch.set_all_error("Failed to store in dataset '" + config->name + "': " + e.what());
+            return;
         }
 
         segment->commit();

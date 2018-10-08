@@ -1862,6 +1862,11 @@
  {
   "doc": "",
   "group": "arki_segment_concat_grib",
+  "method": "is_empty"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_concat_grib",
   "method": "append"
  },
  {
@@ -1902,6 +1907,11 @@
  {
   "doc": "",
   "group": "arki_segment_concat_bufr",
+  "method": "is_empty"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_concat_bufr",
   "method": "append"
  },
  {
@@ -1938,6 +1948,11 @@
   "doc": "",
   "group": "arki_segment_lines_vm2",
   "method": "remove"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_lines_vm2",
+  "method": "is_empty"
  },
  {
   "doc": "",
@@ -1987,6 +2002,11 @@
  {
   "doc": "",
   "group": "arki_segment_dir_grib",
+  "method": "is_empty"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_dir_grib",
   "method": "append"
  },
  {
@@ -2022,6 +2042,11 @@
  {
   "doc": "",
   "group": "arki_segment_dir_bufr",
+  "method": "is_empty"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_dir_bufr",
   "method": "append"
  },
  {
@@ -2057,6 +2082,11 @@
  {
   "doc": "",
   "group": "arki_segment_dir_odim",
+  "method": "is_empty"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_dir_odim",
   "method": "append"
  },
  {
@@ -2092,6 +2122,11 @@
  {
   "doc": "",
   "group": "arki_segment_dir_vm2",
+  "method": "is_empty"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_dir_vm2",
   "method": "append"
  },
  {
@@ -2126,6 +2161,11 @@
  },
  {
   "doc": "",
+  "group": "arki_segment_tar_grib",
+  "method": "is_empty"
+ },
+ {
+  "doc": "",
   "group": "arki_segment_tar_bufr",
   "method": "create"
  },
@@ -2153,6 +2193,11 @@
   "doc": "",
   "group": "arki_segment_tar_bufr",
   "method": "remove"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_tar_bufr",
+  "method": "is_empty"
  },
  {
   "doc": "",
@@ -2186,6 +2231,11 @@
  },
  {
   "doc": "",
+  "group": "arki_segment_tar_odim",
+  "method": "is_empty"
+ },
+ {
+  "doc": "",
   "group": "arki_segment_tar_vm2",
   "method": "create"
  },
@@ -2213,6 +2263,11 @@
   "doc": "",
   "group": "arki_segment_tar_vm2",
   "method": "remove"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_tar_vm2",
+  "method": "is_empty"
  },
  {
   "doc": "",
@@ -2246,6 +2301,11 @@
  },
  {
   "doc": "",
+  "group": "arki_segment_zip_grib",
+  "method": "is_empty"
+ },
+ {
+  "doc": "",
   "group": "arki_segment_zip_bufr",
   "method": "create"
  },
@@ -2276,6 +2336,11 @@
  },
  {
   "doc": "",
+  "group": "arki_segment_zip_bufr",
+  "method": "is_empty"
+ },
+ {
+  "doc": "",
   "group": "arki_segment_zip_odim",
   "method": "create"
  },
@@ -2306,6 +2371,11 @@
  },
  {
   "doc": "",
+  "group": "arki_segment_zip_odim",
+  "method": "is_empty"
+ },
+ {
+  "doc": "",
   "group": "arki_segment_zip_vm2",
   "method": "create"
  },
@@ -2336,6 +2406,11 @@
  },
  {
   "doc": "",
+  "group": "arki_segment_zip_vm2",
+  "method": "is_empty"
+ },
+ {
+  "doc": "",
   "group": "arki_segment_gz_grib_nogroup",
   "method": "create"
  },
@@ -2363,6 +2438,11 @@
   "doc": "",
   "group": "arki_segment_gz_grib_nogroup",
   "method": "remove"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_gz_grib_nogroup",
+  "method": "is_empty"
  },
  {
   "doc": "",
@@ -2412,6 +2492,11 @@
  {
   "doc": "",
   "group": "arki_segment_gz_bufr_nogroup",
+  "method": "is_empty"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_gz_bufr_nogroup",
   "method": "noidx"
  },
  {
@@ -2457,6 +2542,11 @@
  {
   "doc": "",
   "group": "arki_segment_gzlines_vm2_nogroup",
+  "method": "is_empty"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_gzlines_vm2_nogroup",
   "method": "noidx"
  },
  {
@@ -2502,6 +2592,11 @@
  {
   "doc": "",
   "group": "arki_segment_gz_grib",
+  "method": "is_empty"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_gz_grib",
   "method": "noidx"
  },
  {
@@ -2547,6 +2642,11 @@
  {
   "doc": "",
   "group": "arki_segment_gz_bufr",
+  "method": "is_empty"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_gz_bufr",
   "method": "noidx"
  },
  {
@@ -2588,6 +2688,11 @@
   "doc": "",
   "group": "arki_segment_gzlines_vm2",
   "method": "remove"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_gzlines_vm2",
+  "method": "is_empty"
  },
  {
   "doc": "",
@@ -3550,6 +3655,11 @@
   "method": "check_exists"
  },
  {
+  "doc": "- an empty segment not known by the index must be considered deleted [deleted]",
+  "group": "arki_dataset_simple_maintenance_grib_plain",
+  "method": "check_unknown_empty"
+ },
+ {
   "doc": "- all data known by the index for this segment must be present on disk [corrupted]",
   "group": "arki_dataset_simple_maintenance_grib_plain",
   "method": "check_dataexists"
@@ -3755,6 +3865,11 @@
   "method": "check_exists"
  },
  {
+  "doc": "- an empty segment not known by the index must be considered deleted [deleted]",
+  "group": "arki_dataset_simple_maintenance_grib_sqlite",
+  "method": "check_unknown_empty"
+ },
+ {
   "doc": "- all data known by the index for this segment must be present on disk [corrupted]",
   "group": "arki_dataset_simple_maintenance_grib_sqlite",
   "method": "check_dataexists"
@@ -3950,6 +4065,11 @@
   "method": "check_exists"
  },
  {
+  "doc": "- an empty segment not known by the index must be considered deleted [deleted]",
+  "group": "arki_dataset_simple_maintenance_grib_plain_dirs",
+  "method": "check_unknown_empty"
+ },
+ {
   "doc": "- all data known by the index for this segment must be present on disk [corrupted]",
   "group": "arki_dataset_simple_maintenance_grib_plain_dirs",
   "method": "check_dataexists"
@@ -4143,6 +4263,11 @@
   "doc": "- the segment must exist [missing]",
   "group": "arki_dataset_simple_maintenance_grib_sqlite_dirs",
   "method": "check_exists"
+ },
+ {
+  "doc": "- an empty segment not known by the index must be considered deleted [deleted]",
+  "group": "arki_dataset_simple_maintenance_grib_sqlite_dirs",
+  "method": "check_unknown_empty"
  },
  {
   "doc": "- all data known by the index for this segment must be present on disk [corrupted]",
@@ -4350,6 +4475,11 @@
   "method": "check_exists"
  },
  {
+  "doc": "- an empty segment not known by the index must be considered deleted [deleted]",
+  "group": "arki_dataset_simple_maintenance_bufr_plain",
+  "method": "check_unknown_empty"
+ },
+ {
   "doc": "- all data known by the index for this segment must be present on disk [corrupted]",
   "group": "arki_dataset_simple_maintenance_bufr_plain",
   "method": "check_dataexists"
@@ -4555,6 +4685,11 @@
   "method": "check_exists"
  },
  {
+  "doc": "- an empty segment not known by the index must be considered deleted [deleted]",
+  "group": "arki_dataset_simple_maintenance_bufr_sqlite",
+  "method": "check_unknown_empty"
+ },
+ {
   "doc": "- all data known by the index for this segment must be present on disk [corrupted]",
   "group": "arki_dataset_simple_maintenance_bufr_sqlite",
   "method": "check_dataexists"
@@ -4750,6 +4885,11 @@
   "method": "check_exists"
  },
  {
+  "doc": "- an empty segment not known by the index must be considered deleted [deleted]",
+  "group": "arki_dataset_simple_maintenance_bufr_plain_dirs",
+  "method": "check_unknown_empty"
+ },
+ {
   "doc": "- all data known by the index for this segment must be present on disk [corrupted]",
   "group": "arki_dataset_simple_maintenance_bufr_plain_dirs",
   "method": "check_dataexists"
@@ -4943,6 +5083,11 @@
   "doc": "- the segment must exist [missing]",
   "group": "arki_dataset_simple_maintenance_bufr_sqlite_dirs",
   "method": "check_exists"
+ },
+ {
+  "doc": "- an empty segment not known by the index must be considered deleted [deleted]",
+  "group": "arki_dataset_simple_maintenance_bufr_sqlite_dirs",
+  "method": "check_unknown_empty"
  },
  {
   "doc": "- all data known by the index for this segment must be present on disk [corrupted]",
@@ -5150,6 +5295,11 @@
   "method": "check_exists"
  },
  {
+  "doc": "- an empty segment not known by the index must be considered deleted [deleted]",
+  "group": "arki_dataset_simple_maintenance_vm2_plain",
+  "method": "check_unknown_empty"
+ },
+ {
   "doc": "- all data known by the index for this segment must be present on disk [corrupted]",
   "group": "arki_dataset_simple_maintenance_vm2_plain",
   "method": "check_dataexists"
@@ -5355,6 +5505,11 @@
   "method": "check_exists"
  },
  {
+  "doc": "- an empty segment not known by the index must be considered deleted [deleted]",
+  "group": "arki_dataset_simple_maintenance_vm2_sqlite",
+  "method": "check_unknown_empty"
+ },
+ {
   "doc": "- all data known by the index for this segment must be present on disk [corrupted]",
   "group": "arki_dataset_simple_maintenance_vm2_sqlite",
   "method": "check_dataexists"
@@ -5550,6 +5705,11 @@
   "method": "check_exists"
  },
  {
+  "doc": "- an empty segment not known by the index must be considered deleted [deleted]",
+  "group": "arki_dataset_simple_maintenance_vm2_plain_dirs",
+  "method": "check_unknown_empty"
+ },
+ {
   "doc": "- all data known by the index for this segment must be present on disk [corrupted]",
   "group": "arki_dataset_simple_maintenance_vm2_plain_dirs",
   "method": "check_dataexists"
@@ -5745,6 +5905,11 @@
   "method": "check_exists"
  },
  {
+  "doc": "- an empty segment not known by the index must be considered deleted [deleted]",
+  "group": "arki_dataset_simple_maintenance_vm2_sqlite_dirs",
+  "method": "check_unknown_empty"
+ },
+ {
   "doc": "- all data known by the index for this segment must be present on disk [corrupted]",
   "group": "arki_dataset_simple_maintenance_vm2_sqlite_dirs",
   "method": "check_dataexists"
@@ -5940,6 +6105,11 @@
   "method": "check_exists"
  },
  {
+  "doc": "- an empty segment not known by the index must be considered deleted [deleted]",
+  "group": "arki_dataset_simple_maintenance_odimh5_plain",
+  "method": "check_unknown_empty"
+ },
+ {
   "doc": "- all data known by the index for this segment must be present on disk [corrupted]",
   "group": "arki_dataset_simple_maintenance_odimh5_plain",
   "method": "check_dataexists"
@@ -6133,6 +6303,11 @@
   "doc": "- the segment must exist [missing]",
   "group": "arki_dataset_simple_maintenance_odimh5_sqlite",
   "method": "check_exists"
+ },
+ {
+  "doc": "- an empty segment not known by the index must be considered deleted [deleted]",
+  "group": "arki_dataset_simple_maintenance_odimh5_sqlite",
+  "method": "check_unknown_empty"
  },
  {
   "doc": "- all data known by the index for this segment must be present on disk [corrupted]",
@@ -6370,6 +6545,11 @@
   "method": "check_exists"
  },
  {
+  "doc": "- an empty segment not known by the index must be considered deleted [deleted]",
+  "group": "arki_dataset_iseg_maintenance_grib",
+  "method": "check_unknown_empty"
+ },
+ {
   "doc": "- segments that contain some data that has been removed are\n  identified as to be repacked [dirty]",
   "group": "arki_dataset_iseg_maintenance_grib",
   "method": "check_one_removed"
@@ -6553,6 +6733,11 @@
   "doc": "- the segment must exist [missing]",
   "group": "arki_dataset_iseg_maintenance_grib_dirs",
   "method": "check_exists"
+ },
+ {
+  "doc": "- an empty segment not known by the index must be considered deleted [deleted]",
+  "group": "arki_dataset_iseg_maintenance_grib_dirs",
+  "method": "check_unknown_empty"
  },
  {
   "doc": "- segments that contain some data that has been removed are\n  identified as to be repacked [dirty]",
@@ -6745,6 +6930,11 @@
   "method": "check_exists"
  },
  {
+  "doc": "- an empty segment not known by the index must be considered deleted [deleted]",
+  "group": "arki_dataset_iseg_maintenance_bufr",
+  "method": "check_unknown_empty"
+ },
+ {
   "doc": "- segments that contain some data that has been removed are\n  identified as to be repacked [dirty]",
   "group": "arki_dataset_iseg_maintenance_bufr",
   "method": "check_one_removed"
@@ -6928,6 +7118,11 @@
   "doc": "- the segment must exist [missing]",
   "group": "arki_dataset_iseg_maintenance_bufr_dirs",
   "method": "check_exists"
+ },
+ {
+  "doc": "- an empty segment not known by the index must be considered deleted [deleted]",
+  "group": "arki_dataset_iseg_maintenance_bufr_dirs",
+  "method": "check_unknown_empty"
  },
  {
   "doc": "- segments that contain some data that has been removed are\n  identified as to be repacked [dirty]",
@@ -7120,6 +7315,11 @@
   "method": "check_exists"
  },
  {
+  "doc": "- an empty segment not known by the index must be considered deleted [deleted]",
+  "group": "arki_dataset_iseg_maintenance_vm2",
+  "method": "check_unknown_empty"
+ },
+ {
   "doc": "- segments that contain some data that has been removed are\n  identified as to be repacked [dirty]",
   "group": "arki_dataset_iseg_maintenance_vm2",
   "method": "check_one_removed"
@@ -7305,6 +7505,11 @@
   "method": "check_exists"
  },
  {
+  "doc": "- an empty segment not known by the index must be considered deleted [deleted]",
+  "group": "arki_dataset_iseg_maintenance_vm2_dirs",
+  "method": "check_unknown_empty"
+ },
+ {
   "doc": "- segments that contain some data that has been removed are\n  identified as to be repacked [dirty]",
   "group": "arki_dataset_iseg_maintenance_vm2_dirs",
   "method": "check_one_removed"
@@ -7483,6 +7688,11 @@
   "doc": "- the segment must exist [missing]",
   "group": "arki_dataset_iseg_maintenance_odimh5",
   "method": "check_exists"
+ },
+ {
+  "doc": "- an empty segment not known by the index must be considered deleted [deleted]",
+  "group": "arki_dataset_iseg_maintenance_odimh5",
+  "method": "check_unknown_empty"
  },
  {
   "doc": "- segments that contain some data that has been removed are\n  identified as to be repacked [dirty]",
@@ -7815,6 +8025,11 @@
   "method": "check_exists"
  },
  {
+  "doc": "- an empty segment not known by the index must be considered deleted [deleted]",
+  "group": "arki_dataset_ondisk2_maintenance_grib",
+  "method": "check_unknown_empty"
+ },
+ {
   "doc": "- segments that contain some data that has been removed are\n  identified as to be repacked [dirty]",
   "group": "arki_dataset_ondisk2_maintenance_grib",
   "method": "check_one_removed"
@@ -8018,6 +8233,11 @@
   "doc": "- the segment must exist [missing]",
   "group": "arki_dataset_ondisk2_maintenance_grib_dirs",
   "method": "check_exists"
+ },
+ {
+  "doc": "- an empty segment not known by the index must be considered deleted [deleted]",
+  "group": "arki_dataset_ondisk2_maintenance_grib_dirs",
+  "method": "check_unknown_empty"
  },
  {
   "doc": "- segments that contain some data that has been removed are\n  identified as to be repacked [dirty]",
@@ -8235,6 +8455,11 @@
   "method": "check_exists"
  },
  {
+  "doc": "- an empty segment not known by the index must be considered deleted [deleted]",
+  "group": "arki_dataset_ondisk2_maintenance_bufr",
+  "method": "check_unknown_empty"
+ },
+ {
   "doc": "- segments that contain some data that has been removed are\n  identified as to be repacked [dirty]",
   "group": "arki_dataset_ondisk2_maintenance_bufr",
   "method": "check_one_removed"
@@ -8438,6 +8663,11 @@
   "doc": "- the segment must exist [missing]",
   "group": "arki_dataset_ondisk2_maintenance_bufr_dirs",
   "method": "check_exists"
+ },
+ {
+  "doc": "- an empty segment not known by the index must be considered deleted [deleted]",
+  "group": "arki_dataset_ondisk2_maintenance_bufr_dirs",
+  "method": "check_unknown_empty"
  },
  {
   "doc": "- segments that contain some data that has been removed are\n  identified as to be repacked [dirty]",
@@ -8655,6 +8885,11 @@
   "method": "check_exists"
  },
  {
+  "doc": "- an empty segment not known by the index must be considered deleted [deleted]",
+  "group": "arki_dataset_ondisk2_maintenance_vm2",
+  "method": "check_unknown_empty"
+ },
+ {
   "doc": "- segments that contain some data that has been removed are\n  identified as to be repacked [dirty]",
   "group": "arki_dataset_ondisk2_maintenance_vm2",
   "method": "check_one_removed"
@@ -8860,6 +9095,11 @@
   "method": "check_exists"
  },
  {
+  "doc": "- an empty segment not known by the index must be considered deleted [deleted]",
+  "group": "arki_dataset_ondisk2_maintenance_vm2_dirs",
+  "method": "check_unknown_empty"
+ },
+ {
   "doc": "- segments that contain some data that has been removed are\n  identified as to be repacked [dirty]",
   "group": "arki_dataset_ondisk2_maintenance_vm2_dirs",
   "method": "check_one_removed"
@@ -9063,6 +9303,11 @@
   "doc": "- the segment must exist [missing]",
   "group": "arki_dataset_ondisk2_maintenance_odimh5",
   "method": "check_exists"
+ },
+ {
+  "doc": "- an empty segment not known by the index must be considered deleted [deleted]",
+  "group": "arki_dataset_ondisk2_maintenance_odimh5",
+  "method": "check_unknown_empty"
  },
  {
   "doc": "- segments that contain some data that has been removed are\n  identified as to be repacked [dirty]",

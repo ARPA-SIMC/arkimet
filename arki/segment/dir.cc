@@ -378,6 +378,7 @@ BaseWriter<Segment>::BaseWriter(const std::string& format, const std::string& ro
 template<typename Segment>
 BaseWriter<Segment>::~BaseWriter()
 {
+    if (!this->fired) rollback_nothrow();
 }
 
 template<typename Segment>

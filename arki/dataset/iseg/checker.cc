@@ -94,10 +94,16 @@ public:
 
         if (!sys::stat(str::joinpath(checker.config().path, segment->segment().relpath + ".index")))
         {
-            //bool untrusted_index = files::hasDontpackFlagfile(checker.config().path);
-            reporter.segment_info(checker.name(), segment->segment().relpath, "segment found on disk with no associated index data");
-            //return segmented::SegmentState(untrusted_index ? segment::SEGMENT_UNALIGNED : segment::SEGMENT_DELETED);
-            return segmented::SegmentState(segment::SEGMENT_UNALIGNED);
+            if (segment->is_empty())
+            {
+                reporter.segment_info(checker.name(), segment->segment().relpath, "empty segment found on disk with no associated index data");
+                return segmented::SegmentState(segment::SEGMENT_DELETED);
+            } else {
+                //bool untrusted_index = files::hasDontpackFlagfile(checker.config().path);
+                reporter.segment_info(checker.name(), segment->segment().relpath, "segment found on disk with no associated index data");
+                //return segmented::SegmentState(untrusted_index ? segment::SEGMENT_UNALIGNED : segment::SEGMENT_DELETED);
+                return segmented::SegmentState(segment::SEGMENT_UNALIGNED);
+            }
         }
 
 #if 0

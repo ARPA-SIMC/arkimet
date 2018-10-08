@@ -194,7 +194,7 @@ this->add_method("import_error", [](Fixture& f) {
     wassert(actual(ds->acquire(md, dataset::Writer::REPLACE_NEVER)) == dataset::ACQ_ERROR);
 
     auto state = f.scan_state();
-    wassert(actual(state.size()) == 1);
+    wassert(actual(state.size()) == 1u);
     wassert(actual(state.get("testds:2018/01-01." + format).state) == segment::SEGMENT_DELETED);
     wassert(f.query_results({}));
 });
@@ -322,6 +322,7 @@ this->add_method("second_resolution", [](Fixture& f) {
 });
 
 auto test_same_segment_fail = [](Fixture& f, unsigned fail_idx, dataset::Writer::ReplaceStrategy strategy) {
+    sys::rmtree_ifexists("testds");
     Metadata md;
     fill(md);
     std::string format = f.cfg.value("format");
@@ -346,7 +347,7 @@ auto test_same_segment_fail = [](Fixture& f, unsigned fail_idx, dataset::Writer:
     wassert(actual(batch[2]->result) == dataset::ACQ_ERROR);
 
     auto state = f.scan_state();
-    wassert(actual(state.size()) == 1);
+    wassert(actual(state.size()) == 1u);
     wassert(actual(state.get("testds:2018/01-01." + format).state) == segment::SEGMENT_DELETED);
     wassert(f.query_results({}));
 };
@@ -370,6 +371,7 @@ this->add_method("transaction_same_segment_fail_last", [=](Fixture& f) {
 });
 
 auto test_different_segment_fail = [](Fixture& f, unsigned fail_idx, dataset::Writer::ReplaceStrategy strategy) {
+    sys::rmtree_ifexists("testds");
     Metadata md;
     fill(md);
     std::string format = f.cfg.value("format");
@@ -378,7 +380,7 @@ auto test_different_segment_fail = [](Fixture& f, unsigned fail_idx, dataset::Wr
     metadata::Collection mds;
     for (unsigned idx = 0; idx < 3; ++idx)
     {
-        md.set(types::Reftime::createPosition(Time(2018, idx, 1, 0, 0, 0)));
+        md.set(types::Reftime::createPosition(Time(2018, idx + 1, 1, 0, 0, 0)));
         if (idx == fail_idx)
             md.set_source_inline(format, metadata::DataManager::get().to_unreadable_data(1));
         else
@@ -389,16 +391,19 @@ auto test_different_segment_fail = [](Fixture& f, unsigned fail_idx, dataset::Wr
     auto ds = f.config().create_writer();
     dataset::WriterBatch batch = mds.make_import_batch();
     wassert(ds->acquire_batch(batch, strategy));
-    wassert(actual(batch[0]->result) == dataset::ACQ_ERROR);
-    wassert(actual(batch[1]->result) == dataset::ACQ_ERROR);
-    wassert(actual(batch[2]->result) == dataset::ACQ_ERROR);
+    wassert(actual(batch[0]->result) == (fail_idx == 0 ? dataset::ACQ_ERROR : dataset::ACQ_OK));
+    wassert(actual(batch[1]->result) == (fail_idx == 1 ? dataset::ACQ_ERROR : dataset::ACQ_OK));
+    wassert(actual(batch[2]->result) == (fail_idx == 2 ? dataset::ACQ_ERROR : dataset::ACQ_OK));
+    ds->flush();
 
     auto state = f.scan_state();
-    wassert(actual(state.size()) == 3);
-    wassert(actual(state.get("testds:2018/01-01." + format).state) == segment::SEGMENT_DELETED);
-    wassert(actual(state.get("testds:2018/02-01." + format).state) == segment::SEGMENT_DELETED);
-    wassert(actual(state.get("testds:2018/03-01." + format).state) == segment::SEGMENT_DELETED);
-    wassert(f.query_results({}));
+    wassert(actual(state.size()) == 3u);
+    wassert(actual(state.get("testds:2018/01-01." + format).state) == (fail_idx == 0 ? segment::SEGMENT_DELETED : segment::SEGMENT_OK));
+    wassert(actual(state.get("testds:2018/02-01." + format).state) == (fail_idx == 1 ? segment::SEGMENT_DELETED : segment::SEGMENT_OK));
+    wassert(actual(state.get("testds:2018/03-01." + format).state) == (fail_idx == 2 ? segment::SEGMENT_DELETED : segment::SEGMENT_OK));
+
+    metadata::Collection res = f.query(dataset::DataQuery());
+    wassert(actual(res.size()) == 2u);
 };
 
 this->add_method("transaction_different_segment_fail_first", [=](Fixture& f) {
