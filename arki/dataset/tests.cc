@@ -473,7 +473,7 @@ void DatasetTest::query_results(const dataset::DataQuery& q, const std::vector<i
         else
             found.push_back(idx);
         if (q.with_data)
-            md->getData();
+            md->get_data();
         return true;
     });
 
@@ -907,7 +907,7 @@ void ActualWriter<Dataset>::import(Metadata& md)
 }
 
 template<typename Dataset>
-void ActualWriter<Dataset>::import(metadata::Collection& mds, dataset::Writer::ReplaceStrategy strategy)
+void ActualWriter<Dataset>::import(metadata::Collection& mds, dataset::ReplaceStrategy strategy)
 {
     WriterBatch batch;
     batch.reserve(mds.size());

@@ -1,8 +1,9 @@
 #include "stream.h"
-#include <arki/types/source/inline.h>
-#include <arki/binary.h>
-#include <arki/exceptions.h>
-#include <arki/utils/string.h>
+#include "data.h"
+#include "arki/types/source/inline.h"
+#include "arki/binary.h"
+#include "arki/exceptions.h"
+#include "arki/utils/string.h"
 #include <cstring>
 
 using namespace std;
@@ -63,7 +64,7 @@ bool Stream::checkData()
     buffer = vector<uint8_t>(buffer.begin() + dataToGet, buffer.end());
     dataToGet = 0;
     state = METADATA;
-    md->set_source_inline(md->source().format, move(buf));
+    md->set_source_inline(md->source().format, metadata::DataManager::get().to_data(md->source().format, move(buf)));
     if (!canceled)
         if (!consumer(move(md)))
             canceled = true;

@@ -199,8 +199,9 @@ struct Writer : public Transaction, public std::enable_shared_from_this<Writer>
     {
         Metadata& md;
         types::source::Blob* new_source;
+        bool drop_cached_data_on_commit;
 
-        PendingMetadata(Metadata& md, std::unique_ptr<types::source::Blob> new_source);
+        PendingMetadata(Metadata& md, std::unique_ptr<types::source::Blob> new_source, bool drop_cached_data_on_commit);
         PendingMetadata(const PendingMetadata&) = delete;
         PendingMetadata(PendingMetadata&& o);
         ~PendingMetadata();
@@ -227,9 +228,9 @@ struct Writer : public Transaction, public std::enable_shared_from_this<Writer>
      * the file.
      *
      * Returns a reference to the blob source that will be set into \a md on
-     * commit
+     * commit.
      */
-    virtual const types::source::Blob& append(Metadata& md) = 0;
+    virtual const types::source::Blob& append(Metadata& md, bool drop_cached_data_on_commit) = 0;
 };
 
 
@@ -264,10 +265,11 @@ public:
     virtual size_t remove() = 0;
     virtual size_t size() = 0;
 
-    /**
-     * Check if the segment exists on disk
-     */
+    /// Check if the segment exists on disk
     virtual bool exists_on_disk() = 0;
+
+    /// Return true if the segment does not contain any data
+    virtual bool is_empty() = 0;
 
     /**
      * Rescan the segment, using Reader::scan_data of the right reader for this segment

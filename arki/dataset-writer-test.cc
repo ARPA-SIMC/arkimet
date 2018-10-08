@@ -1,6 +1,7 @@
 #include "arki/dataset/tests.h"
 #include "arki/dataset.h"
 #include "arki/dataset/time.h"
+#include "arki/metadata/data.h"
 #include "arki/metadata/collection.h"
 #include "arki/types/source.h"
 #include "arki/types/source/blob.h"
@@ -63,21 +64,21 @@ class TestsWriter : public FixtureTestCase<FixtureWriter<Data>>
     void register_tests() override;
 };
 
-TestsWriter<GRIBData> test_writer_grib_ondisk2("arki_dataset_writer_grib_ondisk2", "type=ondisk2\n");
-TestsWriter<GRIBData> test_writer_grib_simple_plain("arki_dataset_writer_grib_simple_plain", "type=simple\nindex_type=plain\n");
-TestsWriter<GRIBData> test_writer_grib_simple_sqlite("arki_dataset_writer_grib_simple_sqlite", "type=simple\nindex_type=sqlite");
+TestsWriter<GRIBData> test_writer_grib_ondisk2("arki_dataset_writer_grib_ondisk2", "type=ondisk2\nformat=grib\n");
+TestsWriter<GRIBData> test_writer_grib_simple_plain("arki_dataset_writer_grib_simple_plain", "type=simple\nindex_type=plain\nformat=grib\n");
+TestsWriter<GRIBData> test_writer_grib_simple_sqlite("arki_dataset_writer_grib_simple_sqlite", "type=simple\nindex_type=sqlite\nformat=grib\n");
 TestsWriter<GRIBData> test_writer_grib_iseg("arki_dataset_writer_grib_iseg", "type=iseg\nformat=grib\n");
-TestsWriter<BUFRData> test_writer_bufr_ondisk2("arki_dataset_writer_bufr_ondisk2", "type=ondisk2\n");
-TestsWriter<BUFRData> test_writer_bufr_simple_plain("arki_dataset_writer_bufr_simple_plain", "type=simple\nindex_type=plain\n");
-TestsWriter<BUFRData> test_writer_bufr_simple_sqlite("arki_dataset_writer_bufr_simple_sqlite", "type=simple\nindex_type=sqlite");
+TestsWriter<BUFRData> test_writer_bufr_ondisk2("arki_dataset_writer_bufr_ondisk2", "type=ondisk2\nformat=bufr\n");
+TestsWriter<BUFRData> test_writer_bufr_simple_plain("arki_dataset_writer_bufr_simple_plain", "type=simple\nindex_type=plain\nformat=bufr\n");
+TestsWriter<BUFRData> test_writer_bufr_simple_sqlite("arki_dataset_writer_bufr_simple_sqlite", "type=simple\nindex_type=sqlite\nformat=bufr\n");
 TestsWriter<BUFRData> test_writer_bufr_iseg("arki_dataset_writer_bufr_iseg", "type=iseg\nformat=bufr\n");
-TestsWriter<VM2Data> test_writer_vm2_ondisk2("arki_dataset_writer_vm2_ondisk2", "type=ondisk2\n");
-TestsWriter<VM2Data> test_writer_vm2_simple_plain("arki_dataset_writer_vm2_simple_plain", "type=simple\nindex_type=plain\n");
-TestsWriter<VM2Data> test_writer_vm2_simple_sqlite("arki_dataset_writer_vm2_simple_sqlite", "type=simple\nindex_type=sqlite");
+TestsWriter<VM2Data> test_writer_vm2_ondisk2("arki_dataset_writer_vm2_ondisk2", "type=ondisk2\nformat=vm2\n");
+TestsWriter<VM2Data> test_writer_vm2_simple_plain("arki_dataset_writer_vm2_simple_plain", "type=simple\nindex_type=plain\nformat=vm2\n");
+TestsWriter<VM2Data> test_writer_vm2_simple_sqlite("arki_dataset_writer_vm2_simple_sqlite", "type=simple\nindex_type=sqlite\nformat=vm2\n");
 TestsWriter<VM2Data> test_writer_vm2_iseg("arki_dataset_writer_vm2_iseg", "type=iseg\nformat=vm2\n");
-TestsWriter<ODIMData> test_writer_odim_ondisk2("arki_dataset_writer_odim_ondisk2", "type=ondisk2\n");
-TestsWriter<ODIMData> test_writer_odim_simple_plain("arki_dataset_writer_odim_simple_plain", "type=simple\nindex_type=plain\n");
-TestsWriter<ODIMData> test_writer_odim_simple_sqlite("arki_dataset_writer_odim_simple_sqlite", "type=simple\nindex_type=sqlite");
+TestsWriter<ODIMData> test_writer_odim_ondisk2("arki_dataset_writer_odim_ondisk2", "type=ondisk2\nformat=odimh5\n");
+TestsWriter<ODIMData> test_writer_odim_simple_plain("arki_dataset_writer_odim_simple_plain", "type=simple\nindex_type=plain\nformat=odimh5\n");
+TestsWriter<ODIMData> test_writer_odim_simple_sqlite("arki_dataset_writer_odim_simple_sqlite", "type=simple\nindex_type=sqlite\nformat=odimh5\n");
 TestsWriter<ODIMData> test_writer_odim_iseg("arki_dataset_writer_odim_iseg", "type=iseg\nformat=odimh5\n");
 
 void Tests::register_tests() {
@@ -130,28 +131,28 @@ add_method("import_batch_replace_usn", [](Fixture& f) {
 
     dataset::WriterBatch batch;
     batch.emplace_back(make_shared<dataset::WriterBatchElement>(mdc[0]));
-    wassert(ds->acquire_batch(batch, dataset::Writer::REPLACE_HIGHER_USN));
+    wassert(ds->acquire_batch(batch, dataset::REPLACE_HIGHER_USN));
     wassert(actual(batch[0]->result) == dataset::ACQ_OK);
     wassert(actual(batch[0]->dataset_name) == "testds");
     wassert(actual_file(str::joinpath(f.ds_root, "2009/12-04.bufr")).exists());
     wassert(actual_type(mdc[0].source()).is_source_blob("bufr", f.ds_root, "2009/12-04.bufr"));
 
     // Acquire again: it works, since USNs the same as the existing ones do overwrite
-    wassert(ds->acquire_batch(batch, dataset::Writer::REPLACE_HIGHER_USN));
+    wassert(ds->acquire_batch(batch, dataset::REPLACE_HIGHER_USN));
     wassert(actual(batch[0]->result) == dataset::ACQ_OK);
     wassert(actual(batch[0]->dataset_name) == "testds");
 
     // Acquire with a newer USN: it works
     batch.clear();
     batch.emplace_back(make_shared<dataset::WriterBatchElement>(mdc_upd[0]));
-    wassert(ds->acquire_batch(batch, dataset::Writer::REPLACE_HIGHER_USN));
+    wassert(ds->acquire_batch(batch, dataset::REPLACE_HIGHER_USN));
     wassert(actual(batch[0]->result) == dataset::ACQ_OK);
     wassert(actual(batch[0]->dataset_name) == "testds");
 
     // Acquire with the lower USN: it fails
     batch.clear();
     batch.emplace_back(make_shared<dataset::WriterBatchElement>(mdc[0]));
-    wassert(ds->acquire_batch(batch, dataset::Writer::REPLACE_HIGHER_USN));
+    wassert(ds->acquire_batch(batch, dataset::REPLACE_HIGHER_USN));
     if (ds->type() == "simple")
     {
         wassert(actual(batch[0]->result) == dataset::ACQ_OK);
@@ -182,6 +183,22 @@ this->add_method("import", [](Fixture& f) {
     }
 });
 
+this->add_method("import_error", [](Fixture& f) {
+    std::string format = f.cfg.value("format");
+    Metadata md;
+    fill(md);
+    md.set("reftime", "2018-01-01T00:00:00");
+    md.set_source_inline(format, metadata::DataManager::get().to_unreadable_data(1));
+
+    auto ds = f.config().create_writer();
+    wassert(actual(ds->acquire(md, dataset::REPLACE_NEVER)) == dataset::ACQ_ERROR);
+
+    auto state = f.scan_state();
+    wassert(actual(state.size()) == 1u);
+    wassert(actual(state.get("testds:2018/01-01." + format).state) == segment::SEGMENT_DELETED);
+    wassert(f.query_results({}));
+});
+
 this->add_method("import_batch_replace_never", [](Fixture& f) {
     auto ds = f.config().create_writer();
 
@@ -189,7 +206,7 @@ this->add_method("import_batch_replace_never", [](Fixture& f) {
     batch.emplace_back(make_shared<dataset::WriterBatchElement>(f.td.mds[0]));
     batch.emplace_back(make_shared<dataset::WriterBatchElement>(f.td.mds[1]));
     batch.emplace_back(make_shared<dataset::WriterBatchElement>(f.td.mds[2]));
-    wassert(ds->acquire_batch(batch, dataset::Writer::REPLACE_NEVER));
+    wassert(ds->acquire_batch(batch, dataset::REPLACE_NEVER));
     for (unsigned i = 0; i < 3; ++i)
     {
         wassert(actual(batch[i]->result) == dataset::ACQ_OK);
@@ -203,7 +220,7 @@ this->add_method("import_batch_replace_never", [](Fixture& f) {
     batch.emplace_back(make_shared<dataset::WriterBatchElement>(mds[0]));
     batch.emplace_back(make_shared<dataset::WriterBatchElement>(mds[1]));
     batch.emplace_back(make_shared<dataset::WriterBatchElement>(mds[2]));
-    wassert(ds->acquire_batch(batch, dataset::Writer::REPLACE_NEVER));
+    wassert(ds->acquire_batch(batch, dataset::REPLACE_NEVER));
     for (unsigned i = 0; i < 3; ++i)
     {
         if (ds->type() == "simple")
@@ -227,7 +244,7 @@ this->add_method("import_batch_replace_always", [](Fixture& f) {
     batch.emplace_back(make_shared<dataset::WriterBatchElement>(f.td.mds[0]));
     batch.emplace_back(make_shared<dataset::WriterBatchElement>(f.td.mds[1]));
     batch.emplace_back(make_shared<dataset::WriterBatchElement>(f.td.mds[2]));
-    wassert(ds->acquire_batch(batch, dataset::Writer::REPLACE_ALWAYS));
+    wassert(ds->acquire_batch(batch, dataset::REPLACE_ALWAYS));
 
     for (unsigned i = 0; i < 3; ++i)
     {
@@ -242,7 +259,7 @@ this->add_method("import_batch_replace_always", [](Fixture& f) {
     batch.emplace_back(make_shared<dataset::WriterBatchElement>(mds[0]));
     batch.emplace_back(make_shared<dataset::WriterBatchElement>(mds[1]));
     batch.emplace_back(make_shared<dataset::WriterBatchElement>(mds[2]));
-    wassert(ds->acquire_batch(batch, dataset::Writer::REPLACE_ALWAYS));
+    wassert(ds->acquire_batch(batch, dataset::REPLACE_ALWAYS));
     for (unsigned i = 0; i < 3; ++i)
     {
         wassert(actual(batch[i]->result) == dataset::ACQ_OK);
@@ -304,7 +321,111 @@ this->add_method("second_resolution", [](Fixture& f) {
     wassert(f.ensure_localds_clean(1, 2));
 });
 
+auto test_same_segment_fail = [](Fixture& f, unsigned fail_idx, dataset::ReplaceStrategy strategy) {
+    sys::rmtree_ifexists("testds");
+    Metadata md;
+    fill(md);
+    std::string format = f.cfg.value("format");
+
+    // Make a batch that ends up all in the same segment
+    metadata::Collection mds;
+    for (unsigned idx = 0; idx < 3; ++idx)
+    {
+        md.set(types::Reftime::createPosition(Time(2018, 1, 1, idx, 0, 0)));
+        if (idx == fail_idx)
+            md.set_source_inline(format, metadata::DataManager::get().to_unreadable_data(1));
+        else
+            md.set_source_inline(format, metadata::DataManager::get().to_data(format, std::vector<uint8_t>{(unsigned char)idx}));
+        mds.push_back(md);
+    }
+
+    auto ds = f.config().create_writer();
+    dataset::WriterBatch batch = mds.make_import_batch();
+    wassert(ds->acquire_batch(batch, strategy));
+    wassert(actual(batch[0]->result) == dataset::ACQ_ERROR);
+    wassert(actual(batch[1]->result) == dataset::ACQ_ERROR);
+    wassert(actual(batch[2]->result) == dataset::ACQ_ERROR);
+
+    auto state = f.scan_state();
+    wassert(actual(state.size()) == 1u);
+    wassert(actual(state.get("testds:2018/01-01." + format).state) == segment::SEGMENT_DELETED);
+    wassert(f.query_results({}));
+};
+
+this->add_method("transaction_same_segment_fail_first", [=](Fixture& f) {
+    wassert(test_same_segment_fail(f, 0, dataset::REPLACE_NEVER));
+    wassert(test_same_segment_fail(f, 0, dataset::REPLACE_ALWAYS));
+    wassert(test_same_segment_fail(f, 0, dataset::REPLACE_HIGHER_USN));
+});
+
+this->add_method("transaction_same_segment_fail_middle", [=](Fixture& f) {
+    wassert(test_same_segment_fail(f, 1, dataset::REPLACE_NEVER));
+    wassert(test_same_segment_fail(f, 1, dataset::REPLACE_ALWAYS));
+    wassert(test_same_segment_fail(f, 1, dataset::REPLACE_HIGHER_USN));
+});
+
+this->add_method("transaction_same_segment_fail_last", [=](Fixture& f) {
+    wassert(test_same_segment_fail(f, 2, dataset::REPLACE_NEVER));
+    wassert(test_same_segment_fail(f, 2, dataset::REPLACE_ALWAYS));
+    wassert(test_same_segment_fail(f, 2, dataset::REPLACE_HIGHER_USN));
+});
+
+auto test_different_segment_fail = [](Fixture& f, unsigned fail_idx, dataset::ReplaceStrategy strategy) {
+    sys::rmtree_ifexists("testds");
+    Metadata md;
+    fill(md);
+    std::string format = f.cfg.value("format");
+
+    // Make a batch that ends up all in the same segment
+    metadata::Collection mds;
+    for (unsigned idx = 0; idx < 3; ++idx)
+    {
+        md.set(types::Reftime::createPosition(Time(2018, idx + 1, 1, 0, 0, 0)));
+        if (idx == fail_idx)
+            md.set_source_inline(format, metadata::DataManager::get().to_unreadable_data(1));
+        else
+            md.set_source_inline(format, metadata::DataManager::get().to_data(format, std::vector<uint8_t>{(unsigned char)idx}));
+        mds.push_back(md);
+    }
+
+    auto ds = f.config().create_writer();
+    dataset::WriterBatch batch = mds.make_import_batch();
+    wassert(ds->acquire_batch(batch, strategy));
+    wassert(actual(batch[0]->result) == (fail_idx == 0 ? dataset::ACQ_ERROR : dataset::ACQ_OK));
+    wassert(actual(batch[1]->result) == (fail_idx == 1 ? dataset::ACQ_ERROR : dataset::ACQ_OK));
+    wassert(actual(batch[2]->result) == (fail_idx == 2 ? dataset::ACQ_ERROR : dataset::ACQ_OK));
+    ds->flush();
+
+    auto state = f.scan_state();
+    wassert(actual(state.size()) == 3u);
+    wassert(actual(state.get("testds:2018/01-01." + format).state) == (fail_idx == 0 ? segment::SEGMENT_DELETED : segment::SEGMENT_OK));
+    wassert(actual(state.get("testds:2018/02-01." + format).state) == (fail_idx == 1 ? segment::SEGMENT_DELETED : segment::SEGMENT_OK));
+    wassert(actual(state.get("testds:2018/03-01." + format).state) == (fail_idx == 2 ? segment::SEGMENT_DELETED : segment::SEGMENT_OK));
+
+    metadata::Collection res = f.query(dataset::DataQuery());
+    wassert(actual(res.size()) == 2u);
+};
+
+this->add_method("transaction_different_segment_fail_first", [=](Fixture& f) {
+    wassert(test_different_segment_fail(f, 0, dataset::REPLACE_NEVER));
+    wassert(test_different_segment_fail(f, 0, dataset::REPLACE_ALWAYS));
+    wassert(test_different_segment_fail(f, 0, dataset::REPLACE_HIGHER_USN));
+});
+
+this->add_method("transaction_different_segment_fail_middle", [=](Fixture& f) {
+    wassert(test_different_segment_fail(f, 1, dataset::REPLACE_NEVER));
+    wassert(test_different_segment_fail(f, 1, dataset::REPLACE_ALWAYS));
+    wassert(test_different_segment_fail(f, 1, dataset::REPLACE_HIGHER_USN));
+});
+
+this->add_method("transaction_different_segment_fail_last", [=](Fixture& f) {
+    wassert(test_different_segment_fail(f, 2, dataset::REPLACE_NEVER));
+    wassert(test_different_segment_fail(f, 2, dataset::REPLACE_ALWAYS));
+    wassert(test_different_segment_fail(f, 2, dataset::REPLACE_HIGHER_USN));
+});
+
 this->add_method("test_acquire", [](Fixture& f) {
+    // TODO: add tests for test_acquire
 });
 
 }

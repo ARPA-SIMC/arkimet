@@ -28,12 +28,12 @@ Reader::Reader(std::shared_ptr<const dataset::Config> config) : m_config(config)
 Reader::~Reader() {}
 
 
-WriterAcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
+WriterAcquireResult Writer::acquire(Metadata& md, const AcquireConfig& cfg)
 {
     return ACQ_OK;
 }
 
-void Writer::acquire_batch(WriterBatch& batch, ReplaceStrategy replace)
+void Writer::acquire_batch(WriterBatch& batch, const AcquireConfig& cfg)
 {
     for (auto& e: batch)
     {

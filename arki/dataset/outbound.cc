@@ -46,14 +46,14 @@ Writer::~Writer()
 
 std::string Writer::type() const { return "outbound"; }
 
-void Writer::storeBlob(Metadata& md, const std::string& reldest)
+void Writer::storeBlob(Metadata& md, const std::string& reldest, bool drop_cached_data_on_commit)
 {
     // Write using segment::Writer
     auto w = file(md, md.source().format);
-    w->append(md);
+    w->append(md, drop_cached_data_on_commit);
 }
 
-WriterAcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
+WriterAcquireResult Writer::acquire(Metadata& md, const AcquireConfig& cfg)
 {
     auto age_check = config().check_acquire_age(md);
     if (age_check.first) return age_check.second;
@@ -65,7 +65,7 @@ WriterAcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
     sys::makedirs(str::dirname(dest));
 
     try {
-        storeBlob(md, reldest);
+        storeBlob(md, reldest, cfg.drop_cached_data_on_commit);
         return ACQ_OK;
     } catch (std::exception& e) {
         md.add_note("Failed to store in dataset '" + name() + "': " + e.what());
@@ -77,12 +77,12 @@ WriterAcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
     throw std::runtime_error("this code path should never be reached (it is here to appease a compiler warning)");
 }
 
-void Writer::acquire_batch(WriterBatch& batch, ReplaceStrategy replace)
+void Writer::acquire_batch(WriterBatch& batch, const AcquireConfig& cfg)
 {
     for (auto& e: batch)
     {
         e->dataset_name.clear();
-        e->result = acquire(e->md, replace);
+        e->result = acquire(e->md, cfg);
         if (e->result == ACQ_OK)
             e->dataset_name = name();
     }

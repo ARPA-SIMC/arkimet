@@ -307,8 +307,8 @@ bool Reader::scan(metadata_dest_func dest)
 
 
 
-Writer::PendingMetadata::PendingMetadata(Metadata& md, std::unique_ptr<types::source::Blob> new_source)
-    : md(md), new_source(new_source.release())
+Writer::PendingMetadata::PendingMetadata(Metadata& md, std::unique_ptr<types::source::Blob> new_source, bool drop_cached_data_on_commit)
+    : md(md), new_source(new_source.release()), drop_cached_data_on_commit(drop_cached_data_on_commit)
 {
 }
 
@@ -328,6 +328,8 @@ void Writer::PendingMetadata::set_source()
     std::unique_ptr<types::source::Blob> source(new_source);
     new_source = 0;
     md.set_source(move(source));
+    if (drop_cached_data_on_commit)
+        md.drop_cached_data();
 }
 
 

@@ -1,6 +1,7 @@
 #include "arki/tests/tests.h"
 #include "arki/metadata/stream.h"
 #include "arki/metadata.h"
+#include "arki/metadata/data.h"
 #include "arki/metadata/collection.h"
 #include "arki/types/source.h"
 #include "arki/types/origin.h"
@@ -71,14 +72,14 @@ inline bool cmpmd(Metadata& md1, Metadata& md2)
         md1.write_yaml(cerr);
         if (md1.source().style() == types::Source::INLINE)
         {
-            const auto& buf = md1.getData();
+            const auto& buf = md1.get_data().read();
             cerr << "-- Inline data:" << string((const char*)buf.data(), buf.size()) << endl;
         }
         cerr << "----- Second one:" << endl;
         md2.write_yaml(cerr);
         if (md2.source().style() == types::Source::INLINE)
         {
-            const auto& buf = md2.getData();
+            const auto& buf = md2.get_data().read();
             cerr << "-- Inline data:" << string((const char*)buf.data(), buf.size()) << endl;
         }
         return false;
@@ -107,7 +108,7 @@ add_method("stream", [] {
     md2.set(types::origin::BUFR::create(1, 2));
 
     const char* teststr = "this is a test";
-    md1.set_source_inline("test", vector<uint8_t>(teststr, teststr + 14));
+    md1.set_source_inline("test", metadata::DataManager::get().to_data("test", vector<uint8_t>(teststr, teststr + 14)));
 
     // Encode everything in a buffer
     size_t end1, end2;

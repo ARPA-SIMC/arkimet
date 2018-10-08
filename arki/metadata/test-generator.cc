@@ -1,7 +1,8 @@
-#include <arki/metadata/test-generator.h>
-#include <arki/metadata.h>
-#include <arki/types/reftime.h>
-#include <arki/types/run.h>
+#include "arki/metadata/test-generator.h"
+#include "arki/metadata.h"
+#include "arki/metadata/data.h"
+#include "arki/types/reftime.h"
+#include "arki/types/run.h"
 #include <cstring>
 
 using namespace std;
@@ -123,7 +124,7 @@ bool Generator::_generate(const Samples::const_iterator& i, Metadata& md, metada
         m->set(types::run::Minute::create(p->time.ho, p->time.mi));
 
         // Set source and inline data
-        m->set_source_inline(format, vector<uint8_t>(5432));
+        m->set_source_inline(format, metadata::DataManager::get().to_data(format, vector<uint8_t>(5432)));
 
         return cons(move(m));
     }

@@ -1,5 +1,6 @@
 #include "arki/tests/tests.h"
 #include "arki/segment.h"
+#include "arki/metadata/data.h"
 #include "core/file.h"
 #include "utils/sys.h"
 #include "configfile.h"
@@ -91,7 +92,7 @@ add_method("cat", [] {
         reader->scan([&](unique_ptr<Metadata> md) {
             md->makeInline();
             md->encodeBinary(enc);
-            const auto& data = md->getData();
+            const auto& data = md->get_data().read();
             enc.add_raw(data);
             return true;
         });

@@ -65,7 +65,7 @@ struct BaseWriter : public segment::BaseWriter<Segment>
     virtual void write_file(Metadata& md, core::NamedFileDescriptor& fd) = 0;
 
     size_t next_offset() const override;
-    const types::source::Blob& append(Metadata& md) override;
+    const types::source::Blob& append(Metadata& md, bool drop_cached_data_on_commit) override;
 
     void commit() override;
     void rollback() override;
@@ -96,6 +96,7 @@ struct BaseChecker : public segment::BaseChecker<Segment>
     void validate(Metadata& md, const scan::Validator& v);
     void move_data(const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath) override;
     bool exists_on_disk() override;
+    bool is_empty() override;
     size_t size() override;
 
     State check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick=true) override;

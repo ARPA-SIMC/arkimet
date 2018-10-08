@@ -3,6 +3,7 @@
 #include <arki/dataset/http.h>
 #include <arki/configfile.h>
 #include <arki/metadata.h>
+#include <arki/metadata/data.h>
 #include <arki/metadata/collection.h>
 #include <arki/matcher.h>
 #include <arki/summary.h>
@@ -82,7 +83,7 @@ add_method("inline", [] {
 
     // Check that the source record that comes out is ok
     wassert(actual_type(mdc[0].source()).is_source_inline("grib", 7218));
-    wassert(actual(mdc[0].getData().size()) == 7218u);
+    wassert(actual(mdc[0].get_data().size()) == 7218u);
 
     mdc.clear();
     mdc.add(*testds, dataset::DataQuery(Matcher::parse("origin:GRIB1,80"), true));
@@ -99,7 +100,7 @@ add_method("inline", [] {
     Metadata::read_file(output.name(), mdc.inserter_func());
     wassert(actual(mdc.size()) == 1u);
     wassert(actual_type(mdc[0].source()).is_source_inline("grib", 7218));
-    wassert(actual(mdc[0].getData().size()) == 7218u);
+    wassert(actual(mdc[0].get_data().size()) == 7218u);
 });
 
 // Test querying the summary
@@ -293,7 +294,7 @@ add_method("postproc_error1", [] {
         ds->query_data(dq, [&](unique_ptr<Metadata> md) {
             md->makeInline();
             md->encodeBinary(enc);
-            enc.add_raw(md->getData());
+            enc.add_raw(md->get_data().read());
             return true;
         });
     }
@@ -361,10 +362,10 @@ add_method("postproc_error1", [] {
     ensure_equals(yaml1, yaml2);
 
     // Compare data
-    const auto& d1 = mdc1[0].getData();
-    const auto& d2 = mdc2[0].getData();
+    const auto& d1 = mdc1[0].get_data().read();
+    const auto& d2 = mdc2[0].get_data().read();
 
-    ensure(d1 == d2);
+    wassert(actual(d1) == d2);
 });
 
 // Test downloading the server alias database

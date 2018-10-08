@@ -6,6 +6,7 @@
 #include <arki/segment/base.h>
 #include <arki/segment/common.h>
 #include <arki/core/file.h>
+#include <arki/metadata/fwd.h>
 #include <string>
 #include <vector>
 
@@ -21,7 +22,7 @@ struct File : public core::File
     using core::File::File;
 
     void fdtruncate_nothrow(off_t pos) noexcept;
-    virtual size_t write_data(const std::vector<uint8_t>& buf) = 0;
+    virtual size_t write_data(const metadata::Data& data) = 0;
     virtual void test_add_padding(size_t size) = 0;
 };
 
@@ -51,6 +52,7 @@ template<typename Segment, typename File>
 struct Writer : public segment::BaseWriter<Segment>
 {
     File fd;
+    struct timespec initial_mtime;
     off_t initial_size;
     off_t current_pos;
     std::vector<segment::Writer::PendingMetadata> pending;
@@ -59,7 +61,7 @@ struct Writer : public segment::BaseWriter<Segment>
     ~Writer();
 
     size_t next_offset() const override;
-    const types::source::Blob& append(Metadata& md) override;
+    const types::source::Blob& append(Metadata& md, bool drop_cached_data_on_commit) override;
 
     void commit() override;
     void rollback() override;
@@ -77,6 +79,7 @@ public:
     Checker(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath);
 
     bool exists_on_disk() override;
+    bool is_empty() override;
     size_t size() override;
 
     State check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick=true) override;
@@ -98,14 +101,14 @@ namespace concat {
 struct File : public fd::File
 {
     using fd::File::File;
-    size_t write_data(const std::vector<uint8_t>& buf) override;
+    size_t write_data(const metadata::Data& buf) override;
     void test_add_padding(size_t size) override;
 };
 
 struct HoleFile : public fd::File
 {
     using fd::File::File;
-    size_t write_data(const std::vector<uint8_t>& buf) override;
+    size_t write_data(const metadata::Data& buf) override;
     void test_add_padding(size_t size) override;
 };
 
@@ -172,11 +175,10 @@ public:
 
 namespace lines {
 
-struct File : public fd::File
+struct File : public concat::File
 {
-    using fd::File::File;
+    using concat::File::File;
 
-    size_t write_data(const std::vector<uint8_t>& buf) override;
     void test_add_padding(size_t size) override;
 };
 

@@ -5,6 +5,7 @@
 #include "arki/dataset/ondisk2/index.h"
 #include "arki/dataset/reporter.h"
 #include "arki/metadata.h"
+#include "arki/metadata/data.h"
 #include "arki/metadata/collection.h"
 #include "arki/types/source/blob.h"
 #include "arki/configfile.h"
@@ -64,9 +65,9 @@ add_method("reindex_with_duplicates", [](Fixture& f) {
     // TODO: use segments also in the other tests, and instantiate a new test suite for different segment types
     {
         auto s = f.segments().get_writer("grib", "2007/07.grib");
-        s->append(data.mds[1]);
-        s->append(data.mds[1]);
-        s->append(data.mds[0]);
+        s->append(data.mds[1], false);
+        s->append(data.mds[1], false);
+        s->append(data.mds[0], false);
         s->commit();
     }
 
@@ -275,7 +276,7 @@ add_method("data_in_right_segment_reindex", [](Fixture& f) {
     metadata::TestCollection mdc("inbound/test.grib1");
 
     // Append one of the GRIBs to the wrong file
-    const auto& buf = mdc[1].getData();
+    const auto& buf = mdc[1].get_data().read();
     wassert(actual(buf.size()) == 34960u);
     FILE* fd = fopen("testds/2007/10-09.grib", "ab");
     wassert(actual(fd != NULL).istrue());
@@ -322,8 +323,8 @@ add_method("data_in_right_segment_rescan", [](Fixture& f) {
     files::createDontpackFlagfile("testds");
 
     // Append one of the GRIBs to the wrong file
-    const auto& buf1 = mdc[1].getData();
-    const auto& buf2 = mdc[2].getData();
+    const auto& buf1 = mdc[1].get_data().read();
+    const auto& buf2 = mdc[2].get_data().read();
     wassert(actual(buf1.size()) == 34960u);
     wassert(actual(buf2.size()) == 2234u);
     FILE* fd = fopen("testds/2007/06-06.grib", "ab");
@@ -373,7 +374,7 @@ add_method("pack_vm2", [](Fixture& f) {
     {
         orig_data.reserve(mdc_imported.size());
         for (unsigned i = 0; i < mdc_imported.size(); ++i)
-            orig_data.push_back(mdc_imported[i].getData());
+            orig_data.push_back(mdc_imported[i].get_data().read());
 
         auto writer = f.makeOndisk2Writer();
         for (unsigned i = 0; i < mdc_imported.size(); ++i)
@@ -413,8 +414,8 @@ add_method("pack_vm2", [](Fixture& f) {
     metadata::Collection mdc_packed = f.query(dataset::DataQuery("", true));
     wassert(actual(mdc_packed[0]).is_similar(mdc_imported[1]));
     wassert(actual(mdc_packed[1]).is_similar(mdc_imported[3]));
-    wassert(actual(mdc_packed[0].getData()) == orig_data[1]);
-    wassert(actual(mdc_packed[1].getData()) == orig_data[3]);
+    wassert(actual(mdc_packed[0].get_data().read()) == orig_data[1]);
+    wassert(actual(mdc_packed[1].get_data().read()) == orig_data[3]);
 });
 
 }

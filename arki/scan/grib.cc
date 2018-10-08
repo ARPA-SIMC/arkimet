@@ -2,6 +2,7 @@
 #include "grib.h"
 #include <grib_api.h>
 #include "arki/metadata.h"
+#include "arki/metadata/data.h"
 #include "arki/types/source.h"
 #include "arki/exceptions.h"
 #include "arki/runtime/config.h"
@@ -262,7 +263,7 @@ struct GribLua : public Lua
         offset -= size;
 
         md.set_source(Source::createBlob(reader, offset, size));
-        md.set_cached_data(vector<uint8_t>(vbuf, vbuf + size));
+        md.set_cached_data(metadata::DataManager::get().to_data(reader->segment().format, vector<uint8_t>(vbuf, vbuf + size)));
 
         stringstream note;
         note << "Scanned from " << str::basename(reader->segment().relpath) << ":" << offset << "+" << size;
@@ -275,7 +276,7 @@ struct GribLua : public Lua
         const uint8_t* vbuf;
         size_t size;
         check_grib_error(grib_get_message(gh, (const void **)&vbuf, &size), "cannot access the encoded GRIB data");
-        md.set_source_inline("grib", vector<uint8_t>(vbuf, vbuf + size));
+        md.set_source_inline("grib", metadata::DataManager::get().to_data("grib", vector<uint8_t>(vbuf, vbuf + size)));
     }
 };
 
@@ -562,7 +563,7 @@ std::unique_ptr<Metadata> Grib::scan_data(const std::vector<uint8_t>& data)
     auto restore_gh = L->with_grib_handle(gh);
 
     std::unique_ptr<Metadata> md(new Metadata);
-    md->set_source_inline("grib", std::vector<uint8_t>(data));
+    md->set_source_inline("grib", metadata::DataManager::get().to_data("grib", std::vector<uint8_t>(data)));
     L->scan_handle(*md);
 
     restore_gh.close();

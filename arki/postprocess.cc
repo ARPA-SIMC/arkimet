@@ -4,6 +4,7 @@
 #include "arki/core/file.h"
 #include "arki/configfile.h"
 #include "arki/metadata.h"
+#include "arki/metadata/data.h"
 #include "arki/utils/process.h"
 #include "arki/runtime/config.h"
 #include "arki/utils/string.h"
@@ -260,8 +261,9 @@ bool Postprocess::process(unique_ptr<Metadata>&& md)
     if (m_child->send(encoded) < encoded.size())
         return false;
 
-    const auto& data = md->getData();
-    if (m_child->send(data.data(), data.size()) < data.size())
+    const auto& data = md->get_data();
+    const auto buf = data.read();
+    if (m_child->send(buf.data(), buf.size()) < buf.size())
         return false;
 
     return true;

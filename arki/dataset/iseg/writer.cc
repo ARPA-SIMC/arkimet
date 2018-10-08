@@ -37,7 +37,7 @@ struct AppendSegment
     {
     }
 
-    WriterAcquireResult acquire_replace_never(Metadata& md, index::SummaryCache& scache)
+    WriterAcquireResult acquire_replace_never(Metadata& md, index::SummaryCache& scache, bool drop_cached_data_on_commit)
     {
         Pending p_idx = idx.begin_transaction();
 
@@ -49,7 +49,7 @@ struct AppendSegment
             }
             // Invalidate the summary cache for this month
             scache.invalidate(md);
-            segment->append(md);
+            segment->append(md, drop_cached_data_on_commit);
             segment->commit();
             p_idx.commit();
             return ACQ_OK;
@@ -60,7 +60,7 @@ struct AppendSegment
         }
     }
 
-    WriterAcquireResult acquire_replace_always(Metadata& md, index::SummaryCache& scache)
+    WriterAcquireResult acquire_replace_always(Metadata& md, index::SummaryCache& scache, bool drop_cached_data_on_commit)
     {
         Pending p_idx = idx.begin_transaction();
 
@@ -68,7 +68,7 @@ struct AppendSegment
             idx.replace(md, segment->next_offset());
             // Invalidate the summary cache for this month
             scache.invalidate(md);
-            segment->append(md);
+            segment->append(md, drop_cached_data_on_commit);
             segment->commit();
             p_idx.commit();
             return ACQ_OK;
@@ -79,7 +79,7 @@ struct AppendSegment
         }
     }
 
-    WriterAcquireResult acquire_replace_higher_usn(Metadata& md, SegmentManager& segs, index::SummaryCache& scache)
+    WriterAcquireResult acquire_replace_higher_usn(Metadata& md, SegmentManager& segs, index::SummaryCache& scache, bool drop_cached_data_on_commit)
     {
         Pending p_idx = idx.begin_transaction();
 
@@ -110,12 +110,12 @@ struct AppendSegment
 
                 // Replace, reusing the pending datafile transaction from earlier
                 idx.replace(md, segment->next_offset());
-                segment->append(md);
+                segment->append(md, drop_cached_data_on_commit);
                 segment->commit();
                 p_idx.commit();
                 return ACQ_OK;
             } else {
-                segment->append(md);
+                segment->append(md, drop_cached_data_on_commit);
                 // Invalidate the summary cache for this month
                 scache.invalidate(md);
                 segment->commit();
@@ -129,105 +129,123 @@ struct AppendSegment
         }
     }
 
-    void acquire_batch_replace_never(WriterBatch& batch, index::SummaryCache& scache)
+    void acquire_batch_replace_never(WriterBatch& batch, index::SummaryCache& scache, bool drop_cached_data_on_commit)
     {
         Pending p_idx = idx.begin_transaction();
 
-        for (auto& e: batch)
-        {
-            e->dataset_name.clear();
-
-            if (std::unique_ptr<types::source::Blob> old = idx.index(e->md, segment->next_offset()))
+        try {
+            for (auto& e: batch)
             {
-                e->md.add_note("Failed to store in dataset '" + config->name + "' because the dataset already has the data in " + segment->segment().relpath + ":" + std::to_string(old->offset));
-                e->result = ACQ_ERROR_DUPLICATE;
-                continue;
-            }
+                e->dataset_name.clear();
 
-            // Invalidate the summary cache for this month
-            scache.invalidate(e->md);
-            segment->append(e->md);
-            e->result = ACQ_OK;
-            e->dataset_name = config->name;
-        }
-
-        segment->commit();
-        p_idx.commit();
-    }
-
-    void acquire_batch_replace_always(WriterBatch& batch, index::SummaryCache& scache)
-    {
-        Pending p_idx = idx.begin_transaction();
-
-        for (auto& e: batch)
-        {
-            e->dataset_name.clear();
-            idx.replace(e->md, segment->next_offset());
-            // Invalidate the summary cache for this month
-            scache.invalidate(e->md);
-            segment->append(e->md);
-            e->result = ACQ_OK;
-            e->dataset_name = config->name;
-        }
-
-        segment->commit();
-        p_idx.commit();
-    }
-
-    void acquire_batch_replace_higher_usn(WriterBatch& batch, SegmentManager& segs, index::SummaryCache& scache)
-    {
-        Pending p_idx = idx.begin_transaction();
-
-        for (auto& e: batch)
-        {
-            e->dataset_name.clear();
-
-            // Try to acquire without replacing
-            if (std::unique_ptr<types::source::Blob> old = idx.index(e->md, segment->next_offset()))
-            {
-                // Duplicate detected
-
-                // Read the update sequence number of the new BUFR
-                int new_usn;
-                if (!scan::Scanner::update_sequence_number(e->md, new_usn))
+                if (std::unique_ptr<types::source::Blob> old = idx.index(e->md, segment->next_offset()))
                 {
-                    e->md.add_note("Failed to store in dataset '" + config->name + "' because the dataset already has the data in " + segment->segment().relpath + ":" + std::to_string(old->offset) + " and there is no Update Sequence Number to compare");
+                    e->md.add_note("Failed to store in dataset '" + config->name + "' because the dataset already has the data in " + segment->segment().relpath + ":" + std::to_string(old->offset));
                     e->result = ACQ_ERROR_DUPLICATE;
                     continue;
                 }
 
-                // Read the update sequence number of the old BUFR
-                auto reader = segs.get_reader(config->format, old->filename, append_lock);
-                old->lock(reader);
-                int old_usn;
-                if (!scan::Scanner::update_sequence_number(*old, old_usn))
-                {
-                    e->md.add_note("Failed to store in dataset '" + config->name + "': a similar element exists, the new element has an Update Sequence Number but the old one does not, so they cannot be compared");
-                    e->result = ACQ_ERROR;
-                    continue;
-                }
-
-                // If the new element has no higher Update Sequence Number, report a duplicate
-                if (old_usn > new_usn)
-                {
-                    e->md.add_note("Failed to store in dataset '" + config->name + "' because the dataset already has the data in " + segment->segment().relpath + ":" + std::to_string(old->offset) + " with a higher Update Sequence Number");
-                    e->result = ACQ_ERROR_DUPLICATE;
-                    continue;
-                }
-
-                // Replace, reusing the pending datafile transaction from earlier
-                idx.replace(e->md, segment->next_offset());
-                segment->append(e->md);
-                e->result = ACQ_OK;
-                e->dataset_name = config->name;
-                continue;
-            } else {
                 // Invalidate the summary cache for this month
                 scache.invalidate(e->md);
-                segment->append(e->md);
+                segment->append(e->md, drop_cached_data_on_commit);
                 e->result = ACQ_OK;
                 e->dataset_name = config->name;
             }
+        } catch (std::exception& e) {
+            // sqlite will take care of transaction consistency
+            batch.set_all_error("Failed to store in dataset '" + config->name + "': " + e.what());
+            return;
+        }
+
+        segment->commit();
+        p_idx.commit();
+    }
+
+    void acquire_batch_replace_always(WriterBatch& batch, index::SummaryCache& scache, bool drop_cached_data_on_commit)
+    {
+        Pending p_idx = idx.begin_transaction();
+
+        try {
+            for (auto& e: batch)
+            {
+                e->dataset_name.clear();
+                idx.replace(e->md, segment->next_offset());
+                // Invalidate the summary cache for this month
+                scache.invalidate(e->md);
+                segment->append(e->md, drop_cached_data_on_commit);
+                e->result = ACQ_OK;
+                e->dataset_name = config->name;
+            }
+        } catch (std::exception& e) {
+            // sqlite will take care of transaction consistency
+            batch.set_all_error("Failed to store in dataset '" + config->name + "': " + e.what());
+            return;
+        }
+
+        segment->commit();
+        p_idx.commit();
+    }
+
+    void acquire_batch_replace_higher_usn(WriterBatch& batch, SegmentManager& segs, index::SummaryCache& scache, bool drop_cached_data_on_commit)
+    {
+        Pending p_idx = idx.begin_transaction();
+
+        try {
+            for (auto& e: batch)
+            {
+                e->dataset_name.clear();
+
+                // Try to acquire without replacing
+                if (std::unique_ptr<types::source::Blob> old = idx.index(e->md, segment->next_offset()))
+                {
+                    // Duplicate detected
+
+                    // Read the update sequence number of the new BUFR
+                    int new_usn;
+                    if (!scan::Scanner::update_sequence_number(e->md, new_usn))
+                    {
+                        e->md.add_note("Failed to store in dataset '" + config->name + "' because the dataset already has the data in " + segment->segment().relpath + ":" + std::to_string(old->offset) + " and there is no Update Sequence Number to compare");
+                        e->result = ACQ_ERROR_DUPLICATE;
+                        continue;
+                    }
+
+                    // Read the update sequence number of the old BUFR
+                    auto reader = segs.get_reader(config->format, old->filename, append_lock);
+                    old->lock(reader);
+                    int old_usn;
+                    if (!scan::Scanner::update_sequence_number(*old, old_usn))
+                    {
+                        e->md.add_note("Failed to store in dataset '" + config->name + "': a similar element exists, the new element has an Update Sequence Number but the old one does not, so they cannot be compared");
+                        e->result = ACQ_ERROR;
+                        continue;
+                    }
+
+                    // If the new element has no higher Update Sequence Number, report a duplicate
+                    if (old_usn > new_usn)
+                    {
+                        e->md.add_note("Failed to store in dataset '" + config->name + "' because the dataset already has the data in " + segment->segment().relpath + ":" + std::to_string(old->offset) + " with a higher Update Sequence Number");
+                        e->result = ACQ_ERROR_DUPLICATE;
+                        continue;
+                    }
+
+                    // Replace, reusing the pending datafile transaction from earlier
+                    idx.replace(e->md, segment->next_offset());
+                    segment->append(e->md, drop_cached_data_on_commit);
+                    e->result = ACQ_OK;
+                    e->dataset_name = config->name;
+                    continue;
+                } else {
+                    // Invalidate the summary cache for this month
+                    scache.invalidate(e->md);
+                    segment->append(e->md, drop_cached_data_on_commit);
+                    e->result = ACQ_OK;
+                    e->dataset_name = config->name;
+                }
+            }
+        } catch (std::exception& e) {
+            // sqlite will take care of transaction consistency
+            batch.set_all_error("Failed to store in dataset '" + config->name + "': " + e.what());
+            return;
         }
 
         segment->commit();
@@ -266,7 +284,7 @@ std::unique_ptr<AppendSegment> Writer::file(const std::string& relpath)
     return std::unique_ptr<AppendSegment>(new AppendSegment(m_config, append_lock, segment));
 }
 
-WriterAcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
+WriterAcquireResult Writer::acquire(Metadata& md, const AcquireConfig& cfg)
 {
     if (md.source().format != config().format)
         throw std::runtime_error("cannot acquire into dataset " + name() + ": data is in format " + md.source().format + " but the dataset only accepts " + config().format);
@@ -274,14 +292,14 @@ WriterAcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
     auto age_check = config().check_acquire_age(md);
     if (age_check.first) return age_check.second;
 
-    if (replace == REPLACE_DEFAULT) replace = config().default_replace_strategy;
+    ReplaceStrategy replace = cfg.replace == REPLACE_DEFAULT ? config().default_replace_strategy : cfg.replace;
 
     auto segment = file(md);
     switch (replace)
     {
-        case REPLACE_NEVER: return segment->acquire_replace_never(md, scache);
-        case REPLACE_ALWAYS: return segment->acquire_replace_always(md, scache);
-        case REPLACE_HIGHER_USN: return segment->acquire_replace_higher_usn(md, segment_manager(), scache);
+        case REPLACE_NEVER: return segment->acquire_replace_never(md, scache, cfg.drop_cached_data_on_commit);
+        case REPLACE_ALWAYS: return segment->acquire_replace_always(md, scache, cfg.drop_cached_data_on_commit);
+        case REPLACE_HIGHER_USN: return segment->acquire_replace_higher_usn(md, segment_manager(), scache, cfg.drop_cached_data_on_commit);
         default:
         {
             stringstream ss;
@@ -291,9 +309,9 @@ WriterAcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
     }
 }
 
-void Writer::acquire_batch(WriterBatch& batch, ReplaceStrategy replace)
+void Writer::acquire_batch(WriterBatch& batch, const AcquireConfig& cfg)
 {
-    if (replace == REPLACE_DEFAULT) replace = config().default_replace_strategy;
+    ReplaceStrategy replace = cfg.replace == REPLACE_DEFAULT ? config().default_replace_strategy : cfg.replace;
 
     if (batch.empty()) return;
     if (batch[0]->md.source().format != config().format)
@@ -311,13 +329,13 @@ void Writer::acquire_batch(WriterBatch& batch, ReplaceStrategy replace)
         switch (replace)
         {
             case REPLACE_NEVER:
-                segment->acquire_batch_replace_never(s.second, scache);
+                segment->acquire_batch_replace_never(s.second, scache, cfg.drop_cached_data_on_commit);
                 break;
             case REPLACE_ALWAYS:
-                segment->acquire_batch_replace_always(s.second, scache);
+                segment->acquire_batch_replace_always(s.second, scache, cfg.drop_cached_data_on_commit);
                 break;
             case REPLACE_HIGHER_USN:
-                segment->acquire_batch_replace_higher_usn(s.second, segment_manager(), scache);
+                segment->acquire_batch_replace_higher_usn(s.second, segment_manager(), scache, cfg.drop_cached_data_on_commit);
                 break;
             default: throw std::runtime_error("programming error: unsupported replace value " + std::to_string(replace));
         }

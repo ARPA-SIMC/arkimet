@@ -1,6 +1,7 @@
 #include "arki/dataset/tests.h"
 #include "arki/dataset.h"
 #include "arki/core/file.h"
+#include "arki/metadata/data.h"
 #include "arki/metadata/collection.h"
 #include "arki/summary.h"
 #include "arki/types/source.h"
@@ -107,7 +108,7 @@ this->add_method("querydata", [](Fixture& f) {
         wassert(actual(matcher(mdc[0])).istrue());
 
         // Check that the data can be loaded
-        const auto& data = mdc[0].getData();
+        const auto& data = mdc[0].get_data().read();
         wassert(actual(data.size()) == s1.size);
     }
 
@@ -184,7 +185,7 @@ this->add_method("query_data", [](Fixture& f) {
     out.close();
 
     string queried = sys::read_file(out.name());
-    std::vector<uint8_t> data = f.td.mds[1].getData();
+    std::vector<uint8_t> data = f.td.mds[1].get_data().read();
     string strdata(data.begin(), data.end());
     wassert(actual(queried.substr(0, 8)) == strdata.substr(0, 8));
 });
@@ -203,7 +204,7 @@ this->add_method("query_inline", [](Fixture& f) {
     //wassert(actual_type(mdc[0].source()).is_source_inline("grib1", 7218));
 
     // Check that data is accessible
-    const auto& buf = mdc[0].getData();
+    const auto& buf = mdc[0].get_data().read();
     wassert(actual(buf.size()) == f.td.mds[0].sourceBlob().size);
 
     mdc.clear();
@@ -280,13 +281,13 @@ this->add_method("locked", [](Fixture& f) {
 });
 
 this->add_method("interrupted_read", [](Fixture& f) {
-    auto orig_data = f.td.mds[1].getData();
+    auto orig_data = f.td.mds[1].get_data().read();
 
     unsigned count = 0;
     auto reader = f.dataset_config()->create_reader();
     reader->query_data(dataset::DataQuery("", true), [&](unique_ptr<Metadata> md) {
-        auto data = md->getData();
-        wassert(actual(data == orig_data).istrue());
+        auto data = md->get_data().read();
+        wassert(actual(data) == orig_data);
         ++count;
         return false;
     });
@@ -303,7 +304,7 @@ this->add_method("read_missing_segment", [](Fixture& f) {
     auto reader = f.dataset_config()->create_reader();
     reader->query_data(dataset::DataQuery("", true), [&](unique_ptr<Metadata> md) {
         try {
-            md->getData();
+            md->get_data().read();
             ++count_ok;
         } catch (std::runtime_error& e) {
             wassert(actual(e.what()).contains("the segment has disappeared"));

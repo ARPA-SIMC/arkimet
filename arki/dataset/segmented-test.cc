@@ -9,6 +9,7 @@
 #include "arki/types/source/blob.h"
 #include "arki/types/reftime.h"
 #include "arki/metadata.h"
+#include "arki/metadata/data.h"
 #include "arki/metadata/collection.h"
 #include "arki/matcher.h"
 #include "arki/summary.h"
@@ -377,7 +378,7 @@ add_method("query_archived", [](Fixture& f) {
     //wassert(actual_type(mdc[0].source()).is_source_inline("grib", 7218));
 
     // Check that data is accessible
-    const auto& buf = mdc[0].getData();
+    const auto& buf = mdc[0].get_data().read();
     wassert(actual(buf.size()) == 7218u);
 
     mdc.clear();
@@ -477,7 +478,7 @@ add_method("query_lots", [](Fixture& f) {
                             char buf[40];
                             int len = snprintf(buf, 40, "2013%02d%02d%02d00,%d,%d,%d,,,000000000",
                                     month, day, hour, station, varid, value);
-                            md->set_source_inline("vm2", vector<uint8_t>(buf, buf+len));
+                            md->set_source_inline("vm2", metadata::DataManager::get().to_data("vm2", vector<uint8_t>(buf, buf+len)));
                             md->add_note("Generated from memory");
                             md->set(Reftime::createPosition(Time(2013, month, day, hour, 0, 0)));
                             md->set(Area::createVM2(station));

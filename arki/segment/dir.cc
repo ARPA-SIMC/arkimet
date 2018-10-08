@@ -2,6 +2,7 @@
 #include "common.h"
 #include "arki/exceptions.h"
 #include "arki/metadata.h"
+#include "arki/metadata/data.h"
 #include "arki/metadata/collection.h"
 #include "arki/types/source/blob.h"
 #include "arki/utils.h"
@@ -67,18 +68,15 @@ struct Creator : public AppendCreator
             if (::link(src.c_str(), dst.c_str()) != 0)
                 throw_system_error("cannot link " + src + " as " + dst);
         } else {
-            auto buf = md.getData();
-            res.size = buf.size();
+            const auto& data = md.get_data();
+            res.size = data.size();
             if (validator)
-                validator->validate_buf(buf.data(), buf.size());
+                validator->validate_data(data);
 
             sys::File fd(str::joinpath(dest_abspath, SequenceFile::data_fname(current_pos, format)),
                         O_WRONLY | O_CLOEXEC | O_CREAT | O_EXCL, 0666);
             try {
-                size_t count = fd.pwrite(buf.data(), buf.size(), 0);
-                if (count != buf.size())
-                    throw std::runtime_error(fd.name() + ": written only " + std::to_string(count) + "/" + std::to_string(buf.size()) + " bytes");
-
+                data.write(fd);
                 if (fdatasync(fd) < 0)
                     fd.throw_error("cannot flush write");
                 fd.close();
@@ -137,7 +135,7 @@ struct CheckBackend : public AppendCheckBackend
             reporter(ss.str());
             return SEGMENT_CORRUPTED;
         }
-        if (source.size != si->second)
+        if (!(source.size == si->second || (format == "vm2" && (source.size + 1 == si->second))))
         {
             stringstream ss;
             ss << "expected file " << source.offset << " has size " << si->second << " instead of expected " << source.size;
@@ -380,6 +378,7 @@ BaseWriter<Segment>::BaseWriter(const std::string& format, const std::string& ro
 template<typename Segment>
 BaseWriter<Segment>::~BaseWriter()
 {
+    if (!this->fired) rollback_nothrow();
 }
 
 template<typename Segment>
@@ -389,7 +388,7 @@ size_t BaseWriter<Segment>::next_offset() const
 }
 
 template<typename Segment>
-const types::source::Blob& BaseWriter<Segment>::append(Metadata& md)
+const types::source::Blob& BaseWriter<Segment>::append(Metadata& md, bool drop_cached_data_on_commit)
 {
     this->fired = false;
 
@@ -403,7 +402,7 @@ const types::source::Blob& BaseWriter<Segment>::append(Metadata& md)
     }
     written.push_back(fd.name());
     fd.close();
-    pending.emplace_back(md, source::Blob::create_unlocked(md.source().format, this->segment().root, this->segment().relpath, current_pos, md.data_size()));
+    pending.emplace_back(md, source::Blob::create_unlocked(md.source().format, this->segment().root, this->segment().relpath, current_pos, md.data_size()), drop_cached_data_on_commit);
     ++current_pos;
     return *pending.back().new_source;
 }
@@ -445,12 +444,8 @@ void BaseWriter<Segment>::rollback_nothrow() noexcept
 
 void Writer::write_file(Metadata& md, NamedFileDescriptor& fd)
 {
-    const std::vector<uint8_t>& buf = md.getData();
-
-    size_t count = fd.pwrite(buf.data(), buf.size(), 0);
-    if (count != buf.size())
-        throw std::runtime_error(fd.name() + ": written only " + std::to_string(count) + "/" + std::to_string(buf.size()) + " bytes");
-
+    const metadata::Data& data = md.get_data();
+    data.write(fd);
     if (fdatasync(fd) < 0)
         fd.throw_error("cannot flush write");
 }
@@ -468,6 +463,21 @@ bool BaseChecker<Segment>::exists_on_disk()
 {
     if (!sys::isdir(this->segment().abspath)) return false;
     return sys::exists(str::joinpath(this->segment().abspath, ".sequence"));
+}
+
+template<typename Segment>
+bool BaseChecker<Segment>::is_empty()
+{
+    if (!sys::isdir(this->segment().abspath)) return false;
+    sys::Path dir(this->segment().abspath);
+    for (sys::Path::iterator i = dir.begin(); i != dir.end(); ++i)
+    {
+        if (strcmp(i->d_name, ".") == 0) continue;
+        if (strcmp(i->d_name, "..") == 0) continue;
+        if (strcmp(i->d_name, ".sequence") == 0) continue;
+        return false;
+    }
+    return true;
 }
 
 template<typename Segment>
@@ -512,8 +522,9 @@ void BaseChecker<Segment>::validate(Metadata& md, const scan::Validator& v)
         v.validate_file(fd, 0, blob->size);
         return;
     }
-    const auto& buf = md.getData();
-    v.validate_buf(buf.data(), buf.size());
+    const auto& data = md.get_data();
+    auto buf = data.read();
+    v.validate_buf(buf.data(), buf.size());  // TODO: add a validate_data that takes the metadata::Data
 }
 
 template<typename Segment>

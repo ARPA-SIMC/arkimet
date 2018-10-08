@@ -293,48 +293,51 @@ struct WriterBatch : public std::vector<std::shared_ptr<WriterBatchElement>>
     void set_all_error(const std::string& note);
 };
 
+
+enum ReplaceStrategy {
+    /// Default strategy, as configured in the dataset
+    REPLACE_DEFAULT,
+    /// Never replace
+    REPLACE_NEVER,
+    /// Always replace
+    REPLACE_ALWAYS,
+    /**
+     * Replace if update sequence number is higher (do not replace if USN
+     * not available)
+     */
+    REPLACE_HIGHER_USN,
+};
+
+
+struct AcquireConfig
+{
+    ReplaceStrategy replace=REPLACE_DEFAULT;
+    bool drop_cached_data_on_commit=false;
+
+    AcquireConfig() = default;
+    AcquireConfig(ReplaceStrategy replace) : replace(replace) {}
+    AcquireConfig(const AcquireConfig&) = default;
+    AcquireConfig(AcquireConfig&&) = default;
+    AcquireConfig& operator=(const AcquireConfig&) = default;
+    AcquireConfig& operator=(AcquireConfig&&) = default;
+};
+
+
 class Writer : public dataset::Base
 {
 public:
-    enum ReplaceStrategy {
-        /// Default strategy, as configured in the dataset
-        REPLACE_DEFAULT,
-        /// Never replace
-        REPLACE_NEVER,
-        /// Always replace
-        REPLACE_ALWAYS,
-        /**
-         * Replace if update sequence number is higher (do not replace if USN
-         * not available)
-         */
-        REPLACE_HIGHER_USN,
-    };
-
-protected:
-	/**
-	 * Insert the given metadata in the dataset.
-	 *
-	 * In case of conflict, replaces existing data.
-	 *
-	 * @return true if the data is successfully stored in the dataset, else
-	 * false.  If false is returned, a note is added to the dataset explaining
-	 * the reason of the failure.
-	 */
-	//virtual bool replace(Metadata& md) = 0;
-
-public:
     using Base::Base;
 
-	/**
-	 * Acquire the given metadata item (and related data) in this dataset.
-	 *
-	 * After acquiring the data successfully, the data can be retrieved from
-	 * the dataset.  Also, information such as the dataset name and the id of
-	 * the data in the dataset are added to the Metadata object.
-	 *
-	 * @return The outcome of the operation.
-	 */
-	virtual WriterAcquireResult acquire(Metadata& md, ReplaceStrategy replace=REPLACE_DEFAULT) = 0;
+    /**
+     * Acquire the given metadata item (and related data) in this dataset.
+     *
+     * After acquiring the data successfully, the data can be retrieved from
+     * the dataset.  Also, information such as the dataset name and the id of
+     * the data in the dataset are added to the Metadata object.
+     *
+     * @return The outcome of the operation.
+     */
+    virtual WriterAcquireResult acquire(Metadata& md, const AcquireConfig& cfg=AcquireConfig()) = 0;
 
     /**
      * Acquire the given metadata items (and related data) in this dataset.
@@ -346,7 +349,7 @@ public:
      * @return The outcome of the operation, as a vector with an WriterAcquireResult
      * for each metadata in the collection.
      */
-    virtual void acquire_batch(WriterBatch& batch, ReplaceStrategy replace=REPLACE_DEFAULT) = 0;
+    virtual void acquire_batch(WriterBatch& batch, const AcquireConfig& cfg=AcquireConfig()) = 0;
 
 	/**
 	 * Remove the given metadata from the database.

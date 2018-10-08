@@ -47,9 +47,9 @@ void Xargs::start_batch(const std::string& new_format)
     tempfile = File::mkstemp(tf.get());
 }
 
-void Xargs::add_to_batch(Metadata& md, const std::vector<uint8_t>& buf)
+void Xargs::add_to_batch(Metadata& md)
 {
-    metadata::Clusterer::add_to_batch(md, buf);
+    metadata::Clusterer::add_to_batch(md);
     md.stream_data(tempfile);
 }
 

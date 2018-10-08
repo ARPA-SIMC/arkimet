@@ -3,6 +3,7 @@
 #include "arki/core/time.h"
 #include "arki/types/reftime.h"
 #include "arki/metadata.h"
+#include "arki/metadata/data.h"
 #include "arki/summary.h"
 #include "config.h"
 
@@ -43,7 +44,7 @@ bool Reader::generate(const core::Time& begin, const core::Time& until, std::fun
         // TODO: set other metadata
 
         std::vector<uint8_t> data(1024 * 1024, 0);
-        md->set_source_inline("GRIB", move(data));
+        md->set_source_inline("grib", metadata::DataManager::get().to_data("grib", move(data)));
 
         if (!out(move(md)))
             return false;

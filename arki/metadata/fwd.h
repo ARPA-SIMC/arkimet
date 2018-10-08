@@ -5,6 +5,7 @@ namespace arki {
 class Metadata;
 
 namespace metadata {
+class Data;
 class Collection;
 }
 

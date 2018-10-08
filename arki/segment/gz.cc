@@ -2,6 +2,7 @@
 #include "common.h"
 #include "arki/exceptions.h"
 #include "arki/metadata.h"
+#include "arki/metadata/data.h"
 #include "arki/metadata/collection.h"
 #include "arki/types/source/blob.h"
 #include "arki/scan/validator.h"
@@ -49,10 +50,10 @@ struct Creator : public AppendCreator
     {
     }
 
-    size_t append(const std::vector<uint8_t>& data) override
+    size_t append(const metadata::Data& data) override
     {
         size_t wrpos = written;
-        gzout.add(data);
+        gzout.add(data.read());
         if (!padding.empty())
             gzout.add(padding);
         gzout.close_entry();
@@ -181,6 +182,13 @@ bool Checker<Segment>::exists_on_disk()
 }
 
 template<typename Segment>
+bool Checker<Segment>::is_empty()
+{
+    if (sys::size(gzabspath) > 1024) return false;
+    return utils::compress::gunzip(gzabspath).empty();
+}
+
+template<typename Segment>
 size_t Checker<Segment>::size()
 {
     return sys::size(gzabspath) + sys::size(gzidxabspath, 0);
@@ -254,19 +262,18 @@ Pending Checker<Segment>::repack(const std::string& rootdir, metadata::Collectio
 template<typename Segment>
 void Checker<Segment>::test_truncate(size_t offset)
 {
-    if (!sys::exists(this->segment().abspath))
-        sys::write_file(this->segment().abspath, "");
+    if (offset > 0)
+        throw std::runtime_error("gz test_truncate not implemented for offset > 0");
 
-    if (offset % 512 != 0)
-        offset += 512 - (offset % 512);
+    utils::files::PreserveFileTimes pft(gzabspath);
 
-    utils::files::PreserveFileTimes pft(this->segment().abspath);
-    if (::truncate(this->segment().abspath.c_str(), offset) < 0)
-    {
-        stringstream ss;
-        ss << "cannot truncate " << this->segment().abspath << " at " << offset;
-        throw std::system_error(errno, std::system_category(), ss.str());
-    }
+    sys::unlink_ifexists(gzabspath);
+    sys::unlink_ifexists(gzidxabspath);
+
+    sys::File out(gzabspath, O_WRONLY | O_CREAT | O_TRUNC);
+    compress::GzipWriter writer(out);
+    writer.flush();
+    out.close();
 }
 
 template<typename Segment>

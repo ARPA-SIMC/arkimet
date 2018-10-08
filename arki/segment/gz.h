@@ -47,6 +47,7 @@ public:
 
     bool exists_on_disk() override;
     size_t size() override;
+    bool is_empty() override;
 
     State check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick=true) override;
     size_t remove() override;

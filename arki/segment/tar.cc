@@ -2,6 +2,7 @@
 #include "common.h"
 #include "arki/exceptions.h"
 #include "arki/metadata.h"
+#include "arki/metadata/data.h"
 #include "arki/metadata/collection.h"
 #include "arki/types/source/blob.h"
 #include "arki/scan/validator.h"
@@ -46,11 +47,11 @@ struct Creator : public AppendCreator
             format = mds[0].source().format;
     }
 
-    size_t append(const std::vector<uint8_t>& data) override
+    size_t append(const metadata::Data& data) override
     {
         // Append it to the new file
         snprintf(fname, 99, "%06zd.%s", idx, format.c_str());
-        return tarout.append(fname, data);
+        return tarout.append(fname, data.read());
     }
 
     void create()
@@ -220,6 +221,14 @@ bool Checker::exists_on_disk()
     return sys::exists(tarabspath);
 }
 
+bool Checker::is_empty()
+{
+    struct stat st;
+    sys::stat(tarabspath, st);
+    if (S_ISDIR(st.st_mode)) return false;
+    return st.st_size <= 1024;
+}
+
 size_t Checker::size()
 {
     return sys::size(tarabspath);
@@ -254,8 +263,9 @@ void Checker::validate(Metadata& md, const scan::Validator& v)
         v.validate_file(fd, blob->offset, blob->size);
         return;
     }
-    const auto& buf = md.getData();
-    v.validate_buf(buf.data(), buf.size());
+    const auto& data = md.get_data();
+    auto buf = data.read();
+    v.validate_buf(buf.data(), buf.size());  // TODO: add a validate_data that takes the metadata::Data
 }
 
 size_t Checker::remove()
@@ -284,19 +294,15 @@ Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, c
 
 void Checker::test_truncate(size_t offset)
 {
-    if (!sys::exists(segment().abspath))
-        sys::write_file(segment().abspath, "");
+    if (offset > 0)
+        throw std::runtime_error("tar test_truncate not implemented for offset > 0");
 
-    if (offset % 512 != 0)
-        offset += 512 - (offset % 512);
+    utils::files::PreserveFileTimes pft(tarabspath);
 
-    utils::files::PreserveFileTimes pft(segment().abspath);
-    if (::truncate(segment().abspath.c_str(), offset) < 0)
-    {
-        stringstream ss;
-        ss << "cannot truncate " << segment().abspath << " at " << offset;
-        throw std::system_error(errno, std::system_category(), ss.str());
-    }
+    sys::File out(tarabspath, O_CREAT | O_TRUNC | O_WRONLY);
+    out.ftruncate(0);
+    out.ftruncate(1024);
+    out.close();
 }
 
 void Checker::test_make_hole(metadata::Collection& mds, unsigned hole_size, unsigned data_idx)

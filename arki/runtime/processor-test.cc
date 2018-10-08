@@ -1,6 +1,7 @@
 #include "config.h"
 #include "processor.h"
 #include "io.h"
+#include "arki/metadata/data.h"
 #include "arki/dataset.h"
 #include "arki/dataset/tests.h"
 #include "arki/types/source.h"
@@ -81,9 +82,9 @@ add_method("metadata_binary_inline", [](Fixture& f) {
     wassert(actual_type(mdc[0].source()).is_source_inline("grib", 34960));
     wassert(actual_type(mdc[1].source()).is_source_inline("grib", 7218));
     wassert(actual_type(mdc[2].source()).is_source_inline("grib", 2234));
-    wassert(actual(mdc[0].getData().size()) == 34960u);
-    wassert(actual(mdc[1].getData().size()) == 7218u);
-    wassert(actual(mdc[2].getData().size()) == 2234u);
+    wassert(actual(mdc[0].get_data().size()) == 34960u);
+    wassert(actual(mdc[1].get_data().size()) == 7218u);
+    wassert(actual(mdc[2].get_data().size()) == 2234u);
 });
 
 // Export data only

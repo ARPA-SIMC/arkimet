@@ -36,8 +36,8 @@ public:
 
     std::string type() const override;
 
-    WriterAcquireResult acquire(Metadata& md, ReplaceStrategy replace=REPLACE_DEFAULT) override;
-    void acquire_batch(WriterBatch& batch, ReplaceStrategy replace=REPLACE_DEFAULT) override;
+    WriterAcquireResult acquire(Metadata& md, const AcquireConfig& cfg=AcquireConfig()) override;
+    void acquire_batch(WriterBatch& batch, const AcquireConfig& cfg=AcquireConfig()) override;
     void remove(Metadata& md);
 
     static void test_acquire(const ConfigFile& cfg, WriterBatch& batch, std::ostream& out);

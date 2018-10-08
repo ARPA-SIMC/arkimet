@@ -1,5 +1,6 @@
 #include "libarchive.h"
 #include "arki/metadata.h"
+#include "arki/metadata/data.h"
 #include "arki/binary.h"
 #include "arki/exceptions.h"
 #include "arki/utils/sys.h"
@@ -115,7 +116,7 @@ size_t LibarchiveOutput::append(const Metadata& md)
     else
         snprintf(filename_buf, 255, "%s/%06zd.%s", subdir.c_str(), ofs, md.source().format.c_str());
     std::unique_ptr<Metadata> stored_md = Metadata::create_copy(md);
-    const std::vector<uint8_t>& stored_data = stored_md->getData();
+    const auto& stored_data = stored_md->get_data().read();
     std::unique_ptr<types::Source> stored_source = types::Source::createBlobUnlocked(md.source().format, "", filename_buf, 0, stored_data.size());
 
     archive_entry_clear(entry);

@@ -1,5 +1,6 @@
 #include "common.h"
 #include "arki/metadata.h"
+#include "arki/metadata/data.h"
 #include "arki/metadata/collection.h"
 #include "arki/scan/validator.h"
 #include "arki/types/source.h"
@@ -21,7 +22,7 @@ AppendCreator::~AppendCreator()
 {
 }
 
-size_t AppendCreator::append(const std::vector<uint8_t>& data)
+size_t AppendCreator::append(const metadata::Data& data)
 {
     throw std::runtime_error("append of buffers not implemented for this segment");
 }
@@ -29,11 +30,11 @@ size_t AppendCreator::append(const std::vector<uint8_t>& data)
 Span AppendCreator::append_md(Metadata& md)
 {
     // Read the data
-    auto buf = md.getData();
+    const auto& data = md.get_data();
     // Validate it if requested
     if (validator)
-        validator->validate_buf(buf.data(), buf.size());
-    return Span(append(buf), buf.size());
+        validator->validate_data(data);
+    return Span(append(data), data.size());
 }
 
 std::unique_ptr<types::Source> AppendCreator::create_source(const Metadata& md, const Span& span)

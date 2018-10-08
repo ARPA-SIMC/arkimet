@@ -66,10 +66,7 @@ void Dispatcher::add_validator(const Validator& v)
     validators.push_back(&v);
 }
 
-void Dispatcher::raw_dispatch_error(dataset::WriterBatch& batch) { raw_dispatch_dataset("error", batch); }
-void Dispatcher::raw_dispatch_duplicates(dataset::WriterBatch& batch) { raw_dispatch_dataset("duplicates", batch); }
-
-void Dispatcher::dispatch(dataset::WriterBatch& batch)
+void Dispatcher::dispatch(dataset::WriterBatch& batch, bool drop_cached_data_on_commit)
 {
     dataset::WriterBatch error_batch;
     dataset::WriterBatch duplicate_batch;
@@ -145,7 +142,7 @@ void Dispatcher::dispatch(dataset::WriterBatch& batch)
     // Acquire into outbound datasets
     for (auto& b: outbound_by_dataset)
     {
-        raw_dispatch_dataset(b.first, b.second);
+        raw_dispatch_dataset(b.first, b.second, false);
         for (const auto& e: b.second)
             if (e->result != dataset::ACQ_OK)
                 // What do we do in case of error?
@@ -158,7 +155,7 @@ void Dispatcher::dispatch(dataset::WriterBatch& batch)
     // Acquire into regular datasets
     for (auto& b: by_dataset)
     {
-        raw_dispatch_dataset(b.first, b.second);
+        raw_dispatch_dataset(b.first, b.second, drop_cached_data_on_commit);
         for (auto& e: b.second)
             switch (e->result)
             {
@@ -178,45 +175,32 @@ void Dispatcher::dispatch(dataset::WriterBatch& batch)
             }
     }
 
-    raw_dispatch_dataset("duplicates", duplicate_batch);
+    raw_dispatch_dataset("duplicates", duplicate_batch, drop_cached_data_on_commit);
     for (auto& e: duplicate_batch)
         if (e->result != dataset::ACQ_OK)
             // If insertion in the duplicates dataset failed, insert in the
             // error dataset
             error_batch.push_back(e);
 
-    raw_dispatch_dataset("error", error_batch);
+    raw_dispatch_dataset("error", error_batch, drop_cached_data_on_commit);
 }
 
 
 RealDispatcher::RealDispatcher(const ConfigFile& cfg)
-    : Dispatcher(cfg), datasets(cfg), pool(datasets), dserror(0), dsduplicates(0)
+    : Dispatcher(cfg), datasets(cfg), pool(datasets)
 {
-    // Instantiate the error dataset in the cache
-    dserror = pool.get_error();
-
-    // Instantiate the duplicates dataset in the cache
-    dsduplicates = pool.get_duplicates();
 }
 
 RealDispatcher::~RealDispatcher()
 {
 }
 
-void RealDispatcher::raw_dispatch_dataset(const std::string& name, dataset::WriterBatch& batch)
+void RealDispatcher::raw_dispatch_dataset(const std::string& name, dataset::WriterBatch& batch, bool drop_cached_data_on_commit)
 {
     if (batch.empty()) return;
-    pool.get(name)->acquire_batch(batch);
-}
-
-void RealDispatcher::raw_dispatch_error(dataset::WriterBatch& batch)
-{
-    dserror->acquire_batch(batch);
-}
-
-void RealDispatcher::raw_dispatch_duplicates(dataset::WriterBatch& batch)
-{
-    dsduplicates->acquire_batch(batch);
+    dataset::AcquireConfig cfg;
+    cfg.drop_cached_data_on_commit = drop_cached_data_on_commit;
+    pool.get(name)->acquire_batch(batch, cfg);
 }
 
 void RealDispatcher::flush() { pool.flush(); }
@@ -231,15 +215,16 @@ TestDispatcher::TestDispatcher(const ConfigFile& cfg, std::ostream& out)
 }
 TestDispatcher::~TestDispatcher() {}
 
-void TestDispatcher::raw_dispatch_dataset(const std::string& name, dataset::WriterBatch& batch)
+void TestDispatcher::raw_dispatch_dataset(const std::string& name, dataset::WriterBatch& batch, bool drop_cached_data_on_commit)
 {
     if (batch.empty()) return;
+    // TODO: forward drop_cached_data_on_commit
     dataset::Writer::test_acquire(*cfg.section(name), batch, out);
 }
 
-void TestDispatcher::dispatch(dataset::WriterBatch& batch)
+void TestDispatcher::dispatch(dataset::WriterBatch& batch, bool drop_cached_data_on_commit)
 {
-    Dispatcher::dispatch(batch);
+    Dispatcher::dispatch(batch, drop_cached_data_on_commit);
     for (const auto& e: batch)
     {
         out << "Message " << e->md.source() << ": ";

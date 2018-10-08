@@ -24,6 +24,9 @@ struct Validator
     // Validate a memory buffer
     virtual void validate_buf(const void* buf, size_t size) const = 0;
 
+    // Validate a metadata::Data
+    virtual void validate_data(const metadata::Data& data) const;
+
 	/**
 	 * Get the validator for a given file name
 	 *

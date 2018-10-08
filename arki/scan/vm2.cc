@@ -4,6 +4,7 @@
 #include "arki/core/time.h"
 #include "arki/types/source/blob.h"
 #include "arki/metadata.h"
+#include "arki/metadata/data.h"
 #include "arki/runtime/config.h"
 #include "arki/utils/files.h"
 #include "arki/nag.h"
@@ -188,7 +189,7 @@ std::unique_ptr<Metadata> Vm2::scan_data(const std::vector<uint8_t>& data)
     if (!input.next())
         throw std::runtime_error("input line did not look like a VM2 line");
     input.to_metadata(*md);
-    md->set_source_inline("bufr", vector<uint8_t>(input.line.begin(), input.line.end()));
+    md->set_source_inline("vm2", metadata::DataManager::get().to_data("vm2", vector<uint8_t>(input.line.begin(), input.line.end())));
     return md;
 }
 
@@ -213,7 +214,7 @@ bool Vm2::scan_pipe(core::NamedFileDescriptor& in, metadata_dest_func dest)
         unique_ptr<Metadata> md(new Metadata);
         if (!input.next()) break;
         input.to_metadata(*md);
-        md->set_source_inline("vm2", vector<uint8_t>(input.line.begin(), input.line.end()));
+        md->set_source_inline("vm2", metadata::DataManager::get().to_data("vm2", vector<uint8_t>(input.line.begin(), input.line.end())));
         if (!dest(move(md))) return false;
     }
     return true;

@@ -1,16 +1,17 @@
-#include <arki/metadata/tests.h>
-#include <arki/matcher.h>
-#include <arki/types/origin.h>
-#include <arki/types/product.h>
-#include <arki/types/level.h>
-#include <arki/types/timerange.h>
-#include <arki/types/reftime.h>
-#include <arki/types/area.h>
-#include <arki/types/proddef.h>
-#include <arki/types/assigneddataset.h>
-#include <arki/types/run.h>
-#include <arki/types/task.h>
-#include <arki/types/quantity.h>
+#include "arki/metadata/tests.h"
+#include "arki/metadata/data.h"
+#include "arki/matcher.h"
+#include "arki/types/origin.h"
+#include "arki/types/product.h"
+#include "arki/types/level.h"
+#include "arki/types/timerange.h"
+#include "arki/types/reftime.h"
+#include "arki/types/area.h"
+#include "arki/types/proddef.h"
+#include "arki/types/assigneddataset.h"
+#include "arki/types/run.h"
+#include "arki/types/task.h"
+#include "arki/types/quantity.h"
 #include <sstream>
 
 using namespace std;
@@ -64,7 +65,7 @@ ODIMData::ODIMData()
 Metadata make_large_mock(const std::string& format, size_t size, unsigned month, unsigned day, unsigned hour)
 {
     Metadata md;
-    md.set_source_inline(format, vector<uint8_t>(size));
+    md.set_source_inline(format, metadata::DataManager::get().to_data(format, vector<uint8_t>(size)));
     md.set("origin", "GRIB1(200, 10, 100)");
     md.set("product", "GRIB1(3, 4, 5)");
     md.set("level", "GRIB1(1, 2)");

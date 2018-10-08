@@ -334,6 +334,18 @@ void MaintenanceTest::register_tests()
         wassert(actual(e.what()).contains("the segment has disappeared"));
     });
 
+    add_method("check_unknown_empty", R"(
+        - an empty segment not known by the index must be considered deleted [deleted]
+    )", [&](Fixture& f) {
+        {
+            auto checker = f.makeSegmentedChecker();
+            checker->test_truncate_data(f.test_relpath, 0);
+            checker->test_remove_index(f.test_relpath);
+        }
+        wassert(f.state_is(3, segment::SEGMENT_DELETED));
+        wassert(f.query_results({0, 2}));
+    });
+
     if (can_delete_data())
     {
         add_method("check_one_removed", R"(

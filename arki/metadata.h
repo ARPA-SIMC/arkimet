@@ -10,12 +10,13 @@
 #include <arki/types/note.h>
 #include <memory>
 #include <string>
-#include <list>
 
 struct lua_State;
 
 namespace arki {
 namespace metadata {
+
+class Data;
 
 struct ReadContext
 {
@@ -45,54 +46,6 @@ struct ReadContext
      */
     ReadContext(const std::string& pathname, const std::string& basedir);
 };
-
-
-struct DataTracker;
-
-/**
- * Track all data elements that get cached in metadata during the lifetime of
- * this object.
- */
-class TrackedData
-{
-protected:
-    DataTracker& tracker;
-
-public:
-    std::vector<std::weak_ptr<std::vector<uint8_t>>> tracked;
-
-    TrackedData(DataTracker& tracker);
-    TrackedData(const TrackedData&) = delete;
-    TrackedData(TrackedData&&) = delete;
-    ~TrackedData();
-    TrackedData& operator=(const TrackedData&) = delete;
-    TrackedData& operator=(TrackedData&&) = delete;
-
-    unsigned count_used() const;
-};
-
-
-/**
- * Track data cached in memory
- */
-class DataTracker
-{
-protected:
-    std::list<TrackedData*> trackers;
-    bool tracking = false;
-
-    void start_tracking(TrackedData* tracker);
-    void stop_tracking(TrackedData* tracker);
-
-public:
-    /// Track a new item
-    std::shared_ptr<std::vector<uint8_t>> track(std::vector<uint8_t>&& data);
-
-    static DataTracker& get();
-
-    friend class TrackedData;
-};
-
 }
 
 class Formatter;
@@ -110,7 +63,7 @@ protected:
     types::Source* m_source = nullptr;
 
     /// Inline data, or cached version of previously read data
-    std::shared_ptr<std::vector<uint8_t>> m_data;
+    std::shared_ptr<metadata::Data> m_data;
 
 public:
     Metadata();
@@ -133,7 +86,7 @@ public:
     /// Set a new source, replacing the old one if present
     void set_source(std::unique_ptr<types::Source>&& s);
     /// Set the source of this metadata as Inline, with the given data
-    void set_source_inline(const std::string& format, std::vector<uint8_t>&& buf);
+    void set_source_inline(const std::string& format, std::shared_ptr<metadata::Data> data);
     /// Unsets the source
     void unset_source();
 
@@ -245,7 +198,7 @@ public:
 
 
     /// Get the raw data described by this metadata
-    const std::vector<uint8_t>& getData();
+    const metadata::Data& get_data();
 
     /**
      * Stream the data referred by this metadata to the given file descriptor.
@@ -254,21 +207,21 @@ public:
      */
     size_t stream_data(core::NamedFileDescriptor& out);
 
-    /// Return True if getData can be called without causing I/O
+    /// Return True if get_data can be called without causing I/O
     bool has_cached_data() const;
 
     /**
-     * Set cached data for non-inline sources, so that getData() won't have
+     * Set cached data for non-inline sources, so that get_data() won't have
      * to read it again.
      */
-    void set_cached_data(std::vector<uint8_t>&& buf);
+    void set_cached_data(std::shared_ptr<metadata::Data> data);
 
     /**
      * If the source is not inline, but the data are cached in memory, drop
      * them.
      *
      * Data for non-inline metadata can be cached in memory, for example,
-     * by a getData() call or a set_cached_data() call.
+     * by a get_data() call or a set_cached_data() call.
      */
     void drop_cached_data();
 
