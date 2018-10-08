@@ -131,28 +131,28 @@ add_method("import_batch_replace_usn", [](Fixture& f) {
 
     dataset::WriterBatch batch;
     batch.emplace_back(make_shared<dataset::WriterBatchElement>(mdc[0]));
-    wassert(ds->acquire_batch(batch, dataset::Writer::REPLACE_HIGHER_USN));
+    wassert(ds->acquire_batch(batch, dataset::REPLACE_HIGHER_USN));
     wassert(actual(batch[0]->result) == dataset::ACQ_OK);
     wassert(actual(batch[0]->dataset_name) == "testds");
     wassert(actual_file(str::joinpath(f.ds_root, "2009/12-04.bufr")).exists());
     wassert(actual_type(mdc[0].source()).is_source_blob("bufr", f.ds_root, "2009/12-04.bufr"));
 
     // Acquire again: it works, since USNs the same as the existing ones do overwrite
-    wassert(ds->acquire_batch(batch, dataset::Writer::REPLACE_HIGHER_USN));
+    wassert(ds->acquire_batch(batch, dataset::REPLACE_HIGHER_USN));
     wassert(actual(batch[0]->result) == dataset::ACQ_OK);
     wassert(actual(batch[0]->dataset_name) == "testds");
 
     // Acquire with a newer USN: it works
     batch.clear();
     batch.emplace_back(make_shared<dataset::WriterBatchElement>(mdc_upd[0]));
-    wassert(ds->acquire_batch(batch, dataset::Writer::REPLACE_HIGHER_USN));
+    wassert(ds->acquire_batch(batch, dataset::REPLACE_HIGHER_USN));
     wassert(actual(batch[0]->result) == dataset::ACQ_OK);
     wassert(actual(batch[0]->dataset_name) == "testds");
 
     // Acquire with the lower USN: it fails
     batch.clear();
     batch.emplace_back(make_shared<dataset::WriterBatchElement>(mdc[0]));
-    wassert(ds->acquire_batch(batch, dataset::Writer::REPLACE_HIGHER_USN));
+    wassert(ds->acquire_batch(batch, dataset::REPLACE_HIGHER_USN));
     if (ds->type() == "simple")
     {
         wassert(actual(batch[0]->result) == dataset::ACQ_OK);
@@ -191,7 +191,7 @@ this->add_method("import_error", [](Fixture& f) {
     md.set_source_inline(format, metadata::DataManager::get().to_unreadable_data(1));
 
     auto ds = f.config().create_writer();
-    wassert(actual(ds->acquire(md, dataset::Writer::REPLACE_NEVER)) == dataset::ACQ_ERROR);
+    wassert(actual(ds->acquire(md, dataset::REPLACE_NEVER)) == dataset::ACQ_ERROR);
 
     auto state = f.scan_state();
     wassert(actual(state.size()) == 1u);
@@ -206,7 +206,7 @@ this->add_method("import_batch_replace_never", [](Fixture& f) {
     batch.emplace_back(make_shared<dataset::WriterBatchElement>(f.td.mds[0]));
     batch.emplace_back(make_shared<dataset::WriterBatchElement>(f.td.mds[1]));
     batch.emplace_back(make_shared<dataset::WriterBatchElement>(f.td.mds[2]));
-    wassert(ds->acquire_batch(batch, dataset::Writer::REPLACE_NEVER));
+    wassert(ds->acquire_batch(batch, dataset::REPLACE_NEVER));
     for (unsigned i = 0; i < 3; ++i)
     {
         wassert(actual(batch[i]->result) == dataset::ACQ_OK);
@@ -220,7 +220,7 @@ this->add_method("import_batch_replace_never", [](Fixture& f) {
     batch.emplace_back(make_shared<dataset::WriterBatchElement>(mds[0]));
     batch.emplace_back(make_shared<dataset::WriterBatchElement>(mds[1]));
     batch.emplace_back(make_shared<dataset::WriterBatchElement>(mds[2]));
-    wassert(ds->acquire_batch(batch, dataset::Writer::REPLACE_NEVER));
+    wassert(ds->acquire_batch(batch, dataset::REPLACE_NEVER));
     for (unsigned i = 0; i < 3; ++i)
     {
         if (ds->type() == "simple")
@@ -244,7 +244,7 @@ this->add_method("import_batch_replace_always", [](Fixture& f) {
     batch.emplace_back(make_shared<dataset::WriterBatchElement>(f.td.mds[0]));
     batch.emplace_back(make_shared<dataset::WriterBatchElement>(f.td.mds[1]));
     batch.emplace_back(make_shared<dataset::WriterBatchElement>(f.td.mds[2]));
-    wassert(ds->acquire_batch(batch, dataset::Writer::REPLACE_ALWAYS));
+    wassert(ds->acquire_batch(batch, dataset::REPLACE_ALWAYS));
 
     for (unsigned i = 0; i < 3; ++i)
     {
@@ -259,7 +259,7 @@ this->add_method("import_batch_replace_always", [](Fixture& f) {
     batch.emplace_back(make_shared<dataset::WriterBatchElement>(mds[0]));
     batch.emplace_back(make_shared<dataset::WriterBatchElement>(mds[1]));
     batch.emplace_back(make_shared<dataset::WriterBatchElement>(mds[2]));
-    wassert(ds->acquire_batch(batch, dataset::Writer::REPLACE_ALWAYS));
+    wassert(ds->acquire_batch(batch, dataset::REPLACE_ALWAYS));
     for (unsigned i = 0; i < 3; ++i)
     {
         wassert(actual(batch[i]->result) == dataset::ACQ_OK);
@@ -321,7 +321,7 @@ this->add_method("second_resolution", [](Fixture& f) {
     wassert(f.ensure_localds_clean(1, 2));
 });
 
-auto test_same_segment_fail = [](Fixture& f, unsigned fail_idx, dataset::Writer::ReplaceStrategy strategy) {
+auto test_same_segment_fail = [](Fixture& f, unsigned fail_idx, dataset::ReplaceStrategy strategy) {
     sys::rmtree_ifexists("testds");
     Metadata md;
     fill(md);
@@ -353,24 +353,24 @@ auto test_same_segment_fail = [](Fixture& f, unsigned fail_idx, dataset::Writer:
 };
 
 this->add_method("transaction_same_segment_fail_first", [=](Fixture& f) {
-    wassert(test_same_segment_fail(f, 0, dataset::Writer::REPLACE_NEVER));
-    wassert(test_same_segment_fail(f, 0, dataset::Writer::REPLACE_ALWAYS));
-    wassert(test_same_segment_fail(f, 0, dataset::Writer::REPLACE_HIGHER_USN));
+    wassert(test_same_segment_fail(f, 0, dataset::REPLACE_NEVER));
+    wassert(test_same_segment_fail(f, 0, dataset::REPLACE_ALWAYS));
+    wassert(test_same_segment_fail(f, 0, dataset::REPLACE_HIGHER_USN));
 });
 
 this->add_method("transaction_same_segment_fail_middle", [=](Fixture& f) {
-    wassert(test_same_segment_fail(f, 1, dataset::Writer::REPLACE_NEVER));
-    wassert(test_same_segment_fail(f, 1, dataset::Writer::REPLACE_ALWAYS));
-    wassert(test_same_segment_fail(f, 1, dataset::Writer::REPLACE_HIGHER_USN));
+    wassert(test_same_segment_fail(f, 1, dataset::REPLACE_NEVER));
+    wassert(test_same_segment_fail(f, 1, dataset::REPLACE_ALWAYS));
+    wassert(test_same_segment_fail(f, 1, dataset::REPLACE_HIGHER_USN));
 });
 
 this->add_method("transaction_same_segment_fail_last", [=](Fixture& f) {
-    wassert(test_same_segment_fail(f, 2, dataset::Writer::REPLACE_NEVER));
-    wassert(test_same_segment_fail(f, 2, dataset::Writer::REPLACE_ALWAYS));
-    wassert(test_same_segment_fail(f, 2, dataset::Writer::REPLACE_HIGHER_USN));
+    wassert(test_same_segment_fail(f, 2, dataset::REPLACE_NEVER));
+    wassert(test_same_segment_fail(f, 2, dataset::REPLACE_ALWAYS));
+    wassert(test_same_segment_fail(f, 2, dataset::REPLACE_HIGHER_USN));
 });
 
-auto test_different_segment_fail = [](Fixture& f, unsigned fail_idx, dataset::Writer::ReplaceStrategy strategy) {
+auto test_different_segment_fail = [](Fixture& f, unsigned fail_idx, dataset::ReplaceStrategy strategy) {
     sys::rmtree_ifexists("testds");
     Metadata md;
     fill(md);
@@ -407,21 +407,21 @@ auto test_different_segment_fail = [](Fixture& f, unsigned fail_idx, dataset::Wr
 };
 
 this->add_method("transaction_different_segment_fail_first", [=](Fixture& f) {
-    wassert(test_different_segment_fail(f, 0, dataset::Writer::REPLACE_NEVER));
-    wassert(test_different_segment_fail(f, 0, dataset::Writer::REPLACE_ALWAYS));
-    wassert(test_different_segment_fail(f, 0, dataset::Writer::REPLACE_HIGHER_USN));
+    wassert(test_different_segment_fail(f, 0, dataset::REPLACE_NEVER));
+    wassert(test_different_segment_fail(f, 0, dataset::REPLACE_ALWAYS));
+    wassert(test_different_segment_fail(f, 0, dataset::REPLACE_HIGHER_USN));
 });
 
 this->add_method("transaction_different_segment_fail_middle", [=](Fixture& f) {
-    wassert(test_different_segment_fail(f, 1, dataset::Writer::REPLACE_NEVER));
-    wassert(test_different_segment_fail(f, 1, dataset::Writer::REPLACE_ALWAYS));
-    wassert(test_different_segment_fail(f, 1, dataset::Writer::REPLACE_HIGHER_USN));
+    wassert(test_different_segment_fail(f, 1, dataset::REPLACE_NEVER));
+    wassert(test_different_segment_fail(f, 1, dataset::REPLACE_ALWAYS));
+    wassert(test_different_segment_fail(f, 1, dataset::REPLACE_HIGHER_USN));
 });
 
 this->add_method("transaction_different_segment_fail_last", [=](Fixture& f) {
-    wassert(test_different_segment_fail(f, 2, dataset::Writer::REPLACE_NEVER));
-    wassert(test_different_segment_fail(f, 2, dataset::Writer::REPLACE_ALWAYS));
-    wassert(test_different_segment_fail(f, 2, dataset::Writer::REPLACE_HIGHER_USN));
+    wassert(test_different_segment_fail(f, 2, dataset::REPLACE_NEVER));
+    wassert(test_different_segment_fail(f, 2, dataset::REPLACE_ALWAYS));
+    wassert(test_different_segment_fail(f, 2, dataset::REPLACE_HIGHER_USN));
 });
 
 this->add_method("test_acquire", [](Fixture& f) {

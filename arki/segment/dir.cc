@@ -388,7 +388,7 @@ size_t BaseWriter<Segment>::next_offset() const
 }
 
 template<typename Segment>
-const types::source::Blob& BaseWriter<Segment>::append(Metadata& md)
+const types::source::Blob& BaseWriter<Segment>::append(Metadata& md, bool drop_cached_data_on_commit)
 {
     this->fired = false;
 
@@ -402,7 +402,7 @@ const types::source::Blob& BaseWriter<Segment>::append(Metadata& md)
     }
     written.push_back(fd.name());
     fd.close();
-    pending.emplace_back(md, source::Blob::create_unlocked(md.source().format, this->segment().root, this->segment().relpath, current_pos, md.data_size()));
+    pending.emplace_back(md, source::Blob::create_unlocked(md.source().format, this->segment().root, this->segment().relpath, current_pos, md.data_size()), drop_cached_data_on_commit);
     ++current_pos;
     return *pending.back().new_source;
 }

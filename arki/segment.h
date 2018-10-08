@@ -199,8 +199,9 @@ struct Writer : public Transaction, public std::enable_shared_from_this<Writer>
     {
         Metadata& md;
         types::source::Blob* new_source;
+        bool drop_cached_data_on_commit;
 
-        PendingMetadata(Metadata& md, std::unique_ptr<types::source::Blob> new_source);
+        PendingMetadata(Metadata& md, std::unique_ptr<types::source::Blob> new_source, bool drop_cached_data_on_commit);
         PendingMetadata(const PendingMetadata&) = delete;
         PendingMetadata(PendingMetadata&& o);
         ~PendingMetadata();
@@ -227,9 +228,9 @@ struct Writer : public Transaction, public std::enable_shared_from_this<Writer>
      * the file.
      *
      * Returns a reference to the blob source that will be set into \a md on
-     * commit
+     * commit.
      */
-    virtual const types::source::Blob& append(Metadata& md) = 0;
+    virtual const types::source::Blob& append(Metadata& md, bool drop_cached_data_on_commit) = 0;
 };
 
 

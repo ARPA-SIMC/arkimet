@@ -71,7 +71,7 @@ struct AppendSegment
         flushed = false;
     }
 
-    WriterAcquireResult acquire(Metadata& md)
+    WriterAcquireResult acquire(Metadata& md, bool drop_cached_data_on_commit)
     {
         auto mft = index::Manifest::create(config->path, config->lock_policy, config->index_type);
         mft->lock = lock;
@@ -79,7 +79,7 @@ struct AppendSegment
 
         // Try appending
         try {
-            const types::source::Blob& new_source = segment->append(md);
+            const types::source::Blob& new_source = segment->append(md, drop_cached_data_on_commit);
             add(md, new_source);
             segment->commit();
             time_t ts = segment->segment().timestamp();
@@ -95,7 +95,7 @@ struct AppendSegment
         }
     }
 
-    void acquire_batch(WriterBatch& batch)
+    void acquire_batch(WriterBatch& batch, bool drop_cached_data_on_commit)
     {
         auto mft = index::Manifest::create(config->path, config->lock_policy, config->index_type);
         mft->lock = lock;
@@ -105,7 +105,7 @@ struct AppendSegment
             for (auto& e: batch)
             {
                 e->dataset_name.clear();
-                const types::source::Blob& new_source = segment->append(e->md);
+                const types::source::Blob& new_source = segment->append(e->md, drop_cached_data_on_commit);
                 add(e->md, new_source);
                 e->result = ACQ_OK;
                 e->dataset_name = config->name;
@@ -159,26 +159,24 @@ std::unique_ptr<AppendSegment> Writer::file(const std::string& relpath)
     return std::unique_ptr<AppendSegment>(new AppendSegment(m_config, lock, segment));
 }
 
-WriterAcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
+WriterAcquireResult Writer::acquire(Metadata& md, const AcquireConfig& cfg)
 {
     auto age_check = config().check_acquire_age(md);
     if (age_check.first) return age_check.second;
 
     auto segment = file(md, md.source().format);
-    return segment->acquire(md);
+    return segment->acquire(md, cfg.drop_cached_data_on_commit);
 }
 
-void Writer::acquire_batch(WriterBatch& batch, ReplaceStrategy replace)
+void Writer::acquire_batch(WriterBatch& batch, const AcquireConfig& cfg)
 {
-    if (replace == REPLACE_DEFAULT) replace = config().default_replace_strategy;
-
     std::map<std::string, WriterBatch> by_segment = batch_by_segment(batch);
 
     // Import segment by segment
     for (auto& s: by_segment)
     {
         auto segment = file(s.first);
-        segment->acquire_batch(s.second);
+        segment->acquire_batch(s.second, cfg.drop_cached_data_on_commit);
     }
 }
 

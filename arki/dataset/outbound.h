@@ -35,7 +35,7 @@ class Writer : public segmented::Writer
 protected:
     std::shared_ptr<const segmented::Config> m_config;
 
-    void storeBlob(Metadata& md, const std::string& reldest);
+    void storeBlob(Metadata& md, const std::string& reldest, bool drop_cached_data_on_commit);
 
 public:
     // Initialise the dataset with the information from the configurationa in 'cfg'
@@ -53,8 +53,8 @@ public:
      * false.  If false is returned, a note is added to the dataset explaining
      * the reason of the failure.
      */
-    WriterAcquireResult acquire(Metadata& md, ReplaceStrategy replace=REPLACE_DEFAULT) override;
-    void acquire_batch(WriterBatch& batch, ReplaceStrategy replace=REPLACE_DEFAULT) override;
+    WriterAcquireResult acquire(Metadata& md, const AcquireConfig& cfg=AcquireConfig()) override;
+    void acquire_batch(WriterBatch& batch, const AcquireConfig& cfg=AcquireConfig()) override;
 
     virtual void remove(Metadata& id);
     virtual void removeAll(std::ostream& log, bool writable=false);

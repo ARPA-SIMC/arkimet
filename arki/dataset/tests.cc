@@ -907,7 +907,7 @@ void ActualWriter<Dataset>::import(Metadata& md)
 }
 
 template<typename Dataset>
-void ActualWriter<Dataset>::import(metadata::Collection& mds, dataset::Writer::ReplaceStrategy strategy)
+void ActualWriter<Dataset>::import(metadata::Collection& mds, dataset::ReplaceStrategy strategy)
 {
     WriterBatch batch;
     batch.reserve(mds.size());

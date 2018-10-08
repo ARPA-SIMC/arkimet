@@ -42,7 +42,7 @@ std::shared_ptr<segment::Writer> SegmentTest::make_full_writer()
 {
     auto res(make_empty_writer());
     for (unsigned i = 0; i < mdc.size(); ++i)
-        res->append(mdc[i]);
+        res->append(mdc[i], false);
     res->commit();
     return res;
 }
@@ -154,7 +154,7 @@ void test_append_transaction_ok(segment::Writer* dw, Metadata& md, int append_am
     size_t orig_fsize = sys::size(dw->segment().abspath, 0);
 
     // Start the append transaction, nothing happens until commit
-    const types::source::Blob& new_source = dw->append(md);
+    const types::source::Blob& new_source = dw->append(md, false);
     wassert(actual((size_t)new_source.offset) == orig_fsize);
     wassert(actual((size_t)new_source.size) == data_size);
     wassert(actual(new_source.basedir) == sys::getcwd());
@@ -163,7 +163,7 @@ void test_append_transaction_ok(segment::Writer* dw, Metadata& md, int append_am
     wassert(actual_type(md.source()) == *orig_source);
 
     // Commit
-    dw->commit();
+    wassert(dw->commit());
 
     // After commit, data is appended
     wassert(actual(sys::size(dw->segment().abspath)) == orig_fsize + data_size + append_amount_adjust);
@@ -179,7 +179,7 @@ void test_append_transaction_rollback(segment::Writer* dw, Metadata& md, int app
     size_t orig_fsize = sys::size(dw->segment().abspath, 0);
 
     // Start the append transaction, nothing happens until commit
-    const types::source::Blob& new_source = dw->append(md);
+    const types::source::Blob& new_source = dw->append(md, false);
     wassert(actual((size_t)new_source.offset) == orig_fsize);
     wassert(actual(sys::size(dw->segment().abspath, 0)) == orig_fsize + new_source.size + append_amount_adjust);
     wassert(actual_type(md.source()) == *orig_source);

@@ -216,12 +216,12 @@ template<typename Segment, typename File>
 size_t Writer<Segment, File>::next_offset() const { return current_pos; }
 
 template<typename Segment, typename File>
-const types::source::Blob& Writer<Segment, File>::append(Metadata& md)
+const types::source::Blob& Writer<Segment, File>::append(Metadata& md, bool drop_cached_data_on_commit)
 {
     const auto& segment = this->segment();
     this->fired = false;
     const metadata::Data& data = md.get_data();
-    pending.emplace_back(md, source::Blob::create_unlocked(segment.format, segment.root, segment.relpath, current_pos, data.size()));
+    pending.emplace_back(md, source::Blob::create_unlocked(segment.format, segment.root, segment.relpath, current_pos, data.size()), drop_cached_data_on_commit);
     current_pos += fd.write_data(data);
     return *pending.back().new_source;
 }

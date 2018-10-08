@@ -24,7 +24,7 @@ public:
     std::string step_name;
 
     /// What replace strategy to use when acquire() is called with REPLACE_DEFAULT
-    dataset::Writer::ReplaceStrategy default_replace_strategy;
+    dataset::ReplaceStrategy default_replace_strategy;
 
     /**
      * If false, autodetect segment types base on data types.
