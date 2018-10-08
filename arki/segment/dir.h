@@ -96,6 +96,7 @@ struct BaseChecker : public segment::BaseChecker<Segment>
     void validate(Metadata& md, const scan::Validator& v);
     void move_data(const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath) override;
     bool exists_on_disk() override;
+    bool is_empty() override;
     size_t size() override;
 
     State check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick=true) override;

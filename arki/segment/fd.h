@@ -52,6 +52,7 @@ template<typename Segment, typename File>
 struct Writer : public segment::BaseWriter<Segment>
 {
     File fd;
+    struct timespec initial_mtime;
     off_t initial_size;
     off_t current_pos;
     std::vector<segment::Writer::PendingMetadata> pending;
@@ -78,6 +79,7 @@ public:
     Checker(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath);
 
     bool exists_on_disk() override;
+    bool is_empty() override;
     size_t size() override;
 
     State check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick=true) override;

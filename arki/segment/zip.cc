@@ -302,6 +302,12 @@ bool Checker::exists_on_disk()
     return sys::exists(zipabspath);
 }
 
+bool Checker::is_empty()
+{
+    utils::ZipReader zip(segment().format, core::File(segment().abspath + ".zip", O_RDONLY | O_CLOEXEC));
+    return zip.list_data().empty();
+}
+
 size_t Checker::size()
 {
     return sys::size(zipabspath);
@@ -370,18 +376,21 @@ Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, c
 
 void Checker::test_truncate(size_t offset)
 {
-    if (!sys::exists(segment().abspath))
-        sys::write_file(segment().abspath, "");
-
-    if (offset % 512 != 0)
-        offset += 512 - (offset % 512);
-
-    utils::files::PreserveFileTimes pft(segment().abspath);
-    if (::truncate(segment().abspath.c_str(), offset) < 0)
+    utils::files::PreserveFileTimes pft(zipabspath);
+    if (offset == 0)
     {
-        stringstream ss;
-        ss << "cannot truncate " << segment().abspath << " at " << offset;
-        throw std::system_error(errno, std::system_category(), ss.str());
+        static const char empty_zip_data[] = "PK\x05\x06\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00";
+        sys::File out(zipabspath, O_WRONLY | O_CREAT | O_TRUNC);
+        out.write_all_or_throw(empty_zip_data, sizeof(empty_zip_data));
+    } else {
+        utils::ZipWriter zip(segment().format, zipabspath);
+        std::vector<segment::Span> spans = zip.list_data();
+        for (const auto& span: spans)
+        {
+            if (span.offset < offset) continue;
+            zip.remove(span);
+        }
+        zip.close();
     }
 }
 

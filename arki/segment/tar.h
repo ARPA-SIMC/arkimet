@@ -67,6 +67,7 @@ public:
     Checker(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath);
 
     bool exists_on_disk() override;
+    bool is_empty() override;
     size_t size() override;
 
     State check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick=true) override;

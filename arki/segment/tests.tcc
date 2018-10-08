@@ -179,6 +179,13 @@ this->add_method("remove", [](Fixture& f) {
     wassert(actual(checker->exists_on_disk()).isfalse());
 });
 
+this->add_method("is_empty", [](Fixture& f) {
+    auto checker = f.create();
+    wassert(actual(checker->is_empty()).isfalse());
+    checker->test_truncate(0);
+    wassert(actual(checker->is_empty()).istrue());
+});
+
 }
 
 }

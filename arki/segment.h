@@ -264,10 +264,11 @@ public:
     virtual size_t remove() = 0;
     virtual size_t size() = 0;
 
-    /**
-     * Check if the segment exists on disk
-     */
+    /// Check if the segment exists on disk
     virtual bool exists_on_disk() = 0;
+
+    /// Return true if the segment does not contain any data
+    virtual bool is_empty() = 0;
 
     /**
      * Rescan the segment, using Reader::scan_data of the right reader for this segment

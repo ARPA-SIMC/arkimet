@@ -10,14 +10,14 @@ struct ZipFile
 {
     zip_file_t* file = nullptr;
 
-    ZipFile(ZipReader& zip, const std::string& name)
+    ZipFile(ZipBase& zip, const std::string& name)
     {
         file = zip_fopen(zip.zip, name.c_str(), ZIP_FL_ENC_RAW);
         if (!file)
             throw zip_error(zip.zip, zip.zipname + ": cannot access entry " + name);
     }
 
-    ZipFile(ZipReader& zip, zip_int64_t idx)
+    ZipFile(ZipBase& zip, zip_int64_t idx)
     {
         file = zip_fopen_index(zip.zip, idx, 0);
         if (!file)
@@ -79,23 +79,12 @@ zip_error::zip_error(zip_file_t* file, const std::string& msg)
 }
 #endif
 
-ZipReader::ZipReader(const std::string& format, core::NamedFileDescriptor&& fd)
-    : format(format), zipname(fd.name())
+ZipBase::ZipBase(const std::string& format, const std::string& zipname)
+    : format(format), zipname(zipname)
 {
-#ifndef HAVE_LIBZIP
-    throw std::runtime_error("cannot read .zip files: libzip was not available at compile time");
-#else
-    int err = 0;
-    zip = zip_fdopen(fd, 0, &err);
-    if (!zip)
-    {
-        fd.close();
-        throw zip_error(err, "cannot open zip file " + fd.name());
-    }
-#endif
 }
 
-ZipReader::~ZipReader()
+ZipBase::~ZipBase()
 {
 #ifdef HAVE_LIBZIP
     if (zip)
@@ -103,7 +92,7 @@ ZipReader::~ZipReader()
 #endif
 }
 
-std::string ZipReader::data_fname(size_t pos, const std::string& format)
+std::string ZipBase::data_fname(size_t pos, const std::string& format)
 {
     char buf[32];
     snprintf(buf, 32, "%06zd.%s", pos, format.c_str());
@@ -111,13 +100,13 @@ std::string ZipReader::data_fname(size_t pos, const std::string& format)
 }
 
 #ifdef HAVE_LIBZIP
-void ZipReader::stat(zip_int64_t index, zip_stat_t* st)
+void ZipBase::stat(zip_int64_t index, zip_stat_t* st)
 {
     if (zip_stat_index(zip, index, ZIP_FL_ENC_RAW, st) == -1)
         throw zip_error(zip, zipname + ": cannot read information on zip entry #" + std::to_string(index));
 }
 
-zip_int64_t ZipReader::locate(const std::string& name)
+zip_int64_t ZipBase::locate(const std::string& name)
 {
     zip_int64_t idx = zip_name_locate(zip, name.c_str(), ZIP_FL_ENC_RAW);
     if (idx == -1)
@@ -126,7 +115,7 @@ zip_int64_t ZipReader::locate(const std::string& name)
 }
 #endif
 
-std::vector<segment::Span> ZipReader::list_data()
+std::vector<segment::Span> ZipBase::list_data()
 {
     std::vector<segment::Span> res;
 #ifdef HAVE_LIBZIP
@@ -145,7 +134,7 @@ std::vector<segment::Span> ZipReader::list_data()
     return res;
 }
 
-std::vector<uint8_t> ZipReader::get(const segment::Span& span)
+std::vector<uint8_t> ZipBase::get(const segment::Span& span)
 {
 #ifndef HAVE_LIBZIP
     throw std::runtime_error("cannot read .zip files: libzip was not available at compile time");
@@ -158,6 +147,56 @@ std::vector<uint8_t> ZipReader::get(const segment::Span& span)
         throw std::runtime_error(zipname + ": found " + std::to_string(st.size) + "b of data when " + std::to_string(span.size) + "b were expected");
     ZipFile file(*this, fname);
     return file.read_all(span.size);
+#endif
+}
+
+
+ZipReader::ZipReader(const std::string& format, core::NamedFileDescriptor&& fd)
+    : ZipBase(format, fd.name())
+{
+#ifndef HAVE_LIBZIP
+    throw std::runtime_error("cannot read .zip files: libzip was not available at compile time");
+#else
+    int err = 0;
+    zip = zip_fdopen(fd, 0, &err);
+    if (!zip)
+    {
+        fd.close();
+        throw zip_error(err, "cannot open zip file " + fd.name());
+    }
+#endif
+}
+
+
+ZipWriter::ZipWriter(const std::string& format, const std::string& pathname)
+    : ZipBase(format, pathname)
+{
+#ifndef HAVE_LIBZIP
+    throw std::runtime_error("cannot read .zip files: libzip was not available at compile time");
+#else
+    int err = 0;
+    zip = zip_open(pathname.c_str(), 0, &err);
+    if (!zip)
+        throw zip_error(err, "cannot open zip file " + pathname);
+#endif
+}
+
+void ZipWriter::close()
+{
+    if (zip_close(zip) != 0)
+        throw zip_error(zip, "cannot close file " + zipname);
+    zip = nullptr;
+}
+
+void ZipWriter::remove(const segment::Span& span)
+{
+#ifndef HAVE_LIBZIP
+    throw std::runtime_error("cannot read .zip files: libzip was not available at compile time");
+#else
+    auto fname = data_fname(span.offset, format);
+    auto idx = locate(fname);
+    if (zip_delete(zip, idx) != 0)
+        throw zip_error(zip, "cannot delete file " + fname);
 #endif
 }
 

@@ -26,7 +26,7 @@ struct zip_error : public std::runtime_error
 };
 #endif
 
-class ZipReader
+class ZipBase
 {
 public:
     std::string format;
@@ -41,10 +41,10 @@ protected:
 #endif
 
 public:
-    ZipReader(const std::string& format, core::NamedFileDescriptor&& fd);
-    ~ZipReader();
-
     std::vector<segment::Span> list_data();
+
+    ZipBase(const std::string& format, const std::string& zipname);
+    ~ZipBase();
 
     /**
      * Get the data associated to the entry in the zip file called
@@ -55,6 +55,29 @@ public:
     static std::string data_fname(size_t pos, const std::string& format);
 
     friend class ZipFile;
+};
+
+class ZipReader : public ZipBase
+{
+public:
+    ZipReader(const std::string& format, core::NamedFileDescriptor&& fd);
+};
+
+class ZipWriter : public ZipBase
+{
+public:
+    ZipWriter(const std::string& format, const std::string& pathname);
+
+    /**
+     * Commit changes and close the .zip file
+     */
+    void close();
+
+    /**
+     * Remove the file associated to the entry in the zip file called
+     * <000ofs.format>
+     */
+    void remove(const segment::Span& span);
 };
 
 }

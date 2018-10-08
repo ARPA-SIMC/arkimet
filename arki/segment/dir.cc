@@ -465,6 +465,21 @@ bool BaseChecker<Segment>::exists_on_disk()
 }
 
 template<typename Segment>
+bool BaseChecker<Segment>::is_empty()
+{
+    if (!sys::isdir(this->segment().abspath)) return false;
+    sys::Path dir(this->segment().abspath);
+    for (sys::Path::iterator i = dir.begin(); i != dir.end(); ++i)
+    {
+        if (strcmp(i->d_name, ".") == 0) continue;
+        if (strcmp(i->d_name, "..") == 0) continue;
+        if (strcmp(i->d_name, ".sequence") == 0) continue;
+        return false;
+    }
+    return true;
+}
+
+template<typename Segment>
 size_t BaseChecker<Segment>::size()
 {
     size_t res = 0;

@@ -221,6 +221,14 @@ bool Checker::exists_on_disk()
     return sys::exists(tarabspath);
 }
 
+bool Checker::is_empty()
+{
+    struct stat st;
+    sys::stat(tarabspath, st);
+    if (S_ISDIR(st.st_mode)) return false;
+    return st.st_size <= 1024;
+}
+
 size_t Checker::size()
 {
     return sys::size(tarabspath);
@@ -286,19 +294,15 @@ Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, c
 
 void Checker::test_truncate(size_t offset)
 {
-    if (!sys::exists(segment().abspath))
-        sys::write_file(segment().abspath, "");
+    if (offset > 0)
+        throw std::runtime_error("tar test_truncate not implemented for offset > 0");
 
-    if (offset % 512 != 0)
-        offset += 512 - (offset % 512);
+    utils::files::PreserveFileTimes pft(tarabspath);
 
-    utils::files::PreserveFileTimes pft(segment().abspath);
-    if (::truncate(segment().abspath.c_str(), offset) < 0)
-    {
-        stringstream ss;
-        ss << "cannot truncate " << segment().abspath << " at " << offset;
-        throw std::system_error(errno, std::system_category(), ss.str());
-    }
+    sys::File out(tarabspath, O_CREAT | O_TRUNC | O_WRONLY);
+    out.ftruncate(0);
+    out.ftruncate(1024);
+    out.close();
 }
 
 void Checker::test_make_hole(metadata::Collection& mds, unsigned hole_size, unsigned data_idx)
