@@ -196,6 +196,7 @@ this->add_method("check_issue51", [](Fixture& f) {
         sys::PreserveFileTimes pt(f);
         f.lseek(blob.offset + blob.size - 1);
         f.write_all_or_throw("\x0d", 1);
+        f.close();
     }
 
     auto checker(f.config().create_checker());
