@@ -234,8 +234,8 @@ add_method("dispatch_plain", [](Fixture& f) {
     wassert(actual(mds[0].sourceBlob().filename) == sys::abspath("testds/2007/07-08.grib"));
     wassert(actual(mds[1].sourceBlob().filename) == sys::abspath("testds/2007/07-07.grib"));
     wassert(actual(mds[2].sourceBlob().filename) == sys::abspath("testds/2007/10-09.grib"));
-    wassert(actual(acct::acquire_single_count.val()) == 0);
-    wassert(actual(acct::acquire_batch_count.val()) == 1);
+    wassert(actual(acct::acquire_single_count.val()) == 0u);
+    wassert(actual(acct::acquire_batch_count.val()) == 1u);
 });
 
 add_method("dispatch_flush_threshold", [](Fixture& f) {
@@ -261,8 +261,8 @@ add_method("dispatch_flush_threshold", [](Fixture& f) {
     wassert(actual(mds[0].sourceBlob().filename) == sys::abspath("testds/2007/07-08.grib"));
     wassert(actual(mds[1].sourceBlob().filename) == sys::abspath("testds/2007/07-07.grib"));
     wassert(actual(mds[2].sourceBlob().filename) == sys::abspath("testds/2007/10-09.grib"));
-    wassert(actual(acct::acquire_single_count.val()) == 0);
-    wassert(actual(acct::acquire_batch_count.val()) == 2);
+    wassert(actual(acct::acquire_single_count.val()) == 0u);
+    wassert(actual(acct::acquire_batch_count.val()) == 2u);
 });
 
 add_method("dispatch_copyok", [](Fixture& f) {
