@@ -4,6 +4,7 @@
 #include "arki/runtime.h"
 #include "arki/runtime/config.h"
 #include "arki/dispatcher.h"
+#include "arki/utils.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
 #include "arki/nag.h"
@@ -67,6 +68,10 @@ DispatchOptions::DispatchOptions(ScanCommandLine& args)
 
     status = dispatchOpts->add<BoolOption>("status", 0, "status", "",
             "print to standard error a line per every file with a summary of how it was handled");
+
+    flush_threshold = dispatchOpts->add<StringOption>("flush-threshold", 0, "flush-threshold", "size",
+            "import a batch as soon as the data read so far exceeds this amount of megabytes"
+            " (default: 128Mi; use 0 to load all in RAM no matter what)");
 }
 
 bool DispatchOptions::handle_parsed_options()
@@ -87,6 +92,14 @@ bool DispatchOptions::handle_parsed_options()
             fprintf(stdout, "%s - %s\n", i->second->name.c_str(), i->second->desc.c_str());
         return true;
     }
+
+    if (flush_threshold->isSet())
+        try
+        {
+            parse_size(flush_threshold->stringValue());
+        } catch (std::runtime_error& e) {
+            throw commandline::BadOption("--flush-threshold wants a number with a valid SI or IEC suffix");
+        }
 
     return false;
 }
@@ -141,6 +154,9 @@ MetadataDispatch::MetadataDispatch(const DispatchOptions& args, DatasetProcessor
         dir_copyok = args.copyok->stringValue();
     if (args.copyko->isSet())
         dir_copyko = args.copyko->stringValue();
+
+    if (args.flush_threshold->isSet())
+        flush_threshold = parse_size(args.flush_threshold->stringValue());
 }
 
 MetadataDispatch::~MetadataDispatch()
@@ -166,22 +182,57 @@ bool MetadataDispatch::process(dataset::Reader& ds, const std::string& name)
 
     // Read
     try {
-        ds.query_data(Matcher(), results.inserter_func());
+        ds.query_data(Matcher(), [&](unique_ptr<Metadata> md) {
+            partial_batch_data_size += md->data_size();
+            partial_batch.acquire(move(md));
+            if (flush_threshold && partial_batch_data_size > flush_threshold)
+                process_partial_batch(name);
+            return true;
+        });
+        if (!partial_batch.empty())
+            process_partial_batch(name);
     } catch (std::exception& e) {
         nag::warning("%s: cannot read contents: %s", name.c_str(), e.what());
         next.process(results, name);
         throw;
     }
 
+    // Process the resulting annotated metadata as a dataset
+    next.process(results, name);
+
+    if (reportStatus)
+    {
+        cerr << name << ": " << summary_so_far() << endl;
+        cerr.flush();
+    }
+
+    bool success = !(countNotImported || countInErrorDataset);
+    if (ignore_duplicates)
+        success = success && (countSuccessful || countDuplicates);
+    else
+        success = success && (countSuccessful && !countDuplicates);
+
+    flush();
+
+    countSuccessful = 0;
+    countNotImported = 0;
+    countDuplicates = 0;
+    countInErrorDataset = 0;
+
+    return success;
+}
+
+void MetadataDispatch::process_partial_batch(const std::string& name)
+{
     bool drop_cached_data_on_commit = !(copyok || copyko);
 
     // Dispatch
-    auto batch = results.make_import_batch();
+    auto batch = partial_batch.make_import_batch();
     try {
         dispatcher->dispatch(batch, drop_cached_data_on_commit);
     } catch (std::exception& e) {
         nag::warning("%s: cannot dispatch contents: %s", name.c_str(), e.what());
-        next.process(results, name);
+        partial_batch.move_to(results.inserter_func());
         throw;
     }
 
@@ -213,28 +264,8 @@ bool MetadataDispatch::process(dataset::Reader& ds, const std::string& name)
     }
 
     // Process the resulting annotated metadata as a dataset
-    next.process(results, name);
-
-    if (reportStatus)
-    {
-        cerr << name << ": " << summarySoFar() << endl;
-        cerr.flush();
-    }
-
-    bool success = !(countNotImported || countInErrorDataset);
-    if (ignore_duplicates)
-        success = success && (countSuccessful || countDuplicates);
-    else
-        success = success && (countSuccessful && !countDuplicates);
-
-    flush();
-
-    countSuccessful = 0;
-    countNotImported = 0;
-    countDuplicates = 0;
-    countInErrorDataset = 0;
-
-    return success;
+    partial_batch.move_to(results.inserter_func());
+    partial_batch_data_size = 0;
 }
 
 void MetadataDispatch::do_copyok(Metadata& md)
@@ -254,7 +285,7 @@ void MetadataDispatch::flush()
     if (dispatcher) dispatcher->flush();
 }
 
-string MetadataDispatch::summarySoFar() const
+string MetadataDispatch::summary_so_far() const
 {
     string timeinfo;
     if (timerisset(&startTime))

@@ -29,6 +29,7 @@ struct DispatchOptions : public Module
     utils::commandline::VectorOption<utils::commandline::String>* dispatch = nullptr;
     utils::commandline::VectorOption<utils::commandline::String>* testdispatch = nullptr;
     utils::commandline::BoolOption* status = nullptr;
+    utils::commandline::StringOption* flush_threshold = nullptr;
 
     DispatchOptions(ScanCommandLine& args);
     DispatchOptions(const DispatchOptions&) = delete;
@@ -47,13 +48,16 @@ struct MetadataDispatch
 {
     ConfigFile cfg;
     Dispatcher* dispatcher = nullptr;
+    dataset::Memory partial_batch;
+    size_t flush_threshold = 128 * 1024 * 1024;
+    size_t partial_batch_data_size = 0;
     dataset::Memory results;
     DatasetProcessor& next;
     bool ignore_duplicates = false;
     bool reportStatus = false;
 
     // Used for timings. Read with gettimeofday at the beginning of a task,
-    // and summarySoFar will report the elapsed time
+    // and summary_so_far will report the elapsed time
     struct timeval startTime;
 
     // Incremented when a metadata is imported in the destination dataset.
@@ -100,12 +104,13 @@ struct MetadataDispatch
     void flush();
 
     // Format a summary of the import statistics so far
-    std::string summarySoFar() const;
+    std::string summary_so_far() const;
 
     // Set startTime to the current time
     void setStartTime();
 
 protected:
+    void process_partial_batch(const std::string& name);
     void do_copyok(Metadata& md);
     void do_copyko(Metadata& md);
 };

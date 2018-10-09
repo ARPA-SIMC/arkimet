@@ -1,6 +1,7 @@
 #include "config.h"
 #include "empty.h"
 #include "arki/metadata/collection.h"
+#include "arki/utils/accounting.h"
 #include <ostream>
 
 using namespace std;
@@ -30,11 +31,13 @@ Reader::~Reader() {}
 
 WriterAcquireResult Writer::acquire(Metadata& md, const AcquireConfig& cfg)
 {
+    utils::acct::acquire_single_count.incr();
     return ACQ_OK;
 }
 
 void Writer::acquire_batch(WriterBatch& batch, const AcquireConfig& cfg)
 {
+    utils::acct::acquire_batch_count.incr();
     for (auto& e: batch)
     {
         e->result = ACQ_OK;

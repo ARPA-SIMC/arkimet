@@ -8,6 +8,7 @@
 #include "arki/summary.h"
 #include "arki/types/reftime.h"
 #include "arki/utils/files.h"
+#include "arki/utils/accounting.h"
 #include "arki/scan.h"
 #include "arki/nag.h"
 #include "arki/utils/sys.h"
@@ -286,6 +287,7 @@ std::unique_ptr<AppendSegment> Writer::file(const std::string& relpath)
 
 WriterAcquireResult Writer::acquire(Metadata& md, const AcquireConfig& cfg)
 {
+    acct::acquire_single_count.incr();
     if (md.source().format != config().format)
         throw std::runtime_error("cannot acquire into dataset " + name() + ": data is in format " + md.source().format + " but the dataset only accepts " + config().format);
 
@@ -311,6 +313,7 @@ WriterAcquireResult Writer::acquire(Metadata& md, const AcquireConfig& cfg)
 
 void Writer::acquire_batch(WriterBatch& batch, const AcquireConfig& cfg)
 {
+    acct::acquire_batch_count.incr();
     ReplaceStrategy replace = cfg.replace == REPLACE_DEFAULT ? config().default_replace_strategy : cfg.replace;
 
     if (batch.empty()) return;

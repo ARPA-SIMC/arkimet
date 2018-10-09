@@ -11,6 +11,7 @@
 #include "arki/utils.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/string.h"
+#include "arki/utils/accounting.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
 #include "arki/summary.h"
@@ -161,6 +162,7 @@ std::unique_ptr<AppendSegment> Writer::file(const std::string& relpath)
 
 WriterAcquireResult Writer::acquire(Metadata& md, const AcquireConfig& cfg)
 {
+    acct::acquire_single_count.incr();
     auto age_check = config().check_acquire_age(md);
     if (age_check.first) return age_check.second;
 
@@ -170,6 +172,7 @@ WriterAcquireResult Writer::acquire(Metadata& md, const AcquireConfig& cfg)
 
 void Writer::acquire_batch(WriterBatch& batch, const AcquireConfig& cfg)
 {
+    acct::acquire_batch_count.incr();
     std::map<std::string, WriterBatch> by_segment = batch_by_segment(batch);
 
     // Import segment by segment

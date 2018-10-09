@@ -9,6 +9,7 @@
 #include "arki/dataset/segment.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
+#include "arki/utils/accounting.h"
 #include <sys/stat.h>
 
 using namespace std;
@@ -55,6 +56,7 @@ void Writer::storeBlob(Metadata& md, const std::string& reldest, bool drop_cache
 
 WriterAcquireResult Writer::acquire(Metadata& md, const AcquireConfig& cfg)
 {
+    acct::acquire_single_count.incr();
     auto age_check = config().check_acquire_age(md);
     if (age_check.first) return age_check.second;
 
@@ -79,6 +81,7 @@ WriterAcquireResult Writer::acquire(Metadata& md, const AcquireConfig& cfg)
 
 void Writer::acquire_batch(WriterBatch& batch, const AcquireConfig& cfg)
 {
+    acct::acquire_batch_count.incr();
     for (auto& e: batch)
     {
         e->dataset_name.clear();
