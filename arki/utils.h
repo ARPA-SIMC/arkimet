@@ -34,6 +34,9 @@ void hexdump(const char* name, const std::string& str);
 // Dump the string, in hex, to stderr, prefixed with name
 void hexdump(const char* name, const unsigned char* str, int len);
 
+/// Parse a string in the form <number><suffix> returning its value in bytes
+size_t parse_size(const std::string& str);
+
 }
 }
 
