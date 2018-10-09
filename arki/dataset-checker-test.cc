@@ -192,11 +192,10 @@ this->add_method("check_issue51", [](Fixture& f) {
     {
         const auto& blob = md->sourceBlob();
         destfiles.insert(blob.filename);
+        utils::files::PreserveFileTimes pt(blob.absolutePathname());
         File f(blob.absolutePathname(), O_RDWR);
-        sys::PreserveFileTimes pt(f);
         f.lseek(blob.offset + blob.size - 1);
         f.write_all_or_throw("\x0d", 1);
-        f.close();
     }
 
     auto checker(f.config().create_checker());
