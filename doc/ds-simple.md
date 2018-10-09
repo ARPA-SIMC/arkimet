@@ -40,6 +40,7 @@ an empty `.metadata` file will always be rescanned.
 
 - the segment must be a file
 - the segment must exist [missing]
+- an empty segment not known by the index must be considered deleted [deleted]
 - all data known by the index for this segment must be present on disk [corrupted]
 - no pair of (offset, size) data spans from the index can overlap [corrupted]
 - data must start at the beginning of the segment [dirty]
@@ -109,6 +110,7 @@ an empty `.metadata` file will always be rescanned.
   so it is ignored. The modification time of the sequence file is used
   instead.
 - the segment must exist [missing]
+- an empty segment not known by the index must be considered deleted [deleted]
 - all data known by the index for this segment must be present on disk [corrupted]
 - no pair of (offset, size) data spans from the index can overlap [corrupted]
 - data must start at the beginning of the segment [dirty]

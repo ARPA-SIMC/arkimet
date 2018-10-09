@@ -42,6 +42,7 @@ with a full check and rescan of all the data in the dataset.
 
 - the segment must be a file
 - the segment must exist [missing]
+- an empty segment not known by the index must be considered deleted [deleted]
 - segments that contain some data that has been removed are
   identified as to be repacked [dirty]
 - segments that only contain data that has been removed are
@@ -120,6 +121,7 @@ with a full check and rescan of all the data in the dataset.
   so it is ignored. The modification time of the sequence file is used
   instead.
 - the segment must exist [missing]
+- an empty segment not known by the index must be considered deleted [deleted]
 - segments that contain some data that has been removed are
   identified as to be repacked [dirty]
 - segments that only contain data that has been removed are
