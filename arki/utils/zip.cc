@@ -183,9 +183,13 @@ ZipWriter::ZipWriter(const std::string& format, const std::string& pathname)
 
 void ZipWriter::close()
 {
+#ifndef HAVE_LIBZIP
+    throw std::runtime_error("cannot read .zip files: libzip was not available at compile time");
+#else
     if (zip_close(zip) != 0)
         throw zip_error(zip, "cannot close file " + zipname);
     zip = nullptr;
+#endif
 }
 
 void ZipWriter::remove(const segment::Span& span)
