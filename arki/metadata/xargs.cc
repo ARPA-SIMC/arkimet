@@ -1,6 +1,7 @@
 #include "xargs.h"
 #include "arki/exceptions.h"
 #include "arki/metadata.h"
+#include "arki/utils.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/string.h"
 #include "arki/wibble/sys/exec.h"
@@ -132,35 +133,6 @@ int Xargs::run_child()
 
     child.fork();
     return child.wait();
-}
-
-static size_t parse_size(const std::string& str)
-{
-    const char* s = str.c_str();
-    char* e;
-    unsigned long long int res = strtoull(s, &e, 10);
-    string suffix = str.substr(e-s);
-    if (suffix.empty() || suffix == "c")
-        return res;
-    if (suffix == "w") return res * 2;
-    if (suffix == "b") return res * 512;
-    if (suffix == "kB") return res * 1000;
-    if (suffix == "K") return res * 1024;
-    if (suffix == "MB") return res * 1000*1000;
-    if (suffix == "M" || suffix == "xM") return res * 1024*1024;
-    if (suffix == "GB") return res * 1000*1000*1000;
-    if (suffix == "G") return res * 1024*1024*1024;
-    if (suffix == "TB") return res * 1000*1000*1000*1000;
-    if (suffix == "T") return res * 1024*1024*1024*1024;
-    if (suffix == "PB") return res * 1000*1000*1000*1000*1000;
-    if (suffix == "P") return res * 1024*1024*1024*1024*1024;
-    if (suffix == "EB") return res * 1000*1000*1000*1000*1000*1000;
-    if (suffix == "E") return res * 1024*1024*1024*1024*1024*1024;
-    if (suffix == "ZB") return res * 1000*1000*1000*1000*1000*1000*1000;
-    if (suffix == "Z") return res * 1024*1024*1024*1024*1024*1024*1024;
-    if (suffix == "YB") return res * 1000*1000*1000*1000*1000*1000*1000*1000;
-    if (suffix == "Y") return res * 1024*1024*1024*1024*1024*1024*1024*1024;
-    throw std::runtime_error("cannot parse size: unknown suffix: '"+suffix+"'");
 }
 
 static size_t parse_interval(const std::string& str)

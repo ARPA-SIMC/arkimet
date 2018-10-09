@@ -52,7 +52,7 @@
  {
   "doc": "",
   "group": "arki_utils",
-  "method": "empty"
+  "method": "parse_size"
  },
  {
   "doc": "",

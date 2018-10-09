@@ -44,14 +44,14 @@ struct Options : public StandardParserWithManpage
 
 		max_args = add<IntOption>("max-args", 'n', "max-args", "count",
 			"group at most this amount of data items per command invocation");
-		max_bytes = add<StringOption>("max-size", 's', "max-size", "size",
-			"create data files no bigger than this size. This may "
-			"NOT be respected if there is one single data item "
-			"greater than the size specified.  size may be followed "
-			"by the following multiplicative suffixes: c=1, w=2, "
-			"b=512, kB=1000, K=1024, MB=1000*1000, M=1024*1024, "
-			"xM=M GB=1000*1000*1000, G=1024*1024*1024, and so on "
-			"for T, P, E, Z, Y");
+        max_bytes = add<StringOption>("max-size", 's', "max-size", "size",
+            "create data files no bigger than this size. This may "
+            "NOT be respected if there is one single data item "
+            "greater than the size specified.  size may be followed "
+            "by SI or IEC multiplicative suffixes: b,c=1, "
+            "K,Kb=1000, Ki=1024, M,Mb=1000*1000, Mi=1024*1024, "
+            "G,Gb=1000*1000*1000, Gi=1024*1024*1024, and so on "
+            "for T, P, E, Z, Y");
 		time_interval = add<StringOption>("time-interval", 0, "time-interval", "interval",
 			"create one data file per 'interval', where interval "
 			"can be minute, hour, day, month or year");
