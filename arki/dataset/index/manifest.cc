@@ -187,8 +187,8 @@ void Manifest::test_deindex(const std::string& relpath)
 void Manifest::test_make_overlap(const std::string& relpath, unsigned overlap_size, unsigned data_idx)
 {
     string pathname = str::joinpath(m_path, relpath) + ".metadata";
+    utils::files::PreserveFileTimes pf(pathname);
     sys::File fd(pathname, O_RDWR);
-    sys::PreserveFileTimes pf(fd);
     metadata::Collection mds;
     mds.read_from_file(fd);
     for (unsigned i = data_idx; i < mds.size(); ++i)
@@ -201,8 +201,8 @@ void Manifest::test_make_overlap(const std::string& relpath, unsigned overlap_si
 void Manifest::test_make_hole(const std::string& relpath, unsigned hole_size, unsigned data_idx)
 {
     string pathname = str::joinpath(m_path, relpath) + ".metadata";
+    utils::files::PreserveFileTimes pf(pathname);
     sys::File fd(pathname, O_RDWR);
-    sys::PreserveFileTimes pf(fd);
     metadata::Collection mds;
     mds.read_from_file(fd);
     for (unsigned i = data_idx; i < mds.size(); ++i)

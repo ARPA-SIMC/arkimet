@@ -664,9 +664,9 @@ void BaseChecker<Segment>::test_truncate(size_t offset)
 template<typename Segment>
 void BaseChecker<Segment>::test_make_hole(metadata::Collection& mds, unsigned hole_size, unsigned data_idx)
 {
+    utils::files::PreserveFileTimes pf(this->segment().abspath);
     SequenceFile seqfile(this->segment().abspath);
     seqfile.open();
-    sys::PreserveFileTimes pf(seqfile);
     size_t pos = seqfile.read_sequence();
     if (data_idx >= mds.size())
     {

@@ -172,8 +172,8 @@ void MaintenanceTest::make_hugefile()
 
     // Pretend that the test segment is 6G already
     {
+        utils::files::PreserveFileTimes pt("testds/" + fixture->test_relpath);
         sys::File fd("testds/" + fixture->test_relpath, O_RDWR);
-        sys::PreserveFileTimes pt(fd);
         fd.ftruncate(6000000000LLU);
     }
 

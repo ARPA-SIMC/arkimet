@@ -318,8 +318,8 @@ void Checker::test_make_overlap(metadata::Collection& mds, unsigned overlap_size
 void Checker::test_corrupt(const metadata::Collection& mds, unsigned data_idx)
 {
     const auto& s = mds[data_idx].sourceBlob();
+    utils::files::PreserveFileTimes pt(segment().abspath);
     sys::File fd(segment().abspath, O_RDWR);
-    sys::PreserveFileTimes pt(fd);
     fd.lseek(s.offset);
     fd.write_all_or_throw("\0", 1);
 }

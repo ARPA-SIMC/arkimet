@@ -355,8 +355,8 @@ void Checker<Segment, File>::test_truncate(size_t offset)
 template<typename Segment, typename File>
 void Checker<Segment, File>::test_make_hole(metadata::Collection& mds, unsigned hole_size, unsigned data_idx)
 {
+    utils::files::PreserveFileTimes pt(this->segment().abspath);
     sys::File fd(this->segment().abspath, O_RDWR);
-    sys::PreserveFileTimes pt(fd);
     off_t end = fd.lseek(0, SEEK_END);
     if (data_idx >= mds.size())
     {
@@ -381,8 +381,8 @@ void Checker<Segment, File>::test_make_hole(metadata::Collection& mds, unsigned 
 template<typename Segment, typename File>
 void Checker<Segment, File>::test_make_overlap(metadata::Collection& mds, unsigned overlap_size, unsigned data_idx)
 {
+    utils::files::PreserveFileTimes pt(this->segment().abspath);
     sys::File fd(this->segment().abspath, O_RDWR);
-    sys::PreserveFileTimes pt(fd);
     off_t start_ofs = mds[data_idx].sourceBlob().offset;
     off_t end = fd.lseek(0, SEEK_END);
     std::vector<uint8_t> buf(end - start_ofs);
@@ -404,8 +404,8 @@ template<typename Segment, typename File>
 void Checker<Segment, File>::test_corrupt(const metadata::Collection& mds, unsigned data_idx)
 {
     const auto& s = mds[data_idx].sourceBlob();
+    utils::files::PreserveFileTimes pt(this->segment().abspath);
     sys::File fd(this->segment().abspath, O_RDWR);
-    sys::PreserveFileTimes pt(fd);
     fd.lseek(s.offset);
     fd.write_all_or_throw("\0", 1);
 }

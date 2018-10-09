@@ -292,8 +292,8 @@ template<typename Segment>
 void Checker<Segment>::test_corrupt(const metadata::Collection& mds, unsigned data_idx)
 {
     const auto& s = mds[data_idx].sourceBlob();
+    utils::files::PreserveFileTimes pt(this->segment().abspath);
     sys::File fd(this->segment().abspath, O_RDWR);
-    sys::PreserveFileTimes pt(fd);
     fd.lseek(s.offset);
     fd.write_all_or_throw("\0", 1);
 }
