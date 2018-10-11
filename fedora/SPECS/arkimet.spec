@@ -3,8 +3,8 @@
 
 Summary: Archive for weather information
 Name: arkimet
-Version: 1.7
-Release: 7
+Version: 1.8
+Release: 1
 License: GPL
 Group: Applications/Meteo
 URL: https://github.com/arpa-simc/%{name}
@@ -220,6 +220,9 @@ if [ "$1" = "1" ]; then
 fi
 
 %changelog
+* Thu Oct 11 2018 Daniele Branchini <dbranchini@arpae.it> - 1.8-1
+- Implemented arki-scan --flush-threshold, with a default of 128Mi (#151)
+
 * Thu Sep 20 2018 Daniele Branchini <dbranchini@arpae.it> - 1.7-7
 - Make arki-check --delete only work if --fix is present (#147)
 - Fixed other dependencies for arkimet-devel package
