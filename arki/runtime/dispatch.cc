@@ -39,13 +39,17 @@ DispatchOptions::DispatchOptions(ScanCommandLine& args)
     dispatchOpts = args.addGroup("Options controlling dispatching data to datasets");
 
     moveok = dispatchOpts->add<StringOption>("moveok", 0, "moveok", "directory",
-            "move input files imported successfully to the given directory");
+            "move input files imported successfully to the given directory "
+            "(destination directory must be on the same filesystem of source file)");
     moveko = dispatchOpts->add<StringOption>("moveko", 0, "moveko", "directory",
-            "move input files with problems to the given directory");
+            "move input files with problems to the given directory "
+            "(destination directory must be on the same filesystem of source file)");
     movework = dispatchOpts->add<StringOption>("movework", 0, "movework", "directory",
             "move input files here before opening them. This is useful to "
             "catch the cases where arki-scan crashes without having a "
-            "chance to handle errors.");
+            "chance to handle errors "
+            "(destination directory must be on the same filesystem of source file)");
+
 
     copyok = dispatchOpts->add<StringOption>("copyok", 0, "copyok", "directory",
             "copy the data from input files that was imported successfully to the given directory");
