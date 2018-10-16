@@ -5,7 +5,6 @@
 #include "arki/exceptions.h"
 #include <wreport/utils/lua.h>
 #include <wreport/var.h>
-#include <dballe/msg/msg.h>
 
 using namespace std;
 using namespace dballe;
@@ -46,8 +45,7 @@ static int dbalua_msg_foreach(lua_State *L)
         lua_pushstring(L, "pind"); lua_pushinteger(L, t.pind); lua_settable(L, -3);
         lua_pushstring(L, "p1"); lua_pushinteger(L, t.p1); lua_settable(L, -3);
         lua_pushstring(L, "p2"); lua_pushinteger(L, t.p2); lua_settable(L, -3);
-        wreport::Var var(v);
-        lua_pushstring(L, "var"); var.lua_push(L); lua_settable(L, -3);
+        lua_pushstring(L, "var"); v.lua_push(L); lua_settable(L, -3);
 
         /* Do the call (1 argument, 0 results) */
         if (lua_pcall(L, 1, 0, 0) != 0)
@@ -59,17 +57,15 @@ static int dbalua_msg_foreach(lua_State *L)
 
 static int dbalua_msg_find(lua_State *L)
 {
-    Msg& msg = Msg::downcast(*msg_lua_check(L, 1));
-    wreport::Var* res = NULL;
+    Message* message = msg_lua_check(L, 1);
+    const wreport::Var* res = NULL;
     if (lua_gettop(L) == 2)
     {
-        // By ID
-        size_t len;
-        const char* name = lua_tolstring(L, 2, &len);
-        int id = resolve_var_substring(name, len);
-        res = msg.edit_by_id(id);
+        // By shortcut name
+        const char* name = lua_tostring(L, 2);
+        res = message->get_shortcut(name);
     } else {
-        // By all details
+        // By level, timerange and varcode
         wreport::Varcode code = dbalua_to_varcode(L, 2);
         Level level;
         level.ltype1 = lua_isnil(L, 3) ? MISSING_INT : lua_tointeger(L, 3);
@@ -80,7 +76,7 @@ static int dbalua_msg_find(lua_State *L)
         trange.pind = lua_isnil(L, 7) ? MISSING_INT : lua_tointeger(L, 7);
         trange.p1 = lua_isnil(L, 8) ? MISSING_INT : lua_tointeger(L, 8);
         trange.p2 = lua_isnil(L, 9) ? MISSING_INT : lua_tointeger(L, 9);
-        res = msg.edit(code, level, trange);
+        res = message->get(code, level, trange);
     }
     if (res == NULL)
         lua_pushnil(L);
