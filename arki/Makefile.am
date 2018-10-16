@@ -505,6 +505,7 @@ tests_arki_test_SOURCES += scan/bufr-test.cc
 if LUA
 nobase_dist_arkiinclude_HEADERS += scan/bufrlua.h
 libarkimet_la_SOURCES += scan/bufrlua.cc
+tests_arki_test_SOURCES += scan/bufrlua-test.cc
 endif
 endif
 
