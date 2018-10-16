@@ -1,9 +1,7 @@
-#include "config.h"
 #include "bufr.h"
 #include <dballe/file.h>
 #include <dballe/message.h>
-#include <dballe/msg/codec.h>
-#include <dballe/core/csv.h>
+#include <dballe/importer.h>
 #include <wreport/bulletin.h>
 #include <wreport/options.h>
 #include "arki/metadata.h"
@@ -18,6 +16,7 @@
 #include "arki/scan/validator.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/files.h"
+#include "arki/libconfig.h"
 #include <sstream>
 #include <cstring>
 #include <stdint.h>
@@ -81,9 +80,9 @@ const Validator& validator() { return bufr_validator; }
 
 Bufr::Bufr()
 {
-    msg::ImporterOptions opts;
+    ImporterOptions opts;
     opts.simplified = true;
-    importer = msg::Importer::create(dballe::File::BUFR, opts).release();
+    importer = Importer::create(dballe::Encoding::BUFR, opts).release();
 
 #ifdef HAVE_LUA
 	extras = new bufr::BufrLua;
@@ -105,13 +104,13 @@ protected:
     Messages msgs;
 
 public:
-    dballe::msg::Importer& importer;
+    dballe::Importer& importer;
     unique_ptr<reftime::Position> reftime;
     unique_ptr<Origin> origin;
     unique_ptr<product::BUFR> product;
-    Message* msg;
+    std::shared_ptr<Message> msg;
 
-    Harvest(dballe::msg::Importer& importer) : importer(importer), msg(0) {}
+    Harvest(dballe::Importer& importer) : importer(importer), msg(0) {}
 
     void refine_reftime(const Message& msg)
     {
@@ -124,7 +123,7 @@ public:
 
     void harvest_from_dballe(const BinaryMessage& rmsg, Metadata& md)
     {
-        msg = 0;
+        msg.reset();
         auto bulletin = BufrBulletin::decode_header(rmsg.data, rmsg.pathname.c_str(), rmsg.offset);
 
 #if 0
@@ -204,7 +203,7 @@ public:
         if (msgs.size() != 1)
             return;
 
-        msg = &msgs[0];
+        msg = msgs[0];
 
         // Set the product from the msg type
         ValueBag newvals;
@@ -260,7 +259,7 @@ std::unique_ptr<Metadata> Bufr::scan_data(const std::vector<uint8_t>& data)
 {
     std::unique_ptr<Metadata> md(new Metadata);
     md->set_source_inline("grib", metadata::DataManager::get().to_data("bufr", std::vector<uint8_t>(data)));
-    BinaryMessage rmsg(File::BUFR);
+    BinaryMessage rmsg(Encoding::BUFR);
     rmsg.data = std::string(data.begin(), data.end());
     do_scan(rmsg, *md);
     return md;
@@ -268,7 +267,7 @@ std::unique_ptr<Metadata> Bufr::scan_data(const std::vector<uint8_t>& data)
 
 bool Bufr::scan_segment(std::shared_ptr<segment::Reader> reader, metadata_dest_func dest)
 {
-    auto file = dballe::File::create(dballe::File::BUFR, reader->segment().abspath.c_str(), "r");
+    auto file = dballe::File::create(dballe::Encoding::BUFR, reader->segment().abspath.c_str(), "r");
     while (true)
     {
         unique_ptr<Metadata> md(new Metadata);
@@ -284,7 +283,7 @@ bool Bufr::scan_segment(std::shared_ptr<segment::Reader> reader, metadata_dest_f
 
 void Bufr::scan_singleton(const std::string& abspath, Metadata& md)
 {
-    auto file = dballe::File::create(dballe::File::BUFR, abspath.c_str(), "r").release();
+    auto file = dballe::File::create(dballe::Encoding::BUFR, abspath.c_str(), "r").release();
     md.clear();
     BinaryMessage rmsg = file->read();
     if (!rmsg) throw std::runtime_error(abspath + " contains no BUFR data");
@@ -296,7 +295,7 @@ void Bufr::scan_singleton(const std::string& abspath, Metadata& md)
 bool Bufr::scan_pipe(core::NamedFileDescriptor& infd, metadata_dest_func dest)
 {
     files::RAIIFILE in(infd, "rb");
-    auto file = dballe::File::create(dballe::File::BUFR, in, false, infd.name()).release();
+    auto file = dballe::File::create(dballe::Encoding::BUFR, in, false, infd.name()).release();
     while (true)
     {
         unique_ptr<Metadata> md(new Metadata);

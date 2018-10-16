@@ -8,9 +8,7 @@
 namespace dballe {
 struct File;
 struct BinaryMessage;
-namespace msg {
 struct Importer;
-}
 }
 
 namespace arki {
@@ -30,7 +28,7 @@ struct BufrLua;
  */
 class Bufr : public Scanner
 {
-    dballe::msg::Importer* importer = nullptr;
+    dballe::Importer* importer = nullptr;
     bufr::BufrLua* extras = nullptr;
 
 
