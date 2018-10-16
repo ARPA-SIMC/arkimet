@@ -5,6 +5,7 @@
 #include "arki/utils/string.h"
 #include "arki/exceptions.h"
 #include <wreport/utils/lua.h>
+#include <dballe/msg/msg.h>
 #include <dballe/msg/context.h>
 
 using namespace std;
@@ -31,7 +32,7 @@ static wreport::Varcode dbalua_to_varcode(lua_State* L, int idx)
 static int dbalua_msg_type(lua_State *L)
 {
     Msg* msg = msg_lua_check(L, 1);
-    lua_pushstring(L, msg_type_name(msg->type));
+    lua_pushstring(L, format_message_type(msg->type));
     return 1;
 }
 
@@ -95,7 +96,7 @@ static int dbalua_msg_tostring(lua_State *L)
     for (size_t i = 0; i < msg->data.size(); ++i)
         varcount += msg->data[i]->data.size();
     lua_pushfstring(L, "dba_msg(%s, %d ctx, %d vars)",
-        msg_type_name(msg->type), msg->data.size(), varcount);
+        format_message_type(msg->type), msg->data.size(), varcount);
     return 1;
 }
 
@@ -209,14 +210,14 @@ BufrLua::~BufrLua()
 {
 }
 
-int BufrLua::get_scan_func(MsgType type)
+int BufrLua::get_scan_func(MessageType type)
 {
-	// First look up in cache
-	std::map<MsgType, int>::iterator i = scan_funcs.find(type);
-	if (i != scan_funcs.end()) return i->second;
+    // First look up in cache
+    auto i = scan_funcs.find(type);
+    if (i != scan_funcs.end()) return i->second;
 
     // Else try to load it
-    string name = str::lower(msg_type_name(type));
+    string name = str::lower(format_message_type(type));
 
     // Load the right bufr scan file
     string fname = runtime::Config::get().dir_scan_bufr.find_file_noerror(name + ".lua");

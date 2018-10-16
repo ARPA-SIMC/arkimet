@@ -101,7 +101,7 @@ namespace {
 class Harvest
 {
 protected:
-    Messages msgs;
+    std::vector<std::shared_ptr<dballe::Message>> msgs;
 
 public:
     dballe::Importer& importer;
@@ -207,7 +207,7 @@ public:
 
         // Set the product from the msg type
         ValueBag newvals;
-        newvals.set("t", Value::createString(msg_type_name(Msg::downcast(*msg).type)));
+        newvals.set("t", Value::createString(format_message_type(msg->get_type())));
         product->addValues(newvals);
 
         // Set reference time from date and time if available
