@@ -63,7 +63,7 @@ static int dbalua_msg_find(lua_State *L)
     {
         // By shortcut name
         const char* name = lua_tostring(L, 2);
-        res = message->get_shortcut(name);
+        res = message->get(name);
     } else {
         // By level, timerange and varcode
         wreport::Varcode code = dbalua_to_varcode(L, 2);
@@ -76,7 +76,7 @@ static int dbalua_msg_find(lua_State *L)
         trange.pind = lua_isnil(L, 7) ? MISSING_INT : lua_tointeger(L, 7);
         trange.p1 = lua_isnil(L, 8) ? MISSING_INT : lua_tointeger(L, 8);
         trange.p2 = lua_isnil(L, 9) ? MISSING_INT : lua_tointeger(L, 9);
-        res = message->get(code, level, trange);
+        res = message->get(level, trange, code);
     }
     if (res == NULL)
         lua_pushnil(L);
