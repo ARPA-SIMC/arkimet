@@ -114,7 +114,12 @@ public:
 
     void refine_reftime(const Message& msg)
     {
-        Datetime dt = msg.get_datetime();
+        Datetime dt;
+        try {
+            dt = msg.get_datetime();
+        } catch (wreport::error_consistency&) {
+            return;
+        }
         if (dt.is_missing()) return;
         reftime->time = core::Time(
                 dt.year, dt.month, dt.day,
