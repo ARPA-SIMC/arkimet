@@ -14,6 +14,7 @@ then
     yum install -q -y yum-plugin-copr
     yum install -q -y git
     yum copr enable -q -y simc/stable epel-7
+    [[ "$SIMC_TEST_COPR" = "yes" ]] && yum copr enable -q -y simc/test epel-7
 elif [[ $image =~ ^fedora: ]]
 then
     pkgcmd="dnf"
@@ -23,6 +24,7 @@ then
     dnf install -q -y 'dnf-command(builddep)'
     dnf install -q -y git
     dnf copr enable -q -y simc/stable
+    [[ "$SIMC_TEST_COPR" = "yes" ]] && yum copr enable -q -y simc/test epel-7
 fi
 
 $builddep -y fedora/SPECS/arkimet.spec
