@@ -36,7 +36,7 @@ BuildRequires: eccodes-simc
 
 BuildRequires: libtool
 BuildRequires: doxygen
-BuildRequires: libdballe-devel >= 7.34
+BuildRequires: libdballe-devel > 8
 BuildRequires: lua-devel >= 5.1
 BuildRequires: %{grib_sw}-devel
 BuildRequires: sqlite-devel >= 3.6
@@ -69,7 +69,7 @@ Requires: %{grib_sw}
 Requires: %{python3_vers}
 Requires: %{python3_vers}-werkzeug
 Requires: %{python3_vers}-setproctitle
-Requires: libdballe6 >= 7.34
+Requires: libdballe6 >= 8
 Requires: systemd
 
 %{!?python3_sitelib: %define python3_sitelib %(%{__python3} -c "from distutils.sysconfig import get_python_lib; print get_python_lib()")}
@@ -99,7 +99,7 @@ currently offline.
 %package  -n arkimet-devel
 Summary:  Arkimet developement library
 Group:    Applications/Meteo
-Requires: libdballe-devel >= 7.34
+Requires: libdballe-devel >= 8
 Requires: %{grib_sw}-devel
 Requires: libwreport-devel
 Requires: %{python3_vers}-devel
