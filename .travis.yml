@@ -6,7 +6,7 @@ services:
     - docker
 
 script:
-    - docker run -v ${TRAVIS_BUILD_DIR}:/root/src/ -w /root/src/ $DOCKER_IMAGE /bin/bash .travis-build.sh $DOCKER_IMAGE
+    - docker run -v ${TRAVIS_BUILD_DIR}:/root/src/ -w /root/src/ -e SIMC_TEST_COPR=$SIMC_TEST_COPR $DOCKER_IMAGE /bin/bash .travis-build.sh $DOCKER_IMAGE
 
 env:
     - DOCKER_IMAGE=centos:7
