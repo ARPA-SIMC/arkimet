@@ -80,12 +80,12 @@ const Validator& validator() { return bufr_validator; }
 
 Bufr::Bufr()
 {
-    ImporterOptions opts;
-    opts.simplified = true;
-    importer = Importer::create(dballe::Encoding::BUFR, opts).release();
+    auto opts = ImporterOptions::create();
+    opts->simplified = true;
+    importer = Importer::create(dballe::Encoding::BUFR, *opts).release();
 
 #ifdef HAVE_LUA
-	extras = new bufr::BufrLua;
+    extras = new bufr::BufrLua;
 #endif
 }
 
