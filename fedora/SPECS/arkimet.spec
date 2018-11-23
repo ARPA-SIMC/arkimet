@@ -36,7 +36,7 @@ BuildRequires: eccodes-simc
 
 BuildRequires: libtool
 BuildRequires: doxygen
-BuildRequires: libdballe-devel > 8
+BuildRequires: libdballe-devel >= 8
 BuildRequires: lua-devel >= 5.1
 BuildRequires: %{grib_sw}-devel
 BuildRequires: sqlite-devel >= 3.6
