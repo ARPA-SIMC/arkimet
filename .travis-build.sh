@@ -20,11 +20,11 @@ then
     pkgcmd="dnf"
     builddep="dnf builddep"
     sed -i '/^tsflags=/d' /etc/dnf/dnf.conf
-    dnf install -q -y @buildsys-build
+    dnf install --allowerasing -q -y @buildsys-build
     dnf install -q -y 'dnf-command(builddep)'
     dnf install -q -y git
     dnf copr enable -q -y simc/stable
-    [[ "$SIMC_TEST_COPR" = "yes" ]] && yum copr enable -q -y simc/test epel-7
+    [[ "$SIMC_TEST_COPR" = "yes" ]] && dnf copr enable -q -y simc/test
 fi
 
 $builddep -y fedora/SPECS/arkimet.spec
