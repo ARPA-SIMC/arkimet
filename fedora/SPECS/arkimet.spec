@@ -34,6 +34,7 @@ BuildRequires: eccodes-simc
 BuildRequires: eccodes-simc
 %endif
 
+BuildRequires: gcc-c++
 BuildRequires: libtool
 BuildRequires: doxygen
 BuildRequires: libdballe-devel >= 8
