@@ -13666,6 +13666,11 @@
  },
  {
   "doc": "",
+  "group": "arki_runtime_arkiscan",
+  "method": "dispatch_issue154"
+ },
+ {
+  "doc": "",
   "group": "arki_runtime",
   "method": "files"
  },

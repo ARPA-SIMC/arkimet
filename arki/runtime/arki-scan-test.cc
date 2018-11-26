@@ -286,7 +286,7 @@ add_method("dispatch_copyok", [](Fixture& f) {
             "--dispatch=test-dispatch",
             "inbound/test.grib1",
         });
-        wassert(co.check_success(res));
+        wassert(actual(res) == 2);
         mds.read_from_file(co.file_stdout.name());
     }
 
@@ -323,7 +323,7 @@ add_method("dispatch_issue68", [](Fixture& f) {
             "--dispatch=test-dispatch",
             "inbound/issue68.vm2",
         });
-        wassert(co.check_success(res));
+        wassert(actual(res) == 2);
         mds.read_from_file(co.file_stdout.name());
     }
 
@@ -340,6 +340,48 @@ add_method("dispatch_issue68", [](Fixture& f) {
         "201101010300,12,2,50,,,000000000",
     }));
 });
+
+add_method("dispatch_issue154", [](Fixture& f) {
+    using runtime::tests::run_cmdline;
+    skip_unless_vm2();
+
+    f.cfg.setValue("filter", "area:VM2,42");
+    f.test_reread_config();
+    f.write_dispatch_config();
+
+    sys::rmtree_ifexists("copyok");
+    sys::makedirs("copyok/copyok");
+    sys::makedirs("copyok/copyko");
+
+    metadata::Collection mds;
+    {
+        runtime::tests::CatchOutput co;
+        int res = run_cmdline(runtime::arki_scan, {
+            "arki-scan",
+            "--copyok=copyok/copyok",
+            "--copyko=copyok/copyko",
+            "--dispatch=test-dispatch",
+            "inbound/issue68.vm2",
+        });
+        wassert(actual(res) == 2);
+        wassert(actual_file(co.file_stderr.name()).contents_equal({
+        }));
+        mds.read_from_file(co.file_stdout.name());
+    }
+
+    wassert(actual_file("copyok/copyok/issue68.vm2").exists());
+    wassert(actual_file("copyok/copyko/issue68.vm2").exists());
+
+    wassert(actual_file("copyok/copyok/issue68.vm2").contents_equal(""));
+    wassert(actual_file("copyok/copyko/issue68.vm2").contents_equal({
+        "198710310000,1,227,1.2,,,000000000",
+        "19871031000030,1,228,.5,,,000000000",
+        "201101010000,12,1,800,,,000000000",
+        "201101010100,12,2,50,,,000000000",
+        "201101010300,12,2,50,,,000000000",
+    }));
+});
+
 
 
 

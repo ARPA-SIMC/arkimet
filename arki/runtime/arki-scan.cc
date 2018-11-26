@@ -42,20 +42,23 @@ int arki_scan(int argc, const char* argv[])
         auto output = make_output(*opts.outfile);
 
         bool all_successful;
+        bool dispatch_ok = true;
         auto processor = processor::create(opts, *output);
         if (opts.dispatch_options->dispatch_requested())
         {
             MetadataDispatch dispatcher(*opts.dispatch_options, *processor);
             all_successful = foreach_source(opts, inputs, [&](runtime::Source& source) {
-                source.dispatch(dispatcher);
+                dispatch_ok = source.dispatch(dispatcher) && dispatch_ok;
                 return true;
             });
         } else {
             all_successful = foreach_source(opts, inputs, [&](runtime::Source& source) {
-                source.process(*processor);
+                dispatch_ok = source.process(*processor) && dispatch_ok;
                 return true;
             });
         }
+
+        all_successful = all_successful && dispatch_ok;
 
         processor->end();
 
