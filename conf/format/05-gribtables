@@ -39,17 +39,19 @@ function read_grib_table(edition, table)
              end
            end,
   }
-  	 
-  -- Build the file name
-  file = GRIBAPI_DEF_DIR .. "/grib" .. edition .. "/" .. table .. ".table"
-  valid = pcall(function()
+  for dir in string.gmatch(GRIBAPI_DEF_DIR, "[^:]+")
+  do
+    valid = pcall(function()
+    -- Build the file name
+    file = dir .. "/grib" .. edition .. "/" .. table .. ".table"
     for line in io.lines(file) do
-      idx, abbr, desc = string.match(line, "^%s*(%d+)%s+([^%s]+)%s+(.-)%s*$")
-      if idx ~= nil then
-        res[tonumber(idx)] = { abbr, desc }
-      end
+        idx, abbr, desc = string.match(line, "^%s*(%d+)%s+([^%s]+)%s+(.-)%s*$")
+        if idx ~= nil and res[tonumber(idx)] == nil then
+            res[tonumber(idx)] = { abbr, desc }
+        end
     end
-  end)
+    end)
+  end
 
   return res
 end
