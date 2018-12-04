@@ -132,20 +132,44 @@ myds/
 
 === Creazione di un dataset ===
 
-Per creare un dataset, si usa il comando `arki-config`, che permette di
-generare un dataset in maniera interattiva:
-
-----
-$ arki-config /path/to/my/dataset
-Config file /path/to/my/dataset/config does not exist: should I create it? (Y/n)
-----
-
-In alternativa, è possibile creare un dataset manualmente:
+Ogni dataset è una directory autoconsistente:
 
 ----
 $ mkdir /path/to/my/dataset
-$ vi /path/to/my/dataset/config
 ----
+
+Si deve poi creare il file `config` all'interno della directory, che definisce
+il dataset, e.g.
+
+----
+$ cat <<EOF > /path/to/my/dataset/config
+description = dataset di esempio
+type = TYPE
+step = daily
+filter = FILTER
+unique = LIST_OF_METADATA
+index = LIST_OF_METADATA
+replace = true
+EOF
+----
+
+Il (`type`) di dataset può essere di vari tipi, ma per quelli locali
+generalmente si usa `type = ondisk2`. Lo `step` indica con quale
+granularità creare i segmenti di dati (giornaliero, settimanale, mensile,
+annuale). `filter` indica quale query devono rispettare i dati per poter
+essere salvati all'interno del dataset. `unique` indica una lista dei
+metadati che rendono univoco un file archiviato all'interno del dataset:
+ogni nuovo file sovrascrive file già archiviati che hanno medesimi
+metadati univoci (se `replace = true`) oppure genera un errore (se
+`replace = false`). Gli indici (`index`) sono un elenco di metadati per cui
+sono creati degli indici.
+
+Ulteriori parametri sono:
+
+- `postprocess`: elenco di postprocessatori abilitati per il dataset
+- `restrict`: lista di utenti che possono accedere al dataset (se vuoto, chiunque)
+- `archive age`: giorni dopo i quali i dati sono messi fuori linea
+- `delete age`: giorni dopo i quali i dati sono eliminati
 
 === Alimentazione di un dataset ===
 
@@ -164,14 +188,45 @@ Nel nostro esempio, abbiamo due dataset (`odimh5` e `grib1`) più i due dataset
 `error` e `duplicates`.
 
 ----
-$ arki-config $HOME/dataset/odimh5
-...
-$ arki-config $HOME/dataset/grib1
-...
-$ arki-config $HOME/dataset/error
-...
-$ arki-config $HOME/dataset/duplicates
-...
+$ mkdir $HOME/dataset/odimh5
+$ cat <<EOF > $HOME/dataset/odimh5/config
+description = Dati ODIM
+filter = origin:ODIMH5,,,
+type = ondisk2
+step = daily
+unique = reftime
+index = reftime,level,task,quantity
+replace = yes
+postprocess = odimh5filter
+archive age = 60
+restrict = simc
+EOF
+
+$ mkdir $HOME/dataset/grib1
+$ cat <<EOF > $HOME/dataset/grib1/config
+description = Dati GRIB
+filter = origin:GRIB1,80,,22; area:GRIB:Ni=386,latfirst=-10575000, lonfirst=-7785000, type=10
+index = reftime, timerange, level, product
+replace = yes
+step = daily
+type = ondisk2
+unique = origin, reftime, timerange, level, product
+archive age = 20
+postprocess = singlepoint, subarea, seriet, cat
+restrict = simc, cosmo
+EOF
+
+$ mkdir $HOME/dataset/error
+$ cat <<EOF > $HOME/dataset/error/config
+type = error
+step = daily
+EOF
+
+$ mkdir $HOME/dataset/duplicates
+$ cat <<EOF > $HOME/dataset/duplicates/config
+type = duplicates
+step = daily
+EOF
 ----
 
 A questo punto, generiamo l'elenco dei dataset, che salveremo nel file
@@ -201,7 +256,7 @@ Un'altra opzione utile è `--testdispatch=FILE` da usare al posto di
 I dati saranno stati importati nel dataset corretto, oppure in `error` se i
 metadati del file non facevano match con __uno solo__ dei dataset (quindi, se
 nessuno o più di uno) oppure in `duplicates` se si tratta di un dato già
-presente in un dataset senza la possibilità si sovrascritttura.
+presente in un dataset senza la possibilità di sovrascritttura.
 
 Se si vogliono reimportare dei dati che sono finiti in `error`, basta toglierli
 dal dataset `error` e cercare di reimportarli.
@@ -213,6 +268,9 @@ cerchiamo di reimportarli:
 $ mv $HOME/dataset/error/2013/*.grib1 /tmp/
 $ arki-scan --dispatch=$HOME/config /tmp/*.grib1 > /dev/null
 ----
+
+In alternativa, si sarebbe potuto usare una `arki-query per estrarre i dati dal
+dataset.
 
 === Manutenzione di un dataset ===
 
