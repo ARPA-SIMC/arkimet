@@ -3,8 +3,8 @@
 
 Summary: Archive for weather information
 Name: arkimet
-Version: 1.8
-Release: 3
+Version: 1.9
+Release: 1
 License: GPL
 Group: Applications/Meteo
 URL: https://github.com/arpa-simc/%{name}
@@ -220,6 +220,10 @@ if [ "$1" = "1" ]; then
 fi
 
 %changelog
+* Wed Dec 5 2018 Daniele Branchini <dbranchini@arpae.it> - 1.9-1
+- Inherit grib definition from environment variables
+- Updated arkiguide (#157)
+
 * Mon Nov 26 2018 Daniele Branchini <dbranchini@arpae.it> - 1.8-3
 - Fixed #138
 
