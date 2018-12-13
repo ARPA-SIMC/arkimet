@@ -324,6 +324,12 @@ void Checker::move_data(const std::string& new_root, const std::string& new_relp
     }
 }
 
+bool Checker::rescan_data(std::shared_ptr<core::Lock> lock, metadata_dest_func dest)
+{
+    auto reader = this->segment().reader(lock);
+    return reader->scan_data(dest);
+}
+
 State Checker::check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick)
 {
     CheckBackend checker(segment().format, zipabspath, segment().relpath, reporter, mds);

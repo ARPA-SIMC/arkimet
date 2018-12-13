@@ -340,12 +340,6 @@ RepackConfig::RepackConfig(unsigned gz_group_size, unsigned test_flags)
 }
 
 
-bool Checker::scan_data(std::shared_ptr<core::Lock> lock, metadata_dest_func dest)
-{
-    auto reader = this->segment().reader(lock);
-    return reader->scan_data(dest);
-}
-
 std::shared_ptr<segment::Checker> Checker::tar(metadata::Collection& mds)
 {
     segment::tar::Segment::create(segment().format, segment().root, segment().relpath, segment().abspath, mds);

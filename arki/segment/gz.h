@@ -49,6 +49,7 @@ public:
     size_t size() override;
     bool is_empty() override;
 
+    bool rescan_data(std::shared_ptr<core::Lock> lock, metadata_dest_func dest) override;
     State check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick=true) override;
     size_t remove() override;
     Pending repack(const std::string& rootdir, metadata::Collection& mds, const RepackConfig& cfg=RepackConfig()) override;

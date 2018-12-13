@@ -272,9 +272,9 @@ public:
     virtual bool is_empty() = 0;
 
     /**
-     * Rescan the segment, using Reader::scan_data of the right reader for this segment
+     * Rescan the segment, possibly fixing fixable issues found during the rescan
      */
-    bool scan_data(std::shared_ptr<core::Lock> lock, metadata_dest_func dest);
+    virtual bool rescan_data(std::shared_ptr<core::Lock> lock, metadata_dest_func dest) = 0;
 
     /**
      * Rewrite this segment so that the data are in the same order as in `mds`.

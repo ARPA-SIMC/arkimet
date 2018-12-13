@@ -11,7 +11,6 @@
 #include "arki/utils/sys.h"
 #include "arki/scan.h"
 #include "arki/scan/validator.h"
-#include "arki/scan/dir.h"
 #include "arki/utils/string.h"
 #include "arki/utils/accounting.h"
 #include "arki/iotrace.h"
@@ -106,12 +105,10 @@ struct CheckBackend : public AppendCheckBackend
     const std::string& format;
     const std::string& abspath;
     std::unique_ptr<struct stat> st;
-    // File size by offset
-    std::map<size_t, size_t> on_disk;
-    size_t max_sequence = 0;
+    Scanner scanner;
 
     CheckBackend(const std::string& format, const std::string& abspath, const std::string& relpath, std::function<void(const std::string&)> reporter, const metadata::Collection& mds)
-        : AppendCheckBackend(reporter, relpath, mds), format(format), abspath(abspath)
+        : AppendCheckBackend(reporter, relpath, mds), format(format), abspath(abspath), scanner(format, abspath)
     {
     }
 
@@ -123,26 +120,26 @@ struct CheckBackend : public AppendCheckBackend
     }
 
     size_t actual_end(off_t offset, size_t size) const override { return offset + 1; }
-    size_t offset_end() const override { return max_sequence + 1; }
+    size_t offset_end() const override { return scanner.max_sequence + 1; }
 
     State check_source(const types::source::Blob& source) override
     {
-        auto si = on_disk.find(source.offset);
-        if (si == on_disk.end())
+        auto si = scanner.on_disk.find(source.offset);
+        if (si == scanner.on_disk.end())
         {
             stringstream ss;
             ss << "expected file " << source.offset << " not found in the file system";
             reporter(ss.str());
             return SEGMENT_CORRUPTED;
         }
-        if (!(source.size == si->second || (format == "vm2" && (source.size + 1 == si->second))))
+        if (!(source.size == si->second.size || (format == "vm2" && (source.size + 1 == si->second.size))))
         {
             stringstream ss;
-            ss << "expected file " << source.offset << " has size " << si->second << " instead of expected " << source.size;
+            ss << "expected file " << source.offset << " has size " << si->second.size << " instead of expected " << source.size;
             reporter(ss.str());
             return SEGMENT_CORRUPTED;
         }
-        on_disk.erase(si);
+        scanner.on_disk.erase(si);
         return SEGMENT_OK;
     }
 
@@ -168,17 +165,7 @@ struct CheckBackend : public AppendCheckBackend
             cur_sequence = sf.read_sequence();
         }
 
-        sys::Path dir(abspath);
-        for (sys::Path::iterator i = dir.begin(); i != dir.end(); ++i)
-        {
-            if (!i.isreg()) continue;
-            if (!str::endswith(i->d_name, format)) continue;
-            struct stat st;
-            i.path->fstatat(i->d_name, st);
-            size_t seq = (size_t)strtoul(i->d_name, 0, 10);
-            on_disk.insert(make_pair(seq, st.st_size));
-            max_sequence = max(max_sequence, seq);
-        }
+        scanner.list_files();
 
         bool dirty = false;
         State state = AppendCheckBackend::check();
@@ -190,16 +177,16 @@ struct CheckBackend : public AppendCheckBackend
                 return state;
         }
 
-        if (cur_sequence < max_sequence)
+        if (cur_sequence < scanner.max_sequence)
         {
             stringstream out;
-            out << "sequence file has value " << cur_sequence << " but found files until sequence " << max_sequence;
+            out << "sequence file has value " << cur_sequence << " but found files until sequence " << scanner.max_sequence;
             reporter(out.str());
             return SEGMENT_UNALIGNED;
         }
 
         // Check files on disk that were not accounted for
-        for (const auto& di: on_disk)
+        for (const auto& di: scanner.on_disk)
         {
             auto scanner = scan::Scanner::get_scanner(format);
             auto idx = di.first;
@@ -238,10 +225,10 @@ struct CheckBackend : public AppendCheckBackend
             }
         }
 
-        if (!on_disk.empty())
+        if (!scanner.on_disk.empty())
         {
             stringstream ss;
-            ss << "segment contains " << on_disk.size() << " file(s) that the index does now know about";
+            ss << "segment contains " << scanner.on_disk.size() << " file(s) that the index does now know about";
             reporter(ss.str());
             dirty = true;
         }
@@ -294,8 +281,9 @@ Reader::Reader(const std::string& format, const std::string& root, const std::st
 
 bool Reader::scan_data(metadata_dest_func dest)
 {
-    scan::Dir scanner;
-    return scanner.scan_segment(static_pointer_cast<segment::Reader>(this->shared_from_this()), dest);
+    Scanner scanner(segment().format, segment().abspath);
+    scanner.list_files();
+    return scanner.scan(static_pointer_cast<segment::Reader>(this->shared_from_this()), dest);
 }
 
 sys::File Reader::open_src(const types::source::Blob& src)
@@ -515,6 +503,15 @@ template<typename Segment>
 void BaseChecker<Segment>::move_data(const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath)
 {
     sys::rename(this->segment().abspath.c_str(), new_abspath.c_str());
+}
+
+template<typename Segment>
+bool BaseChecker<Segment>::rescan_data(std::shared_ptr<core::Lock> lock, metadata_dest_func dest)
+{
+    Scanner scanner(this->segment().format, this->segment().abspath);
+    scanner.list_files();
+    auto reader = this->segment().reader(lock);
+    return scanner.scan(static_pointer_cast<segment::Reader>(reader), dest);
 }
 
 template<typename Segment>
@@ -740,6 +737,45 @@ template class BaseWriter<Segment>;
 template class BaseWriter<HoleSegment>;
 template class BaseChecker<Segment>;
 template class BaseChecker<HoleSegment>;
+
+
+Scanner::Scanner(const std::string& format, const std::string& abspath)
+    : format(format), abspath(abspath)
+{
+}
+
+void Scanner::list_files()
+{
+    sys::Path dir(abspath);
+    for (sys::Path::iterator i = dir.begin(); i != dir.end(); ++i)
+    {
+        if (!i.isreg()) continue;
+        if (!str::endswith(i->d_name, format)) continue;
+        struct stat st;
+        i.path->fstatat(i->d_name, st);
+        size_t seq = (size_t)strtoul(i->d_name, 0, 10);
+        on_disk.insert(make_pair(seq, ScannerData(i->d_name, st.st_size)));
+        max_sequence = max(max_sequence, seq);
+    }
+}
+
+bool Scanner::scan(std::shared_ptr<segment::Reader> reader, metadata_dest_func dest)
+{
+    // Scan them one by one
+    auto scanner = scan::Scanner::get_scanner(format);
+    for (const auto& fi : on_disk)
+    {
+        unique_ptr<Metadata> md(new Metadata);
+        size_t size = scanner->scan_singleton(str::joinpath(abspath, fi.second.fname), *md);
+        if (!size)
+            continue;
+        md->set_source(Source::createBlob(reader, fi.first, size));
+        if (!dest(std::move(md)))
+            return false;
+    }
+
+    return true;
+}
 
 }
 }

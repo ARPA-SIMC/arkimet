@@ -378,7 +378,7 @@ public:
         sys::unlink_ifexists(segment->segment().abspath + ".summary");
 
         metadata::Collection mds;
-        segment->scan_data(lock, mds.inserter_func());
+        segment->rescan_data(lock, mds.inserter_func());
 
         Summary sum;
         for (const auto& md: mds)

@@ -393,7 +393,7 @@ public:
     void rescan() override
     {
         metadata::Collection mds;
-        segment->scan_data(lock, mds.inserter_func());
+        segment->rescan_data(lock, mds.inserter_func());
 
         // Lock away writes and reads
         auto write_lock = lock->write_lock();

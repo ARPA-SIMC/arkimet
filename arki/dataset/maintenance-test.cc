@@ -337,6 +337,28 @@ void MaintenanceTest::register_tests_dir()
         wassert(f.ensure_localds_clean(3, 4));
         wassert(f.query_results({1, 3, 0, 2}));
     });
+
+    add_method("fix_truncated_file_above_sequence", R"(
+       - [unaligned] fix low sequence file value by setting it to the highest
+         sequence number found, with one file truncated / partly written.
+    )", [&](Fixture& f) {
+        reset_seqfile();
+        {
+            sys::File df("testds/" + f.test_relpath + "/000000." + f.format, O_RDWR);
+            df.ftruncate(f.test_datum_size / 2);
+        }
+
+        {
+            auto checker(f.makeSegmentedChecker());
+            ReporterExpected e;
+            e.report.emplace_back("testds", "check", "2 files ok");
+            e.rescanned.emplace_back("testds", f.test_relpath);
+            wassert(actual(checker.get()).check(e, true));
+        }
+
+        wassert(f.ensure_localds_clean(3, 4));
+        wassert(f.query_results({1, 3, 0, 2}));
+    });
 }
 
 void MaintenanceTest::register_tests()
