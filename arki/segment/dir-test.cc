@@ -25,6 +25,12 @@ using namespace arki::utils;
 
 const char* relpath = "testfile.grib";
 
+class TestInternals : public TestCase
+{
+    using TestCase::TestCase;
+    void register_tests() override;
+} test("arki_segment_dir_internals");
+
 template<class Segment, class Data>
 class Tests : public SegmentTests<Segment, Data>
 {
@@ -51,6 +57,30 @@ std::shared_ptr<segment::dir::Writer> make_w()
 {
     string abspath = sys::abspath(relpath);
     return std::shared_ptr<segment::dir::Writer>(new segment::dir::Writer("grib", sys::getcwd(), relpath, abspath));
+}
+
+
+void TestInternals::register_tests() {
+
+// Scan a well-known sample
+add_method("scanner", [] {
+    Metadata md;
+    segment::dir::Scanner scanner("odimh5", "inbound/fixture.odimh5");
+    scanner.list_files();
+    wassert(actual(scanner.on_disk.size()) == 3u);
+    wassert(actual(scanner.max_sequence) == 2u);
+
+    auto reader = Segment::detect_reader("odimh5", sys::abspath("."), "inbound/fixture.odimh5", sys::abspath("inbound/fixture.odimh5"), make_shared<core::lock::Null>());
+
+    metadata::Collection mds;
+    scanner.scan(reader, mds.inserter_func());
+    wassert(actual(mds.size()) == 3u);
+    md = mds[0];
+
+    // Check the source info
+    wassert(actual(md.source().cloneType()).is_source_blob("odimh5", sys::abspath("."), "inbound/fixture.odimh5", 0, 49057));
+});
+
 }
 
 

@@ -120,6 +120,10 @@ with a full check and rescan of all the data in the dataset.
 - the modification time of a directory segment can vary unpredictably,
   so it is ignored. The modification time of the sequence file is used
   instead.
+- if arkimet is interrupted during rollback of an append operation on a
+  dir dataset, there are files whose name has a higher sequence number
+  than the sequence file. This will break further appends, and needs to
+  be detected and fixed. [unaligned]
 - the segment must exist [missing]
 - an empty segment not known by the index must be considered deleted [deleted]
 - segments that contain some data that has been removed are
@@ -160,6 +164,10 @@ with a full check and rescan of all the data in the dataset.
 
 ### During fix
 
+- [unaligned] fix low sequence file value by setting it to the highest
+  sequence number found.
+- [unaligned] fix low sequence file value by setting it to the highest
+  sequence number found, with one file truncated / partly written.
 - [deleted] segments are left untouched
 - [dirty] segments are not touched
 - [unaligned] segments are imported in-place

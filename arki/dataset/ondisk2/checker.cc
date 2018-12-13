@@ -330,10 +330,12 @@ public:
         return segment->remove();
     }
 
-    void rescan() override
+    void rescan(dataset::Reporter& reporter) override
     {
         metadata::Collection mds;
-        segment->scan_data(lock, mds.inserter_func());
+        segment->rescan_data(
+                [&](const std::string& msg) { reporter.segment_info(checker.name(), segment->segment().relpath, msg); },
+                lock, mds.inserter_func());
 
         // Lock away writes and reads
         Pending p = checker.idx->begin_transaction();

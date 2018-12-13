@@ -240,7 +240,7 @@ void RealFixer::operator()(segmented::CheckerSegment& segment, segment::State st
     */
     if (state.has(segment::SEGMENT_UNALIGNED))
     {
-        segment.rescan();
+        segment.rescan(reporter);
         reporter.segment_rescan(w.name(), segment.path_relative(), "rescanned");
         ++m_count_rescanned;
         m_redo_summary = true;

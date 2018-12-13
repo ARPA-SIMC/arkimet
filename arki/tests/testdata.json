@@ -1811,11 +1811,6 @@
  },
  {
   "doc": "",
-  "group": "arki_scan_dir",
-  "method": "scan"
- },
- {
-  "doc": "",
   "group": "arki_segment",
   "method": "auto_instantiate_existing"
  },
@@ -1968,6 +1963,11 @@
   "doc": "",
   "group": "arki_segment_seqfile",
   "method": "empty"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_dir_internals",
+  "method": "scanner"
  },
  {
   "doc": "",
@@ -4055,6 +4055,21 @@
   "method": "check_ignore_dir_timestamp"
  },
  {
+  "doc": "- if arkimet is interrupted during rollback of an append operation on a\n  dir dataset, there are files whose name has a higher sequence number\n  than the sequence file. This will break further appends, and needs to\n  be detected and fixed. [unaligned]",
+  "group": "arki_dataset_simple_maintenance_grib_plain_dirs",
+  "method": "check_files_above_sequence"
+ },
+ {
+  "doc": "- [unaligned] fix low sequence file value by setting it to the highest\n  sequence number found.",
+  "group": "arki_dataset_simple_maintenance_grib_plain_dirs",
+  "method": "fix_files_above_sequence"
+ },
+ {
+  "doc": "- [unaligned] fix low sequence file value by setting it to the highest\n  sequence number found, with one file truncated / partly written.",
+  "group": "arki_dataset_simple_maintenance_grib_plain_dirs",
+  "method": "fix_truncated_file_above_sequence"
+ },
+ {
   "doc": "",
   "group": "arki_dataset_simple_maintenance_grib_plain_dirs",
   "method": "clean"
@@ -4253,6 +4268,21 @@
   "doc": "- the modification time of a directory segment can vary unpredictably,\n  so it is ignored. The modification time of the sequence file is used\n  instead.",
   "group": "arki_dataset_simple_maintenance_grib_sqlite_dirs",
   "method": "check_ignore_dir_timestamp"
+ },
+ {
+  "doc": "- if arkimet is interrupted during rollback of an append operation on a\n  dir dataset, there are files whose name has a higher sequence number\n  than the sequence file. This will break further appends, and needs to\n  be detected and fixed. [unaligned]",
+  "group": "arki_dataset_simple_maintenance_grib_sqlite_dirs",
+  "method": "check_files_above_sequence"
+ },
+ {
+  "doc": "- [unaligned] fix low sequence file value by setting it to the highest\n  sequence number found.",
+  "group": "arki_dataset_simple_maintenance_grib_sqlite_dirs",
+  "method": "fix_files_above_sequence"
+ },
+ {
+  "doc": "- [unaligned] fix low sequence file value by setting it to the highest\n  sequence number found, with one file truncated / partly written.",
+  "group": "arki_dataset_simple_maintenance_grib_sqlite_dirs",
+  "method": "fix_truncated_file_above_sequence"
  },
  {
   "doc": "",
@@ -4875,6 +4905,21 @@
   "method": "check_ignore_dir_timestamp"
  },
  {
+  "doc": "- if arkimet is interrupted during rollback of an append operation on a\n  dir dataset, there are files whose name has a higher sequence number\n  than the sequence file. This will break further appends, and needs to\n  be detected and fixed. [unaligned]",
+  "group": "arki_dataset_simple_maintenance_bufr_plain_dirs",
+  "method": "check_files_above_sequence"
+ },
+ {
+  "doc": "- [unaligned] fix low sequence file value by setting it to the highest\n  sequence number found.",
+  "group": "arki_dataset_simple_maintenance_bufr_plain_dirs",
+  "method": "fix_files_above_sequence"
+ },
+ {
+  "doc": "- [unaligned] fix low sequence file value by setting it to the highest\n  sequence number found, with one file truncated / partly written.",
+  "group": "arki_dataset_simple_maintenance_bufr_plain_dirs",
+  "method": "fix_truncated_file_above_sequence"
+ },
+ {
   "doc": "",
   "group": "arki_dataset_simple_maintenance_bufr_plain_dirs",
   "method": "clean"
@@ -5073,6 +5118,21 @@
   "doc": "- the modification time of a directory segment can vary unpredictably,\n  so it is ignored. The modification time of the sequence file is used\n  instead.",
   "group": "arki_dataset_simple_maintenance_bufr_sqlite_dirs",
   "method": "check_ignore_dir_timestamp"
+ },
+ {
+  "doc": "- if arkimet is interrupted during rollback of an append operation on a\n  dir dataset, there are files whose name has a higher sequence number\n  than the sequence file. This will break further appends, and needs to\n  be detected and fixed. [unaligned]",
+  "group": "arki_dataset_simple_maintenance_bufr_sqlite_dirs",
+  "method": "check_files_above_sequence"
+ },
+ {
+  "doc": "- [unaligned] fix low sequence file value by setting it to the highest\n  sequence number found.",
+  "group": "arki_dataset_simple_maintenance_bufr_sqlite_dirs",
+  "method": "fix_files_above_sequence"
+ },
+ {
+  "doc": "- [unaligned] fix low sequence file value by setting it to the highest\n  sequence number found, with one file truncated / partly written.",
+  "group": "arki_dataset_simple_maintenance_bufr_sqlite_dirs",
+  "method": "fix_truncated_file_above_sequence"
  },
  {
   "doc": "",
@@ -5693,6 +5753,21 @@
   "doc": "- the modification time of a directory segment can vary unpredictably,\n  so it is ignored. The modification time of the sequence file is used\n  instead.",
   "group": "arki_dataset_simple_maintenance_vm2_plain_dirs",
   "method": "check_ignore_dir_timestamp"
+ },
+ {
+  "doc": "- if arkimet is interrupted during rollback of an append operation on a\n  dir dataset, there are files whose name has a higher sequence number\n  than the sequence file. This will break further appends, and needs to\n  be detected and fixed. [unaligned]",
+  "group": "arki_dataset_simple_maintenance_vm2_plain_dirs",
+  "method": "check_files_above_sequence"
+ },
+ {
+  "doc": "- [unaligned] fix low sequence file value by setting it to the highest\n  sequence number found.",
+  "group": "arki_dataset_simple_maintenance_vm2_plain_dirs",
+  "method": "fix_files_above_sequence"
+ },
+ {
+  "doc": "- [unaligned] fix low sequence file value by setting it to the highest\n  sequence number found, with one file truncated / partly written.",
+  "group": "arki_dataset_simple_maintenance_vm2_plain_dirs",
+  "method": "fix_truncated_file_above_sequence"
  },
  {
   "doc": "",
@@ -5893,6 +5968,21 @@
   "doc": "- the modification time of a directory segment can vary unpredictably,\n  so it is ignored. The modification time of the sequence file is used\n  instead.",
   "group": "arki_dataset_simple_maintenance_vm2_sqlite_dirs",
   "method": "check_ignore_dir_timestamp"
+ },
+ {
+  "doc": "- if arkimet is interrupted during rollback of an append operation on a\n  dir dataset, there are files whose name has a higher sequence number\n  than the sequence file. This will break further appends, and needs to\n  be detected and fixed. [unaligned]",
+  "group": "arki_dataset_simple_maintenance_vm2_sqlite_dirs",
+  "method": "check_files_above_sequence"
+ },
+ {
+  "doc": "- [unaligned] fix low sequence file value by setting it to the highest\n  sequence number found.",
+  "group": "arki_dataset_simple_maintenance_vm2_sqlite_dirs",
+  "method": "fix_files_above_sequence"
+ },
+ {
+  "doc": "- [unaligned] fix low sequence file value by setting it to the highest\n  sequence number found, with one file truncated / partly written.",
+  "group": "arki_dataset_simple_maintenance_vm2_sqlite_dirs",
+  "method": "fix_truncated_file_above_sequence"
  },
  {
   "doc": "",
@@ -6093,6 +6183,21 @@
   "doc": "- the modification time of a directory segment can vary unpredictably,\n  so it is ignored. The modification time of the sequence file is used\n  instead.",
   "group": "arki_dataset_simple_maintenance_odimh5_plain",
   "method": "check_ignore_dir_timestamp"
+ },
+ {
+  "doc": "- if arkimet is interrupted during rollback of an append operation on a\n  dir dataset, there are files whose name has a higher sequence number\n  than the sequence file. This will break further appends, and needs to\n  be detected and fixed. [unaligned]",
+  "group": "arki_dataset_simple_maintenance_odimh5_plain",
+  "method": "check_files_above_sequence"
+ },
+ {
+  "doc": "- [unaligned] fix low sequence file value by setting it to the highest\n  sequence number found.",
+  "group": "arki_dataset_simple_maintenance_odimh5_plain",
+  "method": "fix_files_above_sequence"
+ },
+ {
+  "doc": "- [unaligned] fix low sequence file value by setting it to the highest\n  sequence number found, with one file truncated / partly written.",
+  "group": "arki_dataset_simple_maintenance_odimh5_plain",
+  "method": "fix_truncated_file_above_sequence"
  },
  {
   "doc": "",
@@ -6293,6 +6398,21 @@
   "doc": "- the modification time of a directory segment can vary unpredictably,\n  so it is ignored. The modification time of the sequence file is used\n  instead.",
   "group": "arki_dataset_simple_maintenance_odimh5_sqlite",
   "method": "check_ignore_dir_timestamp"
+ },
+ {
+  "doc": "- if arkimet is interrupted during rollback of an append operation on a\n  dir dataset, there are files whose name has a higher sequence number\n  than the sequence file. This will break further appends, and needs to\n  be detected and fixed. [unaligned]",
+  "group": "arki_dataset_simple_maintenance_odimh5_sqlite",
+  "method": "check_files_above_sequence"
+ },
+ {
+  "doc": "- [unaligned] fix low sequence file value by setting it to the highest\n  sequence number found.",
+  "group": "arki_dataset_simple_maintenance_odimh5_sqlite",
+  "method": "fix_files_above_sequence"
+ },
+ {
+  "doc": "- [unaligned] fix low sequence file value by setting it to the highest\n  sequence number found, with one file truncated / partly written.",
+  "group": "arki_dataset_simple_maintenance_odimh5_sqlite",
+  "method": "fix_truncated_file_above_sequence"
  },
  {
   "doc": "",
@@ -6725,6 +6845,21 @@
   "method": "check_ignore_dir_timestamp"
  },
  {
+  "doc": "- if arkimet is interrupted during rollback of an append operation on a\n  dir dataset, there are files whose name has a higher sequence number\n  than the sequence file. This will break further appends, and needs to\n  be detected and fixed. [unaligned]",
+  "group": "arki_dataset_iseg_maintenance_grib_dirs",
+  "method": "check_files_above_sequence"
+ },
+ {
+  "doc": "- [unaligned] fix low sequence file value by setting it to the highest\n  sequence number found.",
+  "group": "arki_dataset_iseg_maintenance_grib_dirs",
+  "method": "fix_files_above_sequence"
+ },
+ {
+  "doc": "- [unaligned] fix low sequence file value by setting it to the highest\n  sequence number found, with one file truncated / partly written.",
+  "group": "arki_dataset_iseg_maintenance_grib_dirs",
+  "method": "fix_truncated_file_above_sequence"
+ },
+ {
   "doc": "",
   "group": "arki_dataset_iseg_maintenance_grib_dirs",
   "method": "clean"
@@ -7110,6 +7245,21 @@
   "method": "check_ignore_dir_timestamp"
  },
  {
+  "doc": "- if arkimet is interrupted during rollback of an append operation on a\n  dir dataset, there are files whose name has a higher sequence number\n  than the sequence file. This will break further appends, and needs to\n  be detected and fixed. [unaligned]",
+  "group": "arki_dataset_iseg_maintenance_bufr_dirs",
+  "method": "check_files_above_sequence"
+ },
+ {
+  "doc": "- [unaligned] fix low sequence file value by setting it to the highest\n  sequence number found.",
+  "group": "arki_dataset_iseg_maintenance_bufr_dirs",
+  "method": "fix_files_above_sequence"
+ },
+ {
+  "doc": "- [unaligned] fix low sequence file value by setting it to the highest\n  sequence number found, with one file truncated / partly written.",
+  "group": "arki_dataset_iseg_maintenance_bufr_dirs",
+  "method": "fix_truncated_file_above_sequence"
+ },
+ {
   "doc": "",
   "group": "arki_dataset_iseg_maintenance_bufr_dirs",
   "method": "clean"
@@ -7495,6 +7645,21 @@
   "method": "check_ignore_dir_timestamp"
  },
  {
+  "doc": "- if arkimet is interrupted during rollback of an append operation on a\n  dir dataset, there are files whose name has a higher sequence number\n  than the sequence file. This will break further appends, and needs to\n  be detected and fixed. [unaligned]",
+  "group": "arki_dataset_iseg_maintenance_vm2_dirs",
+  "method": "check_files_above_sequence"
+ },
+ {
+  "doc": "- [unaligned] fix low sequence file value by setting it to the highest\n  sequence number found.",
+  "group": "arki_dataset_iseg_maintenance_vm2_dirs",
+  "method": "fix_files_above_sequence"
+ },
+ {
+  "doc": "- [unaligned] fix low sequence file value by setting it to the highest\n  sequence number found, with one file truncated / partly written.",
+  "group": "arki_dataset_iseg_maintenance_vm2_dirs",
+  "method": "fix_truncated_file_above_sequence"
+ },
+ {
   "doc": "",
   "group": "arki_dataset_iseg_maintenance_vm2_dirs",
   "method": "clean"
@@ -7678,6 +7843,21 @@
   "doc": "- the modification time of a directory segment can vary unpredictably,\n  so it is ignored. The modification time of the sequence file is used\n  instead.",
   "group": "arki_dataset_iseg_maintenance_odimh5",
   "method": "check_ignore_dir_timestamp"
+ },
+ {
+  "doc": "- if arkimet is interrupted during rollback of an append operation on a\n  dir dataset, there are files whose name has a higher sequence number\n  than the sequence file. This will break further appends, and needs to\n  be detected and fixed. [unaligned]",
+  "group": "arki_dataset_iseg_maintenance_odimh5",
+  "method": "check_files_above_sequence"
+ },
+ {
+  "doc": "- [unaligned] fix low sequence file value by setting it to the highest\n  sequence number found.",
+  "group": "arki_dataset_iseg_maintenance_odimh5",
+  "method": "fix_files_above_sequence"
+ },
+ {
+  "doc": "- [unaligned] fix low sequence file value by setting it to the highest\n  sequence number found, with one file truncated / partly written.",
+  "group": "arki_dataset_iseg_maintenance_odimh5",
+  "method": "fix_truncated_file_above_sequence"
  },
  {
   "doc": "",
@@ -8225,6 +8405,21 @@
   "method": "check_ignore_dir_timestamp"
  },
  {
+  "doc": "- if arkimet is interrupted during rollback of an append operation on a\n  dir dataset, there are files whose name has a higher sequence number\n  than the sequence file. This will break further appends, and needs to\n  be detected and fixed. [unaligned]",
+  "group": "arki_dataset_ondisk2_maintenance_grib_dirs",
+  "method": "check_files_above_sequence"
+ },
+ {
+  "doc": "- [unaligned] fix low sequence file value by setting it to the highest\n  sequence number found.",
+  "group": "arki_dataset_ondisk2_maintenance_grib_dirs",
+  "method": "fix_files_above_sequence"
+ },
+ {
+  "doc": "- [unaligned] fix low sequence file value by setting it to the highest\n  sequence number found, with one file truncated / partly written.",
+  "group": "arki_dataset_ondisk2_maintenance_grib_dirs",
+  "method": "fix_truncated_file_above_sequence"
+ },
+ {
   "doc": "",
   "group": "arki_dataset_ondisk2_maintenance_grib_dirs",
   "method": "clean"
@@ -8655,6 +8850,21 @@
   "method": "check_ignore_dir_timestamp"
  },
  {
+  "doc": "- if arkimet is interrupted during rollback of an append operation on a\n  dir dataset, there are files whose name has a higher sequence number\n  than the sequence file. This will break further appends, and needs to\n  be detected and fixed. [unaligned]",
+  "group": "arki_dataset_ondisk2_maintenance_bufr_dirs",
+  "method": "check_files_above_sequence"
+ },
+ {
+  "doc": "- [unaligned] fix low sequence file value by setting it to the highest\n  sequence number found.",
+  "group": "arki_dataset_ondisk2_maintenance_bufr_dirs",
+  "method": "fix_files_above_sequence"
+ },
+ {
+  "doc": "- [unaligned] fix low sequence file value by setting it to the highest\n  sequence number found, with one file truncated / partly written.",
+  "group": "arki_dataset_ondisk2_maintenance_bufr_dirs",
+  "method": "fix_truncated_file_above_sequence"
+ },
+ {
   "doc": "",
   "group": "arki_dataset_ondisk2_maintenance_bufr_dirs",
   "method": "clean"
@@ -9085,6 +9295,21 @@
   "method": "check_ignore_dir_timestamp"
  },
  {
+  "doc": "- if arkimet is interrupted during rollback of an append operation on a\n  dir dataset, there are files whose name has a higher sequence number\n  than the sequence file. This will break further appends, and needs to\n  be detected and fixed. [unaligned]",
+  "group": "arki_dataset_ondisk2_maintenance_vm2_dirs",
+  "method": "check_files_above_sequence"
+ },
+ {
+  "doc": "- [unaligned] fix low sequence file value by setting it to the highest\n  sequence number found.",
+  "group": "arki_dataset_ondisk2_maintenance_vm2_dirs",
+  "method": "fix_files_above_sequence"
+ },
+ {
+  "doc": "- [unaligned] fix low sequence file value by setting it to the highest\n  sequence number found, with one file truncated / partly written.",
+  "group": "arki_dataset_ondisk2_maintenance_vm2_dirs",
+  "method": "fix_truncated_file_above_sequence"
+ },
+ {
   "doc": "",
   "group": "arki_dataset_ondisk2_maintenance_vm2_dirs",
   "method": "clean"
@@ -9293,6 +9518,21 @@
   "doc": "- the modification time of a directory segment can vary unpredictably,\n  so it is ignored. The modification time of the sequence file is used\n  instead.",
   "group": "arki_dataset_ondisk2_maintenance_odimh5",
   "method": "check_ignore_dir_timestamp"
+ },
+ {
+  "doc": "- if arkimet is interrupted during rollback of an append operation on a\n  dir dataset, there are files whose name has a higher sequence number\n  than the sequence file. This will break further appends, and needs to\n  be detected and fixed. [unaligned]",
+  "group": "arki_dataset_ondisk2_maintenance_odimh5",
+  "method": "check_files_above_sequence"
+ },
+ {
+  "doc": "- [unaligned] fix low sequence file value by setting it to the highest\n  sequence number found.",
+  "group": "arki_dataset_ondisk2_maintenance_odimh5",
+  "method": "fix_files_above_sequence"
+ },
+ {
+  "doc": "- [unaligned] fix low sequence file value by setting it to the highest\n  sequence number found, with one file truncated / partly written.",
+  "group": "arki_dataset_ondisk2_maintenance_odimh5",
+  "method": "fix_truncated_file_above_sequence"
  },
  {
   "doc": "",

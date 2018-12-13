@@ -193,14 +193,16 @@ std::unique_ptr<Metadata> Vm2::scan_data(const std::vector<uint8_t>& data)
     return md;
 }
 
-size_t Vm2::scan_singleton(const std::string& abspath, Metadata& md)
+void Vm2::scan_singleton(const std::string& abspath, Metadata& md)
 {
     vm2::Input input(abspath);
     if (!input.next())
-        return 0;
+        throw std::runtime_error(abspath + " contains no VM2 data");
     md.clear();
     input.to_metadata(md);
-    return input.line.size();
+
+    if (input.next())
+        throw std::runtime_error(abspath + " contains more than one VM2 data");
 }
 
 bool Vm2::scan_pipe(core::NamedFileDescriptor& in, metadata_dest_func dest)

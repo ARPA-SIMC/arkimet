@@ -127,7 +127,6 @@ nobase_dist_arkiinclude_HEADERS = \
 		scan.h \
 		scan/fwd.h \
 		scan/validator.h \
-		scan/dir.h \
 		segment.h \
 		segment/fwd.h \
 		segment/base.h \
@@ -436,8 +435,7 @@ libarkimet_la_SOURCES += \
 		validator.cc \
 		postprocess.cc \
 		scan.cc \
-		scan/validator.cc \
-		scan/dir.cc
+		scan/validator.cc
 
 tests_arki_test_SOURCES += \
 		metadata/tests.cc \
@@ -476,7 +474,6 @@ tests_arki_test_SOURCES += \
 		matcher/quantity-test.cc \
 		scan-test.cc \
 		scan/validator-test.cc \
-		scan/dir-test.cc \
 		segment-test.cc \
 		segment/common-test.cc \
 		segment/missing-test.cc \

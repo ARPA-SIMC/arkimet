@@ -202,6 +202,13 @@ void Checker<Segment>::move_data(const std::string& new_root, const std::string&
 }
 
 template<typename Segment>
+bool Checker<Segment>::rescan_data(std::function<void(const std::string&)> reporter, std::shared_ptr<core::Lock> lock, metadata_dest_func dest)
+{
+    auto reader = this->segment().reader(lock);
+    return reader->scan_data(dest);
+}
+
+template<typename Segment>
 State Checker<Segment>::check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick)
 {
     CheckBackend<Segment> checker(gzabspath, this->segment().relpath, reporter, mds);

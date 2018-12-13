@@ -207,7 +207,7 @@ public:
      * Consider all existing metadata about a file as invalid and rebuild
      * them by rescanning the file
      */
-    virtual void rescan() = 0;
+    virtual void rescan(dataset::Reporter& reporter) = 0;
 
     /**
      * Release the segment from the dataset and move it to destpath.

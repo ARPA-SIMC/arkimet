@@ -8,6 +8,7 @@
 #include <arki/core/file.h>
 #include <arki/utils/sys.h>
 #include <vector>
+#include <map>
 
 namespace arki {
 class Metadata;
@@ -99,6 +100,7 @@ struct BaseChecker : public segment::BaseChecker<Segment>
     bool is_empty() override;
     size_t size() override;
 
+    bool rescan_data(std::function<void(const std::string&)> reporter, std::shared_ptr<core::Lock> lock, metadata_dest_func dest) override;
     State check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick=true) override;
     size_t remove() override;
     Pending repack(const std::string& rootdir, metadata::Collection& mds, const RepackConfig& cfg=RepackConfig()) override;
@@ -125,6 +127,45 @@ struct HoleChecker : public BaseChecker<HoleSegment>
 {
     using BaseChecker<HoleSegment>::BaseChecker;
     State check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick=true) override;
+};
+
+
+struct ScannerData
+{
+    std::string fname;
+    size_t size;
+
+    ScannerData(const std::string& fname, size_t size)
+        : fname(fname), size(size)
+    {
+    }
+};
+
+
+struct Scanner
+{
+    /// Format of the data to scan
+    std::string format;
+
+    /// Pathname to the directory to scan
+    std::string abspath;
+
+    /// File size by offset
+    std::map<size_t, ScannerData> on_disk;
+
+    /// Maximum sequence found on disk
+    size_t max_sequence = 0;
+
+    Scanner(const std::string& format, const std::string& abspath);
+
+    /// Fill on_disk and max_sequence with the data found on disk
+    void list_files();
+
+    /// Scan the data found in on_disk sending results to dest
+    bool scan(std::shared_ptr<segment::Reader> reader, metadata_dest_func dest);
+
+    /// Scan the data found in on_disk sending results to dest, reporting scanning errors to the reporter
+    bool scan(std::function<void(const std::string&)> reporter, std::shared_ptr<segment::Reader> reader, metadata_dest_func dest);
 };
 
 }
