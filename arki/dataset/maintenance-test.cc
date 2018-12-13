@@ -255,7 +255,8 @@ void MaintenanceTest::register_tests_concat()
         {
             sys::touch("testds/" + f.test_relpath, 199926000);
 
-            f.makeSegmentedChecker()->segment(f.test_relpath)->rescan();
+            NullReporter reporter;
+            f.makeSegmentedChecker()->segment(f.test_relpath)->rescan(reporter);
         }
 
         // Ensure that the archive is still clean

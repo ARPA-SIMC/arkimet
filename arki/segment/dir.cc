@@ -506,10 +506,26 @@ void BaseChecker<Segment>::move_data(const std::string& new_root, const std::str
 }
 
 template<typename Segment>
-bool BaseChecker<Segment>::rescan_data(std::shared_ptr<core::Lock> lock, metadata_dest_func dest)
+bool BaseChecker<Segment>::rescan_data(std::function<void(const std::string&)> reporter, std::shared_ptr<core::Lock> lock, metadata_dest_func dest)
 {
     Scanner scanner(this->segment().format, this->segment().abspath);
-    scanner.list_files();
+
+    {
+        SequenceFile sf(this->segment().abspath);
+        sf.open();
+        size_t cur_sequence = sf.read_sequence();
+
+        scanner.list_files();
+
+        if (cur_sequence < scanner.max_sequence)
+        {
+            stringstream out;
+            out << "sequence file value set to " << scanner.max_sequence << " from old value " << cur_sequence << " earlier than files found on disk";
+            reporter(out.str());
+            sf.write_sequence(scanner.max_sequence);
+        }
+    }
+
     auto reader = this->segment().reader(lock);
     return scanner.scan(static_pointer_cast<segment::Reader>(reader), dest);
 }

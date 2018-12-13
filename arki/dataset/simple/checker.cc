@@ -371,14 +371,16 @@ public:
         checker.m_mft->flush();
     }
 
-    void rescan() override
+    void rescan(dataset::Reporter& reporter) override
     {
         // Delete cached info to force a full rescan
         sys::unlink_ifexists(segment->segment().abspath + ".metadata");
         sys::unlink_ifexists(segment->segment().abspath + ".summary");
 
         metadata::Collection mds;
-        segment->rescan_data(lock, mds.inserter_func());
+        segment->rescan_data(
+                [&](const std::string& msg) { reporter.segment_info(checker.name(), segment->segment().relpath, msg); },
+                lock, mds.inserter_func());
 
         Summary sum;
         for (const auto& md: mds)

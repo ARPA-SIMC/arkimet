@@ -324,7 +324,7 @@ void Checker::move_data(const std::string& new_root, const std::string& new_relp
     }
 }
 
-bool Checker::rescan_data(std::shared_ptr<core::Lock> lock, metadata_dest_func dest)
+bool Checker::rescan_data(std::function<void(const std::string&)> reporter, std::shared_ptr<core::Lock> lock, metadata_dest_func dest)
 {
     auto reader = this->segment().reader(lock);
     return reader->scan_data(dest);

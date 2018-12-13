@@ -297,7 +297,7 @@ size_t Checker<Segment, File>::size()
 }
 
 template<typename Segment, typename File>
-bool Checker<Segment, File>::rescan_data(std::shared_ptr<core::Lock> lock, metadata_dest_func dest)
+bool Checker<Segment, File>::rescan_data(std::function<void(const std::string&)> reporter, std::shared_ptr<core::Lock> lock, metadata_dest_func dest)
 {
     auto reader = this->segment().reader(lock);
     return reader->scan_data(dest);

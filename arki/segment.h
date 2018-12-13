@@ -274,7 +274,7 @@ public:
     /**
      * Rescan the segment, possibly fixing fixable issues found during the rescan
      */
-    virtual bool rescan_data(std::shared_ptr<core::Lock> lock, metadata_dest_func dest) = 0;
+    virtual bool rescan_data(std::function<void(const std::string&)> reporter, std::shared_ptr<core::Lock> lock, metadata_dest_func dest) = 0;
 
     /**
      * Rewrite this segment so that the data are in the same order as in `mds`.

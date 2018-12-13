@@ -390,10 +390,12 @@ public:
         sys::unlink_ifexists(segment->segment().abspath + ".summary");
     }
 
-    void rescan() override
+    void rescan(dataset::Reporter& reporter) override
     {
         metadata::Collection mds;
-        segment->rescan_data(lock, mds.inserter_func());
+        segment->rescan_data(
+                [&](const std::string& msg) { reporter.segment_info(checker.name(), segment->segment().relpath, msg); },
+                lock, mds.inserter_func());
 
         // Lock away writes and reads
         auto write_lock = lock->write_lock();
