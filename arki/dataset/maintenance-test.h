@@ -123,6 +123,9 @@ struct MaintenanceTest : public arki::tests::FixtureTestCase<Fixture>
     /// Delete all data in the test segment
     void delete_all_in_segment();
 
+    /// Reset sequence file to 0 on the test segment
+    void reset_seqfile();
+
     void register_tests() override;
 
     virtual void register_tests_concat();

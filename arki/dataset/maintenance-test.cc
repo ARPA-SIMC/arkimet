@@ -7,6 +7,7 @@
 #include "arki/dataset/time.h"
 #include "arki/metadata/collection.h"
 #include "arki/types/source/blob.h"
+#include "arki/segment/seqfile.h"
 #include "arki/utils/files.h"
 #include "arki/utils/sys.h"
 #include "arki/nag.h"
@@ -158,6 +159,13 @@ void MaintenanceTest::delete_all_in_segment()
     writer->remove(mds[1]);
 }
 
+void MaintenanceTest::reset_seqfile()
+{
+    segment::SequenceFile sf("testds/" + fixture->test_relpath);
+    sf.open();
+    sf.write_sequence(0u);
+}
+
 void MaintenanceTest::rm_r(const std::string& pathname)
 {
     if (sys::isdir(pathname))
@@ -298,6 +306,35 @@ void MaintenanceTest::register_tests_dir()
     )", [&](Fixture& f) {
         sys::touch("testds/" + f.test_relpath, time(NULL) + 86400);
         wassert(f.all_clean(3));
+        wassert(f.query_results({1, 3, 0, 2}));
+    });
+
+    add_method("check_files_above_sequence", R"(
+       - if arkimet is interrupted during rollback of an append operation on a
+         dir dataset, there are files whose name has a higher sequence number
+         than the sequence file. This will break further appends, and needs to
+         be detected and fixed. [unaligned]
+    )", [&](Fixture& f) {
+        reset_seqfile();
+        wassert(f.state_is(3, segment::SEGMENT_UNALIGNED));
+        wassert(f.query_results({1, 3, 0, 2}));
+    });
+
+    add_method("fix_files_above_sequence", R"(
+       - [unaligned] fix low sequence file value by setting it to the highest
+         sequence number found.
+    )", [&](Fixture& f) {
+        reset_seqfile();
+
+        {
+            auto checker(f.makeSegmentedChecker());
+            ReporterExpected e;
+            e.report.emplace_back("testds", "check", "2 files ok");
+            e.rescanned.emplace_back("testds", f.test_relpath);
+            wassert(actual(checker.get()).check(e, true));
+        }
+
+        wassert(f.ensure_localds_clean(3, 4));
         wassert(f.query_results({1, 3, 0, 2}));
     });
 }

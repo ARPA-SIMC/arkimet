@@ -107,7 +107,7 @@ struct CheckBackend : public AppendCheckBackend
     const std::string& abspath;
     std::unique_ptr<struct stat> st;
     // File size by offset
-    map<size_t, size_t> on_disk;
+    std::map<size_t, size_t> on_disk;
     size_t max_sequence = 0;
 
     CheckBackend(const std::string& format, const std::string& abspath, const std::string& relpath, std::function<void(const std::string&)> reporter, const metadata::Collection& mds)
@@ -161,6 +161,13 @@ struct CheckBackend : public AppendCheckBackend
             return SEGMENT_CORRUPTED;
         }
 
+        size_t cur_sequence = 0;
+        {
+            SequenceFile sf(abspath);
+            sf.open();
+            cur_sequence = sf.read_sequence();
+        }
+
         sys::Path dir(abspath);
         for (sys::Path::iterator i = dir.begin(); i != dir.end(); ++i)
         {
@@ -181,6 +188,14 @@ struct CheckBackend : public AppendCheckBackend
                 dirty = true;
             else
                 return state;
+        }
+
+        if (cur_sequence < max_sequence)
+        {
+            stringstream out;
+            out << "sequence file has value " << cur_sequence << " but found files until sequence " << max_sequence;
+            reporter(out.str());
+            return SEGMENT_UNALIGNED;
         }
 
         // Check files on disk that were not accounted for
