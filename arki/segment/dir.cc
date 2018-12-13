@@ -193,10 +193,9 @@ struct CheckBackend : public AppendCheckBackend
             if (accurate)
             {
                 string fname = SequenceFile::data_fname(idx, format);
-                size_t size;
                 Metadata md;
                 try {
-                    size = scanner->scan_singleton(fname, md);
+                    scanner->scan_singleton(fname, md);
                 } catch (std::exception& e) {
                     stringstream out;
                     out << "unexpected data file " << idx << " fails to scan (" << e.what() << ")";
@@ -204,24 +203,6 @@ struct CheckBackend : public AppendCheckBackend
                     dirty = true;
                     continue;
                 }
-
-                if (size == 0)
-                {
-                    stringstream ss;
-                    ss << "unexpected data file " << idx << " does not contain any " << format << " items";
-                    reporter(ss.str());
-                    dirty = true;
-                    continue;
-                }
-#if 0
-                if (mds.size() > 1)
-                {
-                    stringstream ss;
-                    ss << "unexpected data file " << idx << " contains " << mds.size() << " " << format << " items instead of 1";
-                    reporter(ss.str());
-                    return SEGMENT_CORRUPTED;
-                }
-#endif
             }
         }
 
@@ -527,7 +508,7 @@ bool BaseChecker<Segment>::rescan_data(std::function<void(const std::string&)> r
     }
 
     auto reader = this->segment().reader(lock);
-    return scanner.scan(static_pointer_cast<segment::Reader>(reader), dest);
+    return scanner.scan(reporter, static_pointer_cast<segment::Reader>(reader), dest);
 }
 
 template<typename Segment>
@@ -782,10 +763,31 @@ bool Scanner::scan(std::shared_ptr<segment::Reader> reader, metadata_dest_func d
     for (const auto& fi : on_disk)
     {
         unique_ptr<Metadata> md(new Metadata);
-        size_t size = scanner->scan_singleton(str::joinpath(abspath, fi.second.fname), *md);
-        if (!size)
+        scanner->scan_singleton(str::joinpath(abspath, fi.second.fname), *md);
+        md->set_source(Source::createBlob(reader, fi.first, fi.second.size));
+        if (!dest(std::move(md)))
+            return false;
+    }
+
+    return true;
+}
+
+bool Scanner::scan(std::function<void(const std::string&)> reporter, std::shared_ptr<segment::Reader> reader, metadata_dest_func dest)
+{
+    // Scan them one by one
+    auto scanner = scan::Scanner::get_scanner(format);
+    for (const auto& fi : on_disk)
+    {
+        unique_ptr<Metadata> md(new Metadata);
+        try {
+            scanner->scan_singleton(str::joinpath(abspath, fi.second.fname), *md);
+        } catch (std::exception& e) {
+            stringstream out;
+            out << "data file " << fi.second.fname << " fails to scan (" << e.what() << ")";
+            reporter(out.str());
             continue;
-        md->set_source(Source::createBlob(reader, fi.first, size));
+        }
+        md->set_source(Source::createBlob(reader, fi.first, fi.second.size));
         if (!dest(std::move(md)))
             return false;
     }

@@ -343,6 +343,7 @@ void MaintenanceTest::register_tests_dir()
        - [unaligned] fix low sequence file value by setting it to the highest
          sequence number found, with one file truncated / partly written.
     )", [&](Fixture& f) {
+        remove_index();
         reset_seqfile();
         {
             sys::File df("testds/" + f.test_relpath + "/000000." + f.format, O_RDWR);
@@ -357,8 +358,18 @@ void MaintenanceTest::register_tests_dir()
             wassert(actual(checker.get()).check(e, true));
         }
 
-        wassert(f.ensure_localds_clean(3, 4));
-        wassert(f.query_results({1, 3, 0, 2}));
+        wassert(f.state_is(3, segment::SEGMENT_DIRTY));
+
+        {
+            auto checker(f.makeSegmentedChecker());
+            ReporterExpected e;
+            e.report.emplace_back("testds", "repack", "2 files ok");
+            e.repacked.emplace_back("testds", f.test_relpath);
+            wassert(actual(checker.get()).repack(e, true));
+        }
+
+        wassert(f.ensure_localds_clean(3, 3));
+        wassert(f.query_results({3, 0, 2}));
     });
 }
 

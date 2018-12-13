@@ -282,14 +282,15 @@ bool Bufr::scan_segment(std::shared_ptr<segment::Reader> reader, metadata_dest_f
     return true;
 }
 
-size_t Bufr::scan_singleton(const std::string& abspath, Metadata& md)
+void Bufr::scan_singleton(const std::string& abspath, Metadata& md)
 {
     auto file = dballe::File::create(dballe::File::BUFR, abspath.c_str(), "r").release();
     md.clear();
     BinaryMessage rmsg = file->read();
-    if (!rmsg) return 0;
+    if (!rmsg) throw std::runtime_error(abspath + " contains no BUFR data");
     do_scan(rmsg, md);
-    return rmsg.data.size();
+    if (file->read())
+        throw std::runtime_error(abspath + " contains more than one BUFR");
 }
 
 bool Bufr::scan_pipe(core::NamedFileDescriptor& infd, metadata_dest_func dest)

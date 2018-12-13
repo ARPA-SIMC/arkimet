@@ -70,8 +70,7 @@ for (auto td: test_data)
     add_method("scan_singleton_" + td.format, [=] {
         auto scanner = scan::Scanner::get_scanner(td.format);
         Metadata md;
-        size_t size = scanner->scan_singleton(td.pathname, md);
-        wassert(actual(size) > 0u);
+        scanner->scan_singleton(td.pathname, md);
         wassert_false(md.has_source());
     });
 

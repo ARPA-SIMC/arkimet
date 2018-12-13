@@ -50,10 +50,8 @@ struct Scanner
      * Open a file, scan it, send results to dest, and close it.
      *
      * Scanned metadata will have no source set.
-     *
-     * Returns the size of the scanned data, or 0 if no data could be scanned.
      */
-    virtual size_t scan_singleton(const std::string& abspath, Metadata& md) = 0;
+    virtual void scan_singleton(const std::string& abspath, Metadata& md) = 0;
 
     /**
      * Create a scanner for the given format

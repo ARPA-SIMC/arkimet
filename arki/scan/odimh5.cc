@@ -226,13 +226,10 @@ std::unique_ptr<Metadata> OdimH5::scan_data(const std::vector<uint8_t>& data)
     return md;
 }
 
-size_t OdimH5::scan_singleton(const std::string& abspath, Metadata& md)
+void OdimH5::scan_singleton(const std::string& abspath, Metadata& md)
 {
-    size_t size = sys::size(abspath, 0);
-    if (!size) return 0;
     md.clear();
     scan_file_impl(abspath, md);
-    return size;
 }
 
 bool OdimH5::scan_segment(std::shared_ptr<segment::Reader> reader, metadata_dest_func dest)
