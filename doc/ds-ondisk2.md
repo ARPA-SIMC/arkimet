@@ -43,6 +43,8 @@ with a full check and rescan of all the data in the dataset.
 - the segment must be a file
 - the segment must exist [missing]
 - an empty segment not known by the index must be considered deleted [deleted]
+- data files not known by a valid index are considered data files whose
+  entire content has been removed [deleted]
 - segments that contain some data that has been removed are
   identified as to be repacked [dirty]
 - segments that only contain data that has been removed are
@@ -61,8 +63,9 @@ with a full check and rescan of all the data in the dataset.
   (FIXME: should this be disabled for archives, to deal with datasets that had
   a change of step in their lifetime?) [corrupted]
 - data on disk must match the order of data used by queries [dirty]
-- data files not known by the index are considered data files whose
-  entire content has been removed [deleted]
+- segments not known by the index, but when the index is either
+  missing, older than the file, or marked as needing checking, are marked
+  for reindexing instead of deletion [unaligned]
 - if the index has been deleted, accessing the dataset recreates it
   empty, and creates a `needs-check-do-not-pack` file in the root of
   the dataset.
@@ -72,8 +75,6 @@ with a full check and rescan of all the data in the dataset.
   in which, after the index has been deleted, and some data has been
   imported that got appended to an existing segment, that segment would
   be considered as needing repack instead of rescan. [unaligned]
-- if a `needs-check-do-not-pack` file is present, segments not known by
-  the index are marked for reindexing instead of deletion [unaligned]
 
 ### During --accurate check
 
@@ -126,6 +127,8 @@ with a full check and rescan of all the data in the dataset.
   be detected and fixed. [unaligned]
 - the segment must exist [missing]
 - an empty segment not known by the index must be considered deleted [deleted]
+- data files not known by a valid index are considered data files whose
+  entire content has been removed [deleted]
 - segments that contain some data that has been removed are
   identified as to be repacked [dirty]
 - segments that only contain data that has been removed are
@@ -144,8 +147,9 @@ with a full check and rescan of all the data in the dataset.
   (FIXME: should this be disabled for archives, to deal with datasets that had
   a change of step in their lifetime?) [corrupted]
 - data on disk must match the order of data used by queries [dirty]
-- data files not known by the index are considered data files whose
-  entire content has been removed [deleted]
+- segments not known by the index, but when the index is either
+  missing, older than the file, or marked as needing checking, are marked
+  for reindexing instead of deletion [unaligned]
 - if the index has been deleted, accessing the dataset recreates it
   empty, and creates a `needs-check-do-not-pack` file in the root of
   the dataset.
@@ -155,8 +159,6 @@ with a full check and rescan of all the data in the dataset.
   in which, after the index has been deleted, and some data has been
   imported that got appended to an existing segment, that segment would
   be considered as needing repack instead of rescan. [unaligned]
-- if a `needs-check-do-not-pack` file is present, segments not known by
-  the index are marked for reindexing instead of deletion [unaligned]
 
 ### During --accurate check
 

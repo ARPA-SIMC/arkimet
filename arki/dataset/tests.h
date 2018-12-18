@@ -241,13 +241,6 @@ public:
     void query_results(const dataset::DataQuery& q, const std::vector<int>& expected);
 
     /**
-     * Tweak the dataset so that the segment needs rescanning.
-     *
-     * This is done in a dataset-dependent way
-     */
-    void make_unaligned(const std::string& segment);
-
-    /**
      * Check if the segment exists online on this dataset, with the given
      * extensions. ".metadata" and ".summary" are added in case of "simple"
      * datasets.

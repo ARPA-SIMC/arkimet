@@ -99,23 +99,12 @@ struct MaintenanceTest : public arki::tests::FixtureTestCase<Fixture>
     void swap_data();
 
     /**
-     * Remove index data for 2007/07-07.grib, making it as if it was never
-     * imported
-     */
-    void remove_index();
-
-    /**
      * Make the test segment 6Gb long (using filesystem holes), with valid
      * imported data at the beginning and at the end.
      *
      * Only works on concat segments
      */
     void make_hugefile();
-
-    /**
-     * Make the segment 2007/07-07.grib show up as unaligned
-     */
-    void make_unaligned();
 
     /// Delete the first element in the test segment
     void delete_one_in_segment();

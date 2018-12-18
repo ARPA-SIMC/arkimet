@@ -32,20 +32,6 @@ void Tests::register_tests()
 {
     MaintenanceTest::register_tests();
 
-    add_method("check_new", R"(
-        - find data files not known by the index [unaligned]
-    )", [&](Fixture& f) {
-        remove_index();
-        wassert(f.state_is(3, segment::SEGMENT_UNALIGNED));
-    });
-
-    add_method("check_unaligned", R"(
-        - the segment must not be newer than the index [unaligned]
-    )", [&](Fixture& f) {
-        make_unaligned();
-        wassert(f.state_is(3, segment::SEGMENT_UNALIGNED));
-    });
-
     add_method("check_empty_metadata", R"(
     - `.metadata` file must not be empty [unaligned]
     )", [](Fixture& f) {
@@ -125,9 +111,10 @@ void Tests::register_tests()
     });
 
     add_method("repack_unaligned", R"(
-        - [unaligned] segments are not touched
+        - [unaligned] segments are not touched, to prevent deleting data that
+          should be reindexed instead
     )", [&](Fixture& f) {
-        make_unaligned();
+        f.makeSegmentedChecker()->test_invalidate_in_index(f.test_relpath);
 
         {
             auto writer(f.makeSegmentedChecker());

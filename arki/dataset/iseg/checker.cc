@@ -713,7 +713,15 @@ void Checker::test_change_metadata(const std::string& relpath, Metadata& md, uns
     md = mds[data_idx];
 }
 
-void Checker::test_remove_index(const std::string& relpath)
+void Checker::test_delete_from_index(const std::string& relpath)
+{
+    auto lock = config().check_lock_segment(relpath);
+    auto wrlock = lock->write_lock();
+    CIndex idx(m_config, relpath, lock);
+    idx.reset();
+}
+
+void Checker::test_invalidate_in_index(const std::string& relpath)
 {
     sys::unlink_ifexists(str::joinpath(config().path, relpath + ".index"));
 }

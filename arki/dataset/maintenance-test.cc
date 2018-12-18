@@ -104,11 +104,6 @@ MaintenanceTest::~MaintenanceTest()
 {
 }
 
-void MaintenanceTest::make_unaligned()
-{
-    fixture->make_unaligned(fixture->test_relpath);
-}
-
 void MaintenanceTest::make_hole_start()
 {
     fixture->makeSegmentedChecker()->test_make_hole(fixture->test_relpath, 10, 0);
@@ -137,11 +132,6 @@ void MaintenanceTest::truncate_segment()
 void MaintenanceTest::swap_data()
 {
     fixture->makeSegmentedChecker()->test_swap_data(fixture->test_relpath, 0, 1);
-}
-
-void MaintenanceTest::remove_index()
-{
-    fixture->makeSegmentedChecker()->test_remove_index(fixture->test_relpath);
 }
 
 void MaintenanceTest::delete_one_in_segment()
@@ -343,12 +333,14 @@ void MaintenanceTest::register_tests_dir()
        - [unaligned] fix low sequence file value by setting it to the highest
          sequence number found, with one file truncated / partly written.
     )", [&](Fixture& f) {
-        remove_index();
+        f.makeSegmentedChecker()->test_invalidate_in_index(f.test_relpath);
         reset_seqfile();
         {
             sys::File df("testds/" + f.test_relpath + "/000000." + f.format, O_RDWR);
             df.ftruncate(f.test_datum_size / 2);
         }
+
+        wassert(f.state_is(3, segment::SEGMENT_UNALIGNED));
 
         {
             auto checker(f.makeSegmentedChecker());
@@ -411,7 +403,7 @@ void MaintenanceTest::register_tests()
         {
             auto checker = f.makeSegmentedChecker();
             checker->test_truncate_data(f.test_relpath, 0);
-            checker->test_remove_index(f.test_relpath);
+            checker->test_delete_from_index(f.test_relpath);
         }
         wassert(f.state_is(3, segment::SEGMENT_DELETED));
         wassert(f.query_results({0, 2}));
@@ -419,6 +411,14 @@ void MaintenanceTest::register_tests()
 
     if (can_delete_data())
     {
+        add_method("check_new", R"(
+            - data files not known by a valid index are considered data files whose
+              entire content has been removed [deleted]
+        )", [&](Fixture& f) {
+            f.makeSegmentedChecker()->test_delete_from_index(f.test_relpath);
+            wassert(f.state_is(3, segment::SEGMENT_DELETED));
+        });
+
         add_method("check_one_removed", R"(
             - segments that contain some data that has been removed are
               identified as to be repacked [dirty]
@@ -627,6 +627,15 @@ void MaintenanceTest::register_tests()
         wassert(f.query_results({1, 3, 0, 2}));
     });
 
+    add_method("check_unaligned", R"(
+        - segments not known by the index, but when the index is either
+          missing, older than the file, or marked as needing checking, are marked
+          for reindexing instead of deletion [unaligned]
+    )", [&](Fixture& f) {
+        f.makeSegmentedChecker()->test_invalidate_in_index(f.test_relpath);
+
+        wassert(f.state_is(3, segment::SEGMENT_UNALIGNED));
+    });
 
     // Optional thorough check
     add_method("tcheck_corrupted_data", R"(
@@ -659,7 +668,7 @@ void MaintenanceTest::register_tests()
     add_method("fix_unaligned", R"(
         - [unaligned] segments are imported in-place
     )", [&](Fixture& f) {
-        make_unaligned();
+        f.makeSegmentedChecker()->test_invalidate_in_index(f.test_relpath);
 
         {
             auto checker(f.makeSegmentedChecker());
@@ -767,8 +776,6 @@ void MaintenanceTest::register_tests()
         wassert(f.ensure_localds_clean(3, 4));
         wassert(f.query_results({1, 3, 0, 2}));
     });
-
-    // repack_unaligned is implemented in dataset-specific tests
 
     add_method("repack_missing", R"(
         - [missing] segments are removed from the index

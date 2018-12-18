@@ -55,8 +55,9 @@ an empty `.metadata` file will always be rescanned.
   (FIXME: should this be disabled for archives, to deal with datasets that had
   a change of step in their lifetime?) [corrupted]
 - data on disk must match the order of data used by queries [dirty]
-- find data files not known by the index [unaligned]
-- the segment must not be newer than the index [unaligned]
+- segments not known by the index, but when the index is either
+  missing, older than the file, or marked as needing checking, are marked
+  for reindexing instead of deletion [unaligned]
 - `.metadata` file must not be empty [unaligned]
 - `.metadata` file must not be older than the data [unaligned]
 - `.summary` file must not be older than the `.metadata` file [unaligned]
@@ -97,7 +98,8 @@ an empty `.metadata` file will always be rescanned.
   deleted, gets deleted without repacking
 - [archive age] [dirty] a segment that needs to be both repacked and
   archived, gets repacked before archiving
-- [unaligned] segments are not touched
+- [unaligned] segments are not touched, to prevent deleting data that
+  should be reindexed instead
 
 
 ## Check and repack on dir segments
@@ -129,8 +131,9 @@ an empty `.metadata` file will always be rescanned.
   (FIXME: should this be disabled for archives, to deal with datasets that had
   a change of step in their lifetime?) [corrupted]
 - data on disk must match the order of data used by queries [dirty]
-- find data files not known by the index [unaligned]
-- the segment must not be newer than the index [unaligned]
+- segments not known by the index, but when the index is either
+  missing, older than the file, or marked as needing checking, are marked
+  for reindexing instead of deletion [unaligned]
 - `.metadata` file must not be empty [unaligned]
 - `.metadata` file must not be older than the data [unaligned]
 - `.summary` file must not be older than the `.metadata` file [unaligned]
@@ -175,4 +178,5 @@ an empty `.metadata` file will always be rescanned.
   deleted, gets deleted without repacking
 - [archive age] [dirty] a segment that needs to be both repacked and
   archived, gets repacked before archiving
-- [unaligned] segments are not touched
+- [unaligned] segments are not touched, to prevent deleting data that
+  should be reindexed instead
