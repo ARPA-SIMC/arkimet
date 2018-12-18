@@ -39,6 +39,15 @@ struct Data
      */
     virtual size_t write(core::NamedFileDescriptor& fd) const = 0;
 
+    /**
+     * Write the data to a NamedFileDescriptor, without leading or trailing
+     * elements, to be contained in some kind of envelope like inline Metadata.
+     *
+     * It returns the number of bytes successfully written. In case of any
+     * error or partial write, an exception is raised.
+     */
+    virtual size_t write_inline(core::NamedFileDescriptor& fd) const = 0;
+
     /// Send data to an emitter
     virtual void emit(Emitter& e) const = 0;
 };
