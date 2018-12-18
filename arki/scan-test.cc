@@ -22,7 +22,7 @@ struct TestData
     unsigned count;
     std::string format;
 
-    TestData(const std::string& pathname, unsigned count)
+    TestData(const std::string& pathname, unsigned count=1)
         : pathname(pathname), count(count), format(scan::Scanner::format_from_filename(pathname)) {}
 };
 
@@ -67,13 +67,6 @@ for (auto td: test_data)
         wassert(actual(mds[0].source().style()) == types::Source::BLOB);
     });
 
-    add_method("scan_singleton_" + td.format, [=] {
-        auto scanner = scan::Scanner::get_scanner(td.format);
-        Metadata md;
-        scanner->scan_singleton(td.pathname, md);
-        wassert_false(md.has_source());
-    });
-
     add_method("scan_pipe_" + td.format, [=] {
         auto scanner = scan::Scanner::get_scanner(td.format);
         metadata::Collection mds;
@@ -85,6 +78,16 @@ for (auto td: test_data)
             wassert(actual(md->source().style()) == types::Source::INLINE);
             wassert(actual(md->source().format) == td.format);
         }
+    });
+}
+
+for (auto td: {TestData("inbound/ship.bufr"), TestData("inbound/oddunits.grib"), TestData("inbound/odimh5/XSEC_v21.h5"), TestData("inbound/single.vm2")})
+{
+    add_method("scan_singleton_" + td.format, [=] {
+        auto scanner = scan::Scanner::get_scanner(td.format);
+        Metadata md;
+        scanner->scan_singleton(td.pathname, md);
+        wassert_false(md.has_source());
     });
 }
 
