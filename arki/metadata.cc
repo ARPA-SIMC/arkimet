@@ -414,7 +414,7 @@ void Metadata::write(NamedFileDescriptor& out) const
             ss << "cannot write metadata to file " << out.name() << ": metadata size " << s->size << " does not match the data size " << m_data->size();
             throw runtime_error(ss.str());
         }
-        m_data->write(out);
+        m_data->write_inline(out);
     }
 }
 

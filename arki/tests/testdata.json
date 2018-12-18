@@ -1161,6 +1161,26 @@
  },
  {
   "doc": "",
+  "group": "arki_metadata",
+  "method": "inline_grib"
+ },
+ {
+  "doc": "",
+  "group": "arki_metadata",
+  "method": "inline_bufr"
+ },
+ {
+  "doc": "",
+  "group": "arki_metadata",
+  "method": "inline_vm2"
+ },
+ {
+  "doc": "",
+  "group": "arki_metadata",
+  "method": "inline_odimh5"
+ },
+ {
+  "doc": "",
   "group": "arki_metadata_data",
   "method": "todo"
  },
