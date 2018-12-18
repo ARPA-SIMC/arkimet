@@ -83,6 +83,31 @@ class Tests : public FixtureTestCase<Fixture>
 } tests("arki_metadata");
 
 
+template<typename TESTDATA>
+void test_inline()
+{
+    TESTDATA td;
+
+    // Write it out as inline metadata
+    File wfd("test.md", O_WRONLY | O_CREAT | O_TRUNC);
+    for (auto& md: td.mds)
+    {
+        md->makeInline();
+        md->write(wfd);
+    }
+    wfd.close();
+
+    unsigned count = 0;
+    Metadata::read_file("test.md", [&](unique_ptr<Metadata> md) {
+        md->get_data();
+        ++count;
+        return true;
+    });
+
+    wassert(actual(count) == 3u);
+}
+
+
 void Tests::register_tests() {
 
 // Test sources
@@ -380,6 +405,11 @@ add_method("wrongsize", [](Fixture& f) {
     Metadata::read_file("test.md", [&](unique_ptr<Metadata> md) { ++count; return true; });
     wassert(actual(count) == 0u);
 });
+
+add_method("inline_grib", [](Fixture& f) { wassert(test_inline<GRIBData>()); });
+add_method("inline_bufr", [](Fixture& f) { wassert(test_inline<BUFRData>()); });
+add_method("inline_vm2", [](Fixture& f) { wassert(test_inline<VM2Data>()); });
+add_method("inline_odimh5", [](Fixture& f) { wassert(test_inline<ODIMData>()); });
 
 }
 
