@@ -296,10 +296,13 @@ bool Reader::scan(metadata_dest_func dest)
     unique_ptr<struct stat> st_md = sys::stat(md_abspath);
     // If it exists and it looks new enough, use it
     if (st_md.get() && st_md->st_mtime >= segment().timestamp())
-        return Metadata::read_file(md_abspath, [&](unique_ptr<Metadata> md) {
+    {
+        std::string root(str::dirname(segment().abspath));
+        return Metadata::read_file(metadata::ReadContext(md_abspath, root), [&](unique_ptr<Metadata> md) {
             md->sourceBlob().lock(shared_from_this());
             return dest(move(md));
         });
+    }
 
     // Else scan the file as usual
     return scan_data(dest);

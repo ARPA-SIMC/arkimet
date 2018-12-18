@@ -1747,22 +1747,12 @@
  {
   "doc": "",
   "group": "arki_scan",
-  "method": "scan_singleton_grib"
- },
- {
-  "doc": "",
-  "group": "arki_scan",
   "method": "scan_pipe_grib"
  },
  {
   "doc": "",
   "group": "arki_scan",
   "method": "scan_file_bufr"
- },
- {
-  "doc": "",
-  "group": "arki_scan",
-  "method": "scan_singleton_bufr"
  },
  {
   "doc": "",
@@ -1777,11 +1767,6 @@
  {
   "doc": "",
   "group": "arki_scan",
-  "method": "scan_singleton_vm2"
- },
- {
-  "doc": "",
-  "group": "arki_scan",
   "method": "scan_pipe_vm2"
  },
  {
@@ -1792,12 +1777,27 @@
  {
   "doc": "",
   "group": "arki_scan",
+  "method": "scan_pipe_odimh5"
+ },
+ {
+  "doc": "",
+  "group": "arki_scan",
+  "method": "scan_singleton_bufr"
+ },
+ {
+  "doc": "",
+  "group": "arki_scan",
+  "method": "scan_singleton_grib"
+ },
+ {
+  "doc": "",
+  "group": "arki_scan",
   "method": "scan_singleton_odimh5"
  },
  {
   "doc": "",
   "group": "arki_scan",
-  "method": "scan_pipe_odimh5"
+  "method": "scan_singleton_vm2"
  },
  {
   "doc": "",
@@ -3710,6 +3710,11 @@
   "method": "check_isordered"
  },
  {
+  "doc": "- segments not known by the index, but when the index is either\n  missing, older than the file, or marked as needing checking, are marked\n  for reindexing instead of deletion [unaligned]",
+  "group": "arki_dataset_simple_maintenance_grib_plain",
+  "method": "check_unaligned"
+ },
+ {
   "doc": "- format-specific consistency checks on the content of each file must pass [corrupted]",
   "group": "arki_dataset_simple_maintenance_grib_plain",
   "method": "tcheck_corrupted_data"
@@ -3780,16 +3785,6 @@
   "method": "repack_archive"
  },
  {
-  "doc": "- find data files not known by the index [unaligned]",
-  "group": "arki_dataset_simple_maintenance_grib_plain",
-  "method": "check_new"
- },
- {
-  "doc": "- the segment must not be newer than the index [unaligned]",
-  "group": "arki_dataset_simple_maintenance_grib_plain",
-  "method": "check_unaligned"
- },
- {
   "doc": "- `.metadata` file must not be empty [unaligned]",
   "group": "arki_dataset_simple_maintenance_grib_plain",
   "method": "check_empty_metadata"
@@ -3825,7 +3820,7 @@
   "method": "check_metadata_must_contain_reftimes"
  },
  {
-  "doc": "- [unaligned] segments are not touched",
+  "doc": "- [unaligned] segments are not touched, to prevent deleting data that\n  should be reindexed instead",
   "group": "arki_dataset_simple_maintenance_grib_plain",
   "method": "repack_unaligned"
  },
@@ -3920,6 +3915,11 @@
   "method": "check_isordered"
  },
  {
+  "doc": "- segments not known by the index, but when the index is either\n  missing, older than the file, or marked as needing checking, are marked\n  for reindexing instead of deletion [unaligned]",
+  "group": "arki_dataset_simple_maintenance_grib_sqlite",
+  "method": "check_unaligned"
+ },
+ {
   "doc": "- format-specific consistency checks on the content of each file must pass [corrupted]",
   "group": "arki_dataset_simple_maintenance_grib_sqlite",
   "method": "tcheck_corrupted_data"
@@ -3990,16 +3990,6 @@
   "method": "repack_archive"
  },
  {
-  "doc": "- find data files not known by the index [unaligned]",
-  "group": "arki_dataset_simple_maintenance_grib_sqlite",
-  "method": "check_new"
- },
- {
-  "doc": "- the segment must not be newer than the index [unaligned]",
-  "group": "arki_dataset_simple_maintenance_grib_sqlite",
-  "method": "check_unaligned"
- },
- {
   "doc": "- `.metadata` file must not be empty [unaligned]",
   "group": "arki_dataset_simple_maintenance_grib_sqlite",
   "method": "check_empty_metadata"
@@ -4035,7 +4025,7 @@
   "method": "check_metadata_must_contain_reftimes"
  },
  {
-  "doc": "- [unaligned] segments are not touched",
+  "doc": "- [unaligned] segments are not touched, to prevent deleting data that\n  should be reindexed instead",
   "group": "arki_dataset_simple_maintenance_grib_sqlite",
   "method": "repack_unaligned"
  },
@@ -4135,6 +4125,11 @@
   "method": "check_isordered"
  },
  {
+  "doc": "- segments not known by the index, but when the index is either\n  missing, older than the file, or marked as needing checking, are marked\n  for reindexing instead of deletion [unaligned]",
+  "group": "arki_dataset_simple_maintenance_grib_plain_dirs",
+  "method": "check_unaligned"
+ },
+ {
   "doc": "- format-specific consistency checks on the content of each file must pass [corrupted]",
   "group": "arki_dataset_simple_maintenance_grib_plain_dirs",
   "method": "tcheck_corrupted_data"
@@ -4205,16 +4200,6 @@
   "method": "repack_archive"
  },
  {
-  "doc": "- find data files not known by the index [unaligned]",
-  "group": "arki_dataset_simple_maintenance_grib_plain_dirs",
-  "method": "check_new"
- },
- {
-  "doc": "- the segment must not be newer than the index [unaligned]",
-  "group": "arki_dataset_simple_maintenance_grib_plain_dirs",
-  "method": "check_unaligned"
- },
- {
   "doc": "- `.metadata` file must not be empty [unaligned]",
   "group": "arki_dataset_simple_maintenance_grib_plain_dirs",
   "method": "check_empty_metadata"
@@ -4250,7 +4235,7 @@
   "method": "check_metadata_must_contain_reftimes"
  },
  {
-  "doc": "- [unaligned] segments are not touched",
+  "doc": "- [unaligned] segments are not touched, to prevent deleting data that\n  should be reindexed instead",
   "group": "arki_dataset_simple_maintenance_grib_plain_dirs",
   "method": "repack_unaligned"
  },
@@ -4350,6 +4335,11 @@
   "method": "check_isordered"
  },
  {
+  "doc": "- segments not known by the index, but when the index is either\n  missing, older than the file, or marked as needing checking, are marked\n  for reindexing instead of deletion [unaligned]",
+  "group": "arki_dataset_simple_maintenance_grib_sqlite_dirs",
+  "method": "check_unaligned"
+ },
+ {
   "doc": "- format-specific consistency checks on the content of each file must pass [corrupted]",
   "group": "arki_dataset_simple_maintenance_grib_sqlite_dirs",
   "method": "tcheck_corrupted_data"
@@ -4420,16 +4410,6 @@
   "method": "repack_archive"
  },
  {
-  "doc": "- find data files not known by the index [unaligned]",
-  "group": "arki_dataset_simple_maintenance_grib_sqlite_dirs",
-  "method": "check_new"
- },
- {
-  "doc": "- the segment must not be newer than the index [unaligned]",
-  "group": "arki_dataset_simple_maintenance_grib_sqlite_dirs",
-  "method": "check_unaligned"
- },
- {
   "doc": "- `.metadata` file must not be empty [unaligned]",
   "group": "arki_dataset_simple_maintenance_grib_sqlite_dirs",
   "method": "check_empty_metadata"
@@ -4465,7 +4445,7 @@
   "method": "check_metadata_must_contain_reftimes"
  },
  {
-  "doc": "- [unaligned] segments are not touched",
+  "doc": "- [unaligned] segments are not touched, to prevent deleting data that\n  should be reindexed instead",
   "group": "arki_dataset_simple_maintenance_grib_sqlite_dirs",
   "method": "repack_unaligned"
  },
@@ -4560,6 +4540,11 @@
   "method": "check_isordered"
  },
  {
+  "doc": "- segments not known by the index, but when the index is either\n  missing, older than the file, or marked as needing checking, are marked\n  for reindexing instead of deletion [unaligned]",
+  "group": "arki_dataset_simple_maintenance_bufr_plain",
+  "method": "check_unaligned"
+ },
+ {
   "doc": "- format-specific consistency checks on the content of each file must pass [corrupted]",
   "group": "arki_dataset_simple_maintenance_bufr_plain",
   "method": "tcheck_corrupted_data"
@@ -4630,16 +4615,6 @@
   "method": "repack_archive"
  },
  {
-  "doc": "- find data files not known by the index [unaligned]",
-  "group": "arki_dataset_simple_maintenance_bufr_plain",
-  "method": "check_new"
- },
- {
-  "doc": "- the segment must not be newer than the index [unaligned]",
-  "group": "arki_dataset_simple_maintenance_bufr_plain",
-  "method": "check_unaligned"
- },
- {
   "doc": "- `.metadata` file must not be empty [unaligned]",
   "group": "arki_dataset_simple_maintenance_bufr_plain",
   "method": "check_empty_metadata"
@@ -4675,7 +4650,7 @@
   "method": "check_metadata_must_contain_reftimes"
  },
  {
-  "doc": "- [unaligned] segments are not touched",
+  "doc": "- [unaligned] segments are not touched, to prevent deleting data that\n  should be reindexed instead",
   "group": "arki_dataset_simple_maintenance_bufr_plain",
   "method": "repack_unaligned"
  },
@@ -4770,6 +4745,11 @@
   "method": "check_isordered"
  },
  {
+  "doc": "- segments not known by the index, but when the index is either\n  missing, older than the file, or marked as needing checking, are marked\n  for reindexing instead of deletion [unaligned]",
+  "group": "arki_dataset_simple_maintenance_bufr_sqlite",
+  "method": "check_unaligned"
+ },
+ {
   "doc": "- format-specific consistency checks on the content of each file must pass [corrupted]",
   "group": "arki_dataset_simple_maintenance_bufr_sqlite",
   "method": "tcheck_corrupted_data"
@@ -4840,16 +4820,6 @@
   "method": "repack_archive"
  },
  {
-  "doc": "- find data files not known by the index [unaligned]",
-  "group": "arki_dataset_simple_maintenance_bufr_sqlite",
-  "method": "check_new"
- },
- {
-  "doc": "- the segment must not be newer than the index [unaligned]",
-  "group": "arki_dataset_simple_maintenance_bufr_sqlite",
-  "method": "check_unaligned"
- },
- {
   "doc": "- `.metadata` file must not be empty [unaligned]",
   "group": "arki_dataset_simple_maintenance_bufr_sqlite",
   "method": "check_empty_metadata"
@@ -4885,7 +4855,7 @@
   "method": "check_metadata_must_contain_reftimes"
  },
  {
-  "doc": "- [unaligned] segments are not touched",
+  "doc": "- [unaligned] segments are not touched, to prevent deleting data that\n  should be reindexed instead",
   "group": "arki_dataset_simple_maintenance_bufr_sqlite",
   "method": "repack_unaligned"
  },
@@ -4985,6 +4955,11 @@
   "method": "check_isordered"
  },
  {
+  "doc": "- segments not known by the index, but when the index is either\n  missing, older than the file, or marked as needing checking, are marked\n  for reindexing instead of deletion [unaligned]",
+  "group": "arki_dataset_simple_maintenance_bufr_plain_dirs",
+  "method": "check_unaligned"
+ },
+ {
   "doc": "- format-specific consistency checks on the content of each file must pass [corrupted]",
   "group": "arki_dataset_simple_maintenance_bufr_plain_dirs",
   "method": "tcheck_corrupted_data"
@@ -5055,16 +5030,6 @@
   "method": "repack_archive"
  },
  {
-  "doc": "- find data files not known by the index [unaligned]",
-  "group": "arki_dataset_simple_maintenance_bufr_plain_dirs",
-  "method": "check_new"
- },
- {
-  "doc": "- the segment must not be newer than the index [unaligned]",
-  "group": "arki_dataset_simple_maintenance_bufr_plain_dirs",
-  "method": "check_unaligned"
- },
- {
   "doc": "- `.metadata` file must not be empty [unaligned]",
   "group": "arki_dataset_simple_maintenance_bufr_plain_dirs",
   "method": "check_empty_metadata"
@@ -5100,7 +5065,7 @@
   "method": "check_metadata_must_contain_reftimes"
  },
  {
-  "doc": "- [unaligned] segments are not touched",
+  "doc": "- [unaligned] segments are not touched, to prevent deleting data that\n  should be reindexed instead",
   "group": "arki_dataset_simple_maintenance_bufr_plain_dirs",
   "method": "repack_unaligned"
  },
@@ -5200,6 +5165,11 @@
   "method": "check_isordered"
  },
  {
+  "doc": "- segments not known by the index, but when the index is either\n  missing, older than the file, or marked as needing checking, are marked\n  for reindexing instead of deletion [unaligned]",
+  "group": "arki_dataset_simple_maintenance_bufr_sqlite_dirs",
+  "method": "check_unaligned"
+ },
+ {
   "doc": "- format-specific consistency checks on the content of each file must pass [corrupted]",
   "group": "arki_dataset_simple_maintenance_bufr_sqlite_dirs",
   "method": "tcheck_corrupted_data"
@@ -5270,16 +5240,6 @@
   "method": "repack_archive"
  },
  {
-  "doc": "- find data files not known by the index [unaligned]",
-  "group": "arki_dataset_simple_maintenance_bufr_sqlite_dirs",
-  "method": "check_new"
- },
- {
-  "doc": "- the segment must not be newer than the index [unaligned]",
-  "group": "arki_dataset_simple_maintenance_bufr_sqlite_dirs",
-  "method": "check_unaligned"
- },
- {
   "doc": "- `.metadata` file must not be empty [unaligned]",
   "group": "arki_dataset_simple_maintenance_bufr_sqlite_dirs",
   "method": "check_empty_metadata"
@@ -5315,7 +5275,7 @@
   "method": "check_metadata_must_contain_reftimes"
  },
  {
-  "doc": "- [unaligned] segments are not touched",
+  "doc": "- [unaligned] segments are not touched, to prevent deleting data that\n  should be reindexed instead",
   "group": "arki_dataset_simple_maintenance_bufr_sqlite_dirs",
   "method": "repack_unaligned"
  },
@@ -5410,6 +5370,11 @@
   "method": "check_isordered"
  },
  {
+  "doc": "- segments not known by the index, but when the index is either\n  missing, older than the file, or marked as needing checking, are marked\n  for reindexing instead of deletion [unaligned]",
+  "group": "arki_dataset_simple_maintenance_vm2_plain",
+  "method": "check_unaligned"
+ },
+ {
   "doc": "- format-specific consistency checks on the content of each file must pass [corrupted]",
   "group": "arki_dataset_simple_maintenance_vm2_plain",
   "method": "tcheck_corrupted_data"
@@ -5480,16 +5445,6 @@
   "method": "repack_archive"
  },
  {
-  "doc": "- find data files not known by the index [unaligned]",
-  "group": "arki_dataset_simple_maintenance_vm2_plain",
-  "method": "check_new"
- },
- {
-  "doc": "- the segment must not be newer than the index [unaligned]",
-  "group": "arki_dataset_simple_maintenance_vm2_plain",
-  "method": "check_unaligned"
- },
- {
   "doc": "- `.metadata` file must not be empty [unaligned]",
   "group": "arki_dataset_simple_maintenance_vm2_plain",
   "method": "check_empty_metadata"
@@ -5525,7 +5480,7 @@
   "method": "check_metadata_must_contain_reftimes"
  },
  {
-  "doc": "- [unaligned] segments are not touched",
+  "doc": "- [unaligned] segments are not touched, to prevent deleting data that\n  should be reindexed instead",
   "group": "arki_dataset_simple_maintenance_vm2_plain",
   "method": "repack_unaligned"
  },
@@ -5620,6 +5575,11 @@
   "method": "check_isordered"
  },
  {
+  "doc": "- segments not known by the index, but when the index is either\n  missing, older than the file, or marked as needing checking, are marked\n  for reindexing instead of deletion [unaligned]",
+  "group": "arki_dataset_simple_maintenance_vm2_sqlite",
+  "method": "check_unaligned"
+ },
+ {
   "doc": "- format-specific consistency checks on the content of each file must pass [corrupted]",
   "group": "arki_dataset_simple_maintenance_vm2_sqlite",
   "method": "tcheck_corrupted_data"
@@ -5690,16 +5650,6 @@
   "method": "repack_archive"
  },
  {
-  "doc": "- find data files not known by the index [unaligned]",
-  "group": "arki_dataset_simple_maintenance_vm2_sqlite",
-  "method": "check_new"
- },
- {
-  "doc": "- the segment must not be newer than the index [unaligned]",
-  "group": "arki_dataset_simple_maintenance_vm2_sqlite",
-  "method": "check_unaligned"
- },
- {
   "doc": "- `.metadata` file must not be empty [unaligned]",
   "group": "arki_dataset_simple_maintenance_vm2_sqlite",
   "method": "check_empty_metadata"
@@ -5735,7 +5685,7 @@
   "method": "check_metadata_must_contain_reftimes"
  },
  {
-  "doc": "- [unaligned] segments are not touched",
+  "doc": "- [unaligned] segments are not touched, to prevent deleting data that\n  should be reindexed instead",
   "group": "arki_dataset_simple_maintenance_vm2_sqlite",
   "method": "repack_unaligned"
  },
@@ -5835,6 +5785,11 @@
   "method": "check_isordered"
  },
  {
+  "doc": "- segments not known by the index, but when the index is either\n  missing, older than the file, or marked as needing checking, are marked\n  for reindexing instead of deletion [unaligned]",
+  "group": "arki_dataset_simple_maintenance_vm2_plain_dirs",
+  "method": "check_unaligned"
+ },
+ {
   "doc": "- format-specific consistency checks on the content of each file must pass [corrupted]",
   "group": "arki_dataset_simple_maintenance_vm2_plain_dirs",
   "method": "tcheck_corrupted_data"
@@ -5905,16 +5860,6 @@
   "method": "repack_archive"
  },
  {
-  "doc": "- find data files not known by the index [unaligned]",
-  "group": "arki_dataset_simple_maintenance_vm2_plain_dirs",
-  "method": "check_new"
- },
- {
-  "doc": "- the segment must not be newer than the index [unaligned]",
-  "group": "arki_dataset_simple_maintenance_vm2_plain_dirs",
-  "method": "check_unaligned"
- },
- {
   "doc": "- `.metadata` file must not be empty [unaligned]",
   "group": "arki_dataset_simple_maintenance_vm2_plain_dirs",
   "method": "check_empty_metadata"
@@ -5950,7 +5895,7 @@
   "method": "check_metadata_must_contain_reftimes"
  },
  {
-  "doc": "- [unaligned] segments are not touched",
+  "doc": "- [unaligned] segments are not touched, to prevent deleting data that\n  should be reindexed instead",
   "group": "arki_dataset_simple_maintenance_vm2_plain_dirs",
   "method": "repack_unaligned"
  },
@@ -6050,6 +5995,11 @@
   "method": "check_isordered"
  },
  {
+  "doc": "- segments not known by the index, but when the index is either\n  missing, older than the file, or marked as needing checking, are marked\n  for reindexing instead of deletion [unaligned]",
+  "group": "arki_dataset_simple_maintenance_vm2_sqlite_dirs",
+  "method": "check_unaligned"
+ },
+ {
   "doc": "- format-specific consistency checks on the content of each file must pass [corrupted]",
   "group": "arki_dataset_simple_maintenance_vm2_sqlite_dirs",
   "method": "tcheck_corrupted_data"
@@ -6120,16 +6070,6 @@
   "method": "repack_archive"
  },
  {
-  "doc": "- find data files not known by the index [unaligned]",
-  "group": "arki_dataset_simple_maintenance_vm2_sqlite_dirs",
-  "method": "check_new"
- },
- {
-  "doc": "- the segment must not be newer than the index [unaligned]",
-  "group": "arki_dataset_simple_maintenance_vm2_sqlite_dirs",
-  "method": "check_unaligned"
- },
- {
   "doc": "- `.metadata` file must not be empty [unaligned]",
   "group": "arki_dataset_simple_maintenance_vm2_sqlite_dirs",
   "method": "check_empty_metadata"
@@ -6165,7 +6105,7 @@
   "method": "check_metadata_must_contain_reftimes"
  },
  {
-  "doc": "- [unaligned] segments are not touched",
+  "doc": "- [unaligned] segments are not touched, to prevent deleting data that\n  should be reindexed instead",
   "group": "arki_dataset_simple_maintenance_vm2_sqlite_dirs",
   "method": "repack_unaligned"
  },
@@ -6265,6 +6205,11 @@
   "method": "check_isordered"
  },
  {
+  "doc": "- segments not known by the index, but when the index is either\n  missing, older than the file, or marked as needing checking, are marked\n  for reindexing instead of deletion [unaligned]",
+  "group": "arki_dataset_simple_maintenance_odimh5_plain",
+  "method": "check_unaligned"
+ },
+ {
   "doc": "- format-specific consistency checks on the content of each file must pass [corrupted]",
   "group": "arki_dataset_simple_maintenance_odimh5_plain",
   "method": "tcheck_corrupted_data"
@@ -6335,16 +6280,6 @@
   "method": "repack_archive"
  },
  {
-  "doc": "- find data files not known by the index [unaligned]",
-  "group": "arki_dataset_simple_maintenance_odimh5_plain",
-  "method": "check_new"
- },
- {
-  "doc": "- the segment must not be newer than the index [unaligned]",
-  "group": "arki_dataset_simple_maintenance_odimh5_plain",
-  "method": "check_unaligned"
- },
- {
   "doc": "- `.metadata` file must not be empty [unaligned]",
   "group": "arki_dataset_simple_maintenance_odimh5_plain",
   "method": "check_empty_metadata"
@@ -6380,7 +6315,7 @@
   "method": "check_metadata_must_contain_reftimes"
  },
  {
-  "doc": "- [unaligned] segments are not touched",
+  "doc": "- [unaligned] segments are not touched, to prevent deleting data that\n  should be reindexed instead",
   "group": "arki_dataset_simple_maintenance_odimh5_plain",
   "method": "repack_unaligned"
  },
@@ -6480,6 +6415,11 @@
   "method": "check_isordered"
  },
  {
+  "doc": "- segments not known by the index, but when the index is either\n  missing, older than the file, or marked as needing checking, are marked\n  for reindexing instead of deletion [unaligned]",
+  "group": "arki_dataset_simple_maintenance_odimh5_sqlite",
+  "method": "check_unaligned"
+ },
+ {
   "doc": "- format-specific consistency checks on the content of each file must pass [corrupted]",
   "group": "arki_dataset_simple_maintenance_odimh5_sqlite",
   "method": "tcheck_corrupted_data"
@@ -6550,16 +6490,6 @@
   "method": "repack_archive"
  },
  {
-  "doc": "- find data files not known by the index [unaligned]",
-  "group": "arki_dataset_simple_maintenance_odimh5_sqlite",
-  "method": "check_new"
- },
- {
-  "doc": "- the segment must not be newer than the index [unaligned]",
-  "group": "arki_dataset_simple_maintenance_odimh5_sqlite",
-  "method": "check_unaligned"
- },
- {
   "doc": "- `.metadata` file must not be empty [unaligned]",
   "group": "arki_dataset_simple_maintenance_odimh5_sqlite",
   "method": "check_empty_metadata"
@@ -6595,7 +6525,7 @@
   "method": "check_metadata_must_contain_reftimes"
  },
  {
-  "doc": "- [unaligned] segments are not touched",
+  "doc": "- [unaligned] segments are not touched, to prevent deleting data that\n  should be reindexed instead",
   "group": "arki_dataset_simple_maintenance_odimh5_sqlite",
   "method": "repack_unaligned"
  },
@@ -6670,6 +6600,11 @@
   "method": "check_unknown_empty"
  },
  {
+  "doc": "- data files not known by a valid index are considered data files whose\n  entire content has been removed [deleted]",
+  "group": "arki_dataset_iseg_maintenance_grib",
+  "method": "check_new"
+ },
+ {
   "doc": "- segments that contain some data that has been removed are\n  identified as to be repacked [dirty]",
   "group": "arki_dataset_iseg_maintenance_grib",
   "method": "check_one_removed"
@@ -6745,6 +6680,11 @@
   "method": "check_isordered"
  },
  {
+  "doc": "- segments not known by the index, but when the index is either\n  missing, older than the file, or marked as needing checking, are marked\n  for reindexing instead of deletion [unaligned]",
+  "group": "arki_dataset_iseg_maintenance_grib",
+  "method": "check_unaligned"
+ },
+ {
   "doc": "- format-specific consistency checks on the content of each file must pass [corrupted]",
   "group": "arki_dataset_iseg_maintenance_grib",
   "method": "tcheck_corrupted_data"
@@ -6815,17 +6755,7 @@
   "method": "repack_archive"
  },
  {
-  "doc": "- find data files not known by the index [unaligned]",
-  "group": "arki_dataset_iseg_maintenance_grib",
-  "method": "check_new"
- },
- {
-  "doc": "- segments found in the dataset without a `.index` file are marked for rescanning [unaligned]",
-  "group": "arki_dataset_iseg_maintenance_grib",
-  "method": "check_unaligned"
- },
- {
-  "doc": "- [unaligned] segments are not touched",
+  "doc": "- [unaligned] segments are not touched, to prevent deleting data that\n  should be reindexed instead",
   "group": "arki_dataset_iseg_maintenance_grib",
   "method": "repack_unaligned"
  },
@@ -6873,6 +6803,11 @@
   "doc": "- an empty segment not known by the index must be considered deleted [deleted]",
   "group": "arki_dataset_iseg_maintenance_grib_dirs",
   "method": "check_unknown_empty"
+ },
+ {
+  "doc": "- data files not known by a valid index are considered data files whose\n  entire content has been removed [deleted]",
+  "group": "arki_dataset_iseg_maintenance_grib_dirs",
+  "method": "check_new"
  },
  {
   "doc": "- segments that contain some data that has been removed are\n  identified as to be repacked [dirty]",
@@ -6945,6 +6880,11 @@
   "method": "check_isordered"
  },
  {
+  "doc": "- segments not known by the index, but when the index is either\n  missing, older than the file, or marked as needing checking, are marked\n  for reindexing instead of deletion [unaligned]",
+  "group": "arki_dataset_iseg_maintenance_grib_dirs",
+  "method": "check_unaligned"
+ },
+ {
   "doc": "- format-specific consistency checks on the content of each file must pass [corrupted]",
   "group": "arki_dataset_iseg_maintenance_grib_dirs",
   "method": "tcheck_corrupted_data"
@@ -7015,17 +6955,7 @@
   "method": "repack_archive"
  },
  {
-  "doc": "- find data files not known by the index [unaligned]",
-  "group": "arki_dataset_iseg_maintenance_grib_dirs",
-  "method": "check_new"
- },
- {
-  "doc": "- segments found in the dataset without a `.index` file are marked for rescanning [unaligned]",
-  "group": "arki_dataset_iseg_maintenance_grib_dirs",
-  "method": "check_unaligned"
- },
- {
-  "doc": "- [unaligned] segments are not touched",
+  "doc": "- [unaligned] segments are not touched, to prevent deleting data that\n  should be reindexed instead",
   "group": "arki_dataset_iseg_maintenance_grib_dirs",
   "method": "repack_unaligned"
  },
@@ -7070,6 +7000,11 @@
   "method": "check_unknown_empty"
  },
  {
+  "doc": "- data files not known by a valid index are considered data files whose\n  entire content has been removed [deleted]",
+  "group": "arki_dataset_iseg_maintenance_bufr",
+  "method": "check_new"
+ },
+ {
   "doc": "- segments that contain some data that has been removed are\n  identified as to be repacked [dirty]",
   "group": "arki_dataset_iseg_maintenance_bufr",
   "method": "check_one_removed"
@@ -7145,6 +7080,11 @@
   "method": "check_isordered"
  },
  {
+  "doc": "- segments not known by the index, but when the index is either\n  missing, older than the file, or marked as needing checking, are marked\n  for reindexing instead of deletion [unaligned]",
+  "group": "arki_dataset_iseg_maintenance_bufr",
+  "method": "check_unaligned"
+ },
+ {
   "doc": "- format-specific consistency checks on the content of each file must pass [corrupted]",
   "group": "arki_dataset_iseg_maintenance_bufr",
   "method": "tcheck_corrupted_data"
@@ -7215,17 +7155,7 @@
   "method": "repack_archive"
  },
  {
-  "doc": "- find data files not known by the index [unaligned]",
-  "group": "arki_dataset_iseg_maintenance_bufr",
-  "method": "check_new"
- },
- {
-  "doc": "- segments found in the dataset without a `.index` file are marked for rescanning [unaligned]",
-  "group": "arki_dataset_iseg_maintenance_bufr",
-  "method": "check_unaligned"
- },
- {
-  "doc": "- [unaligned] segments are not touched",
+  "doc": "- [unaligned] segments are not touched, to prevent deleting data that\n  should be reindexed instead",
   "group": "arki_dataset_iseg_maintenance_bufr",
   "method": "repack_unaligned"
  },
@@ -7273,6 +7203,11 @@
   "doc": "- an empty segment not known by the index must be considered deleted [deleted]",
   "group": "arki_dataset_iseg_maintenance_bufr_dirs",
   "method": "check_unknown_empty"
+ },
+ {
+  "doc": "- data files not known by a valid index are considered data files whose\n  entire content has been removed [deleted]",
+  "group": "arki_dataset_iseg_maintenance_bufr_dirs",
+  "method": "check_new"
  },
  {
   "doc": "- segments that contain some data that has been removed are\n  identified as to be repacked [dirty]",
@@ -7345,6 +7280,11 @@
   "method": "check_isordered"
  },
  {
+  "doc": "- segments not known by the index, but when the index is either\n  missing, older than the file, or marked as needing checking, are marked\n  for reindexing instead of deletion [unaligned]",
+  "group": "arki_dataset_iseg_maintenance_bufr_dirs",
+  "method": "check_unaligned"
+ },
+ {
   "doc": "- format-specific consistency checks on the content of each file must pass [corrupted]",
   "group": "arki_dataset_iseg_maintenance_bufr_dirs",
   "method": "tcheck_corrupted_data"
@@ -7415,17 +7355,7 @@
   "method": "repack_archive"
  },
  {
-  "doc": "- find data files not known by the index [unaligned]",
-  "group": "arki_dataset_iseg_maintenance_bufr_dirs",
-  "method": "check_new"
- },
- {
-  "doc": "- segments found in the dataset without a `.index` file are marked for rescanning [unaligned]",
-  "group": "arki_dataset_iseg_maintenance_bufr_dirs",
-  "method": "check_unaligned"
- },
- {
-  "doc": "- [unaligned] segments are not touched",
+  "doc": "- [unaligned] segments are not touched, to prevent deleting data that\n  should be reindexed instead",
   "group": "arki_dataset_iseg_maintenance_bufr_dirs",
   "method": "repack_unaligned"
  },
@@ -7470,6 +7400,11 @@
   "method": "check_unknown_empty"
  },
  {
+  "doc": "- data files not known by a valid index are considered data files whose\n  entire content has been removed [deleted]",
+  "group": "arki_dataset_iseg_maintenance_vm2",
+  "method": "check_new"
+ },
+ {
   "doc": "- segments that contain some data that has been removed are\n  identified as to be repacked [dirty]",
   "group": "arki_dataset_iseg_maintenance_vm2",
   "method": "check_one_removed"
@@ -7545,6 +7480,11 @@
   "method": "check_isordered"
  },
  {
+  "doc": "- segments not known by the index, but when the index is either\n  missing, older than the file, or marked as needing checking, are marked\n  for reindexing instead of deletion [unaligned]",
+  "group": "arki_dataset_iseg_maintenance_vm2",
+  "method": "check_unaligned"
+ },
+ {
   "doc": "- format-specific consistency checks on the content of each file must pass [corrupted]",
   "group": "arki_dataset_iseg_maintenance_vm2",
   "method": "tcheck_corrupted_data"
@@ -7615,17 +7555,7 @@
   "method": "repack_archive"
  },
  {
-  "doc": "- find data files not known by the index [unaligned]",
-  "group": "arki_dataset_iseg_maintenance_vm2",
-  "method": "check_new"
- },
- {
-  "doc": "- segments found in the dataset without a `.index` file are marked for rescanning [unaligned]",
-  "group": "arki_dataset_iseg_maintenance_vm2",
-  "method": "check_unaligned"
- },
- {
-  "doc": "- [unaligned] segments are not touched",
+  "doc": "- [unaligned] segments are not touched, to prevent deleting data that\n  should be reindexed instead",
   "group": "arki_dataset_iseg_maintenance_vm2",
   "method": "repack_unaligned"
  },
@@ -7673,6 +7603,11 @@
   "doc": "- an empty segment not known by the index must be considered deleted [deleted]",
   "group": "arki_dataset_iseg_maintenance_vm2_dirs",
   "method": "check_unknown_empty"
+ },
+ {
+  "doc": "- data files not known by a valid index are considered data files whose\n  entire content has been removed [deleted]",
+  "group": "arki_dataset_iseg_maintenance_vm2_dirs",
+  "method": "check_new"
  },
  {
   "doc": "- segments that contain some data that has been removed are\n  identified as to be repacked [dirty]",
@@ -7745,6 +7680,11 @@
   "method": "check_isordered"
  },
  {
+  "doc": "- segments not known by the index, but when the index is either\n  missing, older than the file, or marked as needing checking, are marked\n  for reindexing instead of deletion [unaligned]",
+  "group": "arki_dataset_iseg_maintenance_vm2_dirs",
+  "method": "check_unaligned"
+ },
+ {
   "doc": "- format-specific consistency checks on the content of each file must pass [corrupted]",
   "group": "arki_dataset_iseg_maintenance_vm2_dirs",
   "method": "tcheck_corrupted_data"
@@ -7815,17 +7755,7 @@
   "method": "repack_archive"
  },
  {
-  "doc": "- find data files not known by the index [unaligned]",
-  "group": "arki_dataset_iseg_maintenance_vm2_dirs",
-  "method": "check_new"
- },
- {
-  "doc": "- segments found in the dataset without a `.index` file are marked for rescanning [unaligned]",
-  "group": "arki_dataset_iseg_maintenance_vm2_dirs",
-  "method": "check_unaligned"
- },
- {
-  "doc": "- [unaligned] segments are not touched",
+  "doc": "- [unaligned] segments are not touched, to prevent deleting data that\n  should be reindexed instead",
   "group": "arki_dataset_iseg_maintenance_vm2_dirs",
   "method": "repack_unaligned"
  },
@@ -7873,6 +7803,11 @@
   "doc": "- an empty segment not known by the index must be considered deleted [deleted]",
   "group": "arki_dataset_iseg_maintenance_odimh5",
   "method": "check_unknown_empty"
+ },
+ {
+  "doc": "- data files not known by a valid index are considered data files whose\n  entire content has been removed [deleted]",
+  "group": "arki_dataset_iseg_maintenance_odimh5",
+  "method": "check_new"
  },
  {
   "doc": "- segments that contain some data that has been removed are\n  identified as to be repacked [dirty]",
@@ -7945,6 +7880,11 @@
   "method": "check_isordered"
  },
  {
+  "doc": "- segments not known by the index, but when the index is either\n  missing, older than the file, or marked as needing checking, are marked\n  for reindexing instead of deletion [unaligned]",
+  "group": "arki_dataset_iseg_maintenance_odimh5",
+  "method": "check_unaligned"
+ },
+ {
   "doc": "- format-specific consistency checks on the content of each file must pass [corrupted]",
   "group": "arki_dataset_iseg_maintenance_odimh5",
   "method": "tcheck_corrupted_data"
@@ -8015,17 +7955,7 @@
   "method": "repack_archive"
  },
  {
-  "doc": "- find data files not known by the index [unaligned]",
-  "group": "arki_dataset_iseg_maintenance_odimh5",
-  "method": "check_new"
- },
- {
-  "doc": "- segments found in the dataset without a `.index` file are marked for rescanning [unaligned]",
-  "group": "arki_dataset_iseg_maintenance_odimh5",
-  "method": "check_unaligned"
- },
- {
-  "doc": "- [unaligned] segments are not touched",
+  "doc": "- [unaligned] segments are not touched, to prevent deleting data that\n  should be reindexed instead",
   "group": "arki_dataset_iseg_maintenance_odimh5",
   "method": "repack_unaligned"
  },
@@ -8210,6 +8140,11 @@
   "method": "check_unknown_empty"
  },
  {
+  "doc": "- data files not known by a valid index are considered data files whose\n  entire content has been removed [deleted]",
+  "group": "arki_dataset_ondisk2_maintenance_grib",
+  "method": "check_new"
+ },
+ {
   "doc": "- segments that contain some data that has been removed are\n  identified as to be repacked [dirty]",
   "group": "arki_dataset_ondisk2_maintenance_grib",
   "method": "check_one_removed"
@@ -8290,6 +8225,11 @@
   "method": "check_isordered"
  },
  {
+  "doc": "- segments not known by the index, but when the index is either\n  missing, older than the file, or marked as needing checking, are marked\n  for reindexing instead of deletion [unaligned]",
+  "group": "arki_dataset_ondisk2_maintenance_grib",
+  "method": "check_unaligned"
+ },
+ {
   "doc": "- format-specific consistency checks on the content of each file must pass [corrupted]",
   "group": "arki_dataset_ondisk2_maintenance_grib",
   "method": "tcheck_corrupted_data"
@@ -8360,11 +8300,6 @@
   "method": "repack_archive"
  },
  {
-  "doc": "- data files not known by the index are considered data files whose\n  entire content has been removed [deleted]",
-  "group": "arki_dataset_ondisk2_maintenance_grib",
-  "method": "check_new"
- },
- {
   "doc": "- if the index has been deleted, accessing the dataset recreates it\n  empty, and creates a `needs-check-do-not-pack` file in the root of\n  the dataset.",
   "group": "arki_dataset_ondisk2_maintenance_grib",
   "method": "check_missing_index"
@@ -8378,11 +8313,6 @@
   "doc": "- while `needs-check-do-not-pack` is present, files with gaps are\n  marked for rescanning instead of repacking. This prevents a scenario\n  in which, after the index has been deleted, and some data has been\n  imported that got appended to an existing segment, that segment would\n  be considered as needing repack instead of rescan. [unaligned]",
   "group": "arki_dataset_ondisk2_maintenance_grib",
   "method": "check_missing_index_rescan_partial_files"
- },
- {
-  "doc": "- if a `needs-check-do-not-pack` file is present, segments not known by\n  the index are marked for reindexing instead of deletion [unaligned]",
-  "group": "arki_dataset_ondisk2_maintenance_grib",
-  "method": "check_unaligned"
  },
  {
   "doc": "- [unaligned] when `needs-check-do-not-pack` is present in the dataset\n  root directory, running a repack fails asking to run a check first,\n  to prevent deleting data that should be reindexed instead",
@@ -8435,6 +8365,11 @@
   "method": "check_unknown_empty"
  },
  {
+  "doc": "- data files not known by a valid index are considered data files whose\n  entire content has been removed [deleted]",
+  "group": "arki_dataset_ondisk2_maintenance_grib_dirs",
+  "method": "check_new"
+ },
+ {
   "doc": "- segments that contain some data that has been removed are\n  identified as to be repacked [dirty]",
   "group": "arki_dataset_ondisk2_maintenance_grib_dirs",
   "method": "check_one_removed"
@@ -8515,6 +8450,11 @@
   "method": "check_isordered"
  },
  {
+  "doc": "- segments not known by the index, but when the index is either\n  missing, older than the file, or marked as needing checking, are marked\n  for reindexing instead of deletion [unaligned]",
+  "group": "arki_dataset_ondisk2_maintenance_grib_dirs",
+  "method": "check_unaligned"
+ },
+ {
   "doc": "- format-specific consistency checks on the content of each file must pass [corrupted]",
   "group": "arki_dataset_ondisk2_maintenance_grib_dirs",
   "method": "tcheck_corrupted_data"
@@ -8585,11 +8525,6 @@
   "method": "repack_archive"
  },
  {
-  "doc": "- data files not known by the index are considered data files whose\n  entire content has been removed [deleted]",
-  "group": "arki_dataset_ondisk2_maintenance_grib_dirs",
-  "method": "check_new"
- },
- {
   "doc": "- if the index has been deleted, accessing the dataset recreates it\n  empty, and creates a `needs-check-do-not-pack` file in the root of\n  the dataset.",
   "group": "arki_dataset_ondisk2_maintenance_grib_dirs",
   "method": "check_missing_index"
@@ -8603,11 +8538,6 @@
   "doc": "- while `needs-check-do-not-pack` is present, files with gaps are\n  marked for rescanning instead of repacking. This prevents a scenario\n  in which, after the index has been deleted, and some data has been\n  imported that got appended to an existing segment, that segment would\n  be considered as needing repack instead of rescan. [unaligned]",
   "group": "arki_dataset_ondisk2_maintenance_grib_dirs",
   "method": "check_missing_index_rescan_partial_files"
- },
- {
-  "doc": "- if a `needs-check-do-not-pack` file is present, segments not known by\n  the index are marked for reindexing instead of deletion [unaligned]",
-  "group": "arki_dataset_ondisk2_maintenance_grib_dirs",
-  "method": "check_unaligned"
  },
  {
   "doc": "- [unaligned] when `needs-check-do-not-pack` is present in the dataset\n  root directory, running a repack fails asking to run a check first,\n  to prevent deleting data that should be reindexed instead",
@@ -8655,6 +8585,11 @@
   "method": "check_unknown_empty"
  },
  {
+  "doc": "- data files not known by a valid index are considered data files whose\n  entire content has been removed [deleted]",
+  "group": "arki_dataset_ondisk2_maintenance_bufr",
+  "method": "check_new"
+ },
+ {
   "doc": "- segments that contain some data that has been removed are\n  identified as to be repacked [dirty]",
   "group": "arki_dataset_ondisk2_maintenance_bufr",
   "method": "check_one_removed"
@@ -8735,6 +8670,11 @@
   "method": "check_isordered"
  },
  {
+  "doc": "- segments not known by the index, but when the index is either\n  missing, older than the file, or marked as needing checking, are marked\n  for reindexing instead of deletion [unaligned]",
+  "group": "arki_dataset_ondisk2_maintenance_bufr",
+  "method": "check_unaligned"
+ },
+ {
   "doc": "- format-specific consistency checks on the content of each file must pass [corrupted]",
   "group": "arki_dataset_ondisk2_maintenance_bufr",
   "method": "tcheck_corrupted_data"
@@ -8805,11 +8745,6 @@
   "method": "repack_archive"
  },
  {
-  "doc": "- data files not known by the index are considered data files whose\n  entire content has been removed [deleted]",
-  "group": "arki_dataset_ondisk2_maintenance_bufr",
-  "method": "check_new"
- },
- {
   "doc": "- if the index has been deleted, accessing the dataset recreates it\n  empty, and creates a `needs-check-do-not-pack` file in the root of\n  the dataset.",
   "group": "arki_dataset_ondisk2_maintenance_bufr",
   "method": "check_missing_index"
@@ -8823,11 +8758,6 @@
   "doc": "- while `needs-check-do-not-pack` is present, files with gaps are\n  marked for rescanning instead of repacking. This prevents a scenario\n  in which, after the index has been deleted, and some data has been\n  imported that got appended to an existing segment, that segment would\n  be considered as needing repack instead of rescan. [unaligned]",
   "group": "arki_dataset_ondisk2_maintenance_bufr",
   "method": "check_missing_index_rescan_partial_files"
- },
- {
-  "doc": "- if a `needs-check-do-not-pack` file is present, segments not known by\n  the index are marked for reindexing instead of deletion [unaligned]",
-  "group": "arki_dataset_ondisk2_maintenance_bufr",
-  "method": "check_unaligned"
  },
  {
   "doc": "- [unaligned] when `needs-check-do-not-pack` is present in the dataset\n  root directory, running a repack fails asking to run a check first,\n  to prevent deleting data that should be reindexed instead",
@@ -8880,6 +8810,11 @@
   "method": "check_unknown_empty"
  },
  {
+  "doc": "- data files not known by a valid index are considered data files whose\n  entire content has been removed [deleted]",
+  "group": "arki_dataset_ondisk2_maintenance_bufr_dirs",
+  "method": "check_new"
+ },
+ {
   "doc": "- segments that contain some data that has been removed are\n  identified as to be repacked [dirty]",
   "group": "arki_dataset_ondisk2_maintenance_bufr_dirs",
   "method": "check_one_removed"
@@ -8960,6 +8895,11 @@
   "method": "check_isordered"
  },
  {
+  "doc": "- segments not known by the index, but when the index is either\n  missing, older than the file, or marked as needing checking, are marked\n  for reindexing instead of deletion [unaligned]",
+  "group": "arki_dataset_ondisk2_maintenance_bufr_dirs",
+  "method": "check_unaligned"
+ },
+ {
   "doc": "- format-specific consistency checks on the content of each file must pass [corrupted]",
   "group": "arki_dataset_ondisk2_maintenance_bufr_dirs",
   "method": "tcheck_corrupted_data"
@@ -9030,11 +8970,6 @@
   "method": "repack_archive"
  },
  {
-  "doc": "- data files not known by the index are considered data files whose\n  entire content has been removed [deleted]",
-  "group": "arki_dataset_ondisk2_maintenance_bufr_dirs",
-  "method": "check_new"
- },
- {
   "doc": "- if the index has been deleted, accessing the dataset recreates it\n  empty, and creates a `needs-check-do-not-pack` file in the root of\n  the dataset.",
   "group": "arki_dataset_ondisk2_maintenance_bufr_dirs",
   "method": "check_missing_index"
@@ -9048,11 +8983,6 @@
   "doc": "- while `needs-check-do-not-pack` is present, files with gaps are\n  marked for rescanning instead of repacking. This prevents a scenario\n  in which, after the index has been deleted, and some data has been\n  imported that got appended to an existing segment, that segment would\n  be considered as needing repack instead of rescan. [unaligned]",
   "group": "arki_dataset_ondisk2_maintenance_bufr_dirs",
   "method": "check_missing_index_rescan_partial_files"
- },
- {
-  "doc": "- if a `needs-check-do-not-pack` file is present, segments not known by\n  the index are marked for reindexing instead of deletion [unaligned]",
-  "group": "arki_dataset_ondisk2_maintenance_bufr_dirs",
-  "method": "check_unaligned"
  },
  {
   "doc": "- [unaligned] when `needs-check-do-not-pack` is present in the dataset\n  root directory, running a repack fails asking to run a check first,\n  to prevent deleting data that should be reindexed instead",
@@ -9100,6 +9030,11 @@
   "method": "check_unknown_empty"
  },
  {
+  "doc": "- data files not known by a valid index are considered data files whose\n  entire content has been removed [deleted]",
+  "group": "arki_dataset_ondisk2_maintenance_vm2",
+  "method": "check_new"
+ },
+ {
   "doc": "- segments that contain some data that has been removed are\n  identified as to be repacked [dirty]",
   "group": "arki_dataset_ondisk2_maintenance_vm2",
   "method": "check_one_removed"
@@ -9180,6 +9115,11 @@
   "method": "check_isordered"
  },
  {
+  "doc": "- segments not known by the index, but when the index is either\n  missing, older than the file, or marked as needing checking, are marked\n  for reindexing instead of deletion [unaligned]",
+  "group": "arki_dataset_ondisk2_maintenance_vm2",
+  "method": "check_unaligned"
+ },
+ {
   "doc": "- format-specific consistency checks on the content of each file must pass [corrupted]",
   "group": "arki_dataset_ondisk2_maintenance_vm2",
   "method": "tcheck_corrupted_data"
@@ -9250,11 +9190,6 @@
   "method": "repack_archive"
  },
  {
-  "doc": "- data files not known by the index are considered data files whose\n  entire content has been removed [deleted]",
-  "group": "arki_dataset_ondisk2_maintenance_vm2",
-  "method": "check_new"
- },
- {
   "doc": "- if the index has been deleted, accessing the dataset recreates it\n  empty, and creates a `needs-check-do-not-pack` file in the root of\n  the dataset.",
   "group": "arki_dataset_ondisk2_maintenance_vm2",
   "method": "check_missing_index"
@@ -9268,11 +9203,6 @@
   "doc": "- while `needs-check-do-not-pack` is present, files with gaps are\n  marked for rescanning instead of repacking. This prevents a scenario\n  in which, after the index has been deleted, and some data has been\n  imported that got appended to an existing segment, that segment would\n  be considered as needing repack instead of rescan. [unaligned]",
   "group": "arki_dataset_ondisk2_maintenance_vm2",
   "method": "check_missing_index_rescan_partial_files"
- },
- {
-  "doc": "- if a `needs-check-do-not-pack` file is present, segments not known by\n  the index are marked for reindexing instead of deletion [unaligned]",
-  "group": "arki_dataset_ondisk2_maintenance_vm2",
-  "method": "check_unaligned"
  },
  {
   "doc": "- [unaligned] when `needs-check-do-not-pack` is present in the dataset\n  root directory, running a repack fails asking to run a check first,\n  to prevent deleting data that should be reindexed instead",
@@ -9325,6 +9255,11 @@
   "method": "check_unknown_empty"
  },
  {
+  "doc": "- data files not known by a valid index are considered data files whose\n  entire content has been removed [deleted]",
+  "group": "arki_dataset_ondisk2_maintenance_vm2_dirs",
+  "method": "check_new"
+ },
+ {
   "doc": "- segments that contain some data that has been removed are\n  identified as to be repacked [dirty]",
   "group": "arki_dataset_ondisk2_maintenance_vm2_dirs",
   "method": "check_one_removed"
@@ -9405,6 +9340,11 @@
   "method": "check_isordered"
  },
  {
+  "doc": "- segments not known by the index, but when the index is either\n  missing, older than the file, or marked as needing checking, are marked\n  for reindexing instead of deletion [unaligned]",
+  "group": "arki_dataset_ondisk2_maintenance_vm2_dirs",
+  "method": "check_unaligned"
+ },
+ {
   "doc": "- format-specific consistency checks on the content of each file must pass [corrupted]",
   "group": "arki_dataset_ondisk2_maintenance_vm2_dirs",
   "method": "tcheck_corrupted_data"
@@ -9475,11 +9415,6 @@
   "method": "repack_archive"
  },
  {
-  "doc": "- data files not known by the index are considered data files whose\n  entire content has been removed [deleted]",
-  "group": "arki_dataset_ondisk2_maintenance_vm2_dirs",
-  "method": "check_new"
- },
- {
   "doc": "- if the index has been deleted, accessing the dataset recreates it\n  empty, and creates a `needs-check-do-not-pack` file in the root of\n  the dataset.",
   "group": "arki_dataset_ondisk2_maintenance_vm2_dirs",
   "method": "check_missing_index"
@@ -9493,11 +9428,6 @@
   "doc": "- while `needs-check-do-not-pack` is present, files with gaps are\n  marked for rescanning instead of repacking. This prevents a scenario\n  in which, after the index has been deleted, and some data has been\n  imported that got appended to an existing segment, that segment would\n  be considered as needing repack instead of rescan. [unaligned]",
   "group": "arki_dataset_ondisk2_maintenance_vm2_dirs",
   "method": "check_missing_index_rescan_partial_files"
- },
- {
-  "doc": "- if a `needs-check-do-not-pack` file is present, segments not known by\n  the index are marked for reindexing instead of deletion [unaligned]",
-  "group": "arki_dataset_ondisk2_maintenance_vm2_dirs",
-  "method": "check_unaligned"
  },
  {
   "doc": "- [unaligned] when `needs-check-do-not-pack` is present in the dataset\n  root directory, running a repack fails asking to run a check first,\n  to prevent deleting data that should be reindexed instead",
@@ -9550,6 +9480,11 @@
   "method": "check_unknown_empty"
  },
  {
+  "doc": "- data files not known by a valid index are considered data files whose\n  entire content has been removed [deleted]",
+  "group": "arki_dataset_ondisk2_maintenance_odimh5",
+  "method": "check_new"
+ },
+ {
   "doc": "- segments that contain some data that has been removed are\n  identified as to be repacked [dirty]",
   "group": "arki_dataset_ondisk2_maintenance_odimh5",
   "method": "check_one_removed"
@@ -9630,6 +9565,11 @@
   "method": "check_isordered"
  },
  {
+  "doc": "- segments not known by the index, but when the index is either\n  missing, older than the file, or marked as needing checking, are marked\n  for reindexing instead of deletion [unaligned]",
+  "group": "arki_dataset_ondisk2_maintenance_odimh5",
+  "method": "check_unaligned"
+ },
+ {
   "doc": "- format-specific consistency checks on the content of each file must pass [corrupted]",
   "group": "arki_dataset_ondisk2_maintenance_odimh5",
   "method": "tcheck_corrupted_data"
@@ -9700,11 +9640,6 @@
   "method": "repack_archive"
  },
  {
-  "doc": "- data files not known by the index are considered data files whose\n  entire content has been removed [deleted]",
-  "group": "arki_dataset_ondisk2_maintenance_odimh5",
-  "method": "check_new"
- },
- {
   "doc": "- if the index has been deleted, accessing the dataset recreates it\n  empty, and creates a `needs-check-do-not-pack` file in the root of\n  the dataset.",
   "group": "arki_dataset_ondisk2_maintenance_odimh5",
   "method": "check_missing_index"
@@ -9718,11 +9653,6 @@
   "doc": "- while `needs-check-do-not-pack` is present, files with gaps are\n  marked for rescanning instead of repacking. This prevents a scenario\n  in which, after the index has been deleted, and some data has been\n  imported that got appended to an existing segment, that segment would\n  be considered as needing repack instead of rescan. [unaligned]",
   "group": "arki_dataset_ondisk2_maintenance_odimh5",
   "method": "check_missing_index_rescan_partial_files"
- },
- {
-  "doc": "- if a `needs-check-do-not-pack` file is present, segments not known by\n  the index are marked for reindexing instead of deletion [unaligned]",
-  "group": "arki_dataset_ondisk2_maintenance_odimh5",
-  "method": "check_unaligned"
  },
  {
   "doc": "- [unaligned] when `needs-check-do-not-pack` is present in the dataset\n  root directory, running a repack fails asking to run a check first,\n  to prevent deleting data that should be reindexed instead",

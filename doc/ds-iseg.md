@@ -36,6 +36,8 @@ indices for the metadata listed in the `index` configuration value.
 - the segment must be a file
 - the segment must exist [missing]
 - an empty segment not known by the index must be considered deleted [deleted]
+- data files not known by a valid index are considered data files whose
+  entire content has been removed [deleted]
 - segments that contain some data that has been removed are
   identified as to be repacked [dirty]
 - segments that only contain data that has been removed are
@@ -51,8 +53,9 @@ indices for the metadata listed in the `index` configuration value.
   implied by the segment file name (FIXME: should this be disabled for
   archives, to deal with datasets that had a change of step in their lifetime?) [corrupted]
 - data on disk must match the order of data used by queries [dirty]
-- find data files not known by the index [unaligned]
-- segments found in the dataset without a `.index` file are marked for rescanning [unaligned]
+- segments not known by the index, but when the index is either
+  missing, older than the file, or marked as needing checking, are marked
+  for reindexing instead of deletion [unaligned]
 
 ### During --accurate check
 
@@ -85,7 +88,8 @@ indices for the metadata listed in the `index` configuration value.
   deleted, gets deleted without repacking
 - [archive age] [dirty] a segment that needs to be both repacked and
   archived, gets repacked before archiving
-- [unaligned] segments are not touched
+- [unaligned] segments are not touched, to prevent deleting data that
+  should be reindexed instead
 
 
 ## Check and repack on dir segments
@@ -103,6 +107,8 @@ indices for the metadata listed in the `index` configuration value.
   be detected and fixed. [unaligned]
 - the segment must exist [missing]
 - an empty segment not known by the index must be considered deleted [deleted]
+- data files not known by a valid index are considered data files whose
+  entire content has been removed [deleted]
 - segments that contain some data that has been removed are
   identified as to be repacked [dirty]
 - segments that only contain data that has been removed are
@@ -117,8 +123,9 @@ indices for the metadata listed in the `index` configuration value.
   implied by the segment file name (FIXME: should this be disabled for
   archives, to deal with datasets that had a change of step in their lifetime?) [corrupted]
 - data on disk must match the order of data used by queries [dirty]
-- find data files not known by the index [unaligned]
-- segments found in the dataset without a `.index` file are marked for rescanning [unaligned]
+- segments not known by the index, but when the index is either
+  missing, older than the file, or marked as needing checking, are marked
+  for reindexing instead of deletion [unaligned]
 
 ### During --accurate check
 
@@ -155,4 +162,5 @@ indices for the metadata listed in the `index` configuration value.
   deleted, gets deleted without repacking
 - [archive age] [dirty] a segment that needs to be both repacked and
   archived, gets repacked before archiving
-- [unaligned] segments are not touched
+- [unaligned] segments are not touched, to prevent deleting data that
+  should be reindexed instead

@@ -555,9 +555,15 @@ void Checker::test_change_metadata(const std::string& relpath, Metadata& md, uns
     md = mds[data_idx];
 }
 
-void Checker::test_remove_index(const std::string& relpath)
+void Checker::test_delete_from_index(const std::string& relpath)
 {
     m_idx->test_deindex(relpath);
+}
+
+void Checker::test_invalidate_in_index(const std::string& relpath)
+{
+    m_idx->test_deindex(relpath);
+    files::createDontpackFlagfile(config().path);
 }
 
 

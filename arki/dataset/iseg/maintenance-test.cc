@@ -30,29 +30,18 @@ void Tests::register_tests()
 {
     MaintenanceTest::register_tests();
 
-    add_method("check_new", R"(
-        - find data files not known by the index [unaligned]
-    )", [&](Fixture& f) {
-        remove_index();
-        wassert(f.state_is(3, segment::SEGMENT_UNALIGNED));
-    });
-
-    add_method("check_unaligned", R"(
-        - segments found in the dataset without a `.index` file are marked for rescanning [unaligned]
-    )", [&](Fixture& f) {
-        make_unaligned();
-        wassert(f.state_is(3, segment::SEGMENT_UNALIGNED));
-    });
-
     add_method("repack_unaligned", R"(
-        - [unaligned] segments are not touched
+        - [unaligned] segments are not touched, to prevent deleting data that
+          should be reindexed instead
     )", [&](Fixture& f) {
-        make_unaligned();
+        f.makeSegmentedChecker()->test_invalidate_in_index(f.test_relpath);
 
-        auto writer(f.makeSegmentedChecker());
-        ReporterExpected e;
-        e.report.emplace_back("testds", "repack", "2 files ok");
-        wassert(actual(writer.get()).repack(e, true));
+        {
+            auto writer(f.makeSegmentedChecker());
+            ReporterExpected e;
+            e.report.emplace_back("testds", "repack", "2 files ok");
+            wassert(actual(writer.get()).repack(e, true));
+        }
 
         wassert(f.state_is(3, segment::SEGMENT_UNALIGNED));
     });

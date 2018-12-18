@@ -377,10 +377,18 @@ public:
         sys::unlink_ifexists(segment->segment().abspath + ".metadata");
         sys::unlink_ifexists(segment->segment().abspath + ".summary");
 
+        std::string dirname(str::dirname(segment->segment().abspath));
+        std::string basename(str::basename(segment->segment().abspath));
+
         metadata::Collection mds;
         segment->rescan_data(
                 [&](const std::string& msg) { reporter.segment_info(checker.name(), segment->segment().relpath, msg); },
-                lock, mds.inserter_func());
+                lock, [&](std::unique_ptr<Metadata> md) {
+                    auto& source = md->sourceBlob();
+                    md->set_source(Source::createBlobUnlocked(segment->segment().format, dirname, basename, source.offset, source.size));
+                    mds.acquire(std::move(md));
+                    return true;
+                });
 
         Summary sum;
         for (const auto& md: mds)
@@ -506,12 +514,19 @@ size_t Checker::vacuum(dataset::Reporter& reporter)
     return m_mft->vacuum();
 }
 
-void Checker::test_remove_index(const std::string& relpath)
+void Checker::test_delete_from_index(const std::string& relpath)
 {
     m_idx->test_deindex(relpath);
     string pathname = str::joinpath(config().path, relpath);
     sys::unlink_ifexists(pathname + ".metadata");
     sys::unlink_ifexists(pathname + ".summary");
+}
+
+void Checker::test_invalidate_in_index(const std::string& relpath)
+{
+    m_idx->test_deindex(relpath);
+    string pathname = str::joinpath(config().path, relpath);
+    sys::touch(pathname + ".metadata", 1496167200);
 }
 
 void Checker::test_rename(const std::string& relpath, const std::string& new_relpath)

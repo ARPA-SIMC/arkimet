@@ -529,7 +529,7 @@ this->add_method("nolock_rescan", [](Fixture& f) {
     f.reset_test("locking=no");
     f.import_all(f.td.mds);
     string test_segment = "2007/07-08." + f.td.format;
-    f.make_unaligned(test_segment);
+    f.makeSegmentedChecker()->test_invalidate_in_index(test_segment);
 
     core::lock::TestCount count;
     {

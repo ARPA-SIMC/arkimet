@@ -370,12 +370,21 @@ public:
     virtual void test_change_metadata(const std::string& relpath, Metadata& md, unsigned data_idx=0) = 0;
 
     /**
-     * Remove index data for the given segment making it as if it was never
-     * imported.
+     * Remove all index data for the given segment, leaving the index valid. It
+     * is the equivalent of deleting all data from this segment from the index.
      *
      * This is used to simulate anomalies in the dataset during tests.
      */
-    virtual void test_remove_index(const std::string& relpath) = 0;
+    virtual void test_delete_from_index(const std::string& relpath) = 0;
+
+    /**
+     * Remove all index data for the given segment, but make it look as if the
+     * index had accidentally been removed and regenerated, and should not be
+     * trusted as a source to mark the segment as deleted.
+     *
+     * This is used to simulate anomalies in the dataset during tests.
+     */
+    virtual void test_invalidate_in_index(const std::string& relpath) = 0;
 };
 
 }
