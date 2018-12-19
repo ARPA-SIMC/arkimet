@@ -89,9 +89,31 @@ template<class Segment, class Data>
 void Tests<Segment, Data>::register_tests() {
 SegmentTests<Segment, Data>::register_tests();
 
-this->add_method("last_sequence", [](Fixture& f) {
+this->add_method("create_last_sequence", [](Fixture& f) {
     std::shared_ptr<segment::Checker> checker = f.create();
     segment::SequenceFile seq(checker->segment().abspath);
+    seq.open();
+    wassert(actual(seq.read_sequence()) == 2u);
+});
+
+this->add_method("append_last_sequence", [](Fixture& f) {
+    if (sys::isdir(relpath))
+        sys::rmtree_ifexists(relpath);
+    else
+        sys::unlink_ifexists(relpath);
+    wassert(actual_file(relpath).not_exists());
+
+    // Append 3 items
+    metadata::TestCollection mdc("inbound/test.grib1");
+    {
+        auto w(make_w());
+        w->append(mdc[0], false);
+        w->append(mdc[1], false);
+        w->append(mdc[2], false);
+        w->commit();
+    }
+
+    segment::SequenceFile seq(relpath);
     seq.open();
     wassert(actual(seq.read_sequence()) == 2u);
 });
