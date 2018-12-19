@@ -10,6 +10,9 @@ namespace segment {
 struct SequenceFile : public core::File
 {
     std::string dirname;
+    /// Set to true by read_sequence when the sequence has been reset to 0
+    /// because the file is new
+    bool new_file = false;
 
     SequenceFile(const std::string& dirname);
     ~SequenceFile();

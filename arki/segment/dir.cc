@@ -96,7 +96,7 @@ struct Creator : public AppendCreator
         AppendCreator::create();
         SequenceFile seqfile(dest_abspath);
         seqfile.open();
-        seqfile.write_sequence(current_pos);
+        seqfile.write_sequence(current_pos - 1);
     }
 };
 
@@ -177,7 +177,7 @@ struct CheckBackend : public AppendCheckBackend
                 return state;
         }
 
-        if (cur_sequence <= scanner.max_sequence)
+        if (cur_sequence < scanner.max_sequence)
         {
             stringstream out;
             out << "sequence file has value " << cur_sequence << " but found files until sequence " << scanner.max_sequence;
@@ -356,7 +356,10 @@ BaseWriter<Segment>::BaseWriter(const std::string& format, const std::string& ro
     // Ensure that the directory 'abspath' exists
     sys::makedirs(abspath);
     seqfile.open();
+    // current_pos is the last sequence generated
     current_pos = seqfile.read_sequence();
+    if (!seqfile.new_file)
+        ++current_pos;
 }
 
 template<typename Segment>
@@ -395,7 +398,7 @@ template<typename Segment>
 void BaseWriter<Segment>::commit()
 {
     if (this->fired) return;
-    seqfile.write_sequence(current_pos);
+    seqfile.write_sequence(current_pos - 1);
     for (auto& p: pending)
         p.set_source();
     pending.clear();
@@ -498,12 +501,12 @@ bool BaseChecker<Segment>::rescan_data(std::function<void(const std::string&)> r
 
         scanner.list_files();
 
-        if (cur_sequence <= scanner.max_sequence)
+        if (cur_sequence < scanner.max_sequence)
         {
             stringstream out;
-            out << "sequence file value set to " << (scanner.max_sequence + 1) << " from old value " << cur_sequence << " earlier than files found on disk";
+            out << "sequence file value set to " << scanner.max_sequence << " from old value " << cur_sequence << " earlier than files found on disk";
             reporter(out.str());
-            sf.write_sequence(scanner.max_sequence + 1);
+            sf.write_sequence(scanner.max_sequence);
         }
     }
 
@@ -677,6 +680,8 @@ void BaseChecker<Segment>::test_make_hole(metadata::Collection& mds, unsigned ho
     utils::files::PreserveFileTimes pf(seqfile.name());
     seqfile.open();
     size_t pos = seqfile.read_sequence();
+    if (!seqfile.new_file)
+        ++pos;
     if (data_idx >= mds.size())
     {
         for (unsigned i = 0; i < hole_size; ++i)
@@ -698,7 +703,7 @@ void BaseChecker<Segment>::test_make_hole(metadata::Collection& mds, unsigned ho
         }
         pos += hole_size;
     }
-    seqfile.write_sequence(pos);
+    seqfile.write_sequence(pos - 1);
 }
 
 template<typename Segment>
