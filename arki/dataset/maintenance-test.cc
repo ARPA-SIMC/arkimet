@@ -151,6 +151,7 @@ void MaintenanceTest::delete_all_in_segment()
 
 void MaintenanceTest::reset_seqfile()
 {
+    // FIXME: unlink instead?
     segment::SequenceFile sf("testds/" + fixture->test_relpath);
     sf.open();
     sf.write_sequence(0u);

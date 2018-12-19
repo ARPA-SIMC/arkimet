@@ -680,6 +680,8 @@ void BaseChecker<Segment>::test_make_hole(metadata::Collection& mds, unsigned ho
     utils::files::PreserveFileTimes pf(seqfile.name());
     seqfile.open();
     size_t pos = seqfile.read_sequence();
+    if (!seqfile.new_file)
+        ++pos;
     if (data_idx >= mds.size())
     {
         for (unsigned i = 0; i < hole_size; ++i)
@@ -701,7 +703,7 @@ void BaseChecker<Segment>::test_make_hole(metadata::Collection& mds, unsigned ho
         }
         pos += hole_size;
     }
-    seqfile.write_sequence(pos);
+    seqfile.write_sequence(pos - 1);
 }
 
 template<typename Segment>
