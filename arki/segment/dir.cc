@@ -177,7 +177,7 @@ struct CheckBackend : public AppendCheckBackend
                 return state;
         }
 
-        if (cur_sequence <= scanner.max_sequence)
+        if (cur_sequence < scanner.max_sequence)
         {
             stringstream out;
             out << "sequence file has value " << cur_sequence << " but found files until sequence " << scanner.max_sequence;
@@ -498,12 +498,12 @@ bool BaseChecker<Segment>::rescan_data(std::function<void(const std::string&)> r
 
         scanner.list_files();
 
-        if (cur_sequence <= scanner.max_sequence)
+        if (cur_sequence < scanner.max_sequence)
         {
             stringstream out;
-            out << "sequence file value set to " << (scanner.max_sequence + 1) << " from old value " << cur_sequence << " earlier than files found on disk";
+            out << "sequence file value set to " << scanner.max_sequence << " from old value " << cur_sequence << " earlier than files found on disk";
             reporter(out.str());
-            sf.write_sequence(scanner.max_sequence + 1);
+            sf.write_sequence(scanner.max_sequence);
         }
     }
 
