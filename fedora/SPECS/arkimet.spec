@@ -3,7 +3,7 @@
 
 Summary: Archive for weather information
 Name: arkimet
-Version: 1.10
+Version: 1.11
 Release: 1
 License: GPL
 Group: Applications/Meteo
@@ -220,6 +220,10 @@ if [ "$1" = "1" ]; then
 fi
 
 %changelog
+* Wed Dec 19 2018 Daniele Branchini <dbranchini@arpae.it> - 1.11-1
+- Fixed tar option (#162)
+- Restored odim sequence file behaviour (#163)
+
 * Fri Dec 14 2018 Daniele Branchini <dbranchini@arpae.it> - 1.10-1
 - Check and repack are able to fix an interrupted append to a dir dataset (#156)
 - Fixed writing VM2 as inline metadata (#160)
