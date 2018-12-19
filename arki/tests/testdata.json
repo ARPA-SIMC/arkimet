@@ -2186,6 +2186,11 @@
  },
  {
   "doc": "",
+  "group": "arki_segment_tar_grib",
+  "method": "filenames"
+ },
+ {
+  "doc": "",
   "group": "arki_segment_tar_bufr",
   "method": "create"
  },
@@ -2221,6 +2226,11 @@
  },
  {
   "doc": "",
+  "group": "arki_segment_tar_bufr",
+  "method": "filenames"
+ },
+ {
+  "doc": "",
   "group": "arki_segment_tar_odim",
   "method": "create"
  },
@@ -2256,6 +2266,11 @@
  },
  {
   "doc": "",
+  "group": "arki_segment_tar_odim",
+  "method": "filenames"
+ },
+ {
+  "doc": "",
   "group": "arki_segment_tar_vm2",
   "method": "create"
  },
@@ -2288,6 +2303,11 @@
   "doc": "",
   "group": "arki_segment_tar_vm2",
   "method": "is_empty"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_tar_vm2",
+  "method": "filenames"
  },
  {
   "doc": "",
