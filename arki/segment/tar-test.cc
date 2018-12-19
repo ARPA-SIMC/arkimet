@@ -23,6 +23,11 @@ template<class Segment, class Data>
 void Tests<Segment, Data>::register_tests() {
 SegmentTests<Segment, Data>::register_tests();
 
+this->add_method("filenames", [](Fixture& f) {
+    std::shared_ptr<segment::Checker> checker = f.create();
+    wassert_true(checker->exists_on_disk());
+});
+
 }
 }
 
