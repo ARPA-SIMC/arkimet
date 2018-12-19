@@ -107,7 +107,7 @@ this->add_method("filenames", [](Fixture& f) {
     tarout.close();
     if (proc.wait() != 0)
         throw std::runtime_error("tar exited with error");
-    wassert(actual_file("tar.out").contents_equal({"000000.grib", "000001.grib", "000002.grib"}));
+    wassert(actual_file("tar.out").contents_equal({"000000." + f.td.format, "000001." + f.td.format, "000002." + f.td.format}));
     sys::unlink("tar.out");
 });
 
