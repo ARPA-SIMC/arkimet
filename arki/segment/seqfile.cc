@@ -28,9 +28,13 @@ size_t SequenceFile::read_sequence()
     uint64_t cur;
     ssize_t count = pread(&cur, sizeof(cur), 0);
     if ((size_t)count < sizeof(cur))
+    {
+        new_file = true;
         return 0;
-    else
+    } else {
+        new_file = false;
         return cur;
+    }
 }
 
 void SequenceFile::write_sequence(size_t val)

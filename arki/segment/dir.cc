@@ -96,7 +96,7 @@ struct Creator : public AppendCreator
         AppendCreator::create();
         SequenceFile seqfile(dest_abspath);
         seqfile.open();
-        seqfile.write_sequence(current_pos);
+        seqfile.write_sequence(current_pos - 1);
     }
 };
 
@@ -356,7 +356,10 @@ BaseWriter<Segment>::BaseWriter(const std::string& format, const std::string& ro
     // Ensure that the directory 'abspath' exists
     sys::makedirs(abspath);
     seqfile.open();
+    // current_pos is the last sequence generated
     current_pos = seqfile.read_sequence();
+    if (!seqfile.new_file)
+        ++current_pos;
 }
 
 template<typename Segment>
@@ -395,7 +398,7 @@ template<typename Segment>
 void BaseWriter<Segment>::commit()
 {
     if (this->fired) return;
-    seqfile.write_sequence(current_pos);
+    seqfile.write_sequence(current_pos - 1);
     for (auto& p: pending)
         p.set_source();
     pending.clear();
