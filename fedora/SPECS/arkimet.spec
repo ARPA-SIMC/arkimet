@@ -222,7 +222,8 @@ fi
 %changelog
 * Fri Dec 14 2018 Daniele Branchini <dbranchini@arpae.it> - 1.10-1
 - Check and repack are able to fix an interrupted append to a dir dataset (#156)
-
+- Fixed writing VM2 as inline metadata (#160)
+    
 * Wed Dec 5 2018 Daniele Branchini <dbranchini@arpae.it> - 1.9-1
 - Inherit grib definition from environment variables
 - Updated arkiguide (#157)
