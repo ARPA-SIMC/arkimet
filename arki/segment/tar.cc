@@ -51,6 +51,7 @@ struct Creator : public AppendCreator
     {
         // Append it to the new file
         snprintf(fname, 99, "%06zd.%s", idx, format.c_str());
+        ++idx;
         return tarout.append(fname, data.read());
     }
 
