@@ -35,6 +35,7 @@ template<class Segment, class Data>
 class Tests : public SegmentTests<Segment, Data>
 {
     using SegmentTests<Segment, Data>::SegmentTests;
+    typedef typename SegmentTests<Segment, Data>::Fixture Fixture;
     void register_tests() override;
 };
 
@@ -87,6 +88,13 @@ add_method("scanner", [] {
 template<class Segment, class Data>
 void Tests<Segment, Data>::register_tests() {
 SegmentTests<Segment, Data>::register_tests();
+
+this->add_method("last_sequence", [](Fixture& f) {
+    std::shared_ptr<segment::Checker> checker = f.create();
+    segment::SequenceFile seq(checker->segment().abspath);
+    seq.open();
+    wassert(actual(seq.read_sequence()) == 2u);
+});
 
 // Try to append some data
 this->add_method("append", [](Fixture& f) {

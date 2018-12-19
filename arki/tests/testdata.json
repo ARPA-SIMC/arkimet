@@ -2027,6 +2027,11 @@
  {
   "doc": "",
   "group": "arki_segment_dir_grib",
+  "method": "last_sequence"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_dir_grib",
   "method": "append"
  },
  {
@@ -2067,6 +2072,11 @@
  {
   "doc": "",
   "group": "arki_segment_dir_bufr",
+  "method": "last_sequence"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_dir_bufr",
   "method": "append"
  },
  {
@@ -2107,6 +2117,11 @@
  {
   "doc": "",
   "group": "arki_segment_dir_odim",
+  "method": "last_sequence"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_dir_odim",
   "method": "append"
  },
  {
@@ -2143,6 +2158,11 @@
   "doc": "",
   "group": "arki_segment_dir_vm2",
   "method": "is_empty"
+ },
+ {
+  "doc": "",
+  "group": "arki_segment_dir_vm2",
+  "method": "last_sequence"
  },
  {
   "doc": "",
