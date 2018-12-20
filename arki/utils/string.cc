@@ -57,13 +57,13 @@ std::string strip(const std::string& str, const FUN& classifier)
         return str;
 
     size_t beg = 0;
-    size_t end = str.size() - 1;
+    size_t end = str.size();
     while (beg < end && classifier(str[beg]))
         ++beg;
-    while (end >= beg && classifier(str[end]))
+    while (beg < end && classifier(str[end - 1]))
         --end;
 
-    return str.substr(beg, end-beg+1);
+    return str.substr(beg, end - beg);
 }
 
 }
