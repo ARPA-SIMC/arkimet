@@ -13907,7 +13907,17 @@
  {
   "doc": "",
   "group": "arki_runtime_arkiscan",
+  "method": "dispatch_copyok_copyko"
+ },
+ {
+  "doc": "",
+  "group": "arki_runtime_arkiscan",
   "method": "dispatch_copyok"
+ },
+ {
+  "doc": "",
+  "group": "arki_runtime_arkiscan",
+  "method": "dispatch_copyko"
  },
  {
   "doc": "",

@@ -175,12 +175,12 @@ bool MetadataDispatch::process(dataset::Reader& ds, const std::string& name)
     results.clear();
 
     if (!dir_copyok.empty())
-        copyok.reset(new core::File(str::joinpath(dir_copyok, str::basename(name)), O_WRONLY | O_APPEND | O_CREAT));
+        copyok.reset(new core::File(str::joinpath(dir_copyok, str::basename(name))));
     else
         copyok.reset();
 
     if (!dir_copyko.empty())
-        copyko.reset(new core::File(str::joinpath(dir_copyko, str::basename(name)), O_WRONLY | O_APPEND | O_CREAT));
+        copyko.reset(new core::File(str::joinpath(dir_copyko, str::basename(name))));
     else
         copyko.reset();
 
@@ -274,14 +274,24 @@ void MetadataDispatch::process_partial_batch(const std::string& name)
 
 void MetadataDispatch::do_copyok(Metadata& md)
 {
-    if (copyok && copyok->is_open())
-        md.stream_data(*copyok);
+    if (!copyok)
+        return;
+
+    if (!copyok->is_open())
+        copyok->open(O_WRONLY | O_APPEND | O_CREAT);
+
+    md.stream_data(*copyok);
 }
 
 void MetadataDispatch::do_copyko(Metadata& md)
 {
-    if (copyko && copyko->is_open())
-        md.stream_data(*copyko);
+    if (!copyko)
+        return;
+
+    if (!copyko->is_open())
+        copyko->open(O_WRONLY | O_APPEND | O_CREAT);
+
+    md.stream_data(*copyko);
 }
 
 void MetadataDispatch::flush()
