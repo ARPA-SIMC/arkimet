@@ -368,7 +368,7 @@ add_method("dispatch_copyko", [](Fixture& f) {
 
     wassert(actual_file("copyok/copyok/test.grib1").not_exists());
     wassert(actual_file("copyok/copyko/test.grib1").exists());
-    wassert(actual(sys::size("copyko/copyko/test.grib1")) == 44412u);
+    wassert(actual(sys::size("copyok/copyko/test.grib1")) == 44412u);
 });
 
 add_method("dispatch_issue68", [](Fixture& f) {
@@ -439,10 +439,8 @@ add_method("dispatch_issue154", [](Fixture& f) {
         mds.read_from_file(co.file_stdout.name());
     }
 
-    wassert(actual_file("copyok/copyok/issue68.vm2").exists());
+    wassert(actual_file("copyok/copyok/issue68.vm2").not_exists());
     wassert(actual_file("copyok/copyko/issue68.vm2").exists());
-
-    wassert(actual_file("copyok/copyok/issue68.vm2").contents_equal(""));
     wassert(actual_file("copyok/copyko/issue68.vm2").contents_equal({
         "198710310000,1,227,1.2,,,000000000",
         "19871031000030,1,228,.5,,,000000000",
