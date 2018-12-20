@@ -265,7 +265,7 @@ add_method("dispatch_flush_threshold", [](Fixture& f) {
     wassert(actual(acct::acquire_batch_count.val()) == 2u);
 });
 
-add_method("dispatch_copyok", [](Fixture& f) {
+add_method("dispatch_copyok_copyko", [](Fixture& f) {
     using runtime::tests::run_cmdline;
 
     f.cfg.setValue("filter", "origin:GRIB1,200 or GRIB1,80");
@@ -299,6 +299,76 @@ add_method("dispatch_copyok", [](Fixture& f) {
     wassert(actual(sys::size("copyok/copyok/test.grib1")) == 42178u);
     wassert(actual_file("copyok/copyko/test.grib1").exists());
     wassert(actual(sys::size("copyok/copyko/test.grib1")) == 2234u);
+});
+
+add_method("dispatch_copyok", [](Fixture& f) {
+    using runtime::tests::run_cmdline;
+
+    f.cfg.setValue("filter", "origin:GRIB1");
+    f.test_reread_config();
+    f.write_dispatch_config();
+
+    sys::rmtree_ifexists("copyok");
+    sys::makedirs("copyok/copyok");
+    sys::makedirs("copyok/copyko");
+
+    metadata::Collection mds;
+    {
+        runtime::tests::CatchOutput co;
+        int res = run_cmdline(runtime::arki_scan, {
+            "arki-scan",
+            "--copyok=copyok/copyok",
+            "--copyko=copyok/copyko",
+            "--dispatch=test-dispatch",
+            "inbound/test.grib1",
+        });
+        wassert(actual(res) == 0);
+        mds.read_from_file(co.file_stdout.name());
+    }
+
+    wassert(actual(mds.size()) == 3u);
+    wassert(actual(mds[0].sourceBlob().filename) == sys::abspath("testds/2007/07-08.grib"));
+    wassert(actual(mds[1].sourceBlob().filename) == sys::abspath("testds/2007/07-07.grib"));
+    wassert(actual(mds[2].sourceBlob().filename) == sys::abspath("testds/2007/10-09.grib"));
+
+    wassert(actual_file("copyok/copyok/test.grib1").exists());
+    wassert(actual(sys::size("copyok/copyok/test.grib1")) == 44412u);
+    wassert(actual_file("copyok/copyko/test.grib1").not_exists());
+});
+
+add_method("dispatch_copyko", [](Fixture& f) {
+    using runtime::tests::run_cmdline;
+
+    f.cfg.setValue("filter", "origin:GRIB2");
+    f.test_reread_config();
+    f.write_dispatch_config();
+
+    sys::rmtree_ifexists("copyok");
+    sys::makedirs("copyok/copyok");
+    sys::makedirs("copyok/copyko");
+
+    metadata::Collection mds;
+    {
+        runtime::tests::CatchOutput co;
+        int res = run_cmdline(runtime::arki_scan, {
+            "arki-scan",
+            "--copyok=copyok/copyok",
+            "--copyko=copyok/copyko",
+            "--dispatch=test-dispatch",
+            "inbound/test.grib1",
+        });
+        wassert(actual(res) == 2);
+        mds.read_from_file(co.file_stdout.name());
+    }
+
+    wassert(actual(mds.size()) == 3u);
+    wassert(actual(mds[0].sourceBlob().filename) == sys::abspath("error/2007/07-08.grib"));
+    wassert(actual(mds[1].sourceBlob().filename) == sys::abspath("error/2007/07-07.grib"));
+    wassert(actual(mds[2].sourceBlob().filename) == sys::abspath("error/2007/10-09.grib"));
+
+    wassert(actual_file("copyok/copyok/test.grib1").not_exists());
+    wassert(actual_file("copyok/copyko/test.grib1").exists());
+    wassert(actual(sys::size("copyko/copyko/test.grib1")) == 44412u);
 });
 
 add_method("dispatch_issue68", [](Fixture& f) {
