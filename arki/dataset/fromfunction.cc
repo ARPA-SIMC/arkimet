@@ -27,6 +27,8 @@ Reader::~Reader() {}
 bool Reader::query_data(const dataset::DataQuery& q, std::function<bool(std::unique_ptr<Metadata>)> dest)
 {
     return generator([&](std::unique_ptr<Metadata> md) {
+        if (!q.matcher(*md))
+            return true;
         return dest(std::move(md));
     });
 }
