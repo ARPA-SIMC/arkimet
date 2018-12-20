@@ -45,6 +45,17 @@ add_method("read", [](Fixture& f) {
     wassert(actual(mdc.size()) == 3u);
 });
 
+add_method("query", [](Fixture& f) {
+    auto reader = f.config().create_reader();
+    fromfunction::Reader* ff_reader = dynamic_cast<fromfunction::Reader*>(reader.get());
+    ff_reader->generator = [&](metadata_dest_func dest){
+        auto scanner = scan::Scanner::get_scanner("grib");
+        return scanner->test_scan_file("inbound/test.grib1", dest);
+    };
+    metadata::Collection mdc(*reader, Matcher::parse("origin:GRIB1,200"));
+    wassert(actual(mdc.size()) == 1u);
+});
+
 }
 
 }

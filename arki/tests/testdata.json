@@ -9771,6 +9771,11 @@
  },
  {
   "doc": "",
+  "group": "arki_dataset_fromfunction",
+  "method": "query"
+ },
+ {
+  "doc": "",
   "group": "arki_dataset_testlarge",
   "method": "read"
  },
