@@ -1422,6 +1422,11 @@
  {
   "doc": "",
   "group": "arki_matcher",
+  "method": "unset"
+ },
+ {
+  "doc": "",
+  "group": "arki_matcher",
   "method": "aliases"
  },
  {
