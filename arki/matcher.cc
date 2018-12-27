@@ -199,9 +199,9 @@ bool AND::matchItemSet(const ItemSet& md) const
 
     for (const auto& i: components)
     {
-        const Type* item = md.get(i.first);
-        fprintf(stderr, "ITEM %d: %p\n", (int)i.first, item);
         if (!i.second) return false;
+        const Type* item = md.get(i.first);
+        if (!item) return false;
         if (!i.second->matchItem(*item)) return false;
     }
     return true;

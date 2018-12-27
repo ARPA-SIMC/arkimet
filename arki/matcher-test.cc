@@ -80,10 +80,10 @@ add_method("unset", [](Fixture& f) {
     m = Matcher::parse("timerange:GRIB1");
     wassert_false(m(md));
 
-    m = Matcher::parse("proddef:BUFR");
+    m = Matcher::parse("proddef:GRIB");
     wassert_false(m(md));
 
-    m = Matcher::parse("area:GRIB");
+    m = Matcher::parse("area:GRIB:foo=5");
     wassert_false(m(md));
 
     m = Matcher::parse("quantity:VRAD");
