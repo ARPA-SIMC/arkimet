@@ -63,6 +63,39 @@ add_method("or", [](Fixture& f) {
     ensure(!m(f.md));
 });
 
+// Try matching an unset metadata (see #166)
+add_method("unset", [](Fixture& f) {
+    Metadata md;
+    Matcher m;
+
+    m = Matcher::parse("origin:GRIB1");
+    wassert_false(m(md));
+
+    m = Matcher::parse("product:BUFR");
+    wassert_false(m(md));
+
+    m = Matcher::parse("level:GRIB1");
+    wassert_false(m(md));
+
+    m = Matcher::parse("timerange:GRIB1");
+    wassert_false(m(md));
+
+    m = Matcher::parse("proddef:GRIB");
+    wassert_false(m(md));
+
+    m = Matcher::parse("area:GRIB:foo=5");
+    wassert_false(m(md));
+
+    m = Matcher::parse("quantity:VRAD");
+    wassert_false(m(md));
+
+    m = Matcher::parse("task:test");
+    wassert_false(m(md));
+
+    m = Matcher::parse("reftime:=2018");
+    wassert_false(m(md));
+});
+
 // Try using aliases
 add_method("aliases", [](Fixture& f) {
     // Configuration file with alias definitions
