@@ -7,7 +7,7 @@
 #include <dballe/file.h>
 #include <wreport/bulletin.h>
 #include <dballe/message.h>
-#include <dballe/msg/codec.h>
+#include <dballe/importer.h>
 #include <arpa/inet.h>
 #include <cstring>
 #include <iostream>
@@ -60,17 +60,17 @@ struct Output
 
     void open_ok_stdout()
     {
-        output_ok = dballe::File::create(dballe::File::BUFR, stdout, false, "[standard output]");
+        output_ok = dballe::File::create(dballe::Encoding::BUFR, stdout, false, "[standard output]");
     }
 
     void open_ok_file(const std::string& pathname)
     {
-        output_ok = dballe::File::create(dballe::File::BUFR, pathname, "wb");
+        output_ok = dballe::File::create(dballe::Encoding::BUFR, pathname, "wb");
     }
 
     void open_fail_file(const std::string& pathname)
     {
-        output_fail = dballe::File::create(dballe::File::BUFR, pathname, "wb");
+        output_fail = dballe::File::create(dballe::Encoding::BUFR, pathname, "wb");
     }
 
     void ok(const std::string& buf)
@@ -126,7 +126,7 @@ protected:
         dst.load_tables();
     }
 
-    void splitmsg(const BinaryMessage& rmsg, const BufrBulletin& msg, msg::Importer& importer, Output& output)
+    void splitmsg(const BinaryMessage& rmsg, const BufrBulletin& msg, Importer& importer, Output& output)
     {
         // Create new message with the same info as the old one
         auto newmsg(BufrBulletin::create());
@@ -145,10 +145,10 @@ protected:
 
             // Parse into dba_msg
             try {
-                Messages msgs = importer.from_bulletin(*newmsg);
+                auto msgs = importer.from_bulletin(*newmsg);
 
                 // Update reference time
-                const Datetime& dt = msgs[0].get_datetime();
+                const Datetime& dt = msgs[0]->get_datetime();
                 if (!dt.is_missing())
                 {
                     newmsg->rep_year = dt.year;
@@ -182,20 +182,20 @@ public:
 
     void process_stdin(Output& output)
     {
-        unique_ptr<dballe::File> file(dballe::File::create(dballe::File::BUFR, stdin, false, "[standard input]").release());
+        unique_ptr<dballe::File> file(dballe::File::create(dballe::Encoding::BUFR, stdin, false, "[standard input]").release());
         process(*file, output);
     }
 
     void process(const std::string& filename, Output& output)
     {
-        unique_ptr<dballe::File> file(dballe::File::create(dballe::File::BUFR, filename.c_str(), "r").release());
+        unique_ptr<dballe::File> file(dballe::File::create(dballe::Encoding::BUFR, filename.c_str(), "r").release());
         process(*file, output);
     }
 
     void process(dballe::File& infile, Output& output)
     {
         // Use .release() so the code is the same even with the new C++11's dballe
-        unique_ptr<msg::Importer> importer = msg::Importer::create(dballe::File::BUFR);
+        auto importer = Importer::create(dballe::Encoding::BUFR);
 
         while (BinaryMessage rmsg = infile.read())
         {

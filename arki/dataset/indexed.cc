@@ -10,6 +10,7 @@
 #include "arki/metadata/collection.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/string.h"
+#include "arki/utils/files.h"
 #include "arki/scan.h"
 #include "arki/nag.h"
 #include <algorithm>
@@ -120,6 +121,7 @@ void IndexedChecker::check_issue51(CheckerConfig& opts)
         {
             // Make a backup copy with .issue51 extension, if it doesn't already exist
             std::string abspath = str::joinpath(config().path, i.first);
+            utils::files::PreserveFileTimes pf(abspath);
             std::string backup = abspath + ".issue51";
             if (!sys::exists(backup))
             {

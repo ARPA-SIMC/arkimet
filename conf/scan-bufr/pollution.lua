@@ -24,13 +24,11 @@ function scan(msg, md)
 
     -- Look for pollutant type
     polltype = nil
-    msg:foreach(function(ctx)
-        if ctx:pind() ~= 257 and polltype == nil then
-            ctx:foreach(function(var)
-                if polltype == nil then
-                    polltype = pollution_codes[var:code()]
-                end
-            end)
+    msg:foreach(function(v)
+        if v.pind ~= 257 and polltype == nil then
+            if polltype == nil then
+                polltype = pollution_codes[v.var:code()]
+            end
         end
     end)
     if polltype ~= nil then md:set(md.product:addValues{p=polltype}) end

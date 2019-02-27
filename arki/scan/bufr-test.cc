@@ -348,7 +348,7 @@ add_method("temp_reftime", [] {
 add_method("wrongdate", [] {
     scan::Bufr scanner;
     metadata::Collection mds;
-    scanner.test_scan_file("inbound/wrongdate.bufr", mds.inserter_func());
+    wassert(scanner.test_scan_file("inbound/wrongdate.bufr", mds.inserter_func()));
     wassert(actual(mds.size()) == 6u);
 
     wassert(actual(mds[0].get<Reftime>()).isfalse());

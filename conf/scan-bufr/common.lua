@@ -50,10 +50,10 @@ end
 
 function bufr_scan_forecast(msg)
     local forecast = nil
-    msg:foreach(function(ctx)
-        if ctx:pind() == 254 then
+    msg:foreach(function(v)
+        if v.pind == 254 then
             -- Verify that all p1 are the same: if they differ, error()
-            local p1 = ctx:p1()
+            local p1 = v.p1
             if forecast ~= nil and forecast ~= p1 then
                 error("BUFR message has contradictory forecasts"..tostring(forecast).." and "..tostring(p1))
             end
