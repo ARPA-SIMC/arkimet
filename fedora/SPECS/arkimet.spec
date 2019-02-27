@@ -3,7 +3,7 @@
 
 Summary: Archive for weather information
 Name: arkimet
-Version: 1.13
+Version: 1.14
 Release: 1
 License: GPL
 Group: Applications/Meteo
@@ -221,6 +221,9 @@ if [ "$1" = "1" ]; then
 fi
 
 %changelog
+* Wed Feb 27 2019 Daniele Branchini <dbranchini@arpae.it> - 1.14-1
+- Ported to new dballe 8 API
+
 * Mon Jan 21 2019 Daniele Branchini <dbranchini@arpae.it> - 1.13-1
 - Fail a match on a metadata which does not have the data to match (#166)
 
