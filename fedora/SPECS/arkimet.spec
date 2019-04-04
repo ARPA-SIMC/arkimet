@@ -3,7 +3,7 @@
 
 Summary: Archive for weather information
 Name: arkimet
-Version: 1.14
+Version: 1.15
 Release: 1
 License: GPL
 Group: Applications/Meteo
@@ -221,6 +221,9 @@ if [ "$1" = "1" ]; then
 fi
 
 %changelog
+* Tue Apr  4 2019 Daniele Branchini <dbranchini@arpae.it> - 1.15-1
+- Fixed bug on dataset compression (--zip option, see #170)
+
 * Wed Feb 27 2019 Daniele Branchini <dbranchini@arpae.it> - 1.14-1
 - Ported to new dballe 8 API
 
