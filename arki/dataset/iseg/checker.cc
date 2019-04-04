@@ -338,7 +338,7 @@ public:
                 throw std::runtime_error("duplicate detected while reordering segment");
         }
 
-        size_t size_pre = sys::isdir(segment->segment().abspath) ? 0 : sys::size(segment->segment().abspath);
+        size_t size_pre = segment->size();
 
         // Remove the .metadata file if present, because we are shuffling the
         // data file and it will not be valid anymore
@@ -357,7 +357,7 @@ public:
         // Commit the changes in the database
         p.commit();
 
-        size_t size_post = sys::isdir(segment->segment().abspath) ? 0 : sys::size(segment->segment().abspath);
+        size_t size_post = segment->size();
 
         return size_pre - size_post;
     }
