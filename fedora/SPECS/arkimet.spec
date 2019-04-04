@@ -221,7 +221,7 @@ if [ "$1" = "1" ]; then
 fi
 
 %changelog
-* Tue Apr  4 2019 Daniele Branchini <dbranchini@arpae.it> - 1.15-1
+* Thu Apr  4 2019 Daniele Branchini <dbranchini@arpae.it> - 1.15-1
 - Fixed bug on dataset compression (--zip option, see #170)
 
 * Wed Feb 27 2019 Daniele Branchini <dbranchini@arpae.it> - 1.14-1
