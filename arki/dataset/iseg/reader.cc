@@ -36,8 +36,8 @@ bool Reader::is_dataset(const std::string& dir)
 bool Reader::list_segments(const Matcher& matcher, std::function<bool(const std::string& relpath)> dest)
 {
     vector<string> seg_relpaths;
-    config().step().list_segments(config().path, config().format + ".index", matcher, [&](std::string&& s) {
-        s.resize(s.size() - 6);
+    step::SegmentQuery squery(config().path, config().format, "\\.index$", matcher);
+    config().step().list_segments(squery, [&](std::string&& s) {
         seg_relpaths.emplace_back(move(s));
     });
     std::sort(seg_relpaths.begin(), seg_relpaths.end());
@@ -89,7 +89,7 @@ void Reader::summary_for_all(Summary& out)
     // Find the datetime extremes in the database
     unique_ptr<core::Time> begin;
     unique_ptr<core::Time> end;
-    config().step().time_extremes(config().path, config().format, begin, end);
+    config().step().time_extremes(step::SegmentQuery(config().path, config().format), begin, end);
 
     // If there is data in the database, get all the involved
     // monthly summaries
@@ -150,7 +150,7 @@ void Reader::query_summary(const Matcher& matcher, Summary& summary)
     // Amend open ends with the bounds from the database
     unique_ptr<core::Time> db_begin;
     unique_ptr<core::Time> db_end;
-    config().step().time_extremes(config().path, config().format, db_begin, db_end);
+    config().step().time_extremes(step::SegmentQuery(config().path, config().format), db_begin, db_end);
     // If the database is empty then the result is empty:
     // we are done
     if (!db_begin.get())

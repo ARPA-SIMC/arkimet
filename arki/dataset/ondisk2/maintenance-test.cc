@@ -78,32 +78,30 @@ void Tests<TestFixture>::register_tests()
         wassert(f.state_is(3, segment::SEGMENT_UNALIGNED));
     });
 
-    this->add_method("check_missing_index_rescan_partial_files", R"(
-        - while `needs-check-do-not-pack` is present, files with gaps are
-          marked for rescanning instead of repacking. This prevents a scenario
-          in which, after the index has been deleted, and some data has been
-          imported that got appended to an existing segment, that segment would
-          be considered as needing repack instead of rescan. [unaligned]
-    )", [&](Fixture& f) {
-        // Remove the index and make it as if the second datum in
-        // 2007/07-07.grib has never been imported
-        sys::unlink("testds/index.sqlite");
-        if (sys::isdir("testds/" + f.test_relpath))
-            sys::unlink("testds/" + f.test_relpath + "/000001." + f.format);
-        else {
-            sys::File df("testds/" + f.test_relpath, O_RDWR);
-            df.ftruncate(f.test_datum_size);
-        }
+    if (TestFixture::segment_can_append_data())
+    {
+        this->add_method("check_missing_index_rescan_partial_files", R"(
+            - while `needs-check-do-not-pack` is present, files with gaps are
+              marked for rescanning instead of repacking. This prevents a scenario
+              in which, after the index has been deleted, and some data has been
+              imported that got appended to an existing segment, that segment would
+              be considered as needing repack instead of rescan. [unaligned]
+        )", [&](Fixture& f) {
+            // Remove the index and make it as if the second datum in
+            // 2007/07-07.grib has never been imported
+            f.truncate_segment();
+            sys::unlink("testds/index.sqlite");
 
-        // Import the second datum of 2007/07-07.grib again
-        {
-            auto w = f.makeSegmentedWriter();
-            wassert(actual(*w).import(f.import_results[3]));
-        }
+            // Import the second datum of 2007/07-07.grib again
+            {
+                auto w = f.makeSegmentedWriter();
+                wassert(actual(*w).import(f.import_results[3]));
+            }
 
-        // Make sure that the segment is seen as unaligned instead of dirty
-        wassert(f.state_is(3, segment::SEGMENT_UNALIGNED));
-    });
+            // Make sure that the segment is seen as unaligned instead of dirty
+            wassert(f.state_is(3, segment::SEGMENT_UNALIGNED));
+        });
+    }
 
     this->add_method("repack_unaligned", R"(
         - [unaligned] when `needs-check-do-not-pack` is present in the dataset
@@ -126,13 +124,17 @@ void Tests<TestFixture>::register_tests()
     });
 }
 
-Tests<FixtureConcat> test_ondisk2_plain_grib("arki_dataset_ondisk2_maintenance_grib", "grib", "type=ondisk2\n");
-Tests<FixtureDir> test_ondisk2_plain_grib_dir("arki_dataset_ondisk2_maintenance_grib_dirs", "grib", "type=ondisk2\nsegments=dir\n");
-Tests<FixtureConcat> test_ondisk2_plain_bufr("arki_dataset_ondisk2_maintenance_bufr", "bufr", "type=ondisk2\n");
-Tests<FixtureDir> test_ondisk2_plain_bufr_dir("arki_dataset_ondisk2_maintenance_bufr_dirs", "bufr", "type=ondisk2\nsegments=dir\n");
-Tests<FixtureConcat> test_ondisk2_plain_vm2("arki_dataset_ondisk2_maintenance_vm2", "vm2", "type=ondisk2\n");
-Tests<FixtureDir> test_ondisk2_plain_vm2_dir("arki_dataset_ondisk2_maintenance_vm2_dirs", "vm2", "type=ondisk2\nsegments=dir\n");
-Tests<FixtureDir> test_ondisk2_plain_odimh5_dir("arki_dataset_ondisk2_maintenance_odimh5", "odimh5", "type=ondisk2\n");
+Tests<FixtureConcat> test_ondisk2_grib("arki_dataset_ondisk2_maintenance_grib", "grib", "type=ondisk2\n");
+Tests<FixtureDir> test_ondisk2_grib_dir("arki_dataset_ondisk2_maintenance_grib_dirs", "grib", "type=ondisk2\nsegments=dir\n");
+Tests<FixtureZip> test_ondisk2_grib_zip("arki_dataset_ondisk2_maintenance_grib_zip", "grib", "type=ondisk2\nsegments=dir\n");
+Tests<FixtureConcat> test_ondisk2_bufr("arki_dataset_ondisk2_maintenance_bufr", "bufr", "type=ondisk2\n");
+Tests<FixtureDir> test_ondisk2_bufr_dir("arki_dataset_ondisk2_maintenance_bufr_dirs", "bufr", "type=ondisk2\nsegments=dir\n");
+Tests<FixtureZip> test_ondisk2_bufr_zip("arki_dataset_ondisk2_maintenance_bufr_zip", "bufr", "type=ondisk2\nsegments=dir\n");
+Tests<FixtureConcat> test_ondisk2_vm2("arki_dataset_ondisk2_maintenance_vm2", "vm2", "type=ondisk2\n");
+Tests<FixtureDir> test_ondisk2_vm2_dir("arki_dataset_ondisk2_maintenance_vm2_dirs", "vm2", "type=ondisk2\nsegments=dir\n");
+Tests<FixtureZip> test_ondisk2_vm2_zip("arki_dataset_ondisk2_maintenance_vm2_zip", "vm2", "type=ondisk2\nsegments=dir\n");
+Tests<FixtureDir> test_ondisk2_odimh5_dir("arki_dataset_ondisk2_maintenance_odimh5", "odimh5", "type=ondisk2\n");
+Tests<FixtureZip> test_ondisk2_odimh5_zip("arki_dataset_ondisk2_maintenance_odimh5_zip", "odimh5", "type=ondisk2\n");
 
 }
 
