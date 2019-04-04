@@ -15,22 +15,25 @@ namespace {
 
 using namespace arki::dataset::maintenance_test;
 
-class Tests : public MaintenanceTest
+template<typename TestFixture>
+class Tests : public MaintenanceTest<TestFixture>
 {
-    using MaintenanceTest::MaintenanceTest;
+    using MaintenanceTest<TestFixture>::MaintenanceTest;
+    typedef TestFixture Fixture;
 
     void register_tests() override;
 
-    bool can_detect_overlap() const override { return segment_type != SEGMENT_DIR; }
+    bool can_detect_overlap() const override { return TestFixture::segment_type() != SEGMENT_DIR; }
     bool can_detect_segments_out_of_step() const override { return false; }
     bool can_delete_data() const override { return true; }
 };
 
-void Tests::register_tests()
+template<typename TestFixture>
+void Tests<TestFixture>::register_tests()
 {
-    MaintenanceTest::register_tests();
+    MaintenanceTest<TestFixture>::register_tests();
 
-    add_method("repack_unaligned", R"(
+    this->add_method("repack_unaligned", R"(
         - [unaligned] segments are not touched, to prevent deleting data that
           should be reindexed instead
     )", [&](Fixture& f) {
@@ -47,13 +50,13 @@ void Tests::register_tests()
     });
 }
 
-Tests test_iseg_plain_grib("arki_dataset_iseg_maintenance_grib", MaintenanceTest::SEGMENT_CONCAT, "grib", "type=iseg\nformat=grib\n");
-Tests test_iseg_plain_grib_dir("arki_dataset_iseg_maintenance_grib_dirs", MaintenanceTest::SEGMENT_DIR, "grib", "type=iseg\nformat=grib\nsegments=dir\n");
-Tests test_iseg_plain_bufr("arki_dataset_iseg_maintenance_bufr", MaintenanceTest::SEGMENT_CONCAT, "bufr", "type=iseg\nformat=bufr\n");
-Tests test_iseg_plain_bufr_dir("arki_dataset_iseg_maintenance_bufr_dirs", MaintenanceTest::SEGMENT_DIR, "bufr", "type=iseg\nformat=bufr\nsegments=dir\n");
-Tests test_iseg_plain_vm2("arki_dataset_iseg_maintenance_vm2", MaintenanceTest::SEGMENT_CONCAT, "vm2", "type=iseg\nformat=vm2\n");
-Tests test_iseg_plain_vm2_dir("arki_dataset_iseg_maintenance_vm2_dirs", MaintenanceTest::SEGMENT_DIR, "vm2", "type=iseg\nformat=vm2\nsegments=dir\n");
-Tests test_iseg_plain_odimh5_dir("arki_dataset_iseg_maintenance_odimh5", MaintenanceTest::SEGMENT_DIR, "odimh5", "type=iseg\nformat=odimh5\n");
+Tests<FixtureConcat> test_iseg_plain_grib("arki_dataset_iseg_maintenance_grib", "grib", "type=iseg\nformat=grib\n");
+Tests<FixtureDir> test_iseg_plain_grib_dir("arki_dataset_iseg_maintenance_grib_dirs", "grib", "type=iseg\nformat=grib\nsegments=dir\n");
+Tests<FixtureConcat> test_iseg_plain_bufr("arki_dataset_iseg_maintenance_bufr", "bufr", "type=iseg\nformat=bufr\n");
+Tests<FixtureDir> test_iseg_plain_bufr_dir("arki_dataset_iseg_maintenance_bufr_dirs", "bufr", "type=iseg\nformat=bufr\nsegments=dir\n");
+Tests<FixtureConcat> test_iseg_plain_vm2("arki_dataset_iseg_maintenance_vm2", "vm2", "type=iseg\nformat=vm2\n");
+Tests<FixtureDir> test_iseg_plain_vm2_dir("arki_dataset_iseg_maintenance_vm2_dirs", "vm2", "type=iseg\nformat=vm2\nsegments=dir\n");
+Tests<FixtureDir> test_iseg_plain_odimh5_dir("arki_dataset_iseg_maintenance_odimh5", "odimh5", "type=iseg\nformat=odimh5\n");
 
 }
 

@@ -14,6 +14,7 @@
 #include "arki/utils/files.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
+#include "arki/scan.h"
 
 using namespace std;
 using namespace arki::utils;
@@ -38,6 +39,58 @@ std::string Segment::basename(const std::string& pathname)
     if (str::endswith(pathname, ".zip"))
         return pathname.substr(0, pathname.size() - 4);
     return pathname;
+}
+
+bool Segment::is_segment(std::string& abspath)
+{
+    std::unique_ptr<struct stat> st = sys::stat(abspath);
+    if (!st.get())
+        return false;
+
+    if (str::endswith(abspath, ".metadata"))
+        return false;
+
+    if (str::endswith(abspath, ".summary"))
+        return false;
+
+    if (str::endswith(abspath, ".gz.idx"))
+        return false;
+
+    if (str::endswith(abspath, ".zip"))
+    {
+        if (S_ISDIR(st->st_mode))
+            return false;
+        string format = scan::Scanner::format_from_filename(abspath.substr(0, abspath.size() - 4), "");
+        return segment::zip::Segment::can_store(format);
+    }
+
+    if (str::endswith(abspath, ".gz"))
+    {
+        if (S_ISDIR(st->st_mode))
+            return false;
+        string format = scan::Scanner::format_from_filename(abspath.substr(0, abspath.size() - 3), "");
+        return segment::gz::Segment::can_store(format);
+    }
+
+    if (str::endswith(abspath, ".tar"))
+    {
+        if (S_ISDIR(st->st_mode))
+            return false;
+        string format = scan::Scanner::format_from_filename(abspath.substr(0, abspath.size() - 4), "");
+        return segment::tar::Segment::can_store(format);
+    }
+
+    string format = scan::Scanner::format_from_filename(abspath, "");
+    if (format.empty())
+        return false;
+
+    if (!S_ISDIR(st->st_mode))
+        return segment::fd::Segment::can_store(format);
+
+    if (!sys::exists(str::joinpath(abspath, ".sequence")))
+        return false;
+
+    return segment::dir::Segment::can_store(format);
 }
 
 std::shared_ptr<segment::Reader> Segment::detect_reader(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock)

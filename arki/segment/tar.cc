@@ -301,14 +301,14 @@ Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, c
 
 void Checker::test_truncate(size_t offset)
 {
-    if (offset > 0)
-        throw std::runtime_error("tar test_truncate not implemented for offset > 0");
+    if (offset % 512 != 0)
+        throw std::runtime_error("tar test_truncate only works at multiples of 512");
 
     utils::files::PreserveFileTimes pft(tarabspath);
 
     sys::File out(tarabspath, O_CREAT | O_TRUNC | O_WRONLY);
-    out.ftruncate(0);
-    out.ftruncate(1024);
+    out.ftruncate(offset);
+    out.ftruncate(offset + 512);
     out.close();
 }
 

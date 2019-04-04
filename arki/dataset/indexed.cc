@@ -193,8 +193,9 @@ void IndexedChecker::test_swap_data(const std::string& relpath, unsigned d1_idx,
 
 void IndexedChecker::test_rename(const std::string& relpath, const std::string& new_relpath)
 {
+    auto segment = segment_manager().get_checker(scan::Scanner::format_from_filename(relpath), relpath);
     m_idx->test_rename(relpath, new_relpath);
-    sys::rename(str::joinpath(config().path, relpath), str::joinpath(config().path, new_relpath));
+    segment->move(config().path, new_relpath, str::joinpath(config().path, new_relpath));
 }
 
 }

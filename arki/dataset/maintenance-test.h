@@ -7,6 +7,11 @@ namespace arki {
 namespace dataset {
 namespace maintenance_test {
 
+enum SegmentType {
+    SEGMENT_CONCAT,
+    SEGMENT_DIR,
+    SEGMENT_ZIP,
+};
 
 struct Fixture : public arki::tests::DatasetTest
 {
@@ -21,6 +26,13 @@ struct Fixture : public arki::tests::DatasetTest
     Fixture(const std::string& format, const std::string& cfg_instance=std::string());
 
     /**
+     * Return the relative path of test_relpath as found on disk.
+     *
+     * It can differ from test_relpath in case the segment is archived or compressed
+     */
+    std::string test_relpath_ondisk() const { return test_relpath; }
+
+    /**
      * Compute the dataset state and assert that it contains `segment_count`
      * segments, and that the segment test_relpath has the given state.
      */
@@ -33,41 +45,6 @@ struct Fixture : public arki::tests::DatasetTest
     void accurate_state_is(unsigned segment_count, unsigned test_relpath_state);
 
     void test_setup();
-};
-
-struct MaintenanceTest : public arki::tests::FixtureTestCase<Fixture>
-{
-    enum SegmentType {
-        SEGMENT_CONCAT,
-        SEGMENT_DIR,
-    };
-
-    SegmentType segment_type;
-
-    template<typename... Args>
-    MaintenanceTest(const std::string& name, SegmentType segment_type, Args... args)
-        : FixtureTestCase(name, std::forward<Args>(args)...), segment_type(segment_type)
-    {
-    }
-    virtual ~MaintenanceTest();
-
-    /**
-     * Return true if this dataset can represent and detect overlapping data.
-     */
-    virtual bool can_detect_overlap() const = 0;
-
-    /**
-     * Return true if this dataset can deal with segments whose name does not
-     * fit the segment step.
-     */
-    virtual bool can_detect_segments_out_of_step() const = 0;
-
-    /**
-     * Return true if this dataset can delete data.
-     */
-    virtual bool can_delete_data() const = 0;
-
-    std::unique_ptr<dataset::segmented::Checker> checker() { return fixture->makeSegmentedChecker(); }
 
     /**
      * Move all elements of 2007/07-07.grib forward, leaving a hole at the
@@ -115,13 +92,75 @@ struct MaintenanceTest : public arki::tests::FixtureTestCase<Fixture>
     /// Reset sequence file to 0 on the test segment
     void reset_seqfile();
 
+    /// Remove the segment from disk
+    void remove_segment();
+};
+
+struct FixtureConcat : public Fixture
+{
+    using Fixture::Fixture;
+
+    static SegmentType segment_type() { return SEGMENT_CONCAT; }
+
+    /// Corrupt the dataset so that two data appear to overlap
+    void make_overlap();
+};
+
+struct FixtureDir : public Fixture
+{
+    using Fixture::Fixture;
+
+    static SegmentType segment_type() { return SEGMENT_DIR; }
+
+    /// Corrupt the dataset so that two data appear to overlap
+    void make_overlap();
+};
+
+struct FixtureZip : public Fixture
+{
+    using Fixture::Fixture;
+
+    static SegmentType segment_type() { return SEGMENT_ZIP; }
+
+    void test_setup();
+
+    std::string test_relpath_ondisk() const { return test_relpath + ".zip"; }
+    void remove_segment();
+
+    /// Corrupt the dataset so that two data appear to overlap
+    void make_overlap();
+};
+
+
+template<typename TestFixture>
+struct MaintenanceTest : public arki::tests::FixtureTestCase<TestFixture>
+{
+    using arki::tests::FixtureTestCase<TestFixture>::FixtureTestCase;
+    typedef TestFixture Fixture;
+
+    virtual ~MaintenanceTest();
+
+    /**
+     * Return true if this dataset can represent and detect overlapping data.
+     */
+    virtual bool can_detect_overlap() const = 0;
+
+    /**
+     * Return true if this dataset can deal with segments whose name does not
+     * fit the segment step.
+     */
+    virtual bool can_detect_segments_out_of_step() const = 0;
+
+    /**
+     * Return true if this dataset can delete data.
+     */
+    virtual bool can_delete_data() const = 0;
+
     void register_tests() override;
 
     virtual void register_tests_concat();
     virtual void register_tests_dir();
-
-    /// Remove a file or a directory
-    static void rm_r(const std::string& pathname);
+    virtual void register_tests_zip();
 };
 
 }

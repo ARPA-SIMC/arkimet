@@ -80,13 +80,6 @@ add_method("scan_dir_dir1", [] {
         wassert(actual(res[5]) == "2009/a.grib");
         wassert(actual(res[6]) == "2009/b.grib");
     }
-
-    {
-        auto sm = SegmentManager::get("dirscanner", true);
-        std::vector<std::string> res;
-        sm->scan_dir([&](const std::string& relpath) { res.push_back(relpath); });
-        wassert(actual(res.size()) == 0u);
-    }
 });
 
 // Test file names interspersed with directory names
@@ -115,13 +108,6 @@ add_method("scan_dir_dir2", [] {
         wassert(actual(res[2]) == "2008/b.grib");
         wassert(actual(res[3]) == "2009/a.grib");
         wassert(actual(res[4]) == "2009/b.grib");
-    }
-
-    {
-        auto sm = SegmentManager::get("dirscanner", true);
-        std::vector<std::string> res;
-        sm->scan_dir([&](const std::string& relpath) { res.push_back(relpath); });
-        wassert(actual(res.size()) == 0u);
     }
 });
 

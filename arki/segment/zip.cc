@@ -257,6 +257,7 @@ bool Reader::scan_data(metadata_dest_func dest)
     {
         std::vector<uint8_t> data = zip.get(span);
         auto md = scanner->scan_data(data);
+        md->set_source(Source::createBlob(shared_from_this(), span.offset, span.size));
         if (!dest(move(md)))
             return false;
     }
@@ -304,7 +305,7 @@ bool Checker::exists_on_disk()
 
 bool Checker::is_empty()
 {
-    utils::ZipReader zip(segment().format, core::File(segment().abspath + ".zip", O_RDONLY | O_CLOEXEC));
+    utils::ZipReader zip(segment().format, core::File(zipabspath, O_RDONLY | O_CLOEXEC));
     return zip.list_data().empty();
 }
 
@@ -382,8 +383,9 @@ Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, c
 
 void Checker::test_truncate(size_t offset)
 {
+    // Zip file indices are 1-based, and we are passed an actual index from a metadata
     utils::files::PreserveFileTimes pft(zipabspath);
-    if (offset == 0)
+    if (offset == 1)
     {
         static const char empty_zip_data[] = "PK\x05\x06\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00";
         sys::File out(zipabspath, O_WRONLY | O_CREAT | O_TRUNC);
@@ -402,7 +404,28 @@ void Checker::test_truncate(size_t offset)
 
 void Checker::test_make_hole(metadata::Collection& mds, unsigned hole_size, unsigned data_idx)
 {
-    throw std::runtime_error("test_make_hole not implemented");
+    utils::files::PreserveFileTimes pf(zipabspath);
+
+    utils::ZipWriter zip(segment().format, zipabspath);
+
+    if (data_idx >= mds.size())
+    {
+        std::vector<segment::Span> spans = zip.list_data();
+        size_t pos = spans.back().offset + 1;
+        for (unsigned i = 0; i < hole_size; ++i)
+        {
+            zip.write(Span(pos + 1, 0), std::vector<uint8_t>());
+        }
+    } else {
+        for (int i = mds.size() - 1; i >= (int)data_idx; --i)
+        {
+            unique_ptr<source::Blob> source(mds[i].sourceBlob().clone());
+            zip.rename(Span(source->offset, source->size), Span(source->offset + hole_size, source->size));
+            source->offset += hole_size;
+            mds[i].set_source(std::move(source));
+        }
+    }
+    zip.close();
 }
 
 void Checker::test_make_overlap(metadata::Collection& mds, unsigned overlap_size, unsigned data_idx)
@@ -413,10 +436,14 @@ void Checker::test_make_overlap(metadata::Collection& mds, unsigned overlap_size
 void Checker::test_corrupt(const metadata::Collection& mds, unsigned data_idx)
 {
     const auto& s = mds[data_idx].sourceBlob();
-    utils::files::PreserveFileTimes pt(segment().abspath);
-    sys::File fd(segment().abspath, O_RDWR);
-    fd.lseek(s.offset);
-    fd.write_all_or_throw("\0", 1);
+    Span span(s.offset, s.size);
+
+    utils::files::PreserveFileTimes pt(zipabspath);
+    utils::ZipWriter zip(segment().format, zipabspath);
+    std::vector<uint8_t> data = zip.get(span);
+    data[0] = 0;
+    zip.write(span, data);
+    zip.close();
 }
 
 

@@ -147,6 +147,9 @@ public:
      */
     static std::string basename(const std::string& pathname);
 
+    /// Check if the given file or directory is a segment
+    static bool is_segment(std::string& abspath);
+
     /// Instantiate the right Reader implementation for a segment that already exists
     static std::shared_ptr<segment::Reader> detect_reader(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock);
 

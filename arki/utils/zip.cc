@@ -204,5 +204,30 @@ void ZipWriter::remove(const segment::Span& span)
 #endif
 }
 
+void ZipWriter::write(const segment::Span& span, const std::vector<uint8_t>& data)
+{
+    auto fname = data_fname(span.offset, format);
+
+    zip_source_t* source = zip_source_buffer(zip, data.data(), data.size(), 0);
+    if (source == nullptr)
+        throw zip_error(zip, "cannot create source for data to append to zip file");
+
+    if (zip_file_add(zip, fname.c_str(), source, ZIP_FL_OVERWRITE | ZIP_FL_ENC_UTF_8) == -1)
+    {
+        zip_source_free(source);
+        throw zip_error(zip, "cannot add file " + fname);
+    }
+}
+
+void ZipWriter::rename(const segment::Span& old_span, const segment::Span& new_span)
+{
+    auto old_fname = data_fname(old_span.offset, format);
+    auto old_idx = locate(old_fname);
+    auto new_fname = data_fname(new_span.offset, format);
+
+    if (zip_file_rename(zip, old_idx, new_fname.c_str(), ZIP_FL_ENC_UTF_8) == -1)
+        throw zip_error(zip, "cannot rename " + old_fname + " to " + new_fname);
+}
+
 }
 }

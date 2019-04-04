@@ -14,6 +14,8 @@ struct BaseManager : public SegmentManager
     bool mockdata;
 
     BaseManager(const std::string& root, bool mockdata=false);
+
+    void scan_dir(std::function<void(const std::string& relpath)> dest) override;
 };
 
 /// Segment manager that picks the right readers/writers based on file types
@@ -24,8 +26,6 @@ struct AutoManager : public BaseManager
     std::shared_ptr<segment::Writer> create_writer_for_format(const std::string& format, const std::string& relpath, const std::string& abspath);
 
     std::shared_ptr<segment::Checker> create_checker_for_format(const std::string& format, const std::string& relpath, const std::string& abspath);
-
-    void scan_dir(std::function<void(const std::string& relpath)> dest) override;
 };
 
 /// Segment manager that always picks directory segments
@@ -36,8 +36,6 @@ struct ForceDirManager : public BaseManager
     std::shared_ptr<segment::Writer> create_writer_for_format(const std::string& format, const std::string& relpath, const std::string& abspath) override;
 
     std::shared_ptr<segment::Checker> create_checker_for_format(const std::string& format, const std::string& relpath, const std::string& abspath) override;
-
-    void scan_dir(std::function<void(const std::string& relpath)> dest) override;
 };
 
 /// Segment manager that always uses hole file segments

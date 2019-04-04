@@ -3807,7 +3807,7 @@
  {
   "doc": "- format-specific consistency checks on the content of each file must pass [corrupted]",
   "group": "arki_dataset_simple_maintenance_grib_plain",
-  "method": "tcheck_corrupted_data"
+  "method": "check_corrupted_data"
  },
  {
   "doc": "- [dirty] segments are not touched",
@@ -4012,7 +4012,7 @@
  {
   "doc": "- format-specific consistency checks on the content of each file must pass [corrupted]",
   "group": "arki_dataset_simple_maintenance_grib_sqlite",
-  "method": "tcheck_corrupted_data"
+  "method": "check_corrupted_data"
  },
  {
   "doc": "- [dirty] segments are not touched",
@@ -4222,7 +4222,7 @@
  {
   "doc": "- format-specific consistency checks on the content of each file must pass [corrupted]",
   "group": "arki_dataset_simple_maintenance_grib_plain_dirs",
-  "method": "tcheck_corrupted_data"
+  "method": "check_corrupted_data"
  },
  {
   "doc": "- [dirty] segments are not touched",
@@ -4432,7 +4432,7 @@
  {
   "doc": "- format-specific consistency checks on the content of each file must pass [corrupted]",
   "group": "arki_dataset_simple_maintenance_grib_sqlite_dirs",
-  "method": "tcheck_corrupted_data"
+  "method": "check_corrupted_data"
  },
  {
   "doc": "- [dirty] segments are not touched",
@@ -4637,7 +4637,7 @@
  {
   "doc": "- format-specific consistency checks on the content of each file must pass [corrupted]",
   "group": "arki_dataset_simple_maintenance_bufr_plain",
-  "method": "tcheck_corrupted_data"
+  "method": "check_corrupted_data"
  },
  {
   "doc": "- [dirty] segments are not touched",
@@ -4842,7 +4842,7 @@
  {
   "doc": "- format-specific consistency checks on the content of each file must pass [corrupted]",
   "group": "arki_dataset_simple_maintenance_bufr_sqlite",
-  "method": "tcheck_corrupted_data"
+  "method": "check_corrupted_data"
  },
  {
   "doc": "- [dirty] segments are not touched",
@@ -5052,7 +5052,7 @@
  {
   "doc": "- format-specific consistency checks on the content of each file must pass [corrupted]",
   "group": "arki_dataset_simple_maintenance_bufr_plain_dirs",
-  "method": "tcheck_corrupted_data"
+  "method": "check_corrupted_data"
  },
  {
   "doc": "- [dirty] segments are not touched",
@@ -5262,7 +5262,7 @@
  {
   "doc": "- format-specific consistency checks on the content of each file must pass [corrupted]",
   "group": "arki_dataset_simple_maintenance_bufr_sqlite_dirs",
-  "method": "tcheck_corrupted_data"
+  "method": "check_corrupted_data"
  },
  {
   "doc": "- [dirty] segments are not touched",
@@ -5467,7 +5467,7 @@
  {
   "doc": "- format-specific consistency checks on the content of each file must pass [corrupted]",
   "group": "arki_dataset_simple_maintenance_vm2_plain",
-  "method": "tcheck_corrupted_data"
+  "method": "check_corrupted_data"
  },
  {
   "doc": "- [dirty] segments are not touched",
@@ -5672,7 +5672,7 @@
  {
   "doc": "- format-specific consistency checks on the content of each file must pass [corrupted]",
   "group": "arki_dataset_simple_maintenance_vm2_sqlite",
-  "method": "tcheck_corrupted_data"
+  "method": "check_corrupted_data"
  },
  {
   "doc": "- [dirty] segments are not touched",
@@ -5882,7 +5882,7 @@
  {
   "doc": "- format-specific consistency checks on the content of each file must pass [corrupted]",
   "group": "arki_dataset_simple_maintenance_vm2_plain_dirs",
-  "method": "tcheck_corrupted_data"
+  "method": "check_corrupted_data"
  },
  {
   "doc": "- [dirty] segments are not touched",
@@ -6092,7 +6092,7 @@
  {
   "doc": "- format-specific consistency checks on the content of each file must pass [corrupted]",
   "group": "arki_dataset_simple_maintenance_vm2_sqlite_dirs",
-  "method": "tcheck_corrupted_data"
+  "method": "check_corrupted_data"
  },
  {
   "doc": "- [dirty] segments are not touched",
@@ -6302,7 +6302,7 @@
  {
   "doc": "- format-specific consistency checks on the content of each file must pass [corrupted]",
   "group": "arki_dataset_simple_maintenance_odimh5_plain",
-  "method": "tcheck_corrupted_data"
+  "method": "check_corrupted_data"
  },
  {
   "doc": "- [dirty] segments are not touched",
@@ -6512,7 +6512,7 @@
  {
   "doc": "- format-specific consistency checks on the content of each file must pass [corrupted]",
   "group": "arki_dataset_simple_maintenance_odimh5_sqlite",
-  "method": "tcheck_corrupted_data"
+  "method": "check_corrupted_data"
  },
  {
   "doc": "- [dirty] segments are not touched",
@@ -6617,6 +6617,376 @@
  {
   "doc": "- [unaligned] segments are not touched, to prevent deleting data that\n  should be reindexed instead",
   "group": "arki_dataset_simple_maintenance_odimh5_sqlite",
+  "method": "repack_unaligned"
+ },
+ {
+  "doc": "- the segment must be a zip file [unaligned]",
+  "group": "arki_dataset_simple_maintenance_odimh5_plain_zip",
+  "method": "check_iszip"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_simple_maintenance_odimh5_plain_zip",
+  "method": "clean"
+ },
+ {
+  "doc": "- the segment must exist [missing]",
+  "group": "arki_dataset_simple_maintenance_odimh5_plain_zip",
+  "method": "check_exists"
+ },
+ {
+  "doc": "- an empty segment not known by the index must be considered deleted [deleted]",
+  "group": "arki_dataset_simple_maintenance_odimh5_plain_zip",
+  "method": "check_unknown_empty"
+ },
+ {
+  "doc": "- all data known by the index for this segment must be present on disk [corrupted]",
+  "group": "arki_dataset_simple_maintenance_odimh5_plain_zip",
+  "method": "check_dataexists"
+ },
+ {
+  "doc": "- no pair of (offset, size) data spans from the index can overlap [corrupted]",
+  "group": "arki_dataset_simple_maintenance_odimh5_plain_zip",
+  "method": "check_data_overlap"
+ },
+ {
+  "doc": "- data must start at the beginning of the segment [dirty]",
+  "group": "arki_dataset_simple_maintenance_odimh5_plain_zip",
+  "method": "check_hole_start"
+ },
+ {
+  "doc": "- there must be no gaps between data in the segment [dirty]",
+  "group": "arki_dataset_simple_maintenance_odimh5_plain_zip",
+  "method": "check_hole_middle"
+ },
+ {
+  "doc": "- data must end at the end of the segment [dirty]",
+  "group": "arki_dataset_simple_maintenance_odimh5_plain_zip",
+  "method": "check_hole_end"
+ },
+ {
+  "doc": "- find segments that can only contain data older than `archive age` days [archive_age]",
+  "group": "arki_dataset_simple_maintenance_odimh5_plain_zip",
+  "method": "check_archive_age"
+ },
+ {
+  "doc": "- find segments that can only contain data older than `delete age` days [delete_age]",
+  "group": "arki_dataset_simple_maintenance_odimh5_plain_zip",
+  "method": "check_delete_age"
+ },
+ {
+  "doc": "- the span of reference times in each segment must fit inside the interval\n  implied by the segment file name (FIXME: should this be disabled for\n  archives, to deal with datasets that had a change of step in their lifetime?) [corrupted]",
+  "group": "arki_dataset_simple_maintenance_odimh5_plain_zip",
+  "method": "check_metadata_reftimes_must_fit_segment"
+ },
+ {
+  "doc": "- the segment name must represent an interval matching the dataset step\n  (FIXME: should this be disabled for archives, to deal with datasets that had\n  a change of step in their lifetime?) [corrupted]",
+  "group": "arki_dataset_simple_maintenance_odimh5_plain_zip",
+  "method": "check_segment_name_must_fit_step"
+ },
+ {
+  "doc": "- data on disk must match the order of data used by queries [dirty]",
+  "group": "arki_dataset_simple_maintenance_odimh5_plain_zip",
+  "method": "check_isordered"
+ },
+ {
+  "doc": "- segments not known by the index, but when the index is either\n  missing, older than the file, or marked as needing checking, are marked\n  for reindexing instead of deletion [unaligned]",
+  "group": "arki_dataset_simple_maintenance_odimh5_plain_zip",
+  "method": "check_unaligned"
+ },
+ {
+  "doc": "- format-specific consistency checks on the content of each file must pass [corrupted]",
+  "group": "arki_dataset_simple_maintenance_odimh5_plain_zip",
+  "method": "check_corrupted_data"
+ },
+ {
+  "doc": "- [dirty] segments are not touched",
+  "group": "arki_dataset_simple_maintenance_odimh5_plain_zip",
+  "method": "fix_dirty"
+ },
+ {
+  "doc": "- [unaligned] segments are imported in-place",
+  "group": "arki_dataset_simple_maintenance_odimh5_plain_zip",
+  "method": "fix_unaligned"
+ },
+ {
+  "doc": "- [missing] segments are removed from the index",
+  "group": "arki_dataset_simple_maintenance_odimh5_plain_zip",
+  "method": "fix_missing"
+ },
+ {
+  "doc": "- [corrupted] segments can only be fixed by manual intervention. They\n  are reported and left untouched",
+  "group": "arki_dataset_simple_maintenance_odimh5_plain_zip",
+  "method": "fix_corrupted"
+ },
+ {
+  "doc": "- [archive age] segments are not touched",
+  "group": "arki_dataset_simple_maintenance_odimh5_plain_zip",
+  "method": "fix_archive_age"
+ },
+ {
+  "doc": "- [delete age] segments are not touched",
+  "group": "arki_dataset_simple_maintenance_odimh5_plain_zip",
+  "method": "fix_delete_age"
+ },
+ {
+  "doc": "- [dirty] segments are rewritten to be without holes and have data in the right order.\n  In concat segments, this is done to guarantee linear disk access when\n  data are queried in the default sorting order. In dir segments, this\n  is done to avoid sequence numbers growing indefinitely for datasets\n  with frequent appends and removes.",
+  "group": "arki_dataset_simple_maintenance_odimh5_plain_zip",
+  "method": "repack_dirty"
+ },
+ {
+  "doc": "- [missing] segments are removed from the index",
+  "group": "arki_dataset_simple_maintenance_odimh5_plain_zip",
+  "method": "repack_missing"
+ },
+ {
+  "doc": "- [corrupted] segments are not touched",
+  "group": "arki_dataset_simple_maintenance_odimh5_plain_zip",
+  "method": "repack_corrupted"
+ },
+ {
+  "doc": "- [archive age] segments are repacked if needed, then moved to .archive/last",
+  "group": "arki_dataset_simple_maintenance_odimh5_plain_zip",
+  "method": "repack_archive_age"
+ },
+ {
+  "doc": "- [delete age] segments are deleted",
+  "group": "arki_dataset_simple_maintenance_odimh5_plain_zip",
+  "method": "repack_delete_age"
+ },
+ {
+  "doc": "- [delete age] [dirty] a segment that needs to be both repacked and\n  deleted, gets deleted without repacking",
+  "group": "arki_dataset_simple_maintenance_odimh5_plain_zip",
+  "method": "repack_delete"
+ },
+ {
+  "doc": "- [archive age] [dirty] a segment that needs to be both repacked and\n  archived, gets repacked before archiving",
+  "group": "arki_dataset_simple_maintenance_odimh5_plain_zip",
+  "method": "repack_archive"
+ },
+ {
+  "doc": "- `.metadata` file must not be empty [unaligned]",
+  "group": "arki_dataset_simple_maintenance_odimh5_plain_zip",
+  "method": "check_empty_metadata"
+ },
+ {
+  "doc": "- `.metadata` file must not be older than the data [unaligned]",
+  "group": "arki_dataset_simple_maintenance_odimh5_plain_zip",
+  "method": "check_metadata_timestamp"
+ },
+ {
+  "doc": "- `.summary` file must not be older than the `.metadata` file [unaligned]",
+  "group": "arki_dataset_simple_maintenance_odimh5_plain_zip",
+  "method": "check_summary_timestamp"
+ },
+ {
+  "doc": "- `MANIFEST` file must not be older than the `.metadata` file [unaligned]",
+  "group": "arki_dataset_simple_maintenance_odimh5_plain_zip",
+  "method": "check_manifest_timestamp"
+ },
+ {
+  "doc": "- if the index has been deleted, accessing the dataset recreates it\n  empty, and a check will rebuild it. Until it gets rebuilt, segments\n  not present in the index would not be considered when querying the\n  dataset",
+  "group": "arki_dataset_simple_maintenance_odimh5_plain_zip",
+  "method": "check_missing_index"
+ },
+ {
+  "doc": "    ",
+  "group": "arki_dataset_simple_maintenance_odimh5_plain_zip",
+  "method": "check_missing_index_spurious_files"
+ },
+ {
+  "doc": "- metadata in the `.metadata` file must contain reference time elements [corrupted]",
+  "group": "arki_dataset_simple_maintenance_odimh5_plain_zip",
+  "method": "check_metadata_must_contain_reftimes"
+ },
+ {
+  "doc": "- [unaligned] segments are not touched, to prevent deleting data that\n  should be reindexed instead",
+  "group": "arki_dataset_simple_maintenance_odimh5_plain_zip",
+  "method": "repack_unaligned"
+ },
+ {
+  "doc": "- the segment must be a zip file [unaligned]",
+  "group": "arki_dataset_simple_maintenance_odimh5_sqlite_zip",
+  "method": "check_iszip"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_simple_maintenance_odimh5_sqlite_zip",
+  "method": "clean"
+ },
+ {
+  "doc": "- the segment must exist [missing]",
+  "group": "arki_dataset_simple_maintenance_odimh5_sqlite_zip",
+  "method": "check_exists"
+ },
+ {
+  "doc": "- an empty segment not known by the index must be considered deleted [deleted]",
+  "group": "arki_dataset_simple_maintenance_odimh5_sqlite_zip",
+  "method": "check_unknown_empty"
+ },
+ {
+  "doc": "- all data known by the index for this segment must be present on disk [corrupted]",
+  "group": "arki_dataset_simple_maintenance_odimh5_sqlite_zip",
+  "method": "check_dataexists"
+ },
+ {
+  "doc": "- no pair of (offset, size) data spans from the index can overlap [corrupted]",
+  "group": "arki_dataset_simple_maintenance_odimh5_sqlite_zip",
+  "method": "check_data_overlap"
+ },
+ {
+  "doc": "- data must start at the beginning of the segment [dirty]",
+  "group": "arki_dataset_simple_maintenance_odimh5_sqlite_zip",
+  "method": "check_hole_start"
+ },
+ {
+  "doc": "- there must be no gaps between data in the segment [dirty]",
+  "group": "arki_dataset_simple_maintenance_odimh5_sqlite_zip",
+  "method": "check_hole_middle"
+ },
+ {
+  "doc": "- data must end at the end of the segment [dirty]",
+  "group": "arki_dataset_simple_maintenance_odimh5_sqlite_zip",
+  "method": "check_hole_end"
+ },
+ {
+  "doc": "- find segments that can only contain data older than `archive age` days [archive_age]",
+  "group": "arki_dataset_simple_maintenance_odimh5_sqlite_zip",
+  "method": "check_archive_age"
+ },
+ {
+  "doc": "- find segments that can only contain data older than `delete age` days [delete_age]",
+  "group": "arki_dataset_simple_maintenance_odimh5_sqlite_zip",
+  "method": "check_delete_age"
+ },
+ {
+  "doc": "- the span of reference times in each segment must fit inside the interval\n  implied by the segment file name (FIXME: should this be disabled for\n  archives, to deal with datasets that had a change of step in their lifetime?) [corrupted]",
+  "group": "arki_dataset_simple_maintenance_odimh5_sqlite_zip",
+  "method": "check_metadata_reftimes_must_fit_segment"
+ },
+ {
+  "doc": "- the segment name must represent an interval matching the dataset step\n  (FIXME: should this be disabled for archives, to deal with datasets that had\n  a change of step in their lifetime?) [corrupted]",
+  "group": "arki_dataset_simple_maintenance_odimh5_sqlite_zip",
+  "method": "check_segment_name_must_fit_step"
+ },
+ {
+  "doc": "- data on disk must match the order of data used by queries [dirty]",
+  "group": "arki_dataset_simple_maintenance_odimh5_sqlite_zip",
+  "method": "check_isordered"
+ },
+ {
+  "doc": "- segments not known by the index, but when the index is either\n  missing, older than the file, or marked as needing checking, are marked\n  for reindexing instead of deletion [unaligned]",
+  "group": "arki_dataset_simple_maintenance_odimh5_sqlite_zip",
+  "method": "check_unaligned"
+ },
+ {
+  "doc": "- format-specific consistency checks on the content of each file must pass [corrupted]",
+  "group": "arki_dataset_simple_maintenance_odimh5_sqlite_zip",
+  "method": "check_corrupted_data"
+ },
+ {
+  "doc": "- [dirty] segments are not touched",
+  "group": "arki_dataset_simple_maintenance_odimh5_sqlite_zip",
+  "method": "fix_dirty"
+ },
+ {
+  "doc": "- [unaligned] segments are imported in-place",
+  "group": "arki_dataset_simple_maintenance_odimh5_sqlite_zip",
+  "method": "fix_unaligned"
+ },
+ {
+  "doc": "- [missing] segments are removed from the index",
+  "group": "arki_dataset_simple_maintenance_odimh5_sqlite_zip",
+  "method": "fix_missing"
+ },
+ {
+  "doc": "- [corrupted] segments can only be fixed by manual intervention. They\n  are reported and left untouched",
+  "group": "arki_dataset_simple_maintenance_odimh5_sqlite_zip",
+  "method": "fix_corrupted"
+ },
+ {
+  "doc": "- [archive age] segments are not touched",
+  "group": "arki_dataset_simple_maintenance_odimh5_sqlite_zip",
+  "method": "fix_archive_age"
+ },
+ {
+  "doc": "- [delete age] segments are not touched",
+  "group": "arki_dataset_simple_maintenance_odimh5_sqlite_zip",
+  "method": "fix_delete_age"
+ },
+ {
+  "doc": "- [dirty] segments are rewritten to be without holes and have data in the right order.\n  In concat segments, this is done to guarantee linear disk access when\n  data are queried in the default sorting order. In dir segments, this\n  is done to avoid sequence numbers growing indefinitely for datasets\n  with frequent appends and removes.",
+  "group": "arki_dataset_simple_maintenance_odimh5_sqlite_zip",
+  "method": "repack_dirty"
+ },
+ {
+  "doc": "- [missing] segments are removed from the index",
+  "group": "arki_dataset_simple_maintenance_odimh5_sqlite_zip",
+  "method": "repack_missing"
+ },
+ {
+  "doc": "- [corrupted] segments are not touched",
+  "group": "arki_dataset_simple_maintenance_odimh5_sqlite_zip",
+  "method": "repack_corrupted"
+ },
+ {
+  "doc": "- [archive age] segments are repacked if needed, then moved to .archive/last",
+  "group": "arki_dataset_simple_maintenance_odimh5_sqlite_zip",
+  "method": "repack_archive_age"
+ },
+ {
+  "doc": "- [delete age] segments are deleted",
+  "group": "arki_dataset_simple_maintenance_odimh5_sqlite_zip",
+  "method": "repack_delete_age"
+ },
+ {
+  "doc": "- [delete age] [dirty] a segment that needs to be both repacked and\n  deleted, gets deleted without repacking",
+  "group": "arki_dataset_simple_maintenance_odimh5_sqlite_zip",
+  "method": "repack_delete"
+ },
+ {
+  "doc": "- [archive age] [dirty] a segment that needs to be both repacked and\n  archived, gets repacked before archiving",
+  "group": "arki_dataset_simple_maintenance_odimh5_sqlite_zip",
+  "method": "repack_archive"
+ },
+ {
+  "doc": "- `.metadata` file must not be empty [unaligned]",
+  "group": "arki_dataset_simple_maintenance_odimh5_sqlite_zip",
+  "method": "check_empty_metadata"
+ },
+ {
+  "doc": "- `.metadata` file must not be older than the data [unaligned]",
+  "group": "arki_dataset_simple_maintenance_odimh5_sqlite_zip",
+  "method": "check_metadata_timestamp"
+ },
+ {
+  "doc": "- `.summary` file must not be older than the `.metadata` file [unaligned]",
+  "group": "arki_dataset_simple_maintenance_odimh5_sqlite_zip",
+  "method": "check_summary_timestamp"
+ },
+ {
+  "doc": "- `MANIFEST` file must not be older than the `.metadata` file [unaligned]",
+  "group": "arki_dataset_simple_maintenance_odimh5_sqlite_zip",
+  "method": "check_manifest_timestamp"
+ },
+ {
+  "doc": "- if the index has been deleted, accessing the dataset recreates it\n  empty, and a check will rebuild it. Until it gets rebuilt, segments\n  not present in the index would not be considered when querying the\n  dataset",
+  "group": "arki_dataset_simple_maintenance_odimh5_sqlite_zip",
+  "method": "check_missing_index"
+ },
+ {
+  "doc": "    ",
+  "group": "arki_dataset_simple_maintenance_odimh5_sqlite_zip",
+  "method": "check_missing_index_spurious_files"
+ },
+ {
+  "doc": "- metadata in the `.metadata` file must contain reference time elements [corrupted]",
+  "group": "arki_dataset_simple_maintenance_odimh5_sqlite_zip",
+  "method": "check_metadata_must_contain_reftimes"
+ },
+ {
+  "doc": "- [unaligned] segments are not touched, to prevent deleting data that\n  should be reindexed instead",
+  "group": "arki_dataset_simple_maintenance_odimh5_sqlite_zip",
   "method": "repack_unaligned"
  },
  {
@@ -6777,7 +7147,7 @@
  {
   "doc": "- format-specific consistency checks on the content of each file must pass [corrupted]",
   "group": "arki_dataset_iseg_maintenance_grib",
-  "method": "tcheck_corrupted_data"
+  "method": "check_corrupted_data"
  },
  {
   "doc": "- [dirty] segments are not touched",
@@ -6977,7 +7347,7 @@
  {
   "doc": "- format-specific consistency checks on the content of each file must pass [corrupted]",
   "group": "arki_dataset_iseg_maintenance_grib_dirs",
-  "method": "tcheck_corrupted_data"
+  "method": "check_corrupted_data"
  },
  {
   "doc": "- [dirty] segments are not touched",
@@ -7177,7 +7547,7 @@
  {
   "doc": "- format-specific consistency checks on the content of each file must pass [corrupted]",
   "group": "arki_dataset_iseg_maintenance_bufr",
-  "method": "tcheck_corrupted_data"
+  "method": "check_corrupted_data"
  },
  {
   "doc": "- [dirty] segments are not touched",
@@ -7377,7 +7747,7 @@
  {
   "doc": "- format-specific consistency checks on the content of each file must pass [corrupted]",
   "group": "arki_dataset_iseg_maintenance_bufr_dirs",
-  "method": "tcheck_corrupted_data"
+  "method": "check_corrupted_data"
  },
  {
   "doc": "- [dirty] segments are not touched",
@@ -7577,7 +7947,7 @@
  {
   "doc": "- format-specific consistency checks on the content of each file must pass [corrupted]",
   "group": "arki_dataset_iseg_maintenance_vm2",
-  "method": "tcheck_corrupted_data"
+  "method": "check_corrupted_data"
  },
  {
   "doc": "- [dirty] segments are not touched",
@@ -7777,7 +8147,7 @@
  {
   "doc": "- format-specific consistency checks on the content of each file must pass [corrupted]",
   "group": "arki_dataset_iseg_maintenance_vm2_dirs",
-  "method": "tcheck_corrupted_data"
+  "method": "check_corrupted_data"
  },
  {
   "doc": "- [dirty] segments are not touched",
@@ -7977,7 +8347,7 @@
  {
   "doc": "- format-specific consistency checks on the content of each file must pass [corrupted]",
   "group": "arki_dataset_iseg_maintenance_odimh5",
-  "method": "tcheck_corrupted_data"
+  "method": "check_corrupted_data"
  },
  {
   "doc": "- [dirty] segments are not touched",
@@ -8322,7 +8692,7 @@
  {
   "doc": "- format-specific consistency checks on the content of each file must pass [corrupted]",
   "group": "arki_dataset_ondisk2_maintenance_grib",
-  "method": "tcheck_corrupted_data"
+  "method": "check_corrupted_data"
  },
  {
   "doc": "- [dirty] segments are not touched",
@@ -8547,7 +8917,7 @@
  {
   "doc": "- format-specific consistency checks on the content of each file must pass [corrupted]",
   "group": "arki_dataset_ondisk2_maintenance_grib_dirs",
-  "method": "tcheck_corrupted_data"
+  "method": "check_corrupted_data"
  },
  {
   "doc": "- [dirty] segments are not touched",
@@ -8767,7 +9137,7 @@
  {
   "doc": "- format-specific consistency checks on the content of each file must pass [corrupted]",
   "group": "arki_dataset_ondisk2_maintenance_bufr",
-  "method": "tcheck_corrupted_data"
+  "method": "check_corrupted_data"
  },
  {
   "doc": "- [dirty] segments are not touched",
@@ -8992,7 +9362,7 @@
  {
   "doc": "- format-specific consistency checks on the content of each file must pass [corrupted]",
   "group": "arki_dataset_ondisk2_maintenance_bufr_dirs",
-  "method": "tcheck_corrupted_data"
+  "method": "check_corrupted_data"
  },
  {
   "doc": "- [dirty] segments are not touched",
@@ -9212,7 +9582,7 @@
  {
   "doc": "- format-specific consistency checks on the content of each file must pass [corrupted]",
   "group": "arki_dataset_ondisk2_maintenance_vm2",
-  "method": "tcheck_corrupted_data"
+  "method": "check_corrupted_data"
  },
  {
   "doc": "- [dirty] segments are not touched",
@@ -9437,7 +9807,7 @@
  {
   "doc": "- format-specific consistency checks on the content of each file must pass [corrupted]",
   "group": "arki_dataset_ondisk2_maintenance_vm2_dirs",
-  "method": "tcheck_corrupted_data"
+  "method": "check_corrupted_data"
  },
  {
   "doc": "- [dirty] segments are not touched",
@@ -9662,7 +10032,7 @@
  {
   "doc": "- format-specific consistency checks on the content of each file must pass [corrupted]",
   "group": "arki_dataset_ondisk2_maintenance_odimh5",
-  "method": "tcheck_corrupted_data"
+  "method": "check_corrupted_data"
  },
  {
   "doc": "- [dirty] segments are not touched",

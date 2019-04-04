@@ -78,6 +78,16 @@ public:
      * <000ofs.format>
      */
     void remove(const segment::Span& span);
+
+    /**
+     * Add or overwrite data to the zip file
+     */
+    void write(const segment::Span& span, const std::vector<uint8_t>& data);
+
+    /**
+     * Rename a file in the zip file
+     */
+    void rename(const segment::Span& old_span, const segment::Span& new_span);
 };
 
 }
