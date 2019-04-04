@@ -17,6 +17,7 @@ struct Segment : public arki::Segment
 {
     using arki::Segment::Segment;
     time_t timestamp() const override;
+    static bool can_store(const std::string& format);
 };
 
 template<typename Segment>

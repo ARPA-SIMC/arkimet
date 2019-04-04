@@ -418,7 +418,7 @@ void Checker<Segment, File>::test_corrupt(const metadata::Collection& mds, unsig
 }
 
 
-bool can_store(const std::string& format)
+bool Segment::can_store(const std::string& format)
 {
     return format == "grib" || format == "grib1" || format == "grib2"
         || format == "bufr" || format == "vm2";

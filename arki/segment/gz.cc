@@ -121,6 +121,10 @@ time_t Segment::timestamp() const
     return max(sys::timestamp(abspath + ".gz"), sys::timestamp(abspath + ".gz.idx", 0));
 }
 
+bool Segment::can_store(const std::string& format)
+{
+    return format == "grib" || format == "bufr" || format == "vm2";
+}
 
 template<typename Segment>
 Reader<Segment>::Reader(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock)

@@ -32,6 +32,7 @@ struct Segment : public arki::Segment
     using arki::Segment::Segment;
 
     time_t timestamp() const override;
+    static bool can_store(const std::string& format);
 };
 
 
@@ -92,8 +93,6 @@ public:
     void test_make_overlap(metadata::Collection& mds, unsigned overlap_size, unsigned data_idx) override;
     void test_corrupt(const metadata::Collection& mds, unsigned data_idx) override;
 };
-
-bool can_store(const std::string& format);
 
 }
 
