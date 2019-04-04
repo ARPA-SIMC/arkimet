@@ -884,7 +884,7 @@ void MaintenanceTest<Fixture>::register_tests()
 
         // Check that the files have been moved to the archive
         wassert(actual_file("testds/" + f.test_relpath).not_exists());
-        wassert(actual_file("testds/.archive/last/" + f.test_relpath).exists());
+        wassert(actual_file("testds/.archive/last/" + f.test_relpath_ondisk()).exists());
         wassert(actual_file("testds/.archive/last/" + f.test_relpath + ".metadata").exists());
         wassert(actual_file("testds/.archive/last/" + f.test_relpath + ".summary").exists());
 

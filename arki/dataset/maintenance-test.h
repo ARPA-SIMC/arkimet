@@ -26,6 +26,13 @@ struct Fixture : public arki::tests::DatasetTest
     Fixture(const std::string& format, const std::string& cfg_instance=std::string());
 
     /**
+     * Return the relative path of test_relpath as found on disk.
+     *
+     * It can differ from test_relpath in case the segment is archived or compressed
+     */
+    std::string test_relpath_ondisk() const { return test_relpath; }
+
+    /**
      * Compute the dataset state and assert that it contains `segment_count`
      * segments, and that the segment test_relpath has the given state.
      */
@@ -117,6 +124,7 @@ struct FixtureZip : public Fixture
 
     void test_setup();
 
+    std::string test_relpath_ondisk() const { return test_relpath + ".zip"; }
     void remove_segment();
 
     /// Corrupt the dataset so that two data appear to overlap
