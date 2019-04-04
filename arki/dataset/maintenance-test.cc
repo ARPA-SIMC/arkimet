@@ -418,8 +418,8 @@ void MaintenanceTest<Fixture>::register_tests_zip()
     });
 }
 
-template<typename Fixture>
-void MaintenanceTest<Fixture>::register_tests()
+template<typename TestFixture>
+void MaintenanceTest<TestFixture>::register_tests()
 {
     switch (Fixture::segment_type())
     {
@@ -464,7 +464,7 @@ void MaintenanceTest<Fixture>::register_tests()
         wassert(f.query_results({0, 2}));
     });
 
-    if (can_delete_data())
+    if (can_delete_data() && TestFixture::segment_can_delete_data())
     {
         this->add_method("check_new", R"(
             - data files not known by a valid index are considered data files whose
