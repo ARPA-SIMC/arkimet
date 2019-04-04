@@ -126,6 +126,8 @@ std::shared_ptr<segment::Writer> ForceDirManager::create_writer_for_format(const
 
 std::shared_ptr<segment::Checker> ForceDirManager::create_checker_for_format(const std::string& format, const std::string& relpath, const std::string& abspath)
 {
+    auto res(Segment::detect_checker(format, root, relpath, abspath, mockdata));
+    if (res) return res;
     return std::shared_ptr<segment::Checker>(new segment::dir::Checker(format, root, relpath, abspath));
 }
 
