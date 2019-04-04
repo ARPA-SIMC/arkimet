@@ -7,9 +7,14 @@ namespace arki {
 namespace dataset {
 namespace maintenance_test {
 
+enum SegmentType {
+    SEGMENT_CONCAT,
+    SEGMENT_DIR,
+};
 
 struct Fixture : public arki::tests::DatasetTest
 {
+    SegmentType segment_type;
     std::string format;
     std::vector<std::string> import_files;
     /// relpath of the segment with two data elements in it
@@ -18,7 +23,7 @@ struct Fixture : public arki::tests::DatasetTest
     /// Size of the first datum in test_relepath
     unsigned test_datum_size;
 
-    Fixture(const std::string& format, const std::string& cfg_instance=std::string());
+    Fixture(SegmentType segment_type, const std::string& format, const std::string& cfg_instance=std::string());
 
     /**
      * Compute the dataset state and assert that it contains `segment_count`
@@ -37,16 +42,11 @@ struct Fixture : public arki::tests::DatasetTest
 
 struct MaintenanceTest : public arki::tests::FixtureTestCase<Fixture>
 {
-    enum SegmentType {
-        SEGMENT_CONCAT,
-        SEGMENT_DIR,
-    };
-
     SegmentType segment_type;
 
     template<typename... Args>
     MaintenanceTest(const std::string& name, SegmentType segment_type, Args... args)
-        : FixtureTestCase(name, std::forward<Args>(args)...), segment_type(segment_type)
+        : FixtureTestCase(name, segment_type, std::forward<Args>(args)...), segment_type(segment_type)
     {
     }
     virtual ~MaintenanceTest();

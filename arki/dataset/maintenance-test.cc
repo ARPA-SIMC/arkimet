@@ -32,8 +32,8 @@ namespace arki {
 namespace dataset {
 namespace maintenance_test {
 
-Fixture::Fixture(const std::string& format, const std::string& cfg_instance)
-    : DatasetTest(cfg_instance), format(format)
+Fixture::Fixture(SegmentType segment_type, const std::string& format, const std::string& cfg_instance)
+    : DatasetTest(cfg_instance), segment_type(segment_type), format(format)
 {
     if (format == "grib")
     {
@@ -513,7 +513,7 @@ void MaintenanceTest::register_tests()
         add_method("check_data_overlap", R"(
             - no pair of (offset, size) data spans from the index can overlap [corrupted]
         )", [&](Fixture& f) {
-            if (segment_type == SEGMENT_DIR)
+            if (f.segment_type == SEGMENT_DIR)
                 f.makeSegmentedChecker()->test_make_overlap(f.test_relpath, 1, 1);
             else
                 f.makeSegmentedChecker()->test_make_overlap(f.test_relpath, f.test_datum_size / 2, 1);

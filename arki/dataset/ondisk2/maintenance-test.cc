@@ -123,13 +123,13 @@ void Tests::register_tests()
     });
 }
 
-Tests test_ondisk2_plain_grib("arki_dataset_ondisk2_maintenance_grib", MaintenanceTest::SEGMENT_CONCAT, "grib", "type=ondisk2\n");
-Tests test_ondisk2_plain_grib_dir("arki_dataset_ondisk2_maintenance_grib_dirs", MaintenanceTest::SEGMENT_DIR, "grib", "type=ondisk2\nsegments=dir\n");
-Tests test_ondisk2_plain_bufr("arki_dataset_ondisk2_maintenance_bufr", MaintenanceTest::SEGMENT_CONCAT, "bufr", "type=ondisk2\n");
-Tests test_ondisk2_plain_bufr_dir("arki_dataset_ondisk2_maintenance_bufr_dirs", MaintenanceTest::SEGMENT_DIR, "bufr", "type=ondisk2\nsegments=dir\n");
-Tests test_ondisk2_plain_vm2("arki_dataset_ondisk2_maintenance_vm2", MaintenanceTest::SEGMENT_CONCAT, "vm2", "type=ondisk2\n");
-Tests test_ondisk2_plain_vm2_dir("arki_dataset_ondisk2_maintenance_vm2_dirs", MaintenanceTest::SEGMENT_DIR, "vm2", "type=ondisk2\nsegments=dir\n");
-Tests test_ondisk2_plain_odimh5_dir("arki_dataset_ondisk2_maintenance_odimh5", MaintenanceTest::SEGMENT_DIR, "odimh5", "type=ondisk2\n");
+Tests test_ondisk2_plain_grib("arki_dataset_ondisk2_maintenance_grib", SEGMENT_CONCAT, "grib", "type=ondisk2\n");
+Tests test_ondisk2_plain_grib_dir("arki_dataset_ondisk2_maintenance_grib_dirs", SEGMENT_DIR, "grib", "type=ondisk2\nsegments=dir\n");
+Tests test_ondisk2_plain_bufr("arki_dataset_ondisk2_maintenance_bufr", SEGMENT_CONCAT, "bufr", "type=ondisk2\n");
+Tests test_ondisk2_plain_bufr_dir("arki_dataset_ondisk2_maintenance_bufr_dirs", SEGMENT_DIR, "bufr", "type=ondisk2\nsegments=dir\n");
+Tests test_ondisk2_plain_vm2("arki_dataset_ondisk2_maintenance_vm2", SEGMENT_CONCAT, "vm2", "type=ondisk2\n");
+Tests test_ondisk2_plain_vm2_dir("arki_dataset_ondisk2_maintenance_vm2_dirs", SEGMENT_DIR, "vm2", "type=ondisk2\nsegments=dir\n");
+Tests test_ondisk2_plain_odimh5_dir("arki_dataset_ondisk2_maintenance_odimh5", SEGMENT_DIR, "odimh5", "type=ondisk2\n");
 
 }
 
