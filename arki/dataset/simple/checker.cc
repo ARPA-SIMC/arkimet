@@ -219,11 +219,11 @@ public:
         sys::unlink_ifexists(segment->segment().abspath + ".metadata");
         sys::unlink_ifexists(segment->segment().abspath + ".summary");
 
-        size_t size_pre = sys::isdir(segment->segment().abspath) ? 0 : sys::size(segment->segment().abspath);
+        size_t size_pre = segment->size();
 
         p_repack.commit();
 
-        size_t size_post = sys::isdir(segment->segment().abspath) ? 0 : sys::size(segment->segment().abspath);
+        size_t size_post = segment->size();
 
         // Write out the new metadata
         mds.writeAtomically(segment->segment().abspath + ".metadata");
@@ -234,8 +234,9 @@ public:
         mds.add_to_summary(sum);
         sum.writeAtomically(segment->segment().abspath + ".summary");
 
+
         // Reindex with the new file information
-        time_t mtime = sys::timestamp(segment->segment().abspath);
+        time_t mtime = segment->segment().timestamp();
         checker.m_mft->acquire(segment->segment().relpath, mtime, sum);
 
         return size_pre - size_post;
@@ -525,18 +526,7 @@ void Checker::test_delete_from_index(const std::string& relpath)
 void Checker::test_invalidate_in_index(const std::string& relpath)
 {
     m_idx->test_deindex(relpath);
-    string pathname = str::joinpath(config().path, relpath);
-    sys::touch(pathname + ".metadata", 1496167200);
-}
-
-void Checker::test_rename(const std::string& relpath, const std::string& new_relpath)
-{
-    IndexedChecker::test_rename(relpath, new_relpath);
-    string abspath = str::joinpath(config().path, relpath);
-    string new_abspath = str::joinpath(config().path, new_relpath);
-
-    sys::rename(abspath + ".metadata", new_abspath + ".metadata");
-    sys::rename(abspath + ".summary", new_abspath + ".summary");
+    sys::touch(str::joinpath(config().path, relpath + ".metadata"), 1496167200);
 }
 
 void Checker::test_change_metadata(const std::string& relpath, Metadata& md, unsigned data_idx)

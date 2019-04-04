@@ -16,9 +16,11 @@ namespace {
 
 using namespace arki::dataset::maintenance_test;
 
-class Tests : public MaintenanceTest
+template<typename TestFixture>
+class Tests : public MaintenanceTest<TestFixture>
 {
-    using MaintenanceTest::MaintenanceTest;
+    using MaintenanceTest<TestFixture>::MaintenanceTest;
+    typedef TestFixture Fixture;
 
     void register_tests() override;
 
@@ -31,11 +33,12 @@ class Tests : public MaintenanceTest
     bool can_delete_data() const override { return true; }
 };
 
-void Tests::register_tests()
+template<typename TestFixture>
+void Tests<TestFixture>::register_tests()
 {
-    MaintenanceTest::register_tests();
+    MaintenanceTest<TestFixture>::register_tests();
 
-    add_method("check_missing_index", R"(
+    this->add_method("check_missing_index", R"(
         - if the index has been deleted, accessing the dataset recreates it
           empty, and creates a `needs-check-do-not-pack` file in the root of
           the dataset.
@@ -63,7 +66,7 @@ void Tests::register_tests()
         wassert(f.state_is(3, segment::SEGMENT_UNALIGNED));
     });
 
-    add_method("check_missing_index_spurious_files", R"(
+    this->add_method("check_missing_index_spurious_files", R"(
     )", [&](Fixture& f) {
         wassert(f.query_results({1, 3, 0, 2}));
 
@@ -75,7 +78,7 @@ void Tests::register_tests()
         wassert(f.state_is(3, segment::SEGMENT_UNALIGNED));
     });
 
-    add_method("check_missing_index_rescan_partial_files", R"(
+    this->add_method("check_missing_index_rescan_partial_files", R"(
         - while `needs-check-do-not-pack` is present, files with gaps are
           marked for rescanning instead of repacking. This prevents a scenario
           in which, after the index has been deleted, and some data has been
@@ -102,7 +105,7 @@ void Tests::register_tests()
         wassert(f.state_is(3, segment::SEGMENT_UNALIGNED));
     });
 
-    add_method("repack_unaligned", R"(
+    this->add_method("repack_unaligned", R"(
         - [unaligned] when `needs-check-do-not-pack` is present in the dataset
           root directory, running a repack fails asking to run a check first,
           to prevent deleting data that should be reindexed instead
@@ -123,13 +126,13 @@ void Tests::register_tests()
     });
 }
 
-Tests test_ondisk2_plain_grib("arki_dataset_ondisk2_maintenance_grib", SEGMENT_CONCAT, "grib", "type=ondisk2\n");
-Tests test_ondisk2_plain_grib_dir("arki_dataset_ondisk2_maintenance_grib_dirs", SEGMENT_DIR, "grib", "type=ondisk2\nsegments=dir\n");
-Tests test_ondisk2_plain_bufr("arki_dataset_ondisk2_maintenance_bufr", SEGMENT_CONCAT, "bufr", "type=ondisk2\n");
-Tests test_ondisk2_plain_bufr_dir("arki_dataset_ondisk2_maintenance_bufr_dirs", SEGMENT_DIR, "bufr", "type=ondisk2\nsegments=dir\n");
-Tests test_ondisk2_plain_vm2("arki_dataset_ondisk2_maintenance_vm2", SEGMENT_CONCAT, "vm2", "type=ondisk2\n");
-Tests test_ondisk2_plain_vm2_dir("arki_dataset_ondisk2_maintenance_vm2_dirs", SEGMENT_DIR, "vm2", "type=ondisk2\nsegments=dir\n");
-Tests test_ondisk2_plain_odimh5_dir("arki_dataset_ondisk2_maintenance_odimh5", SEGMENT_DIR, "odimh5", "type=ondisk2\n");
+Tests<FixtureConcat> test_ondisk2_plain_grib("arki_dataset_ondisk2_maintenance_grib", "grib", "type=ondisk2\n");
+Tests<FixtureDir> test_ondisk2_plain_grib_dir("arki_dataset_ondisk2_maintenance_grib_dirs", "grib", "type=ondisk2\nsegments=dir\n");
+Tests<FixtureConcat> test_ondisk2_plain_bufr("arki_dataset_ondisk2_maintenance_bufr", "bufr", "type=ondisk2\n");
+Tests<FixtureDir> test_ondisk2_plain_bufr_dir("arki_dataset_ondisk2_maintenance_bufr_dirs", "bufr", "type=ondisk2\nsegments=dir\n");
+Tests<FixtureConcat> test_ondisk2_plain_vm2("arki_dataset_ondisk2_maintenance_vm2", "vm2", "type=ondisk2\n");
+Tests<FixtureDir> test_ondisk2_plain_vm2_dir("arki_dataset_ondisk2_maintenance_vm2_dirs", "vm2", "type=ondisk2\nsegments=dir\n");
+Tests<FixtureDir> test_ondisk2_plain_odimh5_dir("arki_dataset_ondisk2_maintenance_odimh5", "odimh5", "type=ondisk2\n");
 
 }
 

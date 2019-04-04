@@ -10,11 +10,11 @@ namespace maintenance_test {
 enum SegmentType {
     SEGMENT_CONCAT,
     SEGMENT_DIR,
+    SEGMENT_ZIP,
 };
 
 struct Fixture : public arki::tests::DatasetTest
 {
-    SegmentType segment_type;
     std::string format;
     std::vector<std::string> import_files;
     /// relpath of the segment with two data elements in it
@@ -23,7 +23,7 @@ struct Fixture : public arki::tests::DatasetTest
     /// Size of the first datum in test_relepath
     unsigned test_datum_size;
 
-    Fixture(SegmentType segment_type, const std::string& format, const std::string& cfg_instance=std::string());
+    Fixture(const std::string& format, const std::string& cfg_instance=std::string());
 
     /**
      * Compute the dataset state and assert that it contains `segment_count`
@@ -89,15 +89,47 @@ struct Fixture : public arki::tests::DatasetTest
     void remove_segment();
 };
 
-struct MaintenanceTest : public arki::tests::FixtureTestCase<Fixture>
+struct FixtureConcat : public Fixture
 {
-    SegmentType segment_type;
+    using Fixture::Fixture;
 
-    template<typename... Args>
-    MaintenanceTest(const std::string& name, SegmentType segment_type, Args... args)
-        : FixtureTestCase(name, segment_type, std::forward<Args>(args)...), segment_type(segment_type)
-    {
-    }
+    static SegmentType segment_type() { return SEGMENT_CONCAT; }
+
+    /// Corrupt the dataset so that two data appear to overlap
+    void make_overlap();
+};
+
+struct FixtureDir : public Fixture
+{
+    using Fixture::Fixture;
+
+    static SegmentType segment_type() { return SEGMENT_DIR; }
+
+    /// Corrupt the dataset so that two data appear to overlap
+    void make_overlap();
+};
+
+struct FixtureZip : public Fixture
+{
+    using Fixture::Fixture;
+
+    static SegmentType segment_type() { return SEGMENT_ZIP; }
+
+    void test_setup();
+
+    void remove_segment();
+
+    /// Corrupt the dataset so that two data appear to overlap
+    void make_overlap();
+};
+
+
+template<typename TestFixture>
+struct MaintenanceTest : public arki::tests::FixtureTestCase<TestFixture>
+{
+    using arki::tests::FixtureTestCase<TestFixture>::FixtureTestCase;
+    typedef TestFixture Fixture;
+
     virtual ~MaintenanceTest();
 
     /**
@@ -120,6 +152,7 @@ struct MaintenanceTest : public arki::tests::FixtureTestCase<Fixture>
 
     virtual void register_tests_concat();
     virtual void register_tests_dir();
+    virtual void register_tests_zip();
 };
 
 }

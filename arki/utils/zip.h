@@ -80,9 +80,9 @@ public:
     void remove(const segment::Span& span);
 
     /**
-     * Append a new data to the zip file
+     * Add or overwrite data to the zip file
      */
-    void append(const segment::Span& span, const std::vector<uint8_t>& data);
+    void write(const segment::Span& span, const std::vector<uint8_t>& data);
 
     /**
      * Rename a file in the zip file

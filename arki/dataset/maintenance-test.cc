@@ -32,8 +32,8 @@ namespace arki {
 namespace dataset {
 namespace maintenance_test {
 
-Fixture::Fixture(SegmentType segment_type, const std::string& format, const std::string& cfg_instance)
-    : DatasetTest(cfg_instance), segment_type(segment_type), format(format)
+Fixture::Fixture(const std::string& format, const std::string& cfg_instance)
+    : DatasetTest(cfg_instance), format(format)
 {
     if (format == "grib")
     {
@@ -98,7 +98,6 @@ void Fixture::test_setup()
     for (const auto& pathname : import_files)
         import(pathname);
 }
-
 
 void Fixture::make_hole_start()
 {
@@ -187,31 +186,64 @@ void Fixture::remove_segment()
 }
 
 
-MaintenanceTest::~MaintenanceTest()
+void FixtureConcat::make_overlap()
 {
+    makeSegmentedChecker()->test_make_overlap(test_relpath, test_datum_size / 2, 1);
 }
 
-void MaintenanceTest::register_tests_concat()
+void FixtureDir::make_overlap()
+{
+    makeSegmentedChecker()->test_make_overlap(test_relpath, 1, 1);
+}
+
+void FixtureZip::test_setup()
+{
+    Fixture::test_setup();
+    auto checker = makeSegmentedChecker();
+    dataset::CheckerConfig opts;
+    opts.readonly = false;
+    opts.online = true;
+    opts.offline = false;
+    checker->zip(opts);
+}
+
+void FixtureZip::remove_segment()
+{
+    std::string pathname = "testds/" + test_relpath + ".zip";
+    if (sys::isdir(pathname))
+        sys::rmtree(pathname);
+    else
+        sys::unlink(pathname);
+}
+
+void FixtureZip::make_overlap()
+{
+    throw TestSkipped("make_overlap not yet implemented in zip segments");
+}
+
+
+template<typename Fixture>
+void MaintenanceTest<Fixture>::register_tests_concat()
 {
     // Check
-    add_method("check_isfile", R"(
+    this->add_method("check_isfile", R"(
         - the segment must be a file
     )", [&](Fixture& f) {
-        sys::unlink("testds/" + fixture->test_relpath);
-        sys::makedirs("testds/" + fixture->test_relpath);
+        f.remove_segment();
+        sys::makedirs("testds/" + f.test_relpath);
 
         wassert(f.state_is(3, segment::SEGMENT_MISSING));
         auto e = wassert_throws(std::runtime_error, f.query_results({1, 3, 0, 2}));
         wassert(actual(e.what()).contains("does not exist in directory segment"));
     });
 
-    add_method("check_hugefile", [&](Fixture& f) {
+    this->add_method("check_hugefile", [&](Fixture& f) {
         f.make_hugefile();
         wassert(f.state_is(3, segment::SEGMENT_DIRTY));
         wassert(f.query_results({1, -1, 3, 0, 2}));
     });
 
-    add_method("fix_hugefile", [&](Fixture& f) {
+    this->add_method("fix_hugefile", [&](Fixture& f) {
         f.make_hugefile();
         wassert(f.state_is(3, segment::SEGMENT_DIRTY));
 
@@ -226,7 +258,7 @@ void MaintenanceTest::register_tests_concat()
         wassert(f.query_results({1, -1, 3, 0, 2}));
     });
 
-    add_method("repack_hugefile", [&](Fixture& f) {
+    this->add_method("repack_hugefile", [&](Fixture& f) {
         f.make_hugefile();
         wassert(f.state_is(3, segment::SEGMENT_DIRTY));
 
@@ -242,7 +274,7 @@ void MaintenanceTest::register_tests_concat()
         wassert(f.query_results({1, -1, 3, 0, 2}));
     });
 
-    add_method("repack_timestamps", [&](Fixture& f) {
+    this->add_method("repack_timestamps", [&](Fixture& f) {
         // Set the segment to a past timestamp and rescan it, making it as if
         // it were imported a long time ago
         {
@@ -267,13 +299,19 @@ void MaintenanceTest::register_tests_concat()
     });
 }
 
-void MaintenanceTest::register_tests_dir()
+template<typename Fixture>
+MaintenanceTest<Fixture>::~MaintenanceTest()
+{
+}
+
+template<typename Fixture>
+void MaintenanceTest<Fixture>::register_tests_dir()
 {
     // Check
-    add_method("check_isdir", R"(
+    this->add_method("check_isdir", R"(
         - the segment must be a directory [unaligned]
     )", [](Fixture& f) {
-        sys::rmtree("testds/" + f.test_relpath);
+        f.remove_segment();
         sys::write_file("testds/" + f.test_relpath, "");
 
         wassert(f.state_is(3, segment::SEGMENT_MISSING));
@@ -281,7 +319,7 @@ void MaintenanceTest::register_tests_dir()
         wassert(actual(e.what()).contains("cannot read"));
     });
 
-    add_method("check_datasize", R"(
+    this->add_method("check_datasize", R"(
         - the size of each data file must match the data size exactly [corrupted]
     )", [](Fixture& f) {
         {
@@ -293,7 +331,7 @@ void MaintenanceTest::register_tests_dir()
         wassert(f.query_results({1, 3, 0, 2}));
     });
 
-    add_method("check_ignore_dir_timestamp", R"(
+    this->add_method("check_ignore_dir_timestamp", R"(
        - the modification time of a directory segment can vary unpredictably,
          so it is ignored. The modification time of the sequence file is used
          instead.
@@ -303,7 +341,7 @@ void MaintenanceTest::register_tests_dir()
         wassert(f.query_results({1, 3, 0, 2}));
     });
 
-    add_method("check_files_above_sequence", R"(
+    this->add_method("check_files_above_sequence", R"(
        - if arkimet is interrupted during rollback of an append operation on a
          dir dataset, there are files whose name has a higher sequence number
          than the sequence file. This will break further appends, and needs to
@@ -314,7 +352,7 @@ void MaintenanceTest::register_tests_dir()
         wassert(f.query_results({1, 3, 0, 2}));
     });
 
-    add_method("fix_files_above_sequence", R"(
+    this->add_method("fix_files_above_sequence", R"(
        - [unaligned] fix low sequence file value by setting it to the highest
          sequence number found.
     )", [&](Fixture& f) {
@@ -332,7 +370,7 @@ void MaintenanceTest::register_tests_dir()
         wassert(f.query_results({1, 3, 0, 2}));
     });
 
-    add_method("fix_truncated_file_above_sequence", R"(
+    this->add_method("fix_truncated_file_above_sequence", R"(
        - [unaligned] fix low sequence file value by setting it to the highest
          sequence number found, with one file truncated / partly written.
     )", [&](Fixture& f) {
@@ -368,16 +406,30 @@ void MaintenanceTest::register_tests_dir()
     });
 }
 
-void MaintenanceTest::register_tests()
+template<typename Fixture>
+void MaintenanceTest<Fixture>::register_tests_zip()
 {
-    switch (segment_type)
+    // Check
+    this->add_method("check_iszip", R"(
+        - the segment must be a zip file [unaligned]
+    )", [](Fixture& f) {
+        wassert(actual_file("testds/" + f.test_relpath + ".zip").exists());
+        wassert(actual_file("testds/" + f.test_relpath).not_exists());
+    });
+}
+
+template<typename Fixture>
+void MaintenanceTest<Fixture>::register_tests()
+{
+    switch (Fixture::segment_type())
     {
         case SEGMENT_CONCAT: register_tests_concat(); break;
         case SEGMENT_DIR:    register_tests_dir();    break;
+        case SEGMENT_ZIP:    register_tests_zip();    break;
         default: throw std::runtime_error("unsupported segment type");
     }
 
-    add_method("clean", [](Fixture& f) {
+    this->add_method("clean", [](Fixture& f) {
         wassert(actual(f.makeSegmentedChecker().get()).check_clean());
         wassert(f.all_clean(3));
         wassert(actual(f.makeSegmentedChecker().get()).repack_clean());
@@ -390,7 +442,7 @@ void MaintenanceTest::register_tests()
 
     // Check
 
-    add_method("check_exists", R"(
+    this->add_method("check_exists", R"(
         - the segment must exist [missing]
     )", [&](Fixture& f) {
         f.remove_segment();
@@ -400,7 +452,7 @@ void MaintenanceTest::register_tests()
         wassert(actual(e.what()).contains("the segment has disappeared"));
     });
 
-    add_method("check_unknown_empty", R"(
+    this->add_method("check_unknown_empty", R"(
         - an empty segment not known by the index must be considered deleted [deleted]
     )", [&](Fixture& f) {
         {
@@ -414,7 +466,7 @@ void MaintenanceTest::register_tests()
 
     if (can_delete_data())
     {
-        add_method("check_new", R"(
+        this->add_method("check_new", R"(
             - data files not known by a valid index are considered data files whose
               entire content has been removed [deleted]
         )", [&](Fixture& f) {
@@ -422,7 +474,7 @@ void MaintenanceTest::register_tests()
             wassert(f.state_is(3, segment::SEGMENT_DELETED));
         });
 
-        add_method("check_one_removed", R"(
+        this->add_method("check_one_removed", R"(
             - segments that contain some data that has been removed are
               identified as to be repacked [dirty]
         )", [&](Fixture& f) {
@@ -431,7 +483,7 @@ void MaintenanceTest::register_tests()
             wassert(f.query_results({3, 0, 2}));
         });
 
-        add_method("check_all_removed", R"(
+        this->add_method("check_all_removed", R"(
             - segments that only contain data that has been removed are
               identified as fully deleted [deleted]
         )", [&](Fixture& f) {
@@ -440,7 +492,7 @@ void MaintenanceTest::register_tests()
             wassert(f.query_results({0, 2}));
         });
 
-        add_method("fix_one_removed", [&](Fixture& f) {
+        this->add_method("fix_one_removed", [&](Fixture& f) {
             f.delete_one_in_segment();
 
             {
@@ -453,7 +505,7 @@ void MaintenanceTest::register_tests()
             wassert(f.query_results({3, 0, 2}));
         });
 
-        add_method("fix_deleted", R"(
+        this->add_method("fix_deleted", R"(
             - [deleted] segments are left untouched
         )", [&](Fixture& f) {
             f.delete_all_in_segment();
@@ -469,7 +521,7 @@ void MaintenanceTest::register_tests()
             wassert(f.query_results({0, 2}));
         });
 
-        add_method("repack_deleted", R"(
+        this->add_method("repack_deleted", R"(
             - [deleted] segments are removed from disk
         )", [&](Fixture& f) {
             f.delete_all_in_segment();
@@ -486,7 +538,7 @@ void MaintenanceTest::register_tests()
             wassert(f.query_results({0, 2}));
         });
 
-        add_method("repack_one_removed", [&](Fixture& f) {
+        this->add_method("repack_one_removed", [&](Fixture& f) {
             f.delete_one_in_segment();
 
             {
@@ -502,7 +554,7 @@ void MaintenanceTest::register_tests()
         });
     }
 
-    add_method("check_dataexists", R"(
+    this->add_method("check_dataexists", R"(
         - all data known by the index for this segment must be present on disk [corrupted]
     )", [&](Fixture& f) {
         f.truncate_segment();
@@ -512,19 +564,15 @@ void MaintenanceTest::register_tests()
     });
 
     if (can_detect_overlap())
-        add_method("check_data_overlap", R"(
+        this->add_method("check_data_overlap", R"(
             - no pair of (offset, size) data spans from the index can overlap [corrupted]
         )", [&](Fixture& f) {
-            if (f.segment_type == SEGMENT_DIR)
-                f.makeSegmentedChecker()->test_make_overlap(f.test_relpath, 1, 1);
-            else
-                f.makeSegmentedChecker()->test_make_overlap(f.test_relpath, f.test_datum_size / 2, 1);
-
+            f.make_overlap();
             wassert(f.state_is(3, segment::SEGMENT_CORRUPTED));
             wassert(f.query_results({1, 3, 0, 2}));
         });
 
-    add_method("check_hole_start", R"(
+    this->add_method("check_hole_start", R"(
         - data must start at the beginning of the segment [dirty]
     )", [&](Fixture& f) {
         f.make_hole_start();
@@ -533,7 +581,7 @@ void MaintenanceTest::register_tests()
         wassert(f.query_results({1, 3, 0, 2}));
     });
 
-    add_method("check_hole_middle", R"(
+    this->add_method("check_hole_middle", R"(
         - there must be no gaps between data in the segment [dirty]
     )", [&](Fixture& f) {
         f.make_hole_middle();
@@ -542,7 +590,7 @@ void MaintenanceTest::register_tests()
         wassert(f.query_results({1, 3, 0, 2}));
     });
 
-    add_method("check_hole_end", R"(
+    this->add_method("check_hole_end", R"(
         - data must end at the end of the segment [dirty]
     )", [&](Fixture& f) {
         f.make_hole_end();
@@ -551,7 +599,7 @@ void MaintenanceTest::register_tests()
         wassert(f.query_results({1, 3, 0, 2}));
     });
 
-    add_method("check_archive_age", R"(
+    this->add_method("check_archive_age", R"(
         - find segments that can only contain data older than `archive age` days [archive_age]
     )", [&](Fixture& f) {
         f.cfg.setValue("archive age", "1");
@@ -570,7 +618,7 @@ void MaintenanceTest::register_tests()
         }
     });
 
-    add_method("check_delete_age", R"(
+    this->add_method("check_delete_age", R"(
         - find segments that can only contain data older than `delete age` days [delete_age]
     )", [&](Fixture& f) {
         f.cfg.setValue("delete age", "1");
@@ -589,7 +637,7 @@ void MaintenanceTest::register_tests()
         }
     });
 
-    add_method("check_metadata_reftimes_must_fit_segment", R"(
+    this->add_method("check_metadata_reftimes_must_fit_segment", R"(
     - the span of reference times in each segment must fit inside the interval
       implied by the segment file name (FIXME: should this be disabled for
       archives, to deal with datasets that had a change of step in their lifetime?) [corrupted]
@@ -603,7 +651,7 @@ void MaintenanceTest::register_tests()
     });
 
     if (can_detect_segments_out_of_step())
-        add_method("check_segment_name_must_fit_step", R"(
+        this->add_method("check_segment_name_must_fit_step", R"(
         - the segment name must represent an interval matching the dataset step
           (FIXME: should this be disabled for archives, to deal with datasets that had
           a change of step in their lifetime?) [corrupted]
@@ -621,7 +669,7 @@ void MaintenanceTest::register_tests()
             wassert(f.query_results({1, 3, 0, 2}));
         });
 
-    add_method("check_isordered", R"(
+    this->add_method("check_isordered", R"(
         - data on disk must match the order of data used by queries [dirty]
     )", [&](Fixture& f) {
         f.swap_data();
@@ -630,7 +678,7 @@ void MaintenanceTest::register_tests()
         wassert(f.query_results({1, 3, 0, 2}));
     });
 
-    add_method("check_unaligned", R"(
+    this->add_method("check_unaligned", R"(
         - segments not known by the index, but when the index is either
           missing, older than the file, or marked as needing checking, are marked
           for reindexing instead of deletion [unaligned]
@@ -641,7 +689,7 @@ void MaintenanceTest::register_tests()
     });
 
     // Optional thorough check
-    add_method("tcheck_corrupted_data", R"(
+    this->add_method("check_corrupted_data", R"(
         - format-specific consistency checks on the content of each file must pass [corrupted]
     )", [&](Fixture& f) {
         f.corrupt_first();
@@ -652,7 +700,7 @@ void MaintenanceTest::register_tests()
 
 
     // Fix
-    add_method("fix_dirty", R"(
+    this->add_method("fix_dirty", R"(
         - [dirty] segments are not touched
     )", [&](Fixture& f) {
         f.make_hole_end();
@@ -668,7 +716,7 @@ void MaintenanceTest::register_tests()
         wassert(f.query_results({1, 3, 0, 2}));
     });
 
-    add_method("fix_unaligned", R"(
+    this->add_method("fix_unaligned", R"(
         - [unaligned] segments are imported in-place
     )", [&](Fixture& f) {
         f.makeSegmentedChecker()->test_invalidate_in_index(f.test_relpath);
@@ -685,7 +733,7 @@ void MaintenanceTest::register_tests()
         wassert(f.query_results({1, 3, 0, 2}));
     });
 
-    add_method("fix_missing", R"(
+    this->add_method("fix_missing", R"(
         - [missing] segments are removed from the index
     )", [&](Fixture& f) {
         f.remove_segment();
@@ -702,7 +750,7 @@ void MaintenanceTest::register_tests()
         wassert(f.query_results({0, 2}));
     });
 
-    add_method("fix_corrupted", R"(
+    this->add_method("fix_corrupted", R"(
         - [corrupted] segments can only be fixed by manual intervention. They
           are reported and left untouched
     )", [&](Fixture& f) {
@@ -721,7 +769,7 @@ void MaintenanceTest::register_tests()
         wassert(f.query_results({-1, 3, 0, 2}));
     });
 
-    add_method("fix_archive_age", R"(
+    this->add_method("fix_archive_age", R"(
         - [archive age] segments are not touched
     )", [&](Fixture& f) {
         f.cfg.setValue("archive age", "1");
@@ -739,7 +787,7 @@ void MaintenanceTest::register_tests()
         wassert(f.query_results({1, 3, 0, 2}));
     });
 
-    add_method("fix_delete_age", R"(
+    this->add_method("fix_delete_age", R"(
         - [delete age] segments are not touched
     )", [&](Fixture& f) {
         f.cfg.setValue("delete age", "1");
@@ -758,7 +806,7 @@ void MaintenanceTest::register_tests()
     });
 
     // Repack
-    add_method("repack_dirty", R"(
+    this->add_method("repack_dirty", R"(
         - [dirty] segments are rewritten to be without holes and have data in the right order.
           In concat segments, this is done to guarantee linear disk access when
           data are queried in the default sorting order. In dir segments, this
@@ -780,7 +828,7 @@ void MaintenanceTest::register_tests()
         wassert(f.query_results({1, 3, 0, 2}));
     });
 
-    add_method("repack_missing", R"(
+    this->add_method("repack_missing", R"(
         - [missing] segments are removed from the index
     )", [&](Fixture& f) {
         f.remove_segment();
@@ -797,7 +845,7 @@ void MaintenanceTest::register_tests()
         wassert(f.query_results({0, 2}));
     });
 
-    add_method("repack_corrupted", R"(
+    this->add_method("repack_corrupted", R"(
         - [corrupted] segments are not touched
     )", [&](Fixture& f) {
         Metadata md = f.import_results[1];
@@ -816,7 +864,7 @@ void MaintenanceTest::register_tests()
     });
 
 
-    add_method("repack_archive_age", R"(
+    this->add_method("repack_archive_age", R"(
         - [archive age] segments are repacked if needed, then moved to .archive/last
     )", [&](Fixture& f) {
         f.make_hole_middle();
@@ -843,7 +891,7 @@ void MaintenanceTest::register_tests()
         wassert(f.query_results({1, 3, 0, 2}));
     });
 
-    add_method("repack_delete_age", R"(
+    this->add_method("repack_delete_age", R"(
         - [delete age] segments are deleted
     )", [&](Fixture& f) {
         f.make_hole_middle();
@@ -863,7 +911,7 @@ void MaintenanceTest::register_tests()
         wassert(f.query_results({0, 2}));
     });
 
-    add_method("repack_delete", R"(
+    this->add_method("repack_delete", R"(
         - [delete age] [dirty] a segment that needs to be both repacked and
           deleted, gets deleted without repacking
     )", [&](Fixture& f) {
@@ -893,7 +941,7 @@ void MaintenanceTest::register_tests()
         wassert(f.query_results({0, 2}));
     });
 
-    add_method("repack_archive", R"(
+    this->add_method("repack_archive", R"(
         - [archive age] [dirty] a segment that needs to be both repacked and
           archived, gets repacked before archiving
     )", [&](Fixture& f) {
@@ -923,6 +971,10 @@ void MaintenanceTest::register_tests()
         wassert(f.query_results({1, 3, 0, 2}));
     });
 }
+
+template class MaintenanceTest<FixtureConcat>;
+template class MaintenanceTest<FixtureDir>;
+template class MaintenanceTest<FixtureZip>;
 
 }
 }

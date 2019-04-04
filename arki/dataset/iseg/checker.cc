@@ -684,10 +684,15 @@ void Checker::test_rename(const std::string& relpath, const std::string& new_rel
 {
     auto lock = config().check_lock_segment(relpath);
     auto wrlock = lock->write_lock();
+
     string abspath = str::joinpath(config().path, relpath);
     string new_abspath = str::joinpath(config().path, new_relpath);
-    sys::rename(abspath, new_abspath);
+
+    auto segment = segment_manager().get_checker(config().format, relpath);
+    segment->move(config().path, new_relpath, new_abspath);
+
     sys::rename(abspath + ".index", new_abspath + ".index");
+
 }
 
 void Checker::test_change_metadata(const std::string& relpath, Metadata& md, unsigned data_idx)

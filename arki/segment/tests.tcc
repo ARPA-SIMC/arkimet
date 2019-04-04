@@ -182,7 +182,7 @@ this->add_method("remove", [](Fixture& f) {
 this->add_method("is_empty", [](Fixture& f) {
     auto checker = f.create();
     wassert(actual(checker->is_empty()).isfalse());
-    checker->test_truncate(0);
+    checker->test_truncate(f.seg_mds[0].sourceBlob().offset);
     wassert(actual(checker->is_empty()).istrue());
 });
 

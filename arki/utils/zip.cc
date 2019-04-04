@@ -204,7 +204,7 @@ void ZipWriter::remove(const segment::Span& span)
 #endif
 }
 
-void ZipWriter::append(const segment::Span& span, const std::vector<uint8_t>& data)
+void ZipWriter::write(const segment::Span& span, const std::vector<uint8_t>& data)
 {
     auto fname = data_fname(span.offset, format);
 
