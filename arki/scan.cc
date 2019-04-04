@@ -106,7 +106,15 @@ std::string Scanner::format_from_filename(const std::string& fname, const char* 
     // Extract the extension
     size_t epos = fname.rfind('.');
     if (epos != string::npos)
-        return normalise_format(str::lower(fname.substr(epos + 1)), default_format);
+    {
+        string ext = fname.substr(epos + 1);
+        if (ext == "zip" || ext == "gz" || ext == "tar")
+        {
+            size_t epos1 = fname.rfind('.', epos - 1);
+            ext = fname.substr(epos1 + 1, epos - epos1 - 1);
+        }
+        return normalise_format(str::lower(ext), default_format);
+    }
     else if (default_format)
         return default_format;
     else
