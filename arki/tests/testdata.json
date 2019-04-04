@@ -10850,11 +10850,6 @@
   "method": "check_missing_index_spurious_files"
  },
  {
-  "doc": "- while `needs-check-do-not-pack` is present, files with gaps are\n  marked for rescanning instead of repacking. This prevents a scenario\n  in which, after the index has been deleted, and some data has been\n  imported that got appended to an existing segment, that segment would\n  be considered as needing repack instead of rescan. [unaligned]",
-  "group": "arki_dataset_ondisk2_maintenance_grib_zip",
-  "method": "check_missing_index_rescan_partial_files"
- },
- {
   "doc": "- [unaligned] when `needs-check-do-not-pack` is present in the dataset\n  root directory, running a repack fails asking to run a check first,\n  to prevent deleting data that should be reindexed instead",
   "group": "arki_dataset_ondisk2_maintenance_grib_zip",
   "method": "repack_unaligned"
@@ -11458,11 +11453,6 @@
   "doc": "    ",
   "group": "arki_dataset_ondisk2_maintenance_bufr_zip",
   "method": "check_missing_index_spurious_files"
- },
- {
-  "doc": "- while `needs-check-do-not-pack` is present, files with gaps are\n  marked for rescanning instead of repacking. This prevents a scenario\n  in which, after the index has been deleted, and some data has been\n  imported that got appended to an existing segment, that segment would\n  be considered as needing repack instead of rescan. [unaligned]",
-  "group": "arki_dataset_ondisk2_maintenance_bufr_zip",
-  "method": "check_missing_index_rescan_partial_files"
  },
  {
   "doc": "- [unaligned] when `needs-check-do-not-pack` is present in the dataset\n  root directory, running a repack fails asking to run a check first,\n  to prevent deleting data that should be reindexed instead",
@@ -12070,11 +12060,6 @@
   "method": "check_missing_index_spurious_files"
  },
  {
-  "doc": "- while `needs-check-do-not-pack` is present, files with gaps are\n  marked for rescanning instead of repacking. This prevents a scenario\n  in which, after the index has been deleted, and some data has been\n  imported that got appended to an existing segment, that segment would\n  be considered as needing repack instead of rescan. [unaligned]",
-  "group": "arki_dataset_ondisk2_maintenance_vm2_zip",
-  "method": "check_missing_index_rescan_partial_files"
- },
- {
   "doc": "- [unaligned] when `needs-check-do-not-pack` is present in the dataset\n  root directory, running a repack fails asking to run a check first,\n  to prevent deleting data that should be reindexed instead",
   "group": "arki_dataset_ondisk2_maintenance_vm2_zip",
   "method": "repack_unaligned"
@@ -12458,11 +12443,6 @@
   "doc": "    ",
   "group": "arki_dataset_ondisk2_maintenance_odimh5_zip",
   "method": "check_missing_index_spurious_files"
- },
- {
-  "doc": "- while `needs-check-do-not-pack` is present, files with gaps are\n  marked for rescanning instead of repacking. This prevents a scenario\n  in which, after the index has been deleted, and some data has been\n  imported that got appended to an existing segment, that segment would\n  be considered as needing repack instead of rescan. [unaligned]",
-  "group": "arki_dataset_ondisk2_maintenance_odimh5_zip",
-  "method": "check_missing_index_rescan_partial_files"
  },
  {
   "doc": "- [unaligned] when `needs-check-do-not-pack` is present in the dataset\n  root directory, running a repack fails asking to run a check first,\n  to prevent deleting data that should be reindexed instead",

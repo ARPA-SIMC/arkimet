@@ -26,6 +26,7 @@ struct Fixture : public arki::tests::DatasetTest
     Fixture(const std::string& format, const std::string& cfg_instance=std::string());
 
     static bool segment_can_delete_data() { return true; }
+    static bool segment_can_append_data() { return true; }
 
     /**
      * Return the relative path of test_relpath as found on disk.
@@ -124,6 +125,7 @@ struct FixtureZip : public Fixture
 
     static SegmentType segment_type() { return SEGMENT_ZIP; }
     static bool segment_can_delete_data() { return false; }
+    static bool segment_can_append_data() { return false; }
 
     void test_setup();
 
