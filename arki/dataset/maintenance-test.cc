@@ -311,12 +311,8 @@ void MaintenanceTest<Fixture>::register_tests_dir()
     this->add_method("check_isdir", R"(
         - the segment must be a directory [unaligned]
     )", [](Fixture& f) {
-        f.remove_segment();
-        sys::write_file("testds/" + f.test_relpath, "");
-
-        wassert(f.state_is(3, segment::SEGMENT_MISSING));
-        auto e = wassert_throws(std::runtime_error, f.query_results({1, 3, 0, 2}));
-        wassert(actual(e.what()).contains("cannot read"));
+        wassert(actual_file("testds/" + f.test_relpath).exists());
+        wassert_true(sys::isdir("testds/" + f.test_relpath));
     });
 
     this->add_method("check_datasize", R"(

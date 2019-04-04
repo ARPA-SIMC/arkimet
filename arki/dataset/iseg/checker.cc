@@ -481,8 +481,8 @@ void Checker::list_segments(std::function<void(const std::string& relpath)> dest
 void Checker::list_segments(const Matcher& matcher, std::function<void(const std::string& relpath)> dest)
 {
     vector<string> seg_relpaths;
-    config().step().list_segments(config().path, config().format + ".index", matcher, [&](std::string&& s) {
-        s.resize(s.size() - 6);
+    step::SegmentQuery squery(config().path, config().format, "\\.index$", matcher);
+    config().step().list_segments(squery, [&](std::string&& s) {
         seg_relpaths.emplace_back(move(s));
     });
     std::sort(seg_relpaths.begin(), seg_relpaths.end());
@@ -520,7 +520,8 @@ void Checker::segments_untracked(std::function<void(segmented::CheckerSegment& r
 
 void Checker::segments_untracked_filtered(const Matcher& matcher, std::function<void(segmented::CheckerSegment& segment)> dest)
 {
-    config().step().list_segments(config().path, config().format, matcher, [&](std::string&& relpath) {
+    step::SegmentQuery squery(config().path, config().format, matcher);
+    config().step().list_segments(squery, [&](std::string&& relpath) {
         if (sys::stat(str::joinpath(config().path, relpath + ".index"))) return;
         CheckerSegment segment(*this, relpath);
         dest(segment);
