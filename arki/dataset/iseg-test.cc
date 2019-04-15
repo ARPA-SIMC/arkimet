@@ -34,6 +34,50 @@ Tests test("arki_dataset_iseg");
 
 void Tests::register_tests() {
 
+// Test acquiring data with replace=1
+add_method("acquire_replace", [](Fixture& f) {
+    metadata::TestCollection mdc("inbound/test.grib1");
+
+    // Import once
+    {
+        auto writer = f.makeIsegWriter();
+        for (auto& md: mdc)
+            wassert(actual(writer->acquire(*md)) == dataset::ACQ_OK);
+        writer->flush();
+    }
+
+    // Import again, make sure they're all duplicates
+    {
+        auto writer = f.makeIsegWriter();
+        for (auto& md: mdc)
+            wassert(actual(writer->acquire(*md)) == dataset::ACQ_ERROR_DUPLICATE);
+        writer->flush();
+    }
+
+    // Import again with replace=true, make sure they're all ok
+    {
+        ConfigFile cfg(f.cfg);
+        cfg.setValue("replace", "true");
+        auto config = dataset::iseg::Config::create(cfg);
+        auto writer = config->create_writer();
+        for (auto& md: mdc)
+            wassert(actual(writer->acquire(*md)) == dataset::ACQ_OK);
+        writer->flush();
+    }
+
+    // Test querying the dataset
+    {
+        metadata::Collection mdc = f.query(Matcher());
+        wassert(actual(mdc.size()) == 3u);
+
+        // Make sure we're not getting the deleted element
+        wassert(actual(mdc[0].sourceBlob().offset) > 0);
+        wassert(actual(mdc[1].sourceBlob().offset) > 0);
+        wassert(actual(mdc[2].sourceBlob().offset) > 0);
+    }
+});
+
+
 // Test Update Sequence Number replacement strategy
 add_method("acquire_replace_usn", [](Fixture& f) {
     f.reset_test("type=iseg\nstep=daily\nformat=bufr");
