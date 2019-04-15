@@ -382,7 +382,7 @@ public:
         Pending p_idx = idx().begin_transaction();
         for (auto& md: mds)
             if (idx().index(*md, md->sourceBlob().offset))
-                throw std::runtime_error("duplicate detected while reordering segment");
+                throw std::runtime_error("duplicate detected while reindexing segment");
         p_idx.commit();
 
         // Remove .metadata and .summary files
