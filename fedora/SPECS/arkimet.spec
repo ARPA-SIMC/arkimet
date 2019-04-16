@@ -4,7 +4,7 @@
 Summary: Archive for weather information
 Name: arkimet
 Version: 1.15
-Release: 1
+Release: 2
 License: GPL
 Group: Applications/Meteo
 URL: https://github.com/arpa-simc/%{name}
@@ -15,9 +15,12 @@ Source3: https://github.com/arpa-simc/%{name}/raw/v%{version}-%{release}/fedora/
 
 # On fedora, we don't need systemd to build. But we do on centos.
 %{?el7:BuildRequires: systemd}
+# to have python 3.6 interpreter
+%{?el7:BuildRequires: python3-rpm-macros >= 3-23}
 
 # Python 3 package names
-%{?el7:%define python3_vers python34}
+%{?el7:%define python3_vers python36}
+
 %{?fedora:%define python3_vers python3}
 
 %if 0%{?fedora} <= 24
@@ -221,6 +224,9 @@ if [ "$1" = "1" ]; then
 fi
 
 %changelog
+* Tue Apr 16 2019 Daniele Branchini <dbranchini@arpae.it> - 1.15-2
+- moving to python 3.6 on Centos7
+
 * Thu Apr  4 2019 Daniele Branchini <dbranchini@arpae.it> - 1.15-1
 - Fixed bug on dataset compression (--zip option, see #170)
 
