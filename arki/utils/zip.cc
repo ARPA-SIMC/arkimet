@@ -195,7 +195,7 @@ void ZipWriter::close()
 void ZipWriter::remove(const segment::Span& span)
 {
 #ifndef HAVE_LIBZIP
-    throw std::runtime_error("cannot read .zip files: libzip was not available at compile time");
+    throw std::runtime_error("cannot write to .zip files: libzip was not available at compile time");
 #else
     auto fname = data_fname(span.offset, format);
     auto idx = locate(fname);
@@ -206,6 +206,9 @@ void ZipWriter::remove(const segment::Span& span)
 
 void ZipWriter::write(const segment::Span& span, const std::vector<uint8_t>& data)
 {
+#ifndef HAVE_LIBZIP
+    throw std::runtime_error("cannot write to .zip files: libzip was not available at compile time");
+#else
     auto fname = data_fname(span.offset, format);
 
     zip_source_t* source = zip_source_buffer(zip, data.data(), data.size(), 0);
@@ -217,16 +220,21 @@ void ZipWriter::write(const segment::Span& span, const std::vector<uint8_t>& dat
         zip_source_free(source);
         throw zip_error(zip, "cannot add file " + fname);
     }
+#endif
 }
 
 void ZipWriter::rename(const segment::Span& old_span, const segment::Span& new_span)
 {
+#ifndef HAVE_LIBZIP
+    throw std::runtime_error("cannot write to .zip files: libzip was not available at compile time");
+#else
     auto old_fname = data_fname(old_span.offset, format);
     auto old_idx = locate(old_fname);
     auto new_fname = data_fname(new_span.offset, format);
 
     if (zip_file_rename(zip, old_idx, new_fname.c_str(), ZIP_FL_ENC_UTF_8) == -1)
         throw zip_error(zip, "cannot rename " + old_fname + " to " + new_fname);
+#endif
 }
 
 }
