@@ -3,8 +3,8 @@
 
 Summary: Archive for weather information
 Name: arkimet
-Version: 1.15
-Release: 2
+Version: 1.16
+Release: 1
 License: GPL
 Group: Applications/Meteo
 URL: https://github.com/arpa-simc/%{name}
@@ -224,8 +224,9 @@ if [ "$1" = "1" ]; then
 fi
 
 %changelog
-* Tue Apr 16 2019 Daniele Branchini <dbranchini@arpae.it> - 1.15-2
+* Tue Apr 16 2019 Daniele Branchini <dbranchini@arpae.it> - 1.16-1
 - moving to python 3.6 on Centos7
+- fixed errors in zip utils (#173)
 
 * Thu Apr  4 2019 Daniele Branchini <dbranchini@arpae.it> - 1.15-1
 - Fixed bug on dataset compression (--zip option, see #170)
