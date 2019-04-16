@@ -198,6 +198,7 @@ void FixtureDir::make_overlap()
 
 void FixtureZip::test_setup()
 {
+    skip_unless_libzip();
     Fixture::test_setup();
     auto checker = makeSegmentedChecker();
     dataset::CheckerConfig opts;
