@@ -1,6 +1,7 @@
 #include "tests.h"
 #include "iseg/writer.h"
 #include "arki/scan.h"
+#include "arki/types/source/blob.h"
 
 namespace {
 using namespace std;

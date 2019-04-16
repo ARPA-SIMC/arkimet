@@ -8102,6 +8102,11 @@
  {
   "doc": "",
   "group": "arki_dataset_iseg",
+  "method": "acquire_replace"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_iseg",
   "method": "acquire_replace_usn"
  },
  {
