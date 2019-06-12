@@ -66,6 +66,7 @@ with a full check and rescan of all the data in the dataset.
 - segments not known by the index, but when the index is either
   missing, older than the file, or marked as needing checking, are marked
   for reindexing instead of deletion [unaligned]
+- format-specific consistency checks on the content of each file must pass [corrupted]
 - if the index has been deleted, accessing the dataset recreates it
   empty, and creates a `needs-check-do-not-pack` file in the root of
   the dataset.
@@ -78,7 +79,7 @@ with a full check and rescan of all the data in the dataset.
 
 ### During --accurate check
 
-- format-specific consistency checks on the content of each file must pass [corrupted]
+
 
 ### During fix
 
@@ -150,6 +151,7 @@ with a full check and rescan of all the data in the dataset.
 - segments not known by the index, but when the index is either
   missing, older than the file, or marked as needing checking, are marked
   for reindexing instead of deletion [unaligned]
+- format-specific consistency checks on the content of each file must pass [corrupted]
 - if the index has been deleted, accessing the dataset recreates it
   empty, and creates a `needs-check-do-not-pack` file in the root of
   the dataset.
@@ -162,7 +164,7 @@ with a full check and rescan of all the data in the dataset.
 
 ### During --accurate check
 
-- format-specific consistency checks on the content of each file must pass [corrupted]
+
 
 ### During fix
 

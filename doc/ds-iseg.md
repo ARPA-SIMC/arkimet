@@ -56,10 +56,11 @@ indices for the metadata listed in the `index` configuration value.
 - segments not known by the index, but when the index is either
   missing, older than the file, or marked as needing checking, are marked
   for reindexing instead of deletion [unaligned]
+- format-specific consistency checks on the content of each file must pass [corrupted]
 
 ### During --accurate check
 
-- format-specific consistency checks on the content of each file must pass [corrupted]
+
 
 ### During fix
 
@@ -126,10 +127,11 @@ indices for the metadata listed in the `index` configuration value.
 - segments not known by the index, but when the index is either
   missing, older than the file, or marked as needing checking, are marked
   for reindexing instead of deletion [unaligned]
+- format-specific consistency checks on the content of each file must pass [corrupted]
 
 ### During --accurate check
 
-- format-specific consistency checks on the content of each file must pass [corrupted]
+
 
 ### During fix
 

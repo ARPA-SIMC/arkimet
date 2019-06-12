@@ -58,6 +58,7 @@ an empty `.metadata` file will always be rescanned.
 - segments not known by the index, but when the index is either
   missing, older than the file, or marked as needing checking, are marked
   for reindexing instead of deletion [unaligned]
+- format-specific consistency checks on the content of each file must pass [corrupted]
 - `.metadata` file must not be empty [unaligned]
 - `.metadata` file must not be older than the data [unaligned]
 - `.summary` file must not be older than the `.metadata` file [unaligned]
@@ -71,7 +72,7 @@ an empty `.metadata` file will always be rescanned.
 
 ### During --accurate check
 
-- format-specific consistency checks on the content of each file must pass [corrupted]
+
 
 ### During fix
 
@@ -134,6 +135,7 @@ an empty `.metadata` file will always be rescanned.
 - segments not known by the index, but when the index is either
   missing, older than the file, or marked as needing checking, are marked
   for reindexing instead of deletion [unaligned]
+- format-specific consistency checks on the content of each file must pass [corrupted]
 - `.metadata` file must not be empty [unaligned]
 - `.metadata` file must not be older than the data [unaligned]
 - `.summary` file must not be older than the `.metadata` file [unaligned]
@@ -147,7 +149,7 @@ an empty `.metadata` file will always be rescanned.
 
 ### During --accurate check
 
-- format-specific consistency checks on the content of each file must pass [corrupted]
+
 
 ### During fix
 
