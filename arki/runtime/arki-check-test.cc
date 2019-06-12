@@ -732,6 +732,149 @@ add_method("remove", [](Fixture& f) {
     wassert(actual(state.get("testds:2007/10-09.grib").state) == segment::SEGMENT_OK);
 });
 
+add_method("tar_archives", [](Fixture& f) {
+    using runtime::tests::run_cmdline;
+
+    f.cfg.setValue("format", "odimh5");
+    f.test_reread_config();
+    f.clean_and_import("inbound/fixture.odimh5/00.odimh5");
+    f.import("inbound/fixture.odimh5/01.odimh5");
+    f.import("inbound/fixture.odimh5/02.odimh5");
+
+    auto o = dataset::SessionTime::local_override(1184018400); // date +%s --date="2007-07-10"
+    f.cfg.setValue("archive age", "1");
+    f.test_reread_config();
+    f.repack();
+
+    sys::rename("testds/.archive/last", "testds/.archive/2007");
+
+    wassert(actual_file("testds/.archive/2007/2007/07-07.odimh5").exists());
+    wassert(actual_file("testds/2007/07-08.odimh5").exists());
+    wassert(actual_file("testds/2007/10-09.odimh5").exists());
+
+    {
+        runtime::tests::CatchOutput co;
+        int res = run_cmdline(runtime::arki_check, { "arki-check", "--tar", "testds", });
+        wassert(actual_file(co.file_stderr.name()).empty());
+        wassert(actual_file(co.file_stdout.name()).contents_equal({
+            "testds.archives.2007:2007/07-07.odimh5: should be tarred",
+        }));
+        wassert(actual(res) == 0);
+    }
+
+    {
+        runtime::tests::CatchOutput co;
+        int res = run_cmdline(runtime::arki_check, { "arki-check", "--tar", "--offline", "testds", });
+        wassert(actual_file(co.file_stderr.name()).empty());
+        wassert(actual_file(co.file_stdout.name()).contents_equal({
+            "testds.archives.2007:2007/07-07.odimh5: should be tarred",
+        }));
+        wassert(actual(res) == 0);
+    }
+
+    {
+        runtime::tests::CatchOutput co;
+        int res = run_cmdline(runtime::arki_check, { "arki-check", "--tar", "--online", "testds", });
+        wassert(actual_file(co.file_stderr.name()).empty());
+        wassert(actual_file(co.file_stdout.name()).contents_equal({
+            "testds:2007/07-08.odimh5: should be tarred",
+            "testds:2007/10-09.odimh5: should be tarred",
+        }));
+        wassert(actual(res) == 0);
+    }
+
+    {
+        runtime::tests::CatchOutput co;
+        int res = run_cmdline(runtime::arki_check, { "arki-check", "--tar", "testds", "-f" });
+        wassert(actual_file(co.file_stderr.name()).empty());
+        wassert(actual_file(co.file_stdout.name()).contents_equal({
+            "testds.archives.2007:2007/07-07.odimh5: tarred",
+        }));
+        wassert(actual(res) == 0);
+    }
+
+    wassert(actual_file("testds/.archive/2007/2007/07-07.odimh5").not_exists());
+    wassert(actual_file("testds/.archive/2007/2007/07-07.odimh5.tar").exists());
+    wassert(actual_file("testds/2007/07-08.odimh5").exists());
+    wassert(actual_file("testds/2007/10-09.odimh5").exists());
+
+    wassert(f.ensure_localds_clean(3, 3));
+    wassert(f.ensure_localds_clean(3, 3, false));
+    wassert(f.query_results({1, 0, 2}));
+});
+
+add_method("zip_archives", [](Fixture& f) {
+    using runtime::tests::run_cmdline;
+    skip_unless_libzip();
+    skip_unless_libarchive();
+
+    f.cfg.setValue("format", "odimh5");
+    f.test_reread_config();
+    f.clean_and_import("inbound/fixture.odimh5/00.odimh5");
+    f.import("inbound/fixture.odimh5/01.odimh5");
+    f.import("inbound/fixture.odimh5/02.odimh5");
+
+    auto o = dataset::SessionTime::local_override(1184018400); // date +%s --date="2007-07-10"
+    f.cfg.setValue("archive age", "1");
+    f.test_reread_config();
+    f.repack();
+
+    sys::rename("testds/.archive/last", "testds/.archive/2007");
+
+    wassert(actual_file("testds/.archive/2007/2007/07-07.odimh5").exists());
+    wassert(actual_file("testds/2007/07-08.odimh5").exists());
+    wassert(actual_file("testds/2007/10-09.odimh5").exists());
+
+    {
+        runtime::tests::CatchOutput co;
+        int res = run_cmdline(runtime::arki_check, { "arki-check", "--zip", "testds", });
+        wassert(actual_file(co.file_stderr.name()).empty());
+        wassert(actual_file(co.file_stdout.name()).contents_equal({
+            "testds.archives.2007:2007/07-07.odimh5: should be zipped",
+        }));
+        wassert(actual(res) == 0);
+    }
+
+    {
+        runtime::tests::CatchOutput co;
+        int res = run_cmdline(runtime::arki_check, { "arki-check", "--zip", "--offline", "testds", });
+        wassert(actual_file(co.file_stderr.name()).empty());
+        wassert(actual_file(co.file_stdout.name()).contents_equal({
+            "testds.archives.2007:2007/07-07.odimh5: should be zipped",
+        }));
+        wassert(actual(res) == 0);
+    }
+
+    {
+        runtime::tests::CatchOutput co;
+        int res = run_cmdline(runtime::arki_check, { "arki-check", "--zip", "--online", "testds", });
+        wassert(actual_file(co.file_stderr.name()).empty());
+        wassert(actual_file(co.file_stdout.name()).contents_equal({
+            "testds:2007/07-08.odimh5: should be zipped",
+            "testds:2007/10-09.odimh5: should be zipped",
+        }));
+        wassert(actual(res) == 0);
+    }
+
+    {
+        runtime::tests::CatchOutput co;
+        int res = run_cmdline(runtime::arki_check, { "arki-check", "--zip", "testds", "-f" });
+        wassert(actual_file(co.file_stderr.name()).empty());
+        wassert(actual_file(co.file_stdout.name()).contents_equal({
+            "testds.archives.2007:2007/07-07.odimh5: zipped",
+        }));
+        wassert(actual(res) == 0);
+    }
+
+    wassert(f.archived_segment_exists("2007/2007/07-07.odimh5", {".zip"}));
+    wassert(f.online_segment_exists("2007/07-08.odimh5", {""}));
+    wassert(f.online_segment_exists("2007/10-09.odimh5", {""}));
+
+    wassert(f.ensure_localds_clean(3, 3));
+    wassert(f.ensure_localds_clean(3, 3, false));
+    wassert(f.query_results({1, 0, 2}));
+});
+
 }
 
 }

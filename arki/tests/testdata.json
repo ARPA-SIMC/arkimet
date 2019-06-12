@@ -16406,6 +16406,16 @@
  },
  {
   "doc": "",
+  "group": "arki_runtime_arkicheck_ondisk2",
+  "method": "tar_archives"
+ },
+ {
+  "doc": "",
+  "group": "arki_runtime_arkicheck_ondisk2",
+  "method": "zip_archives"
+ },
+ {
+  "doc": "",
   "group": "arki_runtime_arkicheck_simple_plain",
   "method": "clean"
  },
@@ -16466,6 +16476,16 @@
  },
  {
   "doc": "",
+  "group": "arki_runtime_arkicheck_simple_plain",
+  "method": "tar_archives"
+ },
+ {
+  "doc": "",
+  "group": "arki_runtime_arkicheck_simple_plain",
+  "method": "zip_archives"
+ },
+ {
+  "doc": "",
   "group": "arki_runtime_arkicheck_simple_sqlite",
   "method": "clean"
  },
@@ -16526,6 +16546,16 @@
  },
  {
   "doc": "",
+  "group": "arki_runtime_arkicheck_simple_sqlite",
+  "method": "tar_archives"
+ },
+ {
+  "doc": "",
+  "group": "arki_runtime_arkicheck_simple_sqlite",
+  "method": "zip_archives"
+ },
+ {
+  "doc": "",
   "group": "arki_runtime_arkicheck_iseg",
   "method": "clean"
  },
@@ -16583,6 +16613,16 @@
   "doc": "",
   "group": "arki_runtime_arkicheck_iseg",
   "method": "remove"
+ },
+ {
+  "doc": "",
+  "group": "arki_runtime_arkicheck_iseg",
+  "method": "tar_archives"
+ },
+ {
+  "doc": "",
+  "group": "arki_runtime_arkicheck_iseg",
+  "method": "zip_archives"
  },
  {
   "doc": "",
