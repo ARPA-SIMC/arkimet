@@ -10,5 +10,5 @@ end
 
 if GRIBAPI_DEF_DIR == nil
 then
-    GRIBAPI_DEF_DIR = "/usr/share/grib_api/definitions/"
+    GRIBAPI_DEF_DIR = "/usr/share/eccodes/definitions/"
 end
