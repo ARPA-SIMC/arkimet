@@ -67,10 +67,8 @@ Makefile
 /data/*.bufr
 /data/*.grib2
 /data/*.grb
-/data/bench
 /data/conf
 /data/dispatched
-/bench
 /testenv
 /testenv2
 /arki/matcher/reftime/reftime-lex.h

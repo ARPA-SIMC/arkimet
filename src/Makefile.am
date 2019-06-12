@@ -4,8 +4,6 @@ bin_PROGRAMS = arki-check arki-query arki-dump arki-mergeconf arki-scan arki-xar
 dist_bin_SCRIPTS = arki-server arki-testtar
 noinst_PROGRAMS = arki-test
 
-dist_noinst_HEADERS = bench/benchmark.h
-
 all_libs = ../arki/libarkimet.la $(LIBGRIB_LIBS) $(DBALLE_LIBS) $(SQLITE3_LDFLAGS) $(GRIBAPI_LIBS) $(LUA_LIBS) $(ZLIB_LIBS) $(DEVEL_LIBS) -lpthread
 
 AM_CPPFLAGS = -I$(top_srcdir) -I$(top_builddir) $(LIBGRIB_CFLAGS) $(DBALLE_CFLAGS) $(SQLITE3_CFLAGS) $(GRIBAPI_CFLAGS) $(LUA_CFLAGS) $(ZLIB_CFLAGS) $(DEVEL_CFLAGS) -DSERVER_DIR=\"$(serverdir)\" $(EXTRA_CXXFLAGS) -Werror
