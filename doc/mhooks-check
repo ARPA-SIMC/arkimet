@@ -18,6 +18,3 @@ OPTIONS end
 |  # Repack a dataset
 |  arki-check -r -f datasetdir
 |.fi
-|
-|.SH SEE ALSO
-|.BR arki-gzip (1)

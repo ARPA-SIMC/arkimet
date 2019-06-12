@@ -49,7 +49,6 @@ Makefile
 /arki-scan.1
 /arki-xargs.1
 /arki-bufr-prepare.1
-/arki-gzip.1
 /arki-server.1
 /arki-config.1
 /arki-inbound.1
@@ -61,7 +60,6 @@ Makefile
 /src/arki-scan
 /src/arki-xargs
 /src/arki-bufr-prepare
-/src/arki-gzip
 /src/arki-test
 /src/test-src
 /arki/tests/arki-test
