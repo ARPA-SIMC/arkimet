@@ -6,9 +6,9 @@ import sys
 import http.server
 
 redirects = {
-    "/config": "/config1",
-    "/config1": "/config2",
-    "/config2": "/config-final",
+    "/config": "/test1/config",
+    "/test1/config": "/test2/config",
+    "/test2/config": "/final/config",
 }
 
 
@@ -21,10 +21,22 @@ class Handler(http.server.BaseHTTPRequestHandler):
             self.send_header("Location", url)
             self.end_headers()
             self.wfile.write("Redirected to {}\n".format(url).encode())
-        elif self.path == "/config-final":
+        elif self.path == "/final/config":
             self.send_response(200)
             self.end_headers()
-            self.wfile.write("OK\n".encode())
+            self.wfile.write("""
+[test200]
+type = ondisk2
+path = http://foo.bar/foo/dataset/test200
+
+[test80]
+type = remote
+path = http://foo.bar/foo/dataset/test80
+
+[error]
+type = remote
+path = http://foo.bar/foo/dataset/error
+""".encode())
         else:
             self.send_response(404)
             self.end_headers()

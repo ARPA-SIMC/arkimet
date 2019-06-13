@@ -14,7 +14,6 @@ Daemon::Daemon(std::initializer_list<std::string> args)
     const char* top_srcdir = getenv("TOP_SRCDIR");
     if (top_srcdir)
         this->args[0] = std::string(top_srcdir) + "/" + this->args[0];
-    fprintf(::stderr, "RUN %s\n", this->args[0].c_str());
 
     this->set_stdout(subprocess::Redirect::PIPE);
     fork();
