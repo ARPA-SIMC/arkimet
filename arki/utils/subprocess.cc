@@ -49,28 +49,28 @@ int Child::returncode() const
     return WEXITSTATUS(m_returncode);
 }
 
-int Child::stdin() const
+int Child::get_stdin() const
 {
     if (m_stdin[1] == -1)
         throw std::runtime_error("stdin() called on Child but stdin was not redirected to a pipe or file descriptor");
     return m_stdin[1];
 }
 
-int Child::stdout() const
+int Child::get_stdout() const
 {
     if (m_stdout[0] == -1)
         throw std::runtime_error("stdout() called on Child but stdout was not redirected to a pipe or file descriptor");
     return m_stdout[0];
 }
 
-int Child::stderr() const
+int Child::get_stderr() const
 {
     if (m_stderr[0] == -1)
         throw std::runtime_error("stderr() called on Child but stderr was not redirected to a pipe or file descriptor");
     return m_stderr[0];
 }
 
-void Child::stdin(int fd)
+void Child::set_stdin(int fd)
 {
     if (m_pid != 0)
         throw std::runtime_error("cannot redirect stdin after the child process has started");
@@ -78,7 +78,7 @@ void Child::stdin(int fd)
     m_stdin_action = Redirect::FD;
 }
 
-void Child::stdout(int fd)
+void Child::set_stdout(int fd)
 {
     if (m_pid != 0)
         throw std::runtime_error("cannot redirect stdout after the child process has started");
@@ -86,7 +86,7 @@ void Child::stdout(int fd)
     m_stdout_action = Redirect::FD;
 }
 
-void Child::stderr(int fd)
+void Child::set_stderr(int fd)
 {
     if (m_pid != 0)
         throw std::runtime_error("cannot redirect stderr after the child process has started");
@@ -94,21 +94,21 @@ void Child::stderr(int fd)
     m_stderr_action = Redirect::FD;
 }
 
-void Child::stdin(Redirect val)
+void Child::set_stdin(Redirect val)
 {
     if (m_pid != 0)
         throw std::runtime_error("cannot redirect stdin after the child process has started");
     m_stdin_action = val;
 }
 
-void Child::stdout(Redirect val)
+void Child::set_stdout(Redirect val)
 {
     if (m_pid != 0)
         throw std::runtime_error("cannot redirect stdin after the child process has started");
     m_stdout_action = val;
 }
 
-void Child::stderr(Redirect val)
+void Child::set_stderr(Redirect val)
 {
     if (m_pid != 0)
         throw std::runtime_error("cannot redirect stderr after the child process has started");

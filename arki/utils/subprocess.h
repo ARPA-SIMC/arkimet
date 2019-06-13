@@ -76,24 +76,24 @@ public:
     bool start_new_session = false;
 
     /// Return the file descriptor to the stdin pipe to the child process, if configured, else thrown an exception
-    int stdin() const;
+    int get_stdin() const;
     /// Return the file descriptor to the stdout pipe from the child process, if configured, else thrown an exception
-    int stdout() const;
+    int get_stdout() const;
     /// Return the file descriptor to the stderr pipe from the child process, if configured, else thrown an exception
-    int stderr() const;
+    int get_stderr() const;
 
     /// Request to redirect the child stdin to this given file descriptor
-    void stdin(int fd);
+    void set_stdin(int fd);
     /// Request to redirect the child stdin according to val
-    void stdin(Redirect val);
+    void set_stdin(Redirect val);
     /// Request to redirect the child stdout to this given file descriptor
-    void stdout(int fd);
+    void set_stdout(int fd);
     /// Request to redirect the child stdout according to val
-    void stdout(Redirect val);
+    void set_stdout(Redirect val);
     /// Request to redirect the child stderr to this given file descriptor
-    void stderr(int fd);
+    void set_stderr(int fd);
     /// Request to redirect the child stderr according to val
-    void stderr(Redirect val);
+    void set_stderr(Redirect val);
 
     virtual ~Child();
 
