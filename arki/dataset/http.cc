@@ -434,7 +434,7 @@ void Reader::getAliasDatabase(const std::string& server, ConfigFile& cfg)
 static string geturlprefix(const std::string& s)
 {
     // Take until /dataset/
-    size_t pos = s.find("/dataset/");
+    size_t pos = s.rfind("/dataset/");
     if (pos == string::npos) return string();
     return s.substr(0, pos);
 }
