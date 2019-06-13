@@ -23,8 +23,8 @@ class Tests : public TestCase
 void Tests::register_tests() {
 
 add_method("grib", [] {
-	ConfigFile cfg;
-	dataset::File::readConfig("inbound/test.grib1", cfg);
+    ConfigFile cfg;
+    dataset::File::read_config("inbound/test.grib1", cfg);
 
     ConfigFile* s = cfg.section("test.grib1");
     wassert(actual(s).istrue());
@@ -35,8 +35,8 @@ add_method("grib", [] {
 });
 
 add_method("grib_as_bufr", [] {
-	ConfigFile cfg;
-	dataset::File::readConfig("bUFr:inbound/test.grib1", cfg);
+    ConfigFile cfg;
+    dataset::File::read_config("bUFr:inbound/test.grib1", cfg);
 
     ConfigFile* s = cfg.section("test.grib1");
     wassert(actual(s).istrue());
@@ -47,9 +47,9 @@ add_method("grib_as_bufr", [] {
 });
 
 add_method("grib_strangename", [] {
-	ConfigFile cfg;
-	system("cp inbound/test.grib1 strangename");
-	dataset::File::readConfig("GRIB:strangename", cfg);
+    ConfigFile cfg;
+    system("cp inbound/test.grib1 strangename");
+    dataset::File::read_config("GRIB:strangename", cfg);
 
     ConfigFile* s = cfg.section("strangename");
     wassert(actual(s).istrue());
@@ -66,7 +66,7 @@ add_method("grib_strangename", [] {
 
 add_method("metadata", [] {
     ConfigFile cfg;
-    dataset::File::readConfig("inbound/odim1.arkimet", cfg);
+    dataset::File::read_config("inbound/odim1.arkimet", cfg);
 
     ConfigFile* s = cfg.section("odim1.arkimet");
     wassert(actual(s).istrue());
@@ -83,7 +83,7 @@ add_method("metadata", [] {
 
 add_method("yaml", [] {
     ConfigFile cfg;
-    dataset::File::readConfig("inbound/issue107.yaml", cfg);
+    dataset::File::read_config("inbound/issue107.yaml", cfg);
 
     ConfigFile* s = cfg.section("issue107.yaml");
     wassert(actual(s).istrue());

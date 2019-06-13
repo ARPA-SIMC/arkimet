@@ -261,11 +261,11 @@ public:
      */
     static std::unique_ptr<Reader> create(const ConfigFile& cfg);
 
-	/**
-	 * Read the configuration of the dataset(s) at the given path or URL,
-	 * adding new sections to cfg
-	 */
-	static void readConfig(const std::string& path, ConfigFile& cfg);
+    /**
+     * Read the configuration of the dataset(s) at the given path or URL,
+     * adding new sections to cfg
+     */
+    static void read_config(const std::string& path, ConfigFile& cfg);
 };
 
 struct WriterBatchElement

@@ -102,7 +102,7 @@ void Inputs::add_config_file(const std::string& pathname)
 void Inputs::add_pathname(const std::string& pathname)
 {
     ConfigFile cfg;
-    dataset::Reader::readConfig(pathname, cfg);
+    dataset::Reader::read_config(pathname, cfg);
     add_sections(cfg);
 }
 

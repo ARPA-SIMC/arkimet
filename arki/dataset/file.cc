@@ -51,7 +51,7 @@ bool File::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
     return scan(q, dest);
 }
 
-void File::readConfig(const std::string& fname, ConfigFile& cfg)
+void File::read_config(const std::string& fname, ConfigFile& cfg)
 {
     ConfigFile section;
 

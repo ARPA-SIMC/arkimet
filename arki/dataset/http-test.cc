@@ -85,7 +85,7 @@ add_method("redirect", [] {
     snprintf(url, 512, "http://localhost:%d", port);
 
     ConfigFile cfg;
-    http::Reader::readConfig(url, cfg);
+    http::Reader::read_config(url, cfg);
 });
 
 }

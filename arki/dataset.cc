@@ -329,16 +329,16 @@ std::unique_ptr<Reader> Reader::create(const ConfigFile& cfg)
     return config->create_reader();
 }
 
-void Reader::readConfig(const std::string& path, ConfigFile& cfg)
+void Reader::read_config(const std::string& path, ConfigFile& cfg)
 {
 #ifdef HAVE_LIBCURL
     if (str::startswith(path, "http://") || str::startswith(path, "https://"))
-        return dataset::http::Reader::readConfig(path, cfg);
+        return dataset::http::Reader::read_config(path, cfg);
 #endif
     if (sys::isdir(path))
-        return dataset::LocalReader::readConfig(path, cfg);
+        return dataset::LocalReader::read_config(path, cfg);
     else
-        return dataset::File::readConfig(path, cfg);
+        return dataset::File::read_config(path, cfg);
 }
 
 

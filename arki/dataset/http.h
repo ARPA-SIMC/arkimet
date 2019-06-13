@@ -153,7 +153,7 @@ public:
     void query_summary(const Matcher& matcher, Summary& summary) override;
     void query_bytes(const dataset::ByteQuery& q, core::NamedFileDescriptor& out) override;
 
-    static void readConfig(const std::string& path, ConfigFile& cfg);
+    static void read_config(const std::string& path, ConfigFile& cfg);
 
     /**
      * Expand the given matcher expression using the aliases on this server

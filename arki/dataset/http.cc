@@ -369,7 +369,7 @@ void Reader::query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out)
     request.perform();
 }
 
-void Reader::readConfig(const std::string& path, ConfigFile& cfg)
+void Reader::read_config(const std::string& path, ConfigFile& cfg)
 {
     using namespace http;
 

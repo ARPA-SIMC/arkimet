@@ -97,7 +97,7 @@ public:
     // Base implementations that queries the archives if they exist
     void query_summary(const Matcher& matcher, Summary& summary) override;
 
-    static void readConfig(const std::string& path, ConfigFile& cfg);
+    static void read_config(const std::string& path, ConfigFile& cfg);
 };
 
 class LocalWriter : public Writer

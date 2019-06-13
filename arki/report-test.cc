@@ -65,7 +65,7 @@ Report = {
 // Test a case of mdreport that used to fail
 add_method("regression", [] {
     ConfigFile cfg;
-    dataset::File::readConfig("inbound/test.grib1", cfg);
+    dataset::File::read_config("inbound/test.grib1", cfg);
     unique_ptr<dataset::Reader> ds(dataset::Reader::create(*cfg.section("test.grib1")));
 
     // Scan it to be sure it can be read
