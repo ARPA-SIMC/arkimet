@@ -394,8 +394,6 @@ void Reader::read_config(const std::string& path, ConfigFile& cfg)
     request.set_url(str::joinpath(path, "config"));
     request.perform();
 
-    fprintf(stderr, "FINAL URL %s\n", request.actual_url.c_str());
-
     cfg.parse(request.buf, request.url);
 }
 

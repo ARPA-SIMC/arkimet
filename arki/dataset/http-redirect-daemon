@@ -26,7 +26,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write("""
 [test200]
-type = ondisk2
+type = remote
 path = http://foo.bar/foo/dataset/test200
 
 [test80]

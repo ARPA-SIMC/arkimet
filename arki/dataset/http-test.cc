@@ -86,6 +86,10 @@ add_method("redirect", [] {
 
     ConfigFile cfg;
     http::Reader::read_config(url, cfg);
+
+    auto sec = cfg.section("test200");
+    wassert(actual(sec->value("type")) == "remote");
+    wassert(actual(sec->value("path")) == "http://foo.bar/foo/dataset/test200");
 });
 
 }
