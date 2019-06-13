@@ -52,6 +52,7 @@ export ARKI_ALIASES=$TOP_SRCDIR/test/conf/match-alias.conf
 export ARKI_POSTPROC=./postproc
 export PYTHONPATH=$TOP_SRCDIR/python/
 export METEO_VM2_SOURCE="$TOP_SRCDIR/conf/vm2/source.lua"
+export TOP_SRCDIR
 ulimit -v 1048576 || true
 ulimit -n 1024 || true
 

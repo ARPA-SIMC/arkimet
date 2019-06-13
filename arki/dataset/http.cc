@@ -375,11 +375,20 @@ void Reader::readConfig(const std::string& path, ConfigFile& cfg)
 
     CurlEasy m_curl;
     m_curl.reset();
+    checked("setting error buffer", curl_easy_setopt(m_curl, CURLOPT_FOLLOWLOCATION, 1L));
 
     BufState<std::string> request(m_curl);
     request.set_url(str::joinpath(path, "config"));
     request.perform();
     cfg.parse(request.buf, request.url);
+
+    char* redirect_url = nullptr;
+    checked("getting final redirect url", curl_easy_getinfo(m_curl, CURLINFO_REDIRECT_URL, &redirect_url));
+
+
+
+    // TODO: if remote again, keep querying
+    // TODO: or if redirecting, save the final url
 }
 
 void Reader::produce_one_wrong_query()

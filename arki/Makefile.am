@@ -149,6 +149,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		summary/stats.h \
 		summary/short.h \
 		targetfile.h \
+		tests/daemon.h \
 		tests/tests.h \
 		transaction.h \
 		types/fwd.h \
@@ -190,6 +191,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		utils/sqlite.h \
 		utils/string.h \
 		utils/sys.h \
+		utils/subprocess.h \
 		utils/yaml.h \
 		utils/tar.h \
 		utils/zip.h \
@@ -254,6 +256,7 @@ libarkimet_la_SOURCES += \
 		utils/regexp.cc \
 		utils/string.cc \
 		utils/sys.cc \
+		utils/subprocess.cc \
 		utils/yaml.cc \
 		utils/tar.cc \
 		utils/zip.cc \
@@ -317,6 +320,7 @@ libarkimet_la_SOURCES += \
 		types-init.cc
 
 libarkimet_test_la_SOURCES += \
+		tests/daemon.cc \
 		tests/tests.cc \
 		core/tests.cc \
 		types/tests.cc \
@@ -697,4 +701,5 @@ EXTRA_DIST = runtest buildbison buildflex \
 	     matcher/reftime/reftime-lex.ll \
 	     matcher/reftime/reftime-parse.yy \
 	     $(reftime_parser_built_sources) \
-	     tests/testdata.json
+	     tests/testdata.json \
+	     dataset/http-redirect-daemon
