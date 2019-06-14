@@ -51,22 +51,16 @@ int Child::returncode() const
 
 int Child::get_stdin() const
 {
-    if (m_stdin[1] == -1)
-        throw std::runtime_error("stdin() called on Child but stdin was not redirected to a pipe or file descriptor");
     return m_stdin[1];
 }
 
 int Child::get_stdout() const
 {
-    if (m_stdout[0] == -1)
-        throw std::runtime_error("stdout() called on Child but stdout was not redirected to a pipe or file descriptor");
     return m_stdout[0];
 }
 
 int Child::get_stderr() const
 {
-    if (m_stderr[0] == -1)
-        throw std::runtime_error("stderr() called on Child but stderr was not redirected to a pipe or file descriptor");
     return m_stderr[0];
 }
 
@@ -74,7 +68,8 @@ void Child::set_stdin(int fd)
 {
     if (m_pid != 0)
         throw std::runtime_error("cannot redirect stdin after the child process has started");
-    m_stdin[0] = m_stdin[1] = fd;
+    m_stdin[0] = fd;
+    m_stdin[1] = -1;
     m_stdin_action = Redirect::FD;
 }
 
@@ -82,7 +77,8 @@ void Child::set_stdout(int fd)
 {
     if (m_pid != 0)
         throw std::runtime_error("cannot redirect stdout after the child process has started");
-    m_stdout[0] = m_stdout[1] = fd;
+    m_stdout[0] = -1;
+    m_stdout[1] = fd;
     m_stdout_action = Redirect::FD;
 }
 
@@ -90,7 +86,8 @@ void Child::set_stderr(int fd)
 {
     if (m_pid != 0)
         throw std::runtime_error("cannot redirect stderr after the child process has started");
-    m_stderr[0] = m_stderr[1] = fd;
+    m_stderr[0] = -1;
+    m_stderr[1] = fd;
     m_stderr_action = Redirect::FD;
 }
 
@@ -113,6 +110,24 @@ void Child::set_stderr(Redirect val)
     if (m_pid != 0)
         throw std::runtime_error("cannot redirect stderr after the child process has started");
     m_stderr_action = val;
+}
+
+void Child::close_stdin()
+{
+    close(m_stdin[1]);
+    m_stdin[1] = -1;
+}
+
+void Child::close_stdout()
+{
+    close(m_stdin[0]);
+    m_stdin[0] = -1;
+}
+
+void Child::close_stderr()
+{
+    close(m_stdin[0]);
+    m_stdin[0] = -1;
 }
 
 void Child::pre_fork()
@@ -373,6 +388,11 @@ void Child::terminate() { send_signal(SIGTERM); }
 void Child::kill() { send_signal(SIGKILL); }
 
 
+Popen::Popen(std::initializer_list<std::string> args)
+    : args(args)
+{
+}
+
 int Popen::main() noexcept
 {
     try {
@@ -388,10 +408,14 @@ int Popen::main() noexcept
         exec_args[args.size()] = nullptr;
 
         if (execvp(path, (char* const*)exec_args) == -1)
+        {
+            delete[] exec_args;
             throw std::system_error(
                     errno, std::system_category(),
                     "execvp failed");
+        }
 
+        delete[] exec_args;
         throw std::runtime_error("process flow continued after execvp did not fail");
     } catch (std::system_error& e) {
         fprintf(::stderr, "Child process setup failed: %s\n", e.what());

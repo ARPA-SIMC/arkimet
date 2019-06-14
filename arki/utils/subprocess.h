@@ -75,11 +75,11 @@ public:
     /// If true, call setsid() in the child process
     bool start_new_session = false;
 
-    /// Return the file descriptor to the stdin pipe to the child process, if configured, else thrown an exception
+    /// Return the file descriptor to the stdin pipe to the child process, if configured, else -1
     int get_stdin() const;
-    /// Return the file descriptor to the stdout pipe from the child process, if configured, else thrown an exception
+    /// Return the file descriptor to the stdout pipe from the child process, if configured, else -1
     int get_stdout() const;
-    /// Return the file descriptor to the stderr pipe from the child process, if configured, else thrown an exception
+    /// Return the file descriptor to the stderr pipe from the child process, if configured, else -1
     int get_stderr() const;
 
     /// Request to redirect the child stdin to this given file descriptor
@@ -95,7 +95,20 @@ public:
     /// Request to redirect the child stderr according to val
     void set_stderr(Redirect val);
 
+    /// Close the pipe to the child process stdin
+    void close_stdin();
+    /// Close the pipe from the child process stdout
+    void close_stdout();
+    /// Close the pipe from the child process stderr
+    void close_stderr();
+
+    Child() = default;
+    Child(const Child&) = delete;
+    Child(Child&&) = delete;
     virtual ~Child();
+
+    Child& operator=(const Child&) = delete;
+    Child& operator=(Child&&) = delete;
 
     /// Start the child process
     void fork();
@@ -142,6 +155,10 @@ public:
     std::string executable;
 
     // env=None
+
+    using Child::Child;
+
+    Popen(std::initializer_list<std::string> args);
 };
 
 
