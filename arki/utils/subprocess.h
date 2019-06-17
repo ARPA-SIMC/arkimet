@@ -151,14 +151,21 @@ protected:
     int main() noexcept override;
 
 public:
+    /// argv of the child process
     std::vector<std::string> args;
+    /// pathname to the executable of the child process, defaults to args[0] if empty
     std::string executable;
-
-    // env=None
+    /// environment variables to use for the child process
+    std::vector<std::string> env;
 
     using Child::Child;
 
     Popen(std::initializer_list<std::string> args);
+
+    /// Override env with the contents of environment
+    void copy_env_from_parent();
+
+    void setenv(const std::string& key, const std::string& val);
 };
 
 

@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <signal.h>
 #include <cerrno>
+#include <cstring>
 #include <system_error>
 #include <algorithm>
 
@@ -394,6 +395,31 @@ Popen::Popen(std::initializer_list<std::string> args)
 {
 }
 
+void Popen::copy_env_from_parent()
+{
+    for (char** s = environ; *s; ++s)
+        env.emplace_back(*s);
+}
+
+void Popen::setenv(const std::string& key, const std::string& val)
+{
+    bool found = false;
+    for (size_t i = 0; i < env.size(); ++i)
+    {
+        if (env[i].size() < key.size() + 1)
+            continue;
+        if (env[i][key.size()] != '=')
+            continue;
+        if (strncmp(env[i].c_str(), key.c_str(), key.size()) != 0)
+            continue;
+        env[i] = key + '=' + val;
+        found = true;
+        break;
+    }
+    if (!found)
+        env.emplace_back(key + '=' + val);
+}
+
 int Popen::main() noexcept
 {
     try {
@@ -408,15 +434,41 @@ int Popen::main() noexcept
             exec_args[i] = args[i].c_str();
         exec_args[args.size()] = nullptr;
 
-        if (execvp(path, (char* const*)exec_args) == -1)
+        const char** exec_env = nullptr;
+
+        if (!env.empty())
         {
-            delete[] exec_args;
-            throw std::system_error(
-                    errno, std::system_category(),
-                    "execvp failed");
+            // Prepare the custom environment
+            exec_env = new const char*[env.size() + 1];
+            for (size_t i = 0; i < env.size(); ++i)
+                // We can just store a pointer to the internal strings, since later
+                // we're calling exec and no destructors will be called
+                exec_env[i] = env[i].c_str();
+            exec_env[env.size()] = 0;
+        }
+
+        if (exec_env)
+        {
+            if (execvpe(path, (char* const*)exec_args, (char* const*)exec_env) == -1)
+            {
+                delete[] exec_args;
+                delete[] exec_env;
+                throw std::system_error(
+                        errno, std::system_category(),
+                        "execvpe failed");
+            }
+        } else {
+            if (execvp(path, (char* const*)exec_args) == -1)
+            {
+                delete[] exec_args;
+                throw std::system_error(
+                        errno, std::system_category(),
+                        "execvp failed");
+            }
         }
 
         delete[] exec_args;
+        delete[] exec_env;
         throw std::runtime_error("process flow continued after execvp did not fail");
     } catch (std::system_error& e) {
         fprintf(::stderr, "Child process setup failed: %s\n", e.what());
