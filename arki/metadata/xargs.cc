@@ -4,7 +4,7 @@
 #include "arki/utils.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/string.h"
-#include "arki/wibble/sys/exec.h"
+#include "arki/utils/subprocess.h"
 #include <cstring>
 #include <unistd.h>
 #include <sys/types.h>
@@ -83,22 +83,10 @@ void Xargs::flush_batch()
 
 int Xargs::run_child()
 {
-    struct CustomChild : public wibble::sys::Exec
-    {
-        CustomChild(const std::string& pathname) : wibble::sys::Exec(pathname) {}
-
-        virtual int main()
-        {
-            // Redirect stdin to /dev/null
-            int new_stdin = open("/dev/null", O_RDONLY);
-            ::dup2(new_stdin, 0);
-            return wibble::sys::Exec::main();
-        }
-    };
-
     if (count == 0) return 0;
 
-    CustomChild child(command[0]);
+    subprocess::Popen child({command[0]});
+    child.set_stdin(subprocess::Redirect::DEVNULL);
     child.args = command;
     if (filename_argument == -1)
         child.args.push_back(tempfile.name());
@@ -106,8 +94,6 @@ int Xargs::run_child()
         if ((unsigned)filename_argument < child.args.size())
             child.args[filename_argument] = tempfile.name();
     }
-    child.searchInPath = true;
-    child.envFromParent = false;
 
     // Import all the environment except ARKI_XARGS_* variables
     for (char** s = environ; *s; ++s)
@@ -116,19 +102,19 @@ int Xargs::run_child()
         if (str::startswith(envstr, "ARKI_XARGS_")) continue;
         child.env.push_back(envstr);
     }
-    child.env.push_back("ARKI_XARGS_FILENAME=" + tempfile.name());
-    child.env.push_back("ARKI_XARGS_FORMAT=" + str::upper(format));
+    child.setenv("ARKI_XARGS_FILENAME", tempfile.name());
+    child.setenv("ARKI_XARGS_FORMAT", str::upper(format));
     char buf[32];
-    snprintf(buf, 32, "ARKI_XARGS_COUNT=%zd", count);
-    child.env.push_back(buf);
+    snprintf(buf, 32, "%zd", count);
+    child.setenv("ARKI_XARGS_COUNT", buf);
 
     if (timespan_begin.get())
     {
-        child.env.push_back("ARKI_XARGS_TIME_START=" + timespan_begin->to_iso8601(' '));
+        child.setenv("ARKI_XARGS_TIME_START", timespan_begin->to_iso8601(' '));
         if (timespan_end.get())
-            child.env.push_back("ARKI_XARGS_TIME_END=" + timespan_end->to_iso8601(' '));
+            child.setenv("ARKI_XARGS_TIME_END", timespan_end->to_iso8601(' '));
         else
-            child.env.push_back("ARKI_XARGS_TIME_END=" + timespan_begin->to_iso8601(' '));
+            child.setenv("ARKI_XARGS_TIME_END", timespan_begin->to_iso8601(' '));
     }
 
     child.fork();

@@ -14,8 +14,6 @@ arkiincludedir = $(includedir)/arki
 
 nobase_dist_arkiinclude_HEADERS = \
 		wibble/sys/process.h \
-		wibble/sys/childprocess.h \
-		wibble/sys/exec.h \
 		wibble/sys/signal.h \
 		core/fwd.h \
 		core/time.h \
@@ -239,8 +237,6 @@ tests_arki_test_LDADD =
 if DEVEL_DO_TYPES
 libarkimet_la_SOURCES += \
 		wibble/sys/process.cpp \
-		wibble/sys/childprocess.cpp \
-		wibble/sys/exec.cpp \
 		wibble/sys/signal.cpp \
 		core/time.cc \
 		core/fuzzytime.cc \
