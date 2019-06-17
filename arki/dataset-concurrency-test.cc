@@ -13,8 +13,8 @@
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/files.h"
+#include "arki/utils/subprocess.h"
 #include "arki/exceptions.h"
-#include "wibble/sys/childprocess.h"
 #include <sys/fcntl.h>
 #include <iostream>
 
@@ -45,27 +45,26 @@ struct FixtureWriter : public DatasetTest
 };
 
 
-class TestSubprocess : public wibble::sys::ChildProcess
+class TestSubprocess : public subprocess::Child
 {
-protected:
-    int commfd;
-
 public:
     void start()
     {
-        forkAndRedirect(0, &commfd);
+        set_stdout(subprocess::Redirect::PIPE);
+        fork();
     }
 
     void notify_ready()
     {
         putchar('H');
         fflush(stdout);
+        fclose(stdout);
     }
 
     char wait_until_ready()
     {
         char buf[2];
-        ssize_t res = read(commfd, buf, 1);
+        ssize_t res = read(get_stdout(), buf, 1);
         if (res < 0)
             throw_system_error("reading 1 byte from child process");
         if (res == 0)
@@ -80,11 +79,11 @@ public:
         try {
             f();
         } catch(...) {
-            kill(9);
+            send_signal(9);
             wait();
             throw;
         }
-        kill(9);
+        send_signal(9);
         wait();
     }
 
@@ -95,18 +94,18 @@ public:
         try {
             f();
         } catch(...) {
-            kill(9);
+            send_signal(9);
             wait();
             throw;
         }
-        kill(9);
+        send_signal(9);
         wait();
     }
 };
 
 
 template<class Fixture>
-struct ConcurrentImporter : public wibble::sys::ChildProcess
+struct ConcurrentImporter : public subprocess::Child
 {
     Fixture& fixture;
     unsigned initial;
@@ -118,7 +117,7 @@ struct ConcurrentImporter : public wibble::sys::ChildProcess
     {
     }
 
-    int main() override
+    int main() noexcept override
     {
         core::lock::test_set_nowait_default(false);
         try {
@@ -166,7 +165,7 @@ struct ReadHang : public TestSubprocess
         return true;
     }
 
-    int main() override
+    int main() noexcept override
     {
         try {
             auto reader = config->create_reader();
@@ -201,7 +200,7 @@ struct CheckForever : public TestSubprocess
 
     CheckForever(Fixture& fixture) : fixture(fixture) {}
 
-    int main() override
+    int main() noexcept override
     {
         try {
             auto ds(fixture.config().create_checker());
@@ -223,7 +222,7 @@ struct RepackForever : public TestSubprocess
 
     RepackForever(Fixture& fixture) : fixture(fixture) {}
 
-    int main() override
+    int main() noexcept override
     {
         try {
             string segment = "2007/07-07." + fixture.td.format;
