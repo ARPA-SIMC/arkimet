@@ -57,7 +57,8 @@ class ArkiView:
         Return the dataset query matcher string
         """
         query = self.request.values.get("query", "").strip()
-        if query: self.info["query"] = query
+        if query:
+            self.info["query"] = query
         return query
 
     def get_sort(self):
@@ -65,7 +66,8 @@ class ArkiView:
         Return the sort order string
         """
         sort = self.request.values.get("sort", "").strip()
-        if sort: self.info["sort"] = sort
+        if sort:
+            self.info["sort"] = sort
         return sort
 
     def get_headers_filename(self):
@@ -447,7 +449,7 @@ class QMacroMixin:
             return self.request.values.get("qmacro", "").strip()
 
     def get_metadata_url(self):
-        #return self.handler.server.url + "/dataset/" + self.request.values.get("qmacro", "").strip()
+        # return self.handler.server.url + "/dataset/" + self.request.values.get("qmacro", "").strip()
         return self.handler.server.url + "/query"
 
     def get_dataset_reader(self):
@@ -466,9 +468,11 @@ class QMacroMixin:
     def get_query(self):
         return ""
 
+
 def arki_query(request, handler, **kw):
     style = request.values.get("style", "metadata").strip()
     View = get_view_for_style(style)
+
     class QMacroView(QMacroMixin, View):
         pass
     return QMacroView(request, handler, **kw)
@@ -504,8 +508,10 @@ class ArkiDatasetIndex(ArkiView):
                     for k, v in sorted(cfg.items()):
                         print("{k} = {v}".format(k=html.escape(k), v=html.escape(v)), file=page.out)
                 with page.ul():
-                    with page.li(): page.a("/dataset/" + name + "/summary", "Download summary")
-                    with page.li(): page.a("/", "List of all datasets")
+                    with page.li():
+                        page.a("/dataset/" + name + "/summary", "Download summary")
+                    with page.li():
+                        page.a("/", "List of all datasets")
 
                 # res << "<p>Summary of dataset <b>" << dsname << "</b>:</p>" << endl;
                 # res << "<pre>" << endl;
