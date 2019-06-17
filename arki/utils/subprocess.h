@@ -131,8 +131,8 @@ public:
     /// Check if the process has terminated. Returns true if it has.
     bool poll();
 
-    // Wait for the child process to terminate
-    void wait();
+    // Wait for the child process to terminate and return its return code
+    int wait();
 
     // Send the given signal to the process
     void send_signal(int sig);
