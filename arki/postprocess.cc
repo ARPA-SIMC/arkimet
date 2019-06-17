@@ -8,8 +8,8 @@
 #include "arki/utils/process.h"
 #include "arki/runtime/config.h"
 #include "arki/utils/string.h"
+#include "arki/utils/subprocess.h"
 #include "arki/utils/regexp.h"
-#include "arki/wibble/sys/childprocess.h"
 #include "arki/wibble/sys/process.h"
 #include <sys/select.h>
 #include <sys/time.h>
@@ -62,7 +62,7 @@ namespace postproc {
 struct Child : public utils::IODispatcher
 {
     /// Subcommand with the child to run
-    utils::Subcommand cmd;
+    subprocess::Popen cmd;
 
     /// Non-null if we should notify the hook as soon as some data arrives from the processor
     std::function<void(NamedFileDescriptor&)> data_start_hook;
@@ -79,6 +79,9 @@ struct Child : public utils::IODispatcher
 
     Child() : utils::IODispatcher(cmd)
     {
+        cmd.set_stdin(subprocess::Redirect::PIPE);
+        cmd.set_stdout(subprocess::Redirect::PIPE);
+        cmd.set_stderr(subprocess::Redirect::PIPE);
     }
 
     void read_stdout() override
@@ -91,15 +94,15 @@ struct Child : public utils::IODispatcher
             if (m_nextfd)
             {
                 // Try splice
-                ssize_t res = splice(outfd, NULL, *m_nextfd, NULL, 4096*2, SPLICE_F_MORE);
+                ssize_t res = splice(subproc.get_stdout(), NULL, *m_nextfd, NULL, 4096*2, SPLICE_F_MORE);
                 if (res >= 0)
                 {
                     if (res == 0)
-                        close_outfd();
+                        subproc.close_stdout();
                     return;
                 }
                 if (errno != EINVAL)
-                    throw_system_error("splicing data from child postprocessor to destination");
+                    throw_system_error("cannot splice data from child postprocessor to destination");
                 // Else pass it on to the traditional method
             }
         }
@@ -109,12 +112,12 @@ struct Child : public utils::IODispatcher
 
         // Read data from child
         char buf[4096*2];
-        ssize_t res = read(outfd, buf, 4096*2);
+        ssize_t res = read(subproc.get_stdout(), buf, 4096*2);
         if (res < 0)
             throw_system_error("reading from child postprocessor");
         if (res == 0)
         {
-            close_outfd();
+            subproc.close_stdout();
             return;
         }
         if (data_start_hook)
@@ -147,14 +150,14 @@ struct Child : public utils::IODispatcher
     {
         if (m_err)
         {
-            if (!fd_to_stream(errfd, *m_err))
+            if (!fd_to_stream(subproc.get_stderr(), *m_err))
             {
-                close_errfd();
+                subproc.close_stderr();
             }
         } else {
-            if (!discard_fd(errfd))
+            if (!discard_fd(subproc.get_stderr()))
             {
-                close_errfd();
+                subproc.close_stderr();
             }
         }
     }
@@ -163,7 +166,7 @@ struct Child : public utils::IODispatcher
     {
         if (cmd.pid() != -1)
         {
-            cmd.kill(SIGTERM);
+            cmd.terminate();
             cmd.wait();
         }
     }
@@ -245,12 +248,12 @@ void Postprocess::start()
     m_child->cmd.args[0] = runtime::Config::get().dir_postproc.find_file(m_child->cmd.args[0], true);
 
     // Spawn the command
-    m_child->start();
+    m_child->subproc.fork();
 }
 
 bool Postprocess::process(unique_ptr<Metadata>&& md)
 {
-    if (m_child->infd == -1)
+    if (m_child->subproc.get_stdin() == -1)
         return false;
 
     // Make the data inline, so that the reader on the other side, knows that
@@ -274,7 +277,8 @@ void Postprocess::flush()
     m_child->flush();
 
     //cerr << "Waiting for child" << endl;
-    int res = m_child->cmd.wait();
+    m_child->subproc.wait();
+    int res = m_child->subproc.returncode();
     //cerr << "Waited and got " << res << endl;
     delete m_child;
     m_child = 0;

@@ -9,8 +9,8 @@ namespace arki {
 namespace tests {
 
 Daemon::Daemon(std::initializer_list<std::string> args)
+    : Popen(args)
 {
-    this->args = args;
     const char* top_srcdir = getenv("TOP_SRCDIR");
     if (top_srcdir)
         this->args[0] = std::string(top_srcdir) + "/" + this->args[0];

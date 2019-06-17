@@ -27,27 +27,10 @@
 #include <map>
 #include <vector>
 #include <sstream>
-#include <arki/wibble/sys/childprocess.h>
+#include <arki/utils/subprocess.h>
 
 namespace arki {
 namespace utils {
-
-/**
- * ChildProcess that runs a command given as an argument vector.
- *
- * The first element of the vector is the pathname to the executable, that will
- * be used as argv[0].
- */
-struct Subcommand : public wibble::sys::ChildProcess
-{
-    std::vector<std::string> args;
-
-    Subcommand();
-    Subcommand(const std::vector<std::string>& args);
-    ~Subcommand();
-
-    virtual int main();
-};
 
 /**
  * Dispatch input and output to and from a child process.
@@ -59,30 +42,12 @@ struct Subcommand : public wibble::sys::ChildProcess
 struct IODispatcher
 {
     /// Subprocess that does the filtering
-    wibble::sys::ChildProcess& subproc;
+    subprocess::Child& subproc;
     /// Wait timeout: use { 0, 0 } to wait forever (default: { 0, 0 })
     struct timespec conf_timeout;
-    /// Pipe used to send data to the subprocess
-    int infd;
-    /// Pipe used to get data back from the subprocess
-    int outfd;
-    /// Pipe used to capture the stderr of the subprocess
-    int errfd;
 
-    IODispatcher(wibble::sys::ChildProcess& subproc);
+    IODispatcher(subprocess::Child& subproc);
     virtual ~IODispatcher();
-
-    /// Start the child process, setting up pipes as needed
-    void start(bool do_stdin=true, bool do_stdout=true, bool do_stderr=true);
-
-    /// Close pipe to child process, to signal we're done sending data
-    void close_infd();
-
-    /// Close stdout pipe from child process
-    void close_outfd();
-
-    /// Close stderr pipe from child process
-    void close_errfd();
 
     /// Called when there is data to read on stdout
     virtual void read_stdout() = 0;
