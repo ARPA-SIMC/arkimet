@@ -138,6 +138,9 @@ void Request::perform()
         if (code != CURLE_OK)
             throw http::Exception(code, curl.m_errbuf, "Cannot query " + actual_url);
 
+        if (response_code == -1)
+            checked("reading response code", curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response_code));
+
         if (response_code >= 400)
         {
             stringstream msg;
@@ -155,7 +158,7 @@ void Request::perform()
             else
                 throw std::runtime_error("redirect code " + std::to_string(response_code) + " received without a redirect url available");
         } else if (response_code >= 200) {
-            break;
+            return;
         } else if (response_code >= 100)
             throw std::runtime_error("received unsupported HTTP code " + std::to_string(response_code));
     }
