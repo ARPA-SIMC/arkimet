@@ -64,41 +64,6 @@ string formatStatus(int status)
 	return b_status.str();
 }
 
-void chdir(const string& dir)
-{
-	if (::chdir(dir.c_str()) == -1)
-		throw_system_error("changing working directory to " + dir);
-}
-
-std::string getcwd()
-{
-#if defined(__GLIBC__)
-	char* cwd = ::get_current_dir_name();
-	if (cwd == NULL)
-		throw_system_error("getting the current working directory");
-	const std::string str(cwd);
-	::free(cwd);
-	return str;
-#else
-	size_t size = pathconf(".", _PC_PATH_MAX);
-	char *buf = (char *)alloca( size );
-	if (::getcwd(buf, size) == NULL)
-		throw_system_error("getting the current working directory");
-	return buf;
-#endif
-}
-
-void chroot(const string& dir)
-{
-	if (::chroot(dir.c_str()) == -1)
-		throw_system_error("changing root directory to " + dir);
-}
-
-mode_t umask(mode_t mask)
-{
-	return ::umask(mask);
-}
-
 struct passwd* getUserInfo(const string& user)
 {
 	if (isdigit(user[0]))

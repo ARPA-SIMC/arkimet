@@ -28,20 +28,8 @@ namespace wibble {
 namespace sys {
 namespace process {
 
-/// Get the absolute path of the current working directory
-std::string getcwd();
-
 /// Pretty-print the return value of a process into a string
 std::string formatStatus(int status);
-
-/// Change working directory
-void chdir(const std::string& dir);
-
-/// Change root directory
-void chroot(const std::string& dir);
-
-/// Change umask (always succeeds and returns the previous umask)
-mode_t umask(mode_t mask);
 
 /// Set user and group permissions
 void setPerms(const std::string& user);
