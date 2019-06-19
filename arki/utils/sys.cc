@@ -167,6 +167,23 @@ std::string getcwd()
 #endif
 }
 
+void chdir(const std::string& dir)
+{
+    if (::chdir(dir.c_str()) == -1)
+        throw std::system_error(errno, std::system_category(), "cannot change the current working directory to " + dir);
+}
+
+void chroot(const std::string& dir)
+{
+    if (::chroot(dir.c_str()) == -1)
+        throw std::system_error(errno, std::system_category(), "cannot chroot to " + dir);
+}
+
+mode_t umask(mode_t mask)
+{
+    return ::umask(mask);
+}
+
 std::string abspath(const std::string& pathname)
 {
     if (pathname[0] == '/')
