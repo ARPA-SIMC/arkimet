@@ -1,9 +1,7 @@
 #include "config.h"
 #include "process.h"
 #include "arki/exceptions.h"
-#include "arki/wibble/sys/childprocess.h"
-#include "arki/wibble/sys/process.h"
-#include <sys/select.h>
+#include <poll.h>
 #include <sys/time.h>
 #include <sys/types.h>
 #include <fcntl.h>
@@ -45,52 +43,8 @@ struct Sigignore
 namespace arki {
 namespace utils {
 
-Subcommand::Subcommand()
-{
-}
-
-Subcommand::Subcommand(const vector<string>& args)
-    : args(args)
-{
-}
-
-Subcommand::~Subcommand()
-{
-}
-
-int Subcommand::main()
-{
-    try {
-        //cerr << "RUN args: " << str::join(args.begin(), args.end()) << endl;
-
-        // Build the argument list
-        //string basename = str::basename(args[0]);
-        const char *argv[args.size()+1];
-        for (size_t i = 0; i < args.size(); ++i)
-        {
-            /*
-            if (i == 0)
-                argv[i] = basename.c_str();
-            else
-            */
-                argv[i] = args[i].c_str();
-        }
-        argv[args.size()] = 0;
-
-        // Exec the filter
-        //cerr << "RUN " << args[0] << " args: " << str::join(&argv[0], &argv[args.size()]) << endl;
-        execv(args[0].c_str(), (char* const*)argv);
-        throw_system_error("running postprocessing filter");
-    } catch (std::exception& e) {
-        cerr << e.what() << endl;
-        return 1;
-    }
-    return 2;
-}
-
-
-IODispatcher::IODispatcher(wibble::sys::ChildProcess& subproc)
-    : subproc(subproc), infd(-1), outfd(-1), errfd(-1)
+IODispatcher::IODispatcher(subprocess::Child& subproc)
+    : subproc(subproc)
 {
     conf_timeout.tv_sec = 0;
     conf_timeout.tv_nsec = 0;
@@ -98,50 +52,6 @@ IODispatcher::IODispatcher(wibble::sys::ChildProcess& subproc)
 
 IODispatcher::~IODispatcher()
 {
-    if (infd != -1) close(infd);
-    if (outfd != -1) close(outfd);
-    if (errfd != -1) close(errfd);
-}
-
-void IODispatcher::start(bool do_stdin, bool do_stdout, bool do_stderr)
-{
-    subproc.forkAndRedirect(
-            do_stdin ? &infd : NULL,
-            do_stdout ? &outfd : NULL,
-            do_stderr ? &errfd : NULL);
-}
-
-void IODispatcher::close_infd()
-{
-    if (infd != -1)
-    {
-        //cerr << "Closing pipe" << endl;
-        if (close(infd) < 0)
-            throw_system_error("closing output to filter child process");
-        infd = -1;
-    }
-}
-
-void IODispatcher::close_outfd()
-{
-    if (outfd != -1)
-    {
-        //cerr << "Closing pipe" << endl;
-        if (close(outfd) < 0)
-            throw_system_error("closing input from child standard output");
-        outfd = -1;
-    }
-}
-
-void IODispatcher::close_errfd()
-{
-    if (errfd != -1)
-    {
-        //cerr << "Closing pipe" << endl;
-        if (close(errfd) < 0)
-            throw_system_error("closing input from child standard error");
-        errfd = -1;
-    }
 }
 
 bool IODispatcher::fd_to_stream(int in, std::ostream& out)
@@ -179,114 +89,148 @@ size_t IODispatcher::send(const void* buf, size_t size)
     if (conf_timeout.tv_sec != 0 || conf_timeout.tv_nsec != 0)
         timeout_param = &conf_timeout;
 
+    struct pollfd fds[3];
+    int stdin_idx, stdout_idx, stderr_idx;
+
     size_t written = 0;
-    while (written < size && infd != -1)
+    while (written < size && subproc.get_stdin() != -1)
     {
-        int nfds = infd;
+        int nfds = 0;
 
-        fd_set infds;
-        FD_ZERO(&infds);
-        FD_SET(infd, &infds);
-
-        fd_set outfds;
-        FD_ZERO(&outfds);
-
-        fd_set* poutfds;
-        if (outfd != -1 || errfd != -1)
+        if (subproc.get_stdin() != -1)
         {
-            if (outfd != -1)
-            {
-                FD_SET(outfd, &outfds);
-                nfds = max(nfds, outfd);
-            }
-            if (errfd != -1)
-            {
-                FD_SET(errfd, &outfds);
-                nfds = max(nfds, errfd);
-            }
-            poutfds = &outfds;
+            stdin_idx = nfds;
+            fds[nfds].fd = subproc.get_stdin();
+            fds[nfds].events = POLLOUT;
+            ++nfds;
         } else
-            poutfds = NULL;
+            stdin_idx = -1;
 
-        ++nfds;
+        if (subproc.get_stdout() != -1)
+        {
+            stdout_idx = nfds;
+            fds[nfds].fd = subproc.get_stdout();
+            fds[nfds].events = POLLIN;
+            ++nfds;
+        } else
+            stdout_idx = -1;
 
-        int res = pselect(nfds, poutfds, &infds, NULL, timeout_param, NULL);
+        if (subproc.get_stderr() != -1)
+        {
+            stderr_idx = nfds;
+            fds[nfds].fd = subproc.get_stderr();
+            fds[nfds].events = POLLIN;
+            ++nfds;
+        } else
+            stderr_idx = -1;
+
+        if (nfds == 0) break;
+
+        int res = ppoll(fds, nfds, timeout_param, nullptr);
         if (res < 0)
-            throw_system_error("waiting for activity on filter child process");
+            throw_system_error("cannot wait for activity on filter child process");
         if (res == 0)
             throw std::runtime_error("timeout waiting for activity on filter child process");
 
-        if (infd != -1 && FD_ISSET(infd, &infds))
+        if (stdin_idx != -1)
         {
-            // Ignore SIGPIPE so we get EPIPE
-            Sigignore ignpipe(SIGPIPE);
-            ssize_t res = write(infd, (unsigned char*)buf + written, size - written);
-            if (res < 0)
+            if (fds[stdin_idx].revents & POLLOUT)
             {
-                if (errno == EPIPE)
+                // Ignore SIGPIPE so we get EPIPE
+                Sigignore ignpipe(SIGPIPE);
+                ssize_t res = write(subproc.get_stdin(), (unsigned char*)buf + written, size - written);
+                if (res < 0)
                 {
-                    close_infd();
+                    if (errno == EPIPE)
+                        subproc.close_stdin();
+                    else
+                        throw_system_error("cannot write to child process");
+                } else {
+                    written += res;
                 }
-                else
-                    throw_system_error("writing to child process");
-            } else {
-                written += res;
             }
+            else if (fds[stdin_idx].revents & POLLHUP)
+                subproc.close_stdin();
         }
 
-        if (outfd != -1 && FD_ISSET(outfd, &outfds))
-            read_stdout();
+        if (stdout_idx != -1)
+        {
+            if (fds[stdout_idx].revents & POLLIN)
+                read_stdout();
+            else if (fds[stdout_idx].revents & POLLHUP)
+                subproc.close_stdout();
+        }
 
-        if (errfd != -1 && FD_ISSET(errfd, &outfds))
-            read_stderr();
+        if (stderr_idx != -1)
+        {
+            if (fds[stderr_idx].revents & POLLIN)
+                read_stderr();
+            else if (fds[stderr_idx].revents & POLLHUP)
+                subproc.close_stderr();
+        }
     }
     return written;
 }
 
 void IODispatcher::flush()
 {
-    if (infd != -1)
-        close_infd();
+    if (subproc.get_stdin() != -1)
+        subproc.close_stdin();
 
-    struct timespec* timeout_param = NULL;
+    struct timespec* timeout_param = nullptr;
     if (conf_timeout.tv_sec != 0 || conf_timeout.tv_nsec != 0)
         timeout_param = &conf_timeout;
 
+    struct pollfd fds[2];
+    int stdout_idx, stderr_idx;
+
     while (true)
     {
-        fd_set outfds;
-        FD_ZERO(&outfds);
         int nfds = 0;
 
-        if (outfd != -1)
+        if (subproc.get_stdout() != -1)
         {
-            FD_SET(outfd, &outfds);
-            nfds = max(nfds, outfd);
-        }
-        if (errfd != -1)
+            stdout_idx = nfds;
+            fds[nfds].fd = subproc.get_stdout();
+            fds[nfds].events = POLLIN;
+            ++nfds;
+        } else
+            stdout_idx = -1;
+
+        if (subproc.get_stderr() != -1)
         {
-            FD_SET(errfd, &outfds);
-            nfds = max(nfds, errfd);
-        }
+            stderr_idx = nfds;
+            fds[nfds].fd = subproc.get_stderr();
+            fds[nfds].events = POLLIN;
+            ++nfds;
+        } else
+            stderr_idx = -1;
 
         if (nfds == 0) break;
 
-        ++nfds;
-
-        int res = pselect(nfds, &outfds, NULL, NULL, timeout_param, NULL);
+        int res = ppoll(fds, nfds, timeout_param, nullptr);
         if (res < 0)
-            throw_system_error("waiting for activity on filter child process");
+            throw_system_error("cannot wait for activity on filter child process");
         if (res == 0)
             throw std::runtime_error("timeout waiting for activity on filter child process");
 
-        if (outfd != -1 && FD_ISSET(outfd, &outfds))
-            read_stdout();
+        if (stdout_idx != -1)
+        {
+            if (fds[stdout_idx].revents & POLLIN)
+                read_stdout();
+            else if (fds[stdout_idx].revents & POLLHUP)
+                subproc.close_stdout();
+        }
 
-        if (errfd != -1 && FD_ISSET(errfd, &outfds))
-            read_stderr();
+        if (stderr_idx != -1)
+        {
+            if (fds[stderr_idx].revents & POLLIN)
+                read_stderr();
+            else if (fds[stderr_idx].revents & POLLHUP)
+                subproc.close_stderr();
+        }
     }
 }
 
 }
 }
-// vim:set ts=4 sw=4:

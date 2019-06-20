@@ -88,6 +88,15 @@ bool exists(const std::string& s);
 /// Get the absolute path of the current working directory
 std::string getcwd();
 
+/// Change working directory
+void chdir(const std::string& dir);
+
+/// Change root directory
+void chroot(const std::string& dir);
+
+/// Change umask (always succeeds and returns the previous umask)
+mode_t umask(mode_t mask);
+
 /// Get the absolute path of a file
 std::string abspath(const std::string& pathname);
 

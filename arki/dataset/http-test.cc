@@ -1,4 +1,5 @@
 #include "arki/tests/tests.h"
+#include "arki/tests/daemon.h"
 #include "arki/configfile.h"
 #include "http.h"
 
@@ -34,7 +35,7 @@ add_method("allsameremoteserver", [] {
         ConfigFile cfg;
         cfg.parse(conf);
 
-        ensure_equals(http::Reader::allSameRemoteServer(cfg), "http://foo.bar/foo");
+        wassert(actual(http::Reader::allSameRemoteServer(cfg)) == "http://foo.bar/foo");
     }
 
     {
@@ -53,7 +54,7 @@ add_method("allsameremoteserver", [] {
         ConfigFile cfg;
         cfg.parse(conf);
 
-        ensure_equals(http::Reader::allSameRemoteServer(cfg), "");
+        wassert(actual(http::Reader::allSameRemoteServer(cfg)) == "");
     }
 
     {
@@ -72,8 +73,23 @@ add_method("allsameremoteserver", [] {
         ConfigFile cfg;
         cfg.parse(conf);
 
-        ensure_equals(http::Reader::allSameRemoteServer(cfg), "");
+        wassert(actual(http::Reader::allSameRemoteServer(cfg)) == "");
     }
+});
+
+add_method("redirect", [] {
+    tests::Daemon server({"arki/dataset/http-redirect-daemon"});
+    int port;
+    sscanf(server.daemon_start_string.c_str(), "OK %d\n", &port);
+    char url[512];
+    snprintf(url, 512, "http://localhost:%d", port);
+
+    ConfigFile cfg;
+    http::Reader::read_config(url, cfg);
+
+    auto sec = cfg.section("test200");
+    wassert(actual(sec->value("type")) == "remote");
+    wassert(actual(sec->value("path")) == "http://foo.bar/foo/dataset/test200");
 });
 
 }

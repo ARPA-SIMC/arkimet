@@ -1,0 +1,73 @@
+#!/usr/bin/python3
+
+import argparse
+import logging
+import sys
+import http.server
+
+redirects = {
+    "/config": "/test1/config",
+    "/test1/config": "/test2/config",
+    "/test2/config": "/final/config",
+}
+
+
+class Handler(http.server.BaseHTTPRequestHandler):
+    def do_GET(self):
+        dest = redirects.get(self.path)
+        if dest is not None:
+            url = "http://{0.server_name}:{0.server_port}{1}".format(self.server, dest)
+            self.send_response(307)
+            self.send_header("Location", url)
+            self.end_headers()
+            self.wfile.write("Redirected to {}\n".format(url).encode())
+        elif self.path == "/final/config":
+            self.send_response(200)
+            self.end_headers()
+            self.wfile.write("""
+[test200]
+type = remote
+path = http://foo.bar/foo/dataset/test200
+
+[test80]
+type = remote
+path = http://foo.bar/foo/dataset/test80
+
+[error]
+type = remote
+path = http://foo.bar/foo/dataset/error
+""".encode())
+        else:
+            self.send_response(404)
+            self.end_headers()
+            self.wfile.write("{} not found\n".format(self.path).encode())
+
+    def log_message(self, fmt, *args, **kw):
+        logging.info(fmt, *args, **kw)
+
+
+def main():
+    parser = argparse.ArgumentParser(description="HTTP server to test HTTP redirects")
+    parser.add_argument("--verbose", "-v", action="store_true", help="verbose output")
+    parser.add_argument("--debug", action="store_true", help="debug output")
+    args = parser.parse_args()
+
+    # Setup logging
+    FORMAT = "%(asctime)-15s %(levelname)s %(message)s"
+    if args.debug:
+        logging.basicConfig(level=logging.DEBUG, stream=sys.stderr, format=FORMAT)
+    elif args.verbose:
+        logging.basicConfig(level=logging.INFO, stream=sys.stderr, format=FORMAT)
+    else:
+        logging.basicConfig(level=logging.WARN, stream=sys.stderr, format=FORMAT)
+
+    PORT = 18001
+
+    with http.server.HTTPServer(("localhost", PORT), Handler) as httpd:
+        print("OK {}".format(PORT))
+        sys.stdout.flush()
+        httpd.serve_forever()
+
+
+if __name__ == "__main__":
+    main()

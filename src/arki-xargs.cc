@@ -8,7 +8,6 @@
 #include <arki/runtime/io.h>
 #include <arki/utils/sys.h>
 #include <arki/utils/commandline/parser.h>
-#include <arki/wibble/sys/exec.h>
 #include <iostream>
 #include <cstdlib>
 #include <cstring>

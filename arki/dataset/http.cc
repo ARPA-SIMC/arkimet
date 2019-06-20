@@ -111,39 +111,56 @@ void Request::set_method(const std::string& method)
 
 void Request::perform()
 {
-    arkimet_exception_message.clear();
-    response_code = -1;
-    checked("setting url", curl_easy_setopt(curl, CURLOPT_URL, url.c_str()));
-    if (method == "POST")
+    actual_url = url;
+    while (true)
     {
-        checked("selecting POST method", curl_easy_setopt(curl, CURLOPT_POST, 1));
-        checked("setting POST data", curl_easy_setopt(curl, CURLOPT_HTTPPOST, post_data.get()));
-    }
-    else if (method == "GET")
-        checked("selecting GET method", curl_easy_setopt(curl, CURLOPT_HTTPGET, 1));
-    else
-        throw std::runtime_error("requested unsupported HTTP method '" + method + "'");
-    checked("setting HTTP authentication method", curl_easy_setopt(curl, CURLOPT_HTTPAUTH, CURLAUTH_ANY));
-    checked("setting netrc usage", curl_easy_setopt(curl, CURLOPT_NETRC, CURL_NETRC_OPTIONAL));
-    checked("setting header function", curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, &Request::headerfunc));
-    checked("setting header function data", curl_easy_setopt(curl, CURLOPT_WRITEHEADER, this));
-    checked("setting write function", curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, &Request::writefunc));
-    checked("setting write function data", curl_easy_setopt(curl, CURLOPT_WRITEDATA, this));
-    // CURLOPT_PROGRESSFUNCTION / CURLOPT_PROGRESSDATA ?
-
-    CURLcode code = curl_easy_perform(curl);
-    if (code != CURLE_OK)
-        throw http::Exception(code, curl.m_errbuf, "Cannot query " + url);
-
-    if (response_code >= 300)
-    {
-        stringstream msg;
-        msg << method << " " << url << " got response code " << response_code << ": ";
-        if (!arkimet_exception_message.empty())
-            msg << arkimet_exception_message;
+        arkimet_exception_message.clear();
+        response_code = -1;
+        checked("setting url", curl_easy_setopt(curl, CURLOPT_URL, actual_url.c_str()));
+        if (method == "POST")
+        {
+            checked("selecting POST method", curl_easy_setopt(curl, CURLOPT_POST, 1));
+            checked("setting POST data", curl_easy_setopt(curl, CURLOPT_HTTPPOST, post_data.get()));
+        }
+        else if (method == "GET")
+            checked("selecting GET method", curl_easy_setopt(curl, CURLOPT_HTTPGET, 1));
         else
-            msg << response_error.str();
-        throw std::runtime_error(msg.str());
+            throw std::runtime_error("requested unsupported HTTP method '" + method + "'");
+        checked("setting HTTP authentication method", curl_easy_setopt(curl, CURLOPT_HTTPAUTH, CURLAUTH_ANY));
+        checked("setting netrc usage", curl_easy_setopt(curl, CURLOPT_NETRC, CURL_NETRC_OPTIONAL));
+        checked("setting header function", curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, &Request::headerfunc));
+        checked("setting header function data", curl_easy_setopt(curl, CURLOPT_WRITEHEADER, this));
+        checked("setting write function", curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, &Request::writefunc));
+        checked("setting write function data", curl_easy_setopt(curl, CURLOPT_WRITEDATA, this));
+        // CURLOPT_PROGRESSFUNCTION / CURLOPT_PROGRESSDATA ?
+
+        CURLcode code = curl_easy_perform(curl);
+        if (code != CURLE_OK)
+            throw http::Exception(code, curl.m_errbuf, "Cannot query " + actual_url);
+
+        if (response_code == -1)
+            checked("reading response code", curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response_code));
+
+        if (response_code >= 400)
+        {
+            stringstream msg;
+            msg << method << " " << actual_url << " got response code " << response_code << ": ";
+            if (!arkimet_exception_message.empty())
+                msg << arkimet_exception_message;
+            else
+                msg << response_error.str();
+            throw std::runtime_error(msg.str());
+        } else if (response_code >= 300) {
+            char *url = nullptr;
+            checked("reading redirect url", curl_easy_getinfo(curl, CURLINFO_REDIRECT_URL, &url));
+            if (url)
+                actual_url = url;
+            else
+                throw std::runtime_error("redirect code " + std::to_string(response_code) + " received without a redirect url available");
+        } else if (response_code >= 200) {
+            return;
+        } else if (response_code >= 100)
+            throw std::runtime_error("received unsupported HTTP code " + std::to_string(response_code));
     }
 }
 
@@ -369,7 +386,7 @@ void Reader::query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out)
     request.perform();
 }
 
-void Reader::readConfig(const std::string& path, ConfigFile& cfg)
+void Reader::read_config(const std::string& path, ConfigFile& cfg)
 {
     using namespace http;
 
@@ -379,6 +396,7 @@ void Reader::readConfig(const std::string& path, ConfigFile& cfg)
     BufState<std::string> request(m_curl);
     request.set_url(str::joinpath(path, "config"));
     request.perform();
+
     cfg.parse(request.buf, request.url);
 }
 
@@ -419,7 +437,7 @@ void Reader::getAliasDatabase(const std::string& server, ConfigFile& cfg)
 static string geturlprefix(const std::string& s)
 {
     // Take until /dataset/
-    size_t pos = s.find("/dataset/");
+    size_t pos = s.rfind("/dataset/");
     if (pos == string::npos) return string();
     return s.substr(0, pos);
 }

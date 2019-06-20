@@ -12,7 +12,6 @@
 #include "arki/core/file.h"
 #include "arki/utils/sys.h"
 #include "arki/types/reftime.h"
-#include "arki/wibble/sys/childprocess.h"
 #include <unistd.h>
 #include <sys/fcntl.h>
 #include <sstream>

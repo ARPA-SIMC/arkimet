@@ -70,6 +70,12 @@ struct Request
     std::string url;
     CurlForm post_data;
     long response_code = -1;
+    /**
+     * If the final request is the result of a redirect, this is the last
+     * redirect url in the chain, that is, the one that provided the actual
+     * response
+     */
+    std::string actual_url;
     std::stringstream response_error;
     std::string arkimet_exception_message;
 
@@ -81,6 +87,8 @@ struct Request
 
     /// Set up \a curl to process this request
     virtual void perform();
+
+    void throw_if_response_code_not_ok();
 
 protected:
     /// Process one full line of headers
@@ -153,7 +161,7 @@ public:
     void query_summary(const Matcher& matcher, Summary& summary) override;
     void query_bytes(const dataset::ByteQuery& q, core::NamedFileDescriptor& out) override;
 
-    static void readConfig(const std::string& path, ConfigFile& cfg);
+    static void read_config(const std::string& path, ConfigFile& cfg);
 
     /**
      * Expand the given matcher expression using the aliases on this server

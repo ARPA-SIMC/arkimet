@@ -1,5 +1,4 @@
 #!/usr/bin/python3
-
 import re
 import configparser
 import logging
@@ -8,7 +7,6 @@ import datetime
 import subprocess
 import threading
 import sys
-import arkimet as arki
 from arkimet.server import views
 from werkzeug.exceptions import HTTPException, NotFound
 from socketserver import ForkingMixIn
@@ -46,7 +44,7 @@ class Server(ForkingMixIn, HTTPServer):
             self.remote_cfg.add_section(sec)
             for k, v in self.cfg.items(sec):
                 self.remote_cfg.set(sec, k, v)
-            self.remote_cfg.set(sec, "path", self.url + "/dataset/" + sec);
+            self.remote_cfg.set(sec, "path", self.url + "/dataset/" + sec)
             self.remote_cfg.set(sec, "type", "remote")
             self.remote_cfg.set(sec, "server", self.url)
 
@@ -114,14 +112,15 @@ class Handler(BaseHTTPRequestHandler):
         """
         Dispatch a request to the endpoint given by self.server.url_map
         """
-        from werkzeug.wrappers import Request, Response
+        from werkzeug.wrappers import Request
         request = Request(self.make_environ())
         setproctitle("arki-server {} for {}".format(request.base_url, request.remote_addr))
         adapter = self.server.url_map.bind_to_environ(request.environ)
         try:
             endpoint, values = adapter.match()
             meth = getattr(views, endpoint, None)
-            if meth is None: raise NotFound("endpoint {} not found".format(endpoint))
+            if meth is None:
+                raise NotFound("endpoint {} not found".format(endpoint))
             view = meth(request, self, **values)
             view.run()
         except HTTPException as e:
@@ -164,6 +163,7 @@ class JournaldFormatter(logging.Formatter):
         logging.ERROR: 3,
         logging.CRITICAL: 2,
     }
+
     def format(self, record):
         return "<{}>{}".format(
             self.level_map.get(record.levelno, 4),
@@ -180,34 +180,36 @@ class DefaultLogFilter:
         self.has_accesslog = bool(has_accesslog)
 
     def filter(self, record):
-        if self.has_accesslog and getattr(record, "access_log", False): return False
+        if self.has_accesslog and getattr(record, "access_log", False):
+            return False
         return getattr(record, "perf", None) is None
 
 
 def main():
-    import argparse
-
     parser = argparse.ArgumentParser(
         description="Start the arkimet server, serving the datasets found in the configuration file")
 
     parser.add_argument("configfile", help="dataset configuration file")
-
     parser.add_argument('--version', action='version', version='%(prog)s 1.0')
-
-    parser.add_argument("--host", "--hostname", metavar="host", default="", help="interface to listen to. Default: all interfaces")
-    parser.add_argument("--port", "-p", metavar="port", type=int, default=8080, help="port to listen not. Default: 8080")
+    parser.add_argument("--host", "--hostname", metavar="host", default="",
+                        help="interface to listen to. Default: all interfaces")
+    parser.add_argument("--port", "-p", metavar="port", type=int, default=8080,
+                        help="port to listen not. Default: 8080")
     parser.add_argument("--url", metavar="url", help="url to use to reach the server")
 
     parser.add_argument("--accesslog", metavar="file", help="file where to log normal access information")
-    parser.add_argument("--perflog", metavar="file", help="file where to log query information and performance statistics")
+    parser.add_argument("--perflog", metavar="file",
+                        help="file where to log query information and performance statistics")
     parser.add_argument("--errorlog", metavar="file", help="file where to log errors")
     parser.add_argument("--syslog", action="store_true", help="log to system log")
     parser.add_argument("--quiet", action="store_true", help="do not log to standard output")
     parser.add_argument("--verbose", action="store_true", help="verbose output")
     parser.add_argument("--debug", action="store_true", help="debug output")
-    parser.add_argument("--journald", action="store_true", help="log to standard error in a way compatible with journald")
+    parser.add_argument("--journald", action="store_true",
+                        help="log to standard error in a way compatible with journald")
 
-    parser.add_argument("--runtest", metavar="cmd", help="start the server, run the given test command and return its exit status")
+    parser.add_argument("--runtest", metavar="cmd",
+                        help="start the server, run the given test command and return its exit status")
 
 #        inbound = add<StringOption>("inbound", 0, "inbound", "dir",
 #                "directory where files to import are found."
@@ -244,26 +246,33 @@ def main():
         h = WatchedFileHandler(args.accesslog)
         h.setFormatter(logging.Formatter("%(message)s"))
         h.setLevel(logging.INFO)
+
         class Filter:
             def filter(self, record):
-                if not getattr(record, "access_log", False): return False
+                if not getattr(record, "access_log", False):
+                    return False
                 return record.levelno < logging.WARN
+
         h.addFilter(Filter())
         root_logger.addHandler(h)
 
     if args.perflog:
         from logging.handlers import WatchedFileHandler
         h = WatchedFileHandler(args.perflog)
+
         class PerfFormatter(logging.Formatter):
             def format(self, record):
                 import json
                 info = getattr(record, "perf", None)
                 return json.dumps(info, sort_keys=True)
+
         h.setFormatter(PerfFormatter())
         h.setLevel(logging.INFO)
+
         class Filter:
             def filter(self, record):
                 return getattr(record, "perf", None) is not None
+
         h.addFilter(Filter())
         root_logger.addHandler(h)
 
@@ -286,13 +295,16 @@ def main():
 
     if args.runtest:
         exit_code = 0
+
         class TestThread(threading.Thread):
             def run(self):
                 try:
                     subprocess.check_call(args.runtest, shell=True)
-                except:
+                except subprocess.CalledProcessError:
+                    nonlocal exit_code
                     exit_code = 1
                 httpd.shutdown()
+
         test_thread = TestThread()
         test_thread.start()
         httpd.serve_forever()

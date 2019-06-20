@@ -12,8 +12,7 @@
 #include "arki/summary.h"
 #include "arki/iotrace.h"
 #include "arki/utils/sys.h"
-#include "arki/wibble/sys/process.h"
-#include "arki/wibble/sys/childprocess.h"
+#include "arki/utils/subprocess.h"
 #include "index.h"
 #include <memory>
 #include <sys/fcntl.h>
@@ -86,17 +85,16 @@ void query_index(WIndex& idx, const dataset::DataQuery& q, metadata::Collection&
     idx.query_data(q, *segs, dest.inserter_func());
 }
 
-struct ReadHang : public wibble::sys::ChildProcess
+struct ReadHang : public subprocess::Child
 {
     ConfigFile cfg;
-    int commfd;
 
     ReadHang(const std::string& cfgstr)
     {
         cfg.parse(cfgstr);
     }
 
-    int main() override
+    int main() noexcept override
     {
         try {
             auto config = dataset::ondisk2::Config::create(cfg);
@@ -108,6 +106,7 @@ struct ReadHang : public wibble::sys::ChildProcess
             idx.query_data(Matcher::parse("origin:GRIB1"), *segs, [&](unique_ptr<Metadata> md) {
                 fputs("H\n", stdout);
                 fflush(stdout);
+                fclose(stdout);
                 usleep(100000);
                 return true;
             });
@@ -121,13 +120,14 @@ struct ReadHang : public wibble::sys::ChildProcess
 
     void start()
     {
-        forkAndRedirect(nullptr, &commfd);
+        set_stdout(subprocess::Redirect::PIPE);
+        fork();
     }
 
     char waitUntilHung()
     {
         char buf[2];
-        ssize_t res = read(commfd, buf, 1);
+        ssize_t res = read(get_stdout(), buf, 1);
         if (res == 0)
             throw std::runtime_error("reader did not produce data");
         if (res != 1)
@@ -309,7 +309,7 @@ add_method("concurrent", [] {
         p.commit();
     }
 
-    readHang.kill(9);
+    readHang.send_signal(9);
     readHang.wait();
 });
 
@@ -511,7 +511,7 @@ add_method("smallfiles", [] {
 
         // 'value' should not have been preserved
         wassert(actual(mdc.size()) == 1u);
-        wassert(actual_type(mdc[0].source()).is_source_blob("vm2", wibble::sys::process::getcwd(), "inbound/test.vm2", 0, 34));
+        wassert(actual_type(mdc[0].source()).is_source_blob("vm2", sys::getcwd(), "inbound/test.vm2", 0, 34));
         wassert(actual(mdc[0]).contains("product", "VM2(227)"));
         wassert(actual(mdc[0]).contains("reftime", "1987-10-31T00:00:00Z"));
         wassert(actual(mdc[0]).contains("area", "VM2(1)"));
@@ -557,7 +557,7 @@ add_method("smallfiles", [] {
 
         // 'value' should have been preserved
         wassert(actual(mdc.size()) == 1u);
-        wassert(actual_type(mdc[0].source()).is_source_blob("vm2", wibble::sys::process::getcwd(), "inbound/test.vm2", 0, 34));
+        wassert(actual_type(mdc[0].source()).is_source_blob("vm2", sys::getcwd(), "inbound/test.vm2", 0, 34));
         wassert(actual(mdc[0]).contains("product", "VM2(227)"));
         wassert(actual(mdc[0]).contains("reftime", "1987-10-31T00:00:00Z"));
         wassert(actual(mdc[0]).contains("area", "VM2(1)"));

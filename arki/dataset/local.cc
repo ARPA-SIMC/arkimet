@@ -140,7 +140,7 @@ void LocalReader::query_summary(const Matcher& matcher, Summary& summary)
         archive().query_summary(matcher, summary);
 }
 
-void LocalReader::readConfig(const std::string& path, ConfigFile& cfg)
+void LocalReader::read_config(const std::string& path, ConfigFile& cfg)
 {
     if (path == "-")
     {
