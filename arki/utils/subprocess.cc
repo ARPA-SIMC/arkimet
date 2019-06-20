@@ -10,6 +10,7 @@
 #include <cstring>
 #include <system_error>
 #include <algorithm>
+#include <sstream>
 
 namespace arki {
 namespace utils {
@@ -388,6 +389,30 @@ void Child::send_signal(int sig)
 void Child::terminate() { send_signal(SIGTERM); }
 
 void Child::kill() { send_signal(SIGKILL); }
+
+std::string Child::format_raw_returncode(int raw_returncode)
+{
+    std::stringstream b_status;
+
+    bool exited_normally = WIFEXITED(raw_returncode);
+    int exit_code = exited_normally ? WEXITSTATUS(raw_returncode) : -1;
+    bool dumped_core = raw_returncode & 128;
+    bool signaled = WIFSIGNALED(raw_returncode);
+    int signal = signaled ? WTERMSIG(raw_returncode) : 0;
+
+    if (exited_normally)
+        if (exit_code == 0)
+            b_status << "terminated successfully";
+        else
+            b_status << "exited with code " << exit_code;
+    else
+    {
+        b_status << "was interrupted, killed by signal " << signal;
+        if (dumped_core) b_status << " (core dumped)";
+    }
+
+    return b_status.str();
+}
 
 
 Popen::Popen(std::initializer_list<std::string> args)

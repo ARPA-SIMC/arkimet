@@ -122,6 +122,9 @@ public:
      */
     int returncode() const;
 
+    /// Return the raw return code as returned by wait(2)
+    int raw_returncode() const { return m_returncode; }
+
     /// Return true if the process has started
     bool started() const { return m_pid != 0; }
 
@@ -131,17 +134,20 @@ public:
     /// Check if the process has terminated. Returns true if it has.
     bool poll();
 
-    // Wait for the child process to terminate and return its return code
+    /// Wait for the child process to terminate and return its return code
     int wait();
 
-    // Send the given signal to the process
+    /// Send the given signal to the process
     void send_signal(int sig);
 
-    // Send SIGTERM to the process
+    /// Send SIGTERM to the process
     void terminate();
 
-    // Send SIGKILL to the process
+    /// Send SIGKILL to the process
     void kill();
+
+    /// Format the status code returned by wait(2)
+    static std::string format_raw_returncode(int raw_returncode);
 };
 
 
