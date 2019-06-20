@@ -4,7 +4,6 @@
 #include "arki/utils.h"
 #include "arki/exceptions.h"
 #include "arki/utils/sys.h"
-#include "arki/wibble/sys/process.h"
 #include <cctype>
 #include <cstdlib>
 #include <cstring>

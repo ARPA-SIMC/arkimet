@@ -10,7 +10,6 @@
 #include "arki/utils/string.h"
 #include "arki/utils/subprocess.h"
 #include "arki/utils/regexp.h"
-#include "arki/wibble/sys/process.h"
 #include <sys/select.h>
 #include <sys/time.h>
 #include <sys/types.h>
@@ -278,13 +277,13 @@ void Postprocess::flush()
 
     //cerr << "Waiting for child" << endl;
     m_child->subproc.wait();
-    int res = m_child->subproc.returncode();
+    int res = m_child->subproc.raw_returncode();
     //cerr << "Waited and got " << res << endl;
     delete m_child;
     m_child = 0;
     if (res)
     {
-        string msg = "cannot run postprocessing filter: postprocess command \"" + m_command + "\" " + wibble::sys::process::formatStatus(res);
+        string msg = "cannot run postprocessing filter: postprocess command \"" + m_command + "\" " + subprocess::Child::format_raw_returncode(res);
         if (!m_errors.str().empty())
             msg += "; stderr: " + str::strip(m_errors.str());
         throw std::runtime_error(msg);

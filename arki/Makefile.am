@@ -13,7 +13,6 @@ AM_LDFLAGS = $(EXTRA_LDFLAGS)
 arkiincludedir = $(includedir)/arki
 
 nobase_dist_arkiinclude_HEADERS = \
-		wibble/sys/process.h \
 		core/fwd.h \
 		core/time.h \
 		core/fuzzytime.h \
@@ -235,7 +234,6 @@ tests_arki_test_LDADD =
 #
 if DEVEL_DO_TYPES
 libarkimet_la_SOURCES += \
-		wibble/sys/process.cpp \
 		core/time.cc \
 		core/fuzzytime.cc \
 		core/file.cc \

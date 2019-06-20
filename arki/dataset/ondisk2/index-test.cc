@@ -13,7 +13,6 @@
 #include "arki/iotrace.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/subprocess.h"
-#include "arki/wibble/sys/process.h"
 #include "index.h"
 #include <memory>
 #include <sys/fcntl.h>
@@ -512,7 +511,7 @@ add_method("smallfiles", [] {
 
         // 'value' should not have been preserved
         wassert(actual(mdc.size()) == 1u);
-        wassert(actual_type(mdc[0].source()).is_source_blob("vm2", wibble::sys::process::getcwd(), "inbound/test.vm2", 0, 34));
+        wassert(actual_type(mdc[0].source()).is_source_blob("vm2", sys::getcwd(), "inbound/test.vm2", 0, 34));
         wassert(actual(mdc[0]).contains("product", "VM2(227)"));
         wassert(actual(mdc[0]).contains("reftime", "1987-10-31T00:00:00Z"));
         wassert(actual(mdc[0]).contains("area", "VM2(1)"));
@@ -558,7 +557,7 @@ add_method("smallfiles", [] {
 
         // 'value' should have been preserved
         wassert(actual(mdc.size()) == 1u);
-        wassert(actual_type(mdc[0].source()).is_source_blob("vm2", wibble::sys::process::getcwd(), "inbound/test.vm2", 0, 34));
+        wassert(actual_type(mdc[0].source()).is_source_blob("vm2", sys::getcwd(), "inbound/test.vm2", 0, 34));
         wassert(actual(mdc[0]).contains("product", "VM2(227)"));
         wassert(actual(mdc[0]).contains("reftime", "1987-10-31T00:00:00Z"));
         wassert(actual(mdc[0]).contains("area", "VM2(1)"));
