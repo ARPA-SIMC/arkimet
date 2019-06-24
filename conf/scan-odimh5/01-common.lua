@@ -32,10 +32,12 @@ function odimh5_set_origin(md)
 	if n == 0 then wmo = "" end
 	local rad, n = source:gsub(".*RAD:([^,]+).*", "%1")
 	if n == 0 then rad = "" end
-	local plc, n = source:gsub(".*PLC:([^,]+).*", "%1")
-	if n == 0 then plc = "" end
-
-	md:set(arki_origin.odimh5(wmo, rad, plc))
+    local nod_or_plc, n = source:gsub(".*NOD:([^,]+).*", "%1")
+    if n == 0 then
+        nod_or_plc, n = source:gsub(".*PLC:([^,]+).*", "%1")
+        if n == 0 then nod_or_plc = "" end
+    end
+    md:set(arki_origin.odimh5(wmo, rad, nod_or_plc))
 end
 
 function odimh5_pvol_set_level(md)

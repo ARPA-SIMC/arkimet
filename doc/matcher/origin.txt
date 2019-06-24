@@ -53,9 +53,10 @@ ensure_not_matches(sample, "origin:BUFR,200")
 ensure_not_matches(sample, "origin:BUFR,98,1")
 
 -- ODIMH5
--- Syntax: origin:ODIMH5,wmo,rad,plc
--- Origin of datas identified using wmo, rad or plc attribute values
--- wmo, rad and plc values can be omitted
+-- Syntax: origin:ODIMH5,wmo,rad,nod_or_plc
+-- Origin of data identified using "WMO" (wmo), "RAD" (rad) and "NOD" or "PLC"
+-- (nod_or_plc) attribute values ("NOD" takes precedence over "PLC")
+-- wmo, rad and nod_or_plc values can be omitted
 
 sample:set(arki_origin.odimh5("02954", "FI44", "Anjalankoski"))
 
