@@ -108,6 +108,10 @@ std::string Type::to_string() const
     return ss.str();
 }
 
+void Type::encode_for_indexing(BinaryEncoder& enc) const
+{
+    encodeWithoutEnvelope(enc);
+}
 
 void Type::encodeBinary(BinaryEncoder& enc) const
 {

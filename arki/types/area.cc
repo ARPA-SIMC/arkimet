@@ -351,6 +351,13 @@ void VM2::encodeWithoutEnvelope(BinaryEncoder& enc) const
     enc.add_unsigned(m_station_id, 4);
     derived_values().encode(enc);
 }
+
+void VM2::encode_for_indexing(BinaryEncoder& enc) const
+{
+    Area::encodeWithoutEnvelope(enc);
+    enc.add_unsigned(m_station_id, 4);
+}
+
 std::ostream& VM2::writeToOstream(std::ostream& o) const
 {
     o << formatStyle(style()) << "(" << m_station_id;

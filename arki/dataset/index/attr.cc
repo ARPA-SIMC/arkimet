@@ -93,7 +93,7 @@ void AttrSubIndex::add_to_cache(int id, const types::Type& item) const
 {
     vector<uint8_t> encoded;
     BinaryEncoder enc(encoded);
-    item.encodeWithoutEnvelope(enc);
+    item.encode_for_indexing(enc);
     add_to_cache(id, item, encoded);
 }
 
@@ -118,7 +118,7 @@ int AttrSubIndex::id(const Metadata& md) const
     // Encode the item
     vector<uint8_t> encoded;
     BinaryEncoder enc(encoded);
-    item->encodeWithoutEnvelope(enc);
+    item->encode_for_indexing(enc);
 
     // First look up in cache
     auto i = m_id_cache.find(encoded);
@@ -194,7 +194,7 @@ int AttrSubIndex::insert(const Metadata& md)
     // Extract the blob to insert
     std::vector<uint8_t> blob;
     BinaryEncoder enc(blob);
-    item->encodeWithoutEnvelope(enc);
+    item->encode_for_indexing(enc);
 
     // Try to serve it from cache if possible
     auto ci = m_id_cache.find(blob);
