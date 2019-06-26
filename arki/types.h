@@ -70,7 +70,7 @@ static inline std::ostream& operator<<(std::ostream& o, const Code& c) { return 
  */
 struct Type
 {
-	virtual ~Type() {}
+    virtual ~Type() {}
 
     /**
      * Make a copy of this type. The caller will own the newly created object
@@ -119,6 +119,12 @@ struct Type
 	 * envelope
 	 */
 	virtual void encodeWithoutEnvelope(BinaryEncoder& enc) const = 0;
+
+    /**
+     * Version of encode_without_envelope without redundant data, used for
+     * indexing
+     */
+    virtual void encode_for_indexing(BinaryEncoder& enc) const;
 
     /// Encode to compact binary representation, with identification envelope
     void encodeBinary(BinaryEncoder& enc) const;
