@@ -9,6 +9,7 @@ nobase_python_PYTHON = arkimet/__init__.py arkimet/server/__init__.py arkimet/se
 pyexec_LTLIBRARIES = _arkimet.la
 
 _arkimet_la_SOURCES = \
+    utils/core.cc \
     common.cc \
     metadata.cc \
     summary.cc \
@@ -37,6 +38,7 @@ clean-local:
 	rm -rf __pycache__ arkimet/__pycache__
 
 EXTRA_DIST = \
+    utils/core.h \
     common.h \
     metadata.h \
     summary.h \
