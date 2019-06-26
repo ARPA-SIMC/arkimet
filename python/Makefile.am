@@ -41,6 +41,7 @@ clean-local:
 EXTRA_DIST = \
     utils/core.h \
     utils/methods.h \
+    utils/type.h \
     common.h \
     metadata.h \
     summary.h \

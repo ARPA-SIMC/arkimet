@@ -112,11 +112,10 @@ struct Methods
     typedef std::array<PyMethodDef, sizeof...(METHODS) + 1> Defs;
     Docstrings docstrings;
     Defs m_defs;
-    Methods() : docstrings({METHODS::docstring()...}), m_defs({METHODS::def()...})
+    Methods() : docstrings({METHODS::docstring()...}), m_defs({METHODS::def()..., nullptr})
     {
         for (unsigned i = 0; i < m_defs.size() - 1; ++i)
             m_defs[i].ml_doc = docstrings[i].c_str();
-        m_defs[m_defs.size() - 1] = { nullptr };
     }
 
     PyMethodDef* as_py()
