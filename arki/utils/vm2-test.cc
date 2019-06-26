@@ -1,6 +1,8 @@
 #include "arki/tests/tests.h"
 #include "vm2.h"
 
+#include <iostream>
+
 namespace {
 using namespace std;
 using namespace arki;
@@ -39,6 +41,12 @@ add_method("get_station", [] {
 
   ValueBag vb2 = ValueBag::parse("lon=1207738,lat=4460016,rep=NONONO");
   ensure(utils::vm2::get_station(1) != vb2);
+
+  ValueBag vb3 = ValueBag::parse("lon=1207738,lat=4460016,rep=locali");
+  meteo::vm2::Source s1 = meteo::vm2::Source("inbound/meteo-vm2-source.1.lua");
+  wassert(actual(utils::vm2::get_station(1, &s1)) == vb3);
+  meteo::vm2::Source s2 = meteo::vm2::Source("inbound/meteo-vm2-source.2.lua");
+  wassert(actual(utils::vm2::get_station(1, &s2)) != vb3);
 });
 
 // Get variable attributes

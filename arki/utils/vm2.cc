@@ -2,15 +2,13 @@
 #include <arki/types/value.h>
 #include <arki/runtime/config.h>
 
-#include <meteo-vm2/source.h>
-
 namespace arki {
 namespace utils {
 namespace vm2 {
 
-std::vector<int> find_stations(const ValueBag& query)
+std::vector<int> find_stations(const ValueBag& query, meteo::vm2::Source* s)
 {
-  meteo::vm2::Source* source = meteo::vm2::Source::get();
+  meteo::vm2::Source* source = (s == nullptr ? meteo::vm2::Source::get() : s);
   lua_State* L = source->L;
 
   std::vector<int> res;
@@ -26,9 +24,9 @@ std::vector<int> find_stations(const ValueBag& query)
   return res;
 }
 
-std::vector<int> find_variables(const ValueBag& query)
+std::vector<int> find_variables(const ValueBag& query, meteo::vm2::Source* s)
 {
-  meteo::vm2::Source* source = meteo::vm2::Source::get();
+  meteo::vm2::Source* source = (s == nullptr ? meteo::vm2::Source::get() : s);
   lua_State* L = source->L;
 
   std::vector<int> res;
@@ -44,9 +42,9 @@ std::vector<int> find_variables(const ValueBag& query)
   return res;
 }
 
-ValueBag get_station(int id)
+ValueBag get_station(int id, meteo::vm2::Source* s)
 {
-  meteo::vm2::Source* source = meteo::vm2::Source::get();
+  meteo::vm2::Source* source = (s == nullptr ? meteo::vm2::Source::get() : s);
   lua_State* L = source->L;
 
   ValueBag vb;
@@ -59,9 +57,9 @@ ValueBag get_station(int id)
   return vb;
 }
 
-ValueBag get_variable(int id)
+ValueBag get_variable(int id, meteo::vm2::Source* s)
 {
-  meteo::vm2::Source* source = meteo::vm2::Source::get();
+  meteo::vm2::Source* source = (s == nullptr ? meteo::vm2::Source::get() : s);
   lua_State* L = source->L;
 
   ValueBag vb;
