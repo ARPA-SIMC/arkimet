@@ -120,5 +120,6 @@ inline T* throw_ifnull(T* o)
 }
 
 }
+}
 
 #endif
