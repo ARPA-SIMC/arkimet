@@ -10,6 +10,7 @@ pyexec_LTLIBRARIES = _arkimet.la
 
 _arkimet_la_SOURCES = \
     utils/core.cc \
+    utils/methods.cc \
     common.cc \
     metadata.cc \
     summary.cc \
@@ -39,6 +40,7 @@ clean-local:
 
 EXTRA_DIST = \
     utils/core.h \
+    utils/methods.h \
     common.h \
     metadata.h \
     summary.h \
