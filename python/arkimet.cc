@@ -6,6 +6,7 @@
 #include "arki_query.h"
 #include "arki_scan.h"
 #include "arki_check.h"
+#include "arki_mergeconf.h"
 #include "arki/matcher.h"
 #include "arki/configfile.h"
 #include "arki/runtime.h"
@@ -143,6 +144,7 @@ PyMODINIT_FUNC PyInit__arkimet(void)
     register_arki_query(m);
     register_arki_scan(m);
     register_arki_check(m);
+    register_arki_mergeconf(m);
 
     return m;
 }

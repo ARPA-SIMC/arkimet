@@ -1,0 +1,12 @@
+#!/usr/bin/python3
+from arkimet import ArkiMergeconf
+import sys
+
+
+def main():
+    arki_mergeconf = ArkiMergeconf()
+    sys.exit(arki_mergeconf.run(sys.argv))
+
+
+if __name__ == "__main__":
+    main()

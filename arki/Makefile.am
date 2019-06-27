@@ -120,6 +120,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		runtime/arki-query.h \
 		runtime/arki-check.h \
 		runtime/arki-scan.h \
+		runtime/arki-mergeconf.h \
 		scan.h \
 		scan/fwd.h \
 		scan/validator.h \
@@ -575,7 +576,8 @@ libarkimet_la_SOURCES += \
 		querymacro.cc \
 		runtime/arki-query.cc \
 		runtime/arki-check.cc \
-		runtime/arki-scan.cc
+		runtime/arki-scan.cc \
+		runtime/arki-mergeconf.cc
 
 tests_arki_test_SOURCES += \
 		targetfile-test.cc \

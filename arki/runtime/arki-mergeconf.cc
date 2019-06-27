@@ -1,5 +1,5 @@
-/// Merge arkimet dataset configurations
-#include "config.h"
+#include "arki/../config.h"
+#include "arki/runtime/arki-mergeconf.h"
 #include <arki/configfile.h>
 #include <arki/dataset.h>
 #include <arki/summary.h>
@@ -16,49 +16,49 @@
 #include <iostream>
 
 using namespace std;
-using namespace arki;
 using namespace arki::utils;
 
 namespace arki {
-namespace utils {
-namespace commandline {
+namespace runtime {
+
+namespace {
+
+using namespace arki::utils::commandline;
 
 struct Options : public StandardParserWithManpage
 {
-	StringOption* outfile;
-	BoolOption* extra;
-	StringOption* restr;
-	VectorOption<String>* cfgfiles;
+    StringOption* outfile;
+    BoolOption* extra;
+    StringOption* restr;
+    VectorOption<String>* cfgfiles;
     BoolOption* ignore_system_ds;
 
-	Options() : StandardParserWithManpage("arki-mergeconf", PACKAGE_VERSION, 1, PACKAGE_BUGREPORT)
-	{
-		usage = "[options] [directories]";
-		description =
-		    "Read dataset configuration from the given directories or config files, "
-			" merge them and output the merged config file to standard output";
+    Options() : StandardParserWithManpage("arki-mergeconf", PACKAGE_VERSION, 1, PACKAGE_BUGREPORT)
+    {
+        usage = "[options] [directories]";
+        description =
+            "Read dataset configuration from the given directories or config files, "
+            " merge them and output the merged config file to standard output";
 
-		outfile = add<StringOption>("output", 'o', "output", "file",
-			"write the output to the given file instead of standard output");
-		extra = add<BoolOption>("extra", 0, "extra", "",
-			"extract extra information from the datasets (such as bounding box) "
-			"and include it in the configuration");
-		restr = add<StringOption>("restrict", 0, "restrict", "names",
-			"restrict operations to only those datasets that allow one of the given (comma separated) names");
-		cfgfiles = add< VectorOption<String> >("config", 'C', "config", "file",
-			"merge configuration from the given file (can be given more than once)");
+        outfile = add<StringOption>("output", 'o', "output", "file",
+                "write the output to the given file instead of standard output");
+        extra = add<BoolOption>("extra", 0, "extra", "",
+                "extract extra information from the datasets (such as bounding box) "
+                "and include it in the configuration");
+        restr = add<StringOption>("restrict", 0, "restrict", "names",
+                "restrict operations to only those datasets that allow one of the given (comma separated) names");
+        cfgfiles = add< VectorOption<String> >("config", 'C', "config", "file",
+                "merge configuration from the given file (can be given more than once)");
         ignore_system_ds = add<BoolOption>("ignore-system-datasets", 0, "ignore-system-datasets", "",
-                                           "ignore error and duplicates datasets");
-	}
+                "ignore error and duplicates datasets");
+    }
 };
 
 }
-}
-}
 
-int main(int argc, const char* argv[])
+int ArkiMergeconf::run(int argc, const char* argv[])
 {
-    commandline::Options opts;
+    Options opts;
     try {
         if (opts.parse(argc, argv))
             return 0;
@@ -141,8 +141,8 @@ int main(int argc, const char* argv[])
         cerr << e.what() << endl;
         opts.outputHelp(cerr);
         return 1;
-    } catch (std::exception& e) {
-        cerr << e.what() << endl;
-        return 1;
     }
+}
+
+}
 }

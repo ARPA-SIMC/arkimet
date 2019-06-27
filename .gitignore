@@ -54,7 +54,6 @@ Makefile
 /arki-inbound.1
 /arki-testtar.1
 /src/arki-dump
-/src/arki-mergeconf
 /src/arki-xargs
 /src/arki-bufr-prepare
 /src/arki-test
