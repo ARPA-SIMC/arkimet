@@ -16,6 +16,7 @@ _arkimet_la_SOURCES = \
     metadata.cc \
     summary.cc \
     dataset.cc \
+    arki_query.cc \
     arkimet.cc
 _arkimet_la_CPPFLAGS = $(PYTHON_CFLAGS) -I$(top_srcdir) -I$(top_builddir)
 _arkimet_la_LDFLAGS = -module -avoid-version -export-symbols-regex init_arkimet
@@ -47,6 +48,7 @@ EXTRA_DIST = \
     common.h \
     metadata.h \
     summary.h \
+    arki_query.h \
     dataset.h
 #    doc-arkimet \
 #    testlib.py \
