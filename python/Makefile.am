@@ -11,6 +11,7 @@ pyexec_LTLIBRARIES = _arkimet.la
 _arkimet_la_SOURCES = \
     utils/core.cc \
     utils/methods.cc \
+    utils/values.cc \
     common.cc \
     metadata.cc \
     summary.cc \
@@ -42,6 +43,7 @@ EXTRA_DIST = \
     utils/core.h \
     utils/methods.h \
     utils/type.h \
+    utils/values.h \
     common.h \
     metadata.h \
     summary.h \
