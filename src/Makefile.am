@@ -1,7 +1,7 @@
 ## Process this file with automake to produce Makefile.in
 
-bin_PROGRAMS = arki-check arki-dump arki-mergeconf arki-scan arki-xargs
-dist_bin_SCRIPTS = arki-query arki-server arki-testtar
+bin_PROGRAMS = arki-check arki-dump arki-mergeconf arki-xargs
+dist_bin_SCRIPTS = arki-query arki-scan arki-server arki-testtar
 noinst_PROGRAMS = arki-test
 
 all_libs = ../arki/libarkimet.la $(LIBGRIB_LIBS) $(DBALLE_LIBS) $(SQLITE3_LDFLAGS) $(GRIBAPI_LIBS) $(LUA_LIBS) $(ZLIB_LIBS) $(DEVEL_LIBS) -lpthread
@@ -31,9 +31,6 @@ bin_PROGRAMS += arki-bufr-prepare
 arki_bufr_prepare_SOURCES = arki-bufr-prepare.cc
 arki_bufr_prepare_LDADD = $(all_libs)
 endif
-
-arki_scan_SOURCES = arki-scan.cc
-arki_scan_LDADD = $(all_libs)
 
 arki_mergeconf_SOURCES = arki-mergeconf.cc
 arki_mergeconf_LDADD = $(all_libs)
