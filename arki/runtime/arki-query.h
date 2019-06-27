@@ -6,6 +6,12 @@ namespace runtime {
 
 int arki_query(int argc, const char* argv[]);
 
+class ArkiQuery
+{
+public:
+    int run(int argc, const char* argv[]);
+};
+
 }
 }
 

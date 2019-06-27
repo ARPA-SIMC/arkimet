@@ -73,5 +73,10 @@ int arki_query(int argc, const char* argv[])
     }
 }
 
+int ArkiQuery::run(int argc, const char* argv[])
+{
+    return arki_query(argc, argv);
+}
+
 }
 }
