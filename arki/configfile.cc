@@ -96,7 +96,6 @@ struct Parser
             if (value[0] == '"' && value[value.size()-1] == '"')
                 value = value.substr(1, value.size()-2);
             dest->m_values.insert(make_pair(assignment[1], value));
-            dest->values_pos.insert(make_pair(assignment[1], Position(pathname, lineno)));
         }
         else
             throw_parse_error("line is not a comment, nor a section start, nor empty, nor a key=value assignment");
@@ -140,7 +139,6 @@ ConfigFile& ConfigFile::operator=(const ConfigFile& cfg)
 void ConfigFile::clear()
 {
     m_values.clear();
-    values_pos.clear();
     for (std::map<string, ConfigFile*>::iterator i = sections.begin();
             i != sections.end(); ++i)
         delete i->second;
@@ -151,14 +149,7 @@ void ConfigFile::merge(const ConfigFile& c)
 {
     // Copy the values and the values information
     for (const_iterator i = c.begin(); i != c.end(); ++i)
-    {
         m_values.insert(*i);
-        std::map<std::string, configfile::Position>::const_iterator j = c.values_pos.find(i->first);
-        if (j == c.values_pos.end())
-            values_pos.erase(i->first);
-        else
-            values_pos.insert(*j);
-    }
 
     for (const_section_iterator i = c.section_begin(); i != c.section_end(); ++i)
     {
@@ -231,18 +222,9 @@ std::string ConfigFile::value(const std::string& key) const
 	return i->second;
 }
 
-const configfile::Position* ConfigFile::valueInfo(const std::string& key) const
-{
-    std::map<std::string, configfile::Position>::const_iterator i = values_pos.find(key);
-    if (i == values_pos.end())
-        return 0;
-    return &(i->second);
-}
-
 void ConfigFile::setValue(const std::string& key, const std::string& value)
 {
     m_values[key] = value;
-    values_pos.erase(key);
 }
 
 void ConfigFile::setValue(const std::string& key, int value)

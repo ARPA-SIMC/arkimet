@@ -25,18 +25,6 @@ public:
     ~ParseError() throw () {}
 };
 
-/**
- * Represent the source file information of where a value has been found
- */
-struct Position
-{
-    std::string pathname;
-    size_t lineno;
-
-    Position(const std::string& pathname, const size_t& lineno)
-        : pathname(pathname), lineno(lineno) {}
-};
-
 class Parser;
 
 }
@@ -49,15 +37,6 @@ class ConfigFile
 protected:
 	/// The configuration values in this node
 	std::map<std::string, std::string> m_values;
-
-	/**
-	 * The source file information of where the configuration values have been
-	 * found.
-	 *
-	 * If a values_pos is missing for a value, it means that the source
-	 * information is unknown.
-	 */
-	std::map<std::string, configfile::Position> values_pos;
 
 	/**
 	 * Subnodes of this node
@@ -115,16 +94,6 @@ public:
 	 * The empty string is returned if the value is empty.
 	 */
 	std::string value(const std::string& key) const;
-
-    /**
-     * Retrieve information about where a value has been parsed.
-     *
-     * @returns
-     *   none if there is no information for the given key, else, a pointer to
-     *   a configfile::Position structure, which will be valid as long as this
-     *   ConfigFile object is not modified.
-     */
-    const configfile::Position* valueInfo(const std::string& key) const;
 
     /// Set a value
     void setValue(const std::string& key, const std::string& value);

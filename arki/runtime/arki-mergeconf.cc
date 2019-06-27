@@ -81,11 +81,9 @@ int ArkiMergeconf::run(int argc, const char* argv[])
             try {
                 Matcher::parse(si->second->value("filter"));
             } catch (std::exception& e) {
-                const auto* fp = si->second->valueInfo("filter");
-                if (fp)
-                    cerr << fp->pathname << ":" << fp->lineno << ":";
-                cerr << e.what();
-                cerr << endl;
+                cerr << si->first << ":"
+                     << e.what()
+                     << endl;
                 hasErrors = true;
             }
         }
@@ -128,7 +126,6 @@ int ArkiMergeconf::run(int argc, const char* argv[])
             }
 #endif
         }
-
 
         // Output the merged configuration
         string res = inputs.as_config().serialize();

@@ -19,18 +19,7 @@ namespace arki {
 
 static inline Matcher getFilter(const ConfigFile* cfg)
 {
-    try {
-        return Matcher::parse(cfg->value("filter"));
-    } catch (std::runtime_error& e) {
-        const configfile::Position* fp = cfg->valueInfo("filter");
-        if (fp)
-        {
-            stringstream ss;
-            ss << fp->pathname << ":" << fp->lineno << ": " << e.what();
-            throw std::runtime_error(ss.str());
-        }
-        throw;
-    }
+    return Matcher::parse(cfg->value("filter"));
 }
 
 Dispatcher::Dispatcher(const ConfigFile& cfg)
