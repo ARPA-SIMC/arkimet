@@ -69,10 +69,11 @@ typedef py_unique_ptr<PyObject> pyo_unique_ptr;
 /**
  * Release the GIL during the lifetime of this object;
  */
-struct ReleaseGIL
+class ReleaseGIL
 {
     PyThreadState *_save = nullptr;
 
+public:
     ReleaseGIL()
     {
         _save = PyEval_SaveThread();
@@ -88,6 +89,29 @@ struct ReleaseGIL
         if (!_save) return;
         PyEval_RestoreThread(_save);
         _save = nullptr;
+    }
+};
+
+
+/**
+ * Acquire the GIL prior to invoking python code.
+ *
+ * This also works correctly if the GIL is already acquired, so it can be used
+ * to wrap invocation of python code regardless of the GIL status.
+ */
+class AcquireGIL
+{
+    PyGILState_STATE _state;
+
+public:
+    AcquireGIL()
+    {
+        _state = PyGILState_Ensure();
+    }
+
+    ~AcquireGIL()
+    {
+        PyGILState_Release(_state);
     }
 };
 
