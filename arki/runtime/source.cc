@@ -116,9 +116,9 @@ void FileSource::close(bool successful)
 MergedSource::MergedSource(QueryCommandLine& args, const Inputs& inputs)
     : m_reader(std::make_shared<dataset::Merged>())
 {
-    for (const auto& cfg: inputs)
+    for (auto si = inputs.merged.section_begin(); si != inputs.merged.section_end(); ++si)
     {
-        sources.push_back(std::make_shared<FileSource>(args, cfg));
+        sources.push_back(std::make_shared<FileSource>(args, *si->second));
         if (m_name.empty())
             m_name = sources.back()->name();
         else
@@ -194,9 +194,9 @@ bool foreach_source(ScanCommandLine& args, const Inputs& inputs, std::function<b
         source.close(all_successful);
     } else {
         // Query all the datasets in sequence
-        for (const auto& cfg: inputs)
+        for (auto si = inputs.merged.section_begin(); si != inputs.merged.section_end(); ++si)
         {
-            FileSource source(*args.dispatch_options, cfg);
+            FileSource source(*args.dispatch_options, *si->second);
             nag::verbose("Processing %s...", source.name().c_str());
             source.open();
             bool success;
@@ -255,9 +255,9 @@ bool foreach_source(QueryCommandLine& args, const Inputs& inputs, std::function<
             source.close(all_successful);
         } else {
             // Query all the datasets in sequence
-            for (const auto& cfg: inputs)
+            for (auto si = inputs.merged.section_begin(); si != inputs.merged.section_end(); ++si)
             {
-                FileSource source(args, cfg);
+                FileSource source(args, *si->second);
                 nag::verbose("Processing %s...", source.name().c_str());
                 source.open();
                 bool success;

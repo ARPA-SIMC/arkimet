@@ -450,12 +450,12 @@ int arki_check(int argc, const char* argv[])
             }
 
             // Harvest the paths from it
-            for (const ConfigFile& cfg: inputs)
+            for (auto si = inputs.merged.section_begin(); si != inputs.merged.section_end(); ++si)
             {
                 try {
-                    worker->process(cfg);
+                    worker->process(*si->second);
                 } catch (SkipDataset& e) {
-                    cerr << "Skipping dataset " << cfg.value("name") << ": " << e.what() << endl;
+                    cerr << "Skipping dataset " << si->second->value("name") << ": " << e.what() << endl;
                     continue;
                 }
             }

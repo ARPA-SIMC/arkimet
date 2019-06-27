@@ -87,6 +87,9 @@ public:
     /// Remove all contents of this ConfigFile
     void clear();
 
+    /// Return the number of sections
+    size_t sections_size() const { return sections.size(); }
+
 	/// Number of values at this level (does not include values inside subsections)
 	size_t valueSize() const { return m_values.size(); }
 
@@ -142,10 +145,8 @@ public:
 	 */
 	ConfigFile* obtainSection(const std::string& key);
 
-	/**
-	 * Delete a section, if present
-	 */
-	void deleteSection(const std::string& key);
+    /// Delete a section, if present
+    void delete_section(const std::string& key);
 
     /**
      * Parse configuration from the given input file.

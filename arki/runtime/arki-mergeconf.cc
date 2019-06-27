@@ -75,13 +75,13 @@ int ArkiMergeconf::run(int argc, const char* argv[])
 
         // Validate the configuration
         bool hasErrors = false;
-        for (const ConfigFile& cfg: inputs)
+        for (auto si = inputs.merged.section_begin(); si != inputs.merged.section_end(); ++si)
         {
             // Validate filters
             try {
-                Matcher::parse(cfg.value("filter"));
+                Matcher::parse(si->second->value("filter"));
             } catch (std::exception& e) {
-                const auto* fp = cfg.valueInfo("filter");
+                const auto* fp = si->second->valueInfo("filter");
                 if (fp)
                     cerr << fp->pathname << ":" << fp->lineno << ":";
                 cerr << e.what();
@@ -113,10 +113,10 @@ int ArkiMergeconf::run(int argc, const char* argv[])
         if (opts.extra->boolValue())
         {
 #ifdef HAVE_GEOS
-            for (ConfigFile& cfg: inputs)
+            for (auto si = inputs.merged.section_begin(); si != inputs.merged.section_end(); ++si)
             {
                 // Instantiate the dataset
-                unique_ptr<dataset::Reader> d(dataset::Reader::create(cfg));
+                unique_ptr<dataset::Reader> d(dataset::Reader::create(*si->second));
                 // Get the summary
                 Summary sum;
                 d->query_summary(Matcher(), sum);
@@ -124,7 +124,7 @@ int ArkiMergeconf::run(int argc, const char* argv[])
                 // Compute bounding box, and store the WKT in bounding
                 auto bbox = sum.getConvexHull();
                 if (bbox.get())
-                    cfg.setValue("bounding", bbox->toString());
+                    si->second->setValue("bounding", bbox->toString());
             }
 #endif
         }

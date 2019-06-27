@@ -10,12 +10,17 @@ struct Restrict;
 struct ScanCommandLine;
 struct QueryCommandLine;
 
-struct Inputs : public std::vector<ConfigFile>
+struct Inputs
 {
+    ConfigFile merged;
+
     Inputs() = default;
     Inputs(ScanCommandLine& args);
     Inputs(QueryCommandLine& args);
 
+    bool empty() const { return merged.section_begin() == merged.section_end(); }
+
+    void add_section(const ConfigFile& section);
     void add_sections(const ConfigFile& cfg);
     void add_config_file(const std::string& pathname);
     void add_pathname(const std::string& pathname);
