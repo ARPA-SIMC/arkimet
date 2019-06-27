@@ -76,5 +76,10 @@ int arki_scan(int argc, const char* argv[])
     }
 }
 
+int ArkiScan::run(int argc, const char* argv[])
+{
+    return arki_scan(argc, argv);
+}
+
 }
 }
