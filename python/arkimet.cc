@@ -5,6 +5,7 @@
 #include "dataset.h"
 #include "arki_query.h"
 #include "arki_scan.h"
+#include "arki_check.h"
 #include "arki/matcher.h"
 #include "arki/configfile.h"
 #include "arki/runtime.h"
@@ -131,6 +132,8 @@ PyMODINIT_FUNC PyInit__arkimet(void)
 {
     using namespace arki::python;
 
+    arki::runtime::init();
+
     PyObject* m = PyModule_Create(&arkimet_module);
     if (!m) return m;
 
@@ -139,6 +142,7 @@ PyMODINIT_FUNC PyInit__arkimet(void)
     register_dataset(m);
     register_arki_query(m);
     register_arki_scan(m);
+    register_arki_check(m);
 
     return m;
 }
