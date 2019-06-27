@@ -77,20 +77,15 @@ public:
 	typedef std::map<std::string, ConfigFile*>::iterator section_iterator;
 	typedef std::map<std::string, ConfigFile*>::const_iterator const_section_iterator;
 
-	//iterator begin() { return values.begin(); }
-	//iterator end() { return values.end(); }
-	const_iterator begin() const { return m_values.begin(); }
-	const_iterator end() const { return m_values.end(); }
-	section_iterator sectionBegin() { return sections.begin(); }
-	section_iterator sectionEnd() { return sections.end(); }
-	const_section_iterator sectionBegin() const { return sections.begin(); }
-	const_section_iterator sectionEnd() const { return sections.end(); }
+    const_iterator begin() const { return m_values.begin(); }
+    const_iterator end() const { return m_values.end(); }
+    section_iterator section_begin() { return sections.begin(); }
+    section_iterator section_end() { return sections.end(); }
+    const_section_iterator section_begin() const { return sections.begin(); }
+    const_section_iterator section_end() const { return sections.end(); }
 
     /// Remove all contents of this ConfigFile
     void clear();
-
-	/// Number of sections at this level (does not include subsections of sections)
-	size_t sectionSize() const { return sections.size(); }
 
 	/// Number of values at this level (does not include values inside subsections)
 	size_t valueSize() const { return m_values.size(); }

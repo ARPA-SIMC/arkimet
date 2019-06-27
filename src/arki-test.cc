@@ -50,7 +50,7 @@ int main(int argc, const char* argv[])
             ConfigFile cfg;
             dataset::Reader::read_config(dspath, cfg);
             cout << "Dataset config:" << endl;
-            ConfigFile* dsconfig = cfg.sectionBegin()->second;
+            ConfigFile* dsconfig = cfg.section_begin()->second;
             dsconfig->output(cout, "stdout");
             unique_ptr<dataset::Writer> ds(dataset::Writer::create(*dsconfig));
             Pending p = ds->test_writelock();

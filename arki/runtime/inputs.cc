@@ -87,7 +87,7 @@ Inputs::Inputs(QueryCommandLine& args)
 
 void Inputs::add_sections(const ConfigFile& cfg)
 {
-    for (auto i = cfg.sectionBegin(); i != cfg.sectionEnd(); ++i)
+    for (auto i = cfg.section_begin(); i != cfg.section_end(); ++i)
         if (i->second->valueSize())
             emplace_back(*i->second);
 }

@@ -445,7 +445,7 @@ static string geturlprefix(const std::string& s)
 std::string Reader::allSameRemoteServer(const ConfigFile& cfg)
 {
     string base;
-    for (ConfigFile::const_section_iterator i = cfg.sectionBegin(); i != cfg.sectionEnd(); ++i)
+    for (ConfigFile::const_section_iterator i = cfg.section_begin(); i != cfg.section_end(); ++i)
     {
         string type = str::lower(i->second->value("type"));
         if (type != "remote") return string();

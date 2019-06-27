@@ -541,15 +541,15 @@ MatcherAliasDatabase::MatcherAliasDatabase(const ConfigFile& cfg) { add(cfg); }
 
 void MatcherAliasDatabase::add(const ConfigFile& cfg)
 {
-	for (ConfigFile::const_section_iterator sec = cfg.sectionBegin();
-			sec != cfg.sectionEnd(); ++sec)
-	{
-		matcher::MatcherType* mt = matcher::MatcherType::find(sec->first);
-		if (!mt)
-			// Ignore unwanted sections
-			continue;
-		aliasDatabase[sec->first].add(*mt, *sec->second);
-	}
+    for (ConfigFile::const_section_iterator sec = cfg.section_begin();
+            sec != cfg.section_end(); ++sec)
+    {
+        matcher::MatcherType* mt = matcher::MatcherType::find(sec->first);
+        if (!mt)
+            // Ignore unwanted sections
+            continue;
+        aliasDatabase[sec->first].add(*mt, *sec->second);
+    }
 }
 
 void MatcherAliasDatabase::addGlobal(const ConfigFile& cfg)

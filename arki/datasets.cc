@@ -73,7 +73,7 @@ namespace arki {
 
 Datasets::Datasets(const ConfigFile& cfg)
 {
-    for (auto section = cfg.sectionBegin(); section != cfg.sectionEnd(); ++section)
+    for (auto section = cfg.section_begin(); section != cfg.section_end(); ++section)
         configs.insert(make_pair(section->first, dataset::Config::create(*section->second)));
 }
 

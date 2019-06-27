@@ -93,7 +93,7 @@ static PyObject* arkipy_make_merged_dataset(arkipy_Metadata* self, PyObject *arg
 
     try {
         std::unique_ptr<dataset::Merged> ds(new dataset::Merged);
-        for (auto i = cfg.sectionBegin(); i != cfg.sectionEnd(); ++i)
+        for (auto i = cfg.section_begin(); i != cfg.section_end(); ++i)
             ds->add_dataset(*i->second);
         return (PyObject*)dataset_reader_create(move(ds));
     } ARKI_CATCH_RETURN_PYO

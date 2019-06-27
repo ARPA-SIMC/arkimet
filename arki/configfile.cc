@@ -160,17 +160,17 @@ void ConfigFile::merge(const ConfigFile& c)
             values_pos.insert(*j);
     }
 
-	for (const_section_iterator i = c.sectionBegin(); i != c.sectionEnd(); ++i)
-	{
-		section_iterator sec = sections.find(i->first);
-		if (sec == sections.end())
-		{
-			ConfigFile* nsec = new ConfigFile;
-			pair<section_iterator, bool> res = sections.insert(make_pair(i->first, nsec));
-			sec = res.first;
-		}
-		sec->second->merge(*i->second);
-	}
+    for (const_section_iterator i = c.section_begin(); i != c.section_end(); ++i)
+    {
+        section_iterator sec = sections.find(i->first);
+        if (sec == sections.end())
+        {
+            ConfigFile* nsec = new ConfigFile;
+            pair<section_iterator, bool> res = sections.insert(make_pair(i->first, nsec));
+            sec = res.first;
+        }
+        sec->second->merge(*i->second);
+    }
 }
 
 void ConfigFile::mergeInto(const std::string& sectionName, const ConfigFile& c)
@@ -289,7 +289,7 @@ void ConfigFile::output(std::ostream& out, const std::string& fileName, const st
 			out << i->first << " = " << i->second << endl;
 
     // Then, the sections
-    for (const_section_iterator i = sectionBegin(); i != sectionEnd(); ++i)
+    for (const_section_iterator i = section_begin(); i != section_end(); ++i)
     {
         string name = str::joinpath(secName, i->first);
         out << endl;

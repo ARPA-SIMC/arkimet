@@ -38,8 +38,8 @@ Dispatcher::Dispatcher(const ConfigFile& cfg)
 {
     // Validate the configuration, and split normal datasets from outbound
     // datasets
-    for (ConfigFile::const_section_iterator i = cfg.sectionBegin();
-            i != cfg.sectionEnd(); ++i)
+    for (ConfigFile::const_section_iterator i = cfg.section_begin();
+            i != cfg.section_end(); ++i)
     {
         if (i->first == "error" or i->first == "duplicates")
             continue;
