@@ -42,7 +42,7 @@ add_method("postproc", [](Fixture& f) {
     f.clean_and_import("inbound/test.grib1");
 
     runtime::tests::CatchOutput co;
-    int res = run_cmdline(runtime::arki_query, {
+    int res = run_cmdline<runtime::ArkiQuery>({
         "arki-query",
         "--postproc=checkfiles",
         "",
@@ -61,7 +61,7 @@ add_method("query_metadata", [](Fixture& f) {
 
     mdc.writeAtomically("test.metadata");
     runtime::tests::CatchOutput co;
-    int res = run_cmdline(runtime::arki_query, {
+    int res = run_cmdline<runtime::ArkiQuery>({
         "arki-query",
         "--data",
         "",
@@ -76,7 +76,7 @@ add_method("query_merged", [](Fixture& f) {
     using runtime::tests::run_cmdline;
     f.clean_and_import("inbound/fixture.grib1");
     runtime::tests::CatchOutput co;
-    int res = run_cmdline(runtime::arki_query, {
+    int res = run_cmdline<runtime::ArkiQuery>({
         "arki-query",
         "--merged", "--data",
         "",
@@ -91,7 +91,7 @@ add_method("query_qmacro", [](Fixture& f) {
     using runtime::tests::run_cmdline;
     f.clean_and_import("inbound/fixture.grib1");
     runtime::tests::CatchOutput co;
-    int res = run_cmdline(runtime::arki_query, {
+    int res = run_cmdline<runtime::ArkiQuery>({
         "arki-query",
         "--qmacro=noop", "--data",
         "testds",
@@ -106,7 +106,7 @@ add_method("query_stdin", [](Fixture& f) {
     using runtime::tests::run_cmdline;
     {
         runtime::tests::CatchOutput co(sys::File("inbound/fixture.grib1", O_RDONLY));
-        int res = run_cmdline(runtime::arki_query, {
+        int res = run_cmdline<runtime::ArkiQuery>({
             "arki-query",
             "--stdin=grib",
             "--data",
@@ -118,7 +118,7 @@ add_method("query_stdin", [](Fixture& f) {
     }
     {
         runtime::tests::CatchOutput co;
-        int res = run_cmdline(runtime::arki_query, {
+        int res = run_cmdline<runtime::ArkiQuery>({
             "arki-query",
             "--stdin=grib",
             "",
@@ -130,7 +130,7 @@ add_method("query_stdin", [](Fixture& f) {
     }
     {
         runtime::tests::CatchOutput co;
-        int res = run_cmdline(runtime::arki_query, {
+        int res = run_cmdline<runtime::ArkiQuery>({
             "arki-query",
             "--stdin=grib",
             "--config=/dev/null",

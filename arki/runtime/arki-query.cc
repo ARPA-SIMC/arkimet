@@ -35,7 +35,7 @@ struct Options : public runtime::QueryCommandLine
 
 }
 
-int arki_query(int argc, const char* argv[])
+int ArkiQuery::run(int argc, const char* argv[])
 {
     Options opts;
 
@@ -71,11 +71,6 @@ int arki_query(int argc, const char* argv[])
         opts.outputHelp(cerr);
         return 1;
     }
-}
-
-int ArkiQuery::run(int argc, const char* argv[])
-{
-    return arki_query(argc, argv);
 }
 
 }
