@@ -1,0 +1,12 @@
+#!/usr/bin/python3
+from arkimet import ArkiQuery
+import sys
+
+
+def main():
+    arki_query = ArkiQuery()
+    sys.exit(arki_query.run(sys.argv))
+
+
+if __name__ == "__main__":
+    main()
