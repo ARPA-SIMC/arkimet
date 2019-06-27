@@ -17,6 +17,18 @@ PyObject* string_to_python(const std::string& str)
 
 std::string string_from_python(PyObject* o)
 {
+    if (!PyUnicode_Check(o))
+    {
+        PyErr_SetString(PyExc_TypeError, "value must be an instance of str");
+        throw PythonException();
+    }
+    ssize_t size;
+    const char* res = throw_ifnull(PyUnicode_AsUTF8AndSize(o, &size));
+    return std::string(res, size);
+}
+
+const char* cstring_from_python(PyObject* o)
+{
     if (PyUnicode_Check(o))
         return throw_ifnull(PyUnicode_AsUTF8(o));
     PyErr_SetString(PyExc_TypeError, "value must be an instance of str");
