@@ -59,13 +59,13 @@ static PyObject* arkipy_DatasetReader_query_data(arkipy_DatasetReader* self, PyO
             // call arg_on_metadata
             py_unique_ptr<arkipy_Metadata> pymd(metadata_create(move(md)));
             pyo_unique_ptr args(PyTuple_Pack(1, pymd.get()));
-            if (!args) throw python_callback_failed();
+            if (!args) throw PythonException();
             pyo_unique_ptr res(PyObject_CallObject(arg_on_metadata, args));
-            if (!res) throw python_callback_failed();
+            if (!res) throw PythonException();
             // Continue if the callback returns None or True
             if (res == Py_None) return true;
             int cont = PyObject_IsTrue(res);
-            if (cont == -1) throw python_callback_failed();
+            if (cont == -1) throw PythonException();
             return cont == 1;
         };
 
@@ -180,7 +180,7 @@ static PyObject* arkipy_DatasetReader_query_bytes(arkipy_DatasetReader* self, Py
             query.data_start_hook = [&](NamedFileDescriptor& fd) {
                 // call arg_data_start_hook
                 pyo_unique_ptr res(PyObject_CallObject(arg_data_start_hook, data_start_hook_args));
-                if (!res) throw python_callback_failed();
+                if (!res) throw PythonException();
             };
         }
 

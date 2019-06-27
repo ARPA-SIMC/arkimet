@@ -11,22 +11,19 @@ struct ConfigFile;
 
 namespace python {
 
-struct python_callback_failed : public std::exception {};
-
-
 /// Given a generic exception, set the Python error indicator appropriately.
 void set_std_exception(const std::exception& e);
 
 
 #define ARKI_CATCH_RETURN_PYO \
-      catch (python_callback_failed&) { \
+      catch (PythonException&) { \
         return nullptr; \
     } catch (std::exception& se) { \
         set_std_exception(se); return nullptr; \
     }
 
 #define ARKI_CATCH_RETURN_INT \
-      catch (python_callback_failed&) { \
+      catch (PythonException&) { \
         return -1; \
     } catch (std::exception& se) { \
         set_std_exception(se); return -1; \
