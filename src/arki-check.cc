@@ -8,7 +8,8 @@ int main(int argc, const char* argv[])
 {
     try {
         arki::runtime::init();
-        return arki::runtime::arki_check(argc, argv);
+        arki::runtime::ArkiCheck cmd;
+        cmd.run(argc, argv);
     } catch (std::exception& e) {
         cerr << e.what() << endl;
         return 1;

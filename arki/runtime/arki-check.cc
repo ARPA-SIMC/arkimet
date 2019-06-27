@@ -1,4 +1,5 @@
 /// arki-check - Maintenance of arkimet dataset
+#include "arki-check.h"
 #include "arki/libconfig.h"
 #include "arki/exceptions.h"
 #include "arki/utils/commandline/parser.h"
@@ -468,6 +469,12 @@ int arki_check(int argc, const char* argv[])
         return 1;
     }
 }
+
+int ArkiCheck::run(int argc, const char* argv[])
+{
+    return arki_check(argc, argv);
+}
+
 
 }
 }
