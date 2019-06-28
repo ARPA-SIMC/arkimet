@@ -8,7 +8,6 @@
 #include "arki/metadata/collection.h"
 #include "arki/metadata/consumer.h"
 #include "arki/types/source/blob.h"
-#include "arki/configfile.h"
 #include "arki/summary.h"
 #include "arki/types/reftime.h"
 #include "arki/matcher.h"

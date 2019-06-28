@@ -10,12 +10,12 @@ namespace arki {
 namespace dataset {
 namespace empty {
 
-Config::Config(const ConfigFile& cfg)
+Config::Config(const core::cfg::Section& cfg)
     : dataset::Config(cfg)
 {
 }
 
-std::shared_ptr<const Config> Config::create(const ConfigFile& cfg)
+std::shared_ptr<const Config> Config::create(const core::cfg::Section& cfg)
 {
     return std::shared_ptr<const Config>(new Config(cfg));
 }
@@ -45,7 +45,7 @@ void Writer::acquire_batch(WriterBatch& batch, const AcquireConfig& cfg)
     }
 }
 
-void Writer::test_acquire(const ConfigFile& cfg, WriterBatch& batch, std::ostream& out)
+void Writer::test_acquire(const core::cfg::Section& cfg, WriterBatch& batch, std::ostream& out)
 {
     std::shared_ptr<const empty::Config> config(new empty::Config(cfg));
     for (auto& e: batch)

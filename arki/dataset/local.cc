@@ -7,7 +7,6 @@
 #include "arki/exceptions.h"
 #include "arki/metadata.h"
 #include "arki/utils/files.h"
-#include "arki/configfile.h"
 #include "arki/runtime/io.h"
 #include "arki/metadata/consumer.h"
 #include "arki/metadata/collection.h"
@@ -24,7 +23,7 @@ using namespace arki::utils;
 namespace arki {
 namespace dataset {
 
-LocalConfig::LocalConfig(const ConfigFile& cfg)
+LocalConfig::LocalConfig(const core::cfg::Section& cfg)
     : Config(cfg), path(sys::abspath(cfg.value("path")))
 {
     string tmp = cfg.value("archive age");
@@ -140,20 +139,19 @@ void LocalReader::query_summary(const Matcher& matcher, Summary& summary)
         archive().query_summary(matcher, summary);
 }
 
-void LocalReader::read_config(const std::string& path, ConfigFile& cfg)
+core::cfg::Section LocalReader::read_config(const std::string& path)
 {
     if (path == "-")
     {
         // Parse the config file from stdin
         Stdin in;
-        cfg.parse(in);
-        return;
+        return core::cfg::Section::parse(in);
     }
 
-	// Remove trailing slashes, if any
-	string fname = path;
-	while (!fname.empty() && fname[fname.size() - 1] == '/')
-		fname.resize(fname.size() - 1);
+    // Remove trailing slashes, if any
+    string fname = path;
+    while (!fname.empty() && fname[fname.size() - 1] == '/')
+        fname.resize(fname.size() - 1);
 
     // Check if it's a file or a directory
     std::unique_ptr<struct stat> st = sys::stat(fname);
@@ -169,20 +167,18 @@ void LocalReader::read_config(const std::string& path, ConfigFile& cfg)
         string name = str::basename(fname);
         string file = str::joinpath(fname, "config");
 
-        ConfigFile section;
         File in(file, O_RDONLY);
         // Parse the config file into a new section
-        section.parse(in);
+        auto res = core::cfg::Section::parse(in);
         // Fill in missing bits
-        section.setValue("name", name);
-        section.setValue("path", sys::abspath(fname));
-        // Merge into cfg
-        cfg.mergeInto(name, section);
+        res.set("name", name);
+        res.set("path", sys::abspath(fname));
+        return res;
     } else {
         // If it's a file, then it's a merged config file
         File in(fname, O_RDONLY);
         // Parse the config file
-        cfg.parse(in);
+        return core::cfg::Section::parse(in);
     }
 }
 
@@ -191,7 +187,7 @@ LocalWriter::~LocalWriter()
 {
 }
 
-void LocalWriter::test_acquire(const ConfigFile& cfg, WriterBatch& batch, std::ostream& out)
+void LocalWriter::test_acquire(const core::cfg::Section& cfg, WriterBatch& batch, std::ostream& out)
 {
     return segmented::Writer::test_acquire(cfg, batch, out);
 }

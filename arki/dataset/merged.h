@@ -8,7 +8,6 @@
 #include <vector>
 
 namespace arki {
-class ConfigFile;
 class Metadata;
 class Matcher;
 
@@ -35,7 +34,7 @@ public:
     void add_dataset(std::shared_ptr<Reader> ds);
 
     /// Add a dataset to the group of datasets to merge
-    void add_dataset(const ConfigFile& cfg);
+    void add_dataset(const core::cfg::Section& cfg);
 
     bool query_data(const dataset::DataQuery& q, metadata_dest_func dest) override;
     void query_summary(const Matcher& matcher, Summary& summary) override;

@@ -3,7 +3,6 @@
 #include <arki/runtime/inputs.h>
 #include <arki/runtime/io.h>
 #include "arki/utils/commandline/parser.h"
-#include "arki/configfile.h"
 #include "arki/dataset.h"
 #include "arki/dataset/merged.h"
 #include "arki/utils.h"

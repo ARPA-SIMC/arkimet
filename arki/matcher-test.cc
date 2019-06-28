@@ -1,12 +1,12 @@
 #include "config.h"
-#include <arki/matcher/tests.h>
-#include <arki/matcher.h>
-#include <arki/metadata.h>
-#include <arki/configfile.h>
-#include <arki/utils/lua.h>
-#include <arki/utils/sys.h>
-#include <arki/utils/string.h>
-#include <arki/runtime/config.h>
+#include "arki/matcher/tests.h"
+#include "arki/matcher.h"
+#include "arki/metadata.h"
+#include "arki/core/cfg.h"
+#include "arki/utils/lua.h"
+#include "arki/utils/sys.h"
+#include "arki/utils/string.h"
+#include "arki/runtime/config.h"
 #include <fcntl.h>
 
 using namespace std;
@@ -115,8 +115,7 @@ add_method("aliases", [](Fixture& f) {
         "[reftime]\n"
         "valid = >=2007,<=2008\n"
         "invalid = <2007\n";
-    ConfigFile conf;
-    conf.parse(test, "(memory)");
+    auto conf = core::cfg::Sections::parse(test, "memory");
 
     MatcherAliasDatabase::addGlobal(conf);
 
@@ -144,8 +143,7 @@ add_method("aliases_multilevel", [](Fixture& f) {
         "c = GRIB1,2,3,4\n"
         "b = GRIB1,1,2,3\n"
         "a = c or b\n";
-    ConfigFile conf;
-    conf.parse(test, "(memory)");
+    auto conf = core::cfg::Sections::parse(test, "memory");
 
     MatcherAliasDatabase::addGlobal(conf);
 
@@ -161,8 +159,7 @@ add_method("aliases_recursive_1", [](Fixture& f) {
     string test =
         "[origin]\n"
         "a = a or a\n";
-    ConfigFile conf;
-    conf.parse(test, "(memory)");
+    auto conf = core::cfg::Sections::parse(test, "memory");
     try {
         MatcherAliasDatabase::addGlobal(conf);
         ensure(false);
@@ -177,8 +174,7 @@ add_method("aliases_recursive_2", [](Fixture& f) {
         "[origin]\n"
         "a = b\n"
         "b = a\n";
-    ConfigFile conf;
-    conf.parse(test, "(memory)");
+    auto conf = core::cfg::Sections::parse(test, "memory");
     try {
         MatcherAliasDatabase::addGlobal(conf);
         ensure(false);
@@ -194,8 +190,7 @@ add_method("aliases_recursive_3", [](Fixture& f) {
         "a = b\n"
         "b = c\n"
         "c = a\n";
-    ConfigFile conf;
-    conf.parse(test, "(memory)");
+    auto conf = core::cfg::Sections::parse(test, "memory");
 	try {
 		MatcherAliasDatabase::addGlobal(conf);
 		ensure(false);
@@ -207,8 +202,7 @@ add_method("aliases_recursive_3", [](Fixture& f) {
 // Load a file with aliases referring to other aliases
 add_method("aliases_multilevel_load", [](Fixture& f) {
     File in("misc/rec-ts-alias.conf", O_RDONLY);
-    ConfigFile conf;
-    conf.parse(in);
+    auto conf = core::cfg::Sections::parse(in);
 
 	MatcherAliasDatabase::addGlobal(conf);
 	Matcher m = Matcher::parse("timerange:f_3");
@@ -241,7 +235,7 @@ add_method("aliases_doctest", [](Fixture& f) {
                 string error = lua_tostring(L, -1);
                 // Pop the error from the stack
                 lua_pop(L, 1);
-		ensure_equals(error, "");
+                wassert(actual(error) == "");
         }
 
     // Run the various lua examples
@@ -257,7 +251,7 @@ add_method("aliases_doctest", [](Fixture& f) {
             string error = lua_tostring(L, -1);
             // Pop the error from the stack
             lua_pop(L, 1);
-            ensure_equals(error, "");
+            wassert(actual(error) == "");
         }
     }
 });

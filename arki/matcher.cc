@@ -1,7 +1,7 @@
 #include "matcher.h"
 #include "matcher/reftime.h"
+#include "core/cfg.h"
 #include "metadata.h"
-#include "configfile.h"
 #include "utils/string.h"
 #include "utils/lua.h"
 #include "utils/regexp.h"
@@ -305,18 +305,18 @@ void Aliases::reset()
     db.clear();
 }
 
-void Aliases::serialise(ConfigFile& cfg) const
+void Aliases::serialise(core::cfg::Section& cfg) const
 {
     for (auto i: db)
-        cfg.setValue(i.first, i.second->toStringValueOnly());
+        cfg.set(i.first, i.second->toStringValueOnly());
 }
 
-void Aliases::add(const MatcherType& type, const ConfigFile& entries)
+void Aliases::add(const MatcherType& type, const core::cfg::Section& entries)
 {
     vector< pair<string, string> > aliases;
     vector< pair<string, string> > failed;
-    for (ConfigFile::const_iterator i = entries.begin(); i != entries.end(); ++i)
-        aliases.push_back(make_pair(str::lower(i->first), i->second));
+    for (const auto& i: entries)
+        aliases.push_back(make_pair(str::lower(i.first), i.second));
 
 	/*
 	 * Try multiple times to catch aliases referring to other aliases.
@@ -537,27 +537,26 @@ Matcher Matcher::lua_check(lua_State* L, int idx)
 #endif
 
 MatcherAliasDatabase::MatcherAliasDatabase() {}
-MatcherAliasDatabase::MatcherAliasDatabase(const ConfigFile& cfg) { add(cfg); }
+MatcherAliasDatabase::MatcherAliasDatabase(const core::cfg::Sections& cfg) { add(cfg); }
 
-void MatcherAliasDatabase::add(const ConfigFile& cfg)
+void MatcherAliasDatabase::add(const core::cfg::Sections& cfg)
 {
-    for (ConfigFile::const_section_iterator sec = cfg.section_begin();
-            sec != cfg.section_end(); ++sec)
+    for (const auto& si: cfg)
     {
-        matcher::MatcherType* mt = matcher::MatcherType::find(sec->first);
+        matcher::MatcherType* mt = matcher::MatcherType::find(si.first);
         if (!mt)
             // Ignore unwanted sections
             continue;
-        aliasDatabase[sec->first].add(*mt, *sec->second);
+        aliasDatabase[si.first].add(*mt, si.second);
     }
 }
 
-void MatcherAliasDatabase::addGlobal(const ConfigFile& cfg)
+void MatcherAliasDatabase::addGlobal(const core::cfg::Sections& cfg)
 {
-	if (!matcher::aliasdb)
-		matcher::aliasdb = new MatcherAliasDatabase(cfg);
-	else
-		matcher::aliasdb->add(cfg);
+    if (!matcher::aliasdb)
+        matcher::aliasdb = new MatcherAliasDatabase(cfg);
+    else
+        matcher::aliasdb->add(cfg);
 }
 
 const matcher::Aliases* MatcherAliasDatabase::get(const std::string& type)
@@ -578,24 +577,24 @@ const void MatcherAliasDatabase::reset()
 		matcher::aliasdb->aliasDatabase.clear();
 }
 
-void MatcherAliasDatabase::serialise(ConfigFile& cfg)
+core::cfg::Sections MatcherAliasDatabase::serialise()
 {
-	if (!matcher::aliasdb)
-		return;
+    if (!matcher::aliasdb)
+        return core::cfg::Sections();
 
-	for (std::map<std::string, matcher::Aliases>::const_iterator i = matcher::aliasdb->aliasDatabase.begin();
-			i != matcher::aliasdb->aliasDatabase.end(); ++i)
-	{
-		ConfigFile* c = cfg.obtainSection(i->first);
-		i->second.serialise(*c);
-	}
+    core::cfg::Sections res;
+    for (const auto& i: matcher::aliasdb->aliasDatabase)
+    {
+        core::cfg::Section& s = res.obtain(i.first);
+        i.second.serialise(s);
+    }
+    return res;
 }
 
 void MatcherAliasDatabase::debug_dump(std::ostream& out)
 {
-    ConfigFile cfg;
-    serialise(cfg);
-    cfg.output(out, "(debug output)");
+    auto cfg = serialise();
+    cfg.write(out, "(debug output)");
 }
 
 }

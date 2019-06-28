@@ -28,16 +28,18 @@ struct Fixture : public DatasetTest
 
     void write_dispatch_config()
     {
-        ConfigFile dispatch_cfg;
-        dispatch_cfg.mergeInto("testds", cfg);
+        core::cfg::Sections dispatch_cfg;
+        dispatch_cfg.emplace("testds", cfg);
 
-        auto section = dispatch_cfg.obtainSection("error");
-        section->setValue("type", "error");
-        section->setValue("step", "daily");
-        section->setValue("path", "error");
+        auto& section = dispatch_cfg.obtain("error");
+        section.set("type", "error");
+        section.set("step", "daily");
+        section.set("path", "error");
 
         sys::File out("test-dispatch", O_WRONLY | O_CREAT | O_TRUNC);
-        out.write_all_or_throw(dispatch_cfg.serialize());
+        stringstream ss;
+        dispatch_cfg.write(ss, "memory");
+        out.write_all_or_throw(ss.str());
     }
 };
 
@@ -268,7 +270,7 @@ add_method("dispatch_flush_threshold", [](Fixture& f) {
 add_method("dispatch_copyok_copyko", [](Fixture& f) {
     using runtime::tests::run_cmdline;
 
-    f.cfg.setValue("filter", "origin:GRIB1,200 or GRIB1,80");
+    f.cfg.set("filter", "origin:GRIB1,200 or GRIB1,80");
     f.test_reread_config();
     f.write_dispatch_config();
 
@@ -304,7 +306,7 @@ add_method("dispatch_copyok_copyko", [](Fixture& f) {
 add_method("dispatch_copyok", [](Fixture& f) {
     using runtime::tests::run_cmdline;
 
-    f.cfg.setValue("filter", "origin:GRIB1");
+    f.cfg.set("filter", "origin:GRIB1");
     f.test_reread_config();
     f.write_dispatch_config();
 
@@ -339,7 +341,7 @@ add_method("dispatch_copyok", [](Fixture& f) {
 add_method("dispatch_copyko", [](Fixture& f) {
     using runtime::tests::run_cmdline;
 
-    f.cfg.setValue("filter", "origin:GRIB2");
+    f.cfg.set("filter", "origin:GRIB2");
     f.test_reread_config();
     f.write_dispatch_config();
 
@@ -375,7 +377,7 @@ add_method("dispatch_issue68", [](Fixture& f) {
     using runtime::tests::run_cmdline;
     skip_unless_vm2();
 
-    f.cfg.setValue("filter", "area:VM2,1");
+    f.cfg.set("filter", "area:VM2,1");
     f.test_reread_config();
     f.write_dispatch_config();
 
@@ -415,7 +417,7 @@ add_method("dispatch_issue154", [](Fixture& f) {
     using runtime::tests::run_cmdline;
     skip_unless_vm2();
 
-    f.cfg.setValue("filter", "area:VM2,42");
+    f.cfg.set("filter", "area:VM2,42");
     f.test_reread_config();
     f.write_dispatch_config();
 

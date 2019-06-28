@@ -100,8 +100,8 @@ void DatasetTest::test_setup(const std::string& cfg_default)
 {
     cfg.clear();
     cfg.parse(cfg_default + "\n" + cfg_instance + "\n");
-    cfg.setValue("path", ds_root);
-    cfg.setValue("name", ds_name);
+    cfg.set("path", ds_root);
+    cfg.set("name", ds_name);
     if (sys::exists(ds_root))
         sys::rmtree(ds_root);
 }
@@ -130,7 +130,9 @@ const Config& DatasetTest::config()
     if (!m_config)
     {
         sys::mkdir_ifmissing(ds_root);
-        sys::write_file(str::joinpath(ds_root, "config"), cfg.serialize());
+        std::stringstream ss;
+        cfg.write(ss, "memory");
+        sys::write_file(str::joinpath(ds_root, "config"), ss.str());
         m_config = dataset::Config::create(cfg);
     }
     return *m_config;
@@ -165,7 +167,7 @@ SegmentManager& DatasetTest::segments()
     return *segment_manager;
 }
 
-std::string DatasetTest::idxfname(const ConfigFile* wcfg) const
+std::string DatasetTest::idxfname(const core::cfg::Section* wcfg) const
 {
     if (!wcfg) wcfg = &cfg;
     if (wcfg->value("type") == "ondisk2")
@@ -347,7 +349,9 @@ void DatasetTest::clean()
 {
     if (sys::exists(ds_root)) sys::rmtree(ds_root);
     sys::mkdir_ifmissing(ds_root);
-    sys::write_file(str::joinpath(ds_root, "config"), cfg.serialize());
+    std::stringstream ss;
+    cfg.write(ss, "memory");
+    sys::write_file(str::joinpath(ds_root, "config"), ss.str());
     import_results.clear();
 }
 

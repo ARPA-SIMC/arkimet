@@ -2,8 +2,8 @@
 #include "arki/segment.h"
 #include "arki/metadata/data.h"
 #include "core/file.h"
+#include "core/cfg.h"
 #include "utils/sys.h"
-#include "configfile.h"
 #include "metadata.h"
 #include "postprocess.h"
 #include "binary.h"
@@ -36,7 +36,6 @@ void Tests::register_tests() {
 // See if the postprocess makes a difference
 add_method("null_validate", [] {
     string conf =
-        "[testall]\n"
         "type = test\n"
         "step = daily\n"
         "filter = origin: GRIB1\n"
@@ -44,12 +43,12 @@ add_method("null_validate", [] {
         "postprocess = null\n"
         "name = testall\n"
         "path = testall\n";
-    ConfigFile config(conf, "(memory)");
+    auto config = core::cfg::Section::parse(conf, "(memory)");
 
     Postprocess p("null");
     Stderr out;
     p.set_output(out);
-    p.validate(config.section("testall")->values());
+    p.validate(config);
     p.start();
 
     produceGRIB(p);

@@ -3,9 +3,10 @@
 #include "common.h"
 #include "metadata.h"
 #include "summary.h"
+#include "utils/values.h"
 #include "arki/core/file.h"
+#include "arki/core/cfg.h"
 #include "arki/dataset.h"
-#include "arki/configfile.h"
 #include "arki/sort.h"
 #include <vector>
 #include "config.h"
@@ -37,19 +38,21 @@ static PyObject* arkipy_DatasetReader_query_data(arkipy_DatasetReader* self, PyO
         PyErr_SetString(PyExc_TypeError, "on_metadata must be a callable object");
         return nullptr;
     }
-    string str_matcher;
-    if (arg_matcher != Py_None && string_from_python(arg_matcher, str_matcher) == -1) return nullptr;
-    bool with_data = false;
-    if (arg_with_data != Py_None)
-    {
-        int istrue = PyObject_IsTrue(arg_with_data);
-        if (istrue == -1) return nullptr;
-        with_data = istrue == 1;
-    }
-    string sort;
-    if (arg_sort != Py_None && string_from_python(arg_sort, sort) == -1) return nullptr;
-
     try {
+        std::string str_matcher;
+        if (arg_matcher != Py_None)
+            str_matcher = string_from_python(arg_matcher);
+        bool with_data = false;
+        if (arg_with_data != Py_None)
+        {
+            int istrue = PyObject_IsTrue(arg_with_data);
+            if (istrue == -1) return nullptr;
+            with_data = istrue == 1;
+        }
+        string sort;
+        if (arg_sort != Py_None)
+            sort = string_from_python(arg_sort);
+
         dataset::DataQuery query;
         query.matcher = Matcher::parse(str_matcher);
         query.with_data = with_data;
@@ -84,7 +87,8 @@ static PyObject* arkipy_DatasetReader_query_summary(arkipy_DatasetReader* self, 
         return nullptr;
 
     string str_matcher;
-    if (arg_matcher != Py_None && string_from_python(arg_matcher, str_matcher) == -1) return nullptr;
+    if (arg_matcher != Py_None)
+        str_matcher = string_from_python(arg_matcher);
 
     Summary* summary = nullptr;
     if (arg_summary != Py_None)
@@ -133,30 +137,36 @@ static PyObject* arkipy_DatasetReader_query_bytes(arkipy_DatasetReader* self, Py
     if (fd == -1) return nullptr;
     string fd_name;
     if (object_repr(arg_file, fd_name) == -1) return nullptr;
-    string str_matcher;
-    if (arg_matcher != Py_None && string_from_python(arg_matcher, str_matcher) == -1) return nullptr;
-    bool with_data = false;
-    if (arg_with_data != Py_None)
-    {
-        int istrue = PyObject_IsTrue(arg_with_data);
-        if (istrue == -1) return nullptr;
-        with_data = istrue == 1;
-    }
-    string sort;
-    if (arg_sort != Py_None && string_from_python(arg_sort, sort) == -1) return nullptr;
-    string postprocess;
-    if (arg_postprocess != Py_None && string_from_python(arg_postprocess, postprocess) == -1) return nullptr;
-    string metadata_report;
-    if (arg_metadata_report != Py_None && string_from_python(arg_metadata_report, metadata_report) == -1) return nullptr;
-    string summary_report;
-    if (arg_summary_report != Py_None && string_from_python(arg_summary_report, summary_report) == -1) return nullptr;
-    if (arg_data_start_hook != Py_None && !PyCallable_Check(arg_data_start_hook))
-    {
-        PyErr_SetString(PyExc_TypeError, "data_start_hoook must be None or a callable object");
-        return nullptr;
-    }
 
     try {
+        string str_matcher;
+        if (arg_matcher != Py_None)
+            str_matcher = string_from_python(arg_matcher);
+        bool with_data = false;
+        if (arg_with_data != Py_None)
+        {
+            int istrue = PyObject_IsTrue(arg_with_data);
+            if (istrue == -1) return nullptr;
+            with_data = istrue == 1;
+        }
+        string sort;
+        if (arg_sort != Py_None)
+            sort = string_from_python(arg_sort);
+        string postprocess;
+        if (arg_postprocess != Py_None)
+            postprocess = string_from_python(arg_postprocess);
+        string metadata_report;
+        if (arg_metadata_report != Py_None)
+            metadata_report = string_from_python(arg_metadata_report);
+        string summary_report;
+        if (arg_summary_report != Py_None)
+            summary_report = string_from_python(arg_summary_report);
+        if (arg_data_start_hook != Py_None && !PyCallable_Check(arg_data_start_hook))
+        {
+            PyErr_SetString(PyExc_TypeError, "data_start_hoook must be None or a callable object");
+            return nullptr;
+        }
+
         Matcher matcher(Matcher::parse(str_matcher));
 
         dataset::ByteQuery query;
@@ -236,9 +246,7 @@ static int arkipy_DatasetReader_init(arkipy_DatasetReader* self, PyObject* args,
         return -1;
 
     try {
-        ConfigFile arki_cfg;
-        if (configfile_from_python(cfg, arki_cfg)) return -1;
-        self->ds = dataset::Reader::create(arki_cfg).release();
+        self->ds = dataset::Reader::create(configfile_from_python(cfg)).release();
         return 0;
     } ARKI_CATCH_RETURN_INT;
 }

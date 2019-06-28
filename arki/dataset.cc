@@ -1,6 +1,5 @@
 #include "config.h"
 #include <arki/dataset.h>
-#include <arki/configfile.h>
 #include <arki/dataset/file.h>
 #include <arki/dataset/ondisk2.h>
 #include <arki/dataset/iseg.h>
@@ -44,8 +43,8 @@ Config::Config() {}
 
 Config::Config(const std::string& name) : name(name) {}
 
-Config::Config(const ConfigFile& cfg)
-    : name(cfg.value("name")), cfg(cfg.values())
+Config::Config(const core::cfg::Section& cfg)
+    : name(cfg.value("name")), cfg(cfg)
 {
 }
 
@@ -53,7 +52,7 @@ std::unique_ptr<Reader> Config::create_reader() const { throw std::runtime_error
 std::unique_ptr<Writer> Config::create_writer() const { throw std::runtime_error("writer not implemented for dataset " + name); }
 std::unique_ptr<Checker> Config::create_checker() const { throw std::runtime_error("checker not implemented for dataset " + name); }
 
-std::shared_ptr<const Config> Config::create(const ConfigFile& cfg)
+std::shared_ptr<const Config> Config::create(const core::cfg::Section& cfg)
 {
     string type = str::lower(cfg.value("type"));
 
@@ -323,22 +322,22 @@ void Reader::lua_push(lua_State* L)
 }
 #endif
 
-std::unique_ptr<Reader> Reader::create(const ConfigFile& cfg)
+std::unique_ptr<Reader> Reader::create(const core::cfg::Section& cfg)
 {
     auto config = Config::create(cfg);
     return config->create_reader();
 }
 
-void Reader::read_config(const std::string& path, ConfigFile& cfg)
+core::cfg::Section Reader::read_config(const std::string& path)
 {
 #ifdef HAVE_LIBCURL
     if (str::startswith(path, "http://") || str::startswith(path, "https://"))
-        return dataset::http::Reader::read_config(path, cfg);
+        return dataset::http::Reader::read_config(path);
 #endif
     if (sys::isdir(path))
-        return dataset::LocalReader::read_config(path, cfg);
+        return dataset::LocalReader::read_config(path);
     else
-        return dataset::File::read_config(path, cfg);
+        return dataset::File::read_config(path);
 }
 
 
@@ -357,13 +356,13 @@ void Writer::flush() {}
 
 Pending Writer::test_writelock() { return Pending(); }
 
-std::unique_ptr<Writer> Writer::create(const ConfigFile& cfg)
+std::unique_ptr<Writer> Writer::create(const core::cfg::Section& cfg)
 {
     auto config = Config::create(cfg);
     return config->create_writer();
 }
 
-void Writer::test_acquire(const ConfigFile& cfg, WriterBatch& batch, std::ostream& out)
+void Writer::test_acquire(const core::cfg::Section& cfg, WriterBatch& batch, std::ostream& out)
 {
     string type = str::lower(cfg.value("type"));
     if (type == "remote")
@@ -387,7 +386,7 @@ CheckerConfig::CheckerConfig(std::shared_ptr<dataset::Reporter> reporter, bool r
 }
 
 
-std::unique_ptr<Checker> Checker::create(const ConfigFile& cfg)
+std::unique_ptr<Checker> Checker::create(const core::cfg::Section& cfg)
 {
     auto config = Config::create(cfg);
     return config->create_checker();

@@ -215,19 +215,18 @@ struct DataProcessor : public SingleOutputProcessor
         {
             ds.query_data(query, [&](unique_ptr<Metadata> md) { check_hooks(); md->makeInline(); (*printer)(*md); return true; });
         } else if (server_side) {
-            map<string, string>::const_iterator iurl = ds.cfg().find("url");
-            if (iurl == ds.cfg().end())
+            if (ds.cfg().has("url"))
             {
                 ds.query_data(query, [&](unique_ptr<Metadata> md) {
                     check_hooks();
-                    md->make_absolute();
+                    md->set_source(types::Source::createURL(md->source().format, ds.cfg().value("url")));
                     (*printer)(*md);
                     return true;
                 });
             } else {
                 ds.query_data(query, [&](unique_ptr<Metadata> md) {
                     check_hooks();
-                    md->set_source(types::Source::createURL(md->source().format, iurl->second));
+                    md->make_absolute();
                     (*printer)(*md);
                     return true;
                 });

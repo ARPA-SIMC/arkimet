@@ -1,7 +1,7 @@
 #ifndef ARKI_RUNTIME_DISPATCH_H
 #define ARKI_RUNTIME_DISPATCH_H
 
-#include <arki/configfile.h>
+#include <arki/core/cfg.h>
 #include <arki/dataset/fwd.h>
 #include <arki/dataset/memory.h>
 #include <arki/runtime/module.h>
@@ -46,7 +46,7 @@ struct DispatchOptions : public Module
 /// Dispatch metadata
 struct MetadataDispatch
 {
-    ConfigFile cfg;
+    core::cfg::Sections cfg;
     Dispatcher* dispatcher = nullptr;
     dataset::Memory partial_batch;
     size_t flush_threshold = 128 * 1024 * 1024;

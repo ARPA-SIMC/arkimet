@@ -1,7 +1,8 @@
 #include "common.h"
+#include "utils/values.h"
 #include <Python.h>
 #include "arki/libconfig.h"
-#include "arki/configfile.h"
+#include "arki/core/cfg.h"
 #include "arki/runtime.h"
 
 using namespace std;
@@ -400,10 +401,7 @@ int object_repr(PyObject* o, std::string& out)
     pyo_unique_ptr fileno_repr(PyObject_Repr(o));
     if (!fileno_repr) return -1;
 
-    std::string name;
-    if (string_from_python(fileno_repr, name))
-        return -1;
-
+    out = string_from_python(fileno_repr);
     return 0;
 }
 
@@ -431,55 +429,29 @@ int file_get_fileno(PyObject* o)
     return PyLong_AsLong(fileno_value);
 }
 
-int string_from_python(PyObject* o, std::string& out)
-{
-    if (PyBytes_Check(o)) {
-        const char* v = PyBytes_AsString(o);
-        if (v == NULL) return -1;
-        out = v;
-        return 0;
-    }
-    if (PyUnicode_Check(o)) {
-        const char* v = PyUnicode_AsUTF8(o);
-        if (v == NULL) return -1;
-        out = v;
-        return 0;
-    }
-    PyErr_SetString(PyExc_TypeError, "value must be an instance of str or bytes");
-    return -1;
-}
-
-int configfile_from_python(PyObject* o, ConfigFile& out)
+core::cfg::Section configfile_from_python(PyObject* o)
 {
     try {
         if (PyBytes_Check(o)) {
-            const char* v = PyBytes_AsString(o);
-            if (v == NULL) return -1;
-            out.parse(v);
-            return 0;
+            const char* v = throw_ifnull(PyBytes_AsString(o));
+            return core::cfg::Section::parse(v);
         }
         if (PyUnicode_Check(o)) {
-            const char* v = PyUnicode_AsUTF8(o);
-            if (v == NULL) return -1;
-            out.parse(v);
-            return 0;
+            const char* v = throw_ifnull(PyUnicode_AsUTF8(o));
+            return core::cfg::Section::parse(v);
         }
         if (PyDict_Check(o))
         {
+            core::cfg::Section res;
             PyObject *key, *val;
             Py_ssize_t pos = 0;
             while (PyDict_Next(o, &pos, &key, &val))
-            {
-                string k, v;
-                if (string_from_python(key, k)) return -1;
-                if (string_from_python(val, v)) return -1;
-                out.setValue(k, v);
-            }
-            return 0;
+                res.set(string_from_python(key), string_from_python(val));
+            return res;
         }
         PyErr_SetString(PyExc_TypeError, "value must be an instance of str, bytes, or dict");
-        return -1;
-    } ARKI_CATCH_RETURN_INT;
+        throw PythonException();
+    } ARKI_CATCH_RETHROW_PYTHON
 }
 
 int common_init()

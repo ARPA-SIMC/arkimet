@@ -1,5 +1,4 @@
 #include "dispatcher.h"
-#include "configfile.h"
 #include "metadata/consumer.h"
 #include "matcher.h"
 #include "dataset.h"
@@ -17,31 +16,30 @@ using arki::core::Time;
 
 namespace arki {
 
-static inline Matcher getFilter(const ConfigFile* cfg)
+static inline Matcher getFilter(const core::cfg::Section& cfg)
 {
-    return Matcher::parse(cfg->value("filter"));
+    return Matcher::parse(cfg.value("filter"));
 }
 
-Dispatcher::Dispatcher(const ConfigFile& cfg)
+Dispatcher::Dispatcher(const core::cfg::Sections& cfg)
     : m_can_continue(true), m_outbound_failures(0)
 {
     // Validate the configuration, and split normal datasets from outbound
     // datasets
-    for (ConfigFile::const_section_iterator i = cfg.section_begin();
-            i != cfg.section_end(); ++i)
+    for (const auto& si: cfg)
     {
-        if (i->first == "error" or i->first == "duplicates")
+        if (si.first == "error" or si.first == "duplicates")
             continue;
-        else if (i->second->value("type") == "outbound")
+        else if (si.second.value("type") == "outbound")
         {
-            if (i->second->value("filter").empty())
-                throw std::runtime_error("configuration of dataset '"+i->first+"' does not have a 'filter' directive");
-            outbounds.push_back(make_pair(i->first, getFilter(i->second)));
+            if (si.second.value("filter").empty())
+                throw std::runtime_error("configuration of dataset '" + si.first + "' does not have a 'filter' directive");
+            outbounds.push_back(make_pair(si.first, getFilter(si.second)));
         }
         else {
-            if (i->second->value("filter").empty())
-                throw std::runtime_error("configuration of dataset '"+i->first+"' does not have a 'filter' directive");
-            datasets.push_back(make_pair(i->first, getFilter(i->second)));
+            if (si.second.value("filter").empty())
+                throw std::runtime_error("configuration of dataset '" + si.first + "' does not have a 'filter' directive");
+            datasets.push_back(make_pair(si.first, getFilter(si.second)));
         }
     }
 }
@@ -175,7 +173,7 @@ void Dispatcher::dispatch(dataset::WriterBatch& batch, bool drop_cached_data_on_
 }
 
 
-RealDispatcher::RealDispatcher(const ConfigFile& cfg)
+RealDispatcher::RealDispatcher(const core::cfg::Sections& cfg)
     : Dispatcher(cfg), datasets(cfg), pool(datasets)
 {
 }
@@ -196,7 +194,7 @@ void RealDispatcher::flush() { pool.flush(); }
 
 
 
-TestDispatcher::TestDispatcher(const ConfigFile& cfg, std::ostream& out)
+TestDispatcher::TestDispatcher(const core::cfg::Sections& cfg, std::ostream& out)
     : Dispatcher(cfg), cfg(cfg), out(out)
 {
     if (!cfg.section("error"))

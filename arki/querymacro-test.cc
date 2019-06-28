@@ -17,20 +17,18 @@ using namespace arki::types;
 struct Fixture : public DatasetTest {
     using DatasetTest::DatasetTest;
 
-    ConfigFile dispatch_cfg;
+    core::cfg::Sections dispatch_cfg;
 
     void test_setup()
     {
         runtime::readMatcherAliasDatabase();
 
-        DatasetTest::test_setup(R"(
-            type = ondisk2
-            step = daily
-            unique = origin, reftime
+        dispatch_cfg = core::cfg::Sections::parse(R"(
+[testds]
+type = ondisk2
+step = daily
+unique = origin, reftime
         )");
-
-        dispatch_cfg.clear();
-        dispatch_cfg.mergeInto("testds", cfg);
     }
 
     void import()
@@ -62,7 +60,7 @@ void Tests::register_tests() {
 add_method("count", [](Fixture& f) {
     f.import();
 
-    ConfigFile cfg;
+    core::cfg::Section cfg;
     Querymacro qm(cfg, f.dispatch_cfg, "test0", "foo");
 
     lua_getglobal(*qm.L, "count1");
@@ -80,7 +78,7 @@ add_method("count", [](Fixture& f) {
 // Lua script that simply passes through the queries
 add_method("noop", [](Fixture& f) {
     f.import();
-    ConfigFile cfg;
+    core::cfg::Section cfg;
     Querymacro qm(cfg, f.dispatch_cfg, "noop", "testds");
 
     metadata::Collection mdc(qm, Matcher());
@@ -97,7 +95,7 @@ add_method("noop", [](Fixture& f) {
 // Lua script that simply passes through the queries, making temporary copies of data
 add_method("noopcopy", [](Fixture& f) {
     f.import();
-    ConfigFile cfg;
+    core::cfg::Section cfg;
     Querymacro qm(cfg, f.dispatch_cfg, "noopcopy", "testds");
 
     metadata::Collection mdc(qm, Matcher());
@@ -114,7 +112,7 @@ add_method("noopcopy", [](Fixture& f) {
 // Try "expa" matchers
 add_method("expa", [](Fixture& f) {
     f.import();
-    ConfigFile cfg;
+    core::cfg::Section cfg;
     Querymacro qm(cfg, f.dispatch_cfg, "expa", 
             "ds:testds. d:2009-08-07. t:0000. s:AN. l:G00. v:GRIB1/200/140/229.\n"
             "ds:testds. d:2009-08-07. t:0000. s:GRIB1/1. l:MSL. v:GRIB1/80/2/2.\n"
@@ -134,7 +132,7 @@ add_method("expa", [](Fixture& f) {
 // Try "expa" matchers with parameter
 add_method("expa_arg", [](Fixture& f) {
     f.import();
-    ConfigFile cfg;
+    core::cfg::Section cfg;
     Querymacro qm(cfg, f.dispatch_cfg, "expa 2009-08-08", 
             "ds:testds. d:@. t:0000. s:AN. l:G00. v:GRIB1/200/140/229.\n"
             "ds:testds. d:@-1. t:0000. s:GRIB1/1. l:MSL. v:GRIB1/80/2/2.\n"
@@ -155,7 +153,7 @@ add_method("expa_arg", [](Fixture& f) {
 // Try "gridspace" matchers
 add_method("gridspace", [](Fixture& f) {
     f.import();
-    ConfigFile cfg;
+    core::cfg::Section cfg;
     {
         Querymacro qm(cfg, f.dispatch_cfg, "gridspace", 
                 "dataset: testds\n"
@@ -195,7 +193,7 @@ add_method("gridspace", [](Fixture& f) {
 // Try "expa" matchers with inline option
 add_method("expa_inline", [](Fixture& f) {
     f.import();
-    ConfigFile cfg;
+    core::cfg::Section cfg;
     Querymacro qm(cfg, f.dispatch_cfg, "expa",
             "ds:testds. d:2009-08-07. t:0000. s:AN. l:G00. v:GRIB1/200/140/229.\n"
             "ds:testds. d:2009-08-07. t:0000. s:GRIB1/1. l:MSL. v:GRIB1/80/2/2.\n"
@@ -216,7 +214,7 @@ add_method("expa_inline", [](Fixture& f) {
 // TODO: ensure sorting
 add_method("expa_sort", [](Fixture& f) {
     f.import();
-    ConfigFile cfg;
+    core::cfg::Section cfg;
     Querymacro qm(cfg, f.dispatch_cfg, "expa",
             "ds:testds. d:2009-08-07. t:0000. s:AN. l:G00. v:GRIB1/200/140/229.\n"
             "ds:testds. d:2009-08-08. t:0000. s:GRIB1/1. l:MSL. v:GRIB1/80/2/2.\n"

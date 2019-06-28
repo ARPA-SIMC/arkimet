@@ -39,7 +39,7 @@ public:
     /**
      * Validate this postprocessor against the given configuration
      */
-    void validate(const std::map<std::string, std::string>& cfg);
+    void validate(const core::cfg::Section& cfg);
 
     /// Fork the child process setting up the various pipes
     void start();

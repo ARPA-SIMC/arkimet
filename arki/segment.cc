@@ -5,7 +5,6 @@
 #include "segment/tar.h"
 #include "segment/zip.h"
 #include "segment/gz.h"
-#include "arki/configfile.h"
 #include "arki/exceptions.h"
 #include "arki/metadata/collection.h"
 #include "arki/metadata.h"

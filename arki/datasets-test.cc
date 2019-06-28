@@ -1,7 +1,7 @@
 #include "config.h"
+#include "core/cfg.h"
 #include "tests/tests.h"
 #include "datasets.h"
-#include "configfile.h"
 
 namespace {
 using namespace std;
@@ -42,7 +42,7 @@ void Tests::register_tests() {
 
 add_method("instantiate", [] {
     // In-memory dataset configuration
-    ConfigFile config(sample_config, "(memory)");
+    auto config = core::cfg::Sections::parse(sample_config, "(memory)");
 
     Datasets datasets(config);
     WriterPool pool(datasets);

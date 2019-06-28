@@ -10,7 +10,6 @@
 #include <map>
 
 namespace arki {
-class ConfigFile;
 class Metadata;
 class Validator;
 
@@ -31,7 +30,7 @@ protected:
     virtual void raw_dispatch_dataset(const std::string& name, dataset::WriterBatch& batch, bool drop_cached_data_on_commit) = 0;
 
 public:
-    Dispatcher(const ConfigFile& cfg);
+    Dispatcher(const core::cfg::Sections& cfg);
     virtual ~Dispatcher();
 
     /**
@@ -90,8 +89,8 @@ protected:
     void raw_dispatch_dataset(const std::string& name, dataset::WriterBatch& batch, bool drop_cached_data_on_commit) override;
 
 public:
-	RealDispatcher(const ConfigFile& cfg);
-	~RealDispatcher();
+    RealDispatcher(const core::cfg::Sections& cfg);
+    ~RealDispatcher();
 
 	/**
 	 * Flush all dataset data do disk
@@ -110,13 +109,13 @@ public:
 class TestDispatcher : public Dispatcher
 {
 protected:
-    const ConfigFile& cfg;
+    const core::cfg::Sections& cfg;
     std::ostream& out;
 
     void raw_dispatch_dataset(const std::string& name, dataset::WriterBatch& batch, bool drop_cached_data_on_commit) override;
 
 public:
-    TestDispatcher(const ConfigFile& cfg, std::ostream& out);
+    TestDispatcher(const core::cfg::Sections& cfg, std::ostream& out);
     ~TestDispatcher();
 
     void dispatch(dataset::WriterBatch& batch, bool drop_cached_data_on_commit) override;

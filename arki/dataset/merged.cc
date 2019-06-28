@@ -1,6 +1,5 @@
 #include "arki/dataset/merged.h"
 #include "arki/exceptions.h"
-#include "arki/configfile.h"
 #include "arki/metadata.h"
 #include "arki/matcher.h"
 #include "arki/summary.h"
@@ -172,7 +171,7 @@ void Merged::add_dataset(std::shared_ptr<Reader> ds)
     datasets.emplace_back(ds);
 }
 
-void Merged::add_dataset(const ConfigFile& cfg)
+void Merged::add_dataset(const core::cfg::Section& cfg)
 {
     add_dataset(move(dataset::Reader::create(cfg)));
 }

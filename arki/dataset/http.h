@@ -9,7 +9,6 @@
 #include <sstream>
 
 namespace arki {
-class ConfigFile;
 class Metadata;
 class Matcher;
 
@@ -125,9 +124,9 @@ struct Config : public dataset::Config
     std::string baseurl;
     std::string qmacro;
 
-    Config(const ConfigFile& cfg);
+    Config(const core::cfg::Section& cfg);
 
-    static std::shared_ptr<const Config> create(const ConfigFile& cfg);
+    static std::shared_ptr<const Config> create(const core::cfg::Section& cfg);
 
     std::unique_ptr<dataset::Reader> create_reader() const override;
 };
@@ -161,7 +160,8 @@ public:
     void query_summary(const Matcher& matcher, Summary& summary) override;
     void query_bytes(const dataset::ByteQuery& q, core::NamedFileDescriptor& out) override;
 
-    static void read_config(const std::string& path, ConfigFile& cfg);
+    static core::cfg::Sections read_server_config(const std::string& path);
+    static core::cfg::Section read_dataset_config(const std::string& path);
 
     /**
      * Expand the given matcher expression using the aliases on this server
@@ -171,7 +171,7 @@ public:
     /**
      * Read the alias database from the given remote dataset
      */
-    static void getAliasDatabase(const std::string& server, ConfigFile& cfg);
+    static core::cfg::Sections getAliasDatabase(const std::string& server);
 
     /**
      * Introduce a syntax error in the next query sent to the server.
@@ -190,7 +190,7 @@ public:
      * @return the common server URL, or the empty string if some datasets
      * are local or from different servers
      */
-    static std::string allSameRemoteServer(const ConfigFile& cfg);
+    static std::string allSameRemoteServer(const core::cfg::Sections& cfg);
 };
 
 class HTTPInbound

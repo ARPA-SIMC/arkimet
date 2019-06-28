@@ -1,6 +1,7 @@
 #include "arki/runtime/config.h"
 #include "arki/runtime/io.h"
 #include "arki/core/file.h"
+#include "arki/core/cfg.h"
 #include "arki/libconfig.h"
 #include "arki/exceptions.h"
 #include "arki/utils.h"
@@ -177,20 +178,19 @@ std::vector<std::string> Config::Dirlist::list_files(const std::string& ext, boo
     return res;
 }
 
-void parseConfigFile(ConfigFile& cfg, const std::string& fileName)
+core::cfg::Sections parse_config_file(const std::string& file_name)
 {
-    if (fileName == "-")
+    if (file_name == "-")
     {
         // Parse the config file from stdin
         Stdin in;
-        cfg.parse(in);
-        return;
+        return core::cfg::Sections::parse(in);
     }
 
-	// Remove trailing slashes, if any
-	string fname = fileName;
-	while (!fname.empty() && fname[fname.size() - 1] == '/')
-		fname.resize(fname.size() - 1);
+    // Remove trailing slashes, if any
+    string fname = file_name;
+    while (!fname.empty() && fname[fname.size() - 1] == '/')
+        fname.resize(fname.size() - 1);
 
     // Check if it's a file or a directory
     std::unique_ptr<struct stat> st = sys::stat(fname);
@@ -198,24 +198,24 @@ void parseConfigFile(ConfigFile& cfg, const std::string& fileName)
         throw std::runtime_error("cannot read configuration from " + fname + ": it does not exist");
     if (S_ISDIR(st->st_mode))
     {
-		// If it's a directory, merge in its config file
-		string name = str::basename(fname);
-		string file = str::joinpath(fname, "config");
+        // If it's a directory, merge in its config file
+        string name = str::basename(fname);
+        string file = str::joinpath(fname, "config");
 
-        ConfigFile section;
+        // Parse the file
         runtime::InputFile in(file);
-        // Parse the config file into a new section
-        section.parse(in);
+        auto section = core::cfg::Section::parse(in);
         // Fill in missing bits
-        section.setValue("name", name);
-        section.setValue("path", sys::abspath(fname));
-        // Merge into cfg
-        cfg.mergeInto(name, section);
+        section.set("name", name);
+        section.set("path", sys::abspath(fname));
+
+        core::cfg::Sections sections;
+        sections.emplace(std::move(name), std::move(section));
+        return sections;
     } else {
         // If it's a file, then it's a merged config file
         runtime::InputFile in(fname);
-        // Parse the config file
-        cfg.parse(in);
+        return core::cfg::Sections::parse(in);
     }
 }
 
@@ -257,7 +257,7 @@ bool Restrict::is_allowed(const std::set<std::string>& names) const
     return false;
 }
 
-bool Restrict::is_allowed(const ConfigFile& cfg) const
+bool Restrict::is_allowed(const core::cfg::Section& cfg) const
 {
     if (wanted.empty()) return true;
     return is_allowed(parseRestrict(cfg.value("restrict")));
@@ -265,24 +265,20 @@ bool Restrict::is_allowed(const ConfigFile& cfg) const
 
 void readMatcherAliasDatabase(commandline::StringOption* file)
 {
-	ConfigFile cfg;
+    // The file named in the given StringOption (if any) is tried first.
+    if (file && file->isSet())
+    {
+        MatcherAliasDatabase::addGlobal(parse_config_file(file->stringValue()));
+        return;
+    }
 
-	// The file named in the given StringOption (if any) is tried first.
-	if (file && file->isSet())
-	{
-		parseConfigFile(cfg, file->stringValue());
-		MatcherAliasDatabase::addGlobal(cfg);
-		return;
-	}
-
-	// Otherwise the file given in the environment variable ARKI_ALIASES is tried.
-	char* fromEnv = getenv("ARKI_ALIASES");
-	if (fromEnv)
-	{
-		parseConfigFile(cfg, fromEnv);
-		MatcherAliasDatabase::addGlobal(cfg);
-		return;
-	}
+    // Otherwise the file given in the environment variable ARKI_ALIASES is tried.
+    char* fromEnv = getenv("ARKI_ALIASES");
+    if (fromEnv)
+    {
+        MatcherAliasDatabase::addGlobal(parse_config_file(fromEnv));
+        return;
+    }
 
 #ifdef CONF_DIR
     // Else, CONF_DIR is tried.
@@ -290,13 +286,12 @@ void readMatcherAliasDatabase(commandline::StringOption* file)
     unique_ptr<struct stat> st = sys::stat(name);
     if (st.get())
     {
-        parseConfigFile(cfg, name);
-        MatcherAliasDatabase::addGlobal(cfg);
+        MatcherAliasDatabase::addGlobal(parse_config_file(name));
         return;
     }
 #endif
 
-	// Else, nothing is loaded.
+    // Else, nothing is loaded.
 }
 
 static std::string rcDirName(const std::string& nameInConfdir, const std::string& nameInEnv, commandline::StringOption* dir)

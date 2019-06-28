@@ -6,7 +6,6 @@
 #include "arki/dataset/lock.h"
 #include "arki/types/source/blob.h"
 #include "arki/types/reftime.h"
-#include "arki/configfile.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
 #include "arki/scan.h"
@@ -367,7 +366,7 @@ void Writer::remove(Metadata& md)
     md.unset(TYPE_ASSIGNEDDATASET);
 }
 
-void Writer::test_acquire(const ConfigFile& cfg, WriterBatch& batch, std::ostream& out)
+void Writer::test_acquire(const core::cfg::Section& cfg, WriterBatch& batch, std::ostream& out)
 {
     ReplaceStrategy replace;
     string repl = cfg.value("replace");

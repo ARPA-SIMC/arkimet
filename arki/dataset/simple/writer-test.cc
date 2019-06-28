@@ -3,7 +3,6 @@
 #include "arki/dataset/simple/writer.h"
 #include "arki/dataset/simple/reader.h"
 #include "arki/types/source/blob.h"
-#include "arki/configfile.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
 #include "arki/matcher.h"
@@ -161,7 +160,7 @@ add_method("acquire", [](Fixture& f) {
 
 // Test appending to existing files
 add_method("append", [](Fixture& f) {
-    f.cfg.setValue("step", "yearly");
+    f.cfg.set("step", "yearly");
 
     metadata::TestCollection mdc("inbound/test-sorted.grib1");
 
@@ -200,12 +199,12 @@ add_method("testacquire", [](Fixture& f) {
     wassert(actual(batch[0]->result) == dataset::ACQ_OK);
     wassert(actual(batch[0]->dataset_name) == "testds");
 
-    f.cfg.setValue("archive age", "1");
+    f.cfg.set("archive age", "1");
     wassert(simple::Writer::test_acquire(f.cfg, batch, ss));
     wassert(actual(batch[0]->result) == dataset::ACQ_ERROR);
     wassert(actual(batch[0]->dataset_name) == "");
 
-    f.cfg.setValue("delete age", "1");
+    f.cfg.set("delete age", "1");
     wassert(simple::Writer::test_acquire(f.cfg, batch, ss));
     wassert(actual(batch[0]->result) == dataset::ACQ_OK);
     wassert(actual(batch[0]->dataset_name) == "testds");

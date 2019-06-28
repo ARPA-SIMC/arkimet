@@ -1,6 +1,5 @@
 #include "config.h"
 #include <arki/dataset/http.h>
-#include <arki/configfile.h>
 #include <arki/metadata.h>
 #include <arki/metadata/stream.h>
 #include <arki/matcher.h>
@@ -223,7 +222,7 @@ size_t Request::writefunc(void *ptr, size_t size, size_t nmemb, void *stream)
 
 
 
-Config::Config(const ConfigFile& cfg)
+Config::Config(const core::cfg::Section& cfg)
     : dataset::Config(cfg),
       baseurl(cfg.value("path")),
       qmacro(cfg.value("qmacro"))
@@ -235,7 +234,7 @@ std::unique_ptr<dataset::Reader> Config::create_reader() const
     return std::unique_ptr<dataset::Reader>(new Reader(dynamic_pointer_cast<const Config>(shared_from_this())));
 }
 
-std::shared_ptr<const Config> Config::create(const ConfigFile& cfg)
+std::shared_ptr<const Config> Config::create(const core::cfg::Section& cfg)
 {
     return std::shared_ptr<const Config>(new Config(cfg));
 }
@@ -386,7 +385,7 @@ void Reader::query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out)
     request.perform();
 }
 
-void Reader::read_config(const std::string& path, ConfigFile& cfg)
+core::cfg::Sections Reader::read_server_config(const std::string& path)
 {
     using namespace http;
 
@@ -397,7 +396,21 @@ void Reader::read_config(const std::string& path, ConfigFile& cfg)
     request.set_url(str::joinpath(path, "config"));
     request.perform();
 
-    cfg.parse(request.buf, request.url);
+    return core::cfg::Sections::parse(request.buf, request.url);
+}
+
+core::cfg::Section Reader::read_dataset_config(const std::string& path)
+{
+    using namespace http;
+
+    CurlEasy m_curl;
+    m_curl.reset();
+
+    BufState<std::string> request(m_curl);
+    request.set_url(str::joinpath(path, "config"));
+    request.perform();
+
+    return core::cfg::Section::parse(request.buf, request.url);
 }
 
 void Reader::produce_one_wrong_query()
@@ -421,7 +434,7 @@ std::string Reader::expandMatcher(const std::string& matcher, const std::string&
     return str::strip(request.buf);
 }
 
-void Reader::getAliasDatabase(const std::string& server, ConfigFile& cfg)
+core::cfg::Sections Reader::getAliasDatabase(const std::string& server)
 {
     using namespace http;
 
@@ -431,7 +444,7 @@ void Reader::getAliasDatabase(const std::string& server, ConfigFile& cfg)
     BufState<string> request(m_curl);
     request.set_url(str::joinpath(server, "aliases"));
     request.perform();
-    cfg.parse(request.buf, server);
+    return core::cfg::Sections::parse(request.buf, server);
 }
 
 static string geturlprefix(const std::string& s)
@@ -442,14 +455,14 @@ static string geturlprefix(const std::string& s)
     return s.substr(0, pos);
 }
 
-std::string Reader::allSameRemoteServer(const ConfigFile& cfg)
+std::string Reader::allSameRemoteServer(const core::cfg::Sections& cfg)
 {
     string base;
-    for (ConfigFile::const_section_iterator i = cfg.section_begin(); i != cfg.section_end(); ++i)
+    for (const auto& si: cfg)
     {
-        string type = str::lower(i->second->value("type"));
+        string type = str::lower(si.second.value("type"));
         if (type != "remote") return string();
-        string urlprefix = geturlprefix(i->second->value("path"));
+        string urlprefix = geturlprefix(si.second.value("path"));
         if (urlprefix.empty()) return string();
         if (base.empty())
             base = urlprefix;

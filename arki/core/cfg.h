@@ -47,6 +47,7 @@ public:
     using std::map<std::string, std::string>::cbegin;
     using std::map<std::string, std::string>::cend;
     using std::map<std::string, std::string>::erase;
+    using std::map<std::string, std::string>::operator=;
 
     /// Check if the configuration file contains the given key
     bool has(const std::string& key) const;
@@ -103,6 +104,7 @@ public:
     using std::map<std::string, Section>::cend;
     using std::map<std::string, Section>::erase;
     using std::map<std::string, Section>::emplace;
+    using std::map<std::string, Section>::operator=;
 
     /**
      * Retrieve a section from this config file.

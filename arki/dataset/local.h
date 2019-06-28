@@ -8,7 +8,6 @@
 #include <string>
 
 namespace arki {
-class ConfigFile;
 class Metadata;
 class Matcher;
 
@@ -36,7 +35,7 @@ public:
 
     const core::lock::Policy* lock_policy;
 
-    LocalConfig(const ConfigFile& cfg);
+    LocalConfig(const core::cfg::Section& cfg);
 
     /**
      * Check if the data to be acquired is older than acquire or delete age.
@@ -97,7 +96,7 @@ public:
     // Base implementations that queries the archives if they exist
     void query_summary(const Matcher& matcher, Summary& summary) override;
 
-    static void read_config(const std::string& path, ConfigFile& cfg);
+    static core::cfg::Section read_config(const std::string& path);
 };
 
 class LocalWriter : public Writer
@@ -111,7 +110,7 @@ public:
     /// Return the dataset path
     const std::string& path() const { return config().path; }
 
-    static void test_acquire(const ConfigFile& cfg, WriterBatch& batch, std::ostream& out);
+    static void test_acquire(const core::cfg::Section& cfg, WriterBatch& batch, std::ostream& out);
 };
 
 struct LocalChecker : public LocalBase<Checker, ArchivesChecker>

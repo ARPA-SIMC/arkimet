@@ -2,7 +2,6 @@
 #include "arki/exceptions.h"
 #include "arki/dataset/ondisk2/reader.h"
 #include "arki/dataset/ondisk2/writer.h"
-#include "arki/configfile.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
 #include "arki/types/source/blob.h"
@@ -179,8 +178,8 @@ add_method("acquire_replace", [](Fixture& f) {
 
     // Import again with replace=true, make sure they're all ok
     {
-        ConfigFile cfg(f.cfg);
-        cfg.setValue("replace", "true");
+        auto cfg(f.cfg);
+        cfg.set("replace", "true");
         auto config = dataset::ondisk2::Config::create(cfg);
         auto writer = config->create_writer();
         for (auto& md: mdc)
@@ -237,7 +236,7 @@ add_method("query_first_reftime_extreme", [](Fixture& f) {
 
 // Test acquiring data on a compressed file
 add_method("acquire_compressed", [](Fixture& f) {
-    f.cfg.setValue("step", "yearly");
+    f.cfg.set("step", "yearly");
 
     metadata::TestCollection mdc("inbound/test.grib1");
 

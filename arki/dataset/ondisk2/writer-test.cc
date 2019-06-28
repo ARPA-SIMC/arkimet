@@ -6,7 +6,6 @@
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
 #include "arki/types/source/blob.h"
-#include "arki/configfile.h"
 #include "arki/core/file.h"
 #include "arki/utils.h"
 #include "arki/core/file.h"
@@ -86,14 +85,14 @@ add_method("summary_invalidate", [](Fixture& f) {
 // imported with USN handling
 add_method("regression_0", [](Fixture& f) {
     skip_unless_bufr();
-    ConfigFile cfg;
-    cfg.setValue("path", "gts_temp");
-    cfg.setValue("name", "gts_temp");
-    cfg.setValue("type", "ondisk2");
-    cfg.setValue("step", "daily");
-    cfg.setValue("unique", "origin, reftime, proddef");
-    cfg.setValue("filter", "product:BUFR:t=temp");
-    cfg.setValue("replace", "USN");
+    core::cfg::Section cfg;
+    cfg.set("path", "gts_temp");
+    cfg.set("name", "gts_temp");
+    cfg.set("type", "ondisk2");
+    cfg.set("step", "daily");
+    cfg.set("unique", "origin, reftime, proddef");
+    cfg.set("filter", "product:BUFR:t=temp");
+    cfg.set("replace", "USN");
 
     auto config = dataset::Config::create(cfg);
     auto writer = config->create_writer();
@@ -105,7 +104,7 @@ add_method("regression_0", [](Fixture& f) {
 // Test removal of VM2 data
 add_method("issue57", [](Fixture& f) {
     skip_unless_vm2();
-    f.cfg.setValue("unique", "reftime, area, product");
+    f.cfg.set("unique", "reftime, area, product");
 
     // Import the sample file
     sys::write_file("issue57.vm2", "201610050000,12626,139,70,,,000000000\n");
@@ -143,12 +142,12 @@ add_method("testacquire", [](Fixture& f) {
     wassert(actual(batch[0]->result) == dataset::ACQ_OK);
     wassert(actual(batch[0]->dataset_name) == "testds");
 
-    f.cfg.setValue("archive age", "1");
+    f.cfg.set("archive age", "1");
     wassert(ondisk2::Writer::test_acquire(f.cfg, batch, ss));
     wassert(actual(batch[0]->result) == dataset::ACQ_ERROR);
     wassert(actual(batch[0]->dataset_name) == "");
 
-    f.cfg.setValue("delete age", "1");
+    f.cfg.set("delete age", "1");
     wassert(ondisk2::Writer::test_acquire(f.cfg, batch, ss));
     wassert(actual(batch[0]->result) == dataset::ACQ_OK);
     wassert(actual(batch[0]->dataset_name) == "testds");

@@ -1,7 +1,6 @@
 #include <arki/types/tests.h>
 #include <arki/dataset.h>
 #include <arki/dataset/http.h>
-#include <arki/configfile.h>
 #include <arki/metadata.h>
 #include <arki/metadata/data.h>
 #include <arki/metadata/collection.h>

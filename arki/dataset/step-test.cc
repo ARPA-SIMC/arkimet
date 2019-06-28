@@ -1,7 +1,6 @@
 #include "arki/tests/tests.h"
 #include "arki/dataset/step.h"
 #include "arki/types/reftime.h"
-#include "arki/configfile.h"
 #include "arki/metadata.h"
 #include "arki/matcher.h"
 #include "arki/utils/sys.h"

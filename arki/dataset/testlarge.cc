@@ -13,12 +13,12 @@ namespace arki {
 namespace dataset {
 namespace testlarge {
 
-Config::Config(const ConfigFile& cfg)
+Config::Config(const core::cfg::Section& cfg)
     : dataset::Config(cfg)
 {
 }
 
-std::shared_ptr<const Config> Config::create(const ConfigFile& cfg)
+std::shared_ptr<const Config> Config::create(const core::cfg::Section& cfg)
 {
     return std::shared_ptr<const Config>(new Config(cfg));
 }

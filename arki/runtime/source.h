@@ -3,7 +3,7 @@
 
 #include <arki/dataset/fwd.h>
 #include <arki/scan/fwd.h>
-#include <arki/configfile.h>
+#include <arki/core/cfg.h>
 #include <string>
 #include <vector>
 
@@ -59,14 +59,14 @@ struct StdinSource : public Source
  */
 struct FileSource : public Source
 {
-    ConfigFile cfg;
+    core::cfg::Section cfg;
     std::shared_ptr<dataset::Reader> m_reader;
     std::string movework;
     std::string moveok;
     std::string moveko;
 
-    FileSource(QueryCommandLine& args, const ConfigFile& info);
-    FileSource(DispatchOptions& args, const ConfigFile& info);
+    FileSource(QueryCommandLine& args, const core::cfg::Section& info);
+    FileSource(DispatchOptions& args, const core::cfg::Section& info);
 
     std::string name() const override;
     dataset::Reader& reader() const override;
@@ -96,7 +96,7 @@ struct MergedSource : public Source
  */
 struct QmacroSource : public Source
 {
-    ConfigFile cfg;
+    core::cfg::Section cfg;
     std::shared_ptr<dataset::Reader> m_reader;
     std::string m_name;
 

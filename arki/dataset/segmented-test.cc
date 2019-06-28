@@ -67,8 +67,8 @@ add_method("gz", [](Fixture& f) {
     f.clean_and_import();
 
     // Test moving into archive data that have been compressed
-    f.cfg.setValue("archive age", days_since(2007, 9, 1));
-    f.cfg.setValue("gz group size", 0);
+    f.cfg.set("archive age", days_since(2007, 9, 1));
+    f.cfg.set("gz group size", 0);
     f.test_reread_config();
 
     // Compress segments
@@ -146,8 +146,8 @@ add_method("gzidx", [](Fixture& f) {
     wassert(f.import(mds));
 
     // Test moving into archive data that have been compressed
-    f.cfg.setValue("archive age", days_since(2007, 9, 1));
-    f.cfg.setValue("gz group size", 1);
+    f.cfg.set("archive age", days_since(2007, 9, 1));
+    f.cfg.set("gz group size", 1);
     f.test_reread_config();
 
     // Compress segments
@@ -216,7 +216,7 @@ add_method("tarred", [](Fixture& f) {
     f.clean_and_import();
 
     // Test moving into archive data that have been tarred
-    f.cfg.setValue("archive age", days_since(2007, 9, 1));
+    f.cfg.set("archive age", days_since(2007, 9, 1));
     f.test_reread_config();
 
     // tar segments
@@ -288,7 +288,7 @@ add_method("zipped", [](Fixture& f) {
     f.clean_and_import();
 
     // Test moving into archive data that have been tarred
-    f.cfg.setValue("archive age", days_since(2007, 9, 1));
+    f.cfg.set("archive age", days_since(2007, 9, 1));
     f.test_reread_config();
 
     // tar segments
@@ -356,7 +356,7 @@ add_method("query_archived", [](Fixture& f) {
     // Test querying with archived data
     using namespace arki::types;
     f.clean_and_import();
-    f.cfg.setValue("archive age", days_since(2007, 9, 1));
+    f.cfg.set("archive age", days_since(2007, 9, 1));
     f.test_reread_config();
     {
         auto writer(f.makeSegmentedChecker());
@@ -552,7 +552,7 @@ add_method("query_lots", [](Fixture& f) {
 // after the archive cutoff (regardless of the data currently in the
 // segment)
 add_method("archive_age", [](Fixture& f) {
-    f.cfg.setValue("step", "yearly");
+    f.cfg.set("step", "yearly");
     f.test_reread_config();
 
     // Import a file with a known reftime
@@ -563,7 +563,7 @@ add_method("archive_age", [](Fixture& f) {
 
     // TZ=UTC date --date="2008-01-01 00:00:00" +%s
     time_t start2008 = 1199145600;
-    f.cfg.setValue("archive age", "1");
+    f.cfg.set("archive age", "1");
     f.test_reread_config();
 
 
@@ -584,7 +584,7 @@ add_method("archive_age", [](Fixture& f) {
 // after the archive cutoff (regardless of the data currently in the
 // segment)
 add_method("delete_age", [](Fixture& f) {
-    f.cfg.setValue("step", "yearly");
+    f.cfg.set("step", "yearly");
     f.test_reread_config();
 
     // Import a file with a known reftime
@@ -595,7 +595,7 @@ add_method("delete_age", [](Fixture& f) {
 
     // TZ=UTC date --date="2008-01-01 00:00:00" +%s
     time_t start2008 = 1199145600;
-    f.cfg.setValue("delete age", "1");
+    f.cfg.set("delete age", "1");
     f.test_reread_config();
 
     {
@@ -623,7 +623,7 @@ add_method("unarchive_segment", [](Fixture& f) {
 
     // TZ=UTC date --date="2007-07-09 00:00:00" +%s
     time_t now = 1183939200;
-    f.cfg.setValue("archive age", "1");
+    f.cfg.set("archive age", "1");
 
     f.test_reread_config();
 
@@ -676,7 +676,7 @@ add_method("unarchive_segment_lastonly", [](Fixture& f) {
 
     // TZ=UTC date --date="2007-07-09 00:00:00" +%s
     time_t now = 1183939200;
-    f.cfg.setValue("archive age", "1");
+    f.cfg.set("archive age", "1");
 
     f.test_reread_config();
 

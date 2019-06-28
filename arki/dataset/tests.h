@@ -2,7 +2,7 @@
 #define ARKI_DATASET_TESTS_H
 
 #include <arki/metadata/tests.h>
-#include <arki/configfile.h>
+#include <arki/core/cfg.h>
 #include <arki/types/fwd.h>
 #include <arki/metadata.h>
 #include <arki/metadata/collection.h>
@@ -120,7 +120,7 @@ public:
      *
      * The 'name' value of the configuration will always be set to ds_name.
      */
-    ConfigFile cfg;
+    core::cfg::Section cfg;
     // Extra configuration for this instance of this fixture
     std::string cfg_instance;
     // Dataset name (always "testds")
@@ -159,7 +159,7 @@ public:
     dataset::SegmentManager& segments();
 
     // Return the file name of the index of the current dataset
-    std::string idxfname(const ConfigFile* wcfg = 0) const;
+    std::string idxfname(const core::cfg::Section* wcfg = 0) const;
 
     /**
      * Return the segment pathname in the current dataset where md is expected

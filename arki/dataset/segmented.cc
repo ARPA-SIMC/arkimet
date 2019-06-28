@@ -7,6 +7,7 @@
 #include "maintenance.h"
 #include "archive.h"
 #include "reporter.h"
+#include "arki/core/cfg.h"
 #include "arki/dataset/lock.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
@@ -15,7 +16,6 @@
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/files.h"
-#include "arki/configfile.h"
 #include <algorithm>
 #include <system_error>
 #include <sstream>
@@ -53,13 +53,13 @@ void SegmentState::check_age(const std::string& relpath, const Config& cfg, data
     }
 }
 
-Config::Config(const ConfigFile& cfg)
+Config::Config(const core::cfg::Section& cfg)
     : LocalConfig(cfg),
       step_name(str::lower(cfg.value("step"))),
       force_dir_segments(cfg.value("segments") == "dir"),
       mock_data(cfg.value("mockdata") == "true"),
       offline(cfg.value("offline") == "true"),
-      smallfiles(ConfigFile::boolValue(cfg.value("smallfiles")))
+      smallfiles(cfg.value_bool("smallfiles"))
 {
     if (step_name.empty())
         throw std::runtime_error("Dataset " + name + " misses step= configuration");
@@ -96,7 +96,7 @@ std::unique_ptr<SegmentManager> Config::create_segment_manager() const
     return SegmentManager::get(path, force_dir_segments, mock_data);
 }
 
-std::shared_ptr<const Config> Config::create(const ConfigFile& cfg)
+std::shared_ptr<const Config> Config::create(const core::cfg::Section& cfg)
 {
     return std::shared_ptr<const Config>(new Config(cfg));
 }
@@ -184,7 +184,7 @@ std::map<std::string, WriterBatch> Writer::batch_by_segment(WriterBatch& batch)
     return by_segment;
 }
 
-void Writer::test_acquire(const ConfigFile& cfg, WriterBatch& batch, std::ostream& out)
+void Writer::test_acquire(const core::cfg::Section& cfg, WriterBatch& batch, std::ostream& out)
 {
     string type = str::lower(cfg.value("type"));
     if (type.empty())

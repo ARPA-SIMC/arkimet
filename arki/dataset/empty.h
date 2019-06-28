@@ -7,7 +7,6 @@
 #include <string>
 
 namespace arki {
-class ConfigFile;
 class Metadata;
 class Matcher;
 
@@ -16,13 +15,13 @@ namespace empty {
 
 struct Config : public dataset::Config
 {
-    Config(const ConfigFile& cfg);
+    Config(const core::cfg::Section& cfg);
 
     std::unique_ptr<dataset::Reader> create_reader() const override;
     std::unique_ptr<dataset::Writer> create_writer() const override;
     std::unique_ptr<dataset::Checker> create_checker() const override;
 
-    static std::shared_ptr<const Config> create(const ConfigFile& cfg);
+    static std::shared_ptr<const Config> create(const core::cfg::Section& cfg);
 };
 
 
@@ -70,7 +69,7 @@ public:
         // in the dataset
     }
 
-    static void test_acquire(const ConfigFile& cfg, WriterBatch& batch, std::ostream& out);
+    static void test_acquire(const core::cfg::Section& cfg, WriterBatch& batch, std::ostream& out);
 };
 
 

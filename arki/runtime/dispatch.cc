@@ -113,6 +113,20 @@ bool DispatchOptions::dispatch_requested() const
     return dispatch->isSet() || testdispatch->isSet();
 }
 
+static void merge_config(core::cfg::Sections& dest_sections, const core::cfg::Sections& sections)
+{
+    for (const auto& src: sections)
+    {
+        const core::cfg::Section* old = dest_sections.section(src.first);
+        if (old)
+        {
+            nag::warning("ignoring dataset %s in %s, which has the same name as the dataset in %s",
+                    src.first.c_str(), src.second.value("path").c_str(), old->value("path").c_str());
+            continue;
+        }
+        dest_sections.emplace(src.first, src.second);
+    }
+}
 
 MetadataDispatch::MetadataDispatch(const DispatchOptions& args, DatasetProcessor& next)
     : next(next)
@@ -122,13 +136,13 @@ MetadataDispatch::MetadataDispatch(const DispatchOptions& args, DatasetProcessor
     if (args.testdispatch->isSet())
     {
         for (const auto& i: args.testdispatch->values())
-            parseConfigFile(cfg, i);
+            merge_config(cfg, parse_config_file(i));
         dispatcher = new TestDispatcher(cfg, cerr);
     }
     else if (args.dispatch->isSet())
     {
         for (const auto& i: args.dispatch->values())
-            parseConfigFile(cfg, i);
+            merge_config(cfg, parse_config_file(i));
         dispatcher = new RealDispatcher(cfg);
     }
     else

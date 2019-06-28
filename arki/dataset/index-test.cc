@@ -84,8 +84,7 @@ type = ondisk2
 name = test
 step = daily
 )";
-        ConfigFile configfile(config);
-        auto cfg = dataset::ondisk2::Config::create(configfile);
+        auto cfg = dataset::ondisk2::Config::create(core::cfg::Section::parse(config));
         {
             WIndex idx(cfg);
             idx.open();

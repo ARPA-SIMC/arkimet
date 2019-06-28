@@ -4,7 +4,6 @@
 #include "arki/segment.h"
 #include "arki/core/file.h"
 #include "arki/metadata/consumer.h"
-#include "arki/configfile.h"
 #include "arki/matcher.h"
 #include "arki/summary.h"
 #include "arki/postprocess.h"
@@ -25,14 +24,14 @@ using namespace arki::utils;
 namespace arki {
 namespace dataset {
 
-FileConfig::FileConfig(const ConfigFile& cfg)
+FileConfig::FileConfig(const core::cfg::Section& cfg)
     : dataset::Config(cfg),
       pathname(cfg.value("path")),
       format(cfg.value("format"))
 {
 }
 
-std::shared_ptr<const FileConfig> FileConfig::create(const ConfigFile& cfg)
+std::shared_ptr<const FileConfig> FileConfig::create(const core::cfg::Section& cfg)
 {
     return std::shared_ptr<const FileConfig>(new FileConfig(cfg));
 }
@@ -51,17 +50,17 @@ bool File::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
     return scan(q, dest);
 }
 
-void File::read_config(const std::string& fname, ConfigFile& cfg)
+core::cfg::Section File::read_config(const std::string& fname)
 {
-    ConfigFile section;
+    core::cfg::Section section;
 
-    section.setValue("type", "file");
+    section.set("type", "file");
     if (sys::exists(fname))
     {
-        section.setValue("path", sys::abspath(fname));
-        section.setValue("format", scan::Scanner::format_from_filename(fname, "arkimet"));
+        section.set("path", sys::abspath(fname));
+        section.set("format", scan::Scanner::format_from_filename(fname, "arkimet"));
         string name = str::basename(fname);
-        section.setValue("name", name);
+        section.set("name", name);
     } else {
         size_t fpos = fname.find(':');
         if (fpos == string::npos)
@@ -70,7 +69,7 @@ void File::read_config(const std::string& fname, ConfigFile& cfg)
             ss << "file " << fname << " does not exist";
             throw runtime_error(ss.str());
         }
-        section.setValue("format", scan::Scanner::normalise_format(fname.substr(0, fpos)));
+        section.set("format", scan::Scanner::normalise_format(fname.substr(0, fpos)));
 
         string fname1 = fname.substr(fpos+1);
         if (!sys::exists(fname1))
@@ -79,12 +78,11 @@ void File::read_config(const std::string& fname, ConfigFile& cfg)
             ss << "file " << fname1 << " does not exist";
             throw runtime_error(ss.str());
         }
-        section.setValue("path", sys::abspath(fname1));
-        section.setValue("name", str::basename(fname1));
+        section.set("path", sys::abspath(fname1));
+        section.set("name", str::basename(fname1));
     }
 
-    // Merge into cfg
-    cfg.mergeInto(section.value("name"), section);
+    return section;
 }
 
 

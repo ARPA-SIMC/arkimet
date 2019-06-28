@@ -6,7 +6,6 @@
 #include "arki/utils/string.h"
 #include "arki/metadata.h"
 #include "arki/types/reftime.h"
-#include "arki/configfile.h"
 
 using namespace std;
 using namespace arki::utils;
@@ -15,13 +14,13 @@ namespace arki {
 namespace dataset {
 namespace simple {
 
-Config::Config(const ConfigFile& cfg)
+Config::Config(const core::cfg::Section& cfg)
     : dataset::IndexedConfig(cfg),
       index_type(cfg.value("index_type"))
 {
 }
 
-std::shared_ptr<const Config> Config::create(const ConfigFile& cfg)
+std::shared_ptr<const Config> Config::create(const core::cfg::Section& cfg)
 {
     return std::shared_ptr<const Config>(new Config(cfg));
 }

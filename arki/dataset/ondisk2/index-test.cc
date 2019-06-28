@@ -7,7 +7,6 @@
 #include "arki/metadata/data.h"
 #include "arki/metadata/collection.h"
 #include "arki/types/source/blob.h"
-#include "arki/configfile.h"
 #include "arki/matcher.h"
 #include "arki/summary.h"
 #include "arki/iotrace.h"
@@ -31,8 +30,7 @@ using namespace arki::tests;
 template<typename INDEX>
 inline unique_ptr<WIndex> createIndex(std::shared_ptr<core::Lock> lock, const std::string& text_cfg)
 {
-    ConfigFile cfg;
-    cfg.parse(text_cfg);
+    auto cfg = core::cfg::Section::parse(text_cfg);
     auto config = dataset::ondisk2::Config::create(cfg);
     auto res = unique_ptr<INDEX>(new INDEX(config));
     res->lock = lock;
@@ -87,11 +85,11 @@ void query_index(WIndex& idx, const dataset::DataQuery& q, metadata::Collection&
 
 struct ReadHang : public subprocess::Child
 {
-    ConfigFile cfg;
+    core::cfg::Section cfg;
 
     ReadHang(const std::string& cfgstr)
+        : cfg(core::cfg::Section::parse(cfgstr))
     {
-        cfg.parse(cfgstr);
     }
 
     int main() noexcept override

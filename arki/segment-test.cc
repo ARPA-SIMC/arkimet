@@ -1,5 +1,4 @@
 #include "arki/core/tests.h"
-#include "arki/configfile.h"
 #include "arki/metadata.h"
 #include "arki/types/source/blob.h"
 #include "arki/utils/sys.h"

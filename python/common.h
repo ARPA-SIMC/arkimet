@@ -5,10 +5,9 @@
 #include <string>
 #include <vector>
 #include <arki/emitter.h>
+#include <arki/core/fwd.h>
 
 namespace arki {
-struct ConfigFile;
-
 namespace python {
 
 /// Given a generic exception, set the Python error indicator appropriately.
@@ -27,6 +26,13 @@ void set_std_exception(const std::exception& e);
         return -1; \
     } catch (std::exception& se) { \
         set_std_exception(se); return -1; \
+    }
+
+#define ARKI_CATCH_RETHROW_PYTHON \
+      catch (PythonException&) { \
+        throw; \
+    } catch (std::exception& se) { \
+        set_std_exception(se); throw PythonException(); \
     }
 
 struct PythonEmitter : public Emitter
@@ -86,22 +92,13 @@ int object_repr(PyObject* o, std::string& out);
 int file_get_fileno(PyObject* o);
 
 /**
- * Convert a python string, bytes or unicode to an utf8 string.
- *
- * Return 0 on success, -1 on failure
- */
-int string_from_python(PyObject* o, std::string& out);
-
-/**
  * Fill a ConfigFile with configuration info from python.
  *
  * Currently this only supports:
  *  - str or bytes, that will get parsed by ConfigFile.
  *  - dict, that will be set as key->val into out
- *
- * In the future it can support reading data from a ConfigFile object.
  */
-int configfile_from_python(PyObject* o, ConfigFile& out);
+core::cfg::Section configfile_from_python(PyObject* o);
 
 /**
  * Initialize the python bits to use used by the common functions.

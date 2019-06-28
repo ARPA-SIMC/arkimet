@@ -83,8 +83,8 @@ add_method("clean", [](Fixture& f) {
 add_method("clean_filtered", [](Fixture& f) {
     using runtime::tests::run_cmdline;
 
-    f.cfg.setValue("type", "iseg");
-    f.cfg.setValue("format", "grib");
+    f.cfg.set("type", "iseg");
+    f.cfg.set("format", "grib");
     f.clean_and_import("inbound/fixture.grib1");
 
     {
@@ -207,7 +207,7 @@ add_method("archive", [](Fixture& f) {
 
     f.clean_and_import("inbound/fixture.grib1");
 
-    f.cfg.setValue("archive age", "1");
+    f.cfg.set("archive age", "1");
     f.test_reread_config();
 
     {
@@ -300,8 +300,8 @@ add_method("issue57", [](Fixture& f) {
     skip_unless_vm2();
     f.skip_if_type_simple();
 
-    f.cfg.setValue("format", "vm2");
-    f.cfg.setValue("unique", "reftime, area, product");
+    f.cfg.set("format", "vm2");
+    f.cfg.set("unique", "reftime, area, product");
     f.test_reread_config();
 
     sys::mkdir_ifmissing("testds/2016");
@@ -349,14 +349,14 @@ add_method("issue57", [](Fixture& f) {
 add_method("tar", [](Fixture& f) {
     using runtime::tests::run_cmdline;
 
-    f.cfg.setValue("format", "odimh5");
+    f.cfg.set("format", "odimh5");
     f.test_reread_config();
     f.clean_and_import("inbound/fixture.odimh5/00.odimh5");
     f.import("inbound/fixture.odimh5/01.odimh5");
     f.import("inbound/fixture.odimh5/02.odimh5");
 
     auto o = dataset::SessionTime::local_override(1184018400); // date +%s --date="2007-07-10"
-    f.cfg.setValue("archive age", "1");
+    f.cfg.set("archive age", "1");
     f.test_reread_config();
     f.repack();
 
@@ -420,14 +420,14 @@ add_method("zip", [](Fixture& f) {
     skip_unless_libzip();
     skip_unless_libarchive();
 
-    f.cfg.setValue("format", "odimh5");
+    f.cfg.set("format", "odimh5");
     f.test_reread_config();
     f.clean_and_import("inbound/fixture.odimh5/00.odimh5");
     f.import("inbound/fixture.odimh5/01.odimh5");
     f.import("inbound/fixture.odimh5/02.odimh5");
 
     auto o = dataset::SessionTime::local_override(1184018400); // date +%s --date="2007-07-10"
-    f.cfg.setValue("archive age", "1");
+    f.cfg.set("archive age", "1");
     f.test_reread_config();
     f.repack();
 
@@ -490,8 +490,8 @@ add_method("compress", [](Fixture& f) {
 
     f.clean_and_import("inbound/fixture.grib1");
     auto o = dataset::SessionTime::local_override(1184018400); // date +%s --date="2007-07-10"
-    f.cfg.setValue("archive age", "1");
-    f.cfg.setValue("gz group size", "0");
+    f.cfg.set("archive age", "1");
+    f.cfg.set("gz group size", "0");
     f.test_reread_config();
     f.repack();
 
@@ -552,14 +552,14 @@ add_method("compress", [](Fixture& f) {
 add_method("scan", [](Fixture& f) {
     using runtime::tests::run_cmdline;
 
-    f.cfg.setValue("format", "odimh5");
+    f.cfg.set("format", "odimh5");
     f.test_reread_config();
     f.clean_and_import("inbound/fixture.odimh5/00.odimh5");
     f.import("inbound/fixture.odimh5/01.odimh5");
     f.import("inbound/fixture.odimh5/02.odimh5");
 
     auto o = dataset::SessionTime::local_override(1184018400); // date +%s --date="2007-07-10"
-    f.cfg.setValue("archive age", "1");
+    f.cfg.set("archive age", "1");
     f.test_reread_config();
     f.repack();
 
@@ -604,18 +604,18 @@ add_method("scan", [](Fixture& f) {
 add_method("remove_old", [](Fixture& f) {
     using runtime::tests::run_cmdline;
 
-    f.cfg.setValue("format", "odimh5");
+    f.cfg.set("format", "odimh5");
     f.test_reread_config();
     f.clean_and_import("inbound/fixture.odimh5/00.odimh5");
     f.import("inbound/fixture.odimh5/01.odimh5");
     f.import("inbound/fixture.odimh5/02.odimh5");
 
     auto o = dataset::SessionTime::local_override(1184104800); // date +%s --date="2007-07-11"
-    f.cfg.setValue("archive age", "2");
+    f.cfg.set("archive age", "2");
     f.test_reread_config();
     f.repack();
 
-    f.cfg.setValue("delete age", "1");
+    f.cfg.set("delete age", "1");
     f.test_reread_config();
 
     wassert(actual_file("testds/.archive/last/2007/07-07.odimh5").exists());
@@ -690,7 +690,7 @@ add_method("remove", [](Fixture& f) {
     using runtime::tests::run_cmdline;
     f.skip_if_type_simple();
 
-    f.cfg.setValue("format", "grib");
+    f.cfg.set("format", "grib");
     f.test_reread_config();
     f.clean_and_import("inbound/fixture.grib1");
 
@@ -735,14 +735,14 @@ add_method("remove", [](Fixture& f) {
 add_method("tar_archives", [](Fixture& f) {
     using runtime::tests::run_cmdline;
 
-    f.cfg.setValue("format", "odimh5");
+    f.cfg.set("format", "odimh5");
     f.test_reread_config();
     f.clean_and_import("inbound/fixture.odimh5/00.odimh5");
     f.import("inbound/fixture.odimh5/01.odimh5");
     f.import("inbound/fixture.odimh5/02.odimh5");
 
     auto o = dataset::SessionTime::local_override(1184018400); // date +%s --date="2007-07-10"
-    f.cfg.setValue("archive age", "1");
+    f.cfg.set("archive age", "1");
     f.test_reread_config();
     f.repack();
 
@@ -808,14 +808,14 @@ add_method("zip_archives", [](Fixture& f) {
     skip_unless_libzip();
     skip_unless_libarchive();
 
-    f.cfg.setValue("format", "odimh5");
+    f.cfg.set("format", "odimh5");
     f.test_reread_config();
     f.clean_and_import("inbound/fixture.odimh5/00.odimh5");
     f.import("inbound/fixture.odimh5/01.odimh5");
     f.import("inbound/fixture.odimh5/02.odimh5");
 
     auto o = dataset::SessionTime::local_override(1184018400); // date +%s --date="2007-07-10"
-    f.cfg.setValue("archive age", "1");
+    f.cfg.set("archive age", "1");
     f.test_reread_config();
     f.repack();
 

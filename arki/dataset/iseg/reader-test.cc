@@ -2,7 +2,6 @@
 #include <arki/dataset/tests.h>
 #include <arki/dataset/iseg/reader.h>
 #include <arki/dataset/iseg/writer.h>
-#include <arki/configfile.h>
 #include <arki/metadata.h>
 #include <arki/metadata/collection.h>
 #include <arki/summary.h>

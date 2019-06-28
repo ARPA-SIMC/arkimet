@@ -1,6 +1,5 @@
 #include "arki/../config.h"
 #include "arki/runtime/arki-mergeconf.h"
-#include <arki/configfile.h>
 #include <arki/dataset.h>
 #include <arki/summary.h>
 #include <arki/matcher.h>
@@ -75,13 +74,13 @@ int ArkiMergeconf::run(int argc, const char* argv[])
 
         // Validate the configuration
         bool hasErrors = false;
-        for (auto si = inputs.merged.section_begin(); si != inputs.merged.section_end(); ++si)
+        for (auto si: inputs.merged)
         {
             // Validate filters
             try {
-                Matcher::parse(si->second->value("filter"));
+                Matcher::parse(si.second.value("filter"));
             } catch (std::exception& e) {
-                cerr << si->first << ":"
+                cerr << si.first << ":"
                      << e.what()
                      << endl;
                 hasErrors = true;
@@ -111,10 +110,10 @@ int ArkiMergeconf::run(int argc, const char* argv[])
         if (opts.extra->boolValue())
         {
 #ifdef HAVE_GEOS
-            for (auto si = inputs.merged.section_begin(); si != inputs.merged.section_end(); ++si)
+            for (auto si: inputs.merged)
             {
                 // Instantiate the dataset
-                unique_ptr<dataset::Reader> d(dataset::Reader::create(*si->second));
+                unique_ptr<dataset::Reader> d(dataset::Reader::create(si.second));
                 // Get the summary
                 Summary sum;
                 d->query_summary(Matcher(), sum);
@@ -122,15 +121,16 @@ int ArkiMergeconf::run(int argc, const char* argv[])
                 // Compute bounding box, and store the WKT in bounding
                 auto bbox = sum.getConvexHull();
                 if (bbox.get())
-                    si->second->setValue("bounding", bbox->toString());
+                    si.second.set("bounding", bbox->toString());
             }
 #endif
         }
 
         // Output the merged configuration
-        string res = inputs.as_config().serialize();
+        std::stringstream ss;
+        inputs.merged.write(ss, "memory");
         unique_ptr<sys::NamedFileDescriptor> out(runtime::make_output(*opts.outfile));
-        out->write_all_or_throw(res);
+        out->write_all_or_throw(ss.str());
         out->close();
 
         return 0;

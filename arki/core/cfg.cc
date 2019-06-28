@@ -77,18 +77,14 @@ struct SectionParser : public ParserBase
      * Returns true if a new section follows, false if it stops at the end of
      * file.
      */
-    Section parse_section(bool multiple=false)
+    Section parse_section()
     {
         Section dest;
 
         while (readline())
         {
             if (patterns.sec_start.match(line))
-            {
-                if (!multiple)
-                    throw_parse_error("[section] line found in a config file that should not contain sections");
-                break;
-            }
+                throw_parse_error("[section] line found in a config file that should not contain sections");
 
             if (patterns.empty_line.match(line))
                 continue;
@@ -113,17 +109,34 @@ struct SectionParser : public ParserBase
     Sections parse_sections()
     {
         Sections dest;
+        Section* section = nullptr;
 
         while (readline())
         {
-            fprintf(stderr, "PARSE %s\n", line.c_str());
             if (patterns.empty_line.match(line))
                 continue;
 
-            if (!patterns.sec_start.match(line))
-                throw_parse_error("expected a [section] start");
-            else
-                dest.emplace(patterns.sec_start[1], parse_section(true));
+            if (section)
+            {
+                if (patterns.sec_start.match(line))
+                    section = &dest.obtain(patterns.sec_start[1]);
+                else if (patterns.assignment.match(line)) {
+                    std::string value = patterns.assignment[3];
+                    // Strip leading and trailing spaces on the value
+                    value = str::strip(value);
+                    // Strip double quotes, if they appear
+                    if (value[0] == '"' && value[value.size()-1] == '"')
+                        value = value.substr(1, value.size()-2);
+                    section->set(patterns.assignment[1], value);
+                }
+                else
+                    throw_parse_error("line is not a comment, nor a section start, nor empty, nor a key=value assignment");
+            } else {
+                if (patterns.sec_start.match(line))
+                    section = &dest.obtain(patterns.sec_start[1]);
+                else
+                    throw_parse_error("expected a [section] start");
+            }
         }
 
         return dest;

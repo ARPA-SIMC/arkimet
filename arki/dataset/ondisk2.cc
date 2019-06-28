@@ -3,7 +3,6 @@
 #include "ondisk2/writer.h"
 #include "ondisk2/checker.h"
 #include "arki/utils/string.h"
-#include "arki/configfile.h"
 #include "step.h"
 
 using namespace std;
@@ -13,7 +12,7 @@ namespace arki {
 namespace dataset {
 namespace ondisk2 {
 
-Config::Config(const ConfigFile& cfg)
+Config::Config(const core::cfg::Section& cfg)
     : dataset::IndexedConfig(cfg),
       summary_cache_pathname(str::joinpath(path, ".summaries")),
       indexfile(cfg.value("indexfile")),
@@ -32,7 +31,7 @@ Config::Config(const ConfigFile& cfg)
         index = "origin, product, level, timerange, area, proddef, run";
 }
 
-std::shared_ptr<const Config> Config::create(const ConfigFile& cfg)
+std::shared_ptr<const Config> Config::create(const core::cfg::Section& cfg)
 {
     return std::shared_ptr<const Config>(new Config(cfg));
 }

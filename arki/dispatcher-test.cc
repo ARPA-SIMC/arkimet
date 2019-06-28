@@ -1,7 +1,6 @@
 #include "arki/core/tests.h"
 #include "arki/dispatcher.h"
 #include "arki/dataset.h"
-#include "arki/configfile.h"
 #include "arki/metadata.h"
 #include "arki/metadata/data.h"
 #include "arki/metadata/collection.h"
@@ -49,14 +48,12 @@ name = error
 path = error
 )";
 
-static ConfigFile setup1()
+static core::cfg::Sections setup1()
 {
     sys::rmtree_ifexists("test200");
     sys::rmtree_ifexists("test80");
     sys::rmtree_ifexists("testerror");
-    ConfigFile cfg;
-    cfg.parse(config1);
-    return cfg;
+    return core::cfg::Sections::parse(config1);
 }
 
 class Tests : public TestCase
@@ -71,7 +68,7 @@ void Tests::register_tests() {
 add_method("simple", [] {
     using namespace arki::utils::acct;
 
-    ConfigFile config = setup1();
+    auto config = setup1();
 
     plain_data_read_count.reset();
     metadata::TrackedData tracked_data(metadata::DataManager::get());
@@ -96,7 +93,7 @@ add_method("simple", [] {
 add_method("drop_cached_data", [] {
     using namespace arki::utils::acct;
 
-    ConfigFile config = setup1();
+    auto config = setup1();
 
     plain_data_read_count.reset();
     metadata::TrackedData tracked_data(metadata::DataManager::get());
@@ -133,8 +130,7 @@ add_method("regression01", [] {
         "[error]\n"
         "type = discard\n"
         "name = error\n";
-    ConfigFile config;
-    config.parse(conf);
+    auto config = core::cfg::Sections::parse(conf);
 
     metadata::TestCollection source("inbound/tempforecast.bufr", true);
     ensure_equals(source.size(), 1u);
@@ -152,7 +148,7 @@ add_method("regression01", [] {
 
 // Test dispatch to error datasets after validation errors
 add_method("validation", [] {
-    ConfigFile config = setup1();
+    auto config = setup1();
     RealDispatcher dispatcher(config);
     validators::FailAlways fail_always;
     dispatcher.add_validator(fail_always);
@@ -170,7 +166,7 @@ add_method("validation", [] {
 
 // Test dispatching files with no reftime, they should end up in the error dataset
 add_method("missing_reftime", [] {
-    ConfigFile config = setup1();
+    auto config = setup1();
     metadata::TestCollection source("inbound/wrongdate.bufr", true);
     wassert(actual(source.size()) == 6u);
 
