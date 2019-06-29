@@ -38,7 +38,7 @@ void Tests::register_tests() {
 
 // Query the configuration
 add_method("config", [] {
-    auto config = dataset::http::Reader::read_server_config("http://localhost:7117");
+    auto config = dataset::http::Reader::load_cfg_sections("http://localhost:7117");
 
     wassert(actual(config.section("test200")).istrue());
     wassert(actual(config.section("test200")->value("server")) == "http://localhost:7117");
@@ -52,7 +52,7 @@ add_method("config", [] {
 
 // Test querying the datasets, metadata only
 add_method("metadata", [] {
-    auto config = dataset::http::Reader::read_server_config("http://localhost:7117");
+    auto config = dataset::http::Reader::load_cfg_sections("http://localhost:7117");
 
     unique_ptr<dataset::Reader> testds(dataset::Reader::create(*config.section("test200")));
     metadata::Collection mdc(*testds, Matcher::parse("origin:GRIB1,200"));
@@ -72,7 +72,7 @@ add_method("metadata", [] {
 
 // Test querying the datasets, with inline data
 add_method("inline", [] {
-    auto config = dataset::http::Reader::read_server_config("http://localhost:7117");
+    auto config = dataset::http::Reader::load_cfg_sections("http://localhost:7117");
 
     unique_ptr<dataset::Reader> testds(dataset::Reader::create(*config.section("test200")));
     metadata::Collection mdc(*testds, dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), true));
@@ -102,7 +102,7 @@ add_method("inline", [] {
 
 // Test querying the summary
 add_method("summary", [] {
-    auto config = dataset::http::Reader::read_server_config("http://localhost:7117");
+    auto config = dataset::http::Reader::load_cfg_sections("http://localhost:7117");
 
     unique_ptr<dataset::Reader> testds(dataset::Reader::create(*config.section("test200")));
 
@@ -113,7 +113,7 @@ add_method("summary", [] {
 
 // Test querying with postprocessing
 add_method("postprocess", [] {
-    auto config = dataset::http::Reader::read_server_config("http://localhost:7117");
+    auto config = dataset::http::Reader::load_cfg_sections("http://localhost:7117");
 
     unique_ptr<dataset::Reader> testds(dataset::Reader::create(*config.section("test200")));
 
@@ -130,7 +130,7 @@ add_method("postprocess", [] {
 
 // Test the server giving an error
 add_method("error", [] {
-    auto config = dataset::http::Reader::read_server_config("http://localhost:7117");
+    auto config = dataset::http::Reader::load_cfg_sections("http://localhost:7117");
     unique_ptr<dataset::Reader> testds(dataset::Reader::create(*config.section("test200")));
 
     dataset::http::Reader* htd = dynamic_cast<dataset::http::Reader*>(testds.get());
@@ -226,7 +226,7 @@ add_method("global_summary", [] {
 
 // Test a postprocessor that outputs data and then exits with error
 add_method("postproc_error", [] {
-    auto cfg = dataset::http::Reader::read_dataset_config("http://localhost:7117/dataset/test200");
+    auto cfg = dataset::http::Reader::load_cfg_section("http://localhost:7117/dataset/test200");
     unique_ptr<dataset::Reader> testds(dataset::Reader::create(cfg));
 
     // Querying it should get the partial output and no error
@@ -246,7 +246,7 @@ add_method("postproc_error", [] {
 
 // Test a postprocessor that outputs data and then exits with error
 add_method("postproc_outthenerr", [] {
-    auto cfg = dataset::http::Reader::read_dataset_config("http://localhost:7117/dataset/test200");
+    auto cfg = dataset::http::Reader::load_cfg_section("http://localhost:7117/dataset/test200");
     unique_ptr<dataset::Reader> testds(dataset::Reader::create(cfg));
 
     // Querying it should get the partial output and no error
@@ -295,7 +295,7 @@ add_method("postproc_error1", [] {
     // Capture the data after going through the postprocessor
     string postprocessed;
     {
-        auto config = dataset::http::Reader::read_server_config("http://localhost:7117");
+        auto config = dataset::http::Reader::load_cfg_sections("http://localhost:7117");
 
         sys::File out(sys::File::mkstemp("test"));
         unique_ptr<dataset::Reader> testds(dataset::Reader::create(*config.section("test80")));
@@ -370,7 +370,7 @@ add_method("aliases", [] {
 
 // Test uploading postprocessor data
 add_method("postproc_data", [] {
-    auto cfg = dataset::http::Reader::read_dataset_config("http://localhost:7117/dataset/test200");
+    auto cfg = dataset::http::Reader::load_cfg_section("http://localhost:7117/dataset/test200");
     unique_ptr<dataset::Reader> testds(dataset::Reader::create(cfg));
     setenv("ARKI_POSTPROC_FILES", "inbound/test.grib1:inbound/padded.grib1", 1);
 
@@ -386,7 +386,7 @@ add_method("postproc_data", [] {
 
 // Test access and error logs
 add_method("logs", [] {
-    auto cfg = dataset::http::Reader::read_dataset_config("http://localhost:7117/dataset/test200");
+    auto cfg = dataset::http::Reader::load_cfg_section("http://localhost:7117/dataset/test200");
     unique_ptr<dataset::Reader> testds(dataset::Reader::create(cfg));
 
     // Run a successful query
