@@ -98,7 +98,8 @@ DatasetTest::~DatasetTest()
 
 void DatasetTest::test_setup(const std::string& cfg_default)
 {
-    cfg = core::cfg::Section::parse(cfg_default + "\n" + cfg_instance + "\n");
+    std::string cfg_all = cfg_instance + "\n" + cfg_default + "\n";
+    cfg = core::cfg::Section::parse(cfg_all);
     cfg.set("path", ds_root);
     cfg.set("name", ds_name);
     if (sys::exists(ds_root))
