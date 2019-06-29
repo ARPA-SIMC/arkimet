@@ -4,7 +4,7 @@
 /// Common configuration-related code used in most arkimet executables
 
 #include <arki/utils/commandline/options.h>
-#include <arki/configfile.h>
+#include <arki/core/fwd.h>
 #include <string>
 #include <vector>
 
@@ -105,11 +105,11 @@ struct Config
 };
 
 /**
- * Parse the config file with the given name into the ConfigFile object 'cfg'.
+ * Parse the config file with the given name.
  *
  * Note: use Reader::read_config to read dataset configuration
  */
-void parseConfigFile(ConfigFile& cfg, const std::string& fileName);
+core::cfg::Sections parse_config_file(const std::string& file_name);
 
 /**
  * Parse a comma separated restrict list into a set of strings
@@ -124,7 +124,7 @@ struct Restrict
 
     bool is_allowed(const std::string& str) const;
     bool is_allowed(const std::set<std::string>& names) const;
-    bool is_allowed(const ConfigFile& cfg) const;
+    bool is_allowed(const core::cfg::Section& cfg) const;
 };
 
 /**

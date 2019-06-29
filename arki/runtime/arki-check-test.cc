@@ -45,7 +45,7 @@ add_method("clean", [](Fixture& f) {
 
     {
         runtime::tests::CatchOutput co;
-        int res = run_cmdline(runtime::arki_check, { "arki-check", "testds", });
+        int res = run_cmdline<runtime::ArkiCheck>({ "arki-check", "testds", });
         wassert(actual(res) == 0);
         wassert(actual_file(co.file_stderr.name()).empty());
         wassert(actual_file(co.file_stdout.name()).contents_equal({"testds: check 3 files ok"}));
@@ -53,7 +53,7 @@ add_method("clean", [](Fixture& f) {
 
     {
         runtime::tests::CatchOutput co;
-        int res = run_cmdline(runtime::arki_check, { "arki-check", "testds", "--fix" });
+        int res = run_cmdline<runtime::ArkiCheck>({ "arki-check", "testds", "--fix" });
         wassert(actual(res) == 0);
         wassert(actual_file(co.file_stderr.name()).empty());
         wassert(actual_file(co.file_stdout.name()).contents_equal({"testds: check 3 files ok"}));
@@ -61,7 +61,7 @@ add_method("clean", [](Fixture& f) {
 
     {
         runtime::tests::CatchOutput co;
-        int res = run_cmdline(runtime::arki_check, { "arki-check", "testds", "--repack" });
+        int res = run_cmdline<runtime::ArkiCheck>({ "arki-check", "testds", "--repack" });
         wassert(actual(res) == 0);
         wassert(actual_file(co.file_stderr.name()).empty());
         wassert(actual_file(co.file_stdout.name()).contents_equal({"testds: repack 3 files ok"}));
@@ -69,7 +69,7 @@ add_method("clean", [](Fixture& f) {
 
     {
         runtime::tests::CatchOutput co;
-        int res = run_cmdline(runtime::arki_check, { "arki-check", "testds", "--repack", "--fix" });
+        int res = run_cmdline<runtime::ArkiCheck>({ "arki-check", "testds", "--repack", "--fix" });
         wassert(actual(res) == 0);
         wassert(actual_file(co.file_stderr.name()).empty());
         wassert(actual_file(co.file_stdout.name()).contents_match({
@@ -83,13 +83,13 @@ add_method("clean", [](Fixture& f) {
 add_method("clean_filtered", [](Fixture& f) {
     using runtime::tests::run_cmdline;
 
-    f.cfg.setValue("type", "iseg");
-    f.cfg.setValue("format", "grib");
+    f.cfg.set("type", "iseg");
+    f.cfg.set("format", "grib");
     f.clean_and_import("inbound/fixture.grib1");
 
     {
         runtime::tests::CatchOutput co;
-        int res = run_cmdline(runtime::arki_check, { "arki-check", "testds", "--filter=reftime:>=2007-07-08" });
+        int res = run_cmdline<runtime::ArkiCheck>({ "arki-check", "testds", "--filter=reftime:>=2007-07-08" });
         wassert(actual(res) == 0);
         wassert(actual_file(co.file_stderr.name()).empty());
         wassert(actual_file(co.file_stdout.name()).contents_equal({"testds: check 2 files ok"}));
@@ -97,7 +97,7 @@ add_method("clean_filtered", [](Fixture& f) {
 
     {
         runtime::tests::CatchOutput co;
-        int res = run_cmdline(runtime::arki_check, { "arki-check", "testds", "--fix", "--filter=reftime:>=2007-07-08" });
+        int res = run_cmdline<runtime::ArkiCheck>({ "arki-check", "testds", "--fix", "--filter=reftime:>=2007-07-08" });
         wassert(actual_file(co.file_stderr.name()).empty());
         wassert(actual_file(co.file_stdout.name()).contents_equal({"testds: check 2 files ok"}));
         wassert(actual(res) == 0);
@@ -105,7 +105,7 @@ add_method("clean_filtered", [](Fixture& f) {
 
     {
         runtime::tests::CatchOutput co;
-        int res = run_cmdline(runtime::arki_check, { "arki-check", "testds", "--repack", "--filter=reftime:>=2007-07-08" });
+        int res = run_cmdline<runtime::ArkiCheck>({ "arki-check", "testds", "--repack", "--filter=reftime:>=2007-07-08" });
         wassert(actual_file(co.file_stderr.name()).empty());
         wassert(actual_file(co.file_stdout.name()).contents_equal({"testds: repack 2 files ok"}));
         wassert(actual(res) == 0);
@@ -113,7 +113,7 @@ add_method("clean_filtered", [](Fixture& f) {
 
     {
         runtime::tests::CatchOutput co;
-        int res = run_cmdline(runtime::arki_check, { "arki-check", "testds", "--repack", "--fix", "--filter=reftime:>=2007-07-08" });
+        int res = run_cmdline<runtime::ArkiCheck>({ "arki-check", "testds", "--repack", "--fix", "--filter=reftime:>=2007-07-08" });
         wassert(actual_file(co.file_stderr.name()).empty());
         wassert(actual_file(co.file_stdout.name()).contents_equal({"testds: repack 2 files ok"}));
         wassert(actual(res) == 0);
@@ -131,7 +131,7 @@ add_method("remove_all", [](Fixture& f) {
 
     {
         runtime::tests::CatchOutput co;
-        int res = run_cmdline(runtime::arki_check, { "arki-check", "testds", "--remove-all" });
+        int res = run_cmdline<runtime::ArkiCheck>({ "arki-check", "testds", "--remove-all" });
         wassert(actual(res) == 0);
         wassert(actual_file(co.file_stderr.name()).empty());
         wassert(actual_file(co.file_stdout.name()).contents_equal({
@@ -147,7 +147,7 @@ add_method("remove_all", [](Fixture& f) {
 
     {
         runtime::tests::CatchOutput co;
-        int res = run_cmdline(runtime::arki_check, { "arki-check", "testds", "--remove-all", "-f" });
+        int res = run_cmdline<runtime::ArkiCheck>({ "arki-check", "testds", "--remove-all", "-f" });
         wassert(actual(res) == 0);
         wassert(actual_file(co.file_stderr.name()).empty());
         wassert(actual_file(co.file_stdout.name()).contents_match({
@@ -176,7 +176,7 @@ add_method("remove_all_filtered", [](Fixture& f) {
 
     {
         runtime::tests::CatchOutput co;
-        int res = run_cmdline(runtime::arki_check, { "arki-check", "testds", "--remove-all", "--filter=reftime:=2007-07-08" });
+        int res = run_cmdline<runtime::ArkiCheck>({ "arki-check", "testds", "--remove-all", "--filter=reftime:=2007-07-08" });
         wassert(actual_file(co.file_stderr.name()).empty());
         wassert(actual_file(co.file_stdout.name()).contents_equal({"testds:2007/07-08.grib: should be deleted"}));
         wassert(actual(res) == 0);
@@ -188,7 +188,7 @@ add_method("remove_all_filtered", [](Fixture& f) {
 
     {
         runtime::tests::CatchOutput co;
-        int res = run_cmdline(runtime::arki_check, { "arki-check", "testds", "--remove-all", "--filter=reftime:=2007-07-08", "-f" });
+        int res = run_cmdline<runtime::ArkiCheck>({ "arki-check", "testds", "--remove-all", "--filter=reftime:=2007-07-08", "-f" });
         wassert(actual_file(co.file_stderr.name()).empty());
         wassert(actual_file(co.file_stdout.name()).contents_match({"testds:2007/07-08.grib: deleted \\([0-9]+ freed\\)"}));
         wassert(actual(res) == 0);
@@ -207,12 +207,12 @@ add_method("archive", [](Fixture& f) {
 
     f.clean_and_import("inbound/fixture.grib1");
 
-    f.cfg.setValue("archive age", "1");
+    f.cfg.set("archive age", "1");
     f.test_reread_config();
 
     {
         runtime::tests::CatchOutput co;
-        int res = run_cmdline(runtime::arki_check, { "arki-check", "testds", });
+        int res = run_cmdline<runtime::ArkiCheck>({ "arki-check", "testds", });
         wassert(actual(res) == 0);
         wassert(actual_file(co.file_stderr.name()).empty());
         wassert(actual_file(co.file_stdout.name()).contents_equal({
@@ -225,7 +225,7 @@ add_method("archive", [](Fixture& f) {
 
     {
         runtime::tests::CatchOutput co;
-        int res = run_cmdline(runtime::arki_check, { "arki-check", "testds", "--fix" });
+        int res = run_cmdline<runtime::ArkiCheck>({ "arki-check", "testds", "--fix" });
         wassert(actual(res) == 0);
         wassert(actual_file(co.file_stderr.name()).empty());
         wassert(actual_file(co.file_stdout.name()).contents_equal({
@@ -238,7 +238,7 @@ add_method("archive", [](Fixture& f) {
 
     {
         runtime::tests::CatchOutput co;
-        int res = run_cmdline(runtime::arki_check, { "arki-check", "testds", "--repack" });
+        int res = run_cmdline<runtime::ArkiCheck>({ "arki-check", "testds", "--repack" });
         wassert(actual(res) == 0);
         wassert(actual_file(co.file_stderr.name()).empty());
         wassert(actual_file(co.file_stdout.name()).contents_equal({
@@ -254,7 +254,7 @@ add_method("archive", [](Fixture& f) {
 
     {
         runtime::tests::CatchOutput co;
-        int res = run_cmdline(runtime::arki_check, { "arki-check", "testds", "--repack", "--fix", "--online", "--offline" });
+        int res = run_cmdline<runtime::ArkiCheck>({ "arki-check", "testds", "--repack", "--fix", "--online", "--offline" });
         wassert(actual(res) == 0);
         wassert(actual_file(co.file_stderr.name()).empty());
         wassert(actual_file(co.file_stdout.name()).contents_match({
@@ -281,7 +281,7 @@ add_method("archive", [](Fixture& f) {
 
     {
         runtime::tests::CatchOutput co;
-        int res = run_cmdline(runtime::arki_check, { "arki-check", "testds", "--unarchive=2007/07-08.grib" });
+        int res = run_cmdline<runtime::ArkiCheck>({ "arki-check", "testds", "--unarchive=2007/07-08.grib" });
         wassert(actual(res) == 0);
         wassert(actual_file(co.file_stderr.name()).empty());
         wassert(actual_file(co.file_stdout.name()).empty());
@@ -300,8 +300,8 @@ add_method("issue57", [](Fixture& f) {
     skip_unless_vm2();
     f.skip_if_type_simple();
 
-    f.cfg.setValue("format", "vm2");
-    f.cfg.setValue("unique", "reftime, area, product");
+    f.cfg.set("format", "vm2");
+    f.cfg.set("unique", "reftime, area, product");
     f.test_reread_config();
 
     sys::mkdir_ifmissing("testds/2016");
@@ -309,7 +309,7 @@ add_method("issue57", [](Fixture& f) {
 
     {
         runtime::tests::CatchOutput co;
-        int res = run_cmdline(runtime::arki_check, { "arki-check", "-f", "testds" });
+        int res = run_cmdline<runtime::ArkiCheck>({ "arki-check", "-f", "testds" });
         wassert(actual_file(co.file_stderr.name()).empty());
         wassert(actual_file(co.file_stdout.name()).contents_equal({
             "testds:2016/10-05.vm2: segment found on disk with no associated index data",
@@ -328,7 +328,7 @@ add_method("issue57", [](Fixture& f) {
     //runtest "arki-check --remove=issue57/todelete.md issue57"
     {
         runtime::tests::CatchOutput co;
-        int res = run_cmdline(runtime::arki_check, { "arki-check", "testds", "--remove=testds/todelete.md" });
+        int res = run_cmdline<runtime::ArkiCheck>({ "arki-check", "testds", "--remove=testds/todelete.md" });
         wassert(actual_file(co.file_stderr.name()).contents_equal({}));
         wassert(actual_file(co.file_stdout.name()).contents_equal({"testds: 1 data would be deleted"}));
         wassert(actual(res) == 0);
@@ -336,7 +336,7 @@ add_method("issue57", [](Fixture& f) {
 
     {
         runtime::tests::CatchOutput co;
-        int res = run_cmdline(runtime::arki_check, { "arki-check", "testds", "--fix", "--remove=testds/todelete.md" });
+        int res = run_cmdline<runtime::ArkiCheck>({ "arki-check", "testds", "--fix", "--remove=testds/todelete.md" });
         wassert(actual_file(co.file_stderr.name()).contents_equal({}));
         wassert(actual_file(co.file_stdout.name()).contents_equal({}));
         wassert(actual(res) == 0);
@@ -349,14 +349,14 @@ add_method("issue57", [](Fixture& f) {
 add_method("tar", [](Fixture& f) {
     using runtime::tests::run_cmdline;
 
-    f.cfg.setValue("format", "odimh5");
+    f.cfg.set("format", "odimh5");
     f.test_reread_config();
     f.clean_and_import("inbound/fixture.odimh5/00.odimh5");
     f.import("inbound/fixture.odimh5/01.odimh5");
     f.import("inbound/fixture.odimh5/02.odimh5");
 
     auto o = dataset::SessionTime::local_override(1184018400); // date +%s --date="2007-07-10"
-    f.cfg.setValue("archive age", "1");
+    f.cfg.set("archive age", "1");
     f.test_reread_config();
     f.repack();
 
@@ -366,7 +366,7 @@ add_method("tar", [](Fixture& f) {
 
     {
         runtime::tests::CatchOutput co;
-        int res = run_cmdline(runtime::arki_check, { "arki-check", "--tar", "testds", });
+        int res = run_cmdline<runtime::ArkiCheck>({ "arki-check", "--tar", "testds", });
         wassert(actual_file(co.file_stderr.name()).empty());
         wassert(actual_file(co.file_stdout.name()).contents_equal({
             "testds.archives.last:2007/07-07.odimh5: should be tarred",
@@ -376,7 +376,7 @@ add_method("tar", [](Fixture& f) {
 
     {
         runtime::tests::CatchOutput co;
-        int res = run_cmdline(runtime::arki_check, { "arki-check", "--tar", "--offline", "testds", });
+        int res = run_cmdline<runtime::ArkiCheck>({ "arki-check", "--tar", "--offline", "testds", });
         wassert(actual_file(co.file_stderr.name()).empty());
         wassert(actual_file(co.file_stdout.name()).contents_equal({
             "testds.archives.last:2007/07-07.odimh5: should be tarred",
@@ -386,7 +386,7 @@ add_method("tar", [](Fixture& f) {
 
     {
         runtime::tests::CatchOutput co;
-        int res = run_cmdline(runtime::arki_check, { "arki-check", "--tar", "--online", "testds", });
+        int res = run_cmdline<runtime::ArkiCheck>({ "arki-check", "--tar", "--online", "testds", });
         wassert(actual_file(co.file_stderr.name()).empty());
         wassert(actual_file(co.file_stdout.name()).contents_equal({
             "testds:2007/07-08.odimh5: should be tarred",
@@ -397,7 +397,7 @@ add_method("tar", [](Fixture& f) {
 
     {
         runtime::tests::CatchOutput co;
-        int res = run_cmdline(runtime::arki_check, { "arki-check", "--tar", "testds", "-f" });
+        int res = run_cmdline<runtime::ArkiCheck>({ "arki-check", "--tar", "testds", "-f" });
         wassert(actual_file(co.file_stderr.name()).empty());
         wassert(actual_file(co.file_stdout.name()).contents_equal({
             "testds.archives.last:2007/07-07.odimh5: tarred",
@@ -420,14 +420,14 @@ add_method("zip", [](Fixture& f) {
     skip_unless_libzip();
     skip_unless_libarchive();
 
-    f.cfg.setValue("format", "odimh5");
+    f.cfg.set("format", "odimh5");
     f.test_reread_config();
     f.clean_and_import("inbound/fixture.odimh5/00.odimh5");
     f.import("inbound/fixture.odimh5/01.odimh5");
     f.import("inbound/fixture.odimh5/02.odimh5");
 
     auto o = dataset::SessionTime::local_override(1184018400); // date +%s --date="2007-07-10"
-    f.cfg.setValue("archive age", "1");
+    f.cfg.set("archive age", "1");
     f.test_reread_config();
     f.repack();
 
@@ -437,7 +437,7 @@ add_method("zip", [](Fixture& f) {
 
     {
         runtime::tests::CatchOutput co;
-        int res = run_cmdline(runtime::arki_check, { "arki-check", "--zip", "testds", });
+        int res = run_cmdline<runtime::ArkiCheck>({ "arki-check", "--zip", "testds", });
         wassert(actual_file(co.file_stderr.name()).empty());
         wassert(actual_file(co.file_stdout.name()).contents_equal({
             "testds.archives.last:2007/07-07.odimh5: should be zipped",
@@ -447,7 +447,7 @@ add_method("zip", [](Fixture& f) {
 
     {
         runtime::tests::CatchOutput co;
-        int res = run_cmdline(runtime::arki_check, { "arki-check", "--zip", "--offline", "testds", });
+        int res = run_cmdline<runtime::ArkiCheck>({ "arki-check", "--zip", "--offline", "testds", });
         wassert(actual_file(co.file_stderr.name()).empty());
         wassert(actual_file(co.file_stdout.name()).contents_equal({
             "testds.archives.last:2007/07-07.odimh5: should be zipped",
@@ -457,7 +457,7 @@ add_method("zip", [](Fixture& f) {
 
     {
         runtime::tests::CatchOutput co;
-        int res = run_cmdline(runtime::arki_check, { "arki-check", "--zip", "--online", "testds", });
+        int res = run_cmdline<runtime::ArkiCheck>({ "arki-check", "--zip", "--online", "testds", });
         wassert(actual_file(co.file_stderr.name()).empty());
         wassert(actual_file(co.file_stdout.name()).contents_equal({
             "testds:2007/07-08.odimh5: should be zipped",
@@ -468,7 +468,7 @@ add_method("zip", [](Fixture& f) {
 
     {
         runtime::tests::CatchOutput co;
-        int res = run_cmdline(runtime::arki_check, { "arki-check", "--zip", "testds", "-f" });
+        int res = run_cmdline<runtime::ArkiCheck>({ "arki-check", "--zip", "testds", "-f" });
         wassert(actual_file(co.file_stderr.name()).empty());
         wassert(actual_file(co.file_stdout.name()).contents_equal({
             "testds.archives.last:2007/07-07.odimh5: zipped",
@@ -490,8 +490,8 @@ add_method("compress", [](Fixture& f) {
 
     f.clean_and_import("inbound/fixture.grib1");
     auto o = dataset::SessionTime::local_override(1184018400); // date +%s --date="2007-07-10"
-    f.cfg.setValue("archive age", "1");
-    f.cfg.setValue("gz group size", "0");
+    f.cfg.set("archive age", "1");
+    f.cfg.set("gz group size", "0");
     f.test_reread_config();
     f.repack();
 
@@ -501,7 +501,7 @@ add_method("compress", [](Fixture& f) {
 
     {
         runtime::tests::CatchOutput co;
-        int res = run_cmdline(runtime::arki_check, { "arki-check", "--compress", "testds", });
+        int res = run_cmdline<runtime::ArkiCheck>({ "arki-check", "--compress", "testds", });
         wassert(actual_file(co.file_stderr.name()).empty());
         wassert(actual_file(co.file_stdout.name()).contents_equal({
             "testds.archives.last:2007/07-07.grib: should be compressed",
@@ -511,7 +511,7 @@ add_method("compress", [](Fixture& f) {
 
     {
         runtime::tests::CatchOutput co;
-        int res = run_cmdline(runtime::arki_check, { "arki-check", "--compress", "--offline", "testds", });
+        int res = run_cmdline<runtime::ArkiCheck>({ "arki-check", "--compress", "--offline", "testds", });
         wassert(actual_file(co.file_stderr.name()).empty());
         wassert(actual_file(co.file_stdout.name()).contents_equal({
             "testds.archives.last:2007/07-07.grib: should be compressed",
@@ -521,7 +521,7 @@ add_method("compress", [](Fixture& f) {
 
     {
         runtime::tests::CatchOutput co;
-        int res = run_cmdline(runtime::arki_check, { "arki-check", "--compress", "--online", "testds", });
+        int res = run_cmdline<runtime::ArkiCheck>({ "arki-check", "--compress", "--online", "testds", });
         wassert(actual_file(co.file_stderr.name()).empty());
         wassert(actual_file(co.file_stdout.name()).contents_equal({
             "testds:2007/07-08.grib: should be compressed",
@@ -532,7 +532,7 @@ add_method("compress", [](Fixture& f) {
 
     {
         runtime::tests::CatchOutput co;
-        int res = run_cmdline(runtime::arki_check, { "arki-check", "--compress", "testds", "-f" });
+        int res = run_cmdline<runtime::ArkiCheck>({ "arki-check", "--compress", "testds", "-f" });
         wassert(actual_file(co.file_stderr.name()).empty());
         wassert(actual_file(co.file_stdout.name()).contents_match({
             "testds.archives.last:2007/07-07.grib: compressed \\([0-9]+ freed\\)",
@@ -552,14 +552,14 @@ add_method("compress", [](Fixture& f) {
 add_method("scan", [](Fixture& f) {
     using runtime::tests::run_cmdline;
 
-    f.cfg.setValue("format", "odimh5");
+    f.cfg.set("format", "odimh5");
     f.test_reread_config();
     f.clean_and_import("inbound/fixture.odimh5/00.odimh5");
     f.import("inbound/fixture.odimh5/01.odimh5");
     f.import("inbound/fixture.odimh5/02.odimh5");
 
     auto o = dataset::SessionTime::local_override(1184018400); // date +%s --date="2007-07-10"
-    f.cfg.setValue("archive age", "1");
+    f.cfg.set("archive age", "1");
     f.test_reread_config();
     f.repack();
 
@@ -569,7 +569,7 @@ add_method("scan", [](Fixture& f) {
 
     {
         runtime::tests::CatchOutput co;
-        int res = run_cmdline(runtime::arki_check, { "arki-check", "--state", "testds", });
+        int res = run_cmdline<runtime::ArkiCheck>({ "arki-check", "--state", "testds", });
         wassert(actual_file(co.file_stderr.name()).empty());
         wassert(actual_file(co.file_stdout.name()).contents_equal({
             "testds:2007/07-08.odimh5: OK 2007-07-08 00:00:00Z to 2007-07-08 23:59:59Z",
@@ -581,7 +581,7 @@ add_method("scan", [](Fixture& f) {
 
     {
         runtime::tests::CatchOutput co;
-        int res = run_cmdline(runtime::arki_check, { "arki-check", "--state", "--offline", "testds", });
+        int res = run_cmdline<runtime::ArkiCheck>({ "arki-check", "--state", "--offline", "testds", });
         wassert(actual_file(co.file_stderr.name()).empty());
         wassert(actual_file(co.file_stdout.name()).contents_equal({
             "testds.archives.last:2007/07-07.odimh5: OK 2007-07-01 00:00:00Z to 2007-07-31 23:59:59Z",
@@ -591,7 +591,7 @@ add_method("scan", [](Fixture& f) {
 
     {
         runtime::tests::CatchOutput co;
-        int res = run_cmdline(runtime::arki_check, { "arki-check", "--state", "--online", "testds", });
+        int res = run_cmdline<runtime::ArkiCheck>({ "arki-check", "--state", "--online", "testds", });
         wassert(actual_file(co.file_stderr.name()).empty());
         wassert(actual_file(co.file_stdout.name()).contents_equal({
             "testds:2007/07-08.odimh5: OK 2007-07-08 00:00:00Z to 2007-07-08 23:59:59Z",
@@ -604,18 +604,18 @@ add_method("scan", [](Fixture& f) {
 add_method("remove_old", [](Fixture& f) {
     using runtime::tests::run_cmdline;
 
-    f.cfg.setValue("format", "odimh5");
+    f.cfg.set("format", "odimh5");
     f.test_reread_config();
     f.clean_and_import("inbound/fixture.odimh5/00.odimh5");
     f.import("inbound/fixture.odimh5/01.odimh5");
     f.import("inbound/fixture.odimh5/02.odimh5");
 
     auto o = dataset::SessionTime::local_override(1184104800); // date +%s --date="2007-07-11"
-    f.cfg.setValue("archive age", "2");
+    f.cfg.set("archive age", "2");
     f.test_reread_config();
     f.repack();
 
-    f.cfg.setValue("delete age", "1");
+    f.cfg.set("delete age", "1");
     f.test_reread_config();
 
     wassert(actual_file("testds/.archive/last/2007/07-07.odimh5").exists());
@@ -624,7 +624,7 @@ add_method("remove_old", [](Fixture& f) {
 
     {
         runtime::tests::CatchOutput co;
-        int res = run_cmdline(runtime::arki_check, { "arki-check", "--remove-old", "testds", });
+        int res = run_cmdline<runtime::ArkiCheck>({ "arki-check", "--remove-old", "testds", });
         wassert(actual_file(co.file_stderr.name()).empty());
         wassert(actual_file(co.file_stdout.name()).contents_equal({
             "testds:2007/07-08.odimh5: segment old enough to be deleted",
@@ -635,7 +635,7 @@ add_method("remove_old", [](Fixture& f) {
 
     {
         runtime::tests::CatchOutput co;
-        int res = run_cmdline(runtime::arki_check, { "arki-check", "--remove-old", "--offline", "testds", });
+        int res = run_cmdline<runtime::ArkiCheck>({ "arki-check", "--remove-old", "--offline", "testds", });
         wassert(actual_file(co.file_stderr.name()).empty());
         wassert(actual_file(co.file_stdout.name()).contents_equal({
             // "testds.archives.last:2007/07-07.odimh5: segment old enough to be deleted\n"
@@ -646,7 +646,7 @@ add_method("remove_old", [](Fixture& f) {
 
     {
         runtime::tests::CatchOutput co;
-        int res = run_cmdline(runtime::arki_check, { "arki-check", "--remove-old", "--online", "testds", });
+        int res = run_cmdline<runtime::ArkiCheck>({ "arki-check", "--remove-old", "--online", "testds", });
         wassert(actual_file(co.file_stderr.name()).empty());
         wassert(actual_file(co.file_stdout.name()).contents_equal({
             "testds:2007/07-08.odimh5: segment old enough to be deleted",
@@ -657,7 +657,7 @@ add_method("remove_old", [](Fixture& f) {
 
     {
         runtime::tests::CatchOutput co;
-        int res = run_cmdline(runtime::arki_check, { "arki-check", "--remove-old", "--offline", "--online", "testds" });
+        int res = run_cmdline<runtime::ArkiCheck>({ "arki-check", "--remove-old", "--offline", "--online", "testds" });
         wassert(actual_file(co.file_stderr.name()).empty());
         wassert(actual_file(co.file_stdout.name()).contents_equal({
             "testds:2007/07-08.odimh5: segment old enough to be deleted",
@@ -669,7 +669,7 @@ add_method("remove_old", [](Fixture& f) {
 
     {
         runtime::tests::CatchOutput co;
-        int res = run_cmdline(runtime::arki_check, { "arki-check", "--remove-old", "testds", "-f" });
+        int res = run_cmdline<runtime::ArkiCheck>({ "arki-check", "--remove-old", "testds", "-f" });
         wassert(actual_file(co.file_stderr.name()).empty());
         wassert(actual_file(co.file_stdout.name()).contents_match({
             "testds:2007/07-08.odimh5: segment old enough to be deleted",
@@ -690,7 +690,7 @@ add_method("remove", [](Fixture& f) {
     using runtime::tests::run_cmdline;
     f.skip_if_type_simple();
 
-    f.cfg.setValue("format", "grib");
+    f.cfg.set("format", "grib");
     f.test_reread_config();
     f.clean_and_import("inbound/fixture.grib1");
 
@@ -701,7 +701,7 @@ add_method("remove", [](Fixture& f) {
 
     {
         runtime::tests::CatchOutput co;
-        int res = wcallchecked(run_cmdline(runtime::arki_check, { "arki-check", "--remove=arki-check-remove-test.md", "testds" }));
+        int res = wcallchecked(run_cmdline<runtime::ArkiCheck>({ "arki-check", "--remove=arki-check-remove-test.md", "testds" }));
         wassert(actual_file(co.file_stderr.name()).contents_equal({}));
         wassert(actual_file(co.file_stdout.name()).contents_equal({
             "testds: 1 data would be deleted"
@@ -714,7 +714,7 @@ add_method("remove", [](Fixture& f) {
 
     {
         runtime::tests::CatchOutput co;
-        int res = wcallchecked(run_cmdline(runtime::arki_check, { "arki-check", "--verbose", "--fix", "--remove=arki-check-remove-test.md", "testds" }));
+        int res = wcallchecked(run_cmdline<runtime::ArkiCheck>({ "arki-check", "--verbose", "--fix", "--remove=arki-check-remove-test.md", "testds" }));
         wassert(actual_file(co.file_stderr.name()).contents_equal({
             "testds: 1 data deleted"
         }));
@@ -735,14 +735,14 @@ add_method("remove", [](Fixture& f) {
 add_method("tar_archives", [](Fixture& f) {
     using runtime::tests::run_cmdline;
 
-    f.cfg.setValue("format", "odimh5");
+    f.cfg.set("format", "odimh5");
     f.test_reread_config();
     f.clean_and_import("inbound/fixture.odimh5/00.odimh5");
     f.import("inbound/fixture.odimh5/01.odimh5");
     f.import("inbound/fixture.odimh5/02.odimh5");
 
     auto o = dataset::SessionTime::local_override(1184018400); // date +%s --date="2007-07-10"
-    f.cfg.setValue("archive age", "1");
+    f.cfg.set("archive age", "1");
     f.test_reread_config();
     f.repack();
 
@@ -754,7 +754,7 @@ add_method("tar_archives", [](Fixture& f) {
 
     {
         runtime::tests::CatchOutput co;
-        int res = run_cmdline(runtime::arki_check, { "arki-check", "--tar", "testds", });
+        int res = run_cmdline<runtime::ArkiCheck>({ "arki-check", "--tar", "testds", });
         wassert(actual_file(co.file_stderr.name()).empty());
         wassert(actual_file(co.file_stdout.name()).contents_equal({
             "testds.archives.2007:2007/07-07.odimh5: should be tarred",
@@ -764,7 +764,7 @@ add_method("tar_archives", [](Fixture& f) {
 
     {
         runtime::tests::CatchOutput co;
-        int res = run_cmdline(runtime::arki_check, { "arki-check", "--tar", "--offline", "testds", });
+        int res = run_cmdline<runtime::ArkiCheck>({ "arki-check", "--tar", "--offline", "testds", });
         wassert(actual_file(co.file_stderr.name()).empty());
         wassert(actual_file(co.file_stdout.name()).contents_equal({
             "testds.archives.2007:2007/07-07.odimh5: should be tarred",
@@ -774,7 +774,7 @@ add_method("tar_archives", [](Fixture& f) {
 
     {
         runtime::tests::CatchOutput co;
-        int res = run_cmdline(runtime::arki_check, { "arki-check", "--tar", "--online", "testds", });
+        int res = run_cmdline<runtime::ArkiCheck>({ "arki-check", "--tar", "--online", "testds", });
         wassert(actual_file(co.file_stderr.name()).empty());
         wassert(actual_file(co.file_stdout.name()).contents_equal({
             "testds:2007/07-08.odimh5: should be tarred",
@@ -785,7 +785,7 @@ add_method("tar_archives", [](Fixture& f) {
 
     {
         runtime::tests::CatchOutput co;
-        int res = run_cmdline(runtime::arki_check, { "arki-check", "--tar", "testds", "-f" });
+        int res = run_cmdline<runtime::ArkiCheck>({ "arki-check", "--tar", "testds", "-f" });
         wassert(actual_file(co.file_stderr.name()).empty());
         wassert(actual_file(co.file_stdout.name()).contents_equal({
             "testds.archives.2007:2007/07-07.odimh5: tarred",
@@ -808,14 +808,14 @@ add_method("zip_archives", [](Fixture& f) {
     skip_unless_libzip();
     skip_unless_libarchive();
 
-    f.cfg.setValue("format", "odimh5");
+    f.cfg.set("format", "odimh5");
     f.test_reread_config();
     f.clean_and_import("inbound/fixture.odimh5/00.odimh5");
     f.import("inbound/fixture.odimh5/01.odimh5");
     f.import("inbound/fixture.odimh5/02.odimh5");
 
     auto o = dataset::SessionTime::local_override(1184018400); // date +%s --date="2007-07-10"
-    f.cfg.setValue("archive age", "1");
+    f.cfg.set("archive age", "1");
     f.test_reread_config();
     f.repack();
 
@@ -827,7 +827,7 @@ add_method("zip_archives", [](Fixture& f) {
 
     {
         runtime::tests::CatchOutput co;
-        int res = run_cmdline(runtime::arki_check, { "arki-check", "--zip", "testds", });
+        int res = run_cmdline<runtime::ArkiCheck>({ "arki-check", "--zip", "testds", });
         wassert(actual_file(co.file_stderr.name()).empty());
         wassert(actual_file(co.file_stdout.name()).contents_equal({
             "testds.archives.2007:2007/07-07.odimh5: should be zipped",
@@ -837,7 +837,7 @@ add_method("zip_archives", [](Fixture& f) {
 
     {
         runtime::tests::CatchOutput co;
-        int res = run_cmdline(runtime::arki_check, { "arki-check", "--zip", "--offline", "testds", });
+        int res = run_cmdline<runtime::ArkiCheck>({ "arki-check", "--zip", "--offline", "testds", });
         wassert(actual_file(co.file_stderr.name()).empty());
         wassert(actual_file(co.file_stdout.name()).contents_equal({
             "testds.archives.2007:2007/07-07.odimh5: should be zipped",
@@ -847,7 +847,7 @@ add_method("zip_archives", [](Fixture& f) {
 
     {
         runtime::tests::CatchOutput co;
-        int res = run_cmdline(runtime::arki_check, { "arki-check", "--zip", "--online", "testds", });
+        int res = run_cmdline<runtime::ArkiCheck>({ "arki-check", "--zip", "--online", "testds", });
         wassert(actual_file(co.file_stderr.name()).empty());
         wassert(actual_file(co.file_stdout.name()).contents_equal({
             "testds:2007/07-08.odimh5: should be zipped",
@@ -858,7 +858,7 @@ add_method("zip_archives", [](Fixture& f) {
 
     {
         runtime::tests::CatchOutput co;
-        int res = run_cmdline(runtime::arki_check, { "arki-check", "--zip", "testds", "-f" });
+        int res = run_cmdline<runtime::ArkiCheck>({ "arki-check", "--zip", "testds", "-f" });
         wassert(actual_file(co.file_stderr.name()).empty());
         wassert(actual_file(co.file_stdout.name()).contents_equal({
             "testds.archives.2007:2007/07-07.odimh5: zipped",

@@ -4,6 +4,7 @@
 /// Base interface for arkimet datasets
 #include <arki/matcher.h>
 #include <arki/core/fwd.h>
+#include <arki/core/cfg.h>
 #include <arki/dataset/fwd.h>
 #include <arki/transaction.h>
 #include <string>
@@ -12,7 +13,6 @@
 struct lua_State;
 
 namespace arki {
-class ConfigFile;
 class Metadata;
 class Summary;
 
@@ -150,19 +150,19 @@ struct Config : public std::enable_shared_from_this<Config>
     /// Dataset name
     std::string name;
 
-    /// Raw configuration key-value pairs (normally extracted from ConfigFile)
-    std::map<std::string, std::string> cfg;
+    /// Raw configuration key-value pairs
+    core::cfg::Section cfg;
 
     Config();
     Config(const std::string& name);
-    Config(const ConfigFile& cfg);
+    Config(const core::cfg::Section& cfg);
     virtual ~Config() {}
 
     virtual std::unique_ptr<Reader> create_reader() const;
     virtual std::unique_ptr<Writer> create_writer() const;
     virtual std::unique_ptr<Checker> create_checker() const;
 
-    static std::shared_ptr<const Config> create(const ConfigFile& cfg);
+    static std::shared_ptr<const Config> create(const core::cfg::Section& cfg);
 };
 
 /**
@@ -190,7 +190,7 @@ public:
     virtual const Config& config() const = 0;
 
     /// Return the dataset configuration
-    const std::map<std::string, std::string>& cfg() const { return config().cfg; }
+    const core::cfg::Section& cfg() const { return config().cfg; }
 
     /// Return a name identifying the dataset type
     virtual std::string type() const = 0;
@@ -259,13 +259,13 @@ public:
     /**
      * Instantiate an appropriate Reader for the given configuration
      */
-    static std::unique_ptr<Reader> create(const ConfigFile& cfg);
+    static std::unique_ptr<Reader> create(const core::cfg::Section& cfg);
 
     /**
      * Read the configuration of the dataset(s) at the given path or URL,
      * adding new sections to cfg
      */
-    static void read_config(const std::string& path, ConfigFile& cfg);
+    static core::cfg::Section read_config(const std::string& path);
 };
 
 struct WriterBatchElement
@@ -372,7 +372,7 @@ public:
     /**
      * Instantiate an appropriate Writer for the given configuration
      */
-    static std::unique_ptr<Writer> create(const ConfigFile& cfg);
+    static std::unique_ptr<Writer> create(const core::cfg::Section& cfg);
 
     /**
      * Simulate acquiring the given metadata item (and related data) in this
@@ -380,7 +380,7 @@ public:
      *
      * No change of any kind happens to the dataset.
      */
-    static void test_acquire(const ConfigFile& cfg, WriterBatch& batch, std::ostream& out);
+    static void test_acquire(const core::cfg::Section& cfg, WriterBatch& batch, std::ostream& out);
 };
 
 struct CheckerConfig
@@ -451,7 +451,7 @@ struct Checker : public dataset::Base
     /**
      * Instantiate an appropriate Checker for the given configuration
      */
-    static std::unique_ptr<Checker> create(const ConfigFile& cfg);
+    static std::unique_ptr<Checker> create(const core::cfg::Section& cfg);
 };
 
 }

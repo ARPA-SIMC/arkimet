@@ -57,8 +57,8 @@ add_method("acquire_replace", [](Fixture& f) {
 
     // Import again with replace=true, make sure they're all ok
     {
-        ConfigFile cfg(f.cfg);
-        cfg.setValue("replace", "true");
+        auto cfg(f.cfg);
+        cfg.set("replace", "true");
         auto config = dataset::iseg::Config::create(cfg);
         auto writer = config->create_writer();
         for (auto& md: mdc)
@@ -72,7 +72,7 @@ add_method("acquire_replace", [](Fixture& f) {
         wassert(actual(mdc.size()) == 3u);
 
         // Make sure we're not getting the deleted element
-        wassert(actual(mdc[0].sourceBlob().offset) > 0);
+        wassert(actual(mdc[0].sourceBlob().offset) > 0u);
         wassert(actual(mdc[1].sourceBlob().offset) > 0);
         wassert(actual(mdc[2].sourceBlob().offset) > 0);
     }

@@ -15,7 +15,7 @@
 #include <arki/runtime.h>
 #include <arki/runtime/io.h>
 #include <arki/runtime/config.h>
-#include <arki/configfile.h>
+#include <arki/runtime/inputs.h>
 #include <sstream>
 #include <iostream>
 
@@ -255,18 +255,13 @@ int main(int argc, const char* argv[])
 
         if (opts.aliases->boolValue())
         {
-            ConfigFile cfg;
-            if (opts.hasNext())
-            {
-                dataset::http::Reader::getAliasDatabase(opts.next(), cfg);
-            } else {
-                MatcherAliasDatabase::serialise(cfg);
-            }
+            core::cfg::Sections cfg = opts.hasNext() ? dataset::http::Reader::getAliasDatabase(opts.next()) : MatcherAliasDatabase::serialise();
 
             // Output the merged configuration
-            string res = cfg.serialize();
+            stringstream ss;
+            cfg.write(ss, "memory");
             unique_ptr<sys::NamedFileDescriptor> out(runtime::make_output(*opts.outfile));
-            out->write_all_or_throw(res);
+            out->write_all_or_throw(ss.str());
             out->close();
 
             return 0;
@@ -274,14 +269,15 @@ int main(int argc, const char* argv[])
 
         if (opts.config->boolValue())
         {
-            ConfigFile cfg;
+            runtime::Inputs inputs;
             while (opts.hasNext())
-                dataset::Reader::read_config(opts.next(), cfg);
+                inputs.add_pathname(opts.next());
 
             // Output the merged configuration
-            string res = cfg.serialize();
+            stringstream ss;
+            inputs.merged.write(ss, "memory");
             unique_ptr<sys::NamedFileDescriptor> out(runtime::make_output(*opts.outfile));
-            out->write_all_or_throw(res);
+            out->write_all_or_throw(ss.str());
             out->close();
 
             return 0;

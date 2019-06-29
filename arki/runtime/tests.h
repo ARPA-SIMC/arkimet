@@ -4,6 +4,7 @@
 #include <arki/core/file.h>
 #include <initializer_list>
 #include <vector>
+#include <cstdio>
 
 namespace arki {
 namespace runtime {
@@ -32,9 +33,19 @@ struct CatchOutput
 };
 
 
-typedef int (*cmdline_func)(int argc, const char* argv[]);
-
-int run_cmdline(cmdline_func func, std::initializer_list<const char*> args);
+template<typename Cmd>
+int run_cmdline(std::initializer_list<const char*> argv)
+{
+    std::vector<const char*> cmd_argv(argv);
+    cmd_argv.push_back(nullptr);
+    Cmd cmd;
+    int res = cmd.run(cmd_argv.size() - 1, cmd_argv.data());
+    // Flush stdio's buffers, so what was written gets written to the capture
+    // files
+    fflush(stdout);
+    fflush(stderr);
+    return res;
+}
 
 }
 }

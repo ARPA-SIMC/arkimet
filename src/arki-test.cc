@@ -5,7 +5,6 @@
 #include <arki/matcher.h>
 #include <arki/dataset.h>
 #include <arki/runtime.h>
-#include <arki/configfile.h>
 #include <memory>
 #include <iostream>
 #include <cstdlib>
@@ -47,12 +46,10 @@ int main(int argc, const char* argv[])
 
         if (opts.do_writelock->boolValue()) {
             string dspath = opts.next();
-            ConfigFile cfg;
-            dataset::Reader::read_config(dspath, cfg);
+            auto cfg = dataset::Reader::read_config(dspath);
             cout << "Dataset config:" << endl;
-            ConfigFile* dsconfig = cfg.sectionBegin()->second;
-            dsconfig->output(cout, "stdout");
-            unique_ptr<dataset::Writer> ds(dataset::Writer::create(*dsconfig));
+            cfg.write(cout, "stdout");
+            unique_ptr<dataset::Writer> ds(dataset::Writer::create(cfg));
             Pending p = ds->test_writelock();
             printf("Press ENTER to unlock %s and quit...", dspath.c_str());
             fflush(stdout);

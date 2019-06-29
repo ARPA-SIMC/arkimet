@@ -1,7 +1,6 @@
 #include "config.h"
 #include <arki/dataset/tests.h>
 #include <arki/dataset/ondisk2.h>
-#include <arki/configfile.h>
 #include <arki/metadata.h>
 #include <arki/metadata/collection.h>
 #include <arki/matcher.h>

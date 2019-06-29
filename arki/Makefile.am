@@ -17,12 +17,12 @@ nobase_dist_arkiinclude_HEADERS = \
 		core/time.h \
 		core/fuzzytime.h \
 		core/file.h \
+		core/cfg.h \
 		core/tests.h \
 		binary.h \
 		defs.h \
 		exceptions.h \
 		bbox.h \
-		configfile.h \
 		libconfig.h \
 		dataset/fwd.h \
 		dataset/lock.h \
@@ -120,6 +120,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		runtime/arki-query.h \
 		runtime/arki-check.h \
 		runtime/arki-scan.h \
+		runtime/arki-mergeconf.h \
 		scan.h \
 		scan/fwd.h \
 		scan/validator.h \
@@ -237,6 +238,7 @@ libarkimet_la_SOURCES += \
 		core/time.cc \
 		core/fuzzytime.cc \
 		core/file.cc \
+		core/cfg.cc \
 		exceptions.cc \
 		nag.cc \
 		utils.cc \
@@ -260,7 +262,6 @@ libarkimet_la_SOURCES += \
 		utils/commandline/engine.cpp \
 		utils/commandline/wordwrap.cpp \
 		binary.cc \
-		configfile.cc \
 		transaction.cc \
 		emitter.cc \
 		emitter/memory.cc \
@@ -324,6 +325,7 @@ tests_arki_test_SOURCES += \
 		core/time-test.cc \
 		core/fuzzytime-test.cc \
 		core/file-test.cc \
+		core/cfg-test.cc \
 		utils-test.cc \
 		utils/accounting-test.cc \
 		utils/gzip-test.cc \
@@ -335,7 +337,6 @@ tests_arki_test_SOURCES += \
 		utils/regexp-test.cc \
 		utils/geos-test.cc \
 		binary-test.cc \
-		configfile-test.cc \
 		transaction-test.cc \
 		emitter/memory-test.cc \
 		emitter/json-test.cc \
@@ -575,7 +576,8 @@ libarkimet_la_SOURCES += \
 		querymacro.cc \
 		runtime/arki-query.cc \
 		runtime/arki-check.cc \
-		runtime/arki-scan.cc
+		runtime/arki-scan.cc \
+		runtime/arki-mergeconf.cc
 
 tests_arki_test_SOURCES += \
 		targetfile-test.cc \
@@ -642,6 +644,7 @@ tests_arki_test_SOURCES += \
 		runtime/arki-query-test.cc \
 		runtime/arki-check-test.cc \
 		runtime/arki-scan-test.cc \
+		runtime/arki-mergeconf-test.cc \
 		runtime-test.cc
 
 if CURL

@@ -6,6 +6,12 @@ namespace runtime {
 
 int arki_check(int argc, const char* argv[]);
 
+class ArkiCheck
+{
+public:
+    int run(int argc, const char* argv[]);
+};
+
 }
 }
 

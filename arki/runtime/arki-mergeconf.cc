@@ -1,9 +1,7 @@
-/// Merge arkimet dataset configurations
-#include "config.h"
-#include <arki/configfile.h>
-#include <arki/dataset.h>
+#include "arki/../config.h"
+#include "arki/runtime/arki-mergeconf.h"
+#include "arki/dataset/http.h"
 #include <arki/summary.h>
-#include <arki/matcher.h>
 #include <arki/runtime.h>
 #include <arki/runtime/inputs.h>
 #include <arki/runtime/config.h>
@@ -11,54 +9,53 @@
 #include <arki/utils/commandline/parser.h>
 #include <arki/utils/geos.h>
 #include <arki/utils/string.h>
-#include <arki/utils/sys.h>
 #include <memory>
 #include <iostream>
 
 using namespace std;
-using namespace arki;
 using namespace arki::utils;
 
 namespace arki {
-namespace utils {
-namespace commandline {
+namespace runtime {
+
+namespace {
+
+using namespace arki::utils::commandline;
 
 struct Options : public StandardParserWithManpage
 {
-	StringOption* outfile;
-	BoolOption* extra;
-	StringOption* restr;
-	VectorOption<String>* cfgfiles;
+    StringOption* outfile;
+    BoolOption* extra;
+    StringOption* restr;
+    VectorOption<String>* cfgfiles;
     BoolOption* ignore_system_ds;
 
-	Options() : StandardParserWithManpage("arki-mergeconf", PACKAGE_VERSION, 1, PACKAGE_BUGREPORT)
-	{
-		usage = "[options] [directories]";
-		description =
-		    "Read dataset configuration from the given directories or config files, "
-			" merge them and output the merged config file to standard output";
+    Options() : StandardParserWithManpage("arki-mergeconf", PACKAGE_VERSION, 1, PACKAGE_BUGREPORT)
+    {
+        usage = "[options] [directories]";
+        description =
+            "Read dataset configuration from the given directories or config files, "
+            " merge them and output the merged config file to standard output";
 
-		outfile = add<StringOption>("output", 'o', "output", "file",
-			"write the output to the given file instead of standard output");
-		extra = add<BoolOption>("extra", 0, "extra", "",
-			"extract extra information from the datasets (such as bounding box) "
-			"and include it in the configuration");
-		restr = add<StringOption>("restrict", 0, "restrict", "names",
-			"restrict operations to only those datasets that allow one of the given (comma separated) names");
-		cfgfiles = add< VectorOption<String> >("config", 'C', "config", "file",
-			"merge configuration from the given file (can be given more than once)");
+        outfile = add<StringOption>("output", 'o', "output", "file",
+                "write the output to the given file instead of standard output");
+        extra = add<BoolOption>("extra", 0, "extra", "",
+                "extract extra information from the datasets (such as bounding box) "
+                "and include it in the configuration");
+        restr = add<StringOption>("restrict", 0, "restrict", "names",
+                "restrict operations to only those datasets that allow one of the given (comma separated) names");
+        cfgfiles = add< VectorOption<String> >("config", 'C', "config", "file",
+                "merge configuration from the given file (can be given more than once)");
         ignore_system_ds = add<BoolOption>("ignore-system-datasets", 0, "ignore-system-datasets", "",
-                                           "ignore error and duplicates datasets");
-	}
+                "ignore error and duplicates datasets");
+    }
 };
 
 }
-}
-}
 
-int main(int argc, const char* argv[])
+int ArkiMergeconf::run(int argc, const char* argv[])
 {
-    commandline::Options opts;
+    Options opts;
     try {
         if (opts.parse(argc, argv))
             return 0;
@@ -69,23 +66,30 @@ int main(int argc, const char* argv[])
             inputs.add_config_file(pathname);
         // Read the config files from the remaining commandline arguments
         while (opts.hasNext())
-            inputs.add_pathname(opts.next());
+        {
+            std::string path = opts.next();
+            if (str::startswith(path, "http://") || str::startswith(path, "https://"))
+            {
+                auto sections = dataset::http::Reader::load_cfg_sections(path);
+                inputs.add_sections(sections);
+            }
+            else
+                inputs.add_pathname(path);
+        }
         if (inputs.empty())
             throw commandline::BadOption("you need to specify at least one config file or dataset");
 
         // Validate the configuration
         bool hasErrors = false;
-        for (const ConfigFile& cfg: inputs)
+        for (auto si: inputs.merged)
         {
             // Validate filters
             try {
-                Matcher::parse(cfg.value("filter"));
+                Matcher::parse(si.second.value("filter"));
             } catch (std::exception& e) {
-                const auto* fp = cfg.valueInfo("filter");
-                if (fp)
-                    cerr << fp->pathname << ":" << fp->lineno << ":";
-                cerr << e.what();
-                cerr << endl;
+                cerr << si.first << ":"
+                     << e.what()
+                     << endl;
                 hasErrors = true;
             }
         }
@@ -113,10 +117,10 @@ int main(int argc, const char* argv[])
         if (opts.extra->boolValue())
         {
 #ifdef HAVE_GEOS
-            for (ConfigFile& cfg: inputs)
+            for (auto si: inputs.merged)
             {
                 // Instantiate the dataset
-                unique_ptr<dataset::Reader> d(dataset::Reader::create(cfg));
+                unique_ptr<dataset::Reader> d(dataset::Reader::create(si.second));
                 // Get the summary
                 Summary sum;
                 d->query_summary(Matcher(), sum);
@@ -124,16 +128,16 @@ int main(int argc, const char* argv[])
                 // Compute bounding box, and store the WKT in bounding
                 auto bbox = sum.getConvexHull();
                 if (bbox.get())
-                    cfg.setValue("bounding", bbox->toString());
+                    si.second.set("bounding", bbox->toString());
             }
 #endif
         }
 
-
         // Output the merged configuration
-        string res = inputs.as_config().serialize();
+        std::stringstream ss;
+        inputs.merged.write(ss, "memory");
         unique_ptr<sys::NamedFileDescriptor> out(runtime::make_output(*opts.outfile));
-        out->write_all_or_throw(res);
+        out->write_all_or_throw(ss.str());
         out->close();
 
         return 0;
@@ -141,8 +145,8 @@ int main(int argc, const char* argv[])
         cerr << e.what() << endl;
         opts.outputHelp(cerr);
         return 1;
-    } catch (std::exception& e) {
-        cerr << e.what() << endl;
-        return 1;
     }
+}
+
+}
 }

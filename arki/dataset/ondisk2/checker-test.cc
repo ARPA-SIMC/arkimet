@@ -8,7 +8,6 @@
 #include "arki/metadata/data.h"
 #include "arki/metadata/collection.h"
 #include "arki/types/source/blob.h"
-#include "arki/configfile.h"
 #include "arki/core/file.h"
 #include "arki/utils.h"
 #include "arki/core/file.h"
@@ -59,7 +58,7 @@ void Tests::register_tests() {
 
 // Test recreating a dataset from just a datafile with duplicate data and a rebuild flagfile
 add_method("reindex_with_duplicates", [](Fixture& f) {
-    f.cfg.setValue("step", "monthly");
+    f.cfg.set("step", "monthly");
     GRIBData data;
     sys::makedirs("testds/2007/07");
     // TODO: use segments also in the other tests, and instantiate a new test suite for different segment types

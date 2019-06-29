@@ -2,6 +2,7 @@ import unittest
 import tempfile
 import arkimet as arki
 
+
 class TestDatasetReader(unittest.TestCase):
     def test_create(self):
         ds = arki.DatasetReader({
@@ -10,8 +11,8 @@ class TestDatasetReader(unittest.TestCase):
             "path": "inbound/test.grib1",
             "type": "file",
         })
-        self.assertEqual(str(ds), "DatasetReader(file, test.grib1)");
-        self.assertEqual(repr(ds), "DatasetReader(file, test.grib1)");
+        self.assertEqual(str(ds), "DatasetReader(file, test.grib1)")
+        self.assertEqual(repr(ds), "DatasetReader(file, test.grib1)")
 
     def test_query_data(self):
         ds = arki.DatasetReader({
@@ -23,6 +24,7 @@ class TestDatasetReader(unittest.TestCase):
         })
 
         count = 0
+
         def count_results(md):
             nonlocal count
             count += 1
@@ -47,10 +49,12 @@ class TestDatasetReader(unittest.TestCase):
 
         def query_reftimes(matcher=None, sort=None):
             res = []
+
             def on_metadata(md):
                 info = md.to_python()["i"]
                 for i in info:
-                    if i["t"] != "reftime": continue
+                    if i["t"] != "reftime":
+                        continue
                     res.append(i["ti"][1:3])
                     break
             ds.query_data(matcher=matcher, sort=sort, on_metadata=on_metadata)
@@ -122,7 +126,8 @@ class TestDatasetReader(unittest.TestCase):
         self.assertEqual(orig, queried)
 
         # data_start_hook
-        triggered = False;
+        triggered = False
+
         def data_start_hook():
             nonlocal triggered
             triggered = True
@@ -171,6 +176,7 @@ type = file
         )
 
         count = 0
+
         def count_results(md):
             nonlocal count
             count += 1
@@ -191,6 +197,7 @@ type = file
         )
 
         count = 0
+
         def count_results(md):
             nonlocal count
             count += 1
@@ -204,6 +211,7 @@ type = file
             "type": "testlarge",
         })
         count = 0
+
         def count_results(md):
             nonlocal count
             count += 1

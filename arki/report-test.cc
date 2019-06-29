@@ -1,6 +1,5 @@
 #include "arki/metadata/tests.h"
 #include "arki/utils/sys.h"
-#include "arki/configfile.h"
 #include "arki/summary.h"
 #include "arki/dataset/file.h"
 #include "report.h"
@@ -64,9 +63,8 @@ Report = {
 
 // Test a case of mdreport that used to fail
 add_method("regression", [] {
-    ConfigFile cfg;
-    dataset::File::read_config("inbound/test.grib1", cfg);
-    unique_ptr<dataset::Reader> ds(dataset::Reader::create(*cfg.section("test.grib1")));
+    auto cfg = dataset::File::read_config("inbound/test.grib1");
+    unique_ptr<dataset::Reader> ds(dataset::Reader::create(cfg));
 
     // Scan it to be sure it can be read
     dataset::ByteQuery q;

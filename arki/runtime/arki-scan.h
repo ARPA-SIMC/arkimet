@@ -4,7 +4,11 @@
 namespace arki {
 namespace runtime {
 
-int arki_scan(int argc, const char* argv[]);
+class ArkiScan
+{
+public:
+    int run(int argc, const char* argv[]);
+};
 
 }
 }

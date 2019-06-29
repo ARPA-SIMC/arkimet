@@ -6,7 +6,6 @@
 #include "arki/types/source.h"
 #include "arki/types/source/blob.h"
 #include "arki/types/reftime.h"
-#include "arki/configfile.h"
 #include "arki/utils/files.h"
 #include "arki/utils/accounting.h"
 #include "arki/utils/string.h"
@@ -39,8 +38,7 @@ struct FixtureWriter : public DatasetTest
 
     bool smallfiles() const
     {
-        return ConfigFile::boolValue(cfg.value("smallfiles")) ||
-            (td.format == "vm2" && cfg.value("type") == "simple");
+        return cfg.value_bool("smallfiles") || (td.format == "vm2" && cfg.value("type") == "simple");
     }
 };
 
@@ -88,9 +86,9 @@ add_method("import_largefile", [](Fixture& f) {
     skip_unless_filesystem_has_holes(".");
 
     // A dataset with hole files
-    f.cfg.setValue("step", "daily");
-    f.cfg.setValue("segments", "dir");
-    f.cfg.setValue("mockdata", "true");
+    f.cfg.set("step", "daily");
+    f.cfg.set("segments", "dir");
+    f.cfg.set("mockdata", "true");
 
     {
         // Import 24*30*10Mb=7.2Gb of data
@@ -122,8 +120,8 @@ add_method("import_largefile", [](Fixture& f) {
 });
 
 add_method("import_batch_replace_usn", [](Fixture& f) {
-    f.cfg.setValue("format", "bufr");
-    f.cfg.setValue("step", "daily");
+    f.cfg.set("format", "bufr");
+    f.cfg.set("step", "daily");
     metadata::TestCollection mdc("inbound/synop-gts.bufr");
     metadata::TestCollection mdc_upd("inbound/synop-gts-usn2.bufr");
 
@@ -272,7 +270,7 @@ this->add_method("import_batch_replace_always", [](Fixture& f) {
 
 this->add_method("import_before_archive_age", [](Fixture& f) {
     auto o = dataset::SessionTime::local_override(1483225200); // date +%s --date="2017-01-01"
-    f.cfg.setValue("archive age", "1");
+    f.cfg.set("archive age", "1");
     auto ds = f.config().create_writer();
 
     for (unsigned i = 0; i < 3; ++i)
@@ -288,7 +286,7 @@ this->add_method("import_before_archive_age", [](Fixture& f) {
 
 this->add_method("import_before_delete_age", [](Fixture& f) {
     auto o = dataset::SessionTime::local_override(1483225200); // date +%s --date="2017-01-01"
-    f.cfg.setValue("delete age", "1");
+    f.cfg.set("delete age", "1");
     auto ds = f.config().create_writer();
 
     for (unsigned i = 0; i < 3; ++i)

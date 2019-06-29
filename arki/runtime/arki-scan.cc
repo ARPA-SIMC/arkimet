@@ -29,7 +29,7 @@ struct Options : public runtime::ScanCommandLine
 
 }
 
-int arki_scan(int argc, const char* argv[])
+int ArkiScan::run(int argc, const char* argv[])
 {
     Options opts;
     try {

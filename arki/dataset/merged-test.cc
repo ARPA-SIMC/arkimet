@@ -1,6 +1,5 @@
 #include "arki/dataset/tests.h"
 #include "arki/dataset/merged.h"
-#include "arki/configfile.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
 #include "arki/matcher.h"
@@ -15,7 +14,7 @@ namespace {
 
 struct Fixture : public arki::utils::tests::Fixture
 {
-    ConfigFile config;
+    core::cfg::Sections config;
     dataset::Merged ds;
 
     Fixture()
@@ -48,7 +47,7 @@ struct Fixture : public arki::utils::tests::Fixture
             "step = daily\n"
             "name = error\n"
             "path = error\n";
-        config.parse(conf, "(memory)");
+        config = core::cfg::Sections::parse(conf, "(memory)");
 
         // Import data into the datasets
         metadata::TestCollection mdc("inbound/test.grib1");

@@ -1,7 +1,6 @@
 #include "arki/dataset/tests.h"
 #include "arki/dataset/iseg.h"
 #include "arki/dataset/iseg/index.h"
-#include "arki/configfile.h"
 #include "arki/utils/sys.h"
 
 namespace {

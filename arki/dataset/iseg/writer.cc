@@ -372,7 +372,7 @@ void Writer::remove(Metadata& md)
     scache.invalidate(md);
 }
 
-void Writer::test_acquire(const ConfigFile& cfg, WriterBatch& batch, std::ostream& out)
+void Writer::test_acquire(const core::cfg::Section& cfg, WriterBatch& batch, std::ostream& out)
 {
     std::shared_ptr<const iseg::Config> config(new iseg::Config(cfg));
     for (auto& e: batch)

@@ -30,11 +30,11 @@ Inputs::Inputs(ScanCommandLine& args)
         while (args.hasNext()) // From command line arguments, looking for data files or datasets
             add_pathname(args.next());
 
-        if (empty())
+        if (merged.empty())
             throw commandline::BadOption("you need to specify at least one input file or dataset");
 
         // Some things cannot be done when querying multiple datasets at the same time
-        if (size() > 1)
+        if (merged.size() > 1)
         {
             if (args.report->boolValue())
                 throw commandline::BadOption("reports are not possible when querying more than one dataset at the same time");
@@ -62,7 +62,7 @@ Inputs::Inputs(QueryCommandLine& args)
         while (args.hasNext()) // From command line arguments, looking for data files or datasets
             add_pathname(args.next());
 
-        if (empty())
+        if (merged.empty())
             throw commandline::BadOption("you need to specify at least one input file or dataset");
 
         // Filter the dataset list
@@ -70,12 +70,12 @@ Inputs::Inputs(QueryCommandLine& args)
         {
             Restrict rest(args.restr->stringValue());
             remove_unallowed(rest);
-            if (empty())
+            if (merged.empty())
                 throw commandline::BadOption("no accessible datasets found for the given --restrict value");
         }
 
         // Some things cannot be done when querying multiple datasets at the same time
-        if (size() > 1 && !(args.qmacro->isSet()))
+        if (merged.size() > 1 && !(args.qmacro->isSet()))
         {
             if (args.postprocess->boolValue())
                 throw commandline::BadOption("postprocessing is not possible when querying more than one dataset at the same time");
@@ -85,25 +85,34 @@ Inputs::Inputs(QueryCommandLine& args)
     }
 }
 
-void Inputs::add_sections(const ConfigFile& cfg)
+void Inputs::add_section(const core::cfg::Section& section, const std::string& name_)
 {
-    for (auto i = cfg.sectionBegin(); i != cfg.sectionEnd(); ++i)
-        if (i->second->valueSize())
-            emplace_back(*i->second);
+    std::string name = name_.empty() ? section.value("name") : name_;
+    core::cfg::Section* old = merged.section(name);
+    if (old)
+    {
+        nag::warning("ignoring dataset %s in %s, which has the same name as the dataset in %s",
+                section.value("name").c_str(), section.value("path").c_str(), old->value("path").c_str());
+        return;
+    }
+    merged.emplace(name, section);
+}
+
+void Inputs::add_sections(const core::cfg::Sections& cfg)
+{
+    for (const auto& si: cfg)
+        if (!si.second.empty())
+            add_section(si.second, si.first);
 }
 
 void Inputs::add_config_file(const std::string& pathname)
 {
-    ConfigFile cfg;
-    parseConfigFile(cfg, pathname);
-    add_sections(cfg);
+    add_sections(parse_config_file(pathname));
 }
 
 void Inputs::add_pathname(const std::string& pathname)
 {
-    ConfigFile cfg;
-    dataset::Reader::read_config(pathname, cfg);
-    add_sections(cfg);
+    add_section(dataset::Reader::read_config(pathname));
 }
 
 void Inputs::add_pathnames_from_file(const std::string& pathname)
@@ -129,49 +138,35 @@ void Inputs::add_pathnames_from_file(const std::string& pathname)
 
 void Inputs::remove_unallowed(const Restrict& restrict)
 {
-    for (unsigned idx = 0; idx < size(); )
-    {
-        ConfigFile& cfg = (*this)[idx];
+    std::vector<std::string> to_remove;
 
-        if (restrict.is_allowed(cfg))
-            ++idx;
-        else
-            erase(begin() + idx);
+    for (auto si: merged)
+    {
+        if (restrict.is_allowed(si.second))
+            continue;
+        to_remove.emplace_back(si.first);
     }
+
+    for (const auto& name: to_remove)
+        merged.erase(name);
 }
 
 void Inputs::remove_system_datasets()
 {
-    for (unsigned idx = 0; idx < size(); )
-    {
-        ConfigFile& cfg = (*this)[idx];
+    std::vector<std::string> to_remove;
 
-        const std::string& type = cfg.value("type");
-        const std::string& name = cfg.value("name");
+    for (auto si: merged)
+    {
+        const std::string& type = si.second.value("type");
+        const std::string& name = si.second.value("name");
 
         if (type == "error" || type == "duplicates" ||
             (type == "remote" && (name == "error" || name == "duplicates")))
-            erase(begin() + idx);
-        else
-            ++idx;
+            to_remove.emplace_back(si.first);
     }
-}
 
-ConfigFile Inputs::as_config() const
-{
-    ConfigFile res;
-    for (const auto& cfg: *this)
-    {
-        ConfigFile* old = res.section(cfg.value("name"));
-        if (old)
-        {
-            nag::warning("ignoring dataset %s in %s, which has the same name as the dataset in %s",
-                    cfg.value("name").c_str(), cfg.value("path").c_str(), old->value("path").c_str());
-            continue;
-        }
-        res.mergeInto(cfg.value("name"), cfg);
-    }
-    return res;
+    for (const auto& name: to_remove)
+        merged.erase(name);
 }
 
 std::string Inputs::expand_remote_query(const std::string& query)
@@ -184,9 +179,9 @@ std::string Inputs::expand_remote_query(const std::string& query)
     string expanded;
     string resolved_by;
     bool first = true;
-    for (const auto& i: *this)
+    for (auto si: merged)
     {
-        string server = i.value("server");
+        string server = si.second.value("server");
         if (servers_seen.find(server) != servers_seen.end()) continue;
         string got;
         try {

@@ -1,6 +1,5 @@
 #include "arki/dataset/tests.h"
 #include "arki/dataset/reporter.h"
-#include "arki/configfile.h"
 #include "arki/metadata.h"
 #include "arki/types/source/blob.h"
 #include "arki/utils/sys.h"

@@ -1,0 +1,12 @@
+#!/usr/bin/python3
+from arkimet import ArkiCheck
+import sys
+
+
+def main():
+    arki_check = ArkiCheck()
+    sys.exit(arki_check.run(sys.argv))
+
+
+if __name__ == "__main__":
+    main()

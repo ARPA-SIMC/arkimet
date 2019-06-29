@@ -9,10 +9,17 @@ nobase_python_PYTHON = arkimet/__init__.py arkimet/server/__init__.py arkimet/se
 pyexec_LTLIBRARIES = _arkimet.la
 
 _arkimet_la_SOURCES = \
+    utils/core.cc \
+    utils/methods.cc \
+    utils/values.cc \
     common.cc \
     metadata.cc \
     summary.cc \
     dataset.cc \
+    arki_query.cc \
+    arki_scan.cc \
+    arki_check.cc \
+    arki_mergeconf.cc \
     arkimet.cc
 _arkimet_la_CPPFLAGS = $(PYTHON_CFLAGS) -I$(top_srcdir) -I$(top_builddir)
 _arkimet_la_LDFLAGS = -module -avoid-version -export-symbols-regex init_arkimet
@@ -37,9 +44,17 @@ clean-local:
 	rm -rf __pycache__ arkimet/__pycache__
 
 EXTRA_DIST = \
+    utils/core.h \
+    utils/methods.h \
+    utils/type.h \
+    utils/values.h \
     common.h \
     metadata.h \
     summary.h \
+    arki_query.h \
+    arki_scan.h \
+    arki_check.h \
+    arki_mergeconf.h \
     dataset.h
 #    doc-arkimet \
 #    testlib.py \

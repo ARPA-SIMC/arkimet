@@ -51,6 +51,16 @@
  },
  {
   "doc": "",
+  "group": "arki_core_cfg",
+  "method": "parse_section"
+ },
+ {
+  "doc": "",
+  "group": "arki_core_cfg",
+  "method": "parse_sections"
+ },
+ {
+  "doc": "",
   "group": "arki_utils",
   "method": "parse_size"
  },
@@ -213,11 +223,6 @@
   "doc": "",
   "group": "arki_binary",
   "method": "lines"
- },
- {
-  "doc": "",
-  "group": "arki_configfile",
-  "method": "parse"
  },
  {
   "doc": "",
@@ -16688,6 +16693,16 @@
   "doc": "",
   "group": "arki_runtime_arkiscan",
   "method": "dispatch_issue154"
+ },
+ {
+  "doc": "",
+  "group": "arki_runtime_arkimergeconf",
+  "method": "http"
+ },
+ {
+  "doc": "",
+  "group": "arki_runtime_arkimergeconf",
+  "method": "ignore_system_datasets"
  },
  {
   "doc": "",

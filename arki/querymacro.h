@@ -4,12 +4,11 @@
 /// Macros implementing special query strategies
 
 #include <arki/dataset.h>
-#include <arki/configfile.h>
+#include <arki/core/cfg.h>
 #include <string>
 #include <map>
 
 namespace arki {
-class ConfigFile;
 class Metadata;
 class Lua;
 
@@ -24,7 +23,7 @@ protected:
     std::map<std::string, Reader*> ds_cache;
 
 public:
-    ConfigFile dispatch_cfg;
+    core::cfg::Sections dispatch_cfg;
     Lua *L = nullptr;
     int funcid_querydata;
     int funcid_querysummary;
@@ -36,7 +35,7 @@ public:
      * @param cfg
      *   Configuration used to instantiate datasets
      */
-    Querymacro(const ConfigFile& ds_cfg, const ConfigFile& dispatch_cfg, const std::string& name, const std::string& query);
+    Querymacro(const core::cfg::Section& ds_cfg, const core::cfg::Sections& dispatch_cfg, const std::string& name, const std::string& query);
     virtual ~Querymacro();
 
     const dataset::Config& config() const override { return *m_config; }

@@ -1,8 +1,9 @@
 /// arki-check - Maintenance of arkimet dataset
+#include "arki-check.h"
 #include "arki/libconfig.h"
 #include "arki/exceptions.h"
 #include "arki/utils/commandline/parser.h"
-#include "arki/configfile.h"
+#include "arki/core/cfg.h"
 #include "arki/datasets.h"
 #include "arki/dataset/local.h"
 #include "arki/dataset/segmented.h"
@@ -138,13 +139,13 @@ struct SkipDataset : public std::exception
 struct Worker
 {
     ~Worker() {}
-    virtual void process(const ConfigFile& cfg) = 0;
+    virtual void process(const core::cfg::Section& cfg) = 0;
     virtual void done() = 0;
 };
 
 struct WorkerOnWritable : public Worker
 {
-    void process(const ConfigFile& cfg) override
+    void process(const core::cfg::Section& cfg) override
     {
         unique_ptr<dataset::Checker> ds;
         try {
@@ -344,7 +345,7 @@ int arki_check(int argc, const char* argv[])
         if (opts.op_remove->isSet()) {
             if (opts.op_remove->stringValue().empty())
                 throw commandline::BadOption("you need to give a file name to --remove");
-            Datasets datasets(inputs.as_config());
+            Datasets datasets(inputs.merged);
             WriterPool pool(datasets);
             // Read all metadata from the file specified in --remove
             metadata::Collection todolist;
@@ -449,12 +450,12 @@ int arki_check(int argc, const char* argv[])
             }
 
             // Harvest the paths from it
-            for (const ConfigFile& cfg: inputs)
+            for (auto si: inputs.merged)
             {
                 try {
-                    worker->process(cfg);
+                    worker->process(si.second);
                 } catch (SkipDataset& e) {
-                    cerr << "Skipping dataset " << cfg.value("name") << ": " << e.what() << endl;
+                    cerr << "Skipping dataset " << si.second.value("name") << ": " << e.what() << endl;
                     continue;
                 }
             }
@@ -468,6 +469,12 @@ int arki_check(int argc, const char* argv[])
         return 1;
     }
 }
+
+int ArkiCheck::run(int argc, const char* argv[])
+{
+    return arki_check(argc, argv);
+}
+
 
 }
 }

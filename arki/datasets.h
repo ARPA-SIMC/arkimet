@@ -3,12 +3,12 @@
 
 /// Pool of datasets, opened on demand
 
+#include <arki/core/fwd.h>
 #include <string>
 #include <map>
 #include <memory>
 
 namespace arki {
-class ConfigFile;
 class Metadata;
 
 namespace dataset {
@@ -26,7 +26,7 @@ protected:
     std::map<std::string, std::shared_ptr<const dataset::Config>> configs;
 
 public:
-    explicit Datasets(const ConfigFile& cfg);
+    explicit Datasets(const core::cfg::Sections& cfg);
 
     /// Get the configuration for the given dataset
     std::shared_ptr<const dataset::Config> get(const std::string& name) const;

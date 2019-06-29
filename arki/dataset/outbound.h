@@ -7,7 +7,6 @@
 #include <string>
 
 namespace arki {
-class ConfigFile;
 class Metadata;
 class Matcher;
 
@@ -16,12 +15,12 @@ namespace outbound {
 
 struct Config : public segmented::Config
 {
-    Config(const ConfigFile& cfg);
+    Config(const core::cfg::Section& cfg);
 
     std::unique_ptr<dataset::Reader> create_reader() const override;
     std::unique_ptr<dataset::Writer> create_writer() const override;
 
-    static std::shared_ptr<const Config> create(const ConfigFile& cfg);
+    static std::shared_ptr<const Config> create(const core::cfg::Section& cfg);
 };
 
 /**
@@ -59,7 +58,7 @@ public:
     virtual void remove(Metadata& id);
     virtual void removeAll(std::ostream& log, bool writable=false);
 
-    static void test_acquire(const ConfigFile& cfg, WriterBatch& batch, std::ostream& out);
+    static void test_acquire(const core::cfg::Section& cfg, WriterBatch& batch, std::ostream& out);
 };
 
 }

@@ -3,6 +3,7 @@
 
 /// Metadata match expressions
 #include <arki/types/fwd.h>
+#include <arki/core/fwd.h>
 #include <string>
 #include <vector>
 #include <map>
@@ -19,7 +20,6 @@ struct Time;
 
 
 class ItemSet;
-class ConfigFile;
 
 /**
  * Represent a set of items to match.
@@ -167,9 +167,9 @@ public:
     ~Aliases();
 
     std::shared_ptr<OR> get(const std::string& name) const;
-    void add(const MatcherType& type, const ConfigFile& entries);
+    void add(const MatcherType& type, const core::cfg::Section& entries);
     void reset();
-    void serialise(ConfigFile& cfg) const;
+    void serialise(core::cfg::Section& cfg) const;
 };
 
 }
@@ -315,27 +315,27 @@ std::ostream& operator<<(std::ostream& o, const Matcher& m);
  */
 struct MatcherAliasDatabase
 {
-	std::map<std::string, matcher::Aliases> aliasDatabase;
+    std::map<std::string, matcher::Aliases> aliasDatabase;
 
-	MatcherAliasDatabase();
-	MatcherAliasDatabase(const ConfigFile& cfg);
+    MatcherAliasDatabase();
+    MatcherAliasDatabase(const core::cfg::Sections& cfg);
 
-	void add(const ConfigFile& cfg);
+    void add(const core::cfg::Sections& cfg);
 
-	/**
-	 * Add global aliases from the given config file.
-	 *
-	 * If there are already existing aliases, they are preserved unless cfg
-	 * overwrites some of them.
-	 *
-	 * The aliases will be used by all newly instantiated Matcher expressions,
-	 * for all the lifetime of the program.
-	 */
-	static void addGlobal(const ConfigFile& cfg);
+    /**
+     * Add global aliases from the given config file.
+     *
+     * If there are already existing aliases, they are preserved unless cfg
+     * overwrites some of them.
+     *
+     * The aliases will be used by all newly instantiated Matcher expressions,
+     * for all the lifetime of the program.
+     */
+    static void addGlobal(const core::cfg::Sections& cfg);
 
-	static const matcher::Aliases* get(const std::string& type);
-	static const void reset();
-	static void serialise(ConfigFile& cfg);
+    static const matcher::Aliases* get(const std::string& type);
+    static const void reset();
+    static core::cfg::Sections serialise();
 
     /**
      * Dump the alias database to the given output stream

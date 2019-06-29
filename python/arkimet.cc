@@ -3,8 +3,12 @@
 #include "metadata.h"
 #include "summary.h"
 #include "dataset.h"
+#include "utils/values.h"
+#include "arki_query.h"
+#include "arki_scan.h"
+#include "arki_check.h"
+#include "arki_mergeconf.h"
 #include "arki/matcher.h"
-#include "arki/configfile.h"
 #include "arki/runtime.h"
 #include "arki/dataset/merged.h"
 #include "arki/dataset/http.h"
@@ -32,10 +36,10 @@ static PyObject* arkipy_expand_query(PyTypeObject *type, PyObject *args)
 static PyObject* arkipy_matcher_alias_database(PyTypeObject *type, PyObject *none)
 {
     try {
-        ConfigFile cfg;
-        MatcherAliasDatabase::serialise(cfg);
-        string out = cfg.serialize();
-        return PyUnicode_FromStringAndSize(out.data(), out.size());
+        core::cfg::Sections cfg = MatcherAliasDatabase::serialise();
+        stringstream ss;
+        cfg.write(ss, "memory");
+        return to_python(ss.str());
     } ARKI_CATCH_RETURN_PYO
 }
 
@@ -50,10 +54,9 @@ static PyObject* arkipy_make_qmacro_dataset(arkipy_Metadata* self, PyObject *arg
     if (!PyArg_ParseTupleAndKeywords(args, kw, "OOs|s", (char**)kwlist, &arg_cfg, &arg_datasets, &name, &query))
         return nullptr;
 
-    ConfigFile cfg;
-    if (configfile_from_python(arg_cfg, cfg)) return nullptr;
-    ConfigFile datasets;
-    if (configfile_from_python(arg_datasets, datasets)) return nullptr;
+    core::cfg::Section cfg = section_from_python(arg_cfg);
+    core::cfg::Sections datasets;
+    datasets = sections_from_python(arg_datasets);
 
     try {
         unique_ptr<dataset::Reader> ds;
@@ -64,11 +67,11 @@ static PyObject* arkipy_make_qmacro_dataset(arkipy_Metadata* self, PyObject *arg
             ds.reset(new Querymacro(cfg, datasets, name, query));
         } else {
             // Create the remote query macro
-            ConfigFile cfg;
-            cfg.setValue("name", name);
-            cfg.setValue("type", "remote");
-            cfg.setValue("path", baseurl);
-            cfg.setValue("qmacro", query);
+            core::cfg::Section cfg;
+            cfg.set("name", name);
+            cfg.set("type", "remote");
+            cfg.set("path", baseurl);
+            cfg.set("qmacro", query);
             ds = dataset::Reader::create(cfg);
         }
 
@@ -84,13 +87,12 @@ static PyObject* arkipy_make_merged_dataset(arkipy_Metadata* self, PyObject *arg
     if (!PyArg_ParseTupleAndKeywords(args, kw, "O", (char**)kwlist, &arg_cfg))
         return nullptr;
 
-    ConfigFile cfg;
-    if (configfile_from_python(arg_cfg, cfg)) return nullptr;
+    core::cfg::Sections cfg = sections_from_python(arg_cfg);
 
     try {
         std::unique_ptr<dataset::Merged> ds(new dataset::Merged);
-        for (auto i = cfg.sectionBegin(); i != cfg.sectionEnd(); ++i)
-            ds->add_dataset(*i->second);
+        for (auto si: cfg)
+            ds->add_dataset(si.second);
         return (PyObject*)dataset_reader_create(move(ds));
     } ARKI_CATCH_RETURN_PYO
 }
@@ -129,12 +131,18 @@ PyMODINIT_FUNC PyInit__arkimet(void)
 {
     using namespace arki::python;
 
+    arki::runtime::init();
+
     PyObject* m = PyModule_Create(&arkimet_module);
     if (!m) return m;
 
     register_metadata(m);
     register_summary(m);
     register_dataset(m);
+    register_arki_query(m);
+    register_arki_scan(m);
+    register_arki_check(m);
+    register_arki_mergeconf(m);
 
     return m;
 }

@@ -1,6 +1,6 @@
 #include "datasets.h"
 #include "utils/string.h"
-#include "configfile.h"
+#include "core/cfg.h"
 #include "dataset.h"
 #include "dataset/local.h"
 #include "utils/sys.h"
@@ -71,10 +71,10 @@ struct PathMatch
 
 namespace arki {
 
-Datasets::Datasets(const ConfigFile& cfg)
+Datasets::Datasets(const core::cfg::Sections& cfg)
 {
-    for (auto section = cfg.sectionBegin(); section != cfg.sectionEnd(); ++section)
-        configs.insert(make_pair(section->first, dataset::Config::create(*section->second)));
+    for (const auto& si: cfg)
+        configs.insert(make_pair(si.first, dataset::Config::create(si.second)));
 }
 
 std::shared_ptr<const dataset::Config> Datasets::get(const std::string& name) const

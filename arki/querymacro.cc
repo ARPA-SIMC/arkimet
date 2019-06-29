@@ -1,6 +1,5 @@
 #include "config.h"
 #include "querymacro.h"
-#include "configfile.h"
 #include "metadata.h"
 #include "metadata/consumer.h"
 #include "summary.h"
@@ -66,7 +65,7 @@ static const struct luaL_Reg querymacrolib[] = {
 	{NULL, NULL}
 };
 
-Querymacro::Querymacro(const ConfigFile& ds_cfg, const ConfigFile& dispatch_cfg, const std::string& name, const std::string& query)
+Querymacro::Querymacro(const core::cfg::Section& ds_cfg, const core::cfg::Sections& dispatch_cfg, const std::string& name, const std::string& query)
     : dispatch_cfg(dispatch_cfg), L(new Lua), funcid_querydata(-1), funcid_querysummary(-1)
 {
     m_config = std::shared_ptr<const dataset::Config>(new dataset::Config(ds_cfg));
@@ -144,7 +143,7 @@ dataset::Reader* Querymacro::dataset(const std::string& name)
     std::map<std::string, dataset::Reader*>::iterator i = ds_cache.find(name);
     if (i == ds_cache.end())
     {
-        ConfigFile* dscfg = dispatch_cfg.section(name);
+        const core::cfg::Section* dscfg = dispatch_cfg.section(name);
         if (!dscfg) return 0;
         auto ds = dataset::Reader::create(*dscfg);
         pair<map<string, dataset::Reader*>::iterator, bool> res = ds_cache.insert(make_pair(name, ds.release()));

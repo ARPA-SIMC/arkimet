@@ -2,7 +2,7 @@
 #include "postprocess.h"
 #include "arki/exceptions.h"
 #include "arki/core/file.h"
-#include "arki/configfile.h"
+#include "arki/core/cfg.h"
 #include "arki/metadata.h"
 #include "arki/metadata/data.h"
 #include "arki/utils/process.h"
@@ -213,15 +213,15 @@ void Postprocess::set_data_start_hook(std::function<void(NamedFileDescriptor&)> 
     m_child->data_start_hook = hook;
 }
 
-void Postprocess::validate(const map<string, string>& cfg)
+void Postprocess::validate(const core::cfg::Section& cfg)
 {
     // Build the set of allowed postprocessors
     set<string> allowed;
-    map<string, string>::const_iterator i = cfg.find("postprocess");
-    if (i != cfg.end())
+    bool has_cfg = cfg.has("postprocess");
+    if (has_cfg)
     {
         Splitter sp("[[:space:]]*,[[:space:]]*|[[:space:]]+", REG_EXTENDED);
-        string pp = i->second;
+        string pp = cfg.value("postprocess");
         for (Splitter::const_iterator j = sp.begin(pp); j != sp.end(); ++j)
             allowed.insert(*j);
     }
@@ -230,7 +230,7 @@ void Postprocess::validate(const map<string, string>& cfg)
     if (m_child->cmd.args.empty())
         throw std::runtime_error("cannot initialize postprocessing filter: postprocess command is empty");
     string scriptname = str::basename(m_child->cmd.args[0]);
-    if (i != cfg.end() && allowed.find(scriptname) == allowed.end())
+    if (has_cfg && allowed.find(scriptname) == allowed.end())
     {
         stringstream ss;
         ss << "cannot initialize postprocessing filter: postprocess command "

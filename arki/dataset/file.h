@@ -9,7 +9,6 @@
 #include <string>
 
 namespace arki {
-class ConfigFile;
 class Metadata;
 class Matcher;
 
@@ -18,14 +17,14 @@ namespace dataset {
 class FileConfig : public dataset::Config
 {
 public:
-    FileConfig(const ConfigFile& cfg);
+    FileConfig(const core::cfg::Section& cfg);
 
     std::string pathname;
     std::string format;
 
     std::unique_ptr<Reader> create_reader() const override;
 
-    static std::shared_ptr<const FileConfig> create(const ConfigFile& cfg);
+    static std::shared_ptr<const FileConfig> create(const core::cfg::Section& cfg);
 };
 
 /**
@@ -42,7 +41,7 @@ public:
 
     bool query_data(const dataset::DataQuery& q, metadata_dest_func) override;
 
-    static void read_config(const std::string& path, ConfigFile& cfg);
+    static core::cfg::Section read_config(const std::string& path);
 };
 
 class FdFile : public File

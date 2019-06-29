@@ -2,7 +2,6 @@
 #include "archive.h"
 #include "reporter.h"
 #include "simple/writer.h"
-#include "arki/configfile.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
 #include "arki/types/source/blob.h"
@@ -24,7 +23,7 @@ namespace {
 
 struct Fixture : public arki::utils::tests::Fixture
 {
-    ConfigFile cfg;
+    core::cfg::Section cfg;
     metadata::TestCollection orig;
     std::shared_ptr<const ArchivesConfig> config;
 
@@ -39,12 +38,12 @@ struct Fixture : public arki::utils::tests::Fixture
         sys::makedirs("testds/.archive/last");
 
         cfg.clear();
-        cfg.setValue("path", "testds");
-        cfg.setValue("name", "testds");
-        cfg.setValue("type", "ondisk2");
-        cfg.setValue("step", "daily");
-        cfg.setValue("unique", "origin, reftime");
-        cfg.setValue("archive age", "7");
+        cfg.set("path", "testds");
+        cfg.set("name", "testds");
+        cfg.set("type", "ondisk2");
+        cfg.set("step", "daily");
+        cfg.set("unique", "origin, reftime");
+        cfg.set("archive age", "7");
 
         config = ArchivesConfig::create("testds");
 
@@ -135,11 +134,11 @@ add_method("maintenance_nonindexed", [](Fixture& f) {
 add_method("reader_empty_last", [](Fixture& f) {
     // Create a secondary archive
     {
-        ConfigFile cfg;
-        cfg.setValue("name", "foo");
-        cfg.setValue("path", sys::abspath("testds/.archive/foo"));
-        cfg.setValue("type", "simple");
-        cfg.setValue("step", "daily");
+        core::cfg::Section cfg;
+        cfg.set("name", "foo");
+        cfg.set("path", sys::abspath("testds/.archive/foo"));
+        cfg.set("type", "simple");
+        cfg.set("step", "daily");
         auto config = dataset::Config::create(cfg);
         auto writer = config->create_writer();
         writer->flush();

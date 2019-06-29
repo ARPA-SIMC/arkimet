@@ -25,6 +25,11 @@ extern const Policy* policy_ofd;
 struct Time;
 struct FuzzyTime;
 
+namespace cfg {
+struct Section;
+struct Sections;
+}
+
 }
 }
 

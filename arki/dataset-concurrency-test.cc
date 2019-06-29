@@ -7,7 +7,6 @@
 #include "arki/types/source.h"
 #include "arki/types/source/blob.h"
 #include "arki/types/reftime.h"
-#include "arki/configfile.h"
 #include "arki/core/file.h"
 #include "arki/utils/accounting.h"
 #include "arki/utils/string.h"
@@ -39,8 +38,7 @@ struct FixtureWriter : public DatasetTest
 
     bool smallfiles() const
     {
-        return ConfigFile::boolValue(cfg.value("smallfiles")) ||
-            (td.format == "vm2" && cfg.value("type") == "simple");
+        return cfg.value_bool("smallfiles") || (td.format == "vm2" && cfg.value("type") == "simple");
     }
 };
 

@@ -4,7 +4,6 @@
 #include "arki/dataset/simple/writer.h"
 #include "arki/dataset/simple/reader.h"
 #include "arki/types/source/blob.h"
-#include "arki/configfile.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
 #include "arki/matcher.h"

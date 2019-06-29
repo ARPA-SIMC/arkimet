@@ -7,7 +7,6 @@
 #include "offline.h"
 #include "maintenance.h"
 #include "empty.h"
-#include "arki/configfile.h"
 #include "arki/libconfig.h"
 #include "arki/matcher.h"
 #include "arki/metadata/collection.h"
@@ -41,14 +40,14 @@ bool is_archive(const std::string& dir)
 }
 
 
-static ConfigFile make_config(const std::string& dir)
+static core::cfg::Section make_config(const std::string& dir)
 {
-    ConfigFile cfg;
-    cfg.setValue("name", str::basename(dir));
-    cfg.setValue("path", dir);
-    cfg.setValue("step", "monthly");
-    cfg.setValue("offline", "true");
-    cfg.setValue("smallfiles", "true");
+    core::cfg::Section cfg;
+    cfg.set("name", str::basename(dir));
+    cfg.set("path", dir);
+    cfg.set("step", "monthly");
+    cfg.set("offline", "true");
+    cfg.set("smallfiles", "true");
     return cfg;
 }
 

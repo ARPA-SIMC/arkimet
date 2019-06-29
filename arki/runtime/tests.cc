@@ -63,18 +63,6 @@ void CatchOutput::check_success(int res)
     wassert(actual(res) == 0);
 }
 
-int run_cmdline(cmdline_func func, std::initializer_list<const char*> argv)
-{
-    std::vector<const char*> cmd_argv(argv);
-    cmd_argv.push_back(nullptr);
-    int res = func(cmd_argv.size() - 1, cmd_argv.data());
-    // Flush stdio's buffers, so what was written gets written to the capture
-    // files
-    fflush(stdout);
-    fflush(stderr);
-    return res;
-}
-
 }
 }
 }

@@ -1,7 +1,6 @@
 #include "config.h"
 #include "index.h"
 #include "arki/dataset/maintenance.h"
-#include "arki/configfile.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
 #include "arki/matcher.h"

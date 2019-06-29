@@ -1,7 +1,6 @@
 #include "outbound.h"
 #include "step.h"
 #include "empty.h"
-#include "arki/configfile.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
 #include "arki/types/reftime.h"
@@ -20,12 +19,12 @@ namespace arki {
 namespace dataset {
 namespace outbound {
 
-Config::Config(const ConfigFile& cfg)
+Config::Config(const core::cfg::Section& cfg)
     : segmented::Config(cfg)
 {
 }
 
-std::shared_ptr<const Config> Config::create(const ConfigFile& cfg)
+std::shared_ptr<const Config> Config::create(const core::cfg::Section& cfg)
 {
     return std::shared_ptr<const Config>(new Config(cfg));
 }
@@ -101,7 +100,7 @@ void Writer::removeAll(std::ostream& log, bool writable)
     log << name() << ": cleaning dataset not implemented" << endl;
 }
 
-void Writer::test_acquire(const ConfigFile& cfg, WriterBatch& batch, std::ostream& out)
+void Writer::test_acquire(const core::cfg::Section& cfg, WriterBatch& batch, std::ostream& out)
 {
     std::shared_ptr<const outbound::Config> config(new outbound::Config(cfg));
     for (auto& e: batch)

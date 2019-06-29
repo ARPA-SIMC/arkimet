@@ -5,7 +5,6 @@
 #include <string>
 
 namespace arki {
-class ConfigFile;
 class Metadata;
 class Matcher;
 
@@ -14,11 +13,11 @@ namespace fromfunction {
 
 struct Config : public dataset::Config
 {
-    Config(const ConfigFile& cfg);
+    Config(const core::cfg::Section& cfg);
 
     std::unique_ptr<dataset::Reader> create_reader() const override;
 
-    static std::shared_ptr<const Config> create(const ConfigFile& cfg);
+    static std::shared_ptr<const Config> create(const core::cfg::Section& cfg);
 };
 
 

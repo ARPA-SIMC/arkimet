@@ -8,7 +8,6 @@
 #include "arki/utils/string.h"
 #include "arki/metadata.h"
 #include "arki/types/reftime.h"
-#include "arki/configfile.h"
 
 using namespace std;
 using namespace arki::utils;
@@ -17,13 +16,13 @@ namespace arki {
 namespace dataset {
 namespace iseg {
 
-Config::Config(const ConfigFile& cfg)
+Config::Config(const core::cfg::Section& cfg)
     : segmented::Config(cfg),
       format(cfg.value("format")),
       index(index::parseMetadataBitmask(cfg.value("index"))),
       unique(index::parseMetadataBitmask(cfg.value("unique"))),
       summary_cache_pathname(str::joinpath(path, ".summaries")),
-      trace_sql(ConfigFile::boolValue(cfg.value("trace_sql")))
+      trace_sql(cfg.value_bool("trace_sql"))
 {
     if (format.empty())
         throw std::runtime_error("Dataset " + name + " misses format= configuration");
@@ -31,7 +30,7 @@ Config::Config(const ConfigFile& cfg)
     unique.erase(TYPE_REFTIME);
 }
 
-std::shared_ptr<const Config> Config::create(const ConfigFile& cfg)
+std::shared_ptr<const Config> Config::create(const core::cfg::Section& cfg)
 {
     return std::shared_ptr<const Config>(new Config(cfg));
 }

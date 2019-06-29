@@ -53,8 +53,8 @@ bool Source::dispatch(MetadataDispatch& dispatcher)
 StdinSource::StdinSource(CommandLine& args, const std::string& format)
     : scanner(scan::Scanner::get_scanner(format).release())
 {
-    ConfigFile cfg;
-    cfg.setValue("format", format);
+    core::cfg::Section cfg;
+    cfg.set("format", format);
     auto config = dataset::fromfunction::Config::create(cfg);
     auto reader = config->create_reader();
     m_reader = std::make_shared<dataset::fromfunction::Reader>(config);
@@ -78,12 +78,12 @@ void StdinSource::open() {}
 void StdinSource::close(bool successful) {}
 
 
-FileSource::FileSource(QueryCommandLine& args, const ConfigFile& info)
+FileSource::FileSource(QueryCommandLine& args, const core::cfg::Section& info)
     : cfg(info)
 {
 }
 
-FileSource::FileSource(DispatchOptions& args, const ConfigFile& info)
+FileSource::FileSource(DispatchOptions& args, const core::cfg::Section& info)
     : cfg(info)
 {
     if (args.movework && args.movework->isSet())
@@ -100,7 +100,7 @@ dataset::Reader& FileSource::reader() const { return *m_reader; }
 void FileSource::open()
 {
     if (!movework.empty() && cfg.value("type") == "file")
-        cfg.setValue("path", moveFile(cfg.value("path"), movework));
+        cfg.set("path", moveFile(cfg.value("path"), movework));
     m_reader = dataset::Reader::create(cfg);
 }
 
@@ -116,9 +116,9 @@ void FileSource::close(bool successful)
 MergedSource::MergedSource(QueryCommandLine& args, const Inputs& inputs)
     : m_reader(std::make_shared<dataset::Merged>())
 {
-    for (const auto& cfg: inputs)
+    for (auto si: inputs.merged)
     {
-        sources.push_back(std::make_shared<FileSource>(args, cfg));
+        sources.push_back(std::make_shared<FileSource>(args, si.second));
         if (m_name.empty())
             m_name = sources.back()->name();
         else
@@ -149,21 +149,20 @@ void MergedSource::close(bool successful)
 QmacroSource::QmacroSource(QueryCommandLine& args, const Inputs& inputs)
 {
     // Create the virtual qmacro dataset
-    ConfigFile inputs_cfg = inputs.as_config();
-    std::string baseurl = dataset::http::Reader::allSameRemoteServer(inputs_cfg);
+    std::string baseurl = dataset::http::Reader::allSameRemoteServer(inputs.merged);
     if (baseurl.empty())
     {
         // Create the local query macro
         nag::verbose("Running query macro %s on local datasets", args.qmacro->stringValue().c_str());
-        m_reader = std::make_shared<Querymacro>(cfg, inputs_cfg, args.qmacro->stringValue(), args.qmacro_query);
+        m_reader = std::make_shared<Querymacro>(cfg, inputs.merged, args.qmacro->stringValue(), args.qmacro_query);
     } else {
         // Create the remote query macro
         nag::verbose("Running query macro %s on %s", args.qmacro->stringValue().c_str(), baseurl.c_str());
-        ConfigFile cfg;
-        cfg.setValue("name", args.qmacro->stringValue());
-        cfg.setValue("type", "remote");
-        cfg.setValue("path", baseurl);
-        cfg.setValue("qmacro", args.qmacro_query);
+        core::cfg::Section cfg;
+        cfg.set("name", args.qmacro->stringValue());
+        cfg.set("type", "remote");
+        cfg.set("path", baseurl);
+        cfg.set("qmacro", args.qmacro_query);
         m_reader = dataset::Reader::create(cfg);
     }
 
@@ -194,9 +193,9 @@ bool foreach_source(ScanCommandLine& args, const Inputs& inputs, std::function<b
         source.close(all_successful);
     } else {
         // Query all the datasets in sequence
-        for (const auto& cfg: inputs)
+        for (auto si: inputs.merged)
         {
-            FileSource source(*args.dispatch_options, cfg);
+            FileSource source(*args.dispatch_options, si.second);
             nag::verbose("Processing %s...", source.name().c_str());
             source.open();
             bool success;
@@ -255,9 +254,9 @@ bool foreach_source(QueryCommandLine& args, const Inputs& inputs, std::function<
             source.close(all_successful);
         } else {
             // Query all the datasets in sequence
-            for (const auto& cfg: inputs)
+            for (auto si: inputs.merged)
             {
-                FileSource source(args, cfg);
+                FileSource source(args, si.second);
                 nag::verbose("Processing %s...", source.name().c_str());
                 source.open();
                 bool success;

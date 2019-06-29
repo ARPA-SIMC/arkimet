@@ -3,7 +3,6 @@
 #include "arki/dataset/iseg/reader.h"
 #include "arki/dataset/reporter.h"
 #include "arki/exceptions.h"
-#include "arki/configfile.h"
 #include "arki/metadata.h"
 
 using namespace std;

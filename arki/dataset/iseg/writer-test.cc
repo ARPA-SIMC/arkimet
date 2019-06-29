@@ -3,7 +3,6 @@
 #include "arki/dataset/iseg/reader.h"
 #include "arki/exceptions.h"
 #include "arki/types/source/blob.h"
-#include "arki/configfile.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
 #include "arki/utils/files.h"
@@ -104,12 +103,12 @@ add_method("testacquire", [](Fixture& f) {
     wassert(actual(batch[0]->result) == dataset::ACQ_OK);
     wassert(actual(batch[0]->dataset_name) == "testds");
 
-    f.cfg.setValue("archive age", "1");
+    f.cfg.set("archive age", "1");
     wassert(iseg::Writer::test_acquire(f.cfg, batch, ss));
     wassert(actual(batch[0]->result) == dataset::ACQ_ERROR);
     wassert(actual(batch[0]->dataset_name) == "");
 
-    f.cfg.setValue("delete age", "1");
+    f.cfg.set("delete age", "1");
     wassert(iseg::Writer::test_acquire(f.cfg, batch, ss));
     wassert(actual(batch[0]->result) == dataset::ACQ_OK);
     wassert(actual(batch[0]->dataset_name) == "testds");

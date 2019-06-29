@@ -1,7 +1,8 @@
 #include "common.h"
+#include "utils/values.h"
 #include <Python.h>
 #include "arki/libconfig.h"
-#include "arki/configfile.h"
+#include "arki/core/cfg.h"
 #include "arki/runtime.h"
 
 using namespace std;
@@ -37,7 +38,7 @@ void PythonEmitter::add_object(PyObject* o)
     } else switch (stack.back().state) {
         case Target::LIST:
             if (PyList_Append(stack.back().o, o) == -1)
-                throw python_callback_failed();
+                throw PythonException();
             Py_DECREF(o);
             break;
         case Target::MAPPING:
@@ -48,7 +49,7 @@ void PythonEmitter::add_object(PyObject* o)
             PyObject* key = stack.back().o;
             stack.pop_back();
             if (PyDict_SetItem(stack.back().o, key, o) == -1)
-                throw python_callback_failed();
+                throw PythonException();
             Py_DECREF(key);
             Py_DECREF(o);
             break;
@@ -59,7 +60,7 @@ void PythonEmitter::add_object(PyObject* o)
 void PythonEmitter::start_list()
 {
     PyObject* o = PyList_New(0);
-    if (o == nullptr) throw python_callback_failed();
+    if (o == nullptr) throw PythonException();
     stack.push_back(Target(Target::LIST, o));
 }
 
@@ -73,7 +74,7 @@ void PythonEmitter::end_list()
 void PythonEmitter::start_mapping()
 {
     PyObject* o = PyDict_New();
-    if (o == nullptr) throw python_callback_failed();
+    if (o == nullptr) throw PythonException();
     stack.push_back(Target(Target::MAPPING, o));
 }
 
@@ -105,21 +106,21 @@ void PythonEmitter::add_bool(bool val)
 void PythonEmitter::add_int(long long int val)
 {
     PyObject* o = PyLong_FromLong(val);
-    if (o == nullptr) throw python_callback_failed();
+    if (o == nullptr) throw PythonException();
     add_object(o);
 }
 
 void PythonEmitter::add_double(double val)
 {
     PyObject* o = PyFloat_FromDouble(val);
-    if (o == nullptr) throw python_callback_failed();
+    if (o == nullptr) throw PythonException();
     add_object(o);
 }
 
 void PythonEmitter::add_string(const std::string& val)
 {
     PyObject* o = PyUnicode_FromStringAndSize(val.data(), val.size());
-    if (o == nullptr) throw python_callback_failed();
+    if (o == nullptr) throw PythonException();
     add_object(o);
 }
 
@@ -400,10 +401,7 @@ int object_repr(PyObject* o, std::string& out)
     pyo_unique_ptr fileno_repr(PyObject_Repr(o));
     if (!fileno_repr) return -1;
 
-    std::string name;
-    if (string_from_python(fileno_repr, name))
-        return -1;
-
+    out = string_from_python(fileno_repr);
     return 0;
 }
 
@@ -431,55 +429,45 @@ int file_get_fileno(PyObject* o)
     return PyLong_AsLong(fileno_value);
 }
 
-int string_from_python(PyObject* o, std::string& out)
-{
-    if (PyBytes_Check(o)) {
-        const char* v = PyBytes_AsString(o);
-        if (v == NULL) return -1;
-        out = v;
-        return 0;
-    }
-    if (PyUnicode_Check(o)) {
-        const char* v = PyUnicode_AsUTF8(o);
-        if (v == NULL) return -1;
-        out = v;
-        return 0;
-    }
-    PyErr_SetString(PyExc_TypeError, "value must be an instance of str or bytes");
-    return -1;
-}
-
-int configfile_from_python(PyObject* o, ConfigFile& out)
+core::cfg::Section section_from_python(PyObject* o)
 {
     try {
         if (PyBytes_Check(o)) {
-            const char* v = PyBytes_AsString(o);
-            if (v == NULL) return -1;
-            out.parse(v);
-            return 0;
+            const char* v = throw_ifnull(PyBytes_AsString(o));
+            return core::cfg::Section::parse(v);
         }
         if (PyUnicode_Check(o)) {
-            const char* v = PyUnicode_AsUTF8(o);
-            if (v == NULL) return -1;
-            out.parse(v);
-            return 0;
+            const char* v = throw_ifnull(PyUnicode_AsUTF8(o));
+            return core::cfg::Section::parse(v);
         }
         if (PyDict_Check(o))
         {
+            core::cfg::Section res;
             PyObject *key, *val;
             Py_ssize_t pos = 0;
             while (PyDict_Next(o, &pos, &key, &val))
-            {
-                string k, v;
-                if (string_from_python(key, k)) return -1;
-                if (string_from_python(val, v)) return -1;
-                out.setValue(k, v);
-            }
-            return 0;
+                res.set(string_from_python(key), string_from_python(val));
+            return res;
         }
         PyErr_SetString(PyExc_TypeError, "value must be an instance of str, bytes, or dict");
-        return -1;
-    } ARKI_CATCH_RETURN_INT;
+        throw PythonException();
+    } ARKI_CATCH_RETHROW_PYTHON
+}
+
+core::cfg::Sections sections_from_python(PyObject* o)
+{
+    try {
+        if (PyBytes_Check(o)) {
+            const char* v = throw_ifnull(PyBytes_AsString(o));
+            return core::cfg::Sections::parse(v);
+        }
+        if (PyUnicode_Check(o)) {
+            const char* v = throw_ifnull(PyUnicode_AsUTF8(o));
+            return core::cfg::Sections::parse(v);
+        }
+        PyErr_SetString(PyExc_TypeError, "value must be an instance of str, or bytes");
+        throw PythonException();
+    } ARKI_CATCH_RETHROW_PYTHON
 }
 
 int common_init()

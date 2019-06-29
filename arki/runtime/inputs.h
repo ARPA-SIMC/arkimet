@@ -1,7 +1,7 @@
 #ifndef ARKI_RUNTIME_INPUTS_H
 #define ARKI_RUNTIME_INPUTS_H
 
-#include <arki/configfile.h>
+#include <arki/core/cfg.h>
 #include <vector>
 
 namespace arki {
@@ -10,13 +10,18 @@ struct Restrict;
 struct ScanCommandLine;
 struct QueryCommandLine;
 
-struct Inputs : public std::vector<ConfigFile>
+struct Inputs
 {
+    core::cfg::Sections merged;
+
     Inputs() = default;
     Inputs(ScanCommandLine& args);
     Inputs(QueryCommandLine& args);
 
-    void add_sections(const ConfigFile& cfg);
+    bool empty() const { return merged.empty(); }
+
+    void add_section(const core::cfg::Section& section, const std::string& name=std::string());
+    void add_sections(const core::cfg::Sections& cfg);
     void add_config_file(const std::string& pathname);
     void add_pathname(const std::string& pathname);
     void add_pathnames_from_file(const std::string& pathname);
@@ -24,8 +29,6 @@ struct Inputs : public std::vector<ConfigFile>
     void remove_system_datasets();
 
     std::string expand_remote_query(const std::string& query);
-
-    ConfigFile as_config() const;
 };
 
 }

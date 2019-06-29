@@ -9,8 +9,6 @@
 #include <iosfwd>
 
 namespace arki {
-class ConfigFile;
-
 namespace dataset {
 namespace iseg {
 class Reader;
@@ -41,7 +39,7 @@ public:
     void acquire_batch(WriterBatch& batch, const AcquireConfig& cfg=AcquireConfig()) override;
     void remove(Metadata& md);
 
-    static void test_acquire(const ConfigFile& cfg, WriterBatch& batch, std::ostream& out);
+    static void test_acquire(const core::cfg::Section& cfg, WriterBatch& batch, std::ostream& out);
 };
 
 
