@@ -392,6 +392,7 @@ nobase_dist_arkiinclude_HEADERS += scan/vm2.h utils/vm2.h
 libarkimet_la_SOURCES += utils/vm2.cc
 libarkimet_la_LDFLAGS += $(VM2_LIBS)
 tests_arki_test_SOURCES += utils/vm2-test.cc
+tests_arki_test_LDADD += $(VM2_LIBS)
 endif
 
 endif
