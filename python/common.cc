@@ -429,7 +429,7 @@ int file_get_fileno(PyObject* o)
     return PyLong_AsLong(fileno_value);
 }
 
-core::cfg::Section configfile_from_python(PyObject* o)
+core::cfg::Section section_from_python(PyObject* o)
 {
     try {
         if (PyBytes_Check(o)) {
@@ -450,6 +450,22 @@ core::cfg::Section configfile_from_python(PyObject* o)
             return res;
         }
         PyErr_SetString(PyExc_TypeError, "value must be an instance of str, bytes, or dict");
+        throw PythonException();
+    } ARKI_CATCH_RETHROW_PYTHON
+}
+
+core::cfg::Sections sections_from_python(PyObject* o)
+{
+    try {
+        if (PyBytes_Check(o)) {
+            const char* v = throw_ifnull(PyBytes_AsString(o));
+            return core::cfg::Sections::parse(v);
+        }
+        if (PyUnicode_Check(o)) {
+            const char* v = throw_ifnull(PyUnicode_AsUTF8(o));
+            return core::cfg::Sections::parse(v);
+        }
+        PyErr_SetString(PyExc_TypeError, "value must be an instance of str, or bytes");
         throw PythonException();
     } ARKI_CATCH_RETHROW_PYTHON
 }

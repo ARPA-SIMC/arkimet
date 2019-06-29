@@ -54,10 +54,9 @@ static PyObject* arkipy_make_qmacro_dataset(arkipy_Metadata* self, PyObject *arg
     if (!PyArg_ParseTupleAndKeywords(args, kw, "OOs|s", (char**)kwlist, &arg_cfg, &arg_datasets, &name, &query))
         return nullptr;
 
-    core::cfg::Section cfg = configfile_from_python(arg_cfg);
+    core::cfg::Section cfg = section_from_python(arg_cfg);
     core::cfg::Sections datasets;
-    // FIXME: this won't work: we need a different way to serialize a Sections from python
-    // datasets = configfile_from_python(arg_datasets);
+    datasets = sections_from_python(arg_datasets);
 
     try {
         unique_ptr<dataset::Reader> ds;
@@ -88,9 +87,7 @@ static PyObject* arkipy_make_merged_dataset(arkipy_Metadata* self, PyObject *arg
     if (!PyArg_ParseTupleAndKeywords(args, kw, "O", (char**)kwlist, &arg_cfg))
         return nullptr;
 
-    core::cfg::Sections cfg;
-    // FIXME: this won't work, we need a different way to create a Sections from python
-    // if (configfile_from_python(arg_cfg, cfg)) return nullptr;
+    core::cfg::Sections cfg = sections_from_python(arg_cfg);
 
     try {
         std::unique_ptr<dataset::Merged> ds(new dataset::Merged);

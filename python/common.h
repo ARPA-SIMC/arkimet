@@ -92,13 +92,21 @@ int object_repr(PyObject* o, std::string& out);
 int file_get_fileno(PyObject* o);
 
 /**
- * Fill a ConfigFile with configuration info from python.
+ * Create a cfg::Section from python.
  *
  * Currently this only supports:
- *  - str or bytes, that will get parsed by ConfigFile.
+ *  - str or bytes, that will get parsed
  *  - dict, that will be set as key->val into out
  */
-core::cfg::Section configfile_from_python(PyObject* o);
+core::cfg::Section section_from_python(PyObject* o);
+
+/**
+ * Create a cfg::Sections from python.
+ *
+ * Currently this only supports:
+ *  - str or bytes, that will get parsed
+ */
+core::cfg::Sections sections_from_python(PyObject* o);
 
 /**
  * Initialize the python bits to use used by the common functions.
