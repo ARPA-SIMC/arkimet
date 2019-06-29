@@ -410,7 +410,13 @@ core::cfg::Section Reader::read_dataset_config(const std::string& path)
     request.set_url(str::joinpath(path, "config"));
     request.perform();
 
-    return core::cfg::Section::parse(request.buf, request.url);
+    auto sections = core::cfg::Sections::parse(request.buf, request.url);
+    if (sections.size() != 1)
+        throw std::runtime_error(request.url + ": only 1 section expected in resulting configuration, found " + std::to_string(sections.size()));
+
+    auto res = sections.begin()->second;
+    res.set("name", sections.begin()->first);
+    return res;
 }
 
 void Reader::produce_one_wrong_query()
