@@ -21,14 +21,9 @@ struct Fixture : public DatasetTest {
 
     void test_setup()
     {
+        DatasetTest::test_setup("type=ondisk2\nstep=daily\nunique=origin,reftime\n");
         runtime::readMatcherAliasDatabase();
-
-        dispatch_cfg = core::cfg::Sections::parse(R"(
-[testds]
-type = ondisk2
-step = daily
-unique = origin, reftime
-        )");
+        dispatch_cfg.emplace("testds", cfg);
     }
 
     void import()
