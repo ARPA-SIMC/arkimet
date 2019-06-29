@@ -1,8 +1,7 @@
 #include "arki/../config.h"
 #include "arki/runtime/arki-mergeconf.h"
-#include <arki/dataset.h>
+#include "arki/dataset/http.h"
 #include <arki/summary.h>
-#include <arki/matcher.h>
 #include <arki/runtime.h>
 #include <arki/runtime/inputs.h>
 #include <arki/runtime/config.h>
@@ -10,7 +9,6 @@
 #include <arki/utils/commandline/parser.h>
 #include <arki/utils/geos.h>
 #include <arki/utils/string.h>
-#include <arki/utils/sys.h>
 #include <memory>
 #include <iostream>
 
@@ -68,7 +66,16 @@ int ArkiMergeconf::run(int argc, const char* argv[])
             inputs.add_config_file(pathname);
         // Read the config files from the remaining commandline arguments
         while (opts.hasNext())
-            inputs.add_pathname(opts.next());
+        {
+            std::string path = opts.next();
+            if (str::startswith(path, "http://") || str::startswith(path, "https://"))
+            {
+                auto sections = dataset::http::Reader::load_cfg_sections(path);
+                inputs.add_sections(sections);
+            }
+            else
+                inputs.add_pathname(path);
+        }
         if (inputs.empty())
             throw commandline::BadOption("you need to specify at least one config file or dataset");
 

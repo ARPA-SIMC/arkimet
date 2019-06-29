@@ -160,8 +160,8 @@ public:
     void query_summary(const Matcher& matcher, Summary& summary) override;
     void query_bytes(const dataset::ByteQuery& q, core::NamedFileDescriptor& out) override;
 
-    static core::cfg::Sections read_server_config(const std::string& path);
-    static core::cfg::Section read_dataset_config(const std::string& path);
+    static core::cfg::Sections load_cfg_sections(const std::string& path);
+    static core::cfg::Section load_cfg_section(const std::string& path);
 
     /**
      * Expand the given matcher expression using the aliases on this server

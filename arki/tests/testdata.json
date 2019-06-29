@@ -16696,6 +16696,16 @@
  },
  {
   "doc": "",
+  "group": "arki_runtime_arkimergeconf",
+  "method": "http"
+ },
+ {
+  "doc": "",
+  "group": "arki_runtime_arkimergeconf",
+  "method": "ignore_system_datasets"
+ },
+ {
+  "doc": "",
   "group": "arki_runtime",
   "method": "files"
  },

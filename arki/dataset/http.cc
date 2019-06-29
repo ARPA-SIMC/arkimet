@@ -385,7 +385,7 @@ void Reader::query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out)
     request.perform();
 }
 
-core::cfg::Sections Reader::read_server_config(const std::string& path)
+core::cfg::Sections Reader::load_cfg_sections(const std::string& path)
 {
     using namespace http;
 
@@ -396,10 +396,14 @@ core::cfg::Sections Reader::read_server_config(const std::string& path)
     request.set_url(str::joinpath(path, "config"));
     request.perform();
 
-    return core::cfg::Sections::parse(request.buf, request.url);
+    auto res = core::cfg::Sections::parse(request.buf, request.url);
+    // Make sure name=* is present in each section
+    for (auto& si: res)
+        si.second.set("name", si.first);
+    return res;
 }
 
-core::cfg::Section Reader::read_dataset_config(const std::string& path)
+core::cfg::Section Reader::load_cfg_section(const std::string& path)
 {
     using namespace http;
 

@@ -41,7 +41,7 @@ arki_xargs_LDADD = $(all_libs)
 arki_test_SOURCES = arki-test.cc
 arki_test_LDADD = $(all_libs)
 
-test_scripts = test-arki-xargs test-arki-mergeconf run-test-src
+test_scripts = test-arki-xargs run-test-src
 check_PROGRAMS = test-src
 
 check-local:

@@ -644,6 +644,7 @@ tests_arki_test_SOURCES += \
 		runtime/arki-query-test.cc \
 		runtime/arki-check-test.cc \
 		runtime/arki-scan-test.cc \
+		runtime/arki-mergeconf-test.cc \
 		runtime-test.cc
 
 if CURL

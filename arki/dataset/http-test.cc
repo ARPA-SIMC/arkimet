@@ -77,7 +77,7 @@ add_method("redirect", [] {
     char url[512];
     snprintf(url, 512, "http://localhost:%d", port);
 
-    auto cfg = http::Reader::read_server_config(url);
+    auto cfg = http::Reader::load_cfg_sections(url);
     auto sec = cfg.section("test200");
     wassert(actual(sec->value("type")) == "remote");
     wassert(actual(sec->value("path")) == "http://foo.bar/foo/dataset/test200");

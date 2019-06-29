@@ -332,7 +332,7 @@ core::cfg::Section Reader::read_config(const std::string& path)
 {
 #ifdef HAVE_LIBCURL
     if (str::startswith(path, "http://") || str::startswith(path, "https://"))
-        return dataset::http::Reader::read_config(path);
+        return dataset::http::Reader::load_cfg_section(path);
 #endif
     if (sys::isdir(path))
         return dataset::LocalReader::read_config(path);
