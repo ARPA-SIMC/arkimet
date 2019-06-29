@@ -75,6 +75,9 @@ public:
     /// Write this configuration to the given output stream
     void write(std::ostream& out, const std::string& pathname) const;
 
+    /// Dump the configuration to the given file
+    void dump(FILE* out) const;
+
     /// Parse configuration from the given LineReader
     static Section parse(core::LineReader& in, const std::string& pathname);
 
@@ -125,6 +128,9 @@ public:
 
     /// Write this configuration to the given output stream
     void write(std::ostream& out, const std::string& pathname) const;
+
+    /// Dump the configuration to the given file
+    void dump(FILE* out) const;
 
     /// Parse configuration from the given LineReader
     static Sections parse(core::LineReader& in, const std::string& pathname);

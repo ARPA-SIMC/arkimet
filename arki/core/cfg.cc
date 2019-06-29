@@ -194,6 +194,13 @@ void Section::write(std::ostream& out, const std::string& pathname) const
             out << i.first << " = " << i.second << endl;
 }
 
+void Section::dump(FILE* out) const
+{
+    for (const auto& i: *this)
+        if (!i.second.empty())
+            fprintf(out, "%s = %s\n", i.first.c_str(), i.second.c_str());
+}
+
 Section Section::parse(core::NamedFileDescriptor& in)
 {
     auto reader = LineReader::from_fd(in);
@@ -255,6 +262,15 @@ void Sections::write(std::ostream& out, const std::string& pathname) const
 
         out << "[" << si.first << "]" << endl;
         si.second.write(out, pathname);
+    }
+}
+
+void Sections::dump(FILE* out) const
+{
+    for (const auto& i: *this)
+    {
+        fprintf(out, "[%s]\n", i.first.c_str());
+        i.second.dump(out);
     }
 }
 
