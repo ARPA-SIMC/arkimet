@@ -331,7 +331,7 @@ dnl Check for vm2 support
 if test $enable_vm2 = yes
 then
 	dnl Check for VM2 library
-	PKG_CHECK_EXISTS([meteo-vm2], [have_vm2=yes], [have_vm2=no])
+	PKG_CHECK_EXISTS([meteo-vm2 >= 1.0], [have_vm2=yes], [have_vm2=no])
 	if test $have_vm2 = yes
 	then
 		AC_DEFINE([HAVE_VM2], 1, [vm2 format enabled])

@@ -73,8 +73,8 @@ add_method("acquire_replace", [](Fixture& f) {
 
         // Make sure we're not getting the deleted element
         wassert(actual(mdc[0].sourceBlob().offset) > 0u);
-        wassert(actual(mdc[1].sourceBlob().offset) > 0);
-        wassert(actual(mdc[2].sourceBlob().offset) > 0);
+        wassert(actual(mdc[1].sourceBlob().offset) > 0u);
+        wassert(actual(mdc[2].sourceBlob().offset) > 0u);
     }
 });
 
