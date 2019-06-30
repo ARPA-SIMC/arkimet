@@ -6,6 +6,7 @@
 #include "arki/utils/files.h"
 #include "arki/core/file.h"
 #include "common.h"
+#include <sstream>
 
 using namespace arki::python;
 
@@ -145,6 +146,54 @@ struct parse_section : public ClassMethKwargs<parse_section>
     }
 };
 
+struct write_sections : public MethKwargs<write_sections, arkipy_cfgSections>
+{
+    constexpr static const char* name = "write";
+    constexpr static const char* signature = "TextIO";
+    constexpr static const char* returns = "";
+    constexpr static const char* summary = "write the configuration to any object with a write method";
+    constexpr static const char* doc = nullptr;
+
+    static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
+    {
+        static const char* kwlist[] = { "file", nullptr };
+        PyObject* arg_file = nullptr;
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "O", const_cast<char**>(kwlist), &arg_file))
+            return nullptr;
+
+        try {
+            std::stringstream ss;
+            self->sections.write(ss, "memory");
+            pyo_unique_ptr res(throw_ifnull(PyObject_CallMethod(arg_file, "write", "s#", ss.str().data(), (int)ss.str().size())));
+            Py_RETURN_NONE;
+        } ARKI_CATCH_RETURN_PYO
+    }
+};
+
+struct write_section : public MethKwargs<write_section, arkipy_cfgSection>
+{
+    constexpr static const char* name = "write";
+    constexpr static const char* signature = "TextIO";
+    constexpr static const char* returns = "";
+    constexpr static const char* summary = "write the configuration to any object with a write method";
+    constexpr static const char* doc = nullptr;
+
+    static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
+    {
+        static const char* kwlist[] = { "file", nullptr };
+        PyObject* arg_file = nullptr;
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "O", const_cast<char**>(kwlist), &arg_file))
+            return nullptr;
+
+        try {
+            std::stringstream ss;
+            self->section->write(ss, "memory");
+            pyo_unique_ptr res(throw_ifnull(PyObject_CallMethod(arg_file, "write", "s#", ss.str().data(), (int)ss.str().size())));
+            Py_RETURN_NONE;
+        } ARKI_CATCH_RETURN_PYO
+    }
+};
+
 
 
 struct SectionsDef : public Type<SectionsDef, arkipy_cfgSections>
@@ -155,7 +204,7 @@ struct SectionsDef : public Type<SectionsDef, arkipy_cfgSections>
 Arkimet configuration, as multiple sections of key/value options
 )";
     GetSetters<> getsetters;
-    Methods<section, obtain, parse_sections> methods;
+    Methods<section, obtain, parse_sections, write_sections> methods;
 
     static void _dealloc(Impl* self)
     {
@@ -216,7 +265,7 @@ struct SectionDef : public Type<SectionDef, arkipy_cfgSection>
 Arkimet configuration, as a section of key/value options
 )";
     GetSetters<> getsetters;
-    Methods<parse_section> methods;
+    Methods<parse_section, write_section> methods;
 
     static void _dealloc(Impl* self)
     {
@@ -327,8 +376,6 @@ static PyModuleDef cfg_module = {
 namespace arki {
 namespace python {
 
-// TODO: Section write
-// TODO: Sections write
 // TODO: Sections as_configparser
 // TODO: Section as_dict
 // TODO: Sections constructor with configparser
