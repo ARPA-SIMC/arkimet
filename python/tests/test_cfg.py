@@ -1,4 +1,6 @@
 import unittest
+import tempfile
+import io
 import arkimet as arki
 
 
@@ -16,6 +18,20 @@ class TestCfgSections(unittest.TestCase):
         self.assertIsInstance(section, arki.cfg.Section)
         self.assertEqual(sections.section("name"), section)
         section["key"] = "val"
+        self.assertEqual(sections["name"]["key"], "val")
+
+    def test_parse(self):
+        body = """
+[name]
+key = val
+"""
+        with tempfile.NamedTemporaryFile("w+t") as fd:
+            fd.write(body)
+            fd.flush()
+            sections = arki.cfg.Sections.parse(fd.name)
+        self.assertEqual(sections["name"]["key"], "val")
+
+        sections = arki.cfg.Sections.parse(io.StringIO(body))
         self.assertEqual(sections["name"]["key"], "val")
 
 

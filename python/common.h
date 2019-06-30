@@ -2,8 +2,10 @@
 #define ARKI_PYTHON_COMMON_H
 
 #include "utils/core.h"
+#include "utils/values.h"
 #include <string>
 #include <vector>
+#include <memory>
 #include <arki/emitter.h>
 #include <arki/core/fwd.h>
 
@@ -107,6 +109,11 @@ core::cfg::Section section_from_python(PyObject* o);
  *  - str or bytes, that will get parsed
  */
 core::cfg::Sections sections_from_python(PyObject* o);
+
+/**
+ * Create a LineReader to read from any python object that can iterate strings
+ */
+std::unique_ptr<core::LineReader> linereader_from_python(PyObject* o);
 
 /**
  * Initialize the python bits to use used by the common functions.
