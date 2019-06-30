@@ -48,3 +48,16 @@ class TestCfgSection(unittest.TestCase):
         section["key2"] = "val2"
         self.assertEqual(section["key1"], "val1")
         self.assertEqual(section["key2"], "val2")
+
+    def test_parse(self):
+        body = """
+key = val
+"""
+        with tempfile.NamedTemporaryFile("w+t") as fd:
+            fd.write(body)
+            fd.flush()
+            section = arki.cfg.Section.parse(fd.name)
+        self.assertEqual(section["key"], "val")
+
+        section = arki.cfg.Section.parse(io.StringIO(body))
+        self.assertEqual(section["key"], "val")
