@@ -1,5 +1,5 @@
-#include "arki/runtime/arki-mergeconf.h"
-#include "arki_mergeconf.h"
+#include "arki/runtime/arki-scan.h"
+#include "arki-scan.h"
 #include "utils/core.h"
 #include "utils/methods.h"
 #include "utils/type.h"
@@ -10,19 +10,19 @@ using namespace arki::python;
 
 extern "C" {
 
-PyTypeObject* arkipy_ArkiMergeconf_Type = nullptr;
+PyTypeObject* arkipy_ArkiScan_Type = nullptr;
 
 }
 
 
 namespace {
 
-struct run_ : public MethKwargs<run_, arkipy_ArkiMergeconf>
+struct run_ : public MethKwargs<run_, arkipy_ArkiScan>
 {
     constexpr static const char* name = "run";
     constexpr static const char* signature = "";
     constexpr static const char* returns = "int";
-    constexpr static const char* summary = "run arki-mergeconf";
+    constexpr static const char* summary = "run arki-scan";
     constexpr static const char* doc = nullptr;
 
     static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
@@ -53,7 +53,7 @@ struct run_ : public MethKwargs<run_, arkipy_ArkiMergeconf>
             int res;
             {
                 ReleaseGIL rg;
-                res = self->arki_mergeconf->run(argc, argv.data());
+                res = self->arki_scan->run(argc, argv.data());
             }
             return throw_ifnull(PyLong_FromLong(res));
         } ARKI_CATCH_RETURN_PYO
@@ -61,19 +61,19 @@ struct run_ : public MethKwargs<run_, arkipy_ArkiMergeconf>
 };
 
 
-struct ArkiMergeconfDef : public Type<ArkiMergeconfDef, arkipy_ArkiMergeconf>
+struct ArkiScanDef : public Type<ArkiScanDef, arkipy_ArkiScan>
 {
-    constexpr static const char* name = "ArkiMergeconf";
-    constexpr static const char* qual_name = "arkimet.ArkiMergeconf";
+    constexpr static const char* name = "ArkiScan";
+    constexpr static const char* qual_name = "arkimet.ArkiScan";
     constexpr static const char* doc = R"(
-arki-mergeconf implementation
+arki-scan implementation
 )";
     GetSetters<> getsetters;
     Methods<run_> methods;
 
     static void _dealloc(Impl* self)
     {
-        delete self->arki_mergeconf;
+        delete self->arki_scan;
         Py_TYPE(self)->tp_free(self);
     }
 
@@ -96,14 +96,14 @@ arki-mergeconf implementation
             return -1;
 
         try {
-            self->arki_mergeconf = new arki::runtime::ArkiMergeconf;
+            self->arki_scan = new arki::runtime::ArkiScan;
         } ARKI_CATCH_RETURN_INT
 
         return 0;
     }
 };
 
-ArkiMergeconfDef* arki_mergeconf_def = nullptr;
+ArkiScanDef* arki_scan_def = nullptr;
 
 
 }
@@ -111,10 +111,10 @@ ArkiMergeconfDef* arki_mergeconf_def = nullptr;
 namespace arki {
 namespace python {
 
-void register_arki_mergeconf(PyObject* m)
+void register_arki_scan(PyObject* m)
 {
-    arki_mergeconf_def = new ArkiMergeconfDef;
-    arki_mergeconf_def->define(arkipy_ArkiMergeconf_Type, m);
+    arki_scan_def = new ArkiScanDef;
+    arki_scan_def->define(arkipy_ArkiScan_Type, m);
 
 }
 

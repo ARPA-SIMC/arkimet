@@ -1,5 +1,5 @@
-#include "arki/runtime/arki-query.h"
-#include "arki_query.h"
+#include "arki/runtime/arki-check.h"
+#include "arki-check.h"
 #include "utils/core.h"
 #include "utils/methods.h"
 #include "utils/type.h"
@@ -10,19 +10,19 @@ using namespace arki::python;
 
 extern "C" {
 
-PyTypeObject* arkipy_ArkiQuery_Type = nullptr;
+PyTypeObject* arkipy_ArkiCheck_Type = nullptr;
 
 }
 
 
 namespace {
 
-struct run_ : public MethKwargs<run_, arkipy_ArkiQuery>
+struct run_ : public MethKwargs<run_, arkipy_ArkiCheck>
 {
     constexpr static const char* name = "run";
     constexpr static const char* signature = "";
     constexpr static const char* returns = "int";
-    constexpr static const char* summary = "run arki-query";
+    constexpr static const char* summary = "run arki-check";
     constexpr static const char* doc = nullptr;
 
     static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
@@ -53,7 +53,7 @@ struct run_ : public MethKwargs<run_, arkipy_ArkiQuery>
             int res;
             {
                 ReleaseGIL rg;
-                res = self->arki_query->run(argc, argv.data());
+                res = self->arki_check->run(argc, argv.data());
             }
             return throw_ifnull(PyLong_FromLong(res));
         } ARKI_CATCH_RETURN_PYO
@@ -61,19 +61,19 @@ struct run_ : public MethKwargs<run_, arkipy_ArkiQuery>
 };
 
 
-struct ArkiQueryDef : public Type<ArkiQueryDef, arkipy_ArkiQuery>
+struct ArkiCheckDef : public Type<ArkiCheckDef, arkipy_ArkiCheck>
 {
-    constexpr static const char* name = "ArkiQuery";
-    constexpr static const char* qual_name = "arkimet.ArkiQuery";
+    constexpr static const char* name = "ArkiCheck";
+    constexpr static const char* qual_name = "arkimet.ArkiCheck";
     constexpr static const char* doc = R"(
-arki-query implementation
+arki-check implementation
 )";
     GetSetters<> getsetters;
     Methods<run_> methods;
 
     static void _dealloc(Impl* self)
     {
-        delete self->arki_query;
+        delete self->arki_check;
         Py_TYPE(self)->tp_free(self);
     }
 
@@ -96,14 +96,14 @@ arki-query implementation
             return -1;
 
         try {
-            self->arki_query = new arki::runtime::ArkiQuery;
+            self->arki_check = new arki::runtime::ArkiCheck;
         } ARKI_CATCH_RETURN_INT
 
         return 0;
     }
 };
 
-ArkiQueryDef* arki_query_def = nullptr;
+ArkiCheckDef* arki_check_def = nullptr;
 
 
 }
@@ -111,10 +111,10 @@ ArkiQueryDef* arki_query_def = nullptr;
 namespace arki {
 namespace python {
 
-void register_arki_query(PyObject* m)
+void register_arki_check(PyObject* m)
 {
-    arki_query_def = new ArkiQueryDef;
-    arki_query_def->define(arkipy_ArkiQuery_Type, m);
+    arki_check_def = new ArkiCheckDef;
+    arki_check_def->define(arkipy_ArkiCheck_Type, m);
 
 }
 
