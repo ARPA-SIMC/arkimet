@@ -42,6 +42,19 @@ key = val
             res = fd.getvalue()
         self.assertEqual(res, "[name]\nkey = val\n")
 
+    def test_items(self):
+        sections = arki.cfg.Sections()
+        sections.obtain("sec1")["key1"] = "val1"
+        sections.obtain("sec2")["key2"] = "val2"
+        sections.obtain("sec3")["key3"] = "val3"
+        a = list(sections.items())
+        self.assertEqual(a[0][0], "sec1")
+        self.assertEqual(a[1][0], "sec2")
+        self.assertEqual(a[2][0], "sec3")
+        self.assertEqual(a[0][1]["key1"], "val1")
+        self.assertEqual(a[1][1]["key2"], "val2")
+        self.assertEqual(a[2][1]["key3"], "val3")
+
 
 class TestCfgSection(unittest.TestCase):
     def test_empty(self):
