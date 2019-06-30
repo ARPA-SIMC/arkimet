@@ -3,6 +3,8 @@
 
 #include <Python.h>
 #include <stdexcept>
+#include <string>
+#include <vector>
 
 namespace arki {
 namespace python {
@@ -42,6 +44,12 @@ template<> inline double from_python<double>(PyObject* o) { return double_from_p
 PyObject* double_to_python(double val);
 inline PyObject* to_python(double val) { return double_to_python(val); }
 
+/// Read a string list from a Python object
+std::vector<std::string> stringlist_from_python(PyObject* o);
+template<> inline std::vector<std::string> from_python<std::vector<std::string>>(PyObject* o)
+{
+    return stringlist_from_python(o);
+}
 
 
 }
