@@ -3,6 +3,8 @@
 #include "utils/methods.h"
 #include "utils/type.h"
 #include "utils/values.h"
+#include "arki/utils/files.h"
+#include "arki/core/file.h"
 #include "common.h"
 
 using namespace arki::python;
@@ -29,7 +31,7 @@ struct section : public MethKwargs<section, arkipy_cfgSections>
     {
         static const char* kwlist[] = { "name", nullptr };
         const char* arg_name = nullptr;
-        Py_ssize_t arg_name_len;
+        int arg_name_len;
         if (!PyArg_ParseTupleAndKeywords(args, kw, "s#", const_cast<char**>(kwlist), &arg_name, &arg_name_len))
             return nullptr;
 
@@ -67,15 +69,43 @@ struct obtain : public MethKwargs<obtain, arkipy_cfgSections>
     }
 };
 
-// TODO: Section write
-// TODO: Section parse
-// TODO: Sections write
-// TODO: Sections parse
-// TODO: Sections as_configparser
-// TODO: Section as_dict
-// TODO: Sections constructor with configparser
-// TODO: Section constructor with dict
-// TODO: Section constructor with sequence of (key, value)
+struct parse_sections : public ClassMethKwargs<parse_sections>
+{
+    constexpr static const char* name = "parse";
+    constexpr static const char* signature = "Union[Str, TextIO]";
+    constexpr static const char* returns = "arki.cfg.Sections";
+    constexpr static const char* summary = "parse the named file or open file, and return the resulting Sections object";
+    constexpr static const char* doc = nullptr;
+
+    static PyObject* run(PyTypeObject* cls, PyObject* args, PyObject* kw)
+    {
+        static const char* kwlist[] = { "input", nullptr };
+        PyObject* arg_input = nullptr;
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "O", const_cast<char**>(kwlist), &arg_input))
+            return nullptr;
+
+        try {
+            if (PyUnicode_Check(arg_input))
+            {
+                std::string fname = from_python<std::string>(arg_input);
+                arki::utils::sys::File in(fname, O_RDONLY);
+                auto parsed = arki::core::cfg::Sections::parse(in);
+                // If string, open file and parse it
+                py_unique_ptr<arkipy_cfgSections> res(throw_ifnull(PyObject_New(arkipy_cfgSections, arkipy_cfgSections_Type)));
+                new (&(res->sections)) arki::core::cfg::Sections(std::move(parsed));
+                return (PyObject*)res.release();
+            } else {
+                // Else iterator or TypeError
+                auto reader = linereader_from_python(arg_input);
+                auto parsed = arki::core::cfg::Sections::parse(*reader, "python object");
+                py_unique_ptr<arkipy_cfgSections> res(throw_ifnull(PyObject_New(arkipy_cfgSections, arkipy_cfgSections_Type)));
+                new (&(res->sections)) arki::core::cfg::Sections(std::move(parsed));
+                return (PyObject*)res.release();
+            }
+        } ARKI_CATCH_RETURN_PYO
+    }
+};
+
 
 
 struct SectionsDef : public Type<SectionsDef, arkipy_cfgSections>
@@ -86,7 +116,7 @@ struct SectionsDef : public Type<SectionsDef, arkipy_cfgSections>
 Arkimet configuration, as multiple sections of key/value options
 )";
     GetSetters<> getsetters;
-    Methods<section, obtain> methods;
+    Methods<section, obtain, parse_sections> methods;
 
     static void _dealloc(Impl* self)
     {
@@ -257,6 +287,16 @@ static PyModuleDef cfg_module = {
 
 namespace arki {
 namespace python {
+
+// TODO: Section write
+// TODO: Section parse
+// TODO: Sections write
+// TODO: Sections parse
+// TODO: Sections as_configparser
+// TODO: Section as_dict
+// TODO: Sections constructor with configparser
+// TODO: Section constructor with dict
+// TODO: Section constructor with sequence of (key, value)
 
 PyObject* cfg_section_reference(PyObject* owner, core::cfg::Section* section)
 {

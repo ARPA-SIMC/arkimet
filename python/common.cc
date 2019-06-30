@@ -3,6 +3,7 @@
 #include <Python.h>
 #include "arki/libconfig.h"
 #include "arki/core/cfg.h"
+#include "arki/core/file.h"
 #include "arki/runtime.h"
 
 using namespace std;
@@ -468,6 +469,62 @@ core::cfg::Sections sections_from_python(PyObject* o)
         PyErr_SetString(PyExc_TypeError, "value must be an instance of str, or bytes");
         throw PythonException();
     } ARKI_CATCH_RETHROW_PYTHON
+}
+
+
+namespace {
+
+struct PythonLineReader : public core::LineReader
+{
+    PyObject* iter;
+
+    PythonLineReader(PyObject* obj)
+        : iter(throw_ifnull(PyObject_GetIter(obj)))
+    {
+    }
+    virtual ~PythonLineReader()
+    {
+        if (iter) Py_DECREF(iter);
+    }
+
+    bool getline(std::string& line) override
+    {
+        if (!iter)
+            return false;
+
+        pyo_unique_ptr item(PyIter_Next(iter));
+        if (!item)
+        {
+            if (PyErr_Occurred())
+                throw PythonException();
+            Py_DECREF(iter);
+            iter = nullptr;
+            return false;
+        }
+
+        line = from_python<std::string>(item);
+        while (!line.empty())
+        {
+            char tail = line[line.size() - 1];
+            if (tail == '\n' || tail == '\r')
+                line.resize(line.size() - 1);
+            else
+                break;
+        }
+        return true;
+    }
+
+    bool eof() const override
+    {
+        return iter == nullptr;
+    }
+};
+
+}
+
+std::unique_ptr<core::LineReader> linereader_from_python(PyObject* o)
+{
+    return std::unique_ptr<core::LineReader>(new PythonLineReader(o));
 }
 
 int common_init()
