@@ -28,26 +28,20 @@ struct run_ : public MethKwargs<run_, arkipy_ArkiMergeconf>
 
     static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
     {
-        static const char* kwlist[] = { "sections", "sources", "cfgfiles", "restrict", "ignore_system_datasets", "extra", nullptr };
+        static const char* kwlist[] = { "sections", "sources", "restrict", "ignore_system_datasets", "extra", nullptr };
         arkipy_cfgSections* sections = nullptr;
         PyObject* sources = nullptr;
-        PyObject* cfgfiles = nullptr;
         const char* restrict = nullptr;
         int ignore_system_ds = 0;
         int extra = 0;
 
-        if (!PyArg_ParseTupleAndKeywords(args, kw, "O!O|Ozpp", const_cast<char**>(kwlist),
-                    arkipy_cfgSections_Type, &sections, &sources, &cfgfiles,
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "O!O|zpp", const_cast<char**>(kwlist),
+                    arkipy_cfgSections_Type, &sections, &sources,
                     &restrict, &ignore_system_ds, &extra))
             return nullptr;
 
         try {
             self->arki_mergeconf->sources = from_python<std::vector<std::string>>(sources);
-
-            if (cfgfiles && cfgfiles != Py_None)
-                self->arki_mergeconf->cfgfiles = from_python<std::vector<std::string>>(cfgfiles);
-            else
-                self->arki_mergeconf->cfgfiles.clear();
 
             if (restrict)
             {

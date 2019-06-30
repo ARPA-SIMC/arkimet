@@ -32,12 +32,28 @@ class Mergeconf(App):
     def run(self):
         super().run()
 
-        arki_mergeconf = arki.ArkiMergeconf()
         merged = arki.cfg.Sections()
+
+        # Process --config options
+        if self.args.config is not None:
+            for pathname in self.args.config:
+                if pathname == "-":
+                    cfg = arki.cfg.Sections.parse(sys.stdin)
+                else:
+                    cfg = arki.cfg.Sections.parse(pathname)
+
+                for name, section in cfg.items():
+                    old = merged.section(name)
+                    if old is not None:
+                        log.warning("ignoring dataset %s in %s, which has the same name as the dataset in %s",
+                                    name, section["path"], old["path"])
+                    merged[name] = section
+                    merged[name]["name"] = name
+
+        arki_mergeconf = arki.ArkiMergeconf()
         arki_mergeconf.run(
             merged,
             self.args.sources,
-            cfgfiles=self.args.config if self.args.config else None,
             restrict=self.args.restrict,
             ignore_system_datasets=self.args.ignore_system_datasets,
             extra=self.args.extra,

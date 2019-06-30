@@ -21,9 +21,6 @@ void ArkiMergeconf::run(core::cfg::Sections& merged)
 {
     runtime::Inputs inputs(merged);
 
-    for (const auto& pathname: cfgfiles)
-        inputs.add_config_file(pathname);
-
     // Read the config files from the remaining commandline arguments
     for (const auto& path: sources)
     {
