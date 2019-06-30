@@ -155,10 +155,24 @@ Arkimet configuration, as a section of key/value options
 
     static PyObject* mp_subscript(Impl* self, PyObject* key)
     {
-        std::string k = from_python<std::string>(key);
-        // TODO: lookup
-        return PyErr_Format(PyExc_KeyError, "section not found: '%s'", k.c_str());
+        try {
+            std::string k = from_python<std::string>(key);
+            if (!self->section->has(k))
+                return PyErr_Format(PyExc_KeyError, "section not found: '%s'", k.c_str());
+            else
+                return to_python(self->section->value(k));
+        } ARKI_CATCH_RETURN_PYO
     }
+
+    static int mp_ass_subscript(Impl* self, PyObject *key, PyObject *val)
+    {
+        try {
+            std::string k = from_python<std::string>(key);
+            self->section->set(k, from_python<std::string>(val));
+            return 0;
+        } ARKI_CATCH_RETURN_INT
+    }
+
 
     static int _init(Impl* self, PyObject* args, PyObject* kw)
     {
