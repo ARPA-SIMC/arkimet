@@ -34,6 +34,14 @@ key = val
         sections = arki.cfg.Sections.parse(io.StringIO(body))
         self.assertEqual(sections["name"]["key"], "val")
 
+    def test_write(self):
+        sections = arki.cfg.Sections()
+        sections.obtain("name")["key"] = "val"
+        with io.StringIO() as fd:
+            sections.write(fd)
+            res = fd.getvalue()
+        self.assertEqual(res, "[name]\nkey = val\n")
+
 
 class TestCfgSection(unittest.TestCase):
     def test_empty(self):
@@ -61,3 +69,11 @@ key = val
 
         section = arki.cfg.Section.parse(io.StringIO(body))
         self.assertEqual(section["key"], "val")
+
+    def test_write(self):
+        section = arki.cfg.Section()
+        section["key"] = "val"
+        with io.StringIO() as fd:
+            section.write(fd)
+            res = fd.getvalue()
+        self.assertEqual(res, "key = val\n")
