@@ -106,6 +106,45 @@ struct parse_sections : public ClassMethKwargs<parse_sections>
     }
 };
 
+struct parse_section : public ClassMethKwargs<parse_section>
+{
+    constexpr static const char* name = "parse";
+    constexpr static const char* signature = "Union[Str, TextIO]";
+    constexpr static const char* returns = "arki.cfg.Section";
+    constexpr static const char* summary = "parse the named file or open file, and return the resulting Section object";
+    constexpr static const char* doc = nullptr;
+
+    static PyObject* run(PyTypeObject* cls, PyObject* args, PyObject* kw)
+    {
+        static const char* kwlist[] = { "input", nullptr };
+        PyObject* arg_input = nullptr;
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "O", const_cast<char**>(kwlist), &arg_input))
+            return nullptr;
+
+        try {
+            if (PyUnicode_Check(arg_input))
+            {
+                std::string fname = from_python<std::string>(arg_input);
+                arki::utils::sys::File in(fname, O_RDONLY);
+                auto parsed = arki::core::cfg::Section::parse(in);
+                // If string, open file and parse it
+                py_unique_ptr<arkipy_cfgSection> res(throw_ifnull(PyObject_New(arkipy_cfgSection, arkipy_cfgSection_Type)));
+                res->owner = nullptr;
+                res->section = new arki::core::cfg::Section(std::move(parsed));
+                return (PyObject*)res.release();
+            } else {
+                // Else iterator or TypeError
+                auto reader = linereader_from_python(arg_input);
+                auto parsed = arki::core::cfg::Section::parse(*reader, "python object");
+                py_unique_ptr<arkipy_cfgSection> res(throw_ifnull(PyObject_New(arkipy_cfgSection, arkipy_cfgSection_Type)));
+                res->owner = nullptr;
+                res->section = new arki::core::cfg::Section(std::move(parsed));
+                return (PyObject*)res.release();
+            }
+        } ARKI_CATCH_RETURN_PYO
+    }
+};
+
 
 
 struct SectionsDef : public Type<SectionsDef, arkipy_cfgSections>
@@ -177,7 +216,7 @@ struct SectionDef : public Type<SectionDef, arkipy_cfgSection>
 Arkimet configuration, as a section of key/value options
 )";
     GetSetters<> getsetters;
-    Methods<> methods;
+    Methods<parse_section> methods;
 
     static void _dealloc(Impl* self)
     {
@@ -289,9 +328,7 @@ namespace arki {
 namespace python {
 
 // TODO: Section write
-// TODO: Section parse
 // TODO: Sections write
-// TODO: Sections parse
 // TODO: Sections as_configparser
 // TODO: Section as_dict
 // TODO: Sections constructor with configparser
