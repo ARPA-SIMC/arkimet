@@ -61,5 +61,19 @@ PyObject* double_to_python(double val)
     return throw_ifnull(PyFloat_FromDouble(val));
 }
 
+std::vector<std::string> stringlist_from_python(PyObject* o)
+{
+    pyo_unique_ptr iter(throw_ifnull(PyObject_GetIter(o)));
+
+    std::vector<std::string> res;
+    while (pyo_unique_ptr item = PyIter_Next(iter))
+        res.emplace_back(from_python<std::string>(item));
+
+    if (PyErr_Occurred())
+        throw PythonException();
+
+    return res;
+}
+
 }
 }
