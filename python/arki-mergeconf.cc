@@ -61,7 +61,7 @@ struct run_ : public MethKwargs<run_, arkipy_ArkiMergeconf>
             arki::core::cfg::Sections merged;
             {
                 ReleaseGIL rg;
-                merged = self->arki_mergeconf->run();
+                self->arki_mergeconf->run(merged);
             }
 
             return cfg_sections(std::move(merged));

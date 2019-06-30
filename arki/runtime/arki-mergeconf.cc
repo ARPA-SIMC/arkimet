@@ -17,9 +17,9 @@ using namespace arki::utils;
 namespace arki {
 namespace runtime {
 
-core::cfg::Sections ArkiMergeconf::run()
+void ArkiMergeconf::run(core::cfg::Sections& merged)
 {
-    runtime::Inputs inputs;
+    runtime::Inputs inputs(merged);
 
     for (const auto& pathname: cfgfiles)
         inputs.add_config_file(pathname);
@@ -89,8 +89,6 @@ core::cfg::Sections ArkiMergeconf::run()
         }
 #endif
     }
-
-    return inputs.merged;
 }
 
 }

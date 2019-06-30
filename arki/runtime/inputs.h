@@ -12,11 +12,11 @@ struct QueryCommandLine;
 
 struct Inputs
 {
-    core::cfg::Sections merged;
+    core::cfg::Sections& merged;
 
-    Inputs() = default;
-    Inputs(ScanCommandLine& args);
-    Inputs(QueryCommandLine& args);
+    Inputs(core::cfg::Sections& merged);
+    Inputs(core::cfg::Sections& merged, ScanCommandLine& args);
+    Inputs(core::cfg::Sections& merged, QueryCommandLine& args);
 
     bool empty() const { return merged.empty(); }
 

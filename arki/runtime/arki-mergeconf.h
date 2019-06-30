@@ -16,7 +16,7 @@ public:
     bool ignore_system_ds = false;
     bool extra = false;
 
-    core::cfg::Sections run();
+    void run(core::cfg::Sections& merged);
 };
 
 }
