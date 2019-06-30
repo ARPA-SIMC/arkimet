@@ -28,7 +28,7 @@ struct run_ : public MethKwargs<run_, arkipy_ArkiMergeconf>
 
     static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
     {
-        static const char* kwlist[] = { "sources", "cfgfiles", "restrict", "ignore_system_ds", "extra", nullptr };
+        static const char* kwlist[] = { "sources", "cfgfiles", "restrict", "ignore_system_datasets", "extra", nullptr };
         PyObject* sources = nullptr;
         PyObject* cfgfiles = nullptr;
         const char* restrict = nullptr;

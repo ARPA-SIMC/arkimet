@@ -4,6 +4,7 @@ from contextlib import contextmanager
 import arkimet as arki
 import os
 import tempfile
+import io
 
 
 @contextmanager
@@ -47,12 +48,11 @@ class TestArkiMergeconfReader(unittest.TestCase):
     def test_http(self):
         with daemon(os.path.join(os.environ["TOP_SRCDIR"], "arki/dataset/http-redirect-daemon")) as url:
             cmd = arki.ArkiMergeconf()
-            out = CatchOutput()
-            with out.redirect():
-                res = cmd.run(["arki-mergeconf", url])
-            self.assertEqual(res, 0)
-            self.assertEqual(out.stderr.decode(), "")
-            self.assertEqual(out.stdout.decode().splitlines(), [
+            merged = cmd.run(sources=[url])
+            with io.StringIO() as fd:
+                merged.write(fd)
+                out = fd.getvalue()
+            self.assertEqual(out.splitlines(), [
                 "[error]",
                 "name = error",
                 "path = http://foo.bar/foo/dataset/error",
@@ -72,12 +72,11 @@ class TestArkiMergeconfReader(unittest.TestCase):
     def test_ignore_system_datasets(self):
         with daemon(os.path.join(os.environ["TOP_SRCDIR"], "arki/dataset/http-redirect-daemon")) as url:
             cmd = arki.ArkiMergeconf()
-            out = CatchOutput()
-            with out.redirect():
-                res = cmd.run(["arki-mergeconf", "--ignore-system-datasets", url])
-            self.assertEqual(res, 0)
-            self.assertEqual(out.stderr.decode(), "")
-            self.assertEqual(out.stdout.decode().splitlines(), [
+            merged = cmd.run(sources=[url], ignore_system_datasets=True)
+            with io.StringIO() as fd:
+                merged.write(fd)
+                out = fd.getvalue()
+            self.assertEqual(out.splitlines(), [
                 "[test200]",
                 "name = test200",
                 "path = http://foo.bar/foo/dataset/test200",
