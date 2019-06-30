@@ -59,38 +59,6 @@ bool StandardParserWithManpage::parse(int argc, const char* argv[])
 	return false;
 }
 
-bool StandardParserWithMandatoryCommand::parse(int argc, const char* argv[])
-{
-	if (StandardParserWithManpage::parse(argc, argv))
-		return true;
-
-	if (!foundCommand())
-	{
-		commandline::Help help(name(), m_version);
-		help.outputHelp(cout, *this);
-		return true;
-	}
-	if (foundCommand() == helpCommand)
-	{
-		commandline::Help help(name(), m_version);
-		if (hasNext())
-		{
-            // Help on a specific command
-            string command = next();
-            if (Engine* e = this->command(command))
-                help.outputHelp(cout, *e);
-            else
-                throw BadOption("unknown command " + command + "; run '" + argv[0] + " help' " "for a list of all the available commands");
-		} else {
-			// General help
-			help.outputHelp(cout, *this);
-		}
-		return true;
-	}
-	return false;
-}
-
-
 }
 }
 }
