@@ -324,7 +324,8 @@ int arki_check(int argc, const char* argv[])
             throw commandline::BadOption("only one of --repack, --remove, --remove-all, --remove-old, --tar, --zip, --compress, --unarchive, --state, or --issue51 can be given in one invocation");
 
         // Read the config file(s)
-        runtime::Inputs inputs;
+        core::cfg::Sections merged;
+        runtime::Inputs inputs(merged);
         for (const auto& pathname: opts.cfgfiles->values())
             inputs.add_config_file(pathname);
         while (opts.hasNext())
@@ -345,7 +346,7 @@ int arki_check(int argc, const char* argv[])
         if (opts.op_remove->isSet()) {
             if (opts.op_remove->stringValue().empty())
                 throw commandline::BadOption("you need to give a file name to --remove");
-            Datasets datasets(inputs.merged);
+            Datasets datasets(merged);
             WriterPool pool(datasets);
             // Read all metadata from the file specified in --remove
             metadata::Collection todolist;
@@ -450,7 +451,7 @@ int arki_check(int argc, const char* argv[])
             }
 
             // Harvest the paths from it
-            for (auto si: inputs.merged)
+            for (auto si: merged)
             {
                 try {
                     worker->process(si.second);

@@ -15,7 +15,13 @@ using namespace arki::utils;
 namespace arki {
 namespace runtime {
 
-Inputs::Inputs(ScanCommandLine& args)
+Inputs::Inputs(core::cfg::Sections& merged)
+    : merged(merged)
+{
+}
+
+Inputs::Inputs(core::cfg::Sections& merged, ScanCommandLine& args)
+    : merged(merged)
 {
     if (args.stdin_input->isSet())
     {
@@ -42,7 +48,8 @@ Inputs::Inputs(ScanCommandLine& args)
     }
 }
 
-Inputs::Inputs(QueryCommandLine& args)
+Inputs::Inputs(core::cfg::Sections& merged, QueryCommandLine& args)
+    : merged(merged)
 {
     if (args.stdin_input->isSet())
     {

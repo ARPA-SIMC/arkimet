@@ -261,13 +261,14 @@ int ArkiDump::run(int argc, const char* argv[])
 
         if (opts.config->boolValue())
         {
-            runtime::Inputs inputs;
+            core::cfg::Sections merged;
+            runtime::Inputs inputs(merged);
             while (opts.hasNext())
                 inputs.add_pathname(opts.next());
 
             // Output the merged configuration
             std::stringstream ss;
-            inputs.merged.write(ss, "memory");
+            merged.write(ss, "memory");
             std::unique_ptr<sys::NamedFileDescriptor> out(runtime::make_output(*opts.outfile));
             out->write_all_or_throw(ss.str());
             out->close();

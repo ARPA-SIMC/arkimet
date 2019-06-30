@@ -38,7 +38,8 @@ int ArkiScan::run(int argc, const char* argv[])
 
         runtime::init();
 
-        Inputs inputs(opts);
+        core::cfg::Sections merged;
+        Inputs inputs(merged, opts);
         auto output = make_output(*opts.outfile);
 
         bool all_successful;

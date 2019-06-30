@@ -43,7 +43,8 @@ int ArkiQuery::run(int argc, const char* argv[])
         if (opts.parse(argc, argv))
             return 0;
 
-        Inputs inputs(opts);
+        core::cfg::Sections merged;
+        Inputs inputs(merged, opts);
         auto output = make_output(*opts.outfile);
 
         Matcher query;
