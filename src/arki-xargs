@@ -1,0 +1,12 @@
+#!/usr/bin/python3
+from arkimet import ArkiXargs
+import sys
+
+
+def main():
+    arki_scan = ArkiXargs()
+    sys.exit(arki_scan.run(sys.argv))
+
+
+if __name__ == "__main__":
+    main()

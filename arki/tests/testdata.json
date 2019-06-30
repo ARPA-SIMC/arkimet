@@ -16706,6 +16706,26 @@
  },
  {
   "doc": "",
+  "group": "arki_runtime_arkidump",
+  "method": "empty"
+ },
+ {
+  "doc": "",
+  "group": "arki_runtime_arkixargs",
+  "method": "default_size"
+ },
+ {
+  "doc": "",
+  "group": "arki_runtime_arkixargs",
+  "method": "large_size"
+ },
+ {
+  "doc": "",
+  "group": "arki_runtime_arkibufrprepare",
+  "method": "empty"
+ },
+ {
+  "doc": "",
   "group": "arki_runtime",
   "method": "files"
  },

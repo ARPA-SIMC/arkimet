@@ -123,7 +123,6 @@ nobase_dist_arkiinclude_HEADERS = \
 		runtime/arki-mergeconf.h \
 		runtime/arki-dump.h \
 		runtime/arki-xargs.h \
-		runtime/arki-bufr-prepare.h \
 		scan.h \
 		scan/fwd.h \
 		scan/validator.h \
@@ -583,8 +582,7 @@ libarkimet_la_SOURCES += \
 		runtime/arki-scan.cc \
 		runtime/arki-mergeconf.cc \
 		runtime/arki-dump.cc \
-		runtime/arki-xargs.cc \
-		runtime/arki-bufr-prepare.cc
+		runtime/arki-xargs.cc
 
 tests_arki_test_SOURCES += \
 		targetfile-test.cc \
@@ -654,7 +652,6 @@ tests_arki_test_SOURCES += \
 		runtime/arki-mergeconf-test.cc \
 		runtime/arki-dump-test.cc \
 		runtime/arki-xargs-test.cc \
-		runtime/arki-bufr-prepare-test.cc \
 		runtime-test.cc
 
 if CURL
@@ -668,6 +665,13 @@ endif
 if LUA
 libarkimet_la_SOURCES += report.cc
 tests_arki_test_SOURCES += report-test.cc
+endif
+
+if DBALLE
+# QUIQUIQUI
+nobase_dist_arkiinclude_HEADERS += runtime/arki-bufr-prepare.h
+libarkimet_la_SOURCES += runtime/arki-bufr-prepare.cc
+tests_arki_test_SOURCES += runtime/arki-bufr-prepare-test.cc
 endif
 
 endif
