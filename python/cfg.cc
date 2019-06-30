@@ -91,6 +91,11 @@ Arkimet configuration, as multiple sections of key/value options
         return PyUnicode_FromString(res.c_str());
     }
 
+    static Py_ssize_t sq_length(Impl* self)
+    {
+        return self->sections.size();
+    }
+
     static int _init(Impl* self, PyObject* args, PyObject* kw)
     {
         static const char* kwlist[] = { nullptr };
