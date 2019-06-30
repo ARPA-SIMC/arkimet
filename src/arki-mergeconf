@@ -55,7 +55,7 @@ def main():
         args.sources,
         cfgfiles=args.config if args.config else None,
         restrict=args.restrict,
-        ignore_system_ds=args.ignore_system_datasets,
+        ignore_system_datasets=args.ignore_system_datasets,
         extra=args.extra,
     )
 
