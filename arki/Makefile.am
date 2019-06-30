@@ -121,6 +121,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		runtime/arki-check.h \
 		runtime/arki-scan.h \
 		runtime/arki-mergeconf.h \
+		runtime/arki-dump.h \
 		scan.h \
 		scan/fwd.h \
 		scan/validator.h \
@@ -578,7 +579,8 @@ libarkimet_la_SOURCES += \
 		runtime/arki-query.cc \
 		runtime/arki-check.cc \
 		runtime/arki-scan.cc \
-		runtime/arki-mergeconf.cc
+		runtime/arki-mergeconf.cc \
+		runtime/arki-dump.cc
 
 tests_arki_test_SOURCES += \
 		targetfile-test.cc \
@@ -646,6 +648,7 @@ tests_arki_test_SOURCES += \
 		runtime/arki-check-test.cc \
 		runtime/arki-scan-test.cc \
 		runtime/arki-mergeconf-test.cc \
+		runtime/arki-dump-test.cc \
 		runtime-test.cc
 
 if CURL
