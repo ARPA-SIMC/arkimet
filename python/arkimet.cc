@@ -1,5 +1,6 @@
 #include <Python.h>
 #include "common.h"
+#include "cfg.h"
 #include "metadata.h"
 #include "summary.h"
 #include "dataset.h"
@@ -139,16 +140,21 @@ PyMODINIT_FUNC PyInit__arkimet(void)
     PyObject* m = PyModule_Create(&arkimet_module);
     if (!m) return m;
 
-    register_metadata(m);
-    register_summary(m);
-    register_dataset(m);
-    register_arki_query(m);
-    register_arki_scan(m);
-    register_arki_check(m);
-    register_arki_mergeconf(m);
-    register_arki_dump(m);
-    register_arki_xargs(m);
-    register_arki_bufr_prepare(m);
+    try {
+        register_cfg(m);
+        register_metadata(m);
+        register_summary(m);
+        register_dataset(m);
+        register_arki_query(m);
+        register_arki_scan(m);
+        register_arki_check(m);
+        register_arki_mergeconf(m);
+        register_arki_dump(m);
+        register_arki_xargs(m);
+        register_arki_bufr_prepare(m);
+    } catch (PythonException) {
+        return nullptr;
+    }
 
     return m;
 }

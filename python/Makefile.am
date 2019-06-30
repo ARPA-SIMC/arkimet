@@ -14,6 +14,7 @@ _arkimet_la_SOURCES = \
     utils/values.cc \
     common.cc \
     metadata.cc \
+    cfg.cc \
     summary.cc \
     dataset.cc \
     arki-query.cc \
@@ -52,16 +53,17 @@ EXTRA_DIST = \
     utils/type.h \
     utils/values.h \
     common.h \
+    cfg.h \
     metadata.h \
     summary.h \
+    dataset.h \
     arki-query.h \
     arki-scan.h \
     arki-check.h \
     arki-mergeconf.h \
     arki-dump.h \
     arki-xargs.h \
-    arki-bufr-prepare.h \
-    dataset.h
+    arki-bufr-prepare.h
 #    doc-arkimet \
 #    testlib.py \
 #    $(arkimet_python_tests)

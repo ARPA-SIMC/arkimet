@@ -107,6 +107,25 @@ Arkimet configuration, as multiple sections of key/value options
 
 SectionsDef* sections_def = nullptr;
 
+Methods<> cfg_methods;
+
+}
+
+
+
+extern "C" {
+
+static PyModuleDef cfg_module = {
+    PyModuleDef_HEAD_INIT,
+    "cfg",          /* m_name */
+    "Arkimet configuration infrastructure",  /* m_doc */
+    -1,             /* m_size */
+    cfg_methods.as_py(),    /* m_methods */
+    nullptr,           /* m_slots */
+    nullptr,           /* m_traverse */
+    nullptr,           /* m_clear */
+    nullptr,           /* m_free */
+};
 
 }
 
@@ -115,10 +134,13 @@ namespace python {
 
 void register_cfg(PyObject* m)
 {
-    // TODO: add a submodule 'cfg' to m
-    sections_def = new SectionsDef;
-    sections_def->define(arkipy_cfgSections_Type, m);
+    pyo_unique_ptr cfg = throw_ifnull(PyModule_Create(&cfg_module));
 
+    sections_def = new SectionsDef;
+    sections_def->define(arkipy_cfgSections_Type, cfg);
+
+    if (PyModule_AddObject(m, "cfg", cfg.release()) == -1)
+        throw PythonException();
 }
 
 }
