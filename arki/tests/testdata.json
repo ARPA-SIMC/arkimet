@@ -16697,12 +16697,7 @@
  {
   "doc": "",
   "group": "arki_runtime_arkimergeconf",
-  "method": "http"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkimergeconf",
-  "method": "ignore_system_datasets"
+  "method": "empty"
  },
  {
   "doc": "",
@@ -16718,11 +16713,6 @@
   "doc": "",
   "group": "arki_runtime_arkixargs",
   "method": "large_size"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkibufrprepare",
-  "method": "empty"
  },
  {
   "doc": "",
@@ -16748,5 +16738,10 @@
   "doc": "",
   "group": "arki_report",
   "method": "regression"
+ },
+ {
+  "doc": "",
+  "group": "arki_runtime_arkibufrprepare",
+  "method": "empty"
  }
 ]
