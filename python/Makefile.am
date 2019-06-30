@@ -16,10 +16,10 @@ _arkimet_la_SOURCES = \
     metadata.cc \
     summary.cc \
     dataset.cc \
-    arki_query.cc \
-    arki_scan.cc \
-    arki_check.cc \
-    arki_mergeconf.cc \
+    arki-query.cc \
+    arki-scan.cc \
+    arki-check.cc \
+    arki-mergeconf.cc \
     arkimet.cc
 _arkimet_la_CPPFLAGS = $(PYTHON_CFLAGS) -I$(top_srcdir) -I$(top_builddir)
 _arkimet_la_LDFLAGS = -module -avoid-version -export-symbols-regex init_arkimet
@@ -51,10 +51,10 @@ EXTRA_DIST = \
     common.h \
     metadata.h \
     summary.h \
-    arki_query.h \
-    arki_scan.h \
-    arki_check.h \
-    arki_mergeconf.h \
+    arki-query.h \
+    arki-scan.h \
+    arki-check.h \
+    arki-mergeconf.h \
     dataset.h
 #    doc-arkimet \
 #    testlib.py \
