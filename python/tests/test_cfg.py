@@ -9,6 +9,15 @@ class TestCfgSections(unittest.TestCase):
         with self.assertRaises(KeyError):
             sections["missing"]
 
+    def test_obtain(self):
+        sections = arki.cfg.Sections()
+        self.assertIsNone(sections.section("name"))
+        section = sections.obtain("name")
+        self.assertIsInstance(section, arki.cfg.Section)
+        self.assertEqual(sections.section("name"), section)
+        section["key"] = "val"
+        self.assertEqual(sections["name"]["key"], "val")
+
 
 class TestCfgSection(unittest.TestCase):
     def test_empty(self):

@@ -21,8 +21,8 @@ typedef struct {
 extern PyTypeObject* arkipy_cfgSections_Type;
 
 #define arkipy_cfgSections_Check(ob) \
-    (Py_TYPE(ob) == &arkipy_cfgSections_Type || \
-     PyType_IsSubtype(Py_TYPE(ob), &arkipy_cfgSections_Type))
+    (Py_TYPE(ob) == arkipy_cfgSections_Type || \
+     PyType_IsSubtype(Py_TYPE(ob), arkipy_cfgSections_Type))
 
 
 typedef struct {
@@ -34,13 +34,15 @@ typedef struct {
 extern PyTypeObject* arkipy_cfgSection_Type;
 
 #define arkipy_cfgSection_Check(ob) \
-    (Py_TYPE(ob) == &arkipy_cfgSection_Type || \
-     PyType_IsSubtype(Py_TYPE(ob), &arkipy_cfgSection_Type))
+    (Py_TYPE(ob) == arkipy_cfgSection_Type || \
+     PyType_IsSubtype(Py_TYPE(ob), arkipy_cfgSection_Type))
 
 }
 
 namespace arki {
 namespace python {
+
+PyObject* cfg_section_reference(PyObject* owner, core::cfg::Section* section);
 
 void register_cfg(PyObject* m);
 
