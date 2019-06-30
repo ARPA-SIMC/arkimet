@@ -109,31 +109,6 @@ public:
 	StringOption* manpage;
 };
 
-/**
- * Parser for commandline arguments, with builting help functions and manpage
- * generation, and requiring a mandatory command.
- */
-class StandardParserWithMandatoryCommand : public StandardParserWithManpage
-{
-public:
-	StandardParserWithMandatoryCommand(
-			const std::string& appname,
-			const std::string& version,
-			int section,
-			const std::string& author) :
-		StandardParserWithManpage(appname, version, section, author)
-	{
-		helpCommand = addEngine("help", "[command]", "print help information",
-				"With no arguments, print a summary of available commands.  "
-				"If given a command name as argument, print detailed informations "
-				"about that command.");
-	}
-
-	bool parse(int argc, const char* argv[]);
-
-	Engine* helpCommand;
-};
-
 }
 }
 }
