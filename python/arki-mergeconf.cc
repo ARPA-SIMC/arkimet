@@ -28,15 +28,17 @@ struct run_ : public MethKwargs<run_, arkipy_ArkiMergeconf>
 
     static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
     {
-        static const char* kwlist[] = { "sources", "cfgfiles", "restrict", "ignore_system_datasets", "extra", nullptr };
+        static const char* kwlist[] = { "sections", "sources", "cfgfiles", "restrict", "ignore_system_datasets", "extra", nullptr };
+        arkipy_cfgSections* sections = nullptr;
         PyObject* sources = nullptr;
         PyObject* cfgfiles = nullptr;
         const char* restrict = nullptr;
         int ignore_system_ds = 0;
         int extra = 0;
 
-        if (!PyArg_ParseTupleAndKeywords(args, kw, "O|Ozpp", const_cast<char**>(kwlist),
-                    &sources, &cfgfiles, &restrict, &ignore_system_ds, &extra))
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "O!O|Ozpp", const_cast<char**>(kwlist),
+                    arkipy_cfgSections_Type, &sections, &sources, &cfgfiles,
+                    &restrict, &ignore_system_ds, &extra))
             return nullptr;
 
         try {
@@ -58,13 +60,12 @@ struct run_ : public MethKwargs<run_, arkipy_ArkiMergeconf>
             self->arki_mergeconf->ignore_system_ds = ignore_system_ds;
             self->arki_mergeconf->extra = extra;
 
-            arki::core::cfg::Sections merged;
             {
                 ReleaseGIL rg;
-                self->arki_mergeconf->run(merged);
+                self->arki_mergeconf->run(sections->sections);
             }
 
-            return cfg_sections(std::move(merged));
+            Py_RETURN_NONE;
         } ARKI_CATCH_RETURN_PYO
     }
 };

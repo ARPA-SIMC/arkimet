@@ -33,7 +33,9 @@ class Mergeconf(App):
         super().run()
 
         arki_mergeconf = arki.ArkiMergeconf()
-        merged = arki_mergeconf.run(
+        merged = arki.cfg.Sections()
+        arki_mergeconf.run(
+            merged,
             self.args.sources,
             cfgfiles=self.args.config if self.args.config else None,
             restrict=self.args.restrict,
