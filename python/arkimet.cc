@@ -152,7 +152,7 @@ PyMODINIT_FUNC PyInit__arkimet(void)
         register_arki_dump(m);
         register_arki_xargs(m);
         register_arki_bufr_prepare(m);
-    } catch (PythonException) {
+    } catch (PythonException&) {
         return nullptr;
     }
 
