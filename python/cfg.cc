@@ -96,6 +96,13 @@ Arkimet configuration, as multiple sections of key/value options
         return self->sections.size();
     }
 
+    static PyObject* mp_subscript(Impl* self, PyObject* key)
+    {
+        std::string k = from_python<std::string>(key);
+        // TODO: lookup
+        return PyErr_Format(PyExc_KeyError, "section not found: '%s'", k.c_str());
+    }
+
     static int _init(Impl* self, PyObject* args, PyObject* kw)
     {
         static const char* kwlist[] = { nullptr };
@@ -111,6 +118,65 @@ Arkimet configuration, as multiple sections of key/value options
 };
 
 SectionsDef* sections_def = nullptr;
+
+
+struct SectionDef : public Type<SectionDef, arkipy_cfgSection>
+{
+    constexpr static const char* name = "Section";
+    constexpr static const char* qual_name = "arkimet.cfg.Section";
+    constexpr static const char* doc = R"(
+Arkimet configuration, as a section of key/value options
+)";
+    GetSetters<> getsetters;
+    Methods<> methods;
+
+    static void _dealloc(Impl* self)
+    {
+        delete self->section;
+        Py_TYPE(self)->tp_free(self);
+    }
+
+    static PyObject* _str(Impl* self)
+    {
+        return PyUnicode_FromString(name);
+    }
+
+    static PyObject* _repr(Impl* self)
+    {
+        std::string res = qual_name;
+        res += " object";
+        return PyUnicode_FromString(res.c_str());
+    }
+
+    static Py_ssize_t mp_length(Impl* self)
+    {
+        return self->section->size();
+    }
+
+    static PyObject* mp_subscript(Impl* self, PyObject* key)
+    {
+        std::string k = from_python<std::string>(key);
+        // TODO: lookup
+        return PyErr_Format(PyExc_KeyError, "section not found: '%s'", k.c_str());
+    }
+
+    static int _init(Impl* self, PyObject* args, PyObject* kw)
+    {
+        static const char* kwlist[] = { nullptr };
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "", const_cast<char**>(kwlist)))
+            return -1;
+
+        try {
+            self->owner = nullptr;
+            self->section = new arki::core::cfg::Section;
+        } ARKI_CATCH_RETURN_INT
+
+        return 0;
+    }
+};
+
+SectionDef* section_def = nullptr;
+
 
 Methods<> cfg_methods;
 
@@ -143,6 +209,9 @@ void register_cfg(PyObject* m)
 
     sections_def = new SectionsDef;
     sections_def->define(arkipy_cfgSections_Type, cfg);
+
+    section_def = new SectionDef;
+    section_def->define(arkipy_cfgSection_Type, cfg);
 
     if (PyModule_AddObject(m, "cfg", cfg.release()) == -1)
         throw PythonException();
