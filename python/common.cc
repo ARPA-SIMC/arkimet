@@ -1,4 +1,5 @@
 #include "common.h"
+#include "cfg.h"
 #include "utils/values.h"
 #include <Python.h>
 #include "arki/libconfig.h"
@@ -433,6 +434,10 @@ int file_get_fileno(PyObject* o)
 core::cfg::Section section_from_python(PyObject* o)
 {
     try {
+        if (arkipy_cfgSection_Check(o)) {
+            return *((arkipy_cfgSection*)o)->section;
+        }
+
         if (PyBytes_Check(o)) {
             const char* v = throw_ifnull(PyBytes_AsString(o));
             return core::cfg::Section::parse(v);
@@ -458,6 +463,10 @@ core::cfg::Section section_from_python(PyObject* o)
 core::cfg::Sections sections_from_python(PyObject* o)
 {
     try {
+        if (arkipy_cfgSections_Check(o)) {
+            return ((arkipy_cfgSections*)o)->sections;
+        }
+
         if (PyBytes_Check(o)) {
             const char* v = throw_ifnull(PyBytes_AsString(o));
             return core::cfg::Sections::parse(v);
