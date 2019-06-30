@@ -1,5 +1,6 @@
 #include "arki/runtime/arki-mergeconf.h"
 #include "arki-mergeconf.h"
+#include "cfg.h"
 #include "utils/core.h"
 #include "utils/methods.h"
 #include "utils/type.h"
@@ -27,35 +28,43 @@ struct run_ : public MethKwargs<run_, arkipy_ArkiMergeconf>
 
     static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
     {
-        static const char* kwlist[] = { "args", nullptr };
-        PyObject* pyargs = nullptr;
-        if (!PyArg_ParseTupleAndKeywords(args, kw, "O", const_cast<char**>(kwlist), &pyargs))
+        static const char* kwlist[] = { "sources", "cfgfiles", "restrict", "ignore_system_ds", "extra", nullptr };
+        PyObject* sources = nullptr;
+        PyObject* cfgfiles = nullptr;
+        const char* restrict = nullptr;
+        int ignore_system_ds = 0;
+        int extra = 0;
+
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "O|Ozpp", const_cast<char**>(kwlist),
+                    &sources, &cfgfiles, &restrict, &ignore_system_ds, &extra))
             return nullptr;
 
-        if (!PySequence_Check(pyargs))
-        {
-            PyErr_SetString(PyExc_TypeError, "args argument must be a sequence of strings");
-            throw PythonException();
-        }
-
-        // Unpack a sequence of strings into argc/argv
-        unsigned argc = PySequence_Size(pyargs);
-        std::vector<const char*> argv;
-        argv.reserve(argc + 1);
-        for (unsigned i = 0; i < argc; ++i)
-        {
-            pyo_unique_ptr o(throw_ifnull(PySequence_ITEM(pyargs, i)));
-            argv.emplace_back(from_python<const char*>(o));
-        }
-        argv.emplace_back(nullptr);
-
         try {
-            int res;
+            self->arki_mergeconf->sources = from_python<std::vector<std::string>>(sources);
+
+            if (cfgfiles && cfgfiles != Py_None)
+                self->arki_mergeconf->cfgfiles = from_python<std::vector<std::string>>(cfgfiles);
+            else
+                self->arki_mergeconf->cfgfiles.clear();
+
+            if (restrict)
+            {
+                self->arki_mergeconf->restrict = true;
+                self->arki_mergeconf->restrict_expr = restrict;
+            } else {
+                self->arki_mergeconf->restrict = false;
+            }
+
+            self->arki_mergeconf->ignore_system_ds = ignore_system_ds;
+            self->arki_mergeconf->extra = extra;
+
+            arki::core::cfg::Sections merged;
             {
                 ReleaseGIL rg;
-                res = self->arki_mergeconf->run(argc, argv.data());
+                merged = self->arki_mergeconf->run();
             }
-            return throw_ifnull(PyLong_FromLong(res));
+
+            return cfg_sections(std::move(merged));
         } ARKI_CATCH_RETURN_PYO
     }
 };

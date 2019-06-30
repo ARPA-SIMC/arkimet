@@ -22,11 +22,14 @@ if DBALLE
 man_MANS += arki-bufr-prepare.1
 endif
 
+arki-mergeconf.1: src/arki-mergeconf doc/mhooks-mergeconf
+	COLUMNS=200 $(srcdir)/run-local help2man --include doc/mhooks-mergeconf --name='Build a single Arkimet configuration file merging configurations from multiple sources' --section=1 --no-info --version-string="$(PACKAGE_VERSION)" $< > $@ || rm -f $@
+
 arki-server.1: src/arki-server
 	COLUMNS=200 $(srcdir)/run-local help2man --name='Arkimet server for remote dataset access' --section=1 --no-info --version-string="$(PACKAGE_VERSION)" $< > $@ || rm -f $@
 
 arki-testtar.1: src/arki-testtar
-	COLUMNS=200 $(srcdir)/run-local help2man --name='Arkimet server for remote dataset access' --section=1 --no-info --version-string="$(PACKAGE_VERSION)" $< > $@ || rm -f $@
+	COLUMNS=200 $(srcdir)/run-local help2man --name='Build a .tar version of a dataset for testing, without storing the actual data' --section=1 --no-info --version-string="$(PACKAGE_VERSION)" $< > $@ || rm -f $@
 
 arki-%.1: src/arki-% doc/mhooks-%
 	$(srcdir)/run-local $< --manpage="$(word 2,$^)" > $@ || rm -f $@

@@ -42,6 +42,10 @@ extern PyTypeObject* arkipy_cfgSection_Type;
 namespace arki {
 namespace python {
 
+PyObject* cfg_sections(const core::cfg::Sections& sections);
+PyObject* cfg_sections(core::cfg::Sections&& sections);
+PyObject* cfg_section(const core::cfg::Section& section);
+PyObject* cfg_section(core::cfg::Section&& section);
 PyObject* cfg_section_reference(PyObject* owner, core::cfg::Section* section);
 
 void register_cfg(PyObject* m);
