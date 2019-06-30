@@ -382,6 +382,36 @@ namespace python {
 // TODO: Section constructor with dict
 // TODO: Section constructor with sequence of (key, value)
 
+PyObject* cfg_sections(const core::cfg::Sections& sections)
+{
+    py_unique_ptr<arkipy_cfgSections> res(throw_ifnull(PyObject_New(arkipy_cfgSections, arkipy_cfgSections_Type)));
+    new (&(res->sections)) core::cfg::Sections(sections);
+    return (PyObject*)res.release();
+}
+
+PyObject* cfg_sections(core::cfg::Sections&& sections)
+{
+    py_unique_ptr<arkipy_cfgSections> res(throw_ifnull(PyObject_New(arkipy_cfgSections, arkipy_cfgSections_Type)));
+    new (&(res->sections)) core::cfg::Sections(std::move(sections));
+    return (PyObject*)res.release();
+}
+
+PyObject* cfg_section(const core::cfg::Section& section)
+{
+    py_unique_ptr<arkipy_cfgSection> res(throw_ifnull(PyObject_New(arkipy_cfgSection, arkipy_cfgSection_Type)));
+    res->owner = nullptr;
+    res->section = new core::cfg::Section(section);
+    return (PyObject*)res.release();
+}
+
+PyObject* cfg_section(core::cfg::Section&& section)
+{
+    py_unique_ptr<arkipy_cfgSection> res(throw_ifnull(PyObject_New(arkipy_cfgSection, arkipy_cfgSection_Type)));
+    res->owner = nullptr;
+    res->section = new core::cfg::Section(std::move(section));
+    return (PyObject*)res.release();
+}
+
 PyObject* cfg_section_reference(PyObject* owner, core::cfg::Section* section)
 {
     py_unique_ptr<arkipy_cfgSection> res(throw_ifnull(PyObject_New(arkipy_cfgSection, arkipy_cfgSection_Type)));
