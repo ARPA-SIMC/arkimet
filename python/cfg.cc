@@ -58,7 +58,7 @@ struct obtain : public MethKwargs<obtain, arkipy_cfgSections>
     {
         static const char* kwlist[] = { "name", nullptr };
         const char* arg_name = nullptr;
-        Py_ssize_t arg_name_len;
+        int arg_name_len;
         if (!PyArg_ParseTupleAndKeywords(args, kw, "s#", const_cast<char**>(kwlist), &arg_name, &arg_name_len))
             return nullptr;
 
@@ -66,6 +66,32 @@ struct obtain : public MethKwargs<obtain, arkipy_cfgSections>
             std::string name(arg_name, arg_name_len);
             arki::core::cfg::Section& res = self->sections.obtain(name);
             return cfg_section_reference((PyObject*)self, &res);
+        } ARKI_CATCH_RETURN_PYO
+    }
+};
+
+struct items : public MethNoargs<items, arkipy_cfgSections>
+{
+    constexpr static const char* name = "items";
+    constexpr static const char* signature = "";
+    constexpr static const char* returns = "Iterable[Tuple[str, arki.cfg.Section]]";
+    constexpr static const char* summary = "Iterate over section names and sections";
+    constexpr static const char* doc = nullptr;
+
+    static PyObject* run(Impl* self)
+    {
+        try {
+            pyo_unique_ptr res(throw_ifnull(PyTuple_New(self->sections.size())));
+            unsigned pos = 0;
+            for (auto& si: self->sections)
+            {
+                pyo_unique_ptr key(to_python(si.first));
+                pyo_unique_ptr val(cfg_section_reference((PyObject*)self, &si.second));
+                pyo_unique_ptr pair(throw_ifnull(PyTuple_Pack(2, key.get(), val.get())));
+                PyTuple_SET_ITEM(res.get(), pos, pair.release());
+                ++pos;
+            }
+            return res.release();
         } ARKI_CATCH_RETURN_PYO
     }
 };
@@ -204,7 +230,7 @@ struct SectionsDef : public Type<SectionsDef, arkipy_cfgSections>
 Arkimet configuration, as multiple sections of key/value options
 )";
     GetSetters<> getsetters;
-    Methods<section, obtain, parse_sections, write_sections> methods;
+    Methods<section, obtain, items, parse_sections, write_sections> methods;
 
     static void _dealloc(Impl* self)
     {
