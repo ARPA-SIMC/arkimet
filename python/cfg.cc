@@ -266,6 +266,16 @@ Arkimet configuration, as multiple sections of key/value options
         } ARKI_CATCH_RETURN_PYO
     }
 
+    static int mp_ass_subscript(Impl* self, PyObject *key, PyObject *val)
+    {
+        try {
+            self->sections.emplace(
+                    from_python<std::string>(key),
+                    section_from_python(val));
+            return 0;
+        } ARKI_CATCH_RETURN_INT
+    }
+
     static int _init(Impl* self, PyObject* args, PyObject* kw)
     {
         static const char* kwlist[] = { nullptr };
