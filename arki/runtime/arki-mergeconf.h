@@ -9,7 +9,6 @@ namespace runtime {
 class ArkiMergeconf
 {
 public:
-    std::vector<std::string> cfgfiles;
     std::vector<std::string> sources;
     bool restrict = false;
     std::string restrict_expr;

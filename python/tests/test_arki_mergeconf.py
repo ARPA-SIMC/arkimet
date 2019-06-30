@@ -43,7 +43,7 @@ class CatchOutput:
                     os.dup2(saved_stderr, 2)
 
 
-class TestArkiMergeconfReader(unittest.TestCase):
+class TestArkiMergeconf(unittest.TestCase):
     def test_http(self):
         with daemon(os.path.join(os.environ["TOP_SRCDIR"], "arki/dataset/http-redirect-daemon")) as url:
             out = CatchOutput()
@@ -86,3 +86,26 @@ class TestArkiMergeconfReader(unittest.TestCase):
                 "path = http://foo.bar/foo/dataset/test80",
                 "type = remote",
             ])
+
+    def test_load_configs(self):
+        with tempfile.NamedTemporaryFile("wt") as conf1:
+            with tempfile.NamedTemporaryFile("wt") as conf2:
+                conf1.write("[ds1]\npath=/tmp/ds1\n")
+                conf1.flush()
+                conf2.write("[ds2]\npath=/tmp/ds2\n")
+                conf2.flush()
+
+                out = CatchOutput()
+                with out.redirect():
+                    res = Mergeconf.main(args=["--config=" + conf1.name, "--config=" + conf2.name])
+                self.assertIsNone(res)
+                self.assertEqual(out.stderr.decode(), "")
+                self.assertEqual(out.stdout.decode().splitlines(), [
+                    "[ds1]",
+                    "name = ds1",
+                    "path = /tmp/ds1",
+                    "",
+                    "[ds2]",
+                    "name = ds2",
+                    "path = /tmp/ds2",
+                ])
