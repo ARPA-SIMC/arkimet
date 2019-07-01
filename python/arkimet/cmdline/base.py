@@ -15,7 +15,7 @@ class App:
     NAME = None
 
     def __init__(self):
-        self.parser = argparse.ArgumentParser(description=self.get_description)
+        self.parser = argparse.ArgumentParser(description=self.get_description())
         self.parser.add_argument("--verbose", "-v", action="store_true",
                                  help="verbose output")
         self.parser.add_argument("--debug", action="store_true",
