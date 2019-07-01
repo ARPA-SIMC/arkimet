@@ -109,3 +109,22 @@ class TestArkiMergeconf(unittest.TestCase):
                     "name = ds2",
                     "path = /tmp/ds2",
                 ])
+
+    def test_extra(self):
+        src = os.path.abspath("inbound/test.grib1")
+        out = CatchOutput()
+        with out.redirect():
+            res = Mergeconf.main(args=[src, "--extra"])
+        self.assertIsNone(res)
+        self.assertEqual(out.stderr.decode(), "")
+        self.assertEqual(out.stdout.decode().splitlines(), [
+            "[test.grib1]",
+            'bounding = POLYGON ((-60.0000000000000000 30.0000000000000000, '
+            '-60.0000000000000000 72.0000000000000000, 42.0000000000000000 '
+            '72.0000000000000000, 42.0000000000000000 30.0000000000000000, '
+            '-60.0000000000000000 30.0000000000000000))',
+            'format = grib',
+            'name = test.grib1',
+            'path = ' + src,
+            'type = file',
+        ])
