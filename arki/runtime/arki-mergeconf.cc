@@ -71,7 +71,7 @@ void ArkiMergeconf::run(core::cfg::Sections& merged)
     if (extra)
     {
 #ifdef HAVE_GEOS
-        for (auto si: inputs.merged)
+        for (auto& si: inputs.merged)
         {
             // Instantiate the dataset
             unique_ptr<dataset::Reader> d(dataset::Reader::create(si.second));
@@ -82,7 +82,9 @@ void ArkiMergeconf::run(core::cfg::Sections& merged)
             // Compute bounding box, and store the WKT in bounding
             auto bbox = sum.getConvexHull();
             if (bbox.get())
+            {
                 si.second.set("bounding", bbox->toString());
+            }
         }
 #endif
     }
