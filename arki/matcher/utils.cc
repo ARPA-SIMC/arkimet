@@ -46,7 +46,7 @@ int OptionalCommaList::getInt(size_t pos, int def) const
     {
         stringstream ss;
         ss << "cannot parse matcher: '" << (*this)[pos] << "' is not a number";
-        throw std::runtime_error(ss.str());
+        throw std::invalid_argument(ss.str());
     }
     return res;
 }

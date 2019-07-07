@@ -47,10 +47,10 @@ class ArkiView:
 
     def get_dataset_reader(self):
         """
-        Return the arki.DatasetReader for the dataset named in
+        Return the arki.dataset.Reader for the dataset named in
         self.kwargs["name"]
         """
-        return arki.DatasetReader(self.get_dataset_config())
+        return arki.dataset.Reader(self.get_dataset_config())
 
     def get_query(self):
         """

@@ -116,7 +116,7 @@ unique_ptr<MatchArea> MatchArea::parse(const std::string& pattern)
     }
 #endif
     else
-        throw std::runtime_error("cannot parse type of area to match: unsupported area match: " + str::strip(p.substr(0, 5)));
+        throw std::invalid_argument("cannot parse type of area to match: unsupported area match: " + str::strip(p.substr(0, 5)));
 }
 
 #ifdef HAVE_GEOS
@@ -160,7 +160,7 @@ unique_ptr<MatchAreaBBox> MatchAreaBBox::parse(const std::string& pattern)
         return unique_ptr<MatchAreaBBox>(new MatchAreaBBoxCoveredBy(rest));
 #endif
     } else {
-        throw std::runtime_error("cannot parse type of bbox match: unsupported match type: " + verb);
+        throw std::invalid_argument("cannot parse type of bbox match: unsupported match type: " + verb);
     }
 }
 

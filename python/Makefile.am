@@ -16,6 +16,7 @@ _arkimet_la_SOURCES = \
     metadata.cc \
     cfg.cc \
     summary.cc \
+    matcher.cc \
     dataset.cc \
     arki-query.cc \
     arki-scan.cc \
@@ -56,6 +57,7 @@ EXTRA_DIST = \
     cfg.h \
     metadata.h \
     summary.h \
+    matcher.h \
     dataset.h \
     arki-query.h \
     arki-scan.h \

@@ -272,14 +272,14 @@ unique_ptr<AND> AND::parse(const std::string& pattern)
         if (expr.empty()) continue;
         size_t pos = expr.find(':');
         if (pos == string::npos)
-            throw std::runtime_error("cannot parse matcher subexpression '" + expr + "' does not contain a colon (':')");
+            throw std::invalid_argument("cannot parse matcher subexpression '" + expr + "' does not contain a colon (':')");
 
         string type = str::lower(str::strip(expr.substr(0, pos)));
         string patterns = str::strip(expr.substr(pos+1));
 
         MatcherType* mt = MatcherType::find(type);
         if (mt == 0)
-            throw std::runtime_error("cannot parse matcher subexpression: unknown match type: '" + type + "'");
+            throw std::invalid_argument("cannot parse matcher subexpression: unknown match type: '" + type + "'");
 
         res->components.insert(make_pair(mt->code, OR::parse(*mt, patterns)));
     }

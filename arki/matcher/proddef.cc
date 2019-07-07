@@ -44,7 +44,7 @@ unique_ptr<MatchProddef> MatchProddef::parse(const std::string& pattern)
     switch (types::Proddef::parseStyle(name))
     {
         case types::Proddef::GRIB: return unique_ptr<MatchProddef>(new MatchProddefGRIB(rest));
-        default: throw runtime_error("cannot parse type of proddef to match: unsupported proddef style: " + name);
+        default: throw invalid_argument("cannot parse type of proddef to match: unsupported proddef style: " + name);
     }
 }
 
