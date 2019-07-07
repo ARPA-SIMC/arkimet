@@ -16,6 +16,20 @@ PyTypeObject* arkipy_Matcher_Type = nullptr;
 
 namespace {
 
+struct expanded : public Getter<expanded, arkipy_Matcher>
+{
+    constexpr static const char* name = "expanded";
+    constexpr static const char* doc = "return the query with all aliases expanded";
+    constexpr static void* closure = nullptr;
+
+    static PyObject* get(Impl* self, void* closure)
+    {
+        try {
+            return to_python(self->matcher->toStringExpanded());
+        } ARKI_CATCH_RETURN_PYO;
+    }
+};
+
 #if 0
 struct match : public MethKwargs<match, arkipy_Matcher>
 {
@@ -40,7 +54,7 @@ struct MatcherDef : public Type<MatcherDef, arkipy_Matcher>
     constexpr static const char* doc = R"(
 Precompiled matcher for arkimet metadata
 )";
-    GetSetters<> getsetters;
+    GetSetters<expanded> getsetters;
     Methods<> methods;
 
     static void _dealloc(Impl* self)
