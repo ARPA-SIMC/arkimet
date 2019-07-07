@@ -28,27 +28,16 @@ struct run_ : public MethKwargs<run_, arkipy_ArkiMergeconf>
 
     static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
     {
-        static const char* kwlist[] = { "sections", "restrict", "ignore_system_datasets", "extra", nullptr };
+        static const char* kwlist[] = { "sections", "extra", nullptr };
         arkipy_cfgSections* sections = nullptr;
-        const char* restrict = nullptr;
-        int ignore_system_ds = 0;
         int extra = 0;
 
-        if (!PyArg_ParseTupleAndKeywords(args, kw, "O!|zpp", const_cast<char**>(kwlist),
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "O!|p", const_cast<char**>(kwlist),
                     arkipy_cfgSections_Type, &sections,
-                    &restrict, &ignore_system_ds, &extra))
+                    &extra))
             return nullptr;
 
         try {
-            if (restrict)
-            {
-                self->arki_mergeconf->restrict = true;
-                self->arki_mergeconf->restrict_expr = restrict;
-            } else {
-                self->arki_mergeconf->restrict = false;
-            }
-
-            self->arki_mergeconf->ignore_system_ds = ignore_system_ds;
             self->arki_mergeconf->extra = extra;
 
             {
