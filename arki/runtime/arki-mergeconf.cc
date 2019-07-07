@@ -21,20 +21,6 @@ void ArkiMergeconf::run(core::cfg::Sections& merged)
 {
     runtime::Inputs inputs(merged);
 
-    // Read the config files from the remaining commandline arguments
-    for (const auto& path: sources)
-    {
-        if (str::startswith(path, "http://") || str::startswith(path, "https://"))
-        {
-            auto sections = dataset::http::Reader::load_cfg_sections(path);
-            inputs.add_sections(sections);
-        }
-        else
-            inputs.add_pathname(path);
-    }
-    if (inputs.empty())
-        throw std::runtime_error("you need to specify at least one config file or dataset");
-
     // Validate the configuration
     bool hasErrors = false;
     for (auto si: inputs.merged)

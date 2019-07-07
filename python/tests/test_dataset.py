@@ -2,6 +2,7 @@ import unittest
 import tempfile
 import arkimet as arki
 import os
+from arkimet.test import daemon
 
 
 class TestReadConfig(unittest.TestCase):
@@ -15,6 +16,11 @@ class TestReadConfig(unittest.TestCase):
             ('path', pathname),
             ('type', 'file'),
         ])
+
+    def test_http(self):
+        with daemon(os.path.join(os.environ["TOP_SRCDIR"], "arki/dataset/http-redirect-daemon")) as url:
+            sections = arki.dataset.http.load_cfg_sections(url)
+            self.assertEqual(sections.keys(), ('error', 'test200', 'test80'))
 
 
 class TestDatasetReader(unittest.TestCase):

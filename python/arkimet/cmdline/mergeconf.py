@@ -1,5 +1,5 @@
 import arkimet as arki
-from arkimet.cmdline.base import App
+from arkimet.cmdline.base import App, Fail
 import sys
 import logging
 
@@ -29,6 +29,17 @@ class Mergeconf(App):
         self.parser.add_argument("sources", nargs="*", action="store",
                                  help="datasets, configuration files or remote urls")
 
+    def _add_section(self, merged, section, name=None):
+        if name is None:
+            name = section["name"]
+
+        old = merged.section(name)
+        if old is not None:
+            log.warning("ignoring dataset %s in %s, which has the same name as the dataset in %s",
+                        name, section["path"], old["path"])
+        merged[name] = section
+        merged[name]["name"] = name
+
     def run(self):
         super().run()
 
@@ -43,17 +54,24 @@ class Mergeconf(App):
                     cfg = arki.cfg.Sections.parse(pathname)
 
                 for name, section in cfg.items():
-                    old = merged.section(name)
-                    if old is not None:
-                        log.warning("ignoring dataset %s in %s, which has the same name as the dataset in %s",
-                                    name, section["path"], old["path"])
-                    merged[name] = section
-                    merged[name]["name"] = name
+                    self._add_section(merged, section, name)
+
+        # Read the config files from the remaining commandline arguments
+        for path in self.args.sources:
+            if path.startswith("http://") or path.startswith("https://"):
+                sections = arki.dataset.http.load_cfg_sections(path)
+                for name, section in sections.items():
+                    self._add_section(merged, section, name)
+            else:
+                section = arki.dataset.read_config(path)
+                self._add_section(merged, section)
+
+        if not merged:
+            raise Fail("you need to specify at least one config file or dataset")
 
         arki_mergeconf = arki.ArkiMergeconf()
         arki_mergeconf.run(
             merged,
-            self.args.sources,
             restrict=self.args.restrict,
             ignore_system_datasets=self.args.ignore_system_datasets,
             extra=self.args.extra,

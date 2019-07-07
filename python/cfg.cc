@@ -70,6 +70,30 @@ struct obtain : public MethKwargs<obtain, arkipy_cfgSections>
     }
 };
 
+struct sections_keys : public MethNoargs<sections_keys, arkipy_cfgSections>
+{
+    constexpr static const char* name = "keys";
+    constexpr static const char* signature = "";
+    constexpr static const char* returns = "Iterable[str]";
+    constexpr static const char* summary = "Iterate over section names";
+    constexpr static const char* doc = nullptr;
+
+    static PyObject* run(Impl* self)
+    {
+        try {
+            pyo_unique_ptr res(throw_ifnull(PyTuple_New(self->sections.size())));
+            unsigned pos = 0;
+            for (auto& si: self->sections)
+            {
+                pyo_unique_ptr key(to_python(si.first));
+                PyTuple_SET_ITEM(res.get(), pos, key.release());
+                ++pos;
+            }
+            return res.release();
+        } ARKI_CATCH_RETURN_PYO
+    }
+};
+
 struct sections_items : public MethNoargs<sections_items, arkipy_cfgSections>
 {
     constexpr static const char* name = "items";
@@ -89,6 +113,30 @@ struct sections_items : public MethNoargs<sections_items, arkipy_cfgSections>
                 pyo_unique_ptr val(cfg_section_reference((PyObject*)self, &si.second));
                 pyo_unique_ptr pair(throw_ifnull(PyTuple_Pack(2, key.get(), val.get())));
                 PyTuple_SET_ITEM(res.get(), pos, pair.release());
+                ++pos;
+            }
+            return res.release();
+        } ARKI_CATCH_RETURN_PYO
+    }
+};
+
+struct section_keys : public MethNoargs<section_keys, arkipy_cfgSection>
+{
+    constexpr static const char* name = "keys";
+    constexpr static const char* signature = "";
+    constexpr static const char* returns = "Iterable[str]";
+    constexpr static const char* summary = "Iterate over key names";
+    constexpr static const char* doc = nullptr;
+
+    static PyObject* run(Impl* self)
+    {
+        try {
+            pyo_unique_ptr res(throw_ifnull(PyTuple_New(self->section->size())));
+            unsigned pos = 0;
+            for (auto& si: *self->section)
+            {
+                pyo_unique_ptr key(to_python(si.first));
+                PyTuple_SET_ITEM(res.get(), pos, key.release());
                 ++pos;
             }
             return res.release();
@@ -257,7 +305,7 @@ struct SectionsDef : public Type<SectionsDef, arkipy_cfgSections>
 Arkimet configuration, as multiple sections of key/value options
 )";
     GetSetters<> getsetters;
-    Methods<section, obtain, sections_items, parse_sections, write_sections> methods;
+    Methods<section, obtain, sections_keys, sections_items, parse_sections, write_sections> methods;
 
     static void _dealloc(Impl* self)
     {
@@ -328,7 +376,7 @@ struct SectionDef : public Type<SectionDef, arkipy_cfgSection>
 Arkimet configuration, as a section of key/value options
 )";
     GetSetters<> getsetters;
-    Methods<section_items, parse_section, write_section> methods;
+    Methods<section_keys, section_items, parse_section, write_section> methods;
 
     static void _dealloc(Impl* self)
     {
