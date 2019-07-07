@@ -21,23 +21,6 @@ void ArkiMergeconf::run(core::cfg::Sections& merged)
 {
     runtime::Inputs inputs(merged);
 
-    // Validate the configuration
-    bool hasErrors = false;
-    for (auto si: inputs.merged)
-    {
-        // Validate filters
-        try {
-            Matcher::parse(si.second.value("filter"));
-        } catch (std::exception& e) {
-            cerr << si.first << ":"
-                 << e.what()
-                 << endl;
-            hasErrors = true;
-        }
-    }
-    if (hasErrors)
-        throw std::runtime_error("Some input files did not validate.");
-
     // If requested, compute extra information
     if (extra)
     {

@@ -91,6 +91,24 @@ class TestArkiMergeconf(unittest.TestCase):
             ])
             self.assertIsNone(res)
 
+    def test_validation(self):
+        with tempfile.NamedTemporaryFile("w+t") as tf:
+            tf.write("""
+[name]
+filter=invalid
+""")
+            tf.flush()
+
+            out = CatchOutput()
+            with out.redirect():
+                res = Mergeconf.main(args=["-C", tf.name])
+            self.assertEqual(out.stderr.decode().splitlines(), [
+                "name: cannot parse matcher subexpression 'invalid' does not contain a colon (':')",
+                "Some input files did not validate.",
+            ])
+            self.assertEqual(out.stdout.decode().splitlines(), [])
+            self.assertEqual(res, 1)
+
     def test_load_configs(self):
         with tempfile.NamedTemporaryFile("wt") as conf1:
             with tempfile.NamedTemporaryFile("wt") as conf2:
