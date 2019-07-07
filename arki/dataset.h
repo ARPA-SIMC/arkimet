@@ -262,8 +262,7 @@ public:
     static std::unique_ptr<Reader> create(const core::cfg::Section& cfg);
 
     /**
-     * Read the configuration of the dataset(s) at the given path or URL,
-     * adding new sections to cfg
+     * Read the configuration of the dataset(s) at the given path or URL
      */
     static core::cfg::Section read_config(const std::string& path);
 };

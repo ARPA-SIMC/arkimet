@@ -70,7 +70,7 @@ struct obtain : public MethKwargs<obtain, arkipy_cfgSections>
     }
 };
 
-struct items : public MethNoargs<items, arkipy_cfgSections>
+struct sections_items : public MethNoargs<sections_items, arkipy_cfgSections>
 {
     constexpr static const char* name = "items";
     constexpr static const char* signature = "";
@@ -95,6 +95,33 @@ struct items : public MethNoargs<items, arkipy_cfgSections>
         } ARKI_CATCH_RETURN_PYO
     }
 };
+
+struct section_items : public MethNoargs<section_items, arkipy_cfgSection>
+{
+    constexpr static const char* name = "items";
+    constexpr static const char* signature = "";
+    constexpr static const char* returns = "Iterable[Tuple[str, str]]";
+    constexpr static const char* summary = "Iterate over key/value pairs";
+    constexpr static const char* doc = nullptr;
+
+    static PyObject* run(Impl* self)
+    {
+        try {
+            pyo_unique_ptr res(throw_ifnull(PyTuple_New(self->section->size())));
+            unsigned pos = 0;
+            for (auto& si: *self->section)
+            {
+                pyo_unique_ptr key(to_python(si.first));
+                pyo_unique_ptr val(to_python(si.second));
+                pyo_unique_ptr pair(throw_ifnull(PyTuple_Pack(2, key.get(), val.get())));
+                PyTuple_SET_ITEM(res.get(), pos, pair.release());
+                ++pos;
+            }
+            return res.release();
+        } ARKI_CATCH_RETURN_PYO
+    }
+};
+
 
 struct parse_sections : public ClassMethKwargs<parse_sections>
 {
@@ -230,7 +257,7 @@ struct SectionsDef : public Type<SectionsDef, arkipy_cfgSections>
 Arkimet configuration, as multiple sections of key/value options
 )";
     GetSetters<> getsetters;
-    Methods<section, obtain, items, parse_sections, write_sections> methods;
+    Methods<section, obtain, sections_items, parse_sections, write_sections> methods;
 
     static void _dealloc(Impl* self)
     {
@@ -301,7 +328,7 @@ struct SectionDef : public Type<SectionDef, arkipy_cfgSection>
 Arkimet configuration, as a section of key/value options
 )";
     GetSetters<> getsetters;
-    Methods<parse_section, write_section> methods;
+    Methods<section_items, parse_section, write_section> methods;
 
     static void _dealloc(Impl* self)
     {

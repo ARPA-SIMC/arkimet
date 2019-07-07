@@ -49,7 +49,6 @@ class TestArkiMergeconf(unittest.TestCase):
             out = CatchOutput()
             with out.redirect():
                 res = Mergeconf.main(args=[url])
-            self.assertIsNone(res)
             self.assertEqual(out.stderr.decode(), "")
             self.assertEqual(out.stdout.decode().splitlines(), [
                 "[error]",
@@ -67,13 +66,13 @@ class TestArkiMergeconf(unittest.TestCase):
                 "path = http://foo.bar/foo/dataset/test80",
                 "type = remote",
             ])
+            self.assertIsNone(res)
 
     def test_ignore_system_datasets(self):
         with daemon(os.path.join(os.environ["TOP_SRCDIR"], "arki/dataset/http-redirect-daemon")) as url:
             out = CatchOutput()
             with out.redirect():
                 res = Mergeconf.main(args=["--ignore-system-datasets", url])
-            self.assertIsNone(res)
             self.assertEqual(out.stderr.decode(), "")
             self.assertEqual(out.stdout.decode().splitlines(), [
                 "[test200]",
@@ -86,6 +85,7 @@ class TestArkiMergeconf(unittest.TestCase):
                 "path = http://foo.bar/foo/dataset/test80",
                 "type = remote",
             ])
+            self.assertIsNone(res)
 
     def test_load_configs(self):
         with tempfile.NamedTemporaryFile("wt") as conf1:
