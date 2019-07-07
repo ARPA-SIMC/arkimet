@@ -1,7 +1,6 @@
 #include "common.h"
 #include "cfg.h"
 #include "utils/values.h"
-#include <Python.h>
 #include "arki/libconfig.h"
 #include "arki/core/cfg.h"
 #include "arki/core/file.h"

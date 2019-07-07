@@ -1,6 +1,7 @@
 #ifndef ARKI_PYTHON_CFG_H
 #define ARKI_PYTHON_CFG_H
 
+#define PY_SSIZE_T_CLEAN
 #include <Python.h>
 #include <memory>
 #include "arki/core/cfg.h"

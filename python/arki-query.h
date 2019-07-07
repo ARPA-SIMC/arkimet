@@ -1,6 +1,7 @@
 #ifndef ARKI_PYTHON_ARKI_QUERY_H
 #define ARKI_PYTHON_ARKI_QUERY_H
 
+#define PY_SSIZE_T_CLEAN
 #include <Python.h>
 #include <memory>
 

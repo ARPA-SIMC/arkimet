@@ -1,4 +1,3 @@
-#include <Python.h>
 #include "summary.h"
 #include "utils/core.h"
 #include "utils/methods.h"

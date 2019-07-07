@@ -68,7 +68,7 @@ Precompiled matcher for arkimet metadata
     {
         static const char* kwlist[] = { "expr", nullptr };
         const char* arg_expr = nullptr;
-        int arg_expr_len;
+        Py_ssize_t arg_expr_len;
         if (!PyArg_ParseTupleAndKeywords(args, kw, "|s#", const_cast<char**>(kwlist), &arg_expr, &arg_expr_len))
             return -1;
 

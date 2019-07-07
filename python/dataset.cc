@@ -1,3 +1,4 @@
+#define PY_SSIZE_T_CLEAN
 #include <Python.h>
 #include "dataset.h"
 #include "common.h"
@@ -328,7 +329,7 @@ struct read_config : public MethKwargs<read_config, PyObject>
     {
         static const char* kwlist[] = { "pathname", nullptr };
         const char* pathname;
-        int pathname_len;
+        Py_ssize_t pathname_len;
 
         if (!PyArg_ParseTupleAndKeywords(args, kw, "s#", const_cast<char**>(kwlist), &pathname, &pathname_len))
             return nullptr;
@@ -359,7 +360,7 @@ struct load_cfg_sections : public MethKwargs<load_cfg_sections, PyObject>
     {
         static const char* kwlist[] = { "url", nullptr };
         const char* url;
-        int url_len;
+        Py_ssize_t url_len;
 
         if (!PyArg_ParseTupleAndKeywords(args, kw, "s#", const_cast<char**>(kwlist), &url, &url_len))
             return nullptr;
