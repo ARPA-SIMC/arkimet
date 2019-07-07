@@ -19,19 +19,19 @@ void Tests::register_tests() {
 // Filter stations by attributes
 add_method("find_stations", [] {
   ValueBag vb1 = ValueBag::parse("rep=NONONO");
-  wassert(actual(utils::vm2::find_stations(vb1).size()) == 0);
+  wassert(actual(utils::vm2::find_stations(vb1).size()) == 0u);
 
   ValueBag vb2 = ValueBag::parse("rep=locali");
-  wassert(actual(utils::vm2::find_stations(vb2).size()) > 0);
+  wassert(actual(utils::vm2::find_stations(vb2).size()) > 0u);
 });
 
 // Filter variables by attributes
 add_method("find_variables", [] {
   ValueBag vb1 = ValueBag::parse("bcode=NONONO");
-  wassert(actual(utils::vm2::find_variables(vb1).size()) == 0);
+  wassert(actual(utils::vm2::find_variables(vb1).size()) == 0u);
 
   ValueBag vb2 = ValueBag::parse("bcode=B13011");
-  wassert(actual(utils::vm2::find_variables(vb2).size()) > 0);
+  wassert(actual(utils::vm2::find_variables(vb2).size()) > 0u);
 });
 
 // Get station attributes
