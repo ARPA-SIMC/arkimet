@@ -46,6 +46,7 @@ public:
     using std::map<std::string, std::string>::end;
     using std::map<std::string, std::string>::cbegin;
     using std::map<std::string, std::string>::cend;
+    using std::map<std::string, std::string>::find;
     using std::map<std::string, std::string>::erase;
     using std::map<std::string, std::string>::operator=;
 
@@ -105,6 +106,7 @@ public:
     using std::map<std::string, Section>::end;
     using std::map<std::string, Section>::cbegin;
     using std::map<std::string, Section>::cend;
+    using std::map<std::string, Section>::find;
     using std::map<std::string, Section>::erase;
     using std::map<std::string, Section>::emplace;
     using std::map<std::string, Section>::operator=;

@@ -70,6 +70,39 @@ struct obtain : public MethKwargs<obtain, arkipy_cfgSections>
     }
 };
 
+struct sections_get : public MethKwargs<sections_get, arkipy_cfgSections>
+{
+    constexpr static const char* name = "get";
+    constexpr static const char* signature = "name: str, default: Optional[Any]=None";
+    constexpr static const char* returns = "Union[arki.cfg.Section, Any]";
+    constexpr static const char* summary = "return the named section, or the given default value if it does not exist";
+    constexpr static const char* doc = nullptr;
+
+    static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
+    {
+        static const char* kwlist[] = { "name", "default", nullptr };
+        const char* arg_name = nullptr;
+        int arg_name_len;
+        PyObject* arg_default = nullptr;
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "s#|O", const_cast<char**>(kwlist), &arg_name, &arg_name_len, &arg_default))
+            return nullptr;
+
+        try {
+            std::string name(arg_name, arg_name_len);
+            arki::core::cfg::Section* res = self->sections.section(name);
+            if (res)
+                return cfg_section_reference((PyObject*)self, res);
+            if (!arg_default)
+                Py_RETURN_NONE;
+            else
+            {
+                Py_INCREF(arg_default);
+                return arg_default;
+            }
+        } ARKI_CATCH_RETURN_PYO
+    }
+};
+
 struct sections_keys : public MethNoargs<sections_keys, arkipy_cfgSections>
 {
     constexpr static const char* name = "keys";
@@ -120,6 +153,39 @@ struct sections_items : public MethNoargs<sections_items, arkipy_cfgSections>
     }
 };
 
+
+struct section_get : public MethKwargs<section_get, arkipy_cfgSection>
+{
+    constexpr static const char* name = "get";
+    constexpr static const char* signature = "name: str, default: Optional[Any]=None";
+    constexpr static const char* returns = "Union[str, Any]";
+    constexpr static const char* summary = "return the value for the given key, or the given default value if it does not exist";
+    constexpr static const char* doc = nullptr;
+
+    static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
+    {
+        static const char* kwlist[] = { "name", "default", nullptr };
+        const char* arg_name = nullptr;
+        int arg_name_len;
+        PyObject* arg_default = nullptr;
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "s#|O", const_cast<char**>(kwlist), &arg_name, &arg_name_len, &arg_default))
+            return nullptr;
+
+        try {
+            std::string name(arg_name, arg_name_len);
+            auto i = self->section->find(name);
+            if (i != self->section->end())
+                return to_python(i->second);
+            if (!arg_default)
+                Py_RETURN_NONE;
+            else
+            {
+                Py_INCREF(arg_default);
+                return arg_default;
+            }
+        } ARKI_CATCH_RETURN_PYO
+    }
+};
 struct section_keys : public MethNoargs<section_keys, arkipy_cfgSection>
 {
     constexpr static const char* name = "keys";
@@ -305,7 +371,7 @@ struct SectionsDef : public Type<SectionsDef, arkipy_cfgSections>
 Arkimet configuration, as multiple sections of key/value options
 )";
     GetSetters<> getsetters;
-    Methods<section, obtain, sections_keys, sections_items, parse_sections, write_sections> methods;
+    Methods<section, obtain, sections_get, sections_keys, sections_items, parse_sections, write_sections> methods;
 
     static void _dealloc(Impl* self)
     {
@@ -344,9 +410,21 @@ Arkimet configuration, as multiple sections of key/value options
     static int mp_ass_subscript(Impl* self, PyObject *key, PyObject *val)
     {
         try {
-            self->sections.emplace(
-                    from_python<std::string>(key),
-                    section_from_python(val));
+            auto name = from_python<std::string>(key);
+            if (!val)
+            {
+                auto i = self->sections.find(name);
+                if (i == self->sections.end())
+                {
+                    PyErr_Format(PyExc_KeyError, "section not found: '%s'", name.c_str());
+                    return -1;
+                }
+                self->sections.erase(i);
+            } else {
+                self->sections.emplace(
+                        from_python<std::string>(key),
+                        section_from_python(val));
+            }
             return 0;
         } ARKI_CATCH_RETURN_INT
     }
@@ -376,7 +454,7 @@ struct SectionDef : public Type<SectionDef, arkipy_cfgSection>
 Arkimet configuration, as a section of key/value options
 )";
     GetSetters<> getsetters;
-    Methods<section_keys, section_items, parse_section, write_section> methods;
+    Methods<section_keys, section_get, section_items, parse_section, write_section> methods;
 
     static void _dealloc(Impl* self)
     {
@@ -419,7 +497,17 @@ Arkimet configuration, as a section of key/value options
     {
         try {
             std::string k = from_python<std::string>(key);
-            self->section->set(k, from_python<std::string>(val));
+            if (!val)
+            {
+                auto i = self->section->find(name);
+                if (i == self->section->end())
+                {
+                    PyErr_Format(PyExc_KeyError, "key not found: '%s'", k.c_str());
+                    return -1;
+                }
+                self->section->erase(i);
+            } else
+                self->section->set(k, from_python<std::string>(val));
             return 0;
         } ARKI_CATCH_RETURN_INT
     }

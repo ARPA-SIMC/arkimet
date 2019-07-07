@@ -9,9 +9,6 @@ namespace runtime {
 class ArkiMergeconf
 {
 public:
-    bool restrict = false;
-    std::string restrict_expr;
-    bool ignore_system_ds = false;
     bool extra = false;
 
     void run(core::cfg::Sections& merged);

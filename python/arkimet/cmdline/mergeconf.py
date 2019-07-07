@@ -1,9 +1,12 @@
 import arkimet as arki
 from arkimet.cmdline.base import App, Fail
+import re
 import sys
 import logging
 
 log = logging.getLogger("arki-mergeconf")
+
+re_stringlist = re.compile(r"[\s,]+")
 
 
 class Mergeconf(App):
@@ -69,11 +72,41 @@ class Mergeconf(App):
         if not merged:
             raise Fail("you need to specify at least one config file or dataset")
 
+        # Remove unallowed entries
+        if self.args.restrict:
+            to_remove = []
+            allowed = frozenset(x for x in re_stringlist.split(self.args.restrict) if x)
+            for name, section in merged:
+                r = section.get("restrict", None)
+                if r is None:
+                    continue
+                offered = frozenset(x for x in re_stringlist.split(r) if x)
+                if not (allowed & offered):
+                    to_remove.append(name)
+
+            for name in to_remove:
+                del merged[name]
+
+        if self.args.ignore_system_datasets:
+            to_remove = []
+
+            for name, section in merged.items():
+                type = section.get("type")
+                name = section.get("name")
+
+                if (type == "error" or type == "duplicates" or
+                        (type == "remote" and (name == "error" or name == "duplicates"))):
+                    to_remove.append(name)
+
+            for name in to_remove:
+                del merged[name]
+
+        if not merged:
+            raise Fail("none of the configuration provided were useable")
+
         arki_mergeconf = arki.ArkiMergeconf()
         arki_mergeconf.run(
             merged,
-            restrict=self.args.restrict,
-            ignore_system_datasets=self.args.ignore_system_datasets,
             extra=self.args.extra,
         )
 

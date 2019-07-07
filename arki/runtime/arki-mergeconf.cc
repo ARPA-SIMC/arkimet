@@ -38,21 +38,6 @@ void ArkiMergeconf::run(core::cfg::Sections& merged)
     if (hasErrors)
         throw std::runtime_error("Some input files did not validate.");
 
-    // Remove unallowed entries
-    if (restrict)
-    {
-        runtime::Restrict rest(restrict_expr);
-        inputs.remove_unallowed(rest);
-    }
-
-    if (ignore_system_ds)
-    {
-        inputs.remove_system_datasets();
-    }
-
-    if (inputs.empty())
-        throw std::runtime_error("no useable config files or dataset directories found");
-
     // If requested, compute extra information
     if (extra)
     {

@@ -19,6 +19,10 @@ class TestCfgSections(unittest.TestCase):
         self.assertEqual(sections.section("name"), section)
         section["key"] = "val"
         self.assertEqual(sections["name"]["key"], "val")
+        self.assertEqual(sections.get("name"), section)
+        self.assertEqual(sections.get("name", 42), section)
+        self.assertIsNone(sections.get("nonexisting"))
+        self.assertEqual(sections.get("nonexisting", 42), 42)
 
     def test_parse(self):
         body = """
@@ -69,6 +73,11 @@ class TestCfgSection(unittest.TestCase):
         section["key2"] = "val2"
         self.assertEqual(section["key1"], "val1")
         self.assertEqual(section["key2"], "val2")
+
+        self.assertEqual(section.get("key1"), "val1")
+        self.assertEqual(section.get("key1", 42), "val1")
+        self.assertIsNone(section.get("nonexisting"))
+        self.assertEqual(section.get("nonexisting", 42), 42)
 
     def test_parse(self):
         body = """
