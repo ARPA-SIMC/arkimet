@@ -121,11 +121,17 @@ class Mergeconf(App):
         if has_errors:
             raise Fail("Some input files did not validate.")
 
-        arki_mergeconf = arki.ArkiMergeconf()
-        arki_mergeconf.run(
-            merged,
-            extra=self.args.extra,
-        )
+        # If requested, compute extra information
+        if self.args.extra:
+            for name, section in merged.items():
+                # Instantiate the dataset
+                ds = arki.dataset.Reader(section)
+                # Get the summary
+                summary = ds.query_summary()
+                # Compute bounding box, and store the WKT in bounding
+                bbox = summary.get_convex_hull()
+                if bbox:
+                    section["bounding"] = bbox
 
         # Output the merged configuration
         if self.args.output:

@@ -15,11 +15,11 @@ typedef struct {
     arki::Summary* summary;
 } arkipy_Summary;
 
-PyAPI_DATA(PyTypeObject) arkipy_Summary_Type;
+extern PyTypeObject* arkipy_Summary_Type;
 
 #define arkipy_Summary_Check(ob) \
-    (Py_TYPE(ob) == &arkipy_Summary_Type || \
-     PyType_IsSubtype(Py_TYPE(ob), &arkipy_Summary_Type))
+    (Py_TYPE(ob) == arkipy_Summary_Type || \
+     PyType_IsSubtype(Py_TYPE(ob), arkipy_Summary_Type))
 }
 
 namespace arki {

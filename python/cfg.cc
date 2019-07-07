@@ -362,7 +362,6 @@ struct write_section : public MethKwargs<write_section, arkipy_cfgSection>
 };
 
 
-
 struct SectionsDef : public Type<SectionsDef, arkipy_cfgSections>
 {
     constexpr static const char* name = "Sections";

@@ -10,7 +10,6 @@
 #include "arki-query.h"
 #include "arki-scan.h"
 #include "arki-check.h"
-#include "arki-mergeconf.h"
 #include "arki-dump.h"
 #include "arki-xargs.h"
 #include "arki-bufr-prepare.h"
@@ -198,7 +197,6 @@ PyMODINIT_FUNC PyInit__arkimet(void)
         register_arki_query(m);
         register_arki_scan(m);
         register_arki_check(m);
-        register_arki_mergeconf(m);
         register_arki_dump(m);
         register_arki_xargs(m);
         register_arki_bufr_prepare(m);
