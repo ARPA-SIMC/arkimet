@@ -1,11 +1,8 @@
 import arkimet as arki
 from arkimet.cmdline.base import App, Exit
-import re
 import logging
 
-log = logging.getLogger("arki-mergeconf")
-
-re_stringlist = re.compile(r"[\s,]+")
+log = logging.getLogger("arki-bufr-prepare")
 
 
 class BufrPrepare(App):
