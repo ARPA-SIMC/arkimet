@@ -21,7 +21,6 @@ _arkimet_la_SOURCES = \
     arki-query.cc \
     arki-scan.cc \
     arki-check.cc \
-    arki-mergeconf.cc \
     arki-dump.cc \
     arki-xargs.cc \
     arki-bufr-prepare.cc \
@@ -62,7 +61,6 @@ EXTRA_DIST = \
     arki-query.h \
     arki-scan.h \
     arki-check.h \
-    arki-mergeconf.h \
     arki-dump.h \
     arki-xargs.h \
     arki-bufr-prepare.h

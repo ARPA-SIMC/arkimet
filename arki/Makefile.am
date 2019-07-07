@@ -120,7 +120,6 @@ nobase_dist_arkiinclude_HEADERS = \
 		runtime/arki-query.h \
 		runtime/arki-check.h \
 		runtime/arki-scan.h \
-		runtime/arki-mergeconf.h \
 		runtime/arki-dump.h \
 		runtime/arki-xargs.h \
 		scan.h \
@@ -580,7 +579,6 @@ libarkimet_la_SOURCES += \
 		runtime/arki-query.cc \
 		runtime/arki-check.cc \
 		runtime/arki-scan.cc \
-		runtime/arki-mergeconf.cc \
 		runtime/arki-dump.cc \
 		runtime/arki-xargs.cc
 
@@ -649,7 +647,6 @@ tests_arki_test_SOURCES += \
 		runtime/arki-query-test.cc \
 		runtime/arki-check-test.cc \
 		runtime/arki-scan-test.cc \
-		runtime/arki-mergeconf-test.cc \
 		runtime/arki-dump-test.cc \
 		runtime/arki-xargs-test.cc \
 		runtime-test.cc
