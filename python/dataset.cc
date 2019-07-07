@@ -10,6 +10,7 @@
 #include "arki/core/file.h"
 #include "arki/core/cfg.h"
 #include "arki/dataset.h"
+#include "arki/dataset/http.h"
 #include "arki/sort.h"
 #include <vector>
 #include "config.h"
@@ -313,8 +314,9 @@ DatasetReaderDef* sections_def = nullptr;
 
 
 /*
- * Other module functions
+ * dataset module functions
  */
+
 struct read_config : public MethKwargs<read_config, PyObject>
 {
     constexpr static const char* name = "read_config";
@@ -341,6 +343,37 @@ struct read_config : public MethKwargs<read_config, PyObject>
 
 Methods<read_config> dataset_methods;
 
+
+/*
+ * dataset.http module functions
+ */
+
+struct load_cfg_sections : public MethKwargs<load_cfg_sections, PyObject>
+{
+    constexpr static const char* name = "load_cfg_sections";
+    constexpr static const char* signature = "url: str";
+    constexpr static const char* returns = "arki.cfg.Sections";
+    constexpr static const char* summary = "Read the configuration of the datasets at the given URL";
+
+    static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
+    {
+        static const char* kwlist[] = { "url", nullptr };
+        const char* url;
+        int url_len;
+
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "s#", const_cast<char**>(kwlist), &url, &url_len))
+            return nullptr;
+
+        try {
+            auto sections = dataset::http::Reader::load_cfg_sections(std::string(url, url_len));
+            return cfg_sections(std::move(sections));
+        } ARKI_CATCH_RETURN_PYO
+    }
+};
+
+
+Methods<load_cfg_sections> http_methods;
+
 }
 
 extern "C" {
@@ -351,6 +384,18 @@ static PyModuleDef dataset_module = {
     "Arkimet dataset functions",  /* m_doc */
     -1,             /* m_size */
     dataset_methods.as_py(),    /* m_methods */
+    nullptr,           /* m_slots */
+    nullptr,           /* m_traverse */
+    nullptr,           /* m_clear */
+    nullptr,           /* m_free */
+};
+
+static PyModuleDef http_module = {
+    PyModuleDef_HEAD_INIT,
+    "http",         /* m_name */
+    "Arkimet http dataset functions",  /* m_doc */
+    -1,             /* m_size */
+    http_methods.as_py(),    /* m_methods */
     nullptr,           /* m_slots */
     nullptr,           /* m_traverse */
     nullptr,           /* m_clear */
@@ -377,10 +422,15 @@ arkipy_DatasetReader* dataset_reader_create(std::unique_ptr<dataset::Reader>&& d
 
 void register_dataset(PyObject* m)
 {
+    pyo_unique_ptr http = throw_ifnull(PyModule_Create(&http_module));
+
     pyo_unique_ptr cfg = throw_ifnull(PyModule_Create(&dataset_module));
 
     sections_def = new DatasetReaderDef;
     sections_def->define(arkipy_DatasetReader_Type, cfg);
+
+    if (PyModule_AddObject(cfg, "http", http.release()) == -1)
+        throw PythonException();
 
     if (PyModule_AddObject(m, "dataset", cfg.release()) == -1)
         throw PythonException();
