@@ -1,24 +1,23 @@
-DESCRIPTION end
-|\fBarki-bufr-prepare\fP prepares BUFR messages for import into arkimet.
-|.P
-|First thing, it splits subsets so that each is in a separate BUFR message,
-|to allow dispatch or extraction at the subset level.
-|.P
-|If using \fB\-\-anotate\fP, it also adds an optional section with information
-|derived from scanning the message data for area information, such as latitude,
-|longitude, WMO station code or mobile station station identifier.
+[DESCRIPTION]
+\fBarki-bufr-prepare\fP prepares BUFR messages for import into arkimet.
+.P
+First thing, it splits subsets so that each is in a separate BUFR message,
+to allow dispatch or extraction at the subset level.
+.P
+If using \fB\-\-anotate\fP, it also adds an optional section with information
+derived from scanning the message data for area information, such as latitude,
+longitude, WMO station code or mobile station station identifier.
 
-OPTIONS end
-|.SH EXAMPLES
-|Here are some example invocations of \fBarki-bufr-prepare\fP:
-|.P
-|.nf
-|  # Prepare a BUFR for import:
-|  arki-bufr-prepare --annotate file.bufr > file-ready-for-import.bufr
-|  # Compare the arki-scan output for the two files:
-|  arki-scan --yaml file.bufr
-|  arki-scan --yaml file-ready-for-import.bufr
-|.fi
-|
-|.SH SEE ALSO
-|.BR arki-scan (1)
+[EXAMPLES]
+Here are some example invocations of \fBarki-bufr-prepare\fP:
+.P
+.nf
+  # Prepare a BUFR for import:
+  arki-bufr-prepare --annotate file.bufr > file-ready-for-import.bufr
+  # Compare the arki-scan output for the two files:
+  arki-scan --yaml file.bufr
+  arki-scan --yaml file-ready-for-import.bufr
+.fi
+
+[SEE ALSO]
+.BR arki-scan (1)

@@ -31,6 +31,9 @@ arki-server.1: src/arki-server
 arki-testtar.1: src/arki-testtar
 	COLUMNS=200 $(srcdir)/run-local help2man --name='Build a .tar version of a dataset for testing, without storing the actual data' --section=1 --no-info --version-string="$(PACKAGE_VERSION)" $< > $@ || rm -f $@
 
+arki-bufr-prepare.1: src/arki-bufr-prepare doc/mhooks-bufr-prepare
+	COLUMNS=200 $(srcdir)/run-local help2man --include doc/mhooks-bufr-prepare --name='Build a single Arkimet configuration file merging configurations from multiple sources' --section=1 --no-info --version-string="$(PACKAGE_VERSION)" $< > $@ || rm -f $@
+
 arki-%.1: src/arki-% doc/mhooks-%
 	$(srcdir)/run-local $< --manpage="$(word 2,$^)" > $@ || rm -f $@
 

@@ -19,6 +19,7 @@
 #include "arki/dataset/merged.h"
 #include "arki/dataset/http.h"
 #include "arki/querymacro.h"
+#include "arki/nag.h"
 #include "config.h"
 
 using namespace std;
@@ -161,7 +162,31 @@ struct get_version : public MethNoargs<get_version, PyObject>
     }
 };
 
-Methods<expand_query, matcher_alias_database, make_merged_dataset, make_qmacro_dataset, get_version> methods;
+struct set_verbosity : public MethKwargs<set_verbosity, PyObject>
+{
+    constexpr static const char* name = "set_verbosity";
+    constexpr static const char* signature = "verbose: bool=False, debug: bool=False";
+    constexpr static const char* returns = "";
+    constexpr static const char* summary = "set the arkimet warning verbosity";
+    constexpr static const char* doc = nullptr;
+
+    static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
+    {
+        static const char* kwlist[] = { "verbose", "debug", nullptr };
+        int verbose = 0;
+        int debug = 0;
+
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "pp", const_cast<char**>(kwlist), &verbose, &debug))
+            return nullptr;
+
+        try {
+            arki::nag::init(verbose, debug);
+            Py_RETURN_NONE;
+        } ARKI_CATCH_RETURN_PYO
+    }
+};
+
+Methods<expand_query, matcher_alias_database, make_merged_dataset, make_qmacro_dataset, get_version, set_verbosity> methods;
 
 }
 

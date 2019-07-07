@@ -1,8 +1,5 @@
-#include "arki/../config.h"
 #include "arki/runtime/arki-bufr-prepare.h"
-#include "arki/utils/commandline/parser.h"
 #include "arki/nag.h"
-#include "arki/runtime.h"
 #include <dballe/file.h>
 #include <wreport/bulletin.h>
 #include <dballe/importer.h>
@@ -16,35 +13,6 @@ namespace arki {
 namespace runtime {
 
 namespace {
-
-using namespace arki::utils::commandline;
-
-struct Options : public StandardParserWithManpage
-{
-    BoolOption* verbose;
-    BoolOption* debug;
-    StringOption* outfile;
-    StringOption* failfile;
-    IntOption* force_usn;
-
-    Options() : StandardParserWithManpage("arki-bufr-prepare", PACKAGE_VERSION, 1, PACKAGE_BUGREPORT)
-    {
-        usage = "[options] file1 file2...";
-        description =
-            "Read BUFR messages, encode each subsection in a "
-            "separate message and add an optional section with "
-            "information useful for arki-prepare";
-
-        debug = add<BoolOption>("debug", 0, "debug", "", "debug output");
-        verbose = add<BoolOption>("verbose", 0, "verbose", "", "verbose output");
-        outfile = add<StringOption>("output", 'o', "output", "file",
-                "write the output to the given file instead of standard output");
-        failfile = add<StringOption>("fail", 0, "fail", "file",
-                "do not ignore BUFR data that could not be decoded, but write it to the given file");
-        force_usn = add<IntOption>("usn", 0, "usn", "number",
-                "overwrite the update sequence number of every BUFR message with this value");
-    }
-};
 
 struct Output
 {
@@ -216,43 +184,29 @@ public:
 
 }
 
-int ArkiBUFRPrepare::run(int argc, const char* argv[])
+int ArkiBUFRPrepare::run()
 {
-    Options opts;
     try {
-        if (opts.parse(argc, argv))
-            return 0;
-
-        nag::init(opts.verbose->isSet(), opts.debug->isSet());
-
-        runtime::init();
-
         Copier copier;
-        if (opts.force_usn->isSet())
-            copier.override_usn(opts.force_usn->intValue());
+        if (force_usn)
+            copier.override_usn(forced_usn);
 
         Output output;
-        if (opts.outfile->isSet())
-            output.open_ok_file(opts.outfile->stringValue());
+        if (!outfile.empty())
+            output.open_ok_file(outfile);
         else
             output.open_ok_stdout();
 
-        if (opts.failfile->isSet())
-            output.open_fail_file(opts.failfile->stringValue());
+        if (!failfile.empty())
+            output.open_fail_file(failfile);
 
-        if (!opts.hasNext())
-        {
+        if (inputs.empty())
             copier.process_stdin(output);
-        } else {
-            while (opts.hasNext())
-                copier.process(opts.next().c_str(), output);
-        }
+        else
+            for (const auto& input: inputs)
+                copier.process(input.c_str(), output);
 
         return 0;
-    } catch (BadOption& e) {
-        std::cerr << e.what() << std::endl;
-        opts.outputHelp(std::cerr);
-        return 1;
     } catch (std::exception& e) {
         std::cerr << e.what() << std::endl;
         return 1;
