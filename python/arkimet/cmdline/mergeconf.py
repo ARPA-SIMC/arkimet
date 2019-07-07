@@ -76,9 +76,10 @@ class Mergeconf(App):
         if self.args.restrict:
             to_remove = []
             allowed = frozenset(x for x in re_stringlist.split(self.args.restrict) if x)
-            for name, section in merged:
+            for name, section in merged.items():
                 r = section.get("restrict", None)
                 if r is None:
+                    to_remove.append(name)
                     continue
                 offered = frozenset(x for x in re_stringlist.split(r) if x)
                 if not (allowed & offered):
