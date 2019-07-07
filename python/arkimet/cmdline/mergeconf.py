@@ -105,6 +105,22 @@ class Mergeconf(App):
         if not merged:
             raise Fail("none of the configuration provided were useable")
 
+        # Validate the configuration
+        has_errors = False
+        for name, section in merged.items():
+            # Validate filters
+            filter = section.get("filter")
+            if filter is None:
+                continue
+
+            try:
+                arki.Matcher(filter)
+            except ValueError as e:
+                print("{}: {}".format(name, e), file=sys.stderr)
+                has_errors = True
+        if has_errors:
+            raise Fail("Some input files did not validate.")
+
         arki_mergeconf = arki.ArkiMergeconf()
         arki_mergeconf.run(
             merged,
