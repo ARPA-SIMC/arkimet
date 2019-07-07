@@ -5,17 +5,17 @@ import arkimet as arki
 
 class TestDatasetReader(unittest.TestCase):
     def test_create(self):
-        ds = arki.DatasetReader({
+        ds = arki.dataset.Reader({
             "format": "grib",
             "name": "test.grib1",
             "path": "inbound/test.grib1",
             "type": "file",
         })
-        self.assertEqual(str(ds), "DatasetReader(file, test.grib1)")
-        self.assertEqual(repr(ds), "DatasetReader(file, test.grib1)")
+        self.assertEqual(str(ds), "dataset.Reader(file, test.grib1)")
+        self.assertEqual(repr(ds), "dataset.Reader(file, test.grib1)")
 
     def test_query_data(self):
-        ds = arki.DatasetReader({
+        ds = arki.dataset.Reader({
             "format": "grib",
             "name": "test.grib1",
             "path": "inbound/test.grib1",
@@ -70,7 +70,7 @@ class TestDatasetReader(unittest.TestCase):
         # self.fail("no way yet to test with_data")
 
     def test_query_summary(self):
-        ds = arki.DatasetReader({
+        ds = arki.dataset.Reader({
             "format": "grib",
             "name": "test.grib1",
             "path": "inbound/test.grib1",
@@ -100,7 +100,7 @@ class TestDatasetReader(unittest.TestCase):
         self.assertEqual(queried[:2], b"SU")
 
     def test_query_bytes(self):
-        ds = arki.DatasetReader({
+        ds = arki.dataset.Reader({
             "format": "grib",
             "name": "test.grib1",
             "path": "inbound/test.grib1",
@@ -207,7 +207,7 @@ type = file
         self.assertEquals(count, 3)
 
     def test_query_data_memoryusage(self):
-        ds = arki.DatasetReader({
+        ds = arki.dataset.Reader({
             "type": "testlarge",
         })
         count = 0

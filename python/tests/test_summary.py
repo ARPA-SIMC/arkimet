@@ -2,12 +2,13 @@ import unittest
 import os
 import arkimet as arki
 
+
 class TestSummary(unittest.TestCase):
     def read(self, pathname, format="grib"):
         """
         Read all the metadata from a file
         """
-        ds = arki.DatasetReader({
+        ds = arki.dataset.Reader({
             "format": format,
             "name": os.path.basename(pathname),
             "path": pathname,
