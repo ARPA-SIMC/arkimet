@@ -32,7 +32,7 @@ struct section : public MethKwargs<section, arkipy_cfgSections>
     {
         static const char* kwlist[] = { "name", nullptr };
         const char* arg_name = nullptr;
-        int arg_name_len;
+        Py_ssize_t arg_name_len;
         if (!PyArg_ParseTupleAndKeywords(args, kw, "s#", const_cast<char**>(kwlist), &arg_name, &arg_name_len))
             return nullptr;
 
@@ -58,7 +58,7 @@ struct obtain : public MethKwargs<obtain, arkipy_cfgSections>
     {
         static const char* kwlist[] = { "name", nullptr };
         const char* arg_name = nullptr;
-        int arg_name_len;
+        Py_ssize_t arg_name_len;
         if (!PyArg_ParseTupleAndKeywords(args, kw, "s#", const_cast<char**>(kwlist), &arg_name, &arg_name_len))
             return nullptr;
 
@@ -82,7 +82,7 @@ struct sections_get : public MethKwargs<sections_get, arkipy_cfgSections>
     {
         static const char* kwlist[] = { "name", "default", nullptr };
         const char* arg_name = nullptr;
-        int arg_name_len;
+        Py_ssize_t arg_name_len;
         PyObject* arg_default = nullptr;
         if (!PyArg_ParseTupleAndKeywords(args, kw, "s#|O", const_cast<char**>(kwlist), &arg_name, &arg_name_len, &arg_default))
             return nullptr;
@@ -166,7 +166,7 @@ struct section_get : public MethKwargs<section_get, arkipy_cfgSection>
     {
         static const char* kwlist[] = { "name", "default", nullptr };
         const char* arg_name = nullptr;
-        int arg_name_len;
+        Py_ssize_t arg_name_len;
         PyObject* arg_default = nullptr;
         if (!PyArg_ParseTupleAndKeywords(args, kw, "s#|O", const_cast<char**>(kwlist), &arg_name, &arg_name_len, &arg_default))
             return nullptr;
@@ -331,7 +331,7 @@ struct write_sections : public MethKwargs<write_sections, arkipy_cfgSections>
         try {
             std::stringstream ss;
             self->sections.write(ss, "memory");
-            pyo_unique_ptr res(throw_ifnull(PyObject_CallMethod(arg_file, "write", "s#", ss.str().data(), (int)ss.str().size())));
+            pyo_unique_ptr res(throw_ifnull(PyObject_CallMethod(arg_file, "write", "s#", ss.str().data(), (Py_ssize_t)ss.str().size())));
             Py_RETURN_NONE;
         } ARKI_CATCH_RETURN_PYO
     }
@@ -355,7 +355,7 @@ struct write_section : public MethKwargs<write_section, arkipy_cfgSection>
         try {
             std::stringstream ss;
             self->section->write(ss, "memory");
-            pyo_unique_ptr res(throw_ifnull(PyObject_CallMethod(arg_file, "write", "s#", ss.str().data(), (int)ss.str().size())));
+            pyo_unique_ptr res(throw_ifnull(PyObject_CallMethod(arg_file, "write", "s#", ss.str().data(), (Py_ssize_t)ss.str().size())));
             Py_RETURN_NONE;
         } ARKI_CATCH_RETURN_PYO
     }
