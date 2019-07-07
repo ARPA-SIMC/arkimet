@@ -3,6 +3,7 @@
 #include "common.h"
 #include "metadata.h"
 #include "summary.h"
+#include "cfg.h"
 #include "utils/values.h"
 #include "utils/methods.h"
 #include "utils/type.h"
@@ -54,7 +55,7 @@ Arguments:
         PyObject* arg_with_data = Py_None;
         PyObject* arg_sort = Py_None;
 
-        if (!PyArg_ParseTupleAndKeywords(args, kw, "O|OOO", (char**)kwlist, &arg_on_metadata, &arg_matcher, &arg_with_data, &arg_sort))
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "O|OOO", const_cast<char**>(kwlist), &arg_on_metadata, &arg_matcher, &arg_with_data, &arg_sort))
             return nullptr;
 
         if (!PyCallable_Check(arg_on_metadata))
@@ -122,7 +123,7 @@ Arguments:
         PyObject* arg_matcher = Py_None;
         PyObject* arg_summary = Py_None;
 
-        if (!PyArg_ParseTupleAndKeywords(args, kw, "|OO", (char**)kwlist, &arg_matcher, &arg_summary))
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "|OO", const_cast<char**>(kwlist), &arg_matcher, &arg_summary))
             return nullptr;
 
         try {
@@ -190,7 +191,7 @@ Arguments:
         PyObject* arg_metadata_report = Py_None;
         PyObject* arg_summary_report = Py_None;
 
-        if (!PyArg_ParseTupleAndKeywords(args, kw, "O|OOOOOOO", (char**)kwlist, &arg_file, &arg_matcher, &arg_with_data, &arg_sort, &arg_data_start_hook, &arg_postprocess, &arg_metadata_report, &arg_summary_report))
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "O|OOOOOOO", const_cast<char**>(kwlist), &arg_file, &arg_matcher, &arg_with_data, &arg_sort, &arg_data_start_hook, &arg_postprocess, &arg_metadata_report, &arg_summary_report))
             return nullptr;
 
         try {
@@ -298,7 +299,7 @@ Examples::
     {
         static const char* kwlist[] = { "cfg", nullptr };
         PyObject* cfg = Py_None;
-        if (!PyArg_ParseTupleAndKeywords(args, kw, "O", (char**)kwlist, &cfg))
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "O", const_cast<char**>(kwlist), &cfg))
             return -1;
 
         try {
@@ -310,7 +311,35 @@ Examples::
 
 DatasetReaderDef* sections_def = nullptr;
 
-Methods<> dataset_methods;
+
+/*
+ * Other module functions
+ */
+struct read_config : public MethKwargs<read_config, PyObject>
+{
+    constexpr static const char* name = "read_config";
+    constexpr static const char* signature = "pathname: str";
+    constexpr static const char* returns = "arki.cfg.Section";
+    constexpr static const char* summary = "Read the configuration of the dataset(s) at the given path or URL";
+
+    static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
+    {
+        static const char* kwlist[] = { "pathname", nullptr };
+        const char* pathname;
+        int pathname_len;
+
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "s#", const_cast<char**>(kwlist), &pathname, &pathname_len))
+            return nullptr;
+
+        try {
+            auto section = dataset::Reader::read_config(std::string(pathname, pathname_len));
+            return cfg_section(std::move(section));
+        } ARKI_CATCH_RETURN_PYO
+    }
+};
+
+
+Methods<read_config> dataset_methods;
 
 }
 

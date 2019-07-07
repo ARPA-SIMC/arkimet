@@ -1,6 +1,20 @@
 import unittest
 import tempfile
 import arkimet as arki
+import os
+
+
+class TestReadConfig(unittest.TestCase):
+    def test_file(self):
+        pathname = os.path.abspath("inbound/test.grib1")
+        section = arki.dataset.read_config(pathname)
+        contents = list(section.items())
+        self.assertEqual(contents, [
+            ('format', 'grib'),
+            ('name', 'test.grib1'),
+            ('path', pathname),
+            ('type', 'file'),
+        ])
 
 
 class TestDatasetReader(unittest.TestCase):
