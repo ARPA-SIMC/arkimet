@@ -19,6 +19,8 @@ void set_std_exception(const std::exception& e);
 #define ARKI_CATCH_RETURN_PYO \
       catch (PythonException&) { \
         return nullptr; \
+    } catch (std::invalid_argument& e) { \
+        PyErr_SetString(PyExc_ValueError, e.what()); return nullptr; \
     } catch (std::exception& se) { \
         set_std_exception(se); return nullptr; \
     }
@@ -26,6 +28,8 @@ void set_std_exception(const std::exception& e);
 #define ARKI_CATCH_RETURN_INT \
       catch (PythonException&) { \
         return -1; \
+    } catch (std::invalid_argument& e) { \
+        PyErr_SetString(PyExc_ValueError, e.what()); return -1; \
     } catch (std::exception& se) { \
         set_std_exception(se); return -1; \
     }
@@ -33,6 +37,8 @@ void set_std_exception(const std::exception& e);
 #define ARKI_CATCH_RETHROW_PYTHON \
       catch (PythonException&) { \
         throw; \
+    } catch (std::invalid_argument& e) { \
+        PyErr_SetString(PyExc_ValueError, e.what()); throw PythonException(); \
     } catch (std::exception& se) { \
         set_std_exception(se); throw PythonException(); \
     }

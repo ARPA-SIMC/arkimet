@@ -62,7 +62,7 @@ static bool parseValueWithUnit(const std::string& str, INT& val, types::timerang
     } else {
         stringstream ss;
         ss << "cannot parse timerange match expression '" << str << "': unknown time suffix '" << unit << "': valid ones are 's', 'm', 'h', 'd', 'mo', 'y'";
-        throw std::runtime_error(ss.str());
+        throw std::invalid_argument(ss.str());
     }
 }
 
@@ -415,7 +415,7 @@ unique_ptr<MatchTimerange> MatchTimerange::parse(const std::string& pattern)
         case types::Timerange::GRIB2: return unique_ptr<MatchTimerange>(new MatchTimerangeGRIB2(rest));
         case types::Timerange::TIMEDEF: return unique_ptr<MatchTimerange>(new MatchTimerangeTimedef(rest));
         case types::Timerange::BUFR: return unique_ptr<MatchTimerange>(new MatchTimerangeBUFR(rest));
-        default: throw std::runtime_error("cannot parse type of timerange to match: unsupported timerange style: " + name);
+        default: throw std::invalid_argument("cannot parse type of timerange to match: unsupported timerange style: " + name);
     }
 }
 

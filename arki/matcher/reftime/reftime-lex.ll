@@ -24,7 +24,7 @@ struct Parser
 	{
 		string lead = str.substr(0, cur - str.begin());
 		string trail = str.substr(cur - str.begin());
-        throw std::runtime_error("cannot parse reftime match expression \"" + lead + "[HERE]" + trail + "\": " + msg);
+        throw std::invalid_argument("cannot parse reftime match expression \"" + lead + "[HERE]" + trail + "\": " + msg);
 	}
 
 	void eatNonSpaces()
@@ -109,7 +109,7 @@ struct Parser
 arki::core::FuzzyTime* parse_easter(const std::string& str)
 {
     if (str.size() < 4)
-        throw std::runtime_error("cannot parse reftime match expression \"" + str + "\": expecting at least 4 characters");
+        throw std::invalid_argument("cannot parse reftime match expression \"" + str + "\": expecting at least 4 characters");
     std::unique_ptr<arki::core::FuzzyTime> res(new arki::core::FuzzyTime);
     // Parse the year directly
     res->set_easter(std::stoi(str.substr(str.size() - 4)));

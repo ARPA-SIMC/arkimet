@@ -208,7 +208,7 @@ unique_ptr<MatchProduct> MatchProduct::parse(const std::string& pattern)
         case types::Product::BUFR: return unique_ptr<MatchProduct>(new MatchProductBUFR(rest));
         case types::Product::ODIMH5: return unique_ptr<MatchProduct>(new MatchProductODIMH5(rest));
         case types::Product::VM2: return unique_ptr<MatchProduct>(new MatchProductVM2(rest));
-        default: throw std::runtime_error("cannot parse type of product to match: unsupported product style: " + name);
+        default: throw std::invalid_argument("cannot parse type of product to match: unsupported product style: " + name);
     }
 }
 

@@ -149,7 +149,7 @@ unique_ptr<MatchOrigin> MatchOrigin::parse(const std::string& pattern)
         case types::Origin::BUFR: return unique_ptr<MatchOrigin>(new MatchOriginBUFR(rest));
         case types::Origin::ODIMH5: return unique_ptr<MatchOrigin>(new MatchOriginODIMH5(rest));
         default:
-            throw std::runtime_error("cannot parse type of origin to match: unsupported origin style: " + name);
+            throw std::invalid_argument("cannot parse type of origin to match: unsupported origin style: " + name);
     }
 }
 

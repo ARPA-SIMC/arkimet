@@ -271,7 +271,7 @@ unique_ptr<MatchLevel> MatchLevel::parse(const std::string& pattern)
         case types::Level::GRIB2S: return unique_ptr<MatchLevel>(new MatchLevelGRIB2S(rest));
         case types::Level::GRIB2D: return unique_ptr<MatchLevel>(new MatchLevelGRIB2D(rest));
         case types::Level::ODIMH5: return unique_ptr<MatchLevel>(new MatchLevelODIMH5(rest));
-        default: throw std::runtime_error("cannot parse type of level to match:  unsupported level style: " + name);
+        default: throw std::invalid_argument("cannot parse type of level to match:  unsupported level style: " + name);
     }
 }
 

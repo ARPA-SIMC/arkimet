@@ -4,6 +4,7 @@
 #include "metadata.h"
 #include "summary.h"
 #include "dataset.h"
+#include "matcher.h"
 #include "utils/values.h"
 #include "utils/methods.h"
 #include "arki-query.h"
@@ -192,6 +193,7 @@ PyMODINIT_FUNC PyInit__arkimet(void)
         register_cfg(m);
         register_metadata(m);
         register_summary(m);
+        register_matcher(m);
         register_dataset(m);
         register_arki_query(m);
         register_arki_scan(m);
