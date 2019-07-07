@@ -46,6 +46,7 @@ class TestArkiMergeconf(unittest.TestCase):
                 "[test200]",
                 "name = test200",
                 "path = http://foo.bar/foo/dataset/test200",
+                "restrict = test",
                 "type = remote",
                 "",
                 "[test80]",
@@ -65,11 +66,27 @@ class TestArkiMergeconf(unittest.TestCase):
                 "[test200]",
                 "name = test200",
                 "path = http://foo.bar/foo/dataset/test200",
+                "restrict = test",
                 "type = remote",
                 "",
                 "[test80]",
                 "name = test80",
                 "path = http://foo.bar/foo/dataset/test80",
+                "type = remote",
+            ])
+            self.assertIsNone(res)
+
+    def test_restrict(self):
+        with daemon(os.path.join(os.environ["TOP_SRCDIR"], "arki/dataset/http-redirect-daemon")) as url:
+            out = CatchOutput()
+            with out.redirect():
+                res = Mergeconf.main(args=["--restrict=test,test1", url])
+            self.assertEqual(out.stderr.decode(), "")
+            self.assertEqual(out.stdout.decode().splitlines(), [
+                "[test200]",
+                "name = test200",
+                "path = http://foo.bar/foo/dataset/test200",
+                "restrict = test",
                 "type = remote",
             ])
             self.assertIsNone(res)

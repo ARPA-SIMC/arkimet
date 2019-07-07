@@ -28,6 +28,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
 [test200]
 type = remote
 path = http://foo.bar/foo/dataset/test200
+restrict = test
 
 [test80]
 type = remote
