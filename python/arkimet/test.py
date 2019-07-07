@@ -24,12 +24,11 @@ class CatchOutput:
 
     @contextmanager
     def redirect(self, input=None):
-        saved_stdin = None
         saved_stdin = os.dup(0)
         saved_stdout = os.dup(1)
         saved_stderr = os.dup(2)
-        with tempfile.TemporaryFile() as tmp_stdin:
-            if input:
+        with tempfile.TemporaryFile("w+b") as tmp_stdin:
+            if input is not None:
                 tmp_stdin.write(input)
                 tmp_stdin.flush()
                 tmp_stdin.seek(0)
