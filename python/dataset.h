@@ -17,11 +17,11 @@ typedef struct {
     arki::dataset::Reader* ds;
 } arkipy_DatasetReader;
 
-PyAPI_DATA(PyTypeObject) arkipy_DatasetReader_Type;
+extern PyTypeObject* arkipy_DatasetReader_Type;
 
 #define arkipy_DatasetReader_Check(ob) \
-    (Py_TYPE(ob) == &arkipy_DatasetReader_Type || \
-     PyType_IsSubtype(Py_TYPE(ob), &arkipy_DatasetReader_Type))
+    (Py_TYPE(ob) == arkipy_DatasetReader_Type || \
+     PyType_IsSubtype(Py_TYPE(ob), arkipy_DatasetReader_Type))
 }
 
 namespace arki {
