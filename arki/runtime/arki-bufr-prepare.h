@@ -1,6 +1,9 @@
 #ifndef ARKI_RUNTIME_ARKIBUFRPREPARE_H
 #define ARKI_RUNTIME_ARKIBUFRPREPARE_H
 
+#include <string>
+#include <vector>
+
 namespace arki {
 namespace runtime {
 
@@ -8,7 +11,13 @@ namespace runtime {
 class ArkiBUFRPrepare
 {
 public:
-    int run(int argc, const char* argv[]);
+    bool force_usn = false;
+    int forced_usn;
+    std::string outfile;
+    std::string failfile;
+    std::vector<std::string> inputs;
+
+    int run();
 };
 
 }

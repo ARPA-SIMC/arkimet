@@ -27,33 +27,37 @@ struct run_ : public MethKwargs<run_, arkipy_ArkiBUFRPrepare>
 
     static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
     {
-        static const char* kwlist[] = { "args", nullptr };
-        PyObject* pyargs = nullptr;
-        if (!PyArg_ParseTupleAndKeywords(args, kw, "O", const_cast<char**>(kwlist), &pyargs))
+        static const char* kwlist[] = { "inputs", "usn", "outfile", "failfile", nullptr };
+        PyObject* arg_inputs = nullptr;
+        PyObject* arg_usn = nullptr;
+        const char* arg_outfile = nullptr;
+        Py_ssize_t arg_outfile_len;
+        const char* arg_failfile = nullptr;
+        Py_ssize_t arg_failfile_len;
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "|OOz#z#", const_cast<char**>(kwlist),
+                    &arg_inputs, &arg_usn,
+                    &arg_outfile, &arg_outfile_len,
+                    &arg_failfile, &arg_failfile_len))
             return nullptr;
 
-        if (!PySequence_Check(pyargs))
-        {
-            PyErr_SetString(PyExc_TypeError, "args argument must be a sequence of strings");
-            throw PythonException();
-        }
-
-        // Unpack a sequence of strings into argc/argv
-        unsigned argc = PySequence_Size(pyargs);
-        std::vector<const char*> argv;
-        argv.reserve(argc + 1);
-        for (unsigned i = 0; i < argc; ++i)
-        {
-            pyo_unique_ptr o(throw_ifnull(PySequence_ITEM(pyargs, i)));
-            argv.emplace_back(from_python<const char*>(o));
-        }
-        argv.emplace_back(nullptr);
-
         try {
+            if (arg_inputs)
+                self->arki_bufr_prepare->inputs = stringlist_from_python(arg_inputs);
+
+            if (arg_outfile)
+                self->arki_bufr_prepare->outfile = std::string(arg_outfile, arg_outfile_len);
+            if (arg_failfile)
+                self->arki_bufr_prepare->failfile = std::string(arg_failfile, arg_failfile_len);
+            if (arg_usn && arg_usn != Py_None)
+            {
+                self->arki_bufr_prepare->force_usn = true;
+                self->arki_bufr_prepare->forced_usn = from_python<int>(arg_usn);
+            }
+
             int res;
             {
                 ReleaseGIL rg;
-                res = self->arki_bufr_prepare->run(argc, argv.data());
+                res = self->arki_bufr_prepare->run();
             }
             return throw_ifnull(PyLong_FromLong(res));
         } ARKI_CATCH_RETURN_PYO

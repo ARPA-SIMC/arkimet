@@ -1,33 +1,8 @@
 import unittest
-from contextlib import contextmanager
 from arkimet.cmdline.mergeconf import Mergeconf
 import os
 import tempfile
-from arkimet.test import daemon
-
-
-class CatchOutput:
-    def __init__(self):
-        self.stdout = None
-        self.stderr = None
-
-    @contextmanager
-    def redirect(self):
-        saved_stdout = os.dup(1)
-        saved_stderr = os.dup(2)
-        with tempfile.TemporaryFile() as tmp_stdout:
-            with tempfile.TemporaryFile() as tmp_stderr:
-                try:
-                    os.dup2(tmp_stdout.fileno(), 1)
-                    os.dup2(tmp_stderr.fileno(), 2)
-                    yield
-                    tmp_stdout.seek(0)
-                    self.stdout = tmp_stdout.read()
-                    tmp_stderr.seek(0)
-                    self.stderr = tmp_stderr.read()
-                finally:
-                    os.dup2(saved_stdout, 1)
-                    os.dup2(saved_stderr, 2)
+from arkimet.test import daemon, CatchOutput
 
 
 class TestArkiMergeconf(unittest.TestCase):

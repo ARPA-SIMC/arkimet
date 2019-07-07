@@ -139,7 +139,3 @@ class Mergeconf(App):
                 merged.write(fd)
         else:
             merged.write(sys.stdout)
-
-
-if __name__ == "__main__":
-    sys.exit(Mergeconf.main())

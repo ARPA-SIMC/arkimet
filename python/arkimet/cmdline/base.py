@@ -51,6 +51,9 @@ class App:
             level = logging.INFO
         logging.basicConfig(level=level, stream=sys.stderr, format=log_format)
 
+        import arkimet
+        arkimet.set_verbosity(verbose=self.args.verbose, debug=self.args.debug)
+
     @classmethod
     def main(cls, args=None):
         try:
