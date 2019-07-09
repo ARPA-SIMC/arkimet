@@ -52,6 +52,7 @@ EXTRA_DIST = \
     utils/methods.h \
     utils/type.h \
     utils/values.h \
+    utils/dict.h \
     common.h \
     cfg.h \
     metadata.h \

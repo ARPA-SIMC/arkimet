@@ -9,8 +9,9 @@ class TestImport(unittest.TestCase):
         self.assertTrue(inspect.isclass(arki.dataset.Reader))
 
     def test_matcher_alias_database(self):
-        import configparser
-        db = arki.matcher_alias_database()
-        cfg = configparser.ConfigParser()
-        cfg.read_string(db)
-        self.assertTrue(cfg.has_section("origin"))
+        db = arki.get_alias_database()
+        self.assertTrue("origin" in db)
+
+    def test_config(self):
+        cfg = arki.config()
+        self.assertIsInstance(cfg, dict)

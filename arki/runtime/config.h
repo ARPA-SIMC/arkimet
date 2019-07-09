@@ -85,9 +85,6 @@ struct Config
     /// Temporary file directory
     std::string dir_temp;
 
-    /// URL of remote inbound directory
-    std::string url_inbound;
-
     /// I/O profiling log file
     std::string file_iotrace_output;
 
