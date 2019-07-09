@@ -55,13 +55,19 @@ public:
     operator Obj*() { return ptr; }
 
     /// Use it as a Obj
+    operator Obj*() const { return ptr; }
+
+    /// Use it as a Obj
     Obj* operator->() { return ptr; }
+
+    /// Use it as a Obj
+    Obj* operator->() const { return ptr; }
 
     /// Get the pointer (useful for passing to Py_BuildValue)
     Obj* get() { return ptr; }
 
-    /// Check if ptr is not nullptr
-    operator bool() const { return ptr; }
+    /// Get the pointer (useful for passing to Py_BuildValue)
+    Obj* get() const { return ptr; }
 };
 
 typedef py_unique_ptr<PyObject> pyo_unique_ptr;
