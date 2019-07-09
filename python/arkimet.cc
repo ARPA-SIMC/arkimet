@@ -8,6 +8,7 @@
 #include "matcher.h"
 #include "utils/values.h"
 #include "utils/methods.h"
+#include "utils/dict.h"
 #include "arki-query.h"
 #include "arki-scan.h"
 #include "arki-check.h"
@@ -16,6 +17,7 @@
 #include "arki-bufr-prepare.h"
 #include "arki/matcher.h"
 #include "arki/runtime.h"
+#include "arki/runtime/config.h"
 #include "arki/dataset/merged.h"
 #include "arki/dataset/http.h"
 #include "arki/querymacro.h"
@@ -50,21 +52,18 @@ struct expand_query : public MethKwargs<expand_query, PyObject>
     }
 };
 
-struct matcher_alias_database : public MethNoargs<matcher_alias_database, PyObject>
+struct get_alias_database : public MethNoargs<get_alias_database, PyObject>
 {
-    constexpr static const char* name = "matcher_alias_database";
+    constexpr static const char* name = "get_alias_database";
     constexpr static const char* signature = "";
-    constexpr static const char* returns = "str";
-    constexpr static const char* summary = "return a string with the current matcher alias database";
+    constexpr static const char* returns = "arkimet.cfg.Sections";
+    constexpr static const char* summary = "return a the current matcher alias database";
     constexpr static const char* doc = nullptr;
 
     static PyObject* run(Impl* self)
     {
         try {
-            core::cfg::Sections cfg = MatcherAliasDatabase::serialise();
-            stringstream ss;
-            cfg.write(ss, "memory");
-            return to_python(ss.str());
+            return cfg_sections(MatcherAliasDatabase::serialise());
         } ARKI_CATCH_RETURN_PYO
     }
 };
@@ -186,7 +185,56 @@ struct set_verbosity : public MethKwargs<set_verbosity, PyObject>
     }
 };
 
-Methods<expand_query, matcher_alias_database, make_merged_dataset, make_qmacro_dataset, get_version, set_verbosity> methods;
+struct config : public MethNoargs<config, PyObject>
+{
+    constexpr static const char* name = "config";
+    constexpr static const char* signature = "";
+    constexpr static const char* returns = "Dict[str, Dict[str, str]]";
+    constexpr static const char* summary = "return the arkimet runtime configuration";
+    constexpr static const char* doc = nullptr;
+
+    static pyo_unique_ptr describe_dirlist(const arki::runtime::Config::Dirlist& dirlist, const char* desc, const char* envvar)
+    {
+        pyo_unique_ptr result(throw_ifnull(PyDict_New()));
+        set_dict(result, "dirs", dirlist);
+        set_dict(result, "desc", desc);
+        if (envvar)
+            set_dict(result, "env", envvar);
+        return result;
+    }
+
+    static pyo_unique_ptr describe_string(const std::string& value, const char* desc, const char* envvar)
+    {
+        pyo_unique_ptr result(throw_ifnull(PyDict_New()));
+        set_dict(result, "value", value);
+        set_dict(result, "desc", desc);
+        if (envvar)
+            set_dict(result, "env", envvar);
+        return result;
+    }
+
+    static PyObject* run(Impl* self)
+    {
+        try {
+            auto& cfg = arki::runtime::Config::get();
+            pyo_unique_ptr result(throw_ifnull(PyDict_New()));
+            set_dict(result, "postproc", describe_dirlist(cfg.dir_postproc, "Postprocessors", "ARKI_POSTPROC"));
+            set_dict(result, "report", describe_dirlist(cfg.dir_report, "Report scripts", "ARKI_REPORT"));
+            set_dict(result, "qmacro", describe_dirlist(cfg.dir_qmacro, "Query macro scripts", "ARKI_QMACRO"));
+            set_dict(result, "scan_grib1", describe_dirlist(cfg.dir_scan_grib1, "GRIB1 scan scripts", "ARKI_SCAN_GRIB1"));
+            set_dict(result, "scan_grib2", describe_dirlist(cfg.dir_scan_grib2, "GRIB2 scan scripts", "ARKI_SCAN_GRIB2"));
+            set_dict(result, "scan_odimh5", describe_dirlist(cfg.dir_scan_odimh5, "ODIMH5 scan scripts", "ARKI_SCAN_ODIMH5"));
+            set_dict(result, "bufr", describe_dirlist(cfg.dir_scan_bufr, "BUFR scan scripts", "ARKI_SCAN_BUFR"));
+            set_dict(result, "targetfile", describe_dirlist(cfg.dir_targetfile, "Target file name scripts", "ARKI_TARGETFILE"));
+            set_dict(result, "tempdir", describe_string(cfg.dir_temp, "Directory for temporary files", "ARKI_TMPDIR,TMPDIR"));
+            set_dict(result, "iotrace", describe_string(cfg.file_iotrace_output, "I/O profiling log file", "ARKI_IOTRACE"));
+            set_dict(result, "vm2_config", describe_string(cfg.file_vm2_config, "VM2 configuration file", "ARKI_VM2_FILE"));
+            return result.release();
+        } ARKI_CATCH_RETURN_PYO
+    }
+};
+
+Methods<expand_query, get_alias_database, make_merged_dataset, make_qmacro_dataset, get_version, set_verbosity, config> methods;
 
 }
 

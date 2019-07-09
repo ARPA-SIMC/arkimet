@@ -242,8 +242,8 @@ class ArkiAliases(ArkiView):
     def stream(self):
         # ./run-local arki-query "" http://localhost:8080
         self.send_headers()
-        out = arki.matcher_alias_database()
-        self.handler.wfile.write(out.encode("utf-8"))
+        out = arki.get_alias_database()
+        out.write(self.handler.wfile)
 
 
 class ArkiDatasetConfig(ArkiView):

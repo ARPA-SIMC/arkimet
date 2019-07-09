@@ -372,8 +372,32 @@ struct load_cfg_sections : public MethKwargs<load_cfg_sections, PyObject>
     }
 };
 
+struct get_alias_database : public MethKwargs<get_alias_database, PyObject>
+{
+    constexpr static const char* name = "get_alias_database";
+    constexpr static const char* signature = "url: str";
+    constexpr static const char* returns = "arki.cfg.Sections";
+    constexpr static const char* summary = "Read the alias database for the server at the given URL";
 
-Methods<load_cfg_sections> http_methods;
+    static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
+    {
+        static const char* kwlist[] = { "url", nullptr };
+        const char* url;
+        Py_ssize_t url_len;
+
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "s#", const_cast<char**>(kwlist), &url, &url_len))
+            return nullptr;
+
+        try {
+            auto sections = dataset::http::Reader::getAliasDatabase(std::string(url, url_len));
+            return cfg_sections(std::move(sections));
+        } ARKI_CATCH_RETURN_PYO
+    }
+};
+
+
+
+Methods<load_cfg_sections, get_alias_database> http_methods;
 
 }
 

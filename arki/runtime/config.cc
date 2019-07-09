@@ -41,9 +41,6 @@ Config::Config()
     else
         dir_temp = "/tmp";
 
-    if (const char* envurl = getenv("ARKI_INBOUND"))
-        url_inbound = envurl;
-
     if (const char* envfile = getenv("ARKI_IOTRACE"))
         file_iotrace_output = envfile;
 
@@ -70,13 +67,6 @@ void Config::describe(std::ostream& out) const
     dir_scan_grib2.describe(out, "GRIB2 scan scripts", "ARKI_SCAN_GRIB2");
     dir_scan_bufr.describe(out, "BUFR scan scripts", "ARKI_SCAN_BUFR");
     dir_targetfile.describe(out, "Target file name scripts", "ARKI_TARGETFILE");
-
-    out << "URL of remote inbound directory: ";
-    if (url_inbound.empty())
-        out << "none." << endl;
-    else
-        out << url_inbound << endl;
-    describe_envvar(out, "ARKI_INBOUND");
 
     out << "Temporary directory: " << dir_temp << "(set with ARKI_TMPDIR and TMPDIR)" << endl;
 
