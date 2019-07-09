@@ -3,8 +3,8 @@
 
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
-#include <arki/python/core.h>
-#include <arki/python/values.h>
+#include "core.h"
+#include "values.h"
 
 namespace arki {
 namespace python {
@@ -18,6 +18,12 @@ inline void set_dict(PyObject* dict, const char* key, const T& val)
 }
 
 inline void set_dict(PyObject* dict, const char* key, PyObject* val)
+{
+    if (PyDict_SetItemString(dict, key, val))
+        throw PythonException();
+}
+
+inline void set_dict(PyObject* dict, const char* key, pyo_unique_ptr& val)
 {
     if (PyDict_SetItemString(dict, key, val))
         throw PythonException();

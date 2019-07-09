@@ -6,12 +6,17 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
+#include "core.h"
 
 namespace arki {
 namespace python {
 
 /// Base template for all from_python shortcuts
 template<typename T> inline T from_python(PyObject*) { throw std::runtime_error("method not implemented"); }
+
+inline PyObject* to_python(PyObject* o) { return o; }
+
+inline PyObject* to_python(const pyo_unique_ptr& o) { return o.get(); }
 
 /// Convert an utf8 string to a python str object
 PyObject* cstring_to_python(const char* str);
@@ -51,6 +56,10 @@ template<> inline std::vector<std::string> from_python<std::vector<std::string>>
 {
     return stringlist_from_python(o);
 }
+
+/// Convert a string list to a Python object
+PyObject* stringlist_to_python(const std::vector<std::string>& val);
+inline PyObject* to_python(const std::vector<std::string>& val) { return stringlist_to_python(val); }
 
 
 }

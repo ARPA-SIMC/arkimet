@@ -5,7 +5,7 @@
 namespace arki {
 namespace python {
 
-PyObject* string_to_python(const char* str)
+PyObject* cstring_to_python(const char* str)
 {
     return throw_ifnull(PyUnicode_FromString(str));
 }
@@ -73,6 +73,15 @@ std::vector<std::string> stringlist_from_python(PyObject* o)
         throw PythonException();
 
     return res;
+}
+
+PyObject* stringlist_to_python(const std::vector<std::string>& val)
+{
+    pyo_unique_ptr res(throw_ifnull(PyList_New(val.size())));
+    Py_ssize_t idx = 0;
+    for (const auto& str: val)
+        PyList_SET_ITEM(res.get(), idx++, to_python(str));
+    return res.release();
 }
 
 }
