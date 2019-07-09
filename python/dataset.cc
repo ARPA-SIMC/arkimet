@@ -86,21 +86,11 @@ Arguments:
             query.with_data = with_data;
             if (!sort.empty()) query.sorter = sort::Compare::parse(sort);
 
-            metadata_dest_func dest = [&](std::unique_ptr<Metadata>&& md) {
-                // call arg_on_metadata
-                py_unique_ptr<arkipy_Metadata> pymd(metadata_create(move(md)));
-                pyo_unique_ptr args(PyTuple_Pack(1, pymd.get()));
-                if (!args) throw PythonException();
-                pyo_unique_ptr res(PyObject_CallObject(arg_on_metadata, args));
-                if (!res) throw PythonException();
-                // Continue if the callback returns None or True
-                if (res == Py_None) return true;
-                int cont = PyObject_IsTrue(res);
-                if (cont == -1) throw PythonException();
-                return cont == 1;
-            };
-
-            self->ds->query_data(query, dest);
+            metadata_dest_func dest = dest_func_from_python(arg_on_metadata);
+            {
+                ReleaseGIL gil;
+                self->ds->query_data(query, dest);
+            }
             Py_RETURN_NONE;
         } ARKI_CATCH_RETURN_PYO
     }

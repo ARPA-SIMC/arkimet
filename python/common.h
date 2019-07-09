@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 #include <memory>
+#include <arki/defs.h>
 #include <arki/emitter.h>
 #include <arki/core/fwd.h>
 
@@ -120,6 +121,14 @@ core::cfg::Sections sections_from_python(PyObject* o);
  * Create a LineReader to read from any python object that can iterate strings
  */
 std::unique_ptr<core::LineReader> linereader_from_python(PyObject* o);
+
+/**
+ * Create a metadata_dest_func from a python object.
+ *
+ * Note that the object should not be destroyed during the lifetime of the
+ * resulting function.
+ */
+arki::metadata_dest_func dest_func_from_python(PyObject* o);
 
 /**
  * Initialize the python bits to use used by the common functions.
