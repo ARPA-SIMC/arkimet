@@ -1,11 +1,10 @@
 #!/usr/bin/python3
-from arkimet import ArkiDump
+from arkimet.cmdline.dump import Dump
 import sys
 
 
 def main():
-    arki_scan = ArkiDump()
-    sys.exit(arki_scan.run(sys.argv))
+    sys.exit(Dump.main())
 
 
 if __name__ == "__main__":

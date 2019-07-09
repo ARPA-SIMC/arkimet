@@ -120,7 +120,6 @@ nobase_dist_arkiinclude_HEADERS = \
 		runtime/arki-query.h \
 		runtime/arki-check.h \
 		runtime/arki-scan.h \
-		runtime/arki-dump.h \
 		runtime/arki-xargs.h \
 		scan.h \
 		scan/fwd.h \
@@ -579,7 +578,6 @@ libarkimet_la_SOURCES += \
 		runtime/arki-query.cc \
 		runtime/arki-check.cc \
 		runtime/arki-scan.cc \
-		runtime/arki-dump.cc \
 		runtime/arki-xargs.cc
 
 tests_arki_test_SOURCES += \
@@ -647,7 +645,6 @@ tests_arki_test_SOURCES += \
 		runtime/arki-query-test.cc \
 		runtime/arki-check-test.cc \
 		runtime/arki-scan-test.cc \
-		runtime/arki-dump-test.cc \
 		runtime/arki-xargs-test.cc \
 		runtime-test.cc
 
@@ -708,4 +705,5 @@ EXTRA_DIST = runtest buildbison buildflex \
 	     matcher/reftime/reftime-parse.yy \
 	     $(reftime_parser_built_sources) \
 	     tests/testdata.json \
-	     dataset/http-redirect-daemon
+	     dataset/http-redirect-daemon \
+	     dataset/http-aliases-daemon
