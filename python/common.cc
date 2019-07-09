@@ -1,9 +1,11 @@
 #include "common.h"
 #include "cfg.h"
+#include "metadata.h"
 #include "utils/values.h"
 #include "arki/libconfig.h"
 #include "arki/core/cfg.h"
 #include "arki/core/file.h"
+#include "arki/metadata.h"
 #include "arki/runtime.h"
 
 using namespace std;
@@ -533,6 +535,83 @@ struct PythonLineReader : public core::LineReader
 std::unique_ptr<core::LineReader> linereader_from_python(PyObject* o)
 {
     return std::unique_ptr<core::LineReader>(new PythonLineReader(o));
+}
+
+namespace {
+
+struct PyDestFunc
+{
+    PyObject* callable;
+
+    PyDestFunc(PyObject* callable)
+        : callable(callable)
+    {
+        Py_XINCREF(callable);
+    }
+
+    PyDestFunc(const PyDestFunc& o)
+        : callable(o.callable)
+    {
+        Py_XINCREF(callable);
+    }
+
+    PyDestFunc(PyDestFunc&& o)
+        : callable(o.callable)
+    {
+        o.callable = nullptr;
+    }
+
+    ~PyDestFunc()
+    {
+        Py_XDECREF(callable);
+    }
+
+    PyDestFunc& operator=(const PyDestFunc& o)
+    {
+        Py_XINCREF(o.callable);
+        Py_XDECREF(callable);
+        callable = o.callable;
+        return *this;
+    }
+
+    PyDestFunc& operator=(PyDestFunc&& o)
+    {
+        if (this == &o)
+            return *this;
+
+        Py_XDECREF(callable);
+        callable = o.callable;
+        o.callable = nullptr;
+        return *this;
+    }
+
+    bool operator()(std::unique_ptr<Metadata> md)
+    {
+        AcquireGIL gil;
+        // call arg_on_metadata
+        py_unique_ptr<arkipy_Metadata> pymd(metadata_create(std::move(md)));
+        pyo_unique_ptr args(PyTuple_Pack(1, pymd.get()));
+        if (!args) throw PythonException();
+        pyo_unique_ptr res(PyObject_CallObject(callable, args));
+        if (!res) throw PythonException();
+        // Continue if the callback returns None or True
+        if (res == Py_None) return true;
+        int cont = PyObject_IsTrue(res);
+        if (cont == -1) throw PythonException();
+        return cont == 1;
+    }
+};
+
+}
+
+arki::metadata_dest_func dest_func_from_python(PyObject* o)
+{
+    if (PyCallable_Check(o))
+    {
+        return PyDestFunc(o);
+    }
+    PyErr_SetString(PyExc_TypeError, "value must be a callable");
+    throw PythonException();
 }
 
 int common_init()
