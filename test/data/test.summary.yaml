@@ -1,0 +1,37 @@
+SummaryItem:
+  Origin: GRIB1(200, 000, 101)
+  Product: GRIB1(200, 140, 229)
+  Level: GRIB1(001)
+  Timerange: GRIB1(000, 000h)
+  Area: GRIB(Ni=97, Nj=73, latfirst=40000000, latlast=46000000, lonfirst=12000000, lonlast=20000000, type=0)
+  Proddef: GRIB(tod=1)
+  Run: MINUTE(13:00)
+SummaryStats:
+  Count: 1
+  Size: 7218
+  Reftime: 2007-07-08T13:00:00Z
+SummaryItem:
+  Origin: GRIB1(080, 255, 100)
+  Product: GRIB1(080, 002, 002)
+  Level: GRIB1(102)
+  Timerange: GRIB1(001)
+  Area: GRIB(Ni=205, Nj=85, latfirst=30000000, latlast=72000000, lonfirst=-60000000, lonlast=42000000, type=0)
+  Proddef: GRIB(tod=1)
+  Run: MINUTE(00:00)
+SummaryStats:
+  Count: 1
+  Size: 34960
+  Reftime: 2007-07-07T00:00:00Z
+SummaryItem:
+  Origin: GRIB1(098, 000, 129)
+  Product: GRIB1(098, 128, 129)
+  Level: GRIB1(100, 01000)
+  Timerange: GRIB1(000, 000h)
+  Area: GRIB(Ni=43, Nj=25, latfirst=55500000, latlast=31500000, lonfirst=-11500000, lonlast=30500000, type=0)
+  Proddef: GRIB(tod=1)
+  Run: MINUTE(00:00)
+SummaryStats:
+  Count: 1
+  Size: 2234
+  Reftime: 2007-10-09T00:00:00Z
+
