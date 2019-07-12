@@ -39,11 +39,12 @@ class CatchOutput:
                         os.dup2(tmp_stdout.fileno(), 1)
                         os.dup2(tmp_stderr.fileno(), 2)
                         yield
-                        tmp_stdout.seek(0)
-                        self.stdout = tmp_stdout.read()
-                        tmp_stderr.seek(0)
-                        self.stderr = tmp_stderr.read()
                     finally:
                         os.dup2(saved_stdin, 0)
                         os.dup2(saved_stdout, 1)
                         os.dup2(saved_stderr, 2)
+
+                        tmp_stdout.seek(0)
+                        self.stdout = tmp_stdout.read()
+                        tmp_stderr.seek(0)
+                        self.stderr = tmp_stderr.read()

@@ -37,6 +37,9 @@ arki-bufr-prepare.1: src/arki-bufr-prepare doc/mhooks-bufr-prepare
 arki-dump.1: src/arki-dump doc/mhooks-dump
 	COLUMNS=200 $(srcdir)/run-local help2man --include doc/mhooks-dump --name='Read data from the given input file (or stdin), and dump the in human readable format on stdout' --section=1 --no-info --version-string="$(PACKAGE_VERSION)" $< > $@ || rm -f $@
 
+arki-xargs.1: src/arki-xargs doc/mhooks-xargs
+	COLUMNS=200 $(srcdir)/run-local help2man --include doc/mhooks-xargs --name='Read data from the given input file (or stdin), and xargs the in human readable format on stdout' --section=1 --no-info --version-string="$(PACKAGE_VERSION)" $< > $@ || rm -f $@
+
 arki-%.1: src/arki-% doc/mhooks-%
 	$(srcdir)/run-local $< --manpage="$(word 2,$^)" > $@ || rm -f $@
 
