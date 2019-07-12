@@ -398,6 +398,15 @@ Arkimet configuration, as multiple sections of key/value options
         } ARKI_CATCH_RETURN_INT
     }
 
+    static PyObject* _iter(Impl* self)
+    {
+        py_unique_ptr<PyTupleObject> res((PyTupleObject*)PyTuple_New(self->sections.size()));
+        unsigned pos = 0;
+        for (const auto& si: self->sections)
+            PyTuple_SET_ITEM(res, pos++, to_python(si.first));
+        return PyObject_GetIter((PyObject*)res.get());
+    }
+
     static Py_ssize_t mp_length(Impl* self)
     {
         return self->sections.size();
@@ -490,6 +499,15 @@ Arkimet configuration, as a section of key/value options
             std::string key = from_python<std::string>(value);
             return self->section->has(key) ? 1 : 0;
         } ARKI_CATCH_RETURN_INT
+    }
+
+    static PyObject* _iter(Impl* self)
+    {
+        py_unique_ptr<PyTupleObject> res((PyTupleObject*)PyTuple_New(self->section->size()));
+        unsigned pos = 0;
+        for (const auto& si: *self->section)
+            PyTuple_SET_ITEM(res, pos++, to_python(si.first));
+        return PyObject_GetIter((PyObject*)res.get());
     }
 
     static Py_ssize_t mp_length(Impl* self)
