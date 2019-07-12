@@ -1,4 +1,4 @@
-#include "arki/runtime/arki-dump.h"
+#include "arki-dump.h"
 #include "arki/utils/sys.h"
 #include "arki/core/file.h"
 #include "arki/metadata.h"
@@ -320,7 +320,6 @@ arki-dump implementation
 
     static void _dealloc(Impl* self)
     {
-        delete self->arki_dump;
         Py_TYPE(self)->tp_free(self);
     }
 
@@ -343,7 +342,6 @@ arki-dump implementation
             return -1;
 
         try {
-            self->arki_dump = new arki::runtime::ArkiDump;
         } ARKI_CATCH_RETURN_INT
 
         return 0;
