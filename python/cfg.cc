@@ -390,6 +390,14 @@ Arkimet configuration, as multiple sections of key/value options
         return PyUnicode_FromString(res.c_str());
     }
 
+    static int sq_contains(Impl *self, PyObject *value)
+    {
+        try {
+            std::string key = from_python<std::string>(value);
+            return (self->sections.find(key) != self->sections.end()) ? 1 : 0;
+        } ARKI_CATCH_RETURN_INT
+    }
+
     static Py_ssize_t mp_length(Impl* self)
     {
         return self->sections.size();
@@ -474,6 +482,14 @@ Arkimet configuration, as a section of key/value options
         std::string res = qual_name;
         res += " object";
         return PyUnicode_FromString(res.c_str());
+    }
+
+    static int sq_contains(Impl *self, PyObject *value)
+    {
+        try {
+            std::string key = from_python<std::string>(value);
+            return self->section->has(key) ? 1 : 0;
+        } ARKI_CATCH_RETURN_INT
     }
 
     static Py_ssize_t mp_length(Impl* self)
