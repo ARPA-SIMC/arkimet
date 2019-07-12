@@ -11,6 +11,8 @@ class TestCfgSections(unittest.TestCase):
         with self.assertRaises(KeyError):
             sections["missing"]
 
+        self.assertFalse("name" in sections)
+
     def test_obtain(self):
         sections = arki.cfg.Sections()
         self.assertIsNone(sections.section("name"))
@@ -23,6 +25,8 @@ class TestCfgSections(unittest.TestCase):
         self.assertEqual(sections.get("name", 42), section)
         self.assertIsNone(sections.get("nonexisting"))
         self.assertEqual(sections.get("nonexisting", 42), 42)
+
+        self.assertTrue("name" in sections)
 
     def test_parse(self):
         body = """
@@ -67,6 +71,8 @@ class TestCfgSection(unittest.TestCase):
         with self.assertRaises(KeyError):
             section["missing"]
 
+        self.assertFalse("key" in section)
+
     def test_assign(self):
         section = arki.cfg.Section()
         section["key1"] = "val1"
@@ -78,6 +84,8 @@ class TestCfgSection(unittest.TestCase):
         self.assertEqual(section.get("key1", 42), "val1")
         self.assertIsNone(section.get("nonexisting"))
         self.assertEqual(section.get("nonexisting", 42), 42)
+
+        self.assertTrue("key1" in section)
 
     def test_parse(self):
         body = """
