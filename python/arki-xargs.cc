@@ -1,11 +1,15 @@
-#include "arki/runtime/arki-xargs.h"
 #include "arki-xargs.h"
+#include "arki/core/file.h"
+#include "arki/metadata.h"
+#include "arki/metadata/xargs.h"
+#include "arki/utils/sys.h"
 #include "utils/core.h"
 #include "utils/methods.h"
 #include "utils/type.h"
 #include "utils/values.h"
 #include "common.h"
 
+using namespace arki::utils;
 using namespace arki::python;
 
 extern "C" {
@@ -20,42 +24,61 @@ namespace {
 struct run_ : public MethKwargs<run_, arkipy_ArkiXargs>
 {
     constexpr static const char* name = "run";
-    constexpr static const char* signature = "";
+    constexpr static const char* signature = "command: Sequence[str], inputs: Sequence[str]=None, max_args: int=None, max_size: str=None, time_interval: str=None, split_timerange: bool=False";
     constexpr static const char* returns = "int";
     constexpr static const char* summary = "run arki-xargs";
     constexpr static const char* doc = nullptr;
 
     static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
     {
-        static const char* kwlist[] = { "args", nullptr };
-        PyObject* pyargs = nullptr;
-        if (!PyArg_ParseTupleAndKeywords(args, kw, "O", const_cast<char**>(kwlist), &pyargs))
+        static const char* kwlist[] = { "command", "inputs", "max_args", "max_size", "time_interval", "split_timerange", nullptr };
+        PyObject* py_command = nullptr;
+        PyObject* py_inputs = nullptr;
+        PyObject* py_max_args = 0;
+        const char* max_size = nullptr;
+        Py_ssize_t max_size_len;
+        const char* time_interval = nullptr;
+        Py_ssize_t time_interval_len;
+        int split_timerange = 0;
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "O|OOz#z#p", const_cast<char**>(kwlist),
+                    &py_command, &py_inputs, &py_max_args, &max_size, &max_size_len,
+                    &time_interval, &time_interval_len, &split_timerange))
             return nullptr;
 
-        if (!PySequence_Check(pyargs))
-        {
-            PyErr_SetString(PyExc_TypeError, "args argument must be a sequence of strings");
-            throw PythonException();
-        }
-
-        // Unpack a sequence of strings into argc/argv
-        unsigned argc = PySequence_Size(pyargs);
-        std::vector<const char*> argv;
-        argv.reserve(argc + 1);
-        for (unsigned i = 0; i < argc; ++i)
-        {
-            pyo_unique_ptr o(throw_ifnull(PySequence_ITEM(pyargs, i)));
-            argv.emplace_back(from_python<const char*>(o));
-        }
-        argv.emplace_back(nullptr);
-
         try {
-            int res;
+            arki::metadata::Xargs consumer;
+            consumer.command = stringlist_from_python(py_command);
+            if (py_max_args && py_max_args != Py_None)
+                consumer.max_count = int_from_python(py_max_args);
+            if (max_size)
+                consumer.set_max_bytes(std::string(max_size, max_size_len));
+            if (time_interval)
+                consumer.set_interval(std::string(time_interval, time_interval_len));
+            if (split_timerange)
+                consumer.split_timerange = true;
+
+            if (!py_inputs || py_inputs != Py_None)
             {
                 ReleaseGIL rg;
-                res = self->arki_xargs->run(argc, argv.data());
+                auto inputs = stringlist_from_python(py_inputs);
+                // Process the files
+                for (const auto& i: inputs)
+                {
+                    sys::File in(i, O_RDONLY);
+                    arki::metadata::ReadContext rc(sys::getcwd(), in.name());
+                    arki::Metadata::read_file(in, rc, [&](std::unique_ptr<arki::Metadata> md) { return consumer.eat(std::move(md)); });
+                }
+                consumer.flush();
+            } else {
+                ReleaseGIL rg;
+                // Process stdin
+                arki::core::Stdin in;
+                arki::metadata::ReadContext rc(sys::getcwd(), in.name());
+                arki::Metadata::read_file(in, rc, [&](std::unique_ptr<arki::Metadata> md) { return consumer.eat(move(md)); });
+                consumer.flush();
             }
-            return throw_ifnull(PyLong_FromLong(res));
+
+            return throw_ifnull(PyLong_FromLong(0));
         } ARKI_CATCH_RETURN_PYO
     }
 };
@@ -73,7 +96,6 @@ arki-xargs implementation
 
     static void _dealloc(Impl* self)
     {
-        delete self->arki_xargs;
         Py_TYPE(self)->tp_free(self);
     }
 
@@ -96,7 +118,6 @@ arki-xargs implementation
             return -1;
 
         try {
-            self->arki_xargs = new arki::runtime::ArkiXargs;
         } ARKI_CATCH_RETURN_INT
 
         return 0;
