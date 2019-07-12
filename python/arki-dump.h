@@ -5,17 +5,10 @@
 #include <Python.h>
 #include <memory>
 
-namespace arki {
-namespace runtime {
-struct ArkiDump;
-}
-}
-
 extern "C" {
 
 typedef struct {
     PyObject_HEAD
-    arki::runtime::ArkiDump* arki_dump;
 } arkipy_ArkiDump;
 
 extern PyTypeObject* arkipy_ArkiDump_Type;
