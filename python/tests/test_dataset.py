@@ -2,6 +2,7 @@ import unittest
 import tempfile
 import arkimet as arki
 import os
+import shutil
 from arkimet.test import daemon
 
 
@@ -239,3 +240,50 @@ type = file
         # No arguments
         ds.query_data(on_metadata=count_results)
         self.assertEquals(count, 24841)
+
+
+class TestDatasetWriter(unittest.TestCase):
+    def test_import(self):
+        try:
+            shutil.rmtree("testds")
+        except FileNotFoundError:
+            pass
+        os.mkdir("testds")
+
+        dest = arki.dataset.Writer({
+            "format": "grib",
+            "name": "testds",
+            "path": "testds",
+            "type": "iseg",
+            "step": "daily",
+        })
+
+        source = arki.dataset.Reader({
+            "format": "grib",
+            "name": "test.grib1",
+            "path": "inbound/test.grib1",
+            "type": "file",
+        })
+
+        def do_import(md):
+            dest.acquire(md)
+
+        source.query_data(on_metadata=do_import)
+        dest.flush()
+
+        dest = arki.dataset.Reader({
+            "format": "grib",
+            "name": "testds",
+            "path": "testds",
+            "type": "iseg",
+            "step": "daily",
+        })
+
+        count = 0
+
+        def count_results(md):
+            nonlocal count
+            count += 1
+
+        dest.query_data(on_metadata=count_results)
+        self.assertEqual(count, 3)

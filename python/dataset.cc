@@ -24,6 +24,11 @@ using namespace arki::python;
 extern "C" {
 
 PyTypeObject* arkipy_DatasetReader_Type = nullptr;
+PyTypeObject* arkipy_DatasetWriter_Type = nullptr;
+
+PyObject* arkipy_ImportError = nullptr;
+PyObject* arkipy_ImportDuplicateError = nullptr;
+PyObject* arkipy_ImportFailedError = nullptr;
 
 }
 
@@ -301,7 +306,149 @@ Examples::
     }
 };
 
-DatasetReaderDef* sections_def = nullptr;
+DatasetReaderDef* reader_def = nullptr;
+
+
+/*
+ * dataset.Writer
+ */
+
+struct acquire : public MethKwargs<acquire, arkipy_DatasetWriter>
+{
+    constexpr static const char* name = "acquire";
+    constexpr static const char* signature = "md: arki.Metadata, replace: str=None, drop_cached_data_on_commit: bool=False";
+    constexpr static const char* returns = "";
+    constexpr static const char* summary = "Acquire the given metadata item (and related data) in this dataset";
+    constexpr static const char* doc = R"(
+After acquiring the data successfully, the data can be retrieved from
+the dataset.  Also, information such as the dataset name and the id of
+the data in the dataset are added to the Metadata object.
+
+If the import failed, a subclass of arki.dataset.ImportError is raised.
+)";
+
+    static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
+    {
+        static const char* kwlist[] = { "md", "replace", "drop_cached_data_on_commit", NULL };
+        PyObject* arg_md = Py_None;
+        const char* arg_replace = nullptr;
+        Py_ssize_t arg_replace_len;
+        int drop_cached_data_on_commit = 0;
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "O!|s#p", const_cast<char**>(kwlist),
+                &arkipy_Metadata_Type, &arg_md,
+                &arg_replace, &arg_replace_len, &drop_cached_data_on_commit))
+            return nullptr;
+
+        try {
+            arki::dataset::AcquireConfig cfg;
+            if (arg_replace)
+            {
+                std::string replace(arg_replace, arg_replace_len);
+                if (replace == "default")
+                    cfg.replace = arki::dataset::REPLACE_DEFAULT;
+                else if (replace == "never")
+                    cfg.replace = arki::dataset::REPLACE_NEVER;
+                else if (replace == "always")
+                    cfg.replace = arki::dataset::REPLACE_ALWAYS;
+                else if (replace == "higher_usn")
+                    cfg.replace = arki::dataset::REPLACE_HIGHER_USN;
+                else
+                {
+                    PyErr_SetString(PyExc_ValueError, "replace argument must be 'default', 'never', 'always', or 'higher_usn'");
+                    return nullptr;
+                }
+            }
+
+            cfg.drop_cached_data_on_commit = drop_cached_data_on_commit;
+
+            arki::dataset::WriterAcquireResult res;
+            {
+                ReleaseGIL gil;
+                res = self->ds->acquire(*((arkipy_Metadata*)arg_md)->md, cfg);
+            }
+
+            switch (res)
+            {
+                case arki::dataset::ACQ_OK:
+                    Py_RETURN_NONE;
+                case arki::dataset::ACQ_ERROR_DUPLICATE:
+                    PyErr_SetString(arkipy_ImportDuplicateError, "data already exists in the dataset");
+                    return nullptr;
+                case arki::dataset::ACQ_ERROR:
+                    PyErr_SetString(arkipy_ImportFailedError, "import failed");
+                    return nullptr;
+                default:
+                    PyErr_SetString(arkipy_ImportError, "unexpected result from dataset import");
+                    return nullptr;
+            }
+        } ARKI_CATCH_RETURN_PYO
+    }
+};
+
+struct flush : public MethNoargs<flush, arkipy_DatasetWriter>
+{
+    constexpr static const char* name = "flush";
+    constexpr static const char* signature = "";
+    constexpr static const char* returns = "";
+    constexpr static const char* summary = "Flush pending changes to disk";
+
+    static PyObject* run(Impl* self)
+    {
+        try {
+            self->ds->flush();
+            Py_RETURN_NONE;
+        } ARKI_CATCH_RETURN_PYO
+    }
+};
+
+struct DatasetWriterDef : public Type<DatasetWriterDef, arkipy_DatasetWriter>
+{
+    constexpr static const char* name = "Writer";
+    constexpr static const char* qual_name = "arkimet.dataset.Writer";
+    constexpr static const char* doc = R"(
+Write functions for an arkimet dataset.
+
+TODO: document
+
+Examples::
+
+    TODO: add examples
+)";
+    GetSetters<> getsetters;
+    Methods<acquire, flush> methods;
+
+    static void _dealloc(Impl* self)
+    {
+        delete self->ds;
+        self->ds = nullptr;
+        Py_TYPE(self)->tp_free((PyObject*)self);
+    }
+
+    static PyObject* _str(Impl* self)
+    {
+        return PyUnicode_FromFormat("dataset.Writer(%s, %s)", self->ds->type().c_str(), self->ds->name().c_str());
+    }
+
+    static PyObject* _repr(Impl* self)
+    {
+        return PyUnicode_FromFormat("dataset.Writer(%s, %s)", self->ds->type().c_str(), self->ds->name().c_str());
+    }
+
+    static int _init(Impl* self, PyObject* args, PyObject* kw)
+    {
+        static const char* kwlist[] = { "cfg", nullptr };
+        PyObject* cfg = Py_None;
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "O", const_cast<char**>(kwlist), &cfg))
+            return -1;
+
+        try {
+            self->ds = dataset::Writer::create(section_from_python(cfg)).release();
+            return 0;
+        } ARKI_CATCH_RETURN_INT;
+    }
+};
+
+DatasetWriterDef* writer_def = nullptr;
 
 
 /*
@@ -488,15 +635,55 @@ void register_dataset(PyObject* m)
 {
     pyo_unique_ptr http = throw_ifnull(PyModule_Create(&http_module));
 
-    pyo_unique_ptr cfg = throw_ifnull(PyModule_Create(&dataset_module));
+    pyo_unique_ptr dataset = throw_ifnull(PyModule_Create(&dataset_module));
 
-    sections_def = new DatasetReaderDef;
-    sections_def->define(arkipy_DatasetReader_Type, cfg);
+    arkipy_ImportError = throw_ifnull(PyErr_NewExceptionWithDoc(
+            "arkimet.dataset.ImportError",
+            "Base class for dataset import errors",
+            PyExc_RuntimeError, nullptr));
 
-    if (PyModule_AddObject(cfg, "http", http.release()) == -1)
+    arkipy_ImportDuplicateError = throw_ifnull(PyErr_NewExceptionWithDoc(
+            "arkimet.dataset.ImportDuplicateError",
+            "The item to import already exists on the dataset",
+            arkipy_ImportError, nullptr));
+
+    arkipy_ImportFailedError = throw_ifnull(PyErr_NewExceptionWithDoc(
+            "arkimet.dataset.ImportFailedError",
+            "The import process failed on this metadata",
+            arkipy_ImportError, nullptr));
+
+    Py_INCREF(arkipy_ImportError);
+    if (PyModule_AddObject(dataset, "ImportError", arkipy_ImportError) == -1)
+    {
+        Py_DECREF(arkipy_ImportError);
+        throw PythonException();
+    }
+
+    Py_INCREF(arkipy_ImportDuplicateError);
+    if (PyModule_AddObject(dataset, "ImportDuplicateError", arkipy_ImportDuplicateError) == -1)
+    {
+        Py_DECREF(arkipy_ImportDuplicateError);
+        throw PythonException();
+    }
+
+    Py_INCREF(arkipy_ImportFailedError);
+    if (PyModule_AddObject(dataset, "ImportFailedError", arkipy_ImportFailedError) == -1)
+    {
+        Py_DECREF(arkipy_ImportFailedError);
+        throw PythonException();
+    }
+
+
+    reader_def = new DatasetReaderDef;
+    reader_def->define(arkipy_DatasetReader_Type, dataset);
+
+    writer_def = new DatasetWriterDef;
+    writer_def->define(arkipy_DatasetWriter_Type, dataset);
+
+    if (PyModule_AddObject(dataset, "http", http.release()) == -1)
         throw PythonException();
 
-    if (PyModule_AddObject(m, "dataset", cfg.release()) == -1)
+    if (PyModule_AddObject(m, "dataset", dataset.release()) == -1)
         throw PythonException();
 }
 
