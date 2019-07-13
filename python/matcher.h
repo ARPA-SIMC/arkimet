@@ -32,5 +32,3 @@ void register_matcher(PyObject* m);
 }
 
 #endif
-
-
