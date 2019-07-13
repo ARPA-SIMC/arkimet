@@ -79,6 +79,13 @@ class TestCfgSection(unittest.TestCase):
 
         self.assertFalse("key" in section)
 
+    def test_init(self):
+        section = arki.cfg.Section({"key": "val"})
+        self.assertEqual(section["key"], "val")
+
+        section = arki.cfg.Section(key="val")
+        self.assertEqual(section["key"], "val")
+
     def test_iter(self):
         section = arki.cfg.Section()
         section["key2"] = "val2"
