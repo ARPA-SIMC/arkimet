@@ -462,6 +462,17 @@ Arkimet configuration, as multiple sections of key/value options
 SectionsDef* sections_def = nullptr;
 
 
+void fill_section_from_dict(arki::core::cfg::Section& dest, PyObject* src)
+{
+    PyObject *key, *value;
+    Py_ssize_t pos = 0;
+
+    while (PyDict_Next(src, &pos, &key, &value)) {
+        dest.set(from_python<std::string>(key), from_python<std::string>(value));
+    }
+}
+
+
 struct SectionDef : public Type<SectionDef, arkipy_cfgSection>
 {
     constexpr static const char* name = "Section";
@@ -567,13 +578,35 @@ Arkimet configuration, as a section of key/value options
 
     static int _init(Impl* self, PyObject* args, PyObject* kw)
     {
-        static const char* kwlist[] = { nullptr };
-        if (!PyArg_ParseTupleAndKeywords(args, kw, "", const_cast<char**>(kwlist)))
-            return -1;
+        PyObject* init_dict = nullptr;
+
+        if (PyTuple_GET_SIZE(args) == 1)
+        {
+            PyObject* first = PyTuple_GET_ITEM(args, 0);
+            if (!PyDict_Check(first))
+            {
+                PyErr_SetString(PyExc_TypeError, "if a positional argument is provided to arkimet.cfg.Section(), it must be a dict");
+                return -1;
+            }
+
+            init_dict = first;
+        } else if (kw && PyDict_Size(kw) > 0) {
+            init_dict = kw;
+        }
 
         try {
+            int argc = PyTuple_GET_SIZE(args);
+            if (argc > 1)
+            {
+                PyErr_SetString(PyExc_TypeError, "arkimet.cfg.Section() takes at most one positional argument");
+                return -1;
+            }
+
             self->owner = nullptr;
             self->section = new arki::core::cfg::Section;
+
+            if (init_dict)
+                fill_section_from_dict(*(self->section), init_dict);
         } ARKI_CATCH_RETURN_INT
 
         return 0;
