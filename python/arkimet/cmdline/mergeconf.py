@@ -51,11 +51,7 @@ class Mergeconf(App):
         # Process --config options
         if self.args.config is not None:
             for pathname in self.args.config:
-                if pathname == "-":
-                    cfg = arki.cfg.Sections.parse(sys.stdin)
-                else:
-                    cfg = arki.cfg.Sections.parse(pathname)
-
+                cfg = arki.dataset.read_configs(pathname)
                 for name, section in cfg.items():
                     self._add_section(merged, section, name)
 
