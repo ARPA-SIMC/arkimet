@@ -341,6 +341,16 @@ core::cfg::Section Reader::read_config(const std::string& path)
 }
 
 
+core::cfg::Sections Reader::read_configs(const std::string& path)
+{
+#ifdef HAVE_LIBCURL
+    if (str::startswith(path, "http://") || str::startswith(path, "https://"))
+        return dataset::http::Reader::load_cfg_sections(path);
+#endif
+    return dataset::LocalReader::read_configs(path);
+}
+
+
 void WriterBatch::set_all_error(const std::string& note)
 {
     for (auto& e: *this)

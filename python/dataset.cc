@@ -313,7 +313,7 @@ struct read_config : public MethKwargs<read_config, PyObject>
     constexpr static const char* name = "read_config";
     constexpr static const char* signature = "pathname: str";
     constexpr static const char* returns = "arki.cfg.Section";
-    constexpr static const char* summary = "Read the configuration of the dataset(s) at the given path or URL";
+    constexpr static const char* summary = "Read the configuration of a dataset at the given path or URL";
 
     static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
     {
@@ -331,8 +331,31 @@ struct read_config : public MethKwargs<read_config, PyObject>
     }
 };
 
+struct read_configs : public MethKwargs<read_configs, PyObject>
+{
+    constexpr static const char* name = "read_configs";
+    constexpr static const char* signature = "pathname: str";
+    constexpr static const char* returns = "arki.cfg.Sections";
+    constexpr static const char* summary = "Read the merged dataset configuration at the given path or URL";
 
-Methods<read_config> dataset_methods;
+    static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
+    {
+        static const char* kwlist[] = { "pathname", nullptr };
+        const char* pathname;
+        Py_ssize_t pathname_len;
+
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "s#", const_cast<char**>(kwlist), &pathname, &pathname_len))
+            return nullptr;
+
+        try {
+            auto sections = dataset::Reader::read_configs(std::string(pathname, pathname_len));
+            return cfg_sections(std::move(sections));
+        } ARKI_CATCH_RETURN_PYO
+    }
+};
+
+
+Methods<read_config, read_configs> dataset_methods;
 
 
 /*

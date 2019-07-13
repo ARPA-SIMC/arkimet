@@ -97,6 +97,7 @@ public:
     void query_summary(const Matcher& matcher, Summary& summary) override;
 
     static core::cfg::Section read_config(const std::string& path);
+    static core::cfg::Sections read_configs(const std::string& path);
 };
 
 class LocalWriter : public Writer
