@@ -640,7 +640,6 @@ tests_arki_test_SOURCES += \
 		runtime/processor-test.cc \
 		runtime/source-test.cc \
 		runtime/dispatch-test.cc \
-		runtime/arki-query-test.cc \
 		runtime/arki-check-test.cc \
 		runtime/arki-scan-test.cc \
 		runtime-test.cc
