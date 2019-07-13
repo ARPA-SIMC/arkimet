@@ -173,6 +173,8 @@ public:
      */
     static core::cfg::Sections getAliasDatabase(const std::string& server);
 
+    static std::string expand_remote_query(const core::cfg::Sections& remotes, const std::string& query);
+
     /**
      * Introduce a syntax error in the next query sent to the server.
      *

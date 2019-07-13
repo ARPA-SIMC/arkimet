@@ -1,13 +1,14 @@
 #include "config.h"
-#include <arki/dataset/http.h>
-#include <arki/metadata.h>
-#include <arki/metadata/stream.h>
-#include <arki/matcher.h>
-#include <arki/summary.h>
-#include <arki/sort.h>
-#include <arki/utils/string.h>
-#include <arki/utils/sys.h>
-#include <arki/binary.h>
+#include "arki/dataset/http.h"
+#include "arki/metadata.h"
+#include "arki/metadata/stream.h"
+#include "arki/matcher.h"
+#include "arki/summary.h"
+#include "arki/sort.h"
+#include "arki/utils/string.h"
+#include "arki/utils/sys.h"
+#include "arki/binary.h"
+#include "arki/nag.h"
 #include <cstdlib>
 #include <sstream>
 
@@ -455,6 +456,53 @@ core::cfg::Sections Reader::getAliasDatabase(const std::string& server)
     request.set_url(str::joinpath(server, "aliases"));
     request.perform();
     return core::cfg::Sections::parse(request.buf, server);
+}
+
+std::string Reader::expand_remote_query(const core::cfg::Sections& remotes, const std::string& query)
+{
+    // Resolve the query on each server (including the local system, if
+    // queried). If at least one server can expand it, send that
+    // expanded query to all servers. If two servers expand the same
+    // query in different ways, raise an error.
+    set<string> servers_seen;
+    string expanded;
+    string resolved_by;
+    bool first = true;
+    for (auto si: remotes)
+    {
+        string server = si.second.value("server");
+        if (servers_seen.find(server) != servers_seen.end()) continue;
+        string got;
+        try {
+            if (server.empty())
+            {
+                got = Matcher::parse(query).toStringExpanded();
+                resolved_by = "local system";
+            } else {
+                got = dataset::http::Reader::expandMatcher(query, server);
+                resolved_by = server;
+            }
+        } catch (std::exception& e) {
+            // If the server cannot expand the query, we're
+            // ok as we send it expanded. What we are
+            // checking here is that the server does not
+            // have a different idea of the same aliases
+            // that we use
+            continue;
+        }
+        if (!first && got != expanded)
+        {
+            nag::warning("%s expands the query as %s", server.c_str(), got.c_str());
+            nag::warning("%s expands the query as %s", resolved_by.c_str(), expanded.c_str());
+            throw std::runtime_error("cannot check alias consistency: two systems queried disagree about the query alias expansion");
+        } else if (first)
+            expanded = got;
+        first = false;
+    }
+
+    if (!first)
+        return expanded;
+    return query;
 }
 
 static string geturlprefix(const std::string& s)
