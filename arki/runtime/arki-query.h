@@ -19,8 +19,6 @@ public:
     ArkiQuery(ArkiQuery&&) = delete;
     ArkiQuery& operator=(const ArkiQuery&) = delete;
     ArkiQuery& operator=(ArkiQuery&&) = delete;
-
-    int run(int argc, const char* argv[]);
 };
 
 }

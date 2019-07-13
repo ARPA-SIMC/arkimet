@@ -71,26 +71,6 @@ struct ScanCommandLine : public CommandLine
     bool parse(int argc, const char* argv[]);
 };
 
-struct QueryCommandLine : public CommandLine
-{
-    utils::commandline::BoolOption* dataInline = nullptr;
-    utils::commandline::BoolOption* dataOnly = nullptr;
-    utils::commandline::BoolOption* merged = nullptr;
-    utils::commandline::StringOption* exprfile = nullptr;
-    utils::commandline::StringOption* qmacro = nullptr;
-    utils::commandline::VectorOption<utils::commandline::String>* cfgfiles = nullptr;
-    utils::commandline::StringOption* restr = nullptr;
-    utils::commandline::StringOption* postprocess = nullptr;
-    utils::commandline::VectorOption<utils::commandline::ExistingFile>* postproc_data = nullptr;
-
-    std::string strquery;
-    std::string qmacro_query;
-
-    QueryCommandLine(const std::string& name, int mansection=1);
-
-    bool parse(int argc, const char* argv[]);
-};
-
 }
 }
 #endif

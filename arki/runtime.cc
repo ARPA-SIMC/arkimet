@@ -116,34 +116,6 @@ ScanCommandLine::ScanCommandLine(const std::string& name, int mansection)
     dispatch_options = add_module(std::unique_ptr<DispatchOptions>(new DispatchOptions(*this)));
 }
 
-QueryCommandLine::QueryCommandLine(const std::string& name, int mansection)
-    : CommandLine(name, mansection)
-{
-    using namespace arki::utils::commandline;
-    dataInline = outputOpts->add<BoolOption>("inline", 0, "inline", "",
-            "output the binary metadata together with the data (pipe through "
-            " arki-dump or arki-grep to estract the data afterwards)");
-    dataOnly = outputOpts->add<BoolOption>("data", 0, "data", "",
-            "output only the data");
-    merged = outputOpts->add<BoolOption>("merged", 0, "merged", "",
-            "if multiple datasets are given, merge their data and output it in"
-            " reference time order.  Note: sorting does not work when using"
-            " --postprocess, --data or --report");
-    exprfile = inputOpts->add<StringOption>("file", 'f', "file", "file",
-            "read the expression from the given file");
-    qmacro = add<StringOption>("qmacro", 0, "qmacro", "name",
-            "run the given query macro instead of a plain query");
-    cfgfiles = inputOpts->add< VectorOption<String> >("config", 'C', "config", "file",
-            "read configuration about input sources from the given file (can be given more than once)");
-    restr = add<StringOption>("restrict", 0, "restrict", "names",
-            "restrict operations to only those datasets that allow one of the given (comma separated) names");
-    postprocess = outputOpts->add<StringOption>("postproc", 'p', "postproc", "command",
-            "output only the data, postprocessed with the given filter");
-    postproc_data = outputOpts->add< VectorOption<ExistingFile> >("postproc-data", 0, "postproc-data", "file",
-        "when querying a remote server with postprocessing, upload a file"
-        " to be used by the postprocessor (can be given more than once)");
-}
-
 bool CommandLine::parse(int argc, const char* argv[])
 {
     add(inputOpts);
@@ -165,60 +137,6 @@ bool ScanCommandLine::parse(int argc, const char* argv[])
     {
         if (stdin_input->isSet())
             throw commandline::BadOption("--stdin cannot be used together with --dispatch");
-    }
-
-    return false;
-}
-
-bool QueryCommandLine::parse(int argc, const char* argv[])
-{
-    if (CommandLine::parse(argc, argv))
-        return true;
-    processor::verify_option_consistency(*this);
-
-    if (postprocess->isSet() && targetfile->isSet())
-        throw commandline::BadOption("--postprocess conflicts with --targetfile");
-    if (postproc_data->isSet() && !postprocess->isSet())
-        throw commandline::BadOption("--postproc-data only makes sense with --postprocess");
-
-    if (postproc_data->isSet())
-    {
-        // Pass files for the postprocessor in the environment
-        string val = str::join(":", postproc_data->values().begin(), postproc_data->values().end());
-        setenv("ARKI_POSTPROC_FILES", val.c_str(), 1);
-    } else
-        unsetenv("ARKI_POSTPROC_FILES");
-
-    // Parse the matcher query
-    if (qmacro->isSet())
-    {
-        strquery = "";
-
-        if (exprfile->isSet())
-        {
-            // Read the entire file into memory and parse it as an expression
-            qmacro_query = runtime::read_file(exprfile->stringValue());
-        } else {
-            // Read from the first commandline argument
-            if (!hasNext())
-                throw commandline::BadOption("you need to specify a " + qmacro->stringValue() + " query or use --" + exprfile->longNames[0]);
-
-            // And parse it as an expression
-            qmacro_query = next();
-        }
-    } else {
-        if (exprfile->isSet())
-        {
-            // Read the entire file into memory and parse it as an expression
-            strquery = runtime::read_file(exprfile->stringValue());
-        } else {
-            // Read from the first commandline argument
-            if (!hasNext())
-                throw commandline::BadOption("you need to specify a filter expression or use --" + exprfile->longNames[0]);
-
-            // And parse it as an expression
-            strquery = next();
-        }
     }
 
     return false;

@@ -19,7 +19,6 @@ class Reader;
 
 namespace runtime {
 struct ScanCommandLine;
-struct QueryCommandLine;
 
 struct DatasetProcessor
 {
@@ -77,10 +76,8 @@ struct ProcessorMaker
 namespace processor {
 
 void verify_option_consistency(ScanCommandLine& args);
-void verify_option_consistency(QueryCommandLine& args);
 
 std::unique_ptr<DatasetProcessor> create(ScanCommandLine& args, core::NamedFileDescriptor& output);
-std::unique_ptr<DatasetProcessor> create(QueryCommandLine& args, const Matcher& query, core::NamedFileDescriptor& output);
 
 }
 
