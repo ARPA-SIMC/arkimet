@@ -35,6 +35,11 @@ struct Options : public runtime::QueryCommandLine
 
 }
 
+ArkiQuery::~ArkiQuery()
+{
+    delete processor;
+}
+
 int ArkiQuery::run(int argc, const char* argv[])
 {
     Options opts;
@@ -44,8 +49,7 @@ int ArkiQuery::run(int argc, const char* argv[])
         if (opts.parse(argc, argv))
             return 0;
 
-        core::cfg::Sections merged;
-        Inputs inputs(merged, opts);
+        Inputs inputs(this->inputs, opts);
         auto output = make_output(*opts.outfile);
 
         Matcher query;
@@ -54,12 +58,24 @@ int ArkiQuery::run(int argc, const char* argv[])
         else
             query = Matcher::parse(opts.strquery);
 
-        auto processor = processor::create(opts, query, *output);
+        processor = processor::create(opts, query, *output).release();
 
-        bool all_successful = foreach_source(opts, inputs, [&](runtime::Source& source) {
+        auto dest =  [&](runtime::Source& source) {
             source.process(*processor);
             return true;
-        });
+        };
+
+        bool all_successful = true;
+        if (opts.stdin_input->isSet())
+        {
+            all_successful = foreach_stdin(opts.stdin_input->stringValue(), dest);
+        } else if (opts.merged->boolValue()) {
+            all_successful = foreach_merged(inputs.merged, dest);
+        } else if (opts.qmacro->isSet()) {
+            all_successful = foreach_qmacro(opts.qmacro->stringValue(), opts.qmacro_query, this->inputs, dest);
+        } else {
+            all_successful = foreach_sections(inputs.merged, dest);
+        }
 
         processor->end();
 

@@ -38,7 +38,10 @@ arki-dump.1: src/arki-dump doc/mhooks-dump
 	COLUMNS=200 $(srcdir)/run-local help2man --include doc/mhooks-dump --name='Read data from the given input file (or stdin), and dump the in human readable format on stdout' --section=1 --no-info --version-string="$(PACKAGE_VERSION)" $< > $@ || rm -f $@
 
 arki-xargs.1: src/arki-xargs doc/mhooks-xargs
-	COLUMNS=200 $(srcdir)/run-local help2man --include doc/mhooks-xargs --name='Read data from the given input file (or stdin), and xargs the in human readable format on stdout' --section=1 --no-info --version-string="$(PACKAGE_VERSION)" $< > $@ || rm -f $@
+	COLUMNS=200 $(srcdir)/run-local help2man --include doc/mhooks-xargs --name='For every item of data read from standard input, save it on a temporary file and run 'command [initial-arguments] filename' on it' --section=1 --no-info --version-string="$(PACKAGE_VERSION)" $< > $@ || rm -f $@
+
+arki-query.1: src/arki-query doc/mhooks-query
+	COLUMNS=200 $(srcdir)/run-local help2man --include doc/mhooks-query --name='Query the datasets in the given config file for data matching the given expression, and output the matching metadata.' --section=1 --no-info --version-string="$(PACKAGE_VERSION)" $< > $@ || rm -f $@
 
 arki-%.1: src/arki-% doc/mhooks-%
 	$(srcdir)/run-local $< --manpage="$(word 2,$^)" > $@ || rm -f $@
