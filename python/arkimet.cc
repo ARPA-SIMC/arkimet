@@ -6,6 +6,7 @@
 #include "summary.h"
 #include "dataset.h"
 #include "matcher.h"
+#include "counters.h"
 #include "utils/values.h"
 #include "utils/methods.h"
 #include "utils/dict.h"
@@ -268,6 +269,7 @@ PyMODINIT_FUNC PyInit__arkimet(void)
         register_summary(m);
         register_matcher(m);
         register_dataset(m);
+        register_counters(m);
         register_arki_query(m);
         register_arki_scan(m);
         register_arki_check(m);

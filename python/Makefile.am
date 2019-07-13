@@ -18,6 +18,7 @@ _arkimet_la_SOURCES = \
     summary.cc \
     matcher.cc \
     dataset.cc \
+    counters.cc \
     arki-query.cc \
     arki-scan.cc \
     arki-check.cc \
@@ -59,6 +60,7 @@ EXTRA_DIST = \
     summary.h \
     matcher.h \
     dataset.h \
+    counters.h \
     arki-query.h \
     arki-scan.h \
     arki-check.h \
