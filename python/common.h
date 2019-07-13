@@ -11,6 +11,8 @@
 #include <arki/core/fwd.h>
 
 namespace arki {
+struct Matcher;
+
 namespace python {
 
 /// Given a generic exception, set the Python error indicator appropriately.
@@ -129,6 +131,11 @@ std::unique_ptr<core::LineReader> linereader_from_python(PyObject* o);
  * resulting function.
  */
 arki::metadata_dest_func dest_func_from_python(PyObject* o);
+
+/**
+ * Return a Matcher from a python string or arkimet.Matcher object
+ */
+arki::Matcher matcher_from_python(PyObject* o);
 
 /**
  * Initialize the python bits to use used by the common functions.

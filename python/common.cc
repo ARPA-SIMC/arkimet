@@ -1,6 +1,7 @@
 #include "common.h"
 #include "cfg.h"
 #include "metadata.h"
+#include "matcher.h"
 #include "utils/values.h"
 #include "arki/libconfig.h"
 #include "arki/core/cfg.h"
@@ -612,6 +613,14 @@ arki::metadata_dest_func dest_func_from_python(PyObject* o)
     }
     PyErr_SetString(PyExc_TypeError, "value must be a callable");
     throw PythonException();
+}
+
+arki::Matcher matcher_from_python(PyObject* o)
+{
+    if (arkipy_Matcher_Check(o))
+        return ((arkipy_Matcher*)o)->matcher;
+
+    return arki::Matcher::parse(from_python<std::string>(o));
 }
 
 int common_init()
