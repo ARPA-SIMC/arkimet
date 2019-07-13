@@ -45,7 +45,7 @@ struct StdinSource : public Source
     scan::Scanner* scanner = nullptr;
     std::shared_ptr<dataset::Reader> m_reader;
 
-    StdinSource(CommandLine& args, const std::string& format);
+    StdinSource(const std::string& format);
     ~StdinSource();
 
     std::string name() const override;
@@ -65,7 +65,7 @@ struct FileSource : public Source
     std::string moveok;
     std::string moveko;
 
-    FileSource(QueryCommandLine& args, const core::cfg::Section& info);
+    FileSource(const core::cfg::Section& info);
     FileSource(DispatchOptions& args, const core::cfg::Section& info);
 
     std::string name() const override;
@@ -83,7 +83,7 @@ struct MergedSource : public Source
     std::shared_ptr<dataset::Merged> m_reader;
     std::string m_name;
 
-    MergedSource(QueryCommandLine& args, const Inputs& inputs);
+    MergedSource(const core::cfg::Sections& inputs);
 
     std::string name() const override;
     dataset::Reader& reader() const override;
@@ -100,7 +100,7 @@ struct QmacroSource : public Source
     std::shared_ptr<dataset::Reader> m_reader;
     std::string m_name;
 
-    QmacroSource(QueryCommandLine& args, const Inputs& inputs);
+    QmacroSource(const std::string& macro_name, const std::string& macro_query, const core::cfg::Sections& inputs);
 
     std::string name() const override;
     dataset::Reader& reader() const override;
@@ -116,12 +116,10 @@ struct QmacroSource : public Source
  */
 bool foreach_source(ScanCommandLine& args, const Inputs& inputs, std::function<bool(Source&)> dest);
 
-/**
- * Instantiate all sources requested on command line.
- *
- * Return true if dest returned true (successful) on all sources.
- */
-bool foreach_source(QueryCommandLine& args, const Inputs& inputs, std::function<bool(Source&)> dest);
+bool foreach_stdin(const std::string& format, std::function<bool(Source&)> dest);
+bool foreach_merged(const core::cfg::Sections& input, std::function<bool(Source&)> dest);
+bool foreach_qmacro(const std::string& macro_name, const std::string& macro_query, const core::cfg::Sections& inputs, std::function<bool(Source&)> dest);
+bool foreach_sections(const core::cfg::Sections& inputs, std::function<bool(Source&)> dest);
 
 }
 }

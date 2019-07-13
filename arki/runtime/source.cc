@@ -50,7 +50,7 @@ bool Source::dispatch(MetadataDispatch& dispatcher)
 }
 
 
-StdinSource::StdinSource(CommandLine& args, const std::string& format)
+StdinSource::StdinSource(const std::string& format)
     : scanner(scan::Scanner::get_scanner(format).release())
 {
     core::cfg::Section cfg;
@@ -78,7 +78,7 @@ void StdinSource::open() {}
 void StdinSource::close(bool successful) {}
 
 
-FileSource::FileSource(QueryCommandLine& args, const core::cfg::Section& info)
+FileSource::FileSource(const core::cfg::Section& info)
     : cfg(info)
 {
 }
@@ -113,12 +113,12 @@ void FileSource::close(bool successful)
     m_reader = std::shared_ptr<dataset::Reader>();
 }
 
-MergedSource::MergedSource(QueryCommandLine& args, const Inputs& inputs)
+MergedSource::MergedSource(const core::cfg::Sections& inputs)
     : m_reader(std::make_shared<dataset::Merged>())
 {
-    for (auto si: inputs.merged)
+    for (auto si: inputs)
     {
-        sources.push_back(std::make_shared<FileSource>(args, si.second));
+        sources.push_back(std::make_shared<FileSource>(si.second));
         if (m_name.empty())
             m_name = sources.back()->name();
         else
@@ -146,27 +146,27 @@ void MergedSource::close(bool successful)
 }
 
 
-QmacroSource::QmacroSource(QueryCommandLine& args, const Inputs& inputs)
+QmacroSource::QmacroSource(const std::string& macro_name, const std::string& macro_query, const core::cfg::Sections& inputs)
 {
     // Create the virtual qmacro dataset
-    std::string baseurl = dataset::http::Reader::allSameRemoteServer(inputs.merged);
+    std::string baseurl = dataset::http::Reader::allSameRemoteServer(inputs);
     if (baseurl.empty())
     {
         // Create the local query macro
-        nag::verbose("Running query macro %s on local datasets", args.qmacro->stringValue().c_str());
-        m_reader = std::make_shared<Querymacro>(cfg, inputs.merged, args.qmacro->stringValue(), args.qmacro_query);
+        nag::verbose("Running query macro %s on local datasets", macro_name.c_str());
+        m_reader = std::make_shared<Querymacro>(cfg, inputs, macro_name, macro_query);
     } else {
         // Create the remote query macro
-        nag::verbose("Running query macro %s on %s", args.qmacro->stringValue().c_str(), baseurl.c_str());
+        nag::verbose("Running query macro %s on %s", macro_name.c_str(), baseurl.c_str());
         core::cfg::Section cfg;
-        cfg.set("name", args.qmacro->stringValue());
+        cfg.set("name", macro_name);
         cfg.set("type", "remote");
         cfg.set("path", baseurl);
-        cfg.set("qmacro", args.qmacro_query);
+        cfg.set("qmacro", macro_query);
         m_reader = dataset::Reader::create(cfg);
     }
 
-    m_name = args.qmacro->stringValue();
+    m_name = macro_name;
 }
 
 std::string QmacroSource::name() const { return m_name; }
@@ -182,7 +182,7 @@ bool foreach_source(ScanCommandLine& args, const Inputs& inputs, std::function<b
 
     if (args.stdin_input->isSet())
     {
-        StdinSource source(args, args.stdin_input->stringValue());
+        StdinSource source(args.stdin_input->stringValue());
         source.open();
         try {
             all_successful = dest(source);
@@ -213,70 +213,74 @@ bool foreach_source(ScanCommandLine& args, const Inputs& inputs, std::function<b
     return all_successful;
 }
 
-bool foreach_source(QueryCommandLine& args, const Inputs& inputs, std::function<bool(Source&)> dest)
+bool foreach_stdin(const std::string& format, std::function<bool(Source&)> dest)
 {
     bool all_successful = true;
-
-    if (args.stdin_input->isSet())
-    {
-        StdinSource source(args, args.stdin_input->stringValue());
-        source.open();
-        try {
-            all_successful = dest(source);
-        } catch (std::exception& e) {
-            nag::warning("%s failed: %s", source.name().c_str(), e.what());
-            all_successful = false;
-        }
-        source.close(all_successful);
-    } else {
-        if (args.merged->boolValue())
-        {
-            MergedSource source(args, inputs);
-            nag::verbose("Processing %s...", source.name().c_str());
-            source.open();
-            try {
-                all_successful = dest(source);
-            } catch (std::exception& e) {
-                nag::warning("%s failed: %s", source.name().c_str(), e.what());
-                all_successful = false;
-            }
-            source.close(all_successful);
-        } else if (args.qmacro->isSet()) {
-            QmacroSource source(args, inputs);
-            nag::verbose("Processing %s...", source.name().c_str());
-            source.open();
-            try {
-                all_successful = dest(source);
-            } catch (std::exception& e) {
-                nag::warning("%s failed: %s", source.name().c_str(), e.what());
-                all_successful = false;
-            }
-            source.close(all_successful);
-        } else {
-            // Query all the datasets in sequence
-            for (auto si: inputs.merged)
-            {
-                FileSource source(args, si.second);
-                nag::verbose("Processing %s...", source.name().c_str());
-                source.open();
-                bool success;
-                try {
-                    success = dest(source);
-                } catch (std::exception& e) {
-                    nag::warning("%s failed: %s", source.name().c_str(), e.what());
-                    success = false;
-                }
-                source.close(success);
-                if (!success) all_successful = false;
-            }
-        }
+    StdinSource source(format);
+    source.open();
+    try {
+        all_successful = dest(source);
+    } catch (std::exception& e) {
+        nag::warning("%s failed: %s", source.name().c_str(), e.what());
+        all_successful = false;
     }
-
+    source.close(all_successful);
     return all_successful;
 }
 
+bool foreach_merged(const core::cfg::Sections& input, std::function<bool(Source&)> dest)
+{
+    bool all_successful = true;
+    MergedSource source(input);
+    nag::verbose("Processing %s...", source.name().c_str());
+    source.open();
+    try {
+        all_successful = dest(source);
+    } catch (std::exception& e) {
+        nag::warning("%s failed: %s", source.name().c_str(), e.what());
+        all_successful = false;
+    }
+    source.close(all_successful);
+    return all_successful;
+}
 
+bool foreach_qmacro(const std::string& macro_name, const std::string& macro_query, const core::cfg::Sections& inputs, std::function<bool(Source&)> dest)
+{
+    bool all_successful = true;
+    QmacroSource source(macro_name, macro_query, inputs);
+    nag::verbose("Processing %s...", source.name().c_str());
+    source.open();
+    try {
+        all_successful = dest(source);
+    } catch (std::exception& e) {
+        nag::warning("%s failed: %s", source.name().c_str(), e.what());
+        all_successful = false;
+    }
+    source.close(all_successful);
+    return all_successful;
+}
 
+bool foreach_sections(const core::cfg::Sections& inputs, std::function<bool(Source&)> dest)
+{
+    bool all_successful = true;
+    // Query all the datasets in sequence
+    for (auto si: inputs)
+    {
+        FileSource source(si.second);
+        nag::verbose("Processing %s...", source.name().c_str());
+        source.open();
+        bool success;
+        try {
+            success = dest(source);
+        } catch (std::exception& e) {
+            nag::warning("%s failed: %s", source.name().c_str(), e.what());
+            success = false;
+        }
+        source.close(success);
+        if (!success) all_successful = false;
+    }
+    return all_successful;
+}
 
 }
 }

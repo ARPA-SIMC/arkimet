@@ -43,8 +43,12 @@ def dataset(srcfile):
 
 class TestArkiQuery(unittest.TestCase):
     def runcmd(self, *args):
-        arkiquery = arki.ArkiQuery()
-        return arkiquery.run(args=("arki-query",) + args)
+        # arkiquery = arki.ArkiQuery()
+        # return arkiquery.run(args=("arki-query",) + args)
+        try:
+            return Query.main(args)
+        except SystemExit as e:
+            return e.args[0]
 
     def test_postproc(self):
         with dataset("inbound/test.grib1"):
@@ -53,7 +57,7 @@ class TestArkiQuery(unittest.TestCase):
                 res = self.runcmd("--postproc=checkfiles", "", "testds", "--postproc-data=/dev/null")
             self.assertEqual(out.stderr, b"")
             self.assertEqual(out.stdout, b"/dev/null\n")
-            self.assertEqual(res, 0)
+            self.assertIsNone(res)
 
     def test_query_metadata(self):
         out = CatchOutput()
@@ -61,7 +65,7 @@ class TestArkiQuery(unittest.TestCase):
             res = self.runcmd("--data", "", "inbound/test.arkimet")
         self.assertEqual(out.stderr, b"")
         self.assertEqual(out.stdout[:4], b"GRIB")
-        self.assertEqual(res, 0)
+        self.assertIsNone(res)
 
     def test_query_merged(self):
         with dataset("inbound/fixture.grib1"):
@@ -70,7 +74,7 @@ class TestArkiQuery(unittest.TestCase):
                 res = self.runcmd("--merged", "--data", "", "testds")
             self.assertEqual(out.stderr, b"")
             self.assertEqual(out.stdout[:4], b"GRIB")
-            self.assertEqual(res, 0)
+            self.assertIsNone(res)
 
     def test_query_qmacro(self):
         with dataset("inbound/fixture.grib1"):
@@ -79,7 +83,7 @@ class TestArkiQuery(unittest.TestCase):
                 res = self.runcmd("--qmacro=noop", "--data", "testds", "testds")
             self.assertEqual(out.stderr, b"")
             self.assertEqual(out.stdout[:4], b"GRIB")
-            self.assertEqual(res, 0)
+            self.assertIsNone(res)
 
     def test_query_stdin(self):
         out = CatchOutput()
@@ -89,16 +93,16 @@ class TestArkiQuery(unittest.TestCase):
             res = self.runcmd("--stdin=grib", "--data", "")
         self.assertEqual(out.stderr, b"")
         self.assertEqual(out.stdout[:4], b"GRIB")
-        self.assertEqual(res, 0)
+        self.assertIsNone(res)
 
         with out.redirect():
             res = self.runcmd("--stdin=grib", "", "test.metadata")
         self.assertIn(b"you cannot specify input files or datasets when using --stdin", out.stderr)
         self.assertEqual(out.stdout, b"")
-        self.assertEqual(res, 1)
+        self.assertEqual(res, 2)
 
         with out.redirect():
             res = self.runcmd("--stdin=grib", "--config=/dev/null", "")
         self.assertIn(b"--stdin cannot be used together with --config", out.stderr)
         self.assertEqual(out.stdout, b"")
-        self.assertEqual(res, 1)
+        self.assertEqual(res, 2)
