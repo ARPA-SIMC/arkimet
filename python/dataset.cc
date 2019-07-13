@@ -408,9 +408,35 @@ struct get_alias_database : public MethKwargs<get_alias_database, PyObject>
     }
 };
 
+struct expand_remote_query : public MethKwargs<expand_remote_query, PyObject>
+{
+    constexpr static const char* name = "expand_remote_query";
+    constexpr static const char* signature = "remotes: arkimet.cfg.Sections, query: str";
+    constexpr static const char* returns = "str";
+    constexpr static const char* summary = "Expand aliases on the query for all remote datasets given.";
+    constexpr static const char* doc = "An exception is raised if some remotes have conflicting aliases definition.";
+
+    static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
+    {
+        static const char* kwlist[] = { "remotes", "query", nullptr };
+        PyObject* remotes = nullptr;
+        const char* query;
+        Py_ssize_t query_len;
+
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "Os#", const_cast<char**>(kwlist), &remotes, &query, &query_len))
+            return nullptr;
+
+        try {
+            std::string expanded = dataset::http::Reader::expand_remote_query(
+                    sections_from_python(remotes), std::string(query, query_len));
+            return to_python(expanded);
+        } ARKI_CATCH_RETURN_PYO
+    }
+};
 
 
-Methods<load_cfg_sections, get_alias_database> http_methods;
+
+Methods<load_cfg_sections, get_alias_database, expand_remote_query> http_methods;
 
 }
 

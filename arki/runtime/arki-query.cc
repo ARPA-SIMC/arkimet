@@ -5,6 +5,7 @@
 #include "arki/utils/commandline/parser.h"
 #include "arki/dataset.h"
 #include "arki/dataset/merged.h"
+#include "arki/dataset/http.h"
 #include "arki/utils.h"
 #include "arki/nag.h"
 #include "arki/runtime.h"
@@ -49,7 +50,7 @@ int ArkiQuery::run(int argc, const char* argv[])
 
         Matcher query;
         if (!opts.strquery.empty())
-            query = Matcher::parse(inputs.expand_remote_query(opts.strquery));
+            query = Matcher::parse(dataset::http::Reader::expand_remote_query(inputs.merged, opts.strquery));
         else
             query = Matcher::parse(opts.strquery);
 

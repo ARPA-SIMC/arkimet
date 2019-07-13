@@ -27,8 +27,6 @@ struct Inputs
     void add_pathnames_from_file(const std::string& pathname);
     void remove_unallowed(const Restrict& restrict);
     void remove_system_datasets();
-
-    std::string expand_remote_query(const std::string& query);
 };
 
 }
