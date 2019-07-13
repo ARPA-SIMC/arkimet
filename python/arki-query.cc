@@ -288,49 +288,6 @@ struct query_sections : public MethKwargs<query_sections, arkipy_ArkiQuery>
     }
 };
 
-struct run_ : public MethKwargs<run_, arkipy_ArkiQuery>
-{
-    constexpr static const char* name = "run";
-    constexpr static const char* signature = "";
-    constexpr static const char* returns = "int";
-    constexpr static const char* summary = "run arki-query";
-    constexpr static const char* doc = nullptr;
-
-    static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
-    {
-        static const char* kwlist[] = { "args", nullptr };
-        PyObject* pyargs = nullptr;
-        if (!PyArg_ParseTupleAndKeywords(args, kw, "O", const_cast<char**>(kwlist), &pyargs))
-            return nullptr;
-
-        if (!PySequence_Check(pyargs))
-        {
-            PyErr_SetString(PyExc_TypeError, "args argument must be a sequence of strings");
-            throw PythonException();
-        }
-
-        try {
-            // Unpack a sequence of strings into argc/argv
-            unsigned argc = PySequence_Size(pyargs);
-            std::vector<const char*> argv;
-            argv.reserve(argc + 1);
-            for (unsigned i = 0; i < argc; ++i)
-            {
-                pyo_unique_ptr o(throw_ifnull(PySequence_ITEM(pyargs, i)));
-                argv.emplace_back(from_python<const char*>(o));
-            }
-            argv.emplace_back(nullptr);
-
-            int res;
-            {
-                ReleaseGIL rg;
-                res = self->arki_query->run(argc, argv.data());
-            }
-            return throw_ifnull(PyLong_FromLong(res));
-        } ARKI_CATCH_RETURN_PYO
-    }
-};
-
 
 struct ArkiQueryDef : public Type<ArkiQueryDef, arkipy_ArkiQuery>
 {
@@ -340,7 +297,7 @@ struct ArkiQueryDef : public Type<ArkiQueryDef, arkipy_ArkiQuery>
 arki-query implementation
 )";
     GetSetters<> getsetters;
-    Methods<set_inputs, set_processor, run_, query_stdin, query_merged, query_qmacro, query_sections> methods;
+    Methods<set_inputs, set_processor, query_stdin, query_merged, query_qmacro, query_sections> methods;
 
     static void _dealloc(Impl* self)
     {

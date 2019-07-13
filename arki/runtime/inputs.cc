@@ -48,50 +48,6 @@ Inputs::Inputs(core::cfg::Sections& merged, ScanCommandLine& args)
     }
 }
 
-Inputs::Inputs(core::cfg::Sections& merged, QueryCommandLine& args)
-    : merged(merged)
-{
-    if (args.stdin_input->isSet())
-    {
-        if (args.hasNext())
-            throw commandline::BadOption("you cannot specify input files or datasets when using --stdin");
-        if (args.cfgfiles->isSet())
-            throw commandline::BadOption("--stdin cannot be used together with --config");
-        if (args.restr->isSet())
-            throw commandline::BadOption("--stdin cannot be used together with --restr");
-        if (args.qmacro->isSet())
-            throw commandline::BadOption("--stdin cannot be used together with --qmacro");
-    } else {
-        // From -C options, looking for config files or datasets
-        for (const auto& pathname : args.cfgfiles->values())
-            add_config_file(pathname);
-
-        while (args.hasNext()) // From command line arguments, looking for data files or datasets
-            add_pathname(args.next());
-
-        if (merged.empty())
-            throw commandline::BadOption("you need to specify at least one input file or dataset");
-
-        // Filter the dataset list
-        if (args.restr->isSet())
-        {
-            Restrict rest(args.restr->stringValue());
-            remove_unallowed(rest);
-            if (merged.empty())
-                throw commandline::BadOption("no accessible datasets found for the given --restrict value");
-        }
-
-        // Some things cannot be done when querying multiple datasets at the same time
-        if (merged.size() > 1 && !(args.qmacro->isSet()))
-        {
-            if (args.postprocess->boolValue())
-                throw commandline::BadOption("postprocessing is not possible when querying more than one dataset at the same time");
-            if (args.report->boolValue())
-                throw commandline::BadOption("reports are not possible when querying more than one dataset at the same time");
-        }
-    }
-}
-
 void Inputs::add_section(const core::cfg::Section& section, const std::string& name_)
 {
     std::string name = name_.empty() ? section.value("name") : name_;

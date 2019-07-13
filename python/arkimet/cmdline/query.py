@@ -1,6 +1,6 @@
 import arkimet as arki
-from arkimet.cmdline.base import App, Exit
-import sys
+from arkimet.cmdline.base import App
+import itertools
 import re
 import os
 import logging
@@ -174,14 +174,36 @@ class Query(DatasetCmd):
                 if self.args.report:
                     self.parser.error("reports are not possible when querying more than one dataset at the same time")
 
+    def check_mutually_exclusive_options(self, *names):
+        for first, second in itertools.combinations(names, 2):
+            if getattr(self.args, first) and getattr(self.args, second):
+                self.parser.error("--{} conflicts with --{}".format(first, second))
+
     def run(self):
         super().run()
         self.build_config()
 
-        # TODO processor::verify_option_consistency(*this);
+        self.check_mutually_exclusive_options(
+                "inline", "yaml", "summary", "summary_short", "data",
+                "postproc", "archive", "json")
+
+        self.check_mutually_exclusive_options(
+                "inline", "yaml", "report", "summary_short", "data",
+                "postproc", "archive", "json")
+
+        self.check_mutually_exclusive_options(
+                "annotate", "inline", "report", "summary_short", "data",
+                "postproc", "archive")
+
+        self.check_mutually_exclusive_options(
+                "sort", "report", "summary", "summary_short")
+
+        if self.args.summary_restrict and not self.args.summary:
+            self.parser.error("--summary-restrict only makes sense with --summary")
 
         if self.args.postproc and self.args.targetfile:
             self.parser.error("--postproc conflicts with --targetfile")
+
         if self.args.postproc_data and not self.args.postproc:
             self.parser.error("--postproc-data only makes sense with --postproc")
 
