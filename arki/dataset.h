@@ -262,9 +262,14 @@ public:
     static std::unique_ptr<Reader> create(const core::cfg::Section& cfg);
 
     /**
-     * Read the configuration of the dataset(s) at the given path or URL
+     * Read the configuration of the dataset at the given path or URL
      */
     static core::cfg::Section read_config(const std::string& path);
+
+    /**
+     * Read a multi-dataset configuration at the given path or URL
+     */
+    static core::cfg::Sections read_configs(const std::string& path);
 };
 
 struct WriterBatchElement

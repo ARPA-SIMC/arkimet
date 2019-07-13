@@ -175,11 +175,29 @@ core::cfg::Section LocalReader::read_config(const std::string& path)
         res.set("path", sys::abspath(fname));
         return res;
     } else {
-        // If it's a file, then it's a merged config file
+        // If it's a file, then it's the config file for one dataset
         File in(fname, O_RDONLY);
         // Parse the config file
         return core::cfg::Section::parse(in);
     }
+}
+
+core::cfg::Sections LocalReader::read_configs(const std::string& path)
+{
+    if (path == "-")
+    {
+        // Parse the config file from stdin
+        Stdin in;
+        return core::cfg::Sections::parse(in);
+    }
+
+    // Remove trailing slashes, if any
+    string fname = path;
+    while (!fname.empty() && fname[fname.size() - 1] == '/')
+        fname.resize(fname.size() - 1);
+
+    File in(fname, O_RDONLY);
+    return core::cfg::Sections::parse(in);
 }
 
 
