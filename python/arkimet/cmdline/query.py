@@ -10,7 +10,12 @@ log = logging.getLogger("arki-query")
 re_stringlist = re.compile(r"[\s,]+")
 
 
-class DatasetCmd(App):
+class Query(App):
+    """
+    Query the datasets in the given config file for data matching the given
+    expression, and output the matching metadata.
+    """
+
     def __init__(self):
         super().__init__()
         self.config = None
@@ -59,26 +64,6 @@ class DatasetCmd(App):
                                           " by origin first, then by reverse timerange, then by reftime."
                                           " Default: do not sort")
 
-    def _add_config(self, section, name=None):
-        if name is None:
-            name = section["name"]
-
-        old = self.config.section(name)
-        if old is not None:
-            log.warning("ignoring dataset %s in %s, which has the same name as the dataset in %s",
-                        name, section["path"], old["path"])
-        self.config[name] = section
-        self.config[name]["name"] = name
-
-
-class Query(DatasetCmd):
-    """
-    Query the datasets in the given config file for data matching the given
-    expression, and output the matching metadata.
-    """
-
-    def __init__(self):
-        super().__init__()
         # arki-query
         self.parser.add_argument("--config", "-C", metavar="file", action="append",
                                  help="read configuration about input sources from the given file"
@@ -108,6 +93,17 @@ class Query(DatasetCmd):
         self.parser_out.add_argument("--postproc-data", metavar="file", action="append",
                                      help="when querying a remote server with postprocessing, upload a file"
                                           " to be used by the postprocessor (can be given more than once)")
+
+    def _add_config(self, section, name=None):
+        if name is None:
+            name = section["name"]
+
+        old = self.config.section(name)
+        if old is not None:
+            log.warning("ignoring dataset %s in %s, which has the same name as the dataset in %s",
+                        name, section["path"], old["path"])
+        self.config[name] = section
+        self.config[name]["name"] = name
 
     def build_config(self):
         self.config = arki.cfg.Sections()
