@@ -335,7 +335,7 @@ If the import failed, a subclass of arki.dataset.ImportError is raised.
         Py_ssize_t arg_replace_len;
         int drop_cached_data_on_commit = 0;
         if (!PyArg_ParseTupleAndKeywords(args, kw, "O!|s#p", const_cast<char**>(kwlist),
-                &arkipy_Metadata_Type, &arg_md,
+                arkipy_Metadata_Type, &arg_md,
                 &arg_replace, &arg_replace_len, &drop_cached_data_on_commit))
             return nullptr;
 

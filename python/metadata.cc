@@ -5,7 +5,10 @@
 #include "arki/metadata.h"
 #include "arki/core/file.h"
 #include "arki/types/source.h"
-#include "config.h"
+#include "utils/core.h"
+#include "utils/methods.h"
+#include "utils/type.h"
+#include "utils/values.h"
 
 using namespace std;
 using namespace arki;
@@ -14,173 +17,161 @@ using namespace arki::python;
 
 extern "C" {
 
+PyTypeObject* arkipy_Metadata_Type = nullptr;
+
+}
+
+namespace {
+
 /*
  * Metadata
  */
 
-static PyObject* arkipy_Metadata_write(arkipy_Metadata* self, PyObject *args, PyObject* kw)
+struct write : public MethKwargs<write, arkipy_Metadata>
 {
-    static const char* kwlist[] = { "file", "format", NULL };
-    PyObject* arg_file = Py_None;
-    const char* format = nullptr;
+    constexpr static const char* name = "write";
+    constexpr static const char* signature = "file: BytesIO, format: str";
+    constexpr static const char* returns = "None";
+    constexpr static const char* summary = "Write the metadata to a file";
+    constexpr static const char* doc = R"(
+Arguments:
+  file: the output file. The file needs to be either an integer file or
+        socket handle, or a file-like object with a fileno() method
+        that returns an integer handle.
+  format: "binary", "yaml", or "json". Default: "binary".
+)";
 
-    if (!PyArg_ParseTupleAndKeywords(args, kw, "O|s", (char**)kwlist, &arg_file, &format))
-        return nullptr;
+    static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
+    {
+        static const char* kwlist[] = { "file", "format", NULL };
+        PyObject* arg_file = Py_None;
+        const char* format = nullptr;
 
-    int fd = file_get_fileno(arg_file);
-    if (fd == -1) return nullptr;
-    string fd_name;
-    if (object_repr(arg_file, fd_name) == -1) return nullptr;
-
-    try {
-        if (!format || strcmp(format, "binary") == 0)
-        {
-            NamedFileDescriptor out(fd, fd_name);
-            self->md->write(out);
-        } else if (strcmp(format, "yaml") == 0) {
-            PyErr_SetString(PyExc_NotImplementedError, "serializing to YAML is not yet implemented");
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "O|s", (char**)kwlist, &arg_file, &format))
             return nullptr;
-        } else if (strcmp(format, "json") == 0) {
-            PyErr_SetString(PyExc_NotImplementedError, "serializing to JSON is not yet implemented");
-            return nullptr;
-        } else {
-            PyErr_Format(PyExc_ValueError, "Unsupported metadata serializati format: %s", format);
-            return nullptr;
-        }
-        Py_RETURN_NONE;
-    } ARKI_CATCH_RETURN_PYO
-}
 
-static PyObject* arkipy_Metadata_make_inline(arkipy_Metadata* self, PyObject *null)
-{
-    try {
-        self->md->makeInline();
-        Py_RETURN_NONE;
-    } ARKI_CATCH_RETURN_PYO
-}
+        try {
+            int fd = file_get_fileno(arg_file);
+            if (fd == -1) return nullptr;
+            std::string fd_name;
+            if (object_repr(arg_file, fd_name) == -1) return nullptr;
 
-static PyObject* arkipy_Metadata_make_url(arkipy_Metadata* self, PyObject *args, PyObject* kw)
-{
-    static const char* kwlist[] = { "baseurl", NULL };
-    const char* url = nullptr;
-
-    if (!PyArg_ParseTupleAndKeywords(args, kw, "s", (char**)kwlist, &url))
-        return nullptr;
-
-    try {
-        self->md->set_source(types::Source::createURL(self->md->source().format, url));
-        Py_RETURN_NONE;
-    } ARKI_CATCH_RETURN_PYO
-}
-
-static PyObject* arkipy_Metadata_to_python(arkipy_Metadata* self, PyObject *null)
-{
-    try {
-        PythonEmitter e;
-        self->md->serialise(e);
-        return e.release();
-    } ARKI_CATCH_RETURN_PYO
-}
-
-
-static PyMethodDef arkipy_Metadata_methods[] = {
-    {"write", (PyCFunction)arkipy_Metadata_write, METH_VARARGS | METH_KEYWORDS, R"(
-        Write the metadata to a file.
-
-        Arguments:
-          file: the output file. The file needs to be either an integer file or
-                socket handle, or a file-like object with a fileno() method
-                that returns an integer handle.
-          format: "binary", "yaml", or "json". Default: "binary".
-        )" },
-    {"make_inline", (PyCFunction)arkipy_Metadata_make_inline, METH_NOARGS, R"(
-        Read the data and inline them in the metadata.
-        )" },
-    {"make_url", (PyCFunction)arkipy_Metadata_make_url, METH_VARARGS | METH_KEYWORDS, R"(
-        Set the data source as URL.
-
-        Arguments:
-          baseurl: the base URL that identifies the dataset
-        )" },
-    {"to_python", (PyCFunction)arkipy_Metadata_to_python, METH_NOARGS, R"(
-        Return the metadata contents in a python dict
-        )" },
-    {NULL}
+            if (!format || strcmp(format, "binary") == 0)
+            {
+                NamedFileDescriptor out(fd, fd_name);
+                self->md->write(out);
+            } else if (strcmp(format, "yaml") == 0) {
+                PyErr_SetString(PyExc_NotImplementedError, "serializing to YAML is not yet implemented");
+                return nullptr;
+            } else if (strcmp(format, "json") == 0) {
+                PyErr_SetString(PyExc_NotImplementedError, "serializing to JSON is not yet implemented");
+                return nullptr;
+            } else {
+                PyErr_Format(PyExc_ValueError, "Unsupported metadata serializati format: %s", format);
+                return nullptr;
+            }
+            Py_RETURN_NONE;
+        } ARKI_CATCH_RETURN_PYO
+    }
 };
 
-static int arkipy_Metadata_init(arkipy_Metadata* self, PyObject* args, PyObject* kw)
+struct make_inline : public MethNoargs<make_inline, arkipy_Metadata>
 {
-    // Metadata() should not be invoked as a constructor, and if someone does
-    // this is better than a segfault later on
-    PyErr_SetString(PyExc_NotImplementedError, "Cursor objects cannot be constructed explicitly");
-    return -1;
-}
+    constexpr static const char* name = "make_inline";
+    constexpr static const char* signature = "";
+    constexpr static const char* returns = "";
+    constexpr static const char* summary = "Read the data and inline them in the metadata";
 
-static void arkipy_Metadata_dealloc(arkipy_Metadata* self)
-{
-    delete self->md;
-    self->md = nullptr;
-    Py_TYPE(self)->tp_free((PyObject*)self);
-}
-
-static PyObject* arkipy_Metadata_str(arkipy_Metadata* self)
-{
-    return PyUnicode_FromFormat("Metadata");
-}
-
-static PyObject* arkipy_Metadata_repr(arkipy_Metadata* self)
-{
-    return PyUnicode_FromFormat("Metadata");
-}
-
-PyTypeObject arkipy_Metadata_Type = {
-    PyVarObject_HEAD_INIT(NULL, 0)
-    "arkimet.Metadata",   // tp_name
-    sizeof(arkipy_Metadata), // tp_basicsize
-    0,                         // tp_itemsize
-    (destructor)arkipy_Metadata_dealloc, // tp_dealloc
-    0,                         // tp_print
-    0,                         // tp_getattr
-    0,                         // tp_setattr
-    0,                         // tp_compare
-    (reprfunc)arkipy_Metadata_repr, // tp_repr
-    0,                         // tp_as_number
-    0,                         // tp_as_sequence
-    0,                         // tp_as_mapping
-    0,                         // tp_hash
-    0,                         // tp_call
-    (reprfunc)arkipy_Metadata_str,  // tp_str
-    0,                         // tp_getattro
-    0,                         // tp_setattro
-    0,                         // tp_as_buffer
-    Py_TPFLAGS_DEFAULT,        // tp_flags
-    R"(
-        Arkimet metadata
-
-        TODO: document
-
-        Examples::
-
-            TODO: add examples
-    )",                        // tp_doc
-    0,                         // tp_traverse
-    0,                         // tp_clear
-    0,                         // tp_richcompare
-    0,                         // tp_weaklistoffset
-    0,                         // tp_iter
-    0,                         // tp_iternext
-    arkipy_Metadata_methods, // tp_methods
-    0,                         // tp_members
-    0,                         // tp_getset
-    0,                         // tp_base
-    0,                         // tp_dict
-    0,                         // tp_descr_get
-    0,                         // tp_descr_set
-    0,                         // tp_dictoffset
-    (initproc)arkipy_Metadata_init, // tp_init
-    0,                         // tp_alloc
-    0,                         // tp_new
+    static PyObject* run(Impl* self)
+    {
+        try {
+            self->md->makeInline();
+            Py_RETURN_NONE;
+        } ARKI_CATCH_RETURN_PYO
+    }
 };
+
+struct make_url : public MethKwargs<make_url, arkipy_Metadata>
+{
+    constexpr static const char* name = "make_url";
+    constexpr static const char* signature = "baseurl: str";
+    constexpr static const char* returns = "None";
+    constexpr static const char* summary = "Set the data source as URL";
+    constexpr static const char* doc = R"(
+Arguments:
+  baseurl: the base URL that identifies the dataset
+)";
+
+    static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
+    {
+        static const char* kwlist[] = { "baseurl", NULL };
+        const char* url = nullptr;
+
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "s", (char**)kwlist, &url))
+            return nullptr;
+
+        try {
+            self->md->set_source(types::Source::createURL(self->md->source().format, url));
+            Py_RETURN_NONE;
+        } ARKI_CATCH_RETURN_PYO
+    }
+};
+
+struct to_python : public MethNoargs<to_python, arkipy_Metadata>
+{
+    constexpr static const char* name = "to_python";
+    constexpr static const char* signature = "";
+    constexpr static const char* returns = "";
+    constexpr static const char* summary = "Return the metadata contents in a python dict";
+
+    static PyObject* run(Impl* self)
+    {
+        try {
+            PythonEmitter e;
+            self->md->serialise(e);
+            return e.release();
+        } ARKI_CATCH_RETURN_PYO
+    }
+};
+
+
+struct MetadataDef : public Type<MetadataDef, arkipy_Metadata>
+{
+    constexpr static const char* name = "Metadata";
+    constexpr static const char* qual_name = "arkimet.Metadata";
+    constexpr static const char* doc = R"(
+Arkimet metadata for one data item
+)";
+    GetSetters<> getsetters;
+    Methods<write, make_inline, make_url, to_python> methods;
+
+    static void _dealloc(Impl* self)
+    {
+        delete self->md;
+        self->md = nullptr;
+        Py_TYPE(self)->tp_free(self);
+    }
+
+    static PyObject* _str(Impl* self)
+    {
+        return PyUnicode_FromFormat("Metadata");
+    }
+
+    static PyObject* _repr(Impl* self)
+    {
+        return PyUnicode_FromFormat("Metadata()");
+    }
+
+    static int _init(Impl* self, PyObject* args, PyObject* kw)
+    {
+        // Metadata() should not be invoked as a constructor, and if someone does
+        // this is better than a segfault later on
+        PyErr_SetString(PyExc_NotImplementedError, "Cursor objects cannot be constructed explicitly");
+        return -1;
+    }
+};
+
+MetadataDef* metadata_def = nullptr;
 
 }
 
@@ -189,7 +180,7 @@ namespace python {
 
 arkipy_Metadata* metadata_create(std::unique_ptr<Metadata>&& md)
 {
-    arkipy_Metadata* result = PyObject_New(arkipy_Metadata, &arkipy_Metadata_Type);
+    arkipy_Metadata* result = PyObject_New(arkipy_Metadata, arkipy_Metadata_Type);
     if (!result) return nullptr;
     result->md = md.release();
     return result;
@@ -197,14 +188,8 @@ arkipy_Metadata* metadata_create(std::unique_ptr<Metadata>&& md)
 
 void register_metadata(PyObject* m)
 {
-    common_init();
-
-    arkipy_Metadata_Type.tp_new = PyType_GenericNew;
-    if (PyType_Ready(&arkipy_Metadata_Type) < 0)
-        return;
-    Py_INCREF(&arkipy_Metadata_Type);
-
-    PyModule_AddObject(m, "Metadata", (PyObject*)&arkipy_Metadata_Type);
+    metadata_def = new MetadataDef;
+    metadata_def->define(arkipy_Metadata_Type, m);
 }
 
 }
