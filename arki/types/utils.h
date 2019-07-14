@@ -56,34 +56,31 @@ struct MetadataType
     typedef std::unique_ptr<Type> (*string_decoder)(const std::string& val);
     typedef std::unique_ptr<Type> (*mapping_decoder)(const emitter::memory::Mapping& val);
     typedef void (*lua_libloader)(lua_State* L);
-    typedef void (*intern_stats)();
 
-	types::Code type_code;
-	int serialisationSizeLen;
-	std::string tag;
-	item_decoder decode_func;
-	string_decoder string_decode_func;
-	mapping_decoder mapping_decode_func;
-	lua_libloader lua_loadlib_func;
-	intern_stats intern_stats_func;
-	
-	MetadataType(
-		types::Code type_code,
-		int serialisationSizeLen,
-		const std::string& tag,
-		item_decoder decode_func,
-		string_decoder string_decode_func,
-		mapping_decoder mapping_decode_func,
-		lua_libloader lua_loadlib_func,
-		intern_stats intern_stats_func = 0
-		);
-	~MetadataType();
+    types::Code type_code;
+    int serialisationSizeLen;
+    std::string tag;
+    item_decoder decode_func;
+    string_decoder string_decode_func;
+    mapping_decoder mapping_decode_func;
+    lua_libloader lua_loadlib_func;
+
+    MetadataType(
+        types::Code type_code,
+        int serialisationSizeLen,
+        const std::string& tag,
+        item_decoder decode_func,
+        string_decoder string_decode_func,
+        mapping_decoder mapping_decode_func,
+        lua_libloader lua_loadlib_func
+    );
+    ~MetadataType();
 
 	// Get information about the given metadata
 	static const MetadataType* get(types::Code);
 
     template<typename T>
-    static MetadataType create(intern_stats intern_stats_func = 0)
+    static MetadataType create()
     {
         return MetadataType(
             traits<T>::type_code,
@@ -92,13 +89,12 @@ struct MetadataType
             (MetadataType::item_decoder)T::decode,
             (MetadataType::string_decoder)T::decodeString,
             (MetadataType::mapping_decoder)T::decodeMapping,
-            T::lua_loadlib,
-            intern_stats_func
+            T::lua_loadlib
         );
     }
 
     template<typename T>
-    static void register_type(intern_stats intern_stats_func = 0)
+    static void register_type()
     {
         static_assert(is_item_decoder<decltype(T::decode)>::value, "decode function must take a BinaryDecoder as argument");
         // FIXME: when we remove create() we can make MetadataType not register
@@ -110,15 +106,12 @@ struct MetadataType
             (MetadataType::item_decoder)T::decode,
             (MetadataType::string_decoder)T::decodeString,
             (MetadataType::mapping_decoder)T::decodeMapping,
-            T::lua_loadlib,
-            intern_stats_func
+            T::lua_loadlib
         );
     }
 
 	static void lua_loadlib(lua_State* L);
 };
-
-void debug_intern_stats();
 
 // Parse the outer style of a TYPE(val1, val2...) string
 template<typename T>
