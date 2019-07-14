@@ -23,6 +23,7 @@
 #include "arki/dataset/http.h"
 #include "arki/querymacro.h"
 #include "arki/nag.h"
+#include "arki/libconfig.h"
 #include "config.h"
 
 using namespace std;
@@ -237,6 +238,13 @@ struct config : public MethNoargs<config, PyObject>
 
 Methods<expand_query, get_alias_database, make_merged_dataset, make_qmacro_dataset, get_version, set_verbosity, config> methods;
 
+void add_feature(PyObject* set, const char* feature)
+{
+    pyo_unique_ptr name(to_python(feature));
+    if (PySet_Add(set, name) == -1)
+        throw PythonException();
+}
+
 }
 
 extern "C" {
@@ -264,6 +272,48 @@ PyMODINIT_FUNC PyInit__arkimet(void)
     if (!m) return m;
 
     try {
+        pyo_unique_ptr features(throw_ifnull(PyFrozenSet_New(nullptr)));
+
+#ifdef HAVE_DBALLE
+        add_feature(features, "dballe");
+#endif
+#ifdef HAVE_GEOS
+        add_feature(features, "geos");
+#endif
+#ifdef HAVE_GRIBAPI
+        add_feature(features, "grib");
+#endif
+#ifdef HAVE_HDF5
+        add_feature(features, "hdf5");
+#endif
+#ifdef HAVE_VM2
+        add_feature(features, "vm2");
+#endif
+#ifdef HAVE_CURL
+        add_feature(features, "curl");
+#endif
+#ifdef HAVE_LUA
+        add_feature(features, "lua");
+#endif
+#ifdef HAVE_LIBARCHIVE
+        add_feature(features, "libarchive");
+#endif
+#ifdef HAVE_LIBZIP
+        add_feature(features, "libzip");
+#endif
+#ifdef HAVE_SQLITE3
+        add_feature(features, "sqlite");
+#endif
+#ifdef HAVE_SPLICE
+        add_feature(features, "splice");
+#endif
+#ifdef HAVE_IOTRACE
+        add_feature(features, "iotrace");
+#endif
+
+        if (PyModule_AddObject(m, "features", features.release()) == -1)
+            throw PythonException();
+
         register_cfg(m);
         register_metadata(m);
         register_summary(m);
@@ -276,9 +326,7 @@ PyMODINIT_FUNC PyInit__arkimet(void)
         register_arki_dump(m);
         register_arki_xargs(m);
         register_arki_bufr_prepare(m);
-    } catch (PythonException&) {
-        return nullptr;
-    }
+    } ARKI_CATCH_RETURN_PYO
 
     return m;
 }
