@@ -7,37 +7,47 @@ from arkimet.test import CatchOutput
 
 
 @contextmanager
-def dataset(srcfile):
+def datasets():
     try:
-        shutil.rmtree("testds")
+        shutil.rmtree("testenv")
     except FileNotFoundError:
         pass
-    os.mkdir("testds")
+    os.mkdir("testenv")
+    os.mkdir("testenv/testds")
+    os.mkdir("testenv/error")
 
-    cfg = arki.cfg.Section({
+    ds_cfg = arki.cfg.Section({
         "format": "grib",
         "name": "testds",
-        "path": "testds",
+        "path": os.path.abspath("testenv/testds"),
         "type": "iseg",
+        "step": "daily",
+        "filter": "origin:GRIB1",
+    })
+
+    error_cfg = arki.cfg.Section({
+        "name": "error",
+        "path": os.path.abspath("testenv/error"),
+        "type": "error",
         "step": "daily",
     })
 
-    with open("testds/config", "wt") as fd:
-        cfg.write(fd)
+    config = arki.cfg.Sections()
+    config["testds"] = ds_cfg
+    config["error"] = error_cfg
 
-    src_cfg = arki.dataset.read_config(srcfile)
-    source = arki.dataset.Reader(src_cfg)
-    dest = arki.dataset.Writer(cfg)
+    with open("testenv/config", "wt") as fd:
+        config.write(fd)
 
-    def do_import(md):
-        dest.acquire(md)
+    with open("testenv/testds/config", "wt") as fd:
+        ds_cfg.write(fd)
 
-    source.query_data(on_metadata=do_import)
-    dest.flush()
+    with open("testenv/testds/error", "wt") as fd:
+        error_cfg.write(fd)
 
-    yield cfg
+    yield config
 
-    shutil.rmtree("testds")
+    shutil.rmtree("testenv")
 
 
 class TestArkiQuery(unittest.TestCase):
@@ -51,15 +61,6 @@ class TestArkiQuery(unittest.TestCase):
         #     return Query.main(args)
         # except SystemExit as e:
         #     return e.args[0]
-
-#     def test_stdin1(self):
-#         with dataset("inbound/test.grib1"):
-#             out = CatchOutput()
-#             with out.redirect():
-#                 res = self.runcmd("--postproc=checkfiles", "", "testds", "--postproc-data=/dev/null")
-#             self.assertEqual(out.stderr, b"")
-#             self.assertEqual(out.stdout, b"/dev/null\n")
-#             self.assertIsNone(res)
 
     def read(self, fname):
         with open(fname, "rb") as fd:
@@ -158,3 +159,30 @@ class TestArkiQuery(unittest.TestCase):
         self.assertEqual(out.stderr, b"file - does not exist\n")
         self.assertEqual(out.stdout, b"")
         self.assertEqual(res, 1)
+
+    def test_dispatch_plain(self):
+        with datasets():
+            arki.counters.acquire_single_count.reset()
+            arki.counters.acquire_batch_count.reset()
+
+            out = CatchOutput()
+            with out.redirect():
+                res = self.runcmd("--dispatch=testenv/config", "inbound/test.grib1")
+            self.assertEqual(out.stderr, b"")
+            self.assertIsNone(res)
+
+            mds = []
+
+            def on_metadata(md):
+                mds.append(md)
+
+            arki.Metadata.read(out.stdout, dest=on_metadata)
+
+            self.assertEqual(len(mds), 3)
+
+            self.assertEqual(mds[0].to_python("source")["file"], os.path.abspath("testenv/testds/2007/07-08.grib"))
+            self.assertEqual(mds[1].to_python("source")["file"], os.path.abspath("testenv/testds/2007/07-07.grib"))
+            self.assertEqual(mds[2].to_python("source")["file"], os.path.abspath("testenv/testds/2007/10-09.grib"))
+
+            self.assertEqual(arki.counters.acquire_single_count.value, 0)
+            self.assertEqual(arki.counters.acquire_batch_count.value, 1)

@@ -52,32 +52,6 @@ class Tests : public FixtureTestCase<Fixture>
 
 void Tests::register_tests() {
 
-add_method("dispatch_plain", [](Fixture& f) {
-    using runtime::tests::run_cmdline;
-
-    acct::acquire_single_count.reset();
-    acct::acquire_batch_count.reset();
-
-    metadata::Collection mds;
-    {
-        runtime::tests::CatchOutput co;
-        int res = run_cmdline<runtime::ArkiScan>({
-            "arki-scan",
-            "--dispatch=test-dispatch",
-            "inbound/test.grib1",
-        });
-        wassert(co.check_success(res));
-        mds.read_from_file(co.file_stdout.name());
-    }
-
-    wassert(actual(mds.size()) == 3u);
-    wassert(actual(mds[0].sourceBlob().filename) == sys::abspath("testds/2007/07-08.grib"));
-    wassert(actual(mds[1].sourceBlob().filename) == sys::abspath("testds/2007/07-07.grib"));
-    wassert(actual(mds[2].sourceBlob().filename) == sys::abspath("testds/2007/10-09.grib"));
-    wassert(actual(acct::acquire_single_count.val()) == 0u);
-    wassert(actual(acct::acquire_batch_count.val()) == 1u);
-});
-
 add_method("dispatch_flush_threshold", [](Fixture& f) {
     using runtime::tests::run_cmdline;
 
