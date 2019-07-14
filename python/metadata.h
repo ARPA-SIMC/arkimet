@@ -16,11 +16,11 @@ typedef struct {
     arki::Metadata* md;
 } arkipy_Metadata;
 
-PyAPI_DATA(PyTypeObject) arkipy_Metadata_Type;
+extern PyTypeObject* arkipy_Metadata_Type;
 
 #define arkipy_Metadata_Check(ob) \
-    (Py_TYPE(ob) == &arkipy_Metadata_Type || \
-     PyType_IsSubtype(Py_TYPE(ob), &arkipy_Metadata_Type))
+    (Py_TYPE(ob) == arkipy_Metadata_Type || \
+     PyType_IsSubtype(Py_TYPE(ob), arkipy_Metadata_Type))
 }
 
 namespace arki {
