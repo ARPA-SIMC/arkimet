@@ -178,39 +178,12 @@ void QmacroSource::close(bool successful) {}
 
 bool foreach_source(ScanCommandLine& args, const Inputs& inputs, std::function<bool(Source&)> dest)
 {
-    bool all_successful = true;
-
     if (args.stdin_input->isSet())
     {
-        StdinSource source(args.stdin_input->stringValue());
-        source.open();
-        try {
-            all_successful = dest(source);
-        } catch (std::exception& e) {
-            nag::warning("%s failed: %s", source.name().c_str(), e.what());
-            all_successful = false;
-        }
-        source.close(all_successful);
+        return foreach_stdin(args.stdin_input->stringValue(), dest);
     } else {
-        // Query all the datasets in sequence
-        for (auto si: inputs.merged)
-        {
-            FileSource source(*args.dispatch_options, si.second);
-            nag::verbose("Processing %s...", source.name().c_str());
-            source.open();
-            bool success;
-            try {
-                success = dest(source);
-            } catch (std::exception& e) {
-                nag::warning("%s failed: %s", source.name().c_str(), e.what());
-                success = false;
-            }
-            source.close(success);
-            if (!success) all_successful = false;
-        }
+        return foreach_sections(inputs.merged, dest);
     }
-
-    return all_successful;
 }
 
 bool foreach_stdin(const std::string& format, std::function<bool(Source&)> dest)
