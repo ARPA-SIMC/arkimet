@@ -42,6 +42,10 @@ template<> inline int from_python<int>(PyObject* o) { return int_from_python(o);
 PyObject* int_to_python(int val);
 inline PyObject* to_python(int val) { return int_to_python(val); }
 
+/// Convert an int to a Python object
+PyObject* size_t_to_python(size_t val);
+inline PyObject* to_python(size_t val) { return size_t_to_python(val); }
+
 /// Convert a Python object to a double
 double double_from_python(PyObject* o);
 template<> inline double from_python<double>(PyObject* o) { return double_from_python(o); }

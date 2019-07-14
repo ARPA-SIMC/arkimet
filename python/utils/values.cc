@@ -48,6 +48,11 @@ PyObject* int_to_python(int val)
     return throw_ifnull(PyLong_FromLong(val));
 }
 
+PyObject* size_t_to_python(size_t val)
+{
+    return throw_ifnull(PyLong_FromLong(val));
+}
+
 double double_from_python(PyObject* o)
 {
     double res = PyFloat_AsDouble(o);
