@@ -117,18 +117,41 @@ Arguments:
     }
 };
 
-struct to_python : public MethNoargs<to_python, arkipy_Metadata>
+struct to_python : public MethKwargs<to_python, arkipy_Metadata>
 {
     constexpr static const char* name = "to_python";
-    constexpr static const char* signature = "";
-    constexpr static const char* returns = "";
+    constexpr static const char* signature = "type: str=None";
+    constexpr static const char* returns = "dict";
     constexpr static const char* summary = "Return the metadata contents in a python dict";
 
-    static PyObject* run(Impl* self)
+    static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
     {
+        static const char* kwlist[] = { "baseurl", NULL };
+        const char* py_type = nullptr;
+        Py_ssize_t py_type_len;
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "|z#", (char**)kwlist, &py_type, &py_type_len))
+            return nullptr;
+
         try {
             PythonEmitter e;
-            self->md->serialise(e);
+            if (py_type)
+            {
+                arki::types::Code code = arki::types::parseCodeName(std::string(py_type, py_type_len));
+                if (code == arki::TYPE_SOURCE)
+                {
+                    if (!self->md->has_source())
+                        Py_RETURN_NONE;
+                    else
+                        self->md->source().serialise(e);
+                } else {
+                    const types::Type* item = self->md->get(code);
+                    if (!item)
+                        Py_RETURN_NONE;
+                    item->serialise(e);
+                }
+            } else {
+                self->md->serialise(e);
+            }
             return e.release();
         } ARKI_CATCH_RETURN_PYO
     }
