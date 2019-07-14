@@ -17,36 +17,50 @@ PyTypeObject* arkipy_countersCounter_Type = nullptr;
 
 namespace {
 
-#if 0
-struct expanded : public Getter<expanded, arkipy_Matcher>
+struct value : public Getter<value, arkipy_countersCounter>
 {
-    constexpr static const char* name = "expanded";
-    constexpr static const char* doc = "return the query with all aliases expanded";
+    constexpr static const char* name = "value";
+    constexpr static const char* doc = "return the counter value";
     constexpr static void* closure = nullptr;
 
     static PyObject* get(Impl* self, void* closure)
     {
         try {
-            return to_python(self->matcher->toStringExpanded());
+            return to_python(self->counter->val());
         } ARKI_CATCH_RETURN_PYO;
     }
 };
 
-struct match : public MethKwargs<match, arkipy_Matcher>
+struct description : public Getter<description, arkipy_countersCounter>
 {
-    constexpr static const char* name = "match";
-    constexpr static const char* signature = "?";
-    constexpr static const char* returns = "bool";
-    constexpr static const char* summary = "return the result of trying to match the given ?";
-    constexpr static const char* doc = nullptr;
+    constexpr static const char* name = "name";
+    constexpr static const char* doc = "return the counter description";
+    constexpr static void* closure = nullptr;
 
-    static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
+    static PyObject* get(Impl* self, void* closure)
     {
         try {
+            return to_python(self->counter->name());
+        } ARKI_CATCH_RETURN_PYO;
+    }
+};
+
+struct reset : public MethNoargs<reset, arkipy_countersCounter>
+{
+    constexpr static const char* name = "reset";
+    constexpr static const char* signature = "";
+    constexpr static const char* returns = "";
+    constexpr static const char* summary = "Reset the counter to 0";
+
+    static PyObject* run(Impl* self)
+    {
+        try {
+            self->counter->reset();
+            Py_RETURN_NONE;
         } ARKI_CATCH_RETURN_PYO
     }
 };
-#endif
+
 
 struct CounterDef : public Type<CounterDef, arkipy_countersCounter>
 {
@@ -55,8 +69,8 @@ struct CounterDef : public Type<CounterDef, arkipy_countersCounter>
     constexpr static const char* doc = R"(
 Counter used to debug arkimet I/O operations
 )";
-    GetSetters<> getsetters;
-    Methods<> methods;
+    GetSetters<value, description> getsetters;
+    Methods<reset> methods;
 
     static void _dealloc(Impl* self)
     {
