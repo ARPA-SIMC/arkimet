@@ -641,7 +641,6 @@ tests_arki_test_SOURCES += \
 		runtime/source-test.cc \
 		runtime/dispatch-test.cc \
 		runtime/arki-check-test.cc \
-		runtime/arki-scan-test.cc \
 		runtime-test.cc
 
 if CURL

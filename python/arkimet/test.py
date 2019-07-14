@@ -1,7 +1,14 @@
+import arkimet as arki
 from contextlib import contextmanager
 import subprocess
 import os
 import tempfile
+
+
+def skip_unless_vm2():
+    import unittest
+    if "vm2" not in arki.features:
+        raise unittest.TestSkipped("vm2 support not available")
 
 
 @contextmanager
