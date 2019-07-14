@@ -16607,11 +16607,6 @@
  {
   "doc": "",
   "group": "arki_runtime_arkiscan",
-  "method": "dispatch_plain"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkiscan",
   "method": "dispatch_flush_threshold"
  },
  {
