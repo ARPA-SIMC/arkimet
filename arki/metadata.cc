@@ -653,9 +653,20 @@ size_t Metadata::data_size() const
     }
 }
 
+bool Metadata::read_buffer(const uint8_t* buf, std::size_t size, const metadata::ReadContext& file, metadata_dest_func dest)
+{
+    BinaryDecoder dec(buf, size);
+    return read_buffer(dec, file, dest);
+}
+
 bool Metadata::read_buffer(const std::vector<uint8_t>& buf, const metadata::ReadContext& file, metadata_dest_func dest)
 {
     BinaryDecoder dec(buf);
+    return read_buffer(dec, file, dest);
+}
+
+bool Metadata::read_buffer(BinaryDecoder& dec, const metadata::ReadContext& file, metadata_dest_func dest)
+{
     bool canceled = false;
     string signature;
     unsigned version;
