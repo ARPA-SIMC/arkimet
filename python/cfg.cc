@@ -437,9 +437,12 @@ Arkimet configuration, as multiple sections of key/value options
                 }
                 self->sections.erase(i);
             } else {
-                self->sections.emplace(
-                        from_python<std::string>(key),
-                        section_from_python(val));
+                std::string k = from_python<std::string>(key);
+                auto i = self->sections.find(k);
+                if (i == self->sections.end())
+                    self->sections.emplace(k, section_from_python(val));
+                else
+                    i->second = section_from_python(val);
             }
             return 0;
         } ARKI_CATCH_RETURN_INT
