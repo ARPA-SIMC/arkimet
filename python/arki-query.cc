@@ -85,7 +85,6 @@ struct query_stdin : public MethKwargs<query_stdin, arkipy_ArkiQuery>
         try {
             auto dest = [&](arki::runtime::Source& source) {
                 self->arki_query->processor->process(source.reader(), source.name());
-                return true;
             };
 
             bool all_successful = true;
@@ -122,7 +121,6 @@ struct query_merged : public MethKwargs<query_merged, arkipy_ArkiQuery>
         try {
             auto dest = [&](arki::runtime::Source& source) {
                 self->arki_query->processor->process(source.reader(), source.name());
-                return true;
             };
 
             bool all_successful = true;
@@ -163,7 +161,6 @@ struct query_qmacro : public MethKwargs<query_qmacro, arkipy_ArkiQuery>
         try {
             auto dest = [&](arki::runtime::Source& source) {
                 self->arki_query->processor->process(source.reader(), source.name());
-                return true;
             };
 
             bool all_successful = true;
@@ -201,7 +198,6 @@ struct query_sections : public MethKwargs<query_sections, arkipy_ArkiQuery>
         try {
             auto dest = [&](arki::runtime::Source& source) {
                 self->arki_query->processor->process(source.reader(), source.name());
-                return true;
             };
 
             bool all_successful = true;

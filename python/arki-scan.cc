@@ -95,8 +95,12 @@ struct scan_stdin : public MethKwargs<scan_stdin, arkipy_ArkiScan>
             return nullptr;
 
         try {
-            bool all_successful = self->arki_scan->run_scan_stdin(std::string(format, format_len));
-            self->arki_scan->processor->end();
+            bool all_successful;
+            {
+                ReleaseGIL rg;
+                all_successful = self->arki_scan->run_scan_stdin(std::string(format, format_len));
+                self->arki_scan->processor->end();
+            }
             if (all_successful)
                 Py_RETURN_TRUE;
             else
@@ -129,11 +133,15 @@ struct scan_sections : public MethKwargs<scan_sections, arkipy_ArkiScan>
             return nullptr;
 
         try {
-            bool all_successful = self->arki_scan->run_scan_inputs(
+            bool all_successful;
+            {
+                ReleaseGIL rg;
+                all_successful = self->arki_scan->run_scan_inputs(
                     moveok ? std::string(moveok, moveok_len) : std::string(),
                     moveko ? std::string(moveko, moveko_len) : std::string(),
                     movework ? std::string(movework, movework_len) : std::string());
-            self->arki_scan->processor->end();
+                self->arki_scan->processor->end();
+            }
             if (all_successful)
                 Py_RETURN_TRUE;
             else
