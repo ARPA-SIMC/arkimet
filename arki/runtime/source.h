@@ -11,7 +11,6 @@ namespace arki {
 namespace runtime {
 struct DatasetProcessor;
 struct MetadataDispatch;
-struct DispatchOptions;
 struct CommandLine;
 struct Inputs;
 
@@ -31,8 +30,6 @@ struct Source
     virtual dataset::Reader& reader() const = 0;
     virtual void open() = 0;
     virtual void close(bool successful) = 0;
-    virtual bool process(DatasetProcessor& processor);
-    virtual bool dispatch(MetadataDispatch& dispatcher);
 };
 
 /**
@@ -64,7 +61,6 @@ struct FileSource : public Source
     std::string moveko;
 
     FileSource(const core::cfg::Section& info);
-    FileSource(DispatchOptions& args, const core::cfg::Section& info);
 
     std::string name() const override;
     dataset::Reader& reader() const override;

@@ -7,7 +7,6 @@
 namespace arki {
 namespace runtime {
 struct Module;
-struct DispatchOptions;
 
 /**
  * Initialise the libraries that we use and parse the matcher alias database.
