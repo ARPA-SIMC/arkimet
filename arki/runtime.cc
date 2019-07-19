@@ -105,17 +105,6 @@ CommandLine::CommandLine(const std::string& name, int mansection)
 			" Default: do not sort");
 }
 
-ScanCommandLine::ScanCommandLine(const std::string& name, int mansection)
-    : CommandLine(name, mansection)
-{
-    using namespace arki::utils::commandline;
-
-    files = inputOpts->add<StringOption>("files", 0, "files", "file",
-            "read the list of files to scan from the given file instead of the command line");
-
-    dispatch_options = add_module(std::unique_ptr<DispatchOptions>(new DispatchOptions(*this)));
-}
-
 bool CommandLine::parse(int argc, const char* argv[])
 {
     add(inputOpts);
@@ -123,21 +112,6 @@ bool CommandLine::parse(int argc, const char* argv[])
 
     if (BaseCommandLine::parse(argc, argv))
         return true;
-
-    return false;
-}
-
-bool ScanCommandLine::parse(int argc, const char* argv[])
-{
-    if (CommandLine::parse(argc, argv))
-        return true;
-    processor::verify_option_consistency(*this);
-
-    if (dispatch_options->dispatch->isSet())
-    {
-        if (stdin_input->isSet())
-            throw commandline::BadOption("--stdin cannot be used together with --dispatch");
-    }
 
     return false;
 }

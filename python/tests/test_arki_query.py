@@ -67,6 +67,14 @@ class TestArkiQuery(unittest.TestCase):
         self.assertEqual(out.stdout[:4], b"GRIB")
         self.assertIsNone(res)
 
+    def test_query_yaml_summary(self):
+        out = CatchOutput()
+        with out.redirect():
+            res = self.runcmd("--summary", "--yaml", "", "inbound/test.arkimet")
+        self.assertEqual(out.stderr, b"")
+        self.assertEqual(out.stdout[:12], b"SummaryItem:")
+        self.assertIsNone(res)
+
     def test_query_merged(self):
         with dataset("inbound/fixture.grib1"):
             out = CatchOutput()

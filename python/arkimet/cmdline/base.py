@@ -130,7 +130,11 @@ class AppWithProcessor(App):
         super().run()
 
         self.check_mutually_exclusive_options(
-                "inline", "yaml", "summary", "summary_short", "data",
+                "inline", "summary", "summary_short", "data",
+                "postproc", "archive", "json")
+
+        self.check_mutually_exclusive_options(
+                "inline", "yaml", "summary_short", "data",
                 "postproc", "archive", "json")
 
         self.check_mutually_exclusive_options(

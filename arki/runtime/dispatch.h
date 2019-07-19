@@ -13,7 +13,6 @@ namespace arki {
 class Dispatcher;
 
 namespace runtime {
-class ScanCommandLine;
 class DatasetProcessor;
 
 struct DispatchOptions : public Module
@@ -31,7 +30,6 @@ struct DispatchOptions : public Module
     utils::commandline::BoolOption* status = nullptr;
     utils::commandline::StringOption* flush_threshold = nullptr;
 
-    DispatchOptions(ScanCommandLine& args);
     DispatchOptions(const DispatchOptions&) = delete;
     DispatchOptions(DispatchOptions&&) = delete;
     DispatchOptions& operator=(const DispatchOptions&) = delete;

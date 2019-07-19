@@ -7,16 +7,12 @@
 namespace arki {
 namespace runtime {
 struct Restrict;
-struct ScanCommandLine;
-struct QueryCommandLine;
 
 struct Inputs
 {
     core::cfg::Sections& merged;
 
     Inputs(core::cfg::Sections& merged);
-    Inputs(core::cfg::Sections& merged, ScanCommandLine& args);
-    Inputs(core::cfg::Sections& merged, QueryCommandLine& args);
 
     bool empty() const { return merged.empty(); }
 

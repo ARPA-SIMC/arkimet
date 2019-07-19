@@ -428,3 +428,23 @@ class TestArkiScan(unittest.TestCase):
                     "201101010100,12,2,50,,,000000000\n",
                     "201101010300,12,2,50,,,000000000\n",
                 ])
+
+    def test_files(self):
+        # Reproduce https://github.com/ARPA-SIMC/arkimet/issues/19
+        with datasets():
+            with open("testenv/import.lst", "wt") as fd:
+                print("grib:inbound/test.grib1", file=fd)
+            with open("testenv/config", "wt") as fd:
+                print("[error]\ntype=discard", file=fd)
+            out = CatchOutput()
+            with out.redirect():
+                res = self.runcmd(
+                    "--dispatch=testenv/config",
+                    "--dump", "--status", "--summary",
+                    "--files=testenv/import.lst",
+                )
+            self.assertRegex(out.stderr, br"inbound/test.grib1:"
+                                         br" serious problems: 0 ok, 0 duplicates, 0 in error dataset,"
+                                         br" 3 NOT imported in [0-9.]+ seconds\n")
+            self.assertRegex(out.stdout, b"^SummaryItem:")
+            self.assertEqual(res, 3)
