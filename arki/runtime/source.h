@@ -13,8 +13,6 @@ struct DatasetProcessor;
 struct MetadataDispatch;
 struct DispatchOptions;
 struct CommandLine;
-struct ScanCommandLine;
-struct QueryCommandLine;
 struct Inputs;
 
 

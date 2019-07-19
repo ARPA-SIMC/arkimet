@@ -60,17 +60,6 @@ struct CommandLine : public BaseCommandLine
     bool parse(int argc, const char* argv[]);
 };
 
-struct ScanCommandLine : public CommandLine
-{
-    DispatchOptions* dispatch_options;
-
-    utils::commandline::StringOption* files = nullptr;
-
-    ScanCommandLine(const std::string& name, int mansection=1);
-
-    bool parse(int argc, const char* argv[]);
-};
-
 }
 }
 #endif

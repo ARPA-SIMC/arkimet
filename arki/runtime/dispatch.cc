@@ -32,52 +32,6 @@ using namespace arki::utils;
 namespace arki {
 namespace runtime {
 
-DispatchOptions::DispatchOptions(ScanCommandLine& args)
-{
-    using namespace arki::utils::commandline;
-
-    dispatchOpts = args.addGroup("Options controlling dispatching data to datasets");
-
-    moveok = dispatchOpts->add<StringOption>("moveok", 0, "moveok", "directory",
-            "move input files imported successfully to the given directory "
-            "(destination directory must be on the same filesystem of source file)");
-    moveko = dispatchOpts->add<StringOption>("moveko", 0, "moveko", "directory",
-            "move input files with problems to the given directory "
-            "(destination directory must be on the same filesystem of source file)");
-    movework = dispatchOpts->add<StringOption>("movework", 0, "movework", "directory",
-            "move input files here before opening them. This is useful to "
-            "catch the cases where arki-scan crashes without having a "
-            "chance to handle errors "
-            "(destination directory must be on the same filesystem of source file)");
-
-
-    copyok = dispatchOpts->add<StringOption>("copyok", 0, "copyok", "directory",
-            "copy the data from input files that was imported successfully to the given directory");
-    copyko = dispatchOpts->add<StringOption>("copyko", 0, "copyko", "directory",
-            "copy the data from input files that had problems to the given directory");
-
-    ignore_duplicates = dispatchOpts->add<BoolOption>("ignore-duplicates", 0, "ignore-duplicates", "",
-            "do not consider the run unsuccessful in case of duplicates");
-    validate = dispatchOpts->add<StringOption>("validate", 0, "validate", "checks",
-            "run the given checks on the input data before dispatching"
-            " (comma-separated list; use 'list' to get a list)");
-    dispatch = dispatchOpts->add< VectorOption<String> >("dispatch", 0, "dispatch", "conffile",
-            "dispatch the data to the datasets described in the "
-            "given configuration file (or a dataset path can also "
-            "be given), then output the metadata of the data that "
-            "has been dispatched (can be specified multiple times)");
-    testdispatch = dispatchOpts->add< VectorOption<String> >("testdispatch", 0, "testdispatch", "conffile",
-            "simulate dispatching the files right after scanning, using the given configuration file "
-            "or dataset directory (can be specified multiple times)");
-
-    status = dispatchOpts->add<BoolOption>("status", 0, "status", "",
-            "print to standard error a line per every file with a summary of how it was handled");
-
-    flush_threshold = dispatchOpts->add<StringOption>("flush-threshold", 0, "flush-threshold", "size",
-            "import a batch as soon as the data read so far exceeds this amount of megabytes"
-            " (default: 128Mi; use 0 to load all in RAM no matter what)");
-}
-
 bool DispatchOptions::handle_parsed_options()
 {
     if (dispatch->isSet() && testdispatch->isSet())

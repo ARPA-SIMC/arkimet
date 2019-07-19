@@ -33,19 +33,7 @@ struct CollectProcessor : public runtime::DatasetProcessor
 
 void Tests::register_tests() {
 
-add_method("files", [] {
-    // Reproduce https://github.com/ARPAE-SIMC/arkimet/issues/19
-
-    utils::sys::write_file("import.lst", "grib:inbound/test.grib1\n");
-    utils::sys::write_file("config", "[error]\ntype=discard\n");
-
-    runtime::ScanCommandLine opts("arki-scan");
-
-    const char* argv[] = { "arki-scan", "--dispatch=config", "--dump", "--status", "--summary", "--files=import.lst", nullptr };
-    int argc = sizeof(argv) / sizeof(argv[0]) - 1;
-    wassert(actual(opts.parse(argc, argv)).isfalse());
-
-    runtime::init();
+add_method("empty", [] {
 });
 
 }

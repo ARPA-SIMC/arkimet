@@ -20,34 +20,6 @@ Inputs::Inputs(core::cfg::Sections& merged)
 {
 }
 
-Inputs::Inputs(core::cfg::Sections& merged, ScanCommandLine& args)
-    : merged(merged)
-{
-    if (args.stdin_input->isSet())
-    {
-        if (args.hasNext())
-            throw commandline::BadOption("you cannot specify input files or datasets when using --stdin");
-        if (args.files->isSet())
-            throw commandline::BadOption("--stdin cannot be used together with --files");
-    } else {
-        if (args.files->isSet())    // From --files option, looking for data files or datasets
-            add_pathnames_from_file(args.files->stringValue());
-
-        while (args.hasNext()) // From command line arguments, looking for data files or datasets
-            add_pathname(args.next());
-
-        if (merged.empty())
-            throw commandline::BadOption("you need to specify at least one input file or dataset");
-
-        // Some things cannot be done when querying multiple datasets at the same time
-        if (merged.size() > 1)
-        {
-            if (args.report->boolValue())
-                throw commandline::BadOption("reports are not possible when querying more than one dataset at the same time");
-        }
-    }
-}
-
 void Inputs::add_section(const core::cfg::Section& section, const std::string& name_)
 {
     std::string name = name_.empty() ? section.value("name") : name_;

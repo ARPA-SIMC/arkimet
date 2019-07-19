@@ -18,7 +18,6 @@ class Reader;
 }
 
 namespace runtime {
-struct ScanCommandLine;
 
 struct DatasetProcessor
 {
@@ -72,15 +71,6 @@ struct ProcessorMaker
     /// Create the processor maker for this configuration
     std::unique_ptr<DatasetProcessor> make(Matcher query, utils::sys::NamedFileDescriptor& out);
 };
-
-namespace processor {
-
-void verify_option_consistency(ScanCommandLine& args);
-
-std::unique_ptr<DatasetProcessor> create(ScanCommandLine& args, core::NamedFileDescriptor& output);
-
-}
-
 
 }
 }
