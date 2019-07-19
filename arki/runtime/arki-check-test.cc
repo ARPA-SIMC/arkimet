@@ -38,48 +38,6 @@ Tests test4("arki_runtime_arkicheck_iseg", "type=iseg\nformat=grib");
 
 void Tests::register_tests() {
 
-add_method("clean", [](Fixture& f) {
-    using runtime::tests::run_cmdline;
-
-    f.clean_and_import("inbound/fixture.grib1");
-
-    {
-        runtime::tests::CatchOutput co;
-        int res = run_cmdline<runtime::ArkiCheck>({ "arki-check", "testds", });
-        wassert(actual(res) == 0);
-        wassert(actual_file(co.file_stderr.name()).empty());
-        wassert(actual_file(co.file_stdout.name()).contents_equal({"testds: check 3 files ok"}));
-    }
-
-    {
-        runtime::tests::CatchOutput co;
-        int res = run_cmdline<runtime::ArkiCheck>({ "arki-check", "testds", "--fix" });
-        wassert(actual(res) == 0);
-        wassert(actual_file(co.file_stderr.name()).empty());
-        wassert(actual_file(co.file_stdout.name()).contents_equal({"testds: check 3 files ok"}));
-    }
-
-    {
-        runtime::tests::CatchOutput co;
-        int res = run_cmdline<runtime::ArkiCheck>({ "arki-check", "testds", "--repack" });
-        wassert(actual(res) == 0);
-        wassert(actual_file(co.file_stderr.name()).empty());
-        wassert(actual_file(co.file_stdout.name()).contents_equal({"testds: repack 3 files ok"}));
-    }
-
-    {
-        runtime::tests::CatchOutput co;
-        int res = run_cmdline<runtime::ArkiCheck>({ "arki-check", "testds", "--repack", "--fix" });
-        wassert(actual(res) == 0);
-        wassert(actual_file(co.file_stderr.name()).empty());
-        wassert(actual_file(co.file_stdout.name()).contents_match({
-            "(testds: repack: running VACUUM ANALYZE on the dataset index(, if applicable)?)?",
-            "(testds: repack: rebuilding the summary cache)?",
-            "testds: repack 3 files ok",
-        }));
-    }
-});
-
 add_method("clean_filtered", [](Fixture& f) {
     using runtime::tests::run_cmdline;
 
