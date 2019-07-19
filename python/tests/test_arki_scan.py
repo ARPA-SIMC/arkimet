@@ -365,7 +365,7 @@ class TestArkiScan(unittest.TestCase):
             self.assertFalse(os.path.exists("testenv/test.grib1"))
             self.assertFalse(os.path.exists("testenv/copyok/test.grib1"))
             self.assertTrue(os.path.exists("testenv/copyko/test.grib1"))
-            self.assertEqual(os.path.getsize("testenv/copyko/test.grib1"), 2234)
+            self.assertEqual(os.path.getsize("testenv/copyko/test.grib1"), 44412)
 
     def test_dispatch_issue68(self):
         skip_unless_vm2()

@@ -171,12 +171,17 @@ class Scan(AppWithProcessor):
 
             arki_scan.set_dispatcher(**kw)
 
-        if self.args.stdin:
-            all_successful = arki_scan.scan_stdin(self.args.stdin)
+            if self.args.stdin:
+                all_successful = arki_scan.dispatch_stdin(self.args.stdin)
+            else:
+                all_successful = arki_scan.dispatch_sections(
+                        moveok=self.args.moveok, moveko=self.args.moveko,
+                        movework=self.args.movework)
         else:
-            all_successful = arki_scan.scan_sections(
-                    moveok=self.args.moveok, moveko=self.args.moveko,
-                    movework=self.args.movework)
+            if self.args.stdin:
+                all_successful = arki_scan.scan_stdin(self.args.stdin)
+            else:
+                all_successful = arki_scan.scan_sections()
 
         # processor->end()
 

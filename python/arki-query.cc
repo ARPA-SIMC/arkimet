@@ -203,10 +203,7 @@ struct query_sections : public MethKwargs<query_sections, arkipy_ArkiQuery>
             bool all_successful = true;
             {
                 ReleaseGIL rg;
-                all_successful = arki::runtime::foreach_sections(
-                        self->arki_query->inputs,
-                        std::string(), std::string(), std::string(),
-                        dest);
+                all_successful = arki::runtime::foreach_sections(self->arki_query->inputs, dest);
                 self->arki_query->processor->end();
             }
 

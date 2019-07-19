@@ -91,6 +91,7 @@ void FileSource::close(bool successful)
     m_reader = std::shared_ptr<dataset::Reader>();
 }
 
+
 MergedSource::MergedSource(const core::cfg::Sections& inputs)
     : m_reader(std::make_shared<dataset::Merged>())
 {
@@ -199,17 +200,13 @@ bool foreach_qmacro(const std::string& macro_name, const std::string& macro_quer
     return success;
 }
 
-bool foreach_sections(const core::cfg::Sections& inputs, const std::string& moveok, const std::string& moveko, const std::string& movework, std::function<void(Source&)> dest)
+bool foreach_sections(const core::cfg::Sections& inputs, std::function<void(Source&)> dest)
 {
     bool all_successful = true;
     // Query all the datasets in sequence
     for (auto si: inputs)
     {
         FileSource source(si.second);
-        source.movework = movework;
-        source.moveok = moveok;
-        source.moveko = moveko;
-
         nag::verbose("Processing %s...", source.name().c_str());
         source.open();
         bool success = true;

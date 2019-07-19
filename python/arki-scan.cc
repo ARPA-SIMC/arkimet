@@ -136,7 +136,78 @@ struct scan_sections : public MethKwargs<scan_sections, arkipy_ArkiScan>
             bool all_successful;
             {
                 ReleaseGIL rg;
-                all_successful = self->arki_scan->run_scan_inputs(
+                all_successful = self->arki_scan->run_scan_inputs();
+                self->arki_scan->processor->end();
+            }
+            if (all_successful)
+                Py_RETURN_TRUE;
+            else
+                Py_RETURN_FALSE;
+        } ARKI_CATCH_RETURN_PYO
+    }
+};
+
+struct dispatch_stdin : public MethKwargs<dispatch_stdin, arkipy_ArkiScan>
+{
+    constexpr static const char* name = "dispatch_stdin";
+    constexpr static const char* signature = "";
+    constexpr static const char* returns = "int";
+    constexpr static const char* summary = "run arki-scan --stdin --dispatch";
+    constexpr static const char* doc = nullptr;
+
+    static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
+    {
+        static const char* kwlist[] = { "format", nullptr };
+
+        const char* format = nullptr;
+        Py_ssize_t format_len;
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "z#", const_cast<char**>(kwlist),
+                    &format, &format_len))
+            return nullptr;
+
+        try {
+            bool all_successful;
+            {
+                ReleaseGIL rg;
+                all_successful = self->arki_scan->run_dispatch_stdin(std::string(format, format_len));
+                self->arki_scan->processor->end();
+            }
+            if (all_successful)
+                Py_RETURN_TRUE;
+            else
+                Py_RETURN_FALSE;
+        } ARKI_CATCH_RETURN_PYO
+    }
+};
+
+struct dispatch_sections : public MethKwargs<dispatch_sections, arkipy_ArkiScan>
+{
+    constexpr static const char* name = "dispatch_sections";
+    constexpr static const char* signature = "";
+    constexpr static const char* returns = "int";
+    constexpr static const char* summary = "run arki-scan --dispatch";
+    constexpr static const char* doc = nullptr;
+
+    static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
+    {
+        static const char* kwlist[] = { "moveok", "moveko", "movework", nullptr };
+        const char* moveok = nullptr;
+        Py_ssize_t moveok_len;
+        const char* moveko = nullptr;
+        Py_ssize_t moveko_len;
+        const char* movework = nullptr;
+        Py_ssize_t movework_len;
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "|z#z#z#", const_cast<char**>(kwlist),
+                    &moveok, &moveok_len,
+                    &moveko, &moveko_len,
+                    &movework, &movework_len))
+            return nullptr;
+
+        try {
+            bool all_successful;
+            {
+                ReleaseGIL rg;
+                all_successful = self->arki_scan->run_dispatch_inputs(
                     moveok ? std::string(moveok, moveok_len) : std::string(),
                     moveko ? std::string(moveko, moveko_len) : std::string(),
                     movework ? std::string(movework, movework_len) : std::string());
@@ -159,7 +230,7 @@ struct ArkiScanDef : public Type<ArkiScanDef, arkipy_ArkiScan>
 arki-scan implementation
 )";
     GetSetters<> getsetters;
-    Methods<set_inputs, set_processor, set_dispatcher, scan_stdin, scan_sections> methods;
+    Methods<set_inputs, set_processor, set_dispatcher, scan_stdin, scan_sections, dispatch_stdin, dispatch_sections> methods;
 
     static void _dealloc(Impl* self)
     {
