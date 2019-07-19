@@ -27,6 +27,20 @@ class Env:
         with open("testenv/testds/config", "wt") as fd:
             self.ds_cfg.write(fd)
 
+    def update_config(self, **kw):
+        for k, v in kw.items():
+            if v is None:
+                del self.ds_cfg[k]
+            else:
+                self.ds_cfg[k] = v
+        self.config["testds"] = self.ds_cfg
+
+        with open("testenv/config", "wt") as fd:
+            self.config.write(fd)
+
+        with open("testenv/testds/config", "wt") as fd:
+            self.ds_cfg.write(fd)
+
     def import_file(self, pathname):
         dest = arki.dataset.Writer(self.ds_cfg)
 
@@ -45,6 +59,17 @@ class Env:
 
     def cleanup(self):
         shutil.rmtree("testenv")
+
+    def query(self, *args, **kw):
+        res = []
+
+        def on_metadata(md):
+            res.append(md)
+
+        kw["on_metadata"] = on_metadata
+        source = arki.dataset.Reader(self.ds_cfg)
+        source.query_data(**kw)
+        return res
 
 
 class ArkiCheckTestsBase:
@@ -157,7 +182,7 @@ class ArkiCheckTestsBase:
             self.assertFalse(os.path.exists("testenv/testds/2007/10-09.grib"))
 
             # TODO wassert(f.ensure_localds_clean(0, 0));
-            # TODO wassert(f.query_results({}));
+            self.assertEqual(env.query(), [])
 
     def test_remove_all_filtered(self):
         with self.datasets() as env:
@@ -189,6 +214,78 @@ class ArkiCheckTestsBase:
 
             # TODO wassert(f.ensure_localds_clean(2, 2));
             # TODO wassert(f.query_results({1, 2}));
+
+    def test_archive(self):
+        with self.datasets() as env:
+            env.import_file("inbound/fixture.grib1")
+            env.update_config(**{"archive age": "1"})
+
+            out = self.call_output_success("testenv/testds")
+            self.assertEqual(
+                    out.stdout,
+                    b"testds:2007/07-07.grib: segment old enough to be archived\n"
+                    b"testds:2007/07-08.grib: segment old enough to be archived\n"
+                    b"testds:2007/10-09.grib: segment old enough to be archived\n"
+                    b"testds: check 0 files ok\n"
+            )
+
+            out = self.call_output_success("testenv/testds", "--fix")
+            self.assertEqual(
+                    out.stdout,
+                    b"testds:2007/07-07.grib: segment old enough to be archived\n"
+                    b"testds:2007/07-08.grib: segment old enough to be archived\n"
+                    b"testds:2007/10-09.grib: segment old enough to be archived\n"
+                    b"testds: check 0 files ok\n"
+            )
+
+            out = self.call_output_success("testenv/testds", "--repack")
+            self.assertEqual(
+                    out.stdout,
+                    b"testds:2007/07-07.grib: segment old enough to be archived\n"
+                    b"testds:2007/07-07.grib: should be archived\n"
+                    b"testds:2007/07-08.grib: segment old enough to be archived\n"
+                    b"testds:2007/07-08.grib: should be archived\n"
+                    b"testds:2007/10-09.grib: segment old enough to be archived\n"
+                    b"testds:2007/10-09.grib: should be archived\n"
+                    b"testds: repack 0 files ok, 3 files should be archived\n"
+            )
+
+            out = self.call_output_success("testenv/testds", "--repack", "--fix", "--online", "--offline")
+            self.assertRegex(
+                    out.stdout,
+                    rb"testds:2007/07-07.grib: segment old enough to be archived\n"
+                    rb"testds:2007/07-07.grib: archived\n"
+                    rb"testds:2007/07-08.grib: segment old enough to be archived\n"
+                    rb"testds:2007/07-08.grib: archived\n"
+                    rb"testds:2007/10-09.grib: segment old enough to be archived\n"
+                    rb"testds:2007/10-09.grib: archived\n"
+                    rb"(testds: repack: running VACUUM ANALYZE on the dataset index(, if applicable)?\n)?"
+                    rb"(testds: repack: rebuilding the summary cache\n)?"
+                    rb"testds: repack 0 files ok, 3 files archived\n"
+                    rb"testds.archives.last: repack: running VACUUM ANALYZE on the dataset index, if applicable\n"
+                    rb"testds.archives.last: repack 3 files ok\n"
+            )
+
+            self.assertTrue(os.path.exists("testenv/testds/.archive/last/2007/07-08.grib"))
+            self.assertFalse(os.path.exists("testenv/testds/2007/07-08.grib"))
+
+            mdc = env.query(matcher="reftime:=2007-07-08")
+            self.assertEqual(len(mdc), 1)
+            blob = mdc[0].to_python("source")
+            self.assertEqual(blob["file"], "2007/07-08.grib")
+            self.assertEqual(blob["b"], os.path.abspath("testenv/testds/.archive/last"))
+
+            out = self.call_output_success("testenv/testds", "--unarchive=2007/07-08.grib")
+            self.assertEqual(out.stdout, b"")
+
+            self.assertFalse(os.path.exists("testenv/testds/.archive/last/2007/07-08.grib"))
+            self.assertTrue(os.path.exists("testenv/testds/2007/07-08.grib"))
+
+            mdc = env.query(matcher="reftime:=2007-07-08")
+            self.assertEqual(len(mdc), 1)
+            blob = mdc[0].to_python("source")
+            self.assertEqual(blob["file"], "2007/07-08.grib")
+            self.assertEqual(blob["b"], os.path.abspath("testenv/testds"))
 
 
 class TestArkiCheckOndisk2(ArkiCheckTestsBase, unittest.TestCase):
