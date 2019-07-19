@@ -108,28 +108,26 @@ std::unique_ptr<runtime::MetadataDispatch> build_dispatcher(runtime::DatasetProc
 //                                          " in RAM no matter what)")
     static const char* kwlist[] = {
         "copyok", "copyko",
-        "ignore_duplicates", "validate",
+        "validate",
         "dispatch", "testdispatch",
-        "status", "flush_threshold",
+        "flush_threshold",
         nullptr };
 
     const char* copyok = nullptr;
     Py_ssize_t copyok_len;
     const char* copyko = nullptr;
     Py_ssize_t copyko_len;
-    int ignore_duplicates = 0;
     const char* validate = nullptr;
     Py_ssize_t validate_len;
     PyObject* dispatch = nullptr;
     PyObject* testdispatch = nullptr;
-    int status = 0;
     const char* flush_threshold = nullptr;
     Py_ssize_t flush_threshold_len;
-    if (!PyArg_ParseTupleAndKeywords(args, kw, "|z#z#pz#OOpz#", const_cast<char**>(kwlist),
+    if (!PyArg_ParseTupleAndKeywords(args, kw, "|z#z#z#OOz#", const_cast<char**>(kwlist),
                 &copyok, &copyok_len, &copyko, &copyko_len,
-                &ignore_duplicates, &validate, &validate_len,
+                &validate, &validate_len,
                 &dispatch, &testdispatch,
-                &status, &flush_threshold, &flush_threshold_len
+                &flush_threshold, &flush_threshold_len
                 ))
         throw PythonException();
 
@@ -145,10 +143,6 @@ std::unique_ptr<runtime::MetadataDispatch> build_dispatcher(runtime::DatasetProc
     }
     else
         throw std::runtime_error("cannot create MetadataDispatch with no --dispatch or --testdispatch information");
-
-    res->reportStatus = status;
-
-    res->ignore_duplicates = ignore_duplicates;
 
     if (validate)
     {

@@ -25,8 +25,6 @@ public:
 
     bool run_scan_stdin(const std::string& format);
     bool run_scan_inputs();
-    bool run_dispatch_stdin(const std::string& format);
-    bool run_dispatch_inputs(const std::string& moveok, const std::string& moveko, const std::string& movework);
 };
 
 }

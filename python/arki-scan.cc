@@ -1,4 +1,5 @@
 #include "arki/runtime/arki-scan.h"
+#include "arki/nag.h"
 #include "arki-scan.h"
 #include "utils/core.h"
 #include "utils/methods.h"
@@ -119,17 +120,8 @@ struct scan_sections : public MethKwargs<scan_sections, arkipy_ArkiScan>
 
     static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
     {
-        static const char* kwlist[] = { "moveok", "moveko", "movework", nullptr };
-        const char* moveok = nullptr;
-        Py_ssize_t moveok_len;
-        const char* moveko = nullptr;
-        Py_ssize_t moveko_len;
-        const char* movework = nullptr;
-        Py_ssize_t movework_len;
-        if (!PyArg_ParseTupleAndKeywords(args, kw, "|z#z#z#", const_cast<char**>(kwlist),
-                    &moveok, &moveok_len,
-                    &moveko, &moveko_len,
-                    &movework, &movework_len))
+        static const char* kwlist[] = { nullptr };
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "", const_cast<char**>(kwlist)))
             return nullptr;
 
         try {
@@ -157,19 +149,36 @@ struct dispatch_stdin : public MethKwargs<dispatch_stdin, arkipy_ArkiScan>
 
     static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
     {
-        static const char* kwlist[] = { "format", nullptr };
+        static const char* kwlist[] = { "format", "ignore_duplicates", "status", nullptr };
 
         const char* format = nullptr;
         Py_ssize_t format_len;
-        if (!PyArg_ParseTupleAndKeywords(args, kw, "z#", const_cast<char**>(kwlist),
-                    &format, &format_len))
+        int ignore_duplicates = 0;
+        int status = 0;
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "z#|pp", const_cast<char**>(kwlist),
+                    &format, &format_len, &ignore_duplicates, &status))
             return nullptr;
 
         try {
             bool all_successful;
             {
                 ReleaseGIL rg;
-                all_successful = self->arki_scan->run_dispatch_stdin(std::string(format, format_len));
+
+                bool dispatch_ok = true;
+                bool res = arki::runtime::foreach_stdin(std::string(format, format_len), [&](arki::runtime::Source& source) {
+                    auto stats = self->arki_scan->dispatcher->process(source.reader(), source.name());
+
+                    if (status)
+                    {
+                        fprintf(stderr, "%s: %s\n", stats.name.c_str(), stats.summary().c_str());
+                        fflush(stderr);
+                    }
+
+                    dispatch_ok = stats.success(ignore_duplicates) && dispatch_ok;
+                });
+
+                all_successful = res && dispatch_ok;
+
                 self->arki_scan->processor->end();
             }
             if (all_successful)
@@ -190,27 +199,55 @@ struct dispatch_sections : public MethKwargs<dispatch_sections, arkipy_ArkiScan>
 
     static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
     {
-        static const char* kwlist[] = { "moveok", "moveko", "movework", nullptr };
+        static const char* kwlist[] = { "moveok", "moveko", "movework", "ignore_duplicates", "status", nullptr };
         const char* moveok = nullptr;
         Py_ssize_t moveok_len;
         const char* moveko = nullptr;
         Py_ssize_t moveko_len;
         const char* movework = nullptr;
         Py_ssize_t movework_len;
-        if (!PyArg_ParseTupleAndKeywords(args, kw, "|z#z#z#", const_cast<char**>(kwlist),
+        int ignore_duplicates = 0;
+        int status = 0;
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "|z#z#z#pp", const_cast<char**>(kwlist),
                     &moveok, &moveok_len,
                     &moveko, &moveko_len,
-                    &movework, &movework_len))
+                    &movework, &movework_len,
+                    &ignore_duplicates, &status))
             return nullptr;
 
         try {
-            bool all_successful;
+            bool all_successful = true;
+
             {
                 ReleaseGIL rg;
-                all_successful = self->arki_scan->run_dispatch_inputs(
-                    moveok ? std::string(moveok, moveok_len) : std::string(),
-                    moveko ? std::string(moveko, moveko_len) : std::string(),
-                    movework ? std::string(movework, movework_len) : std::string());
+
+                // Query all the datasets in sequence
+                for (auto si: self->arki_scan->inputs)
+                {
+                    arki::runtime::FileSource source(si.second);
+                    if (movework) source.movework = std::string(movework, movework_len);
+                    if (moveok) source.moveok = std::string(moveok, moveok_len);
+                    if (moveko) source.moveko = std::string(moveko, moveko_len);
+
+                    arki::nag::verbose("Processing %s...", source.name().c_str());
+                    source.open();
+                    bool success = true;
+                    try {
+                        auto stats = self->arki_scan->dispatcher->process(source.reader(), source.name());
+                        if (status)
+                        {
+                            fprintf(stderr, "%s: %s\n", stats.name.c_str(), stats.summary().c_str());
+                            fflush(stderr);
+                        }
+                        success = stats.success(ignore_duplicates);
+                    } catch (std::exception& e) {
+                        arki::nag::warning("%s failed: %s", source.name().c_str(), e.what());
+                        success = false;
+                    }
+                    source.close(success);
+                    if (!success) all_successful = false;
+                }
+
                 self->arki_scan->processor->end();
             }
             if (all_successful)
