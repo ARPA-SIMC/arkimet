@@ -15,31 +15,43 @@ class Dispatcher;
 namespace runtime {
 class DatasetProcessor;
 
-struct DispatchOptions : public Module
+struct DispatchResults
 {
-    utils::commandline::OptionGroup* dispatchOpts = nullptr;
-    utils::commandline::StringOption* moveok = nullptr;
-    utils::commandline::StringOption* moveko = nullptr;
-    utils::commandline::StringOption* movework = nullptr;
-    utils::commandline::StringOption* copyok = nullptr;
-    utils::commandline::StringOption* copyko = nullptr;
-    utils::commandline::BoolOption* ignore_duplicates = nullptr;
-    utils::commandline::StringOption* validate = nullptr;
-    utils::commandline::VectorOption<utils::commandline::String>* dispatch = nullptr;
-    utils::commandline::VectorOption<utils::commandline::String>* testdispatch = nullptr;
-    utils::commandline::BoolOption* status = nullptr;
-    utils::commandline::StringOption* flush_threshold = nullptr;
+    /// Name of source that was imported
+    std::string name;
 
-    DispatchOptions(const DispatchOptions&) = delete;
-    DispatchOptions(DispatchOptions&&) = delete;
-    DispatchOptions& operator=(const DispatchOptions&) = delete;
-    DispatchOptions& operator=(DispatchOptions&&) = delete;
+    // Used for timings. Read with gettimeofday at the beginning of a task,
+    // and summary_so_far will report the elapsed time
+    struct timeval start_time;
 
-    bool handle_parsed_options() override;
+    // Used for timings. Read with gettimeofday at the beginning of a task,
+    // and summary_so_far will report the elapsed time
+    struct timeval end_time;
 
-    bool dispatch_requested() const;
+    /// True if everything was imported successfully
+    bool success = true;
+
+    /// Count of metadata imported successfully in the destination dataset
+    unsigned successful = 0;
+
+    /// Count of metadata imported in the error dataset because it had already
+    /// been imported
+    unsigned duplicates = 0;
+
+    /// Count of metadata imported in the error dataset
+    unsigned in_error_dataset = 0;
+
+    /// Count of metadata not imported at all
+    unsigned not_imported = 0;
+
+    DispatchResults();
+
+    /// Notify the end of processing for this source
+    void end();
+
+    /// Format a summary
+    std::string summary() const;
 };
-
 
 /// Dispatch metadata
 struct MetadataDispatch
@@ -53,26 +65,6 @@ struct MetadataDispatch
     DatasetProcessor& next;
     bool ignore_duplicates = false;
     bool reportStatus = false;
-
-    // Used for timings. Read with gettimeofday at the beginning of a task,
-    // and summary_so_far will report the elapsed time
-    struct timeval startTime;
-
-    // Incremented when a metadata is imported in the destination dataset.
-    // Feel free to reset it to 0 anytime.
-    int countSuccessful = 0;
-
-    // Incremented when a metadata is imported in the error dataset because it
-    // had already been imported.  Feel free to reset it to 0 anytime.
-    int countDuplicates = 0;
-
-    // Incremented when a metadata is imported in the error dataset.  Feel free
-    // to reset it to 0 anytime.
-    int countInErrorDataset = 0;
-
-    // Incremented when a metadata is not imported at all.  Feel free to reset
-    // it to 0 anytime.
-    int countNotImported = 0;
 
     /// Directory where we store copyok files
     std::string dir_copyok;
@@ -88,7 +80,6 @@ struct MetadataDispatch
 
 
     MetadataDispatch(DatasetProcessor& next);
-    MetadataDispatch(const DispatchOptions& args, DatasetProcessor& next);
     ~MetadataDispatch();
 
     /**
@@ -97,19 +88,13 @@ struct MetadataDispatch
      * @returns true if all went well, false if any problem happend.
      * It can still throw in case of big trouble.
      */
-    bool process(dataset::Reader& ds, const std::string& name);
+    DispatchResults process(dataset::Reader& ds, const std::string& name);
 
     // Flush all imports done so far
     void flush();
 
-    // Format a summary of the import statistics so far
-    std::string summary_so_far() const;
-
-    // Set startTime to the current time
-    void setStartTime();
-
 protected:
-    void process_partial_batch(const std::string& name);
+    void process_partial_batch(const std::string& name, DispatchResults& stats);
     void do_copyok(Metadata& md);
     void do_copyko(Metadata& md);
 };

@@ -38,17 +38,6 @@ static std::string moveFile(const dataset::Reader& ds, const std::string& target
 
 Source::~Source() {}
 
-bool Source::process(DatasetProcessor& processor)
-{
-    processor.process(reader(), name());
-    return true;
-}
-
-bool Source::dispatch(MetadataDispatch& dispatcher)
-{
-    return dispatcher.process(reader(), name());
-}
-
 
 StdinSource::StdinSource(const std::string& format)
     : scanner(scan::Scanner::get_scanner(format).release())

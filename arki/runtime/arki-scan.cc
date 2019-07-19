@@ -23,12 +23,13 @@ std::function<bool(runtime::Source& source)> ArkiScan::make_dest_func(bool& disp
     if (dispatcher)
     {
         return [&](runtime::Source& source) {
-            dispatch_ok = source.dispatch(*dispatcher) && dispatch_ok;
+            auto stats = dispatcher->process(source.reader(), source.name());
+            dispatch_ok = stats.success && dispatch_ok;
             return true;
         };
     } else {
         return [&](runtime::Source& source) {
-            dispatch_ok = source.process(*processor) && dispatch_ok;
+            processor->process(source.reader(), source.name());
             return true;
         };
     }
