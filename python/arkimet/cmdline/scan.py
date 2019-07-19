@@ -186,7 +186,5 @@ class Scan(AppWithProcessor):
             else:
                 all_successful = arki_scan.scan_sections()
 
-        # processor->end()
-
         if not all_successful:
             raise Exit(3)
