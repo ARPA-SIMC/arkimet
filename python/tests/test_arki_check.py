@@ -70,42 +70,125 @@ class ArkiCheckTestsBase:
         # except SystemExit as e:
         #     return e.args[0]
 
+    def call_output(self, *args):
+        out = CatchOutput()
+        with out.redirect():
+            res = self.runcmd(*args)
+        return out, res
+
+    def call_output_success(self, *args):
+        out, res = self.call_output(*args)
+        self.assertEqual(out.stderr, b"")
+        self.assertIsNone(res)
+        return out
+
     def test_clean(self):
         with self.datasets() as env:
             env.import_file("inbound/fixture.grib1")
 
-            out = CatchOutput()
-            with out.redirect():
-                res = self.runcmd("testenv/testds")
-            self.assertEqual(out.stderr, b"")
+            out = self.call_output_success("testenv/testds")
             self.assertEqual(out.stdout, b"testds: check 3 files ok\n")
-            self.assertIsNone(res)
 
-            out = CatchOutput()
-            with out.redirect():
-                res = self.runcmd("testenv/testds", "--fix")
-            self.assertEqual(out.stderr, b"")
+            out = self.call_output_success("testenv/testds", "--fix")
             self.assertEqual(out.stdout, b"testds: check 3 files ok\n")
-            self.assertIsNone(res)
 
-            out = CatchOutput()
-            with out.redirect():
-                res = self.runcmd("testenv/testds", "--repack")
-            self.assertEqual(out.stderr, b"")
+            out = self.call_output_success("testenv/testds", "--repack")
             self.assertEqual(out.stdout, b"testds: repack 3 files ok\n")
-            self.assertIsNone(res)
 
-            out = CatchOutput()
-            with out.redirect():
-                res = self.runcmd("testenv/testds", "--repack", "--fix")
-            self.assertEqual(out.stderr, b"")
+            out = self.call_output_success("testenv/testds", "--repack", "--fix")
             self.assertRegex(
                     out.stdout,
                     rb"(testds: repack: running VACUUM ANALYZE on the dataset index(, if applicable)?\n)?"
                     rb"(testds: repack: rebuilding the summary cache\n)?"
                     rb"testds: repack 3 files ok\n"
             )
-            self.assertIsNone(res)
+
+    def test_clean_filtered(self):
+        with self.datasets() as env:
+            env.import_file("inbound/fixture.grib1")
+
+            out = self.call_output_success("testenv/testds", "--filter=reftime:>=2007-07-08")
+            self.assertEqual(out.stdout, b"testds: check 2 files ok\n")
+
+            out = self.call_output_success("testenv/testds", "--fix", "--filter=reftime:>=2007-07-08")
+            self.assertEqual(out.stdout, b"testds: check 2 files ok\n")
+
+            out = self.call_output_success("testenv/testds", "--repack", "--filter=reftime:>=2007-07-08")
+            self.assertEqual(out.stdout, b"testds: repack 2 files ok\n")
+
+            out = self.call_output_success("testenv/testds", "--repack", "--fix", "--filter=reftime:>=2007-07-08")
+            self.assertRegex(
+                    out.stdout,
+                    rb"(testds: repack: running VACUUM ANALYZE on the dataset index(, if applicable)?\n)?"
+                    rb"(testds: repack: rebuilding the summary cache\n)?"
+                    rb"testds: repack 2 files ok\n"
+            )
+
+    def test_remove_all(self):
+        with self.datasets() as env:
+            env.import_file("inbound/fixture.grib1")
+
+            self.assertTrue(os.path.exists("testenv/testds/2007/07-08.grib"))
+            self.assertTrue(os.path.exists("testenv/testds/2007/07-07.grib"))
+            self.assertTrue(os.path.exists("testenv/testds/2007/10-09.grib"))
+
+            out = self.call_output_success("testenv/testds", "--remove-all")
+            self.assertEqual(
+                    out.stdout,
+                    b"testds:2007/07-07.grib: should be deleted\n"
+                    b"testds:2007/07-08.grib: should be deleted\n"
+                    b"testds:2007/10-09.grib: should be deleted\n"
+            )
+
+            self.assertTrue(os.path.exists("testenv/testds/2007/07-08.grib"))
+            self.assertTrue(os.path.exists("testenv/testds/2007/07-07.grib"))
+            self.assertTrue(os.path.exists("testenv/testds/2007/10-09.grib"))
+
+            out = self.call_output_success("testenv/testds", "--remove-all", "-f")
+            self.assertRegex(
+                    out.stdout,
+                    rb"testds:2007/07-07.grib: deleted \(\d+ freed\)\n"
+                    rb"testds:2007/07-08.grib: deleted \(\d+ freed\)\n"
+                    rb"testds:2007/10-09.grib: deleted \(\d+ freed\)\n"
+            )
+
+            self.assertFalse(os.path.exists("testenv/testds/2007/07-08.grib"))
+            self.assertFalse(os.path.exists("testenv/testds/2007/07-07.grib"))
+            self.assertFalse(os.path.exists("testenv/testds/2007/10-09.grib"))
+
+            # TODO wassert(f.ensure_localds_clean(0, 0));
+            # TODO wassert(f.query_results({}));
+
+    def test_remove_all_filtered(self):
+        with self.datasets() as env:
+            env.import_file("inbound/fixture.grib1")
+
+            self.assertTrue(os.path.exists("testenv/testds/2007/07-08.grib"))
+            self.assertTrue(os.path.exists("testenv/testds/2007/07-07.grib"))
+            self.assertTrue(os.path.exists("testenv/testds/2007/10-09.grib"))
+
+            out = self.call_output_success("testenv/testds", "--remove-all", "--filter=reftime:=2007-07-08")
+            self.assertEqual(
+                    out.stdout,
+                    b"testds:2007/07-08.grib: should be deleted\n"
+            )
+
+            self.assertTrue(os.path.exists("testenv/testds/2007/07-08.grib"))
+            self.assertTrue(os.path.exists("testenv/testds/2007/07-07.grib"))
+            self.assertTrue(os.path.exists("testenv/testds/2007/10-09.grib"))
+
+            out = self.call_output_success("testenv/testds", "--remove-all", "-f", "--filter=reftime:=2007-07-08")
+            self.assertRegex(
+                    out.stdout,
+                    rb"testds:2007/07-08.grib: deleted \(\d+ freed\)\n"
+            )
+
+            self.assertFalse(os.path.exists("testenv/testds/2007/07-08.grib"))
+            self.assertTrue(os.path.exists("testenv/testds/2007/07-07.grib"))
+            self.assertTrue(os.path.exists("testenv/testds/2007/10-09.grib"))
+
+            # TODO wassert(f.ensure_localds_clean(2, 2));
+            # TODO wassert(f.query_results({1, 2}));
 
 
 class TestArkiCheckOndisk2(ArkiCheckTestsBase, unittest.TestCase):
