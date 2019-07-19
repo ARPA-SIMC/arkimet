@@ -83,17 +83,6 @@ FileSource::FileSource(const core::cfg::Section& info)
 {
 }
 
-FileSource::FileSource(DispatchOptions& args, const core::cfg::Section& info)
-    : cfg(info)
-{
-    if (args.movework && args.movework->isSet())
-        movework = args.movework->stringValue();
-    if (args.moveok && args.moveok->isSet())
-        moveok = args.moveok->stringValue();
-    if (args.moveko && args.moveko->isSet())
-        moveko = args.moveko->stringValue();
-}
-
 std::string FileSource::name() const { return cfg.value("path"); }
 dataset::Reader& FileSource::reader() const { return *m_reader; }
 
@@ -174,18 +163,6 @@ dataset::Reader& QmacroSource::reader() const { return *m_reader; }
 void QmacroSource::open() {}
 void QmacroSource::close(bool successful) {}
 
-
-
-bool foreach_source(ScanCommandLine& args, const Inputs& inputs, std::function<bool(Source&)> dest)
-{
-    if (args.stdin_input->isSet())
-    {
-        return foreach_stdin(args.stdin_input->stringValue(), dest);
-    } else {
-        return foreach_sections(inputs.merged, dest);
-    }
-}
-
 bool foreach_stdin(const std::string& format, std::function<bool(Source&)> dest)
 {
     bool all_successful = true;
@@ -233,13 +210,17 @@ bool foreach_qmacro(const std::string& macro_name, const std::string& macro_quer
     return all_successful;
 }
 
-bool foreach_sections(const core::cfg::Sections& inputs, std::function<bool(Source&)> dest)
+bool foreach_sections(const core::cfg::Sections& inputs, const std::string& moveok, const std::string& moveko, const std::string& movework, std::function<bool(Source&)> dest)
 {
     bool all_successful = true;
     // Query all the datasets in sequence
     for (auto si: inputs)
     {
         FileSource source(si.second);
+        source.movework = movework;
+        source.moveok = moveok;
+        source.moveko = moveko;
+
         nag::verbose("Processing %s...", source.name().c_str());
         source.open();
         bool success;

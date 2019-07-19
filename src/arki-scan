@@ -1,11 +1,10 @@
 #!/usr/bin/python3
-from arkimet import ArkiScan
+from arkimet.cmdline.scan import Scan
 import sys
 
 
 def main():
-    arki_scan = ArkiScan()
-    sys.exit(arki_scan.run(sys.argv))
+    sys.exit(Scan.main())
 
 
 if __name__ == "__main__":

@@ -10,6 +10,7 @@
 #include "utils/type.h"
 #include "utils/values.h"
 #include "common.h"
+#include "cmdline.h"
 
 using namespace arki::python;
 using namespace arki::utils;
@@ -55,82 +56,9 @@ struct set_processor : public MethKwargs<set_processor, arkipy_ArkiQuery>
 
     static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
     {
-        static const char* kwlist[] = {
-            "query", "outfile",
-            "yaml", "json", "annotate", "inline", "data",
-            "summary", "summary_short",
-            "report", "summary_restrict",
-            "archive", "postproc", "postproc_data",
-            "sort", "targetfile", nullptr };
-
-        PyObject* py_query = nullptr;
-        const char* outfile = nullptr;
-        Py_ssize_t outfile_len;
-        int yaml = 0, json = 0, annotate = 0, out_inline = 0, data = 0, summary = 0, summary_short = 0;
-        const char* report = nullptr;
-        Py_ssize_t report_len;
-        const char* summary_restrict = nullptr;
-        Py_ssize_t summary_restrict_len;
-        PyObject* archive = nullptr;
-        const char* postproc = nullptr;
-        Py_ssize_t postproc_len;
-        PyObject* postproc_data = nullptr;
-        const char* sort = nullptr;
-        Py_ssize_t sort_len;
-        const char* targetfile = nullptr;
-        Py_ssize_t targetfile_len;
-        if (!PyArg_ParseTupleAndKeywords(args, kw, "Os#|ppppp" "pp" "z#z#" "Oz#O" "z#z#", const_cast<char**>(kwlist),
-                    &py_query, &outfile, &outfile_len,
-                    &yaml, &json, &annotate, &out_inline, &data,
-                    &summary, &summary_short,
-                    &report, &report_len, &summary_restrict, &summary_restrict_len,
-                    &archive, &postproc, &postproc_len, &postproc_data,
-                    &sort, &sort_len, &targetfile, &targetfile_len))
-            return nullptr;
-
         try {
-            std::unique_ptr<sys::NamedFileDescriptor> output;
-            auto pathname = std::string(outfile, outfile_len);
-            if (pathname != "-")
-                output.reset(new sys::File(pathname, O_WRONLY | O_CREAT | O_TRUNC));
-            else
-                output.reset(new arki::core::Stdout);
-
-            arki::Matcher query = matcher_from_python(py_query);
-
-            arki::runtime::ProcessorMaker pmaker;
-            // Initialize the processor maker
-            pmaker.summary = summary;
-            pmaker.summary_short = summary_short;
-            pmaker.yaml = yaml;
-            pmaker.json = json;
-            pmaker.annotate = annotate;
-            pmaker.data_only = data;
-            pmaker.data_inline = out_inline;
-            if (postproc) pmaker.postprocess = std::string(postproc, postproc_len);
-            if (report) pmaker.report = std::string(report, report_len);
-            if (summary_restrict) pmaker.summary_restrict = std::string(summary_restrict, summary_restrict_len);
-            if (sort) pmaker.sort = std::string(sort, sort_len);
-            if (archive)
-            {
-                if (archive == Py_None)
-                    pmaker.archive = "tar";
-                else
-                    pmaker.archive = string_from_python(archive);
-            }
-
-            auto processor = pmaker.make(query, *output);
-
-            // If targetfile is requested, wrap with the targetfile processor
-            if (targetfile)
-            {
-                arki::runtime::SingleOutputProcessor* sop = dynamic_cast<arki::runtime::SingleOutputProcessor*>(processor.release());
-                assert(sop != nullptr);
-                processor.reset(new arki::runtime::TargetFileProcessor(sop, std::string(targetfile, targetfile_len)));
-            }
-
+            auto processor = build_processor(args, kw);
             self->arki_query->processor = processor.release();
-
             Py_RETURN_NONE;
         } ARKI_CATCH_RETURN_PYO
     }
@@ -165,6 +93,7 @@ struct query_stdin : public MethKwargs<query_stdin, arkipy_ArkiQuery>
                 ReleaseGIL rg;
                 all_successful = arki::runtime::foreach_stdin(
                         std::string(format, format_len), dest);
+                self->arki_query->processor->end();
             }
 
             if (all_successful)
@@ -201,6 +130,7 @@ struct query_merged : public MethKwargs<query_merged, arkipy_ArkiQuery>
                 ReleaseGIL rg;
                 all_successful = arki::runtime::foreach_merged(
                         self->arki_query->inputs, dest);
+                self->arki_query->processor->end();
             }
 
             if (all_successful)
@@ -243,6 +173,7 @@ struct query_qmacro : public MethKwargs<query_qmacro, arkipy_ArkiQuery>
                         std::string(macro_name, macro_name_len),
                         std::string(macro_query, macro_query_len),
                         self->arki_query->inputs, dest);
+                self->arki_query->processor->end();
             }
 
             if (all_successful)
@@ -277,7 +208,10 @@ struct query_sections : public MethKwargs<query_sections, arkipy_ArkiQuery>
             {
                 ReleaseGIL rg;
                 all_successful = arki::runtime::foreach_sections(
-                        self->arki_query->inputs, dest);
+                        self->arki_query->inputs,
+                        std::string(), std::string(), std::string(),
+                        dest);
+                self->arki_query->processor->end();
             }
 
             if (all_successful)
