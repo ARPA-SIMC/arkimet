@@ -152,54 +152,54 @@ dataset::Reader& QmacroSource::reader() const { return *m_reader; }
 void QmacroSource::open() {}
 void QmacroSource::close(bool successful) {}
 
-bool foreach_stdin(const std::string& format, std::function<bool(Source&)> dest)
+bool foreach_stdin(const std::string& format, std::function<void(Source&)> dest)
 {
-    bool all_successful = true;
+    bool success = true;
     StdinSource source(format);
     source.open();
     try {
-        all_successful = dest(source);
+        dest(source);
     } catch (std::exception& e) {
         nag::warning("%s failed: %s", source.name().c_str(), e.what());
-        all_successful = false;
+        success = false;
     }
-    source.close(all_successful);
-    return all_successful;
+    source.close(success);
+    return success;
 }
 
-bool foreach_merged(const core::cfg::Sections& input, std::function<bool(Source&)> dest)
+bool foreach_merged(const core::cfg::Sections& input, std::function<void(Source&)> dest)
 {
-    bool all_successful = true;
+    bool success = true;
     MergedSource source(input);
     nag::verbose("Processing %s...", source.name().c_str());
     source.open();
     try {
-        all_successful = dest(source);
+        dest(source);
     } catch (std::exception& e) {
         nag::warning("%s failed: %s", source.name().c_str(), e.what());
-        all_successful = false;
+        success = false;
     }
-    source.close(all_successful);
-    return all_successful;
+    source.close(success);
+    return success;
 }
 
-bool foreach_qmacro(const std::string& macro_name, const std::string& macro_query, const core::cfg::Sections& inputs, std::function<bool(Source&)> dest)
+bool foreach_qmacro(const std::string& macro_name, const std::string& macro_query, const core::cfg::Sections& inputs, std::function<void(Source&)> dest)
 {
-    bool all_successful = true;
+    bool success = true;
     QmacroSource source(macro_name, macro_query, inputs);
     nag::verbose("Processing %s...", source.name().c_str());
     source.open();
     try {
-        all_successful = dest(source);
+        dest(source);
     } catch (std::exception& e) {
         nag::warning("%s failed: %s", source.name().c_str(), e.what());
-        all_successful = false;
+        success = false;
     }
-    source.close(all_successful);
-    return all_successful;
+    source.close(success);
+    return success;
 }
 
-bool foreach_sections(const core::cfg::Sections& inputs, const std::string& moveok, const std::string& moveko, const std::string& movework, std::function<bool(Source&)> dest)
+bool foreach_sections(const core::cfg::Sections& inputs, const std::string& moveok, const std::string& moveko, const std::string& movework, std::function<void(Source&)> dest)
 {
     bool all_successful = true;
     // Query all the datasets in sequence
@@ -212,9 +212,9 @@ bool foreach_sections(const core::cfg::Sections& inputs, const std::string& move
 
         nag::verbose("Processing %s...", source.name().c_str());
         source.open();
-        bool success;
+        bool success = true;
         try {
-            success = dest(source);
+            dest(source);
         } catch (std::exception& e) {
             nag::warning("%s failed: %s", source.name().c_str(), e.what());
             success = false;
