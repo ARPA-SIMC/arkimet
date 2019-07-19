@@ -28,9 +28,6 @@ struct DispatchResults
     // and summary_so_far will report the elapsed time
     struct timeval end_time;
 
-    /// True if everything was imported successfully
-    bool success = true;
-
     /// Count of metadata imported successfully in the destination dataset
     unsigned successful = 0;
 
@@ -44,6 +41,7 @@ struct DispatchResults
     /// Count of metadata not imported at all
     unsigned not_imported = 0;
 
+
     DispatchResults();
 
     /// Notify the end of processing for this source
@@ -51,6 +49,9 @@ struct DispatchResults
 
     /// Format a summary
     std::string summary() const;
+
+    /// Check if dispatching was successful
+    bool success(bool ignore_duplicates) const;
 };
 
 /// Dispatch metadata
@@ -63,8 +64,6 @@ struct MetadataDispatch
     size_t partial_batch_data_size = 0;
     dataset::Memory results;
     DatasetProcessor& next;
-    bool ignore_duplicates = false;
-    bool reportStatus = false;
 
     /// Directory where we store copyok files
     std::string dir_copyok;

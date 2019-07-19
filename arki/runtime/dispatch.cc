@@ -43,6 +43,15 @@ void DispatchResults::end()
     gettimeofday(&end_time, NULL);
 }
 
+bool DispatchResults::success(bool ignore_duplicates) const
+{
+    bool success = !(not_imported || in_error_dataset);
+    if (ignore_duplicates)
+        return success && (successful || duplicates);
+    else
+        return success && (successful && !duplicates);
+}
+
 std::string DispatchResults::summary() const
 {
     std::string timeinfo;
@@ -136,18 +145,6 @@ DispatchResults MetadataDispatch::process(dataset::Reader& ds, const std::string
     next.process(results, name);
 
     stats.end();
-
-    stats.success = !(stats.not_imported || stats.in_error_dataset);
-    if (ignore_duplicates)
-        stats.success = stats.successful && (stats.success || stats.duplicates);
-    else
-        stats.success = stats.successful && (stats.success && !stats.duplicates);
-
-    if (reportStatus)
-    {
-        cerr << name << ": " << stats.summary() << endl;
-        cerr.flush();
-    }
 
     flush();
 
