@@ -29,6 +29,42 @@ struct Options : public runtime::ScanCommandLine
 
 }
 
+ArkiScan::~ArkiScan()
+{
+    delete processor;
+    delete dispatcher;
+}
+
+std::function<bool(runtime::Source& source)> ArkiScan::make_dest_func(bool& dispatch_ok)
+{
+    if (dispatcher)
+    {
+        return [&](runtime::Source& source) {
+            dispatch_ok = source.dispatch(*dispatcher) && dispatch_ok;
+            return true;
+        };
+    } else {
+        return [&](runtime::Source& source) {
+            dispatch_ok = source.process(*processor) && dispatch_ok;
+            return true;
+        };
+    }
+}
+
+bool ArkiScan::run_scan_stdin(const std::string& format)
+{
+    bool dispatch_ok = true;
+    auto dest = make_dest_func(dispatch_ok);
+    return foreach_stdin(format, dest) && dispatch_ok;
+}
+
+bool ArkiScan::run_scan_inputs(const std::string& moveok, const std::string& moveko, const std::string& movework)
+{
+    bool dispatch_ok = true;
+    auto dest = make_dest_func(dispatch_ok);
+    return foreach_sections(inputs, moveok, moveko, movework, dest) && dispatch_ok;
+}
+
 int ArkiScan::run(int argc, const char* argv[])
 {
     Options opts;
@@ -38,28 +74,19 @@ int ArkiScan::run(int argc, const char* argv[])
 
         runtime::init();
 
-        core::cfg::Sections merged;
-        Inputs inputs(merged, opts);
+        Inputs inputs(this->inputs, opts);
         auto output = make_output(*opts.outfile);
 
         bool all_successful;
-        bool dispatch_ok = true;
-        auto processor = processor::create(opts, *output);
+        processor = processor::create(opts, *output).release();
         if (opts.dispatch_options->dispatch_requested())
-        {
-            MetadataDispatch dispatcher(*opts.dispatch_options, *processor);
-            all_successful = foreach_source(opts, inputs, [&](runtime::Source& source) {
-                dispatch_ok = source.dispatch(dispatcher) && dispatch_ok;
-                return true;
-            });
-        } else {
-            all_successful = foreach_source(opts, inputs, [&](runtime::Source& source) {
-                dispatch_ok = source.process(*processor) && dispatch_ok;
-                return true;
-            });
-        }
+            dispatcher = new MetadataDispatch(*opts.dispatch_options, *processor);
 
-        all_successful = all_successful && dispatch_ok;
+        if (opts.stdin_input->isSet()) {
+            all_successful = run_scan_stdin(opts.stdin_input->stringValue());
+        } else {
+            all_successful = run_scan_inputs(opts.dispatch_options->moveok->stringValue(), opts.dispatch_options->moveko->stringValue(), opts.dispatch_options->movework->stringValue());
+        }
 
         processor->end();
 

@@ -89,6 +89,7 @@ struct MetadataDispatch
     std::unique_ptr<core::File> copyko;
 
 
+    MetadataDispatch(DatasetProcessor& next);
     MetadataDispatch(const DispatchOptions& args, DatasetProcessor& next);
     ~MetadataDispatch();
 

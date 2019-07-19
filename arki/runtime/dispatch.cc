@@ -128,6 +128,12 @@ static void merge_config(core::cfg::Sections& dest_sections, const core::cfg::Se
     }
 }
 
+MetadataDispatch::MetadataDispatch(DatasetProcessor& next)
+    : next(next)
+{
+    timerclear(&startTime);
+}
+
 MetadataDispatch::MetadataDispatch(const DispatchOptions& args, DatasetProcessor& next)
     : next(next)
 {
@@ -229,7 +235,6 @@ bool MetadataDispatch::process(dataset::Reader& ds, const std::string& name)
         success = success && (countSuccessful || countDuplicates);
     else
         success = success && (countSuccessful && !countDuplicates);
-
     flush();
 
     countSuccessful = 0;

@@ -16606,36 +16606,6 @@
  },
  {
   "doc": "",
-  "group": "arki_runtime_arkiscan",
-  "method": "dispatch_flush_threshold"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkiscan",
-  "method": "dispatch_copyok_copyko"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkiscan",
-  "method": "dispatch_copyok"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkiscan",
-  "method": "dispatch_copyko"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkiscan",
-  "method": "dispatch_issue68"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkiscan",
-  "method": "dispatch_issue154"
- },
- {
-  "doc": "",
   "group": "arki_runtime",
   "method": "files"
  },

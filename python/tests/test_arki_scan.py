@@ -3,6 +3,7 @@ import unittest
 import shutil
 import os
 from contextlib import contextmanager
+from arkimet.cmdline.scan import Scan
 from arkimet.test import CatchOutput, skip_unless_vm2
 
 
@@ -66,17 +67,17 @@ def parse_metadata(buf):
     return mds
 
 
-class TestArkiQuery(unittest.TestCase):
+class TestArkiScan(unittest.TestCase):
     def runcmd(self, *args):
-        arkiscan = arki.ArkiScan()
-        res = arkiscan.run(args=("arki-scan",) + args)
-        if res == 0:
-            return None
-        return res
-        # try:
-        #     return Query.main(args)
-        # except SystemExit as e:
-        #     return e.args[0]
+        # arkiscan = arki.ArkiScan()
+        # res = arkiscan.run(args=("arki-scan",) + args)
+        # if res == 0:
+        #     return None
+        # return res
+        try:
+            return Scan.main(args)
+        except SystemExit as e:
+            return e.args[0]
 
     def read(self, fname):
         with open(fname, "rb") as fd:
@@ -94,25 +95,25 @@ class TestArkiQuery(unittest.TestCase):
         out = CatchOutput()
         with out.redirect():
             res = self.runcmd("--yaml", "--stdin=grib", "inbound/fixture.grib1")
-        self.assertRegex(out.stderr, b"^you cannot specify input files or datasets when using --stdin")
+        self.assertRegex(out.stderr, b"you cannot specify input files or datasets when using --stdin")
         self.assertEqual(out.stdout, b"")
-        self.assertEqual(res, 1)
+        self.assertEqual(res, 2)
 
     def test_stdin3(self):
         out = CatchOutput()
         with out.redirect():
             res = self.runcmd("--files=inbound/fixture.grib1", "--stdin=grib")
-        self.assertRegex(out.stderr, b"^--stdin cannot be used together with --files")
+        self.assertRegex(out.stderr, b"you cannot specify input files or datasets when using --stdin")
         self.assertEqual(out.stdout, b"")
-        self.assertEqual(res, 1)
+        self.assertEqual(res, 2)
 
     def test_stdin4(self):
         out = CatchOutput()
         with out.redirect():
             res = self.runcmd("--dispatch=/dev/null", "--stdin=grib")
-        self.assertRegex(out.stderr, b"^--stdin cannot be used together with --dispatch")
+        self.assertRegex(out.stderr, b"--stdin cannot be used together with --dispatch")
         self.assertEqual(out.stdout, b"")
-        self.assertEqual(res, 1)
+        self.assertEqual(res, 2)
 
     def test_scan_grib(self):
         out = CatchOutput()
@@ -158,23 +159,25 @@ class TestArkiQuery(unittest.TestCase):
         out = CatchOutput()
         with out.redirect():
             res = self.runcmd("--yaml", "-")
-        self.assertEqual(out.stderr, b"file - does not exist\n")
+        self.assertRegex(out.stderr, b"use --stdin to read data from standard input")
         self.assertEqual(out.stdout, b"")
-        self.assertEqual(res, 1)
+        self.assertEqual(res, 2)
 
         out = CatchOutput()
-        with out.redirect():
-            res = self.runcmd("--json", "bufr:-")
-        self.assertEqual(out.stderr, b"file - does not exist\n")
+        with self.assertRaises(RuntimeError) as e:
+            with out.redirect():
+                res = self.runcmd("--json", "bufr:-")
+        self.assertRegex(str(e.exception), "file - does not exist")
+        self.assertEqual(out.stderr, b"")
         self.assertEqual(out.stdout, b"")
-        self.assertEqual(res, 1)
+        self.assertEqual(res, 2)
 
         out = CatchOutput()
         with out.redirect():
             res = self.runcmd("--dispatch=/dev/null", "-")
-        self.assertEqual(out.stderr, b"file - does not exist\n")
+        self.assertRegex(out.stderr, b"use --stdin to read data from standard input")
         self.assertEqual(out.stdout, b"")
-        self.assertEqual(res, 1)
+        self.assertEqual(res, 2)
 
     def test_dispatch_plain(self):
         with datasets():
@@ -227,7 +230,7 @@ class TestArkiQuery(unittest.TestCase):
                     "inbound/test.grib1"
                 )
             self.assertEqual(out.stderr, b"")
-            self.assertEqual(res, 2)
+            self.assertEqual(res, 3)
             mds = parse_metadata(out.stdout)
             self.assertEqual(len(mds), 3)
 
@@ -235,6 +238,7 @@ class TestArkiQuery(unittest.TestCase):
             self.assertEqual(mds[1].to_python("source")["file"], os.path.abspath("testenv/testds/2007/07-07.grib"))
             self.assertEqual(mds[2].to_python("source")["file"], os.path.abspath("testenv/error/2007/10-09.grib"))
 
+            self.assertTrue(os.path.exists("inbound/test.grib1"))
             self.assertTrue(os.path.exists("testenv/copyok/test.grib1"))
             self.assertEqual(os.path.getsize("testenv/copyok/test.grib1"), 42178)
             self.assertTrue(os.path.exists("testenv/copyko/test.grib1"))
@@ -259,6 +263,7 @@ class TestArkiQuery(unittest.TestCase):
             self.assertEqual(mds[1].to_python("source")["file"], os.path.abspath("testenv/testds/2007/07-07.grib"))
             self.assertEqual(mds[2].to_python("source")["file"], os.path.abspath("testenv/testds/2007/10-09.grib"))
 
+            self.assertTrue(os.path.exists("inbound/test.grib1"))
             self.assertTrue(os.path.exists("testenv/copyok/test.grib1"))
             self.assertEqual(os.path.getsize("testenv/copyok/test.grib1"), 44412)
             self.assertFalse(os.path.exists("testenv/copyko/test.grib1"))
@@ -274,7 +279,7 @@ class TestArkiQuery(unittest.TestCase):
                     "inbound/test.grib1"
                 )
             self.assertEqual(out.stderr, b"")
-            self.assertEqual(res, 2)
+            self.assertEqual(res, 3)
             mds = parse_metadata(out.stdout)
             self.assertEqual(len(mds), 3)
 
@@ -282,9 +287,85 @@ class TestArkiQuery(unittest.TestCase):
             self.assertEqual(mds[1].to_python("source")["file"], os.path.abspath("testenv/error/2007/07-07.grib"))
             self.assertEqual(mds[2].to_python("source")["file"], os.path.abspath("testenv/error/2007/10-09.grib"))
 
+            self.assertTrue(os.path.exists("inbound/test.grib1"))
             self.assertFalse(os.path.exists("testenv/copyok/test.grib1"))
             self.assertTrue(os.path.exists("testenv/copyko/test.grib1"))
             self.assertEqual(os.path.getsize("testenv/copyko/test.grib1"), 44412)
+
+    def test_dispatch_moveok(self):
+        with datasets(filter="origin:GRIB1"):
+            shutil.copyfile("inbound/test.grib1", "testenv/test.grib1")
+            out = CatchOutput()
+            with out.redirect():
+                res = self.runcmd(
+                    "--moveok=testenv/copyok",
+                    "--moveko=testenv/copyko",
+                    "--dispatch=testenv/config",
+                    "testenv/test.grib1"
+                )
+            self.assertEqual(out.stderr, b"")
+            self.assertIsNone(res)
+            mds = parse_metadata(out.stdout)
+            self.assertEqual(len(mds), 3)
+
+            self.assertEqual(mds[0].to_python("source")["file"], os.path.abspath("testenv/testds/2007/07-08.grib"))
+            self.assertEqual(mds[1].to_python("source")["file"], os.path.abspath("testenv/testds/2007/07-07.grib"))
+            self.assertEqual(mds[2].to_python("source")["file"], os.path.abspath("testenv/testds/2007/10-09.grib"))
+
+            self.assertFalse(os.path.exists("testenv/test.grib1"))
+            self.assertTrue(os.path.exists("testenv/copyok/test.grib1"))
+            self.assertEqual(os.path.getsize("testenv/copyok/test.grib1"), 44412)
+            self.assertFalse(os.path.exists("testenv/copyko/test.grib1"))
+
+    def test_dispatch_moveko(self):
+        with datasets(filter="origin:GRIB2"):
+            shutil.copyfile("inbound/test.grib1", "testenv/test.grib1")
+            out = CatchOutput()
+            with out.redirect():
+                res = self.runcmd(
+                    "--moveok=testenv/copyok",
+                    "--moveko=testenv/copyko",
+                    "--dispatch=testenv/config",
+                    "testenv/test.grib1"
+                )
+            self.assertEqual(out.stderr, b"")
+            self.assertEqual(res, 3)
+            mds = parse_metadata(out.stdout)
+            self.assertEqual(len(mds), 3)
+
+            self.assertEqual(mds[0].to_python("source")["file"], os.path.abspath("testenv/error/2007/07-08.grib"))
+            self.assertEqual(mds[1].to_python("source")["file"], os.path.abspath("testenv/error/2007/07-07.grib"))
+            self.assertEqual(mds[2].to_python("source")["file"], os.path.abspath("testenv/error/2007/10-09.grib"))
+
+            self.assertFalse(os.path.exists("testenv/test.grib1"))
+            self.assertFalse(os.path.exists("testenv/copyok/test.grib1"))
+            self.assertTrue(os.path.exists("testenv/copyko/test.grib1"))
+            self.assertEqual(os.path.getsize("testenv/copyko/test.grib1"), 44412)
+
+    def test_dispatch_moveok_moveko(self):
+        with datasets(filter="origin:GRIB1,200 or GRIB1,80"):
+            shutil.copyfile("inbound/test.grib1", "testenv/test.grib1")
+            out = CatchOutput()
+            with out.redirect():
+                res = self.runcmd(
+                    "--moveok=testenv/copyok",
+                    "--moveko=testenv/copyko",
+                    "--dispatch=testenv/config",
+                    "testenv/test.grib1"
+                )
+            self.assertEqual(out.stderr, b"")
+            self.assertEqual(res, 3)
+            mds = parse_metadata(out.stdout)
+            self.assertEqual(len(mds), 3)
+
+            self.assertEqual(mds[0].to_python("source")["file"], os.path.abspath("testenv/testds/2007/07-08.grib"))
+            self.assertEqual(mds[1].to_python("source")["file"], os.path.abspath("testenv/testds/2007/07-07.grib"))
+            self.assertEqual(mds[2].to_python("source")["file"], os.path.abspath("testenv/error/2007/10-09.grib"))
+
+            self.assertFalse(os.path.exists("testenv/test.grib1"))
+            self.assertFalse(os.path.exists("testenv/copyok/test.grib1"))
+            self.assertTrue(os.path.exists("testenv/copyko/test.grib1"))
+            self.assertEqual(os.path.getsize("testenv/copyko/test.grib1"), 2234)
 
     def test_dispatch_issue68(self):
         skip_unless_vm2()
@@ -299,7 +380,7 @@ class TestArkiQuery(unittest.TestCase):
                     "inbound/issue68.vm2",
                 )
             self.assertEqual(out.stderr, b"")
-            self.assertEqual(res, 2)
+            self.assertEqual(res, 3)
             mds = parse_metadata(out.stdout)
             self.assertEqual(len(mds), 5)
 
@@ -332,7 +413,7 @@ class TestArkiQuery(unittest.TestCase):
                     "inbound/issue68.vm2",
                 )
             self.assertEqual(out.stderr, b"")
-            self.assertEqual(res, 2)
+            self.assertEqual(res, 3)
             mds = parse_metadata(out.stdout)
             self.assertEqual(len(mds), 5)
 

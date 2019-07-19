@@ -109,17 +109,10 @@ struct QmacroSource : public Source
 };
 
 
-/**
- * Instantiate all sources requested on command line.
- *
- * Return true if dest returned true (successful) on all sources.
- */
-bool foreach_source(ScanCommandLine& args, const Inputs& inputs, std::function<bool(Source&)> dest);
-
 bool foreach_stdin(const std::string& format, std::function<bool(Source&)> dest);
 bool foreach_merged(const core::cfg::Sections& input, std::function<bool(Source&)> dest);
 bool foreach_qmacro(const std::string& macro_name, const std::string& macro_query, const core::cfg::Sections& inputs, std::function<bool(Source&)> dest);
-bool foreach_sections(const core::cfg::Sections& inputs, std::function<bool(Source&)> dest);
+bool foreach_sections(const core::cfg::Sections& inputs, const std::string& moveok, const std::string& moveko, const std::string& movework, std::function<bool(Source&)> dest);
 
 }
 }
