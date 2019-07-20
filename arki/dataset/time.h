@@ -11,8 +11,9 @@ struct SessionTime
 {
     struct Override
     {
-        SessionTime* orig;
+        SessionTime* orig = nullptr;
 
+        Override() = default;
         Override(SessionTime* orig);
         Override(const Override&) = delete;
         Override(Override&&);

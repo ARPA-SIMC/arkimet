@@ -8,10 +8,14 @@
 #include "utils/values.h"
 #include "utils/methods.h"
 #include "utils/type.h"
+#include "utils/dict.h"
 #include "arki/core/file.h"
 #include "arki/core/cfg.h"
 #include "arki/dataset.h"
 #include "arki/dataset/http.h"
+#include "arki/dataset/time.h"
+#include "arki/dataset/reporter.h"
+#include "arki/dataset/segmented.h"
 #include "arki/sort.h"
 #include <vector>
 #include "config.h"
@@ -25,6 +29,7 @@ extern "C" {
 
 PyTypeObject* arkipy_DatasetReader_Type = nullptr;
 PyTypeObject* arkipy_DatasetWriter_Type = nullptr;
+PyTypeObject* arkipy_DatasetChecker_Type = nullptr;
 
 PyObject* arkipy_ImportError = nullptr;
 PyObject* arkipy_ImportDuplicateError = nullptr;
@@ -33,6 +38,146 @@ PyObject* arkipy_ImportFailedError = nullptr;
 }
 
 namespace {
+
+class PythonReporter : public dataset::Reporter
+{
+protected:
+    PyObject* o;
+
+public:
+    PythonReporter(PyObject* o)
+        : o(o)
+    {
+        Py_INCREF(o);
+    }
+    PythonReporter(const PythonReporter&) = delete;
+    PythonReporter(PythonReporter&&) = delete;
+    ~PythonReporter()
+    {
+        Py_DECREF(o);
+    }
+    PythonReporter& operator=(const PythonReporter&) = delete;
+    PythonReporter& operator=(PythonReporter&&) = delete;
+
+    void operation_progress(const std::string& ds, const std::string& operation, const std::string& message) override
+    {
+        AcquireGIL gil;
+        throw_ifnull(PyObject_CallMethod(
+                    o, "operation_progress", "s#s#s#",
+                    ds.data(), ds.size(),
+                    operation.data(), operation.size(),
+                    message.data(), message.size()));
+    }
+    void operation_manual_intervention(const std::string& ds, const std::string& operation, const std::string& message) override
+    {
+        AcquireGIL gil;
+        throw_ifnull(PyObject_CallMethod(
+                    o, "operation_manual_intervention", "s#s#s#",
+                    ds.data(), ds.size(),
+                    operation.data(), operation.size(),
+                    message.data(), message.size()));
+    }
+    void operation_aborted(const std::string& ds, const std::string& operation, const std::string& message) override
+    {
+        AcquireGIL gil;
+        throw_ifnull(PyObject_CallMethod(
+                    o, "operation_aborted", "s#s#s#",
+                    ds.data(), ds.size(),
+                    operation.data(), operation.size(),
+                    message.data(), message.size()));
+    }
+    void operation_report(const std::string& ds, const std::string& operation, const std::string& message) override
+    {
+        AcquireGIL gil;
+        throw_ifnull(PyObject_CallMethod(
+                    o, "operation_report", "s#s#s#",
+                    ds.data(), ds.size(),
+                    operation.data(), operation.size(),
+                    message.data(), message.size()));
+    }
+    void segment_info(const std::string& ds, const std::string& relpath, const std::string& message) override
+    {
+        AcquireGIL gil;
+        throw_ifnull(PyObject_CallMethod(
+                    o, "segment_info", "s#s#s#",
+                    ds.data(), ds.size(),
+                    relpath.data(), relpath.size(),
+                    message.data(), message.size()));
+    }
+    void segment_repack(const std::string& ds, const std::string& relpath, const std::string& message) override
+    {
+        AcquireGIL gil;
+        throw_ifnull(PyObject_CallMethod(
+                    o, "segment_repack", "s#s#s#",
+                    ds.data(), ds.size(),
+                    relpath.data(), relpath.size(),
+                    message.data(), message.size()));
+    }
+    void segment_archive(const std::string& ds, const std::string& relpath, const std::string& message) override
+    {
+        AcquireGIL gil;
+        throw_ifnull(PyObject_CallMethod(
+                    o, "segment_archive", "s#s#s#",
+                    ds.data(), ds.size(),
+                    relpath.data(), relpath.size(),
+                    message.data(), message.size()));
+    }
+    void segment_delete(const std::string& ds, const std::string& relpath, const std::string& message) override
+    {
+        AcquireGIL gil;
+        throw_ifnull(PyObject_CallMethod(
+                    o, "segment_delete", "s#s#s#",
+                    ds.data(), ds.size(),
+                    relpath.data(), relpath.size(),
+                    message.data(), message.size()));
+    }
+    void segment_deindex(const std::string& ds, const std::string& relpath, const std::string& message) override
+    {
+        AcquireGIL gil;
+        throw_ifnull(PyObject_CallMethod(
+                    o, "segment_deindex", "s#s#s#",
+                    ds.data(), ds.size(),
+                    relpath.data(), relpath.size(),
+                    message.data(), message.size()));
+    }
+    void segment_rescan(const std::string& ds, const std::string& relpath, const std::string& message) override
+    {
+        AcquireGIL gil;
+        throw_ifnull(PyObject_CallMethod(
+                    o, "segment_rescan", "s#s#s#",
+                    ds.data(), ds.size(),
+                    relpath.data(), relpath.size(),
+                    message.data(), message.size()));
+    }
+    void segment_tar(const std::string& ds, const std::string& relpath, const std::string& message) override
+    {
+        AcquireGIL gil;
+        throw_ifnull(PyObject_CallMethod(
+                    o, "segment_tar", "s#s#s#",
+                    ds.data(), ds.size(),
+                    relpath.data(), relpath.size(),
+                    message.data(), message.size()));
+    }
+    void segment_compress(const std::string& ds, const std::string& relpath, const std::string& message) override
+    {
+        AcquireGIL gil;
+        throw_ifnull(PyObject_CallMethod(
+                    o, "segment_compress", "s#s#s#",
+                    ds.data(), ds.size(),
+                    relpath.data(), relpath.size(),
+                    message.data(), message.size()));
+    }
+    void segment_issue51(const std::string& ds, const std::string& relpath, const std::string& message) override
+    {
+        AcquireGIL gil;
+        throw_ifnull(PyObject_CallMethod(
+                    o, "segment_issue51", "s#s#s#",
+                    ds.data(), ds.size(),
+                    relpath.data(), relpath.size(),
+                    message.data(), message.size()));
+    }
+};
+
 
 /*
  * dataset.Reader
@@ -452,6 +597,222 @@ DatasetWriterDef* writer_def = nullptr;
 
 
 /*
+ * dataset.Checker
+ */
+
+struct repack : public MethKwargs<repack, arkipy_DatasetChecker>
+{
+    constexpr static const char* name = "repack";
+    constexpr static const char* signature = "reporter: Any=None, segment_filter: Union[arkimet.Matcher, str]="", offline: bool=True, online: bool=True, readonly: bool=True, accurate: bool=False, time_override: int=None";
+    constexpr static const char* returns = "";
+    constexpr static const char* summary = "Perform repacking on the dataset";
+
+    static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
+    {
+        static const char* kwlist[] = { "reporter", "segment_filter", "offline", "online", "readonly", "accurate", "time_override", nullptr };
+        PyObject* arg_reporter = nullptr;
+        PyObject* arg_segment_filter = nullptr;
+        int arg_offline = 1;
+        int arg_online = 1;
+        int arg_readonly = 1;
+        int arg_accurate = 0;
+        unsigned long long arg_time_override = 0;
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "|OOppppK", const_cast<char**>(kwlist),
+                &arg_reporter, &arg_segment_filter,
+                &arg_offline, &arg_online, &arg_readonly, &arg_accurate,
+                &arg_time_override))
+            return nullptr;
+
+        try {
+            arki::dataset::CheckerConfig cfg;
+            if (arg_reporter)
+                cfg.reporter = make_shared<PythonReporter>(arg_reporter);
+
+            if (arg_segment_filter)
+                cfg.segment_filter = matcher_from_python(arg_segment_filter);
+
+            cfg.offline = arg_offline;
+            cfg.online = arg_online;
+            cfg.readonly = arg_readonly;
+            cfg.accurate = arg_accurate;
+
+            if (arg_time_override)
+            {
+                ReleaseGIL gil;
+                auto o = dataset::SessionTime::local_override(arg_time_override);
+                self->ds->repack(cfg);
+            } else {
+                ReleaseGIL gil;
+                self->ds->repack(cfg);
+            }
+
+            Py_RETURN_NONE;
+        } ARKI_CATCH_RETURN_PYO
+    }
+};
+
+struct check : public MethKwargs<check, arkipy_DatasetChecker>
+{
+    constexpr static const char* name = "check";
+    constexpr static const char* signature = "reporter: Any=None, segment_filter: Union[arkimet.Matcher, str]="", offline: bool=True, online: bool=True, readonly: bool=True, accurate: bool=False, time_override: int=None";
+    constexpr static const char* returns = "";
+    constexpr static const char* summary = "Perform checking/fixing on the dataset";
+
+    static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
+    {
+        static const char* kwlist[] = { "reporter", "segment_filter", "offline", "online", "readonly", "accurate", "time_override", nullptr };
+        PyObject* arg_reporter = nullptr;
+        PyObject* arg_segment_filter = nullptr;
+        int arg_offline = 1;
+        int arg_online = 1;
+        int arg_readonly = 1;
+        int arg_accurate = 0;
+        unsigned long long arg_time_override = 0;
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "|OOppppK", const_cast<char**>(kwlist),
+                &arg_reporter, &arg_segment_filter,
+                &arg_offline, &arg_online, &arg_readonly, &arg_accurate,
+                &arg_time_override))
+            return nullptr;
+
+        try {
+            arki::dataset::CheckerConfig cfg;
+            if (arg_reporter)
+                cfg.reporter = make_shared<PythonReporter>(arg_reporter);
+
+            if (arg_segment_filter)
+                cfg.segment_filter = matcher_from_python(arg_segment_filter);
+
+            cfg.offline = arg_offline;
+            cfg.online = arg_online;
+            cfg.readonly = arg_readonly;
+            cfg.accurate = arg_accurate;
+
+            if (arg_time_override)
+            {
+                ReleaseGIL gil;
+                auto o = dataset::SessionTime::local_override(arg_time_override);
+                self->ds->check(cfg);
+            } else {
+                ReleaseGIL gil;
+                self->ds->check(cfg);
+            }
+
+            Py_RETURN_NONE;
+        } ARKI_CATCH_RETURN_PYO
+    }
+};
+
+struct segment_state : public MethKwargs<segment_state, arkipy_DatasetChecker>
+{
+    constexpr static const char* name = "segment_state";
+    constexpr static const char* signature = "reporter: Any=None, segment_filter: Union[arkimet.Matcher, str]="", offline: bool=True, online: bool=True, readonly: bool=True, accurate: bool=False, time_override: int=None";
+    constexpr static const char* returns = "Dict[str, str]";
+    constexpr static const char* summary = "Compute the state of each segment in the archive";
+
+    static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
+    {
+        static const char* kwlist[] = { "reporter", "segment_filter", "offline", "online", "readonly", "accurate", "time_override", nullptr };
+        PyObject* arg_reporter = nullptr;
+        PyObject* arg_segment_filter = nullptr;
+        int arg_offline = 1;
+        int arg_online = 1;
+        int arg_readonly = 1;
+        int arg_accurate = 0;
+        unsigned long long arg_time_override = 0;
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "|OOppppK", const_cast<char**>(kwlist),
+                &arg_reporter, &arg_segment_filter,
+                &arg_offline, &arg_online, &arg_readonly, &arg_accurate,
+                &arg_time_override))
+            return nullptr;
+
+        try {
+            dataset::segmented::Checker* checker = dynamic_cast<dataset::segmented::Checker*>(self->ds);
+            if (!checker)
+                Py_RETURN_NONE;
+
+            arki::dataset::CheckerConfig cfg;
+            if (arg_reporter)
+                cfg.reporter = make_shared<PythonReporter>(arg_reporter);
+
+            if (arg_segment_filter)
+                cfg.segment_filter = matcher_from_python(arg_segment_filter);
+
+            cfg.offline = arg_offline;
+            cfg.online = arg_online;
+            cfg.readonly = arg_readonly;
+            cfg.accurate = arg_accurate;
+
+            pyo_unique_ptr res(throw_ifnull(PyDict_New()));
+
+            dataset::SessionTime::Override time_override;
+            if (arg_time_override)
+                time_override = dataset::SessionTime::local_override(arg_time_override);
+
+            {
+                ReleaseGIL gil;
+                checker->segments_recursive(cfg, [&](dataset::segmented::Checker& checker, dataset::segmented::CheckerSegment& segment) {
+                    std::string key = checker.name() + ":" + segment.path_relative();
+                    auto state = segment.scan(*cfg.reporter, !cfg.accurate);
+                    AcquireGIL gil;
+                    set_dict(res, key.c_str(), state.state.to_string());
+                });
+            }
+            return res.release();
+        } ARKI_CATCH_RETURN_PYO
+    }
+};
+
+struct DatasetCheckerDef : public Type<DatasetCheckerDef, arkipy_DatasetChecker>
+{
+    constexpr static const char* name = "Checker";
+    constexpr static const char* qual_name = "arkimet.dataset.Checker";
+    constexpr static const char* doc = R"(
+Check functions for an arkimet dataset.
+
+TODO: document
+
+Examples::
+
+    TODO: add examples
+)";
+    GetSetters<> getsetters;
+    Methods<repack, check, segment_state> methods;
+
+    static void _dealloc(Impl* self)
+    {
+        delete self->ds;
+        self->ds = nullptr;
+        Py_TYPE(self)->tp_free((PyObject*)self);
+    }
+
+    static PyObject* _str(Impl* self)
+    {
+        return PyUnicode_FromFormat("dataset.Checker(%s, %s)", self->ds->type().c_str(), self->ds->name().c_str());
+    }
+
+    static PyObject* _repr(Impl* self)
+    {
+        return PyUnicode_FromFormat("dataset.Checker(%s, %s)", self->ds->type().c_str(), self->ds->name().c_str());
+    }
+
+    static int _init(Impl* self, PyObject* args, PyObject* kw)
+    {
+        static const char* kwlist[] = { "cfg", nullptr };
+        PyObject* cfg = Py_None;
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "O", const_cast<char**>(kwlist), &cfg))
+            return -1;
+
+        try {
+            self->ds = dataset::Checker::create(section_from_python(cfg)).release();
+            return 0;
+        } ARKI_CATCH_RETURN_INT;
+    }
+};
+
+DatasetCheckerDef* checker_def = nullptr;
+
+
+/*
  * dataset module functions
  */
 
@@ -679,6 +1040,9 @@ void register_dataset(PyObject* m)
 
     writer_def = new DatasetWriterDef;
     writer_def->define(arkipy_DatasetWriter_Type, dataset);
+
+    checker_def = new DatasetCheckerDef;
+    checker_def->define(arkipy_DatasetChecker_Type, dataset);
 
     if (PyModule_AddObject(dataset, "http", http.release()) == -1)
         throw PythonException();

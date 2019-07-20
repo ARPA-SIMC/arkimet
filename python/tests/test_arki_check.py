@@ -8,6 +8,62 @@ from contextlib import contextmanager
 from arkimet.test import skip_unless_vm2, CatchOutput
 
 
+class StatsReporter:
+    def __init__(self):
+        self.op_progress = []
+        self.op_manual_intervention = []
+        self.op_aborted = []
+        self.op_report = []
+        self.seg_info = []
+        self.seg_repack = []
+        self.seg_archive = []
+        self.seg_delete = []
+        self.seg_deindex = []
+        self.seg_rescan = []
+        self.seg_tar = []
+        self.seg_compress = []
+        self.seg_issue52 = []
+
+    def operation_progress(self, ds, operation, message):
+        self.op_progress.append((ds, operation, message))
+
+    def operation_manual_intervention(self, ds, operation, message):
+        self.op_manual_intervention.append((ds, operation, message))
+
+    def operation_aborted(self, ds, operation, message):
+        self.op_aborted.append((ds, operation, message))
+
+    def operation_report(self, ds, operation, message):
+        self.op_report.append((ds, operation, message))
+
+    def segment_info(self, ds, relpath, message):
+        self.seg_info.append((ds, relpath, message))
+
+    def segment_repack(self, ds, relpath, message):
+        self.seg_repack.append((ds, relpath, message))
+
+    def segment_archive(self, ds, relpath, message):
+        self.seg_archive.append((ds, relpath, message))
+
+    def segment_delete(self, ds, relpath, message):
+        self.seg_delete.append((ds, relpath, message))
+
+    def segment_deindex(self, ds, relpath, message):
+        self.seg_deindex.append((ds, relpath, message))
+
+    def segment_rescan(self, ds, relpath, message):
+        self.seg_rescan.append((ds, relpath, message))
+
+    def segment_tar(self, ds, relpath, message):
+        self.seg_tar.append((ds, relpath, message))
+
+    def segment_compress(self, ds, relpath, message):
+        self.seg_compress.append((ds, relpath, message))
+
+    def segment_issue51(self, ds, relpath, message):
+        self.seg_issue51.append((ds, relpath, message))
+
+
 class Env:
     def __init__(self, **kw):
         try:
@@ -46,7 +102,7 @@ class Env:
         dest = arki.dataset.Writer(self.ds_cfg)
 
         source = arki.dataset.Reader({
-            "format": "grib",
+            "format": self.ds_cfg["format"],
             "name": os.path.basename(pathname),
             "path": pathname,
             "type": "file",
@@ -71,6 +127,18 @@ class Env:
         source = arki.dataset.Reader(self.ds_cfg)
         source.query_data(**kw)
         return res
+
+    def repack(self, **kw):
+        checker = arki.dataset.Checker(self.ds_cfg)
+        checker.repack(**kw)
+
+    def check(self, **kw):
+        checker = arki.dataset.Checker(self.ds_cfg)
+        checker.check(**kw)
+
+    def segment_state(self, **kw):
+        checker = arki.dataset.Checker(self.ds_cfg)
+        return checker.segment_state(**kw)
 
     def inspect(self):
         subprocess.run([os.environ.get("SHELL", "bash")], cwd="testenv")
@@ -109,6 +177,32 @@ class ArkiCheckTestsBase:
         self.assertEqual(out.stderr, b"")
         self.assertIsNone(res)
         return out
+
+    def assertCheckClean(self, env, files=None, items=None, **kw):
+        reporter = StatsReporter()
+
+        state = env.segment_state(**kw)
+        if files is not None:
+            self.assertEqual(len(state), files)
+
+        not_ok = [x for x in state.items() if x[1] != "OK"]
+        self.assertEqual(not_ok, [])
+
+        env.check(reporter=reporter, **kw)
+        self.assertEqual(reporter.op_manual_intervention, [])
+        self.assertEqual(reporter.op_aborted, [])
+        self.assertEqual(reporter.seg_repack, [])
+        self.assertEqual(reporter.seg_archive, [])
+        self.assertEqual(reporter.seg_delete, [])
+        self.assertEqual(reporter.seg_deindex, [])
+        self.assertEqual(reporter.seg_rescan, [])
+        self.assertEqual(reporter.seg_tar, [])
+        self.assertEqual(reporter.seg_compress, [])
+        self.assertEqual(reporter.seg_issue52, [])
+
+        if items is not None:
+            mdc = env.query()
+            self.assertEqual(len(mdc), items)
 
     def test_clean(self):
         with self.datasets() as env:
@@ -184,7 +278,7 @@ class ArkiCheckTestsBase:
             self.assertFalse(os.path.exists("testenv/testds/2007/07-07.grib"))
             self.assertFalse(os.path.exists("testenv/testds/2007/10-09.grib"))
 
-            # TODO wassert(f.ensure_localds_clean(0, 0));
+            self.assertCheckClean(env, files=0, items=0)
             self.assertEqual(env.query(), [])
 
     def test_remove_all_filtered(self):
@@ -215,7 +309,7 @@ class ArkiCheckTestsBase:
             self.assertTrue(os.path.exists("testenv/testds/2007/07-07.grib"))
             self.assertTrue(os.path.exists("testenv/testds/2007/10-09.grib"))
 
-            # TODO wassert(f.ensure_localds_clean(2, 2));
+            self.assertCheckClean(env, files=2, items=2)
             # TODO wassert(f.query_results({1, 2}));
 
     def test_archive(self):
@@ -289,6 +383,43 @@ class ArkiCheckTestsBase:
             blob = mdc[0].to_python("source")
             self.assertEqual(blob["file"], "2007/07-08.grib")
             self.assertEqual(blob["b"], os.path.abspath("testenv/testds"))
+
+    def test_tar(self):
+        with self.datasets(format="odimh5") as env:
+            env.import_file("inbound/fixture.odimh5/00.odimh5")
+            env.import_file("inbound/fixture.odimh5/01.odimh5")
+            env.import_file("inbound/fixture.odimh5/02.odimh5")
+
+            env.update_config(**{"archive age": "1"})
+            env.repack(readonly=False, time_override=1184018400)  # date +%s --date="2007-07-10"
+
+            self.assertTrue(os.path.exists("testenv/testds/.archive/last/2007/07-07.odimh5"))
+            self.assertTrue(os.path.exists("testenv/testds/2007/07-08.odimh5"))
+            self.assertTrue(os.path.exists("testenv/testds/2007/10-09.odimh5"))
+
+            out = self.call_output_success("testenv/testds", "--tar")
+            self.assertEqual(out.stdout, b"testds.archives.last:2007/07-07.odimh5: should be tarred\n")
+
+            out = self.call_output_success("testenv/testds", "--tar", "--offline")
+            self.assertEqual(out.stdout, b"testds.archives.last:2007/07-07.odimh5: should be tarred\n")
+
+            out = self.call_output_success("testenv/testds", "--tar", "--online")
+            self.assertEqual(
+                    out.stdout,
+                    b"testds:2007/07-08.odimh5: should be tarred\n"
+                    b"testds:2007/10-09.odimh5: should be tarred\n")
+
+            out = self.call_output_success("testenv/testds", "--tar", "--fix")
+            self.assertEqual(out.stdout, b"testds.archives.last:2007/07-07.odimh5: tarred\n")
+
+            self.assertFalse(os.path.exists("testenv/testds/.archive/last/2007/07-07.odimh5"))
+            self.assertTrue(os.path.exists("testenv/testds/.archive/last/2007/07-07.odimh5.tar"))
+            self.assertTrue(os.path.exists("testenv/testds/2007/07-08.odimh5"))
+            self.assertTrue(os.path.exists("testenv/testds/2007/10-09.odimh5"))
+
+            self.assertCheckClean(env, files=3, items=3, time_override=1184018400)
+            self.assertCheckClean(env, files=3, items=3, accurate=True, time_override=1184018400)
+            # TODO: wassert(f.query_results({1, 0, 2}));
 
 
 class ArkiCheckNonSimpleTestsMixin:
