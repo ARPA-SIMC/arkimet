@@ -16327,56 +16327,6 @@
  {
   "doc": "",
   "group": "arki_runtime_arkicheck_ondisk2",
-  "method": "clean"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkicheck_ondisk2",
-  "method": "clean_filtered"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkicheck_ondisk2",
-  "method": "remove_all"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkicheck_ondisk2",
-  "method": "remove_all_filtered"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkicheck_ondisk2",
-  "method": "archive"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkicheck_ondisk2",
-  "method": "issue57"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkicheck_ondisk2",
-  "method": "tar"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkicheck_ondisk2",
-  "method": "zip"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkicheck_ondisk2",
-  "method": "compress"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkicheck_ondisk2",
-  "method": "scan"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkicheck_ondisk2",
   "method": "remove_old"
  },
  {
@@ -16393,56 +16343,6 @@
   "doc": "",
   "group": "arki_runtime_arkicheck_ondisk2",
   "method": "zip_archives"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkicheck_simple_plain",
-  "method": "clean"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkicheck_simple_plain",
-  "method": "clean_filtered"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkicheck_simple_plain",
-  "method": "remove_all"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkicheck_simple_plain",
-  "method": "remove_all_filtered"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkicheck_simple_plain",
-  "method": "archive"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkicheck_simple_plain",
-  "method": "issue57"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkicheck_simple_plain",
-  "method": "tar"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkicheck_simple_plain",
-  "method": "zip"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkicheck_simple_plain",
-  "method": "compress"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkicheck_simple_plain",
-  "method": "scan"
  },
  {
   "doc": "",
@@ -16467,56 +16367,6 @@
  {
   "doc": "",
   "group": "arki_runtime_arkicheck_simple_sqlite",
-  "method": "clean"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkicheck_simple_sqlite",
-  "method": "clean_filtered"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkicheck_simple_sqlite",
-  "method": "remove_all"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkicheck_simple_sqlite",
-  "method": "remove_all_filtered"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkicheck_simple_sqlite",
-  "method": "archive"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkicheck_simple_sqlite",
-  "method": "issue57"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkicheck_simple_sqlite",
-  "method": "tar"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkicheck_simple_sqlite",
-  "method": "zip"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkicheck_simple_sqlite",
-  "method": "compress"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkicheck_simple_sqlite",
-  "method": "scan"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkicheck_simple_sqlite",
   "method": "remove_old"
  },
  {
@@ -16533,56 +16383,6 @@
   "doc": "",
   "group": "arki_runtime_arkicheck_simple_sqlite",
   "method": "zip_archives"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkicheck_iseg",
-  "method": "clean"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkicheck_iseg",
-  "method": "clean_filtered"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkicheck_iseg",
-  "method": "remove_all"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkicheck_iseg",
-  "method": "remove_all_filtered"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkicheck_iseg",
-  "method": "archive"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkicheck_iseg",
-  "method": "issue57"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkicheck_iseg",
-  "method": "tar"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkicheck_iseg",
-  "method": "zip"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkicheck_iseg",
-  "method": "compress"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkicheck_iseg",
-  "method": "scan"
  },
  {
   "doc": "",

@@ -2,26 +2,28 @@
 #define ARKI_DATASET_TIME_H
 
 #include <arki/core/time.h>
+#include <arki/dataset/fwd.h>
 #include <ctime>
 
 namespace arki {
 namespace dataset {
 
+struct SessionTimeOverride
+{
+    SessionTime* orig = nullptr;
+
+    SessionTimeOverride() = default;
+    SessionTimeOverride(SessionTime* orig);
+    SessionTimeOverride(const SessionTimeOverride&) = delete;
+    SessionTimeOverride(SessionTimeOverride&&);
+    SessionTimeOverride& operator=(const SessionTimeOverride&) = delete;
+    SessionTimeOverride& operator=(SessionTimeOverride&&);
+    ~SessionTimeOverride();
+};
+
+
 struct SessionTime
 {
-    struct Override
-    {
-        SessionTime* orig = nullptr;
-
-        Override() = default;
-        Override(SessionTime* orig);
-        Override(const Override&) = delete;
-        Override(Override&&);
-        Override& operator=(const Override&) = delete;
-        Override& operator=(Override&&);
-        ~Override();
-    };
-
     virtual ~SessionTime() {}
 
     /// Return the current time
@@ -45,7 +47,7 @@ struct SessionTime
      * Override the current time with the given time, and restore the previous
      * value when the returned Override object goes out of scope.
      */
-    static Override local_override(time_t new_value);
+    static SessionTimeOverride local_override(time_t new_value);
 };
 
 }

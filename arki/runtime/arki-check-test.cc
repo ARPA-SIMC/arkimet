@@ -38,58 +38,6 @@ Tests test4("arki_runtime_arkicheck_iseg", "type=iseg\nformat=grib");
 
 void Tests::register_tests() {
 
-add_method("scan", [](Fixture& f) {
-    using runtime::tests::run_cmdline;
-
-    f.cfg.set("format", "odimh5");
-    f.test_reread_config();
-    f.clean_and_import("inbound/fixture.odimh5/00.odimh5");
-    f.import("inbound/fixture.odimh5/01.odimh5");
-    f.import("inbound/fixture.odimh5/02.odimh5");
-
-    auto o = dataset::SessionTime::local_override(1184018400); // date +%s --date="2007-07-10"
-    f.cfg.set("archive age", "1");
-    f.test_reread_config();
-    f.repack();
-
-    wassert(actual_file("testds/.archive/last/2007/07-07.odimh5").exists());
-    wassert(actual_file("testds/2007/07-08.odimh5").exists());
-    wassert(actual_file("testds/2007/10-09.odimh5").exists());
-
-    {
-        runtime::tests::CatchOutput co;
-        int res = run_cmdline<runtime::ArkiCheck>({ "arki-check", "--state", "testds", });
-        wassert(actual_file(co.file_stderr.name()).empty());
-        wassert(actual_file(co.file_stdout.name()).contents_equal({
-            "testds:2007/07-08.odimh5: OK 2007-07-08 00:00:00Z to 2007-07-08 23:59:59Z",
-            "testds:2007/10-09.odimh5: OK 2007-10-09 00:00:00Z to 2007-10-09 23:59:59Z",
-            "testds.archives.last:2007/07-07.odimh5: OK 2007-07-01 00:00:00Z to 2007-07-31 23:59:59Z",
-        }));
-        wassert(actual(res) == 0);
-    }
-
-    {
-        runtime::tests::CatchOutput co;
-        int res = run_cmdline<runtime::ArkiCheck>({ "arki-check", "--state", "--offline", "testds", });
-        wassert(actual_file(co.file_stderr.name()).empty());
-        wassert(actual_file(co.file_stdout.name()).contents_equal({
-            "testds.archives.last:2007/07-07.odimh5: OK 2007-07-01 00:00:00Z to 2007-07-31 23:59:59Z",
-        }));
-        wassert(actual(res) == 0);
-    }
-
-    {
-        runtime::tests::CatchOutput co;
-        int res = run_cmdline<runtime::ArkiCheck>({ "arki-check", "--state", "--online", "testds", });
-        wassert(actual_file(co.file_stderr.name()).empty());
-        wassert(actual_file(co.file_stdout.name()).contents_equal({
-            "testds:2007/07-08.odimh5: OK 2007-07-08 00:00:00Z to 2007-07-08 23:59:59Z",
-            "testds:2007/10-09.odimh5: OK 2007-10-09 00:00:00Z to 2007-10-09 23:59:59Z",
-        }));
-        wassert(actual(res) == 0);
-    }
-});
-
 add_method("remove_old", [](Fixture& f) {
     using runtime::tests::run_cmdline;
 
