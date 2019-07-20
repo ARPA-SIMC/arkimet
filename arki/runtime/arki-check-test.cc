@@ -38,52 +38,6 @@ Tests test4("arki_runtime_arkicheck_iseg", "type=iseg\nformat=grib");
 
 void Tests::register_tests() {
 
-add_method("remove", [](Fixture& f) {
-    using runtime::tests::run_cmdline;
-    f.skip_if_type_simple();
-
-    f.cfg.set("format", "grib");
-    f.test_reread_config();
-    f.clean_and_import("inbound/fixture.grib1");
-
-    metadata::Collection mdc;
-    mdc.push_back(f.import_results[0]);
-    mdc[0].make_absolute();
-    mdc.writeAtomically("arki-check-remove-test.md");
-
-    {
-        runtime::tests::CatchOutput co;
-        int res = wcallchecked(run_cmdline<runtime::ArkiCheck>({ "arki-check", "--remove=arki-check-remove-test.md", "testds" }));
-        wassert(actual_file(co.file_stderr.name()).contents_equal({}));
-        wassert(actual_file(co.file_stdout.name()).contents_equal({
-            "testds: 1 data would be deleted"
-        }));
-        wassert(actual(res) == 0);
-    }
-
-    wassert(f.ensure_localds_clean(3, 3));
-    wassert(f.query_results({1, 0, 2}));
-
-    {
-        runtime::tests::CatchOutput co;
-        int res = wcallchecked(run_cmdline<runtime::ArkiCheck>({ "arki-check", "--verbose", "--fix", "--remove=arki-check-remove-test.md", "testds" }));
-        wassert(actual_file(co.file_stderr.name()).contents_equal({
-            "testds: 1 data deleted"
-        }));
-        wassert(actual_file(co.file_stdout.name()).contents_equal({}));
-        wassert(actual(res) == 0);
-    }
-
-    wassert(f.query_results({1, 2}));
-
-    auto state = f.scan_state();
-    wassert(actual(state.size()) == 3u);
-
-    wassert(actual(state.get("testds:2007/07-07.grib").state) == segment::SEGMENT_OK);
-    wassert(actual(state.get("testds:2007/07-08.grib").state) == segment::SEGMENT_DELETED);
-    wassert(actual(state.get("testds:2007/10-09.grib").state) == segment::SEGMENT_OK);
-});
-
 add_method("tar_archives", [](Fixture& f) {
     using runtime::tests::run_cmdline;
 

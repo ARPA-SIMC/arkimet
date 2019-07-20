@@ -77,6 +77,22 @@ Arguments:
     }
 };
 
+struct make_absolute : public MethNoargs<make_absolute, arkipy_Metadata>
+{
+    constexpr static const char* name = "make_absolute";
+    constexpr static const char* signature = "";
+    constexpr static const char* returns = "";
+    constexpr static const char* summary = "Make path in source blob absolute";
+
+    static PyObject* run(Impl* self)
+    {
+        try {
+            self->md->make_absolute();
+            Py_RETURN_NONE;
+        } ARKI_CATCH_RETURN_PYO
+    }
+};
+
 struct make_inline : public MethNoargs<make_inline, arkipy_Metadata>
 {
     constexpr static const char* name = "make_inline";
@@ -290,7 +306,7 @@ struct MetadataDef : public Type<MetadataDef, arkipy_Metadata>
 Arkimet metadata for one data item
 )";
     GetSetters<> getsetters;
-    Methods<write, make_inline, make_url, to_python, read_bundle, write_bundle> methods;
+    Methods<write, make_absolute, make_inline, make_url, to_python, read_bundle, write_bundle> methods;
 
     static void _dealloc(Impl* self)
     {
