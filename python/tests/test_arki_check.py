@@ -187,6 +187,9 @@ class ArkiCheckTestsBase:
         return out
 
     def assertCheckClean(self, env, files=None, items=None, **kw):
+        """
+        Check that the dataset results clean to a check run
+        """
         reporter = StatsReporter()
 
         state = env.segment_state(**kw)
@@ -213,6 +216,10 @@ class ArkiCheckTestsBase:
             self.assertEqual(len(mdc), items)
 
     def assertSegmentExists(self, env, pathname, extensions=None):
+        """
+        Check that the given segment exists, optionally verifying that it only
+        exists with the given extensions
+        """
         if extensions is None:
             extensions = ("", ".gz", ".tar", ".zip")
             if not any(os.path.exists(pathname + ext) for ext in extensions):
@@ -231,10 +238,22 @@ class ArkiCheckTestsBase:
                     self.fail("Segment {}{} exists but it should not".format(pathname, ext))
 
     def assertSegmentNotExists(self, env, pathname):
+        """
+        Check that the given segment does not exist in any possible version
+        """
         all_extensions = ("", ".gz", ".tar", ".zip", ".gz.idx", ".metadata", ".summary")
         for ext in all_extensions:
             if os.path.exists(pathname + ext):
                 self.fail("Segment {}{} exists but it should not".format(pathname, ext))
+
+    def assertQueryResults(self, env, imported, results):
+        """
+        Compare the query results of the dataset against what was imported
+        """
+        mds = env.query(with_data=True)
+        expected = [imported[i].to_python("reftime") for i in results]
+        mds = [x.to_python("reftime") for x in mds]
+        self.assertEqual(mds, expected)
 
     def test_clean(self):
         with self.datasets() as env:
@@ -315,7 +334,7 @@ class ArkiCheckTestsBase:
 
     def test_remove_all_filtered(self):
         with self.datasets() as env:
-            env.import_file("inbound/fixture.grib1")
+            imported = env.import_file("inbound/fixture.grib1")
 
             self.assertTrue(os.path.exists("testenv/testds/2007/07-08.grib"))
             self.assertTrue(os.path.exists("testenv/testds/2007/07-07.grib"))
@@ -342,7 +361,7 @@ class ArkiCheckTestsBase:
             self.assertTrue(os.path.exists("testenv/testds/2007/10-09.grib"))
 
             self.assertCheckClean(env, files=2, items=2)
-            # TODO wassert(f.query_results({1, 2}));
+            self.assertQueryResults(env, imported, [1, 2])
 
     def test_archive(self):
         with self.datasets() as env:
@@ -418,9 +437,10 @@ class ArkiCheckTestsBase:
 
     def test_tar(self):
         with self.datasets(format="odimh5") as env:
-            env.import_file("inbound/fixture.odimh5/00.odimh5")
-            env.import_file("inbound/fixture.odimh5/01.odimh5")
-            env.import_file("inbound/fixture.odimh5/02.odimh5")
+            imported = []
+            imported += env.import_file("inbound/fixture.odimh5/00.odimh5")
+            imported += env.import_file("inbound/fixture.odimh5/01.odimh5")
+            imported += env.import_file("inbound/fixture.odimh5/02.odimh5")
 
             env.update_config(**{"archive age": "1"})
             with arki.dataset.SessionTimeOverride(1184018400):  # date +%s --date="2007-07-10"
@@ -452,15 +472,16 @@ class ArkiCheckTestsBase:
 
                 self.assertCheckClean(env, files=3, items=3)
                 self.assertCheckClean(env, files=3, items=3, accurate=True)
-                # TODO: wassert(f.query_results({1, 0, 2}));
+                self.assertQueryResults(env, imported, [1, 0, 2])
 
     def test_zip(self):
         arki.test.skip_unless_libzip()
         arki.test.skip_unless_libarchive()
         with self.datasets(format="odimh5") as env:
-            env.import_file("inbound/fixture.odimh5/00.odimh5")
-            env.import_file("inbound/fixture.odimh5/01.odimh5")
-            env.import_file("inbound/fixture.odimh5/02.odimh5")
+            imported = []
+            imported += env.import_file("inbound/fixture.odimh5/00.odimh5")
+            imported += env.import_file("inbound/fixture.odimh5/01.odimh5")
+            imported += env.import_file("inbound/fixture.odimh5/02.odimh5")
 
             env.update_config(**{"archive age": "1"})
             with arki.dataset.SessionTimeOverride(1184018400):  # date +%s --date="2007-07-10"
@@ -492,11 +513,11 @@ class ArkiCheckTestsBase:
 
                 self.assertCheckClean(env, files=3, items=3)
                 self.assertCheckClean(env, files=3, items=3, accurate=True)
-                # TODO: wassert(f.query_results({1, 0, 2}));
+                self.assertQueryResults(env, imported, [1, 0, 2])
 
     def test_compress(self):
         with self.datasets() as env:
-            env.import_file("inbound/fixture.grib1")
+            imported = env.import_file("inbound/fixture.grib1")
             env.update_config(**{"archive age": "1", "gz group size": "0"})
             with arki.dataset.SessionTimeOverride(1184018400):  # date +%s --date="2007-07-10"
                 env.repack(readonly=False)
@@ -527,7 +548,7 @@ class ArkiCheckTestsBase:
 
                 self.assertCheckClean(env, files=3, items=3)
                 self.assertCheckClean(env, files=3, items=3, accurate=True)
-                # TODO: wassert(f.query_results({1, 0, 2}));
+                self.assertQueryResults(env, imported, [1, 0, 2])
 
     def test_scan(self):
         with self.datasets(format="odimh5") as env:
@@ -563,9 +584,10 @@ class ArkiCheckTestsBase:
 
     def test_remove_old(self):
         with self.datasets(format="odimh5") as env:
-            env.import_file("inbound/fixture.odimh5/00.odimh5")
-            env.import_file("inbound/fixture.odimh5/01.odimh5")
-            env.import_file("inbound/fixture.odimh5/02.odimh5")
+            imported = []
+            imported += env.import_file("inbound/fixture.odimh5/00.odimh5")
+            imported += env.import_file("inbound/fixture.odimh5/01.odimh5")
+            imported += env.import_file("inbound/fixture.odimh5/02.odimh5")
 
             with arki.dataset.SessionTimeOverride(1184104800):  # date +%s --date="2007-07-11"
                 env.update_config(**{"archive age": "2"})
@@ -613,7 +635,7 @@ class ArkiCheckTestsBase:
                 self.assertSegmentExists(env, "testenv/testds/2007/10-09.odimh5", extensions=[""])
 
                 self.assertCheckClean(env, files=2, items=2)
-                # TODO: wassert(f.query_results({1, 2}));
+                self.assertQueryResults(env, imported, [1, 2])
 
 
 class ArkiCheckNonSimpleTestsMixin:
@@ -661,14 +683,14 @@ class ArkiCheckNonSimpleTestsMixin:
             self.assertEqual(out.stdout, b"testds: 1 data would be deleted\n")
 
             self.assertCheckClean(env, files=3, items=3)
-            # TODO: wassert(f.query_results({1, 0, 2}));
+            self.assertQueryResults(env, imported, [1, 0, 2])
 
             out, res = self.call_output("testenv/testds", "--remove=testenv/remove.md", "--verbose", "--fix")
             self.assertEqual(out.stderr, b"testds: 1 data deleted\n")
             self.assertEqual(out.stdout, b"")
             self.assertIsNone(res)
 
-            # TODO: wassert(f.query_results({1, 2}));
+            self.assertQueryResults(env, imported, [1, 2])
 
             state = env.segment_state()
             self.assertEqual(len(state), 3)
@@ -679,9 +701,10 @@ class ArkiCheckNonSimpleTestsMixin:
 
     def test_tar_archives(self):
         with self.datasets(format="odimh5") as env:
-            env.import_file("inbound/fixture.odimh5/00.odimh5")
-            env.import_file("inbound/fixture.odimh5/01.odimh5")
-            env.import_file("inbound/fixture.odimh5/02.odimh5")
+            imported = []
+            imported += env.import_file("inbound/fixture.odimh5/00.odimh5")
+            imported += env.import_file("inbound/fixture.odimh5/01.odimh5")
+            imported += env.import_file("inbound/fixture.odimh5/02.odimh5")
 
             with arki.dataset.SessionTimeOverride(1184018400):  # date +%s --date="2007-07-10"
                 env.update_config(**{"archive age": "1"})
@@ -721,16 +744,17 @@ class ArkiCheckNonSimpleTestsMixin:
 
                 self.assertCheckClean(env, files=3, items=3)
                 self.assertCheckClean(env, files=3, items=3, accurate=True)
-                # TODO: wassert(f.query_results({1, 0, 2}));
+                self.assertQueryResults(env, imported, [1, 0, 2])
 
     def test_zip_archives(self):
         arki.test.skip_unless_libzip()
         arki.test.skip_unless_libarchive()
 
         with self.datasets(format="odimh5") as env:
-            env.import_file("inbound/fixture.odimh5/00.odimh5")
-            env.import_file("inbound/fixture.odimh5/01.odimh5")
-            env.import_file("inbound/fixture.odimh5/02.odimh5")
+            imported = []
+            imported += env.import_file("inbound/fixture.odimh5/00.odimh5")
+            imported += env.import_file("inbound/fixture.odimh5/01.odimh5")
+            imported += env.import_file("inbound/fixture.odimh5/02.odimh5")
 
             with arki.dataset.SessionTimeOverride(1184018400):  # date +%s --date="2007-07-10"
                 env.update_config(**{"archive age": "1"})
@@ -770,7 +794,7 @@ class ArkiCheckNonSimpleTestsMixin:
 
                 self.assertCheckClean(env, files=3, items=3)
                 self.assertCheckClean(env, files=3, items=3, accurate=True)
-                # TODO: wassert(f.query_results({1, 0, 2}));
+                self.assertQueryResults(env, imported, [1, 0, 2])
 
 
 class TestArkiCheckOndisk2(ArkiCheckNonSimpleTestsMixin, ArkiCheckTestsBase, unittest.TestCase):
