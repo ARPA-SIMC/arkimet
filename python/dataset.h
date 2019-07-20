@@ -3,14 +3,8 @@
 
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
+#include <arki/dataset/fwd.h>
 #include <memory>
-
-namespace arki {
-namespace dataset {
-struct Reader;
-struct Writer;
-}
-}
 
 extern "C" {
 
@@ -41,6 +35,18 @@ extern PyTypeObject* arkipy_DatasetWriter_Type;
 extern PyObject* arkipy_ImportError;
 extern PyObject* arkipy_ImportDuplicateError;
 extern PyObject* arkipy_ImportFailedError;
+
+
+typedef struct {
+    PyObject_HEAD
+    arki::dataset::Checker* ds;
+} arkipy_DatasetChecker;
+
+extern PyTypeObject* arkipy_DatasetChecker_Type;
+
+#define arkipy_DatasetChecker_Check(ob) \
+    (Py_TYPE(ob) == arkipy_DatasetChecker_Type || \
+     PyType_IsSubtype(Py_TYPE(ob), arkipy_DatasetChecker_Type))
 
 }
 

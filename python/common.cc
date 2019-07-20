@@ -617,6 +617,9 @@ arki::metadata_dest_func dest_func_from_python(PyObject* o)
 
 arki::Matcher matcher_from_python(PyObject* o)
 {
+    if (o == Py_None)
+        return arki::Matcher();
+
     if (arkipy_Matcher_Check(o))
         return ((arkipy_Matcher*)o)->matcher;
 
