@@ -108,11 +108,16 @@ class Env:
             "type": "file",
         })
 
+        res = []
+
         def do_import(md):
             dest.acquire(md)
+            res.append(md)
 
         source.query_data(on_metadata=do_import)
         dest.flush()
+
+        return res
 
     def cleanup(self):
         shutil.rmtree("testenv")
@@ -637,6 +642,34 @@ class ArkiCheckNonSimpleTestsMixin:
 
             mds = env.query()
             self.assertEqual(len(mds), 0)
+
+    def test_remove(self):
+        with self.datasets() as env:
+            imported = env.import_file("inbound/fixture.grib1")
+
+            imported[0].make_absolute()
+            with open("testenv/remove.md", "wb") as fd:
+                arki.Metadata.write_bundle(imported[0:1], file=fd)
+
+            out = self.call_output_success("testenv/testds", "--remove=testenv/remove.md")
+            self.assertEqual(out.stdout, b"testds: 1 data would be deleted\n")
+
+            self.assertCheckClean(env, files=3, items=3)
+            # TODO: wassert(f.query_results({1, 0, 2}));
+
+            out, res = self.call_output("testenv/testds", "--remove=testenv/remove.md", "--verbose", "--fix")
+            self.assertEqual(out.stderr, b"testds: 1 data deleted\n")
+            self.assertEqual(out.stdout, b"")
+            self.assertIsNone(res)
+
+            # TODO: wassert(f.query_results({1, 2}));
+
+            state = env.segment_state()
+            self.assertEqual(len(state), 3)
+
+            self.assertEqual(state["testds:2007/07-07.grib"], "OK")
+            self.assertEqual(state["testds:2007/07-08.grib"], "DELETED")
+            self.assertEqual(state["testds:2007/10-09.grib"], "OK")
 
 
 class TestArkiCheckOndisk2(ArkiCheckNonSimpleTestsMixin, ArkiCheckTestsBase, unittest.TestCase):
