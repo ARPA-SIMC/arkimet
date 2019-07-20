@@ -2,9 +2,10 @@ import arkimet as arki
 import unittest
 import shutil
 import os
+import subprocess
 from contextlib import contextmanager
 # from arkimet.cmdline.check import Check
-from arkimet.test import CatchOutput
+from arkimet.test import skip_unless_vm2, CatchOutput
 
 
 class Env:
@@ -71,17 +72,19 @@ class Env:
         source.query_data(**kw)
         return res
 
+    def inspect(self):
+        subprocess.run([os.environ.get("SHELL", "bash")], cwd="testenv")
+
 
 class ArkiCheckTestsBase:
     @contextmanager
     def datasets(self, **kw):
-        env = Env(**self.dataset_config(
-                format="grib",
-                name="testds",
-                path=os.path.abspath("testenv/testds"),
-                step="daily",
-        ))
+        kw["name"] = "testds"
+        kw["path"] = os.path.abspath("testenv/testds")
+        kw.setdefault("format", "grib")
+        kw.setdefault("step", "daily")
 
+        env = Env(**self.dataset_config(**kw))
         yield env
 
     def runcmd(self, *args):
@@ -288,13 +291,47 @@ class ArkiCheckTestsBase:
             self.assertEqual(blob["b"], os.path.abspath("testenv/testds"))
 
 
-class TestArkiCheckOndisk2(ArkiCheckTestsBase, unittest.TestCase):
+class ArkiCheckNonSimpleTestsMixin:
+    def test_issue57(self):
+        skip_unless_vm2()
+        with self.datasets(format="vm2", unique="reftime, area, product") as env:
+            os.makedirs("testenv/testds/2016")
+            with open("testenv/testds/2016/10-05.vm2", "wt") as fd:
+                fd.write("201610050000,12626,139,70,,,000000000")
+
+            out = self.call_output_success("testenv/testds", "--fix")
+            self.assertEqual(
+                    out.stdout,
+                    b"testds:2016/10-05.vm2: segment found on disk with no associated index data\n"
+                    b"testds:2016/10-05.vm2: rescanned\n"
+                    b"testds: check 0 files ok, 1 file rescanned\n"
+            )
+
+            # arki-query '' issue57 > issue57/todelete.md
+            to_delete = env.query()
+            # test -s issue57/todelete.md
+            self.assertEqual(len(to_delete), 1)
+            with open("testenv/testds/todelete.md", "wb") as fd:
+                arki.Metadata.write_bundle(to_delete, file=fd)
+
+            # runtest "arki-check --remove=issue57/todelete.md issue57"
+            out = self.call_output_success("testenv/testds", "--remove=testenv/testds/todelete.md")
+            self.assertEqual(out.stdout, b"testds: 1 data would be deleted\n")
+
+            out = self.call_output_success("testenv/testds", "--remove=testenv/testds/todelete.md", "--fix")
+            self.assertEqual(out.stdout, b"")
+
+            mds = env.query()
+            self.assertEqual(len(mds), 0)
+
+
+class TestArkiCheckOndisk2(ArkiCheckNonSimpleTestsMixin, ArkiCheckTestsBase, unittest.TestCase):
     def dataset_config(self, **kw):
         kw["type"] = "ondisk2"
         return kw
 
 
-class TestArkiCheckIseg(ArkiCheckTestsBase, unittest.TestCase):
+class TestArkiCheckIseg(ArkiCheckNonSimpleTestsMixin, ArkiCheckTestsBase, unittest.TestCase):
     def dataset_config(self, **kw):
         kw["type"] = "iseg"
         return kw

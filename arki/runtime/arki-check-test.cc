@@ -38,57 +38,6 @@ Tests test4("arki_runtime_arkicheck_iseg", "type=iseg\nformat=grib");
 
 void Tests::register_tests() {
 
-add_method("issue57", [](Fixture& f) {
-    using runtime::tests::run_cmdline;
-    skip_unless_vm2();
-    f.skip_if_type_simple();
-
-    f.cfg.set("format", "vm2");
-    f.cfg.set("unique", "reftime, area, product");
-    f.test_reread_config();
-
-    sys::mkdir_ifmissing("testds/2016");
-    sys::write_file("testds/2016/10-05.vm2", "201610050000,12626,139,70,,,000000000");
-
-    {
-        runtime::tests::CatchOutput co;
-        int res = run_cmdline<runtime::ArkiCheck>({ "arki-check", "-f", "testds" });
-        wassert(actual_file(co.file_stderr.name()).empty());
-        wassert(actual_file(co.file_stdout.name()).contents_equal({
-            "testds:2016/10-05.vm2: segment found on disk with no associated index data",
-            "testds:2016/10-05.vm2: rescanned",
-            "testds: check 0 files ok, 1 file rescanned",
-        }));
-        wassert(actual(res) == 0);
-    }
-
-    //arki-query '' issue57 > issue57/todelete.md
-    metadata::Collection to_delete(*f.config().create_reader(), "");
-    //runtest "test -s issue57/todelete.md"
-    wassert(actual(to_delete.size()) == 1u);
-    to_delete.writeAtomically("testds/todelete.md");
-
-    //runtest "arki-check --remove=issue57/todelete.md issue57"
-    {
-        runtime::tests::CatchOutput co;
-        int res = run_cmdline<runtime::ArkiCheck>({ "arki-check", "testds", "--remove=testds/todelete.md" });
-        wassert(actual_file(co.file_stderr.name()).contents_equal({}));
-        wassert(actual_file(co.file_stdout.name()).contents_equal({"testds: 1 data would be deleted"}));
-        wassert(actual(res) == 0);
-    }
-
-    {
-        runtime::tests::CatchOutput co;
-        int res = run_cmdline<runtime::ArkiCheck>({ "arki-check", "testds", "--fix", "--remove=testds/todelete.md" });
-        wassert(actual_file(co.file_stderr.name()).contents_equal({}));
-        wassert(actual_file(co.file_stdout.name()).contents_equal({}));
-        wassert(actual(res) == 0);
-    }
-
-    metadata::Collection post_delete(*f.config().create_reader(), "");
-    wassert(actual(post_delete.size()) == 0u);
-});
-
 add_method("tar", [](Fixture& f) {
     using runtime::tests::run_cmdline;
 

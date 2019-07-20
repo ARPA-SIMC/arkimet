@@ -394,7 +394,7 @@ int arki_check(int argc, const char* argv[])
                     nag::verbose("%s: %u data deleted", i.first.c_str(), i.second);
             } else {
                 for (const auto& i: counts)
-                    printf("%s: %u data would be deleted", i.first.c_str(), i.second);
+                    printf("%s: %u data would be deleted\n", i.first.c_str(), i.second);
             }
         } else {
             dataset::CheckerConfig config(make_shared<dataset::OstreamReporter>(cout), !opts.fix->boolValue());
