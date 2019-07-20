@@ -219,6 +219,12 @@ class ArkiCheckTestsBase:
                 if os.path.exists(pathname + ext):
                     self.fail("Segment {}{} exists but it should not".format(pathname, ext))
 
+    def assertSegmentNotExists(self, pathname):
+        all_extensions = ("", ".gz", ".tar", ".zip", ".gz.idx", ".metadata", ".summary")
+        for ext in all_extensions:
+            if os.path.exists(pathname + ext):
+                self.fail("Segment {}{} exists but it should not".format(pathname, ext))
+
     def test_clean(self):
         with self.datasets() as env:
             env.import_file("inbound/fixture.grib1")
@@ -543,6 +549,60 @@ class ArkiCheckTestsBase:
                         out.stdout,
                         b"testds:2007/07-08.odimh5: OK 2007-07-08 00:00:00Z to 2007-07-08 23:59:59Z\n"
                         b"testds:2007/10-09.odimh5: OK 2007-10-09 00:00:00Z to 2007-10-09 23:59:59Z\n")
+
+    def test_remove_old(self):
+        with self.datasets(format="odimh5") as env:
+            env.import_file("inbound/fixture.odimh5/00.odimh5")
+            env.import_file("inbound/fixture.odimh5/01.odimh5")
+            env.import_file("inbound/fixture.odimh5/02.odimh5")
+
+            with arki.dataset.SessionTimeOverride(1184104800):  # date +%s --date="2007-07-11"
+                env.update_config(**{"archive age": "2"})
+                env.repack(readonly=False)
+                env.update_config(**{"delete age": "1"})
+
+                self.assertTrue(os.path.exists("testenv/testds/.archive/last/2007/07-07.odimh5"))
+                self.assertTrue(os.path.exists("testenv/testds/2007/07-08.odimh5"))
+                self.assertTrue(os.path.exists("testenv/testds/2007/10-09.odimh5"))
+
+                out = self.call_output_success("testenv/testds", "--remove-old")
+                self.assertEqual(
+                        out.stdout,
+                        b"testds:2007/07-08.odimh5: segment old enough to be deleted\n"
+                        b"testds:2007/07-08.odimh5: should be deleted\n")
+
+                out = self.call_output_success("testenv/testds", "--remove-old", "--offline")
+                self.assertEqual(
+                        out.stdout,
+                        # b"testds.archives.last:2007/07-07.odimh5: segment old enough to be deleted\n"
+                        b"testds.archives.last:2007/07-07.odimh5: should be deleted\n")
+
+                out = self.call_output_success("testenv/testds", "--remove-old", "--online")
+                self.assertEqual(
+                        out.stdout,
+                        b"testds:2007/07-08.odimh5: segment old enough to be deleted\n"
+                        b"testds:2007/07-08.odimh5: should be deleted\n")
+
+                out = self.call_output_success("testenv/testds", "--remove-old", "--online", "--offline")
+                self.assertEqual(
+                        out.stdout,
+                        b"testds:2007/07-08.odimh5: segment old enough to be deleted\n"
+                        b"testds:2007/07-08.odimh5: should be deleted\n"
+                        b"testds.archives.last:2007/07-07.odimh5: should be deleted\n")
+
+                out = self.call_output_success("testenv/testds", "--remove-old", "--fix")
+                self.assertRegex(
+                        out.stdout,
+                        rb"^testds:2007/07-08.odimh5: segment old enough to be deleted\n"
+                        rb"testds:2007/07-08.odimh5: deleted \(\d+ freed\)\n")
+
+                self.assertSegmentExists("testenv/testds/.archive/last/2007/07-07.odimh5",
+                                         extensions=["", ".metadata", ".summary"])
+                self.assertSegmentNotExists("testenv/testds/2007/07-08.odimh5")
+                self.assertSegmentExists("testenv/testds/2007/10-09.odimh5", extensions=[""])
+
+                self.assertCheckClean(env, files=2, items=2)
+                # TODO: wassert(f.query_results({1, 2}));
 
 
 class ArkiCheckNonSimpleTestsMixin:
