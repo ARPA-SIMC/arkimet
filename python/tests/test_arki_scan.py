@@ -62,7 +62,7 @@ def parse_metadata(buf):
     def on_metadata(md):
         mds.append(md)
 
-    arki.Metadata.read(buf, dest=on_metadata)
+    arki.Metadata.read_bundle(buf, dest=on_metadata)
 
     return mds
 
