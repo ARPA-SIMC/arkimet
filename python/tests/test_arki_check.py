@@ -671,6 +671,101 @@ class ArkiCheckNonSimpleTestsMixin:
             self.assertEqual(state["testds:2007/07-08.grib"], "DELETED")
             self.assertEqual(state["testds:2007/10-09.grib"], "OK")
 
+    def test_tar_archives(self):
+        with self.datasets(format="odimh5") as env:
+            env.import_file("inbound/fixture.odimh5/00.odimh5")
+            env.import_file("inbound/fixture.odimh5/01.odimh5")
+            env.import_file("inbound/fixture.odimh5/02.odimh5")
+
+            with arki.dataset.SessionTimeOverride(1184018400):  # date +%s --date="2007-07-10"
+                env.update_config(**{"archive age": "1"})
+                env.repack(readonly=False)
+
+                os.rename("testenv/testds/.archive/last", "testenv/testds/.archive/2007")
+
+                self.assertTrue(os.path.exists("testenv/testds/.archive/2007/2007/07-07.odimh5"))
+                self.assertTrue(os.path.exists("testenv/testds/2007/07-08.odimh5"))
+                self.assertTrue(os.path.exists("testenv/testds/2007/10-09.odimh5"))
+
+                out = self.call_output_success("testenv/testds", "--tar")
+                self.assertEqual(
+                        out.stdout,
+                        b"testds.archives.2007:2007/07-07.odimh5: should be tarred\n")
+
+                out = self.call_output_success("testenv/testds", "--tar", "--offline")
+                self.assertEqual(
+                        out.stdout,
+                        b"testds.archives.2007:2007/07-07.odimh5: should be tarred\n")
+
+                out = self.call_output_success("testenv/testds", "--tar", "--online")
+                self.assertEqual(
+                        out.stdout,
+                        b"testds:2007/07-08.odimh5: should be tarred\n"
+                        b"testds:2007/10-09.odimh5: should be tarred\n")
+
+                out = self.call_output_success("testenv/testds", "--tar", "--fix")
+                self.assertEqual(
+                        out.stdout,
+                        b"testds.archives.2007:2007/07-07.odimh5: tarred\n")
+
+                self.assertSegmentExists("testenv/testds/.archive/2007/2007/07-07.odimh5",
+                                         extensions=[".tar", ".metadata", ".summary"])
+                self.assertSegmentExists("testenv/testds/2007/07-08.odimh5")
+                self.assertSegmentExists("testenv/testds/2007/10-09.odimh5")
+
+                self.assertCheckClean(env, files=3, items=3)
+                self.assertCheckClean(env, files=3, items=3, accurate=True)
+                # TODO: wassert(f.query_results({1, 0, 2}));
+
+    def test_zip_archives(self):
+        arki.test.skip_unless_libzip()
+        arki.test.skip_unless_libarchive()
+
+        with self.datasets(format="odimh5") as env:
+            env.import_file("inbound/fixture.odimh5/00.odimh5")
+            env.import_file("inbound/fixture.odimh5/01.odimh5")
+            env.import_file("inbound/fixture.odimh5/02.odimh5")
+
+            with arki.dataset.SessionTimeOverride(1184018400):  # date +%s --date="2007-07-10"
+                env.update_config(**{"archive age": "1"})
+                env.repack(readonly=False)
+
+                os.rename("testenv/testds/.archive/last", "testenv/testds/.archive/2007")
+
+                self.assertTrue(os.path.exists("testenv/testds/.archive/2007/2007/07-07.odimh5"))
+                self.assertTrue(os.path.exists("testenv/testds/2007/07-08.odimh5"))
+                self.assertTrue(os.path.exists("testenv/testds/2007/10-09.odimh5"))
+
+                out = self.call_output_success("testenv/testds", "--zip")
+                self.assertEqual(
+                        out.stdout,
+                        b"testds.archives.2007:2007/07-07.odimh5: should be zipped\n")
+
+                out = self.call_output_success("testenv/testds", "--zip", "--offline")
+                self.assertEqual(
+                        out.stdout,
+                        b"testds.archives.2007:2007/07-07.odimh5: should be zipped\n")
+
+                out = self.call_output_success("testenv/testds", "--zip", "--online")
+                self.assertEqual(
+                        out.stdout,
+                        b"testds:2007/07-08.odimh5: should be zipped\n"
+                        b"testds:2007/10-09.odimh5: should be zipped\n")
+
+                out = self.call_output_success("testenv/testds", "--zip", "--fix")
+                self.assertEqual(
+                        out.stdout,
+                        b"testds.archives.2007:2007/07-07.odimh5: zipped\n")
+
+                self.assertSegmentExists("testenv/testds/.archive/2007/2007/07-07.odimh5",
+                                         extensions=[".zip", ".metadata", ".summary"])
+                self.assertSegmentExists("testenv/testds/2007/07-08.odimh5")
+                self.assertSegmentExists("testenv/testds/2007/10-09.odimh5")
+
+                self.assertCheckClean(env, files=3, items=3)
+                self.assertCheckClean(env, files=3, items=3, accurate=True)
+                # TODO: wassert(f.query_results({1, 0, 2}));
+
 
 class TestArkiCheckOndisk2(ArkiCheckNonSimpleTestsMixin, ArkiCheckTestsBase, unittest.TestCase):
     def dataset_config(self, **kw):
