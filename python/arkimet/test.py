@@ -11,6 +11,18 @@ def skip_unless_vm2():
         raise unittest.TestSkipped("vm2 support not available")
 
 
+def skip_unless_libzip():
+    import unittest
+    if "libzip" not in arki.features:
+        raise unittest.TestSkipped("libzip support not available")
+
+
+def skip_unless_libarchive():
+    import unittest
+    if "libarchive" not in arki.features:
+        raise unittest.TestSkipped("libarchive support not available")
+
+
 @contextmanager
 def daemon(*cmd):
     proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, text=True)
