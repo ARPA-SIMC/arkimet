@@ -48,6 +48,18 @@ extern PyTypeObject* arkipy_DatasetChecker_Type;
     (Py_TYPE(ob) == arkipy_DatasetChecker_Type || \
      PyType_IsSubtype(Py_TYPE(ob), arkipy_DatasetChecker_Type))
 
+
+typedef struct {
+    PyObject_HEAD
+    arki::dataset::SessionTimeOverride* o;
+} arkipy_DatasetSessionTimeOverride;
+
+extern PyTypeObject* arkipy_DatasetSessionTimeOverride_Type;
+
+#define arkipy_DatasetSessionTimeOverride_Check(ob) \
+    (Py_TYPE(ob) == arkipy_DatasetSessionTimeOverride_Type || \
+     PyType_IsSubtype(Py_TYPE(ob), arkipy_DatasetSessionTimeOverride_Type))
+
 }
 
 namespace arki {

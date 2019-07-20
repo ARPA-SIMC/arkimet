@@ -30,6 +30,7 @@ extern "C" {
 PyTypeObject* arkipy_DatasetReader_Type = nullptr;
 PyTypeObject* arkipy_DatasetWriter_Type = nullptr;
 PyTypeObject* arkipy_DatasetChecker_Type = nullptr;
+PyTypeObject* arkipy_DatasetSessionTimeOverride_Type = nullptr;
 
 PyObject* arkipy_ImportError = nullptr;
 PyObject* arkipy_ImportDuplicateError = nullptr;
@@ -600,48 +601,48 @@ DatasetWriterDef* writer_def = nullptr;
  * dataset.Checker
  */
 
+static arki::dataset::CheckerConfig get_checker_config(PyObject* args, PyObject* kw)
+{
+    static const char* kwlist[] = { "reporter", "segment_filter", "offline", "online", "readonly", "accurate", nullptr };
+    PyObject* arg_reporter = nullptr;
+    PyObject* arg_segment_filter = nullptr;
+    int arg_offline = 1;
+    int arg_online = 1;
+    int arg_readonly = 1;
+    int arg_accurate = 0;
+    if (!PyArg_ParseTupleAndKeywords(args, kw, "|OOpppp", const_cast<char**>(kwlist),
+            &arg_reporter, &arg_segment_filter,
+            &arg_offline, &arg_online, &arg_readonly, &arg_accurate))
+        throw PythonException();
+
+    arki::dataset::CheckerConfig cfg;
+    if (arg_reporter)
+        cfg.reporter = make_shared<PythonReporter>(arg_reporter);
+
+    if (arg_segment_filter)
+        cfg.segment_filter = matcher_from_python(arg_segment_filter);
+
+    cfg.offline = arg_offline;
+    cfg.online = arg_online;
+    cfg.readonly = arg_readonly;
+    cfg.accurate = arg_accurate;
+
+    return cfg;
+}
+
 struct repack : public MethKwargs<repack, arkipy_DatasetChecker>
 {
     constexpr static const char* name = "repack";
-    constexpr static const char* signature = "reporter: Any=None, segment_filter: Union[arkimet.Matcher, str]="", offline: bool=True, online: bool=True, readonly: bool=True, accurate: bool=False, time_override: int=None";
+    constexpr static const char* signature = "reporter: Any=None, segment_filter: Union[arkimet.Matcher, str]="", offline: bool=True, online: bool=True, readonly: bool=True, accurate: bool=False";
     constexpr static const char* returns = "";
     constexpr static const char* summary = "Perform repacking on the dataset";
 
     static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
     {
-        static const char* kwlist[] = { "reporter", "segment_filter", "offline", "online", "readonly", "accurate", "time_override", nullptr };
-        PyObject* arg_reporter = nullptr;
-        PyObject* arg_segment_filter = nullptr;
-        int arg_offline = 1;
-        int arg_online = 1;
-        int arg_readonly = 1;
-        int arg_accurate = 0;
-        unsigned long long arg_time_override = 0;
-        if (!PyArg_ParseTupleAndKeywords(args, kw, "|OOppppK", const_cast<char**>(kwlist),
-                &arg_reporter, &arg_segment_filter,
-                &arg_offline, &arg_online, &arg_readonly, &arg_accurate,
-                &arg_time_override))
-            return nullptr;
-
         try {
-            arki::dataset::CheckerConfig cfg;
-            if (arg_reporter)
-                cfg.reporter = make_shared<PythonReporter>(arg_reporter);
+            auto cfg = get_checker_config(args, kw);
 
-            if (arg_segment_filter)
-                cfg.segment_filter = matcher_from_python(arg_segment_filter);
-
-            cfg.offline = arg_offline;
-            cfg.online = arg_online;
-            cfg.readonly = arg_readonly;
-            cfg.accurate = arg_accurate;
-
-            if (arg_time_override)
             {
-                ReleaseGIL gil;
-                auto o = dataset::SessionTime::local_override(arg_time_override);
-                self->ds->repack(cfg);
-            } else {
                 ReleaseGIL gil;
                 self->ds->repack(cfg);
             }
@@ -654,45 +655,16 @@ struct repack : public MethKwargs<repack, arkipy_DatasetChecker>
 struct check : public MethKwargs<check, arkipy_DatasetChecker>
 {
     constexpr static const char* name = "check";
-    constexpr static const char* signature = "reporter: Any=None, segment_filter: Union[arkimet.Matcher, str]="", offline: bool=True, online: bool=True, readonly: bool=True, accurate: bool=False, time_override: int=None";
+    constexpr static const char* signature = "reporter: Any=None, segment_filter: Union[arkimet.Matcher, str]="", offline: bool=True, online: bool=True, readonly: bool=True, accurate: bool=False";
     constexpr static const char* returns = "";
     constexpr static const char* summary = "Perform checking/fixing on the dataset";
 
     static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
     {
-        static const char* kwlist[] = { "reporter", "segment_filter", "offline", "online", "readonly", "accurate", "time_override", nullptr };
-        PyObject* arg_reporter = nullptr;
-        PyObject* arg_segment_filter = nullptr;
-        int arg_offline = 1;
-        int arg_online = 1;
-        int arg_readonly = 1;
-        int arg_accurate = 0;
-        unsigned long long arg_time_override = 0;
-        if (!PyArg_ParseTupleAndKeywords(args, kw, "|OOppppK", const_cast<char**>(kwlist),
-                &arg_reporter, &arg_segment_filter,
-                &arg_offline, &arg_online, &arg_readonly, &arg_accurate,
-                &arg_time_override))
-            return nullptr;
-
         try {
-            arki::dataset::CheckerConfig cfg;
-            if (arg_reporter)
-                cfg.reporter = make_shared<PythonReporter>(arg_reporter);
+            auto cfg = get_checker_config(args, kw);
 
-            if (arg_segment_filter)
-                cfg.segment_filter = matcher_from_python(arg_segment_filter);
-
-            cfg.offline = arg_offline;
-            cfg.online = arg_online;
-            cfg.readonly = arg_readonly;
-            cfg.accurate = arg_accurate;
-
-            if (arg_time_override)
             {
-                ReleaseGIL gil;
-                auto o = dataset::SessionTime::local_override(arg_time_override);
-                self->ds->check(cfg);
-            } else {
                 ReleaseGIL gil;
                 self->ds->check(cfg);
             }
@@ -711,42 +683,14 @@ struct segment_state : public MethKwargs<segment_state, arkipy_DatasetChecker>
 
     static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
     {
-        static const char* kwlist[] = { "reporter", "segment_filter", "offline", "online", "readonly", "accurate", "time_override", nullptr };
-        PyObject* arg_reporter = nullptr;
-        PyObject* arg_segment_filter = nullptr;
-        int arg_offline = 1;
-        int arg_online = 1;
-        int arg_readonly = 1;
-        int arg_accurate = 0;
-        unsigned long long arg_time_override = 0;
-        if (!PyArg_ParseTupleAndKeywords(args, kw, "|OOppppK", const_cast<char**>(kwlist),
-                &arg_reporter, &arg_segment_filter,
-                &arg_offline, &arg_online, &arg_readonly, &arg_accurate,
-                &arg_time_override))
-            return nullptr;
-
         try {
+            auto cfg = get_checker_config(args, kw);
+
             dataset::segmented::Checker* checker = dynamic_cast<dataset::segmented::Checker*>(self->ds);
             if (!checker)
                 Py_RETURN_NONE;
 
-            arki::dataset::CheckerConfig cfg;
-            if (arg_reporter)
-                cfg.reporter = make_shared<PythonReporter>(arg_reporter);
-
-            if (arg_segment_filter)
-                cfg.segment_filter = matcher_from_python(arg_segment_filter);
-
-            cfg.offline = arg_offline;
-            cfg.online = arg_online;
-            cfg.readonly = arg_readonly;
-            cfg.accurate = arg_accurate;
-
             pyo_unique_ptr res(throw_ifnull(PyDict_New()));
-
-            dataset::SessionTime::Override time_override;
-            if (arg_time_override)
-                time_override = dataset::SessionTime::local_override(arg_time_override);
 
             {
                 ReleaseGIL gil;
@@ -811,6 +755,100 @@ Examples::
 
 DatasetCheckerDef* checker_def = nullptr;
 
+
+/*
+ * dataset.SessionTimeOverride
+ */
+
+struct __enter__ : public MethNoargs<__enter__, arkipy_DatasetSessionTimeOverride>
+{
+    constexpr static const char* name = "__enter__";
+    constexpr static const char* signature = "";
+    constexpr static const char* returns = "";
+    constexpr static const char* summary = "";
+
+    static PyObject* run(Impl* self)
+    {
+        try {
+            Py_INCREF(self);
+            return (PyObject*)self;
+        } ARKI_CATCH_RETURN_PYO
+    }
+};
+
+struct __exit__ : public MethKwargs<__exit__, arkipy_DatasetSessionTimeOverride>
+{
+    constexpr static const char* name = "__exit__";
+    constexpr static const char* signature = "ext_type, ext_val, ext_tb";
+    constexpr static const char* returns = "";
+    constexpr static const char* summary = "";
+
+    static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
+    {
+        static const char* kwlist[] = { "exc_type", "exc_val", "exc_tb", nullptr };
+        PyObject* exc_type = nullptr;
+        PyObject* exc_val = nullptr;
+        PyObject* exc_tb = nullptr;
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "OOO", const_cast<char**>(kwlist),
+                &exc_type, &exc_val, &exc_tb))
+            return nullptr;
+
+        try {
+            delete self->o;
+            self->o = nullptr;
+            Py_RETURN_NONE;
+        } ARKI_CATCH_RETURN_PYO
+    }
+};
+
+struct DatasetSessionTimeOverrideDef : public Type<DatasetSessionTimeOverrideDef, arkipy_DatasetSessionTimeOverride>
+{
+    constexpr static const char* name = "SessionTimeOverride";
+    constexpr static const char* qual_name = "arkimet.dataset.SessionTimeOverride";
+    constexpr static const char* doc = R"(
+Write functions for an arkimet dataset.
+
+TODO: document
+
+Examples::
+
+    TODO: add examples
+)";
+    GetSetters<> getsetters;
+    Methods<__enter__, __exit__> methods;
+
+    static void _dealloc(Impl* self)
+    {
+        delete self->o;
+        self->o = nullptr;
+        Py_TYPE(self)->tp_free((PyObject*)self);
+    }
+
+    static PyObject* _str(Impl* self)
+    {
+        return PyUnicode_FromFormat("dataset.SessionTimeOverride()");
+    }
+
+    static PyObject* _repr(Impl* self)
+    {
+        return PyUnicode_FromFormat("dataset.SessionTimeOverride()");
+    }
+
+    static int _init(Impl* self, PyObject* args, PyObject* kw)
+    {
+        static const char* kwlist[] = { "time", nullptr };
+        unsigned long long arg_time = 0;
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "K", const_cast<char**>(kwlist), &arg_time))
+            return -1;
+
+        try {
+            self->o = new dataset::SessionTimeOverride(dataset::SessionTime::local_override(arg_time));
+            return 0;
+        } ARKI_CATCH_RETURN_INT;
+    }
+};
+
+DatasetSessionTimeOverrideDef* session_time_override_def = nullptr;
 
 /*
  * dataset module functions
@@ -1043,6 +1081,9 @@ void register_dataset(PyObject* m)
 
     checker_def = new DatasetCheckerDef;
     checker_def->define(arkipy_DatasetChecker_Type, dataset);
+
+    session_time_override_def = new DatasetSessionTimeOverrideDef;
+    session_time_override_def->define(arkipy_DatasetSessionTimeOverride_Type, dataset);
 
     if (PyModule_AddObject(dataset, "http", http.release()) == -1)
         throw PythonException();

@@ -396,6 +396,7 @@ int arki_check(int argc, const char* argv[])
                 for (const auto& i: counts)
                     printf("%s: %u data would be deleted\n", i.first.c_str(), i.second);
             }
+            fflush(stdout);
         } else {
             dataset::CheckerConfig config(make_shared<dataset::OstreamReporter>(cout), !opts.fix->boolValue());
 

@@ -17,6 +17,8 @@ struct Checker;
 struct Reporter;
 struct SegmentManager;
 struct Merged;
+struct SessionTime;
+struct SessionTimeOverride;
 
 }
 }
