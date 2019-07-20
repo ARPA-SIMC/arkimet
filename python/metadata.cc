@@ -3,6 +3,7 @@
 #include "metadata.h"
 #include "common.h"
 #include "arki/metadata.h"
+#include "arki/metadata/collection.h"
 #include "arki/core/file.h"
 #include "arki/types/source.h"
 #include "utils/core.h"
@@ -13,6 +14,7 @@
 using namespace std;
 using namespace arki;
 using namespace arki::core;
+using namespace arki::utils;
 using namespace arki::python;
 
 extern "C" {
@@ -168,7 +170,7 @@ struct read_bundle : public ClassMethKwargs<read_bundle>
     constexpr static const char* name = "read_bundle";
     constexpr static const char* signature = "src: Union[bytes, ByteIO], dest: Callable[[metadata], Optional[bool]], basedir: str=None, pathname: str=None";
     constexpr static const char* returns = "bool";
-    constexpr static const char* summary = "Read all metadata from a give file or memory buffer";
+    constexpr static const char* summary = "Read all metadata from a given file or memory buffer";
 
     static PyObject* run(PyTypeObject* cls, PyObject* args, PyObject* kw)
     {
@@ -244,6 +246,42 @@ struct read_bundle : public ClassMethKwargs<read_bundle>
 };
 
 
+struct write_bundle : public ClassMethKwargs<write_bundle>
+{
+    constexpr static const char* name = "write_bundle";
+    constexpr static const char* signature = "mds: Iterable[arkimet.Metadata], file: BinaryIO";
+    constexpr static const char* returns = "";
+    constexpr static const char* summary = "Write all metadata to a given file";
+
+    static PyObject* run(PyTypeObject* cls, PyObject* args, PyObject* kw)
+    {
+        static const char* kwlist[] = { "mds", "file", NULL };
+        PyObject* py_mds = nullptr;
+        PyObject* py_file = nullptr;
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "OO", (char**)kwlist, &py_mds, &py_file))
+            return nullptr;
+
+        try {
+            // TODO: make an abstract writable interface supported by arkimet,
+            // and use it to wrap .write() methods on python files
+            int outfd = file_get_fileno(py_file);
+            if (outfd == -1)
+                throw PythonException();
+
+            sys::NamedFileDescriptor out(outfd, get_fd_name(py_file));
+
+            metadata::Collection mdc = metadata_collection_from_python(py_mds);
+            {
+                ReleaseGIL rg;
+                mdc.write_to(out);
+            }
+
+            Py_RETURN_NONE;
+        } ARKI_CATCH_RETURN_PYO
+    }
+};
+
+
 struct MetadataDef : public Type<MetadataDef, arkipy_Metadata>
 {
     constexpr static const char* name = "Metadata";
@@ -252,7 +290,7 @@ struct MetadataDef : public Type<MetadataDef, arkipy_Metadata>
 Arkimet metadata for one data item
 )";
     GetSetters<> getsetters;
-    Methods<write, make_inline, make_url, to_python, read_bundle> methods;
+    Methods<write, make_inline, make_url, to_python, read_bundle, write_bundle> methods;
 
     static void _dealloc(Impl* self)
     {
@@ -286,6 +324,32 @@ MetadataDef* metadata_def = nullptr;
 
 namespace arki {
 namespace python {
+
+arki::metadata::Collection metadata_collection_from_python(PyObject* o)
+{
+    metadata::Collection mdc;
+    pyo_unique_ptr iterator(throw_ifnull(PyObject_GetIter(o)));
+
+    while (true)
+    {
+        pyo_unique_ptr item(PyIter_Next(iterator));
+        if (!item)
+            break;
+
+        if (arkipy_Metadata_Check(item))
+        {
+            mdc.push_back(*((arkipy_Metadata*)item.get())->md);
+        } else {
+            PyErr_SetString(PyExc_TypeError, "an iterable of arkimet.Metadata is needed");
+            throw PythonException();
+        }
+    }
+
+    if (PyErr_Occurred())
+        throw PythonException();
+
+    return mdc;
+}
 
 arkipy_Metadata* metadata_create(std::unique_ptr<Metadata>&& md)
 {

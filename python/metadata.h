@@ -3,11 +3,8 @@
 
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
+#include <arki/metadata/fwd.h>
 #include <memory>
-
-namespace arki {
-struct Metadata;
-}
 
 extern "C" {
 
@@ -25,6 +22,12 @@ extern PyTypeObject* arkipy_Metadata_Type;
 
 namespace arki {
 namespace python {
+
+/**
+ * Return a metadata::Collection from a python sequence of arkimet.Metadata
+ * objects
+ */
+arki::metadata::Collection metadata_collection_from_python(PyObject* o);
 
 arkipy_Metadata* metadata_create(std::unique_ptr<Metadata>&& md);
 
