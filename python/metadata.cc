@@ -163,9 +163,9 @@ std::string get_fd_name(PyObject* fd)
     return from_python<std::string>(res);
 }
 
-struct read : public ClassMethKwargs<read>
+struct read_bundle : public ClassMethKwargs<read_bundle>
 {
-    constexpr static const char* name = "read";
+    constexpr static const char* name = "read_bundle";
     constexpr static const char* signature = "src: Union[bytes, ByteIO], dest: Callable[[metadata], Optional[bool]], basedir: str=None, pathname: str=None";
     constexpr static const char* returns = "bool";
     constexpr static const char* summary = "Read all metadata from a give file or memory buffer";
@@ -252,7 +252,7 @@ struct MetadataDef : public Type<MetadataDef, arkipy_Metadata>
 Arkimet metadata for one data item
 )";
     GetSetters<> getsetters;
-    Methods<write, make_inline, make_url, to_python, read> methods;
+    Methods<write, make_inline, make_url, to_python, read_bundle> methods;
 
     static void _dealloc(Impl* self)
     {
