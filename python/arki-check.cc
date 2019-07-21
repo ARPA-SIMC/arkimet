@@ -1,4 +1,3 @@
-#include "arki/runtime/arki-check.h"
 #include "arki/core/cfg.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
@@ -317,50 +316,6 @@ struct unarchive : public checker_base<unarchive, arkipy_ArkiCheck>
 };
 
 
-struct run_ : public MethKwargs<run_, arkipy_ArkiCheck>
-{
-    constexpr static const char* name = "run";
-    constexpr static const char* signature = "";
-    constexpr static const char* returns = "int";
-    constexpr static const char* summary = "run arki-check";
-    constexpr static const char* doc = nullptr;
-
-    static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
-    {
-        static const char* kwlist[] = { "args", nullptr };
-        PyObject* pyargs = nullptr;
-        if (!PyArg_ParseTupleAndKeywords(args, kw, "O", const_cast<char**>(kwlist), &pyargs))
-            return nullptr;
-
-        if (!PySequence_Check(pyargs))
-        {
-            PyErr_SetString(PyExc_TypeError, "args argument must be a sequence of strings");
-            throw PythonException();
-        }
-
-        // Unpack a sequence of strings into argc/argv
-        unsigned argc = PySequence_Size(pyargs);
-        std::vector<const char*> argv;
-        argv.reserve(argc + 1);
-        for (unsigned i = 0; i < argc; ++i)
-        {
-            pyo_unique_ptr o(throw_ifnull(PySequence_ITEM(pyargs, i)));
-            argv.emplace_back(from_python<const char*>(o));
-        }
-        argv.emplace_back(nullptr);
-
-        try {
-            int res;
-            {
-                ReleaseGIL rg;
-                res = self->arki_check->run(argc, argv.data());
-            }
-            return throw_ifnull(PyLong_FromLong(res));
-        } ARKI_CATCH_RETURN_PYO
-    }
-};
-
-
 struct ArkiCheckDef : public Type<ArkiCheckDef, arkipy_ArkiCheck>
 {
     constexpr static const char* name = "ArkiCheck";
@@ -369,13 +324,12 @@ struct ArkiCheckDef : public Type<ArkiCheckDef, arkipy_ArkiCheck>
 arki-check implementation
 )";
     GetSetters<> getsetters;
-    Methods<remove, remove_all, remove_old, repack, tar, zip, compress, unarchive, state, check_issue51, check, run_> methods;
+    Methods<remove, remove_all, remove_old, repack, tar, zip, compress, unarchive, state, check_issue51, check> methods;
 
     static void _dealloc(Impl* self)
     {
         self->config.~Sections();
         self->checker_config.~CheckerConfig();
-        delete self->arki_check;
         Py_TYPE(self)->tp_free(self);
     }
 
@@ -410,7 +364,6 @@ arki-check implementation
         try {
             new (&(self->config)) arki::core::cfg::Sections(std::move(sections_from_python(arg_config)));
             new (&(self->checker_config)) arki::dataset::CheckerConfig(std::make_shared<arki::dataset::OstreamReporter>(std::cout), arg_readonly);
-            self->arki_check = new arki::runtime::ArkiCheck;
 
             if (arg_filter)
                 self->checker_config.segment_filter = arki::Matcher::parse(std::string(arg_filter, arg_filter_len));

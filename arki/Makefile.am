@@ -117,7 +117,6 @@ nobase_dist_arkiinclude_HEADERS = \
 		runtime/processor.h \
 		runtime/module.h \
 		runtime/arki-query.h \
-		runtime/arki-check.h \
 		runtime/arki-scan.h \
 		scan.h \
 		scan/fwd.h \
@@ -190,12 +189,6 @@ nobase_dist_arkiinclude_HEADERS = \
 		utils/yaml.h \
 		utils/tar.h \
 		utils/zip.h \
-		utils/commandline/core.h \
-		utils/commandline/doc.h \
-		utils/commandline/engine.h \
-		utils/commandline/options.h \
-		utils/commandline/parser.h \
-		utils/commandline/wordwrap.h \
 		utils/term.h \
 		utils/tests.h \
 		utils/testrunner.h \
@@ -253,12 +246,6 @@ libarkimet_la_SOURCES += \
 		utils/tar.cc \
 		utils/zip.cc \
 		utils/term.cc \
-		utils/commandline/core.cpp \
-		utils/commandline/options.cpp \
-		utils/commandline/doc.cpp \
-		utils/commandline/parser.cpp \
-		utils/commandline/engine.cpp \
-		utils/commandline/wordwrap.cpp \
 		binary.cc \
 		transaction.cc \
 		emitter.cc \
@@ -574,7 +561,6 @@ libarkimet_la_SOURCES += \
 		dispatcher.cc \
 		querymacro.cc \
 		runtime/arki-query.cc \
-		runtime/arki-check.cc \
 		runtime/arki-scan.cc
 
 tests_arki_test_SOURCES += \

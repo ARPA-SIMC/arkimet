@@ -155,7 +155,7 @@ std::unique_ptr<runtime::MetadataDispatch> build_dispatcher(runtime::DatasetProc
         {
             ValidatorRepository::const_iterator i = vals.find(*iname);
             if (i == vals.end())
-                throw commandline::BadOption("unknown validator '" + *iname + "'. You can get a list using --validate=list.");
+                throw std::runtime_error("unknown validator '" + *iname + "'. You can get a list using --validate=list.");
             res->dispatcher->add_validator(*(i->second));
         }
     }

@@ -253,15 +253,8 @@ bool Restrict::is_allowed(const core::cfg::Section& cfg) const
     return is_allowed(parseRestrict(cfg.value("restrict")));
 }
 
-void readMatcherAliasDatabase(commandline::StringOption* file)
+void readMatcherAliasDatabase()
 {
-    // The file named in the given StringOption (if any) is tried first.
-    if (file && file->isSet())
-    {
-        MatcherAliasDatabase::addGlobal(parse_config_file(file->stringValue()));
-        return;
-    }
-
     // Otherwise the file given in the environment variable ARKI_ALIASES is tried.
     char* fromEnv = getenv("ARKI_ALIASES");
     if (fromEnv)
@@ -284,18 +277,14 @@ void readMatcherAliasDatabase(commandline::StringOption* file)
     // Else, nothing is loaded.
 }
 
-static std::string rcDirName(const std::string& nameInConfdir, const std::string& nameInEnv, commandline::StringOption* dir)
+static std::string rcDirName(const std::string& nameInConfdir, const std::string& nameInEnv)
 {
-	std::string dirname;
-	char* fromEnv = 0;
+    std::string dirname;
+    char* fromEnv = 0;
 
-	// The directory named in the given StringOption (if any) is tried first.
-	if (dir && dir->isSet())
-		return dir->stringValue();
-	
-	// Otherwise the directory given in the environment variable nameInEnv is tried.
-	if ((fromEnv = getenv(nameInEnv.c_str())))
-		return fromEnv;
+    // Otherwise the directory given in the environment variable nameInEnv is tried.
+    if ((fromEnv = getenv(nameInEnv.c_str())))
+        return fromEnv;
 
 #ifdef CONF_DIR
 	// Else, CONF_DIR is tried.
@@ -306,9 +295,9 @@ static std::string rcDirName(const std::string& nameInConfdir, const std::string
 #endif
 }
 
-std::vector<std::string> rcFiles(const std::string& nameInConfdir, const std::string& nameInEnv, commandline::StringOption* dirOption)
+std::vector<std::string> rcFiles(const std::string& nameInConfdir, const std::string& nameInEnv)
 {
-	std::string dirname = rcDirName(nameInConfdir, nameInEnv, dirOption);
+    std::string dirname = rcDirName(nameInConfdir, nameInEnv);
 
     vector<string> files;
     sys::Path dir(dirname);
@@ -330,9 +319,9 @@ std::vector<std::string> rcFiles(const std::string& nameInConfdir, const std::st
 	return files;
 }
 
-std::string readRcDir(const std::string& nameInConfdir, const std::string& nameInEnv, commandline::StringOption* dirOption)
+std::string readRcDir(const std::string& nameInConfdir, const std::string& nameInEnv)
 {
-	vector<string> files = rcFiles(nameInConfdir, nameInEnv, dirOption);
+    vector<string> files = rcFiles(nameInConfdir, nameInEnv);
 
 	// Read all the contents
 	string res;
@@ -342,10 +331,10 @@ std::string readRcDir(const std::string& nameInConfdir, const std::string& nameI
 	return res;
 }
 
-SourceCode readSourceFromRcDir(const std::string& nameInConfdir, const std::string& nameInEnv, commandline::StringOption* dirOption)
+SourceCode readSourceFromRcDir(const std::string& nameInConfdir, const std::string& nameInEnv)
 {
-	vector<string> files = rcFiles(nameInConfdir, nameInEnv, dirOption);
-	SourceCode res;
+    vector<string> files = rcFiles(nameInConfdir, nameInEnv);
+    SourceCode res;
 
 	// Read all the contents
 	for (vector<string>::const_iterator i = files.begin();
