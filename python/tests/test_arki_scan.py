@@ -69,11 +69,6 @@ def parse_metadata(buf):
 
 class TestArkiScan(unittest.TestCase):
     def runcmd(self, *args):
-        # arkiscan = arki.ArkiScan()
-        # res = arkiscan.run(args=("arki-scan",) + args)
-        # if res == 0:
-        #     return None
-        # return res
         try:
             return Scan.main(args)
         except SystemExit as e:
