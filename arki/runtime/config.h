@@ -3,10 +3,10 @@
 
 /// Common configuration-related code used in most arkimet executables
 
-#include <arki/utils/commandline/options.h>
 #include <arki/core/fwd.h>
 #include <string>
 #include <vector>
+#include <set>
 
 namespace arki {
 namespace runtime {
@@ -127,27 +127,26 @@ struct Restrict
 /**
  * Read the Matcher alias database.
  *
- * The file named in the given StringOption (if any) is tried first.
- * Otherwise the file given in the environment variable ARKI_ALIASES is tried.
+ * The file given in the environment variable ARKI_ALIASES is tried.
  * Else, $(sysconfdir)/arkimet/match-alias.conf is tried.
  * Else, nothing is loaded.
  *
  * The alias database is kept statically for all the lifetime of the program,
  * and is automatically used by readQuery.
  */
-void readMatcherAliasDatabase(arki::utils::commandline::StringOption* file = 0);
+void readMatcherAliasDatabase();
 
 /**
  * Read the content of an rc directory, returning all the files found, sorted
  * alphabetically by name.
  */
-std::vector<std::string> rcFiles(const std::string& nameInConfdir, const std::string& nameInEnv, arki::utils::commandline::StringOption* dir = 0);
+std::vector<std::string> rcFiles(const std::string& nameInConfdir, const std::string& nameInEnv);
 
 /**
  * Read the content of an rc directory, by concatenating all non-hidden,
  * non-backup files in it, sorted alphabetically by name
  */
-std::string readRcDir(const std::string& nameInConfdir, const std::string& nameInEnv, arki::utils::commandline::StringOption* dir = 0);
+std::string readRcDir(const std::string& nameInConfdir, const std::string& nameInEnv);
 
 struct FileInfo
 {
@@ -169,7 +168,7 @@ struct SourceCode : public std::vector<FileInfo>
  * information about what parts of the string belong to what file, which can be
  * used to map a string location to its original position.
  */
-SourceCode readSourceFromRcDir(const std::string& nameInConfdir, const std::string& nameInEnv, arki::utils::commandline::StringOption* dir = 0);
+SourceCode readSourceFromRcDir(const std::string& nameInConfdir, const std::string& nameInEnv);
 
 }
 }

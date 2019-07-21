@@ -2,7 +2,6 @@
 
 bin_PROGRAMS =
 dist_bin_SCRIPTS = arki-query arki-scan arki-check arki-mergeconf arki-dump arki-xargs arki-server arki-testtar
-noinst_PROGRAMS = arki-test
 
 all_libs = ../arki/libarkimet.la $(LIBGRIB_LIBS) $(DBALLE_LIBS) $(SQLITE3_LDFLAGS) $(GRIBAPI_LIBS) $(LUA_LIBS) $(ZLIB_LIBS) $(DEVEL_LIBS) -lpthread
 
@@ -28,9 +27,6 @@ endif
 if DBALLE
 dist_bin_SCRIPTS += arki-bufr-prepare
 endif
-
-arki_test_SOURCES = arki-test.cc
-arki_test_LDADD = $(all_libs)
 
 test_scripts = run-test-src
 check_PROGRAMS = test-src

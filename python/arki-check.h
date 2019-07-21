@@ -7,19 +7,12 @@
 #include <arki/dataset.h>
 #include <memory>
 
-namespace arki {
-namespace runtime {
-struct ArkiCheck;
-}
-}
-
 extern "C" {
 
 typedef struct {
     PyObject_HEAD
     arki::core::cfg::Sections config;
     arki::dataset::CheckerConfig checker_config;
-    arki::runtime::ArkiCheck* arki_check;
 } arkipy_ArkiCheck;
 
 extern PyTypeObject* arkipy_ArkiCheck_Type;

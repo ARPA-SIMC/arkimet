@@ -3,7 +3,6 @@
 
 /// Common I/O code used in most arkimet executables
 
-#include <arki/utils/commandline/parser.h>
 #include <arki/core/file.h>
 #include <arki/defs.h>
 #include <string>
@@ -23,15 +22,6 @@ struct File : public core::File
 {
     File(const std::string pathname, bool append=false);
 };
-
-/**
- * Open an input file.
- *
- * If there is a commandline parameter available in the parser, use that as a
- * file name; else use the standard input.
- */
-std::unique_ptr<core::NamedFileDescriptor> make_output(utils::commandline::Parser& opts);
-std::unique_ptr<core::NamedFileDescriptor> make_output(utils::commandline::StringOption& opt);
 
 
 /**

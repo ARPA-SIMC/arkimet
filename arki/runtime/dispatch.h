@@ -5,7 +5,6 @@
 #include <arki/dataset/fwd.h>
 #include <arki/dataset/memory.h>
 #include <arki/runtime/module.h>
-#include <arki/utils/commandline/parser.h>
 #include <string>
 #include <vector>
 
