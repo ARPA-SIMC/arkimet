@@ -4,7 +4,7 @@ import shutil
 import os
 import subprocess
 from contextlib import contextmanager
-# from arkimet.cmdline.check import Check
+from arkimet.cmdline.check import Check
 from arkimet.test import CatchOutput
 
 
@@ -164,15 +164,15 @@ class ArkiCheckTestsBase:
         yield env
 
     def runcmd(self, *args):
-        arkiscan = arki.ArkiCheck()
-        res = arkiscan.run(args=("arki-check",) + args)
-        if res == 0:
-            return None
-        return res
-        # try:
-        #     return Check.main(args)
-        # except SystemExit as e:
-        #     return e.args[0]
+        # arkiscan = arki.ArkiCheck()
+        # res = arkiscan.run(args=("arki-check",) + args)
+        # if res == 0:
+        #     return None
+        # return res
+        try:
+            return Check.main(args)
+        except SystemExit as e:
+            return e.args[0]
 
     def call_output(self, *args):
         out = CatchOutput()
