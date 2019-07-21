@@ -116,7 +116,6 @@ nobase_dist_arkiinclude_HEADERS = \
 		runtime/dispatch.h \
 		runtime/processor.h \
 		runtime/module.h \
-		runtime/tests.h \
 		runtime/arki-query.h \
 		runtime/arki-check.h \
 		runtime/arki-scan.h \
@@ -636,7 +635,6 @@ tests_arki_test_SOURCES += \
 		querymacro-test.cc \
 		datasets-test.cc \
 		dispatcher-test.cc \
-		runtime/tests.cc \
 		runtime/processor-test.cc \
 		runtime/source-test.cc \
 		runtime/dispatch-test.cc \
@@ -656,10 +654,8 @@ tests_arki_test_SOURCES += report-test.cc
 endif
 
 if DBALLE
-# QUIQUIQUI
 nobase_dist_arkiinclude_HEADERS += runtime/arki-bufr-prepare.h
 libarkimet_la_SOURCES += runtime/arki-bufr-prepare.cc
-tests_arki_test_SOURCES += runtime/arki-bufr-prepare-test.cc
 endif
 
 endif
