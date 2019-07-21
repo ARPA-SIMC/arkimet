@@ -1,8 +1,11 @@
+import re
 import arkimet as arki
 from arkimet.cmdline.base import App, Exit
 import logging
 
 log = logging.getLogger("arki-check")
+
+re_stringlist = re.compile(r"[\s,]+")
 
 
 class Check(App):
@@ -62,11 +65,59 @@ class Check(App):
         self.parser.add_argument("--offline", action="store_true",
                                  help="Work on archives, skipping online data unless --online is also provided")
 
-        self.parser.add_argument("dataset", action="append", nargs="*",
+        self.parser.add_argument("dataset", nargs="*",
                                  help="dataset(s) to check")
 
+    def _add_config(self, section, name=None):
+        if name is None:
+            name = section["name"]
+
+        old = self.config.section(name)
+        if old is not None:
+            log.warning("ignoring dataset %s in %s, which has the same name as the dataset in %s",
+                        name, section["path"], old["path"])
+        self.config[name] = section
+        self.config[name]["name"] = name
+
     def build_config(self):
+        """
+        Fill the input datasets configuration
+        """
         self.config = arki.cfg.Sections()
+
+        # From -C options, looking for config files or datasets
+        if self.args.config:
+            for pathname in self.args.config:
+                cfg = arki.dataset.read_configs(pathname)
+                for name, section in cfg.items():
+                    self._add_config(section, name)
+
+        # From command line arguments, looking for data files or datasets
+        for dataset in self.args.dataset:
+            section = arki.dataset.read_config(dataset)
+            self._add_config(section)
+
+        if not self.config:
+            self.parser.error("you need to specify at least one dataset to work on")
+
+        # Remove unallowed entries
+        if self.args.restrict:
+            to_remove = []
+            allowed = frozenset(x for x in re_stringlist.split(self.args.restrict) if x)
+            for name, section in self.config.items():
+                r = section.get("restrict", None)
+                if r is None:
+                    to_remove.append(name)
+                    continue
+                offered = frozenset(x for x in re_stringlist.split(r) if x)
+                if not (allowed & offered):
+                    to_remove.append(name)
+
+            for name in to_remove:
+                del self.config[name]
+
+        if not self.config:
+            self.parser.error("no accessible datasets found for the given --restrict value")
 
     def run(self):
         super().run()
