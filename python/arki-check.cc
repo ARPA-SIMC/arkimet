@@ -1,10 +1,18 @@
 #include "arki/runtime/arki-check.h"
+#include "arki/core/cfg.h"
+#include "arki/metadata.h"
+#include "arki/metadata/collection.h"
+#include "arki/dataset.h"
+#include "arki/datasets.h"
+#include "arki/nag.h"
 #include "arki-check.h"
 #include "utils/core.h"
 #include "utils/methods.h"
 #include "utils/type.h"
 #include "utils/values.h"
 #include "common.h"
+#include <sstream>
+#include <iostream>
 
 using namespace arki::python;
 
@@ -16,6 +24,89 @@ PyTypeObject* arkipy_ArkiCheck_Type = nullptr;
 
 
 namespace {
+
+struct remove : public MethKwargs<remove, arkipy_ArkiCheck>
+{
+    constexpr static const char* name = "remove";
+    constexpr static const char* signature = "config: arkimet.cfg.Sections, metadata_file: str, fix: bool=False";
+    constexpr static const char* returns = "";
+    constexpr static const char* summary = "run arki-check --remove=metadata_file";
+    constexpr static const char* doc = nullptr;
+
+    static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
+    {
+        static const char* kwlist[] = { "config", "metadata_file", "fix", nullptr };
+        PyObject* arg_config = nullptr;
+        const char* arg_metadata_file = nullptr;
+        Py_ssize_t arg_metadata_file_len;
+        int arg_fix = 0;
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "Os#|p", const_cast<char**>(kwlist),
+                    &arg_config, &arg_metadata_file, &arg_metadata_file_len, &arg_fix))
+            return nullptr;
+
+        try {
+            auto config = sections_from_python(arg_config);
+            std::string metadata_file(arg_metadata_file, arg_metadata_file_len);
+
+            {
+                ReleaseGIL rg;
+                arki::Datasets datasets(config);
+                arki::WriterPool pool(datasets);
+                // Read all metadata from the file specified in --remove
+                arki::metadata::Collection todolist;
+                todolist.read_from_file(metadata_file);
+                // Datasets where each metadata comes from
+                std::vector<std::string> dsnames;
+                // Verify that all metadata items can be mapped to a dataset
+                std::map<std::string, unsigned> counts;
+                unsigned idx = 1;
+                for (const auto& md: todolist)
+                {
+                    if (!md->has_source_blob())
+                    {
+                        std::stringstream ss;
+                        ss << "cannot remove data #" << idx << ": metadata does not come from an on-disk dataset";
+                        throw std::runtime_error(ss.str());
+                    }
+
+                    auto ds = datasets.locate_metadata(*md);
+                    if (!ds)
+                    {
+                        std::stringstream ss;
+                        ss << "cannot remove data #" << idx << " is does not come from any known dataset";
+                        throw std::runtime_error(ss.str());
+                    }
+
+                    dsnames.push_back(ds->name);
+                    ++counts[ds->name];
+                    ++idx;
+                }
+                if (arg_fix)
+                {
+                    // Perform removals
+                    idx = 1;
+                    for (unsigned i = 0; i < todolist.size(); ++i)
+                    {
+                        auto ds = pool.get(dsnames[i]);
+                        try {
+                            ds->remove(todolist[i]);
+                        } catch (std::exception& e) {
+                            std::cerr << "Cannot remove message #" << idx << ": " << e.what() << std::endl;
+                        }
+                    }
+                    for (const auto& i: counts)
+                        arki::nag::verbose("%s: %u data deleted", i.first.c_str(), i.second);
+                } else {
+                    for (const auto& i: counts)
+                        printf("%s: %u data would be deleted\n", i.first.c_str(), i.second);
+                }
+                fflush(stdout);
+                fflush(stderr);
+            }
+            Py_RETURN_NONE;
+        } ARKI_CATCH_RETURN_PYO
+    }
+};
 
 struct run_ : public MethKwargs<run_, arkipy_ArkiCheck>
 {
@@ -69,7 +160,7 @@ struct ArkiCheckDef : public Type<ArkiCheckDef, arkipy_ArkiCheck>
 arki-check implementation
 )";
     GetSetters<> getsetters;
-    Methods<run_> methods;
+    Methods<remove, run_> methods;
 
     static void _dealloc(Impl* self)
     {

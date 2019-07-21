@@ -124,4 +124,7 @@ class Check(App):
         self.build_config()
 
         arki_check = arki.ArkiCheck()
-        raise NotImplementedError("arki-check")
+        if self.args.remove:
+            arki_check.remove(self.config, self.args.remove, fix=self.args.fix)
+        else:
+            raise NotImplementedError("arki-check")
