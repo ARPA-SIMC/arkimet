@@ -3,6 +3,8 @@
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
 #include "arki/dataset.h"
+#include "arki/dataset/reporter.h"
+#include "arki/dataset/segmented.h"
 #include "arki/datasets.h"
 #include "arki/nag.h"
 #include "arki-check.h"
@@ -25,32 +27,41 @@ PyTypeObject* arkipy_ArkiCheck_Type = nullptr;
 
 namespace {
 
+struct SkipDataset : public std::exception
+{
+    std::string msg;
+
+    SkipDataset(const std::string& msg)
+        : msg(msg) {}
+    virtual ~SkipDataset() throw () {}
+
+    virtual const char* what() const throw() { return msg.c_str(); }
+};
+
+
 struct remove : public MethKwargs<remove, arkipy_ArkiCheck>
 {
     constexpr static const char* name = "remove";
-    constexpr static const char* signature = "config: arkimet.cfg.Sections, metadata_file: str, fix: bool=False";
+    constexpr static const char* signature = "metadata_file: str";
     constexpr static const char* returns = "";
     constexpr static const char* summary = "run arki-check --remove=metadata_file";
     constexpr static const char* doc = nullptr;
 
     static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
     {
-        static const char* kwlist[] = { "config", "metadata_file", "fix", nullptr };
-        PyObject* arg_config = nullptr;
+        static const char* kwlist[] = { "metadata_file", nullptr };
         const char* arg_metadata_file = nullptr;
         Py_ssize_t arg_metadata_file_len;
-        int arg_fix = 0;
-        if (!PyArg_ParseTupleAndKeywords(args, kw, "Os#|p", const_cast<char**>(kwlist),
-                    &arg_config, &arg_metadata_file, &arg_metadata_file_len, &arg_fix))
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "s#", const_cast<char**>(kwlist),
+                    &arg_metadata_file, &arg_metadata_file_len))
             return nullptr;
 
         try {
-            auto config = sections_from_python(arg_config);
             std::string metadata_file(arg_metadata_file, arg_metadata_file_len);
 
             {
                 ReleaseGIL rg;
-                arki::Datasets datasets(config);
+                arki::Datasets datasets(self->config);
                 arki::WriterPool pool(datasets);
                 // Read all metadata from the file specified in --remove
                 arki::metadata::Collection todolist;
@@ -81,7 +92,7 @@ struct remove : public MethKwargs<remove, arkipy_ArkiCheck>
                     ++counts[ds->name];
                     ++idx;
                 }
-                if (arg_fix)
+                if (not self->checker_config.readonly)
                 {
                     // Perform removals
                     idx = 1;
@@ -107,6 +118,204 @@ struct remove : public MethKwargs<remove, arkipy_ArkiCheck>
         } ARKI_CATCH_RETURN_PYO
     }
 };
+
+template<typename Base, typename Impl>
+struct checker_base : public MethKwargs<Base, Impl>
+{
+    constexpr static const char* signature = "";
+    constexpr static const char* returns = "";
+
+    static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
+    {
+        static const char* kwlist[] = { nullptr };
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "", const_cast<char**>(kwlist)))
+            return nullptr;
+        try {
+            ReleaseGIL rg;
+            {
+                for (auto si: self->config)
+                {
+                    try {
+                        std::unique_ptr<arki::dataset::Checker> checker;
+                        try {
+                            checker = arki::dataset::Checker::create(si.second);
+                        } catch (std::exception& e) {
+                            throw SkipDataset(e.what());
+                        }
+                        Base::process(self, *checker);
+                    } catch (SkipDataset& e) {
+                        std::cerr << "Skipping dataset " << si.second.value("name") << ": " << e.what() << std::endl;
+                        continue;
+                    }
+                }
+            }
+            Py_RETURN_NONE;
+        } ARKI_CATCH_RETURN_PYO
+    }
+};
+
+struct remove_all : public checker_base<remove_all, arkipy_ArkiCheck>
+{
+    constexpr static const char* name = "remove_all";
+    constexpr static const char* summary = "run arki-check --remove-all";
+
+    static void process(Impl* self, arki::dataset::Checker& checker)
+    {
+        checker.remove_all(self->checker_config);
+    }
+};
+
+struct remove_old : public checker_base<remove_old, arkipy_ArkiCheck>
+{
+    constexpr static const char* name = "remove_old";
+    constexpr static const char* summary = "run arki-check --remove-old";
+
+    static void process(Impl* self, arki::dataset::Checker& checker)
+    {
+        checker.remove_old(self->checker_config);
+    }
+};
+
+struct repack : public checker_base<repack, arkipy_ArkiCheck>
+{
+    constexpr static const char* name = "repack";
+    constexpr static const char* summary = "run arki-check --repack";
+
+    static void process(Impl* self, arki::dataset::Checker& checker)
+    {
+        checker.repack(self->checker_config);
+    }
+};
+
+struct tar : public checker_base<tar, arkipy_ArkiCheck>
+{
+    constexpr static const char* name = "tar";
+    constexpr static const char* summary = "run arki-check --tar";
+
+    static void process(Impl* self, arki::dataset::Checker& checker)
+    {
+        checker.tar(self->checker_config);
+    }
+};
+
+struct zip : public checker_base<zip, arkipy_ArkiCheck>
+{
+    constexpr static const char* name = "zip";
+    constexpr static const char* summary = "run arki-check --zip";
+
+    static void process(Impl* self, arki::dataset::Checker& checker)
+    {
+        checker.zip(self->checker_config);
+    }
+};
+
+struct state : public checker_base<state, arkipy_ArkiCheck>
+{
+    constexpr static const char* name = "state";
+    constexpr static const char* summary = "run arki-check --state";
+
+    static void process(Impl* self, arki::dataset::Checker& checker)
+    {
+        checker.state(self->checker_config);
+    }
+};
+
+struct check_issue51 : public checker_base<check_issue51, arkipy_ArkiCheck>
+{
+    constexpr static const char* name = "check_issue51";
+    constexpr static const char* summary = "run arki-check --issue51";
+
+    static void process(Impl* self, arki::dataset::Checker& checker)
+    {
+        checker.check_issue51(self->checker_config);
+    }
+};
+
+struct check : public checker_base<check, arkipy_ArkiCheck>
+{
+    constexpr static const char* name = "check";
+    constexpr static const char* summary = "run arki-check";
+
+    static void process(Impl* self, arki::dataset::Checker& checker)
+    {
+        checker.check(self->checker_config);
+    }
+};
+
+struct compress : public checker_base<compress, arkipy_ArkiCheck>
+{
+    constexpr static const char* name = "compress";
+    constexpr static const char* summary = "run arki-check --compress";
+
+    static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
+    {
+        static const char* kwlist[] = { "group_size", nullptr };
+        int group_size;
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "i", const_cast<char**>(kwlist), &group_size))
+            return nullptr;
+        try {
+            ReleaseGIL rg;
+            {
+                for (auto si: self->config)
+                {
+                    try {
+                        std::unique_ptr<arki::dataset::Checker> checker;
+                        try {
+                            checker = arki::dataset::Checker::create(si.second);
+                        } catch (std::exception& e) {
+                            throw SkipDataset(e.what());
+                        }
+                        checker->compress(self->checker_config, group_size);
+                    } catch (SkipDataset& e) {
+                        std::cerr << "Skipping dataset " << si.second.value("name") << ": " << e.what() << std::endl;
+                        continue;
+                    }
+                }
+            }
+            Py_RETURN_NONE;
+        } ARKI_CATCH_RETURN_PYO
+    }
+};
+
+struct unarchive : public checker_base<unarchive, arkipy_ArkiCheck>
+{
+    constexpr static const char* name = "unarchive";
+    constexpr static const char* summary = "run arki-check --unarchive";
+
+    static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
+    {
+        static const char* kwlist[] = { "pathname", nullptr };
+        const char* arg_pathname = nullptr;
+        Py_ssize_t arg_pathname_len;
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "s#", const_cast<char**>(kwlist),
+                    &arg_pathname, &arg_pathname_len))
+            return nullptr;
+        try {
+            std::string pathname(arg_pathname, arg_pathname_len);
+            ReleaseGIL rg;
+            {
+                for (auto si: self->config)
+                {
+                    try {
+                        std::unique_ptr<arki::dataset::Checker> checker;
+                        try {
+                            checker = arki::dataset::Checker::create(si.second);
+                        } catch (std::exception& e) {
+                            throw SkipDataset(e.what());
+                        }
+                        if (arki::dataset::segmented::Checker* c = dynamic_cast<arki::dataset::segmented::Checker*>(checker.get()))
+                            c->segment(pathname)->unarchive();
+                    } catch (SkipDataset& e) {
+                        std::cerr << "Skipping dataset " << si.second.value("name") << ": " << e.what() << std::endl;
+                        continue;
+                    }
+                }
+            }
+            Py_RETURN_NONE;
+        } ARKI_CATCH_RETURN_PYO
+    }
+};
+
 
 struct run_ : public MethKwargs<run_, arkipy_ArkiCheck>
 {
@@ -160,10 +369,12 @@ struct ArkiCheckDef : public Type<ArkiCheckDef, arkipy_ArkiCheck>
 arki-check implementation
 )";
     GetSetters<> getsetters;
-    Methods<remove, run_> methods;
+    Methods<remove, remove_all, remove_old, repack, tar, zip, compress, unarchive, state, check_issue51, check, run_> methods;
 
     static void _dealloc(Impl* self)
     {
+        self->config.~Sections();
+        self->checker_config.~CheckerConfig();
         delete self->arki_check;
         Py_TYPE(self)->tp_free(self);
     }
@@ -182,12 +393,30 @@ arki-check implementation
 
     static int _init(Impl* self, PyObject* args, PyObject* kw)
     {
-        static const char* kwlist[] = { nullptr };
-        if (!PyArg_ParseTupleAndKeywords(args, kw, "", const_cast<char**>(kwlist)))
+        static const char* kwlist[] = { "config", "filter", "accurate", "offline", "online", "readonly", nullptr };
+        PyObject* arg_config;
+        const char* arg_filter = nullptr;
+        Py_ssize_t arg_filter_len;
+        int arg_accurate = 0;
+        int arg_offline = 0;
+        int arg_online = 0;
+        int arg_readonly = 0;
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "O|z#pppp", const_cast<char**>(kwlist),
+                    &arg_config,
+                    &arg_filter, &arg_filter_len,
+                    &arg_accurate, &arg_offline, &arg_online, &arg_readonly))
             return -1;
 
         try {
+            new (&(self->config)) arki::core::cfg::Sections(std::move(sections_from_python(arg_config)));
+            new (&(self->checker_config)) arki::dataset::CheckerConfig(std::make_shared<arki::dataset::OstreamReporter>(std::cout), arg_readonly);
             self->arki_check = new arki::runtime::ArkiCheck;
+
+            if (arg_filter)
+                self->checker_config.segment_filter = arki::Matcher::parse(std::string(arg_filter, arg_filter_len));
+            self->checker_config.accurate = arg_accurate;
+            self->checker_config.online = arg_online;
+            self->checker_config.offline = arg_offline;
         } ARKI_CATCH_RETURN_INT
 
         return 0;
