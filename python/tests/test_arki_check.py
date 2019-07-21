@@ -164,11 +164,6 @@ class ArkiCheckTestsBase:
         yield env
 
     def runcmd(self, *args):
-        # arkiscan = arki.ArkiCheck()
-        # res = arkiscan.run(args=("arki-check",) + args)
-        # if res == 0:
-        #     return None
-        # return res
         try:
             return Check.main(args)
         except SystemExit as e:
