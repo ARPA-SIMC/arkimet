@@ -50,13 +50,13 @@ class Check(App):
         self.parser.add_argument("--config", "-C", metavar="file", action="append",
                                  help="read configuration about datasets to scan from the given file"
                                       " (can be given more than once)")
-        self.parser.add_argument("--fix", action="store_true",
-                                 help="Perform the changes instead of writing what would have been changed")
-        self.parser.add_argument("--accurate", action="store_true",
-                                 help="Also verify the consistency of the contents of the data files (slow)")
         self.parser.add_argument("--restrict", action="store", metavar="names",
                                  help="Restrict operations to only those datasets that allow"
                                       " one of the given (comma separated) names")
+        self.parser.add_argument("--fix", "-f", action="store_true",
+                                 help="Perform the changes instead of writing what would have been changed")
+        self.parser.add_argument("--accurate", action="store_true",
+                                 help="Also verify the consistency of the contents of the data files (slow)")
         self.parser.add_argument("--filter", action="store", metavar="matcher",
                                  help="Restrict operations to at least those segments whose reference time"
                                       " matches the given matcher (but some more datasets may be included)")
@@ -123,8 +123,47 @@ class Check(App):
         super().run()
         self.build_config()
 
-        arki_check = arki.ArkiCheck()
-        if self.args.remove:
-            arki_check.remove(self.config, self.args.remove, fix=self.args.fix)
+        # Set defaults for online and offline depending on the operation performed
+        if not self.args.online and not self.args.offline:
+            if self.args.remove_all or self.args.remove_old or self.args.repack:
+                offline = False
+                online = True
+            elif self.args.tar or self.args.zip or self.args.compress:
+                offline = True
+                online = False
+            else:
+                offline = online = True
         else:
-            raise NotImplementedError("arki-check")
+            offline = self.args.offline
+            online = self.args.online
+
+        arki_check = arki.ArkiCheck(
+                self.config,
+                filter=self.args.filter,
+                accurate=self.args.accurate,
+                online=online,
+                offline=offline,
+                readonly=not self.args.fix,
+        )
+        if self.args.remove:
+            arki_check.remove(self.args.remove)
+        elif self.args.remove_all:
+            arki_check.remove_all()
+        elif self.args.remove_old:
+            arki_check.remove_old()
+        elif self.args.repack:
+            arki_check.repack()
+        elif self.args.tar:
+            arki_check.tar()
+        elif self.args.zip:
+            arki_check.zip()
+        elif self.args.compress is not None:
+            arki_check.compress(group_size=self.args.compress)
+        elif self.args.unarchive is not None:
+            arki_check.unarchive(pathname=self.args.unarchive)
+        elif self.args.state:
+            arki_check.state()
+        elif self.args.issue51:
+            arki_check.check_issue51()
+        else:
+            arki_check.check()

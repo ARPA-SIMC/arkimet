@@ -3,6 +3,8 @@
 
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
+#include <arki/core/cfg.h>
+#include <arki/dataset.h>
 #include <memory>
 
 namespace arki {
@@ -15,6 +17,8 @@ extern "C" {
 
 typedef struct {
     PyObject_HEAD
+    arki::core::cfg::Sections config;
+    arki::dataset::CheckerConfig checker_config;
     arki::runtime::ArkiCheck* arki_check;
 } arkipy_ArkiCheck;
 
