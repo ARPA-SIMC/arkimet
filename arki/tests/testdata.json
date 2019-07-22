@@ -2801,11 +2801,6 @@
  },
  {
   "doc": "",
-  "group": "arki_runtime_io",
-  "method": "tempfile"
- },
- {
-  "doc": "",
   "group": "arki_runtime_config",
   "method": "restrict"
  },

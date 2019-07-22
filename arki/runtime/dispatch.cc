@@ -1,6 +1,5 @@
 #include "dispatch.h"
 #include "processor.h"
-#include "module.h"
 #include "arki/runtime.h"
 #include "arki/runtime/config.h"
 #include "arki/dispatcher.h"

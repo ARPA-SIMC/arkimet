@@ -4,7 +4,6 @@
 #include <arki/core/cfg.h>
 #include <arki/dataset/fwd.h>
 #include <arki/dataset/memory.h>
-#include <arki/runtime/module.h>
 #include <string>
 #include <vector>
 

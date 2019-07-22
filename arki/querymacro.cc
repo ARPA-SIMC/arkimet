@@ -6,7 +6,6 @@
 #include "dataset/gridquery.h"
 #include "nag.h"
 #include "runtime/config.h"
-#include "runtime/io.h"
 #include "utils/lua.h"
 #include "sort.h"
 #include "utils/string.h"

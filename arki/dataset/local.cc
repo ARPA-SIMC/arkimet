@@ -7,7 +7,6 @@
 #include "arki/exceptions.h"
 #include "arki/metadata.h"
 #include "arki/utils/files.h"
-#include "arki/runtime/io.h"
 #include "arki/metadata/consumer.h"
 #include "arki/metadata/collection.h"
 #include "arki/nag.h"
