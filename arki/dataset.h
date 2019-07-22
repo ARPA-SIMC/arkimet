@@ -5,20 +5,17 @@
 #include <arki/matcher.h>
 #include <arki/core/fwd.h>
 #include <arki/core/cfg.h>
+#include <arki/metadata/fwd.h>
 #include <arki/dataset/fwd.h>
 #include <arki/transaction.h>
 #include <string>
+#include <vector>
 #include <memory>
 
 struct lua_State;
 
 namespace arki {
-class Metadata;
 class Summary;
-
-namespace metadata {
-class Collection;
-}
 
 namespace sort {
 class Compare;

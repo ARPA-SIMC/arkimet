@@ -1,8 +1,7 @@
 #include "config.h"
-#include <arki/matcher/area.h>
-#include <arki/matcher/utils.h>
-#include <arki/utils/geos.h>
-#include <arki/utils/regexp.h>
+#include "area.h"
+#include "arki/utils/geos.h"
+#include "arki/utils/regexp.h"
 #include <strings.h>
 #include <algorithm>
 
@@ -219,7 +218,7 @@ bool MatchAreaBBoxCoveredBy::matchGeom(const arki::utils::geos::Geometry* val) c
 
 void MatchArea::init()
 {
-    Matcher::register_matcher("area", TYPE_AREA, (MatcherType::subexpr_parser)MatchArea::parse);
+    MatcherType::register_matcher("area", TYPE_AREA, (MatcherType::subexpr_parser)MatchArea::parse);
 }
 
 }

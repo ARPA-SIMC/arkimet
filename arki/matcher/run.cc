@@ -1,7 +1,5 @@
 #include "config.h"
-
-#include <arki/matcher/run.h>
-#include <arki/matcher/utils.h>
+#include "run.h"
 #include <sstream>
 #include <iomanip>
 
@@ -70,7 +68,7 @@ unique_ptr<MatchRun> MatchRun::parse(const std::string& pattern)
 
 void MatchRun::init()
 {
-    Matcher::register_matcher("run", TYPE_RUN, (MatcherType::subexpr_parser)MatchRun::parse);
+    MatcherType::register_matcher("run", TYPE_RUN, (MatcherType::subexpr_parser)MatchRun::parse);
 }
 
 }

@@ -4,7 +4,7 @@
 #include "arki/libconfig.h"
 #include "arki/exceptions.h"
 #include "arki/utils.h"
-#include "arki/matcher.h"
+#include "arki/matcher/aliases.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
 #include <algorithm>
@@ -166,7 +166,7 @@ void readMatcherAliasDatabase()
     {
         sys::File in(fromEnv, O_RDONLY);
         auto sections = core::cfg::Sections::parse(in);
-        MatcherAliasDatabase::addGlobal(sections);
+        matcher::AliasDatabase::addGlobal(sections);
         return;
     }
 
@@ -178,7 +178,7 @@ void readMatcherAliasDatabase()
     {
         sys::File in(name, O_RDONLY);
         auto sections = core::cfg::Sections::parse(in);
-        MatcherAliasDatabase::addGlobal(sections);
+        matcher::AliasDatabase::addGlobal(sections);
         return;
     }
 #endif

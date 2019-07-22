@@ -1,12 +1,11 @@
 #include "config.h"
 
-#include <arki/matcher/product.h>
-#include <arki/matcher/utils.h>
+#include "product.h"
 #include <limits>
 #include <algorithm>
 
 #ifdef HAVE_VM2
-#include <arki/utils/vm2.h>
+#include "arki/utils/vm2.h"
 #endif
 
 using namespace std;
@@ -214,7 +213,7 @@ unique_ptr<MatchProduct> MatchProduct::parse(const std::string& pattern)
 
 void MatchProduct::init()
 {
-    Matcher::register_matcher("product", TYPE_PRODUCT, (MatcherType::subexpr_parser)MatchProduct::parse);
+    MatcherType::register_matcher("product", TYPE_PRODUCT, (MatcherType::subexpr_parser)MatchProduct::parse);
 }
 
 }

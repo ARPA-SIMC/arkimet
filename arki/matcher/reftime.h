@@ -24,6 +24,7 @@
  */
 
 #include <arki/matcher.h>
+#include <arki/matcher/utils.h>
 #include <arki/types/reftime.h>
 #include <vector>
 
@@ -39,7 +40,7 @@ class DTMatch;
  *
  * Ranges match when they intersect the interval given in the expression.
  */
-struct MatchReftime : public Implementation
+struct MatchReftime : public matcher::Implementation
 {
 	std::vector<reftime::DTMatch*> tests;
 

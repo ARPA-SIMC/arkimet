@@ -1,7 +1,5 @@
 #include "config.h"
-
-#include <arki/matcher/proddef.h>
-#include <arki/matcher/utils.h>
+#include "proddef.h"
 
 using namespace std;
 using namespace arki::types;
@@ -50,7 +48,7 @@ unique_ptr<MatchProddef> MatchProddef::parse(const std::string& pattern)
 
 void MatchProddef::init()
 {
-    Matcher::register_matcher("proddef", TYPE_PRODDEF, (MatcherType::subexpr_parser)MatchProddef::parse);
+    MatcherType::register_matcher("proddef", TYPE_PRODDEF, (MatcherType::subexpr_parser)MatchProddef::parse);
 }
 
 }

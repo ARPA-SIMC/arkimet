@@ -2,6 +2,7 @@
 #define ARKI_MATCHER_TIMERANGE
 
 #include <arki/matcher.h>
+#include <arki/matcher/utils.h>
 #include <arki/types/timerange.h>
 
 namespace arki {

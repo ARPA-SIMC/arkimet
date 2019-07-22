@@ -1,8 +1,7 @@
 #include "config.h"
 
-#include <arki/matcher/task.h>
-#include <arki/matcher/utils.h>
-#include <arki/utils/string.h>
+#include "task.h"
+#include "arki/utils/string.h"
 
 using namespace std;
 using namespace arki::types;
@@ -48,7 +47,7 @@ unique_ptr<MatchTask> MatchTask::parse(const std::string& pattern)
 
 void MatchTask::init()
 {
-    Matcher::register_matcher("task", TYPE_TASK, (MatcherType::subexpr_parser)MatchTask::parse);
+    MatcherType::register_matcher("task", TYPE_TASK, (MatcherType::subexpr_parser)MatchTask::parse);
 }
 
 }

@@ -1,5 +1,6 @@
 #include <arki/dataset/index/attr.h>
 #include <arki/matcher.h>
+#include <arki/matcher/utils.h>
 #include <arki/binary.h>
 #include <sstream>
 

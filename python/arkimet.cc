@@ -16,7 +16,7 @@
 #include "arki-dump.h"
 #include "arki-xargs.h"
 #include "arki-bufr-prepare.h"
-#include "arki/matcher.h"
+#include "arki/matcher/aliases.h"
 #include "arki/runtime.h"
 #include "arki/runtime/config.h"
 #include "arki/dataset/merged.h"
@@ -65,7 +65,7 @@ struct get_alias_database : public MethNoargs<get_alias_database, PyObject>
     static PyObject* run(Impl* self)
     {
         try {
-            return cfg_sections(MatcherAliasDatabase::serialise());
+            return cfg_sections(matcher::AliasDatabase::serialise());
         } ARKI_CATCH_RETURN_PYO
     }
 };

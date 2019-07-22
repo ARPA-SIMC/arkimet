@@ -1,7 +1,6 @@
 #include "config.h"
-#include <arki/matcher/timerange.h>
-#include <arki/matcher/utils.h>
-#include <arki/exceptions.h>
+#include "timerange.h"
+#include "arki/exceptions.h"
 
 using namespace std;
 using namespace arki::types;
@@ -421,7 +420,7 @@ unique_ptr<MatchTimerange> MatchTimerange::parse(const std::string& pattern)
 
 void MatchTimerange::init()
 {
-    Matcher::register_matcher("timerange", TYPE_TIMERANGE, (MatcherType::subexpr_parser)MatchTimerange::parse);
+    MatcherType::register_matcher("timerange", TYPE_TIMERANGE, (MatcherType::subexpr_parser)MatchTimerange::parse);
 }
 
 }

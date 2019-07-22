@@ -1431,43 +1431,43 @@
  },
  {
   "doc": "",
-  "group": "arki_matcher",
-  "method": "aliases"
+  "group": "arki_matcher_aliases",
+  "method": "use"
  },
  {
   "doc": "",
-  "group": "arki_matcher",
-  "method": "aliases_multilevel"
+  "group": "arki_matcher_aliases",
+  "method": "multilevel"
  },
  {
   "doc": "",
-  "group": "arki_matcher",
-  "method": "aliases_recursive_1"
+  "group": "arki_matcher_aliases",
+  "method": "recursive_1"
  },
  {
   "doc": "",
-  "group": "arki_matcher",
-  "method": "aliases_recursive_2"
+  "group": "arki_matcher_aliases",
+  "method": "recursive_2"
  },
  {
   "doc": "",
-  "group": "arki_matcher",
-  "method": "aliases_recursive_3"
+  "group": "arki_matcher_aliases",
+  "method": "recursive_3"
  },
  {
   "doc": "",
-  "group": "arki_matcher",
-  "method": "aliases_multilevel_load"
+  "group": "arki_matcher_aliases",
+  "method": "multilevel_load"
  },
  {
   "doc": "",
-  "group": "arki_matcher",
-  "method": "aliases_doctest"
+  "group": "arki_matcher_aliases",
+  "method": "doctest"
  },
  {
   "doc": "",
-  "group": "arki_matcher",
-  "method": "aliases_regression"
+  "group": "arki_matcher_aliases",
+  "method": "regression"
  },
  {
   "doc": "",
@@ -1748,11 +1748,6 @@
   "doc": "",
   "group": "arki_matcher_run",
   "method": "minute"
- },
- {
-  "doc": "",
-  "group": "arki_matcher_source",
-  "method": "empty"
  },
  {
   "doc": "",

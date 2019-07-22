@@ -25,7 +25,7 @@ struct expanded : public Getter<expanded, arkipy_Matcher>
     static PyObject* get(Impl* self, void* closure)
     {
         try {
-            return to_python(self->matcher->toStringExpanded());
+            return to_python(self->matcher.toStringExpanded());
         } ARKI_CATCH_RETURN_PYO;
     }
 };

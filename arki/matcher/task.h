@@ -3,6 +3,7 @@
 
 /// Radar task matcher
 #include <arki/matcher.h>
+#include <arki/matcher/utils.h>
 #include <arki/types/task.h>
 
 namespace arki {

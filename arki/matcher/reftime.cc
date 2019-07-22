@@ -1,7 +1,6 @@
-#include <arki/matcher/reftime.h>
-#include <arki/matcher/reftime/parser.h>
-#include <arki/matcher/utils.h>
-#include <arki/core/time.h>
+#include "reftime.h"
+#include "reftime/parser.h"
+#include "arki/core/time.h"
 #include <cctype>
 
 using namespace std;
@@ -98,7 +97,7 @@ std::unique_ptr<MatchReftime> MatchReftime::parse(const std::string& pattern)
 
 void MatchReftime::init()
 {
-    Matcher::register_matcher("reftime", TYPE_REFTIME, (MatcherType::subexpr_parser)MatchReftime::parse);
+    MatcherType::register_matcher("reftime", TYPE_REFTIME, (MatcherType::subexpr_parser)MatchReftime::parse);
 }
 
 }
