@@ -1,10 +1,9 @@
-#include <arki/utils/tests.h>
-#include <arki/utils/testrunner.h>
-#include <arki/utils/term.h>
-#include <arki/types-init.h>
-#include <arki/iotrace.h>
-#include <arki/core/file.h>
-#include <arki/emitter/json.h>
+#include "arki/utils/tests.h"
+#include "arki/utils/testrunner.h"
+#include "arki/utils/term.h"
+#include "arki/core/file.h"
+#include "arki/emitter/json.h"
+#include "arki/runtime.h"
 #include <signal.h>
 #include <cstring>
 #include <cstdlib>
@@ -97,8 +96,7 @@ struct ArkiRunner
 int main(int argc, const char* argv[])
 {
     arki::nag::init(false, false, true);
-    arki::types::init_default_types();
-    arki::iotrace::init();
+    arki::runtime::init();
     arki::core::lock::test_set_nowait_default(true);
 
     signal(SIGSEGV,signal_to_exception);
