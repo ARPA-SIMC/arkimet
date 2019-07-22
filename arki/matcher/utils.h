@@ -27,10 +27,145 @@
 #include <arki/utils/string.h>
 #include <vector>
 #include <string>
+#include <map>
 #include <stdint.h>
 
 namespace arki {
 namespace matcher {
+
+struct Implementation;
+
+
+/**
+ * This class is used to register matchers with arkimet
+ *
+ * Registration is done by declaring a static MatcherType object, passing the
+ * matcher details in the constructor.
+ */
+struct MatcherType
+{
+    typedef std::unique_ptr<Implementation> (*subexpr_parser)(const std::string& pattern);
+
+    std::string name;
+    types::Code code;
+    subexpr_parser parse_func;
+
+    MatcherType(const std::string& name, types::Code code, subexpr_parser parse_func);
+    ~MatcherType();
+
+    static MatcherType* find(const std::string& name);
+    static std::vector<std::string> matcherNames();
+
+    /// Register a matcher type
+    static void register_matcher(const std::string& name, types::Code code, matcher::MatcherType::subexpr_parser parse_func);
+};
+
+
+/**
+ * Base class for implementing arkimet matchers
+ */
+class Implementation
+{
+public:
+    Implementation() {}
+    Implementation(const Implementation&) = delete;
+    Implementation(const Implementation&&) = delete;
+    Implementation& operator=(const Implementation&) = delete;
+    Implementation& operator=(const Implementation&&) = delete;
+    virtual ~Implementation() {}
+
+    /// Matcher name: the name part in "name:expr"
+    virtual std::string name() const = 0;
+
+    /// Match a metadata item
+    virtual bool matchItem(const types::Type& t) const = 0;
+
+    /// Format back into a string that can be parsed again
+    virtual std::string toString() const = 0;
+
+    /**
+     * Format back into a string that can be parsed again, with all aliases
+     * expanded.
+     */
+    virtual std::string toStringExpanded() const { return toString(); }
+};
+
+
+/// ORed list of matchers, all of the same type, with the same name
+class OR : public Implementation
+{
+protected:
+    std::vector<std::shared_ptr<Implementation>> components;
+
+public:
+    std::string unparsed;
+
+    OR(const std::string& unparsed) : unparsed(unparsed) {}
+    virtual ~OR();
+
+    std::string name() const override;
+    bool matchItem(const types::Type& t) const override;
+
+    // Serialise as "type:original definition"
+    std::string toString() const override;
+    // Serialise as "type:expanded definition"
+    std::string toStringExpanded() const override;
+    // Serialise as "original definition" only
+    std::string toStringValueOnly() const;
+    // Serialise as "expanded definition" only
+    std::string toStringValueOnlyExpanded() const;
+
+    // If we match Reftime elements, build a SQL query for it. Else, throw an exception.
+    std::string toReftimeSQL(const std::string& column) const;
+
+    /**
+     * Restrict date extremes to be no wider than what is matched by this
+     * matcher.
+     *
+     * An unique_ptr set to NULL means an open end in the range. Date extremes
+     * are inclusive on both ends.
+     *
+     * @returns true if the matcher has consistent reference time expressions,
+     * false if the match is impossible (like reftime:<2014,>2015)
+     */
+    bool restrict_date_range(std::unique_ptr<core::Time>& begin, std::unique_ptr<core::Time>& end) const;
+
+    static std::unique_ptr<OR> parse(const MatcherType& type, const std::string& pattern);
+    static std::unique_ptr<OR> parse(const MatcherType& type, const std::string& pattern, const Aliases* aliases);
+};
+
+
+/// ANDed list of matchers.
+class AND : public Implementation
+{
+protected:
+    std::map<types::Code, std::shared_ptr<OR>> components;
+
+public:
+    //typedef std::map< types::Code, refcounted::Pointer<const Implementation> >::const_iterator const_iterator;
+
+    AND() {}
+    virtual ~AND();
+
+    bool empty() const { return components.empty(); }
+
+    std::string name() const override;
+
+    bool matchItem(const types::Type& t) const override;
+    bool matchItemSet(const types::ItemSet& s) const;
+
+    std::shared_ptr<OR> get(types::Code code) const;
+
+    void foreach_type(std::function<void(types::Code, const OR&)> dest) const;
+
+    void split(const std::set<types::Code>& codes, AND& with, AND& without) const;
+
+    std::string toString() const override;
+    std::string toStringExpanded() const override;
+
+    static std::unique_ptr<AND> parse(const std::string& pattern);
+};
+
 
 struct OptionalCommaList : public std::vector<std::string>
 {

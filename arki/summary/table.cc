@@ -3,6 +3,7 @@
 #include "arki/core/file.h"
 #include "arki/metadata.h"
 #include "arki/matcher.h"
+#include "arki/matcher/utils.h"
 #include "arki/types/utils.h"
 #include "arki/emitter/memory.h"
 #include "arki/summary.h"

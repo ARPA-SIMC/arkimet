@@ -45,7 +45,6 @@
 #include <arki/types/task.h>
 #include <arki/matcher/task.h>
 #include <arki/types/value.h>
-#include <arki/matcher/source.h>
 #include <arki/types/note.h>
 #include <arki/types/source.h>
 #include <arki/types/assigneddataset.h>
@@ -77,7 +76,6 @@ void init_default_types()
     Task::init();
     matcher::MatchTask::init();
     Value::init();
-    matcher::MatchSource::init();
     Note::init();
     Source::init();
     AssignedDataset::init();

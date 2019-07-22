@@ -1,8 +1,5 @@
 #include "config.h"
-
-#include <arki/matcher/level.h>
-#include <arki/matcher/utils.h>
-
+#include "level.h"
 #include <set>
 #include <stdexcept>
 #include <sstream>
@@ -277,7 +274,7 @@ unique_ptr<MatchLevel> MatchLevel::parse(const std::string& pattern)
 
 void MatchLevel::init()
 {
-    Matcher::register_matcher("level", TYPE_LEVEL, (MatcherType::subexpr_parser)MatchLevel::parse);
+    MatcherType::register_matcher("level", TYPE_LEVEL, (MatcherType::subexpr_parser)MatchLevel::parse);
 }
 
 }

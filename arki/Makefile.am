@@ -77,8 +77,10 @@ nobase_dist_arkiinclude_HEADERS = \
 		formatter.h \
 		validator.h \
 		iotrace.h \
-		matcher/area.h \
 		matcher.h \
+		matcher/fwd.h \
+		matcher/aliases.h \
+		matcher/area.h \
 		matcher/level.h \
 		matcher/origin.h \
 		matcher/proddef.h \
@@ -87,7 +89,6 @@ nobase_dist_arkiinclude_HEADERS = \
 		matcher/reftime.h \
 		matcher/reftime/parser.h \
 		matcher/run.h \
-		matcher/source.h \
 		matcher/task.h \
 		matcher/tests.h \
 		matcher/timerange.h \
@@ -272,6 +273,7 @@ libarkimet_la_SOURCES += \
 		types/typeset.cc \
 		types/itemset.cc \
 		matcher.cc \
+		matcher/aliases.cc \
 		matcher/utils.cc \
 		matcher/origin.cc \
 		matcher/product.cc \
@@ -284,7 +286,6 @@ libarkimet_la_SOURCES += \
 		matcher/area.cc \
 		matcher/proddef.cc \
 		matcher/run.cc \
-		matcher/source.cc \
 		matcher/task.cc \
 		matcher/quantity.cc \
 		runtime/config.cc \
@@ -435,6 +436,7 @@ tests_arki_test_SOURCES += \
 		summary/stats-test.cc \
 		summary/short-test.cc \
 		matcher-test.cc \
+		matcher/aliases-test.cc \
 		matcher/utils-test.cc \
 		matcher/origin-test.cc \
 		matcher/product-test.cc \
@@ -445,7 +447,6 @@ tests_arki_test_SOURCES += \
 		matcher/area-test.cc \
 		matcher/proddef-test.cc \
 		matcher/run-test.cc \
-		matcher/source-test.cc \
 		matcher/task-test.cc \
 		matcher/quantity-test.cc \
 		scan-test.cc \
