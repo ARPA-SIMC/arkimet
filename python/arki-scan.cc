@@ -1,7 +1,7 @@
 #include "arki-scan.h"
 #include "arki/nag.h"
 #include "arki/runtime/processor.h"
-#include "arki/runtime/dispatch.h"
+#include "arki-scan/dispatch.h"
 #include "arki/dispatcher.h"
 #include "arki/utils/string.h"
 #include "arki/exceptions.h"
@@ -82,7 +82,7 @@ struct FileSource
 /**
  * Build a MetadataDispatcher from the given python function args/kwargs
  */
-std::unique_ptr<arki::runtime::MetadataDispatch> build_dispatcher(arki::runtime::DatasetProcessor& processor, PyObject* args, PyObject* kw)
+std::unique_ptr<arki_scan::MetadataDispatch> build_dispatcher(arki::runtime::DatasetProcessor& processor, PyObject* args, PyObject* kw)
 {
     static const char* kwlist[] = {
         "copyok", "copyko",
@@ -109,7 +109,7 @@ std::unique_ptr<arki::runtime::MetadataDispatch> build_dispatcher(arki::runtime:
                 ))
         throw PythonException();
 
-    std::unique_ptr<arki::runtime::MetadataDispatch> res(new arki::runtime::MetadataDispatch(processor));
+    std::unique_ptr<arki_scan::MetadataDispatch> res(new arki_scan::MetadataDispatch(processor));
 
     if (testdispatch)
     {
