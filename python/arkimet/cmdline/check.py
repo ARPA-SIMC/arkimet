@@ -1,14 +1,11 @@
-import re
 import arkimet as arki
-from arkimet.cmdline.base import App, Exit
+from arkimet.cmdline.base import App, AppConfigMixin
 import logging
 
 log = logging.getLogger("arki-check")
 
-re_stringlist = re.compile(r"[\s,]+")
 
-
-class Check(App):
+class Check(AppConfigMixin, App):
     """
     Given one or more dataset root directories (either specified directly or
     read from config files), perform a maintenance run on them.
@@ -19,8 +16,6 @@ class Check(App):
 
     def __init__(self):
         super().__init__()
-        self.config = None
-
         actions = self.parser.add_mutually_exclusive_group()
         actions.add_argument("--repack", "-r", action="store_true",
                              help="Perform a repack instead of a check")
@@ -83,8 +78,6 @@ class Check(App):
         """
         Fill the input datasets configuration
         """
-        self.config = arki.cfg.Sections()
-
         # From -C options, looking for config files or datasets
         if self.args.config:
             for pathname in self.args.config:
@@ -102,19 +95,7 @@ class Check(App):
 
         # Remove unallowed entries
         if self.args.restrict:
-            to_remove = []
-            allowed = frozenset(x for x in re_stringlist.split(self.args.restrict) if x)
-            for name, section in self.config.items():
-                r = section.get("restrict", None)
-                if r is None:
-                    to_remove.append(name)
-                    continue
-                offered = frozenset(x for x in re_stringlist.split(r) if x)
-                if not (allowed & offered):
-                    to_remove.append(name)
-
-            for name in to_remove:
-                del self.config[name]
+            self.filter_restrict(self.args.restrict)
 
         if not self.config:
             self.parser.error("no accessible datasets found for the given --restrict value")
