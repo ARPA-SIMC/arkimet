@@ -1,9 +1,10 @@
-#ifndef ARKI_RUNTIME_DISPATCH_H
-#define ARKI_RUNTIME_DISPATCH_H
+#ifndef ARKI_PYTHON_ARKISCAN_DISPATCH_H
+#define ARKI_PYTHON_ARKISCAN_DISPATCH_H
 
 #include <arki/core/cfg.h>
 #include <arki/dataset/fwd.h>
 #include <arki/dataset/memory.h>
+#include "results.h"
 #include <string>
 #include <vector>
 
@@ -12,45 +13,12 @@ class Dispatcher;
 
 namespace runtime {
 class DatasetProcessor;
+}
 
-struct DispatchResults
-{
-    /// Name of source that was imported
-    std::string name;
+namespace python {
 
-    // Used for timings. Read with gettimeofday at the beginning of a task,
-    // and summary_so_far will report the elapsed time
-    struct timeval start_time;
+namespace arki_scan {
 
-    // Used for timings. Read with gettimeofday at the beginning of a task,
-    // and summary_so_far will report the elapsed time
-    struct timeval end_time;
-
-    /// Count of metadata imported successfully in the destination dataset
-    unsigned successful = 0;
-
-    /// Count of metadata imported in the error dataset because it had already
-    /// been imported
-    unsigned duplicates = 0;
-
-    /// Count of metadata imported in the error dataset
-    unsigned in_error_dataset = 0;
-
-    /// Count of metadata not imported at all
-    unsigned not_imported = 0;
-
-
-    DispatchResults();
-
-    /// Notify the end of processing for this source
-    void end();
-
-    /// Format a summary
-    std::string summary() const;
-
-    /// Check if dispatching was successful
-    bool success(bool ignore_duplicates) const;
-};
 
 /// Dispatch metadata
 struct MetadataDispatch
@@ -61,7 +29,7 @@ struct MetadataDispatch
     size_t flush_threshold = 128 * 1024 * 1024;
     size_t partial_batch_data_size = 0;
     dataset::Memory results;
-    DatasetProcessor& next;
+    runtime::DatasetProcessor& next;
 
     /// Directory where we store copyok files
     std::string dir_copyok;
@@ -76,7 +44,7 @@ struct MetadataDispatch
     std::unique_ptr<core::File> copyko;
 
 
-    MetadataDispatch(DatasetProcessor& next);
+    MetadataDispatch(runtime::DatasetProcessor& next);
     ~MetadataDispatch();
 
     /**
@@ -97,6 +65,7 @@ protected:
 };
 
 
+}
 }
 }
 #endif

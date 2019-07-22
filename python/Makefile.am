@@ -21,6 +21,8 @@ _arkimet_la_SOURCES = \
     counters.cc \
     cmdline.cc \
     arki-query.cc \
+    arki-scan/results.cc \
+    arki-scan/dispatch.cc \
     arki-scan.cc \
     arki-check.cc \
     arki-dump.cc \
@@ -65,6 +67,8 @@ EXTRA_DIST = \
     cmdline.h \
     arki-query.h \
     arki-scan.h \
+    arki-scan/results.h \
+    arki-scan/dispatch.h \
     arki-check.h \
     arki-dump.h \
     arki-xargs.h \

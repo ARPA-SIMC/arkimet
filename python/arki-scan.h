@@ -9,7 +9,12 @@
 namespace arki {
 namespace runtime {
 struct DatasetProcessor;
+}
+
+namespace python {
+namespace arki_scan {
 struct MetadataDispatch;
+}
 }
 }
 
@@ -19,7 +24,7 @@ typedef struct {
     PyObject_HEAD
     arki::core::cfg::Sections inputs;
     arki::runtime::DatasetProcessor* processor = nullptr;
-    arki::runtime::MetadataDispatch* dispatcher = nullptr;
+    arki::python::arki_scan::MetadataDispatch* dispatcher = nullptr;
 } arkipy_ArkiScan;
 
 extern PyTypeObject* arkipy_ArkiScan_Type;
