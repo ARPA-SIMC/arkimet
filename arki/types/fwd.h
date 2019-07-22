@@ -75,6 +75,8 @@ class VM2;
 struct Quantity;
 struct Task;
 
+class ItemSet;
+
 }
 }
 #endif

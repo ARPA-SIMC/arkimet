@@ -32,7 +32,7 @@ protected:
     // Metadata grid of requested items per every reference time
     MetadataGrid mdgrid;
     // Itemsets actually requested (not all elements in the grid are needed)
-    std::vector<ItemSet> items;
+    std::vector<types::ItemSet> items;
     // Reference times requested
     std::vector<core::Time> times;
     // Sorted list of mdgrid indices requested per every reference time
@@ -75,7 +75,7 @@ public:
     size_t expectedItems() const;
 
     /// Check if a metadata fits in the result, and mark it as seen
-    bool checkAndMark(const ItemSet& md);
+    bool checkAndMark(const types::ItemSet& md);
 
     /// Check that all items in todolist are true
     bool satisfied() const;

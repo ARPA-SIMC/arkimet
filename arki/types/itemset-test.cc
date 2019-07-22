@@ -1,19 +1,19 @@
-#include <arki/types/tests.h>
-#include <arki/itemset.h>
-#include <arki/types/origin.h>
-#include <arki/types/product.h>
-#include <arki/types/level.h>
-#include <arki/types/timerange.h>
-#include <arki/types/reftime.h>
-#include <arki/types/area.h>
-#include <arki/types/proddef.h>
-#include <arki/types/assigneddataset.h>
+#include "arki/types/tests.h"
+#include "itemset.h"
+#include "arki/types/origin.h"
+#include "arki/types/product.h"
+#include "arki/types/level.h"
+#include "arki/types/timerange.h"
+#include "arki/types/reftime.h"
+#include "arki/types/area.h"
+#include "arki/types/proddef.h"
+#include "arki/types/assigneddataset.h"
 
 namespace std {
-static inline std::ostream& operator<<(std::ostream& o, const arki::ItemSet& m)
+static inline std::ostream& operator<<(std::ostream& o, const arki::types::ItemSet& m)
 {
     o << "(";
-    for (arki::ItemSet::const_iterator i = m.begin(); i != m.end(); ++i)
+    for (arki::types::ItemSet::const_iterator i = m.begin(); i != m.end(); ++i)
         if (i == m.begin())
             o << i->second;
         else

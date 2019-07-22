@@ -23,7 +23,7 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include <arki/itemset.h>
+#include <arki/types/itemset.h>
 #include <arki/types/typevector.h>
 #include <string>
 #include <vector>
@@ -63,9 +63,9 @@ struct MetadataGrid
 
 	MetadataGrid();
 
-	// Find the linearised matrix index for md. Returns -1 if md does not
-	// match a point in the matrix
-	int index(const ItemSet& md) const;
+    // Find the linearised matrix index for md. Returns -1 if md does not
+    // match a point in the matrix
+    int index(const types::ItemSet& md) const;
 
     // Expand an index in its corresponding set of metadata
     types::TypeVector expand(size_t index) const;
@@ -80,11 +80,11 @@ struct MetadataGrid
     // Add an item to the grid space
     void add(const types::Type& item);
 
-	// Add all items from an itemset
-	void add(const ItemSet& is);
+    // Add all items from an itemset
+    void add(const types::ItemSet& is);
 
-	/**
-	 * Consolidate the grid: remove duplicates, sort the vectors
+    /**
+     * Consolidate the grid: remove duplicates, sort the vectors
 	 *
 	 * This can be called more than once if the space changes, but it
 	 * invalidates the previous linearisation of the matrix space, which

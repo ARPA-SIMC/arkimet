@@ -5,8 +5,8 @@
 
 #include <arki/core/fwd.h>
 #include <arki/metadata/fwd.h>
-#include <arki/itemset.h>
 #include <arki/types/fwd.h>
+#include <arki/types/itemset.h>
 #include <arki/types/note.h>
 #include <memory>
 #include <string>
@@ -53,7 +53,7 @@ class Formatter;
 /**
  * Metadata information about a message
  */
-struct Metadata : public ItemSet
+struct Metadata : public types::ItemSet
 {
 protected:
     /// Annotations, kept binary-serialized to string
