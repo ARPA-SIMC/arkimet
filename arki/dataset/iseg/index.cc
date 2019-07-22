@@ -16,7 +16,6 @@
 #include "arki/utils/files.h"
 #include "arki/sort.h"
 #include "arki/nag.h"
-#include "arki/runtime/io.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
 

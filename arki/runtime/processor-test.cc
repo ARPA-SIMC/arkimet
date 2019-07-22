@@ -1,6 +1,5 @@
 #include "config.h"
 #include "processor.h"
-#include "io.h"
 #include "arki/metadata/data.h"
 #include "arki/dataset.h"
 #include "arki/dataset/tests.h"
@@ -39,7 +38,7 @@ struct Fixture : public DatasetTest {
         if (sys::exists("pm-out"))
             sys::unlink("pm-out");
 
-        runtime::File out("pm-out");
+        sys::File out("pm-out", O_WRONLY | O_CREAT | O_TRUNC, 0666);
         unique_ptr<DatasetProcessor> dp(pm.make(matcher, out));
         dp->process(*ds, "testds");
         dp->end();

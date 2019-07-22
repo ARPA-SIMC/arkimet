@@ -1,5 +1,4 @@
 #include "arki/runtime/config.h"
-#include "arki/runtime/io.h"
 #include "arki/core/file.h"
 #include "arki/core/cfg.h"
 #include "arki/libconfig.h"
@@ -184,7 +183,7 @@ core::cfg::Sections parse_config_file(const std::string& file_name)
         string file = str::joinpath(fname, "config");
 
         // Parse the file
-        runtime::InputFile in(file);
+        sys::File in(file, O_RDONLY);
         auto section = core::cfg::Section::parse(in);
         // Fill in missing bits
         section.set("name", name);
@@ -195,7 +194,7 @@ core::cfg::Sections parse_config_file(const std::string& file_name)
         return sections;
     } else {
         // If it's a file, then it's a merged config file
-        runtime::InputFile in(fname);
+        sys::File in(fname, O_RDONLY);
         return core::cfg::Sections::parse(in);
     }
 }
@@ -314,12 +313,11 @@ std::string readRcDir(const std::string& nameInConfdir, const std::string& nameI
 {
     vector<string> files = rcFiles(nameInConfdir, nameInEnv);
 
-	// Read all the contents
-	string res;
-	for (vector<string>::const_iterator i = files.begin();
-			i != files.end(); ++i)
-		res += runtime::read_file(*i);
-	return res;
+    // Read all the contents
+    std::string res;
+    for (const auto& file: files)
+        res += sys::read_file(file);
+    return res;
 }
 
 SourceCode readSourceFromRcDir(const std::string& nameInConfdir, const std::string& nameInEnv)
@@ -327,15 +325,14 @@ SourceCode readSourceFromRcDir(const std::string& nameInConfdir, const std::stri
     vector<string> files = rcFiles(nameInConfdir, nameInEnv);
     SourceCode res;
 
-	// Read all the contents
-	for (vector<string>::const_iterator i = files.begin();
-			i != files.end(); ++i)
-	{
-		string tmp = runtime::read_file(*i);
-		res.push_back(FileInfo(*i, tmp.size()));
-		res.code += tmp;
-	}
-	return res;
+    // Read all the contents
+    for (const auto& file: files)
+    {
+        string tmp = sys::read_file(file);
+        res.push_back(FileInfo(file, tmp.size()));
+        res.code += tmp;
+    }
+    return res;
 }
 
 }
