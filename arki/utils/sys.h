@@ -498,6 +498,31 @@ public:
     static File mkstemp(char* pathname_template);
 };
 
+
+/**
+ * Open a temporary file.
+ *
+ * By default, the temporary file will be deleted when the object is deleted.
+ */
+class Tempfile : public File
+{
+protected:
+    bool m_unlink_on_exit = true;
+
+public:
+    Tempfile();
+    Tempfile(const std::string& prefix);
+    Tempfile(const char* prefix);
+    ~Tempfile();
+
+    /// Change the unlink-on-exit behaviour
+    void unlink_on_exit(bool val);
+
+    /// Unlink the file right now
+    void unlink();
+};
+
+
 /// Read whole file into memory. Throws exceptions on failure.
 std::string read_file(const std::string &file);
 
