@@ -3,6 +3,7 @@
 #include "arki/core/cfg.h"
 #include "arki/core/file.h"
 #include "arki/matcher.h"
+#include "arki/dataset.h"
 #include "arki-query.h"
 #include "utils/core.h"
 #include "utils/methods.h"
@@ -82,8 +83,8 @@ struct query_stdin : public MethKwargs<query_stdin, arkipy_ArkiQuery>
             return nullptr;
 
         try {
-            auto dest = [&](arki::runtime::Source& source) {
-                self->processor->process(source.reader(), source.name());
+            auto dest = [&](arki::dataset::Reader& reader) {
+                self->processor->process(reader, reader.name());
             };
 
             bool all_successful = true;
@@ -118,8 +119,8 @@ struct query_merged : public MethKwargs<query_merged, arkipy_ArkiQuery>
             return nullptr;
 
         try {
-            auto dest = [&](arki::runtime::Source& source) {
-                self->processor->process(source.reader(), source.name());
+            auto dest = [&](arki::dataset::Reader& reader) {
+                self->processor->process(reader, reader.name());
             };
 
             bool all_successful = true;
@@ -158,8 +159,8 @@ struct query_qmacro : public MethKwargs<query_qmacro, arkipy_ArkiQuery>
             return nullptr;
 
         try {
-            auto dest = [&](arki::runtime::Source& source) {
-                self->processor->process(source.reader(), source.name());
+            auto dest = [&](arki::dataset::Reader& reader) {
+                self->processor->process(reader, reader.name());
             };
 
             bool all_successful = true;
@@ -195,8 +196,8 @@ struct query_sections : public MethKwargs<query_sections, arkipy_ArkiQuery>
             return nullptr;
 
         try {
-            auto dest = [&](arki::runtime::Source& source) {
-                self->processor->process(source.reader(), source.name());
+            auto dest = [&](arki::dataset::Reader& reader) {
+                self->processor->process(reader, reader.name());
             };
 
             bool all_successful = true;

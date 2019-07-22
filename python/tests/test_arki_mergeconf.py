@@ -115,13 +115,13 @@ filter=invalid
         self.assertIsNone(res)
         self.assertEqual(out.stderr.decode(), "")
         self.assertEqual(out.stdout.decode().splitlines(), [
-            "[test.grib1]",
+            "[" + src + "]",
             'bounding = POLYGON ((-60.0000000000000000 30.0000000000000000, '
             '-60.0000000000000000 72.0000000000000000, 42.0000000000000000 '
             '72.0000000000000000, 42.0000000000000000 30.0000000000000000, '
             '-60.0000000000000000 30.0000000000000000))',
             'format = grib',
-            'name = test.grib1',
+            'name = ' + src,
             'path = ' + src,
             'type = file',
         ])

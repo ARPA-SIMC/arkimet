@@ -9,102 +9,30 @@
 
 namespace arki {
 namespace runtime {
-struct DatasetProcessor;
-struct MetadataDispatch;
-
-
-/**
- * Generic interface for data sources configured via the command line
- */
-struct Source
-{
-    Source() {}
-    Source(const Source&) = delete;
-    Source(Source&&) = delete;
-    Source& operator=(const Source&) = delete;
-    Source& operator=(Source&&) = delete;
-    virtual ~Source();
-    virtual std::string name() const = 0;
-    virtual dataset::Reader& reader() const = 0;
-    virtual void open() = 0;
-    virtual void close(bool successful) = 0;
-};
-
-/**
- * Data source reading from stdin
- */
-struct StdinSource : public Source
-{
-    scan::Scanner* scanner = nullptr;
-    std::shared_ptr<dataset::Reader> m_reader;
-
-    StdinSource(const std::string& format);
-    ~StdinSource();
-
-    std::string name() const override;
-    dataset::Reader& reader() const override;
-    void open() override;
-    void close(bool successful) override;
-};
 
 /**
  * Data source from the path to a file or dataset
  */
-struct FileSource : public Source
+struct FileSource
 {
+    std::shared_ptr<dataset::Reader> reader;
+
     core::cfg::Section cfg;
-    std::shared_ptr<dataset::Reader> m_reader;
     std::string movework;
     std::string moveok;
     std::string moveko;
 
     FileSource(const core::cfg::Section& info);
 
-    std::string name() const override;
-    dataset::Reader& reader() const override;
-    void open() override;
-    void close(bool successful) override;
-};
-
-/**
- * Data source from --merged
- */
-struct MergedSource : public Source
-{
-    std::vector<std::shared_ptr<FileSource>> sources;
-    std::shared_ptr<dataset::Merged> m_reader;
-    std::string m_name;
-
-    MergedSource(const core::cfg::Sections& inputs);
-
-    std::string name() const override;
-    dataset::Reader& reader() const override;
-    void open() override;
-    void close(bool successful) override;
-};
-
-/**
- * Data source from --qmacro
- */
-struct QmacroSource : public Source
-{
-    core::cfg::Section cfg;
-    std::shared_ptr<dataset::Reader> m_reader;
-    std::string m_name;
-
-    QmacroSource(const std::string& macro_name, const std::string& macro_query, const core::cfg::Sections& inputs);
-
-    std::string name() const override;
-    dataset::Reader& reader() const override;
-    void open() override;
-    void close(bool successful) override;
+    void open();
+    void close(bool successful);
 };
 
 
-bool foreach_stdin(const std::string& format, std::function<void(Source&)> dest);
-bool foreach_merged(const core::cfg::Sections& input, std::function<void(Source&)> dest);
-bool foreach_qmacro(const std::string& macro_name, const std::string& macro_query, const core::cfg::Sections& inputs, std::function<void(Source&)> dest);
-bool foreach_sections(const core::cfg::Sections& inputs, std::function<void(Source&)> dest);
+bool foreach_stdin(const std::string& format, std::function<void(dataset::Reader&)> dest);
+bool foreach_merged(const core::cfg::Sections& input, std::function<void(dataset::Reader&)> dest);
+bool foreach_qmacro(const std::string& macro_name, const std::string& macro_query, const core::cfg::Sections& inputs, std::function<void(dataset::Reader&)> dest);
+bool foreach_sections(const core::cfg::Sections& inputs, std::function<void(dataset::Reader&)> dest);
 
 }
 }

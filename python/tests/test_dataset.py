@@ -13,7 +13,7 @@ class TestReadConfig(unittest.TestCase):
         contents = list(section.items())
         self.assertEqual(contents, [
             ('format', 'grib'),
-            ('name', 'test.grib1'),
+            ('name', pathname),
             ('path', pathname),
             ('type', 'file'),
         ])
@@ -123,7 +123,7 @@ class TestDatasetReader(unittest.TestCase):
     def test_query_bytes(self):
         ds = arki.dataset.Reader({
             "format": "grib",
-            "name": "test.grib1",
+            "name": "inbound/test.grib1",
             "path": "inbound/test.grib1",
             "type": "file",
             "postprocess": "countbytes",

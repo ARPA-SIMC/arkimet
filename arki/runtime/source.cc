@@ -35,104 +35,98 @@ static std::string moveFile(const dataset::Reader& ds, const std::string& target
         return std::string();
 }
 
-Source::~Source() {}
-
-
-StdinSource::StdinSource(const std::string& format)
-    : scanner(scan::Scanner::get_scanner(format).release())
-{
-    core::cfg::Section cfg;
-    cfg.set("format", format);
-    auto config = dataset::fromfunction::Config::create(cfg);
-    auto reader = config->create_reader();
-    m_reader = std::make_shared<dataset::fromfunction::Reader>(config);
-    // TODO: pass function to constructor
-    auto ff_reader = std::dynamic_pointer_cast<dataset::fromfunction::Reader>(m_reader);
-    ff_reader->generator = [&](metadata_dest_func dest){
-        auto scanner = scan::Scanner::get_scanner(format);
-        sys::NamedFileDescriptor fd_stdin(0, "stdin");
-        return scanner->scan_pipe(fd_stdin, dest);
-    };
-}
-
-StdinSource::~StdinSource()
-{
-    delete scanner;
-}
-
-std::string StdinSource::name() const { return "stdin:" + scanner->name(); }
-dataset::Reader& StdinSource::reader() const { return *m_reader; }
-void StdinSource::open() {}
-void StdinSource::close(bool successful) {}
-
 
 FileSource::FileSource(const core::cfg::Section& info)
     : cfg(info)
 {
 }
 
-std::string FileSource::name() const { return cfg.value("path"); }
-dataset::Reader& FileSource::reader() const { return *m_reader; }
-
 void FileSource::open()
 {
     if (!movework.empty() && cfg.value("type") == "file")
         cfg.set("path", moveFile(cfg.value("path"), movework));
-    m_reader = dataset::Reader::create(cfg);
+    reader = dataset::Reader::create(cfg);
 }
 
 void FileSource::close(bool successful)
 {
     if (successful && !moveok.empty())
-        moveFile(reader(), moveok);
+        moveFile(*reader, moveok);
     else if (!successful && !moveko.empty())
-        moveFile(reader(), moveko);
-    m_reader = std::shared_ptr<dataset::Reader>();
+        moveFile(*reader, moveko);
+    reader = std::shared_ptr<dataset::Reader>();
 }
 
 
-MergedSource::MergedSource(const core::cfg::Sections& inputs)
-    : m_reader(std::make_shared<dataset::Merged>())
+
+bool foreach_stdin(const std::string& format, std::function<void(dataset::Reader&)> dest)
 {
-    for (auto si: inputs)
-    {
-        sources.push_back(std::make_shared<FileSource>(si.second));
-        if (m_name.empty())
-            m_name = sources.back()->name();
-        else
-            m_name += "," + sources.back()->name();
+    auto scanner = scan::Scanner::get_scanner(format);
+
+    core::cfg::Section cfg;
+    cfg.set("format", format);
+    cfg.set("name", "stdin:" + scanner->name());
+    auto config = dataset::fromfunction::Config::create(cfg);
+
+    auto reader = std::make_shared<dataset::fromfunction::Reader>(config);
+    reader->generator = [&](metadata_dest_func dest){
+        sys::NamedFileDescriptor fd_stdin(0, "stdin");
+        return scanner->scan_pipe(fd_stdin, dest);
+    };
+
+    bool success = true;
+    try {
+        dest(*reader);
+    } catch (std::exception& e) {
+        nag::warning("%s failed: %s", reader->name().c_str(), e.what());
+        success = false;
     }
+    return success;
 }
 
-std::string MergedSource::name() const { return m_name; }
-dataset::Reader& MergedSource::reader() const { return *m_reader; }
-
-void MergedSource::open()
+bool foreach_merged(const core::cfg::Sections& input, std::function<void(dataset::Reader&)> dest)
 {
+    bool success = true;
+    std::shared_ptr<dataset::Merged> reader = std::make_shared<dataset::Merged>();
+
+    std::vector<std::shared_ptr<FileSource>> sources;
+    for (auto si: input)
+        sources.push_back(std::make_shared<FileSource>(si.second));
+
     // Instantiate the datasets and add them to the merger
     for (const auto& source: sources)
     {
         source->open();
-        m_reader->add_dataset(source->m_reader);
+        reader->add_dataset(source->reader);
     }
-}
 
-void MergedSource::close(bool successful)
-{
+    try {
+        dest(*reader);
+    } catch (std::exception& e) {
+        nag::warning("%s failed: %s", reader->name().c_str(), e.what());
+        success = false;
+    }
+
     for (auto& source: sources)
-        source->close(successful);
+        source->close(success);
+
+    return success;
 }
 
-
-QmacroSource::QmacroSource(const std::string& macro_name, const std::string& macro_query, const core::cfg::Sections& inputs)
+bool foreach_qmacro(const std::string& macro_name, const std::string& macro_query, const core::cfg::Sections& inputs, std::function<void(dataset::Reader&)> dest)
 {
+    bool success = true;
+
+    core::cfg::Section cfg;
+    std::shared_ptr<dataset::Reader> reader;
+
     // Create the virtual qmacro dataset
     std::string baseurl = dataset::http::Reader::allSameRemoteServer(inputs);
     if (baseurl.empty())
     {
         // Create the local query macro
         nag::verbose("Running query macro %s on local datasets", macro_name.c_str());
-        m_reader = std::make_shared<Querymacro>(cfg, inputs, macro_name, macro_query);
+        reader = std::make_shared<Querymacro>(cfg, inputs, macro_name, macro_query);
     } else {
         // Create the remote query macro
         nag::verbose("Running query macro %s on %s", macro_name.c_str(), baseurl.c_str());
@@ -141,78 +135,31 @@ QmacroSource::QmacroSource(const std::string& macro_name, const std::string& mac
         cfg.set("type", "remote");
         cfg.set("path", baseurl);
         cfg.set("qmacro", macro_query);
-        m_reader = dataset::Reader::create(cfg);
+        reader = dataset::Reader::create(cfg);
     }
 
-    m_name = macro_name;
-}
-
-std::string QmacroSource::name() const { return m_name; }
-dataset::Reader& QmacroSource::reader() const { return *m_reader; }
-void QmacroSource::open() {}
-void QmacroSource::close(bool successful) {}
-
-bool foreach_stdin(const std::string& format, std::function<void(Source&)> dest)
-{
-    bool success = true;
-    StdinSource source(format);
-    source.open();
     try {
-        dest(source);
+        dest(*reader);
     } catch (std::exception& e) {
-        nag::warning("%s failed: %s", source.name().c_str(), e.what());
+        nag::warning("%s failed: %s", reader->name().c_str(), e.what());
         success = false;
     }
-    source.close(success);
     return success;
 }
 
-bool foreach_merged(const core::cfg::Sections& input, std::function<void(Source&)> dest)
-{
-    bool success = true;
-    MergedSource source(input);
-    nag::verbose("Processing %s...", source.name().c_str());
-    source.open();
-    try {
-        dest(source);
-    } catch (std::exception& e) {
-        nag::warning("%s failed: %s", source.name().c_str(), e.what());
-        success = false;
-    }
-    source.close(success);
-    return success;
-}
-
-bool foreach_qmacro(const std::string& macro_name, const std::string& macro_query, const core::cfg::Sections& inputs, std::function<void(Source&)> dest)
-{
-    bool success = true;
-    QmacroSource source(macro_name, macro_query, inputs);
-    nag::verbose("Processing %s...", source.name().c_str());
-    source.open();
-    try {
-        dest(source);
-    } catch (std::exception& e) {
-        nag::warning("%s failed: %s", source.name().c_str(), e.what());
-        success = false;
-    }
-    source.close(success);
-    return success;
-}
-
-bool foreach_sections(const core::cfg::Sections& inputs, std::function<void(Source&)> dest)
+bool foreach_sections(const core::cfg::Sections& inputs, std::function<void(dataset::Reader&)> dest)
 {
     bool all_successful = true;
     // Query all the datasets in sequence
     for (auto si: inputs)
     {
         FileSource source(si.second);
-        nag::verbose("Processing %s...", source.name().c_str());
         source.open();
         bool success = true;
         try {
-            dest(source);
+            dest(*source.reader);
         } catch (std::exception& e) {
-            nag::warning("%s failed: %s", source.name().c_str(), e.what());
+            nag::warning("%s failed: %s", source.reader->name().c_str(), e.what());
             success = false;
         }
         source.close(success);

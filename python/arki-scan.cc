@@ -101,8 +101,8 @@ struct scan_stdin : public MethKwargs<scan_stdin, arkipy_ArkiScan>
             bool all_successful;
             {
                 ReleaseGIL rg;
-                all_successful = arki::runtime::foreach_stdin(std::string(format, format_len), [&](arki::runtime::Source& source) {
-                    self->processor->process(source.reader(), source.name());
+                all_successful = arki::runtime::foreach_stdin(std::string(format, format_len), [&](arki::dataset::Reader& reader) {
+                    self->processor->process(reader, reader.name());
                 });
                 self->processor->end();
             }
@@ -132,8 +132,8 @@ struct scan_sections : public MethKwargs<scan_sections, arkipy_ArkiScan>
             bool all_successful;
             {
                 ReleaseGIL rg;
-                all_successful = arki::runtime::foreach_sections(self->inputs, [&](arki::runtime::Source& source) {
-                    self->processor->process(source.reader(), source.name());
+                all_successful = arki::runtime::foreach_sections(self->inputs, [&](arki::dataset::Reader& reader) {
+                    self->processor->process(reader, reader.name());
                 });
                 self->processor->end();
             }
@@ -171,8 +171,8 @@ struct dispatch_stdin : public MethKwargs<dispatch_stdin, arkipy_ArkiScan>
                 ReleaseGIL rg;
 
                 bool dispatch_ok = true;
-                bool res = arki::runtime::foreach_stdin(std::string(format, format_len), [&](arki::runtime::Source& source) {
-                    auto stats = self->dispatcher->process(source.reader(), source.name());
+                bool res = arki::runtime::foreach_stdin(std::string(format, format_len), [&](arki::dataset::Reader& reader) {
+                    auto stats = self->dispatcher->process(reader, reader.name());
 
                     if (status)
                     {
@@ -235,11 +235,11 @@ struct dispatch_sections : public MethKwargs<dispatch_sections, arkipy_ArkiScan>
                     if (moveok) source.moveok = std::string(moveok, moveok_len);
                     if (moveko) source.moveko = std::string(moveko, moveko_len);
 
-                    arki::nag::verbose("Processing %s...", source.name().c_str());
                     source.open();
+                    arki::nag::verbose("Processing %s...", source.reader->name().c_str());
                     bool success = true;
                     try {
-                        auto stats = self->dispatcher->process(source.reader(), source.name());
+                        auto stats = self->dispatcher->process(*source.reader, source.reader->name());
                         if (status)
                         {
                             fprintf(stderr, "%s: %s\n", stats.name.c_str(), stats.summary().c_str());
@@ -247,7 +247,7 @@ struct dispatch_sections : public MethKwargs<dispatch_sections, arkipy_ArkiScan>
                         }
                         success = stats.success(ignore_duplicates);
                     } catch (std::exception& e) {
-                        arki::nag::warning("%s failed: %s", source.name().c_str(), e.what());
+                        arki::nag::warning("%s failed: %s", source.reader->name().c_str(), e.what());
                         success = false;
                     }
                     source.close(success);
