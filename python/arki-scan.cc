@@ -3,6 +3,9 @@
 #include "arki/runtime/source.h"
 #include "arki/runtime/processor.h"
 #include "arki/runtime/dispatch.h"
+#include "arki/utils/string.h"
+#include "arki/exceptions.h"
+#include "arki/dataset/file.h"
 #include "utils/core.h"
 #include "utils/methods.h"
 #include "utils/type.h"
@@ -11,6 +14,7 @@
 #include "cmdline.h"
 
 using namespace arki::python;
+using namespace arki::utils;
 
 extern "C" {
 
@@ -20,6 +24,57 @@ PyTypeObject* arkipy_ArkiScan_Type = nullptr;
 
 
 namespace {
+
+static std::string moveFile(const std::string& source, const std::string& targetdir)
+{
+    std::string targetFile = str::joinpath(targetdir, str::basename(source));
+    if (::rename(source.c_str(), targetFile.c_str()) == -1)
+        arki::throw_system_error ("cannot move " + source + " to " + targetFile);
+    return targetFile;
+}
+
+static std::string moveFile(const arki::dataset::Reader& ds, const std::string& targetdir)
+{
+    if (const arki::dataset::File* d = dynamic_cast<const arki::dataset::File*>(&ds))
+        return moveFile(d->config().pathname, targetdir);
+    else
+        return std::string();
+}
+
+/**
+ * Data source from the path to a file or dataset
+ */
+struct FileSource
+{
+    std::shared_ptr<arki::dataset::Reader> reader;
+
+    arki::core::cfg::Section cfg;
+    std::string movework;
+    std::string moveok;
+    std::string moveko;
+
+    FileSource(const arki::core::cfg::Section& info)
+        : cfg(info)
+    {
+    }
+
+    void open()
+    {
+        if (!movework.empty() && cfg.value("type") == "file")
+            cfg.set("path", moveFile(cfg.value("path"), movework));
+        reader = arki::dataset::Reader::create(cfg);
+    }
+
+    void close(bool successful)
+    {
+        if (successful && !moveok.empty())
+            moveFile(*reader, moveok);
+        else if (!successful && !moveko.empty())
+            moveFile(*reader, moveko);
+        reader = std::shared_ptr<arki::dataset::Reader>();
+    }
+};
+
 
 struct set_inputs : public MethKwargs<set_inputs, arkipy_ArkiScan>
 {
@@ -230,7 +285,7 @@ struct dispatch_sections : public MethKwargs<dispatch_sections, arkipy_ArkiScan>
                 // Query all the datasets in sequence
                 for (auto si: self->inputs)
                 {
-                    arki::runtime::FileSource source(si.second);
+                    FileSource source(si.second);
                     if (movework) source.movework = std::string(movework, movework_len);
                     if (moveok) source.moveok = std::string(moveok, moveok_len);
                     if (moveko) source.moveko = std::string(moveko, moveko_len);
