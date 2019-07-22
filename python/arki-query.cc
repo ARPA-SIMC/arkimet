@@ -1,9 +1,12 @@
 #include "arki/runtime/processor.h"
-#include "arki/runtime/source.h"
 #include "arki/core/cfg.h"
 #include "arki/core/file.h"
 #include "arki/matcher.h"
 #include "arki/dataset.h"
+#include "arki/dataset/http.h"
+#include "arki/dataset/merged.h"
+#include "arki/querymacro.h"
+#include "arki/nag.h"
 #include "arki-query.h"
 #include "utils/core.h"
 #include "utils/methods.h"
@@ -23,6 +26,7 @@ PyTypeObject* arkipy_ArkiQuery_Type = nullptr;
 
 
 namespace {
+
 
 struct set_inputs : public MethKwargs<set_inputs, arkipy_ArkiQuery>
 {
@@ -90,7 +94,7 @@ struct query_stdin : public MethKwargs<query_stdin, arkipy_ArkiQuery>
             bool all_successful = true;
             {
                 ReleaseGIL rg;
-                all_successful = arki::runtime::foreach_stdin(
+                all_successful = foreach_stdin(
                         std::string(format, format_len), dest);
                 self->processor->end();
             }
@@ -119,15 +123,23 @@ struct query_merged : public MethKwargs<query_merged, arkipy_ArkiQuery>
             return nullptr;
 
         try {
-            auto dest = [&](arki::dataset::Reader& reader) {
-                self->processor->process(reader, reader.name());
-            };
-
             bool all_successful = true;
             {
                 ReleaseGIL rg;
-                all_successful = arki::runtime::foreach_merged(
-                        self->inputs, dest);
+
+                arki::dataset::Merged reader;
+
+                // Instantiate the datasets and add them to the merger
+                for (auto si: self->inputs)
+                    reader.add_dataset(arki::dataset::Reader::create(si.second));
+
+                try {
+                    self->processor->process(reader, reader.name());
+                } catch (std::exception& e) {
+                    arki::nag::warning("%s failed: %s", reader.name().c_str(), e.what());
+                    all_successful = false;
+                }
+
                 self->processor->end();
             }
 
@@ -150,26 +162,49 @@ struct query_qmacro : public MethKwargs<query_qmacro, arkipy_ArkiQuery>
     static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
     {
         static const char* kwlist[] = { "macro_name", "macro_query", nullptr };
-        const char* macro_name = nullptr;
-        Py_ssize_t macro_name_len;
-        const char* macro_query = nullptr;
-        Py_ssize_t macro_query_len;
+        const char* arg_macro_name = nullptr;
+        Py_ssize_t arg_macro_name_len;
+        const char* arg_macro_query = nullptr;
+        Py_ssize_t arg_macro_query_len;
         if (!PyArg_ParseTupleAndKeywords(args, kw, "z#z#", const_cast<char**>(kwlist),
-                    &macro_name, &macro_name_len, &macro_query, &macro_query_len))
+                    &arg_macro_name, &arg_macro_name_len, &arg_macro_query, &arg_macro_query_len))
             return nullptr;
 
         try {
-            auto dest = [&](arki::dataset::Reader& reader) {
-                self->processor->process(reader, reader.name());
-            };
-
             bool all_successful = true;
             {
                 ReleaseGIL rg;
-                all_successful = arki::runtime::foreach_qmacro(
-                        std::string(macro_name, macro_name_len),
-                        std::string(macro_query, macro_query_len),
-                        self->inputs, dest);
+
+                arki::core::cfg::Section cfg;
+                std::shared_ptr<arki::dataset::Reader> reader;
+                std::string macro_name(arg_macro_name, arg_macro_name_len);
+                std::string macro_query(arg_macro_query, arg_macro_query_len);
+
+                // Create the virtual qmacro dataset
+                std::string baseurl = arki::dataset::http::Reader::allSameRemoteServer(self->inputs);
+                if (baseurl.empty())
+                {
+                    // Create the local query macro
+                    arki::nag::verbose("Running query macro %s on local datasets", macro_name.c_str());
+                    reader = std::make_shared<arki::Querymacro>(cfg, self->inputs, macro_name, macro_query);
+                } else {
+                    // Create the remote query macro
+                    arki::nag::verbose("Running query macro %s on %s", macro_name.c_str(), baseurl.c_str());
+                    arki::core::cfg::Section cfg;
+                    cfg.set("name", macro_name);
+                    cfg.set("type", "remote");
+                    cfg.set("path", baseurl);
+                    cfg.set("qmacro", macro_query);
+                    reader = arki::dataset::Reader::create(cfg);
+                }
+
+                try {
+                    self->processor->process(*reader, reader->name());
+                } catch (std::exception& e) {
+                    arki::nag::warning("%s failed: %s", reader->name().c_str(), e.what());
+                    all_successful = false;
+                }
+
                 self->processor->end();
             }
 
@@ -203,7 +238,7 @@ struct query_sections : public MethKwargs<query_sections, arkipy_ArkiQuery>
             bool all_successful = true;
             {
                 ReleaseGIL rg;
-                all_successful = arki::runtime::foreach_sections(self->inputs, dest);
+                all_successful = foreach_sections(self->inputs, dest);
                 self->processor->end();
             }
 

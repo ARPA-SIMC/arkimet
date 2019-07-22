@@ -1,6 +1,5 @@
 #include "arki-scan.h"
 #include "arki/nag.h"
-#include "arki/runtime/source.h"
 #include "arki/runtime/processor.h"
 #include "arki/runtime/dispatch.h"
 #include "arki/utils/string.h"
@@ -156,7 +155,7 @@ struct scan_stdin : public MethKwargs<scan_stdin, arkipy_ArkiScan>
             bool all_successful;
             {
                 ReleaseGIL rg;
-                all_successful = arki::runtime::foreach_stdin(std::string(format, format_len), [&](arki::dataset::Reader& reader) {
+                all_successful = foreach_stdin(std::string(format, format_len), [&](arki::dataset::Reader& reader) {
                     self->processor->process(reader, reader.name());
                 });
                 self->processor->end();
@@ -187,7 +186,7 @@ struct scan_sections : public MethKwargs<scan_sections, arkipy_ArkiScan>
             bool all_successful;
             {
                 ReleaseGIL rg;
-                all_successful = arki::runtime::foreach_sections(self->inputs, [&](arki::dataset::Reader& reader) {
+                all_successful = foreach_sections(self->inputs, [&](arki::dataset::Reader& reader) {
                     self->processor->process(reader, reader.name());
                 });
                 self->processor->end();
@@ -226,7 +225,7 @@ struct dispatch_stdin : public MethKwargs<dispatch_stdin, arkipy_ArkiScan>
                 ReleaseGIL rg;
 
                 bool dispatch_ok = true;
-                bool res = arki::runtime::foreach_stdin(std::string(format, format_len), [&](arki::dataset::Reader& reader) {
+                bool res = foreach_stdin(std::string(format, format_len), [&](arki::dataset::Reader& reader) {
                     auto stats = self->dispatcher->process(reader, reader.name());
 
                     if (status)
