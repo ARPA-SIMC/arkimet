@@ -838,6 +838,28 @@ File File::mkstemp(char* pathname_template)
     return File(fd, pathname_template);
 }
 
+
+Tempfile::Tempfile() : sys::File(sys::File::mkstemp("")) {}
+Tempfile::Tempfile(const std::string& prefix) : sys::File(sys::File::mkstemp(prefix)) {}
+Tempfile::Tempfile(const char* prefix) : sys::File(sys::File::mkstemp(prefix)) {}
+
+Tempfile::~Tempfile()
+{
+    if (m_unlink_on_exit)
+        ::unlink(name().c_str());
+}
+
+void Tempfile::unlink_on_exit(bool val)
+{
+    m_unlink_on_exit = val;
+}
+
+void Tempfile::unlink()
+{
+    sys::unlink(name());
+}
+
+
 std::string read_file(const std::string& file)
 {
     File in(file, O_RDONLY);
