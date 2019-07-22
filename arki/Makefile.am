@@ -110,7 +110,6 @@ nobase_dist_arkiinclude_HEADERS = \
 		querymacro.h \
 		runtime/config.h \
 		runtime.h \
-		runtime/source.h \
 		runtime/dispatch.h \
 		runtime/processor.h \
 		scan.h \
@@ -612,7 +611,6 @@ tests_arki_test_SOURCES += \
 		datasets-test.cc \
 		dispatcher-test.cc \
 		runtime/processor-test.cc \
-		runtime/source-test.cc \
 		runtime/dispatch-test.cc \
 		runtime-test.cc
 
@@ -636,7 +634,6 @@ endif
 #
 if DEVEL_DO_RUNTIME
 libarkimet_la_SOURCES += \
-		runtime/source.cc \
 		runtime/dispatch.cc \
 		runtime/processor.cc \
 		runtime.cc

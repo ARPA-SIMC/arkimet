@@ -3,6 +3,8 @@
 
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
+#include <arki/core/fwd.h>
+#include <arki/dataset/fwd.h>
 #include <memory>
 
 namespace arki {
@@ -23,6 +25,9 @@ std::unique_ptr<runtime::DatasetProcessor> build_processor(PyObject* args, PyObj
  * Build a MetadataDispatcher from the given python function args/kwargs
  */
 std::unique_ptr<runtime::MetadataDispatch> build_dispatcher(runtime::DatasetProcessor& processor, PyObject* args, PyObject* kw);
+
+bool foreach_stdin(const std::string& format, std::function<void(dataset::Reader&)> dest);
+bool foreach_sections(const core::cfg::Sections& inputs, std::function<void(dataset::Reader&)> dest);
 
 }
 }

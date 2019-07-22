@@ -1,5 +1,4 @@
 #include "arki/runtime/processor.h"
-#include "arki/runtime/source.h"
 #include "arki/runtime/dispatch.h"
 #include "arki/core/cfg.h"
 #include "arki/core/file.h"
@@ -8,7 +7,9 @@
 #include "arki/dispatcher.h"
 #include "arki/utils.h"
 #include "arki/utils/string.h"
-#include "arki-query.h"
+#include "arki/scan.h"
+#include "arki/dataset/fromfunction.h"
+#include "arki/nag.h"
 #include "utils/core.h"
 #include "utils/methods.h"
 #include "utils/type.h"
@@ -168,6 +169,50 @@ std::unique_ptr<runtime::MetadataDispatch> build_dispatcher(runtime::DatasetProc
         res->flush_threshold = parse_size(std::string(flush_threshold, flush_threshold_len));
 
     return res;
+}
+
+bool foreach_stdin(const std::string& format, std::function<void(dataset::Reader&)> dest)
+{
+    auto scanner = scan::Scanner::get_scanner(format);
+
+    core::cfg::Section cfg;
+    cfg.set("format", format);
+    cfg.set("name", "stdin:" + scanner->name());
+    auto config = dataset::fromfunction::Config::create(cfg);
+
+    auto reader = std::make_shared<dataset::fromfunction::Reader>(config);
+    reader->generator = [&](metadata_dest_func dest){
+        sys::NamedFileDescriptor fd_stdin(0, "stdin");
+        return scanner->scan_pipe(fd_stdin, dest);
+    };
+
+    bool success = true;
+    try {
+        dest(*reader);
+    } catch (std::exception& e) {
+        arki::nag::warning("%s failed: %s", reader->name().c_str(), e.what());
+        success = false;
+    }
+    return success;
+}
+
+bool foreach_sections(const core::cfg::Sections& inputs, std::function<void(dataset::Reader&)> dest)
+{
+    bool all_successful = true;
+    // Query all the datasets in sequence
+    for (auto si: inputs)
+    {
+        auto reader = dataset::Reader::create(si.second);
+        bool success = true;
+        try {
+            dest(*reader);
+        } catch (std::exception& e) {
+            arki::nag::warning("%s failed: %s", reader->name().c_str(), e.what());
+            success = false;
+        }
+        if (!success) all_successful = false;
+    }
+    return all_successful;
 }
 
 }
