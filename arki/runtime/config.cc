@@ -158,98 +158,15 @@ std::vector<std::string> Config::Dirlist::list_files(const std::string& ext, boo
     return res;
 }
 
-core::cfg::Sections parse_config_file(const std::string& file_name)
-{
-    if (file_name == "-")
-    {
-        // Parse the config file from stdin
-        Stdin in;
-        return core::cfg::Sections::parse(in);
-    }
-
-    // Remove trailing slashes, if any
-    string fname = file_name;
-    while (!fname.empty() && fname[fname.size() - 1] == '/')
-        fname.resize(fname.size() - 1);
-
-    // Check if it's a file or a directory
-    std::unique_ptr<struct stat> st = sys::stat(fname);
-    if (st.get() == 0)
-        throw std::runtime_error("cannot read configuration from " + fname + ": it does not exist");
-    if (S_ISDIR(st->st_mode))
-    {
-        // If it's a directory, merge in its config file
-        string name = str::basename(fname);
-        string file = str::joinpath(fname, "config");
-
-        // Parse the file
-        sys::File in(file, O_RDONLY);
-        auto section = core::cfg::Section::parse(in);
-        // Fill in missing bits
-        section.set("name", name);
-        section.set("path", sys::abspath(fname));
-
-        core::cfg::Sections sections;
-        sections.emplace(std::move(name), std::move(section));
-        return sections;
-    } else {
-        // If it's a file, then it's a merged config file
-        sys::File in(fname, O_RDONLY);
-        return core::cfg::Sections::parse(in);
-    }
-}
-
-std::set<std::string> parseRestrict(const std::string& str)
-{
-	set<string> res;
-	string cur;
-	for (string::const_iterator i = str.begin(); i != str.end(); ++i)
-	{
-		if (isspace(*i) || *i == ',')
-		{
-			if (!cur.empty())
-			{
-				res.insert(cur);
-				cur.clear();
-			}
-			continue;
-		} else
-			cur += *i;
-	}
-	if (!cur.empty())
-		res.insert(cur);
-	return res;
-}
-
-bool Restrict::is_allowed(const std::string& str) const
-{
-    if (wanted.empty()) return true;
-    return is_allowed(parseRestrict(str));
-
-}
-
-bool Restrict::is_allowed(const std::set<std::string>& names) const
-{
-    if (wanted.empty()) return true;
-    for (const auto& i: wanted)
-        if (names.find(i) != names.end())
-            return true;
-    return false;
-}
-
-bool Restrict::is_allowed(const core::cfg::Section& cfg) const
-{
-    if (wanted.empty()) return true;
-    return is_allowed(parseRestrict(cfg.value("restrict")));
-}
-
 void readMatcherAliasDatabase()
 {
     // Otherwise the file given in the environment variable ARKI_ALIASES is tried.
     char* fromEnv = getenv("ARKI_ALIASES");
     if (fromEnv)
     {
-        MatcherAliasDatabase::addGlobal(parse_config_file(fromEnv));
+        sys::File in(fromEnv, O_RDONLY);
+        auto sections = core::cfg::Sections::parse(in);
+        MatcherAliasDatabase::addGlobal(sections);
         return;
     }
 
@@ -259,7 +176,9 @@ void readMatcherAliasDatabase()
     unique_ptr<struct stat> st = sys::stat(name);
     if (st.get())
     {
-        MatcherAliasDatabase::addGlobal(parse_config_file(name));
+        sys::File in(name, O_RDONLY);
+        auto sections = core::cfg::Sections::parse(in);
+        MatcherAliasDatabase::addGlobal(sections);
         return;
     }
 #endif

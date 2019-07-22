@@ -2802,7 +2802,7 @@
  {
   "doc": "",
   "group": "arki_runtime_config",
-  "method": "restrict"
+  "method": "empty"
  },
  {
   "doc": "",

@@ -99,29 +99,6 @@ struct Config
 };
 
 /**
- * Parse the config file with the given name.
- *
- * Note: use Reader::read_config to read dataset configuration
- */
-core::cfg::Sections parse_config_file(const std::string& file_name);
-
-/**
- * Parse a comma separated restrict list into a set of strings
- */
-std::set<std::string> parseRestrict(const std::string& str);
-
-struct Restrict
-{
-    std::set<std::string> wanted;
-
-    Restrict(const std::string& str) : wanted(parseRestrict(str)) {}
-
-    bool is_allowed(const std::string& str) const;
-    bool is_allowed(const std::set<std::string>& names) const;
-    bool is_allowed(const core::cfg::Section& cfg) const;
-};
-
-/**
  * Read the Matcher alias database.
  *
  * The file given in the environment variable ARKI_ALIASES is tried.
