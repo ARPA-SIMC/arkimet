@@ -82,9 +82,6 @@ struct Config
     /// Directories where targetfile scripts are found
     Dirlist dir_targetfile;
 
-    /// Temporary file directory
-    std::string dir_temp;
-
     /// I/O profiling log file
     std::string file_iotrace_output;
 

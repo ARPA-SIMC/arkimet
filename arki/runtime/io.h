@@ -27,8 +27,6 @@ struct File : public core::File
 /**
  * Open a temporary file.
  *
- * If a path is not given, $ARKI_TMPDIR is tried, then $TMPDIR, then /tmp
- *
  * By default, the temporary file will be deleted when the object is deleted.
  */
 class Tempfile : public core::File
