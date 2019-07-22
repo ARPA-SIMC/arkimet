@@ -146,10 +146,13 @@ std::string OR::toReftimeSQL(const std::string& column) const
 
 unique_ptr<OR> OR::parse(const MatcherType& mt, const std::string& pattern)
 {
-    unique_ptr<OR> res(new OR(pattern));
-
     // Fetch the alias database for this type
-    const Aliases* aliases = MatcherAliasDatabase::get(mt.name);
+    return parse(mt, pattern, MatcherAliasDatabase::get(mt.name));
+}
+
+unique_ptr<OR> OR::parse(const MatcherType& mt, const std::string& pattern, const Aliases* aliases)
+{
+    unique_ptr<OR> res(new OR(pattern));
 
     // Split 'patterns' on /\s*or\s*/i
     Splitter splitter("[ \t]+or[ \t]+", REG_EXTENDED | REG_ICASE);
@@ -323,25 +326,24 @@ void Aliases::add(const MatcherType& type, const core::cfg::Section& entries)
 	 * We continue until the number of aliases to parse stops decreasing.
      */
     for (size_t pass = 0; !aliases.empty(); ++pass)
-	{
-		failed.clear();
-		for (vector< pair<string, string> >::const_iterator i = aliases.begin();
-				i != aliases.end(); ++i)
-		{
-			unique_ptr<OR> val;
+    {
+        failed.clear();
+        for (const auto& alias: aliases)
+        {
+            unique_ptr<OR> val;
 
             // If instantiation fails, try it again later
             try {
-                val = OR::parse(type, i->second);
+                val = OR::parse(type, alias.second, this);
             } catch (std::exception& e) {
-                failed.push_back(*i);
+                failed.push_back(alias);
                 continue;
             }
 
-            auto j = db.find(i->first);
+            auto j = db.find(alias.first);
             if (j == db.end())
             {
-                db.insert(make_pair(i->first, move(val)));
+                db.insert(make_pair(alias.first, move(val)));
             } else {
                 j->second = move(val);
             }
@@ -411,43 +413,6 @@ std::ostream& operator<<(std::ostream& o, const Matcher& m)
 {
 	return o << m.toString();
 }
-
-#if 0
-bool Matcher::match(const Metadata& md) const
-{
-	if (!origin.match(md.origins)) return false;
-	if (!product.match(md.products)) return false;
-	if (!level.match(md.levels)) return false;
-	if (!timerange.match(md.timeranges)) return false;
-	if (!area.match(md.areas)) return false;
-	if (!proddef.match(md.proddef)) return false;
-	if (!reftime.match(md.reftime)) return false;
-	return true;
-}
-
-static inline void appendList(std::string& str, char sep, const std::string& trail)
-{
-	if (!str.empty())
-		str += sep;
-	str += trail;
-}
-
-std::string Matcher::toString(bool formatted) const
-{
-	string res;
-	char sep = formatted ? '\n' : ';';
-
-	if (!origin.empty()) appendList(res, sep, origin.toString());
-	if (!product.empty()) appendList(res, sep, product.toString());
-	if (!level.empty()) appendList(res, sep, level.toString());
-	if (!timerange.empty()) appendList(res, sep, timerange.toString());
-	if (!area.empty()) appendList(res, sep, area.toString());
-	if (!proddef.empty()) appendList(res, sep, proddef.toString());
-	if (!reftime.empty()) appendList(res, sep, reftime.toString());
-
-	return res;
-}
-#endif
 
 void Matcher::register_matcher(const std::string& name, types::Code code, matcher::MatcherType::subexpr_parser parse_func)
 {
@@ -571,12 +536,6 @@ const matcher::Aliases* MatcherAliasDatabase::get(const std::string& type)
 	return &(i->second);
 }
 
-const void MatcherAliasDatabase::reset()
-{
-	if (matcher::aliasdb)
-		matcher::aliasdb->aliasDatabase.clear();
-}
-
 core::cfg::Sections MatcherAliasDatabase::serialise()
 {
     if (!matcher::aliasdb)
@@ -595,6 +554,23 @@ void MatcherAliasDatabase::debug_dump(std::ostream& out)
 {
     auto cfg = serialise();
     cfg.write(out, "(debug output)");
+}
+
+MatcherAliasDatabaseOverride::MatcherAliasDatabaseOverride()
+    : orig(matcher::aliasdb)
+{
+    matcher::aliasdb = &newdb;
+}
+
+MatcherAliasDatabaseOverride::MatcherAliasDatabaseOverride(const core::cfg::Sections& cfg)
+    : newdb(cfg), orig(matcher::aliasdb)
+{
+    matcher::aliasdb = &newdb;
+}
+
+MatcherAliasDatabaseOverride::~MatcherAliasDatabaseOverride()
+{
+    matcher::aliasdb = orig;
 }
 
 }
