@@ -1,13 +1,5 @@
-#include "config.h"
-#include <fstream>
-#include <algorithm>
 #include "arki/tests/tests.h"
-#include "arki/metadata/collection.h"
-#include "arki/utils/sys.h"
-#include "arki/runtime.h"
-#include "arki/runtime/processor.h"
-#include "arki/runtime/dispatch.h"
-#include "arki/dataset/file.h"
+#include "runtime.h"
 
 namespace {
 using namespace std;
@@ -21,15 +13,6 @@ class Tests : public TestCase
     void register_tests() override;
 } test("arki_runtime");
 
-struct CollectProcessor : public runtime::DatasetProcessor
-{
-    metadata::Collection mdc;
-
-    void process(dataset::Reader& ds, const std::string& name) override {
-        mdc.add(ds, Matcher());
-    }
-    std::string describe() const { return "[test]CollectProcessor"; }
-};
 
 void Tests::register_tests() {
 

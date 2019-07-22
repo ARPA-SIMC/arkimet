@@ -2,15 +2,19 @@
 #include "arki/nag.h"
 #include "arki/runtime/processor.h"
 #include "arki/runtime/dispatch.h"
+#include "arki/dispatcher.h"
 #include "arki/utils/string.h"
 #include "arki/exceptions.h"
 #include "arki/dataset/file.h"
+#include "arki/validator.h"
+#include "arki/utils.h"
 #include "utils/core.h"
 #include "utils/methods.h"
 #include "utils/type.h"
 #include "utils/values.h"
 #include "common.h"
 #include "cmdline.h"
+#include <iostream>
 
 using namespace arki::python;
 using namespace arki::utils;
@@ -74,6 +78,76 @@ struct FileSource
     }
 };
 
+
+/**
+ * Build a MetadataDispatcher from the given python function args/kwargs
+ */
+std::unique_ptr<arki::runtime::MetadataDispatch> build_dispatcher(arki::runtime::DatasetProcessor& processor, PyObject* args, PyObject* kw)
+{
+    static const char* kwlist[] = {
+        "copyok", "copyko",
+        "validate",
+        "dispatch", "testdispatch",
+        "flush_threshold",
+        nullptr };
+
+    const char* copyok = nullptr;
+    Py_ssize_t copyok_len;
+    const char* copyko = nullptr;
+    Py_ssize_t copyko_len;
+    const char* validate = nullptr;
+    Py_ssize_t validate_len;
+    PyObject* dispatch = nullptr;
+    PyObject* testdispatch = nullptr;
+    const char* flush_threshold = nullptr;
+    Py_ssize_t flush_threshold_len;
+    if (!PyArg_ParseTupleAndKeywords(args, kw, "|z#z#z#OOz#", const_cast<char**>(kwlist),
+                &copyok, &copyok_len, &copyko, &copyko_len,
+                &validate, &validate_len,
+                &dispatch, &testdispatch,
+                &flush_threshold, &flush_threshold_len
+                ))
+        throw PythonException();
+
+    std::unique_ptr<arki::runtime::MetadataDispatch> res(new arki::runtime::MetadataDispatch(processor));
+
+    if (testdispatch)
+    {
+        res->dispatcher = new arki::TestDispatcher(sections_from_python(testdispatch), std::cerr);
+    }
+    else if (dispatch)
+    {
+        res->dispatcher = new arki::RealDispatcher(sections_from_python(dispatch));
+    }
+    else
+        throw std::runtime_error("cannot create MetadataDispatch with no --dispatch or --testdispatch information");
+
+    if (validate)
+    {
+        const arki::ValidatorRepository& vals = arki::ValidatorRepository::get();
+
+        // Add validators to dispatcher
+        str::Split splitter(std::string(validate, validate_len), ",");
+        for (str::Split::const_iterator iname = splitter.begin();
+                iname != splitter.end(); ++iname)
+        {
+            arki::ValidatorRepository::const_iterator i = vals.find(*iname);
+            if (i == vals.end())
+                throw std::runtime_error("unknown validator '" + *iname + "'. You can get a list using --validate=list.");
+            res->dispatcher->add_validator(*(i->second));
+        }
+    }
+
+    if (copyok)
+        res->dir_copyok = std::string(copyok, copyok_len);
+    if (copyko)
+        res->dir_copyko = std::string(copyko, copyko_len);
+
+    if (flush_threshold)
+        res->flush_threshold = parse_size(std::string(flush_threshold, flush_threshold_len));
+
+    return res;
+}
 
 struct set_inputs : public MethKwargs<set_inputs, arkipy_ArkiScan>
 {
