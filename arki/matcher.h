@@ -33,6 +33,7 @@ struct MatchedItems : public std::set<int>
 namespace matcher {
 
 struct MatcherType;
+struct Aliases;
 
 /**
  * Base class for implementing arkimet matchers
@@ -103,6 +104,7 @@ public:
     bool restrict_date_range(std::unique_ptr<core::Time>& begin, std::unique_ptr<core::Time>& end) const;
 
     static std::unique_ptr<OR> parse(const MatcherType& type, const std::string& pattern);
+    static std::unique_ptr<OR> parse(const MatcherType& type, const std::string& pattern, const Aliases* aliases);
 };
 
 /// ANDed list of matchers.
@@ -310,6 +312,9 @@ public:
 /// Write as a string to an output stream
 std::ostream& operator<<(std::ostream& o, const Matcher& m);
 
+struct MatcherAliasDatabaseOverride;
+
+
 /**
  * Store aliases to be used by the matcher
  */
@@ -334,7 +339,6 @@ struct MatcherAliasDatabase
     static void addGlobal(const core::cfg::Sections& cfg);
 
     static const matcher::Aliases* get(const std::string& type);
-    static const void reset();
     static core::cfg::Sections serialise();
 
     /**
@@ -343,6 +347,23 @@ struct MatcherAliasDatabase
      * (used for debugging purposes)
      */
     static void debug_dump(std::ostream& out);
+};
+
+
+class MatcherAliasDatabaseOverride
+{
+protected:
+    MatcherAliasDatabase newdb;
+    MatcherAliasDatabase* orig;
+
+public:
+    MatcherAliasDatabaseOverride();
+    MatcherAliasDatabaseOverride(const core::cfg::Sections& cfg);
+    MatcherAliasDatabaseOverride(const MatcherAliasDatabaseOverride&) = delete;
+    MatcherAliasDatabaseOverride(MatcherAliasDatabaseOverride&&) = delete;
+    MatcherAliasDatabaseOverride& operator=(const MatcherAliasDatabaseOverride&) = delete;
+    MatcherAliasDatabaseOverride& operator=(MatcherAliasDatabaseOverride&&) = delete;
+    ~MatcherAliasDatabaseOverride();
 };
 
 }

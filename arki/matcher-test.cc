@@ -26,7 +26,6 @@ struct Fixture : public arki::utils::tests::Fixture
 
     void test_setup()
     {
-        MatcherAliasDatabase::reset();
         md.clear();
         arki::tests::fill(md);
     }
@@ -117,22 +116,22 @@ add_method("aliases", [](Fixture& f) {
         "invalid = <2007\n";
     auto conf = core::cfg::Sections::parse(test, "memory");
 
-    MatcherAliasDatabase::addGlobal(conf);
+    MatcherAliasDatabaseOverride aliases(conf);
 
-    ensure_matches("origin:valid", f.md);
-    ensure_not_matches("origin:invalid", f.md);
+    wassert(actual_matcher("origin:valid").matches(f.md));
+    wassert(actual_matcher("origin:invalid").not_matches(f.md));
 
-    ensure_matches("product:valid", f.md);
-    ensure_not_matches("product:invalid", f.md);
+    wassert(actual_matcher("product:valid").matches(f.md));
+    wassert(actual_matcher("product:invalid").not_matches(f.md));
 
-    ensure_matches("level:valid", f.md);
-    ensure_not_matches("level:invalid", f.md);
+    wassert(actual_matcher("level:valid").matches(f.md));
+    wassert(actual_matcher("level:invalid").not_matches(f.md));
 
-    ensure_matches("timerange:valid", f.md);
-    ensure_not_matches("timerange:invalid", f.md);
+    wassert(actual_matcher("timerange:valid").matches(f.md));
+    wassert(actual_matcher("timerange:invalid").not_matches(f.md));
 
-    ensure_matches("reftime:valid", f.md);
-    ensure_not_matches("reftime:invalid", f.md);
+    wassert(actual_matcher("reftime:valid").matches(f.md));
+    wassert(actual_matcher("reftime:invalid").not_matches(f.md));
 });
 
 // Aliases that refer to aliases
@@ -145,13 +144,11 @@ add_method("aliases_multilevel", [](Fixture& f) {
         "a = c or b\n";
     auto conf = core::cfg::Sections::parse(test, "memory");
 
-    MatcherAliasDatabase::addGlobal(conf);
+    MatcherAliasDatabaseOverride aliases(conf);
 
-    Matcher m;
-
-    ensure_matches("origin:a", f.md);
-    ensure_matches("origin:b", f.md);
-    ensure_not_matches("origin:c", f.md);
+    wassert(actual_matcher("origin:a").matches(f.md));
+    wassert(actual_matcher("origin:b").matches(f.md));
+    wassert(actual_matcher("origin:c").not_matches(f.md));
 });
 
 // Recursive aliases should fail
@@ -160,12 +157,7 @@ add_method("aliases_recursive_1", [](Fixture& f) {
         "[origin]\n"
         "a = a or a\n";
     auto conf = core::cfg::Sections::parse(test, "memory");
-    try {
-        MatcherAliasDatabase::addGlobal(conf);
-        ensure(false);
-    } catch (std::exception& e) {
-        ensure(true);
-    }
+    wassert_throws(std::runtime_error, MatcherAliasDatabase db(conf));
 });
 
 // Recursive aliases should fail
@@ -175,12 +167,7 @@ add_method("aliases_recursive_2", [](Fixture& f) {
         "a = b\n"
         "b = a\n";
     auto conf = core::cfg::Sections::parse(test, "memory");
-    try {
-        MatcherAliasDatabase::addGlobal(conf);
-        ensure(false);
-    } catch (std::exception& e) {
-        ensure(true);
-    }
+    wassert_throws(std::runtime_error, MatcherAliasDatabase db(conf));
 });
 
 // Recursive aliases should fail
@@ -191,28 +178,19 @@ add_method("aliases_recursive_3", [](Fixture& f) {
         "b = c\n"
         "c = a\n";
     auto conf = core::cfg::Sections::parse(test, "memory");
-	try {
-		MatcherAliasDatabase::addGlobal(conf);
-		ensure(false);
-	} catch (std::exception& e) {
-		ensure(true);
-	}
+    wassert_throws(std::runtime_error, MatcherAliasDatabase db(conf));
 });
 
 // Load a file with aliases referring to other aliases
 add_method("aliases_multilevel_load", [](Fixture& f) {
     File in("misc/rec-ts-alias.conf", O_RDONLY);
     auto conf = core::cfg::Sections::parse(in);
-
-	MatcherAliasDatabase::addGlobal(conf);
-	Matcher m = Matcher::parse("timerange:f_3");
-	//cerr << m << endl;
-	ensure(true);
+    MatcherAliasDatabaseOverride aliases(conf);
+    Matcher m = Matcher::parse("timerange:f_3");
 });
 
 // Run matcher/*.txt files, doctest style
 add_method("aliases_doctest", [](Fixture& f) {
-    runtime::readMatcherAliasDatabase();
     arki::Lua L;
 
 	// Define 'ensure' function
