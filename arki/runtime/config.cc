@@ -34,13 +34,6 @@ Config::Config()
     dir_scan_odimh5.init_config_and_env("scan-odimh5", "ARKI_SCAN_ODIMH5");
     dir_targetfile.init_config_and_env("targetfile", "ARKI_TARGETFILE");
 
-    if (const char* envdir = getenv("ARKI_TMPDIR"))
-        dir_temp = envdir;
-    else if (const char* envdir = getenv("TMPDIR"))
-        dir_temp = envdir;
-    else
-        dir_temp = "/tmp";
-
     if (const char* envfile = getenv("ARKI_IOTRACE"))
         file_iotrace_output = envfile;
 
@@ -67,8 +60,6 @@ void Config::describe(std::ostream& out) const
     dir_scan_grib2.describe(out, "GRIB2 scan scripts", "ARKI_SCAN_GRIB2");
     dir_scan_bufr.describe(out, "BUFR scan scripts", "ARKI_SCAN_BUFR");
     dir_targetfile.describe(out, "Target file name scripts", "ARKI_TARGETFILE");
-
-    out << "Temporary directory: " << dir_temp << "(set with ARKI_TMPDIR and TMPDIR)" << endl;
 
     out << "I/O profiling: ";
 #ifdef ARKI_IOTRACE
