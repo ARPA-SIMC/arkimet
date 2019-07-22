@@ -59,8 +59,7 @@ core::cfg::Section File::read_config(const std::string& fname)
     {
         section.set("path", sys::abspath(fname));
         section.set("format", scan::Scanner::format_from_filename(fname, "arkimet"));
-        string name = str::basename(fname);
-        section.set("name", name);
+        section.set("name", fname);
     } else {
         size_t fpos = fname.find(':');
         if (fpos == string::npos)
@@ -79,7 +78,7 @@ core::cfg::Section File::read_config(const std::string& fname)
             throw runtime_error(ss.str());
         }
         section.set("path", sys::abspath(fname1));
-        section.set("name", str::basename(fname1));
+        section.set("name", fname1);
     }
 
     return section;
