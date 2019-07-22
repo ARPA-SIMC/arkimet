@@ -10,25 +10,6 @@
 namespace arki {
 namespace runtime {
 
-/**
- * Data source from the path to a file or dataset
- */
-struct FileSource
-{
-    std::shared_ptr<dataset::Reader> reader;
-
-    core::cfg::Section cfg;
-    std::string movework;
-    std::string moveok;
-    std::string moveko;
-
-    FileSource(const core::cfg::Section& info);
-
-    void open();
-    void close(bool successful);
-};
-
-
 bool foreach_stdin(const std::string& format, std::function<void(dataset::Reader&)> dest);
 bool foreach_merged(const core::cfg::Sections& input, std::function<void(dataset::Reader&)> dest);
 bool foreach_qmacro(const std::string& macro_name, const std::string& macro_query, const core::cfg::Sections& inputs, std::function<void(dataset::Reader&)> dest);

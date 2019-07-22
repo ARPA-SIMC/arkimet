@@ -19,45 +19,6 @@ using namespace arki::utils;
 namespace arki {
 namespace runtime {
 
-static std::string moveFile(const std::string& source, const std::string& targetdir)
-{
-    std::string targetFile = str::joinpath(targetdir, str::basename(source));
-    if (::rename(source.c_str(), targetFile.c_str()) == -1)
-        throw_system_error ("cannot move " + source + " to " + targetFile);
-    return targetFile;
-}
-
-static std::string moveFile(const dataset::Reader& ds, const std::string& targetdir)
-{
-    if (const dataset::File* d = dynamic_cast<const dataset::File*>(&ds))
-        return moveFile(d->config().pathname, targetdir);
-    else
-        return std::string();
-}
-
-
-FileSource::FileSource(const core::cfg::Section& info)
-    : cfg(info)
-{
-}
-
-void FileSource::open()
-{
-    if (!movework.empty() && cfg.value("type") == "file")
-        cfg.set("path", moveFile(cfg.value("path"), movework));
-    reader = dataset::Reader::create(cfg);
-}
-
-void FileSource::close(bool successful)
-{
-    if (successful && !moveok.empty())
-        moveFile(*reader, moveok);
-    else if (!successful && !moveko.empty())
-        moveFile(*reader, moveko);
-    reader = std::shared_ptr<dataset::Reader>();
-}
-
-
 
 bool foreach_stdin(const std::string& format, std::function<void(dataset::Reader&)> dest)
 {
@@ -89,16 +50,9 @@ bool foreach_merged(const core::cfg::Sections& input, std::function<void(dataset
     bool success = true;
     std::shared_ptr<dataset::Merged> reader = std::make_shared<dataset::Merged>();
 
-    std::vector<std::shared_ptr<FileSource>> sources;
-    for (auto si: input)
-        sources.push_back(std::make_shared<FileSource>(si.second));
-
     // Instantiate the datasets and add them to the merger
-    for (const auto& source: sources)
-    {
-        source->open();
-        reader->add_dataset(source->reader);
-    }
+    for (auto si: input)
+        reader->add_dataset(dataset::Reader::create(si.second));
 
     try {
         dest(*reader);
@@ -106,9 +60,6 @@ bool foreach_merged(const core::cfg::Sections& input, std::function<void(dataset
         nag::warning("%s failed: %s", reader->name().c_str(), e.what());
         success = false;
     }
-
-    for (auto& source: sources)
-        source->close(success);
 
     return success;
 }
@@ -153,16 +104,14 @@ bool foreach_sections(const core::cfg::Sections& inputs, std::function<void(data
     // Query all the datasets in sequence
     for (auto si: inputs)
     {
-        FileSource source(si.second);
-        source.open();
+        auto reader = dataset::Reader::create(si.second);
         bool success = true;
         try {
-            dest(*source.reader);
+            dest(*reader);
         } catch (std::exception& e) {
-            nag::warning("%s failed: %s", source.reader->name().c_str(), e.what());
+            nag::warning("%s failed: %s", reader->name().c_str(), e.what());
             success = false;
         }
-        source.close(success);
         if (!success) all_successful = false;
     }
     return all_successful;
