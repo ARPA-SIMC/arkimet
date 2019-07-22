@@ -632,11 +632,6 @@ libarkimet_la_SOURCES += report.cc
 tests_arki_test_SOURCES += report-test.cc
 endif
 
-if DBALLE
-nobase_dist_arkiinclude_HEADERS += runtime/arki-bufr-prepare.h
-libarkimet_la_SOURCES += runtime/arki-bufr-prepare.cc
-endif
-
 endif
 
 #
