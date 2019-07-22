@@ -1,7 +1,9 @@
+import arkimet as arki
 import argparse
 import logging
 import itertools
 import sys
+import re
 import os
 
 
@@ -75,6 +77,38 @@ class App:
         except Fail as e:
             print(e, file=sys.stderr)
             return 1
+
+
+class AppConfigMixin:
+    def __init__(self):
+        super().__init__()
+        self.config = arki.cfg.Sections()
+
+    re_stringlist = re.compile(r"[\s,]+")
+
+    def filter_restrict(self, restrict):
+        """
+        Filter self.config leaving only those sections whose restrict entry
+        matches the given filter
+        """
+        to_remove = []
+        allowed = frozenset(x for x in self.re_stringlist.split(restrict) if x)
+
+        # An empty filter matches every config entry
+        if not allowed:
+            return
+
+        for name, section in self.config.items():
+            r = section.get("restrict", None)
+            if r is None:
+                to_remove.append(name)
+                continue
+            offered = frozenset(x for x in self.re_stringlist.split(r) if x)
+            if not (allowed & offered):
+                to_remove.append(name)
+
+        for name in to_remove:
+            del self.config[name]
 
 
 class AppWithProcessor(App):

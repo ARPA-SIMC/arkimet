@@ -1,14 +1,11 @@
 import arkimet as arki
-from arkimet.cmdline.base import AppWithProcessor
-import re
+from arkimet.cmdline.base import AppConfigMixin, AppWithProcessor
 import logging
 
 log = logging.getLogger("arki-query")
 
-re_stringlist = re.compile(r"[\s,]+")
 
-
-class Query(AppWithProcessor):
+class Query(AppConfigMixin, AppWithProcessor):
     """
     Query the datasets in the given config file for data matching the given
     expression, and output the matching metadata.
@@ -16,7 +13,6 @@ class Query(AppWithProcessor):
 
     def __init__(self):
         super().__init__()
-        self.config = None
 
         # Inputs
         self.parser.add_argument("--stdin", metavar="format",
@@ -57,7 +53,6 @@ class Query(AppWithProcessor):
         self.config[name]["name"] = name
 
     def build_config(self):
-        self.config = arki.cfg.Sections()
         self.query = None
         self.sources = []
         if self.args.file is not None:
@@ -96,19 +91,7 @@ class Query(AppWithProcessor):
 
             # Remove unallowed entries
             if self.args.restrict:
-                to_remove = []
-                allowed = frozenset(x for x in re_stringlist.split(self.args.restrict) if x)
-                for name, section in self.config.items():
-                    r = section.get("restrict", None)
-                    if r is None:
-                        to_remove.append(name)
-                        continue
-                    offered = frozenset(x for x in re_stringlist.split(r) if x)
-                    if not (allowed & offered):
-                        to_remove.append(name)
-
-                for name in to_remove:
-                    del self.config[name]
+                self.filter_restrict(self.args.restrict)
 
             if not self.config:
                 self.parser.error("no accessible datasets found for the given --restrict value")

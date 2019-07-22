@@ -1,15 +1,12 @@
 import arkimet as arki
-from arkimet.cmdline.base import App, Fail
-import re
+from arkimet.cmdline.base import App, AppConfigMixin, Fail
 import sys
 import logging
 
 log = logging.getLogger("arki-mergeconf")
 
-re_stringlist = re.compile(r"[\s,]+")
 
-
-class Mergeconf(App):
+class Mergeconf(AppConfigMixin, App):
     """
     Read dataset configuration from the given directories or config files,
     merge them and output the merged config file to standard output
@@ -46,48 +43,34 @@ class Mergeconf(App):
     def run(self):
         super().run()
 
-        merged = arki.cfg.Sections()
-
         # Process --config options
         if self.args.config is not None:
             for pathname in self.args.config:
                 cfg = arki.dataset.read_configs(pathname)
                 for name, section in cfg.items():
-                    self._add_section(merged, section, name)
+                    self._add_section(self.config, section, name)
 
         # Read the config files from the remaining commandline arguments
         for path in self.args.sources:
             if path.startswith("http://") or path.startswith("https://"):
                 sections = arki.dataset.http.load_cfg_sections(path)
                 for name, section in sections.items():
-                    self._add_section(merged, section, name)
+                    self._add_section(self.config, section, name)
             else:
                 section = arki.dataset.read_config(path)
-                self._add_section(merged, section)
+                self._add_section(self.config, section)
 
-        if not merged:
+        if not self.config:
             raise Fail("you need to specify at least one config file or dataset")
 
         # Remove unallowed entries
         if self.args.restrict:
-            to_remove = []
-            allowed = frozenset(x for x in re_stringlist.split(self.args.restrict) if x)
-            for name, section in merged.items():
-                r = section.get("restrict", None)
-                if r is None:
-                    to_remove.append(name)
-                    continue
-                offered = frozenset(x for x in re_stringlist.split(r) if x)
-                if not (allowed & offered):
-                    to_remove.append(name)
-
-            for name in to_remove:
-                del merged[name]
+            self.filter_restrict(self.args.restrict)
 
         if self.args.ignore_system_datasets:
             to_remove = []
 
-            for name, section in merged.items():
+            for name, section in self.config.items():
                 type = section.get("type")
                 name = section.get("name")
 
@@ -96,14 +79,14 @@ class Mergeconf(App):
                     to_remove.append(name)
 
             for name in to_remove:
-                del merged[name]
+                del self.config[name]
 
-        if not merged:
+        if not self.config:
             raise Fail("none of the configuration provided were useable")
 
         # Validate the configuration
         has_errors = False
-        for name, section in merged.items():
+        for name, section in self.config.items():
             # Validate filters
             filter = section.get("filter")
             if filter is None:
@@ -119,7 +102,7 @@ class Mergeconf(App):
 
         # If requested, compute extra information
         if self.args.extra:
-            for name, section in merged.items():
+            for name, section in self.config.items():
                 # Instantiate the dataset
                 ds = arki.dataset.Reader(section)
                 # Get the summary
@@ -132,6 +115,6 @@ class Mergeconf(App):
         # Output the merged configuration
         if self.args.output:
             with open(self.args.output, "wt") as fd:
-                merged.write(fd)
+                self.config.write(fd)
         else:
-            merged.write(sys.stdout)
+            self.config.write(sys.stdout)
