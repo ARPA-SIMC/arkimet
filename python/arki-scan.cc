@@ -1,6 +1,8 @@
-#include "arki/runtime/arki-scan.h"
-#include "arki/nag.h"
 #include "arki-scan.h"
+#include "arki/nag.h"
+#include "arki/runtime/source.h"
+#include "arki/runtime/processor.h"
+#include "arki/runtime/dispatch.h"
 #include "utils/core.h"
 #include "utils/methods.h"
 #include "utils/type.h"
@@ -35,7 +37,7 @@ struct set_inputs : public MethKwargs<set_inputs, arkipy_ArkiScan>
             return nullptr;
 
         try {
-            self->arki_scan->inputs = sections_from_python(py_config);
+            self->inputs = sections_from_python(py_config);
             Py_RETURN_NONE;
         } ARKI_CATCH_RETURN_PYO
     }
@@ -53,7 +55,7 @@ struct set_processor : public MethKwargs<set_processor, arkipy_ArkiScan>
     {
         try {
             auto processor = build_processor(args, kw);
-            self->arki_scan->processor = processor.release();
+            self->processor = processor.release();
             Py_RETURN_NONE;
         } ARKI_CATCH_RETURN_PYO
     }
@@ -70,8 +72,8 @@ struct set_dispatcher : public MethKwargs<set_dispatcher, arkipy_ArkiScan>
     static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
     {
         try {
-            auto dispatcher = build_dispatcher(*(self->arki_scan->processor), args, kw);
-            self->arki_scan->dispatcher = dispatcher.release();
+            auto dispatcher = build_dispatcher(*(self->processor), args, kw);
+            self->dispatcher = dispatcher.release();
             Py_RETURN_NONE;
         } ARKI_CATCH_RETURN_PYO
     }
@@ -99,8 +101,10 @@ struct scan_stdin : public MethKwargs<scan_stdin, arkipy_ArkiScan>
             bool all_successful;
             {
                 ReleaseGIL rg;
-                all_successful = self->arki_scan->run_scan_stdin(std::string(format, format_len));
-                self->arki_scan->processor->end();
+                all_successful = arki::runtime::foreach_stdin(std::string(format, format_len), [&](arki::runtime::Source& source) {
+                    self->processor->process(source.reader(), source.name());
+                });
+                self->processor->end();
             }
             if (all_successful)
                 Py_RETURN_TRUE;
@@ -128,8 +132,10 @@ struct scan_sections : public MethKwargs<scan_sections, arkipy_ArkiScan>
             bool all_successful;
             {
                 ReleaseGIL rg;
-                all_successful = self->arki_scan->run_scan_inputs();
-                self->arki_scan->processor->end();
+                all_successful = arki::runtime::foreach_sections(self->inputs, [&](arki::runtime::Source& source) {
+                    self->processor->process(source.reader(), source.name());
+                });
+                self->processor->end();
             }
             if (all_successful)
                 Py_RETURN_TRUE;
@@ -166,7 +172,7 @@ struct dispatch_stdin : public MethKwargs<dispatch_stdin, arkipy_ArkiScan>
 
                 bool dispatch_ok = true;
                 bool res = arki::runtime::foreach_stdin(std::string(format, format_len), [&](arki::runtime::Source& source) {
-                    auto stats = self->arki_scan->dispatcher->process(source.reader(), source.name());
+                    auto stats = self->dispatcher->process(source.reader(), source.name());
 
                     if (status)
                     {
@@ -179,7 +185,7 @@ struct dispatch_stdin : public MethKwargs<dispatch_stdin, arkipy_ArkiScan>
 
                 all_successful = res && dispatch_ok;
 
-                self->arki_scan->processor->end();
+                self->processor->end();
             }
             if (all_successful)
                 Py_RETURN_TRUE;
@@ -222,7 +228,7 @@ struct dispatch_sections : public MethKwargs<dispatch_sections, arkipy_ArkiScan>
                 ReleaseGIL rg;
 
                 // Query all the datasets in sequence
-                for (auto si: self->arki_scan->inputs)
+                for (auto si: self->inputs)
                 {
                     arki::runtime::FileSource source(si.second);
                     if (movework) source.movework = std::string(movework, movework_len);
@@ -233,7 +239,7 @@ struct dispatch_sections : public MethKwargs<dispatch_sections, arkipy_ArkiScan>
                     source.open();
                     bool success = true;
                     try {
-                        auto stats = self->arki_scan->dispatcher->process(source.reader(), source.name());
+                        auto stats = self->dispatcher->process(source.reader(), source.name());
                         if (status)
                         {
                             fprintf(stderr, "%s: %s\n", stats.name.c_str(), stats.summary().c_str());
@@ -248,7 +254,7 @@ struct dispatch_sections : public MethKwargs<dispatch_sections, arkipy_ArkiScan>
                     if (!success) all_successful = false;
                 }
 
-                self->arki_scan->processor->end();
+                self->processor->end();
             }
             if (all_successful)
                 Py_RETURN_TRUE;
@@ -271,7 +277,9 @@ arki-scan implementation
 
     static void _dealloc(Impl* self)
     {
-        delete self->arki_scan;
+        self->inputs.~Sections();
+        delete self->processor;
+        delete self->dispatcher;
         Py_TYPE(self)->tp_free(self);
     }
 
@@ -294,7 +302,9 @@ arki-scan implementation
             return -1;
 
         try {
-            self->arki_scan = new arki::runtime::ArkiScan;
+            new (&(self->inputs)) arki::core::cfg::Sections;
+            self->processor = nullptr;
+            self->dispatcher = nullptr;
         } ARKI_CATCH_RETURN_INT
 
         return 0;
