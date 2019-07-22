@@ -2806,11 +2806,6 @@
  },
  {
   "doc": "",
-  "group": "arki_runtime_inputs",
-  "method": "empty"
- },
- {
-  "doc": "",
   "group": "arki_runtime_config",
   "method": "restrict"
  },

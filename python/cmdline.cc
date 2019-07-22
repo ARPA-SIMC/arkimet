@@ -1,4 +1,3 @@
-#include "arki/runtime/arki-query.h"
 #include "arki/runtime/processor.h"
 #include "arki/runtime/source.h"
 #include "arki/runtime/dispatch.h"

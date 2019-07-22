@@ -11,8 +11,6 @@ namespace arki {
 namespace runtime {
 struct DatasetProcessor;
 struct MetadataDispatch;
-struct CommandLine;
-struct Inputs;
 
 
 /**

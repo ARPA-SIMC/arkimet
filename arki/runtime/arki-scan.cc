@@ -2,7 +2,6 @@
 #include "arki/runtime/processor.h"
 #include "arki/runtime/source.h"
 #include "arki/runtime/dispatch.h"
-#include <arki/runtime/inputs.h>
 #include <arki/runtime/io.h>
 #include <arki/nag.h>
 #include <iostream>

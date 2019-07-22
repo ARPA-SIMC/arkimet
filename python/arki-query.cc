@@ -1,4 +1,3 @@
-#include "arki/runtime/arki-query.h"
 #include "arki/runtime/processor.h"
 #include "arki/runtime/source.h"
 #include "arki/core/cfg.h"
@@ -40,7 +39,7 @@ struct set_inputs : public MethKwargs<set_inputs, arkipy_ArkiQuery>
             return nullptr;
 
         try {
-            self->arki_query->inputs = sections_from_python(py_config);
+            self->inputs = sections_from_python(py_config);
             Py_RETURN_NONE;
         } ARKI_CATCH_RETURN_PYO
     }
@@ -58,7 +57,7 @@ struct set_processor : public MethKwargs<set_processor, arkipy_ArkiQuery>
     {
         try {
             auto processor = build_processor(args, kw);
-            self->arki_query->processor = processor.release();
+            self->processor = processor.release();
             Py_RETURN_NONE;
         } ARKI_CATCH_RETURN_PYO
     }
@@ -84,7 +83,7 @@ struct query_stdin : public MethKwargs<query_stdin, arkipy_ArkiQuery>
 
         try {
             auto dest = [&](arki::runtime::Source& source) {
-                self->arki_query->processor->process(source.reader(), source.name());
+                self->processor->process(source.reader(), source.name());
             };
 
             bool all_successful = true;
@@ -92,7 +91,7 @@ struct query_stdin : public MethKwargs<query_stdin, arkipy_ArkiQuery>
                 ReleaseGIL rg;
                 all_successful = arki::runtime::foreach_stdin(
                         std::string(format, format_len), dest);
-                self->arki_query->processor->end();
+                self->processor->end();
             }
 
             if (all_successful)
@@ -120,15 +119,15 @@ struct query_merged : public MethKwargs<query_merged, arkipy_ArkiQuery>
 
         try {
             auto dest = [&](arki::runtime::Source& source) {
-                self->arki_query->processor->process(source.reader(), source.name());
+                self->processor->process(source.reader(), source.name());
             };
 
             bool all_successful = true;
             {
                 ReleaseGIL rg;
                 all_successful = arki::runtime::foreach_merged(
-                        self->arki_query->inputs, dest);
-                self->arki_query->processor->end();
+                        self->inputs, dest);
+                self->processor->end();
             }
 
             if (all_successful)
@@ -160,7 +159,7 @@ struct query_qmacro : public MethKwargs<query_qmacro, arkipy_ArkiQuery>
 
         try {
             auto dest = [&](arki::runtime::Source& source) {
-                self->arki_query->processor->process(source.reader(), source.name());
+                self->processor->process(source.reader(), source.name());
             };
 
             bool all_successful = true;
@@ -169,8 +168,8 @@ struct query_qmacro : public MethKwargs<query_qmacro, arkipy_ArkiQuery>
                 all_successful = arki::runtime::foreach_qmacro(
                         std::string(macro_name, macro_name_len),
                         std::string(macro_query, macro_query_len),
-                        self->arki_query->inputs, dest);
-                self->arki_query->processor->end();
+                        self->inputs, dest);
+                self->processor->end();
             }
 
             if (all_successful)
@@ -197,14 +196,14 @@ struct query_sections : public MethKwargs<query_sections, arkipy_ArkiQuery>
 
         try {
             auto dest = [&](arki::runtime::Source& source) {
-                self->arki_query->processor->process(source.reader(), source.name());
+                self->processor->process(source.reader(), source.name());
             };
 
             bool all_successful = true;
             {
                 ReleaseGIL rg;
-                all_successful = arki::runtime::foreach_sections(self->arki_query->inputs, dest);
-                self->arki_query->processor->end();
+                all_successful = arki::runtime::foreach_sections(self->inputs, dest);
+                self->processor->end();
             }
 
             if (all_successful)
@@ -228,7 +227,8 @@ arki-query implementation
 
     static void _dealloc(Impl* self)
     {
-        delete self->arki_query;
+        self->inputs.~Sections();
+        delete self->processor;
         Py_TYPE(self)->tp_free(self);
     }
 
@@ -251,7 +251,8 @@ arki-query implementation
             return -1;
 
         try {
-            self->arki_query = new arki::runtime::ArkiQuery;
+            new (&(self->inputs)) arki::core::cfg::Sections;
+            self->processor = nullptr;
         } ARKI_CATCH_RETURN_INT
 
         return 0;

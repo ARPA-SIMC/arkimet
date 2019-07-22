@@ -1,7 +1,6 @@
 #include "source.h"
 #include "processor.h"
 #include "dispatch.h"
-#include "inputs.h"
 #include "arki/runtime.h"
 #include "arki/scan.h"
 #include "arki/utils/string.h"
