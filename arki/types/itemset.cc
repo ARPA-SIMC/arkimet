@@ -1,11 +1,12 @@
 #include "itemset.h"
-#include "types.h"
-#include "utils.h"
+#include "arki/types.h"
+#include "arki/utils.h"
 
 using namespace std;
 using namespace arki::types;
 
 namespace arki {
+namespace types {
 
 ItemSet::ItemSet() {}
 
@@ -116,4 +117,5 @@ int ItemSet::compare(const ItemSet& m) const
     return 1;
 }
 
+}
 }

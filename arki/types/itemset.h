@@ -6,6 +6,7 @@
 #include <memory>
 
 namespace arki {
+namespace types {
 
 class ItemSet
 {
@@ -69,6 +70,6 @@ public:
 };
 
 }
+}
 
-// vim:set ts=4 sw=4:
 #endif

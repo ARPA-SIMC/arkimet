@@ -61,9 +61,8 @@ void GridQuery::addFilter(const Matcher& m)
 void GridQuery::consolidate()
 {
     // Feed all items into mdgrid
-    for (std::vector<ItemSet>::const_iterator i = items.begin();
-            i != items.end(); ++i)
-        mdgrid.add(*i);
+    for (const auto& item: items)
+        mdgrid.add(item);
 
     mdgrid.consolidate();
 

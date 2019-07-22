@@ -355,11 +355,11 @@ void Summary::expand_date_range(unique_ptr<Time>& begin, unique_ptr<Time>& end) 
 namespace {
 struct ResolveVisitor : public summary::Visitor
 {
-    std::vector<ItemSet>& result;
+    std::vector<types::ItemSet>& result;
     std::vector<types::Code> codes;
     size_t added;
 
-    ResolveVisitor(std::vector<ItemSet>& result, const Matcher& m) : result(result), added(0)
+    ResolveVisitor(std::vector<types::ItemSet>& result, const Matcher& m) : result(result), added(0)
     {
         m.foreach_type([&](types::Code code, const matcher::OR&) {
             codes.push_back(code);
@@ -368,7 +368,7 @@ struct ResolveVisitor : public summary::Visitor
     virtual ~ResolveVisitor() {}
     virtual bool operator()(const std::vector<const Type*>& md, const summary::Stats& stats)
     {
-        ItemSet is;
+        types::ItemSet is;
         for (std::vector<types::Code>::const_iterator i = codes.begin();
                 i != codes.end(); ++i)
         {
@@ -378,7 +378,7 @@ struct ResolveVisitor : public summary::Visitor
         }
         ++added;
         // Insertion sort, as we expect to have lots of duplicates
-        std::vector<ItemSet>::iterator i = std::lower_bound(result.begin(), result.end(), is);
+        std::vector<types::ItemSet>::iterator i = std::lower_bound(result.begin(), result.end(), is);
         if (i == result.end())
             result.push_back(is);
         else if (*i != is)
@@ -389,18 +389,18 @@ struct ResolveVisitor : public summary::Visitor
 };
 }
 
-std::vector<ItemSet> Summary::resolveMatcher(const Matcher& matcher) const
+std::vector<types::ItemSet> Summary::resolveMatcher(const Matcher& matcher) const
 {
-    if (matcher.empty()) return std::vector<ItemSet>();
+    if (matcher.empty()) return std::vector<types::ItemSet>();
 
-    std::vector<ItemSet> result;
+    std::vector<types::ItemSet> result;
     ResolveVisitor visitor(result, matcher);
     visitFiltered(matcher, visitor);
 
     return result;
 }
 
-size_t Summary::resolveMatcher(const Matcher& matcher, std::vector<ItemSet>& res) const
+size_t Summary::resolveMatcher(const Matcher& matcher, std::vector<types::ItemSet>& res) const
 {
     if (matcher.empty()) return 0;
 

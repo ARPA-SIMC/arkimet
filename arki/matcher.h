@@ -2,6 +2,7 @@
 #define ARKI_MATCHER_H
 
 /// Metadata match expressions
+#include <arki/metadata/fwd.h>
 #include <arki/types/fwd.h>
 #include <arki/core/fwd.h>
 #include <string>
@@ -14,12 +15,6 @@
 struct lua_State;
 
 namespace arki {
-namespace core {
-struct Time;
-}
-
-
-class ItemSet;
 
 /**
  * Represent a set of items to match.
@@ -124,7 +119,7 @@ public:
     std::string name() const override;
 
     bool matchItem(const types::Type& t) const override;
-    bool matchItemSet(const ItemSet& s) const;
+    bool matchItemSet(const types::ItemSet& s) const;
 
     std::shared_ptr<OR> get(types::Code code) const;
 
@@ -236,7 +231,7 @@ public:
     }
 
     /// Match a full ItemSet
-    bool operator()(const ItemSet& md) const
+    bool operator()(const types::ItemSet& md) const
     {
         if (m_impl.get()) return m_impl->matchItemSet(md);
         // An empty matcher always matches

@@ -19,7 +19,7 @@ struct TypeptrLt
 
 MetadataGrid::MetadataGrid() {}
 
-int MetadataGrid::index(const ItemSet& md) const
+int MetadataGrid::index(const types::ItemSet& md) const
 {
     int res = 0;
     size_t dim = 0;
@@ -87,9 +87,9 @@ void MetadataGrid::add(const Type& item)
     v.sorted_insert(item);
 }
 
-void MetadataGrid::add(const ItemSet& is)
+void MetadataGrid::add(const types::ItemSet& is)
 {
-    for (ItemSet::const_iterator i = is.begin(); i != is.end(); ++i)
+    for (types::ItemSet::const_iterator i = is.begin(); i != is.end(); ++i)
         add(*(i->second));
 }
 

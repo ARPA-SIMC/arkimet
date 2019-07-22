@@ -3,7 +3,8 @@
 
 #include <arki/core/fwd.h>
 #include <arki/types/fwd.h>
-#include <arki/itemset.h>
+#include <arki/metadata/fwd.h>
+#include <arki/types/itemset.h>
 #include <arki/utils/geosfwd.h>
 #include <vector>
 #include <map>
@@ -15,7 +16,6 @@
 struct lua_State;
 
 namespace arki {
-class Metadata;
 class Matcher;
 class Formatter;
 class BinaryDecoder;
@@ -265,24 +265,24 @@ public:
 	 */
 	std::unique_ptr<arki::utils::geos::Geometry> getConvexHull() const;
 
-	/**
-	 * Return all the unique combination of metadata items that are found
-	 * by the matcher in this summary.
-	 *
-	 * Only metadata items for which there is an expression in matcher are
-	 * present in the output.
-	 */
-	std::vector<ItemSet> resolveMatcher(const Matcher& matcher) const;
+    /**
+     * Return all the unique combination of metadata items that are found
+     * by the matcher in this summary.
+     *
+     * Only metadata items for which there is an expression in matcher are
+     * present in the output.
+     */
+    std::vector<types::ItemSet> resolveMatcher(const Matcher& matcher) const;
 
-	/**
-	 * Return all the unique combination of metadata items that are found
-	 * by the matcher in this summary.
-	 *
-	 * Metadata are added to res, sorted and avoiding duplicated.
-	 *
-	 * Return the number of matching items found (0 if nothing matched)
-	 */
-	size_t resolveMatcher(const Matcher& matcher, std::vector<ItemSet>& res) const;
+    /**
+     * Return all the unique combination of metadata items that are found
+     * by the matcher in this summary.
+     *
+     * Metadata are added to res, sorted and avoiding duplicated.
+     *
+     * Return the number of matching items found (0 if nothing matched)
+     */
+    size_t resolveMatcher(const Matcher& matcher, std::vector<types::ItemSet>& res) const;
 
 	// LUA functions
 	/// Push to the LUA stack a userdata to access this Origin
