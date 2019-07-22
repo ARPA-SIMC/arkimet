@@ -115,7 +115,6 @@ nobase_dist_arkiinclude_HEADERS = \
 		runtime/dispatch.h \
 		runtime/processor.h \
 		runtime/module.h \
-		runtime/arki-scan.h \
 		scan.h \
 		scan/fwd.h \
 		scan/validator.h \
@@ -555,8 +554,7 @@ libarkimet_la_SOURCES += \
 		datasets.cc \
 		metadatagrid.cc \
 		dispatcher.cc \
-		querymacro.cc \
-		runtime/arki-scan.cc
+		querymacro.cc
 
 tests_arki_test_SOURCES += \
 		targetfile-test.cc \

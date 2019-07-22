@@ -3,11 +3,13 @@
 
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
+#include <arki/core/cfg.h>
 #include <memory>
 
 namespace arki {
 namespace runtime {
-struct ArkiScan;
+struct DatasetProcessor;
+struct MetadataDispatch;
 }
 }
 
@@ -15,7 +17,9 @@ extern "C" {
 
 typedef struct {
     PyObject_HEAD
-    arki::runtime::ArkiScan* arki_scan;
+    arki::core::cfg::Sections inputs;
+    arki::runtime::DatasetProcessor* processor = nullptr;
+    arki::runtime::MetadataDispatch* dispatcher = nullptr;
 } arkipy_ArkiScan;
 
 extern PyTypeObject* arkipy_ArkiScan_Type;
