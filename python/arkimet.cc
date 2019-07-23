@@ -17,7 +17,7 @@
 #include "arki-xargs.h"
 #include "arki-bufr-prepare.h"
 #include "arki/matcher/aliases.h"
-#include "arki/runtime.h"
+#include "arki/init.h"
 #include "arki/runtime/config.h"
 #include "arki/dataset/merged.h"
 #include "arki/dataset/http.h"
@@ -265,7 +265,7 @@ PyMODINIT_FUNC PyInit__arkimet(void)
 {
     using namespace arki::python;
 
-    arki::runtime::init();
+    arki::init();
 
     PyObject* m = PyModule_Create(&arkimet_module);
     if (!m) return m;

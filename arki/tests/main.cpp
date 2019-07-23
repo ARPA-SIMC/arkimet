@@ -3,7 +3,7 @@
 #include "arki/utils/term.h"
 #include "arki/core/file.h"
 #include "arki/emitter/json.h"
-#include "arki/runtime.h"
+#include "arki/init.h"
 #include <signal.h>
 #include <cstring>
 #include <cstdlib>
@@ -96,7 +96,7 @@ struct ArkiRunner
 int main(int argc, const char* argv[])
 {
     arki::nag::init(false, false, true);
-    arki::runtime::init();
+    arki::init();
     arki::core::lock::test_set_nowait_default(true);
 
     signal(SIGSEGV,signal_to_exception);

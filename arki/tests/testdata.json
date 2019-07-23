@@ -16301,12 +16301,7 @@
  },
  {
   "doc": "",
-  "group": "arki_runtime_dispatch",
-  "method": "empty"
- },
- {
-  "doc": "",
-  "group": "arki_runtime",
+  "group": "arki_init",
   "method": "empty"
  },
  {

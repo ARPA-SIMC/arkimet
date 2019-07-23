@@ -1,5 +1,5 @@
 #include "arki/tests/tests.h"
-#include "runtime.h"
+#include "init.h"
 
 namespace {
 using namespace std;
@@ -11,7 +11,7 @@ class Tests : public TestCase
 {
     using TestCase::TestCase;
     void register_tests() override;
-} test("arki_runtime");
+} test("arki_init");
 
 
 void Tests::register_tests() {

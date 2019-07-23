@@ -7,7 +7,7 @@
 #include "arki/core/cfg.h"
 #include "arki/core/file.h"
 #include "arki/metadata.h"
-#include "arki/runtime.h"
+#include "arki/init.h"
 
 using namespace std;
 
@@ -628,7 +628,7 @@ arki::Matcher matcher_from_python(PyObject* o)
 
 int common_init()
 {
-    runtime::init();
+    arki::init();
 #if 0
     /*
      * PyDateTimeAPI, that is used by all the PyDate* and PyTime* macros, is
