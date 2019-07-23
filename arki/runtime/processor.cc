@@ -1,6 +1,5 @@
 #include "config.h"
 #include "arki/runtime/processor.h"
-#include "arki/runtime.h"
 #include "arki/metadata/libarchive.h"
 #include "arki/types/source.h"
 #include "arki/formatter.h"

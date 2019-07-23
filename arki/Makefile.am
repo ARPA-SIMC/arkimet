@@ -109,7 +109,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		postprocess.h \
 		querymacro.h \
 		runtime/config.h \
-		runtime.h \
+		init.h \
 		runtime/processor.h \
 		scan.h \
 		scan/fwd.h \
@@ -610,7 +610,7 @@ tests_arki_test_SOURCES += \
 		datasets-test.cc \
 		dispatcher-test.cc \
 		runtime/processor-test.cc \
-		runtime-test.cc
+		init-test.cc
 
 if CURL
 AM_CPPFLAGS += @LIBCURL_CPPFLAGS@
@@ -633,7 +633,7 @@ endif
 if DEVEL_DO_RUNTIME
 libarkimet_la_SOURCES += \
 		runtime/processor.cc \
-		runtime.cc
+		init.cc
 endif
 
 if GCOV
