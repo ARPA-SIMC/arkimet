@@ -2,6 +2,7 @@
 #include "arki/metadata.h"
 #include "arki/metadata/consumer.h"
 #include "arki/runtime.h"
+#include "arki/utils/lua.h"
 #include "arki/utils/string.h"
 #include <sys/fcntl.h>
 

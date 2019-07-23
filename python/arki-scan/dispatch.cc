@@ -1,5 +1,5 @@
 #include "dispatch.h"
-#include "arki/runtime/processor.h"
+#include "python/cmdline/processor.h"
 #include "arki/dispatcher.h"
 #include "arki/utils.h"
 #include "arki/utils/string.h"
@@ -17,7 +17,7 @@ namespace python {
 namespace arki_scan {
 
 
-MetadataDispatch::MetadataDispatch(runtime::DatasetProcessor& next)
+MetadataDispatch::MetadataDispatch(cmdline::DatasetProcessor& next)
     : next(next)
 {
 }

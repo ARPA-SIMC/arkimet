@@ -7,8 +7,10 @@
 #include <memory>
 
 namespace arki {
-namespace runtime {
+namespace python {
+namespace cmdline {
 struct DatasetProcessor;
+}
 }
 }
 
@@ -17,7 +19,7 @@ extern "C" {
 typedef struct {
     PyObject_HEAD
     arki::core::cfg::Sections inputs;
-    arki::runtime::DatasetProcessor* processor = nullptr;
+    arki::python::cmdline::DatasetProcessor* processor = nullptr;
 } arkipy_ArkiQuery;
 
 extern PyTypeObject* arkipy_ArkiQuery_Type;

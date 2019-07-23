@@ -20,6 +20,7 @@ _arkimet_la_SOURCES = \
     dataset.cc \
     counters.cc \
     cmdline.cc \
+    cmdline/processor.cc \
     arki-query.cc \
     arki-scan/results.cc \
     arki-scan/dispatch.cc \
@@ -65,6 +66,7 @@ EXTRA_DIST = \
     dataset.h \
     counters.h \
     cmdline.h \
+    cmdline/processor.h \
     arki-query.h \
     arki-scan.h \
     arki-scan/results.h \

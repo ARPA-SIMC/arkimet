@@ -1,4 +1,5 @@
-#include "arki/runtime/processor.h"
+#include "cmdline.h"
+#include "cmdline/processor.h"
 #include "arki/core/cfg.h"
 #include "arki/core/file.h"
 #include "arki/scan.h"
@@ -16,7 +17,7 @@ using namespace arki::utils;
 namespace arki {
 namespace python {
 
-std::unique_ptr<runtime::DatasetProcessor> build_processor(PyObject* args, PyObject* kw)
+std::unique_ptr<cmdline::DatasetProcessor> build_processor(PyObject* args, PyObject* kw)
 {
     static const char* kwlist[] = {
         "query", "outfile",
@@ -60,7 +61,7 @@ std::unique_ptr<runtime::DatasetProcessor> build_processor(PyObject* args, PyObj
 
     arki::Matcher query = matcher_from_python(py_query);
 
-    arki::runtime::ProcessorMaker pmaker;
+    cmdline::ProcessorMaker pmaker;
     // Initialize the processor maker
     pmaker.summary = summary;
     pmaker.summary_short = summary_short;
@@ -81,9 +82,9 @@ std::unique_ptr<runtime::DatasetProcessor> build_processor(PyObject* args, PyObj
     // If targetfile is requested, wrap with the targetfile processor
     if (targetfile)
     {
-        arki::runtime::SingleOutputProcessor* sop = dynamic_cast<arki::runtime::SingleOutputProcessor*>(processor.release());
+        cmdline::SingleOutputProcessor* sop = dynamic_cast<cmdline::SingleOutputProcessor*>(processor.release());
         assert(sop != nullptr);
-        processor.reset(new arki::runtime::TargetFileProcessor(sop, std::string(targetfile, targetfile_len)));
+        processor.reset(new cmdline::TargetFileProcessor(sop, std::string(targetfile, targetfile_len)));
     }
 
     return processor;

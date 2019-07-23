@@ -1,4 +1,3 @@
-#include "arki/runtime/processor.h"
 #include "arki/core/cfg.h"
 #include "arki/core/file.h"
 #include "arki/matcher.h"
@@ -14,6 +13,7 @@
 #include "utils/values.h"
 #include "common.h"
 #include "cmdline.h"
+#include "cmdline/processor.h"
 
 using namespace arki::python;
 using namespace arki::utils;
