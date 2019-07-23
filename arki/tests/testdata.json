@@ -16281,21 +16281,6 @@
  },
  {
   "doc": "",
-  "group": "arki_runtime_processor",
-  "method": "metadata_binary"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_processor",
-  "method": "metadata_binary_inline"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_processor",
-  "method": "data_binary"
- },
- {
-  "doc": "",
   "group": "arki_init",
   "method": "empty"
  },

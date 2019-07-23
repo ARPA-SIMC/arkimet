@@ -7,14 +7,16 @@
 #include <memory>
 
 namespace arki {
-namespace runtime {
+namespace python {
+
+namespace cmdline {
 struct DatasetProcessor;
 }
 
-namespace python {
 namespace arki_scan {
 struct MetadataDispatch;
 }
+
 }
 }
 
@@ -23,7 +25,7 @@ extern "C" {
 typedef struct {
     PyObject_HEAD
     arki::core::cfg::Sections inputs;
-    arki::runtime::DatasetProcessor* processor = nullptr;
+    arki::python::cmdline::DatasetProcessor* processor = nullptr;
     arki::python::arki_scan::MetadataDispatch* dispatcher = nullptr;
 } arkipy_ArkiScan;
 

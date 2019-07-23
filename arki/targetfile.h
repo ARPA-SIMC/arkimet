@@ -1,7 +1,6 @@
 #ifndef ARKI_TARGETFILE_H
 #define ARKI_TARGETFILE_H
 
-#include <arki/utils/lua.h>
 #include <arki/utils/sys.h>
 #include <arki/dataset.h>
 #include <string>
@@ -9,6 +8,7 @@
 
 namespace arki {
 class Metadata;
+class Lua;
 
 class Targetfile
 {

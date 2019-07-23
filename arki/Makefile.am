@@ -109,7 +109,6 @@ nobase_dist_arkiinclude_HEADERS = \
 		postprocess.h \
 		querymacro.h \
 		runtime.h \
-		runtime/processor.h \
 		scan.h \
 		scan/fwd.h \
 		scan/validator.h \
@@ -546,7 +545,8 @@ libarkimet_la_SOURCES += \
 		datasets.cc \
 		metadatagrid.cc \
 		dispatcher.cc \
-		querymacro.cc
+		querymacro.cc \
+		runtime.cc
 
 tests_arki_test_SOURCES += \
 		targetfile-test.cc \
@@ -606,7 +606,6 @@ tests_arki_test_SOURCES += \
 		querymacro-test.cc \
 		datasets-test.cc \
 		dispatcher-test.cc \
-		runtime/processor-test.cc \
 		runtime-test.cc
 
 if CURL
@@ -622,15 +621,6 @@ libarkimet_la_SOURCES += report.cc
 tests_arki_test_SOURCES += report-test.cc
 endif
 
-endif
-
-#
-# Runtime
-#
-if DEVEL_DO_RUNTIME
-libarkimet_la_SOURCES += \
-		runtime/processor.cc \
-		runtime.cc
 endif
 
 if GCOV

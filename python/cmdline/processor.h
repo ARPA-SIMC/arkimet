@@ -17,7 +17,8 @@ namespace dataset {
 class Reader;
 }
 
-namespace runtime {
+namespace python {
+namespace cmdline {
 
 struct DatasetProcessor
 {
@@ -72,6 +73,7 @@ struct ProcessorMaker
     std::unique_ptr<DatasetProcessor> make(Matcher query, utils::sys::NamedFileDescriptor& out);
 };
 
+}
 }
 }
 #endif

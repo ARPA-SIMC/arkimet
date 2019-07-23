@@ -1,6 +1,6 @@
-#include "config.h"
-#include "arki/runtime/processor.h"
+#include "processor.h"
 #include "arki/metadata/libarchive.h"
+#include "arki/libconfig.h"
 #include "arki/types/source.h"
 #include "arki/formatter.h"
 #include "arki/dataset.h"
@@ -95,7 +95,8 @@ struct YamlPrinter : public FormattedPrinter
 }
 
 namespace arki {
-namespace runtime {
+namespace python {
+namespace cmdline {
 
 typedef std::function<void(const Metadata&)> metadata_print_func;
 typedef std::function<void(const Summary&)> summary_print_func;
@@ -446,5 +447,6 @@ std::unique_ptr<DatasetProcessor> ProcessorMaker::make(Matcher query, sys::Named
         return unique_ptr<DatasetProcessor>(new DataProcessor(*this, query, out, data_inline));
 }
 
+}
 }
 }

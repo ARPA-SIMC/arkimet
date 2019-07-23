@@ -11,11 +11,11 @@
 namespace arki {
 class Dispatcher;
 
-namespace runtime {
+namespace python {
+
+namespace cmdline {
 class DatasetProcessor;
 }
-
-namespace python {
 
 namespace arki_scan {
 
@@ -29,7 +29,7 @@ struct MetadataDispatch
     size_t flush_threshold = 128 * 1024 * 1024;
     size_t partial_batch_data_size = 0;
     dataset::Memory results;
-    runtime::DatasetProcessor& next;
+    cmdline::DatasetProcessor& next;
 
     /// Directory where we store copyok files
     std::string dir_copyok;
@@ -44,7 +44,7 @@ struct MetadataDispatch
     std::unique_ptr<core::File> copyko;
 
 
-    MetadataDispatch(runtime::DatasetProcessor& next);
+    MetadataDispatch(cmdline::DatasetProcessor& next);
     ~MetadataDispatch();
 
     /**

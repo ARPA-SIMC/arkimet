@@ -8,18 +8,16 @@
 #include <memory>
 
 namespace arki {
-
-namespace runtime {
-struct DatasetProcessor;
-struct MetadataDispatch;
-}
-
 namespace python {
+
+namespace cmdline {
+struct DatasetProcessor;
+}
 
 /**
  * Build a DatasetProcessor from the given python function args/kwargs
  */
-std::unique_ptr<runtime::DatasetProcessor> build_processor(PyObject* args, PyObject* kw);
+std::unique_ptr<cmdline::DatasetProcessor> build_processor(PyObject* args, PyObject* kw);
 
 bool foreach_stdin(const std::string& format, std::function<void(dataset::Reader&)> dest);
 bool foreach_sections(const core::cfg::Sections& inputs, std::function<void(dataset::Reader&)> dest);
