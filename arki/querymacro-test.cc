@@ -1,7 +1,6 @@
 #include "arki/dataset/tests.h"
 #include "arki/types/reftime.h"
 #include "arki/metadata/data.h"
-#include "arki/runtime/config.h"
 #include "arki/sort.h"
 #include "querymacro.h"
 #include "summary.h"
@@ -22,7 +21,6 @@ struct Fixture : public DatasetTest {
     void test_setup()
     {
         DatasetTest::test_setup("type=ondisk2\nstep=daily\nunique=origin,reftime\n");
-        runtime::readMatcherAliasDatabase();
         dispatch_cfg.emplace("testds", cfg);
     }
 

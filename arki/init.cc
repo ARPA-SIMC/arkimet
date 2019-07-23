@@ -1,6 +1,6 @@
 #include "config.h"
 #include "arki/init.h"
-#include "arki/runtime/config.h"
+#include "arki/matcher/aliases.h"
 #include "arki/types-init.h"
 #include "arki/iotrace.h"
 
@@ -16,7 +16,7 @@ void init()
 
     if (initialized) return;
     types::init_default_types();
-    runtime::readMatcherAliasDatabase();
+    matcher::read_matcher_alias_database();
     iotrace::init();
     initialized = true;
 }

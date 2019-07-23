@@ -2,8 +2,8 @@
 #include "arki/bbox.h"
 #include "arki/exceptions.h"
 #include "arki/utils/geos.h"
-#include "arki/runtime/config.h"
 #include "arki/utils/string.h"
+#include "arki/utils/files.h"
 #include <memory>
 
 using namespace std;
@@ -17,7 +17,7 @@ BBox::BBox(const std::string& code) : L(new Lua), funcCount(0)
     /// Load the bbox scanning functions
     if (code.empty())
     {
-        vector<string> files = runtime::rcFiles("bbox", "ARKI_BBOX");
+        vector<string> files = utils::files::rcFiles("bbox", "ARKI_BBOX");
         for (vector<string>::const_iterator i = files.begin(); i != files.end(); ++i)
         {
             char buf[32];
