@@ -7,7 +7,7 @@
 #include "arki/core/cfg.h"
 #include "arki/core/file.h"
 #include "arki/metadata.h"
-#include "arki/init.h"
+#include "arki/runtime.h"
 
 using namespace std;
 

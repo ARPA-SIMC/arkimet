@@ -108,8 +108,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		nag.h \
 		postprocess.h \
 		querymacro.h \
-		runtime/config.h \
-		init.h \
+		runtime.h \
 		runtime/processor.h \
 		scan.h \
 		scan/fwd.h \
@@ -286,7 +285,6 @@ libarkimet_la_SOURCES += \
 		matcher/run.cc \
 		matcher/task.cc \
 		matcher/quantity.cc \
-		runtime/config.cc \
 		types-init.cc
 
 libarkimet_test_la_SOURCES += \
@@ -458,8 +456,7 @@ tests_arki_test_SOURCES += \
 		segment/tar-test.cc \
 		segment/zip-test.cc \
 		segment/gz-test.cc \
-		segment/tests.cc \
-		runtime/config-test.cc
+		segment/tests.cc
 
 if GRIBAPI
 nobase_dist_arkiinclude_HEADERS += scan/grib.h
@@ -610,7 +607,7 @@ tests_arki_test_SOURCES += \
 		datasets-test.cc \
 		dispatcher-test.cc \
 		runtime/processor-test.cc \
-		init-test.cc
+		runtime-test.cc
 
 if CURL
 AM_CPPFLAGS += @LIBCURL_CPPFLAGS@
@@ -633,7 +630,7 @@ endif
 if DEVEL_DO_RUNTIME
 libarkimet_la_SOURCES += \
 		runtime/processor.cc \
-		init.cc
+		runtime.cc
 endif
 
 if GCOV

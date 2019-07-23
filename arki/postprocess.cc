@@ -6,10 +6,10 @@
 #include "arki/metadata.h"
 #include "arki/metadata/data.h"
 #include "arki/utils/process.h"
-#include "arki/runtime/config.h"
 #include "arki/utils/string.h"
 #include "arki/utils/subprocess.h"
 #include "arki/utils/regexp.h"
+#include "arki/runtime.h"
 #include <sys/select.h>
 #include <sys/time.h>
 #include <sys/types.h>
@@ -18,6 +18,7 @@
 #include <signal.h>
 #include <unistd.h>
 #include <cerrno>
+#include <set>
 #include <iostream>
 
 
@@ -244,7 +245,7 @@ void Postprocess::validate(const core::cfg::Section& cfg)
 void Postprocess::start()
 {
     // Expand args[0] to the full pathname and check that the program exists
-    m_child->cmd.args[0] = runtime::Config::get().dir_postproc.find_file(m_child->cmd.args[0], true);
+    m_child->cmd.args[0] = Config::get().dir_postproc.find_file(m_child->cmd.args[0], true);
 
     // Spawn the command
     m_child->subproc.fork();

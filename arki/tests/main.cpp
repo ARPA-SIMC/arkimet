@@ -3,7 +3,7 @@
 #include "arki/utils/term.h"
 #include "arki/core/file.h"
 #include "arki/emitter/json.h"
-#include "arki/init.h"
+#include "arki/runtime.h"
 #include <signal.h>
 #include <cstring>
 #include <cstdlib>

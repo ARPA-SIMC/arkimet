@@ -1,7 +1,7 @@
 #include "arki/iotrace.h"
 #include "arki/libconfig.h"
 #include "arki/exceptions.h"
-#include "arki/runtime/config.h"
+#include "arki/runtime.h"
 #include <vector>
 #include <set>
 #include <ostream>
@@ -43,10 +43,10 @@ static ListenerList* listeners = 0;
 
 void init()
 {
-    if (!runtime::Config::get().file_iotrace_output.empty())
+    if (!Config::get().file_iotrace_output.empty())
     {
-        FILE* out = fopen(runtime::Config::get().file_iotrace_output.c_str(), "at");
-        if (!out) throw_system_error("cannot open " + runtime::Config::get().file_iotrace_output + " for appending");
+        FILE* out = fopen(Config::get().file_iotrace_output.c_str(), "at");
+        if (!out) throw_system_error("cannot open " + Config::get().file_iotrace_output + " for appending");
         Logger* logger = new Logger(out);
         add_listener(*logger);
         // Lose references, effectively creating garbage; never mind, as we log

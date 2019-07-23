@@ -1,7 +1,7 @@
 #include "arki/targetfile.h"
 #include "arki/metadata.h"
 #include "arki/metadata/consumer.h"
-#include "arki/runtime/config.h"
+#include "arki/runtime.h"
 #include "arki/utils/string.h"
 #include <sys/fcntl.h>
 
@@ -106,7 +106,7 @@ Targetfile::~Targetfile()
 
 void Targetfile::loadRCFiles()
 {
-    vector<string> files = runtime::Config::get().dir_targetfile.list_files(".lua");
+    vector<string> files = Config::get().dir_targetfile.list_files(".lua");
     for (vector<string>::const_iterator i = files.begin(); i != files.end(); ++i)
     {
         if (luaL_dofile(*L, i->c_str()))

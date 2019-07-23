@@ -1,5 +1,5 @@
 #include "arki/tests/tests.h"
-#include "init.h"
+#include "runtime.h"
 
 namespace {
 using namespace std;

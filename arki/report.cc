@@ -5,7 +5,7 @@
 #include "utils/sys.h"
 #include "utils/string.h"
 #include "utils/regexp.h"
-#include "runtime/config.h"
+#include "runtime.h"
 
 using namespace std;
 using namespace arki::utils;
@@ -35,7 +35,7 @@ void Report::load(const std::string& params)
         throw std::runtime_error("cannot initialize report: report command is empty");
 
     // Look for the script in all report paths
-    loadFile(runtime::Config::get().dir_report.find_file(args[0]));
+    loadFile(Config::get().dir_report.find_file(args[0]));
 }
 
 void Report::loadFile(const std::string& fname)

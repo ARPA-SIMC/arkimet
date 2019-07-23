@@ -1,6 +1,5 @@
 #include <arki/utils/vm2.h>
 #include <arki/types/value.h>
-#include <arki/runtime/config.h>
 
 namespace arki {
 namespace utils {
