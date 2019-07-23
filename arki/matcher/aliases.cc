@@ -2,6 +2,7 @@
 #include "utils.h"
 #include "arki/core/cfg.h"
 #include "arki/utils/string.h"
+#include "arki/utils/sys.h"
 #include <vector>
 #include <string>
 
@@ -152,6 +153,34 @@ AliasDatabaseOverride::~AliasDatabaseOverride()
     matcher::aliasdb = orig;
 }
 
+
+void read_matcher_alias_database()
+{
+    // Otherwise the file given in the environment variable ARKI_ALIASES is tried.
+    char* fromEnv = getenv("ARKI_ALIASES");
+    if (fromEnv)
+    {
+        sys::File in(fromEnv, O_RDONLY);
+        auto sections = core::cfg::Sections::parse(in);
+        matcher::AliasDatabase::addGlobal(sections);
+        return;
+    }
+
+#ifdef CONF_DIR
+    // Else, CONF_DIR is tried.
+    std::string name = std::string(CONF_DIR) + "/match-alias.conf";
+    std::unique_ptr<struct stat> st = sys::stat(name);
+    if (st.get())
+    {
+        sys::File in(name, O_RDONLY);
+        auto sections = core::cfg::Sections::parse(in);
+        matcher::AliasDatabase::addGlobal(sections);
+        return;
+    }
+#endif
+
+    // Else, nothing is loaded.
+}
 
 }
 }

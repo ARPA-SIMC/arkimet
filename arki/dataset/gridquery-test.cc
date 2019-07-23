@@ -2,7 +2,6 @@
 #include "arki/metadata.h"
 #include "arki/core/file.h"
 #include "arki/matcher.h"
-#include "arki/runtime/config.h"
 #include "gridquery.h"
 #include "memory.h"
 
@@ -60,8 +59,6 @@ add_method("gridquery", [](Fixture& f) {
 
 // Test adding an entry which does not expand to anything
 add_method("no_expansion", [](Fixture& f) {
-    runtime::readMatcherAliasDatabase();
-
     // Build a test dataset
     string md_yaml(
         "Source: BLOB(grib1,/dev/null:0+186196)\n"

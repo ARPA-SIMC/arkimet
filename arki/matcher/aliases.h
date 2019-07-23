@@ -78,6 +78,18 @@ public:
 };
 
 
+/**
+ * Read the Matcher alias database.
+ *
+ * The file given in the environment variable ARKI_ALIASES is tried.
+ * Else, $(sysconfdir)/arkimet/match-alias.conf is tried.
+ * Else, nothing is loaded.
+ *
+ * The alias database is kept statically for all the lifetime of the program,
+ * and is automatically used by readQuery.
+ */
+void read_matcher_alias_database();
+
 }
 }
 
