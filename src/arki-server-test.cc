@@ -12,7 +12,6 @@
 #include <arki/utils.h>
 #include <arki/utils/sys.h>
 #include <arki/binary.h>
-#include <arki/runtime/processor.h>
 #include <sstream>
 #include <iostream>
 #include <sys/types.h>
@@ -84,19 +83,6 @@ add_method("inline", [] {
     mdc.clear();
     mdc.add(*testds, dataset::DataQuery(Matcher::parse("origin:GRIB1,80"), true));
     wassert(actual(mdc.size()) == 0u);
-
-    // Try again, but let ProcessorMaker build the query
-    sys::Tempfile output;
-    runtime::ProcessorMaker pm;
-    pm.data_inline = true;
-    unique_ptr<runtime::DatasetProcessor> proc = pm.make(Matcher::parse("origin:GRIB1,200"), output);
-    proc->process(*testds, "test200");
-    proc->end();
-    mdc.clear();
-    Metadata::read_file(output.name(), mdc.inserter_func());
-    wassert(actual(mdc.size()) == 1u);
-    wassert(actual_type(mdc[0].source()).is_source_inline("grib", 7218));
-    wassert(actual(mdc[0].get_data().size()) == 7218u);
 });
 
 // Test querying the summary
