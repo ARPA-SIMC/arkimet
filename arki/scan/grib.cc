@@ -5,7 +5,7 @@
 #include "arki/metadata/data.h"
 #include "arki/types/source.h"
 #include "arki/exceptions.h"
-#include "arki/runtime/config.h"
+#include "arki/runtime.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/lua.h"
@@ -156,7 +156,7 @@ struct GribLua : public Lua
      * If code is non-empty, load scan code from it. Else, load scan code
      * from configuration files. Store scan function IDs in \a ids
      */
-    void load_scan_code(const std::string& code, const runtime::Config::Dirlist& src, vector<int>& ids)
+    void load_scan_code(const std::string& code, const Config::Dirlist& src, vector<int>& ids)
     {
 		/// Load the grib1 scanning functions
 		if (!code.empty())
@@ -309,10 +309,10 @@ GribLua::GribLua(const std::string& grib1code, const std::string& grib2code)
     make_index_userdata("gribd", GribLua::arkilua_lookup_gribd);
 
     /// Load the grib1 scanning functions
-    load_scan_code(grib1code, runtime::Config::get().dir_scan_grib1, grib1_funcs);
+    load_scan_code(grib1code, Config::get().dir_scan_grib1, grib1_funcs);
 
     /// Load the grib2 scanning functions
-    load_scan_code(grib2code, runtime::Config::get().dir_scan_grib2, grib2_funcs);
+    load_scan_code(grib2code, Config::get().dir_scan_grib2, grib2_funcs);
 
 	//arkilua_dumpstack(L, "Afterinit", stderr);
 }

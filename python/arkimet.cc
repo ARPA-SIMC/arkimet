@@ -17,8 +17,7 @@
 #include "arki-xargs.h"
 #include "arki-bufr-prepare.h"
 #include "arki/matcher/aliases.h"
-#include "arki/init.h"
-#include "arki/runtime/config.h"
+#include "arki/runtime.h"
 #include "arki/dataset/merged.h"
 #include "arki/dataset/http.h"
 #include "arki/querymacro.h"
@@ -195,7 +194,7 @@ struct config : public MethNoargs<config, PyObject>
     constexpr static const char* summary = "return the arkimet runtime configuration";
     constexpr static const char* doc = nullptr;
 
-    static pyo_unique_ptr describe_dirlist(const arki::runtime::Config::Dirlist& dirlist, const char* desc, const char* envvar)
+    static pyo_unique_ptr describe_dirlist(const arki::Config::Dirlist& dirlist, const char* desc, const char* envvar)
     {
         pyo_unique_ptr result(throw_ifnull(PyDict_New()));
         set_dict(result, "dirs", dirlist);
@@ -218,7 +217,7 @@ struct config : public MethNoargs<config, PyObject>
     static PyObject* run(Impl* self)
     {
         try {
-            auto& cfg = arki::runtime::Config::get();
+            auto& cfg = arki::Config::get();
             pyo_unique_ptr result(throw_ifnull(PyDict_New()));
             set_dict(result, "postproc", describe_dirlist(cfg.dir_postproc, "Postprocessors", "ARKI_POSTPROC"));
             set_dict(result, "report", describe_dirlist(cfg.dir_report, "Report scripts", "ARKI_REPORT"));

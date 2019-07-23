@@ -2796,11 +2796,6 @@
  },
  {
   "doc": "",
-  "group": "arki_runtime_config",
-  "method": "empty"
- },
- {
-  "doc": "",
   "group": "arki_scan_grib",
   "method": "compact"
  },

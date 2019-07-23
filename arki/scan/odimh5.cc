@@ -12,7 +12,7 @@
 #include "arki/types/level.h"
 #include "arki/types/area.h"
 #include "arki/types/timerange.h"
-#include "arki/runtime/config.h"
+#include "arki/runtime.h"
 #include "arki/utils/string.h"
 #include "arki/utils/files.h"
 #include "arki/utils/lua.h"
@@ -135,7 +135,7 @@ struct OdimH5Lua : public Lua {
     /**
      * Load scanning functions
      */
-    void load_scan_functions(const runtime::Config::Dirlist& src, std::vector<int>& ids)
+    void load_scan_functions(const Config::Dirlist& src, std::vector<int>& ids)
     {
         std::vector<std::string> files = src.list_files(".lua");
         for (std::vector<std::string>::const_iterator i = files.begin(); i != files.end(); ++i)
@@ -173,7 +173,7 @@ struct OdimH5Lua : public Lua {
 OdimH5::OdimH5()
     : h5file(-1), L(new OdimH5Lua(this))
 {
-    L->load_scan_functions(runtime::Config::get().dir_scan_odimh5, odimh5_funcs);
+    L->load_scan_functions(Config::get().dir_scan_odimh5, odimh5_funcs);
 }
 
 OdimH5::~OdimH5()

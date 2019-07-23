@@ -5,7 +5,7 @@
 #include "summary.h"
 #include "dataset/gridquery.h"
 #include "nag.h"
-#include "runtime/config.h"
+#include "runtime.h"
 #include "utils/lua.h"
 #include "sort.h"
 #include "utils/string.h"
@@ -104,7 +104,7 @@ Querymacro::Querymacro(const core::cfg::Section& ds_cfg, const core::cfg::Sectio
 	lua_setglobal(*L, "args");
 
     /// Load the right qmacro file
-    string fname = runtime::Config::get().dir_qmacro.find_file(macroname + ".lua");
+    string fname = Config::get().dir_qmacro.find_file(macroname + ".lua");
     if (luaL_dofile(*L, fname.c_str()))
     {
         // Copy the error, so that it will exist after the pop

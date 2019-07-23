@@ -5,7 +5,6 @@
 #include "arki/types/source/blob.h"
 #include "arki/metadata.h"
 #include "arki/metadata/data.h"
-#include "arki/runtime/config.h"
 #include "arki/utils/files.h"
 #include "arki/nag.h"
 #include "arki/utils/string.h"

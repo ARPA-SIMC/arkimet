@@ -6,7 +6,6 @@
 #include "arki/utils/lua.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/string.h"
-#include "arki/runtime/config.h"
 #include <fcntl.h>
 
 using namespace std;

@@ -1,6 +1,6 @@
 #include "arki/scan/bufrlua.h"
 #include "arki/metadata.h"
-#include "arki/runtime/config.h"
+#include "arki/runtime.h"
 #include "arki/utils/string.h"
 #include "arki/exceptions.h"
 #include <wreport/utils/lua.h>
@@ -115,7 +115,7 @@ static Message* msg_lua_check(struct lua_State* L, int idx)
 BufrLua::BufrLua()
 {
     // Load common library functions, if they exist
-    string fname = runtime::Config::get().dir_scan_bufr.find_file_noerror("common.lua");
+    string fname = Config::get().dir_scan_bufr.find_file_noerror("common.lua");
     if (!fname.empty())
     {
         if (luaL_dofile(L, fname.c_str()))
@@ -143,7 +143,7 @@ int BufrLua::get_scan_func(MessageType type)
     string name = str::lower(format_message_type(type));
 
     // Load the right bufr scan file
-    string fname = runtime::Config::get().dir_scan_bufr.find_file_noerror(name + ".lua");
+    string fname = Config::get().dir_scan_bufr.find_file_noerror(name + ".lua");
 
     // If the fine does not exist, we are done
     if (fname.empty())

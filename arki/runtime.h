@@ -1,15 +1,10 @@
-#ifndef ARKI_RUNTIME_CONFIG_H
-#define ARKI_RUNTIME_CONFIG_H
+#ifndef ARKI_RUNTIME_H
+#define ARKI_RUNTIME_H
 
-/// Common configuration-related code used in most arkimet executables
-
-#include <arki/core/fwd.h>
 #include <string>
 #include <vector>
-#include <set>
 
 namespace arki {
-namespace runtime {
 
 /**
  * Hold runtime configuration read from compile-time defaults and environment
@@ -98,7 +93,10 @@ struct Config
     static Config& get();
 };
 
-}
-}
+/**
+ * Initialise the libraries that we use and parse the matcher alias database.
+ */
+void init();
 
+}
 #endif

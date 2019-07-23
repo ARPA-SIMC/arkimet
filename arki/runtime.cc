@@ -1,22 +1,17 @@
-#include "arki/runtime/config.h"
-#include "arki/core/file.h"
-#include "arki/core/cfg.h"
-#include "arki/libconfig.h"
-#include "arki/exceptions.h"
-#include "arki/utils.h"
+#include "config.h"
+#include "runtime.h"
 #include "arki/matcher/aliases.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
+#include "arki/types-init.h"
+#include "arki/iotrace.h"
 #include <algorithm>
-#include <memory>
-#include <unistd.h>
 
 using namespace std;
-using namespace arki::core;
 using namespace arki::utils;
+using namespace arki::types;
 
 namespace arki {
-namespace runtime {
 
 Config::Config()
 {
@@ -158,5 +153,16 @@ std::vector<std::string> Config::Dirlist::list_files(const std::string& ext, boo
     return res;
 }
 
+
+void init()
+{
+    static bool initialized = false;
+
+    if (initialized) return;
+    types::init_default_types();
+    matcher::read_matcher_alias_database();
+    iotrace::init();
+    initialized = true;
 }
+
 }
