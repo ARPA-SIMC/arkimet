@@ -109,6 +109,12 @@ trap cleanup EXIT
 # Try to debug the libtool executable, if present
 if [ ! -z "$DEBUGGER" ]
 then
+    if [ "$DEBUGGER" = "valgrind" ]
+    then
+        # See https://stackoverflow.com/questions/20112989/how-to-use-valgrind-with-python
+        export PYTHONMALLOC=malloc
+    fi
+
     echo "Running $DEBUGGER $DEBUG_CMD $ARGS"
     RES=0
     if ! libtool --mode=execute $DEBUGGER $DEBUG_CMD $ARGS
