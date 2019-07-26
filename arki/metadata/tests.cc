@@ -12,7 +12,6 @@
 #include "arki/types/run.h"
 #include "arki/types/task.h"
 #include "arki/types/quantity.h"
-#include <sstream>
 
 using namespace std;
 using namespace arki;
@@ -114,9 +113,9 @@ void ActualMetadata::operator==(const Metadata& expected) const
     if (_actual == expected) return;
     std::stringstream ss;
     ss << "value:" << endl;
-    _actual.write_yaml(ss);
+    ss << _actual.to_yaml();
     ss << "is different than the expected:" << endl;
-    expected.write_yaml(ss);
+    ss << expected.to_yaml();
     throw TestFailed(ss.str());
 }
 
@@ -125,9 +124,9 @@ void ActualMetadata::operator!=(const Metadata& expected) const
     if (_actual != expected) return;
     std::stringstream ss;
     ss << "value:" << endl;
-    _actual.write_yaml(ss);
+    ss << _actual.to_yaml();
     ss << "is not different than the expected:" << endl;
-    expected.write_yaml(ss);
+    ss << expected.to_yaml();
     throw TestFailed(ss.str());
 }
 

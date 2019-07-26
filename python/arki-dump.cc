@@ -114,18 +114,16 @@ struct YamlPrinter
 
     std::string serialize(const arki::Metadata& md)
     {
-        std::stringstream ss;
-        md.write_yaml(ss, formatter);
-        ss << std::endl;
-        return ss.str();
+        std::string res = md.to_yaml(formatter);
+        res += "\n";
+        return res;
     }
 
     std::string serialize(const arki::Summary& s)
     {
-        std::stringstream ss;
-        s.write_yaml(ss, formatter);
-        ss << std::endl;
-        return ss.str();
+        std::string res = s.to_yaml(formatter);
+        res += "\n";
+        return res;
     }
 };
 

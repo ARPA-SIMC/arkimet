@@ -11,7 +11,6 @@
 #include "utils/type.h"
 #include "utils/values.h"
 #include "files.h"
-#include <sstream>
 
 using namespace std;
 using namespace arki;
@@ -346,16 +345,14 @@ Arkimet metadata for one data item
 
     static PyObject* _str(Impl* self)
     {
-        std::stringstream buf;
-        self->md->write_yaml(buf);
-        return PyUnicode_FromStringAndSize(buf.str().data(), buf.str().size());
+        std::string yaml = self->md->to_yaml();
+        return PyUnicode_FromStringAndSize(yaml.data(), yaml.size());
     }
 
     static PyObject* _repr(Impl* self)
     {
-        std::stringstream buf;
-        self->md->write_yaml(buf);
-        return PyUnicode_FromStringAndSize(buf.str().data(), buf.str().size());
+        std::string yaml = self->md->to_yaml();
+        return PyUnicode_FromStringAndSize(yaml.data(), yaml.size());
     }
 
     static int _init(Impl* self, PyObject* args, PyObject* kw)

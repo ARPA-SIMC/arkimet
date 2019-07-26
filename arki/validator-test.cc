@@ -5,16 +5,6 @@
 #include <arki/types/reftime.h>
 #include <time.h>
 #include <memory>
-#include <sstream>
-#include <iostream>
-
-namespace std {
-static inline std::ostream& operator<<(std::ostream& o, const arki::Metadata& m)
-{
-    m.write_yaml(o);
-    return o;
-}
-}
 
 namespace {
 using namespace std;
@@ -26,11 +16,8 @@ using arki::core::Time;
 static void dump_errors(const vector<string>& errors)
 {
     unsigned count = 1;
-    for (vector<string>::const_iterator i = errors.begin();
-            i != errors.end(); ++i, ++count)
-    {
-        cerr << "Error " << count << ": " << *i << endl;
-    }
+    for (const auto& error: errors)
+        fprintf(stderr, "Error %u: %s\n", count, error.c_str());
 }
 
 class Tests : public TestCase

@@ -1,19 +1,17 @@
-#include <arki/types/tests.h>
-#include <arki/dataset.h>
-#include <arki/dataset/http.h>
-#include <arki/metadata.h>
-#include <arki/metadata/data.h>
-#include <arki/metadata/collection.h>
-#include <arki/matcher.h>
-#include <arki/summary.h>
-#include <arki/scan/grib.h>
-#include <arki/dispatcher.h>
-#include <arki/types/source/blob.h>
-#include <arki/utils.h>
-#include <arki/utils/sys.h>
-#include <arki/binary.h>
-#include <sstream>
-#include <iostream>
+#include "arki/types/tests.h"
+#include "arki/dataset.h"
+#include "arki/dataset/http.h"
+#include "arki/metadata.h"
+#include "arki/metadata/data.h"
+#include "arki/metadata/collection.h"
+#include "arki/matcher.h"
+#include "arki/summary.h"
+#include "arki/scan/grib.h"
+#include "arki/dispatcher.h"
+#include "arki/types/source/blob.h"
+#include "arki/utils.h"
+#include "arki/utils/sys.h"
+#include "arki/binary.h"
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -327,18 +325,7 @@ add_method("postproc_error1", [] {
     mdc2[0].set_notes(nonotes);
 
     // Compare YAML versions so we get readable output
-    string yaml1, yaml2;
-    {
-        stringstream s1;
-        mdc1[0].write_yaml(s1);
-        yaml1 = s1.str();
-    }
-    {
-        stringstream s1;
-        mdc2[0].write_yaml(s1);
-        yaml2 = s1.str();
-    }
-    wassert(actual(yaml1) == yaml2);
+    wassert(actual(mdc1[0].to_yaml()) == mdc2[0].to_yaml());
 
     // Compare data
     const auto& d1 = mdc1[0].get_data().read();

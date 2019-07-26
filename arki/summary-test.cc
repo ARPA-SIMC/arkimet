@@ -155,10 +155,8 @@ add_method("binary", [](Fixture& f) {
 
 // Test serialisation to Yaml
 add_method("yaml", [](Fixture& f) {
-    stringstream stream1;
-    f.s.write_yaml(stream1);
+    string st = f.s.to_yaml();
     Summary s2;
-    string st(stream1.str());
     auto reader = LineReader::from_chars(st.data(), st.size());
     s2.readYaml(*reader, "(test memory buffer)");
     ensure(s2 == f.s);
@@ -276,17 +274,15 @@ add_method("summarise_grib", [](Fixture& f) {
     vector<uint8_t> encoded = s1.encode();
     Summary s2;
     BinaryDecoder dec(encoded);
-    ensure(s2.read(dec, "(test memory buffer)"));
-    ensure(s1 == s2);
+    wassert_true(s2.read(dec, "(test memory buffer)"));
+    wassert_true(s1 == s2);
 
     // Serialisation to Yaml
-    stringstream stream1;
-    s1.write_yaml(stream1);
+    std::string st2 = s1.to_yaml();
     Summary s3;
-    string st2(stream1.str());
     auto reader = LineReader::from_chars(st2.data(), st2.size());
     s3.readYaml(*reader, "(test memory buffer)");
-    ensure(s3 == s1);
+    wassert_true(s3 == s1);
 #endif
 });
 
@@ -352,9 +348,7 @@ add_method("binary_old", [](Fixture& f) {
 
     // Serialisation to Yaml
     {
-        stringstream stream;
-        s.write_yaml(stream);
-        string st = stream.str();
+        string st = s.to_yaml();
         auto reader = LineReader::from_chars(st.data(), st.size());
         Summary s2;
         s2.readYaml(*reader, "(test memory buffer)");
