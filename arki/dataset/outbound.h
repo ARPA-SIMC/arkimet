@@ -56,9 +56,8 @@ public:
     void acquire_batch(WriterBatch& batch, const AcquireConfig& cfg=AcquireConfig()) override;
 
     virtual void remove(Metadata& id);
-    virtual void removeAll(std::ostream& log, bool writable=false);
 
-    static void test_acquire(const core::cfg::Section& cfg, WriterBatch& batch, std::ostream& out);
+    static void test_acquire(const core::cfg::Section& cfg, WriterBatch& batch);
 };
 
 }

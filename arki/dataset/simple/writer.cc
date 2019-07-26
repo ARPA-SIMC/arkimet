@@ -189,7 +189,7 @@ void Writer::remove(Metadata& md)
     throw std::runtime_error("cannot remove data from simple dataset: dataset does not support removing items");
 }
 
-void Writer::test_acquire(const core::cfg::Section& cfg, WriterBatch& batch, std::ostream& out)
+void Writer::test_acquire(const core::cfg::Section& cfg, WriterBatch& batch)
 {
     std::shared_ptr<const simple::Config> config(new simple::Config(cfg));
     for (auto& e: batch)

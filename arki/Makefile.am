@@ -165,6 +165,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		types/typevector.h \
 		types/typeset.h \
 		utils/accounting.h \
+		utils/iostream.h \
 		utils/gzip.h \
 		utils/compress.h \
 		utils/files.h \

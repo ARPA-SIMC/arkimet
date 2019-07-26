@@ -5,6 +5,7 @@
 #include <string>
 #include <stdexcept>
 #include <ctime>
+#include <sstream>
 
 using namespace std;
 using namespace arki::matcher::reftime;
@@ -302,7 +303,7 @@ void Parser::parse(const std::string& str)
 			break;
 		case 1: {
             // Syntax error
-            stringstream ss;
+            std::stringstream ss;
             ss << "cannot parse '" << str << "': ";
             for (vector<string>::const_iterator i = errors.begin();
                     i != errors.end(); ++i)

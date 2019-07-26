@@ -110,12 +110,11 @@ class TestDispatcher : public Dispatcher
 {
 protected:
     const core::cfg::Sections& cfg;
-    std::ostream& out;
 
     void raw_dispatch_dataset(const std::string& name, dataset::WriterBatch& batch, bool drop_cached_data_on_commit) override;
 
 public:
-    TestDispatcher(const core::cfg::Sections& cfg, std::ostream& out);
+    TestDispatcher(const core::cfg::Sections& cfg);
     ~TestDispatcher();
 
     void dispatch(dataset::WriterBatch& batch, bool drop_cached_data_on_commit) override;

@@ -1,4 +1,6 @@
 #include "parser.h"
+#include <sstream>
+#include <set>
 
 using namespace std;
 using arki::core::Time;
@@ -51,7 +53,7 @@ static std::string tosqlTime(const int& tt)
 
 static std::string tostringInterval(const int& tt)
 {
-    stringstream res;
+    std::stringstream res;
     if (tt / 3600) res << (tt / 3600) << "h";
     if ((tt % 3600) / 60) res << ((tt % 3600) / 60) << "m";
     if (tt % 60) res << (tt % 60) << "s";

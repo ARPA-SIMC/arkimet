@@ -33,12 +33,7 @@ public:
     void acquire_batch(WriterBatch& batch, const AcquireConfig& cfg=AcquireConfig()) override;
     void remove(Metadata& md) override;
 
-    /**
-     * Iterate through the contents of the dataset, in depth-first order.
-     */
-    //void depthFirstVisit(Visitor& v);
-
-    static void test_acquire(const core::cfg::Section& cfg, WriterBatch& batch, std::ostream& out);
+    static void test_acquire(const core::cfg::Section& cfg, WriterBatch& batch);
 };
 
 }

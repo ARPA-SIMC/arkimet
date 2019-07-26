@@ -1,14 +1,10 @@
 #ifndef ARKI_DATASET_INDEX_BASE_H
 #define ARKI_DATASET_INDEX_BASE_H
 
-#include <arki/metadata.h>
-#include <arki/types/origin.h>
-#include <arki/types/product.h>
-#include <arki/types/level.h>
-#include <arki/utils/sqlite.h>
+#include <arki/types/fwd.h>
 #include <string>
+#include <vector>
 #include <set>
-#include <sstream>
 
 namespace arki {
 class Metadata;
