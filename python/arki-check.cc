@@ -2,18 +2,18 @@
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
 #include "arki/dataset.h"
-#include "arki/dataset/reporter.h"
 #include "arki/dataset/segmented.h"
 #include "arki/datasets.h"
 #include "arki/nag.h"
 #include "arki-check.h"
+#include "dataset/reporter.h"
 #include "utils/core.h"
 #include "utils/methods.h"
 #include "utils/type.h"
 #include "utils/values.h"
+#include "dataset/reporter.h"
 #include "common.h"
 #include <sstream>
-#include <iostream>
 
 using namespace arki::python;
 
@@ -101,17 +101,15 @@ struct remove : public MethKwargs<remove, arkipy_ArkiCheck>
                         try {
                             ds->remove(todolist[i]);
                         } catch (std::exception& e) {
-                            std::cerr << "Cannot remove message #" << idx << ": " << e.what() << std::endl;
+                            arki::nag::warning("Cannot remove message #%u: %s", idx, e.what());
                         }
                     }
                     for (const auto& i: counts)
                         arki::nag::verbose("%s: %u data deleted", i.first.c_str(), i.second);
                 } else {
                     for (const auto& i: counts)
-                        printf("%s: %u data would be deleted\n", i.first.c_str(), i.second);
+                        arki::nag::verbose("%s: %u data would be deleted", i.first.c_str(), i.second);
                 }
-                fflush(stdout);
-                fflush(stderr);
             }
             Py_RETURN_NONE;
         } ARKI_CATCH_RETURN_PYO
@@ -143,7 +141,7 @@ struct checker_base : public MethKwargs<Base, Impl>
                         }
                         Base::process(self, *checker);
                     } catch (SkipDataset& e) {
-                        std::cerr << "Skipping dataset " << si.second.value("name") << ": " << e.what() << std::endl;
+                        arki::nag::warning("Skipping dataset %s: %s", si.second.value("name").c_str(), e.what());
                         continue;
                     }
                 }
@@ -266,7 +264,7 @@ struct compress : public checker_base<compress, arkipy_ArkiCheck>
                         }
                         checker->compress(self->checker_config, group_size);
                     } catch (SkipDataset& e) {
-                        std::cerr << "Skipping dataset " << si.second.value("name") << ": " << e.what() << std::endl;
+                        arki::nag::warning("Skipping dataset %s: %s", si.second.value("name").c_str(), e.what());
                         continue;
                     }
                 }
@@ -305,7 +303,7 @@ struct unarchive : public checker_base<unarchive, arkipy_ArkiCheck>
                         if (arki::dataset::segmented::Checker* c = dynamic_cast<arki::dataset::segmented::Checker*>(checker.get()))
                             c->segment(pathname)->unarchive();
                     } catch (SkipDataset& e) {
-                        std::cerr << "Skipping dataset " << si.second.value("name") << ": " << e.what() << std::endl;
+                        arki::nag::warning("Skipping dataset %s: %s", si.second.value("name").c_str(), e.what());
                         continue;
                     }
                 }
@@ -362,8 +360,14 @@ arki-check implementation
             return -1;
 
         try {
+            std::shared_ptr<arki::dataset::Reporter> reporter;
+
+            pyo_unique_ptr mod_sys(throw_ifnull(PyImport_ImportModule("sys")));
+            pyo_unique_ptr py_stdout(throw_ifnull(PyObject_GetAttrString(mod_sys, "stdout")));
+            reporter = std::make_shared<dataset::TextIOReporter>(py_stdout);
+
             new (&(self->config)) arki::core::cfg::Sections(std::move(sections_from_python(arg_config)));
-            new (&(self->checker_config)) arki::dataset::CheckerConfig(std::make_shared<arki::dataset::OstreamReporter>(std::cout), arg_readonly);
+            new (&(self->checker_config)) arki::dataset::CheckerConfig(reporter, arg_readonly);
 
             if (arg_filter)
                 self->checker_config.segment_filter = arki::Matcher::parse(std::string(arg_filter, arg_filter_len));

@@ -2,6 +2,8 @@ import arkimet as arki
 import unittest
 import shutil
 import os
+import io
+import sys
 import subprocess
 from contextlib import contextmanager
 from arkimet.cmdline.check import Check
@@ -170,14 +172,23 @@ class ArkiCheckTestsBase:
             return e.args[0]
 
     def call_output(self, *args):
+        orig_stdout = sys.stdout
+        orig_stderr = sys.stderr
+        sys.stdout = io.StringIO()
+        sys.stderr = io.StringIO()
         out = CatchOutput()
-        with out.redirect():
+        try:
             res = self.runcmd(*args)
+            out.stdout = sys.stdout.getvalue()
+            out.stderr = sys.stderr.getvalue()
+        finally:
+            sys.stdout = orig_stdout
+            sys.stderr = orig_stderr
         return out, res
 
     def call_output_success(self, *args):
         out, res = self.call_output(*args)
-        self.assertEqual(out.stderr, b"")
+        self.assertEqual(out.stderr, "")
         self.assertIsNone(res)
         return out
 
@@ -255,20 +266,20 @@ class ArkiCheckTestsBase:
             env.import_file("inbound/fixture.grib1")
 
             out = self.call_output_success("testenv/testds")
-            self.assertEqual(out.stdout, b"testds: check 3 files ok\n")
+            self.assertEqual(out.stdout, "testds: check 3 files ok\n")
 
             out = self.call_output_success("testenv/testds", "--fix")
-            self.assertEqual(out.stdout, b"testds: check 3 files ok\n")
+            self.assertEqual(out.stdout, "testds: check 3 files ok\n")
 
             out = self.call_output_success("testenv/testds", "--repack")
-            self.assertEqual(out.stdout, b"testds: repack 3 files ok\n")
+            self.assertEqual(out.stdout, "testds: repack 3 files ok\n")
 
             out = self.call_output_success("testenv/testds", "--repack", "--fix")
             self.assertRegex(
                     out.stdout,
-                    rb"(testds: repack: running VACUUM ANALYZE on the dataset index(, if applicable)?\n)?"
-                    rb"(testds: repack: rebuilding the summary cache\n)?"
-                    rb"testds: repack 3 files ok\n"
+                    r"(testds: repack: running VACUUM ANALYZE on the dataset index(, if applicable)?\n)?"
+                    r"(testds: repack: rebuilding the summary cache\n)?"
+                    r"testds: repack 3 files ok\n"
             )
 
     def test_clean_filtered(self):
@@ -276,20 +287,20 @@ class ArkiCheckTestsBase:
             env.import_file("inbound/fixture.grib1")
 
             out = self.call_output_success("testenv/testds", "--filter=reftime:>=2007-07-08")
-            self.assertEqual(out.stdout, b"testds: check 2 files ok\n")
+            self.assertEqual(out.stdout, "testds: check 2 files ok\n")
 
             out = self.call_output_success("testenv/testds", "--fix", "--filter=reftime:>=2007-07-08")
-            self.assertEqual(out.stdout, b"testds: check 2 files ok\n")
+            self.assertEqual(out.stdout, "testds: check 2 files ok\n")
 
             out = self.call_output_success("testenv/testds", "--repack", "--filter=reftime:>=2007-07-08")
-            self.assertEqual(out.stdout, b"testds: repack 2 files ok\n")
+            self.assertEqual(out.stdout, "testds: repack 2 files ok\n")
 
             out = self.call_output_success("testenv/testds", "--repack", "--fix", "--filter=reftime:>=2007-07-08")
             self.assertRegex(
                     out.stdout,
-                    rb"(testds: repack: running VACUUM ANALYZE on the dataset index(, if applicable)?\n)?"
-                    rb"(testds: repack: rebuilding the summary cache\n)?"
-                    rb"testds: repack 2 files ok\n"
+                    r"(testds: repack: running VACUUM ANALYZE on the dataset index(, if applicable)?\n)?"
+                    r"(testds: repack: rebuilding the summary cache\n)?"
+                    r"testds: repack 2 files ok\n"
             )
 
     def test_remove_all(self):
@@ -303,9 +314,9 @@ class ArkiCheckTestsBase:
             out = self.call_output_success("testenv/testds", "--remove-all")
             self.assertEqual(
                     out.stdout,
-                    b"testds:2007/07-07.grib: should be deleted\n"
-                    b"testds:2007/07-08.grib: should be deleted\n"
-                    b"testds:2007/10-09.grib: should be deleted\n"
+                    "testds:2007/07-07.grib: should be deleted\n"
+                    "testds:2007/07-08.grib: should be deleted\n"
+                    "testds:2007/10-09.grib: should be deleted\n"
             )
 
             self.assertTrue(os.path.exists("testenv/testds/2007/07-08.grib"))
@@ -315,9 +326,9 @@ class ArkiCheckTestsBase:
             out = self.call_output_success("testenv/testds", "--remove-all", "-f")
             self.assertRegex(
                     out.stdout,
-                    rb"testds:2007/07-07.grib: deleted \(\d+ freed\)\n"
-                    rb"testds:2007/07-08.grib: deleted \(\d+ freed\)\n"
-                    rb"testds:2007/10-09.grib: deleted \(\d+ freed\)\n"
+                    r"testds:2007/07-07.grib: deleted \(\d+ freed\)\n"
+                    r"testds:2007/07-08.grib: deleted \(\d+ freed\)\n"
+                    r"testds:2007/10-09.grib: deleted \(\d+ freed\)\n"
             )
 
             self.assertFalse(os.path.exists("testenv/testds/2007/07-08.grib"))
@@ -338,7 +349,7 @@ class ArkiCheckTestsBase:
             out = self.call_output_success("testenv/testds", "--remove-all", "--filter=reftime:=2007-07-08")
             self.assertEqual(
                     out.stdout,
-                    b"testds:2007/07-08.grib: should be deleted\n"
+                    "testds:2007/07-08.grib: should be deleted\n"
             )
 
             self.assertTrue(os.path.exists("testenv/testds/2007/07-08.grib"))
@@ -348,7 +359,7 @@ class ArkiCheckTestsBase:
             out = self.call_output_success("testenv/testds", "--remove-all", "-f", "--filter=reftime:=2007-07-08")
             self.assertRegex(
                     out.stdout,
-                    rb"testds:2007/07-08.grib: deleted \(\d+ freed\)\n"
+                    r"testds:2007/07-08.grib: deleted \(\d+ freed\)\n"
             )
 
             self.assertFalse(os.path.exists("testenv/testds/2007/07-08.grib"))
@@ -366,47 +377,47 @@ class ArkiCheckTestsBase:
             out = self.call_output_success("testenv/testds")
             self.assertEqual(
                     out.stdout,
-                    b"testds:2007/07-07.grib: segment old enough to be archived\n"
-                    b"testds:2007/07-08.grib: segment old enough to be archived\n"
-                    b"testds:2007/10-09.grib: segment old enough to be archived\n"
-                    b"testds: check 0 files ok\n"
+                    "testds:2007/07-07.grib: segment old enough to be archived\n"
+                    "testds:2007/07-08.grib: segment old enough to be archived\n"
+                    "testds:2007/10-09.grib: segment old enough to be archived\n"
+                    "testds: check 0 files ok\n"
             )
 
             out = self.call_output_success("testenv/testds", "--fix")
             self.assertEqual(
                     out.stdout,
-                    b"testds:2007/07-07.grib: segment old enough to be archived\n"
-                    b"testds:2007/07-08.grib: segment old enough to be archived\n"
-                    b"testds:2007/10-09.grib: segment old enough to be archived\n"
-                    b"testds: check 0 files ok\n"
+                    "testds:2007/07-07.grib: segment old enough to be archived\n"
+                    "testds:2007/07-08.grib: segment old enough to be archived\n"
+                    "testds:2007/10-09.grib: segment old enough to be archived\n"
+                    "testds: check 0 files ok\n"
             )
 
             out = self.call_output_success("testenv/testds", "--repack")
             self.assertEqual(
                     out.stdout,
-                    b"testds:2007/07-07.grib: segment old enough to be archived\n"
-                    b"testds:2007/07-07.grib: should be archived\n"
-                    b"testds:2007/07-08.grib: segment old enough to be archived\n"
-                    b"testds:2007/07-08.grib: should be archived\n"
-                    b"testds:2007/10-09.grib: segment old enough to be archived\n"
-                    b"testds:2007/10-09.grib: should be archived\n"
-                    b"testds: repack 0 files ok, 3 files should be archived\n"
+                    "testds:2007/07-07.grib: segment old enough to be archived\n"
+                    "testds:2007/07-07.grib: should be archived\n"
+                    "testds:2007/07-08.grib: segment old enough to be archived\n"
+                    "testds:2007/07-08.grib: should be archived\n"
+                    "testds:2007/10-09.grib: segment old enough to be archived\n"
+                    "testds:2007/10-09.grib: should be archived\n"
+                    "testds: repack 0 files ok, 3 files should be archived\n"
             )
 
             out = self.call_output_success("testenv/testds", "--repack", "--fix", "--online", "--offline")
             self.assertRegex(
                     out.stdout,
-                    rb"testds:2007/07-07.grib: segment old enough to be archived\n"
-                    rb"testds:2007/07-07.grib: archived\n"
-                    rb"testds:2007/07-08.grib: segment old enough to be archived\n"
-                    rb"testds:2007/07-08.grib: archived\n"
-                    rb"testds:2007/10-09.grib: segment old enough to be archived\n"
-                    rb"testds:2007/10-09.grib: archived\n"
-                    rb"(testds: repack: running VACUUM ANALYZE on the dataset index(, if applicable)?\n)?"
-                    rb"(testds: repack: rebuilding the summary cache\n)?"
-                    rb"testds: repack 0 files ok, 3 files archived\n"
-                    rb"testds.archives.last: repack: running VACUUM ANALYZE on the dataset index, if applicable\n"
-                    rb"testds.archives.last: repack 3 files ok\n"
+                    r"testds:2007/07-07.grib: segment old enough to be archived\n"
+                    r"testds:2007/07-07.grib: archived\n"
+                    r"testds:2007/07-08.grib: segment old enough to be archived\n"
+                    r"testds:2007/07-08.grib: archived\n"
+                    r"testds:2007/10-09.grib: segment old enough to be archived\n"
+                    r"testds:2007/10-09.grib: archived\n"
+                    r"(testds: repack: running VACUUM ANALYZE on the dataset index(, if applicable)?\n)?"
+                    r"(testds: repack: rebuilding the summary cache\n)?"
+                    r"testds: repack 0 files ok, 3 files archived\n"
+                    r"testds.archives.last: repack: running VACUUM ANALYZE on the dataset index, if applicable\n"
+                    r"testds.archives.last: repack 3 files ok\n"
             )
 
             self.assertTrue(os.path.exists("testenv/testds/.archive/last/2007/07-08.grib"))
@@ -419,7 +430,7 @@ class ArkiCheckTestsBase:
             self.assertEqual(blob["b"], os.path.abspath("testenv/testds/.archive/last"))
 
             out = self.call_output_success("testenv/testds", "--unarchive=2007/07-08.grib")
-            self.assertEqual(out.stdout, b"")
+            self.assertEqual(out.stdout, "")
 
             self.assertFalse(os.path.exists("testenv/testds/.archive/last/2007/07-08.grib"))
             self.assertTrue(os.path.exists("testenv/testds/2007/07-08.grib"))
@@ -446,19 +457,19 @@ class ArkiCheckTestsBase:
                 self.assertTrue(os.path.exists("testenv/testds/2007/10-09.odimh5"))
 
                 out = self.call_output_success("testenv/testds", "--tar")
-                self.assertEqual(out.stdout, b"testds.archives.last:2007/07-07.odimh5: should be tarred\n")
+                self.assertEqual(out.stdout, "testds.archives.last:2007/07-07.odimh5: should be tarred\n")
 
                 out = self.call_output_success("testenv/testds", "--tar", "--offline")
-                self.assertEqual(out.stdout, b"testds.archives.last:2007/07-07.odimh5: should be tarred\n")
+                self.assertEqual(out.stdout, "testds.archives.last:2007/07-07.odimh5: should be tarred\n")
 
                 out = self.call_output_success("testenv/testds", "--tar", "--online")
                 self.assertEqual(
                         out.stdout,
-                        b"testds:2007/07-08.odimh5: should be tarred\n"
-                        b"testds:2007/10-09.odimh5: should be tarred\n")
+                        "testds:2007/07-08.odimh5: should be tarred\n"
+                        "testds:2007/10-09.odimh5: should be tarred\n")
 
                 out = self.call_output_success("testenv/testds", "--tar", "--fix")
-                self.assertEqual(out.stdout, b"testds.archives.last:2007/07-07.odimh5: tarred\n")
+                self.assertEqual(out.stdout, "testds.archives.last:2007/07-07.odimh5: tarred\n")
 
                 self.assertSegmentExists(env, "testenv/testds/.archive/last/2007/07-07.odimh5",
                                          extensions=[".tar"])
@@ -487,19 +498,19 @@ class ArkiCheckTestsBase:
                 self.assertTrue(os.path.exists("testenv/testds/2007/10-09.odimh5"))
 
                 out = self.call_output_success("testenv/testds", "--zip")
-                self.assertEqual(out.stdout, b"testds.archives.last:2007/07-07.odimh5: should be zipped\n")
+                self.assertEqual(out.stdout, "testds.archives.last:2007/07-07.odimh5: should be zipped\n")
 
                 out = self.call_output_success("testenv/testds", "--zip", "--offline")
-                self.assertEqual(out.stdout, b"testds.archives.last:2007/07-07.odimh5: should be zipped\n")
+                self.assertEqual(out.stdout, "testds.archives.last:2007/07-07.odimh5: should be zipped\n")
 
                 out = self.call_output_success("testenv/testds", "--zip", "--online")
                 self.assertEqual(
                         out.stdout,
-                        b"testds:2007/07-08.odimh5: should be zipped\n"
-                        b"testds:2007/10-09.odimh5: should be zipped\n")
+                        "testds:2007/07-08.odimh5: should be zipped\n"
+                        "testds:2007/10-09.odimh5: should be zipped\n")
 
                 out = self.call_output_success("testenv/testds", "--zip", "--fix")
-                self.assertEqual(out.stdout, b"testds.archives.last:2007/07-07.odimh5: zipped\n")
+                self.assertEqual(out.stdout, "testds.archives.last:2007/07-07.odimh5: zipped\n")
 
                 self.assertSegmentExists(env, "testenv/testds/.archive/last/2007/07-07.odimh5",
                                          extensions=[".zip"])
@@ -522,16 +533,16 @@ class ArkiCheckTestsBase:
                 self.assertTrue(os.path.exists("testenv/testds/2007/10-09.grib"))
 
                 out = self.call_output_success("testenv/testds", "--compress")
-                self.assertEqual(out.stdout, b"testds.archives.last:2007/07-07.grib: should be compressed\n")
+                self.assertEqual(out.stdout, "testds.archives.last:2007/07-07.grib: should be compressed\n")
 
                 out = self.call_output_success("testenv/testds", "--compress", "--offline")
-                self.assertEqual(out.stdout, b"testds.archives.last:2007/07-07.grib: should be compressed\n")
+                self.assertEqual(out.stdout, "testds.archives.last:2007/07-07.grib: should be compressed\n")
 
                 out = self.call_output_success("testenv/testds", "--compress", "--online")
                 self.assertEqual(
                         out.stdout,
-                        b"testds:2007/07-08.grib: should be compressed\n"
-                        b"testds:2007/10-09.grib: should be compressed\n")
+                        "testds:2007/07-08.grib: should be compressed\n"
+                        "testds:2007/10-09.grib: should be compressed\n")
 
                 out = self.call_output_success("testenv/testds", "--compress", "--fix")
                 self.assertRegex(out.stdout, rb"testds.archives.last:2007/07-07.grib: compressed \(\d+ freed\)\n")
@@ -562,20 +573,20 @@ class ArkiCheckTestsBase:
                 out = self.call_output_success("testenv/testds", "--state")
                 self.assertEqual(
                         out.stdout,
-                        b"testds:2007/07-08.odimh5: OK 2007-07-08 00:00:00Z to 2007-07-08 23:59:59Z\n"
-                        b"testds:2007/10-09.odimh5: OK 2007-10-09 00:00:00Z to 2007-10-09 23:59:59Z\n"
-                        b"testds.archives.last:2007/07-07.odimh5: OK 2007-07-01 00:00:00Z to 2007-07-31 23:59:59Z\n")
+                        "testds:2007/07-08.odimh5: OK 2007-07-08 00:00:00Z to 2007-07-08 23:59:59Z\n"
+                        "testds:2007/10-09.odimh5: OK 2007-10-09 00:00:00Z to 2007-10-09 23:59:59Z\n"
+                        "testds.archives.last:2007/07-07.odimh5: OK 2007-07-01 00:00:00Z to 2007-07-31 23:59:59Z\n")
 
                 out = self.call_output_success("testenv/testds", "--state", "--offline")
                 self.assertEqual(
                         out.stdout,
-                        b"testds.archives.last:2007/07-07.odimh5: OK 2007-07-01 00:00:00Z to 2007-07-31 23:59:59Z\n")
+                        "testds.archives.last:2007/07-07.odimh5: OK 2007-07-01 00:00:00Z to 2007-07-31 23:59:59Z\n")
 
                 out = self.call_output_success("testenv/testds", "--state", "--online")
                 self.assertEqual(
                         out.stdout,
-                        b"testds:2007/07-08.odimh5: OK 2007-07-08 00:00:00Z to 2007-07-08 23:59:59Z\n"
-                        b"testds:2007/10-09.odimh5: OK 2007-10-09 00:00:00Z to 2007-10-09 23:59:59Z\n")
+                        "testds:2007/07-08.odimh5: OK 2007-07-08 00:00:00Z to 2007-07-08 23:59:59Z\n"
+                        "testds:2007/10-09.odimh5: OK 2007-10-09 00:00:00Z to 2007-10-09 23:59:59Z\n")
 
     def test_remove_old(self):
         with self.datasets(format="odimh5") as env:
@@ -596,27 +607,27 @@ class ArkiCheckTestsBase:
                 out = self.call_output_success("testenv/testds", "--remove-old")
                 self.assertEqual(
                         out.stdout,
-                        b"testds:2007/07-08.odimh5: segment old enough to be deleted\n"
-                        b"testds:2007/07-08.odimh5: should be deleted\n")
+                        "testds:2007/07-08.odimh5: segment old enough to be deleted\n"
+                        "testds:2007/07-08.odimh5: should be deleted\n")
 
                 out = self.call_output_success("testenv/testds", "--remove-old", "--offline")
                 self.assertEqual(
                         out.stdout,
-                        # b"testds.archives.last:2007/07-07.odimh5: segment old enough to be deleted\n"
-                        b"testds.archives.last:2007/07-07.odimh5: should be deleted\n")
+                        # "testds.archives.last:2007/07-07.odimh5: segment old enough to be deleted\n"
+                        "testds.archives.last:2007/07-07.odimh5: should be deleted\n")
 
                 out = self.call_output_success("testenv/testds", "--remove-old", "--online")
                 self.assertEqual(
                         out.stdout,
-                        b"testds:2007/07-08.odimh5: segment old enough to be deleted\n"
-                        b"testds:2007/07-08.odimh5: should be deleted\n")
+                        "testds:2007/07-08.odimh5: segment old enough to be deleted\n"
+                        "testds:2007/07-08.odimh5: should be deleted\n")
 
                 out = self.call_output_success("testenv/testds", "--remove-old", "--online", "--offline")
                 self.assertEqual(
                         out.stdout,
-                        b"testds:2007/07-08.odimh5: segment old enough to be deleted\n"
-                        b"testds:2007/07-08.odimh5: should be deleted\n"
-                        b"testds.archives.last:2007/07-07.odimh5: should be deleted\n")
+                        "testds:2007/07-08.odimh5: segment old enough to be deleted\n"
+                        "testds:2007/07-08.odimh5: should be deleted\n"
+                        "testds.archives.last:2007/07-07.odimh5: should be deleted\n")
 
                 out = self.call_output_success("testenv/testds", "--remove-old", "--fix")
                 self.assertRegex(
@@ -644,9 +655,9 @@ class ArkiCheckNonSimpleTestsMixin:
             out = self.call_output_success("testenv/testds", "--fix")
             self.assertEqual(
                     out.stdout,
-                    b"testds:2016/10-05.vm2: segment found on disk with no associated index data\n"
-                    b"testds:2016/10-05.vm2: rescanned\n"
-                    b"testds: check 0 files ok, 1 file rescanned\n"
+                    "testds:2016/10-05.vm2: segment found on disk with no associated index data\n"
+                    "testds:2016/10-05.vm2: rescanned\n"
+                    "testds: check 0 files ok, 1 file rescanned\n"
             )
 
             # arki-query '' issue57 > issue57/todelete.md
@@ -658,10 +669,10 @@ class ArkiCheckNonSimpleTestsMixin:
 
             # runtest "arki-check --remove=issue57/todelete.md issue57"
             out = self.call_output_success("testenv/testds", "--remove=testenv/testds/todelete.md")
-            self.assertEqual(out.stdout, b"testds: 1 data would be deleted\n")
+            self.assertEqual(out.stdout, "testds: 1 data would be deleted\n")
 
             out = self.call_output_success("testenv/testds", "--remove=testenv/testds/todelete.md", "--fix")
-            self.assertEqual(out.stdout, b"")
+            self.assertEqual(out.stdout, "")
 
             mds = env.query()
             self.assertEqual(len(mds), 0)
@@ -675,14 +686,14 @@ class ArkiCheckNonSimpleTestsMixin:
                 arki.Metadata.write_bundle(imported[0:1], file=fd)
 
             out = self.call_output_success("testenv/testds", "--remove=testenv/remove.md")
-            self.assertEqual(out.stdout, b"testds: 1 data would be deleted\n")
+            self.assertEqual(out.stdout, "testds: 1 data would be deleted\n")
 
             self.assertCheckClean(env, files=3, items=3)
             self.assertQueryResults(env, imported, [1, 0, 2])
 
             out, res = self.call_output("testenv/testds", "--remove=testenv/remove.md", "--verbose", "--fix")
-            self.assertEqual(out.stderr, b"testds: 1 data deleted\n")
-            self.assertEqual(out.stdout, b"")
+            self.assertEqual(out.stderr, "testds: 1 data deleted\n")
+            self.assertEqual(out.stdout, "")
             self.assertIsNone(res)
 
             self.assertQueryResults(env, imported, [1, 2])
@@ -714,23 +725,23 @@ class ArkiCheckNonSimpleTestsMixin:
                 out = self.call_output_success("testenv/testds", "--tar")
                 self.assertEqual(
                         out.stdout,
-                        b"testds.archives.2007:2007/07-07.odimh5: should be tarred\n")
+                        "testds.archives.2007:2007/07-07.odimh5: should be tarred\n")
 
                 out = self.call_output_success("testenv/testds", "--tar", "--offline")
                 self.assertEqual(
                         out.stdout,
-                        b"testds.archives.2007:2007/07-07.odimh5: should be tarred\n")
+                        "testds.archives.2007:2007/07-07.odimh5: should be tarred\n")
 
                 out = self.call_output_success("testenv/testds", "--tar", "--online")
                 self.assertEqual(
                         out.stdout,
-                        b"testds:2007/07-08.odimh5: should be tarred\n"
-                        b"testds:2007/10-09.odimh5: should be tarred\n")
+                        "testds:2007/07-08.odimh5: should be tarred\n"
+                        "testds:2007/10-09.odimh5: should be tarred\n")
 
                 out = self.call_output_success("testenv/testds", "--tar", "--fix")
                 self.assertEqual(
                         out.stdout,
-                        b"testds.archives.2007:2007/07-07.odimh5: tarred\n")
+                        "testds.archives.2007:2007/07-07.odimh5: tarred\n")
 
                 self.assertSegmentExists(env, "testenv/testds/.archive/2007/2007/07-07.odimh5",
                                          extensions=[".tar"])
@@ -764,23 +775,23 @@ class ArkiCheckNonSimpleTestsMixin:
                 out = self.call_output_success("testenv/testds", "--zip")
                 self.assertEqual(
                         out.stdout,
-                        b"testds.archives.2007:2007/07-07.odimh5: should be zipped\n")
+                        "testds.archives.2007:2007/07-07.odimh5: should be zipped\n")
 
                 out = self.call_output_success("testenv/testds", "--zip", "--offline")
                 self.assertEqual(
                         out.stdout,
-                        b"testds.archives.2007:2007/07-07.odimh5: should be zipped\n")
+                        "testds.archives.2007:2007/07-07.odimh5: should be zipped\n")
 
                 out = self.call_output_success("testenv/testds", "--zip", "--online")
                 self.assertEqual(
                         out.stdout,
-                        b"testds:2007/07-08.odimh5: should be zipped\n"
-                        b"testds:2007/10-09.odimh5: should be zipped\n")
+                        "testds:2007/07-08.odimh5: should be zipped\n"
+                        "testds:2007/10-09.odimh5: should be zipped\n")
 
                 out = self.call_output_success("testenv/testds", "--zip", "--fix")
                 self.assertEqual(
                         out.stdout,
-                        b"testds.archives.2007:2007/07-07.odimh5: zipped\n")
+                        "testds.archives.2007:2007/07-07.odimh5: zipped\n")
 
                 self.assertSegmentExists(env, "testenv/testds/.archive/2007/2007/07-07.odimh5",
                                          extensions=[".zip"])

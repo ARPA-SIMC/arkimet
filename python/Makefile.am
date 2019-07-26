@@ -66,6 +66,7 @@ EXTRA_DIST = \
     summary.h \
     matcher.h \
     dataset.h \
+    dataset/reporter.h \
     counters.h \
     cmdline.h \
     cmdline/processor.h \
