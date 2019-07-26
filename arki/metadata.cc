@@ -455,31 +455,47 @@ void Metadata::write(AbstractOutputFile& out) const
     }
 }
 
-void Metadata::write_yaml(std::ostream& out, const Formatter* formatter) const
+std::string Metadata::to_yaml(const Formatter* formatter) const
 {
-    if (m_source) out << "Source: " << *m_source << endl;
-    for (map<types::Code, types::Type*>::const_iterator i = m_vals.begin(); i != m_vals.end(); ++i)
+    std::stringstream buf;
+    if (m_source) buf << "Source: " << *m_source << endl;
+    for (const auto& i: m_vals)
     {
-        string uc = str::lower(i->second->tag());
+        string uc = str::lower(i.second->tag());
         uc[0] = toupper(uc[0]);
-        out << uc << ": ";
-        i->second->writeToOstream(out);
+        buf << uc << ": ";
+        i.second->writeToOstream(buf);
         if (formatter)
-            out << "\t# " << (*formatter)(*i->second);
-        out << endl;
+            buf << "\t# " << (*formatter)(*i.second);
+        buf << endl;
     }
 
     vector<Note> l(notes());
-    if (l.empty()) return;
-    out << "Note: ";
+    if (l.empty())
+        return buf.str();
+    buf << "Note: ";
     if (l.size() == 1)
-        out << *l.begin() << endl;
+        buf << *l.begin() << endl;
     else
     {
-        out << endl;
-        for (vector<Note>::const_iterator i = l.begin(); i != l.end(); ++i)
-            out << " " << *i << endl;
+        buf << endl;
+        for (const auto& note: l)
+            buf << " " << note << endl;
     }
+
+    return buf.str();
+}
+
+void Metadata::write_yaml(core::NamedFileDescriptor& out, const Formatter* formatter) const
+{
+    std::string yaml = to_yaml(formatter);
+    out.write_all_or_retry(yaml.data(), yaml.size());
+}
+
+void Metadata::write_yaml(core::AbstractOutputFile& out, const Formatter* formatter) const
+{
+    std::string yaml = to_yaml(formatter);
+    out.write(yaml.data(), yaml.size());
 }
 
 void Metadata::serialise(Emitter& e, const Formatter* f) const

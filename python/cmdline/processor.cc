@@ -85,10 +85,7 @@ struct YamlPrinter : public FormattedPrinter
     using FormattedPrinter::FormattedPrinter;
     void operator()(const arki::Metadata& md) override
     {
-        stringstream ss;
-        md.write_yaml(ss, formatter);
-        ss << endl;
-        out.write_all_or_throw(ss.str());
+        out.write_all_or_throw(md.to_yaml(formatter));
     }
 };
 
@@ -145,11 +142,9 @@ summary_print_func create_summary_printer(ProcessorMaker& maker, sys::NamedFileD
         };
 
     return [&out, formatter](const Summary& s) {
-        stringstream ss;
-        s.write_yaml(ss, formatter.get());
-        ss << endl;
-        string res = ss.str();
-        out.write_all_or_throw(ss.str());
+        std::string buf = s.to_yaml(formatter.get());
+        buf += "\n";
+        out.write_all_or_throw(buf);
     };
 }
 

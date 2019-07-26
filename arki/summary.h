@@ -186,10 +186,18 @@ public:
 	 */
 	void writeAtomically(const std::string& filename);
 
+    /// Format the summary as a yaml string
+    std::string to_yaml(const Formatter* formatter=nullptr) const;
+
     /**
      * Write the summary as YAML text to the given output stream.
      */
-    void write_yaml(std::ostream& out, const Formatter* f=nullptr) const;
+    void write_yaml(core::NamedFileDescriptor& out, const Formatter* f=nullptr) const;
+
+    /**
+     * Write the summary as YAML text to the given output stream.
+     */
+    void write_yaml(core::AbstractOutputFile& out, const Formatter* f=nullptr) const;
 
     /// Serialise using an emitter
     void serialise(Emitter& e, const Formatter* f=0) const;
@@ -310,8 +318,6 @@ public:
 
 	friend class matcher::AND;
 };
-
-std::ostream& operator<<(std::ostream& o, const Summary& s);
 
 }
 #endif

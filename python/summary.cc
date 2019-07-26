@@ -63,12 +63,11 @@ Arguments:
                 else
                     self->summary->write(*out.abstract);
             } else if (strcmp(format, "yaml") == 0) {
-                std::stringstream buf;
-                self->summary->write_yaml(buf);
+                std::string yaml = self->summary->to_yaml();
                 if (out.fd)
-                    out.fd->write_all_or_retry(buf.str());
+                    out.fd->write_all_or_retry(yaml);
                 else
-                    out.abstract->write(buf.str().data(), buf.str().size());
+                    out.abstract->write(yaml.data(), yaml.size());
                 return nullptr;
             } else if (strcmp(format, "json") == 0) {
                 std::stringstream buf;

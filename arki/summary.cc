@@ -590,11 +590,25 @@ bool Summary::visitFiltered(const Matcher& matcher, summary::Visitor& visitor) c
         return root->visitFiltered(matcher, visitor);
 }
 
-void Summary::write_yaml(std::ostream& out, const Formatter* f) const
+std::string Summary::to_yaml(const Formatter* formatter) const
 {
-    if (root->empty()) return;
-    summary::YamlPrinter printer(out, 2, f);
+    std::stringstream buf;
+    if (root->empty()) return buf.str();
+    summary::YamlPrinter printer(buf, 2, formatter);
     visit(printer);
+    return buf.str();
+}
+
+void Summary::write_yaml(core::NamedFileDescriptor& out, const Formatter* formatter) const
+{
+    std::string yaml = to_yaml(formatter);
+    out.write_all_or_retry(yaml.data(), yaml.size());
+}
+
+void Summary::write_yaml(core::AbstractOutputFile& out, const Formatter* formatter) const
+{
+    std::string yaml = to_yaml(formatter);
+    out.write(yaml.data(), yaml.size());
 }
 
 void Summary::serialise(Emitter& e, const Formatter* f) const
@@ -752,12 +766,6 @@ void Summary::filter(const Matcher& matcher, Summary& result) const
     if (root->empty()) return;
     summary::SummaryMerger merger(*result.root);
     visitFiltered(matcher, merger);
-}
-
-std::ostream& operator<<(std::ostream& o, const Summary& s)
-{
-    s.write_yaml(o);
-    return o;
 }
 
 }

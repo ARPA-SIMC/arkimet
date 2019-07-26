@@ -192,10 +192,8 @@ add_method("yaml", [](Fixture& f) {
     md.set_source(Source::createBlobUnlocked("grib", "", "inbound/test.grib1", 1, 2));
     f.fill(md);
 
-    stringstream output;
-    md.write_yaml(output);
+    string s = md.to_yaml();
     Metadata md1;
-    string s(output.str());
     auto reader = LineReader::from_chars(s.data(), s.size());
     md1.readYaml(*reader, "(test memory buffer)");
 
@@ -206,10 +204,8 @@ add_method("yaml", [](Fixture& f) {
     // Test PERIOD reference times
     md.set(Reftime::createPeriod(Time(2007, 6, 5, 4, 3, 2), Time(2008, 7, 6, 5, 4, 3)));
 
-    stringstream output1;
-    md.write_yaml(output1);
+    s = md.to_yaml();
     Metadata md2;
-    s = output1.str();
     reader = LineReader::from_chars(s.data(), s.size());
     md2.readYaml(*reader, "(test memory buffer)");
 

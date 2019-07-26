@@ -69,14 +69,14 @@ inline bool cmpmd(Metadata& md1, Metadata& md2)
     if (md1 != md2)
     {
         cerr << "----- The two metadata differ.  First one:" << endl;
-        md1.write_yaml(cerr);
+        cerr << md1.to_yaml();
         if (md1.source().style() == types::Source::INLINE)
         {
             const auto& buf = md1.get_data().read();
             cerr << "-- Inline data:" << string((const char*)buf.data(), buf.size()) << endl;
         }
         cerr << "----- Second one:" << endl;
-        md2.write_yaml(cerr);
+        cerr << md2.to_yaml();
         if (md2.source().style() == types::Source::INLINE)
         {
             const auto& buf = md2.get_data().read();
