@@ -161,6 +161,9 @@ public:
     /// Read the inline data from the given file handle
     void read_inline_data(core::NamedFileDescriptor& fd);
 
+    /// Read the inline data from the given file handle
+    void read_inline_data(core::AbstractInputFile& fd);
+
     /// Read the inline data from the given memory buffer
     void readInlineData(BinaryDecoder& dec, const std::string& filename);
 
@@ -181,6 +184,14 @@ public:
      * throwing exceptions, and can be anything.
      */
     void write(core::NamedFileDescriptor& out) const;
+
+    /**
+     * Write the metadata to the given output stream.
+     *
+     * The filename string is used to generate nicer parse error messages when
+     * throwing exceptions, and can be anything.
+     */
+    void write(core::AbstractOutputFile& out) const;
 
     /**
      * Write the metadata as YAML text to the given output stream.
@@ -206,6 +217,13 @@ public:
      * Return the number of bytes written
      */
     size_t stream_data(core::NamedFileDescriptor& out);
+
+    /**
+     * Stream the data referred by this metadata to the given file descriptor.
+     *
+     * Return the number of bytes written
+     */
+    size_t stream_data(core::AbstractOutputFile& out);
 
     /// Return True if get_data can be called without causing I/O
     bool has_cached_data() const;
@@ -264,7 +282,10 @@ public:
     static bool read_file(int in, const metadata::ReadContext& file, metadata_dest_func dest);
 
     /// Read all metadata from a file into the given consumer
-    static bool read_file(core::NamedFileDescriptor& fd, metadata_dest_func mdc);
+    static bool read_file(core::NamedFileDescriptor& fd, metadata_dest_func dest);
+
+    /// Read all metadata from a file into the given consumer
+    static bool read_file(core::AbstractInputFile& fd, const metadata::ReadContext& file, metadata_dest_func dest);
 
     /**
      * Read a metadata group into the given consumer

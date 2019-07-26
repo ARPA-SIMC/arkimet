@@ -360,6 +360,19 @@ bool Reader::scan(metadata_dest_func dest)
     return scan_data(dest);
 }
 
+size_t Reader::stream(const types::source::Blob& src, core::AbstractOutputFile& out)
+{
+    vector<uint8_t> buf = read(src);
+    if (src.format == "vm2")
+    {
+        out.write(buf.data(), buf.size());
+        out.write("\n", 1);
+        return buf.size() + 1;
+    } else {
+        out.write(buf.data(), buf.size());
+        return buf.size();
+    }
+}
 
 
 Writer::PendingMetadata::PendingMetadata(Metadata& md, std::unique_ptr<types::source::Blob> new_source, bool drop_cached_data_on_commit)

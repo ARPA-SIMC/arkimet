@@ -158,6 +158,61 @@ void Reader::query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out)
     }
 }
 
+void Reader::query_bytes(const dataset::ByteQuery& q, AbstractOutputFile& out)
+{
+    if (q.data_start_hook)
+        throw std::runtime_error("Cannot use data_start_hook on abstract output files");
+
+    switch (q.type)
+    {
+        case dataset::ByteQuery::BQ_DATA: {
+            query_data(q, [&](unique_ptr<Metadata> md) {
+                md->stream_data(out);
+                return true;
+            });
+            break;
+        }
+        case dataset::ByteQuery::BQ_POSTPROCESS: {
+            Postprocess postproc(q.param);
+            postproc.set_output(out);
+            postproc.validate(config().cfg);
+            postproc.set_data_start_hook(q.data_start_hook);
+            postproc.start();
+            query_data(q, [&](unique_ptr<Metadata> md) { return postproc.process(move(md)); });
+            postproc.flush();
+            break;
+        }
+        case dataset::ByteQuery::BQ_REP_METADATA: {
+#ifdef HAVE_LUA
+            Report rep;
+            rep.captureOutput(out);
+            rep.load(q.param);
+            query_data(q, [&](unique_ptr<Metadata> md) { return rep.eat(move(md)); });
+            rep.report();
+#endif
+            break;
+        }
+        case dataset::ByteQuery::BQ_REP_SUMMARY: {
+#ifdef HAVE_LUA
+            Report rep;
+            rep.captureOutput(out);
+            rep.load(q.param);
+            Summary s;
+            query_summary(q.matcher, s);
+            rep(s);
+            rep.report();
+#endif
+            break;
+        }
+        default:
+        {
+            stringstream s;
+            s << "cannot query dataset: unsupported query type: " << (int)q.type;
+            throw std::runtime_error(s.str());
+        }
+    }
+}
+
 void Reader::expand_date_range(std::unique_ptr<core::Time>& begin, std::unique_ptr<core::Time>& end)
 {
 }

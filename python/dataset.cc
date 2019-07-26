@@ -5,6 +5,7 @@
 #include "metadata.h"
 #include "summary.h"
 #include "cfg.h"
+#include "files.h"
 #include "utils/values.h"
 #include "utils/methods.h"
 #include "utils/type.h"
@@ -338,10 +339,7 @@ Arguments:
             return nullptr;
 
         try {
-            int fd = file_get_fileno(arg_file);
-            if (fd == -1) return nullptr;
-            string fd_name;
-            if (object_repr(arg_file, fd_name) == -1) return nullptr;
+            OutputFile out(arg_file);
 
             string str_matcher;
             if (arg_matcher != Py_None)
@@ -398,8 +396,10 @@ Arguments:
                 };
             }
 
-            NamedFileDescriptor out(fd, fd_name);
-            self->ds->query_bytes(query, out);
+            if (out.fd)
+                self->ds->query_bytes(query, *out.fd);
+            else
+                self->ds->query_bytes(query, *out.abstract);
             Py_RETURN_NONE;
         } ARKI_CATCH_RETURN_PYO
     }

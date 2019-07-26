@@ -236,7 +236,7 @@ struct reverse_summary : public MethKwargs<reverse_summary, arkipy_ArkiDump>
             arki::Summary summary;
             auto reader = arki::core::LineReader::from_fd(*in);
             while (summary.readYaml(*reader, in->name()))
-                summary.write(*outfd, outfd->name());
+                summary.write(*outfd);
 
             return throw_ifnull(PyLong_FromLong(0));
         } ARKI_CATCH_RETURN_PYO

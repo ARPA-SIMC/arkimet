@@ -4,6 +4,7 @@
 #include "utils/type.h"
 #include "utils/values.h"
 #include "common.h"
+#include "files.h"
 #include "arki/summary.h"
 #include "arki/summary/short.h"
 #include "arki/emitter/json.h"
@@ -53,27 +54,30 @@ Arguments:
             return nullptr;
 
         try {
-            int fd = file_get_fileno(arg_file);
-            if (fd == -1) return nullptr;
-            string fd_name;
-            if (object_repr(arg_file, fd_name) == -1)
-                return nullptr;
+            OutputFile out(arg_file);
 
             if (!format || strcmp(format, "binary") == 0)
             {
-                self->summary->write(fd, fd_name);
+                if (out.fd)
+                    self->summary->write(*out.fd);
+                else
+                    self->summary->write(*out.abstract);
             } else if (strcmp(format, "yaml") == 0) {
                 std::stringstream buf;
                 self->summary->write_yaml(buf);
-                sys::NamedFileDescriptor outfd(fd, fd_name);
-                outfd.write_all_or_retry(buf.str());
+                if (out.fd)
+                    out.fd->write_all_or_retry(buf.str());
+                else
+                    out.abstract->write(buf.str().data(), buf.str().size());
                 return nullptr;
             } else if (strcmp(format, "json") == 0) {
                 std::stringstream buf;
                 arki::emitter::JSON output(buf);
                 self->summary->serialise(output);
-                sys::NamedFileDescriptor outfd(fd, fd_name);
-                outfd.write_all_or_retry(buf.str());
+                if (out.fd)
+                    out.fd->write_all_or_retry(buf.str());
+                else
+                    out.abstract->write(buf.str().data(), buf.str().size());
                 return nullptr;
             } else {
                 PyErr_Format(PyExc_ValueError, "Unsupported metadata serialization format: %s", format);
@@ -108,11 +112,7 @@ Arguments:
             return nullptr;
 
         try {
-            int fd = file_get_fileno(arg_file);
-            if (fd == -1) return nullptr;
-            string fd_name;
-            if (object_repr(arg_file, fd_name) == -1)
-                return nullptr;
+            OutputFile out(arg_file);
 
             summary::Short shrt;
             self->summary->visit(shrt);
@@ -121,15 +121,19 @@ Arguments:
             {
                 std::stringstream buf;
                 shrt.write_yaml(buf);
-                sys::NamedFileDescriptor outfd(fd, fd_name);
-                outfd.write_all_or_retry(buf.str());
+                if (out.fd)
+                    out.fd->write_all_or_retry(buf.str().data(), buf.str().size());
+                else
+                    out.abstract->write(buf.str().data(), buf.str().size());
                 return nullptr;
             } else if (strcmp(format, "json") == 0) {
                 std::stringstream buf;
                 arki::emitter::JSON output(buf);
                 shrt.serialise(output);
-                sys::NamedFileDescriptor outfd(fd, fd_name);
-                outfd.write_all_or_retry(buf.str());
+                if (out.fd)
+                    out.fd->write_all_or_retry(buf.str().data(), buf.str().size());
+                else
+                    out.abstract->write(buf.str().data(), buf.str().size());
                 return nullptr;
             } else {
                 PyErr_Format(PyExc_ValueError, "Unsupported metadata serialization format: %s", format);

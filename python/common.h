@@ -95,14 +95,6 @@ struct PythonEmitter : public Emitter
 int object_repr(PyObject* o, std::string& out);
 
 /**
- * If o is a Long, return its value. Else call o.fileno() and return its
- * result.
- *
- * Returns -1 if fileno() was not available or an error occurred.
- */
-int file_get_fileno(PyObject* o);
-
-/**
  * Create a cfg::Section from python.
  *
  * Currently this only supports:

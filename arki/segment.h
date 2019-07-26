@@ -194,6 +194,7 @@ struct Reader : public std::enable_shared_from_this<Reader>
 
     virtual std::vector<uint8_t> read(const types::source::Blob& src) = 0;
     virtual size_t stream(const types::source::Blob& src, core::NamedFileDescriptor& out) = 0;
+    virtual size_t stream(const types::source::Blob& src, core::AbstractOutputFile& out);
 };
 
 struct Writer : public Transaction, public std::enable_shared_from_this<Writer>

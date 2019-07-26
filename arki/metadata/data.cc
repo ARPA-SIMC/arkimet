@@ -22,7 +22,15 @@ struct DataUnreadable : public Data
     {
         throw std::runtime_error("DataUnreadable::write() called");
     }
+    size_t write(core::AbstractOutputFile& fd) const override
+    {
+        throw std::runtime_error("DataUnreadable::write() called");
+    }
     size_t write_inline(core::NamedFileDescriptor& fd) const override
+    {
+        throw std::runtime_error("DataUnreadable::write_inline() called");
+    }
+    size_t write_inline(core::AbstractOutputFile& fd) const override
     {
         throw std::runtime_error("DataUnreadable::write_inline() called");
     }
@@ -49,9 +57,19 @@ struct DataBuffer : public Data
         fd.write_all_or_retry(buffer.data(), buffer.size());
         return buffer.size();
     }
+    size_t write(core::AbstractOutputFile& fd) const override
+    {
+        fd.write(buffer.data(), buffer.size());
+        return buffer.size();
+    }
     size_t write_inline(core::NamedFileDescriptor& fd) const override
     {
         fd.write_all_or_retry(buffer.data(), buffer.size());
+        return buffer.size();
+    }
+    size_t write_inline(core::AbstractOutputFile& fd) const override
+    {
+        fd.write(buffer.data(), buffer.size());
         return buffer.size();
     }
     void emit(Emitter& e) const override
@@ -76,10 +94,11 @@ struct DataLineBuffer : public DataBuffer
             throw_system_error("cannot write " + std::to_string(buffer.size() + 1) + " bytes to " + fd.name());
         return buffer.size() + 1;
     }
-    size_t write_inline(core::NamedFileDescriptor& fd) const override
+    size_t write(core::AbstractOutputFile& fd) const override
     {
-        fd.write_all_or_retry(buffer.data(), buffer.size());
-        return buffer.size();
+        fd.write(buffer.data(), buffer.size());
+        fd.write("\n", 1);
+        return buffer.size() + 1;
     }
 };
 

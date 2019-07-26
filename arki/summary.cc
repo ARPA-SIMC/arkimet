@@ -2,6 +2,7 @@
 #include "summary/table.h"
 #include "summary/codec.h"
 #include "summary/stats.h"
+#include "core/file.h"
 #include "exceptions.h"
 #include "metadata.h"
 #include "matcher.h"
@@ -511,15 +512,25 @@ std::vector<uint8_t> Summary::encode(bool compressed) const
     return res;
 }
 
-void Summary::write(int outfd, const std::string& filename) const
+void Summary::write(NamedFileDescriptor& out) const
 {
     // Prepare the encoded data
     vector<uint8_t> encoded = encode(true);
 
-    iotrace::trace_file(filename, 0, encoded.size(), "write summary");
+    iotrace::trace_file(out, 0, encoded.size(), "write summary");
 
     // Write out
-    sys::NamedFileDescriptor out(outfd, filename);
+    out.write(encoded.data(), encoded.size());
+}
+
+void Summary::write(AbstractOutputFile& out) const
+{
+    // Prepare the encoded data
+    vector<uint8_t> encoded = encode(true);
+
+    iotrace::trace_file(out, 0, encoded.size(), "write summary");
+
+    // Write out
     out.write(encoded.data(), encoded.size());
 }
 

@@ -4,6 +4,7 @@
 #include <arki/utils/sys.h>
 #include <arki/core/fwd.h>
 #include <string>
+#include <vector>
 
 namespace arki {
 namespace core {
@@ -32,6 +33,40 @@ struct Stdout : public NamedFileDescriptor
 struct Stderr : public NamedFileDescriptor
 {
     Stderr();
+};
+
+
+/**
+ * Abstract input file implementation to use for output operation on things
+ * that are not file descriptors
+ */
+struct AbstractInputFile
+{
+    virtual ~AbstractInputFile();
+
+    virtual std::string name() const = 0;
+
+    /**
+     * Read up to \a size bytes into dest.
+     *
+     * Return the number of bytes read, or 0 for EOF
+     */
+    virtual size_t read(void* dest, size_t size) = 0;
+};
+
+
+/**
+ * Abstract output file implementation to use for output operation on things
+ * that are not file descriptors
+ */
+struct AbstractOutputFile
+{
+    virtual ~AbstractOutputFile();
+
+    virtual std::string name() const = 0;
+
+    /// Write \a size bytes of data
+    virtual void write(const void* data, size_t size) = 0;
 };
 
 

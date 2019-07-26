@@ -199,6 +199,12 @@ size_t Blob::stream_data(NamedFileDescriptor& out) const
     return reader->stream(*this, out);
 }
 
+size_t Blob::stream_data(AbstractOutputFile& out) const
+{
+    if (!reader) throw std::runtime_error("readData() called on an unlocked source");
+    return reader->stream(*this, out);
+}
+
 }
 }
 }

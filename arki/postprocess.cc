@@ -74,6 +74,9 @@ struct Child : public utils::IODispatcher
      */
     NamedFileDescriptor* m_nextfd = nullptr;
 
+    /// Alternative to m_nextfd when we are not writing to a file descriptor
+    AbstractOutputFile* m_outfile = nullptr;
+
     /// Stream where child stderr is sent
     std::ostream* m_err = 0;
 
@@ -85,6 +88,32 @@ struct Child : public utils::IODispatcher
     }
 
     void read_stdout() override
+    {
+        if (m_nextfd)
+            read_stdout_fd();
+        else
+            read_stdout_aof();
+    }
+
+    void read_stdout_aof()
+    {
+        // Read data from child
+        char buf[4096*2];
+        ssize_t res = read(subproc.get_stdout(), buf, 4096*2);
+        if (res < 0)
+            throw_system_error("reading from child postprocessor");
+        if (res == 0)
+        {
+            subproc.close_stdout();
+            return;
+        }
+
+        // Pass it on
+        Sigignore ignpipe(SIGPIPE);
+        m_outfile->write(buf, res);
+    }
+
+    void read_stdout_fd()
     {
 #if defined(__linux__)
 #ifdef HAVE_SPLICE
@@ -164,7 +193,7 @@ struct Child : public utils::IODispatcher
 
     void terminate()
     {
-        if (cmd.pid() != -1)
+        if (cmd.started())
         {
             cmd.terminate();
             cmd.wait();
@@ -175,7 +204,7 @@ struct Child : public utils::IODispatcher
 }
 
 Postprocess::Postprocess(const std::string& command)
-    : m_child(0), m_command(command)
+    : m_command(command)
 {
     m_child = new postproc::Child();
     m_child->m_err = &m_errors;
@@ -202,6 +231,11 @@ Postprocess::~Postprocess()
 void Postprocess::set_output(NamedFileDescriptor& outfd)
 {
     m_child->m_nextfd = &outfd;
+}
+
+void Postprocess::set_output(core::AbstractOutputFile& outfd)
+{
+    m_child->m_outfile = &outfd;
 }
 
 void Postprocess::set_error(std::ostream& err)

@@ -19,7 +19,7 @@ class Postprocess
 {
 protected:
     /// Subprocess that filters our data
-    postproc::Child* m_child;
+    postproc::Child* m_child = nullptr;
     /// Command line run in the subprocess
     std::string m_command;
     /// Captured stderr from the child (unless sent elsewhere)
@@ -46,6 +46,9 @@ public:
 
     /// Set the output file descriptor where we send data coming from the postprocessor
     void set_output(core::NamedFileDescriptor& outfd);
+
+    /// Set the output file descriptor where we send data coming from the postprocessor
+    void set_output(core::AbstractOutputFile& outfd);
 
     /// Set the output stream where we send the postprocessor stderr
     void set_error(std::ostream& err);

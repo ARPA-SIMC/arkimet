@@ -50,6 +50,14 @@ size_t Reader::stream(const types::source::Blob& src, core::NamedFileDescriptor&
     throw std::runtime_error(ss.str());
 }
 
+size_t Reader::stream(const types::source::Blob& src, core::AbstractOutputFile& out)
+{
+    stringstream ss;
+    ss << "cannot stream " << src.size << " bytes of " << src.format << " data from " << m_segment.abspath << ":"
+       << src.offset << ": the segment has disappeared";
+    throw std::runtime_error(ss.str());
+}
+
 }
 }
 }

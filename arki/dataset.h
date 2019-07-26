@@ -234,6 +234,14 @@ public:
     virtual void query_bytes(const dataset::ByteQuery& q, core::NamedFileDescriptor& out);
 
     /**
+     * Query the dataset obtaining a byte stream, that gets written to a file
+     * descriptor.
+     *
+     * The default implementation in Reader is based on queryData.
+     */
+    virtual void query_bytes(const dataset::ByteQuery& q, core::AbstractOutputFile& out);
+
+    /**
      * Expand the given begin and end ranges to include the datetime extremes
      * of this dataset.
      *

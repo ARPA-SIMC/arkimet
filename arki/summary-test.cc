@@ -412,7 +412,7 @@ add_method("zero_timestamp", [](Fixture& f) {
     out_yaml << *rt << endl;
 
     utils::sys::File out("/dev/null", O_WRONLY);
-    s.write(out, "memory");
+    s.write(out);
 });
 
 }
