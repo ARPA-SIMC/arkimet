@@ -35,52 +35,12 @@ Config::Config()
         file_vm2_config = envfile;
 }
 
-static void describe_envvar(ostream& out, const char* envvar)
-{
-    out << "  change with " << envvar << " (currently ";
-    if (const char* envdir = getenv(envvar))
-        out << "'" << envdir << "'";
-    else
-        out << "unset";
-    out << ")" << endl;
-}
-
-void Config::describe(std::ostream& out) const
-{
-    dir_postproc.describe(out, "Postprocessors", "ARKI_POSTPROC");
-    dir_report.describe(out, "Report scripts", "ARKI_REPORT");
-    dir_qmacro.describe(out, "Query macro scripts", "ARKI_QMACRO");
-    dir_scan_grib1.describe(out, "GRIB1 scan scripts", "ARKI_SCAN_GRIB1");
-    dir_scan_grib2.describe(out, "GRIB2 scan scripts", "ARKI_SCAN_GRIB2");
-    dir_scan_bufr.describe(out, "BUFR scan scripts", "ARKI_SCAN_BUFR");
-    dir_targetfile.describe(out, "Target file name scripts", "ARKI_TARGETFILE");
-
-    out << "I/O profiling: ";
-#ifdef ARKI_IOTRACE
-    if (file_iotrace_output.empty())
-        out << "disabled." << endl;
-    else
-        out << "logged to " << file_iotrace_output << endl;
-    describe_envvar(out, "ARKI_IOTRACE");
-#else
-    out << "disabled at compile time." << endl;
-#endif
-}
-
 Config& Config::get()
 {
     static Config* instance = 0;
     if (!instance)
         instance = new Config;
     return *instance;
-}
-
-void Config::Dirlist::describe(ostream& out, const char* desc, const char* envvar) const
-{
-    out << desc << ": ";
-    out << str::join(":", begin(), end());
-    out << endl;
-    if (envvar) describe_envvar(out, envvar);
 }
 
 void Config::Dirlist::init_config_and_env(const char* confdir, const char* envname)
