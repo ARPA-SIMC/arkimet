@@ -15,8 +15,8 @@
 #include "arki/dataset.h"
 #include "arki/dataset/http.h"
 #include "arki/dataset/time.h"
-#include "arki/dataset/reporter.h"
 #include "arki/dataset/segmented.h"
+#include "dataset/reporter.h"
 #include "arki/sort.h"
 #include <vector>
 #include "config.h"
@@ -40,145 +40,6 @@ PyObject* arkipy_ImportFailedError = nullptr;
 }
 
 namespace {
-
-class PythonReporter : public dataset::Reporter
-{
-protected:
-    PyObject* o;
-
-public:
-    PythonReporter(PyObject* o)
-        : o(o)
-    {
-        Py_INCREF(o);
-    }
-    PythonReporter(const PythonReporter&) = delete;
-    PythonReporter(PythonReporter&&) = delete;
-    ~PythonReporter()
-    {
-        Py_DECREF(o);
-    }
-    PythonReporter& operator=(const PythonReporter&) = delete;
-    PythonReporter& operator=(PythonReporter&&) = delete;
-
-    void operation_progress(const std::string& ds, const std::string& operation, const std::string& message) override
-    {
-        AcquireGIL gil;
-        throw_ifnull(PyObject_CallMethod(
-                    o, "operation_progress", "s#s#s#",
-                    ds.data(), ds.size(),
-                    operation.data(), operation.size(),
-                    message.data(), message.size()));
-    }
-    void operation_manual_intervention(const std::string& ds, const std::string& operation, const std::string& message) override
-    {
-        AcquireGIL gil;
-        throw_ifnull(PyObject_CallMethod(
-                    o, "operation_manual_intervention", "s#s#s#",
-                    ds.data(), ds.size(),
-                    operation.data(), operation.size(),
-                    message.data(), message.size()));
-    }
-    void operation_aborted(const std::string& ds, const std::string& operation, const std::string& message) override
-    {
-        AcquireGIL gil;
-        throw_ifnull(PyObject_CallMethod(
-                    o, "operation_aborted", "s#s#s#",
-                    ds.data(), ds.size(),
-                    operation.data(), operation.size(),
-                    message.data(), message.size()));
-    }
-    void operation_report(const std::string& ds, const std::string& operation, const std::string& message) override
-    {
-        AcquireGIL gil;
-        throw_ifnull(PyObject_CallMethod(
-                    o, "operation_report", "s#s#s#",
-                    ds.data(), ds.size(),
-                    operation.data(), operation.size(),
-                    message.data(), message.size()));
-    }
-    void segment_info(const std::string& ds, const std::string& relpath, const std::string& message) override
-    {
-        AcquireGIL gil;
-        throw_ifnull(PyObject_CallMethod(
-                    o, "segment_info", "s#s#s#",
-                    ds.data(), ds.size(),
-                    relpath.data(), relpath.size(),
-                    message.data(), message.size()));
-    }
-    void segment_repack(const std::string& ds, const std::string& relpath, const std::string& message) override
-    {
-        AcquireGIL gil;
-        throw_ifnull(PyObject_CallMethod(
-                    o, "segment_repack", "s#s#s#",
-                    ds.data(), ds.size(),
-                    relpath.data(), relpath.size(),
-                    message.data(), message.size()));
-    }
-    void segment_archive(const std::string& ds, const std::string& relpath, const std::string& message) override
-    {
-        AcquireGIL gil;
-        throw_ifnull(PyObject_CallMethod(
-                    o, "segment_archive", "s#s#s#",
-                    ds.data(), ds.size(),
-                    relpath.data(), relpath.size(),
-                    message.data(), message.size()));
-    }
-    void segment_delete(const std::string& ds, const std::string& relpath, const std::string& message) override
-    {
-        AcquireGIL gil;
-        throw_ifnull(PyObject_CallMethod(
-                    o, "segment_delete", "s#s#s#",
-                    ds.data(), ds.size(),
-                    relpath.data(), relpath.size(),
-                    message.data(), message.size()));
-    }
-    void segment_deindex(const std::string& ds, const std::string& relpath, const std::string& message) override
-    {
-        AcquireGIL gil;
-        throw_ifnull(PyObject_CallMethod(
-                    o, "segment_deindex", "s#s#s#",
-                    ds.data(), ds.size(),
-                    relpath.data(), relpath.size(),
-                    message.data(), message.size()));
-    }
-    void segment_rescan(const std::string& ds, const std::string& relpath, const std::string& message) override
-    {
-        AcquireGIL gil;
-        throw_ifnull(PyObject_CallMethod(
-                    o, "segment_rescan", "s#s#s#",
-                    ds.data(), ds.size(),
-                    relpath.data(), relpath.size(),
-                    message.data(), message.size()));
-    }
-    void segment_tar(const std::string& ds, const std::string& relpath, const std::string& message) override
-    {
-        AcquireGIL gil;
-        throw_ifnull(PyObject_CallMethod(
-                    o, "segment_tar", "s#s#s#",
-                    ds.data(), ds.size(),
-                    relpath.data(), relpath.size(),
-                    message.data(), message.size()));
-    }
-    void segment_compress(const std::string& ds, const std::string& relpath, const std::string& message) override
-    {
-        AcquireGIL gil;
-        throw_ifnull(PyObject_CallMethod(
-                    o, "segment_compress", "s#s#s#",
-                    ds.data(), ds.size(),
-                    relpath.data(), relpath.size(),
-                    message.data(), message.size()));
-    }
-    void segment_issue51(const std::string& ds, const std::string& relpath, const std::string& message) override
-    {
-        AcquireGIL gil;
-        throw_ifnull(PyObject_CallMethod(
-                    o, "segment_issue51", "s#s#s#",
-                    ds.data(), ds.size(),
-                    relpath.data(), relpath.size(),
-                    message.data(), message.size()));
-    }
-};
 
 
 /*
@@ -233,7 +94,7 @@ Arguments:
             if (arg_sort != Py_None)
                 sort = string_from_python(arg_sort);
 
-            dataset::DataQuery query;
+            arki::dataset::DataQuery query;
             query.matcher = Matcher::parse(str_matcher);
             query.with_data = with_data;
             if (!sort.empty()) query.sorter = sort::Compare::parse(sort);
@@ -371,7 +232,7 @@ Arguments:
 
             Matcher matcher(Matcher::parse(str_matcher));
 
-            dataset::ByteQuery query;
+            arki::dataset::ByteQuery query;
             query.with_data = with_data;
             if (!sort.empty()) query.sorter = sort::Compare::parse(sort);
             if (!metadata_report.empty())
@@ -446,7 +307,7 @@ Examples::
             return -1;
 
         try {
-            self->ds = dataset::Reader::create(section_from_python(cfg)).release();
+            self->ds = arki::dataset::Reader::create(section_from_python(cfg)).release();
             return 0;
         } ARKI_CATCH_RETURN_INT;
     }
@@ -588,7 +449,7 @@ Examples::
             return -1;
 
         try {
-            self->ds = dataset::Writer::create(section_from_python(cfg)).release();
+            self->ds = arki::dataset::Writer::create(section_from_python(cfg)).release();
             return 0;
         } ARKI_CATCH_RETURN_INT;
     }
@@ -617,7 +478,7 @@ static arki::dataset::CheckerConfig get_checker_config(PyObject* args, PyObject*
 
     arki::dataset::CheckerConfig cfg;
     if (arg_reporter)
-        cfg.reporter = make_shared<PythonReporter>(arg_reporter);
+        cfg.reporter = make_shared<python::dataset::ProxyReporter>(arg_reporter);
 
     if (arg_segment_filter)
         cfg.segment_filter = matcher_from_python(arg_segment_filter);
@@ -686,7 +547,7 @@ struct segment_state : public MethKwargs<segment_state, arkipy_DatasetChecker>
         try {
             auto cfg = get_checker_config(args, kw);
 
-            dataset::segmented::Checker* checker = dynamic_cast<dataset::segmented::Checker*>(self->ds);
+            arki::dataset::segmented::Checker* checker = dynamic_cast<arki::dataset::segmented::Checker*>(self->ds);
             if (!checker)
                 Py_RETURN_NONE;
 
@@ -694,7 +555,7 @@ struct segment_state : public MethKwargs<segment_state, arkipy_DatasetChecker>
 
             {
                 ReleaseGIL gil;
-                checker->segments_recursive(cfg, [&](dataset::segmented::Checker& checker, dataset::segmented::CheckerSegment& segment) {
+                checker->segments_recursive(cfg, [&](arki::dataset::segmented::Checker& checker, arki::dataset::segmented::CheckerSegment& segment) {
                     std::string key = checker.name() + ":" + segment.path_relative();
                     auto state = segment.scan(*cfg.reporter, !cfg.accurate);
                     AcquireGIL gil;
@@ -747,7 +608,7 @@ Examples::
             return -1;
 
         try {
-            self->ds = dataset::Checker::create(section_from_python(cfg)).release();
+            self->ds = arki::dataset::Checker::create(section_from_python(cfg)).release();
             return 0;
         } ARKI_CATCH_RETURN_INT;
     }
@@ -842,7 +703,7 @@ Examples::
             return -1;
 
         try {
-            self->o = new dataset::SessionTimeOverride(dataset::SessionTime::local_override(arg_time));
+            self->o = new arki::dataset::SessionTimeOverride(arki::dataset::SessionTime::local_override(arg_time));
             return 0;
         } ARKI_CATCH_RETURN_INT;
     }
@@ -871,7 +732,7 @@ struct read_config : public MethKwargs<read_config, PyObject>
             return nullptr;
 
         try {
-            auto section = dataset::Reader::read_config(std::string(pathname, pathname_len));
+            auto section = arki::dataset::Reader::read_config(std::string(pathname, pathname_len));
             return cfg_section(std::move(section));
         } ARKI_CATCH_RETURN_PYO
     }
@@ -894,7 +755,7 @@ struct read_configs : public MethKwargs<read_configs, PyObject>
             return nullptr;
 
         try {
-            auto sections = dataset::Reader::read_configs(std::string(pathname, pathname_len));
+            auto sections = arki::dataset::Reader::read_configs(std::string(pathname, pathname_len));
             return cfg_sections(std::move(sections));
         } ARKI_CATCH_RETURN_PYO
     }
@@ -925,7 +786,7 @@ struct load_cfg_sections : public MethKwargs<load_cfg_sections, PyObject>
             return nullptr;
 
         try {
-            auto sections = dataset::http::Reader::load_cfg_sections(std::string(url, url_len));
+            auto sections = arki::dataset::http::Reader::load_cfg_sections(std::string(url, url_len));
             return cfg_sections(std::move(sections));
         } ARKI_CATCH_RETURN_PYO
     }
@@ -948,7 +809,7 @@ struct get_alias_database : public MethKwargs<get_alias_database, PyObject>
             return nullptr;
 
         try {
-            auto sections = dataset::http::Reader::getAliasDatabase(std::string(url, url_len));
+            auto sections = arki::dataset::http::Reader::getAliasDatabase(std::string(url, url_len));
             return cfg_sections(std::move(sections));
         } ARKI_CATCH_RETURN_PYO
     }
@@ -973,7 +834,7 @@ struct expand_remote_query : public MethKwargs<expand_remote_query, PyObject>
             return nullptr;
 
         try {
-            std::string expanded = dataset::http::Reader::expand_remote_query(
+            std::string expanded = arki::dataset::http::Reader::expand_remote_query(
                     sections_from_python(remotes), std::string(query, query_len));
             return to_python(expanded);
         } ARKI_CATCH_RETURN_PYO
@@ -1022,7 +883,7 @@ arkipy_DatasetReader* dataset_reader_create()
     return (arkipy_DatasetReader*)PyObject_CallObject((PyObject*)arkipy_DatasetReader_Type, NULL);
 }
 
-arkipy_DatasetReader* dataset_reader_create(std::unique_ptr<dataset::Reader>&& ds)
+arkipy_DatasetReader* dataset_reader_create(std::unique_ptr<arki::dataset::Reader>&& ds)
 {
     arkipy_DatasetReader* result = PyObject_New(arkipy_DatasetReader, arkipy_DatasetReader_Type);
     if (!result) return nullptr;
