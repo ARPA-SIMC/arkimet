@@ -57,7 +57,14 @@ struct AliasDatabase
      *
      * (used for debugging purposes)
      */
-    static void debug_dump(std::ostream& out);
+    static void debug_dump(core::NamedFileDescriptor& out);
+
+    /**
+     * Dump the alias database to the given output stream
+     *
+     * (used for debugging purposes)
+     */
+    static void debug_dump(core::AbstractOutputFile& out);
 };
 
 

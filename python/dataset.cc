@@ -339,7 +339,7 @@ Arguments:
             return nullptr;
 
         try {
-            OutputFile out(arg_file);
+            BinaryOutputFile out(arg_file);
 
             string str_matcher;
             if (arg_matcher != Py_None)

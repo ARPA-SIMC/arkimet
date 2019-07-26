@@ -74,7 +74,10 @@ public:
     void set(const std::string& key, int value);
 
     /// Write this configuration to the given output stream
-    void write(std::ostream& out, const std::string& pathname) const;
+    void write(core::NamedFileDescriptor& out) const;
+
+    /// Write this configuration to the given output stream
+    void write(core::AbstractOutputFile& out) const;
 
     /// Dump the configuration to the given file
     void dump(FILE* out) const;
@@ -129,7 +132,10 @@ public:
     Section& obtain(const std::string& key);
 
     /// Write this configuration to the given output stream
-    void write(std::ostream& out, const std::string& pathname) const;
+    void write(core::NamedFileDescriptor& out) const;
+
+    /// Write this configuration to the given output stream
+    void write(core::AbstractOutputFile& out) const;
 
     /// Dump the configuration to the given file
     void dump(FILE* out) const;

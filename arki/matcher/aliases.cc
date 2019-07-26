@@ -130,11 +130,18 @@ core::cfg::Sections AliasDatabase::serialise()
     return res;
 }
 
-void AliasDatabase::debug_dump(std::ostream& out)
+void AliasDatabase::debug_dump(core::NamedFileDescriptor& out)
 {
     auto cfg = serialise();
-    cfg.write(out, "(debug output)");
+    cfg.write(out);
 }
+
+void AliasDatabase::debug_dump(core::AbstractOutputFile& out)
+{
+    auto cfg = serialise();
+    cfg.write(out);
+}
+
 
 AliasDatabaseOverride::AliasDatabaseOverride()
     : orig(matcher::aliasdb)
