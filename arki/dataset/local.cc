@@ -204,9 +204,9 @@ LocalWriter::~LocalWriter()
 {
 }
 
-void LocalWriter::test_acquire(const core::cfg::Section& cfg, WriterBatch& batch, std::ostream& out)
+void LocalWriter::test_acquire(const core::cfg::Section& cfg, WriterBatch& batch)
 {
-    return segmented::Writer::test_acquire(cfg, batch, out);
+    return segmented::Writer::test_acquire(cfg, batch);
 }
 
 

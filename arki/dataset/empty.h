@@ -69,7 +69,7 @@ public:
         // in the dataset
     }
 
-    static void test_acquire(const core::cfg::Section& cfg, WriterBatch& batch, std::ostream& out);
+    static void test_acquire(const core::cfg::Section& cfg, WriterBatch& batch);
 };
 
 

@@ -3,13 +3,9 @@
 
 #include <arki/types.h>
 #include <arki/core/fuzzytime.h>
-#include <arki/utils/string.h>
 #include <string>
 #include <ctime>
 #include <vector>
-#include <set>
-#include <sstream>
-#include <cstdio>
 
 namespace arki {
 namespace matcher {

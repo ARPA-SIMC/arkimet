@@ -17,7 +17,6 @@
 #include "arki/utils/sys.h"
 #include "index.h"
 #include <system_error>
-#include <sstream>
 
 using namespace std;
 using namespace arki::utils;
@@ -366,7 +365,7 @@ void Writer::remove(Metadata& md)
     md.unset(TYPE_ASSIGNEDDATASET);
 }
 
-void Writer::test_acquire(const core::cfg::Section& cfg, WriterBatch& batch, std::ostream& out)
+void Writer::test_acquire(const core::cfg::Section& cfg, WriterBatch& batch)
 {
     ReplaceStrategy replace;
     string repl = cfg.value("replace");
@@ -446,7 +445,7 @@ void Writer::test_acquire(const core::cfg::Section& cfg, WriterBatch& batch, std
         int old_usn;
         if (!scan::Scanner::update_sequence_number(*old, old_usn))
         {
-            out << "cannot acquire into dataset: insert reported a conflict, the new element has an Update Sequence Number but the old one does not, so they cannot be compared";
+            nag::warning("cannot acquire into dataset: insert reported a conflict, the new element has an Update Sequence Number but the old one does not, so they cannot be compared");
             e->result = ACQ_ERROR;
             e->dataset_name.clear();
         } else if (old_usn > new_usn) {

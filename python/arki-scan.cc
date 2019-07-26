@@ -113,7 +113,7 @@ std::unique_ptr<arki_scan::MetadataDispatch> build_dispatcher(cmdline::DatasetPr
 
     if (testdispatch)
     {
-        res->dispatcher = new arki::TestDispatcher(sections_from_python(testdispatch), std::cerr);
+        res->dispatcher = new arki::TestDispatcher(sections_from_python(testdispatch));
     }
     else if (dispatch)
     {

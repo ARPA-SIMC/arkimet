@@ -1,6 +1,6 @@
 #include "arki/exceptions.h"
 #include "arki/binary.h"
-#include "arki/utils.h"
+#include "arki/utils/iostream.h"
 #include "arki/types/level.h"
 #include "arki/types/utils.h"
 #include "arki/emitter.h"
