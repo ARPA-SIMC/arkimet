@@ -7,41 +7,52 @@
 namespace arki {
 namespace python {
 
-/**
- * Turn a python object into an open input file
- */
-struct InputFile
+template<typename AbstractFile>
+struct FileBase
 {
-    core::AbstractInputFile* abstract = nullptr;
+    AbstractFile* abstract = nullptr;
     core::NamedFileDescriptor* fd = nullptr;
 
-    InputFile(PyObject* o);
-    InputFile(const InputFile&) = delete;
-    InputFile(InputFile&&) = delete;
-    InputFile& operator=(const InputFile&) = delete;
-    InputFile& operator=(InputFile&&) = delete;
-    ~InputFile();
+    FileBase() = default;
+    FileBase(const FileBase&) = delete;
+    FileBase(FileBase&&) = delete;
+    FileBase& operator=(const FileBase&) = delete;
+    FileBase& operator=(FileBase&&) = delete;
+    ~FileBase()
+    {
+        delete abstract;
+        delete fd;
+    }
 
     // void close();
 };
 
 
-/**
- * Turn a python object into an open input file
- */
-struct OutputFile
+/// Turn a python object into an open input file
+struct TextInputFile : public FileBase<core::AbstractInputFile>
 {
-    core::AbstractOutputFile* abstract = nullptr;
-    core::NamedFileDescriptor* fd = nullptr;
+    TextInputFile(PyObject* o);
+};
 
-    OutputFile(PyObject* o);
-    OutputFile(const OutputFile&) = delete;
-    OutputFile(OutputFile&&) = delete;
-    OutputFile& operator=(const OutputFile&) = delete;
-    OutputFile& operator=(OutputFile&&) = delete;
-    ~OutputFile();
 
-    // void close();
+/// Turn a python object into an open input file
+struct BinaryInputFile : public FileBase<core::AbstractInputFile>
+{
+    BinaryInputFile(PyObject* o);
+};
+
+
+/// Turn a python object into an open input file
+struct TextOutputFile : public FileBase<core::AbstractOutputFile>
+{
+    TextOutputFile(PyObject* o);
+};
+
+
+/// Turn a python object into an open input file
+struct BinaryOutputFile : public FileBase<core::AbstractOutputFile>
+{
+    BinaryOutputFile(PyObject* o);
 };
 
 }

@@ -6,7 +6,7 @@
 #include "arki/utils/files.h"
 #include "arki/core/file.h"
 #include "common.h"
-#include <sstream>
+#include "files.h"
 
 using namespace arki::python;
 
@@ -329,9 +329,11 @@ struct write_sections : public MethKwargs<write_sections, arkipy_cfgSections>
             return nullptr;
 
         try {
-            std::stringstream ss;
-            self->sections.write(ss, "memory");
-            pyo_unique_ptr res(throw_ifnull(PyObject_CallMethod(arg_file, "write", "s#", ss.str().data(), (Py_ssize_t)ss.str().size())));
+            TextOutputFile out(arg_file);
+            if (out.fd)
+                self->sections.write(*out.fd);
+            else
+                self->sections.write(*out.abstract);
             Py_RETURN_NONE;
         } ARKI_CATCH_RETURN_PYO
     }
@@ -353,9 +355,11 @@ struct write_section : public MethKwargs<write_section, arkipy_cfgSection>
             return nullptr;
 
         try {
-            std::stringstream ss;
-            self->section->write(ss, "memory");
-            pyo_unique_ptr res(throw_ifnull(PyObject_CallMethod(arg_file, "write", "s#", ss.str().data(), (Py_ssize_t)ss.str().size())));
+            TextOutputFile out(arg_file);
+            if (out.fd)
+                self->section->write(*out.fd);
+            else
+                self->section->write(*out.abstract);
             Py_RETURN_NONE;
         } ARKI_CATCH_RETURN_PYO
     }

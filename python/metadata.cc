@@ -55,7 +55,7 @@ Arguments:
             return nullptr;
 
         try {
-            OutputFile out(arg_file);
+            BinaryOutputFile out(arg_file);
 
             if (!format || strcmp(format, "binary") == 0)
             {
@@ -239,7 +239,7 @@ struct read_bundle : public ClassMethKwargs<read_bundle>
                     res = arki::Metadata::read_buffer((uint8_t*)buffer, length, ctx, dest);
                 }
             } else {
-                InputFile in(py_src);
+                BinaryInputFile in(py_src);
 
                 if (py_basedir && py_pathname)
                 {
@@ -310,7 +310,7 @@ struct write_bundle : public ClassMethKwargs<write_bundle>
             return nullptr;
 
         try {
-            OutputFile out(py_file);
+            BinaryOutputFile out(py_file);
 
             metadata::Collection mdc = metadata_collection_from_python(py_mds);
             {

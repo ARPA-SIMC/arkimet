@@ -130,9 +130,8 @@ const Config& DatasetTest::config()
     if (!m_config)
     {
         sys::mkdir_ifmissing(ds_root);
-        std::stringstream ss;
-        cfg.write(ss, "memory");
-        sys::write_file(str::joinpath(ds_root, "config"), ss.str());
+        sys::File out(str::joinpath(ds_root, "config"), O_WRONLY | O_CREAT | O_TRUNC, 0666);
+        cfg.write(out);
         m_config = dataset::Config::create(cfg);
     }
     return *m_config;
@@ -349,9 +348,8 @@ void DatasetTest::clean()
 {
     if (sys::exists(ds_root)) sys::rmtree(ds_root);
     sys::mkdir_ifmissing(ds_root);
-    std::stringstream ss;
-    cfg.write(ss, "memory");
-    sys::write_file(str::joinpath(ds_root, "config"), ss.str());
+    sys::File out(str::joinpath(ds_root, "config"), O_WRONLY | O_CREAT | O_TRUNC, 0666);
+    cfg.write(out);
     import_results.clear();
 }
 

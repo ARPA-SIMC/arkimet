@@ -54,7 +54,32 @@ struct PyFile : public Base
 };
 
 
-struct PyAbstractInputFile : public PyFile<arki::core::AbstractInputFile>
+struct PyAbstractTextInputFile : public PyFile<arki::core::AbstractInputFile>
+{
+    using PyFile::PyFile;
+
+    size_t read(void* dest, size_t size) override
+    {
+        AcquireGIL gil;
+        pyo_unique_ptr res(throw_ifnull(PyObject_CallMethod(o, "read", "n", (Py_ssize_t)size)));
+        if (res == Py_None)
+            return 0;
+
+        Py_ssize_t res_len;
+        const char* res_buffer = throw_ifnull(PyUnicode_AsUTF8AndSize(res, &res_len));
+
+        if ((size_t)res_len > size)
+        {
+            PyErr_Format(PyExc_RuntimeError, "asked to read %zu characters, and got %zi bytes that do not fit in the output buffer", size, res_len);
+            throw PythonException();
+        }
+
+        memcpy(dest, res_buffer, res_len);
+        return res_len;
+    }
+};
+
+struct PyAbstractBinaryInputFile : public PyFile<arki::core::AbstractInputFile>
 {
     using PyFile::PyFile;
 
@@ -81,7 +106,18 @@ struct PyAbstractInputFile : public PyFile<arki::core::AbstractInputFile>
     }
 };
 
-struct PyAbstractOutputFile : public PyFile<arki::core::AbstractOutputFile>
+struct PyAbstractTextOutputFile : public PyFile<arki::core::AbstractOutputFile>
+{
+    using PyFile::PyFile;
+
+    void write(const void* data, size_t size) override
+    {
+        AcquireGIL gil;
+        pyo_unique_ptr res(throw_ifnull(PyObject_CallMethod(o, "write", "s#", (const char*)data, (Py_ssize_t)size)));
+    }
+};
+
+struct PyAbstractBinaryOutputFile : public PyFile<arki::core::AbstractOutputFile>
 {
     using PyFile::PyFile;
 
@@ -98,8 +134,7 @@ struct PyAbstractOutputFile : public PyFile<arki::core::AbstractOutputFile>
 namespace arki {
 namespace python {
 
-
-InputFile::InputFile(PyObject* o)
+TextInputFile::TextInputFile(PyObject* o)
 {
     // If it is already an int handle, use it
     if (PyLong_Check(o))
@@ -130,17 +165,46 @@ InputFile::InputFile(PyObject* o)
     PyErr_Clear();
 
     // Fall back on calling o.read()
-    abstract = new PyAbstractInputFile(o);
+    abstract = new PyAbstractTextInputFile(o);
 }
 
-InputFile::~InputFile()
+
+BinaryInputFile::BinaryInputFile(PyObject* o)
 {
-    delete abstract;
-    delete fd;
+    // If it is already an int handle, use it
+    if (PyLong_Check(o))
+    {
+        fd = new core::NamedFileDescriptor(int_from_python(o), get_fd_name(o));
+        return;
+    }
+
+    // If it is a string, take it as a file name
+    if (PyUnicode_Check(o))
+    {
+        std::string pathname = from_python<std::string>(o);
+        fd = new core::File(pathname, O_RDONLY);
+        return;
+    }
+
+    // Try calling fileno
+    pyo_unique_ptr fileno(PyObject_CallMethod(o, "fileno", nullptr));
+    if (fileno)
+    {
+        // It would be nice to give up and fallback to AbstractInputFile if
+        // there are bytes in the read buffer of o, but there seems to be no
+        // way to know
+        fd = new core::NamedFileDescriptor(int_from_python(fileno), get_fd_name(o));
+        return;
+    }
+
+    PyErr_Clear();
+
+    // Fall back on calling o.read()
+    abstract = new PyAbstractBinaryInputFile(o);
 }
 
 
-OutputFile::OutputFile(PyObject* o)
+TextOutputFile::TextOutputFile(PyObject* o)
 {
     // If it is already an int handle, use it
     if (PyLong_Check(o))
@@ -171,14 +235,42 @@ OutputFile::OutputFile(PyObject* o)
     PyErr_Clear();
 
     // Fall back on calling o.write()
-    PyAbstractOutputFile* tmp;
-    abstract = tmp = new PyAbstractOutputFile(o);
+    abstract = new PyAbstractTextOutputFile(o);
 }
 
-OutputFile::~OutputFile()
+
+BinaryOutputFile::BinaryOutputFile(PyObject* o)
 {
-    delete abstract;
-    delete fd;
+    // If it is already an int handle, use it
+    if (PyLong_Check(o))
+    {
+        fd = new core::NamedFileDescriptor(int_from_python(o), get_fd_name(o));
+        return;
+    }
+
+    // If it is a string, take it as a file name
+    if (PyUnicode_Check(o))
+    {
+        std::string pathname = from_python<std::string>(o);
+        fd = new core::File(pathname, O_WRONLY | O_CREAT | O_TRUNC, 0666);
+        return;
+    }
+
+    // Try calling fileno
+    pyo_unique_ptr fileno(PyObject_CallMethod(o, "fileno", nullptr));
+    if (fileno)
+    {
+        // It would be nice to give up and fallback to AbstractInputFile if
+        // there are bytes in the read buffer of o, but there seems to be no
+        // way to know
+        fd = new core::NamedFileDescriptor(int_from_python(fileno), get_fd_name(o));
+        return;
+    }
+
+    PyErr_Clear();
+
+    // Fall back on calling o.write()
+    abstract = new PyAbstractBinaryOutputFile(o);
 }
 
 }

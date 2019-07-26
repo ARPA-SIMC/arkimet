@@ -54,7 +54,7 @@ Arguments:
             return nullptr;
 
         try {
-            OutputFile out(arg_file);
+            BinaryOutputFile out(arg_file);
 
             if (!format || strcmp(format, "binary") == 0)
             {
@@ -112,7 +112,7 @@ Arguments:
             return nullptr;
 
         try {
-            OutputFile out(arg_file);
+            BinaryOutputFile out(arg_file);
 
             summary::Short shrt;
             self->summary->visit(shrt);
