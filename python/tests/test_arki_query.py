@@ -62,7 +62,7 @@ class TestArkiQuery(unittest.TestCase):
     def test_query_metadata(self):
         out = CatchOutput()
         with out.redirect():
-            res = self.runcmd("--data", "", "inbound/test.arkimet")
+            res = self.runcmd("--data", "", "inbound/test.grib1.arkimet")
         self.assertEqual(out.stderr, b"")
         self.assertEqual(out.stdout[:4], b"GRIB")
         self.assertIsNone(res)
@@ -70,7 +70,7 @@ class TestArkiQuery(unittest.TestCase):
     def test_query_yaml_summary(self):
         out = CatchOutput()
         with out.redirect():
-            res = self.runcmd("--summary", "--yaml", "", "inbound/test.arkimet")
+            res = self.runcmd("--summary", "--yaml", "", "inbound/test.grib1.arkimet")
         self.assertEqual(out.stderr, b"")
         self.assertEqual(out.stdout[:12], b"SummaryItem:")
         self.assertIsNone(res)

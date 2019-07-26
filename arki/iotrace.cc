@@ -1,6 +1,7 @@
 #include "arki/iotrace.h"
 #include "arki/libconfig.h"
 #include "arki/exceptions.h"
+#include "arki/core/file.h"
 #include "arki/runtime.h"
 #include <vector>
 #include <set>
@@ -73,6 +74,45 @@ void trace_file(const char* name, off_t offset, size_t size, const char* desc)
     {
         Event ev;
         ev.filename = name;
+        ev.offset = offset;
+        ev.size = size;
+        ev.desc = desc;
+        listeners->process(ev);
+    }
+}
+
+void trace_file(core::NamedFileDescriptor& fd, off_t offset, size_t size, const char* desc)
+{
+    if (listeners)
+    {
+        Event ev;
+        ev.filename = fd.name();
+        ev.offset = offset;
+        ev.size = size;
+        ev.desc = desc;
+        listeners->process(ev);
+    }
+}
+
+void trace_file(core::AbstractInputFile& fd, off_t offset, size_t size, const char* desc)
+{
+    if (listeners)
+    {
+        Event ev;
+        ev.filename = fd.name();
+        ev.offset = offset;
+        ev.size = size;
+        ev.desc = desc;
+        listeners->process(ev);
+    }
+}
+
+void trace_file(core::AbstractOutputFile& fd, off_t offset, size_t size, const char* desc)
+{
+    if (listeners)
+    {
+        Event ev;
+        ev.filename = fd.name();
         ev.offset = offset;
         ev.size = size;
         ev.desc = desc;

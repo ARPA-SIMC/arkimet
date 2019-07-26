@@ -305,6 +305,27 @@ struct Bundle
      * @return true if all was read, false on end of file
      */
     bool read(core::NamedFileDescriptor& fd);
+
+    /**
+     * Read only the bundle header
+     *
+     * @return true if a bundle header was read, false on end of file
+     */
+    bool read_header(core::AbstractInputFile& fd);
+
+    /**
+     * Read the bundle data after read_header has been called
+     *
+     * @return true if all bundle data was read, false on end of file
+     */
+    bool read_data(core::AbstractInputFile& fd);
+
+    /**
+     * read_header and read_data together
+     *
+     * @return true if all was read, false on end of file
+     */
+    bool read(core::AbstractInputFile& fd);
 };
 
 }

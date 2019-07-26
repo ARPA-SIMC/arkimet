@@ -8,6 +8,7 @@
  */
 
 #include <arki/libconfig.h>
+#include <arki/core/fwd.h>
 #include <vector>
 #include <string>
 #include <cstddef>
@@ -80,6 +81,15 @@ void trace_file(const std::string& name, off_t offset, size_t size, const char* 
 
 /// Specialised implementation for C-style filenames
 void trace_file(const char* name, off_t offset, size_t size, const char* desc);
+
+/// Specialised implementation NamedFileDescriptor
+void trace_file(core::NamedFileDescriptor& fd, off_t offset, size_t size, const char* desc);
+
+/// Specialised implementation AbstractInputFile
+void trace_file(core::AbstractInputFile& fd, off_t offset, size_t size, const char* desc);
+
+/// Specialised implementation AbstractOutputFile
+void trace_file(core::AbstractOutputFile& fd, off_t offset, size_t size, const char* desc);
 
 void add_listener(Listener& l);
 void remove_listener(Listener& l);

@@ -1,11 +1,13 @@
 #include <arki/utils/lua.h>
 #include <arki/utils/sys.h>
+#include <arki/core/file.h>
 #include <arki/types.h>
 #include <arki/metadata.h>
 #include <arki/summary.h>
 #include <arki/matcher.h>
 #include <arki/exceptions.h>
 #include <ostream>
+#include <cstring>
 
 using namespace std;
 
@@ -194,6 +196,35 @@ static int lua_fd_print(lua_State *L)
     return 0;
 }
 
+static int lua_abstractoutputfile_print(lua_State *L)
+{
+    // Access the closure parameters
+    int outidx = lua_upvalueindex(1);
+    void* ud = lua_touserdata(L, outidx);
+    if (!ud)
+        return luaL_error(L, "lua_report_print must be called as a closure with one userdata");
+    core::AbstractOutputFile& out = **(core::AbstractOutputFile**)ud;
+
+    int n = lua_gettop(L);  /* number of arguments */
+    int i;
+    lua_getglobal(L, "tostring");
+    for (i=1; i<=n; i++) {
+        const char *s;
+        lua_pushvalue(L, -1);  /* function to be called */
+        lua_pushvalue(L, i);   /* value to print */
+        lua_call(L, 1, 1);
+        s = lua_tostring(L, -1);  /* get result */
+        if (s == NULL)
+            return luaL_error(L, LUA_QL("tostring") " must return a string to "
+                    LUA_QL("print"));
+        if (i>1) out.write("\t", 1);
+        out.write(s, strlen(s));
+        lua_pop(L, 1);  /* pop result */
+    }
+    out.write("\n", 1);
+    return 0;
+}
+
 void capturePrintOutput(lua_State* L, std::ostream& buf)
 {
 	// Create a C closure with the print function and the ostream to use
@@ -211,6 +242,17 @@ void capturePrintOutput(lua_State* L, int fd)
     // Create a C closure with the print function and the ostream to use
     lua_pushinteger(L, fd);
     lua_pushcclosure(L, lua_fd_print, 1);
+
+    // redefine print
+    lua_setglobal(L, "print");
+}
+
+void capturePrintOutput(lua_State* L, core::AbstractOutputFile& fd)
+{
+    // Create a C closure with the print function and the ostream to use
+    core::AbstractOutputFile** s = (core::AbstractOutputFile**)lua_newuserdata(L, sizeof(core::AbstractOutputFile*));
+    *s = &fd;
+    lua_pushcclosure(L, lua_abstractoutputfile_print, 1);
 
     // redefine print
     lua_setglobal(L, "print");

@@ -1,5 +1,4 @@
 import unittest
-import tempfile
 import os
 import arkimet as arki
 from arkimet.cmdline.dump import Dump
@@ -44,7 +43,7 @@ class TestArkiDump(unittest.TestCase):
     def test_bbox(self):
         out = CatchOutput()
         with out.redirect():
-            res = Dump.main(args=["--bbox", "inbound/test.arkimet"])
+            res = Dump.main(args=["--bbox", "inbound/test.grib1.arkimet"])
         self.assertEqual(out.stderr, b"")
         self.assertEqual(out.stdout[:7], b"POLYGON")
         self.assertEqual(res, 0)
@@ -68,7 +67,7 @@ class TestArkiDump(unittest.TestCase):
     def test_from_md(self):
         out = CatchOutput()
         with out.redirect():
-            res = Dump.main(args=["inbound/test.arkimet"])
+            res = Dump.main(args=["inbound/test.grib1.arkimet"])
         self.assertEqual(out.stderr, b"")
         self.assertEqual(out.stdout[:8], b"Source: ")
         self.assertNotIn(b"# Geopotential", out.stdout)
@@ -86,7 +85,7 @@ class TestArkiDump(unittest.TestCase):
     def test_from_md_annotated(self):
         out = CatchOutput()
         with out.redirect():
-            res = Dump.main(args=["--annotate", "inbound/test.arkimet"])
+            res = Dump.main(args=["--annotate", "inbound/test.grib1.arkimet"])
         self.assertEqual(out.stderr, b"")
         self.assertEqual(out.stdout[:8], b"Source: ")
         self.assertIn(b"# Geopotential", out.stdout)

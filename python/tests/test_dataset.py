@@ -2,6 +2,7 @@ import unittest
 import tempfile
 import arkimet as arki
 import os
+import io
 import shutil
 from arkimet.test import daemon
 
@@ -139,11 +140,21 @@ class TestDatasetReader(unittest.TestCase):
             queried = fd.read()
         self.assertEqual(orig, queried)
 
+        with io.BytesIO() as fd:
+            ds.query_bytes(fd)
+            queried = fd.getvalue()
+        self.assertEqual(orig, queried)
+
         # matcher
         with tempfile.TemporaryFile() as fd:
             ds.query_bytes(fd, matcher="reftime:>=1900")
             fd.seek(0)
             queried = fd.read()
+        self.assertEqual(orig, queried)
+
+        with io.BytesIO() as fd:
+            ds.query_bytes(fd, matcher="reftime:>=1900")
+            queried = fd.getvalue()
         self.assertEqual(orig, queried)
 
         # data_start_hook
@@ -168,6 +179,13 @@ class TestDatasetReader(unittest.TestCase):
         # metadata, so that arki-xargs can work.
         self.assertEqual(queried, b"44937\n")
 
+        with io.BytesIO() as fd:
+            ds.query_bytes(fd, postprocess="countbytes")
+            queried = fd.getvalue()
+        # This is bigger than 44412 because postprocessors are also sent
+        # metadata, so that arki-xargs can work.
+        self.assertEqual(queried, b"44937\n")
+
         # metadata_report
         with tempfile.TemporaryFile() as fd:
             ds.query_bytes(fd, metadata_report="count")
@@ -175,11 +193,21 @@ class TestDatasetReader(unittest.TestCase):
             queried = fd.read()
         self.assertEqual(queried, b"3\n")
 
+        with io.BytesIO() as fd:
+            ds.query_bytes(fd, metadata_report="count")
+            queried = fd.getvalue()
+        self.assertEqual(queried, b"3\n")
+
         # summary_report
         with tempfile.TemporaryFile() as fd:
             ds.query_bytes(fd, summary_report="count")
             fd.seek(0)
             queried = fd.read()
+        self.assertEqual(queried, b"3\n")
+
+        with io.BytesIO() as fd:
+            ds.query_bytes(fd, summary_report="count")
+            queried = fd.getvalue()
         self.assertEqual(queried, b"3\n")
 
     def test_query_data_qmacro(self):

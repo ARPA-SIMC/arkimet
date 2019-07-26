@@ -146,7 +146,7 @@ std::vector<uint8_t> Reader<Segment>::read(const types::source::Blob& src)
         throw std::runtime_error(msg.str());
     }
     acct::plain_data_read_count.incr();
-    iotrace::trace_file(fd.name(), src.offset, src.size, "read data");
+    iotrace::trace_file(fd, src.offset, src.size, "read data");
 
     return buf;
 }
@@ -189,7 +189,7 @@ size_t Reader<Segment>::stream(const types::source::Blob& src, core::NamedFileDe
         }
 
         acct::plain_data_read_count.incr();
-        iotrace::trace_file(fd.name(), src.offset, src.size, "streamed data");
+        iotrace::trace_file(fd, src.offset, src.size, "streamed data");
         return res;
     }
 }

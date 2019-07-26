@@ -289,6 +289,14 @@ void ArchivesReader::query_bytes(const dataset::ByteQuery& q, NamedFileDescripto
     });
 }
 
+void ArchivesReader::query_bytes(const dataset::ByteQuery& q, AbstractOutputFile& out)
+{
+    archives->iter([&](Reader& r) {
+        r.query_bytes(q, out);
+        return true;
+    });
+}
+
 void ArchivesReader::summary_for_all(Summary& out)
 {
     string sum_file = str::joinpath(archives->dataset_root, ".summaries/archives.summary");

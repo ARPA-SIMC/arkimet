@@ -11,6 +11,9 @@ Stdin::Stdin() : NamedFileDescriptor(0, "(stdin)") {}
 Stdout::Stdout() : NamedFileDescriptor(1, "(stdout)") {}
 Stderr::Stderr() : NamedFileDescriptor(2, "(stderr)") {}
 
+AbstractInputFile::~AbstractInputFile() {}
+AbstractOutputFile::~AbstractOutputFile() {}
+
 namespace {
 
 struct FDLineReader : public LineReader

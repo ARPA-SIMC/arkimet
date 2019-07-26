@@ -131,6 +131,11 @@ void Report::captureOutput(int fd)
     utils::lua::capturePrintOutput(*L, fd);
 }
 
+void Report::captureOutput(core::AbstractOutputFile& fd)
+{
+    utils::lua::capturePrintOutput(*L, fd);
+}
+
 bool Report::eat(unique_ptr<Metadata>&& md)
 {
     if (!acceptsMetadata()) return true;

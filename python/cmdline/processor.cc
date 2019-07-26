@@ -129,7 +129,7 @@ std::unique_ptr<Printer> create_metadata_printer(ProcessorMaker& maker, sys::Nam
 summary_print_func create_summary_printer(ProcessorMaker& maker, sys::NamedFileDescriptor& out)
 {
     if (!maker.json && !maker.yaml && !maker.annotate)
-        return [&](const Summary& s) { s.write(out, out.name()); };
+        return [&](const Summary& s) { s.write(out); };
 
     shared_ptr<Formatter> formatter;
     if (maker.annotate)

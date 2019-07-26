@@ -166,7 +166,15 @@ public:
      * The filename string is used to generate nicer parse error messages when
      * throwing exceptions, and can be anything.
      */
-    void write(int out, const std::string& filename) const;
+    void write(core::NamedFileDescriptor& out) const;
+
+    /**
+     * Write the summary to the given output file.
+     *
+     * The filename string is used to generate nicer parse error messages when
+     * throwing exceptions, and can be anything.
+     */
+    void write(core::AbstractOutputFile& out) const;
 
 	/**
 	 * Write the summary to the given file name.

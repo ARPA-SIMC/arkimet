@@ -358,10 +358,26 @@ void Metadata::read_inline_data(NamedFileDescriptor& fd)
     vector<uint8_t> buf;
     buf.resize(s->size);
 
-    iotrace::trace_file(fd.name(), 0, s->size, "read inline data");
+    iotrace::trace_file(fd, 0, s->size, "read inline data");
 
     // Read the inline data
     fd.read_all_or_throw(buf.data(), s->size);
+    m_data = metadata::DataManager::get().to_data(m_source->format, move(buf));
+}
+
+void Metadata::read_inline_data(core::AbstractInputFile& fd)
+{
+    // If the source is inline, then the data follows the metadata
+    if (source().style() != types::Source::INLINE) return;
+
+    source::Inline* s = dynamic_cast<source::Inline*>(m_source);
+    vector<uint8_t> buf;
+    buf.resize(s->size);
+
+    iotrace::trace_file(fd, 0, s->size, "read inline data");
+
+    // Read the inline data
+    fd.read(buf.data(), s->size);
     m_data = metadata::DataManager::get().to_data(m_source->format, move(buf));
 }
 
@@ -404,6 +420,27 @@ void Metadata::write(NamedFileDescriptor& out) const
 
     // Write out
     out.write_all_or_retry(encoded.data(), encoded.size());
+
+    // If the source is inline, then the data follows the metadata
+    if (const source::Inline* s = dynamic_cast<const source::Inline*>(m_source))
+    {
+        if (s->size != m_data->size())
+        {
+            stringstream ss;
+            ss << "cannot write metadata to file " << out.name() << ": metadata size " << s->size << " does not match the data size " << m_data->size();
+            throw runtime_error(ss.str());
+        }
+        m_data->write_inline(out);
+    }
+}
+
+void Metadata::write(AbstractOutputFile& out) const
+{
+    // Prepare the encoded data
+    vector<uint8_t> encoded = encodeBinary();
+
+    // Write out
+    out.write(encoded.data(), encoded.size());
 
     // If the source is inline, then the data follows the metadata
     if (const source::Inline* s = dynamic_cast<const source::Inline*>(m_source))
@@ -601,6 +638,41 @@ size_t Metadata::stream_data(NamedFileDescriptor& out)
     }
 }
 
+size_t Metadata::stream_data(AbstractOutputFile& out)
+{
+    // First thing, try and return it from cache
+    if (m_data) return m_data->write(out);
+
+    // If we don't have it in cache, try reconstructing it from the Value metadata
+    if (const Value* value = get<types::Value>())
+        m_data = metadata::DataManager::get().to_data(m_source->format, scan::Scanner::reconstruct(m_source->format, *this, value->buffer));
+    if (m_data) return m_data->write(out);
+
+    // If we don't have it in cache and we don't have a source, we cannot know
+    // how to load it: give up
+    if (!m_source) throw_consistency_error("retrieving data", "data source is not defined");
+
+    // Load it according to source
+    switch (m_source->style())
+    {
+        case Source::INLINE:
+            throw runtime_error("cannot retrieve data: data is not found on INLINE metadata");
+        case Source::URL:
+            throw runtime_error("cannot retrieve data: data is not accessible for URL metadata");
+        case Source::BLOB:
+        {
+            // Do not directly use m_data so that if dataReader.read throws an
+            // exception, m_data remains empty.
+            source::Blob& s = sourceBlob();
+            if (!s.reader)
+                throw runtime_error("cannot retrieve data: BLOB source has no reader associated");
+            return s.stream_data(out);
+        }
+        default:
+            throw_consistency_error("retrieving data", "unsupported source style");
+    }
+}
+
 void Metadata::drop_cached_data()
 {
     if (/*const source::Blob* blob =*/ dynamic_cast<const source::Blob*>(m_source))
@@ -753,6 +825,41 @@ bool Metadata::read_file(int in, const metadata::ReadContext& file, metadata_des
 bool Metadata::read_file(NamedFileDescriptor& fd, metadata_dest_func mdc)
 {
     return read_file(fd, fd.name(), mdc);
+}
+
+bool Metadata::read_file(core::AbstractInputFile& fd, const metadata::ReadContext& file, metadata_dest_func dest)
+{
+    bool canceled = false;
+    types::Bundle bundle;
+    while (bundle.read_header(fd))
+    {
+        // Ensure first 2 bytes are MD or !D
+        if (bundle.signature != "MD" && bundle.signature != "!D" && bundle.signature != "MG")
+            throw_consistency_error("parsing file " + file.pathname, "metadata entry does not start with 'MD', '!D' or 'MG'");
+
+        if (!bundle.read_data(fd)) break;
+
+        if (canceled) continue;
+
+        if (bundle.signature == "MG")
+        {
+            // Handle metadata group
+            iotrace::trace_file(file.pathname, 0, 0, "read metadata group");
+            BinaryDecoder dec(bundle.data);
+            Metadata::read_group(dec, bundle.version, file, dest);
+        } else {
+            unique_ptr<Metadata> md(new Metadata);
+            iotrace::trace_file(file.pathname, 0, 0, "read metadata");
+            BinaryDecoder dec(bundle.data);
+            md->read_inner(dec, bundle.version, file);
+
+            // If the source is inline, then the data follows the metadata
+            if (md->source().style() == types::Source::INLINE)
+                md->read_inline_data(fd);
+            canceled = !dest(move(md));
+        }
+    }
+    return !canceled;
 }
 
 bool Metadata::read_group(BinaryDecoder& dec, unsigned version, const metadata::ReadContext& file, metadata_dest_func dest)

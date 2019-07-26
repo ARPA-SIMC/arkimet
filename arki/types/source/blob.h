@@ -113,6 +113,7 @@ struct Blob : public Source
      * Returns the number of bytes written to out.
      */
     size_t stream_data(core::NamedFileDescriptor& out) const;
+    size_t stream_data(core::AbstractOutputFile& out) const;
 
     static std::unique_ptr<Blob> create(std::shared_ptr<segment::Reader> reader, uint64_t offset, uint64_t size);
     static std::unique_ptr<Blob> create(const std::string& format, const std::string& basedir, const std::string& filename, uint64_t offset, uint64_t size, std::shared_ptr<segment::Reader> reader);

@@ -137,12 +137,12 @@ class TestArkiScan(unittest.TestCase):
     def test_scan_metadata(self):
         out = CatchOutput()
         with out.redirect():
-            res = self.runcmd("--yaml", "inbound/test.arkimet")
+            res = self.runcmd("--yaml", "inbound/test.grib1.arkimet")
         self.assertEqual(out.stderr, b"")
         self.assertRegex(out.stdout, b"\nOrigin:")
         self.assertIsNone(res)
 
-        shutil.copyfile("inbound/test.arkimet", "test.foo")
+        shutil.copyfile("inbound/test.grib1.arkimet", "test.foo")
         out = CatchOutput()
         with out.redirect():
             res = self.runcmd("--yaml", "metadata:test.foo")

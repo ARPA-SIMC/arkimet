@@ -6,9 +6,10 @@
 #include <string>
 #include <memory>
 #include <iosfwd>
+#include <arki/core/fwd.h>
+#include <arki/metadata/fwd.h>
 
 namespace arki {
-struct Metadata;
 struct Summary;
 struct Lua;
 
@@ -40,8 +41,11 @@ public:
 	/// Load the report code from the given string containing Lua source code
 	void loadString(const std::string& buf);
 
-	/// Send Lua's print output to an ostream
-	void captureOutput(std::ostream& buf);
+    /// Send Lua's print output to an ostream
+    void captureOutput(std::ostream& buf);
+
+    /// Send Lua's print output to an ostream
+    void captureOutput(core::AbstractOutputFile& out);
 
     /// Send Lua's print output to a file descriptor
     void captureOutput(int out);
