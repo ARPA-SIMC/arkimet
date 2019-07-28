@@ -243,6 +243,60 @@ void add_feature(PyObject* set, const char* feature)
         throw PythonException();
 }
 
+struct PythonNagHandler : public nag::Handler
+{
+    PyObject* py_warning = nullptr;
+    PyObject* py_info = nullptr;
+    PyObject* py_debug = nullptr;
+
+    PythonNagHandler()
+    {
+        // import logging
+        pyo_unique_ptr mod_logging(throw_ifnull(PyImport_ImportModule("logging")));
+        // logger = logging.getLogger("arkimet")
+        pyo_unique_ptr logger(throw_ifnull(PyObject_CallMethod(mod_logging, "getLogger", "s", "arkimet")));
+
+        pyo_unique_ptr meth_warning(throw_ifnull(PyObject_GetAttrString(logger, "warning")));
+        pyo_unique_ptr meth_info(throw_ifnull(PyObject_GetAttrString(logger, "info")));
+        pyo_unique_ptr meth_debug(throw_ifnull(PyObject_GetAttrString(logger, "debug")));
+
+        py_warning = meth_warning.release();
+        py_info = meth_info.release();
+        py_debug = meth_debug.release();
+    }
+
+    ~PythonNagHandler()
+    {
+        Py_XDECREF(py_warning);
+        Py_XDECREF(py_info);
+        Py_XDECREF(py_debug);
+    }
+
+    void warning(const char* fmt, va_list ap) override
+    {
+        std::string msg = format(fmt, ap);
+        AcquireGIL gil;
+        throw_ifnull(PyObject_CallMethod(
+                    py_warning, "%s", "s#", msg.data(), msg.size()));
+    }
+
+    void verbose(const char* fmt, va_list ap) override
+    {
+        std::string msg = format(fmt, ap);
+        AcquireGIL gil;
+        throw_ifnull(PyObject_CallMethod(
+                    py_info, "%s", "s#", msg.data(), msg.size()));
+    }
+
+    void debug(const char* fmt, va_list ap) override
+    {
+        std::string msg = format(fmt, ap);
+        AcquireGIL gil;
+        throw_ifnull(PyObject_CallMethod(
+                    py_debug, "%s", "s#", msg.data(), msg.size()));
+    }
+};
+
 }
 
 extern "C" {
@@ -260,11 +314,16 @@ static PyModuleDef arkimet_module = {
 
 };
 
+arki::nag::Handler* python_nag_handler = nullptr;
+
 PyMODINIT_FUNC PyInit__arkimet(void)
 {
     using namespace arki::python;
 
     arki::init();
+
+    python_nag_handler = new PythonNagHandler;
+    python_nag_handler->install();
 
     PyObject* m = PyModule_Create(&arkimet_module);
     if (!m) return m;
