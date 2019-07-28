@@ -1,4 +1,5 @@
 #include "arki/types/tests.h"
+#include "arki/types/origin.h"
 #include "arki/metadata.h"
 #include "arki/matcher.h"
 #include "arki/types.h"
