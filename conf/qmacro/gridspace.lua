@@ -99,14 +99,12 @@ function makedsgq()
 		gq:consolidate()
 	end
 
-	if debug then
-		io.stderr:write("Gridspace ready for ", name, "\n")
-		io.stderr:write("Master query: ", tostring(gq:mergedquery()), "\n")
-		io.stderr:write("Result space:\n")
-		io.stderr:write(gq:dump(), "\n")
-	end
+    nag_debug("Gridspace ready for ", name)
+    nag_debug("Master query: ", tostring(gq:mergedquery()))
+    nag_debug("Result space:")
+    nag_debug(gq:dump())
 
-	return name, ds, gq
+    return name, ds, gq
 end
 
 function queryData(q, cons)
@@ -115,13 +113,11 @@ function queryData(q, cons)
 		local dsname, ds, gq = makedsgq()
 		if dsname == nil then break end
 
-		if verbose then io.stderr:write("Trying query on ", dsname, "\n") end
+        nag_verbose("Trying query on ", dsname)
 
-		if gq:expecteditems() == 0 then
-			if verbose then
-                                io.stderr:write("No results expected from ", dsname, "\n")
-                        end
-		else
+        if gq:expecteditems() == 0 then
+            nag_verbose("No results expected from ", dsname)
+        else
 			-- Build the merged query
 			local query = gq:mergedquery()
 			-- print (query)
@@ -136,25 +132,22 @@ function queryData(q, cons)
 				return true
 			end)
 
-			
-			if #mds == 0 then
-				if verbose then
-					io.stderr:write("No results from ", dsname, "\n")
-				end
-			elseif gq:satisfied() then
-				if verbose then io.stderr:write("Satisfied query on ", dsname, "\n") end
-				for idx, md in ipairs(mds) do
-					cons(md)
-				end
-				return
-			elseif verbose then
-				io.stderr:write("Unsatisfied query on ", dsname, "\n")
-				io.stderr:write("Master query: ", tostring(query), "\n")
-				io.stderr:write("Result space:\n")
-				io.stderr:write(gq:dump(), "\n")
-			end
-		end
-	end
+            if #mds == 0 then
+                nag_verbose("No results from ", dsname)
+            elseif gq:satisfied() then
+                nag_verbose("Satisfied query on ", dsname)
+                for idx, md in ipairs(mds) do
+                    cons(md)
+                end
+                return
+            else
+                nag_verbose("Unsatisfied query on ", dsname)
+                nag_verbose("Master query: ", tostring(query))
+                nag_verbose("Result space:")
+                nag_verbose(gq:dump())
+            end
+        end
+    end
 
 	error("Query cannot be satisfied")
 end
@@ -163,11 +156,11 @@ function querySummary(q, sum)
 	datasets_tried = {}
 	local tried = 0
 	while true do
-		local dsname, ds, gq = makedsgq()
-		if dsname == nil then break end
-		if verbose then io.stderr:write("Getting summary from ", dsname, "\n") end
-		-- Build the merged query
-		local query = gq:mergedquery()
+        local dsname, ds, gq = makedsgq()
+        if dsname == nil then break end
+        nag_verbose("Getting summary from ", dsname)
+        -- Build the merged query
+        local query = gq:mergedquery()
 
 		-- Add the summary to sum
 		ds:querySummary(query, sum)
