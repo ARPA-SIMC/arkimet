@@ -4,7 +4,6 @@
 #include "metadata/consumer.h"
 #include "summary.h"
 #include "dataset/gridquery.h"
-#include "nag.h"
 #include "runtime.h"
 #include "utils/lua.h"
 #include "sort.h"
@@ -82,12 +81,6 @@ Querymacro::Querymacro(const core::cfg::Section& ds_cfg, const core::cfg::Sectio
 	lua_pushstring(*L, query.c_str());
 	lua_setglobal(*L, "query");
 
-	// Set 'debug' and 'verbose' globals
-	lua_pushboolean(*L, nag::is_verbose());
-	lua_setglobal(*L, "verbose");
-	lua_pushboolean(*L, nag::is_debug());
-	lua_setglobal(*L, "debug");
-	
 	// Split macro name and arguments
 	string macroname;
 	size_t pos = name.find(" ");

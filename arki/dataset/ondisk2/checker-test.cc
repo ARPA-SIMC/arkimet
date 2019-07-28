@@ -193,7 +193,8 @@ add_method("scan_reindex_compressed", [](Fixture& f) {
 
     // The dataset should still be clean even with an accurate scan
     {
-        nag::TestCollect tc;
+        nag::CollectHandler tc;
+        tc.install();
         wassert(f.ensure_localds_clean(3, 3, true));
     }
 

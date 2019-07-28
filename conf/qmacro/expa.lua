@@ -127,16 +127,14 @@ function QueryChunk:setupgq(gq)
 	-- Consolidate in the end
 	gq:consolidate()
 
-	if debug then
-		io.stderr:write("Master query: ", tostring(gq:mergedquery()), "\n")
-		io.stderr:write("Result space:\n")
-		io.stderr:write(gq:dump(), "\n")
-	end
+    nag_debug("Master query: ", tostring(gq:mergedquery()))
+    nag_debug("Result space:")
+    nag_debug(gq:dump())
 end
 
 function QueryChunk:checkData(cons, orig_q)
-	for idx, dsname in ipairs(self:datasets()) do
-		if verbose then io.stderr:write("Trying query on ", dsname, "\n") end
+    for idx, dsname in ipairs(self:datasets()) do
+        nag_verbose("Trying query on ", dsname)
 
 		local ds = qmacro:dataset(dsname)
 		if ds == nil then error("Cannot access dataset " .. dsname) end
@@ -145,11 +143,9 @@ function QueryChunk:checkData(cons, orig_q)
 		-- Prepare the GridQuery
 		self:setupgq(gq)
 
-		if gq:expecteditems() == 0 then
-			if verbose then
-                                io.stderr:write("No results expected from ", dsname, "\n")
-                        end
-		else
+        if gq:expecteditems() == 0 then
+            nag_verbose("No results expected from ", dsname)
+        else
 			-- Build the merged query
 			query = gq:mergedquery()
 			-- print (query)
@@ -165,22 +161,19 @@ function QueryChunk:checkData(cons, orig_q)
 				return true
 			end)
 
-			
-			if #self.mds == 0 then
-				if verbose then
-					io.stderr:write("No results from ", dsname, "\n")
-				end
-			elseif gq:satisfied() then
-				if verbose then io.stderr:write("Satisfied query on ", dsname, "\n") end
-				return
-			elseif verbose then
-				io.stderr:write("Unsatisfied query on ", dsname, "\n")
-				io.stderr:write("Master query: ", tostring(query), "\n")
-				io.stderr:write("Result space:\n")
-				io.stderr:write(gq:dump(), "\n")
-			end
-		end
-	end
+            if #self.mds == 0 then
+                nag_verbose("No results from ", dsname)
+            elseif gq:satisfied() then
+                nag_verbose("Satisfied query on ", dsname)
+                return
+            else
+                nag_verbose("Unsatisfied query on ", dsname)
+                nag_verbose("Master query: ", tostring(query))
+                nag_verbose("Result space:")
+                nag_verbose(gq:dump())
+            end
+        end
+    end
 
 	error("Query cannot be satisfied")
 end
@@ -192,8 +185,8 @@ function QueryChunk:outputData(cons)
 end
 
 function QueryChunk:querySummary(sum)
-	for idx, dsname in ipairs(self:datasets()) do
-		if verbose then io.stderr:write("Getting summary from ", dsname, "\n") end
+    for idx, dsname in ipairs(self:datasets()) do
+        nag_verbose("Getting summary from ", dsname)
 
 		local ds = qmacro:dataset(dsname)
 		if ds == nil then error("Cannot access dataset " .. dsname) end

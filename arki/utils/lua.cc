@@ -6,6 +6,7 @@
 #include <arki/summary.h>
 #include <arki/matcher.h>
 #include <arki/exceptions.h>
+#include <arki/nag.h>
 #include <ostream>
 #include <cstring>
 
@@ -15,6 +16,48 @@ namespace arki {
 namespace utils {
 namespace lua {
 void dumpstack(lua_State* L, const std::string& title, std::ostream& out);
+
+static std::string lua_format_print(lua_State* L)
+{
+    std::stringstream buf;
+    int n = lua_gettop(L);  /* number of arguments */
+    int i;
+    lua_getglobal(L, "tostring");
+    for (i=1; i<=n; i++) {
+        const char *s;
+        lua_pushvalue(L, -1);  /* function to be called */
+        lua_pushvalue(L, i);   /* value to print */
+        lua_call(L, 1, 1);
+        s = lua_tostring(L, -1);  /* get result */
+        if (!s)
+            s = "[lua_tostring did not return a string]";
+        if (i > 1) buf << '\t';
+        buf << s;
+        lua_pop(L, 1);  /* pop result */
+    }
+    return buf.str();
+}
+
+static int lua_nag_warning(lua_State *L)
+{
+    std::string str = lua_format_print(L);
+    nag::warning("%s", str.c_str());
+    return 0;
+}
+
+static int lua_nag_verbose(lua_State *L)
+{
+    std::string str = lua_format_print(L);
+    nag::verbose("%s", str.c_str());
+    return 0;
+}
+
+static int lua_nag_debug(lua_State *L)
+{
+    std::string str = lua_format_print(L);
+    nag::debug("%s", str.c_str());
+    return 0;
+}
 }
 }
 
@@ -22,6 +65,15 @@ Lua::Lua(bool load_libs, bool load_arkimet) : L(0)
 {
     // Initialise the lua logic
     L = luaL_newstate();
+
+    lua_pushcfunction(L, utils::lua::lua_nag_warning);
+    lua_setglobal(L, "nag_warning");
+
+    lua_pushcfunction(L, utils::lua::lua_nag_verbose);
+    lua_setglobal(L, "nag_verbose");
+
+    lua_pushcfunction(L, utils::lua::lua_nag_debug);
+    lua_setglobal(L, "nag_debug");
 
     if (load_libs)
         luaL_openlibs(L);

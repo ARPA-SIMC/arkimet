@@ -399,7 +399,8 @@ metadata::Collection DatasetTest::query(const dataset::DataQuery& q)
 
 void DatasetTest::ensure_localds_clean(size_t filecount, size_t resultcount, bool quick)
 {
-    nag::TestCollect tc;
+    nag::CollectHandler tc;
+    tc.install();
     auto state = scan_state(quick);
     wassert(actual(state.count(segment::SEGMENT_OK)) == filecount);
     wassert(actual(state.size()) == filecount);
