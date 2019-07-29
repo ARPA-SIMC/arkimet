@@ -1,13 +1,13 @@
 #ifndef ARKI_TARGETFILE_H
 #define ARKI_TARGETFILE_H
 
-#include <arki/utils/sys.h>
+#include <arki/core/fwd.h>
+#include <arki/metadata/fwd.h>
 #include <arki/dataset.h>
 #include <string>
 #include <map>
 
 namespace arki {
-class Metadata;
 class Lua;
 
 class Targetfile

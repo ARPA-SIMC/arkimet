@@ -4,6 +4,7 @@
 #include "arki/runtime.h"
 #include "arki/utils/lua.h"
 #include "arki/utils/string.h"
+#include "arki/core/file.h"
 #include <sys/fcntl.h>
 
 using namespace std;
