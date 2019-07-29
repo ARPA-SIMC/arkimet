@@ -94,6 +94,15 @@ class TestArkiQuery(unittest.TestCase):
             self.assertEqual(out.stdout[:4], b"GRIB")
             self.assertIsNone(res)
 
+    def test_query_qmacro_py_noop(self):
+        with dataset("inbound/fixture.grib1"):
+            out = CatchOutput()
+            with out.redirect():
+                res = self.runcmd("--qmacro=py_noop", "--data", "testds", "testds")
+            self.assertEqual(out.stderr, b"")
+            self.assertEqual(out.stdout[:4], b"GRIB")
+            self.assertIsNone(res)
+
     def test_query_stdin(self):
         out = CatchOutput()
         with open("inbound/fixture.grib1", "rb") as fd:

@@ -245,17 +245,6 @@ std::unique_ptr<core::LineReader> linereader_from_python(PyObject* o)
 }
 
 
-arki::Matcher matcher_from_python(PyObject* o)
-{
-    if (o == Py_None)
-        return arki::Matcher();
-
-    if (arkipy_Matcher_Check(o))
-        return ((arkipy_Matcher*)o)->matcher;
-
-    return arki::Matcher::parse(from_python<std::string>(o));
-}
-
 int common_init()
 {
     arki::init();

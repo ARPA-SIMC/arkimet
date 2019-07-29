@@ -2,6 +2,7 @@
 #include "arki/exceptions.h"
 #include "arki/querymacro.h"
 #include "arki/utils/sys.h"
+#include "arki/nag.h"
 #include "python/cfg.h"
 #include "python/metadata.h"
 #include "python/matcher.h"
@@ -22,9 +23,10 @@ public:
     PythonMacro(const std::string& source, const qmacro::Options& opts)
         : Base(opts)
     {
+        AcquireGIL gil;
         // Check if the qmacro module had already been imported
         std::string module_name = "arki.python.dataset.qmacro." + opts.macro_name;
-        pyo_unique_ptr py_module_name(to_python(module_name));
+        pyo_unique_ptr py_module_name(string_to_python(module_name));
         pyo_unique_ptr module(PyImport_GetModule(py_module_name));
         if (PyErr_Occurred())
             throw PythonException();
@@ -33,13 +35,9 @@ public:
         if (!module)
         {
             std::string source_code = utils::sys::read_file(source);
-
-            pyo_unique_ptr globals(throw_ifnull(PyDict_New()));
-            pyo_unique_ptr locals(throw_ifnull(PyDict_New()));
             pyo_unique_ptr code(throw_ifnull(Py_CompileStringExFlags(
                             source_code.c_str(), source.c_str(),
                             Py_file_input, nullptr, -1)));
-
             module = pyo_unique_ptr(throw_ifnull(PyImport_ExecCodeModule(
                             module_name.c_str(), code)));
         }
@@ -62,11 +60,13 @@ public:
 
     ~PythonMacro()
     {
+        AcquireGIL gil;
         Py_XDECREF(qmacro);
     }
 
     bool query_data(const arki::dataset::DataQuery& q, arki::metadata_dest_func dest) override
     {
+        AcquireGIL gil;
         pyo_unique_ptr meth(throw_ifnull(PyObject_GetAttrString(qmacro, "query_data")));
         pyo_unique_ptr args(throw_ifnull(PyTuple_New(0)));
         pyo_unique_ptr kwargs(throw_ifnull(PyDict_New()));
@@ -78,16 +78,12 @@ public:
         pyo_unique_ptr res(throw_ifnull(PyObject_Call(meth, args, kwargs)));
         if (res == Py_None)
             return true;
-        if (res == Py_True)
-            return true;
-        if (res == Py_False)
-            return false;
-
-        throw std::runtime_error("python metadata_dest_function returned a non-None, non-bool result");
+        return from_python<bool>(res);
     }
 
     void query_summary(const Matcher& matcher, Summary& summary) override
     {
+        AcquireGIL gil;
     //constexpr static const char* signature = "matcher: str=None, summary: arkimet.Summary=None";
     //constexpr static const char* returns = "arkimet.Summary";
         // Pass matcher

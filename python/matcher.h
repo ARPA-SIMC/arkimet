@@ -5,6 +5,7 @@
 #include <Python.h>
 #include <memory>
 #include "arki/matcher.h"
+#include "utils/values.h"
 
 extern "C" {
 
@@ -25,6 +26,12 @@ namespace arki {
 namespace python {
 
 PyObject* matcher(arki::Matcher matcher);
+
+/**
+ * Return a Matcher from a python string or arkimet.Matcher object
+ */
+arki::Matcher matcher_from_python(PyObject* o);
+template<> inline arki::Matcher from_python<arki::Matcher>(PyObject* o) { return matcher_from_python(o); }
 
 void register_matcher(PyObject* m);
 

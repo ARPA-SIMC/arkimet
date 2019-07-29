@@ -38,6 +38,10 @@ template<> inline const char* from_python<const char*>(PyObject* o) { return cst
 int int_from_python(PyObject* o);
 template<> inline int from_python<int>(PyObject* o) { return int_from_python(o); }
 
+/// Convert a Python object to an int
+bool bool_from_python(PyObject* o);
+template<> inline bool from_python<bool>(PyObject* o) { return bool_from_python(o); }
+
 /// Convert an int to a Python object
 PyObject* int_to_python(int val);
 inline PyObject* to_python(int val) { return int_to_python(val); }

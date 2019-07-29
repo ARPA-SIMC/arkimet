@@ -81,14 +81,18 @@ Precompiled matcher for arkimet metadata
     static int _init(Impl* self, PyObject* args, PyObject* kw)
     {
         static const char* kwlist[] = { "expr", nullptr };
-        const char* arg_expr = nullptr;
-        Py_ssize_t arg_expr_len;
-        if (!PyArg_ParseTupleAndKeywords(args, kw, "|s#", const_cast<char**>(kwlist), &arg_expr, &arg_expr_len))
+        PyObject* arg_matcher = nullptr;
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "|O", const_cast<char**>(kwlist), &arg_matcher))
             return -1;
 
         try {
-            if (arg_expr)
-                new(&(self->matcher)) arki::Matcher(arki::Matcher::parse(std::string(arg_expr, arg_expr_len)));
+            if (arg_matcher)
+            {
+                if (arkipy_Matcher_Check(arg_matcher))
+                    new(&(self->matcher)) arki::Matcher(((arkipy_Matcher*)arg_matcher)->matcher);
+                else
+                    new(&(self->matcher)) arki::Matcher(arki::Matcher::parse(from_python<std::string>(arg_matcher)));
+            }
             else
                 new(&(self->matcher)) arki::Matcher();
         } ARKI_CATCH_RETURN_INT
@@ -109,6 +113,17 @@ PyObject* matcher(arki::Matcher matcher)
     py_unique_ptr<arkipy_Matcher> res(throw_ifnull(PyObject_New(arkipy_Matcher, arkipy_Matcher_Type)));
     new (&(res->matcher)) arki::Matcher(matcher);
     return (PyObject*)res.release();
+}
+
+arki::Matcher matcher_from_python(PyObject* o)
+{
+    if (o == Py_None)
+        return arki::Matcher();
+
+    if (arkipy_Matcher_Check(o))
+        return ((arkipy_Matcher*)o)->matcher;
+
+    return arki::Matcher::parse(from_python<std::string>(o));
 }
 
 void register_matcher(PyObject* m)
