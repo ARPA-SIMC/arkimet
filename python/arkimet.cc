@@ -103,7 +103,8 @@ Arguments:
             if (baseurl.empty())
             {
                 // Create the local query macro
-                ds = qmacro::get(cfg, datasets, name, query);
+                arki::qmacro::Options opts(cfg, datasets, name, query);
+                ds = qmacro::get(opts);
             } else {
                 // Create the remote query macro
                 core::cfg::Section cfg;

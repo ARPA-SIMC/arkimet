@@ -53,7 +53,8 @@ void Tests::register_tests() {
 add_method("noop", [](Fixture& f) {
     f.import();
     core::cfg::Section cfg;
-    auto qm = qmacro::get(cfg, f.dispatch_cfg, "noop", "testds");
+    qmacro::Options opts(cfg, f.dispatch_cfg, "noop", "testds");
+    auto qm = qmacro::get(opts);
 
     metadata::Collection mdc(*qm, Matcher());
     wassert(actual(mdc.size()) == 9u);
@@ -70,7 +71,8 @@ add_method("noop", [](Fixture& f) {
 add_method("noopcopy", [](Fixture& f) {
     f.import();
     core::cfg::Section cfg;
-    auto qm = qmacro::get(cfg, f.dispatch_cfg, "noopcopy", "testds");
+    qmacro::Options opts(cfg, f.dispatch_cfg, "noopcopy", "testds");
+    auto qm = qmacro::get(opts);
 
     metadata::Collection mdc(*qm, Matcher());
     wassert(actual(mdc.size()) == 9u);
@@ -87,12 +89,12 @@ add_method("noopcopy", [](Fixture& f) {
 add_method("expa", [](Fixture& f) {
     f.import();
     core::cfg::Section cfg;
-    auto qm = qmacro::get(cfg, f.dispatch_cfg, "expa", 
+    qmacro::Options opts(cfg, f.dispatch_cfg, "expa", 
             "ds:testds. d:2009-08-07. t:0000. s:AN. l:G00. v:GRIB1/200/140/229.\n"
             "ds:testds. d:2009-08-07. t:0000. s:GRIB1/1. l:MSL. v:GRIB1/80/2/2.\n"
     //          utils::readFile("misc/erse00.expa")
     );
-
+    auto qm = qmacro::get(opts);
     metadata::Collection mdc(*qm, Matcher());
     wassert(actual(mdc.size()) == 2u);
     wassert_true(mdc[0].has_source());
@@ -107,12 +109,12 @@ add_method("expa", [](Fixture& f) {
 add_method("expa_arg", [](Fixture& f) {
     f.import();
     core::cfg::Section cfg;
-    auto qm = qmacro::get(cfg, f.dispatch_cfg, "expa 2009-08-08", 
+    qmacro::Options opts(cfg, f.dispatch_cfg, "expa 2009-08-08", 
             "ds:testds. d:@. t:0000. s:AN. l:G00. v:GRIB1/200/140/229.\n"
             "ds:testds. d:@-1. t:0000. s:GRIB1/1. l:MSL. v:GRIB1/80/2/2.\n"
 //          utils::readFile("misc/erse00.expa")
     );
-
+    auto qm = qmacro::get(opts);
     metadata::Collection mdc(*qm, Matcher());
     wassert(actual(mdc.size()) == 2u);
     wassert_true(mdc[0].has_source());
@@ -129,13 +131,13 @@ add_method("gridspace", [](Fixture& f) {
     f.import();
     core::cfg::Section cfg;
     {
-        auto qm = qmacro::get(cfg, f.dispatch_cfg, "gridspace", 
+        qmacro::Options opts(cfg, f.dispatch_cfg, "gridspace", 
                 "dataset: testds\n"
                 "addtime: 2009-08-07 00:00:00\n"
                 "add: timerange:AN; level:G00; product:GRIB1,200,140,229\n"
                 "add: timerange:GRIB1,1; level:MSL; product:GRIB1,80,2,2\n"
         );
-
+        auto qm = qmacro::get(opts);
         metadata::Collection mdc(*qm, Matcher());
         wassert(actual(mdc.size()) == 2u);
         wassert_true(mdc[0].has_source());
@@ -146,13 +148,13 @@ add_method("gridspace", [](Fixture& f) {
         wassert(actual(s.count()) == 2u);
     }
     {
-        auto qm = qmacro::get(cfg, f.dispatch_cfg, "gridspace", 
+        qmacro::Options opts(cfg, f.dispatch_cfg, "gridspace", 
                 "dataset: testds\n"
                 "addtimes: 2009-08-07 00:00:00 2009-08-08 00:00:00 86400\n"
                 "add: timerange:AN; level:G00; product:GRIB1,200,140,229\n"
                 "add: timerange:GRIB1,1; level:MSL; product:GRIB1,80,2,2\n"
         );
-
+        auto qm = qmacro::get(opts);
         metadata::Collection mdc(*qm, Matcher());
         wassert(actual(mdc.size()) == 2u);
         wassert_true(mdc[0].has_source());
@@ -168,11 +170,11 @@ add_method("gridspace", [](Fixture& f) {
 add_method("expa_inline", [](Fixture& f) {
     f.import();
     core::cfg::Section cfg;
-    auto qm = qmacro::get(cfg, f.dispatch_cfg, "expa",
+    qmacro::Options opts(cfg, f.dispatch_cfg, "expa",
             "ds:testds. d:2009-08-07. t:0000. s:AN. l:G00. v:GRIB1/200/140/229.\n"
             "ds:testds. d:2009-08-07. t:0000. s:GRIB1/1. l:MSL. v:GRIB1/80/2/2.\n"
             );
-
+    auto qm = qmacro::get(opts);
     metadata::Collection mdc(*qm, dataset::DataQuery("", true));
     wassert(actual(mdc.size()) == 2u);
     // Ensure that data is reachable
@@ -189,11 +191,11 @@ add_method("expa_inline", [](Fixture& f) {
 add_method("expa_sort", [](Fixture& f) {
     f.import();
     core::cfg::Section cfg;
-    auto qm = qmacro::get(cfg, f.dispatch_cfg, "expa",
+    qmacro::Options opts(cfg, f.dispatch_cfg, "expa",
             "ds:testds. d:2009-08-07. t:0000. s:AN. l:G00. v:GRIB1/200/140/229.\n"
             "ds:testds. d:2009-08-08. t:0000. s:GRIB1/1. l:MSL. v:GRIB1/80/2/2.\n"
             );
-
+    auto qm = qmacro::get(opts);
     dataset::DataQuery dq;
     dq.sorter = sort::Compare::parse("month:-reftime");
     metadata::Collection mdc(*qm, dq);
