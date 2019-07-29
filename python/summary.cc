@@ -248,13 +248,13 @@ namespace python {
 
 arkipy_Summary* summary_create()
 {
-    return (arkipy_Summary*)PyObject_CallObject((PyObject*)arkipy_Summary_Type, NULL);
+    return (arkipy_Summary*)throw_ifnull(PyObject_CallObject((PyObject*)arkipy_Summary_Type, NULL));
 }
 
 arkipy_Summary* summary_create(std::unique_ptr<Summary>&& summary)
 {
     arkipy_Summary* result = PyObject_New(arkipy_Summary, arkipy_Summary_Type);
-    if (!result) return nullptr;
+    if (!result) throw PythonException();
     result->summary = summary.release();
     return result;
 }

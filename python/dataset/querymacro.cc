@@ -3,9 +3,11 @@
 #include "arki/querymacro.h"
 #include "arki/utils/sys.h"
 #include "arki/nag.h"
+#include "arki/summary.h"
 #include "python/cfg.h"
 #include "python/metadata.h"
 #include "python/matcher.h"
+#include "python/summary.h"
 #include "python/utils/values.h"
 #include "python/utils/dict.h"
 
@@ -70,7 +72,7 @@ public:
         pyo_unique_ptr meth(throw_ifnull(PyObject_GetAttrString(qmacro, "query_data")));
         pyo_unique_ptr args(throw_ifnull(PyTuple_New(0)));
         pyo_unique_ptr kwargs(throw_ifnull(PyDict_New()));
-        set_dict(kwargs, "matcher", matcher(q.matcher));
+        set_dict(kwargs, "matcher", q.matcher);
         set_dict(kwargs, "with_data", q.with_data);
         // TODO set_dict(kwargs, "sort", q.sorter);
         set_dict(kwargs, "on_metadata", dest);
@@ -84,11 +86,14 @@ public:
     void query_summary(const Matcher& matcher, Summary& summary) override
     {
         AcquireGIL gil;
-    //constexpr static const char* signature = "matcher: str=None, summary: arkimet.Summary=None";
-    //constexpr static const char* returns = "arkimet.Summary";
-        // Pass matcher
-        // Pass summary
-        // Call the function
+        pyo_unique_ptr meth(throw_ifnull(PyObject_GetAttrString(qmacro, "query_summary")));
+        pyo_unique_ptr args(throw_ifnull(PyTuple_New(0)));
+        pyo_unique_ptr kwargs(throw_ifnull(PyDict_New()));
+        pyo_unique_ptr py_summary((PyObject*)summary_create());
+        set_dict(kwargs, "matcher", matcher);
+        set_dict(kwargs, "summary", py_summary);
+        pyo_unique_ptr res(throw_ifnull(PyObject_Call(meth, args, kwargs)));
+        summary.add(*((arkipy_Summary*)py_summary.get())->summary);
     }
 };
 

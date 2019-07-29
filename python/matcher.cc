@@ -108,7 +108,7 @@ MatcherDef* matcher_def = nullptr;
 namespace arki {
 namespace python {
 
-PyObject* matcher(arki::Matcher matcher)
+PyObject* matcher_to_python(arki::Matcher matcher)
 {
     py_unique_ptr<arkipy_Matcher> res(throw_ifnull(PyObject_New(arkipy_Matcher, arkipy_Matcher_Type)));
     new (&(res->matcher)) arki::Matcher(matcher);

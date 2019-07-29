@@ -25,7 +25,9 @@ extern PyTypeObject* arkipy_Matcher_Type;
 namespace arki {
 namespace python {
 
-PyObject* matcher(arki::Matcher matcher);
+PyObject* matcher_to_python(arki::Matcher matcher);
+inline PyObject* to_python(arki::Matcher matcher) { return matcher_to_python(matcher); }
+
 
 /**
  * Return a Matcher from a python string or arkimet.Matcher object
