@@ -20,7 +20,6 @@
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
 #include <system_error>
-#include <sstream>
 #include <unistd.h>
 #include <cerrno>
 #include <cassert>
@@ -339,11 +338,9 @@ public:
 
         // Lock away writes and reads
         Pending p = checker.idx->begin_transaction();
-        // cerr << "LOCK" << endl;
 
         // Remove from the index all data about the file
         checker.idx->reset(segment->segment().relpath);
-        // cerr << " RESET " << file << endl;
 
         // Scan the list of metadata, looking for duplicates and marking all
         // the duplicates except the last one as deleted
@@ -361,7 +358,6 @@ public:
             else
                 dup->second = *i;
         }
-        // cerr << " DUPECHECKED " << pathname << ": " << finddupes.size() << endl;
 
         // Send the remaining metadata to the reindexer
         std::string basename = str::basename(segment->segment().relpath);
@@ -385,14 +381,12 @@ public:
                 // sqlite will take care of transaction consistency
             }
         }
-        // cerr << " REINDEXED " << pathname << endl;
 
         // TODO: if scan fails, remove all info from the index and rename the
         // file to something like .broken
 
         // Commit the changes on the database
         p.commit();
-        // cerr << " COMMITTED" << endl;
 
         // TODO: remove relevant summary
     }

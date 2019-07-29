@@ -1,12 +1,7 @@
-#include "config.h"
-
-#include <arki/types/tests.h>
-#include <arki/values.h>
-#include <arki/binary.h>
-
+#include "arki/types/tests.h"
+#include "arki/values.h"
+#include "arki/binary.h"
 #include <memory>
-#include <sstream>
-#include <iostream>
 
 namespace {
 using namespace std;

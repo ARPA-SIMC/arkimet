@@ -16,12 +16,9 @@
 #include "arki/scan/validator.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/string.h"
-#include <sstream>
 #include <iostream>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <fcntl.h>
-#include <config.h>
 
 namespace {
 using namespace std;

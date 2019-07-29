@@ -1,11 +1,8 @@
-#include "config.h"
 #include <arki/metadata/tests.h>
 #include <arki/formatter.h>
 #include <arki/metadata.h>
 #include "arki/core/file.h"
 #include <memory>
-#include <sstream>
-#include <iostream>
 
 namespace {
 using namespace std;

@@ -12,8 +12,6 @@
 #include "arki/utils/sys.h"
 #include "arki/types/reftime.h"
 #include <unistd.h>
-#include <sys/fcntl.h>
-#include <sstream>
 #include <iostream>
 
 using namespace std;

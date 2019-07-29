@@ -13,8 +13,6 @@
 #include "arki/utils/sys.h"
 #include "arki/summary.h"
 #include "arki/nag.h"
-#include <sstream>
-#include <iostream>
 #include <algorithm>
 #include <unistd.h>
 #include <sys/types.h>

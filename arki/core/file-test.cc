@@ -1,9 +1,5 @@
-#include "config.h"
-#include <arki/tests/tests.h>
+#include "arki/tests/tests.h"
 #include "file.h"
-#include <sstream>
-#include <iostream>
-#include <fcntl.h>
 
 using namespace std;
 using namespace arki;
@@ -53,5 +49,3 @@ add_method("linereader", []() {
 }
 
 }
-
-

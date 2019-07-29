@@ -7,8 +7,6 @@
 #include "arki/metadata/collection.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
-#include <sstream>
-#include <iostream>
 
 namespace {
 using namespace std;

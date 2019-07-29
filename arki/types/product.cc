@@ -1,23 +1,21 @@
-#include <arki/exceptions.h>
-#include <arki/types/product.h>
-#include <arki/types/utils.h>
-#include <arki/binary.h>
-#include <arki/utils/string.h>
-#include <arki/emitter.h>
-#include <arki/emitter/memory.h>
+#include "arki/exceptions.h"
+#include "arki/types/product.h"
+#include "arki/types/utils.h"
+#include "arki/binary.h"
+#include "arki/utils/string.h"
+#include "arki/emitter.h"
+#include "arki/emitter/memory.h"
+#include "arki/libconfig.h"
 #include <sstream>
 #include <iomanip>
-#include <iostream>
 #include <stdexcept>
 
-#include "config.h"
-
 #ifdef HAVE_LUA
-#include <arki/utils/lua.h>
+#include "arki/utils/lua.h"
 #endif
 
 #ifdef HAVE_VM2
-#include <arki/utils/vm2.h>
+#include "arki/utils/vm2.h"
 #endif
 
 #define CODE TYPE_PRODUCT

@@ -3,8 +3,6 @@
 #include "arki/utils/geos.h"
 #include "arki/types/area.h"
 #include <cmath>
-#include <sstream>
-#include <iostream>
 #include <memory>
 
 namespace {
@@ -47,7 +45,6 @@ add_method("2", [] {
 
     unique_ptr<Area> area(Area::createGRIB(vb));
     auto g = bbox(*area);
-    //cerr <<" AREA " << area << endl;
 
 	ensure(g.get() != 0);
 	ensure_equals(g->getNumPoints(), 5u);
@@ -86,7 +83,6 @@ add_method("3", [] {
 
     unique_ptr<Area> area(Area::createGRIB(vb));
     auto g = bbox(*area);
-    //cerr <<" AREA " << area << endl;
 
 	ensure(g.get() != 0);
 	ensure_equals(g->getNumPoints(), 5u);
@@ -129,7 +125,6 @@ add_method("4", [] {
 
     unique_ptr<Area> area(Area::createGRIB(vb));
     auto g = bbox(*area);
-    //cerr <<" AREA " << area << endl;
 
 	ensure(g.get() != 0);
 	ensure_equals(g->getNumPoints(), 28u);
@@ -186,7 +181,6 @@ add_method("5", [] {
 
     unique_ptr<Area> area(Area::createGRIB(vb));
     auto g = bbox(*area);
-    //cerr <<" AREA " << area << endl;
 
 	ensure(g.get() != 0);
 	ensure_equals(g->getNumPoints(), 5u);
@@ -220,7 +214,6 @@ add_method("6", [] {
 
     unique_ptr<Area> area(Area::createGRIB(vb));
     auto g(bbox(*area));
-    //cerr <<" AREA " << area << endl;
 
     ensure(g.get() != 0);
     ensure_equals(g->getNumPoints(), 5u);
@@ -250,7 +243,6 @@ add_method("7", [] {
     unique_ptr<Area> area = Area::decodeString("GRIB(fe=0, fn=0, latfirst=4852500, latlast=5107500, lonfirst=402500, lonlast=847500, tn=32768, utm=1, zone=32)");
 
     auto g(bbox(*area));
-    //cerr <<" AREA " << area << endl;
 
     ensure(g.get() != 0);
     ensure_equals(g->getNumPoints(), 5u);

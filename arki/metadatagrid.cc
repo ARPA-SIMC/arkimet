@@ -1,8 +1,6 @@
-#include "config.h"
 #include "metadatagrid.h"
 #include "metadata.h"
 #include "utils/string.h"
-// #include <iostream>
 
 using namespace std;
 using namespace arki::utils;

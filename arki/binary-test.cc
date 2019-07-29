@@ -1,8 +1,6 @@
 #include "config.h"
 #include <arki/tests/tests.h>
 #include <arki/binary.h>
-#include <sstream>
-#include <iostream>
 
 using namespace std;
 using namespace arki;

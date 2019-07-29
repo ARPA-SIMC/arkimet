@@ -10,7 +10,6 @@
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
 #include "arki/validator.h"
-#include <iostream>
 
 namespace {
 using namespace std;

@@ -5,7 +5,6 @@
 #include "arki/emitter/memory.h"
 #include "arki/utils/lua.h"
 #include "config.h"
-#include <sstream>
 #include <cmath>
 #include <cstring>
 #include <ctime>
@@ -261,19 +260,15 @@ void Time::normalise()
     // Rebase day and month numbers on 0
     --mo;
     --da;
-    //cerr << "TOZERO " << tostringall(vals) << endl;
 
     // Normalise seconds
     normalN(se, mi, 60);
-    //cerr << "ADJSEC " << tostringall(vals) << endl;
 
     // Normalise minutes
     normalN(mi, ho, 60);
-    //cerr << "ADJMIN " << tostringall(vals) << endl;
 
     // Normalise hours
     normalN(ho, da, 24);
-    //cerr << "ADJHOUR " << tostringall(vals) << endl;
 
     // Normalise days
     while (da < 0)
@@ -282,7 +277,6 @@ void Time::normalise()
         normalN(mo, ye, 12);
         da += days_in_month(ye, mo + 1);
     }
-    //cerr << "ADJDAY1 " << tostringall(vals) << endl;
     while (true)
     {
         normalN(mo, ye, 12);
@@ -291,15 +285,12 @@ void Time::normalise()
         da -= dim;
         ++mo;
     }
-    //cerr << "ADJDAY2 " << tostringall(vals) << endl;
 
     // Normalise months
     normalN(mo, ye, 12);
-    //cerr << "ADJMONYEAR " << tostringall(vals) << endl;
 
     ++mo;
     ++da;
-    //cerr << "FROMZERO " << tostringall(vals) << endl;
 }
 
 std::string Time::to_iso8601(char sep) const

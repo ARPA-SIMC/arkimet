@@ -142,10 +142,8 @@ unique_ptr<Compare> Compare::parse(const std::string& expr)
     size_t pos = expr.find(':');
     if (pos == string::npos)
     {
-        //cerr << "creating interval: " << expr << endl;
         return unique_ptr<Compare>(new sort::Items(expr));
     } else {
-        //cerr << "creating with interval " << expr.substr(0, pos) << ": " << expr.substr(pos+1) << endl;
         return unique_ptr<Compare>(new sort::IntervalCompare(sort::parseInterval(expr.substr(0, pos)), expr.substr(pos+1)));
     }
 }

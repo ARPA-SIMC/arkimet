@@ -6,9 +6,6 @@
 #include <sstream>
 #include <unistd.h>
 
-// FIXME: for debugging
-//#include <iostream>
-
 using namespace std;
 
 namespace arki {

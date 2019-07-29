@@ -14,8 +14,6 @@
 #include "arki/report.h"
 #endif
 
-// #include <iostream>
-
 using namespace std;
 using namespace arki::utils;
 using namespace arki::types;

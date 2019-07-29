@@ -1,12 +1,9 @@
-#include <arki/types/tests.h>
-#include <arki/metadata/collection.h>
-#include <arki/sort.h>
-#include <arki/types/reftime.h>
-#include <arki/types/run.h>
-#include <arki/utils/string.h>
-
-#include <sstream>
-#include <iostream>
+#include "arki/types/tests.h"
+#include "arki/metadata/collection.h"
+#include "arki/sort.h"
+#include "arki/types/reftime.h"
+#include "arki/types/run.h"
+#include "arki/utils/string.h"
 
 namespace std{
 static ostream& operator<<(ostream& out, const vector<int>& v)
@@ -74,13 +71,13 @@ add_method("simple", [] {
 
 	sorter.flush();
 
-	ensure_equals(mdvals(mdc[0]), mdvals(0, 3, 7));
-	ensure_equals(mdvals(mdc[1]), mdvals(0, 2, 9));
-	ensure_equals(mdvals(mdc[2]), mdvals(0, 1, 9));
-	ensure_equals(mdvals(mdc[3]), mdvals(0, 0, 10));
-	ensure_equals(mdvals(mdc[4]), mdvals(1, 2, 7));
-	ensure_equals(mdvals(mdc[5]), mdvals(1, 0, 8));
-	ensure_equals(mdvals(mdc[6]), mdvals(1, 1, 9));
+    wassert(actual(mdvals(mdc[0])) == mdvals(0, 3, 7));
+    wassert(actual(mdvals(mdc[1])) == mdvals(0, 2, 9));
+    wassert(actual(mdvals(mdc[2])) == mdvals(0, 1, 9));
+    wassert(actual(mdvals(mdc[3])) == mdvals(0, 0, 10));
+    wassert(actual(mdvals(mdc[4])) == mdvals(1, 2, 7));
+    wassert(actual(mdvals(mdc[5])) == mdvals(1, 0, 8));
+    wassert(actual(mdvals(mdc[6])) == mdvals(1, 1, 9));
 });
 
 // An empty expression sorts by reference time
@@ -99,13 +96,13 @@ add_method("empty", [] {
 
 	sorter.flush();
 
-	ensure_equals(mdvals(mdc[0]), mdvals(0, 0, 10));
-	ensure_equals(mdvals(mdc[1]), mdvals(0, 1, 9));
-	ensure_equals(mdvals(mdc[2]), mdvals(0, 2, 9));
-	ensure_equals(mdvals(mdc[3]), mdvals(0, 3, 7));
-	ensure_equals(mdvals(mdc[4]), mdvals(1, 0, 8));
-	ensure_equals(mdvals(mdc[5]), mdvals(1, 1, 9));
-	ensure_equals(mdvals(mdc[6]), mdvals(1, 2, 7));
+    wassert(actual(mdvals(mdc[0])) == mdvals(0, 0, 10));
+    wassert(actual(mdvals(mdc[1])) == mdvals(0, 1, 9));
+    wassert(actual(mdvals(mdc[2])) == mdvals(0, 2, 9));
+    wassert(actual(mdvals(mdc[3])) == mdvals(0, 3, 7));
+    wassert(actual(mdvals(mdc[4])) == mdvals(1, 0, 8));
+    wassert(actual(mdvals(mdc[5])) == mdvals(1, 1, 9));
+    wassert(actual(mdvals(mdc[6])) == mdvals(1, 2, 7));
 });
 
 }

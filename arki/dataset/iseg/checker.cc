@@ -420,7 +420,6 @@ public:
             else
                 dup->second = *i;
         }
-        // cerr << " DUPECHECKED " << pathname << ": " << finddupes.size() << endl;
 
         // Send the remaining metadata to the reindexer
         std::string basename = str::basename(segment->segment().relpath);
@@ -444,14 +443,12 @@ public:
                 // sqlite will take care of transaction consistency
             }
         }
-        // cerr << " REINDEXED " << pathname << endl;
 
         // TODO: if scan fails, remove all info from the index and rename the
         // file to something like .broken
 
         // Commit the changes on the database
         p.commit();
-        // cerr << " COMMITTED" << endl;
 
         // TODO: remove relevant summary
     }
