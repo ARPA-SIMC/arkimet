@@ -103,6 +103,7 @@ struct Type
     constexpr static iternextfunc _iternext = nullptr;
     constexpr static richcmpfunc _richcompare = nullptr;
     constexpr static hashfunc _hash = nullptr;
+    constexpr static ternaryfunc _call = nullptr;
 
     constexpr static lenfunc sq_length = nullptr;
     constexpr static binaryfunc sq_concat = nullptr;
@@ -162,9 +163,9 @@ struct Type
             0,                         // tp_as_number
             tp_as_sequence,            // tp_as_sequence
             tp_as_mapping,             // tp_as_mapping
-            (hashfunc)Child::_hash,  // tp_hash
-            0,                         // tp_call
-            (reprfunc)Child::_str,   // tp_str
+            (hashfunc)Child::_hash,    // tp_hash
+            (ternaryfunc)Child::_call, // tp_call
+            (reprfunc)Child::_str,     // tp_str
             0,                         // tp_getattro
             0,                         // tp_setattro
             0,                         // tp_as_buffer
