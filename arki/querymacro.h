@@ -6,6 +6,7 @@
 #include <arki/core/cfg.h>
 #include <arki/dataset/fwd.h>
 #include <string>
+#include <functional>
 
 namespace arki {
 namespace qmacro {
@@ -31,6 +32,10 @@ struct Options
  * query: the macro script
  */
 std::shared_ptr<dataset::Reader> get(const Options& opts);
+
+void register_parser(
+        const std::string& ext,
+        std::function<std::shared_ptr<dataset::Reader>(const std::string& source, const Options& opts)> parser);
 
 void init();
 
