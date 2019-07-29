@@ -16212,11 +16212,6 @@
  {
   "doc": "",
   "group": "arki_querymacro",
-  "method": "count"
- },
- {
-  "doc": "",
-  "group": "arki_querymacro",
   "method": "noop"
  },
  {

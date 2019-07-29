@@ -284,8 +284,7 @@ Examples::
 
     static void _dealloc(Impl* self)
     {
-        delete self->ds;
-        self->ds = nullptr;
+        self->ds.~shared_ptr<arki::dataset::Reader>();
         Py_TYPE(self)->tp_free((PyObject*)self);
     }
 
@@ -307,7 +306,7 @@ Examples::
             return -1;
 
         try {
-            self->ds = arki::dataset::Reader::create(section_from_python(cfg)).release();
+            new (&(self->ds)) shared_ptr<arki::dataset::Reader>(arki::dataset::Reader::create(section_from_python(cfg)));
             return 0;
         } ARKI_CATCH_RETURN_INT;
     }
@@ -426,8 +425,7 @@ Examples::
 
     static void _dealloc(Impl* self)
     {
-        delete self->ds;
-        self->ds = nullptr;
+        self->ds.~shared_ptr<arki::dataset::Writer>();
         Py_TYPE(self)->tp_free((PyObject*)self);
     }
 
@@ -449,7 +447,7 @@ Examples::
             return -1;
 
         try {
-            self->ds = arki::dataset::Writer::create(section_from_python(cfg)).release();
+            new (&(self->ds)) std::shared_ptr<arki::dataset::Writer>(arki::dataset::Writer::create(section_from_python(cfg)));
             return 0;
         } ARKI_CATCH_RETURN_INT;
     }
@@ -547,7 +545,7 @@ struct segment_state : public MethKwargs<segment_state, arkipy_DatasetChecker>
         try {
             auto cfg = get_checker_config(args, kw);
 
-            arki::dataset::segmented::Checker* checker = dynamic_cast<arki::dataset::segmented::Checker*>(self->ds);
+            arki::dataset::segmented::Checker* checker = dynamic_cast<arki::dataset::segmented::Checker*>(self->ds.get());
             if (!checker)
                 Py_RETURN_NONE;
 
@@ -585,8 +583,7 @@ Examples::
 
     static void _dealloc(Impl* self)
     {
-        delete self->ds;
-        self->ds = nullptr;
+        self->ds.~shared_ptr<arki::dataset::Checker>();
         Py_TYPE(self)->tp_free((PyObject*)self);
     }
 
@@ -608,7 +605,7 @@ Examples::
             return -1;
 
         try {
-            self->ds = arki::dataset::Checker::create(section_from_python(cfg)).release();
+            new (&(self->ds)) std::shared_ptr<arki::dataset::Checker>(arki::dataset::Checker::create(section_from_python(cfg)));
             return 0;
         } ARKI_CATCH_RETURN_INT;
     }
@@ -883,11 +880,11 @@ arkipy_DatasetReader* dataset_reader_create()
     return (arkipy_DatasetReader*)PyObject_CallObject((PyObject*)arkipy_DatasetReader_Type, NULL);
 }
 
-arkipy_DatasetReader* dataset_reader_create(std::unique_ptr<arki::dataset::Reader>&& ds)
+arkipy_DatasetReader* dataset_reader_create(std::shared_ptr<arki::dataset::Reader> ds)
 {
     arkipy_DatasetReader* result = PyObject_New(arkipy_DatasetReader, arkipy_DatasetReader_Type);
     if (!result) return nullptr;
-    result->ds = ds.release();
+    new (&(result->ds)) std::shared_ptr<arki::dataset::Reader>(ds);
     return result;
 }
 

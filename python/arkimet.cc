@@ -98,12 +98,12 @@ Arguments:
             core::cfg::Sections datasets;
             datasets = sections_from_python(arg_datasets);
 
-            unique_ptr<dataset::Reader> ds;
+            std::shared_ptr<dataset::Reader> ds;
             string baseurl = dataset::http::Reader::allSameRemoteServer(datasets);
             if (baseurl.empty())
             {
                 // Create the local query macro
-                ds.reset(new Querymacro(cfg, datasets, name, query));
+                ds = qmacro::get(cfg, datasets, name, query);
             } else {
                 // Create the remote query macro
                 core::cfg::Section cfg;
@@ -114,7 +114,7 @@ Arguments:
                 ds = dataset::Reader::create(cfg);
             }
 
-            return (PyObject*)dataset_reader_create(move(ds));
+            return (PyObject*)dataset_reader_create(ds);
         } ARKI_CATCH_RETURN_PYO
     }
 };

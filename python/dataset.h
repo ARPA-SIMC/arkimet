@@ -10,7 +10,7 @@ extern "C" {
 
 typedef struct {
     PyObject_HEAD
-    arki::dataset::Reader* ds;
+    std::shared_ptr<arki::dataset::Reader> ds;
 } arkipy_DatasetReader;
 
 extern PyTypeObject* arkipy_DatasetReader_Type;
@@ -22,7 +22,7 @@ extern PyTypeObject* arkipy_DatasetReader_Type;
 
 typedef struct {
     PyObject_HEAD
-    arki::dataset::Writer* ds;
+    std::shared_ptr<arki::dataset::Writer> ds;
 } arkipy_DatasetWriter;
 
 extern PyTypeObject* arkipy_DatasetWriter_Type;
@@ -39,7 +39,7 @@ extern PyObject* arkipy_ImportFailedError;
 
 typedef struct {
     PyObject_HEAD
-    arki::dataset::Checker* ds;
+    std::shared_ptr<arki::dataset::Checker> ds;
 } arkipy_DatasetChecker;
 
 extern PyTypeObject* arkipy_DatasetChecker_Type;
@@ -66,7 +66,7 @@ namespace arki {
 namespace python {
 
 arkipy_DatasetReader* dataset_reader_create();
-arkipy_DatasetReader* dataset_reader_create(std::unique_ptr<dataset::Reader>&& ds);
+arkipy_DatasetReader* dataset_reader_create(std::shared_ptr<dataset::Reader> ds);
 
 void register_dataset(PyObject* m);
 
