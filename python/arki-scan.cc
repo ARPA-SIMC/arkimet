@@ -302,10 +302,7 @@ struct dispatch_stdin : public MethKwargs<dispatch_stdin, arkipy_ArkiScan>
                     auto stats = self->dispatcher->process(reader, reader.name());
 
                     if (status)
-                    {
-                        fprintf(stderr, "%s: %s\n", stats.name.c_str(), stats.summary().c_str());
-                        fflush(stderr);
-                    }
+                        arki::nag::warning("%s: %s", stats.name.c_str(), stats.summary().c_str());
 
                     dispatch_ok = stats.success(ignore_duplicates) && dispatch_ok;
                 });
@@ -368,10 +365,7 @@ struct dispatch_sections : public MethKwargs<dispatch_sections, arkipy_ArkiScan>
                     try {
                         auto stats = self->dispatcher->process(*source.reader, source.reader->name());
                         if (status)
-                        {
-                            fprintf(stderr, "%s: %s\n", stats.name.c_str(), stats.summary().c_str());
-                            fflush(stderr);
-                        }
+                            arki::nag::warning("%s: %s", stats.name.c_str(), stats.summary().c_str());
                         success = stats.success(ignore_duplicates);
                     } catch (std::exception& e) {
                         arki::nag::warning("%s failed: %s", source.reader->name().c_str(), e.what());
