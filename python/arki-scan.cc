@@ -14,7 +14,6 @@
 #include "common.h"
 #include "cmdline.h"
 #include "cmdline/processor.h"
-#include <iostream>
 
 using namespace arki::python;
 using namespace arki::utils;
