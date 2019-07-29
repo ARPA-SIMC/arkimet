@@ -117,14 +117,6 @@ core::cfg::Sections sections_from_python(PyObject* o);
 std::unique_ptr<core::LineReader> linereader_from_python(PyObject* o);
 
 /**
- * Create a metadata_dest_func from a python object.
- *
- * Note that the object should not be destroyed during the lifetime of the
- * resulting function.
- */
-arki::metadata_dest_func dest_func_from_python(PyObject* o);
-
-/**
  * Return a Matcher from a python string or arkimet.Matcher object
  */
 arki::Matcher matcher_from_python(PyObject* o);
