@@ -86,13 +86,13 @@ bool is_verbose();
 bool is_debug();
 
 /// Output a message, except during tests (a newline is automatically appended)
-void warning(const char* fmt, ...);
+void warning(const char* fmt, ...) __attribute__ ((format(printf, 1, 2)));
 
 /// Output a message, if verbose messages are allowed (a newline is automatically appended)
-void verbose(const char* fmt, ...);
+void verbose(const char* fmt, ...) __attribute__ ((format(printf, 1, 2)));
 
 /// Output a message, if debug messages are allowed (a newline is automatically appended)
-void debug(const char* fmt, ...);
+void debug(const char* fmt, ...) __attribute__ ((format(printf, 1, 2)));
 
 }
 }

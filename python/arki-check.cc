@@ -108,7 +108,7 @@ struct remove : public MethKwargs<remove, arkipy_ArkiCheck>
                         arki::nag::verbose("%s: %u data deleted", i.first.c_str(), i.second);
                 } else {
                     for (const auto& i: counts)
-                        arki::nag::verbose("%s: %u data would be deleted", i.first.c_str(), i.second);
+                        arki::nag::warning("%s: %u data would be deleted", i.first.c_str(), i.second);
                 }
             }
             Py_RETURN_NONE;

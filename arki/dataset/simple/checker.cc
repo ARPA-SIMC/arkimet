@@ -107,14 +107,14 @@ public:
         if (ts_idx != ts_data || ts_md < ts_data || ts_sum < ts_md)
         {
             if (ts_idx != ts_data)
-                nag::verbose("%s: %s has a timestamp (%d) different than the one in the index (%d)",
-                        checker.config().path.c_str(), segment->segment().relpath.c_str(), ts_data, ts_idx);
+                nag::verbose("%s: %s has a timestamp (%ld) different than the one in the index (%ld)",
+                        checker.config().path.c_str(), segment->segment().relpath.c_str(), (long int)ts_data, (long int)ts_idx);
             if (ts_md < ts_data)
-                nag::verbose("%s: %s has a timestamp (%d) newer that its metadata (%d)",
-                        checker.config().path.c_str(), segment->segment().relpath.c_str(), ts_data, ts_md);
+                nag::verbose("%s: %s has a timestamp (%ld) newer that its metadata (%ld)",
+                        checker.config().path.c_str(), segment->segment().relpath.c_str(), (long int)ts_data, (long int)ts_md);
             if (ts_md < ts_data)
-                nag::verbose("%s: %s metadata has a timestamp (%d) newer that its summary (%d)",
-                        checker.config().path.c_str(), segment->segment().relpath.c_str(), ts_md, ts_sum);
+                nag::verbose("%s: %s metadata has a timestamp (%ld) newer that its summary (%ld)",
+                        checker.config().path.c_str(), segment->segment().relpath.c_str(), (long int)ts_md, (long int)ts_sum);
             state = segment::SEGMENT_UNALIGNED;
         }
 
