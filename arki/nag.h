@@ -94,6 +94,9 @@ void verbose(const char* fmt, ...) __attribute__ ((format(printf, 1, 2)));
 /// Output a message, if debug messages are allowed (a newline is automatically appended)
 void debug(const char* fmt, ...) __attribute__ ((format(printf, 1, 2)));
 
+/// Output a message to /dev/tty (used for debugging when the output is redirected)
+void debug_tty(const char* fmt, ...) __attribute__ ((format(printf, 1, 2)));
+
 }
 }
 

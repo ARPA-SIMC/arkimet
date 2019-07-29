@@ -169,6 +169,20 @@ void debug(const char* fmt, ...)
     va_end(ap);
 }
 
+void debug_tty(const char* fmt, ...)
+{
+    FILE* tty = fopen("/dev/tty", "wt");
+    if (!tty)
+        return;
+
+    va_list ap;
+    va_start(ap, fmt);
+    vfprintf(tty, fmt, ap);
+    putc('\n', tty);
+    va_end(ap);
+    fclose(tty);
+}
+
 
 }
 }
