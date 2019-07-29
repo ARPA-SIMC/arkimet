@@ -86,7 +86,7 @@ add_method("acquire", [](Fixture& f) {
     wassert(actual_file("testds/2007/07-08.grib.summary").not_exists());
     wassert(actual_file("testds/" + f.idxfname()).not_exists());
     wassert(actual(sys::timestamp("testds/2007/07-08.grib")) <= sys::timestamp("testds/2007/07-08.grib.index"));
-    ensure(!files::hasDontpackFlagfile("testds"));
+    wassert_false(files::hasDontpackFlagfile("testds"));
 
     f.import_results.push_back(md);
 

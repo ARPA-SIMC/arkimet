@@ -1,4 +1,4 @@
-#include "config.h"
+#include "arki/tests/legacy.h"
 #include "arki/core/file.h"
 #include "arki/dataset/tests.h"
 #include "arki/dataset/index/manifest.h"

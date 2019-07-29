@@ -60,10 +60,10 @@ add_method("summary_invalidate", [](Fixture& f) {
     // Query the summary, there should be no data
     {
         auto reader = f.makeOndisk2Reader();
-        ensure(reader->hasWorkingIndex());
+        wassert_true(reader->hasWorkingIndex());
         Summary s;
         reader->query_summary(Matcher(), s);
-        ensure_equals(s.count(), 0u);
+        wassert(actual(s.count()) == 0u);
     }
 
     // Acquire files
@@ -72,10 +72,10 @@ add_method("summary_invalidate", [](Fixture& f) {
     // Query the summary again, there should be data
     {
         auto reader = f.makeOndisk2Reader();
-        ensure(reader->hasWorkingIndex());
+        wassert_true(reader->hasWorkingIndex());
         Summary s;
         reader->query_summary(Matcher(), s);
-        ensure_equals(s.count(), 3u);
+        wassert(actual(s.count()) == 3u);
     }
 });
 

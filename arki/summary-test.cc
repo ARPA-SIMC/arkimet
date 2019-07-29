@@ -1,3 +1,4 @@
+#include "arki/tests/legacy.h"
 #include "types/tests.h"
 #include "tests/lua.h"
 #include "core/file.h"

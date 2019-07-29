@@ -126,22 +126,22 @@ add_method("usn", [] {
         // be left untouched
         metadata::TestCollection mdc("inbound/test.grib1");
         int usn = 42;
-        ensure_equals(scan::Scanner::update_sequence_number(mdc[0], usn), false);
-        ensure_equals(usn, 42);
+        wassert_false(scan::Scanner::update_sequence_number(mdc[0], usn));
+        wassert(actual(usn) == 42);
     }
 
     {
         metadata::TestCollection mdc("inbound/synop-gts.bufr");
         int usn;
-        ensure_equals(scan::Scanner::update_sequence_number(mdc[0], usn), true);
-        ensure_equals(usn, 0);
+        wassert_true(scan::Scanner::update_sequence_number(mdc[0], usn));
+        wassert(actual(usn) == 0);
     }
 
     {
         metadata::TestCollection mdc("inbound/synop-gts-usn2.bufr");
         int usn;
-        ensure_equals(scan::Scanner::update_sequence_number(mdc[0], usn), true);
-        ensure_equals(usn, 2);
+        wassert_true(scan::Scanner::update_sequence_number(mdc[0], usn));
+        wassert(actual(usn) == 2);
     }
 #endif
 });

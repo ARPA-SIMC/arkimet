@@ -1,3 +1,4 @@
+#include "arki/tests/legacy.h"
 #include "arki/tests/tests.h"
 #include "arki/metadata/stream.h"
 #include "arki/metadata.h"

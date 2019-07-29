@@ -1,3 +1,4 @@
+#include "arki/tests/legacy.h"
 #include "arki/metadata/tests.h"
 #include "arki/exceptions.h"
 #include "arki/dataset.h"

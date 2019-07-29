@@ -36,20 +36,20 @@ add_method("basic", [] {
     unique_ptr<Type> origin(Origin::createGRIB1(200, 0, 0));
     unique_ptr<Type> product(Product::createGRIB1(200, 1, 2));
 
-    ensure_equals(u.get(md), -1);
+    wassert(actual(u.get(md)) == -1);
     md.set(*origin);
     md.set(*product);
 
-	// ID is -1 if it is not in the database
-	ensure_equals(u.get(md), -1);
+    // ID is -1 if it is not in the database
+    wassert(actual(u.get(md)) == -1);
 
-	int id = u.obtain(md);
-	ensure_equals(id, 1);
+    int id = u.obtain(md);
+    wassert(actual(id) == 1);
 
-	// Insert again, we should have the same result
-	ensure_equals(u.obtain(md), 1);
+    // Insert again, we should have the same result
+    wassert(actual(u.obtain(md)) == 1);
 
-	ensure_equals(u.get(md), 1);
+    wassert(actual(u.get(md)) == 1);
 
     // Retrieve from the database
     Metadata md1;
@@ -57,12 +57,12 @@ add_method("basic", [] {
     wassert(actual_type(md1.get<types::Origin>()) == origin);
     wassert(actual_type(md1.get<types::Product>()) == product);
 
-	Matcher m = Matcher::parse("origin:GRIB1,200; product:GRIB1,200,1");
-	vector<string> constraints;
-	ensure_equals(u.add_constraints(m, constraints, "t"), 2);
-	ensure_equals(constraints.size(), 2u);
-	ensure_equals(constraints[0], "t.origin =1");
-	ensure_equals(constraints[1], "t.product =1");
+    Matcher m = Matcher::parse("origin:GRIB1,200; product:GRIB1,200,1");
+    vector<string> constraints;
+    wassert(actual(u.add_constraints(m, constraints, "t")) == 2);
+    wassert(actual(constraints.size()) == 2u);
+    wassert(actual(constraints[0]) == "t.origin =1");
+    wassert(actual(constraints[1]) == "t.product =1");
 });
 
 }

@@ -27,11 +27,7 @@ add_method("dontpack", [] {
     wassert(actual(hasDontpackFlagfile(name)).isfalse());
     wassert(createDontpackFlagfile(name));
     wassert(actual(hasDontpackFlagfile(name)).istrue());
-    try {
-        createNewDontpackFlagfile(name);
-        ensure(false);
-    } catch (...) {
-    }
+    wassert_throws(std::system_error, createNewDontpackFlagfile(name));
     wassert(removeDontpackFlagfile(name));
     wassert(actual(hasDontpackFlagfile(name)).isfalse());
     wassert(createNewDontpackFlagfile(name));

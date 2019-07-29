@@ -132,10 +132,10 @@ add_method("regression01", [] {
     auto config = core::cfg::Sections::parse(conf);
 
     metadata::TestCollection source("inbound/tempforecast.bufr", true);
-    ensure_equals(source.size(), 1u);
+    wassert(actual(source.size()) == 1u);
 
     Matcher matcher = Matcher::parse("origin:BUFR,200; product:BUFR:t=temp");
-    ensure(matcher(source[0]));
+    wassert_true(matcher(source[0]));
 
     RealDispatcher dispatcher(config);
     auto batch = source.make_import_batch();

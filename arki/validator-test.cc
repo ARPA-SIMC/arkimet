@@ -35,8 +35,8 @@ add_method("fail_always", [] {
 
     validators::FailAlways v;
     vector<string> errors;
-    ensure(!v(md, errors));
-    ensure_equals(errors.size(), 1u);
+    wassert_false(v(md, errors));
+    wassert(actual(errors.size()) == 1u);
 });
 
 #define ensure_no_errors() \
@@ -44,16 +44,16 @@ add_method("fail_always", [] {
         errors.clear(); \
         bool tmp = v(md, errors); \
         dump_errors(errors); \
-        ensure(tmp); \
-        ensure_equals(errors.size(), 0u); \
+        wassert_true(tmp); \
+        wassert(actual(errors.size()) == 0u); \
     } while(0)
 
 #define ensure_errors(count) \
     do { \
         errors.clear(); \
         bool tmp = v(md, errors); \
-        ensure(!tmp); \
-        ensure_equals(errors.size(), count); \
+        wassert_false(tmp); \
+        wassert(actual(errors.size()) == count); \
     } while(0)
 
 

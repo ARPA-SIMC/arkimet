@@ -1,3 +1,4 @@
+#include "arki/tests/legacy.h"
 #include "arki/matcher/tests.h"
 #include "arki/matcher.h"
 #include "arki/metadata.h"

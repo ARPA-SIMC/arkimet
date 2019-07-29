@@ -48,8 +48,8 @@ add_method("scan", []() {
     md.unset(TYPE_VALUE);
     md.drop_cached_data();
     auto buf = md.get_data().read();
-    ensure_equals(buf.size(), 34u);
-    ensure_equals(string((const char*)buf.data(), 34), "198710310000,1,227,1.2,,,000000000");
+    wassert(actual(buf.size()) == 34u);
+    wassert(actual(string((const char*)buf.data(), 34)) == "198710310000,1,227,1.2,,,000000000");
 });
 
 // Scan a well-known vm2 sample (with seconds)
@@ -85,17 +85,15 @@ add_method("validate", []() {
     const scan::Validator& v = scan::vm2::validator();
 
     sys::File fd("inbound/test.vm2", O_RDONLY);
-#define ensure_no_throws(x) do { try { x; } catch(std::exception&) { ensure(false); } } while (0)
-#define ensure_throws(x) do { try { x; ensure(false); } catch (std::exception&) { } } while (0)
-    ensure_no_throws(v.validate_file(fd, 0, 35));
-    ensure_no_throws(v.validate_file(fd, 0, 34));
-    ensure_no_throws(v.validate_file(fd, 35, 35));
-    ensure_no_throws(v.validate_file(fd, 35, 36));
+    wassert(v.validate_file(fd, 0, 35));
+    wassert(v.validate_file(fd, 0, 34));
+    wassert(v.validate_file(fd, 35, 35));
+    wassert(v.validate_file(fd, 35, 36));
 
-    ensure_throws(v.validate_file(fd, 1, 35));
-    ensure_throws(v.validate_file(fd, 0, 36));
-    ensure_throws(v.validate_file(fd, 34, 34));
-    ensure_throws(v.validate_file(fd, 36, 34));
+    wassert_throws(std::runtime_error, v.validate_file(fd, 1, 35));
+    wassert_throws(std::runtime_error, v.validate_file(fd, 0, 36));
+    wassert_throws(std::runtime_error, v.validate_file(fd, 34, 34));
+    wassert_throws(std::runtime_error, v.validate_file(fd, 36, 34));
 
     fd.close();
 
@@ -104,13 +102,13 @@ add_method("validate", []() {
     buf = mdc[0].get_data().read();
 
     v.validate_buf(buf.data(), buf.size());
-    ensure_throws(v.validate_buf((const char*)buf.data()+1, buf.size()-1));
+    wassert_throws(std::runtime_error, v.validate_buf((const char*)buf.data()+1, buf.size()-1));
 
     std::ifstream in("inbound/test.vm2");
     std::string line;
     while (std::getline(in, line)) {
         line += "\n";
-        ensure_no_throws(v.validate_buf(line.c_str(), line.size()));
+        wassert(v.validate_buf(line.c_str(), line.size()));
     }
 });
 

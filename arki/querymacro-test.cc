@@ -1,3 +1,4 @@
+#include "arki/tests/legacy.h"
 #include "arki/dataset/tests.h"
 #include "arki/types/reftime.h"
 #include "arki/metadata/data.h"

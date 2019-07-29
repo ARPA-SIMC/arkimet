@@ -80,12 +80,11 @@ add_method("no_expansion", [](Fixture& f) {
     // Build the grid query
     dataset::GridQuery gq(ds);
 
-    try {
+    auto e = wassert_throws(std::runtime_error, {
         gq.add(Matcher::parse("timerange:c012; level:g00; product:u"));
-        ensure(false);
-    } catch (std::exception& c) {
-        ensure(string(c.what()).find("no data which correspond to the matcher") != string::npos);
-    }
+    });
+    wassert(actual(e.what()).contains("no data which correspond to the matcher"));
+
     gq.add(Matcher::parse("timerange:c012; level:g00; product:tp"));
 
     Time t(2010, 05, 03, 0, 0, 0);
@@ -93,7 +92,7 @@ add_method("no_expansion", [](Fixture& f) {
 
     gq.consolidate();
 
-    ensure_equals(gq.expectedItems(), 1u);
+    wassert(actual(gq.expectedItems()) == 1u);
 });
 
 }

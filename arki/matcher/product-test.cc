@@ -63,18 +63,10 @@ add_method("bufr", [] {
 	ensure_not_matches("product:BUFR,1,2,3:name=antani1", md);
 	ensure_not_matches("product:BUFR,1,2,3:enam=antani", md);
 	ensure_not_matches("product:GRIB1,1,2,3", md);
-    try {
-        ensure_matches("product:BUFR,name=antani", md);
-        ensure(false);
-    } catch (std::exception& e) {
-        ensure(string(e.what()).find("is not a number") != string::npos);
-    }
-    try {
-        ensure_matches("product:BUFR:0,,2", md);
-        ensure(false);
-    } catch (std::exception& e) {
-        ensure(string(e.what()).find("key=value") != string::npos);
-    }
+    auto e1 = wassert_throws(std::invalid_argument, Matcher::parse("product:BUFR,name=antani"));
+    wassert(actual(e1.what()).contains("is not a number"));
+    auto e2 = wassert_throws(std::runtime_error, Matcher::parse("product:BUFR:0,,2"));
+    wassert(actual(e2.what()).contains("key=value"));
 });
 
 // Try matching VM2 product
@@ -89,12 +81,10 @@ add_method("vm2", [] {
 	ensure_matches("product:VM2,1", md);
 	ensure_not_matches("product:GRIB1,1,2,3", md);
     ensure_not_matches("product:VM2,2", md);
-    try {
-        ensure_matches("product:VM2,ciccio=riccio", md);
-        ensure(false);
-    } catch (std::exception& e) {
-        ensure(string(e.what()).find("is not a number") != string::npos);
-    }
+
+    auto e1 = wassert_throws(std::invalid_argument, Matcher::parse("product:VM2,ciccio=riccio"));
+    wassert(actual(e1.what()).contains("is not a number"));
+
     ensure_not_matches("product: VM2:ciccio=riccio", md);
     ensure_not_matches("product: VM2,1:ciccio=riccio", md);
     ensure_matches("product: VM2,1:bcode=B20013", md);

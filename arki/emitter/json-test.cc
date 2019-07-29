@@ -1,3 +1,4 @@
+#include "arki/tests/legacy.h"
 #include "arki/tests/tests.h"
 #include "json.h"
 #include "memory.h"

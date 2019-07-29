@@ -131,9 +131,9 @@ add_method("vm2_details", [] {
 
     // Test derived values
     ValueBag vb1 = ValueBag::parse("bcode=B20013,lt1=256,l1=0,lt2=258,l2=0,tr=254,p1=0,p2=0,unit=m");
-    ensure(product::VM2::create(1)->derived_values() == vb1);
+    wassert_true(product::VM2::create(1)->derived_values() == vb1);
     ValueBag vb2 = ValueBag::parse("bcode=NONONO,lt1=256,l1=0,lt2=258,tr=254,p1=0,p2=0,unit=m");
-    ensure(product::VM2::create(1)->derived_values() != vb2);
+    wassert_true(product::VM2::create(1)->derived_values() != vb2);
 });
 
 // Test Lua functions
