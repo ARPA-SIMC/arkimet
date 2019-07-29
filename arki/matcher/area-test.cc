@@ -232,12 +232,9 @@ add_method("vm2", [] {
 	ensure_not_matches("area:VM2,2", md);
 	ensure_not_matches("area:GRIB:lon=0,lat=0", md);
 
-    try {
-        ensure_matches("area:VM2,ciccio=riccio", md);
-        ensure(false);
-    } catch (std::exception& e) {
-        ensure(string(e.what()).find("is not a number") != string::npos);
-    }
+    auto e1 = wassert_throws(std::invalid_argument, Matcher::parse("area:VM2,ciccio=riccio"));
+    wassert(actual(e1.what()).contains("is not a number"));
+
     ensure_not_matches("area: VM2:ciccio=riccio", md);
     ensure_not_matches("area: VM2,1:ciccio=riccio", md);
     ensure_matches("area: VM2,1:lon=1207738", md);

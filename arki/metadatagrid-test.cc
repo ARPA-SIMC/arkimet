@@ -33,7 +33,7 @@ add_method("query", [] {
     md.set("origin", "GRIB1(200, 0, 101)");
     md.set("product", "GRIB1(200, 140, 229)");
 
-    wassert(actual(mdg.index(md)), 0);
+    wassert(actual(mdg.index(md)) == 0);
 });
 
 }

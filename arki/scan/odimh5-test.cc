@@ -83,7 +83,7 @@ add_method("comp_etop", [] {
     // Check contents
     wassert(actual(md).contains("origin", "ODIMH5(16144,IY46,itspc)"));
     wassert(actual(md).contains("product", "ODIMH5(COMP,ETOP)"));
-    ensure(!md.get(TYPE_LEVEL));
+    wassert_false(md.get(TYPE_LEVEL));
     wassert(actual(md).contains("reftime", "2013-03-18T14:30:00Z"));
     wassert(actual(md).contains("task", "ZLR-BB"));
     wassert(actual(md).contains("quantity", "HGHT"));
@@ -96,7 +96,7 @@ add_method("comp_lbm", [] {
     // Check contents
     wassert(actual(md).contains("origin", "ODIMH5(16144,IY46,itspc)"));
     wassert(actual(md).contains("product", "ODIMH5(COMP,NEW:LBM_ARPA)"));
-    ensure(!md.get(TYPE_LEVEL));
+    wassert_false(md.get(TYPE_LEVEL));
     wassert(actual(md).contains("reftime", "2013-03-18T14:30:00Z"));
     wassert(actual(md).contains("task", "ZLR-BB"));
     wassert(actual(md).contains("quantity", "DBZH"));
@@ -109,7 +109,7 @@ add_method("comp_max", [] {
     // Check contents
     wassert(actual(md).contains("origin", "ODIMH5(16144,IY46,itspc)"));
     wassert(actual(md).contains("product", "ODIMH5(COMP,MAX)"));
-    ensure(!md.get(TYPE_LEVEL));
+    wassert_false(md.get(TYPE_LEVEL));
     wassert(actual(md).contains("reftime", "2013-03-18T14:30:00Z"));
     wassert(actual(md).contains("task", "ZLR-BB"));
     wassert(actual(md).contains("quantity", "DBZH"));
@@ -148,7 +148,7 @@ add_method("comp_rr", [] {
     // Check contents
     wassert(actual(md).contains("origin", "ODIMH5(16144,IY46,itspc)"));
     wassert(actual(md).contains("product", "ODIMH5(COMP,RR)"));
-    ensure(!md.get(TYPE_LEVEL));
+    wassert_false(md.get(TYPE_LEVEL));
     wassert(actual(md).contains("timerange", "Timedef(0s,1,1h)"));
     wassert(actual(md).contains("reftime", "2013-03-18T14:30:00Z"));
     wassert(actual(md).contains("task", "ZLR-BB"));
@@ -163,7 +163,7 @@ add_method("comp_vil", [] {
     wassert(actual(md).contains("origin", "ODIMH5(16144,IY46,itspc)"));
     wassert(actual(md).contains("product", "ODIMH5(COMP,VIL)"));
     wassert(actual(md).contains("level", "GRIB1(106,10,0)"));
-    ensure(!md.get(TYPE_TIMERANGE));
+    wassert_false(md.get(TYPE_TIMERANGE));
     wassert(actual(md).contains("reftime", "2013-03-18T14:30:00Z"));
     wassert(actual(md).contains("task", "ZLR-BB"));
     wassert(actual(md).contains("quantity", "VIL"));
@@ -177,7 +177,7 @@ add_method("image_cappi", [] {
     wassert(actual(md).contains("origin", "ODIMH5(16144,IY46,itspc)"));
     wassert(actual(md).contains("product", "ODIMH5(IMAGE,CAPPI)"));
     wassert(actual(md).contains("level", "GRIB1(105,500)"));
-    ensure(!md.get(TYPE_TIMERANGE));
+    wassert_false(md.get(TYPE_TIMERANGE));
     wassert(actual(md).contains("reftime", "2013-03-18T14:30:00Z"));
     wassert(actual(md).contains("task", "ZLR-BB"));
     wassert(actual(md).contains("quantity", "DBZH"));
@@ -190,7 +190,7 @@ add_method("image_etop", [] {
     // Check contents
     wassert(actual(md).contains("origin", "ODIMH5(16144,IY46,itspc)"));
     wassert(actual(md).contains("product", "ODIMH5(IMAGE,ETOP)"));
-    ensure(!md.get(TYPE_LEVEL));
+    wassert_false(md.get(TYPE_LEVEL));
     wassert(actual(md).contains("reftime", "2013-03-18T14:30:00Z"));
     wassert(actual(md).contains("task", "ZLR-BB"));
     wassert(actual(md).contains("quantity", "HGHT"));
@@ -203,7 +203,7 @@ add_method("image_hvmi", [] {
     // Check contents
     wassert(actual(md).contains("origin", "ODIMH5(16144,IY46,itspc)"));
     wassert(actual(md).contains("product", "ODIMH5(IMAGE,HVMI)"));
-    ensure(!md.get(TYPE_LEVEL));
+    wassert_false(md.get(TYPE_LEVEL));
     wassert(actual(md).contains("reftime", "2013-03-18T14:30:00Z"));
     wassert(actual(md).contains("task", "ZLR-BB"));
     wassert(actual(md).contains("quantity", "DBZH"));
@@ -216,7 +216,7 @@ add_method("image_max", [] {
     // Check contents
     wassert(actual(md).contains("origin", "ODIMH5(16144,IY46,itspc)"));
     wassert(actual(md).contains("product", "ODIMH5(IMAGE,MAX)"));
-    ensure(!md.get(TYPE_LEVEL));
+    wassert_false(md.get(TYPE_LEVEL));
     wassert(actual(md).contains("reftime", "2013-03-18T14:30:00Z"));
     wassert(actual(md).contains("task", "ZLR-BB"));
     wassert(actual(md).contains("quantity", "DBZH"));
@@ -255,7 +255,7 @@ add_method("image_rr", [] {
     // Check contents
     wassert(actual(md).contains("origin", "ODIMH5(16144,IY46,itspc)"));
     wassert(actual(md).contains("product", "ODIMH5(IMAGE,RR)"));
-    ensure(!md.get(TYPE_LEVEL));
+    wassert_false(md.get(TYPE_LEVEL));
     wassert(actual(md).contains("timerange", "Timedef(0s,1,1h)"));
     wassert(actual(md).contains("reftime", "2013-03-18T14:30:00Z"));
     wassert(actual(md).contains("task", "ZLR-BB"));
@@ -282,7 +282,7 @@ add_method("image_zlr_bb", [] {
     // Check contents
     wassert(actual(md).contains("origin", "ODIMH5(16144,IY46,itspc)"));
     wassert(actual(md).contains("product", "ODIMH5(IMAGE,NEW:LBM_ARPA)"));
-    ensure(!md.get(TYPE_LEVEL));
+    wassert_false(md.get(TYPE_LEVEL));
     wassert(actual(md).contains("reftime", "2013-03-18T10:00:00Z"));
     wassert(actual(md).contains("task", "ZLR-BB"));
     wassert(actual(md).contains("quantity", "DBZH"));
@@ -295,7 +295,7 @@ add_method("xsec", [] {
     // Check contents
     wassert(actual(md).contains("origin", "ODIMH5(16144,IY46,itspc)"));
     wassert(actual(md).contains("product", "ODIMH5(XSEC,XSEC)"));
-    ensure(!md.get(TYPE_LEVEL));
+    wassert_false(md.get(TYPE_LEVEL));
     wassert(actual(md).contains("reftime", "2013-11-04T14:10:00Z"));
     wassert(actual(md).contains("task", "XZS"));
     wassert(actual(md).contains("quantity", "DBZH"));

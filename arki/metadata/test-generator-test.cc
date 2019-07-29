@@ -22,32 +22,32 @@ add_method("grib1", [] {
     test::Generator g("grib1");
     Collection c;
     g.generate(c.inserter_func());
-    ensure_equals(c.size(), 1u);
-    ensure_equals(c[0].get<types::Origin>()->style(), types::Origin::GRIB1);
+    wassert(actual(c.size()) == 1u);
+    wassert(actual(c[0].get<types::Origin>()->style()) == types::Origin::GRIB1);
 });
 
 add_method("grib2", [] {
     test::Generator g("grib2");
     Collection c;
     g.generate(c.inserter_func());
-    ensure_equals(c.size(), 1u);
-    ensure_equals(c[0].get<types::Origin>()->style(), types::Origin::GRIB2);
+    wassert(actual(c.size()) == 1u);
+    wassert(actual(c[0].get<types::Origin>()->style()) == types::Origin::GRIB2);
 });
 
 add_method("bufr", [] {
     test::Generator g("bufr");
     Collection c;
     g.generate(c.inserter_func());
-    ensure_equals(c.size(), 1u);
-    ensure_equals(c[0].get<types::Origin>()->style(), types::Origin::BUFR);
+    wassert(actual(c.size()) == 1u);
+    wassert(actual(c[0].get<types::Origin>()->style()) == types::Origin::BUFR);
 });
 
 add_method("odimh5", [] {
     test::Generator g("odimh5");
     Collection c;
     g.generate(c.inserter_func());
-    ensure_equals(c.size(), 1u);
-    ensure_equals(c[0].get<types::Origin>()->style(), types::Origin::ODIMH5);
+    wassert(actual(c.size()) == 1u);
+    wassert(actual(c[0].get<types::Origin>()->style()) == types::Origin::ODIMH5);
 });
 
 add_method("grib1_extratypes", [] {
@@ -61,7 +61,7 @@ add_method("grib1_extratypes", [] {
 
     Collection c;
     g.generate(c.inserter_func());
-    ensure_equals(c.size(), 6u);
+    wassert(actual(c.size()) == 6u);
 });
 
 }

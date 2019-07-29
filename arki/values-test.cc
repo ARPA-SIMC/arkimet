@@ -1,3 +1,4 @@
+#include "types/tests.h"
 #include "arki/types/tests.h"
 #include "arki/values.h"
 #include "arki/binary.h"
@@ -25,22 +26,22 @@ add_method("comparison", [] {
 	std::unique_ptr<Value> vs2(Value::createString("antani"));
 	std::unique_ptr<Value> vs3(Value::createString("blinda"));
 
-    wassert(actual(*vi1 == *vi1));
-    wassert(actual(*vi1 == *vi2));
-    ensure(*vi1 != *vi3);
-    ensure(*vi2 != *vi3);
+    wassert_true(*vi1 == *vi1);
+    wassert_true(*vi1 == *vi2);
+    wassert_true(*vi1 != *vi3);
+    wassert_true(*vi2 != *vi3);
 
-    ensure(*vs1 == *vs1);
-    ensure(*vs1 == *vs2);
-    ensure(*vs1 != *vs3);
-    ensure(*vs2 != *vs3);
+    wassert_true(*vs1 == *vs1);
+    wassert_true(*vs1 == *vs2);
+    wassert_true(*vs1 != *vs3);
+    wassert_true(*vs2 != *vs3);
 
-    ensure(*vi1 < *vi3);
-    ensure(not (*vi1 < *vi1));
-    ensure(not (*vi3 < *vi1));
-    ensure(*vs1 < *vs3);
-    ensure(not (*vs1 < *vs1));
-    ensure(not (*vs3 < *vs1));
+    wassert_true(*vi1 < *vi3);
+    wassert_false(*vi1 < *vi1);
+    wassert_false(*vi3 < *vi1);
+    wassert_true(*vs1 < *vs3);
+    wassert_false(*vs1 < *vs1);
+    wassert_false(*vs3 < *vs1);
 });
 
 // Check encoding
@@ -69,16 +70,16 @@ add_method("encoding", [] {
         vector<uint8_t> enc;
         BinaryEncoder e(enc);
         var.encode(e);
-        ensure_equals(enc.size(), (encsize));
+        wassert(actual(enc.size()) == (encsize));
         BinaryDecoder dec(enc);
         v.reset(Value::decode(dec));
         size_t decsize = dec.buf - enc.data();
-        ensure_equals(decsize, (encsize));
-        ensure(*v == var);
+        wassert(actual(decsize) == (encsize));
+        wassert_true(*v == var);
 
         string enc1 = var.toString();
         v.reset(Value::parse(enc1));
-        ensure(*v == var);
+        wassert_true(*v == var);
     };
 
     test(*zero, 1u);
@@ -112,30 +113,30 @@ add_method("valuebag", [] {
 
     // Test accessors
     val.reset(Value::createInteger(1));
-    ensure(*v1.get("test1") == *val);
+    wassert_true(*v1.get("test1") == *val);
     val.reset(Value::createInteger(1000000));
-    ensure(*v1.get("test2") == *val);
+    wassert_true(*v1.get("test2") == *val);
     val.reset(Value::createInteger(-20));
-    ensure(*v1.get("test3") == *val);
+    wassert_true(*v1.get("test3") == *val);
     val.reset(Value::createString("1"));
-    ensure(*v1.get("test4") == *val);
+    wassert_true(*v1.get("test4") == *val);
 
-	ensure_equals(v1.size(), 4u);
-	ensure_equals(v2.size(), 0u);
+    wassert(actual(v1.size()) == 4u);
+    wassert(actual(v2.size()) == 0u);
 
-	// Test copy and comparison
-	ensure(v1 != v2);
-	v2 = v1;
+    // Test copy and comparison
+    wassert_true(v1 != v2);
+    v2 = v1;
 
-	ensure_equals(v1.size(), 4u);
-	ensure_equals(v2.size(), 4u);
+    wassert(actual(v1.size()) == 4u);
+    wassert(actual(v2.size()) == 4u);
 
-	ensure_equals(v1, v2);
+    wassert(actual(v1) == v2);
 
-	// Test clear
-	v2.clear();
-	ensure_equals(v1.size(), 4u);
-	ensure_equals(v2.size(), 0u);
+    // Test clear
+    v2.clear();
+    wassert(actual(v1.size()) == 4u);
+    wassert(actual(v2.size()) == 0u);
 
     // Test encoding and decoding
     std::vector<uint8_t> enc;
@@ -144,23 +145,23 @@ add_method("valuebag", [] {
     v1.encode(e);
     BinaryDecoder dec(enc);
     v2 = ValueBag::decode(dec);
-    ensure_equals(v1, v2);
+    wassert(actual(v1) == v2);
 
-	ensure_equals(v1.size(), 4u);
-	ensure_equals(v2.size(), 4u);
+    wassert(actual(v1.size()) == 4u);
+    wassert(actual(v2.size()) == 4u);
 
-	v2.clear();
-	ensure_equals(v1.size(), 4u);
-	ensure_equals(v2.size(), 0u);
+    v2.clear();
+    wassert(actual(v1.size()) == 4u);
+    wassert(actual(v2.size()) == 0u);
 
     string enc1 = v1.toString();
-    ensure_equals(enc1, "test1=1, test2=1000000, test3=-20, test4=\"1\"");
+    wassert(actual(enc1) == "test1=1, test2=1000000, test3=-20, test4=\"1\"");
     v2 = ValueBag::parse(enc1);
 
-	ensure_equals(v1.size(), 4u);
-	ensure_equals(v2.size(), 4u);
+    wassert(actual(v1.size()) == 4u);
+    wassert(actual(v2.size()) == 4u);
 
-	ensure_equals(v2, v1);
+    wassert(actual(v2) == v1);
 });
 
 // Check a case where ValueBag seemed to fail (but it actually didn't, the
@@ -176,7 +177,7 @@ add_method("regression1", [] {
 
 	v2.set("sta", Value::createInteger(88));
 
-	ensure(!v1.contains(v2));
+    wassert_false(v1.contains(v2));
 });
 
 }

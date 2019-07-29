@@ -1,3 +1,4 @@
+#include "arki/tests/legacy.h"
 #include "arki/types/tests.h"
 #include "arki/types/origin.h"
 #include "arki/metadata.h"
@@ -27,28 +28,23 @@ add_method("basic", [] {
     Metadata md;
     unique_ptr<Type> origin(Origin::createGRIB1(200, 0, 0));
 
-	dataset::index::AttrSubIndex attr(db, TYPE_ORIGIN);
+    dataset::index::AttrSubIndex attr(db, TYPE_ORIGIN);
 
-	// ID is -1 if it is not in the database
-	ensure_equals(attr.id(md), -1);
+    // ID is -1 if it is not in the database
+    wassert(actual(attr.id(md)) == -1);
 
     md.set(*origin);
 
-	// id() is read-only so it throws NotFound when the item does not exist
-	try {
-		attr.id(md);
-		ensure(false);
-	} catch (dataset::index::NotFound) {
-		ensure(true);
-	}
+    // id() is read-only so it throws NotFound when the item does not exist
+    wassert_throws(dataset::index::NotFound, attr.id(md));
 
-	int id = attr.insert(md);
-	ensure_equals(id, 1);
+    int id = attr.insert(md);
+    wassert(actual(id) == 1);
 
-	// Insert again, we should have the same result
-	ensure_equals(attr.insert(md), 1);
+    // Insert again, we should have the same result
+    wassert(actual(attr.insert(md)) == 1);
 
-	ensure_equals(attr.id(md), 1);
+    wassert(actual(attr.id(md)) == 1);
 
     // Retrieve from the database
     Metadata md1;
@@ -57,10 +53,10 @@ add_method("basic", [] {
 
     Matcher m = Matcher::parse("origin:GRIB1,200");
     auto matcher = m.get(TYPE_ORIGIN);
-    ensure((bool)matcher);
+    wassert_true((bool)matcher);
     vector<int> ids = attr.query(*matcher);
-    ensure_equals(ids.size(), 1u);
-    ensure_equals(ids[0], 1);
+    wassert(actual(ids.size()) == 1u);
+    wassert(actual(ids[0]) == 1);
 });
 
 // Same as <1> but instantiates attr every time to always test with a cold cache
@@ -72,26 +68,21 @@ add_method("cold_cache", [] {
     Metadata md;
     unique_ptr<Type> origin(Origin::createGRIB1(200, 0, 0));
 
-	// ID is -1 if it is not in the database
-	ensure_equals(dataset::index::AttrSubIndex(db, TYPE_ORIGIN).id(md), -1);
+    // ID is -1 if it is not in the database
+    wassert(actual(dataset::index::AttrSubIndex(db, TYPE_ORIGIN).id(md)) == -1);
 
     md.set(*origin);
 
-	// id() is read-only so it throws NotFound when the item does not exist
-	try {
-		dataset::index::AttrSubIndex(db, TYPE_ORIGIN).id(md);
-		ensure(false);
-	} catch (dataset::index::NotFound) {
-		ensure(true);
-	}
+    // id() is read-only so it throws NotFound when the item does not exist
+    wassert_throws(dataset::index::NotFound, dataset::index::AttrSubIndex(db, TYPE_ORIGIN).id(md));
 
-	int id = dataset::index::AttrSubIndex(db, TYPE_ORIGIN).insert(md);
-	ensure_equals(id, 1);
+    int id = dataset::index::AttrSubIndex(db, TYPE_ORIGIN).insert(md);
+    wassert(actual(id) == 1);
 
-	// Insert again, we should have the same result
-	ensure_equals(dataset::index::AttrSubIndex(db, TYPE_ORIGIN).insert(md), 1);
+    // Insert again, we should have the same result
+    wassert(actual(dataset::index::AttrSubIndex(db, TYPE_ORIGIN).insert(md)) == 1);
 
-	ensure_equals(dataset::index::AttrSubIndex(db, TYPE_ORIGIN).id(md), 1);
+    wassert(actual(dataset::index::AttrSubIndex(db, TYPE_ORIGIN).id(md)) == 1);
 
     // Retrieve from the database
     Metadata md1;
@@ -101,10 +92,10 @@ add_method("cold_cache", [] {
     // Query the database
     Matcher m = Matcher::parse("origin:GRIB1,200");
     auto matcher = m.get(TYPE_ORIGIN);
-    ensure((bool)matcher);
+    wassert_true((bool)matcher);
     vector<int> ids = dataset::index::AttrSubIndex(db, TYPE_ORIGIN).query(*matcher);
-    ensure_equals(ids.size(), 1u);
-    ensure_equals(ids[0], 1);
+    wassert(actual(ids.size()) == 1u);
+    wassert(actual(ids[0]) == 1);
 });
 
 add_method("obtainids", [] {
@@ -118,12 +109,12 @@ add_method("obtainids", [] {
 	members.insert(TYPE_LEVEL);
 	dataset::index::Attrs attrs(db, members);
 
-	Metadata md;
-	vector<int> ids = attrs.obtainIDs(md);
-	ensure_equals(ids.size(), 3u);
-	ensure_equals(ids[0], -1);
-	ensure_equals(ids[1], -1);
-	ensure_equals(ids[2], -1);
+    Metadata md;
+    vector<int> ids = attrs.obtainIDs(md);
+    wassert(actual(ids.size()) == 3u);
+    wassert(actual(ids[0]) == -1);
+    wassert(actual(ids[1]) == -1);
+    wassert(actual(ids[2]) == -1);
 });
 
 }

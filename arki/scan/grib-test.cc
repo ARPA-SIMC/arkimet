@@ -59,13 +59,13 @@ add_method("compact", [] {
     // Check that the source can be read properly
     wassert(is_grib_data(md, 7218));
 
-	// Check notes
-	if (md.notes().size() != 1)
-	{
-		for (size_t i = 0; i < md.notes().size(); ++i)
-			cerr << md.notes()[i] << endl;
-		ensure_equals(md.notes().size(), 1u);
-	}
+    // Check notes
+    if (md.notes().size() != 1)
+    {
+        for (size_t i = 0; i < md.notes().size(); ++i)
+            cerr << md.notes()[i] << endl;
+    }
+    wassert(actual(md.notes().size()) == 1u);
 
     // Check contents
     wassert(actual(md).contains("origin", "GRIB1(200, 0, 101)"));
@@ -228,15 +228,13 @@ add_method("validation", [] {
     v.validate_file(fd, 7218, 34960);
     v.validate_file(fd, 42178, 2234);
 
-#define ensure_throws(x) do { try { x; ensure(false); } catch (std::exception& e) { } } while (0)
-
-    ensure_throws(v.validate_file(fd, 1, 7217));
-    ensure_throws(v.validate_file(fd, 0, 7217));
-    ensure_throws(v.validate_file(fd, 0, 7219));
-    ensure_throws(v.validate_file(fd, 7217, 34961));
-    ensure_throws(v.validate_file(fd, 42178, 2235));
-    ensure_throws(v.validate_file(fd, 44412, 0));
-    ensure_throws(v.validate_file(fd, 44412, 10));
+    wassert_throws(std::runtime_error, v.validate_file(fd, 1, 7217));
+    wassert_throws(std::runtime_error, v.validate_file(fd, 0, 7217));
+    wassert_throws(std::runtime_error, v.validate_file(fd, 0, 7219));
+    wassert_throws(std::runtime_error, v.validate_file(fd, 7217, 34961));
+    wassert_throws(std::runtime_error, v.validate_file(fd, 42178, 2235));
+    wassert_throws(std::runtime_error, v.validate_file(fd, 44412, 0));
+    wassert_throws(std::runtime_error, v.validate_file(fd, 44412, 10));
 
     fd.close();
 
@@ -244,8 +242,8 @@ add_method("validation", [] {
     buf = mdc[0].get_data().read();
 
     wassert(v.validate_buf(buf.data(), buf.size()));
-    ensure_throws(v.validate_buf((const char*)buf.data()+1, buf.size()-1));
-    ensure_throws(v.validate_buf(buf.data(), buf.size()-1));
+    wassert_throws(std::runtime_error, v.validate_buf((const char*)buf.data()+1, buf.size()-1));
+    wassert_throws(std::runtime_error, v.validate_buf(buf.data(), buf.size()-1));
 });
 
 // Test scanning layers instead of levels

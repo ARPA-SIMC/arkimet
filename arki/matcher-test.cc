@@ -52,13 +52,13 @@ add_method("or", [](Fixture& f) {
     Matcher m;
 
     m = Matcher::parse("origin:GRIB1 OR BUFR");
-    ensure(m(f.md));
+    wassert_true(m(f.md));
 
     m = Matcher::parse("origin:BUFR or GRIB1");
-    ensure(m(f.md));
+    wassert_true(m(f.md));
 
     m = Matcher::parse("origin:BUFR or BUFR");
-    ensure(!m(f.md));
+    wassert_false(m(f.md));
 });
 
 // Try matching an unset metadata (see #166)

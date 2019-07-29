@@ -1,3 +1,4 @@
+#include "arki/tests/legacy.h"
 #include "tests.h"
 #include "arki/segment/tests.h"
 #include "segmented.h"

@@ -364,30 +364,30 @@ add_method("timedef_info", [] {
         // GRIB1, forecast at +60min
         unique_ptr<Timerange> tr(Timerange::createGRIB1(0, 0, 60, 0));
 
-        ensure(tr->get_forecast_step(val, issec));
-        ensure_equals(val, 3600);
-        ensure_equals(issec, true);
+        wassert_true(tr->get_forecast_step(val, issec));
+        wassert(actual(val) == 3600);
+        wassert(actual(issec) == true);
 
-        ensure_equals(tr->get_proc_type(), 254);
+        wassert(actual(tr->get_proc_type()) == 254);
 
-        ensure(tr->get_proc_duration(val, issec));
-        ensure_equals(val, 0);
-        ensure_equals(issec, true);
+        wassert_true(tr->get_proc_duration(val, issec));
+        wassert(actual(val) == 0);
+        wassert(actual(issec) == true);
     }
 
     {
         // GRIB1, average between rt+1h and rt+3h
         unique_ptr<Timerange> tr(Timerange::createGRIB1(3, 1, 1, 3));
 
-        ensure(tr->get_forecast_step(val, issec));
-        ensure_equals(val, 3 * 3600);
-        ensure_equals(issec, true);
+        wassert_true(tr->get_forecast_step(val, issec));
+        wassert(actual(val) == 3 * 3600);
+        wassert(actual(issec) == true);
 
-        ensure_equals(tr->get_proc_type(), 0);
+        wassert(actual(tr->get_proc_type()) == 0);
 
-        ensure(tr->get_proc_duration(val, issec));
-        ensure_equals(val, 2 * 3600);
-        ensure_equals(issec, true);
+        wassert_true(tr->get_proc_duration(val, issec));
+        wassert(actual(val) == 2 * 3600);
+        wassert(actual(issec) == true);
     }
 });
 

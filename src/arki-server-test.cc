@@ -122,33 +122,25 @@ add_method("error", [] {
     // Try it on metadata
     metadata::Collection mdc;
     htd->produce_one_wrong_query();
-    try {
-        mdc.add(*testds, Matcher::parse("origin:GRIB1,200"));
-        ensure(false);
-    } catch (std::exception& e) {
-        wassert(actual(e.what()).not_contains("<html>"));
-        wassert(actual(e.what()).contains("subexpression 'MISCHIEF' does not contain a colon"));
-    }
+    auto e1 = wassert_throws(std::runtime_error, mdc.add(*testds, Matcher::parse("origin:GRIB1,200")));
+    wassert(actual(e1.what()).not_contains("<html>"));
+    wassert(actual(e1.what()).contains("subexpression 'MISCHIEF' does not contain a colon"));
     wassert(actual(mdc.size()) == 0u);
 
     // Try it on summaries
     Summary summary;
     htd->produce_one_wrong_query();
-    try {
-        testds->query_summary(Matcher::parse("origin:GRIB1,200"), summary);
-        ensure(false);
-    } catch (std::exception& e) {}
+    wassert_throws(std::runtime_error, testds->query_summary(Matcher::parse("origin:GRIB1,200"), summary));
     wassert(actual(summary.count()) == 0u);
 
     // Try it on streams
     sys::File out(sys::File::mkstemp("test"));
     htd->produce_one_wrong_query();
-    try {
+    auto e2 = wassert_throws(std::runtime_error, {
         dataset::ByteQuery bq;
         bq.setPostprocess(Matcher::parse("origin:GRIB1,200"), "say ciao");
         testds->query_bytes(bq, out);
-        ensure(false);
-    } catch (std::exception& e) {}
+    });
     out.close();
     wassert(actual(sys::size(out.name())) == 0u);
 });
@@ -157,12 +149,8 @@ add_method("error", [] {
 add_method("qexpand", [] {
     wassert(actual(dataset::http::Reader::expandMatcher("origin:GRIB1,200;product:t", "http://localhost:7117")) ==
           "origin:GRIB1,200; product:GRIB1,200,2,11 or GRIB1,98,128,130 or GRIB1,98,128,167 or GRIB1,200,200,11 or GRIB2,200,0,200,11");
-    try {
-    dataset::http::Reader::expandMatcher("origin:GRIB1,200;product:pippo", "http://localhost:7117");
-        ensure(false);
-    } catch (std::runtime_error& e) {
-        wassert(actual(e.what()).contains("pippo"));
-    }
+    auto e = wassert_throws(std::runtime_error, dataset::http::Reader::expandMatcher("origin:GRIB1,200;product:pippo", "http://localhost:7117"));
+    wassert(actual(e.what()).contains("pippo"));
 });
 
 // Test querying the datasets via macro

@@ -177,7 +177,7 @@ add_method("regression", [] {
 
     m1 = Matcher::parse("origin:GRIB1 OR BUFR\n    ");
     m2 = Matcher::parse("origin:GRIB1 OR BUFR;\n   \n;   \n  ;\n");
-    ensure(m1.toString() == m2.toString());
+    wassert(actual(m1.toString()) == m2.toString());
 });
 
 }

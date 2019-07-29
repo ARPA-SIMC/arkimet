@@ -333,8 +333,8 @@ add_method("lua", [](Fixture& f) {
 		"  return nil\n"
 		"end \n"
 	);
-	test.pusharg(md);
-	ensure_equals(test.run(), "");
+    test.pusharg(md);
+    wassert(actual(test.run()) == "");
 });
 
 add_method("stream_grib", [](Fixture& f) {

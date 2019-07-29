@@ -1,3 +1,4 @@
+#include "arki/tests/legacy.h"
 #include "arki/dataset/ondisk2/test-utils.h"
 #include "arki/dataset/ondisk2/checker.h"
 #include "arki/dataset/ondisk2/writer.h"

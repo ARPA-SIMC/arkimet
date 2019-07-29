@@ -173,42 +173,42 @@ add_method("timedef_parse", [] {
     {
         unique_ptr<matcher::MatchTimerange> matcher(matcher::MatchTimerange::parse("Timedef,+72h,1,6h"));
         const matcher::MatchTimerangeTimedef* m = dynamic_cast<const matcher::MatchTimerangeTimedef*>(matcher.get());
-        ensure(m);
+        wassert_true(m);
 
-        ensure(m->has_step);
-        ensure_equals(m->step, 72 * 3600);
-        ensure(m->step_is_seconds);
+        wassert_true(m->has_step);
+        wassert(actual(m->step) == 72 * 3600);
+        wassert_true(m->step_is_seconds);
 
-        ensure(m->has_proc_type);
-        ensure_equals(m->proc_type, 1);
+        wassert_true(m->has_proc_type);
+        wassert(actual(m->proc_type) == 1);
 
-        ensure(m->has_proc_duration);
-        ensure_equals(m->proc_duration, 6 * 3600);
-        ensure(m->proc_duration_is_seconds);
+        wassert_true(m->has_proc_duration);
+        wassert(actual(m->proc_duration) == 6 * 3600);
+        wassert_true(m->proc_duration_is_seconds);
     }
 
     {
         unique_ptr<matcher::MatchTimerange> matcher(matcher::MatchTimerange::parse("Timedef,72h"));
         const matcher::MatchTimerangeTimedef* m = dynamic_cast<const matcher::MatchTimerangeTimedef*>(matcher.get());
-        ensure(m);
+        wassert_true(m);
 
-        ensure(m->has_step);
-        ensure_equals(m->step, 72 * 3600);
-        ensure(m->step_is_seconds);
+        wassert_true(m->has_step);
+        wassert(actual(m->step) == 72 * 3600);
+        wassert_true(m->step_is_seconds);
 
-        ensure(not m->has_proc_type);
-        ensure(not m->has_proc_duration);
+        wassert_false(m->has_proc_type);
+        wassert_false(m->has_proc_duration);
     }
 
     {
         unique_ptr<matcher::MatchTimerange> matcher(matcher::MatchTimerange::parse("Timedef,,-"));
         const matcher::MatchTimerangeTimedef* m = dynamic_cast<const matcher::MatchTimerangeTimedef*>(matcher.get());
-        ensure(m);
+        wassert_true(m);
 
-        ensure(not m->has_step);
+        wassert_false(m->has_step);
 
-        ensure(m->has_proc_type);
-        ensure_equals(m->proc_type, -1);
+        wassert_true(m->has_proc_type);
+        wassert(actual(m->proc_type) == -1);
     }
 });
 
@@ -364,15 +364,15 @@ add_method("serialize", [] {
     Matcher m = Matcher::parse("timerange:Timedef,,1,3h");
     //Matcher m1 = Matcher::parse(m.toStringExpanded());
     //ensure_equals(m, m1);
-    ensure_equals(m.toStringExpanded(), "timerange:Timedef,,1,10800s");
+    wassert(actual(m.toStringExpanded()) == "timerange:Timedef,,1,10800s");
 
     // Ensure that timerange expansion skips irrelevant arguments
     m = Matcher::parse("timerange:GRIB1,0,1h,2h");
-    ensure_equals(m.toStringExpanded(), "timerange:GRIB1,0,3600s");
+    wassert(actual(m.toStringExpanded()) == "timerange:GRIB1,0,3600s");
     m = Matcher::parse("timerange:GRIB1,124,1h,2h");
-    ensure_equals(m.toStringExpanded(), "timerange:GRIB1,124,,7200s");
+    wassert(actual(m.toStringExpanded()) == "timerange:GRIB1,124,,7200s");
     m = Matcher::parse("timerange:GRIB1,6,1h,2h");
-    ensure_equals(m.toStringExpanded(), "timerange:GRIB1,6,3600s,7200s");
+    wassert(actual(m.toStringExpanded()) == "timerange:GRIB1,6,3600s,7200s");
 });
 
 }
