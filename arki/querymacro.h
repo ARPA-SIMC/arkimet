@@ -4,7 +4,7 @@
 /// Macros implementing special query strategies
 
 #include <arki/core/cfg.h>
-#include <arki/dataset/fwd.h>
+#include <arki/dataset.h>
 #include <string>
 #include <functional>
 
@@ -22,6 +22,23 @@ struct Options
     Options(const core::cfg::Sections& datasets_cfg, const std::string& name, const std::string& query);
     Options(const core::cfg::Section& macro_cfg, const core::cfg::Sections& datasets_cfg, const std::string& name, const std::string& query);
 };
+
+
+struct Base : public dataset::Reader
+{
+protected:
+    std::shared_ptr<const dataset::Config> m_config;
+
+public:
+    core::cfg::Sections datasets_cfg;
+
+    Base(const Options& opts);
+    ~Base();
+
+    const dataset::Config& config() const override { return *m_config; }
+    std::string type() const override { return "querymacro"; }
+};
+
 
 /**
  * Get a Querymacro dataset reader.
