@@ -64,7 +64,7 @@ public:
      * @param cfg
      *   Configuration used to instantiate datasets
      */
-    LuaMacro(const Options& opts);
+    LuaMacro(const std::string& source, const Options& opts);
     virtual ~LuaMacro()
     {
         if (L) delete L;
@@ -137,7 +137,7 @@ static const struct luaL_Reg querymacrolib[] = {
 };
 
 
-LuaMacro::LuaMacro(const Options& opts)
+LuaMacro::LuaMacro(const std::string& source, const Options& opts)
     : datasets_cfg(opts.datasets_cfg), L(new Lua), funcid_querydata(-1), funcid_querysummary(-1)
 {
     m_config = std::shared_ptr<const dataset::Config>(new dataset::Config(opts.macro_cfg));
@@ -165,14 +165,13 @@ LuaMacro::LuaMacro(const Options& opts)
     lua_setglobal(*L, "args");
 
     /// Load the right qmacro file
-    string fname = Config::get().dir_qmacro.find_file(opts.macro_name + ".lua");
-    if (luaL_dofile(*L, fname.c_str()))
+    if (luaL_dofile(*L, source.c_str()))
     {
         // Copy the error, so that it will exist after the pop
         string error = lua_tostring(*L, -1);
         // Pop the error from the stack
         lua_pop(*L, 1);
-        throw std::runtime_error("cannot parse " + fname + ": " + error);
+        throw std::runtime_error("cannot parse " + source + ": " + error);
     }
 
 	/// Index the queryData function
@@ -261,9 +260,37 @@ void LuaMacro::query_summary(const Matcher& matcher, Summary& summary)
 
 }
 
+std::vector<std::pair<std::string, std::function<std::shared_ptr<dataset::Reader>(const std::string& source, const Options& opts)>>> parsers;
+
 std::shared_ptr<dataset::Reader> get(const Options& opts)
 {
-    return make_shared<LuaMacro>(opts);
+    for (const auto& entry: parsers)
+    {
+        std::string fname = Config::get().dir_qmacro.find_file_noerror(opts.macro_name + "." + entry.first);
+        if (!fname.empty())
+        {
+            return entry.second(fname, opts);
+        }
+    }
+    throw std::runtime_error("querymacro source not found for macro" + opts.macro_name);
+}
+
+void register_parser(
+        const std::string& ext,
+        std::function<std::shared_ptr<dataset::Reader>(const std::string& source, const Options& opts)> parser)
+{
+    for (const auto& entry: parsers)
+        if (entry.first == ext)
+            throw std::runtime_error("quarymacro parser for ." + ext + " files has already been registered");
+
+    parsers.emplace_back(make_pair(ext, parser));
+}
+
+void init()
+{
+    register_parser("lua", [](const std::string& source, const Options& opts) {
+        return make_shared<LuaMacro>(source, opts);
+    });
 }
 
 }
