@@ -7,7 +7,6 @@
 #include "arki/nag.h"
 #include "arki/validator.h"
 #include "arki/types/source/blob.h"
-#include <iostream>
 
 using namespace std;
 using namespace arki::utils;
