@@ -10,6 +10,7 @@
 #include "utils/type.h"
 #include "utils/values.h"
 #include "common.h"
+#include "matcher.h"
 
 using namespace arki::python;
 using namespace arki::utils;

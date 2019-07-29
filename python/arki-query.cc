@@ -201,6 +201,8 @@ struct query_qmacro : public MethKwargs<query_qmacro, arkipy_ArkiQuery>
 
                 try {
                     self->processor->process(*reader, reader->name());
+                } catch (PythonException&) {
+                    throw;
                 } catch (std::exception& e) {
                     arki::nag::warning("%s failed: %s", reader->name().c_str(), e.what());
                     all_successful = false;

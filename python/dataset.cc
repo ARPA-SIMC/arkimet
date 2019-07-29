@@ -6,6 +6,7 @@
 #include "summary.h"
 #include "cfg.h"
 #include "files.h"
+#include "matcher.h"
 #include "utils/values.h"
 #include "utils/methods.h"
 #include "utils/type.h"
@@ -16,6 +17,7 @@
 #include "arki/dataset/http.h"
 #include "arki/dataset/time.h"
 #include "arki/dataset/segmented.h"
+#include "arki/nag.h"
 #include "dataset/reporter.h"
 #include "arki/sort.h"
 #include <vector>
@@ -80,23 +82,12 @@ Arguments:
         }
 
         try {
-            std::string str_matcher;
-            if (arg_matcher != Py_None)
-                str_matcher = string_from_python(arg_matcher);
-            bool with_data = false;
+            arki::dataset::DataQuery query(from_python<arki::Matcher>(arg_matcher));
             if (arg_with_data != Py_None)
-            {
-                int istrue = PyObject_IsTrue(arg_with_data);
-                if (istrue == -1) return nullptr;
-                with_data = istrue == 1;
-            }
+                query.with_data = from_python<bool>(arg_with_data);
             string sort;
             if (arg_sort != Py_None)
                 sort = string_from_python(arg_sort);
-
-            arki::dataset::DataQuery query;
-            query.matcher = Matcher::parse(str_matcher);
-            query.with_data = with_data;
             if (!sort.empty()) query.sorter = sort::Compare::parse(sort);
 
             metadata_dest_func dest = dest_func_from_python(arg_on_metadata);

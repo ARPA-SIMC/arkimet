@@ -117,11 +117,6 @@ core::cfg::Sections sections_from_python(PyObject* o);
 std::unique_ptr<core::LineReader> linereader_from_python(PyObject* o);
 
 /**
- * Return a Matcher from a python string or arkimet.Matcher object
- */
-arki::Matcher matcher_from_python(PyObject* o);
-
-/**
  * Initialize the python bits to use used by the common functions.
  *
  * This can be called multiple times and will execute only once.

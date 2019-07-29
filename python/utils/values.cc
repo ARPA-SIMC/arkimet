@@ -35,6 +35,13 @@ const char* cstring_from_python(PyObject* o)
     throw PythonException();
 }
 
+bool bool_from_python(PyObject* o)
+{
+    int istrue = PyObject_IsTrue(o);
+    if (istrue == -1) throw PythonException();
+    return istrue == 1;
+}
+
 int int_from_python(PyObject* o)
 {
     int res = PyLong_AsLong(o);
