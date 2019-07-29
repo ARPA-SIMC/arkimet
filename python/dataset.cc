@@ -51,7 +51,7 @@ namespace {
 struct query_data : public MethKwargs<query_data, arkipy_DatasetReader>
 {
     constexpr static const char* name = "query_data";
-    constexpr static const char* signature = "on_metadata: Callable[[metadata], Optional[bool]], matcher: str=None, with_data: bool=False, sort: str=None";
+    constexpr static const char* signature = "on_metadata: Callable[[metadata], Optional[bool]], matcher: Union[arki.Matcher, str]=None, with_data: bool=False, sort: str=None";
     constexpr static const char* returns = "None";
     constexpr static const char* summary = "query a dataset, processing the resulting metadata one by one";
     constexpr static const char* doc = R"(
@@ -103,7 +103,7 @@ Arguments:
 struct query_summary : public MethKwargs<query_summary, arkipy_DatasetReader>
 {
     constexpr static const char* name = "query_summary";
-    constexpr static const char* signature = "matcher: str=None, summary: arkimet.Summary=None";
+    constexpr static const char* signature = "matcher: Union[arki.Matcher, str]=None, summary: arkimet.Summary=None";
     constexpr static const char* returns = "arkimet.Summary";
     constexpr static const char* summary = "query a dataset, returning an arkimet.Summary with the results";
     constexpr static const char* doc = R"(
@@ -123,9 +123,7 @@ Arguments:
             return nullptr;
 
         try {
-            std::string str_matcher;
-            if (arg_matcher != Py_None)
-                str_matcher = string_from_python(arg_matcher);
+            auto matcher = matcher_from_python(arg_matcher);
 
             Summary* summary = nullptr;
             if (arg_summary != Py_None)
@@ -141,14 +139,14 @@ Arguments:
 
             if (summary)
             {
-                self->ds->query_summary(Matcher::parse(str_matcher), *summary);
+                self->ds->query_summary(matcher, *summary);
                 Py_INCREF(arg_summary);
                 return (PyObject*)arg_summary;
             }
             else
             {
                 py_unique_ptr<arkipy_Summary> res(summary_create());
-                self->ds->query_summary(Matcher::parse(str_matcher), *res->summary);
+                self->ds->query_summary(matcher, *res->summary);
                 return (PyObject*)res.release();
             }
         } ARKI_CATCH_RETURN_PYO
@@ -158,7 +156,7 @@ Arguments:
 struct query_bytes : public MethKwargs<query_bytes, arkipy_DatasetReader>
 {
     constexpr static const char* name = "query_bytes";
-    constexpr static const char* signature = "file: Union[int, BinaryIO], matcher: str=None, with_data: bool=False, sort: str=None, data_start_hook: Callable[[], None]=None, postprocess: str=None, metadata_report: str=None, summary_report: str=None";
+    constexpr static const char* signature = "file: Union[int, BinaryIO], matcher: Union[arki.Matcher, str]=None, with_data: bool=False, sort: str=None, data_start_hook: Callable[[], None]=None, postprocess: str=None, metadata_report: str=None, summary_report: str=None";
     constexpr static const char* returns = "None";
     constexpr static const char* summary = "query a dataset, piping results to a file";
     constexpr static const char* doc = R"(
@@ -193,9 +191,7 @@ Arguments:
         try {
             BinaryOutputFile out(arg_file);
 
-            string str_matcher;
-            if (arg_matcher != Py_None)
-                str_matcher = string_from_python(arg_matcher);
+            arki::Matcher matcher = matcher_from_python(arg_matcher);
             bool with_data = false;
             if (arg_with_data != Py_None)
             {
@@ -220,8 +216,6 @@ Arguments:
                 PyErr_SetString(PyExc_TypeError, "data_start_hoook must be None or a callable object");
                 return nullptr;
             }
-
-            Matcher matcher(Matcher::parse(str_matcher));
 
             arki::dataset::ByteQuery query;
             query.with_data = with_data;
