@@ -10,6 +10,7 @@
 #include "utils/values.h"
 #include "utils/methods.h"
 #include "utils/dict.h"
+#include "dataset/querymacro.h"
 #include "arki-query.h"
 #include "arki-scan.h"
 #include "arki-check.h"
@@ -98,8 +99,8 @@ Arguments:
             core::cfg::Sections datasets;
             datasets = sections_from_python(arg_datasets);
 
-            std::shared_ptr<dataset::Reader> ds;
-            string baseurl = dataset::http::Reader::allSameRemoteServer(datasets);
+            std::shared_ptr<arki::dataset::Reader> ds;
+            string baseurl = arki::dataset::http::Reader::allSameRemoteServer(datasets);
             if (baseurl.empty())
             {
                 // Create the local query macro
@@ -112,7 +113,7 @@ Arguments:
                 cfg.set("type", "remote");
                 cfg.set("path", baseurl);
                 cfg.set("qmacro", query);
-                ds = dataset::Reader::create(cfg);
+                ds = arki::dataset::Reader::create(cfg);
             }
 
             return (PyObject*)dataset_reader_create(ds);
@@ -139,7 +140,7 @@ struct make_merged_dataset : public MethKwargs<make_merged_dataset, PyObject>
         try {
             core::cfg::Sections cfg = sections_from_python(arg_cfg);
 
-            std::unique_ptr<dataset::Merged> ds(new dataset::Merged);
+            std::unique_ptr<arki::dataset::Merged> ds(new arki::dataset::Merged);
             for (auto si: cfg)
                 ds->add_dataset(si.second);
             return (PyObject*)dataset_reader_create(move(ds));
@@ -322,6 +323,8 @@ PyMODINIT_FUNC PyInit__arkimet(void)
     using namespace arki::python;
 
     arki::init();
+
+    arki::python::dataset::qmacro::init();
 
     python_nag_handler = new PythonNagHandler;
     python_nag_handler->install();
