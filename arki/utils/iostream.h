@@ -1,7 +1,7 @@
 #ifndef ARKI_UTILS_IOSTREAM_H
 #define ARKI_UTILS_IOSTREAM_H
 
-#include <iostream>
+#include <iomanip>
 
 namespace arki {
 namespace utils {

@@ -1,4 +1,3 @@
-#include "config.h"
 #include <arki/dataset/tests.h>
 #include <arki/dataset/ondisk2.h>
 #include <arki/metadata.h>
@@ -10,8 +9,6 @@
 #include <arki/utils/sys.h>
 #include <arki/iotrace.h>
 #include <unistd.h>
-#include <sstream>
-#include <iostream>
 
 using namespace std;
 using namespace arki;

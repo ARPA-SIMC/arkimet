@@ -689,8 +689,6 @@ public:
             query += " ORDER BY start_time";
         }
 
-        // cerr << "Query: " << query << endl;
-
         Query q("sel_archive", m_db);
         q.compile(query);
         while (q.step())

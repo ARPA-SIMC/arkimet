@@ -5,9 +5,6 @@
 #include <arki/types/origin.h>
 #include <arki/types/product.h>
 
-#include <sstream>
-#include <iostream>
-
 namespace {
 using namespace std;
 using namespace arki;
@@ -32,13 +29,11 @@ add_method("query", [] {
     mdg.add(*Product::createGRIB1(200, 140, 230));
     mdg.consolidate();
 
-    //ensure_equals(mdg.maxidx, 4u);
-
     Metadata md;
     md.set("origin", "GRIB1(200, 0, 101)");
     md.set("product", "GRIB1(200, 140, 229)");
 
-    ensure_equals(mdg.index(md), 0);
+    wassert(actual(mdg.index(md)), 0);
 });
 
 }

@@ -4,8 +4,6 @@
 #include "arki/matcher.h"
 #include "arki/dataset/file.h"
 #include "arki/metadata/collection.h"
-#include <sstream>
-#include <iostream>
 #include <memory>
 
 namespace {

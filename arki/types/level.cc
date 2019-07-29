@@ -15,7 +15,7 @@
 #endif
 
 #ifdef HAVE_LUA
-#include <arki/utils/lua.h>
+#include "arki/utils/lua.h"
 #endif
 
 #define CODE TYPE_LEVEL

@@ -91,7 +91,6 @@ add_method("rollback", [] {
         //p.rollback();
         throw std::runtime_error("no problem");
     } catch (std::runtime_error& e) {
-        //cerr << e.what() << endl;
         wassert(actual(e.what()).contains("no problem"));
     }
 });

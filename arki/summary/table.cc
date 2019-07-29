@@ -10,7 +10,6 @@
 #include "arki/utils/yaml.h"
 #include <system_error>
 #include <algorithm>
-#include <iostream>
 
 using namespace std;
 using namespace arki::core;
@@ -275,48 +274,12 @@ bool Table::merge_yaml(LineReader& in, const std::string& filename)
     return !in.eof();
 }
 
-#if 0
-static void test_consistency(Row* rows, unsigned size, const char* context)
-{
-    for (unsigned i = 0; i < size; ++i)
-    {
-        for (unsigned j = 0; j < Row::mso_size; ++j)
-        {
-            const Type* t = rows[i].items[j];
-            if (t == 0) continue;
-            if (t->type_code() != Table::mso[j])
-                cerr << "FAIL " << context << endl;
-        }
-    }
-}
-#endif
-
 void Table::merge(const Row& row)
 {
     // Occasionally clean the table in case we are adding a lot of metadata one
     // by one, to prevent the intermediate table from exploding in size
     if (dirty > 100000)
         want_clean();
-//    cerr << "MERGE " << this << " cur_size: " << row_count << " [" << rows << ", " << (rows + row_count) << ")" << " stats count " << row.stats.count << endl;
-//    row.dump(cerr);
-#if 0
-    // Find the insertion point
-    //
-    // This works well even in case rows == 0, since it works in the [0, 0)
-    // range, returning 0 and later matching the append case
-    auto pos = lower_bound(rows.begin(), rows.end(), row);
-
-    if (pos == rows.end())
-    {
-        rows.emplace_back(row);
-    } else if (*pos == row) {
-        // Just merge stats
-        pos->stats.merge(row.stats);
-    } else {
-        rows.emplace(pos, row);
-    }
-    stats.merge(row.stats);
-#endif
     rows.emplace_back(row);
     stats.merge(row.stats);
     ++dirty;

@@ -1,10 +1,7 @@
-#include "config.h"
-#include <arki/tests/tests.h>
-#include <arki/utils.h>
-#include <arki/utils/files.h>
-#include <arki/utils/sys.h>
-#include <sstream>
-#include <iostream>
+#include "arki/tests/tests.h"
+#include "arki/utils.h"
+#include "arki/utils/files.h"
+#include "arki/utils/sys.h"
 
 namespace {
 using namespace std;

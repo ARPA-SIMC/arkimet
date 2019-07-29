@@ -1,11 +1,6 @@
-#include "config.h"
-
-#include <arki/tests/tests.h>
-#include <arki/types.h>
-#include <arki/types/utils.h>
-
-#include <sstream>
-#include <iostream>
+#include "arki/tests/tests.h"
+#include "arki/types.h"
+#include "arki/types/utils.h"
 
 namespace {
 using namespace std;
@@ -18,12 +13,14 @@ class Tests : public TestCase
     void register_tests() override;
 } test("arki_types");
 
+
 struct TestImpl : public types::Type
 {
-	int val;
-	TestImpl() : val(0) {}
-	TestImpl(int val) : val(val) {}
-	virtual ~TestImpl() {}
+    int val;
+
+    TestImpl() : val(0) {}
+    TestImpl(int val) : val(val) {}
+    virtual ~TestImpl() {}
 
     TestImpl* clone() const override = 0;
     bool equals(const Type& o) const override { return false; }

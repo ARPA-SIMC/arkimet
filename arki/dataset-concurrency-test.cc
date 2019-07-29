@@ -15,7 +15,6 @@
 #include "arki/utils/subprocess.h"
 #include "arki/exceptions.h"
 #include <sys/fcntl.h>
-#include <iostream>
 
 using namespace std;
 using namespace arki;
@@ -169,8 +168,8 @@ struct ReadHang : public TestSubprocess
             auto reader = config->create_reader();
             reader->query_data(Matcher(), [&](unique_ptr<Metadata> md) { return eat(move(md)); });
         } catch (std::exception& e) {
-            cerr << e.what() << endl;
-            cout << "E" << endl;
+            fprintf(stderr, "%s\n", e.what());
+            fprintf(stdout, "E\n");
             return 1;
         }
         return 0;

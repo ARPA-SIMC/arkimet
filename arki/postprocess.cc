@@ -19,7 +19,6 @@
 #include <unistd.h>
 #include <cerrno>
 #include <set>
-#include <iostream>
 
 
 #if __xlC__
@@ -213,7 +212,6 @@ Postprocess::Postprocess(const std::string& command)
     Splitter sp("[[:space:]]+", REG_EXTENDED);
     for (Splitter::const_iterator j = sp.begin(m_command); j != sp.end(); ++j)
         m_child->cmd.args.push_back(*j);
-    //cerr << "Split \"" << m_command << "\" into: " << str::join(m_child->cmd.args.begin(), m_child->cmd.args.end(), ", ") << endl;
 }
 
 Postprocess::~Postprocess()
@@ -310,10 +308,8 @@ void Postprocess::flush()
 {
     m_child->flush();
 
-    //cerr << "Waiting for child" << endl;
     m_child->subproc.wait();
     int res = m_child->subproc.raw_returncode();
-    //cerr << "Waited and got " << res << endl;
     delete m_child;
     m_child = 0;
     if (res)

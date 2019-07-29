@@ -1,10 +1,7 @@
-#include "config.h"
 #include <arki/dataset/tests.h>
 #include <arki/metadata.h>
 #include <arki/metadata/collection.h>
 #include <arki/dataset/outbound.h>
-#include <sstream>
-#include <iostream>
 
 namespace {
 using namespace std;

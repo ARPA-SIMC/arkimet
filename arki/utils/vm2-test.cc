@@ -1,8 +1,6 @@
 #include "arki/tests/tests.h"
 #include "vm2.h"
 
-#include <iostream>
-
 namespace {
 using namespace std;
 using namespace arki;

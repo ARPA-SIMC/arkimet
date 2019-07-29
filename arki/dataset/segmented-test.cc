@@ -20,9 +20,6 @@
 #include "arki/types/value.h"
 #include "arki/sort.h"
 #include "arki/utils/sys.h"
-#include <fcntl.h>
-#include <sstream>
-#include <iostream>
 #include <sys/resource.h>
 #include <time.h>
 

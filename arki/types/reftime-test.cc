@@ -1,9 +1,7 @@
 #include "tests.h"
 #include "reftime.h"
-#include <arki/matcher.h>
-#include <arki/utils/string.h>
-#include <sstream>
-#include <iostream>
+#include "arki/matcher.h"
+#include "arki/utils/string.h"
 
 namespace {
 using namespace std;

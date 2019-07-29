@@ -116,7 +116,6 @@ static int arkilua_data(lua_State* L)
 
 static int arkilua_filter(lua_State* L)
 {
-    // utils::lua::dumpstack(L, "FILTER", cerr);
     Summary* s = Summary::lua_check(L, 1);
     luaL_argcheck(L, s != NULL, 1, "`arki.summary' expected");
     Matcher m = Matcher::lua_check(L, 2);
@@ -293,9 +292,7 @@ struct StatsHull : public ItemVisitor
         if (i.second)
         {
             const arki::utils::geos::Geometry* g = a.bbox();
-            //cerr << "Got: " << g << g->getGeometryType() << endl;
             if (!g) return true;
-            //cerr << "Adding: " << g->toString() << endl;
             geoms->push_back(g->clone());
         }
         return true;
