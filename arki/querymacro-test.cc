@@ -1,4 +1,3 @@
-#include "arki/tests/legacy.h"
 #include "arki/dataset/tests.h"
 #include "arki/types/reftime.h"
 #include "arki/metadata/data.h"
@@ -50,39 +49,20 @@ class Tests : public FixtureTestCase<Fixture>
 
 void Tests::register_tests() {
 
-// Test running queries from Lua
-add_method("count", [](Fixture& f) {
-    f.import();
-
-    core::cfg::Section cfg;
-    Querymacro qm(cfg, f.dispatch_cfg, "test0", "foo");
-
-    lua_getglobal(*qm.L, "count1");
-    int count1 = lua_tointeger(*qm.L, -1);
-
-    lua_getglobal(*qm.L, "count2");
-    int count2 = lua_tointeger(*qm.L, -1);
-
-    lua_pop(*qm.L, 2);
-
-    wassert(actual(count1) == 9);
-    wassert(actual(count2) == 3);
-});
-
 // Lua script that simply passes through the queries
 add_method("noop", [](Fixture& f) {
     f.import();
     core::cfg::Section cfg;
-    Querymacro qm(cfg, f.dispatch_cfg, "noop", "testds");
+    auto qm = qmacro::get(cfg, f.dispatch_cfg, "noop", "testds");
 
-    metadata::Collection mdc(qm, Matcher());
+    metadata::Collection mdc(*qm, Matcher());
     wassert(actual(mdc.size()) == 9u);
-    ensure(mdc[0].has_source());
-    ensure(mdc[1].has_source());
-    ensure(mdc[2].has_source());
+    wassert_true(mdc[0].has_source());
+    wassert_true(mdc[1].has_source());
+    wassert_true(mdc[2].has_source());
 
     Summary s;
-    qm.query_summary(Matcher::parse(""), s);
+    qm->query_summary(Matcher::parse(""), s);
     wassert(actual(s.count()) == 9u);
 });
 
@@ -90,16 +70,16 @@ add_method("noop", [](Fixture& f) {
 add_method("noopcopy", [](Fixture& f) {
     f.import();
     core::cfg::Section cfg;
-    Querymacro qm(cfg, f.dispatch_cfg, "noopcopy", "testds");
+    auto qm = qmacro::get(cfg, f.dispatch_cfg, "noopcopy", "testds");
 
-    metadata::Collection mdc(qm, Matcher());
+    metadata::Collection mdc(*qm, Matcher());
     wassert(actual(mdc.size()) == 9u);
-    ensure(mdc[0].has_source());
-    ensure(mdc[1].has_source());
-    ensure(mdc[2].has_source());
+    wassert_true(mdc[0].has_source());
+    wassert_true(mdc[1].has_source());
+    wassert_true(mdc[2].has_source());
 
     Summary s;
-    qm.query_summary(Matcher::parse(""), s);
+    qm->query_summary(Matcher::parse(""), s);
     wassert(actual(s.count()) == 9u);
 });
 
@@ -107,40 +87,40 @@ add_method("noopcopy", [](Fixture& f) {
 add_method("expa", [](Fixture& f) {
     f.import();
     core::cfg::Section cfg;
-    Querymacro qm(cfg, f.dispatch_cfg, "expa", 
+    auto qm = qmacro::get(cfg, f.dispatch_cfg, "expa", 
             "ds:testds. d:2009-08-07. t:0000. s:AN. l:G00. v:GRIB1/200/140/229.\n"
             "ds:testds. d:2009-08-07. t:0000. s:GRIB1/1. l:MSL. v:GRIB1/80/2/2.\n"
     //          utils::readFile("misc/erse00.expa")
     );
 
-    metadata::Collection mdc(qm, Matcher());
-    ensure_equals(mdc.size(), 2u);
-    ensure(mdc[0].has_source());
-    ensure(mdc[1].has_source());
+    metadata::Collection mdc(*qm, Matcher());
+    wassert(actual(mdc.size()) == 2u);
+    wassert_true(mdc[0].has_source());
+    wassert_true(mdc[1].has_source());
 
     Summary s;
-    qm.query_summary(Matcher::parse(""), s);
-    ensure_equals(s.count(), 2u);
+    qm->query_summary(Matcher::parse(""), s);
+    wassert(actual(s.count()) == 2u);
 });
 
 // Try "expa" matchers with parameter
 add_method("expa_arg", [](Fixture& f) {
     f.import();
     core::cfg::Section cfg;
-    Querymacro qm(cfg, f.dispatch_cfg, "expa 2009-08-08", 
+    auto qm = qmacro::get(cfg, f.dispatch_cfg, "expa 2009-08-08", 
             "ds:testds. d:@. t:0000. s:AN. l:G00. v:GRIB1/200/140/229.\n"
             "ds:testds. d:@-1. t:0000. s:GRIB1/1. l:MSL. v:GRIB1/80/2/2.\n"
 //          utils::readFile("misc/erse00.expa")
     );
 
-    metadata::Collection mdc(qm, Matcher());
-    ensure_equals(mdc.size(), 2u);
-    ensure(mdc[0].has_source());
-    ensure(mdc[1].has_source());
+    metadata::Collection mdc(*qm, Matcher());
+    wassert(actual(mdc.size()) == 2u);
+    wassert_true(mdc[0].has_source());
+    wassert_true(mdc[1].has_source());
 
     Summary s;
-    qm.query_summary(Matcher::parse(""), s);
-    ensure_equals(s.count(), 2u);
+    qm->query_summary(Matcher::parse(""), s);
+    wassert(actual(s.count()) == 2u);
 });
 
 
@@ -149,38 +129,38 @@ add_method("gridspace", [](Fixture& f) {
     f.import();
     core::cfg::Section cfg;
     {
-        Querymacro qm(cfg, f.dispatch_cfg, "gridspace", 
+        auto qm = qmacro::get(cfg, f.dispatch_cfg, "gridspace", 
                 "dataset: testds\n"
                 "addtime: 2009-08-07 00:00:00\n"
                 "add: timerange:AN; level:G00; product:GRIB1,200,140,229\n"
                 "add: timerange:GRIB1,1; level:MSL; product:GRIB1,80,2,2\n"
         );
 
-        metadata::Collection mdc(qm, Matcher());
-        ensure_equals(mdc.size(), 2u);
-        ensure(mdc[0].has_source());
-        ensure(mdc[1].has_source());
+        metadata::Collection mdc(*qm, Matcher());
+        wassert(actual(mdc.size()) == 2u);
+        wassert_true(mdc[0].has_source());
+        wassert_true(mdc[1].has_source());
 
         Summary s;
-        qm.query_summary(Matcher::parse(""), s);
-        ensure_equals(s.count(), 2u);
+        wassert(qm->query_summary(Matcher::parse(""), s));
+        wassert(actual(s.count()) == 2u);
     }
     {
-        Querymacro qm(cfg, f.dispatch_cfg, "gridspace", 
+        auto qm = qmacro::get(cfg, f.dispatch_cfg, "gridspace", 
                 "dataset: testds\n"
                 "addtimes: 2009-08-07 00:00:00 2009-08-08 00:00:00 86400\n"
                 "add: timerange:AN; level:G00; product:GRIB1,200,140,229\n"
                 "add: timerange:GRIB1,1; level:MSL; product:GRIB1,80,2,2\n"
         );
 
-        metadata::Collection mdc(qm, Matcher());
-        ensure_equals(mdc.size(), 2u);
-        ensure(mdc[0].has_source());
-        ensure(mdc[1].has_source());
+        metadata::Collection mdc(*qm, Matcher());
+        wassert(actual(mdc.size()) == 2u);
+        wassert_true(mdc[0].has_source());
+        wassert_true(mdc[1].has_source());
 
         Summary s;
-        qm.query_summary(Matcher::parse(""), s);
-        ensure_equals(s.count(), 2u);
+        wassert(qm->query_summary(Matcher::parse(""), s));
+        wassert(actual(s.count()) == 2u);
     }
 });
 
@@ -188,20 +168,20 @@ add_method("gridspace", [](Fixture& f) {
 add_method("expa_inline", [](Fixture& f) {
     f.import();
     core::cfg::Section cfg;
-    Querymacro qm(cfg, f.dispatch_cfg, "expa",
+    auto qm = qmacro::get(cfg, f.dispatch_cfg, "expa",
             "ds:testds. d:2009-08-07. t:0000. s:AN. l:G00. v:GRIB1/200/140/229.\n"
             "ds:testds. d:2009-08-07. t:0000. s:GRIB1/1. l:MSL. v:GRIB1/80/2/2.\n"
             );
 
-    metadata::Collection mdc(qm, dataset::DataQuery("", true));
+    metadata::Collection mdc(*qm, dataset::DataQuery("", true));
     wassert(actual(mdc.size()) == 2u);
     // Ensure that data is reachable
     wassert(actual(mdc[0].get_data().size()) == mdc[0].data_size());
     wassert(actual(mdc[1].get_data().size()) == mdc[1].data_size());
 
     Summary s;
-    qm.query_summary(Matcher::parse(""), s);
-    ensure_equals(s.count(), 2u);
+    wassert(qm->query_summary(Matcher::parse(""), s));
+    wassert(actual(s.count()) == 2u);
 });
 
 // Try "expa" matchers with sort option
@@ -209,23 +189,23 @@ add_method("expa_inline", [](Fixture& f) {
 add_method("expa_sort", [](Fixture& f) {
     f.import();
     core::cfg::Section cfg;
-    Querymacro qm(cfg, f.dispatch_cfg, "expa",
+    auto qm = qmacro::get(cfg, f.dispatch_cfg, "expa",
             "ds:testds. d:2009-08-07. t:0000. s:AN. l:G00. v:GRIB1/200/140/229.\n"
             "ds:testds. d:2009-08-08. t:0000. s:GRIB1/1. l:MSL. v:GRIB1/80/2/2.\n"
             );
 
     dataset::DataQuery dq;
     dq.sorter = sort::Compare::parse("month:-reftime");
-    metadata::Collection mdc(qm, dq);
-    ensure_equals(mdc.size(), 2u);
-    ensure(mdc[0].has_source());
+    metadata::Collection mdc(*qm, dq);
+    wassert(actual(mdc.size()) == 2u);
+    wassert_true(mdc[0].has_source());
     wassert(actual_type(mdc[0].get(TYPE_REFTIME)) == Reftime::decodeString("2009-08-08 00:00:00"));
-    ensure(mdc[1].has_source());
+    wassert_true(mdc[1].has_source());
     wassert(actual_type(mdc[1].get(TYPE_REFTIME)) == Reftime::decodeString("2009-08-07 00:00:00"));
 
     Summary s;
-    qm.query_summary(Matcher::parse(""), s);
-    ensure_equals(s.count(), 2u);
+    qm->query_summary(Matcher::parse(""), s);
+    wassert(actual(s.count()) == 2u);
 });
 
 }
