@@ -30,10 +30,18 @@ void Handler::install()
 
 std::string Handler::format(const char* fmt, va_list ap)
 {
-    auto size = vsnprintf(nullptr, 0, fmt, ap);
+    // Use a copy of ap to compute the size, since a va_list can be iterated
+    // only once
+    va_list ap1;
+    va_copy(ap1, ap);
+    auto size = vsnprintf(nullptr, 0, fmt, ap1);
+    va_end(ap1);
+
     std::string res(size + 1, '\0');
     // TODO: remove the const cast when we have C++17
     vsnprintf(const_cast<char*>(res.data()), size + 1, fmt, ap);
+    res.resize(size);
+
     return res;
 }
 

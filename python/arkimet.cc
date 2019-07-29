@@ -276,24 +276,24 @@ struct PythonNagHandler : public nag::Handler
     {
         std::string msg = format(fmt, ap);
         AcquireGIL gil;
-        throw_ifnull(PyObject_CallMethod(
-                    py_warning, "%s", "s#", msg.data(), msg.size()));
+        throw_ifnull(PyObject_CallFunction(
+                    py_warning, "ss#", "%s", msg.data(), (Py_ssize_t)msg.size()));
     }
 
     void verbose(const char* fmt, va_list ap) override
     {
         std::string msg = format(fmt, ap);
         AcquireGIL gil;
-        throw_ifnull(PyObject_CallMethod(
-                    py_info, "%s", "s#", msg.data(), msg.size()));
+        throw_ifnull(PyObject_CallFunction(
+                    py_info, "ss#", "%s", msg.data(), (Py_ssize_t)msg.size()));
     }
 
     void debug(const char* fmt, va_list ap) override
     {
         std::string msg = format(fmt, ap);
         AcquireGIL gil;
-        throw_ifnull(PyObject_CallMethod(
-                    py_debug, "%s", "s#", msg.data(), msg.size()));
+        throw_ifnull(PyObject_CallFunction(
+                    py_debug, "ss#", "%s", msg.data(), (Py_ssize_t)msg.size()));
     }
 };
 
