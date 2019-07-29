@@ -2,6 +2,7 @@ import arkimet as arki
 import unittest
 import shutil
 import os
+import posix
 from contextlib import contextmanager
 from arkimet.cmdline.scan import Scan
 from arkimet.test import CatchOutput, skip_unless_vm2
@@ -92,7 +93,7 @@ class TestArkiScan(unittest.TestCase):
             res = self.runcmd("--yaml", "--stdin=grib", "inbound/fixture.grib1")
         self.assertRegex(out.stderr, b"you cannot specify input files or datasets when using --stdin")
         self.assertEqual(out.stdout, b"")
-        self.assertEqual(res, 2)
+        self.assertEqual(res, posix.EX_USAGE)
 
     def test_stdin3(self):
         out = CatchOutput()
@@ -100,7 +101,7 @@ class TestArkiScan(unittest.TestCase):
             res = self.runcmd("--files=inbound/fixture.grib1", "--stdin=grib")
         self.assertRegex(out.stderr, b"you cannot specify input files or datasets when using --stdin")
         self.assertEqual(out.stdout, b"")
-        self.assertEqual(res, 2)
+        self.assertEqual(res, posix.EX_USAGE)
 
     def test_stdin4(self):
         out = CatchOutput()
@@ -108,7 +109,7 @@ class TestArkiScan(unittest.TestCase):
             res = self.runcmd("--dispatch=/dev/null", "--stdin=grib")
         self.assertRegex(out.stderr, b"--stdin cannot be used together with --dispatch")
         self.assertEqual(out.stdout, b"")
-        self.assertEqual(res, 2)
+        self.assertEqual(res, posix.EX_USAGE)
 
     def test_scan_grib(self):
         out = CatchOutput()
@@ -156,7 +157,7 @@ class TestArkiScan(unittest.TestCase):
             res = self.runcmd("--yaml", "-")
         self.assertRegex(out.stderr, b"use --stdin to read data from standard input")
         self.assertEqual(out.stdout, b"")
-        self.assertEqual(res, 2)
+        self.assertEqual(res, posix.EX_USAGE)
 
         out = CatchOutput()
         with self.assertRaises(RuntimeError) as e:
@@ -165,14 +166,14 @@ class TestArkiScan(unittest.TestCase):
         self.assertRegex(str(e.exception), "file - does not exist")
         self.assertEqual(out.stderr, b"")
         self.assertEqual(out.stdout, b"")
-        self.assertEqual(res, 2)
+        self.assertEqual(res, posix.EX_USAGE)
 
         out = CatchOutput()
         with out.redirect():
             res = self.runcmd("--dispatch=/dev/null", "-")
         self.assertRegex(out.stderr, b"use --stdin to read data from standard input")
         self.assertEqual(out.stdout, b"")
-        self.assertEqual(res, 2)
+        self.assertEqual(res, posix.EX_USAGE)
 
     def test_dispatch_plain(self):
         with datasets():
@@ -225,7 +226,7 @@ class TestArkiScan(unittest.TestCase):
                     "inbound/test.grib1"
                 )
             self.assertEqual(out.stderr, b"")
-            self.assertEqual(res, 3)
+            self.assertEqual(res, posix.EX_DATAERR)
             mds = parse_metadata(out.stdout)
             self.assertEqual(len(mds), 3)
 
@@ -274,7 +275,7 @@ class TestArkiScan(unittest.TestCase):
                     "inbound/test.grib1"
                 )
             self.assertEqual(out.stderr, b"")
-            self.assertEqual(res, 3)
+            self.assertEqual(res, posix.EX_DATAERR)
             mds = parse_metadata(out.stdout)
             self.assertEqual(len(mds), 3)
 
@@ -324,7 +325,7 @@ class TestArkiScan(unittest.TestCase):
                     "testenv/test.grib1"
                 )
             self.assertEqual(out.stderr, b"")
-            self.assertEqual(res, 3)
+            self.assertEqual(res, posix.EX_DATAERR)
             mds = parse_metadata(out.stdout)
             self.assertEqual(len(mds), 3)
 
@@ -349,7 +350,7 @@ class TestArkiScan(unittest.TestCase):
                     "testenv/test.grib1"
                 )
             self.assertEqual(out.stderr, b"")
-            self.assertEqual(res, 3)
+            self.assertEqual(res, posix.EX_DATAERR)
             mds = parse_metadata(out.stdout)
             self.assertEqual(len(mds), 3)
 
@@ -375,7 +376,7 @@ class TestArkiScan(unittest.TestCase):
                     "inbound/issue68.vm2",
                 )
             self.assertEqual(out.stderr, b"")
-            self.assertEqual(res, 3)
+            self.assertEqual(res, posix.EX_DATAERR)
             mds = parse_metadata(out.stdout)
             self.assertEqual(len(mds), 5)
 
@@ -408,7 +409,7 @@ class TestArkiScan(unittest.TestCase):
                     "inbound/issue68.vm2",
                 )
             self.assertEqual(out.stderr, b"")
-            self.assertEqual(res, 3)
+            self.assertEqual(res, posix.EX_DATAERR)
             mds = parse_metadata(out.stdout)
             self.assertEqual(len(mds), 5)
 
@@ -442,4 +443,4 @@ class TestArkiScan(unittest.TestCase):
                                          br" serious problems: 0 ok, 0 duplicates, 0 in error dataset,"
                                          br" 3 NOT imported in [0-9.]+ seconds\n")
             self.assertRegex(out.stdout, b"^SummaryItem:")
-            self.assertEqual(res, 3)
+            self.assertEqual(res, posix.EX_DATAERR)

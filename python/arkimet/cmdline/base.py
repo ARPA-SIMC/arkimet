@@ -5,6 +5,7 @@ import itertools
 import sys
 import re
 import os
+import posix
 
 
 class Fail(Exception):
@@ -15,11 +16,17 @@ class Exit(Exception):
     pass
 
 
+class PosixArgumentParser(argparse.ArgumentParser):
+    def error(self, message):
+        self.print_help(sys.stderr)
+        self.exit(posix.EX_USAGE, '%s: error: %s\n' % (self.prog, message))
+
+
 class App:
     NAME = None
 
     def __init__(self):
-        self.parser = argparse.ArgumentParser(description=self.get_description())
+        self.parser = PosixArgumentParser(description=self.get_description())
         self.parser.add_argument("--verbose", "-v", action="store_true",
                                  help="verbose output")
         self.parser.add_argument("--debug", action="store_true",

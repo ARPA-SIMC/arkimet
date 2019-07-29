@@ -2,6 +2,7 @@ import arkimet as arki
 import unittest
 import shutil
 import os
+import posix
 from contextlib import contextmanager
 from arkimet.cmdline.query import Query
 from arkimet.test import CatchOutput
@@ -107,10 +108,10 @@ class TestArkiQuery(unittest.TestCase):
             res = self.runcmd("--stdin=grib", "", "test.metadata")
         self.assertIn(b"you cannot specify input files or datasets when using --stdin", out.stderr)
         self.assertEqual(out.stdout, b"")
-        self.assertEqual(res, 2)
+        self.assertEqual(res, posix.EX_USAGE)
 
         with out.redirect():
             res = self.runcmd("--stdin=grib", "--config=/dev/null", "")
         self.assertIn(b"--stdin cannot be used together with --config", out.stderr)
         self.assertEqual(out.stdout, b"")
-        self.assertEqual(res, 2)
+        self.assertEqual(res, posix.EX_USAGE)
