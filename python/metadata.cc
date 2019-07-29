@@ -21,6 +21,7 @@ using namespace arki::python;
 extern "C" {
 
 PyTypeObject* arkipy_Metadata_Type = nullptr;
+PyTypeObject* arkipy_metadata_dest_func_Type = nullptr;
 
 }
 
@@ -375,6 +376,125 @@ Arkimet metadata for one data item
 
 MetadataDef* metadata_def = nullptr;
 
+
+struct PyDestFunc
+{
+    PyObject* callable;
+
+    PyDestFunc(PyObject* callable)
+        : callable(callable)
+    {
+        Py_XINCREF(callable);
+    }
+
+    PyDestFunc(const PyDestFunc& o)
+        : callable(o.callable)
+    {
+        Py_XINCREF(callable);
+    }
+
+    PyDestFunc(PyDestFunc&& o)
+        : callable(o.callable)
+    {
+        o.callable = nullptr;
+    }
+
+    ~PyDestFunc()
+    {
+        Py_XDECREF(callable);
+    }
+
+    PyDestFunc& operator=(const PyDestFunc& o)
+    {
+        Py_XINCREF(o.callable);
+        Py_XDECREF(callable);
+        callable = o.callable;
+        return *this;
+    }
+
+    PyDestFunc& operator=(PyDestFunc&& o)
+    {
+        if (this == &o)
+            return *this;
+
+        Py_XDECREF(callable);
+        callable = o.callable;
+        o.callable = nullptr;
+        return *this;
+    }
+
+    bool operator()(std::unique_ptr<Metadata> md)
+    {
+        AcquireGIL gil;
+        // call arg_on_metadata
+        py_unique_ptr<arkipy_Metadata> pymd(metadata_create(std::move(md)));
+        pyo_unique_ptr args(PyTuple_Pack(1, pymd.get()));
+        if (!args) throw PythonException();
+        pyo_unique_ptr res(PyObject_CallObject(callable, args));
+        if (!res) throw PythonException();
+        // Continue if the callback returns None or True
+        if (res == Py_None) return true;
+        int cont = PyObject_IsTrue(res);
+        if (cont == -1) throw PythonException();
+        return cont == 1;
+    }
+};
+
+
+struct MetadataDestFuncDef : public Type<MetadataDestFuncDef, arkipy_metadata_dest_func>
+{
+    constexpr static const char* name = "metadata_dest_func";
+    constexpr static const char* qual_name = "arkimet.metadata_dest_func";
+    constexpr static const char* doc = R"(
+callback for producing one metadata element
+)";
+    GetSetters<> getsetters;
+    Methods<> methods;
+
+    static void _dealloc(Impl* self)
+    {
+        self->func.~metadata_dest_func();
+        Py_TYPE(self)->tp_free(self);
+    }
+
+    static PyObject* _str(Impl* self)
+    {
+        return PyUnicode_FromString("metadata_dest_func");
+    }
+
+    static PyObject* _repr(Impl* self)
+    {
+        return PyUnicode_FromString("metadata_dest_func");
+    }
+
+    static PyObject* _call(Impl* self, PyObject* args, PyObject* kw)
+    {
+        static const char* kwlist[] = { "md", nullptr };
+        PyObject* py_md = nullptr;
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "O!",
+                    const_cast<char**>(kwlist), arkipy_Metadata_Type, &py_md))
+            return nullptr;
+
+        try {
+            std::unique_ptr<Metadata> md(new Metadata(*((arkipy_Metadata*)py_md)->md));
+            bool res = self->func(std::move(md));
+            if (res)
+                Py_RETURN_TRUE;
+            else
+                Py_RETURN_FALSE;
+        } ARKI_CATCH_RETURN_PYO
+    }
+
+    static int _init(Impl* self, PyObject* args, PyObject* kw)
+    {
+        PyErr_SetString(PyExc_NotImplementedError, "MetadataDestFunc objects cannot be constructed explicitly");
+        return -1;
+    }
+};
+
+MetadataDestFuncDef* metadata_dest_func_def = nullptr;
+
+
 }
 
 namespace arki {
@@ -414,10 +534,33 @@ arkipy_Metadata* metadata_create(std::unique_ptr<Metadata>&& md)
     return result;
 }
 
+
+arki::metadata_dest_func dest_func_from_python(PyObject* o)
+{
+    if (PyCallable_Check(o))
+    {
+        return PyDestFunc(o);
+    }
+    PyErr_SetString(PyExc_TypeError, "value must be a callable");
+    throw PythonException();
+}
+
+PyObject* dest_func_to_python(arki::metadata_dest_func func)
+{
+    arkipy_metadata_dest_func* result = PyObject_New(arkipy_metadata_dest_func, arkipy_metadata_dest_func_Type);
+    if (!result) return nullptr;
+    new (&(result->func)) metadata_dest_func(func);
+    return (PyObject*)result;
+}
+
+
 void register_metadata(PyObject* m)
 {
     metadata_def = new MetadataDef;
     metadata_def->define(arkipy_Metadata_Type, m);
+
+    metadata_dest_func_def = new MetadataDestFuncDef;
+    metadata_dest_func_def->define(arkipy_metadata_dest_func_Type);
 }
 
 }
