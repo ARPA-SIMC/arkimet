@@ -186,7 +186,8 @@ struct query_qmacro : public MethKwargs<query_qmacro, arkipy_ArkiQuery>
                 {
                     // Create the local query macro
                     arki::nag::verbose("Running query macro %s on local datasets", macro_name.c_str());
-                    reader = arki::qmacro::get(cfg, self->inputs, macro_name, macro_query);
+                    arki::qmacro::Options opts(cfg, self->inputs, macro_name, macro_query);
+                    reader = arki::qmacro::get(opts);
                 } else {
                     // Create the remote query macro
                     arki::nag::verbose("Running query macro %s on %s", macro_name.c_str(), baseurl.c_str());

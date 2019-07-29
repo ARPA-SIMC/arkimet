@@ -15,14 +15,44 @@ using namespace arki::utils;
 namespace arki {
 namespace qmacro {
 
-class Querymacro : public dataset::Reader
+Options::Options(const core::cfg::Sections& datasets_cfg, const std::string& name, const std::string& query)
+    : datasets_cfg(datasets_cfg), query(query)
+{
+    size_t pos = name.find(" ");
+    if (pos == string::npos)
+    {
+        macro_name = name;
+    } else {
+        macro_name = name.substr(0, pos);
+        macro_args = str::strip(name.substr(pos + 1));
+    }
+
+}
+
+Options::Options(const core::cfg::Section& macro_cfg, const core::cfg::Sections& datasets_cfg, const std::string& name, const std::string& query)
+    : macro_cfg(macro_cfg), datasets_cfg(datasets_cfg), query(query)
+{
+    size_t pos = name.find(" ");
+    if (pos == string::npos)
+    {
+        macro_name = name;
+    } else {
+        macro_name = name.substr(0, pos);
+        macro_args = str::strip(name.substr(pos + 1));
+    }
+
+}
+
+namespace {
+
+class LuaMacro : public dataset::Reader
 {
 protected:
     std::shared_ptr<const dataset::Config> m_config;
     std::map<std::string, Reader*> ds_cache;
 
 public:
-    core::cfg::Sections dispatch_cfg;
+    core::cfg::Sections datasets_cfg;
     Lua *L = nullptr;
     int funcid_querydata;
     int funcid_querysummary;
@@ -34,33 +64,39 @@ public:
      * @param cfg
      *   Configuration used to instantiate datasets
      */
-    Querymacro(const core::cfg::Section& ds_cfg, const core::cfg::Sections& dispatch_cfg, const std::string& name, const std::string& query);
-    virtual ~Querymacro();
+    LuaMacro(const Options& opts);
+    virtual ~LuaMacro()
+    {
+        if (L) delete L;
+        for (std::map<std::string, Reader*>::iterator i = ds_cache.begin();
+                i != ds_cache.end(); ++i)
+            delete i->second;
+    }
 
     const dataset::Config& config() const override { return *m_config; }
-    std::string type() const override;
+    std::string type() const override { return "querymacro"; }
 
-	/**
-	 * Get a dataset from the querymacro dataset cache, instantiating it in
-	 * the cache if it is not already there
-	 */
-	Reader* dataset(const std::string& name);
+    /**
+     * Get a dataset from the querymacro dataset cache, instantiating it in
+     * the cache if it is not already there
+     */
+    Reader* dataset(const std::string& name);
 
     bool query_data(const dataset::DataQuery& q, metadata_dest_func dest) override;
     void query_summary(const Matcher& matcher, Summary& summary) override;
 };
 
 
-static Querymacro* checkqmacro(lua_State *L, int idx = 1)
+static LuaMacro* checkqmacro(lua_State *L, int idx = 1)
 {
-	void* ud = luaL_checkudata(L, idx, "arki.querymacro");
-	luaL_argcheck(L, ud != NULL, idx, "`querymacro' expected");
-	return *(Querymacro**)ud;
+    void* ud = luaL_checkudata(L, idx, "arki.querymacro");
+    luaL_argcheck(L, ud != NULL, idx, "`querymacro' expected");
+    return *(LuaMacro**)ud;
 }
 
 static int arkilua_dataset(lua_State *L)
 {
-    Querymacro* rd = checkqmacro(L);
+    LuaMacro* rd = checkqmacro(L);
     const char* name = luaL_checkstring(L, 2);
     dataset::Reader* ds = rd->dataset(name);
     if (ds)
@@ -101,13 +137,13 @@ static const struct luaL_Reg querymacrolib[] = {
 };
 
 
-Querymacro::Querymacro(const core::cfg::Section& ds_cfg, const core::cfg::Sections& dispatch_cfg, const std::string& name, const std::string& query)
-    : dispatch_cfg(dispatch_cfg), L(new Lua), funcid_querydata(-1), funcid_querysummary(-1)
+LuaMacro::LuaMacro(const Options& opts)
+    : datasets_cfg(opts.datasets_cfg), L(new Lua), funcid_querydata(-1), funcid_querysummary(-1)
 {
-    m_config = std::shared_ptr<const dataset::Config>(new dataset::Config(ds_cfg));
-	Summary::lua_openlib(*L);
-	Matcher::lua_openlib(*L);
-	dataset::GridQuery::lua_openlib(*L);
+    m_config = std::shared_ptr<const dataset::Config>(new dataset::Config(opts.macro_cfg));
+    Summary::lua_openlib(*L);
+    Matcher::lua_openlib(*L);
+    dataset::GridQuery::lua_openlib(*L);
 
     // Create the Querymacro object
     utils::lua::push_object_ptr(*L, this, "arki.querymacro", querymacrolib);
@@ -115,27 +151,21 @@ Querymacro::Querymacro(const core::cfg::Section& ds_cfg, const core::cfg::Sectio
 	// global qmacro = our userdata object
 	lua_setglobal(*L, "qmacro");
 
-	// Load the data as a global variable
-	lua_pushstring(*L, query.c_str());
-	lua_setglobal(*L, "query");
+    // Load the data as a global variable
+    lua_pushstring(*L, opts.query.c_str());
+    lua_setglobal(*L, "query");
 
-	// Split macro name and arguments
-	string macroname;
-	size_t pos = name.find(" ");
-	if (pos == string::npos)
-	{
-		macroname = name;
-		lua_pushnil(*L);
+    if (opts.macro_args.empty())
+    {
+        lua_pushnil(*L);
     } else {
-        macroname = name.substr(0, pos);
-        string macroargs = str::strip(name.substr(pos + 1));
-        lua_pushstring(*L, macroargs.c_str());
+        lua_pushstring(*L, opts.macro_args.c_str());
     }
-	// Load the arguments as a global variable
-	lua_setglobal(*L, "args");
+    // Load the arguments as a global variable
+    lua_setglobal(*L, "args");
 
     /// Load the right qmacro file
-    string fname = Config::get().dir_qmacro.find_file(macroname + ".lua");
+    string fname = Config::get().dir_qmacro.find_file(opts.macro_name + ".lua");
     if (luaL_dofile(*L, fname.c_str()))
     {
         // Copy the error, so that it will exist after the pop
@@ -158,22 +188,12 @@ Querymacro::Querymacro(const core::cfg::Section& ds_cfg, const core::cfg::Sectio
 	// utils::lua::dumpstack(*L, "Afterinit", cerr);
 }
 
-Querymacro::~Querymacro()
-{
-	if (L) delete L;
-	for (std::map<std::string, Reader*>::iterator i = ds_cache.begin();
-			i != ds_cache.end(); ++i)
-		delete i->second;
-}
-
-std::string Querymacro::type() const { return "querymacro"; }
-
-dataset::Reader* Querymacro::dataset(const std::string& name)
+dataset::Reader* LuaMacro::dataset(const std::string& name)
 {
     std::map<std::string, dataset::Reader*>::iterator i = ds_cache.find(name);
     if (i == ds_cache.end())
     {
-        const core::cfg::Section* dscfg = dispatch_cfg.section(name);
+        const core::cfg::Section* dscfg = datasets_cfg.section(name);
         if (!dscfg) return 0;
         auto ds = dataset::Reader::create(*dscfg);
         pair<map<string, dataset::Reader*>::iterator, bool> res = ds_cache.insert(make_pair(name, ds.release()));
@@ -182,7 +202,7 @@ dataset::Reader* Querymacro::dataset(const std::string& name)
     return i->second;
 }
 
-bool Querymacro::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
+bool LuaMacro::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 {
     if (funcid_querydata == -1) return true;
 
@@ -216,7 +236,7 @@ bool Querymacro::query_data(const dataset::DataQuery& q, metadata_dest_func dest
     return true;
 }
 
-void Querymacro::query_summary(const Matcher& matcher, Summary& summary)
+void LuaMacro::query_summary(const Matcher& matcher, Summary& summary)
 {
 	if (funcid_querysummary == -1) return;
 
@@ -239,9 +259,11 @@ void Querymacro::query_summary(const Matcher& matcher, Summary& summary)
     }
 }
 
-std::shared_ptr<dataset::Reader> get(const core::cfg::Section& ds_cfg, const core::cfg::Sections& dispatch_cfg, const std::string& name, const std::string& query)
+}
+
+std::shared_ptr<dataset::Reader> get(const Options& opts)
 {
-    return make_shared<Querymacro>(ds_cfg, dispatch_cfg, name, query);
+    return make_shared<LuaMacro>(opts);
 }
 
 }
