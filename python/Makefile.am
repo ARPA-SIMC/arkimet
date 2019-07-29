@@ -19,6 +19,7 @@ _arkimet_la_SOURCES = \
     summary.cc \
     matcher.cc \
     dataset.cc \
+    dataset/querymacro.cc \
     counters.cc \
     cmdline.cc \
     cmdline/processor.cc \
@@ -67,6 +68,7 @@ EXTRA_DIST = \
     matcher.h \
     dataset.h \
     dataset/reporter.h \
+    dataset/querymacro.h \
     counters.h \
     cmdline.h \
     cmdline/processor.h \
