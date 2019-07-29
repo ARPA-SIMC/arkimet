@@ -1,5 +1,6 @@
 import arkimet as arki
 from arkimet.cmdline.base import AppWithProcessor, Exit
+import posix
 import logging
 
 log = logging.getLogger("arki-scan")
@@ -187,4 +188,4 @@ class Scan(AppWithProcessor):
                 all_successful = arki_scan.scan_sections()
 
         if not all_successful:
-            raise Exit(3)
+            raise Exit(posix.EX_DATAERR)
