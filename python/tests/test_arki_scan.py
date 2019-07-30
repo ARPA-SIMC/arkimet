@@ -8,53 +8,28 @@ from arkimet.cmdline.scan import Scan
 from arkimet.test import CatchOutput, skip_unless_vm2
 
 
-@contextmanager
-def datasets(**kw):
-    try:
-        shutil.rmtree("testenv")
-    except FileNotFoundError:
-        pass
-    os.mkdir("testenv")
-    os.mkdir("testenv/testds")
-    os.mkdir("testenv/error")
-    os.mkdir("testenv/copyok")
-    os.mkdir("testenv/copyko")
+class Env(arki.test.Env):
+    def __init__(self, *args, **kw):
+        super().__init__(*args, **kw)
+        os.mkdir("testenv/error")
+        os.mkdir("testenv/copyok")
+        os.mkdir("testenv/copyko")
 
-    ds_cfg = {
-        "format": "grib",
-        "name": "testds",
-        "path": os.path.abspath("testenv/testds"),
-        "type": "iseg",
-        "step": "daily",
-        "filter": "origin:GRIB1",
-    }
-    ds_cfg.update(**kw)
+    def build_config(self):
+        config = super().build_config()
 
-    ds_cfg = arki.cfg.Section(ds_cfg)
+        error_cfg = arki.cfg.Section({
+            "name": "error",
+            "path": os.path.abspath("testenv/error"),
+            "type": "error",
+            "step": "daily",
+        })
+        config["error"] = error_cfg
 
-    error_cfg = arki.cfg.Section({
-        "name": "error",
-        "path": os.path.abspath("testenv/error"),
-        "type": "error",
-        "step": "daily",
-    })
+        with open("testenv/testds/error", "wt") as fd:
+            error_cfg.write(fd)
 
-    config = arki.cfg.Sections()
-    config["testds"] = ds_cfg
-    config["error"] = error_cfg
-
-    with open("testenv/config", "wt") as fd:
-        config.write(fd)
-
-    with open("testenv/testds/config", "wt") as fd:
-        ds_cfg.write(fd)
-
-    with open("testenv/testds/error", "wt") as fd:
-        error_cfg.write(fd)
-
-    yield config
-
-    shutil.rmtree("testenv")
+        return config
 
 
 def parse_metadata(buf):
@@ -69,6 +44,14 @@ def parse_metadata(buf):
 
 
 class TestArkiScan(unittest.TestCase):
+    @contextmanager
+    def datasets(self, **kw):
+        kw.setdefault("format", "grib")
+        kw.setdefault("filter", "origin:GRIB1")
+        env = Env(**kw)
+        yield env
+        env.cleanup()
+
     def runcmd(self, *args):
         try:
             return Scan.main(args)
@@ -176,7 +159,7 @@ class TestArkiScan(unittest.TestCase):
         self.assertEqual(res, posix.EX_USAGE)
 
     def test_dispatch_plain(self):
-        with datasets():
+        with self.datasets():
             arki.counters.acquire_single_count.reset()
             arki.counters.acquire_batch_count.reset()
 
@@ -196,7 +179,7 @@ class TestArkiScan(unittest.TestCase):
             self.assertEqual(arki.counters.acquire_batch_count.value, 1)
 
     def test_dispatch_flush_threshold(self):
-        with datasets():
+        with self.datasets():
             arki.counters.acquire_single_count.reset()
             arki.counters.acquire_batch_count.reset()
 
@@ -216,7 +199,7 @@ class TestArkiScan(unittest.TestCase):
             self.assertEqual(arki.counters.acquire_batch_count.value, 2)
 
     def test_dispatch_copyok_copyko(self):
-        with datasets(filter="origin:GRIB1,200 or GRIB1,80"):
+        with self.datasets(filter="origin:GRIB1,200 or GRIB1,80"):
             out = CatchOutput()
             with out.redirect():
                 res = self.runcmd(
@@ -241,7 +224,7 @@ class TestArkiScan(unittest.TestCase):
             self.assertEqual(os.path.getsize("testenv/copyko/test.grib1"), 2234)
 
     def test_dispatch_copyok(self):
-        with datasets(filter="origin:GRIB1"):
+        with self.datasets(filter="origin:GRIB1"):
             out = CatchOutput()
             with out.redirect():
                 res = self.runcmd(
@@ -265,7 +248,7 @@ class TestArkiScan(unittest.TestCase):
             self.assertFalse(os.path.exists("testenv/copyko/test.grib1"))
 
     def test_dispatch_copyko(self):
-        with datasets(filter="origin:GRIB2"):
+        with self.datasets(filter="origin:GRIB2"):
             out = CatchOutput()
             with out.redirect():
                 res = self.runcmd(
@@ -289,7 +272,7 @@ class TestArkiScan(unittest.TestCase):
             self.assertEqual(os.path.getsize("testenv/copyko/test.grib1"), 44412)
 
     def test_dispatch_moveok(self):
-        with datasets(filter="origin:GRIB1"):
+        with self.datasets(filter="origin:GRIB1"):
             shutil.copyfile("inbound/test.grib1", "testenv/test.grib1")
             out = CatchOutput()
             with out.redirect():
@@ -314,7 +297,7 @@ class TestArkiScan(unittest.TestCase):
             self.assertFalse(os.path.exists("testenv/copyko/test.grib1"))
 
     def test_dispatch_moveko(self):
-        with datasets(filter="origin:GRIB2"):
+        with self.datasets(filter="origin:GRIB2"):
             shutil.copyfile("inbound/test.grib1", "testenv/test.grib1")
             out = CatchOutput()
             with out.redirect():
@@ -339,7 +322,7 @@ class TestArkiScan(unittest.TestCase):
             self.assertEqual(os.path.getsize("testenv/copyko/test.grib1"), 44412)
 
     def test_dispatch_moveok_moveko(self):
-        with datasets(filter="origin:GRIB1,200 or GRIB1,80"):
+        with self.datasets(filter="origin:GRIB1,200 or GRIB1,80"):
             shutil.copyfile("inbound/test.grib1", "testenv/test.grib1")
             out = CatchOutput()
             with out.redirect():
@@ -366,7 +349,7 @@ class TestArkiScan(unittest.TestCase):
     def test_dispatch_issue68(self):
         skip_unless_vm2()
 
-        with datasets(filter="area:VM2,1", format="vm2"):
+        with self.datasets(filter="area:VM2,1", format="vm2"):
             out = CatchOutput()
             with out.redirect():
                 res = self.runcmd(
@@ -399,7 +382,7 @@ class TestArkiScan(unittest.TestCase):
     def test_dispatch_issue154(self):
         skip_unless_vm2()
 
-        with datasets(filter="area:VM2,42", format="vm2"):
+        with self.datasets(filter="area:VM2,42", format="vm2"):
             out = CatchOutput()
             with out.redirect():
                 res = self.runcmd(
@@ -427,7 +410,7 @@ class TestArkiScan(unittest.TestCase):
 
     def test_files(self):
         # Reproduce https://github.com/ARPA-SIMC/arkimet/issues/19
-        with datasets():
+        with self.datasets():
             with open("testenv/import.lst", "wt") as fd:
                 print("grib:inbound/test.grib1", file=fd)
             with open("testenv/config", "wt") as fd:

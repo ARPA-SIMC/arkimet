@@ -1,48 +1,25 @@
-import arkimet as arki
 import unittest
-import shutil
 import os
 import posix
 from contextlib import contextmanager
 from arkimet.cmdline.query import Query
-from arkimet.test import CatchOutput
-
-
-@contextmanager
-def dataset(srcfile):
-    try:
-        shutil.rmtree("testds")
-    except FileNotFoundError:
-        pass
-    os.mkdir("testds")
-
-    cfg = arki.cfg.Section({
-        "format": "grib",
-        "name": "testds",
-        "path": "testds",
-        "type": "iseg",
-        "step": "daily",
-    })
-
-    with open("testds/config", "wt") as fd:
-        cfg.write(fd)
-
-    src_cfg = arki.dataset.read_config(srcfile)
-    source = arki.dataset.Reader(src_cfg)
-    dest = arki.dataset.Writer(cfg)
-
-    def do_import(md):
-        dest.acquire(md)
-
-    source.query_data(on_metadata=do_import)
-    dest.flush()
-
-    yield cfg
-
-    shutil.rmtree("testds")
+from arkimet.test import CatchOutput, Env
 
 
 class TestArkiQuery(unittest.TestCase):
+    @contextmanager
+    def dataset(self, srcfile, **kw):
+        kw["name"] = "testds"
+        kw["path"] = os.path.abspath("testenv/testds")
+        kw.setdefault("format", "grib")
+        kw.setdefault("step", "daily")
+        kw.setdefault("type", "iseg")
+
+        env = Env(**kw)
+        env.import_file(srcfile)
+        yield env
+        env.cleanup()
+
     def runcmd(self, *args):
         # arkiquery = arki.ArkiQuery()
         # return arkiquery.run(args=("arki-query",) + args)
@@ -52,10 +29,10 @@ class TestArkiQuery(unittest.TestCase):
             return e.args[0]
 
     def test_postproc(self):
-        with dataset("inbound/test.grib1"):
+        with self.dataset("inbound/test.grib1"):
             out = CatchOutput()
             with out.redirect():
-                res = self.runcmd("--postproc=checkfiles", "", "testds", "--postproc-data=/dev/null")
+                res = self.runcmd("--postproc=checkfiles", "", "testenv/testds", "--postproc-data=/dev/null")
             self.assertEqual(out.stderr, b"")
             self.assertEqual(out.stdout, b"/dev/null\n")
             self.assertIsNone(res)
@@ -77,28 +54,28 @@ class TestArkiQuery(unittest.TestCase):
         self.assertIsNone(res)
 
     def test_query_merged(self):
-        with dataset("inbound/fixture.grib1"):
+        with self.dataset("inbound/fixture.grib1"):
             out = CatchOutput()
             with out.redirect():
-                res = self.runcmd("--merged", "--data", "", "testds")
+                res = self.runcmd("--merged", "--data", "", "testenv/testds")
             self.assertEqual(out.stderr, b"")
             self.assertEqual(out.stdout[:4], b"GRIB")
             self.assertIsNone(res)
 
     def test_query_qmacro(self):
-        with dataset("inbound/fixture.grib1"):
+        with self.dataset("inbound/fixture.grib1"):
             out = CatchOutput()
             with out.redirect():
-                res = self.runcmd("--qmacro=noop", "--data", "testds", "testds")
+                res = self.runcmd("--qmacro=noop", "--data", "testds", "testenv/testds")
             self.assertEqual(out.stderr, b"")
             self.assertEqual(out.stdout[:4], b"GRIB")
             self.assertIsNone(res)
 
     def test_query_qmacro_py_noop(self):
-        with dataset("inbound/fixture.grib1"):
+        with self.dataset("inbound/fixture.grib1"):
             out = CatchOutput()
             with out.redirect():
-                res = self.runcmd("--qmacro=py_noop", "--data", "testds", "testds")
+                res = self.runcmd("--qmacro=py_noop", "--data", "testds", "testenv/testds")
             self.assertEqual(out.stderr, b"")
             self.assertEqual(out.stdout[:4], b"GRIB")
             self.assertIsNone(res)
