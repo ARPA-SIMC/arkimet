@@ -283,7 +283,7 @@ std::shared_ptr<dataset::Reader> get(const Options& opts)
             return entry.second(fname, opts);
         }
     }
-    throw std::runtime_error("querymacro source not found for macro" + opts.macro_name);
+    throw std::runtime_error("querymacro source not found for macro " + opts.macro_name);
 }
 
 void register_parser(
