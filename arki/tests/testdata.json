@@ -16212,37 +16212,7 @@
  {
   "doc": "",
   "group": "arki_querymacro",
-  "method": "noop"
- },
- {
-  "doc": "",
-  "group": "arki_querymacro",
-  "method": "noopcopy"
- },
- {
-  "doc": "",
-  "group": "arki_querymacro",
-  "method": "expa"
- },
- {
-  "doc": "",
-  "group": "arki_querymacro",
-  "method": "expa_arg"
- },
- {
-  "doc": "",
-  "group": "arki_querymacro",
-  "method": "gridspace"
- },
- {
-  "doc": "",
-  "group": "arki_querymacro",
-  "method": "expa_inline"
- },
- {
-  "doc": "",
-  "group": "arki_querymacro",
-  "method": "expa_sort"
+  "method": "empty"
  },
  {
   "doc": "",
