@@ -72,14 +72,8 @@ Arguments:
         PyObject* arg_with_data = Py_None;
         PyObject* arg_sort = Py_None;
 
-        if (!PyArg_ParseTupleAndKeywords(args, kw, "O|OOO", const_cast<char**>(kwlist), &arg_on_metadata, &arg_matcher, &arg_with_data, &arg_sort))
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "|OOOO", const_cast<char**>(kwlist), &arg_on_metadata, &arg_matcher, &arg_with_data, &arg_sort))
             return nullptr;
-
-        if (!PyCallable_Check(arg_on_metadata))
-        {
-            PyErr_SetString(PyExc_TypeError, "on_metadata must be a callable object");
-            return nullptr;
-        }
 
         try {
             arki::dataset::DataQuery query(from_python<arki::Matcher>(arg_matcher));
@@ -90,12 +84,34 @@ Arguments:
                 sort = string_from_python(arg_sort);
             if (!sort.empty()) query.sorter = sort::Compare::parse(sort);
 
-            metadata_dest_func dest = dest_func_from_python(arg_on_metadata);
+            metadata_dest_func dest;
+            pyo_unique_ptr res_list;
+            if (arg_on_metadata == Py_None)
+            {
+                res_list.reset(throw_ifnull(PyList_New(0)));
+
+                dest = [&](std::unique_ptr<Metadata> md) {
+                    AcquireGIL gil;
+                    pyo_unique_ptr py_md((PyObject*)throw_ifnull(metadata_create(std::move(md))));
+                    if (PyList_Append(res_list, py_md) == -1)
+                        throw PythonException();
+                    return true;
+                };
+            } else
+                dest = dest_func_from_python(arg_on_metadata);
+
+            bool res;
             {
                 ReleaseGIL gil;
-                self->ds->query_data(query, dest);
+                res = self->ds->query_data(query, dest);
             }
-            Py_RETURN_NONE;
+
+            if (res_list)
+                return res_list.release();
+            if (res)
+                Py_RETURN_TRUE;
+            else
+                Py_RETURN_FALSE;
         } ARKI_CATCH_RETURN_PYO
     }
 };

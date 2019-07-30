@@ -128,13 +128,10 @@ class Env:
             "type": "file",
         })
 
-        res = []
-
-        def do_import(md):
+        res = source.query_data()
+        for md in res:
             dest.acquire(md)
-            res.append(md)
 
-        source.query_data(on_metadata=do_import)
         dest.flush()
 
         return res
