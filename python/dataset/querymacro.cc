@@ -4,6 +4,7 @@
 #include "arki/utils/sys.h"
 #include "arki/nag.h"
 #include "arki/summary.h"
+#include "arki/sort.h"
 #include "python/cfg.h"
 #include "python/metadata.h"
 #include "python/matcher.h"
@@ -74,13 +75,26 @@ public:
         pyo_unique_ptr kwargs(throw_ifnull(PyDict_New()));
         set_dict(kwargs, "matcher", q.matcher);
         set_dict(kwargs, "with_data", q.with_data);
-        // TODO set_dict(kwargs, "sort", q.sorter);
+
+        std::shared_ptr<arki::sort::Stream> sorter;
+        if (q.sorter)
+        {
+            sorter.reset(new sort::Stream(*q.sorter, dest));
+            dest = [sorter](std::unique_ptr<Metadata> md) { return sorter->add(move(md)); };
+        }
+
         set_dict(kwargs, "on_metadata", dest);
 
         pyo_unique_ptr res(throw_ifnull(PyObject_Call(meth, args, kwargs)));
-        if (res == Py_None)
-            return true;
-        return from_python<bool>(res);
+
+        if (sorter)
+            return sorter->flush();
+        else
+        {
+            if (res == Py_None)
+                return true;
+            return from_python<bool>(res);
+        }
     }
 
     void query_summary(const Matcher& matcher, Summary& summary) override
