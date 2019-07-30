@@ -49,6 +49,7 @@ struct PyFile : public Base
 
     std::string name() const override
     {
+        AcquireGIL gil;
         return get_fd_name(o);
     }
 };
