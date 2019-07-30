@@ -89,7 +89,7 @@ class Querymacro:
                     row.lineno, repr(row.line), len(mds)))
             return mds[0]
 
-    def query_data(self, matcher=None, with_data=False, sort=None, on_metadata=None):
+    def query_data(self, matcher=None, with_data=False, on_metadata=None):
         # Note: matcher and sort are currently ignored
         # FIXME: change the api to remove them?
 
