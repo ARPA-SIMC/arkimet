@@ -16,15 +16,14 @@ class TestMetadata(unittest.TestCase):
             "path": pathname,
             "type": "file",
         })
+        return ds.query_data()
 
-        res = []
-
-        def store_md(md):
-            nonlocal res
-            res.append(md)
-        ds.query_data(on_metadata=store_md)
-
-        return res
+    def test_subscript(self):
+        md = self.read("inbound/test.grib1")[0]
+        self.assertIn("reftime", md)
+        self.assertEqual(md["reftime"], "2007-07-08T13:00:00Z")
+        md["reftime"] = "2019-07-30T12:00:00Z"
+        self.assertEqual(md["reftime"], "2019-07-30T12:00:00Z")
 
     def test_to_python(self):
         mds = self.read("inbound/test.grib1")

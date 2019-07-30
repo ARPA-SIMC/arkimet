@@ -374,6 +374,39 @@ Arkimet metadata for one data item
             Py_RETURN_RICHCOMPARE(*(self->md), *(((Impl*)other)->md), op);
         } ARKI_CATCH_RETURN_PYO
     }
+
+    static int sq_contains(Impl* self, PyObject* py_key)
+    {
+        try {
+            std::string key = from_python<std::string>(py_key);
+            types::Code code = types::parseCodeName(key);
+            return self->md->has(code) ? 1 : 0;
+        } ARKI_CATCH_RETURN_INT
+    }
+
+    static PyObject* mp_subscript(Impl* self, PyObject* py_key)
+    {
+        try {
+            std::string key = from_python<std::string>(py_key);
+            types::Code code = types::parseCodeName(key);
+            const types::Type* res = self->md->get(code);
+            if (!res)
+                return PyErr_Format(PyExc_KeyError, "section not found: '%s'", key.c_str());
+            return python::to_python(res->to_string());
+        } ARKI_CATCH_RETURN_PYO
+    }
+
+    static int mp_ass_subscript(Impl* self, PyObject* py_key, PyObject* py_val)
+    {
+        try {
+            std::string key = from_python<std::string>(py_key);
+            types::Code code = types::parseCodeName(key);
+            std::string strval = from_python<std::string>(py_val);
+            std::unique_ptr<types::Type> val = types::decodeString(code, strval);
+            self->md->set(std::move(val));
+            return 0;
+        } ARKI_CATCH_RETURN_INT
+    }
 };
 
 MetadataDef* metadata_def = nullptr;
