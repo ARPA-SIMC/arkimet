@@ -1,16 +1,10 @@
 #include "arki/dataset/tests.h"
 #include "arki/types/reftime.h"
-#include "arki/metadata/data.h"
-#include "arki/sort.h"
 #include "querymacro.h"
-#include "summary.h"
 
 namespace {
-using namespace std;
 using namespace arki;
 using namespace arki::tests;
-using namespace arki::core;
-using namespace arki::utils;
 using namespace arki::types;
 
 struct Fixture : public DatasetTest {
@@ -33,7 +27,7 @@ struct Fixture : public DatasetTest {
             Metadata md = *const_md;
             for (unsigned i = 7; i <= 9; ++i)
             {
-                md.set(Reftime::createPosition(Time(2009, 8, i, 0, 0, 0)));
+                md.set(Reftime::createPosition(core::Time(2009, 8, i, 0, 0, 0)));
                 wassert(actual(*writer).import(md));
             }
         }
