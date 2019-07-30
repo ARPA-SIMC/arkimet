@@ -30,6 +30,35 @@ namespace {
  * Summary
  */
 
+struct count : public Getter<count, arkipy_Summary>
+{
+    constexpr static const char* name = "count";
+    constexpr static const char* doc = "Return the number of metadata described by this summary";
+    constexpr static void* closure = nullptr;
+
+    static PyObject* get(Impl* self, void* closure)
+    {
+        try {
+            return to_python(self->summary->count());
+        } ARKI_CATCH_RETURN_PYO;
+    }
+};
+
+struct size : public Getter<size, arkipy_Summary>
+{
+    constexpr static const char* name = "size";
+    constexpr static const char* doc = "Return the total size of all the metadata described by this summary";
+    constexpr static void* closure = nullptr;
+
+    static PyObject* get(Impl* self, void* closure)
+    {
+        try {
+            return to_python((size_t)self->summary->size());
+        } ARKI_CATCH_RETURN_PYO;
+    }
+};
+
+
 struct write : public MethKwargs<write, arkipy_Summary>
 {
     constexpr static const char* name = "write";
@@ -206,7 +235,7 @@ Examples::
 
     TODO: add examples
 )";
-    GetSetters<> getsetters;
+    GetSetters<count, size> getsetters;
     Methods<write, write_short, to_python, get_convex_hull> methods;
 
     static void _dealloc(Impl* self)
