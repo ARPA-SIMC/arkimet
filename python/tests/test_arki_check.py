@@ -1,13 +1,12 @@
 import arkimet as arki
 import unittest
-import shutil
 import os
 import io
 import sys
-import subprocess
 from testfixtures import LogCapture
 from contextlib import contextmanager
 from arkimet.cmdline.check import Check
+from arkimet.test import Env
 
 
 class StatsReporter:
@@ -66,104 +65,13 @@ class StatsReporter:
         self.seg_issue51.append((ds, relpath, message))
 
 
-class Env:
-    def __init__(self, skip_initial_check=False, **kw):
-        try:
-            shutil.rmtree("testenv")
-        except FileNotFoundError:
-            pass
-        os.mkdir("testenv")
-        os.mkdir("testenv/testds")
-
-        self.ds_cfg = arki.cfg.Section(**kw)
-
-        self.config = arki.cfg.Sections()
-        self.config["testds"] = self.ds_cfg
-
-        with open("testenv/config", "wt") as fd:
-            self.config.write(fd)
-
-        with open("testenv/testds/config", "wt") as fd:
-            self.ds_cfg.write(fd)
-
-        if not skip_initial_check:
-            self.check(readonly=False)
-
-    def update_config(self, **kw):
-        for k, v in kw.items():
-            if v is None:
-                del self.ds_cfg[k]
-            else:
-                self.ds_cfg[k] = v
-        self.config["testds"] = self.ds_cfg
-
-        with open("testenv/config", "wt") as fd:
-            self.config.write(fd)
-
-        with open("testenv/testds/config", "wt") as fd:
-            self.ds_cfg.write(fd)
-
-    def import_file(self, pathname):
-        dest = arki.dataset.Writer(self.ds_cfg)
-
-        source = arki.dataset.Reader({
-            "format": self.ds_cfg["format"],
-            "name": os.path.basename(pathname),
-            "path": pathname,
-            "type": "file",
-        })
-
-        res = []
-
-        def do_import(md):
-            dest.acquire(md)
-            res.append(md)
-
-        source.query_data(on_metadata=do_import)
-        dest.flush()
-
-        return res
-
-    def cleanup(self):
-        shutil.rmtree("testenv")
-
-    def query(self, *args, **kw):
-        res = []
-
-        def on_metadata(md):
-            res.append(md)
-
-        kw["on_metadata"] = on_metadata
-        source = arki.dataset.Reader(self.ds_cfg)
-        source.query_data(**kw)
-        return res
-
-    def repack(self, **kw):
-        checker = arki.dataset.Checker(self.ds_cfg)
-        checker.repack(**kw)
-
-    def check(self, **kw):
-        checker = arki.dataset.Checker(self.ds_cfg)
-        checker.check(**kw)
-
-    def segment_state(self, **kw):
-        checker = arki.dataset.Checker(self.ds_cfg)
-        return checker.segment_state(**kw)
-
-    def inspect(self):
-        subprocess.run([os.environ.get("SHELL", "bash")], cwd="testenv")
-
-
 class ArkiCheckTestsBase:
     @contextmanager
     def datasets(self, **kw):
-        kw["name"] = "testds"
-        kw["path"] = os.path.abspath("testenv/testds")
         kw.setdefault("format", "grib")
-        kw.setdefault("step", "daily")
-
         env = Env(**self.dataset_config(**kw))
         yield env
+        env.cleanup()
 
     def runcmd(self, *args):
         try:
