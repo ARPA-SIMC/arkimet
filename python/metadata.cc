@@ -4,6 +4,7 @@
 #include "common.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
+#include "arki/metadata/data.h"
 #include "arki/core/file.h"
 #include "arki/types/source.h"
 #include "utils/core.h"
@@ -30,6 +31,54 @@ namespace {
 /*
  * Metadata
  */
+
+struct data : public Getter<data, arkipy_Metadata>
+{
+    constexpr static const char* name = "data";
+    constexpr static const char* doc = "get the raw data described by this metadata";
+    constexpr static void* closure = nullptr;
+
+    static PyObject* get(Impl* self, void* closure)
+    {
+        try {
+            const metadata::Data& data = self->md->get_data();
+            std::vector<uint8_t> buf = data.read();
+            return PyBytes_FromStringAndSize((const char*)buf.data(), buf.size());
+        } ARKI_CATCH_RETURN_PYO;
+    }
+};
+
+struct data_size : public Getter<data_size, arkipy_Metadata>
+{
+    constexpr static const char* name = "data_size";
+    constexpr static const char* doc = "return the size of the data, if known, else returns 0";
+    constexpr static void* closure = nullptr;
+
+    static PyObject* get(Impl* self, void* closure)
+    {
+        try {
+            return to_python(self->md->data_size());
+        } ARKI_CATCH_RETURN_PYO;
+    }
+};
+
+struct has_source : public MethNoargs<has_source, arkipy_Metadata>
+{
+    constexpr static const char* name = "has_source";
+    constexpr static const char* signature = "";
+    constexpr static const char* returns = "bool";
+    constexpr static const char* summary = "check if a source has been set";
+
+    static PyObject* run(Impl* self)
+    {
+        try {
+            if (self->md->has_source())
+                Py_RETURN_TRUE;
+            else
+                Py_RETURN_FALSE;
+        } ARKI_CATCH_RETURN_PYO
+    }
+};
 
 struct write : public MethKwargs<write, arkipy_Metadata>
 {
@@ -336,8 +385,8 @@ struct MetadataDef : public Type<MetadataDef, arkipy_Metadata>
     constexpr static const char* doc = R"(
 Arkimet metadata for one data item
 )";
-    GetSetters<> getsetters;
-    Methods<write, make_absolute, make_inline, make_url, to_python, read_bundle, write_bundle> methods;
+    GetSetters<data, data_size> getsetters;
+    Methods<has_source, write, make_absolute, make_inline, make_url, to_python, read_bundle, write_bundle> methods;
 
     static void _dealloc(Impl* self)
     {
