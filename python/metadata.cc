@@ -205,6 +205,7 @@ struct read_bundle : public ClassMethKwargs<read_bundle>
                 res_list.reset(throw_ifnull(PyList_New(0)));
 
                 dest = [&](std::unique_ptr<Metadata> md) {
+                    AcquireGIL gil;
                     pyo_unique_ptr py_md((PyObject*)throw_ifnull(metadata_create(std::move(md))));
                     if (PyList_Append(res_list, py_md) == -1)
                         throw PythonException();
@@ -240,6 +241,7 @@ struct read_bundle : public ClassMethKwargs<read_bundle>
                 }
             } else {
                 BinaryInputFile in(py_src);
+                ReleaseGIL gil;
 
                 if (py_basedir && py_pathname)
                 {
