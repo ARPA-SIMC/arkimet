@@ -5,12 +5,12 @@
 #include "utils/values.h"
 #include "common.h"
 #include "files.h"
+#include "metadata.h"
 #include "arki/summary.h"
 #include "arki/summary/short.h"
 #include "arki/emitter/json.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/geos.h"
-#include "config.h"
 #include <sstream>
 
 using namespace std;
@@ -58,6 +58,35 @@ struct size : public Getter<size, arkipy_Summary>
     }
 };
 
+
+struct add : public MethKwargs<add, arkipy_Summary>
+{
+    constexpr static const char* name = "add";
+    constexpr static const char* signature = "val: Union[arki.Metadata, arki.Summary]";
+    constexpr static const char* returns = "";
+    constexpr static const char* summary = "merge a metadata or summary into this summary";
+
+    static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
+    {
+        static const char* kwlist[] = { "val", nullptr };
+        PyObject* arg_val = Py_None;
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "O", const_cast<char**>(kwlist), &arg_val))
+            return nullptr;
+
+        try {
+            if (arkipy_Metadata_Check(arg_val))
+                self->summary->add(*((arkipy_Metadata*)arg_val)->md);
+            else if (arkipy_Summary_Check(arg_val))
+                self->summary->add(*((arkipy_Summary*)arg_val)->summary);
+            else
+            {
+                PyErr_SetString(PyExc_TypeError, "Argument must be arki.Metadata or arki.Summary");
+                return nullptr;
+            }
+            Py_RETURN_NONE;
+        } ARKI_CATCH_RETURN_PYO
+    }
+};
 
 struct write : public MethKwargs<write, arkipy_Summary>
 {
@@ -236,7 +265,7 @@ Examples::
     TODO: add examples
 )";
     GetSetters<count, size> getsetters;
-    Methods<write, write_short, to_python, get_convex_hull> methods;
+    Methods<add, write, write_short, to_python, get_convex_hull> methods;
 
     static void _dealloc(Impl* self)
     {
