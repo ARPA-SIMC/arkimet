@@ -26,7 +26,6 @@ struct DatasetProcessor
 
     virtual void process(dataset::Reader& ds, const std::string& name) = 0;
     virtual void end() {}
-    virtual std::string describe() const = 0;
 };
 
 struct ProcessorMaker
