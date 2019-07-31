@@ -11,6 +11,7 @@
 #include "python/summary.h"
 #include "python/utils/values.h"
 #include "python/utils/dict.h"
+#include "python/dataset/python.h"
 
 
 namespace arki {
@@ -18,97 +19,40 @@ namespace python {
 
 namespace {
 
-class PythonMacro : public qmacro::Base
+PyObject* instantiate_qmacro_pydataset(const std::string& source, const qmacro::Options& opts)
 {
-    PyObject* qmacro = nullptr;
+    // Check if the qmacro module had already been imported
+    std::string module_name = "arki.python.dataset.qmacro." + opts.macro_name;
+    pyo_unique_ptr py_module_name(string_to_python(module_name));
+    pyo_unique_ptr module(PyImport_GetModule(py_module_name));
+    if (PyErr_Occurred())
+        throw PythonException();
 
-public:
-    PythonMacro(const std::string& source, const qmacro::Options& opts)
-        : Base(opts)
+    // Import it if needed
+    if (!module)
     {
-        AcquireGIL gil;
-        // Check if the qmacro module had already been imported
-        std::string module_name = "arki.python.dataset.qmacro." + opts.macro_name;
-        pyo_unique_ptr py_module_name(string_to_python(module_name));
-        pyo_unique_ptr module(PyImport_GetModule(py_module_name));
-        if (PyErr_Occurred())
-            throw PythonException();
-
-        // Import it if needed
-        if (!module)
-        {
-            std::string source_code = utils::sys::read_file(source);
-            pyo_unique_ptr code(throw_ifnull(Py_CompileStringExFlags(
-                            source_code.c_str(), source.c_str(),
-                            Py_file_input, nullptr, -1)));
-            module = pyo_unique_ptr(throw_ifnull(PyImport_ExecCodeModule(
-                            module_name.c_str(), code)));
-        }
-
-        // Get module.Querymacro
-        pyo_unique_ptr cls(throw_ifnull(PyObject_GetAttrString(module, "Querymacro")));
-
-        pyo_unique_ptr macro_cfg(cfg_section(opts.macro_cfg));
-        pyo_unique_ptr datasets_cfg(cfg_sections(opts.datasets_cfg));
-
-        // Instantiate obj = Querymacro(macro_cfg, datasets_cfg, args, query)
-        pyo_unique_ptr obj(throw_ifnull(PyObject_CallFunction(cls, "OOs#s#",
-                        macro_cfg.get(),
-                        datasets_cfg.get(),
-                        opts.macro_args.data(), (Py_ssize_t)opts.macro_args.size(),
-                        opts.query.data(), (Py_ssize_t)opts.query.size())));
-
-        qmacro = obj.release();
+        std::string source_code = utils::sys::read_file(source);
+        pyo_unique_ptr code(throw_ifnull(Py_CompileStringExFlags(
+                        source_code.c_str(), source.c_str(),
+                        Py_file_input, nullptr, -1)));
+        module = pyo_unique_ptr(throw_ifnull(PyImport_ExecCodeModule(
+                        module_name.c_str(), code)));
     }
 
-    ~PythonMacro()
-    {
-        AcquireGIL gil;
-        Py_XDECREF(qmacro);
-    }
+    // Get module.Querymacro
+    pyo_unique_ptr cls(throw_ifnull(PyObject_GetAttrString(module, "Querymacro")));
 
-    bool query_data(const arki::dataset::DataQuery& q, arki::metadata_dest_func dest) override
-    {
-        AcquireGIL gil;
-        pyo_unique_ptr meth(throw_ifnull(PyObject_GetAttrString(qmacro, "query_data")));
-        pyo_unique_ptr args(throw_ifnull(PyTuple_New(0)));
-        pyo_unique_ptr kwargs(throw_ifnull(PyDict_New()));
-        set_dict(kwargs, "matcher", q.matcher);
-        set_dict(kwargs, "with_data", q.with_data);
+    pyo_unique_ptr macro_cfg(cfg_section(opts.macro_cfg));
+    pyo_unique_ptr datasets_cfg(cfg_sections(opts.datasets_cfg));
 
-        std::shared_ptr<arki::sort::Stream> sorter;
-        if (q.sorter)
-        {
-            sorter.reset(new sort::Stream(*q.sorter, dest));
-            dest = [sorter](std::unique_ptr<Metadata> md) { return sorter->add(move(md)); };
-        }
+    // Instantiate obj = Querymacro(macro_cfg, datasets_cfg, args, query)
+    pyo_unique_ptr obj(throw_ifnull(PyObject_CallFunction(cls, "OOs#s#",
+                    macro_cfg.get(),
+                    datasets_cfg.get(),
+                    opts.macro_args.data(), (Py_ssize_t)opts.macro_args.size(),
+                    opts.query.data(), (Py_ssize_t)opts.query.size())));
 
-        set_dict(kwargs, "on_metadata", dest);
-
-        pyo_unique_ptr res(throw_ifnull(PyObject_Call(meth, args, kwargs)));
-
-        if (sorter)
-            return sorter->flush();
-        else
-        {
-            if (res == Py_None)
-                return true;
-            return from_python<bool>(res);
-        }
-    }
-
-    void query_summary(const Matcher& matcher, Summary& summary) override
-    {
-        AcquireGIL gil;
-        pyo_unique_ptr meth(throw_ifnull(PyObject_GetAttrString(qmacro, "query_summary")));
-        pyo_unique_ptr args(throw_ifnull(PyTuple_New(0)));
-        pyo_unique_ptr kwargs(throw_ifnull(PyDict_New()));
-        pyo_unique_ptr py_summary((PyObject*)summary_create());
-        set_dict(kwargs, "matcher", matcher);
-        set_dict(kwargs, "summary", py_summary);
-        pyo_unique_ptr res(throw_ifnull(PyObject_Call(meth, args, kwargs)));
-        summary.add(*((arkipy_Summary*)py_summary.get())->summary);
-    }
+    return obj.release();
 };
 
 }
@@ -119,7 +63,9 @@ namespace qmacro {
 void init()
 {
     arki::qmacro::register_parser("py", [](const std::string& source, const arki::qmacro::Options& opts) {
-        return std::make_shared<PythonMacro>(source, opts);
+        AcquireGIL gil;
+        pyo_unique_ptr o(instantiate_qmacro_pydataset(source, opts));
+        return python::dataset::create_reader(opts.macro_cfg, o);
     });
 }
 
