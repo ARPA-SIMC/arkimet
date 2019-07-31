@@ -3,10 +3,12 @@ import os
 import posix
 from contextlib import contextmanager
 from arkimet.cmdline.query import Query
-from arkimet.test import CatchOutput, Env
+from arkimet.test import CatchOutput, Env, CmdlineTestMixin
 
 
-class TestArkiQuery(unittest.TestCase):
+class TestArkiQuery(CmdlineTestMixin, unittest.TestCase):
+    command = Query
+
     @contextmanager
     def dataset(self, srcfile, **kw):
         kw["name"] = "testds"
@@ -20,22 +22,10 @@ class TestArkiQuery(unittest.TestCase):
         yield env
         env.cleanup()
 
-    def runcmd(self, *args):
-        # arkiquery = arki.ArkiQuery()
-        # return arkiquery.run(args=("arki-query",) + args)
-        try:
-            return Query.main(args)
-        except SystemExit as e:
-            return e.args[0]
-
     def test_postproc(self):
         with self.dataset("inbound/test.grib1"):
-            out = CatchOutput()
-            with out.redirect():
-                res = self.runcmd("--postproc=checkfiles", "", "testenv/testds", "--postproc-data=/dev/null")
-            self.assertEqual(out.stderr, b"")
-            self.assertEqual(out.stdout, b"/dev/null\n")
-            self.assertIsNone(res)
+            out = self.call_output_success("--postproc=checkfiles", "", "testenv/testds", "--postproc-data=/dev/null")
+            self.assertEqual(out, b"/dev/null\n")
 
     def test_query_metadata(self):
         out = CatchOutput()

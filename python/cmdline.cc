@@ -11,6 +11,7 @@
 #include "utils/values.h"
 #include "common.h"
 #include "matcher.h"
+#include "files.h"
 
 using namespace arki::python;
 using namespace arki::utils;
@@ -29,8 +30,7 @@ std::unique_ptr<cmdline::DatasetProcessor> build_processor(PyObject* args, PyObj
         "sort", "targetfile", nullptr };
 
     PyObject* py_query = nullptr;
-    const char* outfile = nullptr;
-    Py_ssize_t outfile_len;
+    PyObject* py_outfile = nullptr;
     int yaml = 0, json = 0, annotate = 0, out_inline = 0, data = 0, summary = 0, summary_short = 0;
     const char* report = nullptr;
     Py_ssize_t report_len;
@@ -44,21 +44,14 @@ std::unique_ptr<cmdline::DatasetProcessor> build_processor(PyObject* args, PyObj
     Py_ssize_t sort_len;
     const char* targetfile = nullptr;
     Py_ssize_t targetfile_len;
-    if (!PyArg_ParseTupleAndKeywords(args, kw, "Os#|ppppp" "pp" "z#z#" "Oz#O" "z#z#", const_cast<char**>(kwlist),
-                &py_query, &outfile, &outfile_len,
+    if (!PyArg_ParseTupleAndKeywords(args, kw, "OO|ppppp" "pp" "z#z#" "Oz#O" "z#z#", const_cast<char**>(kwlist),
+                &py_query, &py_outfile,
                 &yaml, &json, &annotate, &out_inline, &data,
                 &summary, &summary_short,
                 &report, &report_len, &summary_restrict, &summary_restrict_len,
                 &archive, &postproc, &postproc_len, &postproc_data,
                 &sort, &sort_len, &targetfile, &targetfile_len))
         throw PythonException();
-
-    std::unique_ptr<sys::NamedFileDescriptor> output;
-    auto pathname = std::string(outfile, outfile_len);
-    if (pathname != "-")
-        output.reset(new sys::File(pathname, O_WRONLY | O_CREAT | O_TRUNC));
-    else
-        output.reset(new arki::core::Stdout);
 
     arki::Matcher query = matcher_from_python(py_query);
 
@@ -77,18 +70,21 @@ std::unique_ptr<cmdline::DatasetProcessor> build_processor(PyObject* args, PyObj
     if (sort) pmaker.sort = std::string(sort, sort_len);
     if (archive && archive != Py_None)
         pmaker.archive = string_from_python(archive);
-
-    auto processor = pmaker.make(query, *output);
-
-    // If targetfile is requested, wrap with the targetfile processor
     if (targetfile)
-    {
-        cmdline::SingleOutputProcessor* sop = dynamic_cast<cmdline::SingleOutputProcessor*>(processor.release());
-        assert(sop != nullptr);
-        processor.reset(new cmdline::TargetFileProcessor(sop, std::string(targetfile, targetfile_len)));
-    }
+        pmaker.targetfile = std::string(targetfile, targetfile_len);
 
-    return processor;
+    BinaryOutputFile outfile(py_outfile);
+
+    if (!outfile.fd)
+    {
+        PyErr_SetString(PyExc_NotImplementedError, "output to non-fileno files is not implemented yet");
+        throw PythonException();
+    } else {
+        std::unique_ptr<sys::NamedFileDescriptor> fd(outfile.fd);
+        outfile.fd = nullptr;
+        auto processor = pmaker.make(query, std::move(fd));
+        return processor;
+    }
 }
 
 bool foreach_stdin(const std::string& format, std::function<void(dataset::Reader&)> dest)

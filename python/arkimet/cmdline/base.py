@@ -1,6 +1,7 @@
 import arkimet as arki
 import argparse
 import logging
+from contextlib import contextmanager
 import itertools
 import sys
 import re
@@ -166,6 +167,14 @@ class AppWithProcessor(App):
         self.parser_out.add_argument("--postproc-data", metavar="file", action="append",
                                      help="when querying a remote server with postprocessing, upload a file"
                                           " to be used by the postprocessor (can be given more than once)")
+
+    @contextmanager
+    def outfile(self):
+        if not self.args.outfile or self.args.outfile == "-":
+            yield sys.stdout
+        else:
+            with open(self.args.outfile, "wb") as fd:
+                yield fd
 
     def run(self):
         super().run()

@@ -29,28 +29,6 @@ struct DatasetProcessor
     virtual std::string describe() const = 0;
 };
 
-struct SingleOutputProcessor : public DatasetProcessor
-{
-    utils::sys::NamedFileDescriptor output;
-
-    SingleOutputProcessor();
-    SingleOutputProcessor(const utils::sys::NamedFileDescriptor& out);
-};
-
-struct TargetFileProcessor : public DatasetProcessor
-{
-    SingleOutputProcessor* next;
-    std::string pattern;
-    std::vector<std::string> description_attrs;
-
-    TargetFileProcessor(SingleOutputProcessor* next, const std::string& pattern);
-    virtual ~TargetFileProcessor();
-
-    virtual std::string describe() const;
-    virtual void process(dataset::Reader& ds, const std::string& name);
-    virtual void end();
-};
-
 struct ProcessorMaker
 {
     bool summary = false;
@@ -68,9 +46,10 @@ struct ProcessorMaker
     std::string archive;
     std::string summary_restrict;
     std::string sort;
+    std::string targetfile;
 
     /// Create the processor maker for this configuration
-    std::unique_ptr<DatasetProcessor> make(Matcher query, utils::sys::NamedFileDescriptor& out);
+    std::unique_ptr<DatasetProcessor> make(Matcher query, std::shared_ptr<utils::sys::NamedFileDescriptor> out);
 };
 
 }

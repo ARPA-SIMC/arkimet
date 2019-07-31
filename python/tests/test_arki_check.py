@@ -1,12 +1,10 @@
 import arkimet as arki
 import unittest
 import os
-import io
-import sys
 from testfixtures import LogCapture
 from contextlib import contextmanager
 from arkimet.cmdline.check import Check
-from arkimet.test import Env
+from arkimet.test import Env, CmdlineTestMixin
 
 
 class StatsReporter:
@@ -65,39 +63,15 @@ class StatsReporter:
         self.seg_issue51.append((ds, relpath, message))
 
 
-class ArkiCheckTestsBase:
+class ArkiCheckTestsBase(CmdlineTestMixin):
+    command = Check
+
     @contextmanager
     def datasets(self, **kw):
         kw.setdefault("format", "grib")
         env = Env(**self.dataset_config(**kw))
         yield env
         env.cleanup()
-
-    def runcmd(self, *args):
-        try:
-            return Check.main(args)
-        except SystemExit as e:
-            return e.args[0]
-
-    def call_output(self, *args):
-        orig_stdout = sys.stdout
-        orig_stderr = sys.stderr
-        sys.stdout = io.StringIO()
-        sys.stderr = io.StringIO()
-        try:
-            res = self.runcmd(*args)
-            out = sys.stdout.getvalue()
-            err = sys.stderr.getvalue()
-        finally:
-            sys.stdout = orig_stdout
-            sys.stderr = orig_stderr
-        return out, err, res
-
-    def call_output_success(self, *args):
-        out, err, res = self.call_output(*args)
-        self.assertEqual(err, "")
-        self.assertIsNone(res)
-        return out
 
     def assertCheckClean(self, env, files=None, items=None, **kw):
         """

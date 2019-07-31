@@ -3,6 +3,8 @@ from contextlib import contextmanager
 import subprocess
 import shutil
 import os
+import io
+import sys
 import tempfile
 
 
@@ -164,3 +166,34 @@ class Env:
 
     def inspect(self):
         subprocess.run([os.environ.get("SHELL", "bash")], cwd="testenv")
+
+
+class CmdlineTestMixin:
+    # Class of the Cmdline subclass to be tested
+    command = None
+
+    def runcmd(self, *args):
+        try:
+            return self.command.main(args)
+        except SystemExit as e:
+            return e.args[0]
+
+    def call_output(self, *args):
+        orig_stdout = sys.stdout
+        orig_stderr = sys.stderr
+        sys.stdout = io.StringIO()
+        sys.stderr = io.StringIO()
+        try:
+            res = self.runcmd(*args)
+            out = sys.stdout.getvalue()
+            err = sys.stderr.getvalue()
+        finally:
+            sys.stdout = orig_stdout
+            sys.stderr = orig_stderr
+        return out, err, res
+
+    def call_output_success(self, *args):
+        out, err, res = self.call_output(*args)
+        self.assertEqual(err, "")
+        self.assertIsNone(res)
+        return out
