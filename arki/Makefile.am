@@ -133,7 +133,6 @@ nobase_dist_arkiinclude_HEADERS = \
 		summary/codec.h \
 		summary/stats.h \
 		summary/short.h \
-		targetfile.h \
 		tests/daemon.h \
 		tests/tests.h \
 		tests/legacy.h \
@@ -502,7 +501,6 @@ endif
 if DEVEL_DO_DATASETS
 libarkimet_la_SOURCES += \
 		metadata/xargs.cc \
-		targetfile.cc \
 		dataset.cc \
 		dataset/lock.cc \
 		dataset/reporter.cc \
@@ -551,7 +549,6 @@ libarkimet_la_SOURCES += \
 		runtime.cc
 
 tests_arki_test_SOURCES += \
-		targetfile-test.cc \
 		metadata/xargs-test.cc \
 		dataset/tests.cc \
 		dataset/lock-test.cc \

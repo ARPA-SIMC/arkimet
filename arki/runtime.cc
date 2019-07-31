@@ -27,7 +27,6 @@ Config::Config()
     dir_scan_grib2.init_config_and_env("scan-grib2", "ARKI_SCAN_GRIB2");
     dir_scan_bufr.init_config_and_env("scan-bufr", "ARKI_SCAN_BUFR");
     dir_scan_odimh5.init_config_and_env("scan-odimh5", "ARKI_SCAN_ODIMH5");
-    dir_targetfile.init_config_and_env("targetfile", "ARKI_TARGETFILE");
 
     if (const char* envfile = getenv("ARKI_IOTRACE"))
         file_iotrace_output = envfile;

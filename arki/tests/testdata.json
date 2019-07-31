@@ -3061,16 +3061,6 @@
  },
  {
   "doc": "",
-  "group": "arki_targetfile",
-  "method": "echo"
- },
- {
-  "doc": "",
-  "group": "arki_targetfile",
-  "method": "mars"
- },
- {
-  "doc": "",
   "group": "arki_metadata_xargs",
   "method": "check_stdin"
  },

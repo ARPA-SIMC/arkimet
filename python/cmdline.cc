@@ -27,7 +27,7 @@ std::unique_ptr<cmdline::DatasetProcessor> build_processor(PyObject* args, PyObj
         "summary", "summary_short",
         "report", "summary_restrict",
         "archive", "postproc", "postproc_data",
-        "sort", "targetfile", nullptr };
+        "sort", nullptr };
 
     PyObject* py_query = nullptr;
     PyObject* py_outfile = nullptr;
@@ -42,15 +42,13 @@ std::unique_ptr<cmdline::DatasetProcessor> build_processor(PyObject* args, PyObj
     PyObject* postproc_data = nullptr;
     const char* sort = nullptr;
     Py_ssize_t sort_len;
-    const char* targetfile = nullptr;
-    Py_ssize_t targetfile_len;
-    if (!PyArg_ParseTupleAndKeywords(args, kw, "OO|ppppp" "pp" "z#z#" "Oz#O" "z#z#", const_cast<char**>(kwlist),
+    if (!PyArg_ParseTupleAndKeywords(args, kw, "OO|ppppp" "pp" "z#z#" "Oz#O" "z#", const_cast<char**>(kwlist),
                 &py_query, &py_outfile,
                 &yaml, &json, &annotate, &out_inline, &data,
                 &summary, &summary_short,
                 &report, &report_len, &summary_restrict, &summary_restrict_len,
                 &archive, &postproc, &postproc_len, &postproc_data,
-                &sort, &sort_len, &targetfile, &targetfile_len))
+                &sort, &sort_len))
         throw PythonException();
 
     arki::Matcher query = matcher_from_python(py_query);
@@ -70,8 +68,6 @@ std::unique_ptr<cmdline::DatasetProcessor> build_processor(PyObject* args, PyObj
     if (sort) pmaker.sort = std::string(sort, sort_len);
     if (archive && archive != Py_None)
         pmaker.archive = string_from_python(archive);
-    if (targetfile)
-        pmaker.targetfile = std::string(targetfile, targetfile_len);
 
     BinaryOutputFile outfile(py_outfile);
 

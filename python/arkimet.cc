@@ -228,7 +228,6 @@ struct config : public MethNoargs<config, PyObject>
             set_dict(result, "scan_grib2", describe_dirlist(cfg.dir_scan_grib2, "GRIB2 scan scripts", "ARKI_SCAN_GRIB2"));
             set_dict(result, "scan_odimh5", describe_dirlist(cfg.dir_scan_odimh5, "ODIMH5 scan scripts", "ARKI_SCAN_ODIMH5"));
             set_dict(result, "bufr", describe_dirlist(cfg.dir_scan_bufr, "BUFR scan scripts", "ARKI_SCAN_BUFR"));
-            set_dict(result, "targetfile", describe_dirlist(cfg.dir_targetfile, "Target file name scripts", "ARKI_TARGETFILE"));
             set_dict(result, "iotrace", describe_string(cfg.file_iotrace_output, "I/O profiling log file", "ARKI_IOTRACE"));
             set_dict(result, "vm2_config", describe_string(cfg.file_vm2_config, "VM2 configuration file", "ARKI_VM2_FILE"));
             return result.release();

@@ -142,7 +142,6 @@ class Query(AppConfigMixin, AppWithProcessor):
                     postproc=self.args.postproc,
                     postproc_data=self.args.postproc_data,
                     sort=self.args.sort,
-                    targetfile=self.args.targetfile,
             )
 
             if self.args.stdin:

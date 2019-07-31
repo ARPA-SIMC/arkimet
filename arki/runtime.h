@@ -71,9 +71,6 @@ struct Config
     /// Directories where odimh5 scan scripts are found
     Dirlist dir_scan_odimh5;
 
-    /// Directories where targetfile scripts are found
-    Dirlist dir_targetfile;
-
     /// I/O profiling log file
     std::string file_iotrace_output;
 
