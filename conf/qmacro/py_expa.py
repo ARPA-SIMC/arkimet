@@ -103,13 +103,6 @@ class Querymacro:
         else:
             return res
 
-    def query_summary(self, matcher, summary):
-        res = arki.Summary()
-        for row in self.rows:
-            res.add(self.row_to_md(row, with_data=False))
-        summary.add(res)
-        return summary
-
     def _to_matcher(self, s):
         return s.replace("/", ",")
 
