@@ -24,51 +24,32 @@ class TestArkiQuery(CmdlineTestMixin, unittest.TestCase):
 
     def test_postproc(self):
         with self.dataset("inbound/test.grib1"):
-            out = self.call_output_success("--postproc=checkfiles", "", "testenv/testds", "--postproc-data=/dev/null")
+            out = self.call_output_success("--postproc=checkfiles", "", "testenv/testds", "--postproc-data=/dev/null",
+                                           binary=True)
             self.assertEqual(out, b"/dev/null\n")
 
     def test_query_metadata(self):
-        out = CatchOutput()
-        with out.redirect():
-            res = self.runcmd("--data", "", "inbound/test.grib1.arkimet")
-        self.assertEqual(out.stderr, b"")
-        self.assertEqual(out.stdout[:4], b"GRIB")
-        self.assertIsNone(res)
+        out = self.call_output_success("--data", "", "inbound/test.grib1.arkimet", binary=True)
+        self.assertEqual(out[:4], b"GRIB")
 
     def test_query_yaml_summary(self):
-        out = CatchOutput()
-        with out.redirect():
-            res = self.runcmd("--summary", "--yaml", "", "inbound/test.grib1.arkimet")
-        self.assertEqual(out.stderr, b"")
-        self.assertEqual(out.stdout[:12], b"SummaryItem:")
-        self.assertIsNone(res)
+        out = self.call_output_success("--summary", "--yaml", "", "inbound/test.grib1.arkimet", binary=True)
+        self.assertEqual(out[:12], b"SummaryItem:")
 
     def test_query_merged(self):
         with self.dataset("inbound/fixture.grib1"):
-            out = CatchOutput()
-            with out.redirect():
-                res = self.runcmd("--merged", "--data", "", "testenv/testds")
-            self.assertEqual(out.stderr, b"")
-            self.assertEqual(out.stdout[:4], b"GRIB")
-            self.assertIsNone(res)
+            out = self.call_output_success("--merged", "--data", "", "testenv/testds", binary=True)
+            self.assertEqual(out[:4], b"GRIB")
 
     def test_query_qmacro(self):
         with self.dataset("inbound/fixture.grib1"):
-            out = CatchOutput()
-            with out.redirect():
-                res = self.runcmd("--qmacro=noop", "--data", "testds", "testenv/testds")
-            self.assertEqual(out.stderr, b"")
-            self.assertEqual(out.stdout[:4], b"GRIB")
-            self.assertIsNone(res)
+            out = self.call_output_success("--qmacro=noop", "--data", "testds", "testenv/testds", binary=True)
+            self.assertEqual(out[:4], b"GRIB")
 
     def test_query_qmacro_py_noop(self):
         with self.dataset("inbound/fixture.grib1"):
-            out = CatchOutput()
-            with out.redirect():
-                res = self.runcmd("--qmacro=py_noop", "--data", "testds", "testenv/testds")
-            self.assertEqual(out.stderr, b"")
-            self.assertEqual(out.stdout[:4], b"GRIB")
-            self.assertIsNone(res)
+            out = self.call_output_success("--qmacro=py_noop", "--data", "testds", "testenv/testds", binary=True)
+            self.assertEqual(out[:4], b"GRIB")
 
     def test_query_stdin(self):
         out = CatchOutput()

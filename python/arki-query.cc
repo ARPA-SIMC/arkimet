@@ -135,6 +135,8 @@ struct query_merged : public MethKwargs<query_merged, arkipy_ArkiQuery>
 
                 try {
                     self->processor->process(reader, reader.name());
+                } catch (PythonException& e) {
+                    throw;
                 } catch (std::exception& e) {
                     arki::nag::warning("%s failed: %s", reader.name().c_str(), e.what());
                     all_successful = false;
