@@ -47,7 +47,17 @@ struct ProcessorMaker
     std::string sort;
 
     /// Create the processor maker for this configuration
-    std::unique_ptr<DatasetProcessor> make(Matcher query, std::shared_ptr<utils::sys::NamedFileDescriptor> out);
+    std::unique_ptr<DatasetProcessor> make(Matcher matcher, std::shared_ptr<core::NamedFileDescriptor> out);
+    std::unique_ptr<DatasetProcessor> make(Matcher matcher, std::shared_ptr<core::AbstractOutputFile> out);
+
+protected:
+    template<typename Output>
+    std::unique_ptr<DatasetProcessor> make_binary(Matcher matcher, std::shared_ptr<Output> out);
+    template<typename Output>
+    std::unique_ptr<DatasetProcessor> make_summary(Matcher matcher, std::shared_ptr<Output> out);
+    template<typename Output>
+    std::unique_ptr<DatasetProcessor> make_metadata(Matcher matcher, std::shared_ptr<Output> out);
+
 };
 
 }

@@ -73,8 +73,10 @@ std::unique_ptr<cmdline::DatasetProcessor> build_processor(PyObject* args, PyObj
 
     if (!outfile.fd)
     {
-        PyErr_SetString(PyExc_NotImplementedError, "output to non-fileno files is not implemented yet");
-        throw PythonException();
+        std::unique_ptr<core::AbstractOutputFile> out(outfile.abstract);
+        outfile.abstract = nullptr;
+        auto processor = pmaker.make(query, std::move(out));
+        return processor;
     } else {
         std::unique_ptr<sys::NamedFileDescriptor> fd(outfile.fd);
         outfile.fd = nullptr;
@@ -101,6 +103,8 @@ bool foreach_stdin(const std::string& format, std::function<void(dataset::Reader
     bool success = true;
     try {
         dest(*reader);
+    } catch (PythonException& e) {
+        throw;
     } catch (std::exception& e) {
         arki::nag::warning("%s failed: %s", reader->name().c_str(), e.what());
         success = false;
@@ -118,6 +122,8 @@ bool foreach_sections(const core::cfg::Sections& inputs, std::function<void(data
         bool success = true;
         try {
             dest(*reader);
+        } catch (PythonException& e) {
+            throw;
         } catch (std::exception& e) {
             arki::nag::warning("%s failed: %s", reader->name().c_str(), e.what());
             success = false;

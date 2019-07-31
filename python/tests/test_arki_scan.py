@@ -5,7 +5,7 @@ import os
 import posix
 from contextlib import contextmanager
 from arkimet.cmdline.scan import Scan
-from arkimet.test import CatchOutput, skip_unless_vm2
+from arkimet.test import CatchOutput, CmdlineTestMixin, skip_unless_vm2
 
 
 class Env(arki.test.Env):
@@ -43,7 +43,9 @@ def parse_metadata(buf):
     return mds
 
 
-class TestArkiScan(unittest.TestCase):
+class TestArkiScan(CmdlineTestMixin, unittest.TestCase):
+    command = Scan
+
     @contextmanager
     def datasets(self, **kw):
         kw.setdefault("format", "grib")
@@ -51,12 +53,6 @@ class TestArkiScan(unittest.TestCase):
         env = Env(**kw)
         yield env
         env.cleanup()
-
-    def runcmd(self, *args):
-        try:
-            return Scan.main(args)
-        except SystemExit as e:
-            return e.args[0]
 
     def read(self, fname):
         with open(fname, "rb") as fd:
@@ -95,44 +91,24 @@ class TestArkiScan(unittest.TestCase):
         self.assertEqual(res, posix.EX_USAGE)
 
     def test_scan_grib(self):
-        out = CatchOutput()
-        with out.redirect():
-            res = self.runcmd("--yaml", "inbound/fixture.grib1")
-        self.assertEqual(out.stderr, b"")
-        self.assertRegex(out.stdout, b"\nOrigin:")
-        self.assertIsNone(res)
+        out = self.call_output_success("--yaml", "inbound/fixture.grib1", binary=True)
+        self.assertRegex(out, b"\nOrigin:")
 
     def test_scan_bufr(self):
-        out = CatchOutput()
-        with out.redirect():
-            res = self.runcmd("--yaml", "inbound/fixture.bufr")
-        self.assertEqual(out.stderr, b"")
-        self.assertRegex(out.stdout, b"\nOrigin:")
-        self.assertIsNone(res)
+        out = self.call_output_success("--yaml", "inbound/fixture.bufr", binary=True)
+        self.assertRegex(out, b"\nOrigin:")
 
     def test_scan_bufr_multiple(self):
-        out = CatchOutput()
-        with out.redirect():
-            res = self.runcmd("--yaml", "inbound/fixture.bufr", "inbound/ship.bufr")
-        self.assertEqual(out.stderr, b"")
-        self.assertRegex(out.stdout, b"\nOrigin:")
-        self.assertIsNone(res)
+        out = self.call_output_success("--yaml", "inbound/fixture.bufr", "inbound/ship.bufr", binary=True)
+        self.assertRegex(out, b"\nOrigin:")
 
     def test_scan_metadata(self):
-        out = CatchOutput()
-        with out.redirect():
-            res = self.runcmd("--yaml", "inbound/test.grib1.arkimet")
-        self.assertEqual(out.stderr, b"")
-        self.assertRegex(out.stdout, b"\nOrigin:")
-        self.assertIsNone(res)
+        out = self.call_output_success("--yaml", "inbound/test.grib1.arkimet", binary=True)
+        self.assertRegex(out, b"\nOrigin:")
 
         shutil.copyfile("inbound/test.grib1.arkimet", "test.foo")
-        out = CatchOutput()
-        with out.redirect():
-            res = self.runcmd("--yaml", "metadata:test.foo")
-        self.assertEqual(out.stderr, b"")
-        self.assertRegex(out.stdout, b"\nOrigin:")
-        self.assertIsNone(res)
+        out = self.call_output_success("--yaml", "metadata:test.foo", binary=True)
+        self.assertRegex(out, b"\nOrigin:")
 
     def test_scan_dash(self):
         out = CatchOutput()
@@ -163,12 +139,8 @@ class TestArkiScan(unittest.TestCase):
             arki.counters.acquire_single_count.reset()
             arki.counters.acquire_batch_count.reset()
 
-            out = CatchOutput()
-            with out.redirect():
-                res = self.runcmd("--dispatch=testenv/config", "inbound/test.grib1")
-            self.assertEqual(out.stderr, b"")
-            self.assertIsNone(res)
-            mds = parse_metadata(out.stdout)
+            out = self.call_output_success("--dispatch=testenv/config", "inbound/test.grib1", binary=True)
+            mds = parse_metadata(out)
             self.assertEqual(len(mds), 3)
 
             self.assertEqual(mds[0].to_python("source")["file"], os.path.abspath("testenv/testds/2007/07-08.grib"))
@@ -183,12 +155,9 @@ class TestArkiScan(unittest.TestCase):
             arki.counters.acquire_single_count.reset()
             arki.counters.acquire_batch_count.reset()
 
-            out = CatchOutput()
-            with out.redirect():
-                res = self.runcmd("--dispatch=testenv/config", "--flush-threshold=8k", "inbound/test.grib1")
-            self.assertEqual(out.stderr, b"")
-            self.assertIsNone(res)
-            mds = parse_metadata(out.stdout)
+            out = self.call_output_success("--dispatch=testenv/config", "--flush-threshold=8k", "inbound/test.grib1",
+                                           binary=True)
+            mds = parse_metadata(out)
             self.assertEqual(len(mds), 3)
 
             self.assertEqual(mds[0].to_python("source")["file"], os.path.abspath("testenv/testds/2007/07-08.grib"))
@@ -225,17 +194,14 @@ class TestArkiScan(unittest.TestCase):
 
     def test_dispatch_copyok(self):
         with self.datasets(filter="origin:GRIB1"):
-            out = CatchOutput()
-            with out.redirect():
-                res = self.runcmd(
-                    "--copyok=testenv/copyok",
-                    "--copyko=testenv/copyko",
-                    "--dispatch=testenv/config",
-                    "inbound/test.grib1"
-                )
-            self.assertEqual(out.stderr, b"")
-            self.assertIsNone(res)
-            mds = parse_metadata(out.stdout)
+            out = self.call_output_success(
+                "--copyok=testenv/copyok",
+                "--copyko=testenv/copyko",
+                "--dispatch=testenv/config",
+                "inbound/test.grib1",
+                binary=True,
+            )
+            mds = parse_metadata(out)
             self.assertEqual(len(mds), 3)
 
             self.assertEqual(mds[0].to_python("source")["file"], os.path.abspath("testenv/testds/2007/07-08.grib"))
@@ -274,17 +240,14 @@ class TestArkiScan(unittest.TestCase):
     def test_dispatch_moveok(self):
         with self.datasets(filter="origin:GRIB1"):
             shutil.copyfile("inbound/test.grib1", "testenv/test.grib1")
-            out = CatchOutput()
-            with out.redirect():
-                res = self.runcmd(
-                    "--moveok=testenv/copyok",
-                    "--moveko=testenv/copyko",
-                    "--dispatch=testenv/config",
-                    "testenv/test.grib1"
-                )
-            self.assertEqual(out.stderr, b"")
-            self.assertIsNone(res)
-            mds = parse_metadata(out.stdout)
+            out = self.call_output_success(
+                "--moveok=testenv/copyok",
+                "--moveko=testenv/copyko",
+                "--dispatch=testenv/config",
+                "testenv/test.grib1",
+                binary=True,
+            )
+            mds = parse_metadata(out)
             self.assertEqual(len(mds), 3)
 
             self.assertEqual(mds[0].to_python("source")["file"], os.path.abspath("testenv/testds/2007/07-08.grib"))

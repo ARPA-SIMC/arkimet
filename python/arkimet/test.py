@@ -178,10 +178,13 @@ class CmdlineTestMixin:
         except SystemExit as e:
             return e.args[0]
 
-    def call_output(self, *args):
+    def call_output(self, *args, binary=False):
         orig_stdout = sys.stdout
         orig_stderr = sys.stderr
-        sys.stdout = io.StringIO()
+        if binary:
+            sys.stdout = io.BytesIO()
+        else:
+            sys.stdout = io.StringIO()
         sys.stderr = io.StringIO()
         try:
             res = self.runcmd(*args)
@@ -192,8 +195,8 @@ class CmdlineTestMixin:
             sys.stderr = orig_stderr
         return out, err, res
 
-    def call_output_success(self, *args):
-        out, err, res = self.call_output(*args)
+    def call_output_success(self, *args, binary=False):
+        out, err, res = self.call_output(*args, binary=binary)
         self.assertEqual(err, "")
         self.assertIsNone(res)
         return out

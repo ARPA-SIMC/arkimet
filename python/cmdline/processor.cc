@@ -10,6 +10,7 @@
 #include "arki/summary/short.h"
 #include "arki/sort.h"
 #include "arki/utils/string.h"
+#include "arki/core/file.h"
 #include "arki/summary/stats.h"
 #include "arki/nag.h"
 #include <cassert>
@@ -25,6 +26,10 @@ void do_output(sys::NamedFileDescriptor& out, const std::string& str)
     out.write_all_or_throw(str);
 }
 
+void do_output(arki::core::AbstractOutputFile& out, const std::string& str)
+{
+    out.write(str.data(), str.size());
+}
 
 }
 
@@ -82,13 +87,12 @@ struct DataProcessor : public DatasetProcessor
 };
 
 
-template<typename Output>
 struct LibarchiveProcessor : public DatasetProcessor
 {
     dataset::DataQuery query;
     arki::metadata::LibarchiveOutput arc_out;
 
-    LibarchiveProcessor(Matcher matcher, std::shared_ptr<Output> out, const std::string& format)
+    LibarchiveProcessor(Matcher matcher, std::shared_ptr<sys::NamedFileDescriptor> out, const std::string& format)
         : query(matcher, true), arc_out(format, *out)
     {
     }
@@ -212,100 +216,135 @@ struct BinaryProcessor : public DatasetProcessor
 };
 
 
+template<typename Output>
+std::unique_ptr<DatasetProcessor> ProcessorMaker::make_binary(Matcher matcher, std::shared_ptr<Output> out)
+{
+    // Binary output from the dataset
+    arki::dataset::ByteQuery query;
+    if (!postprocess.empty())
+    {
+        query.setPostprocess(matcher, postprocess);
+#ifdef HAVE_LUA
+    } else if (!report.empty()) {
+        if (summary)
+            query.setRepSummary(matcher, report);
+        else
+            query.setRepMetadata(matcher, report);
+#endif
+    } else
+        query.setData(matcher);
+
+    if (!sort.empty())
+        query.sorter = sort::Compare::parse(sort);
+
+    return unique_ptr<DatasetProcessor>(new BinaryProcessor<Output>(query, out));
+}
+
+template<typename Output>
+std::unique_ptr<DatasetProcessor> ProcessorMaker::make_summary(Matcher matcher, std::shared_ptr<Output> out)
+{
+    // Summary output from the dataset
+    summary_print_func printer;
+    if (!json && !yaml && !annotate)
+        printer = [out](const Summary& s) { s.write(*out); };
+    else {
+        shared_ptr<Formatter> formatter;
+        if (annotate)
+            formatter = Formatter::create();
+
+        if (json)
+            printer = [out, formatter](const Summary& s) {
+                stringstream ss;
+                emitter::JSON json(ss);
+                s.serialise(json, formatter.get());
+                string res = ss.str();
+                do_output(*out, ss.str());
+            };
+        else
+            printer = [out, formatter](const Summary& s) {
+                std::string buf = s.to_yaml(formatter.get());
+                buf += "\n";
+                do_output(*out, buf);
+            };
+    }
+
+    if (summary)
+        return std::unique_ptr<DatasetProcessor>(new SummaryProcessor<Output>(matcher, printer, summary_restrict, out));
+    else
+        return std::unique_ptr<DatasetProcessor>(new SummaryShortProcessor<Output>(matcher, annotate, json, printer, out));
+}
+
+template<typename Output>
+std::unique_ptr<DatasetProcessor> ProcessorMaker::make_metadata(Matcher matcher, std::shared_ptr<Output> out)
+{
+    // Metadata output from the dataset
+    metadata_print_func printer;
+
+    std::shared_ptr<Formatter> formatter;
+    if (annotate)
+        formatter = Formatter::create();
+
+    if (!json && !yaml && !annotate)
+        printer = [out](const arki::Metadata& md) { md.write(*out); };
+    else if (json)
+        printer = [out, formatter](const arki::Metadata& md) {
+            stringstream ss;
+            arki::emitter::JSON json(ss);
+            md.serialise(json, formatter.get());
+            do_output(*out, ss.str());
+        };
+    else
+        printer = [out, formatter](const arki::Metadata& md) {
+            do_output(*out, md.to_yaml(formatter.get()));
+        };
+
+    dataset::DataQuery query(matcher, data_inline);
+    if (!sort.empty())
+        query.sorter = sort::Compare::parse(sort);
+
+    return std::unique_ptr<DatasetProcessor>(new DataProcessor(query, printer, server_side, data_inline));
+}
+
 std::unique_ptr<DatasetProcessor> ProcessorMaker::make(Matcher matcher, std::shared_ptr<sys::NamedFileDescriptor> out)
 {
-    unique_ptr<DatasetProcessor> res;
-
     if (data_only || !postprocess.empty()
 #ifdef HAVE_LUA
         || !report.empty()
 #endif
         )
-    {
-        arki::dataset::ByteQuery query;
-        if (!postprocess.empty())
-        {
-            query.setPostprocess(matcher, postprocess);
-#ifdef HAVE_LUA
-        } else if (!report.empty()) {
-            if (summary)
-                query.setRepSummary(matcher, report);
-            else
-                query.setRepMetadata(matcher, report);
-#endif
-        } else
-            query.setData(matcher);
-
-        if (!sort.empty())
-            query.sorter = sort::Compare::parse(sort);
-
-        res.reset(new BinaryProcessor<sys::NamedFileDescriptor>(query, out));
-    }
+        return make_binary(matcher, out);
     else if (summary || summary_short)
-    {
-        summary_print_func printer;
-        if (!json && !yaml && !annotate)
-            printer = [out](const Summary& s) { s.write(*out); };
-        else {
-            shared_ptr<Formatter> formatter;
-            if (annotate)
-                formatter = Formatter::create();
-
-            if (json)
-                printer = [out, formatter](const Summary& s) {
-                    stringstream ss;
-                    emitter::JSON json(ss);
-                    s.serialise(json, formatter.get());
-                    string res = ss.str();
-                    do_output(*out, ss.str());
-                };
-            else
-                printer = [out, formatter](const Summary& s) {
-                    std::string buf = s.to_yaml(formatter.get());
-                    buf += "\n";
-                    do_output(*out, buf);
-                };
-        }
-
-        if (summary)
-            res.reset(new SummaryProcessor<sys::NamedFileDescriptor>(matcher, printer, summary_restrict, out));
-        else
-            res.reset(new SummaryShortProcessor<sys::NamedFileDescriptor>(matcher, annotate, json, printer, out));
-    }
+        return make_summary(matcher, out);
     else if (!archive.empty())
-    {
-        res.reset(new LibarchiveProcessor<sys::NamedFileDescriptor>(matcher, out, archive));
-    }
+        // Metadata output from the dataset
+        return std::unique_ptr<DatasetProcessor>(new LibarchiveProcessor(matcher, out, archive));
     else
-    {
-        metadata_print_func printer;
-
-        std::shared_ptr<Formatter> formatter;
-        if (annotate)
-            formatter = Formatter::create();
-
-        if (!json && !yaml && !annotate)
-            printer = [out](const arki::Metadata& md) { md.write(*out); };
-        else if (json)
-            printer = [out, formatter](const arki::Metadata& md) {
-                stringstream ss;
-                arki::emitter::JSON json(ss);
-                md.serialise(json, formatter.get());
-                do_output(*out, ss.str());
-            };
-        else
-            printer = [out, formatter](const arki::Metadata& md) {
-                do_output(*out, md.to_yaml(formatter.get()));
-            };
-
-        dataset::DataQuery query(matcher, data_inline);
-        if (!sort.empty())
-            query.sorter = sort::Compare::parse(sort);
-        res.reset(new DataProcessor(query, printer, server_side, data_inline));
-    }
-
-    return res;
+        return make_metadata(matcher, out);
 }
+
+std::unique_ptr<DatasetProcessor> ProcessorMaker::make(Matcher matcher, std::shared_ptr<core::AbstractOutputFile> out)
+{
+    if (data_only || !postprocess.empty()
+#ifdef HAVE_LUA
+        || !report.empty()
+#endif
+        )
+        return make_binary(matcher, out);
+    else if (summary || summary_short)
+        return make_summary(matcher, out);
+    else if (!archive.empty())
+        throw std::runtime_error("--archive only works when the output goes to a unix file");
+    else
+        return make_metadata(matcher, out);
+}
+
+
+template std::unique_ptr<DatasetProcessor> ProcessorMaker::make_metadata(Matcher query, std::shared_ptr<sys::NamedFileDescriptor> out);
+template std::unique_ptr<DatasetProcessor> ProcessorMaker::make_metadata(Matcher query, std::shared_ptr<core::AbstractOutputFile> out);
+template std::unique_ptr<DatasetProcessor> ProcessorMaker::make_binary(Matcher query, std::shared_ptr<sys::NamedFileDescriptor> out);
+template std::unique_ptr<DatasetProcessor> ProcessorMaker::make_binary(Matcher query, std::shared_ptr<core::AbstractOutputFile> out);
+template std::unique_ptr<DatasetProcessor> ProcessorMaker::make_summary(Matcher query, std::shared_ptr<sys::NamedFileDescriptor> out);
+template std::unique_ptr<DatasetProcessor> ProcessorMaker::make_summary(Matcher query, std::shared_ptr<core::AbstractOutputFile> out);
 
 }
 }
