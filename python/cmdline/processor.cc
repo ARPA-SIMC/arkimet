@@ -26,88 +26,6 @@ void do_output(sys::NamedFileDescriptor& out, const std::string& str)
     out.write_all_or_throw(str);
 }
 
-template<typename Output>
-struct Printer
-{
-    std::shared_ptr<Output> out;
-
-    Printer(std::shared_ptr<Output> out) : out(out) {}
-    virtual ~Printer() {}
-    virtual void operator()(const arki::Metadata& md) = 0;
-    virtual void flush() {}
-    void output(const std::string& str)
-    {
-        do_output(*out, str);
-    }
-};
-
-template<typename Output>
-struct BinaryPrinter : public Printer<Output>
-{
-    using Printer<Output>::Printer;
-
-    void operator()(const arki::Metadata& md) override
-    {
-        md.write(*(this->out));
-    }
-};
-
-template<typename Output>
-struct LibarchivePrinter : public Printer<Output>
-{
-    arki::metadata::LibarchiveOutput arc_out;
-
-    LibarchivePrinter(std::shared_ptr<Output> out, const std::string& format)
-        : Printer<Output>(out), arc_out(format, *out)
-    {
-    }
-    void operator()(const arki::Metadata& md) override
-    {
-        arc_out.append(md);
-    }
-    void flush() override
-    {
-        arc_out.flush();
-    }
-};
-
-template<typename Output>
-struct FormattedPrinter : public Printer<Output>
-{
-    arki::Formatter* formatter = nullptr;
-    FormattedPrinter(std::shared_ptr<Output> out, bool annotate)
-        : Printer<Output>(out)
-    {
-        if (annotate)
-            formatter = arki::Formatter::create().release();
-    }
-    ~FormattedPrinter() { delete formatter; }
-};
-
-template<typename Output>
-struct JSONPrinter : public FormattedPrinter<Output>
-{
-    using FormattedPrinter<Output>::FormattedPrinter;
-
-    void operator()(const arki::Metadata& md) override
-    {
-        stringstream ss;
-        arki::emitter::JSON json(ss);
-        md.serialise(json, this->formatter);
-        this->output(ss.str());
-    }
-};
-
-template<typename Output>
-struct YamlPrinter : public FormattedPrinter<Output>
-{
-    using FormattedPrinter<Output>::FormattedPrinter;
-
-    void operator()(const arki::Metadata& md) override
-    {
-        this->output(md.to_yaml(this->formatter));
-    }
-};
 
 }
 
@@ -134,70 +52,76 @@ SingleOutputProcessor<Output>::SingleOutputProcessor(std::shared_ptr<Output> out
 }
 
 
-template<typename Output>
 struct DataProcessor : public DatasetProcessor
 {
-    std::unique_ptr<Printer<Output>> printer;
     dataset::DataQuery query;
+    metadata_print_func printer;
     bool data_inline;
     bool server_side;
-    bool any_output_generated = false;
 
-    DataProcessor(std::unique_ptr<Printer<Output>> printer, Matcher& q, std::shared_ptr<Output> out, bool server_side, const std::string& sort, bool data_inline=false)
-        : printer(std::move(printer)), query(q, data_inline),
+    DataProcessor(const dataset::DataQuery& query, metadata_print_func printer, bool server_side, bool data_inline=false)
+        : query(query), printer(std::move(printer)),
           data_inline(data_inline), server_side(server_side)
     {
-        if (!sort.empty())
-            query.sorter = sort::Compare::parse(sort);
     }
 
     virtual ~DataProcessor() {}
-
-    void check_hooks()
-    {
-        if (!any_output_generated)
-        {
-            any_output_generated = true;
-        }
-    }
 
     void process(dataset::Reader& ds, const std::string& name) override
     {
         if (data_inline)
         {
-            ds.query_data(query, [&](unique_ptr<Metadata> md) { check_hooks(); md->makeInline(); (*printer)(*md); return true; });
+            ds.query_data(query, [&](unique_ptr<Metadata> md) { md->makeInline(); printer(*md); return true; });
         } else if (server_side) {
             if (ds.cfg().has("url"))
             {
                 ds.query_data(query, [&](unique_ptr<Metadata> md) {
-                    check_hooks();
                     md->set_source(types::Source::createURL(md->source().format, ds.cfg().value("url")));
-                    (*printer)(*md);
+                    printer(*md);
                     return true;
                 });
             } else {
                 ds.query_data(query, [&](unique_ptr<Metadata> md) {
-                    check_hooks();
                     md->make_absolute();
-                    (*printer)(*md);
+                    printer(*md);
                     return true;
                 });
             }
         } else {
             ds.query_data(query, [&](unique_ptr<Metadata> md) {
-                check_hooks();
                 md->make_absolute();
-                (*printer)(*md);
+                printer(*md);
                 return true;
             });
         }
     }
+};
+
+
+template<typename Output>
+struct LibarchiveProcessor : public DatasetProcessor
+{
+    dataset::DataQuery query;
+    arki::metadata::LibarchiveOutput arc_out;
+
+    LibarchiveProcessor(Matcher matcher, std::shared_ptr<Output> out, const std::string& format)
+        : query(matcher, true), arc_out(format, *out)
+    {
+    }
+
+    virtual ~LibarchiveProcessor() {}
+
+    void process(dataset::Reader& ds, const std::string& name) override
+    {
+        ds.query_data(query, [&](unique_ptr<Metadata> md) { arc_out.append(*md); return true; });
+    }
 
     void end() override
     {
-        printer->flush();
+        arc_out.flush();
     }
 };
+
 
 template<typename Output>
 struct SummaryProcessor : public SingleOutputProcessor<Output>
@@ -298,10 +222,6 @@ struct BinaryProcessor : public SingleOutputProcessor<Output>
         // TODO: validate query's postprocessor with ds' config
         ds.query_bytes(query, *this->output);
     }
-
-    void end() override
-    {
-    }
 };
 
 template<typename Output>
@@ -392,20 +312,36 @@ std::unique_ptr<DatasetProcessor> ProcessorMaker::make(Matcher matcher, std::sha
         else
             res.reset(new SummaryShortProcessor<sys::NamedFileDescriptor>(matcher, annotate, json, printer, out));
     }
+    else if (!archive.empty())
+    {
+        res.reset(new LibarchiveProcessor<sys::NamedFileDescriptor>(matcher, out, archive));
+    }
     else
     {
-        std::unique_ptr<Printer<sys::NamedFileDescriptor>> printer;
+        metadata_print_func printer;
 
-        if (!archive.empty())
-            printer = std::unique_ptr<Printer<sys::NamedFileDescriptor>>(new LibarchivePrinter<sys::NamedFileDescriptor>(out, archive));
-        else if (!json && !yaml && !annotate)
-            printer = std::unique_ptr<Printer<sys::NamedFileDescriptor>>(new BinaryPrinter<sys::NamedFileDescriptor>(out));
+        std::shared_ptr<Formatter> formatter;
+        if (annotate)
+            formatter = Formatter::create();
+
+        if (!json && !yaml && !annotate)
+            printer = [out](const arki::Metadata& md) { md.write(*out); };
         else if (json)
-            printer = std::unique_ptr<Printer<sys::NamedFileDescriptor>>(new JSONPrinter<sys::NamedFileDescriptor>(out, annotate));
+            printer = [out, formatter](const arki::Metadata& md) {
+                stringstream ss;
+                arki::emitter::JSON json(ss);
+                md.serialise(json, formatter.get());
+                do_output(*out, ss.str());
+            };
         else
-            printer = std::unique_ptr<Printer<sys::NamedFileDescriptor>>(new YamlPrinter<sys::NamedFileDescriptor>(out, annotate));
+            printer = [out, formatter](const arki::Metadata& md) {
+                do_output(*out, md.to_yaml(formatter.get()));
+            };
 
-        res.reset(new DataProcessor<sys::NamedFileDescriptor>(std::move(printer), matcher, out, server_side, sort, data_inline));
+        dataset::DataQuery query(matcher, data_inline);
+        if (!sort.empty())
+            query.sorter = sort::Compare::parse(sort);
+        res.reset(new DataProcessor(query, printer, server_side, data_inline));
     }
 
     // If targetfile is requested, wrap with the targetfile processor
