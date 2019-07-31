@@ -27,7 +27,9 @@ struct PyDatasetReader : public arki::dataset::Reader
         AcquireGIL gil;
         Py_XINCREF(o);
         meth_query_data = throw_ifnull(PyObject_GetAttrString(o, "query_data"));
-        meth_query_summary = throw_ifnull(PyObject_GetAttrString(o, "query_summary"));
+        meth_query_summary = PyObject_GetAttrString(o, "query_summary");
+        if (!meth_query_summary)
+            PyErr_Clear();
 
         m_type = config.value("type");
         if (m_type.empty())
@@ -90,14 +92,21 @@ struct PyDatasetReader : public arki::dataset::Reader
 
     void query_summary(const Matcher& matcher, Summary& summary) override
     {
-        AcquireGIL gil;
-        pyo_unique_ptr args(throw_ifnull(PyTuple_New(0)));
-        pyo_unique_ptr kwargs(throw_ifnull(PyDict_New()));
-        pyo_unique_ptr py_summary((PyObject*)summary_create());
-        set_dict(kwargs, "matcher", matcher);
-        set_dict(kwargs, "summary", py_summary);
-        pyo_unique_ptr res(throw_ifnull(PyObject_Call(meth_query_summary, args, kwargs)));
-        summary.add(*((arkipy_Summary*)py_summary.get())->summary);
+        if (meth_query_summary)
+        {
+            AcquireGIL gil;
+            pyo_unique_ptr args(throw_ifnull(PyTuple_New(0)));
+            pyo_unique_ptr kwargs(throw_ifnull(PyDict_New()));
+            pyo_unique_ptr py_summary((PyObject*)summary_create());
+            set_dict(kwargs, "matcher", matcher);
+            set_dict(kwargs, "summary", py_summary);
+            pyo_unique_ptr res(throw_ifnull(PyObject_Call(meth_query_summary, args, kwargs)));
+            summary.add(*((arkipy_Summary*)py_summary.get())->summary);
+        } else {
+            // If the class does not implement query_summary, use the default
+            // implementation based on query_data
+            arki::dataset::Reader::query_summary(matcher, summary);
+        }
     }
 };
 
