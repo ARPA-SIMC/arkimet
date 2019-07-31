@@ -123,32 +123,33 @@ class Query(AppConfigMixin, AppWithProcessor):
         else:
             query = arki.Matcher()
 
-        arki_query = arki.ArkiQuery()
-        arki_query.set_inputs(self.config)
-        arki_query.set_processor(
-                query=query,
-                outfile=self.args.outfile or "-",
-                yaml=self.args.yaml,
-                json=self.args.json,
-                annotate=self.args.annotate,
-                inline=self.args.inline,
-                data=self.args.data,
-                summary=self.args.summary,
-                summary_short=self.args.summary_short,
-                report=self.args.report,
-                summary_restrict=self.args.summary_restrict,
-                archive=self.args.archive,
-                postproc=self.args.postproc,
-                postproc_data=self.args.postproc_data,
-                sort=self.args.sort,
-                targetfile=self.args.targetfile,
-        )
+        with self.outfile() as outfd:
+            arki_query = arki.ArkiQuery()
+            arki_query.set_inputs(self.config)
+            arki_query.set_processor(
+                    query=query,
+                    outfile=outfd,
+                    yaml=self.args.yaml,
+                    json=self.args.json,
+                    annotate=self.args.annotate,
+                    inline=self.args.inline,
+                    data=self.args.data,
+                    summary=self.args.summary,
+                    summary_short=self.args.summary_short,
+                    report=self.args.report,
+                    summary_restrict=self.args.summary_restrict,
+                    archive=self.args.archive,
+                    postproc=self.args.postproc,
+                    postproc_data=self.args.postproc_data,
+                    sort=self.args.sort,
+                    targetfile=self.args.targetfile,
+            )
 
-        if self.args.stdin:
-            arki_query.query_stdin(self.args.stdin)
-        elif self.args.merged:
-            arki_query.query_merged()
-        elif self.args.qmacro:
-            arki_query.query_qmacro(self.args.qmacro, qmacro_query)
-        else:
-            arki_query.query_sections()
+            if self.args.stdin:
+                arki_query.query_stdin(self.args.stdin)
+            elif self.args.merged:
+                arki_query.query_merged()
+            elif self.args.qmacro:
+                arki_query.query_qmacro(self.args.qmacro, qmacro_query)
+            else:
+                arki_query.query_sections()

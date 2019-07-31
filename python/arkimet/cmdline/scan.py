@@ -128,64 +128,65 @@ class Scan(AppWithProcessor):
         super().run()
         self.build_config()
 
-        arki_scan = arki.ArkiScan()
-        arki_scan.set_inputs(self.config)
-        arki_scan.set_processor(
-                query=arki.Matcher(),
-                outfile=self.args.outfile or "-",
-                yaml=self.args.yaml,
-                json=self.args.json,
-                annotate=self.args.annotate,
-                inline=self.args.inline,
-                data=self.args.data,
-                summary=self.args.summary,
-                summary_short=self.args.summary_short,
-                report=self.args.report,
-                summary_restrict=self.args.summary_restrict,
-                archive=self.args.archive,
-                postproc=self.args.postproc,
-                postproc_data=self.args.postproc_data,
-                sort=self.args.sort,
-                targetfile=self.args.targetfile,
-        )
-
-        if self.args.dispatch or self.args.testdispatch:
-            kw = dict(
-                    copyok=self.args.copyok,
-                    copyko=self.args.copyko,
-                    validate=self.args.validate,
-                    flush_threshold=self.args.flush_threshold,
+        with self.outfile() as outfd:
+            arki_scan = arki.ArkiScan()
+            arki_scan.set_inputs(self.config)
+            arki_scan.set_processor(
+                    query=arki.Matcher(),
+                    outfile=outfd,
+                    yaml=self.args.yaml,
+                    json=self.args.json,
+                    annotate=self.args.annotate,
+                    inline=self.args.inline,
+                    data=self.args.data,
+                    summary=self.args.summary,
+                    summary_short=self.args.summary_short,
+                    report=self.args.report,
+                    summary_restrict=self.args.summary_restrict,
+                    archive=self.args.archive,
+                    postproc=self.args.postproc,
+                    postproc_data=self.args.postproc_data,
+                    sort=self.args.sort,
+                    targetfile=self.args.targetfile,
             )
 
-            if self.args.dispatch:
-                dispatch_cfg = arki.cfg.Sections()
-                for source in self.args.dispatch:
-                    merge_config(dispatch_cfg, arki.cfg.Sections.parse(source))
-                kw["dispatch"] = dispatch_cfg
-            elif self.args.testdispatch:
-                dispatch_cfg = arki.cfg.Sections()
-                for source in self.args.testdispatch:
-                    merge_config(dispatch_cfg, arki.cfg.Sections.parse(source))
-                kw["testdispatch"] = dispatch_cfg
+            if self.args.dispatch or self.args.testdispatch:
+                kw = dict(
+                        copyok=self.args.copyok,
+                        copyko=self.args.copyko,
+                        validate=self.args.validate,
+                        flush_threshold=self.args.flush_threshold,
+                )
 
-            arki_scan.set_dispatcher(**kw)
+                if self.args.dispatch:
+                    dispatch_cfg = arki.cfg.Sections()
+                    for source in self.args.dispatch:
+                        merge_config(dispatch_cfg, arki.cfg.Sections.parse(source))
+                    kw["dispatch"] = dispatch_cfg
+                elif self.args.testdispatch:
+                    dispatch_cfg = arki.cfg.Sections()
+                    for source in self.args.testdispatch:
+                        merge_config(dispatch_cfg, arki.cfg.Sections.parse(source))
+                    kw["testdispatch"] = dispatch_cfg
 
-            if self.args.stdin:
-                all_successful = arki_scan.dispatch_stdin(
-                        self.args.stdin,
-                        ignore_duplicates=self.args.ignore_duplicates,
-                        status=self.args.status)
+                arki_scan.set_dispatcher(**kw)
+
+                if self.args.stdin:
+                    all_successful = arki_scan.dispatch_stdin(
+                            self.args.stdin,
+                            ignore_duplicates=self.args.ignore_duplicates,
+                            status=self.args.status)
+                else:
+                    all_successful = arki_scan.dispatch_sections(
+                            moveok=self.args.moveok, moveko=self.args.moveko,
+                            movework=self.args.movework,
+                            ignore_duplicates=self.args.ignore_duplicates,
+                            status=self.args.status)
             else:
-                all_successful = arki_scan.dispatch_sections(
-                        moveok=self.args.moveok, moveko=self.args.moveko,
-                        movework=self.args.movework,
-                        ignore_duplicates=self.args.ignore_duplicates,
-                        status=self.args.status)
-        else:
-            if self.args.stdin:
-                all_successful = arki_scan.scan_stdin(self.args.stdin)
-            else:
-                all_successful = arki_scan.scan_sections()
+                if self.args.stdin:
+                    all_successful = arki_scan.scan_stdin(self.args.stdin)
+                else:
+                    all_successful = arki_scan.scan_sections()
 
-        if not all_successful:
-            raise Exit(posix.EX_DATAERR)
+            if not all_successful:
+                raise Exit(posix.EX_DATAERR)

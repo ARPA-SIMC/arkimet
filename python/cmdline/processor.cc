@@ -12,6 +12,7 @@
 #include "arki/sort.h"
 #include "arki/utils/string.h"
 #include "arki/summary/stats.h"
+#include "arki/nag.h"
 #include <cassert>
 
 using namespace std;
@@ -20,30 +21,44 @@ using namespace arki::utils;
 
 namespace {
 
+void do_output(sys::NamedFileDescriptor& out, const std::string& str)
+{
+    out.write_all_or_throw(str);
+}
+
+template<typename Output>
 struct Printer
 {
-    sys::NamedFileDescriptor& out;
-    Printer(sys::NamedFileDescriptor& out) : out(out) {}
+    std::shared_ptr<Output> out;
+
+    Printer(std::shared_ptr<Output> out) : out(out) {}
     virtual ~Printer() {}
     virtual void operator()(const arki::Metadata& md) = 0;
     virtual void flush() {}
-};
-
-struct BinaryPrinter : public Printer
-{
-    using Printer::Printer;
-    void operator()(const arki::Metadata& md) override
+    void output(const std::string& str)
     {
-        md.write(out);
+        do_output(*out, str);
     }
 };
 
-struct LibarchivePrinter : public Printer
+template<typename Output>
+struct BinaryPrinter : public Printer<Output>
+{
+    using Printer<Output>::Printer;
+
+    void operator()(const arki::Metadata& md) override
+    {
+        md.write(*(this->out));
+    }
+};
+
+template<typename Output>
+struct LibarchivePrinter : public Printer<Output>
 {
     arki::metadata::LibarchiveOutput arc_out;
 
-    LibarchivePrinter(sys::NamedFileDescriptor& out, const std::string& format)
-        : Printer(out), arc_out(format, out)
+    LibarchivePrinter(std::shared_ptr<Output> out, const std::string& format)
+        : Printer<Output>(out), arc_out(format, *out)
     {
     }
     void operator()(const arki::Metadata& md) override
@@ -56,11 +71,12 @@ struct LibarchivePrinter : public Printer
     }
 };
 
-struct FormattedPrinter : public Printer
+template<typename Output>
+struct FormattedPrinter : public Printer<Output>
 {
     arki::Formatter* formatter = nullptr;
-    FormattedPrinter(sys::NamedFileDescriptor& out, bool annotate)
-        : Printer(out)
+    FormattedPrinter(std::shared_ptr<Output> out, bool annotate)
+        : Printer<Output>(out)
     {
         if (annotate)
             formatter = arki::Formatter::create().release();
@@ -68,24 +84,28 @@ struct FormattedPrinter : public Printer
     ~FormattedPrinter() { delete formatter; }
 };
 
-struct JSONPrinter : public FormattedPrinter
+template<typename Output>
+struct JSONPrinter : public FormattedPrinter<Output>
 {
-    using FormattedPrinter::FormattedPrinter;
+    using FormattedPrinter<Output>::FormattedPrinter;
+
     void operator()(const arki::Metadata& md) override
     {
         stringstream ss;
         arki::emitter::JSON json(ss);
-        md.serialise(json, formatter);
-        out.write_all_or_throw(ss.str());
+        md.serialise(json, this->formatter);
+        this->output(ss.str());
     }
 };
 
-struct YamlPrinter : public FormattedPrinter
+template<typename Output>
+struct YamlPrinter : public FormattedPrinter<Output>
 {
-    using FormattedPrinter::FormattedPrinter;
+    using FormattedPrinter<Output>::FormattedPrinter;
+
     void operator()(const arki::Metadata& md) override
     {
-        out.write_all_or_throw(md.to_yaml(formatter));
+        this->output(md.to_yaml(this->formatter));
     }
 };
 
@@ -98,53 +118,60 @@ namespace cmdline {
 typedef std::function<void(const Metadata&)> metadata_print_func;
 typedef std::function<void(const Summary&)> summary_print_func;
 
-SingleOutputProcessor::SingleOutputProcessor()
-    : output(-1, "(output not initialized yet)")
+template<typename Output>
+struct SingleOutputProcessor : public DatasetProcessor
+{
+    std::shared_ptr<Output> output;
+
+    SingleOutputProcessor(std::shared_ptr<Output> out);
+};
+
+
+template<typename Output>
+SingleOutputProcessor<Output>::SingleOutputProcessor(std::shared_ptr<Output> out)
+    : output(out)
 {
 }
 
-SingleOutputProcessor::SingleOutputProcessor(const utils::sys::NamedFileDescriptor& out)
-    : output(out, out.name())
-{
-}
 
-
-std::unique_ptr<Printer> create_metadata_printer(ProcessorMaker& maker, sys::NamedFileDescriptor& out)
+template<typename Output>
+std::unique_ptr<Printer<Output>> create_metadata_printer(ProcessorMaker& maker, std::shared_ptr<Output> out)
 {
     if (!maker.archive.empty())
-        return std::unique_ptr<Printer>(new LibarchivePrinter(out, maker.archive));
+        return std::unique_ptr<Printer<Output>>(new LibarchivePrinter<Output>(out, maker.archive));
 
     if (!maker.json && !maker.yaml && !maker.annotate)
-        return std::unique_ptr<Printer>(new BinaryPrinter(out));
+        return std::unique_ptr<Printer<Output>>(new BinaryPrinter<Output>(out));
 
     if (maker.json)
-        return std::unique_ptr<Printer>(new JSONPrinter(out, maker.annotate));
+        return std::unique_ptr<Printer<Output>>(new JSONPrinter<Output>(out, maker.annotate));
 
-    return std::unique_ptr<Printer>(new YamlPrinter(out, maker.annotate));
+    return std::unique_ptr<Printer<Output>>(new YamlPrinter<Output>(out, maker.annotate));
 }
 
-summary_print_func create_summary_printer(ProcessorMaker& maker, sys::NamedFileDescriptor& out)
+template<typename Output>
+summary_print_func create_summary_printer(ProcessorMaker& maker, std::shared_ptr<Output> out)
 {
     if (!maker.json && !maker.yaml && !maker.annotate)
-        return [&](const Summary& s) { s.write(out); };
+        return [&](const Summary& s) { s.write(*out); };
 
     shared_ptr<Formatter> formatter;
     if (maker.annotate)
         formatter = Formatter::create();
 
     if (maker.json)
-        return [&out, formatter](const Summary& s) {
+        return [out, formatter](const Summary& s) {
             stringstream ss;
             emitter::JSON json(ss);
             s.serialise(json, formatter.get());
             string res = ss.str();
-            out.write_all_or_throw(ss.str());
+            do_output(*out, ss.str());
         };
 
-    return [&out, formatter](const Summary& s) {
+    return [out, formatter](const Summary& s) {
         std::string buf = s.to_yaml(formatter.get());
         buf += "\n";
-        out.write_all_or_throw(buf);
+        do_output(*out, buf);
     };
 }
 
@@ -159,17 +186,18 @@ std::string describe_printer(ProcessorMaker& maker)
     return "yaml";
 }
 
-struct DataProcessor : public SingleOutputProcessor
+template<typename Output>
+struct DataProcessor : public SingleOutputProcessor<Output>
 {
-    std::unique_ptr<Printer> printer;
+    std::unique_ptr<Printer<Output>> printer;
     dataset::DataQuery query;
     vector<string> description_attrs;
     bool data_inline;
     bool server_side;
     bool any_output_generated = false;
 
-    DataProcessor(ProcessorMaker& maker, Matcher& q, const sys::NamedFileDescriptor& out, bool data_inline=false)
-        : SingleOutputProcessor(out), printer(create_metadata_printer(maker, output)), query(q, data_inline),
+    DataProcessor(ProcessorMaker& maker, Matcher& q, std::shared_ptr<Output> out, bool data_inline=false)
+        : SingleOutputProcessor<Output>(out), printer(create_metadata_printer(maker, out)), query(q, data_inline),
           data_inline(data_inline), server_side(maker.server_side)
     {
         description_attrs.push_back("query=" + q.toString());
@@ -241,7 +269,8 @@ struct DataProcessor : public SingleOutputProcessor
     }
 };
 
-struct SummaryProcessor : public SingleOutputProcessor
+template<typename Output>
+struct SummaryProcessor : public SingleOutputProcessor<Output>
 {
     Matcher matcher;
     summary_print_func printer;
@@ -249,8 +278,8 @@ struct SummaryProcessor : public SingleOutputProcessor
     Summary summary;
     vector<string> description_attrs;
 
-    SummaryProcessor(ProcessorMaker& maker, Matcher& q, const sys::NamedFileDescriptor& out)
-        : SingleOutputProcessor(out), matcher(q), printer(create_summary_printer(maker, output))
+    SummaryProcessor(ProcessorMaker& maker, Matcher& q, std::shared_ptr<Output> out)
+        : SingleOutputProcessor<Output>(out), matcher(q), printer(create_summary_printer(maker, out))
     {
         description_attrs.push_back("query=" + q.toString());
         if (!maker.summary_restrict.empty())
@@ -291,7 +320,8 @@ struct SummaryProcessor : public SingleOutputProcessor
     }
 };
 
-struct SummaryShortProcessor : public SingleOutputProcessor
+template<typename Output>
+struct SummaryShortProcessor : public SingleOutputProcessor<Output>
 {
     Matcher matcher;
     summary_print_func printer;
@@ -299,9 +329,9 @@ struct SummaryShortProcessor : public SingleOutputProcessor
     bool annotate;
     bool json;
 
-    SummaryShortProcessor(ProcessorMaker& maker, Matcher& q, const sys::NamedFileDescriptor& out)
-        : SingleOutputProcessor(out), matcher(q),
-          printer(create_summary_printer(maker, output)),
+    SummaryShortProcessor(ProcessorMaker& maker, Matcher& q, std::shared_ptr<Output> out)
+        : SingleOutputProcessor<Output>(out), matcher(q),
+          printer(create_summary_printer(maker, out)),
           annotate(maker.annotate),
           json(maker.json)
     {
@@ -337,18 +367,19 @@ struct SummaryShortProcessor : public SingleOutputProcessor
         else
             c.write_yaml(ss, formatter.get());
 
-        output.write_all_or_retry(ss.str());
+        do_output(*this->output, ss.str());
     }
 };
 
 
-struct BinaryProcessor : public SingleOutputProcessor
+template<typename Output>
+struct BinaryProcessor : public SingleOutputProcessor<Output>
 {
     dataset::ByteQuery query;
     vector<string> description_attrs;
 
-    BinaryProcessor(ProcessorMaker& maker, Matcher& q, const sys::NamedFileDescriptor& out)
-        : SingleOutputProcessor(out)
+    BinaryProcessor(ProcessorMaker& maker, Matcher& q, std::shared_ptr<Output> out)
+        : SingleOutputProcessor<Output>(out)
     {
         description_attrs.push_back("query=" + q.toString());
         if (!maker.postprocess.empty())
@@ -388,7 +419,7 @@ struct BinaryProcessor : public SingleOutputProcessor
     void process(dataset::Reader& ds, const std::string& name) override
     {
         // TODO: validate query's postprocessor with ds' config
-        ds.query_bytes(query, output);
+        ds.query_bytes(query, *this->output);
     }
 
     void end() override
@@ -396,51 +427,75 @@ struct BinaryProcessor : public SingleOutputProcessor
     }
 };
 
-
-TargetFileProcessor::TargetFileProcessor(SingleOutputProcessor* next, const std::string& pattern)
-    : next(next), pattern(pattern)
+template<typename Output>
+struct TargetFileProcessor : public DatasetProcessor
 {
-    description_attrs.push_back("pattern=" + pattern);
-    description_attrs.push_back("next=" + next->describe());
-}
+    SingleOutputProcessor<Output>* next;
+    std::string pattern;
+    std::vector<std::string> description_attrs;
 
-TargetFileProcessor::~TargetFileProcessor()
+    TargetFileProcessor(SingleOutputProcessor<Output>* next, const std::string& pattern)
+    {
+        description_attrs.push_back("pattern=" + pattern);
+        description_attrs.push_back("next=" + next->describe());
+    }
+
+    virtual ~TargetFileProcessor()
+    {
+        if (next) delete next;
+    }
+
+    std::string describe() const override
+    {
+        string res = "targetfile(";
+        res += str::join(", ", description_attrs.begin(), description_attrs.end());
+        res += ")";
+        return res;
+    }
+
+    void process(dataset::Reader& ds, const std::string& name) override
+    {
+        TargetfileSpy spy(ds, *next->output, pattern);
+        next->process(spy, name);
+    }
+
+    void end() override
+    {
+        next->end();
+    }
+};
+
+
+std::unique_ptr<DatasetProcessor> ProcessorMaker::make(Matcher query, std::shared_ptr<sys::NamedFileDescriptor> out)
 {
-    if (next) delete next;
-}
+    unique_ptr<DatasetProcessor> res;
 
-std::string TargetFileProcessor::describe() const
-{
-    string res = "targetfile(";
-    res += str::join(", ", description_attrs.begin(), description_attrs.end());
-    res += ")";
-    return res;
-}
-
-void TargetFileProcessor::process(dataset::Reader& ds, const std::string& name)
-{
-    TargetfileSpy spy(ds, next->output, pattern);
-    next->process(spy, name);
-}
-
-void TargetFileProcessor::end() { next->end(); }
-
-
-std::unique_ptr<DatasetProcessor> ProcessorMaker::make(Matcher query, sys::NamedFileDescriptor& out)
-{
     if (data_only || !postprocess.empty()
 #ifdef HAVE_LUA
         || !report.empty()
 #endif
         )
-        return unique_ptr<DatasetProcessor>(new BinaryProcessor(*this, query, out));
+        res.reset(new BinaryProcessor<sys::NamedFileDescriptor>(*this, query, out));
     else if (summary)
-        return unique_ptr<DatasetProcessor>(new SummaryProcessor(*this, query, out));
+        res.reset(new SummaryProcessor<sys::NamedFileDescriptor>(*this, query, out));
     else if (summary_short)
-        return unique_ptr<DatasetProcessor>(new SummaryShortProcessor(*this, query, out));
+        res.reset(new SummaryShortProcessor<sys::NamedFileDescriptor>(*this, query, out));
     else
-        return unique_ptr<DatasetProcessor>(new DataProcessor(*this, query, out, data_inline));
+        res.reset(new DataProcessor<sys::NamedFileDescriptor>(*this, query, out, data_inline));
+
+    // If targetfile is requested, wrap with the targetfile processor
+    if (!targetfile.empty())
+    {
+        cmdline::SingleOutputProcessor<sys::NamedFileDescriptor>* sop = dynamic_cast<cmdline::SingleOutputProcessor<sys::NamedFileDescriptor>*>(res.release());
+        assert(sop != nullptr);
+        res.reset(new cmdline::TargetFileProcessor<sys::NamedFileDescriptor>(sop, targetfile));
+    }
+
+    return res;
 }
+
+template class SingleOutputProcessor<sys::NamedFileDescriptor>;
+template class TargetFileProcessor<sys::NamedFileDescriptor>;
 
 }
 }
