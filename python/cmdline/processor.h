@@ -45,7 +45,6 @@ struct ProcessorMaker
     std::string archive;
     std::string summary_restrict;
     std::string sort;
-    std::string targetfile;
 
     /// Create the processor maker for this configuration
     std::unique_ptr<DatasetProcessor> make(Matcher query, std::shared_ptr<utils::sys::NamedFileDescriptor> out);

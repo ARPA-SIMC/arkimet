@@ -6,7 +6,6 @@
 #include "arki/dataset.h"
 #include "arki/dataset/index/base.h"
 #include "arki/emitter/json.h"
-#include "arki/targetfile.h"
 #include "arki/summary.h"
 #include "arki/summary/short.h"
 #include "arki/sort.h"
@@ -35,21 +34,6 @@ namespace cmdline {
 
 typedef std::function<void(const Metadata&)> metadata_print_func;
 typedef std::function<void(const Summary&)> summary_print_func;
-
-template<typename Output>
-struct SingleOutputProcessor : public DatasetProcessor
-{
-    std::shared_ptr<Output> output;
-
-    SingleOutputProcessor(std::shared_ptr<Output> out);
-};
-
-
-template<typename Output>
-SingleOutputProcessor<Output>::SingleOutputProcessor(std::shared_ptr<Output> out)
-    : output(out)
-{
-}
 
 
 struct DataProcessor : public DatasetProcessor
@@ -124,15 +108,16 @@ struct LibarchiveProcessor : public DatasetProcessor
 
 
 template<typename Output>
-struct SummaryProcessor : public SingleOutputProcessor<Output>
+struct SummaryProcessor : public DatasetProcessor
 {
+    std::shared_ptr<Output> output;
     Matcher matcher;
     summary_print_func printer;
     string summary_restrict;
     Summary summary;
 
     SummaryProcessor(Matcher& q, summary_print_func printer, const std::string& summary_restrict, std::shared_ptr<Output> out)
-        : SingleOutputProcessor<Output>(out), matcher(q), printer(printer), summary_restrict(summary_restrict)
+        : output(out), matcher(q), printer(printer), summary_restrict(summary_restrict)
     {
     }
 
@@ -161,8 +146,9 @@ struct SummaryProcessor : public SingleOutputProcessor<Output>
 };
 
 template<typename Output>
-struct SummaryShortProcessor : public SingleOutputProcessor<Output>
+struct SummaryShortProcessor : public DatasetProcessor
 {
+    std::shared_ptr<Output> output;
     Matcher matcher;
     summary_print_func printer;
     Summary summary;
@@ -170,7 +156,7 @@ struct SummaryShortProcessor : public SingleOutputProcessor<Output>
     bool json;
 
     SummaryShortProcessor(Matcher& q, bool annotate, bool json, summary_print_func printer, std::shared_ptr<Output> out)
-        : SingleOutputProcessor<Output>(out), matcher(q),
+        : output(out), matcher(q),
           printer(printer),
           annotate(annotate),
           json(json)
@@ -208,12 +194,13 @@ struct SummaryShortProcessor : public SingleOutputProcessor<Output>
 
 
 template<typename Output>
-struct BinaryProcessor : public SingleOutputProcessor<Output>
+struct BinaryProcessor : public DatasetProcessor
 {
+    std::shared_ptr<Output> output;
     dataset::ByteQuery query;
 
     BinaryProcessor(const dataset::ByteQuery& query, std::shared_ptr<Output> out)
-        : SingleOutputProcessor<Output>(out), query(query)
+        : output(out), query(query)
     {
     }
 
@@ -221,33 +208,6 @@ struct BinaryProcessor : public SingleOutputProcessor<Output>
     {
         // TODO: validate query's postprocessor with ds' config
         ds.query_bytes(query, *this->output);
-    }
-};
-
-template<typename Output>
-struct TargetFileProcessor : public DatasetProcessor
-{
-    SingleOutputProcessor<Output>* next;
-    std::string pattern;
-
-    TargetFileProcessor(SingleOutputProcessor<Output>* next, const std::string& pattern)
-    {
-    }
-
-    virtual ~TargetFileProcessor()
-    {
-        if (next) delete next;
-    }
-
-    void process(dataset::Reader& ds, const std::string& name) override
-    {
-        TargetfileSpy spy(ds, *next->output, pattern);
-        next->process(spy, name);
-    }
-
-    void end() override
-    {
-        next->end();
     }
 };
 
@@ -344,19 +304,8 @@ std::unique_ptr<DatasetProcessor> ProcessorMaker::make(Matcher matcher, std::sha
         res.reset(new DataProcessor(query, printer, server_side, data_inline));
     }
 
-    // If targetfile is requested, wrap with the targetfile processor
-    if (!targetfile.empty())
-    {
-        cmdline::SingleOutputProcessor<sys::NamedFileDescriptor>* sop = dynamic_cast<cmdline::SingleOutputProcessor<sys::NamedFileDescriptor>*>(res.release());
-        assert(sop != nullptr);
-        res.reset(new cmdline::TargetFileProcessor<sys::NamedFileDescriptor>(sop, targetfile));
-    }
-
     return res;
 }
-
-template class SingleOutputProcessor<sys::NamedFileDescriptor>;
-template class TargetFileProcessor<sys::NamedFileDescriptor>;
 
 }
 }

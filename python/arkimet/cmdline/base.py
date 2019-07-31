@@ -145,9 +145,6 @@ class AppWithProcessor(App):
 
         self.parser_out.add_argument("--outfile", "-o", metavar="file",
                                      help="write the output to the given file instead of standard output")
-        self.parser_out.add_argument("--targetfile", metavar="pattern",
-                                     help="append the output to file names computed from the data"
-                                          " to be written. See /etc/arkimet/targetfile for details.")
         self.parser_out.add_argument("--sort", metavar="period:order",
                                      help="sort order.  Period can be year, month, day, hour or minute."
                                           " Order can be a list of one or more metadata"
@@ -200,9 +197,6 @@ class AppWithProcessor(App):
 
         if self.args.summary_restrict and not self.args.summary:
             self.parser.error("--summary-restrict only makes sense with --summary")
-
-        if self.args.postproc and self.args.targetfile:
-            self.parser.error("--postproc conflicts with --targetfile")
 
         if self.args.postproc_data and not self.args.postproc:
             self.parser.error("--postproc-data only makes sense with --postproc")
