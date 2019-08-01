@@ -178,9 +178,17 @@ class CmdlineTestMixin:
         except SystemExit as e:
             return e.args[0]
 
-    def call_output(self, *args, binary=False):
+    def call_output(self, *args, binary=False, input=None):
+        orig_stdin = sys.stdin
         orig_stdout = sys.stdout
         orig_stderr = sys.stderr
+        if input is not None:
+            if isinstance(input, bytes):
+                sys.stdin = io.BytesIO(input)
+            elif isinstance(input, str):
+                sys.stdin = io.StringIO(input)
+            else:
+                sys.stdin = input
         if binary:
             sys.stdout = io.BytesIO()
         else:
@@ -191,12 +199,13 @@ class CmdlineTestMixin:
             out = sys.stdout.getvalue()
             err = sys.stderr.getvalue()
         finally:
+            sys.stdin = orig_stdin
             sys.stdout = orig_stdout
             sys.stderr = orig_stderr
         return out, err, res
 
-    def call_output_success(self, *args, binary=False, returncode=None):
-        out, err, res = self.call_output(*args, binary=binary)
+    def call_output_success(self, *args, binary=False, returncode=None, input=None):
+        out, err, res = self.call_output(*args, binary=binary, input=input)
         self.assertEqual(err, "")
         if returncode is None:
             self.assertIsNone(res)

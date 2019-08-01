@@ -1,5 +1,6 @@
 import arkimet as arki
 from arkimet.cmdline.base import AppConfigMixin, AppWithProcessor
+import sys
 import logging
 
 log = logging.getLogger("arki-query")
@@ -145,7 +146,7 @@ class Query(AppConfigMixin, AppWithProcessor):
             )
 
             if self.args.stdin:
-                arki_query.query_stdin(self.args.stdin)
+                arki_query.query_file(sys.stdin, self.args.stdin)
             elif self.args.merged:
                 arki_query.query_merged()
             elif self.args.qmacro:

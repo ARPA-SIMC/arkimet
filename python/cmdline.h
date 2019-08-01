@@ -5,6 +5,7 @@
 #include <Python.h>
 #include <arki/core/fwd.h>
 #include <arki/dataset/fwd.h>
+#include "python/files.h"
 #include <memory>
 
 namespace arki {
@@ -19,7 +20,7 @@ struct DatasetProcessor;
  */
 std::unique_ptr<cmdline::DatasetProcessor> build_processor(PyObject* args, PyObject* kw);
 
-bool foreach_stdin(const std::string& format, std::function<void(dataset::Reader&)> dest);
+bool foreach_file(BinaryInputFile& file, const std::string& format, std::function<void(dataset::Reader&)> dest);
 bool foreach_sections(const core::cfg::Sections& inputs, std::function<void(dataset::Reader&)> dest);
 
 }

@@ -3,7 +3,7 @@ import os
 import posix
 from contextlib import contextmanager
 from arkimet.cmdline.query import Query
-from arkimet.test import CatchOutput, Env, CmdlineTestMixin
+from arkimet.test import Env, CmdlineTestMixin
 
 
 class TestArkiQuery(CmdlineTestMixin, unittest.TestCase):
@@ -52,23 +52,16 @@ class TestArkiQuery(CmdlineTestMixin, unittest.TestCase):
             self.assertEqual(out[:4], b"GRIB")
 
     def test_query_stdin(self):
-        out = CatchOutput()
         with open("inbound/fixture.grib1", "rb") as fd:
-            stdin = fd.read()
-        with out.redirect(input=stdin):
-            res = self.runcmd("--stdin=grib", "--data", "")
-        self.assertEqual(out.stderr, b"")
-        self.assertEqual(out.stdout[:4], b"GRIB")
-        self.assertIsNone(res)
+            out = self.call_output_success("--stdin=grib", "--data", "", input=fd, binary=True)
+        self.assertEqual(out[:4], b"GRIB")
 
-        with out.redirect():
-            res = self.runcmd("--stdin=grib", "", "test.metadata")
-        self.assertIn(b"you cannot specify input files or datasets when using --stdin", out.stderr)
-        self.assertEqual(out.stdout, b"")
+        out, err, res = self.call_output("--stdin=grib", "", "test.metadata")
+        self.assertIn("you cannot specify input files or datasets when using --stdin", err)
+        self.assertEqual(out, "")
         self.assertEqual(res, posix.EX_USAGE)
 
-        with out.redirect():
-            res = self.runcmd("--stdin=grib", "--config=/dev/null", "")
-        self.assertIn(b"--stdin cannot be used together with --config", out.stderr)
-        self.assertEqual(out.stdout, b"")
+        out, err, res = self.call_output("--stdin=grib", "--config=/dev/null", "")
+        self.assertIn("--stdin cannot be used together with --config", err)
+        self.assertEqual(out, "")
         self.assertEqual(res, posix.EX_USAGE)
