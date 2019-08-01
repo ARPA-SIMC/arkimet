@@ -46,6 +46,24 @@ void set_std_exception(const std::exception& e);
         set_std_exception(se); throw PythonException(); \
     }
 
+
+// Define Py_RETURN_RICHCOMPARE for compatibility for pre-3.7 python versions
+#ifndef Py_RETURN_RICHCOMPARE
+#define Py_RETURN_RICHCOMPARE(val1, val2, op)                               \
+    do {                                                                    \
+        switch (op) {                                                       \
+        case Py_EQ: if ((val1) == (val2)) Py_RETURN_TRUE; Py_RETURN_FALSE;  \
+        case Py_NE: if ((val1) != (val2)) Py_RETURN_TRUE; Py_RETURN_FALSE;  \
+        case Py_LT: if ((val1) < (val2)) Py_RETURN_TRUE; Py_RETURN_FALSE;   \
+        case Py_GT: if ((val1) > (val2)) Py_RETURN_TRUE; Py_RETURN_FALSE;   \
+        case Py_LE: if ((val1) <= (val2)) Py_RETURN_TRUE; Py_RETURN_FALSE;  \
+        case Py_GE: if ((val1) >= (val2)) Py_RETURN_TRUE; Py_RETURN_FALSE;  \
+        default:                                                            \
+            Py_UNREACHABLE();                                               \
+        }                                                                   \
+    } while (0)
+#endif
+
 struct PythonEmitter : public Emitter
 {
     struct Target
