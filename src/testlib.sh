@@ -39,7 +39,6 @@ setup() {
     export ARKI_REPORT=$TOP_SRCDIR/conf/report/
     export ARKI_BBOX=$TOP_SRCDIR/conf/bbox/
     export ARKI_QMACRO=$TOP_SRCDIR/conf/qmacro/
-    export ARKI_TARGETFILE=$TOP_SRCDIR/conf/targetfile/
     export ARKI_POSTPROC=$TOP_SRCDIR/test/postproc/
     export ARKI_ALIASES=$TOP_SRCDIR/test/conf/match-alias.conf
     export PYTHONPATH="$PYTHONPATH:$TOP_SRCDIR/python"

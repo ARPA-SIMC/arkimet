@@ -178,7 +178,6 @@ install -D -m 0644 -p %{SOURCE3} %{buildroot}%{_sysconfdir}/logrotate.d/%{name}
 %{_sysconfdir}/arkimet/scan-grib1/*
 %{_sysconfdir}/arkimet/scan-grib2/*
 %{_sysconfdir}/arkimet/scan-odimh5/*
-%{_sysconfdir}/arkimet/targetfile/*
 %{_sysconfdir}/arkimet/vm2/*
 %{_bindir}/*
 %{_libdir}/libarkimet.so.*
