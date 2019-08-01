@@ -13,7 +13,6 @@ nobase_dist_conf_DATA = \
 	qmacro/py_noop.py \
 	qmacro/expa.lua \
 	qmacro/py_expa.py \
-	qmacro/gridspace.lua \
 	report/count \
 	report/datasets \
 	report/mdstats \
