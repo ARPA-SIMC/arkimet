@@ -5,6 +5,7 @@
 #include "arki/nag.h"
 #include "arki/summary.h"
 #include "arki/sort.h"
+#include "python/common.h"
 #include "python/cfg.h"
 #include "python/metadata.h"
 #include "python/matcher.h"
@@ -24,7 +25,7 @@ PyObject* instantiate_qmacro_pydataset(const std::string& source, const qmacro::
     // Check if the qmacro module had already been imported
     std::string module_name = "arki.python.dataset.qmacro." + opts.macro_name;
     pyo_unique_ptr py_module_name(string_to_python(module_name));
-    pyo_unique_ptr module(PyImport_GetModule(py_module_name));
+    pyo_unique_ptr module(ArkiPyImport_GetModule(py_module_name));
     if (PyErr_Occurred())
         throw PythonException();
 
