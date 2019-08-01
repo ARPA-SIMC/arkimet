@@ -59,7 +59,7 @@ void set_std_exception(const std::exception& e);
         case Py_LE: if ((val1) <= (val2)) Py_RETURN_TRUE; Py_RETURN_FALSE;  \
         case Py_GE: if ((val1) >= (val2)) Py_RETURN_TRUE; Py_RETURN_FALSE;  \
         default:                                                            \
-            Py_UNREACHABLE();                                               \
+            abort();                                                        \
         }                                                                   \
     } while (0)
 #endif
