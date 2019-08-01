@@ -28,7 +28,7 @@ def skip_unless_libarchive():
 
 @contextmanager
 def daemon(*cmd):
-    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, text=True)
+    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, universal_newlines=True)
     try:
         init = proc.stdout.readline()
         if not init.startswith("OK "):
