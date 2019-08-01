@@ -1,10 +1,9 @@
 import arkimet as arki
 import unittest
 import os
-from testfixtures import LogCapture
 from contextlib import contextmanager
 from arkimet.cmdline.check import Check
-from arkimet.test import Env, CmdlineTestMixin
+from arkimet.test import Env, CmdlineTestMixin, LogCapture
 
 
 class StatsReporter:
@@ -551,7 +550,10 @@ class ArkiCheckNonSimpleTestsMixin:
             # runtest "arki-check --remove=issue57/todelete.md issue57"
             with LogCapture() as log:
                 out = self.call_output_success("testenv/testds", "--remove=testenv/testds/todelete.md")
-            log.check(("arkimet", "WARNING", "testds: 1 data would be deleted"))
+            self.assertEqual(len(log), 1)
+            self.assertEqual(log[0].name, "arkimet")
+            self.assertEqual(log[0].levelname, "WARNING")
+            self.assertEqual(log[0].getMessage(), "testds: 1 data would be deleted")
             self.assertEqual(out, "")
 
             out = self.call_output_success("testenv/testds", "--remove=testenv/testds/todelete.md", "--fix")
@@ -570,14 +572,20 @@ class ArkiCheckNonSimpleTestsMixin:
 
             with LogCapture() as log:
                 out = self.call_output_success("testenv/testds", "--remove=testenv/remove.md")
-            log.check(("arkimet", "WARNING", "testds: 1 data would be deleted"))
+            self.assertEqual(len(log), 1)
+            self.assertEqual(log[0].name, "arkimet")
+            self.assertEqual(log[0].levelname, "WARNING")
+            self.assertEqual(log[0].getMessage(), "testds: 1 data would be deleted")
 
             self.assertCheckClean(env, files=3, items=3)
             self.assertQueryResults(env, imported, [1, 0, 2])
 
             with LogCapture() as log:
                 out = self.call_output_success("testenv/testds", "--remove=testenv/remove.md", "--verbose", "--fix")
-            log.check(("arkimet", "INFO", "testds: 1 data deleted"))
+            self.assertEqual(len(log), 1)
+            self.assertEqual(log[0].name, "arkimet")
+            self.assertEqual(log[0].levelname, "INFO")
+            self.assertEqual(log[0].getMessage(), "testds: 1 data deleted")
             self.assertEqual(out, "")
 
             self.assertQueryResults(env, imported, [1, 2])
