@@ -73,12 +73,12 @@ std::unique_ptr<cmdline::DatasetProcessor> build_processor(PyObject* args, PyObj
 
     if (!outfile.fd)
     {
-        std::unique_ptr<core::AbstractOutputFile> out(outfile.abstract);
+        std::shared_ptr<core::AbstractOutputFile> out(outfile.abstract);
         outfile.abstract = nullptr;
         auto processor = pmaker.make(query, std::move(out));
         return processor;
     } else {
-        std::unique_ptr<sys::NamedFileDescriptor> fd(outfile.fd);
+        std::shared_ptr<sys::NamedFileDescriptor> fd(outfile.fd);
         outfile.fd = nullptr;
         auto processor = pmaker.make(query, std::move(fd));
         return processor;

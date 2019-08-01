@@ -2,6 +2,7 @@
 #include "arki/utils.h"
 #include "arki/utils/files.h"
 #include "arki/utils/sys.h"
+#include <system_error>
 
 namespace {
 using namespace std;
