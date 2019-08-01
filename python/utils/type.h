@@ -23,7 +23,7 @@ struct Getter
 
     static constexpr PyGetSetDef def()
     {
-        return PyGetSetDef {const_cast<char*>(Child::name), (getter)Child::get, nullptr, Child::doc, Child::closure};
+        return PyGetSetDef {const_cast<char*>(Child::name), (getter)Child::get, nullptr, const_cast<char*>(Child::doc), Child::closure};
     }
 };
 
