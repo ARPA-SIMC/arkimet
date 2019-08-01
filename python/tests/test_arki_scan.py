@@ -4,6 +4,8 @@ import shutil
 import os
 import posix
 from contextlib import contextmanager
+from testfixtures import LogCapture
+from testfixtures import StringComparison as S
 from arkimet.cmdline.scan import Scan
 from arkimet.test import CatchOutput, CmdlineTestMixin, skip_unless_vm2
 
@@ -366,15 +368,18 @@ class TestArkiScan(CmdlineTestMixin, unittest.TestCase):
                 print("grib:inbound/test.grib1", file=fd)
             with open("testenv/config", "wt") as fd:
                 print("[error]\ntype=discard", file=fd)
-            out = CatchOutput()
-            with out.redirect():
-                res = self.runcmd(
-                    "--dispatch=testenv/config",
-                    "--dump", "--status", "--summary",
-                    "--files=testenv/import.lst",
-                )
-            self.assertRegex(out.stderr, br"inbound/test.grib1:"
-                                         br" serious problems: 0 ok, 0 duplicates, 0 in error dataset,"
-                                         br" 3 NOT imported in [0-9.]+ seconds\n")
+            with LogCapture() as log:
+                out = CatchOutput()
+                with out.redirect():
+                    res = self.runcmd(
+                        "--dispatch=testenv/config",
+                        "--dump", "--status", "--summary",
+                        "--files=testenv/import.lst",
+                    )
+            log.check(("arkimet", "WARNING",
+                       S(r"inbound/test.grib1:"
+                         r" serious problems: 0 ok, 0 duplicates, 0 in error dataset,"
+                         r" 3 NOT imported in [0-9.]+ seconds")))
+            self.assertEqual(out.stderr, b"")
             self.assertRegex(out.stdout, b"^SummaryItem:")
             self.assertEqual(res, posix.EX_DATAERR)
