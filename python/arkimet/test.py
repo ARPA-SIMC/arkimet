@@ -6,6 +6,7 @@ import os
 import io
 import sys
 import tempfile
+import logging
 
 
 def skip_unless_vm2():
@@ -212,3 +213,61 @@ class CmdlineTestMixin:
         else:
             self.assertEqual(res, returncode)
         return out
+
+
+# Adapted from testfixtures.logcapture, which cannot be used in Fedora
+class LogCapture(logging.Handler):
+    def __init__(self):
+        super().__init__()
+        self.old_levels = None
+        self.old_handlers = None
+        self.old_disabled = None
+        self.old_propagate = None
+        self.clear()
+
+    def clear(self):
+        "Clear any entries that have been captured."
+        self.records = []
+
+    def emit(self, record):
+        self.records.append(record)
+
+    def install(self):
+        """
+        Install this :class:`LogHandler` into the Python logging
+        framework for the named loggers.
+
+        This will remove any existing handlers for those loggers and
+        drop their level to that specified on this :class:`LogCapture` in order
+        to capture all logging.
+        """
+        logger = logging.getLogger(None)
+        self.old_levels = logger.level
+        self.old_handlers = logger.handlers
+        self.old_disabled = logger.disabled
+        self.old_progagate = logger.propagate
+        logger.setLevel(1)
+        logger.handlers = [self]
+        logger.disabled = False
+
+    def uninstall(self):
+        """
+        Un-install this :class:`LogHandler` from the Python logging
+        framework for the named loggers.
+
+        This will re-instate any existing handlers for those loggers
+        that were removed during installation and retore their level
+        that prior to installation.
+        """
+        logger = logging.getLogger(None)
+        logger.setLevel(self.old_levels)
+        logger.handlers = self.old_handlers
+        logger.disabled = self.old_disabled
+        logger.propagate = self.old_progagate
+
+    def __enter__(self):
+        self.install()
+        return self.records
+
+    def __exit__(self, type, value, traceback):
+        self.uninstall()
