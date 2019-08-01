@@ -2,17 +2,16 @@ import unittest
 from arkimet.cmdline.mergeconf import Mergeconf
 import os
 import tempfile
-from arkimet.test import daemon, CatchOutput
+from arkimet.test import daemon, CmdlineTestMixin
 
 
-class TestArkiMergeconf(unittest.TestCase):
+class TestArkiMergeconf(CmdlineTestMixin, unittest.TestCase):
+    command = Mergeconf
+
     def test_http(self):
         with daemon(os.path.join(os.environ["TOP_SRCDIR"], "arki/dataset/http-redirect-daemon")) as url:
-            out = CatchOutput()
-            with out.redirect():
-                res = Mergeconf.main(args=[url])
-            self.assertEqual(out.stderr.decode(), "")
-            self.assertEqual(out.stdout.decode().splitlines(), [
+            out = self.call_output_success(url)
+            self.assertEqual(out.splitlines(), [
                 "[error]",
                 "name = error",
                 "path = http://foo.bar/foo/dataset/error",
@@ -29,15 +28,11 @@ class TestArkiMergeconf(unittest.TestCase):
                 "path = http://foo.bar/foo/dataset/test80",
                 "type = remote",
             ])
-            self.assertIsNone(res)
 
     def test_ignore_system_datasets(self):
         with daemon(os.path.join(os.environ["TOP_SRCDIR"], "arki/dataset/http-redirect-daemon")) as url:
-            out = CatchOutput()
-            with out.redirect():
-                res = Mergeconf.main(args=["--ignore-system-datasets", url])
-            self.assertEqual(out.stderr.decode(), "")
-            self.assertEqual(out.stdout.decode().splitlines(), [
+            out = self.call_output_success("--ignore-system-datasets", url)
+            self.assertEqual(out.splitlines(), [
                 "[test200]",
                 "name = test200",
                 "path = http://foo.bar/foo/dataset/test200",
@@ -49,22 +44,17 @@ class TestArkiMergeconf(unittest.TestCase):
                 "path = http://foo.bar/foo/dataset/test80",
                 "type = remote",
             ])
-            self.assertIsNone(res)
 
     def test_restrict(self):
         with daemon(os.path.join(os.environ["TOP_SRCDIR"], "arki/dataset/http-redirect-daemon")) as url:
-            out = CatchOutput()
-            with out.redirect():
-                res = Mergeconf.main(args=["--restrict=test,test1", url])
-            self.assertEqual(out.stderr.decode(), "")
-            self.assertEqual(out.stdout.decode().splitlines(), [
+            out = self.call_output_success("--restrict=test,test1", url)
+            self.assertEqual(out.splitlines(), [
                 "[test200]",
                 "name = test200",
                 "path = http://foo.bar/foo/dataset/test200",
                 "restrict = test",
                 "type = remote",
             ])
-            self.assertIsNone(res)
 
     def test_validation(self):
         with tempfile.NamedTemporaryFile("w+t") as tf:
@@ -74,14 +64,12 @@ filter=invalid
 """)
             tf.flush()
 
-            out = CatchOutput()
-            with out.redirect():
-                res = Mergeconf.main(args=["-C", tf.name])
-            self.assertEqual(out.stderr.decode().splitlines(), [
+            out, err, res = self.call_output("-C", tf.name)
+            self.assertEqual(err.splitlines(), [
                 "name: cannot parse matcher subexpression 'invalid' does not contain a colon (':')",
                 "Some input files did not validate.",
             ])
-            self.assertEqual(out.stdout.decode().splitlines(), [])
+            self.assertEqual(out.splitlines(), [])
             self.assertEqual(res, 1)
 
     def test_load_configs(self):
@@ -92,12 +80,8 @@ filter=invalid
                 conf2.write("[ds2]\npath=/tmp/ds2\n")
                 conf2.flush()
 
-                out = CatchOutput()
-                with out.redirect():
-                    res = Mergeconf.main(args=["--config=" + conf1.name, "--config=" + conf2.name])
-                self.assertIsNone(res)
-                self.assertEqual(out.stderr.decode(), "")
-                self.assertEqual(out.stdout.decode().splitlines(), [
+                out = self.call_output_success("--config=" + conf1.name, "--config=" + conf2.name)
+                self.assertEqual(out.splitlines(), [
                     "[ds1]",
                     "name = ds1",
                     "path = /tmp/ds1",
@@ -109,12 +93,8 @@ filter=invalid
 
     def test_extra(self):
         src = os.path.abspath("inbound/test.grib1")
-        out = CatchOutput()
-        with out.redirect():
-            res = Mergeconf.main(args=[src, "--extra"])
-        self.assertIsNone(res)
-        self.assertEqual(out.stderr.decode(), "")
-        self.assertEqual(out.stdout.decode().splitlines(), [
+        out = self.call_output_success(src, "--extra")
+        self.assertEqual(out.splitlines(), [
             "[" + src + "]",
             'bounding = POLYGON ((-60.0000000000000000 30.0000000000000000, '
             '-60.0000000000000000 72.0000000000000000, 42.0000000000000000 '
