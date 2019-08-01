@@ -143,39 +143,3 @@ class TestExpa(QmacroTestMixin, unittest.TestCase):
 
             s = reader.query_summary()
             self.assertEqual(s.count, 2)
-
-
-class TestGridspace(QmacroTestMixin, unittest.TestCase):
-    def test_gridspace(self):
-        with self.datasets() as env:
-            reader = arki.make_qmacro_dataset(
-                    arki.cfg.Section(), env.config, "gridspace",
-                    "dataset: testds\n"
-                    "addtime: 2009-08-07 00:00:00\n"
-                    "add: timerange:AN; level:G00; product:GRIB1,200,140,229\n"
-                    "add: timerange:GRIB1,1; level:MSL; product:GRIB1,80,2,2\n")
-            mdc = reader.query_data()
-            self.assertEqual(len(mdc), 2)
-
-            self.assertTrue(mdc[0].has_source())
-            self.assertTrue(mdc[1].has_source())
-
-            s = reader.query_summary()
-            self.assertEqual(s.count, 2)
-
-    def test_gridspace_addtimes(self):
-        with self.datasets() as env:
-            reader = arki.make_qmacro_dataset(
-                    arki.cfg.Section(), env.config, "gridspace",
-                    "dataset: testds\n"
-                    "addtimes: 2009-08-07 00:00:00 2009-08-08 00:00:00 86400\n"
-                    "add: timerange:AN; level:G00; product:GRIB1,200,140,229\n"
-                    "add: timerange:GRIB1,1; level:MSL; product:GRIB1,80,2,2\n")
-            mdc = reader.query_data()
-            self.assertEqual(len(mdc), 2)
-
-            self.assertTrue(mdc[0].has_source())
-            self.assertTrue(mdc[1].has_source())
-
-            s = reader.query_summary()
-            self.assertEqual(s.count, 2)
