@@ -5,7 +5,7 @@ import os
 import posix
 from contextlib import contextmanager
 from arkimet.cmdline.scan import Scan
-from arkimet.test import CatchOutput, CmdlineTestMixin, skip_unless_vm2, LogCapture
+from arkimet.test import CmdlineTestMixin, skip_unless_vm2, LogCapture
 
 
 class Env(arki.test.Env):
@@ -59,35 +59,26 @@ class TestArkiScan(CmdlineTestMixin, unittest.TestCase):
             return fd.read()
 
     def test_stdin1(self):
-        out = CatchOutput()
-        with out.redirect(input=self.read("inbound/fixture.grib1")):
-            res = self.runcmd("--yaml", "--stdin=grib")
-        self.assertEqual(out.stderr, b"")
-        self.assertRegex(out.stdout, b"\nOrigin:")
-        self.assertIsNone(res)
+        with open("inbound/fixture.grib1") as stdin:
+            out = self.call_output_success("--yaml", "--stdin=grib", binary=True, input=stdin)
+        self.assertRegex(out, b"\nOrigin:")
 
     def test_stdin2(self):
-        out = CatchOutput()
-        with out.redirect():
-            res = self.runcmd("--yaml", "--stdin=grib", "inbound/fixture.grib1")
-        self.assertRegex(out.stderr, b"you cannot specify input files or datasets when using --stdin")
-        self.assertEqual(out.stdout, b"")
+        out, err, res = self.call_output("--yaml", "--stdin=grib", "inbound/fixture.grib1")
+        self.assertRegex(err, "you cannot specify input files or datasets when using --stdin")
+        self.assertEqual(out, "")
         self.assertEqual(res, posix.EX_USAGE)
 
     def test_stdin3(self):
-        out = CatchOutput()
-        with out.redirect():
-            res = self.runcmd("--files=inbound/fixture.grib1", "--stdin=grib")
-        self.assertRegex(out.stderr, b"you cannot specify input files or datasets when using --stdin")
-        self.assertEqual(out.stdout, b"")
+        out, err, res = self.call_output("--files=inbound/fixture.grib1", "--stdin=grib")
+        self.assertRegex(err, "you cannot specify input files or datasets when using --stdin")
+        self.assertEqual(out, "")
         self.assertEqual(res, posix.EX_USAGE)
 
     def test_stdin4(self):
-        out = CatchOutput()
-        with out.redirect():
-            res = self.runcmd("--dispatch=/dev/null", "--stdin=grib")
-        self.assertRegex(out.stderr, b"--stdin cannot be used together with --dispatch")
-        self.assertEqual(out.stdout, b"")
+        out, err, res = self.call_output("--dispatch=/dev/null", "--stdin=grib")
+        self.assertRegex(err, "--stdin cannot be used together with --dispatch")
+        self.assertEqual(out, "")
         self.assertEqual(res, posix.EX_USAGE)
 
     def test_scan_grib(self):
@@ -111,27 +102,18 @@ class TestArkiScan(CmdlineTestMixin, unittest.TestCase):
         self.assertRegex(out, b"\nOrigin:")
 
     def test_scan_dash(self):
-        out = CatchOutput()
-        with out.redirect():
-            res = self.runcmd("--yaml", "-")
-        self.assertRegex(out.stderr, b"use --stdin to read data from standard input")
-        self.assertEqual(out.stdout, b"")
+        out, err, res = self.call_output("--yaml", "-")
+        self.assertRegex(err, "use --stdin to read data from standard input")
+        self.assertEqual(out, "")
         self.assertEqual(res, posix.EX_USAGE)
 
-        out = CatchOutput()
         with self.assertRaises(RuntimeError) as e:
-            with out.redirect():
-                res = self.runcmd("--json", "bufr:-")
+            out, err, res = self.call_output("--json", "bufr:-")
         self.assertRegex(str(e.exception), "file - does not exist")
-        self.assertEqual(out.stderr, b"")
-        self.assertEqual(out.stdout, b"")
-        self.assertEqual(res, posix.EX_USAGE)
 
-        out = CatchOutput()
-        with out.redirect():
-            res = self.runcmd("--dispatch=/dev/null", "-")
-        self.assertRegex(out.stderr, b"use --stdin to read data from standard input")
-        self.assertEqual(out.stdout, b"")
+        out, err, res = self.call_output("--dispatch=/dev/null", "-")
+        self.assertRegex(err, "use --stdin to read data from standard input")
+        self.assertEqual(out, "")
         self.assertEqual(res, posix.EX_USAGE)
 
     def test_dispatch_plain(self):
@@ -367,12 +349,12 @@ class TestArkiScan(CmdlineTestMixin, unittest.TestCase):
             with open("testenv/config", "wt") as fd:
                 print("[error]\ntype=discard", file=fd)
             with LogCapture() as log:
-                out = CatchOutput()
-                with out.redirect():
-                    res = self.runcmd(
+                out = self.call_output_success(
                         "--dispatch=testenv/config",
                         "--dump", "--status", "--summary",
                         "--files=testenv/import.lst",
+                        binary=True,
+                        returncode=posix.EX_DATAERR,
                     )
             self.assertEqual(len(log), 1)
             self.assertEqual(log[0].name, "arkimet")
@@ -381,6 +363,4 @@ class TestArkiScan(CmdlineTestMixin, unittest.TestCase):
                              r"inbound/test.grib1:"
                              r" serious problems: 0 ok, 0 duplicates, 0 in error dataset,"
                              r" 3 NOT imported in [0-9.]+ seconds")
-            self.assertEqual(out.stderr, b"")
-            self.assertRegex(out.stdout, b"^SummaryItem:")
-            self.assertEqual(res, posix.EX_DATAERR)
+            self.assertRegex(out, b"^SummaryItem:")
