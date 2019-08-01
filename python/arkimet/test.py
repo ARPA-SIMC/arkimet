@@ -195,8 +195,11 @@ class CmdlineTestMixin:
             sys.stderr = orig_stderr
         return out, err, res
 
-    def call_output_success(self, *args, binary=False):
+    def call_output_success(self, *args, binary=False, returncode=None):
         out, err, res = self.call_output(*args, binary=binary)
         self.assertEqual(err, "")
-        self.assertIsNone(res)
+        if returncode is None:
+            self.assertIsNone(res)
+        else:
+            self.assertEqual(res, returncode)
         return out
