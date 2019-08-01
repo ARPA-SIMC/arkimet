@@ -23,11 +23,6 @@ struct FileBase
         delete abstract;
         delete fd;
     }
-
-    void close()
-    {
-        if (fd) fd->close();
-    }
 };
 
 

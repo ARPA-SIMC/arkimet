@@ -1,5 +1,6 @@
 import arkimet as arki
 from arkimet.cmdline.base import App, Exit
+from contextlib import contextmanager
 import sys
 import logging
 
@@ -37,6 +38,22 @@ class Dump(App):
         group.add_argument("--annotate", action="store_true",
                            help="annotate the human-readable Yaml output with field descriptions")
 
+    @contextmanager
+    def input(self, mode):
+        if not self.args.input or self.args.input == "-":
+            yield self.stdin
+        else:
+            with open(self.args.input, mode) as fd:
+                yield fd
+
+    @contextmanager
+    def output(self, mode):
+        if not self.args.output or self.args.output == "-":
+            yield sys.stdout
+        else:
+            with open(self.args.output, mode) as fd:
+                yield fd
+
     def run(self):
         super().run()
 
@@ -71,15 +88,25 @@ class Dump(App):
 
         if self.args.bbox:
             dump = arki.ArkiDump()
-            raise Exit(dump.bbox(self.args.input or "-", self.args.output or "-"))
+            with self.input("rb") as fd:
+                bbox = dump.bbox(fd)
+            with self.output("wt") as fd:
+                print(bbox, file=fd)
+            raise Exit()
 
         if self.args.from_yaml_data:
             dump = arki.ArkiDump()
-            raise Exit(dump.reverse_data(self.args.input or "-", self.args.output or "-"))
+            with self.input("rb") as fdin:
+                with self.output("wb") as fdout:
+                    raise Exit(dump.reverse_data(fdin, fdout))
 
         if self.args.from_yaml_summary:
             dump = arki.ArkiDump()
-            raise Exit(dump.reverse_summary(self.args.input or "-", self.args.output or "-"))
+            with self.input("rb") as fdin:
+                with self.output("wb") as fdout:
+                    raise Exit(dump.reverse_summary(fdin, fdout))
 
         dump = arki.ArkiDump()
-        raise Exit(dump.dump_yaml(self.args.input or "-", self.args.output or "-", self.args.annotate))
+        with self.input("rb") as fdin:
+            with self.output("wb") as fdout:
+                raise Exit(dump.dump_yaml(fdin, fdout, self.args.annotate))
