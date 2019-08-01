@@ -16,13 +16,14 @@ AbstractOutputFile::~AbstractOutputFile() {}
 
 namespace {
 
+template<typename Input>
 struct FDLineReader : public LineReader
 {
-    NamedFileDescriptor& fd;
+    Input& fd;
     std::deque<char> linebuf;
     bool fd_eof = false;
 
-    FDLineReader(NamedFileDescriptor& fd) : fd(fd) {}
+    FDLineReader(Input& fd) : fd(fd) {}
 
     bool eof() const override { return fd_eof && linebuf.empty(); }
 
@@ -97,7 +98,12 @@ struct StringLineReader : public LineReader
 
 std::unique_ptr<LineReader> LineReader::from_fd(NamedFileDescriptor& fd)
 {
-    return std::unique_ptr<LineReader>(new FDLineReader(fd));
+    return std::unique_ptr<LineReader>(new FDLineReader<NamedFileDescriptor>(fd));
+}
+
+std::unique_ptr<LineReader> LineReader::from_abstract(AbstractInputFile& fd)
+{
+    return std::unique_ptr<LineReader>(new FDLineReader<AbstractInputFile>(fd));
 }
 
 std::unique_ptr<LineReader> LineReader::from_chars(const char* buf, size_t size)

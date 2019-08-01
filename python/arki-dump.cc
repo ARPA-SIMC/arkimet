@@ -8,12 +8,14 @@
 #include "arki/types/source.h"
 #include "arki/utils/geos.h"
 #include "arki/formatter.h"
+#include "arki/nag.h"
 #include "arki-dump.h"
 #include "utils/core.h"
 #include "utils/methods.h"
 #include "utils/type.h"
 #include "utils/values.h"
 #include "common.h"
+#include "files.h"
 #include <sstream>
 
 using namespace arki::python;
@@ -28,25 +30,10 @@ PyTypeObject* arkipy_ArkiDump_Type = nullptr;
 
 namespace {
 
-std::unique_ptr<sys::NamedFileDescriptor> make_input(const std::string& input)
-{
-    if (input == "-")
-        return std::unique_ptr<sys::NamedFileDescriptor>(new arki::core::Stdin);
-
-    return std::unique_ptr<sys::NamedFileDescriptor>(new sys::File(input, O_RDONLY));
-}
-
-std::unique_ptr<sys::NamedFileDescriptor> make_output(const std::string& output)
-{
-    if (output == "-")
-        return std::unique_ptr<sys::NamedFileDescriptor>(new arki::core::Stdout);
-    else
-        return std::unique_ptr<sys::NamedFileDescriptor>(new sys::File(output, O_WRONLY | O_CREAT | O_TRUNC, 0666));
-}
-
 #ifdef HAVE_GEOS
 // Add to \a s the info from all data read from \a in
-void addToSummary(sys::NamedFileDescriptor& in, arki::Summary& s)
+template<typename Input>
+void addToSummary(Input& in, arki::Summary& s)
 {
     arki::Metadata md;
     arki::Summary summary;
@@ -82,93 +69,44 @@ void addToSummary(sys::NamedFileDescriptor& in, arki::Summary& s)
 }
 #endif
 
-struct YamlPrinter
-{
-    sys::NamedFileDescriptor& out;
-    arki::Formatter* formatter = nullptr;
-
-    YamlPrinter(sys::NamedFileDescriptor& out, bool formatted=false)
-        : out(out)
-    {
-        if (formatted)
-            formatter = arki::Formatter::create().release();
-    }
-    ~YamlPrinter()
-    {
-        delete formatter;
-    }
-
-    bool print(const arki::Metadata& md)
-    {
-        std::string res = serialize(md);
-        out.write_all_or_throw(res.data(), res.size());
-        return true;
-    }
-
-    bool print_summary(const arki::Summary& s)
-    {
-        std::string res = serialize(s);
-        out.write_all_or_throw(res.data(), res.size());
-        return true;
-    }
-
-    std::string serialize(const arki::Metadata& md)
-    {
-        std::string res = md.to_yaml(formatter);
-        res += "\n";
-        return res;
-    }
-
-    std::string serialize(const arki::Summary& s)
-    {
-        std::string res = s.to_yaml(formatter);
-        res += "\n";
-        return res;
-    }
-};
-
 
 struct bbox : public MethKwargs<bbox, arkipy_ArkiDump>
 {
     constexpr static const char* name = "bbox";
     constexpr static const char* signature = "input: str, output: str";
-    constexpr static const char* returns = "int";
+    constexpr static const char* returns = "str";
     constexpr static const char* summary = "run arki-dump --bbox";
     constexpr static const char* doc = nullptr;
 
     static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
     {
-        static const char* kwlist[] = { "input", "output", nullptr };
-        const char* input = nullptr;
-        const char* output = nullptr;
-        if (!PyArg_ParseTupleAndKeywords(args, kw, "ss", const_cast<char**>(kwlist), &input, &output))
+        static const char* kwlist[] = { "input", nullptr };
+        PyObject* py_input = nullptr;
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "O", const_cast<char**>(kwlist), &py_input))
             return nullptr;
 
         try {
+            BinaryInputFile input(py_input);
             ReleaseGIL rg;
-            // Open the input file
-            auto in = make_input(input);
 
             // Read everything into a single summary
             arki::Summary summary;
-            addToSummary(*in, summary);
+            if (input.fd)
+                addToSummary(*input.fd, summary);
+            else
+                addToSummary(*input.abstract, summary);
 
             // Get the bounding box
             auto hull = summary.getConvexHull();
 
+            rg.lock();
+
             // Print it out
-            std::string out;
+            std::string bbox;
             if (hull.get())
-                out = hull->toString();
+                return to_python(hull->toString());
             else
-                out = "no bounding box could be computed.";
-
-            // Open the output file
-            std::unique_ptr<sys::NamedFileDescriptor> outfd(make_output(output));
-            outfd->write_all_or_throw(out);
-            outfd->close();
-
-            return throw_ifnull(PyLong_FromLong(0));
+                Py_RETURN_NONE;
         } ARKI_CATCH_RETURN_PYO
     }
 };
@@ -184,23 +122,36 @@ struct reverse_data : public MethKwargs<reverse_data, arkipy_ArkiDump>
     static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
     {
         static const char* kwlist[] = { "input", "output", nullptr };
-        const char* input = nullptr;
-        const char* output = nullptr;
-        if (!PyArg_ParseTupleAndKeywords(args, kw, "ss", const_cast<char**>(kwlist), &input, &output))
+        PyObject* py_input = nullptr;
+        PyObject* py_output = nullptr;
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "OO", const_cast<char**>(kwlist), &py_input, &py_output))
             return nullptr;
 
         try {
-            ReleaseGIL rg;
-            // Open the input file
-            auto in = make_input(input);
+            BinaryInputFile input(py_input);
+            BinaryOutputFile output(py_output);
 
-            // Open the output channel
-            std::unique_ptr<sys::NamedFileDescriptor> outfd(make_output(output));
+            ReleaseGIL rg;
 
             arki::Metadata md;
-            auto reader = arki::core::LineReader::from_fd(*in);
-            while (md.readYaml(*reader, in->name()))
-                md.write(*outfd);
+            std::unique_ptr<arki::core::LineReader> reader;
+            std::string input_name;
+            if (input.fd)
+            {
+                input_name = input.fd->name();
+                reader = arki::core::LineReader::from_fd(*input.fd);
+            }
+            else
+            {
+                input_name = input.abstract->name();
+                reader = arki::core::LineReader::from_abstract(*input.abstract);
+            }
+            if (output.fd)
+                while (md.readYaml(*reader, input_name))
+                    md.write(*output.fd);
+            else
+                while (md.readYaml(*reader, input_name))
+                    md.write(*output.abstract);
 
             return throw_ifnull(PyLong_FromLong(0));
         } ARKI_CATCH_RETURN_PYO
@@ -218,23 +169,36 @@ struct reverse_summary : public MethKwargs<reverse_summary, arkipy_ArkiDump>
     static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
     {
         static const char* kwlist[] = { "input", "output", nullptr };
-        const char* input = nullptr;
-        const char* output = nullptr;
-        if (!PyArg_ParseTupleAndKeywords(args, kw, "ss", const_cast<char**>(kwlist), &input, &output))
+        PyObject* py_input = nullptr;
+        PyObject* py_output = nullptr;
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "OO", const_cast<char**>(kwlist), &py_input, &py_output))
             return nullptr;
 
         try {
-            ReleaseGIL rg;
-            // Open the input file
-            auto in = make_input(input);
+            BinaryInputFile input(py_input);
+            BinaryOutputFile output(py_output);
 
-            // Open the output channel
-            std::unique_ptr<sys::NamedFileDescriptor> outfd(make_output(output));
+            ReleaseGIL rg;
 
             arki::Summary summary;
-            auto reader = arki::core::LineReader::from_fd(*in);
-            while (summary.readYaml(*reader, in->name()))
-                summary.write(*outfd);
+            std::unique_ptr<arki::core::LineReader> reader;
+            std::string input_name;
+            if (input.fd)
+            {
+                input_name = input.fd->name();
+                reader = arki::core::LineReader::from_fd(*input.fd);
+            }
+            else
+            {
+                input_name = input.abstract->name();
+                reader = arki::core::LineReader::from_abstract(*input.abstract);
+            }
+            if (output.fd)
+                while (summary.readYaml(*reader, input_name))
+                    summary.write(*output.fd);
+            else
+                while (summary.readYaml(*reader, input_name))
+                    summary.write(*output.abstract);
 
             return throw_ifnull(PyLong_FromLong(0));
         } ARKI_CATCH_RETURN_PYO
@@ -252,52 +216,111 @@ struct dump_yaml : public MethKwargs<dump_yaml, arkipy_ArkiDump>
     static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
     {
         static const char* kwlist[] = { "input", "output", "annotate", nullptr };
-        const char* input = nullptr;
-        const char* output = nullptr;
+        PyObject* py_input = nullptr;
+        PyObject* py_output = nullptr;
         int annotate = 0;
-        if (!PyArg_ParseTupleAndKeywords(args, kw, "ss|p", const_cast<char**>(kwlist), &input, &output, &annotate))
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "OO|p", const_cast<char**>(kwlist), &py_input, &py_output, &annotate))
             return nullptr;
 
         try {
+            BinaryInputFile input(py_input);
+            BinaryOutputFile output(py_output);
+
             ReleaseGIL rg;
-            // Open the input file
-            auto in = make_input(input);
 
-            // Open the output channel
-            std::unique_ptr<sys::NamedFileDescriptor> outfd(make_output(output));
+            std::shared_ptr<arki::Formatter> formatter;
+            if (annotate)
+                formatter = arki::Formatter::create();
 
-            YamlPrinter writer(*outfd, annotate);
+            std::function<void(const arki::Metadata&)> print_md;
+            std::function<void(const arki::Summary&)> print_summary;
+
+            if (output.fd)
+            {
+                print_md = [&output, formatter](const arki::Metadata& md) {
+                    std::string res = md.to_yaml(formatter.get());
+                    res += "\n";
+                    output.fd->write_all_or_throw(res.data(), res.size());
+                };
+                print_summary = [&output, formatter](const arki::Summary& md) {
+                    std::string res = md.to_yaml(formatter.get());
+                    res += "\n";
+                    output.fd->write_all_or_throw(res.data(), res.size());
+                };
+            } else {
+                print_md = [&output, formatter](const arki::Metadata& md) {
+                    std::string res = md.to_yaml(formatter.get());
+                    res += "\n";
+                    output.abstract->write(res.data(), res.size());
+                };
+                print_summary = [&output, formatter](const arki::Summary& md) {
+                    std::string res = md.to_yaml(formatter.get());
+                    res += "\n";
+                    output.abstract->write(res.data(), res.size());
+                };
+            }
 
             arki::Metadata md;
             arki::Summary summary;
 
             arki::types::Bundle bundle;
-            while (bundle.read_header(*in))
+            std::string input_name;
+            std::function<bool()> read_header;
+            std::function<bool()> read_data;
+            std::function<void(arki::Metadata& md)> read_inline_data;
+            if (input.fd)
+            {
+                input_name = input.fd->name();
+                read_header = [&bundle, &input] {
+                    return bundle.read_header(*input.fd);
+                };
+                read_data = [&bundle, &input] {
+                    return bundle.read_data(*input.fd);
+                };
+                read_inline_data = [&input](arki::Metadata& md) {
+                    md.read_inline_data(*input.fd);
+                };
+            }
+            else
+            {
+                input_name = input.abstract->name();
+                read_header = [&bundle, &input] {
+                    return bundle.read_header(*input.abstract);
+                };
+                read_data = [&bundle, &input] {
+                    return bundle.read_data(*input.abstract);
+                };
+                read_inline_data = [&input](arki::Metadata& md) {
+                    md.read_inline_data(*input.abstract);
+                };
+            }
+
+            while (read_header())
             {
                 if (bundle.signature == "MD" || bundle.signature == "!D")
                 {
-                    if (!bundle.read_data(*in)) break;
+                    if (!read_data()) break;
                     arki::BinaryDecoder dec(bundle.data);
-                    md.read_inner(dec, bundle.version, in->name());
+                    md.read_inner(dec, bundle.version, input_name);
                     if (md.source().style() == arki::types::Source::INLINE)
-                        md.read_inline_data(*in);
-                    writer.print(md);
+                        read_inline_data(md);
+                    print_md(md);
                 }
                 else if (bundle.signature == "SU")
                 {
-                    if (!bundle.read_data(*in)) break;
+                    if (!read_data()) break;
                     arki::BinaryDecoder dec(bundle.data);
-                    summary.read_inner(dec, bundle.version, in->name());
-                    writer.print_summary(summary);
+                    summary.read_inner(dec, bundle.version, input_name);
+                    print_summary(summary);
                 }
                 else if (bundle.signature == "MG")
                 {
-                    if (!bundle.read_data(*in)) break;
+                    if (!read_data()) break;
                     arki::BinaryDecoder dec(bundle.data);
-                    arki::Metadata::read_group(dec, bundle.version, in->name(), [&](std::unique_ptr<arki::Metadata> md) { return writer.print(*md); });
+                    arki::Metadata::read_group(dec, bundle.version, input_name, [&](std::unique_ptr<arki::Metadata> md) { print_md(*md); return true; });
                 }
                 else
-                    throw std::runtime_error(in->name() + ": metadata entry does not start with 'MD', '!D', 'SU', or 'MG'");
+                    throw std::runtime_error(input_name + ": metadata entry does not start with 'MD', '!D', 'SU', or 'MG'");
             }
 
             return throw_ifnull(PyLong_FromLong(0));
