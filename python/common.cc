@@ -13,7 +13,7 @@ using namespace std;
 
 extern "C" {
 
-#if Py_MAJOR_VERSION == 3 && Py_MINOR_VERSION < 7
+#if PY_MAJOR_VERSION == 3 && PY_MINOR_VERSION < 7
 PyObject *ArkiPyImport_GetModule(PyObject *name)
 {
     PyObject *m;
