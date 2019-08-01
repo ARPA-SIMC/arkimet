@@ -11,7 +11,8 @@
 
 using namespace std;
 
-extern "C" {
+namespace arki {
+namespace python {
 
 #if PY_MAJOR_VERSION == 3 && PY_MINOR_VERSION < 7
 PyObject *ArkiPyImport_GetModule(PyObject *name)
@@ -37,11 +38,6 @@ PyObject *ArkiPyImport_GetModule(PyObject *name)
     return m;
 }
 #endif
-
-}
-
-namespace arki {
-namespace python {
 
 void set_std_exception(const std::exception& e)
 {
