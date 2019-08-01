@@ -85,7 +85,7 @@ std::unique_ptr<cmdline::DatasetProcessor> build_processor(PyObject* args, PyObj
     }
 }
 
-bool foreach_stdin(const std::string& format, std::function<void(dataset::Reader&)> dest)
+bool foreach_file(BinaryInputFile& file, const std::string& format, std::function<void(dataset::Reader&)> dest)
 {
     auto scanner = scan::Scanner::get_scanner(format);
 
@@ -95,10 +95,18 @@ bool foreach_stdin(const std::string& format, std::function<void(dataset::Reader
     auto config = dataset::fromfunction::Config::create(cfg);
 
     auto reader = std::make_shared<dataset::fromfunction::Reader>(config);
-    reader->generator = [&](metadata_dest_func dest){
-        sys::NamedFileDescriptor fd_stdin(0, "stdin");
-        return scanner->scan_pipe(fd_stdin, dest);
-    };
+
+    if (file.fd)
+    {
+        reader->generator = [&](metadata_dest_func dest){
+            return scanner->scan_pipe(*file.fd, dest);
+        };
+    } else {
+        throw std::runtime_error("scanning abstract input files is not yet supported");
+        // reader->generator = [&](metadata_dest_func dest){
+        //     return scanner->scan_pipe(*file.abstract, dest);
+        // };
+    }
 
     bool success = true;
     try {

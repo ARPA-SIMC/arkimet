@@ -206,9 +206,9 @@ struct set_dispatcher : public MethKwargs<set_dispatcher, arkipy_ArkiScan>
     }
 };
 
-struct scan_stdin : public MethKwargs<scan_stdin, arkipy_ArkiScan>
+struct scan_file : public MethKwargs<scan_file, arkipy_ArkiScan>
 {
-    constexpr static const char* name = "scan_stdin";
+    constexpr static const char* name = "scan_file";
     constexpr static const char* signature = "";
     constexpr static const char* returns = "int";
     constexpr static const char* summary = "run arki-scan --stdin";
@@ -216,19 +216,21 @@ struct scan_stdin : public MethKwargs<scan_stdin, arkipy_ArkiScan>
 
     static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
     {
-        static const char* kwlist[] = { "format", nullptr };
+        static const char* kwlist[] = { "file", "format", nullptr };
 
+        PyObject* file = nullptr;
         const char* format = nullptr;
         Py_ssize_t format_len;
-        if (!PyArg_ParseTupleAndKeywords(args, kw, "z#", const_cast<char**>(kwlist),
-                    &format, &format_len))
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "Oz#", const_cast<char**>(kwlist),
+                    &file, &format, &format_len))
             return nullptr;
 
         try {
             bool all_successful;
             {
+                BinaryInputFile in(file);
                 ReleaseGIL rg;
-                all_successful = foreach_stdin(std::string(format, format_len), [&](arki::dataset::Reader& reader) {
+                all_successful = foreach_file(in, std::string(format, format_len), [&](arki::dataset::Reader& reader) {
                     self->processor->process(reader, reader.name());
                 });
                 self->processor->end();
@@ -272,9 +274,9 @@ struct scan_sections : public MethKwargs<scan_sections, arkipy_ArkiScan>
     }
 };
 
-struct dispatch_stdin : public MethKwargs<dispatch_stdin, arkipy_ArkiScan>
+struct dispatch_file : public MethKwargs<dispatch_file, arkipy_ArkiScan>
 {
-    constexpr static const char* name = "dispatch_stdin";
+    constexpr static const char* name = "dispatch_file";
     constexpr static const char* signature = "";
     constexpr static const char* returns = "int";
     constexpr static const char* summary = "run arki-scan --stdin --dispatch";
@@ -282,23 +284,25 @@ struct dispatch_stdin : public MethKwargs<dispatch_stdin, arkipy_ArkiScan>
 
     static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
     {
-        static const char* kwlist[] = { "format", "ignore_duplicates", "status", nullptr };
+        static const char* kwlist[] = { "file", "format", "ignore_duplicates", "status", nullptr };
 
+        PyObject* file = nullptr;
         const char* format = nullptr;
         Py_ssize_t format_len;
         int ignore_duplicates = 0;
         int status = 0;
-        if (!PyArg_ParseTupleAndKeywords(args, kw, "z#|pp", const_cast<char**>(kwlist),
-                    &format, &format_len, &ignore_duplicates, &status))
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "Oz#|pp", const_cast<char**>(kwlist),
+                    &file, &format, &format_len, &ignore_duplicates, &status))
             return nullptr;
 
         try {
             bool all_successful;
             {
+                BinaryInputFile in(file);
                 ReleaseGIL rg;
 
                 bool dispatch_ok = true;
-                bool res = foreach_stdin(std::string(format, format_len), [&](arki::dataset::Reader& reader) {
+                bool res = foreach_file(in, std::string(format, format_len), [&](arki::dataset::Reader& reader) {
                     auto stats = self->dispatcher->process(reader, reader.name());
 
                     if (status)
@@ -396,7 +400,7 @@ struct ArkiScanDef : public Type<ArkiScanDef, arkipy_ArkiScan>
 arki-scan implementation
 )";
     GetSetters<> getsetters;
-    Methods<set_inputs, set_processor, set_dispatcher, scan_stdin, scan_sections, dispatch_stdin, dispatch_sections> methods;
+    Methods<set_inputs, set_processor, set_dispatcher, scan_file, scan_sections, dispatch_file, dispatch_sections> methods;
 
     static void _dealloc(Impl* self)
     {

@@ -1,5 +1,6 @@
 import arkimet as arki
 from arkimet.cmdline.base import AppWithProcessor, Exit
+import sys
 import posix
 import logging
 
@@ -171,8 +172,8 @@ class Scan(AppWithProcessor):
                 arki_scan.set_dispatcher(**kw)
 
                 if self.args.stdin:
-                    all_successful = arki_scan.dispatch_stdin(
-                            self.args.stdin,
+                    all_successful = arki_scan.dispatch_file(
+                            sys.stdin, self.args.stdin,
                             ignore_duplicates=self.args.ignore_duplicates,
                             status=self.args.status)
                 else:
@@ -183,7 +184,7 @@ class Scan(AppWithProcessor):
                             status=self.args.status)
             else:
                 if self.args.stdin:
-                    all_successful = arki_scan.scan_stdin(self.args.stdin)
+                    all_successful = arki_scan.scan_file(sys.stdin, self.args.stdin)
                 else:
                     all_successful = arki_scan.scan_sections()
 
