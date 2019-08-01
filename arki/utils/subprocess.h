@@ -166,6 +166,7 @@ public:
 
     using Child::Child;
 
+    Popen() = default;
     Popen(std::initializer_list<std::string> args);
 
     /// Override env with the contents of environment
