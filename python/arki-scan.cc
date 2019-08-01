@@ -367,6 +367,8 @@ struct dispatch_sections : public MethKwargs<dispatch_sections, arkipy_ArkiScan>
                         if (status)
                             arki::nag::warning("%s: %s", stats.name.c_str(), stats.summary().c_str());
                         success = stats.success(ignore_duplicates);
+                    } catch (PythonException&) {
+                        throw;
                     } catch (std::exception& e) {
                         arki::nag::warning("%s failed: %s", source.reader->name().c_str(), e.what());
                         success = false;
