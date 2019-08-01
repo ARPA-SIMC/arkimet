@@ -1,7 +1,7 @@
 import unittest
 import tempfile
 from arkimet.cmdline.bufr_prepare import BufrPrepare
-from arkimet.test import CatchOutput
+from arkimet.test import CmdlineTestMixin
 
 # Bufr support uses dballe, which uses libc's FILE* I/O, which doesn't
 # cooperate well with being called multiple times with multiple
@@ -9,14 +9,12 @@ from arkimet.test import CatchOutput
 # Therefore, we skip stdin/stdout tests here.
 
 
-class TestArkiBufrPrepare(unittest.TestCase):
+class TestArkiBufrPrepare(CmdlineTestMixin, unittest.TestCase):
+    command = BufrPrepare
+
     def test_empty(self):
-        out = CatchOutput()
-        with out.redirect():
-            res = BufrPrepare.main(args=[])
-        self.assertEqual(out.stderr, b"")
-        self.assertEqual(out.stdout, b"")
-        self.assertIsNone(res)
+        out = self.call_output_success("/dev/null")
+        self.assertEqual(out, "")
 
 #     def test_passthrough(self):
 #         with open("inbound/test.bufr", "rb") as fd:
@@ -30,15 +28,11 @@ class TestArkiBufrPrepare(unittest.TestCase):
 #         self.assertIsNone(res)
 
     def test_files(self):
-        out = CatchOutput()
         with tempfile.NamedTemporaryFile("w+b") as tf:
-            with out.redirect():
-                res = BufrPrepare.main(args=["-o", tf.name, "inbound/test.bufr"])
+            out = self.call_output_success("-o", tf.name, "inbound/test.bufr")
             tf.seek(0)
             dest = tf.read()
-        self.assertEqual(out.stderr, b"")
-        self.assertEqual(out.stdout, b"")
-        self.assertIsNone(res)
+        self.assertEqual(out, "")
 
         self.assertEqual(len(dest), 634)
         with open("inbound/test.bufr", "rb") as fd:
