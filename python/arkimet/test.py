@@ -11,19 +11,19 @@ import tempfile
 def skip_unless_vm2():
     import unittest
     if "vm2" not in arki.features:
-        raise unittest.TestSkipped("vm2 support not available")
+        raise unittest.SkipTest("vm2 support not available")
 
 
 def skip_unless_libzip():
     import unittest
     if "libzip" not in arki.features:
-        raise unittest.TestSkipped("libzip support not available")
+        raise unittest.SkipTest("libzip support not available")
 
 
 def skip_unless_libarchive():
     import unittest
     if "libarchive" not in arki.features:
-        raise unittest.TestSkipped("libarchive support not available")
+        raise unittest.SkipTest("libarchive support not available")
 
 
 @contextmanager
