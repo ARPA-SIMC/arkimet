@@ -54,12 +54,7 @@ class App:
             if getattr(self.args, first) and getattr(self.args, second):
                 self.parser.error("--{} conflicts with --{}".format(first, second))
 
-    def run(self):
-        if self.args.version:
-            import arkimet
-            print(arkimet.get_version())
-            raise Exit()
-
+    def setup_logging(self):
         log_format = "%(levelname)s %(message)s"
         level = logging.WARN
         if self.args.debug:
@@ -68,8 +63,15 @@ class App:
             level = logging.INFO
         logging.basicConfig(level=level, stream=sys.stderr, format=log_format)
 
-        import arkimet
-        arkimet.set_verbosity(verbose=self.args.verbose, debug=self.args.debug)
+    def run(self):
+        arki.set_verbosity(verbose=self.args.verbose, debug=self.args.debug)
+
+        if self.args.version:
+            import arkimet
+            print(arkimet.get_version())
+            raise Exit()
+
+        self.setup_logging()
 
     @classmethod
     def main(cls, args=None):
