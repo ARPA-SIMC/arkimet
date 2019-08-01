@@ -175,9 +175,12 @@ class CmdlineTestMixin:
 
     def runcmd(self, *args):
         try:
-            return self.command.main(args)
+            res = self.command.main(args)
         except SystemExit as e:
-            return e.args[0]
+            res = e.args[0]
+        if res == 0:
+            return None
+        return res
 
     def call_output(self, *args, binary=False, input=None):
         orig_stdin = sys.stdin
