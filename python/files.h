@@ -24,7 +24,10 @@ struct FileBase
         delete fd;
     }
 
-    // void close();
+    void close()
+    {
+        if (fd) fd->close();
+    }
 };
 
 
