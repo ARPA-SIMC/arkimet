@@ -296,6 +296,7 @@ std::unique_ptr<DatasetProcessor> ProcessorMaker::make_metadata(Matcher matcher,
     else
         printer = [out, formatter](const arki::Metadata& md) {
             do_output(*out, md.to_yaml(formatter.get()));
+            do_output(*out, std::string("\n"));
         };
 
     dataset::DataQuery query(matcher, data_inline);
