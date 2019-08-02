@@ -159,6 +159,7 @@ public:
     bool query_data(const dataset::DataQuery& q, metadata_dest_func) override;
     void query_summary(const Matcher& matcher, Summary& summary) override;
     void query_bytes(const dataset::ByteQuery& q, core::NamedFileDescriptor& out) override;
+    void query_bytes(const dataset::ByteQuery& q, core::AbstractOutputFile& out) override;
 
     static core::cfg::Sections load_cfg_sections(const std::string& path);
     static core::cfg::Section load_cfg_section(const std::string& path);

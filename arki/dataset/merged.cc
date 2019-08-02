@@ -289,5 +289,22 @@ void Merged::query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out)
         i->query_bytes(q, out);
 }
 
+void Merged::query_bytes(const dataset::ByteQuery& q, AbstractOutputFile& out)
+{
+    // Here we must serialize, as we do not know how to merge raw data streams
+    //
+    // We cannot just wrap query_data because some subdatasets could be
+    // remote, and that would mean doing postprocessing on the client side,
+    // potentially transferring terabytes of data just to produce a number
+
+    // TODO: data_start_hook may be called more than once here
+    // TODO: we might be able to do something smarter, like if we're merging
+    // many datasets from the same server we can run it all there; if we're
+    // merging all local datasets, wrap queryData; and so on.
+
+    for (auto i: datasets)
+        i->query_bytes(q, out);
+}
+
 }
 }
