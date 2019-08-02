@@ -120,7 +120,7 @@ class Query(AppConfigMixin, AppWithProcessor):
             qmacro_query = None
 
         if strquery:
-            query = arki.Matcher(arki.dataset.http.expand_remote_query(strquery))
+            query = arki.Matcher(arki.dataset.http.expand_remote_query(self.config, strquery))
         else:
             query = arki.Matcher()
 
