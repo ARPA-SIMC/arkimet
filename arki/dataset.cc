@@ -1,30 +1,31 @@
-#include "config.h"
-#include <arki/dataset.h>
-#include <arki/dataset/file.h>
-#include <arki/dataset/ondisk2.h>
-#include <arki/dataset/iseg.h>
-#include <arki/dataset/simple/reader.h>
-#include <arki/dataset/outbound.h>
-#include <arki/dataset/empty.h>
-#include <arki/dataset/fromfunction.h>
-#include <arki/dataset/testlarge.h>
-#include <arki/dataset/reporter.h>
-#include <arki/metadata.h>
-#include <arki/metadata/consumer.h>
-#include <arki/sort.h>
-#include <arki/utils.h>
-#include <arki/utils/string.h>
-#include <arki/utils/sys.h>
-#include <arki/postprocess.h>
-#include <arki/report.h>
-#include <arki/summary.h>
+#include "arki/dataset.h"
+#include "arki/libconfig.h"
+#include "arki/dataset/file.h"
+#include "arki/dataset/ondisk2.h"
+#include "arki/dataset/iseg.h"
+#include "arki/dataset/simple/reader.h"
+#include "arki/dataset/outbound.h"
+#include "arki/dataset/empty.h"
+#include "arki/dataset/fromfunction.h"
+#include "arki/dataset/testlarge.h"
+#include "arki/dataset/reporter.h"
+#include "arki/metadata.h"
+#include "arki/metadata/consumer.h"
+#include "arki/sort.h"
+#include "arki/utils.h"
+#include "arki/utils/string.h"
+#include "arki/utils/sys.h"
+#include "arki/postprocess.h"
+#include "arki/report.h"
+#include "arki/summary.h"
+#include "arki/nag.h"
 
 #ifdef HAVE_LIBCURL
-#include <arki/dataset/http.h>
+#include "arki/dataset/http.h"
 #endif
 
 #ifdef HAVE_LUA
-#include <arki/utils/lua.h>
+#include "arki/utils/lua.h"
 #endif
 
 using namespace std;
