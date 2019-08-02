@@ -1,6 +1,7 @@
 import unittest
 import multiprocessing
 import os
+import io
 import requests
 import arkimet as arki
 import arkimet.test
@@ -40,7 +41,8 @@ class Env(arkimet.test.Env):
             })
             config[name] = cfg
 
-            with open(os.path.join("testenv", "testds", name), "wt") as fd:
+            os.makedirs(os.path.join("testenv", name))
+            with open(os.path.join("testenv", name, "config"), "wt") as fd:
                 cfg.write(fd)
 
             checker = arki.dataset.Checker(cfg)
@@ -274,3 +276,119 @@ class TestArkiServer(unittest.TestCase):
         # Querying it should get the partial output and no error
         data = ds.query_bytes(postprocess="outthenerr")
         self.assertEqual(data, b"So far, so good\n")
+
+    def test_postproc_error1(self):
+        """
+        Test data integrity of postprocessed queries through a server (used to fail
+        after offset 0xc00)
+        """
+        # Get the normal data
+        ds = arki.dataset.Reader("testenv/test80")
+        mdc = ds.query_data(with_data=True)
+        with io.BytesIO() as out:
+            for md in mdc:
+                md.make_inline()
+                md.write(out, format="binary")
+            plain = out.getvalue()
+
+        # Capture the data after going through the postprocessor
+        config = arki.dataset.http.load_cfg_sections(self.server_url)
+        ds = arki.dataset.Reader(config["test80"])
+        postprocessed = ds.query_bytes("origin:GRIB1,80", postprocess="cat")
+
+        self.assertEqual(len(plain), len(postprocessed))
+
+        md1 = arki.Metadata.read_bundle(plain)[0]
+        md2 = arki.Metadata.read_bundle(postprocessed)[0]
+
+        # Remove those metadata that contain test-dependent timestamps
+        del md1["assigneddataset"]
+        del md2["assigneddataset"]
+
+        self.assertEqual(md1, md2)
+
+        # Compare data
+        d1 = md1.data
+        d2 = md2.data
+        self.assertEqual(d1, d2)
+
+    def test_aliases(self):
+        """
+        Test downloading the server alias database
+        """
+        config = arki.dataset.http.get_alias_database(self.server_url)
+        self.assertTrue(config.section("origin"))
+
+    def test_postproc_data(self):
+        """
+        Test uploading postprocessor data
+        """
+        config = arki.dataset.http.load_cfg_sections(self.server_url)
+        ds = arki.dataset.Reader(config["test200"])
+        try:
+            # Files should be uploaded and notified to the postprocessor script
+            os.environ["ARKI_POSTPROC_FILES"] = "inbound/test.grib1:inbound/padded.grib1"
+            data = ds.query_bytes(postprocess="checkfiles")
+
+            self.assertEqual(data, b"padded.grib1:test.grib1\n")
+        finally:
+            del os.environ["ARKI_POSTPROC_FILES"]
+
+    def test_query_global_summary_style_binary(self):
+        """
+        Test style=binary summary queries
+        """
+        res = requests.post(self.server_url + "/summary?style=binary", data={
+            "query": arki.Matcher().expanded,
+        })
+        res.raise_for_status()
+        self.assertEqual(res.content[:2], b"SU")
+
+    def test_query_summary_style_binary(self):
+        """
+        Test style=binary summary queries
+        """
+        res = requests.post(self.server_url + "/dataset/test200/summary?style=binary", data={
+            "query": arki.Matcher().expanded,
+        })
+        res.raise_for_status()
+        self.assertEqual(res.content[:2], b"SU")
+
+    def test_query_summary_style_json(self):
+        """
+        Test style=json summary queries
+        """
+        res = requests.post(self.server_url + "/dataset/test200/summary?style=json", data={
+            "query": arki.Matcher().expanded,
+        })
+        res.raise_for_status()
+        self.assertIn("items", res.json())
+
+    def test_query_summary_style_yaml(self):
+        """
+        Test style=yaml summary queries
+        """
+        res = requests.post(self.server_url + "/dataset/test200/summary?style=yaml", data={
+            "query": arki.Matcher().expanded,
+        })
+        self.assertEqual(res.text[:11], "SummaryItem")
+
+    def test_query_summaryshort_style_json(self):
+        """
+        Test style=json summary short queries
+        """
+        res = requests.post(self.server_url + "/dataset/test200/summaryshort?style=json", data={
+            "query": arki.Matcher().expanded,
+        })
+        res.raise_for_status()
+        self.assertIn("items", res.json())
+
+    def test_query_summaryshort_style_yaml(self):
+        """
+        Test style=yaml summary queries
+        """
+        res = requests.post(self.server_url + "/dataset/test200/summaryshort?style=yaml", data={
+            "query": arki.Matcher().expanded,
+        })
+        res.raise_for_status()
+        self.assertEqual(res.text[:12], "SummaryStats")

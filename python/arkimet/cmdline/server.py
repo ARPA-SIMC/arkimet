@@ -300,7 +300,7 @@ class Server(App):
         super().run()
 
         logging.info("Reading configuration from %s", self.args.configfile)
-        config = arki.cfg.Sections.read(self.args.configfile)
+        config = arki.cfg.Sections.parse(self.args.configfile)
 
         httpd = make_server(self.args.host, self.args.port, config, self.args.url)
 
