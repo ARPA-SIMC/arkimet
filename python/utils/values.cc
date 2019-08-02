@@ -35,6 +35,11 @@ const char* cstring_from_python(PyObject* o)
     throw PythonException();
 }
 
+PyObject* bytes_to_python(const std::vector<uint8_t>& buffer)
+{
+    return throw_ifnull(PyBytes_FromStringAndSize((const char*)buffer.data(), buffer.size()));
+}
+
 bool bool_from_python(PyObject* o)
 {
     int istrue = PyObject_IsTrue(o);
