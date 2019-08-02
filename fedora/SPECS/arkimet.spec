@@ -65,6 +65,7 @@ BuildRequires: %{python3_vers}-werkzeug
 BuildRequires: %{python3_vers}-setproctitle
 BuildRequires: %{python3_vers}-nose
 BuildRequires: %{python3_vers}-jinja2
+BuildRequires: %{python3_vers}-requests
 BuildRequires: libzip-devel
 BuildRequires: libarchive-devel
 BuildRequires: bzip2-devel
