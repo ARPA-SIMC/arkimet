@@ -83,14 +83,13 @@ struct has_source : public MethNoargs<has_source, arkipy_Metadata>
 struct write : public MethKwargs<write, arkipy_Metadata>
 {
     constexpr static const char* name = "write";
-    constexpr static const char* signature = "file: BytesIO, format: str";
+    constexpr static const char* signature = "file: Union[int, BytesIO], format: str";
     constexpr static const char* returns = "None";
     constexpr static const char* summary = "Write the metadata to a file";
     constexpr static const char* doc = R"(
 Arguments:
-  file: the output file. The file needs to be either an integer file or
-        socket handle, or a file-like object with a fileno() method
-        that returns an integer handle.
+  file: the output file. The file can be a normal file-like object or an
+        integer file or socket handle
   format: "binary", "yaml", or "json". Default: "binary".
 )";
 
@@ -450,9 +449,14 @@ Arkimet metadata for one data item
         try {
             std::string key = from_python<std::string>(py_key);
             types::Code code = types::parseCodeName(key);
-            std::string strval = from_python<std::string>(py_val);
-            std::unique_ptr<types::Type> val = types::decodeString(code, strval);
-            self->md->set(std::move(val));
+            if (!py_val)
+            {
+                self->md->unset(code);
+            } else {
+                std::string strval = from_python<std::string>(py_val);
+                std::unique_ptr<types::Type> val = types::decodeString(code, strval);
+                self->md->set(std::move(val));
+            }
             return 0;
         } ARKI_CATCH_RETURN_INT
     }
