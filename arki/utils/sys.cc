@@ -12,6 +12,7 @@
 #include <sys/time.h>
 #include <fcntl.h>
 #include <sys/types.h>
+#include <sys/sendfile.h>
 #include <utime.h>
 #include <alloca.h>
 
@@ -401,6 +402,68 @@ bool FileDescriptor::ofd_getlk(struct flock& lk)
 #endif
         throw_error("cannot test lock");
     return lk.l_type == F_UNLCK;
+}
+
+namespace {
+
+struct TransferBuffer
+{
+    char* buf = nullptr;
+
+    ~TransferBuffer()
+    {
+        delete[] buf;
+    }
+
+    void allocate()
+    {
+        if (buf)
+            return;
+        buf = new char[40960];
+    }
+
+    operator char*() { return buf; }
+};
+
+}
+
+size_t FileDescriptor::sendfile(FileDescriptor& out_fd, off_t* offset, size_t count)
+{
+    bool has_sendfile = true;
+    size_t sent = 0;
+    TransferBuffer buffer;
+    while (count > 0)
+    {
+        if (has_sendfile)
+        {
+            ssize_t res = ::sendfile(out_fd, fd, offset, count);
+            if (res < 0)
+            {
+                if (errno == EINVAL || errno == ENOSYS)
+                {
+                    has_sendfile = false;
+                    buffer.allocate();
+                }
+                else
+                {
+                    std::stringstream msg;
+                    msg << "cannot sendfile() " << count << " bytes from offset" << *offset;
+                    throw_error(msg.str().c_str());
+                }
+            } else {
+                sent += res;
+                *offset += res;
+                count -= res;
+            }
+        } else {
+            size_t res = pread(buffer, count, *offset);
+            out_fd.write_all_or_retry(buffer, res);
+            sent += res;
+            *offset += res;
+            count -= res;
+        }
+    }
+    return sent;
 }
 
 void FileDescriptor::futimens(const struct ::timespec ts[2])
