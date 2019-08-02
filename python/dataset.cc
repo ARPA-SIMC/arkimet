@@ -302,12 +302,19 @@ Examples::
     static int _init(Impl* self, PyObject* args, PyObject* kw)
     {
         static const char* kwlist[] = { "cfg", nullptr };
-        PyObject* cfg = Py_None;
-        if (!PyArg_ParseTupleAndKeywords(args, kw, "O", const_cast<char**>(kwlist), &cfg))
+        PyObject* py_cfg = Py_None;
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "O", const_cast<char**>(kwlist), &py_cfg))
             return -1;
 
         try {
-            new (&(self->ds)) shared_ptr<arki::dataset::Reader>(arki::dataset::Reader::create(section_from_python(cfg)));
+            core::cfg::Section cfg;
+
+            if (PyUnicode_Check(py_cfg))
+                cfg = arki::dataset::Reader::read_config(from_python<std::string>(py_cfg));
+            else
+                cfg = section_from_python(py_cfg);
+
+            new (&(self->ds)) shared_ptr<arki::dataset::Reader>(arki::dataset::Reader::create(cfg));
             return 0;
         } ARKI_CATCH_RETURN_INT;
     }
@@ -443,12 +450,19 @@ Examples::
     static int _init(Impl* self, PyObject* args, PyObject* kw)
     {
         static const char* kwlist[] = { "cfg", nullptr };
-        PyObject* cfg = Py_None;
-        if (!PyArg_ParseTupleAndKeywords(args, kw, "O", const_cast<char**>(kwlist), &cfg))
+        PyObject* py_cfg = Py_None;
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "O", const_cast<char**>(kwlist), &py_cfg))
             return -1;
 
         try {
-            new (&(self->ds)) std::shared_ptr<arki::dataset::Writer>(arki::dataset::Writer::create(section_from_python(cfg)));
+            core::cfg::Section cfg;
+
+            if (PyUnicode_Check(py_cfg))
+                cfg = arki::dataset::Reader::read_config(from_python<std::string>(py_cfg));
+            else
+                cfg = section_from_python(py_cfg);
+
+            new (&(self->ds)) std::shared_ptr<arki::dataset::Writer>(arki::dataset::Writer::create(cfg));
             return 0;
         } ARKI_CATCH_RETURN_INT;
     }
@@ -601,12 +615,19 @@ Examples::
     static int _init(Impl* self, PyObject* args, PyObject* kw)
     {
         static const char* kwlist[] = { "cfg", nullptr };
-        PyObject* cfg = Py_None;
-        if (!PyArg_ParseTupleAndKeywords(args, kw, "O", const_cast<char**>(kwlist), &cfg))
+        PyObject* py_cfg = Py_None;
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "O", const_cast<char**>(kwlist), &py_cfg))
             return -1;
 
         try {
-            new (&(self->ds)) std::shared_ptr<arki::dataset::Checker>(arki::dataset::Checker::create(section_from_python(cfg)));
+            core::cfg::Section cfg;
+
+            if (PyUnicode_Check(py_cfg))
+                cfg = arki::dataset::Reader::read_config(from_python<std::string>(py_cfg));
+            else
+                cfg = section_from_python(py_cfg);
+
+            new (&(self->ds)) std::shared_ptr<arki::dataset::Checker>(arki::dataset::Checker::create(cfg));
             return 0;
         } ARKI_CATCH_RETURN_INT;
     }
