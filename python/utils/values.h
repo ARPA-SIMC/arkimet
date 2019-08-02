@@ -26,13 +26,17 @@ inline PyObject* to_python(const char* s) { return cstring_to_python(s); }
 PyObject* string_to_python(const std::string& str);
 inline PyObject* to_python(const std::string& s) { return string_to_python(s); }
 
-/// Convert a python string, bytes or unicode to an utf8 string
+/// Convert a python string to an utf8 string
 std::string string_from_python(PyObject* o);
 template<> inline std::string from_python<std::string>(PyObject* o) { return string_from_python(o); }
 
-/// Convert a python string, bytes or unicode to an utf8 string
+/// Convert a python string to an utf8 string
 const char* cstring_from_python(PyObject* o);
 template<> inline const char* from_python<const char*>(PyObject* o) { return cstring_from_python(o); }
+
+/// Convert a buffer of data to python bytes
+PyObject* bytes_to_python(const std::vector<uint8_t>& buffer);
+inline PyObject* to_python(const std::vector<uint8_t>& buffer) { return bytes_to_python(buffer); }
 
 /// Convert a Python object to an int
 int int_from_python(PyObject* o);
