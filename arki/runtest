@@ -39,22 +39,6 @@ fi
 
 ## Set up the test environment
 
-export ARKI_SCAN_GRIB1=$TOP_SRCDIR/conf/scan-grib1/
-export ARKI_SCAN_GRIB2=$TOP_SRCDIR/conf/scan-grib2/
-export ARKI_SCAN_BUFR=$TOP_SRCDIR/conf/scan-bufr/
-export ARKI_SCAN_ODIMH5=$TOP_SRCDIR/conf/scan-odimh5/
-export ARKI_FORMATTER=$TOP_SRCDIR/conf/format/
-export ARKI_REPORT=$TOP_SRCDIR/conf/report/
-export ARKI_BBOX=$TOP_SRCDIR/conf/bbox/
-export ARKI_QMACRO=$TOP_SRCDIR/conf/qmacro/
-export ARKI_ALIASES=$TOP_SRCDIR/test/conf/match-alias.conf
-export ARKI_POSTPROC=./postproc
-export PYTHONPATH=$TOP_SRCDIR/python/
-export METEO_VM2_SOURCE="$TOP_SRCDIR/conf/vm2/source.lua"
-export TOP_SRCDIR
-ulimit -v 1048576 || true
-ulimit -n 1024 || true
-
 ORIGDIR=`pwd`
 if which mktemp > /dev/null
 then
@@ -66,6 +50,22 @@ fi
 
 echo "Moving to test directory $TESTDIR"
 cd "$TESTDIR"
+
+export ARKI_SCAN_GRIB1=$TOP_SRCDIR/conf/scan-grib1/
+export ARKI_SCAN_GRIB2=$TOP_SRCDIR/conf/scan-grib2/
+export ARKI_SCAN_BUFR=$TOP_SRCDIR/conf/scan-bufr/
+export ARKI_SCAN_ODIMH5=$TOP_SRCDIR/conf/scan-odimh5/
+export ARKI_FORMATTER=$TOP_SRCDIR/conf/format/
+export ARKI_REPORT=$TOP_SRCDIR/conf/report/
+export ARKI_BBOX=$TOP_SRCDIR/conf/bbox/
+export ARKI_QMACRO=$TOP_SRCDIR/conf/qmacro/
+export ARKI_ALIASES=$TOP_SRCDIR/test/conf/match-alias.conf
+export ARKI_POSTPROC=$TESTDIR/postproc
+export PYTHONPATH=$TOP_SRCDIR/python/
+export METEO_VM2_SOURCE="$TOP_SRCDIR/conf/vm2/source.lua"
+export TOP_SRCDIR
+ulimit -v 1048576 || true
+ulimit -n 1024 || true
 
 
 mkdir inbound
