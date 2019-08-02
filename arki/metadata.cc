@@ -498,20 +498,20 @@ void Metadata::write_yaml(core::AbstractOutputFile& out, const Formatter* format
     out.write(yaml.data(), yaml.size());
 }
 
-void Metadata::serialise(Emitter& e, const Formatter* f) const
+void Metadata::serialise(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
 {
     e.start_mapping();
     e.add("i");
     e.start_list();
-    if (m_source) m_source->serialise(e, f);
-    for (map<types::Code, types::Type*>::const_iterator i = m_vals.begin(); i != m_vals.end(); ++i)
-        i->second->serialise(e, f);
+    if (m_source) m_source->serialise(e, keys, f);
+    for (const auto& val: m_vals)
+        val.second->serialise(e, keys, f);
     e.end_list();
     e.add("n");
     e.start_list();
     std::vector<types::Note> n = notes();
-    for (std::vector<types::Note>::const_iterator i = n.begin(); i != n.end(); ++i)
-        i->serialise(e, f);
+    for (const auto& note: n)
+        note.serialise(e, keys, f);
     e.end_list();
     e.end_mapping();
 

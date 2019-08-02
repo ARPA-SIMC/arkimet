@@ -18,7 +18,7 @@ struct Short : public summary::Visitor
     summary::Stats stats;
 
     /// Serialise using an emitter
-    void serialise(Emitter& e, const Formatter* f=0) const;
+    void serialise(Emitter& e, const emitter::Keys& keys, const Formatter* f=0) const;
 
     /**
      * Write the short summary as YAML text to the given output stream.

@@ -207,7 +207,7 @@ public:
     void write_yaml(core::AbstractOutputFile& out, const Formatter* formatter=nullptr) const;
 
     /// Serialise using an emitter
-    void serialise(Emitter& e, const Formatter* f=0) const;
+    void serialise(Emitter& e, const emitter::Keys& keys, const Formatter* f=0) const;
 
     /// Encode to a buffer. Inline data will not be added.
     std::vector<uint8_t> encodeBinary() const;

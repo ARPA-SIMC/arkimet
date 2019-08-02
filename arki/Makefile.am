@@ -72,6 +72,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		datasets.h \
 		dispatcher.h \
 		emitter.h \
+		emitter/keys.h \
 		emitter/json.h \
 		emitter/memory.h \
 		formatter.h \
@@ -242,6 +243,7 @@ libarkimet_la_SOURCES += \
 		binary.cc \
 		transaction.cc \
 		emitter.cc \
+		emitter/keys.cc \
 		emitter/memory.cc \
 		emitter/json.cc \
 		values.cc \

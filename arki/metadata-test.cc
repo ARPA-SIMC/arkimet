@@ -14,6 +14,7 @@
 #include "types/assigneddataset.h"
 #include "types/source/blob.h"
 #include "binary.h"
+#include "emitter/keys.h"
 #include "emitter/json.h"
 #include "emitter/memory.h"
 #include "utils/sys.h"
@@ -221,7 +222,7 @@ add_method("json", [](Fixture& f) {
     // Serialise to JSON;
     stringstream output;
     emitter::JSON json(output);
-    md.serialise(json);
+    md.serialise(json, emitter::keys_json);
 
     // Parse back
     stringstream stream(output.str(), ios_base::in);
@@ -242,7 +243,7 @@ add_method("json", [](Fixture& f) {
     // Serialise to JSON
     stringstream output1;
     emitter::JSON json1(output1);
-    md.serialise(json1);
+    md.serialise(json1, emitter::keys_json);
 
     // Parse back
     stringstream stream1(output1.str(), ios_base::in);

@@ -9,7 +9,7 @@ using namespace arki::utils;
 namespace arki {
 namespace summary {
 
-void Short::serialise(Emitter& e, const Formatter* f) const
+void Short::serialise(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
 {
     e.start_mapping();
 
@@ -24,7 +24,7 @@ void Short::serialise(Emitter& e, const Formatter* f) const
         e.add(str::lower(types::formatCode(i.first)));
         e.start_list();
         for (const auto& mi: i.second)
-            e.add_type(*mi, f);
+            e.add_type(*mi, keys, f);
         e.end_list();
     }
     e.end_mapping();

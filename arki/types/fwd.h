@@ -78,5 +78,13 @@ struct Task;
 class ItemSet;
 
 }
+
+namespace emitter {
+struct Keys;
+}
+
+struct Formatter;
+struct Emitter;
+
 }
 #endif

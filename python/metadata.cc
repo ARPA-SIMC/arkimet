@@ -7,6 +7,7 @@
 #include "arki/metadata/data.h"
 #include "arki/core/file.h"
 #include "arki/types/source.h"
+#include "arki/emitter/keys.h"
 #include "utils/core.h"
 #include "utils/methods.h"
 #include "utils/type.h"
@@ -209,15 +210,15 @@ struct to_python : public MethKwargs<to_python, arkipy_Metadata>
                     if (!self->md->has_source())
                         Py_RETURN_NONE;
                     else
-                        self->md->source().serialise(e);
+                        self->md->source().serialise(e, emitter::keys_python);
                 } else {
                     const types::Type* item = self->md->get(code);
                     if (!item)
                         Py_RETURN_NONE;
-                    item->serialise(e);
+                    item->serialise(e, emitter::keys_python);
                 }
             } else {
-                self->md->serialise(e);
+                self->md->serialise(e, emitter::keys_python);
             }
             return e.release();
         } ARKI_CATCH_RETURN_PYO

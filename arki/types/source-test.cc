@@ -4,6 +4,7 @@
 #include "arki/segment.h"
 #include "arki/emitter/json.h"
 #include "arki/emitter/memory.h"
+#include "arki/emitter/keys.h"
 #include "arki/core/file.h"
 #include "arki/binary.h"
 #include "arki/utils/sys.h"
@@ -105,7 +106,7 @@ add_method("blob_pathnames_encode", [] {
     {
         std::stringstream jbuf;
         emitter::JSON json(jbuf);
-        o->serialise(json);
+        o->serialise(json, emitter::keys_json);
         jbuf.seekg(0);
         emitter::Memory parsed;
         emitter::JSON::parse(jbuf, parsed);

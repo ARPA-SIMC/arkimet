@@ -138,7 +138,7 @@ struct Type
     std::string to_string() const;
 
     /// Serialise using an emitter
-    virtual void serialise(Emitter& e, const Formatter* f=0) const;
+    virtual void serialise(Emitter& e, const emitter::Keys& keys, const Formatter* f=0) const;
     virtual void serialiseLocal(Emitter& e, const Formatter* f=0) const = 0;
 
 	/**

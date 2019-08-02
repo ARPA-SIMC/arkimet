@@ -6,13 +6,9 @@
 #include <string>
 #include <cstdint>
 #include <vector>
+#include <arki/types/fwd.h>
 
 namespace arki {
-struct Formatter;
-
-namespace types {
-struct Type;
-}
 
 /**
  * Abstract interface for all emitters
@@ -35,7 +31,7 @@ public:
     virtual void add_int(long long int val) = 0;
     virtual void add_double(double val) = 0;
     virtual void add_string(const std::string& val) = 0;
-    void add_type(const types::Type& t, const Formatter* f=0);
+    void add_type(const types::Type& t, const emitter::Keys& keys, const Formatter* f=0);
 
     /// Add a break in the output stream, such as a newline between JSON chunks
     virtual void add_break();
