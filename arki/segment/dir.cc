@@ -324,27 +324,10 @@ size_t Reader::stream(const types::source::Blob& src, core::NamedFileDescriptor&
         return buf.size() + 1;
     } else {
         sys::File file_fd = open_src(src);
-
-        // TODO: add a stream method to sys::FileDescriptor that does the
-        // right thing depending on what's available in the system, and
-        // potentially also handles retries
-        off_t offset = 0;
-        while ((unsigned)offset < src.size)
-        {
-            size_t size = src.size - offset;
-            ssize_t res = sendfile(out, file_fd, &offset, size);
-            if (res < 0)
-            {
-                stringstream msg;
-                msg << "cannot stream " << size << " bytes of " << src.format << " data from " << file_fd.name() << ":"
-                    << src.offset << "+" << offset;
-                throw_system_error(msg.str());
-            }
-        }
-
+        file_fd.sendfile(out, 0, src.size);
         acct::plain_data_read_count.incr();
         iotrace::trace_file(dirfd, src.offset, src.size, "streamed data");
-        return offset;
+        return src.size;
     }
 }
 
