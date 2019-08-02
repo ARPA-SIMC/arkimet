@@ -60,7 +60,7 @@ class Query(AppConfigMixin, AppWithProcessor):
             with open(self.args.file, "rt") as fd:
                 self.query = fd.read()
             if self.args.query is not None:
-                self.sources = [self.args.query] = self.args.source
+                self.sources = [self.args.query] + self.args.source
         else:
             self.query = self.args.query
             self.sources = self.args.source
