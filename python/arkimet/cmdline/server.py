@@ -1,10 +1,10 @@
 import re
-import configparser
 import logging
 import datetime
 import subprocess
 import threading
 import sys
+import arkimet as arki
 from arkimet.server import views
 from werkzeug.exceptions import HTTPException, NotFound
 from socketserver import ForkingMixIn
@@ -32,20 +32,16 @@ class ArkiServer(ForkingMixIn, HTTPServer):
             Rule('/dataset/<name>/config', endpoint='ArkiDatasetConfig'),
         ])
 
-    def read_config(self, pathname):
-        logging.info("Reading configuration from %s", pathname)
-        self.cfg = configparser.ConfigParser()
-        self.cfg.read(pathname)
+    def set_config(self, config):
+        self.cfg = config
 
         # Amend configuration turning local datasets into remote dataset
-        self.remote_cfg = configparser.ConfigParser()
-        for sec in self.cfg.sections():
-            self.remote_cfg.add_section(sec)
-            for k, v in self.cfg.items(sec):
-                self.remote_cfg.set(sec, k, v)
-            self.remote_cfg.set(sec, "path", self.url + "/dataset/" + sec)
-            self.remote_cfg.set(sec, "type", "remote")
-            self.remote_cfg.set(sec, "server", self.url)
+        self.remote_cfg = arki.cfg.Sections()
+        for name, sec in self.cfg.items():
+            self.remote_cfg[name] = sec
+            self.remote_cfg[name]["path"] = self.url + "/dataset/" + name
+            self.remote_cfg[name]["type"] = "remote"
+            self.remote_cfg[name]["server"] = self.url
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -184,6 +180,14 @@ class DefaultLogFilter:
         return getattr(record, "perf", None) is None
 
 
+def make_server(host, port, config, url=None):
+    httpd = ArkiServer((host, port), Handler)
+    if url is not None:
+        httpd.url = url
+    httpd.set_config(config)
+    return httpd
+
+
 class Server(App):
     """
     Start the arkimet server, serving the datasets found in the configuration file
@@ -283,10 +287,10 @@ class Server(App):
     def run(self):
         super().run()
 
-        httpd = ArkiServer((self.args.host, self.args.port), Handler)
-        if self.args.url:
-            httpd.url = self.args.url
-        httpd.read_config(self.args.configfile)
+        logging.info("Reading configuration from %s", self.args.configfile)
+        config = arki.cfg.Sections.read(self.args.configfile)
+
+        httpd = make_server(self.args.host, self.args.port, config, self.args.url)
 
         if self.args.runtest:
             exit_code = 0

@@ -32,40 +32,6 @@ class Tests : public TestCase
 
 void Tests::register_tests() {
 
-// Query the configuration
-add_method("config", [] {
-    auto config = dataset::http::Reader::load_cfg_sections("http://localhost:7117");
-
-    wassert(actual(config.section("test200")).istrue());
-    wassert(actual(config.section("test200")->value("server")) == "http://localhost:7117");
-
-    wassert(actual(config.section("test80")).istrue());
-    wassert(actual(config.section("test80")->value("server")) == "http://localhost:7117");
-
-    wassert(actual(config.section("error")).istrue());
-    wassert(actual(config.section("error")->value("server")) == "http://localhost:7117");
-});
-
-// Test querying the datasets, metadata only
-add_method("metadata", [] {
-    auto config = dataset::http::Reader::load_cfg_sections("http://localhost:7117");
-
-    unique_ptr<dataset::Reader> testds(dataset::Reader::create(*config.section("test200")));
-    metadata::Collection mdc(*testds, Matcher::parse("origin:GRIB1,200"));
-    wassert(actual(mdc.size()) == 1u);
-
-    // Check that the source record that comes out is ok
-    wassert(actual_type(mdc[0].source()).is_source_url("grib", "http://localhost:7117/dataset/test200"));
-
-    mdc.clear();
-    mdc.add(*testds, Matcher::parse("origin:GRIB1,80"));
-    wassert(actual(mdc.size()) == 0u);
-
-    mdc.clear();
-    mdc.add(*testds, Matcher::parse("origin:GRIB1,98"));
-    wassert(actual(mdc.size()) == 0u);
-});
-
 // Test querying the datasets, with inline data
 add_method("inline", [] {
     auto config = dataset::http::Reader::load_cfg_sections("http://localhost:7117");

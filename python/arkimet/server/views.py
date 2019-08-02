@@ -41,9 +41,9 @@ class ArkiView:
         """
         name = self.kwargs["name"]
         self.info["dataset"] = name
-        if not self.handler.server.cfg.has_section(name):
+        if name not in self.handler.server.cfg:
             raise NotFound("Dataset {} not found".format(name))
-        return dict(self.handler.server.cfg.items(name))
+        return self.handler.server.cfg[name]
 
     def get_dataset_reader(self):
         """
@@ -204,9 +204,9 @@ class ArkiIndex(ArkiView):
             with page.body():
                 page.p("Available datasets:")
                 with page.ul():
-                    for sec in self.handler.server.cfg.sections():
+                    for name in self.handler.server.cfg.keys():
                         with page.li():
-                            page.a("/dataset/" + sec, sec)
+                            page.a("/dataset/" + name, name)
             page.a("/query", "Perform a query")
         self.send_headers()
         self.handler.wfile.write(page.out.getvalue().encode("utf-8"))
