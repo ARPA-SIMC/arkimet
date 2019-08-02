@@ -427,16 +427,15 @@ struct TransferBuffer
 
 }
 
-size_t FileDescriptor::sendfile(FileDescriptor& out_fd, off_t* offset, size_t count)
+void FileDescriptor::sendfile(FileDescriptor& out_fd, off_t offset, size_t count)
 {
     bool has_sendfile = true;
-    size_t sent = 0;
     TransferBuffer buffer;
     while (count > 0)
     {
         if (has_sendfile)
         {
-            ssize_t res = ::sendfile(out_fd, fd, offset, count);
+            ssize_t res = ::sendfile(out_fd, fd, &offset, count);
             if (res < 0)
             {
                 if (errno == EINVAL || errno == ENOSYS)
@@ -447,23 +446,20 @@ size_t FileDescriptor::sendfile(FileDescriptor& out_fd, off_t* offset, size_t co
                 else
                 {
                     std::stringstream msg;
-                    msg << "cannot sendfile() " << count << " bytes from offset" << *offset;
+                    msg << "cannot sendfile() " << count << " bytes from offset" << offset;
                     throw_error(msg.str().c_str());
                 }
             } else {
-                sent += res;
-                *offset += res;
+                offset += res;
                 count -= res;
             }
         } else {
-            size_t res = pread(buffer, count, *offset);
+            size_t res = pread(buffer, count, offset);
             out_fd.write_all_or_retry(buffer, res);
-            sent += res;
-            *offset += res;
+            offset += res;
             count -= res;
         }
     }
-    return sent;
 }
 
 void FileDescriptor::futimens(const struct ::timespec ts[2])

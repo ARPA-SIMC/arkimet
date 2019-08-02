@@ -279,7 +279,7 @@ public:
      *
      * Perform retry if data was partially written.
      */
-    size_t sendfile(FileDescriptor& out_fd, off_t* offset, size_t count);
+    void sendfile(FileDescriptor& out_fd, off_t offset, size_t count);
 
     operator int() const { return fd; }
 };
