@@ -13,6 +13,7 @@
 #include "utils/values.h"
 #include "dataset/reporter.h"
 #include "common.h"
+#include "cfg.h"
 #include <sstream>
 
 using namespace arki::python;

@@ -43,6 +43,23 @@ extern PyTypeObject* arkipy_cfgSection_Type;
 namespace arki {
 namespace python {
 
+/**
+ * Create a cfg::Section from python.
+ *
+ * Currently this only supports:
+ *  - str or bytes, that will get parsed
+ *  - dict, that will be set as key->val into out
+ */
+core::cfg::Section section_from_python(PyObject* o);
+
+/**
+ * Create a cfg::Sections from python.
+ *
+ * Currently this only supports:
+ *  - str or bytes, that will get parsed
+ */
+core::cfg::Sections sections_from_python(PyObject* o);
+
 PyObject* cfg_sections(const core::cfg::Sections& sections);
 PyObject* cfg_sections(core::cfg::Sections&& sections);
 PyObject* cfg_section(const core::cfg::Section& section);

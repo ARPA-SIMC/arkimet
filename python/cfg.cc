@@ -654,6 +654,56 @@ namespace python {
 // TODO: Section constructor with dict
 // TODO: Section constructor with sequence of (key, value)
 
+core::cfg::Section section_from_python(PyObject* o)
+{
+    try {
+        if (arkipy_cfgSection_Check(o)) {
+            return *((arkipy_cfgSection*)o)->section;
+        }
+
+        if (PyBytes_Check(o)) {
+            const char* v = throw_ifnull(PyBytes_AsString(o));
+            return core::cfg::Section::parse(v);
+        }
+        if (PyUnicode_Check(o)) {
+            const char* v = throw_ifnull(PyUnicode_AsUTF8(o));
+            return core::cfg::Section::parse(v);
+        }
+        if (PyDict_Check(o))
+        {
+            core::cfg::Section res;
+            PyObject *key, *val;
+            Py_ssize_t pos = 0;
+            while (PyDict_Next(o, &pos, &key, &val))
+                res.set(string_from_python(key), string_from_python(val));
+            return res;
+        }
+        PyErr_SetString(PyExc_TypeError, "value must be an instance of str, bytes, or dict");
+        throw PythonException();
+    } ARKI_CATCH_RETHROW_PYTHON
+}
+
+core::cfg::Sections sections_from_python(PyObject* o)
+{
+    try {
+        if (arkipy_cfgSections_Check(o)) {
+            return ((arkipy_cfgSections*)o)->sections;
+        }
+
+        if (PyBytes_Check(o)) {
+            const char* v = throw_ifnull(PyBytes_AsString(o));
+            return core::cfg::Sections::parse(v);
+        }
+        if (PyUnicode_Check(o)) {
+            const char* v = throw_ifnull(PyUnicode_AsUTF8(o));
+            return core::cfg::Sections::parse(v);
+        }
+        PyErr_SetString(PyExc_TypeError, "value must be an instance of str, or bytes");
+        throw PythonException();
+    } ARKI_CATCH_RETHROW_PYTHON
+}
+
+
 PyObject* cfg_sections(const core::cfg::Sections& sections)
 {
     py_unique_ptr<arkipy_cfgSections> res(throw_ifnull(PyObject_New(arkipy_cfgSections, arkipy_cfgSections_Type)));
