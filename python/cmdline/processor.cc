@@ -6,6 +6,7 @@
 #include "arki/dataset.h"
 #include "arki/dataset/index/base.h"
 #include "arki/emitter/json.h"
+#include "arki/emitter/keys.h"
 #include "arki/summary.h"
 #include "arki/summary/short.h"
 #include "arki/sort.h"
@@ -187,7 +188,7 @@ struct SummaryShortProcessor : public DatasetProcessor
         if (json)
         {
             emitter::JSON json(ss);
-            c.serialise(json, formatter.get());
+            c.serialise(json, emitter::keys_json, formatter.get());
         }
         else
             c.write_yaml(ss, formatter.get());
@@ -291,7 +292,7 @@ std::unique_ptr<DatasetProcessor> ProcessorMaker::make_metadata(Matcher matcher,
         printer = [out, formatter](const arki::Metadata& md) {
             stringstream ss;
             arki::emitter::JSON json(ss);
-            md.serialise(json, formatter.get());
+            md.serialise(json, emitter::keys_json, formatter.get());
             do_output(*out, ss.str());
         };
     else

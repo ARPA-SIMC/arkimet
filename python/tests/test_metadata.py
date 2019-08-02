@@ -29,11 +29,11 @@ class TestMetadata(unittest.TestCase):
         mds = self.read("inbound/test.grib1")
         self.assertEqual(len(mds), 3)
         data = mds[0].to_python()
-        source = next(i for i in data["i"] if i["t"] == "source")
+        source = next(i for i in data["i"] if i["type"] == "source")
         self.assertEquals(source["ofs"], 0)
         self.assertEquals(source["file"], "inbound/test.grib1")
         data = mds[1].to_python()
-        source = next(i for i in data["i"] if i["t"] == "source")
+        source = next(i for i in data["i"] if i["type"] == "source")
         self.assertEquals(source["ofs"], 7218)
         self.assertEquals(source["file"], "inbound/test.grib1")
 
@@ -51,7 +51,7 @@ class TestMetadata(unittest.TestCase):
         self.assertTrue(arki.Metadata.read_bundle("inbound/test.grib1.arkimet", dest=store_md))
         self.assertEqual(len(res), 3)
         self.assertEqual(res[0].to_python("source"), {
-            't': 'source', 's': 'BLOB', 'f': 'grib',
+            'type': 'source', 's': 'BLOB', 'f': 'grib',
             'b': os.path.abspath("inbound"),
             'file': 'test.grib1',
             'ofs': 0, 'sz': 7218,
@@ -71,7 +71,7 @@ class TestMetadata(unittest.TestCase):
         self.assertEqual(len(res), 3)
         self.assertEqual(res[0].to_python("source"), {
             'b': os.path.join(os.getcwd(), "basedir"),
-            't': 'source', 's': 'BLOB', 'f': 'grib',
+            'type': 'source', 's': 'BLOB', 'f': 'grib',
             'file': 'test.grib1',
             'ofs': 0, 'sz': 7218,
         })
@@ -88,7 +88,7 @@ class TestMetadata(unittest.TestCase):
         self.assertEqual(len(res), 3)
         self.assertEqual(res[0].to_python("source"), {
             'b': os.path.abspath("inbound"),
-            't': 'source', 's': 'BLOB', 'f': 'grib',
+            'type': 'source', 's': 'BLOB', 'f': 'grib',
             'file': 'test.grib1',
             'ofs': 0, 'sz': 7218,
         })
@@ -105,7 +105,7 @@ class TestMetadata(unittest.TestCase):
         self.assertEqual(len(res), 3)
         self.assertEqual(res[0].to_python("source"), {
             'b': os.path.join(os.getcwd(), "basedir"),
-            't': 'source', 's': 'BLOB', 'f': 'grib',
+            'type': 'source', 's': 'BLOB', 'f': 'grib',
             'file': 'test.grib1',
             'ofs': 0, 'sz': 7218,
         })
@@ -124,7 +124,7 @@ class TestMetadata(unittest.TestCase):
         self.assertEqual(len(res), 3)
         self.assertEqual(res[0].to_python("source"), {
             'b': os.path.join(os.getcwd(), "basedir"),
-            't': 'source', 's': 'BLOB', 'f': 'grib',
+            'type': 'source', 's': 'BLOB', 'f': 'grib',
             'file': 'test.grib1',
             'ofs': 0, 'sz': 7218,
         })

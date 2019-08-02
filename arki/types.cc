@@ -6,6 +6,7 @@
 #include "utils/sys.h"
 #include "utils/string.h"
 #include "emitter.h"
+#include "emitter/keys.h"
 #include "emitter/memory.h"
 #include "formatter.h"
 #include <cstring>
@@ -133,11 +134,11 @@ std::vector<uint8_t> Type::encodeBinary() const
     return contents;
 }
 
-void Type::serialise(Emitter& e, const Formatter* f) const
+void Type::serialise(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
 {
     e.start_mapping();
-    e.add("t", tag());
-    if (f) e.add("desc", (*f)(*this));
+    e.add(keys.type_name, tag());
+    if (f) e.add(keys.type_desc, (*f)(*this));
     serialiseLocal(e, f);
     e.end_mapping();
 }

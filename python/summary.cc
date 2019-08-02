@@ -9,6 +9,7 @@
 #include "arki/summary.h"
 #include "arki/summary/short.h"
 #include "arki/emitter/json.h"
+#include "arki/emitter/keys.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/geos.h"
 #include <sstream>
@@ -186,7 +187,7 @@ Arguments:
             } else if (strcmp(format, "json") == 0) {
                 std::stringstream buf;
                 arki::emitter::JSON output(buf);
-                shrt.serialise(output);
+                shrt.serialise(output, emitter::keys_python);
                 if (out.fd)
                     out.fd->write_all_or_retry(buf.str().data(), buf.str().size());
                 else
