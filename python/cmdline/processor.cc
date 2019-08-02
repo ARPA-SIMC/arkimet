@@ -231,8 +231,9 @@ std::unique_ptr<DatasetProcessor> ProcessorMaker::make_binary(Matcher matcher, s
         else
             query.setRepMetadata(matcher, report);
 #endif
-    } else
+    } else {
         query.setData(matcher);
+    }
 
     if (!sort.empty())
         query.sorter = sort::Compare::parse(sort);
