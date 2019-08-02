@@ -66,8 +66,8 @@ class TestArkiServer(unittest.TestCase):
         super().setUp()
         self.env = Env(format="grib")
         # TODO: randomly allocate a port
-        self.server_url = "http://localhost:7117"
-        self.server = make_server("localhost", 7117, self.env.config, self.server_url)
+        self.server = make_server("localhost", 0, self.env.config)
+        self.server_url = self.server.url
         self.server_thread = ServerThread(self.server)
         self.server_thread.start()
 
@@ -84,13 +84,13 @@ class TestArkiServer(unittest.TestCase):
         config = arki.dataset.http.load_cfg_sections(self.server_url)
 
         self.assertIn("test200", config)
-        self.assertEqual(config["test200"]["server"], "http://localhost:7117")
+        self.assertEqual(config["test200"]["server"], self.server_url)
 
         self.assertIn("test80", config)
-        self.assertEqual(config["test80"]["server"], "http://localhost:7117")
+        self.assertEqual(config["test80"]["server"], self.server_url)
 
         self.assertIn("error", config)
-        self.assertEqual(config["error"]["server"], "http://localhost:7117")
+        self.assertEqual(config["error"]["server"], self.server_url)
 
     def test_metadata(self):
         """
@@ -103,7 +103,7 @@ class TestArkiServer(unittest.TestCase):
         self.assertEqual(len(mdc), 1)
         self.assertEqual(mdc[0].to_python("source"), {
             't': 'source', 's': 'URL', 'f': 'grib',
-            'url': 'http://localhost:7117/dataset/test200',
+            'url': self.server_url + '/dataset/test200',
         })
 
         mdc = ds.query_data("origin:GRIB1,80")

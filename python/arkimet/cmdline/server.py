@@ -4,6 +4,7 @@ import datetime
 import subprocess
 import threading
 import sys
+import socket
 import arkimet as arki
 from arkimet.server import views
 from werkzeug.exceptions import HTTPException, NotFound
@@ -31,6 +32,17 @@ class ArkiServer(ForkingMixIn, HTTPServer):
             Rule('/dataset/<name>/summaryshort', endpoint='ArkiDatasetSummaryShort'),
             Rule('/dataset/<name>/config', endpoint='ArkiDatasetConfig'),
         ])
+
+    def server_bind(self):
+        if self.server_address[1] != 0:
+            super().server_bind()
+        else:
+            # Bind to a random port and reread the server address
+            self.socket.bind(self.server_address)
+            self.server_address = self.socket.getsockname()
+            host, port = self.server_address[:2]
+            self.server_name = socket.getfqdn(host)
+            self.server_port = port
 
     def set_config(self, config):
         self.cfg = config
