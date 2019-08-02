@@ -1,5 +1,6 @@
 #include "config.h"
 #include "arki/dataset/http.h"
+#include "arki/core/file.h"
 #include "arki/metadata.h"
 #include "arki/metadata/stream.h"
 #include "arki/matcher.h"
@@ -272,6 +273,22 @@ struct OstreamState : public Request
     }
 };
 
+struct AbstractOutputState : public Request
+{
+    AbstractOutputFile& out;
+
+    AbstractOutputState(CurlEasy& curl, AbstractOutputFile& out)
+        : Request(curl), out(out)
+    {
+    }
+
+    size_t process_body_chunk(void *ptr, size_t size, size_t nmemb, void *stream) override
+    {
+        out.write((const char*)ptr, size * nmemb);
+        return size * nmemb;
+    }
+};
+
 struct MDStreamState : public Request
 {
     metadata::Stream mdc;
@@ -347,6 +364,53 @@ void Reader::query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out)
     m_curl.reset();
 
     OstreamState request(m_curl, out, q.data_start_hook);
+    request.set_url(str::joinpath(config().baseurl, "query"));
+    request.set_method("POST");
+    set_post_query(request, q);
+
+    const char* toupload = getenv("ARKI_POSTPROC_FILES");
+    if (toupload != NULL)
+    {
+        unsigned count = 0;
+        // Split by ':'
+        str::Split splitter(toupload, ":");
+        for (str::Split::const_iterator i = splitter.begin(); i != splitter.end(); ++i)
+            request.post_data.add_file("postprocfile" + to_string(++count), *i);
+    }
+    switch (q.type)
+    {
+        case dataset::ByteQuery::BQ_DATA:
+            request.post_data.add_string("style", "data");
+            break;
+        case dataset::ByteQuery::BQ_POSTPROCESS:
+            request.post_data.add_string("style", "postprocess");
+            request.post_data.add_string("command", q.param);
+            break;
+        case dataset::ByteQuery::BQ_REP_METADATA:
+            request.post_data.add_string("style", "rep_metadata");
+            request.post_data.add_string("command", q.param);
+            break;
+        case dataset::ByteQuery::BQ_REP_SUMMARY:
+            request.post_data.add_string("style", "rep_summary");
+            request.post_data.add_string("command", q.param);
+            break;
+        default: {
+            stringstream ss;
+            ss << "cannot query dataset: unsupported query type: " << (int)q.type;
+            throw std::runtime_error(ss.str());
+        }
+    }
+    request.perform();
+}
+
+void Reader::query_bytes(const dataset::ByteQuery& q, AbstractOutputFile& out)
+{
+    if (q.data_start_hook)
+        throw std::runtime_error("Cannot use data_start_hook on abstract output files");
+
+    m_curl.reset();
+
+    AbstractOutputState request(m_curl, out);
     request.set_url(str::joinpath(config().baseurl, "query"));
     request.set_method("POST");
     set_post_query(request, q);
