@@ -51,28 +51,28 @@ namespace {
 struct query_data : public MethKwargs<query_data, arkipy_DatasetReader>
 {
     constexpr static const char* name = "query_data";
-    constexpr static const char* signature = "on_metadata: Callable[[metadata], Optional[bool]], matcher: Union[arki.Matcher, str]=None, with_data: bool=False, sort: str=None";
+    constexpr static const char* signature = "matcher: Union[arki.Matcher, str]=None, with_data: bool=False, sort: str=None, on_metadata: Callable[[metadata], Optional[bool]]=None";
     constexpr static const char* returns = "None";
     constexpr static const char* summary = "query a dataset, processing the resulting metadata one by one";
     constexpr static const char* doc = R"(
 Arguments:
-  on_metadata: a function called on each metadata, with the Metadata
-               object as its only argument. Return None or True to
-               continue processing results, False to stop.
   matcher: the matcher string to filter data to return.
   with_data: if True, also load data together with the metadata.
   sort: string with the desired sort order of results.
+  on_metadata: a function called on each metadata, with the Metadata
+               object as its only argument. Return None or True to
+               continue processing results, False to stop.
 )";
 
     static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
     {
-        static const char* kwlist[] = { "on_metadata", "matcher", "with_data", "sort", NULL };
-        PyObject* arg_on_metadata = Py_None;
+        static const char* kwlist[] = { "matcher", "with_data", "sort", "on_metadata", nullptr };
         PyObject* arg_matcher = Py_None;
         PyObject* arg_with_data = Py_None;
         PyObject* arg_sort = Py_None;
+        PyObject* arg_on_metadata = Py_None;
 
-        if (!PyArg_ParseTupleAndKeywords(args, kw, "|OOOO", const_cast<char**>(kwlist), &arg_on_metadata, &arg_matcher, &arg_with_data, &arg_sort))
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "|OOOO", const_cast<char**>(kwlist), &arg_matcher, &arg_with_data, &arg_sort, &arg_on_metadata))
             return nullptr;
 
         try {
