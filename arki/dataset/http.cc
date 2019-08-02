@@ -242,7 +242,7 @@ std::shared_ptr<const Config> Config::create(const core::cfg::Section& cfg)
 }
 
 Reader::Reader(std::shared_ptr<const Config> config)
-    : m_config(config), m_mischief(false)
+    : m_config(config)
 {
 }
 
@@ -308,14 +308,7 @@ struct MDStreamState : public Request
 void Reader::set_post_query(Request& request, const std::string& query)
 {
     if (config().qmacro.empty())
-    {
-        if (m_mischief)
-        {
-            request.post_data.add_string("query", query + ";MISCHIEF");
-            m_mischief = false;
-        } else
-            request.post_data.add_string("query", query);
-    }
+        request.post_data.add_string("query", query);
     else
     {
         request.post_data.add_string("query", config().qmacro);
@@ -486,11 +479,6 @@ core::cfg::Section Reader::load_cfg_section(const std::string& path)
     auto res = sections.begin()->second;
     res.set("name", sections.begin()->first);
     return res;
-}
-
-void Reader::produce_one_wrong_query()
-{
-    m_mischief = true;
 }
 
 std::string Reader::expandMatcher(const std::string& matcher, const std::string& server)
