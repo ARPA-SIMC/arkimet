@@ -70,6 +70,21 @@ struct AbstractOutputFile
 };
 
 
+class BufferOutputFile: public AbstractOutputFile
+{
+protected:
+    std::vector<uint8_t>& buffer;
+    std::string m_name;
+
+public:
+    BufferOutputFile(std::vector<uint8_t>& buffer, const std::string& name);
+
+    std::string name() const override;
+
+    void write(const void* data, size_t size) override;
+};
+
+
 /**
  * Abstract interface to things that return a line of text at a time
  */

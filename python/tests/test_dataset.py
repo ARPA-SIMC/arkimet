@@ -135,25 +135,25 @@ class TestDatasetReader(unittest.TestCase):
 
         # No arguments
         with tempfile.TemporaryFile() as fd:
-            ds.query_bytes(fd)
+            ds.query_bytes(file=fd)
             fd.seek(0)
             queried = fd.read()
         self.assertEqual(orig, queried)
 
         with io.BytesIO() as fd:
-            ds.query_bytes(fd)
+            ds.query_bytes(file=fd)
             queried = fd.getvalue()
         self.assertEqual(orig, queried)
 
         # matcher
         with tempfile.TemporaryFile() as fd:
-            ds.query_bytes(fd, matcher="reftime:>=1900")
+            ds.query_bytes(file=fd, matcher="reftime:>=1900")
             fd.seek(0)
             queried = fd.read()
         self.assertEqual(orig, queried)
 
         with io.BytesIO() as fd:
-            ds.query_bytes(fd, matcher="reftime:>=1900")
+            ds.query_bytes(file=fd, matcher="reftime:>=1900")
             queried = fd.getvalue()
         self.assertEqual(orig, queried)
 
@@ -164,7 +164,7 @@ class TestDatasetReader(unittest.TestCase):
             nonlocal triggered
             triggered = True
         with tempfile.TemporaryFile() as fd:
-            ds.query_bytes(fd, data_start_hook=data_start_hook)
+            ds.query_bytes(file=fd, data_start_hook=data_start_hook)
             fd.seek(0)
             queried = fd.read()
         self.assertEqual(orig, queried)
@@ -172,7 +172,7 @@ class TestDatasetReader(unittest.TestCase):
 
         # postprocess
         with tempfile.TemporaryFile() as fd:
-            ds.query_bytes(fd, postprocess="countbytes")
+            ds.query_bytes(file=fd, postprocess="countbytes")
             fd.seek(0)
             queried = fd.read()
         # This is bigger than 44412 because postprocessors are also sent
@@ -180,33 +180,38 @@ class TestDatasetReader(unittest.TestCase):
         self.assertEqual(queried, b"44937\n")
 
         with io.BytesIO() as fd:
-            ds.query_bytes(fd, postprocess="countbytes")
+            ds.query_bytes(file=fd, postprocess="countbytes")
             queried = fd.getvalue()
+        # This is bigger than 44412 because postprocessors are also sent
+        # metadata, so that arki-xargs can work.
+        self.assertEqual(queried, b"44937\n")
+
+        queried = ds.query_bytes(postprocess="countbytes")
         # This is bigger than 44412 because postprocessors are also sent
         # metadata, so that arki-xargs can work.
         self.assertEqual(queried, b"44937\n")
 
         # metadata_report
         with tempfile.TemporaryFile() as fd:
-            ds.query_bytes(fd, metadata_report="count")
+            ds.query_bytes(file=fd, metadata_report="count")
             fd.seek(0)
             queried = fd.read()
         self.assertEqual(queried, b"3\n")
 
         with io.BytesIO() as fd:
-            ds.query_bytes(fd, metadata_report="count")
+            ds.query_bytes(file=fd, metadata_report="count")
             queried = fd.getvalue()
         self.assertEqual(queried, b"3\n")
 
         # summary_report
         with tempfile.TemporaryFile() as fd:
-            ds.query_bytes(fd, summary_report="count")
+            ds.query_bytes(file=fd, summary_report="count")
             fd.seek(0)
             queried = fd.read()
         self.assertEqual(queried, b"3\n")
 
         with io.BytesIO() as fd:
-            ds.query_bytes(fd, summary_report="count")
+            ds.query_bytes(file=fd, summary_report="count")
             queried = fd.getvalue()
         self.assertEqual(queried, b"3\n")
 
