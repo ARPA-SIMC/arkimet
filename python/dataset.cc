@@ -52,7 +52,7 @@ struct query_data : public MethKwargs<query_data, arkipy_DatasetReader>
 {
     constexpr static const char* name = "query_data";
     constexpr static const char* signature = "matcher: Union[arki.Matcher, str]=None, with_data: bool=False, sort: str=None, on_metadata: Callable[[metadata], Optional[bool]]=None";
-    constexpr static const char* returns = "None";
+    constexpr static const char* returns = "Union[None, List[arki.Metadata]]";
     constexpr static const char* summary = "query a dataset, processing the resulting metadata one by one";
     constexpr static const char* doc = R"(
 Arguments:
@@ -172,14 +172,11 @@ Arguments:
 struct query_bytes : public MethKwargs<query_bytes, arkipy_DatasetReader>
 {
     constexpr static const char* name = "query_bytes";
-    constexpr static const char* signature = "file: Union[int, BinaryIO], matcher: Union[arki.Matcher, str]=None, with_data: bool=False, sort: str=None, data_start_hook: Callable[[], None]=None, postprocess: str=None, metadata_report: str=None, summary_report: str=None";
-    constexpr static const char* returns = "None";
+    constexpr static const char* signature = "matcher: Union[arki.Matcher, str]=None, with_data: bool=False, sort: str=None, data_start_hook: Callable[[], None]=None, postprocess: str=None, metadata_report: str=None, summary_report: str=None, file: Union[int, BinaryIO]=None";
+    constexpr static const char* returns = "Union[None, bytes]";
     constexpr static const char* summary = "query a dataset, piping results to a file";
     constexpr static const char* doc = R"(
 Arguments:
-  file: the output file. The file needs to be either an integer file or
-        socket handle, or a file-like object with a fileno() method
-        that returns an integer handle.
   matcher: the matcher string to filter data to return.
   with_data: if True, also load data together with the metadata.
   sort: string with the desired sort order of results.
@@ -187,12 +184,13 @@ Arguments:
   postprocess: name of a postprocessor to use to filter data server-side
   metadata_report: name of the server-side report function to run on results metadata
   summary_report: name of the server-side report function to run on results summary
+  file: the output file. The file can be a file-like object, or an integer file
+        or socket handle. If missing, data is returned in a bytes object
 )";
 
     static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
     {
-        static const char* kwlist[] = { "file", "matcher", "with_data", "sort", "data_start_hook", "postprocess", "metadata_report", "summary_report", NULL };
-        PyObject* arg_file = Py_None;
+        static const char* kwlist[] = { "matcher", "with_data", "sort", "data_start_hook", "postprocess", "metadata_report", "summary_report", "file", nullptr };
         PyObject* arg_matcher = Py_None;
         PyObject* arg_with_data = Py_None;
         PyObject* arg_sort = Py_None;
@@ -200,13 +198,12 @@ Arguments:
         PyObject* arg_postprocess = Py_None;
         PyObject* arg_metadata_report = Py_None;
         PyObject* arg_summary_report = Py_None;
+        PyObject* arg_file = Py_None;
 
-        if (!PyArg_ParseTupleAndKeywords(args, kw, "O|OOOOOOO", const_cast<char**>(kwlist), &arg_file, &arg_matcher, &arg_with_data, &arg_sort, &arg_data_start_hook, &arg_postprocess, &arg_metadata_report, &arg_summary_report))
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "|OOOOOOOO", const_cast<char**>(kwlist), &arg_matcher, &arg_with_data, &arg_sort, &arg_data_start_hook, &arg_postprocess, &arg_metadata_report, &arg_summary_report, &arg_file))
             return nullptr;
 
         try {
-            BinaryOutputFile out(arg_file);
-
             arki::Matcher matcher = matcher_from_python(arg_matcher);
             bool with_data = false;
             if (arg_with_data != Py_None)
@@ -253,16 +250,33 @@ Arguments:
 
                 query.data_start_hook = [&](NamedFileDescriptor& fd) {
                     // call arg_data_start_hook
+                    AcquireGIL gil;
                     pyo_unique_ptr res(PyObject_CallObject(arg_data_start_hook, data_start_hook_args));
                     if (!res) throw PythonException();
                 };
             }
 
-            if (out.fd)
-                self->ds->query_bytes(query, *out.fd);
-            else
-                self->ds->query_bytes(query, *out.abstract);
-            Py_RETURN_NONE;
+            if (arg_file && arg_file != Py_None)
+            {
+                BinaryOutputFile out(arg_file);
+
+                {
+                    ReleaseGIL gil;
+                    if (out.fd)
+                        self->ds->query_bytes(query, *out.fd);
+                    else
+                        self->ds->query_bytes(query, *out.abstract);
+                }
+                Py_RETURN_NONE;
+            } else {
+                std::vector<uint8_t> buffer;
+                BufferOutputFile out(buffer, "memory buffer");
+                {
+                    ReleaseGIL gil;
+                    self->ds->query_bytes(query, out);
+                }
+                return to_python(buffer);
+            }
         } ARKI_CATCH_RETURN_PYO
     }
 };
