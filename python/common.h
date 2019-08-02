@@ -115,26 +115,6 @@ struct PythonEmitter : public Emitter
     void add_string(const std::string& val) override;
 };
 
-/// Call repr() on \a o, and return the result in \a out
-int object_repr(PyObject* o, std::string& out);
-
-/**
- * Create a cfg::Section from python.
- *
- * Currently this only supports:
- *  - str or bytes, that will get parsed
- *  - dict, that will be set as key->val into out
- */
-core::cfg::Section section_from_python(PyObject* o);
-
-/**
- * Create a cfg::Sections from python.
- *
- * Currently this only supports:
- *  - str or bytes, that will get parsed
- */
-core::cfg::Sections sections_from_python(PyObject* o);
-
 /**
  * Create a LineReader to read from any python object that can iterate strings
  */

@@ -11,6 +11,7 @@
 #include "utils/methods.h"
 #include "utils/type.h"
 #include "utils/values.h"
+#include "cfg.h"
 #include "common.h"
 #include "cmdline.h"
 #include "cmdline/processor.h"

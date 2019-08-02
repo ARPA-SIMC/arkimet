@@ -12,6 +12,7 @@
 #include "utils/type.h"
 #include "utils/values.h"
 #include "common.h"
+#include "cfg.h"
 #include "cmdline.h"
 #include "cmdline/processor.h"
 
