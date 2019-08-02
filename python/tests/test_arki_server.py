@@ -97,12 +97,10 @@ class TestArkiServer(unittest.TestCase):
         Test querying the datasets, metadata only
         """
         config = arki.dataset.http.load_cfg_sections(self.server_url)
-
         ds = arki.dataset.Reader(config["test200"])
+
         mdc = ds.query_data("origin:GRIB1,200")
         self.assertEqual(len(mdc), 1)
-
-        # Check that the source record that comes out is ok
         self.assertEqual(mdc[0].to_python("source"), {
             't': 'source', 's': 'URL', 'f': 'grib',
             'url': 'http://localhost:7117/dataset/test200',
@@ -113,3 +111,41 @@ class TestArkiServer(unittest.TestCase):
 
         mdc = ds.query_data("origin:GRIB1,98")
         self.assertFalse(mdc)
+
+    def test_inline(self):
+        """
+        Test querying the datasets, with inline data
+        """
+        config = arki.dataset.http.load_cfg_sections(self.server_url)
+        ds = arki.dataset.Reader(config["test200"])
+
+        mdc = ds.query_data("origin:GRIB1,200", True)
+        self.assertEqual(len(mdc), 1)
+        self.assertEqual(mdc[0].to_python("source"), {
+            't': 'source', 's': 'INLINE', 'f': 'grib',
+            'sz': 7218
+        })
+        self.assertEqual(len(mdc[0].data), 7218)
+
+        mdc = ds.query_data("origin:GRIB1,80", True)
+        self.assertFalse(mdc)
+
+    def test_summary(self):
+        """
+        Test querying the summary
+        """
+        config = arki.dataset.http.load_cfg_sections(self.server_url)
+        ds = arki.dataset.Reader(config["test200"])
+
+        summary = ds.query_summary("origin:GRIB1,200")
+        self.assertEqual(summary.count, 1)
+
+    def test_postprocess(self):
+        """
+        Test querying with postprocessing
+        """
+        config = arki.dataset.http.load_cfg_sections(self.server_url)
+        ds = arki.dataset.Reader(config["test200"])
+
+        data = ds.query_bytes("origin:GRIB1,200", postprocess="say ciao")
+        self.assertEqual(data, b"ciao\n")

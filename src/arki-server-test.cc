@@ -32,51 +32,6 @@ class Tests : public TestCase
 
 void Tests::register_tests() {
 
-// Test querying the datasets, with inline data
-add_method("inline", [] {
-    auto config = dataset::http::Reader::load_cfg_sections("http://localhost:7117");
-
-    unique_ptr<dataset::Reader> testds(dataset::Reader::create(*config.section("test200")));
-    metadata::Collection mdc(*testds, dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), true));
-    wassert(actual(mdc.size()) == 1u);
-
-    // Check that the source record that comes out is ok
-    wassert(actual_type(mdc[0].source()).is_source_inline("grib", 7218));
-    wassert(actual(mdc[0].get_data().size()) == 7218u);
-
-    mdc.clear();
-    mdc.add(*testds, dataset::DataQuery(Matcher::parse("origin:GRIB1,80"), true));
-    wassert(actual(mdc.size()) == 0u);
-});
-
-// Test querying the summary
-add_method("summary", [] {
-    auto config = dataset::http::Reader::load_cfg_sections("http://localhost:7117");
-
-    unique_ptr<dataset::Reader> testds(dataset::Reader::create(*config.section("test200")));
-
-    Summary summary;
-    testds->query_summary(Matcher::parse("origin:GRIB1,200"), summary);
-    wassert(actual(summary.count()) == 1u);
-});
-
-// Test querying with postprocessing
-add_method("postprocess", [] {
-    auto config = dataset::http::Reader::load_cfg_sections("http://localhost:7117");
-
-    unique_ptr<dataset::Reader> testds(dataset::Reader::create(*config.section("test200")));
-
-    wassert(actual(dynamic_cast<dataset::http::Reader*>(testds.get())).istrue());
-
-    sys::File out(sys::File::mkstemp("test"));
-    dataset::ByteQuery bq;
-    bq.setPostprocess(Matcher::parse("origin:GRIB1,200"), "say ciao");
-    testds->query_bytes(bq, out);
-    out.close();
-    string res = sys::read_file(out.name());
-    wassert(actual(res) == "ciao\n");
-});
-
 // Test the server giving an error
 add_method("error", [] {
     auto config = dataset::http::Reader::load_cfg_sections("http://localhost:7117");
