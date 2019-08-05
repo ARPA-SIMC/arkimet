@@ -88,7 +88,7 @@ std::ostream& Quantity::writeToOstream(std::ostream& o) const
     return o << str::join(", ", values.begin(), values.end());
 }
 
-void Quantity::serialiseLocal(Emitter& e, const Formatter* f) const
+void Quantity::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
 {
     e.add("va");
     e.start_list();

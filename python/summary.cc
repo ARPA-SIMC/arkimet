@@ -131,7 +131,7 @@ Arguments:
             } else if (strcmp(format, "json") == 0) {
                 std::stringstream buf;
                 arki::emitter::JSON output(buf);
-                self->summary->serialise(output);
+                self->summary->serialise(output, emitter::keys_json);
                 if (out.fd)
                     out.fd->write_all_or_retry(buf.str());
                 else
@@ -220,7 +220,7 @@ Arguments:
     {
         try {
             PythonEmitter e;
-            self->summary->serialise(e);
+            self->summary->serialise(e, emitter::keys_python);
             return e.release();
         } ARKI_CATCH_RETURN_PYO
     }

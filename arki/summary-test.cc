@@ -13,6 +13,7 @@
 #include "types/run.h"
 #include "emitter/json.h"
 #include "emitter/memory.h"
+#include "emitter/keys.h"
 #include "matcher.h"
 #include "metadata/collection.h"
 #include "utils.h"
@@ -168,7 +169,7 @@ add_method("json", [](Fixture& f) {
     // Serialise to JSON;
     stringstream stream1;
     emitter::JSON json(stream1);
-    f.s.serialise(json);
+    f.s.serialise(json, emitter::keys_json);
 
     // Parse back
     stringstream stream2(stream1.str(), ios_base::in);

@@ -139,7 +139,7 @@ void Type::serialise(Emitter& e, const emitter::Keys& keys, const Formatter* f) 
     e.start_mapping();
     e.add(keys.type_name, tag());
     if (f) e.add(keys.type_desc, (*f)(*this));
-    serialiseLocal(e, f);
+    serialise_local(e, keys, f);
     e.end_mapping();
 }
 

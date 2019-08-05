@@ -195,9 +195,9 @@ std::ostream& GRIB::writeToOstream(std::ostream& o) const
 {
     return o << formatStyle(style()) << "(" << m_values.toString() << ")";
 }
-void GRIB::serialiseLocal(Emitter& e, const Formatter* f) const
+void GRIB::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
 {
-    Area::serialiseLocal(e, f);
+    Area::serialise_local(e, keys, f);
     e.add("va");
     m_values.serialise(e);
 }
@@ -269,9 +269,9 @@ std::ostream& ODIMH5::writeToOstream(std::ostream& o) const
 {
     return o << formatStyle(style()) << "(" << m_values.toString() << ")";
 }
-void ODIMH5::serialiseLocal(Emitter& e, const Formatter* f) const
+void ODIMH5::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
 {
-    Area::serialiseLocal(e, f);
+    Area::serialise_local(e, keys, f);
     e.add("va");
     m_values.serialise(e);
 }
@@ -365,9 +365,9 @@ std::ostream& VM2::writeToOstream(std::ostream& o) const
         o << "," << derived_values().toString();
     return o << ")";
 }
-void VM2::serialiseLocal(Emitter& e, const Formatter* f) const
+void VM2::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
 {
-    Area::serialiseLocal(e, f);
+    Area::serialise_local(e, keys, f);
     e.add("id", m_station_id);
     if (!derived_values().empty()) {
         e.add("va");

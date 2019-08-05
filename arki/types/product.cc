@@ -314,9 +314,9 @@ std::ostream& GRIB1::writeToOstream(std::ostream& o) const
 	     << setfill(' ')
 	     << ")";
 }
-void GRIB1::serialiseLocal(Emitter& e, const Formatter* f) const
+void GRIB1::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
 {
-    Product::serialiseLocal(e, f);
+    Product::serialise_local(e, keys, f);
     e.add("or", m_origin);
     e.add("ta", m_table);
     e.add("pr", m_product);
@@ -435,9 +435,9 @@ std::ostream& GRIB2::writeToOstream(std::ostream& o) const
       << ")";
     return o;
 }
-void GRIB2::serialiseLocal(Emitter& e, const Formatter* f) const
+void GRIB2::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
 {
-    Product::serialiseLocal(e, f);
+    Product::serialise_local(e, keys, f);
     e.add("ce", m_centre);
     e.add("di", m_discipline);
     e.add("ca", m_category);
@@ -586,9 +586,9 @@ std::ostream& BUFR::writeToOstream(std::ostream& o) const
 		o << ", " << m_values << ")";
 	return o;
 }
-void BUFR::serialiseLocal(Emitter& e, const Formatter* f) const
+void BUFR::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
 {
-    Product::serialiseLocal(e, f);
+    Product::serialise_local(e, keys, f);
     e.add("ty", m_type);
     e.add("st", m_subtype);
     e.add("ls", m_localsubtype);
@@ -758,9 +758,9 @@ std::ostream& ODIMH5::writeToOstream(std::ostream& o) const
 		;
 }
 
-void ODIMH5::serialiseLocal(Emitter& e, const Formatter* f) const
+void ODIMH5::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
 {
-    Product::serialiseLocal(e, f);
+    Product::serialise_local(e, keys, f);
     e.add("ob", m_obj);
     e.add("pr", m_prod);
 }
@@ -897,9 +897,9 @@ std::ostream& VM2::writeToOstream(std::ostream& o) const
         o << ", " << derived_values().toString();
     return o << ")";
 }
-void VM2::serialiseLocal(Emitter& e, const Formatter* f) const
+void VM2::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
 {
-    Product::serialiseLocal(e, f);
+    Product::serialise_local(e, keys, f);
     e.add("id", m_variable_id);
     if (!derived_values().empty()) {
         e.add("va");

@@ -75,7 +75,7 @@ std::ostream& Note::writeToOstream(std::ostream& o) const
 	return o << "[" << time << "]" << content;
 }
 
-void Note::serialiseLocal(Emitter& e, const Formatter* f) const
+void Note::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
 {
     e.add("ti"); time.serialiseList(e);
     e.add("va", content);

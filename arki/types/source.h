@@ -51,7 +51,7 @@ struct Source : public types::StyledType<Source>
     static std::unique_ptr<Source> decodeRelative(BinaryDecoder& dec, const std::string& basedir);
     static std::unique_ptr<Source> decodeString(const std::string& val);
     static std::unique_ptr<Source> decodeMapping(const emitter::memory::Mapping& val);
-    virtual void serialiseLocal(Emitter& e, const Formatter* f=0) const;
+    virtual void serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f=0) const;
 
     virtual bool lua_lookup(lua_State* L, const std::string& name) const;
 

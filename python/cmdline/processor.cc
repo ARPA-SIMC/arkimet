@@ -258,7 +258,7 @@ std::unique_ptr<DatasetProcessor> ProcessorMaker::make_summary(Matcher matcher, 
             printer = [out, formatter](const Summary& s) {
                 stringstream ss;
                 emitter::JSON json(ss);
-                s.serialise(json, formatter.get());
+                s.serialise(json, emitter::keys_json, formatter.get());
                 string res = ss.str();
                 do_output(*out, ss.str());
             };

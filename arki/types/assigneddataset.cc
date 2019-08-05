@@ -68,7 +68,7 @@ std::ostream& AssignedDataset::writeToOstream(std::ostream& o) const
 	return o << name << " as " << id << " imported on " << changed;
 }
 
-void AssignedDataset::serialiseLocal(Emitter& e, const Formatter* f) const
+void AssignedDataset::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
 {
     e.add("ti"); changed.serialiseList(e);
     e.add("na", name);

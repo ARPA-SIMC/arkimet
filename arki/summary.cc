@@ -15,6 +15,7 @@
 #include "utils/compress.h"
 #include "emitter.h"
 #include "emitter/memory.h"
+#include "emitter/keys.h"
 #include "iotrace.h"
 #include "utils/lua.h"
 #include "utils/string.h"
@@ -608,7 +609,7 @@ void Summary::write_yaml(core::AbstractOutputFile& out, const Formatter* formatt
     out.write(yaml.data(), yaml.size());
 }
 
-void Summary::serialise(Emitter& e, const Formatter* f) const
+void Summary::serialise(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
 {
     e.start_mapping();
     e.add("items");
@@ -618,9 +619,10 @@ void Summary::serialise(Emitter& e, const Formatter* f) const
         struct Serialiser : public summary::Visitor
         {
             Emitter& e;
+            const emitter::Keys& keys;
             const Formatter* f;
 
-            Serialiser(Emitter& e, const Formatter* f) : e(e), f(f) {}
+            Serialiser(Emitter& e, const emitter::Keys& keys, const Formatter* f) : e(e), keys(keys), f(f) {}
 
             virtual bool operator()(const std::vector<const Type*>& md, const Stats& stats)
             {
@@ -632,7 +634,7 @@ void Summary::serialise(Emitter& e, const Formatter* f) const
                     e.add((*i)->tag());
                     e.start_mapping();
                     if (f) e.add("desc", (*f)(**i));
-                    (*i)->serialiseLocal(e, f);
+                    (*i)->serialise_local(e, keys, f);
                     e.end_mapping();
                 }
                 e.add("summarystats");
@@ -642,7 +644,7 @@ void Summary::serialise(Emitter& e, const Formatter* f) const
                 e.end_mapping();
                 return true;
             }
-        } visitor(e, f);
+        } visitor(e, keys, f);
 
         visit(visitor);
     }

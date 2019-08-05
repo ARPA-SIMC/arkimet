@@ -74,7 +74,7 @@ public:
     Style style() const override;
     void encodeWithoutEnvelope(BinaryEncoder& enc) const override;
     std::ostream& writeToOstream(std::ostream& o) const override;
-    void serialiseLocal(Emitter& e, const Formatter* f=0) const override;
+    void serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f=0) const override;
     std::string exactQuery() const override;
     const char* lua_type_name() const override;
     bool lua_lookup(lua_State* L, const std::string& name) const override;
@@ -131,7 +131,7 @@ public:
     Style style() const override;
     void encodeWithoutEnvelope(BinaryEncoder& enc) const override;
     std::ostream& writeToOstream(std::ostream& o) const override;
-    void serialiseLocal(Emitter& e, const Formatter* f=0) const override;
+    void serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f=0) const override;
     std::string exactQuery() const override;
     const char* lua_type_name() const override;
     bool lua_lookup(lua_State* L, const std::string& name) const override;
@@ -165,7 +165,7 @@ public:
     Style style() const override;
     void encodeWithoutEnvelope(BinaryEncoder& enc) const override;
     std::ostream& writeToOstream(std::ostream& o) const override;
-    void serialiseLocal(Emitter& e, const Formatter* f=0) const override;
+    void serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f=0) const override;
     std::string exactQuery() const override;
     const char* lua_type_name() const override;
     bool lua_lookup(lua_State* L, const std::string& name) const override;
@@ -193,7 +193,7 @@ public:
     Style style() const override;
     void encodeWithoutEnvelope(BinaryEncoder& enc) const override;
     std::ostream& writeToOstream(std::ostream& o) const override;
-    void serialiseLocal(Emitter& e, const Formatter* f=0) const override;
+    void serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f=0) const override;
     std::string exactQuery() const override;
     const char* lua_type_name() const override;
     bool lua_lookup(lua_State* L, const std::string& name) const override;

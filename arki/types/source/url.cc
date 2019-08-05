@@ -27,9 +27,9 @@ std::ostream& URL::writeToOstream(std::ostream& o) const
 			 << format << "," << url
 			 << ")";
 }
-void URL::serialiseLocal(Emitter& e, const Formatter* f) const
+void URL::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
 {
-    Source::serialiseLocal(e, f);
+    Source::serialise_local(e, keys, f);
     e.add("url"); e.add(url);
 }
 std::unique_ptr<URL> URL::decodeMapping(const emitter::memory::Mapping& val)

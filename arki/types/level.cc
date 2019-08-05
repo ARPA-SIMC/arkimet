@@ -477,9 +477,9 @@ std::ostream& GRIB1::writeToOstream(std::ostream& o) const
 	o << setfill(' ');
 	return o << ")";
 }
-void GRIB1::serialiseLocal(Emitter& e, const Formatter* f) const
+void GRIB1::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
 {
-    Level::serialiseLocal(e, f);
+    Level::serialise_local(e, keys, f);
     e.add("lt", (unsigned)m_type);
     switch (valType())
     {
@@ -687,9 +687,9 @@ std::ostream& GRIB2S::writeToOstream(std::ostream& o) const
 
     return o;
 }
-void GRIB2S::serialiseLocal(Emitter& e, const Formatter* f) const
+void GRIB2S::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
 {
-    Level::serialiseLocal(e, f);
+    Level::serialise_local(e, keys, f);
 
     if (m_type == MISSING_TYPE)
     {
@@ -861,9 +861,9 @@ std::ostream& GRIB2D::writeToOstream(std::ostream& o) const
 
     return o;
 }
-void GRIB2D::serialiseLocal(Emitter& e, const Formatter* f) const
+void GRIB2D::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
 {
-    Level::serialiseLocal(e, f);
+    Level::serialise_local(e, keys, f);
 
     if (m_type1 == GRIB2S::MISSING_TYPE)
     {
@@ -1048,9 +1048,9 @@ std::ostream& ODIMH5::writeToOstream(std::ostream& o) const
 		<< ")"
 		;
 }
-void ODIMH5::serialiseLocal(Emitter& e, const Formatter* f) const
+void ODIMH5::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
 {
-    Level::serialiseLocal(e, f);
+    Level::serialise_local(e, keys, f);
     e.add("mi", m_min);
     e.add("ma", m_max);
 }

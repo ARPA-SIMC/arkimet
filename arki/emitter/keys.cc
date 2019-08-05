@@ -8,6 +8,7 @@ static Keys make_json()
     Keys res;
     res.type_name = "t";
     res.type_desc = "desc";
+    res.type_style = "s";
     return res;
 }
 
@@ -16,6 +17,7 @@ static Keys make_python()
     Keys res;
     res.type_name = "type";
     res.type_desc = "desc";
+    res.type_style = "style";
     return res;
 }
 

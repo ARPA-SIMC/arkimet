@@ -156,9 +156,9 @@ std::ostream& Position::writeToOstream(std::ostream& o) const
     return o << time;
 }
 
-void Position::serialiseLocal(Emitter& e, const Formatter* f) const
+void Position::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
 {
-    Reftime::serialiseLocal(e, f);
+    Reftime::serialise_local(e, keys, f);
     e.add("ti");
     time.serialiseList(e);
 }
@@ -245,9 +245,9 @@ std::ostream& Period::writeToOstream(std::ostream& o) const
     return o << begin << " to " << end;
 }
 
-void Period::serialiseLocal(Emitter& e, const Formatter* f) const
+void Period::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
 {
-    Reftime::serialiseLocal(e, f);
+    Reftime::serialise_local(e, keys, f);
     e.add("b"); begin.serialiseList(e);
     e.add("e"); end.serialiseList(e);
 }

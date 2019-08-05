@@ -26,9 +26,9 @@ std::ostream& Inline::writeToOstream(std::ostream& o) const
              << format << "," << size
              << ")";
 }
-void Inline::serialiseLocal(Emitter& e, const Formatter* f) const
+void Inline::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
 {
-    Source::serialiseLocal(e, f);
+    Source::serialise_local(e, keys, f);
     e.add("sz", size);
 }
 std::unique_ptr<Inline> Inline::decodeMapping(const emitter::memory::Mapping& val)

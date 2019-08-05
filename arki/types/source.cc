@@ -69,9 +69,9 @@ void Source::encodeWithoutEnvelope(BinaryEncoder& enc) const
     enc.add_raw(format);
 }
 
-void Source::serialiseLocal(Emitter& e, const Formatter* f) const
+void Source::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
 {
-    types::StyledType<Source>::serialiseLocal(e, f);
+    types::StyledType<Source>::serialise_local(e, keys, f);
     e.add("f"); e.add(format);
 }
 

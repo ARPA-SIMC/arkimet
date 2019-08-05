@@ -986,9 +986,9 @@ std::ostream& GRIB1::writeToOstream(std::ostream& o) const
 	return o << ")";
 }
 
-void GRIB1::serialiseLocal(Emitter& e, const Formatter* f) const
+void GRIB1::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
 {
-    Timerange::serialiseLocal(e, f);
+    Timerange::serialise_local(e, keys, f);
     e.add("ty", (int)m_type);
     e.add("un", (int)m_unit);
     e.add("p1", (int)m_p1);
@@ -1529,9 +1529,9 @@ std::ostream& GRIB2::writeToOstream(std::ostream& o) const
 	  << ")";
 }
 
-void GRIB2::serialiseLocal(Emitter& e, const Formatter* f) const
+void GRIB2::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
 {
-    Timerange::serialiseLocal(e, f);
+    Timerange::serialise_local(e, keys, f);
     e.add("ty", (int)m_type);
     e.add("un", (int)m_unit);
     e.add("p1", (int)m_p1);
@@ -1702,9 +1702,9 @@ unique_ptr<Timedef> Timedef::createFromYaml(const std::string& encoded)
 }
 
 
-void Timedef::serialiseLocal(Emitter& e, const Formatter* f) const
+void Timedef::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
 {
-    Timerange::serialiseLocal(e, f);
+    Timerange::serialise_local(e, keys, f);
     e.add("sl", (int)m_step_len);
     e.add("su", (int)m_step_unit);
     if (m_stat_type != 255)
@@ -2197,9 +2197,9 @@ std::ostream& BUFR::writeToOstream(std::ostream& o) const
 	return o << ")";
 }
 
-void BUFR::serialiseLocal(Emitter& e, const Formatter* f) const
+void BUFR::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
 {
-    Timerange::serialiseLocal(e, f);
+    Timerange::serialise_local(e, keys, f);
     e.add("un", (int)m_unit);
     e.add("va", (int)m_value);
 }

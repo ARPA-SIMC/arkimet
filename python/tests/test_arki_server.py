@@ -107,7 +107,7 @@ class TestArkiServer(unittest.TestCase):
         mdc = ds.query_data("origin:GRIB1,200")
         self.assertEqual(len(mdc), 1)
         self.assertEqual(mdc[0].to_python("source"), {
-            'type': 'source', 's': 'URL', 'f': 'grib',
+            'type': 'source', 'style': 'URL', 'f': 'grib',
             'url': self.server_url + '/dataset/test200',
         })
 
@@ -127,7 +127,7 @@ class TestArkiServer(unittest.TestCase):
         mdc = ds.query_data("origin:GRIB1,200", True)
         self.assertEqual(len(mdc), 1)
         self.assertEqual(mdc[0].to_python("source"), {
-            'type': 'source', 's': 'INLINE', 'f': 'grib',
+            'type': 'source', 'style': 'INLINE', 'f': 'grib',
             'sz': 7218
         })
         self.assertEqual(len(mdc[0].data), 7218)
@@ -218,7 +218,7 @@ class TestArkiServer(unittest.TestCase):
         self.assertEqual(len(mdc), 1)
         # Check that the source record that comes out is ok
         self.assertEqual(mdc[0].to_python("source"), {
-            'type': 'source', 's': 'URL', 'f': 'grib',
+            'type': 'source', 'style': 'URL', 'f': 'grib',
             'url': self.server_url + '/query',
         })
 
@@ -237,7 +237,7 @@ class TestArkiServer(unittest.TestCase):
         self.assertEqual(len(mdc), 1)
         # Check that the source record that comes out is ok
         self.assertEqual(mdc[0].to_python("source"), {
-            'type': 'source', 's': 'URL', 'f': 'grib',
+            'type': 'source', 'style': 'URL', 'f': 'grib',
             'url': self.server_url + '/query',
         })
 

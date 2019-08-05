@@ -64,7 +64,7 @@ std::ostream& Value::writeToOstream(std::ostream& o) const
     return o << str::encode_cstring(buffer);
 }
 
-void Value::serialiseLocal(Emitter& e, const Formatter* f) const
+void Value::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
 {
     e.add("va", buffer);
 }
