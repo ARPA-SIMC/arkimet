@@ -1,9 +1,10 @@
 #include "inline.h"
-#include <arki/binary.h>
-#include <arki/utils/lua.h>
-#include <arki/emitter.h>
-#include <arki/emitter/memory.h>
-#include <arki/exceptions.h>
+#include "arki/binary.h"
+#include "arki/utils/lua.h"
+#include "arki/emitter.h"
+#include "arki/emitter/memory.h"
+#include "arki/emitter/keys.h"
+#include "arki/exceptions.h"
 
 using namespace std;
 using namespace arki::utils;
@@ -29,7 +30,7 @@ std::ostream& Inline::writeToOstream(std::ostream& o) const
 void Inline::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
 {
     Source::serialise_local(e, keys, f);
-    e.add("sz", size);
+    e.add(keys.source_size, size);
 }
 std::unique_ptr<Inline> Inline::decodeMapping(const emitter::memory::Mapping& val)
 {

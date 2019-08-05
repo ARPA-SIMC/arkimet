@@ -307,7 +307,7 @@ class ArkiCheckTestsBase(CmdlineTestMixin):
             self.assertEqual(len(mdc), 1)
             blob = mdc[0].to_python("source")
             self.assertEqual(blob["file"], "2007/07-08.grib")
-            self.assertEqual(blob["b"], os.path.abspath("testenv/testds/.archive/last"))
+            self.assertEqual(blob["basedir"], os.path.abspath("testenv/testds/.archive/last"))
 
             out = self.call_output_success("testenv/testds", "--unarchive=2007/07-08.grib")
             self.assertEqual(out, "")
@@ -319,7 +319,7 @@ class ArkiCheckTestsBase(CmdlineTestMixin):
             self.assertEqual(len(mdc), 1)
             blob = mdc[0].to_python("source")
             self.assertEqual(blob["file"], "2007/07-08.grib")
-            self.assertEqual(blob["b"], os.path.abspath("testenv/testds"))
+            self.assertEqual(blob["basedir"], os.path.abspath("testenv/testds"))
 
     def test_tar(self):
         with self.datasets(format="odimh5") as env:

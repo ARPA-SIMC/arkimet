@@ -1,15 +1,16 @@
-#include <arki/exceptions.h>
-#include <arki/types/proddef.h>
-#include <arki/types/utils.h>
-#include <arki/binary.h>
-#include <arki/emitter.h>
-#include <arki/emitter/memory.h>
-#include "config.h"
+#include "arki/exceptions.h"
+#include "arki/types/proddef.h"
+#include "arki/types/utils.h"
+#include "arki/binary.h"
+#include "arki/emitter.h"
+#include "arki/emitter/memory.h"
+#include "arki/emitter/keys.h"
+#include "arki/libconfig.h"
 #include <sstream>
 #include <cmath>
 
 #ifdef HAVE_LUA
-#include <arki/utils/lua.h>
+#include "arki/utils/lua.h"
 #endif
 
 #define CODE TYPE_PRODDEF
@@ -127,7 +128,7 @@ std::ostream& GRIB::writeToOstream(std::ostream& o) const
 void GRIB::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
 {
     Proddef::serialise_local(e, keys, f);
-    e.add("va");
+    e.add(keys.proddef_value);
     m_values.serialise(e);
 }
 unique_ptr<GRIB> GRIB::decodeMapping(const emitter::memory::Mapping& val)

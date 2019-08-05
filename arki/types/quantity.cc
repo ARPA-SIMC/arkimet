@@ -1,16 +1,17 @@
-#include <arki/exceptions.h>
-#include <arki/types/quantity.h>
-#include <arki/types/utils.h>
-#include <arki/binary.h>
-#include <arki/utils/string.h>
-#include <arki/emitter.h>
-#include <arki/emitter/memory.h>
-#include "config.h"
+#include "arki/exceptions.h"
+#include "arki/types/quantity.h"
+#include "arki/types/utils.h"
+#include "arki/binary.h"
+#include "arki/utils/string.h"
+#include "arki/emitter.h"
+#include "arki/emitter/memory.h"
+#include "arki/emitter/keys.h"
+#include "arki/libconfig.h"
 #include <sstream>
 #include <cmath>
 
 #ifdef HAVE_LUA
-#include <arki/utils/lua.h>
+#include "arki/utils/lua.h"
 #endif
 
 #define CODE TYPE_QUANTITY
@@ -90,11 +91,10 @@ std::ostream& Quantity::writeToOstream(std::ostream& o) const
 
 void Quantity::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
 {
-    e.add("va");
+    e.add(keys.quantity_value);
     e.start_list();
-    for (set<string>::const_iterator i = values.begin();
-            i != values.end(); ++i)
-        e.add(*i);
+    for (const auto& value: values)
+        e.add(value);
     e.end_list();
 }
 

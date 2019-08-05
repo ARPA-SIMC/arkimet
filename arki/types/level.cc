@@ -5,6 +5,7 @@
 #include "arki/types/utils.h"
 #include "arki/emitter.h"
 #include "arki/emitter/memory.h"
+#include "arki/emitter/keys.h"
 #include "arki/libconfig.h"
 #include <sstream>
 #include <iomanip>
@@ -480,16 +481,16 @@ std::ostream& GRIB1::writeToOstream(std::ostream& o) const
 void GRIB1::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
 {
     Level::serialise_local(e, keys, f);
-    e.add("lt", (unsigned)m_type);
+    e.add(keys.level_type, (unsigned)m_type);
     switch (valType())
     {
         case 0: break;
         case 1:
-            e.add("l1", (unsigned)m_l1);
+            e.add(keys.level_l1, (unsigned)m_l1);
             break;
         case 2:
-            e.add("l1", (unsigned)m_l1);
-            e.add("l2", (unsigned)m_l2);
+            e.add(keys.level_l1, (unsigned)m_l1);
+            e.add(keys.level_l2, (unsigned)m_l2);
             break;
     }
 }
@@ -693,22 +694,22 @@ void GRIB2S::serialise_local(Emitter& e, const emitter::Keys& keys, const Format
 
     if (m_type == MISSING_TYPE)
     {
-        e.add("lt"); e.add_null();
+        e.add(keys.level_type); e.add_null();
     }
     else
-        e.add("lt", (unsigned)m_type);
+        e.add(keys.level_type, (unsigned)m_type);
 
     if (m_scale == MISSING_SCALE)
     {
-        e.add("sc"); e.add_null();
+        e.add(keys.level_scale); e.add_null();
     } else
-        e.add("sc", (unsigned)m_scale);
+        e.add(keys.level_scale, (unsigned)m_scale);
 
     if (m_value == MISSING_VALUE)
     {
-        e.add("va"); e.add_null();
+        e.add(keys.level_value); e.add_null();
     } else
-        e.add("va", m_value);
+        e.add(keys.level_value, m_value);
 }
 unique_ptr<GRIB2S> GRIB2S::decodeMapping(const emitter::memory::Mapping& val)
 {
@@ -867,41 +868,41 @@ void GRIB2D::serialise_local(Emitter& e, const emitter::Keys& keys, const Format
 
     if (m_type1 == GRIB2S::MISSING_TYPE)
     {
-        e.add("l1"); e.add_null();
+        e.add(keys.level_l1); e.add_null();
     }
     else
-        e.add("l1", (unsigned)m_type1);
+        e.add(keys.level_l1, (unsigned)m_type1);
 
     if (m_scale1 == GRIB2S::MISSING_SCALE)
     {
-        e.add("s1"); e.add_null();
+        e.add(keys.level_scale1); e.add_null();
     } else
-        e.add("s1", (unsigned)m_scale1);
+        e.add(keys.level_scale1, (unsigned)m_scale1);
 
     if (m_value1 == GRIB2S::MISSING_VALUE)
     {
-        e.add("v1"); e.add_null();
+        e.add(keys.level_value1); e.add_null();
     } else
-        e.add("v1", m_value1);
+        e.add(keys.level_value1, m_value1);
 
     if (m_type2 == GRIB2S::MISSING_TYPE)
     {
-        e.add("l2"); e.add_null();
+        e.add(keys.level_l2); e.add_null();
     }
     else
-        e.add("l2", (unsigned)m_type2);
+        e.add(keys.level_l2, (unsigned)m_type2);
 
     if (m_scale2 == GRIB2S::MISSING_SCALE)
     {
-        e.add("s2"); e.add_null();
+        e.add(keys.level_scale2); e.add_null();
     } else
-        e.add("s2", (unsigned)m_scale2);
+        e.add(keys.level_scale2, (unsigned)m_scale2);
 
     if (m_value2 == GRIB2S::MISSING_VALUE)
     {
-        e.add("v2"); e.add_null();
+        e.add(keys.level_value2); e.add_null();
     } else
-        e.add("v2", m_value2);
+        e.add(keys.level_value2, m_value2);
 
 }
 unique_ptr<GRIB2D> GRIB2D::decodeMapping(const emitter::memory::Mapping& val)
@@ -1051,8 +1052,8 @@ std::ostream& ODIMH5::writeToOstream(std::ostream& o) const
 void ODIMH5::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
 {
     Level::serialise_local(e, keys, f);
-    e.add("mi", m_min);
-    e.add("ma", m_max);
+    e.add(keys.level_min, m_min);
+    e.add(keys.level_max, m_max);
 }
 unique_ptr<ODIMH5> ODIMH5::decodeMapping(const emitter::memory::Mapping& val)
 {

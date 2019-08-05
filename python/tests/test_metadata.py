@@ -30,11 +30,11 @@ class TestMetadata(unittest.TestCase):
         self.assertEqual(len(mds), 3)
         data = mds[0].to_python()
         source = next(i for i in data["i"] if i["type"] == "source")
-        self.assertEquals(source["ofs"], 0)
+        self.assertEquals(source["offset"], 0)
         self.assertEquals(source["file"], "inbound/test.grib1")
         data = mds[1].to_python()
         source = next(i for i in data["i"] if i["type"] == "source")
-        self.assertEquals(source["ofs"], 7218)
+        self.assertEquals(source["offset"], 7218)
         self.assertEquals(source["file"], "inbound/test.grib1")
 
     def test_read_write_bundle(self):
@@ -51,10 +51,10 @@ class TestMetadata(unittest.TestCase):
         self.assertTrue(arki.Metadata.read_bundle("inbound/test.grib1.arkimet", dest=store_md))
         self.assertEqual(len(res), 3)
         self.assertEqual(res[0].to_python("source"), {
-            'type': 'source', 'style': 'BLOB', 'f': 'grib',
-            'b': os.path.abspath("inbound"),
+            'type': 'source', 'style': 'BLOB', 'format': 'grib',
+            'basedir': os.path.abspath("inbound"),
             'file': 'test.grib1',
-            'ofs': 0, 'sz': 7218,
+            'offset': 0, 'size': 7218,
             })
 
         orig_md = res
@@ -70,10 +70,10 @@ class TestMetadata(unittest.TestCase):
         res = arki.Metadata.read_bundle("inbound/test.grib1.arkimet", basedir="basedir", pathname="pathname")
         self.assertEqual(len(res), 3)
         self.assertEqual(res[0].to_python("source"), {
-            'b': os.path.join(os.getcwd(), "basedir"),
-            'type': 'source', 'style': 'BLOB', 'f': 'grib',
+            'basedir': os.path.join(os.getcwd(), "basedir"),
+            'type': 'source', 'style': 'BLOB', 'format': 'grib',
             'file': 'test.grib1',
-            'ofs': 0, 'sz': 7218,
+            'offset': 0, 'size': 7218,
         })
 
         with tempfile.TemporaryFile() as fd:
@@ -87,10 +87,10 @@ class TestMetadata(unittest.TestCase):
             res = arki.Metadata.read_bundle(fd)
         self.assertEqual(len(res), 3)
         self.assertEqual(res[0].to_python("source"), {
-            'b': os.path.abspath("inbound"),
-            'type': 'source', 'style': 'BLOB', 'f': 'grib',
+            'basedir': os.path.abspath("inbound"),
+            'type': 'source', 'style': 'BLOB', 'format': 'grib',
             'file': 'test.grib1',
-            'ofs': 0, 'sz': 7218,
+            'offset': 0, 'size': 7218,
         })
 
         with tempfile.TemporaryFile() as fd:
@@ -104,10 +104,10 @@ class TestMetadata(unittest.TestCase):
             res = arki.Metadata.read_bundle(fd.fileno(), basedir="basedir", pathname="pathname")
         self.assertEqual(len(res), 3)
         self.assertEqual(res[0].to_python("source"), {
-            'b': os.path.join(os.getcwd(), "basedir"),
-            'type': 'source', 'style': 'BLOB', 'f': 'grib',
+            'basedir': os.path.join(os.getcwd(), "basedir"),
+            'type': 'source', 'style': 'BLOB', 'format': 'grib',
             'file': 'test.grib1',
-            'ofs': 0, 'sz': 7218,
+            'offset': 0, 'size': 7218,
         })
 
         with tempfile.TemporaryFile() as fd:
@@ -123,10 +123,10 @@ class TestMetadata(unittest.TestCase):
             res = arki.Metadata.read_bundle(fd, basedir="basedir")
         self.assertEqual(len(res), 3)
         self.assertEqual(res[0].to_python("source"), {
-            'b': os.path.join(os.getcwd(), "basedir"),
-            'type': 'source', 'style': 'BLOB', 'f': 'grib',
+            'basedir': os.path.join(os.getcwd(), "basedir"),
+            'type': 'source', 'style': 'BLOB', 'format': 'grib',
             'file': 'test.grib1',
-            'ofs': 0, 'sz': 7218,
+            'offset': 0, 'size': 7218,
         })
 
         with io.BytesIO() as fd:
