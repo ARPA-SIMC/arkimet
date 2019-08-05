@@ -478,10 +478,17 @@ Arkimet metadata for one data item
         try {
             std::string key = from_python<std::string>(py_key);
             types::Code code = types::parseCodeName(key);
-            const types::Type* res = self->md->get(code);
-            if (!res)
-                return PyErr_Format(PyExc_KeyError, "section not found: '%s'", key.c_str());
-            return python::to_python(res->to_string());
+            if (code == TYPE_SOURCE)
+            {
+                if (!self->md->has_source())
+                    return PyErr_Format(PyExc_KeyError, "section not found: '%s'", key.c_str());
+                return python::to_python(self->md->source().to_string());
+            } else {
+                const types::Type* res = self->md->get(code);
+                if (!res)
+                    return PyErr_Format(PyExc_KeyError, "section not found: '%s'", key.c_str());
+                return python::to_python(res->to_string());
+            }
         } ARKI_CATCH_RETURN_PYO
     }
 
