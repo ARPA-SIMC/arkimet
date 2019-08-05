@@ -67,7 +67,7 @@ std::ostream& Task::writeToOstream(std::ostream& o) const
 	return o << task;
 }
 
-void Task::serialiseLocal(Emitter& e, const Formatter* f) const
+void Task::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
 {
     e.add("va", task);
 }

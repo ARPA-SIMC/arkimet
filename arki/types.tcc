@@ -1,12 +1,13 @@
 #ifndef ARKI_TYPES_TCC
 #define ARKI_TYPES_TCC
 
-#include <arki/emitter.h>
-#include <arki/emitter/memory.h>
-#include <arki/binary.h>
-#include "config.h"
+#include "arki/emitter.h"
+#include "arki/emitter/memory.h"
+#include "arki/emitter/keys.h"
+#include "arki/binary.h"
+#include "arki/libconfig.h"
 #ifdef HAVE_LUA
-#include <arki/utils/lua.h>
+#include "arki/utils/lua.h"
 #endif
 
 namespace arki {
@@ -44,9 +45,9 @@ int StyledType<BASE>::compare(const Type& o) const
 }
 
 template<typename BASE>
-void StyledType<BASE>::serialiseLocal(Emitter& e, const Formatter* f) const
+void StyledType<BASE>::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
 {
-    e.add("s", BASE::formatStyle(style()));
+    e.add(keys.type_style, BASE::formatStyle(style()));
 }
 
 template<typename BASE>

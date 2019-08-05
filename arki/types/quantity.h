@@ -59,7 +59,7 @@ struct Quantity : public CoreType<Quantity>
     static std::unique_ptr<Quantity> decode(BinaryDecoder& dec);
     static std::unique_ptr<Quantity> decodeString(const std::string& val);
     std::ostream& writeToOstream(std::ostream& o) const override;
-    void serialiseLocal(Emitter& e, const Formatter* f=0) const override;
+    void serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f=0) const override;
     bool lua_lookup(lua_State* L, const std::string& name) const override;
 
     Quantity* clone() const override;

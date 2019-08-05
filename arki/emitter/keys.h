@@ -8,6 +8,7 @@ struct Keys
 {
     const char* type_name;
     const char* type_desc;
+    const char* type_style;
 };
 
 extern const Keys keys_json;

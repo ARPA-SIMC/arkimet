@@ -35,9 +35,9 @@ std::ostream& Blob::writeToOstream(std::ostream& o) const
              << ")";
 }
 
-void Blob::serialiseLocal(Emitter& e, const Formatter* f) const
+void Blob::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
 {
-    Source::serialiseLocal(e, f);
+    Source::serialise_local(e, keys, f);
     e.add("b", basedir);
     e.add("file", filename);
     e.add("ofs", offset);

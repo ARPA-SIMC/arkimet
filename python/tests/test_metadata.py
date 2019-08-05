@@ -51,7 +51,7 @@ class TestMetadata(unittest.TestCase):
         self.assertTrue(arki.Metadata.read_bundle("inbound/test.grib1.arkimet", dest=store_md))
         self.assertEqual(len(res), 3)
         self.assertEqual(res[0].to_python("source"), {
-            'type': 'source', 's': 'BLOB', 'f': 'grib',
+            'type': 'source', 'style': 'BLOB', 'f': 'grib',
             'b': os.path.abspath("inbound"),
             'file': 'test.grib1',
             'ofs': 0, 'sz': 7218,
@@ -71,7 +71,7 @@ class TestMetadata(unittest.TestCase):
         self.assertEqual(len(res), 3)
         self.assertEqual(res[0].to_python("source"), {
             'b': os.path.join(os.getcwd(), "basedir"),
-            'type': 'source', 's': 'BLOB', 'f': 'grib',
+            'type': 'source', 'style': 'BLOB', 'f': 'grib',
             'file': 'test.grib1',
             'ofs': 0, 'sz': 7218,
         })
@@ -88,7 +88,7 @@ class TestMetadata(unittest.TestCase):
         self.assertEqual(len(res), 3)
         self.assertEqual(res[0].to_python("source"), {
             'b': os.path.abspath("inbound"),
-            'type': 'source', 's': 'BLOB', 'f': 'grib',
+            'type': 'source', 'style': 'BLOB', 'f': 'grib',
             'file': 'test.grib1',
             'ofs': 0, 'sz': 7218,
         })
@@ -105,7 +105,7 @@ class TestMetadata(unittest.TestCase):
         self.assertEqual(len(res), 3)
         self.assertEqual(res[0].to_python("source"), {
             'b': os.path.join(os.getcwd(), "basedir"),
-            'type': 'source', 's': 'BLOB', 'f': 'grib',
+            'type': 'source', 'style': 'BLOB', 'f': 'grib',
             'file': 'test.grib1',
             'ofs': 0, 'sz': 7218,
         })
@@ -124,7 +124,7 @@ class TestMetadata(unittest.TestCase):
         self.assertEqual(len(res), 3)
         self.assertEqual(res[0].to_python("source"), {
             'b': os.path.join(os.getcwd(), "basedir"),
-            'type': 'source', 's': 'BLOB', 'f': 'grib',
+            'type': 'source', 'style': 'BLOB', 'f': 'grib',
             'file': 'test.grib1',
             'ofs': 0, 'sz': 7218,
         })

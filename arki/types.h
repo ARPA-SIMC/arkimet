@@ -139,7 +139,7 @@ struct Type
 
     /// Serialise using an emitter
     virtual void serialise(Emitter& e, const emitter::Keys& keys, const Formatter* f=0) const;
-    virtual void serialiseLocal(Emitter& e, const Formatter* f=0) const = 0;
+    virtual void serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f=0) const = 0;
 
 	/**
 	 * Return a matcher query (without the metadata type prefix) that
@@ -249,7 +249,7 @@ struct StyledType : public CoreType<BASE>
     int compare(const Type& o) const override;
     virtual int compare_local(const BASE& o) const { return style() - o.style(); }
 
-    virtual void serialiseLocal(Emitter& e, const Formatter* f=0) const;
+    virtual void serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f=0) const;
 
 	virtual bool lua_lookup(lua_State* L, const std::string& name) const;
 

@@ -150,9 +150,9 @@ std::ostream& Minute::writeToOstream(std::ostream& o) const
 			 << setw(2) << (m_minute / 60) << ":"
 			 << setw(2) << (m_minute % 60) << ")";
 }
-void Minute::serialiseLocal(Emitter& e, const Formatter* f) const
+void Minute::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
 {
-    Run::serialiseLocal(e, f);
+    Run::serialise_local(e, keys, f);
     e.add("va", (int)m_minute);
 }
 unique_ptr<Minute> Minute::decodeMapping(const emitter::memory::Mapping& val)

@@ -258,9 +258,9 @@ std::ostream& GRIB1::writeToOstream(std::ostream& o) const
 		 << setfill(' ')
 		 << ")";
 }
-void GRIB1::serialiseLocal(Emitter& e, const Formatter* f) const
+void GRIB1::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
 {
-    Origin::serialiseLocal(e, f);
+    Origin::serialise_local(e, keys, f);
     e.add("ce", m_centre);
     e.add("sc", m_subcentre);
     e.add("pr", m_process);
@@ -368,9 +368,9 @@ std::ostream& GRIB2::writeToOstream(std::ostream& o) const
 		 << setfill(' ')
 		 << ")";
 }
-void GRIB2::serialiseLocal(Emitter& e, const Formatter* f) const
+void GRIB2::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
 {
-    Origin::serialiseLocal(e, f);
+    Origin::serialise_local(e, keys, f);
     e.add("ce", m_centre);
     e.add("sc", m_subcentre);
     e.add("pt", m_processtype);
@@ -491,9 +491,9 @@ std::ostream& BUFR::writeToOstream(std::ostream& o) const
 		 << setfill(' ')
 		 << ")";
 }
-void BUFR::serialiseLocal(Emitter& e, const Formatter* f) const
+void BUFR::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
 {
-    Origin::serialiseLocal(e, f);
+    Origin::serialise_local(e, keys, f);
     e.add("ce", m_centre);
     e.add("sc", m_subcentre);
 }
@@ -590,9 +590,9 @@ std::ostream& ODIMH5::writeToOstream(std::ostream& o) const
 		 << m_RAD << ", "
 		 << m_PLC << ")";
 }
-void ODIMH5::serialiseLocal(Emitter& e, const Formatter* f) const
+void ODIMH5::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
 {
-    Origin::serialiseLocal(e, f);
+    Origin::serialise_local(e, keys, f);
     e.add("wmo", m_WMO);
     e.add("rad", m_RAD);
     e.add("plc", m_PLC);
