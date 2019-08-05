@@ -75,6 +75,11 @@ static Keys make_json()
     res.assigneddataset_id = "id";
     res.note_time = "ti";
     res.note_value = "va";
+    res.metadata_items = "i";
+    res.metadata_notes = "n";
+    res.summary_items = "items";
+    res.summary_stats = "summarystats";
+    res.summary_desc = "desc";
     return res;
 }
 
@@ -150,6 +155,11 @@ static Keys make_python()
     res.assigneddataset_id = "id";
     res.note_time = "time";
     res.note_value = "value";
+    res.metadata_items = "items";
+    res.metadata_notes = "notes";
+    res.summary_items = "items";
+    res.summary_stats = "summarystats";
+    res.summary_desc = "desc";
     return res;
 }
 

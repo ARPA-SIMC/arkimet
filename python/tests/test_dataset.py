@@ -73,7 +73,7 @@ class TestDatasetReader(unittest.TestCase):
             res = []
 
             def on_metadata(md):
-                info = md.to_python()["i"]
+                info = md.to_python()["items"]
                 for i in info:
                     if i["type"] != "reftime":
                         continue

@@ -75,6 +75,11 @@ struct Keys
     const char* assigneddataset_id;
     const char* note_time;
     const char* note_value;
+    const char* metadata_items;
+    const char* metadata_notes;
+    const char* summary_items;
+    const char* summary_stats;
+    const char* summary_desc;
 };
 
 extern const Keys keys_json;

@@ -612,7 +612,7 @@ void Summary::write_yaml(core::AbstractOutputFile& out, const Formatter* formatt
 void Summary::serialise(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
 {
     e.start_mapping();
-    e.add("items");
+    e.add(keys.summary_items);
     e.start_list();
     if (!root->empty())
     {
@@ -633,11 +633,11 @@ void Summary::serialise(Emitter& e, const emitter::Keys& keys, const Formatter* 
                     if (!*i) continue;
                     e.add((*i)->tag());
                     e.start_mapping();
-                    if (f) e.add("desc", (*f)(**i));
+                    if (f) e.add(keys.summary_desc, (*f)(**i));
                     (*i)->serialise_local(e, keys, f);
                     e.end_mapping();
                 }
-                e.add("summarystats");
+                e.add(keys.summary_stats);
                 e.start_mapping();
                 stats.serialiseLocal(e, f);
                 e.end_mapping();
