@@ -5,6 +5,7 @@
 #include "arki/utils/string.h"
 #include "arki/emitter.h"
 #include "arki/emitter/memory.h"
+#include "arki/emitter/keys.h"
 #include "arki/libconfig.h"
 #include <sstream>
 #include <iomanip>
@@ -317,9 +318,9 @@ std::ostream& GRIB1::writeToOstream(std::ostream& o) const
 void GRIB1::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
 {
     Product::serialise_local(e, keys, f);
-    e.add("or", m_origin);
-    e.add("ta", m_table);
-    e.add("pr", m_product);
+    e.add(keys.product_origin, m_origin);
+    e.add(keys.product_table, m_table);
+    e.add(keys.product_product, m_product);
 }
 unique_ptr<GRIB1> GRIB1::decodeMapping(const emitter::memory::Mapping& val)
 {
@@ -438,12 +439,12 @@ std::ostream& GRIB2::writeToOstream(std::ostream& o) const
 void GRIB2::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
 {
     Product::serialise_local(e, keys, f);
-    e.add("ce", m_centre);
-    e.add("di", m_discipline);
-    e.add("ca", m_category);
-    e.add("no", m_number);
-    e.add("tv", m_table_version);
-    e.add("ltv", m_local_table_version);
+    e.add(keys.product_centre, m_centre);
+    e.add(keys.product_discipline, m_discipline);
+    e.add(keys.product_category, m_category);
+    e.add(keys.product_number, m_number);
+    e.add(keys.product_table_version, m_table_version);
+    e.add(keys.product_local_table_version, m_local_table_version);
 }
 unique_ptr<GRIB2> GRIB2::decodeMapping(const emitter::memory::Mapping& val)
 {
@@ -589,12 +590,12 @@ std::ostream& BUFR::writeToOstream(std::ostream& o) const
 void BUFR::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
 {
     Product::serialise_local(e, keys, f);
-    e.add("ty", m_type);
-    e.add("st", m_subtype);
-    e.add("ls", m_localsubtype);
+    e.add(keys.product_type, m_type);
+    e.add(keys.product_subtype, m_subtype);
+    e.add(keys.product_local_subtype, m_localsubtype);
     if (!m_values.empty())
     {
-        e.add("va");
+        e.add(keys.product_value);
         m_values.serialise(e);
     }
 }
@@ -761,8 +762,8 @@ std::ostream& ODIMH5::writeToOstream(std::ostream& o) const
 void ODIMH5::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
 {
     Product::serialise_local(e, keys, f);
-    e.add("ob", m_obj);
-    e.add("pr", m_prod);
+    e.add(keys.product_object, m_obj);
+    e.add(keys.product_product, m_prod);
 }
 
 unique_ptr<ODIMH5> ODIMH5::decodeMapping(const emitter::memory::Mapping& val)
@@ -900,9 +901,9 @@ std::ostream& VM2::writeToOstream(std::ostream& o) const
 void VM2::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
 {
     Product::serialise_local(e, keys, f);
-    e.add("id", m_variable_id);
+    e.add(keys.product_id, m_variable_id);
     if (!derived_values().empty()) {
-        e.add("va");
+        e.add(keys.product_value);
         derived_values().serialise(e);
     }
 }

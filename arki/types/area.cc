@@ -1,22 +1,23 @@
-#include <arki/exceptions.h>
-#include <arki/types/area.h>
-#include <arki/types/utils.h>
-#include <arki/binary.h>
-#include <arki/utils/geos.h>
-#include <arki/utils/string.h>
-#include <arki/emitter.h>
-#include <arki/emitter/memory.h>
-#include <arki/bbox.h>
-#include "config.h"
+#include "arki/exceptions.h"
+#include "arki/types/area.h"
+#include "arki/types/utils.h"
+#include "arki/binary.h"
+#include "arki/utils/geos.h"
+#include "arki/utils/string.h"
+#include "arki/emitter.h"
+#include "arki/emitter/memory.h"
+#include "arki/emitter/keys.h"
+#include "arki/bbox.h"
+#include "arki/libconfig.h"
 #include <sstream>
 #include <cmath>
 
 #ifdef HAVE_LUA
-#include <arki/utils/lua.h>
+#include "arki/utils/lua.h"
 #endif
 
 #ifdef HAVE_VM2
-#include <arki/utils/vm2.h>
+#include "arki/utils/vm2.h"
 #endif
 
 #define CODE TYPE_AREA
@@ -198,7 +199,7 @@ std::ostream& GRIB::writeToOstream(std::ostream& o) const
 void GRIB::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
 {
     Area::serialise_local(e, keys, f);
-    e.add("va");
+    e.add(keys.area_value);
     m_values.serialise(e);
 }
 unique_ptr<GRIB> GRIB::decodeMapping(const emitter::memory::Mapping& val)
@@ -272,7 +273,7 @@ std::ostream& ODIMH5::writeToOstream(std::ostream& o) const
 void ODIMH5::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
 {
     Area::serialise_local(e, keys, f);
-    e.add("va");
+    e.add(keys.area_value);
     m_values.serialise(e);
 }
 unique_ptr<ODIMH5> ODIMH5::decodeMapping(const emitter::memory::Mapping& val)
@@ -368,9 +369,9 @@ std::ostream& VM2::writeToOstream(std::ostream& o) const
 void VM2::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
 {
     Area::serialise_local(e, keys, f);
-    e.add("id", m_station_id);
+    e.add(keys.area_id, m_station_id);
     if (!derived_values().empty()) {
-        e.add("va");
+        e.add(keys.area_value);
         derived_values().serialise(e);
     }
 }

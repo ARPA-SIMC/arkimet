@@ -1,11 +1,12 @@
-#include <arki/exceptions.h>
-#include <arki/types/origin.h>
-#include <arki/types/utils.h>
-#include <arki/binary.h>
-#include <arki/utils/string.h>
-#include <arki/emitter.h>
-#include <arki/emitter/memory.h>
-#include <arki/utils/lua.h>
+#include "arki/exceptions.h"
+#include "arki/types/origin.h"
+#include "arki/types/utils.h"
+#include "arki/binary.h"
+#include "arki/utils/string.h"
+#include "arki/emitter.h"
+#include "arki/emitter/memory.h"
+#include "arki/emitter/keys.h"
+#include "arki/utils/lua.h"
 #include <iomanip>
 #include <sstream>
 #include <cstring>
@@ -261,9 +262,9 @@ std::ostream& GRIB1::writeToOstream(std::ostream& o) const
 void GRIB1::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
 {
     Origin::serialise_local(e, keys, f);
-    e.add("ce", m_centre);
-    e.add("sc", m_subcentre);
-    e.add("pr", m_process);
+    e.add(keys.origin_centre, m_centre);
+    e.add(keys.origin_subcentre, m_subcentre);
+    e.add(keys.origin_process, m_process);
 }
 unique_ptr<GRIB1> GRIB1::decodeMapping(const emitter::memory::Mapping& val)
 {
@@ -371,11 +372,11 @@ std::ostream& GRIB2::writeToOstream(std::ostream& o) const
 void GRIB2::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
 {
     Origin::serialise_local(e, keys, f);
-    e.add("ce", m_centre);
-    e.add("sc", m_subcentre);
-    e.add("pt", m_processtype);
-    e.add("bi", m_bgprocessid);
-    e.add("pi", m_processid);
+    e.add(keys.origin_centre, m_centre);
+    e.add(keys.origin_subcentre, m_subcentre);
+    e.add(keys.origin_process_type, m_processtype);
+    e.add(keys.origin_background_process_id, m_bgprocessid);
+    e.add(keys.origin_process_id, m_processid);
 }
 unique_ptr<GRIB2> GRIB2::decodeMapping(const emitter::memory::Mapping& val)
 {
@@ -494,8 +495,8 @@ std::ostream& BUFR::writeToOstream(std::ostream& o) const
 void BUFR::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
 {
     Origin::serialise_local(e, keys, f);
-    e.add("ce", m_centre);
-    e.add("sc", m_subcentre);
+    e.add(keys.origin_centre, m_centre);
+    e.add(keys.origin_subcentre, m_subcentre);
 }
 unique_ptr<BUFR> BUFR::decodeMapping(const emitter::memory::Mapping& val)
 {
@@ -593,9 +594,9 @@ std::ostream& ODIMH5::writeToOstream(std::ostream& o) const
 void ODIMH5::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
 {
     Origin::serialise_local(e, keys, f);
-    e.add("wmo", m_WMO);
-    e.add("rad", m_RAD);
-    e.add("plc", m_PLC);
+    e.add(keys.origin_wmo, m_WMO);
+    e.add(keys.origin_rad, m_RAD);
+    e.add(keys.origin_plc, m_PLC);
 }
 unique_ptr<ODIMH5> ODIMH5::decodeMapping(const emitter::memory::Mapping& val)
 {

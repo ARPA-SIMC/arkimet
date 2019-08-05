@@ -23,10 +23,11 @@ struct traits<Value>
 };
 
 /**
- * The run of some data.
+ * The value of very short data encoded as part of the metadata
  *
- * It can contain information like centre, process, subcentre, subprocess and
- * other similar data.
+ * This is currently used to encode the non-metadata part of VM2 data so that
+ * it can be extracted from metadata or dataset indices and completed using the
+ * rest of metadata values, avoiding disk lookips
  */
 struct Value : public types::CoreType<Value>
 {

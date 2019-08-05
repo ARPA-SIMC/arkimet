@@ -1,15 +1,16 @@
-#include <arki/types/value.h>
-#include <arki/types/utils.h>
-#include <arki/binary.h>
-#include <arki/utils/string.h>
-#include <arki/emitter.h>
-#include <arki/emitter/memory.h>
-#include "config.h"
+#include "arki/types/value.h"
+#include "arki/types/utils.h"
+#include "arki/binary.h"
+#include "arki/utils/string.h"
+#include "arki/emitter.h"
+#include "arki/emitter/memory.h"
+#include "arki/emitter/keys.h"
+#include "arki/libconfig.h"
 #include <iomanip>
 #include <sstream>
 
 #ifdef HAVE_LUA
-#include <arki/utils/lua.h>
+#include "arki/utils/lua.h"
 #endif
 
 #define CODE TYPE_VALUE
@@ -66,7 +67,7 @@ std::ostream& Value::writeToOstream(std::ostream& o) const
 
 void Value::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
 {
-    e.add("va", buffer);
+    e.add(keys.value_value, buffer);
 }
 
 unique_ptr<Value> Value::decode(BinaryDecoder& dec)

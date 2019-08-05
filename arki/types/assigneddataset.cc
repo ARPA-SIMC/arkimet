@@ -1,15 +1,16 @@
-#include <arki/exceptions.h>
-#include <arki/types/assigneddataset.h>
-#include <arki/types/utils.h>
-#include <arki/binary.h>
-#include <arki/emitter.h>
-#include <arki/emitter/memory.h>
-#include "config.h"
+#include "arki/exceptions.h"
+#include "arki/types/assigneddataset.h"
+#include "arki/types/utils.h"
+#include "arki/binary.h"
+#include "arki/emitter.h"
+#include "arki/emitter/memory.h"
+#include "arki/emitter/keys.h"
+#include "arki/libconfig.h"
 #include <sstream>
 #include <cmath>
 
 #ifdef HAVE_LUA
-#include <arki/utils/lua.h>
+#include "arki/utils/lua.h"
 #endif
 
 #define CODE TYPE_ASSIGNEDDATASET
@@ -70,9 +71,9 @@ std::ostream& AssignedDataset::writeToOstream(std::ostream& o) const
 
 void AssignedDataset::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
 {
-    e.add("ti"); changed.serialiseList(e);
-    e.add("na", name);
-    e.add("id", id);
+    e.add(keys.assigneddataset_time); changed.serialiseList(e);
+    e.add(keys.assigneddataset_name, name);
+    e.add(keys.assigneddataset_id, id);
 }
 
 unique_ptr<AssignedDataset> AssignedDataset::decodeMapping(const emitter::memory::Mapping& val)

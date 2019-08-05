@@ -7,6 +7,7 @@
 #include "arki/utils/sys.h"
 #include "arki/emitter.h"
 #include "arki/emitter/memory.h"
+#include "arki/emitter/keys.h"
 #include "arki/exceptions.h"
 
 using namespace std;
@@ -38,10 +39,10 @@ std::ostream& Blob::writeToOstream(std::ostream& o) const
 void Blob::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
 {
     Source::serialise_local(e, keys, f);
-    e.add("b", basedir);
-    e.add("file", filename);
-    e.add("ofs", offset);
-    e.add("sz", size);
+    e.add(keys.source_basedir, basedir);
+    e.add(keys.source_file, filename);
+    e.add(keys.source_offset, offset);
+    e.add(keys.source_size, size);
 }
 
 std::unique_ptr<Blob> Blob::decodeMapping(const emitter::memory::Mapping& val)

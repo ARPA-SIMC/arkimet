@@ -5,6 +5,7 @@
 #include "arki/binary.h"
 #include "arki/emitter.h"
 #include "arki/emitter/memory.h"
+#include "arki/emitter/keys.h"
 #include "arki/libconfig.h"
 #include <iomanip>
 #include <sstream>
@@ -153,7 +154,7 @@ std::ostream& Minute::writeToOstream(std::ostream& o) const
 void Minute::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
 {
     Run::serialise_local(e, keys, f);
-    e.add("va", (int)m_minute);
+    e.add(keys.run_value, (int)m_minute);
 }
 unique_ptr<Minute> Minute::decodeMapping(const emitter::memory::Mapping& val)
 {

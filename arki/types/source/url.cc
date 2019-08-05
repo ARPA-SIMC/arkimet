@@ -1,9 +1,10 @@
 #include "url.h"
-#include <arki/binary.h>
-#include <arki/utils/lua.h>
-#include <arki/emitter.h>
-#include <arki/emitter/memory.h>
-#include <arki/exceptions.h>
+#include "arki/binary.h"
+#include "arki/utils/lua.h"
+#include "arki/emitter.h"
+#include "arki/emitter/memory.h"
+#include "arki/emitter/keys.h"
+#include "arki/exceptions.h"
 
 using namespace std;
 using namespace arki::utils;
@@ -30,7 +31,7 @@ std::ostream& URL::writeToOstream(std::ostream& o) const
 void URL::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
 {
     Source::serialise_local(e, keys, f);
-    e.add("url"); e.add(url);
+    e.add(keys.source_url); e.add(url);
 }
 std::unique_ptr<URL> URL::decodeMapping(const emitter::memory::Mapping& val)
 {

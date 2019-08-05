@@ -4,6 +4,7 @@
 #include "arki/binary.h"
 #include "arki/emitter.h"
 #include "arki/emitter/memory.h"
+#include "arki/emitter/keys.h"
 #include "arki/utils/lua.h"
 #include "config.h"
 #include <sstream>
@@ -77,8 +78,8 @@ std::ostream& Note::writeToOstream(std::ostream& o) const
 
 void Note::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
 {
-    e.add("ti"); time.serialiseList(e);
-    e.add("va", content);
+    e.add(keys.note_time); time.serialiseList(e);
+    e.add(keys.note_value, content);
 }
 
 unique_ptr<Note> Note::decodeMapping(const emitter::memory::Mapping& val)

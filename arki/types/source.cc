@@ -9,6 +9,7 @@
 #include "arki/utils/lua.h"
 #include "arki/emitter.h"
 #include "arki/emitter/memory.h"
+#include "arki/emitter/keys.h"
 #include <sstream>
 
 #define CODE TYPE_SOURCE
@@ -72,7 +73,7 @@ void Source::encodeWithoutEnvelope(BinaryEncoder& enc) const
 void Source::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
 {
     types::StyledType<Source>::serialise_local(e, keys, f);
-    e.add("f"); e.add(format);
+    e.add(keys.source_format); e.add(format);
 }
 
 unique_ptr<Source> Source::decode(BinaryDecoder& dec)
