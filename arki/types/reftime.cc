@@ -5,6 +5,7 @@
 #include "arki/utils/string.h"
 #include "arki/emitter.h"
 #include "arki/emitter/memory.h"
+#include "arki/emitter/keys.h"
 #include "arki/utils/lua.h"
 #include "config.h"
 #include <sstream>
@@ -159,7 +160,7 @@ std::ostream& Position::writeToOstream(std::ostream& o) const
 void Position::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
 {
     Reftime::serialise_local(e, keys, f);
-    e.add("ti");
+    e.add(keys.reftime_position_time);
     time.serialiseList(e);
 }
 
@@ -248,8 +249,8 @@ std::ostream& Period::writeToOstream(std::ostream& o) const
 void Period::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
 {
     Reftime::serialise_local(e, keys, f);
-    e.add("b"); begin.serialiseList(e);
-    e.add("e"); end.serialiseList(e);
+    e.add(keys.reftime_period_begin); begin.serialiseList(e);
+    e.add(keys.reftime_period_end); end.serialiseList(e);
 }
 
 unique_ptr<Period> Period::decodeMapping(const emitter::memory::Mapping& val)
