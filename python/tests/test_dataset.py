@@ -77,7 +77,7 @@ class TestDatasetReader(unittest.TestCase):
                 for i in info:
                     if i["type"] != "reftime":
                         continue
-                    res.append(i["ti"][1:3])
+                    res.append(i["time"][1:3])
                     break
             ds.query_data(matcher=matcher, sort=sort, on_metadata=on_metadata)
             return res
