@@ -11,6 +11,7 @@
 #include "utils/compress.h"
 #include "emitter.h"
 #include "emitter/memory.h"
+#include "emitter/keys.h"
 #include "iotrace.h"
 #include "scan.h"
 #include "utils/string.h"
@@ -501,13 +502,13 @@ void Metadata::write_yaml(core::AbstractOutputFile& out, const Formatter* format
 void Metadata::serialise(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
 {
     e.start_mapping();
-    e.add("i");
+    e.add(keys.metadata_items);
     e.start_list();
     if (m_source) m_source->serialise(e, keys, f);
     for (const auto& val: m_vals)
         val.second->serialise(e, keys, f);
     e.end_list();
-    e.add("n");
+    e.add(keys.metadata_notes);
     e.start_list();
     std::vector<types::Note> n = notes();
     for (const auto& note: n)

@@ -29,11 +29,11 @@ class TestMetadata(unittest.TestCase):
         mds = self.read("inbound/test.grib1")
         self.assertEqual(len(mds), 3)
         data = mds[0].to_python()
-        source = next(i for i in data["i"] if i["type"] == "source")
+        source = next(i for i in data["items"] if i["type"] == "source")
         self.assertEquals(source["offset"], 0)
         self.assertEquals(source["file"], "inbound/test.grib1")
         data = mds[1].to_python()
-        source = next(i for i in data["i"] if i["type"] == "source")
+        source = next(i for i in data["items"] if i["type"] == "source")
         self.assertEquals(source["offset"], 7218)
         self.assertEquals(source["file"], "inbound/test.grib1")
 
