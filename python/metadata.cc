@@ -185,6 +185,46 @@ Arguments:
     }
 };
 
+struct to_string : public MethKwargs<to_string, arkipy_Metadata>
+{
+    constexpr static const char* name = "to_string";
+    constexpr static const char* signature = "type: str=None";
+    constexpr static const char* returns = "Optional[str]";
+    constexpr static const char* summary = "Return the metadata contents as a string";
+
+    static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
+    {
+        static const char* kwlist[] = { "type", NULL };
+        const char* py_type = nullptr;
+        Py_ssize_t py_type_len;
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "|z#", (char**)kwlist, &py_type, &py_type_len))
+            return nullptr;
+
+        try {
+            pyo_unique_ptr res;
+            if (py_type)
+            {
+                arki::types::Code code = arki::types::parseCodeName(std::string(py_type, py_type_len));
+                if (code == arki::TYPE_SOURCE)
+                {
+                    if (!self->md->has_source())
+                        Py_RETURN_NONE;
+                    else
+                        res = to_python(self->md->source().to_string());
+                } else {
+                    const types::Type* item = self->md->get(code);
+                    if (!item)
+                        Py_RETURN_NONE;
+                    res = to_python(item->to_string());
+                }
+            } else {
+                res.reset(to_python(self->md->to_yaml()));
+            }
+            return res.release();
+        } ARKI_CATCH_RETURN_PYO
+    }
+};
+
 struct to_python : public MethKwargs<to_python, arkipy_Metadata>
 {
     constexpr static const char* name = "to_python";
@@ -194,7 +234,7 @@ struct to_python : public MethKwargs<to_python, arkipy_Metadata>
 
     static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
     {
-        static const char* kwlist[] = { "baseurl", NULL };
+        static const char* kwlist[] = { "type", NULL };
         const char* py_type = nullptr;
         Py_ssize_t py_type_len;
         if (!PyArg_ParseTupleAndKeywords(args, kw, "|z#", (char**)kwlist, &py_type, &py_type_len))
@@ -386,7 +426,7 @@ struct MetadataDef : public Type<MetadataDef, arkipy_Metadata>
 Arkimet metadata for one data item
 )";
     GetSetters<data, data_size> getsetters;
-    Methods<has_source, write, make_absolute, make_inline, make_url, to_python, read_bundle, write_bundle> methods;
+    Methods<has_source, write, make_absolute, make_inline, make_url, to_string, to_python, read_bundle, write_bundle> methods;
 
     static void _dealloc(Impl* self)
     {
