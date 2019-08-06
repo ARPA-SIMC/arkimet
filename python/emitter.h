@@ -2,6 +2,7 @@
 #define ARKI_PYTHON_EMITTER_H
 
 #include <arki/emitter.h>
+#include <arki/emitter/structure.h>
 #include "utils/core.h"
 
 namespace arki {
@@ -50,6 +51,74 @@ struct PythonEmitter : public Emitter
     void add_int(long long int val) override;
     void add_double(double val) override;
     void add_string(const std::string& val) override;
+};
+
+
+struct PythonReader : public emitter::Reader
+{
+protected:
+    PyObject* o;
+
+public:
+    PythonReader(PyObject* o)
+        : o(o)
+    {
+        Py_INCREF(o);
+    }
+    PythonReader(const PythonReader& o)
+        : o (o.o)
+    {
+        Py_INCREF(this->o);
+    }
+    PythonReader(PythonReader&& o)
+        : o (o.o)
+    {
+        Py_INCREF(this->o);
+    }
+    PythonReader& operator=(const PythonReader& o)
+    {
+        if (this->o == o.o)
+            return *this;
+        Py_DECREF(this->o);
+        this->o = o.o;
+        Py_INCREF(this->o);
+        return *this;
+    }
+    PythonReader& operator=(PythonReader&& o)
+    {
+        if (this->o == o.o)
+            return *this;
+        Py_DECREF(this->o);
+        this->o = o.o;
+        Py_INCREF(this->o);
+        return *this;
+    }
+    ~PythonReader()
+    {
+        Py_DECREF(o);
+    }
+    emitter::NodeType type() const override;
+
+    bool as_bool(const char* desc) const override;
+    long long int as_int(const char* desc) const override;
+    double as_double(const char* desc) const override;
+    std::string as_string(const char* desc) const override;
+
+    unsigned list_size(const char* desc) const override;
+    bool as_bool(unsigned idx, const char* desc) const override;
+    long long int as_int(unsigned idx, const char* desc) const override;
+    double as_double(unsigned idx, const char* desc) const override;
+    std::string as_string(unsigned idx, const char* desc) const override;
+    void sub(unsigned idx, const char* desc, std::function<void(const Reader&)>) const override;
+
+    bool has_key(const std::string& key, emitter::NodeType type) const override;
+    bool as_bool(const std::string& key, const char* desc) const override;
+    long long int as_int(const std::string& key, const char* desc) const override;
+    double as_double(const std::string& key, const char* desc) const override;
+    std::string as_string(const std::string& key, const char* desc) const override;
+    core::Time as_time(const std::string& key, const char* desc) const override;
+    void items(const char* desc, std::function<void(const std::string&, const Reader&)>) const override;
+    void sub(const std::string& key, const char* desc, std::function<void(const Reader&)>) const override;
 };
 
 

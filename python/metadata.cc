@@ -508,7 +508,9 @@ Arkimet metadata for one data item
                     std::unique_ptr<types::Type> val = types::decodeString(code, strval);
                     self->md->set(std::move(val));
                 } else {
-                    throw std::runtime_error("not implemented");
+                    PythonReader reader(py_val);
+                    std::unique_ptr<types::Type> val = types::decode_structure(emitter::keys_python, reader);
+                    self->md->set(std::move(val));
                 }
             }
             return 0;

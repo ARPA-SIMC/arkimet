@@ -1,4 +1,5 @@
 #include "emitter.h"
+#include "arki/core/time.h"
 
 namespace arki {
 namespace python {
@@ -112,6 +113,103 @@ void PythonEmitter::add_string(const std::string& val)
     add_object(o);
 }
 
+
+emitter::NodeType PythonReader::type() const
+{
+    throw std::runtime_error("not implemented");
+}
+
+bool PythonReader::as_bool(const char* desc) const
+{
+    throw std::runtime_error("not implemented");
+}
+
+long long int PythonReader::as_int(const char* desc) const
+{
+    throw std::runtime_error("not implemented");
+}
+
+double PythonReader::as_double(const char* desc) const
+{
+    throw std::runtime_error("not implemented");
+}
+
+std::string PythonReader::as_string(const char* desc) const
+{
+    throw std::runtime_error("not implemented");
+}
+
+
+unsigned PythonReader::list_size(const char* desc) const
+{
+    throw std::runtime_error("not implemented");
+}
+
+bool PythonReader::as_bool(unsigned idx, const char* desc) const
+{
+    throw std::runtime_error("not implemented");
+}
+
+long long int PythonReader::as_int(unsigned idx, const char* desc) const
+{
+    throw std::runtime_error("not implemented");
+}
+
+double PythonReader::as_double(unsigned idx, const char* desc) const
+{
+    throw std::runtime_error("not implemented");
+}
+
+std::string PythonReader::as_string(unsigned idx, const char* desc) const
+{
+    throw std::runtime_error("not implemented");
+}
+
+void PythonReader::sub(unsigned idx, const char* desc, std::function<void(const Reader&)>) const
+{
+    throw std::runtime_error("not implemented");
+}
+
+
+bool PythonReader::has_key(const std::string& key, emitter::NodeType type) const
+{
+    throw std::runtime_error("not implemented");
+}
+
+bool PythonReader::as_bool(const std::string& key, const char* desc) const
+{
+    throw std::runtime_error("not implemented");
+}
+
+long long int PythonReader::as_int(const std::string& key, const char* desc) const
+{
+    throw std::runtime_error("not implemented");
+}
+
+double PythonReader::as_double(const std::string& key, const char* desc) const
+{
+    throw std::runtime_error("not implemented");
+}
+
+std::string PythonReader::as_string(const std::string& key, const char* desc) const
+{
+    throw std::runtime_error("not implemented");
+}
+
+core::Time PythonReader::as_time(const std::string& key, const char* desc) const
+{
+    throw std::runtime_error("not implemented");
+}
+
+void PythonReader::items(const char* desc, std::function<void(const std::string&, const Reader&)>) const
+{
+    throw std::runtime_error("not implemented");
+}
+
+void PythonReader::sub(const std::string& key, const char* desc, std::function<void(const Reader&)>) const
+{
+    throw std::runtime_error("not implemented");
+}
 
 }
 }
