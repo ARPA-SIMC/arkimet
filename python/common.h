@@ -7,7 +7,6 @@
 #include <vector>
 #include <memory>
 #include <arki/defs.h>
-#include <arki/emitter.h>
 #include <arki/core/fwd.h>
 
 namespace arki {
@@ -69,51 +68,6 @@ PyObject *ArkiPyImport_GetModule(PyObject *name);
 #else
 #define ArkiPyImport_GetModule PyImport_GetModule
 #endif
-
-struct PythonEmitter : public Emitter
-{
-    struct Target
-    {
-        enum State {
-            LIST,
-            MAPPING,
-            MAPPING_KEY,
-        } state;
-        PyObject* o = nullptr;
-
-        Target(State state, PyObject* o) : state(state), o(o) {}
-    };
-    std::vector<Target> stack;
-    PyObject* res = nullptr;
-
-    ~PythonEmitter();
-
-    PyObject* release()
-    {
-        PyObject* o = res;
-        res = nullptr;
-        return o;
-    }
-
-    /**
-     * Adds a value to the python object that is currnetly been built.
-     *
-     * Steals a reference to o.
-     */
-    void add_object(PyObject* o);
-
-    void start_list() override;
-    void end_list() override;
-
-    void start_mapping() override;
-    void end_mapping() override;
-
-    void add_null() override;
-    void add_bool(bool val) override;
-    void add_int(long long int val) override;
-    void add_double(double val) override;
-    void add_string(const std::string& val) override;
-};
 
 /**
  * Create a LineReader to read from any python object that can iterate strings

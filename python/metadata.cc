@@ -2,6 +2,7 @@
 #include <Python.h>
 #include "metadata.h"
 #include "common.h"
+#include "emitter.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
 #include "arki/metadata/data.h"
@@ -241,7 +242,7 @@ struct to_python : public MethKwargs<to_python, arkipy_Metadata>
             return nullptr;
 
         try {
-            PythonEmitter e;
+            arki::python::PythonEmitter e;
             if (py_type)
             {
                 arki::types::Code code = arki::types::parseCodeName(std::string(py_type, py_type_len));
