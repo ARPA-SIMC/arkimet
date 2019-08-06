@@ -28,25 +28,22 @@ const types::Code traits<Proddef>::type_code = CODE;
 const size_t traits<Proddef>::type_sersize_bytes = SERSIZELEN;
 const char* traits<Proddef>::type_lua_tag = LUATAG_TYPES ".proddef";
 
-// Style constants
-const unsigned char Proddef::GRIB;
-
 Proddef::Style Proddef::parseStyle(const std::string& str)
 {
-	if (str == "GRIB") return GRIB;
-	throw_consistency_error("parsing Proddef style", "cannot parse Proddef style '"+str+"': only GRIB is supported");
+    if (str == "GRIB") return Style::GRIB;
+    throw_consistency_error("parsing Proddef style", "cannot parse Proddef style '"+str+"': only GRIB is supported");
 }
 
 std::string Proddef::formatStyle(Proddef::Style s)
 {
-	switch (s)
-	{
-		case Proddef::GRIB: return "GRIB";
-		default:
-			std::stringstream str;
-			str << "(unknown " << (int)s << ")";
-			return str.str();
-	}
+    switch (s)
+    {
+        case Style::GRIB: return "GRIB";
+        default:
+            std::stringstream str;
+            str << "(unknown " << (int)s << ")";
+            return str.str();
+    }
 }
 
 unique_ptr<Proddef> Proddef::decode(BinaryDecoder& dec)
@@ -54,7 +51,7 @@ unique_ptr<Proddef> Proddef::decode(BinaryDecoder& dec)
     Style s = (Style)dec.pop_uint(1, "proddef style");
     switch (s)
     {
-        case GRIB:
+        case Style::GRIB:
             return createGRIB(ValueBag::decode(dec));
         default:
             throw_consistency_error("parsing Proddef", "style is " + formatStyle(s) + " but we can only decode GRIB");
@@ -67,7 +64,7 @@ unique_ptr<Proddef> Proddef::decodeString(const std::string& val)
     Proddef::Style style = outerParse<Proddef>(val, inner);
     switch (style)
     {
-        case Proddef::GRIB: return createGRIB(ValueBag::parse(inner));
+        case Style::GRIB: return createGRIB(ValueBag::parse(inner));
         default:
             throw_consistency_error("parsing Proddef", "unknown Proddef style " + formatStyle(style));
     }
@@ -79,11 +76,21 @@ unique_ptr<Proddef> Proddef::decodeMapping(const emitter::memory::Mapping& val)
 
     switch (style_from_mapping(val))
     {
-        case Proddef::GRIB: return upcast<Proddef>(proddef::GRIB::decodeMapping(val));
+        case Style::GRIB: return upcast<Proddef>(proddef::GRIB::decodeMapping(val));
         default:
             throw_consistency_error("parsing Proddef", "unknown Proddef style " + val.get_string());
     }
 }
+
+std::unique_ptr<Proddef> Proddef::decode_structure(const emitter::Keys& keys, const emitter::Reader& val)
+{
+    switch (style_from_structure(keys, val))
+    {
+        case Style::GRIB: return upcast<Proddef>(proddef::GRIB::decode_structure(keys, val));
+        default: throw std::runtime_error("Unknown Proddef style");
+    }
+}
+
 
 #ifdef HAVE_LUA
 static int arkilua_new_grib(lua_State* L)
@@ -114,7 +121,7 @@ namespace proddef {
 
 GRIB::~GRIB() { /* cache_grib.uncache(this); */ }
 
-Proddef::Style GRIB::style() const { return Proddef::GRIB; }
+Proddef::Style GRIB::style() const { return Style::GRIB; }
 
 void GRIB::encodeWithoutEnvelope(BinaryEncoder& enc) const
 {
@@ -135,6 +142,14 @@ unique_ptr<GRIB> GRIB::decodeMapping(const emitter::memory::Mapping& val)
 {
     return GRIB::create(ValueBag::parse(val["va"].get_mapping()));
 }
+std::unique_ptr<GRIB> GRIB::decode_structure(const emitter::Keys& keys, const emitter::Reader& val)
+{
+    std::unique_ptr<GRIB> res;
+    val.sub(keys.proddef_value, "proddef value", [&](const emitter::Reader& values) {
+        res = GRIB::create(ValueBag::parse(values));
+    });
+    return res;
+}
 std::string GRIB::exactQuery() const
 {
     return "GRIB:" + m_values.toString();
@@ -154,6 +169,8 @@ bool GRIB::lua_lookup(lua_State* L, const std::string& name) const
 
 int GRIB::compare_local(const Proddef& o) const
 {
+    if (int res = Proddef::compare_local(o)) return res;
+
 	// We should be the same kind, so upcast
 	const GRIB* v = dynamic_cast<const GRIB*>(&o);
 	if (!v)
@@ -194,4 +211,4 @@ void Proddef::init()
 
 }
 }
-#include <arki/types.tcc>
+#include <arki/types/styled.tcc>

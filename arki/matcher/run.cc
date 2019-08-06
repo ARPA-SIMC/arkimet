@@ -61,7 +61,7 @@ unique_ptr<MatchRun> MatchRun::parse(const std::string& pattern)
     }
     switch (types::Run::parseStyle(name))
     {
-        case types::Run::MINUTE: return unique_ptr<MatchRun>(new MatchRunMinute(rest));
+        case types::Run::Style::MINUTE: return unique_ptr<MatchRun>(new MatchRunMinute(rest));
         default: throw invalid_argument("cannot parse type of run to match: unsupported run style: " + name);
     }
 }

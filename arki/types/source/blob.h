@@ -119,6 +119,7 @@ struct Blob : public Source
     static std::unique_ptr<Blob> create(const std::string& format, const std::string& basedir, const std::string& filename, uint64_t offset, uint64_t size, std::shared_ptr<segment::Reader> reader);
     static std::unique_ptr<Blob> create_unlocked(const std::string& format, const std::string& basedir, const std::string& filename, uint64_t offset, uint64_t size);
     static std::unique_ptr<Blob> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<Blob> decode_structure(const emitter::Keys& keys, const emitter::Reader& reader);
 };
 
 }

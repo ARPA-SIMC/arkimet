@@ -1,13 +1,21 @@
 #ifndef ARKI_TYPES_REFTIME_H
 #define ARKI_TYPES_REFTIME_H
 
-#include <arki/types.h>
+#include <arki/types/styled.h>
 #include <arki/core/time.h>
 
 struct lua_State;
 
 namespace arki {
 namespace types {
+namespace reftime {
+
+enum class Style: unsigned char {
+    POSITION = 1,
+    PERIOD = 2,
+};
+
+}
 
 template<>
 struct traits<Reftime>
@@ -17,7 +25,7 @@ struct traits<Reftime>
     static const size_t type_sersize_bytes;
     static const char* type_lua_tag;
 
-    typedef unsigned char Style;
+    typedef reftime::Style Style;
 };
 
 template<> struct traits<reftime::Position> : public traits<Reftime> {};
@@ -30,10 +38,6 @@ template<> struct traits<reftime::Period> : public traits<Reftime> {};
  */
 struct Reftime : public StyledType<Reftime>
 {
-	/// Style values
-	static const Style POSITION = 1;
-	static const Style PERIOD = 2;
-
 	/// Convert a string into a style
 	static Style parseStyle(const std::string& str);
 	/// Convert a style into its string representation
@@ -43,6 +47,7 @@ struct Reftime : public StyledType<Reftime>
     static std::unique_ptr<Reftime> decode(BinaryDecoder& dec);
     static std::unique_ptr<Reftime> decodeString(const std::string& val);
     static std::unique_ptr<Reftime> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<Reftime> decode_structure(const emitter::Keys& keys, const emitter::Reader& val);
 
 	static void lua_loadlib(lua_State* L);
 
@@ -80,6 +85,9 @@ struct Reftime : public StyledType<Reftime>
 
 namespace reftime {
 
+inline std::ostream& operator<<(std::ostream& o, Style s) { return o << Reftime::formatStyle(s); }
+
+
 struct Position : public Reftime
 {
     core::Time time;
@@ -107,6 +115,7 @@ struct Position : public Reftime
 
     static std::unique_ptr<Position> create(const core::Time& position);
     static std::unique_ptr<Position> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<Position> decode_structure(const emitter::Keys& keys, const emitter::Reader& val);
 };
 
 struct Period : public Reftime
@@ -136,6 +145,7 @@ struct Period : public Reftime
 
     static std::unique_ptr<Period> create(const core::Time& begin, const core::Time& end);
     static std::unique_ptr<Period> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<Period> decode_structure(const emitter::Keys& keys, const emitter::Reader& val);
 };
 
 }
@@ -143,5 +153,4 @@ struct Period : public Reftime
 }
 }
 
-// vim:set ts=4 sw=4:
 #endif

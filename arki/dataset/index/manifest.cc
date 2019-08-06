@@ -755,12 +755,12 @@ public:
 
         switch (rt->style())
         {
-            case types::Reftime::POSITION: {
+            case types::Reftime::Style::POSITION: {
                 const reftime::Position* p = dynamic_cast<const reftime::Position*>(rt.get());
                 bt = et = p->time.to_sql();
                 break;
             }
-            case types::Reftime::PERIOD: {
+            case types::Reftime::Style::PERIOD: {
                 const reftime::Period* p = dynamic_cast<const reftime::Period*>(rt.get());
                 bt = p->begin.to_sql();
                 et = p->end.to_sql();

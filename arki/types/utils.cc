@@ -22,6 +22,7 @@ MetadataType::MetadataType(
         item_decoder decode_func,
         string_decoder string_decode_func,
         mapping_decoder mapping_decode_func,
+        structure_decoder structure_decode_func,
         lua_libloader lua_loadlib_func)
     : type_code(type_code),
       serialisationSizeLen(serialisationSizeLen),
@@ -29,16 +30,9 @@ MetadataType::MetadataType(
       decode_func(decode_func),
       string_decode_func(string_decode_func),
       mapping_decode_func(mapping_decode_func),
+      structure_decode_func(structure_decode_func),
       lua_loadlib_func(lua_loadlib_func)
 {
-	// Ensure that the map is created before we add items to it
-	if (!decoders)
-	{
-		decoders = new const MetadataType*[decoders_size];
-		memset(decoders, 0, decoders_size * sizeof(const MetadataType*));
-	}
-
-	decoders[type_code] = this;
 }
 
 MetadataType::~MetadataType()
@@ -47,6 +41,18 @@ MetadataType::~MetadataType()
 		return;
 	
 	decoders[type_code] = 0;
+}
+
+void MetadataType::register_type(MetadataType* type)
+{
+    // Ensure that the map is created before we add items to it
+    if (!decoders)
+    {
+        decoders = new const MetadataType*[decoders_size];
+        memset(decoders, 0, decoders_size * sizeof(const MetadataType*));
+    }
+
+    decoders[type->type_code] = type;
 }
 
 const MetadataType* MetadataType::get(types::Code code)

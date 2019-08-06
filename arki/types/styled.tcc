@@ -1,23 +1,18 @@
-#ifndef ARKI_TYPES_TCC
-#define ARKI_TYPES_TCC
+#ifndef ARKI_TYPES_STYLED_TCC
+#define ARKI_TYPES_STYLED_TCC
 
-#include "arki/emitter.h"
+#include "arki/types/styled.h"
+#include "arki/binary.h"
 #include "arki/emitter/memory.h"
 #include "arki/emitter/keys.h"
-#include "arki/binary.h"
 #include "arki/libconfig.h"
 #ifdef HAVE_LUA
 #include "arki/utils/lua.h"
 #endif
+#include <sstream>
 
 namespace arki {
 namespace types {
-
-template<typename BASE>
-void CoreType<BASE>::lua_loadlib(lua_State* L)
-{
-	/* By default, do not register anything */
-}
 
 template<typename BASE>
 void StyledType<BASE>::encodeWithoutEnvelope(BinaryEncoder& enc) const
@@ -39,9 +34,7 @@ int StyledType<BASE>::compare(const Type& o) const
         ss << "cannot compare metadata types: second element claims to be `" << traits<BASE>::type_tag << "', but it is `" << typeid(&o).name() << "' instead";
     }
 
-	res = this->style() - v->style();
-	if (res != 0) return res;
-	return this->compare_local(*v);
+    return this->compare_local(*v);
 }
 
 template<typename BASE>
@@ -54,6 +47,12 @@ template<typename BASE>
 typename StyledType<BASE>::Style StyledType<BASE>::style_from_mapping(const emitter::memory::Mapping& m)
 {
     return BASE::parseStyle(m["s"].want_string("decoding Source style"));
+}
+
+template<typename BASE>
+typename StyledType<BASE>::Style StyledType<BASE>::style_from_structure(const emitter::Keys& keys, const emitter::Reader& reader)
+{
+    return BASE::parseStyle(reader.as_string(keys.type_style, "type style"));
 }
 
 #ifdef HAVE_LUA
@@ -70,7 +69,9 @@ bool StyledType<TYPE>::lua_lookup(lua_State* L, const std::string& name) const
 }
 #endif
 
+}
+}
 
-}
-}
+#include "arki/types/core.tcc"
+
 #endif

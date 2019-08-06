@@ -48,7 +48,7 @@ add_method("bufr", [] {
     arki::tests::fill(md);
 
     ValueBag vb;
-    vb.set("name", Value::createString("antani"));
+    vb.set("name", Value::create_string("antani"));
     md.set(product::BUFR::create(1, 2, 3, vb));
 
 	ensure_matches("product:BUFR", md);

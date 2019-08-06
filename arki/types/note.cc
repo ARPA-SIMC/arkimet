@@ -89,6 +89,13 @@ unique_ptr<Note> Note::decodeMapping(const emitter::memory::Mapping& val)
             val["va"].want_string("parsing Note content"));
 }
 
+std::unique_ptr<Note> Note::decode_structure(const emitter::Keys& keys, const emitter::Reader& val)
+{
+    return Note::create(
+            val.as_time(keys.note_time, "Note time"),
+            val.as_string(keys.note_value, "Note content"));
+}
+
 unique_ptr<Note> Note::decodeString(const std::string& val)
 {
     if (val.empty())
@@ -136,5 +143,5 @@ void Note::init()
 
 }
 }
-#include <arki/types.tcc>
-// vim:set ts=4 sw=4:
+
+#include <arki/types/core.tcc>

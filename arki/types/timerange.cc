@@ -40,12 +40,6 @@ const types::Code traits<timerange::Timedef>::type_code = CODE;
 const size_t traits<timerange::Timedef>::type_sersize_bytes = SERSIZELEN;
 const char* traits<timerange::Timedef>::type_lua_tag = LUATAG_TIMERANGE;
 
-// Style constants
-const unsigned char Timerange::GRIB1;
-const unsigned char Timerange::GRIB2;
-const unsigned char Timerange::TIMEDEF;
-const unsigned char Timerange::BUFR;
-
 // Constants from meteosatlib's libgrib
 /// Time ranges
 typedef enum t_enum_GRIB_TIMERANGE {
@@ -140,26 +134,26 @@ static t_enum_GRIB_TIMEUNIT parseTimeUnit(const std::string& tu)
 
 Timerange::Style Timerange::parseStyle(const std::string& str)
 {
-	if (str == "GRIB1") return GRIB1;
-	if (str == "GRIB2") return GRIB2;
-	if (str == "Timedef") return TIMEDEF;
-	if (str == "BUFR") return BUFR;
-	throw_consistency_error("parsing Timerange style", "cannot parse Timerange style '"+str+"': only GRIB1, GRIB2, Timedef and BUFR are supported");
+    if (str == "GRIB1") return Style::GRIB1;
+    if (str == "GRIB2") return Style::GRIB2;
+    if (str == "Timedef") return Style::TIMEDEF;
+    if (str == "BUFR") return Style::BUFR;
+    throw_consistency_error("parsing Timerange style", "cannot parse Timerange style '"+str+"': only GRIB1, GRIB2, Timedef and BUFR are supported");
 }
 
 std::string Timerange::formatStyle(Timerange::Style s)
 {
-	switch (s)
-	{
-		case Timerange::GRIB1: return "GRIB1";
-		case Timerange::GRIB2: return "GRIB2";
-		case Timerange::TIMEDEF: return "Timedef";
-		case Timerange::BUFR: return "BUFR";
-		default:
-			std::stringstream str;
-			str << "(unknown " << (int)s << ")";
-			return str.str();
-	}
+    switch (s)
+    {
+        case Style::GRIB1: return "GRIB1";
+        case Style::GRIB2: return "GRIB2";
+        case Style::TIMEDEF: return "Timedef";
+        case Style::BUFR: return "BUFR";
+        default:
+            std::stringstream str;
+            str << "(unknown " << (int)s << ")";
+            return str.str();
+    }
 }
 
 unique_ptr<Timerange> Timerange::decode(BinaryDecoder& dec)
@@ -167,21 +161,21 @@ unique_ptr<Timerange> Timerange::decode(BinaryDecoder& dec)
     Style s = (Style)dec.pop_uint(1, "timerange");
     switch (s)
     {
-        case GRIB1: {
+        case Style::GRIB1: {
             uint8_t type = dec.pop_uint(1, "GRIB1 type"),
                 unit = dec.pop_uint(1, "GRIB1 unit");
             int8_t  p1   = dec.pop_sint(1, "GRIB1 p1"),
                     p2   = dec.pop_sint(1, "GRIB1 p2");
             return createGRIB1(type, unit, p1, p2);
             }
-        case GRIB2: {
+        case Style::GRIB2: {
             uint8_t type = dec.pop_uint(1, "GRIB2 type"),
                 unit = dec.pop_uint(1, "GRIB2 unit");
             int32_t p1   = dec.pop_sint(4, "GRIB2 p1"),
                     p2   = dec.pop_sint(4, "GRIB2 p2");
             return createGRIB2(type, unit, p1, p2);
         }
-        case TIMEDEF: {
+        case Style::TIMEDEF: {
             uint8_t step_unit = dec.pop_uint(1, "timedef forecast step unit");
             uint32_t step_len = 0;
             if (step_unit != 255)
@@ -198,7 +192,7 @@ unique_ptr<Timerange> Timerange::decode(BinaryDecoder& dec)
             return createTimedef(step_len, (timerange::TimedefUnit)step_unit,
                                             stat_type, stat_len, (timerange::TimedefUnit)stat_unit);
         }
-        case BUFR: {
+        case Style::BUFR: {
             uint8_t unit   = dec.pop_uint(1, "BUFR unit");
             unsigned value = dec.pop_varint<unsigned>("BUFR value");
             return createBUFR(value, unit);
@@ -214,12 +208,24 @@ unique_ptr<Timerange> Timerange::decodeMapping(const emitter::memory::Mapping& v
 
     switch (style_from_mapping(val))
     {
-        case Timerange::GRIB1: return upcast<Timerange>(timerange::GRIB1::decodeMapping(val));
-        case Timerange::GRIB2: return upcast<Timerange>(timerange::GRIB2::decodeMapping(val));
-        case Timerange::TIMEDEF: return upcast<Timerange>(timerange::Timedef::decodeMapping(val));
-        case Timerange::BUFR: return upcast<Timerange>(timerange::BUFR::decodeMapping(val));
+        case Style::GRIB1: return upcast<Timerange>(timerange::GRIB1::decodeMapping(val));
+        case Style::GRIB2: return upcast<Timerange>(timerange::GRIB2::decodeMapping(val));
+        case Style::TIMEDEF: return upcast<Timerange>(timerange::Timedef::decodeMapping(val));
+        case Style::BUFR: return upcast<Timerange>(timerange::BUFR::decodeMapping(val));
         default:
             throw_consistency_error("parsing Timerange", "unknown Timerange style " + val.get_string());
+    }
+}
+
+std::unique_ptr<Timerange> Timerange::decode_structure(const emitter::Keys& keys, const emitter::Reader& val)
+{
+    switch (style_from_structure(keys, val))
+    {
+        case Style::GRIB1: return upcast<Timerange>(timerange::GRIB1::decode_structure(keys, val));
+        case Style::GRIB2: return upcast<Timerange>(timerange::GRIB2::decode_structure(keys, val));
+        case Style::TIMEDEF: return upcast<Timerange>(timerange::Timedef::decode_structure(keys, val));
+        case Style::BUFR: return upcast<Timerange>(timerange::BUFR::decode_structure(keys, val));
+        default: throw std::runtime_error("Unknown Timerange style");
     }
 }
 
@@ -267,7 +273,7 @@ unique_ptr<Timerange> Timerange::decodeString(const std::string& val)
 	Timerange::Style style = outerParse<Timerange>(val, inner);
 	switch (style)
 	{
-		case Timerange::GRIB1: {
+		case Style::GRIB1: {
 			const char* start = inner.c_str();
 			char* endptr;
 			int p1 = -1, p2 = -1;
@@ -418,7 +424,7 @@ unique_ptr<Timerange> Timerange::decodeString(const std::string& val)
                     return createGRIB1(type, parseTimeUnit(p1tu), p1, p2);
             }
         }
-        case Timerange::GRIB2: {
+        case Style::GRIB2: {
             const char* start = inner.c_str();
             int type = getNumber(start, "time range type");
             int unit = getNumber(start, "unit of time range values");
@@ -428,9 +434,9 @@ unique_ptr<Timerange> Timerange::decodeString(const std::string& val)
             skipSuffix(start);
             return createGRIB2(type, unit, p1, p2);
         }
-        case Timerange::TIMEDEF:
+        case Style::TIMEDEF:
             return upcast<Timerange>(timerange::Timedef::createFromYaml(inner));
-        case Timerange::BUFR: {
+        case Style::BUFR: {
             const char* start = inner.c_str();
             unsigned value = getNumber(start, "forecast seconds");
             unsigned unit = parseTimeUnit(start);
@@ -439,7 +445,7 @@ unique_ptr<Timerange> Timerange::decodeString(const std::string& val)
         default:
         {
             stringstream ss;
-            ss << "cannot parse Timerange: unknown Timerange style " << style;
+            ss << "cannot parse Timerange: unknown Timerange style " << (int)style;
             throw std::runtime_error(ss.str());
         }
     }
@@ -915,7 +921,7 @@ void make_same_units(uint32_t& val1, TimedefUnit& unit1, uint32_t& val2, Timedef
 }
 
 
-Timerange::Style GRIB1::style() const { return Timerange::GRIB1; }
+Timerange::Style GRIB1::style() const { return Style::GRIB1; }
 
 void GRIB1::encodeWithoutEnvelope(BinaryEncoder& enc) const
 {
@@ -1005,6 +1011,15 @@ unique_ptr<GRIB1> GRIB1::decodeMapping(const emitter::memory::Mapping& val)
             val["p2"].want_int("parsing GRIB1 timerange p2"));
 }
 
+std::unique_ptr<GRIB1> GRIB1::decode_structure(const emitter::Keys& keys, const emitter::Reader& val)
+{
+    return GRIB1::create(
+            val.as_int(keys.timerange_type, "timerange type"),
+            val.as_int(keys.timerange_unit, "timerange unit"),
+            val.as_int(keys.timerange_p1, "timerange p1"),
+            val.as_int(keys.timerange_p2, "timerange p2"));
+}
+
 std::string GRIB1::exactQuery() const
 {
 	stringstream o;
@@ -1052,6 +1067,7 @@ bool GRIB1::lua_lookup(lua_State* L, const std::string& name) const
 
 int GRIB1::compare_local(const Timerange& o) const
 {
+    if (int res = Timerange::compare_local(o)) return res;
 	// We should be the same kind, so upcast
 	const GRIB1* v = dynamic_cast<const GRIB1*>(&o);
 	if (!v)
@@ -1507,7 +1523,7 @@ void GRIB1::arg_significance(unsigned type, bool& use_p1, bool& use_p2)
     }
 }
 
-Timerange::Style GRIB2::style() const { return Timerange::GRIB2; }
+Timerange::Style GRIB2::style() const { return Style::GRIB2; }
 
 void GRIB2::encodeWithoutEnvelope(BinaryEncoder& enc) const
 {
@@ -1548,6 +1564,15 @@ unique_ptr<GRIB2> GRIB2::decodeMapping(const emitter::memory::Mapping& val)
             val["p2"].want_int("parsing GRIB2 timerange p2"));
 }
 
+std::unique_ptr<GRIB2> GRIB2::decode_structure(const emitter::Keys& keys, const emitter::Reader& val)
+{
+    return GRIB2::create(
+            val.as_int(keys.timerange_type, "timerange type"),
+            val.as_int(keys.timerange_unit, "timerange unit"),
+            val.as_int(keys.timerange_p1, "timerange p1"),
+            val.as_int(keys.timerange_p2, "timerange p2"));
+}
+
 std::string GRIB2::exactQuery() const
 {
 	stringstream o;
@@ -1578,6 +1603,7 @@ bool GRIB2::lua_lookup(lua_State* L, const std::string& name) const
 
 int GRIB2::compare_local(const Timerange& o) const
 {
+    if (int res = Timerange::compare_local(o)) return res;
 	// We should be the same kind, so upcast
 	const GRIB2* v = dynamic_cast<const GRIB2*>(&o);
 	if (!v)
@@ -1635,7 +1661,7 @@ unique_ptr<GRIB2> GRIB2::create(unsigned char type, unsigned char unit, signed l
     return unique_ptr<GRIB2>(res);
 }
 
-Timerange::Style Timedef::style() const { return Timerange::TIMEDEF; }
+Timerange::Style Timedef::style() const { return Style::TIMEDEF; }
 
 void Timedef::encodeWithoutEnvelope(BinaryEncoder& enc) const
 {
@@ -1745,6 +1771,29 @@ unique_ptr<Timedef> Timedef::decodeMapping(const emitter::memory::Mapping& val)
     return timerange::Timedef::create(step_len, step_unit, stat_type, stat_len, stat_unit);
 }
 
+std::unique_ptr<Timedef> Timedef::decode_structure(const emitter::Keys& keys, const emitter::Reader& val)
+{
+    uint32_t step_len = val.as_int(keys.timerange_step_len, "Timedef forecast step length");
+    TimedefUnit step_unit = (TimedefUnit)val.as_int(keys.timerange_step_unit, "Timedef forecast step units");
+
+    int stat_type = 255;
+    uint32_t stat_len = 0;
+    TimedefUnit stat_unit = timerange::UNIT_MISSING;
+
+    if (val.has_key(keys.timerange_stat_type, emitter::NodeType::INT))
+    {
+        stat_type = val.as_int(keys.timerange_stat_type, "Timedef statistical type");
+
+        if (val.has_key(keys.timerange_stat_unit, emitter::NodeType::INT))
+        {
+            stat_unit = (TimedefUnit)val.as_int(keys.timerange_stat_unit, "Timedef statistical unit");
+            stat_len = val.as_int(keys.timerange_stat_len, "Timedef length of interval of statistical processing");
+        }
+    }
+
+    return timerange::Timedef::create(step_len, step_unit, stat_type, stat_len, stat_unit);
+}
+
 std::string Timedef::exactQuery() const
 {
     stringstream o;
@@ -1787,6 +1836,7 @@ bool Timedef::lua_lookup(lua_State* L, const std::string& name) const
 
 int Timedef::compare_local(const Timerange& o) const
 {
+    if (int res = Timerange::compare_local(o)) return res;
     // We should be the same kind, so upcast
     const Timedef* v = dynamic_cast<const Timedef*>(&o);
     if (!v)
@@ -2180,7 +2230,7 @@ unsigned BUFR::months() const
     }
 }
 
-Timerange::Style BUFR::style() const { return Timerange::BUFR; }
+Timerange::Style BUFR::style() const { return Style::BUFR; }
 
 void BUFR::encodeWithoutEnvelope(BinaryEncoder& enc) const
 {
@@ -2210,6 +2260,13 @@ unique_ptr<BUFR> BUFR::decodeMapping(const emitter::memory::Mapping& val)
     return BUFR::create(
             val["va"].want_int("parsing BUFR timerange value"),
             val["un"].want_int("parsing BUFR timerange un"));
+}
+
+std::unique_ptr<BUFR> BUFR::decode_structure(const emitter::Keys& keys, const emitter::Reader& val)
+{
+    return BUFR::create(
+            val.as_int(keys.timerange_value, "timerange value"),
+            val.as_int(keys.timerange_unit, "timerange unit"));
 }
 
 std::string BUFR::exactQuery() const
@@ -2247,6 +2304,7 @@ bool BUFR::lua_lookup(lua_State* L, const std::string& name) const
 
 int BUFR::compare_local(const Timerange& o) const
 {
+    if (int res = Timerange::compare_local(o)) return res;
 	// We should be the same kind, so upcast
 	const BUFR* v = dynamic_cast<const BUFR*>(&o);
 	if (!v)
@@ -2315,4 +2373,4 @@ void Timerange::init()
 }
 }
 
-#include <arki/types.tcc>
+#include <arki/types/styled.tcc>

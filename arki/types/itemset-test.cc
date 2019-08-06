@@ -38,16 +38,16 @@ struct Fixture : public arki::utils::tests::Fixture
 
     Fixture()
     {
-        testValues.set("foo", Value::createInteger(5));
-        testValues.set("bar", Value::createInteger(5000));
-        testValues.set("baz", Value::createInteger(-200));
-        testValues.set("moo", Value::createInteger(0x5ffffff));
-        testValues.set("antani", Value::createInteger(-1));
-        testValues.set("blinda", Value::createInteger(0));
-        testValues.set("supercazzola", Value::createInteger(-1234567));
-        testValues.set("pippo", Value::createString("pippo"));
-        testValues.set("pluto", Value::createString("12"));
-        testValues.set("cippo", Value::createString(""));
+        testValues.set("foo", Value::create_integer(5));
+        testValues.set("bar", Value::create_integer(5000));
+        testValues.set("baz", Value::create_integer(-200));
+        testValues.set("moo", Value::create_integer(0x5ffffff));
+        testValues.set("antani", Value::create_integer(-1));
+        testValues.set("blinda", Value::create_integer(0));
+        testValues.set("supercazzola", Value::create_integer(-1234567));
+        testValues.set("pippo", Value::create_string("pippo"));
+        testValues.set("pluto", Value::create_string("12"));
+        testValues.set("cippo", Value::create_string(""));
     }
 
     void fill(ItemSet& md)
@@ -187,18 +187,18 @@ add_method("basic_ops", [](Fixture& f) {
 def_test(9)
 {
 	ValueBag test1;
-	test1.set("foo", Value::createInteger(5));
-	test1.set("bar", Value::createInteger(5000));
-	test1.set("baz", Value::createInteger(-200));
-	test1.set("moo", Value::createInteger(0x5ffffff));
-	test1.set("pippo", Value::createString("pippo"));
-	test1.set("pluto", Value::createString("12"));
-	test1.set("cippo", Value::createString(""));
+	test1.set("foo", Value::create_integer(5));
+	test1.set("bar", Value::create_integer(5000));
+	test1.set("baz", Value::create_integer(-200));
+	test1.set("moo", Value::create_integer(0x5ffffff));
+	test1.set("pippo", Value::create_string("pippo"));
+	test1.set("pluto", Value::create_string("12"));
+	test1.set("cippo", Value::create_string(""));
 
 	ValueBag test2;
-	test2.set("antani", Value::createInteger(-1));
-	test2.set("blinda", Value::createInteger(0));
-	test2.set("supercazzola", Value::createInteger(-1234567));
+	test2.set("antani", Value::create_integer(-1));
+	test2.set("blinda", Value::create_integer(0));
+	test2.set("supercazzola", Value::create_integer(-1234567));
 
 	Item<> val(area::GRIB::create(test1));
 	Item<> val1(area::GRIB::create(test2));
@@ -209,18 +209,18 @@ def_test(9)
 def_test(10)
 {
 	ValueBag test1;
-	test1.set("foo", Value::createInteger(5));
-	test1.set("bar", Value::createInteger(5000));
-	test1.set("baz", Value::createInteger(-200));
-	test1.set("moo", Value::createInteger(0x5ffffff));
-	test1.set("pippo", Value::createString("pippo"));
-	test1.set("pluto", Value::createString("12"));
-	test1.set("cippo", Value::createString(""));
+	test1.set("foo", Value::create_integer(5));
+	test1.set("bar", Value::create_integer(5000));
+	test1.set("baz", Value::create_integer(-200));
+	test1.set("moo", Value::create_integer(0x5ffffff));
+	test1.set("pippo", Value::create_string("pippo"));
+	test1.set("pluto", Value::create_string("12"));
+	test1.set("cippo", Value::create_string(""));
 
 	ValueBag test2;
-	test2.set("antani", Value::createInteger(-1));
-	test2.set("blinda", Value::createInteger(0));
-	test2.set("supercazzola", Value::createInteger(-1234567));
+	test2.set("antani", Value::create_integer(-1));
+	test2.set("blinda", Value::create_integer(0));
+	test2.set("supercazzola", Value::create_integer(-1234567));
 
 	Item<> val(proddef::GRIB::create(test1));
 	Item<> val1(proddef::GRIB::create(test2));

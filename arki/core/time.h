@@ -3,20 +3,13 @@
 
 #include <vector>
 #include <string>
+#include <arki/emitter/fwd.h>
 
 struct lua_State;
 
 namespace arki {
 struct BinaryEncoder;
 struct BinaryDecoder;
-struct Emitter;
-
-namespace emitter {
-namespace memory {
-struct List;
-struct Mapping;
-}
-}
 
 namespace core {
 

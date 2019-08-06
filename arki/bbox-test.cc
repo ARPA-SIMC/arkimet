@@ -36,13 +36,13 @@ add_method("2", [] {
 
 	BBox bbox;
 	ValueBag vb;
-	vb.set("Ni", Value::createInteger(97));
-	vb.set("Nj", Value::createInteger(73));
-	vb.set("latfirst", Value::createInteger(40000000));
-	vb.set("latlast", Value::createInteger(46000000));
-	vb.set("lonfirst", Value::createInteger(12000000));
-	vb.set("lonlast", Value::createInteger(20000000));
-	vb.set("type", Value::createInteger(0));
+	vb.set("Ni", Value::create_integer(97));
+	vb.set("Nj", Value::create_integer(73));
+	vb.set("latfirst", Value::create_integer(40000000));
+	vb.set("latlast", Value::create_integer(46000000));
+	vb.set("lonfirst", Value::create_integer(12000000));
+	vb.set("lonlast", Value::create_integer(20000000));
+	vb.set("type", Value::create_integer(0));
 
     unique_ptr<Area> area(Area::createGRIB(vb));
     auto g = bbox(*area);
@@ -73,14 +73,14 @@ add_method("3", [] {
 
 	BBox bbox;
 	ValueBag vb;
-	vb.set("Ni", Value::createInteger(90));
-	vb.set("Nj", Value::createInteger(52));
-	vb.set("latfirst", Value::createInteger(4852500));
-	vb.set("latlast", Value::createInteger(5107500));
-	vb.set("lonfirst", Value::createInteger(402500));
-	vb.set("lonlast", Value::createInteger(847500));
-	vb.set("type", Value::createInteger(0));
-	vb.set("utm", Value::createInteger(1));
+	vb.set("Ni", Value::create_integer(90));
+	vb.set("Nj", Value::create_integer(52));
+	vb.set("latfirst", Value::create_integer(4852500));
+	vb.set("latlast", Value::create_integer(5107500));
+	vb.set("lonfirst", Value::create_integer(402500));
+	vb.set("lonlast", Value::create_integer(847500));
+	vb.set("type", Value::create_integer(0));
+	vb.set("utm", Value::create_integer(1));
 
     unique_ptr<Area> area(Area::createGRIB(vb));
     auto g = bbox(*area);
@@ -113,16 +113,16 @@ add_method("4", [] {
 
 	BBox bbox;
 	ValueBag vb;
-	vb.set("Ni", Value::createInteger(447));
-	vb.set("Nj", Value::createInteger(532));
-	vb.set("latfirst", Value::createInteger(-21925000));
-	vb.set("latlast", Value::createInteger(-8650000));
-	vb.set("lonfirst", Value::createInteger(-3500000));
-	vb.set("lonlast", Value::createInteger(7650000));
-	vb.set("latp", Value::createInteger(-32500000));
-	vb.set("lonp", Value::createInteger(10000000));
-	vb.set("type", Value::createInteger(10));
-	vb.set("rot", Value::createInteger(0));
+	vb.set("Ni", Value::create_integer(447));
+	vb.set("Nj", Value::create_integer(532));
+	vb.set("latfirst", Value::create_integer(-21925000));
+	vb.set("latlast", Value::create_integer(-8650000));
+	vb.set("lonfirst", Value::create_integer(-3500000));
+	vb.set("lonlast", Value::create_integer(7650000));
+	vb.set("latp", Value::create_integer(-32500000));
+	vb.set("lonp", Value::create_integer(10000000));
+	vb.set("type", Value::create_integer(10));
+	vb.set("rot", Value::create_integer(0));
 
     unique_ptr<Area> area(Area::createGRIB(vb));
     auto g = bbox(*area);
@@ -172,13 +172,13 @@ add_method("5", [] {
 
 	BBox bbox;
 	ValueBag vb;
-	vb.set("Ni", Value::createInteger(135));
-	vb.set("Nj", Value::createInteger(98));
-	vb.set("latfirst", Value::createInteger(49200000));
-	vb.set("latlast", Value::createInteger(34650000));
-	vb.set("lonfirst", Value::createInteger(2400000));
-	vb.set("lonlast", Value::createInteger(22500000));
-	vb.set("type", Value::createInteger(0));
+	vb.set("Ni", Value::create_integer(135));
+	vb.set("Nj", Value::create_integer(98));
+	vb.set("latfirst", Value::create_integer(49200000));
+	vb.set("latlast", Value::create_integer(34650000));
+	vb.set("lonfirst", Value::create_integer(2400000));
+	vb.set("lonlast", Value::create_integer(22500000));
+	vb.set("type", Value::create_integer(0));
 
     unique_ptr<Area> area(Area::createGRIB(vb));
     auto g = bbox(*area);
@@ -209,9 +209,9 @@ add_method("6", [] {
 
     BBox bbox;
     ValueBag vb;
-    vb.set("type", Value::createString("mob"));
-    vb.set("x", Value::createInteger(11));
-    vb.set("y", Value::createInteger(45));
+    vb.set("type", Value::create_string("mob"));
+    vb.set("x", Value::create_integer(11));
+    vb.set("y", Value::create_integer(45));
 
     unique_ptr<Area> area(Area::createGRIB(vb));
     auto g(bbox(*area));

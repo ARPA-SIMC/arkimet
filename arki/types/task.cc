@@ -78,6 +78,11 @@ unique_ptr<Task> Task::decodeMapping(const emitter::memory::Mapping& val)
     return Task::create(val["va"].want_string("parsing Task value"));
 }
 
+std::unique_ptr<Task> Task::decode_structure(const emitter::Keys& keys, const emitter::Reader& val)
+{
+    return Task::create(val.as_string(keys.task_value, "Task value"));
+}
+
 unique_ptr<Task> Task::decodeString(const std::string& val)
 {
 	if (val.empty())
@@ -139,5 +144,4 @@ void Task::init()
 }
 }
 
-#include <arki/types.tcc>
-// vim:set ts=4 sw=4:
+#include <arki/types/core.tcc>

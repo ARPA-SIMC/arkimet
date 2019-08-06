@@ -86,6 +86,12 @@ unique_ptr<Value> Value::decodeMapping(const emitter::memory::Mapping& val)
     return Value::create(val["va"].want_string("parsing item value encoded in metadata"));
 }
 
+std::unique_ptr<Value> Value::decode_structure(const emitter::Keys& keys, const emitter::Reader& val)
+{
+    return Value::create(val.as_string(keys.value_value, "item value encoded in metadata"));
+}
+
+
 Value* Value::clone() const
 {
     Value* val = new Value;
@@ -119,5 +125,4 @@ void Value::init()
 
 }
 }
-#include <arki/types.tcc>
-// vim:set ts=4 sw=4:
+#include <arki/types/core.tcc>

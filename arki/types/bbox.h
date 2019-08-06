@@ -8,12 +8,24 @@
  */
 
 
-#include <arki/types.h>
+#include <arki/types/styled.h>
 
 struct lua_State;
 
 namespace arki {
 namespace types {
+
+namespace bbox {
+
+/// Style values
+enum class Style: unsigned char {
+    INVALID = 1,
+    POINT = 2,
+    BOX = 3,
+    HULL = 4,
+};
+
+}
 
 struct BBox;
 
@@ -25,7 +37,7 @@ struct traits<BBox>
 	static const size_t type_sersize_bytes;
 	static const char* type_lua_tag;
 
-	typedef unsigned char Style;
+    typedef bbox::Style Style;
 };
 
 /**
@@ -36,13 +48,6 @@ struct traits<BBox>
  */
 struct BBox : public types::StyledType<BBox>
 {
-	/// Style values
-	//static const Style NONE = 0;
-	static const Style INVALID = 1;
-	static const Style POINT = 2;
-	static const Style BOX = 3;
-	static const Style HULL = 4;
-
 	/// Convert a string into a style
 	static Style parseStyle(const std::string& str);
 	/// Convert a style into its string representation
@@ -52,6 +57,7 @@ struct BBox : public types::StyledType<BBox>
     static std::unique_ptr<BBox> decode(BinaryDecoder& dec);
     static std::unique_ptr<BBox> decodeString(const std::string& val);
     static std::unique_ptr<BBox> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<BBox> decode_structure(const emitter::Keys& keys, const emitter::Reader& val);
 
     // Register this type tree with the type system
     static void init();

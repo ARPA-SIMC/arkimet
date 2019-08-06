@@ -28,14 +28,10 @@ const types::Code traits<Reftime>::type_code = CODE;
 const size_t traits<Reftime>::type_sersize_bytes = SERSIZELEN;
 const char* traits<Reftime>::type_lua_tag = LUATAG_TYPES ".reftime";
 
-// Style constants
-const unsigned char Reftime::POSITION;
-const unsigned char Reftime::PERIOD;
-
 Reftime::Style Reftime::parseStyle(const std::string& str)
 {
-	if (str == "POSITION") return POSITION;
-	if (str == "PERIOD") return PERIOD;
+	if (str == "POSITION") return reftime::Style::POSITION;
+	if (str == "PERIOD") return reftime::Style::PERIOD;
 	throw_consistency_error("parsing Reftime style", "cannot parse Reftime style '"+str+"': only POSITION and PERIOD are supported");
 }
 
@@ -43,8 +39,8 @@ std::string Reftime::formatStyle(Reftime::Style s)
 {
 	switch (s)
 	{
-		case Reftime::POSITION: return "POSITION";
-		case Reftime::PERIOD: return "PERIOD";
+		case Style::POSITION: return "POSITION";
+		case Style::PERIOD: return "PERIOD";
 		default:
 			std::stringstream str;
 			str << "(unknown " << (int)s << ")";
@@ -57,19 +53,15 @@ unique_ptr<Reftime> Reftime::decode(BinaryDecoder& dec)
     Style s = (Style)dec.pop_uint(1, "reftime style");
     switch (s)
     {
-        case POSITION: return Reftime::createPosition(Time::decode(dec));
-        case PERIOD:
+        case Style::POSITION: return Reftime::createPosition(Time::decode(dec));
+        case Style::PERIOD:
         {
             auto begin = Time::decode(dec);
             auto until = Time::decode(dec);
             return Reftime::createPeriod(begin, until);
         }
         default:
-        {
-            stringstream ss;
-            ss << "cannot parse reference time: style is " << s << " but we can only decode POSITION and PERIOD";
-            throw std::runtime_error(ss.str());
-        }
+            throw std::runtime_error("cannot parse reference time: style is '" + std::to_string((int)s) + "' but onlt POSITION and PERIOD are valid values");
     }
 }
 
@@ -79,10 +71,20 @@ unique_ptr<Reftime> Reftime::decodeMapping(const emitter::memory::Mapping& val)
 
     switch (style_from_mapping(val))
     {
-        case POSITION: return upcast<Reftime>(reftime::Position::decodeMapping(val));
-        case PERIOD: return upcast<Reftime>(reftime::Period::decodeMapping(val));
+        case Style::POSITION: return upcast<Reftime>(reftime::Position::decodeMapping(val));
+        case Style::PERIOD: return upcast<Reftime>(reftime::Period::decodeMapping(val));
         default:
             throw_consistency_error("parsing Reftime", "unknown Reftime style " + val.get_string());
+    }
+}
+
+std::unique_ptr<Reftime> Reftime::decode_structure(const emitter::Keys& keys, const emitter::Reader& val)
+{
+    switch (style_from_structure(keys, val))
+    {
+        case Style::POSITION: return upcast<Reftime>(reftime::Position::decode_structure(keys, val));
+        case Style::PERIOD: return upcast<Reftime>(reftime::Period::decode_structure(keys, val));
+        default: throw std::runtime_error("unknown Reftime style");
     }
 }
 
@@ -144,7 +146,7 @@ namespace reftime {
 
 Position::Position(const Time& time) : time(time) {}
 
-Reftime::Style Position::style() const { return Reftime::POSITION; }
+Reftime::Style Position::style() const { return Style::POSITION; }
 
 void Position::encodeWithoutEnvelope(BinaryEncoder& enc) const
 {
@@ -170,6 +172,11 @@ unique_ptr<Position> Position::decodeMapping(const emitter::memory::Mapping& val
     return Position::create(time);
 }
 
+std::unique_ptr<Position> Position::decode_structure(const emitter::Keys& keys, const emitter::Reader& val)
+{
+    return Position::create(val.as_time(keys.reftime_position_time, "time"));
+}
+
 std::string Position::exactQuery() const
 {
     return "=" + time.to_iso8601();
@@ -188,6 +195,7 @@ bool Position::lua_lookup(lua_State* L, const std::string& name) const
 
 int Position::compare_local(const Reftime& o) const
 {
+    if (int res = Reftime::compare_local(o)) return res;
 	// We should be the same kind, so upcast
 	const Position* v = dynamic_cast<const Position*>(&o);
 	if (!v)
@@ -232,7 +240,7 @@ unique_ptr<Position> Position::create(const Time& time)
 Period::Period(const Time& begin, const Time& end)
     : begin(begin), end(end) {}
 
-Reftime::Style Period::style() const { return Reftime::PERIOD; }
+Reftime::Style Period::style() const { return Style::PERIOD; }
 
 void Period::encodeWithoutEnvelope(BinaryEncoder& enc) const
 {
@@ -260,6 +268,13 @@ unique_ptr<Period> Period::decodeMapping(const emitter::memory::Mapping& val)
     return Period::create(beg, end);
 }
 
+std::unique_ptr<Period> Period::decode_structure(const emitter::Keys& keys, const emitter::Reader& val)
+{
+    return Period::create(
+            val.as_time(keys.reftime_period_begin, "period begin"),
+            val.as_time(keys.reftime_period_end, "period end"));
+}
+
 const char* Period::lua_type_name() const { return "arki.types.reftime.period"; }
 
 bool Period::lua_lookup(lua_State* L, const std::string& name) const
@@ -275,6 +290,7 @@ bool Period::lua_lookup(lua_State* L, const std::string& name) const
 
 int Period::compare_local(const Reftime& o) const
 {
+    if (int res = Reftime::compare_local(o)) return res;
 	// We should be the same kind, so upcast
 	const Period* v = dynamic_cast<const Period*>(&o);
 	if (!v)
@@ -328,6 +344,4 @@ void Reftime::init()
 }
 }
 
-#include <arki/types.tcc>
-
-// vim:set ts=4 sw=4:
+#include <arki/types/styled.tcc>

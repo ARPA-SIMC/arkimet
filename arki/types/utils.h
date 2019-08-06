@@ -55,6 +55,7 @@ struct MetadataType
     typedef std::unique_ptr<Type> (*item_decoder)(BinaryDecoder& dec);
     typedef std::unique_ptr<Type> (*string_decoder)(const std::string& val);
     typedef std::unique_ptr<Type> (*mapping_decoder)(const emitter::memory::Mapping& val);
+    typedef std::unique_ptr<Type> (*structure_decoder)(const emitter::Keys& keys, const emitter::Reader& reader);
     typedef void (*lua_libloader)(lua_State* L);
 
     types::Code type_code;
@@ -63,6 +64,7 @@ struct MetadataType
     item_decoder decode_func;
     string_decoder string_decode_func;
     mapping_decoder mapping_decode_func;
+    structure_decoder structure_decode_func;
     lua_libloader lua_loadlib_func;
 
     MetadataType(
@@ -72,6 +74,7 @@ struct MetadataType
         item_decoder decode_func,
         string_decoder string_decode_func,
         mapping_decoder mapping_decode_func,
+        structure_decoder structure_decode_func,
         lua_libloader lua_loadlib_func
     );
     ~MetadataType();
@@ -80,35 +83,25 @@ struct MetadataType
 	static const MetadataType* get(types::Code);
 
     template<typename T>
-    static MetadataType create()
-    {
-        return MetadataType(
-            traits<T>::type_code,
-            traits<T>::type_sersize_bytes,
-            traits<T>::type_tag,
-            (MetadataType::item_decoder)T::decode,
-            (MetadataType::string_decoder)T::decodeString,
-            (MetadataType::mapping_decoder)T::decodeMapping,
-            T::lua_loadlib
-        );
-    }
-
-    template<typename T>
     static void register_type()
     {
         static_assert(is_item_decoder<decltype(T::decode)>::value, "decode function must take a BinaryDecoder as argument");
         // FIXME: when we remove create() we can make MetadataType not register
         // itself and remove the need of this awkward new
-        new MetadataType(
+        auto type = new MetadataType(
             traits<T>::type_code,
             traits<T>::type_sersize_bytes,
             traits<T>::type_tag,
             (MetadataType::item_decoder)T::decode,
             (MetadataType::string_decoder)T::decodeString,
             (MetadataType::mapping_decoder)T::decodeMapping,
+            (MetadataType::structure_decoder)T::decode_structure,
             T::lua_loadlib
         );
+        register_type(type);
     }
+
+    static void register_type(MetadataType* type);
 
 	static void lua_loadlib(lua_State* L);
 };

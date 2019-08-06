@@ -25,7 +25,7 @@ add_generic_test(
 add_method("grib1_details", [] {
     using namespace arki::types;
     unique_ptr<Origin> o = Origin::createGRIB1(1, 2, 3);
-    wassert(actual(o->style()) == Origin::GRIB1);
+    wassert(actual(o->style()) == Origin::Style::GRIB1);
     const origin::GRIB1* v = dynamic_cast<origin::GRIB1*>(o.get());
     wassert(actual(v->centre()) == 1u);
     wassert(actual(v->subcentre()) == 2u);
@@ -43,7 +43,7 @@ add_generic_test(
 add_method("grib2_details", [] {
     using namespace arki::types;
     unique_ptr<Origin> o = Origin::createGRIB2(1, 2, 3, 4, 5);
-    wassert(actual(o->style()) == Origin::GRIB2);
+    wassert(actual(o->style()) == Origin::Style::GRIB2);
     const origin::GRIB2* v = dynamic_cast<origin::GRIB2*>(o.get());
     wassert(actual(v->centre()) == 1u);
     wassert(actual(v->subcentre()) == 2u);
@@ -63,7 +63,7 @@ add_generic_test(
 add_method("bufr_details", [] {
     using namespace arki::types;
     unique_ptr<Origin> o = Origin::createBUFR(1, 2);
-    wassert(actual(o->style()) == Origin::BUFR);
+    wassert(actual(o->style()) == Origin::Style::BUFR);
     const origin::BUFR* v = dynamic_cast<origin::BUFR*>(o.get());
     wassert(actual(v->centre()) == 1u);
     wassert(actual(v->subcentre()) == 2u);
@@ -88,14 +88,14 @@ add_generic_test(
 add_method("odim_details", [] {
     using namespace arki::types;
     unique_ptr<Origin> o = Origin::createODIMH5("1", "2", "3");
-    wassert(actual(o->style()) == Origin::ODIMH5);
+    wassert(actual(o->style()) == Origin::Style::ODIMH5);
     const origin::ODIMH5* v = dynamic_cast<origin::ODIMH5*>(o.get());
     wassert(actual(v->getWMO()) == "1");
     wassert(actual(v->getRAD()) == "2");
     wassert(actual(v->getPLC()) == "3");
 
     o = Origin::createODIMH5("", "2", "3");
-    wassert(actual(o->style()) == Origin::ODIMH5);
+    wassert(actual(o->style()) == Origin::Style::ODIMH5);
     v = dynamic_cast<origin::ODIMH5*>(o.get());
     wassert(actual(v->getWMO()) == "");
     wassert(actual(v->getRAD()) == "2");

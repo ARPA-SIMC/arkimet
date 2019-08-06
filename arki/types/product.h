@@ -1,15 +1,27 @@
 #ifndef ARKI_TYPES_PRODUCT_H
 #define ARKI_TYPES_PRODUCT_H
 
-#include <memory>
-
-#include <arki/types.h>
+#include <arki/types/styled.h>
 #include <arki/values.h>
+#include <memory>
 
 struct lua_State;
 
 namespace arki {
 namespace types {
+
+namespace product {
+
+/// Style values
+enum class Style: unsigned char {
+    GRIB1 = 1,
+    GRIB2 = 2,
+    BUFR = 3,
+    ODIMH5 = 4,
+    VM2 = 5,
+};
+
+}
 
 template<>
 struct traits<Product>
@@ -18,7 +30,7 @@ struct traits<Product>
     static const types::Code type_code;
     static const size_t type_sersize_bytes;
     static const char* type_lua_tag;
-    typedef unsigned char Style;
+    typedef product::Style Style;
 };
 
 /**
@@ -27,14 +39,6 @@ struct traits<Product>
  */
 struct Product : public types::StyledType<Product>
 {
-	/// Style values
-	//static const unsigned char NONE = 0;
-	static const unsigned char GRIB1 = 1;
-	static const unsigned char GRIB2 = 2;
-	static const unsigned char BUFR = 3;
-	static const unsigned char ODIMH5 	= 4;
-    static const unsigned char VM2 = 5;
-
 	/// Convert a string into a style
 	static Style parseStyle(const std::string& str);
 	/// Convert a style into its string representation
@@ -44,6 +48,7 @@ struct Product : public types::StyledType<Product>
     static std::unique_ptr<Product> decode(BinaryDecoder& dec);
     static std::unique_ptr<Product> decodeString(const std::string& val);
     static std::unique_ptr<Product> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<Product> decode_structure(const emitter::Keys& keys, const emitter::Reader& val);
 
 	// Deprecated functions
 	virtual std::vector<int> toIntVector() const = 0;
@@ -69,6 +74,9 @@ struct Product : public types::StyledType<Product>
 
 
 namespace product {
+
+inline std::ostream& operator<<(std::ostream& o, Style s) { return o << Product::formatStyle(s); }
+
 
 class GRIB1 : public Product
 {
@@ -97,6 +105,7 @@ public:
     GRIB1* clone() const override;
     static std::unique_ptr<GRIB1> create(unsigned char origin, unsigned char table, unsigned char product);
     static std::unique_ptr<GRIB1> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<GRIB1> decode_structure(const emitter::Keys& keys, const emitter::Reader& val);
 
     // Deprecated functions
     std::vector<int> toIntVector() const override;
@@ -141,6 +150,7 @@ public:
             unsigned char table_version=4,
             unsigned char local_table_version=255);
     static std::unique_ptr<GRIB2> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<GRIB2> decode_structure(const emitter::Keys& keys, const emitter::Reader& val);
 
     // Deprecated functions
     std::vector<int> toIntVector() const override;
@@ -180,6 +190,7 @@ public:
     static std::unique_ptr<BUFR> create(unsigned char type, unsigned char subtype, unsigned char localsubtype);
     static std::unique_ptr<BUFR> create(unsigned char type, unsigned char subtype, unsigned char localsubtype, const ValueBag& name);
     static std::unique_ptr<BUFR> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<BUFR> decode_structure(const emitter::Keys& keys, const emitter::Reader& val);
 
     // Deprecated functions
     std::vector<int> toIntVector() const override;
@@ -220,6 +231,7 @@ public:
             /*REMOVED:, double prodpar1, double prodpar2*/
     );
     static std::unique_ptr<ODIMH5> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<ODIMH5> decode_structure(const emitter::Keys& keys, const emitter::Reader& val);
 
     // Deprecated functions
     std::vector<int> toIntVector() const override;
@@ -252,6 +264,7 @@ public:
     VM2* clone() const override;
     static std::unique_ptr<VM2> create(unsigned variable_id);
     static std::unique_ptr<VM2> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<VM2> decode_structure(const emitter::Keys& keys, const emitter::Reader& val);
 
     std::vector<int> toIntVector() const override;
 };

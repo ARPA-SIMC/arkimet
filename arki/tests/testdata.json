@@ -346,6 +346,11 @@
  },
  {
   "doc": "",
+  "group": "arki_types_bundle",
+  "method": "empty"
+ },
+ {
+  "doc": "",
   "group": "arki_types_utils",
   "method": "empty"
  },

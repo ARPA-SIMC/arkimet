@@ -1,6 +1,7 @@
-#include "config.h"
-#include "memory.h"
 #include "arki/exceptions.h"
+#include "arki/core/time.h"
+#include "arki/libconfig.h"
+#include "memory.h"
 #include <memory>
 
 using namespace std;
@@ -14,19 +15,18 @@ Node::~Node()
 {
 }
 
-void Node::add_val(const Node*)
+void Node::add_val(const memory::Node*)
 {
     throw_consistency_error("adding node to structured data", "cannot add elements to this node");
 }
 
 List::~List()
 {
-    for (vector<const Node*>::iterator i = val.begin();
-            i != val.end(); ++i)
-        delete *i;
+    for (auto& i: val)
+        delete i;
 }
 
-void List::add_val(const Node* n)
+void List::add_val(const memory::Node* n)
 {
     val.push_back(n);
 }
@@ -38,12 +38,11 @@ Mapping::Mapping()
 
 Mapping::~Mapping()
 {
-    for (map<string, const Node*>::iterator i = val.begin();
-            i != val.end(); ++i)
-        delete i->second;
+    for (auto& i: val)
+        delete i.second;
 }
 
-void Mapping::add_val(const Node* n)
+void Mapping::add_val(const memory::Node* n)
 {
     if (has_cur_key)
     {
@@ -58,6 +57,41 @@ void Mapping::add_val(const Node* n)
         has_cur_key = true;
         delete n;
     }
+}
+
+bool Mapping::has_key(const std::string& key, NodeType type) const
+{
+    auto i = val.find(key);
+    if (i == val.end())
+        return false;
+
+    if (i->second->type() != type)
+        return false;
+
+    return true;
+}
+
+core::Time Mapping::as_time(const std::string& key, const char* desc) const
+{
+    auto i = val.find(key);
+    if (i == val.end())
+        return Node::as_time(key, desc);
+
+    const List* list = dynamic_cast<const List*>(i->second);
+    if (!list)
+        return Node::as_time(key, desc);
+
+    if (list->size() < 6)
+        throw std::runtime_error("cannot decode item: list has " + std::to_string(list->size()) + " elements instead of 6");
+
+    core::Time res;
+    res.ye = list->as_int(0, "time year");
+    res.mo = list->as_int(1, "time month");
+    res.da = list->as_int(2, "time day");
+    res.ho = list->as_int(3, "time hour");
+    res.mi = list->as_int(4, "time minute");
+    res.se = list->as_int(5, "time second");
+    return res;
 }
 
 }
@@ -131,5 +165,3 @@ void Memory::end_mapping()
 
 }
 }
-
-// vim:set ts=4 sw=4:

@@ -9,6 +9,7 @@
 #include "binary.h"
 #include "formatter.h"
 #include "core/time.h"
+#include "types/bundle.h"
 #include "types/utils.h"
 #include "types/area.h"
 #include "utils/geos.h"

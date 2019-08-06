@@ -4,7 +4,7 @@
 /// Represent where the data for a metadata can be found
 
 #include <arki/libconfig.h>
-#include <arki/types.h>
+#include <arki/types/styled.h>
 #include <arki/segment/fwd.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -13,6 +13,16 @@ struct lua_State;
 
 namespace arki {
 namespace types {
+namespace source {
+
+/// Style values
+enum class Style: unsigned char {
+    BLOB = 1,
+    URL = 2,
+    INLINE = 3,
+};
+
+}
 
 template<>
 struct traits<Source>
@@ -22,7 +32,8 @@ struct traits<Source>
 	static const size_t type_sersize_bytes;
 	static const char* type_lua_tag;
 
-	typedef unsigned char Style;
+    /// Style values
+    typedef source::Style Style;
 };
 
 /**
@@ -31,12 +42,6 @@ struct traits<Source>
 struct Source : public types::StyledType<Source>
 {
     std::string format;
-
-	/// Style values
-	//static const Style NONE = 0;
-	static const Style BLOB = 1;
-	static const Style URL = 2;
-	static const Style INLINE = 3;
 
 	/// Convert a string into a style
 	static Style parseStyle(const std::string& str);
@@ -51,6 +56,7 @@ struct Source : public types::StyledType<Source>
     static std::unique_ptr<Source> decodeRelative(BinaryDecoder& dec, const std::string& basedir);
     static std::unique_ptr<Source> decodeString(const std::string& val);
     static std::unique_ptr<Source> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<Source> decode_structure(const emitter::Keys& keys, const emitter::Reader& val);
     virtual void serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f=0) const;
 
     virtual bool lua_lookup(lua_State* L, const std::string& name) const;
@@ -66,6 +72,12 @@ struct Source : public types::StyledType<Source>
     static std::unique_ptr<Source> createInline(const std::string& format, uint64_t size);
     static std::unique_ptr<Source> createURL(const std::string& format, const std::string& url);
 };
+
+namespace source {
+
+inline std::ostream& operator<<(std::ostream& o, Style s) { return o << Source::formatStyle(s); }
+
+}
 
 }
 }

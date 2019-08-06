@@ -4,6 +4,8 @@
 #include <arki/core/fwd.h>
 #include <arki/types/fwd.h>
 #include <arki/metadata/fwd.h>
+#include <arki/emitter/fwd.h>
+#include <arki/matcher/fwd.h>
 #include <arki/types/itemset.h>
 #include <arki/utils/geosfwd.h>
 #include <vector>
@@ -16,24 +18,12 @@
 struct lua_State;
 
 namespace arki {
-class Matcher;
 class Formatter;
 class BinaryDecoder;
-class Emitter;
-
-namespace emitter {
-namespace memory {
-class Mapping;
-}
-}
 
 namespace summary {
 struct Table;
 struct Stats;
-}
-
-namespace matcher {
-class AND;
 }
 
 namespace summary {

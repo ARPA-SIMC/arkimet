@@ -410,10 +410,10 @@ unique_ptr<MatchTimerange> MatchTimerange::parse(const std::string& pattern)
 
     switch (types::Timerange::parseStyle(name))
     {
-        case types::Timerange::GRIB1: return unique_ptr<MatchTimerange>(new MatchTimerangeGRIB1(rest));
-        case types::Timerange::GRIB2: return unique_ptr<MatchTimerange>(new MatchTimerangeGRIB2(rest));
-        case types::Timerange::TIMEDEF: return unique_ptr<MatchTimerange>(new MatchTimerangeTimedef(rest));
-        case types::Timerange::BUFR: return unique_ptr<MatchTimerange>(new MatchTimerangeBUFR(rest));
+        case types::Timerange::Style::GRIB1: return unique_ptr<MatchTimerange>(new MatchTimerangeGRIB1(rest));
+        case types::Timerange::Style::GRIB2: return unique_ptr<MatchTimerange>(new MatchTimerangeGRIB2(rest));
+        case types::Timerange::Style::TIMEDEF: return unique_ptr<MatchTimerange>(new MatchTimerangeTimedef(rest));
+        case types::Timerange::Style::BUFR: return unique_ptr<MatchTimerange>(new MatchTimerangeBUFR(rest));
         default: throw std::invalid_argument("cannot parse type of timerange to match: unsupported timerange style: " + name);
     }
 }

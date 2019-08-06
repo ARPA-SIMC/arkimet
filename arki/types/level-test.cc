@@ -48,7 +48,7 @@ add_method("grib1_details", [] {
     const level::GRIB1* v;
 
     o = Level::createGRIB1(1);
-    wassert(actual(o->style()) == Level::GRIB1);
+    wassert(actual(o->style()) == Level::Style::GRIB1);
     v = dynamic_cast<level::GRIB1*>(o.get());
     wassert(actual(v->type()) == 1u);
     wassert(actual(v->l1()) == 0u);
@@ -56,7 +56,7 @@ add_method("grib1_details", [] {
     wassert(actual(v->valType()) == 0);
 
     o = Level::createGRIB1(103, 132);
-    wassert(actual(o->style()) == Level::GRIB1);
+    wassert(actual(o->style()) == Level::Style::GRIB1);
     v = dynamic_cast<level::GRIB1*>(o.get());
     wassert(actual(v->type()) == 103u);
     wassert(actual(v->l1()) == 132u);
@@ -64,7 +64,7 @@ add_method("grib1_details", [] {
     wassert(actual(v->valType()) == 1);
 
     o = Level::createGRIB1(103, 13200);
-    wassert(actual(o->style()) == Level::GRIB1);
+    wassert(actual(o->style()) == Level::Style::GRIB1);
     v = dynamic_cast<level::GRIB1*>(o.get());
     wassert(actual(v->type()) == 103u);
     wassert(actual(v->l1()) == 13200u);
@@ -72,7 +72,7 @@ add_method("grib1_details", [] {
     wassert(actual(v->valType()) == 1);
 
     o = Level::createGRIB1(104, 132, 231);
-    wassert(actual(o->style()) == Level::GRIB1);
+    wassert(actual(o->style()) == Level::Style::GRIB1);
     v = dynamic_cast<level::GRIB1*>(o.get());
     wassert(actual(v->type()) == 104u);
     wassert(actual(v->l1()) == 132u);
@@ -103,14 +103,14 @@ add_method("grib2s_details", [] {
     const level::GRIB2S* v;
 
     o = Level::createGRIB2S(100, 100, 500);
-    wassert(actual(o->style()) == Level::GRIB2S);
+    wassert(actual(o->style()) == Level::Style::GRIB2S);
     v = dynamic_cast<level::GRIB2S*>(o.get());
     wassert(actual(v->type()) == 100u);
     wassert(actual(v->scale()) == 100u);
     wassert(actual(v->value()) == 500u);
 
     o = Level::createGRIB2S(level::GRIB2S::MISSING_TYPE, level::GRIB2S::MISSING_SCALE, level::GRIB2S::MISSING_VALUE);
-    wassert(actual(o->style()) == Level::GRIB2S);
+    wassert(actual(o->style()) == Level::Style::GRIB2S);
     v = dynamic_cast<level::GRIB2S*>(o.get());
     wassert(actual(v->type()) == level::GRIB2S::MISSING_TYPE);
     wassert(actual(v->scale()) == level::GRIB2S::MISSING_SCALE);
@@ -154,7 +154,7 @@ add_method("grib2d_details", [] {
     const level::GRIB2D* v;
 
     o = Level::createGRIB2D(100, 100, 500, 100, 100, 1000);
-    wassert(actual(o->style()) == Level::GRIB2D);
+    wassert(actual(o->style()) == Level::Style::GRIB2D);
     v = dynamic_cast<level::GRIB2D*>(o.get());
     wassert(actual(v->type1()) == 100u);
     wassert(actual(v->scale1()) == 100u);
@@ -166,7 +166,7 @@ add_method("grib2d_details", [] {
     o = Level::createGRIB2D(
             level::GRIB2S::MISSING_TYPE, level::GRIB2S::MISSING_SCALE, level::GRIB2S::MISSING_VALUE,
             level::GRIB2S::MISSING_TYPE, level::GRIB2S::MISSING_SCALE, level::GRIB2S::MISSING_VALUE);
-    wassert(actual(o->style()) == Level::GRIB2D);
+    wassert(actual(o->style()) == Level::Style::GRIB2D);
     v = dynamic_cast<level::GRIB2D*>(o.get());
     wassert(actual(v->type1()) == level::GRIB2S::MISSING_TYPE);
     wassert(actual(v->scale1()) == level::GRIB2S::MISSING_SCALE);
@@ -186,7 +186,7 @@ add_generic_test("odimh5",
 add_method("odimh5_details", [] {
     using namespace arki::types;
     unique_ptr<Level> o = Level::createODIMH5(10.123, 20.123);
-    wassert(actual(o->style()) == Level::ODIMH5);
+    wassert(actual(o->style()) == Level::Style::ODIMH5);
     const level::ODIMH5* v = dynamic_cast<level::ODIMH5*>(o.get());
     wassert(actual(v->max()) == 20.123);
     wassert(actual(v->min()) == 10.123);

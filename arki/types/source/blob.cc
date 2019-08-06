@@ -18,7 +18,7 @@ namespace arki {
 namespace types {
 namespace source {
 
-Source::Style Blob::style() const { return Source::BLOB; }
+Source::Style Blob::style() const { return source::Style::BLOB; }
 
 void Blob::encodeWithoutEnvelope(BinaryEncoder& enc) const
 {
@@ -58,6 +58,20 @@ std::unique_ptr<Blob> Blob::decodeMapping(const emitter::memory::Mapping& val)
             val["file"].want_string("parsing blob source filename"),
             val["ofs"].want_int("parsing blob source offset"),
             val["sz"].want_int("parsing blob source size"));
+}
+
+std::unique_ptr<Blob> Blob::decode_structure(const emitter::Keys& keys, const emitter::Reader& reader)
+{
+    std::string basedir;
+    if (reader.has_key(keys.source_basedir, emitter::NodeType::STRING))
+        basedir = reader.as_string(keys.source_basedir, "source base directory");
+
+    return Blob::create_unlocked(
+            reader.as_string(keys.source_format, "source format"),
+            basedir,
+            reader.as_string(keys.source_file, "source file name"),
+            reader.as_int(keys.source_offset, "source offset"),
+            reader.as_int(keys.source_size, "source size"));
 }
 
 const char* Blob::lua_type_name() const { return "arki.types.source.blob"; }
