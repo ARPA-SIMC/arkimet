@@ -501,9 +501,14 @@ Arkimet metadata for one data item
             {
                 self->md->unset(code);
             } else {
-                std::string strval = from_python<std::string>(py_val);
-                std::unique_ptr<types::Type> val = types::decodeString(code, strval);
-                self->md->set(std::move(val));
+                if (PyUnicode_Check(py_val))
+                {
+                    std::string strval = from_python<std::string>(py_val);
+                    std::unique_ptr<types::Type> val = types::decodeString(code, strval);
+                    self->md->set(std::move(val));
+                } else {
+                    throw std::runtime_error("not implemented");
+                }
             }
             return 0;
         } ARKI_CATCH_RETURN_INT

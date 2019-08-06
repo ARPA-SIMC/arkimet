@@ -91,7 +91,7 @@ for (auto td: test_data)
         metadata::Collection mds;
         scanner->test_scan_file(td.pathname, mds.inserter_func());
         wassert(actual(mds.size()) == td.count);
-        wassert(actual(mds[0].source().style()) == types::Source::BLOB);
+        wassert(actual(mds[0].source().style()) == types::Source::Style::BLOB);
     });
 
     add_method("scan_pipe_" + td.format, [=] {
@@ -102,7 +102,7 @@ for (auto td: test_data)
         wassert(actual(mds.size()) == td.count);
         for (const auto& md: mds)
         {
-            wassert(actual(md->source().style()) == types::Source::INLINE);
+            wassert(actual(md->source().style()) == types::Source::Style::INLINE);
             wassert(actual(md->source().format) == td.format);
         }
     });

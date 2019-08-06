@@ -13,7 +13,7 @@ namespace arki {
 namespace types {
 namespace source {
 
-Source::Style URL::style() const { return Source::URL; }
+Source::Style URL::style() const { return source::Style::URL; }
 
 void URL::encodeWithoutEnvelope(BinaryEncoder& enc) const
 {
@@ -38,6 +38,12 @@ std::unique_ptr<URL> URL::decodeMapping(const emitter::memory::Mapping& val)
     return URL::create(
             val["f"].want_string("parsing url source format"),
             val["url"].want_string("parsing url source url"));
+}
+std::unique_ptr<URL> URL::decode_structure(const emitter::Keys& keys, const emitter::Reader& reader)
+{
+    return URL::create(
+            reader.as_string(keys.source_format, "source format"),
+            reader.as_string(keys.source_url, "source url"));
 }
 
 const char* URL::lua_type_name() const { return "arki.types.source.url"; }

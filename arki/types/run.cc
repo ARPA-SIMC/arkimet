@@ -29,27 +29,22 @@ const types::Code traits<Run>::type_code = CODE;
 const size_t traits<Run>::type_sersize_bytes = SERSIZELEN;
 const char* traits<Run>::type_lua_tag = LUATAG_TYPES ".run";
 
-// Style constants
-//const unsigned char Run::NONE;
-const unsigned char Run::MINUTE;
-
 Run::Style Run::parseStyle(const std::string& str)
 {
-	if (str == "MINUTE") return MINUTE;
-	throw_consistency_error("parsing Run style", "cannot parse Run style '"+str+"': only MINUTE is supported");
+    if (str == "MINUTE") return Style::MINUTE;
+    throw_consistency_error("parsing Run style", "cannot parse Run style '"+str+"': only MINUTE is supported");
 }
 
 std::string Run::formatStyle(Run::Style s)
 {
-	switch (s)
-	{
-		//case Run::NONE: return "NONE";
-		case Run::MINUTE: return "MINUTE";
-		default:
-			std::stringstream str;
-			str << "(unknown " << (int)s << ")";
-			return str.str();
-	}
+    switch (s)
+    {
+        case Style::MINUTE: return "MINUTE";
+        default:
+            std::stringstream str;
+            str << "(unknown " << (int)s << ")";
+            return str.str();
+    }
 }
 
 unique_ptr<Run> Run::decode(BinaryDecoder& dec)
@@ -57,7 +52,7 @@ unique_ptr<Run> Run::decode(BinaryDecoder& dec)
     Style s = (Style)dec.pop_uint(1, "run style");
     switch (s)
     {
-        case MINUTE: {
+        case Style::MINUTE: {
             unsigned int m = dec.pop_varint<unsigned>("run minute");
             return createMinute(m / 60, m % 60);
         }
@@ -68,11 +63,11 @@ unique_ptr<Run> Run::decode(BinaryDecoder& dec)
 
 unique_ptr<Run> Run::decodeString(const std::string& val)
 {
-	string inner;
-	Run::Style style = outerParse<Run>(val, inner);
-	switch (style)
-	{
-		case Run::MINUTE: {
+    std::string inner;
+    Run::Style style = outerParse<Run>(val, inner);
+    switch (style)
+    {
+        case Style::MINUTE: {
 			size_t sep = inner.find(':');
 			int hour, minute;
 			if (sep == string::npos)
@@ -98,9 +93,18 @@ unique_ptr<Run> Run::decodeMapping(const emitter::memory::Mapping& val)
 
     switch (style_from_mapping(val))
     {
-        case Run::MINUTE: return upcast<Run>(run::Minute::decodeMapping(val));
+        case Style::MINUTE: return upcast<Run>(run::Minute::decodeMapping(val));
         default:
             throw_consistency_error("parsing Run", "unknown Run style " + val.get_string());
+    }
+}
+
+std::unique_ptr<Run> Run::decode_structure(const emitter::Keys& keys, const emitter::Reader& val)
+{
+    switch (style_from_structure(keys, val))
+    {
+        case Style::MINUTE: return upcast<Run>(run::Minute::decode_structure(keys, val));
+        default: throw std::runtime_error("Unknown Run style");
     }
 }
 
@@ -136,7 +140,7 @@ unique_ptr<Run> Run::createMinute(unsigned int hour, unsigned int minute)
 
 namespace run {
 
-Run::Style Minute::style() const { return Run::MINUTE; }
+Run::Style Minute::style() const { return Style::MINUTE; }
 
 void Minute::encodeWithoutEnvelope(BinaryEncoder& enc) const
 {
@@ -161,6 +165,13 @@ unique_ptr<Minute> Minute::decodeMapping(const emitter::memory::Mapping& val)
     unsigned int m = val["va"].want_int("parsing Minute run value");
     return run::Minute::create(m / 60, m % 60);
 }
+
+std::unique_ptr<Minute> Minute::decode_structure(const emitter::Keys& keys, const emitter::Reader& val)
+{
+    unsigned int m = val.as_int(keys.run_value, "run value");
+    return run::Minute::create(m / 60, m % 60);
+}
+
 std::string Minute::exactQuery() const
 {
 	stringstream res;
@@ -225,4 +236,4 @@ void Run::init()
 
 }
 }
-#include <arki/types.tcc>
+#include <arki/types/styled.tcc>

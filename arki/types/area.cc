@@ -35,31 +35,26 @@ const types::Code traits<Area>::type_code = CODE;
 const size_t traits<Area>::type_sersize_bytes = SERSIZELEN;
 const char* traits<Area>::type_lua_tag = LUATAG_TYPES ".area";
 
-// Style constants
-const unsigned char Area::GRIB;
-const unsigned char Area::ODIMH5;
-const unsigned char Area::VM2;
-
 Area::Style Area::parseStyle(const std::string& str)
 {
-    if (str == "GRIB") return GRIB;
-    if (str == "ODIMH5") return ODIMH5;
-    if (str == "VM2") return VM2;
+    if (str == "GRIB") return Style::GRIB;
+    if (str == "ODIMH5") return Style::ODIMH5;
+    if (str == "VM2") return Style::VM2;
     throw_consistency_error("parsing Area style", "cannot parse Area style '"+str+"': only GRIB,ODIMH5 is supported");
 }
 
 std::string Area::formatStyle(Area::Style s)
 {
-	switch (s)
-	{
-		case Area::GRIB: return "GRIB";
-		case Area::ODIMH5: return "ODIMH5";
-        case Area::VM2: return "VM2";
-		default:
-			std::stringstream str;
-			str << "(unknown " << (int)s << ")";
-			return str.str();
-	}
+    switch (s)
+    {
+        case Style::GRIB: return "GRIB";
+        case Style::ODIMH5: return "ODIMH5";
+        case Style::VM2: return "VM2";
+        default:
+            std::stringstream str;
+            str << "(unknown " << (int)s << ")";
+            return str.str();
+    }
 }
 
 Area::Area()
@@ -84,11 +79,11 @@ unique_ptr<Area> Area::decode(BinaryDecoder& dec)
     Style s = (Style)dec.pop_uint(1, "area");
     switch (s)
     {
-        case GRIB:
+        case Style::GRIB:
             return createGRIB(ValueBag::decode(dec));
-        case ODIMH5:
+        case Style::ODIMH5:
             return createODIMH5(ValueBag::decode(dec));
-        case VM2:
+        case Style::VM2:
             return createVM2(dec.pop_uint(4, "VM station id"));
         default:
             throw std::runtime_error("cannot parse Area: style is " + formatStyle(s) + " but we can only decode GRIB, ODIMH5 and VM2");
@@ -101,9 +96,9 @@ unique_ptr<Area> Area::decodeString(const std::string& val)
 	Area::Style style = outerParse<Area>(val, inner);
     switch (style)
     {
-        case Area::GRIB: return createGRIB(ValueBag::parse(inner));
-        case Area::ODIMH5: return createODIMH5(ValueBag::parse(inner));
-        case Area::VM2: {
+        case Style::GRIB: return createGRIB(ValueBag::parse(inner));
+        case Style::ODIMH5: return createODIMH5(ValueBag::parse(inner));
+        case Style::VM2: {
             const char* innerptr = inner.c_str();
             char* endptr;
             unsigned long station_id = strtoul(innerptr, &endptr, 10); 
@@ -122,11 +117,22 @@ unique_ptr<Area> Area::decodeMapping(const emitter::memory::Mapping& val)
 
     switch (style_from_mapping(val))
     {
-        case Area::GRIB: return upcast<Area>(area::GRIB::decodeMapping(val));
-        case Area::ODIMH5: return upcast<Area>(area::ODIMH5::decodeMapping(val));
-        case Area::VM2: return upcast<Area>(area::VM2::decodeMapping(val));
+        case Style::GRIB: return upcast<Area>(area::GRIB::decodeMapping(val));
+        case Style::ODIMH5: return upcast<Area>(area::ODIMH5::decodeMapping(val));
+        case Style::VM2: return upcast<Area>(area::VM2::decodeMapping(val));
         default:
             throw_consistency_error("parsing Area", "unknown Area style " + val.get_string());
+    }
+}
+
+std::unique_ptr<Area> Area::decode_structure(const emitter::Keys& keys, const emitter::Reader& val)
+{
+    switch (style_from_structure(keys, val))
+    {
+        case Style::GRIB: return upcast<Area>(area::GRIB::decode_structure(keys, val));
+        case Style::ODIMH5: return upcast<Area>(area::ODIMH5::decode_structure(keys, val));
+        case Style::VM2: return upcast<Area>(area::VM2::decode_structure(keys, val));
+        default: throw std::runtime_error("unknown area style");
     }
 }
 
@@ -185,7 +191,7 @@ namespace area {
 
 GRIB::~GRIB() { /* cache_grib.uncache(this); */ }
 
-Area::Style GRIB::style() const { return Area::GRIB; }
+Area::Style GRIB::style() const { return Style::GRIB; }
 
 void GRIB::encodeWithoutEnvelope(BinaryEncoder& enc) const
 {
@@ -205,6 +211,14 @@ void GRIB::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatte
 unique_ptr<GRIB> GRIB::decodeMapping(const emitter::memory::Mapping& val)
 {
     return GRIB::create(ValueBag::parse(val["va"].get_mapping()));
+}
+std::unique_ptr<GRIB> GRIB::decode_structure(const emitter::Keys& keys, const emitter::Reader& val)
+{
+    std::unique_ptr<GRIB> res;
+    val.sub(keys.area_value, "area value", [&](const emitter::Reader& reader) {
+        res = GRIB::create(ValueBag::parse(reader));
+    });
+    return res;
 }
 std::string GRIB::exactQuery() const
 {
@@ -226,6 +240,7 @@ bool GRIB::lua_lookup(lua_State* L, const std::string& name) const
 
 int GRIB::compare_local(const Area& o) const
 {
+    if (int res = Area::compare_local(o)) return res;
     // We should be the same kind, so upcast
     const GRIB* v = dynamic_cast<const GRIB*>(&o);
     if (!v)
@@ -259,7 +274,7 @@ unique_ptr<GRIB> GRIB::create(const ValueBag& values)
 
 ODIMH5::~ODIMH5() { /* cache_odimh5.uncache(this); */ }
 
-Area::Style ODIMH5::style() const { return Area::ODIMH5; }
+Area::Style ODIMH5::style() const { return Style::ODIMH5; }
 
 void ODIMH5::encodeWithoutEnvelope(BinaryEncoder& enc) const
 {
@@ -279,6 +294,14 @@ void ODIMH5::serialise_local(Emitter& e, const emitter::Keys& keys, const Format
 unique_ptr<ODIMH5> ODIMH5::decodeMapping(const emitter::memory::Mapping& val)
 {
     return ODIMH5::create(ValueBag::parse(val["va"].get_mapping()));
+}
+std::unique_ptr<ODIMH5> ODIMH5::decode_structure(const emitter::Keys& keys, const emitter::Reader& val)
+{
+    std::unique_ptr<ODIMH5> res;
+    val.sub(keys.area_value, "area value", [&](const emitter::Reader& reader) {
+        res = ODIMH5::create(ValueBag::parse(reader));
+    });
+    return res;
 }
 std::string ODIMH5::exactQuery() const
 {
@@ -300,6 +323,7 @@ bool ODIMH5::lua_lookup(lua_State* L, const std::string& name) const
 
 int ODIMH5::compare_local(const Area& o) const
 {
+    if (int res = Area::compare_local(o)) return res;
     // We should be the same kind, so upcast
     const ODIMH5* v = dynamic_cast<const ODIMH5*>(&o);
     if (!v)
@@ -344,7 +368,7 @@ const ValueBag& VM2::derived_values() const {
     return *m_derived_values;
 }
 
-Area::Style VM2::style() const { return Area::VM2; }
+Area::Style VM2::style() const { return Style::VM2; }
 
 void VM2::encodeWithoutEnvelope(BinaryEncoder& enc) const
 {
@@ -404,6 +428,7 @@ bool VM2::lua_lookup(lua_State* L, const std::string& name) const
 
 int VM2::compare_local(const Area& o) const
 {
+    if (int res = Area::compare_local(o)) return res;
     const VM2* v = dynamic_cast<const VM2*>(&o);
     if (!v)
         throw_consistency_error(
@@ -437,6 +462,10 @@ unique_ptr<VM2> VM2::decodeMapping(const emitter::memory::Mapping& val)
 {
     return VM2::create(val["id"].want_int("parsing VM2 area station id"));
 }
+std::unique_ptr<VM2> VM2::decode_structure(const emitter::Keys& keys, const emitter::Reader& val)
+{
+    return VM2::create(val.as_int(keys.area_id, "vm2 id"));
+}
 
 }
 
@@ -447,5 +476,5 @@ void Area::init()
 
 }
 }
-#include <arki/types.tcc>
-// vim:set ts=4 sw=4:
+
+#include <arki/types/styled.tcc>

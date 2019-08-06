@@ -19,12 +19,12 @@ void Tests::register_tests() {
 
 // Check comparison
 add_method("comparison", [] {
-	std::unique_ptr<Value> vi1(Value::createInteger(-1));
-	std::unique_ptr<Value> vi2(Value::createInteger(-1));
-	std::unique_ptr<Value> vi3(Value::createInteger(1));
-	std::unique_ptr<Value> vs1(Value::createString("antani"));
-	std::unique_ptr<Value> vs2(Value::createString("antani"));
-	std::unique_ptr<Value> vs3(Value::createString("blinda"));
+    std::unique_ptr<Value> vi1(Value::create_integer(-1));
+    std::unique_ptr<Value> vi2(Value::create_integer(-1));
+    std::unique_ptr<Value> vi3(Value::create_integer(1));
+    std::unique_ptr<Value> vs1(Value::create_string("antani"));
+    std::unique_ptr<Value> vs2(Value::create_string("antani"));
+    std::unique_ptr<Value> vs3(Value::create_string("blinda"));
 
     wassert_true(*vi1 == *vi1);
     wassert_true(*vi1 == *vi2);
@@ -46,24 +46,24 @@ add_method("comparison", [] {
 
 // Check encoding
 add_method("encoding", [] {
-	std::unique_ptr<Value> zero(Value::createInteger(0));
-	std::unique_ptr<Value> one(Value::createInteger(1));
-	std::unique_ptr<Value> minusOne(Value::createInteger(-1));
-	std::unique_ptr<Value> u6bit(Value::createInteger(30));
-	std::unique_ptr<Value> s6bit(Value::createInteger(-31));
-	std::unique_ptr<Value> onemillion(Value::createInteger(1000000));
-	std::unique_ptr<Value> bignegative(Value::createInteger(-1234567));
-	std::unique_ptr<Value> empty(Value::createString(""));
-	std::unique_ptr<Value> onechar(Value::createString("a"));
-	std::unique_ptr<Value> numstr(Value::createString("12"));
-	std::unique_ptr<Value> longname(Value::createString("thisIsAVeryLongNameButFitsIn64byesBecauseIts55BytesLong"));
-	std::unique_ptr<Value> escaped(Value::createString("\"\\\'pippo"));
-	// Not 6 bits, but 1 byte
-	std::unique_ptr<Value> fourtythree(Value::createInteger(43));
-	std::unique_ptr<Value> minusfourtythree(Value::createInteger(-43));
-	// 2 bytes
-	std::unique_ptr<Value> tenthousand(Value::createInteger(10000));
-	std::unique_ptr<Value> minustenthousand(Value::createInteger(-10000));
+    std::unique_ptr<Value> zero(Value::create_integer(0));
+    std::unique_ptr<Value> one(Value::create_integer(1));
+    std::unique_ptr<Value> minusOne(Value::create_integer(-1));
+    std::unique_ptr<Value> u6bit(Value::create_integer(30));
+    std::unique_ptr<Value> s6bit(Value::create_integer(-31));
+    std::unique_ptr<Value> onemillion(Value::create_integer(1000000));
+    std::unique_ptr<Value> bignegative(Value::create_integer(-1234567));
+    std::unique_ptr<Value> empty(Value::create_string(""));
+    std::unique_ptr<Value> onechar(Value::create_string("a"));
+    std::unique_ptr<Value> numstr(Value::create_string("12"));
+    std::unique_ptr<Value> longname(Value::create_string("thisIsAVeryLongNameButFitsIn64byesBecauseIts55BytesLong"));
+    std::unique_ptr<Value> escaped(Value::create_string("\"\\\'pippo"));
+    // Not 6 bits, but 1 byte
+    std::unique_ptr<Value> fourtythree(Value::create_integer(43));
+    std::unique_ptr<Value> minusfourtythree(Value::create_integer(-43));
+    // 2 bytes
+    std::unique_ptr<Value> tenthousand(Value::create_integer(10000));
+    std::unique_ptr<Value> minustenthousand(Value::create_integer(-10000));
 
     auto test = [](const Value& var, unsigned encsize) {
         std::unique_ptr<Value> v;
@@ -106,19 +106,19 @@ add_method("valuebag", [] {
 	ValueBag v2;
 	unique_ptr<Value> val;
 
-	v1.set("test1", Value::createInteger(1));
-	v1.set("test2", Value::createInteger(1000000));
-	v1.set("test3", Value::createInteger(-20));
-	v1.set("test4", Value::createString("1"));
+    v1.set("test1", Value::create_integer(1));
+    v1.set("test2", Value::create_integer(1000000));
+    v1.set("test3", Value::create_integer(-20));
+    v1.set("test4", Value::create_string("1"));
 
     // Test accessors
-    val.reset(Value::createInteger(1));
+    val.reset(Value::create_integer(1));
     wassert_true(*v1.get("test1") == *val);
-    val.reset(Value::createInteger(1000000));
+    val.reset(Value::create_integer(1000000));
     wassert_true(*v1.get("test2") == *val);
-    val.reset(Value::createInteger(-20));
+    val.reset(Value::create_integer(-20));
     wassert_true(*v1.get("test3") == *val);
-    val.reset(Value::createString("1"));
+    val.reset(Value::create_string("1"));
     wassert_true(*v1.get("test4") == *val);
 
     wassert(actual(v1.size()) == 4u);
@@ -170,12 +170,12 @@ add_method("regression1", [] {
 	ValueBag v1;
 	ValueBag v2;
 
-	v1.set("blo", Value::createInteger(10));
-	v1.set("lat", Value::createInteger(5480000));
-	v1.set("lon", Value::createInteger(895000));
-	v1.set("sta", Value::createInteger(22));
+    v1.set("blo", Value::create_integer(10));
+    v1.set("lat", Value::create_integer(5480000));
+    v1.set("lon", Value::create_integer(895000));
+    v1.set("sta", Value::create_integer(22));
 
-	v2.set("sta", Value::createInteger(88));
+    v2.set("sta", Value::create_integer(88));
 
     wassert_false(v1.contains(v2));
 });

@@ -1,7 +1,7 @@
 #ifndef ARKI_TYPES_VALUE_H
 #define ARKI_TYPES_VALUE_H
 
-#include <arki/types.h>
+#include <arki/types/core.h>
 #include <string>
 
 struct lua_State;
@@ -18,8 +18,6 @@ struct traits<Value>
 	static const types::Code type_code;
 	static const size_t type_sersize_bytes;
 	static const char* type_lua_tag;
-
-	typedef unsigned char Style;
 };
 
 /**
@@ -43,6 +41,7 @@ struct Value : public types::CoreType<Value>
     static std::unique_ptr<Value> decode(BinaryDecoder& dec);
     static std::unique_ptr<Value> decodeString(const std::string& val);
     static std::unique_ptr<Value> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<Value> decode_structure(const emitter::Keys& keys, const emitter::Reader& val);
 
     Value* clone() const override;
     static std::unique_ptr<Value> create(const std::string& buf);

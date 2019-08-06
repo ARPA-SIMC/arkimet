@@ -7,6 +7,7 @@
 #include <cstdint>
 #include <vector>
 #include <arki/types/fwd.h>
+#include <arki/emitter/fwd.h>
 
 namespace arki {
 
@@ -61,8 +62,6 @@ public:
     }
 };
 
-
 }
 
-// vim:set ts=4 sw=4:
 #endif

@@ -1,13 +1,22 @@
 #ifndef ARKI_TYPES_PRODDEF_H
 #define ARKI_TYPES_PRODDEF_H
 
-#include <arki/types.h>
+#include <arki/types/styled.h>
 #include <arki/values.h>
 
 struct lua_State;
 
 namespace arki {
 namespace types {
+
+namespace proddef {
+
+/// Style values
+enum class Style: unsigned char {
+    GRIB = 1,
+};
+
+}
 
 struct Proddef;
 
@@ -19,7 +28,7 @@ struct traits<Proddef>
 	static const size_t type_sersize_bytes;
 	static const char* type_lua_tag;
 
-	typedef unsigned char Style;
+    typedef proddef::Style Style;
 };
 
 /**
@@ -29,9 +38,6 @@ struct traits<Proddef>
  */
 struct Proddef : public types::StyledType<Proddef>
 {
-	/// Style values
-	static const Style GRIB = 1;
-
 	/// Convert a string into a style
 	static Style parseStyle(const std::string& str);
 	/// Convert a style into its string representation
@@ -41,6 +47,7 @@ struct Proddef : public types::StyledType<Proddef>
     static std::unique_ptr<Proddef> decode(BinaryDecoder& dec);
     static std::unique_ptr<Proddef> decodeString(const std::string& val);
     static std::unique_ptr<Proddef> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<Proddef> decode_structure(const emitter::Keys& keys, const emitter::Reader& val);
 
 	static void lua_loadlib(lua_State* L);
 
@@ -51,6 +58,9 @@ struct Proddef : public types::StyledType<Proddef>
 };
 
 namespace proddef {
+
+inline std::ostream& operator<<(std::ostream& o, Style s) { return o << Proddef::formatStyle(s); }
+
 
 struct GRIB : public Proddef
 {
@@ -76,6 +86,7 @@ public:
     GRIB* clone() const override;
     static std::unique_ptr<GRIB> create(const ValueBag& values);
     static std::unique_ptr<GRIB> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<GRIB> decode_structure(const emitter::Keys& keys, const emitter::Reader& val);
 };
 
 }

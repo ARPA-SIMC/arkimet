@@ -3,6 +3,7 @@
 
 #include <string>
 #include <map>
+#include <arki/emitter/fwd.h>
 #include <iosfwd>
 
 struct lua_State;
@@ -10,14 +11,6 @@ struct lua_State;
 namespace arki {
 struct BinaryEncoder;
 struct BinaryDecoder;
-struct Emitter;
-
-namespace emitter {
-namespace memory {
-struct Mapping;
-struct Node;
-}
-}
 
 /**
  * Base class for generic scalar values.
@@ -76,8 +69,8 @@ public:
     /// Parse from structured data
     static Value* parse(const emitter::memory::Node& m);
 
-	static Value* createInteger(int val);
-	static Value* createString(const std::string& val);
+    static Value* create_integer(int val);
+    static Value* create_string(const std::string& val);
 };
 
 struct ValueBag : public std::map<std::string, Value*>
@@ -137,6 +130,9 @@ struct ValueBag : public std::map<std::string, Value*>
 
     /// Parse from structured data
     static ValueBag parse(const emitter::memory::Mapping& m);
+
+    /// Parse from structured data
+    static ValueBag parse(const emitter::Reader& reader);
 
 	/// Push to the LUA stack a table with the data of this ValueBag
 	void lua_push(lua_State* L) const;

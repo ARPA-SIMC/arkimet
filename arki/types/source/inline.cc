@@ -13,7 +13,7 @@ namespace arki {
 namespace types {
 namespace source {
 
-Source::Style Inline::style() const { return Source::INLINE; }
+source::Style Inline::style() const { return source::Style::INLINE; }
 
 void Inline::encodeWithoutEnvelope(BinaryEncoder& enc) const
 {
@@ -37,6 +37,12 @@ std::unique_ptr<Inline> Inline::decodeMapping(const emitter::memory::Mapping& va
     return Inline::create(
             val["f"].want_string("parsing inline source format"),
             val["sz"].want_int("parsing inline source size"));
+}
+std::unique_ptr<Inline> Inline::decode_structure(const emitter::Keys& keys, const emitter::Reader& reader)
+{
+    return Inline::create(
+            reader.as_string(keys.source_format, "source format"),
+            reader.as_int(keys.source_size, "source size"));
 }
 
 const char* Inline::lua_type_name() const { return "arki.types.source.inline"; }

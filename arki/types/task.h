@@ -1,7 +1,7 @@
 #ifndef ARKI_TYPES_TASK_H
 #define ARKI_TYPES_TASK_H
 
-#include <arki/types.h>
+#include <arki/types/core.h>
 
 struct lua_State;
 
@@ -43,6 +43,7 @@ struct Task : public CoreType<Task>
     /// Create a task
     static std::unique_ptr<Task> create(const std::string& value);
     static std::unique_ptr<Task> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<Task> decode_structure(const emitter::Keys& keys, const emitter::Reader& val);
 
 	static void lua_loadlib(lua_State* L);
 

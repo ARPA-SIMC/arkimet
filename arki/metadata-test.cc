@@ -36,16 +36,16 @@ struct Fixture : public arki::utils::tests::Fixture
 
     Fixture()
     {
-        testValues.set("foo", Value::createInteger(5));
-        testValues.set("bar", Value::createInteger(5000));
-        testValues.set("baz", Value::createInteger(-200));
-        testValues.set("moo", Value::createInteger(0x5ffffff));
-        testValues.set("antani", Value::createInteger(-1));
-        testValues.set("blinda", Value::createInteger(0));
-        testValues.set("supercazzola", Value::createInteger(-1234567));
-        testValues.set("pippo", Value::createString("pippo"));
-        testValues.set("pluto", Value::createString("12"));
-        testValues.set("cippo", Value::createString(""));
+        testValues.set("foo", Value::create_integer(5));
+        testValues.set("bar", Value::create_integer(5000));
+        testValues.set("baz", Value::create_integer(-200));
+        testValues.set("moo", Value::create_integer(0x5ffffff));
+        testValues.set("antani", Value::create_integer(-1));
+        testValues.set("blinda", Value::create_integer(0));
+        testValues.set("supercazzola", Value::create_integer(-1234567));
+        testValues.set("pippo", Value::create_string("pippo"));
+        testValues.set("pluto", Value::create_string("12"));
+        testValues.set("cippo", Value::create_string(""));
     }
 
     void fill(Metadata& md)
@@ -115,7 +115,7 @@ void Tests::register_tests() {
 add_method("sources", [](Fixture& f) {
     Metadata md;
     md.set_source(Source::createBlobUnlocked("grib", "", "inbound/test.grib1", 1, 2));
-    wassert(actual(md.source().style()) == Source::BLOB);
+    wassert(actual(md.source().style()) == Source::Style::BLOB);
     wassert(actual(md.source().format) == "grib");
 
     const source::Blob& blob = md.sourceBlob();

@@ -1,12 +1,21 @@
 #ifndef ARKI_TYPES_RUN_H
 #define ARKI_TYPES_RUN_H
 
-#include <arki/types.h>
+#include <arki/types/styled.h>
 
 struct lua_State;
 
 namespace arki {
 namespace types {
+
+namespace run {
+
+/// Style values
+enum class Style: unsigned char {
+    MINUTE = 1,
+};
+
+}
 
 template<>
 struct traits<Run>
@@ -16,7 +25,7 @@ struct traits<Run>
     static const size_t type_sersize_bytes;
     static const char* type_lua_tag;
 
-    typedef unsigned char Style;
+    typedef run::Style Style;
 };
 
 /**
@@ -27,10 +36,6 @@ struct traits<Run>
  */
 struct Run : public types::StyledType<Run>
 {
-	/// Style values
-	//static const Style NONE = 0;
-	static const Style MINUTE = 1;
-
 	/// Convert a string into a style
 	static Style parseStyle(const std::string& str);
 	/// Convert a style into its string representation
@@ -40,6 +45,7 @@ struct Run : public types::StyledType<Run>
     static std::unique_ptr<Run> decode(BinaryDecoder& dec);
     static std::unique_ptr<Run> decodeString(const std::string& val);
     static std::unique_ptr<Run> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<Run> decode_structure(const emitter::Keys& keys, const emitter::Reader& val);
 
 	static void lua_loadlib(lua_State* L);
 
@@ -72,6 +78,7 @@ public:
     Minute* clone() const override;
     static std::unique_ptr<Minute> create(unsigned int hour, unsigned int minute=0);
     static std::unique_ptr<Minute> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<Minute> decode_structure(const emitter::Keys& keys, const emitter::Reader& val);
 };
 
 }

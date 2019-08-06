@@ -43,16 +43,16 @@ void fill(Metadata& md)
     using namespace arki::types;
 
     ValueBag testValues;
-    testValues.set("foo", Value::createInteger(5));
-    testValues.set("bar", Value::createInteger(5000));
-    testValues.set("baz", Value::createInteger(-200));
-    testValues.set("moo", Value::createInteger(0x5ffffff));
-    testValues.set("antani", Value::createInteger(-1));
-    testValues.set("blinda", Value::createInteger(0));
-    testValues.set("supercazzola", Value::createInteger(-1234567));
-    testValues.set("pippo", Value::createString("pippo"));
-    testValues.set("pluto", Value::createString("12"));
-    testValues.set("cippo", Value::createString(""));
+    testValues.set("foo", Value::create_integer(5));
+    testValues.set("bar", Value::create_integer(5000));
+    testValues.set("baz", Value::create_integer(-200));
+    testValues.set("moo", Value::create_integer(0x5ffffff));
+    testValues.set("antani", Value::create_integer(-1));
+    testValues.set("blinda", Value::create_integer(0));
+    testValues.set("supercazzola", Value::create_integer(-1234567));
+    testValues.set("pippo", Value::create_string("pippo"));
+    testValues.set("pluto", Value::create_string("12"));
+    testValues.set("cippo", Value::create_string(""));
 
     md.set(Reftime::createPosition(core::Time(2006, 5, 4, 3, 2, 1)));
     md.set(origin::GRIB1::create(1, 2, 3));
@@ -71,14 +71,14 @@ inline bool cmpmd(Metadata& md1, Metadata& md2)
     {
         cerr << "----- The two metadata differ.  First one:" << endl;
         cerr << md1.to_yaml();
-        if (md1.source().style() == types::Source::INLINE)
+        if (md1.source().style() == types::Source::Style::INLINE)
         {
             const auto& buf = md1.get_data().read();
             cerr << "-- Inline data:" << string((const char*)buf.data(), buf.size()) << endl;
         }
         cerr << "----- Second one:" << endl;
         cerr << md2.to_yaml();
-        if (md2.source().style() == types::Source::INLINE)
+        if (md2.source().style() == types::Source::Style::INLINE)
         {
             const auto& buf = md2.get_data().read();
             cerr << "-- Inline data:" << string((const char*)buf.data(), buf.size()) << endl;

@@ -212,7 +212,7 @@ public:
 
         // Set the product from the msg type
         ValueBag newvals;
-        newvals.set("t", Value::createString(format_message_type(msg->get_type())));
+        newvals.set("t", Value::create_string(format_message_type(msg->get_type())));
         product->addValues(newvals);
 
         // Set reference time from date and time if available

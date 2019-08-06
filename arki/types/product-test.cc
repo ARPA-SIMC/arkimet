@@ -24,7 +24,7 @@ add_generic_test("grib1",
 add_method("grib1_details", [] {
     using namespace arki::types;
     unique_ptr<Product> o = Product::createGRIB1(1, 2, 3);
-    wassert(actual(o->style()) == Product::GRIB1);
+    wassert(actual(o->style()) == Product::Style::GRIB1);
     const product::GRIB1* v = dynamic_cast<product::GRIB1*>(o.get());
     wassert(actual(v->origin()) == 1u);
     wassert(actual(v->table()) == 2u);
@@ -58,7 +58,7 @@ add_method("grib2_details", [] {
     const product::GRIB2* v;
 
     o = Product::createGRIB2(1, 2, 3, 4);
-    wassert(actual(o->style()) == Product::GRIB2);
+    wassert(actual(o->style()) == Product::Style::GRIB2);
     v = dynamic_cast<product::GRIB2*>(o.get());
     wassert(actual(v->centre()) == 1u);
     wassert(actual(v->discipline()) == 2u);
@@ -68,7 +68,7 @@ add_method("grib2_details", [] {
     wassert(actual(v->local_table_version()) == 255u);
 
     o = Product::createGRIB2(1, 2, 3, 4, 5);
-    wassert(actual(o->style()) == Product::GRIB2);
+    wassert(actual(o->style()) == Product::Style::GRIB2);
     v = dynamic_cast<product::GRIB2*>(o.get());
     wassert(actual(v->centre()) == 1u);
     wassert(actual(v->discipline()) == 2u);
@@ -78,7 +78,7 @@ add_method("grib2_details", [] {
     wassert(actual(v->local_table_version()) == 255u);
 
     o = Product::createGRIB2(1, 2, 3, 4, 4, 5);
-    wassert(actual(o->style()) == Product::GRIB2);
+    wassert(actual(o->style()) == Product::Style::GRIB2);
     v = dynamic_cast<product::GRIB2*>(o.get());
     wassert(actual(v->centre()) == 1u);
     wassert(actual(v->discipline()) == 2u);
@@ -98,9 +98,9 @@ add_generic_test("bufr",
 add_method("bufr_details", [] {
     using namespace arki::types;
     ValueBag vb;
-    vb.set("name", Value::createString("antani"));
+    vb.set("name", Value::create_string("antani"));
     unique_ptr<Product> o = Product::createBUFR(1, 2, 3, vb);
-    wassert(actual(o->style()) == Product::BUFR);
+    wassert(actual(o->style()) == Product::Style::BUFR);
     product::BUFR* v = dynamic_cast<product::BUFR*>(o.get());
     wassert(actual(v->type()) == 1u);
     wassert(actual(v->subtype()) == 2u);
@@ -108,7 +108,7 @@ add_method("bufr_details", [] {
     wassert(actual(v->values()) == vb);
 
     ValueBag vb2;
-    vb2.set("val", Value::createString("blinda"));
+    vb2.set("val", Value::create_string("blinda"));
     v->addValues(vb2);
     stringstream tmp;
     tmp << *o;
@@ -125,7 +125,7 @@ add_generic_test("vm2",
 add_method("vm2_details", [] {
     using namespace arki::types;
     unique_ptr<Product> o = Product::createVM2(1);
-    wassert(actual(o->style()) == Product::VM2);
+    wassert(actual(o->style()) == Product::Style::VM2);
     const product::VM2* v = dynamic_cast<product::VM2*>(o.get());
     wassert(actual(v->variable_id()) == 1ul);
 

@@ -203,7 +203,10 @@ void ActualType::serializes() const
         emitter::Memory parsed;
         emitter::JSON::parse(jbuf, parsed);
         wassert(actual(parsed.root().is_mapping()).istrue());
-        unique_ptr<Type> iparsed = types::decodeMapping(parsed.root().get_mapping());
+        unique_ptr<Type> iparsed = wcallchecked(types::decodeMapping(parsed.root().get_mapping()));
+        wassert(actual(iparsed) == _actual);
+
+        iparsed = wcallchecked(types::decode_structure(emitter::keys_json, parsed.root().get_mapping()));
         wassert(actual(iparsed) == _actual);
     }
 }

@@ -1,29 +1,7 @@
 #ifndef ARKI_TYPES_QUANTITY_H
 #define ARKI_TYPES_QUANTITY_H
-/*
- * types/task - Metadata quantity (used for OdimH5 /what.quantity)
- *
- * Copyright (C) 2007--2014  ARPAE-SIMC <simc-urp@arpae.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- * Author: Guido Billi <guidobilli@gmail.com>
- */
 
-#include <arki/types.h>
+#include <arki/types/core.h>
 #include <set>
 #include <string>
 
@@ -38,8 +16,6 @@ template<> struct traits<Quantity>
     static const types::Code type_code;
     static const size_t type_sersize_bytes;
     static const char* type_lua_tag;
-
-    typedef unsigned char Style;
 };
 
 /**
@@ -68,6 +44,7 @@ struct Quantity : public CoreType<Quantity>
     static std::unique_ptr<Quantity> create(const std::string& values);
     static std::unique_ptr<Quantity> create(const std::set<std::string>& values);
     static std::unique_ptr<Quantity> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<Quantity> decode_structure(const emitter::Keys& keys, const emitter::Reader& val);
 
 	static void lua_loadlib(lua_State* L);
 

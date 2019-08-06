@@ -3,6 +3,7 @@
 #include "metadata/consumer.h"
 #include "core/file.h"
 #include "exceptions.h"
+#include "types/bundle.h"
 #include "types/value.h"
 #include "types/source/blob.h"
 #include "types/source/inline.h"
@@ -288,7 +289,7 @@ bool Metadata::read(int in, const metadata::ReadContext& filename, bool readInli
     read_inner(inner, bundle.version, filename);
 
     // If the source is inline, then the data follows the metadata
-    if (readInline && source().style() == types::Source::INLINE)
+    if (readInline && source().style() == types::Source::Style::INLINE)
         read_inline_data(f);
 
     return true;
@@ -309,7 +310,7 @@ bool Metadata::read(BinaryDecoder& dec, const metadata::ReadContext& filename, b
     read_inner(inner, version, filename);
 
     // If the source is inline, then the data follows the metadata
-    if (readInline && source().style() == types::Source::INLINE)
+    if (readInline && source().style() == types::Source::Style::INLINE)
         readInlineData(dec, filename.pathname);
 
     return true;
@@ -353,7 +354,7 @@ void Metadata::read_inner(BinaryDecoder& dec, unsigned version, const metadata::
 void Metadata::read_inline_data(NamedFileDescriptor& fd)
 {
     // If the source is inline, then the data follows the metadata
-    if (source().style() != types::Source::INLINE) return;
+    if (source().style() != types::Source::Style::INLINE) return;
 
     source::Inline* s = dynamic_cast<source::Inline*>(m_source);
     vector<uint8_t> buf;
@@ -369,7 +370,7 @@ void Metadata::read_inline_data(NamedFileDescriptor& fd)
 void Metadata::read_inline_data(core::AbstractInputFile& fd)
 {
     // If the source is inline, then the data follows the metadata
-    if (source().style() != types::Source::INLINE) return;
+    if (source().style() != types::Source::Style::INLINE) return;
 
     source::Inline* s = dynamic_cast<source::Inline*>(m_source);
     vector<uint8_t> buf;
@@ -385,7 +386,7 @@ void Metadata::read_inline_data(core::AbstractInputFile& fd)
 void Metadata::readInlineData(BinaryDecoder& dec, const std::string& filename)
 {
     // If the source is inline, then the data follows the metadata
-    if (source().style() != types::Source::INLINE) return;
+    if (source().style() != types::Source::Style::INLINE) return;
 
     source::Inline* s = dynamic_cast<source::Inline*>(m_source);
 
@@ -601,11 +602,11 @@ const metadata::Data& Metadata::get_data()
     // Load it according to source
     switch (m_source->style())
     {
-        case Source::INLINE:
+        case Source::Style::INLINE:
             throw runtime_error("cannot retrieve data: data is not found on INLINE metadata");
-        case Source::URL:
+        case Source::Style::URL:
             throw runtime_error("cannot retrieve data: data is not accessible for URL metadata");
-        case Source::BLOB:
+        case Source::Style::BLOB:
         {
             // Do not directly use m_data so that if dataReader.read throws an
             // exception, m_data remains empty.
@@ -637,11 +638,11 @@ size_t Metadata::stream_data(NamedFileDescriptor& out)
     // Load it according to source
     switch (m_source->style())
     {
-        case Source::INLINE:
+        case Source::Style::INLINE:
             throw runtime_error("cannot retrieve data: data is not found on INLINE metadata");
-        case Source::URL:
+        case Source::Style::URL:
             throw runtime_error("cannot retrieve data: data is not accessible for URL metadata");
-        case Source::BLOB:
+        case Source::Style::BLOB:
         {
             // Do not directly use m_data so that if dataReader.read throws an
             // exception, m_data remains empty.
@@ -672,11 +673,11 @@ size_t Metadata::stream_data(AbstractOutputFile& out)
     // Load it according to source
     switch (m_source->style())
     {
-        case Source::INLINE:
+        case Source::Style::INLINE:
             throw runtime_error("cannot retrieve data: data is not found on INLINE metadata");
-        case Source::URL:
+        case Source::Style::URL:
             throw runtime_error("cannot retrieve data: data is not accessible for URL metadata");
-        case Source::BLOB:
+        case Source::Style::BLOB:
         {
             // Do not directly use m_data so that if dataReader.read throws an
             // exception, m_data remains empty.
@@ -728,12 +729,12 @@ size_t Metadata::data_size() const
     // Query according to source
     switch (m_source->style())
     {
-        case Source::INLINE:
+        case Source::Style::INLINE:
             return dynamic_cast<const source::Inline*>(m_source)->size;
-        case Source::URL:
+        case Source::Style::URL:
             // URL does not know about sizes
             return 0;
-        case Source::BLOB:
+        case Source::Style::BLOB:
             return dynamic_cast<const source::Blob*>(m_source)->size;
         default:
             // An unsupported source type should make more noise than a 0
@@ -779,7 +780,7 @@ bool Metadata::read_buffer(BinaryDecoder& dec, const metadata::ReadContext& file
             md->read_inner(inner, version, file);
 
             // If the source is inline, then the data follows the metadata
-            if (md->source().style() == types::Source::INLINE)
+            if (md->source().style() == types::Source::Style::INLINE)
                 md->readInlineData(dec, file.pathname);
             canceled = !dest(move(md));
         }
@@ -831,7 +832,7 @@ bool Metadata::read_file(int in, const metadata::ReadContext& file, metadata_des
             md->read_inner(dec, bundle.version, file);
 
             // If the source is inline, then the data follows the metadata
-            if (md->source().style() == types::Source::INLINE)
+            if (md->source().style() == types::Source::Style::INLINE)
                 md->read_inline_data(f);
             canceled = !dest(move(md));
         }
@@ -871,7 +872,7 @@ bool Metadata::read_file(core::AbstractInputFile& fd, const metadata::ReadContex
             md->read_inner(dec, bundle.version, file);
 
             // If the source is inline, then the data follows the metadata
-            if (md->source().style() == types::Source::INLINE)
+            if (md->source().style() == types::Source::Style::INLINE)
                 md->read_inline_data(fd);
             canceled = !dest(move(md));
         }

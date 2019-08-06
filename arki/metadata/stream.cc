@@ -42,7 +42,7 @@ bool Stream::checkMetadata()
     md->read_inner(inner, version, rc);
 
     buffer = vector<uint8_t>(dec.buf, dec.buf + dec.size);
-    if (md->source().style() == types::Source::INLINE)
+    if (md->source().style() == types::Source::Style::INLINE)
     {
         dataToGet = md->data_size();
         state = DATA;

@@ -73,6 +73,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		dispatcher.h \
 		emitter.h \
 		emitter/keys.h \
+		emitter/structure.h \
 		emitter/json.h \
 		emitter/memory.h \
 		formatter.h \
@@ -139,12 +140,16 @@ nobase_dist_arkiinclude_HEADERS = \
 		tests/legacy.h \
 		transaction.h \
 		types/fwd.h \
+		types/bundle.h \
 		types/area.h \
 		types/assigneddataset.h \
 		types/bbox.h \
 		types.h \
 		types-init.h \
-		types/itemset.h \
+		types/core.h \
+		types/core.tcc \
+		types/styled.h \
+		types/styled.tcc \
 		types/level.h \
 		types/note.h \
 		types/origin.h \
@@ -158,7 +163,6 @@ nobase_dist_arkiinclude_HEADERS = \
 		types/source/inline.h \
 		types/source/url.h \
 		types/task.h \
-		types.tcc \
 		types/tests.h \
 		types/timerange.h \
 		types/utils.h \
@@ -244,11 +248,13 @@ libarkimet_la_SOURCES += \
 		transaction.cc \
 		emitter.cc \
 		emitter/keys.cc \
+		emitter/structure.cc \
 		emitter/memory.cc \
 		emitter/json.cc \
 		values.cc \
 		bbox.cc \
 		types.cc \
+		types/bundle.cc \
 		types/utils.cc \
 		types/source.cc \
 		types/source/blob.cc \
@@ -319,6 +325,7 @@ tests_arki_test_SOURCES += \
 		emitter/json-test.cc \
 		values-test.cc \
 		types-test.cc \
+		types/bundle-test.cc \
 		types/utils-test.cc \
 		types/source-test.cc \
 		types/reftime-test.cc \

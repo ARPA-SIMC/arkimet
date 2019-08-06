@@ -24,6 +24,7 @@ struct URL : public Source
 
     static std::unique_ptr<URL> create(const std::string& format, const std::string& url);
     static std::unique_ptr<URL> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<URL> decode_structure(const emitter::Keys& keys, const emitter::Reader& reader);
 };
 
 

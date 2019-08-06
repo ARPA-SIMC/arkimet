@@ -2,7 +2,7 @@
 #define ARKI_TYPES_AREA_H
 
 #include <memory>
-#include <arki/types.h>
+#include <arki/types/styled.h>
 #include <arki/values.h>
 #include <arki/utils/geosfwd.h>
 
@@ -11,6 +11,17 @@ struct lua_State;
 namespace arki {
 namespace types {
 
+namespace area {
+
+/// Style values
+enum class Style: unsigned char {
+    GRIB = 1,
+    ODIMH5 = 2,
+    VM2 = 3,
+};
+
+}
+
 template<>
 struct traits<Area>
 {
@@ -18,7 +29,7 @@ struct traits<Area>
     static const types::Code type_code;
     static const size_t type_sersize_bytes;
     static const char* type_lua_tag;
-    typedef unsigned char Style;
+    typedef area::Style Style;
 };
 
 /**
@@ -29,11 +40,6 @@ struct traits<Area>
 struct Area : public types::StyledType<Area>
 {
     mutable arki::utils::geos::Geometry* cached_bbox = nullptr;
-
-	/// Style values
-	static const Style GRIB = 1;
-	static const Style ODIMH5 = 2;
-    static const Style VM2 = 3;
 
 	Area();
 
@@ -46,6 +52,7 @@ struct Area : public types::StyledType<Area>
     static std::unique_ptr<Area> decode(BinaryDecoder& dec);
     static std::unique_ptr<Area> decodeString(const std::string& val);
     static std::unique_ptr<Area> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<Area> decode_structure(const emitter::Keys& keys, const emitter::Reader& val);
 
     /// Return the geographical bounding box
     const arki::utils::geos::Geometry* bbox() const;
@@ -61,6 +68,9 @@ struct Area : public types::StyledType<Area>
 };
 
 namespace area {
+
+inline std::ostream& operator<<(std::ostream& o, Style s) { return o << Area::formatStyle(s); }
+
 
 class GRIB : public Area
 {
@@ -86,6 +96,7 @@ public:
     GRIB* clone() const override;
     static std::unique_ptr<GRIB> create(const ValueBag& values);
     static std::unique_ptr<GRIB> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<GRIB> decode_structure(const emitter::Keys& keys, const emitter::Reader& val);
 };
 
 class ODIMH5 : public Area
@@ -112,6 +123,7 @@ public:
     ODIMH5* clone() const override;
     static std::unique_ptr<ODIMH5> create(const ValueBag& values);
     static std::unique_ptr<ODIMH5> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<ODIMH5> decode_structure(const emitter::Keys& keys, const emitter::Reader& val);
 };
 
 class VM2 : public Area
@@ -141,6 +153,7 @@ public:
     VM2* clone() const override;
     static std::unique_ptr<VM2> create(unsigned station_id);
     static std::unique_ptr<VM2> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<VM2> decode_structure(const emitter::Keys& keys, const emitter::Reader& val);
 };
 
 

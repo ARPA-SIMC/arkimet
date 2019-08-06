@@ -223,7 +223,7 @@ add_method("query_first_reftime_extreme", [](Fixture& f) {
     wassert(actual(summary.count()) == 3u);
 
     unique_ptr<Reftime> rt = summary.getReferenceTime();
-    ensure_equals(rt->style(), Reftime::PERIOD);
+    wassert(actual(rt->style()) == Reftime::Style::PERIOD);
     unique_ptr<reftime::Period> p = downcast<reftime::Period>(move(rt));
     metadata::Collection mdc(*reader, Matcher::parse("origin:GRIB1,80; reftime:=" + p->begin.to_iso8601()));
     wassert(actual(mdc.size()) == 1u);

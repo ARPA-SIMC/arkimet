@@ -372,21 +372,15 @@ Value* Value::parse(const std::string& str, size_t& lenParsed)
 Value* Value::parse(const emitter::memory::Node& m)
 {
     if (m.is_int())
-        return createInteger(m.get_int());
+        return create_integer(m.get_int());
     else if (m.is_string())
-        return createString(m.get_string());
+        return create_string(m.get_string());
     else
         throw_consistency_error("decoding value", "value is neither integer nor string");
 }
 
-Value* Value::createInteger(int val)
-{
-	return new value::Integer(val);
-}
-Value* Value::createString(const std::string& val)
-{
-	return new value::String(val);
-}
+Value* Value::create_integer(int val) { return new value::Integer(val); }
+Value* Value::create_string(const std::string& val) { return new value::String(val); }
 
 ValueBag::ValueBag() {}
 
@@ -665,6 +659,25 @@ ValueBag ValueBag::parse(const emitter::memory::Mapping& m)
     return res;
 }
 
+ValueBag ValueBag::parse(const emitter::Reader& reader)
+{
+    ValueBag res;
+    reader.items("values", [&](const std::string& key, const emitter::Reader& val) {
+        switch (val.type())
+        {
+            case emitter::NodeType::INT:
+                res.set(key, Value::create_integer(val.as_int("int value")));
+                break;
+            case emitter::NodeType::STRING:
+                res.set(key, Value::create_string(val.as_string("string value")));
+                break;
+            default:
+                throw std::runtime_error("cannot decode value: value is neither integer nor string");
+        }
+    });
+    return res;
+}
+
 #ifdef HAVE_LUA
 void ValueBag::lua_push(lua_State* L) const
 {
@@ -712,15 +725,15 @@ void ValueBag::load_lua_table(lua_State* L, int idx)
                 throw std::runtime_error(buf);
             }
         }
-		// Get value
-		switch (lua_type(L, -1))
-		{
-			case LUA_TNUMBER: 
-				set(key, Value::createInteger(lua_tonumber(L, -1)));
-				break;
-			case LUA_TSTRING:
-				set(key, Value::createString(lua_tostring(L, -1)));
-				break;
+        // Get value
+        switch (lua_type(L, -1))
+        {
+            case LUA_TNUMBER:
+                set(key, Value::create_integer(lua_tonumber(L, -1)));
+                break;
+            case LUA_TSTRING:
+                set(key, Value::create_string(lua_tostring(L, -1)));
+                break;
             default:
             {
                 char buf[256];

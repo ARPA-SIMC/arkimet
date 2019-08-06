@@ -1,12 +1,24 @@
 #ifndef ARKI_TYPES_ORIGIN_H
 #define ARKI_TYPES_ORIGIN_H
 
-#include <arki/types.h>
+#include <arki/types/styled.h>
 
 struct lua_State;
 
 namespace arki {
 namespace types {
+
+namespace origin {
+
+/// Style values
+enum class Style: unsigned char {
+    GRIB1 = 1,
+    GRIB2 = 2,
+    BUFR = 3,
+    ODIMH5 = 4,
+};
+
+}
 
 template<>
 struct traits<Origin>
@@ -16,7 +28,7 @@ struct traits<Origin>
     static const size_t type_sersize_bytes;
     static const char* type_lua_tag;
 
-    typedef unsigned char Style;
+    typedef origin::Style Style;
 };
 
 /**
@@ -27,13 +39,6 @@ struct traits<Origin>
  */
 struct Origin : public types::StyledType<Origin>
 {
-	/// Style values
-	//static const Style NONE = 0;
-	static const Style GRIB1 = 1;
-	static const Style GRIB2 = 2;
-	static const Style BUFR = 3;
-	static const Style ODIMH5 = 4;
-
 	/// Convert a string into a style
 	static Style parseStyle(const std::string& str);
 	/// Convert a style into its string representation
@@ -43,6 +48,7 @@ struct Origin : public types::StyledType<Origin>
     static std::unique_ptr<Origin> decode(BinaryDecoder& dec);
     static std::unique_ptr<Origin> decodeString(const std::string& val);
     static std::unique_ptr<Origin> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<Origin> decode_structure(const emitter::Keys& keys, const emitter::Reader& val);
 
 	// Deprecated functions
 	virtual std::vector<int> toIntVector() const = 0;
@@ -61,6 +67,9 @@ struct Origin : public types::StyledType<Origin>
 };
 
 namespace origin {
+
+inline std::ostream& operator<<(std::ostream& o, Style s) { return o << Origin::formatStyle(s); }
+
 
 class GRIB1 : public Origin
 {
@@ -90,6 +99,7 @@ public:
     GRIB1* clone() const override;
     static std::unique_ptr<GRIB1> create(unsigned char centre, unsigned char subcentre, unsigned char process);
     static std::unique_ptr<GRIB1> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<GRIB1> decode_structure(const emitter::Keys& keys, const emitter::Reader& val);
 
     // Deprecated functions
     std::vector<int> toIntVector() const override;
@@ -128,6 +138,7 @@ public:
     static std::unique_ptr<GRIB2> create(unsigned short centre, unsigned short subcentre,
             unsigned char processtype, unsigned char bgprocessid, unsigned char processid);
     static std::unique_ptr<GRIB2> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<GRIB2> decode_structure(const emitter::Keys& keys, const emitter::Reader& val);
 
     // Deprecated functions
     std::vector<int> toIntVector() const override;
@@ -159,6 +170,7 @@ public:
     BUFR* clone() const override;
     static std::unique_ptr<BUFR> create(unsigned char centre, unsigned char subcentre);
     static std::unique_ptr<BUFR> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<BUFR> decode_structure(const emitter::Keys& keys, const emitter::Reader& val);
 
     // Deprecated functions
     std::vector<int> toIntVector() const override;
@@ -192,6 +204,7 @@ public:
     ODIMH5* clone() const override;
     static std::unique_ptr<ODIMH5> create(const std::string& wmo, const std::string& rad, const std::string& plc);
     static std::unique_ptr<ODIMH5> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<ODIMH5> decode_structure(const emitter::Keys& keys, const emitter::Reader& val);
 
     // Deprecated functions
     std::vector<int> toIntVector() const override;

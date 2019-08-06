@@ -1,7 +1,7 @@
 #ifndef ARKI_TYPES_NOTE_H
 #define ARKI_TYPES_NOTE_H
 
-#include <arki/types.h>
+#include <arki/types/core.h>
 #include <arki/core/time.h>
 
 struct lua_State;
@@ -18,8 +18,6 @@ struct traits<Note>
 	static const types::Code type_code;
 	static const size_t type_sersize_bytes;
 	static const char* type_lua_tag;
-
-	typedef unsigned char Style;
 };
 
 /**
@@ -56,6 +54,7 @@ struct Note : public CoreType<Note>
     /// Create a note with the given time and content
     static std::unique_ptr<Note> create(const core::Time& time, const std::string& content);
     static std::unique_ptr<Note> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<Note> decode_structure(const emitter::Keys& keys, const emitter::Reader& val);
 };
 
 }

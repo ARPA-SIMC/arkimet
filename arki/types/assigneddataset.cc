@@ -84,6 +84,13 @@ unique_ptr<AssignedDataset> AssignedDataset::decodeMapping(const emitter::memory
             val["id"].want_string("parsing AssignedDataset id"));
 }
 
+std::unique_ptr<AssignedDataset> AssignedDataset::decode_structure(const emitter::Keys& keys, const emitter::Reader& val)
+{
+    return AssignedDataset::create(
+            val.as_time(keys.assigneddataset_time, "AssignedDataset time"),
+            val.as_string(keys.assigneddataset_name, "AssignedDataset name"),
+            val.as_string(keys.assigneddataset_id, "AssignedDataset id"));
+}
 
 unique_ptr<AssignedDataset> AssignedDataset::decodeString(const std::string& val)
 {
@@ -142,4 +149,4 @@ void AssignedDataset::init()
 }
 }
 
-#include <arki/types.tcc>
+#include <arki/types/styled.tcc>

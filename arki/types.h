@@ -5,6 +5,7 @@
 #include <arki/defs.h>
 #include <arki/core/fwd.h>
 #include <arki/types/fwd.h>
+#include <arki/emitter/fwd.h>
 #include <string>
 #include <vector>
 #include <memory>
@@ -14,8 +15,6 @@ struct lua_State;
 namespace arki {
 struct BinaryEncoder;
 struct BinaryDecoder;
-struct Emitter;
-struct Formatter;
 
 /// dynamic cast between two unique_ptr
 template<typename B, typename A>
@@ -48,12 +47,6 @@ template<typename B, typename A>
 std::unique_ptr<B> upcast(std::unique_ptr<A> orig)
 {
     return std::unique_ptr<B>(orig.release());
-}
-
-namespace emitter {
-namespace memory {
-struct Mapping;
-}
 }
 
 namespace types {
@@ -225,38 +218,6 @@ inline std::ostream& operator<<(std::ostream& o, const Type& t)
 }
 
 
-
-template<typename BASE>
-struct CoreType : public Type
-{
-    types::Code type_code() const override { return traits<BASE>::type_code; }
-    size_t serialisationSizeLength() const override { return traits<BASE>::type_sersize_bytes; }
-    std::string tag() const override { return traits<BASE>::type_tag; }
-    const char* lua_type_name() const override { return traits<BASE>::type_lua_tag; }
-    static void lua_loadlib(lua_State* L);
-};
-
-template<typename BASE>
-struct StyledType : public CoreType<BASE>
-{
-	typedef typename traits<BASE>::Style Style;
-
-	// Get the element style
-	virtual Style style() const = 0;
-
-    // Default implementations of Type methods
-    void encodeWithoutEnvelope(BinaryEncoder& enc) const override;
-    int compare(const Type& o) const override;
-    virtual int compare_local(const BASE& o) const { return style() - o.style(); }
-
-    virtual void serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f=0) const;
-
-	virtual bool lua_lookup(lua_State* L, const std::string& name) const;
-
-    static Style style_from_mapping(const emitter::memory::Mapping& m);
-};
-
-
 /**
  * Decode an item encoded in binary representation with envelope, from a
  * decoder
@@ -268,65 +229,9 @@ std::unique_ptr<Type> decodeString(types::Code, const std::string& val);
 std::unique_ptr<Type> decodeMapping(const emitter::memory::Mapping& m);
 /// Same as decodeMapping, but does not look for the item type in the mapping
 std::unique_ptr<Type> decodeMapping(types::Code, const emitter::memory::Mapping& m);
+std::unique_ptr<Type> decode_structure(const emitter::Keys& keys, const emitter::Reader& reader);
+std::unique_ptr<Type> decode_structure(const emitter::Keys& keys, types::Code code, const emitter::Reader& reader);
 std::string tag(types::Code);
-
-
-/**
- * Read a data bundle from a POSIX file descriptor
- */
-struct Bundle
-{
-    /// Bundle signature
-    std::string signature;
-    /// Bundle version
-    unsigned version;
-    /// Data length
-    size_t length;
-    /// Bundle data
-    std::vector<uint8_t> data;
-
-    /**
-     * Read only the bundle header
-     *
-     * @return true if a bundle header was read, false on end of file
-     */
-    bool read_header(core::NamedFileDescriptor& fd);
-
-    /**
-     * Read the bundle data after read_header has been called
-     *
-     * @return true if all bundle data was read, false on end of file
-     */
-    bool read_data(core::NamedFileDescriptor& fd);
-
-    /**
-     * read_header and read_data together
-     *
-     * @return true if all was read, false on end of file
-     */
-    bool read(core::NamedFileDescriptor& fd);
-
-    /**
-     * Read only the bundle header
-     *
-     * @return true if a bundle header was read, false on end of file
-     */
-    bool read_header(core::AbstractInputFile& fd);
-
-    /**
-     * Read the bundle data after read_header has been called
-     *
-     * @return true if all bundle data was read, false on end of file
-     */
-    bool read_data(core::AbstractInputFile& fd);
-
-    /**
-     * read_header and read_data together
-     *
-     * @return true if all was read, false on end of file
-     */
-    bool read(core::AbstractInputFile& fd);
-};
 
 }
 

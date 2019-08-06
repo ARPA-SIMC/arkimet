@@ -6,6 +6,7 @@
 #include "arki/binary.h"
 #include "arki/types.h"
 #include "arki/types/source.h"
+#include "arki/types/bundle.h"
 #include "arki/utils/geos.h"
 #include "arki/formatter.h"
 #include "arki/nag.h"
@@ -46,7 +47,7 @@ void addToSummary(Input& in, arki::Summary& s)
             if (!bundle.read_data(in)) break;
             arki::BinaryDecoder dec(bundle.data);
             md.read_inner(dec, bundle.version, in.name());
-            if (md.source().style() == arki::types::Source::INLINE)
+            if (md.source().style() == arki::types::Source::Style::INLINE)
                 md.read_inline_data(in);
             s.add(md);
         }
@@ -302,7 +303,7 @@ struct dump_yaml : public MethKwargs<dump_yaml, arkipy_ArkiDump>
                     if (!read_data()) break;
                     arki::BinaryDecoder dec(bundle.data);
                     md.read_inner(dec, bundle.version, input_name);
-                    if (md.source().style() == arki::types::Source::INLINE)
+                    if (md.source().style() == arki::types::Source::Style::INLINE)
                         read_inline_data(md);
                     print_md(md);
                 }

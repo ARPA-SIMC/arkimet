@@ -109,6 +109,17 @@ unique_ptr<Quantity> Quantity::decodeMapping(const emitter::memory::Mapping& val
     return Quantity::create(vals);
 }
 
+std::unique_ptr<Quantity> Quantity::decode_structure(const emitter::Keys& keys, const emitter::Reader& val)
+{
+    std::set<string> vals;
+    val.sub(keys.quantity_value, "Quantity values", [&](const emitter::Reader& list) {
+        unsigned size = list.list_size("Quantity values");
+        for (unsigned i = 0; i < size; ++i)
+            vals.insert(list.as_string(i, "quantity value"));
+    });
+    return Quantity::create(vals);
+}
+
 unique_ptr<Quantity> Quantity::decodeString(const std::string& val)
 {
 	if (val.empty())
@@ -192,4 +203,4 @@ void Quantity::init()
 
 }
 }
-#include <arki/types.tcc>
+#include <arki/types/core.tcc>

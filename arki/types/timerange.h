@@ -11,6 +11,14 @@ namespace arki {
 namespace types {
 namespace timerange {
 
+/// Style values
+enum class Style: unsigned char {
+    GRIB1 = 1,
+    GRIB2 = 2,
+    BUFR = 3,
+    TIMEDEF = 4,
+};
+
 enum GRIB1Unit {
     SECOND = 0,
     MONTH = 1
@@ -82,7 +90,7 @@ struct traits<Timerange>
 	static const size_t type_sersize_bytes;
 	static const char* type_lua_tag;
 
-	typedef unsigned char Style;
+    typedef timerange::Style Style;
 };
 
 template<>
@@ -93,7 +101,7 @@ struct traits<timerange::Timedef>
 	static const size_t type_sersize_bytes;
 	static const char* type_lua_tag;
 
-	typedef unsigned char Style;
+    typedef timerange::Style Style;
 };
 
 /**
@@ -104,12 +112,6 @@ struct traits<timerange::Timedef>
  */
 struct Timerange : public types::StyledType<Timerange>
 {
-	/// Style values
-	static const Style GRIB1 = 1;
-	static const Style GRIB2 = 2;
-	static const Style BUFR = 3;
-	static const Style TIMEDEF = 4;
-
 	/// Convert a string into a style
 	static Style parseStyle(const std::string& str);
 	/// Convert a style into its string representation
@@ -147,6 +149,7 @@ struct Timerange : public types::StyledType<Timerange>
     static std::unique_ptr<Timerange> decode(BinaryDecoder& dec);
     static std::unique_ptr<Timerange> decodeString(const std::string& val);
     static std::unique_ptr<Timerange> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<Timerange> decode_structure(const emitter::Keys& keys, const emitter::Reader& val);
 
 	static void lua_loadlib(lua_State* L);
 
@@ -164,6 +167,9 @@ struct Timerange : public types::StyledType<Timerange>
 };
 
 namespace timerange {
+
+inline std::ostream& operator<<(std::ostream& o, Style s) { return o << Timerange::formatStyle(s); }
+
 
 struct GRIB1 : public Timerange
 {
@@ -209,6 +215,7 @@ public:
     GRIB1* clone() const override;
     static std::unique_ptr<GRIB1> create(unsigned char type, unsigned char unit, unsigned char p1, unsigned char p2);
     static std::unique_ptr<GRIB1> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<GRIB1> decode_structure(const emitter::Keys& keys, const emitter::Reader& val);
     static void arg_significance(unsigned type, bool& use_p1, bool& use_p2);
 };
 
@@ -242,6 +249,7 @@ public:
     GRIB2* clone() const override;
     static std::unique_ptr<GRIB2> create(unsigned char type, unsigned char unit, signed long p1, signed long p2);
     static std::unique_ptr<GRIB2> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<GRIB2> decode_structure(const emitter::Keys& keys, const emitter::Reader& val);
 };
 
 class Timedef : public Timerange
@@ -294,6 +302,7 @@ public:
                               uint8_t stat_type, uint32_t stat_len, TimedefUnit stat_unit=UNIT_SECOND);
     static std::unique_ptr<Timedef> createFromYaml(const std::string& str);
     static std::unique_ptr<Timedef> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<Timedef> decode_structure(const emitter::Keys& keys, const emitter::Reader& val);
 
     /**
      * Unit conversion for code table 4.4 GRIB2 indicator of unit of time range
@@ -352,6 +361,7 @@ public:
     BUFR* clone() const override;
     static std::unique_ptr<BUFR> create(unsigned value = 0, unsigned char unit = 254);
     static std::unique_ptr<BUFR> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<BUFR> decode_structure(const emitter::Keys& keys, const emitter::Reader& val);
 };
 
 }

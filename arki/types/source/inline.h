@@ -25,6 +25,7 @@ struct Inline : public Source
 
     static std::unique_ptr<Inline> create(const std::string& format, uint64_t size);
     static std::unique_ptr<Inline> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<Inline> decode_structure(const emitter::Keys& keys, const emitter::Reader& reader);
 };
 
 
