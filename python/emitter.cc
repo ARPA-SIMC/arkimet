@@ -1,4 +1,5 @@
 #include "emitter.h"
+#include "utils/values.h"
 #include "arki/core/time.h"
 
 namespace arki {
@@ -116,99 +117,142 @@ void PythonEmitter::add_string(const std::string& val)
 
 emitter::NodeType PythonReader::type() const
 {
-    throw std::runtime_error("not implemented");
+    if (o == Py_None)
+        return emitter::NodeType::NONE;
+    if (PyBool_Check(o))
+        return emitter::NodeType::BOOL;
+    if (PyLong_Check(o))
+        return emitter::NodeType::INT;
+    if (PyUnicode_Check(o))
+        return emitter::NodeType::STRING;
+    if (PyMapping_Check(o))
+        return emitter::NodeType::MAPPING;
+    if (PySequence_Check(o))
+        return emitter::NodeType::LIST;
+    // TODO: add a repr
+    throw std::invalid_argument("python object cannot be understood");
 }
 
 bool PythonReader::as_bool(const char* desc) const
 {
-    throw std::runtime_error("not implemented");
+    return from_python<bool>(o);
 }
 
 long long int PythonReader::as_int(const char* desc) const
 {
-    throw std::runtime_error("not implemented");
+    long long int res = PyLong_AsLongLong(o);
+    if (res == -1 && PyErr_Occurred())
+        throw PythonException();
+    return res;
 }
 
 double PythonReader::as_double(const char* desc) const
 {
-    throw std::runtime_error("not implemented");
+    return from_python<double>(o);
 }
 
 std::string PythonReader::as_string(const char* desc) const
 {
-    throw std::runtime_error("not implemented");
+    return from_python<std::string>(o);
 }
 
 
 unsigned PythonReader::list_size(const char* desc) const
 {
-    throw std::runtime_error("not implemented");
+    int res = PySequence_Size(o);
+    if (res == -1) throw PythonException();
+    return res;
 }
 
 bool PythonReader::as_bool(unsigned idx, const char* desc) const
 {
-    throw std::runtime_error("not implemented");
+    pyo_unique_ptr res(throw_ifnull(PySequence_GetItem(o, idx)));
+    return from_python<bool>(res);
 }
 
 long long int PythonReader::as_int(unsigned idx, const char* desc) const
 {
-    throw std::runtime_error("not implemented");
+    pyo_unique_ptr el(throw_ifnull(PySequence_GetItem(o, idx)));
+    long long int res = PyLong_AsLongLong(el);
+    if (res == -1 && PyErr_Occurred())
+        throw PythonException();
+    return res;
 }
 
 double PythonReader::as_double(unsigned idx, const char* desc) const
 {
-    throw std::runtime_error("not implemented");
+    pyo_unique_ptr el(throw_ifnull(PySequence_GetItem(o, idx)));
+    return from_python<double>(el);
 }
 
 std::string PythonReader::as_string(unsigned idx, const char* desc) const
 {
-    throw std::runtime_error("not implemented");
+    pyo_unique_ptr el(throw_ifnull(PySequence_GetItem(o, idx)));
+    return from_python<std::string>(el);
 }
 
-void PythonReader::sub(unsigned idx, const char* desc, std::function<void(const Reader&)>) const
+void PythonReader::sub(unsigned idx, const char* desc, std::function<void(const Reader&)> dest) const
 {
-    throw std::runtime_error("not implemented");
+    pyo_unique_ptr el(throw_ifnull(PySequence_GetItem(o, idx)));
+    PythonReader reader(el);
+    dest(reader);
 }
 
 
 bool PythonReader::has_key(const std::string& key, emitter::NodeType type) const
 {
-    throw std::runtime_error("not implemented");
+    int res = PyMapping_HasKeyString(o, key.c_str());
+    return res == 1;
 }
 
 bool PythonReader::as_bool(const std::string& key, const char* desc) const
 {
-    throw std::runtime_error("not implemented");
+    pyo_unique_ptr el(throw_ifnull(PyMapping_GetItemString(o, key.c_str())));
+    return from_python<bool>(el);
 }
 
 long long int PythonReader::as_int(const std::string& key, const char* desc) const
 {
-    throw std::runtime_error("not implemented");
+    pyo_unique_ptr el(throw_ifnull(PyMapping_GetItemString(o, key.c_str())));
+    long long int res = PyLong_AsLongLong(el);
+    if (res == -1 && PyErr_Occurred())
+        throw PythonException();
+    return res;
 }
 
 double PythonReader::as_double(const std::string& key, const char* desc) const
 {
-    throw std::runtime_error("not implemented");
+    pyo_unique_ptr el(throw_ifnull(PyMapping_GetItemString(o, key.c_str())));
+    return from_python<double>(el);
 }
 
 std::string PythonReader::as_string(const std::string& key, const char* desc) const
 {
-    throw std::runtime_error("not implemented");
+    pyo_unique_ptr el(throw_ifnull(PyMapping_GetItemString(o, key.c_str())));
+    return from_python<std::string>(el);
 }
 
 core::Time PythonReader::as_time(const std::string& key, const char* desc) const
 {
-    throw std::runtime_error("not implemented");
+    throw std::runtime_error("not implemented: parsing time");
 }
 
-void PythonReader::items(const char* desc, std::function<void(const std::string&, const Reader&)>) const
+void PythonReader::items(const char* desc, std::function<void(const std::string&, const Reader&)> dest) const
 {
-    throw std::runtime_error("not implemented");
+    PyObject *key, *value;
+    Py_ssize_t pos = 0;
+
+    while (PyDict_Next(o, &pos, &key, &value)) {
+        PythonReader reader(value);
+        dest(from_python<std::string>(key), reader);
+    }
 }
 
-void PythonReader::sub(const std::string& key, const char* desc, std::function<void(const Reader&)>) const
+void PythonReader::sub(const std::string& key, const char* desc, std::function<void(const Reader&)> dest) const
 {
-    throw std::runtime_error("not implemented");
+    pyo_unique_ptr el(throw_ifnull(PyMapping_GetItemString(o, key.c_str())));
+    PythonReader reader(el);
+    dest(reader);
 }
 
 }
