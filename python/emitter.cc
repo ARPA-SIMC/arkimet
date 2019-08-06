@@ -234,7 +234,33 @@ std::string PythonReader::as_string(const std::string& key, const char* desc) co
 
 core::Time PythonReader::as_time(const std::string& key, const char* desc) const
 {
-    throw std::runtime_error("not implemented: parsing time");
+    pyo_unique_ptr el(throw_ifnull(PyMapping_GetItemString(o, key.c_str())));
+    if (PySequence_Check(el))
+    {
+        Py_ssize_t size = PySequence_Size(el);
+        if (size == -1)
+            throw PythonException();
+        if (size != 6)
+        {
+            PyErr_Format(PyExc_ValueError, "time should be a sequence of 6 elements, not %d", (int)size);
+            throw PythonException();
+        }
+        pyo_unique_ptr py_year(throw_ifnull(PySequence_GetItem(el, 0)));
+        int year = from_python<int>(py_year);
+        pyo_unique_ptr py_month(throw_ifnull(PySequence_GetItem(el, 1)));
+        int month = from_python<int>(py_month);
+        pyo_unique_ptr py_day(throw_ifnull(PySequence_GetItem(el, 2)));
+        int day = from_python<int>(py_day);
+        pyo_unique_ptr py_hour(throw_ifnull(PySequence_GetItem(el, 3)));
+        int hour = from_python<int>(py_hour);
+        pyo_unique_ptr py_minute(throw_ifnull(PySequence_GetItem(el, 4)));
+        int minute = from_python<int>(py_minute);
+        pyo_unique_ptr py_second(throw_ifnull(PySequence_GetItem(el, 5)));
+        int second = from_python<int>(py_second);
+        return core::Time(year, month, day, hour, minute, second);
+    }
+    PyErr_SetString(PyExc_NotImplementedError, "Cannot parse a non-sequence as a time");
+    throw PythonException();
 }
 
 void PythonReader::items(const char* desc, std::function<void(const std::string&, const Reader&)> dest) const

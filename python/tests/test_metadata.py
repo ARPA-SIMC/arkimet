@@ -20,14 +20,36 @@ class TestMetadata(unittest.TestCase):
 
     def test_subscript(self):
         md = self.read("inbound/test.grib1")[0]
+
         self.assertIn("reftime", md)
         self.assertEqual(md["reftime"], "2007-07-08T13:00:00Z")
+
+        py_reftime = md.to_python("reftime")
+        self.assertEqual(py_reftime,
+                         {"type": "reftime", "style": "POSITION",  "time": [2007, 7, 8, 13, 0, 0]})
+
         md["reftime"] = "2019-07-30T12:00:00Z"
         self.assertEqual(md["reftime"], "2019-07-30T12:00:00Z")
+
+        md["reftime"] = py_reftime
+        self.assertEqual(md["reftime"], "2007-07-08T13:00:00Z")
+
+        self.assertIn("source", md)
+
         self.assertEqual(md["source"], "BLOB(grib,{}:0+7218)".format(os.path.abspath("inbound/test.grib1")))
 
-        md["reftime"] = {"type": "reftime", "style": "POSITION",  "time": [2019, 8, 31, 13, 0, 0]}
-        self.assertEqual(md["reftime"], "2019-08-31T13:00:00Z")
+        py_source = md.to_python("source")
+        self.assertEqual(py_source, {
+            "basedir": os.getcwd(),
+            "file": "inbound/test.grib1",
+            "format": "grib",
+            "offset": 0,
+            "size": 7218,
+            "style": "BLOB",
+            "type": "source",
+        })
+        md["source"] = py_source
+        self.assertEqual(md["source"], "BLOB(grib,{}:0+7218)".format(os.path.abspath("inbound/test.grib1")))
 
     def test_to_string(self):
         md = self.read("inbound/test.grib1")[0]
