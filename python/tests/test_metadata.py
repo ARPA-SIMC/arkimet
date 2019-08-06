@@ -26,6 +26,9 @@ class TestMetadata(unittest.TestCase):
         self.assertEqual(md["reftime"], "2019-07-30T12:00:00Z")
         self.assertEqual(md["source"], "BLOB(grib,{}:0+7218)".format(os.path.abspath("inbound/test.grib1")))
 
+        md["reftime"] = {"style": "position",  "time": [2019, 8, 31, 13, 0, 0]}
+        self.assertEqual(md["reftime"], "2019-08-31T13:00:00Z")
+
     def test_to_string(self):
         md = self.read("inbound/test.grib1")[0]
         self.assertEqual(md.to_string("origin"), "GRIB1(200, 000, 101)")
