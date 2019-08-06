@@ -470,7 +470,10 @@ Arkimet metadata for one data item
         try {
             std::string key = from_python<std::string>(py_key);
             types::Code code = types::parseCodeName(key);
-            return self->md->has(code) ? 1 : 0;
+            if (code == arki::TYPE_SOURCE)
+                return self->md->has_source() ? 1 : 0;
+            else
+                return self->md->has(code) ? 1 : 0;
         } ARKI_CATCH_RETURN_INT
     }
 
