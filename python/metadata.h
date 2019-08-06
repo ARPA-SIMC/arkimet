@@ -65,4 +65,3 @@ void register_metadata(PyObject* m);
 }
 }
 #endif
-
