@@ -78,10 +78,6 @@ void createDontpackFlagfile(const std::string& dir)
 {
 	utils::createFlagfile(str::joinpath(dir, FLAGFILE_DONTPACK));
 }
-void createNewDontpackFlagfile(const std::string& dir)
-{
-	utils::createNewFlagfile(str::joinpath(dir, FLAGFILE_DONTPACK));
-}
 void removeDontpackFlagfile(const std::string& dir)
 {
     sys::unlink_ifexists(str::joinpath(dir, FLAGFILE_DONTPACK));
@@ -217,75 +213,6 @@ void FinalizeTempfilesTransaction::rollback_nothrow() noexcept
     for (const auto& f: tmpfiles)
         ::unlink(f.c_str());
     fired = true;
-}
-
-
-static std::string rcDirName(const std::string& nameInConfdir, const std::string& nameInEnv)
-{
-    std::string dirname;
-    char* fromEnv = 0;
-
-    // Otherwise the directory given in the environment variable nameInEnv is tried.
-    if ((fromEnv = getenv(nameInEnv.c_str())))
-        return fromEnv;
-
-#ifdef CONF_DIR
-    // Else, CONF_DIR is tried.
-    return string(CONF_DIR) + "/" + nameInConfdir;
-#else
-    // Or if there is no config, we fail to read anything
-    return string();
-#endif
-}
-
-std::vector<std::string> rcFiles(const std::string& nameInConfdir, const std::string& nameInEnv)
-{
-    std::string dirname = rcDirName(nameInConfdir, nameInEnv);
-
-    vector<string> files;
-    sys::Path dir(dirname);
-    for (sys::Path::iterator i = dir.begin(); i != dir.end(); ++i)
-    {
-        string file = i->d_name;
-        // Skip hidden files
-        if (file[0] == '.') continue;
-        // Skip backup files
-        if (file[file.size() - 1] == '~') continue;
-        // Skip non-files
-        if (!i.isreg()) continue;
-        files.push_back(str::joinpath(dirname, i->d_name));
-    }
-
-    // Sort the file names
-    std::sort(files.begin(), files.end());
-
-    return files;
-}
-
-std::string readRcDir(const std::string& nameInConfdir, const std::string& nameInEnv)
-{
-    vector<string> files = rcFiles(nameInConfdir, nameInEnv);
-
-    // Read all the contents
-    std::string res;
-    for (const auto& file: files)
-        res += sys::read_file(file);
-    return res;
-}
-
-SourceCode readSourceFromRcDir(const std::string& nameInConfdir, const std::string& nameInEnv)
-{
-    vector<string> files = rcFiles(nameInConfdir, nameInEnv);
-    SourceCode res;
-
-    // Read all the contents
-    for (const auto& file: files)
-    {
-        string tmp = sys::read_file(file);
-        res.push_back(FileInfo(file, tmp.size()));
-        res.code += tmp;
-    }
-    return res;
 }
 
 }
