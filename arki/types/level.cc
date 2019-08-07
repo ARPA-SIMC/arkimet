@@ -3,9 +3,9 @@
 #include "arki/utils/iostream.h"
 #include "arki/types/level.h"
 #include "arki/types/utils.h"
-#include "arki/emitter.h"
-#include "arki/emitter/memory.h"
-#include "arki/emitter/keys.h"
+#include "arki/structured/emitter.h"
+#include "arki/structured/memory.h"
+#include "arki/structured/keys.h"
 #include "arki/libconfig.h"
 #include <sstream>
 #include <iomanip>
@@ -285,22 +285,7 @@ unique_ptr<Level> Level::decodeString(const std::string& val)
 	}
 }
 
-unique_ptr<Level> Level::decodeMapping(const emitter::memory::Mapping& val)
-{
-    using namespace emitter::memory;
-
-    switch (style_from_mapping(val))
-    {
-        case Style::GRIB1: return upcast<Level>(level::GRIB1::decodeMapping(val));
-        case Style::GRIB2S: return upcast<Level>(level::GRIB2S::decodeMapping(val));
-        case Style::GRIB2D: return upcast<Level>(level::GRIB2D::decodeMapping(val));
-        case Style::ODIMH5: return upcast<Level>(level::ODIMH5::decodeMapping(val));
-        default:
-            throw_consistency_error("parsing Level", "unknown Level style " + val.get_string());
-    }
-}
-
-std::unique_ptr<Level> Level::decode_structure(const emitter::Keys& keys, const emitter::Reader& val)
+std::unique_ptr<Level> Level::decode_structure(const structured::Keys& keys, const structured::Reader& val)
 {
     switch (style_from_structure(keys, val))
     {
@@ -484,7 +469,7 @@ std::ostream& GRIB1::writeToOstream(std::ostream& o) const
 	o << setfill(' ');
 	return o << ")";
 }
-void GRIB1::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
+void GRIB1::serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f) const
 {
     Level::serialise_local(e, keys, f);
     e.add(keys.level_type, (unsigned)m_type);
@@ -500,30 +485,15 @@ void GRIB1::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatt
             break;
     }
 }
-unique_ptr<GRIB1> GRIB1::decodeMapping(const emitter::memory::Mapping& val)
-{
-    using namespace emitter::memory;
-    int lt = val["lt"].want_int("parsing GRIB1 level type");
-    const Node& l1 = val["l1"];
-    const Node& l2 = val["l2"];
-    if (!l2.is_null())
-        return GRIB1::create(lt,
-                l1.want_int("parsing GRIB1 level l1"),
-                l2.want_int("parsing GRIB1 level l2"));
-    if (!l1.is_null())
-        return GRIB1::create(lt,
-                l1.want_int("parsing GRIB1 level l1"));
-    return GRIB1::create(lt);
-}
 
-std::unique_ptr<GRIB1> GRIB1::decode_structure(const emitter::Keys& keys, const emitter::Reader& val)
+std::unique_ptr<GRIB1> GRIB1::decode_structure(const structured::Keys& keys, const structured::Reader& val)
 {
     int lt = val.as_int(keys.level_type, "level type");
-    if (val.has_key(keys.level_l2, emitter::NodeType::INT))
+    if (val.has_key(keys.level_l2, structured::NodeType::INT))
         return GRIB1::create(lt,
                 val.as_int(keys.level_l1, "level l1"),
                 val.as_int(keys.level_l2, "level l2"));
-    if (val.has_key(keys.level_l1, emitter::NodeType::INT))
+    if (val.has_key(keys.level_l1, structured::NodeType::INT))
         return GRIB1::create(lt,
                 val.as_int(keys.level_l1, "level l1"));
     return GRIB1::create(lt);
@@ -709,7 +679,7 @@ std::ostream& GRIB2S::writeToOstream(std::ostream& o) const
 
     return o;
 }
-void GRIB2S::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
+void GRIB2S::serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f) const
 {
     Level::serialise_local(e, keys, f);
 
@@ -732,26 +702,15 @@ void GRIB2S::serialise_local(Emitter& e, const emitter::Keys& keys, const Format
     } else
         e.add(keys.level_value, m_value);
 }
-unique_ptr<GRIB2S> GRIB2S::decodeMapping(const emitter::memory::Mapping& val)
-{
-    using namespace emitter::memory;
-    const Node& lt = val["lt"];
-    const Node& sc = val["sc"];
-    const Node& va = val["va"];
-    return GRIB2S::create(
-            lt.is_null() ? MISSING_TYPE : lt.want_int("parsing GRIB2S level type"),
-            sc.is_null() ? MISSING_SCALE : sc.want_int("parsing GRIB2S level scale"),
-            va.is_null() ? MISSING_VALUE : va.want_int("parsing GRIB2S level value"));
-}
 
-std::unique_ptr<GRIB2S> GRIB2S::decode_structure(const emitter::Keys& keys, const emitter::Reader& val)
+std::unique_ptr<GRIB2S> GRIB2S::decode_structure(const structured::Keys& keys, const structured::Reader& val)
 {
     int lt = MISSING_TYPE, sc = MISSING_SCALE, va = MISSING_VALUE;
-    if (val.has_key(keys.level_type, emitter::NodeType::INT))
+    if (val.has_key(keys.level_type, structured::NodeType::INT))
         lt = val.as_int(keys.level_type, "level type");
-    if (val.has_key(keys.level_scale, emitter::NodeType::INT))
+    if (val.has_key(keys.level_scale, structured::NodeType::INT))
         sc = val.as_int(keys.level_scale, "level scale");
-    if (val.has_key(keys.level_value, emitter::NodeType::INT))
+    if (val.has_key(keys.level_value, structured::NodeType::INT))
         va = val.as_int(keys.level_value, "level value");
     return GRIB2S::create(lt, sc, va);
 }
@@ -897,7 +856,7 @@ std::ostream& GRIB2D::writeToOstream(std::ostream& o) const
 
     return o;
 }
-void GRIB2D::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
+void GRIB2D::serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f) const
 {
     Level::serialise_local(e, keys, f);
 
@@ -940,41 +899,23 @@ void GRIB2D::serialise_local(Emitter& e, const emitter::Keys& keys, const Format
         e.add(keys.level_value2, m_value2);
 
 }
-unique_ptr<GRIB2D> GRIB2D::decodeMapping(const emitter::memory::Mapping& val)
-{
-    using namespace emitter::memory;
-    const Node& l1 = val["l1"];
-    const Node& s1 = val["s1"];
-    const Node& v1 = val["v1"];
-    const Node& l2 = val["l2"];
-    const Node& s2 = val["s2"];
-    const Node& v2 = val["v2"];
 
-    return GRIB2D::create(
-        l1.is_null() ? GRIB2S::MISSING_TYPE : l1.want_int("parsing GRIB2D level type1"),
-        s1.is_null() ? GRIB2S::MISSING_SCALE : s1.want_int("parsing GRIB2D level scale1"),
-        v1.is_null() ? GRIB2S::MISSING_VALUE : v1.want_int("parsing GRIB2D level value1"),
-        l2.is_null() ? GRIB2S::MISSING_TYPE : l2.want_int("parsing GRIB2D level type2"),
-        s2.is_null() ? GRIB2S::MISSING_SCALE : s2.want_int("parsing GRIB2D level scale2"),
-        v2.is_null() ? GRIB2S::MISSING_VALUE : v2.want_int("parsing GRIB2D level value2"));
-}
-
-std::unique_ptr<GRIB2D> GRIB2D::decode_structure(const emitter::Keys& keys, const emitter::Reader& val)
+std::unique_ptr<GRIB2D> GRIB2D::decode_structure(const structured::Keys& keys, const structured::Reader& val)
 {
     int l1 = GRIB2S::MISSING_TYPE, s1 = GRIB2S::MISSING_SCALE, v1 = GRIB2S::MISSING_VALUE;
-    if (val.has_key(keys.level_l1, emitter::NodeType::INT))
+    if (val.has_key(keys.level_l1, structured::NodeType::INT))
         l1 = val.as_int(keys.level_l1, "level type1");
-    if (val.has_key(keys.level_scale1, emitter::NodeType::INT))
+    if (val.has_key(keys.level_scale1, structured::NodeType::INT))
         s1 = val.as_int(keys.level_scale1, "level scale1");
-    if (val.has_key(keys.level_value1, emitter::NodeType::INT))
+    if (val.has_key(keys.level_value1, structured::NodeType::INT))
         v1 = val.as_int(keys.level_value1, "level value1");
 
     int l2 = GRIB2S::MISSING_TYPE, s2 = GRIB2S::MISSING_SCALE, v2 = GRIB2S::MISSING_VALUE;
-    if (val.has_key(keys.level_l2, emitter::NodeType::INT))
+    if (val.has_key(keys.level_l2, structured::NodeType::INT))
         l2 = val.as_int(keys.level_l2, "level type2");
-    if (val.has_key(keys.level_scale2, emitter::NodeType::INT))
+    if (val.has_key(keys.level_scale2, structured::NodeType::INT))
         s2 = val.as_int(keys.level_scale2, "level scale2");
-    if (val.has_key(keys.level_value2, emitter::NodeType::INT))
+    if (val.has_key(keys.level_value2, structured::NodeType::INT))
         v2 = val.as_int(keys.level_value2, "level value2");
 
     return GRIB2D::create(l1, s1, v1, l2, s2, v2);
@@ -1107,21 +1048,14 @@ std::ostream& ODIMH5::writeToOstream(std::ostream& o) const
 		<< ")"
 		;
 }
-void ODIMH5::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
+void ODIMH5::serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f) const
 {
     Level::serialise_local(e, keys, f);
     e.add(keys.level_min, m_min);
     e.add(keys.level_max, m_max);
 }
-unique_ptr<ODIMH5> ODIMH5::decodeMapping(const emitter::memory::Mapping& val)
-{
-    using namespace emitter::memory;
-    return ODIMH5::create(
-            val["mi"].want_double("parsing ODIMH5 level min"),
-            val["ma"].want_double("parsing ODIMH5 level max"));
-}
 
-std::unique_ptr<ODIMH5> ODIMH5::decode_structure(const emitter::Keys& keys, const emitter::Reader& val)
+std::unique_ptr<ODIMH5> ODIMH5::decode_structure(const structured::Keys& keys, const structured::Reader& val)
 {
     return ODIMH5::create(
             val.as_double(keys.level_min, "level min"),

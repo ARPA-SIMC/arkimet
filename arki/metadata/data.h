@@ -2,13 +2,12 @@
 #define ARKI_METADATA_DATA_H
 
 #include <arki/core/file.h>
+#include <arki/structured/fwd.h>
 #include <vector>
 #include <list>
 #include <memory>
 
 namespace arki {
-class Emitter;
-
 namespace metadata {
 
 /**
@@ -66,7 +65,7 @@ struct Data
     virtual size_t write_inline(core::AbstractOutputFile& fd) const = 0;
 
     /// Send data to an emitter
-    virtual void emit(Emitter& e) const = 0;
+    virtual void emit(structured::Emitter& e) const = 0;
 };
 
 

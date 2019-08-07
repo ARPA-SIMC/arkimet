@@ -3,12 +3,12 @@
 
 /// Emitter implementation that outputs JSON
 
-#include <arki/emitter.h>
+#include <arki/structured/emitter.h>
 #include <vector>
 #include <iosfwd>
 
 namespace arki {
-namespace emitter {
+namespace structured {
 
 /**
  * JSON emitter

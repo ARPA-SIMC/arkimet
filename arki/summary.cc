@@ -14,9 +14,9 @@
 #include "types/area.h"
 #include "utils/geos.h"
 #include "utils/compress.h"
-#include "emitter.h"
-#include "emitter/memory.h"
-#include "emitter/keys.h"
+#include "structured/emitter.h"
+#include "structured/memory.h"
+#include "structured/keys.h"
 #include "iotrace.h"
 #include "utils/lua.h"
 #include "utils/string.h"
@@ -610,7 +610,7 @@ void Summary::write_yaml(core::AbstractOutputFile& out, const Formatter* formatt
     out.write(yaml.data(), yaml.size());
 }
 
-void Summary::serialise(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
+void Summary::serialise(structured::Emitter& e, const structured::Keys& keys, const Formatter* f) const
 {
     e.start_mapping();
     e.add(keys.summary_items);
@@ -619,11 +619,11 @@ void Summary::serialise(Emitter& e, const emitter::Keys& keys, const Formatter* 
     {
         struct Serialiser : public summary::Visitor
         {
-            Emitter& e;
-            const emitter::Keys& keys;
+            structured::Emitter& e;
+            const structured::Keys& keys;
             const Formatter* f;
 
-            Serialiser(Emitter& e, const emitter::Keys& keys, const Formatter* f) : e(e), keys(keys), f(f) {}
+            Serialiser(structured::Emitter& e, const structured::Keys& keys, const Formatter* f) : e(e), keys(keys), f(f) {}
 
             virtual bool operator()(const std::vector<const Type*>& md, const Stats& stats)
             {
@@ -653,16 +653,19 @@ void Summary::serialise(Emitter& e, const emitter::Keys& keys, const Formatter* 
     e.end_mapping();
 }
 
-void Summary::read(const emitter::memory::Mapping& val)
+void Summary::read(const structured::Keys& keys, const structured::Reader& val)
 {
-    using namespace emitter::memory;
+    using namespace structured::memory;
 
-    const List& items = val["items"].want_list("parsing summary item list");
-    for (std::vector<const Node*>::const_iterator i = items.val.begin(); i != items.val.end(); ++i)
-    {
-        const Mapping& m = (*i)->want_mapping("parsing summary item");
-        root->merge(m);
-    }
+    val.sub(keys.summary_items, "summary item list", [&](const structured::Reader& items) {
+        unsigned size = items.list_size("summary item list");
+        for (unsigned i = 0; i < size; ++i)
+        {
+            items.sub(i, "summary item", [&](const structured::Reader& item) {
+                root->merge(keys, item);
+            });
+        }
+    });
 }
 
 void Summary::readFile(const std::string& fname)

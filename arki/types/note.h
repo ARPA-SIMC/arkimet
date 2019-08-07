@@ -40,7 +40,7 @@ struct Note : public CoreType<Note>
     static std::unique_ptr<Note> decode(BinaryDecoder& dec);
     static std::unique_ptr<Note> decodeString(const std::string& val);
     std::ostream& writeToOstream(std::ostream& o) const override;
-    void serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f=0) const override;
+    void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
     bool lua_lookup(lua_State* L, const std::string& name) const override;
 
     Note* clone() const override;
@@ -53,8 +53,7 @@ struct Note : public CoreType<Note>
 
     /// Create a note with the given time and content
     static std::unique_ptr<Note> create(const core::Time& time, const std::string& content);
-    static std::unique_ptr<Note> decodeMapping(const emitter::memory::Mapping& val);
-    static std::unique_ptr<Note> decode_structure(const emitter::Keys& keys, const emitter::Reader& val);
+    static std::unique_ptr<Note> decode_structure(const structured::Keys& keys, const structured::Reader& val);
 };
 
 }

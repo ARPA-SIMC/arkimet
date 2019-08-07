@@ -1,7 +1,7 @@
 #include "keys.h"
 
 namespace arki {
-namespace emitter {
+namespace structured {
 
 static Keys make_json()
 {
@@ -80,6 +80,10 @@ static Keys make_json()
     res.summary_items = "items";
     res.summary_stats = "summarystats";
     res.summary_desc = "desc";
+    res.summarystats_begin = "b";
+    res.summarystats_end = "e";
+    res.summarystats_count = "c";
+    res.summarystats_size = "s";
     return res;
 }
 
@@ -160,6 +164,10 @@ static Keys make_python()
     res.summary_items = "items";
     res.summary_stats = "summarystats";
     res.summary_desc = "desc";
+    res.summarystats_begin = "begin";
+    res.summarystats_end = "end";
+    res.summarystats_count = "count";
+    res.summarystats_size = "size";
     return res;
 }
 

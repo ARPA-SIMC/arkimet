@@ -231,72 +231,72 @@
  },
  {
   "doc": "",
-  "group": "arki_emitter_memory",
+  "group": "arki_structured_memory",
   "method": "null"
  },
  {
   "doc": "",
-  "group": "arki_emitter_memory",
+  "group": "arki_structured_memory",
   "method": "bool"
  },
  {
   "doc": "",
-  "group": "arki_emitter_memory",
+  "group": "arki_structured_memory",
   "method": "int"
  },
  {
   "doc": "",
-  "group": "arki_emitter_memory",
+  "group": "arki_structured_memory",
   "method": "double"
  },
  {
   "doc": "",
-  "group": "arki_emitter_memory",
+  "group": "arki_structured_memory",
   "method": "string"
  },
  {
   "doc": "",
-  "group": "arki_emitter_memory",
+  "group": "arki_structured_memory",
   "method": "list"
  },
  {
   "doc": "",
-  "group": "arki_emitter_memory",
+  "group": "arki_structured_memory",
   "method": "mapping"
  },
  {
   "doc": "",
-  "group": "arki_emitter_json",
+  "group": "arki_structured_json",
   "method": "null"
  },
  {
   "doc": "",
-  "group": "arki_emitter_json",
+  "group": "arki_structured_json",
   "method": "bool"
  },
  {
   "doc": "",
-  "group": "arki_emitter_json",
+  "group": "arki_structured_json",
   "method": "int"
  },
  {
   "doc": "",
-  "group": "arki_emitter_json",
+  "group": "arki_structured_json",
   "method": "double"
  },
  {
   "doc": "",
-  "group": "arki_emitter_json",
+  "group": "arki_structured_json",
   "method": "string"
  },
  {
   "doc": "",
-  "group": "arki_emitter_json",
+  "group": "arki_structured_json",
   "method": "list"
  },
  {
   "doc": "",
-  "group": "arki_emitter_json",
+  "group": "arki_structured_json",
   "method": "mapping"
  },
  {

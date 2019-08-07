@@ -1,8 +1,6 @@
 #include "time.h"
 #include "arki/exceptions.h"
 #include "arki/binary.h"
-#include "arki/emitter.h"
-#include "arki/emitter/memory.h"
 #include "arki/utils/lua.h"
 #include "config.h"
 #include <cmath>
@@ -338,34 +336,6 @@ Time Time::decodeString(const std::string& val)
     return Time::create_iso8601(val);
 }
 
-Time Time::decodeMapping(const emitter::memory::Mapping& val)
-{
-    using namespace emitter::memory;
-
-    return decodeList(val["v"].want_list("decoding Time value"));
-}
-
-Time Time::decodeList(const emitter::memory::List& val)
-{
-    using namespace emitter::memory;
-
-    if (val.size() < 6)
-    {
-        stringstream ss;
-        ss << "cannot decode item: list has " << val.size() << " elements instead of 6";
-        throw std::runtime_error(ss.str());
-    }
-
-    Time res;
-    res.ye = val[0].want_int("decoding year component of time value");
-    res.mo = val[1].want_int("decoding month component of time value");
-    res.da = val[2].want_int("decoding day component of time value");
-    res.ho = val[3].want_int("decoding hour component of time value");
-    res.mi = val[4].want_int("decoding minute component of time value");
-    res.se = val[5].want_int("decoding second component of time value");
-    return res;
-}
-
 void Time::encodeWithoutEnvelope(BinaryEncoder& enc) const
 {
     uint32_t a = ((ye & 0x3fff) << 18)
@@ -377,32 +347,6 @@ void Time::encodeWithoutEnvelope(BinaryEncoder& enc) const
                | (se & 0x3f);
     enc.add_unsigned(a, 4);
     enc.add_unsigned(b, 1);
-}
-
-void Time::serialise(Emitter& e) const
-{
-    e.start_mapping();
-    e.add("t", "time");
-    serialiseLocal(e);
-    e.end_mapping();
-}
-
-void Time::serialiseLocal(Emitter& e) const
-{
-    e.add("v");
-    serialiseList(e);
-}
-
-void Time::serialiseList(Emitter& e) const
-{
-    e.start_list();
-    e.add(ye);
-    e.add(mo);
-    e.add(da);
-    e.add(ho);
-    e.add(mi);
-    e.add(se);
-    e.end_list();
 }
 
 int Time::days_in_month(int year, int month)

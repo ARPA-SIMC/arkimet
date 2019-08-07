@@ -1,10 +1,10 @@
-#include "config.h"
-#include <arki/exceptions.h>
-#include <arki/values.h>
-#include <arki/binary.h>
-#include <arki/utils/string.h>
-#include <arki/emitter.h>
-#include <arki/emitter/memory.h>
+#include "arki/libconfig.h"
+#include "arki/exceptions.h"
+#include "arki/values.h"
+#include "arki/binary.h"
+#include "arki/utils/string.h"
+#include "arki/structured/emitter.h"
+#include "arki/structured/memory.h"
 #include <memory>
 #include <cstdlib>
 #include <cctype>
@@ -121,21 +121,21 @@ protected:
 public:
 	Common(const TYPE& val) : m_val(val) {}
 
-	virtual bool operator==(const Value& v) const
-	{
+    bool operator==(const Value& v) const override
+    {
 		const Common<TYPE>* vi = dynamic_cast<const Common<TYPE>*>(&v);
 		if (vi == 0)
 			return false;
 		return m_val == vi->m_val;
-	}
-	virtual bool operator<(const Value& v) const
-	{
+    }
+    bool operator<(const Value& v) const override
+    {
 		const Common<TYPE>* vi = dynamic_cast<const Common<TYPE>*>(&v);
 		if (vi == 0)
 			return false;
 		return m_val < vi->m_val;
-	}
-    virtual std::string toString() const
+    }
+    std::string toString() const override
     {
         stringstream ss;
         ss << m_val;
@@ -147,17 +147,17 @@ struct Integer : public Common<int>
 {
 	Integer(const int& val) : Common<int>(val) {}
 
-	virtual int compare(const Value& v) const
-	{
+    int compare(const Value& v) const override
+    {
 		if (const Integer* v1 = dynamic_cast< const Integer* >(&v))
 			return m_val - v1->m_val;
 		else
 			return sortKey() - v.sortKey();
 	}
 
-	virtual int sortKey() const { return 1; }
+    int sortKey() const override { return 1; }
 
-	int toInt() const { return m_val; }
+    int toInt() const { return m_val; }
 
     void encode(BinaryEncoder& enc) const override
     {
@@ -211,12 +211,12 @@ struct Integer : public Common<int>
 
     static Integer* parse(const std::string& str);
 
-    virtual void serialise(Emitter& e) const
+    void serialise(structured::Emitter& e) const override
     {
         e.add_int(m_val);
     }
 
-	Value* clone() const { return new Integer(m_val); }
+    Value* clone() const override { return new Integer(m_val); }
 };
 
 Integer* Integer::parse(const std::string& str)
@@ -229,10 +229,10 @@ struct String : public Common<std::string>
 {
 	String(const std::string& val) : Common<std::string>(val) {}
 
-	virtual int sortKey() const { return 2; }
+    int sortKey() const override { return 2; }
 
-	virtual int compare(const Value& v) const
-	{
+    int compare(const Value& v) const override
+    {
 		if (const String* v1 = dynamic_cast< const String* >(&v))
 		{
 			if (m_val < v1->m_val) return -1;
@@ -241,7 +241,7 @@ struct String : public Common<std::string>
 		}
 		else
 			return sortKey() - v.sortKey();
-	}
+    }
 
     void encode(BinaryEncoder& enc) const override
     {
@@ -257,8 +257,8 @@ struct String : public Common<std::string>
             throw_consistency_error("encoding short string", "string '"+m_val+"' is too long: the maximum length is 63 characters, but the string is " + to_string(m_val.size()) + " characters long");
     }
 
-	virtual std::string toString() const
-	{
+    std::string toString() const override
+    {
 		int idummy;
 
 		if (parsesAsNumber(m_val, idummy) || needsQuoting(m_val))
@@ -271,12 +271,12 @@ struct String : public Common<std::string>
 		}
 	}
 
-    virtual void serialise(Emitter& e) const
+    void serialise(structured::Emitter& e) const override
     {
         e.add_string(m_val);
     }
 
-	Value* clone() const { return new String(m_val); }
+    Value* clone() const override { return new String(m_val); }
 };
 
 }
@@ -367,16 +367,6 @@ Value* Value::parse(const std::string& str, size_t& lenParsed)
 
 	// Else return the string
 	return new value::String(res);
-}
-
-Value* Value::parse(const emitter::memory::Node& m)
-{
-    if (m.is_int())
-        return create_integer(m.get_int());
-    else if (m.is_string())
-        return create_string(m.get_string());
-    else
-        throw_consistency_error("decoding value", "value is neither integer nor string");
 }
 
 Value* Value::create_integer(int val) { return new value::Integer(val); }
@@ -564,7 +554,7 @@ std::string ValueBag::toString() const
 	return res;
 }
 
-void ValueBag::serialise(Emitter& e) const
+void ValueBag::serialise(structured::Emitter& e) const
 {
     e.start_mapping();
     for (const_iterator i = begin(); i != end(); ++i)
@@ -648,27 +638,16 @@ ValueBag ValueBag::parse(const std::string& str)
 	return res;
 }
 
-ValueBag ValueBag::parse(const emitter::memory::Mapping& m)
-{
-    using namespace emitter::memory;
-
-    ValueBag res;
-    for (std::map<std::string, const Node*>::const_iterator i = m.val.begin();
-            i != m.val.end(); ++i)
-        res.set(i->first, Value::parse(*i->second));
-    return res;
-}
-
-ValueBag ValueBag::parse(const emitter::Reader& reader)
+ValueBag ValueBag::parse(const structured::Reader& reader)
 {
     ValueBag res;
-    reader.items("values", [&](const std::string& key, const emitter::Reader& val) {
+    reader.items("values", [&](const std::string& key, const structured::Reader& val) {
         switch (val.type())
         {
-            case emitter::NodeType::INT:
+            case structured::NodeType::INT:
                 res.set(key, Value::create_integer(val.as_int("int value")));
                 break;
-            case emitter::NodeType::STRING:
+            case structured::NodeType::STRING:
                 res.set(key, Value::create_string(val.as_string("string value")));
                 break;
             default:

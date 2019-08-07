@@ -3,9 +3,9 @@
 #include "arki/types/utils.h"
 #include "arki/binary.h"
 #include "arki/utils/string.h"
-#include "arki/emitter.h"
-#include "arki/emitter/memory.h"
-#include "arki/emitter/keys.h"
+#include "arki/structured/emitter.h"
+#include "arki/structured/memory.h"
+#include "arki/structured/keys.h"
 #include "arki/libconfig.h"
 #include <sstream>
 #include <iomanip>
@@ -170,23 +170,7 @@ unique_ptr<Product> Product::decodeString(const std::string& val)
     }
 }
 
-unique_ptr<Product> Product::decodeMapping(const emitter::memory::Mapping& val)
-{
-    using namespace emitter::memory;
-
-    switch (style_from_mapping(val))
-    {
-        case Style::GRIB1: return upcast<Product>(product::GRIB1::decodeMapping(val));
-        case Style::GRIB2: return upcast<Product>(product::GRIB2::decodeMapping(val));
-        case Style::BUFR: return upcast<Product>(product::BUFR::decodeMapping(val));
-        case Style::ODIMH5: return upcast<Product>(product::ODIMH5::decodeMapping(val));
-        case Style::VM2: return upcast<Product>(product::VM2::decodeMapping(val));
-        default:
-            throw_consistency_error("parsing Product", "unknown Product style " + val.get_string());
-    }
-}
-
-std::unique_ptr<Product> Product::decode_structure(const emitter::Keys& keys, const emitter::Reader& val)
+std::unique_ptr<Product> Product::decode_structure(const structured::Keys& keys, const structured::Reader& val)
 {
     switch (style_from_structure(keys, val))
     {
@@ -321,22 +305,15 @@ std::ostream& GRIB1::writeToOstream(std::ostream& o) const
 	     << setfill(' ')
 	     << ")";
 }
-void GRIB1::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
+void GRIB1::serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f) const
 {
     Product::serialise_local(e, keys, f);
     e.add(keys.product_origin, m_origin);
     e.add(keys.product_table, m_table);
     e.add(keys.product_product, m_product);
 }
-unique_ptr<GRIB1> GRIB1::decodeMapping(const emitter::memory::Mapping& val)
-{
-    return GRIB1::create(
-            val["or"].want_int("parsing GRIB1 origin origin"),
-            val["ta"].want_int("parsing GRIB1 origin table"),
-            val["pr"].want_int("parsing GRIB1 origin product"));
-}
 
-std::unique_ptr<GRIB1> GRIB1::decode_structure(const emitter::Keys& keys, const emitter::Reader& val)
+std::unique_ptr<GRIB1> GRIB1::decode_structure(const structured::Keys& keys, const structured::Reader& val)
 {
     return GRIB1::create(
             val.as_int(keys.product_origin, "product origin"),
@@ -451,7 +428,7 @@ std::ostream& GRIB2::writeToOstream(std::ostream& o) const
       << ")";
     return o;
 }
-void GRIB2::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
+void GRIB2::serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f) const
 {
     Product::serialise_local(e, keys, f);
     e.add(keys.product_centre, m_centre);
@@ -461,28 +438,14 @@ void GRIB2::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatt
     e.add(keys.product_table_version, m_table_version);
     e.add(keys.product_local_table_version, m_local_table_version);
 }
-unique_ptr<GRIB2> GRIB2::decodeMapping(const emitter::memory::Mapping& val)
-{
-    using namespace emitter::memory;
-    const Node& tv = val["tv"];
-    const Node& ltv = val["ltv"];
-    return GRIB2::create(
-            val["ce"].want_int("parsing GRIB2 origin centre"),
-            val["di"].want_int("parsing GRIB2 origin discipline"),
-            val["ca"].want_int("parsing GRIB2 origin category"),
-            val["no"].want_int("parsing GRIB2 origin number"),
-            tv.is_null() ? 4 : tv.want_int("parsing GRIB2 table version"),
-            ltv.is_null() ? 255 : ltv.want_int("parsing GRIB2 local table version")
-            );
-}
 
-std::unique_ptr<GRIB2> GRIB2::decode_structure(const emitter::Keys& keys, const emitter::Reader& val)
+std::unique_ptr<GRIB2> GRIB2::decode_structure(const structured::Keys& keys, const structured::Reader& val)
 {
     int tv = 4;
     int ltv = 255;
-    if (val.has_key(keys.product_table_version, emitter::NodeType::INT))
+    if (val.has_key(keys.product_table_version, structured::NodeType::INT))
         tv = val.as_int(keys.product_table_version, "product table version");
-    if (val.has_key(keys.product_local_table_version, emitter::NodeType::INT))
+    if (val.has_key(keys.product_local_table_version, structured::NodeType::INT))
         ltv = val.as_int(keys.product_local_table_version, "product local table version");
     return GRIB2::create(
             val.as_int(keys.product_centre, "product centre"),
@@ -619,7 +582,7 @@ std::ostream& BUFR::writeToOstream(std::ostream& o) const
 		o << ", " << m_values << ")";
 	return o;
 }
-void BUFR::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
+void BUFR::serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f) const
 {
     Product::serialise_local(e, keys, f);
     e.add(keys.product_type, m_type);
@@ -631,29 +594,13 @@ void BUFR::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatte
         m_values.serialise(e);
     }
 }
-unique_ptr<BUFR> BUFR::decodeMapping(const emitter::memory::Mapping& val)
-{
-    using namespace emitter::memory;
-    const Node& va = val["va"];
-    if (va.is_mapping())
-        return BUFR::create(
-                val["ty"].want_int("parsing BUFR product type"),
-                val["st"].want_int("parsing BUFR product subtype"),
-                val["ls"].want_int("parsing BUFR product localsubtype"),
-                ValueBag::parse(va.get_mapping()));
-    else
-        return BUFR::create(
-                val["ty"].want_int("parsing BUFR product type"),
-                val["st"].want_int("parsing BUFR product subtype"),
-                val["ls"].want_int("parsing BUFR product localsubtype"));
-}
 
-std::unique_ptr<BUFR> BUFR::decode_structure(const emitter::Keys& keys, const emitter::Reader& val)
+std::unique_ptr<BUFR> BUFR::decode_structure(const structured::Keys& keys, const structured::Reader& val)
 {
-    if (val.has_key(keys.product_value, emitter::NodeType::MAPPING))
+    if (val.has_key(keys.product_value, structured::NodeType::MAPPING))
     {
         ValueBag values;
-        val.sub(keys.product_value, "product value", [&](const emitter::Reader& value) {
+        val.sub(keys.product_value, "product value", [&](const structured::Reader& value) {
             values = ValueBag::parse(value);
         });
         return BUFR::create(
@@ -810,22 +757,14 @@ std::ostream& ODIMH5::writeToOstream(std::ostream& o) const
 		;
 }
 
-void ODIMH5::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
+void ODIMH5::serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f) const
 {
     Product::serialise_local(e, keys, f);
     e.add(keys.product_object, m_obj);
     e.add(keys.product_product, m_prod);
 }
 
-unique_ptr<ODIMH5> ODIMH5::decodeMapping(const emitter::memory::Mapping& val)
-{
-    using namespace emitter::memory;
-    return ODIMH5::create(
-            val["ob"].want_string("parsing ODIMH5 product object"),
-            val["pr"].want_string("parsing ODIMH5 product name"));
-}
-
-std::unique_ptr<ODIMH5> ODIMH5::decode_structure(const emitter::Keys& keys, const emitter::Reader& val)
+std::unique_ptr<ODIMH5> ODIMH5::decode_structure(const structured::Keys& keys, const structured::Reader& val)
 {
     return ODIMH5::create(
             val.as_string(keys.product_object, "product object"),
@@ -954,7 +893,7 @@ std::ostream& VM2::writeToOstream(std::ostream& o) const
         o << ", " << derived_values().toString();
     return o << ")";
 }
-void VM2::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
+void VM2::serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f) const
 {
     Product::serialise_local(e, keys, f);
     e.add(keys.product_id, m_variable_id);
@@ -1020,12 +959,8 @@ unique_ptr<VM2> VM2::create(unsigned variable_id)
     res->m_variable_id = variable_id;
     return unique_ptr<VM2>(res);
 }
-unique_ptr<VM2> VM2::decodeMapping(const emitter::memory::Mapping& val)
-{
-    return VM2::create(val["id"].want_int("parsing VM2 variable id"));
-}
 
-std::unique_ptr<VM2> VM2::decode_structure(const emitter::Keys& keys, const emitter::Reader& val)
+std::unique_ptr<VM2> VM2::decode_structure(const structured::Keys& keys, const structured::Reader& val)
 {
     return VM2::create(val.as_int(keys.product_id, "product id"));
 }

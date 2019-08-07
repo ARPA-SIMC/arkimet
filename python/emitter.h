@@ -1,14 +1,14 @@
 #ifndef ARKI_PYTHON_EMITTER_H
 #define ARKI_PYTHON_EMITTER_H
 
-#include <arki/emitter.h>
-#include <arki/emitter/structure.h>
+#include <arki/structured/emitter.h>
+#include <arki/structured/reader.h>
 #include "utils/core.h"
 
 namespace arki {
 namespace python {
 
-struct PythonEmitter : public Emitter
+struct PythonEmitter : public structured::Emitter
 {
     struct Target
     {
@@ -54,7 +54,7 @@ struct PythonEmitter : public Emitter
 };
 
 
-struct PythonReader : public emitter::Reader
+struct PythonReader : public structured::Reader
 {
 protected:
     PyObject* o;
@@ -97,7 +97,8 @@ public:
     {
         Py_DECREF(o);
     }
-    emitter::NodeType type() const override;
+    structured::NodeType type() const override;
+    std::string repr() const override;
 
     bool as_bool(const char* desc) const override;
     long long int as_int(const char* desc) const override;
@@ -111,7 +112,7 @@ public:
     std::string as_string(unsigned idx, const char* desc) const override;
     void sub(unsigned idx, const char* desc, std::function<void(const Reader&)>) const override;
 
-    bool has_key(const std::string& key, emitter::NodeType type) const override;
+    bool has_key(const std::string& key, structured::NodeType type) const override;
     bool as_bool(const std::string& key, const char* desc) const override;
     long long int as_int(const std::string& key, const char* desc) const override;
     double as_double(const std::string& key, const char* desc) const override;

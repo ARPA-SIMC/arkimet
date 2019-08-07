@@ -2,9 +2,9 @@
 #include "utils.h"
 #include "arki/exceptions.h"
 #include "arki/binary.h"
-#include "arki/emitter.h"
-#include "arki/emitter/memory.h"
-#include "arki/emitter/keys.h"
+#include "arki/structured/emitter.h"
+#include "arki/structured/memory.h"
+#include "arki/structured/keys.h"
 #include "arki/utils/lua.h"
 #include "config.h"
 #include <sstream>
@@ -76,20 +76,13 @@ std::ostream& Note::writeToOstream(std::ostream& o) const
 	return o << "[" << time << "]" << content;
 }
 
-void Note::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
+void Note::serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f) const
 {
-    e.add(keys.note_time); time.serialiseList(e);
+    e.add(keys.note_time); e.add(time);
     e.add(keys.note_value, content);
 }
 
-unique_ptr<Note> Note::decodeMapping(const emitter::memory::Mapping& val)
-{
-    return Note::create(
-            Time::decodeList(val["ti"].want_list("parsing Note time")),
-            val["va"].want_string("parsing Note content"));
-}
-
-std::unique_ptr<Note> Note::decode_structure(const emitter::Keys& keys, const emitter::Reader& val)
+std::unique_ptr<Note> Note::decode_structure(const structured::Keys& keys, const structured::Reader& val)
 {
     return Note::create(
             val.as_time(keys.note_time, "Note time"),

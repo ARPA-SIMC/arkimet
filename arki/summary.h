@@ -4,7 +4,7 @@
 #include <arki/core/fwd.h>
 #include <arki/types/fwd.h>
 #include <arki/metadata/fwd.h>
-#include <arki/emitter/fwd.h>
+#include <arki/structured/fwd.h>
 #include <arki/matcher/fwd.h>
 #include <arki/types/itemset.h>
 #include <arki/utils/geosfwd.h>
@@ -133,7 +133,7 @@ public:
     void read_inner(BinaryDecoder& dec, unsigned version, const std::string& filename);
 
     /// Decode from structured data
-	void read(const emitter::memory::Mapping& val);
+    void read(const structured::Keys& keys, const structured::Reader& val);
 
 	/**
 	 * Read data from the given file
@@ -190,7 +190,7 @@ public:
     void write_yaml(core::AbstractOutputFile& out, const Formatter* f=nullptr) const;
 
     /// Serialise using an emitter
-    void serialise(Emitter& e, const emitter::Keys& keys, const Formatter* f=0) const;
+    void serialise(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const;
 
     /**
      * Encode to a string

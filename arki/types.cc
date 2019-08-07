@@ -5,10 +5,10 @@
 #include "binary.h"
 #include "utils/sys.h"
 #include "utils/string.h"
-#include "emitter.h"
-#include "emitter/keys.h"
-#include "emitter/memory.h"
-#include "emitter/structure.h"
+#include "structured/emitter.h"
+#include "structured/keys.h"
+#include "structured/memory.h"
+#include "structured/reader.h"
 #include "formatter.h"
 #include <cstring>
 #include <unistd.h>
@@ -135,7 +135,7 @@ std::vector<uint8_t> Type::encodeBinary() const
     return contents;
 }
 
-void Type::serialise(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
+void Type::serialise(structured::Emitter& e, const structured::Keys& keys, const Formatter* f) const
 {
     e.start_mapping();
     e.add(keys.type_name, tag());
@@ -311,26 +311,13 @@ unique_ptr<Type> decodeString(types::Code code, const std::string& val)
 	return types::MetadataType::get(code)->string_decode_func(val);
 }
 
-unique_ptr<Type> decodeMapping(const emitter::memory::Mapping& m)
-{
-    using namespace emitter::memory;
-    const std::string& type = m["t"].want_string("decoding item type");
-    return decodeMapping(parseCodeName(type), m);
-}
-
-unique_ptr<Type> decodeMapping(types::Code code, const emitter::memory::Mapping& m)
-{
-    using namespace emitter::memory;
-    return types::MetadataType::get(code)->mapping_decode_func(m);
-}
-
-std::unique_ptr<Type> decode_structure(const emitter::Keys& keys, const emitter::Reader& reader)
+std::unique_ptr<Type> decode_structure(const structured::Keys& keys, const structured::Reader& reader)
 {
     const std::string& type = reader.as_string(keys.type_name, "item type");
     return decode_structure(keys, parseCodeName(type), reader);
 }
 
-std::unique_ptr<Type> decode_structure(const emitter::Keys& keys, types::Code code, const emitter::Reader& reader)
+std::unique_ptr<Type> decode_structure(const structured::Keys& keys, types::Code code, const structured::Reader& reader)
 {
     return types::MetadataType::get(code)->structure_decode_func(keys, reader);
 }

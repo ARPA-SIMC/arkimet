@@ -9,8 +9,8 @@
 #include "metadata.h"
 #include "arki/summary.h"
 #include "arki/summary/short.h"
-#include "arki/emitter/json.h"
-#include "arki/emitter/keys.h"
+#include "arki/structured/json.h"
+#include "arki/structured/keys.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/geos.h"
 #include <sstream>
@@ -131,8 +131,8 @@ Arguments:
                 return nullptr;
             } else if (strcmp(format, "json") == 0) {
                 std::stringstream buf;
-                arki::emitter::JSON output(buf);
-                self->summary->serialise(output, emitter::keys_json);
+                arki::structured::JSON output(buf);
+                self->summary->serialise(output, structured::keys_json);
                 if (out.fd)
                     out.fd->write_all_or_retry(buf.str());
                 else
@@ -187,8 +187,8 @@ Arguments:
                 return nullptr;
             } else if (strcmp(format, "json") == 0) {
                 std::stringstream buf;
-                arki::emitter::JSON output(buf);
-                shrt.serialise(output, emitter::keys_python);
+                arki::structured::JSON output(buf);
+                shrt.serialise(output, structured::keys_python);
                 if (out.fd)
                     out.fd->write_all_or_retry(buf.str().data(), buf.str().size());
                 else
@@ -221,7 +221,7 @@ Arguments:
     {
         try {
             PythonEmitter e;
-            self->summary->serialise(e, emitter::keys_python);
+            self->summary->serialise(e, structured::keys_python);
             return e.release();
         } ARKI_CATCH_RETURN_PYO
     }

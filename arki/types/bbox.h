@@ -56,8 +56,7 @@ struct BBox : public types::StyledType<BBox>
     /// CODEC functions
     static std::unique_ptr<BBox> decode(BinaryDecoder& dec);
     static std::unique_ptr<BBox> decodeString(const std::string& val);
-    static std::unique_ptr<BBox> decodeMapping(const emitter::memory::Mapping& val);
-    static std::unique_ptr<BBox> decode_structure(const emitter::Keys& keys, const emitter::Reader& val);
+    static std::unique_ptr<BBox> decode_structure(const structured::Keys& keys, const structured::Reader& val);
 
     // Register this type tree with the type system
     static void init();

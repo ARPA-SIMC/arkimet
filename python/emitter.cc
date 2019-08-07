@@ -115,22 +115,34 @@ void PythonEmitter::add_string(const std::string& val)
 }
 
 
-emitter::NodeType PythonReader::type() const
+structured::NodeType PythonReader::type() const
 {
     if (o == Py_None)
-        return emitter::NodeType::NONE;
+        return structured::NodeType::NONE;
     if (PyBool_Check(o))
-        return emitter::NodeType::BOOL;
+        return structured::NodeType::BOOL;
     if (PyLong_Check(o))
-        return emitter::NodeType::INT;
+        return structured::NodeType::INT;
     if (PyUnicode_Check(o))
-        return emitter::NodeType::STRING;
+        return structured::NodeType::STRING;
     if (PyMapping_Check(o))
-        return emitter::NodeType::MAPPING;
+        return structured::NodeType::MAPPING;
     if (PySequence_Check(o))
-        return emitter::NodeType::LIST;
-    // TODO: add a repr
-    throw std::invalid_argument("python object cannot be understood");
+        return structured::NodeType::LIST;
+    throw std::invalid_argument("python object " + repr() + " cannot be understood");
+}
+
+std::string PythonReader::repr() const
+{
+    py_unique_ptr<PyObject> py_repr(PyObject_Repr(o));
+    if (!py_repr)
+    {
+        PyErr_Clear();
+        return "(python repr failed)";
+    }
+    Py_ssize_t size;
+    const char* res = PyUnicode_AsUTF8AndSize(py_repr, &size);
+    return std::string(res, size);
 }
 
 bool PythonReader::as_bool(const char* desc) const
@@ -199,7 +211,7 @@ void PythonReader::sub(unsigned idx, const char* desc, std::function<void(const 
 }
 
 
-bool PythonReader::has_key(const std::string& key, emitter::NodeType type) const
+bool PythonReader::has_key(const std::string& key, structured::NodeType type) const
 {
     int res = PyMapping_HasKeyString(o, key.c_str());
     return res == 1;

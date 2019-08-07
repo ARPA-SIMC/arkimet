@@ -3,7 +3,6 @@
 
 #include <vector>
 #include <string>
-#include <arki/emitter/fwd.h>
 
 struct lua_State;
 
@@ -181,11 +180,6 @@ public:
     void encodeWithoutEnvelope(BinaryEncoder& enc) const;
     static Time decode(BinaryDecoder& dec);
     static Time decodeString(const std::string& val);
-    static Time decodeMapping(const emitter::memory::Mapping& val);
-    static Time decodeList(const emitter::memory::List& val);
-    void serialise(Emitter& e) const;
-    void serialiseLocal(Emitter& e) const;
-    void serialiseList(Emitter& e) const;
 
     /**
      * Generate a sequence of Position reftime values.

@@ -2,9 +2,9 @@
 #include "arki/types/task.h"
 #include "arki/types/utils.h"
 #include "arki/binary.h"
-#include "arki/emitter.h"
-#include "arki/emitter/memory.h"
-#include "arki/emitter/keys.h"
+#include "arki/structured/emitter.h"
+#include "arki/structured/memory.h"
+#include "arki/structured/keys.h"
 #include "arki/libconfig.h"
 #include <sstream>
 #include <cmath>
@@ -68,17 +68,12 @@ std::ostream& Task::writeToOstream(std::ostream& o) const
 	return o << task;
 }
 
-void Task::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
+void Task::serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f) const
 {
     e.add(keys.task_value, task);
 }
 
-unique_ptr<Task> Task::decodeMapping(const emitter::memory::Mapping& val)
-{
-    return Task::create(val["va"].want_string("parsing Task value"));
-}
-
-std::unique_ptr<Task> Task::decode_structure(const emitter::Keys& keys, const emitter::Reader& val)
+std::unique_ptr<Task> Task::decode_structure(const structured::Keys& keys, const structured::Reader& val)
 {
     return Task::create(val.as_string(keys.task_value, "Task value"));
 }

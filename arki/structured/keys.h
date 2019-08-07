@@ -1,8 +1,8 @@
-#ifndef ARKI_EMITTER_KEYS_H
-#define ARKI_EMITTER_KEYS_H
+#ifndef ARKI_STRUCTURED_KEYS_H
+#define ARKI_STRUCTURED_KEYS_H
 
 namespace arki {
-namespace emitter {
+namespace structured {
 
 struct Keys
 {
@@ -80,6 +80,10 @@ struct Keys
     const char* summary_items;
     const char* summary_stats;
     const char* summary_desc;
+    const char* summarystats_begin;
+    const char* summarystats_end;
+    const char* summarystats_count;
+    const char* summarystats_size;
 };
 
 extern const Keys keys_json;

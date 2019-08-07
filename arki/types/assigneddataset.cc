@@ -2,9 +2,9 @@
 #include "arki/types/assigneddataset.h"
 #include "arki/types/utils.h"
 #include "arki/binary.h"
-#include "arki/emitter.h"
-#include "arki/emitter/memory.h"
-#include "arki/emitter/keys.h"
+#include "arki/structured/emitter.h"
+#include "arki/structured/memory.h"
+#include "arki/structured/keys.h"
 #include "arki/libconfig.h"
 #include <sstream>
 #include <cmath>
@@ -69,22 +69,14 @@ std::ostream& AssignedDataset::writeToOstream(std::ostream& o) const
 	return o << name << " as " << id << " imported on " << changed;
 }
 
-void AssignedDataset::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
+void AssignedDataset::serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f) const
 {
-    e.add(keys.assigneddataset_time); changed.serialiseList(e);
+    e.add(keys.assigneddataset_time); e.add(changed);
     e.add(keys.assigneddataset_name, name);
     e.add(keys.assigneddataset_id, id);
 }
 
-unique_ptr<AssignedDataset> AssignedDataset::decodeMapping(const emitter::memory::Mapping& val)
-{
-    return AssignedDataset::create(
-            Time::decodeList(val["ti"].want_list("parsing AssignedDataset time")),
-            val["na"].want_string("parsing AssignedDataset name"),
-            val["id"].want_string("parsing AssignedDataset id"));
-}
-
-std::unique_ptr<AssignedDataset> AssignedDataset::decode_structure(const emitter::Keys& keys, const emitter::Reader& val)
+std::unique_ptr<AssignedDataset> AssignedDataset::decode_structure(const structured::Keys& keys, const structured::Reader& val)
 {
     return AssignedDataset::create(
             val.as_time(keys.assigneddataset_time, "AssignedDataset time"),

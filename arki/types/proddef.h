@@ -46,8 +46,7 @@ struct Proddef : public types::StyledType<Proddef>
     /// CODEC functions
     static std::unique_ptr<Proddef> decode(BinaryDecoder& dec);
     static std::unique_ptr<Proddef> decodeString(const std::string& val);
-    static std::unique_ptr<Proddef> decodeMapping(const emitter::memory::Mapping& val);
-    static std::unique_ptr<Proddef> decode_structure(const emitter::Keys& keys, const emitter::Reader& val);
+    static std::unique_ptr<Proddef> decode_structure(const structured::Keys& keys, const structured::Reader& val);
 
 	static void lua_loadlib(lua_State* L);
 
@@ -75,7 +74,7 @@ public:
     Style style() const override;
     void encodeWithoutEnvelope(BinaryEncoder& enc) const override;
     std::ostream& writeToOstream(std::ostream& o) const override;
-    void serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f=0) const override;
+    void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
     std::string exactQuery() const override;
     const char* lua_type_name() const override;
     bool lua_lookup(lua_State* L, const std::string& name) const override;
@@ -85,8 +84,7 @@ public:
 
     GRIB* clone() const override;
     static std::unique_ptr<GRIB> create(const ValueBag& values);
-    static std::unique_ptr<GRIB> decodeMapping(const emitter::memory::Mapping& val);
-    static std::unique_ptr<GRIB> decode_structure(const emitter::Keys& keys, const emitter::Reader& val);
+    static std::unique_ptr<GRIB> decode_structure(const structured::Keys& keys, const structured::Reader& val);
 };
 
 }

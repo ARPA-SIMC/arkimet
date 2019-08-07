@@ -1,9 +1,9 @@
 #include "inline.h"
 #include "arki/binary.h"
 #include "arki/utils/lua.h"
-#include "arki/emitter.h"
-#include "arki/emitter/memory.h"
-#include "arki/emitter/keys.h"
+#include "arki/structured/emitter.h"
+#include "arki/structured/memory.h"
+#include "arki/structured/keys.h"
 #include "arki/exceptions.h"
 
 using namespace std;
@@ -27,18 +27,13 @@ std::ostream& Inline::writeToOstream(std::ostream& o) const
              << format << "," << size
              << ")";
 }
-void Inline::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
+void Inline::serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f) const
 {
     Source::serialise_local(e, keys, f);
     e.add(keys.source_size, size);
 }
-std::unique_ptr<Inline> Inline::decodeMapping(const emitter::memory::Mapping& val)
-{
-    return Inline::create(
-            val["f"].want_string("parsing inline source format"),
-            val["sz"].want_int("parsing inline source size"));
-}
-std::unique_ptr<Inline> Inline::decode_structure(const emitter::Keys& keys, const emitter::Reader& reader)
+
+std::unique_ptr<Inline> Inline::decode_structure(const structured::Keys& keys, const structured::Reader& reader)
 {
     return Inline::create(
             reader.as_string(keys.source_format, "source format"),

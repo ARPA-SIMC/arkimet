@@ -5,7 +5,8 @@
 #include "arki/matcher.h"
 #include "arki/matcher/utils.h"
 #include "arki/types/utils.h"
-#include "arki/emitter/memory.h"
+#include "arki/structured/keys.h"
+#include "arki/structured/reader.h"
 #include "arki/summary.h"
 #include "arki/utils/yaml.h"
 #include <system_error>
@@ -212,21 +213,25 @@ void Table::merge(const std::vector<const types::Type*>& md, const Stats& st, co
     merge(new_row);
 }
 
-void Table::merge(const emitter::memory::Mapping& m)
+void Table::merge(const structured::Keys& keys, const structured::Reader& val)
 {
-    using namespace emitter::memory;
+    using namespace structured::memory;
 
-    unique_ptr<summary::Stats> stats = summary::Stats::decodeMapping(
-            m["summarystats"].want_mapping("parsing summary item stats"));
+    unique_ptr<summary::Stats> stats;
+    val.sub(keys.summary_stats, "summary stats", [&](const structured::Reader& summarystats) {
+        stats = summary::Stats::decode_structure(keys, summarystats);
+    });
     Row new_row(*stats);
     new_row.set_to_zero();
 
     for (size_t pos = 0; pos < msoSize; ++pos)
     {
         types::Code code = summary::Visitor::codeForPos(pos);
-        const Node& n = m[types::tag(code)];
-        if (n.is_mapping())
-            new_row.items[pos] = interns[pos].intern(types::decodeMapping(code, n.get_mapping()));
+        if (!val.has_key(types::tag(code), structured::NodeType::MAPPING))
+            continue;
+        val.sub(types::tag(code), "summary item", [&](const structured::Reader& item) {
+            new_row.items[pos] = interns[pos].intern(types::decode_structure(keys, code, item));
+        });
     }
 
     merge(new_row);

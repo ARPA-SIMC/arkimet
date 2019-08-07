@@ -10,9 +10,9 @@
 #include "formatter.h"
 #include "binary.h"
 #include "utils/compress.h"
-#include "emitter.h"
-#include "emitter/memory.h"
-#include "emitter/keys.h"
+#include "structured/emitter.h"
+#include "structured/memory.h"
+#include "structured/keys.h"
 #include "iotrace.h"
 #include "scan.h"
 #include "utils/string.h"
@@ -500,7 +500,7 @@ void Metadata::write_yaml(core::AbstractOutputFile& out, const Formatter* format
     out.write(yaml.data(), yaml.size());
 }
 
-void Metadata::serialise(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
+void Metadata::serialise(structured::Emitter& e, const structured::Keys& keys, const Formatter* f) const
 {
     e.start_mapping();
     e.add(keys.metadata_items);
@@ -532,29 +532,31 @@ void Metadata::serialise(Emitter& e, const emitter::Keys& keys, const Formatter*
     }
 }
 
-void Metadata::read(const emitter::memory::Mapping& val)
+void Metadata::read(const structured::Keys& keys, const structured::Reader& val)
 {
-    using namespace emitter::memory;
-
     // Parse items
-    const List& items = val["i"].want_list("parsing metadata item list");
-    for (std::vector<const Node*>::const_iterator i = items.val.begin(); i != items.val.end(); ++i)
-    {
-        unique_ptr<types::Type> item = types::decodeMapping((*i)->want_mapping("parsing metadata item"));
-        if (item->type_code() == TYPE_SOURCE)
-            set_source(move(downcast<types::Source>(move(item))));
-        else
-            set(move(item));
-    }
+    val.sub(keys.metadata_items, "metadata items", [&](const structured::Reader& items) {
+        unsigned size = items.list_size("metadata items");
+        for (unsigned idx = 0; idx < size; ++idx)
+        {
+            unique_ptr<types::Type> item = items.as_type(idx, "metadata item", keys);
+            if (item->type_code() == TYPE_SOURCE)
+                set_source(move(downcast<types::Source>(move(item))));
+            else
+                set(move(item));
+        }
+    });
 
     // Parse notes
-    const List& notes = val["n"].want_list("parsing metadata notes list");
-    for (std::vector<const Node*>::const_iterator i = notes.val.begin(); i != notes.val.end(); ++i)
-    {
-        unique_ptr<types::Type> item = types::decodeMapping((*i)->want_mapping("parsing metadata item"));
-        if (item->type_code() == TYPE_NOTE)
-            add_note(*downcast<types::Note>(move(item)));
-    }
+    val.sub(keys.metadata_notes, "metadata notes", [&](const structured::Reader& notes) {
+        unsigned size = notes.list_size("metadata notes");
+        for (unsigned idx = 0; idx < size; ++idx)
+        {
+            unique_ptr<types::Type> item = notes.as_type(idx, "metadata note", keys);
+            if (item->type_code() == TYPE_NOTE)
+                add_note(*downcast<types::Note>(move(item)));
+        }
+    });
 }
 
 std::vector<uint8_t> Metadata::encodeBinary() const

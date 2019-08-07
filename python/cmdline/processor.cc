@@ -5,8 +5,8 @@
 #include "arki/formatter.h"
 #include "arki/dataset.h"
 #include "arki/dataset/index/base.h"
-#include "arki/emitter/json.h"
-#include "arki/emitter/keys.h"
+#include "arki/structured/json.h"
+#include "arki/structured/keys.h"
 #include "arki/summary.h"
 #include "arki/summary/short.h"
 #include "arki/sort.h"
@@ -187,8 +187,8 @@ struct SummaryShortProcessor : public DatasetProcessor
         stringstream ss;
         if (json)
         {
-            emitter::JSON json(ss);
-            c.serialise(json, emitter::keys_json, formatter.get());
+            structured::JSON json(ss);
+            c.serialise(json, structured::keys_json, formatter.get());
         }
         else
             c.write_yaml(ss, formatter.get());
@@ -257,8 +257,8 @@ std::unique_ptr<DatasetProcessor> ProcessorMaker::make_summary(Matcher matcher, 
         if (json)
             printer = [out, formatter](const Summary& s) {
                 stringstream ss;
-                emitter::JSON json(ss);
-                s.serialise(json, emitter::keys_json, formatter.get());
+                structured::JSON json(ss);
+                s.serialise(json, structured::keys_json, formatter.get());
                 string res = ss.str();
                 do_output(*out, ss.str());
             };
@@ -291,8 +291,8 @@ std::unique_ptr<DatasetProcessor> ProcessorMaker::make_metadata(Matcher matcher,
     else if (json)
         printer = [out, formatter](const arki::Metadata& md) {
             stringstream ss;
-            arki::emitter::JSON json(ss);
-            md.serialise(json, emitter::keys_json, formatter.get());
+            arki::structured::JSON json(ss);
+            md.serialise(json, structured::keys_json, formatter.get());
             do_output(*out, ss.str());
         };
     else

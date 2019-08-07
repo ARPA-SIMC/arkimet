@@ -4,9 +4,9 @@
 #include "arki/binary.h"
 #include "arki/utils/geos.h"
 #include "arki/utils/string.h"
-#include "arki/emitter.h"
-#include "arki/emitter/memory.h"
-#include "arki/emitter/keys.h"
+#include "arki/structured/emitter.h"
+#include "arki/structured/memory.h"
+#include "arki/structured/keys.h"
 #include "arki/bbox.h"
 #include "arki/libconfig.h"
 #include <sstream>
@@ -111,21 +111,7 @@ unique_ptr<Area> Area::decodeString(const std::string& val)
     }
 }
 
-unique_ptr<Area> Area::decodeMapping(const emitter::memory::Mapping& val)
-{
-    using namespace emitter::memory;
-
-    switch (style_from_mapping(val))
-    {
-        case Style::GRIB: return upcast<Area>(area::GRIB::decodeMapping(val));
-        case Style::ODIMH5: return upcast<Area>(area::ODIMH5::decodeMapping(val));
-        case Style::VM2: return upcast<Area>(area::VM2::decodeMapping(val));
-        default:
-            throw_consistency_error("parsing Area", "unknown Area style " + val.get_string());
-    }
-}
-
-std::unique_ptr<Area> Area::decode_structure(const emitter::Keys& keys, const emitter::Reader& val)
+std::unique_ptr<Area> Area::decode_structure(const structured::Keys& keys, const structured::Reader& val)
 {
     switch (style_from_structure(keys, val))
     {
@@ -202,20 +188,17 @@ std::ostream& GRIB::writeToOstream(std::ostream& o) const
 {
     return o << formatStyle(style()) << "(" << m_values.toString() << ")";
 }
-void GRIB::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
+void GRIB::serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f) const
 {
     Area::serialise_local(e, keys, f);
     e.add(keys.area_value);
     m_values.serialise(e);
 }
-unique_ptr<GRIB> GRIB::decodeMapping(const emitter::memory::Mapping& val)
-{
-    return GRIB::create(ValueBag::parse(val["va"].get_mapping()));
-}
-std::unique_ptr<GRIB> GRIB::decode_structure(const emitter::Keys& keys, const emitter::Reader& val)
+
+std::unique_ptr<GRIB> GRIB::decode_structure(const structured::Keys& keys, const structured::Reader& val)
 {
     std::unique_ptr<GRIB> res;
-    val.sub(keys.area_value, "area value", [&](const emitter::Reader& reader) {
+    val.sub(keys.area_value, "area value", [&](const structured::Reader& reader) {
         res = GRIB::create(ValueBag::parse(reader));
     });
     return res;
@@ -285,20 +268,17 @@ std::ostream& ODIMH5::writeToOstream(std::ostream& o) const
 {
     return o << formatStyle(style()) << "(" << m_values.toString() << ")";
 }
-void ODIMH5::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
+void ODIMH5::serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f) const
 {
     Area::serialise_local(e, keys, f);
     e.add(keys.area_value);
     m_values.serialise(e);
 }
-unique_ptr<ODIMH5> ODIMH5::decodeMapping(const emitter::memory::Mapping& val)
-{
-    return ODIMH5::create(ValueBag::parse(val["va"].get_mapping()));
-}
-std::unique_ptr<ODIMH5> ODIMH5::decode_structure(const emitter::Keys& keys, const emitter::Reader& val)
+
+std::unique_ptr<ODIMH5> ODIMH5::decode_structure(const structured::Keys& keys, const structured::Reader& val)
 {
     std::unique_ptr<ODIMH5> res;
-    val.sub(keys.area_value, "area value", [&](const emitter::Reader& reader) {
+    val.sub(keys.area_value, "area value", [&](const structured::Reader& reader) {
         res = ODIMH5::create(ValueBag::parse(reader));
     });
     return res;
@@ -390,7 +370,7 @@ std::ostream& VM2::writeToOstream(std::ostream& o) const
         o << "," << derived_values().toString();
     return o << ")";
 }
-void VM2::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
+void VM2::serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f) const
 {
     Area::serialise_local(e, keys, f);
     e.add(keys.area_id, m_station_id);
@@ -458,11 +438,8 @@ unique_ptr<VM2> VM2::create(unsigned station_id)
     res->m_station_id = station_id;
     return unique_ptr<VM2>(res);
 }
-unique_ptr<VM2> VM2::decodeMapping(const emitter::memory::Mapping& val)
-{
-    return VM2::create(val["id"].want_int("parsing VM2 area station id"));
-}
-std::unique_ptr<VM2> VM2::decode_structure(const emitter::Keys& keys, const emitter::Reader& val)
+
+std::unique_ptr<VM2> VM2::decode_structure(const structured::Keys& keys, const structured::Reader& val)
 {
     return VM2::create(val.as_int(keys.area_id, "vm2 id"));
 }

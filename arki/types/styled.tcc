@@ -3,8 +3,8 @@
 
 #include "arki/types/styled.h"
 #include "arki/binary.h"
-#include "arki/emitter/memory.h"
-#include "arki/emitter/keys.h"
+#include "arki/structured/memory.h"
+#include "arki/structured/keys.h"
 #include "arki/libconfig.h"
 #ifdef HAVE_LUA
 #include "arki/utils/lua.h"
@@ -38,19 +38,13 @@ int StyledType<BASE>::compare(const Type& o) const
 }
 
 template<typename BASE>
-void StyledType<BASE>::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
+void StyledType<BASE>::serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f) const
 {
     e.add(keys.type_style, BASE::formatStyle(style()));
 }
 
 template<typename BASE>
-typename StyledType<BASE>::Style StyledType<BASE>::style_from_mapping(const emitter::memory::Mapping& m)
-{
-    return BASE::parseStyle(m["s"].want_string("decoding Source style"));
-}
-
-template<typename BASE>
-typename StyledType<BASE>::Style StyledType<BASE>::style_from_structure(const emitter::Keys& keys, const emitter::Reader& reader)
+typename StyledType<BASE>::Style StyledType<BASE>::style_from_structure(const structured::Keys& keys, const structured::Reader& reader)
 {
     return BASE::parseStyle(reader.as_string(keys.type_style, "type style"));
 }

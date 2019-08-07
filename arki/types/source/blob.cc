@@ -5,9 +5,9 @@
 #include "arki/utils/lua.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
-#include "arki/emitter.h"
-#include "arki/emitter/memory.h"
-#include "arki/emitter/keys.h"
+#include "arki/structured/emitter.h"
+#include "arki/structured/memory.h"
+#include "arki/structured/keys.h"
 #include "arki/exceptions.h"
 
 using namespace std;
@@ -36,7 +36,7 @@ std::ostream& Blob::writeToOstream(std::ostream& o) const
              << ")";
 }
 
-void Blob::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
+void Blob::serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f) const
 {
     Source::serialise_local(e, keys, f);
     e.add(keys.source_basedir, basedir);
@@ -45,25 +45,10 @@ void Blob::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatte
     e.add(keys.source_size, size);
 }
 
-std::unique_ptr<Blob> Blob::decodeMapping(const emitter::memory::Mapping& val)
-{
-    const arki::emitter::memory::Node& rd = val["b"];
-    string basedir;
-    if (rd.is_string())
-        basedir = rd.get_string();
-
-    return Blob::create_unlocked(
-            val["f"].want_string("parsing blob source format"),
-            basedir,
-            val["file"].want_string("parsing blob source filename"),
-            val["ofs"].want_int("parsing blob source offset"),
-            val["sz"].want_int("parsing blob source size"));
-}
-
-std::unique_ptr<Blob> Blob::decode_structure(const emitter::Keys& keys, const emitter::Reader& reader)
+std::unique_ptr<Blob> Blob::decode_structure(const structured::Keys& keys, const structured::Reader& reader)
 {
     std::string basedir;
-    if (reader.has_key(keys.source_basedir, emitter::NodeType::STRING))
+    if (reader.has_key(keys.source_basedir, structured::NodeType::STRING))
         basedir = reader.as_string(keys.source_basedir, "source base directory");
 
     return Blob::create_unlocked(

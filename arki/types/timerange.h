@@ -148,8 +148,7 @@ struct Timerange : public types::StyledType<Timerange>
     /// CODEC functions
     static std::unique_ptr<Timerange> decode(BinaryDecoder& dec);
     static std::unique_ptr<Timerange> decodeString(const std::string& val);
-    static std::unique_ptr<Timerange> decodeMapping(const emitter::memory::Mapping& val);
-    static std::unique_ptr<Timerange> decode_structure(const emitter::Keys& keys, const emitter::Reader& val);
+    static std::unique_ptr<Timerange> decode_structure(const structured::Keys& keys, const structured::Reader& val);
 
 	static void lua_loadlib(lua_State* L);
 
@@ -198,7 +197,7 @@ public:
     Style style() const override;
     void encodeWithoutEnvelope(BinaryEncoder& enc) const override;
     std::ostream& writeToOstream(std::ostream& o) const override;
-    void serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f=0) const override;
+    void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
     std::string exactQuery() const override;
     const char* lua_type_name() const override;
     bool lua_lookup(lua_State* L, const std::string& name) const override;
@@ -214,8 +213,7 @@ public:
 
     GRIB1* clone() const override;
     static std::unique_ptr<GRIB1> create(unsigned char type, unsigned char unit, unsigned char p1, unsigned char p2);
-    static std::unique_ptr<GRIB1> decodeMapping(const emitter::memory::Mapping& val);
-    static std::unique_ptr<GRIB1> decode_structure(const emitter::Keys& keys, const emitter::Reader& val);
+    static std::unique_ptr<GRIB1> decode_structure(const structured::Keys& keys, const structured::Reader& val);
     static void arg_significance(unsigned type, bool& use_p1, bool& use_p2);
 };
 
@@ -234,7 +232,7 @@ public:
     Style style() const override;
     void encodeWithoutEnvelope(BinaryEncoder& enc) const override;
     std::ostream& writeToOstream(std::ostream& o) const override;
-    void serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f=0) const override;
+    void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
     std::string exactQuery() const override;
     const char* lua_type_name() const override;
     bool lua_lookup(lua_State* L, const std::string& name) const override;
@@ -248,8 +246,7 @@ public:
 
     GRIB2* clone() const override;
     static std::unique_ptr<GRIB2> create(unsigned char type, unsigned char unit, signed long p1, signed long p2);
-    static std::unique_ptr<GRIB2> decodeMapping(const emitter::memory::Mapping& val);
-    static std::unique_ptr<GRIB2> decode_structure(const emitter::Keys& keys, const emitter::Reader& val);
+    static std::unique_ptr<GRIB2> decode_structure(const structured::Keys& keys, const structured::Reader& val);
 };
 
 class Timedef : public Timerange
@@ -278,7 +275,7 @@ public:
     Style style() const override;
     void encodeWithoutEnvelope(BinaryEncoder& enc) const override;
     std::ostream& writeToOstream(std::ostream& o) const override;
-    void serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f=0) const override;
+    void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
     std::string exactQuery() const override;
     const char* lua_type_name() const override;
     bool lua_lookup(lua_State* L, const std::string& name) const override;
@@ -301,8 +298,7 @@ public:
     static std::unique_ptr<Timedef> create(uint32_t step_len, TimedefUnit step_unit,
                               uint8_t stat_type, uint32_t stat_len, TimedefUnit stat_unit=UNIT_SECOND);
     static std::unique_ptr<Timedef> createFromYaml(const std::string& str);
-    static std::unique_ptr<Timedef> decodeMapping(const emitter::memory::Mapping& val);
-    static std::unique_ptr<Timedef> decode_structure(const emitter::Keys& keys, const emitter::Reader& val);
+    static std::unique_ptr<Timedef> decode_structure(const structured::Keys& keys, const structured::Reader& val);
 
     /**
      * Unit conversion for code table 4.4 GRIB2 indicator of unit of time range
@@ -346,7 +342,7 @@ public:
     Style style() const override;
     void encodeWithoutEnvelope(BinaryEncoder& enc) const override;
     std::ostream& writeToOstream(std::ostream& o) const override;
-    void serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f=0) const override;
+    void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
     std::string exactQuery() const override;
     const char* lua_type_name() const override;
     bool lua_lookup(lua_State* L, const std::string& name) const override;
@@ -360,8 +356,7 @@ public:
 
     BUFR* clone() const override;
     static std::unique_ptr<BUFR> create(unsigned value = 0, unsigned char unit = 254);
-    static std::unique_ptr<BUFR> decodeMapping(const emitter::memory::Mapping& val);
-    static std::unique_ptr<BUFR> decode_structure(const emitter::Keys& keys, const emitter::Reader& val);
+    static std::unique_ptr<BUFR> decode_structure(const structured::Keys& keys, const structured::Reader& val);
 };
 
 }

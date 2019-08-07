@@ -1,4 +1,3 @@
-#include "arki/tests/legacy.h"
 #include "types/tests.h"
 #include "tests/lua.h"
 #include "core/file.h"
@@ -11,9 +10,9 @@
 #include "types/reftime.h"
 #include "types/source.h"
 #include "types/run.h"
-#include "emitter/json.h"
-#include "emitter/memory.h"
-#include "emitter/keys.h"
+#include "structured/json.h"
+#include "structured/memory.h"
+#include "structured/keys.h"
 #include "matcher.h"
 #include "metadata/collection.h"
 #include "utils.h"
@@ -79,28 +78,28 @@ void Tests::register_tests() {
 // Test that it contains the right things
 add_method("stats", [](Fixture& f) {
     // Check that it contains 2 metadata
-    ensure_equals(f.s.count(), 2u);
-    ensure_equals(f.s.size(), 30u);
+    wassert(actual(f.s.count()) == 2u);
+    wassert(actual(f.s.size()) == 30u);
 });
 
 // Test assignment and comparison
 add_method("compare", [](Fixture& f) {
     Summary s1;
     s1.add(f.s);
-    ensure(s1 == f.s);
-    ensure_equals(s1.count(), 2u);
-    ensure_equals(s1.size(), 30u);
+    wassert_true(s1 == f.s);
+    wassert(actual(s1.count()) == 2u);
+    wassert(actual(s1.size()) == 30u);
 });
 
 // Test matching
 add_method("match", [](Fixture& f) {
     Summary s1;
     wassert(actual(f.s.match(Matcher::parse("origin:GRIB1,1"))).istrue());
-    f.s.filter(Matcher::parse("origin:GRIB1,1"), s1); ensure_equals(s1.count(), 1u);
+    f.s.filter(Matcher::parse("origin:GRIB1,1"), s1); wassert(actual(s1.count()) == 1u);
 
     s1.clear();
     wassert(actual(f.s.match(Matcher::parse("origin:GRIB1,2"))).isfalse());
-    f.s.filter(Matcher::parse("origin:GRIB1,2"), s1); ensure_equals(s1.count(), 0u);
+    f.s.filter(Matcher::parse("origin:GRIB1,2"), s1); wassert(actual(s1.count()) == 0u);
 });
 
 // Test matching runs
@@ -114,26 +113,26 @@ add_method("match_run", [](Fixture& f) {
 
     Summary s1;
     wassert(actual(s.match(Matcher::parse("run:MINUTE,0"))).istrue());
-    s.filter(Matcher::parse("run:MINUTE,0"), s1); ensure_equals(s1.count(), 1u);
+    s.filter(Matcher::parse("run:MINUTE,0"), s1); wassert(actual(s1.count()) == 1u);
 
     s1.clear();
     wassert(actual(s.match(Matcher::parse("run:MINUTE,12"))).istrue());
-    s.filter(Matcher::parse("run:MINUTE,12"), s1); ensure_equals(s1.count(), 1u);
+    s.filter(Matcher::parse("run:MINUTE,12"), s1); wassert(actual(s1.count()) == 1u);
 });
 
 // Test filtering
 add_method("filter", [](Fixture& f) {
     Summary s1;
     f.s.filter(Matcher::parse("origin:GRIB1,1"), s1);
-    ensure_equals(s1.count(), 1u);
-    ensure_equals(s1.size(), 10u);
+    wassert(actual(s1.count()) == 1u);
+    wassert(actual(s1.size()) == 10u);
 
     Summary s2;
     f.s.filter(Matcher::parse("origin:GRIB1,1"), s2);
-    ensure_equals(s2.count(), 1u);
-    ensure_equals(s2.size(), 10u);
+    wassert(actual(s2.count()) == 1u);
+    wassert(actual(s2.size()) == 10u);
 
-    ensure(s1 == s2);
+    wassert_true(s1 == s2);
 });
 
 // Test serialisation to binary
@@ -142,16 +141,16 @@ add_method("binary", [](Fixture& f) {
         vector<uint8_t> encoded = f.s.encode();
         Summary s1;
         BinaryDecoder dec(encoded);
-        ensure(s1.read(dec, "(test memory buffer)"));
-        ensure(s1 == f.s);
+        wassert_true(s1.read(dec, "(test memory buffer)"));
+        wassert_true(s1 == f.s);
     }
 
     {
         vector<uint8_t> encoded = f.s.encode(true);
         Summary s1;
         BinaryDecoder dec(encoded);
-        ensure(s1.read(dec, "(test memory buffer)"));
-        ensure(s1 == f.s);
+        wassert_true(s1.read(dec, "(test memory buffer)"));
+        wassert_true(s1 == f.s);
     }
 });
 
@@ -161,31 +160,31 @@ add_method("yaml", [](Fixture& f) {
     Summary s2;
     auto reader = LineReader::from_chars(st.data(), st.size());
     s2.readYaml(*reader, "(test memory buffer)");
-    ensure(s2 == f.s);
+    wassert_true(s2 == f.s);
 });
 
 // Test serialisation to JSON
 add_method("json", [](Fixture& f) {
     // Serialise to JSON;
     stringstream stream1;
-    emitter::JSON json(stream1);
-    f.s.serialise(json, emitter::keys_json);
+    structured::JSON json(stream1);
+    f.s.serialise(json, structured::keys_json);
 
     // Parse back
     stringstream stream2(stream1.str(), ios_base::in);
-    emitter::Memory parsed;
-    emitter::JSON::parse(stream2, parsed);
+    structured::Memory parsed;
+    structured::JSON::parse(stream2, parsed);
 
     Summary s2;
-    s2.read(parsed.root().want_mapping("parsing summary"));
-    ensure(s2 == f.s);
+    wassert(s2.read(structured::keys_json, parsed.root()));
+    wassert_true(s2 == f.s);
 });
 
 // Test merging summaries
 add_method("merge", [](Fixture& f) {
     Summary s1;
     s1.add(f.s);
-    ensure(s1 == f.s);
+    wassert_true(s1 == f.s);
 });
 
 // Test serialisation of empty summary
@@ -194,8 +193,8 @@ add_method("binary_empty", [](Fixture& f) {
     vector<uint8_t> encoded = s.encode();
     Summary s1;
     BinaryDecoder dec(encoded);
-    ensure(s1.read(dec, "(test memory buffer)"));
-    ensure(s1 == s);
+    wassert_true(s1.read(dec, "(test memory buffer)"));
+    wassert_true(s1 == s);
 });
 
 // Test a case of metadata wrongly considered the same
@@ -218,8 +217,8 @@ add_method("regression0", [](Fixture& f) {
     ts.add(tmd1);
     ts.add(tmd2);
 
-    ensure_equals(ts.count(), 2u);
-    ensure_equals(ts.size(), 25u);
+    wassert(actual(ts.count()) == 2u);
+    wassert(actual(ts.size()) == 25u);
 });
 
 // Test Lua functions
@@ -305,14 +304,14 @@ add_method("add_with_stats", [](Fixture& f) {
     f.s.add(md3, st);
 
     // Check that it contains 2 metadata
-    ensure_equals(f.s.count(), 7u);
-    ensure_equals(f.s.size(), 123486u);
+    wassert(actual(f.s.count()) == 7u);
+    wassert(actual(f.s.size()) == 123486u);
 });
 
 // Test resolveMatcher
 add_method("resolvematcher", [](Fixture& f) {
     std::vector<ItemSet> res = f.s.resolveMatcher(Matcher::parse("origin:GRIB1,1,2,3; product:GRIB1,1,2,3 or GRIB1,2,3,4"));
-    ensure_equals(res.size(), 1u);
+    wassert(actual(res.size()) == 1u);
 
     ItemSet& is = res[0];
     wassert(actual(is.size()) == 2u);
@@ -324,14 +323,14 @@ add_method("resolvematcher", [](Fixture& f) {
 add_method("binary_old", [](Fixture& f) {
     Summary s;
     s.readFile("inbound/old.summary");
-    ensure(s.count() > 0);
+    wassert_true(s.count() > 0);
     // Compare with a summary with different msoSerLen
     {
         Summary s1;
         s1.add(s);
         wassert(actual(s.count()) == s1.count());
         wassert(actual(s.size()) == s1.size());
-        ensure(s == s1);
+        wassert_true(s == s1);
     }
 
     // Ensure we can recode it
@@ -344,8 +343,8 @@ add_method("binary_old", [](Fixture& f) {
         vector<uint8_t> encoded = s.encode();
         Summary s2;
         BinaryDecoder dec(encoded);
-        ensure(s2.read(dec, "(test memory buffer)"));
-        ensure(s == s2);
+        wassert_true(s2.read(dec, "(test memory buffer)"));
+        wassert_true(s == s2);
     }
 
     // Serialisation to Yaml
@@ -373,23 +372,23 @@ add_method("regression1", [](Fixture& f) {
     } counter;
     f.s.visit(counter);
 
-    ensure_equals(counter.count, 2u);
+    wassert(actual(counter.count) == 2u);
 });
 
 // Test loading an old summary
 add_method("binary_old1", [](Fixture& f) {
     Summary s;
     s.readFile("inbound/all.summary");
-    ensure(s.count() > 0);
+    wassert_true(s.count() > 0);
 });
 
 // Test filtering with an empty matcher
 add_method("filter_empty_matcher", [](Fixture& f) {
     Summary s1;
     f.s.filter(Matcher(), s1);
-    ensure(s1 == f.s);
-    ensure_equals(s1.count(), 2u);
-    ensure_equals(s1.size(), 30u);
+    wassert_true(s1 == f.s);
+    wassert(actual(s1.count()) == 2u);
+    wassert(actual(s1.size()) == 30u);
 });
 
 // Test loading and saving summaries that summarise data where

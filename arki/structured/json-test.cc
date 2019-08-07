@@ -1,4 +1,3 @@
-#include "arki/tests/legacy.h"
 #include "arki/tests/tests.h"
 #include "json.h"
 #include "memory.h"
@@ -7,13 +6,13 @@ namespace {
 using namespace std;
 using namespace arki;
 using namespace arki::tests;
-using namespace arki::emitter;
+using namespace arki::structured;
 
 class Tests : public TestCase
 {
     using TestCase::TestCase;
     void register_tests() override;
-} test("arki_emitter_json");
+} test("arki_structured_json");
 
 void Tests::register_tests() {
 
@@ -22,12 +21,12 @@ add_method("null", [] {
     stringstream str;
     JSON json(str);
     json.add_null();
-    ensure_equals(str.str(), "null");
+    wassert(actual(str.str()) == "null");
 
     str.seekg(0);
     Memory m;
     JSON::parse(str, m);
-    ensure_equals(m.root().is_null(), true);
+    wassert(actual(m.root().type()) = NodeType::NONE);
 });
 
 // bool value
@@ -36,26 +35,24 @@ add_method("bool", [] {
         stringstream str;
         JSON json(str);
         json.add(true);
-        ensure_equals(str.str(), "true");
+        wassert(actual(str.str()) == "true");
 
         str.seekg(0);
         Memory m;
         JSON::parse(str, m);
-        ensure_equals(m.root().is_bool(), true);
-        ensure_equals(m.root().get_bool(), true);
+        wassert(actual(m.root().type()) == NodeType::BOOL);
     }
 
     {
         stringstream str;
         JSON json(str);
         json.add(false);
-        ensure_equals(str.str(), "false");
+        wassert(actual(str.str()) == "false");
 
         str.seekg(0);
         Memory m;
         JSON::parse(str, m);
-        ensure_equals(m.root().is_bool(), true);
-        ensure_equals(m.root().get_bool(), false);
+        wassert(actual(m.root().type()) == NodeType::BOOL);
     }
 });
 
@@ -65,26 +62,26 @@ add_method("int", [] {
         stringstream str;
         JSON json(str);
         json.add(1);
-        ensure_equals(str.str(), "1");
+        wassert(actual(str.str()) == "1");
 
         str.seekg(0);
         Memory m;
         JSON::parse(str, m);
-        ensure_equals(m.root().is_int(), true);
-        ensure_equals(m.root().get_int(), 1);
+        wassert(actual(m.root().type()) == NodeType::INT);
+        wassert(actual(m.root().as_int("test")) == 1);
     }
 
     {
         stringstream str;
         JSON json(str);
         json.add(-1234567);
-        ensure_equals(str.str(), "-1234567");
+        wassert(actual(str.str()) == "-1234567");
 
         str.seekg(0);
         Memory m;
         JSON::parse(str, m);
-        ensure_equals(m.root().is_int(), true);
-        ensure_equals(m.root().get_int(), -1234567);
+        wassert(actual(m.root().type()) == NodeType::INT);
+        wassert(actual(m.root().as_int("test")) == -1234567);
     }
 });
 
@@ -94,52 +91,52 @@ add_method("double", [] {
         stringstream str;
         JSON json(str);
         json.add(1.1);
-        ensure_equals(str.str(), "1.1");
+        wassert(actual(str.str()) == "1.1");
 
         str.seekg(0);
         Memory m;
         JSON::parse(str, m);
-        ensure_equals(m.root().is_double(), true);
-        ensure_equals(m.root().get_double(), 1.1);
+        wassert(actual(m.root().type()) == NodeType::DOUBLE);
+        wassert(actual(m.root().as_double("test")) == 1.1);
     }
 
     {
         stringstream str;
         JSON json(str);
         json.add(-1.1);
-        ensure_equals(str.str(), "-1.1");
+        wassert(actual(str.str()) == "-1.1");
 
         str.seekg(0);
         Memory m;
         JSON::parse(str, m);
-        ensure_equals(m.root().is_double(), true);
-        ensure_equals(m.root().get_double(), -1.1);
+        wassert(actual(m.root().type()) == NodeType::DOUBLE);
+        wassert(actual(m.root().as_double("test")) == -1.1);
     }
 
     {
         stringstream str;
         JSON json(str);
         json.add(1.0);
-        ensure_equals(str.str(), "1.0");
+        wassert(actual(str.str()) == "1.0");
 
         str.seekg(0);
         Memory m;
         JSON::parse(str, m);
-        ensure_equals(m.root().is_double(), true);
-        ensure_equals(m.root().get_double(), 1.0);
+        wassert(actual(m.root().type()) == NodeType::DOUBLE);
+        wassert(actual(m.root().as_double("test")) == 1.0);
     }
 
     {
         stringstream str;
         JSON json(str);
         json.add(-1.0);
-        ensure_equals(str.str(), "-1.0");
+        wassert(actual(str.str()) == "-1.0");
 
         str.seekg(0);
         Memory m;
         JSON::parse(str, m);
-        ensure_equals(m.root().is_double(), true);
-        ensure_equals(m.root().get_double(), -1.0);
+        wassert(actual(m.root().type()) == NodeType::DOUBLE);
+        wassert(actual(m.root().as_double("test")) == -1.0);
     }
 });
 
@@ -149,26 +146,26 @@ add_method("string", [] {
         stringstream str;
         JSON json(str);
         json.add("");
-        ensure_equals(str.str(), "\"\"");
+        wassert(actual(str.str()) == "\"\"");
 
         str.seekg(0);
         Memory m;
         JSON::parse(str, m);
-        ensure_equals(m.root().is_string(), true);
-        ensure_equals(m.root().get_string(), "");
+        wassert(actual(m.root().type()) == NodeType::STRING);
+        wassert(actual(m.root().as_string("test")) == "");
     }
 
     {
         stringstream str;
         JSON json(str);
         json.add("antani");
-        ensure_equals(str.str(), "\"antani\"");
+        wassert(actual(str.str()) == "\"antani\"");
 
         str.seekg(0);
         Memory m;
         JSON::parse(str, m);
-        ensure_equals(m.root().is_string(), true);
-        ensure_equals(m.root().get_string(), "antani");
+        wassert(actual(m.root().type()) == NodeType::STRING);
+        wassert(actual(m.root().as_string("test")) == "antani");
     }
 });
 
@@ -181,18 +178,18 @@ add_method("list", [] {
     json.add(1);
     json.add(1.0);
     json.end_list();
-    ensure_equals(str.str(), "[\"\",1,1.0]");
+    wassert(actual(str.str()) == "[\"\",1,1.0]");
 
     str.seekg(0);
     Memory m;
     JSON::parse(str, m);
-    ensure_equals(m.root().is_list(), true);
-    ensure_equals(m.root().get_list()[0].is_string(), true);
-    ensure_equals(m.root().get_list()[0].get_string(), "");
-    ensure_equals(m.root().get_list()[1].is_int(), true);
-    ensure_equals(m.root().get_list()[1].get_int(), 1);
-    ensure_equals(m.root().get_list()[2].is_double(), true);
-    ensure_equals(m.root().get_list()[2].get_double(), 1.0);
+    wassert(actual(m.root().type()) == NodeType::LIST);
+    // wassert(actual(m.root().get_list()[0].is_string(), true);
+    wassert(actual(m.root().as_string(0, "test")) == "");
+    // wassert(actual(m.root().get_list()[1].is_int(), true);
+    wassert(actual(m.root().as_int(1, "test")) == 1);
+    // wassert(actual(m.root().get_list()[2].is_double(), true);
+    wassert(actual(m.root().as_double(2, "test")) == 1.0);
 });
 
 // mapping value
@@ -203,16 +200,16 @@ add_method("mapping", [] {
     json.add("", 1);
     json.add("antani", 1.0);
     json.end_mapping();
-    ensure_equals(str.str(), "{\"\":1,\"antani\":1.0}");
+    wassert(actual(str.str()) == "{\"\":1,\"antani\":1.0}");
 
     str.seekg(0);
     Memory m;
     JSON::parse(str, m);
-    ensure_equals(m.root().is_mapping(), true);
-    ensure_equals(m.root().get_mapping()[""].is_int(), true);
-    ensure_equals(m.root().get_mapping()[""].get_int(), 1);
-    ensure_equals(m.root().get_mapping()["antani"].is_double(), true);
-    ensure_equals(m.root().get_mapping()["antani"].get_double(), 1.0);
+    wassert(actual(m.root().type()) == NodeType::MAPPING);
+    // ensure_equals(m.root().get_mapping()[""].is_int(), true);
+    wassert(actual(m.root().as_int("", "test")) == 1);
+    // ensure_equals(m.root().get_mapping()["antani"].is_double(), true);
+    wassert(actual(m.root().as_double("antani", "test")) == 1.0);
 });
 
 }

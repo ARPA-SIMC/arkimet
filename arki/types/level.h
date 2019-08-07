@@ -46,8 +46,7 @@ struct Level : public types::StyledType<Level>
     /// CODEC functions
     static std::unique_ptr<Level> decode(BinaryDecoder& dec);
     static std::unique_ptr<Level> decodeString(const std::string& val);
-    static std::unique_ptr<Level> decodeMapping(const emitter::memory::Mapping& val);
-    static std::unique_ptr<Level> decode_structure(const emitter::Keys& keys, const emitter::Reader& val);
+    static std::unique_ptr<Level> decode_structure(const structured::Keys& keys, const structured::Reader& val);
 
 	static void lua_loadlib(lua_State* L);
 
@@ -83,7 +82,7 @@ public:
     Style style() const override;
     void encodeWithoutEnvelope(BinaryEncoder& enc) const override;
     std::ostream& writeToOstream(std::ostream& o) const override;
-    void serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f=0) const override;
+    void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
     std::string exactQuery() const override;
     const char* lua_type_name() const override;
     bool lua_lookup(lua_State* L, const std::string& name) const override;
@@ -104,8 +103,7 @@ public:
     static std::unique_ptr<GRIB1> create(unsigned char type);
     static std::unique_ptr<GRIB1> create(unsigned char type, unsigned short l1);
     static std::unique_ptr<GRIB1> create(unsigned char type, unsigned char l1, unsigned char l2);
-    static std::unique_ptr<GRIB1> decodeMapping(const emitter::memory::Mapping& val);
-    static std::unique_ptr<GRIB1> decode_structure(const emitter::Keys& keys, const emitter::Reader& val);
+    static std::unique_ptr<GRIB1> decode_structure(const structured::Keys& keys, const structured::Reader& val);
 
     static int getValType(unsigned char type);
 };
@@ -141,7 +139,7 @@ public:
     Style style() const override;
     void encodeWithoutEnvelope(BinaryEncoder& enc) const override;
     std::ostream& writeToOstream(std::ostream& o) const override;
-    void serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f=0) const override;
+    void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
     std::string exactQuery() const override;
     const char* lua_type_name() const override;
     bool lua_lookup(lua_State* L, const std::string& name) const override;
@@ -151,8 +149,7 @@ public:
 
     GRIB2S* clone() const override;
     static std::unique_ptr<GRIB2S> create(uint8_t type, uint8_t scale, uint32_t val);
-    static std::unique_ptr<GRIB2S> decodeMapping(const emitter::memory::Mapping& val);
-    static std::unique_ptr<GRIB2S> decode_structure(const emitter::Keys& keys, const emitter::Reader& val);
+    static std::unique_ptr<GRIB2S> decode_structure(const structured::Keys& keys, const structured::Reader& val);
 };
 
 class GRIB2D : public GRIB2
@@ -176,7 +173,7 @@ public:
     Style style() const override;
     void encodeWithoutEnvelope(BinaryEncoder& enc) const override;
     std::ostream& writeToOstream(std::ostream& o) const override;
-    void serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f=0) const override;
+    void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
     std::string exactQuery() const override;
     const char* lua_type_name() const override;
     bool lua_lookup(lua_State* L, const std::string& name) const override;
@@ -188,8 +185,7 @@ public:
     static std::unique_ptr<GRIB2D> create(uint8_t type1, uint8_t scale1, uint32_t val1,
                                uint8_t type2, uint8_t scale2, uint32_t val2);
 
-    static std::unique_ptr<GRIB2D> decodeMapping(const emitter::memory::Mapping& val);
-    static std::unique_ptr<GRIB2D> decode_structure(const emitter::Keys& keys, const emitter::Reader& val);
+    static std::unique_ptr<GRIB2D> decode_structure(const structured::Keys& keys, const structured::Reader& val);
 };
 
 class ODIMH5 : public Level
@@ -205,7 +201,7 @@ public:
     Style style() const override;
     void encodeWithoutEnvelope(BinaryEncoder& enc) const override;
     std::ostream& writeToOstream(std::ostream& o) const override;
-    void serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f=0) const override;
+    void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
     std::string exactQuery() const override;
     const char* lua_type_name() const override;
     bool lua_lookup(lua_State* L, const std::string& name) const override;
@@ -216,8 +212,7 @@ public:
     ODIMH5* clone() const override;
     static std::unique_ptr<ODIMH5> create(double value);
     static std::unique_ptr<ODIMH5> create(double min, double max);
-    static std::unique_ptr<ODIMH5> decodeMapping(const emitter::memory::Mapping& val);
-    static std::unique_ptr<ODIMH5> decode_structure(const emitter::Keys& keys, const emitter::Reader& val);
+    static std::unique_ptr<ODIMH5> decode_structure(const structured::Keys& keys, const structured::Reader& val);
 };
 
 }

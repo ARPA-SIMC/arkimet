@@ -1,13 +1,16 @@
 #include "arki/exceptions.h"
 #include "arki/core/time.h"
+#include "arki/types.h"
 #include "arki/libconfig.h"
+#include "arki/utils/string.h"
 #include "memory.h"
 #include <memory>
 
 using namespace std;
+using namespace arki::utils;
 
 namespace arki {
-namespace emitter {
+namespace structured {
 
 namespace memory {
 
@@ -20,6 +23,8 @@ void Node::add_val(const memory::Node*)
     throw_consistency_error("adding node to structured data", "cannot add elements to this node");
 }
 
+std::string String::repr() const { return "\"" + str::encode_cstring(val) + "\""; }
+
 List::~List()
 {
     for (auto& i: val)
@@ -29,6 +34,42 @@ List::~List()
 void List::add_val(const memory::Node* n)
 {
     val.push_back(n);
+}
+
+std::string List::repr() const
+{
+    std::string res("[");
+    bool first = true;
+    for (const auto& value: val)
+    {
+        if (first)
+            first = false;
+        else
+            res += ", ";
+        res += value->repr();
+    }
+    res += "]";
+    return res;
+}
+
+core::Time List::as_time(const char* desc) const
+{
+    if (size() < 6)
+        throw std::invalid_argument("cannot decode time: list has " + std::to_string(size()) + " elements instead of 6");
+
+    core::Time res;
+    res.ye = as_int(0, "time year");
+    res.mo = as_int(1, "time month");
+    res.da = as_int(2, "time day");
+    res.ho = as_int(3, "time hour");
+    res.mi = as_int(4, "time minute");
+    res.se = as_int(5, "time second");
+    return res;
+}
+
+std::unique_ptr<types::Type> List::as_type(unsigned idx, const char* desc, const structured::Keys& keys) const
+{
+    return types::decode_structure(keys, *val[idx]);
 }
 
 Mapping::Mapping()
@@ -42,6 +83,22 @@ Mapping::~Mapping()
         delete i.second;
 }
 
+std::string Mapping::repr() const
+{
+    std::string res("{");
+    bool first = true;
+    for (const auto& value: val)
+    {
+        if (first)
+            first = false;
+        else
+            res += ", ";
+        res += "\"" + str::encode_cstring(value.first) + "\": " + value.second->repr();
+    }
+    res += "}";
+    return res;
+}
+
 void Mapping::add_val(const memory::Node* n)
 {
     if (has_cur_key)
@@ -51,9 +108,9 @@ void Mapping::add_val(const memory::Node* n)
     }
     else
     {
-        if (!n->is_string())
+        if (n->type() != NodeType::STRING)
             throw_consistency_error("adding node to structured data", "cannot use a non-string as mapping key");
-        cur_key = n->get_string();
+        cur_key = n->as_string("key");
         has_cur_key = true;
         delete n;
     }
@@ -81,18 +138,17 @@ core::Time Mapping::as_time(const std::string& key, const char* desc) const
     if (!list)
         return Node::as_time(key, desc);
 
-    if (list->size() < 6)
-        throw std::runtime_error("cannot decode item: list has " + std::to_string(list->size()) + " elements instead of 6");
-
-    core::Time res;
-    res.ye = list->as_int(0, "time year");
-    res.mo = list->as_int(1, "time month");
-    res.da = list->as_int(2, "time day");
-    res.ho = list->as_int(3, "time hour");
-    res.mi = list->as_int(4, "time minute");
-    res.se = list->as_int(5, "time second");
-    return res;
+    return list->as_time(desc);
 }
+
+std::unique_ptr<types::Type> Mapping::as_type(const std::string& key, const char* desc, const structured::Keys& keys) const
+{
+    auto i = val.find(key);
+    if (i == val.end())
+        throw std::invalid_argument("cannot decode time: key " + key + " does not exist");
+    return types::decode_structure(keys, *i->second);
+}
+
 
 }
 
