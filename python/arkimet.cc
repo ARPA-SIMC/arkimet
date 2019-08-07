@@ -7,6 +7,7 @@
 #include "dataset.h"
 #include "matcher.h"
 #include "counters.h"
+#include "formatter.h"
 #include "utils/values.h"
 #include "utils/methods.h"
 #include "utils/dict.h"
@@ -221,6 +222,8 @@ struct config : public MethNoargs<config, PyObject>
         try {
             auto& cfg = arki::Config::get();
             pyo_unique_ptr result(throw_ifnull(PyDict_New()));
+            set_dict(result, "format", describe_dirlist(cfg.dir_formatter, "Formatter scripts", "ARKI_FORMATTER"));
+            set_dict(result, "bbox", describe_dirlist(cfg.dir_bbox, "Bounding box scripts", "ARKI_BBOX"));
             set_dict(result, "postproc", describe_dirlist(cfg.dir_postproc, "Postprocessors", "ARKI_POSTPROC"));
             set_dict(result, "report", describe_dirlist(cfg.dir_report, "Report scripts", "ARKI_REPORT"));
             set_dict(result, "qmacro", describe_dirlist(cfg.dir_qmacro, "Query macro scripts", "ARKI_QMACRO"));

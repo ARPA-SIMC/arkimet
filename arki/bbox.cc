@@ -3,7 +3,7 @@
 #include "arki/exceptions.h"
 #include "arki/utils/geos.h"
 #include "arki/utils/string.h"
-#include "arki/utils/files.h"
+#include "arki/runtime.h"
 #include <memory>
 
 using namespace std;
@@ -17,12 +17,12 @@ BBox::BBox(const std::string& code) : L(new Lua), funcCount(0)
     /// Load the bbox scanning functions
     if (code.empty())
     {
-        vector<string> files = utils::files::rcFiles("bbox", "ARKI_BBOX");
-        for (vector<string>::const_iterator i = files.begin(); i != files.end(); ++i)
+        vector<string> sources = arki::Config::get().dir_bbox.list_files(".lua");
+        for (const auto& source: sources)
         {
             char buf[32];
             snprintf(buf, 32, "BBOX_%u", funcCount++);
-            L->functionFromFile(buf, *i);
+            L->functionFromFile(buf, source);
         }
     } else {
         char buf[32];

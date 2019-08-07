@@ -16,6 +16,14 @@ namespace arki {
 
 Config::Config()
 {
+    if (const char* envdir = getenv("ARKI_FORMATTER"))
+        dir_formatter.push_back(envdir);
+    dir_formatter.push_back(std::string(CONF_DIR) + "/format");
+
+    if (const char* envdir = getenv("ARKI_BBOX"))
+        dir_bbox.push_back(envdir);
+    dir_bbox.push_back(std::string(CONF_DIR) + "/bbox");
+
     // TODO: colon-separated $PATH-like semantics
     if (const char* envdir = getenv("ARKI_POSTPROC"))
         dir_postproc.push_back(envdir);
@@ -81,10 +89,10 @@ std::vector<std::string> Config::Dirlist::list_files(const std::string& ext, boo
 {
     vector<string> res;
 
-    for (const_iterator i = begin(); i != end(); ++i)
+    for (const auto& path: *this)
     {
         vector<string> files;
-        sys::Path dir(*i);
+        sys::Path dir(path);
         for (auto di = dir.begin(); di != dir.end(); ++di)
         {
             string file = di->d_name;
@@ -101,9 +109,8 @@ std::vector<std::string> Config::Dirlist::list_files(const std::string& ext, boo
         std::sort(files.begin(), files.end());
 
         // Append the sorted file list to the result
-        for (vector<string>::const_iterator fn = files.begin();
-                fn != files.end(); ++fn)
-            res.push_back(str::joinpath(*i, *fn));
+        for (const auto& fn: files)
+            res.push_back(str::joinpath(path, fn));
 
         // Stop here if we got results and only a dir is needed
         if (!res.empty() && first_only)
