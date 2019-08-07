@@ -238,7 +238,30 @@ struct config : public MethNoargs<config, PyObject>
     }
 };
 
-Methods<expand_query, get_alias_database, make_merged_dataset, make_qmacro_dataset, get_version, set_verbosity, config> methods;
+struct debug_tty : public MethKwargs<debug_tty, PyObject>
+{
+    constexpr static const char* name = "debug_tty";
+    constexpr static const char* signature = "text: str";
+    constexpr static const char* returns = "";
+    constexpr static const char* summary = "write a debug message to /dev/tty";
+    constexpr static const char* doc = nullptr;
+
+    static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
+    {
+        static const char* kwlist[] = { "text", nullptr };
+        const char* text = nullptr;
+        Py_ssize_t text_len;
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "s#", const_cast<char**>(kwlist), &text, &text_len))
+            return nullptr;
+
+        try {
+            arki::nag::debug_tty("%.*s", (int)text_len, text);
+            Py_RETURN_NONE;
+        } ARKI_CATCH_RETURN_PYO
+    }
+};
+
+Methods<expand_query, get_alias_database, make_merged_dataset, make_qmacro_dataset, get_version, set_verbosity, config, debug_tty> methods;
 
 void add_feature(PyObject* set, const char* feature)
 {
@@ -326,6 +349,7 @@ PyMODINIT_FUNC PyInit__arkimet(void)
 
     arki::init();
 
+    arki::python::formatter::init();
     arki::python::dataset::qmacro::init();
 
     python_nag_handler = new PythonNagHandler;

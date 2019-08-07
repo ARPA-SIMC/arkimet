@@ -16,6 +16,7 @@ _arkimet_la_SOURCES = \
     files.cc \
     structured.cc \
     metadata.cc \
+    formatter.cc \
     cfg.cc \
     summary.cc \
     matcher.cc \
@@ -67,6 +68,7 @@ EXTRA_DIST = \
     structured.h \
     cfg.h \
     metadata.h \
+    formatter.h \
     summary.h \
     matcher.h \
     dataset.h \
