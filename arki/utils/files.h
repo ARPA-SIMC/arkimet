@@ -37,9 +37,6 @@ bool filesystem_has_ofd_locks(const std::string& dir);
 /// Create an empty file, succeeding if it already exists
 void createDontpackFlagfile(const std::string& dir);
 
-/// Create an empty file, failing if it already exists
-void createNewDontpackFlagfile(const std::string& dir);
-
 /// Remove a file, succeeding if it does not exists
 void removeDontpackFlagfile(const std::string& dir);
 
@@ -150,42 +147,6 @@ struct RAIIFILE
     }
     operator FILE*() { return fd; }
 };
-
-
-/**
- * Read the content of an rc directory, returning all the files found, sorted
- * alphabetically by name.
- */
-std::vector<std::string> rcFiles(const std::string& nameInConfdir, const std::string& nameInEnv);
-
-/**
- * Read the content of an rc directory, by concatenating all non-hidden,
- * non-backup files in it, sorted alphabetically by name
- */
-std::string readRcDir(const std::string& nameInConfdir, const std::string& nameInEnv);
-
-struct FileInfo
-{
-    std::string pathname;
-    size_t length;
-
-    FileInfo(const std::string& pathname, const size_t& length):
-        pathname(pathname), length(length) {}
-};
-
-struct SourceCode : public std::vector<FileInfo>
-{
-    std::string code;
-};
-
-/**
- * Read the content of an rc directory, by concatenating all non-hidden,
- * non-backup files in it, sorted alphabetically by name.  It also returns
- * information about what parts of the string belong to what file, which can be
- * used to map a string location to its original position.
- */
-SourceCode readSourceFromRcDir(const std::string& nameInConfdir, const std::string& nameInEnv);
-
 
 }
 }
