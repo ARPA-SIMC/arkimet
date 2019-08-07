@@ -22,15 +22,13 @@ struct PythonEmitter : public structured::Emitter
         Target(State state, PyObject* o) : state(state), o(o) {}
     };
     std::vector<Target> stack;
-    PyObject* res = nullptr;
+    pyo_unique_ptr res;
 
     ~PythonEmitter();
 
     PyObject* release()
     {
-        PyObject* o = res;
-        res = nullptr;
-        return o;
+        return res.release();
     }
 
     /**
@@ -38,7 +36,7 @@ struct PythonEmitter : public structured::Emitter
      *
      * Steals a reference to o.
      */
-    void add_object(PyObject* o);
+    void add_object(pyo_unique_ptr o);
 
     void start_list() override;
     void end_list() override;

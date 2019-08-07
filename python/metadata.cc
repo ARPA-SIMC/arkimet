@@ -2,7 +2,7 @@
 #include <Python.h>
 #include "metadata.h"
 #include "common.h"
-#include "emitter.h"
+#include "structured.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
 #include "arki/metadata/data.h"

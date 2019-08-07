@@ -50,6 +50,12 @@ struct Config
         void init_config_and_env(const char* confdir, const char* envname);
     };
 
+    /// Directories where formatter scripts are found
+    Dirlist dir_formatter;
+
+    /// Directories where bounding box scripts are found
+    Dirlist dir_bbox;
+
     /// Directories where postprocessor executables are found
     Dirlist dir_postproc;
 

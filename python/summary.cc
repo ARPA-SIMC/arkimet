@@ -5,7 +5,7 @@
 #include "utils/values.h"
 #include "common.h"
 #include "files.h"
-#include "emitter.h"
+#include "structured.h"
 #include "metadata.h"
 #include "arki/summary.h"
 #include "arki/summary/short.h"

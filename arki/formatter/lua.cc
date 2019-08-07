@@ -3,7 +3,7 @@
 #include "arki/exceptions.h"
 #include "arki/types.h"
 #include "arki/utils/lua.h"
-#include "arki/utils/files.h"
+#include "arki/runtime.h"
 
 extern "C" {
 #include <lauxlib.h>
@@ -21,10 +21,10 @@ Lua::Lua() : L(new arki::Lua)
     /// Load the prettyprinting functions
 
     // TODO: rcFiles also supports a 3rd StringOption parameter
-    vector<string> sources = utils::files::rcFiles("format", "ARKI_FORMATTER");
-    for (vector<string>::const_iterator i = sources.begin(); i != sources.end(); ++i)
+    vector<string> sources = arki::Config::get().dir_formatter.list_files(".lua");
+    for (const auto& pathname: sources)
     {
-        if (luaL_loadfile(*L, i->c_str()))
+        if (luaL_loadfile(*L, pathname.c_str()))
             throw_consistency_error("parsing Lua code for pretty printing", lua_tostring(*L, -1));
         if (lua_pcall(*L, 0, 0, 0))
         {

@@ -19,6 +19,7 @@ public:
     virtual std::string operator()(const types::Type& v) const;
 
     static std::unique_ptr<Formatter> create();
+    static void set_factory(std::function<std::unique_ptr<Formatter>()> new_factory);
 };
 
 

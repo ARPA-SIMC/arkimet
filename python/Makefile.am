@@ -14,7 +14,7 @@ _arkimet_la_SOURCES = \
     utils/values.cc \
     common.cc \
     files.cc \
-    emitter.cc \
+    structured.cc \
     metadata.cc \
     cfg.cc \
     summary.cc \
@@ -64,7 +64,7 @@ EXTRA_DIST = \
     utils/dict.h \
     common.h \
     files.h \
-    emitter.h \
+    structured.h \
     cfg.h \
     metadata.h \
     summary.h \
