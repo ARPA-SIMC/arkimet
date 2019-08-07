@@ -3,7 +3,7 @@
 
 #include <string>
 #include <map>
-#include <arki/emitter/fwd.h>
+#include <arki/structured/fwd.h>
 #include <iosfwd>
 
 struct lua_State;
@@ -54,7 +54,7 @@ public:
 	virtual std::string toString() const = 0;
 
     /// Send contents to an emitter
-    virtual void serialise(Emitter& e) const = 0;
+    virtual void serialise(structured::Emitter& e) const = 0;
 
 	/**
 	 * Parse from a string representation
@@ -65,9 +65,6 @@ public:
 	 * Parse from a string representation
 	 */
 	static Value* parse(const std::string& str, size_t& lenParsed);
-
-    /// Parse from structured data
-    static Value* parse(const emitter::memory::Node& m);
 
     static Value* create_integer(int val);
     static Value* create_string(const std::string& val);
@@ -126,13 +123,10 @@ struct ValueBag : public std::map<std::string, Value*>
 	static ValueBag parse(const std::string& str);
 
     /// Send contents to an emitter
-    void serialise(Emitter& e) const;
+    void serialise(structured::Emitter& e) const;
 
     /// Parse from structured data
-    static ValueBag parse(const emitter::memory::Mapping& m);
-
-    /// Parse from structured data
-    static ValueBag parse(const emitter::Reader& reader);
+    static ValueBag parse(const structured::Reader& reader);
 
 	/// Push to the LUA stack a table with the data of this ValueBag
 	void lua_push(lua_State* L) const;

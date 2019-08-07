@@ -26,12 +26,11 @@ struct StyledType : public CoreType<BASE>
         return 0;
     }
 
-    virtual void serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f=0) const;
+    virtual void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const;
 
     virtual bool lua_lookup(lua_State* L, const std::string& name) const;
 
-    static Style style_from_mapping(const emitter::memory::Mapping& m);
-    static Style style_from_structure(const emitter::Keys& keys, const emitter::Reader& reader);
+    static Style style_from_structure(const structured::Keys& keys, const structured::Reader& reader);
 };
 
 }

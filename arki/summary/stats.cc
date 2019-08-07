@@ -6,8 +6,9 @@
 #include "arki/utils/lua.h"
 #include "arki/utils/string.h"
 #include "arki/utils/yaml.h"
-#include "arki/emitter.h"
-#include "arki/emitter/memory.h"
+#include "arki/structured/emitter.h"
+#include "arki/structured/reader.h"
+#include "arki/structured/keys.h"
 #include "arki/exceptions.h"
 
 using namespace std;
@@ -126,27 +127,27 @@ std::ostream& Stats::writeToOstream(std::ostream& o) const
     return o << toYaml(0);
 }
 
-void Stats::serialiseLocal(Emitter& e, const Formatter* f) const
+void Stats::serialiseLocal(structured::Emitter& e, const Formatter* f) const
 {
     if (count > 0)
     {
-        e.add("b"); begin.serialiseList(e);
-        e.add("e"); end.serialiseList(e);
+        e.add("b"); e.add(begin);
+        e.add("e"); e.add(end);
     }
     e.add("c", count);
     e.add("s", size);
 }
 
-unique_ptr<Stats> Stats::decodeMapping(const emitter::memory::Mapping& val)
+unique_ptr<Stats> Stats::decode_structure(const structured::Keys& keys, const structured::Reader& val)
 {
-    using namespace emitter::memory;
+    using namespace structured::memory;
     unique_ptr<Stats> res(new Stats);
-    res->count = val["c"].want_int("parsing summary stats count");
-    res->size = val["s"].want_int("parsing summary stats size");
+    res->count = val.as_int(keys.summarystats_count, "summary stats count");
+    res->size = val.as_int(keys.summarystats_size, "summary stats size");
     if (res->count)
     {
-        res->begin = core::Time::decodeList(val["b"].want_list("parsing summary stats begin"));
-        res->end = core::Time::decodeList(val["e"].want_list("parsing summary stats end"));
+        res->begin = val.as_time(keys.summarystats_begin, "summary stats begin");
+        res->end = val.as_time(keys.summarystats_end, "summary stats end");
     }
     return res;
 }

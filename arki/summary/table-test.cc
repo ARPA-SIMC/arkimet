@@ -154,7 +154,7 @@ add_method("row", [] {
 //    void merge(const std::vector<const types::Type*>& md, const Stats& st, const std::vector<unsigned>& positions);
 //
 //    /// Merge an entry decoded from a mapping
-//    void merge(const emitter::memory::Mapping& val);
+//    void merge(const structured::memory::Mapping& val);
 //
 //    /// Merge a row into the table
 //    void merge(const Row& row);

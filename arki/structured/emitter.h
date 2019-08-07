@@ -1,15 +1,17 @@
-#ifndef ARKI_EMITTER_H
-#define ARKI_EMITTER_H
+#ifndef ARKI_STRUCTURED_EMITTER_H
+#define ARKI_STRUCTURED_EMITTER_H
 
 /// Generic structured data formatter
 
 #include <string>
 #include <cstdint>
 #include <vector>
+#include <arki/core/fwd.h>
 #include <arki/types/fwd.h>
-#include <arki/emitter/fwd.h>
+#include <arki/structured/fwd.h>
 
 namespace arki {
+namespace structured {
 
 /**
  * Abstract interface for all emitters
@@ -32,7 +34,8 @@ public:
     virtual void add_int(long long int val) = 0;
     virtual void add_double(double val) = 0;
     virtual void add_string(const std::string& val) = 0;
-    void add_type(const types::Type& t, const emitter::Keys& keys, const Formatter* f=0);
+    virtual void add_time(const core::Time& val);
+    void add_type(const types::Type& t, const structured::Keys& keys, const Formatter* f=0);
 
     /// Add a break in the output stream, such as a newline between JSON chunks
     virtual void add_break();
@@ -52,6 +55,7 @@ public:
     void add(uint32_t val) { add_int(val); }
     void add(uint64_t val) { add_int(val); }
     void add(bool val) { add_bool(val); }
+    void add(const core::Time& val) { add_time(val); }
 
     // Shortcut to add a mapping, which also ensure the key is a string
     template<typename T>
@@ -62,6 +66,7 @@ public:
     }
 };
 
+}
 }
 
 #endif

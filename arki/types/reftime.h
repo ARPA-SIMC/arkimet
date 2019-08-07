@@ -46,8 +46,7 @@ struct Reftime : public StyledType<Reftime>
     /// CODEC functions
     static std::unique_ptr<Reftime> decode(BinaryDecoder& dec);
     static std::unique_ptr<Reftime> decodeString(const std::string& val);
-    static std::unique_ptr<Reftime> decodeMapping(const emitter::memory::Mapping& val);
-    static std::unique_ptr<Reftime> decode_structure(const emitter::Keys& keys, const emitter::Reader& val);
+    static std::unique_ptr<Reftime> decode_structure(const structured::Keys& keys, const structured::Reader& val);
 
 	static void lua_loadlib(lua_State* L);
 
@@ -97,7 +96,7 @@ struct Position : public Reftime
     Style style() const override;
     void encodeWithoutEnvelope(BinaryEncoder& enc) const override;
     std::ostream& writeToOstream(std::ostream& o) const override;
-    void serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f=0) const override;
+    void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
     std::string exactQuery() const override;
     const char* lua_type_name() const override;
     bool lua_lookup(lua_State* L, const std::string& name) const override;
@@ -114,8 +113,7 @@ struct Position : public Reftime
     void expand_date_range(core::Time& begin, core::Time& end) const override;
 
     static std::unique_ptr<Position> create(const core::Time& position);
-    static std::unique_ptr<Position> decodeMapping(const emitter::memory::Mapping& val);
-    static std::unique_ptr<Position> decode_structure(const emitter::Keys& keys, const emitter::Reader& val);
+    static std::unique_ptr<Position> decode_structure(const structured::Keys& keys, const structured::Reader& val);
 };
 
 struct Period : public Reftime
@@ -128,7 +126,7 @@ struct Period : public Reftime
     Style style() const override;
     void encodeWithoutEnvelope(BinaryEncoder& enc) const override;
     std::ostream& writeToOstream(std::ostream& o) const override;
-    void serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f=0) const override;
+    void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
     const char* lua_type_name() const override;
     bool lua_lookup(lua_State* L, const std::string& name) const override;
 
@@ -144,8 +142,7 @@ struct Period : public Reftime
     void expand_date_range(core::Time& begin, core::Time& end) const override;
 
     static std::unique_ptr<Period> create(const core::Time& begin, const core::Time& end);
-    static std::unique_ptr<Period> decodeMapping(const emitter::memory::Mapping& val);
-    static std::unique_ptr<Period> decode_structure(const emitter::Keys& keys, const emitter::Reader& val);
+    static std::unique_ptr<Period> decode_structure(const structured::Keys& keys, const structured::Reader& val);
 };
 
 }

@@ -2,9 +2,9 @@
 #include "arki/types/utils.h"
 #include "arki/binary.h"
 #include "arki/utils/string.h"
-#include "arki/emitter.h"
-#include "arki/emitter/memory.h"
-#include "arki/emitter/keys.h"
+#include "arki/structured/emitter.h"
+#include "arki/structured/memory.h"
+#include "arki/structured/keys.h"
 #include "arki/libconfig.h"
 #include <iomanip>
 #include <sstream>
@@ -65,7 +65,7 @@ std::ostream& Value::writeToOstream(std::ostream& o) const
     return o << str::encode_cstring(buffer);
 }
 
-void Value::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
+void Value::serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f) const
 {
     e.add(keys.value_value, buffer);
 }
@@ -81,12 +81,7 @@ unique_ptr<Value> Value::decodeString(const std::string& val)
     return Value::create(str::decode_cstring(val, len));
 }
 
-unique_ptr<Value> Value::decodeMapping(const emitter::memory::Mapping& val)
-{
-    return Value::create(val["va"].want_string("parsing item value encoded in metadata"));
-}
-
-std::unique_ptr<Value> Value::decode_structure(const emitter::Keys& keys, const emitter::Reader& val)
+std::unique_ptr<Value> Value::decode_structure(const structured::Keys& keys, const structured::Reader& val)
 {
     return Value::create(val.as_string(keys.value_value, "item value encoded in metadata"));
 }

@@ -1,15 +1,13 @@
-#ifndef ARKI_EMITTER_FWD_H
-#define ARKI_EMITTER_FWD_H
+#ifndef ARKI_STRUCTURED_FWD_H
+#define ARKI_STRUCTURED_FWD_H
 
 namespace arki {
+namespace structured {
 struct Emitter;
-
-namespace emitter {
+struct Reader;
 struct Keys;
 extern const Keys keys_json;
 extern const Keys keys_python;
-
-struct Reader;
 
 namespace memory {
 struct Node;

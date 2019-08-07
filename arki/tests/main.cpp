@@ -2,7 +2,7 @@
 #include "arki/utils/testrunner.h"
 #include "arki/utils/term.h"
 #include "arki/core/file.h"
-#include "arki/emitter/json.h"
+#include "arki/structured/json.h"
 #include "arki/runtime.h"
 #include <signal.h>
 #include <cstring>
@@ -67,7 +67,7 @@ struct ArkiRunner
     {
         using namespace arki::utils::tests;
         auto& tests = TestRegistry::get();
-        arki::emitter::JSON out(cout);
+        arki::structured::JSON out(cout);
         out.start_list();
         tests.iterate_test_methods([&](const TestCase& tc, const TestMethod& tm) {
             out.start_mapping();

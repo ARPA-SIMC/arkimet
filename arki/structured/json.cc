@@ -8,7 +8,7 @@
 using namespace std;
 
 namespace arki {
-namespace emitter {
+namespace structured {
 
 JSON::JSON(std::ostream& out) : out(out) {}
 JSON::~JSON() {}

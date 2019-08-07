@@ -119,7 +119,7 @@ public:
     void clear();
 
     /// Decode from structured data
-    void read(const emitter::memory::Mapping& val);
+    void read(const structured::Keys& keys, const structured::Reader& val);
 
     /**
      * Read a metadata document from the given input stream.
@@ -207,7 +207,7 @@ public:
     void write_yaml(core::AbstractOutputFile& out, const Formatter* formatter=nullptr) const;
 
     /// Serialise using an emitter
-    void serialise(Emitter& e, const emitter::Keys& keys, const Formatter* f=0) const;
+    void serialise(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const;
 
     /// Encode to a buffer. Inline data will not be added.
     std::vector<uint8_t> encodeBinary() const;

@@ -3,9 +3,9 @@
 #include "arki/exceptions.h"
 #include "arki/binary.h"
 #include "arki/utils/string.h"
-#include "arki/emitter.h"
-#include "arki/emitter/memory.h"
-#include "arki/emitter/keys.h"
+#include "arki/structured/emitter.h"
+#include "arki/structured/memory.h"
+#include "arki/structured/keys.h"
 #include "arki/utils/lua.h"
 #include "config.h"
 #include <sstream>
@@ -65,20 +65,7 @@ unique_ptr<Reftime> Reftime::decode(BinaryDecoder& dec)
     }
 }
 
-unique_ptr<Reftime> Reftime::decodeMapping(const emitter::memory::Mapping& val)
-{
-    using namespace emitter::memory;
-
-    switch (style_from_mapping(val))
-    {
-        case Style::POSITION: return upcast<Reftime>(reftime::Position::decodeMapping(val));
-        case Style::PERIOD: return upcast<Reftime>(reftime::Period::decodeMapping(val));
-        default:
-            throw_consistency_error("parsing Reftime", "unknown Reftime style " + val.get_string());
-    }
-}
-
-std::unique_ptr<Reftime> Reftime::decode_structure(const emitter::Keys& keys, const emitter::Reader& val)
+std::unique_ptr<Reftime> Reftime::decode_structure(const structured::Keys& keys, const structured::Reader& val)
 {
     switch (style_from_structure(keys, val))
     {
@@ -159,20 +146,14 @@ std::ostream& Position::writeToOstream(std::ostream& o) const
     return o << time;
 }
 
-void Position::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
+void Position::serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f) const
 {
     Reftime::serialise_local(e, keys, f);
     e.add(keys.reftime_position_time);
-    time.serialiseList(e);
+    e.add(time);
 }
 
-unique_ptr<Position> Position::decodeMapping(const emitter::memory::Mapping& val)
-{
-    Time time = Time::decodeList(val["ti"].want_list("parsing position reftime time"));
-    return Position::create(time);
-}
-
-std::unique_ptr<Position> Position::decode_structure(const emitter::Keys& keys, const emitter::Reader& val)
+std::unique_ptr<Position> Position::decode_structure(const structured::Keys& keys, const structured::Reader& val)
 {
     return Position::create(val.as_time(keys.reftime_position_time, "time"));
 }
@@ -254,21 +235,14 @@ std::ostream& Period::writeToOstream(std::ostream& o) const
     return o << begin << " to " << end;
 }
 
-void Period::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
+void Period::serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f) const
 {
     Reftime::serialise_local(e, keys, f);
-    e.add(keys.reftime_period_begin); begin.serialiseList(e);
-    e.add(keys.reftime_period_end); end.serialiseList(e);
+    e.add(keys.reftime_period_begin); e.add(begin);
+    e.add(keys.reftime_period_end); e.add(end);
 }
 
-unique_ptr<Period> Period::decodeMapping(const emitter::memory::Mapping& val)
-{
-    Time beg = Time::decodeList(val["b"].want_list("parsing period reftime begin"));
-    Time end = Time::decodeList(val["e"].want_list("parsing period reftime end"));
-    return Period::create(beg, end);
-}
-
-std::unique_ptr<Period> Period::decode_structure(const emitter::Keys& keys, const emitter::Reader& val)
+std::unique_ptr<Period> Period::decode_structure(const structured::Keys& keys, const structured::Reader& val)
 {
     return Period::create(
             val.as_time(keys.reftime_period_begin, "period begin"),

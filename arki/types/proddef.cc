@@ -2,9 +2,9 @@
 #include "arki/types/proddef.h"
 #include "arki/types/utils.h"
 #include "arki/binary.h"
-#include "arki/emitter.h"
-#include "arki/emitter/memory.h"
-#include "arki/emitter/keys.h"
+#include "arki/structured/emitter.h"
+#include "arki/structured/memory.h"
+#include "arki/structured/keys.h"
 #include "arki/libconfig.h"
 #include <sstream>
 #include <cmath>
@@ -70,19 +70,7 @@ unique_ptr<Proddef> Proddef::decodeString(const std::string& val)
     }
 }
 
-unique_ptr<Proddef> Proddef::decodeMapping(const emitter::memory::Mapping& val)
-{
-    using namespace emitter::memory;
-
-    switch (style_from_mapping(val))
-    {
-        case Style::GRIB: return upcast<Proddef>(proddef::GRIB::decodeMapping(val));
-        default:
-            throw_consistency_error("parsing Proddef", "unknown Proddef style " + val.get_string());
-    }
-}
-
-std::unique_ptr<Proddef> Proddef::decode_structure(const emitter::Keys& keys, const emitter::Reader& val)
+std::unique_ptr<Proddef> Proddef::decode_structure(const structured::Keys& keys, const structured::Reader& val)
 {
     switch (style_from_structure(keys, val))
     {
@@ -132,20 +120,17 @@ std::ostream& GRIB::writeToOstream(std::ostream& o) const
 {
     return o << formatStyle(style()) << "(" << m_values.toString() << ")";
 }
-void GRIB::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
+void GRIB::serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f) const
 {
     Proddef::serialise_local(e, keys, f);
     e.add(keys.proddef_value);
     m_values.serialise(e);
 }
-unique_ptr<GRIB> GRIB::decodeMapping(const emitter::memory::Mapping& val)
-{
-    return GRIB::create(ValueBag::parse(val["va"].get_mapping()));
-}
-std::unique_ptr<GRIB> GRIB::decode_structure(const emitter::Keys& keys, const emitter::Reader& val)
+
+std::unique_ptr<GRIB> GRIB::decode_structure(const structured::Keys& keys, const structured::Reader& val)
 {
     std::unique_ptr<GRIB> res;
-    val.sub(keys.proddef_value, "proddef value", [&](const emitter::Reader& values) {
+    val.sub(keys.proddef_value, "proddef value", [&](const structured::Reader& values) {
         res = GRIB::create(ValueBag::parse(values));
     });
     return res;

@@ -3,9 +3,9 @@
 #include "arki/types/utils.h"
 #include "arki/utils/iostream.h"
 #include "arki/binary.h"
-#include "arki/emitter.h"
-#include "arki/emitter/memory.h"
-#include "arki/emitter/keys.h"
+#include "arki/structured/emitter.h"
+#include "arki/structured/memory.h"
+#include "arki/structured/keys.h"
 #include "arki/libconfig.h"
 #include <sstream>
 #include <iomanip>
@@ -202,22 +202,7 @@ unique_ptr<Timerange> Timerange::decode(BinaryDecoder& dec)
 	}
 }
 
-unique_ptr<Timerange> Timerange::decodeMapping(const emitter::memory::Mapping& val)
-{
-    using namespace emitter::memory;
-
-    switch (style_from_mapping(val))
-    {
-        case Style::GRIB1: return upcast<Timerange>(timerange::GRIB1::decodeMapping(val));
-        case Style::GRIB2: return upcast<Timerange>(timerange::GRIB2::decodeMapping(val));
-        case Style::TIMEDEF: return upcast<Timerange>(timerange::Timedef::decodeMapping(val));
-        case Style::BUFR: return upcast<Timerange>(timerange::BUFR::decodeMapping(val));
-        default:
-            throw_consistency_error("parsing Timerange", "unknown Timerange style " + val.get_string());
-    }
-}
-
-std::unique_ptr<Timerange> Timerange::decode_structure(const emitter::Keys& keys, const emitter::Reader& val)
+std::unique_ptr<Timerange> Timerange::decode_structure(const structured::Keys& keys, const structured::Reader& val)
 {
     switch (style_from_structure(keys, val))
     {
@@ -993,7 +978,7 @@ std::ostream& GRIB1::writeToOstream(std::ostream& o) const
 	return o << ")";
 }
 
-void GRIB1::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
+void GRIB1::serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f) const
 {
     Timerange::serialise_local(e, keys, f);
     e.add(keys.timerange_type, (int)m_type);
@@ -1001,17 +986,8 @@ void GRIB1::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatt
     e.add(keys.timerange_p1, (int)m_p1);
     e.add(keys.timerange_p2, (int)m_p2);
 }
-unique_ptr<GRIB1> GRIB1::decodeMapping(const emitter::memory::Mapping& val)
-{
-    using namespace emitter::memory;
-    return GRIB1::create(
-            val["ty"].want_int("parsing GRIB1 timerange ty"),
-            val["un"].want_int("parsing GRIB1 timerange un"),
-            val["p1"].want_int("parsing GRIB1 timerange p1"),
-            val["p2"].want_int("parsing GRIB1 timerange p2"));
-}
 
-std::unique_ptr<GRIB1> GRIB1::decode_structure(const emitter::Keys& keys, const emitter::Reader& val)
+std::unique_ptr<GRIB1> GRIB1::decode_structure(const structured::Keys& keys, const structured::Reader& val)
 {
     return GRIB1::create(
             val.as_int(keys.timerange_type, "timerange type"),
@@ -1546,7 +1522,7 @@ std::ostream& GRIB2::writeToOstream(std::ostream& o) const
 	  << ")";
 }
 
-void GRIB2::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
+void GRIB2::serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f) const
 {
     Timerange::serialise_local(e, keys, f);
     e.add(keys.timerange_type, (int)m_type);
@@ -1554,17 +1530,8 @@ void GRIB2::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatt
     e.add(keys.timerange_p1, (int)m_p1);
     e.add(keys.timerange_p2, (int)m_p2);
 }
-unique_ptr<GRIB2> GRIB2::decodeMapping(const emitter::memory::Mapping& val)
-{
-    using namespace emitter::memory;
-    return GRIB2::create(
-            val["ty"].want_int("parsing GRIB2 timerange ty"),
-            val["un"].want_int("parsing GRIB2 timerange un"),
-            val["p1"].want_int("parsing GRIB2 timerange p1"),
-            val["p2"].want_int("parsing GRIB2 timerange p2"));
-}
 
-std::unique_ptr<GRIB2> GRIB2::decode_structure(const emitter::Keys& keys, const emitter::Reader& val)
+std::unique_ptr<GRIB2> GRIB2::decode_structure(const structured::Keys& keys, const structured::Reader& val)
 {
     return GRIB2::create(
             val.as_int(keys.timerange_type, "timerange type"),
@@ -1729,7 +1696,7 @@ unique_ptr<Timedef> Timedef::createFromYaml(const std::string& encoded)
 }
 
 
-void Timedef::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
+void Timedef::serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f) const
 {
     Timerange::serialise_local(e, keys, f);
     e.add(keys.timerange_step_len, (int)m_step_len);
@@ -1744,34 +1711,8 @@ void Timedef::serialise_local(Emitter& e, const emitter::Keys& keys, const Forma
         }
     }
 }
-unique_ptr<Timedef> Timedef::decodeMapping(const emitter::memory::Mapping& val)
-{
-    using namespace emitter::memory;
 
-    uint32_t step_len = val["sl"].want_int("parsing Timedef forecast step length");
-    TimedefUnit step_unit = (TimedefUnit)val["su"].want_int("parsing Timedef forecast step units");
-
-    int stat_type = 255;
-    uint32_t stat_len = 0;
-    TimedefUnit stat_unit = timerange::UNIT_MISSING;
-
-    const Node& pt = val["pt"];
-    if (pt.is_int())
-    {
-        stat_type = pt.get_int();
-
-        const Node& pu = val["pu"];
-        if (pu.is_int())
-        {
-            stat_unit = (TimedefUnit)pu.get_int();
-            stat_len = val["pl"].want_int("parsing Timedef length of interval of statistical processing");
-        }
-    }
-
-    return timerange::Timedef::create(step_len, step_unit, stat_type, stat_len, stat_unit);
-}
-
-std::unique_ptr<Timedef> Timedef::decode_structure(const emitter::Keys& keys, const emitter::Reader& val)
+std::unique_ptr<Timedef> Timedef::decode_structure(const structured::Keys& keys, const structured::Reader& val)
 {
     uint32_t step_len = val.as_int(keys.timerange_step_len, "Timedef forecast step length");
     TimedefUnit step_unit = (TimedefUnit)val.as_int(keys.timerange_step_unit, "Timedef forecast step units");
@@ -1780,11 +1721,11 @@ std::unique_ptr<Timedef> Timedef::decode_structure(const emitter::Keys& keys, co
     uint32_t stat_len = 0;
     TimedefUnit stat_unit = timerange::UNIT_MISSING;
 
-    if (val.has_key(keys.timerange_stat_type, emitter::NodeType::INT))
+    if (val.has_key(keys.timerange_stat_type, structured::NodeType::INT))
     {
         stat_type = val.as_int(keys.timerange_stat_type, "Timedef statistical type");
 
-        if (val.has_key(keys.timerange_stat_unit, emitter::NodeType::INT))
+        if (val.has_key(keys.timerange_stat_unit, structured::NodeType::INT))
         {
             stat_unit = (TimedefUnit)val.as_int(keys.timerange_stat_unit, "Timedef statistical unit");
             stat_len = val.as_int(keys.timerange_stat_len, "Timedef length of interval of statistical processing");
@@ -2248,21 +2189,14 @@ std::ostream& BUFR::writeToOstream(std::ostream& o) const
 	return o << ")";
 }
 
-void BUFR::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
+void BUFR::serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f) const
 {
     Timerange::serialise_local(e, keys, f);
     e.add(keys.timerange_unit, (int)m_unit);
     e.add(keys.timerange_value, (int)m_value);
 }
-unique_ptr<BUFR> BUFR::decodeMapping(const emitter::memory::Mapping& val)
-{
-    using namespace emitter::memory;
-    return BUFR::create(
-            val["va"].want_int("parsing BUFR timerange value"),
-            val["un"].want_int("parsing BUFR timerange un"));
-}
 
-std::unique_ptr<BUFR> BUFR::decode_structure(const emitter::Keys& keys, const emitter::Reader& val)
+std::unique_ptr<BUFR> BUFR::decode_structure(const structured::Keys& keys, const structured::Reader& val)
 {
     return BUFR::create(
             val.as_int(keys.timerange_value, "timerange value"),

@@ -51,8 +51,7 @@ struct Area : public types::StyledType<Area>
     /// CODEC functions
     static std::unique_ptr<Area> decode(BinaryDecoder& dec);
     static std::unique_ptr<Area> decodeString(const std::string& val);
-    static std::unique_ptr<Area> decodeMapping(const emitter::memory::Mapping& val);
-    static std::unique_ptr<Area> decode_structure(const emitter::Keys& keys, const emitter::Reader& val);
+    static std::unique_ptr<Area> decode_structure(const structured::Keys& keys, const structured::Reader& val);
 
     /// Return the geographical bounding box
     const arki::utils::geos::Geometry* bbox() const;
@@ -85,7 +84,7 @@ public:
     Style style() const override;
     void encodeWithoutEnvelope(BinaryEncoder& enc) const override;
     std::ostream& writeToOstream(std::ostream& o) const override;
-    void serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f=0) const override;
+    void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
     std::string exactQuery() const override;
     const char* lua_type_name() const override;
     bool lua_lookup(lua_State* L, const std::string& name) const override;
@@ -95,8 +94,7 @@ public:
 
     GRIB* clone() const override;
     static std::unique_ptr<GRIB> create(const ValueBag& values);
-    static std::unique_ptr<GRIB> decodeMapping(const emitter::memory::Mapping& val);
-    static std::unique_ptr<GRIB> decode_structure(const emitter::Keys& keys, const emitter::Reader& val);
+    static std::unique_ptr<GRIB> decode_structure(const structured::Keys& keys, const structured::Reader& val);
 };
 
 class ODIMH5 : public Area
@@ -112,7 +110,7 @@ public:
     Style style() const override;
     void encodeWithoutEnvelope(BinaryEncoder& enc) const override;
     std::ostream& writeToOstream(std::ostream& o) const override;
-    void serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f=0) const override;
+    void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
     std::string exactQuery() const override;
     const char* lua_type_name() const override;
     bool lua_lookup(lua_State* L, const std::string& name) const override;
@@ -122,8 +120,7 @@ public:
 
     ODIMH5* clone() const override;
     static std::unique_ptr<ODIMH5> create(const ValueBag& values);
-    static std::unique_ptr<ODIMH5> decodeMapping(const emitter::memory::Mapping& val);
-    static std::unique_ptr<ODIMH5> decode_structure(const emitter::Keys& keys, const emitter::Reader& val);
+    static std::unique_ptr<ODIMH5> decode_structure(const structured::Keys& keys, const structured::Reader& val);
 };
 
 class VM2 : public Area
@@ -142,7 +139,7 @@ public:
     void encodeWithoutEnvelope(BinaryEncoder& enc) const override;
     void encode_for_indexing(BinaryEncoder& enc) const override;
     std::ostream& writeToOstream(std::ostream& o) const override;
-    void serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f=0) const override;
+    void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
     std::string exactQuery() const override;
     const char* lua_type_name() const override;
     bool lua_lookup(lua_State* L, const std::string& name) const override;
@@ -152,8 +149,7 @@ public:
 
     VM2* clone() const override;
     static std::unique_ptr<VM2> create(unsigned station_id);
-    static std::unique_ptr<VM2> decodeMapping(const emitter::memory::Mapping& val);
-    static std::unique_ptr<VM2> decode_structure(const emitter::Keys& keys, const emitter::Reader& val);
+    static std::unique_ptr<VM2> decode_structure(const structured::Keys& keys, const structured::Reader& val);
 };
 
 

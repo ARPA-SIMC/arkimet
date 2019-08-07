@@ -1,7 +1,7 @@
 #include "tests.h"
 #include "arki/binary.h"
-#include "arki/emitter/json.h"
-#include "arki/emitter/memory.h"
+#include "arki/structured/json.h"
+#include "arki/structured/memory.h"
 #include "arki/exceptions.h"
 #include "arki/libconfig.h"
 #include "arki/utils/files.h"
@@ -76,13 +76,13 @@ void ActualTime::serializes() const
     // JSON encoding
     {
         std::stringstream jbuf;
-        emitter::JSON json(jbuf);
-        _actual.serialise(json);
+        structured::JSON json(jbuf);
+        json.add(_actual);
         jbuf.seekg(0);
-        emitter::Memory parsed;
-        emitter::JSON::parse(jbuf, parsed);
-        wassert(actual(parsed.root().is_mapping()).istrue());
-        Time iparsed = Time::decodeMapping(parsed.root().get_mapping());
+        structured::Memory parsed;
+        structured::JSON::parse(jbuf, parsed);
+        wassert(actual(parsed.root().type()) == structured::NodeType::LIST);
+        Time iparsed = parsed.root().as_time("time");
         wassert(actual(iparsed) == _actual);
     }
 }

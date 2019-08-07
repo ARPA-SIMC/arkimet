@@ -2,9 +2,9 @@
 #include "source.h"
 #include "source/blob.h"
 #include "arki/segment.h"
-#include "arki/emitter/json.h"
-#include "arki/emitter/memory.h"
-#include "arki/emitter/keys.h"
+#include "arki/structured/json.h"
+#include "arki/structured/memory.h"
+#include "arki/structured/keys.h"
 #include "arki/core/file.h"
 #include "arki/binary.h"
 #include "arki/utils/sys.h"
@@ -105,13 +105,13 @@ add_method("blob_pathnames_encode", [] {
     // Encode to JSON, decode, we keep the root
     {
         std::stringstream jbuf;
-        emitter::JSON json(jbuf);
-        o->serialise(json, emitter::keys_json);
+        structured::JSON json(jbuf);
+        o->serialise(json, structured::keys_json);
         jbuf.seekg(0);
-        emitter::Memory parsed;
-        emitter::JSON::parse(jbuf, parsed);
+        structured::Memory parsed;
+        structured::JSON::parse(jbuf, parsed);
 
-        decoded = downcast<Source>(types::decodeMapping(parsed.root().get_mapping()));
+        decoded = downcast<Source>(types::decode_structure(structured::keys_json, parsed.root()));
         wassert(actual(decoded).is_source_blob("test", "/tmp", "testfile", 21, 42));
     }
 });

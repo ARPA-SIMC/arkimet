@@ -5,7 +5,7 @@
 #include <arki/defs.h>
 #include <arki/core/fwd.h>
 #include <arki/types/fwd.h>
-#include <arki/emitter/fwd.h>
+#include <arki/structured/fwd.h>
 #include <string>
 #include <vector>
 #include <memory>
@@ -131,8 +131,8 @@ struct Type
     std::string to_string() const;
 
     /// Serialise using an emitter
-    virtual void serialise(Emitter& e, const emitter::Keys& keys, const Formatter* f=0) const;
-    virtual void serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f=0) const = 0;
+    virtual void serialise(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const;
+    virtual void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const = 0;
 
 	/**
 	 * Return a matcher query (without the metadata type prefix) that
@@ -226,11 +226,8 @@ std::unique_ptr<Type> decode(BinaryDecoder& dec);
 
 std::unique_ptr<Type> decodeInner(types::Code, BinaryDecoder& dec);
 std::unique_ptr<Type> decodeString(types::Code, const std::string& val);
-std::unique_ptr<Type> decodeMapping(const emitter::memory::Mapping& m);
-/// Same as decodeMapping, but does not look for the item type in the mapping
-std::unique_ptr<Type> decodeMapping(types::Code, const emitter::memory::Mapping& m);
-std::unique_ptr<Type> decode_structure(const emitter::Keys& keys, const emitter::Reader& reader);
-std::unique_ptr<Type> decode_structure(const emitter::Keys& keys, types::Code code, const emitter::Reader& reader);
+std::unique_ptr<Type> decode_structure(const structured::Keys& keys, const structured::Reader& reader);
+std::unique_ptr<Type> decode_structure(const structured::Keys& keys, types::Code code, const structured::Reader& reader);
 std::string tag(types::Code);
 
 }

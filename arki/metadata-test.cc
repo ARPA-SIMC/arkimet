@@ -14,9 +14,9 @@
 #include "types/assigneddataset.h"
 #include "types/source/blob.h"
 #include "binary.h"
-#include "emitter/keys.h"
-#include "emitter/json.h"
-#include "emitter/memory.h"
+#include "structured/keys.h"
+#include "structured/json.h"
+#include "structured/memory.h"
 #include "utils/sys.h"
 #include "utils/files.h"
 #include <fcntl.h>
@@ -221,16 +221,16 @@ add_method("json", [](Fixture& f) {
 
     // Serialise to JSON;
     stringstream output;
-    emitter::JSON json(output);
-    md.serialise(json, emitter::keys_json);
+    structured::JSON json(output);
+    md.serialise(json, structured::keys_json);
 
     // Parse back
     stringstream stream(output.str(), ios_base::in);
-    emitter::Memory parsed;
-    emitter::JSON::parse(stream, parsed);
+    structured::Memory parsed;
+    structured::JSON::parse(stream, parsed);
 
     Metadata md1;
-    md1.read(parsed.root().want_mapping("parsing metadata"));
+    md1.read(structured::keys_json, parsed.root());
 
     wassert(actual(Source::createBlobUnlocked("grib", "", "inbound/test.grib1", 1, 2)) == md1.source());
     wassert(actual(md1.source().format) == "grib");
@@ -242,16 +242,16 @@ add_method("json", [](Fixture& f) {
 
     // Serialise to JSON
     stringstream output1;
-    emitter::JSON json1(output1);
-    md.serialise(json1, emitter::keys_json);
+    structured::JSON json1(output1);
+    md.serialise(json1, structured::keys_json);
 
     // Parse back
     stringstream stream1(output1.str(), ios_base::in);
-    emitter::Memory parsed1;
-    emitter::JSON::parse(stream1, parsed1);
+    structured::Memory parsed1;
+    structured::JSON::parse(stream1, parsed1);
 
     Metadata md2;
-    md2.read(parsed1.root().want_mapping("parsing metadata"));
+    md2.read(structured::keys_json, parsed1.root());
 
     wassert(actual(Reftime::createPeriod(Time(2007, 6, 5, 4, 3, 2), Time(2008, 7, 6, 5, 4, 3))) == md2.get<Reftime>());
 });

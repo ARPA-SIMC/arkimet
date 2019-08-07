@@ -3,9 +3,9 @@
 #include "arki/types/utils.h"
 #include "arki/binary.h"
 #include "arki/utils/string.h"
-#include "arki/emitter.h"
-#include "arki/emitter/memory.h"
-#include "arki/emitter/keys.h"
+#include "arki/structured/emitter.h"
+#include "arki/structured/memory.h"
+#include "arki/structured/keys.h"
 #include "arki/utils/lua.h"
 #include <iomanip>
 #include <sstream>
@@ -142,22 +142,7 @@ unique_ptr<Origin> Origin::decodeString(const std::string& val)
 	}
 }
 
-unique_ptr<Origin> Origin::decodeMapping(const emitter::memory::Mapping& val)
-{
-    using namespace emitter::memory;
-
-    switch (style_from_mapping(val))
-    {
-        case Style::GRIB1: return upcast<Origin>(origin::GRIB1::decodeMapping(val));
-        case Style::GRIB2: return upcast<Origin>(origin::GRIB2::decodeMapping(val));
-        case Style::BUFR: return upcast<Origin>(origin::BUFR::decodeMapping(val));
-        case Style::ODIMH5: return upcast<Origin>(origin::ODIMH5::decodeMapping(val));
-        default:
-            throw_consistency_error("parsing Origin", "unknown Origin style " + val.get_string());
-    }
-}
-
-std::unique_ptr<Origin> Origin::decode_structure(const emitter::Keys& keys, const emitter::Reader& val)
+std::unique_ptr<Origin> Origin::decode_structure(const structured::Keys& keys, const structured::Reader& val)
 {
     switch (style_from_structure(keys, val))
     {
@@ -261,21 +246,15 @@ std::ostream& GRIB1::writeToOstream(std::ostream& o) const
 		 << setfill(' ')
 		 << ")";
 }
-void GRIB1::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
+void GRIB1::serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f) const
 {
     Origin::serialise_local(e, keys, f);
     e.add(keys.origin_centre, m_centre);
     e.add(keys.origin_subcentre, m_subcentre);
     e.add(keys.origin_process, m_process);
 }
-std::unique_ptr<GRIB1> GRIB1::decodeMapping(const emitter::memory::Mapping& val)
-{
-    return GRIB1::create(
-            val["ce"].want_int("parsing GRIB1 origin centre"),
-            val["sc"].want_int("parsing GRIB1 origin subcentre"),
-            val["pr"].want_int("parsing GRIB1 origin process"));
-}
-std::unique_ptr<GRIB1> GRIB1::decode_structure(const emitter::Keys& keys, const emitter::Reader& val)
+
+std::unique_ptr<GRIB1> GRIB1::decode_structure(const structured::Keys& keys, const structured::Reader& val)
 {
     return GRIB1::create(
             val.as_int(keys.origin_centre, "origin centre"),
@@ -379,7 +358,7 @@ std::ostream& GRIB2::writeToOstream(std::ostream& o) const
 		 << setfill(' ')
 		 << ")";
 }
-void GRIB2::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
+void GRIB2::serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f) const
 {
     Origin::serialise_local(e, keys, f);
     e.add(keys.origin_centre, m_centre);
@@ -388,16 +367,8 @@ void GRIB2::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatt
     e.add(keys.origin_background_process_id, m_bgprocessid);
     e.add(keys.origin_process_id, m_processid);
 }
-unique_ptr<GRIB2> GRIB2::decodeMapping(const emitter::memory::Mapping& val)
-{
-    return GRIB2::create(
-            val["ce"].want_int("parsing GRIB1 origin centre"),
-            val["sc"].want_int("parsing GRIB1 origin subcentre"),
-            val["pt"].want_int("parsing GRIB1 origin process type"),
-            val["bi"].want_int("parsing GRIB1 origin bg process id"),
-            val["pi"].want_int("parsing GRIB1 origin process id"));
-}
-std::unique_ptr<GRIB2> GRIB2::decode_structure(const emitter::Keys& keys, const emitter::Reader& val)
+
+std::unique_ptr<GRIB2> GRIB2::decode_structure(const structured::Keys& keys, const structured::Reader& val)
 {
     return GRIB2::create(
             val.as_int(keys.origin_centre, "origin centre"),
@@ -512,19 +483,14 @@ std::ostream& BUFR::writeToOstream(std::ostream& o) const
 		 << setfill(' ')
 		 << ")";
 }
-void BUFR::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
+void BUFR::serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f) const
 {
     Origin::serialise_local(e, keys, f);
     e.add(keys.origin_centre, m_centre);
     e.add(keys.origin_subcentre, m_subcentre);
 }
-unique_ptr<BUFR> BUFR::decodeMapping(const emitter::memory::Mapping& val)
-{
-    return BUFR::create(
-            val["ce"].want_int("parsing BUFR origin centre"),
-            val["sc"].want_int("parsing BUFR origin subcentre"));
-}
-std::unique_ptr<BUFR> BUFR::decode_structure(const emitter::Keys& keys, const emitter::Reader& val)
+
+std::unique_ptr<BUFR> BUFR::decode_structure(const structured::Keys& keys, const structured::Reader& val)
 {
     return BUFR::create(
             val.as_int(keys.origin_centre, "origin centre"),
@@ -618,21 +584,15 @@ std::ostream& ODIMH5::writeToOstream(std::ostream& o) const
 		 << m_RAD << ", "
 		 << m_PLC << ")";
 }
-void ODIMH5::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
+void ODIMH5::serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f) const
 {
     Origin::serialise_local(e, keys, f);
     e.add(keys.origin_wmo, m_WMO);
     e.add(keys.origin_rad, m_RAD);
     e.add(keys.origin_plc, m_PLC);
 }
-unique_ptr<ODIMH5> ODIMH5::decodeMapping(const emitter::memory::Mapping& val)
-{
-    return ODIMH5::create(
-            val["wmo"].want_string("parsing ODIMH5 origin WMO"),
-            val["rad"].want_string("parsing ODIMH5 origin RAD"),
-            val["plc"].want_string("parsing ODIMH5 origin PLC"));
-}
-std::unique_ptr<ODIMH5> ODIMH5::decode_structure(const emitter::Keys& keys, const emitter::Reader& val)
+
+std::unique_ptr<ODIMH5> ODIMH5::decode_structure(const structured::Keys& keys, const structured::Reader& val)
 {
     return ODIMH5::create(
             val.as_string(keys.origin_wmo, "origin wmo"),

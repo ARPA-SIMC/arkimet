@@ -47,8 +47,7 @@ struct Product : public types::StyledType<Product>
     /// CODEC functions
     static std::unique_ptr<Product> decode(BinaryDecoder& dec);
     static std::unique_ptr<Product> decodeString(const std::string& val);
-    static std::unique_ptr<Product> decodeMapping(const emitter::memory::Mapping& val);
-    static std::unique_ptr<Product> decode_structure(const emitter::Keys& keys, const emitter::Reader& val);
+    static std::unique_ptr<Product> decode_structure(const structured::Keys& keys, const structured::Reader& val);
 
 	// Deprecated functions
 	virtual std::vector<int> toIntVector() const = 0;
@@ -93,7 +92,7 @@ public:
     Style style() const override;
     void encodeWithoutEnvelope(BinaryEncoder& enc) const override;
     std::ostream& writeToOstream(std::ostream& o) const override;
-    void serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f=0) const override;
+    void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
     std::string exactQuery() const override;
     const char* lua_type_name() const override;
 
@@ -104,8 +103,7 @@ public:
 
     GRIB1* clone() const override;
     static std::unique_ptr<GRIB1> create(unsigned char origin, unsigned char table, unsigned char product);
-    static std::unique_ptr<GRIB1> decodeMapping(const emitter::memory::Mapping& val);
-    static std::unique_ptr<GRIB1> decode_structure(const emitter::Keys& keys, const emitter::Reader& val);
+    static std::unique_ptr<GRIB1> decode_structure(const structured::Keys& keys, const structured::Reader& val);
 
     // Deprecated functions
     std::vector<int> toIntVector() const override;
@@ -132,7 +130,7 @@ public:
     Style style() const override;
     void encodeWithoutEnvelope(BinaryEncoder& enc) const override;
     std::ostream& writeToOstream(std::ostream& o) const override;
-    void serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f=0) const override;
+    void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
     std::string exactQuery() const override;
     const char* lua_type_name() const override;
 
@@ -149,8 +147,7 @@ public:
             unsigned char number,
             unsigned char table_version=4,
             unsigned char local_table_version=255);
-    static std::unique_ptr<GRIB2> decodeMapping(const emitter::memory::Mapping& val);
-    static std::unique_ptr<GRIB2> decode_structure(const emitter::Keys& keys, const emitter::Reader& val);
+    static std::unique_ptr<GRIB2> decode_structure(const structured::Keys& keys, const structured::Reader& val);
 
     // Deprecated functions
     std::vector<int> toIntVector() const override;
@@ -176,7 +173,7 @@ public:
     Style style() const override;
     void encodeWithoutEnvelope(BinaryEncoder& enc) const override;
     std::ostream& writeToOstream(std::ostream& o) const override;
-    void serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f=0) const override;
+    void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
     std::string exactQuery() const override;
     const char* lua_type_name() const override;
 
@@ -189,8 +186,7 @@ public:
     BUFR* clone() const override;
     static std::unique_ptr<BUFR> create(unsigned char type, unsigned char subtype, unsigned char localsubtype);
     static std::unique_ptr<BUFR> create(unsigned char type, unsigned char subtype, unsigned char localsubtype, const ValueBag& name);
-    static std::unique_ptr<BUFR> decodeMapping(const emitter::memory::Mapping& val);
-    static std::unique_ptr<BUFR> decode_structure(const emitter::Keys& keys, const emitter::Reader& val);
+    static std::unique_ptr<BUFR> decode_structure(const structured::Keys& keys, const structured::Reader& val);
 
     // Deprecated functions
     std::vector<int> toIntVector() const override;
@@ -216,7 +212,7 @@ public:
     Style style() const override;
     void encodeWithoutEnvelope(BinaryEncoder& enc) const override;
     std::ostream& writeToOstream(std::ostream& o) const override;
-    void serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f=0) const override;
+    void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
     std::string exactQuery() const override;
     const char* lua_type_name() const override;
 
@@ -230,8 +226,7 @@ public:
     static std::unique_ptr<ODIMH5> create(const std::string& obj, const std::string& prod
             /*REMOVED:, double prodpar1, double prodpar2*/
     );
-    static std::unique_ptr<ODIMH5> decodeMapping(const emitter::memory::Mapping& val);
-    static std::unique_ptr<ODIMH5> decode_structure(const emitter::Keys& keys, const emitter::Reader& val);
+    static std::unique_ptr<ODIMH5> decode_structure(const structured::Keys& keys, const structured::Reader& val);
 
     // Deprecated functions
     std::vector<int> toIntVector() const override;
@@ -252,7 +247,7 @@ public:
     Style style() const override;
     void encodeWithoutEnvelope(BinaryEncoder& enc) const override;
     std::ostream& writeToOstream(std::ostream& o) const override;
-    void serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f=0) const override;
+    void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
     std::string exactQuery() const override;
     const char* lua_type_name() const override;
 
@@ -263,8 +258,7 @@ public:
 
     VM2* clone() const override;
     static std::unique_ptr<VM2> create(unsigned variable_id);
-    static std::unique_ptr<VM2> decodeMapping(const emitter::memory::Mapping& val);
-    static std::unique_ptr<VM2> decode_structure(const emitter::Keys& keys, const emitter::Reader& val);
+    static std::unique_ptr<VM2> decode_structure(const structured::Keys& keys, const structured::Reader& val);
 
     std::vector<int> toIntVector() const override;
 };

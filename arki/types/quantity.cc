@@ -3,9 +3,9 @@
 #include "arki/types/utils.h"
 #include "arki/binary.h"
 #include "arki/utils/string.h"
-#include "arki/emitter.h"
-#include "arki/emitter/memory.h"
-#include "arki/emitter/keys.h"
+#include "arki/structured/emitter.h"
+#include "arki/structured/memory.h"
+#include "arki/structured/keys.h"
 #include "arki/libconfig.h"
 #include <sstream>
 #include <cmath>
@@ -89,7 +89,7 @@ std::ostream& Quantity::writeToOstream(std::ostream& o) const
     return o << str::join(", ", values.begin(), values.end());
 }
 
-void Quantity::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
+void Quantity::serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f) const
 {
     e.add(keys.quantity_value);
     e.start_list();
@@ -98,21 +98,10 @@ void Quantity::serialise_local(Emitter& e, const emitter::Keys& keys, const Form
     e.end_list();
 }
 
-unique_ptr<Quantity> Quantity::decodeMapping(const emitter::memory::Mapping& val)
-{
-    using namespace emitter::memory;
-    const List& l = val["va"].want_list("parsing Quantity values");
-    set<string> vals;
-    for (vector<const Node*>::const_iterator i = l.val.begin();
-            i != l.val.end(); ++i)
-        vals.insert((*i)->want_string("parsing a Quantity value"));
-    return Quantity::create(vals);
-}
-
-std::unique_ptr<Quantity> Quantity::decode_structure(const emitter::Keys& keys, const emitter::Reader& val)
+std::unique_ptr<Quantity> Quantity::decode_structure(const structured::Keys& keys, const structured::Reader& val)
 {
     std::set<string> vals;
-    val.sub(keys.quantity_value, "Quantity values", [&](const emitter::Reader& list) {
+    val.sub(keys.quantity_value, "Quantity values", [&](const structured::Reader& list) {
         unsigned size = list.list_size("Quantity values");
         for (unsigned i = 0; i < size; ++i)
             vals.insert(list.as_string(i, "quantity value"));

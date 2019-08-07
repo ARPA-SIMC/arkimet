@@ -21,12 +21,6 @@ struct lua_State;
 namespace arki {
 struct BinaryDecoder;
 
-namespace emitter {
-namespace memory {
-struct Mapping;
-}
-}
-
 namespace types {
 
 template<class F>
@@ -54,8 +48,7 @@ struct MetadataType
 {
     typedef std::unique_ptr<Type> (*item_decoder)(BinaryDecoder& dec);
     typedef std::unique_ptr<Type> (*string_decoder)(const std::string& val);
-    typedef std::unique_ptr<Type> (*mapping_decoder)(const emitter::memory::Mapping& val);
-    typedef std::unique_ptr<Type> (*structure_decoder)(const emitter::Keys& keys, const emitter::Reader& reader);
+    typedef std::unique_ptr<Type> (*structure_decoder)(const structured::Keys& keys, const structured::Reader& reader);
     typedef void (*lua_libloader)(lua_State* L);
 
     types::Code type_code;
@@ -63,7 +56,6 @@ struct MetadataType
     std::string tag;
     item_decoder decode_func;
     string_decoder string_decode_func;
-    mapping_decoder mapping_decode_func;
     structure_decoder structure_decode_func;
     lua_libloader lua_loadlib_func;
 
@@ -73,7 +65,6 @@ struct MetadataType
         const std::string& tag,
         item_decoder decode_func,
         string_decoder string_decode_func,
-        mapping_decoder mapping_decode_func,
         structure_decoder structure_decode_func,
         lua_libloader lua_loadlib_func
     );
@@ -94,7 +85,6 @@ struct MetadataType
             traits<T>::type_tag,
             (MetadataType::item_decoder)T::decode,
             (MetadataType::string_decoder)T::decodeString,
-            (MetadataType::mapping_decoder)T::decodeMapping,
             (MetadataType::structure_decoder)T::decode_structure,
             T::lua_loadlib
         );

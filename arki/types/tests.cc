@@ -10,9 +10,9 @@
 #include "arki/binary.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/string.h"
-#include "arki/emitter/json.h"
-#include "arki/emitter/memory.h"
-#include "arki/emitter/keys.h"
+#include "arki/structured/json.h"
+#include "arki/structured/memory.h"
+#include "arki/structured/keys.h"
 #include <cxxabi.h>
 #include <sstream>
 
@@ -197,16 +197,14 @@ void ActualType::serializes() const
     // JSON encoding
     {
         std::stringstream jbuf;
-        emitter::JSON json(jbuf);
-        _actual->serialise(json, emitter::keys_json);
+        structured::JSON json(jbuf);
+        _actual->serialise(json, structured::keys_json);
         jbuf.seekg(0);
-        emitter::Memory parsed;
-        emitter::JSON::parse(jbuf, parsed);
-        wassert(actual(parsed.root().is_mapping()).istrue());
-        unique_ptr<Type> iparsed = wcallchecked(types::decodeMapping(parsed.root().get_mapping()));
-        wassert(actual(iparsed) == _actual);
+        structured::Memory parsed;
+        structured::JSON::parse(jbuf, parsed);
+        wassert(actual(parsed.root().type()) == structured::NodeType::MAPPING);
 
-        iparsed = wcallchecked(types::decode_structure(emitter::keys_json, parsed.root().get_mapping()));
+        unique_ptr<Type> iparsed = wcallchecked(types::decode_structure(structured::keys_json, parsed.root()));
         wassert(actual(iparsed) == _actual);
     }
 }

@@ -21,7 +21,6 @@ MetadataType::MetadataType(
         const std::string& tag,
         item_decoder decode_func,
         string_decoder string_decode_func,
-        mapping_decoder mapping_decode_func,
         structure_decoder structure_decode_func,
         lua_libloader lua_loadlib_func)
     : type_code(type_code),
@@ -29,7 +28,6 @@ MetadataType::MetadataType(
       tag(tag),
       decode_func(decode_func),
       string_decode_func(string_decode_func),
-      mapping_decode_func(mapping_decode_func),
       structure_decode_func(structure_decode_func),
       lua_loadlib_func(lua_loadlib_func)
 {

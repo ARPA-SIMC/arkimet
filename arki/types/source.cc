@@ -7,10 +7,10 @@
 #include "arki/exceptions.h"
 #include "arki/types/utils.h"
 #include "arki/utils/lua.h"
-#include "arki/emitter.h"
-#include "arki/emitter/memory.h"
-#include "arki/emitter/keys.h"
-#include "arki/emitter/structure.h"
+#include "arki/structured/emitter.h"
+#include "arki/structured/memory.h"
+#include "arki/structured/keys.h"
+#include "arki/structured/reader.h"
 #include <sstream>
 
 #define CODE TYPE_SOURCE
@@ -64,7 +64,7 @@ void Source::encodeWithoutEnvelope(BinaryEncoder& enc) const
     enc.add_raw(format);
 }
 
-void Source::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
+void Source::serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f) const
 {
     types::StyledType<Source>::serialise_local(e, keys, f);
     e.add(keys.source_format); e.add(format);
@@ -136,20 +136,7 @@ unique_ptr<Source> Source::decodeString(const std::string& val)
     }
 }
 
-unique_ptr<Source> Source::decodeMapping(const emitter::memory::Mapping& val)
-{
-    using namespace emitter::memory;
-
-    switch (style_from_mapping(val))
-    {
-        case source::Style::BLOB: return upcast<Source>(source::Blob::decodeMapping(val));
-        case source::Style::URL: return upcast<Source>(source::URL::decodeMapping(val));
-        case source::Style::INLINE: return upcast<Source>(source::Inline::decodeMapping(val));
-        default: throw std::runtime_error("Unknown source style " + val.get_string());
-    }
-}
-
-std::unique_ptr<Source> Source::decode_structure(const emitter::Keys& keys, const emitter::Reader& val)
+std::unique_ptr<Source> Source::decode_structure(const structured::Keys& keys, const structured::Reader& val)
 {
     switch (style_from_structure(keys, val))
     {

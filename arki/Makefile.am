@@ -71,11 +71,11 @@ nobase_dist_arkiinclude_HEADERS = \
 		dataset/maintenance-test.h \
 		datasets.h \
 		dispatcher.h \
-		emitter.h \
-		emitter/keys.h \
-		emitter/structure.h \
-		emitter/json.h \
-		emitter/memory.h \
+		structured/emitter.h \
+		structured/keys.h \
+		structured/reader.h \
+		structured/json.h \
+		structured/memory.h \
 		formatter.h \
 		validator.h \
 		iotrace.h \
@@ -246,11 +246,11 @@ libarkimet_la_SOURCES += \
 		utils/term.cc \
 		binary.cc \
 		transaction.cc \
-		emitter.cc \
-		emitter/keys.cc \
-		emitter/structure.cc \
-		emitter/memory.cc \
-		emitter/json.cc \
+		structured/emitter.cc \
+		structured/keys.cc \
+		structured/reader.cc \
+		structured/memory.cc \
+		structured/json.cc \
 		values.cc \
 		bbox.cc \
 		types.cc \
@@ -321,8 +321,8 @@ tests_arki_test_SOURCES += \
 		utils/geos-test.cc \
 		binary-test.cc \
 		transaction-test.cc \
-		emitter/memory-test.cc \
-		emitter/json-test.cc \
+		structured/memory-test.cc \
+		structured/json-test.cc \
 		values-test.cc \
 		types-test.cc \
 		types/bundle-test.cc \

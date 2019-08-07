@@ -2,8 +2,8 @@
 #include "arki/types/bbox.h"
 #include "arki/types/utils.h"
 #include "arki/binary.h"
-#include "arki/emitter.h"
-#include "arki/emitter/memory.h"
+#include "arki/structured/emitter.h"
+#include "arki/structured/memory.h"
 #include "arki/libconfig.h"
 #ifdef HAVE_LUA
 #include "arki/utils/lua.h"
@@ -82,12 +82,7 @@ unique_ptr<BBox> BBox::decodeString(const std::string& val)
     return createInvalid();
 }
 
-unique_ptr<BBox> BBox::decodeMapping(const emitter::memory::Mapping& val)
-{
-    return createInvalid();
-}
-
-std::unique_ptr<BBox> BBox::decode_structure(const emitter::Keys& keys, const emitter::Reader& val)
+std::unique_ptr<BBox> BBox::decode_structure(const structured::Keys& keys, const structured::Reader& val)
 {
     return createInvalid();
 }

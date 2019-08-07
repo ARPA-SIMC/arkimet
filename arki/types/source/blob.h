@@ -44,7 +44,7 @@ struct Blob : public Source
     Style style() const override;
     void encodeWithoutEnvelope(BinaryEncoder& enc) const override;
     std::ostream& writeToOstream(std::ostream& o) const override;
-    void serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f=0) const override;
+    void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
     const char* lua_type_name() const override;
     bool lua_lookup(lua_State* L, const std::string& name) const override;
 
@@ -118,8 +118,7 @@ struct Blob : public Source
     static std::unique_ptr<Blob> create(std::shared_ptr<segment::Reader> reader, uint64_t offset, uint64_t size);
     static std::unique_ptr<Blob> create(const std::string& format, const std::string& basedir, const std::string& filename, uint64_t offset, uint64_t size, std::shared_ptr<segment::Reader> reader);
     static std::unique_ptr<Blob> create_unlocked(const std::string& format, const std::string& basedir, const std::string& filename, uint64_t offset, uint64_t size);
-    static std::unique_ptr<Blob> decodeMapping(const emitter::memory::Mapping& val);
-    static std::unique_ptr<Blob> decode_structure(const emitter::Keys& keys, const emitter::Reader& reader);
+    static std::unique_ptr<Blob> decode_structure(const structured::Keys& keys, const structured::Reader& reader);
 };
 
 }

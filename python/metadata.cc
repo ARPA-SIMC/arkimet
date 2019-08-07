@@ -8,7 +8,7 @@
 #include "arki/metadata/data.h"
 #include "arki/core/file.h"
 #include "arki/types/source.h"
-#include "arki/emitter/keys.h"
+#include "arki/structured/keys.h"
 #include "utils/core.h"
 #include "utils/methods.h"
 #include "utils/type.h"
@@ -251,15 +251,15 @@ struct to_python : public MethKwargs<to_python, arkipy_Metadata>
                     if (!self->md->has_source())
                         Py_RETURN_NONE;
                     else
-                        self->md->source().serialise(e, emitter::keys_python);
+                        self->md->source().serialise(e, structured::keys_python);
                 } else {
                     const types::Type* item = self->md->get(code);
                     if (!item)
                         Py_RETURN_NONE;
-                    item->serialise(e, emitter::keys_python);
+                    item->serialise(e, structured::keys_python);
                 }
             } else {
-                self->md->serialise(e, emitter::keys_python);
+                self->md->serialise(e, structured::keys_python);
             }
             return e.release();
         } ARKI_CATCH_RETURN_PYO
@@ -512,7 +512,7 @@ Arkimet metadata for one data item
                     self->md->set(std::move(val));
                 } else {
                     PythonReader reader(py_val);
-                    std::unique_ptr<types::Type> val = types::decode_structure(emitter::keys_python, reader);
+                    std::unique_ptr<types::Type> val = types::decode_structure(structured::keys_python, reader);
                     self->md->set(std::move(val));
                 }
             }

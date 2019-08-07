@@ -1,9 +1,9 @@
 #include "url.h"
 #include "arki/binary.h"
 #include "arki/utils/lua.h"
-#include "arki/emitter.h"
-#include "arki/emitter/memory.h"
-#include "arki/emitter/keys.h"
+#include "arki/structured/emitter.h"
+#include "arki/structured/memory.h"
+#include "arki/structured/keys.h"
 #include "arki/exceptions.h"
 
 using namespace std;
@@ -28,18 +28,13 @@ std::ostream& URL::writeToOstream(std::ostream& o) const
 			 << format << "," << url
 			 << ")";
 }
-void URL::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
+void URL::serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f) const
 {
     Source::serialise_local(e, keys, f);
     e.add(keys.source_url); e.add(url);
 }
-std::unique_ptr<URL> URL::decodeMapping(const emitter::memory::Mapping& val)
-{
-    return URL::create(
-            val["f"].want_string("parsing url source format"),
-            val["url"].want_string("parsing url source url"));
-}
-std::unique_ptr<URL> URL::decode_structure(const emitter::Keys& keys, const emitter::Reader& reader)
+
+std::unique_ptr<URL> URL::decode_structure(const structured::Keys& keys, const structured::Reader& reader)
 {
     return URL::create(
             reader.as_string(keys.source_format, "source format"),

@@ -5,21 +5,15 @@
 
 #include <arki/types.h>
 #include <arki/core/fwd.h>
+#include <arki/structured/fwd.h>
+#include <arki/metadata/fwd.h>
+#include <arki/matcher/fwd.h>
 #include <arki/summary/stats.h>
 #include <vector>
 #include <array>
 #include <cstring>
 
 namespace arki {
-class Metadata;
-class Matcher;
-
-namespace emitter {
-namespace memory {
-class Mapping;
-}
-}
-
 namespace summary {
 class TypeIntern;
 class Stats;
@@ -103,7 +97,7 @@ public:
     void merge(const std::vector<const types::Type*>& md, const Stats& st, const std::vector<unsigned>& positions);
 
     /// Merge an entry decoded from a mapping
-    void merge(const emitter::memory::Mapping& val);
+    void merge(const structured::Keys& keys, const structured::Reader& val);
 
     /// Merge a row into the table
     void merge(const Row& row);

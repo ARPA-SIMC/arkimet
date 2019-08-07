@@ -3,9 +3,9 @@
 #include "arki/types/utils.h"
 #include "arki/utils/iostream.h"
 #include "arki/binary.h"
-#include "arki/emitter.h"
-#include "arki/emitter/memory.h"
-#include "arki/emitter/keys.h"
+#include "arki/structured/emitter.h"
+#include "arki/structured/memory.h"
+#include "arki/structured/keys.h"
 #include "arki/libconfig.h"
 #include <iomanip>
 #include <sstream>
@@ -87,19 +87,7 @@ unique_ptr<Run> Run::decodeString(const std::string& val)
     }
 }
 
-unique_ptr<Run> Run::decodeMapping(const emitter::memory::Mapping& val)
-{
-    using namespace emitter::memory;
-
-    switch (style_from_mapping(val))
-    {
-        case Style::MINUTE: return upcast<Run>(run::Minute::decodeMapping(val));
-        default:
-            throw_consistency_error("parsing Run", "unknown Run style " + val.get_string());
-    }
-}
-
-std::unique_ptr<Run> Run::decode_structure(const emitter::Keys& keys, const emitter::Reader& val)
+std::unique_ptr<Run> Run::decode_structure(const structured::Keys& keys, const structured::Reader& val)
 {
     switch (style_from_structure(keys, val))
     {
@@ -155,18 +143,13 @@ std::ostream& Minute::writeToOstream(std::ostream& o) const
 			 << setw(2) << (m_minute / 60) << ":"
 			 << setw(2) << (m_minute % 60) << ")";
 }
-void Minute::serialise_local(Emitter& e, const emitter::Keys& keys, const Formatter* f) const
+void Minute::serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f) const
 {
     Run::serialise_local(e, keys, f);
     e.add(keys.run_value, (int)m_minute);
 }
-unique_ptr<Minute> Minute::decodeMapping(const emitter::memory::Mapping& val)
-{
-    unsigned int m = val["va"].want_int("parsing Minute run value");
-    return run::Minute::create(m / 60, m % 60);
-}
 
-std::unique_ptr<Minute> Minute::decode_structure(const emitter::Keys& keys, const emitter::Reader& val)
+std::unique_ptr<Minute> Minute::decode_structure(const structured::Keys& keys, const structured::Reader& val)
 {
     unsigned int m = val.as_int(keys.run_value, "run value");
     return run::Minute::create(m / 60, m % 60);

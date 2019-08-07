@@ -7,8 +7,8 @@
 #include "arki/types/reftime.h"
 #include "arki/types/source.h"
 #include "arki/types/run.h"
-#include "arki/emitter/json.h"
-#include "arki/emitter/keys.h"
+#include "arki/structured/json.h"
+#include "arki/structured/keys.h"
 #include "short.h"
 
 namespace {
@@ -64,8 +64,8 @@ add_method("json", [](Fixture& f) {
     f.summary.visit(shrt);
 
     stringstream ss;
-    emitter::JSON json(ss);
-    shrt.serialise(json, emitter::keys_json);
+    structured::JSON json(ss);
+    shrt.serialise(json, structured::keys_json);
 
     wassert(actual(ss.str()) == R"({"items":{"summarystats":{"b":[2006,5,4,3,2,1],"e":[2007,1,2,3,4,5],"c":2,"s":30},"origin":[{"t":"origin","s":"GRIB1","ce":1,"sc":2,"pr":3},{"t":"origin","s":"GRIB1","ce":3,"sc":4,"pr":5}],"product":[{"t":"product","s":"GRIB1","or":1,"ta":2,"pr":3},{"t":"product","s":"GRIB1","or":2,"ta":3,"pr":4}],"timerange":[{"t":"timerange","s":"GRIB1","ty":1,"un":0,"p1":0,"p2":0}]}})");
 });
