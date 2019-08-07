@@ -91,7 +91,9 @@ std::vector<std::string> Config::Dirlist::list_files(const std::string& ext, boo
 
     for (const auto& path: *this)
     {
-        vector<string> files;
+        if (!sys::isdir(path))
+            continue;
+        std::vector<std::string> files;
         sys::Path dir(path);
         for (auto di = dir.begin(); di != dir.end(); ++di)
         {
