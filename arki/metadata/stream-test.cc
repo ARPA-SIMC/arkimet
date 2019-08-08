@@ -1,4 +1,3 @@
-#include "arki/tests/legacy.h"
 #include "arki/tests/tests.h"
 #include "arki/metadata/stream.h"
 #include "arki/metadata.h"
@@ -128,45 +127,45 @@ add_method("stream", [] {
 
 	size_t cur = 0;
 
-	// Not a full metadata yet
-	mdstream.readData(input.data() + cur, end1 - 20);
-	cur += end1-20;
-	ensure_equals(results.size(), 0u);
+    // Not a full metadata yet
+    mdstream.readData(input.data() + cur, end1 - 20);
+    cur += end1-20;
+    wassert(actual(results.size()) == 0u);
 
-	// The full metadata but not the data
-	mdstream.readData(input.data() + cur, 10);
-	cur += 10;
-	ensure_equals(results.size(), 0u);
+    // The full metadata but not the data
+    mdstream.readData(input.data() + cur, 10);
+    cur += 10;
+    wassert(actual(results.size()) == 0u);
 
-	// The full metadata and the data and part of the next metadata
-	mdstream.readData(input.data() + cur, 40);
-	cur += 40;
-	ensure_equals(results.size(), 1u);
+    // The full metadata and the data and part of the next metadata
+    mdstream.readData(input.data() + cur, 40);
+    cur += 40;
+    wassert(actual(results.size()) == 1u);
 
 	// All the rest
 	mdstream.readData(input.data() + cur, end2-cur);
 	cur = end2;
 
-	// No bytes must be left to decode
-	ensure_equals(mdstream.countBytesUnprocessed(), 0u);
+    // No bytes must be left to decode
+    wassert(actual(mdstream.countBytesUnprocessed()) == 0u);
 
-	// See that we've got what we expect
-	ensure_equals(results.size(), 2u);
-	ensure(cmpmd(md1, results[0]));
-	ensure(cmpmd(md2, results[1]));
-	
+    // See that we've got what we expect
+    wassert(actual(results.size()) == 2u);
+    wassert_true(cmpmd(md1, results[0]));
+    wassert_true(cmpmd(md2, results[1]));
+
 	results.clear();
 
 	// Try feeding all the data at the same time
 	mdstream.readData(input.data(), input.size());
 
-	// No bytes must be left to decode
-	ensure_equals(mdstream.countBytesUnprocessed(), 0u);
+    // No bytes must be left to decode
+    wassert(actual(mdstream.countBytesUnprocessed()) == 0u);
 
-	// See that we've got what we expect
-	ensure_equals(results.size(), 2u);
-	ensure(cmpmd(md1, results[0]));
-	ensure(cmpmd(md2, results[1]));
+    // See that we've got what we expect
+    wassert(actual(results.size()) == 2u);
+    wassert_true(cmpmd(md1, results[0]));
+    wassert_true(cmpmd(md2, results[1]));
 });
 
 // Send data split in less chunks than we have metadata
@@ -191,17 +190,17 @@ add_method("split", [] {
 
     // Send the data in two halves
     mdstream.readData(str.data(), str.size() / 2);
-    ensure_equals(results.size(), 1u);
+    wassert(actual(results.size()) == 1u);
     mdstream.readData(str.data() + str.size() / 2, str.size() - (str.size() / 2));
 
     // No bytes must be left to decode
-    ensure_equals(mdstream.countBytesUnprocessed(), 0u);
+    wassert(actual(mdstream.countBytesUnprocessed()) == 0u);
 
     // See that we've got what we expect
-    ensure_equals(results.size(), 3u);
-    ensure(cmpmd(md, results[0]));
-    ensure(cmpmd(md, results[1]));
-    ensure(cmpmd(md, results[2]));
+    wassert(actual(results.size()) == 3u);
+    wassert_true(cmpmd(md, results[0]));
+    wassert_true(cmpmd(md, results[1]));
+    wassert_true(cmpmd(md, results[2]));
 });
 
 }
