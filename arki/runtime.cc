@@ -5,6 +5,7 @@
 #include "arki/utils/sys.h"
 #include "arki/types-init.h"
 #include "arki/iotrace.h"
+#include "arki/scan.h"
 #include "arki/querymacro.h"
 #include <algorithm>
 
@@ -131,6 +132,7 @@ void init()
     types::init_default_types();
     matcher::read_matcher_alias_database();
     iotrace::init();
+    scan::init();
     qmacro::init();
     initialized = true;
 }

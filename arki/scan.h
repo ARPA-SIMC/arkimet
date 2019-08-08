@@ -111,7 +111,15 @@ struct Scanner
      */
     static std::vector<uint8_t> reconstruct(const std::string& format, const Metadata& md, const std::string& value);
 
+    /**
+     * Register the scanner factory function for the given format
+     */
+    static void register_factory(const std::string& name, std::function<std::unique_ptr<Scanner>()> factory);
+
 };
+
+/// Initialize scanner registry
+void init();
 
 }
 }
