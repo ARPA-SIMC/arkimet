@@ -73,6 +73,22 @@ public:
         return std::string(res, size);
     }
 
+    /// Call str() on the object
+    std::string str()
+    {
+        if (!ptr)
+            return "(null)";
+        py_unique_ptr<PyObject> py_repr(PyObject_Str(ptr));
+        if (!py_repr)
+        {
+            PyErr_Clear();
+            return "(str failed)";
+        }
+        Py_ssize_t size;
+        const char* res = PyUnicode_AsUTF8AndSize(py_repr, &size);
+        return std::string(res, size);
+    }
+
     /// Use it as a Obj
     operator Obj*() { return ptr; }
 
