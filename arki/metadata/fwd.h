@@ -3,6 +3,7 @@
 
 namespace arki {
 class Metadata;
+class Formatter;
 
 namespace metadata {
 class Data;

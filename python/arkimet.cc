@@ -402,6 +402,7 @@ PyMODINIT_FUNC PyInit__arkimet(void)
             throw PythonException();
 
         register_cfg(m);
+        register_formatter(m);
         register_metadata(m);
         register_summary(m);
         register_matcher(m);
