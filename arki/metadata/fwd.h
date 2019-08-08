@@ -4,6 +4,7 @@
 namespace arki {
 class Metadata;
 class Formatter;
+class BBox;
 
 namespace metadata {
 class Data;

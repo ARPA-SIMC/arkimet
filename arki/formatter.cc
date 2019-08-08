@@ -14,7 +14,7 @@ static std::function<std::unique_ptr<Formatter>()> factory;
 
 Formatter::Formatter() {}
 Formatter::~Formatter() {}
-string Formatter::operator()(const Type& v) const
+string Formatter::format(const Type& v) const
 {
     stringstream ss;
     ss << v;

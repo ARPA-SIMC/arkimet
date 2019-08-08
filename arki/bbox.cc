@@ -13,6 +13,14 @@ namespace arki {
 
 namespace {
 
+struct NullBBox : public BBox
+{
+    std::unique_ptr<arki::utils::geos::Geometry> compute(const types::Area& v) const override
+    {
+        return unique_ptr<arki::utils::geos::Geometry>();
+    }
+};
+
 struct LuaBBox : public BBox
 {
     Lua *L;
@@ -51,7 +59,7 @@ struct LuaBBox : public BBox
      * @return the Geometry object with the bounding box, or 0 if the
      * computation is unsupported for this area.
      */
-    std::unique_ptr<arki::utils::geos::Geometry> operator()(const types::Area& v) const override;
+    std::unique_ptr<arki::utils::geos::Geometry> compute(const types::Area& v) const override;
 };
 
 
@@ -113,7 +121,7 @@ static vector< pair<double, double> > bbox(lua_State* L)
 }
 #endif
 
-std::unique_ptr<arki::utils::geos::Geometry> LuaBBox::operator()(const types::Area& v) const
+std::unique_ptr<arki::utils::geos::Geometry> LuaBBox::compute(const types::Area& v) const
 {
 #ifdef HAVE_GEOS
 	// Set the area information as the 'area' global
@@ -152,17 +160,27 @@ std::unique_ptr<arki::utils::geos::Geometry> LuaBBox::operator()(const types::Ar
 
 }
 
+static std::function<std::unique_ptr<BBox>()> factory;
+
 BBox::~BBox()
 {
 }
 
 
-const BBox& BBox::get_singleton()
+unique_ptr<BBox> BBox::create()
 {
-    static __thread BBox* bbox = 0;
-    if (!bbox)
-        bbox = new LuaBBox();
-    return *bbox;
+    if (factory)
+        return factory();
+#if HAVE_LUA
+    return unique_ptr<BBox>(new LuaBBox);
+#else
+    return unique_ptr<BBox>(new NullBBox);
+#endif
+}
+
+void BBox::set_factory(std::function<std::unique_ptr<BBox>()> new_factory)
+{
+    factory = new_factory;
 }
 
 }

@@ -19,9 +19,10 @@ public:
     /**
      * Compute the bounding box for an area.
      */
-    virtual std::unique_ptr<arki::utils::geos::Geometry> operator()(const types::Area& v) const = 0;
+    virtual std::unique_ptr<arki::utils::geos::Geometry> compute(const types::Area& v) const = 0;
 
-    static const BBox& get_singleton();
+    static std::unique_ptr<BBox> create();
+    static void set_factory(std::function<std::unique_ptr<BBox>()> new_factory);
 };
 
 }

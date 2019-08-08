@@ -63,10 +63,14 @@ Area::Area()
 
 const arki::utils::geos::Geometry* Area::bbox() const
 {
+static thread_local std::unique_ptr<BBox> bbox;
+
 #ifdef HAVE_GEOS
     if (!cached_bbox)
     {
-        std::unique_ptr<arki::utils::geos::Geometry> res = BBox::get_singleton()(*this);
+        if (!bbox)
+            bbox = BBox::create();
+        std::unique_ptr<arki::utils::geos::Geometry> res = bbox->compute(*this);
         if (res.get())
             cached_bbox = res.release();
     }

@@ -139,7 +139,7 @@ void Type::serialise(structured::Emitter& e, const structured::Keys& keys, const
 {
     e.start_mapping();
     e.add(keys.type_name, tag());
-    if (f) e.add(keys.type_desc, (*f)(*this));
+    if (f) e.add(keys.type_desc, f->format(*this));
     serialise_local(e, keys, f);
     e.end_mapping();
 }

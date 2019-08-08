@@ -12,7 +12,7 @@ import logging
 def skip_unless_vm2():
     import unittest
     if "vm2" not in arki.features:
-        raise unittest.SkipTest("vm2 support not available")
+        raise unittest.SkipTest("VM2 support not available")
 
 
 def skip_unless_libzip():
@@ -25,6 +25,12 @@ def skip_unless_libarchive():
     import unittest
     if "libarchive" not in arki.features:
         raise unittest.SkipTest("libarchive support not available")
+
+
+def skip_unless_geos():
+    import unittest
+    if "geos" not in arki.features:
+        raise unittest.SkipTest("GEOS support not available")
 
 
 @contextmanager

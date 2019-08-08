@@ -46,7 +46,7 @@ void Short::write_yaml(std::ostream& out, const Formatter* f) const
         for (const auto& mi: i.second) {
             out << "    " << *mi;
             if (f)
-                out << "\t# " << (*f)(*mi);
+                out << "\t# " << f->format(*mi);
             out << endl;
         }
     }

@@ -1,10 +1,11 @@
-#include "formatter.h"
+#include "bbox.h"
 #include "structured.h"
-#include "arki/formatter.h"
+#include "arki/bbox.h"
 #include "arki/types.h"
 #include "arki/runtime.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
+#include "arki/utils/geos.h"
 #include "arki/nag.h"
 #include "python/utils/values.h"
 #include "python/utils/methods.h"
@@ -16,24 +17,25 @@ using namespace arki::python;
 
 extern "C" {
 
-PyTypeObject* arkipy_Formatter_Type = nullptr;
+PyTypeObject* arkipy_BBox_Type = nullptr;
 
 }
 
 namespace {
 
-PyObject* formatter_object = nullptr;
+#if 0
+PyObject* bbox_object = nullptr;
 
-void load_formatter_object()
+void load_bbox_object()
 {
     using namespace arki;
-    std::vector<std::string> sources = arki::Config::get().dir_formatter.list_files(".py");
+    std::vector<std::string> sources = arki::Config::get().dir_bbox.list_files(".py");
     for (const auto& source: sources)
     {
         std::string basename = str::basename(source);
 
-        // Check if the formatter module had already been imported
-        std::string module_name = "arkimet.formatter." + basename.substr(0, basename.size() - 3);
+        // Check if the bbox module had already been imported
+        std::string module_name = "arkimet.bbox." + basename.substr(0, basename.size() - 3);
         pyo_unique_ptr py_module_name(string_to_python(module_name));
         pyo_unique_ptr module(ArkiPyImport_GetModule(py_module_name));
         if (PyErr_Occurred())
@@ -51,29 +53,29 @@ void load_formatter_object()
         }
     }
 
-    // Get arkimet.formatter.Formatter
-    pyo_unique_ptr module(throw_ifnull(PyImport_ImportModule("arkimet.formatter")));
-    pyo_unique_ptr cls(throw_ifnull(PyObject_GetAttrString(module, "Formatter")));
+    // Get arkimet.bbox.BBox
+    pyo_unique_ptr module(throw_ifnull(PyImport_ImportModule("arkimet.bbox")));
+    pyo_unique_ptr cls(throw_ifnull(PyObject_GetAttrString(module, "BBox")));
     pyo_unique_ptr obj(throw_ifnull(PyObject_CallFunction(cls, nullptr)));
 
-    // Hold a reference to arki.python.Formatter forever once loaded the first time
-    formatter_object = obj.release();
+    // Hold a reference to arki.python.BBox forever once loaded the first time
+    bbox_object = obj.release();
 }
 
 
-struct PythonFormatter : public arki::Formatter
+struct PythonBBox : public arki::BBox
 {
-    std::string format(const arki::types::Type& v) const override
+    std::string operator()(const arki::types::Type& v) const override
     {
         AcquireGIL gil;
-        if (!formatter_object)
-            load_formatter_object();
+        if (!bbox_object)
+            load_bbox_object();
 
         arki::python::PythonEmitter e;
         v.serialise(e, arki::structured::keys_python);
 
         pyo_unique_ptr obj(PyObject_CallMethod(
-                        formatter_object, "format", "O", e.res.get()));
+                        bbox_object, "format", "O", e.res.get()));
 
         if (!obj)
         {
@@ -83,7 +85,7 @@ struct PythonFormatter : public arki::Formatter
             pyo_unique_ptr exc_value(value);
             pyo_unique_ptr exc_traceback(traceback);
 
-            arki::nag::warning("python formatter failed: %s", exc_type.str().c_str());
+            arki::nag::warning("python bbox failed: %s", exc_type.str().c_str());
             return from_python<std::string>(obj);
         }
 
@@ -93,14 +95,14 @@ struct PythonFormatter : public arki::Formatter
         return from_python<std::string>(obj);
     }
 };
+#endif
 
-
-struct format : public MethKwargs<format, arkipy_Formatter>
+struct compute : public MethKwargs<compute, arkipy_BBox>
 {
-    constexpr static const char* name = "format";
-    constexpr static const char* signature = "type: Dict[str, Any]";
-    constexpr static const char* returns = "str";
-    constexpr static const char* summary = "format the given type to a human understandable string";
+    constexpr static const char* name = "compute";
+    constexpr static const char* signature = "type: Union[Dict[str, Any], str]";
+    constexpr static const char* returns = "str"; // TODO
+    constexpr static const char* summary = "compute the bounding box for the given area";
     constexpr static const char* doc = nullptr;
 
     static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
@@ -111,39 +113,49 @@ struct format : public MethKwargs<format, arkipy_Formatter>
             return nullptr;
 
         try {
-            PythonReader reader(py_type);
-            std::unique_ptr<arki::types::Type> type = arki::types::decode_structure(arki::structured::keys_python, reader);
-            std::string formatted = self->formatter->format(*type);
-            return to_python(formatted);
+            std::unique_ptr<arki::types::Type> type;
+            if (PyUnicode_Check(py_type))
+            {
+                std::string strval = from_python<std::string>(py_type);
+                type = arki::types::decodeString(arki::TYPE_AREA, strval);
+            } else {
+                PythonReader reader(py_type);
+                type = arki::types::decode_structure(arki::structured::keys_python, reader);
+            }
+            std::unique_ptr<arki::types::Area> area = arki::downcast<arki::types::Area>(std::move(type));
+            auto hull = self->bbox->compute(*area);
+            if (!hull)
+                Py_RETURN_NONE;
+            return to_python(hull->toString());
         } ARKI_CATCH_RETURN_PYO
     }
 };
 
 
-struct FormatterDef : public Type<FormatterDef, arkipy_Formatter>
+struct BBoxDef : public Type<BBoxDef, arkipy_BBox>
 {
-    constexpr static const char* name = "Formatter";
-    constexpr static const char* qual_name = "arkimet.Formatter";
+    constexpr static const char* name = "BBox";
+    constexpr static const char* qual_name = "arkimet.BBox";
     constexpr static const char* doc = R"(
-Formatter for arkimet metadata.
+BBox for arkimet metadata.
 )";
     GetSetters<> getsetters;
-    Methods<format> methods;
+    Methods<compute> methods;
 
     static void _dealloc(Impl* self)
     {
-        delete self->formatter;
+        delete self->bbox;
         Py_TYPE(self)->tp_free(self);
     }
 
     static PyObject* _str(Impl* self)
     {
-        return PyUnicode_FromString("Formatter");
+        return PyUnicode_FromString("BBox");
     }
 
     static PyObject* _repr(Impl* self)
     {
-        return PyUnicode_FromString("Formatter");
+        return PyUnicode_FromString("BBox");
     }
 
     static int _init(Impl* self, PyObject* args, PyObject* kw)
@@ -153,35 +165,38 @@ Formatter for arkimet metadata.
             return -1;
 
         try {
-            self->formatter = arki::Formatter::create().release();
+            self->bbox = arki::BBox::create().release();
         } ARKI_CATCH_RETURN_INT
 
         return 0;
     }
 };
 
-FormatterDef* formatter_def = nullptr;
+BBoxDef* bbox_def = nullptr;
 
 }
 
 namespace arki {
 namespace python {
 
-void register_formatter(PyObject* m)
+void register_bbox(PyObject* m)
 {
-    formatter_def = new FormatterDef;
-    formatter_def->define(arkipy_Formatter_Type, m);
+    bbox_def = new BBoxDef;
+    bbox_def->define(arkipy_BBox_Type, m);
 }
 
-namespace formatter {
+namespace bbox {
 
 void init()
 {
-    arki::Formatter::set_factory([] {
-        return std::unique_ptr<arki::Formatter>(new PythonFormatter);
+#if 0
+    arki::BBox::set_factory([] {
+        return std::unique_ptr<arki::BBox>(new PythonBBox);
     });
+#endif
 }
 
 }
 }
 }
+

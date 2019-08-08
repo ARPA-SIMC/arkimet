@@ -1062,37 +1062,7 @@
  {
   "doc": "",
   "group": "arki_bbox",
-  "method": "1"
- },
- {
-  "doc": "",
-  "group": "arki_bbox",
-  "method": "2"
- },
- {
-  "doc": "",
-  "group": "arki_bbox",
-  "method": "3"
- },
- {
-  "doc": "",
-  "group": "arki_bbox",
-  "method": "4"
- },
- {
-  "doc": "",
-  "group": "arki_bbox",
-  "method": "5"
- },
- {
-  "doc": "",
-  "group": "arki_bbox",
-  "method": "6"
- },
- {
-  "doc": "",
-  "group": "arki_bbox",
-  "method": "7"
+  "method": "empty"
  },
  {
   "doc": "",
