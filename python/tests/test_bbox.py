@@ -12,7 +12,7 @@ except ImportError:
         raise unittest.SkipTest("shapely support not available")
 
 
-def test_coord_list(coords):
+def coord_list(coords):
     res = []
     for x, y in coords:
         res.append((
@@ -50,7 +50,7 @@ class TestBBox(unittest.TestCase):
 
         shape = shapely.wkt.loads(res)
         self.assertEqual(shape.geom_type, "Polygon")
-        self.assertEqual(test_coord_list(shape.exterior.coords), [
+        self.assertEqual(coord_list(shape.exterior.coords), [
             (12.0, 40.0),
             (12.0, 46.0),
             (20.0, 46.0),
@@ -79,7 +79,7 @@ class TestBBox(unittest.TestCase):
         self.assertEqual(shape.geom_type, "Polygon")
         # These are the values computed with the old BB algorithm that however
         # only produced rectangles.
-        self.assertEqual(test_coord_list(shape.exterior.coords), [
+        self.assertEqual(coord_list(shape.exterior.coords), [
             (3.3241, 43.6864),
             (8.8445, 43.8274),
             (8.8382, 46.1229),
@@ -109,7 +109,7 @@ class TestBBox(unittest.TestCase):
         self.assertEqual(shape.geom_type, "Polygon")
         # These are the values computed with the old BB algorithm that however
         # only produced rectangles.
-        self.assertEqual(test_coord_list(shape.exterior.coords), [
+        self.assertEqual(coord_list(shape.exterior.coords), [
             (06.0124, 35.4723),
             (08.1280, 35.5524),
             (10.2471, 35.5746),
@@ -211,7 +211,7 @@ class TestBBox(unittest.TestCase):
         shape = shapely.wkt.loads(res)
         self.assertEqual(shape.geom_type, "Polygon")
         self.maxDiff = None
-        self.assertEqual(test_coord_list(shape.exterior.coords), [
+        self.assertEqual(coord_list(shape.exterior.coords), [
             (13.9963, 43.7182),
             (19.4533, 43.3469),
             (19.8689, 45.6030),
