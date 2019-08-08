@@ -60,8 +60,31 @@ struct get_station : public MethKwargs<get_station, PyObject>
     }
 };
 
+struct get_variable : public MethKwargs<get_variable, PyObject>
+{
+    constexpr static const char* name = "get_variable";
+    constexpr static const char* signature = "id: int";
+    constexpr static const char* returns = "Dict[str, Any]";
+    constexpr static const char* summary = "Read the variable attributes for a VM2 variable ID";
+
+    static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
+    {
+        static const char* kwlist[] = { "id", nullptr };
+        int id;
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "i", const_cast<char**>(kwlist), &id))
+            return nullptr;
+
+        try {
+            arki::ValueBag values(arki::utils::vm2::get_variable(id));
+            arki::python::PythonEmitter e;
+            values.serialise(e);
+            return e.release();
+        } ARKI_CATCH_RETURN_PYO
+    }
+};
+
 Methods<> scan_methods;
-Methods<get_station> vm2_methods;
+Methods<get_station, get_variable> vm2_methods;
 
 }
 
