@@ -1,5 +1,6 @@
 from arkimet.formatter import Formatter
 from arkimet.formatter.eccodes import GribTable
+import arkimet as arki
 import os
 import re
 
@@ -31,11 +32,12 @@ def format_product(v):
 
         if names.has(number):
             return re_grib1_product.sub("^", names.desc(number))
-    elif v.style == "BUFR":
+    elif v["style"] == "BUFR":
         return None
-    elif v.style == "VM2":
+    elif v["style"] == "VM2":
         s = "id={}".format(v["id"])
-        for k, v in v["dval"].items():
+        product = arki.scan.vm2.get_variable(v["id"])
+        for k, v in product.items():
             s += ", {}={}".format(k, v)
         return s
     else:
