@@ -1,8 +1,5 @@
 #include "bbox.h"
 #include "arki/types/tests.h"
-#include "arki/utils/geos.h"
-#include "arki/types/area.h"
-#include "arki/tests/legacy.h"
 #include <cmath>
 #include <memory>
 
