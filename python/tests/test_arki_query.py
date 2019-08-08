@@ -46,11 +46,6 @@ class TestArkiQuery(CmdlineTestMixin, unittest.TestCase):
             out = self.call_output_success("--qmacro=noop", "--data", "testds", "testenv/testds", binary=True)
             self.assertEqual(out[:4], b"GRIB")
 
-    def test_query_qmacro_py_noop(self):
-        with self.dataset("inbound/fixture.grib1"):
-            out = self.call_output_success("--qmacro=py_noop", "--data", "testds", "testenv/testds", binary=True)
-            self.assertEqual(out[:4], b"GRIB")
-
     def test_query_stdin(self):
         with open("inbound/fixture.grib1", "rb") as fd:
             out = self.call_output_success("--stdin=grib", "--data", "", input=fd, binary=True)
