@@ -22,7 +22,7 @@ void Tests::register_tests() {
 
 // Empty or unsupported area should give 0
 add_method("1", [] {
-    BBox bbox;
+    const BBox& bbox = BBox::get_singleton();
     ValueBag vb;
     unique_ptr<Area> area(Area::createGRIB(vb));
     unique_ptr<arki::utils::geos::Geometry> g(bbox(*area));
@@ -34,7 +34,7 @@ add_method("1", [] {
 add_method("2", [] {
     skip_unless_geos();
 
-	BBox bbox;
+    const BBox& bbox = BBox::get_singleton();
 	ValueBag vb;
 	vb.set("Ni", Value::create_integer(97));
 	vb.set("Nj", Value::create_integer(73));
@@ -71,7 +71,7 @@ add_method("2", [] {
 add_method("3", [] {
     skip_unless_geos();
 
-	BBox bbox;
+    const BBox& bbox = BBox::get_singleton();
 	ValueBag vb;
 	vb.set("Ni", Value::create_integer(90));
 	vb.set("Nj", Value::create_integer(52));
@@ -111,7 +111,7 @@ add_method("3", [] {
 add_method("4", [] {
     skip_unless_geos();
 
-	BBox bbox;
+    const BBox& bbox = BBox::get_singleton();
 	ValueBag vb;
 	vb.set("Ni", Value::create_integer(447));
 	vb.set("Nj", Value::create_integer(532));
@@ -170,7 +170,7 @@ add_method("4", [] {
 add_method("5", [] {
     skip_unless_geos();
 
-	BBox bbox;
+    const BBox& bbox = BBox::get_singleton();
 	ValueBag vb;
 	vb.set("Ni", Value::create_integer(135));
 	vb.set("Nj", Value::create_integer(98));
@@ -207,7 +207,7 @@ add_method("5", [] {
 add_method("6", [] {
     skip_unless_geos();
 
-    BBox bbox;
+    const BBox& bbox = BBox::get_singleton();
     ValueBag vb;
     vb.set("type", Value::create_string("mob"));
     vb.set("x", Value::create_integer(11));
@@ -240,7 +240,7 @@ add_method("6", [] {
 add_method("7", [] {
     skip_unless_geos();
 
-    BBox bbox;
+    const BBox& bbox = BBox::get_singleton();
     unique_ptr<Area> area = Area::decodeString("GRIB(fe=0, fn=0, latfirst=4852500, latlast=5107500, lonfirst=402500, lonlast=847500, tn=32768, utm=1, zone=32)");
 
     auto g(bbox(*area));

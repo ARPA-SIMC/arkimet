@@ -3,6 +3,7 @@
 #include "arki/exceptions.h"
 #include "arki/utils/geos.h"
 #include "arki/utils/string.h"
+#include "arki/utils/lua.h"
 #include "arki/runtime.h"
 #include <memory>
 
@@ -10,31 +11,49 @@ using namespace std;
 
 namespace arki {
 
-BBox::BBox(const std::string& code) : L(new Lua), funcCount(0)
-{
-    /// Load the bounding box functions
+namespace {
 
-    /// Load the bbox scanning functions
-    if (code.empty())
+struct LuaBBox : public BBox
+{
+    Lua *L;
+    unsigned funcCount;
+
+    LuaBBox(const std::string& code=std::string()) : L(new Lua), funcCount(0)
     {
-        vector<string> sources = arki::Config::get().dir_bbox.list_files(".lua");
-        for (const auto& source: sources)
+        /// Load the bounding box functions
+
+        /// Load the bbox scanning functions
+        if (code.empty())
         {
+            vector<string> sources = arki::Config::get().dir_bbox.list_files(".lua");
+            for (const auto& source: sources)
+            {
+                char buf[32];
+                snprintf(buf, 32, "BBOX_%u", funcCount++);
+                L->functionFromFile(buf, source);
+            }
+        } else {
             char buf[32];
             snprintf(buf, 32, "BBOX_%u", funcCount++);
-            L->functionFromFile(buf, source);
+            L->functionFromString(buf, code, "bbox scan instructions");
         }
-    } else {
-        char buf[32];
-        snprintf(buf, 32, "BBOX_%u", funcCount++);
-        L->functionFromString(buf, code, "bbox scan instructions");
     }
-}
 
-BBox::~BBox()
-{
-    if (L) delete L;
-}
+    ~LuaBBox()
+    {
+        if (L) delete L;
+    }
+
+    /*
+     * The lua code must produce a table called 'bbox' that contains a
+     * vector of (lat, lon) pairs.
+     *
+     * @return the Geometry object with the bounding box, or 0 if the
+     * computation is unsupported for this area.
+     */
+    std::unique_ptr<arki::utils::geos::Geometry> operator()(const types::Area& v) const override;
+};
+
 
 #ifdef HAVE_GEOS
 static vector< pair<double, double> > bbox(lua_State* L)
@@ -94,7 +113,7 @@ static vector< pair<double, double> > bbox(lua_State* L)
 }
 #endif
 
-std::unique_ptr<arki::utils::geos::Geometry> BBox::operator()(const types::Area& v) const
+std::unique_ptr<arki::utils::geos::Geometry> LuaBBox::operator()(const types::Area& v) const
 {
 #ifdef HAVE_GEOS
 	// Set the area information as the 'area' global
@@ -131,11 +150,18 @@ std::unique_ptr<arki::utils::geos::Geometry> BBox::operator()(const types::Area&
 #endif
 }
 
+}
+
+BBox::~BBox()
+{
+}
+
+
 const BBox& BBox::get_singleton()
 {
     static __thread BBox* bbox = 0;
     if (!bbox)
-        bbox = new BBox();
+        bbox = new LuaBBox();
     return *bbox;
 }
 
