@@ -68,6 +68,12 @@ BuildRequires: libzip-devel
 BuildRequires: libarchive-devel
 BuildRequires: bzip2-devel
 
+# shapely is an optional dependency, not available on centos7
+%if ! 0${?el7}
+BuildRequires: %{python3_vers}-shapely
+Requires: %{python3_vers}-shapely
+%endif
+
 Requires: hdf5
 Requires: meteo-vm2 >= 0.12
 Requires: %{grib_sw}

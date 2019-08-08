@@ -559,7 +559,7 @@ struct YamlPrinter : public Visitor
             ucfirst[0] = toupper(ucfirst[0]);
             out << indent << ucfirst << ": ";
             (*i)->writeToOstream(out);
-            if (f) out << "\t# " << (*f)(**i);
+            if (f) out << "\t# " << f->format(**i);
             out << endl;
         }
 
@@ -634,7 +634,7 @@ void Summary::serialise(structured::Emitter& e, const structured::Keys& keys, co
                     if (!*i) continue;
                     e.add((*i)->tag());
                     e.start_mapping();
-                    if (f) e.add(keys.summary_desc, (*f)(**i));
+                    if (f) e.add(keys.summary_desc, f->format(**i));
                     (*i)->serialise_local(e, keys, f);
                     e.end_mapping();
                 }

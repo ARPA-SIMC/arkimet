@@ -42,7 +42,7 @@ Lua::~Lua()
 	if (L) delete L;
 }
 
-std::string Lua::operator()(const Type& v) const
+std::string Lua::format(const Type& v) const
 {
     string tag = v.tag();
     string func = "fmt_" + tag;
@@ -54,7 +54,7 @@ std::string Lua::operator()(const Type& v) const
 		// If the formatter was not defined, we fall back to the parent
 		// formatter
 		lua_pop(*L, 1);
-		return Formatter::operator()(v);
+		return Formatter::format(v);
     }
     v.lua_push(*L);
     if (lua_pcall(*L, 1, 1, 0))
@@ -69,7 +69,7 @@ std::string Lua::operator()(const Type& v) const
 			// The Lua function did not know how to format this: we fall back
 			// to the parent formatter
 			lua_pop(*L, 1);
-			return Formatter::operator()(v);
+			return Formatter::format(v);
 		} else {
 			string res = lua_tostring(*L, -1);
 			lua_pop(*L, 1);

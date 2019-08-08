@@ -468,7 +468,7 @@ std::string Metadata::to_yaml(const Formatter* formatter) const
         buf << uc << ": ";
         i.second->writeToOstream(buf);
         if (formatter)
-            buf << "\t# " << (*formatter)(*i.second);
+            buf << "\t# " << formatter->format(*i.second);
         buf << endl;
     }
 

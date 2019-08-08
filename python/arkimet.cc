@@ -8,6 +8,7 @@
 #include "matcher.h"
 #include "counters.h"
 #include "formatter.h"
+#include "bbox.h"
 #include "utils/values.h"
 #include "utils/methods.h"
 #include "utils/dict.h"
@@ -403,6 +404,7 @@ PyMODINIT_FUNC PyInit__arkimet(void)
 
         register_cfg(m);
         register_formatter(m);
+        register_bbox(m);
         register_metadata(m);
         register_summary(m);
         register_matcher(m);
