@@ -1,5 +1,8 @@
 from typing import Dict, Any, Callable, Optional
 from collections import defaultdict
+import logging
+
+log = logging.getLogger("arkimet.formatter")
 
 
 class Formatter:
@@ -16,7 +19,12 @@ class Formatter:
         # Iterate in reverse order, so that formatters loaded later (like from
         # /etc) can be called earlier and fall back on the shipped ones
         for formatter in reversed(formatters):
-            res = formatter(t)
+            try:
+                res = formatter(t)
+            except Exception:
+                log.exception("formatter failed")
+                res = None
+
             if res is not None:
                 return res
 
