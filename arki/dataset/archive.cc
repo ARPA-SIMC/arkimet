@@ -19,9 +19,6 @@
 #include "arki/utils/sys.h"
 #include <ctime>
 #include <fcntl.h>
-#ifdef HAVE_LUA
-#include "arki/report.h"
-#endif
 
 using namespace std;
 using namespace arki;

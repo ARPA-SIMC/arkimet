@@ -12,8 +12,6 @@
 #include <vector>
 #include <memory>
 
-struct lua_State;
-
 namespace arki {
 class Summary;
 
@@ -89,9 +87,6 @@ struct DataQuery
     DataQuery(const std::string& matcher, bool with_data=false);
     DataQuery(const Matcher& matcher, bool with_data=false);
     ~DataQuery();
-
-    void lua_from_table(lua_State* L, int idx);
-    void lua_push_table(lua_State* L, int idx) const;
 };
 
 struct ByteQuery : public DataQuery
@@ -249,17 +244,6 @@ public:
      * dataset.
      */
     virtual void expand_date_range(std::unique_ptr<core::Time>& begin, std::unique_ptr<core::Time>& end);
-
-	// LUA functions
-	/// Push to the LUA stack a userdata to access this dataset
-	void lua_push(lua_State* L);
-
-	/**
-	 * Check that the element at \a idx is a Reader userdata
-	 *
-	 * @return the Reader element, or 0 if the check failed
-	 */
-	static Reader* lua_check(lua_State* L, int idx);
 
     /**
      * Instantiate an appropriate Reader for the given configuration

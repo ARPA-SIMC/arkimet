@@ -24,10 +24,6 @@
 #include <fcntl.h>
 #include <ctime>
 
-#ifdef HAVE_LUA
-#include <arki/report.h>
-#endif
-
 using namespace std;
 using namespace arki;
 using namespace arki::core;
