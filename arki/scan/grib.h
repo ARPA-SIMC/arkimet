@@ -11,33 +11,45 @@ struct grib_context;
 struct grib_handle;
 
 namespace arki {
-class Metadata;
-
 namespace scan {
-struct Validator;
 
 namespace grib {
 const Validator& validator();
 }
 
-class Grib;
 struct GribLua;
 
-class Grib : public Scanner
+class GribScanner : public Scanner
 {
 protected:
     grib_context* context = nullptr;
+
+    void set_source_blob(grib_handle* gh, std::shared_ptr<segment::Reader> reader, FILE* in, Metadata& md);
+    void set_source_inline(grib_handle* gh, Metadata& md);
+
+    // Read from gh and add metadata to md
+    virtual void scan(grib_handle* gh, Metadata& md) = 0;
+
+public:
+    GribScanner();
+
+    std::string name() const override { return "grib"; }
+    std::unique_ptr<Metadata> scan_data(const std::vector<uint8_t>& data) override;
+    bool scan_segment(std::shared_ptr<segment::Reader> reader, metadata_dest_func dest) override;
+    bool scan_pipe(core::NamedFileDescriptor& in, metadata_dest_func dest) override;
+    void scan_singleton(const std::string& abspath, Metadata& md) override;
+};
+
+class Grib : public GribScanner
+{
+protected:
     GribLua* L;
+
+    void scan(grib_handle* gh, Metadata& md) override;
 
 public:
     Grib(const std::string& grib1code=std::string(), const std::string& grib2code=std::string());
     virtual ~Grib();
-
-    std::string name() const override { return "grib"; }
-    std::unique_ptr<Metadata> scan_data(const std::vector<uint8_t>& data) override;
-    bool scan_pipe(core::NamedFileDescriptor& in, metadata_dest_func dest) override;
-    bool scan_segment(std::shared_ptr<segment::Reader> reader, metadata_dest_func dest) override;
-    void scan_singleton(const std::string& abspath, Metadata& md) override;
 
     friend class GribLua;
 };

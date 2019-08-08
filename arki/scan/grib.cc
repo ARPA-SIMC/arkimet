@@ -35,6 +35,169 @@ using namespace arki::utils;
 namespace arki {
 namespace scan {
 
+namespace {
+
+struct GribHandle
+{
+    grib_handle* gh = nullptr;
+
+    GribHandle(grib_context* context, FILE* in)
+    {
+        int griberror;
+        gh = grib_handle_new_from_file(context, in, &griberror);
+        if (!gh && griberror == GRIB_END_OF_FILE)
+            return;
+        check_grib_error(griberror, "reading GRIB from file");
+    }
+    GribHandle(grib_handle* gh)
+        : gh(gh) {}
+    GribHandle(const GribHandle&) = delete;
+    GribHandle(GribHandle&& o)
+        : gh(o.gh)
+    {
+        o.gh = nullptr;
+    }
+    GribHandle& operator=(const GribHandle&) = delete;
+    GribHandle&& operator=(GribHandle&&) = delete;
+    ~GribHandle()
+    {
+        if (gh)
+        {
+            grib_handle_delete(gh);
+            gh = nullptr;
+        }
+    }
+
+    void close()
+    {
+        if (!gh) return;
+
+        check_grib_error(grib_handle_delete(gh), "cannot close GRIB message");
+        gh = nullptr;
+    }
+
+    operator grib_handle*() { return gh; }
+
+    operator bool() const { return gh != nullptr; }
+};
+
+}
+
+
+GribScanner::GribScanner()
+{
+    // Get a grib_api context
+    context = grib_context_get_default();
+    if (!context)
+        throw std::runtime_error("cannot get grib_api default context: default context is not available");
+
+    // Multi support is off unless a child class specifies otherwise
+    grib_multi_support_off(context);
+}
+
+void GribScanner::set_source_blob(grib_handle* gh, std::shared_ptr<segment::Reader> reader, FILE* in, Metadata& md)
+{
+    // Get the encoded GRIB buffer from the GRIB handle
+    const uint8_t* vbuf;
+    size_t size;
+    check_grib_error(grib_get_message(gh, (const void **)&vbuf, &size), "cannot access the encoded GRIB data");
+
+#if 0
+    // We cannot use this as long is too small for 64bit file offsets
+    long offset;
+    check_grib_error(grib_get_long(gh, "offset", &offset), "reading offset");
+#endif
+    off_t offset = ftello(in);
+    offset -= size;
+
+    md.set_source(Source::createBlob(reader, offset, size));
+    md.set_cached_data(metadata::DataManager::get().to_data(reader->segment().format, vector<uint8_t>(vbuf, vbuf + size)));
+
+    stringstream note;
+    note << "Scanned from " << str::basename(reader->segment().relpath) << ":" << offset << "+" << size;
+    md.add_note(note.str());
+}
+
+void GribScanner::set_source_inline(grib_handle* gh, Metadata& md)
+{
+    // Get the encoded GRIB buffer from the GRIB handle
+    const uint8_t* vbuf;
+    size_t size;
+    check_grib_error(grib_get_message(gh, (const void **)&vbuf, &size), "cannot access the encoded GRIB data");
+    md.set_source_inline("grib", metadata::DataManager::get().to_data("grib", vector<uint8_t>(vbuf, vbuf + size)));
+}
+
+std::unique_ptr<Metadata> GribScanner::scan_data(const std::vector<uint8_t>& data)
+{
+    GribHandle gh(grib_handle_new_from_message(context, (void*)data.data(), data.size()));
+    if (!gh) throw std::runtime_error("GRIB memory buffer failed to scan");
+
+    std::unique_ptr<Metadata> md(new Metadata);
+    md->set_source_inline("grib", metadata::DataManager::get().to_data("grib", std::vector<uint8_t>(data)));
+
+    scan(gh, *md);
+
+    gh.close();
+
+    return md;
+}
+
+bool GribScanner::scan_segment(std::shared_ptr<segment::Reader> reader, metadata_dest_func dest)
+{
+    files::RAIIFILE in(reader->segment().abspath, "rb");
+    while (true)
+    {
+        unique_ptr<Metadata> md(new Metadata);
+        GribHandle gh(context, in);
+        if (!gh) break;
+        set_source_blob(gh, reader, in, *md);
+        scan(gh, *md);
+        gh.close();
+        if (!dest(move(md))) return false;
+    }
+    return true;
+}
+
+void GribScanner::scan_singleton(const std::string& abspath, Metadata& md)
+{
+    files::RAIIFILE in(abspath, "rb");
+    md.clear();
+    {
+        GribHandle gh(context, in);
+        if (!gh) throw std::runtime_error(abspath + " contains no GRIB data");
+        stringstream note;
+        note << "Scanned from " << str::basename(abspath);
+        md.add_note(note.str());
+        scan(gh, md);
+        gh.close();
+    }
+
+    {
+        GribHandle gh(context, in);
+        if (gh) throw std::runtime_error(abspath + " contains more than one GRIB data");
+        gh.close();
+    }
+}
+
+bool GribScanner::scan_pipe(core::NamedFileDescriptor& infd, metadata_dest_func dest)
+{
+    files::RAIIFILE in(infd, "rb");
+    while (true)
+    {
+        unique_ptr<Metadata> md(new Metadata);
+        GribHandle gh(context, in);
+        if (!gh) break;
+        set_source_inline(gh, *md);
+        stringstream note;
+        note << "Scanned from standard input";
+        md->add_note(note.str());
+        scan(gh, *md);
+        if (!dest(move(md))) return false;
+    }
+    return true;
+}
+
+
 namespace grib {
 
 struct GribValidator : public Validator
@@ -79,78 +242,90 @@ const Validator& validator() { return grib_validator; }
 }
 
 
-struct RAIICloseHandle
+class GribLua : public Lua
 {
-    GribLua* g = nullptr;
-
-    RAIICloseHandle(GribLua* g)
-        : g(g) {}
-    RAIICloseHandle(const RAIICloseHandle&) = delete;
-    RAIICloseHandle(RAIICloseHandle&& o)
-        : g(o.g)
-    {
-        o.g = nullptr;
-    }
-    RAIICloseHandle& operator=(const RAIICloseHandle&) = delete;
-    RAIICloseHandle&& operator=(RAIICloseHandle&&) = delete;
-    ~RAIICloseHandle();
-
-    void close();
-
-    operator bool() const;
-};
-
-
-struct GribLua : public Lua
-{
-    grib_handle* gh = nullptr;
+private:
     std::vector<int> grib1_funcs;
     std::vector<int> grib2_funcs;
 
     /**
-     * Create the 'grib' object in the interpreter, to access the grib data of
-     * the current grib read by the scanner
+     * Load scan function from file, returning the stored function ID
+     *
+     * It can return -1 if \a fname did not define a `scan' function. This
+     * can happen, for example, if one adds a .lua file that only provides
+     * a library of conveniency functions
      */
-    GribLua(const std::string& grib1code, const std::string& grib2code);
-
-    RAIICloseHandle with_grib_handle(grib_handle* gh)
+    int load_function(const std::string& fname)
     {
-        this->gh = gh;
-        return RAIICloseHandle(this);
+        // Compile the macro
+        if (luaL_dofile(L, fname.c_str()))
+        {
+            // Copy the error, so that it will exist after the pop
+            string error = lua_tostring(L, -1);
+            // Pop the error from the stack
+            lua_pop(L, 1);
+            throw std::runtime_error("cannot parse " + fname + ": " + error);
+        }
+
+        // Index the scan function
+        int id = -1;
+        lua_getglobal(L, "scan");
+        if (lua_isfunction(L, -1))
+            id = luaL_ref(L, LUA_REGISTRYINDEX);
+
+        // Return the ID, or -1 if no 'scan' function was defined
+        return id;
     }
 
-    RAIICloseHandle with_grib_handle_from_file(grib_context* context, FILE* in)
+    /**
+     * Same as load_function, but reads Lua code from a string instead of a
+     * file. The file name is still provided as a description of the code,
+     * to use in error messages.
+     */
+    int load_function(const std::string& fname, const std::string& code)
     {
-        int griberror;
-        gh = grib_handle_new_from_file(context, in, &griberror);
-        if (!gh && griberror == GRIB_END_OF_FILE)
-            return RAIICloseHandle(this);
-        check_grib_error(griberror, "reading GRIB from file");
-        return RAIICloseHandle(this);
+        // Compile the macro
+        if (luaL_loadbuffer(L, code.data(), code.size(), fname.c_str()))
+        {
+            // Copy the error, so that it will exist after the pop
+            string error = lua_tostring(L, -1);
+            // Pop the error from the stack
+            lua_pop(L, 1);
+            throw std::runtime_error("cannot parse " + fname + ": " + error);
+        }
+
+        // Index the scan function
+        int id = -1;
+        lua_getglobal(L, "scan");
+        if (lua_isfunction(L, -1))
+            id = luaL_ref(L, LUA_REGISTRYINDEX);
+
+        // Return the ID, or -1 if no 'scan' function was defined
+        return id;
     }
 
-	/**
-	 * Load scan function from file, returning the stored function ID
-	 *
-	 * It can return -1 if \a fname did not define a `scan' function. This
-	 * can happen, for example, if one adds a .lua file that only provides
-	 * a library of conveniency functions
-	 */
-	int load_function(const std::string& fname);
+    /**
+     * Run previously loaded scan function, passing the given metadata
+     *
+     * Return the error message, or an empty string if no error
+     */
+    std::string run_function(int id, Metadata& md)
+    {
+        // Retrieve the Lua function registered for this
+        lua_rawgeti(L, LUA_REGISTRYINDEX, id);
 
-	/**
-	 * Same as load_function, but reads Lua code from a string instead of a
-	 * file. The file name is still provided as a description of the code,
-	 * to use in error messages.
-	 */
-	int load_function(const std::string& fname, const std::string& code);
+        // Pass md
+        md.lua_push(L);
 
-	/**
-	 * Run previously loaded scan function, passing the given metadata
-	 *
-	 * Return the error message, or an empty string if no error
-	 */
-	std::string run_function(int id, Metadata& md);
+        // Call the function
+        if (lua_pcall(L, 1, 0, 0))
+        {
+            string error = lua_tostring(L, -1);
+            lua_pop(L, 1);
+            return error;
+        } else
+            return std::string();
+    }
 
     /**
      * If code is non-empty, load scan code from it. Else, load scan code
@@ -158,35 +333,18 @@ struct GribLua : public Lua
      */
     void load_scan_code(const std::string& code, const Config::Dirlist& src, vector<int>& ids)
     {
-		/// Load the grib1 scanning functions
-		if (!code.empty())
-		{
-			int id = load_function("grib scan instructions", code);
-			if (id != -1) ids.push_back(id);
-			return;
-		}
+        /// Load the grib1 scanning functions
+        if (!code.empty())
+        {
+            int id = load_function("grib scan instructions", code);
+            if (id != -1) ids.push_back(id);
+            return;
+        }
         vector<string> files = src.list_files(".lua");
         for (vector<string>::const_iterator i = files.begin(); i != files.end(); ++i)
         {
             int id = load_function(*i);
             if (id != -1) ids.push_back(id);
-        }
-    }
-
-    void scan_handle(Metadata& md)
-    {
-        long edition;
-        check_grib_error(grib_get_long(gh, "editionNumber", &edition), "reading edition number");
-        switch (edition)
-        {
-            case 1: scanGrib1(md); break;
-            case 2: scanGrib2(md); break;
-            default:
-                    {
-                stringstream ss;
-                ss << "cannot read grib message: GRIB edition " << edition << " is not supported";
-                throw std::runtime_error(ss.str());
-            }
         }
     }
 
@@ -247,137 +405,51 @@ struct GribLua : public Lua
         lua_pop(L, 1);
     }
 
-    void set_source_blob(std::shared_ptr<segment::Reader> reader, FILE* in, Metadata& md)
+public:
+    grib_handle* gh = nullptr;
+
+    /**
+     * Create the 'grib' object in the interpreter, to access the grib data of
+     * the current grib read by the scanner
+     */
+    GribLua(const std::string& grib1code, const std::string& grib2code)
     {
-        // Get the encoded GRIB buffer from the GRIB handle
-        const uint8_t* vbuf;
-        size_t size;
-        check_grib_error(grib_get_message(gh, (const void **)&vbuf, &size), "cannot access the encoded GRIB data");
+        make_index_userdata("grib", GribLua::arkilua_lookup_grib);
+        make_index_userdata("gribl", GribLua::arkilua_lookup_gribl);
+        make_index_userdata("gribs", GribLua::arkilua_lookup_gribs);
+        make_index_userdata("gribd", GribLua::arkilua_lookup_gribd);
 
-#if 0
-        // We cannot use this as long is too small for 64bit file offsets
-        long offset;
-        check_grib_error(grib_get_long(gh, "offset", &offset), "reading offset");
-#endif
-        off_t offset = ftello(in);
-        offset -= size;
+        /// Load the grib1 scanning functions
+        load_scan_code(grib1code, Config::get().dir_scan_grib1, grib1_funcs);
 
-        md.set_source(Source::createBlob(reader, offset, size));
-        md.set_cached_data(metadata::DataManager::get().to_data(reader->segment().format, vector<uint8_t>(vbuf, vbuf + size)));
+        /// Load the grib2 scanning functions
+        load_scan_code(grib2code, Config::get().dir_scan_grib2, grib2_funcs);
 
-        stringstream note;
-        note << "Scanned from " << str::basename(reader->segment().relpath) << ":" << offset << "+" << size;
-        md.add_note(note.str());
+        //arkilua_dumpstack(L, "Afterinit", stderr);
     }
 
-    void set_source_inline(Metadata& md)
+    void scan_handle(grib_handle* gh, Metadata& md)
     {
-        // Get the encoded GRIB buffer from the GRIB handle
-        const uint8_t* vbuf;
-        size_t size;
-        check_grib_error(grib_get_message(gh, (const void **)&vbuf, &size), "cannot access the encoded GRIB data");
-        md.set_source_inline("grib", metadata::DataManager::get().to_data("grib", vector<uint8_t>(vbuf, vbuf + size)));
+        // Set this here so the Lua code can find it
+        // Do not bother resetting it, as long as this function is the only
+        // entry point into the class
+        this->gh = gh;
+        long edition;
+        check_grib_error(grib_get_long(gh, "editionNumber", &edition), "reading edition number");
+        switch (edition)
+        {
+            case 1: scanGrib1(md); break;
+            case 2: scanGrib2(md); break;
+            default:
+                    {
+                stringstream ss;
+                ss << "cannot read grib message: GRIB edition " << edition << " is not supported";
+                throw std::runtime_error(ss.str());
+            }
+        }
     }
 };
 
-RAIICloseHandle::~RAIICloseHandle()
-{
-    if (g && g->gh)
-    {
-        grib_handle_delete(g->gh);
-        g->gh = nullptr;
-    }
-}
-
-void RAIICloseHandle::close()
-{
-    if (!g || !g->gh)
-        return;
-
-    check_grib_error(grib_handle_delete(g->gh), "cannot close GRIB message");
-    g->gh = nullptr;
-}
-
-RAIICloseHandle::operator bool() const { return g->gh != nullptr; }
-
-
-GribLua::GribLua(const std::string& grib1code, const std::string& grib2code)
-{
-    make_index_userdata("grib", GribLua::arkilua_lookup_grib);
-    make_index_userdata("gribl", GribLua::arkilua_lookup_gribl);
-    make_index_userdata("gribs", GribLua::arkilua_lookup_gribs);
-    make_index_userdata("gribd", GribLua::arkilua_lookup_gribd);
-
-    /// Load the grib1 scanning functions
-    load_scan_code(grib1code, Config::get().dir_scan_grib1, grib1_funcs);
-
-    /// Load the grib2 scanning functions
-    load_scan_code(grib2code, Config::get().dir_scan_grib2, grib2_funcs);
-
-	//arkilua_dumpstack(L, "Afterinit", stderr);
-}
-
-int GribLua::load_function(const std::string& fname)
-{
-    // Compile the macro
-    if (luaL_dofile(L, fname.c_str()))
-    {
-        // Copy the error, so that it will exist after the pop
-        string error = lua_tostring(L, -1);
-        // Pop the error from the stack
-        lua_pop(L, 1);
-        throw std::runtime_error("cannot parse " + fname + ": " + error);
-    }
-
-    // Index the scan function
-    int id = -1;
-    lua_getglobal(L, "scan");
-    if (lua_isfunction(L, -1))
-        id = luaL_ref(L, LUA_REGISTRYINDEX);
-
-    // Return the ID, or -1 if no 'scan' function was defined
-    return id;
-}
-
-int GribLua::load_function(const std::string& fname, const std::string& code)
-{
-    // Compile the macro
-    if (luaL_loadbuffer(L, code.data(), code.size(), fname.c_str()))
-    {
-        // Copy the error, so that it will exist after the pop
-        string error = lua_tostring(L, -1);
-        // Pop the error from the stack
-        lua_pop(L, 1);
-        throw std::runtime_error("cannot parse " + fname + ": " + error);
-    }
-
-    // Index the scan function
-    int id = -1;
-    lua_getglobal(L, "scan");
-    if (lua_isfunction(L, -1))
-        id = luaL_ref(L, LUA_REGISTRYINDEX);
-
-    // Return the ID, or -1 if no 'scan' function was defined
-    return id;
-}
-
-string GribLua::run_function(int id, Metadata& md)
-{
-    // Retrieve the Lua function registered for this
-    lua_rawgeti(L, LUA_REGISTRYINDEX, id);
-
-    // Pass md
-    md.lua_push(L);
-
-    // Call the function
-    if (lua_pcall(L, 1, 0, 0))
-    {
-        string error = lua_tostring(L, -1);
-        lua_pop(L, 1);
-        return error;
-    } else
-        return std::string();
-}
 
 // Never returns in case of error
 #define arkilua_check_gribapi(L, error, ...) do { \
@@ -535,19 +607,6 @@ int GribLua::arkilua_lookup_gribd(lua_State* L)
 Grib::Grib(const std::string& grib1code, const std::string& grib2code)
     : L(new GribLua(grib1code, grib2code))
 {
-    // Get a grib_api context
-    context = grib_context_get_default();
-    if (!context)
-        throw std::runtime_error("cannot get grib_api default context: default context is not available");
-
-    if (false)
-    {
-		// If we inline the data, we can also do multigrib
-		grib_multi_support_on(context);
-	} else {
-		// Multi support is off unless a child class specifies otherwise
-		grib_multi_support_off(context);
-	}
 }
 
 Grib::~Grib()
@@ -555,114 +614,10 @@ Grib::~Grib()
     if (L) delete L;
 }
 
-std::unique_ptr<Metadata> Grib::scan_data(const std::vector<uint8_t>& data)
+void Grib::scan(grib_handle* gh, Metadata& md)
 {
-    grib_handle* gh = grib_handle_new_from_message(context, (void*)data.data(), data.size());
-    if (!gh) throw std::runtime_error("GRIB memory buffer failed to scan");
-
-    auto restore_gh = L->with_grib_handle(gh);
-
-    std::unique_ptr<Metadata> md(new Metadata);
-    md->set_source_inline("grib", metadata::DataManager::get().to_data("grib", std::vector<uint8_t>(data)));
-    L->scan_handle(*md);
-
-    restore_gh.close();
-
-    return md;
+    L->scan_handle(gh, md);
 }
-
-bool Grib::scan_segment(std::shared_ptr<segment::Reader> reader, metadata_dest_func dest)
-{
-    files::RAIIFILE in(reader->segment().abspath, "rb");
-    while (true)
-    {
-        unique_ptr<Metadata> md(new Metadata);
-        auto has_grib = L->with_grib_handle_from_file(context, in);
-        if (!has_grib) break;
-        L->set_source_blob(reader, in, *md);
-        L->scan_handle(*md);
-        if (!dest(move(md))) return false;
-    }
-    return true;
-}
-
-void Grib::scan_singleton(const std::string& abspath, Metadata& md)
-{
-    files::RAIIFILE in(abspath, "rb");
-    md.clear();
-    {
-        auto has_grib = L->with_grib_handle_from_file(context, in);
-        if (!has_grib) throw std::runtime_error(abspath + " contains no GRIB data");
-        stringstream note;
-        note << "Scanned from " << str::basename(abspath);
-        md.add_note(note.str());
-        L->scan_handle(md);
-    }
-
-    {
-        auto has_grib = L->with_grib_handle_from_file(context, in);
-        if (has_grib) throw std::runtime_error(abspath + " contains more than one GRIB data");
-    }
-}
-
-bool Grib::scan_pipe(core::NamedFileDescriptor& infd, metadata_dest_func dest)
-{
-    files::RAIIFILE in(infd, "rb");
-    while (true)
-    {
-        unique_ptr<Metadata> md(new Metadata);
-        auto has_grib = L->with_grib_handle_from_file(context, in);
-        if (!has_grib) break;
-        L->set_source_inline(*md);
-        stringstream note;
-        note << "Scanned from standard input";
-        md->add_note(note.str());
-        L->scan_handle(*md);
-        if (!dest(move(md))) return false;
-    }
-    return true;
-}
-
-#if 0
-MultiGrib::MultiGrib(const std::string& tmpfilename, std::ostream& tmpfile)
-    : tmpfilename(tmpfilename),
-    tmpfile(tmpfile)
-{
-    // Turn on multigrib support: we can handle them
-    grib_multi_support_on(context);
-}
-
-
-void MultiGrib::setSource(Metadata& md)
-{
-    long edition;
-    check_grib_error(grib_get_long(gh, "editionNumber", &edition), "reading edition number");
-
-    // Get the encoded GRIB buffer from the GRIB handle
-    const void* vbuf;
-    size_t size;
-    check_grib_error(grib_get_message(gh, &vbuf, &size), "accessing the encoded GRIB data");
-    const char* buf = static_cast<const char*>(vbuf);
-
-    // Get the write position in the file
-    streampos offset = tmpfile.tellp();
-    if (tmpfile.fail())
-        throw_file_error(tmpfilename, "cannot read the current position");
-
-    // Write the data
-    tmpfile.write(buf, size);
-    if (tmpfile.fail())
-    {
-        stringstream ss;
-        ss << "cannot write " << size << " bytes to file " << tmpfilename;
-        throw std::system_error(errno, std::system_category(), ss.str());
-    }
-
-    tmpfile.flush();
-
-    md.set_source(Source::createBlob("grib", "", tmpfilename, offset, size));
-}
-#endif
 
 }
 }

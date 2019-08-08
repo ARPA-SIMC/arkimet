@@ -5,6 +5,7 @@
 #include <arki/segment/fwd.h>
 #include <arki/scan/fwd.h>
 #include <arki/types/fwd.h>
+#include <arki/metadata/fwd.h>
 #include <string>
 #include <memory>
 #include <vector>
