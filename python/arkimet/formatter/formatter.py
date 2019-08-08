@@ -3,7 +3,7 @@ from collections import defaultdict
 
 
 class Formatter:
-    formatters = defaultdict(set)
+    formatters = defaultdict(list)
 
     def format(self, t: Dict[str, Any]) -> str:
         # Find the formatter list for this type
@@ -12,8 +12,10 @@ class Formatter:
             return None
 
         # Try all formatters in the list, returning the result of the first
-        # that returns not-None
-        for formatter in formatters:
+        # that returns not-None.
+        # Iterate in reverse order, so that formatters loaded later (like from
+        # /etc) can be called earlier and fall back on the shipped ones
+        for formatter in reversed(formatters):
             res = formatter(t)
             if res is not None:
                 return res
@@ -23,4 +25,5 @@ class Formatter:
 
     @classmethod
     def register(cls, type: str, formatter: Callable[[Dict[str, Any]], Optional[str]]):
-        cls.formatters[type].add(formatter)
+        if formatter not in cls.formatters[type]:
+            cls.formatters[type].append(formatter)
