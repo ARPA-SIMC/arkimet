@@ -4,7 +4,11 @@
 #include <arki/values.h>
 #include <arki/types/value.h>
 
-#include <meteo-vm2/source.h>
+namespace meteo {
+namespace vm2 {
+struct Source;
+}
+}
 
 namespace arki {
 namespace utils {

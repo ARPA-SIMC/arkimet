@@ -4,6 +4,7 @@
 #include "cfg.h"
 #include "metadata.h"
 #include "summary.h"
+#include "scan.h"
 #include "dataset.h"
 #include "matcher.h"
 #include "counters.h"
@@ -409,6 +410,7 @@ PyMODINIT_FUNC PyInit__arkimet(void)
         register_metadata(m);
         register_summary(m);
         register_matcher(m);
+        register_scan(m);
         register_dataset(m);
         register_counters(m);
         register_arki_query(m);
