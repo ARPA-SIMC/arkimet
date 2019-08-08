@@ -40,7 +40,7 @@ public:
     void scan_singleton(const std::string& abspath, Metadata& md) override;
 };
 
-class Grib : public GribScanner
+class LuaGribScanner : public GribScanner
 {
 protected:
     GribLua* L;
@@ -48,8 +48,8 @@ protected:
     void scan(grib_handle* gh, Metadata& md) override;
 
 public:
-    Grib(const std::string& grib1code=std::string(), const std::string& grib2code=std::string());
-    virtual ~Grib();
+    LuaGribScanner(const std::string& grib1code=std::string(), const std::string& grib2code=std::string());
+    virtual ~LuaGribScanner();
 
     friend class GribLua;
 };

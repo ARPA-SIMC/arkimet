@@ -604,17 +604,17 @@ int GribLua::arkilua_lookup_gribd(lua_State* L)
 }
 
 
-Grib::Grib(const std::string& grib1code, const std::string& grib2code)
+LuaGribScanner::LuaGribScanner(const std::string& grib1code, const std::string& grib2code)
     : L(new GribLua(grib1code, grib2code))
 {
 }
 
-Grib::~Grib()
+LuaGribScanner::~LuaGribScanner()
 {
     if (L) delete L;
 }
 
-void Grib::scan(grib_handle* gh, Metadata& md)
+void LuaGribScanner::scan(grib_handle* gh, Metadata& md)
 {
     L->scan_handle(gh, md);
 }
