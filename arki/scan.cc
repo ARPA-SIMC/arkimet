@@ -36,7 +36,7 @@ void init()
 {
 #ifdef HAVE_GRIBAPI
     factories["grib"] = [] {
-        return std::unique_ptr<Scanner>(new scan::Grib);
+        return std::unique_ptr<Scanner>(new scan::LuaGribScanner);
     };
 #endif
 #ifdef HAVE_DBALLE

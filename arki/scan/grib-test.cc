@@ -47,7 +47,7 @@ void Tests::register_tests() {
 add_method("compact", [] {
     Metadata md;
     metadata::Collection mds;
-    scan::Grib scanner;
+    scan::LuaGribScanner scanner;
     vector<uint8_t> buf;
     scanner.test_scan_file("inbound/test.grib1", mds.inserter_func());
     wassert(actual(mds.size()) == 3u);
@@ -122,7 +122,7 @@ add_method("compact", [] {
 add_method("padded", [] {
     Metadata md;
     metadata::Collection mds;
-    scan::Grib scanner;
+    scan::LuaGribScanner scanner;
     vector<uint8_t> buf;
 
     scanner.test_scan_file("inbound/padded.grib1", mds.inserter_func());
@@ -186,7 +186,7 @@ add_method("padded", [] {
 });
 
 add_method("lua_results", [] {
-    scan::Grib scanner("", R"(
+    scan::LuaGribScanner scanner("", R"(
 arki.year = 2008
 arki.month = 7
 arki.day = 30
@@ -250,7 +250,7 @@ add_method("validation", [] {
 add_method("layers", [] {
     Metadata md;
     metadata::Collection mds;
-    scan::Grib scanner;
+    scan::LuaGribScanner scanner;
     vector<uint8_t> buf;
     scanner.test_scan_file("inbound/layer.grib1", mds.inserter_func());
     wassert(actual(mds.size()) == 1u);
@@ -277,7 +277,7 @@ add_method("layers", [] {
 // Scan a know item for which grib_api changed behaviour
 add_method("proselvo", [] {
     Metadata md;
-    scan::Grib scanner;
+    scan::LuaGribScanner scanner;
     vector<uint8_t> buf;
     metadata::Collection mds;
     scanner.test_scan_file("inbound/proselvo.grib1", mds.inserter_func());
@@ -305,7 +305,7 @@ add_method("proselvo", [] {
 // Scan a know item for which grib_api changed behaviour
 add_method("cleps", [] {
     Metadata md;
-    scan::Grib scanner;
+    scan::LuaGribScanner scanner;
     vector<uint8_t> buf;
     metadata::Collection mds;
     scanner.test_scan_file("inbound/cleps_pf16_HighPriority.grib2", mds.inserter_func());
@@ -335,7 +335,7 @@ add_method("utm_areas", [] {
     throw TestSkipped("ARPAE GRIB support not available");
 #endif
     Metadata md;
-    scan::Grib scanner;
+    scan::LuaGribScanner scanner;
     metadata::Collection mds;
     scanner.test_scan_file("inbound/calmety_20110215.grib2", mds.inserter_func());
     wassert(actual(mds.size()) == 1u);
@@ -357,14 +357,14 @@ add_method("ninfa", [] {
     throw TestSkipped("ARPAE GRIB support not available");
 #endif
     {
-        scan::Grib scanner;
+        scan::LuaGribScanner scanner;
         metadata::Collection mds;
         scanner.test_scan_file("inbound/ninfa_ana.grib2", mds.inserter_func());
         wassert(actual(mds.size()) == 1u);
         wassert(actual(mds[0]).contains("timerange", "Timedef(0s,254,0s)"));
     }
     {
-        scan::Grib scanner;
+        scan::LuaGribScanner scanner;
         metadata::Collection mds;
         scanner.test_scan_file("inbound/ninfa_forc.grib2", mds.inserter_func());
         wassert(actual(mds.size()) == 1u);
@@ -515,7 +515,7 @@ add_method("bigfile", [] {
 
 add_method("issue120", [] {
     Metadata md;
-    scan::Grib scanner;
+    scan::LuaGribScanner scanner;
     metadata::Collection mds;
     scanner.test_scan_file("inbound/oddunits.grib", mds.inserter_func());
     wassert(actual(mds.size()) == 1u);
