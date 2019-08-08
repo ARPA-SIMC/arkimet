@@ -9,10 +9,9 @@ nobase_dist_conf_DATA = \
 	format/10-product.lua \
 	format/10-timerange.lua \
 	match-alias.conf \
-	qmacro/noop.lua \
-	qmacro/py_noop.py \
-	qmacro/expa.lua \
-	qmacro/py_expa.py \
+	qmacro/noop.py \
+	qmacro/noopcopy.py \
+	qmacro/expa.py \
 	report/count \
 	report/datasets \
 	report/mdstats \
