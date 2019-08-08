@@ -1,4 +1,5 @@
 #include "arki/tests/tests.h"
+#include <meteo-vm2/source.h>
 #include "vm2.h"
 
 namespace {
