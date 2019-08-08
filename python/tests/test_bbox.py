@@ -218,3 +218,21 @@ class TestBBox(unittest.TestCase):
             (14.1986, 46.0046),
             (13.9963, 43.7182),
         ])
+
+    def test_vm2(self):
+        """
+        Experimental UTM areas
+        """
+        skip_unless_geos()
+        skip_unless_shapely()
+
+        bbox = arki.BBox()
+        res = bbox.compute({"type": "area", "style": "VM2", "id": 1})
+        self.assertIsNotNone(res)
+
+        shape = shapely.wkt.loads(res)
+        self.assertEqual(shape.geom_type, "Point")
+        self.maxDiff = None
+        self.assertEqual(coord_list(shape.coords), [
+            (12.0774, 44.6002),
+        ])

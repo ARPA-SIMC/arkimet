@@ -1,13 +1,18 @@
 from arkimet.bbox import BBox
+import arkimet as arki
 
 
 def bbox_vm2(area):
     """
     Compute bounding boxes for VM2 areas
     """
-    if area.dval and area.dval.lat and area.dval.lon:
+    station = arki.scan.vm2.get_station(area["id"])
+    lat = station.get("lat")
+    lon = station.get("lon")
+
+    if lat is not None and lon is not None:
         return [
-            (area.dval.lat / 100000, area.dval.lon / 100000),
+            (lat / 100000, lon / 100000),
         ]
 
 
