@@ -21,6 +21,7 @@ _arkimet_la_SOURCES = \
     cfg.cc \
     summary.cc \
     matcher.cc \
+    scan.cc \
     dataset.cc \
     dataset/python.cc \
     dataset/querymacro.cc \
@@ -73,6 +74,7 @@ EXTRA_DIST = \
     bbox.h \
     summary.h \
     matcher.h \
+    scan.h \
     dataset.h \
     dataset/python.h \
     dataset/reporter.h \
