@@ -23,7 +23,6 @@ PyTypeObject* arkipy_BBox_Type = nullptr;
 
 namespace {
 
-#if 0
 PyObject* bbox_object = nullptr;
 
 void load_bbox_object()
@@ -63,9 +62,20 @@ void load_bbox_object()
 }
 
 
+std::pair<double, double> get_coord_pair(PyObject* obj)
+{
+    Py_ssize_t size = PyTuple_Size(obj);
+    if (size != 2)
+        throw std::invalid_argument("python bbox function did not return a list of coordinate pairs");
+    PyObject* first = PyTuple_GET_ITEM(obj, 0); // Borrowed reference
+    PyObject* second = PyTuple_GET_ITEM(obj, 1); // Borrowed reference
+    return std::make_pair(from_python<double>(first), from_python<double>(second));
+}
+
+
 struct PythonBBox : public arki::BBox
 {
-    std::string operator()(const arki::types::Type& v) const override
+    std::unique_ptr<arki::utils::geos::Geometry> compute(const arki::types::Area& v) const override
     {
         AcquireGIL gil;
         if (!bbox_object)
@@ -75,7 +85,7 @@ struct PythonBBox : public arki::BBox
         v.serialise(e, arki::structured::keys_python);
 
         pyo_unique_ptr obj(PyObject_CallMethod(
-                        bbox_object, "format", "O", e.res.get()));
+                        bbox_object, "compute", "O", e.res.get()));
 
         if (!obj)
         {
@@ -85,17 +95,47 @@ struct PythonBBox : public arki::BBox
             pyo_unique_ptr exc_value(value);
             pyo_unique_ptr exc_traceback(traceback);
 
+            arki::nag::debug_tty("python bbox failed: %s", exc_type.str().c_str());
             arki::nag::warning("python bbox failed: %s", exc_type.str().c_str());
-            return from_python<std::string>(obj);
+            return std::unique_ptr<arki::utils::geos::Geometry>();
         }
 
         if (obj == Py_None)
-            return v.to_string();
+            return std::unique_ptr<arki::utils::geos::Geometry>();
 
-        return from_python<std::string>(obj);
+        Py_ssize_t size = PyList_Size(obj);
+        if (size == -1)
+            throw PythonException();
+
+        switch (size)
+        {
+            case 0: return std::unique_ptr<arki::utils::geos::Geometry>();
+            case 1:
+            {
+                auto gf = arki::utils::geos::GeometryFactory::getDefaultInstance();
+                PyObject* pair = PyList_GET_ITEM(obj.get(), 0); // Borrowed reference
+                auto point = get_coord_pair(pair);
+                return std::unique_ptr<arki::utils::geos::Geometry>(
+                        gf->createPoint(arki::utils::geos::Coordinate(point.second, point.first)));
+            }
+            default:
+            {
+                auto gf = arki::utils::geos::GeometryFactory::getDefaultInstance();
+                arki::utils::geos::CoordinateArraySequence cas;
+                for (Py_ssize_t i = 0; i < size; ++i)
+                {
+                    PyObject* pair = PyList_GET_ITEM(obj.get(), i); // Borrowed reference
+                    auto point = get_coord_pair(pair);
+                    cas.add(arki::utils::geos::Coordinate(point.second, point.first));
+                }
+                std::unique_ptr<arki::utils::geos::LinearRing> lr(gf->createLinearRing(cas));
+                return std::unique_ptr<arki::utils::geos::Geometry>(
+                        gf->createPolygon(*lr, std::vector<arki::utils::geos::Geometry*>()));
+            }
+        }
     }
 };
-#endif
+
 
 struct compute : public MethKwargs<compute, arkipy_BBox>
 {
@@ -189,11 +229,9 @@ namespace bbox {
 
 void init()
 {
-#if 0
     arki::BBox::set_factory([] {
         return std::unique_ptr<arki::BBox>(new PythonBBox);
     });
-#endif
 }
 
 }

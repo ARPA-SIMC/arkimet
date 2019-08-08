@@ -351,6 +351,7 @@ PyMODINIT_FUNC PyInit__arkimet(void)
     arki::init();
 
     arki::python::formatter::init();
+    arki::python::bbox::init();
     arki::python::dataset::qmacro::init();
 
     python_nag_handler = new PythonNagHandler;
