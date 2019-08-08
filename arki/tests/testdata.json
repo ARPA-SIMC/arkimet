@@ -12451,16 +12451,6 @@
  },
  {
   "doc": "",
-  "group": "arki_dataset_gridquery",
-  "method": "gridquery"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_gridquery",
-  "method": "no_expansion"
- },
- {
-  "doc": "",
   "group": "arki_dataset_instantiate_simple",
   "method": "instantiate"
  },
@@ -16133,11 +16123,6 @@
   "doc": "",
   "group": "arki_dataset_concurrent_odim_iseg",
   "method": "nolock_repack"
- },
- {
-  "doc": "",
-  "group": "arki_metadatagrid",
-  "method": "query"
  },
  {
   "doc": "",

@@ -35,7 +35,6 @@ nobase_dist_arkiinclude_HEADERS = \
 		dataset/fromfunction.h \
 		dataset/testlarge.h \
 		dataset/file.h \
-		dataset/gridquery.h \
 		dataset.h \
 		dataset/index.h \
 		dataset/index/attr.h \
@@ -106,7 +105,6 @@ nobase_dist_arkiinclude_HEADERS = \
 		metadata/stream.h \
 		metadata/tests.h \
 		metadata/test-generator.h \
-		metadatagrid.h \
 		nag.h \
 		postprocess.h \
 		querymacro.h \
@@ -550,9 +548,7 @@ libarkimet_la_SOURCES += \
 		dataset/fromfunction.cc \
 		dataset/testlarge.cc \
 		dataset/merged.cc \
-		dataset/gridquery.cc \
 		datasets.cc \
-		metadatagrid.cc \
 		dispatcher.cc \
 		querymacro.cc \
 		runtime.cc
@@ -603,13 +599,11 @@ tests_arki_test_SOURCES += \
 		dataset/fromfunction-test.cc \
 		dataset/testlarge-test.cc \
 		dataset/merged-test.cc \
-		dataset/gridquery-test.cc \
 		dataset-test.cc \
 		dataset-reader-test.cc \
 		dataset-writer-test.cc \
 		dataset-checker-test.cc \
 		dataset-concurrency-test.cc \
-		metadatagrid-test.cc \
 		postprocess-test.cc \
 		querymacro-test.cc \
 		datasets-test.cc \
