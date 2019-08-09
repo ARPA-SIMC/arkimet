@@ -49,6 +49,7 @@ struct PythonEmitter : public structured::Emitter
     void add_int(long long int val) override;
     void add_double(double val) override;
     void add_string(const std::string& val) override;
+    void add_time(const core::Time& val) override;
 };
 
 
@@ -119,6 +120,10 @@ public:
     void items(const char* desc, std::function<void(const std::string&, const Reader&)>) const override;
     void sub(const std::string& key, const char* desc, std::function<void(const Reader&)>) const override;
 };
+
+namespace structured{
+void init();
+}
 
 
 }

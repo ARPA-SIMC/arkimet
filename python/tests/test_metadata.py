@@ -3,6 +3,7 @@ import os
 import io
 import tempfile
 import arkimet as arki
+import datetime
 
 
 class TestMetadata(unittest.TestCase):
@@ -26,7 +27,7 @@ class TestMetadata(unittest.TestCase):
 
         py_reftime = md.to_python("reftime")
         self.assertEqual(py_reftime,
-                         {"type": "reftime", "style": "POSITION",  "time": [2007, 7, 8, 13, 0, 0]})
+                         {"type": "reftime", "style": "POSITION",  "time": datetime.datetime(2007, 7, 8, 13, 0, 0)})
 
         md["reftime"] = "2019-07-30T12:00:00Z"
         self.assertEqual(md["reftime"], "2019-07-30T12:00:00Z")
