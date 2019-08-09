@@ -60,6 +60,11 @@ PyObject* int_to_python(int val)
     return throw_ifnull(PyLong_FromLong(val));
 }
 
+PyObject* long_to_python(long int val)
+{
+    return throw_ifnull(PyLong_FromLong(val));
+}
+
 PyObject* size_t_to_python(size_t val)
 {
     return throw_ifnull(PyLong_FromLong(val));
