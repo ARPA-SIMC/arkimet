@@ -60,7 +60,7 @@ public:
     void set_data_start_hook(std::function<void(core::NamedFileDescriptor&)> hook);
 
     // Process one metadata
-    bool process(std::unique_ptr<Metadata>&& md);
+    bool process(std::shared_ptr<Metadata> md);
 
     // End of processing: flush all pending data
     void flush();

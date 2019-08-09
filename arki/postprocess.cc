@@ -283,7 +283,7 @@ void Postprocess::start()
     m_child->subproc.fork();
 }
 
-bool Postprocess::process(unique_ptr<Metadata>&& md)
+bool Postprocess::process(std::shared_ptr<Metadata> md)
 {
     if (m_child->subproc.get_stdin() == -1)
         return false;

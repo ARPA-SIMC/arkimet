@@ -111,25 +111,6 @@ static void compressAndWrite(const std::vector<uint8_t>& buf, AbstractOutputFile
         out.write(buf.data(), buf.size());
 }
 
-Collection::Collection() {}
-
-Collection::Collection(const Collection& o)
-{
-    for (const auto& i: o.vals)
-        vals.push_back(i->clone());
-}
-
-Collection& Collection::operator=(const Collection& o)
-{
-    if (this == &o) return *this;
-
-    clear();
-    for (const auto& i: o.vals)
-        vals.push_back(i->clone());
-
-    return *this;
-}
-
 Collection::Collection(dataset::Reader& ds, const dataset::DataQuery& q)
 {
     add(ds, q);
@@ -142,8 +123,6 @@ Collection::Collection(dataset::Reader& ds, const std::string& q)
 
 Collection::~Collection()
 {
-    for (vector<Metadata*>::iterator i = vals.begin(); i != vals.end(); ++i)
-        delete *i;
 }
 
 bool Collection::operator==(const Collection& o) const
@@ -156,31 +135,26 @@ bool Collection::operator==(const Collection& o) const
     return true;
 }
 
-void Collection::clear()
+Collection Collection::clone() const
 {
-    for (vector<Metadata*>::iterator i = vals.begin(); i != vals.end(); ++i)
-        delete *i;
-    vals.clear();
-}
-
-void Collection::pop_back()
-{
-    if (empty()) return;
-    delete vals.back();
-    vals.pop_back();
+    Collection res;
+    res.vals.reserve(size());
+    for (const auto& md: vals)
+        res.vals.push_back(std::shared_ptr<Metadata>(md->clone()));
+    return res;
 }
 
 dataset::WriterBatch Collection::make_import_batch() const
 {
     dataset::WriterBatch batch;
-    for (auto& md: *this)
+    for (auto& md: vals)
         batch.emplace_back(make_shared<dataset::WriterBatchElement>(*md));
     return batch;
 }
 
 metadata_dest_func Collection::inserter_func()
 {
-    return [=](unique_ptr<Metadata> md) { acquire(move(md)); return true; };
+    return [=](std::shared_ptr<Metadata> md) { acquire(md); return true; };
 }
 
 void Collection::add(dataset::Reader& ds, const dataset::DataQuery& q)
@@ -193,10 +167,10 @@ void Collection::push_back(const Metadata& md)
     acquire(Metadata::create_copy(md));
 }
 
-void Collection::acquire(unique_ptr<Metadata>&& md, bool with_data)
+void Collection::acquire(std::shared_ptr<Metadata> md, bool with_data)
 {
     if (!with_data) md->drop_cached_data();
-    vals.push_back(md.release());
+    vals.push_back(md);
 }
 
 void Collection::write_to(NamedFileDescriptor& out) const
@@ -273,7 +247,7 @@ std::string Collection::ensureContiguousData(const std::string& source) const
 
     string fname;
     off_t last_end = 0;
-    for (vector<Metadata*>::const_iterator i = vals.begin(); i != vals.end(); ++i)
+    for (auto i = vals.begin(); i != vals.end(); ++i)
     {
         const source::Blob& s = (*i)->sourceBlob();
         if (s.offset != (size_t)last_end)
@@ -319,25 +293,21 @@ struct ClearOnEnd
 
 bool Collection::move_to(metadata_dest_func dest)
 {
-    // Ensure that at the end of this method we clear vals, deallocating all
-    // leftovers
-    ClearOnEnd coe(vals);
-
-    for (vector<Metadata*>::iterator i = vals.begin(); i != vals.end(); ++i)
+    bool success = true;
+    for (auto& md: vals)
     {
-        // Move the pointer to an unique_ptr
-        unique_ptr<Metadata> md(*i);
-        *i = 0;
-        // Pass it on to the eater
-        if (!dest(move(md)))
-            return false;
+        if (success && !dest(md))
+            success = false;
+        // Release as soon as we passed it on
+        md.reset();
     }
-    return true;
+    clear();
+    return success;
 }
 
 void Collection::strip_source_paths()
 {
-    for (vector<Metadata*>::iterator i = vals.begin(); i != vals.end(); ++i)
+    for (auto i = vals.begin(); i != vals.end(); ++i)
     {
         const source::Blob& source = (*i)->sourceBlob();
         (*i)->set_source(upcast<Source>(source.fileOnly()));
@@ -346,7 +316,7 @@ void Collection::strip_source_paths()
 
 void Collection::sort(const sort::Compare& cmp)
 {
-    std::sort(vals.begin(), vals.end(), sort::STLCompare(cmp));
+    std::stable_sort(vals.begin(), vals.end(), sort::STLCompare(cmp));
 }
 
 void Collection::sort(const std::string& cmp)
@@ -388,7 +358,7 @@ void TestCollection::scan_from_file(const std::string& pathname, bool with_data)
     string relpath;
     utils::files::resolve_path(pathname, basedir, relpath);
     auto reader = Segment::detect_reader(format, basedir, relpath, pathname, std::make_shared<core::lock::Null>());
-    reader->scan([&](unique_ptr<Metadata> md) { acquire(move(md), with_data); return true; });
+    reader->scan([&](std::shared_ptr<Metadata> md) { acquire(md, with_data); return true; });
 }
 
 void TestCollection::scan_from_file(const std::string& pathname, const std::string& format, bool with_data)
@@ -397,7 +367,7 @@ void TestCollection::scan_from_file(const std::string& pathname, const std::stri
     string relpath;
     utils::files::resolve_path(pathname, basedir, relpath);
     auto reader = Segment::detect_reader(format, basedir, relpath, pathname, std::make_shared<core::lock::Null>());
-    reader->scan([&](unique_ptr<Metadata> md) { acquire(move(md), with_data); return true; });
+    reader->scan([&](std::shared_ptr<Metadata> md) { acquire(md, with_data); return true; });
 }
 
 

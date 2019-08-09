@@ -350,9 +350,9 @@ bool Reader::scan(metadata_dest_func dest)
     if (st_md.get() && st_md->st_mtime >= segment().timestamp())
     {
         std::string root(str::dirname(segment().abspath));
-        return Metadata::read_file(metadata::ReadContext(md_abspath, root), [&](unique_ptr<Metadata> md) {
+        return Metadata::read_file(metadata::ReadContext(md_abspath, root), [&](std::shared_ptr<Metadata> md) {
             md->sourceBlob().lock(shared_from_this());
-            return dest(move(md));
+            return dest(md);
         });
     }
 

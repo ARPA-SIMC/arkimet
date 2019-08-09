@@ -13,7 +13,7 @@ using namespace arki::summary;
 /// Function to add metadata to Tables
 metadata_dest_func make_adder(Table& root)
 {
-    return [&](unique_ptr<Metadata> md) {
+    return [&](std::shared_ptr<Metadata> md) {
         root.merge(*md);
         return true;
     };

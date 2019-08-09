@@ -24,7 +24,7 @@ protected:
     static const int buf_size = 10;
     std::mutex mutex;
     std::condition_variable cond;
-    Metadata* buffer[buf_size];
+    std::shared_ptr<Metadata> buffer[buf_size];
     size_t head, tail, size;
     mutable bool m_done;
 
@@ -36,32 +36,28 @@ public:
 
     SyncBuffer() : head(0), tail(0), size(buf_size), m_done(false)
     {
-        memset(buffer, 0, buf_size * sizeof(Metadata*));
     }
     ~SyncBuffer()
     {
-        for (unsigned i = 0; i < buf_size; ++i)
-            delete buffer[i];
     }
 
-    void push(unique_ptr<Metadata> val)
+    void push(std::shared_ptr<Metadata> val)
     {
         std::unique_lock<std::mutex> lock(mutex);
         cond.wait(lock, [this] { return (head + 1) % size != tail; });
-        buffer[head] = val.release();
+        buffer[head] = val;
         head = (head + 1) % size;
         cond.notify_all();
     }
 
-    unique_ptr<Metadata> pop()
+    std::shared_ptr<Metadata> pop()
     {
         std::lock_guard<std::mutex> lock(mutex);
         if (head == tail)
             throw_consistency_error("removing an element from a SyncBuffer", "the buffer is empty");
         // Reset the item (this will take care, for example, to dereference
         // refcounted values in the same thread that took them over)
-        unique_ptr<Metadata> res(buffer[tail]);
-        buffer[tail] = 0;
+        std::shared_ptr<Metadata> res(std::move(buffer[tail]));
         tail = (tail + 1) % size;
         cond.notify_all();
         return res;
@@ -73,7 +69,7 @@ public:
         std::unique_lock<std::mutex> lock(mutex);
         cond.wait(lock, [this] { return head != tail || m_done; });
         if (head == tail && m_done) return 0;
-        return buffer[tail];
+        return buffer[tail].get();
     }
 
     bool isDone()
@@ -108,8 +104,8 @@ public:
         try {
             if (!query)
                 throw_consistency_error("executing query in subthread", "no query has been set");
-            dataset->query_data(*query, [&](unique_ptr<Metadata> md) {
-                mdbuf.push(move(md));
+            dataset->query_data(*query, [&](std::shared_ptr<Metadata> md) {
+                mdbuf.push(md);
                 return true;
             });
             mdbuf.done();

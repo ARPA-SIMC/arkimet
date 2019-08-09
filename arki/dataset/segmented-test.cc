@@ -498,7 +498,7 @@ add_method("query_lots", [](Fixture& f) {
         unsigned seen;
         CheckSortOrder() : last_value(0), seen(0) {}
         virtual uint64_t make_key(const Metadata& md) const = 0;
-        bool eat(unique_ptr<Metadata>&& md)
+        bool eat(std::shared_ptr<Metadata> md)
         {
             uint64_t value = make_key(*md);
             wassert(actual(value) >= last_value);
@@ -532,7 +532,7 @@ add_method("query_lots", [](Fixture& f) {
     {
         auto reader = f.config().create_reader();
         CheckReftimeSortOrder cso;
-        reader->query_data(Matcher(), [&](unique_ptr<Metadata> md) { return cso.eat(move(md)); });
+        reader->query_data(Matcher(), [&](std::shared_ptr<Metadata> md) { return cso.eat(md); });
         wassert(actual(cso.seen) == 16128u);
     }
 
@@ -541,7 +541,7 @@ add_method("query_lots", [](Fixture& f) {
         CheckAllSortOrder cso;
         dataset::DataQuery dq(Matcher::parse(""));
         dq.sorter = sort::Compare::parse("reftime,area,product");
-        reader->query_data(dq, [&](unique_ptr<Metadata> md) { return cso.eat(move(md)); });
+        reader->query_data(dq, [&](std::shared_ptr<Metadata> md) { return cso.eat(md); });
         wassert(actual(cso.seen) == 16128u);
     }
 });
@@ -799,7 +799,7 @@ add_method("issue103", [](Fixture& f) {
     // Query with data, without storing all the results on a collection
     dataset::DataQuery dq(Matcher::parse(""), true);
     unsigned count = 0;
-    wassert(reader->query_data(dq, [&](unique_ptr<Metadata> md) {
+    wassert(reader->query_data(dq, [&](std::shared_ptr<Metadata> md) {
         wassert(actual(md->sourceBlob().reader).istrue());
         ++count; return true;
     }));
@@ -808,7 +808,7 @@ add_method("issue103", [](Fixture& f) {
     // Query with data, sorting, without storing all the results on a collection
     dq.sorter = sort::Compare::parse("level");
     count = 0;
-    wassert(reader->query_data(dq, [&](unique_ptr<Metadata> md) {
+    wassert(reader->query_data(dq, [&](std::shared_ptr<Metadata> md) {
         wassert(actual(md->sourceBlob().reader).istrue());
         ++count; return true;
     }));

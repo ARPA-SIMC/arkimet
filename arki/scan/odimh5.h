@@ -27,10 +27,10 @@ public:
     virtual ~OdimH5();
 
     std::string name() const override { return "odimh5"; }
-    std::unique_ptr<Metadata> scan_data(const std::vector<uint8_t>& data) override;
+    std::shared_ptr<Metadata> scan_data(const std::vector<uint8_t>& data) override;
     bool scan_pipe(core::NamedFileDescriptor& in, metadata_dest_func dest) override;
     bool scan_segment(std::shared_ptr<segment::Reader> reader, metadata_dest_func dest) override;
-    void scan_singleton(const std::string& abspath, Metadata& md) override;
+    std::shared_ptr<Metadata> scan_singleton(const std::string& abspath) override;
 
 protected:
     hid_t h5file;

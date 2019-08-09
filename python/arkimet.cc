@@ -230,8 +230,7 @@ struct config : public MethNoargs<config, PyObject>
             set_dict(result, "postproc", describe_dirlist(cfg.dir_postproc, "Postprocessors", "ARKI_POSTPROC"));
             set_dict(result, "report", describe_dirlist(cfg.dir_report, "Report scripts", "ARKI_REPORT"));
             set_dict(result, "qmacro", describe_dirlist(cfg.dir_qmacro, "Query macro scripts", "ARKI_QMACRO"));
-            set_dict(result, "scan_grib1", describe_dirlist(cfg.dir_scan_grib1, "GRIB1 scan scripts", "ARKI_SCAN_GRIB1"));
-            set_dict(result, "scan_grib2", describe_dirlist(cfg.dir_scan_grib2, "GRIB2 scan scripts", "ARKI_SCAN_GRIB2"));
+            set_dict(result, "scan_grib", describe_dirlist(cfg.dir_scan_grib, "GRIB scan scripts", "ARKI_SCAN_GRIB"));
             set_dict(result, "scan_odimh5", describe_dirlist(cfg.dir_scan_odimh5, "ODIMH5 scan scripts", "ARKI_SCAN_ODIMH5"));
             set_dict(result, "bufr", describe_dirlist(cfg.dir_scan_bufr, "BUFR scan scripts", "ARKI_SCAN_BUFR"));
             set_dict(result, "iotrace", describe_string(cfg.file_iotrace_output, "I/O profiling log file", "ARKI_IOTRACE"));

@@ -91,7 +91,7 @@ public:
     ~LocalReader();
 
     // Base implementations that queries the archives if they exist
-    bool query_data(const dataset::DataQuery& q, std::function<bool(std::unique_ptr<Metadata>)> dest) override;
+    bool query_data(const dataset::DataQuery& q, metadata_dest_func dest) override;
 
     // Base implementations that queries the archives if they exist
     void query_summary(const Matcher& matcher, Summary& summary) override;

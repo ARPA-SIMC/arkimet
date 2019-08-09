@@ -22,7 +22,7 @@ using namespace arki::utils;
 void produceGRIB(Postprocess& p)
 {
     auto reader = Segment::detect_reader("grib", ".", "inbound/test.grib1", "inbound/test.grib1", std::make_shared<core::lock::Null>());
-    reader->scan([&](unique_ptr<Metadata> md) { return p.process(move(md)); });
+    reader->scan([&](std::shared_ptr<Metadata> md) { return p.process(move(md)); });
 }
 
 class Tests : public TestCase
@@ -88,7 +88,7 @@ add_method("cat", [] {
     vector<uint8_t> plain;
     {
         BinaryEncoder enc(plain);
-        reader->scan([&](unique_ptr<Metadata> md) {
+        reader->scan([&](std::shared_ptr<Metadata> md) {
             md->makeInline();
             md->encodeBinary(enc);
             const auto& data = md->get_data().read();
@@ -102,7 +102,7 @@ add_method("cat", [] {
     Postprocess p("cat");
     p.set_output(out);
     p.start();
-    reader->scan([&](unique_ptr<Metadata> md) { return p.process(move(md)); });
+    reader->scan([&](std::shared_ptr<Metadata> md) { return p.process(md); });
     p.flush();
     out.close();
 

@@ -56,7 +56,7 @@ bool Reader::generate(const core::Time& begin, const core::Time& until, std::fun
     return true;
 }
 
-bool Reader::query_data(const dataset::DataQuery& q, std::function<bool(std::unique_ptr<Metadata>)> out)
+bool Reader::query_data(const dataset::DataQuery& q, metadata_dest_func out)
 {
     std::unique_ptr<core::Time> begin;
     std::unique_ptr<core::Time> until;

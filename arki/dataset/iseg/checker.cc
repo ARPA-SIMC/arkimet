@@ -409,16 +409,16 @@ public:
         IDMaker id_maker(idx().unique_codes());
 
         map<vector<uint8_t>, const Metadata*> finddupes;
-        for (metadata::Collection::const_iterator i = mds.begin(); i != mds.end(); ++i)
+        for (const auto& md: mds)
         {
-            vector<uint8_t> id = id_maker.make_string(**i);
+            vector<uint8_t> id = id_maker.make_string(*md);
             if (id.empty())
                 continue;
             auto dup = finddupes.find(id);
             if (dup == finddupes.end())
-                finddupes.insert(make_pair(id, *i));
+                finddupes.insert(make_pair(id, md.get()));
             else
-                dup->second = *i;
+                dup->second = md.get();
         }
 
         // Send the remaining metadata to the reindexer

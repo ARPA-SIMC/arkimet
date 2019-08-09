@@ -260,9 +260,9 @@ void Bufr::do_scan(BinaryMessage& rmsg, Metadata& md)
             md.set(timedef->validity_time_to_emission_time(*p));
 }
 
-std::unique_ptr<Metadata> Bufr::scan_data(const std::vector<uint8_t>& data)
+std::shared_ptr<Metadata> Bufr::scan_data(const std::vector<uint8_t>& data)
 {
-    std::unique_ptr<Metadata> md(new Metadata);
+    auto md = std::make_shared<Metadata>();
     md->set_source_inline("grib", metadata::DataManager::get().to_data("bufr", std::vector<uint8_t>(data)));
     BinaryMessage rmsg(Encoding::BUFR);
     rmsg.data = std::string(data.begin(), data.end());
@@ -286,15 +286,16 @@ bool Bufr::scan_segment(std::shared_ptr<segment::Reader> reader, metadata_dest_f
     return true;
 }
 
-void Bufr::scan_singleton(const std::string& abspath, Metadata& md)
+std::shared_ptr<Metadata> Bufr::scan_singleton(const std::string& abspath)
 {
+    auto md = std::make_shared<Metadata>();
     auto file = dballe::File::create(dballe::Encoding::BUFR, abspath.c_str(), "r").release();
-    md.clear();
     BinaryMessage rmsg = file->read();
     if (!rmsg) throw std::runtime_error(abspath + " contains no BUFR data");
-    do_scan(rmsg, md);
+    do_scan(rmsg, *md);
     if (file->read())
         throw std::runtime_error(abspath + " contains more than one BUFR");
+    return md;
 }
 
 bool Bufr::scan_pipe(core::NamedFileDescriptor& infd, metadata_dest_func dest)

@@ -66,7 +66,7 @@ struct run_ : public MethKwargs<run_, arkipy_ArkiXargs>
                 {
                     sys::File in(i, O_RDONLY);
                     arki::metadata::ReadContext rc(sys::getcwd(), in.name());
-                    arki::Metadata::read_file(in, rc, [&](std::unique_ptr<arki::Metadata> md) { return consumer.eat(std::move(md)); });
+                    arki::Metadata::read_file(in, rc, [&](std::shared_ptr<arki::Metadata> md) { return consumer.eat(md); });
                 }
                 consumer.flush();
             } else {
@@ -74,7 +74,7 @@ struct run_ : public MethKwargs<run_, arkipy_ArkiXargs>
                 // Process stdin
                 arki::core::Stdin in;
                 arki::metadata::ReadContext rc(sys::getcwd(), in.name());
-                arki::Metadata::read_file(in, rc, [&](std::unique_ptr<arki::Metadata> md) { return consumer.eat(move(md)); });
+                arki::Metadata::read_file(in, rc, [&](std::shared_ptr<arki::Metadata> md) { return consumer.eat(md); });
                 consumer.flush();
             }
 

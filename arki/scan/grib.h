@@ -28,16 +28,16 @@ protected:
     void set_source_inline(grib_handle* gh, Metadata& md);
 
     // Read from gh and add metadata to md
-    virtual void scan(grib_handle* gh, Metadata& md) = 0;
+    virtual void scan(grib_handle* gh, std::shared_ptr<Metadata> md) = 0;
 
 public:
     GribScanner();
 
     std::string name() const override { return "grib"; }
-    std::unique_ptr<Metadata> scan_data(const std::vector<uint8_t>& data) override;
+    std::shared_ptr<Metadata> scan_data(const std::vector<uint8_t>& data) override;
     bool scan_segment(std::shared_ptr<segment::Reader> reader, metadata_dest_func dest) override;
     bool scan_pipe(core::NamedFileDescriptor& in, metadata_dest_func dest) override;
-    void scan_singleton(const std::string& abspath, Metadata& md) override;
+    std::shared_ptr<Metadata> scan_singleton(const std::string& abspath) override;
 };
 
 class LuaGribScanner : public GribScanner
@@ -45,7 +45,7 @@ class LuaGribScanner : public GribScanner
 protected:
     GribLua* L;
 
-    void scan(grib_handle* gh, Metadata& md) override;
+    void scan(grib_handle* gh, std::shared_ptr<Metadata> md) override;
 
 public:
     LuaGribScanner(const std::string& grib1code=std::string(), const std::string& grib2code=std::string());

@@ -5,6 +5,7 @@
 
 #include <arki/metadata.h>
 #include <arki/metadata/consumer.h>
+#include <arki/metadata/collection.h>
 #include <arki/types/reftime.h>
 
 #include <string>
@@ -63,10 +64,15 @@ struct STLCompare
 
 	STLCompare(const Compare& cmp) : cmp(cmp) {}
 
-	bool operator()(const Metadata& a, const Metadata& b) const
-	{
-		return cmp.compare(a, b) < 0;
-	}
+    bool operator()(const std::shared_ptr<Metadata>& a, const std::shared_ptr<Metadata>& b) const
+    {
+        return cmp.compare(*a, *b) < 0;
+    }
+
+    bool operator()(const Metadata& a, const Metadata& b) const
+    {
+        return cmp.compare(a, b) < 0;
+    }
 
     bool operator()(const Metadata* a, const Metadata* b) const
     {
@@ -81,7 +87,7 @@ protected:
     metadata_dest_func next_dest;
     bool hasInterval;
     std::unique_ptr<core::Time> endofperiod;
-    std::vector<Metadata*> buffer;
+    metadata::Collection buffer;
 
     void setEndOfPeriod(const types::Reftime& rt);
 
@@ -92,7 +98,7 @@ public:
         hasInterval = sorter.interval() != Compare::NONE;
     }
 
-    bool add(std::unique_ptr<Metadata> md);
+    bool add(std::shared_ptr<Metadata> md);
 
     /**
      * Send all currently buffered data to next_dest.

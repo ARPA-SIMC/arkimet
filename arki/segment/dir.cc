@@ -193,9 +193,8 @@ struct CheckBackend : public AppendCheckBackend
             if (accurate)
             {
                 string fname = SequenceFile::data_fname(idx, format);
-                Metadata md;
                 try {
-                    scanner->scan_singleton(fname, md);
+                    scanner->scan_singleton(fname);
                 } catch (std::exception& e) {
                     stringstream out;
                     out << "unexpected data file " << idx << " fails to scan (" << e.what() << ")";
@@ -677,7 +676,7 @@ void BaseChecker<Segment>::test_make_hole(metadata::Collection& mds, unsigned ho
     } else {
         for (int i = mds.size() - 1; i >= (int)data_idx; --i)
         {
-            unique_ptr<source::Blob> source(mds[i].sourceBlob().clone());
+            std::unique_ptr<source::Blob> source(mds[i].sourceBlob().clone());
             sys::rename(
                     str::joinpath(source->absolutePathname(), SequenceFile::data_fname(source->offset, source->format)),
                     str::joinpath(source->absolutePathname(), SequenceFile::data_fname(source->offset + hole_size, source->format)));
@@ -750,10 +749,9 @@ bool Scanner::scan(std::shared_ptr<segment::Reader> reader, metadata_dest_func d
     auto scanner = scan::Scanner::get_scanner(format);
     for (const auto& fi : on_disk)
     {
-        unique_ptr<Metadata> md(new Metadata);
-        scanner->scan_singleton(str::joinpath(abspath, fi.second.fname), *md);
+        auto md = scanner->scan_singleton(str::joinpath(abspath, fi.second.fname));
         md->set_source(Source::createBlob(reader, fi.first, fi.second.size));
-        if (!dest(std::move(md)))
+        if (!dest(md))
             return false;
     }
 
@@ -766,9 +764,9 @@ bool Scanner::scan(std::function<void(const std::string&)> reporter, std::shared
     auto scanner = scan::Scanner::get_scanner(format);
     for (const auto& fi : on_disk)
     {
-        unique_ptr<Metadata> md(new Metadata);
+        std::shared_ptr<Metadata> md;
         try {
-            scanner->scan_singleton(str::joinpath(abspath, fi.second.fname), *md);
+            md = scanner->scan_singleton(str::joinpath(abspath, fi.second.fname));
         } catch (std::exception& e) {
             stringstream out;
             out << "data file " << fi.second.fname << " fails to scan (" << e.what() << ")";
@@ -776,7 +774,7 @@ bool Scanner::scan(std::function<void(const std::string&)> reporter, std::shared
             continue;
         }
         md->set_source(Source::createBlob(reader, fi.first, fi.second.size));
-        if (!dest(std::move(md)))
+        if (!dest(md))
             return false;
     }
 

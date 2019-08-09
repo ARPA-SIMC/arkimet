@@ -15,7 +15,7 @@ template<class Segment, class Data>
 void SegmentFixture<Segment, Data>::test_setup()
 {
     using namespace arki::utils;
-    seg_mds = td.mds;
+    seg_mds = td.mds.clone();
     root = sys::getcwd();
     sys::rmtree_ifexists("testseg");
     sys::mkdir_ifmissing("testseg");

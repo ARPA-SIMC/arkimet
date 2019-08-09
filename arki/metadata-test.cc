@@ -99,7 +99,7 @@ void test_inline()
     wfd.close();
 
     unsigned count = 0;
-    Metadata::read_file("test.md", [&](unique_ptr<Metadata> md) {
+    Metadata::read_file("test.md", [&](std::shared_ptr<Metadata> md) {
         md->get_data();
         ++count;
         return true;
@@ -301,7 +301,7 @@ add_method("binary_fd", [](Fixture& f) {
 // Reproduce decoding error at #24
 add_method("decode_issue_24", [](Fixture& f) {
     unsigned count = 0;
-    Metadata::read_file("inbound/issue24.arkimet", [&](unique_ptr<Metadata> md) { ++count; return true; });
+    Metadata::read_file("inbound/issue24.arkimet", [&](std::shared_ptr<Metadata> md) { ++count; return true; });
     wassert(actual(count) == 1u);
 });
 
@@ -377,7 +377,7 @@ add_method("stream_odim", [](Fixture& f) {
 add_method("issue107_binary", [](Fixture& f) {
     unsigned count = 0;
     try {
-        Metadata::read_file("inbound/issue107.yaml", [&](unique_ptr<Metadata> md) { ++count; return true; });
+        Metadata::read_file("inbound/issue107.yaml", [&](std::shared_ptr<Metadata> md) { ++count; return true; });
         wassert(actual(0) == 1);
     } catch (std::runtime_error& e) {
         wassert(actual(e.what()).contains("metadata entry does not start with "));
@@ -399,7 +399,7 @@ add_method("wrongsize", [](Fixture& f) {
     fd.close();
 
     unsigned count = 0;
-    Metadata::read_file("test.md", [&](unique_ptr<Metadata> md) { ++count; return true; });
+    Metadata::read_file("test.md", [&](std::shared_ptr<Metadata> md) { ++count; return true; });
     wassert(actual(count) == 0u);
 });
 

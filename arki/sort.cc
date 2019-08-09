@@ -174,42 +174,25 @@ void Stream::setEndOfPeriod(const types::Reftime& rt)
     endofperiod->set_upperbound(begin.ye, mo, da, ho, mi, se);
 }
 
-bool Stream::add(unique_ptr<Metadata> m)
+bool Stream::add(std::shared_ptr<Metadata> m)
 {
     const Reftime* rt = m->get<Reftime>();
     if (hasInterval && (!endofperiod.get() || !rt || rt->period_begin() > *endofperiod))
     {
         flush();
-        buffer.push_back(m.release());
+        buffer.push_back(m);
         if (rt) setEndOfPeriod(*rt);
     }
     else
-        buffer.push_back(m.release());
+        buffer.push_back(m);
     return true;
 }
 
 bool Stream::flush()
 {
     if (buffer.empty()) return true;
-    bool res = true;
-    std::stable_sort(buffer.begin(), buffer.end(), STLCompare(sorter));
-    for (vector<Metadata*>::iterator i = buffer.begin(); i != buffer.end(); ++i)
-    {
-        unique_ptr<Metadata> md(*i);
-        *i = 0;
-        if (!next_dest(move(md)))
-        {
-            res = false;
-            break;
-        }
-    }
-
-    // Delete all leftover metadata, if any
-    for (vector<Metadata*>::iterator i = buffer.begin(); i != buffer.end(); ++i)
-        delete *i;
-    buffer.clear();
-
-    return res;
+    buffer.sort(sorter);
+    return buffer.move_to(next_dest);
 }
 
 }

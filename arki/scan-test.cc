@@ -112,9 +112,8 @@ for (auto td: {TestData("inbound/ship.bufr"), TestData("inbound/oddunits.grib"),
 {
     add_method("scan_singleton_" + td.format, [=] {
         auto scanner = scan::Scanner::get_scanner(td.format);
-        Metadata md;
-        scanner->scan_singleton(td.pathname, md);
-        wassert_false(md.has_source());
+        auto md = scanner->scan_singleton(td.pathname);
+        wassert_false(md->has_source());
     });
 }
 

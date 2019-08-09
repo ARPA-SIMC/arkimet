@@ -51,7 +51,7 @@ public:
     void captureOutput(int out);
 
     /// Process a metadata for the report
-    bool eat(std::unique_ptr<Metadata>&& md);
+    bool eat(std::shared_ptr<Metadata> md);
 
     /// Process a summary for the report
     bool operator()(Summary& s);

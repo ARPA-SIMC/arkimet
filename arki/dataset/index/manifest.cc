@@ -90,7 +90,7 @@ bool Manifest::query_data(const dataset::DataQuery& q, SegmentManager& segs, met
             reader = segs.get_reader(scan::Scanner::format_from_filename(*i), *i, lock.lock());
         // This generates filenames relative to the metadata
         // We need to use absdir as the dirname, and prepend dirname(*i) to the filenames
-        Metadata::read_file(fullpath, [&](unique_ptr<Metadata> md) {
+        Metadata::read_file(fullpath, [&](std::shared_ptr<Metadata> md) {
             // Filter using the matcher in the query
             if (!q.matcher(*md)) return true;
 
@@ -102,7 +102,7 @@ bool Manifest::query_data(const dataset::DataQuery& q, SegmentManager& segs, met
                 else
                     md->set_source(Source::createBlobUnlocked(s->format, absdir, str::joinpath(prepend_fname, s->filename), s->offset, s->size));
             }
-            return sorter.add(move(md));
+            return sorter.add(md);
         });
         if (!sorter.flush())
             return false;
@@ -155,7 +155,7 @@ void Manifest::query_segment(const std::string& relpath, SegmentManager& segs, m
     string prepend_fname = str::dirname(relpath);
     string abspath = str::joinpath(m_path, relpath);
     auto reader = segs.get_reader(scan::Scanner::format_from_filename(relpath), relpath, lock.lock());
-    Metadata::read_file(abspath + ".metadata", [&](unique_ptr<Metadata> md) {
+    Metadata::read_file(abspath + ".metadata", [&](std::shared_ptr<Metadata> md) {
         // Tweak Blob sources replacing the file name with relpath
         if (const source::Blob* s = md->has_source_blob())
             md->set_source(Source::createBlob(s->format, absdir, str::joinpath(prepend_fname, s->filename), s->offset, s->size, reader));
