@@ -251,20 +251,48 @@ struct to_python : public MethKwargs<to_python, arkipy_Metadata>
                     if (!self->md->has_source())
                         Py_RETURN_NONE;
                     else
-                        self->md->source().serialise(e, structured::keys_python);
+                        self->md->source().serialise(e, arki::structured::keys_python);
                 } else {
                     const types::Type* item = self->md->get(code);
                     if (!item)
                         Py_RETURN_NONE;
-                    item->serialise(e, structured::keys_python);
+                    item->serialise(e, arki::structured::keys_python);
                 }
             } else {
-                self->md->serialise(e, structured::keys_python);
+                self->md->serialise(e, arki::structured::keys_python);
             }
             return e.release();
         } ARKI_CATCH_RETURN_PYO
     }
 };
+
+struct get_notes : public MethNoargs<get_notes, arkipy_Metadata>
+{
+    constexpr static const char* name = "get_notes";
+    constexpr static const char* signature = "";
+    constexpr static const char* returns = "List[Dict[str, Any]]";
+    constexpr static const char* summary = "get the notes for this metadata";
+
+    static PyObject* run(Impl* self)
+    {
+        try {
+            std::vector<types::Note> notes = self->md->notes();
+            pyo_unique_ptr res(throw_ifnull(PyList_New(notes.size())));
+            for (unsigned idx = 0; idx < notes.size(); ++idx)
+            {
+                arki::python::PythonEmitter e;
+                notes[idx].serialise(e, arki::structured::keys_python);
+                // Note This macro “steals” a reference to item, and, unlike
+                // PyList_SetItem(), does not discard a reference to any item
+                // that is being replaced; any reference in list at position i
+                // will be leaked.
+                PyList_SET_ITEM(res.get(), idx, e.release());
+            }
+            return res.release();
+        } ARKI_CATCH_RETURN_PYO
+    }
+};
+
 
 struct read_bundle : public ClassMethKwargs<read_bundle>
 {
@@ -427,7 +455,7 @@ struct MetadataDef : public Type<MetadataDef, arkipy_Metadata>
 Arkimet metadata for one data item
 )";
     GetSetters<data, data_size> getsetters;
-    Methods<has_source, write, make_absolute, make_inline, make_url, to_string, to_python, read_bundle, write_bundle> methods;
+    Methods<has_source, write, make_absolute, make_inline, make_url, to_string, to_python, get_notes, read_bundle, write_bundle> methods;
 
     static void _dealloc(Impl* self)
     {
