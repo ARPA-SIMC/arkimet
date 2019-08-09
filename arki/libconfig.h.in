@@ -48,3 +48,6 @@
 
 /* Define for large files, on AIX-style hosts. */
 #undef _LARGE_FILES
+
+/* enable ARPAE-specific unit tests */
+#undef ARPAE_TESTS

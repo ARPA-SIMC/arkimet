@@ -402,6 +402,9 @@ PyMODINIT_FUNC PyInit__arkimet(void)
 #ifdef HAVE_IOTRACE
         add_feature(features, "iotrace");
 #endif
+#ifdef ARPAE_TESTS
+        add_feature(features, "arpae_tests");
+#endif
 
         if (PyModule_AddObject(m, "features", features.release()) == -1)
             throw PythonException();

@@ -33,6 +33,12 @@ def skip_unless_geos():
         raise unittest.SkipTest("GEOS support not available")
 
 
+def skip_unless_arpae_tests():
+    import unittest
+    if "arpae_tests" not in arki.features:
+        raise unittest.SkipTest("ARPAE tests disabled")
+
+
 @contextmanager
 def daemon(*cmd):
     proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, universal_newlines=True)
