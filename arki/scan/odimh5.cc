@@ -205,13 +205,13 @@ void OdimH5::scan_file_impl(const std::string& filename, Metadata& md)
     }
 }
 
-std::unique_ptr<Metadata> OdimH5::scan_data(const std::vector<uint8_t>& data)
+std::shared_ptr<Metadata> OdimH5::scan_data(const std::vector<uint8_t>& data)
 {
     sys::File tmpfd = sys::File::mkstemp("");
     tmpfd.write_all_or_throw(data.data(), data.size());
     tmpfd.close();
 
-    std::unique_ptr<Metadata> md(new Metadata);
+    std::shared_ptr<Metadata> md(new Metadata);
     md->set_source_inline("odimh5", metadata::DataManager::get().to_data("odimh5", std::vector<uint8_t>(data)));
 
     try {
@@ -226,10 +226,11 @@ std::unique_ptr<Metadata> OdimH5::scan_data(const std::vector<uint8_t>& data)
     return md;
 }
 
-void OdimH5::scan_singleton(const std::string& abspath, Metadata& md)
+std::shared_ptr<Metadata> OdimH5::scan_singleton(const std::string& abspath)
 {
-    md.clear();
-    scan_file_impl(abspath, md);
+    auto md = std::make_shared<Metadata>();
+    scan_file_impl(abspath, *md);
+    return md;
 }
 
 bool OdimH5::scan_segment(std::shared_ptr<segment::Reader> reader, metadata_dest_func dest)
@@ -263,8 +264,8 @@ bool OdimH5::scan_pipe(core::NamedFileDescriptor& in, metadata_dest_func dest)
         }
     }
 
-    std::unique_ptr<Metadata> md = scan_data(buf);
-    return dest(std::move(md));
+    std::shared_ptr<Metadata> md = scan_data(buf);
+    return dest(md);
 }
 
 void OdimH5::set_inline_source(Metadata& md, const std::string& abspath)

@@ -24,12 +24,12 @@ std::unique_ptr<dataset::Reader> Config::create_reader() const { return std::uni
 Reader::Reader(std::shared_ptr<const dataset::Config> config) : m_config(config) {}
 Reader::~Reader() {}
 
-bool Reader::query_data(const dataset::DataQuery& q, std::function<bool(std::unique_ptr<Metadata>)> dest)
+bool Reader::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 {
-    return generator([&](std::unique_ptr<Metadata> md) {
+    return generator([&](std::shared_ptr<Metadata> md) {
         if (!q.matcher(*md))
             return true;
-        return dest(std::move(md));
+        return dest(md);
     });
 }
 

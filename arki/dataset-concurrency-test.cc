@@ -153,7 +153,7 @@ struct ReadHang : public TestSubprocess
 
     ReadHang(std::shared_ptr<const dataset::Config> config) : config(config) {}
 
-    bool eat(unique_ptr<Metadata>&& md)
+    bool eat(std::shared_ptr<Metadata> md)
     {
         notify_ready();
         // Get stuck while reading
@@ -166,7 +166,7 @@ struct ReadHang : public TestSubprocess
     {
         try {
             auto reader = config->create_reader();
-            reader->query_data(Matcher(), [&](unique_ptr<Metadata> md) { return eat(move(md)); });
+            reader->query_data(Matcher(), [&](std::shared_ptr<Metadata> md) { return eat(md); });
         } catch (std::exception& e) {
             fprintf(stderr, "%s\n", e.what());
             fprintf(stdout, "E\n");
@@ -320,7 +320,7 @@ this->add_method("read_write1", [](Fixture& f) {
     // Query it and import during query
     auto reader = f.dataset_config()->create_reader();
     unsigned count = 0;
-    reader->query_data(Matcher(), [&](unique_ptr<Metadata> md) {
+    reader->query_data(Matcher(), [&](std::shared_ptr<Metadata> md) {
         {
             // Make sure we only get one query result, that is, we don't read
             // the thing we import during the query
@@ -337,7 +337,7 @@ this->add_method("read_write1", [](Fixture& f) {
 
     // Querying again returns all imported data
     count = 0;
-    reader->query_data(Matcher(), [&](unique_ptr<Metadata> md) { ++count; return true; });
+    reader->query_data(Matcher(), [&](std::shared_ptr<Metadata> md) { ++count; return true; });
     wassert(actual(count) == 3u);
 });
 
@@ -398,7 +398,7 @@ this->add_method("read_repack", [](Fixture& f) {
     f.import_all(f.td.mds);
 
     auto reader = f.dataset_config()->create_reader();
-    reader->query_data(dataset::DataQuery("", true), [&](unique_ptr<Metadata> md) {
+    reader->query_data(dataset::DataQuery("", true), [&](std::shared_ptr<Metadata> md) {
         {
             auto checker = f.dataset_config()->create_checker();
             auto e = wassert_throws(std::runtime_error, {
@@ -496,7 +496,7 @@ this->add_method("write_repack", [](Fixture& f) {
 
     auto reader = f.config().create_reader();
     unsigned count = 0;
-    reader->query_data(Matcher(), [&](unique_ptr<Metadata> md) { ++count; return true; });
+    reader->query_data(Matcher(), [&](std::shared_ptr<Metadata> md) { ++count; return true; });
     wassert(actual(count) == 61u);
 });
 

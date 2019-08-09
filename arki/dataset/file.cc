@@ -102,13 +102,13 @@ static shared_ptr<sort::Stream> wrap_with_query(const dataset::DataQuery& q, met
     if (q.sorter)
     {
         sorter.reset(new sort::Stream(*q.sorter, dest));
-        dest = [sorter](unique_ptr<Metadata> md) { return sorter->add(move(md)); };
+        dest = [sorter](std::shared_ptr<Metadata> md) { return sorter->add(md); };
     }
 
-    dest = [dest, &q](unique_ptr<Metadata> md) {
+    dest = [dest, &q](std::shared_ptr<Metadata> md) {
         // And filter using the query matcher
         if (!q.matcher(*md)) return true;
-        return dest(move(md));
+        return dest(md);
     };
 
     return sorter;
@@ -125,7 +125,7 @@ bool ArkimetFile::scan(const dataset::DataQuery& q, metadata_dest_func dest)
         if (!Metadata::read_file(fd, dest))
             return false;
     } else {
-        if (!Metadata::read_file(fd, [&](unique_ptr<Metadata>&& md) {
+        if (!Metadata::read_file(fd, [&](std::shared_ptr<Metadata> md) {
                     if (md->has_source_blob())
                     {
                         const auto& blob = md->sourceBlob();
@@ -134,7 +134,7 @@ bool ArkimetFile::scan(const dataset::DataQuery& q, metadata_dest_func dest)
                                 std::make_shared<core::lock::Null>());
                         md->sourceBlob().lock(reader);
                     }
-                    return dest(move(md));
+                    return dest(md);
                 }))
             return false;
     }

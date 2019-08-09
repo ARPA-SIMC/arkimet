@@ -94,7 +94,7 @@ void Base::set_parent(Base& p)
 
 void Reader::query_summary(const Matcher& matcher, Summary& summary)
 {
-    query_data(DataQuery(matcher), [&](unique_ptr<Metadata> md) { summary.add(*md); return true; });
+    query_data(DataQuery(matcher), [&](std::shared_ptr<Metadata> md) { summary.add(*md); return true; });
 }
 
 void Reader::query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out)
@@ -103,7 +103,7 @@ void Reader::query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out)
     {
         case dataset::ByteQuery::BQ_DATA: {
             bool first = true;
-            query_data(q, [&](unique_ptr<Metadata> md) {
+            query_data(q, [&](std::shared_ptr<Metadata> md) {
                 if (first)
                 {
                     if (q.data_start_hook) q.data_start_hook(out);
@@ -120,7 +120,7 @@ void Reader::query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out)
             postproc.validate(config().cfg);
             postproc.set_data_start_hook(q.data_start_hook);
             postproc.start();
-            query_data(q, [&](unique_ptr<Metadata> md) { return postproc.process(move(md)); });
+            query_data(q, [&](std::shared_ptr<Metadata> md) { return postproc.process(md); });
             postproc.flush();
             break;
         }
@@ -129,7 +129,7 @@ void Reader::query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out)
             Report rep;
             rep.captureOutput(out);
             rep.load(q.param);
-            query_data(q, [&](unique_ptr<Metadata> md) { return rep.eat(move(md)); });
+            query_data(q, [&](std::shared_ptr<Metadata> md) { return rep.eat(md); });
             rep.report();
 #endif
             break;
@@ -163,7 +163,7 @@ void Reader::query_bytes(const dataset::ByteQuery& q, AbstractOutputFile& out)
     switch (q.type)
     {
         case dataset::ByteQuery::BQ_DATA: {
-            query_data(q, [&](unique_ptr<Metadata> md) {
+            query_data(q, [&](std::shared_ptr<Metadata> md) {
                 md->stream_data(out);
                 return true;
             });
@@ -175,7 +175,7 @@ void Reader::query_bytes(const dataset::ByteQuery& q, AbstractOutputFile& out)
             postproc.validate(config().cfg);
             postproc.set_data_start_hook(q.data_start_hook);
             postproc.start();
-            query_data(q, [&](unique_ptr<Metadata> md) { return postproc.process(move(md)); });
+            query_data(q, [&](std::shared_ptr<Metadata> md) { return postproc.process(move(md)); });
             postproc.flush();
             break;
         }
@@ -184,7 +184,7 @@ void Reader::query_bytes(const dataset::ByteQuery& q, AbstractOutputFile& out)
             Report rep;
             rep.captureOutput(out);
             rep.load(q.param);
-            query_data(q, [&](unique_ptr<Metadata> md) { return rep.eat(move(md)); });
+            query_data(q, [&](std::shared_ptr<Metadata> md) { return rep.eat(md); });
             rep.report();
 #endif
             break;

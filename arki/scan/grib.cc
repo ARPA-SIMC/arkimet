@@ -127,15 +127,15 @@ void GribScanner::set_source_inline(grib_handle* gh, Metadata& md)
     md.set_source_inline("grib", metadata::DataManager::get().to_data("grib", vector<uint8_t>(vbuf, vbuf + size)));
 }
 
-std::unique_ptr<Metadata> GribScanner::scan_data(const std::vector<uint8_t>& data)
+std::shared_ptr<Metadata> GribScanner::scan_data(const std::vector<uint8_t>& data)
 {
     GribHandle gh(grib_handle_new_from_message(context, (void*)data.data(), data.size()));
     if (!gh) throw std::runtime_error("GRIB memory buffer failed to scan");
 
-    std::unique_ptr<Metadata> md(new Metadata);
+    std::shared_ptr<Metadata> md(new Metadata);
     md->set_source_inline("grib", metadata::DataManager::get().to_data("grib", std::vector<uint8_t>(data)));
 
-    scan(gh, *md);
+    scan(gh, md);
 
     gh.close();
 
@@ -147,27 +147,28 @@ bool GribScanner::scan_segment(std::shared_ptr<segment::Reader> reader, metadata
     files::RAIIFILE in(reader->segment().abspath, "rb");
     while (true)
     {
-        unique_ptr<Metadata> md(new Metadata);
+        std::shared_ptr<Metadata> md(new Metadata);
         GribHandle gh(context, in);
         if (!gh) break;
         set_source_blob(gh, reader, in, *md);
-        scan(gh, *md);
+        scan(gh, md);
         gh.close();
-        if (!dest(move(md))) return false;
+
+        if (!dest(md)) return false;
     }
     return true;
 }
 
-void GribScanner::scan_singleton(const std::string& abspath, Metadata& md)
+std::shared_ptr<Metadata> GribScanner::scan_singleton(const std::string& abspath)
 {
+    auto md = std::make_shared<Metadata>();
     files::RAIIFILE in(abspath, "rb");
-    md.clear();
     {
         GribHandle gh(context, in);
         if (!gh) throw std::runtime_error(abspath + " contains no GRIB data");
         stringstream note;
         note << "Scanned from " << str::basename(abspath);
-        md.add_note(note.str());
+        md->add_note(note.str());
         scan(gh, md);
         gh.close();
     }
@@ -177,6 +178,8 @@ void GribScanner::scan_singleton(const std::string& abspath, Metadata& md)
         if (gh) throw std::runtime_error(abspath + " contains more than one GRIB data");
         gh.close();
     }
+
+    return md;
 }
 
 bool GribScanner::scan_pipe(core::NamedFileDescriptor& infd, metadata_dest_func dest)
@@ -184,15 +187,16 @@ bool GribScanner::scan_pipe(core::NamedFileDescriptor& infd, metadata_dest_func 
     files::RAIIFILE in(infd, "rb");
     while (true)
     {
-        unique_ptr<Metadata> md(new Metadata);
+        std::shared_ptr<Metadata> md(new Metadata);
         GribHandle gh(context, in);
         if (!gh) break;
         set_source_inline(gh, *md);
         stringstream note;
         note << "Scanned from standard input";
         md->add_note(note.str());
-        scan(gh, *md);
-        if (!dest(move(md))) return false;
+        scan(gh, md);
+
+        if (!dest(md)) return false;
     }
     return true;
 }
@@ -611,9 +615,9 @@ LuaGribScanner::~LuaGribScanner()
     if (L) delete L;
 }
 
-void LuaGribScanner::scan(grib_handle* gh, Metadata& md)
+void LuaGribScanner::scan(grib_handle* gh, std::shared_ptr<Metadata> md)
 {
-    L->scan_handle(gh, md);
+    L->scan_handle(gh, *md);
 }
 
 }

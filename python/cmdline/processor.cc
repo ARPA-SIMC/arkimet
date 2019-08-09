@@ -61,24 +61,24 @@ struct DataProcessor : public DatasetProcessor
     {
         if (data_inline)
         {
-            ds.query_data(query, [&](unique_ptr<Metadata> md) { md->makeInline(); printer(*md); return true; });
+            ds.query_data(query, [&](std::shared_ptr<Metadata> md) { md->makeInline(); printer(*md); return true; });
         } else if (server_side) {
             if (ds.cfg().has("url"))
             {
-                ds.query_data(query, [&](unique_ptr<Metadata> md) {
+                ds.query_data(query, [&](std::shared_ptr<Metadata> md) {
                     md->set_source(types::Source::createURL(md->source().format, ds.cfg().value("url")));
                     printer(*md);
                     return true;
                 });
             } else {
-                ds.query_data(query, [&](unique_ptr<Metadata> md) {
+                ds.query_data(query, [&](std::shared_ptr<Metadata> md) {
                     md->make_absolute();
                     printer(*md);
                     return true;
                 });
             }
         } else {
-            ds.query_data(query, [&](unique_ptr<Metadata> md) {
+            ds.query_data(query, [&](std::shared_ptr<Metadata> md) {
                 md->make_absolute();
                 printer(*md);
                 return true;
@@ -102,7 +102,7 @@ struct LibarchiveProcessor : public DatasetProcessor
 
     void process(dataset::Reader& ds, const std::string& name) override
     {
-        ds.query_data(query, [&](unique_ptr<Metadata> md) { arc_out.append(*md); return true; });
+        ds.query_data(query, [&](std::shared_ptr<Metadata> md) { arc_out.append(*md); return true; });
     }
 
     void end() override

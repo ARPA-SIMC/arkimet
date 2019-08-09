@@ -73,7 +73,7 @@ struct PyDatasetReader : public arki::dataset::Reader
         if (q.sorter)
         {
             sorter.reset(new sort::Stream(*q.sorter, dest));
-            dest = [sorter](std::unique_ptr<Metadata> md) { return sorter->add(move(md)); };
+            dest = [sorter](std::shared_ptr<Metadata> md) { return sorter->add(md); };
         }
 
         set_dict(kwargs, "on_metadata", dest);

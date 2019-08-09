@@ -126,7 +126,7 @@ LocalReader::~LocalReader()
 {
 }
 
-bool LocalReader::query_data(const dataset::DataQuery& q, std::function<bool(std::unique_ptr<Metadata>)> dest)
+bool LocalReader::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 {
     if (!hasArchive()) return true;
     return archive().query_data(q, dest);

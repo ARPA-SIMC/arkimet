@@ -38,7 +38,7 @@ public:
     const dataset::Config& config() const override { return *m_config; }
     std::string type() const override { return "fromfunction"; }
 
-    bool query_data(const dataset::DataQuery& q, std::function<bool(std::unique_ptr<Metadata>)> dest) override;
+    bool query_data(const dataset::DataQuery& q, metadata_dest_func dest) override;
 };
 
 }

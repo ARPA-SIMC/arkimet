@@ -102,7 +102,7 @@ struct ReadHang : public subprocess::Child
             RIndex idx(config);
             idx.lock = lock;
             idx.open();
-            idx.query_data(Matcher::parse("origin:GRIB1"), *segs, [&](unique_ptr<Metadata> md) {
+            idx.query_data(Matcher::parse("origin:GRIB1"), *segs, [&](std::shared_ptr<Metadata> md) {
                 fputs("H\n", stdout);
                 fflush(stdout);
                 fclose(stdout);

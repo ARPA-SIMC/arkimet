@@ -48,10 +48,10 @@ void Xargs::start_batch(const std::string& new_format)
     tempfile = File::mkstemp(tf.get());
 }
 
-void Xargs::add_to_batch(Metadata& md)
+void Xargs::add_to_batch(std::shared_ptr<Metadata> md)
 {
     metadata::Clusterer::add_to_batch(md);
-    md.stream_data(tempfile);
+    md->stream_data(tempfile);
 }
 
 void Xargs::flush_batch()

@@ -29,7 +29,7 @@ add_method("read", []() {
     auto config = dataset::OfflineConfig::create("test-offline");
     dataset::OfflineReader reader(config);
     size_t count = 0;
-    reader.query_data(Matcher(), [&](unique_ptr<Metadata>) { ++count; return true; });
+    reader.query_data(Matcher(), [&](std::shared_ptr<Metadata>) { ++count; return true; });
     wassert(actual(count) == 0u);
 
     Summary sum1;

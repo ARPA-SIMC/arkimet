@@ -16,7 +16,7 @@ protected:
     std::string tempfile_template;
 
     void start_batch(const std::string& new_format) override;
-    void add_to_batch(Metadata& md) override;
+    void add_to_batch(std::shared_ptr<Metadata> md) override;
     void flush_batch() override;
 
     int run_child();

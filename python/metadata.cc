@@ -322,9 +322,9 @@ struct read_bundle : public ClassMethKwargs<read_bundle>
             {
                 res_list.reset(throw_ifnull(PyList_New(0)));
 
-                dest = [&](std::unique_ptr<Metadata> md) {
+                dest = [&](std::shared_ptr<Metadata> md) {
                     AcquireGIL gil;
-                    pyo_unique_ptr py_md((PyObject*)throw_ifnull(metadata_create(std::move(md))));
+                    pyo_unique_ptr py_md((PyObject*)throw_ifnull(metadata_create(md)));
                     if (PyList_Append(res_list, py_md) == -1)
                         throw PythonException();
                     return true;
@@ -597,11 +597,11 @@ struct PyDestFunc
         return *this;
     }
 
-    bool operator()(std::unique_ptr<Metadata> md)
+    bool operator()(std::shared_ptr<Metadata> md)
     {
         AcquireGIL gil;
         // call arg_on_metadata
-        py_unique_ptr<arkipy_Metadata> pymd(metadata_create(std::move(md)));
+        py_unique_ptr<arkipy_Metadata> pymd(metadata_create(md));
         pyo_unique_ptr args(PyTuple_Pack(1, pymd.get()));
         if (!args) throw PythonException();
         pyo_unique_ptr res(PyObject_CallObject(callable, args));

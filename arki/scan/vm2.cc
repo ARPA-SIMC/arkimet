@@ -178,11 +178,11 @@ Vm2::~Vm2()
 {
 }
 
-std::unique_ptr<Metadata> Vm2::scan_data(const std::vector<uint8_t>& data)
+std::shared_ptr<Metadata> Vm2::scan_data(const std::vector<uint8_t>& data)
 {
     std::istringstream str(std::string(data.begin(), data.end()));
     vm2::Input input(str);
-    std::unique_ptr<Metadata> md(new Metadata);
+    std::shared_ptr<Metadata> md(new Metadata);
     if (!input.next())
         throw std::runtime_error("input line did not look like a VM2 line");
     input.to_metadata(*md);
@@ -190,16 +190,17 @@ std::unique_ptr<Metadata> Vm2::scan_data(const std::vector<uint8_t>& data)
     return md;
 }
 
-void Vm2::scan_singleton(const std::string& abspath, Metadata& md)
+std::shared_ptr<Metadata> Vm2::scan_singleton(const std::string& abspath)
 {
+    auto md = std::make_shared<Metadata>();
     vm2::Input input(abspath);
     if (!input.next())
         throw std::runtime_error(abspath + " contains no VM2 data");
-    md.clear();
-    input.to_metadata(md);
+    input.to_metadata(*md);
 
     if (input.next())
         throw std::runtime_error(abspath + " contains more than one VM2 data");
+    return md;
 }
 
 bool Vm2::scan_pipe(core::NamedFileDescriptor& in, metadata_dest_func dest)

@@ -62,7 +62,7 @@ void addToSummary(Input& in, arki::Summary& s)
         {
             if (!bundle.read_data(in)) break;
             arki::BinaryDecoder dec(bundle.data);
-            arki::Metadata::read_group(dec, bundle.version, in.name(), [&](std::unique_ptr<arki::Metadata> md) { s.add(*md); return true; });
+            arki::Metadata::read_group(dec, bundle.version, in.name(), [&](std::shared_ptr<arki::Metadata> md) { s.add(*md); return true; });
         }
         else
             throw std::runtime_error(in.name() + ": metadata entry does not start with 'MD', '!D', 'SU', or 'MG'");
@@ -318,7 +318,7 @@ struct dump_yaml : public MethKwargs<dump_yaml, arkipy_ArkiDump>
                 {
                     if (!read_data()) break;
                     arki::BinaryDecoder dec(bundle.data);
-                    arki::Metadata::read_group(dec, bundle.version, input_name, [&](std::unique_ptr<arki::Metadata> md) { print_md(*md); return true; });
+                    arki::Metadata::read_group(dec, bundle.version, input_name, [&](std::shared_ptr<arki::Metadata> md) { print_md(*md); return true; });
                 }
                 else
                     throw std::runtime_error(input_name + ": metadata entry does not start with 'MD', '!D', 'SU', or 'MG'");

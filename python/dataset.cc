@@ -90,7 +90,7 @@ Arguments:
             {
                 res_list.reset(throw_ifnull(PyList_New(0)));
 
-                dest = [&](std::unique_ptr<Metadata> md) {
+                dest = [&](std::shared_ptr<Metadata> md) {
                     AcquireGIL gil;
                     pyo_unique_ptr py_md((PyObject*)throw_ifnull(metadata_create(std::move(md))));
                     if (PyList_Append(res_list, py_md) == -1)

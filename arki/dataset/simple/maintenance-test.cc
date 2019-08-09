@@ -106,7 +106,7 @@ void Tests<Fixture>::register_tests()
         metadata::Collection mds;
         mds.read_from_file("testds/" + f.test_relpath + ".metadata");
         wassert(actual(mds.size()) == 2u);
-        for (auto* md: mds)
+        for (auto& md: mds)
             md->unset(TYPE_REFTIME);
         mds.writeAtomically("testds/" + f.test_relpath + ".metadata");
 

@@ -127,11 +127,11 @@ public:
         metadata::Collection contents;
         if (sys::exists(segment->segment().abspath + ".metadata"))
         {
-            Metadata::read_file(metadata::ReadContext(segment->segment().abspath + ".metadata", checker.config().path), [&](unique_ptr<Metadata> md) {
+            Metadata::read_file(metadata::ReadContext(segment->segment().abspath + ".metadata", checker.config().path), [&](std::shared_ptr<Metadata> md) {
                 // Tweak Blob sources replacing the file name with segment->relpath
                 if (const source::Blob* s = md->has_source_blob())
                     md->set_source(Source::createBlobUnlocked(s->format, checker.config().path, segment->segment().relpath, s->offset, s->size));
-                contents.acquire(move(md));
+                contents.acquire(md);
                 return true;
             });
         }
@@ -384,10 +384,10 @@ public:
         metadata::Collection mds;
         segment->rescan_data(
                 [&](const std::string& msg) { reporter.segment_info(checker.name(), segment->segment().relpath, msg); },
-                lock, [&](std::unique_ptr<Metadata> md) {
+                lock, [&](std::shared_ptr<Metadata> md) {
                     auto& source = md->sourceBlob();
                     md->set_source(Source::createBlobUnlocked(segment->segment().format, dirname, basename, source.offset, source.size));
-                    mds.acquire(std::move(md));
+                    mds.acquire(md);
                     return true;
                 });
 

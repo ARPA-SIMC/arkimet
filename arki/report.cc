@@ -136,7 +136,7 @@ void Report::captureOutput(core::AbstractOutputFile& fd)
     utils::lua::capturePrintOutput(*L, fd);
 }
 
-bool Report::eat(unique_ptr<Metadata>&& md)
+bool Report::eat(std::shared_ptr<Metadata> md)
 {
     if (!acceptsMetadata()) return true;
 

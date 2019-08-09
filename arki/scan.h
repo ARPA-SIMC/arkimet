@@ -13,6 +13,7 @@
 namespace arki {
 namespace scan {
 
+
 struct Scanner
 {
     virtual ~Scanner();
@@ -45,14 +46,14 @@ struct Scanner
      *
      * Returns a Metadata with inline source.
      */
-    virtual std::unique_ptr<Metadata> scan_data(const std::vector<uint8_t>& data) = 0;
+    virtual std::shared_ptr<Metadata> scan_data(const std::vector<uint8_t>& data) = 0;
 
     /**
      * Open a file, scan it, send results to dest, and close it.
      *
      * Scanned metadata will have no source set.
      */
-    virtual void scan_singleton(const std::string& abspath, Metadata& md) = 0;
+    virtual std::shared_ptr<Metadata> scan_singleton(const std::string& abspath) = 0;
 
     /**
      * Create a scanner for the given format
