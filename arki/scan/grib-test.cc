@@ -43,73 +43,6 @@ void is_grib_data(Metadata& md, size_t expected_size)
 
 void Tests::register_tests() {
 
-// Scan a well-known grib file, with extra padding data between messages
-add_method("padded", [] {
-    Metadata md;
-    metadata::Collection mds;
-    scan::LuaGribScanner scanner;
-    vector<uint8_t> buf;
-
-    scanner.test_scan_file("inbound/padded.grib1", mds.inserter_func());
-    wassert(actual(mds.size()) == 3u);
-
-    md = mds[0];
-
-    // Check the source info
-    wassert(actual(md.source().cloneType()).is_source_blob("grib", sys::abspath("."), "inbound/padded.grib1", 100, 7218));
-
-    // Check that the source can be read properly
-    wassert(is_grib_data(md, 7218));
-
-    // Check contents
-    wassert(actual(md).contains("origin", "GRIB1(200, 0, 101)"));
-    wassert(actual(md).contains("product", "GRIB1(200, 140, 229)"));
-    wassert(actual(md).contains("level", "GRIB1(1, 0)"));
-    wassert(actual(md).contains("timerange", "GRIB1(0, 0s)"));
-    wassert(actual(md).contains("area", "GRIB(Ni=97,Nj=73,latfirst=40000000,latlast=46000000,lonfirst=12000000,lonlast=20000000,type=0)"));
-    wassert(actual(md).contains("proddef", "GRIB(tod=1)"));
-    wassert(actual(md).contains("reftime", "2007-07-08T13:00:00Z"));
-    wassert(actual(md).contains("run", "MINUTE(13:00)"));
-
-    // Next grib
-    md = mds[1];
-
-    // Check the source info
-    wassert(actual(md.source().cloneType()).is_source_blob("grib", sys::abspath("."), "inbound/padded.grib1", 7418, 34960));
-
-    // Check that the source can be read properly
-    wassert(is_grib_data(md, 34960));
-
-    // Check contents
-    wassert(actual(md).contains("origin", "GRIB1(80, 255, 100)"));
-    wassert(actual(md).contains("product", "GRIB1(80, 2, 2)"));
-    wassert(actual(md).contains("level", "GRIB1(102, 0)"));
-    wassert(actual(md).contains("timerange", "GRIB1(1)"));
-    wassert(actual(md).contains("area", "GRIB(Ni=205,Nj=85,latfirst=30000000,latlast=72000000,lonfirst=-60000000,lonlast=42000000,type=0)"));
-    wassert(actual(md).contains("proddef", "GRIB(tod=1)"));
-    wassert(actual(md).contains("reftime", "2007-07-07T00:00:00Z"));
-    wassert(actual(md).contains("run", "MINUTE(0)"));
-
-    // Last grib
-    md = mds[2];
-
-    // Check the source info
-    wassert(actual(md.source().cloneType()).is_source_blob("grib", sys::abspath("."), "inbound/padded.grib1", 42478, 2234));
-
-    // Check that the source can be read properly
-    wassert(is_grib_data(md, 2234));
-
-    // Check contents
-    wassert(actual(md).contains("origin", "GRIB1(98, 0, 129)"));
-    wassert(actual(md).contains("product", "GRIB1(98, 128, 129)"));
-    wassert(actual(md).contains("level", "GRIB1(100, 1000)"));
-    wassert(actual(md).contains("timerange", "GRIB1(0, 0s)"));
-    wassert(actual(md).contains("area", "GRIB(Ni=43,Nj=25,latfirst=55500000,latlast=31500000,lonfirst=-11500000,lonlast=30500000,type=0)"));
-    wassert(actual(md).contains("proddef", "GRIB(tod=1)"));
-    wassert(actual(md).contains("reftime", "2007-10-09T00:00:00Z"));
-    wassert(actual(md).contains("run", "MINUTE(0)"));
-});
-
 add_method("lua_results", [] {
     scan::LuaGribScanner scanner("", R"(
 arki.year = 2008
@@ -169,89 +102,6 @@ add_method("validation", [] {
     wassert(v.validate_buf(buf.data(), buf.size()));
     wassert_throws(std::runtime_error, v.validate_buf((const char*)buf.data()+1, buf.size()-1));
     wassert_throws(std::runtime_error, v.validate_buf(buf.data(), buf.size()-1));
-});
-
-// Test scanning layers instead of levels
-add_method("layers", [] {
-    Metadata md;
-    metadata::Collection mds;
-    scan::LuaGribScanner scanner;
-    vector<uint8_t> buf;
-    scanner.test_scan_file("inbound/layer.grib1", mds.inserter_func());
-    wassert(actual(mds.size()) == 1u);
-
-    md = mds[0];
-
-    // Check the source info
-    wassert(actual(md.source().cloneType()).is_source_blob("grib", sys::abspath("."), "inbound/layer.grib1", 0, 30682));
-
-    // Check that the source can be read properly
-    wassert(is_grib_data(md, 30682));
-
-    // Check contents
-    wassert(actual(md).contains("origin", "GRIB1(200, 255, 45)"));
-    wassert(actual(md).contains("product", "GRIB1(200, 2, 33)"));
-    wassert(actual(md).contains("level", "GRIB1(110, 1, 2)"));
-    wassert(actual(md).contains("timerange", "Timedef(0s, 254, 0s)"));
-    wassert(actual(md).contains("area", "GRIB(Ni=169,Nj=181,latfirst=-21125000,latlast=-9875000,lonfirst=-2937000,lonlast=7563000,latp=-32500000,lonp=10000000,rot=0,type=10)"));
-    wassert(actual(md).contains("proddef", "GRIB(tod=0)"));
-    wassert(actual(md).contains("reftime", "2009-09-02T00:00:00Z"));
-    wassert(actual(md).contains("run", "MINUTE(0)"));
-});
-
-// Scan a know item for which grib_api changed behaviour
-add_method("proselvo", [] {
-    Metadata md;
-    scan::LuaGribScanner scanner;
-    vector<uint8_t> buf;
-    metadata::Collection mds;
-    scanner.test_scan_file("inbound/proselvo.grib1", mds.inserter_func());
-    wassert(actual(mds.size()) == 1u);
-
-    md = mds[0];
-
-    // Check the source info
-    wassert(actual(md.source().cloneType()).is_source_blob("grib", sys::abspath("."), "inbound/proselvo.grib1", 0, 298));
-
-    // Check that the source can be read properly
-    wassert(is_grib_data(md, 298));
-
-    // Check contents
-    wassert(actual(md).contains("origin", "GRIB1(80, 98, 131)"));
-    wassert(actual(md).contains("product", "GRIB1(80, 2, 79)"));
-    wassert(actual(md).contains("level", "GRIB1(1)"));
-    wassert(actual(md).contains("timerange", "GRIB1(0, 0s)"));
-    wassert(actual(md).contains("area", "GRIB(Ni=231,Nj=265,latfirst=-16125000,latlast=375000,lonfirst=-5125000,lonlast=9250000,latp=-40000000,lonp=10000000,rot=0,type=10)"));
-    wassert(actual(md).contains("proddef", "GRIB(ld=1,mt=9,nn=0,tod=1)"));
-    wassert(actual(md).contains("reftime", "2010-08-11T12:00:00Z"));
-    wassert(actual(md).contains("run", "MINUTE(12:00)"));
-});
-
-// Scan a know item for which grib_api changed behaviour
-add_method("cleps", [] {
-    Metadata md;
-    scan::LuaGribScanner scanner;
-    vector<uint8_t> buf;
-    metadata::Collection mds;
-    scanner.test_scan_file("inbound/cleps_pf16_HighPriority.grib2", mds.inserter_func());
-    wassert(actual(mds.size()) == 1u);
-
-    md = mds[0];
-
-    // Check the source info
-    wassert(actual(md.source().cloneType()).is_source_blob("grib", sys::abspath("."), "inbound/cleps_pf16_HighPriority.grib2", 0, 432));
-
-    // Check that the source can be read properly
-    wassert(is_grib_data(md, 432));
-
-    wassert(actual(md).contains("origin", "GRIB2(250, 98, 4, 255, 131)"));
-    wassert(actual(md).contains("product", "GRIB2(250, 2, 0, 0, 5, 0)"));
-    wassert(actual(md).contains("level", "GRIB2S(1, -, -)"));
-    wassert(actual(md).contains("timerange", "Timedef(0, 254, 0s)"));
-    wassert(actual(md).contains("area", "GRIB(Ni=511,Nj=415,latfirst=-16125000,latlast=9750000,lonfirst=344250000,lonlast=16125000,latp=-40000000,lonp=10000000,rot=0,tn=1)"));
-    wassert(actual(md).contains("proddef", "GRIB(mc=ti,mt=0,pf=16,tf=16,tod=4,ty=3)"));
-    wassert(actual(md).contains("reftime", "2013-10-22T00:00:00"));
-    wassert(actual(md).contains("run", "MINUTE(00:00)"));
 });
 
 // Scan a GRIB2 with experimental UTM areas
@@ -437,30 +287,6 @@ add_method("bigfile", [] {
     wassert(scanner.test_open("bigfile.grib1"));
 });
 #endif
-
-add_method("issue120", [] {
-    Metadata md;
-    scan::LuaGribScanner scanner;
-    metadata::Collection mds;
-    scanner.test_scan_file("inbound/oddunits.grib", mds.inserter_func());
-    wassert(actual(mds.size()) == 1u);
-    md = mds[0];
-
-    // Check the source info
-    wassert(actual(md.source().cloneType()).is_source_blob("grib", sys::abspath("."), "inbound/oddunits.grib", 0, 245));
-
-    // Check that the source can be read properly
-    wassert(is_grib_data(md, 245));
-
-    wassert(actual(md).contains("origin", "GRIB2(00080, 00255, 005, 255, 015)"));
-    wassert(actual(md).contains("product", "GRIB2(00080, 000, 001, 052, 011, 001)"));
-    wassert(actual(md).contains("level", "GRIB2S(1, -, -)"));
-    wassert(actual(md).contains("timerange", "Timedef(27h, 4, 24h)"));
-    wassert(actual(md).contains("area", "GRIB(Ni=576, Nj=701, latfirst=-8500000, latlast=5500000, latp=-47000000, lonfirst=-3800000, lonlast=7700000, lonp=10000000, rot=0, tn=1)"));
-    wassert(actual(md).contains("proddef", "GRIB(tod=5)"));
-    wassert(actual(md).contains("reftime", "2018-01-25T21:00:00"));
-    wassert(actual(md).contains("run", "MINUTE(21:00)"));
-});
 
 }
 
