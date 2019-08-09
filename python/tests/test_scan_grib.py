@@ -250,11 +250,11 @@ class TestScanGrib(unittest.TestCase):
 
         mds = self.read("inbound/ninfa_ana.grib2")
         self.assertEqual(len(mds), 1)
-        self.assertEqual(mds[0]["timerange"], "Timedef(0s,254,0s)")
+        self.assertEqual(mds[0]["timerange"], "Timedef(0s, 254, 0s)")
 
-        mds = self.read("inbound/ninfa_forc.grib")
+        mds = self.read("inbound/ninfa_forc.grib2")
         self.assertEqual(len(mds), 1)
-        self.assertEqual(mds[0]["timerange"], "Timedef(3h,254,0s)")
+        self.assertEqual(mds[0]["timerange"], "Timedef(3h, 254, 0s)")
 
     def test_cosmo_nudging(self):
         """
@@ -312,7 +312,8 @@ class TestScanGrib(unittest.TestCase):
         self.assertEqual(mds[0]["proddef"], "GRIB(tod=0)")
 
         mds = self.read("inbound/cosmo/fc0ist_1.grib")
-        self.assertEqual(mds[0]["timerange"], "Timedef(0s, 254, 0s)")
+        self.assertEqual(mds[0]["timerange"], "GRIB1(000, 000h)")
+        # self.assertEqual(mds[0]["timerange"], "Timedef(0s, 254, 0s)")
         self.assertEqual(mds[0]["proddef"], "GRIB(tod=1)")
 
         mds = self.read("inbound/cosmo/anproc_1.grib")
@@ -340,17 +341,19 @@ class TestScanGrib(unittest.TestCase):
         self.assertEqual(mds[0]["proddef"], "GRIB(tod=0)")
 
         mds = self.read("inbound/cosmo/fcist_1.grib")
-        self.assertEqual(mds[0]["timerange"], "Timedef(6h,254,0s)")
+        self.assertEqual(mds[0]["timerange"], "GRIB1(000, 006h)")
+        # self.assertEqual(mds[0]["timerange"], "Timedef(6h,254,0s)")
         self.assertEqual(mds[0]["proddef"], "GRIB(tod=1)")
 
         mds = self.read("inbound/cosmo/fcist_1.grib2")
-        self.assertEqual(mds[0]["timerange"], "Timedef(6h,254,0s)")
+        self.assertEqual(mds[0]["timerange"], "Timedef(6h, 254, 0s)")
         self.assertEqual(mds[0]["proddef"], "GRIB(tod=1)")
 
         mds = self.read("inbound/cosmo/fcproc_1.grib")
-        self.assertEqual(mds[0]["timerange"], "Timedef(6h,1,6h)")
+        # self.assertEqual(mds[0]["timerange"], "Timedef(6h, 1, 6h)")
+        self.assertEqual(mds[0]["timerange"], "GRIB1(004, 000h, 006h)")
         self.assertEqual(mds[0]["proddef"], "GRIB(tod=1)")
 
-        mds = self.read("inbound/cosmo/fcproc_3.grib")
-        self.assertEqual(mds[0]["timerange"], "Timedef(48h,1,24h)")
+        mds = self.read("inbound/cosmo/fcproc_3.grib2")
+        self.assertEqual(mds[0]["timerange"], "Timedef(48h, 1, 24h)")
         self.assertEqual(mds[0]["proddef"], "GRIB(tod=1)")
