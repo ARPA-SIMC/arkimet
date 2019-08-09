@@ -1,6 +1,7 @@
 import unittest
 import os
 import arkimet as arki
+from arkimet.test import skip_unless_arpae_tests
 import datetime
 
 
@@ -240,3 +241,116 @@ class TestScanGrib(unittest.TestCase):
         self.assertEqual(md["proddef"], "GRIB(tod=5)")
         self.assertEqual(md["reftime"], "2018-01-25T21:00:00Z")
         self.assertEqual(md["run"], "MINUTE(21:00)")
+
+    def test_ninfa(self):
+        """
+        Check scanning of some Timedef cases
+        """
+        skip_unless_arpae_tests()
+
+        mds = self.read("inbound/ninfa_ana.grib2")
+        self.assertEqual(len(mds), 1)
+        self.assertEqual(mds[0]["timerange"], "Timedef(0s,254,0s)")
+
+        mds = self.read("inbound/ninfa_forc.grib")
+        self.assertEqual(len(mds), 1)
+        self.assertEqual(mds[0]["timerange"], "Timedef(3h,254,0s)")
+
+    def test_cosmo_nudging(self):
+        """
+        Check scanning COSMO nudging timeranges
+        """
+        skip_unless_arpae_tests()
+
+        mds = self.read("inbound/cosmonudging-t2.grib1")
+        self.assertEqual(len(mds), 35)
+        for i in range(5):
+            self.assertEqual(mds[i]["timerange"], "Timedef(0s, 254, 0s)")
+        self.assertEqual(mds[5]["timerange"], "Timedef(0s, 2, 1h)")
+        self.assertEqual(mds[6]["timerange"], "Timedef(0s, 3, 1h)")
+        for i in range(7, 13):
+            self.assertEqual(mds[i]["timerange"], "Timedef(0s, 254, 0s)")
+        self.assertEqual(mds[13]["timerange"], "Timedef(0s, 1, 12h)")
+        for i in range(14, 19):
+            self.assertEqual(mds[i]["timerange"], "Timedef(0s, 254, 0s)")
+        for i in range(19, 21):
+            self.assertEqual(mds[i]["timerange"], "Timedef(0s, 1, 12h)")
+        for i in range(21, 26):
+            self.assertEqual(mds[i]["timerange"], "Timedef(0s, 254, 0s)")
+        self.assertEqual(mds[26]["timerange"], "Timedef(0s, 1, 12h)")
+        for i in range(27, 35):
+            self.assertEqual(mds[i]["timerange"], "Timedef(0s, 0, 12h)")
+
+        mds = self.read("inbound/cosmonudging-t201.grib1")
+        self.assertEqual(len(mds), 33)
+        for i in range(0, 3):
+            self.assertEqual(mds[i]["timerange"], "Timedef(0s, 0, 12h)")
+        for i in range(3, 16):
+            self.assertEqual(mds[i]["timerange"], "Timedef(0s, 254, 0s)")
+        for i in range(16, 18):
+            self.assertEqual(mds[i]["timerange"], "Timedef(0s, 1, 12h)")
+        for i in range(18, 26):
+            self.assertEqual(mds[i]["timerange"], "Timedef(0s, 254, 0s)")
+        self.assertEqual(mds[26]["timerange"], "Timedef(0s, 2, 1h)")
+        for i in range(27, 33):
+            self.assertEqual(mds[i]["timerange"], "Timedef(0s, 254, 0s)")
+
+        mds = self.read("inbound/cosmonudging-t202.grib1")
+        self.assertEqual(len(mds), 11)
+        for i in range(0, 11):
+            self.assertEqual(mds[i]["timerange"], "Timedef(0s, 254, 0s)")
+
+        mds = self.read("inbound/cosmonudging-t203.grib1")
+        self.assertEqual(mds[0]["timerange"], "Timedef(0s, 254, 0s)")
+
+        mds = self.read("inbound/cosmo/anist_1.grib")
+        self.assertEqual(mds[0]["timerange"], "Timedef(0s, 254, 0s)")
+        self.assertEqual(mds[0]["proddef"], "GRIB(tod=0)")
+
+        mds = self.read("inbound/cosmo/anist_1.grib2")
+        self.assertEqual(mds[0]["timerange"], "Timedef(0s, 254, 0s)")
+        self.assertEqual(mds[0]["proddef"], "GRIB(tod=0)")
+
+        mds = self.read("inbound/cosmo/fc0ist_1.grib")
+        self.assertEqual(mds[0]["timerange"], "Timedef(0s, 254, 0s)")
+        self.assertEqual(mds[0]["proddef"], "GRIB(tod=1)")
+
+        mds = self.read("inbound/cosmo/anproc_1.grib")
+        self.assertEqual(mds[0]["timerange"], "Timedef(0s, 1, 1h)")
+        self.assertEqual(mds[0]["proddef"], "GRIB(tod=0)")
+
+        mds = self.read("inbound/cosmo/anproc_2.grib")
+        self.assertEqual(mds[0]["timerange"], "Timedef(0s, 0, 1h)")
+        self.assertEqual(mds[0]["proddef"], "GRIB(tod=0)")
+
+        mds = self.read("inbound/cosmo/anproc_3.grib")
+        self.assertEqual(mds[0]["timerange"], "Timedef(0s, 2, 1h)")
+        self.assertEqual(mds[0]["proddef"], "GRIB(tod=0)")
+
+        mds = self.read("inbound/cosmo/anproc_4.grib")
+        self.assertEqual(mds[0]["timerange"], "Timedef(0s, 0, 12h)")
+        self.assertEqual(mds[0]["proddef"], "GRIB(tod=0)")
+
+        mds = self.read("inbound/cosmo/anproc_1.grib2")
+        self.assertEqual(mds[0]["timerange"], "Timedef(0s, 0, 24h)")
+        self.assertEqual(mds[0]["proddef"], "GRIB(tod=0)")
+
+        mds = self.read("inbound/cosmo/anproc_2.grib2")
+        self.assertEqual(mds[0]["timerange"], "Timedef(0s, 1, 24h)")
+        self.assertEqual(mds[0]["proddef"], "GRIB(tod=0)")
+
+        mds = self.read("inbound/cosmo/fcist_1.grib")
+        self.assertEqual(mds[0]["timerange"], "Timedef(6h,254,0s)")
+        self.assertEqual(mds[0]["proddef"], "GRIB(tod=1)")
+
+        mds = self.read("inbound/cosmo/fcist_1.grib2")
+        self.assertEqual(mds[0]["timerange"], "Timedef(6h,254,0s)")
+        self.assertEqual(mds[0]["proddef"], "GRIB(tod=1)")
+
+        mds = self.read("inbound/cosmo/fcproc_1.grib")
+        self.assertEqual(mds[0]["timerange"], "Timedef(6h,1,6h)")
+        self.assertEqual(mds[0]["proddef"], "GRIB(tod=1)")
+
+        mds = self.read("inbound/cosmo/fcproc_3.grib")
+        self.assertEqual(mds[0]["timerange"], "Timedef(48h,1,24h)")
+        self.assertEqual(mds[0]["proddef"], "GRIB(tod=1)")
