@@ -459,8 +459,7 @@ Arkimet metadata for one data item
 
     static void _dealloc(Impl* self)
     {
-        delete self->md;
-        self->md = nullptr;
+        self->md.~shared_ptr();
         Py_TYPE(self)->tp_free(self);
     }
 
@@ -701,11 +700,19 @@ arki::metadata::Collection metadata_collection_from_python(PyObject* o)
     return mdc;
 }
 
-arkipy_Metadata* metadata_create(std::unique_ptr<Metadata>&& md)
+arkipy_Metadata* metadata_create(std::unique_ptr<Metadata> md)
 {
     arkipy_Metadata* result = PyObject_New(arkipy_Metadata, arkipy_Metadata_Type);
     if (!result) return nullptr;
-    result->md = md.release();
+    new (&(result->md)) std::shared_ptr<Metadata>(std::move(md));
+    return result;
+}
+
+arkipy_Metadata* metadata_create(std::shared_ptr<Metadata> md)
+{
+    arkipy_Metadata* result = PyObject_New(arkipy_Metadata, arkipy_Metadata_Type);
+    if (!result) return nullptr;
+    new (&(result->md)) std::shared_ptr<Metadata>(md);
     return result;
 }
 

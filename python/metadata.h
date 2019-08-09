@@ -11,7 +11,7 @@ extern "C" {
 
 typedef struct {
     PyObject_HEAD
-    arki::Metadata* md;
+    std::shared_ptr<arki::Metadata> md;
 } arkipy_Metadata;
 
 extern PyTypeObject* arkipy_Metadata_Type;
@@ -43,7 +43,9 @@ namespace python {
  */
 arki::metadata::Collection metadata_collection_from_python(PyObject* o);
 
-arkipy_Metadata* metadata_create(std::unique_ptr<Metadata>&& md);
+arkipy_Metadata* metadata_create(std::unique_ptr<Metadata> md);
+
+arkipy_Metadata* metadata_create(std::shared_ptr<Metadata> md);
 
 
 /**
