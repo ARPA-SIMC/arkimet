@@ -539,7 +539,7 @@ Arkimet metadata for one data item
                     self->md->set(std::move(val));
                 } else {
                     PythonReader reader(py_val);
-                    std::unique_ptr<types::Type> val = types::decode_structure(arki::structured::keys_python, reader);
+                    std::unique_ptr<types::Type> val = types::decode_structure(arki::structured::keys_python, code, reader);
                     self->md->set(std::move(val));
                 }
             }
@@ -703,7 +703,7 @@ arki::metadata::Collection metadata_collection_from_python(PyObject* o)
 arkipy_Metadata* metadata_create(std::unique_ptr<Metadata> md)
 {
     arkipy_Metadata* result = PyObject_New(arkipy_Metadata, arkipy_Metadata_Type);
-    if (!result) return nullptr;
+    if (!result) throw PythonException();
     new (&(result->md)) std::shared_ptr<Metadata>(std::move(md));
     return result;
 }
@@ -711,7 +711,7 @@ arkipy_Metadata* metadata_create(std::unique_ptr<Metadata> md)
 arkipy_Metadata* metadata_create(std::shared_ptr<Metadata> md)
 {
     arkipy_Metadata* result = PyObject_New(arkipy_Metadata, arkipy_Metadata_Type);
-    if (!result) return nullptr;
+    if (!result) throw PythonException();
     new (&(result->md)) std::shared_ptr<Metadata>(md);
     return result;
 }
@@ -730,7 +730,7 @@ arki::metadata_dest_func dest_func_from_python(PyObject* o)
 PyObject* dest_func_to_python(arki::metadata_dest_func func)
 {
     arkipy_metadata_dest_func* result = PyObject_New(arkipy_metadata_dest_func, arkipy_metadata_dest_func_Type);
-    if (!result) return nullptr;
+    if (!result) throw PythonException();
     new (&(result->func)) metadata_dest_func(func);
     return (PyObject*)result;
 }

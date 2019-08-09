@@ -352,6 +352,7 @@ PyMODINIT_FUNC PyInit__arkimet(void)
     arki::init();
 
     arki::python::structured::init();
+    arki::python::scan::init();
     arki::python::formatter::init();
     arki::python::bbox::init();
     arki::python::dataset::qmacro::init();

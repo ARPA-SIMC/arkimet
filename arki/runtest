@@ -51,6 +51,7 @@ fi
 echo "Moving to test directory $TESTDIR"
 cd "$TESTDIR"
 
+export ARKI_SCAN_GRIB=$TOP_SRCDIR/conf/scan-grib/
 export ARKI_SCAN_GRIB1=$TOP_SRCDIR/conf/scan-grib1/
 export ARKI_SCAN_GRIB2=$TOP_SRCDIR/conf/scan-grib2/
 export ARKI_SCAN_BUFR=$TOP_SRCDIR/conf/scan-bufr/
