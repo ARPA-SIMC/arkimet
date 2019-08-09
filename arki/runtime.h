@@ -65,11 +65,8 @@ struct Config
     /// Directories where query macro scripts are found
     Dirlist dir_qmacro;
 
-    /// Directories where grib1 scan scripts are found
-    Dirlist dir_scan_grib1;
-
-    /// Directories where grib2 scan scripts are found
-    Dirlist dir_scan_grib2;
+    /// Directories where grib scan scripts are found
+    Dirlist dir_scan_grib;
 
     /// Directories where bufr scan scripts are found
     Dirlist dir_scan_bufr;

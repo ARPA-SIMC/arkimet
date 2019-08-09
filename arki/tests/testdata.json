@@ -2772,16 +2772,6 @@
  {
   "doc": "",
   "group": "arki_scan_grib",
-  "method": "compact"
- },
- {
-  "doc": "",
-  "group": "arki_scan_grib",
-  "method": "padded"
- },
- {
-  "doc": "",
-  "group": "arki_scan_grib",
   "method": "lua_results"
  },
  {
@@ -2792,37 +2782,7 @@
  {
   "doc": "",
   "group": "arki_scan_grib",
-  "method": "layers"
- },
- {
-  "doc": "",
-  "group": "arki_scan_grib",
-  "method": "proselvo"
- },
- {
-  "doc": "",
-  "group": "arki_scan_grib",
-  "method": "cleps"
- },
- {
-  "doc": "",
-  "group": "arki_scan_grib",
   "method": "utm_areas"
- },
- {
-  "doc": "",
-  "group": "arki_scan_grib",
-  "method": "ninfa"
- },
- {
-  "doc": "",
-  "group": "arki_scan_grib",
-  "method": "cosmo_nudging"
- },
- {
-  "doc": "",
-  "group": "arki_scan_grib",
-  "method": "issue120"
  },
  {
   "doc": "",
