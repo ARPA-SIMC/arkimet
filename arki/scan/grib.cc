@@ -259,7 +259,7 @@ private:
      * can happen, for example, if one adds a .lua file that only provides
      * a library of conveniency functions
      */
-    int load_function(const std::string& fname)
+    void load_file(const std::string& fname)
     {
         // Compile the macro
         if (luaL_dofile(L, fname.c_str()))
@@ -271,41 +271,14 @@ private:
             throw std::runtime_error("cannot parse " + fname + ": " + error);
         }
 
-        // Index the scan function
-        int id = -1;
-        lua_getglobal(L, "scan");
+        // Index the scan functions
+        lua_getglobal(L, "scan_grib1");
         if (lua_isfunction(L, -1))
-            id = luaL_ref(L, LUA_REGISTRYINDEX);
+            grib1_funcs.push_back(luaL_ref(L, LUA_REGISTRYINDEX));
 
-        // Return the ID, or -1 if no 'scan' function was defined
-        return id;
-    }
-
-    /**
-     * Same as load_function, but reads Lua code from a string instead of a
-     * file. The file name is still provided as a description of the code,
-     * to use in error messages.
-     */
-    int load_function(const std::string& fname, const std::string& code)
-    {
-        // Compile the macro
-        if (luaL_loadbuffer(L, code.data(), code.size(), fname.c_str()))
-        {
-            // Copy the error, so that it will exist after the pop
-            string error = lua_tostring(L, -1);
-            // Pop the error from the stack
-            lua_pop(L, 1);
-            throw std::runtime_error("cannot parse " + fname + ": " + error);
-        }
-
-        // Index the scan function
-        int id = -1;
-        lua_getglobal(L, "scan");
+        lua_getglobal(L, "scan_grib2");
         if (lua_isfunction(L, -1))
-            id = luaL_ref(L, LUA_REGISTRYINDEX);
-
-        // Return the ID, or -1 if no 'scan' function was defined
-        return id;
+            grib2_funcs.push_back(luaL_ref(L, LUA_REGISTRYINDEX));
     }
 
     /**
@@ -331,33 +304,12 @@ private:
             return std::string();
     }
 
-    /**
-     * If code is non-empty, load scan code from it. Else, load scan code
-     * from configuration files. Store scan function IDs in \a ids
-     */
-    void load_scan_code(const std::string& code, const Config::Dirlist& src, vector<int>& ids)
-    {
-        /// Load the grib1 scanning functions
-        if (!code.empty())
-        {
-            int id = load_function("grib scan instructions", code);
-            if (id != -1) ids.push_back(id);
-            return;
-        }
-        vector<string> files = src.list_files(".lua");
-        for (vector<string>::const_iterator i = files.begin(); i != files.end(); ++i)
-        {
-            int id = load_function(*i);
-            if (id != -1) ids.push_back(id);
-        }
-    }
-
     /// Run Lua scanning functions on \a md
     bool scanLua(std::vector<int> ids, Metadata& md)
     {
-        for (vector<int>::const_iterator i = ids.begin(); i != ids.end(); ++i)
+        for (const auto& id: ids)
         {
-            string error = run_function(*i, md);
+            string error = run_function(id, md);
             if (!error.empty())
             {
                 md.add_note("Scanning failed: " + error);
@@ -416,15 +368,17 @@ public:
      * Create the 'grib' object in the interpreter, to access the grib data of
      * the current grib read by the scanner
      */
-    GribLua(const std::string& grib1code, const std::string& grib2code)
+    GribLua()
     {
         make_index_userdata("grib", GribLua::arkilua_lookup_grib);
         make_index_userdata("gribl", GribLua::arkilua_lookup_gribl);
         make_index_userdata("gribs", GribLua::arkilua_lookup_gribs);
         make_index_userdata("gribd", GribLua::arkilua_lookup_gribd);
 
-        /// Load the grib1 scanning functions
-        load_scan_code(grib1code, Config::get().dir_scan_grib, grib1_funcs);
+        /// Load the grib scanning functions
+        std::vector<string> files = Config::get().dir_scan_grib.list_files(".lua", false);
+        for (const auto& file: files)
+            load_file(file);
 
         //arkilua_dumpstack(L, "Afterinit", stderr);
     }
@@ -605,8 +559,8 @@ int GribLua::arkilua_lookup_gribd(lua_State* L)
 }
 
 
-LuaGribScanner::LuaGribScanner(const std::string& grib1code, const std::string& grib2code)
-    : L(new GribLua(grib1code, grib2code))
+LuaGribScanner::LuaGribScanner()
+    : L(new GribLua())
 {
 }
 

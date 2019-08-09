@@ -33,46 +33,7 @@ class Tests : public TestCase
     void register_tests() override;
 } test("arki_scan_grib");
 
-void is_grib_data(Metadata& md, size_t expected_size)
-{
-    auto buf = wcallchecked(md.get_data().read());
-    wassert(actual(buf.size()) == expected_size);
-    wassert(actual(string((const char*)buf.data(), 4)) == "GRIB");
-    wassert(actual(string((const char*)buf.data() + expected_size - 4, 4)) == "7777");
-}
-
 void Tests::register_tests() {
-
-add_method("lua_results", [] {
-    scan::LuaGribScanner scanner("", R"(
-arki.year = 2008
-arki.month = 7
-arki.day = 30
-arki.hour = 12
-arki.minute = 30
-arki.second = 0
-arki.centre = 98
-arki.subcentre = 1
-arki.process = 2
-arki.origin = 1
-arki.table = 1
-arki.product = 1
-arki.ltype = 1
-arki.l1 = 1
-arki.l2 = 1
-arki.ptype = 1
-arki.punit = 1
-arki.p1 = 1
-arki.p2 = 1
-arki.bbox = { { 45.00, 11.00 }, { 46.00, 11.00 }, { 46.00, 12.00 }, { 47.00, 13.00 }, { 45.00, 12.00 } }
-)");
-    metadata::Collection mds;
-    scanner.test_scan_file("inbound/test.grib1", mds.inserter_func());
-    wassert(actual(mds.size()) == 3u);
-
-    // Check the source info
-    wassert(actual(mds[0].source().cloneType()).is_source_blob("grib", sys::abspath("."), "inbound/test.grib1", 0, 7218));
-});
 
 // Test validation
 add_method("validation", [] {

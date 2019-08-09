@@ -1,4 +1,4 @@
-function scan(md)
+function scan_grib2(md)
 	-- Reference time
 	local reftime = arki_time.time(grib.year, grib.month, grib.day, grib.hour, grib.minute, grib.second)
 	md:set(arki_reftime.position(reftime))

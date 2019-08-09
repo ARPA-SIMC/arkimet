@@ -11,7 +11,7 @@ local cosmo_nudging_table201 = {
 local cosmo_nudging_table202 = {
     [231]=0, [232]=0, [233]=0 }
 
-function scan(md)
+function scan_grib1(md)
 	-- Reference time
 	local year = (grib.centuryOfReferenceTimeOfData - 1) * 100 + grib.yearOfCentury
 	local reftime = arki_time.time(year, grib.month, grib.day, grib.hour, grib.minute, grib.second)
