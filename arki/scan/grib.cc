@@ -420,10 +420,7 @@ public:
         make_index_userdata("gribd", GribLua::arkilua_lookup_gribd);
 
         /// Load the grib1 scanning functions
-        load_scan_code(grib1code, Config::get().dir_scan_grib1, grib1_funcs);
-
-        /// Load the grib2 scanning functions
-        load_scan_code(grib2code, Config::get().dir_scan_grib2, grib2_funcs);
+        load_scan_code(grib1code, Config::get().dir_scan_grib, grib1_funcs);
 
         //arkilua_dumpstack(L, "Afterinit", stderr);
     }
