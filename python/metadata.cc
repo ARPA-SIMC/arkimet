@@ -512,7 +512,7 @@ Arkimet metadata for one data item
                     self->md->set(std::move(val));
                 } else {
                     PythonReader reader(py_val);
-                    std::unique_ptr<types::Type> val = types::decode_structure(structured::keys_python, reader);
+                    std::unique_ptr<types::Type> val = types::decode_structure(arki::structured::keys_python, reader);
                     self->md->set(std::move(val));
                 }
             }

@@ -132,7 +132,7 @@ Arguments:
             } else if (strcmp(format, "json") == 0) {
                 std::stringstream buf;
                 arki::structured::JSON output(buf);
-                self->summary->serialise(output, structured::keys_json);
+                self->summary->serialise(output, arki::structured::keys_json);
                 if (out.fd)
                     out.fd->write_all_or_retry(buf.str());
                 else
@@ -188,7 +188,7 @@ Arguments:
             } else if (strcmp(format, "json") == 0) {
                 std::stringstream buf;
                 arki::structured::JSON output(buf);
-                shrt.serialise(output, structured::keys_python);
+                shrt.serialise(output, arki::structured::keys_python);
                 if (out.fd)
                     out.fd->write_all_or_retry(buf.str().data(), buf.str().size());
                 else
@@ -221,7 +221,7 @@ Arguments:
     {
         try {
             PythonEmitter e;
-            self->summary->serialise(e, structured::keys_python);
+            self->summary->serialise(e, arki::structured::keys_python);
             return e.release();
         } ARKI_CATCH_RETURN_PYO
     }
