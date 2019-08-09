@@ -1,6 +1,7 @@
 #include "structured.h"
 #include "utils/values.h"
 #include "arki/core/time.h"
+#include <datetime.h>
 
 namespace arki {
 namespace python {
@@ -103,25 +104,33 @@ void PythonEmitter::add_string(const std::string& val)
     add_object(std::move(o));
 }
 
+void PythonEmitter::add_time(const core::Time& val)
+{
+    pyo_unique_ptr o(throw_ifnull(PyDateTime_FromDateAndTime(
+            val.ye, val.mo, val.da,
+            val.ho, val.mi, val.se, 0)));
+    add_object(std::move(o));
+}
+
 
 /*
  * PythonReader
  */
 
-structured::NodeType PythonReader::type() const
+arki::structured::NodeType PythonReader::type() const
 {
     if (o == Py_None)
-        return structured::NodeType::NONE;
+        return arki::structured::NodeType::NONE;
     if (PyBool_Check(o))
-        return structured::NodeType::BOOL;
+        return arki::structured::NodeType::BOOL;
     if (PyLong_Check(o))
-        return structured::NodeType::INT;
+        return arki::structured::NodeType::INT;
     if (PyUnicode_Check(o))
-        return structured::NodeType::STRING;
+        return arki::structured::NodeType::STRING;
     if (PyMapping_Check(o))
-        return structured::NodeType::MAPPING;
+        return arki::structured::NodeType::MAPPING;
     if (PySequence_Check(o))
-        return structured::NodeType::LIST;
+        return arki::structured::NodeType::LIST;
     throw std::invalid_argument("python object " + repr() + " cannot be understood");
 }
 
@@ -204,7 +213,7 @@ void PythonReader::sub(unsigned idx, const char* desc, std::function<void(const 
 }
 
 
-bool PythonReader::has_key(const std::string& key, structured::NodeType type) const
+bool PythonReader::has_key(const std::string& key, arki::structured::NodeType type) const
 {
     int res = PyMapping_HasKeyString(o, key.c_str());
     return res == 1;
@@ -240,7 +249,16 @@ std::string PythonReader::as_string(const std::string& key, const char* desc) co
 core::Time PythonReader::as_time(const std::string& key, const char* desc) const
 {
     pyo_unique_ptr el(throw_ifnull(PyMapping_GetItemString(o, key.c_str())));
-    if (PySequence_Check(el))
+    if (PyDateTime_Check(el))
+    {
+        int ye = PyDateTime_GET_YEAR(el.get());
+        int mo = PyDateTime_GET_MONTH(el.get());
+        int da = PyDateTime_GET_DAY(el.get());
+        int ho = PyDateTime_DATE_GET_HOUR(el.get());
+        int mi = PyDateTime_DATE_GET_MINUTE(el.get());
+        int se = PyDateTime_DATE_GET_SECOND(el.get());
+        return core::Time(ye, mo, da, ho, mi, se);
+    } else if (PySequence_Check(el))
     {
         Py_ssize_t size = PySequence_Size(el);
         if (size == -1)
@@ -264,7 +282,7 @@ core::Time PythonReader::as_time(const std::string& key, const char* desc) const
         int second = from_python<int>(py_second);
         return core::Time(year, month, day, hour, minute, second);
     }
-    PyErr_SetString(PyExc_NotImplementedError, "Cannot parse a non-sequence as a time");
+    PyErr_SetString(PyExc_NotImplementedError, "Cannot parse a non-sequence, non-datetime as a time");
     throw PythonException();
 }
 
@@ -284,6 +302,24 @@ void PythonReader::sub(const std::string& key, const char* desc, std::function<v
     pyo_unique_ptr el(throw_ifnull(PyMapping_GetItemString(o, key.c_str())));
     PythonReader reader(el);
     dest(reader);
+}
+
+namespace structured{
+
+void init()
+{
+    /*
+     * PyDateTimeAPI, that is used by all the PyDate* and PyTime* macros, is
+     * defined as a static variable defaulting to NULL, and it needs to be
+     * initialized on each and every C file where it is used.
+     *
+     * Therefore, we need to have a common_init() to call from all
+     * initialization functions. *sigh*
+     */
+    if (!PyDateTimeAPI)
+        PyDateTime_IMPORT;
+}
+
 }
 
 }

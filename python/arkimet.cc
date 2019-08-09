@@ -2,6 +2,7 @@
 #include <Python.h>
 #include "common.h"
 #include "cfg.h"
+#include "structured.h"
 #include "metadata.h"
 #include "summary.h"
 #include "scan.h"
@@ -351,6 +352,7 @@ PyMODINIT_FUNC PyInit__arkimet(void)
 
     arki::init();
 
+    arki::python::structured::init();
     arki::python::formatter::init();
     arki::python::bbox::init();
     arki::python::dataset::qmacro::init();
