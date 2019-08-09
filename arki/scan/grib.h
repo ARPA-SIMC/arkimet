@@ -48,7 +48,7 @@ protected:
     void scan(grib_handle* gh, std::shared_ptr<Metadata> md) override;
 
 public:
-    LuaGribScanner(const std::string& grib1code=std::string(), const std::string& grib2code=std::string());
+    LuaGribScanner();
     virtual ~LuaGribScanner();
 
     friend class GribLua;
