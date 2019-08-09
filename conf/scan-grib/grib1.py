@@ -45,13 +45,17 @@ def scan_grib1(grib, md):
     }
 
     # Level
-# 	local ltype = gribl.indicatorOfTypeOfLevel
-# 	if grib.levels == nil
-# 	then
-# 		md:set(arki_level.grib1(ltype, grib.level, 0))
-# 	else
-# 		md:set(arki_level.grib1(ltype, grib.topLevel, grib.bottomLevel))
-# 	end
+    level = {
+        "style": "GRIB1",
+        "level_type": grib.get_long("indicatorOfTypeOfLevel"),
+    }
+    if grib["levels"] is None:
+        level["l1"] = grib.get_long("level")
+        level["l2"] = 0
+    else:
+        level["l1"] = grib.get_long("topLevel")
+        level["l2"] = grib.get_long("bottomLevel")
+    md["level"] = level
 
 #     -- Create this array here so time range can add to it
 #     local proddef = {}

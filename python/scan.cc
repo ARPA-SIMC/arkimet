@@ -36,6 +36,15 @@ inline void check_grib_error(int res, const char* msg)
     }
 }
 
+inline void check_grib_lookup_error(int res, const char* key, const char* msg)
+{
+    if (res)
+    {
+        PyErr_Format(PyExc_KeyError, "%s, key: %s: %s", msg, key, grib_get_error_message(res));
+        throw PythonException();
+    }
+}
+
 arkipy_scan_Grib* grib_create(grib_handle* gh)
 {
     arkipy_scan_Grib* result = PyObject_New(arkipy_scan_Grib, arkipy_scan_Grib_Type);
@@ -260,78 +269,47 @@ Access grib message contents
                 return self->md->has(code) ? 1 : 0;
         } ARKI_CATCH_RETURN_INT
     }
-
+#endif
     static PyObject* mp_subscript(Impl* self, PyObject* py_key)
     {
         try {
             std::string key = from_python<std::string>(py_key);
-            types::Code code = types::parseCodeName(key);
-            if (code == TYPE_SOURCE)
+
+            // Get information about the type
+            int type;
+            int res = grib_get_native_type(self->gh, key.c_str(), &type);
+            if (res == GRIB_NOT_FOUND)
+                type = GRIB_TYPE_MISSING;
+            else
+                check_grib_lookup_error(res, key.c_str(), "cannot get type of key");
+
+            // Look up the value
+            switch (type)
             {
-                if (!self->md->has_source())
-                    return PyErr_Format(PyExc_KeyError, "section not found: '%s'", key.c_str());
-                return python::to_python(self->md->source().to_string());
-            } else {
-                const types::Type* res = self->md->get(code);
-                if (!res)
-                    return PyErr_Format(PyExc_KeyError, "section not found: '%s'", key.c_str());
-                return python::to_python(res->to_string());
+                case GRIB_TYPE_LONG: {
+                    long val;
+                    check_grib_lookup_error(grib_get_long(self->gh, key.c_str(), &val), key.c_str(), "cannot read reading long value");
+                    return to_python(val);
+                }
+                case GRIB_TYPE_DOUBLE: {
+                    double val;
+                    check_grib_lookup_error(grib_get_double(self->gh, key.c_str(), &val), key.c_str(), "cannot read double value");
+                    return to_python(val);
+                }
+                case GRIB_TYPE_STRING: {
+                    const int maxsize = 1000;
+                    char buf[maxsize];
+                    size_t len = maxsize;
+                    check_grib_lookup_error(grib_get_string(self->gh, key.c_str(), buf, &len), key.c_str(), "cannot read string value");
+                    buf[len] = 0;
+                    return to_python(buf);
+                }
+                default:
+                    Py_RETURN_NONE;
             }
         } ARKI_CATCH_RETURN_PYO
     }
-// Lookup a grib value for grib.<fieldname>
-int GribLua::arkilua_lookup_grib(lua_State* L)
-{
-    // Fetch the Scanner reference from the userdata value
-    GribLua& s = get_griblua(L, 1, "grib");
-    grib_handle* gh = s.gh;
 
-	// Get the name to lookup from lua
-	// (we use 2 because 1 is the table, since we are a __index function)
-	luaL_checkstring(L, 2);
-	const char* name = lua_tostring(L, 2);
-
-	// Get information about the type
-	int type;
-	int res = grib_get_native_type(gh, name, &type);
-	if (res == GRIB_NOT_FOUND)
-		type = GRIB_TYPE_MISSING;
-	else
-		arkilua_check_gribapi(L, res, "getting type of key %s", name);
-
-	// Look up the value and push the function result for lua
-	switch (type)
-	{
-		case GRIB_TYPE_LONG: {
-			long val;
-			arkilua_check_gribapi(L, grib_get_long(gh, name, &val), "reading long value %s", name);
-			lua_pushnumber(L, val);
-			break;
-		}
-		case GRIB_TYPE_DOUBLE: {
-			double val;
-			arkilua_check_gribapi(L, grib_get_double(gh, name, &val), "reading double value %s", name);
-			lua_pushnumber(L, val);
-			break;
-		} 
-		case GRIB_TYPE_STRING: {
-			const int maxsize = 1000;
-			char buf[maxsize];
-			size_t len = maxsize;
-			arkilua_check_gribapi(L, grib_get_string(gh, name, buf, &len), "reading string value %s", name);
-			if (len > 0) --len;
-			lua_pushlstring(L, buf, len);
-			break;
-		} 
-		default:
-		    lua_pushnil(L);
-			break;
-	}
-
-	// Number of values we're returning to lua
-	return 1;
-}
-#endif
 };
 
 GribDef* grib_def = nullptr;
