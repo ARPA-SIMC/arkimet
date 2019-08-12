@@ -215,8 +215,29 @@ void PythonReader::sub(unsigned idx, const char* desc, std::function<void(const 
 
 bool PythonReader::has_key(const std::string& key, arki::structured::NodeType type) const
 {
-    int res = PyMapping_HasKeyString(o, key.c_str());
-    return res == 1;
+    pyo_unique_ptr el(PyMapping_GetItemString(o, key.c_str()));
+    if (!el)
+    {
+        PyErr_Clear();
+        return 0;
+    }
+    switch (type)
+    {
+        case arki::structured::NodeType::NONE:
+            return el == Py_None;
+        case arki::structured::NodeType::BOOL:
+            return el == Py_True || el == Py_False;
+        case arki::structured::NodeType::INT:
+            return PyLong_Check(el);
+        case arki::structured::NodeType::STRING:
+            return PyUnicode_Check(el);
+        case arki::structured::NodeType::MAPPING:
+            return PyMapping_Check(el);
+        case arki::structured::NodeType::LIST:
+            return PySequence_Check(el);
+        default:
+            return 0;
+    }
 }
 
 bool PythonReader::as_bool(const std::string& key, const char* desc) const
