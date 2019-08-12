@@ -257,19 +257,23 @@ Access grib message contents
         return -1;
     }
 
-#if 0
     static int sq_contains(Impl* self, PyObject* py_key)
     {
         try {
             std::string key = from_python<std::string>(py_key);
-            types::Code code = types::parseCodeName(key);
-            if (code == arki::TYPE_SOURCE)
-                return self->md->has_source() ? 1 : 0;
+
+            // Get information about the type
+            int type;
+            int res = grib_get_native_type(self->gh, key.c_str(), &type);
+            if (res == GRIB_NOT_FOUND)
+                return 0;
             else
-                return self->md->has(code) ? 1 : 0;
+                check_grib_lookup_error(res, key.c_str(), "cannot get type of key");
+
+            return 1;
         } ARKI_CATCH_RETURN_INT
     }
-#endif
+
     static PyObject* mp_subscript(Impl* self, PyObject* py_key)
     {
         try {

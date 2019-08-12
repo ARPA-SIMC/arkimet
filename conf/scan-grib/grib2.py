@@ -39,22 +39,31 @@ def scan_grib2(grib, md):
     }
 
     # Level
-#	local ltype1, lscale1, lvalue1 = gribl.typeOfFirstFixedSurface, 0, 0
-#	if gribl.scaleFactorOfFirstFixedSurface ~= -1 then
-#		lscale1 = gribl.scaleFactorOfFirstFixedSurface
-#		lvalue1 = gribl.scaledValueOfFirstFixedSurface
-#	end
-#
-#	if grib.typeOfSecondFixedSurface and grib.typeOfSecondFixedSurface ~= 255 then
-#		local ltype2, lscale2, lvalue2 = grib.typeOfSecondFixedSurface, 0, 0
-#		if gribl.scaleFactorOfSecondFixedSurface ~= -1 then
-#			lscale2 = grib.scaleFactorOfSecondFixedSurface
-#			lvalue2 = grib.scaledValueOfSecondFixedSurface
-#		end
-#		md:set(arki_level.grib2d(ltype1, lscale1, lvalue1, ltype2, lscale2, lvalue2))
-#	else
-#		md:set(arki_level.grib2s(ltype1, lscale1, lvalue1))
-#	end
+    ltype1, lscale1, lvalue1 = grib.get_long("typeOfFirstFixedSurface"), 0, 0
+    if grib.get_long("scaleFactorOfFirstFixedSurface") != -1:
+        lscale1 = grib.get_long("scaleFactorOfFirstFixedSurface)")
+        lvalue1 = grib.get_long("scaledValueOfFirstFixedSurface)")
+
+    if "typeOfSecondFixedSurface" in grib and grib["typeOfSecondFixedSurface"] != 255:
+        level = {
+            "style": "GRIB2D",
+            "l1": ltype1, "scale1": lscale1, "value1": lvalue1,
+            "l2": grib["typeOfSecondFixedSurface"],
+        }
+        if grib.get_long("scaleFactorOfSecondFixedSurface") != -1:
+            level["scale2"] = grib["scaleFactorOfSecondFixedSurface"]
+            level["value2"] = grib["scaledValueOfSecondFixedSurface"]
+        else:
+            level["scale2"] = 0
+            level["value2"] = 0
+        md["level"] = level
+    else:
+        md["level"] = {
+            "style": "GRIB2S",
+            "level_type": ltype1,
+            "scale": lscale1,
+            "value": lvalue1,
+        }
 
     # Time range
 #    local tr_ft = gribl.forecastTime
