@@ -34,8 +34,9 @@ class DB:
         # Get the source
         # source = md.to_python("source")
 
-        # Encode the metadata without source information
+        # Encode the metadata without source information and without notes
         del md["source"]
+        md.del_notes()
         with io.BytesIO() as binmd:
             md.write(binmd)
             md_encoded = binmd.getvalue()
