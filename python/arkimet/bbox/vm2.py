@@ -1,12 +1,12 @@
 from arkimet.bbox import BBox
-import arkimet as arki
+import arkimet.scan.vm2
 
 
 def bbox_vm2(area):
     """
     Compute bounding boxes for VM2 areas
     """
-    station = arki.scan.vm2.get_station(area["id"])
+    station = arkimet.scan.vm2.get_station(area["id"])
     lat = station.get("lat")
     lon = station.get("lon")
 

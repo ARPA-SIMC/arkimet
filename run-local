@@ -1,7 +1,7 @@
 #!/bin/bash
 
 TOP_SRCDIR=$(cd $(dirname $0) && pwd)
-export ARKI_SCAN_GRIB=$TOP_SRCDIR/conf/scan-grib/
+export ARKI_SCAN=$TOP_SRCDIR/conf/scan/
 export ARKI_SCAN_GRIB1=$TOP_SRCDIR/conf/scan-grib1/
 export ARKI_SCAN_GRIB2=$TOP_SRCDIR/conf/scan-grib2/
 export ARKI_SCAN_BUFR=$TOP_SRCDIR/conf/scan-bufr/

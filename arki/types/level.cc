@@ -489,14 +489,18 @@ void GRIB1::serialise_local(structured::Emitter& e, const structured::Keys& keys
 std::unique_ptr<GRIB1> GRIB1::decode_structure(const structured::Keys& keys, const structured::Reader& val)
 {
     int lt = val.as_int(keys.level_type, "level type");
-    if (val.has_key(keys.level_l2, structured::NodeType::INT))
-        return GRIB1::create(lt,
-                val.as_int(keys.level_l1, "level l1"),
-                val.as_int(keys.level_l2, "level l2"));
-    if (val.has_key(keys.level_l1, structured::NodeType::INT))
-        return GRIB1::create(lt,
-                val.as_int(keys.level_l1, "level l1"));
-    return GRIB1::create(lt);
+    switch (level::GRIB1::getValType(lt))
+    {
+        case 0: return GRIB1::create(lt);
+        case 1: return level::GRIB1::create(lt, val.as_int(keys.level_l1, "level l1"));
+        case 2:
+            return level::GRIB1::create(
+                    lt,
+                    val.as_int(keys.level_l1, "level l1"),
+                    val.as_int(keys.level_l2, "level l2"));
+        default:
+            throw std::invalid_argument("unsupported level type value " + std::to_string(lt));
+    }
 }
 
 std::string GRIB1::exactQuery() const

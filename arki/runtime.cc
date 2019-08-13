@@ -32,15 +32,15 @@ Config::Config()
 
     dir_report.init_config_and_env("report", "ARKI_REPORT");
     dir_qmacro.init_config_and_env("qmacro", "ARKI_QMACRO");
-    if (const char* envdir = getenv("ARKI_SCAN_GRIB"))
-        dir_scan_grib.push_back(envdir);
+    if (const char* envdir = getenv("ARKI_SCAN"))
+        dir_scan.push_back(envdir);
     if (const char* envdir = getenv("ARKI_SCAN_GRIB1"))
-        dir_scan_grib.push_back(envdir);
+        dir_scan.push_back(envdir);
     if (const char* envdir = getenv("ARKI_SCAN_GRIB2"))
-        dir_scan_grib.push_back(envdir);
-    dir_scan_grib.push_back(str::joinpath(CONF_DIR, "scan-grib"));
-    dir_scan_grib.push_back(str::joinpath(CONF_DIR, "scan-grib1"));
-    dir_scan_grib.push_back(str::joinpath(CONF_DIR, "scan-grib2"));
+        dir_scan.push_back(envdir);
+    dir_scan.push_back(str::joinpath(CONF_DIR, "scan"));
+    dir_scan.push_back(str::joinpath(CONF_DIR, "scan-grib1"));
+    dir_scan.push_back(str::joinpath(CONF_DIR, "scan-grib2"));
     dir_scan_bufr.init_config_and_env("scan-bufr", "ARKI_SCAN_BUFR");
     dir_scan_odimh5.init_config_and_env("scan-odimh5", "ARKI_SCAN_ODIMH5");
 
