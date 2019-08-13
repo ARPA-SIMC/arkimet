@@ -737,26 +737,6 @@
  {
   "doc": "",
   "group": "arki_types_timerange",
-  "method": "restrict_unit"
- },
- {
-  "doc": "",
-  "group": "arki_types_timerange",
-  "method": "enlarge_unit"
- },
- {
-  "doc": "",
-  "group": "arki_types_timerange",
-  "method": "compare_units"
- },
- {
-  "doc": "",
-  "group": "arki_types_timerange",
-  "method": "make_same_units"
- },
- {
-  "doc": "",
-  "group": "arki_types_timerange",
   "method": "lua"
  },
  {
