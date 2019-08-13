@@ -25,7 +25,8 @@ def scan_grib1(grib, md):
     year = (grib["centuryOfReferenceTimeOfData"] - 1) * 100 + grib["yearOfCentury"]
     md["reftime"] = {
         "style": "POSITION",
-        "time": datetime.datetime(year, grib["month"], grib["day"], grib["hour"], grib["minute"], grib["second"]),
+        "time": datetime.datetime(year, grib["month"], grib["day"],
+                                  grib["hour"], grib["minute"], grib["second"]),
     }
 
     # Run

@@ -7,7 +7,8 @@ def scan_grib2(grib, md):
     # Reference time
     md["reftime"] = {
         "style": "POSITION",
-        "time": datetime.datetime(grib["year"], grib["month"], grib["day"], grib["hour"], grib["minute"], grib["second"]),
+        "time": datetime.datetime(grib["year"], grib["month"], grib["day"],
+                                  grib["hour"], grib["minute"], grib["second"]),
     }
 
     # Run

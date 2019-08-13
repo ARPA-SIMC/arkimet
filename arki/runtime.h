@@ -66,7 +66,7 @@ struct Config
     Dirlist dir_qmacro;
 
     /// Directories where grib scan scripts are found
-    Dirlist dir_scan_grib;
+    Dirlist dir_scan;
 
     /// Directories where bufr scan scripts are found
     Dirlist dir_scan_bufr;

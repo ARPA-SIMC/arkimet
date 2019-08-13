@@ -27,6 +27,44 @@ PyTypeObject* arkipy_scan_Grib_Type = nullptr;
 
 namespace {
 
+/// Load scripts from the dir_scan configuration directory
+void load_scanners()
+{
+    using namespace arki;
+
+    static bool scanners_loaded = false;
+
+    if (scanners_loaded)
+        return;
+
+    std::vector<std::string> sources = arki::Config::get().dir_scan.list_files(".py");
+    for (const auto& source: sources)
+    {
+        std::string basename = str::basename(source);
+
+        // Check if the scanner module had already been imported
+        std::string module_name = "arkimet.scanners." + basename.substr(0, basename.size() - 3);
+        pyo_unique_ptr py_module_name(string_to_python(module_name));
+        pyo_unique_ptr module(ArkiPyImport_GetModule(py_module_name));
+        if (PyErr_Occurred())
+            throw PythonException();
+
+        // Import it if needed
+        if (!module)
+        {
+            std::string source_code = utils::sys::read_file(source);
+            pyo_unique_ptr code(throw_ifnull(Py_CompileStringExFlags(
+                            source_code.c_str(), source.c_str(),
+                            Py_file_input, nullptr, -1)));
+            module = pyo_unique_ptr(throw_ifnull(PyImport_ExecCodeModule(
+                            module_name.c_str(), code)));
+        }
+    }
+
+    scanners_loaded = true;
+}
+
+
 inline void check_grib_error(int res, const char* msg)
 {
     if (res)
@@ -62,30 +100,7 @@ PyObject* gribscanner_object = nullptr;
 
 void load_gribscanner_object()
 {
-    using namespace arki;
-    std::vector<std::string> sources = arki::Config::get().dir_scan_grib.list_files(".py");
-    for (const auto& source: sources)
-    {
-        std::string basename = str::basename(source);
-
-        // Check if the bbox module had already been imported
-        std::string module_name = "arkimet.scan.grib." + basename.substr(0, basename.size() - 3);
-        pyo_unique_ptr py_module_name(string_to_python(module_name));
-        pyo_unique_ptr module(ArkiPyImport_GetModule(py_module_name));
-        if (PyErr_Occurred())
-            throw PythonException();
-
-        // Import it if needed
-        if (!module)
-        {
-            std::string source_code = utils::sys::read_file(source);
-            pyo_unique_ptr code(throw_ifnull(Py_CompileStringExFlags(
-                            source_code.c_str(), source.c_str(),
-                            Py_file_input, nullptr, -1)));
-            module = pyo_unique_ptr(throw_ifnull(PyImport_ExecCodeModule(
-                            module_name.c_str(), code)));
-        }
-    }
+    load_scanners();
 
     // Get arkimet.scan.grib.GribScanner
     pyo_unique_ptr module(throw_ifnull(PyImport_ImportModule("arkimet.scan.grib")));

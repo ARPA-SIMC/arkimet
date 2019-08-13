@@ -376,7 +376,7 @@ public:
         make_index_userdata("gribd", GribLua::arkilua_lookup_gribd);
 
         /// Load the grib scanning functions
-        std::vector<string> files = Config::get().dir_scan_grib.list_files(".lua", false);
+        std::vector<string> files = Config::get().dir_scan.list_files(".lua", false);
         for (const auto& file: files)
             load_file(file);
 

@@ -15,8 +15,8 @@ nobase_dist_conf_DATA = \
 	report/count \
 	report/datasets \
 	report/mdstats \
-	scan-grib/grib1.py \
-	scan-grib/grib2.py \
+	scan/grib1.py \
+	scan/grib2.py \
 	scan-grib1/01-common.lua \
 	scan-grib2/01-common.lua \
 	scan-bufr/common.lua \

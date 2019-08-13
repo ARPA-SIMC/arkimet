@@ -1,7 +1,10 @@
 from typing import Callable
 from collections import defaultdict
 import arkimet
+import _arkimet
 import logging
+
+Grib = _arkimet.scan.grib.Grib
 
 log = logging.getLogger("arkimet.scan.grib")
 
@@ -9,7 +12,7 @@ log = logging.getLogger("arkimet.scan.grib")
 class Scanner:
     by_edition = defaultdict(list)
 
-    def scan(self, grib: arkimet.scan.grib.Grib, md: arkimet.Metadata):
+    def scan(self, grib: Grib, md: arkimet.Metadata):
         # Find the formatter list for this style
         scanners = self.by_edition.get(grib.edition)
         if scanners is None:
@@ -27,6 +30,6 @@ class Scanner:
                 log.exception("scanner function failed")
 
     @classmethod
-    def register(cls, edition: int, scanner: Callable[[arkimet.scan.grib.Grib, arkimet.Metadata], None]):
+    def register(cls, edition: int, scanner: Callable[[Grib, arkimet.Metadata], None]):
         if scanner not in cls.by_edition[edition]:
             cls.by_edition[edition].append(scanner)
