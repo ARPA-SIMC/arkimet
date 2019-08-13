@@ -293,6 +293,22 @@ struct get_notes : public MethNoargs<get_notes, arkipy_Metadata>
     }
 };
 
+struct del_notes : public MethNoargs<del_notes, arkipy_Metadata>
+{
+    constexpr static const char* name = "del_notes";
+    constexpr static const char* signature = "";
+    constexpr static const char* returns = "";
+    constexpr static const char* summary = "remove all notes from this Metadata";
+
+    static PyObject* run(Impl* self)
+    {
+        try {
+            self->md->set_notes(std::vector<types::Note>());
+            Py_RETURN_NONE;
+        } ARKI_CATCH_RETURN_PYO
+    }
+};
+
 
 struct read_bundle : public ClassMethKwargs<read_bundle>
 {
@@ -455,7 +471,7 @@ struct MetadataDef : public Type<MetadataDef, arkipy_Metadata>
 Arkimet metadata for one data item
 )";
     GetSetters<data, data_size> getsetters;
-    Methods<has_source, write, make_absolute, make_inline, make_url, to_string, to_python, get_notes, read_bundle, write_bundle> methods;
+    Methods<has_source, write, make_absolute, make_inline, make_url, to_string, to_python, get_notes, del_notes, read_bundle, write_bundle> methods;
 
     static void _dealloc(Impl* self)
     {
