@@ -4,3 +4,5 @@ dist_bin_SCRIPTS = arki-query arki-scan arki-check arki-mergeconf arki-dump arki
 if DBALLE
 dist_bin_SCRIPTS += arki-bufr-prepare
 endif
+
+dist_noinst_SCRIPTS = mock-scanner-index

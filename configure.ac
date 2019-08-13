@@ -277,6 +277,10 @@ dnl Check for Curl
 LIBCURL_CHECK_CONFIG([], [], [have_curl=yes], [have_curl=no])
 AM_CONDITIONAL([CURL], [test x"$have_curl" = x"yes"])
 
+PKG_CHECK_MODULES([LIBSSL], [libssl])
+AC_SUBST(LIBSSL_CFLAGS)
+AC_SUBST(LIBSSL_LIBS)
+
 dnl Check for Geos
 if test x$enable_geos = xyes
 then

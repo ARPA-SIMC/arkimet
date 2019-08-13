@@ -34,11 +34,16 @@ static std::map<std::string, factory> factories;
 
 void init()
 {
+    factories["grib"] = [] {
+        return std::unique_ptr<Scanner>(new scan::MockGribScanner);
+    };
+    /*
 #ifdef HAVE_GRIBAPI
     factories["grib"] = [] {
         return std::unique_ptr<Scanner>(new scan::LuaGribScanner);
     };
 #endif
+*/
 #ifdef HAVE_DBALLE
     factories["bufr"] = [] {
         return std::unique_ptr<Scanner>(new scan::Bufr);

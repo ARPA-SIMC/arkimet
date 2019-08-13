@@ -2,7 +2,7 @@
 
 SUBDIRS = .
 
-AM_CPPFLAGS = -I$(top_srcdir) -I$(top_builddir) $(SQLITE3_CFLAGS) -DCONF_DIR=\"$(confdir)\" -DPOSTPROC_DIR=\"$(postprocdir)\" $(ZLIB_CFLAGS) $(LIBARCHIVE_CFLAGS) $(LIBZIP_CFLAGS)
+AM_CPPFLAGS = -I$(top_srcdir) -I$(top_builddir) $(SQLITE3_CFLAGS) -DCONF_DIR=\"$(confdir)\" -DPOSTPROC_DIR=\"$(postprocdir)\" $(ZLIB_CFLAGS) $(LIBARCHIVE_CFLAGS) $(LIBZIP_CFLAGS) $(LIBSSL_CFLAGS)
 if FILE_OFFSET_BITS_64
 AM_CPPFLAGS += -D_FILE_OFFSET_BITS=64
 endif
@@ -112,6 +112,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		scan.h \
 		scan/fwd.h \
 		scan/validator.h \
+		scan/mock.h \
 		segment.h \
 		segment/fwd.h \
 		segment/base.h \
@@ -211,7 +212,7 @@ noinst_LTLIBRARIES = libarkimet-test.la
 # Build these incrementally
 libarkimet_la_CPPFLAGS = $(AM_CPPFLAGS) -Werror
 libarkimet_la_SOURCES =
-libarkimet_la_LDFLAGS = -version-info @LIBARKI_VERSION_INFO@ $(SQLITE3_LDFLAGS) $(ZLIB_LIBS) $(LIBARCHIVE_LIBS) $(LIBZIP_LIBS) $(DEVEL_LIBS) -lpthread
+libarkimet_la_LDFLAGS = -version-info @LIBARKI_VERSION_INFO@ $(SQLITE3_LDFLAGS) $(ZLIB_LIBS) $(LIBARCHIVE_LIBS) $(LIBZIP_LIBS) $(LIBSSL_LIBS) $(DEVEL_LIBS) -lpthread
 libarkimet_test_la_SOURCES = tests/main.cpp
 tests_arki_test_SOURCES =
 tests_arki_test_LDADD =
@@ -415,7 +416,8 @@ libarkimet_la_SOURCES += \
 		validator.cc \
 		postprocess.cc \
 		scan.cc \
-		scan/validator.cc
+		scan/validator.cc \
+		scan/mock.cc
 
 tests_arki_test_SOURCES += \
 		metadata/tests.cc \
@@ -454,6 +456,7 @@ tests_arki_test_SOURCES += \
 		matcher/quantity-test.cc \
 		scan-test.cc \
 		scan/validator-test.cc \
+		scan/mock-test.cc \
 		segment-test.cc \
 		segment/common-test.cc \
 		segment/missing-test.cc \
@@ -639,7 +642,7 @@ check-local:
 		$(TESTS_ENVIRONMENT) $$test ; \
 	done
 
-tests_arki_test_LDADD += libarkimet.la libarkimet-test.la $(SQLITE3_LDFLAGS) $(LIBARCHIVE_LIBS) $(LIBZIP_LIBS) $(DEVEL_LIBS) -lpthread
+tests_arki_test_LDADD += libarkimet.la libarkimet-test.la $(SQLITE3_LDFLAGS) $(LIBARCHIVE_LIBS) $(LIBZIP_LIBS) $(LIBSSL_LIBS) $(DEVEL_LIBS) -lpthread
 
 tests/testdata.json: tests/arki-test
 	$(top_srcdir)/doc/update --testsuite=$< --cache-testsuite=$@

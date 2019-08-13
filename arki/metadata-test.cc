@@ -340,7 +340,8 @@ add_method("lua", [](Fixture& f) {
 
 add_method("stream_grib", [](Fixture& f) {
     skip_unless_grib();
-    metadata::TestCollection grib("inbound/test.grib1");
+    metadata::TestCollection grib("inbound/fixture.grib1");
+    wassert(actual(grib.size()) == 3u);
     File fd("tmpfile", O_WRONLY | O_CREAT | O_TRUNC);
     wassert(actual(grib[0].stream_data(fd)) == grib[0].sourceBlob().size);
     fd.close();

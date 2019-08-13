@@ -12,6 +12,7 @@ struct grib_handle;
 
 namespace arki {
 namespace scan {
+class MockEngine;
 
 namespace grib {
 const Validator& validator();
@@ -28,7 +29,7 @@ protected:
     void set_source_inline(grib_handle* gh, Metadata& md);
 
     // Read from gh and add metadata to md
-    virtual void scan(grib_handle* gh, std::shared_ptr<Metadata> md) = 0;
+    virtual std::shared_ptr<Metadata> scan(grib_handle* gh) = 0;
 
 public:
     GribScanner();
@@ -40,12 +41,26 @@ public:
     std::shared_ptr<Metadata> scan_singleton(const std::string& abspath) override;
 };
 
+class MockGribScanner : public GribScanner
+{
+protected:
+    MockEngine* engine;
+
+    std::shared_ptr<Metadata> scan(grib_handle* gh) override;
+
+public:
+    MockGribScanner();
+    virtual ~MockGribScanner();
+
+    friend class GribLua;
+};
+
 class LuaGribScanner : public GribScanner
 {
 protected:
     GribLua* L;
 
-    void scan(grib_handle* gh, std::shared_ptr<Metadata> md) override;
+    std::shared_ptr<Metadata> scan(grib_handle* gh) override;
 
 public:
     LuaGribScanner();
