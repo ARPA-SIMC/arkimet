@@ -1791,6 +1791,11 @@
  },
  {
   "doc": "",
+  "group": "arki_scan_mock",
+  "method": "empty"
+ },
+ {
+  "doc": "",
   "group": "arki_segment",
   "method": "auto_instantiate_existing"
  },

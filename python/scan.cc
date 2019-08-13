@@ -115,8 +115,10 @@ void load_gribscanner_object()
 class PythonGribScanner : public arki::scan::GribScanner
 {
 protected:
-    void scan(grib_handle* gh, std::shared_ptr<Metadata> md) override
+    std::shared_ptr<Metadata> scan(grib_handle* gh) override
     {
+        auto md = std::make_shared<Metadata>();
+
         AcquireGIL gil;
         if (!gribscanner_object)
             load_gribscanner_object();
@@ -125,6 +127,8 @@ protected:
         pyo_unique_ptr pymd((PyObject*)metadata_create(md));
         pyo_unique_ptr obj(PyObject_CallMethod(
                         gribscanner_object, "scan", "OO", pygh.get(), pymd.get()));
+
+        return md;
     }
 
 public:

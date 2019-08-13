@@ -12,6 +12,7 @@
 #include "arki/utils/files.h"
 #include "arki/utils/sys.h"
 #include "arki/scan/validator.h"
+#include "arki/scan/mock.h"
 #include "arki/segment.h"
 #include <system_error>
 #include <cstring>
@@ -132,10 +133,9 @@ std::shared_ptr<Metadata> GribScanner::scan_data(const std::vector<uint8_t>& dat
     GribHandle gh(grib_handle_new_from_message(context, (void*)data.data(), data.size()));
     if (!gh) throw std::runtime_error("GRIB memory buffer failed to scan");
 
-    std::shared_ptr<Metadata> md(new Metadata);
+    std::shared_ptr<Metadata> md = scan(gh);
     md->set_source_inline("grib", metadata::DataManager::get().to_data("grib", std::vector<uint8_t>(data)));
 
-    scan(gh, md);
 
     gh.close();
 
@@ -147,11 +147,10 @@ bool GribScanner::scan_segment(std::shared_ptr<segment::Reader> reader, metadata
     files::RAIIFILE in(reader->segment().abspath, "rb");
     while (true)
     {
-        std::shared_ptr<Metadata> md(new Metadata);
         GribHandle gh(context, in);
         if (!gh) break;
+        std::shared_ptr<Metadata> md = scan(gh);
         set_source_blob(gh, reader, in, *md);
-        scan(gh, md);
         gh.close();
 
         if (!dest(md)) return false;
@@ -161,15 +160,15 @@ bool GribScanner::scan_segment(std::shared_ptr<segment::Reader> reader, metadata
 
 std::shared_ptr<Metadata> GribScanner::scan_singleton(const std::string& abspath)
 {
-    auto md = std::make_shared<Metadata>();
+    std::shared_ptr<Metadata> md;
     files::RAIIFILE in(abspath, "rb");
     {
         GribHandle gh(context, in);
         if (!gh) throw std::runtime_error(abspath + " contains no GRIB data");
+        md = scan(gh);
         stringstream note;
         note << "Scanned from " << str::basename(abspath);
         md->add_note(note.str());
-        scan(gh, md);
         gh.close();
     }
 
@@ -187,20 +186,38 @@ bool GribScanner::scan_pipe(core::NamedFileDescriptor& infd, metadata_dest_func 
     files::RAIIFILE in(infd, "rb");
     while (true)
     {
-        std::shared_ptr<Metadata> md(new Metadata);
         GribHandle gh(context, in);
         if (!gh) break;
+        std::shared_ptr<Metadata> md = scan(gh);
         set_source_inline(gh, *md);
         stringstream note;
         note << "Scanned from standard input";
         md->add_note(note.str());
-        scan(gh, md);
 
         if (!dest(md)) return false;
     }
     return true;
 }
 
+MockGribScanner::MockGribScanner()
+{
+    engine = new MockEngine();
+}
+
+MockGribScanner::~MockGribScanner()
+{
+    delete engine;
+}
+
+std::shared_ptr<Metadata> MockGribScanner::scan(grib_handle* gh)
+{
+    // Get the encoded GRIB buffer from the GRIB handle
+    const uint8_t* vbuf;
+    size_t size;
+    check_grib_error(grib_get_message(gh, (const void **)&vbuf, &size), "cannot access the encoded GRIB data");
+
+    return engine->lookup(vbuf, size);
+}
 
 namespace grib {
 
@@ -569,9 +586,11 @@ LuaGribScanner::~LuaGribScanner()
     if (L) delete L;
 }
 
-void LuaGribScanner::scan(grib_handle* gh, std::shared_ptr<Metadata> md)
+std::shared_ptr<Metadata> LuaGribScanner::scan(grib_handle* gh)
 {
+    auto md = std::make_shared<Metadata>();
     L->scan_handle(gh, *md);
+    return md;
 }
 
 }

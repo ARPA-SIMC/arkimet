@@ -530,7 +530,10 @@ Arkimet metadata for one data item
             types::Code code = types::parseCodeName(key);
             if (!py_val)
             {
-                self->md->unset(code);
+                if (code == TYPE_SOURCE)
+                    self->md->unset_source();
+                else
+                    self->md->unset(code);
             } else {
                 if (PyUnicode_Check(py_val))
                 {
