@@ -1,4 +1,5 @@
 from arkimet.scan.grib import Scanner
+from arkimet.scan import timedef
 
 
 # 	function norm_lon(lon)
@@ -66,31 +67,58 @@ def scan_grib2(grib, md):
         }
 
     # Time range
-#    local tr_ft = gribl.forecastTime
-#    local tr_ftu = gribl.indicatorOfUnitOfTimeRange
-#    if tr_ft ~= nil and tr_ftu ~= nil then
-#        local pdtn = gribl.productDefinitionTemplateNumber
-#        if pdtn >= 0 and pdtn <= 7 then
-#            md:set(arki_timerange.timedef(tr_ft, tr_ftu, 254, 0, "s"))
-#        else
-#            local tr_sp = gribl.typeOfStatisticalProcessing
-#            local tr_spu = gribl.indicatorOfUnitForTimeRange
-#            local tr_spl = gribl.lengthOfTimeRange
-#            if tr_sp ~= nil and tr_spu ~= nil and tr_spl ~= nil then
-#                if pdtn >= 8 and pdtn <= 14 and gribl.typeOfProcessedData == 0 then
-#                    md:set(arki_timerange.timedef(0, "s", tr_sp, tr_spl, tr_spu))
-#                else
-#                    md:set(arki_timerange.timedef_combined(tr_ft, tr_ftu, tr_sp, tr_spl, tr_spu))
-#                end
-#            else
-#                if pdtn >= 8 and pdtn <= 14 and gribl.typeOfProcessedData == 0 then
-#                    md:set(arki_timerange.timedef(0, "s"))
-#                else
-#                    md:set(arki_timerange.timedef(tr_ft, tr_ftu))
-#                end
-#            end
-#        end
-#    end
+    tr_ft = grib.get_long("forecastTime")
+    tr_ftu = grib.get_long("indicatorOfUnitOfTimeRange")
+    if tr_ft is not None and tr_ftu is not None:
+        pdtn = grib.get_long("productDefinitionTemplateNumber")
+        if pdtn >= 0 and pdtn <= 7:
+            md["timerange"] = {
+                "style": "Timedef",
+                "step_len": tr_ft,
+                "step_unit": tr_ftu,
+                "stat_type": 254,
+                "stat_len": 0,
+                "stat_unit": timedef.UNIT_SECOND,
+            }
+        else:
+            tr_sp = grib.get_long("typeOfStatisticalProcessing")
+            tr_spu = grib.get_long("indicatorOfUnitForTimeRange")
+            tr_spl = grib.get_long("lengthOfTimeRange")
+            if tr_sp is not None and tr_spu is not None and tr_spl is not None:
+                if pdtn >= 8 and pdtn <= 14 and grib.get_long("typeOfProcessedData") == 0:
+                    md["timerange"] = {
+                        "style": "Timedef",
+                        "step_len": 0,
+                        "step_unit": timedef.UNIT_SECOND,
+                        "stat_type": tr_sp,
+                        "stat_len": tr_spl,
+                        "stat_unit": tr_spu,
+                    }
+                else:
+                    val = {
+                        "style": "Timedef",
+                        "step_len": tr_ft,
+                        "step_unit": tr_ftu,
+                        "stat_type": tr_sp,
+                        "stat_len": tr_spl,
+                        "stat_unit": tr_spu,
+                    }
+                    timedef.make_same_units(val)
+                    val["step_len"] += val["stat_len"]
+                    md["timerange"] = val
+            else:
+                if pdtn >= 8 and pdtn <= 14 and grib.get_long("typeOfProcessedData") == 0:
+                    md["timerange"] = {
+                        "style": "Timedef",
+                        "step_len": 0,
+                        "step_unit": timedef.UNIT_SECOND,
+                    }
+                else:
+                    md["timerange"] = {
+                        "style": "Timedef",
+                        "step_len": tr_ft,
+                        "step_unit": tr_ftu,
+                    }
 
     # Area
 #	local area = {}

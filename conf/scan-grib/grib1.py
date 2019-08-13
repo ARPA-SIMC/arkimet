@@ -1,8 +1,8 @@
 from arkimet.scan.grib import Scanner
+from arkimet.scan import timedef
 
-cosmo_centres = {
-    78: 1, 80: 1, 200: 1
-}
+cosmo_centres = {78, 80, 200}
+
 cosmo_nudging_table2 = {
     11:  0,  15: 2,  16: 3,  17: 0,  33: 0,  34: 0,
     57:  1,  61: 1,  78: 1,  79: 1,  90: 1, 111: 0,
@@ -57,58 +57,74 @@ def scan_grib1(grib, md):
         level["l2"] = grib.get_long("bottomLevel")
     md["level"] = level
 
-#     -- Create this array here so time range can add to it
-#     local proddef = {}
-# 
+    # Create this array here so time range can add to it
+    proddef = {}
+
     # Time range
-#     if gribl.timeRangeIndicator == 13 and cosmo_centres[gribl.centre]
-#     then
-#         -- COSMO 'nudging'
-#         -- Special scan directly to timedef timeranges
-#         -- needs to be done here since it depends on the parameter
-# 
-#         proddef.tod = 0 -- Analysis product
-# 
-#         -- Instantaneous data
-#         if grib.P1 == 0 and grib.P2 == 0 then
-#             md:set(arki_timerange.timedef(0, "s", 254, 0, "s"))
-#         elseif grib.P1 > grib.P2 then
-#             -- TODO: this could be a general warning
-#             error("COSMO message with P1 > P2")
-#         else
-#             local statproc = nil
-# 
-#             -- guess timerange according to parameter
-#             if gribl.gribTablesVersionNo == 2 then
-#                 -- table 2
-#                 statproc = cosmo_nudging_table2[gribl.indicatorOfParameter]
-#             elseif gribl.gribTablesVersionNo == 201 then
-#                 -- table 201
-#                 statproc = cosmo_nudging_table201[gribl.indicatorOfParameter]
-#             elseif gribl.gribTablesVersionNo == 202 then
-#                 -- table 202
-#                 statproc = cosmo_nudging_table202[gribl.indicatorOfParameter]
-#             end
-#             -- If gribTablesVersionNo is unsupported or if
-#             -- gribl.indicatorOfParameter is not found in tables, statproc
-#             -- is nil and later below we default to 'point in time' and
-#             -- 'cosmo nudging analysis'
-# 
-#             if statproc == nil then
-#                 -- default to point in time, with 'cosmo nudging analysis' as
-#                 -- statistical processing
-#                 error("Unknown COSMO parameter type")
-#             else
-#                 -- known statistical processing
-#                 local tunit = gribl.indicatorOfUnitOfTimeRange
-#                 if tunit == 254 then tunit = 13 end
-#                 md:set(arki_timerange.timedef(0, "s", statproc, grib.P2-grib.P1, tunit))
-#             end
-#         end
-#     else
-#         md:set(arki_timerange.grib1(grib.timeRangeIndicator, grib.indicatorOfUnitOfTimeRange, grib.P1, grib.P2))
-#         proddef.tod = 1 -- Initial instant of forecast
-#     end
+    if grib.get_long("timeRangeIndicator") == 13 and grib.get_long("centre") in cosmo_centres:
+        # COSMO 'nudging'
+        # Special scan directly to timedef timeranges
+        # needs to be done here since it depends on the parameter
+
+        proddef["tod"] = 0  # Analysis product
+
+        # Instantaneous data
+        if grib["P1"] == 0 and grib["P2"] == 0:
+            md["timerange"] = {
+                "style": "Timedef",
+                "step_len": 0,
+                "step_unit": timedef.UNIT_SECOND,
+                "stat_type": 254,
+                "stat_len": 0,
+                "stat_unit": timedef.UNIT_SECOND,
+            }
+        elif grib["P1"] > grib["P2"]:
+            # TODO: this could be a general warning
+            raise RuntimeError("COSMO message with P1 > P2")
+        else:
+            statproc = None
+
+            # guess timerange according to parameter
+            if grib.get_long("gribTablesVersionNo") == 2:
+                # table 2
+                statproc = cosmo_nudging_table2.get(grib.get_long("indicatorOfParameter"))
+            elif grib.get_long("gribTablesVersionNo") == 201:
+                # table 201
+                statproc = cosmo_nudging_table201.get(grib.get_long("indicatorOfParameter"))
+            elif grib.get_long("gribTablesVersionNo") == 202:
+                # table 202
+                statproc = cosmo_nudging_table202.get(grib.get_long("indicatorOfParameter"))
+            # If gribTablesVersionNo is unsupported or if
+            # gribl.indicatorOfParameter is not found in tables, statproc
+            # is nil and later below we default to 'point in time' and
+            # 'cosmo nudging analysis'
+
+            if statproc is None:
+                # default to point in time, with 'cosmo nudging analysis' as
+                # statistical processing
+                raise RuntimeError("Unknown COSMO parameter type")
+            else:
+                # known statistical processing
+                tunit = grib.get_long("indicatorOfUnitOfTimeRange")
+                if tunit == 254:
+                    tunit = timedef.UNIT_SECOND
+                md["timerange"] = {
+                    "style": "Timedef",
+                    "step_len": 0,
+                    "step_unit": timedef.UNIT_SECOND,
+                    "stat_type": statproc,
+                    "stat_len": grib["P2"] - grib["P1"],
+                    "stat_unit": tunit,
+                }
+    else:
+        md["timerange"] = {
+            "style": "GRIB1",
+            "trange_type": grib["timeRangeIndicator"],
+            "unit": grib["indicatorOfUnitOfTimeRange"],
+            "p1": grib["P1"],
+            "p2": grib["P2"],
+        }
+        proddef["tod"] = 1  # Initial instant of forecast
 
     # Area
 # 	local area = {}
