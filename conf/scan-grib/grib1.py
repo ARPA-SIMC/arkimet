@@ -127,50 +127,49 @@ def scan_grib1(grib, md):
         proddef["tod"] = 1  # Initial instant of forecast
 
     # Area
-# 	local area = {}
-# 	area.type = grib.dataRepresentationType
-# 
-# 	if grib.latitudeOfFirstGridPointInDegrees ~= nil then
-# 		if grib.latitudeOfFirstGridPointInDegrees >= 1000 then
-# 			-- UTM hack
-# 			area.utm = 1
-# 
-# 			area.latfirst = grib.latitudeOfFirstGridPointInDegrees * 1000
-# 			area.lonfirst = grib.longitudeOfFirstGridPointInDegrees * 1000
-# 
-# 			if grib.numberOfPointsAlongAParallel then
-# 				area.Ni = grib.numberOfPointsAlongAParallel
-# 				area.Nj = grib.numberOfPointsAlongAMeridian
-# 				area.latlast = grib.latitudeOfLastGridPointInDegrees * 1000
-# 				area.lonlast = grib.longitudeOfLastGridPointInDegrees * 1000
-# 			end
-# 			if grib.numberOfPointsAlongXAxis then
-# 				area.Ni = grib.numberOfPointsAlongXAxis
-# 				area.Nj = grib.numberOfPointsAlongYAxis
-# 			end
-# 		else
-# 			area.latfirst = grib.latitudeOfFirstGridPointInDegrees * 1000000
-# 			area.lonfirst = grib.longitudeOfFirstGridPointInDegrees * 1000000
-# 
-# 			if grib.numberOfPointsAlongAParallel then
-# 				area.Ni = grib.numberOfPointsAlongAParallel
-# 				area.Nj = grib.numberOfPointsAlongAMeridian
-# 				area.latlast = grib.latitudeOfLastGridPointInDegrees * 1000000
-# 				area.lonlast = grib.longitudeOfLastGridPointInDegrees * 1000000
-# 			end
-# 			if grib.numberOfPointsAlongXAxis then
-# 				area.Ni = grib.numberOfPointsAlongXAxis
-# 				area.Nj = grib.numberOfPointsAlongYAxis
-# 			end
-# 			if grib.angleOfRotationInDegrees then
-# 				area.rot = grib.angleOfRotationInDegrees * 1000000
-# 				area.latp = grib.latitudeOfSouthernPoleInDegrees * 1000000
-# 				area.lonp = grib.longitudeOfSouthernPoleInDegrees * 1000000
-# 			end
-# 		end
-# 	end
-# 	md:set(arki_area.grib(area))
-# 
+    area = {
+        "type": grib["dataRepresentationType"],
+    }
+
+    if grib["latitudeOfFirstGridPointInDegrees"] is not None:
+        if grib["latitudeOfFirstGridPointInDegrees"] >= 1000:
+            # UTM hack
+            area["utm"] = 1
+
+            area["latfirst"] = round(grib["latitudeOfFirstGridPointInDegrees"] * 1000)
+            area["lonfirst"] = round(grib["longitudeOfFirstGridPointInDegrees"] * 1000)
+
+            if grib["numberOfPointsAlongAParallel"]:
+                area["Ni"] = round(grib["numberOfPointsAlongAParallel"])
+                area["Nj"] = round(grib["numberOfPointsAlongAMeridian"])
+                area["latlast"] = round(grib["latitudeOfLastGridPointInDegrees"] * 1000)
+                area["lonlast"] = round(grib["longitudeOfLastGridPointInDegrees"] * 1000)
+            if grib["numberOfPointsAlongXAxis"]:
+                area["Ni"] = grib["numberOfPointsAlongXAxis"]
+                area["Nj"] = grib["numberOfPointsAlongYAxis"]
+        else:
+            area["latfirst"] = round(grib["latitudeOfFirstGridPointInDegrees"] * 1000000)
+            area["lonfirst"] = round(grib["longitudeOfFirstGridPointInDegrees"] * 1000000)
+
+            if grib["numberOfPointsAlongAParallel"]:
+                area["Ni"] = grib["numberOfPointsAlongAParallel"]
+                area["Nj"] = grib["numberOfPointsAlongAMeridian"]
+                area["latlast"] = round(grib["latitudeOfLastGridPointInDegrees"] * 1000000)
+                area["lonlast"] = round(grib["longitudeOfLastGridPointInDegrees"] * 1000000)
+
+            if grib["numberOfPointsAlongXAxis"]:
+                area["Ni"] = grib["numberOfPointsAlongXAxis"]
+                area["Nj"] = grib["numberOfPointsAlongYAxis"]
+
+            if grib["angleOfRotationInDegrees"] is not None:
+                area["rot"] = round(grib["angleOfRotationInDegrees"] * 1000000)
+                area["latp"] = round(grib["latitudeOfSouthernPoleInDegrees"] * 1000000)
+                area["lonp"] = round(grib["longitudeOfSouthernPoleInDegrees"] * 1000000)
+    md["area"] = {
+        "style": "GRIB",
+        "value": area,
+    }
+
     # Proddef
 # 	if grib.localDefinitionNumber then
 # 		proddef.ld = gribl.localDefinitionNumber

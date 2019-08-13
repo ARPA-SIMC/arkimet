@@ -125,6 +125,8 @@ arki::structured::NodeType PythonReader::type() const
         return arki::structured::NodeType::BOOL;
     if (PyLong_Check(o))
         return arki::structured::NodeType::INT;
+    if (PyFloat_Check(o))
+        return arki::structured::NodeType::DOUBLE;
     if (PyUnicode_Check(o))
         return arki::structured::NodeType::STRING;
     if (PyMapping_Check(o))
