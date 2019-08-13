@@ -644,6 +644,8 @@ ValueBag ValueBag::parse(const structured::Reader& reader)
     reader.items("values", [&](const std::string& key, const structured::Reader& val) {
         switch (val.type())
         {
+            case structured::NodeType::NONE:
+                break;
             case structured::NodeType::INT:
                 res.set(key, Value::create_integer(val.as_int("int value")));
                 break;
@@ -651,7 +653,7 @@ ValueBag ValueBag::parse(const structured::Reader& reader)
                 res.set(key, Value::create_string(val.as_string("string value")));
                 break;
             default:
-                throw std::runtime_error("cannot decode value: value is neither integer nor string");
+                throw std::runtime_error("cannot decode value " + key + ": value is neither integer nor string");
         }
     });
     return res;

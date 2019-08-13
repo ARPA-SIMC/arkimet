@@ -1,22 +1,20 @@
 from arkimet.scan.grib import Scanner
 from arkimet.scan import timedef
+import datetime
 
-
-# 	function norm_lon(lon)
-# 		if lon > 180 then
-# 			return lon - 360
-# 		else
-# 			return lon
-# 		end
-# 	end
 
 def scan_grib2(grib, md):
     # Reference time
-#	local reftime = arki_time.time(grib.year, grib.month, grib.day, grib.hour, grib.minute, grib.second)
-#	md:set(arki_reftime.position(reftime))
+    md["reftime"] = {
+        "style": "POSITION",
+        "time": datetime.datetime(grib["year"], grib["month"], grib["day"], grib["hour"], grib["minute"], grib["second"]),
+    }
 
     # Run
-#	md:set(arki_run.minute(grib.hour, grib.minute))
+    md["run"] = {
+        "style": "MINUTE",
+        "value": grib["hour"] * 60 + grib["minute"],
+    }
 
     # Origin
     md["origin"] = {
@@ -161,19 +159,22 @@ def scan_grib2(grib, md):
     }
 
     # Proddef
-#    local proddef = {}
-#    proddef.tod = gribl.typeOfProcessedData
-#	if gribl.typeOfProcessedData >= 3 and gribl.typeOfProcessedData <= 5 then
-#		proddef.mc = grib.marsClass
-#		proddef.mt = gribl.marsType
-#		proddef.ty = grib.typeOfEnsembleForecast
-#		proddef.pf = grib.perturbationNumber
-#		proddef.tf = grib.numberOfForecastsInEnsemble
-#		if grib.derivedForecast then
-#			proddef.d = grib.derivedForecast
-#		end
-#	end
-#    md:set(arki_proddef.grib(proddef))
+    proddef = {
+        "tod": grib.get_long("typeOfProcessedData"),
+    }
+    if grib.get_long("typeOfProcessedData") >= 3 and grib.get_long("typeOfProcessedData") <= 5:
+        proddef["mc"] = grib["marsClass"]
+        proddef["mt"] = grib.get_long("marsType")
+        proddef["ty"] = grib["typeOfEnsembleForecast"]
+        proddef["pf"] = grib["perturbationNumber"]
+        proddef["tf"] = grib["numberOfForecastsInEnsemble"]
+        if "derivedForecast" in grib:
+            proddef["d"] = grib["derivedForecast"]
+
+    md["proddef"] = {
+        "style": "GRIB",
+        "value": proddef,
+    }
 
 
 Scanner.register(2, scan_grib2)

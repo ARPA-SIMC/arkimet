@@ -1,5 +1,6 @@
 from arkimet.scan.grib import Scanner
 from arkimet.scan import timedef
+import datetime
 
 cosmo_centres = {78, 80, 200}
 
@@ -21,12 +22,17 @@ cosmo_nudging_table202 = {
 
 def scan_grib1(grib, md):
     # Reference time
-# 	local year = (grib.centuryOfReferenceTimeOfData - 1) * 100 + grib.yearOfCentury
-# 	local reftime = arki_time.time(year, grib.month, grib.day, grib.hour, grib.minute, grib.second)
-# 	md:set(arki_reftime.position(reftime))
+    year = (grib["centuryOfReferenceTimeOfData"] - 1) * 100 + grib["yearOfCentury"]
+    md["reftime"] = {
+        "style": "POSITION",
+        "time": datetime.datetime(year, grib["month"], grib["day"], grib["hour"], grib["minute"], grib["second"]),
+    }
 
     # Run
-# 	md:set(arki_run.minute(grib.hour, grib.minute))
+    md["run"] = {
+        "style": "MINUTE",
+        "value": grib["hour"] * 60 + grib["minute"],
+    }
 
     # Origin
     md["origin"] = {
@@ -171,24 +177,24 @@ def scan_grib1(grib, md):
     }
 
     # Proddef
-# 	if grib.localDefinitionNumber then
-# 		proddef.ld = gribl.localDefinitionNumber
-# 		proddef.mt = gribl.marsType
-# 		if grib.clusterNumber then
-# 			proddef.nn = gribl.clusterNumber
-# 		end
-# 		if grib.forecastProbabilityNumber then
-# 			proddef.nn = gribl.forecastProbabilityNumber
-# 		end
-# 		if grib.perturbationNumber then
-# 			proddef.nn = gribl.perturbationNumber
-# 		end
-# 	end
-# 
-# 	-- Only set proddef if there is some data in it
-# 	if next(proddef) ~= nil then
-# 		md:set(arki_proddef.grib(proddef))
-# 	end
+    if grib["localDefinitionNumber"]:
+        proddef["ld"] = grib.get_long("localDefinitionNumber")
+        proddef["mt"] = grib.get_long("marsType")
+        if "clusterNumber" in grib:
+            proddef["nn"] = grib.get_long("clusterNumber")
+
+        if "forecastProbabilityNumber" in grib:
+            proddef["nn"] = grib.get_long("forecastProbabilityNumber")
+
+        if "perturbationNumber" in grib:
+            proddef["nn"] = grib.get_long("perturbationNumber")
+
+    # Only set proddef if there is some data in it
+    if proddef:
+        md["proddef"] = {
+            "style": "GRIB",
+            "value": proddef,
+        }
 
 
 Scanner.register(1, scan_grib1)
