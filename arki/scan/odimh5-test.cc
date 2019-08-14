@@ -22,8 +22,8 @@ class Tests : public TestCase
 static Metadata scan_file(const std::string& pathname, size_t size)
 {
     metadata::Collection mds;
-    scan::LuaOdimScanner scanner;
-    scanner.test_scan_file(pathname, mds.inserter_func());
+    auto scanner = scan::Scanner::get_scanner("odimh5");
+    scanner->test_scan_file(pathname, mds.inserter_func());
     wassert(actual(mds.size()) == 1u);
 
     // Check the source info
@@ -305,8 +305,8 @@ add_method("xsec", [] {
 // Check that the scanner silently discard an empty file
 add_method("empty", [] {
     metadata::Collection mds;
-    scan::LuaOdimScanner scanner;
-    scanner.test_scan_file("inbound/odimh5/empty.h5", mds.inserter_func());
+    auto scanner = scan::Scanner::get_scanner("odimh5");
+    scanner->test_scan_file("inbound/odimh5/empty.h5", mds.inserter_func());
     wassert(actual(mds.size()) == 0u);
 });
 

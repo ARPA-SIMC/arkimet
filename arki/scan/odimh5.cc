@@ -17,6 +17,7 @@
 #include "arki/utils/files.h"
 #include "arki/utils/lua.h"
 #include "arki/utils/sys.h"
+#include "arki/utils/h5.h"
 #include "arki/scan/validator.h"
 #include <cstring>
 #include <unistd.h>
@@ -147,6 +148,33 @@ bool OdimScanner::scan_pipe(core::NamedFileDescriptor& in, metadata_dest_func de
 /*
  * LuaOdimScanner
  */
+
+struct OdimH5Lua;
+
+class LuaOdimScanner : public OdimScanner
+{
+public:
+    LuaOdimScanner();
+    virtual ~LuaOdimScanner();
+
+protected:
+    hid_t h5file;
+    std::vector<int> odimh5_funcs;
+    OdimH5Lua* L;
+
+    std::shared_ptr<Metadata> scan_h5_file(const std::string& pathname) override;
+
+    /**
+     * Run Lua scanning functions on \a md
+     */
+    bool scanLua(Metadata& md);
+
+    static int arkilua_find_attr(lua_State* L);
+    static int arkilua_get_groups(lua_State* L);
+
+    friend class OdimH5Lua;
+};
+
 
 struct OdimH5Lua : public Lua {
     OdimH5Lua(LuaOdimScanner* scanner) {
@@ -384,7 +412,12 @@ int LuaOdimScanner::arkilua_get_groups(lua_State* L)
     return 1;
 }
 
-}
+void register_odimh5_lua()
+{
+    Scanner::register_factory("odimh5", [] {
+        return std::unique_ptr<Scanner>(new scan::LuaOdimScanner);
+    });
 }
 
-// vim:set ts=4 sw=4:
+}
+}
