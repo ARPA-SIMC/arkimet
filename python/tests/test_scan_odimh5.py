@@ -59,3 +59,27 @@ class TestScanBufr(unittest.TestCase):
         self.assertEqual(md["reftime"], "2000-01-02T03:04:05Z")
         self.assertNotIn("run", md)
         self.assertNotIn("timerange", md)
+
+    def test_comp_cappi(self):
+        md = self.read("inbound/odimh5/COMP_CAPPI_v20.h5", 49113)
+
+        self.assertEqual(md["origin"], "ODIMH5(16144, IY46, itspc)")
+        self.assertEqual(md["product"], "ODIMH5(COMP, CAPPI)")
+        self.assertEqual(md["level"], "GRIB1(105, 00010)")
+        self.assertEqual(md["reftime"], "2013-03-18T14:30:00Z")
+        self.assertEqual(md["task"], "ZLR-BB")
+        self.assertEqual(md["quantity"], "DBZH")
+        self.assertEqual(md["area"],
+                         "GRIB(latfirst=42314117, latlast=46912151, lonfirst=8273203, lonlast=14987079, type=0)")
+
+    def test_comp_etop(self):
+        md = self.read("inbound/odimh5/COMP_ETOP_v20.h5", 49113)
+
+        self.assertEqual(md["origin"], "ODIMH5(16144, IY46, itspc)")
+        self.assertEqual(md["product"], "ODIMH5(COMP, ETOP)")
+        self.assertEqual(md["reftime"], "2013-03-18T14:30:00Z")
+        self.assertEqual(md["task"], "ZLR-BB")
+        self.assertEqual(md["quantity"], "HGHT")
+        self.assertEqual(md["area"],
+                         "GRIB(latfirst=42314117, latlast=46912151, lonfirst=8273203, lonlast=14987079, type=0)")
+        self.assertNotIn("level", md)
