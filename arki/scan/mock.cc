@@ -35,6 +35,15 @@ MockEngine::MockEngine()
     } else {
         throw std::runtime_error("ARKI_MOCK_SCAN_DB not defined but needed by arkimet mock scanner");
     }
+
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+static bool has_digests = false;
+    if (!has_digests)
+    {
+        OpenSSL_add_all_digests();
+        has_digests = true;
+    }
+#endif
 }
 
 MockEngine::~MockEngine()
@@ -90,19 +99,18 @@ void EVP_MD_CTX_free(EVP_MD_CTX *ctx)
 std::string compute_hash(const char* name, const void* data, size_t size)
 {
     // See: https://www.openssl.org/docs/man1.1.0/man3/EVP_DigestInit.html
-    EVP_MD_CTX *mdctx;
-    const EVP_MD *md;
-    unsigned char md_value[EVP_MAX_MD_SIZE];
-    unsigned int md_len;
-
-    md = EVP_get_digestbyname(name);
+    const EVP_MD *md = EVP_get_digestbyname(name);
     if (!md)
         throw std::invalid_argument(std::string("checksum algorithm not found: ") + name);
 
-    mdctx = EVP_MD_CTX_new();
+    EVP_MD_CTX *mdctx = EVP_MD_CTX_new();
     EVP_DigestInit_ex(mdctx, md, NULL);
     EVP_DigestUpdate(mdctx, data, size);
+
+    unsigned char md_value[EVP_MAX_MD_SIZE];
+    unsigned int md_len;
     EVP_DigestFinal_ex(mdctx, md_value, &md_len);
+
     EVP_MD_CTX_free(mdctx);
 
     std::string res;
