@@ -319,21 +319,21 @@ int BufrScanner::update_sequence_number(const std::string& buf)
 }
 
 
-Bufr::Bufr()
+LuaBufrScanner::LuaBufrScanner()
 {
 #ifdef HAVE_LUA
     extras = new bufr::BufrLua;
 #endif
 }
 
-Bufr::~Bufr()
+LuaBufrScanner::~LuaBufrScanner()
 {
 #ifdef HAVE_LUA
 	if (extras) delete extras;
 #endif
 }
 
-void Bufr::scan_extra(dballe::Message& msg, Metadata& md)
+void LuaBufrScanner::scan_extra(dballe::Message& msg, Metadata& md)
 {
     if (extras)
         extras->scan(msg, md);

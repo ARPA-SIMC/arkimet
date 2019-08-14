@@ -46,7 +46,7 @@ void init()
 */
 #ifdef HAVE_DBALLE
     factories["bufr"] = [] {
-        return std::unique_ptr<Scanner>(new scan::Bufr);
+        return std::unique_ptr<Scanner>(new scan::LuaBufrScanner);
     };
 #endif
 #ifdef HAVE_HDF5
@@ -159,7 +159,7 @@ bool Scanner::update_sequence_number(const types::source::Blob& source, int& usn
 
     auto data = source.read_data();
     string buf((const char*)data.data(), data.size());
-    usn = Bufr::update_sequence_number(buf);
+    usn = BufrScanner::update_sequence_number(buf);
     return true;
 #else
     return false;
@@ -176,7 +176,7 @@ bool Scanner::update_sequence_number(Metadata& md, int& usn)
     const auto& data = md.get_data();
     auto buf = data.read();
     string strbuf((const char*)buf.data(), buf.size());
-    usn = Bufr::update_sequence_number(strbuf);
+    usn = BufrScanner::update_sequence_number(strbuf);
     return true;
 #else
     return false;
