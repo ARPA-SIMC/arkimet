@@ -115,9 +115,6 @@ public:
     bool operator>(const Metadata& o) const { return compare(o) > 0; }
     bool operator>=(const Metadata& o) const { return compare(o) >= 0; }
 
-    /// Clear all the contents of this Metadata
-    void clear();
-
     /// Decode from structured data
     void read(const structured::Keys& keys, const structured::Reader& val);
 
