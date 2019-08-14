@@ -101,7 +101,7 @@ def read_proddef(msg):
 #         end
 #     end)
 #     if forecast == nil then forecast = 0 end
-# 
+#
 #     if forecast == 0 then
 #         return arki_timerange.timedef(0)
 #     elseif math.floor(forecast / 3600) * 3600 == forecast then

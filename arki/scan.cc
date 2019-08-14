@@ -55,9 +55,7 @@ void init()
 #endif
 */
 #ifdef HAVE_HDF5
-    factories["odimh5"] = [] {
-        return std::unique_ptr<Scanner>(new scan::LuaOdimScanner);
-    };
+    register_odimh5_lua();
 #endif
 #ifdef HAVE_VM2
     factories["vm2"] = [] {

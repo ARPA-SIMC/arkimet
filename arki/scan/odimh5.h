@@ -2,7 +2,6 @@
 #define ARKI_SCAN_ODIMH5_H
 
 #include <arki/scan.h>
-#include <arki/utils/h5.h>
 #include <string>
 #include <vector>
 
@@ -17,8 +16,6 @@ struct Validator;
 namespace odimh5 {
 const Validator& validator();
 }
-
-struct OdimH5Lua;
 
 class OdimScanner : public Scanner
 {
@@ -38,29 +35,7 @@ public:
 };
 
 
-class LuaOdimScanner : public OdimScanner
-{
-public:
-    LuaOdimScanner();
-    virtual ~LuaOdimScanner();
-
-protected:
-    hid_t h5file;
-    std::vector<int> odimh5_funcs;
-    OdimH5Lua* L;
-
-    std::shared_ptr<Metadata> scan_h5_file(const std::string& pathname) override;
-
-    /**
-     * Run Lua scanning functions on \a md
-     */
-    bool scanLua(Metadata& md);
-
-    static int arkilua_find_attr(lua_State* L);
-    static int arkilua_get_groups(lua_State* L);
-
-    friend class OdimH5Lua;
-};
+void register_odimh5_lua();
 
 }
 }
