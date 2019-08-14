@@ -47,20 +47,6 @@ static Metadata scan_file(const std::string& pathname, size_t size)
 
 void Tests::register_tests() {
 
-// Scan an ODIMH5 polar volume
-add_method("pvol", [] {
-    Metadata md = wcallchecked(scan_file("inbound/odimh5/PVOL_v20.h5", 320696));
-
-    // Check contents
-    wassert(actual(md).contains("origin", "ODIMH5(wmo,rad,plc)"));
-    wassert(actual(md).contains("product", "ODIMH5(PVOL,SCAN)"));
-    wassert(actual(md).contains("level", "ODIMH5(0,27)"));
-    wassert(actual(md).contains("reftime", "2000-01-02T03:04:05Z"));
-    wassert(actual(md).contains("task", "task"));
-    wassert(actual(md).contains("quantity", "ACRR,BRDR,CLASS,DBZH,DBZV,HGHT,KDP,LDR,PHIDP,QIND,RATE,RHOHV,SNR,SQI,TH,TV,UWND,VIL,VRAD,VWND,WRAD,ZDR,ad,ad_dev,chi2,dbz,dbz_dev,dd,dd_dev,def,def_dev,div,div_dev,ff,ff_dev,n,rhohv,rhohv_dev,w,w_dev,z,z_dev"));
-    wassert(actual(md).contains("area", "ODIMH5(lat=44456700,lon=11623600,radius=1000)"));
-});
-
 add_method("comp_cappi", [] {
     Metadata md = wcallchecked(scan_file("inbound/odimh5/COMP_CAPPI_v20.h5", 49113));
 
