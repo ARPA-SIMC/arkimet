@@ -11,6 +11,7 @@
 #include "arki/utils/string.h"
 #include "arki/runtime.h"
 #include "arki/scan/grib.h"
+#include "arki/nag.h"
 #include <grib_api.h>
 
 using namespace std;
@@ -125,8 +126,16 @@ protected:
 
         pyo_unique_ptr pygh((PyObject*)grib_create(gh));
         pyo_unique_ptr pymd((PyObject*)metadata_create(md));
-        pyo_unique_ptr obj(PyObject_CallMethod(
-                        gribscanner_object, "scan", "OO", pygh.get(), pymd.get()));
+        pyo_unique_ptr obj(throw_ifnull(PyObject_CallMethod(
+                        gribscanner_object, "scan", "OO", pygh.get(), pymd.get())));
+
+        // If use_count is > 1, it means we are potentially and unexpectedly
+        // holding all the metadata (and potentially their data) in memory,
+        // while a supported and important use case is to stream out one
+        // metadata at a time
+        pymd.reset(nullptr);
+        if (md.use_count() != 1)
+            arki::nag::warning("metadata use count after scanning is %ld instead of 1", md.use_count());
 
         return md;
     }
