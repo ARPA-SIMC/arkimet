@@ -78,24 +78,9 @@ const Validator& validator() { return bufr_validator; }
 }
 
 
-Bufr::Bufr()
-{
-    auto opts = ImporterOptions::create();
-    opts->simplified = true;
-    importer = Importer::create(dballe::Encoding::BUFR, *opts).release();
-
-#ifdef HAVE_LUA
-    extras = new bufr::BufrLua;
-#endif
-}
-
-Bufr::~Bufr()
-{
-	if (importer) delete importer;
-#ifdef HAVE_LUA
-	if (extras) delete extras;
-#endif
-}
+/*
+ * BufrScanner
+ */
 
 namespace {
 class Harvest
@@ -222,7 +207,19 @@ public:
 }
 
 
-void Bufr::do_scan(BinaryMessage& rmsg, Metadata& md)
+BufrScanner::BufrScanner()
+{
+    auto opts = ImporterOptions::create();
+    opts->simplified = true;
+    importer = Importer::create(dballe::Encoding::BUFR, *opts).release();
+}
+
+BufrScanner::~BufrScanner()
+{
+    if (importer) delete importer;
+}
+
+void BufrScanner::do_scan(BinaryMessage& rmsg, Metadata& md)
 {
     Harvest harvest(*importer);
     harvest.harvest_from_dballe(rmsg, md);
@@ -231,11 +228,11 @@ void Bufr::do_scan(BinaryMessage& rmsg, Metadata& md)
     md.set(move(harvest.origin));
     md.set(move(harvest.product));
 
-    if (extras && harvest.msg)
+    if (harvest.msg)
     {
-        // DB-All.e managed to make sense of the message: hand it down to Lua
-        // to extract further metadata
-        extras->scan(*harvest.msg, md);
+        // DB-All.e managed to make sense of the message: let the subclasser
+        // try to extract further metadata
+        scan_extra(*harvest.msg, md);
     }
 
     // Check that the date is a valid date, unset if it is rubbish
@@ -260,7 +257,7 @@ void Bufr::do_scan(BinaryMessage& rmsg, Metadata& md)
             md.set(timedef->validity_time_to_emission_time(*p));
 }
 
-std::shared_ptr<Metadata> Bufr::scan_data(const std::vector<uint8_t>& data)
+std::shared_ptr<Metadata> BufrScanner::scan_data(const std::vector<uint8_t>& data)
 {
     auto md = std::make_shared<Metadata>();
     md->set_source_inline("grib", metadata::DataManager::get().to_data("bufr", std::vector<uint8_t>(data)));
@@ -270,7 +267,7 @@ std::shared_ptr<Metadata> Bufr::scan_data(const std::vector<uint8_t>& data)
     return md;
 }
 
-bool Bufr::scan_segment(std::shared_ptr<segment::Reader> reader, metadata_dest_func dest)
+bool BufrScanner::scan_segment(std::shared_ptr<segment::Reader> reader, metadata_dest_func dest)
 {
     auto file = dballe::File::create(dballe::Encoding::BUFR, reader->segment().abspath.c_str(), "r");
     while (true)
@@ -286,7 +283,7 @@ bool Bufr::scan_segment(std::shared_ptr<segment::Reader> reader, metadata_dest_f
     return true;
 }
 
-std::shared_ptr<Metadata> Bufr::scan_singleton(const std::string& abspath)
+std::shared_ptr<Metadata> BufrScanner::scan_singleton(const std::string& abspath)
 {
     auto md = std::make_shared<Metadata>();
     auto file = dballe::File::create(dballe::Encoding::BUFR, abspath.c_str(), "r").release();
@@ -298,7 +295,7 @@ std::shared_ptr<Metadata> Bufr::scan_singleton(const std::string& abspath)
     return md;
 }
 
-bool Bufr::scan_pipe(core::NamedFileDescriptor& infd, metadata_dest_func dest)
+bool BufrScanner::scan_pipe(core::NamedFileDescriptor& infd, metadata_dest_func dest)
 {
     files::RAIIFILE in(infd, "rb");
     auto file = dballe::File::create(dballe::Encoding::BUFR, in, false, infd.name()).release();
@@ -314,16 +311,32 @@ bool Bufr::scan_pipe(core::NamedFileDescriptor& infd, metadata_dest_func dest)
     return true;
 }
 
-static inline void inplace_tolower(std::string& buf)
-{
-	for (std::string::iterator i = buf.begin(); i != buf.end(); ++i)
-		*i = tolower(*i);
-}
 
-int Bufr::update_sequence_number(const std::string& buf)
+int BufrScanner::update_sequence_number(const std::string& buf)
 {
     auto bulletin = BufrBulletin::decode_header(buf);
     return bulletin->update_sequence_number;
+}
+
+
+Bufr::Bufr()
+{
+#ifdef HAVE_LUA
+    extras = new bufr::BufrLua;
+#endif
+}
+
+Bufr::~Bufr()
+{
+#ifdef HAVE_LUA
+	if (extras) delete extras;
+#endif
+}
+
+void Bufr::scan_extra(dballe::Message& msg, Metadata& md)
+{
+    if (extras)
+        extras->scan(msg, md);
 }
 
 }
