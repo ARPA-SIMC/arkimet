@@ -35,7 +35,7 @@ void Tests::register_tests() {
 add_method("contiguous", [] {
     Metadata md;
     vector<uint8_t> buf;
-    scan::Bufr scanner;
+    scan::LuaBufrScanner scanner;
     metadata::Collection mds;
 
     scanner.test_scan_file("inbound/test.bufr", mds.inserter_func());
@@ -103,7 +103,7 @@ add_method("contiguous", [] {
 add_method("padded", [] {
     Metadata md;
     vector<uint8_t> buf;
-    scan::Bufr scanner;
+    scan::LuaBufrScanner scanner;
     metadata::Collection mds;
 
     scanner.test_scan_file("inbound/padded.bufr", mds.inserter_func());
@@ -200,7 +200,7 @@ add_method("validate", [] {
 // (note: it can now be fully decoded)
 add_method("partial", [] {
     Metadata md;
-    scan::Bufr scanner;
+    scan::LuaBufrScanner scanner;
     metadata::Collection mds;
 
     scanner.test_scan_file("inbound/C23000.bufr", mds.inserter_func());
@@ -230,7 +230,7 @@ add_method("partial", [] {
 // Test scanning a pollution BUFR file
 add_method("pollution", [] {
     Metadata md;
-    scan::Bufr scanner;
+    scan::LuaBufrScanner scanner;
     metadata::Collection mds;
 
     scanner.test_scan_file("inbound/pollution.bufr", mds.inserter_func());
@@ -256,7 +256,7 @@ add_method("pollution", [] {
 
 // Test scanning a BUFR file with undefined dates
 add_method("zerodate", [] {
-    scan::Bufr scanner;
+    scan::LuaBufrScanner scanner;
     metadata::Collection mds;
     scanner.test_scan_file("inbound/zerodate.bufr", mds.inserter_func());
     wassert(actual(mds.size()) == 1u);
@@ -267,7 +267,7 @@ add_method("zerodate", [] {
 
 // Test scanning a ship
 add_method("ship", [] {
-    scan::Bufr scanner;
+    scan::LuaBufrScanner scanner;
     metadata::Collection mds;
     scanner.test_scan_file("inbound/ship.bufr", mds.inserter_func());
     wassert(actual(mds.size()) == 1u);
@@ -277,7 +277,7 @@ add_method("ship", [] {
 
 // Test scanning an amdar
 add_method("amdar", [] {
-    scan::Bufr scanner;
+    scan::LuaBufrScanner scanner;
     metadata::Collection mds;
     scanner.test_scan_file("inbound/amdar.bufr", mds.inserter_func());
     wassert(actual(mds[0]).contains("area", "GRIB(x=21, y=64, type=mob)"));
@@ -286,7 +286,7 @@ add_method("amdar", [] {
 
 // Test scanning an airep
 add_method("airep", [] {
-    scan::Bufr scanner;
+    scan::LuaBufrScanner scanner;
     metadata::Collection mds;
     scanner.test_scan_file("inbound/airep.bufr", mds.inserter_func());
     wassert(actual(mds[0]).contains("area", "GRIB(x=-54, y=51, type=mob)"));
@@ -295,7 +295,7 @@ add_method("airep", [] {
 
 // Test scanning an acars
 add_method("acars", [] {
-    scan::Bufr scanner;
+    scan::LuaBufrScanner scanner;
     metadata::Collection mds;
     scanner.test_scan_file("inbound/acars.bufr", mds.inserter_func());
     wassert(actual(mds[0]).contains("area", "GRIB(x=-88, y=39, type=mob)"));
@@ -304,7 +304,7 @@ add_method("acars", [] {
 
 // Test scanning a GTS synop
 add_method("gts", [] {
-    scan::Bufr scanner;
+    scan::LuaBufrScanner scanner;
     metadata::Collection mds;
     scanner.test_scan_file("inbound/synop-gts.bufr", mds.inserter_func());
     wassert(actual(mds[0]).contains("area", "GRIB(lat=4586878, lon=717080)"));
@@ -313,7 +313,7 @@ add_method("gts", [] {
 
 // Test scanning a message with a different date in the header than in its contents
 add_method("date_mismatch", [] {
-    scan::Bufr scanner;
+    scan::LuaBufrScanner scanner;
     metadata::Collection mds;
     scanner.test_scan_file("inbound/synop-gts-different-date-in-header.bufr", mds.inserter_func());
     wassert(actual(mds[0]).contains("area", "GRIB(lat=4586878, lon=717080)"));
@@ -322,7 +322,7 @@ add_method("date_mismatch", [] {
 
 // Test scanning a message which raises domain errors when interpreted
 add_method("out_of_range", [] {
-    scan::Bufr scanner;
+    scan::LuaBufrScanner scanner;
     metadata::Collection mds;
     scanner.test_scan_file("inbound/interpreted-range.bufr", mds.inserter_func());
     wassert(actual(mds[0]).contains("Area", "GRIB(type=mob, x=10, y=53)"));
@@ -332,7 +332,7 @@ add_method("out_of_range", [] {
 // Test scanning a temp forecast, to see if we got the right reftime
 add_method("temp_reftime", [] {
     // BUFR has datetime 2009-02-13 12:00:00, timerange instant
-    scan::Bufr scanner;
+    scan::LuaBufrScanner scanner;
     metadata::Collection mds;
     scanner.test_scan_file("inbound/tempforecast.bufr", mds.inserter_func());
     wassert(actual(mds[0]).contains("reftime", "2009-02-13 12:00:00"));
@@ -346,7 +346,7 @@ add_method("temp_reftime", [] {
 
 // Test scanning a bufr with all sorts of wrong dates
 add_method("wrongdate", [] {
-    scan::Bufr scanner;
+    scan::LuaBufrScanner scanner;
     metadata::Collection mds;
     wassert(scanner.test_scan_file("inbound/wrongdate.bufr", mds.inserter_func()));
     wassert(actual(mds.size()) == 6u);

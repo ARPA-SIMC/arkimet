@@ -51,15 +51,15 @@ public:
 /**
  * Scan files for BUFR messages
  */
-class Bufr : public BufrScanner
+class LuaBufrScanner : public BufrScanner
 {
     bufr::BufrLua* extras = nullptr;
 
     void scan_extra(dballe::Message& msg, Metadata& md) override;
 
 public:
-    Bufr();
-    ~Bufr();
+    LuaBufrScanner();
+    ~LuaBufrScanner();
 };
 
 }
