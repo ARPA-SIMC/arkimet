@@ -212,15 +212,6 @@ void Metadata::add_note(const std::string& note)
     Note(note).encodeBinary(enc);
 }
 
-void Metadata::clear()
-{
-    ItemSet::clear();
-    m_vals.clear();
-    m_notes.clear();
-    delete m_source;
-    m_source = 0;
-}
-
 bool Metadata::operator==(const Metadata& m) const
 {
     if (!ItemSet::operator==(m)) return false;
