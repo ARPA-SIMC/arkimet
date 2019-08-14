@@ -47,35 +47,6 @@ static Metadata scan_file(const std::string& pathname, size_t size)
 
 void Tests::register_tests() {
 
-add_method("comp_cappi", [] {
-    Metadata md = wcallchecked(scan_file("inbound/odimh5/COMP_CAPPI_v20.h5", 49113));
-
-    // Check the source info
-    wassert(actual(md.source().cloneType()).is_source_blob("odimh5", sys::abspath("."), "inbound/odimh5/COMP_CAPPI_v20.h5", 0, 49113));
-
-    // Check contents
-    wassert(actual(md).contains("origin", "ODIMH5(16144,IY46,itspc)"));
-    wassert(actual(md).contains("product", "ODIMH5(COMP,CAPPI)"));
-    wassert(actual(md).contains("level", "GRIB1(105,10)"));
-    wassert(actual(md).contains("reftime", "2013-03-18T14:30:00Z"));
-    wassert(actual(md).contains("task", "ZLR-BB"));
-    wassert(actual(md).contains("quantity", "DBZH"));
-    wassert(actual(md).contains("area", "GRIB(latfirst=42314117,lonfirst=8273203,latlast=46912151,lonlast=14987079,type=0)"));
-});
-
-add_method("comp_etop", [] {
-    Metadata md = wcallchecked(scan_file("inbound/odimh5/COMP_ETOP_v20.h5", 49113));
-
-    // Check contents
-    wassert(actual(md).contains("origin", "ODIMH5(16144,IY46,itspc)"));
-    wassert(actual(md).contains("product", "ODIMH5(COMP,ETOP)"));
-    wassert_false(md.get(TYPE_LEVEL));
-    wassert(actual(md).contains("reftime", "2013-03-18T14:30:00Z"));
-    wassert(actual(md).contains("task", "ZLR-BB"));
-    wassert(actual(md).contains("quantity", "HGHT"));
-    wassert(actual(md).contains("area", "GRIB(latfirst=42314117,lonfirst=8273203,latlast=46912151,lonlast=14987079,type=0)"));
-});
-
 add_method("comp_lbm", [] {
     Metadata md = wcallchecked(scan_file("inbound/odimh5/COMP_LBM_v20.h5", 49057));
 
