@@ -9,6 +9,10 @@
 #include <openssl/evp.h>
 #include <cstdlib>
 
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+#include <openssl/engine.h>
+#endif
+
 using namespace std;
 using namespace arki::types;
 using namespace arki::utils;
@@ -61,6 +65,15 @@ static const char* hex[] = {
 
 // From https://wiki.openssl.org/index.php/OpenSSL_1.1.0_Changes
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
+void *OPENSSL_zalloc(size_t num)
+{
+    void *ret = OPENSSL_malloc(num);
+
+    if (ret != NULL)
+        memset(ret, 0, num);
+    return ret;
+}
+
 EVP_MD_CTX *EVP_MD_CTX_new(void)
 {
     return OPENSSL_zalloc(sizeof(EVP_MD_CTX));
