@@ -14,6 +14,7 @@
 #include "arki/types/run.h"
 #include "arki/types/timerange.h"
 #include "arki/scan/validator.h"
+#include "arki/scan/mock.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/files.h"
 #include "arki/libconfig.h"
@@ -232,7 +233,7 @@ void BufrScanner::do_scan(BinaryMessage& rmsg, std::shared_ptr<Metadata> md)
     {
         // DB-All.e managed to make sense of the message: let the subclasser
         // try to extract further metadata
-        scan_extra(*harvest.msg, md);
+        scan_extra(rmsg, *harvest.msg, md);
     }
 
     // Check that the date is a valid date, unset if it is rubbish
@@ -319,6 +320,32 @@ int BufrScanner::update_sequence_number(const std::string& buf)
 }
 
 
+/*
+ * MockBufrScanner
+ */
+
+MockBufrScanner::MockBufrScanner()
+{
+    engine = new MockEngine();
+}
+
+MockBufrScanner::~MockBufrScanner()
+{
+    delete engine;
+}
+
+void MockBufrScanner::scan_extra(dballe::BinaryMessage& rmsg, dballe::Message& msg, std::shared_ptr<Metadata> md)
+{
+    auto new_md = engine->lookup(reinterpret_cast<const uint8_t*>(rmsg.data.data()), rmsg.data.size());
+    for (const auto& i: *new_md)
+        md->set(*i.second);
+}
+
+
+/*
+ * LuaBufrScanner
+ */
+
 LuaBufrScanner::LuaBufrScanner()
 {
 #ifdef HAVE_LUA
@@ -333,7 +360,7 @@ LuaBufrScanner::~LuaBufrScanner()
 #endif
 }
 
-void LuaBufrScanner::scan_extra(dballe::Message& msg, std::shared_ptr<Metadata> md)
+void LuaBufrScanner::scan_extra(dballe::BinaryMessage& rmsg, dballe::Message& msg, std::shared_ptr<Metadata> md)
 {
     if (extras)
         extras->scan(msg, *md);
