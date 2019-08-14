@@ -183,6 +183,7 @@ install -D -m 0644 -p %{SOURCE3} %{buildroot}%{_sysconfdir}/logrotate.d/%{name}
 %{_sysconfdir}/arkimet/format/*
 %{_sysconfdir}/arkimet/qmacro/*
 %{_sysconfdir}/arkimet/report/*
+%{_sysconfdir}/arkimet/scan/*
 %{_sysconfdir}/arkimet/scan-bufr/*
 %{_sysconfdir}/arkimet/scan-grib1/*
 %{_sysconfdir}/arkimet/scan-grib2/*
