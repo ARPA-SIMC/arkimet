@@ -11,6 +11,7 @@
 
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
 #include <openssl/engine.h>
+#include <cstring>
 #endif
 
 using namespace std;
