@@ -11,8 +11,13 @@
 #include "arki/utils/string.h"
 #include "arki/runtime.h"
 #include "arki/scan/grib.h"
+#include "arki/scan/bufr.h"
 #include "arki/nag.h"
 #include <grib_api.h>
+#include <dballe/message.h>
+#include <dballe/var.h>
+#include <wreport/python.h>
+
 
 using namespace std;
 using namespace arki;
@@ -23,10 +28,21 @@ using namespace arki::python;
 extern "C" {
 
 PyTypeObject* arkipy_scan_Grib_Type = nullptr;
+PyTypeObject* arkipy_scan_BufrMessage_Type = nullptr;
 
 }
 
 namespace {
+
+// Index to the wreport python API
+wrpy_c_api* wrpy = 0;
+
+// Pointer to the arkimet module
+PyObject* module_arkimet = nullptr;
+
+// Pointer to the scanners module
+PyObject* module_scanners = nullptr;
+
 
 /// Load scripts from the dir_scan configuration directory
 void load_scanners()
@@ -38,13 +54,21 @@ void load_scanners()
     if (scanners_loaded)
         return;
 
+    // Get the name of the scanners module
+    if (!module_scanners || !module_arkimet)
+        throw std::runtime_error("load_scanners was called before the _arkimet.scan module has been initialized");
+
+    std::string base = PyModule_GetName(module_arkimet);
+    base += ".";
+    base += PyModule_GetName(module_scanners);
+
     std::vector<std::string> sources = arki::Config::get().dir_scan.list_files(".py");
     for (const auto& source: sources)
     {
         std::string basename = str::basename(source);
 
         // Check if the scanner module had already been imported
-        std::string module_name = "arkimet.scanners." + basename.substr(0, basename.size() - 3);
+        std::string module_name = base + "." + basename.substr(0, basename.size() - 3);
         pyo_unique_ptr py_module_name(string_to_python(module_name));
         pyo_unique_ptr module(ArkiPyImport_GetModule(py_module_name));
         if (PyErr_Occurred())
@@ -195,64 +219,6 @@ struct get_long : public MethKwargs<get_long, arkipy_scan_Grib>
     }
 };
 
-#if 0
-
-// Lookup a grib value for grib.<fieldname>
-int GribLua::arkilua_lookup_gribs(lua_State* L)
-{
-    GribLua& s = get_griblua(L, 1, "gribs");
-    grib_handle* gh = s.gh;
-
-	// Get the name to lookup from lua
-	// (we use 2 because 1 is the table, since we are a __index function)
-	luaL_checkstring(L, 2);
-	const char* name = lua_tostring(L, 2);
-
-	// Push the function result for lua
-	const int maxsize = 1000;
-	char buf[maxsize];
-	size_t len = maxsize;
-	int res = grib_get_string(gh, name, buf, &len);
-	if (res == GRIB_NOT_FOUND)
-	{
-		lua_pushnil(L);
-	} else {
-		arkilua_check_gribapi(L, res, "reading string value");
-		if (len > 0) --len;
-		lua_pushlstring(L, buf, len);
-	}
-
-	// Number of values we're returning to lua
-	return 1;
-}
-
-// Lookup a grib value for grib.<fieldname>
-int GribLua::arkilua_lookup_gribd(lua_State* L)
-{
-    GribLua& s = get_griblua(L, 1, "gribd");
-    grib_handle* gh = s.gh;
-
-	// Get the name to lookup from lua
-	// (we use 2 because 1 is the table, since we are a __index function)
-	luaL_checkstring(L, 2);
-	const char* name = lua_tostring(L, 2);
-
-	// Push the function result for lua
-	double val;
-	int res = grib_get_double(gh, name, &val);
-	if (res == GRIB_NOT_FOUND)
-	{
-		lua_pushnil(L);
-	} else {
-		arkilua_check_gribapi(L, res, "reading double value");
-		lua_pushnumber(L, val);
-	}
-
-	// Number of values we're returning to lua
-	return 1;
-}
-#endif
-
 struct GribDef : public Type<GribDef, arkipy_scan_Grib>
 {
     constexpr static const char* name = "Grib";
@@ -348,6 +314,232 @@ GribDef* grib_def = nullptr;
 
 
 /*
+ * scan.bufr module contents
+ */
+
+arkipy_scan_BufrMessage* bufrmessage_create(dballe::Message& msg)
+{
+    arkipy_scan_BufrMessage* result = PyObject_New(arkipy_scan_BufrMessage, arkipy_scan_BufrMessage_Type);
+    if (!result) throw PythonException();
+    result->msg = &msg;
+    return result;
+}
+
+PyObject* bufrscanner_object = nullptr;
+
+void load_bufrscanner_object()
+{
+    load_scanners();
+
+    // Get arkimet.scan.bufr.BufrScanner
+    pyo_unique_ptr module(throw_ifnull(PyImport_ImportModule("arkimet.scan.bufr")));
+    pyo_unique_ptr cls(throw_ifnull(PyObject_GetAttrString(module, "Scanner")));
+    pyo_unique_ptr obj(throw_ifnull(PyObject_CallFunction(cls, nullptr)));
+
+    // Hold a reference to arki.python.BBox forever once loaded the first time
+    bufrscanner_object = obj.release();
+}
+
+
+class PythonBufrScanner : public arki::scan::BufrScanner
+{
+protected:
+    void scan_extra(dballe::Message& msg, std::shared_ptr<Metadata> md) override
+    {
+        auto orig_use_count = md.use_count();
+
+        AcquireGIL gil;
+        if (!bufrscanner_object)
+            load_bufrscanner_object();
+
+        pyo_unique_ptr pymsg((PyObject*)bufrmessage_create(msg));
+        pyo_unique_ptr pymd((PyObject*)metadata_create(md));
+        pyo_unique_ptr obj(throw_ifnull(PyObject_CallMethod(
+                        bufrscanner_object, "scan", "OO", pymsg.get(), pymd.get())));
+
+        // If use_count is > 1, it means we are potentially and unexpectedly
+        // holding all the metadata (and potentially their data) in memory,
+        // while a supported and important use case is to stream out one
+        // metadata at a time
+        pymd.reset(nullptr);
+        if (md.use_count() != orig_use_count)
+            arki::nag::warning("metadata use count after scanning is %ld instead of %ld", md.use_count(), orig_use_count);
+    }
+
+public:
+    PythonBufrScanner()
+    {
+    }
+    virtual ~PythonBufrScanner()
+    {
+    }
+};
+
+
+// FIXME: implement exporting a capsule with API functions in dballe, and use it here
+
+struct msg_type : public Getter<msg_type, arkipy_scan_BufrMessage>
+{
+    constexpr static const char* name = "type";
+    constexpr static const char* doc = "return the BUFR message type";
+    constexpr static void* closure = nullptr;
+
+    static PyObject* get(Impl* self, void* closure)
+    {
+        try {
+            std::string name = str::lower(dballe::format_message_type(self->msg->get_type()));
+            return to_python(name);
+        } ARKI_CATCH_RETURN_PYO;
+    }
+};
+
+struct msg_get_named : public MethKwargs<msg_get_named, arkipy_scan_BufrMessage>
+{
+    constexpr static const char* name = "get_named";
+    constexpr static const char* signature = "name: str";
+    constexpr static const char* returns = "Optional[dballe.Var]";
+    constexpr static const char* summary = "return the variable given its shortcut name, or None of not found";
+    constexpr static const char* doc = nullptr;
+
+    static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
+    {
+        static const char* kwlist[] = { "name", NULL };
+        const char* name = nullptr;
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "s", (char**)kwlist, &name))
+            return nullptr;
+
+        try {
+            const wreport::Var* res = self->msg->get(name);
+            if (!res)
+                Py_RETURN_NONE;
+            else
+                return (PyObject*)wrpy->var_create_copy(*res);
+        } ARKI_CATCH_RETURN_PYO
+    }
+};
+
+wreport::Varcode varcode_from_python(PyObject* o)
+{
+    return dballe::resolve_varcode(from_python<std::string>(o));
+}
+
+struct msg_get : MethKwargs<msg_get, arkipy_scan_BufrMessage>
+{
+    constexpr static const char* name = "get";
+    constexpr static const char* signature = "level: dballe.Level, trange: dballe.Trange, code: str";
+    constexpr static const char* returns = "Optional[dballe.Var]";
+    constexpr static const char* summary = "Get a Var given its level, timerange, and varcode; returns None if not found";
+
+    static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
+    {
+        static const char* kwlist[] = { "level", "trange", "code", nullptr };
+        PyObject* pylevel = nullptr;
+        PyObject* pytrange = nullptr;
+        PyObject* pycode = nullptr;
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "OOO", const_cast<char**>(kwlist), &pylevel, &pytrange, &pycode))
+            return nullptr;
+
+        try {
+            if (pylevel && pylevel != Py_None)
+            {
+                PyErr_SetString(PyExc_NotImplementedError, "dballe message lookup by level is not implemented");
+                throw PythonException();
+            }
+            if (pytrange && pytrange != Py_None)
+            {
+                PyErr_SetString(PyExc_NotImplementedError, "dballe message lookup by timerange is not implemented");
+                throw PythonException();
+            }
+            dballe::Level level;
+            dballe::Trange trange;
+            wreport::Varcode code = varcode_from_python(pycode);
+
+            const wreport::Var* res = self->msg->get(level, trange, code);
+            if (!res)
+                Py_RETURN_NONE;
+            else
+                return (PyObject*)wrpy->var_create_copy(*res);
+        } ARKI_CATCH_RETURN_PYO
+    }
+};
+
+PyObject* varcode_to_python(wreport::Varcode code)
+{
+    char buf[7];
+    snprintf(buf, 7, "%c%02d%03d",
+            WR_VAR_F(code) == 0 ? 'B' :
+            WR_VAR_F(code) == 1 ? 'R' :
+            WR_VAR_F(code) == 2 ? 'C' :
+            WR_VAR_F(code) == 3 ? 'D' : '?',
+            WR_VAR_X(code), WR_VAR_Y(code));
+    return throw_ifnull(PyUnicode_FromString(buf));
+}
+
+
+// TODO: implement in python when we can use dballe's dballe.Message
+struct msg_get_pollution_type : public MethNoargs<msg_get_pollution_type, arkipy_scan_BufrMessage>
+{
+    constexpr static const char* name = "get_pollution_type";
+    constexpr static const char* signature = "";
+    constexpr static const char* returns = "Optional[str]";
+    constexpr static const char* summary = "get the pollution varcode for message, if present, or None otherwise";
+
+    static PyObject* run(Impl* self)
+    {
+        try {
+            wreport::Varcode code = 0;
+            self->msg->foreach_var([&](const dballe::Level& level, const dballe::Trange& trange, const wreport::Var& var) {
+                if (trange.is_missing())
+                    return true;
+                code = var.code();
+                return false;
+            });
+
+            if (code != 0)
+                return varcode_to_python(code);
+            else
+                Py_RETURN_NONE;
+        } ARKI_CATCH_RETURN_PYO
+    }
+};
+
+struct BufrMessageDef : public Type<BufrMessageDef, arkipy_scan_BufrMessage>
+{
+    constexpr static const char* name = "BufrMessage";
+    constexpr static const char* qual_name = "arkimet.scan.grib.BufrMessage";
+    constexpr static const char* doc = R"(
+Access grib message contents
+)";
+    GetSetters<msg_type> getsetters;
+    Methods<msg_get_named, msg_get, msg_get_pollution_type> methods;
+
+    static void _dealloc(Impl* self)
+    {
+        Py_TYPE(self)->tp_free(self);
+    }
+
+    static PyObject* _str(Impl* self)
+    {
+        return PyUnicode_FromString("BufrMessage");
+    }
+
+    static PyObject* _repr(Impl* self)
+    {
+        return PyUnicode_FromString("BufrMessage");
+    }
+
+    static int _init(Impl* self, PyObject* args, PyObject* kw)
+    {
+        // BufrMessage() should not be invoked as a constructor
+        PyErr_SetString(PyExc_NotImplementedError, "BufrMessage objects cannot be constructed explicitly");
+        return -1;
+    }
+};
+
+BufrMessageDef* bufrmessage_def = nullptr;
+
+
+/*
  * scan.vm2 module functions
  */
 
@@ -398,7 +590,9 @@ struct vm2_get_variable : public MethKwargs<vm2_get_variable, PyObject>
 };
 
 Methods<> scan_methods;
+Methods<> scanners_methods;
 Methods<> grib_methods;
+Methods<> bufr_methods;
 Methods<vm2_get_station, vm2_get_variable> vm2_methods;
 
 }
@@ -407,10 +601,22 @@ extern "C" {
 
 static PyModuleDef scan_module = {
     PyModuleDef_HEAD_INIT,
-    "scan",         /* m_name */
+    "scan",            /* m_name */
     "Arkimet format-specific functions",  /* m_doc */
-    -1,             /* m_size */
-    scan_methods.as_py(),    /* m_methods */
+    -1,                /* m_size */
+    scan_methods.as_py(),  /* m_methods */
+    nullptr,           /* m_slots */
+    nullptr,           /* m_traverse */
+    nullptr,           /* m_clear */
+    nullptr,           /* m_free */
+};
+
+static PyModuleDef scanners_module = {
+    PyModuleDef_HEAD_INIT,
+    "scanners",            /* m_name */
+    "Arkimet scanner code",  /* m_doc */
+    -1,                /* m_size */
+    scanners_methods.as_py(),  /* m_methods */
     nullptr,           /* m_slots */
     nullptr,           /* m_traverse */
     nullptr,           /* m_clear */
@@ -419,10 +625,22 @@ static PyModuleDef scan_module = {
 
 static PyModuleDef grib_module = {
     PyModuleDef_HEAD_INIT,
-    "grib",         /* m_name */
+    "grib",            /* m_name */
     "Arkimet GRIB-specific functions",  /* m_doc */
-    -1,             /* m_size */
-    grib_methods.as_py(),    /* m_methods */
+    -1,                /* m_size */
+    grib_methods.as_py(),  /* m_methods */
+    nullptr,           /* m_slots */
+    nullptr,           /* m_traverse */
+    nullptr,           /* m_clear */
+    nullptr,           /* m_free */
+};
+
+static PyModuleDef bufr_module = {
+    PyModuleDef_HEAD_INIT,
+    "bufr",            /* m_name */
+    "Arkimet BUFR-specific functions",  /* m_doc */
+    -1,                /* m_size */
+    bufr_methods.as_py(),  /* m_methods */
     nullptr,           /* m_slots */
     nullptr,           /* m_traverse */
     nullptr,           /* m_clear */
@@ -431,10 +649,10 @@ static PyModuleDef grib_module = {
 
 static PyModuleDef vm2_module = {
     PyModuleDef_HEAD_INIT,
-    "vm2",         /* m_name */
+    "vm2",             /* m_name */
     "Arkimet VM2-specific functions",  /* m_doc */
-    -1,             /* m_size */
-    vm2_methods.as_py(),    /* m_methods */
+    -1,                /* m_size */
+    vm2_methods.as_py(),  /* m_methods */
     nullptr,           /* m_slots */
     nullptr,           /* m_traverse */
     nullptr,           /* m_clear */
@@ -448,17 +666,49 @@ namespace python {
 
 void register_scan(PyObject* m)
 {
+    if (!wrpy)
+    {
+        pyo_unique_ptr module(throw_ifnull(PyImport_ImportModule("wreport")));
+
+        wrpy = (wrpy_c_api*)PyCapsule_Import("_wreport._C_API", 0);
+        if (!wrpy)
+            throw PythonException();
+
+#if 0
+        // TODO: uncomment when the new wreport has been widely deployed
+        if (wrpy->version_major != 1)
+        {
+            PyErr_Format(PyExc_RuntimeError, "wreport C API version is %d.%d but only 1.x is supported", wrpy->version_major, wrpy->version_minor);
+            throw PythonException();
+        }
+#endif
+    }
+
     pyo_unique_ptr grib = throw_ifnull(PyModule_Create(&grib_module));
     grib_def = new GribDef;
     grib_def->define(arkipy_scan_Grib_Type, grib);
 
+    pyo_unique_ptr bufr = throw_ifnull(PyModule_Create(&bufr_module));
+    bufrmessage_def = new BufrMessageDef;
+    bufrmessage_def->define(arkipy_scan_BufrMessage_Type, bufr);
+
     pyo_unique_ptr vm2 = throw_ifnull(PyModule_Create(&vm2_module));
     pyo_unique_ptr scan = throw_ifnull(PyModule_Create(&scan_module));
+    pyo_unique_ptr scanners = throw_ifnull(PyModule_Create(&scanners_module));
+
+    module_arkimet = m;
+    module_scanners = scanners;
 
     if (PyModule_AddObject(scan, "grib", grib.release()) == -1)
         throw PythonException();
 
+    if (PyModule_AddObject(scan, "bufr", bufr.release()) == -1)
+        throw PythonException();
+
     if (PyModule_AddObject(scan, "vm2", vm2.release()) == -1)
+        throw PythonException();
+
+    if (PyModule_AddObject(scan, "scanners", scanners.release()) == -1)
         throw PythonException();
 
     if (PyModule_AddObject(m, "scan", scan.release()) == -1)
@@ -470,6 +720,9 @@ void init()
 {
     arki::scan::Scanner::register_factory("grib", [] {
         return std::unique_ptr<arki::scan::Scanner>(new PythonGribScanner);
+    });
+    arki::scan::Scanner::register_factory("bufr", [] {
+        return std::unique_ptr<arki::scan::Scanner>(new PythonBufrScanner);
     });
 }
 }
