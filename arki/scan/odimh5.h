@@ -20,26 +20,36 @@ const Validator& validator();
 
 struct OdimH5Lua;
 
-class OdimH5 : public Scanner
+class OdimScanner : public Scanner
 {
-public:
-    OdimH5();
-    virtual ~OdimH5();
+    void set_blob_source(Metadata& md, std::shared_ptr<segment::Reader> reader);
 
+protected:
+    virtual std::shared_ptr<Metadata> scan_h5_file(const std::string& pathname) = 0;
+    virtual std::shared_ptr<Metadata> scan_h5_data(const std::vector<uint8_t>& data);
+
+public:
     std::string name() const override { return "odimh5"; }
+
     std::shared_ptr<Metadata> scan_data(const std::vector<uint8_t>& data) override;
     bool scan_pipe(core::NamedFileDescriptor& in, metadata_dest_func dest) override;
     bool scan_segment(std::shared_ptr<segment::Reader> reader, metadata_dest_func dest) override;
     std::shared_ptr<Metadata> scan_singleton(const std::string& abspath) override;
+};
+
+
+class LuaOdimScanner : public OdimScanner
+{
+public:
+    LuaOdimScanner();
+    virtual ~LuaOdimScanner();
 
 protected:
     hid_t h5file;
     std::vector<int> odimh5_funcs;
     OdimH5Lua* L;
 
-    void scan_file_impl(const std::string& filename, Metadata& md);
-    void set_inline_source(Metadata& md, const std::string& abspath);
-    void set_blob_source(Metadata& md, std::shared_ptr<segment::Reader> reader);
+    std::shared_ptr<Metadata> scan_h5_file(const std::string& pathname) override;
 
     /**
      * Run Lua scanning functions on \a md

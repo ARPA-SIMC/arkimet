@@ -77,20 +77,91 @@ const Validator& validator() { return odimh5_validator; }
 }
 
 
+/*
+ * OdimScanner
+ */
+
+void OdimScanner::set_blob_source(Metadata& md, std::shared_ptr<segment::Reader> reader)
+{
+    struct stat st;
+    sys::stat(reader->segment().abspath, st);
+    stringstream note;
+    note << "Scanned from " << str::basename(reader->segment().relpath);
+    md.add_note(note.str());
+    md.set_source(Source::createBlob(reader, 0, st.st_size));
+}
+
+std::shared_ptr<Metadata> OdimScanner::scan_h5_data(const std::vector<uint8_t>& data)
+{
+    sys::Tempfile tmpfd;
+    tmpfd.write_all_or_throw(data.data(), data.size());
+    return scan_h5_file(tmpfd.name());
+}
+
+std::shared_ptr<Metadata> OdimScanner::scan_data(const std::vector<uint8_t>& data)
+{
+    std::shared_ptr<Metadata> md = scan_h5_data(data);
+    md->set_source_inline("odimh5", metadata::DataManager::get().to_data("odimh5", std::vector<uint8_t>(data)));
+    return md;
+}
+
+std::shared_ptr<Metadata> OdimScanner::scan_singleton(const std::string& abspath)
+{
+    return scan_h5_file(abspath);
+}
+
+bool OdimScanner::scan_segment(std::shared_ptr<segment::Reader> reader, metadata_dest_func dest)
+{
+    // If the file is empty, skip it
+    auto st = sys::stat(reader->segment().abspath);
+    if (!st) return true;
+    if (S_ISDIR(st->st_mode))
+        throw std::runtime_error("OdimH5::scan_segment cannot be called on directory segments");
+    if (!st->st_size) return true;
+
+    auto md = scan_h5_file(reader->segment().abspath);
+    set_blob_source(*md, reader);
+    return dest(md);
+}
+
+bool OdimScanner::scan_pipe(core::NamedFileDescriptor& in, metadata_dest_func dest)
+{
+    // Read all in a buffer
+    std::vector<uint8_t> buf;
+    const unsigned blocksize = 4096;
+    while (true)
+    {
+        buf.resize(buf.size() + blocksize);
+        unsigned read = in.read(buf.data() + buf.size() - blocksize, blocksize);
+        if (read < blocksize)
+        {
+            buf.resize(buf.size() - blocksize + read);
+            break;
+        }
+    }
+
+    return dest(scan_data(buf));
+}
+
+
+/*
+ * LuaOdimScanner
+ */
+
 struct OdimH5Lua : public Lua {
-    OdimH5Lua(OdimH5* scanner) {
+    OdimH5Lua(LuaOdimScanner* scanner) {
         // Create the metatable for the odimh5 object
         luaL_newmetatable(L, "odimh5");
 
         lua_pushvalue(L, -1);
         lua_setfield(L, -2, "__index"); // metatable.__index = metatable
-        lua_pushcfunction(L, OdimH5::arkilua_find_attr);
+        lua_pushcfunction(L, LuaOdimScanner::arkilua_find_attr);
         lua_setfield(L, -2, "find_attr");
-        lua_pushcfunction(L, OdimH5::arkilua_get_groups);
+        lua_pushcfunction(L, LuaOdimScanner::arkilua_get_groups);
         lua_setfield(L, -2, "get_groups");
 
-        // The 'odimh5' object is a userdata that holds a pointer to this OdimH5 structure
-        OdimH5** s = (OdimH5**)lua_newuserdata(L, sizeof(OdimH5*));
+        // The 'odimh5' object is a userdata that holds a pointer to this LuaOdimScanner structure
+        LuaOdimScanner** s = (LuaOdimScanner**)lua_newuserdata(L, sizeof(LuaOdimScanner*));
         *s = scanner;
 
         // Set the metatable for the userdata
@@ -170,32 +241,33 @@ struct OdimH5Lua : public Lua {
     }
 };
 
-OdimH5::OdimH5()
+LuaOdimScanner::LuaOdimScanner()
     : h5file(-1), L(new OdimH5Lua(this))
 {
     L->load_scan_functions(Config::get().dir_scan_odimh5, odimh5_funcs);
 }
 
-OdimH5::~OdimH5()
+LuaOdimScanner::~LuaOdimScanner()
 {
     if (h5file >= 0) H5Fclose(h5file);
     delete L;
 }
 
-void OdimH5::scan_file_impl(const std::string& filename, Metadata& md)
+std::shared_ptr<Metadata> LuaOdimScanner::scan_h5_file(const std::string& pathname)
 {
     using namespace arki::utils::h5;
     MuteErrors h5e;
-    if ((h5file = H5Fopen(filename.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT)) < 0)
-        throw std::runtime_error(filename + " is not an hdf5 file");
+    if ((h5file = H5Fopen(pathname.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT)) < 0)
+        throw std::runtime_error(pathname + " is not an hdf5 file");
 
-    /* NOTA: per ora la next estrare un metadato unico per un intero file */
+    auto md = std::make_shared<Metadata>();
+
     try {
-        scanLua(md);
+        scanLua(*md);
     } catch (const std::exception& e) {
         H5Fclose(h5file);
         h5file = -1;
-        throw std::runtime_error("cannot scan file " + filename + ": " + e.what());
+        throw std::runtime_error("cannot scan file " + pathname + ": " + e.what());
     }
 
     if (h5file >= 0)
@@ -203,102 +275,11 @@ void OdimH5::scan_file_impl(const std::string& filename, Metadata& md)
         H5Fclose(h5file);
         h5file = -1;
     }
-}
-
-std::shared_ptr<Metadata> OdimH5::scan_data(const std::vector<uint8_t>& data)
-{
-    sys::File tmpfd = sys::File::mkstemp("");
-    tmpfd.write_all_or_throw(data.data(), data.size());
-    tmpfd.close();
-
-    std::shared_ptr<Metadata> md(new Metadata);
-    md->set_source_inline("odimh5", metadata::DataManager::get().to_data("odimh5", std::vector<uint8_t>(data)));
-
-    try {
-        scan_file_impl(tmpfd.name(), *md);
-    } catch (...) {
-        sys::unlink(tmpfd.name());
-        throw;
-    }
-
-    sys::unlink(tmpfd.name());
 
     return md;
 }
 
-std::shared_ptr<Metadata> OdimH5::scan_singleton(const std::string& abspath)
-{
-    auto md = std::make_shared<Metadata>();
-    scan_file_impl(abspath, *md);
-    return md;
-}
-
-bool OdimH5::scan_segment(std::shared_ptr<segment::Reader> reader, metadata_dest_func dest)
-{
-    // If the file is empty, skip it
-    auto st = sys::stat(reader->segment().abspath);
-    if (!st) return true;
-    if (S_ISDIR(st->st_mode))
-        throw std::runtime_error("OdimH5::scan_segment cannot be called on directory segments");
-    if (!st->st_size) return true;
-
-    unique_ptr<Metadata> md(new Metadata);
-    set_blob_source(*md, reader);
-    scan_file_impl(reader->segment().abspath, *md);
-    return dest(std::move(md));
-}
-
-bool OdimH5::scan_pipe(core::NamedFileDescriptor& in, metadata_dest_func dest)
-{
-    // Read all in a buffer
-    std::vector<uint8_t> buf;
-    const unsigned blocksize = 4096;
-    while (true)
-    {
-        buf.resize(buf.size() + blocksize);
-        unsigned read = in.read(buf.data() + buf.size() - blocksize, blocksize);
-        if (read < blocksize)
-        {
-            buf.resize(buf.size() - blocksize + read);
-            break;
-        }
-    }
-
-    std::shared_ptr<Metadata> md = scan_data(buf);
-    return dest(md);
-}
-
-void OdimH5::set_inline_source(Metadata& md, const std::string& abspath)
-{
-    // for ODIMH5 files the source is the entire file
-    sys::File in(abspath, O_RDONLY);
-
-    // calculate file size
-    struct stat st;
-    in.fstat(st);
-
-    vector<uint8_t> buf(st.st_size);
-    in.read_all_or_throw(buf.data(), buf.size());
-    in.close();
-
-    stringstream note;
-    note << "Scanned from " << str::basename(abspath);
-    md.add_note(note.str());
-
-    md.set_source_inline("odimh5", metadata::DataManager::get().to_data("odimh5", move(buf)));
-}
-
-void OdimH5::set_blob_source(Metadata& md, std::shared_ptr<segment::Reader> reader)
-{
-    struct stat st;
-    sys::stat(reader->segment().abspath, st);
-    stringstream note;
-    note << "Scanned from " << str::basename(reader->segment().relpath);
-    md.add_note(note.str());
-    md.set_source(Source::createBlob(reader, 0, st.st_size));
-}
-
-bool OdimH5::scanLua(Metadata& md)
+bool LuaOdimScanner::scanLua(Metadata& md)
 {
     using namespace arki::utils::h5;
     MuteErrors h5e;
@@ -314,13 +295,13 @@ bool OdimH5::scanLua(Metadata& md)
     return true;
 }
 
-int OdimH5::arkilua_find_attr(lua_State* L)
+int LuaOdimScanner::arkilua_find_attr(lua_State* L)
 {
     using namespace arki::utils::h5;
 
     luaL_checkudata(L, 1, "odimh5");
     void* userdata = lua_touserdata(L, 1);
-    OdimH5& s = **(OdimH5**)userdata;
+    LuaOdimScanner& s = **(LuaOdimScanner**)userdata;
 
     if (s.h5file < 0)
         luaL_error(L, "h5 file not opened");
@@ -370,13 +351,13 @@ int OdimH5::arkilua_find_attr(lua_State* L)
 #undef fail
 }
 
-int OdimH5::arkilua_get_groups(lua_State* L)
+int LuaOdimScanner::arkilua_get_groups(lua_State* L)
 {
     using namespace arki::utils::h5;
 
     luaL_checkudata(L, 1, "odimh5");
     void* userdata = lua_touserdata(L, 1);
-    OdimH5& s = **(OdimH5**)userdata;
+    LuaOdimScanner& s = **(LuaOdimScanner**)userdata;
 
     if (s.h5file < 0)
         luaL_error(L, "h5 file not opened");
