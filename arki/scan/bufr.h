@@ -29,9 +29,9 @@ class BufrScanner : public Scanner
     dballe::Importer* importer = nullptr;
 
 protected:
-    virtual void scan_extra(dballe::Message& msg, Metadata& md) = 0;
+    virtual void scan_extra(dballe::Message& msg, std::shared_ptr<Metadata> md) = 0;
 
-    void do_scan(dballe::BinaryMessage& rmsg, Metadata& md);
+    void do_scan(dballe::BinaryMessage& rmsg, std::shared_ptr<Metadata> md);
 
 public:
     BufrScanner();
@@ -55,7 +55,7 @@ class LuaBufrScanner : public BufrScanner
 {
     bufr::BufrLua* extras = nullptr;
 
-    void scan_extra(dballe::Message& msg, Metadata& md) override;
+    void scan_extra(dballe::Message& msg, std::shared_ptr<Metadata> md) override;
 
 public:
     LuaBufrScanner();

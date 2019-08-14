@@ -219,14 +219,14 @@ BufrScanner::~BufrScanner()
     if (importer) delete importer;
 }
 
-void BufrScanner::do_scan(BinaryMessage& rmsg, Metadata& md)
+void BufrScanner::do_scan(BinaryMessage& rmsg, std::shared_ptr<Metadata> md)
 {
     Harvest harvest(*importer);
-    harvest.harvest_from_dballe(rmsg, md);
+    harvest.harvest_from_dballe(rmsg, *md);
 
-    md.set(move(harvest.reftime));
-    md.set(move(harvest.origin));
-    md.set(move(harvest.product));
+    md->set(move(harvest.reftime));
+    md->set(move(harvest.origin));
+    md->set(move(harvest.product));
 
     if (harvest.msg)
     {
@@ -236,25 +236,25 @@ void BufrScanner::do_scan(BinaryMessage& rmsg, Metadata& md)
     }
 
     // Check that the date is a valid date, unset if it is rubbish
-    const reftime::Position* rt = md.get<types::reftime::Position>();
+    const reftime::Position* rt = md->get<types::reftime::Position>();
     if (rt)
     {
         if (rt->time.ye <= 0)
-            md.unset(TYPE_REFTIME);
+            md->unset(TYPE_REFTIME);
         else
         {
             core::Time t = rt->time;
             t.normalise();
-            if (t != rt->time) md.unset(TYPE_REFTIME);
+            if (t != rt->time) md->unset(TYPE_REFTIME);
         }
     }
 
     // Convert validity times to emission times
     // If md has a timedef, substract it from the reftime
-    const timerange::Timedef* timedef = md.get<types::timerange::Timedef>();
+    const timerange::Timedef* timedef = md->get<types::timerange::Timedef>();
     if (timedef)
-        if (const reftime::Position* p = md.get<types::reftime::Position>())
-            md.set(timedef->validity_time_to_emission_time(*p));
+        if (const reftime::Position* p = md->get<types::reftime::Position>())
+            md->set(timedef->validity_time_to_emission_time(*p));
 }
 
 std::shared_ptr<Metadata> BufrScanner::scan_data(const std::vector<uint8_t>& data)
@@ -263,7 +263,7 @@ std::shared_ptr<Metadata> BufrScanner::scan_data(const std::vector<uint8_t>& dat
     md->set_source_inline("grib", metadata::DataManager::get().to_data("bufr", std::vector<uint8_t>(data)));
     BinaryMessage rmsg(Encoding::BUFR);
     rmsg.data = std::string(data.begin(), data.end());
-    do_scan(rmsg, *md);
+    do_scan(rmsg, md);
     return md;
 }
 
@@ -272,13 +272,13 @@ bool BufrScanner::scan_segment(std::shared_ptr<segment::Reader> reader, metadata
     auto file = dballe::File::create(dballe::Encoding::BUFR, reader->segment().abspath.c_str(), "r");
     while (true)
     {
-        unique_ptr<Metadata> md(new Metadata);
+        auto md = std::make_shared<Metadata>();
         BinaryMessage rmsg = file->read();
         if (!rmsg) break;
         md->set_source(Source::createBlob(reader, rmsg.offset, rmsg.data.size()));
         md->set_cached_data(metadata::DataManager::get().to_data("bufr", vector<uint8_t>(rmsg.data.begin(), rmsg.data.end())));
-        do_scan(rmsg, *md);
-        if (!dest(std::move(md))) return false;
+        do_scan(rmsg, md);
+        if (!dest(md)) return false;
     }
     return true;
 }
@@ -289,7 +289,7 @@ std::shared_ptr<Metadata> BufrScanner::scan_singleton(const std::string& abspath
     auto file = dballe::File::create(dballe::Encoding::BUFR, abspath.c_str(), "r").release();
     BinaryMessage rmsg = file->read();
     if (!rmsg) throw std::runtime_error(abspath + " contains no BUFR data");
-    do_scan(rmsg, *md);
+    do_scan(rmsg, md);
     if (file->read())
         throw std::runtime_error(abspath + " contains more than one BUFR");
     return md;
@@ -301,11 +301,11 @@ bool BufrScanner::scan_pipe(core::NamedFileDescriptor& infd, metadata_dest_func 
     auto file = dballe::File::create(dballe::Encoding::BUFR, in, false, infd.name()).release();
     while (true)
     {
-        unique_ptr<Metadata> md(new Metadata);
+        auto md = std::make_shared<Metadata>();
         BinaryMessage rmsg = file->read();
         if (!rmsg) break;
         md->set_source_inline("bufr", metadata::DataManager::get().to_data("bufr", vector<uint8_t>(rmsg.data.begin(), rmsg.data.end())));
-        do_scan(rmsg, *md);
+        do_scan(rmsg, md);
         if (!dest(move(md))) return false;
     }
     return true;
@@ -333,10 +333,10 @@ LuaBufrScanner::~LuaBufrScanner()
 #endif
 }
 
-void LuaBufrScanner::scan_extra(dballe::Message& msg, Metadata& md)
+void LuaBufrScanner::scan_extra(dballe::Message& msg, std::shared_ptr<Metadata> md)
 {
     if (extras)
-        extras->scan(msg, md);
+        extras->scan(msg, *md);
 }
 
 }

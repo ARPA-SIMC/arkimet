@@ -1,7 +1,6 @@
 import unittest
 import os
 import arkimet as arki
-from arkimet.test import skip_unless_arpae_tests
 
 
 class TestScanBufr(unittest.TestCase):

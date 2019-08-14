@@ -6,6 +6,10 @@
 #include <arki/scan/fwd.h>
 #include <memory>
 
+namespace dballe {
+struct Message;
+}
+
 extern "C" {
 
 struct grib_handle;
@@ -20,6 +24,18 @@ extern PyTypeObject* arkipy_scan_Grib_Type;
 #define arkipy_scan_Grib_Check(ob) \
     (Py_TYPE(ob) == arkipy_scan_Grib_Type || \
      PyType_IsSubtype(Py_TYPE(ob), arkipy_scan_Grib_Type))
+
+
+typedef struct {
+    PyObject_HEAD
+    dballe::Message* msg;
+} arkipy_scan_BufrMessage;
+
+extern PyTypeObject* arkipy_scan_BufrMessage_Type;
+
+#define arkipy_scan_BufrMessage_Check(ob) \
+    (Py_TYPE(ob) == arkipy_scan_BufrMessage_Type || \
+     PyType_IsSubtype(Py_TYPE(ob), arkipy_scan_BufrMessage_Type))
 
 }
 
