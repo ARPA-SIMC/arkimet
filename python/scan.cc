@@ -344,7 +344,7 @@ void load_bufrscanner_object()
 class PythonBufrScanner : public arki::scan::BufrScanner
 {
 protected:
-    void scan_extra(dballe::Message& msg, std::shared_ptr<Metadata> md) override
+    void scan_extra(dballe::BinaryMessage& rmsg, dballe::Message& msg, std::shared_ptr<Metadata> md) override
     {
         auto orig_use_count = md.use_count();
 

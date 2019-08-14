@@ -51,8 +51,6 @@ protected:
 public:
     MockGribScanner();
     virtual ~MockGribScanner();
-
-    friend class GribLua;
 };
 
 class LuaGribScanner : public GribScanner

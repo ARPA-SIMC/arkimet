@@ -44,11 +44,16 @@ void init()
     };
 #endif
 */
+    factories["bufr"] = [] {
+        return std::unique_ptr<Scanner>(new scan::MockBufrScanner);
+    };
+    /*
 #ifdef HAVE_DBALLE
     factories["bufr"] = [] {
         return std::unique_ptr<Scanner>(new scan::LuaBufrScanner);
     };
 #endif
+*/
 #ifdef HAVE_HDF5
     factories["odimh5"] = [] {
         return std::unique_ptr<Scanner>(new scan::OdimH5);

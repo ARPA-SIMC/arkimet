@@ -2767,77 +2767,7 @@
  {
   "doc": "",
   "group": "arki_scan_bufr",
-  "method": "contiguous"
- },
- {
-  "doc": "",
-  "group": "arki_scan_bufr",
-  "method": "padded"
- },
- {
-  "doc": "",
-  "group": "arki_scan_bufr",
   "method": "validate"
- },
- {
-  "doc": "",
-  "group": "arki_scan_bufr",
-  "method": "partial"
- },
- {
-  "doc": "",
-  "group": "arki_scan_bufr",
-  "method": "pollution"
- },
- {
-  "doc": "",
-  "group": "arki_scan_bufr",
-  "method": "zerodate"
- },
- {
-  "doc": "",
-  "group": "arki_scan_bufr",
-  "method": "ship"
- },
- {
-  "doc": "",
-  "group": "arki_scan_bufr",
-  "method": "amdar"
- },
- {
-  "doc": "",
-  "group": "arki_scan_bufr",
-  "method": "airep"
- },
- {
-  "doc": "",
-  "group": "arki_scan_bufr",
-  "method": "acars"
- },
- {
-  "doc": "",
-  "group": "arki_scan_bufr",
-  "method": "gts"
- },
- {
-  "doc": "",
-  "group": "arki_scan_bufr",
-  "method": "date_mismatch"
- },
- {
-  "doc": "",
-  "group": "arki_scan_bufr",
-  "method": "out_of_range"
- },
- {
-  "doc": "",
-  "group": "arki_scan_bufr",
-  "method": "temp_reftime"
- },
- {
-  "doc": "",
-  "group": "arki_scan_bufr",
-  "method": "wrongdate"
  },
  {
   "doc": "",
