@@ -59,6 +59,20 @@ static const char* hex[] = {
     "f0", "f1", "f2", "f3", "f4", "f5", "f6", "f7", "f8", "f9", "fa", "fb", "fc", "fd", "fe", "ff",
 };
 
+// From https://wiki.openssl.org/index.php/OpenSSL_1.1.0_Changes
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+EVP_MD_CTX *EVP_MD_CTX_new(void)
+{
+    return OPENSSL_zalloc(sizeof(EVP_MD_CTX));
+}
+
+void EVP_MD_CTX_free(EVP_MD_CTX *ctx)
+{
+    EVP_MD_CTX_cleanup(ctx);
+    OPENSSL_free(ctx);
+}
+#endif
+
 std::string compute_hash(const char* name, const void* data, size_t size)
 {
     // See: https://www.openssl.org/docs/man1.1.0/man3/EVP_DigestInit.html
