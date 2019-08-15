@@ -350,16 +350,22 @@ PyMODINIT_FUNC PyInit__arkimet(void)
     using namespace arki::python;
 
     try {
-        arki::init();
+static bool arkimet_initialized = false;
+        if (!arkimet_initialized)
+        {
+            arki::init();
 
-        arki::python::structured::init();
-        arki::python::scan::init();
-        arki::python::formatter::init();
-        arki::python::bbox::init();
-        arki::python::dataset::qmacro::init();
+            arki::python::structured::init();
+            arki::python::scan::init();
+            arki::python::formatter::init();
+            arki::python::bbox::init();
+            arki::python::dataset::qmacro::init();
 
-        python_nag_handler = new PythonNagHandler;
-        python_nag_handler->install();
+            python_nag_handler = new PythonNagHandler;
+            python_nag_handler->install();
+
+            arkimet_initialized = true;
+        }
 
         PyObject* m = PyModule_Create(&arkimet_module);
         if (!m) return m;
