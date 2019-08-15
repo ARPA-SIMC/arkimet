@@ -799,11 +799,9 @@ void init()
     arki::scan::Scanner::register_factory("bufr", [] {
         return std::unique_ptr<arki::scan::Scanner>(new PythonBufrScanner);
     });
-    /*
     arki::scan::Scanner::register_factory("odimh5", [] {
         return std::unique_ptr<arki::scan::Scanner>(new PythonOdimh5Scanner);
     });
-    */
 }
 }
 
