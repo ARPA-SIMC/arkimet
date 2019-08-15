@@ -56,6 +56,16 @@ def test_ventotto():
     run_test("ventotto")
 
 
+@hosts("ventinove")
+def test_ventinove():
+    run_test("ventinove")
+
+
+@hosts("trenta")
+def test_trenta():
+    run_test("trenta")
+
+
 @hosts("sette")
 def test_sette():
     run_test("sette")
