@@ -15,10 +15,13 @@
 #include "arki/runtime.h"
 #include "arki/utils/string.h"
 #include "arki/utils/files.h"
-#include "arki/utils/lua.h"
 #include "arki/utils/sys.h"
-#include "arki/utils/h5.h"
 #include "arki/scan/validator.h"
+#include "arki/scan/mock.h"
+#if 0
+#include "arki/utils/lua.h"
+#include "arki/utils/h5.h"
+#endif
 #include <cstring>
 #include <unistd.h>
 #include <fcntl.h>
@@ -146,9 +149,36 @@ bool OdimScanner::scan_pipe(core::NamedFileDescriptor& in, metadata_dest_func de
 
 
 /*
+ * MockOdimScanner
+ */
+
+MockOdimScanner::MockOdimScanner()
+{
+    engine = new MockEngine();
+}
+
+MockOdimScanner::~MockOdimScanner()
+{
+    delete engine;
+}
+
+std::shared_ptr<Metadata> MockOdimScanner::scan_h5_file(const std::string& pathname)
+{
+    auto buf = sys::read_file(pathname);
+    return engine->lookup(reinterpret_cast<const uint8_t*>(buf.data()), buf.size());
+}
+
+std::shared_ptr<Metadata> MockOdimScanner::scan_h5_data(const std::vector<uint8_t>& data)
+{
+    return engine->lookup(data.data(), data.size());
+}
+
+
+/*
  * LuaOdimScanner
  */
 
+#if 0
 struct OdimH5Lua;
 
 class LuaOdimScanner : public OdimScanner
@@ -411,11 +441,12 @@ int LuaOdimScanner::arkilua_get_groups(lua_State* L)
 
     return 1;
 }
+#endif
 
 void register_odimh5_lua()
 {
     Scanner::register_factory("odimh5", [] {
-        return std::unique_ptr<Scanner>(new scan::LuaOdimScanner);
+        return std::unique_ptr<Scanner>(new scan::MockOdimScanner);
     });
 }
 
