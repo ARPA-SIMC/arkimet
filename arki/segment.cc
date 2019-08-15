@@ -381,7 +381,7 @@ Writer::PendingMetadata::PendingMetadata(Metadata& md, std::unique_ptr<types::so
 }
 
 Writer::PendingMetadata::PendingMetadata(PendingMetadata&& o)
-    : md(o.md), new_source(o.new_source)
+    : md(o.md), new_source(o.new_source), drop_cached_data_on_commit(o.drop_cached_data_on_commit)
 {
     o.new_source = nullptr;
 }
