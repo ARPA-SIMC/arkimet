@@ -5,6 +5,7 @@
 #include "arki/utils/gzip.h"
 #include "arki/metadata.h"
 #include "arki/utils/accounting.h"
+#include "arki/libconfig.h"
 #include <algorithm>
 #include <sys/types.h>
 #include <sys/stat.h>

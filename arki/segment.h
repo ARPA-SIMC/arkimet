@@ -3,7 +3,6 @@
 
 /// Dataset segment read/write functions
 
-#include <arki/libconfig.h>
 #include <arki/defs.h>
 #include <arki/core/fwd.h>
 #include <arki/types/fwd.h>
