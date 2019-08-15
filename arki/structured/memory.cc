@@ -1,7 +1,6 @@
 #include "arki/exceptions.h"
 #include "arki/core/time.h"
 #include "arki/types.h"
-#include "arki/libconfig.h"
 #include "arki/utils/string.h"
 #include "memory.h"
 #include <memory>

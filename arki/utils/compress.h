@@ -1,7 +1,6 @@
 #ifndef ARKI_UTILS_COMPRESS_H
 #define ARKI_UTILS_COMPRESS_H
 
-#include <arki/libconfig.h>
 #include <arki/core/fwd.h>
 #include <arki/utils/sys.h>
 #include <arki/binary.h>

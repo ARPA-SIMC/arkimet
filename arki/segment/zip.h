@@ -3,7 +3,6 @@
 
 /// Base class for unix fd based read/write functions
 
-#include <arki/libconfig.h>
 #include <arki/segment.h>
 #include <arki/segment/base.h>
 #include <arki/core/file.h>

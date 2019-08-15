@@ -3,7 +3,6 @@
 
 /// Core defines common to all arkimet code
 
-#include <arki/libconfig.h>
 #include <functional>
 #include <memory>
 

@@ -1,7 +1,6 @@
 #ifndef ARKI_SEGMENT_FD_H
 #define ARKI_SEGMENT_FD_H
 
-#include <arki/libconfig.h>
 #include <arki/segment.h>
 #include <arki/segment/base.h>
 #include <arki/segment/common.h>

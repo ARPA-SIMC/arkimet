@@ -2,7 +2,6 @@
 #include "arki/matcher.h"
 #include "arki/metadata.h"
 #include "arki/types/origin.h"
-#include "arki/libconfig.h"
 
 using namespace std;
 using namespace arki::tests;

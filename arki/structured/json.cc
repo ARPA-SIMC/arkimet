@@ -1,5 +1,4 @@
 #include "json.h"
-#include "arki/libconfig.h"
 #include "arki/utils/string.h"
 #include "arki/exceptions.h"
 #include <cctype>
@@ -360,5 +359,3 @@ void JSON::parse(std::istream& in, Emitter& e)
 
 }
 }
-
-// vim:set ts=4 sw=4:
