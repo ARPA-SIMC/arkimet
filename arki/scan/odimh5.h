@@ -12,6 +12,7 @@ class Metadata;
 
 namespace scan {
 struct Validator;
+class MockEngine;
 
 namespace odimh5 {
 const Validator& validator();
@@ -32,6 +33,20 @@ public:
     bool scan_pipe(core::NamedFileDescriptor& in, metadata_dest_func dest) override;
     bool scan_segment(std::shared_ptr<segment::Reader> reader, metadata_dest_func dest) override;
     std::shared_ptr<Metadata> scan_singleton(const std::string& abspath) override;
+};
+
+
+class MockOdimScanner : public OdimScanner
+{
+protected:
+    MockEngine* engine;
+
+    std::shared_ptr<Metadata> scan_h5_file(const std::string& pathname) override;
+    std::shared_ptr<Metadata> scan_h5_data(const std::vector<uint8_t>& data) override;
+
+public:
+    MockOdimScanner();
+    virtual ~MockOdimScanner();
 };
 
 
