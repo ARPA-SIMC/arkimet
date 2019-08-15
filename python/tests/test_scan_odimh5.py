@@ -4,7 +4,7 @@ import arkimet as arki
 import datetime
 
 
-class TestScanBufr(unittest.TestCase):
+class TestScanODIMH5(unittest.TestCase):
     def read(self, pathname, size, format="odimh5"):
         """
         Read all the metadata from a file

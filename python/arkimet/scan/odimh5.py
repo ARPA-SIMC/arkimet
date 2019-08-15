@@ -25,4 +25,4 @@ class Scanner:
     @classmethod
     def register(cls, scanner: Callable[[h5py.File, arkimet.Metadata], None]):
         if scanner not in cls.scanners:
-            cls.scanners[type].append(scanner)
+            cls.scanners.append(scanner)
