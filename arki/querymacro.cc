@@ -80,7 +80,7 @@ void register_parser(
 {
     for (const auto& entry: parsers)
         if (entry.first == ext)
-            throw std::runtime_error("quarymacro parser for ." + ext + " files has already been registered");
+            throw std::runtime_error("querymacro parser for ." + ext + " files has already been registered");
 
     parsers.emplace_back(make_pair(ext, parser));
 }
