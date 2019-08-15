@@ -349,21 +349,21 @@ PyMODINIT_FUNC PyInit__arkimet(void)
 {
     using namespace arki::python;
 
-    arki::init();
-
-    arki::python::structured::init();
-    arki::python::scan::init();
-    arki::python::formatter::init();
-    arki::python::bbox::init();
-    arki::python::dataset::qmacro::init();
-
-    python_nag_handler = new PythonNagHandler;
-    python_nag_handler->install();
-
-    PyObject* m = PyModule_Create(&arkimet_module);
-    if (!m) return m;
-
     try {
+        arki::init();
+
+        arki::python::structured::init();
+        arki::python::scan::init();
+        arki::python::formatter::init();
+        arki::python::bbox::init();
+        arki::python::dataset::qmacro::init();
+
+        python_nag_handler = new PythonNagHandler;
+        python_nag_handler->install();
+
+        PyObject* m = PyModule_Create(&arkimet_module);
+        if (!m) return m;
+
         pyo_unique_ptr features(throw_ifnull(PyFrozenSet_New(nullptr)));
 
 #ifdef HAVE_DBALLE
@@ -424,9 +424,9 @@ PyMODINIT_FUNC PyInit__arkimet(void)
         register_arki_dump(m);
         register_arki_xargs(m);
         register_arki_bufr_prepare(m);
-    } ARKI_CATCH_RETURN_PYO
 
-    return m;
+        return m;
+    } ARKI_CATCH_RETURN_PYO
 }
 
 }
