@@ -63,7 +63,6 @@ namespace qmacro {
 
 void init()
 {
-    fprintf(stderr, "QUERYMACRO PYTHON INIT CALLED\n");
     arki::qmacro::register_parser("py", [](const std::string& source, const arki::qmacro::Options& opts) {
         AcquireGIL gil;
         pyo_unique_ptr o(instantiate_qmacro_pydataset(source, opts));
