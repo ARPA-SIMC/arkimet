@@ -1,5 +1,3 @@
-from arkimet.scan.odimh5 import Scanner
-from arkimet.scan import timedef
 import datetime
 import re
 import math
@@ -205,10 +203,10 @@ def scan(h5f, md):
             md["timerange"] = {
                 "style": "Timedef",
                 "step_len": 0,
-                "step_unit": timedef.UNIT_SECOND,
+                "step_unit": UNIT_SECOND,
                 "stat_type": 1,
                 "stat_len": diff,
-                "stat_unit": timedef.UNIT_SECOND,
+                "stat_unit": UNIT_SECOND,
             }
         elif product == "VIL":
             prodpar = dataset1["what"].attrs["prodpar"]
@@ -228,4 +226,28 @@ def scan(h5f, md):
         odimh5_xsec_set_area(h5f, md)
 
 
-Scanner.register(scan)
+# Hack to deal with Centos7 having h5py only for python2
+if __name__ == "__main__":
+    UNIT_SECOND = 13
+    import argparse
+    import h5py
+    import json
+
+    class Encoder(json.JSONEncoder):
+        def default(self, o):
+            if isinstance(o, datetime.datetime):
+                return [o.year, o.month, o.day, o.hour, o.minute, o.second]
+            else:
+                return json.JSONEncoder.default(self, o)
+
+    parser = argparse.ArgumentParser(description="scan ODIMH5 files for arkimet")
+    parser.add_argument("file", help="file to scan")
+    args = parser.parse_args()
+    with h5py.File(args.file) as f:
+        metadata = {}
+        scan(f, metadata)
+        print(json.dumps(metadata, cls=Encoder))
+else:
+    from arkimet.scan.odimh5 import Scanner
+    from arkimet.scan.timedef import UNIT_SECOND
+    Scanner.register(scan)
