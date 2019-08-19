@@ -50,6 +50,10 @@ template<> inline bool from_python<bool>(PyObject* o) { return bool_from_python(
 PyObject* int_to_python(int val);
 inline PyObject* to_python(int val) { return int_to_python(val); }
 
+/// Convert an int to a Python object
+PyObject* unsigned_int_to_python(unsigned int val);
+inline PyObject* to_python(unsigned int val) { return unsigned_int_to_python(val); }
+
 /// Convert a long to a Python object
 PyObject* long_to_python(long val);
 inline PyObject* to_python(long val) { return long_to_python(val); }
