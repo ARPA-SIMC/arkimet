@@ -60,6 +60,11 @@ PyObject* int_to_python(int val)
     return throw_ifnull(PyLong_FromLong(val));
 }
 
+PyObject* unsigned_int_to_python(unsigned int val)
+{
+    return throw_ifnull(PyLong_FromUnsignedLong(val));
+}
+
 PyObject* long_to_python(long int val)
 {
     return throw_ifnull(PyLong_FromLong(val));

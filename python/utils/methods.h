@@ -1,5 +1,5 @@
-#ifndef ARKI_PYTHON_MODULE_H
-#define ARKI_PYTHON_MODULE_H
+#ifndef ARKI_PYTHON_METHODS_H
+#define ARKI_PYTHON_METHODS_H
 
 #include "core.h"
 #include <array>
