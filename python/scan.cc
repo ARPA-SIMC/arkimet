@@ -4,6 +4,7 @@
 #include "metadata.h"
 #include "utils/methods.h"
 #include "utils/type.h"
+#include "utils/wreport.h"
 #include "arki/metadata.h"
 #include "arki/values.h"
 #include "arki/utils/vm2.h"
@@ -35,15 +36,14 @@ PyTypeObject* arkipy_scan_BufrMessage_Type = nullptr;
 
 namespace {
 
-// Index to the wreport python API
-wrpy_c_api* wrpy = 0;
-
 // Pointer to the arkimet module
 PyObject* module_arkimet = nullptr;
 
 // Pointer to the scanners module
 PyObject* module_scanners = nullptr;
 
+// Wreport API
+arki::python::Wreport wreport_api;
 
 /// Load scripts from the dir_scan configuration directory
 void load_scanners()
@@ -414,7 +414,7 @@ struct msg_get_named : public MethKwargs<msg_get_named, arkipy_scan_BufrMessage>
             if (!res)
                 Py_RETURN_NONE;
             else
-                return (PyObject*)wrpy->var_create_copy(*res);
+                return wreport_api.var_create(*res);
         } ARKI_CATCH_RETURN_PYO
     }
 };
@@ -459,7 +459,7 @@ struct msg_get : MethKwargs<msg_get, arkipy_scan_BufrMessage>
             if (!res)
                 Py_RETURN_NONE;
             else
-                return (PyObject*)wrpy->var_create_copy(*res);
+                return wreport_api.var_create(*res);
         } ARKI_CATCH_RETURN_PYO
     }
 };
@@ -737,23 +737,7 @@ namespace python {
 
 void register_scan(PyObject* m)
 {
-    if (!wrpy)
-    {
-        pyo_unique_ptr module(throw_ifnull(PyImport_ImportModule("wreport")));
-
-        wrpy = (wrpy_c_api*)PyCapsule_Import("_wreport._C_API", 0);
-        if (!wrpy)
-            throw PythonException();
-
-#if 0
-        // TODO: uncomment when the new wreport has been widely deployed
-        if (wrpy->version_major != 1)
-        {
-            PyErr_Format(PyExc_RuntimeError, "wreport C API version is %d.%d but only 1.x is supported", wrpy->version_major, wrpy->version_minor);
-            throw PythonException();
-        }
-#endif
-    }
+    wreport_api.import();
 
     pyo_unique_ptr grib = throw_ifnull(PyModule_Create(&grib_module));
     grib_def = new GribDef;
