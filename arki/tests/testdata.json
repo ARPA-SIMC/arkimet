@@ -301,26 +301,6 @@
  },
  {
   "doc": "",
-  "group": "arki_values",
-  "method": "comparison"
- },
- {
-  "doc": "",
-  "group": "arki_values",
-  "method": "encoding"
- },
- {
-  "doc": "",
-  "group": "arki_values",
-  "method": "valuebag"
- },
- {
-  "doc": "",
-  "group": "arki_values",
-  "method": "regression1"
- },
- {
-  "doc": "",
   "group": "arki_types",
   "method": "cast"
  },
@@ -353,6 +333,26 @@
   "doc": "",
   "group": "arki_types_utils",
   "method": "empty"
+ },
+ {
+  "doc": "",
+  "group": "arki_types_values",
+  "method": "comparison"
+ },
+ {
+  "doc": "",
+  "group": "arki_types_values",
+  "method": "encoding"
+ },
+ {
+  "doc": "",
+  "group": "arki_types_values",
+  "method": "valuebag"
+ },
+ {
+  "doc": "",
+  "group": "arki_types_values",
+  "method": "regression1"
  },
  {
   "doc": "",

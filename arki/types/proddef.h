@@ -2,7 +2,7 @@
 #define ARKI_TYPES_PRODDEF_H
 
 #include <arki/types/styled.h>
-#include <arki/values.h>
+#include <arki/types/values.h>
 
 struct lua_State;
 

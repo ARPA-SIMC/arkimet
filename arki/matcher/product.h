@@ -48,11 +48,11 @@ struct MatchProductGRIB2 : public MatchProduct
 
 struct MatchProductBUFR : public MatchProduct
 {
-	// These are -1 when they should be ignored in the match
-	int type;
-	int subtype;
-	int localsubtype;
-	ValueBag values;
+    // These are -1 when they should be ignored in the match
+    int type;
+    int subtype;
+    int localsubtype;
+    types::ValueBag values;
 
     MatchProductBUFR(const std::string& pattern);
     bool matchItem(const types::Type& o) const override;
@@ -75,7 +75,7 @@ struct MatchProductVM2 : public MatchProduct
 {
     // This is -1 when should be ignored
     int variable_id;
-    ValueBag expr;
+    types::ValueBag expr;
     std::vector<int> idlist;
 
     MatchProductVM2(const std::string& pattern);

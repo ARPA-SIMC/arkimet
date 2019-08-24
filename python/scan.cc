@@ -7,7 +7,7 @@
 #include "utils/wreport.h"
 #include "utils/dballe.h"
 #include "arki/metadata.h"
-#include "arki/values.h"
+#include "arki/types/values.h"
 #include "arki/utils/vm2.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/string.h"
@@ -459,7 +459,7 @@ struct vm2_get_station : public MethKwargs<vm2_get_station, PyObject>
             return nullptr;
 
         try {
-            arki::ValueBag values(arki::utils::vm2::get_station(id));
+            arki::types::ValueBag values(arki::utils::vm2::get_station(id));
             arki::python::PythonEmitter e;
             values.serialise(e);
             return e.release();
@@ -482,7 +482,7 @@ struct vm2_get_variable : public MethKwargs<vm2_get_variable, PyObject>
             return nullptr;
 
         try {
-            arki::ValueBag values(arki::utils::vm2::get_variable(id));
+            arki::types::ValueBag values(arki::utils::vm2::get_variable(id));
             arki::python::PythonEmitter e;
             values.serialise(e);
             return e.release();

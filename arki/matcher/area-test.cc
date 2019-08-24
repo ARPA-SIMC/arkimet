@@ -19,6 +19,7 @@ class Tests : public TestCase
 void Tests::register_tests() {
 
 add_method("grib", [] {
+    using namespace arki::types::values;
     Metadata md;
     arki::tests::fill(md);
 
@@ -147,6 +148,7 @@ add_method("bbox_coveredby", [] {
 
 // Try matching Area with ODIMH5
 add_method("odimh5", [] {
+    using namespace arki::types::values;
     ValueBag testArea2;
     testArea2.set("foo", Value::create_integer(15));
     testArea2.set("bar", Value::create_integer(15000));

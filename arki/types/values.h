@@ -10,7 +10,9 @@
 struct lua_State;
 
 namespace arki {
+namespace types {
 
+namespace values {
 /**
  * Base class for generic scalar values.
  *
@@ -68,8 +70,9 @@ public:
     static Value* create_integer(int val);
     static Value* create_string(const std::string& val);
 };
+}
 
-struct ValueBag : public std::map<std::string, Value*>
+struct ValueBag : public std::map<std::string, values::Value*>
 {
 	ValueBag();
 	ValueBag(const ValueBag& vb);
@@ -87,19 +90,19 @@ struct ValueBag : public std::map<std::string, Value*>
 
 	void clear();
 
-	/**
-	 * Gets a value.
-	 *
-	 * It returns 0 if the value is not found.
-	 */
-	const Value* get(const std::string& key) const;
+    /**
+     * Gets a value.
+     *
+     * It returns nullptr if the value is not found.
+     */
+    const values::Value* get(const std::string& key) const;
 
-	/**
-	 * Sets a value.
-	 *
-	 * It takes ownership of the Value pointer.
-	 */
-	void set(const std::string& key, Value* val);
+    /**
+     * Sets a value.
+     *
+     * It takes ownership of the Value pointer.
+     */
+    void set(const std::string& key, values::Value* val);
 
     /**
      * Encode into a compact binary representation
@@ -135,21 +138,21 @@ struct ValueBag : public std::map<std::string, Value*>
 	void load_lua_table(lua_State* L, int idx = -1);
 
 private:
-	// Disable modifying subscription, because it'd be hard to deallocate the
-	// old value
-	Value*& operator[](const std::string& str);
+    // Disable modifying subscription, because it'd be hard to deallocate the
+    // old value
+    values::Value*& operator[](const std::string& str);
 };
 
-static inline std::ostream& operator<<(std::ostream& o, const Value& v)
+static inline std::ostream& operator<<(std::ostream& o, const values::Value& v)
 {
-	return o << v.toString();
+    return o << v.toString();
 }
 static inline std::ostream& operator<<(std::ostream& o, const ValueBag& v)
 {
-	return o << v.toString();
+    return o << v.toString();
 }
 
 }
+}
 
-// vim:set ts=4 sw=4:
 #endif

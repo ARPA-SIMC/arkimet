@@ -38,6 +38,7 @@ struct Fixture : public arki::utils::tests::Fixture
 
     Fixture()
     {
+        using namespace arki::types::values;
         testValues.set("foo", Value::create_integer(5));
         testValues.set("bar", Value::create_integer(5000));
         testValues.set("baz", Value::create_integer(-200));
