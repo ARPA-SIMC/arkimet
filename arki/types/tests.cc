@@ -7,7 +7,7 @@
 #include "reftime.h"
 #include "arki/types.h"
 #include "arki/matcher.h"
-#include "arki/binary.h"
+#include "arki/core/binary.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/string.h"
 #include "arki/structured/json.h"
@@ -167,10 +167,10 @@ void ActualType::serializes() const
 
     // Binary encoding, without envelope
     std::vector<uint8_t> enc;
-    BinaryEncoder e(enc);
+    core::BinaryEncoder e(enc);
     _actual->encodeWithoutEnvelope(e);
     size_t inner_enc_size = enc.size();
-    BinaryDecoder dec(enc);
+    core::BinaryDecoder dec(enc);
     wassert(actual(decodeInner(code, dec)) == _actual);
 
     // Binary encoding, with envelope
@@ -178,13 +178,13 @@ void ActualType::serializes() const
     _actual->encodeBinary(e);
     // Rewritten in the next two lines due to, it seems, a bug in old gccs
     // inner_ensure_equals(types::decode((const unsigned char*)enc.data(), enc.size()).upcast<T>(), _actual);
-    dec = BinaryDecoder(enc);
+    dec = core::BinaryDecoder(enc);
     unique_ptr<Type> decoded = types::decode(dec);
     wassert(actual(decoded) == _actual);
 
-    dec = BinaryDecoder(enc);
+    dec = core::BinaryDecoder(enc);
     TypeCode dec_code;
-    BinaryDecoder inner = dec.pop_type_envelope(dec_code);
+    core::BinaryDecoder inner = dec.pop_type_envelope(dec_code);
     wassert(actual(dec_code) == code);
     wassert(actual(inner.size) == inner_enc_size);
     wassert(actual(decodeInner(code, inner)) == _actual);

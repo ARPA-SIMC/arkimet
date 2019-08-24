@@ -1,6 +1,5 @@
-#include "config.h"
-#include <arki/tests/tests.h>
-#include <arki/binary.h>
+#include "arki/tests/tests.h"
+#include "binary.h"
 
 using namespace std;
 using namespace arki;
@@ -14,7 +13,7 @@ class Tests : public TestCase
     using TestCase::TestCase;
 
     void register_tests() override;
-} test("arki_binary");
+} test("arki_core_binary");
 
 void Tests::register_tests() {
 
@@ -22,11 +21,11 @@ add_method("integer", []() {
     // Check integer serialisation
 #define TEST_CODEC(encname, decname, val, encsize) do { \
         vector<uint8_t> enc; \
-        BinaryEncoder e(enc); \
+        core::BinaryEncoder e(enc); \
         e.add_ ## encname((val), (encsize)); \
         wassert(actual(enc.size()) == (encsize)); \
         \
-        BinaryDecoder dec(enc); \
+        core::BinaryDecoder dec(enc); \
         wassert(actual(dec.pop_ ## decname((encsize), "value")) ==  (val)); \
     } while (0)
 
@@ -124,11 +123,11 @@ add_method("integer", []() {
 #undef TEST_CODEC
 #define TEST_CODEC(name, val, encsize) do { \
         vector<uint8_t> enc; \
-        BinaryEncoder e(enc); \
+        core::BinaryEncoder e(enc); \
         e.add_ ## name((val)); \
         wassert(actual(enc.size()) == (encsize)); \
         \
-        BinaryDecoder dec(enc.data(), enc.size()); \
+        core::BinaryDecoder dec(enc.data(), enc.size()); \
         wassert(actual(dec.pop_ ## name("value")) == (val)); \
     } while (0)
     TEST_CODEC(float, 0.0f, 4u);
@@ -148,11 +147,11 @@ add_method("varints", []() {
 #define TEST_VARINT(TYPE, val, encsize) do { \
         TYPE v = (val); \
         vector<uint8_t> enc; \
-        BinaryEncoder e(enc); \
+        core::BinaryEncoder e(enc); \
         e.add_varint(v); \
         wassert(actual(enc.size()) == (encsize)); \
         wassert(actual(enc[encsize-1] & 0x80) == 0); \
-        BinaryDecoder dec(enc); \
+        core::BinaryDecoder dec(enc); \
         TYPE v1 = dec.pop_varint<TYPE>("test value"); \
         wassert(actual((uint64_t)v) == (uint64_t)v1); \
     } while (0)
@@ -187,10 +186,10 @@ add_method("strings", []() {
 #define TEST_STRING(val) do { \
         string s(val); \
         vector<uint8_t> enc; \
-        BinaryEncoder e(enc); \
+        core::BinaryEncoder e(enc); \
         e.add_raw(s); \
         wassert(actual(enc.size()) == s.size()); \
-        BinaryDecoder dec(enc.data(), enc.size()); \
+        core::BinaryDecoder dec(enc.data(), enc.size()); \
         wassert(actual(dec.pop_string(s.size(), "test")) == val); \
     } while (0)
 
@@ -204,10 +203,10 @@ add_method("cstrings", []() {
 #define TEST_CSTRING(val) do { \
         string s(val); \
         vector<uint8_t> enc; \
-        BinaryEncoder e(enc); \
+        core::BinaryEncoder e(enc); \
         e.add_string(val); \
         wassert(actual(enc.size()) == s.size()); \
-        BinaryDecoder dec(enc.data(), enc.size()); \
+        core::BinaryDecoder dec(enc.data(), enc.size()); \
         wassert(actual(dec.pop_string(s.size(), "test")) == val); \
     } while (0)
 
@@ -221,7 +220,7 @@ add_method("lines", []() {
     string buf("line 1\nline 2\nline 3");
 
     {
-        BinaryDecoder dec(buf);
+        core::BinaryDecoder dec(buf);
         wassert(actual(dec.pop_line()) == "line 1");
         wassert(actual(dec.pop_line()) == "line 2");
         wassert(actual(dec.pop_line()) == "line 3");
@@ -229,7 +228,7 @@ add_method("lines", []() {
     }
 
     {
-        BinaryDecoder dec(buf);
+        core::BinaryDecoder dec(buf);
         wassert(actual(dec.pop_line("\n")) == "line 1");
         wassert(actual(dec.pop_line("\n")) == "line 2");
         wassert(actual(dec.pop_line("\n")) == "line 3");

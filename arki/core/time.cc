@@ -1,6 +1,6 @@
 #include "time.h"
+#include "binary.h"
 #include "arki/exceptions.h"
-#include "arki/binary.h"
 #include "arki/utils/lua.h"
 #include "config.h"
 #include <cmath>
@@ -318,7 +318,7 @@ time_t Time::to_unix() const
     return timegm(&t);
 }
 
-Time Time::decode(BinaryDecoder& dec)
+Time Time::decode(core::BinaryDecoder& dec)
 {
     uint32_t a = dec.pop_uint(4, "first 32 bits of encoded time");
     uint32_t b = dec.pop_uint(1, "last 8 bits of encoded time");
@@ -336,7 +336,7 @@ Time Time::decodeString(const std::string& val)
     return Time::create_iso8601(val);
 }
 
-void Time::encodeWithoutEnvelope(BinaryEncoder& enc) const
+void Time::encodeWithoutEnvelope(core::BinaryEncoder& enc) const
 {
     uint32_t a = ((ye & 0x3fff) << 18)
                | ((mo & 0xf)    << 14)

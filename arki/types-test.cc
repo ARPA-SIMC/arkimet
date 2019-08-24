@@ -27,7 +27,7 @@ struct TestImpl : public types::Type
     std::string tag() const override { return string(); }
     types::Code type_code() const override { return TYPE_INVALID; }
     size_t serialisationSizeLength() const override { return 1; }
-    void encodeWithoutEnvelope(BinaryEncoder&) const override {}
+    void encodeWithoutEnvelope(core::BinaryEncoder&) const override {}
     std::ostream& writeToOstream(std::ostream& o) const override { return o; }
     void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override {}
     const char* lua_type_name() const override { return "arki.types.testimpl"; }

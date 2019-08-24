@@ -1,6 +1,6 @@
 #include "arki/dataset/ondisk2/checker.h"
 #include "arki/exceptions.h"
-#include "arki/binary.h"
+#include "arki/core/binary.h"
 #include "arki/dataset/maintenance.h"
 #include "arki/dataset/archive.h"
 #include "arki/dataset/segment.h"
@@ -45,7 +45,7 @@ struct IDMaker
     vector<uint8_t> make_string(const Metadata& md) const
     {
         vector<uint8_t> res;
-        BinaryEncoder enc(res);
+        core::BinaryEncoder enc(res);
         for (set<types::Code>::const_iterator i = components.begin(); i != components.end(); ++i)
             if (const Type* t = md.get(*i))
                 t->encodeBinary(enc);

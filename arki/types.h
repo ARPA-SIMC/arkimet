@@ -13,8 +13,6 @@
 struct lua_State;
 
 namespace arki {
-struct BinaryEncoder;
-struct BinaryDecoder;
 
 /// dynamic cast between two unique_ptr
 template<typename B, typename A>
@@ -107,20 +105,20 @@ struct Type
 	/// Length in bytes of the size field when serialising
 	virtual size_t serialisationSizeLength() const = 0;
 
-	/**
-	 * Encoding to compact binary representation, without identification
-	 * envelope
-	 */
-	virtual void encodeWithoutEnvelope(BinaryEncoder& enc) const = 0;
+    /**
+     * Encoding to compact binary representation, without identification
+     * envelope
+     */
+    virtual void encodeWithoutEnvelope(core::BinaryEncoder& enc) const = 0;
 
     /**
      * Version of encode_without_envelope without redundant data, used for
      * indexing
      */
-    virtual void encode_for_indexing(BinaryEncoder& enc) const;
+    virtual void encode_for_indexing(core::BinaryEncoder& enc) const;
 
     /// Encode to compact binary representation, with identification envelope
-    void encodeBinary(BinaryEncoder& enc) const;
+    void encodeBinary(core::BinaryEncoder& enc) const;
 
     /// Encode to compact binary representation, with identification envelope
     std::vector<uint8_t> encodeBinary() const;
@@ -222,9 +220,9 @@ inline std::ostream& operator<<(std::ostream& o, const Type& t)
  * Decode an item encoded in binary representation with envelope, from a
  * decoder
  */
-std::unique_ptr<Type> decode(BinaryDecoder& dec);
+std::unique_ptr<Type> decode(core::BinaryDecoder& dec);
 
-std::unique_ptr<Type> decodeInner(types::Code, BinaryDecoder& dec);
+std::unique_ptr<Type> decodeInner(types::Code, core::BinaryDecoder& dec);
 std::unique_ptr<Type> decodeString(types::Code, const std::string& val);
 std::unique_ptr<Type> decode_structure(const structured::Keys& keys, const structured::Reader& reader);
 std::unique_ptr<Type> decode_structure(const structured::Keys& keys, types::Code code, const structured::Reader& reader);

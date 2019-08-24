@@ -1,6 +1,7 @@
 #include "types/tests.h"
 #include "tests/lua.h"
 #include "core/file.h"
+#include "core/binary.h"
 #include "summary.h"
 #include "summary/stats.h"
 #include "metadata.h"
@@ -18,7 +19,6 @@
 #include "utils.h"
 #include "utils/files.h"
 #include "utils/sys.h"
-#include "binary.h"
 #include <sys/fcntl.h>
 #include <sstream>
 
@@ -140,7 +140,7 @@ add_method("binary", [](Fixture& f) {
     {
         vector<uint8_t> encoded = f.s.encode();
         Summary s1;
-        BinaryDecoder dec(encoded);
+        core::BinaryDecoder dec(encoded);
         wassert_true(s1.read(dec, "(test memory buffer)"));
         wassert_true(s1 == f.s);
     }
@@ -148,7 +148,7 @@ add_method("binary", [](Fixture& f) {
     {
         vector<uint8_t> encoded = f.s.encode(true);
         Summary s1;
-        BinaryDecoder dec(encoded);
+        core::BinaryDecoder dec(encoded);
         wassert_true(s1.read(dec, "(test memory buffer)"));
         wassert_true(s1 == f.s);
     }
@@ -192,7 +192,7 @@ add_method("binary_empty", [](Fixture& f) {
     Summary s;
     vector<uint8_t> encoded = s.encode();
     Summary s1;
-    BinaryDecoder dec(encoded);
+    core::BinaryDecoder dec(encoded);
     wassert_true(s1.read(dec, "(test memory buffer)"));
     wassert_true(s1 == s);
 });
@@ -274,7 +274,7 @@ add_method("summarise_grib", [](Fixture& f) {
     // Serialisation to binary
     vector<uint8_t> encoded = s1.encode();
     Summary s2;
-    BinaryDecoder dec(encoded);
+    core::BinaryDecoder dec(encoded);
     wassert_true(s2.read(dec, "(test memory buffer)"));
     wassert_true(s1 == s2);
 
@@ -342,7 +342,7 @@ add_method("binary_old", [](Fixture& f) {
     {
         vector<uint8_t> encoded = s.encode();
         Summary s2;
-        BinaryDecoder dec(encoded);
+        core::BinaryDecoder dec(encoded);
         wassert_true(s2.read(dec, "(test memory buffer)"));
         wassert_true(s == s2);
     }

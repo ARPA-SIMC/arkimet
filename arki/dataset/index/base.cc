@@ -2,7 +2,6 @@
 #include <arki/metadata.h>
 #include <arki/matcher.h>
 #include <arki/utils/string.h>
-#include <arki/binary.h>
 #include <arki/utils/regexp.h>
 #include <sstream>
 #include <ctime>

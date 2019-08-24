@@ -1,7 +1,7 @@
 #include "libarchive.h"
 #include "arki/metadata.h"
 #include "arki/metadata/data.h"
-#include "arki/binary.h"
+#include "arki/core/binary.h"
 #include "arki/exceptions.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/string.h"
@@ -142,7 +142,7 @@ void LibarchiveOutput::append_metadata()
 {
 #ifdef HAVE_LIBARCHIVE
     std::vector<uint8_t> buf;
-    BinaryEncoder enc(buf);
+    core::BinaryEncoder enc(buf);
     for (const auto& md: mds)
         md->encodeBinary(enc);
 

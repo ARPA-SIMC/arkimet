@@ -1,7 +1,7 @@
 #include "arki/exceptions.h"
 #include "arki/types/assigneddataset.h"
 #include "arki/types/utils.h"
-#include "arki/binary.h"
+#include "arki/core/binary.h"
 #include "arki/structured/emitter.h"
 #include "arki/structured/memory.h"
 #include "arki/structured/keys.h"
@@ -47,14 +47,14 @@ bool AssignedDataset::equals(const Type& o) const
 	return name == v->name && id == v->id;
 }
 
-void AssignedDataset::encodeWithoutEnvelope(BinaryEncoder& enc) const
+void AssignedDataset::encodeWithoutEnvelope(core::BinaryEncoder& enc) const
 {
     changed.encodeWithoutEnvelope(enc);
     enc.add_unsigned(name.size(), 1); enc.add_raw(name);
     enc.add_unsigned(id.size(), 2); enc.add_raw(id);
 }
 
-unique_ptr<AssignedDataset> AssignedDataset::decode(BinaryDecoder& dec)
+unique_ptr<AssignedDataset> AssignedDataset::decode(core::BinaryDecoder& dec)
 {
     Time changed = Time::decode(dec);
     size_t name_len = dec.pop_uint(1, "length of dataset name");

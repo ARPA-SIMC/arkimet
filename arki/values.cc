@@ -1,7 +1,7 @@
 #include "arki/libconfig.h"
 #include "arki/exceptions.h"
 #include "arki/values.h"
-#include "arki/binary.h"
+#include "arki/core/binary.h"
 #include "arki/utils/string.h"
 #include "arki/structured/emitter.h"
 #include "arki/structured/memory.h"
@@ -159,7 +159,7 @@ struct Integer : public Common<int>
 
     int toInt() const { return m_val; }
 
-    void encode(BinaryEncoder& enc) const override
+    void encode(core::BinaryEncoder& enc) const override
     {
         if (m_val >= -32 && m_val < 31)
         {
@@ -243,7 +243,7 @@ struct String : public Common<std::string>
 			return sortKey() - v.sortKey();
     }
 
-    void encode(BinaryEncoder& enc) const override
+    void encode(core::BinaryEncoder& enc) const override
     {
         if (m_val.size() < 64)
         {
@@ -281,7 +281,7 @@ struct String : public Common<std::string>
 
 }
 
-Value* Value::decode(BinaryDecoder& dec)
+Value* Value::decode(core::BinaryDecoder& dec)
 {
     uint8_t lead = dec.pop_byte("valuebag value type");
     switch ((lead >> 6) & 0x3)
@@ -527,7 +527,7 @@ void ValueBag::update(const ValueBag& vb)
 		set(i->first, i->second->clone());
 }
 
-void ValueBag::encode(BinaryEncoder& enc) const
+void ValueBag::encode(core::BinaryEncoder& enc) const
 {
     for (const_iterator i = begin(); i != end(); ++i)
     {
@@ -568,7 +568,7 @@ void ValueBag::serialise(structured::Emitter& e) const
 /**
  * Decode from compact binary representation
  */
-ValueBag ValueBag::decode(BinaryDecoder& dec)
+ValueBag ValueBag::decode(core::BinaryDecoder& dec)
 {
     ValueBag res;
     while (dec)

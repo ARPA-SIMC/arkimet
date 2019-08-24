@@ -238,7 +238,7 @@ void SeekIndex::read(sys::File& fd)
     fd.read_all_or_throw(diskidx.data(), diskidx.size());
     ofs_unc.reserve(idxcount + 1);
     ofs_comp.reserve(idxcount + 1);
-    BinaryDecoder dec(diskidx);
+    core::BinaryDecoder dec(diskidx);
     for (size_t i = 0; i < idxcount; ++i)
     {
         ofs_unc.push_back(ofs_unc[i] + dec.pop_uint(8, "uncompressed index"));

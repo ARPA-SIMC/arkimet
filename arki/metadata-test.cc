@@ -2,6 +2,7 @@
 #include "metadata/data.h"
 #include "metadata/collection.h"
 #include "core/file.h"
+#include "core/binary.h"
 #include "metadata/tests.h"
 #include "tests/lua.h"
 #include "types/origin.h"
@@ -13,7 +14,6 @@
 #include "types/proddef.h"
 #include "types/assigneddataset.h"
 #include "types/source/blob.h"
-#include "binary.h"
 #include "structured/keys.h"
 #include "structured/json.h"
 #include "structured/memory.h"
@@ -150,7 +150,7 @@ add_method("binary", [](Fixture& f) {
     sys::write_file("test.md", encoded.data(), encoded.size());
 
     Metadata md1;
-    BinaryDecoder dec(encoded);
+    core::BinaryDecoder dec(encoded);
     wassert(md1.read(dec, metadata::ReadContext("(test memory buffer)", dir)));
 
     wassert(actual_type(md1.source()).is_source_blob("grib", dir, "inbound/test.grib1", 1, 2));
@@ -163,7 +163,7 @@ add_method("binary", [](Fixture& f) {
 
     encoded = md.encodeBinary();
     Metadata md2;
-    BinaryDecoder dec1(encoded);
+    core::BinaryDecoder dec1(encoded);
     wassert(md2.read(dec1, metadata::ReadContext("(test memory buffer)", ""), false));
 
     wassert(actual(Reftime::createPeriod(Time(2007, 6, 5, 4, 3, 2), Time(2008, 7, 6, 5, 4, 3))) == md2.get<Reftime>());

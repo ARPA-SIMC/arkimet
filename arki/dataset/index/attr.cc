@@ -1,7 +1,7 @@
 #include "arki/dataset/index/attr.h"
 #include "arki/matcher.h"
 #include "arki/matcher/utils.h"
-#include "arki/binary.h"
+#include "arki/core/binary.h"
 #include "arki/types.h"
 #include "arki/metadata.h"
 #include <sstream>
@@ -53,7 +53,7 @@ unique_ptr<Type> AttrSubIndex::q_select_one(int id) const
     {
         const void* buf = m_select_one->fetchBlob(0);
         int len = m_select_one->fetchBytes(0);
-        BinaryDecoder dec((const uint8_t*)buf, len);
+        core::BinaryDecoder dec((const uint8_t*)buf, len);
         res = types::decodeInner(code, dec);
     }
     return res;
@@ -95,7 +95,7 @@ AttrSubIndex::~AttrSubIndex()
 void AttrSubIndex::add_to_cache(int id, const types::Type& item) const
 {
     vector<uint8_t> encoded;
-    BinaryEncoder enc(encoded);
+    core::BinaryEncoder enc(encoded);
     item.encode_for_indexing(enc);
     add_to_cache(id, item, encoded);
 }
@@ -120,7 +120,7 @@ int AttrSubIndex::id(const Metadata& md) const
 
     // Encode the item
     vector<uint8_t> encoded;
-    BinaryEncoder enc(encoded);
+    core::BinaryEncoder enc(encoded);
     item->encode_for_indexing(enc);
 
     // First look up in cache
@@ -171,7 +171,7 @@ std::vector<int> AttrSubIndex::query(const matcher::OR& m) const
     {
         const void* buf = m_select_all->fetchBlob(1);
         int len = m_select_all->fetchBytes(1);
-        BinaryDecoder dec((const uint8_t*)buf, len);
+        core::BinaryDecoder dec((const uint8_t*)buf, len);
         unique_ptr<Type> t = types::decodeInner(code, dec);
         if (m.matchItem(*t))
             ids.push_back(m_select_all->fetch<int>(0));
@@ -196,7 +196,7 @@ int AttrSubIndex::insert(const Metadata& md)
 
     // Extract the blob to insert
     std::vector<uint8_t> blob;
-    BinaryEncoder enc(blob);
+    core::BinaryEncoder enc(blob);
     item->encode_for_indexing(enc);
 
     // Try to serve it from cache if possible

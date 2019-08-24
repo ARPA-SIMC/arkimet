@@ -1,7 +1,7 @@
 #include "arki/exceptions.h"
 #include "arki/types/proddef.h"
 #include "arki/types/utils.h"
-#include "arki/binary.h"
+#include "arki/core/binary.h"
 #include "arki/structured/emitter.h"
 #include "arki/structured/memory.h"
 #include "arki/structured/keys.h"
@@ -46,7 +46,7 @@ std::string Proddef::formatStyle(Proddef::Style s)
     }
 }
 
-unique_ptr<Proddef> Proddef::decode(BinaryDecoder& dec)
+unique_ptr<Proddef> Proddef::decode(core::BinaryDecoder& dec)
 {
     Style s = (Style)dec.pop_uint(1, "proddef style");
     switch (s)
@@ -111,7 +111,7 @@ GRIB::~GRIB() { /* cache_grib.uncache(this); */ }
 
 Proddef::Style GRIB::style() const { return Style::GRIB; }
 
-void GRIB::encodeWithoutEnvelope(BinaryEncoder& enc) const
+void GRIB::encodeWithoutEnvelope(core::BinaryEncoder& enc) const
 {
     Proddef::encodeWithoutEnvelope(enc);
     m_values.encode(enc);

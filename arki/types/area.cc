@@ -1,7 +1,7 @@
 #include "arki/exceptions.h"
 #include "arki/types/area.h"
 #include "arki/types/utils.h"
-#include "arki/binary.h"
+#include "arki/core/binary.h"
 #include "arki/utils/geos.h"
 #include "arki/utils/string.h"
 #include "arki/structured/emitter.h"
@@ -78,7 +78,7 @@ static thread_local std::unique_ptr<BBox> bbox;
     return cached_bbox;
 }
 
-unique_ptr<Area> Area::decode(BinaryDecoder& dec)
+unique_ptr<Area> Area::decode(core::BinaryDecoder& dec)
 {
     Style s = (Style)dec.pop_uint(1, "area");
     switch (s)
@@ -183,7 +183,7 @@ GRIB::~GRIB() { /* cache_grib.uncache(this); */ }
 
 Area::Style GRIB::style() const { return Style::GRIB; }
 
-void GRIB::encodeWithoutEnvelope(BinaryEncoder& enc) const
+void GRIB::encodeWithoutEnvelope(core::BinaryEncoder& enc) const
 {
     Area::encodeWithoutEnvelope(enc);
     m_values.encode(enc);
@@ -263,7 +263,7 @@ ODIMH5::~ODIMH5() { /* cache_odimh5.uncache(this); */ }
 
 Area::Style ODIMH5::style() const { return Style::ODIMH5; }
 
-void ODIMH5::encodeWithoutEnvelope(BinaryEncoder& enc) const
+void ODIMH5::encodeWithoutEnvelope(core::BinaryEncoder& enc) const
 {
     Area::encodeWithoutEnvelope(enc);
     m_values.encode(enc);
@@ -354,14 +354,14 @@ const ValueBag& VM2::derived_values() const {
 
 Area::Style VM2::style() const { return Style::VM2; }
 
-void VM2::encodeWithoutEnvelope(BinaryEncoder& enc) const
+void VM2::encodeWithoutEnvelope(core::BinaryEncoder& enc) const
 {
     Area::encodeWithoutEnvelope(enc);
     enc.add_unsigned(m_station_id, 4);
     derived_values().encode(enc);
 }
 
-void VM2::encode_for_indexing(BinaryEncoder& enc) const
+void VM2::encode_for_indexing(core::BinaryEncoder& enc) const
 {
     Area::encodeWithoutEnvelope(enc);
     enc.add_unsigned(m_station_id, 4);

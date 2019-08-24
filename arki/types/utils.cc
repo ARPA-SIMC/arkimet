@@ -1,8 +1,6 @@
-#include "config.h"
-
-#include <arki/types.h>
-#include <arki/types/utils.h>
-#include <arki/utils/string.h>
+#include "arki/types.h"
+#include "arki/types/utils.h"
+#include "arki/utils/string.h"
 #include <cstring>
 
 using namespace std;

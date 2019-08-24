@@ -8,7 +8,7 @@
 #include "arki/sort.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
-#include "arki/binary.h"
+#include "arki/core/binary.h"
 #include "arki/nag.h"
 #include <cstdlib>
 #include <sstream>

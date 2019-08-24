@@ -2,13 +2,13 @@
 #include "metadata/data.h"
 #include "metadata/consumer.h"
 #include "core/file.h"
+#include "core/binary.h"
 #include "exceptions.h"
 #include "types/bundle.h"
 #include "types/value.h"
 #include "types/source/blob.h"
 #include "types/source/inline.h"
 #include "formatter.h"
-#include "binary.h"
 #include "utils/compress.h"
 #include "structured/emitter.h"
 #include "structured/memory.h"
@@ -169,11 +169,11 @@ void Metadata::unset_source()
 std::vector<types::Note> Metadata::notes() const
 {
     std::vector<types::Note> res;
-    BinaryDecoder dec(m_notes);
+    core::BinaryDecoder dec(m_notes);
     while (dec)
     {
         types::Code el_type;
-        BinaryDecoder inner = dec.pop_type_envelope(el_type);
+        core::BinaryDecoder inner = dec.pop_type_envelope(el_type);
 
         if (el_type != TYPE_NOTE)
             throw std::runtime_error("cannot decode note: item type is not a note");
@@ -202,13 +202,13 @@ void Metadata::set_notes_encoded(const std::vector<uint8_t>& notes)
 
 void Metadata::add_note(const types::Note& note)
 {
-    BinaryEncoder enc(m_notes);
+    core::BinaryEncoder enc(m_notes);
     note.encodeBinary(enc);
 }
 
 void Metadata::add_note(const std::string& note)
 {
-    BinaryEncoder enc(m_notes);
+    core::BinaryEncoder enc(m_notes);
     Note(note).encodeBinary(enc);
 }
 
@@ -275,7 +275,7 @@ bool Metadata::read(int in, const metadata::ReadContext& filename, bool readInli
     if (!bundle.read_data(f))
         return false;
 
-    BinaryDecoder inner(bundle.data);
+    core::BinaryDecoder inner(bundle.data);
 
     read_inner(inner, bundle.version, filename);
 
@@ -286,13 +286,13 @@ bool Metadata::read(int in, const metadata::ReadContext& filename, bool readInli
     return true;
 }
 
-bool Metadata::read(BinaryDecoder& dec, const metadata::ReadContext& filename, bool readInline)
+bool Metadata::read(core::BinaryDecoder& dec, const metadata::ReadContext& filename, bool readInline)
 {
     if (!dec) return false;
 
     string signature;
     unsigned version;
-    BinaryDecoder inner = dec.pop_metadata_bundle(signature, version);
+    core::BinaryDecoder inner = dec.pop_metadata_bundle(signature, version);
 
     // Ensure first 2 bytes are MD or !D
     if (signature != "MD")
@@ -307,7 +307,7 @@ bool Metadata::read(BinaryDecoder& dec, const metadata::ReadContext& filename, b
     return true;
 }
 
-void Metadata::read_inner(BinaryDecoder& dec, unsigned version, const metadata::ReadContext& rc)
+void Metadata::read_inner(core::BinaryDecoder& dec, unsigned version, const metadata::ReadContext& rc)
 {
     clear();
 
@@ -324,7 +324,7 @@ void Metadata::read_inner(BinaryDecoder& dec, unsigned version, const metadata::
     {
         const uint8_t* encoded_start = dec.buf;
         TypeCode el_type;
-        BinaryDecoder inner = dec.pop_type_envelope(el_type);
+        core::BinaryDecoder inner = dec.pop_type_envelope(el_type);
         const uint8_t* encoded_end = dec.buf;
 
         switch (el_type)
@@ -374,14 +374,14 @@ void Metadata::read_inline_data(core::AbstractInputFile& fd)
     m_data = metadata::DataManager::get().to_data(m_source->format, move(buf));
 }
 
-void Metadata::readInlineData(BinaryDecoder& dec, const std::string& filename)
+void Metadata::readInlineData(core::BinaryDecoder& dec, const std::string& filename)
 {
     // If the source is inline, then the data follows the metadata
     if (source().style() != types::Source::Style::INLINE) return;
 
     source::Inline* s = dynamic_cast<source::Inline*>(m_source);
 
-    BinaryDecoder data = dec.pop_data(s->size, "inline data");
+    core::BinaryDecoder data = dec.pop_data(s->size, "inline data");
     m_data = metadata::DataManager::get().to_data(m_source->format, std::vector<uint8_t>(data.buf, data.buf + s->size));
 }
 
@@ -553,16 +553,16 @@ void Metadata::read(const structured::Keys& keys, const structured::Reader& val)
 std::vector<uint8_t> Metadata::encodeBinary() const
 {
     vector<uint8_t> res;
-    BinaryEncoder enc(res);
+    core::BinaryEncoder enc(res);
     encodeBinary(enc);
     return res;
 }
 
-void Metadata::encodeBinary(BinaryEncoder& enc) const
+void Metadata::encodeBinary(core::BinaryEncoder& enc) const
 {
     // Encode the various information
     vector<uint8_t> encoded;
-    BinaryEncoder subenc(encoded);
+    core::BinaryEncoder subenc(encoded);
     for (map<types::Code, types::Type*>::const_iterator i = m_vals.begin(); i != m_vals.end(); ++i)
         i->second->encodeBinary(subenc);
     subenc.add_raw(m_notes);
@@ -738,17 +738,17 @@ size_t Metadata::data_size() const
 
 bool Metadata::read_buffer(const uint8_t* buf, std::size_t size, const metadata::ReadContext& file, metadata_dest_func dest)
 {
-    BinaryDecoder dec(buf, size);
+    core::BinaryDecoder dec(buf, size);
     return read_buffer(dec, file, dest);
 }
 
 bool Metadata::read_buffer(const std::vector<uint8_t>& buf, const metadata::ReadContext& file, metadata_dest_func dest)
 {
-    BinaryDecoder dec(buf);
+    core::BinaryDecoder dec(buf);
     return read_buffer(dec, file, dest);
 }
 
-bool Metadata::read_buffer(BinaryDecoder& dec, const metadata::ReadContext& file, metadata_dest_func dest)
+bool Metadata::read_buffer(core::BinaryDecoder& dec, const metadata::ReadContext& file, metadata_dest_func dest)
 {
     bool canceled = false;
     string signature;
@@ -756,7 +756,7 @@ bool Metadata::read_buffer(BinaryDecoder& dec, const metadata::ReadContext& file
     while (dec)
     {
         if (canceled) continue;
-        BinaryDecoder inner = dec.pop_metadata_bundle(signature, version);
+        core::BinaryDecoder inner = dec.pop_metadata_bundle(signature, version);
 
         // Ensure first 2 bytes are MD or !D
         if (signature != "MD" && signature != "!D" && signature != "MG")
@@ -816,12 +816,12 @@ bool Metadata::read_file(int in, const metadata::ReadContext& file, metadata_des
         {
             // Handle metadata group
             iotrace::trace_file(file.pathname, 0, 0, "read metadata group");
-            BinaryDecoder dec(bundle.data);
+            core::BinaryDecoder dec(bundle.data);
             Metadata::read_group(dec, bundle.version, file, dest);
         } else {
             unique_ptr<Metadata> md(new Metadata);
             iotrace::trace_file(file.pathname, 0, 0, "read metadata");
-            BinaryDecoder dec(bundle.data);
+            core::BinaryDecoder dec(bundle.data);
             md->read_inner(dec, bundle.version, file);
 
             // If the source is inline, then the data follows the metadata
@@ -856,12 +856,12 @@ bool Metadata::read_file(core::AbstractInputFile& fd, const metadata::ReadContex
         {
             // Handle metadata group
             iotrace::trace_file(file.pathname, 0, 0, "read metadata group");
-            BinaryDecoder dec(bundle.data);
+            core::BinaryDecoder dec(bundle.data);
             Metadata::read_group(dec, bundle.version, file, dest);
         } else {
             unique_ptr<Metadata> md(new Metadata);
             iotrace::trace_file(file.pathname, 0, 0, "read metadata");
-            BinaryDecoder dec(bundle.data);
+            core::BinaryDecoder dec(bundle.data);
             md->read_inner(dec, bundle.version, file);
 
             // If the source is inline, then the data follows the metadata
@@ -873,7 +873,7 @@ bool Metadata::read_file(core::AbstractInputFile& fd, const metadata::ReadContex
     return !canceled;
 }
 
-bool Metadata::read_group(BinaryDecoder& dec, unsigned version, const metadata::ReadContext& file, metadata_dest_func dest)
+bool Metadata::read_group(core::BinaryDecoder& dec, unsigned version, const metadata::ReadContext& file, metadata_dest_func dest)
 {
     // Handle metadata group
     if (version != 0)
@@ -890,14 +890,14 @@ bool Metadata::read_group(BinaryDecoder& dec, unsigned version, const metadata::
     dec.buf += dec.size;
     dec.size = 0;
 
-    BinaryDecoder unenc(decomp);
+    core::BinaryDecoder unenc(decomp);
 
     string isig;
     unsigned iver;
     bool canceled = false;
     while (!canceled && unenc)
     {
-        BinaryDecoder inner = unenc.pop_metadata_bundle(isig, iver);
+        core::BinaryDecoder inner = unenc.pop_metadata_bundle(isig, iver);
         unique_ptr<Metadata> md(new Metadata);
         md->read_inner(inner, iver, file);
         canceled = !dest(move(md));

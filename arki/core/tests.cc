@@ -1,5 +1,5 @@
 #include "tests.h"
-#include "arki/binary.h"
+#include "arki/core/binary.h"
 #include "arki/structured/json.h"
 #include "arki/structured/memory.h"
 #include "arki/exceptions.h"
@@ -63,9 +63,9 @@ void ActualTime::serializes() const
 {
     // Binary encoding, without envelope
     std::vector<uint8_t> enc;
-    BinaryEncoder e(enc);
+    core::BinaryEncoder e(enc);
     _actual.encodeWithoutEnvelope(e);
-    BinaryDecoder dec(enc);
+    core::BinaryDecoder dec(enc);
     wassert(actual(Time::decode(dec)) == _actual);
 
     // String encoding

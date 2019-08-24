@@ -39,14 +39,14 @@ struct Stats
 
     std::unique_ptr<types::Reftime> make_reftime() const;
 
-    void encodeBinary(BinaryEncoder& enc) const;
+    void encodeBinary(core::BinaryEncoder& enc) const;
 
-    void encodeWithoutEnvelope(BinaryEncoder& enc) const;
+    void encodeWithoutEnvelope(core::BinaryEncoder& enc) const;
     std::ostream& writeToOstream(std::ostream& o) const;
     void serialiseLocal(structured::Emitter& e, const Formatter* f=0) const;
     std::string toYaml(size_t indent = 0) const;
     void toYaml(std::ostream& out, size_t indent = 0) const;
-    static std::unique_ptr<Stats> decode(BinaryDecoder& dec);
+    static std::unique_ptr<Stats> decode(core::BinaryDecoder& dec);
     static std::unique_ptr<Stats> decodeString(const std::string& str);
     static std::unique_ptr<Stats> decode_structure(const structured::Keys& keys, const structured::Reader& val);
 

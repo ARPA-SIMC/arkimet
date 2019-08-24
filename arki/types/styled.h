@@ -2,6 +2,7 @@
 #define ARKI_TYPES_STYLED_H
 
 #include <arki/types/core.h>
+#include <arki/core/fwd.h>
 
 namespace arki {
 namespace types {
@@ -15,7 +16,7 @@ struct StyledType : public CoreType<BASE>
     virtual Style style() const = 0;
 
     // Default implementations of Type methods
-    void encodeWithoutEnvelope(BinaryEncoder& enc) const override;
+    void encodeWithoutEnvelope(core::BinaryEncoder& enc) const override;
     int compare(const Type& o) const override;
     virtual int compare_local(const BASE& o) const
     {

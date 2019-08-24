@@ -1,5 +1,5 @@
 #include "url.h"
-#include "arki/binary.h"
+#include "arki/core/binary.h"
 #include "arki/utils/lua.h"
 #include "arki/structured/emitter.h"
 #include "arki/structured/memory.h"
@@ -15,7 +15,7 @@ namespace source {
 
 Source::Style URL::style() const { return source::Style::URL; }
 
-void URL::encodeWithoutEnvelope(BinaryEncoder& enc) const
+void URL::encodeWithoutEnvelope(core::BinaryEncoder& enc) const
 {
     Source::encodeWithoutEnvelope(enc);
     enc.add_varint(url.size());

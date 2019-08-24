@@ -1,7 +1,7 @@
 #include "bundle.h"
 #include "arki/core/file.h"
+#include "arki/core/binary.h"
 #include "arki/utils/sys.h"
-#include "arki/binary.h"
 #include <algorithm>
 
 using namespace arki::utils;
@@ -27,7 +27,7 @@ bool Bundle::read_header(NamedFileDescriptor& fd)
     size_t res = fd.read(hdr + 1, 7);
     if (res < 7) return false; // EOF
 
-    BinaryDecoder dec(hdr, 8);
+    core::BinaryDecoder dec(hdr, 8);
 
     // Read the signature
     signature = dec.pop_string(2, "header of metadata bundle");
@@ -87,7 +87,7 @@ bool Bundle::read_header(AbstractInputFile& fd)
     size_t res = fd.read(hdr + 1, 7);
     if (res < 7) return false; // EOF
 
-    BinaryDecoder dec(hdr, 8);
+    core::BinaryDecoder dec(hdr, 8);
 
     // Read the signature
     signature = dec.pop_string(2, "header of metadata bundle");

@@ -6,7 +6,7 @@
 #include "arki/structured/memory.h"
 #include "arki/structured/keys.h"
 #include "arki/core/file.h"
-#include "arki/binary.h"
+#include "arki/core/binary.h"
 #include "arki/utils/sys.h"
 
 namespace {

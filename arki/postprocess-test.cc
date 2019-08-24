@@ -3,10 +3,10 @@
 #include "arki/metadata/data.h"
 #include "core/file.h"
 #include "core/cfg.h"
+#include "core/binary.h"
 #include "utils/sys.h"
 #include "metadata.h"
 #include "postprocess.h"
-#include "binary.h"
 
 #ifndef STDERR_FILENO
 #define STDERR_FILENO 2
@@ -87,7 +87,7 @@ add_method("cat", [] {
     // Get the normal data
     vector<uint8_t> plain;
     {
-        BinaryEncoder enc(plain);
+        core::BinaryEncoder enc(plain);
         reader->scan([&](std::shared_ptr<Metadata> md) {
             md->makeInline();
             md->encodeBinary(enc);

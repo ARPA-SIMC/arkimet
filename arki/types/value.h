@@ -33,12 +33,12 @@ struct Value : public types::CoreType<Value>
 
     bool equals(const Type& o) const override;
     int compare(const Type& o) const override;
-    void encodeWithoutEnvelope(BinaryEncoder& enc) const override;
+    void encodeWithoutEnvelope(core::BinaryEncoder& enc) const override;
     std::ostream& writeToOstream(std::ostream& o) const override;
     void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
 
     /// CODEC functions
-    static std::unique_ptr<Value> decode(BinaryDecoder& dec);
+    static std::unique_ptr<Value> decode(core::BinaryDecoder& dec);
     static std::unique_ptr<Value> decodeString(const std::string& val);
     static std::unique_ptr<Value> decode_structure(const structured::Keys& keys, const structured::Reader& val);
 

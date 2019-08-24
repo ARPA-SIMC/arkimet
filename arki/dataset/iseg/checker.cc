@@ -16,7 +16,7 @@
 #include "arki/nag.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/string.h"
-#include "arki/binary.h"
+#include "arki/core/binary.h"
 #include <system_error>
 #include <algorithm>
 #include <cstring>
@@ -43,7 +43,7 @@ struct IDMaker
     vector<uint8_t> make_string(const Metadata& md) const
     {
         vector<uint8_t> res;
-        BinaryEncoder enc(res);
+        core::BinaryEncoder enc(res);
         for (set<types::Code>::const_iterator i = components.begin(); i != components.end(); ++i)
             if (const Type* t = md.get(*i))
                 t->encodeBinary(enc);

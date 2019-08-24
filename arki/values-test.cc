@@ -1,7 +1,7 @@
 #include "types/tests.h"
 #include "arki/types/tests.h"
 #include "arki/values.h"
-#include "arki/binary.h"
+#include "arki/core/binary.h"
 #include <memory>
 
 namespace {
@@ -68,10 +68,10 @@ add_method("encoding", [] {
     auto test = [](const Value& var, unsigned encsize) {
         std::unique_ptr<Value> v;
         vector<uint8_t> enc;
-        BinaryEncoder e(enc);
+        core::BinaryEncoder e(enc);
         var.encode(e);
         wassert(actual(enc.size()) == (encsize));
-        BinaryDecoder dec(enc);
+        core::BinaryDecoder dec(enc);
         v.reset(Value::decode(dec));
         size_t decsize = dec.buf - enc.data();
         wassert(actual(decsize) == (encsize));
@@ -140,10 +140,10 @@ add_method("valuebag", [] {
 
     // Test encoding and decoding
     std::vector<uint8_t> enc;
-    BinaryEncoder e(enc);
+    core::BinaryEncoder e(enc);
 
     v1.encode(e);
-    BinaryDecoder dec(enc);
+    core::BinaryDecoder dec(enc);
     v2 = ValueBag::decode(dec);
     wassert(actual(v1) == v2);
 

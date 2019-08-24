@@ -5,7 +5,7 @@
 #include "arki/types/reftime.h"
 #include "arki/utils/compress.h"
 #include "arki/utils/files.h"
-#include "arki/binary.h"
+#include "arki/core/binary.h"
 #include "arki/segment.h"
 #include "arki/scan.h"
 #include "arki/utils/sys.h"
@@ -80,7 +80,7 @@ static void compressAndWrite(const std::vector<uint8_t>& buf, NamedFileDescripto
     {
         // Write a metadata group
         vector<uint8_t> tmp;
-        BinaryEncoder enc(tmp);
+        core::BinaryEncoder enc(tmp);
         enc.add_string("MG");
         enc.add_unsigned(0u, 2);	// Version 0: LZO compressed
         enc.add_unsigned(obuf.size() + 4, 4); // Compressed len
@@ -99,7 +99,7 @@ static void compressAndWrite(const std::vector<uint8_t>& buf, AbstractOutputFile
     {
         // Write a metadata group
         vector<uint8_t> tmp;
-        BinaryEncoder enc(tmp);
+        core::BinaryEncoder enc(tmp);
         enc.add_string("MG");
         enc.add_unsigned(0u, 2);	// Version 0: LZO compressed
         enc.add_unsigned(obuf.size() + 4, 4); // Compressed len
@@ -178,7 +178,7 @@ void Collection::write_to(NamedFileDescriptor& out) const
     static const size_t blocksize = 256;
 
     vector<uint8_t> buf;
-    BinaryEncoder enc(buf);
+    core::BinaryEncoder enc(buf);
     for (size_t i = 0; i < vals.size(); ++i)
     {
         if (i > 0 && (i % blocksize) == 0)
@@ -197,7 +197,7 @@ void Collection::write_to(AbstractOutputFile& out) const
     static const size_t blocksize = 256;
 
     vector<uint8_t> buf;
-    BinaryEncoder enc(buf);
+    core::BinaryEncoder enc(buf);
     for (size_t i = 0; i < vals.size(); ++i)
     {
         if (i > 0 && (i % blocksize) == 0)

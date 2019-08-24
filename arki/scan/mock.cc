@@ -2,7 +2,7 @@
 #include "arki/metadata.h"
 #include "arki/metadata/data.h"
 #include "arki/segment.h"
-#include "arki/binary.h"
+#include "arki/core/binary.h"
 #include "arki/types/source.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/sqlite.h"
@@ -132,7 +132,7 @@ std::shared_ptr<Metadata> MockEngine::by_checksum(const std::string& checksum)
     {
         const uint8_t* buf = static_cast<const uint8_t*>(by_sha256sum->fetchBlob(0));
         int len = by_sha256sum->fetchBytes(0);
-        BinaryDecoder dec((const uint8_t*)buf, len);
+        core::BinaryDecoder dec((const uint8_t*)buf, len);
 
         md.reset(new Metadata);
         md->read(dec, db_pathname, false);

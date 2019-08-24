@@ -1,5 +1,5 @@
 #include "inline.h"
-#include "arki/binary.h"
+#include "arki/core/binary.h"
 #include "arki/utils/lua.h"
 #include "arki/structured/emitter.h"
 #include "arki/structured/memory.h"
@@ -15,7 +15,7 @@ namespace source {
 
 source::Style Inline::style() const { return source::Style::INLINE; }
 
-void Inline::encodeWithoutEnvelope(BinaryEncoder& enc) const
+void Inline::encodeWithoutEnvelope(core::BinaryEncoder& enc) const
 {
     Source::encodeWithoutEnvelope(enc);
     enc.add_varint(size);

@@ -7,6 +7,7 @@
 #include <cstdint>
 
 namespace arki {
+namespace core {
 
 struct BinaryEncoder
 {
@@ -358,6 +359,7 @@ protected:
     [[noreturn]] void throw_insufficient_size(const std::string& what, size_t wanted);
 };
 
+}
 }
 
 #endif

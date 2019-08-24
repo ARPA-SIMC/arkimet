@@ -51,9 +51,9 @@ struct Source : public types::StyledType<Source>
 	virtual int compare_local(const Source& o) const;
 
     /// CODEC functions
-    virtual void encodeWithoutEnvelope(BinaryEncoder& enc) const;
-    static std::unique_ptr<Source> decode(BinaryDecoder& dec);
-    static std::unique_ptr<Source> decodeRelative(BinaryDecoder& dec, const std::string& basedir);
+    virtual void encodeWithoutEnvelope(core::BinaryEncoder& enc) const;
+    static std::unique_ptr<Source> decode(core::BinaryDecoder& dec);
+    static std::unique_ptr<Source> decodeRelative(core::BinaryDecoder& dec, const std::string& basedir);
     static std::unique_ptr<Source> decodeString(const std::string& val);
     static std::unique_ptr<Source> decode_structure(const structured::Keys& keys, const structured::Reader& val);
     virtual void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const;
