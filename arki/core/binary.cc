@@ -6,6 +6,7 @@
 using namespace std;
 
 namespace arki {
+namespace core {
 
 void BinaryDecoder::throw_parse_error(const std::string& what, const std::string& errmsg)
 {
@@ -101,4 +102,5 @@ BinaryDecoder BinaryDecoder::pop_metadata_bundle(std::string& signature, unsigne
     return res;
 }
 
+}
 }

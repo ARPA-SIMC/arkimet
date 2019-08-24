@@ -44,7 +44,7 @@ struct Reftime : public StyledType<Reftime>
 	static std::string formatStyle(Style s);
 
     /// CODEC functions
-    static std::unique_ptr<Reftime> decode(BinaryDecoder& dec);
+    static std::unique_ptr<Reftime> decode(core::BinaryDecoder& dec);
     static std::unique_ptr<Reftime> decodeString(const std::string& val);
     static std::unique_ptr<Reftime> decode_structure(const structured::Keys& keys, const structured::Reader& val);
 
@@ -94,7 +94,7 @@ struct Position : public Reftime
     Position(const core::Time& time);
 
     Style style() const override;
-    void encodeWithoutEnvelope(BinaryEncoder& enc) const override;
+    void encodeWithoutEnvelope(core::BinaryEncoder& enc) const override;
     std::ostream& writeToOstream(std::ostream& o) const override;
     void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
     std::string exactQuery() const override;
@@ -124,7 +124,7 @@ struct Period : public Reftime
     Period(const core::Time& begin, const core::Time& end);
 
     Style style() const override;
-    void encodeWithoutEnvelope(BinaryEncoder& enc) const override;
+    void encodeWithoutEnvelope(core::BinaryEncoder& enc) const override;
     std::ostream& writeToOstream(std::ostream& o) const override;
     void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
     const char* lua_type_name() const override;

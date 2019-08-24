@@ -2,7 +2,7 @@
 #include "arki/types/run.h"
 #include "arki/types/utils.h"
 #include "arki/utils/iostream.h"
-#include "arki/binary.h"
+#include "arki/core/binary.h"
 #include "arki/structured/emitter.h"
 #include "arki/structured/memory.h"
 #include "arki/structured/keys.h"
@@ -47,7 +47,7 @@ std::string Run::formatStyle(Run::Style s)
     }
 }
 
-unique_ptr<Run> Run::decode(BinaryDecoder& dec)
+unique_ptr<Run> Run::decode(core::BinaryDecoder& dec)
 {
     Style s = (Style)dec.pop_uint(1, "run style");
     switch (s)
@@ -130,7 +130,7 @@ namespace run {
 
 Run::Style Minute::style() const { return Style::MINUTE; }
 
-void Minute::encodeWithoutEnvelope(BinaryEncoder& enc) const
+void Minute::encodeWithoutEnvelope(core::BinaryEncoder& enc) const
 {
     Run::encodeWithoutEnvelope(enc);
     enc.add_varint(m_minute);

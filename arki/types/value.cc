@@ -1,6 +1,6 @@
 #include "arki/types/value.h"
 #include "arki/types/utils.h"
-#include "arki/binary.h"
+#include "arki/core/binary.h"
 #include "arki/utils/string.h"
 #include "arki/structured/emitter.h"
 #include "arki/structured/memory.h"
@@ -55,7 +55,7 @@ int Value::compare(const Type& o) const
     return 1;
 }
 
-void Value::encodeWithoutEnvelope(BinaryEncoder& enc) const
+void Value::encodeWithoutEnvelope(core::BinaryEncoder& enc) const
 {
     enc.add_raw(buffer);
 }
@@ -70,7 +70,7 @@ void Value::serialise_local(structured::Emitter& e, const structured::Keys& keys
     e.add(keys.value_value, buffer);
 }
 
-unique_ptr<Value> Value::decode(BinaryDecoder& dec)
+unique_ptr<Value> Value::decode(core::BinaryDecoder& dec)
 {
     return Value::create(dec.pop_string(dec.size, "'value' metadata type"));
 }

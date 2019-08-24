@@ -3,7 +3,7 @@
 
 #include <arki/core/fwd.h>
 #include <arki/utils/sys.h>
-#include <arki/binary.h>
+#include <arki/core/binary.h>
 #include <sys/types.h>
 #include <string>
 #include <vector>
@@ -143,7 +143,7 @@ struct IndexWriter
     /// Index data to be written
     std::vector<uint8_t> outbuf;
     /// Binary encoder to write to outbuf
-    BinaryEncoder enc;
+    core::BinaryEncoder enc;
     /// Offset of end of last uncompressed data read
     off_t unc_ofs = 0;
     /// Offset of end of last uncompressed block written

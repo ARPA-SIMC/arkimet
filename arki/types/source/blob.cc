@@ -1,6 +1,6 @@
 #include "blob.h"
-#include "arki/binary.h"
 #include "arki/segment.h"
+#include "arki/core/binary.h"
 #include "arki/core/file.h"
 #include "arki/utils/lua.h"
 #include "arki/utils/string.h"
@@ -20,7 +20,7 @@ namespace source {
 
 Source::Style Blob::style() const { return source::Style::BLOB; }
 
-void Blob::encodeWithoutEnvelope(BinaryEncoder& enc) const
+void Blob::encodeWithoutEnvelope(core::BinaryEncoder& enc) const
 {
     Source::encodeWithoutEnvelope(enc);
     enc.add_varint(filename.size());

@@ -45,7 +45,7 @@ struct Product : public types::StyledType<Product>
 	static std::string formatStyle(Style s);
 
     /// CODEC functions
-    static std::unique_ptr<Product> decode(BinaryDecoder& dec);
+    static std::unique_ptr<Product> decode(core::BinaryDecoder& dec);
     static std::unique_ptr<Product> decodeString(const std::string& val);
     static std::unique_ptr<Product> decode_structure(const structured::Keys& keys, const structured::Reader& val);
 
@@ -90,7 +90,7 @@ public:
 	unsigned product() const { return m_product; }
 
     Style style() const override;
-    void encodeWithoutEnvelope(BinaryEncoder& enc) const override;
+    void encodeWithoutEnvelope(core::BinaryEncoder& enc) const override;
     std::ostream& writeToOstream(std::ostream& o) const override;
     void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
     std::string exactQuery() const override;
@@ -128,7 +128,7 @@ public:
     unsigned local_table_version() const { return m_local_table_version; }
 
     Style style() const override;
-    void encodeWithoutEnvelope(BinaryEncoder& enc) const override;
+    void encodeWithoutEnvelope(core::BinaryEncoder& enc) const override;
     std::ostream& writeToOstream(std::ostream& o) const override;
     void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
     std::string exactQuery() const override;
@@ -171,7 +171,7 @@ public:
     void addValues(const ValueBag& newvalues);
 
     Style style() const override;
-    void encodeWithoutEnvelope(BinaryEncoder& enc) const override;
+    void encodeWithoutEnvelope(core::BinaryEncoder& enc) const override;
     std::ostream& writeToOstream(std::ostream& o) const override;
     void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
     std::string exactQuery() const override;
@@ -210,7 +210,7 @@ public:
 	/* REMOVED: inline double prodpar2() 	const { return m_prodpar2; } */
 
     Style style() const override;
-    void encodeWithoutEnvelope(BinaryEncoder& enc) const override;
+    void encodeWithoutEnvelope(core::BinaryEncoder& enc) const override;
     std::ostream& writeToOstream(std::ostream& o) const override;
     void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
     std::string exactQuery() const override;
@@ -245,7 +245,7 @@ public:
     const ValueBag& derived_values() const;
 
     Style style() const override;
-    void encodeWithoutEnvelope(BinaryEncoder& enc) const override;
+    void encodeWithoutEnvelope(core::BinaryEncoder& enc) const override;
     std::ostream& writeToOstream(std::ostream& o) const override;
     void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
     std::string exactQuery() const override;

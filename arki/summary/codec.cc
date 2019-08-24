@@ -3,7 +3,7 @@
 #include "stats.h"
 #include <arki/summary.h>
 #include <arki/metadata.h>
-#include <arki/binary.h>
+#include <arki/core/binary.h>
 #include <arki/utils/compress.h>
 #include <arki/utils/sys.h>
 #include <arki/types/utils.h>
@@ -42,7 +42,7 @@ struct Format1Decoder : public DecoderBase
         row.set_to_zero();
     }
 
-    const Type* decodeUItem(size_t msoIdx, BinaryDecoder& dec)
+    const Type* decodeUItem(size_t msoIdx, core::BinaryDecoder& dec)
     {
         codeclog("Decode metadata item " << msoIdx << ":" << formatCode(Table::mso[msoIdx]) << " len " << Table::msoSerLen[msoIdx]);
         size_t itemsizelen = Table::msoSerLen[msoIdx];
@@ -51,14 +51,14 @@ struct Format1Decoder : public DecoderBase
 
         if (itemsize)
         {
-            BinaryDecoder inner = dec.pop_data(itemsize, "encoded metadata body");
+            core::BinaryDecoder inner = dec.pop_data(itemsize, "encoded metadata body");
             return target.intern(msoIdx, decodeInner(Table::mso[msoIdx], inner));
         }
         else
             return 0;
     }
 
-    void decode(BinaryDecoder& dec, size_t scanpos = 0)
+    void decode(core::BinaryDecoder& dec, size_t scanpos = 0)
     {
         codeclog("Start decoding scanpos " << scanpos);
 
@@ -103,7 +103,7 @@ struct Format3Decoder : public DecoderBase
         row.set_to_zero();
     }
 
-    void decode(BinaryDecoder& dec)
+    void decode(core::BinaryDecoder& dec)
     {
         while (dec)
         {
@@ -139,7 +139,7 @@ struct Format3Decoder : public DecoderBase
 
             // Decode the stats
             types::Code code;
-            BinaryDecoder inner = dec.pop_type_envelope(code);
+            core::BinaryDecoder inner = dec.pop_type_envelope(code);
             if (code != TYPE_SUMMARYSTATS)
             {
                 stringstream ss;
@@ -157,7 +157,7 @@ struct Format3Decoder : public DecoderBase
 
 }
 
-size_t decode1(BinaryDecoder& dec, Table& target)
+size_t decode1(core::BinaryDecoder& dec, Table& target)
 {
     // Stripe size
     // either: child count + children
@@ -172,7 +172,7 @@ size_t decode1(BinaryDecoder& dec, Table& target)
     return decoder.count;
 }
 
-size_t decode3(BinaryDecoder& dec, Table& target)
+size_t decode3(core::BinaryDecoder& dec, Table& target)
 {
     // Stripe size
     // stats size + stats
@@ -186,7 +186,7 @@ size_t decode3(BinaryDecoder& dec, Table& target)
     return decoder.count;
 }
 
-size_t decode(BinaryDecoder& dec, unsigned version, const std::string& filename, Table& target)
+size_t decode(core::BinaryDecoder& dec, unsigned version, const std::string& filename, Table& target)
 {
     // Check version and ensure we can decode
     switch (version)
@@ -203,7 +203,7 @@ size_t decode(BinaryDecoder& dec, unsigned version, const std::string& filename,
             uint32_t uncsize = dec.pop_uint(4, "size of uncompressed data");
 
             vector<uint8_t> decomp = utils::compress::unlzo(dec.buf, dec.size, uncsize);
-            BinaryDecoder uncdec(decomp);
+            core::BinaryDecoder uncdec(decomp);
             return decode1(uncdec, target);
         }
         case 3: {
@@ -219,7 +219,7 @@ size_t decode(BinaryDecoder& dec, unsigned version, const std::string& filename,
                     // Read uncompressed size
                     uint32_t uncsize = dec.pop_uint(4, "uncompressed item size");
                     vector<uint8_t> decomp = utils::compress::unlzo(dec.buf, dec.size, uncsize);
-                    BinaryDecoder uncdec(decomp);
+                    core::BinaryDecoder uncdec(decomp);
                     return decode3(uncdec, target);
                 }
                 default:
@@ -239,7 +239,7 @@ size_t decode(BinaryDecoder& dec, unsigned version, const std::string& filename,
     }
 }
 
-EncodingVisitor::EncodingVisitor(BinaryEncoder& enc)
+EncodingVisitor::EncodingVisitor(core::BinaryEncoder& enc)
     : enc(enc)
 {
     // Start with all undef
@@ -251,7 +251,7 @@ bool EncodingVisitor::operator()(const std::vector<const Type*>& md, const Stats
     vector<types::Code> removed;
     size_t added_count = 0;
     vector<uint8_t> added;
-    BinaryEncoder added_enc(added);
+    core::BinaryEncoder added_enc(added);
 
     // Prepare the diff between last and md
     for (size_t i = 0; i < Table::msoSize; ++i)

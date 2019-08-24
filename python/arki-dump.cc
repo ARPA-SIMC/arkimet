@@ -1,9 +1,9 @@
 #include "arki-dump.h"
 #include "arki/utils/sys.h"
 #include "arki/core/file.h"
+#include "arki/core/binary.h"
 #include "arki/metadata.h"
 #include "arki/summary.h"
-#include "arki/binary.h"
 #include "arki/types.h"
 #include "arki/types/source.h"
 #include "arki/types/bundle.h"
@@ -45,7 +45,7 @@ void addToSummary(Input& in, arki::Summary& s)
         if (bundle.signature == "MD" || bundle.signature == "!D")
         {
             if (!bundle.read_data(in)) break;
-            arki::BinaryDecoder dec(bundle.data);
+            arki::core::BinaryDecoder dec(bundle.data);
             md.read_inner(dec, bundle.version, in.name());
             if (md.source().style() == arki::types::Source::Style::INLINE)
                 md.read_inline_data(in);
@@ -54,14 +54,14 @@ void addToSummary(Input& in, arki::Summary& s)
         else if (bundle.signature == "SU")
         {
             if (!bundle.read_data(in)) break;
-            arki::BinaryDecoder dec(bundle.data);
+            arki::core::BinaryDecoder dec(bundle.data);
             summary.read_inner(dec, bundle.version, in.name());
             s.add(summary);
         }
         else if (bundle.signature == "MG")
         {
             if (!bundle.read_data(in)) break;
-            arki::BinaryDecoder dec(bundle.data);
+            arki::core::BinaryDecoder dec(bundle.data);
             arki::Metadata::read_group(dec, bundle.version, in.name(), [&](std::shared_ptr<arki::Metadata> md) { s.add(*md); return true; });
         }
         else
@@ -301,7 +301,7 @@ struct dump_yaml : public MethKwargs<dump_yaml, arkipy_ArkiDump>
                 if (bundle.signature == "MD" || bundle.signature == "!D")
                 {
                     if (!read_data()) break;
-                    arki::BinaryDecoder dec(bundle.data);
+                    arki::core::BinaryDecoder dec(bundle.data);
                     md.read_inner(dec, bundle.version, input_name);
                     if (md.source().style() == arki::types::Source::Style::INLINE)
                         read_inline_data(md);
@@ -310,14 +310,14 @@ struct dump_yaml : public MethKwargs<dump_yaml, arkipy_ArkiDump>
                 else if (bundle.signature == "SU")
                 {
                     if (!read_data()) break;
-                    arki::BinaryDecoder dec(bundle.data);
+                    arki::core::BinaryDecoder dec(bundle.data);
                     summary.read_inner(dec, bundle.version, input_name);
                     print_summary(summary);
                 }
                 else if (bundle.signature == "MG")
                 {
                     if (!read_data()) break;
-                    arki::BinaryDecoder dec(bundle.data);
+                    arki::core::BinaryDecoder dec(bundle.data);
                     arki::Metadata::read_group(dec, bundle.version, input_name, [&](std::shared_ptr<arki::Metadata> md) { print_md(*md); return true; });
                 }
                 else

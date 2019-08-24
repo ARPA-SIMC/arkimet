@@ -1,7 +1,7 @@
 #include "arki/exceptions.h"
 #include "arki/types/bbox.h"
 #include "arki/types/utils.h"
-#include "arki/binary.h"
+#include "arki/core/binary.h"
 #include "arki/structured/emitter.h"
 #include "arki/structured/memory.h"
 #include "arki/libconfig.h"
@@ -51,7 +51,7 @@ std::string BBox::formatStyle(BBox::Style s)
     }
 }
 
-unique_ptr<BBox> BBox::decode(BinaryDecoder& dec)
+unique_ptr<BBox> BBox::decode(core::BinaryDecoder& dec)
 {
     Style s = (Style)dec.pop_uint(1, "bbox style");
     switch (s)
@@ -97,7 +97,7 @@ namespace bbox {
 
 BBox::Style INVALID::style() const { return Style::INVALID; }
 
-void INVALID::encodeWithoutEnvelope(BinaryEncoder& enc) const
+void INVALID::encodeWithoutEnvelope(core::BinaryEncoder& enc) const
 {
     BBox::encodeWithoutEnvelope(enc);
 }

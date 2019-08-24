@@ -1,7 +1,7 @@
 #include "arki/exceptions.h"
 #include "arki/types/product.h"
 #include "arki/types/utils.h"
-#include "arki/binary.h"
+#include "arki/core/binary.h"
 #include "arki/utils/string.h"
 #include "arki/structured/emitter.h"
 #include "arki/structured/memory.h"
@@ -63,7 +63,7 @@ std::string Product::formatStyle(Product::Style s)
     }
 }
 
-unique_ptr<Product> Product::decode(BinaryDecoder& dec)
+unique_ptr<Product> Product::decode(core::BinaryDecoder& dec)
 {
     Style s = (Style)dec.pop_uint(1, "product");
     switch (s)
@@ -288,7 +288,7 @@ std::unique_ptr<Product> Product::createVM2(unsigned variable_id)
 namespace product {
 
 Product::Style GRIB1::style() const { return Style::GRIB1; }
-void GRIB1::encodeWithoutEnvelope(BinaryEncoder& enc) const
+void GRIB1::encodeWithoutEnvelope(core::BinaryEncoder& enc) const
 {
     Product::encodeWithoutEnvelope(enc);
     enc.add_unsigned(m_origin, 1);
@@ -396,7 +396,7 @@ bool GRIB1::lua_lookup(lua_State* L, const std::string& name) const
 
 
 Product::Style GRIB2::style() const { return Style::GRIB2; }
-void GRIB2::encodeWithoutEnvelope(BinaryEncoder& enc) const
+void GRIB2::encodeWithoutEnvelope(core::BinaryEncoder& enc) const
 {
     Product::encodeWithoutEnvelope(enc);
     enc.add_unsigned(m_centre, 2);
@@ -560,7 +560,7 @@ bool GRIB2::lua_lookup(lua_State* L, const std::string& name) const
 
 Product::Style BUFR::style() const { return Style::BUFR; }
 
-void BUFR::encodeWithoutEnvelope(BinaryEncoder& enc) const
+void BUFR::encodeWithoutEnvelope(core::BinaryEncoder& enc) const
 {
     Product::encodeWithoutEnvelope(enc);
     enc.add_unsigned(m_type, 1);
@@ -736,7 +736,7 @@ void BUFR::lua_register_methods(lua_State* L) const
 
 Product::Style ODIMH5::style() const { return Style::ODIMH5; }
 
-void ODIMH5::encodeWithoutEnvelope(BinaryEncoder& enc) const
+void ODIMH5::encodeWithoutEnvelope(core::BinaryEncoder& enc) const
 {
     Product::encodeWithoutEnvelope(enc);
     enc.add_varint(m_obj.size());
@@ -880,7 +880,7 @@ const ValueBag& VM2::derived_values() const {
 
 Product::Style VM2::style() const { return Style::VM2; }
 
-void VM2::encodeWithoutEnvelope(BinaryEncoder& enc) const
+void VM2::encodeWithoutEnvelope(core::BinaryEncoder& enc) const
 {
     Product::encodeWithoutEnvelope(enc);
     enc.add_unsigned(m_variable_id, 4);

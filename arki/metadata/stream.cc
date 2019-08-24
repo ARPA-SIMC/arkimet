@@ -1,7 +1,7 @@
 #include "stream.h"
 #include "data.h"
 #include "arki/types/source/inline.h"
-#include "arki/binary.h"
+#include "arki/core/binary.h"
 #include "arki/exceptions.h"
 #include "arki/utils/string.h"
 #include <cstring>
@@ -16,7 +16,7 @@ bool Stream::checkMetadata()
 {
     if (buffer.size() < 8) return false;
 
-    BinaryDecoder dec(buffer);
+    core::BinaryDecoder dec(buffer);
 
     // Ensure first 2 bytes are MD
     char header[2];
@@ -35,7 +35,7 @@ bool Stream::checkMetadata()
     if (dec.size < len)
         return false;
 
-    BinaryDecoder inner = dec.pop_data(len, "encoded metadata body");
+    core::BinaryDecoder inner = dec.pop_data(len, "encoded metadata body");
 
     metadata::ReadContext rc("http-connection", streamname);
     md.reset(new Metadata);

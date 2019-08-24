@@ -38,6 +38,9 @@ struct Section;
 struct Sections;
 }
 
+struct BinaryEncoder;
+struct BinaryDecoder;
+
 }
 }
 

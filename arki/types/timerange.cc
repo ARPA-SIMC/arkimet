@@ -2,7 +2,7 @@
 #include "arki/types/timerange.h"
 #include "arki/types/utils.h"
 #include "arki/utils/iostream.h"
-#include "arki/binary.h"
+#include "arki/core/binary.h"
 #include "arki/structured/emitter.h"
 #include "arki/structured/memory.h"
 #include "arki/structured/keys.h"
@@ -156,7 +156,7 @@ std::string Timerange::formatStyle(Timerange::Style s)
     }
 }
 
-unique_ptr<Timerange> Timerange::decode(BinaryDecoder& dec)
+unique_ptr<Timerange> Timerange::decode(core::BinaryDecoder& dec)
 {
     Style s = (Style)dec.pop_uint(1, "timerange");
     switch (s)
@@ -654,7 +654,7 @@ namespace timerange {
 
 Timerange::Style GRIB1::style() const { return Style::GRIB1; }
 
-void GRIB1::encodeWithoutEnvelope(BinaryEncoder& enc) const
+void GRIB1::encodeWithoutEnvelope(core::BinaryEncoder& enc) const
 {
     Timerange::encodeWithoutEnvelope(enc);
     enc.add_unsigned(m_type, 1); enc.add_unsigned(m_unit, 1); enc.add_signed(m_p1, 1); enc.add_signed(m_p2, 1);
@@ -1247,7 +1247,7 @@ void GRIB1::arg_significance(unsigned type, bool& use_p1, bool& use_p2)
 
 Timerange::Style GRIB2::style() const { return Style::GRIB2; }
 
-void GRIB2::encodeWithoutEnvelope(BinaryEncoder& enc) const
+void GRIB2::encodeWithoutEnvelope(core::BinaryEncoder& enc) const
 {
     Timerange::encodeWithoutEnvelope(enc);
     enc.add_unsigned(m_type, 1); enc.add_unsigned(m_unit, 1); enc.add_signed(m_p1, 4); enc.add_signed(m_p2, 4);
@@ -1376,7 +1376,7 @@ unique_ptr<GRIB2> GRIB2::create(unsigned char type, unsigned char unit, signed l
 
 Timerange::Style Timedef::style() const { return Style::TIMEDEF; }
 
-void Timedef::encodeWithoutEnvelope(BinaryEncoder& enc) const
+void Timedef::encodeWithoutEnvelope(core::BinaryEncoder& enc) const
 {
     Timerange::encodeWithoutEnvelope(enc);
 
@@ -1919,7 +1919,7 @@ unsigned BUFR::months() const
 
 Timerange::Style BUFR::style() const { return Style::BUFR; }
 
-void BUFR::encodeWithoutEnvelope(BinaryEncoder& enc) const
+void BUFR::encodeWithoutEnvelope(core::BinaryEncoder& enc) const
 {
     Timerange::encodeWithoutEnvelope(enc);
     enc.add_unsigned(m_unit, 1);

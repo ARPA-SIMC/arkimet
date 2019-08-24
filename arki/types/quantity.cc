@@ -1,7 +1,7 @@
 #include "arki/exceptions.h"
 #include "arki/types/quantity.h"
 #include "arki/types/utils.h"
-#include "arki/binary.h"
+#include "arki/core/binary.h"
 #include "arki/utils/string.h"
 #include "arki/structured/emitter.h"
 #include "arki/structured/memory.h"
@@ -58,7 +58,7 @@ bool Quantity::equals(const Type& o) const
 	return compare(*v) == 0;
 }
 
-void Quantity::encodeWithoutEnvelope(BinaryEncoder& enc) const
+void Quantity::encodeWithoutEnvelope(core::BinaryEncoder& enc) const
 {
     enc.add_varint(values.size());
 
@@ -69,7 +69,7 @@ void Quantity::encodeWithoutEnvelope(BinaryEncoder& enc) const
     }
 }
 
-unique_ptr<Quantity> Quantity::decode(BinaryDecoder& dec)
+unique_ptr<Quantity> Quantity::decode(core::BinaryDecoder& dec)
 {
     size_t num = dec.pop_varint<size_t>("quantity num elemetns");
     std::set<std::string> vals;

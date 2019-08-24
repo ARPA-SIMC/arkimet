@@ -1,16 +1,15 @@
 #ifndef ARKI_VALUES_H
 #define ARKI_VALUES_H
 
+#include <arki/core/fwd.h>
+#include <arki/structured/fwd.h>
 #include <string>
 #include <map>
-#include <arki/structured/fwd.h>
 #include <iosfwd>
 
 struct lua_State;
 
 namespace arki {
-struct BinaryEncoder;
-struct BinaryDecoder;
 
 /**
  * Base class for generic scalar values.
@@ -39,14 +38,14 @@ public:
     /**
      * Encode into a compact binary representation
      */
-    virtual void encode(BinaryEncoder& enc) const = 0;
+    virtual void encode(core::BinaryEncoder& enc) const = 0;
 
     /**
      * Decode from compact binary representation.
      *
      * @retval used The number of bytes decoded.
      */
-    static Value* decode(BinaryDecoder& dec);
+    static Value* decode(core::BinaryDecoder& dec);
 
 	/**
 	 * Encode into a string representation
@@ -105,12 +104,12 @@ struct ValueBag : public std::map<std::string, Value*>
     /**
      * Encode into a compact binary representation
      */
-    void encode(BinaryEncoder& enc) const;
+    void encode(core::BinaryEncoder& enc) const;
 
     /**
      * Decode from compact binary representation
      */
-    static ValueBag decode(BinaryDecoder& dec);
+    static ValueBag decode(core::BinaryDecoder& dec);
 
 	/**
 	 * Encode into a string representation

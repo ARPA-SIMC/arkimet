@@ -61,6 +61,31 @@
  },
  {
   "doc": "",
+  "group": "arki_core_binary",
+  "method": "integer"
+ },
+ {
+  "doc": "",
+  "group": "arki_core_binary",
+  "method": "varints"
+ },
+ {
+  "doc": "",
+  "group": "arki_core_binary",
+  "method": "strings"
+ },
+ {
+  "doc": "",
+  "group": "arki_core_binary",
+  "method": "cstrings"
+ },
+ {
+  "doc": "",
+  "group": "arki_core_binary",
+  "method": "lines"
+ },
+ {
+  "doc": "",
   "group": "arki_utils",
   "method": "parse_size"
  },
@@ -198,31 +223,6 @@
   "doc": "",
   "group": "arki_utils_geos",
   "method": "empty"
- },
- {
-  "doc": "",
-  "group": "arki_binary",
-  "method": "integer"
- },
- {
-  "doc": "",
-  "group": "arki_binary",
-  "method": "varints"
- },
- {
-  "doc": "",
-  "group": "arki_binary",
-  "method": "strings"
- },
- {
-  "doc": "",
-  "group": "arki_binary",
-  "method": "cstrings"
- },
- {
-  "doc": "",
-  "group": "arki_binary",
-  "method": "lines"
  },
  {
   "doc": "",

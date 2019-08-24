@@ -148,12 +148,12 @@ public:
      *
      * @returns false when end-of-file is reached
      */
-    bool read(BinaryDecoder& dec, const metadata::ReadContext& filename, bool readInline=true);
+    bool read(core::BinaryDecoder& dec, const metadata::ReadContext& filename, bool readInline=true);
 
     /**
      * Decode the metadata, without the outer bundle headers, from the given buffer.
      */
-    void read_inner(BinaryDecoder& dec, unsigned version, const metadata::ReadContext& filename);
+    void read_inner(core::BinaryDecoder& dec, unsigned version, const metadata::ReadContext& filename);
 
     /// Read the inline data from the given file handle
     void read_inline_data(core::NamedFileDescriptor& fd);
@@ -162,7 +162,7 @@ public:
     void read_inline_data(core::AbstractInputFile& fd);
 
     /// Read the inline data from the given memory buffer
-    void readInlineData(BinaryDecoder& dec, const std::string& filename);
+    void readInlineData(core::BinaryDecoder& dec, const std::string& filename);
 
     /**
      * Read a metadata document encoded in Yaml from the given file descriptor.
@@ -210,7 +210,7 @@ public:
     std::vector<uint8_t> encodeBinary() const;
 
     /// Encode to an Encoder. Inline data will not be added.
-    void encodeBinary(BinaryEncoder& enc) const;
+    void encodeBinary(core::BinaryEncoder& enc) const;
 
 
     /// Get the raw data described by this metadata
@@ -275,7 +275,7 @@ public:
     static bool read_buffer(const uint8_t* buf, std::size_t size, const metadata::ReadContext& file, metadata_dest_func dest);
 
     /// Read all metadata from a buffer into the given consumer
-    static bool read_buffer(BinaryDecoder& dec, const metadata::ReadContext& file, metadata_dest_func dest);
+    static bool read_buffer(core::BinaryDecoder& dec, const metadata::ReadContext& file, metadata_dest_func dest);
 
     /// Read all metadata from a file into the given consumer
     static bool read_file(const std::string& fname, metadata_dest_func dest);
@@ -295,7 +295,7 @@ public:
     /**
      * Read a metadata group into the given consumer
      */
-    static bool read_group(BinaryDecoder& dec, unsigned version, const metadata::ReadContext& file, metadata_dest_func dest);
+    static bool read_group(core::BinaryDecoder& dec, unsigned version, const metadata::ReadContext& file, metadata_dest_func dest);
 
 	// LUA functions
 	/// Push to the LUA stack a userdata to access this Metadata

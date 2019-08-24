@@ -2,7 +2,7 @@
 #define ARKI_TYPES_STYLED_TCC
 
 #include "arki/types/styled.h"
-#include "arki/binary.h"
+#include "arki/core/binary.h"
 #include "arki/structured/memory.h"
 #include "arki/structured/keys.h"
 #include "arki/libconfig.h"
@@ -15,7 +15,7 @@ namespace arki {
 namespace types {
 
 template<typename BASE>
-void StyledType<BASE>::encodeWithoutEnvelope(BinaryEncoder& enc) const
+void StyledType<BASE>::encodeWithoutEnvelope(core::BinaryEncoder& enc) const
 {
     enc.add_unsigned((unsigned)this->style(), 1);
 }

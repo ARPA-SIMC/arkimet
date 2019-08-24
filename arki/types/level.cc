@@ -1,5 +1,5 @@
 #include "arki/exceptions.h"
-#include "arki/binary.h"
+#include "arki/core/binary.h"
 #include "arki/utils/iostream.h"
 #include "arki/types/level.h"
 #include "arki/types/utils.h"
@@ -109,7 +109,7 @@ std::string Level::formatStyle(Level::Style s)
     }
 }
 
-unique_ptr<Level> Level::decode(BinaryDecoder& dec)
+unique_ptr<Level> Level::decode(core::BinaryDecoder& dec)
 {
     Style s = (Style)dec.pop_uint(1, "level style");
     switch (s)
@@ -437,7 +437,7 @@ namespace level {
 
 Level::Style GRIB1::style() const { return Style::GRIB1; }
 
-void GRIB1::encodeWithoutEnvelope(BinaryEncoder& enc) const
+void GRIB1::encodeWithoutEnvelope(core::BinaryEncoder& enc) const
 {
     Level::encodeWithoutEnvelope(enc) ;
     enc.add_unsigned(m_type, 1);
@@ -654,7 +654,7 @@ const uint32_t GRIB2S::MISSING_VALUE = 0xffffffff;
 
 Level::Style GRIB2S::style() const { return Style::GRIB2S; }
 
-void GRIB2S::encodeWithoutEnvelope(BinaryEncoder& enc) const
+void GRIB2S::encodeWithoutEnvelope(core::BinaryEncoder& enc) const
 {
     Level::encodeWithoutEnvelope(enc);
     enc.add_unsigned(m_type, 1);
@@ -816,7 +816,7 @@ unique_ptr<GRIB2S> GRIB2S::create(unsigned char type, unsigned char scale, unsig
 
 Level::Style GRIB2D::style() const { return Style::GRIB2D; }
 
-void GRIB2D::encodeWithoutEnvelope(BinaryEncoder& enc) const
+void GRIB2D::encodeWithoutEnvelope(core::BinaryEncoder& enc) const
 {
     Level::encodeWithoutEnvelope(enc);
     enc.add_unsigned(m_type1, 1); enc.add_unsigned(m_scale1, 1); enc.add_varint(m_value1);
@@ -1035,7 +1035,7 @@ unique_ptr<GRIB2D> GRIB2D::create(
 
 Level::Style ODIMH5::style() const { return Style::ODIMH5; }
 
-void ODIMH5::encodeWithoutEnvelope(BinaryEncoder& enc) const
+void ODIMH5::encodeWithoutEnvelope(core::BinaryEncoder& enc) const
 {
     Level::encodeWithoutEnvelope(enc);
     enc.add_double(m_min);

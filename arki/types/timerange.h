@@ -106,7 +106,7 @@ struct Timerange : public types::StyledType<Timerange>
     virtual std::unique_ptr<timerange::Timedef> to_timedef() const;
 
     /// CODEC functions
-    static std::unique_ptr<Timerange> decode(BinaryDecoder& dec);
+    static std::unique_ptr<Timerange> decode(core::BinaryDecoder& dec);
     static std::unique_ptr<Timerange> decodeString(const std::string& val);
     static std::unique_ptr<Timerange> decode_structure(const structured::Keys& keys, const structured::Reader& val);
 
@@ -155,7 +155,7 @@ public:
 	unsigned p2() const { return m_p2; }
 
     Style style() const override;
-    void encodeWithoutEnvelope(BinaryEncoder& enc) const override;
+    void encodeWithoutEnvelope(core::BinaryEncoder& enc) const override;
     std::ostream& writeToOstream(std::ostream& o) const override;
     void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
     std::string exactQuery() const override;
@@ -190,7 +190,7 @@ public:
 	signed p2() const { return m_p2; }
 
     Style style() const override;
-    void encodeWithoutEnvelope(BinaryEncoder& enc) const override;
+    void encodeWithoutEnvelope(core::BinaryEncoder& enc) const override;
     std::ostream& writeToOstream(std::ostream& o) const override;
     void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
     std::string exactQuery() const override;
@@ -233,7 +233,7 @@ public:
     unsigned stat_len() const { return m_stat_len; }
 
     Style style() const override;
-    void encodeWithoutEnvelope(BinaryEncoder& enc) const override;
+    void encodeWithoutEnvelope(core::BinaryEncoder& enc) const override;
     std::ostream& writeToOstream(std::ostream& o) const override;
     void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
     std::string exactQuery() const override;
@@ -300,7 +300,7 @@ public:
 	unsigned months() const;
 
     Style style() const override;
-    void encodeWithoutEnvelope(BinaryEncoder& enc) const override;
+    void encodeWithoutEnvelope(core::BinaryEncoder& enc) const override;
     std::ostream& writeToOstream(std::ostream& o) const override;
     void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
     std::string exactQuery() const override;

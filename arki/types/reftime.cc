@@ -1,7 +1,7 @@
 #include "reftime.h"
 #include "utils.h"
 #include "arki/exceptions.h"
-#include "arki/binary.h"
+#include "arki/core/binary.h"
 #include "arki/utils/string.h"
 #include "arki/structured/emitter.h"
 #include "arki/structured/memory.h"
@@ -48,7 +48,7 @@ std::string Reftime::formatStyle(Reftime::Style s)
 	}
 }
 
-unique_ptr<Reftime> Reftime::decode(BinaryDecoder& dec)
+unique_ptr<Reftime> Reftime::decode(core::BinaryDecoder& dec)
 {
     Style s = (Style)dec.pop_uint(1, "reftime style");
     switch (s)
@@ -135,7 +135,7 @@ Position::Position(const Time& time) : time(time) {}
 
 Reftime::Style Position::style() const { return Style::POSITION; }
 
-void Position::encodeWithoutEnvelope(BinaryEncoder& enc) const
+void Position::encodeWithoutEnvelope(core::BinaryEncoder& enc) const
 {
     Reftime::encodeWithoutEnvelope(enc);
     time.encodeWithoutEnvelope(enc);
@@ -223,7 +223,7 @@ Period::Period(const Time& begin, const Time& end)
 
 Reftime::Style Period::style() const { return Style::PERIOD; }
 
-void Period::encodeWithoutEnvelope(BinaryEncoder& enc) const
+void Period::encodeWithoutEnvelope(core::BinaryEncoder& enc) const
 {
     Reftime::encodeWithoutEnvelope(enc);
     begin.encodeWithoutEnvelope(enc);

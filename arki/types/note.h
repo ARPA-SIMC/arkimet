@@ -36,8 +36,8 @@ struct Note : public CoreType<Note>
     bool equals(const Type& o) const override;
 
     /// CODEC functions
-    void encodeWithoutEnvelope(BinaryEncoder& enc) const override;
-    static std::unique_ptr<Note> decode(BinaryDecoder& dec);
+    void encodeWithoutEnvelope(core::BinaryEncoder& enc) const override;
+    static std::unique_ptr<Note> decode(core::BinaryDecoder& dec);
     static std::unique_ptr<Note> decodeString(const std::string& val);
     std::ostream& writeToOstream(std::ostream& o) const override;
     void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;

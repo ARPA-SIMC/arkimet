@@ -3,10 +3,10 @@
 #include "summary/codec.h"
 #include "summary/stats.h"
 #include "core/file.h"
+#include "core/binary.h"
 #include "exceptions.h"
 #include "metadata.h"
 #include "matcher.h"
-#include "binary.h"
 #include "formatter.h"
 #include "core/time.h"
 #include "types/bundle.h"
@@ -288,7 +288,7 @@ struct StatsHull : public ItemVisitor
     {
         const Area& a = *dynamic_cast<const Area*>(&type);
         vector<uint8_t> encoded;
-        BinaryEncoder enc(encoded);
+        core::BinaryEncoder enc(encoded);
         a.encodeBinary(enc);
         pair<set<vector<uint8_t>>::iterator, bool> i = seen.insert(encoded);
         if (i.second)
@@ -437,17 +437,17 @@ bool Summary::read(int fd, const std::string& filename)
     if (!bundle.read_data(f))
         return false;
 
-    BinaryDecoder dec(bundle.data);
+    core::BinaryDecoder dec(bundle.data);
     read_inner(dec, bundle.version, filename);
 
     return true;
 }
 
-bool Summary::read(BinaryDecoder& dec, const std::string& filename)
+bool Summary::read(core::BinaryDecoder& dec, const std::string& filename)
 {
     string signature;
     unsigned version;
-    BinaryDecoder inner = dec.pop_metadata_bundle(signature, version);
+    core::BinaryDecoder inner = dec.pop_metadata_bundle(signature, version);
 
     // Ensure first 2 bytes are SU
     if (signature != "SU")
@@ -458,7 +458,7 @@ bool Summary::read(BinaryDecoder& dec, const std::string& filename)
     return true;
 }
 
-void Summary::read_inner(BinaryDecoder& dec, unsigned version, const std::string& filename)
+void Summary::read_inner(core::BinaryDecoder& dec, unsigned version, const std::string& filename)
 {
     using namespace summary;
     summary::decode(dec, version, filename, *root);
@@ -468,7 +468,7 @@ std::vector<uint8_t> Summary::encode(bool compressed) const
 {
     // Encode
     vector<uint8_t> inner;
-    BinaryEncoder innerenc(inner);
+    core::BinaryEncoder innerenc(inner);
     if (!root->empty())
     {
         EncodingVisitor visitor(innerenc);
@@ -477,7 +477,7 @@ std::vector<uint8_t> Summary::encode(bool compressed) const
 
     // Prepend header
     vector<uint8_t> res;
-    BinaryEncoder enc(res);
+    core::BinaryEncoder enc(res);
     // Signature
     enc.add_string("SU");
     // Version

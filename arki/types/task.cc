@@ -1,7 +1,7 @@
 #include "arki/exceptions.h"
 #include "arki/types/task.h"
 #include "arki/types/utils.h"
-#include "arki/binary.h"
+#include "arki/core/binary.h"
 #include "arki/structured/emitter.h"
 #include "arki/structured/memory.h"
 #include "arki/structured/keys.h"
@@ -50,13 +50,13 @@ bool Task::equals(const Type& o) const
 	return task == v->task;
 }
 
-void Task::encodeWithoutEnvelope(BinaryEncoder& enc) const
+void Task::encodeWithoutEnvelope(core::BinaryEncoder& enc) const
 {
     enc.add_varint(task.size());
     enc.add_raw(task);
 }
 
-unique_ptr<Task> Task::decode(BinaryDecoder& dec)
+unique_ptr<Task> Task::decode(core::BinaryDecoder& dec)
 {
     size_t vallen = dec.pop_varint<size_t>("task text size");
     string val = dec.pop_string(vallen, "task text");

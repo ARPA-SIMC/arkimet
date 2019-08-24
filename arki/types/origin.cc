@@ -1,7 +1,7 @@
 #include "arki/exceptions.h"
 #include "arki/types/origin.h"
 #include "arki/types/utils.h"
-#include "arki/binary.h"
+#include "arki/core/binary.h"
 #include "arki/utils/string.h"
 #include "arki/structured/emitter.h"
 #include "arki/structured/memory.h"
@@ -59,7 +59,7 @@ std::string Origin::formatStyle(Origin::Style s)
     }
 }
 
-unique_ptr<Origin> Origin::decode(BinaryDecoder& dec)
+unique_ptr<Origin> Origin::decode(core::BinaryDecoder& dec)
 {
     Style s = (Style)dec.pop_uint(1, "origin style");
     switch (s)
@@ -229,7 +229,7 @@ GRIB1::~GRIB1() { /* cache_grib1.uncache(this); */ }
 
 Origin::Style GRIB1::style() const { return Style::GRIB1; }
 
-void GRIB1::encodeWithoutEnvelope(BinaryEncoder& enc) const
+void GRIB1::encodeWithoutEnvelope(core::BinaryEncoder& enc) const
 {
     Origin::encodeWithoutEnvelope(enc);
     enc.add_unsigned(m_centre, 1);
@@ -337,7 +337,7 @@ GRIB2::~GRIB2() { /* cache_grib2.uncache(this); */ }
 
 Origin::Style GRIB2::style() const { return Style::GRIB2; }
 
-void GRIB2::encodeWithoutEnvelope(BinaryEncoder& enc) const
+void GRIB2::encodeWithoutEnvelope(core::BinaryEncoder& enc) const
 {
     Origin::encodeWithoutEnvelope(enc);
     enc.add_unsigned(m_centre, 2);
@@ -468,7 +468,7 @@ BUFR::~BUFR() { /* cache_bufr.uncache(this); */ }
 
 Origin::Style BUFR::style() const { return Style::BUFR; }
 
-void BUFR::encodeWithoutEnvelope(BinaryEncoder& enc) const
+void BUFR::encodeWithoutEnvelope(core::BinaryEncoder& enc) const
 {
     Origin::encodeWithoutEnvelope(enc);
     enc.add_unsigned(m_centre, 1);
@@ -567,7 +567,7 @@ ODIMH5::~ODIMH5() { /* cache_grib1.uncache(this); */ }
 
 Origin::Style ODIMH5::style() const { return Style::ODIMH5; }
 
-void ODIMH5::encodeWithoutEnvelope(BinaryEncoder& enc) const
+void ODIMH5::encodeWithoutEnvelope(core::BinaryEncoder& enc) const
 {
     Origin::encodeWithoutEnvelope(enc);
     enc.add_varint(m_WMO.size());

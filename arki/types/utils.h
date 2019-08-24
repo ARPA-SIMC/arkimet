@@ -2,6 +2,7 @@
 #define ARKI_TYPES_UTILS_H
 
 #include <arki/types.h>
+#include <arki/core/fwd.h>
 #include <stdexcept>
 #include <string>
 #include <sstream>
@@ -19,8 +20,6 @@
 struct lua_State;
 
 namespace arki {
-struct BinaryDecoder;
-
 namespace types {
 
 template<class F>
@@ -33,7 +32,7 @@ struct is_item_decoder<R(Args...)>
 };
 
 template<class R>
-struct is_item_decoder<R(BinaryDecoder&)>
+struct is_item_decoder<R(core::BinaryDecoder&)>
 {
     static constexpr bool value = true;
 };
@@ -46,7 +45,7 @@ struct is_item_decoder<R(BinaryDecoder&)>
  */
 struct MetadataType
 {
-    typedef std::unique_ptr<Type> (*item_decoder)(BinaryDecoder& dec);
+    typedef std::unique_ptr<Type> (*item_decoder)(core::BinaryDecoder& dec);
     typedef std::unique_ptr<Type> (*string_decoder)(const std::string& val);
     typedef std::unique_ptr<Type> (*structure_decoder)(const structured::Keys& keys, const structured::Reader& reader);
     typedef void (*lua_libloader)(lua_State* L);

@@ -2,7 +2,7 @@
 #include "source/blob.h"
 #include "source/inline.h"
 #include "source/url.h"
-#include "arki/binary.h"
+#include "arki/core/binary.h"
 #include "arki/segment.h"
 #include "arki/exceptions.h"
 #include "arki/types/utils.h"
@@ -57,7 +57,7 @@ int Source::compare_local(const Source& o) const
     return 0;
 }
 
-void Source::encodeWithoutEnvelope(BinaryEncoder& enc) const
+void Source::encodeWithoutEnvelope(core::BinaryEncoder& enc) const
 {
     StyledType<Source>::encodeWithoutEnvelope(enc);
     enc.add_unsigned(format.size(), 1);
@@ -70,12 +70,12 @@ void Source::serialise_local(structured::Emitter& e, const structured::Keys& key
     e.add(keys.source_format); e.add(format);
 }
 
-unique_ptr<Source> Source::decode(BinaryDecoder& dec)
+unique_ptr<Source> Source::decode(core::BinaryDecoder& dec)
 {
     return decodeRelative(dec, string());
 }
 
-unique_ptr<Source> Source::decodeRelative(BinaryDecoder& dec, const std::string& basedir)
+unique_ptr<Source> Source::decodeRelative(core::BinaryDecoder& dec, const std::string& basedir)
 {
     Style s = (Style)dec.pop_uint(1, "source style");
     unsigned int format_len = dec.pop_uint(1, "source format length");

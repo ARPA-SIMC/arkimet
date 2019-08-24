@@ -1,15 +1,13 @@
 #ifndef ARKI_CORE_TIME_H
 #define ARKI_CORE_TIME_H
 
+#include <arki/core/fwd.h>
 #include <vector>
 #include <string>
 
 struct lua_State;
 
 namespace arki {
-struct BinaryEncoder;
-struct BinaryDecoder;
-
 namespace core {
 
 class TimeBase

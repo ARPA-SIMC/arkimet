@@ -54,7 +54,7 @@ struct BBox : public types::StyledType<BBox>
 	static std::string formatStyle(Style s);
 
     /// CODEC functions
-    static std::unique_ptr<BBox> decode(BinaryDecoder& dec);
+    static std::unique_ptr<BBox> decode(core::BinaryDecoder& dec);
     static std::unique_ptr<BBox> decodeString(const std::string& val);
     static std::unique_ptr<BBox> decode_structure(const structured::Keys& keys, const structured::Reader& val);
 
@@ -69,7 +69,7 @@ namespace bbox {
 struct INVALID : public BBox
 {
     Style style() const override;
-    void encodeWithoutEnvelope(BinaryEncoder& enc) const override;
+    void encodeWithoutEnvelope(core::BinaryEncoder& enc) const override;
     std::ostream& writeToOstream(std::ostream& o) const override;
     const char* lua_type_name() const override;
 

@@ -1,7 +1,7 @@
 #include "note.h"
 #include "utils.h"
 #include "arki/exceptions.h"
-#include "arki/binary.h"
+#include "arki/core/binary.h"
 #include "arki/structured/emitter.h"
 #include "arki/structured/memory.h"
 #include "arki/structured/keys.h"
@@ -56,14 +56,14 @@ bool Note::equals(const Type& o) const
 	return time == v->time && content == v->content;
 }
 
-void Note::encodeWithoutEnvelope(BinaryEncoder& enc) const
+void Note::encodeWithoutEnvelope(core::BinaryEncoder& enc) const
 {
     time.encodeWithoutEnvelope(enc);
     enc.add_varint(content.size());
     enc.add_raw(content);
 }
 
-unique_ptr<Note> Note::decode(BinaryDecoder& dec)
+unique_ptr<Note> Note::decode(core::BinaryDecoder& dec)
 {
     Time t = Time::decode(dec);
     size_t msg_len = dec.pop_varint<size_t>("note text size");

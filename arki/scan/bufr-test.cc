@@ -21,14 +21,6 @@ class Tests : public TestCase
     void register_tests() override;
 } test("arki_scan_bufr");
 
-void is_bufr_data(Metadata& md, size_t expected_size)
-{
-    auto buf = wcallchecked(md.get_data().read());
-    wassert(actual(buf.size()) == expected_size);
-    wassert(actual(string((const char*)buf.data(), 4)) == "BUFR");
-    wassert(actual(string((const char*)buf.data() + expected_size - 4, 4)) == "7777");
-}
-
 void Tests::register_tests() {
 
 // Test validation

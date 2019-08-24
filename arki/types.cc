@@ -1,8 +1,8 @@
 #include "arki/libconfig.h"
 #include "core/file.h"
+#include "core/binary.h"
 #include "types.h"
 #include "types/utils.h"
-#include "binary.h"
 #include "utils/sys.h"
 #include "utils/string.h"
 #include "structured/emitter.h"
@@ -110,16 +110,16 @@ std::string Type::to_string() const
     return ss.str();
 }
 
-void Type::encode_for_indexing(BinaryEncoder& enc) const
+void Type::encode_for_indexing(core::BinaryEncoder& enc) const
 {
     encodeWithoutEnvelope(enc);
 }
 
-void Type::encodeBinary(BinaryEncoder& enc) const
+void Type::encodeBinary(core::BinaryEncoder& enc) const
 {
     vector<uint8_t> contents;
     contents.reserve(256);
-    BinaryEncoder contentsenc(contents);
+    core::BinaryEncoder contentsenc(contents);
     encodeWithoutEnvelope(contentsenc);
 
     enc.add_varint((unsigned)type_code());
@@ -130,7 +130,7 @@ void Type::encodeBinary(BinaryEncoder& enc) const
 std::vector<uint8_t> Type::encodeBinary() const
 {
     vector<uint8_t> contents;
-    BinaryEncoder enc(contents);
+    core::BinaryEncoder enc(contents);
     encodeBinary(enc);
     return contents;
 }
@@ -294,14 +294,14 @@ void Type::lua_loadlib(lua_State* L)
 }
 #endif
 
-unique_ptr<Type> decode(BinaryDecoder& dec)
+unique_ptr<Type> decode(core::BinaryDecoder& dec)
 {
     types::Code code;
-    BinaryDecoder inner = dec.pop_type_envelope(code);
+    core::BinaryDecoder inner = dec.pop_type_envelope(code);
     return decodeInner(code, inner);
 }
 
-unique_ptr<Type> decodeInner(types::Code code, BinaryDecoder& dec)
+unique_ptr<Type> decodeInner(types::Code code, core::BinaryDecoder& dec)
 {
     return types::MetadataType::get(code)->decode_func(dec);
 }

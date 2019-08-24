@@ -18,9 +18,6 @@
 struct lua_State;
 
 namespace arki {
-class Formatter;
-class BinaryDecoder;
-
 namespace summary {
 struct Table;
 struct Stats;
@@ -125,12 +122,12 @@ public:
      *
      * @returns false when end-of-file is reached
      */
-    bool read(BinaryDecoder& dec, const std::string& filename);
+    bool read(core::BinaryDecoder& dec, const std::string& filename);
 
     /**
      * Decode the summary, without the outer bundle headers, from the given buffer.
      */
-    void read_inner(BinaryDecoder& dec, unsigned version, const std::string& filename);
+    void read_inner(core::BinaryDecoder& dec, unsigned version, const std::string& filename);
 
     /// Decode from structured data
     void read(const structured::Keys& keys, const structured::Reader& val);

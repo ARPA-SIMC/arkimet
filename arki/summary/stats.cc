@@ -1,8 +1,8 @@
 #include "arki/summary/stats.h"
 #include "arki/metadata.h"
 #include "arki/core/file.h"
+#include "arki/core/binary.h"
 #include "arki/types/utils.h"
-#include "arki/binary.h"
 #include "arki/utils/lua.h"
 #include "arki/utils/string.h"
 #include "arki/utils/yaml.h"
@@ -102,11 +102,11 @@ std::unique_ptr<types::Reftime> Stats::make_reftime() const
     return Reftime::create(begin, end);
 }
 
-void Stats::encodeBinary(BinaryEncoder& enc) const
+void Stats::encodeBinary(core::BinaryEncoder& enc) const
 {
     vector<uint8_t> contents;
     contents.reserve(256);
-    BinaryEncoder contentsenc(contents);
+    core::BinaryEncoder contentsenc(contents);
     encodeWithoutEnvelope(contentsenc);
 
     enc.add_varint((unsigned)TYPE_SUMMARYSTATS);
@@ -114,7 +114,7 @@ void Stats::encodeBinary(BinaryEncoder& enc) const
     enc.add_raw(contents);
 }
 
-void Stats::encodeWithoutEnvelope(BinaryEncoder& enc) const
+void Stats::encodeWithoutEnvelope(core::BinaryEncoder& enc) const
 {
     unique_ptr<types::Reftime> reftime(Reftime::create(begin, end));
     enc.add_unsigned(count, 4);
@@ -168,7 +168,7 @@ void Stats::toYaml(std::ostream& out, size_t indent) const
     out << ind << "Reftime: " << *reftime << endl;
 }
 
-unique_ptr<Stats> Stats::decode(BinaryDecoder& dec)
+unique_ptr<Stats> Stats::decode(core::BinaryDecoder& dec)
 {
     unique_ptr<Stats> res(new Stats);
 
@@ -177,7 +177,7 @@ unique_ptr<Stats> Stats::decode(BinaryDecoder& dec)
 
     // Then decode the reftime
     TypeCode code;
-    BinaryDecoder inner = dec.pop_type_envelope(code);
+    core::BinaryDecoder inner = dec.pop_type_envelope(code);
     if (code == TYPE_REFTIME)
     {
         unique_ptr<Reftime> rt(Reftime::decode(inner));

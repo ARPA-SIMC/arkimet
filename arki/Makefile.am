@@ -19,7 +19,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		core/file.h \
 		core/cfg.h \
 		core/tests.h \
-		binary.h \
+		core/binary.h \
 		defs.h \
 		exceptions.h \
 		bbox.h \
@@ -227,6 +227,7 @@ libarkimet_la_SOURCES += \
 		core/fuzzytime.cc \
 		core/file.cc \
 		core/cfg.cc \
+		core/binary.cc \
 		exceptions.cc \
 		nag.cc \
 		utils.cc \
@@ -243,7 +244,6 @@ libarkimet_la_SOURCES += \
 		utils/tar.cc \
 		utils/zip.cc \
 		utils/term.cc \
-		binary.cc \
 		transaction.cc \
 		structured/emitter.cc \
 		structured/keys.cc \
@@ -308,6 +308,7 @@ tests_arki_test_SOURCES += \
 		core/fuzzytime-test.cc \
 		core/file-test.cc \
 		core/cfg-test.cc \
+		core/binary-test.cc \
 		utils-test.cc \
 		utils/accounting-test.cc \
 		utils/gzip-test.cc \
@@ -318,7 +319,6 @@ tests_arki_test_SOURCES += \
 		utils/process-test.cc \
 		utils/regexp-test.cc \
 		utils/geos-test.cc \
-		binary-test.cc \
 		transaction-test.cc \
 		structured/memory-test.cc \
 		structured/json-test.cc \
