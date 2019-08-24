@@ -5,6 +5,7 @@
 #include "utils/methods.h"
 #include "utils/type.h"
 #include "utils/wreport.h"
+#include "utils/dballe.h"
 #include "arki/metadata.h"
 #include "arki/values.h"
 #include "arki/utils/vm2.h"
@@ -44,6 +45,9 @@ PyObject* module_scanners = nullptr;
 
 // Wreport API
 arki::python::Wreport wreport_api;
+
+// Dballe API
+arki::python::Dballe dballe_api;
 
 /// Load scripts from the dir_scan configuration directory
 void load_scanners()
@@ -318,6 +322,7 @@ GribDef* grib_def = nullptr;
  * scan.bufr module contents
  */
 
+#if 0
 arkipy_scan_BufrMessage* bufrmessage_create(dballe::Message& msg)
 {
     arkipy_scan_BufrMessage* result = PyObject_New(arkipy_scan_BufrMessage, arkipy_scan_BufrMessage_Type);
@@ -325,6 +330,7 @@ arkipy_scan_BufrMessage* bufrmessage_create(dballe::Message& msg)
     result->msg = &msg;
     return result;
 }
+#endif
 
 PyObject* bufrscanner_object = nullptr;
 
@@ -345,7 +351,7 @@ void load_bufrscanner_object()
 class PythonBufrScanner : public arki::scan::BufrScanner
 {
 protected:
-    void scan_extra(dballe::BinaryMessage& rmsg, dballe::Message& msg, std::shared_ptr<Metadata> md) override
+    void scan_extra(dballe::BinaryMessage& rmsg, std::shared_ptr<dballe::Message> msg, std::shared_ptr<Metadata> md) override
     {
         auto orig_use_count = md.use_count();
 
@@ -353,7 +359,7 @@ protected:
         if (!bufrscanner_object)
             load_bufrscanner_object();
 
-        pyo_unique_ptr pymsg((PyObject*)bufrmessage_create(msg));
+        pyo_unique_ptr pymsg(dballe_api.message_create(msg));
         pyo_unique_ptr pymd((PyObject*)metadata_create(md));
         pyo_unique_ptr obj(throw_ifnull(PyObject_CallMethod(
                         bufrscanner_object, "scan", "OO", pymsg.get(), pymd.get())));
@@ -375,169 +381,6 @@ public:
     {
     }
 };
-
-
-// FIXME: implement exporting a capsule with API functions in dballe, and use it here
-
-struct msg_type : public Getter<msg_type, arkipy_scan_BufrMessage>
-{
-    constexpr static const char* name = "type";
-    constexpr static const char* doc = "return the BUFR message type";
-    constexpr static void* closure = nullptr;
-
-    static PyObject* get(Impl* self, void* closure)
-    {
-        try {
-            std::string name = str::lower(dballe::format_message_type(self->msg->get_type()));
-            return to_python(name);
-        } ARKI_CATCH_RETURN_PYO;
-    }
-};
-
-struct msg_get_named : public MethKwargs<msg_get_named, arkipy_scan_BufrMessage>
-{
-    constexpr static const char* name = "get_named";
-    constexpr static const char* signature = "name: str";
-    constexpr static const char* returns = "Optional[dballe.Var]";
-    constexpr static const char* summary = "return the variable given its shortcut name, or None of not found";
-    constexpr static const char* doc = nullptr;
-
-    static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
-    {
-        static const char* kwlist[] = { "name", NULL };
-        const char* name = nullptr;
-        if (!PyArg_ParseTupleAndKeywords(args, kw, "s", (char**)kwlist, &name))
-            return nullptr;
-
-        try {
-            const wreport::Var* res = self->msg->get(name);
-            if (!res)
-                Py_RETURN_NONE;
-            else
-                return wreport_api.var_create(*res);
-        } ARKI_CATCH_RETURN_PYO
-    }
-};
-
-wreport::Varcode varcode_from_python(PyObject* o)
-{
-    return dballe::resolve_varcode(from_python<std::string>(o));
-}
-
-struct msg_get : MethKwargs<msg_get, arkipy_scan_BufrMessage>
-{
-    constexpr static const char* name = "get";
-    constexpr static const char* signature = "level: dballe.Level, trange: dballe.Trange, code: str";
-    constexpr static const char* returns = "Optional[dballe.Var]";
-    constexpr static const char* summary = "Get a Var given its level, timerange, and varcode; returns None if not found";
-
-    static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
-    {
-        static const char* kwlist[] = { "level", "trange", "code", nullptr };
-        PyObject* pylevel = nullptr;
-        PyObject* pytrange = nullptr;
-        PyObject* pycode = nullptr;
-        if (!PyArg_ParseTupleAndKeywords(args, kw, "OOO", const_cast<char**>(kwlist), &pylevel, &pytrange, &pycode))
-            return nullptr;
-
-        try {
-            if (pylevel && pylevel != Py_None)
-            {
-                PyErr_SetString(PyExc_NotImplementedError, "dballe message lookup by level is not implemented");
-                throw PythonException();
-            }
-            if (pytrange && pytrange != Py_None)
-            {
-                PyErr_SetString(PyExc_NotImplementedError, "dballe message lookup by timerange is not implemented");
-                throw PythonException();
-            }
-            dballe::Level level;
-            dballe::Trange trange;
-            wreport::Varcode code = varcode_from_python(pycode);
-
-            const wreport::Var* res = self->msg->get(level, trange, code);
-            if (!res)
-                Py_RETURN_NONE;
-            else
-                return wreport_api.var_create(*res);
-        } ARKI_CATCH_RETURN_PYO
-    }
-};
-
-PyObject* varcode_to_python(wreport::Varcode code)
-{
-    char buf[7];
-    snprintf(buf, 7, "%c%02d%03d",
-            WR_VAR_F(code) == 0 ? 'B' :
-            WR_VAR_F(code) == 1 ? 'R' :
-            WR_VAR_F(code) == 2 ? 'C' :
-            WR_VAR_F(code) == 3 ? 'D' : '?',
-            WR_VAR_X(code), WR_VAR_Y(code));
-    return throw_ifnull(PyUnicode_FromString(buf));
-}
-
-
-// TODO: implement in python when we can use dballe's dballe.Message
-struct msg_get_pollution_type : public MethNoargs<msg_get_pollution_type, arkipy_scan_BufrMessage>
-{
-    constexpr static const char* name = "get_pollution_type";
-    constexpr static const char* signature = "";
-    constexpr static const char* returns = "Optional[str]";
-    constexpr static const char* summary = "get the pollution varcode for message, if present, or None otherwise";
-
-    static PyObject* run(Impl* self)
-    {
-        try {
-            wreport::Varcode code = 0;
-            self->msg->foreach_var([&](const dballe::Level& level, const dballe::Trange& trange, const wreport::Var& var) {
-                if (trange.is_missing())
-                    return true;
-                code = var.code();
-                return false;
-            });
-
-            if (code != 0)
-                return varcode_to_python(code);
-            else
-                Py_RETURN_NONE;
-        } ARKI_CATCH_RETURN_PYO
-    }
-};
-
-struct BufrMessageDef : public Type<BufrMessageDef, arkipy_scan_BufrMessage>
-{
-    constexpr static const char* name = "BufrMessage";
-    constexpr static const char* qual_name = "arkimet.scan.grib.BufrMessage";
-    constexpr static const char* doc = R"(
-Access grib message contents
-)";
-    GetSetters<msg_type> getsetters;
-    Methods<msg_get_named, msg_get, msg_get_pollution_type> methods;
-
-    static void _dealloc(Impl* self)
-    {
-        Py_TYPE(self)->tp_free(self);
-    }
-
-    static PyObject* _str(Impl* self)
-    {
-        return PyUnicode_FromString("BufrMessage");
-    }
-
-    static PyObject* _repr(Impl* self)
-    {
-        return PyUnicode_FromString("BufrMessage");
-    }
-
-    static int _init(Impl* self, PyObject* args, PyObject* kw)
-    {
-        // BufrMessage() should not be invoked as a constructor
-        PyErr_SetString(PyExc_NotImplementedError, "BufrMessage objects cannot be constructed explicitly");
-        return -1;
-    }
-};
-
-BufrMessageDef* bufrmessage_def = nullptr;
 
 
 /*
@@ -738,15 +581,13 @@ namespace python {
 void register_scan(PyObject* m)
 {
     wreport_api.import();
+    dballe_api.import();
 
     pyo_unique_ptr grib = throw_ifnull(PyModule_Create(&grib_module));
     grib_def = new GribDef;
     grib_def->define(arkipy_scan_Grib_Type, grib);
 
     pyo_unique_ptr bufr = throw_ifnull(PyModule_Create(&bufr_module));
-    bufrmessage_def = new BufrMessageDef;
-    bufrmessage_def->define(arkipy_scan_BufrMessage_Type, bufr);
-
     pyo_unique_ptr odimh5 = throw_ifnull(PyModule_Create(&odimh5_module));
     pyo_unique_ptr vm2 = throw_ifnull(PyModule_Create(&vm2_module));
     pyo_unique_ptr scan = throw_ifnull(PyModule_Create(&scan_module));

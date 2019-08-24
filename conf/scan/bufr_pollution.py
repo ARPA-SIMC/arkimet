@@ -30,10 +30,12 @@ def scan(msg, md):
         md["proddef"] = {"style": "GRIB", "value": proddef}
 
     # Look for pollutant type
-    polltype = msg.get_pollution_type()
-    if polltype is not None:
-        polltype = pollution_codes.get(polltype)
-    if polltype is not None:
+    code = None
+    for cur in msg.query_data():
+        code = cur["var"]
+    if code is not None:
+        code = pollution_codes.get(code)
+    if code is not None:
         product = md.to_python("product")
         if product is None:
             raise RuntimeError("cannot add pollution type to a missing product")
@@ -41,7 +43,7 @@ def scan(msg, md):
         if value is None:
             value = {}
             product["value"] = value
-        value["p"] = polltype
+        value["p"] = code
         md["product"] = product
 
 
