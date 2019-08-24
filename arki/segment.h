@@ -9,7 +9,7 @@
 #include <arki/scan/fwd.h>
 #include <arki/metadata/fwd.h>
 #include <arki/segment/fwd.h>
-#include <arki/transaction.h>
+#include <arki/core/transaction.h>
 #include <string>
 #include <iosfwd>
 #include <memory>
@@ -196,7 +196,7 @@ struct Reader : public std::enable_shared_from_this<Reader>
     virtual size_t stream(const types::source::Blob& src, core::AbstractOutputFile& out);
 };
 
-struct Writer : public Transaction, public std::enable_shared_from_this<Writer>
+struct Writer : public core::Transaction, public std::enable_shared_from_this<Writer>
 {
     struct PendingMetadata
     {
@@ -284,7 +284,7 @@ public:
      *
      * `rootdir` is the directory to use as root for the Blob sources in `mds`.
      */
-    virtual Pending repack(const std::string& rootdir, metadata::Collection& mds, const RepackConfig& cfg=RepackConfig()) = 0;
+    virtual core::Pending repack(const std::string& rootdir, metadata::Collection& mds, const RepackConfig& cfg=RepackConfig()) = 0;
 
     /**
      * Replace this segment with a tar segment, updating the metadata in mds to

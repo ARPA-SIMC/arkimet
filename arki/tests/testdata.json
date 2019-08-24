@@ -86,6 +86,11 @@
  },
  {
   "doc": "",
+  "group": "arki_core_transaction",
+  "method": "empty"
+ },
+ {
+  "doc": "",
   "group": "arki_utils",
   "method": "parse_size"
  },
@@ -222,11 +227,6 @@
  {
   "doc": "",
   "group": "arki_utils_geos",
-  "method": "empty"
- },
- {
-  "doc": "",
-  "group": "arki_transaction",
   "method": "empty"
  },
  {

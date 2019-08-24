@@ -4,7 +4,7 @@
 #include <arki/defs.h>
 #include <arki/utils/sys.h>
 #include <arki/exceptions.h>
-#include <arki/transaction.h>
+#include <arki/core/transaction.h>
 #include <string>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -88,7 +88,7 @@ struct PreserveFileTimes
     ~PreserveFileTimes() noexcept(false);
 };
 
-struct RenameTransaction : public Transaction
+struct RenameTransaction : public core::Transaction
 {
     std::string tmpabspath;
     std::string abspath;
@@ -107,7 +107,7 @@ struct RenameTransaction : public Transaction
  *
  * On rollback, unlink all tmpfiles
  */
-struct FinalizeTempfilesTransaction : public Transaction
+struct FinalizeTempfilesTransaction : public core::Transaction
 {
     std::vector<std::string> tmpfiles;
     std::function<void(const std::vector<std::string>& tmpfiles)> on_commit;

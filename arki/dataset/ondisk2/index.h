@@ -4,7 +4,7 @@
 /// Index for data files and their contents
 
 #include <arki/dataset/index.h>
-#include <arki/transaction.h>
+#include <arki/core/transaction.h>
 #include <arki/segment/fwd.h>
 #include <arki/utils/sqlite.h>
 #include <arki/dataset/ondisk2.h>
@@ -259,7 +259,7 @@ public:
 	bool open();
 
     /// Begin a transaction and return the corresponding Pending object
-    Pending begin_transaction();
+    core::Pending begin_transaction();
 
     /**
      * Index the given metadata item.

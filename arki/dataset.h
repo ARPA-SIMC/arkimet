@@ -5,9 +5,9 @@
 #include <arki/matcher.h>
 #include <arki/core/fwd.h>
 #include <arki/core/cfg.h>
+#include <arki/core/transaction.h>
 #include <arki/metadata/fwd.h>
 #include <arki/dataset/fwd.h>
-#include <arki/transaction.h>
 #include <string>
 #include <vector>
 #include <memory>
@@ -360,7 +360,7 @@ public:
      *
      * This is only used for testing.
      */
-    virtual Pending test_writelock();
+    virtual core::Pending test_writelock();
 
     /**
      * Instantiate an appropriate Writer for the given configuration

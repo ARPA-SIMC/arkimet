@@ -2,7 +2,7 @@
 #define ARKI_DATASET_INDEX_MANIFEST_H
 
 #include <arki/dataset/index.h>
-#include <arki/transaction.h>
+#include <arki/core/transaction.h>
 #include <vector>
 #include <string>
 #include <memory>
@@ -36,7 +36,7 @@ public:
     virtual void remove(const std::string& relpath) = 0;
     virtual void flush() = 0;
 
-    virtual Pending test_writelock() = 0;
+    virtual core::Pending test_writelock() = 0;
 
     /// Invalidate global summary
     void invalidate_summary();

@@ -41,6 +41,9 @@ struct Sections;
 struct BinaryEncoder;
 struct BinaryDecoder;
 
+struct Transaction;
+struct Pending;
+
 }
 }
 

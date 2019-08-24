@@ -6,7 +6,6 @@
 #include <arki/libconfig.h>
 #include <arki/defs.h>
 #include <arki/core/fwd.h>
-#include <arki/transaction.h>
 #include <arki/segment.h>
 #include <string>
 #include <iosfwd>
