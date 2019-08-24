@@ -13,13 +13,13 @@
 #include "utils/dict.h"
 #include "arki/core/file.h"
 #include "arki/core/cfg.h"
+#include "arki/metadata/sort.h"
 #include "arki/dataset.h"
 #include "arki/dataset/http.h"
 #include "arki/dataset/time.h"
 #include "arki/dataset/segmented.h"
 #include "arki/nag.h"
 #include "dataset/reporter.h"
-#include "arki/sort.h"
 #include <vector>
 #include "config.h"
 
@@ -82,7 +82,7 @@ Arguments:
             string sort;
             if (arg_sort != Py_None)
                 sort = string_from_python(arg_sort);
-            if (!sort.empty()) query.sorter = sort::Compare::parse(sort);
+            if (!sort.empty()) query.sorter = metadata::sort::Compare::parse(sort);
 
             metadata_dest_func dest;
             pyo_unique_ptr res_list;
@@ -232,7 +232,7 @@ Arguments:
 
             arki::dataset::ByteQuery query;
             query.with_data = with_data;
-            if (!sort.empty()) query.sorter = sort::Compare::parse(sort);
+            if (!sort.empty()) query.sorter = metadata::sort::Compare::parse(sort);
             if (!metadata_report.empty())
                 query.setRepMetadata(matcher, metadata_report);
             else if (!summary_report.empty())

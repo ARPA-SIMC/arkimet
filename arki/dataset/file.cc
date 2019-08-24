@@ -4,12 +4,11 @@
 #include "arki/segment.h"
 #include "arki/core/file.h"
 #include "arki/metadata/consumer.h"
+#include "arki/metadata/sort.h"
 #include "arki/matcher.h"
 #include "arki/summary.h"
-#include "arki/postprocess.h"
-#include "arki/sort.h"
-#include "arki/utils/files.h"
 #include "arki/scan.h"
+#include "arki/utils/files.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
 #include <sys/types.h>
@@ -95,13 +94,13 @@ FdFile::~FdFile()
 }
 
 
-static shared_ptr<sort::Stream> wrap_with_query(const dataset::DataQuery& q, metadata_dest_func& dest)
+static std::shared_ptr<metadata::sort::Stream> wrap_with_query(const dataset::DataQuery& q, metadata_dest_func& dest)
 {
     // Wrap with a stream sorter if we need sorting
-    shared_ptr<sort::Stream> sorter;
+    shared_ptr<metadata::sort::Stream> sorter;
     if (q.sorter)
     {
-        sorter.reset(new sort::Stream(*q.sorter, dest));
+        sorter.reset(new metadata::sort::Stream(*q.sorter, dest));
         dest = [sorter](std::shared_ptr<Metadata> md) { return sorter->add(md); };
     }
 

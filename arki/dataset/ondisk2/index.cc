@@ -13,7 +13,7 @@
 #include "arki/summary.h"
 #include "arki/summary/stats.h"
 #include "arki/utils/files.h"
-#include "arki/sort.h"
+#include "arki/metadata/sort.h"
 #include "arki/scan.h"
 #include "arki/nag.h"
 #include "arki/utils/string.h"

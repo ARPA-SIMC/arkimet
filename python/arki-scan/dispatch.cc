@@ -5,7 +5,8 @@
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
 #include "arki/nag.h"
-#include "arki/validator.h"
+#include "arki/metadata.h"
+#include "arki/metadata/validator.h"
 #include "arki/types/source/blob.h"
 
 using namespace std;

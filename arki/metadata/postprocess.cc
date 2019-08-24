@@ -55,7 +55,7 @@ struct Sigignore
 
 
 namespace arki {
-
+namespace metadata {
 namespace postproc {
 
 struct Child : public utils::IODispatcher
@@ -321,4 +321,5 @@ void Postprocess::flush()
     }
 }
 
+}
 }

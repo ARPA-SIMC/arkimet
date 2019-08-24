@@ -77,7 +77,6 @@ nobase_dist_arkiinclude_HEADERS = \
 		structured/json.h \
 		structured/memory.h \
 		formatter.h \
-		validator.h \
 		iotrace.h \
 		matcher.h \
 		matcher/fwd.h \
@@ -103,11 +102,13 @@ nobase_dist_arkiinclude_HEADERS = \
 		metadata/xargs.h \
 		metadata/libarchive.h \
 		metadata/fwd.h \
+		metadata/postprocess.h \
+		metadata/sort.h \
 		metadata/stream.h \
 		metadata/tests.h \
 		metadata/test-generator.h \
+		metadata/validator.h \
 		nag.h \
-		postprocess.h \
 		querymacro.h \
 		runtime.h \
 		scan.h \
@@ -128,7 +129,6 @@ nobase_dist_arkiinclude_HEADERS = \
 		segment/seqfile.h \
 		segment/tests.h \
 		segment/tests.tcc \
-		sort.h \
 		summary.h \
 		summary/intern.h \
 		summary/table.h \
@@ -389,12 +389,15 @@ libarkimet_la_SOURCES += \
 		utils/compress.cc \
 		utils/sqlite.cc \
 		metadata.cc \
+		metadata/sort.cc \
 		metadata/data.cc \
 		metadata/collection.cc \
 		metadata/stream.cc \
 		metadata/clusterer.cc \
 		metadata/consumer.cc \
 		metadata/libarchive.cc \
+		metadata/validator.cc \
+		metadata/postprocess.cc \
 		metadata/test-generator.cc \
 		summary/stats.cc \
 		summary/intern.cc \
@@ -411,10 +414,7 @@ libarkimet_la_SOURCES += \
 		segment/zip.cc \
 		segment/gz.cc \
 		segment/seqfile.cc \
-		sort.cc \
 		formatter.cc \
-		validator.cc \
-		postprocess.cc \
 		scan.cc \
 		scan/validator.cc \
 		scan/mock.cc
@@ -424,16 +424,16 @@ tests_arki_test_SOURCES += \
 		matcher/tests.cc \
 		utils/compress-test.cc \
 		utils/sqlite-test.cc \
-		sort-test.cc \
 		formatter-test.cc \
-		validator-test.cc \
 		bbox-test.cc \
 		metadata-test.cc \
+		metadata/sort-test.cc \
 		metadata/data-test.cc \
 		metadata/collection-test.cc \
 		metadata/clusterer-test.cc \
 		metadata/stream-test.cc \
 		metadata/libarchive-test.cc \
+		metadata/validator-test.cc \
 		metadata/test-generator-test.cc \
 		summary-test.cc \
 		summary/intern-test.cc \
@@ -558,6 +558,7 @@ libarkimet_la_SOURCES += \
 
 tests_arki_test_SOURCES += \
 		metadata/xargs-test.cc \
+		metadata/postprocess-test.cc \
 		dataset/tests.cc \
 		dataset/lock-test.cc \
 		dataset/reporter-test.cc \
@@ -607,7 +608,6 @@ tests_arki_test_SOURCES += \
 		dataset-writer-test.cc \
 		dataset-checker-test.cc \
 		dataset-concurrency-test.cc \
-		postprocess-test.cc \
 		querymacro-test.cc \
 		datasets-test.cc \
 		dispatcher-test.cc \

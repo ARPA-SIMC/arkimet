@@ -1016,28 +1016,8 @@
  },
  {
   "doc": "",
-  "group": "arki_sort",
-  "method": "simple"
- },
- {
-  "doc": "",
-  "group": "arki_sort",
-  "method": "empty"
- },
- {
-  "doc": "",
   "group": "arki_formatter",
   "method": "yaml"
- },
- {
-  "doc": "",
-  "group": "arki_validator",
-  "method": "fail_always"
- },
- {
-  "doc": "",
-  "group": "arki_validator",
-  "method": "daily_import"
  },
  {
   "doc": "",
@@ -1141,6 +1121,16 @@
  },
  {
   "doc": "",
+  "group": "arki_metadata_sort",
+  "method": "simple"
+ },
+ {
+  "doc": "",
+  "group": "arki_metadata_sort",
+  "method": "empty"
+ },
+ {
+  "doc": "",
   "group": "arki_metadata_data",
   "method": "todo"
  },
@@ -1198,6 +1188,16 @@
   "doc": "",
   "group": "arki_metadata_libarchive",
   "method": "zip"
+ },
+ {
+  "doc": "",
+  "group": "arki_metadata_validator",
+  "method": "fail_always"
+ },
+ {
+  "doc": "",
+  "group": "arki_metadata_validator",
+  "method": "daily_import"
  },
  {
   "doc": "",
@@ -2833,6 +2833,41 @@
   "doc": "",
   "group": "arki_metadata_xargs",
   "method": "check_tmpfile_exist"
+ },
+ {
+  "doc": "",
+  "group": "arki_metadata_postprocess",
+  "method": "null_validate"
+ },
+ {
+  "doc": "",
+  "group": "arki_metadata_postprocess",
+  "method": "null"
+ },
+ {
+  "doc": "",
+  "group": "arki_metadata_postprocess",
+  "method": "countbytes"
+ },
+ {
+  "doc": "",
+  "group": "arki_metadata_postprocess",
+  "method": "cat"
+ },
+ {
+  "doc": "",
+  "group": "arki_metadata_postprocess",
+  "method": "countbytes_large"
+ },
+ {
+  "doc": "",
+  "group": "arki_metadata_postprocess",
+  "method": "zeroes_arg"
+ },
+ {
+  "doc": "",
+  "group": "arki_metadata_postprocess",
+  "method": "zeroes_arg_large"
  },
  {
   "doc": "",
@@ -15898,41 +15933,6 @@
   "doc": "",
   "group": "arki_dataset_concurrent_odim_iseg",
   "method": "nolock_repack"
- },
- {
-  "doc": "",
-  "group": "arki_postprocess",
-  "method": "null_validate"
- },
- {
-  "doc": "",
-  "group": "arki_postprocess",
-  "method": "null"
- },
- {
-  "doc": "",
-  "group": "arki_postprocess",
-  "method": "countbytes"
- },
- {
-  "doc": "",
-  "group": "arki_postprocess",
-  "method": "cat"
- },
- {
-  "doc": "",
-  "group": "arki_postprocess",
-  "method": "countbytes_large"
- },
- {
-  "doc": "",
-  "group": "arki_postprocess",
-  "method": "zeroes_arg"
- },
- {
-  "doc": "",
-  "group": "arki_postprocess",
-  "method": "zeroes_arg_large"
  },
  {
   "doc": "",

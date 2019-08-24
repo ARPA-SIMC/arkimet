@@ -1,6 +1,6 @@
 #include "arki/types/tests.h"
+#include "sort.h"
 #include "arki/metadata/collection.h"
-#include "arki/sort.h"
 #include "arki/types/reftime.h"
 #include "arki/types/run.h"
 #include "arki/utils/string.h"
@@ -14,16 +14,17 @@ static ostream& operator<<(ostream& out, const vector<int>& v)
 
 namespace {
 using namespace std;
-using namespace arki::tests;
 using namespace arki;
+using namespace arki::tests;
 using namespace arki::types;
+using namespace arki::metadata;
 using arki::core::Time;
 
 class Tests : public TestCase
 {
     using TestCase::TestCase;
     void register_tests() override;
-} test("arki_sort");
+} test("arki_metadata_sort");
 
 void produce(int hour, int minute, int run, sort::Stream& c)
 {

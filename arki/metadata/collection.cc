@@ -10,8 +10,8 @@
 #include "arki/scan.h"
 #include "arki/utils/sys.h"
 #include "arki/summary.h"
-#include "arki/sort.h"
-#include "arki/postprocess.h"
+#include "arki/metadata/sort.h"
+#include "arki/metadata/postprocess.h"
 #include "arki/dataset.h"
 #include <algorithm>
 #include <memory>

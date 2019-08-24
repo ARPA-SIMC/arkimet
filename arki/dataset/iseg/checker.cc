@@ -12,7 +12,7 @@
 #include "arki/matcher.h"
 #include "arki/metadata/collection.h"
 #include "arki/utils/files.h"
-#include "arki/sort.h"
+#include "arki/metadata/sort.h"
 #include "arki/nag.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/string.h"

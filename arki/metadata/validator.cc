@@ -1,14 +1,13 @@
-#include "config.h"
-
-#include <arki/validator.h>
-#include <arki/metadata.h>
-#include <arki/types/reftime.h>
+#include "validator.h"
+#include "arki/metadata.h"
+#include "arki/types/reftime.h"
 
 using namespace std;
 using namespace arki::types;
 using arki::core::Time;
 
 namespace arki {
+namespace metadata {
 
 namespace validators {
 
@@ -104,4 +103,4 @@ const ValidatorRepository& ValidatorRepository::get()
 }
 
 }
-// vim:set ts=4 sw=4:
+}

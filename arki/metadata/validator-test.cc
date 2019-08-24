@@ -1,8 +1,7 @@
-#include "config.h"
-#include <arki/metadata/tests.h>
-#include <arki/validator.h>
-#include <arki/metadata.h>
-#include <arki/types/reftime.h>
+#include "arki/metadata/tests.h"
+#include "validator.h"
+#include "arki/metadata.h"
+#include "arki/types/reftime.h"
 #include <time.h>
 #include <memory>
 
@@ -11,6 +10,7 @@ using namespace std;
 using namespace arki;
 using namespace arki::types;
 using namespace arki::tests;
+using namespace arki::metadata;
 using arki::core::Time;
 
 static void dump_errors(const vector<string>& errors)
@@ -24,7 +24,7 @@ class Tests : public TestCase
 {
     using TestCase::TestCase;
     void register_tests() override;
-} test("arki_validator");
+} test("arki_metadata_validator");
 
 void Tests::register_tests() {
 

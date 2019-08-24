@@ -1,11 +1,11 @@
 #include "arki/tests/tests.h"
 #include "arki/segment.h"
 #include "arki/metadata/data.h"
-#include "core/file.h"
-#include "core/cfg.h"
-#include "core/binary.h"
-#include "utils/sys.h"
-#include "metadata.h"
+#include "arki/core/file.h"
+#include "arki/core/cfg.h"
+#include "arki/core/binary.h"
+#include "arki/utils/sys.h"
+#include "arki/metadata.h"
 #include "postprocess.h"
 
 #ifndef STDERR_FILENO
@@ -18,6 +18,7 @@ using namespace arki;
 using namespace arki::core;
 using namespace arki::tests;
 using namespace arki::utils;
+using namespace arki::metadata;
 
 void produceGRIB(Postprocess& p)
 {
@@ -29,7 +30,7 @@ class Tests : public TestCase
 {
     using TestCase::TestCase;
     void register_tests() override;
-} test("arki_postprocess");
+} test("arki_metadata_postprocess");
 
 void Tests::register_tests() {
 

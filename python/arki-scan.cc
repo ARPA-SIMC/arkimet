@@ -5,7 +5,7 @@
 #include "arki/utils/string.h"
 #include "arki/exceptions.h"
 #include "arki/dataset/file.h"
-#include "arki/validator.h"
+#include "arki/metadata/validator.h"
 #include "arki/utils.h"
 #include "utils/core.h"
 #include "utils/methods.h"
@@ -124,14 +124,14 @@ std::unique_ptr<arki_scan::MetadataDispatch> build_dispatcher(cmdline::DatasetPr
 
     if (validate)
     {
-        const arki::ValidatorRepository& vals = arki::ValidatorRepository::get();
+        const arki::metadata::ValidatorRepository& vals = arki::metadata::ValidatorRepository::get();
 
         // Add validators to dispatcher
         str::Split splitter(std::string(validate, validate_len), ",");
         for (str::Split::const_iterator iname = splitter.begin();
                 iname != splitter.end(); ++iname)
         {
-            arki::ValidatorRepository::const_iterator i = vals.find(*iname);
+            arki::metadata::ValidatorRepository::const_iterator i = vals.find(*iname);
             if (i == vals.end())
                 throw std::runtime_error("unknown validator '" + *iname + "'. You can get a list using --validate=list.");
             res->dispatcher->add_validator(*(i->second));

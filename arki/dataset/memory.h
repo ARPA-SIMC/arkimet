@@ -9,10 +9,6 @@
 namespace arki {
 struct Summary;
 
-namespace sort {
-struct Compare;
-}
-
 namespace dataset {
 
 /**

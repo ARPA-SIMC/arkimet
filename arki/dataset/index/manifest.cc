@@ -7,13 +7,13 @@
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
 #include "arki/metadata/consumer.h"
+#include "arki/metadata/sort.h"
 #include "arki/types/source/blob.h"
 #include "arki/summary.h"
 #include "arki/types/reftime.h"
 #include "arki/matcher.h"
 #include "arki/utils/sqlite.h"
 #include "arki/utils/files.h"
-#include "arki/sort.h"
 #include "arki/nag.h"
 #include "arki/iotrace.h"
 #include "arki/utils/sys.h"
@@ -66,15 +66,15 @@ bool Manifest::query_data(const dataset::DataQuery& q, SegmentManager& segs, met
 
     // TODO: does it make sense to check with the summary first?
 
-    shared_ptr<sort::Compare> compare;
+    std::shared_ptr<metadata::sort::Compare> compare;
     if (q.sorter)
         compare = q.sorter;
     else
         // If no sorter is provided, sort by reftime in case segment files have
         // not been sorted before archiving
-        compare = sort::Compare::parse("reftime");
+        compare = metadata::sort::Compare::parse("reftime");
 
-    sort::Stream sorter(*compare, dest);
+    metadata::sort::Stream sorter(*compare, dest);
 
     string absdir = sys::abspath(m_path);
     string prepend_fname;

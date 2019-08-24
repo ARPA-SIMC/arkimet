@@ -10,10 +10,10 @@
 #include "arki/types/reftime.h"
 #include "arki/matcher.h"
 #include "arki/metadata/collection.h"
-#include "arki/utils/files.h"
-#include "arki/sort.h"
+#include "arki/metadata/sort.h"
 #include "arki/scan.h"
 #include "arki/nag.h"
+#include "arki/utils/files.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/string.h"
 #include <ctime>
@@ -31,7 +31,7 @@ namespace simple {
 
 namespace {
 
-struct RepackSort : public sort::Compare
+struct RepackSort : public metadata::sort::Compare
 {
     int compare(const Metadata& a, const Metadata& b) const override
     {
