@@ -1,9 +1,9 @@
 #include "arki/dataset/merged.h"
 #include "arki/exceptions.h"
 #include "arki/metadata.h"
+#include "arki/metadata/sort.h"
 #include "arki/matcher.h"
 #include "arki/summary.h"
-#include "arki/sort.h"
 #include "arki/utils/string.h"
 #include <cstring>
 #include <thread>
@@ -190,9 +190,9 @@ bool Merged::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
     // Output items in time-sorted order or in the order asked by q
     // Note: we assume that every dataset will give us data sorted as q
     // asks, so here we just merge sorted data
-    shared_ptr<sort::Compare> sorter = q.sorter;
+    std::shared_ptr<metadata::sort::Compare> sorter = q.sorter;
     if (!sorter)
-        sorter = sort::Compare::parse("");
+        sorter = metadata::sort::Compare::parse("");
 
     bool canceled = false;
     while (true)

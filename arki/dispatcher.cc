@@ -1,9 +1,10 @@
 #include "dispatcher.h"
+#include "metadata.h"
 #include "metadata/consumer.h"
+#include "metadata/validator.h"
 #include "matcher.h"
 #include "dataset.h"
 #include "dataset/local.h"
-#include "validator.h"
 #include "types/reftime.h"
 #include "types/source.h"
 #include "utils/string.h"
@@ -49,7 +50,7 @@ Dispatcher::~Dispatcher()
 {
 }
 
-void Dispatcher::add_validator(const Validator& v)
+void Dispatcher::add_validator(const metadata::Validator& v)
 {
     validators.push_back(&v);
 }

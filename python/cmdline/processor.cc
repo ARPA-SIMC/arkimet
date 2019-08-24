@@ -9,7 +9,7 @@
 #include "arki/structured/keys.h"
 #include "arki/summary.h"
 #include "arki/summary/short.h"
-#include "arki/sort.h"
+#include "arki/metadata/sort.h"
 #include "arki/utils/string.h"
 #include "arki/core/file.h"
 #include "arki/summary/stats.h"
@@ -237,7 +237,7 @@ std::unique_ptr<DatasetProcessor> ProcessorMaker::make_binary(Matcher matcher, s
     }
 
     if (!sort.empty())
-        query.sorter = sort::Compare::parse(sort);
+        query.sorter = metadata::sort::Compare::parse(sort);
 
     return unique_ptr<DatasetProcessor>(new BinaryProcessor<Output>(query, out));
 }
@@ -303,7 +303,7 @@ std::unique_ptr<DatasetProcessor> ProcessorMaker::make_metadata(Matcher matcher,
 
     dataset::DataQuery query(matcher, data_inline);
     if (!sort.empty())
-        query.sorter = sort::Compare::parse(sort);
+        query.sorter = metadata::sort::Compare::parse(sort);
 
     return std::unique_ptr<DatasetProcessor>(new DataProcessor(query, printer, server_side, data_inline));
 }

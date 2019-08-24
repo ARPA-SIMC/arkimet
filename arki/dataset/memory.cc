@@ -1,6 +1,6 @@
 #include "memory.h"
-#include <arki/summary.h>
-#include <arki/sort.h>
+#include "arki/summary.h"
+#include "arki/metadata/sort.h"
 
 using namespace std;
 

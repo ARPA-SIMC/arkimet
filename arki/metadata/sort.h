@@ -1,5 +1,5 @@
-#ifndef ARKI_SORT_H
-#define ARKI_SORT_H
+#ifndef ARKI_METADATA_SORT_H
+#define ARKI_METADATA_SORT_H
 
 /// Sorting routines for metadata
 
@@ -13,8 +13,7 @@
 #include <memory>
 
 namespace arki {
-class Metadata;
-
+namespace metadata {
 namespace sort {
 
 /**
@@ -113,6 +112,7 @@ private:
     Stream& operator=(const Stream&);
 };
 
+}
 }
 }
 #endif

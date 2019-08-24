@@ -3,23 +3,21 @@
 
 #include <arki/datasets.h>
 #include <arki/dataset.h>
-#include <arki/metadata.h>
+#include <arki/metadata/fwd.h>
 #include <arki/matcher.h>
 #include <string>
 #include <vector>
 #include <map>
 
 namespace arki {
-class Metadata;
-class Validator;
 
 class Dispatcher
 {
 protected:
-	// Dispatching information
-	std::vector< std::pair<std::string, Matcher> > datasets;
-	std::vector< std::pair<std::string, Matcher> > outbounds;
-    std::vector<const Validator*> validators;
+    // Dispatching information
+    std::vector< std::pair<std::string, Matcher> > datasets;
+    std::vector< std::pair<std::string, Matcher> > outbounds;
+    std::vector<const metadata::Validator*> validators;
 
     /// True if we can import another one
     bool m_can_continue;
@@ -39,7 +37,7 @@ public:
      * Memory management is handled by the caller, so the validator must be
      * valid during the whole lifetime of the dispatcher.
      */
-    void add_validator(const Validator& v);
+    void add_validator(const metadata::Validator& v);
 
 	/**
 	 * Return true if the metadata consumer called by the last dispatch()

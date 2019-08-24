@@ -4,7 +4,6 @@
 #include "metadata/consumer.h"
 #include "summary.h"
 #include "runtime.h"
-#include "sort.h"
 #include "utils/string.h"
 
 using namespace std;

@@ -6,20 +6,12 @@
 #include <arki/defs.h>
 #include <arki/core/fwd.h>
 #include <arki/dataset/fwd.h>
+#include <arki/metadata/fwd.h>
 #include <vector>
 #include <string>
 
 namespace arki {
-struct Metadata;
 struct Summary;
-
-namespace metadata {
-struct ReadContext;
-}
-
-namespace sort {
-struct Compare;
-}
 
 namespace metadata {
 

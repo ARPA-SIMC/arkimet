@@ -1,7 +1,8 @@
-#ifndef ARKI_POSTPROCESS_H
-#define ARKI_POSTPROCESS_H
+#ifndef ARKI_METADATA_POSTPROCESS_H
+#define ARKI_METADATA_POSTPROCESS_H
 
 #include <arki/core/fwd.h>
+#include <arki/metadata/fwd.h>
 #include <string>
 #include <map>
 #include <sstream>
@@ -9,8 +10,7 @@
 #include <memory>
 
 namespace arki {
-class Metadata;
-
+namespace metadata {
 namespace postproc {
 class Child;
 }
@@ -66,5 +66,6 @@ public:
     void flush();
 };
 
+}
 }
 #endif

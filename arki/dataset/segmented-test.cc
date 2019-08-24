@@ -19,7 +19,7 @@
 #include "arki/types/area.h"
 #include "arki/types/product.h"
 #include "arki/types/value.h"
-#include "arki/sort.h"
+#include "arki/metadata/sort.h"
 #include "arki/utils/sys.h"
 #include <sys/resource.h>
 #include <time.h>
@@ -540,7 +540,7 @@ add_method("query_lots", [](Fixture& f) {
         auto reader = f.config().create_reader();
         CheckAllSortOrder cso;
         dataset::DataQuery dq(Matcher::parse(""));
-        dq.sorter = sort::Compare::parse("reftime,area,product");
+        dq.sorter = metadata::sort::Compare::parse("reftime,area,product");
         reader->query_data(dq, [&](std::shared_ptr<Metadata> md) { return cso.eat(md); });
         wassert(actual(cso.seen) == 16128u);
     }
@@ -806,7 +806,7 @@ add_method("issue103", [](Fixture& f) {
     wassert(actual(count) == max_files + 1);
 
     // Query with data, sorting, without storing all the results on a collection
-    dq.sorter = sort::Compare::parse("level");
+    dq.sorter = metadata::sort::Compare::parse("level");
     count = 0;
     wassert(reader->query_data(dq, [&](std::shared_ptr<Metadata> md) {
         wassert(actual(md->sourceBlob().reader).istrue());

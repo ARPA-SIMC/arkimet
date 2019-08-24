@@ -4,7 +4,7 @@
 #include "python/summary.h"
 #include "python/utils/values.h"
 #include "python/utils/dict.h"
-#include "arki/sort.h"
+#include "arki/metadata/sort.h"
 #include "arki/summary.h"
 
 namespace arki {
@@ -69,10 +69,10 @@ struct PyDatasetReader : public arki::dataset::Reader
         set_dict(kwargs, "matcher", q.matcher);
         set_dict(kwargs, "with_data", q.with_data);
 
-        std::shared_ptr<arki::sort::Stream> sorter;
+        std::shared_ptr<arki::metadata::sort::Stream> sorter;
         if (q.sorter)
         {
-            sorter.reset(new sort::Stream(*q.sorter, dest));
+            sorter.reset(new metadata::sort::Stream(*q.sorter, dest));
             dest = [sorter](std::shared_ptr<Metadata> md) { return sorter->add(md); };
         }
 

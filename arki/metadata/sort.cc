@@ -1,4 +1,4 @@
-#include "arki/sort.h"
+#include "sort.h"
 #include "arki/metadata.h"
 #include "arki/types/reftime.h"
 #include "arki/metadata.h"
@@ -16,6 +16,7 @@ using namespace arki::utils;
 using arki::core::Time;
 
 namespace arki {
+namespace metadata {
 namespace sort {
 
 /// Comparison function for one metadata item
@@ -194,5 +195,6 @@ bool Stream::flush()
     return buffer.move_to(next_dest);
 }
 
+}
 }
 }

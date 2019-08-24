@@ -4,7 +4,6 @@
 #include "arki/utils/sys.h"
 #include "arki/nag.h"
 #include "arki/summary.h"
-#include "arki/sort.h"
 #include "python/common.h"
 #include "python/cfg.h"
 #include "python/metadata.h"

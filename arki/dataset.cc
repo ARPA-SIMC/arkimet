@@ -11,11 +11,11 @@
 #include "arki/dataset/reporter.h"
 #include "arki/metadata.h"
 #include "arki/metadata/consumer.h"
-#include "arki/sort.h"
+#include "arki/metadata/sort.h"
+#include "arki/metadata/postprocess.h"
 #include "arki/utils.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
-#include "arki/postprocess.h"
 #include "arki/report.h"
 #include "arki/summary.h"
 #include "arki/nag.h"
@@ -115,7 +115,7 @@ void Reader::query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out)
             break;
         }
         case dataset::ByteQuery::BQ_POSTPROCESS: {
-            Postprocess postproc(q.param);
+            metadata::Postprocess postproc(q.param);
             postproc.set_output(out);
             postproc.validate(config().cfg);
             postproc.set_data_start_hook(q.data_start_hook);
@@ -170,7 +170,7 @@ void Reader::query_bytes(const dataset::ByteQuery& q, AbstractOutputFile& out)
             break;
         }
         case dataset::ByteQuery::BQ_POSTPROCESS: {
-            Postprocess postproc(q.param);
+            metadata::Postprocess postproc(q.param);
             postproc.set_output(out);
             postproc.validate(config().cfg);
             postproc.set_data_start_hook(q.data_start_hook);

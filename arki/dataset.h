@@ -15,10 +15,6 @@
 namespace arki {
 class Summary;
 
-namespace sort {
-class Compare;
-}
-
 /**
  * Generic dataset interface.
  *
@@ -81,7 +77,7 @@ struct DataQuery
     bool with_data;
 
     /// Optional compare function to define a custom ordering of the result
-    std::shared_ptr<sort::Compare> sorter;
+    std::shared_ptr<metadata::sort::Compare> sorter;
 
     DataQuery();
     DataQuery(const std::string& matcher, bool with_data=false);
