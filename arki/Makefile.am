@@ -168,6 +168,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		types/value.h \
 		types/typevector.h \
 		types/typeset.h \
+		types/values.h \
 		utils/accounting.h \
 		utils/iostream.h \
 		utils/gzip.h \
@@ -188,8 +189,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		utils/zip.h \
 		utils/term.h \
 		utils/tests.h \
-		utils/testrunner.h \
-		values.h
+		utils/testrunner.h
 
 reftime_parser_built_sources = \
 		matcher/reftime/reftime-lex.h \
@@ -250,11 +250,11 @@ libarkimet_la_SOURCES += \
 		structured/reader.cc \
 		structured/memory.cc \
 		structured/json.cc \
-		values.cc \
 		bbox.cc \
 		types.cc \
 		types/bundle.cc \
 		types/utils.cc \
+		types/values.cc \
 		types/source.cc \
 		types/source/blob.cc \
 		types/source/inline.cc \
@@ -322,10 +322,10 @@ tests_arki_test_SOURCES += \
 		utils/geos-test.cc \
 		structured/memory-test.cc \
 		structured/json-test.cc \
-		values-test.cc \
 		types-test.cc \
 		types/bundle-test.cc \
 		types/utils-test.cc \
+		types/values-test.cc \
 		types/source-test.cc \
 		types/reftime-test.cc \
 		types/origin-test.cc \

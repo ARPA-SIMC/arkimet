@@ -79,6 +79,7 @@ Metadata make_large_mock(const std::string& format, size_t size, unsigned month,
 
 void fill(Metadata& md)
 {
+    using namespace arki::types::values;
     ValueBag testValues;
     testValues.set("aaa", Value::create_integer(0));
     testValues.set("foo", Value::create_integer(5));

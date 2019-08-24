@@ -21,7 +21,7 @@ struct MatchProddef : public Implementation
 
 struct MatchProddefGRIB : public MatchProddef
 {
-    ValueBag expr;
+    types::ValueBag expr;
 
     MatchProddefGRIB(const std::string& pattern);
     bool matchItem(const types::Type& o) const override;
@@ -31,5 +31,4 @@ struct MatchProddefGRIB : public MatchProddef
 }
 }
 
-// vim:set ts=4 sw=4:
 #endif

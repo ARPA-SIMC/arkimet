@@ -40,6 +40,7 @@ std::string tempfile_to_string(std::function<void(arki::utils::sys::NamedFileDes
 void fill(Metadata& md)
 {
     using namespace arki::types;
+    using namespace arki::types::values;
 
     ValueBag testValues;
     testValues.set("foo", Value::create_integer(5));

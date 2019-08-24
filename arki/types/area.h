@@ -3,7 +3,7 @@
 
 #include <memory>
 #include <arki/types/styled.h>
-#include <arki/values.h>
+#include <arki/types/values.h>
 #include <arki/utils/geosfwd.h>
 
 struct lua_State;

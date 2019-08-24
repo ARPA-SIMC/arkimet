@@ -1,6 +1,6 @@
+#include "values.h"
 #include "arki/libconfig.h"
 #include "arki/exceptions.h"
-#include "arki/values.h"
 #include "arki/core/binary.h"
 #include "arki/utils/string.h"
 #include "arki/structured/emitter.h"
@@ -87,7 +87,8 @@ static inline size_t skipSpaces(const std::string& str, size_t cur)
 
 
 namespace arki {
-namespace value {
+namespace types {
+namespace values {
 
 // Main encoding type constants (fit 2 bits)
 
@@ -279,42 +280,40 @@ struct String : public Common<std::string>
     Value* clone() const override { return new String(m_val); }
 };
 
-}
-
 Value* Value::decode(core::BinaryDecoder& dec)
 {
     uint8_t lead = dec.pop_byte("valuebag value type");
     switch ((lead >> 6) & 0x3)
     {
-        case value::ENC_SINT6:
+        case ENC_SINT6:
             if (lead & 0x20)
-                return new value::Integer(-((~(lead-1)) & 0x3f));
+                return new Integer(-((~(lead-1)) & 0x3f));
             else
-                return new value::Integer(lead & 0x3f);
-        case value::ENC_NUMBER: {
+                return new Integer(lead & 0x3f);
+        case ENC_NUMBER: {
             switch ((lead >> 4) & 0x3)
             {
-                case value::ENC_NUM_INTEGER: {
+                case ENC_NUM_INTEGER: {
                     // Sign in the next bit.  Number of bytes in the next 3 bits.
                     unsigned nbytes = (lead & 0x7) + 1;
                     unsigned val = dec.pop_uint(nbytes, "integer number value");
-                    return new value::Integer((lead & 0x8) ? -val : val);
+                    return new Integer((lead & 0x8) ? -val : val);
                 }
-                case value::ENC_NUM_FLOAT:
+                case ENC_NUM_FLOAT:
                     throw std::runtime_error("cannot decode value: the number value to decode is a floating point number, but decoding floating point numbers is not currently implemented");
-                case value::ENC_NUM_UNUSED:
+                case ENC_NUM_UNUSED:
                     throw std::runtime_error("cannot decode value: the number value to decode has an unknown type");
-                case value::ENC_NUM_EXTENDED:
+                case ENC_NUM_EXTENDED:
                     throw std::runtime_error("cannot decode value: the number value to decode has an extended type, but no extended type is currently implemented");
                 default:
                     throw std::runtime_error("cannot decode value: control flow should never reach here (" __FILE__ ":" + to_string(__LINE__) + "), but the compiler cannot easily know it.  This is here to silence a compiler warning.");
             }
         }
-        case value::ENC_NAME: {
+        case ENC_NAME: {
             unsigned size = lead & 0x3f;
-            return new value::String(dec.pop_string(size, "valuebag string value"));
+            return new String(dec.pop_string(size, "valuebag string value"));
         }
-        case value::ENC_EXTENDED:
+        case ENC_EXTENDED:
             throw std::runtime_error("cannot decode value: the encoded value has an extended type, but no extended type is currently implemented");
         default:
             throw std::runtime_error("cannot decode value: control flow should never reach here (" __FILE__ ":" + to_string(__LINE__) + "), but the compiler cannot easily know it.  This is here to silence a compiler warning.");
@@ -329,14 +328,14 @@ Value* Value::parse(const std::string& str)
 
 Value* Value::parse(const std::string& str, size_t& lenParsed)
 {
-	size_t begin = skipSpaces(str, 0);
+    size_t begin = skipSpaces(str, 0);
 
-	// Handle the empty string
-	if (begin == str.size())
-	{
-		lenParsed = begin;
-		return new value::String(string());
-	}
+    // Handle the empty string
+    if (begin == str.size())
+    {
+        lenParsed = begin;
+        return new String(string());
+    }
 
 	// Handle the quoted string
 	if (str[begin] == '"')
@@ -348,9 +347,9 @@ Value* Value::parse(const std::string& str, size_t& lenParsed)
 		size_t parsed;
 		string res = str::decode_cstring(str.substr(begin), parsed);
 
-		lenParsed = skipSpaces(str, begin + parsed);
-		return new value::String(res);
-	}
+        lenParsed = skipSpaces(str, begin + parsed);
+        return new String(res);
+    }
 
 	// No quoted string, so we can terminate the token at the next space, ',' or ';'
 	size_t end = begin;
@@ -359,18 +358,21 @@ Value* Value::parse(const std::string& str, size_t& lenParsed)
 	string res = str.substr(begin, end-begin);
 	lenParsed = skipSpaces(str, end);
 
-	// If it can be parsed as a number, with maybe leading and trailing
-	// spaces, return the number
-	int val;
-	if (parsesAsNumber(res, val))
-		return new value::Integer(val);
+    // If it can be parsed as a number, with maybe leading and trailing
+    // spaces, return the number
+    int val;
+    if (parsesAsNumber(res, val))
+        return new Integer(val);
 
-	// Else return the string
-	return new value::String(res);
+    // Else return the string
+    return new String(res);
 }
 
-Value* Value::create_integer(int val) { return new value::Integer(val); }
-Value* Value::create_string(const std::string& val) { return new value::String(val); }
+Value* Value::create_integer(int val) { return new Integer(val); }
+Value* Value::create_string(const std::string& val) { return new String(val); }
+
+}
+
 
 ValueBag::ValueBag() {}
 
@@ -495,19 +497,19 @@ void ValueBag::clear()
 		if (i->second)
 			delete i->second;
 
-	// Empty the map
-	map<string, Value*>::clear();
+    // Empty the map
+    map<string, values::Value*>::clear();
 }
 
-const Value* ValueBag::get(const std::string& key) const
+const values::Value* ValueBag::get(const std::string& key) const
 {
-	const_iterator i = find(key);
-	if (i == end())
-		return 0;
-	return i->second;
+    const_iterator i = find(key);
+    if (i == end())
+        return 0;
+    return i->second;
 }
 
-void ValueBag::set(const std::string& key, Value* val)
+void ValueBag::set(const std::string& key, values::Value* val)
 {
 	iterator i = find(key);
 	if (i == end())
@@ -580,7 +582,7 @@ ValueBag ValueBag::decode(core::BinaryDecoder& dec)
         string key = dec.pop_string(key_len, "valuebag key");
 
         // Value
-        res.set(key, Value::decode(dec));
+        res.set(key, values::Value::decode(dec));
     }
     return res;
 }
@@ -617,15 +619,15 @@ ValueBag ValueBag::parse(const std::string& str)
 		// Skip spaces after the '='
 		cur = skipSpaces(str, cur);
 
-		// Parse the value
-		size_t lenParsed;
-		unique_ptr<Value> val(Value::parse(str.substr(cur), lenParsed));
+        // Parse the value
+        size_t lenParsed;
+        unique_ptr<values::Value> val(values::Value::parse(str.substr(cur), lenParsed));
 
-		// Set the value
-		if (val.get())
-			res.set(key, val.release());
-		else
-			throw_consistency_error("parsing key=value list", "cannot parse value at \""+str.substr(cur)+"\"");
+        // Set the value
+        if (val.get())
+            res.set(key, val.release());
+        else
+            throw_consistency_error("parsing key=value list", "cannot parse value at \""+str.substr(cur)+"\"");
 
 		// Move on to the next one
 		begin = cur + lenParsed;
@@ -647,10 +649,10 @@ ValueBag ValueBag::parse(const structured::Reader& reader)
             case structured::NodeType::NONE:
                 break;
             case structured::NodeType::INT:
-                res.set(key, Value::create_integer(val.as_int("int value")));
+                res.set(key, values::Value::create_integer(val.as_int("int value")));
                 break;
             case structured::NodeType::STRING:
-                res.set(key, Value::create_string(val.as_string("string value")));
+                res.set(key, values::Value::create_string(val.as_string("string value")));
                 break;
             default:
                 throw std::runtime_error("cannot decode value " + key + ": value is neither integer nor string");
@@ -662,25 +664,25 @@ ValueBag ValueBag::parse(const structured::Reader& reader)
 #ifdef HAVE_LUA
 void ValueBag::lua_push(lua_State* L) const
 {
-	lua_newtable(L);
-	for (const_iterator i = begin(); i != end(); ++i)
-	{
-		string name = i->first;
-		lua_pushlstring(L, name.data(), name.size());
-		if (const value::Integer* vs = dynamic_cast<const value::Integer*>(i->second))
-		{
-			lua_pushnumber(L, vs->toInt());
-		} else if (const value::String* vs = dynamic_cast<const value::String*>(i->second)) {
-			string val = vs->toString();
-			lua_pushlstring(L, val.data(), val.size());
-		} else {
-			string val = i->second->toString();
-			lua_pushlstring(L, val.data(), val.size());
-		}
-		// Set name = val in the table
-		lua_settable(L, -3);
-	}
-	// Leave the table on the stack: we pushed it
+    lua_newtable(L);
+    for (const_iterator i = begin(); i != end(); ++i)
+    {
+        string name = i->first;
+        lua_pushlstring(L, name.data(), name.size());
+        if (const values::Integer* vs = dynamic_cast<const values::Integer*>(i->second))
+        {
+            lua_pushnumber(L, vs->toInt());
+        } else if (const values::String* vs = dynamic_cast<const values::String*>(i->second)) {
+            string val = vs->toString();
+            lua_pushlstring(L, val.data(), val.size());
+        } else {
+            string val = i->second->toString();
+            lua_pushlstring(L, val.data(), val.size());
+        }
+        // Set name = val in the table
+        lua_settable(L, -3);
+    }
+    // Leave the table on the stack: we pushed it
 }
 
 void ValueBag::load_lua_table(lua_State* L, int idx)
@@ -710,10 +712,10 @@ void ValueBag::load_lua_table(lua_State* L, int idx)
         switch (lua_type(L, -1))
         {
             case LUA_TNUMBER:
-                set(key, Value::create_integer(lua_tonumber(L, -1)));
+                set(key, values::Value::create_integer(lua_tonumber(L, -1)));
                 break;
             case LUA_TSTRING:
-                set(key, Value::create_string(lua_tostring(L, -1)));
+                set(key, values::Value::create_string(lua_tostring(L, -1)));
                 break;
             default:
             {
@@ -770,4 +772,4 @@ struct DataKeyVal : Base
 #endif
 
 }
-// vim:set ts=4 sw=4:
+}

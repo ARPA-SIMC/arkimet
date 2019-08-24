@@ -98,7 +98,7 @@ add_generic_test("bufr",
 add_method("bufr_details", [] {
     using namespace arki::types;
     ValueBag vb;
-    vb.set("name", Value::create_string("antani"));
+    vb.set("name", values::Value::create_string("antani"));
     unique_ptr<Product> o = Product::createBUFR(1, 2, 3, vb);
     wassert(actual(o->style()) == Product::Style::BUFR);
     product::BUFR* v = dynamic_cast<product::BUFR*>(o.get());
@@ -108,7 +108,7 @@ add_method("bufr_details", [] {
     wassert(actual(v->values()) == vb);
 
     ValueBag vb2;
-    vb2.set("val", Value::create_string("blinda"));
+    vb2.set("val", values::Value::create_string("blinda"));
     v->addValues(vb2);
     stringstream tmp;
     tmp << *o;

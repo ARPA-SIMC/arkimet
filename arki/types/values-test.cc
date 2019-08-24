@@ -1,19 +1,20 @@
-#include "types/tests.h"
 #include "arki/types/tests.h"
-#include "arki/values.h"
+#include "values.h"
 #include "arki/core/binary.h"
 #include <memory>
 
 namespace {
 using namespace std;
 using namespace arki;
+using namespace arki::types;
+using namespace arki::types::values;
 using namespace arki::tests;
 
 class Tests : public TestCase
 {
     using TestCase::TestCase;
     void register_tests() override;
-} test("arki_values");
+} test("arki_types_values");
 
 void Tests::register_tests() {
 
