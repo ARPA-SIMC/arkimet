@@ -156,7 +156,7 @@ dnl Look for DB-All.e C++ libraries, for BUFR support
 if test $enable_bufr = yes
 then
 	dnl Check for DB-All.e C++ libraries (this needs to be outside of the if, 
-	PKG_CHECK_EXISTS([libdballe >= 8.0], [have_dballe=yes], [have_dballe=no])
+	PKG_CHECK_EXISTS([libdballe >= 8.1], [have_dballe=yes], [have_dballe=no])
 	if test $have_dballe = yes
 	then
 		AC_DEFINE([HAVE_DBALLE], 1, [dballe functions are available])
