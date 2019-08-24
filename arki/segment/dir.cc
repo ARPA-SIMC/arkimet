@@ -552,7 +552,7 @@ size_t BaseChecker<Segment>::remove()
 }
 
 template<typename Segment>
-Pending BaseChecker<Segment>::repack(const std::string& rootdir, metadata::Collection& mds, const RepackConfig& cfg)
+core::Pending BaseChecker<Segment>::repack(const std::string& rootdir, metadata::Collection& mds, const RepackConfig& cfg)
 {
     struct Rename : public Transaction
     {
@@ -629,7 +629,7 @@ Pending BaseChecker<Segment>::repack(const std::string& rootdir, metadata::Colle
     string tmprelpath = this->segment().relpath + ".repack";
     string tmpabspath = this->segment().abspath + ".repack";
 
-    Pending p(new Rename(tmpabspath, this->segment().abspath));
+    core::Pending p(new Rename(tmpabspath, this->segment().abspath));
 
     Creator creator(rootdir, this->segment().relpath, mds, tmpabspath);
     creator.hardlink = true;

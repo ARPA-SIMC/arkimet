@@ -84,7 +84,7 @@ public:
 
     bool rescan_data(std::function<void(const std::string&)> reporter, std::shared_ptr<core::Lock> lock, metadata_dest_func dest) override;
     State check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick=true) override;
-    Pending repack(const std::string& rootdir, metadata::Collection& mds, const RepackConfig& cfg=RepackConfig()) override;
+    core::Pending repack(const std::string& rootdir, metadata::Collection& mds, const RepackConfig& cfg=RepackConfig()) override;
     size_t remove() override;
 
     void test_truncate(size_t offset) override;
@@ -167,7 +167,7 @@ class HoleChecker : public fd::Checker<HoleSegment, HoleFile>
 {
 public:
     using fd::Checker<HoleSegment, HoleFile>::Checker;
-    Pending repack(const std::string& rootdir, metadata::Collection& mds, const RepackConfig& cfg=RepackConfig()) override;
+    core::Pending repack(const std::string& rootdir, metadata::Collection& mds, const RepackConfig& cfg=RepackConfig()) override;
 };
 
 }

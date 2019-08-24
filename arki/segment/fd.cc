@@ -306,11 +306,11 @@ size_t Checker<Segment, File>::remove()
 }
 
 template<typename Segment, typename File>
-Pending Checker<Segment, File>::repack(const std::string& rootdir, metadata::Collection& mds, const RepackConfig& cfg)
+core::Pending Checker<Segment, File>::repack(const std::string& rootdir, metadata::Collection& mds, const RepackConfig& cfg)
 {
     string tmpabspath = this->segment().abspath + ".repack";
 
-    Pending p(new files::RenameTransaction(tmpabspath, this->segment().abspath));
+    core::Pending p(new files::RenameTransaction(tmpabspath, this->segment().abspath));
 
     Creator<File> creator(rootdir, this->segment().relpath, mds, tmpabspath);
     creator.validator = &scan::Validator::by_filename(this->segment().abspath);
@@ -488,11 +488,11 @@ std::shared_ptr<segment::Checker> HoleSegment::make_checker(const std::string& f
     return make_shared<HoleChecker>(format, root, relpath, abspath);
 }
 
-Pending HoleChecker::repack(const std::string& rootdir, metadata::Collection& mds, const RepackConfig& cfg)
+core::Pending HoleChecker::repack(const std::string& rootdir, metadata::Collection& mds, const RepackConfig& cfg)
 {
     string tmpabspath = segment().abspath + ".repack";
 
-    Pending p(new files::RenameTransaction(tmpabspath, segment().abspath));
+    core::Pending p(new files::RenameTransaction(tmpabspath, segment().abspath));
 
     fd::Creator<HoleFile> creator(rootdir, segment().relpath, mds, tmpabspath);
     // Skip validation, since all data reads as zeroes

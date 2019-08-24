@@ -361,11 +361,11 @@ size_t Checker::remove()
     return size;
 }
 
-Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, const RepackConfig& cfg)
+core::Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, const RepackConfig& cfg)
 {
     string tmpabspath = segment().abspath + ".repack";
 
-    Pending p(new files::RenameTransaction(tmpabspath, zipabspath));
+    core::Pending p(new files::RenameTransaction(tmpabspath, zipabspath));
 
     Creator creator(rootdir, segment().relpath, mds, tmpabspath);
     creator.out = sys::File(tmpabspath);

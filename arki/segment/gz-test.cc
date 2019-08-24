@@ -31,7 +31,7 @@ this->add_method("noidx", [&](Fixture& f) {
     wassert(actual_file(f.abspath + ".gz").exists());
     wassert(actual_file(f.abspath + ".gz.idx").not_exists());
 
-    Pending p = wcallchecked(checker->repack(f.root, f.seg_mds, segment::RepackConfig(0)));
+    auto p = wcallchecked(checker->repack(f.root, f.seg_mds, segment::RepackConfig(0)));
     wassert(p.commit());
     wassert(actual_file(f.abspath + ".gz").exists());
     wassert(actual_file(f.abspath + ".gz.idx").not_exists());
@@ -47,7 +47,7 @@ this->add_method("idx", [&](Fixture& f) {
     wassert(actual_file(f.abspath + ".gz").exists());
     wassert(actual_file(f.abspath + ".gz.idx").exists());
 
-    Pending p = wcallchecked(checker->repack(f.root, f.seg_mds, segment::RepackConfig(1)));
+    auto p = wcallchecked(checker->repack(f.root, f.seg_mds, segment::RepackConfig(1)));
     wassert(p.commit());
     wassert(actual_file(f.abspath + ".gz").exists());
     wassert(actual_file(f.abspath + ".gz.idx").exists());
@@ -63,7 +63,7 @@ this->add_method("onegroup", [&](Fixture& f) {
     wassert(actual_file(f.abspath + ".gz").exists());
     wassert(actual_file(f.abspath + ".gz.idx").not_exists());
 
-    Pending p = wcallchecked(checker->repack(f.root, f.seg_mds, segment::RepackConfig(1024)));
+    auto p = wcallchecked(checker->repack(f.root, f.seg_mds, segment::RepackConfig(1024)));
     wassert(p.commit());
     wassert(actual_file(f.abspath + ".gz").exists());
     wassert(actual_file(f.abspath + ".gz.idx").not_exists());

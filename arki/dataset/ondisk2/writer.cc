@@ -47,7 +47,7 @@ struct AppendSegment
 
     WriterAcquireResult acquire_replace_never(Metadata& md, bool drop_cached_data_on_commit)
     {
-        Pending p_idx = idx.begin_transaction();
+        auto p_idx = idx.begin_transaction();
         try {
             if (std::unique_ptr<types::source::Blob> old = idx.index(md, segment->segment().relpath, segment->next_offset()))
             {
@@ -67,7 +67,7 @@ struct AppendSegment
 
     WriterAcquireResult acquire_replace_always(Metadata& md, bool drop_cached_data_on_commit)
     {
-        Pending p_idx = idx.begin_transaction();
+        auto p_idx = idx.begin_transaction();
         try {
             idx.replace(md, segment->segment().relpath, segment->next_offset());
             segment->append(md, drop_cached_data_on_commit);
@@ -86,7 +86,7 @@ struct AppendSegment
 
     WriterAcquireResult acquire_replace_higher_usn(Metadata& md, SegmentManager& segs, bool drop_cached_data_on_commit)
     {
-        Pending p_idx = idx.begin_transaction();
+        auto p_idx = idx.begin_transaction();
 
         try {
             // Try to acquire without replacing
@@ -135,7 +135,7 @@ struct AppendSegment
 
     void acquire_batch_replace_never(WriterBatch& batch, bool drop_cached_data_on_commit)
     {
-        Pending p_idx = idx.begin_transaction();
+        auto p_idx = idx.begin_transaction();
 
         try {
             for (auto& e: batch)
@@ -164,7 +164,7 @@ struct AppendSegment
 
     void acquire_batch_replace_always(WriterBatch& batch, bool drop_cached_data_on_commit)
     {
-        Pending p_idx = idx.begin_transaction();
+        auto p_idx = idx.begin_transaction();
 
         try {
             for (auto& e: batch)
@@ -187,7 +187,7 @@ struct AppendSegment
 
     void acquire_batch_replace_higher_usn(WriterBatch& batch, SegmentManager& segs, bool drop_cached_data_on_commit)
     {
-        Pending p_idx = idx.begin_transaction();
+        auto p_idx = idx.begin_transaction();
 
         try {
             for (auto& e: batch)
@@ -351,7 +351,7 @@ void Writer::remove(Metadata& md)
     index::WIndex idx(m_config);
     idx.open();
     idx.lock = lock;
-    Pending p_del = idx.begin_transaction();
+    auto p_del = idx.begin_transaction();
     idx.remove(source->filename, source->offset);
 
     // Create flagfile

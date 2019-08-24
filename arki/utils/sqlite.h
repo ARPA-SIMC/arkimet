@@ -3,7 +3,7 @@
 
 /// SQLite helpers
 
-#include <arki/transaction.h>
+#include <arki/core/transaction.h>
 #include <arki/types/fwd.h>
 #include <sqlite3.h>
 #include <string>
@@ -336,12 +336,12 @@ struct Committer
 /**
  * RAII-style transaction
  */
-struct SqliteTransaction : public Transaction
+struct SqliteTransaction : public core::Transaction
 {
-	int _ref;
+    int _ref;
 
-	Committer committer;
-	bool fired;
+    Committer committer;
+    bool fired;
 
     SqliteTransaction(SQLiteDB& db, const char* type=nullptr)
         : _ref(0), committer(db, type), fired(false)

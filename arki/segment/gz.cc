@@ -230,11 +230,11 @@ size_t Checker<Segment>::remove()
 }
 
 template<typename Segment>
-Pending Checker<Segment>::repack(const std::string& rootdir, metadata::Collection& mds, const RepackConfig& cfg)
+core::Pending Checker<Segment>::repack(const std::string& rootdir, metadata::Collection& mds, const RepackConfig& cfg)
 {
     string tmpabspath = gzabspath + ".repack";
     files::FinalizeTempfilesTransaction* finalize;
-    Pending p = finalize = new files::FinalizeTempfilesTransaction;
+    core::Pending p = finalize = new files::FinalizeTempfilesTransaction;
     finalize->tmpfiles.push_back(tmpabspath);
 
     if (cfg.gz_group_size == 0)

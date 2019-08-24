@@ -76,9 +76,9 @@ Index::~Index()
     delete m_others;
 }
 
-Pending Index::begin_transaction()
+core::Pending Index::begin_transaction()
 {
-    return Pending(new SqliteTransaction(m_db));
+    return core::Pending(new SqliteTransaction(m_db));
 }
 
 std::set<types::Code> Index::available_other_tables() const

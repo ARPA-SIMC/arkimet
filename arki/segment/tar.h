@@ -55,7 +55,7 @@ protected:
      * inside. The files are made of filesystem holes, so the data that is read
      * from them is always zeroes.
      */
-    Pending repack_impl(
+    core::Pending repack_impl(
             const std::string& rootdir,
             metadata::Collection& mds,
             bool skip_validation=false,
@@ -72,7 +72,7 @@ public:
     bool rescan_data(std::function<void(const std::string&)> reporter, std::shared_ptr<core::Lock> lock, metadata_dest_func dest) override;
     State check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick=true) override;
     size_t remove() override;
-    Pending repack(const std::string& rootdir, metadata::Collection& mds, const RepackConfig& cfg=RepackConfig()) override;
+    core::Pending repack(const std::string& rootdir, metadata::Collection& mds, const RepackConfig& cfg=RepackConfig()) override;
 
     void test_truncate(size_t offset) override;
     void test_make_hole(metadata::Collection& mds, unsigned hole_size, unsigned data_idx) override;

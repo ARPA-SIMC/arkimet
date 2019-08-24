@@ -416,9 +416,9 @@ public:
         return 0;
     }
 
-    Pending test_writelock()
+    core::Pending test_writelock()
     {
-        return Pending();
+        return core::Pending();
     }
 
     void acquire(const std::string& relpath, time_t mtime, const Summary& sum)
@@ -737,9 +737,9 @@ public:
         return 0;
     }
 
-    Pending test_writelock()
+    core::Pending test_writelock()
     {
-        return Pending(new SqliteTransaction(m_db, "EXCLUSIVE"));
+        return core::Pending(new SqliteTransaction(m_db, "EXCLUSIVE"));
     }
 
     void acquire(const std::string& relpath, time_t mtime, const Summary& sum)

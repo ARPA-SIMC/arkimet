@@ -1,7 +1,5 @@
-#include "config.h"
-#include <arki/tests/tests.h>
-#include <arki/transaction.h>
-#include <sstream>
+#include "arki/tests/tests.h"
+#include "transaction.h"
 
 namespace {
 using namespace std;
@@ -12,7 +10,7 @@ class Tests : public TestCase
 {
     using TestCase::TestCase;
     void register_tests() override;
-} test("arki_transaction");
+} test("arki_core_transaction");
 
 void Tests::register_tests() {
 

@@ -20,6 +20,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		core/cfg.h \
 		core/tests.h \
 		core/binary.h \
+		core/transaction.h \
 		defs.h \
 		exceptions.h \
 		bbox.h \
@@ -137,7 +138,6 @@ nobase_dist_arkiinclude_HEADERS = \
 		tests/daemon.h \
 		tests/tests.h \
 		tests/legacy.h \
-		transaction.h \
 		types/fwd.h \
 		types/bundle.h \
 		types/area.h \
@@ -228,6 +228,7 @@ libarkimet_la_SOURCES += \
 		core/file.cc \
 		core/cfg.cc \
 		core/binary.cc \
+		core/transaction.cc \
 		exceptions.cc \
 		nag.cc \
 		utils.cc \
@@ -244,7 +245,6 @@ libarkimet_la_SOURCES += \
 		utils/tar.cc \
 		utils/zip.cc \
 		utils/term.cc \
-		transaction.cc \
 		structured/emitter.cc \
 		structured/keys.cc \
 		structured/reader.cc \
@@ -309,6 +309,7 @@ tests_arki_test_SOURCES += \
 		core/file-test.cc \
 		core/cfg-test.cc \
 		core/binary-test.cc \
+		core/transaction-test.cc \
 		utils-test.cc \
 		utils/accounting-test.cc \
 		utils/gzip-test.cc \
@@ -319,7 +320,6 @@ tests_arki_test_SOURCES += \
 		utils/process-test.cc \
 		utils/regexp-test.cc \
 		utils/geos-test.cc \
-		transaction-test.cc \
 		structured/memory-test.cc \
 		structured/json-test.cc \
 		values-test.cc \

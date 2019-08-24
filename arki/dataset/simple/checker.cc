@@ -210,7 +210,7 @@ public:
         segment::RepackConfig repack_config;
         repack_config.gz_group_size = config().gz_group_size;
         repack_config.test_flags = test_flags;
-        Pending p_repack = segment->repack(checker.config().path, mds, repack_config);
+        auto p_repack = segment->repack(checker.config().path, mds, repack_config);
 
         // Strip paths from mds sources
         mds.strip_source_paths();

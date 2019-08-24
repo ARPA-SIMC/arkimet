@@ -77,7 +77,7 @@ add_method("rollback", [] {
     db.exec("CREATE TABLE test (id INTEGER PRIMARY KEY, val INTEGER NOT NULL)");
 
     try {
-        Pending p(new SqliteTransaction(db));
+        core::Pending p(new SqliteTransaction(db));
         db.exec("INSERT INTO test (val) VALUES (1)");
         db.exec("INSERT INTO test (val) VALUES (2)");
         db.exec("INSERT INTO test (val) VALUES (3)");

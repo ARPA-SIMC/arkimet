@@ -164,12 +164,12 @@ public:
     size_t reorder(metadata::Collection& mds, unsigned test_flags) override
     {
         // Lock away writes and reads
-        Pending p = checker.idx->begin_transaction();
+        auto p = checker.idx->begin_transaction();
 
         segment::RepackConfig repack_config;
         repack_config.gz_group_size = config().gz_group_size;
         repack_config.test_flags = test_flags;
-        Pending p_repack = segment->repack(checker.config().path, mds, repack_config);
+        auto p_repack = segment->repack(checker.config().path, mds, repack_config);
 
         // Reindex mds
         checker.idx->reset(segment->segment().relpath);
@@ -209,7 +209,7 @@ public:
             return;
 
         auto lock = checker.lock->write_lock();
-        Pending p = checker.idx->begin_transaction();
+        auto p = checker.idx->begin_transaction();
 
         // Rescan file
         metadata::Collection mds;
@@ -246,7 +246,7 @@ public:
             return;
 
         auto lock = checker.lock->write_lock();
-        Pending p = checker.idx->begin_transaction();
+        auto p = checker.idx->begin_transaction();
 
         // Rescan file
         metadata::Collection mds;
@@ -283,7 +283,7 @@ public:
             return 0;
 
         auto lock = checker.lock->write_lock();
-        Pending p = checker.idx->begin_transaction();
+        auto p = checker.idx->begin_transaction();
 
         // Rescan file
         metadata::Collection mds;
@@ -337,7 +337,7 @@ public:
                 lock, mds.inserter_func());
 
         // Lock away writes and reads
-        Pending p = checker.idx->begin_transaction();
+        auto p = checker.idx->begin_transaction();
 
         // Remove from the index all data about the file
         checker.idx->reset(segment->segment().relpath);
@@ -394,7 +394,7 @@ public:
     void index(metadata::Collection&& contents) override
     {
         // Add to index
-        Pending p_idx = checker.idx->begin_transaction();
+        auto p_idx = checker.idx->begin_transaction();
         for (auto& md: contents)
             if (checker.idx->index(*md, segment->segment().relpath, md->sourceBlob().offset))
                 throw std::runtime_error("duplicate detected while reordering segment");
