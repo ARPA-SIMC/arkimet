@@ -233,7 +233,7 @@ void BufrScanner::do_scan(BinaryMessage& rmsg, std::shared_ptr<Metadata> md)
     {
         // DB-All.e managed to make sense of the message: let the subclasser
         // try to extract further metadata
-        scan_extra(rmsg, *harvest.msg, md);
+        scan_extra(rmsg, harvest.msg, md);
     }
 
     // Check that the date is a valid date, unset if it is rubbish
@@ -334,7 +334,7 @@ MockBufrScanner::~MockBufrScanner()
     delete engine;
 }
 
-void MockBufrScanner::scan_extra(dballe::BinaryMessage& rmsg, dballe::Message& msg, std::shared_ptr<Metadata> md)
+void MockBufrScanner::scan_extra(dballe::BinaryMessage& rmsg, std::shared_ptr<dballe::Message> msg, std::shared_ptr<Metadata> md)
 {
     auto new_md = engine->lookup(reinterpret_cast<const uint8_t*>(rmsg.data.data()), rmsg.data.size());
     for (const auto& i: *new_md)
@@ -360,10 +360,10 @@ LuaBufrScanner::~LuaBufrScanner()
 #endif
 }
 
-void LuaBufrScanner::scan_extra(dballe::BinaryMessage& rmsg, dballe::Message& msg, std::shared_ptr<Metadata> md)
+void LuaBufrScanner::scan_extra(dballe::BinaryMessage& rmsg, std::shared_ptr<dballe::Message> msg, std::shared_ptr<Metadata> md)
 {
     if (extras)
-        extras->scan(msg, *md);
+        extras->scan(*msg, *md);
 }
 
 }

@@ -1,11 +1,9 @@
 from typing import Callable
 from collections import defaultdict
 import arkimet
-import _arkimet
+import dballe
 import math
 import logging
-
-BufrMessage = _arkimet.scan.bufr.BufrMessage
 
 log = logging.getLogger("arkimet.scan.bufr")
 
@@ -13,7 +11,7 @@ log = logging.getLogger("arkimet.scan.bufr")
 class Scanner:
     by_type = defaultdict(list)
 
-    def scan(self, msg: BufrMessage, md: arkimet.Metadata):
+    def scan(self, msg: dballe.Message, md: arkimet.Metadata):
         # Find the formatter list for this style
         scanners = self.by_type.get(msg.type)
         if scanners is None:
@@ -31,7 +29,7 @@ class Scanner:
                 log.exception("scanner function failed")
 
     @classmethod
-    def register(cls, type: str, scanner: Callable[[BufrMessage, arkimet.Metadata], None]):
+    def register(cls, type: str, scanner: Callable[[dballe.Message, arkimet.Metadata], None]):
         if scanner not in cls.by_type[type]:
             cls.by_type[type].append(scanner)
 

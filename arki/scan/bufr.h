@@ -30,7 +30,7 @@ class BufrScanner : public Scanner
     dballe::Importer* importer = nullptr;
 
 protected:
-    virtual void scan_extra(dballe::BinaryMessage& rmsg, dballe::Message& msg, std::shared_ptr<Metadata> md) = 0;
+    virtual void scan_extra(dballe::BinaryMessage& rmsg, std::shared_ptr<dballe::Message> msg, std::shared_ptr<Metadata> md) = 0;
 
     void do_scan(dballe::BinaryMessage& rmsg, std::shared_ptr<Metadata> md);
 
@@ -54,7 +54,7 @@ class MockBufrScanner : public BufrScanner
 protected:
     MockEngine* engine;
 
-    void scan_extra(dballe::BinaryMessage& rmsg, dballe::Message& msg, std::shared_ptr<Metadata> md) override;
+    void scan_extra(dballe::BinaryMessage& rmsg, std::shared_ptr<dballe::Message> msg, std::shared_ptr<Metadata> md) override;
 
 public:
     MockBufrScanner();
@@ -68,7 +68,7 @@ class LuaBufrScanner : public BufrScanner
 {
     bufr::BufrLua* extras = nullptr;
 
-    void scan_extra(dballe::BinaryMessage& rmsg, dballe::Message& msg, std::shared_ptr<Metadata> md) override;
+    void scan_extra(dballe::BinaryMessage& rmsg, std::shared_ptr<dballe::Message> msg, std::shared_ptr<Metadata> md) override;
 
 public:
     LuaBufrScanner();

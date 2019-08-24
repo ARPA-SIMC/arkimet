@@ -13,6 +13,7 @@ _arkimet_la_SOURCES = \
     utils/methods.cc \
     utils/values.cc \
     utils/wreport.cc \
+    utils/dballe.cc \
     common.cc \
     files.cc \
     structured.cc \
@@ -67,6 +68,7 @@ EXTRA_DIST = \
     utils/values.h \
     utils/dict.h \
     utils/wreport.h \
+    utils/dballe.h \
     common.h \
     files.h \
     structured.h \
