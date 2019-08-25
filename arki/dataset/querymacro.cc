@@ -1,15 +1,15 @@
-#include "config.h"
 #include "querymacro.h"
-#include "metadata.h"
-#include "metadata/consumer.h"
-#include "summary.h"
-#include "runtime.h"
-#include "utils/string.h"
+#include "arki/metadata.h"
+#include "arki/metadata/consumer.h"
+#include "arki/summary.h"
+#include "arki/runtime.h"
+#include "arki/utils/string.h"
 
 using namespace std;
 using namespace arki::utils;
 
 namespace arki {
+namespace dataset {
 namespace qmacro {
 
 Options::Options(const core::cfg::Sections& datasets_cfg, const std::string& name, const std::string& query)
@@ -51,12 +51,6 @@ Base::~Base()
 {
 }
 
-}
-}
-
-
-namespace arki {
-namespace qmacro {
 
 std::vector<std::pair<std::string, std::function<std::shared_ptr<dataset::Reader>(const std::string& source, const Options& opts)>>> parsers;
 
@@ -64,7 +58,7 @@ std::shared_ptr<dataset::Reader> get(const Options& opts)
 {
     for (const auto& entry: parsers)
     {
-        std::string fname = Config::get().dir_qmacro.find_file_noerror(opts.macro_name + "." + entry.first);
+        std::string fname = arki::Config::get().dir_qmacro.find_file_noerror(opts.macro_name + "." + entry.first);
         if (!fname.empty())
         {
             return entry.second(fname, opts);
@@ -88,5 +82,6 @@ void init()
 {
 }
 
+}
 }
 }

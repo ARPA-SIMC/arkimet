@@ -25,7 +25,7 @@
 #include "arki/runtime.h"
 #include "arki/dataset/merged.h"
 #include "arki/dataset/http.h"
-#include "arki/querymacro.h"
+#include "arki/dataset/querymacro.h"
 #include "arki/nag.h"
 #include "arki/libconfig.h"
 #include "config.h"
@@ -108,8 +108,8 @@ Arguments:
             if (baseurl.empty())
             {
                 // Create the local query macro
-                arki::qmacro::Options opts(cfg, datasets, name, query);
-                ds = qmacro::get(opts);
+                arki::dataset::qmacro::Options opts(cfg, datasets, name, query);
+                ds = arki::dataset::qmacro::get(opts);
             } else {
                 // Create the remote query macro
                 core::cfg::Section cfg;

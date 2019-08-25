@@ -4,7 +4,7 @@
 #include "arki/dataset.h"
 #include "arki/dataset/http.h"
 #include "arki/dataset/merged.h"
-#include "arki/querymacro.h"
+#include "arki/dataset/querymacro.h"
 #include "arki/nag.h"
 #include "arki-query.h"
 #include "utils/core.h"
@@ -191,8 +191,8 @@ struct query_qmacro : public MethKwargs<query_qmacro, arkipy_ArkiQuery>
                 {
                     // Create the local query macro
                     arki::nag::verbose("Running query macro %s on local datasets", macro_name.c_str());
-                    arki::qmacro::Options opts(cfg, self->inputs, macro_name, macro_query);
-                    reader = arki::qmacro::get(opts);
+                    arki::dataset::qmacro::Options opts(cfg, self->inputs, macro_name, macro_query);
+                    reader = arki::dataset::qmacro::get(opts);
                 } else {
                     // Create the remote query macro
                     arki::nag::verbose("Running query macro %s on %s", macro_name.c_str(), baseurl.c_str());
