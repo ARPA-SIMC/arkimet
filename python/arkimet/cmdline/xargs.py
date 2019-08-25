@@ -42,7 +42,7 @@ class Xargs(App):
             command=self.args.command,
             inputs=self.args.input,
             max_args=self.args.max_args,
-            max_size=self.args.max_size,
+            max_size=self.parse_size(self.args.max_size) if self.args.max_size else 0,
             time_interval=self.args.time_interval,
             split_timerange=self.args.split_timerange,
         )

@@ -1,6 +1,4 @@
-#include "config.h"
 #include "arki/libconfig.h"
-#include "arki/utils.h"
 #include "files.h"
 #include "sys.h"
 #include "string.h"

@@ -152,10 +152,11 @@ class Scan(AppWithProcessor):
 
             if self.args.dispatch or self.args.testdispatch:
                 kw = dict(
-                        copyok=self.args.copyok,
-                        copyko=self.args.copyko,
-                        validate=self.args.validate,
-                        flush_threshold=self.args.flush_threshold,
+                    copyok=self.args.copyok,
+                    copyko=self.args.copyko,
+                    validate=self.args.validate,
+                    flush_threshold=(
+                        self.parse_size(self.args.flush_threshold) if self.args.flush_threshold is not None else 0),
                 )
 
                 if self.args.dispatch:

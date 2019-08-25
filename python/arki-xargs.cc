@@ -35,13 +35,12 @@ struct run_ : public MethKwargs<run_, arkipy_ArkiXargs>
         PyObject* py_command = nullptr;
         PyObject* py_inputs = nullptr;
         PyObject* py_max_args = 0;
-        const char* max_size = nullptr;
-        Py_ssize_t max_size_len;
+        unsigned long long max_size = 0;
         const char* time_interval = nullptr;
         Py_ssize_t time_interval_len;
         int split_timerange = 0;
-        if (!PyArg_ParseTupleAndKeywords(args, kw, "O|OOz#z#p", const_cast<char**>(kwlist),
-                    &py_command, &py_inputs, &py_max_args, &max_size, &max_size_len,
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "O|OOKz#p", const_cast<char**>(kwlist),
+                    &py_command, &py_inputs, &py_max_args, &max_size,
                     &time_interval, &time_interval_len, &split_timerange))
             return nullptr;
 
@@ -51,7 +50,7 @@ struct run_ : public MethKwargs<run_, arkipy_ArkiXargs>
             if (py_max_args && py_max_args != Py_None)
                 consumer.max_count = int_from_python(py_max_args);
             if (max_size)
-                consumer.set_max_bytes(std::string(max_size, max_size_len));
+                consumer.set_max_bytes(max_size);
             if (time_interval)
                 consumer.set_interval(std::string(time_interval, time_interval_len));
             if (split_timerange)

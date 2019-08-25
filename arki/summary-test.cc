@@ -16,7 +16,6 @@
 #include "structured/keys.h"
 #include "matcher.h"
 #include "metadata/collection.h"
-#include "utils.h"
 #include "utils/files.h"
 #include "utils/sys.h"
 #include <sys/fcntl.h>
