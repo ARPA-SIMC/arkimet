@@ -35,6 +35,9 @@ bool filesystem_has_ofd_locks(const std::string& dir);
 // Flagfile handling
 
 /// Create an empty file, succeeding if it already exists
+void createFlagfile(const std::string& pathname);
+
+/// Create an empty file, succeeding if it already exists
 void createDontpackFlagfile(const std::string& dir);
 
 /// Remove a file, succeeding if it does not exists

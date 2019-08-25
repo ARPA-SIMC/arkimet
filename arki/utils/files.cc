@@ -74,14 +74,22 @@ bool filesystem_has_ofd_locks(const std::string& dir)
     return res1 && !res2;
 }
 
+void createFlagfile(const std::string& pathname)
+{
+    sys::File fd(pathname, O_WRONLY | O_CREAT | O_NOCTTY, 0666);
+    fd.close();
+}
+
 void createDontpackFlagfile(const std::string& dir)
 {
-	utils::createFlagfile(str::joinpath(dir, FLAGFILE_DONTPACK));
+    createFlagfile(str::joinpath(dir, FLAGFILE_DONTPACK));
 }
+
 void removeDontpackFlagfile(const std::string& dir)
 {
     sys::unlink_ifexists(str::joinpath(dir, FLAGFILE_DONTPACK));
 }
+
 bool hasDontpackFlagfile(const std::string& dir)
 {
     return sys::exists(str::joinpath(dir, FLAGFILE_DONTPACK));

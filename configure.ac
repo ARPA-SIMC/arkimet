@@ -103,7 +103,6 @@ AM_CONDITIONAL([FILE_OFFSET_BITS_64], [test x"$FILE_OFFSET_BITS_64" = x"yes"])
 
 dnl Check what libc features are available on this system
 gl_CHECK_TYPE_STRUCT_DIRENT_D_TYPE
-gt_FUNC_MKDTEMP
 ez_FUNC_SPLICE
 
 dnl Call in pkg-config explicitly, so we can safely put the first

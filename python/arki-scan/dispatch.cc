@@ -1,7 +1,6 @@
 #include "dispatch.h"
 #include "python/cmdline/processor.h"
 #include "arki/dispatcher.h"
-#include "arki/utils.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
 #include "arki/nag.h"

@@ -1,6 +1,5 @@
 #include "arki/dataset/tests.h"
 #include "arki/utils/sys.h"
-#include "arki/utils.h"
 #include "managers.h"
 
 namespace {

@@ -5,7 +5,6 @@
 #include <arki/metadata/collection.h>
 #include <arki/summary.h>
 #include <arki/matcher.h>
-#include <arki/utils.h>
 #include <arki/utils/files.h>
 #include <arki/utils/sys.h>
 

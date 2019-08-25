@@ -6,7 +6,6 @@
 #include "arki/metadata/sort.h"
 #include "arki/dataset/step.h"
 #include "arki/dataset/reporter.h"
-#include "arki/utils.h"
 #include "arki/utils/files.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"

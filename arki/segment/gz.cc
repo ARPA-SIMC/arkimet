@@ -12,7 +12,6 @@
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/tar.h"
-#include "arki/utils.h"
 #include "arki/nag.h"
 #include "arki/utils/accounting.h"
 #include "arki/iotrace.h"

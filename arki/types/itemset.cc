@@ -1,6 +1,5 @@
 #include "itemset.h"
 #include "arki/types.h"
-#include "arki/utils.h"
 
 using namespace std;
 using namespace arki::types;

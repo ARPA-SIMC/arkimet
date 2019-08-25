@@ -18,10 +18,6 @@
 #include "arki/utils/sys.h"
 #include "arki/scan/validator.h"
 #include "arki/scan/mock.h"
-#if 0
-#include "arki/utils/lua.h"
-#include "arki/utils/h5.h"
-#endif
 #include <cstring>
 #include <unistd.h>
 #include <fcntl.h>

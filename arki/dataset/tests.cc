@@ -16,7 +16,6 @@
 #include "arki/dataset/reporter.h"
 #include "arki/scan/grib.h"
 #include "arki/scan/vm2.h"
-#include "arki/utils.h"
 #include "arki/utils/files.h"
 #include "arki/types/timerange.h"
 #include "arki/types/area.h"

@@ -3,7 +3,6 @@
 #include "arki/types/source/blob.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/string.h"
-#include "arki/utils.h"
 #include "segment.h"
 #include <algorithm>
 
