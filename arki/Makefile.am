@@ -177,7 +177,6 @@ nobase_dist_arkiinclude_HEADERS = \
 		utils/geos.h \
 		utils/geosfwd.h \
 		utils/h5.h \
-		utils.h \
 		utils/process.h \
 		utils/regexp.h \
 		utils/sqlite.h \
@@ -231,7 +230,6 @@ libarkimet_la_SOURCES += \
 		core/transaction.cc \
 		exceptions.cc \
 		nag.cc \
-		utils.cc \
 		utils/accounting.cc \
 		utils/geos.cc \
 		utils/gzip.cc \
@@ -310,7 +308,6 @@ tests_arki_test_SOURCES += \
 		core/cfg-test.cc \
 		core/binary-test.cc \
 		core/transaction-test.cc \
-		utils-test.cc \
 		utils/accounting-test.cc \
 		utils/gzip-test.cc \
 		utils/yaml-test.cc \

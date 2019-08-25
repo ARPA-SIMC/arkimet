@@ -46,7 +46,7 @@ public:
     Xargs();
     ~Xargs();
 
-    void set_max_bytes(const std::string& val);
+    void set_max_bytes(size_t val);
     void set_interval(const std::string& val);
 };
 

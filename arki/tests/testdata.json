@@ -91,11 +91,6 @@
  },
  {
   "doc": "",
-  "group": "arki_utils",
-  "method": "parse_size"
- },
- {
-  "doc": "",
   "group": "arki_utils_accounting",
   "method": "counter"
  },

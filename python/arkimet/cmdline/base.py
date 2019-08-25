@@ -88,6 +88,60 @@ class App:
             print(e, file=sys.stderr)
             return 1
 
+    re_size = re.compile(r"^(\d+)(\w*)$")
+
+    @classmethod
+    def parse_size(cls, val: str):
+        """
+        Parse a string in the form <number><suffix> returning its value in bytes
+        """
+        mo = cls.re_size.match(val)
+        if not mo:
+            raise ValueError("invalid size: {}".format(repr(val)))
+
+        base_val = int(mo.group(1))
+        suffix = mo.group(2)
+
+        if not suffix:
+            return base_val
+
+        if len(suffix) > 2:
+            raise ValueError("invalid suffix {} in {}".format(repr(suffix), repr(val)))
+
+        lsuffix = suffix.lower()
+
+        if len(suffix) == 1:
+            mul = 1000
+        elif lsuffix[1] == 'b':
+            if lsuffix[0] in ("b", "c"):
+                raise ValueError("invalid suffix {} in {}".format(repr(suffix), repr(val)))
+            mul = 1000
+        elif lsuffix[1] == "i":
+            mul = 1024
+        else:
+            raise ValueError("invalid suffix {} in {}".format(repr(suffix), repr(val)))
+
+        if lsuffix[0] in ("b", "c"):
+            return base_val
+        elif lsuffix[0] == "k":
+            return base_val * mul
+        elif lsuffix[0] == "m":
+            return base_val * (mul ** 2)
+        elif lsuffix[0] == "g":
+            return base_val * (mul ** 3)
+        elif lsuffix[0] == "t":
+            return base_val * (mul ** 4)
+        elif lsuffix[0] == "p":
+            return base_val * (mul ** 5)
+        elif lsuffix[0] == "e":
+            return base_val * (mul ** 6)
+        elif lsuffix[0] == "z":
+            return base_val * (mul ** 7)
+        elif lsuffix[0] == "y":
+            return base_val * (mul ** 8)
+        else:
+            raise ValueError("invalid suffix {} in {}".format(repr(suffix), repr(val)))
+
 
 class AppConfigMixin:
     def __init__(self):

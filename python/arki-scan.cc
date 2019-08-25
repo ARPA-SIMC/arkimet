@@ -6,7 +6,6 @@
 #include "arki/exceptions.h"
 #include "arki/dataset/file.h"
 #include "arki/metadata/validator.h"
-#include "arki/utils.h"
 #include "utils/core.h"
 #include "utils/methods.h"
 #include "utils/type.h"
@@ -99,14 +98,12 @@ std::unique_ptr<arki_scan::MetadataDispatch> build_dispatcher(cmdline::DatasetPr
     Py_ssize_t validate_len;
     PyObject* dispatch = nullptr;
     PyObject* testdispatch = nullptr;
-    const char* flush_threshold = nullptr;
-    Py_ssize_t flush_threshold_len;
-    if (!PyArg_ParseTupleAndKeywords(args, kw, "|z#z#z#OOz#", const_cast<char**>(kwlist),
+    unsigned long long flush_threshold = 0;
+    if (!PyArg_ParseTupleAndKeywords(args, kw, "|z#z#z#OOK", const_cast<char**>(kwlist),
                 &copyok, &copyok_len, &copyko, &copyko_len,
                 &validate, &validate_len,
                 &dispatch, &testdispatch,
-                &flush_threshold, &flush_threshold_len
-                ))
+                &flush_threshold))
         throw PythonException();
 
     std::unique_ptr<arki_scan::MetadataDispatch> res(new arki_scan::MetadataDispatch(processor));
@@ -144,7 +141,7 @@ std::unique_ptr<arki_scan::MetadataDispatch> build_dispatcher(cmdline::DatasetPr
         res->dir_copyko = std::string(copyko, copyko_len);
 
     if (flush_threshold)
-        res->flush_threshold = parse_size(std::string(flush_threshold, flush_threshold_len));
+        res->flush_threshold = flush_threshold;
 
     return res;
 }
