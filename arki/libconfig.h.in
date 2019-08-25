@@ -31,9 +31,6 @@
 /* SQLite 3 is available */
 #undef HAVE_SQLITE3
 
-/* mkdtemp is available */
-#undef HAVE_MKDTEMP
-
 /* the `splice' function is available */
 #undef HAVE_SPLICE
 

@@ -4,7 +4,7 @@
 #include "arki/metadata.h"
 #include "arki/matcher.h"
 #include "arki/utils/sys.h"
-#include "arki/utils.h"
+#include "arki/utils/files.h"
 #include <algorithm>
 #include <memory>
 #include <sstream>
@@ -57,8 +57,8 @@ add_method("single", [](Fixture& f) {
     wassert_true(step->pathMatches("all.test", mimpl(Matcher::parse("reftime:<=2008"))));
 
     sys::mkdir_ifmissing("test_step/");
-    createFlagfile("test_step/all.grib");
-    createFlagfile("test_step/all.bufr");
+    files::createFlagfile("test_step/all.grib");
+    files::createFlagfile("test_step/all.bufr");
 
     vector<string> res;
     step->list_segments(step::SegmentQuery("test_step", "grib", Matcher::parse("reftime:<2002")), [&](std::string&& s) { res.emplace_back(move(s)); });
@@ -93,11 +93,11 @@ add_method("yearly", [](Fixture& f) {
     wassert_false(step->pathMatches("20/2007.test", mimpl(Matcher::parse("reftime:<2007"))));
 
     sys::mkdir_ifmissing("test_step/19");
-    createFlagfile("test_step/19/1998.grib");
-    createFlagfile("test_step/19/1998.bufr");
+    files::createFlagfile("test_step/19/1998.grib");
+    files::createFlagfile("test_step/19/1998.bufr");
     sys::mkdir_ifmissing("test_step/20");
-    createFlagfile("test_step/20/2001.grib");
-    createFlagfile("test_step/20/2002.grib");
+    files::createFlagfile("test_step/20/2001.grib");
+    files::createFlagfile("test_step/20/2002.grib");
 
     vector<string> res;
     step->list_segments(step::SegmentQuery("test_step", "grib", Matcher::parse("reftime:<2002")), [&](std::string&& s) { res.emplace_back(move(s)); });
@@ -134,14 +134,14 @@ add_method("monthly", [](Fixture& f) {
     wassert(actual((*step)(f.time)) == "2007/06");
 
     sys::mkdir_ifmissing("test_step/2007");
-    createFlagfile("test_step/2007/01.grib");
-    createFlagfile("test_step/2007/01.bufr");
+    files::createFlagfile("test_step/2007/01.grib");
+    files::createFlagfile("test_step/2007/01.bufr");
     sys::mkdir_ifmissing("test_step/2008");
-    createFlagfile("test_step/2008/06.grib");
+    files::createFlagfile("test_step/2008/06.grib");
     sys::mkdir_ifmissing("test_step/2008/07.grib");
     sys::mkdir_ifmissing("test_step/2009");
-    createFlagfile("test_step/2009/11.grib");
-    createFlagfile("test_step/2009/12.grib");
+    files::createFlagfile("test_step/2009/11.grib");
+    files::createFlagfile("test_step/2009/12.grib");
 
     vector<string> res;
     step->list_segments(step::SegmentQuery("test_step", "grib", Matcher::parse("reftime:<2009-11-15")), [&](std::string&& s) { res.emplace_back(move(s)); });
@@ -192,14 +192,14 @@ add_method("daily", [](Fixture& f) {
     wassert(actual((*step)(f.time)) == "2007/06-05");
 
     sys::mkdir_ifmissing("test_step/2007");
-    createFlagfile("test_step/2007/01-01.grib");
-    createFlagfile("test_step/2007/01-01.bufr");
+    files::createFlagfile("test_step/2007/01-01.grib");
+    files::createFlagfile("test_step/2007/01-01.bufr");
     sys::mkdir_ifmissing("test_step/2008");
-    createFlagfile("test_step/2008/06-01.grib");
+    files::createFlagfile("test_step/2008/06-01.grib");
     sys::mkdir_ifmissing("test_step/2008/06-05.grib");
     sys::mkdir_ifmissing("test_step/2009");
-    createFlagfile("test_step/2009/12-29.grib");
-    createFlagfile("test_step/2009/12-30.grib");
+    files::createFlagfile("test_step/2009/12-29.grib");
+    files::createFlagfile("test_step/2009/12-30.grib");
 
     vector<string> res;
     step->list_segments(step::SegmentQuery("test_step", "grib", Matcher::parse("reftime:<2009-12-30")), [&](std::string&& s) { res.emplace_back(move(s)); });

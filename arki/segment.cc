@@ -9,7 +9,6 @@
 #include "arki/metadata/collection.h"
 #include "arki/metadata.h"
 #include "arki/types/source/blob.h"
-#include "arki/utils.h"
 #include "arki/utils/files.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
