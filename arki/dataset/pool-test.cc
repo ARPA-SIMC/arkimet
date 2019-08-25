@@ -1,7 +1,6 @@
-#include "config.h"
-#include "core/cfg.h"
-#include "tests/tests.h"
-#include "datasets.h"
+#include "arki/core/cfg.h"
+#include "arki/tests/tests.h"
+#include "pool.h"
 
 namespace {
 using namespace std;
@@ -41,10 +40,11 @@ class Tests : public TestCase
 void Tests::register_tests() {
 
 add_method("instantiate", [] {
+    using namespace arki::dataset;
     // In-memory dataset configuration
     auto config = core::cfg::Sections::parse(sample_config, "(memory)");
 
-    Datasets datasets(config);
+    Configs datasets(config);
     WriterPool pool(datasets);
     wassert(actual(pool.get("error")).istrue());
     wassert(actual(pool.get("test200")).istrue());

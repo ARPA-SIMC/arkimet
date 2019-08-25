@@ -3,7 +3,7 @@
 #include "arki/metadata/collection.h"
 #include "arki/dataset.h"
 #include "arki/dataset/segmented.h"
-#include "arki/datasets.h"
+#include "arki/dataset/pool.h"
 #include "arki/nag.h"
 #include "arki-check.h"
 #include "dataset/reporter.h"
@@ -61,8 +61,8 @@ struct remove : public MethKwargs<remove, arkipy_ArkiCheck>
 
             {
                 ReleaseGIL rg;
-                arki::Datasets datasets(self->config);
-                arki::WriterPool pool(datasets);
+                arki::dataset::Configs datasets(self->config);
+                arki::dataset::WriterPool pool(datasets);
                 // Read all metadata from the file specified in --remove
                 arki::metadata::Collection todolist;
                 todolist.read_from_file(metadata_file);

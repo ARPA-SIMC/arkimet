@@ -1,8 +1,7 @@
 #ifndef ARKI_DISPATCHER_H
 #define ARKI_DISPATCHER_H
 
-#include <arki/datasets.h>
-#include <arki/dataset.h>
+#include <arki/dataset/pool.h>
 #include <arki/metadata/fwd.h>
 #include <arki/matcher.h>
 #include <string>
@@ -81,8 +80,8 @@ public:
 class RealDispatcher : public Dispatcher
 {
 protected:
-    Datasets datasets;
-    WriterPool pool;
+    dataset::Configs datasets;
+    dataset::WriterPool pool;
 
     void raw_dispatch_dataset(const std::string& name, dataset::WriterBatch& batch, bool drop_cached_data_on_commit) override;
 

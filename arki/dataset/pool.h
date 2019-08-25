@@ -1,32 +1,28 @@
-#ifndef ARKI_DATASETPOOL_H
-#define ARKI_DATASETPOOL_H
+#ifndef ARKI_DATASET_POOL_H
+#define ARKI_DATASET_POOL_H
 
 /// Pool of datasets, opened on demand
 
 #include <arki/core/fwd.h>
+#include <arki/metadata/fwd.h>
+#include <arki/dataset/fwd.h>
 #include <string>
 #include <map>
 #include <memory>
 
 namespace arki {
-class Metadata;
-
 namespace dataset {
-class Config;
-class Reader;
-class Writer;
-}
 
 /**
  * Manage a pool of datasets
  */
-class Datasets
+class Configs
 {
 protected:
     std::map<std::string, std::shared_ptr<const dataset::Config>> configs;
 
 public:
-    explicit Datasets(const core::cfg::Sections& cfg);
+    explicit Configs(const core::cfg::Sections& cfg);
 
     /// Get the configuration for the given dataset
     std::shared_ptr<const dataset::Config> get(const std::string& name) const;
@@ -48,13 +44,13 @@ public:
 class WriterPool
 {
 protected:
-    const Datasets& datasets;
+    const Configs& datasets;
 
     // Dataset cache
     std::map<std::string, std::shared_ptr<dataset::Writer>> cache;
 
 public:
-    WriterPool(const Datasets& datasets);
+    WriterPool(const Configs& datasets);
     ~WriterPool();
 
     /**
@@ -81,5 +77,6 @@ public:
     void flush();
 };
 
+}
 }
 #endif

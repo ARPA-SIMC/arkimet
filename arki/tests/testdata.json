@@ -12261,6 +12261,11 @@
  },
  {
   "doc": "",
+  "group": "arki_dataset_datasets",
+  "method": "instantiate"
+ },
+ {
+  "doc": "",
   "group": "arki_dataset_instantiate_simple",
   "method": "instantiate"
  },
@@ -15933,11 +15938,6 @@
   "doc": "",
   "group": "arki_dataset_concurrent_odim_iseg",
   "method": "nolock_repack"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_datasets",
-  "method": "instantiate"
  },
  {
   "doc": "",

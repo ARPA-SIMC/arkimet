@@ -1,13 +1,12 @@
-#include "datasets.h"
-#include "utils/string.h"
-#include "core/cfg.h"
-#include "dataset.h"
-#include "dataset/local.h"
-#include "utils/sys.h"
-#include "utils/string.h"
-#include "metadata.h"
-#include "types/source/blob.h"
-#include "config.h"
+#include "pool.h"
+#include "arki/utils/string.h"
+#include "arki/core/cfg.h"
+#include "arki/dataset.h"
+#include "arki/dataset/local.h"
+#include "arki/utils/sys.h"
+#include "arki/utils/string.h"
+#include "arki/metadata.h"
+#include "arki/types/source/blob.h"
 
 using namespace std;
 using namespace arki::utils;
@@ -70,14 +69,15 @@ struct PathMatch
 
 
 namespace arki {
+namespace dataset {
 
-Datasets::Datasets(const core::cfg::Sections& cfg)
+Configs::Configs(const core::cfg::Sections& cfg)
 {
     for (const auto& si: cfg)
         configs.insert(make_pair(si.first, dataset::Config::create(si.second)));
 }
 
-std::shared_ptr<const dataset::Config> Datasets::get(const std::string& name) const
+std::shared_ptr<const dataset::Config> Configs::get(const std::string& name) const
 {
     auto res = configs.find(name);
     if (res == configs.end())
@@ -85,12 +85,12 @@ std::shared_ptr<const dataset::Config> Datasets::get(const std::string& name) co
     return res->second;
 }
 
-bool Datasets::has(const std::string& name) const
+bool Configs::has(const std::string& name) const
 {
     return configs.find(name) != configs.end();
 }
 
-std::shared_ptr<const dataset::Config> Datasets::locate_metadata(Metadata& md)
+std::shared_ptr<const dataset::Config> Configs::locate_metadata(Metadata& md)
 {
     const auto& source = md.sourceBlob();
     std::string pathname = source.absolutePathname();
@@ -112,7 +112,7 @@ std::shared_ptr<const dataset::Config> Datasets::locate_metadata(Metadata& md)
 }
 
 
-WriterPool::WriterPool(const Datasets& datasets)
+WriterPool::WriterPool(const Configs& datasets)
     : datasets(datasets)
 {
 }
@@ -155,4 +155,5 @@ void WriterPool::flush()
         i.second->flush();
 }
 
+}
 }
