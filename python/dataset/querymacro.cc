@@ -1,6 +1,6 @@
 #include "querymacro.h"
 #include "arki/exceptions.h"
-#include "arki/querymacro.h"
+#include "arki/dataset/querymacro.h"
 #include "arki/utils/sys.h"
 #include "arki/nag.h"
 #include "arki/summary.h"
@@ -19,7 +19,7 @@ namespace python {
 
 namespace {
 
-PyObject* instantiate_qmacro_pydataset(const std::string& source, const qmacro::Options& opts)
+PyObject* instantiate_qmacro_pydataset(const std::string& source, const arki::dataset::qmacro::Options& opts)
 {
     // Check if the qmacro module had already been imported
     std::string module_name = "arki.python.dataset.qmacro." + opts.macro_name;
@@ -62,7 +62,7 @@ namespace qmacro {
 
 void init()
 {
-    arki::qmacro::register_parser("py", [](const std::string& source, const arki::qmacro::Options& opts) {
+    arki::dataset::qmacro::register_parser("py", [](const std::string& source, const arki::dataset::qmacro::Options& opts) {
         AcquireGIL gil;
         pyo_unique_ptr o(instantiate_qmacro_pydataset(source, opts));
         return python::dataset::create_reader(opts.macro_cfg, o);

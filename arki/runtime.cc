@@ -6,7 +6,7 @@
 #include "arki/types-init.h"
 #include "arki/iotrace.h"
 #include "arki/scan.h"
-#include "arki/querymacro.h"
+#include "arki/dataset/querymacro.h"
 #include <algorithm>
 
 using namespace std;
@@ -140,7 +140,7 @@ void init()
     matcher::read_matcher_alias_database();
     iotrace::init();
     scan::init();
-    qmacro::init();
+    dataset::qmacro::init();
     initialized = true;
 }
 

@@ -69,6 +69,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		dataset/step.h \
 		dataset/tests.h \
 		dataset/maintenance-test.h \
+		dataset/querymacro.h \
 		datasets.h \
 		dispatcher.h \
 		structured/emitter.h \
@@ -109,7 +110,6 @@ nobase_dist_arkiinclude_HEADERS = \
 		metadata/test-generator.h \
 		metadata/validator.h \
 		nag.h \
-		querymacro.h \
 		runtime.h \
 		scan.h \
 		scan/fwd.h \
@@ -548,9 +548,9 @@ libarkimet_la_SOURCES += \
 		dataset/fromfunction.cc \
 		dataset/testlarge.cc \
 		dataset/merged.cc \
+		dataset/querymacro.cc \
 		datasets.cc \
 		dispatcher.cc \
-		querymacro.cc \
 		runtime.cc
 
 tests_arki_test_SOURCES += \
@@ -600,12 +600,12 @@ tests_arki_test_SOURCES += \
 		dataset/fromfunction-test.cc \
 		dataset/testlarge-test.cc \
 		dataset/merged-test.cc \
+		dataset/querymacro-test.cc \
 		dataset-test.cc \
 		dataset-reader-test.cc \
 		dataset-writer-test.cc \
 		dataset-checker-test.cc \
 		dataset-concurrency-test.cc \
-		querymacro-test.cc \
 		datasets-test.cc \
 		dispatcher-test.cc \
 		runtime-test.cc

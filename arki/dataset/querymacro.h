@@ -9,6 +9,7 @@
 #include <functional>
 
 namespace arki {
+namespace dataset {
 namespace qmacro {
 
 struct Options
@@ -56,6 +57,7 @@ void register_parser(
 
 void init();
 
+}
 }
 }
 #endif
