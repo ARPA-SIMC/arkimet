@@ -67,7 +67,7 @@ BuildRequires: %{python3_vers}-nose
 BuildRequires: %{python3_vers}-jinja2
 BuildRequires: %{python3_vers}-requests
 BuildRequires: %{python3_vers}-wreport3
-BuildRequires: %{python3_vers}-dballe
+BuildRequires: %{python3_vers}-dballe >= 8.3
 %if ! 0%{?el7}
 BuildRequires: %{python3_vers}-h5py
 %else
@@ -89,6 +89,7 @@ Requires: %{grib_sw}
 Requires: %{python3_vers}
 Requires: %{python3_vers}-werkzeug
 Requires: %{python3_vers}-setproctitle
+Requires: %{python3_vers}-dballe >= 8.3
 Requires: libdballe6 >= 8.3
 Requires: systemd
 
