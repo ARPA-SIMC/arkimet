@@ -67,6 +67,7 @@ BuildRequires: %{python3_vers}-nose
 BuildRequires: %{python3_vers}-jinja2
 BuildRequires: %{python3_vers}-requests
 BuildRequires: %{python3_vers}-wreport3
+BuildRequires: %{python3_vers}-dballe
 %if ! 0%{?el7}
 BuildRequires: %{python3_vers}-h5py
 %else
