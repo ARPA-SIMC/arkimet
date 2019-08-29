@@ -4,7 +4,46 @@ TESTS_ENVIRONMENT = $(top_srcdir)/arki/runtest
 
 #TESTS = test.py
 
-nobase_python_PYTHON = arkimet/__init__.py arkimet/server/__init__.py arkimet/server/views.py
+nobase_python_PYTHON = \
+    arkimet/__init__.py \
+    arkimet/cfg.py \
+    arkimet/counters.py \
+    arkimet/formatter/level.py \
+    arkimet/formatter/__init__.py \
+    arkimet/formatter/eccodes.py \
+    arkimet/formatter/timerange.py \
+    arkimet/formatter/product.py \
+    arkimet/formatter/formatter.py \
+    arkimet/formatter/area.py \
+    arkimet/formatter/origin.py \
+    arkimet/formatter/proddef.py \
+    arkimet/dataset/__init__.py \
+    arkimet/dataset/http.py \
+    arkimet/bbox/__init__.py \
+    arkimet/bbox/grib.py \
+    arkimet/bbox/bbox.py \
+    arkimet/bbox/common.py \
+    arkimet/bbox/vm2.py \
+    arkimet/bbox/odimh5.py \
+    arkimet/scan/timedef.py \
+    arkimet/scan/__init__.py \
+    arkimet/scan/grib.py \
+    arkimet/scan/common.py \
+    arkimet/scan/bufr.py \
+    arkimet/scan/vm2.py \
+    arkimet/scan/odimh5.py \
+    arkimet/server/views.py \
+    arkimet/server/__init__.py \
+    arkimet/cmdline/dump.py \
+    arkimet/cmdline/query.py \
+    arkimet/cmdline/__init__.py \
+    arkimet/cmdline/server.py \
+    arkimet/cmdline/xargs.py \
+    arkimet/cmdline/mergeconf.py \
+    arkimet/cmdline/base.py \
+    arkimet/cmdline/bufr_prepare.py \
+    arkimet/cmdline/scan.py \
+    arkimet/cmdline/check.py
 
 pyexec_LTLIBRARIES = _arkimet.la
 
