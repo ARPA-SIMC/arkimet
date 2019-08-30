@@ -1,6 +1,7 @@
 import unittest
 import os
 import posix
+import json
 from contextlib import contextmanager
 from arkimet.cmdline.query import Query
 from arkimet.test import Env, CmdlineTestMixin
@@ -29,12 +30,31 @@ class TestArkiQuery(CmdlineTestMixin, unittest.TestCase):
             self.assertEqual(out, b"/dev/null\n")
 
     def test_query_metadata(self):
+        self.maxDiff = None
         out = self.call_output_success("--data", "", "inbound/test.grib1.arkimet", binary=True)
         self.assertEqual(out[:4], b"GRIB")
 
     def test_query_yaml_summary(self):
+        self.maxDiff = None
         out = self.call_output_success("--summary", "--yaml", "", "inbound/test.grib1.arkimet", binary=True)
         self.assertEqual(out[:12], b"SummaryItem:")
+
+    def test_query_dump_summary_short(self):
+        self.maxDiff = None
+        out = self.call_output_success("--summary-short", "--dump", "", "inbound/test.grib1.arkimet", binary=True)
+        self.assertEqual(out[:13], b"SummaryStats:")
+
+    def test_query_json_summary(self):
+        self.maxDiff = None
+        out = self.call_output_success("--summary", "--json", "", "inbound/test.grib1.arkimet", binary=True)
+        parsed = json.loads(out)
+        self.assertIn("items", parsed)
+
+    def test_query_json_summary_short(self):
+        self.maxDiff = None
+        out = self.call_output_success("--summary-short", "--json", "", "inbound/test.grib1.arkimet", binary=True)
+        parsed = json.loads(out)
+        self.assertIn("items", parsed)
 
     def test_query_merged(self):
         with self.dataset("inbound/fixture.grib1"):

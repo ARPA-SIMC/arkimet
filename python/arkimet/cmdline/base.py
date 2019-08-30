@@ -234,19 +234,15 @@ class AppWithProcessor(App):
 
         self.check_mutually_exclusive_options(
                 "inline", "summary", "summary_short", "data",
-                "postproc", "archive", "json")
-
-        self.check_mutually_exclusive_options(
-                "inline", "yaml", "summary_short", "data",
-                "postproc", "archive", "json")
-
-        self.check_mutually_exclusive_options(
-                "inline", "yaml", "report", "summary_short", "data",
-                "postproc", "archive", "json")
-
-        self.check_mutually_exclusive_options(
-                "annotate", "inline", "report", "summary_short", "data",
                 "postproc", "archive")
+
+        self.check_mutually_exclusive_options(
+                "inline", "data", "postproc", "archive", "report",
+                "yaml", "json")
+
+        self.check_mutually_exclusive_options(
+                "inline", "data", "postproc", "archive", "report",
+                "annotate")
 
         self.check_mutually_exclusive_options(
                 "sort", "report", "summary", "summary_short")
