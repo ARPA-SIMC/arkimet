@@ -2,6 +2,7 @@
 #define ARKI_DISPATCHER_H
 
 #include <arki/dataset/pool.h>
+#include <arki/core/cfg.h>
 #include <arki/metadata/fwd.h>
 #include <arki/matcher.h>
 #include <string>
@@ -106,7 +107,7 @@ public:
 class TestDispatcher : public Dispatcher
 {
 protected:
-    const core::cfg::Sections& cfg;
+    core::cfg::Sections cfg;
 
     void raw_dispatch_dataset(const std::string& name, dataset::WriterBatch& batch, bool drop_cached_data_on_commit) override;
 
