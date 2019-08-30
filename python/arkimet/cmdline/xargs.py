@@ -34,12 +34,16 @@ class Xargs(App):
         self.parser.add_argument("command", nargs=argparse.REMAINDER,
                                  help="command to run, including initial arguments")
 
+    def __sanitize_command(self, command):
+        """Ignore double dash if it's the first item in the command list."""
+        return command[1:] if command and command[0] == "--" else command
+
     def run(self):
         super().run()
         res = 0
         cmd = arki.ArkiXargs()
         res = cmd.run(
-            command=self.args.command,
+            command=self.__sanitize_command(self.args.command),
             inputs=self.args.input,
             max_args=self.args.max_args,
             max_size=self.parse_size(self.args.max_size) if self.args.max_size else 0,
