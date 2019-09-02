@@ -6,7 +6,6 @@
 #include "arki/metadata.h"
 #include "arki/summary.h"
 #include "arki/matcher.h"
-#include "h5.h"
 
 namespace {
 using namespace std;

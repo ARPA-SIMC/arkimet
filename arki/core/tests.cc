@@ -151,12 +151,6 @@ void skip_unless_vm2()
     throw TestSkipped("VM2 support not available");
 #endif
 }
-void skip_unless_odimh5()
-{
-#ifndef HAVE_HDF5
-    throw TestSkipped("ODIMH5 support not available");
-#endif
-}
 void skip_unless_geos()
 {
 #ifndef HAVE_GEOS

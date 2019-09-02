@@ -368,7 +368,6 @@ add_method("stream_vm2", [](Fixture& f) {
 });
 
 add_method("stream_odim", [](Fixture& f) {
-    skip_unless_odimh5();
     metadata::TestCollection odim("inbound/odimh5/XSEC_v21.h5");
     File fd("tmpfile", O_WRONLY | O_CREAT | O_TRUNC);
     wassert(actual(odim[0].stream_data(fd)) == odim[0].sourceBlob().size);

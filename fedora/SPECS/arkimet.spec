@@ -56,7 +56,6 @@ BuildRequires: libwreport-devel >= 3.0
 BuildRequires: flex
 BuildRequires: bison
 BuildRequires: meteo-vm2-devel >= 0.12
-BuildRequires: hdf5-devel
 BuildRequires: %{python3_vers}
 BuildRequires: %{python3_vers}-devel
 BuildRequires: %{python3_vers}-werkzeug
@@ -81,7 +80,6 @@ BuildRequires: %{python3_vers}-shapely
 Requires: %{python3_vers}-shapely
 %endif
 
-Requires: hdf5
 Requires: meteo-vm2 >= 0.12
 Requires: %{grib_sw}
 Requires: %{python3_vers}
@@ -128,7 +126,6 @@ Requires: %{grib_sw}-devel
 Requires: libwreport-devel
 Requires: %{python3_vers}-devel
 Requires: meteo-vm2-devel
-Requires: hdf5-devel
 Requires: sqlite-devel
 Requires: curl-devel
 Requires: lzo-devel

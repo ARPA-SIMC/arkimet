@@ -14,9 +14,7 @@
 #ifdef HAVE_DBALLE
 #include "arki/scan/bufr.h"
 #endif
-#ifdef HAVE_HDF5
 #include "arki/scan/odimh5.h"
-#endif
 #ifdef HAVE_VM2
 #include "arki/scan/vm2.h"
 #endif
@@ -53,9 +51,9 @@ void init()
     };
 #endif
 */
-#ifdef HAVE_HDF5
+
     register_odimh5_lua();
-#endif
+
 #ifdef HAVE_VM2
     factories["vm2"] = [] {
         return std::unique_ptr<Scanner>(new scan::Vm2);
@@ -97,10 +95,10 @@ const Validator& Scanner::get_validator(const std::string& format)
     if (format == "bufr")
         return bufr::validator();
 #endif
-#ifdef HAVE_HDF5
+
     if (format == "odimh5")
         return odimh5::validator();
-#endif
+
 #ifdef HAVE_VM2
    if (format == "vm2")
        return vm2::validator();
@@ -114,14 +112,15 @@ std::string Scanner::normalise_format(const std::string& format, const char* def
     if (f == "grib") return "grib";
     if (f == "grib1") return "grib";
     if (f == "grib2") return "grib";
+
     if (f == "bufr") return "bufr";
     if (f == "vm2") return "vm2";
-#ifdef HAVE_HDF5
+
     if (f == "h5")     return "odimh5";
     if (f == "hdf5")   return "odimh5";
     if (f == "odim")   return "odimh5";
     if (f == "odimh5") return "odimh5";
-#endif
+
     if (f == "yaml") return "yaml";
     if (f == "metadata") return "arkimet";
     if (default_format) return default_format;

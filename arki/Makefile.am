@@ -115,6 +115,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		scan/fwd.h \
 		scan/validator.h \
 		scan/mock.h \
+		scan/odimh5.h \
 		segment.h \
 		segment/fwd.h \
 		segment/base.h \
@@ -176,7 +177,6 @@ nobase_dist_arkiinclude_HEADERS = \
 		utils/files.h \
 		utils/geos.h \
 		utils/geosfwd.h \
-		utils/h5.h \
 		utils/process.h \
 		utils/regexp.h \
 		utils/sqlite.h \
@@ -382,7 +382,6 @@ endif
 #
 if DEVEL_DO_METADATA
 libarkimet_la_SOURCES += \
-		utils/h5.cc \
 		utils/compress.cc \
 		utils/sqlite.cc \
 		metadata.cc \
@@ -414,7 +413,8 @@ libarkimet_la_SOURCES += \
 		formatter.cc \
 		scan.cc \
 		scan/validator.cc \
-		scan/mock.cc
+		scan/mock.cc \
+		scan/odimh5.cc
 
 tests_arki_test_SOURCES += \
 		metadata/tests.cc \
@@ -454,6 +454,7 @@ tests_arki_test_SOURCES += \
 		scan-test.cc \
 		scan/validator-test.cc \
 		scan/mock-test.cc \
+		scan/odimh5-test.cc \
 		segment-test.cc \
 		segment/common-test.cc \
 		segment/missing-test.cc \
@@ -479,15 +480,6 @@ libarkimet_la_SOURCES += scan/bufr.cc
 libarkimet_la_LDFLAGS += $(DBALLE_LIBS)
 AM_CPPFLAGS += $(DBALLE_CFLAGS)
 tests_arki_test_SOURCES += scan/bufr-test.cc
-endif
-
-if HDF5
-AM_CPPFLAGS += $(HDF5_CFLAGS)
-nobase_dist_arkiinclude_HEADERS += scan/odimh5.h
-libarkimet_la_SOURCES += scan/odimh5.cc
-libarkimet_la_LDFLAGS += $(HDF5_LIBS)
-tests_arki_test_SOURCES += utils/h5-test.cc scan/odimh5-test.cc
-tests_arki_test_LDADD += $(HDF5_LIBS)
 endif
 
 if VM2

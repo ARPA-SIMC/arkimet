@@ -10,9 +10,6 @@
 /* grib_api functions are available */
 #undef HAVE_GRIBAPI
 
-/* HDF5 functions are available */
-#undef HAVE_HDF5
-
 /* VM2 functions are available */
 #undef HAVE_VM2
 
