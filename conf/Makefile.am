@@ -5,7 +5,6 @@ nobase_dist_conf_DATA = \
 	qmacro/noop.py \
 	qmacro/noopcopy.py \
 	qmacro/expa.py \
-	scan-odimh5/01-common.lua \
 	vm2/source.lua
 
 EXTRA_DIST = \
