@@ -801,21 +801,6 @@
  },
  {
   "doc": "",
-  "group": "arki_utils_lua",
-  "method": "code"
- },
- {
-  "doc": "",
-  "group": "arki_utils_lua",
-  "method": "add_global_library"
- },
- {
-  "doc": "",
-  "group": "arki_utils_lua",
-  "method": "arki_code"
- },
- {
-  "doc": "",
   "group": "arki_utils_vm2",
   "method": "find_stations"
  },

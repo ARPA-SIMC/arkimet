@@ -52,7 +52,6 @@ _arkimet_la_SOURCES = \
     utils/methods.cc \
     utils/values.cc \
     utils/wreport.cc \
-    utils/dballe.cc \
     common.cc \
     files.cc \
     structured.cc \
@@ -81,6 +80,10 @@ _arkimet_la_SOURCES = \
 _arkimet_la_CPPFLAGS = $(PYTHON_CFLAGS) -I$(top_srcdir) -I$(top_builddir)
 _arkimet_la_LDFLAGS = -module -avoid-version -export-symbols-regex init_arkimet
 _arkimet_la_LIBADD = ../arki/libarkimet.la
+
+if DBALLE
+_arkimet_la_SOURCES += utils/dballe.cc
+endif
 
 #doc_DATA = python-arkimet.rst
 
