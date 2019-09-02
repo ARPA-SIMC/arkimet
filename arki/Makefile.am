@@ -479,11 +479,6 @@ libarkimet_la_SOURCES += scan/bufr.cc
 libarkimet_la_LDFLAGS += $(DBALLE_LIBS)
 AM_CPPFLAGS += $(DBALLE_CFLAGS)
 tests_arki_test_SOURCES += scan/bufr-test.cc
-if LUA
-nobase_dist_arkiinclude_HEADERS += scan/bufrlua.h
-libarkimet_la_SOURCES += scan/bufrlua.cc
-tests_arki_test_SOURCES += scan/bufrlua-test.cc
-endif
 endif
 
 if HDF5
