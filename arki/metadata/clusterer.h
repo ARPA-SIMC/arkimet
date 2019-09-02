@@ -3,7 +3,6 @@
 
 /// Process a stream of metadata in batches
 
-#include <arki/metadata/consumer.h>
 #include <arki/types/timerange.h>
 #include <arki/types/reftime.h>
 

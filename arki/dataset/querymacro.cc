@@ -1,6 +1,5 @@
 #include "querymacro.h"
 #include "arki/metadata.h"
-#include "arki/metadata/consumer.h"
 #include "arki/summary.h"
 #include "arki/runtime.h"
 #include "arki/utils/string.h"

@@ -10,7 +10,6 @@
 #include "arki/dataset/testlarge.h"
 #include "arki/dataset/reporter.h"
 #include "arki/metadata.h"
-#include "arki/metadata/consumer.h"
 #include "arki/metadata/sort.h"
 #include "arki/metadata/postprocess.h"
 #include "arki/utils/string.h"

@@ -1,6 +1,5 @@
 #include "dispatcher.h"
 #include "metadata.h"
-#include "metadata/consumer.h"
 #include "metadata/validator.h"
 #include "matcher.h"
 #include "dataset.h"

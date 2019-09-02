@@ -842,12 +842,9 @@ $ arki-scan --yaml arkimet:/tmp/delete.md
 Il comando `arki-query` possiede un'opzione `--annotate`, la quale fornisce una
 descrizione human-readable di ogni metadato (se presente).
 
-Tali descrizioni sono prese a tempo di esecuzione dagli script Lua contenuti
-nella directory `$sysconfdir/arkimet/format`. In particolare, viene invocata la
-funzione il cui nome è nella forma `fmt_TIPO`: ad esempio, se `TIPO=area`,
-allora verrà invocata `fmt_area`, a cui viene passato come parametro il
-metadato stesso; tale funzione deve restituire una stringa con la descrizione
-oppure `nil`.
+Tali descrizioni sono prese a tempo di esecuzione dagli script Python contenuti
+nella directory `$sysconfdir/arkimet/format`. Il file `README.md` in quella
+directory fornisce dettagli su come aggiungere scanner.
 
 Da notare che Arkimet legge ed esegue _tutti_ gli script contenuti in questa
 directory in alfabetico, quindi è possibile inserire anche delle funzioni di

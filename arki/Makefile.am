@@ -98,7 +98,6 @@ nobase_dist_arkiinclude_HEADERS = \
 		metadata.h \
 		metadata/data.h \
 		metadata/collection.h \
-		metadata/consumer.h \
 		metadata/clusterer.h \
 		metadata/xargs.h \
 		metadata/libarchive.h \
@@ -352,15 +351,6 @@ AM_CPPFLAGS += $(LZO_CFLAGS)
 libarkimet_la_LDFLAGS += $(LZO_LIBS)
 endif
 
-if LUA
-nobase_dist_arkiinclude_HEADERS += utils/lua.h
-libarkimet_la_SOURCES += utils/lua.cc
-tests_arki_test_SOURCES += utils/lua-test.cc
-AM_CPPFLAGS += $(LUA_CFLAGS)
-libarkimet_la_LDFLAGS += $(LUA_LIBS)
-tests_arki_test_LDADD += $(LUA_LIBS)
-endif
-
 if GEOS
 AM_CPPFLAGS += $(GEOS_CFLAGS)
 libarkimet_la_LDFLAGS += $(GEOS_LIBS)
@@ -373,6 +363,13 @@ libarkimet_la_SOURCES += utils/vm2.cc
 libarkimet_la_LDFLAGS += $(VM2_LIBS)
 tests_arki_test_SOURCES += utils/vm2-test.cc
 tests_arki_test_LDADD += $(VM2_LIBS)
+
+if LUA
+AM_CPPFLAGS += $(LUA_CFLAGS)
+libarkimet_la_LDFLAGS += $(LUA_LIBS)
+tests_arki_test_LDADD += $(LUA_LIBS)
+endif
+
 endif
 
 endif
@@ -390,7 +387,6 @@ libarkimet_la_SOURCES += \
 		metadata/collection.cc \
 		metadata/stream.cc \
 		metadata/clusterer.cc \
-		metadata/consumer.cc \
 		metadata/libarchive.cc \
 		metadata/validator.cc \
 		metadata/postprocess.cc \
@@ -470,8 +466,8 @@ if GRIBAPI
 nobase_dist_arkiinclude_HEADERS += scan/grib.h
 libarkimet_la_SOURCES += scan/grib.cc
 tests_arki_test_SOURCES += scan/grib-test.cc
-AM_CPPFLAGS += $(GRIBAPI_CFLAGS) $(LUA_CFLAGS)
-libarkimet_la_LDFLAGS += $(GRIBAPI_LIBS) $(LUA_LIBS)
+AM_CPPFLAGS += $(GRIBAPI_CFLAGS)
+libarkimet_la_LDFLAGS += $(GRIBAPI_LIBS)
 endif
 
 if DBALLE

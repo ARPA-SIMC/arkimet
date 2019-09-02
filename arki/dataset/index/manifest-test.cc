@@ -4,7 +4,6 @@
 #include "arki/dataset/index/manifest.h"
 #include "arki/dataset/maintenance.h"
 #include "arki/metadata.h"
-#include "arki/metadata/consumer.h"
 #include "arki/metadata/collection.h"
 #include "arki/matcher.h"
 #include "arki/summary.h"

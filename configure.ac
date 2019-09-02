@@ -188,7 +188,7 @@ dnl Check for lua
 PKG_CHECK_EXISTS([lua5.2], [have_lua=yes], [have_lua=no])
 if test x$have_lua = xyes
 then
-        PKG_CHECK_MODULES(LUA,lua5.2,,[have_lua=no])
+    PKG_CHECK_MODULES(LUA,lua5.2,,[have_lua=no])
 else
 	PKG_CHECK_EXISTS([lua5.1], [have_lua=yes], [have_lua=no])
 	if test x$have_lua = xyes
@@ -211,7 +211,9 @@ else
 fi
 if test x$have_lua = xyes
 then
-	AC_DEFINE([HAVE_LUA], 1, [lua is available])
+    AC_DEFINE([HAVE_LUA], 1, [lua is available])
+    AC_SUBST(LUA_CFLAGS)
+    AC_SUBST(LUA_LIBS)
 fi
 AM_CONDITIONAL([LUA], [test x"$have_lua" = x"yes"])
 
@@ -244,8 +246,6 @@ then
 		have_gribapi=no
 	fi	
 
-	AC_SUBST(LUA_CFLAGS)
-	AC_SUBST(LUA_LIBS)
 else
 	AC_MSG_WARN([compiling without grib_api])
 fi
@@ -448,6 +448,5 @@ AS_HELP_STRING([I/O profiling:], [$enable_iotrace])
 AS_HELP_STRING([Code coverage:], [$enable_gcov])
 dnl AS_HELP_STRING([BUFR support via DB-All.e:], [$have_dballe])
 dnl AS_HELP_STRING([GRIB1 support via Meteosatlib's libgrib:], [$have_libgrib])
-dnl AS_HELP_STRING([GRIB1 and GRIB2 support via grib_api and Lua:], [$have_gribapi])
 ===================================================])
 

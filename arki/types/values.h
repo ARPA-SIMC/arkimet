@@ -130,6 +130,9 @@ struct ValueBag : public std::map<std::string, values::Value*>
     /// Parse from structured data
     static ValueBag parse(const structured::Reader& reader);
 
+    // Lua functions are still here because they are needed by arki::utils::vm2::find_*
+    // and can be removed otherwise
+
 	/// Push to the LUA stack a table with the data of this ValueBag
 	void lua_push(lua_State* L) const;
 
