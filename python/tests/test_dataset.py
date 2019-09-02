@@ -191,30 +191,6 @@ class TestDatasetReader(unittest.TestCase):
         # metadata, so that arki-xargs can work.
         self.assertEqual(queried, b"44937\n")
 
-        # metadata_report
-        with tempfile.TemporaryFile() as fd:
-            ds.query_bytes(file=fd, metadata_report="count")
-            fd.seek(0)
-            queried = fd.read()
-        self.assertEqual(queried, b"3\n")
-
-        with io.BytesIO() as fd:
-            ds.query_bytes(file=fd, metadata_report="count")
-            queried = fd.getvalue()
-        self.assertEqual(queried, b"3\n")
-
-        # summary_report
-        with tempfile.TemporaryFile() as fd:
-            ds.query_bytes(file=fd, summary_report="count")
-            fd.seek(0)
-            queried = fd.read()
-        self.assertEqual(queried, b"3\n")
-
-        with io.BytesIO() as fd:
-            ds.query_bytes(file=fd, summary_report="count")
-            queried = fd.getvalue()
-        self.assertEqual(queried, b"3\n")
-
     def test_query_data_qmacro(self):
         ds = arki.make_qmacro_dataset(
             {},

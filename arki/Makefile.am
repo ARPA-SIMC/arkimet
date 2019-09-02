@@ -353,7 +353,7 @@ libarkimet_la_LDFLAGS += $(LZO_LIBS)
 endif
 
 if LUA
-nobase_dist_arkiinclude_HEADERS += report.h formatter/lua.h utils/lua.h tests/lua.h
+nobase_dist_arkiinclude_HEADERS += formatter/lua.h utils/lua.h tests/lua.h
 libarkimet_la_SOURCES += formatter/lua.cc utils/lua.cc
 tests_arki_test_SOURCES += formatter/lua-test.cc utils/lua-test.cc tests/lua.cc
 AM_CPPFLAGS += $(LUA_CFLAGS)
@@ -616,11 +616,6 @@ nobase_dist_arkiinclude_HEADERS += dataset/http.h
 libarkimet_la_SOURCES += dataset/http.cc
 libarkimet_la_LDFLAGS += @LIBCURL@
 tests_arki_test_SOURCES += dataset/http-test.cc
-endif
-
-if LUA
-libarkimet_la_SOURCES += report.cc
-tests_arki_test_SOURCES += report-test.cc
 endif
 
 endif

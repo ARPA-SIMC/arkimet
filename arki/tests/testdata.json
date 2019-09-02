@@ -15978,15 +15978,5 @@
   "doc": "",
   "group": "arki_dataset_http",
   "method": "redirect"
- },
- {
-  "doc": "",
-  "group": "arki_report",
-  "method": "simple"
- },
- {
-  "doc": "",
-  "group": "arki_report",
-  "method": "regression"
  }
 ]

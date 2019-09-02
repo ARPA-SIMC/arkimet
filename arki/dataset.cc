@@ -15,7 +15,6 @@
 #include "arki/metadata/postprocess.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
-#include "arki/report.h"
 #include "arki/summary.h"
 #include "arki/nag.h"
 
@@ -123,28 +122,6 @@ void Reader::query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out)
             postproc.flush();
             break;
         }
-        case dataset::ByteQuery::BQ_REP_METADATA: {
-#ifdef HAVE_LUA
-            Report rep;
-            rep.captureOutput(out);
-            rep.load(q.param);
-            query_data(q, [&](std::shared_ptr<Metadata> md) { return rep.eat(md); });
-            rep.report();
-#endif
-            break;
-        }
-        case dataset::ByteQuery::BQ_REP_SUMMARY: {
-#ifdef HAVE_LUA
-            Report rep;
-            rep.captureOutput(out);
-            rep.load(q.param);
-            Summary s;
-            query_summary(q.matcher, s);
-            rep(s);
-            rep.report();
-#endif
-            break;
-        }
         default:
         {
             stringstream s;
@@ -176,28 +153,6 @@ void Reader::query_bytes(const dataset::ByteQuery& q, AbstractOutputFile& out)
             postproc.start();
             query_data(q, [&](std::shared_ptr<Metadata> md) { return postproc.process(move(md)); });
             postproc.flush();
-            break;
-        }
-        case dataset::ByteQuery::BQ_REP_METADATA: {
-#ifdef HAVE_LUA
-            Report rep;
-            rep.captureOutput(out);
-            rep.load(q.param);
-            query_data(q, [&](std::shared_ptr<Metadata> md) { return rep.eat(md); });
-            rep.report();
-#endif
-            break;
-        }
-        case dataset::ByteQuery::BQ_REP_SUMMARY: {
-#ifdef HAVE_LUA
-            Report rep;
-            rep.captureOutput(out);
-            rep.load(q.param);
-            Summary s;
-            query_summary(q.matcher, s);
-            rep(s);
-            rep.report();
-#endif
             break;
         }
         default:

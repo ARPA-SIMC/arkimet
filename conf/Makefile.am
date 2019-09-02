@@ -12,9 +12,6 @@ nobase_dist_conf_DATA = \
 	qmacro/noop.py \
 	qmacro/noopcopy.py \
 	qmacro/expa.py \
-	report/count \
-	report/datasets \
-	report/mdstats \
 	scan/grib1.py \
 	scan/grib2.py \
 	scan-grib1/01-common.lua \

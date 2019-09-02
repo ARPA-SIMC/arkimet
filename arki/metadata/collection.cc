@@ -19,12 +19,6 @@
 #include <arpa/inet.h>
 #include <utime.h>
 
-#include "config.h"
-
-#ifdef HAVE_LUA
-#include <arki/report.h>
-#endif
-
 using namespace std;
 using namespace arki::core;
 using namespace arki::utils;

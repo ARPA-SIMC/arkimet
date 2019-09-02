@@ -24,16 +24,13 @@ std::unique_ptr<cmdline::DatasetProcessor> build_processor(PyObject* args, PyObj
     static const char* kwlist[] = {
         "query", "outfile",
         "yaml", "json", "annotate", "inline", "data",
-        "summary", "summary_short",
-        "report", "summary_restrict",
+        "summary", "summary_short", "summary_restrict",
         "archive", "postproc", "postproc_data",
         "sort", nullptr };
 
     PyObject* py_query = nullptr;
     PyObject* py_outfile = nullptr;
     int yaml = 0, json = 0, annotate = 0, out_inline = 0, data = 0, summary = 0, summary_short = 0;
-    const char* report = nullptr;
-    Py_ssize_t report_len;
     const char* summary_restrict = nullptr;
     Py_ssize_t summary_restrict_len;
     PyObject* archive = nullptr;
@@ -42,11 +39,10 @@ std::unique_ptr<cmdline::DatasetProcessor> build_processor(PyObject* args, PyObj
     PyObject* postproc_data = nullptr;
     const char* sort = nullptr;
     Py_ssize_t sort_len;
-    if (!PyArg_ParseTupleAndKeywords(args, kw, "OO|ppppp" "pp" "z#z#" "Oz#O" "z#", const_cast<char**>(kwlist),
+    if (!PyArg_ParseTupleAndKeywords(args, kw, "OO|ppppp" "ppz#" "Oz#O" "z#", const_cast<char**>(kwlist),
                 &py_query, &py_outfile,
                 &yaml, &json, &annotate, &out_inline, &data,
-                &summary, &summary_short,
-                &report, &report_len, &summary_restrict, &summary_restrict_len,
+                &summary, &summary_short, &summary_restrict, &summary_restrict_len,
                 &archive, &postproc, &postproc_len, &postproc_data,
                 &sort, &sort_len))
         throw PythonException();
@@ -63,7 +59,6 @@ std::unique_ptr<cmdline::DatasetProcessor> build_processor(PyObject* args, PyObj
     pmaker.data_only = data;
     pmaker.data_inline = out_inline;
     if (postproc) pmaker.postprocess = std::string(postproc, postproc_len);
-    if (report) pmaker.report = std::string(report, report_len);
     if (summary_restrict) pmaker.summary_restrict = std::string(summary_restrict, summary_restrict_len);
     if (sort) pmaker.sort = std::string(sort, sort_len);
     if (archive && archive != Py_None)

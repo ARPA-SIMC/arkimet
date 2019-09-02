@@ -186,8 +186,6 @@ class AppWithProcessor(App):
                                      help="dump the metadata in JSON format")
         self.parser_out.add_argument("--annotate", action="store_true",
                                      help="annotate the human-readable Yaml output with field descriptions")
-        self.parser_out.add_argument("--report", metavar="name",
-                                     help="produce the given report with the command output")
 
         self.parser_out.add_argument("--summary", action="store_true",
                                      help="output only the summary of the data")
@@ -237,15 +235,15 @@ class AppWithProcessor(App):
                 "postproc", "archive")
 
         self.check_mutually_exclusive_options(
-                "inline", "data", "postproc", "archive", "report",
+                "inline", "data", "postproc", "archive",
                 "yaml", "json")
 
         self.check_mutually_exclusive_options(
-                "inline", "data", "postproc", "archive", "report",
+                "inline", "data", "postproc", "archive",
                 "annotate")
 
         self.check_mutually_exclusive_options(
-                "sort", "report", "summary", "summary_short")
+                "sort", "summary", "summary_short")
 
         if self.args.summary_restrict and not self.args.summary:
             self.parser.error("--summary-restrict only makes sense with --summary")

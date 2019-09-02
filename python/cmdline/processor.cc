@@ -225,13 +225,6 @@ std::unique_ptr<DatasetProcessor> ProcessorMaker::make_binary(Matcher matcher, s
     if (!postprocess.empty())
     {
         query.setPostprocess(matcher, postprocess);
-#ifdef HAVE_LUA
-    } else if (!report.empty()) {
-        if (summary)
-            query.setRepSummary(matcher, report);
-        else
-            query.setRepMetadata(matcher, report);
-#endif
     } else {
         query.setData(matcher);
     }
@@ -310,11 +303,7 @@ std::unique_ptr<DatasetProcessor> ProcessorMaker::make_metadata(Matcher matcher,
 
 std::unique_ptr<DatasetProcessor> ProcessorMaker::make(Matcher matcher, std::shared_ptr<sys::NamedFileDescriptor> out)
 {
-    if (data_only || !postprocess.empty()
-#ifdef HAVE_LUA
-        || !report.empty()
-#endif
-        )
+    if (data_only || !postprocess.empty())
         return make_binary(matcher, out);
     else if (summary || summary_short)
         return make_summary(matcher, out);
@@ -327,11 +316,7 @@ std::unique_ptr<DatasetProcessor> ProcessorMaker::make(Matcher matcher, std::sha
 
 std::unique_ptr<DatasetProcessor> ProcessorMaker::make(Matcher matcher, std::shared_ptr<core::AbstractOutputFile> out)
 {
-    if (data_only || !postprocess.empty()
-#ifdef HAVE_LUA
-        || !report.empty()
-#endif
-        )
+    if (data_only || !postprocess.empty())
         return make_binary(matcher, out);
     else if (summary || summary_short)
         return make_summary(matcher, out);
