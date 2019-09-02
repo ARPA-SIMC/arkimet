@@ -61,7 +61,6 @@ Fixture::Fixture(const std::string& format, const std::string& cfg_instance)
     }
     else if (format == "odimh5")
     {
-        skip_unless_odimh5();
         import_files = {
             "inbound/mainttest.h5/00.h5",
             "inbound/mainttest.h5/01.h5",

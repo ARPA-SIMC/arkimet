@@ -381,9 +381,9 @@ static bool arkimet_initialized = false;
 #ifdef HAVE_GRIBAPI
         add_feature(features, "grib");
 #endif
-#ifdef HAVE_HDF5
+
         add_feature(features, "hdf5");
-#endif
+
 #ifdef HAVE_VM2
         add_feature(features, "vm2");
 #endif

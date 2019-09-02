@@ -56,7 +56,7 @@ add_method("format_from_filename", [] {
     wassert(actual(scan::Scanner::format_from_filename("test.grib1.tar")) == "grib");
     wassert(actual(scan::Scanner::format_from_filename("test.grib2.tar")) == "grib");
     wassert(actual(scan::Scanner::format_from_filename("test.bufr.tar")) == "bufr");
-#ifdef HAVE_HDF5
+
     wassert(actual(scan::Scanner::format_from_filename("test.h5")) == "odimh5");
     wassert(actual(scan::Scanner::format_from_filename("test.hdf5")) == "odimh5");
     wassert(actual(scan::Scanner::format_from_filename("test.odim")) == "odimh5");
@@ -73,7 +73,7 @@ add_method("format_from_filename", [] {
     wassert(actual(scan::Scanner::format_from_filename("test.hdf5.tar")) == "odimh5");
     wassert(actual(scan::Scanner::format_from_filename("test.odim.tar")) == "odimh5");
     wassert(actual(scan::Scanner::format_from_filename("test.odimh5.tar")) == "odimh5");
-#endif
+
     wassert_throws(std::runtime_error, scan::Scanner::format_from_filename("test"));
     wassert_throws(std::runtime_error, scan::Scanner::format_from_filename("test.zip"));
     wassert_throws(std::runtime_error, scan::Scanner::format_from_filename("test.tar"));

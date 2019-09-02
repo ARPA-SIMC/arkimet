@@ -50,7 +50,6 @@ VM2Data::VM2Data()
 ODIMData::ODIMData()
     : TestData("odimh5")
 {
-    skip_unless_odimh5();
 #if 0
     mds.scan_from_file("inbound/fixture.odimh5", format, true);
 #else

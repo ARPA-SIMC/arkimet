@@ -1776,6 +1776,11 @@
  },
  {
   "doc": "",
+  "group": "arki_scan_odimh5",
+  "method": "empty"
+ },
+ {
+  "doc": "",
   "group": "arki_segment",
   "method": "auto_instantiate_existing"
  },
@@ -2743,16 +2748,6 @@
   "doc": "",
   "group": "arki_scan_bufr",
   "method": "validate"
- },
- {
-  "doc": "",
-  "group": "arki_utils_h5",
-  "method": "read"
- },
- {
-  "doc": "",
-  "group": "arki_scan_odimh5",
-  "method": "empty"
  },
  {
   "doc": "",

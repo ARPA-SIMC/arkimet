@@ -60,7 +60,6 @@ void skip_unless_libarchive();
 void skip_unless_grib();
 void skip_unless_bufr();
 void skip_unless_vm2();
-void skip_unless_odimh5();
 void skip_unless_geos();
 void skip_unless_lua();
 void skip_unless_filesystem_has_holes(const std::string& path);

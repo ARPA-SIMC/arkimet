@@ -251,27 +251,6 @@ else
 fi
 AM_CONDITIONAL([GRIBAPI], [test x"$have_gribapi" = x"yes"])
 
-dnl Check for hdf5 support
-PKG_CHECK_MODULES([HDF5], [hdf5-serial], [have_hdf5=yes], [have_hdf5=no])
-if test $have_hdf5 = yes
-then
-    PKG_CHECK_MODULES([HDF5],[hdf5-serial])
-else
-    AX_LIB_HDF5
-    if test "$with_hdf5" = yes
-    then
-        have_hdf5=yes
-    else
-        AC_MSG_WARN([compiling without libhdf5])
-    fi
-fi
-if test $have_hdf5 = yes
-then
-    AC_DEFINE([HAVE_HDF5], 1, [hdf5 format enabled])
-fi
-
-AM_CONDITIONAL([HDF5], [test x"$have_hdf5" = x"yes"])
-
 dnl Check for Curl
 LIBCURL_CHECK_CONFIG([], [], [have_curl=yes], [have_curl=no])
 AM_CONDITIONAL([CURL], [test x"$have_curl" = x"yes"])
@@ -453,7 +432,6 @@ $PACKAGE_NAME-$PACKAGE_VERSION configuration:
 AS_HELP_STRING([BUFR via DB-All.e:], [$have_dballe])
 dnl AS_HELP_STRING([GRIB 1 via Meteosatlib:], [$have_libgrib])
 AS_HELP_STRING([GRIB 1+2 via grib_api:], [$have_gribapi])
-AS_HELP_STRING([ODIMH5 via hdf5:], [$have_hdf5])
 AS_HELP_STRING([VM2 support:], [$have_vm2])
 AS_HELP_STRING([CURL support:], [$have_curl])
 AS_HELP_STRING([Lua support:], [$have_lua])
