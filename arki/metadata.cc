@@ -24,10 +24,6 @@
 #include <fcntl.h>
 #include <sys/uio.h>
 
-#ifdef HAVE_LUA
-#include "utils/lua.h"
-#endif
-
 using namespace std;
 using namespace arki::types;
 using namespace arki::utils;
