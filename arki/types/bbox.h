@@ -10,8 +10,6 @@
 
 #include <arki/types/styled.h>
 
-struct lua_State;
-
 namespace arki {
 namespace types {
 
@@ -32,10 +30,9 @@ struct BBox;
 template<>
 struct traits<BBox>
 {
-	static const char* type_tag;
-	static const types::Code type_code;
-	static const size_t type_sersize_bytes;
-	static const char* type_lua_tag;
+    static const char* type_tag;
+    static const types::Code type_code;
+    static const size_t type_sersize_bytes;
 
     typedef bbox::Style Style;
 };
@@ -71,7 +68,6 @@ struct INVALID : public BBox
     Style style() const override;
     void encodeWithoutEnvelope(core::BinaryEncoder& enc) const override;
     std::ostream& writeToOstream(std::ostream& o) const override;
-    const char* lua_type_name() const override;
 
     int compare_local(const BBox& o) const override;
     bool equals(const Type& o) const override;

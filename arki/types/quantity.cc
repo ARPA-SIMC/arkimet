@@ -10,10 +10,6 @@
 #include <sstream>
 #include <cmath>
 
-#ifdef HAVE_LUA
-#include "arki/utils/lua.h"
-#endif
-
 #define CODE TYPE_QUANTITY
 #define TAG "quantity"
 #define SERSIZELEN 	1
@@ -27,7 +23,6 @@ namespace types {
 const char* traits<Quantity>::type_tag = TAG;
 const types::Code traits<Quantity>::type_code = CODE;
 const size_t traits<Quantity>::type_sersize_bytes = SERSIZELEN;
-const char* traits<Quantity>::type_lua_tag = LUATAG_TYPES ".quantity";
 
 int Quantity::compare(const Type& o) const
 {
@@ -118,54 +113,6 @@ unique_ptr<Quantity> Quantity::decodeString(const std::string& val)
 	split(val, vals);
 	return Quantity::create(vals);
 }
-
-#ifdef HAVE_LUA
-bool Quantity::lua_lookup(lua_State* L, const std::string& name) const
-{
-	if (name == "quantity")
-	{
-		//TODO XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-		//lua_pushlstring(L, task.data(), task.size());
-	}
-	else
-		return CoreType<Quantity>::lua_lookup(L, name);
-	return true;
-}
-
-static int arkilua_new_quantity(lua_State* L)
-{
-	set<string> values;
-	if (lua_gettop(L) == 1 && lua_istable(L, 1))
-	{
-		// Iterate the table building the values vector
-
-		lua_pushnil(L); // first key
-		while (lua_next(L, 1) != 0) {
-			// Ignore index at -2
-			const char* val = lua_tostring(L, -1);
-			values.insert(val);
-			// removes 'value'; keeps 'key' for next iteration
-			lua_pop(L, 1);
-		}
-	} else {
-		unsigned count = lua_gettop(L);
-		for (unsigned i = 0; i != count; ++i)
-			values.insert(lua_tostring(L, i + 1));
-	}
-	
-	Quantity::create(values)->lua_push(L);
-	return 1;
-}
-
-void Quantity::lua_loadlib(lua_State* L)
-{
-	static const struct luaL_Reg lib [] = {
-		{ "new", arkilua_new_quantity },
-		{ NULL, NULL }
-	};
-    utils::lua::add_global_library(L, "arki_quantity", lib);
-}
-#endif
 
 Quantity* Quantity::clone() const
 {

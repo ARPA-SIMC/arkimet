@@ -1,5 +1,4 @@
 #include "arki/core/tests.h"
-#include "arki/tests/lua.h"
 #include <sstream>
 
 namespace {
@@ -152,33 +151,6 @@ def_test(3)
     wassert(actual(t) == Time(0, 0, 0, 0, 0, 0));
 }
 #endif
-
-// Test Lua functions
-add_method("lua", [] {
-    skip_unless_lua();
-    Time o(1, 2, 3, 4, 5, 6);
-    tests::Lua test(R"(
-        function test(o)
-          if o.year ~= 1 then return 'o.year is '..o.year..' instead of 1' end
-          if o.month ~= 2 then return 'o.month is '..o.month..' instead of 2' end
-          if o.day ~= 3 then return 'o.day is '..o.day..' instead of 3' end
-          if o.hour ~= 4 then return 'o.hour is '..o.hour..' instead of 4' end
-          if o.minute ~= 5 then return 'o.minute is '..o.minute..' instead of 5' end
-          if o.second ~= 6 then return 'o.second is '..o.second..' instead of 6' end
-          if tostring(o) ~= '0001-02-03T04:05:06Z' then return 'tostring gave '..tostring(o)..' instead of 0001-02-03T04:05:06Z' end
-          o1 = arki_time.time(1, 2, 3, 4, 5, 6)
-          if o ~= o1 then return 'new time is '..tostring(o1)..' instead of '..tostring(o) end
-          o1 = arki_time.iso8601('1-2-3T4:5:6Z')
-          if o ~= o1 then return 'new time is '..tostring(o1)..' instead of '..tostring(o) end
-          o1 = arki_time.sql('1-2-3 4:5:6')
-          if o ~= o1 then return 'new time is '..tostring(o1)..' instead of '..tostring(o) end
-          o2 = arki_time.now()
-          if o2 <= o1 then return 'time now is '..tostring(o2)..' which is not later than '..tostring(o1) end
-        end
-    )");
-    test.pusharg(o);
-    wassert(actual(test.run()) == "");
-});
 
 }
 

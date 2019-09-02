@@ -9,10 +9,6 @@
 #include <sstream>
 #include <cmath>
 
-#ifdef HAVE_LUA
-#include "arki/utils/lua.h"
-#endif
-
 #define CODE TYPE_PRODDEF
 #define TAG "proddef"
 #define SERSIZELEN 2
@@ -26,7 +22,6 @@ namespace types {
 const char* traits<Proddef>::type_tag = TAG;
 const types::Code traits<Proddef>::type_code = CODE;
 const size_t traits<Proddef>::type_sersize_bytes = SERSIZELEN;
-const char* traits<Proddef>::type_lua_tag = LUATAG_TYPES ".proddef";
 
 Proddef::Style Proddef::parseStyle(const std::string& str)
 {
@@ -79,27 +74,6 @@ std::unique_ptr<Proddef> Proddef::decode_structure(const structured::Keys& keys,
     }
 }
 
-
-#ifdef HAVE_LUA
-static int arkilua_new_grib(lua_State* L)
-{
-	luaL_checktype(L, 1, LUA_TTABLE);
-	ValueBag vals;
-	vals.load_lua_table(L);
-	proddef::GRIB::create(vals)->lua_push(L);
-	return 1;
-}
-
-void Proddef::lua_loadlib(lua_State* L)
-{
-	static const struct luaL_Reg lib [] = {
-		{ "grib", arkilua_new_grib },
-		{ NULL, NULL }
-	};
-    utils::lua::add_global_library(L, "arki_proddef", lib);
-}
-#endif
-
 unique_ptr<Proddef> Proddef::createGRIB(const ValueBag& values)
 {
     return upcast<Proddef>(proddef::GRIB::create(values));
@@ -139,18 +113,6 @@ std::string GRIB::exactQuery() const
 {
     return "GRIB:" + m_values.toString();
 }
-const char* GRIB::lua_type_name() const { return "arki.types.proddef.grib"; }
-
-#ifdef HAVE_LUA
-bool GRIB::lua_lookup(lua_State* L, const std::string& name) const
-{
-	if (name == "val")
-		values().lua_push(L);
-	else
-		return Proddef::lua_lookup(L, name);
-	return true;
-}
-#endif
 
 int GRIB::compare_local(const Proddef& o) const
 {

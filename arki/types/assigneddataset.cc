@@ -9,10 +9,6 @@
 #include <sstream>
 #include <cmath>
 
-#ifdef HAVE_LUA
-#include "arki/utils/lua.h"
-#endif
-
 #define CODE TYPE_ASSIGNEDDATASET
 #define TAG "assigneddataset"
 #define SERSIZELEN 2
@@ -27,7 +23,6 @@ namespace types {
 const char* traits<AssignedDataset>::type_tag = TAG;
 const types::Code traits<AssignedDataset>::type_code = CODE;
 const size_t traits<AssignedDataset>::type_sersize_bytes = SERSIZELEN;
-const char* traits<AssignedDataset>::type_lua_tag = LUATAG_TYPES ".assigneddataset";
 
 int AssignedDataset::compare(const Type& o) const
 {
@@ -102,21 +97,6 @@ unique_ptr<AssignedDataset> AssignedDataset::decodeString(const std::string& val
 
     return AssignedDataset::create(changed, name, id);
 }
-
-#ifdef HAVE_LUA
-bool AssignedDataset::lua_lookup(lua_State* L, const std::string& name) const
-{
-    if (name == "changed")
-        changed.lua_push(L);
-    else if (name == "name")
-        lua_pushlstring(L, this->name.data(), this->name.size());
-    else if (name == "id")
-        lua_pushlstring(L, id.data(), id.size());
-    else
-        return CoreType<AssignedDataset>::lua_lookup(L, name);
-    return true;
-}
-#endif
 
 AssignedDataset* AssignedDataset::clone() const
 {

@@ -1,8 +1,6 @@
 #include <arki/utils/lua.h>
 #include <arki/utils/sys.h>
 #include <arki/core/file.h>
-#include <arki/types.h>
-#include <arki/metadata.h>
 #include <arki/matcher.h>
 #include <arki/exceptions.h>
 #include <arki/nag.h>
@@ -76,14 +74,6 @@ Lua::Lua(bool load_libs, bool load_arkimet) : L(0)
 
     if (load_libs)
         luaL_openlibs(L);
-
-    if (load_arkimet)
-    {
-        core::Time::lua_loadlib(L);
-        types::Type::lua_loadlib(L);
-        Metadata::lua_openlib(L);
-        Matcher::lua_openlib(L);
-    }
 }
 
 Lua::~Lua()

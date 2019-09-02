@@ -6,7 +6,6 @@
 #include "arki/segment.h"
 #include "arki/exceptions.h"
 #include "arki/types/utils.h"
-#include "arki/utils/lua.h"
 #include "arki/structured/emitter.h"
 #include "arki/structured/memory.h"
 #include "arki/structured/keys.h"
@@ -26,7 +25,6 @@ namespace types {
 const char* traits<Source>::type_tag = TAG;
 const types::Code traits<Source>::type_code = CODE;
 const size_t traits<Source>::type_sersize_bytes = SERSIZELEN;
-const char* traits<Source>::type_lua_tag = LUATAG_TYPES ".source";
 
 source::Style Source::parseStyle(const std::string& str)
 {
@@ -146,17 +144,6 @@ std::unique_ptr<Source> Source::decode_structure(const structured::Keys& keys, c
         default: throw std::runtime_error("Unknown source style");
     }
 }
-
-#ifdef HAVE_LUA
-bool Source::lua_lookup(lua_State* L, const std::string& name) const
-{
-	if (name == "format")
-		lua_pushlstring(L, format.data(), format.size());
-	else
-		return StyledType<Source>::lua_lookup(L, name);
-	return true;
-}
-#endif
 
 std::unique_ptr<Source> Source::createBlob(std::shared_ptr<segment::Reader> reader, uint64_t offset, uint64_t size)
 {

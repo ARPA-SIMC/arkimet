@@ -9,10 +9,6 @@
 #include <iomanip>
 #include <sstream>
 
-#ifdef HAVE_LUA
-#include "arki/utils/lua.h"
-#endif
-
 #define CODE TYPE_VALUE
 #define TAG "value"
 #define SERSIZELEN 0   // Not supported in version 1
@@ -26,7 +22,6 @@ namespace types {
 const char* traits<Value>::type_tag = TAG;
 const types::Code traits<Value>::type_code = CODE;
 const size_t traits<Value>::type_sersize_bytes = SERSIZELEN;
-const char* traits<Value>::type_lua_tag = LUATAG_TYPES ".run";
 
 bool Value::equals(const Type& o) const
 {
@@ -99,18 +94,6 @@ unique_ptr<Value> Value::create(const std::string& buf)
     Value* val = new Value;
     val->buffer = buf;
     return unique_ptr<Value>(val);
-}
-
-void Value::lua_loadlib(lua_State* L)
-{
-#if 0
-	static const struct luaL_Reg lib [] = {
-		{ "minute", arkilua_new_minute },
-		{ NULL, NULL }
-	};
-	luaL_openlib(L, "arki_run", lib, 0);
-	lua_pop(L, 1);
-#endif
 }
 
 void Value::init()

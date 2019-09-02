@@ -19,15 +19,13 @@ MetadataType::MetadataType(
         const std::string& tag,
         item_decoder decode_func,
         string_decoder string_decode_func,
-        structure_decoder structure_decode_func,
-        lua_libloader lua_loadlib_func)
+        structure_decoder structure_decode_func)
     : type_code(type_code),
       serialisationSizeLen(serialisationSizeLen),
       tag(tag),
       decode_func(decode_func),
       string_decode_func(string_decode_func),
-      structure_decode_func(structure_decode_func),
-      lua_loadlib_func(lua_loadlib_func)
+      structure_decode_func(structure_decode_func)
 {
 }
 
@@ -60,13 +58,6 @@ const MetadataType* MetadataType::get(types::Code code)
         throw std::runtime_error(ss.str());
     }
     return decoders[code];
-}
-
-void MetadataType::lua_loadlib(lua_State* L)
-{
-	for (size_t i = 0; i < decoders_size; ++i)
-		if (decoders[i] != 0)
-			decoders[i]->lua_loadlib_func(L);
 }
 
 void split(const std::string& str, std::set<std::string>& result, const std::string& delimiters)

@@ -6,9 +6,6 @@
 #include "arki/structured/memory.h"
 #include "arki/structured/keys.h"
 #include "arki/libconfig.h"
-#ifdef HAVE_LUA
-#include "arki/utils/lua.h"
-#endif
 #include <sstream>
 
 namespace arki {
@@ -48,20 +45,6 @@ typename StyledType<BASE>::Style StyledType<BASE>::style_from_structure(const st
 {
     return BASE::parseStyle(reader.as_string(keys.type_style, "type style"));
 }
-
-#ifdef HAVE_LUA
-template<typename TYPE>
-bool StyledType<TYPE>::lua_lookup(lua_State* L, const std::string& name) const
-{
-    if (name == "style")
-    {
-        std::string s = TYPE::formatStyle(style());
-        lua_pushlstring(L, s.data(), s.size());
-        return true;
-    }
-    return false;
-}
-#endif
 
 }
 }

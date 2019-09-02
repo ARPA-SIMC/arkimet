@@ -5,8 +5,6 @@
 #include <arki/types/values.h>
 #include <memory>
 
-struct lua_State;
-
 namespace arki {
 namespace types {
 
@@ -29,7 +27,6 @@ struct traits<Product>
     static const char* type_tag;
     static const types::Code type_code;
     static const size_t type_sersize_bytes;
-    static const char* type_lua_tag;
     typedef product::Style Style;
 };
 
@@ -52,8 +49,6 @@ struct Product : public types::StyledType<Product>
 	// Deprecated functions
 	virtual std::vector<int> toIntVector() const = 0;
 	static int getMaxIntCount();
-
-	static void lua_loadlib(lua_State* L);
 
 	static void init();
 
@@ -94,12 +89,9 @@ public:
     std::ostream& writeToOstream(std::ostream& o) const override;
     void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
     std::string exactQuery() const override;
-    const char* lua_type_name() const override;
 
     int compare_local(const Product& o) const override;
     bool equals(const Type& o) const override;
-
-    bool lua_lookup(lua_State* L, const std::string& name) const;
 
     GRIB1* clone() const override;
     static std::unique_ptr<GRIB1> create(unsigned char origin, unsigned char table, unsigned char product);
@@ -132,12 +124,9 @@ public:
     std::ostream& writeToOstream(std::ostream& o) const override;
     void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
     std::string exactQuery() const override;
-    const char* lua_type_name() const override;
 
     int compare_local(const Product& o) const override;
     bool equals(const Type& o) const override;
-
-    bool lua_lookup(lua_State* L, const std::string& name) const override;
 
     GRIB2* clone() const override;
     static std::unique_ptr<GRIB2> create(
@@ -175,13 +164,9 @@ public:
     std::ostream& writeToOstream(std::ostream& o) const override;
     void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
     std::string exactQuery() const override;
-    const char* lua_type_name() const override;
 
     int compare_local(const Product& o) const override;
     bool equals(const Type& o) const override;
-
-    void lua_register_methods(lua_State* L) const override;
-    bool lua_lookup(lua_State* L, const std::string& name) const override;
 
     BUFR* clone() const override;
     static std::unique_ptr<BUFR> create(unsigned char type, unsigned char subtype, unsigned char localsubtype);
@@ -214,13 +199,9 @@ public:
     std::ostream& writeToOstream(std::ostream& o) const override;
     void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
     std::string exactQuery() const override;
-    const char* lua_type_name() const override;
 
     int compare_local(const Product& o) const override;
     bool equals(const Type& o) const override;
-
-    void lua_register_methods(lua_State* L) const override;
-    bool lua_lookup(lua_State* L, const std::string& name) const override;
 
     ODIMH5* clone() const override;
     static std::unique_ptr<ODIMH5> create(const std::string& obj, const std::string& prod
@@ -249,12 +230,9 @@ public:
     std::ostream& writeToOstream(std::ostream& o) const override;
     void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
     std::string exactQuery() const override;
-    const char* lua_type_name() const override;
 
     int compare_local(const Product& o) const override;
     bool equals(const Type& o) const override;
-
-    bool lua_lookup(lua_State* L, const std::string& name) const override;
 
     VM2* clone() const override;
     static std::unique_ptr<VM2> create(unsigned variable_id);
@@ -268,5 +246,4 @@ public:
 }
 }
 
-// vim:set ts=4 sw=4:
 #endif

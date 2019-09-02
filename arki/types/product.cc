@@ -11,10 +11,6 @@
 #include <iomanip>
 #include <stdexcept>
 
-#ifdef HAVE_LUA
-#include "arki/utils/lua.h"
-#endif
-
 #ifdef HAVE_VM2
 #include "arki/utils/vm2.h"
 #endif
@@ -32,7 +28,6 @@ namespace types {
 const char* traits<Product>::type_tag = TAG;
 const types::Code traits<Product>::type_code = CODE;
 const size_t traits<Product>::type_sersize_bytes = SERSIZELEN;
-const char* traits<Product>::type_lua_tag = LUATAG_TYPES ".product";
 
 // Deprecated
 int Product::getMaxIntCount() { return 4; }
@@ -184,75 +179,6 @@ std::unique_ptr<Product> Product::decode_structure(const structured::Keys& keys,
 }
 
 
-#ifdef HAVE_LUA
-static int arkilua_new_grib1(lua_State* L)
-{
-	int origin = luaL_checkint(L, 1);
-	int table = luaL_checkint(L, 2);
-	int product = luaL_checkint(L, 3);
-    product::GRIB1::create(origin, table, product)->lua_push(L);
-    return 1;
-}
-
-static int arkilua_new_grib2(lua_State* L)
-{
-	int centre = luaL_checkint(L, 1);
-	int discipline = luaL_checkint(L, 2);
-	int category = luaL_checkint(L, 3);
-	int number = luaL_checkint(L, 4);
-    int table_version = lua_gettop(L) > 4 ? luaL_checkint(L, 5) : 4;
-    int local_table_version = lua_gettop(L) > 5 ? luaL_checkint(L, 6) : 255;
-    product::GRIB2::create(centre, discipline, category, number, table_version, local_table_version)->lua_push(L);
-    return 1;
-}
-
-static int arkilua_new_bufr(lua_State* L)
-{
-	int type = luaL_checkint(L, 1);
-	int subtype = luaL_checkint(L, 2);
-	int localsubtype = luaL_checkint(L, 3);
-	if (lua_gettop(L) > 3)
-	{
-		luaL_checktype(L, 4, LUA_TTABLE);
-		ValueBag values;
-		values.load_lua_table(L, 4);
-		product::BUFR::create(type, subtype, localsubtype, values)->lua_push(L);
-	}
-	else
-		product::BUFR::create(type, subtype, localsubtype)->lua_push(L);
-	return 1;
-}
-
-static int arkilua_new_odimh5(lua_State* L)
-{
-	const char* obj = luaL_checkstring(L, 1);
-	const char* prod = luaL_checkstring(L, 2);
-	product::ODIMH5::create(obj, prod)->lua_push(L);
-	return 1;
-}
-
-static int arkilua_new_vm2(lua_State* L)
-{
-	int type = luaL_checkint(L, 1);
-	product::VM2::create(type)->lua_push(L);
-	return 1;
-}
-
-void Product::lua_loadlib(lua_State* L)
-{
-	static const struct luaL_Reg lib [] = {
-		{ "grib1", arkilua_new_grib1 },
-		{ "grib2", arkilua_new_grib2 },
-		{ "bufr", arkilua_new_bufr },
-		{ "odimh5", arkilua_new_odimh5 },
-		{ "vm2", arkilua_new_vm2 },
-		{ NULL, NULL }
-	};
-
-    utils::lua::add_global_library(L, "arki_product", lib);
-}
-#endif
-
 std::unique_ptr<Product> Product::createGRIB1(unsigned char origin, unsigned char table, unsigned char product)
 {
     return upcast<Product>(product::GRIB1::create(origin, table, product));
@@ -327,7 +253,6 @@ std::string GRIB1::exactQuery() const
     snprintf(buf, 128, "GRIB1,%d,%d,%d", (int)m_origin, (int)m_table, (int)m_product);
     return buf;
 }
-const char* GRIB1::lua_type_name() const { return "arki.types.product.grib1"; }
 
 int GRIB1::compare_local(const Product& o) const
 {
@@ -378,21 +303,6 @@ std::vector<int> GRIB1::toIntVector() const
 	res.push_back(m_product);
 	return res;
 }
-
-#ifdef HAVE_LUA
-bool GRIB1::lua_lookup(lua_State* L, const std::string& name) const
-{
-	if (name == "origin")
-		lua_pushnumber(L, origin());
-	else if (name == "table")
-		lua_pushnumber(L, table());
-	else if (name == "product")
-		lua_pushnumber(L, product());
-	else
-		return Product::lua_lookup(L, name);
-	return true;
-}
-#endif
 
 
 Product::Style GRIB2::style() const { return Style::GRIB2; }
@@ -467,7 +377,6 @@ std::string GRIB2::exactQuery() const
     }
     return ss.str();
 }
-const char* GRIB2::lua_type_name() const { return "arki.types.product.grib2"; }
 
 int GRIB2::compare_local(const Product& o) const
 {
@@ -536,27 +445,6 @@ std::vector<int> GRIB2::toIntVector() const
     return res;
 }
 
-#ifdef HAVE_LUA
-bool GRIB2::lua_lookup(lua_State* L, const std::string& name) const
-{
-	if (name == "centre")
-		lua_pushnumber(L, centre());
-	else if (name == "discipline")
-		lua_pushnumber(L, discipline());
-	else if (name == "category")
-		lua_pushnumber(L, category());
-	else if (name == "number")
-		lua_pushnumber(L, number());
-    else if (name == "table_version")
-        lua_pushnumber(L, table_version());
-    else if (name == "local_table_version")
-        lua_pushnumber(L, local_table_version());
-	else
-		return Product::lua_lookup(L, name);
-	return true;
-}
-#endif
-
 
 Product::Style BUFR::style() const { return Style::BUFR; }
 
@@ -624,7 +512,6 @@ std::string BUFR::exactQuery() const
         ss << ":" << m_values.toString();
     return ss.str();
 }
-const char* BUFR::lua_type_name() const { return "arki.types.product.bufr"; }
 
 int BUFR::compare_local(const Product& o) const
 {
@@ -691,48 +578,6 @@ std::vector<int> BUFR::toIntVector() const
 	return vector<int>();
 }
 
-#ifdef HAVE_LUA
-bool BUFR::lua_lookup(lua_State* L, const std::string& name) const
-{
-	if (name == "type")
-		lua_pushnumber(L, type());
-	else if (name == "subtype")
-		lua_pushnumber(L, subtype());
-	else if (name == "localsubtype")
-		lua_pushnumber(L, localsubtype());
-	else if (name == "val")
-		m_values.lua_push(L);
-	else
-		return Product::lua_lookup(L, name);
-	return true;
-}
-
-static int arkilua_addvalues(lua_State* L)
-{
-    BUFR* b = dynamic_cast<BUFR*>(Type::lua_check<Product>(L, 1));
-    luaL_checktype(L, 2, LUA_TTABLE);
-
-    ValueBag values;
-    values.load_lua_table(L, 2);
-
-    // TODO: change the LUA API to allow in-place modification
-    BUFR copy(*b);
-    copy.addValues(values);
-    copy.lua_push(L);
-    return 1;
-}
-
-void BUFR::lua_register_methods(lua_State* L) const
-{
-	Product::lua_register_methods(L);
-
-	static const struct luaL_Reg lib [] = {
-		{ "addValues", arkilua_addvalues },
-		{ NULL, NULL }
-	};
-    utils::lua::add_functions(L, lib);
-}
-#endif
 
 Product::Style ODIMH5::style() const { return Style::ODIMH5; }
 
@@ -780,11 +625,6 @@ std::string ODIMH5::exactQuery() const
 		/*REMOVED: << "," << std::fixed << std::setprecision(5) << m_prodpar1 << "," << std::fixed << std::setprecision(5) << m_prodpar2 */
 		;
 	return ss.str();
-}
-
-const char* ODIMH5::lua_type_name() const
-{
-	return "arki.types.product.odimh5";
 }
 
 int ODIMH5::compare_local(const Product& o) const
@@ -839,33 +679,6 @@ std::vector<int> ODIMH5::toIntVector() const
 	return vector<int>();
 }
 
-#ifdef HAVE_LUA
-bool ODIMH5::lua_lookup(lua_State* L, const std::string& name) const
-{
-	if (name == "object")
-		lua_pushlstring(L, m_obj.data(), m_obj.size());
-	else if (name == "product")
-		lua_pushlstring(L, m_prod.data(), m_prod.size());
-	/*REMOVED: else if (name == "prodpar1") */
-	/*REMOVED: 	lua_pushnumber(L, m_prodpar1); */
-	/*REMOVED: else if (name == "prodpar2") */
-	/*REMOVED: 	lua_pushnumber(L, m_prodpar2); */
-	else
-		return Product::lua_lookup(L, name);
-	return true;
-}
-
-void ODIMH5::lua_register_methods(lua_State* L) const
-{
-	Product::lua_register_methods(L);
-
-//	static const struct luaL_Reg lib [] = {
-//		{ "addName", arkilua_addname },
-//		{ NULL, NULL }
-//	};
-//	luaL_register(L, NULL, lib);
-}
-#endif
 
 const ValueBag& VM2::derived_values() const {
     if (m_derived_values.get() == 0) {
@@ -910,7 +723,6 @@ std::string VM2::exactQuery() const
         ss << ":" << derived_values().toString();
     return ss.str();
 }
-const char* VM2::lua_type_name() const { return "arki.types.product.vm2"; }
 int VM2::compare_local(const Product& o) const
 {
     if (int res = Product::compare_local(o)) return res;
@@ -929,22 +741,6 @@ bool VM2::equals(const Type& o) const
     if (!v) return false;
     return m_variable_id == v->m_variable_id;
 }
-
-#ifdef HAVE_LUA
-bool VM2::lua_lookup(lua_State* L, const std::string& name) const
-{
-    if (name == "id") {
-        lua_pushnumber(L, variable_id());
-#ifdef HAVE_VM2
-    } else if (name == "dval") {
-        derived_values().lua_push(L);
-#endif
-    } else {
-        return Product::lua_lookup(L, name);
-    }
-    return true;
-}
-#endif
 
 VM2* VM2::clone() const
 {

@@ -6,7 +6,6 @@
 #include "arki/structured/emitter.h"
 #include "arki/structured/memory.h"
 #include "arki/structured/keys.h"
-#include "arki/utils/lua.h"
 #include "config.h"
 #include <sstream>
 #include <cmath>
@@ -26,7 +25,6 @@ namespace types {
 const char* traits<Reftime>::type_tag = TAG;
 const types::Code traits<Reftime>::type_code = CODE;
 const size_t traits<Reftime>::type_sersize_bytes = SERSIZELEN;
-const char* traits<Reftime>::type_lua_tag = LUATAG_TYPES ".reftime";
 
 Reftime::Style Reftime::parseStyle(const std::string& str)
 {
@@ -85,32 +83,6 @@ unique_ptr<Reftime> Reftime::decodeString(const std::string& val)
                 Time::decodeString(val.substr(pos + 4)));
 }
 
-static int arkilua_new_position(lua_State* L)
-{
-    Time time = Time::lua_check(L, 1);
-    reftime::Position::create(time)->lua_push(L);
-    return 1;
-}
-
-static int arkilua_new_period(lua_State* L)
-{
-    Time beg = Time::lua_check(L, 1);
-    Time end = Time::lua_check(L, 2);
-    reftime::Period::create(beg, end)->lua_push(L);
-    return 1;
-}
-
-void Reftime::lua_loadlib(lua_State* L)
-{
-	static const struct luaL_Reg lib [] = {
-		{ "position", arkilua_new_position },
-		{ "period", arkilua_new_period },
-		{ NULL, NULL }
-	};
-
-    utils::lua::add_global_library(L, "arki_reftime", lib);
-}
-
 std::unique_ptr<Reftime> Reftime::create(const Time& begin, const Time& end)
 {
     if (begin == end)
@@ -161,17 +133,6 @@ std::unique_ptr<Position> Position::decode_structure(const structured::Keys& key
 std::string Position::exactQuery() const
 {
     return "=" + time.to_iso8601();
-}
-
-const char* Position::lua_type_name() const { return "arki.types.reftime.position"; }
-
-bool Position::lua_lookup(lua_State* L, const std::string& name) const
-{
-    if (name == "time")
-        time.lua_push(L);
-    else
-        return Reftime::lua_lookup(L, name);
-    return true;
 }
 
 int Position::compare_local(const Reftime& o) const
@@ -247,19 +208,6 @@ std::unique_ptr<Period> Period::decode_structure(const structured::Keys& keys, c
     return Period::create(
             val.as_time(keys.reftime_period_begin, "period begin"),
             val.as_time(keys.reftime_period_end, "period end"));
-}
-
-const char* Period::lua_type_name() const { return "arki.types.reftime.period"; }
-
-bool Period::lua_lookup(lua_State* L, const std::string& name) const
-{
-    if (name == "from")
-        begin.lua_push(L);
-    else if (name == "to")
-        end.lua_push(L);
-    else
-        return Reftime::lua_lookup(L, name);
-    return true;
 }
 
 int Period::compare_local(const Reftime& o) const

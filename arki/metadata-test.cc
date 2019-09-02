@@ -4,7 +4,6 @@
 #include "core/file.h"
 #include "core/binary.h"
 #include "metadata/tests.h"
-#include "tests/lua.h"
 #include "types/origin.h"
 #include "types/product.h"
 #include "types/level.h"
@@ -304,39 +303,6 @@ add_method("decode_issue_24", [](Fixture& f) {
     unsigned count = 0;
     Metadata::read_file("inbound/issue24.arkimet", [&](std::shared_ptr<Metadata> md) { ++count; return true; });
     wassert(actual(count) == 1u);
-});
-
-// Test Lua functions
-add_method("lua", [](Fixture& f) {
-    skip_unless_lua();
-    Metadata md;
-    md.set_source(Source::createBlobUnlocked("grib", "", "inbound/test.grib1", 1, 2));
-    f.fill(md);
-
-    arki::tests::Lua test(
-		"function test(md) \n"
-		"  if md.source == nil then return 'source is nil' end \n"
-		"  if md.origin == nil then return 'origin is nil' end \n"
-		"  if md.product == nil then return 'product is nil' end \n"
-		"  if md.level == nil then return 'level is nil' end \n"
-		"  if md.timerange == nil then return 'timerange is nil' end \n"
-		"  if md.area == nil then return 'area is nil' end \n"
-		"  if md.proddef == nil then return 'proddef is nil' end \n"
-		"  if md.assigneddataset == nil then return 'assigneddataset is nil' end \n"
-		"  if md.reftime == nil then return 'reftime is nil' end \n"
-		"  if md.bbox ~= nil then return 'bbox is not nil' end \n"
-		"  notes = md:notes() \n"
-		"  if #notes ~= 1 then return 'table has '..#notes..' elements instead of 1' end \n"
-//		"  i = 0 \n"
-//		"  for name, value in md.iter do \n"
-//		"    i = i + 1 \n"
-//		"  end \n"
-//		"  if i ~= 8 then return 'iterated '..i..' items instead of 8' end \n"
-		"  return nil\n"
-		"end \n"
-	);
-    test.pusharg(md);
-    wassert(actual(test.run()) == "");
 });
 
 add_method("stream_grib", [](Fixture& f) {

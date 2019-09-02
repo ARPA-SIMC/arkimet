@@ -4,8 +4,6 @@
 #include <arki/types/styled.h>
 #include <stdint.h>
 
-struct lua_State;
-
 namespace arki {
 namespace types {
 
@@ -27,7 +25,6 @@ struct traits<Level>
     static const char* type_tag;
     static const types::Code type_code;
     static const size_t type_sersize_bytes;
-    static const char* type_lua_tag;
     typedef level::Style Style;
 };
 
@@ -47,8 +44,6 @@ struct Level : public types::StyledType<Level>
     static std::unique_ptr<Level> decode(core::BinaryDecoder& dec);
     static std::unique_ptr<Level> decodeString(const std::string& val);
     static std::unique_ptr<Level> decode_structure(const structured::Keys& keys, const structured::Reader& val);
-
-	static void lua_loadlib(lua_State* L);
 
     // Register this type tree with the type system
     static void init();
@@ -84,8 +79,6 @@ public:
     std::ostream& writeToOstream(std::ostream& o) const override;
     void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
     std::string exactQuery() const override;
-    const char* lua_type_name() const override;
-    bool lua_lookup(lua_State* L, const std::string& name) const override;
 
     /**
      * Get information on how l1 and l2 should be treated:
@@ -141,8 +134,6 @@ public:
     std::ostream& writeToOstream(std::ostream& o) const override;
     void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
     std::string exactQuery() const override;
-    const char* lua_type_name() const override;
-    bool lua_lookup(lua_State* L, const std::string& name) const override;
 
     int compare_local(const Level& o) const override;
     bool equals(const Type& o) const override;
@@ -175,8 +166,6 @@ public:
     std::ostream& writeToOstream(std::ostream& o) const override;
     void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
     std::string exactQuery() const override;
-    const char* lua_type_name() const override;
-    bool lua_lookup(lua_State* L, const std::string& name) const override;
 
     int compare_local(const Level& o) const override;
     bool equals(const Type& o) const override;
@@ -203,8 +192,6 @@ public:
     std::ostream& writeToOstream(std::ostream& o) const override;
     void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
     std::string exactQuery() const override;
-    const char* lua_type_name() const override;
-    bool lua_lookup(lua_State* L, const std::string& name) const override;
 
     int compare_local(const Level& o) const override;
     bool equals(const Type& o) const override;

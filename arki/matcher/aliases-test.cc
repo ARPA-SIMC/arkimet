@@ -127,51 +127,6 @@ add_method("multilevel_load", [] {
     Matcher m = Matcher::parse("timerange:f_3");
 });
 
-// Run matcher/*.txt files, doctest style
-add_method("doctest", [] {
-    arki::Lua L;
-
-	// Define 'ensure' function
-	string lua_ensure = "function ensure_matches(val, expr)\n"
-			"  local matcher = arki.matcher.new(expr)\n"
-			"  if (not matcher:match(val)) then error(expr .. ' did not match ' .. tostring(val) .. ':\\n' .. debug.traceback()) end\n"
-			"end\n"
-			"function ensure_not_matches(val, expr)\n"
-			"  local matcher = arki.matcher.new(expr)\n"
-			"  if (matcher:match(val)) then error(expr .. ' should not have matched ' .. tostring(val) .. ':\\n' .. debug.traceback()) end\n"
-			"end\n"
-			"function ensure_matchers_equal(expr1, expr2)\n"
-			"  local matcher1 = arki.matcher.new(expr1)\n"
-			"  local matcher2 = arki.matcher.new(expr2)\n"
-			"  if matcher1:expanded() ~= matcher2:expanded() then error(tostring(matcher1) .. '(' .. matcher1:expanded() .. ') should be the same as ' .. tostring(matcher2) .. '(' .. matcher2:expanded() .. '):\\n' .. debug.traceback()) end\n"
-			"end\n";
-	if (luaL_dostring(L, lua_ensure.c_str()))
-        {
-                // Copy the error, so that it will exist after the pop
-                string error = lua_tostring(L, -1);
-                // Pop the error from the stack
-                lua_pop(L, 1);
-                wassert(actual(error) == "");
-        }
-
-    // Run the various lua examples
-    string path = "matcher";
-    sys::Path dir(path);
-    for (sys::Path::iterator d = dir.begin(); d != dir.end(); ++d)
-    {
-        if (!str::endswith(d->d_name, ".txt")) continue;
-        string fname = str::joinpath(path, d->d_name);
-        if (luaL_dofile(L, fname.c_str()))
-        {
-            // Copy the error, so that it will exist after the pop
-            string error = lua_tostring(L, -1);
-            // Pop the error from the stack
-            lua_pop(L, 1);
-            wassert(actual(error) == "");
-        }
-    }
-});
-
 add_method("regression", [] {
     Matcher m1, m2;
 

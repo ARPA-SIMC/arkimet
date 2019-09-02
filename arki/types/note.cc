@@ -5,7 +5,6 @@
 #include "arki/structured/emitter.h"
 #include "arki/structured/memory.h"
 #include "arki/structured/keys.h"
-#include "arki/utils/lua.h"
 #include "config.h"
 #include <sstream>
 #include <cmath>
@@ -24,7 +23,6 @@ namespace types {
 const char* traits<Note>::type_tag = TAG;
 const types::Code traits<Note>::type_code = CODE;
 const size_t traits<Note>::type_sersize_bytes = SERSIZELEN;
-const char* traits<Note>::type_lua_tag = LUATAG_TYPES ".note";
 
 int Note::compare(const Type& o) const
 {
@@ -100,19 +98,6 @@ unique_ptr<Note> Note::decodeString(const std::string& val)
         throw_consistency_error("parsing Note", "no closed square bracket found");
     return Note::create(Time::create_iso8601(val.substr(1, pos-1)), val.substr(pos+1));
 }
-
-#ifdef HAVE_LUA
-bool Note::lua_lookup(lua_State* L, const std::string& name) const
-{
-    if (name == "time")
-        time.lua_push(L);
-    else if (name == "content")
-        lua_pushlstring(L, content.data(), content.size());
-    else
-        return CoreType<Note>::lua_lookup(L, name);
-    return true;
-}
-#endif
 
 Note* Note::clone() const
 {

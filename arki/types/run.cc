@@ -10,10 +10,6 @@
 #include <iomanip>
 #include <sstream>
 
-#ifdef HAVE_LUA
-#include "arki/utils/lua.h"
-#endif
-
 #define CODE TYPE_RUN
 #define TAG "run"
 #define SERSIZELEN 1
@@ -27,7 +23,6 @@ namespace types {
 const char* traits<Run>::type_tag = TAG;
 const types::Code traits<Run>::type_code = CODE;
 const size_t traits<Run>::type_sersize_bytes = SERSIZELEN;
-const char* traits<Run>::type_lua_tag = LUATAG_TYPES ".run";
 
 Run::Style Run::parseStyle(const std::string& str)
 {
@@ -96,31 +91,6 @@ std::unique_ptr<Run> Run::decode_structure(const structured::Keys& keys, const s
     }
 }
 
-#ifdef HAVE_LUA
-static int arkilua_new_minute(lua_State* L)
-{
-	int nargs = lua_gettop(L);
-	int hour = luaL_checkint(L, 1);
-	if (nargs == 1)
-	{
-		run::Minute::create(hour, 0)->lua_push(L);
-	} else {
-		int minute = luaL_checkint(L, 2);
-		run::Minute::create(hour, minute)->lua_push(L);
-	}
-	return 1;
-}
-
-void Run::lua_loadlib(lua_State* L)
-{
-	static const struct luaL_Reg lib [] = {
-		{ "minute", arkilua_new_minute },
-		{ NULL, NULL }
-	};
-    utils::lua::add_global_library(L, "arki_run", lib);
-}
-#endif
-
 unique_ptr<Run> Run::createMinute(unsigned int hour, unsigned int minute)
 {
     return upcast<Run>(run::Minute::create(hour, minute));
@@ -161,21 +131,6 @@ std::string Minute::exactQuery() const
 	res << "MINUTE," << setfill('0') << setw(2) << (m_minute/60) << ":" << setw(2) << (m_minute % 60);
 	return res.str();
 }
-const char* Minute::lua_type_name() const { return "arki.types.run.minute"; }
-
-#ifdef HAVE_LUA
-bool Minute::lua_lookup(lua_State* L, const std::string& name) const
-{
-	if (name == "hour")
-		lua_pushnumber(L, minute() / 60);
-	else if (name == "min")
-		lua_pushnumber(L, minute() % 60);
-	else
-		return Run::lua_lookup(L, name);
-	return true;
-}
-#endif
-
 
 int Minute::compare_local(const Run& o) const
 {

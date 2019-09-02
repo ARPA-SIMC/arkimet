@@ -6,13 +6,6 @@
 namespace arki {
 namespace types {
 
-template<typename BASE>
-void CoreType<BASE>::lua_loadlib(lua_State* L)
-{
-    /* By default, do not register anything */
-}
-
-
 }
 }
 

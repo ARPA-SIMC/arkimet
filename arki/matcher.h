@@ -10,8 +10,6 @@
 #include <set>
 #include <memory>
 
-struct lua_State;
-
 namespace arki {
 
 /**
@@ -89,24 +87,8 @@ public:
      */
     std::string toStringExpanded() const;
 
-	/// Parse a string into a matcher
-	static Matcher parse(const std::string& pattern);
-
-	// LUA functions
-	/// Push to the LUA stack a userdata to access this Matcher
-	void lua_push(lua_State* L);
-
-	/**
-	 * Check that the element at \a idx is a Matcher userdata
-	 *
-	 * @return the Matcher element, or 0 if the check failed
-	 */
-	static Matcher lua_check(lua_State* L, int idx);
-
-	/**
-	 * Load summary functions into a lua VM
-	 */
-	static void lua_openlib(lua_State* L);
+    /// Parse a string into a matcher
+    static Matcher parse(const std::string& pattern);
 };
 
 /// Write as a string to an output stream

@@ -12,10 +12,6 @@
 #include <sstream>
 #include <cmath>
 
-#ifdef HAVE_LUA
-#include "arki/utils/lua.h"
-#endif
-
 #ifdef HAVE_VM2
 #include "arki/utils/vm2.h"
 #endif
@@ -33,7 +29,6 @@ namespace types {
 const char* traits<Area>::type_tag = TAG;
 const types::Code traits<Area>::type_code = CODE;
 const size_t traits<Area>::type_sersize_bytes = SERSIZELEN;
-const char* traits<Area>::type_lua_tag = LUATAG_TYPES ".area";
 
 Area::Style Area::parseStyle(const std::string& str)
 {
@@ -126,44 +121,6 @@ std::unique_ptr<Area> Area::decode_structure(const structured::Keys& keys, const
     }
 }
 
-#ifdef HAVE_LUA
-static int arkilua_new_grib(lua_State* L)
-{
-	luaL_checktype(L, 1, LUA_TTABLE);
-	ValueBag vals;
-	vals.load_lua_table(L);
-	area::GRIB::create(vals)->lua_push(L);
-	return 1;
-}
-
-static int arkilua_new_odimh5(lua_State* L)
-{
-	luaL_checktype(L, 1, LUA_TTABLE);
-	ValueBag vals;
-	vals.load_lua_table(L);
-	area::ODIMH5::create(vals)->lua_push(L);
-	return 1;
-}
-
-static int arkilua_new_vm2(lua_State* L)
-{
-	int type = luaL_checkint(L, 1);
-	area::VM2::create(type)->lua_push(L);
-	return 1;
-}
-
-void Area::lua_loadlib(lua_State* L)
-{
-	static const struct luaL_Reg lib [] = {
-		{ "grib", arkilua_new_grib },
-		{ "odimh5", arkilua_new_odimh5 },
-		{ "vm2", arkilua_new_vm2 },
-		{ NULL, NULL }
-	};
-    utils::lua::add_global_library(L, "arki_area", lib);
-}
-#endif
-
 unique_ptr<Area> Area::createGRIB(const ValueBag& values)
 {
     return upcast<Area>(area::GRIB::create(values));
@@ -211,19 +168,6 @@ std::string GRIB::exactQuery() const
 {
     return "GRIB:" + m_values.toString();
 }
-
-const char* GRIB::lua_type_name() const { return "arki.types.area.grib"; }
-
-#ifdef HAVE_LUA
-bool GRIB::lua_lookup(lua_State* L, const std::string& name) const
-{
-	if (name == "val")
-		values().lua_push(L);
-	else
-		return Area::lua_lookup(L, name);
-	return true;
-}
-#endif
 
 int GRIB::compare_local(const Area& o) const
 {
@@ -291,19 +235,6 @@ std::string ODIMH5::exactQuery() const
 {
     return "ODIMH5:" + m_values.toString();
 }
-
-const char* ODIMH5::lua_type_name() const { return "arki.types.area.odimh5"; }
-
-#ifdef HAVE_LUA
-bool ODIMH5::lua_lookup(lua_State* L, const std::string& name) const
-{
-	if (name == "val")
-		values().lua_push(L);
-	else
-		return Area::lua_lookup(L, name);
-	return true;
-}
-#endif
 
 int ODIMH5::compare_local(const Area& o) const
 {
@@ -392,23 +323,6 @@ std::string VM2::exactQuery() const
         ss << ":" << derived_values().toString();
     return ss.str();
 }
-
-const char* VM2::lua_type_name() const { return "arki.types.area.vm2"; }
-#ifdef HAVE_LUA
-bool VM2::lua_lookup(lua_State* L, const std::string& name) const
-{
-    if (name == "id") {
-        lua_pushnumber(L, station_id());
-#ifdef HAVE_VM2
-    } else if (name == "dval") {
-        derived_values().lua_push(L);
-#endif
-    } else {
-        return Area::lua_lookup(L, name);
-    }
-	return true;
-}
-#endif
 
 int VM2::compare_local(const Area& o) const
 {
