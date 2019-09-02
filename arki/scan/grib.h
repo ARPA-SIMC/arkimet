@@ -18,8 +18,6 @@ namespace grib {
 const Validator& validator();
 }
 
-struct GribLua;
-
 class GribScanner : public Scanner
 {
 protected:
@@ -51,20 +49,6 @@ protected:
 public:
     MockGribScanner();
     virtual ~MockGribScanner();
-};
-
-class LuaGribScanner : public GribScanner
-{
-protected:
-    GribLua* L;
-
-    std::shared_ptr<Metadata> scan(grib_handle* gh) override;
-
-public:
-    LuaGribScanner();
-    virtual ~LuaGribScanner();
-
-    friend class GribLua;
 };
 
 }

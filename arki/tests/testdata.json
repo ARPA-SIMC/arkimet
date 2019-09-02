@@ -2741,11 +2741,6 @@
  },
  {
   "doc": "",
-  "group": "arki_scan_grib",
-  "method": "utm_areas"
- },
- {
-  "doc": "",
   "group": "arki_scan_bufr",
   "method": "validate"
  },

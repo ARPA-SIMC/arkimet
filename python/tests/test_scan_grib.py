@@ -256,6 +256,27 @@ class TestScanGrib(unittest.TestCase):
         self.assertEqual(len(mds), 1)
         self.assertEqual(mds[0]["timerange"], "Timedef(3h, 254, 0s)")
 
+    def test_utm_areas(self):
+        """
+        Scan a GRIB2 with experimental UTM areas
+        """
+        skip_unless_arpae_tests()
+
+        mds = self.read("inbound/calmety_20110215.grib2")
+        self.assertEqual(len(mds), 1)
+
+        self.assertEqual(mds[0]["origin"], "GRIB2(00200, 00000, 000, 000, 203)")
+        self.assertEqual(mds[0]["product"], "GRIB2(200, 0, 200, 33, 5, 0)")
+        self.assertEqual(mds[0]["level"], "GRIB2S(103, 0, 10)")
+        self.assertEqual(mds[0]["timerange"], "Timedef(0s, 254, 0s)")
+        self.assertEqual(
+                mds[0]["area"],
+                "GRIB(Ni=90, Nj=52, fe=0, fn=0, latfirst=4852500, latlast=5107500, lonfirst=402500, lonlast=847500,"
+                " tn=32768, utm=1, zone=32)")
+        self.assertEqual(mds[0]["proddef"], "GRIB(tod=0)")
+        self.assertEqual(mds[0]["reftime"], "2011-02-15T00:00:00Z")
+        self.assertEqual(mds[0]["run"], "MINUTE(0)")
+
     def test_cosmo_nudging(self):
         """
         Check scanning COSMO nudging timeranges

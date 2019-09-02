@@ -5,10 +5,6 @@ nobase_dist_conf_DATA = \
 	qmacro/noop.py \
 	qmacro/noopcopy.py \
 	qmacro/expa.py \
-	scan/grib1.py \
-	scan/grib2.py \
-	scan-grib1/01-common.lua \
-	scan-grib2/01-common.lua \
 	scan-odimh5/01-common.lua \
 	vm2/source.lua
 
