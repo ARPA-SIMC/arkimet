@@ -266,8 +266,8 @@ class TestScanGrib(unittest.TestCase):
         self.assertEqual(len(mds), 1)
 
         self.assertEqual(mds[0]["origin"], "GRIB2(00200, 00000, 000, 000, 203)")
-        self.assertEqual(mds[0]["product"], "GRIB2(200, 0, 200, 33, 5, 0)")
-        self.assertEqual(mds[0]["level"], "GRIB2S(103, 0, 10)")
+        self.assertEqual(mds[0]["product"], "GRIB2(00200, 000, 200, 033, 005, 000)")
+        self.assertEqual(mds[0]["level"], "GRIB2S(103, 000, 0000000010)")
         self.assertEqual(mds[0]["timerange"], "Timedef(0s, 254, 0s)")
         self.assertEqual(
                 mds[0]["area"],
@@ -275,7 +275,7 @@ class TestScanGrib(unittest.TestCase):
                 " tn=32768, utm=1, zone=32)")
         self.assertEqual(mds[0]["proddef"], "GRIB(tod=0)")
         self.assertEqual(mds[0]["reftime"], "2011-02-15T00:00:00Z")
-        self.assertEqual(mds[0]["run"], "MINUTE(0)")
+        self.assertEqual(mds[0]["run"], "MINUTE(00:00)")
 
     def test_cosmo_nudging(self):
         """
