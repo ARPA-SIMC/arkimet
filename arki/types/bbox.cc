@@ -5,9 +5,6 @@
 #include "arki/structured/emitter.h"
 #include "arki/structured/memory.h"
 #include "arki/libconfig.h"
-#ifdef HAVE_LUA
-#include "arki/utils/lua.h"
-#endif
 #include <iomanip>
 #include <sstream>
 
@@ -24,7 +21,6 @@ namespace types {
 const char* traits<BBox>::type_tag = TAG;
 const types::Code traits<BBox>::type_code = CODE;
 const size_t traits<BBox>::type_sersize_bytes = SERSIZELEN;
-const char* traits<BBox>::type_lua_tag = LUATAG_TYPES ".bbox";
 
 BBox::Style BBox::parseStyle(const std::string& str)
 {
@@ -105,7 +101,6 @@ std::ostream& INVALID::writeToOstream(std::ostream& o) const
 {
     return o << formatStyle(style()) << "()";
 }
-const char* INVALID::lua_type_name() const { return "arki.types.bbox.invalid"; }
 
 int INVALID::compare_local(const BBox& o) const
 {

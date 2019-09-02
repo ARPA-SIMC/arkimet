@@ -94,24 +94,6 @@ add_method("regression1", [] {
     wassert(actual(ss.str()) == "2005-12-01T18:00:00Z");
 });
 
-
-// Test Lua functions
-add_lua_test("lua", "2007-06-05T04:03:02Z", R"(
-    function test(o)
-      if o.style ~= 'POSITION' then return 'style is '..o.style..' instead of POSITION' end
-      t = o.time
-      if t.year ~= 2007 then return 't.year is '..t.year..' instead of 2007' end
-      if t.month ~= 6 then return 't.month is '..t.month..' instead of 6' end
-      if t.day ~= 5 then return 't.day is '..t.day..' instead of 5' end
-      if t.hour ~= 4 then return 't.hour is '..t.hour..' instead of 4' end
-      if t.minute ~= 3 then return 't.minute is '..t.minute..' instead of 3' end
-      if t.second ~= 2 then return 't.second is '..t.second..' instead of 2' end
-      if tostring(o) ~= '2007-06-05T04:03:02Z' then return 'tostring gave '..tostring(o)..' instead of 2007-06-05T04:03:02Z' end
-      o1 = arki_reftime.position(arki_time.time(2007, 6, 5, 4, 3, 2))
-      if o ~= o1 then return 'new reftime is '..tostring(o1)..' instead of '..tostring(o) end
-    end
-)");
-
 }
 
 }

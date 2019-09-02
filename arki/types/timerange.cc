@@ -12,16 +12,9 @@
 #include <cmath>
 #include <cstring>
 
-#ifdef HAVE_LUA
-#include "arki/utils/lua.h"
-#endif
-
 #define CODE TYPE_TIMERANGE
 #define TAG "timerange"
 #define SERSIZELEN 1
-#define LUATAG_TIMERANGE LUATAG_TYPES ".timerange"
-#define LUATAG_GRIB1 LUATAG_TIMERANGE ".grib1"
-#define LUATAG_GRIB2 LUATAG_TIMERANGE ".grib2"
 
 using namespace std;
 using namespace arki::utils;
@@ -33,12 +26,10 @@ namespace types {
 const char* traits<Timerange>::type_tag = TAG;
 const types::Code traits<Timerange>::type_code = CODE;
 const size_t traits<Timerange>::type_sersize_bytes = SERSIZELEN;
-const char* traits<Timerange>::type_lua_tag = LUATAG_TIMERANGE;
 
 const char* traits<timerange::Timedef>::type_tag = TAG;
 const types::Code traits<timerange::Timedef>::type_code = CODE;
 const size_t traits<timerange::Timedef>::type_sersize_bytes = SERSIZELEN;
-const char* traits<timerange::Timedef>::type_lua_tag = LUATAG_TIMERANGE;
 
 // Constants from meteosatlib's libgrib
 /// Time ranges
@@ -475,159 +466,6 @@ unique_ptr<timerange::Timedef> Timerange::to_timedef() const
     return Timedef::create(step_len, step_unit, stat_type, stat_len, stat_unit);
 }
 
-static int arkilua_new_grib1(lua_State* L)
-{
-	int type = luaL_checkint(L, 1);
-	int unit = luaL_checkint(L, 2);
-	int p1 = luaL_checkint(L, 3);
-	int p2 = luaL_checkint(L, 4);
-    timerange::GRIB1::create(type, unit, p1, p2)->lua_push(L);
-    return 1;
-}
-
-static int arkilua_new_grib2(lua_State* L)
-{
-	int type = luaL_checkint(L, 1);
-	int unit = luaL_checkint(L, 2);
-	int p1 = luaL_checkint(L, 3);
-	int p2 = luaL_checkint(L, 4);
-    timerange::GRIB2::create(type, unit, p1, p2)->lua_push(L);
-    return 1;
-}
-
-// Parse a time unit in string or number form
-static timerange::TimedefUnit arkilua_checkunit(lua_State* L, int pos)
-{
-    switch (lua_type(L, pos))
-    {
-        case LUA_TSTRING: {
-            const char* str = lua_tostring(L, pos);
-            timerange::TimedefUnit unit;
-            if (!timerange::Timedef::timeunit_parse_suffix(str, unit))
-                luaL_argcheck(L, 0, pos, "unit name not valid");
-            if (*str) // Trailing garbage in unit
-                luaL_argcheck(L, 0, pos, "unit name not valid");
-            return unit;
-        }
-        case LUA_TNUMBER:
-            return (timerange::TimedefUnit)lua_tointeger(L, pos);
-        default:
-            luaL_argcheck(L, 0, pos, "unit is not string or number");
-            return timerange::UNIT_MISSING; // This should never be reached
-    }
-}
-
-// Parse ("3h") or (3, "h") or (3, 1)
-static int arkilua_checkunit_val(lua_State* L, int pos, timerange::TimedefUnit& unit, uint32_t& val)
-{
-    switch (lua_type(L, pos))
-    {
-        case LUA_TSTRING: {
-            const char* str = lua_tostring(L, pos);
-            if (!timerange::Timedef::timeunit_parse(str, unit, val))
-                luaL_argcheck(L, 0, pos, "value is not a number with a time range suffix");
-            if (*str) // Trailing garbage in unit
-                luaL_argcheck(L, 0, pos, "value is not a number with a time range suffix");
-            return 1;
-        }
-        case LUA_TNUMBER:
-            val = lua_tointeger(L, pos);
-            if (lua_gettop(L) == pos && val == 0)
-                return 1;
-            unit = arkilua_checkunit(L, pos + 1);
-            return 2;
-        default:
-            luaL_argcheck(L, 0, pos, "value is not string or number");
-            return 0; // This return shouldn't be reached
-    }
-}
-
-static int arkilua_new_timedef(lua_State* L)
-{
-    using namespace timerange;
-
-    uint32_t step_len = 0;
-    TimedefUnit step_unit = timerange::UNIT_SECOND;
-    int stat_type = 255;
-    uint32_t stat_len = 0;
-    TimedefUnit stat_unit = timerange::UNIT_MISSING;
-
-    int pos = 1;
-
-    // Parse forecast step
-    pos += arkilua_checkunit_val(L, pos, step_unit, step_len);
-
-    if (lua_gettop(L) >= pos)
-    {
-        // Parse type of statistical processing
-        stat_type = luaL_checkint(L, pos);
-        ++pos;
-
-        // Parse length of statistical processing
-        if (lua_gettop(L) >= pos)
-            pos += arkilua_checkunit_val(L, pos, stat_unit, stat_len);
-    }
-
-    timerange::Timedef::create(step_len, step_unit, stat_type, stat_len, stat_unit)->lua_push(L);
-    return 1;
-}
-
-static int arkilua_new_timedef_combined(lua_State* L)
-{
-    using namespace timerange;
-
-    uint32_t step_len = 0;
-    TimedefUnit step_unit = timerange::UNIT_SECOND;
-    int stat_type = 255;
-    uint32_t stat_len = 0;
-    TimedefUnit stat_unit = timerange::UNIT_MISSING;
-
-    int pos = 1;
-
-    if (lua_gettop(L) != 5)
-        luaL_argcheck(L, 0, lua_gettop(L), "timedef_combined requires 5 arguments");
-
-    // Parse forecast step
-    pos += arkilua_checkunit_val(L, pos, step_unit, step_len);
-
-    // Parse type of statistical processing
-    stat_type = luaL_checkint(L, pos);
-    ++pos;
-
-    // Parse length of statistical processing
-    pos += arkilua_checkunit_val(L, pos, stat_unit, stat_len);
-
-    // Normalise/uniform units to the highest common one that does not lose precision for both
-    // TODO: remove this lua function make_same_units(step_len, step_unit, stat_len, stat_unit);
-
-    timerange::Timedef::create(step_len + stat_len, step_unit, stat_type, stat_len, stat_unit)->lua_push(L);
-    return 1;
-}
-
-
-static int arkilua_new_bufr(lua_State* L)
-{
-	int value = luaL_checkint(L, 1);
-	int unit = 254;
-	if (lua_gettop(L) > 1)
-		unit = luaL_checkint(L, 2);
-	timerange::BUFR::create(value, unit)->lua_push(L);
-	return 1;
-}
-
-void Timerange::lua_loadlib(lua_State* L)
-{
-	static const struct luaL_Reg lib [] = {
-		{ "grib1", arkilua_new_grib1 },
-		{ "grib2", arkilua_new_grib2 },
-		{ "timedef", arkilua_new_timedef },
-		{ "timedef_combined", arkilua_new_timedef_combined },
-		{ "bufr", arkilua_new_bufr },
-		{ NULL, NULL }
-	};
-    utils::lua::add_global_library(L, "arki_timerange", lib);
-}
-
 unique_ptr<Timerange> Timerange::createGRIB1(unsigned char type, unsigned char unit, unsigned char p1, unsigned char p2)
 {
     return upcast<Timerange>(timerange::GRIB1::create(type, unit, p1, p2));
@@ -748,43 +586,6 @@ std::string GRIB1::exactQuery() const
 	o << formatStyle(style()) << ", ";
 	writeNumbers(o);
 	return o.str();
-}
-
-const char* GRIB1::lua_type_name() const { return "arki.types.timerange.grib1"; }
-bool GRIB1::lua_lookup(lua_State* L, const std::string& name) const
-{
-    int type;
-    GRIB1Unit unit;
-    int p1, p2;
-    bool use_p1, use_p2;
-    getNormalised(type, unit, p1, p2, use_p1, use_p2);
-
-	if (name == "type")
-		lua_pushnumber(L, type);
-	else if (name == "unit")
-		switch (unit)
-		{
-			case timerange::SECOND: lua_pushstring(L, "second"); break;
-			case timerange::MONTH: lua_pushstring(L, "month"); break;
-			default: lua_pushnil(L); break;
-		}
-    else if (name == "p1")
-    {
-        if (use_p1)
-            lua_pushnumber(L, p1);
-        else
-            lua_pushnil(L);
-    }
-    else if (name == "p2")
-    {
-        if (use_p2)
-            lua_pushnumber(L, p2);
-        else
-            lua_pushnil(L);
-    }
-	else
-		return Timerange::lua_lookup(L, name);
-	return true;
 }
 
 int GRIB1::compare_local(const Timerange& o) const
@@ -1297,23 +1098,6 @@ std::string GRIB2::exactQuery() const
 	return o.str();
 }
 
-const char* GRIB2::lua_type_name() const { return "arki.types.timerange.grib2"; }
-
-bool GRIB2::lua_lookup(lua_State* L, const std::string& name) const
-{
-	if (name == "type")
-		lua_pushnumber(L, type());
-	else if (name == "unit")
-		lua_pushstring(L, formatTimeUnit((t_enum_GRIB_TIMEUNIT)unit()).c_str());
-	else if (name == "p1")
-		lua_pushnumber(L, p1());
-	else if (name == "p2")
-		lua_pushnumber(L, p2());
-	else
-		return Timerange::lua_lookup(L, name);
-	return true;
-}
-
 int GRIB2::compare_local(const Timerange& o) const
 {
     if (int res = Timerange::compare_local(o)) return res;
@@ -1500,25 +1284,6 @@ std::string Timedef::exactQuery() const
             o << m_stat_len << timeunit_suffix(m_stat_unit);
     }
     return o.str();
-}
-
-const char* Timedef::lua_type_name() const { return "arki.types.timerange.grib2"; }
-
-bool Timedef::lua_lookup(lua_State* L, const std::string& name) const
-{
-    if (name == "step_unit")
-        lua_pushnumber(L, m_step_unit);
-    else if (name == "step_len")
-        lua_pushnumber(L, m_step_len);
-    else if (name == "stat_type")
-        lua_pushnumber(L, m_stat_type);
-    else if (name == "stat_unit")
-        lua_pushnumber(L, m_stat_unit);
-    else if (name == "stat_len")
-        lua_pushnumber(L, m_stat_len);
-    else
-        return Timerange::lua_lookup(L, name);
-    return true;
 }
 
 int Timedef::compare_local(const Timerange& o) const
@@ -1955,31 +1720,6 @@ std::string BUFR::exactQuery() const
 	string suffix = formatTimeUnit((t_enum_GRIB_TIMEUNIT)m_unit);
 	o << formatStyle(style()) << "," << m_value << suffix;
 	return o.str();
-}
-
-const char* BUFR::lua_type_name() const { return "arki.types.timerange.bufr"; }
-
-bool BUFR::lua_lookup(lua_State* L, const std::string& name) const
-{
-	if (name == "value")
-		lua_pushnumber(L, value());
-	else if (name == "unit")
-		lua_pushnumber(L, unit());
-	else if (name == "is_seconds")
-		lua_pushboolean(L, is_seconds());
-	else if (name == "seconds")
-		if (is_seconds())
-			lua_pushnumber(L, seconds());
-		else
-			lua_pushnil(L);
-	else if (name == "months")
-		if (is_seconds())
-			lua_pushnil(L);
-		else
-			lua_pushnumber(L, months());
-	else
-		return Timerange::lua_lookup(L, name);
-	return true;
 }
 
 int BUFR::compare_local(const Timerange& o) const

@@ -6,7 +6,6 @@
 #include "arki/structured/emitter.h"
 #include "arki/structured/memory.h"
 #include "arki/structured/keys.h"
-#include "arki/utils/lua.h"
 #include <iomanip>
 #include <sstream>
 #include <cstring>
@@ -30,7 +29,6 @@ namespace types {
 const char* traits<Origin>::type_tag = TAG;
 const types::Code traits<Origin>::type_code = CODE;
 const size_t traits<Origin>::type_sersize_bytes = SERSIZELEN;
-const char* traits<Origin>::type_lua_tag = LUATAG_ORIGIN;
 
 // Deprecated
 int Origin::getMaxIntCount() { return 5; }
@@ -154,57 +152,6 @@ std::unique_ptr<Origin> Origin::decode_structure(const structured::Keys& keys, c
     }
 }
 
-#ifdef HAVE_LUA
-static int arkilua_new_grib1(lua_State* L)
-{
-	int centre = luaL_checkint(L, 1);
-	int subcentre = luaL_checkint(L, 2);
-	int process = luaL_checkint(L, 3);
-    origin::GRIB1::create(centre, subcentre, process)->lua_push(L);
-    return 1;
-}
-
-static int arkilua_new_grib2(lua_State* L)
-{
-	int centre = luaL_checkint(L, 1);
-	int subcentre = luaL_checkint(L, 2);
-	int processtype = luaL_checkint(L, 3);
-	int bgprocessid = luaL_checkint(L, 4);
-	int processid = luaL_checkint(L, 5);
-    origin::GRIB2::create(centre, subcentre, processtype, bgprocessid, processid)->lua_push(L);
-    return 1;
-}
-
-static int arkilua_new_bufr(lua_State* L)
-{
-	int centre = luaL_checkint(L, 1);
-	int subcentre = luaL_checkint(L, 2);
-    origin::BUFR::create(centre, subcentre)->lua_push(L);
-    return 1;
-}
-
-static int arkilua_new_odimh5(lua_State* L)
-{
-	const char* wmo = luaL_checkstring(L, 1);
-	const char* rad = luaL_checkstring(L, 2);
-	const char* plc = luaL_checkstring(L, 3);
-    origin::ODIMH5::create(wmo, rad, plc)->lua_push(L);
-    return 1;
-}
-
-void Origin::lua_loadlib(lua_State* L)
-{
-	static const struct luaL_Reg lib [] = {
-		{ "grib1", arkilua_new_grib1 },
-		{ "grib2", arkilua_new_grib2 },
-		{ "bufr", arkilua_new_bufr },
-		{ "odimh5", arkilua_new_odimh5 },
-		{ NULL, NULL }
-	};
-    utils::lua::add_global_library(L, "arki_origin", lib);
-}
-#endif
-
 unique_ptr<Origin> Origin::createGRIB1(unsigned char centre, unsigned char subcentre, unsigned char process)
 {
     return upcast<Origin>(origin::GRIB1::create(centre, subcentre, process));
@@ -267,22 +214,6 @@ std::string GRIB1::exactQuery() const
     snprintf(buf, 64, "GRIB1,%d,%d,%d", (int)m_centre, (int)m_subcentre, (int)m_process);
     return buf;
 }
-const char* GRIB1::lua_type_name() const { return LUATAG_GRIB1; }
-
-#ifdef HAVE_LUA
-bool GRIB1::lua_lookup(lua_State* L, const std::string& name) const
-{
-	if (name == "centre")
-		lua_pushnumber(L, centre());
-	else if (name == "subcentre")
-		lua_pushnumber(L, subcentre());
-	else if (name == "process")
-		lua_pushnumber(L, process());
-	else
-		return Origin::lua_lookup(L, name);
-	return true;
-}
-#endif
 
 int GRIB1::compare_local(const Origin& o) const
 {
@@ -383,26 +314,6 @@ std::string GRIB2::exactQuery() const
     snprintf(buf, 64, "GRIB2,%d,%d,%d,%d,%d", (int)m_centre, (int)m_subcentre, (int)m_processtype, (int)m_bgprocessid, (int)m_processid);
     return buf;
 }
-const char* GRIB2::lua_type_name() const { return LUATAG_GRIB2; }
-
-#ifdef HAVE_LUA
-bool GRIB2::lua_lookup(lua_State* L, const std::string& name) const
-{
-	if (name == "centre")
-		lua_pushnumber(L, centre());
-	else if (name == "subcentre")
-		lua_pushnumber(L, subcentre());
-	else if (name == "processtype")
-		lua_pushnumber(L, processtype());
-	else if (name == "bgprocessid")
-		lua_pushnumber(L, bgprocessid());
-	else if (name == "processid")
-		lua_pushnumber(L, processid());
-	else
-		return Origin::lua_lookup(L, name);
-	return true;
-}
-#endif
 
 int GRIB2::compare_local(const Origin& o) const
 {
@@ -502,20 +413,6 @@ std::string BUFR::exactQuery() const
     snprintf(buf, 32, "BUFR,%d,%d", (int)m_centre, (int)m_subcentre);
     return buf;
 }
-const char* BUFR::lua_type_name() const { return LUATAG_BUFR; }
-
-#ifdef HAVE_LUA
-bool BUFR::lua_lookup(lua_State* L, const std::string& name) const
-{
-	if (name == "centre")
-		lua_pushnumber(L, centre());
-	else if (name == "subcentre")
-		lua_pushnumber(L, subcentre());
-	else
-		return Origin::lua_lookup(L, name);
-	return true;
-}
-#endif
 
 int BUFR::compare_local(const Origin& o) const
 {
@@ -605,22 +502,6 @@ std::string ODIMH5::exactQuery() const
     res << "ODIMH5," << m_WMO << "," << m_RAD << "," << m_PLC;
     return res.str();
 }
-const char* ODIMH5::lua_type_name() const { return LUATAG_ODIMH5; }
-
-#ifdef HAVE_LUA
-bool ODIMH5::lua_lookup(lua_State* L, const std::string& name) const
-{
-	if (name == "wmo")
-		lua_pushlstring(L, m_WMO.data(), m_WMO.size());
-	else if (name == "rad")                
-		lua_pushlstring(L, m_RAD.data(), m_RAD.size());
-	else if (name == "plc")                
-		lua_pushlstring(L, m_PLC.data(), m_PLC.size());
-	else
-		return Origin::lua_lookup(L, name);
-	return true;
-}
-#endif
 
 int ODIMH5::compare_local(const Origin& o) const
 {

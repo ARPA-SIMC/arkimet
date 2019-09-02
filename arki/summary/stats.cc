@@ -3,7 +3,6 @@
 #include "arki/core/file.h"
 #include "arki/core/binary.h"
 #include "arki/types/utils.h"
-#include "arki/utils/lua.h"
 #include "arki/utils/string.h"
 #include "arki/utils/yaml.h"
 #include "arki/structured/emitter.h"
@@ -23,7 +22,6 @@ namespace types {
 const char* traits<summary::Stats>::type_tag = "summarystats";
 const types::Code traits<summary::Stats>::type_code = TYPE_SUMMARYSTATS;
 const size_t traits<summary::Stats>::type_sersize_bytes = 2;
-const char* traits<summary::Stats>::type_lua_tag = LUATAG_TYPES ".summary.stats";
 }
 */
 
@@ -222,34 +220,6 @@ unique_ptr<Stats> Stats::decodeString(const std::string& str)
     }
     return res;
 }
-
-#ifdef HAVE_LUA
-void Stats::lua_push(lua_State* L) const
-{
-    lua_newtable(L);
-
-    lua_pushstring(L, "count");
-    lua_pushnumber(L, count);
-    lua_settable(L, -3);
-
-    lua_pushstring(L, "size");
-    lua_pushnumber(L, size);
-    lua_settable(L, -3);
-
-    lua_pushstring(L, "reftime");
-    Reftime::create(begin, end)->lua_push(L);
-    lua_settable(L, -3);
-}
-
-bool Stats::lua_lookup(lua_State* L, const std::string& name) const
-{
-    if (name == "count")
-        lua_pushnumber(L, count);
-    else if (name == "reftime")
-        Reftime::create(begin, end)->lua_push(L);
-    return true;
-}
-#endif
 
 }
 }

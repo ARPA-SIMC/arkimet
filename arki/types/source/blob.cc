@@ -2,7 +2,6 @@
 #include "arki/segment.h"
 #include "arki/core/binary.h"
 #include "arki/core/file.h"
-#include "arki/utils/lua.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
 #include "arki/structured/emitter.h"
@@ -58,23 +57,6 @@ std::unique_ptr<Blob> Blob::decode_structure(const structured::Keys& keys, const
             reader.as_int(keys.source_offset, "source offset"),
             reader.as_int(keys.source_size, "source size"));
 }
-
-const char* Blob::lua_type_name() const { return "arki.types.source.blob"; }
-
-#ifdef HAVE_LUA
-bool Blob::lua_lookup(lua_State* L, const std::string& name) const
-{
-    if (name == "file")
-        lua_pushlstring(L, filename.data(), filename.size());
-    else if (name == "offset")
-        lua_pushnumber(L, offset);
-    else if (name == "size")
-        lua_pushnumber(L, size);
-    else
-        return Source::lua_lookup(L, name);
-    return true;
-}
-#endif
 
 int Blob::compare_local(const Source& o) const
 {

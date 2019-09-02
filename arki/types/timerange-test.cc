@@ -401,20 +401,6 @@ add_method("timedef_validity_time_to_emission_time", [] {
     wassert(actual(p1->time).is(2009, 2, 13, 6));
 });
 
-// Test Lua functions
-add_lua_test("lua", "GRIB1(2, 2s, 3s)", R"(
-    function test(o)
-      if o.style ~= 'GRIB1' then return 'style is '..o.style..' instead of GRIB1' end
-      if o.type ~= 2 then return 'o.type is '..o.type..' instead of 2' end
-      if o.unit ~= 'second' then return 'o.unit is '..o.unit..' instead of \'second\'' end
-      if o.p1 ~= 2 then return 'o.p1 is '..o.p1..' instead of 2' end
-      if o.p2 ~= 3 then return 'o.p2 is '..o.p2..' instead of 3' end
-      if tostring(o) ~= 'GRIB1(002, 002s, 003s)' then return 'tostring gave '..tostring(o)..' instead of GRIB1(002, 002s, 003s)' end
-      o1 = arki_timerange.grib1(2, 254, 2, 3)
-      if o ~= o1 then return 'new timerange is '..tostring(o1)..' instead of '..tostring(o) end
-    end
-)");
-
 }
 
 }

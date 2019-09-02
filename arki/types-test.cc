@@ -30,7 +30,6 @@ struct TestImpl : public types::Type
     void encodeWithoutEnvelope(core::BinaryEncoder&) const override {}
     std::ostream& writeToOstream(std::ostream& o) const override { return o; }
     void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override {}
-    const char* lua_type_name() const override { return "arki.types.testimpl"; }
 };
 
 struct ImplA : public TestImpl

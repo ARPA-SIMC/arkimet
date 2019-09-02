@@ -17,19 +17,7 @@ dist_doc_DATA = \
 		mhooks-check \
 		mhooks-mergeconf \
 		mhooks-xargs \
-		mhooks-bufr-prepare \
-		lua-examples/area.lua \
-		lua-examples/bbox.lua \
-		lua-examples/proddef.lua \
-		lua-examples/origin.lua \
-		lua-examples/level.lua \
-		lua-examples/product.lua \
-		lua-examples/quantity.lua \
-		lua-examples/reftime.lua \
-		lua-examples/run.lua \
-		lua-examples/task.lua \
-		lua-examples/time.lua \
-		lua-examples/timerange.lua
+		mhooks-bufr-prepare
 
 doc_matcherdir = $(docdir)/matcher
 

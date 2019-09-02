@@ -11,8 +11,6 @@
 #include <memory>
 #include <string>
 
-struct lua_State;
-
 namespace arki {
 namespace metadata {
 
@@ -296,28 +294,6 @@ public:
      * Read a metadata group into the given consumer
      */
     static bool read_group(core::BinaryDecoder& dec, unsigned version, const metadata::ReadContext& file, metadata_dest_func dest);
-
-	// LUA functions
-	/// Push to the LUA stack a userdata to access this Metadata
-	void lua_push(lua_State* L);
-
-    /**
-     * Push a userdata to access this Metadata, and hand over its ownership to
-     * Lua's garbage collector
-     */
-    static void lua_push(lua_State* L, std::unique_ptr<Metadata>&& md);
-
-	/**
-	 * Check that the element at \a idx is a Metadata userdata
-	 *
-	 * @return the Metadata element, or 0 if the check failed
-	 */
-	static Metadata* lua_check(lua_State* L, int idx);
-
-	/**
-	 * Load metadata functions into a lua VM
-	 */
-	static void lua_openlib(lua_State* L);
 };
 
 }

@@ -136,43 +136,6 @@ add_method("vm2_details", [] {
     wassert_true(product::VM2::create(1)->derived_values() != vb2);
 });
 
-// Test Lua functions
-add_lua_test("lua_grib1", "GRIB1(1, 2, 3)", R"(
-    function test(o)
-      if o.style ~= 'GRIB1' then return 'style is '..o.style..' instead of GRIB1' end
-      if o.origin ~= 1 then return 'o.origin first item is '..o.origin..' instead of 1' end
-      if o.table ~= 2 then return 'o.table first item is '..o.table..' instead of 2' end
-      if o.product ~= 3 then return 'o.product first item is '..o.product..' instead of 3' end
-      if tostring(o) ~= 'GRIB1(001, 002, 003)' then return 'tostring gave '..tostring(o)..' instead of GRIB1(001, 002, 003)' end
-      o1 = arki_product.grib1(1, 2, 3)
-      if o ~= o1 then return 'new product is '..tostring(o1)..' instead of '..tostring(o) end
-    end
-)");
-
-#ifdef HAVE_LUA
-// Test GRIB2 Lua constructor
-add_method("lua_grib2_constructor", [] {
-    arki::tests::Lua test(
-        "function test(o) \n"
-        "  p = arki_product.grib2(1, 2, 3, 4)\n"
-        "  if p.table_version ~= 4 then return 'p.table_version '..p.table_version..' instead of 4' end \n"
-        "  if p.local_table_version ~= 255 then return 'p.local_table_version '..p.local_table_version..' instead of 255' end \n"
-
-        "  p = arki_product.grib2(1, 2, 3, 4, 5)\n"
-        "  if p.table_version ~= 5 then return 'p.table_version '..p.table_version..' instead of 5' end \n"
-        "  if p.local_table_version ~= 255 then return 'p.local_table_version '..p.local_table_version..' instead of 255' end \n"
-
-        "  p = arki_product.grib2(1, 2, 3, 4, 5, 6)\n"
-        "  if p.table_version ~= 5 then return 'p.table_version '..p.table_version..' instead of 5' end \n"
-        "  if p.local_table_version ~= 6 then return 'p.local_table_version '..p.local_table_version..' instead of 6' end \n"
-
-        "end \n"
-    );
-
-    wassert(actual(test.run()) == "");
-});
-#endif
-
 }
 
 }

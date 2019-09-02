@@ -192,19 +192,6 @@ add_method("odimh5_details", [] {
     wassert(actual(v->min()) == 10.123);
 });
 
-// Test Lua functions
-add_lua_test("lua", "GRIB1(104, 132, 231)", R"(
-    function test(o)
-      if o.style ~= 'GRIB1' then return 'style is '..o.style..' instead of GRIB1' end
-      if o.type ~= 104 then return 'o.type first item is '..o.type..' instead of 104' end
-      if o.l1 ~= 132 then return 'o.l1 second item is '..o.l1..' instead of 132' end
-      if o.l2 ~= 231 then return 'o.l2 third item is '..o.l2..' instead of 231' end
-      if tostring(o) ~= 'GRIB1(104, 132, 231)' then return 'tostring gave '..tostring(o)..' instead of GRIB1(104, 132, 231)' end
-      o1 = arki_level.grib1(104, 132, 231)
-      if o ~= o1 then return 'new level is '..tostring(o1)..' instead of '..tostring(o) end
-    end
-)");
-
 }
 
 }

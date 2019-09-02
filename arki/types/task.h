@@ -3,19 +3,16 @@
 
 #include <arki/types/core.h>
 
-struct lua_State;
-
 namespace arki {
 namespace types {
 
 template<> struct traits<Task>
 {
-	static const char* type_tag;
-	static const types::Code type_code;
-	static const size_t type_sersize_bytes;
-	static const char* type_lua_tag;
+    static const char* type_tag;
+    static const types::Code type_code;
+    static const size_t type_sersize_bytes;
 
-	typedef unsigned char Style;
+    typedef unsigned char Style;
 };
 
 /**
@@ -36,15 +33,12 @@ struct Task : public CoreType<Task>
     static std::unique_ptr<Task> decodeString(const std::string& val);
     std::ostream& writeToOstream(std::ostream& o) const override;
     void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
-    bool lua_lookup(lua_State* L, const std::string& name) const override;
 
     Task* clone() const override;
 
     /// Create a task
     static std::unique_ptr<Task> create(const std::string& value);
     static std::unique_ptr<Task> decode_structure(const structured::Keys& keys, const structured::Reader& val);
-
-	static void lua_loadlib(lua_State* L);
 
     // Register this type tree with the type system
     static void init();

@@ -5,8 +5,6 @@
 #include <vector>
 #include <string>
 
-struct lua_State;
-
 namespace arki {
 namespace core {
 
@@ -213,15 +211,6 @@ public:
      * Return the number of seconds between `begin` and `until`
      */
     static long long int duration(const Time& begin, const Time& until);
-
-    /// Push this time on the Lua stack
-    void lua_push(lua_State* L) const;
-
-    /// Return the Time at the given position in the Lua stack
-    static Time lua_check(lua_State* L, int idx);
-
-    /// Load Time functions in the Lua stack
-    static void lua_loadlib(lua_State* L);
 };
 
 static inline std::ostream& operator<<(std::ostream& o, const Time& i)

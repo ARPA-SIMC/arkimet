@@ -1,10 +1,10 @@
 #include "url.h"
 #include "arki/core/binary.h"
-#include "arki/utils/lua.h"
 #include "arki/structured/emitter.h"
 #include "arki/structured/memory.h"
 #include "arki/structured/keys.h"
 #include "arki/exceptions.h"
+#include <ostream>
 
 using namespace std;
 using namespace arki::utils;
@@ -40,19 +40,6 @@ std::unique_ptr<URL> URL::decode_structure(const structured::Keys& keys, const s
             reader.as_string(keys.source_format, "source format"),
             reader.as_string(keys.source_url, "source url"));
 }
-
-const char* URL::lua_type_name() const { return "arki.types.source.url"; }
-
-#ifdef HAVE_LUA
-bool URL::lua_lookup(lua_State* L, const std::string& name) const
-{
-	if (name == "url")
-		lua_pushlstring(L, url.data(), url.size());
-	else
-		return Source::lua_lookup(L, name);
-	return true;
-}
-#endif
 
 int URL::compare_local(const Source& o) const
 {

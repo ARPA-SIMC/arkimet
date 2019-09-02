@@ -4,8 +4,6 @@
 #include <arki/types/core.h>
 #include <arki/core/time.h>
 
-struct lua_State;
-
 namespace arki {
 namespace types {
 
@@ -14,10 +12,9 @@ struct Note;
 template<>
 struct traits<Note>
 {
-	static const char* type_tag;
-	static const types::Code type_code;
-	static const size_t type_sersize_bytes;
-	static const char* type_lua_tag;
+    static const char* type_tag;
+    static const types::Code type_code;
+    static const size_t type_sersize_bytes;
 };
 
 /**
@@ -41,7 +38,6 @@ struct Note : public CoreType<Note>
     static std::unique_ptr<Note> decodeString(const std::string& val);
     std::ostream& writeToOstream(std::ostream& o) const override;
     void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
-    bool lua_lookup(lua_State* L, const std::string& name) const override;
 
     Note* clone() const override;
 

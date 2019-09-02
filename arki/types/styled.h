@@ -29,8 +29,6 @@ struct StyledType : public CoreType<BASE>
 
     virtual void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const;
 
-    virtual bool lua_lookup(lua_State* L, const std::string& name) const;
-
     static Style style_from_structure(const structured::Keys& keys, const structured::Reader& reader);
 };
 

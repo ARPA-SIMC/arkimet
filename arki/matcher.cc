@@ -4,7 +4,6 @@
 #include "core/cfg.h"
 #include "metadata.h"
 #include "utils/string.h"
-#include "utils/lua.h"
 #include "utils/string.h"
 #include <memory>
 
@@ -125,85 +124,5 @@ std::ostream& operator<<(std::ostream& o, const Matcher& m)
 {
 	return o << m.toString();
 }
-
-#ifdef HAVE_LUA
-
-static int arkilua_gc (lua_State *L)
-{
-	Matcher* ud = (Matcher*)luaL_checkudata(L, 1, "arki.matcher");
-	ud->~Matcher();
-	return 0;
-}
-
-static int arkilua_tostring (lua_State *L)
-{
-	Matcher m = Matcher::lua_check(L, 1);
-	lua_pushstring(L, m.toString().c_str());
-	return 1;
-}
-
-static int arkilua_expanded (lua_State *L)
-{
-	Matcher m = Matcher::lua_check(L, 1);
-	lua_pushstring(L, m.toStringExpanded().c_str());
-	return 1;
-}
-
-static int arkilua_match (lua_State *L)
-{
-    Matcher m = Matcher::lua_check(L, 1);
-    ItemSet* md = Metadata::lua_check(L, 2);
-    lua_pushboolean(L, m(*md));
-    return 1;
-}
-
-static const struct luaL_Reg matcherlib [] = {
-    { "match", arkilua_match },
-    { "expanded", arkilua_expanded },
-    { "__tostring", arkilua_tostring },
-    { "__gc", arkilua_gc },
-    { NULL, NULL }
-};
-
-static int arkilua_new(lua_State* L)
-{
-    if (lua_gettop(L) == 0)
-        utils::lua::push_object_copy(L, Matcher(), "arki.matcher", matcherlib);
-    else
-    {
-        const char* expr = lua_tostring(L, 1);
-        luaL_argcheck(L, expr != NULL, 1, "`string' expected");
-        utils::lua::push_object_copy(L, Matcher::parse(expr), "arki.matcher", matcherlib);
-    }
-
-    return 1;
-}
-
-static const struct luaL_Reg matcherclasslib [] = {
-	{ "new", arkilua_new },
-	{ NULL, NULL }
-};
-
-void Matcher::lua_push(lua_State* L)
-{
-    utils::lua::push_object_copy(L, *this, "arki.matcher", matcherlib);
-}
-
-void Matcher::lua_openlib(lua_State* L)
-{
-    utils::lua::add_arki_global_library(L, "matcher", matcherclasslib);
-}
-
-Matcher Matcher::lua_check(lua_State* L, int idx)
-{
-	if (lua_isstring(L, idx))
-	{
-		return Matcher::parse(lua_tostring(L, idx));
-	} else {
-		Matcher* ud = (Matcher*)luaL_checkudata(L, idx, "arki.matcher");
-		return *ud;
-	}
-}
-#endif
 
 }

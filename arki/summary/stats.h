@@ -12,11 +12,7 @@
 #include <iosfwd>
 #include <stdint.h>
 
-struct lua_State;
-
 namespace arki {
-class Formatter;
-
 namespace summary {
 struct Stats
 {
@@ -51,11 +47,6 @@ struct Stats
     static std::unique_ptr<Stats> decode_structure(const structured::Keys& keys, const structured::Reader& val);
 
     Stats* clone() const;
-
-    /// Push to the LUA stack a userdata with a copy of this item
-    void lua_push(lua_State* L) const;
-
-    bool lua_lookup(lua_State* L, const std::string& name) const;
 };
 
 }

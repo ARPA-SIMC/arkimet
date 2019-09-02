@@ -41,11 +41,6 @@
  },
  {
   "doc": "",
-  "group": "arki_core_time",
-  "method": "lua"
- },
- {
-  "doc": "",
   "group": "arki_file",
   "method": "linereader"
  },
@@ -431,11 +426,6 @@
  },
  {
   "doc": "",
-  "group": "arki_types_reftime",
-  "method": "lua"
- },
- {
-  "doc": "",
   "group": "arki_types_origin",
   "method": "grib1"
  },
@@ -478,11 +468,6 @@
   "doc": "",
   "group": "arki_types_origin",
   "method": "odim_details"
- },
- {
-  "doc": "",
-  "group": "arki_types_origin",
-  "method": "lua"
  },
  {
   "doc": "",
@@ -533,16 +518,6 @@
   "doc": "",
   "group": "arki_types_product",
   "method": "vm2_details"
- },
- {
-  "doc": "",
-  "group": "arki_types_product",
-  "method": "lua_grib1"
- },
- {
-  "doc": "",
-  "group": "arki_types_product",
-  "method": "lua_grib2_constructor"
  },
  {
   "doc": "",
@@ -608,11 +583,6 @@
   "doc": "",
   "group": "arki_types_level",
   "method": "odimh5_details"
- },
- {
-  "doc": "",
-  "group": "arki_types_level",
-  "method": "lua"
  },
  {
   "doc": "",
@@ -731,11 +701,6 @@
  },
  {
   "doc": "",
-  "group": "arki_types_timerange",
-  "method": "lua"
- },
- {
-  "doc": "",
   "group": "arki_types_area",
   "method": "grib"
  },
@@ -761,11 +726,6 @@
  },
  {
   "doc": "",
-  "group": "arki_types_area",
-  "method": "lua"
- },
- {
-  "doc": "",
   "group": "arki_types_proddef",
   "method": "grib"
  },
@@ -776,18 +736,8 @@
  },
  {
   "doc": "",
-  "group": "arki_types_proddef",
-  "method": "lua"
- },
- {
-  "doc": "",
   "group": "arki_types_note",
   "method": "note"
- },
- {
-  "doc": "",
-  "group": "arki_types_note",
-  "method": "lua"
  },
  {
   "doc": "",
@@ -796,18 +746,8 @@
  },
  {
   "doc": "",
-  "group": "arki_types_assigneddataset",
-  "method": "lua"
- },
- {
-  "doc": "",
   "group": "arki_types_bbox",
   "method": "invalid"
- },
- {
-  "doc": "",
-  "group": "arki_types_bbox",
-  "method": "lua"
  },
  {
   "doc": "",
@@ -816,18 +756,8 @@
  },
  {
   "doc": "",
-  "group": "arki_types_run",
-  "method": "lua"
- },
- {
-  "doc": "",
   "group": "arki_types_task",
   "method": "task"
- },
- {
-  "doc": "",
-  "group": "arki_types_task",
-  "method": "lua"
  },
  {
   "doc": "",
@@ -882,27 +812,7 @@
  {
   "doc": "",
   "group": "arki_utils_lua",
-  "method": "arki_types"
- },
- {
-  "doc": "",
-  "group": "arki_utils_lua",
-  "method": "arki_metadata"
- },
- {
-  "doc": "",
-  "group": "arki_utils_lua",
-  "method": "arki_matcher"
- },
- {
-  "doc": "",
-  "group": "arki_utils_lua",
   "method": "arki_code"
- },
- {
-  "doc": "",
-  "group": "arki_utils_lua",
-  "method": "examples"
  },
  {
   "doc": "",
@@ -1043,11 +953,6 @@
   "doc": "",
   "group": "arki_metadata",
   "method": "decode_issue_24"
- },
- {
-  "doc": "",
-  "group": "arki_metadata",
-  "method": "lua"
  },
  {
   "doc": "",
@@ -1393,11 +1298,6 @@
   "doc": "",
   "group": "arki_matcher_aliases",
   "method": "multilevel_load"
- },
- {
-  "doc": "",
-  "group": "arki_matcher_aliases",
-  "method": "doctest"
  },
  {
   "doc": "",

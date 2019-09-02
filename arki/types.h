@@ -10,8 +10,6 @@
 #include <vector>
 #include <memory>
 
-struct lua_State;
-
 namespace arki {
 
 /// dynamic cast between two unique_ptr
@@ -137,44 +135,6 @@ struct Type
 	 * exactly matches this metadata item
 	 */
 	virtual std::string exactQuery() const;
-
-    /// Push to the LUA stack a userdata with a copy of this item
-    void lua_push(lua_State* L) const;
-
-	/**
-	 * Lookup members by name and push them in the Lua stack
-	 *
-	 * @return true if name matched a member and an element was pushed on
-	 *         stack, else false
-	 */
-	virtual bool lua_lookup(lua_State* L, const std::string& name) const;
-
-	/**
-	 * Return the lua type name (i.e. arki.type.<something>)
-	 * used to register the metatable for this type
-	 */
-	virtual const char* lua_type_name() const = 0;
-
-	/**
-	 * Given a metatable on top of the stack, register methods for this
-	 * object on it
-	 */
-	virtual void lua_register_methods(lua_State* L) const;
-
-    /**
-     * Check that the element at \a idx is a Type userdata
-     *
-     * @return the Type element, or undefined if the check failed
-     */
-    static Type* lua_check(lua_State* L, int idx, const char* prefix = "arki.types");
-
-    template<typename T>
-    static T* lua_check(lua_State* L, int idx)
-    {
-        return dynamic_cast<T*>(lua_check(L, idx, traits<T>::type_lua_tag));
-    }
-
-    static void lua_loadlib(lua_State* L);
 
     /**
      * Return true of either both pointers are null, or if they are both

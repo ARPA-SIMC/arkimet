@@ -9,8 +9,6 @@
 #include <stddef.h>
 #include <stdint.h>
 
-struct lua_State;
-
 namespace arki {
 namespace types {
 namespace source {
@@ -27,10 +25,9 @@ enum class Style: unsigned char {
 template<>
 struct traits<Source>
 {
-	static const char* type_tag;
-	static const types::Code type_code;
-	static const size_t type_sersize_bytes;
-	static const char* type_lua_tag;
+    static const char* type_tag;
+    static const types::Code type_code;
+    static const size_t type_sersize_bytes;
 
     /// Style values
     typedef source::Style Style;
@@ -57,8 +54,6 @@ struct Source : public types::StyledType<Source>
     static std::unique_ptr<Source> decodeString(const std::string& val);
     static std::unique_ptr<Source> decode_structure(const structured::Keys& keys, const structured::Reader& val);
     virtual void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const;
-
-    virtual bool lua_lookup(lua_State* L, const std::string& name) const;
 
     Source* clone() const = 0;
 

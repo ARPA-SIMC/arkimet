@@ -1,10 +1,10 @@
 #include "inline.h"
 #include "arki/core/binary.h"
-#include "arki/utils/lua.h"
 #include "arki/structured/emitter.h"
 #include "arki/structured/memory.h"
 #include "arki/structured/keys.h"
 #include "arki/exceptions.h"
+#include <ostream>
 
 using namespace std;
 using namespace arki::utils;
@@ -39,19 +39,6 @@ std::unique_ptr<Inline> Inline::decode_structure(const structured::Keys& keys, c
             reader.as_string(keys.source_format, "source format"),
             reader.as_int(keys.source_size, "source size"));
 }
-
-const char* Inline::lua_type_name() const { return "arki.types.source.inline"; }
-
-#ifdef HAVE_LUA
-bool Inline::lua_lookup(lua_State* L, const std::string& name) const
-{
-    if (name == "size")
-        lua_pushnumber(L, size);
-    else
-        return Source::lua_lookup(L, name);
-    return true;
-}
-#endif
 
 int Inline::compare_local(const Source& o) const
 {

@@ -4,8 +4,6 @@
 #include <arki/types/core.h>
 #include <string>
 
-struct lua_State;
-
 namespace arki {
 namespace types {
 
@@ -14,10 +12,9 @@ struct Value;
 template<>
 struct traits<Value>
 {
-	static const char* type_tag;
-	static const types::Code type_code;
-	static const size_t type_sersize_bytes;
-	static const char* type_lua_tag;
+    static const char* type_tag;
+    static const types::Code type_code;
+    static const size_t type_sersize_bytes;
 };
 
 /**
@@ -44,8 +41,6 @@ struct Value : public types::CoreType<Value>
 
     Value* clone() const override;
     static std::unique_ptr<Value> create(const std::string& buf);
-
-    static void lua_loadlib(lua_State* L);
 
     // Register this type tree with the type system
     static void init();

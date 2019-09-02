@@ -4,8 +4,6 @@
 #include <arki/types/styled.h>
 #include <arki/core/time.h>
 
-struct lua_State;
-
 namespace arki {
 namespace types {
 namespace reftime {
@@ -23,7 +21,6 @@ struct traits<Reftime>
     static const char* type_tag;
     static const types::Code type_code;
     static const size_t type_sersize_bytes;
-    static const char* type_lua_tag;
 
     typedef reftime::Style Style;
 };
@@ -47,8 +44,6 @@ struct Reftime : public StyledType<Reftime>
     static std::unique_ptr<Reftime> decode(core::BinaryDecoder& dec);
     static std::unique_ptr<Reftime> decodeString(const std::string& val);
     static std::unique_ptr<Reftime> decode_structure(const structured::Keys& keys, const structured::Reader& val);
-
-	static void lua_loadlib(lua_State* L);
 
     /// Beginning of the period in this Reftime
     virtual const core::Time& period_begin() const = 0;
@@ -98,8 +93,6 @@ struct Position : public Reftime
     std::ostream& writeToOstream(std::ostream& o) const override;
     void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
     std::string exactQuery() const override;
-    const char* lua_type_name() const override;
-    bool lua_lookup(lua_State* L, const std::string& name) const override;
 
     int compare_local(const Reftime& o) const override;
     bool equals(const Type& o) const override;
@@ -127,8 +120,6 @@ struct Period : public Reftime
     void encodeWithoutEnvelope(core::BinaryEncoder& enc) const override;
     std::ostream& writeToOstream(std::ostream& o) const override;
     void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
-    const char* lua_type_name() const override;
-    bool lua_lookup(lua_State* L, const std::string& name) const override;
 
     int compare_local(const Reftime& o) const override;
     bool equals(const Type& o) const override;

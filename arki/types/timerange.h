@@ -5,8 +5,6 @@
 #include <arki/types/reftime.h>
 #include <stdint.h>
 
-struct lua_State;
-
 namespace arki {
 namespace types {
 namespace timerange {
@@ -45,10 +43,9 @@ enum TimedefUnit {
 template<>
 struct traits<Timerange>
 {
-	static const char* type_tag;
-	static const types::Code type_code;
-	static const size_t type_sersize_bytes;
-	static const char* type_lua_tag;
+    static const char* type_tag;
+    static const types::Code type_code;
+    static const size_t type_sersize_bytes;
 
     typedef timerange::Style Style;
 };
@@ -56,10 +53,9 @@ struct traits<Timerange>
 template<>
 struct traits<timerange::Timedef>
 {
-	static const char* type_tag;
-	static const types::Code type_code;
-	static const size_t type_sersize_bytes;
-	static const char* type_lua_tag;
+    static const char* type_tag;
+    static const types::Code type_code;
+    static const size_t type_sersize_bytes;
 
     typedef timerange::Style Style;
 };
@@ -110,8 +106,6 @@ struct Timerange : public types::StyledType<Timerange>
     static std::unique_ptr<Timerange> decodeString(const std::string& val);
     static std::unique_ptr<Timerange> decode_structure(const structured::Keys& keys, const structured::Reader& val);
 
-	static void lua_loadlib(lua_State* L);
-
     // Register this type tree with the type system
     static void init();
 
@@ -159,8 +153,6 @@ public:
     std::ostream& writeToOstream(std::ostream& o) const override;
     void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
     std::string exactQuery() const override;
-    const char* lua_type_name() const override;
-    bool lua_lookup(lua_State* L, const std::string& name) const override;
 
     bool get_forecast_step(int& step, bool& is_seconds) const override;
     int get_proc_type() const override;
@@ -194,8 +186,6 @@ public:
     std::ostream& writeToOstream(std::ostream& o) const override;
     void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
     std::string exactQuery() const override;
-    const char* lua_type_name() const override;
-    bool lua_lookup(lua_State* L, const std::string& name) const override;
 
     bool get_forecast_step(int& step, bool& is_seconds) const override;
     int get_proc_type() const override;
@@ -237,8 +227,6 @@ public:
     std::ostream& writeToOstream(std::ostream& o) const override;
     void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
     std::string exactQuery() const override;
-    const char* lua_type_name() const override;
-    bool lua_lookup(lua_State* L, const std::string& name) const override;
 
     bool get_forecast_step(int& step, bool& is_seconds) const override;
     int get_proc_type() const override;
@@ -304,8 +292,6 @@ public:
     std::ostream& writeToOstream(std::ostream& o) const override;
     void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
     std::string exactQuery() const override;
-    const char* lua_type_name() const override;
-    bool lua_lookup(lua_State* L, const std::string& name) const override;
 
     bool get_forecast_step(int& step, bool& is_seconds) const override;
     int get_proc_type() const override;

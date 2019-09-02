@@ -9,10 +9,6 @@
 #include <sstream>
 #include <cmath>
 
-#ifdef HAVE_LUA
-#include "arki/utils/lua.h"
-#endif
-
 #define CODE TYPE_TASK
 #define TAG "task"
 #define SERSIZELEN 	1
@@ -26,7 +22,6 @@ namespace types {
 const char* traits<Task>::type_tag = TAG;
 const types::Code traits<Task>::type_code = CODE;
 const size_t traits<Task>::type_sersize_bytes = SERSIZELEN;
-const char* traits<Task>::type_lua_tag = LUATAG_TYPES ".task";
 
 int Task::compare(const Type& o) const
 {
@@ -89,33 +84,6 @@ unique_ptr<Task> Task::decodeString(const std::string& val)
 	//	throw_consistency_error("parsing Task", "no closed square bracket found");
 	return Task::create(val);
 }
-
-#ifdef HAVE_LUA
-bool Task::lua_lookup(lua_State* L, const std::string& name) const
-{
-	if (name == "task")
-		lua_pushlstring(L, task.data(), task.size());
-	else
-		return CoreType<Task>::lua_lookup(L, name);
-	return true;
-}
-
-static int arkilua_new_task(lua_State* L)
-{
-	const char* value = luaL_checkstring(L, 1);
-	Task::create(value)->lua_push(L);
-	return 1;
-}
-
-void Task::lua_loadlib(lua_State* L)
-{
-	static const struct luaL_Reg lib [] = {
-		{ "new", arkilua_new_task },
-		{ NULL, NULL }
-	};
-    utils::lua::add_global_library(L, "arki_task", lib);
-}
-#endif
 
 Task* Task::clone() const
 {

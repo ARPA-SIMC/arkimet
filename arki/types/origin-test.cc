@@ -102,18 +102,6 @@ add_method("odim_details", [] {
     wassert(actual(v->getPLC()) == "3");
 });
 
-add_lua_test("lua", "GRIB1(1, 2, 3)", R"(
-    function test(o)
-      if o.style ~= 'GRIB1' then return 'style is '..o.style..' instead of GRIB1' end
-      if o.centre ~= 1 then return 'o.centre first item is '..o.centre..' instead of 1' end
-      if o.subcentre ~= 2 then return 'o.subcentre first item is '..o.subcentre..' instead of 2' end
-      if o.process ~= 3 then return 'o.process first item is '..o.process..' instead of 3' end
-      if tostring(o) ~= 'GRIB1(001, 002, 003)' then return 'tostring gave '..tostring(o)..' instead of GRIB1(001, 002, 003)' end
-      local o1 = arki_origin.grib1(1, 2, 3)
-      if o ~= o1 then return 'new origin is '..tostring(o1)..' instead of '..tostring(o) end
-    end
-)");
-
 }
 
 }

@@ -15,10 +15,6 @@
 #include <grib_api.h>
 #endif
 
-#ifdef HAVE_LUA
-#include "arki/utils/lua.h"
-#endif
-
 #define CODE TYPE_LEVEL
 #define TAG "level"
 #define SERSIZELEN 1
@@ -32,7 +28,6 @@ namespace types {
 const char* traits<Level>::type_tag = TAG;
 const types::Code traits<Level>::type_code = CODE;
 const size_t traits<Level>::type_sersize_bytes = SERSIZELEN;
-const char* traits<Level>::type_lua_tag = LUATAG_TYPES ".level";
 
 // Constants from meteosatlib's libgrib
 /// Level codes
@@ -297,112 +292,6 @@ std::unique_ptr<Level> Level::decode_structure(const structured::Keys& keys, con
     }
 }
 
-static int arkilua_new_grib1(lua_State* L)
-{
-	int type = luaL_checkint(L, 1);
-	switch (level::GRIB1::getValType(type))
-	{
-		case 0: level::GRIB1::create(type)->lua_push(L); break;
-		case 1: level::GRIB1::create(type, luaL_checkint(L, 2))->lua_push(L); break;
-		case 2: level::GRIB1::create(type, luaL_checkint(L, 2), luaL_checkint(L, 3))->lua_push(L); break;
-		default: lua_pushnil(L);
-	}
-	return 1;
-}
-
-static int arkilua_new_grib2s(lua_State* L)
-{
-    uint8_t type;
-    uint8_t scale;
-    uint32_t val;
-
-    if (lua_isnil(L, 1))
-        type = level::GRIB2S::MISSING_TYPE;
-    else
-        type = luaL_checkint(L, 1);
-
-    if (lua_isnil(L, 2))
-        scale = level::GRIB2S::MISSING_SCALE;
-    else
-        scale = luaL_checkint(L, 2);
-
-    if (lua_isnil(L, 3))
-        val = level::GRIB2S::MISSING_VALUE;
-    else
-        val = luaL_checkint(L, 3);
-
-    level::GRIB2S::create(type, scale, val)->lua_push(L);
-    return 1;
-}
-
-static int arkilua_new_grib2d(lua_State* L)
-{
-    uint8_t type1;
-    uint8_t scale1;
-    uint32_t val1;
-    uint8_t type2;
-    uint8_t scale2;
-    uint32_t val2;
-
-    if (lua_isnil(L, 1))
-        type1 = level::GRIB2S::MISSING_TYPE;
-    else
-        type1 = luaL_checkint(L, 1);
-
-    if (lua_isnil(L, 2))
-        scale1 = level::GRIB2S::MISSING_SCALE;
-    else
-        scale1 = luaL_checkint(L, 2);
-
-    if (lua_isnil(L, 3))
-        val1 = level::GRIB2S::MISSING_VALUE;
-    else
-        val1 = luaL_checkint(L, 3);
-
-    if (lua_isnil(L, 1))
-        type2 = level::GRIB2S::MISSING_TYPE;
-    else
-        type2 = luaL_checkint(L, 4);
-
-    if (lua_isnil(L, 2))
-        scale2 = level::GRIB2S::MISSING_SCALE;
-    else
-        scale2 = luaL_checkint(L, 5);
-
-    if (lua_isnil(L, 3))
-        val2 = level::GRIB2S::MISSING_VALUE;
-    else
-        val2 = luaL_checkint(L, 6);
-
-    level::GRIB2D::create(type1, scale1, val1, type2, scale2, val2)->lua_push(L);
-    return 1;
-}
-
-static int arkilua_new_odimh5(lua_State* L)
-{
-	double value = luaL_checknumber(L, 1);
-	if (lua_gettop(L) > 1)
-	{
-		double max = luaL_checknumber(L, 2);
-		level::ODIMH5::create(value, max)->lua_push(L);
-	} else
-		level::ODIMH5::create(value)->lua_push(L);
-	return 1;
-}
-
-
-void Level::lua_loadlib(lua_State* L)
-{
-	static const struct luaL_Reg lib [] = {
-		{ "grib1", arkilua_new_grib1 },
-		{ "grib2s", arkilua_new_grib2s },
-		{ "grib2d", arkilua_new_grib2d },
-		{ "odimh5", arkilua_new_odimh5 },
-		{ NULL, NULL }
-	};
-    utils::lua::add_global_library(L, "arki_level", lib);
-}
-
 unique_ptr<Level> Level::createGRIB1(unsigned char type)
 {
     return upcast<Level>(level::GRIB1::create(type));
@@ -514,7 +403,6 @@ std::string GRIB1::exactQuery() const
     }
     return buf;
 }
-const char* GRIB1::lua_type_name() const { return "arki.types.level.grib1"; }
 
 int GRIB1::compare_local(const Level& o) const
 {
@@ -635,19 +523,6 @@ int GRIB1::getValType(unsigned char type)
 	}
 }
 
-bool GRIB1::lua_lookup(lua_State* L, const std::string& name) const
-{
-	if (name == "type")
-		lua_pushnumber(L, type());
-	else if (name == "l1")
-		lua_pushnumber(L, l1());
-	else if (name == "l2")
-		lua_pushnumber(L, l2());
-	else
-		return Level::lua_lookup(L, name);
-	return true;
-}
-
 const uint8_t GRIB2S::MISSING_TYPE = 0xff;
 const uint8_t GRIB2S::MISSING_SCALE = 0xff;
 const uint32_t GRIB2S::MISSING_VALUE = 0xffffffff;
@@ -728,7 +603,6 @@ std::string GRIB2S::exactQuery() const
     if (m_value == MISSING_VALUE) res << "-"; else res << m_value;
     return res.str();
 }
-const char* GRIB2S::lua_type_name() const { return "arki.types.level.grib2s"; }
 
 template<typename T>
 static inline int compare_with_missing(const T& a, const T& b, const T& missing)
@@ -767,28 +641,6 @@ bool GRIB2S::equals(const Type& o) const
 	if (!v) return false;
 	// FIXME: here we can handle uniforming the scales if needed
 	return m_type == v->m_type && m_scale == v->m_scale && m_value == v->m_value;
-}
-
-bool GRIB2S::lua_lookup(lua_State* L, const std::string& name) const
-{
-    if (name == "type")
-        if (m_type == MISSING_TYPE)
-            lua_pushnil(L);
-        else
-            lua_pushnumber(L, m_type);
-    else if (name == "scale")
-        if (m_scale == MISSING_SCALE)
-            lua_pushnil(L);
-        else
-            lua_pushnumber(L, m_scale);
-    else if (name == "value")
-        if (m_value == MISSING_VALUE)
-            lua_pushnil(L);
-        else
-            lua_pushnumber(L, m_value);
-    else
-        return Level::lua_lookup(L, name);
-    return true;
 }
 
 GRIB2S* GRIB2S::clone() const
@@ -937,7 +789,6 @@ std::string GRIB2D::exactQuery() const
     if (m_value2 == GRIB2S::MISSING_VALUE) res << "-"; else res << m_value2;
     return res.str();
 }
-const char* GRIB2D::lua_type_name() const { return "arki.types.level.grib2d"; }
 
 int GRIB2D::compare_local(const Level& o) const
 {
@@ -966,46 +817,6 @@ bool GRIB2D::equals(const Type& o) const
 	return m_type1 == v->m_type1 && m_scale1 == v->m_scale1 && m_value1 == v->m_value1
 	    && m_type2 == v->m_type2 && m_scale2 == v->m_scale2 && m_value2 == v->m_value2;
 }
-
-#ifdef HAVE_LUA
-bool GRIB2D::lua_lookup(lua_State* L, const std::string& name) const
-{
-    if (name == "type1")
-        if (m_type1 == GRIB2S::MISSING_TYPE)
-            lua_pushnil(L);
-        else
-            lua_pushnumber(L, m_type1);
-    else if (name == "scale1")
-        if (m_scale1 == GRIB2S::MISSING_SCALE)
-            lua_pushnil(L);
-        else
-            lua_pushnumber(L, m_scale1);
-    else if (name == "value1")
-        if (m_value1 == GRIB2S::MISSING_VALUE)
-            lua_pushnil(L);
-        else
-            lua_pushnumber(L, m_value1);
-    else if (name == "type2")
-        if (m_type2 == GRIB2S::MISSING_TYPE)
-            lua_pushnil(L);
-        else
-            lua_pushnumber(L, m_type2);
-    else if (name == "scale2")
-        if (m_scale2 == GRIB2S::MISSING_SCALE)
-            lua_pushnil(L);
-        else
-            lua_pushnumber(L, m_scale2);
-    else if (name == "value2")
-        if (m_value2 == GRIB2S::MISSING_VALUE)
-            lua_pushnil(L);
-        else
-            lua_pushnumber(L, m_value2);
-    else
-        return Level::lua_lookup(L, name);
-
-    return true;
-}
-#endif
 
 GRIB2D* GRIB2D::clone() const
 {
@@ -1077,7 +888,6 @@ std::string ODIMH5::exactQuery() const
 	return ss.str();
 	//return str::fmtf("ODIMH5,%lf,%lf", m_min, m_max);
 }
-const char* ODIMH5::lua_type_name() const { return "arki.types.level.odimh5"; }
 
 static inline int compare_double(double a, double b)
 {
@@ -1107,19 +917,6 @@ bool ODIMH5::equals(const Type& o) const
 	// FIXME: here we can handle uniforming the scales if needed
 	return m_max == v->m_max && m_min == v->m_min;
 }
-
-#ifdef HAVE_LUA
-bool ODIMH5::lua_lookup(lua_State* L, const std::string& name) const
-{
-	if (name == "max")
-		lua_pushnumber(L, max());
-	else if (name == "min")
-		lua_pushnumber(L, min());
-	else
-		return Level::lua_lookup(L, name);
-	return true;
-}
-#endif
 
 ODIMH5* ODIMH5::clone() const
 {
