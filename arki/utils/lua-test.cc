@@ -77,16 +77,6 @@ add_method("arki_metadata", [] {
     wassert(actual(L.run_string("foo(")).matches("unexpected symbol near"));
 });
 
-add_method("arki_summary", [] {
-    Lua L(true, false);
-
-    Summary::lua_openlib(L);
-    wassert(actual(lua_gettop(L)) == 0);
-
-    wassert(actual(L.run_string("a=3")) == "");
-    wassert(actual(L.run_string("foo(")).matches("unexpected symbol near"));
-});
-
 add_method("arki_matcher", [] {
     // Test adding arkimet libraries one at a time
     Lua L(true, false);

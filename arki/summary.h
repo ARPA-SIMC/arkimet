@@ -15,8 +15,6 @@
 #include <memory>
 #include <iosfwd>
 
-struct lua_State;
-
 namespace arki {
 namespace summary {
 struct Table;
@@ -287,23 +285,7 @@ public:
      */
     size_t resolveMatcher(const Matcher& matcher, std::vector<types::ItemSet>& res) const;
 
-	// LUA functions
-	/// Push to the LUA stack a userdata to access this Origin
-	void lua_push(lua_State* L);
-
-	/**
-	 * Check that the element at \a idx is a Summary userdata
-	 *
-	 * @return the Summary element, or 0 if the check failed
-	 */
-	static Summary* lua_check(lua_State* L, int idx);
-
-	/**
-	 * Load summary functions into a lua VM
-	 */
-	static void lua_openlib(lua_State* L);
-
-	friend class matcher::AND;
+    friend class matcher::AND;
 };
 
 }

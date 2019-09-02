@@ -897,11 +897,6 @@
  {
   "doc": "",
   "group": "arki_utils_lua",
-  "method": "arki_summary"
- },
- {
-  "doc": "",
-  "group": "arki_utils_lua",
   "method": "arki_matcher"
  },
  {
@@ -1273,11 +1268,6 @@
   "doc": "",
   "group": "arki_summary",
   "method": "regression0"
- },
- {
-  "doc": "",
-  "group": "arki_summary",
-  "method": "lua"
  },
  {
   "doc": "",
