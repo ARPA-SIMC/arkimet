@@ -41,9 +41,11 @@ void init()
     };
 #endif
 */
+#ifdef HAVE_DBALLE
     factories["bufr"] = [] {
         return std::unique_ptr<Scanner>(new scan::MockBufrScanner);
     };
+#endif
     /*
 #ifdef HAVE_DBALLE
     factories["bufr"] = [] {
