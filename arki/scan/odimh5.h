@@ -5,8 +5,6 @@
 #include <string>
 #include <vector>
 
-struct lua_State;
-
 namespace arki {
 class Metadata;
 
