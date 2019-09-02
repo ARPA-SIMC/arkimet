@@ -46,14 +46,6 @@ PyObject* module_arkimet = nullptr;
 // Pointer to the scanners module
 PyObject* module_scanners = nullptr;
 
-#ifdef HAVE_DBALLE
-// Wreport API
-arki::python::Wreport wreport_api;
-
-// Dballe API
-arki::python::Dballe dballe_api;
-#endif
-
 /// Load scripts from the dir_scan configuration directory
 void load_scanners()
 {
@@ -327,15 +319,12 @@ GribDef* grib_def = nullptr;
  * scan.bufr module contents
  */
 
-#if 0
-arkipy_scan_BufrMessage* bufrmessage_create(dballe::Message& msg)
-{
-    arkipy_scan_BufrMessage* result = PyObject_New(arkipy_scan_BufrMessage, arkipy_scan_BufrMessage_Type);
-    if (!result) throw PythonException();
-    result->msg = &msg;
-    return result;
-}
-#endif
+#ifdef HAVE_DBALLE
+// Wreport API
+arki::python::Wreport wreport_api;
+
+// Dballe API
+arki::python::Dballe dballe_api;
 
 PyObject* bufrscanner_object = nullptr;
 
@@ -361,7 +350,6 @@ protected:
         auto orig_use_count = md.use_count();
 
         AcquireGIL gil;
-#ifdef HAVE_DBALLE
         if (!bufrscanner_object)
             load_bufrscanner_object();
 
@@ -377,10 +365,6 @@ protected:
         pymd.reset(nullptr);
         if (md.use_count() != orig_use_count)
             arki::nag::warning("metadata use count after scanning is %ld instead of %ld", md.use_count(), orig_use_count);
-#else
-        PyErr_SetString(PyExc_NotImplementedError, "BUFR support is not compiled in this version of arkimet");
-        throw PythonException();
-#endif
     }
 
 public:
@@ -391,7 +375,7 @@ public:
     {
     }
 };
-
+#endif
 
 /*
  * scan.odimh5 module contents
@@ -633,9 +617,11 @@ void init()
     arki::scan::Scanner::register_factory("grib", [] {
         return std::unique_ptr<arki::scan::Scanner>(new PythonGribScanner);
     });
+#ifdef HAVE_DBALLE
     arki::scan::Scanner::register_factory("bufr", [] {
         return std::unique_ptr<arki::scan::Scanner>(new PythonBufrScanner);
     });
+#endif
     arki::scan::Scanner::register_factory("odimh5", [] {
         return std::unique_ptr<arki::scan::Scanner>(new PythonOdimh5Scanner);
     });
