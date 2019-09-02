@@ -219,7 +219,6 @@ tests_arki_test_LDADD =
 #
 # Core functions
 #
-if DEVEL_DO_TYPES
 libarkimet_la_SOURCES += \
 		core/time.cc \
 		core/fuzzytime.cc \
@@ -289,7 +288,39 @@ libarkimet_la_SOURCES += \
 		matcher/run.cc \
 		matcher/task.cc \
 		matcher/quantity.cc \
-		types-init.cc
+		types-init.cc \
+		utils/compress.cc \
+		utils/sqlite.cc \
+		metadata.cc \
+		metadata/sort.cc \
+		metadata/data.cc \
+		metadata/collection.cc \
+		metadata/stream.cc \
+		metadata/clusterer.cc \
+		metadata/libarchive.cc \
+		metadata/validator.cc \
+		metadata/postprocess.cc \
+		metadata/test-generator.cc \
+		summary/stats.cc \
+		summary/intern.cc \
+		summary/table.cc \
+		summary/codec.cc \
+		summary/short.cc \
+		summary.cc \
+		segment.cc \
+		segment/common.cc \
+		segment/missing.cc \
+		segment/fd.cc \
+		segment/dir.cc \
+		segment/tar.cc \
+		segment/zip.cc \
+		segment/gz.cc \
+		segment/seqfile.cc \
+		formatter.cc \
+		scan.cc \
+		scan/validator.cc \
+		scan/mock.cc \
+		scan/odimh5.cc
 
 libarkimet_test_la_SOURCES += \
 		tests/daemon.cc \
@@ -339,80 +370,7 @@ tests_arki_test_SOURCES += \
 		types/value-test.cc \
 		types/typevector-test.cc \
 		types/typeset-test.cc \
-		types/itemset-test.cc
-
-if IOTRACE
-libarkimet_la_SOURCES += iotrace.cc
-tests_arki_test_SOURCES += iotrace-test.cc
-endif
-
-if LZO
-AM_CPPFLAGS += $(LZO_CFLAGS)
-libarkimet_la_LDFLAGS += $(LZO_LIBS)
-endif
-
-if GEOS
-AM_CPPFLAGS += $(GEOS_CFLAGS)
-libarkimet_la_LDFLAGS += $(GEOS_LIBS)
-endif
-
-if VM2
-AM_CPPFLAGS += $(VM2_CFLAGS)
-nobase_dist_arkiinclude_HEADERS += scan/vm2.h utils/vm2.h
-libarkimet_la_SOURCES += utils/vm2.cc
-libarkimet_la_LDFLAGS += $(VM2_LIBS)
-tests_arki_test_SOURCES += utils/vm2-test.cc
-tests_arki_test_LDADD += $(VM2_LIBS)
-
-if LUA
-AM_CPPFLAGS += $(LUA_CFLAGS)
-libarkimet_la_LDFLAGS += $(LUA_LIBS)
-tests_arki_test_LDADD += $(LUA_LIBS)
-endif
-
-endif
-
-endif
-
-#
-# Metadata types
-#
-if DEVEL_DO_METADATA
-libarkimet_la_SOURCES += \
-		utils/compress.cc \
-		utils/sqlite.cc \
-		metadata.cc \
-		metadata/sort.cc \
-		metadata/data.cc \
-		metadata/collection.cc \
-		metadata/stream.cc \
-		metadata/clusterer.cc \
-		metadata/libarchive.cc \
-		metadata/validator.cc \
-		metadata/postprocess.cc \
-		metadata/test-generator.cc \
-		summary/stats.cc \
-		summary/intern.cc \
-		summary/table.cc \
-		summary/codec.cc \
-		summary/short.cc \
-		summary.cc \
-		segment.cc \
-		segment/common.cc \
-		segment/missing.cc \
-		segment/fd.cc \
-		segment/dir.cc \
-		segment/tar.cc \
-		segment/zip.cc \
-		segment/gz.cc \
-		segment/seqfile.cc \
-		formatter.cc \
-		scan.cc \
-		scan/validator.cc \
-		scan/mock.cc \
-		scan/odimh5.cc
-
-tests_arki_test_SOURCES += \
+		types/itemset-test.cc \
 		metadata/tests.cc \
 		matcher/tests.cc \
 		utils/compress-test.cc \
@@ -462,6 +420,21 @@ tests_arki_test_SOURCES += \
 		segment/gz-test.cc \
 		segment/tests.cc
 
+if IOTRACE
+libarkimet_la_SOURCES += iotrace.cc
+tests_arki_test_SOURCES += iotrace-test.cc
+endif
+
+if LZO
+AM_CPPFLAGS += $(LZO_CFLAGS)
+libarkimet_la_LDFLAGS += $(LZO_LIBS)
+endif
+
+if GEOS
+AM_CPPFLAGS += $(GEOS_CFLAGS)
+libarkimet_la_LDFLAGS += $(GEOS_LIBS)
+endif
+
 if GRIBAPI
 nobase_dist_arkiinclude_HEADERS += scan/grib.h
 libarkimet_la_SOURCES += scan/grib.cc
@@ -479,11 +452,18 @@ tests_arki_test_SOURCES += scan/bufr-test.cc
 endif
 
 if VM2
-libarkimet_la_SOURCES += scan/vm2.cc
-tests_arki_test_SOURCES += scan/vm2-test.cc
+AM_CPPFLAGS += $(VM2_CFLAGS)
+nobase_dist_arkiinclude_HEADERS += scan/vm2.h utils/vm2.h
+libarkimet_la_SOURCES += utils/vm2.cc scan/vm2.cc
+libarkimet_la_LDFLAGS += $(VM2_LIBS)
+tests_arki_test_SOURCES += utils/vm2-test.cc scan/vm2-test.cc
+
+if LUA
+AM_CPPFLAGS += $(LUA_CFLAGS)
+libarkimet_la_LDFLAGS += $(LUA_LIBS)
+endif
 endif
 
-endif
 
 #
 # Datasets
@@ -617,7 +597,20 @@ check-local:
 		$(TESTS_ENVIRONMENT) $$test ; \
 	done
 
-tests_arki_test_LDADD += libarkimet.la libarkimet-test.la $(SQLITE3_LDFLAGS) $(LIBARCHIVE_LIBS) $(LIBZIP_LIBS) $(LIBSSL_LIBS) $(DEVEL_LIBS) -lpthread
+tests_arki_test_LDADD += libarkimet.la libarkimet-test.la 
+if GEOS
+tests_arki_test_LDADD += $(GEOS_LIBS)
+endif
+if VM2
+tests_arki_test_LDADD += $(VM2_LIBS)
+if LUA
+tests_arki_test_LDADD += $(LUA_LIBS)
+endif
+endif
+if LZO
+tests_arki_test_LDADD += $(LZO_LIBS)
+endif
+tests_arki_test_LDADD += $(SQLITE3_LDFLAGS) $(ZLIB_LIBS) $(LIBARCHIVE_LIBS) $(LIBZIP_LIBS) $(LIBSSL_LIBS) $(DEVEL_LIBS) -lpthread
 
 tests/testdata.json: tests/arki-test
 	$(top_srcdir)/doc/update --testsuite=$< --cache-testsuite=$@
