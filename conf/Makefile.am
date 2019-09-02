@@ -1,5 +1,5 @@
 nobase_dist_conf_DATA = \
-	bbox/01-common.lua \
+	bbox/README.md \
 	format/README.md \
 	match-alias.conf \
 	qmacro/noop.py \
