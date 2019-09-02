@@ -18,11 +18,12 @@ To implement support for a new data format, just add a new module in arki/scan/
 and wire it into arki/scan/any.cc. You can use arki/scan/grib and
 arki/scan/bufr as examples.
 
-arki/scan/grib uses Lua to make the scanning process configurable, because GRIB
-files are extremely diverse. Using Lua is however a choice of the GRIB scanner:
-it is not required that all scanners use Lua. The idea is that, while it would
-be good to try to maintain some consistency if possible, every scanner is free
-to do whatever works best for the data format that needs to be scanned.
+arkimet scanners use Python to make the scanning process configurable, because
+input files can be extremely diverse. Using Python is however a choice of
+individual scanners: it is not required that all scanners use Python. The idea
+is that, while it would be good to try to maintain some consistency if
+possible, every scanner is free to do whatever works best for the data format
+that needs to be scanned.
 
 arki/scan/odimh5 files allow to scan OdimH5 Polar volumes (object=PVOL)
 with SCAN datasets (product=SCAN). Support for new type of products can be

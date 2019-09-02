@@ -390,9 +390,6 @@ static bool arkimet_initialized = false;
 #ifdef HAVE_CURL
         add_feature(features, "curl");
 #endif
-#ifdef HAVE_LUA
-        add_feature(features, "lua");
-#endif
 #ifdef HAVE_LIBARCHIVE
         add_feature(features, "libarchive");
 #endif

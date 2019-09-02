@@ -3,7 +3,6 @@
 #include "arki/types/source/blob.h"
 #include "arki/segment.h"
 #include "arki/core/file.h"
-#include "arki/metadata/consumer.h"
 #include "arki/metadata/sort.h"
 #include "arki/matcher.h"
 #include "arki/summary.h"

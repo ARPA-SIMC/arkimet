@@ -5,64 +5,6 @@ outputs a stream of metadata describing them.
 Besides scanning, \fBarki-scan\fP can also import the data it finds
 into \fBarkimet\fP datasets.
 
-[SYNTAX OF GRIB SCAN CONFIGURATION FILES]
-The configuration files used to customise the logic of \fBarki-scan\fP
-follow the very simple syntax of the Lua language.  Comments start with two
-dashes and continue until the end of the line.
-.P
-The purpose of the configuration files is to fill in the arkimet metadata
-using the data contained in the grib file.
-.P
-The arkimet metadata can be assigned like this:
-.nf
-  -- Set the year to 2007
-  arki.year = 2007
-.fi
-.P
-The keywords required for GRIB1 are: year, month, day, hour, minute, second,
-centre, subcentre, process, origin, table, product, ltype, level, ptype, punit,
-p1, and p2.
-.P
-The keywords required for GRIB2 are: year, month, day, hour, minute, second,
-centre, subcentre, processtype, bgprocessid, processid, centre, discipline,
-category and number.
-.P
-If \fBarki-scan-grib\fP finds that not all the keys have been assigned, it
-leaves most fields blank in the  metadata and adds a note about what fields
-were not assigned.
-.P
-To access grib data, use this syntax:
-.nf
-  -- Set the month from grib
-  arki.month = grib.month
-.fi
-.P
-The grib keywords change between grib editions, and different grib files can
-contain different sets of keywords.  To see what keywords are available for a
-grib file, you can use the command \fBgrib_dump\fP from ECMWF grib_api.
-.P
-The configuration language supports complex expressions:
-.nf
-  -- Set the year from GRIB edition 1
-  arki.year = (grib.centuryOfReferenceTimeOfData - 1) * 100 + grib.yearOfCentury
-.fi
-and if/then blocks:
-.nf
-  if grib.level then
-  	arki.level = grib.level
-  else
-  	arki.level = grib.topLevel * 256 + grib.bottomLevel
-  end
-
-  if grib.gridDefinitionTemplateNumber == 1 then
-    -- ...
-  elseif grib.gridDefinitionTemplateNumber == 2 then
-    -- ...
-  else
-    -- ...
-  end
-.fi
-
 [EXAMPLES]
 Here are some example invocations of \fBarki-scan\fP:
 .P

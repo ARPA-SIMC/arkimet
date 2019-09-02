@@ -1,6 +1,5 @@
 #include "metadata.h"
 #include "metadata/data.h"
-#include "metadata/consumer.h"
 #include "core/file.h"
 #include "core/binary.h"
 #include "exceptions.h"

@@ -4,7 +4,6 @@
 /// Sorting routines for metadata
 
 #include <arki/metadata.h>
-#include <arki/metadata/consumer.h>
 #include <arki/metadata/collection.h>
 #include <arki/types/reftime.h>
 

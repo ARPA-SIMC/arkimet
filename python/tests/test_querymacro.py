@@ -48,7 +48,7 @@ class TestNoop(QmacroTestMixin, unittest.TestCase):
             self.assertEqual(s.count, 9)
 
     def test_noopcopy(self):
-        # Lua script that simply passes through the queries, making temporary copies of data
+        # Querymacro script that simply passes through the queries, making temporary copies of data
         with self.datasets() as env:
             reader = arki.make_qmacro_dataset(arki.cfg.Section(), env.config, "noopcopy", "testds")
             mdc = reader.query_data()

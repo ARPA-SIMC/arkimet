@@ -22,7 +22,6 @@ struct Stats;
 }
 
 namespace summary {
-class LuaIter;
 
 struct Visitor
 {

@@ -43,7 +43,6 @@ class Tests : public FixtureTestCase<Fixture>
 
 void Tests::register_tests() {
 
-// Lua script that simply passes through the queries
 add_method("empty", [](Fixture& f) {
 });
 

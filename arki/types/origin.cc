@@ -14,11 +14,6 @@
 #define CODE TYPE_ORIGIN
 #define TAG "origin"
 #define SERSIZELEN 1
-#define LUATAG_ORIGIN LUATAG_TYPES ".origin"
-#define LUATAG_GRIB1 LUATAG_ORIGIN ".grib1"
-#define LUATAG_GRIB2 LUATAG_ORIGIN ".grib2"
-#define LUATAG_BUFR LUATAG_ORIGIN ".bufr"
-#define LUATAG_ODIMH5 LUATAG_ORIGIN ".odimh5"
 
 using namespace std;
 using namespace arki::utils;
