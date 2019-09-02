@@ -871,11 +871,6 @@
  },
  {
   "doc": "",
-  "group": "arki_formatter_lua",
-  "method": "empty"
- },
- {
-  "doc": "",
   "group": "arki_utils_lua",
   "method": "code"
  },
