@@ -4,8 +4,7 @@
 #include "metadata.h"
 #include "utils/methods.h"
 #include "utils/type.h"
-#include "utils/wreport.h"
-#include "utils/dballe.h"
+#include "arki/libconfig.h"
 #include "arki/metadata.h"
 #include "arki/types/values.h"
 #include "arki/utils/vm2.h"
@@ -17,9 +16,13 @@
 #include "arki/scan/odimh5.h"
 #include "arki/nag.h"
 #include <grib_api.h>
+#ifdef HAVE_DBALLE
+#include "utils/wreport.h"
+#include "utils/dballe.h"
 #include <dballe/message.h>
 #include <dballe/var.h>
 #include <wreport/python.h>
+#endif
 
 
 using namespace std;
@@ -43,11 +46,13 @@ PyObject* module_arkimet = nullptr;
 // Pointer to the scanners module
 PyObject* module_scanners = nullptr;
 
+#ifdef HAVE_DBALLE
 // Wreport API
 arki::python::Wreport wreport_api;
 
 // Dballe API
 arki::python::Dballe dballe_api;
+#endif
 
 /// Load scripts from the dir_scan configuration directory
 void load_scanners()
@@ -356,6 +361,7 @@ protected:
         auto orig_use_count = md.use_count();
 
         AcquireGIL gil;
+#ifdef HAVE_DBALLE
         if (!bufrscanner_object)
             load_bufrscanner_object();
 
@@ -371,6 +377,10 @@ protected:
         pymd.reset(nullptr);
         if (md.use_count() != orig_use_count)
             arki::nag::warning("metadata use count after scanning is %ld instead of %ld", md.use_count(), orig_use_count);
+#else
+        PyErr_SetString(PyExc_NotImplementedError, "BUFR support is not compiled in this version of arkimet");
+        throw PythonException();
+#endif
     }
 
 public:
@@ -580,8 +590,10 @@ namespace python {
 
 void register_scan(PyObject* m)
 {
+#ifdef HAVE_DBALLE
     wreport_api.import();
     dballe_api.import();
+#endif
 
     pyo_unique_ptr grib = throw_ifnull(PyModule_Create(&grib_module));
     grib_def = new GribDef;
