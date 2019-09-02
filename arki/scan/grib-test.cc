@@ -65,29 +65,6 @@ add_method("validation", [] {
     wassert_throws(std::runtime_error, v.validate_buf(buf.data(), buf.size()-1));
 });
 
-// Scan a GRIB2 with experimental UTM areas
-add_method("utm_areas", [] {
-#ifndef ARPAE_TESTS
-    throw TestSkipped("ARPAE GRIB support not available");
-#endif
-    Metadata md;
-    scan::LuaGribScanner scanner;
-    metadata::Collection mds;
-    scanner.test_scan_file("inbound/calmety_20110215.grib2", mds.inserter_func());
-    wassert(actual(mds.size()) == 1u);
-    md = mds[0];
-
-    wassert(actual(md).contains("origin", "GRIB2(00200, 00000, 000, 000, 203)"));
-    wassert(actual(md).contains("product", "GRIB2(200, 0, 200, 33, 5, 0)"));
-    wassert(actual(md).contains("level", "GRIB2S(103, 0, 10)"));
-    wassert(actual(md).contains("timerange", "Timedef(0s, 254, 0s)"));
-    wassert(actual(md).contains("area", "GRIB(Ni=90, Nj=52, fe=0, fn=0, latfirst=4852500, latlast=5107500, lonfirst=402500, lonlast=847500, tn=32768, utm=1, zone=32)"));
-    wassert(actual(md).contains("proddef", "GRIB(tod=0)"));
-    wassert(actual(md).contains("reftime", "2011-02-15T00:00:00Z"));
-    wassert(actual(md).contains("run", "MINUTE(0)"));
-});
-
-
 #if 0
 // Check opening very long GRIB files for scanning
 // TODO: needs skipping of there are no holes
