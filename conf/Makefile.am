@@ -1,13 +1,6 @@
 nobase_dist_conf_DATA = \
 	bbox/01-common.lua \
-	format/01-gribapi.lua \
-	format/05-gribtables.lua \
-	format/10-area.lua \
-	format/10-proddef.lua \
-	format/10-level.lua \
-	format/10-origin.lua \
-	format/10-product.lua \
-	format/10-timerange.lua \
+	format/README.md \
 	match-alias.conf \
 	qmacro/noop.py \
 	qmacro/noopcopy.py \
