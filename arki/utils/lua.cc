@@ -3,7 +3,6 @@
 #include <arki/core/file.h>
 #include <arki/types.h>
 #include <arki/metadata.h>
-#include <arki/summary.h>
 #include <arki/matcher.h>
 #include <arki/exceptions.h>
 #include <arki/nag.h>
@@ -83,7 +82,6 @@ Lua::Lua(bool load_libs, bool load_arkimet) : L(0)
         core::Time::lua_loadlib(L);
         types::Type::lua_loadlib(L);
         Metadata::lua_openlib(L);
-        Summary::lua_openlib(L);
         Matcher::lua_openlib(L);
     }
 }

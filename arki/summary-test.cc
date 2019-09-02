@@ -220,45 +220,6 @@ add_method("regression0", [](Fixture& f) {
     wassert(actual(ts.size()) == 25u);
 });
 
-// Test Lua functions
-add_method("lua", [](Fixture& f) {
-#ifdef HAVE_LUA
-    Summary s;
-    f.s.add(f.md2);
-
-	tests::Lua test(
-		"function test(s) \n"
-		"  if s:count() ~= 3 then return 'count is '..s.count()..' instead of 3' end \n"
-		"  if s:size() ~= 50 then return 'size is '..s.size()..' instead of 50' end \n"
-		"  i = 0 \n"
-		"  items = {} \n"
-		"  for idx, entry in ipairs(s:data()) do \n"
-		"    item, stats = unpack(entry) \n"
-		"    for name, val in pairs(item) do \n"
-		"      o = name..':'..tostring(val) \n"
-		"      count = items[o] or 0 \n"
-		"      items[o] = count + stats.count \n"
-		"    end \n"
-		"    i = i + 1 \n"
-		"  end \n"
-		"  if i ~= 2 then return 'iterated '..i..' times instead of 2' end \n"
-		"  c = items['origin:GRIB1(001, 002, 003)'] \n"
-		"  if c ~= 1 then return 'origin1 c is '..tostring(c)..' instead of 1' end \n"
-		"  c = items['origin:GRIB1(003, 004, 005)'] \n"
-		"  if c ~= 2 then return 'origin2 c is '..c..' instead of 2' end \n"
-		"  c = items['product:GRIB1(001, 002, 003)'] \n"
-		"  if c ~= 1 then return 'product1 c is '..c..' instead of 1' end \n"
-		"  c = items['product:GRIB1(002, 003, 004)'] \n"
-		"  if c ~= 2 then return 'product2 c is '..c..' instead of 2' end \n"
-		"  return nil\n"
-		"end \n"
-	);
-
-    test.pusharg(f.s);
-    wassert(actual(test.run()) == "");
-#endif
-});
-
 // Summarise the test gribs
 add_method("summarise_grib", [](Fixture& f) {
 #ifdef HAVE_GRIBAPI
