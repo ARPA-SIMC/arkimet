@@ -796,31 +796,6 @@
  },
  {
   "doc": "",
-  "group": "arki_iotrace",
-  "method": "empty"
- },
- {
-  "doc": "",
-  "group": "arki_utils_vm2",
-  "method": "find_stations"
- },
- {
-  "doc": "",
-  "group": "arki_utils_vm2",
-  "method": "find_variables"
- },
- {
-  "doc": "",
-  "group": "arki_utils_vm2",
-  "method": "get_station"
- },
- {
-  "doc": "",
-  "group": "arki_utils_vm2",
-  "method": "get_variable"
- },
- {
-  "doc": "",
   "group": "arki_utils_compress",
   "method": "incompressible"
  },
@@ -2626,6 +2601,11 @@
  },
  {
   "doc": "",
+  "group": "arki_iotrace",
+  "method": "empty"
+ },
+ {
+  "doc": "",
   "group": "arki_scan_grib",
   "method": "validation"
  },
@@ -2633,6 +2613,26 @@
   "doc": "",
   "group": "arki_scan_bufr",
   "method": "validate"
+ },
+ {
+  "doc": "",
+  "group": "arki_utils_vm2",
+  "method": "find_stations"
+ },
+ {
+  "doc": "",
+  "group": "arki_utils_vm2",
+  "method": "find_variables"
+ },
+ {
+  "doc": "",
+  "group": "arki_utils_vm2",
+  "method": "get_station"
+ },
+ {
+  "doc": "",
+  "group": "arki_utils_vm2",
+  "method": "get_variable"
  },
  {
   "doc": "",
