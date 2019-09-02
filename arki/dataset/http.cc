@@ -379,14 +379,6 @@ void Reader::query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out)
             request.post_data.add_string("style", "postprocess");
             request.post_data.add_string("command", q.param);
             break;
-        case dataset::ByteQuery::BQ_REP_METADATA:
-            request.post_data.add_string("style", "rep_metadata");
-            request.post_data.add_string("command", q.param);
-            break;
-        case dataset::ByteQuery::BQ_REP_SUMMARY:
-            request.post_data.add_string("style", "rep_summary");
-            request.post_data.add_string("command", q.param);
-            break;
         default: {
             stringstream ss;
             ss << "cannot query dataset: unsupported query type: " << (int)q.type;
@@ -424,14 +416,6 @@ void Reader::query_bytes(const dataset::ByteQuery& q, AbstractOutputFile& out)
             break;
         case dataset::ByteQuery::BQ_POSTPROCESS:
             request.post_data.add_string("style", "postprocess");
-            request.post_data.add_string("command", q.param);
-            break;
-        case dataset::ByteQuery::BQ_REP_METADATA:
-            request.post_data.add_string("style", "rep_metadata");
-            request.post_data.add_string("command", q.param);
-            break;
-        case dataset::ByteQuery::BQ_REP_SUMMARY:
-            request.post_data.add_string("style", "rep_summary");
             request.post_data.add_string("command", q.param);
             break;
         default: {

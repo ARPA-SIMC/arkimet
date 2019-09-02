@@ -327,31 +327,6 @@ class DatasetQueryData(ArkiDatasetQuery):
             data_start_hook=self.send_headers)
 
 
-class DatasetQueryRepMetadata(ArkiDatasetQuery):
-    content_type = "text/plain"
-    headers_ext = "txt"
-
-    def stream(self):
-        self.get_dataset_reader().query_bytes(
-            file=self.handler.wfile,
-            matcher=self.get_query(),
-            sort=self.get_sort(),
-            data_start_hook=self.send_headers,
-            metadata_report=self.request.values.get("command", ""))
-
-
-class DatasetQueryRepSummary(ArkiDatasetQuery):
-    content_type = "text/plain"
-    headers_ext = "txt"
-
-    def stream(self):
-        self.get_dataset_reader().query_bytes(
-            file=self.handler.wfile,
-            matcher=self.get_query(),
-            data_start_hook=self.send_headers,
-            summary_report=self.request.values.get("command", ""))
-
-
 class DatasetQueryMetadata(ArkiDatasetQuery):
     headers_ext = "arkimet"
 
@@ -426,10 +401,6 @@ def get_view_for_style(style):
         return DatasetQueryData
     elif style == "postprocess":
         return DatasetQueryPostprocess
-    elif style == "rep_metadata":
-        return DatasetQueryRepMetadata
-    elif style == "rep_summary":
-        return DatasetQueryRepSummary
     else:
         raise NotFound("TODO: query style {}".format(style))
 

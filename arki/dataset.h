@@ -90,8 +90,6 @@ struct ByteQuery : public DataQuery
     enum Type {
         BQ_DATA = 0,
         BQ_POSTPROCESS = 1,
-        BQ_REP_METADATA = 2,
-        BQ_REP_SUMMARY = 3
     };
 
     std::string param;
@@ -113,22 +111,6 @@ struct ByteQuery : public DataQuery
         type = BQ_POSTPROCESS;
         matcher = m;
         param = procname;
-    }
-
-    void setRepMetadata(const Matcher& m, const std::string& repname)
-    {
-        with_data = false;
-        type = BQ_REP_METADATA;
-        matcher = m;
-        param = repname;
-    }
-
-    void setRepSummary(const Matcher& m, const std::string& repname)
-    {
-        with_data = false;
-        type = BQ_REP_SUMMARY;
-        matcher = m;
-        param = repname;
     }
 };
 

@@ -190,17 +190,15 @@ Arguments:
 
     static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
     {
-        static const char* kwlist[] = { "matcher", "with_data", "sort", "data_start_hook", "postprocess", "metadata_report", "summary_report", "file", nullptr };
+        static const char* kwlist[] = { "matcher", "with_data", "sort", "data_start_hook", "postprocess", "file", nullptr };
         PyObject* arg_matcher = Py_None;
         PyObject* arg_with_data = Py_None;
         PyObject* arg_sort = Py_None;
         PyObject* arg_data_start_hook = Py_None;
         PyObject* arg_postprocess = Py_None;
-        PyObject* arg_metadata_report = Py_None;
-        PyObject* arg_summary_report = Py_None;
         PyObject* arg_file = Py_None;
 
-        if (!PyArg_ParseTupleAndKeywords(args, kw, "|OOOOOOOO", const_cast<char**>(kwlist), &arg_matcher, &arg_with_data, &arg_sort, &arg_data_start_hook, &arg_postprocess, &arg_metadata_report, &arg_summary_report, &arg_file))
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "|OOOOOO", const_cast<char**>(kwlist), &arg_matcher, &arg_with_data, &arg_sort, &arg_data_start_hook, &arg_postprocess, &arg_file))
             return nullptr;
 
         try {
@@ -218,12 +216,6 @@ Arguments:
             string postprocess;
             if (arg_postprocess != Py_None)
                 postprocess = string_from_python(arg_postprocess);
-            string metadata_report;
-            if (arg_metadata_report != Py_None)
-                metadata_report = string_from_python(arg_metadata_report);
-            string summary_report;
-            if (arg_summary_report != Py_None)
-                summary_report = string_from_python(arg_summary_report);
             if (arg_data_start_hook != Py_None && !PyCallable_Check(arg_data_start_hook))
             {
                 PyErr_SetString(PyExc_TypeError, "data_start_hoook must be None or a callable object");
@@ -233,10 +225,6 @@ Arguments:
             arki::dataset::ByteQuery query;
             query.with_data = with_data;
             if (!sort.empty()) query.sorter = metadata::sort::Compare::parse(sort);
-            if (!metadata_report.empty())
-                query.setRepMetadata(matcher, metadata_report);
-            else if (!summary_report.empty())
-                query.setRepSummary(matcher, summary_report);
             else if (!postprocess.empty())
                 query.setPostprocess(matcher, postprocess);
             else

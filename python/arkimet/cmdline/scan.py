@@ -142,7 +142,6 @@ class Scan(AppWithProcessor):
                     data=self.args.data,
                     summary=self.args.summary,
                     summary_short=self.args.summary_short,
-                    report=self.args.report,
                     summary_restrict=self.args.summary_restrict,
                     archive=self.args.archive,
                     postproc=self.args.postproc,
