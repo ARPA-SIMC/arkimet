@@ -1,5 +1,4 @@
 #include "types/tests.h"
-#include "tests/lua.h"
 #include "core/file.h"
 #include "core/binary.h"
 #include "summary.h"

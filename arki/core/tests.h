@@ -3,9 +3,6 @@
 
 #include <arki/tests/tests.h>
 #include <arki/core/time.h>
-#ifdef HAVE_LUA
-#include <arki/tests/lua.h>
-#endif
 
 namespace arki {
 namespace tests {

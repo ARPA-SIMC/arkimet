@@ -10,7 +10,6 @@
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/regexp.h"
-#include "arki/utils/lua.h"
 #include "arki/scan/validator.h"
 #include "arki/types/area.h"
 #include "arki/types/reftime.h"

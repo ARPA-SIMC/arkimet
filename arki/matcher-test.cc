@@ -3,7 +3,6 @@
 #include "arki/matcher.h"
 #include "arki/metadata.h"
 #include "arki/core/cfg.h"
-#include "arki/utils/lua.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/string.h"
 #include <fcntl.h>
