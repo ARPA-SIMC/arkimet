@@ -22,7 +22,6 @@ class MockEngine;
 
 namespace bufr {
 const Validator& validator();
-struct BufrLua;
 }
 
 class BufrScanner : public Scanner
@@ -59,20 +58,6 @@ protected:
 public:
     MockBufrScanner();
     virtual ~MockBufrScanner();
-};
-
-/**
- * Lua-based scanner
- */
-class LuaBufrScanner : public BufrScanner
-{
-    bufr::BufrLua* extras = nullptr;
-
-    void scan_extra(dballe::BinaryMessage& rmsg, std::shared_ptr<dballe::Message> msg, std::shared_ptr<Metadata> md) override;
-
-public:
-    LuaBufrScanner();
-    ~LuaBufrScanner();
 };
 
 }

@@ -2751,11 +2751,6 @@
  },
  {
   "doc": "",
-  "group": "arki_scan_bufrlua",
-  "method": "message"
- },
- {
-  "doc": "",
   "group": "arki_utils_h5",
   "method": "read"
  },

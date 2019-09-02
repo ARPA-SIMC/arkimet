@@ -23,10 +23,6 @@
 #include <stdint.h>
 #include <arpa/inet.h>
 
-#ifdef HAVE_LUA
-#include "arki/scan/bufrlua.h"
-#endif
-
 using namespace std;
 using namespace wreport;
 using namespace dballe;
@@ -339,31 +335,6 @@ void MockBufrScanner::scan_extra(dballe::BinaryMessage& rmsg, std::shared_ptr<db
     auto new_md = engine->lookup(reinterpret_cast<const uint8_t*>(rmsg.data.data()), rmsg.data.size());
     for (const auto& i: *new_md)
         md->set(*i.second);
-}
-
-
-/*
- * LuaBufrScanner
- */
-
-LuaBufrScanner::LuaBufrScanner()
-{
-#ifdef HAVE_LUA
-    extras = new bufr::BufrLua;
-#endif
-}
-
-LuaBufrScanner::~LuaBufrScanner()
-{
-#ifdef HAVE_LUA
-	if (extras) delete extras;
-#endif
-}
-
-void LuaBufrScanner::scan_extra(dballe::BinaryMessage& rmsg, std::shared_ptr<dballe::Message> msg, std::shared_ptr<Metadata> md)
-{
-    if (extras)
-        extras->scan(*msg, *md);
 }
 
 }
