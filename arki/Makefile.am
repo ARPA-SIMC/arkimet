@@ -353,9 +353,9 @@ libarkimet_la_LDFLAGS += $(LZO_LIBS)
 endif
 
 if LUA
-nobase_dist_arkiinclude_HEADERS += utils/lua.h tests/lua.h
+nobase_dist_arkiinclude_HEADERS += utils/lua.h
 libarkimet_la_SOURCES += utils/lua.cc
-tests_arki_test_SOURCES += utils/lua-test.cc tests/lua.cc
+tests_arki_test_SOURCES += utils/lua-test.cc
 AM_CPPFLAGS += $(LUA_CFLAGS)
 libarkimet_la_LDFLAGS += $(LUA_LIBS)
 tests_arki_test_LDADD += $(LUA_LIBS)
