@@ -267,7 +267,7 @@ class TestScanGrib(unittest.TestCase):
 
         self.assertEqual(mds[0]["origin"], "GRIB2(00200, 00000, 000, 000, 203)")
         self.assertEqual(mds[0]["product"], "GRIB2(00200, 000, 200, 033, 005, 000)")
-        self.assertEqual(mds[0]["level"], "GRIB2S(103, 000, 0000000010)")
+        self.assertEqual(mds[0]["level"], "GRIB2S(103,   -,          -)")
         self.assertEqual(mds[0]["timerange"], "Timedef(0s, 254, 0s)")
         self.assertEqual(
                 mds[0]["area"],
