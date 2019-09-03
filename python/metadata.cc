@@ -493,10 +493,15 @@ Arkimet metadata for one data item
 
     static int _init(Impl* self, PyObject* args, PyObject* kw)
     {
-        // Metadata() should not be invoked as a constructor, and if someone does
-        // this is better than a segfault later on
-        PyErr_SetString(PyExc_NotImplementedError, "Cursor objects cannot be constructed explicitly");
-        return -1;
+        static const char* kwlist[] = { nullptr };
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "", const_cast<char**>(kwlist)))
+            return -1;
+
+        try {
+            new(&(self->md)) std::shared_ptr<arki::Metadata>(make_shared<arki::Metadata>());
+        } ARKI_CATCH_RETURN_INT
+
+        return 0;
     }
 
     static PyObject* _richcompare(Impl* self, PyObject *other, int op)

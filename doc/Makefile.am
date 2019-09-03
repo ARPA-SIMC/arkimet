@@ -22,16 +22,16 @@ dist_doc_DATA = \
 doc_matcherdir = $(docdir)/matcher
 
 dist_doc_matcher_DATA = \
-		   matcher/origin.txt \
-		   matcher/product.txt \
-		   matcher/level.txt \
-		   matcher/timerange.txt \
-		   matcher/reftime.txt \
-		   matcher/area.txt \
-		   matcher/proddef.txt \
-		   matcher/run.txt \
-		   matcher/aliases.txt \
-		   matcher/expressions.txt
+		   matcher/origin.md \
+		   matcher/product.md \
+		   matcher/level.md \
+		   matcher/timerange.md \
+		   matcher/reftime.md \
+		   matcher/area.md \
+		   matcher/proddef.md \
+		   matcher/run.md \
+		   matcher/aliases.md \
+		   matcher/expressions.md
 
 CLEANFILES =
 
