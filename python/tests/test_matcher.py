@@ -33,7 +33,7 @@ class TestMatcher(unittest.TestCase):
             expected_not_matches = 0
             count_matches = 0
             count_not_matches = 0
-            with open(pathname, "rt") as fd:
+            with open(pathname, "rt", encoding="utf-8") as fd:
                 for lineno, line in enumerate(fd):
                     mo = re_given.match(line)
                     if mo:
