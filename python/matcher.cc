@@ -1,9 +1,11 @@
 #include "matcher.h"
+#include "metadata.h"
 #include "utils/core.h"
 #include "utils/methods.h"
 #include "utils/type.h"
 #include "utils/values.h"
 #include "common.h"
+#include "arki/metadata.h"
 
 using namespace arki::python;
 
@@ -30,22 +32,31 @@ struct expanded : public Getter<expanded, arkipy_Matcher>
     }
 };
 
-#if 0
 struct match : public MethKwargs<match, arkipy_Matcher>
 {
     constexpr static const char* name = "match";
-    constexpr static const char* signature = "?";
+    constexpr static const char* signature = "md: arki.Metadata";
     constexpr static const char* returns = "bool";
-    constexpr static const char* summary = "return the result of trying to match the given ?";
+    constexpr static const char* summary = "return the result of trying to match the given metadata";
     constexpr static const char* doc = nullptr;
 
     static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
     {
+        static const char* kwlist[] = { "md", nullptr };
+        PyObject* py_md = nullptr;
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "O!",
+                    const_cast<char**>(kwlist), arkipy_Metadata_Type, &py_md))
+            return nullptr;
+
         try {
+            bool res = self->matcher(*((arkipy_Metadata*)py_md)->md);
+            if (res)
+                Py_RETURN_TRUE;
+            else
+                Py_RETURN_FALSE;
         } ARKI_CATCH_RETURN_PYO
     }
 };
-#endif
 
 struct MatcherDef : public Type<MatcherDef, arkipy_Matcher>
 {
@@ -55,7 +66,7 @@ struct MatcherDef : public Type<MatcherDef, arkipy_Matcher>
 Precompiled matcher for arkimet metadata
 )";
     GetSetters<expanded> getsetters;
-    Methods<> methods;
+    Methods<match> methods;
 
     static void _dealloc(Impl* self)
     {
