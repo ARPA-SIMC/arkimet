@@ -96,7 +96,9 @@ public:
     // Base implementations that queries the archives if they exist
     void query_summary(const Matcher& matcher, Summary& summary) override;
 
+    /// Read the configuration for the given dataset. path must point to a directory
     static core::cfg::Section read_config(const std::string& path);
+
     static core::cfg::Sections read_configs(const std::string& path);
 };
 

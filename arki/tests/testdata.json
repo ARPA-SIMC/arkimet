@@ -12121,6 +12121,16 @@
  },
  {
   "doc": "",
+  "group": "arki_dataset",
+  "method": "read_config"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset",
+  "method": "read_configs"
+ },
+ {
+  "doc": "",
   "group": "arki_dataset_instantiate_simple",
   "method": "instantiate"
  },

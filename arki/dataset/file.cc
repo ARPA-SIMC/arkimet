@@ -82,6 +82,14 @@ core::cfg::Section File::read_config(const std::string& fname)
     return section;
 }
 
+core::cfg::Sections File::read_configs(const std::string& fname)
+{
+    auto sec = read_config(fname);
+    core::cfg::Sections res;
+    res.obtain(sec.value("name")) = std::move(sec);
+    return res;
+}
+
 
 FdFile::FdFile(std::shared_ptr<const FileConfig> config)
     : m_config(config), fd(config->pathname, O_RDONLY)

@@ -84,8 +84,9 @@ class Query(AppConfigMixin, AppWithProcessor):
 
             # From command line arguments, looking for data files or datasets
             for source in self.sources:
-                section = arki.dataset.read_config(source)
-                self._add_config(section)
+                cfg = arki.dataset.read_configs(source)
+                for name, section in cfg.items():
+                    self._add_config(section, name)
 
             if not self.config:
                 self.parser.error("you need to specify at least one input file or dataset")
