@@ -42,6 +42,7 @@ public:
     bool query_data(const dataset::DataQuery& q, metadata_dest_func) override;
 
     static core::cfg::Section read_config(const std::string& path);
+    static core::cfg::Sections read_configs(const std::string& path);
 };
 
 class FdFile : public File

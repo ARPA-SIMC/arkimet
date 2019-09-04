@@ -110,6 +110,7 @@ std::string Scanner::normalise_format(const std::string& format, const char* def
     if (f == "odimh5") return "odimh5";
 
     if (f == "yaml") return "yaml";
+    if (f == "arkimet") return "arkimet";
     if (f == "metadata") return "arkimet";
     if (default_format) return default_format;
     throw std::runtime_error("unsupported format `" + format + "`");

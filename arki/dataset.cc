@@ -15,6 +15,7 @@
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
 #include "arki/summary.h"
+#include "arki/scan.h"
 #include "arki/nag.h"
 
 #ifdef HAVE_LIBCURL
@@ -175,24 +176,99 @@ std::unique_ptr<Reader> Reader::create(const core::cfg::Section& cfg)
 
 core::cfg::Section Reader::read_config(const std::string& path)
 {
+    if (path == "-")
+    {
+        // Parse the config file from stdin
+        Stdin in;
+        return core::cfg::Section::parse(in);
+    }
+
+    // Remove trailing slashes, if any
+    string fname = path;
+    while (!fname.empty() && fname[fname.size() - 1] == '/')
+        fname.resize(fname.size() - 1);
+
+    std::unique_ptr<struct stat> st = sys::stat(fname);
+
+    if (st.get() == 0)
+    {
+        // If it does not exist, it could be a URL or a format:filename URL-like
+        size_t pos = path.find(':');
+        if (pos == string::npos)
+        {
+            stringstream ss;
+            ss << "cannot read configuration from " << fname << " because it does not exist";
+            throw runtime_error(ss.str());
+        }
+
+        std::string prefix = path.substr(0, pos);
 #ifdef HAVE_LIBCURL
-    if (str::startswith(path, "http://") || str::startswith(path, "https://"))
-        return dataset::http::Reader::load_cfg_section(path);
+        if (prefix == "http" or prefix == "https")
+            return dataset::http::Reader::load_cfg_section(path);
+        else
 #endif
-    if (sys::isdir(path))
-        return dataset::LocalReader::read_config(path);
+            return dataset::File::read_config(path);
+    }
+
+    if (S_ISDIR(st->st_mode))
+        return dataset::LocalReader::read_config(fname);
     else
-        return dataset::File::read_config(path);
+        return dataset::File::read_config(fname);
 }
 
 
 core::cfg::Sections Reader::read_configs(const std::string& path)
 {
+    if (path == "-")
+    {
+        // Parse the config file from stdin
+        Stdin in;
+        return core::cfg::Sections::parse(in);
+    }
+
+    // Remove trailing slashes, if any
+    string fname = path;
+    while (!fname.empty() && fname[fname.size() - 1] == '/')
+        fname.resize(fname.size() - 1);
+
+    std::unique_ptr<struct stat> st = sys::stat(fname);
+
+    if (st.get() == 0)
+    {
+        // If it does not exist, it could be a URL or a format:filename URL-like
+        size_t pos = path.find(':');
+        if (pos == string::npos)
+        {
+            stringstream ss;
+            ss << "cannot read configuration from " << fname << " because it does not exist";
+            throw runtime_error(ss.str());
+        }
+
+        std::string prefix = path.substr(0, pos);
 #ifdef HAVE_LIBCURL
-    if (str::startswith(path, "http://") || str::startswith(path, "https://"))
-        return dataset::http::Reader::load_cfg_sections(path);
+        if (prefix == "http" or prefix == "https")
+            return dataset::http::Reader::load_cfg_sections(path);
+        else
 #endif
-    return dataset::LocalReader::read_configs(path);
+            return dataset::File::read_configs(path);
+    }
+
+    if (S_ISDIR(st->st_mode))
+    {
+        // A directory, read the dataset config
+        return dataset::LocalReader::read_configs(fname);
+    }
+    else
+    {
+        // A file, check for known extensions
+        std::string format = scan::Scanner::format_from_filename(fname, "");
+        if (!format.empty())
+            return dataset::File::read_configs(fname);
+
+        // Read the contents as configuration
+        sys::File in(fname, O_RDONLY);
+        return core::cfg::Sections::parse(in);
+    }
 }
 
 

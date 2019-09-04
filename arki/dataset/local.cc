@@ -139,63 +139,36 @@ void LocalReader::query_summary(const Matcher& matcher, Summary& summary)
 
 core::cfg::Section LocalReader::read_config(const std::string& path)
 {
-    if (path == "-")
-    {
-        // Parse the config file from stdin
-        Stdin in;
-        return core::cfg::Section::parse(in);
-    }
+    // Read the config file inside the directory
+    string name = str::basename(path);
+    string file = str::joinpath(path, "config");
 
-    // Remove trailing slashes, if any
-    string fname = path;
-    while (!fname.empty() && fname[fname.size() - 1] == '/')
-        fname.resize(fname.size() - 1);
-
-    // Check if it's a file or a directory
-    std::unique_ptr<struct stat> st = sys::stat(fname);
-    if (st.get() == 0)
-    {
-        stringstream ss;
-        ss << "cannot read configuration from " << fname << " because it does not exist";
-        throw runtime_error(ss.str());
-    }
-    if (S_ISDIR(st->st_mode))
-    {
-        // If it's a directory, merge in its config file
-        string name = str::basename(fname);
-        string file = str::joinpath(fname, "config");
-
-        File in(file, O_RDONLY);
-        // Parse the config file into a new section
-        auto res = core::cfg::Section::parse(in);
-        // Fill in missing bits
-        res.set("name", name);
-        res.set("path", sys::abspath(fname));
-        return res;
-    } else {
-        // If it's a file, then it's the config file for one dataset
-        File in(fname, O_RDONLY);
-        // Parse the config file
-        return core::cfg::Section::parse(in);
-    }
+    File in(file, O_RDONLY);
+    // Parse the config file into a new section
+    auto res = core::cfg::Section::parse(in);
+    // Fill in missing bits
+    res.set("name", name);
+    res.set("path", sys::abspath(path));
+    return res;
 }
 
 core::cfg::Sections LocalReader::read_configs(const std::string& path)
 {
-    if (path == "-")
-    {
-        // Parse the config file from stdin
-        Stdin in;
-        return core::cfg::Sections::parse(in);
-    }
+    // Read the config file inside the directory
+    string name = str::basename(path);
+    string file = str::joinpath(path, "config");
 
-    // Remove trailing slashes, if any
-    string fname = path;
-    while (!fname.empty() && fname[fname.size() - 1] == '/')
-        fname.resize(fname.size() - 1);
+    File in(file, O_RDONLY);
+    // Parse the config file into a new section
+    auto sec = core::cfg::Section::parse(in);
+    // Fill in missing bits
+    sec.set("name", name);
+    sec.set("path", sys::abspath(path));
 
-    File in(fname, O_RDONLY);
-    return core::cfg::Sections::parse(in);
+    // Return a Sections with only this section
+    core::cfg::Sections res;
+    res.obtain(name) = std::move(sec);
+    return res;
 }
 
 
