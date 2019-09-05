@@ -7,9 +7,15 @@ Welcome to arkimet's documentation!
 ===================================
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Contents:
 
+   arkimet
+   arkimet.cfg
+   arkimet.dataset
+   arkimet.scan
+   arkimet.formatter
+   arkimet.bbox
 
 
 Indices and tables
