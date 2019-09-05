@@ -634,7 +634,7 @@ extern "C" {
 static PyModuleDef cfg_module = {
     PyModuleDef_HEAD_INIT,
     "cfg",          /* m_name */
-    "Arkimet configuration infrastructure",  /* m_doc */
+    "Arkimet configuration C functions",  /* m_doc */
     -1,             /* m_size */
     cfg_methods.as_py(),    /* m_methods */
     nullptr,           /* m_slots */
