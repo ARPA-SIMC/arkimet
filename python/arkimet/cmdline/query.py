@@ -1,4 +1,4 @@
-import arkimet as arki
+import arkimet
 from arkimet.cmdline.base import AppConfigMixin, AppWithProcessor
 import sys
 import logging
@@ -78,13 +78,13 @@ class Query(AppConfigMixin, AppWithProcessor):
             # From -C options, looking for config files or datasets
             if self.args.config:
                 for pathname in self.args.config:
-                    cfg = arki.dataset.read_configs(pathname)
+                    cfg = arkimet.dataset.read_configs(pathname)
                     for name, section in cfg.items():
                         self._add_config(section, name)
 
             # From command line arguments, looking for data files or datasets
             for source in self.sources:
-                cfg = arki.dataset.read_configs(source)
+                cfg = arkimet.dataset.read_configs(source)
                 for name, section in cfg.items():
                     self._add_config(section, name)
 
@@ -119,12 +119,12 @@ class Query(AppConfigMixin, AppWithProcessor):
             qmacro_query = None
 
         if strquery:
-            query = arki.Matcher(arki.dataset.http.expand_remote_query(self.config, strquery))
+            query = arkimet.Matcher(arkimet.dataset.http.expand_remote_query(self.config, strquery))
         else:
-            query = arki.Matcher()
+            query = arkimet.Matcher()
 
         with self.outfile() as outfd:
-            arki_query = arki.ArkiQuery()
+            arki_query = arkimet.cmdline.ArkiQuery()
             arki_query.set_inputs(self.config)
             arki_query.set_processor(
                     query=query,

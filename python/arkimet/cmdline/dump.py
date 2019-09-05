@@ -1,4 +1,4 @@
-import arkimet as arki
+import arkimet
 from arkimet.cmdline.base import App, Exit
 from contextlib import contextmanager
 import sys
@@ -60,15 +60,15 @@ class Dump(App):
         if self.args.query:
             if not self.args.input:
                 self.parser.error("--query needs a query on the command line")
-            matcher = arki.Matcher(self.args.input)
+            matcher = arkimet.Matcher(self.args.input)
             print(matcher.expanded)
             raise Exit()
 
         if self.args.aliases:
             if self.args.input:
-                sections = arki.dataset.http.get_alias_database(self.args.input)
+                sections = arkimet.dataset.http.get_alias_database(self.args.input)
             else:
-                sections = arki.get_alias_database()
+                sections = arkimet.get_alias_database()
 
             if self.args.output:
                 with open(self.args.output, "wt") as fd:
@@ -82,12 +82,12 @@ class Dump(App):
 
         if self.args.info:
             import json
-            cfg = arki.config()
+            cfg = arkimet.config()
             print(json.dumps(cfg, indent=1))
             raise Exit()
 
         if self.args.bbox:
-            dump = arki.ArkiDump()
+            dump = arkimet.cmdline.ArkiDump()
             with self.input("rb") as fd:
                 bbox = dump.bbox(fd)
             with self.output("wt") as fd:
@@ -95,18 +95,18 @@ class Dump(App):
             raise Exit()
 
         if self.args.from_yaml_data:
-            dump = arki.ArkiDump()
+            dump = arkimet.cmdline.ArkiDump()
             with self.input("rb") as fdin:
                 with self.output("wb") as fdout:
                     raise Exit(dump.reverse_data(fdin, fdout))
 
         if self.args.from_yaml_summary:
-            dump = arki.ArkiDump()
+            dump = arkimet.cmdline.ArkiDump()
             with self.input("rb") as fdin:
                 with self.output("wb") as fdout:
                     raise Exit(dump.reverse_summary(fdin, fdout))
 
-        dump = arki.ArkiDump()
+        dump = arkimet.cmdline.ArkiDump()
         with self.input("rb") as fdin:
             with self.output("wb") as fdout:
                 raise Exit(dump.dump_yaml(fdin, fdout, self.args.annotate))

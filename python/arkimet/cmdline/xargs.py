@@ -1,4 +1,4 @@
-import arkimet as arki
+import arkimet
 from arkimet.cmdline.base import App, Exit
 import argparse
 import logging
@@ -41,7 +41,7 @@ class Xargs(App):
     def run(self):
         super().run()
         res = 0
-        cmd = arki.ArkiXargs()
+        cmd = arkimet.cmdline.ArkiXargs()
         res = cmd.run(
             command=self.__sanitize_command(self.args.command),
             inputs=self.args.input,
