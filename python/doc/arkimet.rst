@@ -5,6 +5,7 @@ Subpackages
 -----------
 
 .. toctree::
+    :maxdepth: 1
 
     arkimet.cfg
     arkimet.dataset
