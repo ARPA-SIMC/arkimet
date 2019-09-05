@@ -6,6 +6,9 @@ log = logging.getLogger("arkimet.bbox")
 
 
 class BBox:
+    """
+    Infrastructure for computing bounding boxes from arkimet areas
+    """
     by_style = defaultdict(list)
 
     def compute(self, t: Dict[str, Any]) -> List[Tuple[float, float]]:
