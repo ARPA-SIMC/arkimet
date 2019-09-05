@@ -7,4 +7,4 @@ from . import area
 from . import proddef
 
 
-__all__ = [Formatter]
+__all__ = ["Formatter"]
