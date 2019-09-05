@@ -870,7 +870,7 @@ extern "C" {
 static PyModuleDef dataset_module = {
     PyModuleDef_HEAD_INIT,
     "dataset",         /* m_name */
-    "Arkimet dataset functions",  /* m_doc */
+    "Arkimet dataset C functions",  /* m_doc */
     -1,             /* m_size */
     dataset_methods.as_py(),    /* m_methods */
     nullptr,           /* m_slots */
@@ -882,7 +882,7 @@ static PyModuleDef dataset_module = {
 static PyModuleDef http_module = {
     PyModuleDef_HEAD_INIT,
     "http",         /* m_name */
-    "Arkimet http dataset functions",  /* m_doc */
+    "Arkimet http dataset C functions",  /* m_doc */
     -1,             /* m_size */
     http_methods.as_py(),    /* m_methods */
     nullptr,           /* m_slots */

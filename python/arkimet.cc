@@ -336,7 +336,7 @@ extern "C" {
 static PyModuleDef arkimet_module = {
     PyModuleDef_HEAD_INIT,
     "_arkimet",       /* m_name */
-    "Arkimet Python interface.",  /* m_doc */
+    "Root of the C side of Arkimet's Python interface.",  /* m_doc */
     -1,               /* m_size */
     methods.as_py(),  /* m_methods */
     NULL,             /* m_slots */
@@ -349,7 +349,7 @@ static PyModuleDef arkimet_module = {
 static PyModuleDef cmdline_module = {
     PyModuleDef_HEAD_INIT,
     "cmdline",         /* m_name */
-    "Arkimet cmdline functions",  /* m_doc */
+    "Arkimet cmdline C functions",  /* m_doc */
     -1,             /* m_size */
     cmdline_methods.as_py(),    /* m_methods */
     nullptr,           /* m_slots */
