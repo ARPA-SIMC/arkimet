@@ -97,11 +97,10 @@ struct write : public MethKwargs<write, arkipy_Summary>
     constexpr static const char* returns = "Optional[arki.cfg.Section]";
     constexpr static const char* summary = "write the summary to a file";
     constexpr static const char* doc = R"(
-Arguments:
-  file: the output file. The file needs to be either an integer file or
-        socket handle, or a file-like object with a fileno() method
-        that returns an integer handle.
-  format: "binary", "yaml", or "json". Default: "binary".
+:param file: the output file. The file needs to be either an integer file or
+             socket handle, or a file-like object with a fileno() method
+             that returns an integer handle.
+:param format: "binary", "yaml", or "json". Default: "binary".
 )";
 
     static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
@@ -154,11 +153,10 @@ struct write_short : public MethKwargs<write_short, arkipy_Summary>
     constexpr static const char* returns = "Optional[arki.cfg.Section]";
     constexpr static const char* summary = "write the short summary to a file";
     constexpr static const char* doc = R"(
-Arguments:
-  file: the output file. The file needs to be either an integer file or
-        socket handle, or a file-like object with a fileno() method
-        that returns an integer handle.
-  format: "binary", "yaml", or "json". Default: "binary".
+:param file: the output file. The file needs to be either an integer file or
+             socket handle, or a file-like object with a fileno() method
+             that returns an integer handle.
+:param format: "binary", "yaml", or "json". Default: "binary".
 )";
 
     static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
@@ -209,13 +207,6 @@ struct to_python : public MethNoargs<to_python, arkipy_Summary>
     constexpr static const char* signature = "";
     constexpr static const char* returns = "Dict[str, Any]";
     constexpr static const char* summary = "return the summary contents in a python dict";
-    constexpr static const char* doc = R"(
-Arguments:
-  file: the output file. The file needs to be either an integer file or
-        socket handle, or a file-like object with a fileno() method
-        that returns an integer handle.
-  format: "binary", "yaml", or "json". Default: "binary".
-)";
 
     static PyObject* run(Impl* self)
     {

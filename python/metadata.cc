@@ -85,14 +85,13 @@ struct has_source : public MethNoargs<has_source, arkipy_Metadata>
 struct write : public MethKwargs<write, arkipy_Metadata>
 {
     constexpr static const char* name = "write";
-    constexpr static const char* signature = "file: Union[int, BytesIO], format: str";
+    constexpr static const char* signature = "file: Union[int, BytesIO], format: str='binary'";
     constexpr static const char* returns = "None";
     constexpr static const char* summary = "Write the metadata to a file";
     constexpr static const char* doc = R"(
-Arguments:
-  file: the output file. The file can be a normal file-like object or an
-        integer file or socket handle
-  format: "binary", "yaml", or "json". Default: "binary".
+:param file: the output file. The file can be a normal file-like object or an
+             integer file or socket handle
+:param format: "binary", "yaml", or "json". Default: "binary".
 )";
 
     static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
@@ -167,8 +166,7 @@ struct make_url : public MethKwargs<make_url, arkipy_Metadata>
     constexpr static const char* returns = "None";
     constexpr static const char* summary = "Set the data source as URL";
     constexpr static const char* doc = R"(
-Arguments:
-  baseurl: the base URL that identifies the dataset
+:param baseurl: the base URL that identifies the dataset
 )";
 
     static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
@@ -314,8 +312,15 @@ struct read_bundle : public ClassMethKwargs<read_bundle>
 {
     constexpr static const char* name = "read_bundle";
     constexpr static const char* signature = "src: Union[bytes, ByteIO], dest: Callable[[metadata]=None, Optional[bool]], basedir: str=None, pathname: str=None";
-    constexpr static const char* returns = "Union[bool, List[arki.Metadata]";
+    constexpr static const char* returns = "Union[bool, List[arkimet.Metadata]";
     constexpr static const char* summary = "Read all metadata from a given file or memory buffer";
+    constexpr static const char* doc = R"(
+:param src: source data or binary input file
+:param dest: function called for each metadata decoded. If None, a list of
+             arkimet.Metadata is returned instead
+:param basedir: base directory used to resolve relative file names inside the metadata
+:param pathname: name of the file to use in error messages, when ``src.name`` is not available
+)";
 
     static PyObject* run(PyTypeObject* cls, PyObject* args, PyObject* kw)
     {
@@ -468,7 +473,23 @@ struct MetadataDef : public Type<MetadataDef, arkipy_Metadata>
     constexpr static const char* name = "Metadata";
     constexpr static const char* qual_name = "arkimet.Metadata";
     constexpr static const char* doc = R"(
-Arkimet metadata for one data item
+Metadata for one data item.
+
+Each single element stored in Arkimet has a number of metadata associated. This
+class stores all the metadata for one single element.
+
+The constructor takes no arguments and returns an empty Metadata object, which
+can be populated with item assigment.
+
+Item assigned can take metadata items both in string format or as Python dicts.
+
+For example::
+
+    md = arkimet.Metadata()
+    md["origin"] = 'GRIB1(098, 000, 129)'
+    md["reftime"] = {"style": "POSITION",  "time": datetime.datetime(2007, 7, 8, 13, 0, 0)}
+    with open("test.json", "wb") as fd:
+        md.write(fd, format="json")
 )";
     GetSetters<data, data_size> getsetters;
     Methods<has_source, write, make_absolute, make_inline, make_url, to_string, to_python, get_notes, del_notes, read_bundle, write_bundle> methods;
