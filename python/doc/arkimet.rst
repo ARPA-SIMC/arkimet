@@ -6,21 +6,11 @@ Subpackages
 
 .. toctree::
 
-    arkimet.bbox
+    arkimet.cfg
     arkimet.dataset
-    arkimet.formatter
     arkimet.scan
-
-Submodules
-----------
-
-arkimet.cfg module
-------------------
-
-.. automodule:: arkimet.cfg
-    :members:
-    :undoc-members:
-    :show-inheritance:
+    arkimet.formatter
+    arkimet.bbox
 
 Module contents
 ---------------
@@ -28,4 +18,3 @@ Module contents
 .. automodule:: arkimet
     :members:
     :undoc-members:
-    :show-inheritance:
