@@ -55,13 +55,12 @@ struct query_data : public MethKwargs<query_data, arkipy_DatasetReader>
     constexpr static const char* returns = "Union[None, List[arki.Metadata]]";
     constexpr static const char* summary = "query a dataset, processing the resulting metadata one by one";
     constexpr static const char* doc = R"(
-Arguments:
-  matcher: the matcher string to filter data to return.
-  with_data: if True, also load data together with the metadata.
-  sort: string with the desired sort order of results.
-  on_metadata: a function called on each metadata, with the Metadata
-               object as its only argument. Return None or True to
-               continue processing results, False to stop.
+:arg matcher: the matcher string to filter data to return.
+:arg with_data: if True, also load data together with the metadata.
+:arg sort: string with the desired sort order of results.
+:arg on_metadata: a function called on each metadata, with the Metadata
+                  object as its only argument. Return None or True to
+                  continue processing results, False to stop.
 )";
 
     static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
@@ -123,10 +122,9 @@ struct query_summary : public MethKwargs<query_summary, arkipy_DatasetReader>
     constexpr static const char* returns = "arkimet.Summary";
     constexpr static const char* summary = "query a dataset, returning an arkimet.Summary with the results";
     constexpr static const char* doc = R"(
-Arguments:
-  matcher: the matcher string to filter data to return.
-  summary: not None, add results to this arkimet.Summary, and return
-           it, instead of creating a new one.
+:arg matcher: the matcher string to filter data to return.
+:arg summary: not None, add results to this arkimet.Summary, and return
+              it, instead of creating a new one.
 )";
 
     static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
@@ -176,16 +174,15 @@ struct query_bytes : public MethKwargs<query_bytes, arkipy_DatasetReader>
     constexpr static const char* returns = "Union[None, bytes]";
     constexpr static const char* summary = "query a dataset, piping results to a file";
     constexpr static const char* doc = R"(
-Arguments:
-  matcher: the matcher string to filter data to return.
-  with_data: if True, also load data together with the metadata.
-  sort: string with the desired sort order of results.
-  data_start_hook: function called before sending the data to the file
-  postprocess: name of a postprocessor to use to filter data server-side
-  metadata_report: name of the server-side report function to run on results metadata
-  summary_report: name of the server-side report function to run on results summary
-  file: the output file. The file can be a file-like object, or an integer file
-        or socket handle. If missing, data is returned in a bytes object
+:arg matcher: the matcher string to filter data to return.
+:arg with_data: if True, also load data together with the metadata.
+:arg sort: string with the desired sort order of results.
+:arg data_start_hook: function called before sending the data to the file
+:arg postprocess: name of a postprocessor to use to filter data server-side
+:arg metadata_report: name of the server-side report function to run on results metadata
+:arg summary_report: name of the server-side report function to run on results summary
+:arg file: the output file. The file can be a file-like object, or an integer file
+           or socket handle. If missing, data is returned in a bytes object
 )";
 
     static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
