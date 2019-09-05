@@ -1,4 +1,4 @@
-import arkimet as arki
+import arkimet
 from arkimet.cmdline.base import App, Exit
 import logging
 
@@ -26,7 +26,7 @@ class BufrPrepare(App):
     def run(self):
         super().run()
 
-        cmd = arki.ArkiBUFRPrepare()
+        cmd = arkimet.cmdline.ArkiBUFRPrepare()
         res = cmd.run(
             inputs=self.args.files,
             usn=self.args.usn,

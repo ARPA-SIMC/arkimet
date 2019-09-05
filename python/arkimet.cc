@@ -326,6 +326,9 @@ struct PythonNagHandler : public nag::Handler
     }
 };
 
+
+Methods<> cmdline_methods;
+
 }
 
 extern "C" {
@@ -341,6 +344,18 @@ static PyModuleDef arkimet_module = {
     NULL,             /* m_clear */
     NULL,             /* m_free */
 
+};
+
+static PyModuleDef cmdline_module = {
+    PyModuleDef_HEAD_INIT,
+    "cmdline",         /* m_name */
+    "Arkimet cmdline functions",  /* m_doc */
+    -1,             /* m_size */
+    cmdline_methods.as_py(),    /* m_methods */
+    nullptr,           /* m_slots */
+    nullptr,           /* m_traverse */
+    nullptr,           /* m_clear */
+    nullptr,           /* m_free */
 };
 
 arki::nag::Handler* python_nag_handler = nullptr;
@@ -421,12 +436,16 @@ static bool arkimet_initialized = false;
         register_scan(m);
         register_dataset(m);
         register_counters(m);
-        register_arki_query(m);
-        register_arki_scan(m);
-        register_arki_check(m);
-        register_arki_dump(m);
-        register_arki_xargs(m);
-        register_arki_bufr_prepare(m);
+
+        pyo_unique_ptr cmdline = throw_ifnull(PyModule_Create(&cmdline_module));
+        register_arki_query(cmdline);
+        register_arki_scan(cmdline);
+        register_arki_check(cmdline);
+        register_arki_dump(cmdline);
+        register_arki_xargs(cmdline);
+        register_arki_bufr_prepare(cmdline);
+        if (PyModule_AddObject(m, "cmdline", cmdline.release()) == -1)
+            throw PythonException();
 
         return m;
     } ARKI_CATCH_RETURN_PYO

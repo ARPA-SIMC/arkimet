@@ -1,4 +1,4 @@
-import arkimet as arki
+import arkimet
 from arkimet.cmdline.base import AppWithProcessor, Exit
 import sys
 import posix
@@ -98,7 +98,7 @@ class Scan(AppWithProcessor):
         self.config[name]["name"] = name
 
     def build_config(self):
-        self.config = arki.cfg.Sections()
+        self.config = arkimet.cfg.Sections()
 
         self.sources = []
         if self.args.stdin is not None:
@@ -116,7 +116,7 @@ class Scan(AppWithProcessor):
             for source in self.sources:
                 if source == "-":
                     self.parser.error("use --stdin to read data from standard input")
-                section = arki.dataset.read_config(source)
+                section = arkimet.dataset.read_config(source)
                 self._add_config(section)
 
             if not self.config:
@@ -130,10 +130,10 @@ class Scan(AppWithProcessor):
         self.build_config()
 
         with self.outfile() as outfd:
-            arki_scan = arki.ArkiScan()
+            arki_scan = arkimet.cmdline.ArkiScan()
             arki_scan.set_inputs(self.config)
             arki_scan.set_processor(
-                    query=arki.Matcher(),
+                    query=arkimet.Matcher(),
                     outfile=outfd,
                     yaml=self.args.yaml,
                     json=self.args.json,
@@ -159,14 +159,14 @@ class Scan(AppWithProcessor):
                 )
 
                 if self.args.dispatch:
-                    dispatch_cfg = arki.cfg.Sections()
+                    dispatch_cfg = arkimet.cfg.Sections()
                     for source in self.args.dispatch:
-                        merge_config(dispatch_cfg, arki.cfg.Sections.parse(source))
+                        merge_config(dispatch_cfg, arkimet.cfg.Sections.parse(source))
                     kw["dispatch"] = dispatch_cfg
                 elif self.args.testdispatch:
-                    dispatch_cfg = arki.cfg.Sections()
+                    dispatch_cfg = arkimet.cfg.Sections()
                     for source in self.args.testdispatch:
-                        merge_config(dispatch_cfg, arki.cfg.Sections.parse(source))
+                        merge_config(dispatch_cfg, arkimet.cfg.Sections.parse(source))
                     kw["testdispatch"] = dispatch_cfg
 
                 arki_scan.set_dispatcher(**kw)

@@ -1,4 +1,4 @@
-import arkimet as arki
+import arkimet
 from arkimet.cmdline.base import App, AppConfigMixin
 import logging
 
@@ -81,13 +81,13 @@ class Check(AppConfigMixin, App):
         # From -C options, looking for config files or datasets
         if self.args.config:
             for pathname in self.args.config:
-                cfg = arki.dataset.read_configs(pathname)
+                cfg = arkimet.dataset.read_configs(pathname)
                 for name, section in cfg.items():
                     self._add_config(section, name)
 
         # From command line arguments, looking for data files or datasets
         for dataset in self.args.dataset:
-            section = arki.dataset.read_config(dataset)
+            section = arkimet.dataset.read_config(dataset)
             self._add_config(section)
 
         if not self.config:
@@ -118,7 +118,7 @@ class Check(AppConfigMixin, App):
             offline = self.args.offline
             online = self.args.online
 
-        arki_check = arki.ArkiCheck(
+        arki_check = arkimet.cmdline.ArkiCheck(
                 self.config,
                 filter=self.args.filter,
                 accurate=self.args.accurate,
