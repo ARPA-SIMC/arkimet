@@ -99,10 +99,9 @@ class Query(AppConfigMixin, AppWithProcessor):
                 self.parser.error("no accessible datasets found for the given --restrict value")
 
             # Some things cannot be done when querying multiple datasets at the same time
-            if len(self.config) > 1 and not self.args.qmacro:
-                if self.args.postprocess:
-                    self.parser.error(
-                            "postprocessing is not possible when querying more than one dataset at the same time")
+            if len(self.config) > 1 and not self.args.qmacro and self.args.postproc:
+                self.parser.error(
+                        "postprocessing is not possible when querying more than one dataset at the same time")
 
     def run(self):
         super().run()
