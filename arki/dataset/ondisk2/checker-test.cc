@@ -1,4 +1,3 @@
-#include "arki/tests/legacy.h"
 #include "arki/dataset/ondisk2/test-utils.h"
 #include "arki/dataset/ondisk2/checker.h"
 #include "arki/dataset/ondisk2/writer.h"
@@ -94,7 +93,7 @@ add_method("reindex_with_duplicates", [](Fixture& f) {
         // Test querying: reindexing should have chosen the last version of
         // duplicate items
         auto reader = f.makeOndisk2Reader();
-        ensure(reader->hasWorkingIndex());
+        wassert_true(reader->hasWorkingIndex());
         metadata::Collection mdc(*reader, Matcher::parse("reftime:=2007-07-07"));
         wassert(actual(mdc.size()) == 1u);
         wassert(actual_type(mdc[0].source()).is_source_blob("grib", sys::abspath("testds"), "2007/07.grib", 34960, 34960));
@@ -119,9 +118,9 @@ add_method("reindex_with_duplicates", [](Fixture& f) {
 
     // Test querying, and see that things have moved to the beginning
     auto reader = f.makeOndisk2Reader();
-    ensure(reader->hasWorkingIndex());
+    wassert_true(reader->hasWorkingIndex());
     metadata::Collection mdc(*reader, Matcher::parse("origin:GRIB1,80"));
-    ensure_equals(mdc.size(), 1u);
+    wassert(actual(mdc.size()) == 1u);
     wassert(actual_type(mdc[0].source()).is_source_blob("grib", sys::abspath("testds"), "2007/07.grib", 0, 34960));
 
     // Query the second element and check that it starts after the first one
@@ -129,13 +128,13 @@ add_method("reindex_with_duplicates", [](Fixture& f) {
     // the metadata instead of the data)
     mdc.clear();
     mdc.add(*reader, Matcher::parse("reftime:=2007-07-08"));
-    ensure_equals(mdc.size(), 1u);
+    wassert(actual(mdc.size()) == 1u);
     wassert(actual_type(mdc[0].source()).is_source_blob("grib", sys::abspath("testds"), "2007/07.grib", 34960, 7218));
 
     // Ensure that we have the summary cache
-    ensure(sys::exists("testds/.summaries/all.summary"));
-    ensure(sys::exists("testds/.summaries/2007-07.summary"));
-    ensure(sys::exists("testds/.summaries/2007-10.summary"));
+    wassert(actual_file("testds/.summaries/all.summary").exists());
+    wassert(actual_file("testds/.summaries/2007-07.summary").exists());
+    wassert(actual_file("testds/.summaries/2007-10.summary").not_exists());
 });
 
 // Test accuracy of maintenance scan, with index, on dataset with some
@@ -220,9 +219,9 @@ add_method("scan_reindex_compressed", [](Fixture& f) {
     wassert(actual(*checker).repack_clean(true));
 
     // Ensure that we have the summary cache
-    ensure(sys::exists("testds/.summaries/all.summary"));
-    ensure(sys::exists("testds/.summaries/2007-07.summary"));
-    ensure(sys::exists("testds/.summaries/2007-10.summary"));
+    wassert(actual_file("testds/.summaries/all.summary").exists());
+    wassert(actual_file("testds/.summaries/2007-07.summary").exists());
+    wassert(actual_file("testds/.summaries/2007-10.summary").exists());
 });
 
 // Test sanity checks on summary cache
@@ -243,9 +242,9 @@ add_method("summary_checks", [](Fixture& f) {
     wassert(actual(*checker).repack_clean(true));
 
     // Ensure that we have the summary cache
-    ensure(sys::exists("testds/.summaries/all.summary"));
-    ensure(sys::exists("testds/.summaries/2007-07.summary"));
-    ensure(sys::exists("testds/.summaries/2007-10.summary"));
+    wassert(actual_file("testds/.summaries/all.summary").exists());
+    wassert(actual_file("testds/.summaries/2007-07.summary").exists());
+    wassert(actual_file("testds/.summaries/2007-10.summary").exists());
 
     // Make one summary cache file not writable
     chmod("testds/.summaries/all.summary", 0400);
