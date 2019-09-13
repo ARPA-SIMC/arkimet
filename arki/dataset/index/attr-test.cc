@@ -1,4 +1,3 @@
-#include "arki/tests/legacy.h"
 #include "arki/types/tests.h"
 #include "arki/types/origin.h"
 #include "arki/metadata.h"
