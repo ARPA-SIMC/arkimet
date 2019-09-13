@@ -9,7 +9,7 @@ namespace tests {
 
 inline void ensure(bool cond)
 {
-    wassert(actual(cond));
+    wassert(actual(cond).istrue());
 }
 
 template <class T,class Q>

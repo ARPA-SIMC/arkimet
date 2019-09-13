@@ -1,4 +1,3 @@
-#include "arki/tests/legacy.h"
 #include "arki/metadata/tests.h"
 #include "arki/exceptions.h"
 #include "arki/dataset.h"
@@ -158,7 +157,7 @@ add_method("index", [] {
         "index = origin, product, level\n"
         "unique = origin, product, level, timerange, area, proddef, reftime\n"
     );
-    ensure(test.get() != 0);
+    wassert_true(test.get());
     Pending p;
 
     test->open();
@@ -199,22 +198,20 @@ add_method("remove", [] {
         "unique = origin, product, level, timerange, area, proddef, reftime\n"
         "index = origin, product, level, timerange, area, proddef, reftime\n"
     );
-    ensure(test.get() != 0);
+    wassert_true(test.get());
     Pending p;
 
     test->open();
     p = test->begin_transaction();
 
     // Index a metadata
-    test->index(md, "inbound/test.grib1", 0);
+    auto res = test->index(md, "inbound/test.grib1", 0);
+    wassert_false(res);
     //int id = test->id(md);
 
     // Index it again and ensure that it fails
-    try {
-        test->index(md, "inbound/test.grib1", 0);
-        ensure(false);
-    } catch (utils::sqlite::DuplicateInsert& e) {
-    }
+    res = test->index(md, "inbound/test.grib1", 0);
+    wassert_true(res);
 
     // Index a second one
     test->index(md1, "inbound/test-sorted.grib1", 0);
@@ -223,7 +220,7 @@ add_method("remove", [] {
     // Ensure that we have two items
     metadata::Collection mdc;
     query_index(*test, Matcher::parse("origin:GRIB1"), mdc);
-    ensure_equals(mdc.size(), 2u);
+    wassert(actual(mdc.size()) == 2u);
     mdc.clear();
 
     // Remove a nonexisting item and see that it fails
@@ -236,7 +233,7 @@ add_method("remove", [] {
 
     // There should be only one result now
     query_index(*test, Matcher::parse("origin:GRIB1"), mdc);
-    ensure_equals(mdc.size(), 1u);
+    wassert(actual(mdc.size()) == 1u);
 
     // It should be the second item we inserted
     auto pos2 = test->get_current(mdc[0]);
@@ -248,9 +245,9 @@ add_method("remove", [] {
 
     // See that it changed
     query_index(*test, Matcher::parse("origin:GRIB1"), mdc);
-    ensure_equals(mdc.size(), 1u);
+    wassert(actual(mdc.size()) == 1u);
     const source::Blob& blob = mdc[0].sourceBlob();
-    ensure_equals(blob.filename, "inbound/test.grib1");
+    wassert(actual(blob.filename) == "inbound/test.grib1");
 
     p.commit();
 });
@@ -329,11 +326,11 @@ add_method("query_file", [] {
         "index = origin, product, level\n"
         "unique = origin, product, level, timerange, area, proddef, reftime\n"
     );
-    ensure(test.get() != 0);
+    wassert_true(test.get());
     Pending p;
 
     metadata::TestCollection src("inbound/test.grib1");
-    ensure_equals(src.size(), 3u);
+    wassert(actual(src.size()) == 3u);
 
     test->open();
     p = test->begin_transaction();
@@ -353,16 +350,16 @@ add_method("query_file", [] {
     metadata::Collection mdc;
     auto segs = dataset::SegmentManager::get(".");
     test->scan_file(*segs, "inbound/padded.grib1", mdc.inserter_func());
-    ensure_equals(mdc.size(), 2u);
+    wassert(actual(mdc.size()) == 2u);
 
     // Check that the metadata came out fine
     mdc[0].unset(TYPE_ASSIGNEDDATASET);
     mdc[0].set_source(unique_ptr<Source>(md.source().clone()));
-    ensure(mdc[0] == md);
+    wassert_true(mdc[0] == md);
 
     mdc[1].unset(TYPE_ASSIGNEDDATASET);
     mdc[1].set_source(unique_ptr<Source>(md1.source().clone()));
-    ensure(mdc[1] == md1);
+    wassert_true(mdc[1] == md1);
 });
 
 // Try a summary query that used to be badly generated
@@ -382,7 +379,7 @@ add_method("reproduce_old_issue1", [] {
         "index = origin, product, level\n"
         "unique = origin, product, level, timerange, area, proddef, reftime\n"
     );
-    ensure(test.get() != 0);
+    wassert_true(test.get());
     Pending p;
 
     test->open();
@@ -407,22 +404,22 @@ add_method("reproduce_old_issue1", [] {
     // Query an interval with a partial month only
     Summary summary;
     test->query_summary(Matcher::parse("reftime:>=2005-01-10,<=2005-01-25"), summary);
-    ensure_equals(summary.count(), 1u);
+    wassert(actual(summary.count()) == 1u);
 
     // Query an interval with a partial month and a full month
     summary.clear();
     test->query_summary(Matcher::parse("reftime:>=2004-12-10,<=2005-01-31"), summary);
-    ensure_equals(summary.count(), 1u);
+    wassert(actual(summary.count()) == 1u);
 
     // Query an interval with a full month and a partial month
     summary.clear();
     test->query_summary(Matcher::parse("reftime:>=2005-01-01,<=2005-02-15"), summary);
-    ensure_equals(summary.count(), 1u);
+    wassert(actual(summary.count()) == 1u);
 
     // Query an interval with a partial month, a full month and a partial month
     summary.clear();
     test->query_summary(Matcher::parse("reftime:>=2004-12-10,<=2005-02-15"), summary);
-    ensure_equals(summary.count(), 1u);
+    wassert(actual(summary.count()) == 1u);
 });
 
 // Trying indexing a few metadata in a large file
@@ -446,7 +443,7 @@ add_method("largefile", [] {
         "index = origin, product, level\n"
         "unique = origin, product, level, timerange, area, proddef, reftime\n"
     );
-    ensure(test.get() != 0);
+    wassert_true(test.get());
     Pending p;
 
     test->open();
@@ -461,12 +458,12 @@ add_method("largefile", [] {
     query_index(*test, Matcher(), mdc);
 
     const source::Blob& s0 = mdc[0].sourceBlob();
-    ensure_equals(s0.offset, 0xFFFFffffFFFF0000LLU);
-    ensure_equals(s0.size, 0xFFFFu);
+    wassert(actual(s0.offset) == 0xFFFFffffFFFF0000LLU);
+    wassert(actual(s0.size) == 0xFFFFu);
 
     const source::Blob& s1 = mdc[1].sourceBlob();
-    ensure_equals(s1.offset, 0x100000000LLU);
-    ensure_equals(s1.size, 2000u);
+    wassert(actual(s1.offset) == 0x100000000LLU);
+    wassert(actual(s1.size) == 2000u);
 
     // TODO: level, timerange, area, proddef, reftime
     p.commit();
@@ -496,7 +493,7 @@ add_method("smallfiles", [] {
                 "index = origin, product, level\n"
                 "unique = origin, product, level, timerange, area, proddef, reftime\n"
         );
-        ensure(test.get() != 0);
+        wassert_true(test.get());
         test->open();
 
         // Insert a metadata
@@ -542,7 +539,7 @@ add_method("smallfiles", [] {
                 "unique = origin, product, level, timerange, area, proddef, reftime\n"
                 "smallfiles = yes\n"
         );
-        ensure(test.get() != 0);
+        wassert_true(test.get());
         test->open();
 
         // Insert a metadata
