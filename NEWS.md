@@ -1,3 +1,16 @@
+# New in version 1.x
+
+ * Greatly enlarged Python API
+ * Ported command line scripts to python
+ * Removed unused gridspace querymacro
+ * Removed unused --targetfile option
+ * Removed unused --report option
+ * Ported all Lua infrastructure and scripts to Python
+ * Use POSIX return values from command line tools (see https://www.freebsd.org/cgi/man.cgi?query=sysexits)
+ * Work when sendfile is not available
+ * ondisk2 datasets are deprecated from now on in favour of iseg, but still fully supported
+ * sphinx-based documentation for python bindings
+
 # New in version 1.12
 
  * Check and repack are able to fix an interrupted append to a dir dataset (#156)
