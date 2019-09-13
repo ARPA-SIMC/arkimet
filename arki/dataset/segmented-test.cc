@@ -1,4 +1,3 @@
-#include "arki/tests/legacy.h"
 #include "tests.h"
 #include "arki/segment/tests.h"
 #include "segmented.h"
@@ -443,11 +442,11 @@ add_method("empty_dirs", [](Fixture& f) {
     auto reader = f.config().create_reader();
 
     metadata::Collection mdc(*reader, Matcher());
-    ensure(mdc.empty());
+    wassert_true(mdc.empty());
 
     Summary s;
     reader->query_summary(Matcher::parse(""), s);
-    ensure_equals(s.count(), 0u);
+    wassert(actual(s.count()) == 0u);
 
     sys::File out(sys::File::mkstemp("test"));
     dataset::ByteQuery bq;
@@ -634,35 +633,35 @@ add_method("unarchive_segment", [](Fixture& f) {
     }
 
     // Check that segments are where we expect them
-    ensure(sys::exists("testds/.archive/last/2007/07-07.grib"));
-    ensure(sys::exists("testds/.archive/last/2007/07-07.grib.metadata"));
-    ensure(sys::exists("testds/.archive/last/2007/07-07.grib.summary"));
-    ensure(!sys::exists("testds/.archive/last/2007/07-08.grib"));
-    ensure(!sys::exists("testds/.archive/last/2007/07-08.grib.metadata"));
-    ensure(!sys::exists("testds/.archive/last/2007/07-08.grib.summary"));
-    ensure(!sys::exists("testds/.archive/last/2007/10-09.grib"));
-    ensure(!sys::exists("testds/.archive/last/2007/10-09.grib.metadata"));
-    ensure(!sys::exists("testds/.archive/last/2007/10-09.grib.summary"));
-    ensure(!sys::exists("testds/2007/07-07.grib"));
-    ensure(sys::exists("testds/2007/07-08.grib"));
-    ensure(sys::exists("testds/2007/10-09.grib"));
+    wassert(actual_file("testds/.archive/last/2007/07-07.grib").exists());
+    wassert(actual_file("testds/.archive/last/2007/07-07.grib.metadata").exists());
+    wassert(actual_file("testds/.archive/last/2007/07-07.grib.summary").exists());
+    wassert(actual_file("testds/.archive/last/2007/07-08.grib").not_exists());
+    wassert(actual_file("testds/.archive/last/2007/07-08.grib.metadata").not_exists());
+    wassert(actual_file("testds/.archive/last/2007/07-08.grib.summary").not_exists());
+    wassert(actual_file("testds/.archive/last/2007/10-09.grib").not_exists());
+    wassert(actual_file("testds/.archive/last/2007/10-09.grib.metadata").not_exists());
+    wassert(actual_file("testds/.archive/last/2007/10-09.grib.summary").not_exists());
+    wassert(actual_file("testds/2007/07-07.grib").not_exists());
+    wassert(actual_file("testds/2007/07-08.grib").exists());
+    wassert(actual_file("testds/2007/10-09.grib").exists());
 
     {
         f.makeSegmentedChecker()->segment("2007/07-07.grib")->unarchive();
     }
 
-    ensure(!sys::exists("testds/.archive/last/2007/07-07.grib"));
-    ensure(!sys::exists("testds/.archive/last/2007/07-07.grib.metadata"));
-    ensure(!sys::exists("testds/.archive/last/2007/07-07.grib.summary"));
-    ensure(!sys::exists("testds/.archive/last/2007/07-08.grib"));
-    ensure(!sys::exists("testds/.archive/last/2007/07-08.grib.metadata"));
-    ensure(!sys::exists("testds/.archive/last/2007/07-08.grib.summary"));
-    ensure(!sys::exists("testds/.archive/last/2007/10-09.grib"));
-    ensure(!sys::exists("testds/.archive/last/2007/10-09.grib.metadata"));
-    ensure(!sys::exists("testds/.archive/last/2007/10-09.grib.summary"));
-    ensure(sys::exists("testds/2007/07-07.grib"));
-    ensure(sys::exists("testds/2007/07-08.grib"));
-    ensure(sys::exists("testds/2007/10-09.grib"));
+    wassert(actual_file("testds/.archive/last/2007/07-07.grib").not_exists());
+    wassert(actual_file("testds/.archive/last/2007/07-07.grib.metadata").not_exists());
+    wassert(actual_file("testds/.archive/last/2007/07-07.grib.summary").not_exists());
+    wassert(actual_file("testds/.archive/last/2007/07-08.grib").not_exists());
+    wassert(actual_file("testds/.archive/last/2007/07-08.grib.metadata").not_exists());
+    wassert(actual_file("testds/.archive/last/2007/07-08.grib.summary").not_exists());
+    wassert(actual_file("testds/.archive/last/2007/10-09.grib").not_exists());
+    wassert(actual_file("testds/.archive/last/2007/10-09.grib.metadata").not_exists());
+    wassert(actual_file("testds/.archive/last/2007/10-09.grib.summary").not_exists());
+    wassert(actual_file("testds/2007/07-07.grib").exists());
+    wassert(actual_file("testds/2007/07-08.grib").exists());
+    wassert(actual_file("testds/2007/10-09.grib").exists());
 });
 
 add_method("unarchive_segment_lastonly", [](Fixture& f) {
@@ -688,18 +687,18 @@ add_method("unarchive_segment_lastonly", [](Fixture& f) {
 
     // Check that segments are where we expect them
     sys::rename("testds/.archive/last/2007", "testds/.archive/testds-2007");
-    ensure(sys::exists("testds/.archive/testds-2007/07-07.grib"));
-    ensure(sys::exists("testds/.archive/testds-2007/07-07.grib.metadata"));
-    ensure(sys::exists("testds/.archive/testds-2007/07-07.grib.summary"));
-    ensure(!sys::exists("testds/.archive/testds-2007/07-08.grib"));
-    ensure(!sys::exists("testds/.archive/testds-2007/07-08.grib.metadata"));
-    ensure(!sys::exists("testds/.archive/testds-2007/07-08.grib.summary"));
-    ensure(!sys::exists("testds/.archive/testds-2007/10-09.grib"));
-    ensure(!sys::exists("testds/.archive/testds-2007/10-09.grib.metadata"));
-    ensure(!sys::exists("testds/.archive/testds-2007/10-09.grib.summary"));
-    ensure(!sys::exists("testds/2007/07-07.grib"));
-    ensure(sys::exists("testds/2007/07-08.grib"));
-    ensure(sys::exists("testds/2007/10-09.grib"));
+    wassert(actual_file("testds/.archive/testds-2007/07-07.grib").exists());
+    wassert(actual_file("testds/.archive/testds-2007/07-07.grib.metadata").exists());
+    wassert(actual_file("testds/.archive/testds-2007/07-07.grib.summary").exists());
+    wassert(actual_file("testds/.archive/testds-2007/07-08.grib").not_exists());
+    wassert(actual_file("testds/.archive/testds-2007/07-08.grib.metadata").not_exists());
+    wassert(actual_file("testds/.archive/testds-2007/07-08.grib.summary").not_exists());
+    wassert(actual_file("testds/.archive/testds-2007/10-09.grib").not_exists());
+    wassert(actual_file("testds/.archive/testds-2007/10-09.grib.metadata").not_exists());
+    wassert(actual_file("testds/.archive/testds-2007/10-09.grib.summary").not_exists());
+    wassert(actual_file("testds/2007/07-07.grib").not_exists());
+    wassert(actual_file("testds/2007/07-08.grib").exists());
+    wassert(actual_file("testds/2007/10-09.grib").exists());
 
     try {
         f.makeSegmentedChecker()->segment("../test-ds/2007/07-07.grib")->unarchive();
@@ -708,18 +707,18 @@ add_method("unarchive_segment_lastonly", [](Fixture& f) {
         wassert(actual(e.what()).contains("segment is not in last/ archive"));
     }
 
-    ensure(sys::exists("testds/.archive/testds-2007/07-07.grib"));
-    ensure(sys::exists("testds/.archive/testds-2007/07-07.grib.metadata"));
-    ensure(sys::exists("testds/.archive/testds-2007/07-07.grib.summary"));
-    ensure(!sys::exists("testds/.archive/testds-2007/07-08.grib"));
-    ensure(!sys::exists("testds/.archive/testds-2007/07-08.grib.metadata"));
-    ensure(!sys::exists("testds/.archive/testds-2007/07-08.grib.summary"));
-    ensure(!sys::exists("testds/.archive/testds-2007/10-09.grib"));
-    ensure(!sys::exists("testds/.archive/testds-2007/10-09.grib.metadata"));
-    ensure(!sys::exists("testds/.archive/testds-2007/10-09.grib.summary"));
-    ensure(!sys::exists("testds/2007/07-07.grib"));
-    ensure(sys::exists("testds/2007/07-08.grib"));
-    ensure(sys::exists("testds/2007/10-09.grib"));
+    wassert(actual_file("testds/.archive/testds-2007/07-07.grib").exists());
+    wassert(actual_file("testds/.archive/testds-2007/07-07.grib.metadata").exists());
+    wassert(actual_file("testds/.archive/testds-2007/07-07.grib.summary").exists());
+    wassert(actual_file("testds/.archive/testds-2007/07-08.grib").not_exists());
+    wassert(actual_file("testds/.archive/testds-2007/07-08.grib.metadata").not_exists());
+    wassert(actual_file("testds/.archive/testds-2007/07-08.grib.summary").not_exists());
+    wassert(actual_file("testds/.archive/testds-2007/10-09.grib").not_exists());
+    wassert(actual_file("testds/.archive/testds-2007/10-09.grib.metadata").not_exists());
+    wassert(actual_file("testds/.archive/testds-2007/10-09.grib.summary").not_exists());
+    wassert(actual_file("testds/2007/07-07.grib").not_exists());
+    wassert(actual_file("testds/2007/07-08.grib").exists());
+    wassert(actual_file("testds/2007/10-09.grib").exists());
 });
 
 }
