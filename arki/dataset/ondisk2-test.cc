@@ -1,4 +1,3 @@
-#include "arki/tests/legacy.h"
 #include "arki/dataset/tests.h"
 #include "arki/exceptions.h"
 #include "arki/dataset/ondisk2/reader.h"
@@ -198,11 +197,11 @@ add_method("acquire_replace", [](Fixture& f) {
 
         // Make sure we're not getting the deleted element
         const source::Blob& blob0 = mdc[0].sourceBlob();
-        ensure(blob0.offset > 0);
+        wassert(actual(blob0.offset) > 0);
         const source::Blob& blob1 = mdc[1].sourceBlob();
-        ensure(blob1.offset > 0);
+        wassert(actual(blob1.offset) > 0);
         const source::Blob& blob2 = mdc[2].sourceBlob();
-        ensure(blob2.offset > 0);
+        wassert(actual(blob2.offset) > 0);
     }
 
     // Test querying the summary
