@@ -338,6 +338,14 @@ then
     AC_SUBST(PYTHON_CFLAGS)
     AC_SUBST(PYTHON_LDFLAGS)
     AC_DEFINE(HAVE_PYTHON, 1, [Have Python bindings])
+    AX_PYTHON_MODULE(werkzeug, yes)
+    AX_PYTHON_MODULE(setproctitle, yes)
+    AX_PYTHON_MODULE(nose, yes)
+    AX_PYTHON_MODULE(jinja2, yes)
+    AX_PYTHON_MODULE(wreport, yes)
+    AX_PYTHON_MODULE(dballe, yes)
+    AX_PYTHON_MODULE(h5py)
+    AX_PYTHON_MODULE(shapely)
 fi
 fi
 AM_CONDITIONAL([DO_PYTHON], [test "$enable_python" != "no"])
