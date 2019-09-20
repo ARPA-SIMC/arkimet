@@ -26,8 +26,9 @@ def scan(msg, md):
 
     # Set product based on report name
     if msg.report:
-        # TODO (see #190) md["product"]["t"] = msg.report
-        pass
+        product = md.to_python("product")
+        product["value"]["t"] = msg.report
+        md["product"] = product
 
     # Set timerange
     p1_list = [d["trange"].p1 for d in msg.query_data()]
