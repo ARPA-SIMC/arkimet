@@ -354,7 +354,7 @@ class TestScanBufr(unittest.TestCase):
         self.assertEqual(md["product"], "BUFR(255, 255, 000, t=test")
         self.assertEqual(md["area"], "GRIB(lat=4448714, lon=1136473)")
         self.assertEqual(md["reftime"], "2019-09-19T00:00:00Z")
-        self.assertEqual(md["timerange", "Timedef(1h)")
+        self.assertEqual(md["timerange"], "Timedef(1h)")
         self.assertNotIn("run", md)
         self.assertNotIn("level", md)
         self.assertNotIn("proddef", md)
