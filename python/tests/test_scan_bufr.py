@@ -338,3 +338,23 @@ class TestScanBufr(unittest.TestCase):
         self.assertNotIn("reftime", mds[3])
         self.assertNotIn("reftime", mds[4])
         self.assertNotIn("reftime", mds[5])
+
+    def test_generic_forecast(self):
+        """
+        Test scanning a generic forecast. The generic scanner update the
+        "t" key to the report name, add the timerange and the reftime is set to
+        the emission time (validity time - p1)
+        """
+        mds = self.read("inbound/generic_forecast.bufr")
+        self.assertEqual(len(mds), 1)
+
+        md = mds[0]
+        self.assertBufrSource(md, "inbound/generic_forecast.bufr")
+        self.assertEqual(md["origin"], "BUFR(200, 000)")
+        self.assertEqual(md["product"], "BUFR(255, 255, 000, t=test")
+        self.assertEqual(md["area"], "GRIB(lat=4448714, lon=1136473)")
+        self.assertEqual(md["reftime"], "2019-09-19T00:00:00Z")
+        self.assertEqual(md["timerange", "Timedef(1h)")
+        self.assertNotIn("run", md)
+        self.assertNotIn("level", md)
+        self.assertNotIn("proddef", md)
