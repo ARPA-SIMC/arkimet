@@ -349,7 +349,7 @@ class TestScanBufr(unittest.TestCase):
         self.assertEqual(len(mds), 1)
 
         md = mds[0]
-        self.assertBufrSource(md, "inbound/generic_forecast.bufr")
+        self.assertBufrSource(md, "inbound/generic_forecast.bufr", 0, 120)
         self.assertEqual(md["origin"], "BUFR(200, 000)")
         self.assertEqual(md["product"], "BUFR(255, 255, 000, t=test")
         self.assertEqual(md["area"], "GRIB(lat=4448714, lon=1136473)")
