@@ -351,7 +351,7 @@ class TestScanBufr(unittest.TestCase):
         md = mds[0]
         self.assertBufrSource(md, "inbound/generic_forecast.bufr", 0, 120)
         self.assertEqual(md["origin"], "BUFR(200, 000)")
-        self.assertEqual(md["product"], "BUFR(255, 255, 000, t=test")
+        self.assertEqual(md["product"], "BUFR(255, 255, 000, t=test)")
         self.assertEqual(md["area"], "GRIB(lat=4448714, lon=1136473)")
         self.assertEqual(md["reftime"], "2019-09-19T00:00:00Z")
         self.assertEqual(md["timerange"], "Timedef(1h)")
