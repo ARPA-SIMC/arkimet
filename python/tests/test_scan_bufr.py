@@ -341,9 +341,11 @@ class TestScanBufr(unittest.TestCase):
 
     def test_generic_forecast(self):
         """
-        Test scanning a generic forecast. The generic scanner update the
-        "t" key to the report name, add the timerange and the reftime is set to
-        the emission time (validity time - p1)
+        Test scanning a generic forecast.
+
+        The generic scanner update the "t" key to the report name, add the
+        timerange and the reftime is set to the emission time (validity time -
+        p1)
         """
         mds = self.read("inbound/generic_forecast.bufr")
         self.assertEqual(len(mds), 1)
