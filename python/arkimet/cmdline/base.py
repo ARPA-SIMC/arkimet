@@ -197,7 +197,7 @@ class AppWithProcessor(App):
                                      help="output an archive with the given format"
                                           " (default: tar, supported: tar, tar.gz, tar.xz, zip)")
 
-        self.parser_out.add_argument("--outfile", "-o", metavar="file",
+        self.parser_out.add_argument("--output", "-o", metavar="file",
                                      help="write the output to the given file instead of standard output")
         self.parser_out.add_argument("--sort", metavar="period:order",
                                      help="sort order.  Period can be year, month, day, hour or minute."
