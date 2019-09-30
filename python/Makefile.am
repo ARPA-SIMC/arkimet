@@ -93,12 +93,6 @@ _arkimet.so: _arkimet.la
 	test -e .libs/_arkimet.so || ( echo ".libs/_arkimet.so not built" >&2 ; exit 1 )
 	ln -fs .libs/_arkimet.so $@
 
-#python-arkimet.rst: doc-arkimet $(pkgpython_PYTHON) _arkimet.so
-#	$(PYTHON) $(srcdir)/doc-arkimet > $@ || (rm -f $@; false)
-#
-#python-arkimet.html: python-arkimet.rst
-#	rst2html $< > $@ || (rm -f $@; false)
-
 clean-local:
 	rm -f _arkimet.so
 	rm -rf __pycache__ arkimet/__pycache__
@@ -136,7 +130,6 @@ EXTRA_DIST = \
     arki-dump.h \
     arki-xargs.h \
     arki-bufr-prepare.h
-#    doc-arkimet \
 #    testlib.py \
 #    $(arkimet_python_tests)
 
