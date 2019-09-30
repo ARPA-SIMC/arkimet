@@ -14,6 +14,13 @@ LT_INIT
 LT_LANG([C++])
 AC_PROG_LIBTOOL
 
+AC_ARG_ENABLE([docs],
+    [AS_HELP_STRING(
+        [--enable-docs],
+        [enable building of the documentation])],
+    [],
+    [enable_docs="yes"])
+
 AC_ARG_ENABLE([bufr],
     [AS_HELP_STRING(
         [--enable-bufr],
@@ -354,6 +361,16 @@ fi
 fi
 AM_CONDITIONAL([DO_PYTHON], [test "$enable_python" != "no"])
 
+if test x$enable_docs = xyes
+then
+    AC_CHECK_PROGS(SPHINX_BUILD, [sphinx-build sphinx-build-3 sphinx-build-3.6], [no])
+    if test $SPHINX_BUILD = no
+    then
+        enable_docs=no
+    fi
+fi
+AC_SUBST(SPHINX_BUILD)
+AM_CONDITIONAL([DO_DOCS], [test x"$enable_docs" = x"yes"])
 
 dnl Enable tests that require ARPAE-specific grib_api/eccodes definition patches
 if test "x$enable_arpae_tests" = xyes
@@ -455,6 +472,7 @@ AS_HELP_STRING([SQLite version:], [$SQLITE3_VERSION])
 AS_HELP_STRING([Python:], [$enable_python])
 AS_HELP_STRING([ARPAE specific tests:], [$enable_arpae_tests])
 AS_HELP_STRING([I/O profiling:], [$enable_iotrace])
+AS_HELP_STRING([documentation:], [$enable_docs])
 AS_HELP_STRING([Code coverage:], [$enable_gcov])
 dnl AS_HELP_STRING([BUFR support via DB-All.e:], [$have_dballe])
 dnl AS_HELP_STRING([GRIB1 support via Meteosatlib's libgrib:], [$have_libgrib])
