@@ -18,18 +18,6 @@ dist_doc_DATA = \
 
 doc_matcherdir = $(docdir)/matcher
 
-dist_doc_matcher_DATA = \
-		   matcher/origin.md \
-		   matcher/product.md \
-		   matcher/level.md \
-		   matcher/timerange.md \
-		   matcher/reftime.md \
-		   matcher/area.md \
-		   matcher/proddef.md \
-		   matcher/run.md \
-		   matcher/aliases.md \
-		   matcher/expressions.md
-
 CLEANFILES =
 
 if ASCIIDOC
@@ -52,6 +40,18 @@ sphinx_packaged_sources = \
 	datasets/archive.rst \
 	segments/concat.rst segments/dir.rst segments/gz.rst \
 	segments/tar.rst segments/zip.rst \
+	matcher.rst \
+	matcher/aliases.rst \
+	matcher/area.rst \
+	matcher/level.rst \
+	matcher/origin.rst \
+	matcher/proddef.rst \
+	matcher/product.rst \
+	matcher/quantity.rst \
+	matcher/reftime.rst \
+	matcher/run.rst \
+	matcher/task.rst \
+	matcher/timerange.rst \
 	http-api.rst
 
 sphinx_generated_sources = \

@@ -1,10 +1,11 @@
---[[ Using aliases
+Using aliases
+=============
 
 For every metadata type it is possible to define some aliases for the most
 commonly used search expressions.
 
-Aliases are defined in /etc/arkimet/match-alias.conf, which has one section per
-metadata type. For example:
+Aliases are defined in ``/etc/arkimet/match-alias.conf``, which has one section per
+metadata type. For example::
 
   [origin]
   arpa = GRIB1,200
@@ -26,16 +27,11 @@ metadata type. For example:
   # Height from surface
   g02    = GRIB1,105,2                                            
   g10    = GRIB1,105,10
-]]
 
-local sample = arki.metadata.new()
 
-sample:set(arki_origin.grib1(200, 0, 0))
-sample:set(arki_product.grib1(98, 128, 167))
-sample:set(arki_level.grib1(1))
+.. toctree::
+   :maxdepth: 2
+   :caption: Contents:
 
-ensure_matches(sample, "origin:arpa")
-ensure_matches(sample, "origin:arpa or GRIB1,98,0")
-ensure_matches(sample, "product:t")
-ensure_matches(sample, "product:t or z")
-ensure_matches(sample, "origin:arpa; product:t; level:g00 or g02")
+.. doctest matched: 0
+.. doctest not_matched: 0

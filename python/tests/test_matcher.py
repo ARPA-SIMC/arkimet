@@ -1,6 +1,7 @@
 import unittest
 import glob
 import re
+import os
 import arkimet as arki
 
 
@@ -21,13 +22,18 @@ class TestMatcher(unittest.TestCase):
         """
         Run the doc/matcher/*.txt as doctests
         """
-        re_given = re.compile(r"^Given (\w+ `[^`]+`(?:\s*,\s*\w+ `[^`]+`)*)")
-        re_given_item = re.compile(r"(\w+) `([^`]+)`")
-        re_matches = re.compile(r"^\* `(.+)` matches\b")
-        re_not_matches = re.compile(r"^\* `(.+)` does not match\b")
-        re_expected = re.compile(r"^\[//\]: # \(matched: (\d+), not matched: (\d+)\)\s*$")
+        re_given = re.compile(r"^Given (\w+ ``[^`]+``(?:\s*,\s*\w+ ``[^`]+``)*)")
+        re_given_item = re.compile(r"(\w+) ``([^`]+)``")
+        re_matches = re.compile(r"^\* ``(.+)`` matches\b")
+        re_not_matches = re.compile(r"^\* ``(.+)`` does not match\b")
+        re_doctest_info = re.compile(r".. doctest (\w+): (.+)")
 
-        for pathname in glob.glob("matcher/*.md"):
+        docdir = os.path.join(os.environ["TOP_SRCDIR"], "doc")
+        doctests = [os.path.join(docdir, "matcher.rst")]
+        doctests += glob.glob(os.path.join(docdir, "matcher", "*.rst"))
+        self.assertTrue(doctests)
+
+        for pathname in doctests:
             md = None
             expected_matches = 0
             expected_not_matches = 0
@@ -68,10 +74,13 @@ class TestMatcher(unittest.TestCase):
                         count_not_matches += 1
                         continue
 
-                    mo = re_expected.match(line)
+                    mo = re_doctest_info.match(line)
                     if mo:
-                        expected_matches = int(mo.group(1))
-                        expected_not_matches = int(mo.group(2))
+                        tag = mo.group(1)
+                        if tag == "matched":
+                            expected_matches = int(mo.group(2))
+                        elif tag == "not_matched":
+                            expected_not_matches = int(mo.group(2))
                         continue
 
                 if (expected_matches != count_matches

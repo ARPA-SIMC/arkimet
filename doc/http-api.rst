@@ -136,3 +136,7 @@ Style can be one of:
 
 Returns an arkimet configuration file with the configuration for this dataset
 in this instance of ``arki-server``.
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Contents:
