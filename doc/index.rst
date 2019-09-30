@@ -34,6 +34,7 @@ Arkimet is Free Software, licensed under the GNU General Public License version
 
    datasets
    segments
+   http-api
 
 ==================
 

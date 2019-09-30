@@ -1,10 +1,7 @@
-md_docs = web-api.md
-
+EXTRA_DIST =
 BUILT_SOURCES =
 noinst_DATA =
-
-doc_DATA = \
-             $(md_docs)
+doc_DATA =
 
 dist_doc_DATA = \
 		DATASET \
@@ -46,8 +43,6 @@ CLEANFILES += arkiguide.it.html
 
 endif
 
-EXTRA_DIST = $(md_docs)
-
 if DO_DOCS
 
 # Sphinx sources
@@ -56,7 +51,8 @@ sphinx_packaged_sources = \
 	datasets.rst segments.rst \
 	datasets/archive.rst \
 	segments/concat.rst segments/dir.rst segments/gz.rst \
-	segments/tar.rst segments/zip.rst
+	segments/tar.rst segments/zip.rst \
+	http-api.rst
 
 sphinx_generated_sources = \
 	datasets/simple.rst datasets/ondisk2.rst datasets/iseg.rst
