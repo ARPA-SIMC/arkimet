@@ -1,0 +1,213 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>arkimet.bbox package &#8212; arkimet 1.16 documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="prev" title="arkimet.formatter package" href="arkimet.formatter.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="arkimet-bbox-package">
+<h1>arkimet.bbox package<a class="headerlink" href="#arkimet-bbox-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-arkimet.bbox.bbox">
+<span id="arkimet-bbox-bbox-module"></span><h2>arkimet.bbox.bbox module<a class="headerlink" href="#module-arkimet.bbox.bbox" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="arkimet.bbox.bbox.BBox">
+<em class="property">class </em><code class="descclassname">arkimet.bbox.bbox.</code><code class="descname">BBox</code><a class="reference internal" href="../_modules/arkimet/bbox/bbox.html#BBox"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.bbox.bbox.BBox" title="Permalink to this definition">¶</a></dt>
+<dd><p>Infrastructure for computing bounding boxes from arkimet areas</p>
+<dl class="attribute">
+<dt id="arkimet.bbox.bbox.BBox.by_style">
+<code class="descname">by_style</code><em class="property"> = {'GRIB': [&lt;function bbox_grib&gt;], 'ODIMH5': [&lt;function bbox_odimh5&gt;], 'VM2': [&lt;function bbox_vm2&gt;]}</em><a class="headerlink" href="#arkimet.bbox.bbox.BBox.by_style" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="arkimet.bbox.bbox.BBox.compute">
+<code class="descname">compute</code><span class="sig-paren">(</span><em>t: Dict[str, Any]</em><span class="sig-paren">)</span> &#x2192; List[Tuple[float, float]]<a class="reference internal" href="../_modules/arkimet/bbox/bbox.html#BBox.compute"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.bbox.bbox.BBox.compute" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="classmethod">
+<dt id="arkimet.bbox.bbox.BBox.register">
+<em class="property">classmethod </em><code class="descname">register</code><span class="sig-paren">(</span><em>style: str, bbox: Callable[[Dict[str, Any]], Optional[List[Tuple[float, float]]]]</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/arkimet/bbox/bbox.html#BBox.register"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.bbox.bbox.BBox.register" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-arkimet.bbox.common">
+<span id="arkimet-bbox-common-module"></span><h2>arkimet.bbox.common module<a class="headerlink" href="#module-arkimet.bbox.common" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="arkimet.bbox.common.norm_lon">
+<code class="descclassname">arkimet.bbox.common.</code><code class="descname">norm_lon</code><span class="sig-paren">(</span><em>lon</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/arkimet/bbox/common.html#norm_lon"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.bbox.common.norm_lon" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="arkimet.bbox.common.utm2ll">
+<code class="descclassname">arkimet.bbox.common.</code><code class="descname">utm2ll</code><span class="sig-paren">(</span><em>x</em>, <em>y</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/arkimet/bbox/common.html#utm2ll"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.bbox.common.utm2ll" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert UTM to Lat-Lon</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="arkimet.bbox.common.utm2ll2">
+<code class="descclassname">arkimet.bbox.common.</code><code class="descname">utm2ll2</code><span class="sig-paren">(</span><em>x</em>, <em>y</em>, <em>falseEasting</em>, <em>falseNorthing</em>, <em>zone</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/arkimet/bbox/common.html#utm2ll2"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.bbox.common.utm2ll2" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert UTM to Lat-Lon (more complete version used for GRIB2)</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-arkimet.bbox.grib">
+<span id="arkimet-bbox-grib-module"></span><h2>arkimet.bbox.grib module<a class="headerlink" href="#module-arkimet.bbox.grib" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="arkimet.bbox.grib.bbox_grib">
+<code class="descclassname">arkimet.bbox.grib.</code><code class="descname">bbox_grib</code><span class="sig-paren">(</span><em>area</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/arkimet/bbox/grib.html#bbox_grib"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.bbox.grib.bbox_grib" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute bounding boxes for GRIB areas</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-arkimet.bbox.odimh5">
+<span id="arkimet-bbox-odimh5-module"></span><h2>arkimet.bbox.odimh5 module<a class="headerlink" href="#module-arkimet.bbox.odimh5" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="arkimet.bbox.odimh5.bbox_odimh5">
+<code class="descclassname">arkimet.bbox.odimh5.</code><code class="descname">bbox_odimh5</code><span class="sig-paren">(</span><em>area</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/arkimet/bbox/odimh5.html#bbox_odimh5"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.bbox.odimh5.bbox_odimh5" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute bounding boxes for ODIM areas</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-arkimet.bbox.vm2">
+<span id="arkimet-bbox-vm2-module"></span><h2>arkimet.bbox.vm2 module<a class="headerlink" href="#module-arkimet.bbox.vm2" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="arkimet.bbox.vm2.bbox_vm2">
+<code class="descclassname">arkimet.bbox.vm2.</code><code class="descname">bbox_vm2</code><span class="sig-paren">(</span><em>area</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/arkimet/bbox/vm2.html#bbox_vm2"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.bbox.vm2.bbox_vm2" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute bounding boxes for VM2 areas</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-arkimet.bbox">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-arkimet.bbox" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="arkimet.bbox.BBox">
+<em class="property">class </em><code class="descclassname">arkimet.bbox.</code><code class="descname">BBox</code><a class="reference internal" href="../_modules/arkimet/bbox/bbox.html#BBox"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.bbox.BBox" title="Permalink to this definition">¶</a></dt>
+<dd><p>Infrastructure for computing bounding boxes from arkimet areas</p>
+<dl class="attribute">
+<dt id="arkimet.bbox.BBox.by_style">
+<code class="descname">by_style</code><em class="property"> = {'GRIB': [&lt;function bbox_grib&gt;], 'ODIMH5': [&lt;function bbox_odimh5&gt;], 'VM2': [&lt;function bbox_vm2&gt;]}</em><a class="headerlink" href="#arkimet.bbox.BBox.by_style" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="arkimet.bbox.BBox.compute">
+<code class="descname">compute</code><span class="sig-paren">(</span><em>t: Dict[str, Any]</em><span class="sig-paren">)</span> &#x2192; List[Tuple[float, float]]<a class="reference internal" href="../_modules/arkimet/bbox/bbox.html#BBox.compute"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.bbox.BBox.compute" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="classmethod">
+<dt id="arkimet.bbox.BBox.register">
+<em class="property">classmethod </em><code class="descname">register</code><span class="sig-paren">(</span><em>style: str, bbox: Callable[[Dict[str, Any]], Optional[List[Tuple[float, float]]]]</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/arkimet/bbox/bbox.html#BBox.register"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.bbox.BBox.register" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">arkimet</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../matcher.html">Match expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../datasets.html">Datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../segments.html">Data segments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../http-api.html">arki-server HTTP API</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Arkimet Python API</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="arkimet.html">arkimet package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="arkimet.cfg.html">arkimet.cfg package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="arkimet.dataset.html">arkimet.dataset package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="arkimet.scan.html">arkimet.scan package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="arkimet.formatter.html">arkimet.formatter package</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">arkimet.bbox package</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="index.html#indices-and-tables">Indices and tables</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="index.html">Arkimet Python API</a><ul>
+  <li><a href="arkimet.html">arkimet package</a><ul>
+      <li>Previous: <a href="arkimet.formatter.html" title="previous chapter">arkimet.formatter package</a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2019, Enrico Zini.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.8.4</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.8</a>
+      
+      |
+      <a href="../_sources/python/arkimet.bbox.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

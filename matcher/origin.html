@@ -1,0 +1,192 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Matching origins &#8212; arkimet 1.16 documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Matching areas" href="area.html" />
+    <link rel="prev" title="Matching reference times" href="reftime.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="matching-origins">
+<h1>Matching origins<a class="headerlink" href="#matching-origins" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="grib1">
+<h2>GRIB1<a class="headerlink" href="#grib1" title="Permalink to this headline">¶</a></h2>
+<p>Syntax: <code class="docutils literal notranslate"><span class="pre">origin:GRIB1,centre,subcentre,process</span></code></p>
+<p>Any of <code class="docutils literal notranslate"><span class="pre">centre</span></code>, <code class="docutils literal notranslate"><span class="pre">subcentre</span></code>, <code class="docutils literal notranslate"><span class="pre">process</span></code> can be omitted; if omitted, any
+value will match.</p>
+<div class="section" id="examples">
+<h3>Examples<a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h3>
+<p>Given origin <code class="docutils literal notranslate"><span class="pre">GRIB1(98,</span> <span class="pre">0,</span> <span class="pre">12)</span></code>:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">origin:GRIB1</span></code> matches: you can omit trailing commas</li>
+<li><code class="docutils literal notranslate"><span class="pre">origin:GRIB1,,,</span></code> matches</li>
+<li><code class="docutils literal notranslate"><span class="pre">origin:GRIB1,98</span></code> matches</li>
+<li><code class="docutils literal notranslate"><span class="pre">origin:GRIB1,98,,12</span></code> matches</li>
+<li><code class="docutils literal notranslate"><span class="pre">origin:GRIB2</span></code> does not match</li>
+<li><code class="docutils literal notranslate"><span class="pre">origin:GRIB1,200</span></code> does not match</li>
+<li><code class="docutils literal notranslate"><span class="pre">origin:GRIB1,98,0,11</span></code> does not match</li>
+</ul>
+</div>
+</div>
+<div class="section" id="grib2">
+<h2>GRIB2<a class="headerlink" href="#grib2" title="Permalink to this headline">¶</a></h2>
+<p>Syntax: <code class="docutils literal notranslate"><span class="pre">origin:GRIB2,centre,subcentre,processtype,bgprocessid,processid</span></code></p>
+<p>Any of <code class="docutils literal notranslate"><span class="pre">centre</span></code>, <code class="docutils literal notranslate"><span class="pre">subcentre</span></code>, <code class="docutils literal notranslate"><span class="pre">processtype</span></code>, <code class="docutils literal notranslate"><span class="pre">bgprocessid</span></code>,
+<code class="docutils literal notranslate"><span class="pre">processid</span></code> can be omitted; if omitted, any value will match.</p>
+<div class="section" id="id1">
+<h3>Examples<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h3>
+<p>Given origin <code class="docutils literal notranslate"><span class="pre">GRIB2(98,</span> <span class="pre">0,</span> <span class="pre">1,</span> <span class="pre">2,</span> <span class="pre">3)</span></code>:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">origin:GRIB2</span></code> matches</li>
+<li><code class="docutils literal notranslate"><span class="pre">origin:GRIB2,98</span></code> matches</li>
+<li><code class="docutils literal notranslate"><span class="pre">origin:GRIB2,98,,,2</span></code> matches</li>
+<li><code class="docutils literal notranslate"><span class="pre">origin:GRIB2,98,0,1,2,3</span></code> matches</li>
+<li><code class="docutils literal notranslate"><span class="pre">origin:GRIB1</span></code> does not match</li>
+<li><code class="docutils literal notranslate"><span class="pre">origin:GRIB2,200</span></code> does not match</li>
+<li><code class="docutils literal notranslate"><span class="pre">origin:GRIB2,98,1,,2</span></code> does not match</li>
+</ul>
+</div>
+</div>
+<div class="section" id="bufr">
+<h2>BUFR<a class="headerlink" href="#bufr" title="Permalink to this headline">¶</a></h2>
+<p>Syntax: <code class="docutils literal notranslate"><span class="pre">origin:BUFR,centre,subcentre</span></code></p>
+<p>Any of <code class="docutils literal notranslate"><span class="pre">centre</span></code> or <code class="docutils literal notranslate"><span class="pre">subcentre</span></code> can be omitted; if omitted, any value will
+match.</p>
+<p><code class="docutils literal notranslate"><span class="pre">centre</span></code> is the originating centre (see Common Code table C-11).</p>
+<p><code class="docutils literal notranslate"><span class="pre">subcentre</span></code> is the originating subcentre (see Common Code table C-12).</p>
+<div class="section" id="id2">
+<h3>Examples<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h3>
+<p>Given origin <code class="docutils literal notranslate"><span class="pre">BUFR(98,</span> <span class="pre">0)</span></code>:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">origin:BUFR</span></code> matches</li>
+<li><code class="docutils literal notranslate"><span class="pre">origin:BUFR,,</span></code> matches</li>
+<li><code class="docutils literal notranslate"><span class="pre">origin:BUFR,98</span></code> matches</li>
+<li><code class="docutils literal notranslate"><span class="pre">origin:BUFR,98,0</span></code> matches</li>
+<li><code class="docutils literal notranslate"><span class="pre">origin:BUFR,,0</span></code> matches</li>
+<li><code class="docutils literal notranslate"><span class="pre">origin:GRIB1</span></code> does not match</li>
+<li><code class="docutils literal notranslate"><span class="pre">origin:BUFR,200</span></code> does not match</li>
+<li><code class="docutils literal notranslate"><span class="pre">origin:BUFR,98,1</span></code> does not match</li>
+</ul>
+</div>
+</div>
+<div class="section" id="odimh5">
+<h2>ODIMH5<a class="headerlink" href="#odimh5" title="Permalink to this headline">¶</a></h2>
+<p>Syntax: <code class="docutils literal notranslate"><span class="pre">origin:ODIMH5,wmo,rad,nod_or_plc</span></code></p>
+<p>Origin of data identified using “WMO” (wmo), “RAD” (rad) and “NOD” or “PLC”.</p>
+<p>For the <code class="docutils literal notranslate"><span class="pre">nod_or_plc</span></code> attribute values, <code class="docutils literal notranslate"><span class="pre">NOD</span></code> takes precedence over <code class="docutils literal notranslate"><span class="pre">PLC</span></code>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">wmo</span></code>, <code class="docutils literal notranslate"><span class="pre">rad</span></code> and <code class="docutils literal notranslate"><span class="pre">nod_or_plc</span></code> values can be omitted.</p>
+<div class="section" id="id3">
+<h3>Examples<a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h3>
+<p>Given origin <code class="docutils literal notranslate"><span class="pre">ODIMH5(02954,</span> <span class="pre">FI44,</span> <span class="pre">Anjalankoski)</span></code>:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">origin:ODIMH5</span></code> matches</li>
+<li><code class="docutils literal notranslate"><span class="pre">origin:ODIMH5,02954</span></code> matches</li>
+<li><code class="docutils literal notranslate"><span class="pre">origin:ODIMH5,,FI44</span></code> matches</li>
+<li><code class="docutils literal notranslate"><span class="pre">origin:ODIMH5,,,Anjalankoski</span></code> matches</li>
+<li><code class="docutils literal notranslate"><span class="pre">origin:GRIB1</span></code> does not match</li>
+<li><code class="docutils literal notranslate"><span class="pre">origin:BUFR,200</span></code> does not match</li>
+<li><code class="docutils literal notranslate"><span class="pre">origin:BUFR,98,1</span></code> does not match</li>
+</ul>
+<div class="toctree-wrapper compound">
+</div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">arkimet</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../matcher.html">Match expressions</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../matcher.html#examples">Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../datasets.html">Datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../segments.html">Data segments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../http-api.html">arki-server HTTP API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../python/index.html">Arkimet Python API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../python/index.html#indices-and-tables">Indices and tables</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="../matcher.html">Match expressions</a><ul>
+      <li>Previous: <a href="reftime.html" title="previous chapter">Matching reference times</a></li>
+      <li>Next: <a href="area.html" title="next chapter">Matching areas</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2019, Enrico Zini.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.8.4</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.8</a>
+      
+      |
+      <a href="../_sources/matcher/origin.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

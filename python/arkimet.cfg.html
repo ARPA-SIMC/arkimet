@@ -1,0 +1,204 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>arkimet.cfg package &#8212; arkimet 1.16 documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="arkimet.dataset package" href="arkimet.dataset.html" />
+    <link rel="prev" title="arkimet package" href="arkimet.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="arkimet-cfg-package">
+<h1>arkimet.cfg package<a class="headerlink" href="#arkimet-cfg-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="module-arkimet.cfg">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-arkimet.cfg" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="arkimet.cfg.Section">
+<em class="property">class </em><code class="descclassname">arkimet.cfg.</code><code class="descname">Section</code><a class="headerlink" href="#arkimet.cfg.Section" title="Permalink to this definition">¶</a></dt>
+<dd><p>Arkimet configuration, as a section of key/value options</p>
+<dl class="method">
+<dt id="arkimet.cfg.Section.get">
+<code class="descname">get</code><span class="sig-paren">(</span><em>name: str</em>, <em>default: Optional[Any]=None</em><span class="sig-paren">)</span> &#x2192; Union[str, Any]<a class="headerlink" href="#arkimet.cfg.Section.get" title="Permalink to this definition">¶</a></dt>
+<dd><p>return the value for the given key, or the given default value if it does not exist</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="arkimet.cfg.Section.items">
+<code class="descname">items</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; Iterable[Tuple[str, str]]<a class="headerlink" href="#arkimet.cfg.Section.items" title="Permalink to this definition">¶</a></dt>
+<dd><p>Iterate over key/value pairs</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="arkimet.cfg.Section.keys">
+<code class="descname">keys</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; Iterable[str]<a class="headerlink" href="#arkimet.cfg.Section.keys" title="Permalink to this definition">¶</a></dt>
+<dd><p>Iterate over key names</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="arkimet.cfg.Section.parse">
+<code class="descname">parse</code><span class="sig-paren">(</span><em>Union[Str, TextIO]</em><span class="sig-paren">)</span> &#x2192; arki.cfg.Section<a class="headerlink" href="#arkimet.cfg.Section.parse" title="Permalink to this definition">¶</a></dt>
+<dd><p>parse the named file or open file, and return the resulting Section object</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="arkimet.cfg.Section.write">
+<code class="descname">write</code><span class="sig-paren">(</span><em>TextIO</em><span class="sig-paren">)</span><a class="headerlink" href="#arkimet.cfg.Section.write" title="Permalink to this definition">¶</a></dt>
+<dd><p>write the configuration to any object with a write method</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="arkimet.cfg.Sections">
+<em class="property">class </em><code class="descclassname">arkimet.cfg.</code><code class="descname">Sections</code><a class="headerlink" href="#arkimet.cfg.Sections" title="Permalink to this definition">¶</a></dt>
+<dd><p>Arkimet configuration, as multiple sections of key/value options</p>
+<dl class="method">
+<dt id="arkimet.cfg.Sections.get">
+<code class="descname">get</code><span class="sig-paren">(</span><em>name: str</em>, <em>default: Optional[Any]=None</em><span class="sig-paren">)</span> &#x2192; Union[arki.cfg.Section, Any]<a class="headerlink" href="#arkimet.cfg.Sections.get" title="Permalink to this definition">¶</a></dt>
+<dd><p>return the named section, or the given default value if it does not exist</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="arkimet.cfg.Sections.items">
+<code class="descname">items</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; Iterable[Tuple[str, arki.cfg.Section]]<a class="headerlink" href="#arkimet.cfg.Sections.items" title="Permalink to this definition">¶</a></dt>
+<dd><p>Iterate over section names and sections</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="arkimet.cfg.Sections.keys">
+<code class="descname">keys</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; Iterable[str]<a class="headerlink" href="#arkimet.cfg.Sections.keys" title="Permalink to this definition">¶</a></dt>
+<dd><p>Iterate over section names</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="arkimet.cfg.Sections.obtain">
+<code class="descname">obtain</code><span class="sig-paren">(</span><em>Str</em><span class="sig-paren">)</span> &#x2192; arki.cfg.Section<a class="headerlink" href="#arkimet.cfg.Sections.obtain" title="Permalink to this definition">¶</a></dt>
+<dd><p>return the named section, creating it if it does not exist</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="arkimet.cfg.Sections.parse">
+<code class="descname">parse</code><span class="sig-paren">(</span><em>Union[Str, TextIO]</em><span class="sig-paren">)</span> &#x2192; arki.cfg.Sections<a class="headerlink" href="#arkimet.cfg.Sections.parse" title="Permalink to this definition">¶</a></dt>
+<dd><p>parse the named file or open file, and return the resulting Sections object</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="arkimet.cfg.Sections.section">
+<code class="descname">section</code><span class="sig-paren">(</span><em>Str</em><span class="sig-paren">)</span> &#x2192; Optional[arki.cfg.Section]<a class="headerlink" href="#arkimet.cfg.Sections.section" title="Permalink to this definition">¶</a></dt>
+<dd><p>return the named section, if it exists, or None if it does not</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="arkimet.cfg.Sections.write">
+<code class="descname">write</code><span class="sig-paren">(</span><em>TextIO</em><span class="sig-paren">)</span><a class="headerlink" href="#arkimet.cfg.Sections.write" title="Permalink to this definition">¶</a></dt>
+<dd><p>write the configuration to any object with a write method</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">arkimet</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../matcher.html">Match expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../datasets.html">Datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../segments.html">Data segments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../http-api.html">arki-server HTTP API</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Arkimet Python API</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="arkimet.html">arkimet package</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">arkimet.cfg package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="arkimet.dataset.html">arkimet.dataset package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="arkimet.scan.html">arkimet.scan package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="arkimet.formatter.html">arkimet.formatter package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="arkimet.bbox.html">arkimet.bbox package</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="index.html#indices-and-tables">Indices and tables</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="index.html">Arkimet Python API</a><ul>
+  <li><a href="arkimet.html">arkimet package</a><ul>
+      <li>Previous: <a href="arkimet.html" title="previous chapter">arkimet package</a></li>
+      <li>Next: <a href="arkimet.dataset.html" title="next chapter">arkimet.dataset package</a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2019, Enrico Zini.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.8.4</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.8</a>
+      
+      |
+      <a href="../_sources/python/arkimet.cfg.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

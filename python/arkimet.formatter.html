@@ -1,0 +1,288 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>arkimet.formatter package &#8212; arkimet 1.16 documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="arkimet.bbox package" href="arkimet.bbox.html" />
+    <link rel="prev" title="arkimet.scan package" href="arkimet.scan.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="arkimet-formatter-package">
+<h1>arkimet.formatter package<a class="headerlink" href="#arkimet-formatter-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-arkimet.formatter.area">
+<span id="arkimet-formatter-area-module"></span><h2>arkimet.formatter.area module<a class="headerlink" href="#module-arkimet.formatter.area" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="arkimet.formatter.area.format_area">
+<code class="descclassname">arkimet.formatter.area.</code><code class="descname">format_area</code><span class="sig-paren">(</span><em>v</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/arkimet/formatter/area.html#format_area"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.formatter.area.format_area" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="module-arkimet.formatter.eccodes">
+<span id="arkimet-formatter-eccodes-module"></span><h2>arkimet.formatter.eccodes module<a class="headerlink" href="#module-arkimet.formatter.eccodes" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="arkimet.formatter.eccodes.GribTable">
+<em class="property">class </em><code class="descclassname">arkimet.formatter.eccodes.</code><code class="descname">GribTable</code><span class="sig-paren">(</span><em>edition: int</em>, <em>table: str</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/arkimet/formatter/eccodes.html#GribTable"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.formatter.eccodes.GribTable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read a grib table.</p>
+<p>edition is the GRIB edition: 1 or 2</p>
+<p>table is the table name, for example “0.0”</p>
+<p>Returns a table where the index maps to a couple { abbreviation, description },
+or nil if the file had no such entry.</p>
+<p>For convenience, the table has also two functions, ‘abbr’ and ‘desc’, that
+return the abbreviation or the description, falling back on returning the table
+index if they are not available.</p>
+<p>For example:</p>
+<p>origins = GribTable(1, “0”)
+print(origins.abbr(98))  – Prints ‘ecmf’
+print(origins.desc(98))  – Prints ‘European Center for Medium-Range Weather Forecasts’
+print(origins.abbr(999)) – Prints ‘999’
+print(origins.desc(999)) – Prints ‘999’</p>
+<dl class="method">
+<dt id="arkimet.formatter.eccodes.GribTable.abbr">
+<code class="descname">abbr</code><span class="sig-paren">(</span><em>val: int</em><span class="sig-paren">)</span> &#x2192; str<a class="reference internal" href="../_modules/arkimet/formatter/eccodes.html#GribTable.abbr"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.formatter.eccodes.GribTable.abbr" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get an abbreviated description</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="arkimet.formatter.eccodes.GribTable.cache">
+<code class="descname">cache</code><em class="property"> = {(1, '0'): &lt;arkimet.formatter.eccodes.GribTable object&gt;}</em><a class="headerlink" href="#arkimet.formatter.eccodes.GribTable.cache" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="arkimet.formatter.eccodes.GribTable.desc">
+<code class="descname">desc</code><span class="sig-paren">(</span><em>val: int</em><span class="sig-paren">)</span> &#x2192; str<a class="reference internal" href="../_modules/arkimet/formatter/eccodes.html#GribTable.desc"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.formatter.eccodes.GribTable.desc" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get a long description</p>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="arkimet.formatter.eccodes.GribTable.get_grib2_table_prefix">
+<em class="property">classmethod </em><code class="descname">get_grib2_table_prefix</code><span class="sig-paren">(</span><em>centre</em>, <em>table_version</em>, <em>local_table_version</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/arkimet/formatter/eccodes.html#GribTable.get_grib2_table_prefix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.formatter.eccodes.GribTable.get_grib2_table_prefix" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="arkimet.formatter.eccodes.GribTable.has">
+<code class="descname">has</code><span class="sig-paren">(</span><em>val: int</em><span class="sig-paren">)</span> &#x2192; bool<a class="reference internal" href="../_modules/arkimet/formatter/eccodes.html#GribTable.has"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.formatter.eccodes.GribTable.has" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="classmethod">
+<dt id="arkimet.formatter.eccodes.GribTable.load">
+<em class="property">classmethod </em><code class="descname">load</code><span class="sig-paren">(</span><em>edition: int</em>, <em>table: str</em><span class="sig-paren">)</span> &#x2192; arkimet.formatter.eccodes.GribTable<a class="reference internal" href="../_modules/arkimet/formatter/eccodes.html#GribTable.load"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.formatter.eccodes.GribTable.load" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="arkimet.formatter.eccodes.GribTable.re_table_line">
+<code class="descname">re_table_line</code><em class="property"> = re.compile('^\\s*(?P&lt;idx&gt;\\d+)\\s+(?P&lt;abbr&gt;\\S+)\\s+(?P&lt;desc&gt;.+)$')</em><a class="headerlink" href="#arkimet.formatter.eccodes.GribTable.re_table_line" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="arkimet.formatter.eccodes.GribTable.set">
+<code class="descname">set</code><span class="sig-paren">(</span><em>code: int</em>, <em>abbr: str</em>, <em>desc: str</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/arkimet/formatter/eccodes.html#GribTable.set"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.formatter.eccodes.GribTable.set" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add/replace a value in the table</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="arkimet.formatter.eccodes.get_eccodes_def_dir">
+<code class="descclassname">arkimet.formatter.eccodes.</code><code class="descname">get_eccodes_def_dir</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; str<a class="reference internal" href="../_modules/arkimet/formatter/eccodes.html#get_eccodes_def_dir"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.formatter.eccodes.get_eccodes_def_dir" title="Permalink to this definition">¶</a></dt>
+<dd><p>get the list of directories (separated by :) where grib_api/eccodes keep their definitions</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-arkimet.formatter.formatter">
+<span id="arkimet-formatter-formatter-module"></span><h2>arkimet.formatter.formatter module<a class="headerlink" href="#module-arkimet.formatter.formatter" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="arkimet.formatter.formatter.Formatter">
+<em class="property">class </em><code class="descclassname">arkimet.formatter.formatter.</code><code class="descname">Formatter</code><a class="reference internal" href="../_modules/arkimet/formatter/formatter.html#Formatter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.formatter.formatter.Formatter" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="arkimet.formatter.formatter.Formatter.format">
+<code class="descname">format</code><span class="sig-paren">(</span><em>t: Dict[str, Any]</em><span class="sig-paren">)</span> &#x2192; str<a class="reference internal" href="../_modules/arkimet/formatter/formatter.html#Formatter.format"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.formatter.formatter.Formatter.format" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="arkimet.formatter.formatter.Formatter.formatters">
+<code class="descname">formatters</code><em class="property"> = {'area': [&lt;function format_area&gt;], 'level': [&lt;function format_level&gt;], 'origin': [&lt;function format_origin&gt;], 'proddef': [&lt;function format_proddef&gt;], 'product': [&lt;function format_product&gt;], 'timerange': [&lt;function format_timerange&gt;]}</em><a class="headerlink" href="#arkimet.formatter.formatter.Formatter.formatters" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="classmethod">
+<dt id="arkimet.formatter.formatter.Formatter.register">
+<em class="property">classmethod </em><code class="descname">register</code><span class="sig-paren">(</span><em>type: str, formatter: Callable[[Dict[str, Any]], Optional[str]]</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/arkimet/formatter/formatter.html#Formatter.register"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.formatter.formatter.Formatter.register" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-arkimet.formatter.level">
+<span id="arkimet-formatter-level-module"></span><h2>arkimet.formatter.level module<a class="headerlink" href="#module-arkimet.formatter.level" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="arkimet.formatter.level.format_level">
+<code class="descclassname">arkimet.formatter.level.</code><code class="descname">format_level</code><span class="sig-paren">(</span><em>v</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/arkimet/formatter/level.html#format_level"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.formatter.level.format_level" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="module-arkimet.formatter.origin">
+<span id="arkimet-formatter-origin-module"></span><h2>arkimet.formatter.origin module<a class="headerlink" href="#module-arkimet.formatter.origin" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="arkimet.formatter.origin.format_origin">
+<code class="descclassname">arkimet.formatter.origin.</code><code class="descname">format_origin</code><span class="sig-paren">(</span><em>v</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/arkimet/formatter/origin.html#format_origin"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.formatter.origin.format_origin" title="Permalink to this definition">¶</a></dt>
+<dd><p>Format an origin: return a string, or None to fall back to other
+formatters</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-arkimet.formatter.proddef">
+<span id="arkimet-formatter-proddef-module"></span><h2>arkimet.formatter.proddef module<a class="headerlink" href="#module-arkimet.formatter.proddef" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="arkimet.formatter.proddef.format_proddef">
+<code class="descclassname">arkimet.formatter.proddef.</code><code class="descname">format_proddef</code><span class="sig-paren">(</span><em>v</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/arkimet/formatter/proddef.html#format_proddef"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.formatter.proddef.format_proddef" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="module-arkimet.formatter.product">
+<span id="arkimet-formatter-product-module"></span><h2>arkimet.formatter.product module<a class="headerlink" href="#module-arkimet.formatter.product" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="arkimet.formatter.product.format_product">
+<code class="descclassname">arkimet.formatter.product.</code><code class="descname">format_product</code><span class="sig-paren">(</span><em>v</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/arkimet/formatter/product.html#format_product"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.formatter.product.format_product" title="Permalink to this definition">¶</a></dt>
+<dd><p>Format a product: return a string, or nil to fall back to other formatters</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-arkimet.formatter.timerange">
+<span id="arkimet-formatter-timerange-module"></span><h2>arkimet.formatter.timerange module<a class="headerlink" href="#module-arkimet.formatter.timerange" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="arkimet.formatter.timerange.format_timerange">
+<code class="descclassname">arkimet.formatter.timerange.</code><code class="descname">format_timerange</code><span class="sig-paren">(</span><em>v</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/arkimet/formatter/timerange.html#format_timerange"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.formatter.timerange.format_timerange" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="module-arkimet.formatter">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-arkimet.formatter" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="arkimet.formatter.Formatter">
+<em class="property">class </em><code class="descclassname">arkimet.formatter.</code><code class="descname">Formatter</code><a class="reference internal" href="../_modules/arkimet/formatter/formatter.html#Formatter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.formatter.Formatter" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="arkimet.formatter.Formatter.format">
+<code class="descname">format</code><span class="sig-paren">(</span><em>t: Dict[str, Any]</em><span class="sig-paren">)</span> &#x2192; str<a class="reference internal" href="../_modules/arkimet/formatter/formatter.html#Formatter.format"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.formatter.Formatter.format" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="arkimet.formatter.Formatter.formatters">
+<code class="descname">formatters</code><em class="property"> = {'area': [&lt;function format_area&gt;], 'level': [&lt;function format_level&gt;], 'origin': [&lt;function format_origin&gt;], 'proddef': [&lt;function format_proddef&gt;], 'product': [&lt;function format_product&gt;], 'timerange': [&lt;function format_timerange&gt;]}</em><a class="headerlink" href="#arkimet.formatter.Formatter.formatters" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="classmethod">
+<dt id="arkimet.formatter.Formatter.register">
+<em class="property">classmethod </em><code class="descname">register</code><span class="sig-paren">(</span><em>type: str, formatter: Callable[[Dict[str, Any]], Optional[str]]</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/arkimet/formatter/formatter.html#Formatter.register"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.formatter.Formatter.register" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">arkimet</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../matcher.html">Match expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../datasets.html">Datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../segments.html">Data segments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../http-api.html">arki-server HTTP API</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Arkimet Python API</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="arkimet.html">arkimet package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="arkimet.cfg.html">arkimet.cfg package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="arkimet.dataset.html">arkimet.dataset package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="arkimet.scan.html">arkimet.scan package</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">arkimet.formatter package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="arkimet.bbox.html">arkimet.bbox package</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="index.html#indices-and-tables">Indices and tables</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="index.html">Arkimet Python API</a><ul>
+  <li><a href="arkimet.html">arkimet package</a><ul>
+      <li>Previous: <a href="arkimet.scan.html" title="previous chapter">arkimet.scan package</a></li>
+      <li>Next: <a href="arkimet.bbox.html" title="next chapter">arkimet.bbox package</a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2019, Enrico Zini.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.8.4</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.8</a>
+      
+      |
+      <a href="../_sources/python/arkimet.formatter.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

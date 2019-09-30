@@ -1,0 +1,442 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>arkimet package &#8212; arkimet 1.16 documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="arkimet.cfg package" href="arkimet.cfg.html" />
+    <link rel="prev" title="Arkimet Python API" href="index.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="arkimet-package">
+<h1>arkimet package<a class="headerlink" href="#arkimet-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="subpackages">
+<h2>Subpackages<a class="headerlink" href="#subpackages" title="Permalink to this headline">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="arkimet.cfg.html">arkimet.cfg package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="arkimet.dataset.html">arkimet.dataset package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="arkimet.scan.html">arkimet.scan package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="arkimet.formatter.html">arkimet.formatter package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="arkimet.bbox.html">arkimet.bbox package</a></li>
+</ul>
+</div>
+</div>
+<div class="section" id="module-arkimet">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-arkimet" title="Permalink to this headline">¶</a></h2>
+<p>Python modules to work with Arkimet archives.</p>
+<dl class="class">
+<dt id="arkimet.BBox">
+<em class="property">class </em><code class="descclassname">arkimet.</code><code class="descname">BBox</code><a class="headerlink" href="#arkimet.BBox" title="Permalink to this definition">¶</a></dt>
+<dd><p>BBox for arkimet metadata.</p>
+<dl class="method">
+<dt id="arkimet.BBox.compute">
+<code class="descname">compute</code><span class="sig-paren">(</span><em>type: Union[Dict[str, Any], str]</em><span class="sig-paren">)</span> &#x2192; str<a class="headerlink" href="#arkimet.BBox.compute" title="Permalink to this definition">¶</a></dt>
+<dd><p>compute the bounding box for the given area</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="arkimet.Formatter">
+<em class="property">class </em><code class="descclassname">arkimet.</code><code class="descname">Formatter</code><a class="headerlink" href="#arkimet.Formatter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Formatter for arkimet metadata.</p>
+<dl class="method">
+<dt id="arkimet.Formatter.format">
+<code class="descname">format</code><span class="sig-paren">(</span><em>type: Dict[str, Any]</em><span class="sig-paren">)</span> &#x2192; str<a class="headerlink" href="#arkimet.Formatter.format" title="Permalink to this definition">¶</a></dt>
+<dd><p>format the given type to a human understandable string</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="arkimet.Matcher">
+<em class="property">class </em><code class="descclassname">arkimet.</code><code class="descname">Matcher</code><a class="headerlink" href="#arkimet.Matcher" title="Permalink to this definition">¶</a></dt>
+<dd><p>Precompiled matcher for arkimet metadata</p>
+<dl class="attribute">
+<dt id="arkimet.Matcher.expanded">
+<code class="descname">expanded</code><a class="headerlink" href="#arkimet.Matcher.expanded" title="Permalink to this definition">¶</a></dt>
+<dd><p>return the query with all aliases expanded</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="arkimet.Matcher.match">
+<code class="descname">match</code><span class="sig-paren">(</span><em>md: arki.Metadata</em><span class="sig-paren">)</span> &#x2192; bool<a class="headerlink" href="#arkimet.Matcher.match" title="Permalink to this definition">¶</a></dt>
+<dd><p>return the result of trying to match the given metadata</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="arkimet.Metadata">
+<em class="property">class </em><code class="descclassname">arkimet.</code><code class="descname">Metadata</code><a class="headerlink" href="#arkimet.Metadata" title="Permalink to this definition">¶</a></dt>
+<dd><p>Metadata for one data item.</p>
+<p>Each single element stored in Arkimet has a number of metadata associated. This
+class stores all the metadata for one single element.</p>
+<p>The constructor takes no arguments and returns an empty Metadata object, which
+can be populated with item assigment.</p>
+<p>Item assigned can take metadata items both in string format or as Python dicts.</p>
+<p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">md</span> <span class="o">=</span> <span class="n">arkimet</span><span class="o">.</span><span class="n">Metadata</span><span class="p">()</span>
+<span class="n">md</span><span class="p">[</span><span class="s2">&quot;origin&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;GRIB1(098, 000, 129)&#39;</span>
+<span class="n">md</span><span class="p">[</span><span class="s2">&quot;reftime&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;style&quot;</span><span class="p">:</span> <span class="s2">&quot;POSITION&quot;</span><span class="p">,</span>  <span class="s2">&quot;time&quot;</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="p">(</span><span class="mi">2007</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">13</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)}</span>
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s2">&quot;test.json&quot;</span><span class="p">,</span> <span class="s2">&quot;wb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fd</span><span class="p">:</span>
+    <span class="n">md</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;json&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="attribute">
+<dt id="arkimet.Metadata.data">
+<code class="descname">data</code><a class="headerlink" href="#arkimet.Metadata.data" title="Permalink to this definition">¶</a></dt>
+<dd><p>get the raw data described by this metadata</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="arkimet.Metadata.data_size">
+<code class="descname">data_size</code><a class="headerlink" href="#arkimet.Metadata.data_size" title="Permalink to this definition">¶</a></dt>
+<dd><p>return the size of the data, if known, else returns 0</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="arkimet.Metadata.del_notes">
+<code class="descname">del_notes</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#arkimet.Metadata.del_notes" title="Permalink to this definition">¶</a></dt>
+<dd><p>remove all notes from this Metadata</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="arkimet.Metadata.get_notes">
+<code class="descname">get_notes</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; List[Dict[str, Any]]<a class="headerlink" href="#arkimet.Metadata.get_notes" title="Permalink to this definition">¶</a></dt>
+<dd><p>get the notes for this metadata</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="arkimet.Metadata.has_source">
+<code class="descname">has_source</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; bool<a class="headerlink" href="#arkimet.Metadata.has_source" title="Permalink to this definition">¶</a></dt>
+<dd><p>check if a source has been set</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="arkimet.Metadata.make_absolute">
+<code class="descname">make_absolute</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#arkimet.Metadata.make_absolute" title="Permalink to this definition">¶</a></dt>
+<dd><p>Make path in source blob absolute</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="arkimet.Metadata.make_inline">
+<code class="descname">make_inline</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#arkimet.Metadata.make_inline" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read the data and inline them in the metadata</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="arkimet.Metadata.make_url">
+<code class="descname">make_url</code><span class="sig-paren">(</span><em>baseurl: str</em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#arkimet.Metadata.make_url" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the data source as URL</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>baseurl</strong> – the base URL that identifies the dataset</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="arkimet.Metadata.read_bundle">
+<code class="descname">read_bundle</code><span class="sig-paren">(</span><em>src: Union[bytes, ByteIO], dest: Callable[[metadata]=None, Optional[bool]], basedir: str=None, pathname: str=None</em><span class="sig-paren">)</span> &#x2192; Union[bool, List[arkimet.Metadata]<a class="headerlink" href="#arkimet.Metadata.read_bundle" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read all metadata from a given file or memory buffer</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>src</strong> – source data or binary input file</li>
+<li><strong>dest</strong> – function called for each metadata decoded. If None, a list of
+arkimet.Metadata is returned instead</li>
+<li><strong>basedir</strong> – base directory used to resolve relative file names inside the metadata</li>
+<li><strong>pathname</strong> – name of the file to use in error messages, when <code class="docutils literal notranslate"><span class="pre">src.name</span></code> is not available</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="arkimet.Metadata.to_python">
+<code class="descname">to_python</code><span class="sig-paren">(</span><em>type: str=None</em><span class="sig-paren">)</span> &#x2192; dict<a class="headerlink" href="#arkimet.Metadata.to_python" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the metadata contents in a python dict</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="arkimet.Metadata.to_string">
+<code class="descname">to_string</code><span class="sig-paren">(</span><em>type: str=None</em><span class="sig-paren">)</span> &#x2192; Optional[str]<a class="headerlink" href="#arkimet.Metadata.to_string" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the metadata contents as a string</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="arkimet.Metadata.write">
+<code class="descname">write</code><span class="sig-paren">(</span><em>file: Union[int, BytesIO], format: str='binary'</em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#arkimet.Metadata.write" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write the metadata to a file</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>file</strong> – the output file. The file can be a normal file-like object or an
+integer file or socket handle</li>
+<li><strong>format</strong> – “binary”, “yaml”, or “json”. Default: “binary”.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="arkimet.Metadata.write_bundle">
+<code class="descname">write_bundle</code><span class="sig-paren">(</span><em>mds: Iterable[arkimet.Metadata], file: BinaryIO</em><span class="sig-paren">)</span><a class="headerlink" href="#arkimet.Metadata.write_bundle" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write all metadata to a given file</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="arkimet.Summary">
+<em class="property">class </em><code class="descclassname">arkimet.</code><code class="descname">Summary</code><a class="headerlink" href="#arkimet.Summary" title="Permalink to this definition">¶</a></dt>
+<dd><p>Arkimet summary</p>
+<p>TODO: document</p>
+<p>Examples:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">TODO</span><span class="p">:</span> <span class="n">add</span> <span class="n">examples</span>
+</pre></div>
+</div>
+<dl class="method">
+<dt id="arkimet.Summary.add">
+<code class="descname">add</code><span class="sig-paren">(</span><em>val: Union[arki.Metadata, arki.Summary]</em><span class="sig-paren">)</span><a class="headerlink" href="#arkimet.Summary.add" title="Permalink to this definition">¶</a></dt>
+<dd><p>merge a metadata or summary into this summary</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="arkimet.Summary.count">
+<code class="descname">count</code><a class="headerlink" href="#arkimet.Summary.count" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the number of metadata described by this summary</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="arkimet.Summary.get_convex_hull">
+<code class="descname">get_convex_hull</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; Optional[str]<a class="headerlink" href="#arkimet.Summary.get_convex_hull" title="Permalink to this definition">¶</a></dt>
+<dd><p>compute the convex hull for this summary and return it as a WKT string</p>
+<p>None is returned if the convex hull could not be computed.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="arkimet.Summary.size">
+<code class="descname">size</code><a class="headerlink" href="#arkimet.Summary.size" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the total size of all the metadata described by this summary</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="arkimet.Summary.to_python">
+<code class="descname">to_python</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; Dict[str, Any]<a class="headerlink" href="#arkimet.Summary.to_python" title="Permalink to this definition">¶</a></dt>
+<dd><p>return the summary contents in a python dict</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="arkimet.Summary.write">
+<code class="descname">write</code><span class="sig-paren">(</span><em>file: Union[int, BinaryIO], format: str='binary'</em><span class="sig-paren">)</span> &#x2192; Optional[arki.cfg.Section]<a class="headerlink" href="#arkimet.Summary.write" title="Permalink to this definition">¶</a></dt>
+<dd><p>write the summary to a file</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>file</strong> – the output file. The file needs to be either an integer file or
+socket handle, or a file-like object with a fileno() method
+that returns an integer handle.</li>
+<li><strong>format</strong> – “binary”, “yaml”, or “json”. Default: “binary”.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="arkimet.Summary.write_short">
+<code class="descname">write_short</code><span class="sig-paren">(</span><em>file: Union[int, BinaryIO], format: str='binary'</em><span class="sig-paren">)</span> &#x2192; Optional[arki.cfg.Section]<a class="headerlink" href="#arkimet.Summary.write_short" title="Permalink to this definition">¶</a></dt>
+<dd><p>write the short summary to a file</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>file</strong> – the output file. The file needs to be either an integer file or
+socket handle, or a file-like object with a fileno() method
+that returns an integer handle.</li>
+<li><strong>format</strong> – “binary”, “yaml”, or “json”. Default: “binary”.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="arkimet.config">
+<code class="descclassname">arkimet.</code><code class="descname">config</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; Dict[str, Dict[str, str]]<a class="headerlink" href="#arkimet.config" title="Permalink to this definition">¶</a></dt>
+<dd><p>return the arkimet runtime configuration</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="arkimet.debug_tty">
+<code class="descclassname">arkimet.</code><code class="descname">debug_tty</code><span class="sig-paren">(</span><em>text: str</em><span class="sig-paren">)</span><a class="headerlink" href="#arkimet.debug_tty" title="Permalink to this definition">¶</a></dt>
+<dd><p>write a debug message to /dev/tty</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="arkimet.expand_query">
+<code class="descclassname">arkimet.</code><code class="descname">expand_query</code><span class="sig-paren">(</span><em>query: str</em><span class="sig-paren">)</span> &#x2192; str<a class="headerlink" href="#arkimet.expand_query" title="Permalink to this definition">¶</a></dt>
+<dd><p>expand aliases in an Arkimet query, returning the same query without use of aliases</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="arkimet.get_alias_database">
+<code class="descclassname">arkimet.</code><code class="descname">get_alias_database</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; arkimet.cfg.Sections<a class="headerlink" href="#arkimet.get_alias_database" title="Permalink to this definition">¶</a></dt>
+<dd><p>return a the current matcher alias database</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="arkimet.get_version">
+<code class="descclassname">arkimet.</code><code class="descname">get_version</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; str<a class="headerlink" href="#arkimet.get_version" title="Permalink to this definition">¶</a></dt>
+<dd><p>get a string with the current Arkimet version</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="arkimet.make_merged_dataset">
+<code class="descclassname">arkimet.</code><code class="descname">make_merged_dataset</code><span class="sig-paren">(</span><em>cfg: Union[str, arkimet.cfg.Sections]</em><span class="sig-paren">)</span> &#x2192; arkimet.DatasetReader<a class="headerlink" href="#arkimet.make_merged_dataset" title="Permalink to this definition">¶</a></dt>
+<dd><p>create a merged dataset from all the datasets found in the given configuration</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="arkimet.make_qmacro_dataset">
+<code class="descclassname">arkimet.</code><code class="descname">make_qmacro_dataset</code><span class="sig-paren">(</span><em>cfg: Union[str, dict, arkimet.cfg.Section], datasets: Union[str, arkimet.cfg.Sections], name: str, query: str</em><span class="sig-paren">)</span> &#x2192; arkimet.DatasetReader<a class="headerlink" href="#arkimet.make_qmacro_dataset" title="Permalink to this definition">¶</a></dt>
+<dd><p>create a QueryMacro dataset that aggregates the contents of multiple datasets</p>
+<dl class="docutils">
+<dt>Arguments:</dt>
+<dd>cfg: base configuration of the resulting dataset
+datasets: configuration of all the available datasets
+name: name of the query macro to use</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="arkimet.set_verbosity">
+<code class="descclassname">arkimet.</code><code class="descname">set_verbosity</code><span class="sig-paren">(</span><em>verbose: bool=False</em>, <em>debug: bool=False</em><span class="sig-paren">)</span><a class="headerlink" href="#arkimet.set_verbosity" title="Permalink to this definition">¶</a></dt>
+<dd><p>set the arkimet warning verbosity</p>
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">arkimet</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../matcher.html">Match expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../datasets.html">Datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../segments.html">Data segments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../http-api.html">arki-server HTTP API</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Arkimet Python API</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">arkimet package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="arkimet.cfg.html">arkimet.cfg package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="arkimet.dataset.html">arkimet.dataset package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="arkimet.scan.html">arkimet.scan package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="arkimet.formatter.html">arkimet.formatter package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="arkimet.bbox.html">arkimet.bbox package</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="index.html#indices-and-tables">Indices and tables</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="index.html">Arkimet Python API</a><ul>
+      <li>Previous: <a href="index.html" title="previous chapter">Arkimet Python API</a></li>
+      <li>Next: <a href="arkimet.cfg.html" title="next chapter">arkimet.cfg package</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2019, Enrico Zini.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.8.4</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.8</a>
+      
+      |
+      <a href="../_sources/python/arkimet.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

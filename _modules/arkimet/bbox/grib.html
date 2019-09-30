@@ -1,0 +1,220 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>arkimet.bbox.grib &#8212; arkimet 1.16 documentation</title>
+    <link rel="stylesheet" href="../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for arkimet.bbox.grib</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">arkimet.bbox</span> <span class="k">import</span> <span class="n">BBox</span>
+<span class="kn">from</span> <span class="nn">.common</span> <span class="k">import</span> <span class="n">utm2ll2</span><span class="p">,</span> <span class="n">utm2ll</span><span class="p">,</span> <span class="n">norm_lon</span>
+<span class="kn">import</span> <span class="nn">math</span>
+
+
+<div class="viewcode-block" id="bbox_grib"><a class="viewcode-back" href="../../../python/arkimet.bbox.html#arkimet.bbox.grib.bbox_grib">[docs]</a><span class="k">def</span> <span class="nf">bbox_grib</span><span class="p">(</span><span class="n">area</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Compute bounding boxes for GRIB areas</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">v</span> <span class="o">=</span> <span class="n">area</span><span class="p">[</span><span class="s2">&quot;value&quot;</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">v</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;utm&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">v</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;tn&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="mi">32768</span><span class="p">:</span>
+        <span class="n">latfirst</span><span class="p">,</span> <span class="n">latlast</span><span class="p">,</span> <span class="n">lonfirst</span><span class="p">,</span> <span class="n">lonlast</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">v</span><span class="p">[</span><span class="s2">&quot;latfirst&quot;</span><span class="p">],</span> <span class="n">v</span><span class="p">[</span><span class="s2">&quot;latlast&quot;</span><span class="p">],</span> <span class="n">v</span><span class="p">[</span><span class="s2">&quot;lonfirst&quot;</span><span class="p">],</span> <span class="n">v</span><span class="p">[</span><span class="s2">&quot;lonlast&quot;</span><span class="p">])</span>
+        <span class="n">fe</span><span class="p">,</span> <span class="n">fn</span><span class="p">,</span> <span class="n">zone</span> <span class="o">=</span> <span class="n">v</span><span class="p">[</span><span class="s2">&quot;fe&quot;</span><span class="p">],</span> <span class="n">v</span><span class="p">[</span><span class="s2">&quot;fn&quot;</span><span class="p">],</span> <span class="n">v</span><span class="p">[</span><span class="s2">&quot;zone&quot;</span><span class="p">]</span>
+
+        <span class="c1"># Compute the bounding box for the Calmet gribs, that memorize the UTM</span>
+        <span class="c1"># coordinates instead of lat and lon</span>
+        <span class="n">bbox</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">bbox</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">utm2ll2</span><span class="p">(</span><span class="n">lonfirst</span><span class="p">,</span> <span class="n">latfirst</span><span class="p">,</span> <span class="n">fe</span><span class="p">,</span> <span class="n">fn</span><span class="p">,</span> <span class="n">zone</span><span class="p">))</span>
+        <span class="n">bbox</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">utm2ll2</span><span class="p">(</span><span class="n">lonlast</span><span class="p">,</span>  <span class="n">latfirst</span><span class="p">,</span> <span class="n">fe</span><span class="p">,</span> <span class="n">fn</span><span class="p">,</span> <span class="n">zone</span><span class="p">))</span>
+        <span class="n">bbox</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">utm2ll2</span><span class="p">(</span><span class="n">lonlast</span><span class="p">,</span>  <span class="n">latlast</span><span class="p">,</span> <span class="n">fe</span><span class="p">,</span> <span class="n">fn</span><span class="p">,</span> <span class="n">zone</span><span class="p">))</span>
+        <span class="n">bbox</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">utm2ll2</span><span class="p">(</span><span class="n">lonfirst</span><span class="p">,</span> <span class="n">latlast</span><span class="p">,</span> <span class="n">fe</span><span class="p">,</span> <span class="n">fn</span><span class="p">,</span> <span class="n">zone</span><span class="p">))</span>
+        <span class="n">bbox</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">bbox</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">bbox</span>
+    <span class="k">elif</span> <span class="n">v</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;utm&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">latfirst</span> <span class="o">=</span> <span class="n">v</span><span class="p">[</span><span class="s2">&quot;latfirst&quot;</span><span class="p">]</span> <span class="o">/</span> <span class="mf">1000.0</span>
+        <span class="n">latlast</span> <span class="o">=</span> <span class="n">v</span><span class="p">[</span><span class="s2">&quot;latlast&quot;</span><span class="p">]</span> <span class="o">/</span> <span class="mf">1000.0</span>
+        <span class="n">lonfirst</span> <span class="o">=</span> <span class="n">norm_lon</span><span class="p">(</span><span class="n">v</span><span class="p">[</span><span class="s2">&quot;lonfirst&quot;</span><span class="p">]</span> <span class="o">/</span> <span class="mf">1000.0</span><span class="p">)</span>
+        <span class="n">lonlast</span> <span class="o">=</span> <span class="n">norm_lon</span><span class="p">(</span><span class="n">v</span><span class="p">[</span><span class="s2">&quot;lonlast&quot;</span><span class="p">]</span> <span class="o">/</span> <span class="mf">1000.0</span><span class="p">)</span>
+
+        <span class="c1"># Compute the bounding box for the Calmet gribs, that memorize the UTM</span>
+        <span class="c1"># coordinates instead of lat and lon</span>
+        <span class="n">bbox</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">bbox</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">utm2ll</span><span class="p">(</span><span class="n">lonfirst</span><span class="p">,</span> <span class="n">latfirst</span><span class="p">))</span>
+        <span class="n">bbox</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">utm2ll</span><span class="p">(</span><span class="n">lonlast</span><span class="p">,</span>  <span class="n">latfirst</span><span class="p">))</span>
+        <span class="n">bbox</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">utm2ll</span><span class="p">(</span><span class="n">lonlast</span><span class="p">,</span>  <span class="n">latlast</span><span class="p">))</span>
+        <span class="n">bbox</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">utm2ll</span><span class="p">(</span><span class="n">lonfirst</span><span class="p">,</span> <span class="n">latlast</span><span class="p">))</span>
+        <span class="n">bbox</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">bbox</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">bbox</span>
+    <span class="k">elif</span> <span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;type&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">v</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;tn&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="ow">and</span> <span class="n">v</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;latfirst&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># Normal latlon</span>
+        <span class="n">latfirst</span> <span class="o">=</span> <span class="n">v</span><span class="p">[</span><span class="s2">&quot;latfirst&quot;</span><span class="p">]</span> <span class="o">/</span> <span class="mf">1000000.0</span>
+        <span class="n">latlast</span> <span class="o">=</span> <span class="n">v</span><span class="p">[</span><span class="s2">&quot;latlast&quot;</span><span class="p">]</span> <span class="o">/</span> <span class="mf">1000000.0</span>
+        <span class="n">lonfirst</span> <span class="o">=</span> <span class="n">norm_lon</span><span class="p">(</span><span class="n">v</span><span class="p">[</span><span class="s2">&quot;lonfirst&quot;</span><span class="p">]</span> <span class="o">/</span> <span class="mf">1000000.0</span><span class="p">)</span>
+        <span class="n">lonlast</span> <span class="o">=</span> <span class="n">norm_lon</span><span class="p">(</span><span class="n">v</span><span class="p">[</span><span class="s2">&quot;lonlast&quot;</span><span class="p">]</span> <span class="o">/</span> <span class="mf">1000000.0</span><span class="p">)</span>
+
+        <span class="n">bbox</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">bbox</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">latfirst</span><span class="p">,</span> <span class="n">lonfirst</span><span class="p">))</span>
+        <span class="n">bbox</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">latlast</span><span class="p">,</span>  <span class="n">lonfirst</span><span class="p">))</span>
+        <span class="n">bbox</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">latlast</span><span class="p">,</span>  <span class="n">lonlast</span><span class="p">))</span>
+        <span class="n">bbox</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">latfirst</span><span class="p">,</span> <span class="n">lonlast</span><span class="p">))</span>
+        <span class="n">bbox</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">bbox</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">bbox</span>
+    <span class="k">elif</span> <span class="p">((</span><span class="n">v</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;type&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="mi">10</span> <span class="ow">or</span> <span class="n">v</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;tn&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>
+          <span class="ow">and</span> <span class="n">v</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;latp&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">v</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;lonp&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+          <span class="ow">and</span> <span class="n">v</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;rot&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">):</span>
+        <span class="c1"># Rotated latlon</span>
+        <span class="c1"># ProjectionInDegrees è grib2</span>
+        <span class="n">latsp</span> <span class="o">=</span> <span class="n">v</span><span class="p">[</span><span class="s2">&quot;latp&quot;</span><span class="p">]</span> <span class="o">/</span> <span class="mf">1000000.0</span>
+        <span class="n">lonsp</span> <span class="o">=</span> <span class="n">v</span><span class="p">[</span><span class="s2">&quot;lonp&quot;</span><span class="p">]</span> <span class="o">/</span> <span class="mf">1000000.0</span>
+
+        <span class="c1"># Common parameters to unrotate coordinates</span>
+        <span class="n">latsouthpole</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">acos</span><span class="p">(</span><span class="o">-</span><span class="n">math</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="n">latsp</span><span class="p">)))</span>
+        <span class="n">cy0</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">latsouthpole</span><span class="p">)</span>
+        <span class="n">sy0</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">latsouthpole</span><span class="p">)</span>
+        <span class="n">lonsouthpole</span> <span class="o">=</span> <span class="n">lonsp</span>
+
+        <span class="k">def</span> <span class="nf">r2ll</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+            <span class="n">y</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+            <span class="n">rlat</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">asin</span><span class="p">(</span><span class="n">sy0</span> <span class="o">*</span> <span class="n">math</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">y</span><span class="p">)</span> <span class="o">*</span> <span class="n">math</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">+</span> <span class="n">cy0</span> <span class="o">*</span> <span class="n">math</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">y</span><span class="p">))</span>
+            <span class="n">lat</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">degrees</span><span class="p">(</span><span class="n">rlat</span><span class="p">)</span>
+            <span class="n">lon</span> <span class="o">=</span> <span class="n">lonsouthpole</span> <span class="o">+</span> <span class="n">math</span><span class="o">.</span><span class="n">degrees</span><span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">asin</span><span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">*</span> <span class="n">math</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">y</span><span class="p">)</span> <span class="o">/</span> <span class="n">math</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">rlat</span><span class="p">)))</span>
+            <span class="k">return</span> <span class="p">(</span><span class="n">lat</span><span class="p">,</span> <span class="n">lon</span><span class="p">)</span>
+
+        <span class="c1"># Number of points to sample</span>
+        <span class="n">xsamples</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">v</span><span class="p">[</span><span class="s2">&quot;Ni&quot;</span><span class="p">]))</span>
+        <span class="n">ysamples</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">v</span><span class="p">[</span><span class="s2">&quot;Nj&quot;</span><span class="p">]))</span>
+
+        <span class="n">latmin</span> <span class="o">=</span> <span class="n">v</span><span class="p">[</span><span class="s2">&quot;latfirst&quot;</span><span class="p">]</span> <span class="o">/</span> <span class="mf">1000000.0</span>
+        <span class="n">latmax</span> <span class="o">=</span> <span class="n">v</span><span class="p">[</span><span class="s2">&quot;latlast&quot;</span><span class="p">]</span> <span class="o">/</span> <span class="mf">1000000.0</span>
+        <span class="n">lonmin</span> <span class="o">=</span> <span class="n">v</span><span class="p">[</span><span class="s2">&quot;lonfirst&quot;</span><span class="p">]</span> <span class="o">/</span> <span class="mf">1000000.0</span>
+        <span class="n">lonmax</span> <span class="o">=</span> <span class="n">v</span><span class="p">[</span><span class="s2">&quot;lonlast&quot;</span><span class="p">]</span> <span class="o">/</span> <span class="mf">1000000.0</span>
+        <span class="k">if</span> <span class="n">lonmax</span> <span class="o">&lt;</span> <span class="n">lonmin</span><span class="p">:</span>
+            <span class="n">lonsize</span> <span class="o">=</span> <span class="n">lonmax</span> <span class="o">+</span> <span class="mi">360</span> <span class="o">-</span> <span class="n">lonmin</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">lonsize</span> <span class="o">=</span> <span class="n">lonmax</span> <span class="o">-</span> <span class="n">lonmin</span>
+
+        <span class="n">bbox</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">xsamples</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="n">bbox</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">r2ll</span><span class="p">(</span><span class="n">lonmin</span> <span class="o">+</span> <span class="n">lonsize</span> <span class="o">*</span> <span class="n">i</span> <span class="o">/</span> <span class="n">xsamples</span><span class="p">,</span> <span class="n">latmin</span><span class="p">))</span>
+
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">ysamples</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="n">bbox</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">r2ll</span><span class="p">(</span><span class="n">lonmax</span><span class="p">,</span> <span class="n">latmin</span> <span class="o">+</span> <span class="p">(</span><span class="n">latmax</span> <span class="o">-</span> <span class="n">latmin</span><span class="p">)</span> <span class="o">*</span> <span class="n">i</span> <span class="o">/</span> <span class="n">ysamples</span><span class="p">))</span>
+
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">xsamples</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+            <span class="n">bbox</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">r2ll</span><span class="p">(</span><span class="n">lonmin</span> <span class="o">+</span> <span class="n">lonsize</span> <span class="o">*</span> <span class="n">i</span> <span class="o">/</span> <span class="n">xsamples</span><span class="p">,</span> <span class="n">latmax</span><span class="p">))</span>
+
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">ysamples</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+            <span class="n">bbox</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">r2ll</span><span class="p">(</span><span class="n">lonmin</span><span class="p">,</span> <span class="n">latmin</span> <span class="o">+</span> <span class="p">(</span><span class="n">latmax</span> <span class="o">-</span> <span class="n">latmin</span><span class="p">)</span> <span class="o">*</span> <span class="n">i</span> <span class="o">/</span> <span class="n">ysamples</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="n">bbox</span>
+    <span class="k">elif</span> <span class="n">v</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;type&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;mob&quot;</span><span class="p">:</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">v</span><span class="p">[</span><span class="s2">&quot;x&quot;</span><span class="p">]</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="n">v</span><span class="p">[</span><span class="s2">&quot;y&quot;</span><span class="p">]</span>
+        <span class="k">return</span> <span class="p">[</span>
+            <span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">x</span><span class="p">),</span>
+            <span class="p">(</span><span class="n">y</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">x</span><span class="p">),</span>
+            <span class="p">(</span><span class="n">y</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">x</span> <span class="o">+</span> <span class="mi">1</span><span class="p">),</span>
+            <span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">x</span> <span class="o">+</span> <span class="mi">1</span><span class="p">),</span>
+            <span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">x</span><span class="p">),</span>
+        <span class="p">]</span>
+    <span class="k">elif</span> <span class="n">v</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;lat&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">v</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;lon&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">[</span>
+            <span class="p">(</span><span class="n">v</span><span class="p">[</span><span class="s2">&quot;lat&quot;</span><span class="p">]</span> <span class="o">/</span> <span class="mi">100000</span><span class="p">,</span> <span class="n">v</span><span class="p">[</span><span class="s2">&quot;lon&quot;</span><span class="p">]</span> <span class="o">/</span> <span class="mi">100000</span><span class="p">)</span>
+        <span class="p">]</span></div>
+
+
+<span class="n">BBox</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="s2">&quot;GRIB&quot;</span><span class="p">,</span> <span class="n">bbox_grib</span><span class="p">)</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">arkimet</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../matcher.html">Match expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../datasets.html">Datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../segments.html">Data segments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../http-api.html">arki-server HTTP API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../python/index.html">Arkimet Python API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../python/index.html#indices-and-tables">Indices and tables</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../index.html">Module code</a><ul>
+  <li><a href="../../arkimet.html">arkimet</a><ul>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2019, Enrico Zini.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.8.4</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.8</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

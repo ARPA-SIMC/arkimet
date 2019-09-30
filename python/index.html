@@ -1,0 +1,175 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Arkimet Python API &#8212; arkimet 1.16 documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="arkimet package" href="arkimet.html" />
+    <link rel="prev" title="arki-server HTTP API" href="../http-api.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="arkimet-python-api">
+<h1>Arkimet Python API<a class="headerlink" href="#arkimet-python-api" title="Permalink to this headline">¶</a></h1>
+<div class="toctree-wrapper compound">
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="arkimet.html">arkimet package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="arkimet.html#subpackages">Subpackages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="arkimet.html#module-arkimet">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="arkimet.cfg.html">arkimet.cfg package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="arkimet.cfg.html#module-arkimet.cfg">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="arkimet.dataset.html">arkimet.dataset package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="arkimet.dataset.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="arkimet.dataset.html#module-arkimet.dataset.http">arkimet.dataset.http module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="arkimet.dataset.html#module-arkimet.dataset">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="arkimet.scan.html">arkimet.scan package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="arkimet.scan.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="arkimet.scan.html#module-arkimet.scan.bufr">arkimet.scan.bufr module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="arkimet.scan.html#module-arkimet.scan.common">arkimet.scan.common module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="arkimet.scan.html#module-arkimet.scan.grib">arkimet.scan.grib module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="arkimet.scan.html#module-arkimet.scan.odimh5">arkimet.scan.odimh5 module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="arkimet.scan.html#module-arkimet.scan.timedef">arkimet.scan.timedef module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="arkimet.scan.html#module-arkimet.scan.vm2">arkimet.scan.vm2 module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="arkimet.scan.html#module-arkimet.scan">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="arkimet.formatter.html">arkimet.formatter package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="arkimet.formatter.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="arkimet.formatter.html#module-arkimet.formatter.area">arkimet.formatter.area module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="arkimet.formatter.html#module-arkimet.formatter.eccodes">arkimet.formatter.eccodes module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="arkimet.formatter.html#module-arkimet.formatter.formatter">arkimet.formatter.formatter module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="arkimet.formatter.html#module-arkimet.formatter.level">arkimet.formatter.level module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="arkimet.formatter.html#module-arkimet.formatter.origin">arkimet.formatter.origin module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="arkimet.formatter.html#module-arkimet.formatter.proddef">arkimet.formatter.proddef module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="arkimet.formatter.html#module-arkimet.formatter.product">arkimet.formatter.product module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="arkimet.formatter.html#module-arkimet.formatter.timerange">arkimet.formatter.timerange module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="arkimet.formatter.html#module-arkimet.formatter">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="arkimet.bbox.html">arkimet.bbox package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="arkimet.bbox.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="arkimet.bbox.html#module-arkimet.bbox.bbox">arkimet.bbox.bbox module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="arkimet.bbox.html#module-arkimet.bbox.common">arkimet.bbox.common module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="arkimet.bbox.html#module-arkimet.bbox.grib">arkimet.bbox.grib module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="arkimet.bbox.html#module-arkimet.bbox.odimh5">arkimet.bbox.odimh5 module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="arkimet.bbox.html#module-arkimet.bbox.vm2">arkimet.bbox.vm2 module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="arkimet.bbox.html#module-arkimet.bbox">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+<div class="section" id="indices-and-tables">
+<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h1>
+<ul class="simple">
+<li><a class="reference internal" href="../genindex.html"><span class="std std-ref">Index</span></a></li>
+<li><a class="reference internal" href="../py-modindex.html"><span class="std std-ref">Module Index</span></a></li>
+<li><a class="reference internal" href="../search.html"><span class="std std-ref">Search Page</span></a></li>
+</ul>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">arkimet</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../matcher.html">Match expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../datasets.html">Datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../segments.html">Data segments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../http-api.html">arki-server HTTP API</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Arkimet Python API</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="arkimet.html">arkimet package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="arkimet.cfg.html">arkimet.cfg package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="arkimet.dataset.html">arkimet.dataset package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="arkimet.scan.html">arkimet.scan package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="arkimet.formatter.html">arkimet.formatter package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="arkimet.bbox.html">arkimet.bbox package</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="#indices-and-tables">Indices and tables</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="../http-api.html" title="previous chapter">arki-server HTTP API</a></li>
+      <li>Next: <a href="arkimet.html" title="next chapter">arkimet package</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2019, Enrico Zini.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.8.4</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.8</a>
+      
+      |
+      <a href="../_sources/python/index.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

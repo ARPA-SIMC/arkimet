@@ -1,0 +1,194 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>arkimet.bbox.odimh5 &#8212; arkimet 1.16 documentation</title>
+    <link rel="stylesheet" href="../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for arkimet.bbox.odimh5</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">arkimet.bbox</span> <span class="k">import</span> <span class="n">BBox</span>
+<span class="kn">import</span> <span class="nn">math</span>
+
+
+<div class="viewcode-block" id="bbox_odimh5"><a class="viewcode-back" href="../../../python/arkimet.bbox.html#arkimet.bbox.odimh5.bbox_odimh5">[docs]</a><span class="k">def</span> <span class="nf">bbox_odimh5</span><span class="p">(</span><span class="n">area</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Compute bounding boxes for ODIM areas</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">v</span> <span class="o">=</span> <span class="n">area</span><span class="p">[</span><span class="s2">&quot;value&quot;</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="n">v</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;radius&quot;</span><span class="p">):</span>
+        <span class="c1"># estraggo i valori in gradi in notazione decimale</span>
+        <span class="n">LON0</span> <span class="o">=</span> <span class="n">v</span><span class="p">[</span><span class="s2">&quot;lon&quot;</span><span class="p">]</span> <span class="o">/</span> <span class="mi">1000000</span>
+        <span class="n">LAT0</span> <span class="o">=</span> <span class="n">v</span><span class="p">[</span><span class="s2">&quot;lat&quot;</span><span class="p">]</span> <span class="o">/</span> <span class="mi">1000000</span>
+        <span class="n">RADIUS</span> <span class="o">=</span> <span class="n">v</span><span class="p">[</span><span class="s2">&quot;radius&quot;</span><span class="p">]</span> <span class="o">/</span> <span class="mi">1000</span>
+
+        <span class="c1"># print(&quot;Calculating bbox for polar area...&quot;);</span>
+        <span class="c1"># print(&quot;LON: &quot; , LON0, &quot; degree&quot;);</span>
+        <span class="c1"># print(&quot;LAT: &quot; , LAT0, &quot; degree&quot;);</span>
+        <span class="c1"># print(&quot;RAD: &quot; , RADIUS, &quot; km&quot;);</span>
+
+        <span class="c1"># se e&#39; indicato il raggio allora e&#39; un area polare</span>
+        <span class="c1"># quindi creiamo un ottagono che circoscrive la circonfernza</span>
+        <span class="c1"># calcoli sono approssimati, bisognerebbe tenere conto della curvatura</span>
+        <span class="c1"># terrestre, della differenza nel raggio della terra ecc</span>
+
+        <span class="k">def</span> <span class="nf">torad</span><span class="p">(</span><span class="n">degree</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">degree</span> <span class="o">*</span> <span class="n">math</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">180</span>  <span class="c1"># _PI_180</span>
+
+        <span class="k">def</span> <span class="nf">todegree</span><span class="p">(</span><span class="n">rad</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">rad</span> <span class="o">*</span> <span class="mi">180</span> <span class="o">/</span> <span class="n">math</span><span class="o">.</span><span class="n">pi</span>  <span class="c1"># _180_PI</span>
+
+        <span class="k">def</span> <span class="nf">moveto</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">km</span><span class="p">,</span> <span class="n">angle</span><span class="p">):</span>
+            <span class="n">lon1</span> <span class="o">=</span> <span class="n">torad</span><span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="n">lat1</span> <span class="o">=</span> <span class="n">torad</span><span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+            <span class="n">EARTH_RADIUS</span> <span class="o">=</span> <span class="mf">6372.795477598</span>
+            <span class="n">d_R</span> <span class="o">=</span> <span class="n">km</span> <span class="o">/</span> <span class="n">EARTH_RADIUS</span>
+            <span class="n">sin_d_R</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">d_R</span><span class="p">)</span>
+            <span class="n">cos_d_R</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">d_R</span><span class="p">)</span>
+            <span class="n">sin_lat1</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">lat1</span><span class="p">)</span>
+            <span class="n">cos_lat1</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">lat1</span><span class="p">)</span>
+            <span class="n">sin_angle</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">angle</span><span class="p">)</span>
+            <span class="n">cos_angle</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">angle</span><span class="p">)</span>
+            <span class="n">lat2</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">asin</span><span class="p">(</span><span class="n">sin_lat1</span> <span class="o">*</span> <span class="n">cos_d_R</span> <span class="o">+</span> <span class="n">cos_lat1</span> <span class="o">*</span> <span class="n">sin_d_R</span> <span class="o">*</span> <span class="n">cos_angle</span><span class="p">)</span>
+            <span class="n">lon2</span> <span class="o">=</span> <span class="n">lon1</span> <span class="o">+</span> <span class="n">math</span><span class="o">.</span><span class="n">atan2</span><span class="p">(</span><span class="n">sin_angle</span> <span class="o">*</span> <span class="n">sin_d_R</span> <span class="o">*</span> <span class="n">cos_lat1</span><span class="p">,</span> <span class="n">cos_d_R</span> <span class="o">-</span> <span class="n">sin_lat1</span> <span class="o">*</span> <span class="n">sin_lat1</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">todegree</span><span class="p">(</span><span class="n">lon2</span><span class="p">),</span> <span class="n">todegree</span><span class="p">(</span><span class="n">lat2</span><span class="p">)</span>
+
+        <span class="n">DIST</span> <span class="o">=</span> <span class="n">RADIUS</span>
+        <span class="n">ORIG</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="n">N</span> <span class="o">=</span> <span class="n">moveto</span><span class="p">(</span><span class="n">ORIG</span><span class="p">,</span> <span class="n">DIST</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="n">E</span> <span class="o">=</span> <span class="n">moveto</span><span class="p">(</span><span class="n">ORIG</span><span class="p">,</span> <span class="n">DIST</span><span class="p">,</span> <span class="n">math</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span>
+
+        <span class="c1"># print(&quot;N:&quot;, N[0], &quot;,&quot;, N[1])</span>
+        <span class="c1"># print(&quot;E:&quot;, E[0], &quot;,&quot;, E[1])</span>
+
+        <span class="n">LATO2</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">math</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span> <span class="o">/</span> <span class="mi">2</span>  <span class="c1"># meta&#39; del lato di un ottagono</span>
+        <span class="n">c1</span> <span class="o">=</span> <span class="n">moveto</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="n">LATO2</span> <span class="o">*</span> <span class="n">DIST</span><span class="p">,</span> <span class="n">math</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span>  <span class="c1"># 0 radianti punta in NORD</span>
+        <span class="n">c2</span> <span class="o">=</span> <span class="n">moveto</span><span class="p">(</span><span class="n">E</span><span class="p">,</span> <span class="n">LATO2</span> <span class="o">*</span> <span class="n">DIST</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>  <span class="c1"># PI/2 radianti punta a EST</span>
+        <span class="n">c3</span> <span class="o">=</span> <span class="p">(</span><span class="o">+</span><span class="n">c2</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="o">-</span><span class="n">c2</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="n">c4</span> <span class="o">=</span> <span class="p">(</span><span class="o">+</span><span class="n">c1</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="o">-</span><span class="n">c1</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="n">c5</span> <span class="o">=</span> <span class="p">(</span><span class="o">-</span><span class="n">c4</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="o">+</span><span class="n">c4</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="n">c6</span> <span class="o">=</span> <span class="p">(</span><span class="o">-</span><span class="n">c3</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="o">+</span><span class="n">c3</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="n">c7</span> <span class="o">=</span> <span class="p">(</span><span class="o">-</span><span class="n">c2</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="o">+</span><span class="n">c2</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="n">c8</span> <span class="o">=</span> <span class="p">(</span><span class="o">-</span><span class="n">c1</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="o">+</span><span class="n">c1</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+
+        <span class="c1"># traslo le coordinate rispeto all&#39;origine</span>
+        <span class="k">def</span> <span class="nf">add</span><span class="p">(</span><span class="n">p1</span><span class="p">,</span> <span class="n">p2</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">p1</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">p2</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">p1</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">p2</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+        <span class="n">ORIG</span> <span class="o">=</span> <span class="p">(</span><span class="n">LON0</span><span class="p">,</span> <span class="n">LAT0</span><span class="p">)</span>
+        <span class="n">c1</span> <span class="o">=</span> <span class="n">add</span><span class="p">(</span><span class="n">c1</span><span class="p">,</span> <span class="n">ORIG</span><span class="p">)</span>
+        <span class="n">c2</span> <span class="o">=</span> <span class="n">add</span><span class="p">(</span><span class="n">c2</span><span class="p">,</span> <span class="n">ORIG</span><span class="p">)</span>
+        <span class="n">c3</span> <span class="o">=</span> <span class="n">add</span><span class="p">(</span><span class="n">c3</span><span class="p">,</span> <span class="n">ORIG</span><span class="p">)</span>
+        <span class="n">c4</span> <span class="o">=</span> <span class="n">add</span><span class="p">(</span><span class="n">c4</span><span class="p">,</span> <span class="n">ORIG</span><span class="p">)</span>
+        <span class="n">c5</span> <span class="o">=</span> <span class="n">add</span><span class="p">(</span><span class="n">c5</span><span class="p">,</span> <span class="n">ORIG</span><span class="p">)</span>
+        <span class="n">c6</span> <span class="o">=</span> <span class="n">add</span><span class="p">(</span><span class="n">c6</span><span class="p">,</span> <span class="n">ORIG</span><span class="p">)</span>
+        <span class="n">c7</span> <span class="o">=</span> <span class="n">add</span><span class="p">(</span><span class="n">c7</span><span class="p">,</span> <span class="n">ORIG</span><span class="p">)</span>
+        <span class="n">c8</span> <span class="o">=</span> <span class="n">add</span><span class="p">(</span><span class="n">c8</span><span class="p">,</span> <span class="n">ORIG</span><span class="p">)</span>
+
+        <span class="c1"># creiamo la boundig box chiusa NOTA: bbox vuole coordinate in LAT,LON!!!</span>
+        <span class="k">return</span> <span class="p">[</span>
+            <span class="p">(</span><span class="n">c1</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">c1</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span>
+            <span class="p">(</span><span class="n">c2</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">c2</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span>
+            <span class="p">(</span><span class="n">c3</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">c3</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span>
+            <span class="p">(</span><span class="n">c4</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">c4</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span>
+            <span class="p">(</span><span class="n">c5</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">c5</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span>
+            <span class="p">(</span><span class="n">c6</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">c6</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span>
+            <span class="p">(</span><span class="n">c7</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">c7</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span>
+            <span class="p">(</span><span class="n">c8</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">c8</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span>
+            <span class="p">(</span><span class="n">c1</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">c1</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span>
+        <span class="p">]</span></div>
+
+
+<span class="n">BBox</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="s2">&quot;ODIMH5&quot;</span><span class="p">,</span> <span class="n">bbox_odimh5</span><span class="p">)</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">arkimet</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../matcher.html">Match expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../datasets.html">Datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../segments.html">Data segments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../http-api.html">arki-server HTTP API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../python/index.html">Arkimet Python API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../python/index.html#indices-and-tables">Indices and tables</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../index.html">Module code</a><ul>
+  <li><a href="../../arkimet.html">arkimet</a><ul>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2019, Enrico Zini.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.8.4</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.8</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

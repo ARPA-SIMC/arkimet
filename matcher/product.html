@@ -1,0 +1,210 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Matching products &#8212; arkimet 1.16 documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Matching levels" href="level.html" />
+    <link rel="prev" title="Matching areas" href="area.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="matching-products">
+<h1>Matching products<a class="headerlink" href="#matching-products" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="grib1">
+<h2>GRIB1<a class="headerlink" href="#grib1" title="Permalink to this headline">¶</a></h2>
+<p>Syntax: <code class="docutils literal notranslate"><span class="pre">product:GRIB1,origin,table,product</span></code></p>
+<p>Any of <code class="docutils literal notranslate"><span class="pre">origin</span></code>, <code class="docutils literal notranslate"><span class="pre">table</span></code>, <code class="docutils literal notranslate"><span class="pre">product</span></code> can be omitted; if omitted, any value will
+match.</p>
+<div class="section" id="examples">
+<h3>Examples<a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h3>
+<p>Given product <code class="docutils literal notranslate"><span class="pre">GRIB1(98,</span> <span class="pre">0,</span> <span class="pre">12)</span></code>:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">product:GRIB1</span></code> matches</li>
+<li><code class="docutils literal notranslate"><span class="pre">product:GRIB1,98</span></code> matches</li>
+<li><code class="docutils literal notranslate"><span class="pre">product:GRIB1,98,,12</span></code> matches</li>
+<li><code class="docutils literal notranslate"><span class="pre">product:GRIB2</span></code> does not match</li>
+<li><code class="docutils literal notranslate"><span class="pre">product:GRIB1,200</span></code> does not match</li>
+<li><code class="docutils literal notranslate"><span class="pre">product:GRIB1,98,0,11</span></code> does not match</li>
+</ul>
+</div>
+</div>
+<div class="section" id="grib2">
+<h2>GRIB2<a class="headerlink" href="#grib2" title="Permalink to this headline">¶</a></h2>
+<p>Syntax: <code class="docutils literal notranslate"><span class="pre">product:GRIB2,centre,discipline,category,number,tablesVersion,localTablesVersion</span></code></p>
+<p>Any of <code class="docutils literal notranslate"><span class="pre">centre</span></code>, <code class="docutils literal notranslate"><span class="pre">discipline</span></code>, <code class="docutils literal notranslate"><span class="pre">category</span></code>, <code class="docutils literal notranslate"><span class="pre">number</span></code>, <code class="docutils literal notranslate"><span class="pre">tablesVersion</span></code>, or
+<code class="docutils literal notranslate"><span class="pre">localTablesVersion</span></code> can be omitted. If omitted, any value will match.</p>
+<div class="section" id="id1">
+<h3>Examples<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h3>
+<p>Given product <code class="docutils literal notranslate"><span class="pre">GRIB2(98,</span> <span class="pre">0,</span> <span class="pre">1,</span> <span class="pre">2)</span></code>:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">product:GRIB2</span></code> matches</li>
+<li><code class="docutils literal notranslate"><span class="pre">product:GRIB2,98</span></code> matches</li>
+<li><code class="docutils literal notranslate"><span class="pre">product:GRIB2,98,,,2</span></code> matches</li>
+<li><code class="docutils literal notranslate"><span class="pre">product:GRIB1</span></code> does not match</li>
+<li><code class="docutils literal notranslate"><span class="pre">product:GRIB2,200</span></code> does not match</li>
+<li><code class="docutils literal notranslate"><span class="pre">product:GRIB2,98,1,,2</span></code> does not match</li>
+</ul>
+</div>
+</div>
+<div class="section" id="bufr">
+<h2>BUFR<a class="headerlink" href="#bufr" title="Permalink to this headline">¶</a></h2>
+<p>Syntax: <code class="docutils literal notranslate"><span class="pre">product:BUFR,category,subcategory,subcategory_local:rep_memo</span></code></p>
+<p>Any of <code class="docutils literal notranslate"><span class="pre">category</span></code>, <code class="docutils literal notranslate"><span class="pre">subcategory</span></code>, <code class="docutils literal notranslate"><span class="pre">subcategory_local</span></code> or <code class="docutils literal notranslate"><span class="pre">rep_memo</span></code> can be
+omitted; if omitted, any value will match.</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">category</span></code>: data category (BUFR or CREX Table A)</li>
+<li><code class="docutils literal notranslate"><span class="pre">subcategory</span></code>: data subcategory (see Common Code table C-13)</li>
+<li><code class="docutils literal notranslate"><span class="pre">subcategory_local</span></code>: data subcategory local (defined by ADP centres)</li>
+</ul>
+<div class="section" id="id2">
+<h3>Examples<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h3>
+<p>Given product <code class="docutils literal notranslate"><span class="pre">BUFR(0,</span> <span class="pre">255,</span> <span class="pre">1,</span> <span class="pre">t=synop)</span></code>:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">product:BUFR</span></code> matches</li>
+<li><code class="docutils literal notranslate"><span class="pre">product:BUFR,0,,1</span></code> matches</li>
+<li><code class="docutils literal notranslate"><span class="pre">product:BUFR,0,,1:t=synop</span></code> matches</li>
+<li><code class="docutils literal notranslate"><span class="pre">product:BUFR:t=synop</span></code> matches</li>
+<li><code class="docutils literal notranslate"><span class="pre">product:GRIB1</span></code> does not match</li>
+<li><code class="docutils literal notranslate"><span class="pre">product:BUFR:t=temp</span></code> does not match</li>
+</ul>
+</div>
+</div>
+<div class="section" id="odimh5">
+<h2>ODIMH5<a class="headerlink" href="#odimh5" title="Permalink to this headline">¶</a></h2>
+<p>Syntax: <code class="docutils literal notranslate"><span class="pre">product:ODIMH5,&lt;OBJ</span> <span class="pre">value&gt;,&lt;PROD</span> <span class="pre">value&gt;</span></code></p>
+<p>OdimH5 product, identified by object and product values.</p>
+<p>object and product values can be omitted.</p>
+<div class="section" id="id3">
+<h3>Examples<a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h3>
+<p>Given product <code class="docutils literal notranslate"><span class="pre">ODIMH5(PVOL,SCAN)</span></code>:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">product:ODIMH5</span></code> matches</li>
+<li><code class="docutils literal notranslate"><span class="pre">product:ODIMH5,PVOL</span></code> matches</li>
+<li><code class="docutils literal notranslate"><span class="pre">product:ODIMH5,,SCAN</span></code> matches</li>
+<li><code class="docutils literal notranslate"><span class="pre">product:GRIB1</span></code> does not match</li>
+<li><code class="docutils literal notranslate"><span class="pre">product:BUFR:t=temp</span></code> does not match</li>
+</ul>
+</div>
+</div>
+<div class="section" id="vm2">
+<h2>VM2<a class="headerlink" href="#vm2" title="Permalink to this headline">¶</a></h2>
+<p>Syntax: <code class="docutils literal notranslate"><span class="pre">product:VM2,id:key1=value1,key2=value2,...</span></code></p>
+<p>The keys (<code class="docutils literal notranslate"><span class="pre">key1=value1</span></code>, …) are loaded at runtime from a meteo-vm2 attribute
+table.</p>
+<div class="section" id="id4">
+<h3>Examples<a class="headerlink" href="#id4" title="Permalink to this headline">¶</a></h3>
+<p>Assume that product with id 23 has the following attributes:
+<code class="docutils literal notranslate"><span class="pre">{bcode=&quot;B22043&quot;,tr=254,p1=0,p2=0,lt1=1}</span></code></p>
+<p>Given product <code class="docutils literal notranslate"><span class="pre">VM2(23)</span></code>:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">product:VM2</span></code> matches</li>
+<li><code class="docutils literal notranslate"><span class="pre">product:VM2,23</span></code> matches</li>
+<li><code class="docutils literal notranslate"><span class="pre">product:VM2,23:bcode=B22043</span></code> matches</li>
+<li><code class="docutils literal notranslate"><span class="pre">product:GRIB1</span></code> does not match</li>
+<li><code class="docutils literal notranslate"><span class="pre">product:BUFR:t=temp</span></code> does not match</li>
+<li><code class="docutils literal notranslate"><span class="pre">product:VM2,12</span></code> does not match</li>
+<li><code class="docutils literal notranslate"><span class="pre">product:VM2,23:foo=bar</span></code> does not match</li>
+<li><code class="docutils literal notranslate"><span class="pre">product:VM2:foo=bar</span></code> does not match</li>
+</ul>
+<div class="toctree-wrapper compound">
+</div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">arkimet</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../matcher.html">Match expressions</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../matcher.html#examples">Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../datasets.html">Datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../segments.html">Data segments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../http-api.html">arki-server HTTP API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../python/index.html">Arkimet Python API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../python/index.html#indices-and-tables">Indices and tables</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="../matcher.html">Match expressions</a><ul>
+      <li>Previous: <a href="area.html" title="previous chapter">Matching areas</a></li>
+      <li>Next: <a href="level.html" title="next chapter">Matching levels</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2019, Enrico Zini.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.8.4</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.8</a>
+      
+      |
+      <a href="../_sources/matcher/product.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

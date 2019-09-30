@@ -1,0 +1,196 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Match expressions &#8212; arkimet 1.16 documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Using aliases" href="matcher/aliases.html" />
+    <link rel="prev" title="arkimet documentation" href="index.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="match-expressions">
+<h1>Match expressions<a class="headerlink" href="#match-expressions" title="Permalink to this headline">¶</a></h1>
+<p>An arkimet matcher is composed of various match expressions, grouped by
+metadata type. Each group is separated by <code class="docutils literal notranslate"><span class="pre">;</span></code> or by a newline. All groups
+must be satisfied for the matcher to match.</p>
+<p>Each group contains one or more type-specific match expression, separated by
+<code class="docutils literal notranslate"><span class="pre">or</span></code>. All expressions inside a group are ORed together, which means that only
+one of them must be true for the group to match.</p>
+<p>It is possible to do, for example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">origin</span><span class="p">:</span><span class="n">arpa</span> <span class="ow">or</span> <span class="n">GRIB1</span><span class="p">,</span><span class="mi">98</span><span class="p">,</span><span class="mi">0</span><span class="p">;</span> <span class="n">product</span><span class="p">:</span><span class="n">t</span> <span class="ow">or</span> <span class="n">z</span>
+</pre></div>
+</div>
+<p>This matches data which are from Arpa or ECMWF, and whose product is
+temperature or geopotential.</p>
+<p>It is not possible to say “this origin OR this product”: only expressions
+inside the same group can be ORed together.</p>
+<div class="section" id="examples">
+<h2>Examples<a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h2>
+<p>Given origin <code class="docutils literal notranslate"><span class="pre">GRIB1(200,</span> <span class="pre">0,</span> <span class="pre">0)</span></code>, product <code class="docutils literal notranslate"><span class="pre">GRIB1(98,</span> <span class="pre">128,</span> <span class="pre">167)</span></code>, level <code class="docutils literal notranslate"><span class="pre">GRIB1(1)</span></code>:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">origin:arpa</span></code> matches</li>
+<li><code class="docutils literal notranslate"><span class="pre">origin:arpa</span> <span class="pre">or</span> <span class="pre">GRIB1,98,0</span></code> matches</li>
+<li><code class="docutils literal notranslate"><span class="pre">origin:arpa;</span> <span class="pre">product:t</span></code> matches</li>
+<li><code class="docutils literal notranslate"><span class="pre">origin:GRIB1,200;</span> <span class="pre">product:t</span> <span class="pre">or</span> <span class="pre">z</span></code> matches</li>
+<li><code class="docutils literal notranslate"><span class="pre">origin:arpa;</span> <span class="pre">product:t;</span> <span class="pre">level:g00</span> <span class="pre">or</span> <span class="pre">g02</span></code> matches</li>
+</ul>
+<div class="toctree-wrapper compound">
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="matcher/aliases.html">Using aliases</a><ul class="simple">
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="matcher/reftime.html">Matching reference times</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="matcher/reftime.html#examples">Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="matcher/origin.html">Matching origins</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="matcher/origin.html#grib1">GRIB1</a></li>
+<li class="toctree-l2"><a class="reference internal" href="matcher/origin.html#grib2">GRIB2</a></li>
+<li class="toctree-l2"><a class="reference internal" href="matcher/origin.html#bufr">BUFR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="matcher/origin.html#odimh5">ODIMH5</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="matcher/area.html">Matching areas</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="matcher/area.html#matching-grib-areas">Matching GRIB areas</a></li>
+<li class="toctree-l2"><a class="reference internal" href="matcher/area.html#matching-odimh5-areas">Matching ODIMH5 areas</a></li>
+<li class="toctree-l2"><a class="reference internal" href="matcher/area.html#matching-vm2-areas">Matching VM2 areas</a></li>
+<li class="toctree-l2"><a class="reference internal" href="matcher/area.html#matching-area-bounding-boxes">Matching area bounding boxes</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="matcher/product.html">Matching products</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="matcher/product.html#grib1">GRIB1</a></li>
+<li class="toctree-l2"><a class="reference internal" href="matcher/product.html#grib2">GRIB2</a></li>
+<li class="toctree-l2"><a class="reference internal" href="matcher/product.html#bufr">BUFR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="matcher/product.html#odimh5">ODIMH5</a></li>
+<li class="toctree-l2"><a class="reference internal" href="matcher/product.html#vm2">VM2</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="matcher/level.html">Matching levels</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="matcher/level.html#grib1">GRIB1</a></li>
+<li class="toctree-l2"><a class="reference internal" href="matcher/level.html#grib2-single-level">GRIB2 single level</a></li>
+<li class="toctree-l2"><a class="reference internal" href="matcher/level.html#grib2-layer">GRIB2 layer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="matcher/level.html#odimh5-layer">ODIMH5 layer</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="matcher/timerange.html">Matching time ranges</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="matcher/timerange.html#grib1">GRIB1</a></li>
+<li class="toctree-l2"><a class="reference internal" href="matcher/timerange.html#grib2">GRIB2</a></li>
+<li class="toctree-l2"><a class="reference internal" href="matcher/timerange.html#timedef">Timedef</a></li>
+<li class="toctree-l2"><a class="reference internal" href="matcher/timerange.html#bufr">BUFR</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="matcher/proddef.html">Matching proddef information</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="matcher/proddef.html#matching-grib-proddefs">Matching GRIB proddefs</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="matcher/quantity.html">Matching ODIMH5 quantities</a><ul class="simple">
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="matcher/task.html">Matching ODIMH5 Task</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="matcher/task.html#examples">Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="matcher/run.html">Matching run information</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="matcher/run.html#minute">MINUTE</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">arkimet</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Match expressions</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#examples">Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="datasets.html">Datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="segments.html">Data segments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="http-api.html">arki-server HTTP API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="python/index.html">Arkimet Python API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="python/index.html#indices-and-tables">Indices and tables</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="index.html" title="previous chapter">arkimet documentation</a></li>
+      <li>Next: <a href="matcher/aliases.html" title="next chapter">Using aliases</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2019, Enrico Zini.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.8.4</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.8</a>
+      
+      |
+      <a href="_sources/matcher.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

@@ -1,0 +1,389 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>arkimet.scan.timedef &#8212; arkimet 1.16 documentation</title>
+    <link rel="stylesheet" href="../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for arkimet.scan.timedef</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Any</span>
+
+<span class="n">UNIT_MINUTE</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="n">UNIT_HOUR</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="n">UNIT_DAY</span> <span class="o">=</span> <span class="mi">2</span>
+<span class="n">UNIT_MONTH</span> <span class="o">=</span> <span class="mi">3</span>
+<span class="n">UNIT_YEAR</span> <span class="o">=</span> <span class="mi">4</span>
+<span class="n">UNIT_DECADE</span> <span class="o">=</span> <span class="mi">5</span>
+<span class="n">UNIT_NORMAL</span> <span class="o">=</span> <span class="mi">6</span>
+<span class="n">UNIT_CENTURY</span> <span class="o">=</span> <span class="mi">7</span>
+<span class="n">UNIT_3HOURS</span> <span class="o">=</span> <span class="mi">10</span>
+<span class="n">UNIT_6HOURS</span> <span class="o">=</span> <span class="mi">11</span>
+<span class="n">UNIT_12HOURS</span> <span class="o">=</span> <span class="mi">12</span>
+<span class="n">UNIT_SECOND</span> <span class="o">=</span> <span class="mi">13</span>
+<span class="n">UNIT_MISSING</span> <span class="o">=</span> <span class="mi">255</span>
+
+<span class="n">UNIT_SUFFIXES</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="n">UNIT_MINUTE</span><span class="p">:</span> <span class="s2">&quot;m&quot;</span><span class="p">,</span>
+    <span class="n">UNIT_HOUR</span><span class="p">:</span> <span class="s2">&quot;h&quot;</span><span class="p">,</span>
+    <span class="n">UNIT_DAY</span><span class="p">:</span> <span class="s2">&quot;d&quot;</span><span class="p">,</span>
+    <span class="n">UNIT_MONTH</span><span class="p">:</span> <span class="s2">&quot;mo&quot;</span><span class="p">,</span>
+    <span class="n">UNIT_YEAR</span><span class="p">:</span> <span class="s2">&quot;y&quot;</span><span class="p">,</span>
+    <span class="n">UNIT_DECADE</span><span class="p">:</span> <span class="s2">&quot;de&quot;</span><span class="p">,</span>
+    <span class="n">UNIT_NORMAL</span><span class="p">:</span> <span class="s2">&quot;no&quot;</span><span class="p">,</span>
+    <span class="n">UNIT_CENTURY</span><span class="p">:</span> <span class="s2">&quot;ce&quot;</span><span class="p">,</span>
+    <span class="n">UNIT_3HOURS</span><span class="p">:</span> <span class="s2">&quot;h3&quot;</span><span class="p">,</span>
+    <span class="n">UNIT_6HOURS</span><span class="p">:</span> <span class="s2">&quot;h6&quot;</span><span class="p">,</span>
+    <span class="n">UNIT_12HOURS</span><span class="p">:</span> <span class="s2">&quot;h12&quot;</span><span class="p">,</span>
+    <span class="n">UNIT_SECOND</span><span class="p">:</span> <span class="s2">&quot;s&quot;</span><span class="p">,</span>
+<span class="p">}</span>
+
+
+<span class="k">def</span> <span class="nf">timeunit_suffix</span><span class="p">(</span><span class="n">unit</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="n">suffix</span> <span class="o">=</span> <span class="n">UNIT_SUFFIXES</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">unit</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">suffix</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">suffix</span>
+    <span class="k">if</span> <span class="n">unit</span> <span class="o">==</span> <span class="n">UNIT_MISSING</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;cannot find suffix for MISSING (255) time unit&quot;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;cannot find find time unit suffix: time unit is unknown (</span><span class="si">{}</span><span class="s2">)&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">unit</span><span class="p">))</span>
+
+
+<span class="k">def</span> <span class="nf">unit_can_be_seconds</span><span class="p">(</span><span class="n">unit</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return true if the unit can be represented in seconds, false if the unit can</span>
+<span class="sd">    be represented in months.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">unit</span> <span class="ow">in</span> <span class="p">(</span><span class="n">UNIT_SECOND</span><span class="p">,</span> <span class="n">UNIT_MINUTE</span><span class="p">,</span> <span class="n">UNIT_HOUR</span><span class="p">,</span> <span class="n">UNIT_3HOURS</span><span class="p">,</span> <span class="n">UNIT_6HOURS</span><span class="p">,</span> <span class="n">UNIT_12HOURS</span><span class="p">,</span> <span class="n">UNIT_DAY</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">True</span>
+    <span class="k">if</span> <span class="n">unit</span> <span class="ow">in</span> <span class="p">(</span><span class="n">UNIT_MONTH</span><span class="p">,</span> <span class="n">UNIT_YEAR</span><span class="p">,</span> <span class="n">UNIT_DECADE</span><span class="p">,</span> <span class="n">UNIT_NORMAL</span><span class="p">,</span> <span class="n">UNIT_CENTURY</span><span class="p">,</span> <span class="n">UNIT_MISSING</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">False</span>
+    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;invalid timedef unit </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">unit</span><span class="p">))</span>
+
+
+<span class="k">def</span> <span class="nf">compare_units</span><span class="p">(</span><span class="n">unit1</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">unit2</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return -1 if unit1 represent a smaller time lapse than unit2, 0 if they are</span>
+<span class="sd">    the same, 1 if unit1 represents a bigger time lapse than unit1.</span>
+
+<span class="sd">    Raises an exception if the two units cannot be compared (like seconds and</span>
+<span class="sd">    months)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">unit1</span> <span class="o">==</span> <span class="n">unit2</span><span class="p">:</span>
+        <span class="k">return</span> <span class="mi">0</span>
+
+    <span class="k">if</span> <span class="n">unit_can_be_seconds</span><span class="p">(</span><span class="n">unit1</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">unit_can_be_seconds</span><span class="p">(</span><span class="n">unit2</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;cannot compare two different kinds of time units (</span><span class="si">{}</span><span class="s2"> and </span><span class="si">{}</span><span class="s2">)&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="n">timeunit_suffix</span><span class="p">(</span><span class="n">unit1</span><span class="p">),</span> <span class="n">timeunit_suffix</span><span class="p">(</span><span class="n">unit2</span><span class="p">)))</span>
+
+        <span class="k">if</span> <span class="n">unit1</span> <span class="o">==</span> <span class="n">UNIT_SECOND</span><span class="p">:</span>
+            <span class="k">return</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="k">elif</span> <span class="n">unit1</span> <span class="o">==</span> <span class="n">UNIT_MINUTE</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">unit2</span> <span class="o">==</span> <span class="n">UNIT_SECOND</span><span class="p">:</span>
+                <span class="k">return</span> <span class="mi">1</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="k">elif</span> <span class="n">unit1</span> <span class="o">==</span> <span class="n">UNIT_HOUR</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">unit2</span> <span class="ow">in</span> <span class="p">(</span><span class="n">UNIT_MINUTE</span><span class="p">,</span> <span class="n">UNIT_SECOND</span><span class="p">):</span>
+                <span class="k">return</span> <span class="mi">1</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="k">elif</span> <span class="n">unit1</span> <span class="o">==</span> <span class="n">UNIT_3HOURS</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">unit2</span> <span class="ow">in</span> <span class="p">(</span><span class="n">UNIT_HOUR</span><span class="p">,</span> <span class="n">UNIT_MINUTE</span><span class="p">,</span> <span class="n">UNIT_SECOND</span><span class="p">):</span>
+                <span class="k">return</span> <span class="mi">1</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="k">elif</span> <span class="n">unit1</span> <span class="o">==</span> <span class="n">UNIT_6HOURS</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">unit2</span> <span class="ow">in</span> <span class="p">(</span><span class="n">UNIT_3HOURS</span><span class="p">,</span> <span class="n">UNIT_HOUR</span><span class="p">,</span> <span class="n">UNIT_MINUTE</span><span class="p">,</span> <span class="n">UNIT_SECOND</span><span class="p">):</span>
+                <span class="k">return</span> <span class="mi">1</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="k">elif</span> <span class="n">unit1</span> <span class="o">==</span> <span class="n">UNIT_12HOURS</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">unit2</span> <span class="ow">in</span> <span class="p">(</span><span class="n">UNIT_6HOURS</span><span class="p">,</span> <span class="n">UNIT_3HOURS</span><span class="p">,</span> <span class="n">UNIT_HOUR</span><span class="p">,</span> <span class="n">UNIT_MINUTE</span><span class="p">,</span> <span class="n">UNIT_SECOND</span><span class="p">):</span>
+                <span class="k">return</span> <span class="mi">1</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="k">elif</span> <span class="n">unit1</span> <span class="o">==</span> <span class="n">UNIT_DAY</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mi">1</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;unable to compare unknown unit type </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">timeunit_suffix</span><span class="p">(</span><span class="n">unit1</span><span class="p">)))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">unit_can_be_seconds</span><span class="p">(</span><span class="n">unit2</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;cannot compare two different kinds of time units (</span><span class="si">{}</span><span class="s2"> and </span><span class="si">{}</span><span class="s2">)&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="n">timeunit_suffix</span><span class="p">(</span><span class="n">unit1</span><span class="p">),</span> <span class="n">timeunit_suffix</span><span class="p">(</span><span class="n">unit2</span><span class="p">)))</span>
+        <span class="k">if</span> <span class="n">unit1</span> <span class="o">==</span> <span class="n">UNIT_MONTH</span><span class="p">:</span>
+            <span class="k">return</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="k">elif</span> <span class="n">unit1</span> <span class="o">==</span> <span class="n">UNIT_YEAR</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">unit2</span> <span class="o">==</span> <span class="n">UNIT_MONTH</span><span class="p">:</span>
+                <span class="k">return</span> <span class="mi">1</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="k">elif</span> <span class="n">unit1</span> <span class="o">==</span> <span class="n">UNIT_DECADE</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">unit2</span> <span class="ow">in</span> <span class="p">(</span><span class="n">UNIT_MONTH</span><span class="p">,</span> <span class="n">UNIT_YEAR</span><span class="p">):</span>
+                <span class="k">return</span> <span class="mi">1</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="k">elif</span> <span class="n">unit1</span> <span class="o">==</span> <span class="n">UNIT_NORMAL</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">unit2</span> <span class="ow">in</span> <span class="p">(</span><span class="n">UNIT_MONTH</span><span class="p">,</span> <span class="n">UNIT_YEAR</span><span class="p">,</span> <span class="n">UNIT_DECADE</span><span class="p">):</span>
+                <span class="k">return</span> <span class="mi">1</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="k">elif</span> <span class="n">unit1</span> <span class="o">==</span> <span class="n">UNIT_CENTURY</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">unit2</span> <span class="ow">in</span> <span class="p">(</span><span class="n">UNIT_MONTH</span><span class="p">,</span> <span class="n">UNIT_YEAR</span><span class="p">,</span> <span class="n">UNIT_DECADE</span><span class="p">,</span> <span class="n">UNIT_NORMAL</span><span class="p">):</span>
+                <span class="k">return</span> <span class="mi">1</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;unable to compare unknown unit type </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">timeunit_suffix</span><span class="p">(</span><span class="n">unit1</span><span class="p">)))</span>
+
+
+<span class="k">def</span> <span class="nf">restrict_unit</span><span class="p">(</span><span class="n">val</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">unit</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Convert the value/unit pair to an equivalent pair with a unit with a smaller</span>
+<span class="sd">    granularity (e.g. years to months, hours to minutes), with no loss of</span>
+<span class="sd">    precision.</span>
+
+<span class="sd">    Return (val, unit) if the value was unchanged because no further change is</span>
+<span class="sd">    possible, otherwise the new (val, unit) pair</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">unit</span> <span class="o">==</span> <span class="n">UNIT_MINUTE</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">val</span> <span class="o">*</span> <span class="mi">60</span><span class="p">,</span> <span class="n">UNIT_SECOND</span>
+    <span class="k">elif</span> <span class="n">unit</span> <span class="o">==</span> <span class="n">UNIT_HOUR</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">val</span> <span class="o">*</span> <span class="mi">60</span><span class="p">,</span> <span class="n">UNIT_MINUTE</span>
+    <span class="k">elif</span> <span class="n">unit</span> <span class="o">==</span> <span class="n">UNIT_DAY</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">val</span> <span class="o">*</span> <span class="mi">24</span><span class="p">,</span> <span class="n">UNIT_HOUR</span>
+    <span class="k">elif</span> <span class="n">unit</span> <span class="o">==</span> <span class="n">UNIT_MONTH</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">val</span><span class="p">,</span> <span class="n">unit</span>
+    <span class="k">elif</span> <span class="n">unit</span> <span class="o">==</span> <span class="n">UNIT_YEAR</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">val</span> <span class="o">*</span> <span class="mi">12</span><span class="p">,</span> <span class="n">UNIT_MONTH</span>
+    <span class="k">elif</span> <span class="n">unit</span> <span class="o">==</span> <span class="n">UNIT_DECADE</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">val</span> <span class="o">*</span> <span class="mi">10</span><span class="p">,</span> <span class="n">UNIT_YEAR</span>
+    <span class="k">elif</span> <span class="n">unit</span> <span class="o">==</span> <span class="n">UNIT_NORMAL</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">val</span> <span class="o">*</span> <span class="mi">3</span><span class="p">,</span> <span class="n">UNIT_DECADE</span>
+    <span class="k">elif</span> <span class="n">unit</span> <span class="o">==</span> <span class="n">UNIT_CENTURY</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">val</span> <span class="o">*</span> <span class="mi">10</span><span class="p">,</span> <span class="n">UNIT_DECADE</span>
+    <span class="k">elif</span> <span class="n">unit</span> <span class="o">==</span> <span class="n">UNIT_3HOURS</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">val</span> <span class="o">*</span> <span class="mi">3</span><span class="p">,</span> <span class="n">UNIT_HOUR</span>
+    <span class="k">elif</span> <span class="n">unit</span> <span class="o">==</span> <span class="n">UNIT_6HOURS</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">val</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span> <span class="n">UNIT_3HOURS</span>
+    <span class="k">elif</span> <span class="n">unit</span> <span class="o">==</span> <span class="n">UNIT_12HOURS</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">val</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span> <span class="n">UNIT_6HOURS</span>
+    <span class="k">elif</span> <span class="n">unit</span> <span class="o">==</span> <span class="n">UNIT_SECOND</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">val</span><span class="p">,</span> <span class="n">unit</span>
+    <span class="k">elif</span> <span class="n">unit</span> <span class="o">==</span> <span class="n">UNIT_MISSING</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">val</span><span class="p">,</span> <span class="n">unit</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">val</span><span class="p">,</span> <span class="n">unit</span>
+
+
+<span class="k">def</span> <span class="nf">enlarge_unit</span><span class="p">(</span><span class="n">val</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">unit</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Convert the value/unit pair to an equivalent pair with a unit with a larger</span>
+<span class="sd">    granularity (e.g. months to years, minutes to hours), with no loss of</span>
+<span class="sd">    precision.</span>
+
+<span class="sd">    Return (val, unit) if the value was unchanged because no further change is</span>
+<span class="sd">    possible, otherwise the new (val, unit) tuple</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">unit</span> <span class="o">==</span> <span class="n">UNIT_MINUTE</span><span class="p">:</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">val</span> <span class="o">%</span> <span class="mi">60</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">val</span> <span class="o">/</span> <span class="mi">60</span><span class="p">,</span> <span class="n">UNIT_HOUR</span>
+    <span class="k">elif</span> <span class="n">unit</span> <span class="o">==</span> <span class="n">UNIT_HOUR</span><span class="p">:</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">val</span> <span class="o">%</span> <span class="mi">24</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">val</span> <span class="o">/</span> <span class="mi">24</span><span class="p">,</span> <span class="n">UNIT_DAY</span>
+    <span class="k">elif</span> <span class="n">unit</span> <span class="o">==</span> <span class="n">UNIT_DAY</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">val</span><span class="p">,</span> <span class="n">unit</span>
+    <span class="k">elif</span> <span class="n">unit</span> <span class="o">==</span> <span class="n">UNIT_MONTH</span><span class="p">:</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">val</span> <span class="o">%</span> <span class="mi">12</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">val</span> <span class="o">/</span> <span class="mi">12</span><span class="p">,</span> <span class="n">UNIT_YEAR</span>
+    <span class="k">elif</span> <span class="n">unit</span> <span class="o">==</span> <span class="n">UNIT_YEAR</span><span class="p">:</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">val</span> <span class="o">%</span> <span class="mi">10</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">val</span> <span class="o">/</span> <span class="mi">10</span><span class="p">,</span> <span class="n">UNIT_DECADE</span>
+    <span class="k">elif</span> <span class="n">unit</span> <span class="o">==</span> <span class="n">UNIT_DECADE</span><span class="p">:</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">val</span> <span class="o">%</span> <span class="mi">100</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">val</span> <span class="o">/</span> <span class="mi">100</span><span class="p">,</span> <span class="n">UNIT_CENTURY</span>
+    <span class="k">elif</span> <span class="n">unit</span> <span class="o">==</span> <span class="n">UNIT_NORMAL</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">val</span><span class="p">,</span> <span class="n">unit</span>
+    <span class="k">elif</span> <span class="n">unit</span> <span class="o">==</span> <span class="n">UNIT_CENTURY</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">val</span><span class="p">,</span> <span class="n">unit</span>
+    <span class="k">elif</span> <span class="n">unit</span> <span class="o">==</span> <span class="n">UNIT_3HOURS</span><span class="p">:</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">val</span> <span class="o">%</span> <span class="mi">2</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">val</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span> <span class="n">UNIT_6HOURS</span>
+    <span class="k">elif</span> <span class="n">unit</span> <span class="o">==</span> <span class="n">UNIT_6HOURS</span><span class="p">:</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">val</span> <span class="o">%</span> <span class="mi">2</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">val</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span> <span class="n">UNIT_12HOURS</span>
+    <span class="k">elif</span> <span class="n">unit</span> <span class="o">==</span> <span class="n">UNIT_12HOURS</span><span class="p">:</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">val</span> <span class="o">%</span> <span class="mi">2</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">val</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span> <span class="n">UNIT_DAY</span>
+    <span class="k">elif</span> <span class="n">unit</span> <span class="o">==</span> <span class="n">UNIT_SECOND</span><span class="p">:</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">val</span> <span class="o">%</span> <span class="mi">60</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">val</span> <span class="o">/</span> <span class="mi">60</span><span class="p">,</span> <span class="n">UNIT_MINUTE</span>
+    <span class="k">elif</span> <span class="n">unit</span> <span class="o">==</span> <span class="n">UNIT_MISSING</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">val</span><span class="p">,</span> <span class="n">unit</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">val</span><span class="p">,</span> <span class="n">unit</span>
+
+    <span class="k">return</span> <span class="n">val</span><span class="p">,</span> <span class="n">unit</span>
+
+
+<div class="viewcode-block" id="make_same_units"><a class="viewcode-back" href="../../../python/arkimet.scan.html#arkimet.scan.timedef.make_same_units">[docs]</a><span class="k">def</span> <span class="nf">make_same_units</span><span class="p">(</span><span class="n">tr</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Make sure val1:unit1 and val2:unit2 are expressed using the same units.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">unit1</span><span class="p">,</span> <span class="n">unit2</span> <span class="o">=</span> <span class="n">tr</span><span class="p">[</span><span class="s2">&quot;step_unit&quot;</span><span class="p">],</span> <span class="n">tr</span><span class="p">[</span><span class="s2">&quot;stat_unit&quot;</span><span class="p">]</span>
+    <span class="n">val1</span><span class="p">,</span> <span class="n">val2</span> <span class="o">=</span> <span class="n">tr</span><span class="p">[</span><span class="s2">&quot;step_len&quot;</span><span class="p">],</span> <span class="n">tr</span><span class="p">[</span><span class="s2">&quot;stat_len&quot;</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">unit1</span> <span class="o">==</span> <span class="n">unit2</span><span class="p">:</span>
+        <span class="k">return</span>
+
+    <span class="c1"># Try enlarging the smallest</span>
+    <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="nb">cmp</span> <span class="o">=</span> <span class="n">compare_units</span><span class="p">(</span><span class="n">unit1</span><span class="p">,</span> <span class="n">unit2</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">cmp</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">tval1</span><span class="p">,</span> <span class="n">tunit1</span> <span class="o">=</span> <span class="n">enlarge_unit</span><span class="p">(</span><span class="n">val1</span><span class="p">,</span> <span class="n">unit1</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">tunit1</span> <span class="o">==</span> <span class="n">unit1</span><span class="p">:</span>
+                <span class="k">break</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">val1</span><span class="p">,</span> <span class="n">unit1</span> <span class="o">=</span> <span class="n">tval1</span><span class="p">,</span> <span class="n">tunit1</span>
+        <span class="k">elif</span> <span class="nb">cmp</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">tr</span><span class="p">[</span><span class="s2">&quot;step_unit&quot;</span><span class="p">],</span> <span class="n">tr</span><span class="p">[</span><span class="s2">&quot;stat_unit&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">unit1</span><span class="p">,</span> <span class="n">unit2</span>
+            <span class="n">tr</span><span class="p">[</span><span class="s2">&quot;step_len&quot;</span><span class="p">],</span> <span class="n">tr</span><span class="p">[</span><span class="s2">&quot;stat_len&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">val1</span><span class="p">,</span> <span class="n">val2</span>
+            <span class="k">return</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">tval2</span><span class="p">,</span> <span class="n">tunit2</span> <span class="o">=</span> <span class="n">enlarge_unit</span><span class="p">(</span><span class="n">val2</span><span class="p">,</span> <span class="n">unit2</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">tunit2</span> <span class="o">==</span> <span class="n">unit2</span><span class="p">:</span>
+                <span class="k">break</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">val2</span><span class="p">,</span> <span class="n">unit2</span> <span class="o">=</span> <span class="n">tval2</span><span class="p">,</span> <span class="n">tunit2</span>
+
+    <span class="c1"># Still not matching, try restricting the largest</span>
+    <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="nb">cmp</span> <span class="o">=</span> <span class="n">compare_units</span><span class="p">(</span><span class="n">unit1</span><span class="p">,</span> <span class="n">unit2</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">cmp</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">tval2</span><span class="p">,</span> <span class="n">tunit2</span> <span class="o">=</span> <span class="n">restrict_unit</span><span class="p">(</span><span class="n">val2</span><span class="p">,</span> <span class="n">unit2</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">tunit2</span> <span class="o">==</span> <span class="n">unit2</span><span class="p">:</span>
+                <span class="k">break</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">val2</span><span class="p">,</span> <span class="n">unit2</span> <span class="o">=</span> <span class="n">tval2</span><span class="p">,</span> <span class="n">tunit2</span>
+        <span class="k">elif</span> <span class="nb">cmp</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">tr</span><span class="p">[</span><span class="s2">&quot;step_unit&quot;</span><span class="p">],</span> <span class="n">tr</span><span class="p">[</span><span class="s2">&quot;stat_unit&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">unit1</span><span class="p">,</span> <span class="n">unit2</span>
+            <span class="n">tr</span><span class="p">[</span><span class="s2">&quot;step_len&quot;</span><span class="p">],</span> <span class="n">tr</span><span class="p">[</span><span class="s2">&quot;stat_len&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">val1</span><span class="p">,</span> <span class="n">val2</span>
+            <span class="k">return</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">tval1</span><span class="p">,</span> <span class="n">tunit1</span> <span class="o">=</span> <span class="n">restrict_unit</span><span class="p">(</span><span class="n">val1</span><span class="p">,</span> <span class="n">unit1</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">tunit1</span> <span class="o">==</span> <span class="n">unit1</span><span class="p">:</span>
+                <span class="k">break</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">val1</span><span class="p">,</span> <span class="n">unit1</span> <span class="o">=</span> <span class="n">tval1</span><span class="p">,</span> <span class="n">tunit1</span>
+
+    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Cannot convert </span><span class="si">{}</span><span class="s2"> and </span><span class="si">{}</span><span class="s2"> to the same unit&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+        <span class="n">timeunit_suffix</span><span class="p">(</span><span class="n">unit1</span><span class="p">),</span> <span class="n">timeunit_suffix</span><span class="p">(</span><span class="n">unit2</span><span class="p">)))</span></div>
+
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">&quot;UNIT_MINUTE&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;UNIT_HOUR&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;UNIT_DAY&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;UNIT_MONTH&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;UNIT_YEAR&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;UNIT_DECADE&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;UNIT_NORMAL&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;UNIT_CENTURY&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;UNIT_3HOURS&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;UNIT_6HOURS&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;UNIT_12HOURS&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;UNIT_SECOND&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;UNIT_MISSING&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;make_same_units&quot;</span><span class="p">,</span>
+<span class="p">]</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">arkimet</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../matcher.html">Match expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../datasets.html">Datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../segments.html">Data segments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../http-api.html">arki-server HTTP API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../python/index.html">Arkimet Python API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../python/index.html#indices-and-tables">Indices and tables</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../index.html">Module code</a><ul>
+  <li><a href="../../arkimet.html">arkimet</a><ul>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2019, Enrico Zini.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.8.4</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.8</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

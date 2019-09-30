@@ -1,0 +1,156 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>dataset archives &#8212; arkimet 1.16 documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Data segments" href="../segments.html" />
+    <link rel="prev" title="ondisk2 dataset format" href="ondisk2.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="dataset-archives">
+<h1>dataset archives<a class="headerlink" href="#dataset-archives" title="Permalink to this headline">¶</a></h1>
+<p>Datasets can distinguish between online and archived data stored in two
+different formats.</p>
+<p>Online data can be stored in a format with detailed indexing like <code class="docutils literal notranslate"><span class="pre">iseg</span></code> (see
+<a class="reference internal" href="iseg.html#datasets-iseg"><span class="std std-ref">iseg dataset format</span></a>), while archived data can be stored in a format with less
+features and overhead like <code class="docutils literal notranslate"><span class="pre">simple</span></code> (see <a class="reference internal" href="simple.html#datasets-simple"><span class="std std-ref">simple dataset format</span></a>).</p>
+<p>Archives are stored in the <code class="docutils literal notranslate"><span class="pre">.archives</span></code> subdirectory of a dataset. The
+<code class="docutils literal notranslate"><span class="pre">archive</span> <span class="pre">age</span></code> configuration value can be used to automate moving to
+<code class="docutils literal notranslate"><span class="pre">.archives/</span></code>, during repack, those segments that only contain data older than
+the given age.</p>
+<p>Data is moved to <code class="docutils literal notranslate"><span class="pre">.archives</span></code> as entire segments after checking and repacking of
+the online part. This should ensure that archived segments contain no
+duplicates and need no further repacking.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">.archives</span></code> directory contain several subdirectory, each with a dataset in
+<a class="reference internal" href="simple.html#datasets-simple"><span class="std std-ref">simple</span></a> format containing data. Queries on the archives query
+each dataset in sequence, ordered by name, with <code class="docutils literal notranslate"><span class="pre">last</span></code> always kept at the end.</p>
+<p>Segments that get archived are moved from the online dataset to the
+<code class="docutils literal notranslate"><span class="pre">.archives/last</span></code> dataset, and can be manually moved from <code class="docutils literal notranslate"><span class="pre">last</span></code> to any
+other subdirectory of <code class="docutils literal notranslate"><span class="pre">.archives</span></code>. arkimet will only ever move segments to
+<code class="docutils literal notranslate"><span class="pre">.archives/last</span></code> and the rest can be maintained with procedures external to
+arkimet with no interference.</p>
+<div class="section" id="online-archives">
+<h2>Online archives<a class="headerlink" href="#online-archives" title="Permalink to this headline">¶</a></h2>
+<p>Online archives are the default type of archive that is created automatically
+as <code class="docutils literal notranslate"><span class="pre">.archives/last</span></code> during maintenance. They are instances of <a class="reference internal" href="simple.html#datasets-simple"><span class="std std-ref">simple</span></a> datasets, and all the simple dataset documentation applies
+to them.</p>
+</div>
+<div class="section" id="offline-archives">
+<h2>Offline archives<a class="headerlink" href="#offline-archives" title="Permalink to this headline">¶</a></h2>
+<p>Offline archives are archives whose data has been moved to external media. The
+only thing that is left is a <code class="docutils literal notranslate"><span class="pre">.summary</span></code> file that describes the data that
+would be there.</p>
+<p>It is possible to bring an offline archive online by copying/linking/mounting
+it next to its <code class="docutils literal notranslate"><span class="pre">.summmary</span></code> file. If both the <code class="docutils literal notranslate"><span class="pre">.summary</span></code> file and the archive
+directory are present, arkimet will ignore the <code class="docutils literal notranslate"><span class="pre">.summary</span></code> file when reading,
+and will ignore the archive directory when checking. This has the effect of
+making an archive read-only when the <code class="docutils literal notranslate"><span class="pre">$archivename.summary</span></code> file is present.</p>
+<p>To run a check/fix/repack operation on an offline archive, bring it online,
+remove the <code class="docutils literal notranslate"><span class="pre">$archivename.summary</span></code> file, run the check/fix/repack operation, and
+copy <code class="docutils literal notranslate"><span class="pre">$archivename/summary</span></code> to <code class="docutils literal notranslate"><span class="pre">$archivename.summary</span></code> to mark it read-only
+again.</p>
+<div class="toctree-wrapper compound">
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">arkimet</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../matcher.html">Match expressions</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../datasets.html">Datasets</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="iseg.html"><code class="docutils literal notranslate"><span class="pre">iseg</span></code> dataset format</a></li>
+<li class="toctree-l2"><a class="reference internal" href="simple.html"><code class="docutils literal notranslate"><span class="pre">simple</span></code> dataset format</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ondisk2.html"><code class="docutils literal notranslate"><span class="pre">ondisk2</span></code> dataset format</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">dataset archives</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../segments.html">Data segments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../http-api.html">arki-server HTTP API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../python/index.html">Arkimet Python API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../python/index.html#indices-and-tables">Indices and tables</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="../datasets.html">Datasets</a><ul>
+      <li>Previous: <a href="ondisk2.html" title="previous chapter"><code class="docutils literal notranslate"><span class="pre">ondisk2</span></code> dataset format</a></li>
+      <li>Next: <a href="../segments.html" title="next chapter">Data segments</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2019, Enrico Zini.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.8.4</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.8</a>
+      
+      |
+      <a href="../_sources/datasets/archive.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

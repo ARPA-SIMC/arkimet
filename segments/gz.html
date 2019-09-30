@@ -1,0 +1,153 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>gz and gzidx segments &#8212; arkimet 1.16 documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="tar segments" href="tar.html" />
+    <link rel="prev" title="dir segments" href="dir.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="gz-and-gzidx-segments">
+<span id="segments-gz"></span><h1>gz and gzidx segments<a class="headerlink" href="#gz-and-gzidx-segments" title="Permalink to this headline">¶</a></h1>
+<p>Gzipped segments are concat segments (see <a class="reference internal" href="concat.html#segments-concat"><span class="std std-ref">concat segments</span></a>) that have
+been compressed with <code class="docutils literal notranslate"><span class="pre">gzip</span></code>. Because this compression processes all data
+together, it can exploit similarities between different data, and compress
+efficiently long sequences of VM2 or small BUFR data.</p>
+<p>While compressing data together achieves high compression ratios, it means that
+to get even just one item, the whole compressed stream needs to be decompressed.</p>
+<p>This can only be a problem if segments are very large: in that case, arkimet
+can restart the compressed stream each so many items, and keep an index of
+where each stream begins. This means that to extract one data item, there is no
+need to decompress the whole file, but only the compressed chunk where the item
+is stored.</p>
+<p>The group size can be controlled by the <code class="docutils literal notranslate"><span class="pre">gz</span> <span class="pre">group</span> <span class="pre">size</span></code> setting in the dataset,
+which defaults to 512. A value of 0 disables the grouping feature and
+compresses all the data in the segment together, without writing an index file.</p>
+<p>Higher group sizes mean higher compression ratios, and smaller group sizes
+means smaller partial reads when only a small part of the segment needs to be
+read. This configuration is highly dependeny on the specific datasets,
+considering:</p>
+<blockquote>
+<div><ul class="simple">
+<li>how big is a segment: for small segments, grouping makes little sense;</li>
+<li>how big are data items: if they are big, compressing them all together makes
+little sense, and you may want a zip segment (see <a class="reference internal" href="zip.html#segments-zip"><span class="std std-ref">zip segments</span></a>) instead;</li>
+<li>what kind of queries are made to the dataset: if queries need most of its
+contents, all needs to be decompressed anyway and grouping makes little
+sense;</li>
+<li>what kind of storage is used to store the segment: an SSD with no seek time
+would make grouping more convenient, while a sequential disk with high seek
+times might require more time in the seeks needed to read the index than it
+would take to sequentially read the whole segment. A remote storage which
+would require downloading all the segment from the network to access it
+would also make grouping optimization unnecessary.</li>
+</ul>
+</div></blockquote>
+<p>If you have very large segments made up of very small data items, which gets
+queried in a way that a very few data items from the segment are needed each
+time, then tweaking compression grouping could help.</p>
+<div class="toctree-wrapper compound">
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">arkimet</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../matcher.html">Match expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../datasets.html">Datasets</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../segments.html">Data segments</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="concat.html">concat segments</a></li>
+<li class="toctree-l2"><a class="reference internal" href="dir.html">dir segments</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">gz and gzidx segments</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tar.html">tar segments</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zip.html">zip segments</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../http-api.html">arki-server HTTP API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../python/index.html">Arkimet Python API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../python/index.html#indices-and-tables">Indices and tables</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="../segments.html">Data segments</a><ul>
+      <li>Previous: <a href="dir.html" title="previous chapter">dir segments</a></li>
+      <li>Next: <a href="tar.html" title="next chapter">tar segments</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2019, Enrico Zini.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.8.4</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.8</a>
+      
+      |
+      <a href="../_sources/segments/gz.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
