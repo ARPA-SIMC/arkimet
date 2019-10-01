@@ -5,18 +5,7 @@ PYTHON=${PYTHON:-python3}
 
 if [ "$1" = "NOSE" ]
 then
-    # Try to find out what is the name of the nose executable today (sigh)
-    PYTHON_VERSION="$($PYTHON -c 'import sys; print("{0}.{1}".format(*sys.version_info[:]))')"
-    NOSE=""
-    for cand in nose2-3 nosetests-3.6 nosetests-3.5 nosetests-3.4 nosetests-3.3 nosetests-${PYTHON_VERSION}
-    do
-        NOSE=`which $cand 2>/dev/null` && break
-    done
-    if [ -z "$NOSE" ]
-    then
-        echo "python3-nose not found" >&2
-        exit 1
-    fi
+    NOSE="${NOSE:-nose}"
     CMD="$NOSE -s `pwd`"
     DEBUG_CMD="$PYTHON $NOSE -s `pwd`"
 else

@@ -340,7 +340,11 @@ then
     AC_DEFINE(HAVE_PYTHON, 1, [Have Python bindings])
     AX_PYTHON_MODULE(werkzeug, yes)
     AX_PYTHON_MODULE(setproctitle, yes)
-    AX_PYTHON_MODULE(nose, yes)
+    AC_CHECK_PROGS(NOSE, [nose2-3 nosetests-3.6 nosetests-3.5 nosetests-3.4 nosetests-3.3 nosetests-$PYTHON_VERSION])
+    if test x$NOSE = x
+    then
+        AC_MSG_ERROR([Python nose not found])
+    fi
     AX_PYTHON_MODULE(jinja2, yes)
     AX_PYTHON_MODULE(wreport, yes)
     AX_PYTHON_MODULE(dballe, yes)
