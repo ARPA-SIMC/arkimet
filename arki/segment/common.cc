@@ -124,14 +124,17 @@ State AppendCheckBackend::check_contiguous()
         if (start < end_of_known_data)
         {
             stringstream out;
-            out << "item at offset " << start << " overlaps with the previous items that ends at offset " << end_of_known_data;
+            out << "corruption: item at offset " << start << " overlaps with the previous items that ends at offset " << end_of_known_data;
             reporter(out.str());
             return SEGMENT_CORRUPTED;
         }
-        else if (!dirty && start > end_of_known_data)
+        else if (start > end_of_known_data)
         {
             stringstream out;
-            out << "item at offset " << start << " begins past the end of the previous item (offset " << end_of_known_data << ")";
+            if (end_of_known_data)
+                out << "gap: item at offset " << start << " begins " << (end_of_known_data - start) << "b past the end of the previous item at offset " << end_of_known_data;
+            else
+                out << "gap: first item begins at offset " << start << " instead of the beginning of the segment";
             reporter(out.str());
             dirty = true;
         }
