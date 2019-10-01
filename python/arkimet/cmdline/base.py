@@ -221,10 +221,10 @@ class AppWithProcessor(App):
 
     @contextmanager
     def outfile(self):
-        if not self.args.outfile or self.args.outfile == "-":
+        if not self.args.output or self.args.output == "-":
             yield sys.stdout
         else:
-            with open(self.args.outfile, "wb") as fd:
+            with open(self.args.output, "wb") as fd:
                 yield fd
 
     def run(self):
