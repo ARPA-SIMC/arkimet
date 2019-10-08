@@ -15,13 +15,15 @@ Source3: https://github.com/arpa-simc/%{name}/raw/v%{version}-%{release}/fedora/
 
 # On fedora, we don't need systemd to build. But we do on centos.
 %{?el7:BuildRequires: systemd}
-# to have python 3.6 interpreter
-%{?el7:BuildRequires: python3-rpm-macros >= 3-23}
 
 # Python 3 package names
-%{?el7:%define python3_vers python36}
-
-%{?fedora:%define python3_vers python3}
+%if 0%{?rhel} == 7
+%define python3_vers python36
+# to have python 3.6 interpreter
+BuildRequires: python3-rpm-macros >= 3-23
+%else
+%define python3_vers python3
+%endif
 
 %if 0%{?fedora} <= 24
 # grib_api is used only on older fedoras
@@ -31,8 +33,8 @@ Source3: https://github.com/arpa-simc/%{name}/raw/v%{version}-%{release}/fedora/
 BuildRequires: eccodes-simc
 %endif
 
-# expliciting eccodes for centos7
-%if 0%{?el7}
+%if 0%{?rhel} >= 7
+# expliciting eccodes for centos 7 and 8
 %define grib_sw eccodes
 BuildRequires: eccodes-simc
 %endif
@@ -146,7 +148,7 @@ sh autogen.sh
 
 # enabling arpae tests on almost all builds
 %{?fedora:%define arpae_tests 1}
-%{?el7:%define arpae_tests 1}
+%{?rhel:%define arpae_tests 1}
 
 %if 0%{?fc20}
 # see issue https://github.com/ARPA-SIMC/arkimet/issues/142
