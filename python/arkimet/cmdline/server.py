@@ -10,7 +10,10 @@ from arkimet.server import views
 from werkzeug.exceptions import HTTPException, NotFound
 from socketserver import ForkingMixIn
 from http.server import HTTPServer, BaseHTTPRequestHandler
-from setproctitle import setproctitle
+try:
+    from setproctitle import setproctitle
+except ModuleNotFoundError:
+    setproctitle = None
 from arkimet.cmdline.base import App
 
 
@@ -121,7 +124,8 @@ class Handler(BaseHTTPRequestHandler):
         """
         from werkzeug.wrappers import Request
         request = Request(self.make_environ())
-        setproctitle("arki-server {} for {}".format(request.base_url, request.remote_addr))
+        if setproctitle is not None:
+            setproctitle("arki-server {} for {}".format(request.base_url, request.remote_addr))
         adapter = self.server.url_map.bind_to_environ(request.environ)
         try:
             endpoint, values = adapter.match()
