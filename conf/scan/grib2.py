@@ -172,6 +172,9 @@ def scan_grib2(grib, md):
         if "derivedForecast" in grib:
             proddef["d"] = grib["derivedForecast"]
 
+    if "percentileValue" in grib:
+        proddef["pv"] = grib["percentileValue"]
+
     md["proddef"] = {
         "style": "GRIB",
         "value": proddef,
