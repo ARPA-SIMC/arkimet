@@ -175,6 +175,15 @@ def scan_grib2(grib, md):
     if "percentileValue" in grib:
         proddef["pv"] = grib["percentileValue"]
 
+    if "probabilityType" in grib:
+        proddef["pt"] = grib.get_long("probabilityType")
+        proddef["pl"] = "{},{},{},{}".format(
+            grib["scaledFactorOfLowerLimit"],
+            grib["scaledValueOfLowerLimit"],
+            grib["scaledFactorOfUpperLimit"],
+            grib["scaledValueOfUpperLimit"],
+        )
+
     md["proddef"] = {
         "style": "GRIB",
         "value": proddef,
