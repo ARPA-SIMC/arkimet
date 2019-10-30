@@ -3,14 +3,13 @@ from arkimet.cmdline.base import App, AppConfigMixin, Fail
 import sys
 import logging
 
-log = logging.getLogger("arki-mergeconf")
-
 
 class Mergeconf(AppConfigMixin, App):
     """
     Read dataset configuration from the given directories or config files,
     merge them and output the merged config file to standard output
     """
+    log = logging.getLogger("arki-mergeconf")
 
     def __init__(self):
         super().__init__()
@@ -29,17 +28,6 @@ class Mergeconf(AppConfigMixin, App):
         self.parser.add_argument("sources", nargs="*", action="store",
                                  help="datasets, configuration files or remote urls")
 
-    def _add_section(self, merged, section, name=None):
-        if name is None:
-            name = section["name"]
-
-        old = merged.section(name)
-        if old is not None:
-            log.warning("ignoring dataset %s in %s, which has the same name as the dataset in %s",
-                        name, section["path"], old["path"])
-        merged[name] = section
-        merged[name]["name"] = name
-
     def run(self):
         super().run()
 
@@ -48,17 +36,17 @@ class Mergeconf(AppConfigMixin, App):
             for pathname in self.args.config:
                 cfg = arki.dataset.read_configs(pathname)
                 for name, section in cfg.items():
-                    self._add_section(self.config, section, name)
+                    self.add_config_section(section, name)
 
         # Read the config files from the remaining commandline arguments
         for path in self.args.sources:
             if path.startswith("http://") or path.startswith("https://"):
                 sections = arki.dataset.http.load_cfg_sections(path)
                 for name, section in sections.items():
-                    self._add_section(self.config, section, name)
+                    self.add_config_section(section, name)
             else:
                 section = arki.dataset.read_config(path)
-                self._add_section(self.config, section)
+                self.add_config_section(section)
 
         if not self.config:
             raise Fail("you need to specify at least one config file or dataset")

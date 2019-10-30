@@ -75,13 +75,17 @@ filter=invalid
     def test_load_configs(self):
         with tempfile.NamedTemporaryFile("wt") as conf1:
             with tempfile.NamedTemporaryFile("wt") as conf2:
-                conf1.write("[ds1]\npath=/tmp/ds1\n")
+                conf1.write("[ds1]\npath=/tmp/ds1\n[common]\npath=/tmp/common1\n")
                 conf1.flush()
-                conf2.write("[ds2]\npath=/tmp/ds2\n")
+                conf2.write("[ds2]\npath=/tmp/ds2\n[common]\npath=/tmp/common2\n")
                 conf2.flush()
 
                 out = self.call_output_success("--config=" + conf1.name, "--config=" + conf2.name)
                 self.assertEqual(out.splitlines(), [
+                    "[common]",
+                    "name = common",
+                    "path = /tmp/common1",
+                    "",
                     "[ds1]",
                     "name = ds1",
                     "path = /tmp/ds1",
