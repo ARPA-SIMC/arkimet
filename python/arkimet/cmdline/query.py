@@ -3,14 +3,13 @@ from arkimet.cmdline.base import AppConfigMixin, AppWithProcessor
 import sys
 import logging
 
-log = logging.getLogger("arki-query")
-
 
 class Query(AppConfigMixin, AppWithProcessor):
     """
     Query the datasets in the given config file for data matching the given
     expression, and output the matching metadata.
     """
+    log = logging.getLogger("arki-query")
 
     def __init__(self):
         super().__init__()
@@ -42,17 +41,6 @@ class Query(AppConfigMixin, AppWithProcessor):
         self.parser.add_argument("--qmacro", metavar="name",
                                  help="run the given query macro instead of a plain query")
 
-    def _add_config(self, section, name=None):
-        if name is None:
-            name = section["name"]
-
-        old = self.config.section(name)
-        if old is not None:
-            log.warning("ignoring dataset %s in %s, which has the same name as the dataset in %s",
-                        name, section["path"], old["path"])
-        self.config[name] = section
-        self.config[name]["name"] = name
-
     def build_config(self):
         self.query = None
         self.sources = []
@@ -80,13 +68,13 @@ class Query(AppConfigMixin, AppWithProcessor):
                 for pathname in self.args.config:
                     cfg = arkimet.dataset.read_configs(pathname)
                     for name, section in cfg.items():
-                        self._add_config(section, name)
+                        self.add_config_section(section, name)
 
             # From command line arguments, looking for data files or datasets
             for source in self.sources:
                 cfg = arkimet.dataset.read_configs(source)
                 for name, section in cfg.items():
-                    self._add_config(section, name)
+                    self.add_config_section(section, name)
 
             if not self.config:
                 self.parser.error("you need to specify at least one input file or dataset")

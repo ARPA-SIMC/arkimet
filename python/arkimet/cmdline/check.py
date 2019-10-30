@@ -2,8 +2,6 @@ import arkimet
 from arkimet.cmdline.base import App, AppConfigMixin
 import logging
 
-log = logging.getLogger("arki-check")
-
 
 class Check(AppConfigMixin, App):
     """
@@ -13,6 +11,7 @@ class Check(AppConfigMixin, App):
     Corrupted metadata files will be rebuilt, data files with deleted data
     will be packed, outdated summaries and indices will be regenerated.
     """
+    log = logging.getLogger("arki-check")
 
     def __init__(self):
         super().__init__()
@@ -63,17 +62,6 @@ class Check(AppConfigMixin, App):
         self.parser.add_argument("dataset", nargs="*",
                                  help="dataset(s) to check")
 
-    def _add_config(self, section, name=None):
-        if name is None:
-            name = section["name"]
-
-        old = self.config.section(name)
-        if old is not None:
-            log.warning("ignoring dataset %s in %s, which has the same name as the dataset in %s",
-                        name, section["path"], old["path"])
-        self.config[name] = section
-        self.config[name]["name"] = name
-
     def build_config(self):
         """
         Fill the input datasets configuration
@@ -83,12 +71,12 @@ class Check(AppConfigMixin, App):
             for pathname in self.args.config:
                 cfg = arkimet.dataset.read_configs(pathname)
                 for name, section in cfg.items():
-                    self._add_config(section, name)
+                    self.add_config_section(section, name)
 
         # From command line arguments, looking for data files or datasets
         for dataset in self.args.dataset:
             section = arkimet.dataset.read_config(dataset)
-            self._add_config(section)
+            self.add_config_section(section)
 
         if not self.config:
             self.parser.error("you need to specify at least one dataset to work on")
