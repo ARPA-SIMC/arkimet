@@ -1,32 +1,19 @@
 import arkimet
-from arkimet.cmdline.base import AppWithProcessor, Exit
+from arkimet.cmdline.base import AppConfigMixin, AppWithProcessor, Exit
 import sys
 import posix
 import logging
 
-log = logging.getLogger("arki-scan")
 
-
-def merge_config(dest_sections, sections):
-    for name, section in sections.items():
-        old = dest_sections.section(name)
-        if old is not None:
-            log.warning("ignoring dataset %s in %s, which has the same name as the dataset in %s",
-                        name, section["path"], old["path"])
-            continue
-        dest_sections[name] = section
-
-
-class Scan(AppWithProcessor):
+class Scan(AppConfigMixin, AppWithProcessor):
     """
     Read one or more files or datasets and process their data
     or import them in a dataset.
     """
+    log = logging.getLogger("arki-scan")
 
     def __init__(self):
         super().__init__()
-        self.config = None
-
         self.parser.add_argument("source", nargs="*",
                                  help="input files or datasets")
 
@@ -86,20 +73,16 @@ class Scan(AppWithProcessor):
                                           " this amount of megabytes (default: 128Mi; use 0 to load all"
                                           " in RAM no matter what)")
 
-    def _add_config(self, section, name=None):
-        if name is None:
-            name = section["name"]
-
-        old = self.config.section(name)
-        if old is not None:
-            log.warning("ignoring dataset %s in %s, which has the same name as the dataset in %s",
-                        name, section["path"], old["path"])
-        self.config[name] = section
-        self.config[name]["name"] = name
+    def merge_config(self, dest_sections, sections):
+        for name, section in sections.items():
+            old = dest_sections.section(name)
+            if old is not None:
+                self.log.warning("ignoring dataset %s in %s, which has the same name as the dataset in %s",
+                                 name, section["path"], old["path"])
+                continue
+            dest_sections[name] = section
 
     def build_config(self):
-        self.config = arkimet.cfg.Sections()
-
         self.sources = []
         if self.args.stdin is not None:
             if self.args.source or self.args.files:
@@ -117,7 +100,7 @@ class Scan(AppWithProcessor):
                 if source == "-":
                     self.parser.error("use --stdin to read data from standard input")
                 section = arkimet.dataset.read_config(source)
-                self._add_config(section)
+                self.add_config_section(section)
 
             if not self.config:
                 self.parser.error("you need to specify at least one input file or dataset")
@@ -161,12 +144,12 @@ class Scan(AppWithProcessor):
                 if self.args.dispatch:
                     dispatch_cfg = arkimet.cfg.Sections()
                     for source in self.args.dispatch:
-                        merge_config(dispatch_cfg, arkimet.cfg.Sections.parse(source))
+                        self.merge_config(dispatch_cfg, arkimet.cfg.Sections.parse(source))
                     kw["dispatch"] = dispatch_cfg
                 elif self.args.testdispatch:
                     dispatch_cfg = arkimet.cfg.Sections()
                     for source in self.args.testdispatch:
-                        merge_config(dispatch_cfg, arkimet.cfg.Sections.parse(source))
+                        self.merge_config(dispatch_cfg, arkimet.cfg.Sections.parse(source))
                     kw["testdispatch"] = dispatch_cfg
 
                 arki_scan.set_dispatcher(**kw)
