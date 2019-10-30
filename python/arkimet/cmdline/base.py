@@ -156,6 +156,7 @@ class AppConfigMixin:
         if old is not None:
             self.log.warning("ignoring dataset %s in %s, which has the same name as the dataset in %s",
                              name, section["path"], old["path"])
+            return
         self.config[name] = section
         self.config[name]["name"] = name
 
