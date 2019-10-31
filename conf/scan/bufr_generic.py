@@ -26,6 +26,9 @@ def read_timerange(msg):
         "style": "Timedef",
         "step_len": p1,
         "step_unit": unit,
+        "stat_type": 255,
+        "stat_len": 0,
+        "stat_unit": 255,
     }
 
 def is_generic(md):
