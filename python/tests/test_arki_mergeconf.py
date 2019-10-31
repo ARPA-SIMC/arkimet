@@ -2,7 +2,7 @@ import unittest
 from arkimet.cmdline.mergeconf import Mergeconf
 import os
 import tempfile
-from arkimet.test import daemon, CmdlineTestMixin
+from arkimet.test import daemon, CmdlineTestMixin, LogCapture
 
 
 class TestArkiMergeconf(CmdlineTestMixin, unittest.TestCase):
@@ -80,7 +80,8 @@ filter=invalid
                 conf2.write("[ds2]\npath=/tmp/ds2\n[common]\npath=/tmp/common2\n")
                 conf2.flush()
 
-                out = self.call_output_success("--config=" + conf1.name, "--config=" + conf2.name)
+                with LogCapture() as log:
+                    out = self.call_output_success("--config=" + conf1.name, "--config=" + conf2.name)
                 self.assertEqual(out.splitlines(), [
                     "[common]",
                     "name = common",
@@ -94,6 +95,14 @@ filter=invalid
                     "name = ds2",
                     "path = /tmp/ds2",
                 ])
+
+                self.assertEqual(len(log), 1)
+                self.assertEqual(log[0].name, "arki-mergeconf")
+                self.assertEqual(log[0].levelname, "WARNING")
+                self.assertEqual(
+                        log[0].getMessage(),
+                        "ignoring dataset common in /tmp/common2,"
+                        " which has the same name as the dataset in /tmp/common1")
 
     def test_extra(self):
         src = os.path.abspath("inbound/test.grib1")

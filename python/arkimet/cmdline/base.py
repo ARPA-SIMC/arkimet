@@ -34,17 +34,10 @@ class App:
                                  help="debug output")
         self.parser.add_argument("--version", action="store_true",
                                  help="print the program version and exit")
-        self.log = logging.getLogger(self.get_name())
         self.args = None
 
     def get_description(self):
         return self.__doc__
-
-    def get_name(self):
-        name = self.NAME
-        if name is not None:
-            return name
-        return "arki-" + self.__class__.__name__[4:].lower()
 
     def parse_args(self, args=None):
         self.args = self.parser.parse_args(args=args)
