@@ -54,8 +54,12 @@ def format_timerange(v):
         return desc
     elif v["style"] == "Timedef":
         step_unit, step_len, stat_type, stat_unit, stat_len = (
-                v["step_unit"], v["step_len"], v["stat_type"], v["stat_unit"],
-                v["stat_len"])
+            v.get("step_unit", 255),
+            v.get("step_len", 0),
+            v.get("stat_type", 255),
+            v.get("stat_unit", 255),
+            v.get("stat_len", 0),
+        )
 
         if stat_type == 254:
             if step_len == 0 and stat_len == 0:
