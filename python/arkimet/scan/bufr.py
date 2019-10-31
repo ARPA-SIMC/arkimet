@@ -11,27 +11,31 @@ log = logging.getLogger("arkimet.scan.bufr")
 class Scanner:
     by_type = defaultdict(list)
 
+    def __init__(self):
+        for type, scanners in self.by_type.items():
+            scanners.sort()
+
     def scan(self, msg: dballe.Message, md: arkimet.Metadata):
         # Find the formatter list for this style
         scanners = self.by_type.get(msg.type)
         if scanners is None:
             return None
 
-        # Try all scanner functions in the list, returning the result of the
-        # first that returns not-None.
-        # Iterate in reverse order, so that scanner functions loaded later
-        # (like from /etc) can be called earlier and fall back on the shipped
-        # ones
-        for scan in reversed(scanners):
+        # Try all scanner functions in the list, in priority order, stopping at
+        # the first one that returns False.
+        # Note that False is explicitly required: returning None will not stop
+        # the scanner chain.
+        for prio, scan in scanners:
             try:
-                scan(msg, md)
+                if scan(msg, md) is False:
+                    break
             except Exception:
                 log.exception("scanner function failed")
 
     @classmethod
-    def register(cls, type: str, scanner: Callable[[dballe.Message, arkimet.Metadata], None]):
+    def register(cls, type: str, scanner: Callable[[dballe.Message, arkimet.Metadata], None], priority=0):
         if scanner not in cls.by_type[type]:
-            cls.by_type[type].append(scanner)
+            cls.by_type[type].append((priority, scanner))
 
 
 def read_area_fixed(msg):

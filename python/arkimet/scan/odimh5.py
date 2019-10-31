@@ -13,18 +13,21 @@ log = logging.getLogger("arkimet.scan.odimh5")
 class Scanner:
     scanners = []
 
+    def __init__(self):
+        self.scanners.sort()
+
     def scan(self, pathname: str, md: arkimet.Metadata):
         # FIXME: hack to deal with Centos not having h5py for python3
         if HAVE_H5PY:
             with h5py.File(pathname, "r") as f:
-                # Try all scanner functions in the list, returning the result of the
-                # first that returns not-None.
-                # Iterate in reverse order, so that scanner functions loaded later
-                # (like from /etc) can be called earlier and fall back on the shipped
-                # ones
-                for scan in reversed(self.scanners):
+                # Try all scanner functions in the list, in priority order, stopping at
+                # the first one that returns False.
+                # Note that False is explicitly required: returning None will not stop
+                # the scanner chain.
+                for prio, scan in self.scanners:
                     try:
-                        scan(f, md)
+                        if scan(f, md) is False:
+                            break
                     except Exception:
                         log.exception("scanner function failed")
         else:
@@ -32,7 +35,7 @@ class Scanner:
             import inspect
             import subprocess
             metadata = {}
-            for scan in reversed(self.scanners):
+            for prio, scan in self.scanners:
                 scanner = inspect.getfile(scan)
                 proc = subprocess.Popen(["python", scanner, pathname],
                                         stdin=subprocess.PIPE, stdout=subprocess.PIPE,
@@ -48,6 +51,6 @@ class Scanner:
                 md[k] = v
 
     @classmethod
-    def register(cls, scanner: Callable[["h5py.File", arkimet.Metadata], None]):
+    def register(cls, scanner: Callable[["h5py.File", arkimet.Metadata], None], priority=0):
         if scanner not in cls.scanners:
-            cls.scanners.append(scanner)
+            cls.scanners.append((priority, scanner))
