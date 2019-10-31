@@ -14,7 +14,7 @@ class Scanner:
 
     def __init__(self):
         for type, scanners in self.by_edition.items():
-            scanners.sort()
+            scanners.sort(key=lambda p: p[0])
 
     def scan(self, grib: Grib, md: arkimet.Metadata):
         # Find the formatter list for this style
