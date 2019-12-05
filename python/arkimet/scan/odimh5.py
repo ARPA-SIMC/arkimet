@@ -14,7 +14,7 @@ class Scanner:
     scanners = []
 
     def __init__(self):
-        scanners.sort(key=lambda p: p[0])
+        self.scanners.sort(key=lambda p: p[0])
 
     def scan(self, pathname: str, md: arkimet.Metadata):
         # FIXME: hack to deal with Centos not having h5py for python3
