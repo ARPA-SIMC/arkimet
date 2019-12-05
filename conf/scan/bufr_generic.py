@@ -31,6 +31,7 @@ def read_timerange(msg):
         "stat_unit": 255,
     }
 
+
 def is_generic(md):
     product = md.to_python("product")
     return product.get("type") == 255 and product.get("subtype") == 255
@@ -63,4 +64,4 @@ def scan_temp(msg, md):
 
 
 Scanner.register("generic", scan)
-Scanner.register("temp", scan_temp, 1)
+Scanner.register("temp", scan_temp, priority=1)

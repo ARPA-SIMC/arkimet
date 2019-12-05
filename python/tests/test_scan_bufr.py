@@ -304,9 +304,9 @@ class TestScanBufr(unittest.TestCase):
         self.assertEqual(md["area"], "GRIB(lat=4502770, lon=966670)")
         self.assertEqual(md["proddef"], "GRIB(blo=0, sta=101)")
         self.assertEqual(md["reftime"], "2009-02-13T12:00:00Z")
+        self.assertEqual(md["timerange"], "Timedef(0s)")
         self.assertNotIn("run", md)
         self.assertNotIn("level", md)
-        self.assertNotIn("timerange", md)
 
         # BUFR has datetime 2013-04-06 00:00:00 (validity time, in this case), timerange 254,259200,0 (+72h)
         # and should be archived with its emission time
@@ -319,10 +319,10 @@ class TestScanBufr(unittest.TestCase):
         self.assertEqual(md["product"], "BUFR(255, 255, 000, t=temp)")
         self.assertEqual(md["area"], "GRIB(lat=4552620, lon=1224850)")
         self.assertEqual(md["proddef"], "GRIB(blo=0, sta=1)")
-        self.assertEqual(md["reftime"], "2013-04-06T00:00:00Z")
+        self.assertEqual(md["reftime"], "2013-04-03T00:00:00Z")
+        self.assertEqual(md["timerange"], "Timedef(72h)")
         self.assertNotIn("run", md)
         self.assertNotIn("level", md)
-        self.assertNotIn("timerange", md)
 
     def test_wrongdate(self):
         """
