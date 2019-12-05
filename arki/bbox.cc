@@ -2,141 +2,91 @@
 #include "arki/bbox.h"
 #include "arki/exceptions.h"
 #include "arki/utils/geos.h"
-#include "arki/runtime/config.h"
 #include "arki/utils/string.h"
+#include "arki/runtime.h"
 #include <memory>
 
 using namespace std;
 
 namespace arki {
 
-BBox::BBox(const std::string& code) : L(new Lua), funcCount(0)
-{
-    /// Load the bounding box functions
+namespace {
 
-    /// Load the bbox scanning functions
-    if (code.empty())
+struct NullBBox : public BBox
+{
+    std::unique_ptr<arki::utils::geos::Geometry> compute(const types::Area& v) const override
     {
-        vector<string> files = runtime::rcFiles("bbox", "ARKI_BBOX");
-        for (vector<string>::const_iterator i = files.begin(); i != files.end(); ++i)
-        {
-            char buf[32];
-            snprintf(buf, 32, "BBOX_%u", funcCount++);
-            L->functionFromFile(buf, *i);
-        }
-    } else {
-        char buf[32];
-        snprintf(buf, 32, "BBOX_%u", funcCount++);
-        L->functionFromString(buf, code, "bbox scan instructions");
+        return unique_ptr<arki::utils::geos::Geometry>();
     }
+};
+
+struct MockBBox : public BBox
+{
+    mutable std::map<std::string, std::string> db;
+    mutable geos::io::WKTReader* reader = nullptr;
+
+    MockBBox()
+    {
+    }
+
+    ~MockBBox()
+    {
+        delete reader;
+    }
+
+    void init() const
+    {
+        reader = new geos::io::WKTReader;
+        // Fill db
+        db["GRIB(Ni=441, Nj=181, latfirst=45000000, latlast=43000000, lonfirst=10000000, lonlast=12000000, type=0)"] =
+            "POLYGON ((10 45, 10 43, 12 43, 12 45, 10 45))",
+        db["GRIB(Ni=441, Nj=181, latfirst=75000000, latlast=30000000, lonfirst=-45000000, lonlast=65000000, type=0)"] =
+            "POLYGON ((-45 75, -45 30, 65 30, 65 75, -45 75))";
+        db["GRIB(blo=0, lat=4502770, lon=966670, sta=101)"] =
+            "POINT (9.666700000000001 45.0277)";
+        db["ODIMH5(lat=44456700, lon=11623600, radius=100000)"] =
+            "POLYGON ((11.9960521084854 45.35574923752996, 12.52266823017452 44.82910625443706, 12.52266823017452 44.08429374556294, 11.9960521084854 43.55765076247004, 11.2511478915146 43.55765076247004, 10.72453176982548 44.08429374556294, 10.72453176982548 44.82910625443706, 11.2511478915146 45.35574923752996, 11.9960521084854 45.35574923752996))";
+    }
+
+    std::unique_ptr<arki::utils::geos::Geometry> compute(const types::Area& v) const override
+    {
+        // Lazily load area values used in tests
+        if (db.empty())
+            init();
+
+        std::string key = v.to_string();
+        auto val = db.find(key);
+        if (val == db.end())
+        {
+            fprintf(stderr, "MOCK MISSING %s\n", key.c_str());
+            return std::unique_ptr<arki::utils::geos::Geometry>();
+        }
+        else
+        {
+            return std::unique_ptr<arki::utils::geos::Geometry>(reader->read(val->second));
+        }
+    }
+};
+
 }
+
+static std::function<std::unique_ptr<BBox>()> factory;
 
 BBox::~BBox()
 {
-    if (L) delete L;
 }
 
-#ifdef HAVE_GEOS
-static vector< pair<double, double> > bbox(lua_State* L)
-{
-    lua_getglobal(L, "bbox");
-    int type = lua_type(L, -1);
-    switch (type)
-    {
-        case LUA_TNIL: {
-            lua_pop(L, 1);
-            throw std::runtime_error("cannot read bounding box: global variable 'bbox' has not been set");
-        }
-        case LUA_TTABLE: {
-            vector< pair<double, double> > res;
-#if LUA_VERSION_NUM >= 502
-            size_t asize = lua_rawlen(L, -1);
-#else
-            size_t asize = lua_objlen(L, -1);
-#endif
-            for (size_t i = 1; i <= asize; ++i)
-            {
-                lua_rawgeti(L, -1, i);
-                int inner_type = lua_type(L, -1); 
-                if (inner_type != LUA_TTABLE)
-                {
-                    lua_pop(L, 2);
-                    stringstream ss;
-                    ss << "cannot read bounding box: value bbox[" << i << "] contains a " << lua_typename(L, inner_type) << " instead of a table";
-                    throw std::runtime_error(ss.str());
-                }
-                double vals[2];
-                for (int j = 0; j < 2; ++j)
-                {
-                    lua_rawgeti(L, -1, j+1);
-                    if (lua_type(L, -1) != LUA_TNUMBER)
-                    {
-                        lua_pop(L, 3);
-                        stringstream ss;
-                        ss << "cannot read bounding box: value bbox[" << i << "][" << j << "] is not a number";
-                        throw std::runtime_error(ss.str());
-                    }
-                    vals[j] = lua_tonumber(L, -1);
-                    lua_pop(L, 1);
-                }
-                res.push_back(make_pair(vals[0], vals[1]));
-                lua_pop(L, 1);
-            }
-            return res;
-        }
-        default: {
-            lua_pop(L, 1);
-            stringstream ss;
-            ss << "cannot read bounding box: global variable 'bbox' has type " << lua_typename(L, type) << " instead of table";
-            throw std::runtime_error(ss.str());
-        }
-    }
-}
-#endif
 
-std::unique_ptr<arki::utils::geos::Geometry> BBox::operator()(const types::Area& v) const
+unique_ptr<BBox> BBox::create()
 {
-#ifdef HAVE_GEOS
-	// Set the area information as the 'area' global
-	v.lua_push(*L);
-	lua_setglobal(*L, "area");
-	lua_newtable(*L);
-	lua_setglobal(*L, "bbox");
-
-    std::string error = L->runFunctionSequence("BBOX_", funcCount);
-    if (!error.empty())
-    {
-        throw_consistency_error("computing bounding box via Lua", error);
-    } else {
-        vector< pair<double, double> > points = bbox(*L);
-        auto gf = arki::utils::geos::GeometryFactory::getDefaultInstance();
-		switch (points.size())
-		{
-			case 0:
-				return unique_ptr<arki::utils::geos::Geometry>();
-			case 1:
-				return unique_ptr<arki::utils::geos::Geometry>(
-						gf->createPoint(arki::utils::geos::Coordinate(points[0].second, points[0].first)));
-			default:
-                arki::utils::geos::CoordinateArraySequence cas;
-                for (size_t i = 0; i < points.size(); ++i)
-                    cas.add(arki::utils::geos::Coordinate(points[i].second, points[i].first));
-                unique_ptr<arki::utils::geos::LinearRing> lr(gf->createLinearRing(cas));
-                return unique_ptr<arki::utils::geos::Geometry>(
-                        gf->createPolygon(*lr, vector<arki::utils::geos::Geometry*>()));
-        }
-    }
-#else
-    return unique_ptr<arki::utils::geos::Geometry>();
-#endif
+    if (factory)
+        return factory();
+    return unique_ptr<BBox>(new MockBBox);
 }
 
-const BBox& BBox::get_singleton()
+void BBox::set_factory(std::function<std::unique_ptr<BBox>()> new_factory)
 {
-    static __thread BBox* bbox = 0;
-    if (!bbox)
-        bbox = new BBox();
-    return *bbox;
+    factory = new_factory;
 }
 
 }

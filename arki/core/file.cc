@@ -11,15 +11,30 @@ Stdin::Stdin() : NamedFileDescriptor(0, "(stdin)") {}
 Stdout::Stdout() : NamedFileDescriptor(1, "(stdout)") {}
 Stderr::Stderr() : NamedFileDescriptor(2, "(stderr)") {}
 
+AbstractInputFile::~AbstractInputFile() {}
+AbstractOutputFile::~AbstractOutputFile() {}
+
+BufferOutputFile::BufferOutputFile(std::vector<uint8_t>& buffer, const std::string& name)
+    : buffer(buffer), m_name(name)
+{
+}
+
+std::string BufferOutputFile::name() const { return m_name; }
+void BufferOutputFile::write(const void* data, size_t size)
+{
+    buffer.insert(buffer.end(), static_cast<const uint8_t*>(data), static_cast<const uint8_t*>(data) + size);
+}
+
 namespace {
 
+template<typename Input>
 struct FDLineReader : public LineReader
 {
-    NamedFileDescriptor& fd;
+    Input& fd;
     std::deque<char> linebuf;
     bool fd_eof = false;
 
-    FDLineReader(NamedFileDescriptor& fd) : fd(fd) {}
+    FDLineReader(Input& fd) : fd(fd) {}
 
     bool eof() const override { return fd_eof && linebuf.empty(); }
 
@@ -94,7 +109,12 @@ struct StringLineReader : public LineReader
 
 std::unique_ptr<LineReader> LineReader::from_fd(NamedFileDescriptor& fd)
 {
-    return std::unique_ptr<LineReader>(new FDLineReader(fd));
+    return std::unique_ptr<LineReader>(new FDLineReader<NamedFileDescriptor>(fd));
+}
+
+std::unique_ptr<LineReader> LineReader::from_abstract(AbstractInputFile& fd)
+{
+    return std::unique_ptr<LineReader>(new FDLineReader<AbstractInputFile>(fd));
 }
 
 std::unique_ptr<LineReader> LineReader::from_chars(const char* buf, size_t size)

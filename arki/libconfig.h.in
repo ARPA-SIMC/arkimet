@@ -10,9 +10,6 @@
 /* grib_api functions are available */
 #undef HAVE_GRIBAPI
 
-/* HDF5 functions are available */
-#undef HAVE_HDF5
-
 /* VM2 functions are available */
 #undef HAVE_VM2
 
@@ -31,9 +28,6 @@
 /* SQLite 3 is available */
 #undef HAVE_SQLITE3
 
-/* mkdtemp is available */
-#undef HAVE_MKDTEMP
-
 /* the `splice' function is available */
 #undef HAVE_SPLICE
 
@@ -48,3 +42,6 @@
 
 /* Define for large files, on AIX-style hosts. */
 #undef _LARGE_FILES
+
+/* enable ARPAE-specific unit tests */
+#undef ARPAE_TESTS

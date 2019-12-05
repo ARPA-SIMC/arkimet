@@ -184,18 +184,18 @@ std::map<std::string, WriterBatch> Writer::batch_by_segment(WriterBatch& batch)
     return by_segment;
 }
 
-void Writer::test_acquire(const core::cfg::Section& cfg, WriterBatch& batch, std::ostream& out)
+void Writer::test_acquire(const core::cfg::Section& cfg, WriterBatch& batch)
 {
     string type = str::lower(cfg.value("type"));
     if (type.empty())
         type = "local";
 
     if (type == "iseg")
-        return dataset::iseg::Writer::test_acquire(cfg, batch, out);
+        return dataset::iseg::Writer::test_acquire(cfg, batch);
     if (type == "ondisk2" || type == "test")
-        return dataset::ondisk2::Writer::test_acquire(cfg, batch, out);
+        return dataset::ondisk2::Writer::test_acquire(cfg, batch);
     if (type == "simple" || type == "error" || type == "duplicates")
-        return dataset::simple::Writer::test_acquire(cfg, batch, out);
+        return dataset::simple::Writer::test_acquire(cfg, batch);
 
     throw std::runtime_error("cannot simulate dataset acquisition: unknown dataset type \""+type+"\"");
 }

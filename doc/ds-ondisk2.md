@@ -9,6 +9,11 @@ metadata selected with the `unique` configuration keyword.
 It can optimize queries that use metadata selected with the `index`
 configuration keyword.
 
+This dataset is deprecated in favour of `iseg` datasets. If you have a reason
+to prefer it to `iseg`, please contribute it to the discussion
+[arkimet/#185](https://github.com/ARPA-SIMC/arkimet/issues/185). Otherwise,
+please use `iseg` datasets instead.
+
 ## Dataset layout
 
 At the root of the dataset there is an `index.sqlite` file that maps each datum

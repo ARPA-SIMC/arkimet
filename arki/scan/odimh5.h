@@ -2,55 +2,53 @@
 #define ARKI_SCAN_ODIMH5_H
 
 #include <arki/scan.h>
-#include <arki/utils/h5.h>
 #include <string>
 #include <vector>
-
-struct lua_State;
 
 namespace arki {
 class Metadata;
 
 namespace scan {
 struct Validator;
+class MockEngine;
 
 namespace odimh5 {
 const Validator& validator();
 }
 
-struct OdimH5Lua;
-
-class OdimH5 : public Scanner
+class OdimScanner : public Scanner
 {
-public:
-    OdimH5();
-    virtual ~OdimH5();
-
-    std::string name() const override { return "odimh5"; }
-    std::unique_ptr<Metadata> scan_data(const std::vector<uint8_t>& data) override;
-    bool scan_pipe(core::NamedFileDescriptor& in, metadata_dest_func dest) override;
-    bool scan_segment(std::shared_ptr<segment::Reader> reader, metadata_dest_func dest) override;
-    void scan_singleton(const std::string& abspath, Metadata& md) override;
-
-protected:
-    hid_t h5file;
-    std::vector<int> odimh5_funcs;
-    OdimH5Lua* L;
-
-    void scan_file_impl(const std::string& filename, Metadata& md);
-    void set_inline_source(Metadata& md, const std::string& abspath);
     void set_blob_source(Metadata& md, std::shared_ptr<segment::Reader> reader);
 
-    /**
-     * Run Lua scanning functions on \a md
-     */
-    bool scanLua(Metadata& md);
+protected:
+    virtual std::shared_ptr<Metadata> scan_h5_file(const std::string& pathname) = 0;
+    virtual std::shared_ptr<Metadata> scan_h5_data(const std::vector<uint8_t>& data);
 
-    static int arkilua_find_attr(lua_State* L);
-    static int arkilua_get_groups(lua_State* L);
+public:
+    std::string name() const override { return "odimh5"; }
 
-    friend class OdimH5Lua;
+    std::shared_ptr<Metadata> scan_data(const std::vector<uint8_t>& data) override;
+    bool scan_pipe(core::NamedFileDescriptor& in, metadata_dest_func dest) override;
+    bool scan_segment(std::shared_ptr<segment::Reader> reader, metadata_dest_func dest) override;
+    std::shared_ptr<Metadata> scan_singleton(const std::string& abspath) override;
 };
+
+
+class MockOdimScanner : public OdimScanner
+{
+protected:
+    MockEngine* engine;
+
+    std::shared_ptr<Metadata> scan_h5_file(const std::string& pathname) override;
+    std::shared_ptr<Metadata> scan_h5_data(const std::vector<uint8_t>& data) override;
+
+public:
+    MockOdimScanner();
+    virtual ~MockOdimScanner();
+};
+
+
+void register_odimh5_lua();
 
 }
 }

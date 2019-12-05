@@ -5,13 +5,11 @@
 
 #include <arki/core/fwd.h>
 #include <arki/metadata/fwd.h>
-#include <arki/itemset.h>
 #include <arki/types/fwd.h>
+#include <arki/types/itemset.h>
 #include <arki/types/note.h>
 #include <memory>
 #include <string>
-
-struct lua_State;
 
 namespace arki {
 namespace metadata {
@@ -53,7 +51,7 @@ class Formatter;
 /**
  * Metadata information about a message
  */
-struct Metadata : public ItemSet
+struct Metadata : public types::ItemSet
 {
 protected:
     /// Annotations, kept binary-serialized to string
@@ -115,11 +113,8 @@ public:
     bool operator>(const Metadata& o) const { return compare(o) > 0; }
     bool operator>=(const Metadata& o) const { return compare(o) >= 0; }
 
-    /// Clear all the contents of this Metadata
-    void clear();
-
     /// Decode from structured data
-    void read(const emitter::memory::Mapping& val);
+    void read(const structured::Keys& keys, const structured::Reader& val);
 
     /**
      * Read a metadata document from the given input stream.
@@ -151,18 +146,21 @@ public:
      *
      * @returns false when end-of-file is reached
      */
-    bool read(BinaryDecoder& dec, const metadata::ReadContext& filename, bool readInline=true);
+    bool read(core::BinaryDecoder& dec, const metadata::ReadContext& filename, bool readInline=true);
 
     /**
      * Decode the metadata, without the outer bundle headers, from the given buffer.
      */
-    void read_inner(BinaryDecoder& dec, unsigned version, const metadata::ReadContext& filename);
+    void read_inner(core::BinaryDecoder& dec, unsigned version, const metadata::ReadContext& filename);
 
     /// Read the inline data from the given file handle
     void read_inline_data(core::NamedFileDescriptor& fd);
 
+    /// Read the inline data from the given file handle
+    void read_inline_data(core::AbstractInputFile& fd);
+
     /// Read the inline data from the given memory buffer
-    void readInlineData(BinaryDecoder& dec, const std::string& filename);
+    void readInlineData(core::BinaryDecoder& dec, const std::string& filename);
 
     /**
      * Read a metadata document encoded in Yaml from the given file descriptor.
@@ -183,18 +181,34 @@ public:
     void write(core::NamedFileDescriptor& out) const;
 
     /**
+     * Write the metadata to the given output stream.
+     *
+     * The filename string is used to generate nicer parse error messages when
+     * throwing exceptions, and can be anything.
+     */
+    void write(core::AbstractOutputFile& out) const;
+
+    /// Format the metadata as a yaml string
+    std::string to_yaml(const Formatter* formatter=nullptr) const;
+
+    /**
      * Write the metadata as YAML text to the given output stream.
      */
-    void write_yaml(std::ostream& out, const Formatter* formatter=nullptr) const;
+    void write_yaml(core::NamedFileDescriptor& out, const Formatter* formatter=nullptr) const;
+
+    /**
+     * Write the metadata as YAML text to the given output stream.
+     */
+    void write_yaml(core::AbstractOutputFile& out, const Formatter* formatter=nullptr) const;
 
     /// Serialise using an emitter
-    void serialise(Emitter& e, const Formatter* f=0) const;
+    void serialise(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const;
 
     /// Encode to a buffer. Inline data will not be added.
     std::vector<uint8_t> encodeBinary() const;
 
     /// Encode to an Encoder. Inline data will not be added.
-    void encodeBinary(BinaryEncoder& enc) const;
+    void encodeBinary(core::BinaryEncoder& enc) const;
 
 
     /// Get the raw data described by this metadata
@@ -206,6 +220,13 @@ public:
      * Return the number of bytes written
      */
     size_t stream_data(core::NamedFileDescriptor& out);
+
+    /**
+     * Stream the data referred by this metadata to the given file descriptor.
+     *
+     * Return the number of bytes written
+     */
+    size_t stream_data(core::AbstractOutputFile& out);
 
     /// Return True if get_data can be called without causing I/O
     bool has_cached_data() const;
@@ -246,7 +267,13 @@ public:
 #endif
 
     /// Read all metadata from a buffer into the given consumer
-    static bool read_buffer(const std::vector<uint8_t>& buf, const metadata::ReadContext& fname, metadata_dest_func dest);
+    static bool read_buffer(const std::vector<uint8_t>& buf, const metadata::ReadContext& file, metadata_dest_func dest);
+
+    /// Read all metadata from a buffer into the given consumer
+    static bool read_buffer(const uint8_t* buf, std::size_t size, const metadata::ReadContext& file, metadata_dest_func dest);
+
+    /// Read all metadata from a buffer into the given consumer
+    static bool read_buffer(core::BinaryDecoder& dec, const metadata::ReadContext& file, metadata_dest_func dest);
 
     /// Read all metadata from a file into the given consumer
     static bool read_file(const std::string& fname, metadata_dest_func dest);
@@ -255,37 +282,18 @@ public:
     static bool read_file(const metadata::ReadContext& fname, metadata_dest_func dest);
 
     /// Read all metadata from a file into the given consumer
-    static bool read_file(int in, const metadata::ReadContext& file, metadata_dest_func mdc);
+    static bool read_file(int in, const metadata::ReadContext& file, metadata_dest_func dest);
 
     /// Read all metadata from a file into the given consumer
-    static bool read_file(core::NamedFileDescriptor& fd, metadata_dest_func mdc);
+    static bool read_file(core::NamedFileDescriptor& fd, metadata_dest_func dest);
+
+    /// Read all metadata from a file into the given consumer
+    static bool read_file(core::AbstractInputFile& fd, const metadata::ReadContext& file, metadata_dest_func dest);
 
     /**
      * Read a metadata group into the given consumer
      */
-    static bool read_group(BinaryDecoder& dec, unsigned version, const metadata::ReadContext& file, metadata_dest_func dest);
-
-	// LUA functions
-	/// Push to the LUA stack a userdata to access this Metadata
-	void lua_push(lua_State* L);
-
-    /**
-     * Push a userdata to access this Metadata, and hand over its ownership to
-     * Lua's garbage collector
-     */
-    static void lua_push(lua_State* L, std::unique_ptr<Metadata>&& md);
-
-	/**
-	 * Check that the element at \a idx is a Metadata userdata
-	 *
-	 * @return the Metadata element, or 0 if the check failed
-	 */
-	static Metadata* lua_check(lua_State* L, int idx);
-
-	/**
-	 * Load metadata functions into a lua VM
-	 */
-	static void lua_openlib(lua_State* L);
+    static bool read_group(core::BinaryDecoder& dec, unsigned version, const metadata::ReadContext& file, metadata_dest_func dest);
 };
 
 }

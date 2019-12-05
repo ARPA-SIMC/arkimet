@@ -103,7 +103,6 @@ AM_CONDITIONAL([FILE_OFFSET_BITS_64], [test x"$FILE_OFFSET_BITS_64" = x"yes"])
 
 dnl Check what libc features are available on this system
 gl_CHECK_TYPE_STRUCT_DIRENT_D_TYPE
-gt_FUNC_MKDTEMP
 ez_FUNC_SPLICE
 
 dnl Call in pkg-config explicitly, so we can safely put the first
@@ -156,11 +155,11 @@ dnl Look for DB-All.e C++ libraries, for BUFR support
 if test $enable_bufr = yes
 then
 	dnl Check for DB-All.e C++ libraries (this needs to be outside of the if, 
-	PKG_CHECK_EXISTS([libdballe >= 8.0], [have_dballe=yes], [have_dballe=no])
+	PKG_CHECK_EXISTS([libdballe >= 8.3], [have_dballe=yes], [have_dballe=no])
 	if test $have_dballe = yes
 	then
 		AC_DEFINE([HAVE_DBALLE], 1, [dballe functions are available])
-		PKG_CHECK_MODULES(DBALLE,[libdballe >= 8.0])
+		PKG_CHECK_MODULES(DBALLE,[libdballe >= 8.3])
 	else
 		AC_MSG_WARN([compiling without DB-All.e: BUFR support will be disabled])
 	fi
@@ -189,7 +188,7 @@ dnl Check for lua
 PKG_CHECK_EXISTS([lua5.2], [have_lua=yes], [have_lua=no])
 if test x$have_lua = xyes
 then
-        PKG_CHECK_MODULES(LUA,lua5.2,,[have_lua=no])
+    PKG_CHECK_MODULES(LUA,lua5.2,,[have_lua=no])
 else
 	PKG_CHECK_EXISTS([lua5.1], [have_lua=yes], [have_lua=no])
 	if test x$have_lua = xyes
@@ -212,7 +211,9 @@ else
 fi
 if test x$have_lua = xyes
 then
-	AC_DEFINE([HAVE_LUA], 1, [lua is available])
+    AC_DEFINE([HAVE_LUA], 1, [lua is available])
+    AC_SUBST(LUA_CFLAGS)
+    AC_SUBST(LUA_LIBS)
 fi
 AM_CONDITIONAL([LUA], [test x"$have_lua" = x"yes"])
 
@@ -245,37 +246,18 @@ then
 		have_gribapi=no
 	fi	
 
-	AC_SUBST(LUA_CFLAGS)
-	AC_SUBST(LUA_LIBS)
 else
 	AC_MSG_WARN([compiling without grib_api])
 fi
 AM_CONDITIONAL([GRIBAPI], [test x"$have_gribapi" = x"yes"])
 
-dnl Check for hdf5 support
-PKG_CHECK_MODULES([HDF5], [hdf5-serial], [have_hdf5=yes], [have_hdf5=no])
-if test $have_hdf5 = yes
-then
-    PKG_CHECK_MODULES([HDF5],[hdf5-serial])
-else
-    AX_LIB_HDF5
-    if test "$with_hdf5" = yes
-    then
-        have_hdf5=yes
-    else
-        AC_MSG_WARN([compiling without libhdf5])
-    fi
-fi
-if test $have_hdf5 = yes
-then
-    AC_DEFINE([HAVE_HDF5], 1, [hdf5 format enabled])
-fi
-
-AM_CONDITIONAL([HDF5], [test x"$have_hdf5" = x"yes"])
-
 dnl Check for Curl
 LIBCURL_CHECK_CONFIG([], [], [have_curl=yes], [have_curl=no])
 AM_CONDITIONAL([CURL], [test x"$have_curl" = x"yes"])
+
+PKG_CHECK_MODULES([LIBSSL], [libssl])
+AC_SUBST(LIBSSL_CFLAGS)
+AC_SUBST(LIBSSL_LIBS)
 
 dnl Check for Geos
 if test x$enable_geos = xyes
@@ -356,6 +338,18 @@ then
     AC_SUBST(PYTHON_CFLAGS)
     AC_SUBST(PYTHON_LDFLAGS)
     AC_DEFINE(HAVE_PYTHON, 1, [Have Python bindings])
+    AX_PYTHON_MODULE(werkzeug, yes)
+    AX_PYTHON_MODULE(setproctitle, yes)
+    AC_CHECK_PROGS(NOSE, [nose2-3 nosetests-3.6 nosetests-3.5 nosetests-3.4 nosetests-3.3 nosetests-$PYTHON_VERSION])
+    if test x$NOSE = x
+    then
+        AC_MSG_ERROR([Python nose not found])
+    fi
+    AX_PYTHON_MODULE(jinja2, yes)
+    AX_PYTHON_MODULE(wreport, yes)
+    AX_PYTHON_MODULE(dballe, yes)
+    AX_PYTHON_MODULE(h5py)
+    AX_PYTHON_MODULE(shapely)
 fi
 fi
 AM_CONDITIONAL([DO_PYTHON], [test "$enable_python" != "no"])
@@ -426,10 +420,7 @@ AC_CHECK_PROG([have_asciidoc], [asciidoc], [yes], [no])
 AM_CONDITIONAL([ASCIIDOC], [test x"$have_asciidoc" = x"yes"])
 
 dnl Developer only: allow to build/test only part of the library
-AM_CONDITIONAL([DEVEL_DO_TYPES], [true])
-AM_CONDITIONAL([DEVEL_DO_METADATA], [true])
 AM_CONDITIONAL([DEVEL_DO_DATASETS], [true])
-AM_CONDITIONAL([DEVEL_DO_RUNTIME], [true])
 
 AC_CONFIG_FILES([
 Makefile
@@ -451,7 +442,6 @@ $PACKAGE_NAME-$PACKAGE_VERSION configuration:
 AS_HELP_STRING([BUFR via DB-All.e:], [$have_dballe])
 dnl AS_HELP_STRING([GRIB 1 via Meteosatlib:], [$have_libgrib])
 AS_HELP_STRING([GRIB 1+2 via grib_api:], [$have_gribapi])
-AS_HELP_STRING([ODIMH5 via hdf5:], [$have_hdf5])
 AS_HELP_STRING([VM2 support:], [$have_vm2])
 AS_HELP_STRING([CURL support:], [$have_curl])
 AS_HELP_STRING([Lua support:], [$have_lua])
@@ -468,6 +458,5 @@ AS_HELP_STRING([I/O profiling:], [$enable_iotrace])
 AS_HELP_STRING([Code coverage:], [$enable_gcov])
 dnl AS_HELP_STRING([BUFR support via DB-All.e:], [$have_dballe])
 dnl AS_HELP_STRING([GRIB1 support via Meteosatlib's libgrib:], [$have_libgrib])
-dnl AS_HELP_STRING([GRIB1 and GRIB2 support via grib_api and Lua:], [$have_gribapi])
 ===================================================])
 

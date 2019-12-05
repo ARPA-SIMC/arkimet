@@ -1,7 +1,8 @@
 #include "arki/iotrace.h"
 #include "arki/libconfig.h"
 #include "arki/exceptions.h"
-#include "arki/runtime/config.h"
+#include "arki/core/file.h"
+#include "arki/runtime.h"
 #include <vector>
 #include <set>
 #include <ostream>
@@ -43,10 +44,10 @@ static ListenerList* listeners = 0;
 
 void init()
 {
-    if (!runtime::Config::get().file_iotrace_output.empty())
+    if (!Config::get().file_iotrace_output.empty())
     {
-        FILE* out = fopen(runtime::Config::get().file_iotrace_output.c_str(), "at");
-        if (!out) throw_system_error("cannot open " + runtime::Config::get().file_iotrace_output + " for appending");
+        FILE* out = fopen(Config::get().file_iotrace_output.c_str(), "at");
+        if (!out) throw_system_error("cannot open " + Config::get().file_iotrace_output + " for appending");
         Logger* logger = new Logger(out);
         add_listener(*logger);
         // Lose references, effectively creating garbage; never mind, as we log
@@ -73,6 +74,45 @@ void trace_file(const char* name, off_t offset, size_t size, const char* desc)
     {
         Event ev;
         ev.filename = name;
+        ev.offset = offset;
+        ev.size = size;
+        ev.desc = desc;
+        listeners->process(ev);
+    }
+}
+
+void trace_file(core::NamedFileDescriptor& fd, off_t offset, size_t size, const char* desc)
+{
+    if (listeners)
+    {
+        Event ev;
+        ev.filename = fd.name();
+        ev.offset = offset;
+        ev.size = size;
+        ev.desc = desc;
+        listeners->process(ev);
+    }
+}
+
+void trace_file(core::AbstractInputFile& fd, off_t offset, size_t size, const char* desc)
+{
+    if (listeners)
+    {
+        Event ev;
+        ev.filename = fd.name();
+        ev.offset = offset;
+        ev.size = size;
+        ev.desc = desc;
+        listeners->process(ev);
+    }
+}
+
+void trace_file(core::AbstractOutputFile& fd, off_t offset, size_t size, const char* desc)
+{
+    if (listeners)
+    {
+        Event ev;
+        ev.filename = fd.name();
         ev.offset = offset;
         ev.size = size;
         ev.desc = desc;

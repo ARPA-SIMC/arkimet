@@ -1,13 +1,15 @@
 #include "config.h"
-#include <arki/dataset/http.h>
-#include <arki/metadata.h>
-#include <arki/metadata/stream.h>
-#include <arki/matcher.h>
-#include <arki/summary.h>
-#include <arki/sort.h>
-#include <arki/utils/string.h>
-#include <arki/utils/sys.h>
-#include <arki/binary.h>
+#include "arki/dataset/http.h"
+#include "arki/core/file.h"
+#include "arki/metadata.h"
+#include "arki/metadata/stream.h"
+#include "arki/metadata/sort.h"
+#include "arki/matcher.h"
+#include "arki/summary.h"
+#include "arki/utils/string.h"
+#include "arki/utils/sys.h"
+#include "arki/core/binary.h"
+#include "arki/nag.h"
 #include <cstdlib>
 #include <sstream>
 
@@ -240,7 +242,7 @@ std::shared_ptr<const Config> Config::create(const core::cfg::Section& cfg)
 }
 
 Reader::Reader(std::shared_ptr<const Config> config)
-    : m_config(config), m_mischief(false)
+    : m_config(config)
 {
 }
 
@@ -271,6 +273,22 @@ struct OstreamState : public Request
     }
 };
 
+struct AbstractOutputState : public Request
+{
+    AbstractOutputFile& out;
+
+    AbstractOutputState(CurlEasy& curl, AbstractOutputFile& out)
+        : Request(curl), out(out)
+    {
+    }
+
+    size_t process_body_chunk(void *ptr, size_t size, size_t nmemb, void *stream) override
+    {
+        out.write((const char*)ptr, size * nmemb);
+        return size * nmemb;
+    }
+};
+
 struct MDStreamState : public Request
 {
     metadata::Stream mdc;
@@ -290,14 +308,7 @@ struct MDStreamState : public Request
 void Reader::set_post_query(Request& request, const std::string& query)
 {
     if (config().qmacro.empty())
-    {
-        if (m_mischief)
-        {
-            request.post_data.add_string("query", query + ";MISCHIEF");
-            m_mischief = false;
-        } else
-            request.post_data.add_string("query", query);
-    }
+        request.post_data.add_string("query", query);
     else
     {
         request.post_data.add_string("query", config().qmacro);
@@ -368,12 +379,43 @@ void Reader::query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out)
             request.post_data.add_string("style", "postprocess");
             request.post_data.add_string("command", q.param);
             break;
-        case dataset::ByteQuery::BQ_REP_METADATA:
-            request.post_data.add_string("style", "rep_metadata");
-            request.post_data.add_string("command", q.param);
+        default: {
+            stringstream ss;
+            ss << "cannot query dataset: unsupported query type: " << (int)q.type;
+            throw std::runtime_error(ss.str());
+        }
+    }
+    request.perform();
+}
+
+void Reader::query_bytes(const dataset::ByteQuery& q, AbstractOutputFile& out)
+{
+    if (q.data_start_hook)
+        throw std::runtime_error("Cannot use data_start_hook on abstract output files");
+
+    m_curl.reset();
+
+    AbstractOutputState request(m_curl, out);
+    request.set_url(str::joinpath(config().baseurl, "query"));
+    request.set_method("POST");
+    set_post_query(request, q);
+
+    const char* toupload = getenv("ARKI_POSTPROC_FILES");
+    if (toupload != NULL)
+    {
+        unsigned count = 0;
+        // Split by ':'
+        str::Split splitter(toupload, ":");
+        for (str::Split::const_iterator i = splitter.begin(); i != splitter.end(); ++i)
+            request.post_data.add_file("postprocfile" + to_string(++count), *i);
+    }
+    switch (q.type)
+    {
+        case dataset::ByteQuery::BQ_DATA:
+            request.post_data.add_string("style", "data");
             break;
-        case dataset::ByteQuery::BQ_REP_SUMMARY:
-            request.post_data.add_string("style", "rep_summary");
+        case dataset::ByteQuery::BQ_POSTPROCESS:
+            request.post_data.add_string("style", "postprocess");
             request.post_data.add_string("command", q.param);
             break;
         default: {
@@ -423,11 +465,6 @@ core::cfg::Section Reader::load_cfg_section(const std::string& path)
     return res;
 }
 
-void Reader::produce_one_wrong_query()
-{
-    m_mischief = true;
-}
-
 std::string Reader::expandMatcher(const std::string& matcher, const std::string& server)
 {
     using namespace http;
@@ -455,6 +492,53 @@ core::cfg::Sections Reader::getAliasDatabase(const std::string& server)
     request.set_url(str::joinpath(server, "aliases"));
     request.perform();
     return core::cfg::Sections::parse(request.buf, server);
+}
+
+std::string Reader::expand_remote_query(const core::cfg::Sections& remotes, const std::string& query)
+{
+    // Resolve the query on each server (including the local system, if
+    // queried). If at least one server can expand it, send that
+    // expanded query to all servers. If two servers expand the same
+    // query in different ways, raise an error.
+    set<string> servers_seen;
+    string expanded;
+    string resolved_by;
+    bool first = true;
+    for (auto si: remotes)
+    {
+        string server = si.second.value("server");
+        if (servers_seen.find(server) != servers_seen.end()) continue;
+        string got;
+        try {
+            if (server.empty())
+            {
+                got = Matcher::parse(query).toStringExpanded();
+                resolved_by = "local system";
+            } else {
+                got = dataset::http::Reader::expandMatcher(query, server);
+                resolved_by = server;
+            }
+        } catch (std::exception& e) {
+            // If the server cannot expand the query, we're
+            // ok as we send it expanded. What we are
+            // checking here is that the server does not
+            // have a different idea of the same aliases
+            // that we use
+            continue;
+        }
+        if (!first && got != expanded)
+        {
+            nag::warning("%s expands the query as %s", server.c_str(), got.c_str());
+            nag::warning("%s expands the query as %s", resolved_by.c_str(), expanded.c_str());
+            throw std::runtime_error("cannot check alias consistency: two systems queried disagree about the query alias expansion");
+        } else if (first)
+            expanded = got;
+        first = false;
+    }
+
+    if (!first)
+        return expanded;
+    return query;
 }
 
 static string geturlprefix(const std::string& s)

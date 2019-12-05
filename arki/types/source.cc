@@ -2,13 +2,14 @@
 #include "source/blob.h"
 #include "source/inline.h"
 #include "source/url.h"
-#include "arki/binary.h"
+#include "arki/core/binary.h"
 #include "arki/segment.h"
 #include "arki/exceptions.h"
 #include "arki/types/utils.h"
-#include "arki/utils/lua.h"
-#include "arki/emitter.h"
-#include "arki/emitter/memory.h"
+#include "arki/structured/emitter.h"
+#include "arki/structured/memory.h"
+#include "arki/structured/keys.h"
+#include "arki/structured/reader.h"
 #include <sstream>
 
 #define CODE TYPE_SOURCE
@@ -24,87 +25,78 @@ namespace types {
 const char* traits<Source>::type_tag = TAG;
 const types::Code traits<Source>::type_code = CODE;
 const size_t traits<Source>::type_sersize_bytes = SERSIZELEN;
-const char* traits<Source>::type_lua_tag = LUATAG_TYPES ".source";
 
-// Style constants
-//const unsigned char Source::NONE;
-const unsigned char Source::BLOB;
-const unsigned char Source::URL;
-const unsigned char Source::INLINE;
-
-Source::Style Source::parseStyle(const std::string& str)
+source::Style Source::parseStyle(const std::string& str)
 {
-	if (str == "BLOB") return BLOB;
-	if (str == "URL") return URL;
-	if (str == "INLINE") return INLINE;
-	throw_consistency_error("parsing Source style", "cannot parse Source style '"+str+"': only BLOB, URL and INLINE are supported");
+    if (str == "BLOB") return source::Style::BLOB;
+    if (str == "URL") return source::Style::URL;
+    if (str == "INLINE") return source::Style::INLINE;
+    throw_consistency_error("parsing Source style", "cannot parse Source style '"+str+"': only BLOB, URL and INLINE are supported");
 }
 
 std::string Source::formatStyle(Source::Style s)
 {
-	switch (s)
-	{
-		//case Source::NONE: return "NONE";
-		case Source::BLOB: return "BLOB";
-		case Source::URL: return "URL";
-		case Source::INLINE: return "INLINE";
-		default:
-			std::stringstream str;
-			str << "(unknown " << (int)s << ")";
-			return str.str();
-	}
+    switch (s)
+    {
+        //case Source::NONE: return "NONE";
+        case source::Style::BLOB: return "BLOB";
+        case source::Style::URL: return "URL";
+        case source::Style::INLINE: return "INLINE";
+        default: throw std::runtime_error("Unknown source style " + std::to_string((int)s));
+    }
 }
 
 int Source::compare_local(const Source& o) const
 {
-	if (format < o.format) return -1;
-	if (format > o.format) return 1;
-	return 0;
+    if (int res = StyledType<Source>::compare_local(o))
+        return res;
+    if (format < o.format) return -1;
+    if (format > o.format) return 1;
+    return 0;
 }
 
-void Source::encodeWithoutEnvelope(BinaryEncoder& enc) const
+void Source::encodeWithoutEnvelope(core::BinaryEncoder& enc) const
 {
     StyledType<Source>::encodeWithoutEnvelope(enc);
     enc.add_unsigned(format.size(), 1);
     enc.add_raw(format);
 }
 
-void Source::serialiseLocal(Emitter& e, const Formatter* f) const
+void Source::serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f) const
 {
-    types::StyledType<Source>::serialiseLocal(e, f);
-    e.add("f"); e.add(format);
+    types::StyledType<Source>::serialise_local(e, keys, f);
+    e.add(keys.source_format); e.add(format);
 }
 
-unique_ptr<Source> Source::decode(BinaryDecoder& dec)
+unique_ptr<Source> Source::decode(core::BinaryDecoder& dec)
 {
     return decodeRelative(dec, string());
 }
 
-unique_ptr<Source> Source::decodeRelative(BinaryDecoder& dec, const std::string& basedir)
+unique_ptr<Source> Source::decodeRelative(core::BinaryDecoder& dec, const std::string& basedir)
 {
     Style s = (Style)dec.pop_uint(1, "source style");
     unsigned int format_len = dec.pop_uint(1, "source format length");
     string format = dec.pop_string(format_len, "source format name");
     switch (s)
     {
-        case BLOB: {
+        case source::Style::BLOB: {
             unsigned fname_len = dec.pop_varint<unsigned>("blob source file name length");
             string fname = dec.pop_string(fname_len, "blob source file name");
             uint64_t offset = dec.pop_varint<uint64_t>("blob source offset");
             uint64_t size = dec.pop_varint<uint64_t>("blob source size");
             return createBlobUnlocked(format, basedir, fname, offset, size);
         }
-        case URL: {
+        case source::Style::URL: {
             unsigned fname_len = dec.pop_varint<unsigned>("url source file name length");
             string url = dec.pop_string(fname_len, "url source url");
             return createURL(format, url);
         }
-        case INLINE: {
+        case source::Style::INLINE: {
             uint64_t size = dec.pop_varint<uint64_t>("inline source size");
             return createInline(format, size);
         }
-        default:
-            throw_consistency_error("parsing Source", "style " + formatStyle(s) + " but we can only decode BLOB, URL or INLINE");
+        default: throw std::runtime_error("Unknown source style " + std::to_string((int)s));
     }
 }
 
@@ -120,57 +112,38 @@ unique_ptr<Source> Source::decodeString(const std::string& val)
 	string format = inner.substr(0, pos);
 	inner = inner.substr(pos+1);
 
-	switch (style)
-	{
-		case Source::BLOB: {
-			size_t end = inner.rfind(':');
-			if (end == string::npos)
-				throw_consistency_error("parsing Source", "source \""+inner+"\" should contain a filename followed by a colon (':')");
-			string fname = inner.substr(0, end);
-			pos = end + 1;
-			end = inner.find('+', pos);
-			if (end == string::npos)
-				throw_consistency_error("parsing Source", "source \""+inner+"\" should contain \"offset+len\" after the filename");
+    switch (style)
+    {
+        case source::Style::BLOB: {
+            size_t end = inner.rfind(':');
+            if (end == string::npos)
+                throw_consistency_error("parsing Source", "source \""+inner+"\" should contain a filename followed by a colon (':')");
+            string fname = inner.substr(0, end);
+            pos = end + 1;
+            end = inner.find('+', pos);
+            if (end == string::npos)
+                throw_consistency_error("parsing Source", "source \""+inner+"\" should contain \"offset+len\" after the filename");
 
             return createBlobUnlocked(format, string(), fname,
                     strtoull(inner.substr(pos, end-pos).c_str(), 0, 10),
                     strtoull(inner.substr(end+1).c_str(), 0, 10));
         }
-        case Source::URL: return createURL(format, inner);
-        case Source::INLINE: return createInline(format, strtoull(inner.c_str(), 0, 10));
-        default:
-        {
-            stringstream ss;
-            ss << "cannot parse Source: unknown Source style " << style;
-            throw std::runtime_error(ss.str());
-        }
+        case source::Style::URL: return createURL(format, inner);
+        case source::Style::INLINE: return createInline(format, strtoull(inner.c_str(), 0, 10));
+        default: throw std::runtime_error("Unknown source style " + std::to_string((int)style));
     }
 }
 
-unique_ptr<Source> Source::decodeMapping(const emitter::memory::Mapping& val)
+std::unique_ptr<Source> Source::decode_structure(const structured::Keys& keys, const structured::Reader& val)
 {
-    using namespace emitter::memory;
-
-    switch (style_from_mapping(val))
+    switch (style_from_structure(keys, val))
     {
-        case Source::BLOB: return upcast<Source>(source::Blob::decodeMapping(val));
-        case Source::URL: return upcast<Source>(source::URL::decodeMapping(val));
-        case Source::INLINE: return upcast<Source>(source::Inline::decodeMapping(val));
-        default:
-            throw_consistency_error("parsing Source", "unknown Source style " + val.get_string());
+        case source::Style::BLOB: return upcast<Source>(source::Blob::decode_structure(keys, val));
+        case source::Style::URL: return upcast<Source>(source::URL::decode_structure(keys, val));
+        case source::Style::INLINE: return upcast<Source>(source::Inline::decode_structure(keys, val));
+        default: throw std::runtime_error("Unknown source style");
     }
 }
-
-#ifdef HAVE_LUA
-bool Source::lua_lookup(lua_State* L, const std::string& name) const
-{
-	if (name == "format")
-		lua_pushlstring(L, format.data(), format.size());
-	else
-		return StyledType<Source>::lua_lookup(L, name);
-	return true;
-}
-#endif
 
 std::unique_ptr<Source> Source::createBlob(std::shared_ptr<segment::Reader> reader, uint64_t offset, uint64_t size)
 {
@@ -204,4 +177,4 @@ void Source::init()
 
 }
 }
-#include <arki/types.tcc>
+#include <arki/types/styled.tcc>

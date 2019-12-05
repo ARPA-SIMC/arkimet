@@ -1,12 +1,11 @@
 #include "config.h"
 
-#include <arki/matcher/product.h>
-#include <arki/matcher/utils.h>
+#include "product.h"
 #include <limits>
 #include <algorithm>
 
 #ifdef HAVE_VM2
-#include <arki/utils/vm2.h>
+#include "arki/utils/vm2.h"
 #endif
 
 using namespace std;
@@ -203,18 +202,18 @@ unique_ptr<MatchProduct> MatchProduct::parse(const std::string& pattern)
     }
     switch (types::Product::parseStyle(name))
     {
-        case types::Product::GRIB1: return unique_ptr<MatchProduct>(new MatchProductGRIB1(rest));
-        case types::Product::GRIB2: return unique_ptr<MatchProduct>(new MatchProductGRIB2(rest));
-        case types::Product::BUFR: return unique_ptr<MatchProduct>(new MatchProductBUFR(rest));
-        case types::Product::ODIMH5: return unique_ptr<MatchProduct>(new MatchProductODIMH5(rest));
-        case types::Product::VM2: return unique_ptr<MatchProduct>(new MatchProductVM2(rest));
-        default: throw std::runtime_error("cannot parse type of product to match: unsupported product style: " + name);
+        case types::Product::Style::GRIB1: return unique_ptr<MatchProduct>(new MatchProductGRIB1(rest));
+        case types::Product::Style::GRIB2: return unique_ptr<MatchProduct>(new MatchProductGRIB2(rest));
+        case types::Product::Style::BUFR: return unique_ptr<MatchProduct>(new MatchProductBUFR(rest));
+        case types::Product::Style::ODIMH5: return unique_ptr<MatchProduct>(new MatchProductODIMH5(rest));
+        case types::Product::Style::VM2: return unique_ptr<MatchProduct>(new MatchProductVM2(rest));
+        default: throw std::invalid_argument("cannot parse type of product to match: unsupported product style: " + name);
     }
 }
 
 void MatchProduct::init()
 {
-    Matcher::register_matcher("product", TYPE_PRODUCT, (MatcherType::subexpr_parser)MatchProduct::parse);
+    MatcherType::register_matcher("product", TYPE_PRODUCT, (MatcherType::subexpr_parser)MatchProduct::parse);
 }
 
 }

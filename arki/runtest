@@ -5,18 +5,7 @@ PYTHON=${PYTHON:-python3}
 
 if [ "$1" = "NOSE" ]
 then
-    # Try to find out what is the name of the nose executable today (sigh)
-    PYTHON_VERSION="$($PYTHON -c 'import sys; print("{0}.{1}".format(*sys.version_info[:]))')"
-    NOSE=""
-    for cand in nose2-3 nosetests-3.6 nosetests-3.5 nosetests-3.4 nosetests-3.3 nosetests-${PYTHON_VERSION}
-    do
-        NOSE=`which $cand 2>/dev/null` && break
-    done
-    if [ -z "$NOSE" ]
-    then
-        echo "python3-nose not found" >&2
-        exit 1
-    fi
+    NOSE="${NOSE:-nose}"
     CMD="$NOSE -s `pwd`"
     DEBUG_CMD="$PYTHON $NOSE -s `pwd`"
 else
@@ -39,23 +28,6 @@ fi
 
 ## Set up the test environment
 
-export ARKI_SCAN_GRIB1=$TOP_SRCDIR/conf/scan-grib1/
-export ARKI_SCAN_GRIB2=$TOP_SRCDIR/conf/scan-grib2/
-export ARKI_SCAN_BUFR=$TOP_SRCDIR/conf/scan-bufr/
-export ARKI_SCAN_ODIMH5=$TOP_SRCDIR/conf/scan-odimh5/
-export ARKI_FORMATTER=$TOP_SRCDIR/conf/format/
-export ARKI_REPORT=$TOP_SRCDIR/conf/report/
-export ARKI_BBOX=$TOP_SRCDIR/conf/bbox/
-export ARKI_QMACRO=$TOP_SRCDIR/conf/qmacro/
-export ARKI_TARGETFILE=$TOP_SRCDIR/conf/targetfile/
-export ARKI_ALIASES=$TOP_SRCDIR/test/conf/match-alias.conf
-export ARKI_POSTPROC=./postproc
-export PYTHONPATH=$TOP_SRCDIR/python/
-export METEO_VM2_SOURCE="$TOP_SRCDIR/conf/vm2/source.lua"
-export TOP_SRCDIR
-ulimit -v 1048576 || true
-ulimit -n 1024 || true
-
 ORIGDIR=`pwd`
 if which mktemp > /dev/null
 then
@@ -68,13 +40,30 @@ fi
 echo "Moving to test directory $TESTDIR"
 cd "$TESTDIR"
 
+export ARKI_MOCK_SCAN_DB=$TOP_SRCDIR/test/mock-scan.sqlite
+export ARKI_SCAN=$TOP_SRCDIR/conf/scan/
+export ARKI_SCAN_GRIB1=$TOP_SRCDIR/conf/scan-grib1/
+export ARKI_SCAN_GRIB2=$TOP_SRCDIR/conf/scan-grib2/
+export ARKI_SCAN_BUFR=$TOP_SRCDIR/conf/scan-bufr/
+export ARKI_SCAN_ODIMH5=$TOP_SRCDIR/conf/scan-odimh5/
+export ARKI_FORMATTER=$TOP_SRCDIR/conf/format/
+export ARKI_REPORT=$TOP_SRCDIR/conf/report/
+export ARKI_BBOX=$TOP_SRCDIR/conf/bbox/
+export ARKI_QMACRO=$TOP_SRCDIR/conf/qmacro/
+export ARKI_ALIASES=$TOP_SRCDIR/test/conf/match-alias.conf
+export ARKI_POSTPROC=$TESTDIR/postproc
+export PYTHONPATH=$TOP_SRCDIR/python/
+export METEO_VM2_SOURCE="$TOP_SRCDIR/conf/vm2/source.lua"
+export TOP_SRCDIR
+ulimit -v 1048576 || true
+ulimit -n 1024 || true
+
 
 mkdir inbound
 # Put data in test inbound area
 cp -a "$TOP_SRCDIR/test/data/"* inbound/
 cp -a "$TOP_SRCDIR/test/postproc" ./
 cp -a "$TOP_SRCDIR/test/misc" ./
-cp -a "$TOP_SRCDIR/doc/lua-examples" ./
 cp -a "$TOP_SRCDIR/doc/matcher" ./
 # Ensure that the directory can be removed at cleanup
 chmod u+w -R "$TESTDIR"
@@ -109,6 +98,12 @@ trap cleanup EXIT
 # Try to debug the libtool executable, if present
 if [ ! -z "$DEBUGGER" ]
 then
+    if [ "$DEBUGGER" = "valgrind" ]
+    then
+        # See https://stackoverflow.com/questions/20112989/how-to-use-valgrind-with-python
+        export PYTHONMALLOC=malloc
+    fi
+
     echo "Running $DEBUGGER $DEBUG_CMD $ARGS"
     RES=0
     if ! libtool --mode=execute $DEBUGGER $DEBUG_CMD $ARGS

@@ -14,8 +14,16 @@ namespace core {
 
 using arki::utils::sys::NamedFileDescriptor;
 using arki::utils::sys::File;
+
+struct Stdin;
+struct Stdout;
+struct Stderr;
+struct AbstractInputFile;
+struct AbstractOutputFile;
+
 struct LineReader;
 struct Lock;
+
 namespace lock {
 struct Policy;
 extern const Policy* policy_null;
@@ -29,6 +37,12 @@ namespace cfg {
 struct Section;
 struct Sections;
 }
+
+struct BinaryEncoder;
+struct BinaryDecoder;
+
+struct Transaction;
+struct Pending;
 
 }
 }

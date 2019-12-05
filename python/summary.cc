@@ -1,11 +1,18 @@
-#include <Python.h>
 #include "summary.h"
+#include "utils/core.h"
+#include "utils/methods.h"
+#include "utils/type.h"
+#include "utils/values.h"
 #include "common.h"
+#include "files.h"
+#include "structured.h"
+#include "metadata.h"
 #include "arki/summary.h"
 #include "arki/summary/short.h"
-#include "arki/emitter/json.h"
+#include "arki/structured/json.h"
+#include "arki/structured/keys.h"
 #include "arki/utils/sys.h"
-#include "config.h"
+#include "arki/utils/geos.h"
 #include <sstream>
 
 using namespace std;
@@ -15,201 +22,275 @@ using namespace arki::python;
 
 extern "C" {
 
+PyTypeObject* arkipy_Summary_Type = nullptr;
+
+}
+
+namespace {
+
 /*
  * Summary
  */
 
-static PyObject* arkipy_Summary_write(arkipy_Summary* self, PyObject *args, PyObject* kw)
+struct count : public Getter<count, arkipy_Summary>
 {
-    static const char* kwlist[] = { "file", "format", NULL };
-    PyObject* arg_file = Py_None;
-    const char* format = nullptr;
+    constexpr static const char* name = "count";
+    constexpr static const char* doc = "Return the number of metadata described by this summary";
+    constexpr static void* closure = nullptr;
 
-    if (!PyArg_ParseTupleAndKeywords(args, kw, "O|s", (char**)kwlist, &arg_file, &format))
-        return nullptr;
-
-    int fd = file_get_fileno(arg_file);
-    if (fd == -1) return nullptr;
-    string fd_name;
-    if (object_repr(arg_file, fd_name) == -1) return nullptr;
-
-    try {
-        if (!format || strcmp(format, "binary") == 0)
-        {
-            self->summary->write(fd, fd_name);
-        } else if (strcmp(format, "yaml") == 0) {
-            std::stringstream buf;
-            self->summary->write_yaml(buf);
-            sys::NamedFileDescriptor outfd(fd, fd_name);
-            outfd.write_all_or_retry(buf.str());
-            return nullptr;
-        } else if (strcmp(format, "json") == 0) {
-            std::stringstream buf;
-            arki::emitter::JSON output(buf);
-            self->summary->serialise(output);
-            sys::NamedFileDescriptor outfd(fd, fd_name);
-            outfd.write_all_or_retry(buf.str());
-            return nullptr;
-        } else {
-            PyErr_Format(PyExc_ValueError, "Unsupported metadata serialization format: %s", format);
-            return nullptr;
-        }
-        Py_RETURN_NONE;
-    } ARKI_CATCH_RETURN_PYO
-}
-
-static PyObject* arkipy_Summary_write_short(arkipy_Summary* self, PyObject *args, PyObject* kw)
-{
-    static const char* kwlist[] = { "file", "format", NULL };
-    PyObject* arg_file = Py_None;
-    const char* format = nullptr;
-
-    if (!PyArg_ParseTupleAndKeywords(args, kw, "O|s", (char**)kwlist, &arg_file, &format))
-        return nullptr;
-
-    int fd = file_get_fileno(arg_file);
-    if (fd == -1) return nullptr;
-    string fd_name;
-    if (object_repr(arg_file, fd_name) == -1) return nullptr;
-
-    try {
-        summary::Short shrt;
-        self->summary->visit(shrt);
-
-        if (!format || strcmp(format, "yaml") == 0)
-        {
-            std::stringstream buf;
-            shrt.write_yaml(buf);
-            sys::NamedFileDescriptor outfd(fd, fd_name);
-            outfd.write_all_or_retry(buf.str());
-            return nullptr;
-        } else if (strcmp(format, "json") == 0) {
-            std::stringstream buf;
-            arki::emitter::JSON output(buf);
-            shrt.serialise(output);
-            sys::NamedFileDescriptor outfd(fd, fd_name);
-            outfd.write_all_or_retry(buf.str());
-            return nullptr;
-        } else {
-            PyErr_Format(PyExc_ValueError, "Unsupported metadata serialization format: %s", format);
-            return nullptr;
-        }
-        Py_RETURN_NONE;
-    } ARKI_CATCH_RETURN_PYO
-}
-
-static PyObject* arkipy_Summary_to_python(arkipy_Summary* self, PyObject *null)
-{
-    try {
-        PythonEmitter e;
-        self->summary->serialise(e);
-        return e.release();
-    } ARKI_CATCH_RETURN_PYO
-}
-
-
-static PyMethodDef arkipy_Summary_methods[] = {
-    {"write", (PyCFunction)arkipy_Summary_write, METH_VARARGS | METH_KEYWORDS, R"(
-        Write the summary to a file.
-
-        Arguments:
-          file: the output file. The file needs to be either an integer file or
-                socket handle, or a file-like object with a fileno() method
-                that returns an integer handle.
-          format: "binary", "yaml", or "json". Default: "binary".
-        )" },
-    {"write_short", (PyCFunction)arkipy_Summary_write_short, METH_VARARGS | METH_KEYWORDS, R"(
-        Write the short summary to a file.
-
-        Arguments:
-          file: the output file. The file needs to be either an integer file or
-                socket handle, or a file-like object with a fileno() method
-                that returns an integer handle.
-          format: "yaml", or "json". Default: "yaml".
-        )" },
-    {"to_python", (PyCFunction)arkipy_Summary_to_python, METH_NOARGS, R"(
-        Return the summary contents in a python dict
-        )" },
-    {NULL}
+    static PyObject* get(Impl* self, void* closure)
+    {
+        try {
+            return to_python(self->summary->count());
+        } ARKI_CATCH_RETURN_PYO;
+    }
 };
 
-static int arkipy_Summary_init(arkipy_Summary* self, PyObject* args, PyObject* kw)
+struct size : public Getter<size, arkipy_Summary>
 {
-    static const char* kwlist[] = { nullptr };
-    if (!PyArg_ParseTupleAndKeywords(args, kw, "", (char**)kwlist))
-        return -1;
+    constexpr static const char* name = "size";
+    constexpr static const char* doc = "Return the total size of all the metadata described by this summary";
+    constexpr static void* closure = nullptr;
 
-    try {
-        self->summary = new Summary;
-        return 0;
-    } ARKI_CATCH_RETURN_INT;
-}
-
-static void arkipy_Summary_dealloc(arkipy_Summary* self)
-{
-    delete self->summary;
-    self->summary = nullptr;
-    Py_TYPE(self)->tp_free((PyObject*)self);
-}
-
-static PyObject* arkipy_Summary_str(arkipy_Summary* self)
-{
-    return PyUnicode_FromFormat("Summary");
-}
-
-static PyObject* arkipy_Summary_repr(arkipy_Summary* self)
-{
-    return PyUnicode_FromFormat("Summary");
-}
-
-PyTypeObject arkipy_Summary_Type = {
-    PyVarObject_HEAD_INIT(NULL, 0)
-    "arkimet.Summary",   // tp_name
-    sizeof(arkipy_Summary), // tp_basicsize
-    0,                         // tp_itemsize
-    (destructor)arkipy_Summary_dealloc, // tp_dealloc
-    0,                         // tp_print
-    0,                         // tp_getattr
-    0,                         // tp_setattr
-    0,                         // tp_compare
-    (reprfunc)arkipy_Summary_repr, // tp_repr
-    0,                         // tp_as_number
-    0,                         // tp_as_sequence
-    0,                         // tp_as_mapping
-    0,                         // tp_hash
-    0,                         // tp_call
-    (reprfunc)arkipy_Summary_str,  // tp_str
-    0,                         // tp_getattro
-    0,                         // tp_setattro
-    0,                         // tp_as_buffer
-    Py_TPFLAGS_DEFAULT,        // tp_flags
-    R"(
-        Arkimet summary
-
-        TODO: document
-
-        Examples::
-
-            TODO: add examples
-    )",                        // tp_doc
-    0,                         // tp_traverse
-    0,                         // tp_clear
-    0,                         // tp_richcompare
-    0,                         // tp_weaklistoffset
-    0,                         // tp_iter
-    0,                         // tp_iternext
-    arkipy_Summary_methods, // tp_methods
-    0,                         // tp_members
-    0,                         // tp_getset
-    0,                         // tp_base
-    0,                         // tp_dict
-    0,                         // tp_descr_get
-    0,                         // tp_descr_set
-    0,                         // tp_dictoffset
-    (initproc)arkipy_Summary_init, // tp_init
-    0,                         // tp_alloc
-    0,                         // tp_new
+    static PyObject* get(Impl* self, void* closure)
+    {
+        try {
+            return to_python((size_t)self->summary->size());
+        } ARKI_CATCH_RETURN_PYO;
+    }
 };
+
+
+struct add : public MethKwargs<add, arkipy_Summary>
+{
+    constexpr static const char* name = "add";
+    constexpr static const char* signature = "val: Union[arki.Metadata, arki.Summary]";
+    constexpr static const char* returns = "";
+    constexpr static const char* summary = "merge a metadata or summary into this summary";
+
+    static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
+    {
+        static const char* kwlist[] = { "val", nullptr };
+        PyObject* arg_val = Py_None;
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "O", const_cast<char**>(kwlist), &arg_val))
+            return nullptr;
+
+        try {
+            if (arkipy_Metadata_Check(arg_val))
+                self->summary->add(*((arkipy_Metadata*)arg_val)->md);
+            else if (arkipy_Summary_Check(arg_val))
+                self->summary->add(*((arkipy_Summary*)arg_val)->summary);
+            else
+            {
+                PyErr_SetString(PyExc_TypeError, "Argument must be arki.Metadata or arki.Summary");
+                return nullptr;
+            }
+            Py_RETURN_NONE;
+        } ARKI_CATCH_RETURN_PYO
+    }
+};
+
+struct write : public MethKwargs<write, arkipy_Summary>
+{
+    constexpr static const char* name = "write";
+    constexpr static const char* signature = "file: Union[int, BinaryIO], format: str='binary'";
+    constexpr static const char* returns = "Optional[arki.cfg.Section]";
+    constexpr static const char* summary = "write the summary to a file";
+    constexpr static const char* doc = R"(
+:param file: the output file. The file needs to be either an integer file or
+             socket handle, or a file-like object with a fileno() method
+             that returns an integer handle.
+:param format: "binary", "yaml", or "json". Default: "binary".
+)";
+
+    static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
+    {
+        static const char* kwlist[] = { "file", "format", NULL };
+        PyObject* arg_file = Py_None;
+        const char* format = nullptr;
+
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "O|s", const_cast<char**>(kwlist), &arg_file, &format))
+            return nullptr;
+
+        try {
+            BinaryOutputFile out(arg_file);
+
+            if (!format || strcmp(format, "binary") == 0)
+            {
+                if (out.fd)
+                    self->summary->write(*out.fd);
+                else
+                    self->summary->write(*out.abstract);
+            } else if (strcmp(format, "yaml") == 0) {
+                std::string yaml = self->summary->to_yaml();
+                if (out.fd)
+                    out.fd->write_all_or_retry(yaml);
+                else
+                    out.abstract->write(yaml.data(), yaml.size());
+                return nullptr;
+            } else if (strcmp(format, "json") == 0) {
+                std::stringstream buf;
+                arki::structured::JSON output(buf);
+                self->summary->serialise(output, arki::structured::keys_json);
+                if (out.fd)
+                    out.fd->write_all_or_retry(buf.str());
+                else
+                    out.abstract->write(buf.str().data(), buf.str().size());
+                return nullptr;
+            } else {
+                PyErr_Format(PyExc_ValueError, "Unsupported metadata serialization format: %s", format);
+                return nullptr;
+            }
+            Py_RETURN_NONE;
+        } ARKI_CATCH_RETURN_PYO
+    }
+};
+
+struct write_short : public MethKwargs<write_short, arkipy_Summary>
+{
+    constexpr static const char* name = "write_short";
+    constexpr static const char* signature = "file: Union[int, BinaryIO], format: str='binary'";
+    constexpr static const char* returns = "Optional[arki.cfg.Section]";
+    constexpr static const char* summary = "write the short summary to a file";
+    constexpr static const char* doc = R"(
+:param file: the output file. The file needs to be either an integer file or
+             socket handle, or a file-like object with a fileno() method
+             that returns an integer handle.
+:param format: "binary", "yaml", or "json". Default: "binary".
+)";
+
+    static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
+    {
+        static const char* kwlist[] = { "file", "format", NULL };
+        PyObject* arg_file = Py_None;
+        const char* format = nullptr;
+
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "O|s", const_cast<char**>(kwlist), &arg_file, &format))
+            return nullptr;
+
+        try {
+            BinaryOutputFile out(arg_file);
+
+            summary::Short shrt;
+            self->summary->visit(shrt);
+
+            if (!format || strcmp(format, "yaml") == 0)
+            {
+                std::stringstream buf;
+                shrt.write_yaml(buf);
+                if (out.fd)
+                    out.fd->write_all_or_retry(buf.str().data(), buf.str().size());
+                else
+                    out.abstract->write(buf.str().data(), buf.str().size());
+                return nullptr;
+            } else if (strcmp(format, "json") == 0) {
+                std::stringstream buf;
+                arki::structured::JSON output(buf);
+                shrt.serialise(output, arki::structured::keys_python);
+                if (out.fd)
+                    out.fd->write_all_or_retry(buf.str().data(), buf.str().size());
+                else
+                    out.abstract->write(buf.str().data(), buf.str().size());
+                return nullptr;
+            } else {
+                PyErr_Format(PyExc_ValueError, "Unsupported metadata serialization format: %s", format);
+                return nullptr;
+            }
+            Py_RETURN_NONE;
+        } ARKI_CATCH_RETURN_PYO
+    }
+};
+
+struct to_python : public MethNoargs<to_python, arkipy_Summary>
+{
+    constexpr static const char* name = "to_python";
+    constexpr static const char* signature = "";
+    constexpr static const char* returns = "Dict[str, Any]";
+    constexpr static const char* summary = "return the summary contents in a python dict";
+
+    static PyObject* run(Impl* self)
+    {
+        try {
+            PythonEmitter e;
+            self->summary->serialise(e, arki::structured::keys_python);
+            return e.release();
+        } ARKI_CATCH_RETURN_PYO
+    }
+};
+
+struct get_convex_hull : public MethNoargs<get_convex_hull, arkipy_Summary>
+{
+    constexpr static const char* name = "get_convex_hull";
+    constexpr static const char* signature = "";
+    constexpr static const char* returns = "Optional[str]";
+    constexpr static const char* summary = "compute the convex hull for this summary and return it as a WKT string";
+    constexpr static const char* doc = R"(
+None is returned if the convex hull could not be computed.
+)";
+
+    static PyObject* run(Impl* self)
+    {
+        try {
+            // Compute bounding box, and store the WKT in bounding
+            auto bbox = self->summary->getConvexHull();
+            if (bbox.get())
+            {
+                pyo_unique_ptr res = arki::python::to_python(bbox->toString());
+                return res.release();
+            }
+            Py_RETURN_NONE;
+        } ARKI_CATCH_RETURN_PYO
+    }
+};
+
+
+struct SummaryDef : public Type<SummaryDef, arkipy_Summary>
+{
+    constexpr static const char* name = "Summary";
+    constexpr static const char* qual_name = "arkimet.Summary";
+    constexpr static const char* doc = R"(
+Arkimet summary
+
+TODO: document
+
+Examples::
+
+    TODO: add examples
+)";
+    GetSetters<count, size> getsetters;
+    Methods<add, write, write_short, to_python, get_convex_hull> methods;
+
+    static void _dealloc(Impl* self)
+    {
+        delete self->summary;
+        self->summary = nullptr;
+        Py_TYPE(self)->tp_free((PyObject*)self);
+    }
+
+    static PyObject* _str(Impl* self)
+    {
+        return PyUnicode_FromFormat("Summary");
+    }
+
+    static PyObject* _repr(Impl* self)
+    {
+        return PyUnicode_FromFormat("Summary");
+    }
+
+    static int _init(Impl* self, PyObject* args, PyObject* kw)
+    {
+        static const char* kwlist[] = { nullptr };
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "", const_cast<char**>(kwlist)))
+            return -1;
+
+        try {
+            self->summary = new Summary;
+            return 0;
+        } ARKI_CATCH_RETURN_INT;
+    }
+};
+
+SummaryDef* summary_def = nullptr;
 
 }
 
@@ -218,27 +299,21 @@ namespace python {
 
 arkipy_Summary* summary_create()
 {
-    return (arkipy_Summary*)PyObject_CallObject((PyObject*)&arkipy_Summary_Type, NULL);
+    return (arkipy_Summary*)throw_ifnull(PyObject_CallObject((PyObject*)arkipy_Summary_Type, NULL));
 }
 
 arkipy_Summary* summary_create(std::unique_ptr<Summary>&& summary)
 {
-    arkipy_Summary* result = PyObject_New(arkipy_Summary, &arkipy_Summary_Type);
-    if (!result) return nullptr;
+    arkipy_Summary* result = PyObject_New(arkipy_Summary, arkipy_Summary_Type);
+    if (!result) throw PythonException();
     result->summary = summary.release();
     return result;
 }
 
 void register_summary(PyObject* m)
 {
-    common_init();
-
-    arkipy_Summary_Type.tp_new = PyType_GenericNew;
-    if (PyType_Ready(&arkipy_Summary_Type) < 0)
-        return;
-    Py_INCREF(&arkipy_Summary_Type);
-
-    PyModule_AddObject(m, "Summary", (PyObject*)&arkipy_Summary_Type);
+    summary_def = new SummaryDef;
+    summary_def->define(arkipy_Summary_Type, m);
 }
 
 }

@@ -2,6 +2,7 @@
 #define ARKI_PYTHON_TYPE_H
 
 #include "core.h"
+#include "methods.h"
 #include <array>
 
 namespace arki {
@@ -23,7 +24,7 @@ struct Getter
 
     static constexpr PyGetSetDef def()
     {
-        return PyGetSetDef {const_cast<char*>(Child::name), (getter)Child::get, nullptr, Child::doc, Child::closure};
+        return PyGetSetDef {const_cast<char*>(Child::name), (getter)Child::get, nullptr, const_cast<char*>(Child::doc), Child::closure};
     }
 };
 
@@ -38,6 +39,21 @@ struct GetSetters
     }
 
     PyGetSetDef* as_py() { return const_cast<PyGetSetDef*>(m_data.data()); }
+};
+
+
+template<typename Impl>
+struct MethGenericEnter : MethNoargs<MethGenericEnter<Impl>, Impl>
+{
+    constexpr static const char* name = "__enter__";
+    constexpr static const char* returns = "self";
+    constexpr static const char* summary = "Context manager __enter__";
+    constexpr static const char* doc = "Returns the object itself";
+    static PyObject* run(Impl* self)
+    {
+        Py_INCREF(self);
+        return (PyObject*)self;
+    }
 };
 
 
@@ -103,6 +119,7 @@ struct Type
     constexpr static iternextfunc _iternext = nullptr;
     constexpr static richcmpfunc _richcompare = nullptr;
     constexpr static hashfunc _hash = nullptr;
+    constexpr static ternaryfunc _call = nullptr;
 
     constexpr static lenfunc sq_length = nullptr;
     constexpr static binaryfunc sq_concat = nullptr;
@@ -162,9 +179,9 @@ struct Type
             0,                         // tp_as_number
             tp_as_sequence,            // tp_as_sequence
             tp_as_mapping,             // tp_as_mapping
-            (hashfunc)Child::_hash,  // tp_hash
-            0,                         // tp_call
-            (reprfunc)Child::_str,   // tp_str
+            (hashfunc)Child::_hash,    // tp_hash
+            (ternaryfunc)Child::_call, // tp_call
+            (reprfunc)Child::_str,     // tp_str
             0,                         // tp_getattro
             0,                         // tp_setattro
             0,                         // tp_as_buffer

@@ -9,6 +9,7 @@
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/accounting.h"
+#include "arki/nag.h"
 #include <sys/stat.h>
 
 using namespace std;
@@ -95,12 +96,7 @@ void Writer::remove(Metadata&)
     throw std::runtime_error("cannot remove data from outbound dataset: dataset does not support removing items");
 }
 
-void Writer::removeAll(std::ostream& log, bool writable)
-{
-    log << name() << ": cleaning dataset not implemented" << endl;
-}
-
-void Writer::test_acquire(const core::cfg::Section& cfg, WriterBatch& batch, std::ostream& out)
+void Writer::test_acquire(const core::cfg::Section& cfg, WriterBatch& batch)
 {
     std::shared_ptr<const outbound::Config> config(new outbound::Config(cfg));
     for (auto& e: batch)
@@ -119,7 +115,7 @@ void Writer::test_acquire(const core::cfg::Section& cfg, WriterBatch& batch, std
         const core::Time& time = e->md.get<types::reftime::Position>()->time;
         auto tf = Step::create(cfg.value("step"));
         string dest = cfg.value("path") + "/" + (*tf)(time) + "." + e->md.source().format;
-        out << "Assigning to dataset " << cfg.value("name") << " in file " << dest << endl;
+        nag::verbose("Assigning to dataset %s in file %s", cfg.value("name").c_str(), dest.c_str());
         e->result = ACQ_OK;
         e->dataset_name = config->name;
     }

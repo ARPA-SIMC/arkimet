@@ -18,11 +18,8 @@
 #include "arki/types/area.h"
 #include "arki/types/product.h"
 #include "arki/types/value.h"
-#include "arki/sort.h"
+#include "arki/metadata/sort.h"
 #include "arki/utils/sys.h"
-#include <fcntl.h>
-#include <sstream>
-#include <iostream>
 #include <sys/resource.h>
 #include <time.h>
 
@@ -445,11 +442,11 @@ add_method("empty_dirs", [](Fixture& f) {
     auto reader = f.config().create_reader();
 
     metadata::Collection mdc(*reader, Matcher());
-    ensure(mdc.empty());
+    wassert_true(mdc.empty());
 
     Summary s;
     reader->query_summary(Matcher::parse(""), s);
-    ensure_equals(s.count(), 0u);
+    wassert(actual(s.count()) == 0u);
 
     sys::File out(sys::File::mkstemp("test"));
     dataset::ByteQuery bq;
@@ -500,7 +497,7 @@ add_method("query_lots", [](Fixture& f) {
         unsigned seen;
         CheckSortOrder() : last_value(0), seen(0) {}
         virtual uint64_t make_key(const Metadata& md) const = 0;
-        bool eat(unique_ptr<Metadata>&& md)
+        bool eat(std::shared_ptr<Metadata> md)
         {
             uint64_t value = make_key(*md);
             wassert(actual(value) >= last_value);
@@ -534,7 +531,7 @@ add_method("query_lots", [](Fixture& f) {
     {
         auto reader = f.config().create_reader();
         CheckReftimeSortOrder cso;
-        reader->query_data(Matcher(), [&](unique_ptr<Metadata> md) { return cso.eat(move(md)); });
+        reader->query_data(Matcher(), [&](std::shared_ptr<Metadata> md) { return cso.eat(md); });
         wassert(actual(cso.seen) == 16128u);
     }
 
@@ -542,8 +539,8 @@ add_method("query_lots", [](Fixture& f) {
         auto reader = f.config().create_reader();
         CheckAllSortOrder cso;
         dataset::DataQuery dq(Matcher::parse(""));
-        dq.sorter = sort::Compare::parse("reftime,area,product");
-        reader->query_data(dq, [&](unique_ptr<Metadata> md) { return cso.eat(move(md)); });
+        dq.sorter = metadata::sort::Compare::parse("reftime,area,product");
+        reader->query_data(dq, [&](std::shared_ptr<Metadata> md) { return cso.eat(md); });
         wassert(actual(cso.seen) == 16128u);
     }
 });
@@ -636,35 +633,35 @@ add_method("unarchive_segment", [](Fixture& f) {
     }
 
     // Check that segments are where we expect them
-    ensure(sys::exists("testds/.archive/last/2007/07-07.grib"));
-    ensure(sys::exists("testds/.archive/last/2007/07-07.grib.metadata"));
-    ensure(sys::exists("testds/.archive/last/2007/07-07.grib.summary"));
-    ensure(!sys::exists("testds/.archive/last/2007/07-08.grib"));
-    ensure(!sys::exists("testds/.archive/last/2007/07-08.grib.metadata"));
-    ensure(!sys::exists("testds/.archive/last/2007/07-08.grib.summary"));
-    ensure(!sys::exists("testds/.archive/last/2007/10-09.grib"));
-    ensure(!sys::exists("testds/.archive/last/2007/10-09.grib.metadata"));
-    ensure(!sys::exists("testds/.archive/last/2007/10-09.grib.summary"));
-    ensure(!sys::exists("testds/2007/07-07.grib"));
-    ensure(sys::exists("testds/2007/07-08.grib"));
-    ensure(sys::exists("testds/2007/10-09.grib"));
+    wassert(actual_file("testds/.archive/last/2007/07-07.grib").exists());
+    wassert(actual_file("testds/.archive/last/2007/07-07.grib.metadata").exists());
+    wassert(actual_file("testds/.archive/last/2007/07-07.grib.summary").exists());
+    wassert(actual_file("testds/.archive/last/2007/07-08.grib").not_exists());
+    wassert(actual_file("testds/.archive/last/2007/07-08.grib.metadata").not_exists());
+    wassert(actual_file("testds/.archive/last/2007/07-08.grib.summary").not_exists());
+    wassert(actual_file("testds/.archive/last/2007/10-09.grib").not_exists());
+    wassert(actual_file("testds/.archive/last/2007/10-09.grib.metadata").not_exists());
+    wassert(actual_file("testds/.archive/last/2007/10-09.grib.summary").not_exists());
+    wassert(actual_file("testds/2007/07-07.grib").not_exists());
+    wassert(actual_file("testds/2007/07-08.grib").exists());
+    wassert(actual_file("testds/2007/10-09.grib").exists());
 
     {
         f.makeSegmentedChecker()->segment("2007/07-07.grib")->unarchive();
     }
 
-    ensure(!sys::exists("testds/.archive/last/2007/07-07.grib"));
-    ensure(!sys::exists("testds/.archive/last/2007/07-07.grib.metadata"));
-    ensure(!sys::exists("testds/.archive/last/2007/07-07.grib.summary"));
-    ensure(!sys::exists("testds/.archive/last/2007/07-08.grib"));
-    ensure(!sys::exists("testds/.archive/last/2007/07-08.grib.metadata"));
-    ensure(!sys::exists("testds/.archive/last/2007/07-08.grib.summary"));
-    ensure(!sys::exists("testds/.archive/last/2007/10-09.grib"));
-    ensure(!sys::exists("testds/.archive/last/2007/10-09.grib.metadata"));
-    ensure(!sys::exists("testds/.archive/last/2007/10-09.grib.summary"));
-    ensure(sys::exists("testds/2007/07-07.grib"));
-    ensure(sys::exists("testds/2007/07-08.grib"));
-    ensure(sys::exists("testds/2007/10-09.grib"));
+    wassert(actual_file("testds/.archive/last/2007/07-07.grib").not_exists());
+    wassert(actual_file("testds/.archive/last/2007/07-07.grib.metadata").not_exists());
+    wassert(actual_file("testds/.archive/last/2007/07-07.grib.summary").not_exists());
+    wassert(actual_file("testds/.archive/last/2007/07-08.grib").not_exists());
+    wassert(actual_file("testds/.archive/last/2007/07-08.grib.metadata").not_exists());
+    wassert(actual_file("testds/.archive/last/2007/07-08.grib.summary").not_exists());
+    wassert(actual_file("testds/.archive/last/2007/10-09.grib").not_exists());
+    wassert(actual_file("testds/.archive/last/2007/10-09.grib.metadata").not_exists());
+    wassert(actual_file("testds/.archive/last/2007/10-09.grib.summary").not_exists());
+    wassert(actual_file("testds/2007/07-07.grib").exists());
+    wassert(actual_file("testds/2007/07-08.grib").exists());
+    wassert(actual_file("testds/2007/10-09.grib").exists());
 });
 
 add_method("unarchive_segment_lastonly", [](Fixture& f) {
@@ -690,18 +687,18 @@ add_method("unarchive_segment_lastonly", [](Fixture& f) {
 
     // Check that segments are where we expect them
     sys::rename("testds/.archive/last/2007", "testds/.archive/testds-2007");
-    ensure(sys::exists("testds/.archive/testds-2007/07-07.grib"));
-    ensure(sys::exists("testds/.archive/testds-2007/07-07.grib.metadata"));
-    ensure(sys::exists("testds/.archive/testds-2007/07-07.grib.summary"));
-    ensure(!sys::exists("testds/.archive/testds-2007/07-08.grib"));
-    ensure(!sys::exists("testds/.archive/testds-2007/07-08.grib.metadata"));
-    ensure(!sys::exists("testds/.archive/testds-2007/07-08.grib.summary"));
-    ensure(!sys::exists("testds/.archive/testds-2007/10-09.grib"));
-    ensure(!sys::exists("testds/.archive/testds-2007/10-09.grib.metadata"));
-    ensure(!sys::exists("testds/.archive/testds-2007/10-09.grib.summary"));
-    ensure(!sys::exists("testds/2007/07-07.grib"));
-    ensure(sys::exists("testds/2007/07-08.grib"));
-    ensure(sys::exists("testds/2007/10-09.grib"));
+    wassert(actual_file("testds/.archive/testds-2007/07-07.grib").exists());
+    wassert(actual_file("testds/.archive/testds-2007/07-07.grib.metadata").exists());
+    wassert(actual_file("testds/.archive/testds-2007/07-07.grib.summary").exists());
+    wassert(actual_file("testds/.archive/testds-2007/07-08.grib").not_exists());
+    wassert(actual_file("testds/.archive/testds-2007/07-08.grib.metadata").not_exists());
+    wassert(actual_file("testds/.archive/testds-2007/07-08.grib.summary").not_exists());
+    wassert(actual_file("testds/.archive/testds-2007/10-09.grib").not_exists());
+    wassert(actual_file("testds/.archive/testds-2007/10-09.grib.metadata").not_exists());
+    wassert(actual_file("testds/.archive/testds-2007/10-09.grib.summary").not_exists());
+    wassert(actual_file("testds/2007/07-07.grib").not_exists());
+    wassert(actual_file("testds/2007/07-08.grib").exists());
+    wassert(actual_file("testds/2007/10-09.grib").exists());
 
     try {
         f.makeSegmentedChecker()->segment("../test-ds/2007/07-07.grib")->unarchive();
@@ -710,18 +707,18 @@ add_method("unarchive_segment_lastonly", [](Fixture& f) {
         wassert(actual(e.what()).contains("segment is not in last/ archive"));
     }
 
-    ensure(sys::exists("testds/.archive/testds-2007/07-07.grib"));
-    ensure(sys::exists("testds/.archive/testds-2007/07-07.grib.metadata"));
-    ensure(sys::exists("testds/.archive/testds-2007/07-07.grib.summary"));
-    ensure(!sys::exists("testds/.archive/testds-2007/07-08.grib"));
-    ensure(!sys::exists("testds/.archive/testds-2007/07-08.grib.metadata"));
-    ensure(!sys::exists("testds/.archive/testds-2007/07-08.grib.summary"));
-    ensure(!sys::exists("testds/.archive/testds-2007/10-09.grib"));
-    ensure(!sys::exists("testds/.archive/testds-2007/10-09.grib.metadata"));
-    ensure(!sys::exists("testds/.archive/testds-2007/10-09.grib.summary"));
-    ensure(!sys::exists("testds/2007/07-07.grib"));
-    ensure(sys::exists("testds/2007/07-08.grib"));
-    ensure(sys::exists("testds/2007/10-09.grib"));
+    wassert(actual_file("testds/.archive/testds-2007/07-07.grib").exists());
+    wassert(actual_file("testds/.archive/testds-2007/07-07.grib.metadata").exists());
+    wassert(actual_file("testds/.archive/testds-2007/07-07.grib.summary").exists());
+    wassert(actual_file("testds/.archive/testds-2007/07-08.grib").not_exists());
+    wassert(actual_file("testds/.archive/testds-2007/07-08.grib.metadata").not_exists());
+    wassert(actual_file("testds/.archive/testds-2007/07-08.grib.summary").not_exists());
+    wassert(actual_file("testds/.archive/testds-2007/10-09.grib").not_exists());
+    wassert(actual_file("testds/.archive/testds-2007/10-09.grib.metadata").not_exists());
+    wassert(actual_file("testds/.archive/testds-2007/10-09.grib.summary").not_exists());
+    wassert(actual_file("testds/2007/07-07.grib").not_exists());
+    wassert(actual_file("testds/2007/07-08.grib").exists());
+    wassert(actual_file("testds/2007/10-09.grib").exists());
 });
 
 }
@@ -801,16 +798,16 @@ add_method("issue103", [](Fixture& f) {
     // Query with data, without storing all the results on a collection
     dataset::DataQuery dq(Matcher::parse(""), true);
     unsigned count = 0;
-    wassert(reader->query_data(dq, [&](unique_ptr<Metadata> md) {
+    wassert(reader->query_data(dq, [&](std::shared_ptr<Metadata> md) {
         wassert(actual(md->sourceBlob().reader).istrue());
         ++count; return true;
     }));
     wassert(actual(count) == max_files + 1);
 
     // Query with data, sorting, without storing all the results on a collection
-    dq.sorter = sort::Compare::parse("level");
+    dq.sorter = metadata::sort::Compare::parse("level");
     count = 0;
-    wassert(reader->query_data(dq, [&](unique_ptr<Metadata> md) {
+    wassert(reader->query_data(dq, [&](std::shared_ptr<Metadata> md) {
         wassert(actual(md->sourceBlob().reader).istrue());
         ++count; return true;
     }));

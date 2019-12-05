@@ -5,7 +5,6 @@
 #include "arki/metadata/data.h"
 #include "arki/metadata/collection.h"
 #include "arki/types/source/blob.h"
-#include "arki/utils.h"
 #include "arki/utils/files.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
@@ -193,9 +192,8 @@ struct CheckBackend : public AppendCheckBackend
             if (accurate)
             {
                 string fname = SequenceFile::data_fname(idx, format);
-                Metadata md;
                 try {
-                    scanner->scan_singleton(fname, md);
+                    scanner->scan_singleton(fname);
                 } catch (std::exception& e) {
                     stringstream out;
                     out << "unexpected data file " << idx << " fails to scan (" << e.what() << ")";
@@ -303,7 +301,7 @@ std::vector<uint8_t> Reader::read(const types::source::Blob& src)
     }
 
     acct::plain_data_read_count.incr();
-    iotrace::trace_file(dirfd.name(), src.offset, src.size, "read data");
+    iotrace::trace_file(dirfd, src.offset, src.size, "read data");
 
     return buf;
 }
@@ -324,27 +322,10 @@ size_t Reader::stream(const types::source::Blob& src, core::NamedFileDescriptor&
         return buf.size() + 1;
     } else {
         sys::File file_fd = open_src(src);
-
-        // TODO: add a stream method to sys::FileDescriptor that does the
-        // right thing depending on what's available in the system, and
-        // potentially also handles retries
-        off_t offset = 0;
-        while ((unsigned)offset < src.size)
-        {
-            size_t size = src.size - offset;
-            ssize_t res = sendfile(out, file_fd, &offset, size);
-            if (res < 0)
-            {
-                stringstream msg;
-                msg << "cannot stream " << size << " bytes of " << src.format << " data from " << file_fd.name() << ":"
-                    << src.offset << "+" << offset;
-                throw_system_error(msg.str());
-            }
-        }
-
+        file_fd.sendfile(out, 0, src.size);
         acct::plain_data_read_count.incr();
-        iotrace::trace_file(dirfd.name(), src.offset, src.size, "streamed data");
-        return offset;
+        iotrace::trace_file(dirfd, src.offset, src.size, "streamed data");
+        return src.size;
     }
 }
 
@@ -570,7 +551,7 @@ size_t BaseChecker<Segment>::remove()
 }
 
 template<typename Segment>
-Pending BaseChecker<Segment>::repack(const std::string& rootdir, metadata::Collection& mds, const RepackConfig& cfg)
+core::Pending BaseChecker<Segment>::repack(const std::string& rootdir, metadata::Collection& mds, const RepackConfig& cfg)
 {
     struct Rename : public Transaction
     {
@@ -647,7 +628,7 @@ Pending BaseChecker<Segment>::repack(const std::string& rootdir, metadata::Colle
     string tmprelpath = this->segment().relpath + ".repack";
     string tmpabspath = this->segment().abspath + ".repack";
 
-    Pending p(new Rename(tmpabspath, this->segment().abspath));
+    core::Pending p(new Rename(tmpabspath, this->segment().abspath));
 
     Creator creator(rootdir, this->segment().relpath, mds, tmpabspath);
     creator.hardlink = true;
@@ -694,7 +675,7 @@ void BaseChecker<Segment>::test_make_hole(metadata::Collection& mds, unsigned ho
     } else {
         for (int i = mds.size() - 1; i >= (int)data_idx; --i)
         {
-            unique_ptr<source::Blob> source(mds[i].sourceBlob().clone());
+            std::unique_ptr<source::Blob> source(mds[i].sourceBlob().clone());
             sys::rename(
                     str::joinpath(source->absolutePathname(), SequenceFile::data_fname(source->offset, source->format)),
                     str::joinpath(source->absolutePathname(), SequenceFile::data_fname(source->offset + hole_size, source->format)));
@@ -767,10 +748,9 @@ bool Scanner::scan(std::shared_ptr<segment::Reader> reader, metadata_dest_func d
     auto scanner = scan::Scanner::get_scanner(format);
     for (const auto& fi : on_disk)
     {
-        unique_ptr<Metadata> md(new Metadata);
-        scanner->scan_singleton(str::joinpath(abspath, fi.second.fname), *md);
+        auto md = scanner->scan_singleton(str::joinpath(abspath, fi.second.fname));
         md->set_source(Source::createBlob(reader, fi.first, fi.second.size));
-        if (!dest(std::move(md)))
+        if (!dest(md))
             return false;
     }
 
@@ -783,9 +763,9 @@ bool Scanner::scan(std::function<void(const std::string&)> reporter, std::shared
     auto scanner = scan::Scanner::get_scanner(format);
     for (const auto& fi : on_disk)
     {
-        unique_ptr<Metadata> md(new Metadata);
+        std::shared_ptr<Metadata> md;
         try {
-            scanner->scan_singleton(str::joinpath(abspath, fi.second.fname), *md);
+            md = scanner->scan_singleton(str::joinpath(abspath, fi.second.fname));
         } catch (std::exception& e) {
             stringstream out;
             out << "data file " << fi.second.fname << " fails to scan (" << e.what() << ")";
@@ -793,7 +773,7 @@ bool Scanner::scan(std::function<void(const std::string&)> reporter, std::shared
             continue;
         }
         md->set_source(Source::createBlob(reader, fi.first, fi.second.size));
-        if (!dest(std::move(md)))
+        if (!dest(md))
             return false;
     }
 

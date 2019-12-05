@@ -6,20 +6,12 @@
 #include <arki/defs.h>
 #include <arki/core/fwd.h>
 #include <arki/dataset/fwd.h>
+#include <arki/metadata/fwd.h>
 #include <vector>
 #include <string>
 
 namespace arki {
-struct Metadata;
 struct Summary;
-
-namespace metadata {
-struct ReadContext;
-}
-
-namespace sort {
-struct Compare;
-}
 
 namespace metadata {
 
@@ -29,42 +21,54 @@ namespace metadata {
 class Collection
 {
 protected:
-    std::vector<Metadata*> vals;
+    std::vector<std::shared_ptr<Metadata>> vals;
 
 public:
-    Collection();
-    Collection(const Collection& o);
+    Collection() = default;
+    Collection(const Collection& o) = default;
     Collection(Collection&& o) = default;
     /// Construct a collection filled by the results of query_data
     Collection(dataset::Reader& ds, const dataset::DataQuery& q);
     Collection(dataset::Reader& ds, const std::string& q);
     ~Collection();
 
-    Collection& operator=(const Collection& o);
+    Collection& operator=(const Collection& o) = default;
     Collection& operator=(Collection&& o) = default;
 
     bool operator==(const Collection& o) const;
 
-    void clear();
+    void clear() { vals.clear(); }
     bool empty() const { return vals.empty(); }
     size_t size() const { return vals.size(); }
-    const Metadata& operator[](unsigned idx) const { return *vals[idx]; }
-    Metadata& operator[](unsigned idx) { return *vals[idx]; }
+    /// Remove the last element
+    void pop_back() { vals.pop_back(); }
 
-    typedef std::vector<Metadata*>::const_iterator const_iterator;
+    /// Append a copy of md
+    void push_back(const std::shared_ptr<Metadata> md) { vals.push_back(md); }
+
+    /// Append a copy of md
+    void push_back(const Metadata& md);
+
+    // TODO: make an iterator adapter that iterates on Metadata references, to make the interface consistent
+    typedef std::vector<std::shared_ptr<Metadata>>::const_iterator const_iterator;
     const_iterator begin() const { return vals.begin(); }
     const_iterator end() const { return vals.end(); }
+
+    const Metadata& operator[](unsigned idx) const { return *vals[idx]; }
+    Metadata& operator[](unsigned idx) { return *vals[idx]; }
 
     const Metadata& back() const { return *vals.back(); }
     Metadata& back() { return *vals.back(); }
 
     /**
+     * Return a collection with a copy of the metadata in this one
+     */
+    Collection clone() const;
+
+    /**
      * Create a batch for acquire_batch with the contents of this collection
      */
     dataset::WriterBatch make_import_batch() const;
-
-    /// Remove the last element
-    void pop_back();
 
     /// Return a metadata_dest_func that inserts into this collection
     metadata_dest_func inserter_func();
@@ -72,11 +76,8 @@ public:
     /// Append results from a query_data
     void add(dataset::Reader& ds, const dataset::DataQuery& q);
 
-    /// Append a copy of md
-    void push_back(const Metadata& md);
-
     /// Append md
-    void acquire(std::unique_ptr<Metadata>&& md, bool with_data=false);
+    void acquire(std::shared_ptr<Metadata> md, bool with_data=false);
 
 	/**
 	 * Write all the metadata to a file, atomically, using AtomicWriter
@@ -88,10 +89,11 @@ public:
 	 */
 	void appendTo(const std::string& fname) const;
 
-    /**
-     * Write all metadata to the given output file
-     */
+    /// Write all metadata to the given output file
     void write_to(core::NamedFileDescriptor& out) const;
+
+    /// Write all metadata to the given output file
+    void write_to(core::AbstractOutputFile& out) const;
 
     /// Read metadata from \a pathname and append them to this collection
     void read_from_file(const metadata::ReadContext& rc);

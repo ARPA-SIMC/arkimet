@@ -1,11 +1,8 @@
-#include "config.h"
 #include <arki/metadata/tests.h>
 #include <arki/formatter.h>
 #include <arki/metadata.h>
 #include "arki/core/file.h"
 #include <memory>
-#include <sstream>
-#include <iostream>
 
 namespace {
 using namespace std;
@@ -29,28 +26,25 @@ add_method("yaml", [] {
 
     unique_ptr<Formatter> formatter(Formatter::create());
 
-    stringstream str1;
-    md.write_yaml(str1);
-
-    stringstream str2;
-    md.write_yaml(str2, formatter.get());
+    std::string str1 = md.to_yaml();
+    std::string str2 = md.to_yaml(formatter.get());
 
     // They must be different
-    wassert(actual(str1.str()) != str2.str());
+    wassert(actual(str1) != str2);
 
     // str2 contains annotations, so it should be longer
-    wassert(actual(str1.str().size()) < str2.str().size());
+    wassert(actual(str1.size()) < str2.size());
 
     // Read back the two metadatas
     Metadata md1;
     {
-        string s(str1.str());
+        string s(str1);
         auto reader = LineReader::from_chars(s.data(), s.size());
         md1.readYaml(*reader, "(test memory buffer)");
     }
     Metadata md2;
     {
-        string s(str2.str());
+        string s(str2);
         auto reader = LineReader::from_chars(s.data(), s.size());
         md2.readYaml(*reader, "(test memory buffer)");
     }

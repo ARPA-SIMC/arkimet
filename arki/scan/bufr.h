@@ -2,54 +2,62 @@
 #define ARKI_SCAN_BUFR_H
 
 #include <arki/scan.h>
+#include <arki/metadata/fwd.h>
 #include <string>
 #include <map>
 
 namespace dballe {
 struct File;
 struct BinaryMessage;
+struct Message;
 struct Importer;
 }
 
 namespace arki {
-class Metadata;
 class ValueBag;
 
 namespace scan {
 struct Validator;
+class MockEngine;
 
 namespace bufr {
 const Validator& validator();
-struct BufrLua;
 }
 
-/**
- * Scan files for BUFR messages
- */
-class Bufr : public Scanner
+class BufrScanner : public Scanner
 {
     dballe::Importer* importer = nullptr;
-    bufr::BufrLua* extras = nullptr;
 
+protected:
+    virtual void scan_extra(dballe::BinaryMessage& rmsg, std::shared_ptr<dballe::Message> msg, std::shared_ptr<Metadata> md) = 0;
 
-    void read_info_base(char* buf, ValueBag& area);
-    void read_info_fixed(char* buf, Metadata& md);
-    void read_info_mobile(char* buf, Metadata& md);
-
-    void do_scan(dballe::BinaryMessage& rmsg, Metadata& md);
+    void do_scan(dballe::BinaryMessage& rmsg, std::shared_ptr<Metadata> md);
 
 public:
-    Bufr();
-    ~Bufr();
+    BufrScanner();
+    ~BufrScanner();
 
     std::string name() const override { return "bufr"; }
-    std::unique_ptr<Metadata> scan_data(const std::vector<uint8_t>& data) override;
+
+    std::shared_ptr<Metadata> scan_data(const std::vector<uint8_t>& data) override;
     bool scan_pipe(core::NamedFileDescriptor& in, metadata_dest_func dest) override;
     bool scan_segment(std::shared_ptr<segment::Reader> reader, metadata_dest_func dest) override;
-    void scan_singleton(const std::string& abspath, Metadata& md) override;
+    std::shared_ptr<Metadata> scan_singleton(const std::string& abspath) override;
 
     /// Return the update sequence number for a BUFR
     static int update_sequence_number(const std::string& buf);
+};
+
+class MockBufrScanner : public BufrScanner
+{
+protected:
+    MockEngine* engine;
+
+    void scan_extra(dballe::BinaryMessage& rmsg, std::shared_ptr<dballe::Message> msg, std::shared_ptr<Metadata> md) override;
+
+public:
+    MockBufrScanner();
+    virtual ~MockBufrScanner();
 };
 
 }

@@ -187,11 +187,25 @@ void Section::set(const std::string& key, int value)
     set(key, std::to_string(value));
 }
 
-void Section::write(std::ostream& out, const std::string& pathname) const
+static void write_section(const Section& section, std::ostream& out)
 {
-    for (const auto& i: *this)
+    for (const auto& i: section)
         if (!i.second.empty())
             out << i.first << " = " << i.second << endl;
+}
+
+void Section::write(core::NamedFileDescriptor& out) const
+{
+    std::stringstream buf;
+    write_section(*this, buf);
+    out.write_all_or_retry(buf.str().data(), buf.str().size());
+}
+
+void Section::write(core::AbstractOutputFile& out) const
+{
+    std::stringstream buf;
+    write_section(*this, buf);
+    out.write(buf.str().data(), buf.str().size());
 }
 
 void Section::dump(FILE* out) const
@@ -250,19 +264,38 @@ Section& Sections::obtain(const std::string& name)
     return r.first->second;
 }
 
-void Sections::write(std::ostream& out, const std::string& pathname) const
+void Sections::write(core::NamedFileDescriptor& out) const
 {
+    std::stringstream buf;
     bool first = true;
     for (const auto& si: *this)
     {
         if (first)
             first = false;
         else
-            out << endl;
+            buf << endl;
 
-        out << "[" << si.first << "]" << endl;
-        si.second.write(out, pathname);
+        buf << "[" << si.first << "]" << endl;
+        write_section(si.second, buf);
     }
+    out.write_all_or_retry(buf.str().data(), buf.str().size());
+}
+
+void Sections::write(core::AbstractOutputFile& out) const
+{
+    std::stringstream buf;
+    bool first = true;
+    for (const auto& si: *this)
+    {
+        if (first)
+            first = false;
+        else
+            buf << endl;
+
+        buf << "[" << si.first << "]" << endl;
+        write_section(si.second, buf);
+    }
+    out.write(buf.str().data(), buf.str().size());
 }
 
 void Sections::dump(FILE* out) const

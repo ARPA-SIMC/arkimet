@@ -23,7 +23,7 @@ def configure():
     run(cmd("./rpm-config"))
 
 
-def run_test(host):
+def push(host):
     repo = git.Repo()
     remote = repo.remote(host)
     push_url = remote.config_reader.get("url")
@@ -37,6 +37,16 @@ def run_test(host):
         run(cmd("git", "clean", "-fx"))
         run(cmd("autoreconf", "-if"))
         configure()
+
+
+def run_test(host):
+    push(host)
+
+    repo = git.Repo()
+    remote = repo.remote(host)
+    push_url = remote.config_reader.get("url")
+    remote_dir = re.sub(r"^ssh://[^/]+", "", push_url)
+    with cd(remote_dir):
         run(cmd("make", "-j2"))
         run(cmd("make", "check", "-j2", "TEST_VERBOSE=1"))
 
@@ -54,6 +64,21 @@ def test_ventiquattro():
 @hosts("ventotto")
 def test_ventotto():
     run_test("ventotto")
+
+
+@hosts("ventinove")
+def test_ventinove():
+    run_test("ventinove")
+
+
+@hosts("trenta")
+def test_trenta():
+    run_test("trenta")
+
+
+@hosts("trenta")
+def push_trenta():
+    push("trenta")
 
 
 @hosts("sette")

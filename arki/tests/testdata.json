@@ -41,11 +41,6 @@
  },
  {
   "doc": "",
-  "group": "arki_core_time",
-  "method": "lua"
- },
- {
-  "doc": "",
   "group": "arki_file",
   "method": "linereader"
  },
@@ -61,8 +56,33 @@
  },
  {
   "doc": "",
-  "group": "arki_utils",
-  "method": "parse_size"
+  "group": "arki_core_binary",
+  "method": "integer"
+ },
+ {
+  "doc": "",
+  "group": "arki_core_binary",
+  "method": "varints"
+ },
+ {
+  "doc": "",
+  "group": "arki_core_binary",
+  "method": "strings"
+ },
+ {
+  "doc": "",
+  "group": "arki_core_binary",
+  "method": "cstrings"
+ },
+ {
+  "doc": "",
+  "group": "arki_core_binary",
+  "method": "lines"
+ },
+ {
+  "doc": "",
+  "group": "arki_core_transaction",
+  "method": "empty"
  },
  {
   "doc": "",
@@ -201,123 +221,73 @@
  },
  {
   "doc": "",
-  "group": "arki_binary",
-  "method": "integer"
- },
- {
-  "doc": "",
-  "group": "arki_binary",
-  "method": "varints"
- },
- {
-  "doc": "",
-  "group": "arki_binary",
-  "method": "strings"
- },
- {
-  "doc": "",
-  "group": "arki_binary",
-  "method": "cstrings"
- },
- {
-  "doc": "",
-  "group": "arki_binary",
-  "method": "lines"
- },
- {
-  "doc": "",
-  "group": "arki_transaction",
-  "method": "empty"
- },
- {
-  "doc": "",
-  "group": "arki_emitter_memory",
+  "group": "arki_structured_memory",
   "method": "null"
  },
  {
   "doc": "",
-  "group": "arki_emitter_memory",
+  "group": "arki_structured_memory",
   "method": "bool"
  },
  {
   "doc": "",
-  "group": "arki_emitter_memory",
+  "group": "arki_structured_memory",
   "method": "int"
  },
  {
   "doc": "",
-  "group": "arki_emitter_memory",
+  "group": "arki_structured_memory",
   "method": "double"
  },
  {
   "doc": "",
-  "group": "arki_emitter_memory",
+  "group": "arki_structured_memory",
   "method": "string"
  },
  {
   "doc": "",
-  "group": "arki_emitter_memory",
+  "group": "arki_structured_memory",
   "method": "list"
  },
  {
   "doc": "",
-  "group": "arki_emitter_memory",
+  "group": "arki_structured_memory",
   "method": "mapping"
  },
  {
   "doc": "",
-  "group": "arki_emitter_json",
+  "group": "arki_structured_json",
   "method": "null"
  },
  {
   "doc": "",
-  "group": "arki_emitter_json",
+  "group": "arki_structured_json",
   "method": "bool"
  },
  {
   "doc": "",
-  "group": "arki_emitter_json",
+  "group": "arki_structured_json",
   "method": "int"
  },
  {
   "doc": "",
-  "group": "arki_emitter_json",
+  "group": "arki_structured_json",
   "method": "double"
  },
  {
   "doc": "",
-  "group": "arki_emitter_json",
+  "group": "arki_structured_json",
   "method": "string"
  },
  {
   "doc": "",
-  "group": "arki_emitter_json",
+  "group": "arki_structured_json",
   "method": "list"
  },
  {
   "doc": "",
-  "group": "arki_emitter_json",
+  "group": "arki_structured_json",
   "method": "mapping"
- },
- {
-  "doc": "",
-  "group": "arki_values",
-  "method": "comparison"
- },
- {
-  "doc": "",
-  "group": "arki_values",
-  "method": "encoding"
- },
- {
-  "doc": "",
-  "group": "arki_values",
-  "method": "valuebag"
- },
- {
-  "doc": "",
-  "group": "arki_values",
-  "method": "regression1"
  },
  {
   "doc": "",
@@ -346,8 +316,33 @@
  },
  {
   "doc": "",
+  "group": "arki_types_bundle",
+  "method": "empty"
+ },
+ {
+  "doc": "",
   "group": "arki_types_utils",
   "method": "empty"
+ },
+ {
+  "doc": "",
+  "group": "arki_types_values",
+  "method": "comparison"
+ },
+ {
+  "doc": "",
+  "group": "arki_types_values",
+  "method": "encoding"
+ },
+ {
+  "doc": "",
+  "group": "arki_types_values",
+  "method": "valuebag"
+ },
+ {
+  "doc": "",
+  "group": "arki_types_values",
+  "method": "regression1"
  },
  {
   "doc": "",
@@ -431,11 +426,6 @@
  },
  {
   "doc": "",
-  "group": "arki_types_reftime",
-  "method": "lua"
- },
- {
-  "doc": "",
   "group": "arki_types_origin",
   "method": "grib1"
  },
@@ -478,11 +468,6 @@
   "doc": "",
   "group": "arki_types_origin",
   "method": "odim_details"
- },
- {
-  "doc": "",
-  "group": "arki_types_origin",
-  "method": "lua"
  },
  {
   "doc": "",
@@ -533,16 +518,6 @@
   "doc": "",
   "group": "arki_types_product",
   "method": "vm2_details"
- },
- {
-  "doc": "",
-  "group": "arki_types_product",
-  "method": "lua_grib1"
- },
- {
-  "doc": "",
-  "group": "arki_types_product",
-  "method": "lua_grib2_constructor"
  },
  {
   "doc": "",
@@ -608,11 +583,6 @@
   "doc": "",
   "group": "arki_types_level",
   "method": "odimh5_details"
- },
- {
-  "doc": "",
-  "group": "arki_types_level",
-  "method": "lua"
  },
  {
   "doc": "",
@@ -731,31 +701,6 @@
  },
  {
   "doc": "",
-  "group": "arki_types_timerange",
-  "method": "restrict_unit"
- },
- {
-  "doc": "",
-  "group": "arki_types_timerange",
-  "method": "enlarge_unit"
- },
- {
-  "doc": "",
-  "group": "arki_types_timerange",
-  "method": "compare_units"
- },
- {
-  "doc": "",
-  "group": "arki_types_timerange",
-  "method": "make_same_units"
- },
- {
-  "doc": "",
-  "group": "arki_types_timerange",
-  "method": "lua"
- },
- {
-  "doc": "",
   "group": "arki_types_area",
   "method": "grib"
  },
@@ -781,11 +726,6 @@
  },
  {
   "doc": "",
-  "group": "arki_types_area",
-  "method": "lua"
- },
- {
-  "doc": "",
   "group": "arki_types_proddef",
   "method": "grib"
  },
@@ -796,18 +736,8 @@
  },
  {
   "doc": "",
-  "group": "arki_types_proddef",
-  "method": "lua"
- },
- {
-  "doc": "",
   "group": "arki_types_note",
   "method": "note"
- },
- {
-  "doc": "",
-  "group": "arki_types_note",
-  "method": "lua"
  },
  {
   "doc": "",
@@ -816,18 +746,8 @@
  },
  {
   "doc": "",
-  "group": "arki_types_assigneddataset",
-  "method": "lua"
- },
- {
-  "doc": "",
   "group": "arki_types_bbox",
   "method": "invalid"
- },
- {
-  "doc": "",
-  "group": "arki_types_bbox",
-  "method": "lua"
  },
  {
   "doc": "",
@@ -836,18 +756,8 @@
  },
  {
   "doc": "",
-  "group": "arki_types_run",
-  "method": "lua"
- },
- {
-  "doc": "",
   "group": "arki_types_task",
   "method": "task"
- },
- {
-  "doc": "",
-  "group": "arki_types_task",
-  "method": "lua"
  },
  {
   "doc": "",
@@ -883,76 +793,6 @@
   "doc": "",
   "group": "arki_itemset",
   "method": "basic_ops"
- },
- {
-  "doc": "",
-  "group": "arki_iotrace",
-  "method": "empty"
- },
- {
-  "doc": "",
-  "group": "arki_formatter_lua",
-  "method": "empty"
- },
- {
-  "doc": "",
-  "group": "arki_utils_lua",
-  "method": "code"
- },
- {
-  "doc": "",
-  "group": "arki_utils_lua",
-  "method": "add_global_library"
- },
- {
-  "doc": "",
-  "group": "arki_utils_lua",
-  "method": "arki_types"
- },
- {
-  "doc": "",
-  "group": "arki_utils_lua",
-  "method": "arki_metadata"
- },
- {
-  "doc": "",
-  "group": "arki_utils_lua",
-  "method": "arki_summary"
- },
- {
-  "doc": "",
-  "group": "arki_utils_lua",
-  "method": "arki_matcher"
- },
- {
-  "doc": "",
-  "group": "arki_utils_lua",
-  "method": "arki_code"
- },
- {
-  "doc": "",
-  "group": "arki_utils_lua",
-  "method": "examples"
- },
- {
-  "doc": "",
-  "group": "arki_utils_vm2",
-  "method": "find_stations"
- },
- {
-  "doc": "",
-  "group": "arki_utils_vm2",
-  "method": "find_variables"
- },
- {
-  "doc": "",
-  "group": "arki_utils_vm2",
-  "method": "get_station"
- },
- {
-  "doc": "",
-  "group": "arki_utils_vm2",
-  "method": "get_variable"
  },
  {
   "doc": "",
@@ -1031,63 +871,13 @@
  },
  {
   "doc": "",
-  "group": "arki_sort",
-  "method": "simple"
- },
- {
-  "doc": "",
-  "group": "arki_sort",
-  "method": "empty"
- },
- {
-  "doc": "",
   "group": "arki_formatter",
   "method": "yaml"
  },
  {
   "doc": "",
-  "group": "arki_validator",
-  "method": "fail_always"
- },
- {
-  "doc": "",
-  "group": "arki_validator",
-  "method": "daily_import"
- },
- {
-  "doc": "",
   "group": "arki_bbox",
-  "method": "1"
- },
- {
-  "doc": "",
-  "group": "arki_bbox",
-  "method": "2"
- },
- {
-  "doc": "",
-  "group": "arki_bbox",
-  "method": "3"
- },
- {
-  "doc": "",
-  "group": "arki_bbox",
-  "method": "4"
- },
- {
-  "doc": "",
-  "group": "arki_bbox",
-  "method": "5"
- },
- {
-  "doc": "",
-  "group": "arki_bbox",
-  "method": "6"
- },
- {
-  "doc": "",
-  "group": "arki_bbox",
-  "method": "7"
+  "method": "empty"
  },
  {
   "doc": "",
@@ -1123,11 +913,6 @@
   "doc": "",
   "group": "arki_metadata",
   "method": "decode_issue_24"
- },
- {
-  "doc": "",
-  "group": "arki_metadata",
-  "method": "lua"
  },
  {
   "doc": "",
@@ -1183,6 +968,16 @@
   "doc": "",
   "group": "arki_metadata",
   "method": "inline_odimh5"
+ },
+ {
+  "doc": "",
+  "group": "arki_metadata_sort",
+  "method": "simple"
+ },
+ {
+  "doc": "",
+  "group": "arki_metadata_sort",
+  "method": "empty"
  },
  {
   "doc": "",
@@ -1243,6 +1038,16 @@
   "doc": "",
   "group": "arki_metadata_libarchive",
   "method": "zip"
+ },
+ {
+  "doc": "",
+  "group": "arki_metadata_validator",
+  "method": "fail_always"
+ },
+ {
+  "doc": "",
+  "group": "arki_metadata_validator",
+  "method": "daily_import"
  },
  {
   "doc": "",
@@ -1323,11 +1128,6 @@
   "doc": "",
   "group": "arki_summary",
   "method": "regression0"
- },
- {
-  "doc": "",
-  "group": "arki_summary",
-  "method": "lua"
  },
  {
   "doc": "",
@@ -1431,43 +1231,38 @@
  },
  {
   "doc": "",
-  "group": "arki_matcher",
-  "method": "aliases"
+  "group": "arki_matcher_aliases",
+  "method": "use"
  },
  {
   "doc": "",
-  "group": "arki_matcher",
-  "method": "aliases_multilevel"
+  "group": "arki_matcher_aliases",
+  "method": "multilevel"
  },
  {
   "doc": "",
-  "group": "arki_matcher",
-  "method": "aliases_recursive_1"
+  "group": "arki_matcher_aliases",
+  "method": "recursive_1"
  },
  {
   "doc": "",
-  "group": "arki_matcher",
-  "method": "aliases_recursive_2"
+  "group": "arki_matcher_aliases",
+  "method": "recursive_2"
  },
  {
   "doc": "",
-  "group": "arki_matcher",
-  "method": "aliases_recursive_3"
+  "group": "arki_matcher_aliases",
+  "method": "recursive_3"
  },
  {
   "doc": "",
-  "group": "arki_matcher",
-  "method": "aliases_multilevel_load"
+  "group": "arki_matcher_aliases",
+  "method": "multilevel_load"
  },
  {
   "doc": "",
-  "group": "arki_matcher",
-  "method": "aliases_doctest"
- },
- {
-  "doc": "",
-  "group": "arki_matcher",
-  "method": "aliases_regression"
+  "group": "arki_matcher_aliases",
+  "method": "regression"
  },
  {
   "doc": "",
@@ -1751,11 +1546,6 @@
  },
  {
   "doc": "",
-  "group": "arki_matcher_source",
-  "method": "empty"
- },
- {
-  "doc": "",
   "group": "arki_matcher_task",
   "method": "odim"
  },
@@ -1837,6 +1627,16 @@
  {
   "doc": "",
   "group": "arki_scan_validator",
+  "method": "empty"
+ },
+ {
+  "doc": "",
+  "group": "arki_scan_mock",
+  "method": "empty"
+ },
+ {
+  "doc": "",
+  "group": "arki_scan_odimh5",
   "method": "empty"
  },
  {
@@ -2801,33 +2601,8 @@
  },
  {
   "doc": "",
-  "group": "arki_runtime_io",
-  "method": "tempfile"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_inputs",
+  "group": "arki_iotrace",
   "method": "empty"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_config",
-  "method": "restrict"
- },
- {
-  "doc": "",
-  "group": "arki_scan_grib",
-  "method": "compact"
- },
- {
-  "doc": "",
-  "group": "arki_scan_grib",
-  "method": "padded"
- },
- {
-  "doc": "",
-  "group": "arki_scan_grib",
-  "method": "lua_results"
  },
  {
   "doc": "",
@@ -2836,223 +2611,28 @@
  },
  {
   "doc": "",
-  "group": "arki_scan_grib",
-  "method": "layers"
- },
- {
-  "doc": "",
-  "group": "arki_scan_grib",
-  "method": "proselvo"
- },
- {
-  "doc": "",
-  "group": "arki_scan_grib",
-  "method": "cleps"
- },
- {
-  "doc": "",
-  "group": "arki_scan_grib",
-  "method": "utm_areas"
- },
- {
-  "doc": "",
-  "group": "arki_scan_grib",
-  "method": "ninfa"
- },
- {
-  "doc": "",
-  "group": "arki_scan_grib",
-  "method": "cosmo_nudging"
- },
- {
-  "doc": "",
-  "group": "arki_scan_grib",
-  "method": "issue120"
- },
- {
-  "doc": "",
-  "group": "arki_scan_bufr",
-  "method": "contiguous"
- },
- {
-  "doc": "",
-  "group": "arki_scan_bufr",
-  "method": "padded"
- },
- {
-  "doc": "",
   "group": "arki_scan_bufr",
   "method": "validate"
  },
  {
   "doc": "",
-  "group": "arki_scan_bufr",
-  "method": "partial"
+  "group": "arki_utils_vm2",
+  "method": "find_stations"
  },
  {
   "doc": "",
-  "group": "arki_scan_bufr",
-  "method": "pollution"
+  "group": "arki_utils_vm2",
+  "method": "find_variables"
  },
  {
   "doc": "",
-  "group": "arki_scan_bufr",
-  "method": "zerodate"
+  "group": "arki_utils_vm2",
+  "method": "get_station"
  },
  {
   "doc": "",
-  "group": "arki_scan_bufr",
-  "method": "ship"
- },
- {
-  "doc": "",
-  "group": "arki_scan_bufr",
-  "method": "amdar"
- },
- {
-  "doc": "",
-  "group": "arki_scan_bufr",
-  "method": "airep"
- },
- {
-  "doc": "",
-  "group": "arki_scan_bufr",
-  "method": "acars"
- },
- {
-  "doc": "",
-  "group": "arki_scan_bufr",
-  "method": "gts"
- },
- {
-  "doc": "",
-  "group": "arki_scan_bufr",
-  "method": "date_mismatch"
- },
- {
-  "doc": "",
-  "group": "arki_scan_bufr",
-  "method": "out_of_range"
- },
- {
-  "doc": "",
-  "group": "arki_scan_bufr",
-  "method": "temp_reftime"
- },
- {
-  "doc": "",
-  "group": "arki_scan_bufr",
-  "method": "wrongdate"
- },
- {
-  "doc": "",
-  "group": "arki_scan_bufrlua",
-  "method": "message"
- },
- {
-  "doc": "",
-  "group": "arki_utils_h5",
-  "method": "read"
- },
- {
-  "doc": "",
-  "group": "arki_scan_odimh5",
-  "method": "pvol"
- },
- {
-  "doc": "",
-  "group": "arki_scan_odimh5",
-  "method": "comp_cappi"
- },
- {
-  "doc": "",
-  "group": "arki_scan_odimh5",
-  "method": "comp_etop"
- },
- {
-  "doc": "",
-  "group": "arki_scan_odimh5",
-  "method": "comp_lbm"
- },
- {
-  "doc": "",
-  "group": "arki_scan_odimh5",
-  "method": "comp_max"
- },
- {
-  "doc": "",
-  "group": "arki_scan_odimh5",
-  "method": "comp_pcappi"
- },
- {
-  "doc": "",
-  "group": "arki_scan_odimh5",
-  "method": "comp_ppi"
- },
- {
-  "doc": "",
-  "group": "arki_scan_odimh5",
-  "method": "comp_rr"
- },
- {
-  "doc": "",
-  "group": "arki_scan_odimh5",
-  "method": "comp_vil"
- },
- {
-  "doc": "",
-  "group": "arki_scan_odimh5",
-  "method": "image_cappi"
- },
- {
-  "doc": "",
-  "group": "arki_scan_odimh5",
-  "method": "image_etop"
- },
- {
-  "doc": "",
-  "group": "arki_scan_odimh5",
-  "method": "image_hvmi"
- },
- {
-  "doc": "",
-  "group": "arki_scan_odimh5",
-  "method": "image_max"
- },
- {
-  "doc": "",
-  "group": "arki_scan_odimh5",
-  "method": "image_pcappi"
- },
- {
-  "doc": "",
-  "group": "arki_scan_odimh5",
-  "method": "image_ppi"
- },
- {
-  "doc": "",
-  "group": "arki_scan_odimh5",
-  "method": "image_rr"
- },
- {
-  "doc": "",
-  "group": "arki_scan_odimh5",
-  "method": "image_vil"
- },
- {
-  "doc": "",
-  "group": "arki_scan_odimh5",
-  "method": "image_zlr_bb"
- },
- {
-  "doc": "",
-  "group": "arki_scan_odimh5",
-  "method": "xsec"
- },
- {
-  "doc": "",
-  "group": "arki_scan_odimh5",
-  "method": "empty"
+  "group": "arki_utils_vm2",
+  "method": "get_variable"
  },
  {
   "doc": "",
@@ -3081,16 +2661,6 @@
  },
  {
   "doc": "",
-  "group": "arki_targetfile",
-  "method": "echo"
- },
- {
-  "doc": "",
-  "group": "arki_targetfile",
-  "method": "mars"
- },
- {
-  "doc": "",
   "group": "arki_metadata_xargs",
   "method": "check_stdin"
  },
@@ -3113,6 +2683,41 @@
   "doc": "",
   "group": "arki_metadata_xargs",
   "method": "check_tmpfile_exist"
+ },
+ {
+  "doc": "",
+  "group": "arki_metadata_postprocess",
+  "method": "null_validate"
+ },
+ {
+  "doc": "",
+  "group": "arki_metadata_postprocess",
+  "method": "null"
+ },
+ {
+  "doc": "",
+  "group": "arki_metadata_postprocess",
+  "method": "countbytes"
+ },
+ {
+  "doc": "",
+  "group": "arki_metadata_postprocess",
+  "method": "cat"
+ },
+ {
+  "doc": "",
+  "group": "arki_metadata_postprocess",
+  "method": "countbytes_large"
+ },
+ {
+  "doc": "",
+  "group": "arki_metadata_postprocess",
+  "method": "zeroes_arg"
+ },
+ {
+  "doc": "",
+  "group": "arki_metadata_postprocess",
+  "method": "zeroes_arg_large"
  },
  {
   "doc": "",
@@ -12506,13 +12111,23 @@
  },
  {
   "doc": "",
-  "group": "arki_dataset_gridquery",
-  "method": "gridquery"
+  "group": "arki_querymacro",
+  "method": "empty"
  },
  {
   "doc": "",
-  "group": "arki_dataset_gridquery",
-  "method": "no_expansion"
+  "group": "arki_dataset_datasets",
+  "method": "instantiate"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset",
+  "method": "read_config"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset",
+  "method": "read_configs"
  },
  {
   "doc": "",
@@ -16191,91 +15806,6 @@
  },
  {
   "doc": "",
-  "group": "arki_metadatagrid",
-  "method": "query"
- },
- {
-  "doc": "",
-  "group": "arki_postprocess",
-  "method": "null_validate"
- },
- {
-  "doc": "",
-  "group": "arki_postprocess",
-  "method": "null"
- },
- {
-  "doc": "",
-  "group": "arki_postprocess",
-  "method": "countbytes"
- },
- {
-  "doc": "",
-  "group": "arki_postprocess",
-  "method": "cat"
- },
- {
-  "doc": "",
-  "group": "arki_postprocess",
-  "method": "countbytes_large"
- },
- {
-  "doc": "",
-  "group": "arki_postprocess",
-  "method": "zeroes_arg"
- },
- {
-  "doc": "",
-  "group": "arki_postprocess",
-  "method": "zeroes_arg_large"
- },
- {
-  "doc": "",
-  "group": "arki_querymacro",
-  "method": "count"
- },
- {
-  "doc": "",
-  "group": "arki_querymacro",
-  "method": "noop"
- },
- {
-  "doc": "",
-  "group": "arki_querymacro",
-  "method": "noopcopy"
- },
- {
-  "doc": "",
-  "group": "arki_querymacro",
-  "method": "expa"
- },
- {
-  "doc": "",
-  "group": "arki_querymacro",
-  "method": "expa_arg"
- },
- {
-  "doc": "",
-  "group": "arki_querymacro",
-  "method": "gridspace"
- },
- {
-  "doc": "",
-  "group": "arki_querymacro",
-  "method": "expa_inline"
- },
- {
-  "doc": "",
-  "group": "arki_querymacro",
-  "method": "expa_sort"
- },
- {
-  "doc": "",
-  "group": "arki_dataset_datasets",
-  "method": "instantiate"
- },
- {
-  "doc": "",
   "group": "arki_dispatcher",
   "method": "simple"
  },
@@ -16301,413 +15831,8 @@
  },
  {
   "doc": "",
-  "group": "arki_runtime_processor",
-  "method": "metadata_binary"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_processor",
-  "method": "metadata_binary_inline"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_processor",
-  "method": "data_binary"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_source",
+  "group": "arki_init",
   "method": "empty"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_dispatch",
-  "method": "empty"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkiquery",
-  "method": "postproc"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkiquery",
-  "method": "query_metadata"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkiquery",
-  "method": "query_merged"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkiquery",
-  "method": "query_qmacro"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkiquery",
-  "method": "query_stdin"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkicheck_ondisk2",
-  "method": "clean"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkicheck_ondisk2",
-  "method": "clean_filtered"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkicheck_ondisk2",
-  "method": "remove_all"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkicheck_ondisk2",
-  "method": "remove_all_filtered"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkicheck_ondisk2",
-  "method": "archive"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkicheck_ondisk2",
-  "method": "issue57"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkicheck_ondisk2",
-  "method": "tar"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkicheck_ondisk2",
-  "method": "zip"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkicheck_ondisk2",
-  "method": "compress"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkicheck_ondisk2",
-  "method": "scan"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkicheck_ondisk2",
-  "method": "remove_old"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkicheck_ondisk2",
-  "method": "remove"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkicheck_ondisk2",
-  "method": "tar_archives"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkicheck_ondisk2",
-  "method": "zip_archives"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkicheck_simple_plain",
-  "method": "clean"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkicheck_simple_plain",
-  "method": "clean_filtered"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkicheck_simple_plain",
-  "method": "remove_all"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkicheck_simple_plain",
-  "method": "remove_all_filtered"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkicheck_simple_plain",
-  "method": "archive"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkicheck_simple_plain",
-  "method": "issue57"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkicheck_simple_plain",
-  "method": "tar"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkicheck_simple_plain",
-  "method": "zip"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkicheck_simple_plain",
-  "method": "compress"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkicheck_simple_plain",
-  "method": "scan"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkicheck_simple_plain",
-  "method": "remove_old"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkicheck_simple_plain",
-  "method": "remove"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkicheck_simple_plain",
-  "method": "tar_archives"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkicheck_simple_plain",
-  "method": "zip_archives"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkicheck_simple_sqlite",
-  "method": "clean"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkicheck_simple_sqlite",
-  "method": "clean_filtered"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkicheck_simple_sqlite",
-  "method": "remove_all"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkicheck_simple_sqlite",
-  "method": "remove_all_filtered"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkicheck_simple_sqlite",
-  "method": "archive"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkicheck_simple_sqlite",
-  "method": "issue57"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkicheck_simple_sqlite",
-  "method": "tar"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkicheck_simple_sqlite",
-  "method": "zip"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkicheck_simple_sqlite",
-  "method": "compress"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkicheck_simple_sqlite",
-  "method": "scan"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkicheck_simple_sqlite",
-  "method": "remove_old"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkicheck_simple_sqlite",
-  "method": "remove"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkicheck_simple_sqlite",
-  "method": "tar_archives"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkicheck_simple_sqlite",
-  "method": "zip_archives"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkicheck_iseg",
-  "method": "clean"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkicheck_iseg",
-  "method": "clean_filtered"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkicheck_iseg",
-  "method": "remove_all"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkicheck_iseg",
-  "method": "remove_all_filtered"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkicheck_iseg",
-  "method": "archive"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkicheck_iseg",
-  "method": "issue57"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkicheck_iseg",
-  "method": "tar"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkicheck_iseg",
-  "method": "zip"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkicheck_iseg",
-  "method": "compress"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkicheck_iseg",
-  "method": "scan"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkicheck_iseg",
-  "method": "remove_old"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkicheck_iseg",
-  "method": "remove"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkicheck_iseg",
-  "method": "tar_archives"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkicheck_iseg",
-  "method": "zip_archives"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkiscan",
-  "method": "scan_stdin"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkiscan",
-  "method": "scan_grib"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkiscan",
-  "method": "scan_bufr"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkiscan",
-  "method": "scan_bufr_multiple"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkiscan",
-  "method": "scan_metadata"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkiscan",
-  "method": "scan_stdin"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkiscan",
-  "method": "dispatch_plain"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkiscan",
-  "method": "dispatch_flush_threshold"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkiscan",
-  "method": "dispatch_copyok_copyko"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkiscan",
-  "method": "dispatch_copyok"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkiscan",
-  "method": "dispatch_copyko"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkiscan",
-  "method": "dispatch_issue68"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkiscan",
-  "method": "dispatch_issue154"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkimergeconf",
-  "method": "http"
- },
- {
-  "doc": "",
-  "group": "arki_runtime_arkimergeconf",
-  "method": "ignore_system_datasets"
- },
- {
-  "doc": "",
-  "group": "arki_runtime",
-  "method": "files"
  },
  {
   "doc": "",
@@ -16718,15 +15843,5 @@
   "doc": "",
   "group": "arki_dataset_http",
   "method": "redirect"
- },
- {
-  "doc": "",
-  "group": "arki_report",
-  "method": "simple"
- },
- {
-  "doc": "",
-  "group": "arki_report",
-  "method": "regression"
  }
 ]

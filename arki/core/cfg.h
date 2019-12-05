@@ -46,6 +46,7 @@ public:
     using std::map<std::string, std::string>::end;
     using std::map<std::string, std::string>::cbegin;
     using std::map<std::string, std::string>::cend;
+    using std::map<std::string, std::string>::find;
     using std::map<std::string, std::string>::erase;
     using std::map<std::string, std::string>::operator=;
 
@@ -73,7 +74,10 @@ public:
     void set(const std::string& key, int value);
 
     /// Write this configuration to the given output stream
-    void write(std::ostream& out, const std::string& pathname) const;
+    void write(core::NamedFileDescriptor& out) const;
+
+    /// Write this configuration to the given output stream
+    void write(core::AbstractOutputFile& out) const;
 
     /// Dump the configuration to the given file
     void dump(FILE* out) const;
@@ -105,6 +109,7 @@ public:
     using std::map<std::string, Section>::end;
     using std::map<std::string, Section>::cbegin;
     using std::map<std::string, Section>::cend;
+    using std::map<std::string, Section>::find;
     using std::map<std::string, Section>::erase;
     using std::map<std::string, Section>::emplace;
     using std::map<std::string, Section>::operator=;
@@ -127,7 +132,10 @@ public:
     Section& obtain(const std::string& key);
 
     /// Write this configuration to the given output stream
-    void write(std::ostream& out, const std::string& pathname) const;
+    void write(core::NamedFileDescriptor& out) const;
+
+    /// Write this configuration to the given output stream
+    void write(core::AbstractOutputFile& out) const;
 
     /// Dump the configuration to the given file
     void dump(FILE* out) const;

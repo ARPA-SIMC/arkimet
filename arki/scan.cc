@@ -5,7 +5,6 @@
 #include "arki/metadata/data.h"
 #include "arki/core/file.h"
 #include "arki/types/source/blob.h"
-#include "arki/utils.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/string.h"
 #include "arki/utils/files.h"
@@ -15,9 +14,7 @@
 #ifdef HAVE_DBALLE
 #include "arki/scan/bufr.h"
 #endif
-#ifdef HAVE_HDF5
 #include "arki/scan/odimh5.h"
-#endif
 #ifdef HAVE_VM2
 #include "arki/scan/vm2.h"
 #endif
@@ -28,8 +25,37 @@ using namespace arki::utils;
 namespace arki {
 namespace scan {
 
+typedef std::function<std::unique_ptr<Scanner>()> factory;
+
+static std::map<std::string, factory> factories;
+
+void init()
+{
+    factories["grib"] = [] {
+        return std::unique_ptr<Scanner>(new scan::MockGribScanner);
+    };
+#ifdef HAVE_DBALLE
+    factories["bufr"] = [] {
+        return std::unique_ptr<Scanner>(new scan::MockBufrScanner);
+    };
+#endif
+
+    register_odimh5_lua();
+
+#ifdef HAVE_VM2
+    factories["vm2"] = [] {
+        return std::unique_ptr<Scanner>(new scan::Vm2);
+    };
+#endif
+}
+
 Scanner::~Scanner()
 {
+}
+
+void Scanner::register_factory(const std::string& name, std::function<std::unique_ptr<Scanner>()> factory)
+{
+    factories[name] = factory;
 }
 
 bool Scanner::test_scan_file(const std::string& filename, metadata_dest_func dest)
@@ -41,23 +67,10 @@ bool Scanner::test_scan_file(const std::string& filename, metadata_dest_func des
 
 std::unique_ptr<Scanner> Scanner::get_scanner(const std::string& format)
 {
-#ifdef HAVE_GRIBAPI
-    if (format == "grib" || format == "grib1" || format == "grib2")
-        return std::unique_ptr<Scanner>(new scan::Grib);
-#endif
-#ifdef HAVE_DBALLE
-    if (format == "bufr")
-        return std::unique_ptr<Scanner>(new scan::Bufr);
-#endif
-#ifdef HAVE_HDF5
-    if ((format == "h5") || (format == "odim") || (format == "odimh5"))
-        return std::unique_ptr<Scanner>(new scan::OdimH5);
-#endif
-#ifdef HAVE_VM2
-    if (format == "vm2")
-        return std::unique_ptr<Scanner>(new scan::Vm2);
-#endif
-    throw std::runtime_error("No scanner available for format '" + format + "'");
+    auto i = factories.find(normalise_format(format));
+    if (i == factories.end())
+        throw std::runtime_error("No scanner available for format '" + format + "'");
+    return i->second();
 }
 
 const Validator& Scanner::get_validator(const std::string& format)
@@ -70,10 +83,10 @@ const Validator& Scanner::get_validator(const std::string& format)
     if (format == "bufr")
         return bufr::validator();
 #endif
-#ifdef HAVE_HDF5
+
     if (format == "odimh5")
         return odimh5::validator();
-#endif
+
 #ifdef HAVE_VM2
    if (format == "vm2")
        return vm2::validator();
@@ -87,15 +100,17 @@ std::string Scanner::normalise_format(const std::string& format, const char* def
     if (f == "grib") return "grib";
     if (f == "grib1") return "grib";
     if (f == "grib2") return "grib";
+
     if (f == "bufr") return "bufr";
     if (f == "vm2") return "vm2";
-#ifdef HAVE_HDF5
+
     if (f == "h5")     return "odimh5";
     if (f == "hdf5")   return "odimh5";
     if (f == "odim")   return "odimh5";
     if (f == "odimh5") return "odimh5";
-#endif
+
     if (f == "yaml") return "yaml";
+    if (f == "arkimet") return "arkimet";
     if (f == "metadata") return "arkimet";
     if (default_format) return default_format;
     throw std::runtime_error("unsupported format `" + format + "`");
@@ -134,7 +149,7 @@ bool Scanner::update_sequence_number(const types::source::Blob& source, int& usn
 
     auto data = source.read_data();
     string buf((const char*)data.data(), data.size());
-    usn = Bufr::update_sequence_number(buf);
+    usn = BufrScanner::update_sequence_number(buf);
     return true;
 #else
     return false;
@@ -151,7 +166,7 @@ bool Scanner::update_sequence_number(Metadata& md, int& usn)
     const auto& data = md.get_data();
     auto buf = data.read();
     string strbuf((const char*)buf.data(), buf.size());
-    usn = Bufr::update_sequence_number(strbuf);
+    usn = BufrScanner::update_sequence_number(strbuf);
     return true;
 #else
     return false;

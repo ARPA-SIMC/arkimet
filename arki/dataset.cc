@@ -1,30 +1,25 @@
-#include "config.h"
-#include <arki/dataset.h>
-#include <arki/dataset/file.h>
-#include <arki/dataset/ondisk2.h>
-#include <arki/dataset/iseg.h>
-#include <arki/dataset/simple/reader.h>
-#include <arki/dataset/outbound.h>
-#include <arki/dataset/empty.h>
-#include <arki/dataset/fromfunction.h>
-#include <arki/dataset/testlarge.h>
-#include <arki/dataset/reporter.h>
-#include <arki/metadata.h>
-#include <arki/metadata/consumer.h>
-#include <arki/sort.h>
-#include <arki/utils.h>
-#include <arki/utils/string.h>
-#include <arki/utils/sys.h>
-#include <arki/postprocess.h>
-#include <arki/report.h>
-#include <arki/summary.h>
+#include "arki/dataset.h"
+#include "arki/libconfig.h"
+#include "arki/dataset/file.h"
+#include "arki/dataset/ondisk2.h"
+#include "arki/dataset/iseg.h"
+#include "arki/dataset/simple/reader.h"
+#include "arki/dataset/outbound.h"
+#include "arki/dataset/empty.h"
+#include "arki/dataset/fromfunction.h"
+#include "arki/dataset/testlarge.h"
+#include "arki/dataset/reporter.h"
+#include "arki/metadata.h"
+#include "arki/metadata/sort.h"
+#include "arki/metadata/postprocess.h"
+#include "arki/utils/string.h"
+#include "arki/utils/sys.h"
+#include "arki/summary.h"
+#include "arki/scan.h"
+#include "arki/nag.h"
 
 #ifdef HAVE_LIBCURL
-#include <arki/dataset/http.h>
-#endif
-
-#ifdef HAVE_LUA
-#include <arki/utils/lua.h>
+#include "arki/dataset/http.h"
 #endif
 
 using namespace std;
@@ -97,7 +92,7 @@ void Base::set_parent(Base& p)
 
 void Reader::query_summary(const Matcher& matcher, Summary& summary)
 {
-    query_data(DataQuery(matcher), [&](unique_ptr<Metadata> md) { summary.add(*md); return true; });
+    query_data(DataQuery(matcher), [&](std::shared_ptr<Metadata> md) { summary.add(*md); return true; });
 }
 
 void Reader::query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out)
@@ -106,7 +101,7 @@ void Reader::query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out)
     {
         case dataset::ByteQuery::BQ_DATA: {
             bool first = true;
-            query_data(q, [&](unique_ptr<Metadata> md) {
+            query_data(q, [&](std::shared_ptr<Metadata> md) {
                 if (first)
                 {
                     if (q.data_start_hook) q.data_start_hook(out);
@@ -118,35 +113,46 @@ void Reader::query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out)
             break;
         }
         case dataset::ByteQuery::BQ_POSTPROCESS: {
-            Postprocess postproc(q.param);
+            metadata::Postprocess postproc(q.param);
             postproc.set_output(out);
             postproc.validate(config().cfg);
             postproc.set_data_start_hook(q.data_start_hook);
             postproc.start();
-            query_data(q, [&](unique_ptr<Metadata> md) { return postproc.process(move(md)); });
+            query_data(q, [&](std::shared_ptr<Metadata> md) { return postproc.process(md); });
             postproc.flush();
             break;
         }
-        case dataset::ByteQuery::BQ_REP_METADATA: {
-#ifdef HAVE_LUA
-            Report rep;
-            rep.captureOutput(out);
-            rep.load(q.param);
-            query_data(q, [&](unique_ptr<Metadata> md) { return rep.eat(move(md)); });
-            rep.report();
-#endif
+        default:
+        {
+            stringstream s;
+            s << "cannot query dataset: unsupported query type: " << (int)q.type;
+            throw std::runtime_error(s.str());
+        }
+    }
+}
+
+void Reader::query_bytes(const dataset::ByteQuery& q, AbstractOutputFile& out)
+{
+    if (q.data_start_hook)
+        throw std::runtime_error("Cannot use data_start_hook on abstract output files");
+
+    switch (q.type)
+    {
+        case dataset::ByteQuery::BQ_DATA: {
+            query_data(q, [&](std::shared_ptr<Metadata> md) {
+                md->stream_data(out);
+                return true;
+            });
             break;
         }
-        case dataset::ByteQuery::BQ_REP_SUMMARY: {
-#ifdef HAVE_LUA
-            Report rep;
-            rep.captureOutput(out);
-            rep.load(q.param);
-            Summary s;
-            query_summary(q.matcher, s);
-            rep(s);
-            rep.report();
-#endif
+        case dataset::ByteQuery::BQ_POSTPROCESS: {
+            metadata::Postprocess postproc(q.param);
+            postproc.set_output(out);
+            postproc.validate(config().cfg);
+            postproc.set_data_start_hook(q.data_start_hook);
+            postproc.start();
+            query_data(q, [&](std::shared_ptr<Metadata> md) { return postproc.process(move(md)); });
+            postproc.flush();
             break;
         }
         default:
@@ -162,166 +168,6 @@ void Reader::expand_date_range(std::unique_ptr<core::Time>& begin, std::unique_p
 {
 }
 
-#ifdef HAVE_LUA
-Reader* Reader::lua_check(lua_State* L, int idx)
-{
-    return *(Reader**)luaL_checkudata(L, idx, "arki.rodataset");
-}
-
-void DataQuery::lua_from_table(lua_State* L, int idx)
-{
-    lua_pushstring(L, "matcher");
-    lua_gettable(L, 2);
-    matcher = Matcher::lua_check(L, -1);
-    lua_pop(L, 1);
-
-    lua_pushstring(L, "with_data");
-    lua_gettable(L, 2);
-    with_data = lua_toboolean(L, -1);
-    lua_pop(L, 1);
-
-    lua_pushstring(L, "sorter");
-    lua_gettable(L, 2);
-    const char* str_sorter = lua_tostring(L, -1);
-    lua_pop(L, 1);
-    if (str_sorter)
-        sorter = sort::Compare::parse(str_sorter);
-    else
-        sorter = 0;
-}
-
-void DataQuery::lua_push_table(lua_State* L, int idx) const
-{
-    string str;
-
-    if (idx < 0) idx -= 2;
-
-    // table["matcher"] = this->matcher
-    lua_pushstring(L, "matcher");
-    str = matcher.toString();
-    lua_pushstring(L, str.c_str());
-    lua_settable(L, idx);
-
-    // table["with_data"] = this->with_data
-    lua_pushstring(L, "with_data");
-    lua_pushboolean(L, with_data);
-    lua_settable(L, idx);
-
-    // table["sorter"] = this->sorter
-    lua_pushstring(L, "sorter");
-    if (sorter)
-    {
-        str = sorter->toString();
-        lua_pushstring(L, str.c_str());
-    }
-    else
-    {
-        lua_pushnil(L);
-    }
-    lua_settable(L, idx);
-}
-
-namespace {
-
-// Metadata consumer that passes the metadata to a Lua function
-struct LuaConsumer
-{
-    lua_State* L;
-    int funcid;
-
-    LuaConsumer(lua_State* L, int funcid) : L(L), funcid(funcid) {}
-    ~LuaConsumer()
-    {
-        // Unindex the function
-        luaL_unref(L, LUA_REGISTRYINDEX, funcid);
-    }
-
-    bool eat(std::unique_ptr<Metadata>&& md)
-    {
-        // Get the function
-        lua_rawgeti(L, LUA_REGISTRYINDEX, funcid);
-
-        // Push the metadata, handing it over to Lua's garbage collector
-        Metadata::lua_push(L, move(md));
-
-        // Call the function
-        if (lua_pcall(L, 1, 1, 0))
-        {
-            string error = lua_tostring(L, -1);
-            lua_pop(L, 1);
-            throw std::runtime_error("cannot run metadata consumer function: " + error);
-        }
-
-        int res = lua_toboolean(L, -1);
-        lua_pop(L, 1);
-        return res;
-    }
-
-    static std::unique_ptr<LuaConsumer> lua_check(lua_State* L, int idx)
-    {
-        luaL_checktype(L, idx, LUA_TFUNCTION);
-
-        // Ref the created function into the registry
-        lua_pushvalue(L, idx);
-        int funcid = luaL_ref(L, LUA_REGISTRYINDEX);
-
-        // Create a consumer using the function
-        return unique_ptr<LuaConsumer>(new LuaConsumer(L, funcid));
-    }
-};
-
-}
-
-static int arkilua_queryData(lua_State *L)
-{
-    // queryData(self, { matcher="", withdata=false, sorter="" }, consumer_func)
-    Reader* rd = Reader::lua_check(L, 1);
-    luaL_argcheck(L, lua_istable(L, 2), 2, "`table' expected");
-    luaL_argcheck(L, lua_isfunction(L, 3), 3, "`function' expected");
-
-    // Create a DataQuery with data from the table
-    dataset::DataQuery dq;
-    dq.lua_from_table(L, 2);
-
-    // Create metadata consumer proxy
-    std::unique_ptr<LuaConsumer> mdc = LuaConsumer::lua_check(L, 3);
-
-    // Run the query
-    rd->query_data(dq, [&](unique_ptr<Metadata> md) { return mdc->eat(move(md)); });
-
-    return 0;
-}
-
-static int arkilua_query_summary(lua_State *L)
-{
-    // query_summary(self, matcher="", summary)
-    Reader* rd = Reader::lua_check(L, 1);
-    Matcher matcher = Matcher::lua_check(L, 2);
-    Summary* sum = Summary::lua_check(L, 3);
-    luaL_argcheck(L, sum != NULL, 3, "`arki.summary' expected");
-    rd->query_summary(matcher, *sum);
-    return 0;
-}
-
-static int arkilua_tostring(lua_State *L)
-{
-    lua_pushstring(L, "dataset");
-    return 1;
-}
-
-static const struct luaL_Reg readonlydatasetlib [] = {
-    { "queryData", arkilua_queryData },
-    { "querySummary", arkilua_query_summary },
-    { "__tostring", arkilua_tostring },
-    {NULL, NULL}
-};
-
-void Reader::lua_push(lua_State* L)
-{
-    utils::lua::push_object_ptr(L, this, "arki.rodataset", readonlydatasetlib);
-}
-#endif
-
 std::unique_ptr<Reader> Reader::create(const core::cfg::Section& cfg)
 {
     auto config = Config::create(cfg);
@@ -330,14 +176,99 @@ std::unique_ptr<Reader> Reader::create(const core::cfg::Section& cfg)
 
 core::cfg::Section Reader::read_config(const std::string& path)
 {
+    if (path == "-")
+    {
+        // Parse the config file from stdin
+        Stdin in;
+        return core::cfg::Section::parse(in);
+    }
+
+    // Remove trailing slashes, if any
+    string fname = path;
+    while (!fname.empty() && fname[fname.size() - 1] == '/')
+        fname.resize(fname.size() - 1);
+
+    std::unique_ptr<struct stat> st = sys::stat(fname);
+
+    if (st.get() == 0)
+    {
+        // If it does not exist, it could be a URL or a format:filename URL-like
+        size_t pos = path.find(':');
+        if (pos == string::npos)
+        {
+            stringstream ss;
+            ss << "cannot read configuration from " << fname << " because it does not exist";
+            throw runtime_error(ss.str());
+        }
+
+        std::string prefix = path.substr(0, pos);
 #ifdef HAVE_LIBCURL
-    if (str::startswith(path, "http://") || str::startswith(path, "https://"))
-        return dataset::http::Reader::load_cfg_section(path);
+        if (prefix == "http" or prefix == "https")
+            return dataset::http::Reader::load_cfg_section(path);
+        else
 #endif
-    if (sys::isdir(path))
-        return dataset::LocalReader::read_config(path);
+            return dataset::File::read_config(path);
+    }
+
+    if (S_ISDIR(st->st_mode))
+        return dataset::LocalReader::read_config(fname);
     else
-        return dataset::File::read_config(path);
+        return dataset::File::read_config(fname);
+}
+
+
+core::cfg::Sections Reader::read_configs(const std::string& path)
+{
+    if (path == "-")
+    {
+        // Parse the config file from stdin
+        Stdin in;
+        return core::cfg::Sections::parse(in);
+    }
+
+    // Remove trailing slashes, if any
+    string fname = path;
+    while (!fname.empty() && fname[fname.size() - 1] == '/')
+        fname.resize(fname.size() - 1);
+
+    std::unique_ptr<struct stat> st = sys::stat(fname);
+
+    if (st.get() == 0)
+    {
+        // If it does not exist, it could be a URL or a format:filename URL-like
+        size_t pos = path.find(':');
+        if (pos == string::npos)
+        {
+            stringstream ss;
+            ss << "cannot read configuration from " << fname << " because it does not exist";
+            throw runtime_error(ss.str());
+        }
+
+        std::string prefix = path.substr(0, pos);
+#ifdef HAVE_LIBCURL
+        if (prefix == "http" or prefix == "https")
+            return dataset::http::Reader::load_cfg_sections(path);
+        else
+#endif
+            return dataset::File::read_configs(path);
+    }
+
+    if (S_ISDIR(st->st_mode))
+    {
+        // A directory, read the dataset config
+        return dataset::LocalReader::read_configs(fname);
+    }
+    else
+    {
+        // A file, check for known extensions
+        std::string format = scan::Scanner::format_from_filename(fname, "");
+        if (!format.empty())
+            return dataset::File::read_configs(fname);
+
+        // Read the contents as configuration
+        sys::File in(fname, O_RDONLY);
+        return core::cfg::Sections::parse(in);
+    }
 }
 
 
@@ -362,17 +293,17 @@ std::unique_ptr<Writer> Writer::create(const core::cfg::Section& cfg)
     return config->create_writer();
 }
 
-void Writer::test_acquire(const core::cfg::Section& cfg, WriterBatch& batch, std::ostream& out)
+void Writer::test_acquire(const core::cfg::Section& cfg, WriterBatch& batch)
 {
     string type = str::lower(cfg.value("type"));
     if (type == "remote")
         throw std::runtime_error("cannot simulate dataset acquisition: remote datasets are not writable");
     if (type == "outbound")
-        return outbound::Writer::test_acquire(cfg, batch, out);
+        return outbound::Writer::test_acquire(cfg, batch);
     if (type == "discard")
-        return empty::Writer::test_acquire(cfg, batch, out);
+        return empty::Writer::test_acquire(cfg, batch);
 
-    return dataset::LocalWriter::test_acquire(cfg, batch, out);
+    return dataset::LocalWriter::test_acquire(cfg, batch);
 }
 
 CheckerConfig::CheckerConfig()

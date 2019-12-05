@@ -1,13 +1,14 @@
 #include "dispatcher.h"
-#include "metadata/consumer.h"
+#include "metadata.h"
+#include "metadata/validator.h"
 #include "matcher.h"
 #include "dataset.h"
 #include "dataset/local.h"
-#include "validator.h"
 #include "types/reftime.h"
 #include "types/source.h"
 #include "utils/string.h"
 #include "utils/sys.h"
+#include "nag.h"
 
 using namespace std;
 using namespace arki::types;
@@ -48,7 +49,7 @@ Dispatcher::~Dispatcher()
 {
 }
 
-void Dispatcher::add_validator(const Validator& v)
+void Dispatcher::add_validator(const metadata::Validator& v)
 {
     validators.push_back(&v);
 }
@@ -194,8 +195,8 @@ void RealDispatcher::flush() { pool.flush(); }
 
 
 
-TestDispatcher::TestDispatcher(const core::cfg::Sections& cfg, std::ostream& out)
-    : Dispatcher(cfg), cfg(cfg), out(out)
+TestDispatcher::TestDispatcher(const core::cfg::Sections& cfg)
+    : Dispatcher(cfg), cfg(cfg)
 {
     if (!cfg.section("error"))
         throw std::runtime_error("no [error] dataset found");
@@ -206,7 +207,7 @@ void TestDispatcher::raw_dispatch_dataset(const std::string& name, dataset::Writ
 {
     if (batch.empty()) return;
     // TODO: forward drop_cached_data_on_commit
-    dataset::Writer::test_acquire(*cfg.section(name), batch, out);
+    dataset::Writer::test_acquire(*cfg.section(name), batch);
 }
 
 void TestDispatcher::dispatch(dataset::WriterBatch& batch, bool drop_cached_data_on_commit)
@@ -214,15 +215,13 @@ void TestDispatcher::dispatch(dataset::WriterBatch& batch, bool drop_cached_data
     Dispatcher::dispatch(batch, drop_cached_data_on_commit);
     for (const auto& e: batch)
     {
-        out << "Message " << e->md.source() << ": ";
         if (e->dataset_name.empty())
-            out << "not imported";
+            nag::verbose("Message %s: not imported", e->md.source().to_string().c_str());
         else
-            out << "imported into " << e->dataset_name;
-        out << endl;
-        out << "  Notes:" << endl;
+            nag::verbose("Message %s: imported into %s", e->md.source().to_string().c_str(), e->dataset_name.c_str());
+        nag::verbose("  Notes:");
         for (const auto& note: e->md.notes())
-            out << "    " << note.content << endl;
+            nag::verbose("    %s", note.content.c_str());
     }
 }
 

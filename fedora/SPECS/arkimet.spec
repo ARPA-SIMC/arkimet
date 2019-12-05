@@ -42,7 +42,7 @@ BuildRequires: eccodes-simc
 BuildRequires: gcc-c++
 BuildRequires: libtool
 BuildRequires: doxygen
-BuildRequires: libdballe-devel >= 8
+BuildRequires: libdballe-devel >= 8.3
 BuildRequires: lua-devel >= 5.1
 BuildRequires: %{grib_sw}-devel
 BuildRequires: sqlite-devel >= 3.6
@@ -58,25 +58,43 @@ BuildRequires: libwreport-devel >= 3.0
 BuildRequires: flex
 BuildRequires: bison
 BuildRequires: meteo-vm2-devel >= 0.12
-BuildRequires: hdf5-devel
 BuildRequires: %{python3_vers}
 BuildRequires: %{python3_vers}-devel
 BuildRequires: %{python3_vers}-werkzeug
 BuildRequires: %{python3_vers}-setproctitle
 BuildRequires: %{python3_vers}-nose
 BuildRequires: %{python3_vers}-jinja2
+BuildRequires: %{python3_vers}-requests
+BuildRequires: %{python3_vers}-wreport3
+BuildRequires: %{python3_vers}-dballe >= 8.3
+%if ! 0%{?el7}
+BuildRequires: %{python3_vers}-h5py
+%else
+BuildRequires: h5py
+%endif
 BuildRequires: libzip-devel
 BuildRequires: libarchive-devel
 BuildRequires: bzip2-devel
 
-Requires: hdf5
+# shapely is an optional dependency, not available on centos7
+%if ! 0%{?el7}
+BuildRequires: %{python3_vers}-shapely
+Requires: %{python3_vers}-shapely
+%endif
+
 Requires: meteo-vm2 >= 0.12
 Requires: %{grib_sw}
 Requires: %{python3_vers}
 Requires: %{python3_vers}-werkzeug
 Requires: %{python3_vers}-setproctitle
-Requires: libdballe6 >= 8
+Requires: %{python3_vers}-dballe >= 8.3
+Requires: libdballe6 >= 8.3
 Requires: systemd
+%if ! 0%{?el7}
+Requires: %{python3_vers}-h5py
+%else
+Requires: h5py
+%endif
 
 %{!?python3_sitelib: %define python3_sitelib %(%{__python3} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")}
 %{!?python3_sitearch: %define python3_sitearch %(%{__python3} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
@@ -110,7 +128,6 @@ Requires: %{grib_sw}-devel
 Requires: libwreport-devel
 Requires: %{python3_vers}-devel
 Requires: meteo-vm2-devel
-Requires: hdf5-devel
 Requires: sqlite-devel
 Requires: curl-devel
 Requires: lzo-devel
@@ -175,12 +192,7 @@ install -D -m 0644 -p %{SOURCE3} %{buildroot}%{_sysconfdir}/logrotate.d/%{name}
 %{_sysconfdir}/arkimet/bbox/*
 %{_sysconfdir}/arkimet/format/*
 %{_sysconfdir}/arkimet/qmacro/*
-%{_sysconfdir}/arkimet/report/*
-%{_sysconfdir}/arkimet/scan-bufr/*
-%{_sysconfdir}/arkimet/scan-grib1/*
-%{_sysconfdir}/arkimet/scan-grib2/*
-%{_sysconfdir}/arkimet/scan-odimh5/*
-%{_sysconfdir}/arkimet/targetfile/*
+%{_sysconfdir}/arkimet/scan/*
 %{_sysconfdir}/arkimet/vm2/*
 %{_bindir}/*
 %{_libdir}/libarkimet.so.*

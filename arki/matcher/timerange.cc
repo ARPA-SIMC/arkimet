@@ -1,7 +1,6 @@
 #include "config.h"
-#include <arki/matcher/timerange.h>
-#include <arki/matcher/utils.h>
-#include <arki/exceptions.h>
+#include "timerange.h"
+#include "arki/exceptions.h"
 
 using namespace std;
 using namespace arki::types;
@@ -62,7 +61,7 @@ static bool parseValueWithUnit(const std::string& str, INT& val, types::timerang
     } else {
         stringstream ss;
         ss << "cannot parse timerange match expression '" << str << "': unknown time suffix '" << unit << "': valid ones are 's', 'm', 'h', 'd', 'mo', 'y'";
-        throw std::runtime_error(ss.str());
+        throw std::invalid_argument(ss.str());
     }
 }
 
@@ -411,17 +410,17 @@ unique_ptr<MatchTimerange> MatchTimerange::parse(const std::string& pattern)
 
     switch (types::Timerange::parseStyle(name))
     {
-        case types::Timerange::GRIB1: return unique_ptr<MatchTimerange>(new MatchTimerangeGRIB1(rest));
-        case types::Timerange::GRIB2: return unique_ptr<MatchTimerange>(new MatchTimerangeGRIB2(rest));
-        case types::Timerange::TIMEDEF: return unique_ptr<MatchTimerange>(new MatchTimerangeTimedef(rest));
-        case types::Timerange::BUFR: return unique_ptr<MatchTimerange>(new MatchTimerangeBUFR(rest));
-        default: throw std::runtime_error("cannot parse type of timerange to match: unsupported timerange style: " + name);
+        case types::Timerange::Style::GRIB1: return unique_ptr<MatchTimerange>(new MatchTimerangeGRIB1(rest));
+        case types::Timerange::Style::GRIB2: return unique_ptr<MatchTimerange>(new MatchTimerangeGRIB2(rest));
+        case types::Timerange::Style::TIMEDEF: return unique_ptr<MatchTimerange>(new MatchTimerangeTimedef(rest));
+        case types::Timerange::Style::BUFR: return unique_ptr<MatchTimerange>(new MatchTimerangeBUFR(rest));
+        default: throw std::invalid_argument("cannot parse type of timerange to match: unsupported timerange style: " + name);
     }
 }
 
 void MatchTimerange::init()
 {
-    Matcher::register_matcher("timerange", TYPE_TIMERANGE, (MatcherType::subexpr_parser)MatchTimerange::parse);
+    MatcherType::register_matcher("timerange", TYPE_TIMERANGE, (MatcherType::subexpr_parser)MatchTimerange::parse);
 }
 
 }

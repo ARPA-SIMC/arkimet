@@ -3,7 +3,7 @@
 
 /// Index for the contents of an iseg data file
 
-#include <arki/transaction.h>
+#include <arki/core/transaction.h>
 #include <arki/utils/sqlite.h>
 #include <arki/types/fwd.h>
 #include <arki/segment/fwd.h>
@@ -128,7 +128,7 @@ public:
     std::set<types::Code> unique_codes() const;
 
     /// Begin a transaction and return the corresponding Pending object
-    Pending begin_transaction();
+    core::Pending begin_transaction();
 
     /**
      * Send the metadata of all data items known by the index

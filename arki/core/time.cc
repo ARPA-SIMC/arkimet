@@ -1,11 +1,7 @@
 #include "time.h"
+#include "binary.h"
 #include "arki/exceptions.h"
-#include "arki/binary.h"
-#include "arki/emitter.h"
-#include "arki/emitter/memory.h"
-#include "arki/utils/lua.h"
 #include "config.h"
-#include <sstream>
 #include <cmath>
 #include <cstring>
 #include <ctime>
@@ -261,19 +257,15 @@ void Time::normalise()
     // Rebase day and month numbers on 0
     --mo;
     --da;
-    //cerr << "TOZERO " << tostringall(vals) << endl;
 
     // Normalise seconds
     normalN(se, mi, 60);
-    //cerr << "ADJSEC " << tostringall(vals) << endl;
 
     // Normalise minutes
     normalN(mi, ho, 60);
-    //cerr << "ADJMIN " << tostringall(vals) << endl;
 
     // Normalise hours
     normalN(ho, da, 24);
-    //cerr << "ADJHOUR " << tostringall(vals) << endl;
 
     // Normalise days
     while (da < 0)
@@ -282,7 +274,6 @@ void Time::normalise()
         normalN(mo, ye, 12);
         da += days_in_month(ye, mo + 1);
     }
-    //cerr << "ADJDAY1 " << tostringall(vals) << endl;
     while (true)
     {
         normalN(mo, ye, 12);
@@ -291,15 +282,12 @@ void Time::normalise()
         da -= dim;
         ++mo;
     }
-    //cerr << "ADJDAY2 " << tostringall(vals) << endl;
 
     // Normalise months
     normalN(mo, ye, 12);
-    //cerr << "ADJMONYEAR " << tostringall(vals) << endl;
 
     ++mo;
     ++da;
-    //cerr << "FROMZERO " << tostringall(vals) << endl;
 }
 
 std::string Time::to_iso8601(char sep) const
@@ -329,7 +317,7 @@ time_t Time::to_unix() const
     return timegm(&t);
 }
 
-Time Time::decode(BinaryDecoder& dec)
+Time Time::decode(core::BinaryDecoder& dec)
 {
     uint32_t a = dec.pop_uint(4, "first 32 bits of encoded time");
     uint32_t b = dec.pop_uint(1, "last 8 bits of encoded time");
@@ -347,35 +335,7 @@ Time Time::decodeString(const std::string& val)
     return Time::create_iso8601(val);
 }
 
-Time Time::decodeMapping(const emitter::memory::Mapping& val)
-{
-    using namespace emitter::memory;
-
-    return decodeList(val["v"].want_list("decoding Time value"));
-}
-
-Time Time::decodeList(const emitter::memory::List& val)
-{
-    using namespace emitter::memory;
-
-    if (val.size() < 6)
-    {
-        stringstream ss;
-        ss << "cannot decode item: list has " << val.size() << " elements instead of 6";
-        throw std::runtime_error(ss.str());
-    }
-
-    Time res;
-    res.ye = val[0].want_int("decoding year component of time value");
-    res.mo = val[1].want_int("decoding month component of time value");
-    res.da = val[2].want_int("decoding day component of time value");
-    res.ho = val[3].want_int("decoding hour component of time value");
-    res.mi = val[4].want_int("decoding minute component of time value");
-    res.se = val[5].want_int("decoding second component of time value");
-    return res;
-}
-
-void Time::encodeWithoutEnvelope(BinaryEncoder& enc) const
+void Time::encodeWithoutEnvelope(core::BinaryEncoder& enc) const
 {
     uint32_t a = ((ye & 0x3fff) << 18)
                | ((mo & 0xf)    << 14)
@@ -386,32 +346,6 @@ void Time::encodeWithoutEnvelope(BinaryEncoder& enc) const
                | (se & 0x3f);
     enc.add_unsigned(a, 4);
     enc.add_unsigned(b, 1);
-}
-
-void Time::serialise(Emitter& e) const
-{
-    e.start_mapping();
-    e.add("t", "time");
-    serialiseLocal(e);
-    e.end_mapping();
-}
-
-void Time::serialiseLocal(Emitter& e) const
-{
-    e.add("v");
-    serialiseList(e);
-}
-
-void Time::serialiseList(Emitter& e) const
-{
-    e.start_list();
-    e.add(ye);
-    e.add(mo);
-    e.add(da);
-    e.add(ho);
-    e.add(mi);
-    e.add(se);
-    e.end_list();
 }
 
 int Time::days_in_month(int year, int month)
@@ -499,157 +433,6 @@ std::vector<Time> Time::generate(const Time& begin, const Time& end, int step)
     }
     return res;
 }
-
-
-#ifdef HAVE_LUA
-static Time* lua_time_check(lua_State* L, int idx)
-{
-    luaL_checktype(L, idx, LUA_TUSERDATA);
-    return (Time*)luaL_checkudata(L, idx, "arki_time");
-}
-
-static int lua_time_index(lua_State *L)
-{
-    Time* item = lua_time_check(L, 1);
-    if (lua_type(L, 2) == LUA_TNUMBER) 
-    {
-        // Lua array indices start at 1
-        int idx = lua_tointeger(L, 2);
-        switch (idx)
-        {
-            case 1: lua_pushnumber(L, item->ye); break;
-            case 2: lua_pushnumber(L, item->mo); break;
-            case 3: lua_pushnumber(L, item->da); break;
-            case 4: lua_pushnumber(L, item->ho); break;
-            case 5: lua_pushnumber(L, item->mi); break;
-            case 6: lua_pushnumber(L, item->se); break;
-            default: lua_pushnil(L); break;
-        }
-    } else {
-        const char* name = lua_tostring(L, 2);
-        luaL_argcheck(L, name != NULL, 2, "`string' expected");
-
-        if (strcmp(name, "year") == 0)
-            lua_pushnumber(L, item->ye);
-        else if (strcmp(name, "month") == 0)
-            lua_pushnumber(L, item->mo);
-        else if (strcmp(name, "day") == 0)
-            lua_pushnumber(L, item->da);
-        else if (strcmp(name, "hour") == 0)
-            lua_pushnumber(L, item->ho);
-        else if (strcmp(name, "minute") == 0)
-            lua_pushnumber(L, item->mi);
-        else if (strcmp(name, "second") == 0)
-            lua_pushnumber(L, item->se);
-        else
-            lua_pushnil(L);
-    }
-    return 1;
-}
-
-Time Time::lua_check(lua_State* L, int idx)
-{
-    return *lua_time_check(L, idx);
-}
-
-static int lua_time_tostring(lua_State* L)
-{
-    std::string s = lua_time_check(L, 1)->to_iso8601();
-    lua_pushlstring(L, s.data(), s.size());
-    return 1;
-}
-
-static int lua_time_le(lua_State* L)
-{
-    Time* time1 = lua_time_check(L, 1);
-    Time* time2 = lua_time_check(L, 2);
-    lua_pushboolean(L, *time1 <= *time2);
-    return 1;
-}
-
-static int lua_time_lt(lua_State* L)
-{
-    Time* time1 = lua_time_check(L, 1);
-    Time* time2 = lua_time_check(L, 2);
-    lua_pushboolean(L, *time1 < *time2);
-    return 1;
-}
-
-static int lua_time_eq(lua_State* L)
-{
-    Time* time1 = lua_time_check(L, 1);
-    Time* time2 = lua_time_check(L, 2);
-    lua_pushboolean(L, *time1 == *time2);
-    return 1;
-}
-
-void Time::lua_push(lua_State* L) const
-{
-    // The userdata will be a Type*, holding a clone of this object
-    Time* s = (Time*)lua_newuserdata(L, sizeof(Time));
-    *s = *this;
-
-    // Create the metatable for the time methods
-    if (luaL_newmetatable(L, "arki_time"))
-    {
-        static const struct luaL_Reg lib [] = {
-            { "__index", lua_time_index },
-            { "__tostring", lua_time_tostring },
-            { "__eq", lua_time_eq },
-            { "__lt", lua_time_lt },
-            { "__le", lua_time_le },
-            { NULL, NULL }
-        };
-        utils::lua::add_functions(L, lib);
-    }
-    lua_setmetatable(L, -2);
-}
-
-static int arkilua_new_time(lua_State* L)
-{
-    int ye = luaL_checkint(L, 1);
-    int mo = luaL_checkint(L, 2);
-    int da = luaL_checkint(L, 3);
-    int ho = luaL_checkint(L, 4);
-    int mi = luaL_checkint(L, 5);
-    int se = luaL_checkint(L, 6);
-    Time(ye, mo, da, ho, mi, se).lua_push(L);
-    return 1;
-}
-
-static int arkilua_new_now(lua_State* L)
-{
-    Time::create_now().lua_push(L);
-    return 1;
-}
-
-static int arkilua_new_iso8601(lua_State* L)
-{
-    const char* str = luaL_checkstring(L, 1);
-    Time::create_iso8601(str).lua_push(L);
-    return 1;
-}
-
-static int arkilua_new_sql(lua_State* L)
-{
-    const char* str = luaL_checkstring(L, 1);
-    Time::create_sql(str).lua_push(L);
-    return 1;
-}
-
-void Time::lua_loadlib(lua_State* L)
-{
-    static const struct luaL_Reg lib [] = {
-        { "time", arkilua_new_time },
-        { "now", arkilua_new_now },
-        { "iso8601", arkilua_new_iso8601 },
-        { "sql", arkilua_new_sql },
-        { NULL, NULL }
-    };
-    utils::lua::add_global_library(L, "arki_time", lib);
-
-}
-#endif
 
 }
 }

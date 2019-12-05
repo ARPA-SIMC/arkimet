@@ -1,24 +1,23 @@
-DESCRIPTION end
-|\fBarki-query\fP extracts all the metadata that matches an Arkimet expression
-|out of one or more datasets.
-|.P
-|The syntax of the match expression is documented in 
-|\fI/usr/share/doc/arkimet/matcher/\fP.
+[DESCRIPTION]
+\fBarki-query\fP extracts all the metadata that matches an Arkimet expression
+out of one or more datasets.
+.P
+The syntax of the match expression is documented in 
+\fI/usr/share/doc/arkimet/matcher/\fP.
 
-OPTIONS end
-|.SH EXAMPLES
-|Here are some example invocations of \fBarki-query\fP:
-|.P
-|.nf
-|  # Merge the configuration of the datasets that we want to query
-|  arki-mergeconf /srv/archives/datasets/* > datasets.conf
-|  # Query the datasets
-|  arki-query --data datasets.conf 'origin:200' > outputdata
-|.fi
-|
-|.SH SEE ALSO
-|.BR arki-scan (1),
-|.BR arki-mergeconf (1),
-|.br
-|.BR /usr/share/doc/arkimet/matcher/
+[EXAMPLES]
+Here are some example invocations of \fBarki-query\fP:
+.P
+.nf
+  # Merge the configuration of the datasets that we want to query
+  arki-mergeconf /srv/archives/datasets/* > datasets.conf
+  # Query the datasets
+  arki-query --data datasets.conf 'origin:200' > outputdata
+.fi
+
+[SEE ALSO]
+.BR arki-scan (1),
+.BR arki-mergeconf (1),
+.br
+.BR /usr/share/doc/arkimet/matcher/
 

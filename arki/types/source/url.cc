@@ -1,9 +1,10 @@
 #include "url.h"
-#include <arki/binary.h>
-#include <arki/utils/lua.h>
-#include <arki/emitter.h>
-#include <arki/emitter/memory.h>
-#include <arki/exceptions.h>
+#include "arki/core/binary.h"
+#include "arki/structured/emitter.h"
+#include "arki/structured/memory.h"
+#include "arki/structured/keys.h"
+#include "arki/exceptions.h"
+#include <ostream>
 
 using namespace std;
 using namespace arki::utils;
@@ -12,9 +13,9 @@ namespace arki {
 namespace types {
 namespace source {
 
-Source::Style URL::style() const { return Source::URL; }
+Source::Style URL::style() const { return source::Style::URL; }
 
-void URL::encodeWithoutEnvelope(BinaryEncoder& enc) const
+void URL::encodeWithoutEnvelope(core::BinaryEncoder& enc) const
 {
     Source::encodeWithoutEnvelope(enc);
     enc.add_varint(url.size());
@@ -27,30 +28,18 @@ std::ostream& URL::writeToOstream(std::ostream& o) const
 			 << format << "," << url
 			 << ")";
 }
-void URL::serialiseLocal(Emitter& e, const Formatter* f) const
+void URL::serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f) const
 {
-    Source::serialiseLocal(e, f);
-    e.add("url"); e.add(url);
+    Source::serialise_local(e, keys, f);
+    e.add(keys.source_url); e.add(url);
 }
-std::unique_ptr<URL> URL::decodeMapping(const emitter::memory::Mapping& val)
+
+std::unique_ptr<URL> URL::decode_structure(const structured::Keys& keys, const structured::Reader& reader)
 {
     return URL::create(
-            val["f"].want_string("parsing url source format"),
-            val["url"].want_string("parsing url source url"));
+            reader.as_string(keys.source_format, "source format"),
+            reader.as_string(keys.source_url, "source url"));
 }
-
-const char* URL::lua_type_name() const { return "arki.types.source.url"; }
-
-#ifdef HAVE_LUA
-bool URL::lua_lookup(lua_State* L, const std::string& name) const
-{
-	if (name == "url")
-		lua_pushlstring(L, url.data(), url.size());
-	else
-		return Source::lua_lookup(L, name);
-	return true;
-}
-#endif
 
 int URL::compare_local(const Source& o) const
 {

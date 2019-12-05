@@ -1,16 +1,12 @@
-#include <arki/exceptions.h>
-#include <arki/types/bbox.h>
-#include <arki/types/utils.h>
-#include <arki/binary.h>
-#include <arki/emitter.h>
-#include <arki/emitter/memory.h>
-#include "config.h"
+#include "arki/exceptions.h"
+#include "arki/types/bbox.h"
+#include "arki/types/utils.h"
+#include "arki/core/binary.h"
+#include "arki/structured/emitter.h"
+#include "arki/structured/memory.h"
+#include "arki/libconfig.h"
 #include <iomanip>
 #include <sstream>
-
-#ifdef HAVE_LUA
-#include <arki/utils/lua.h>
-#endif
 
 #define CODE TYPE_BBOX
 #define TAG "bbox"
@@ -25,56 +21,48 @@ namespace types {
 const char* traits<BBox>::type_tag = TAG;
 const types::Code traits<BBox>::type_code = CODE;
 const size_t traits<BBox>::type_sersize_bytes = SERSIZELEN;
-const char* traits<BBox>::type_lua_tag = LUATAG_TYPES ".bbox";
-
-// Style constants
-//const unsigned char BBox::NONE;
-const unsigned char BBox::INVALID;
-const unsigned char BBox::POINT;
-const unsigned char BBox::BOX;
-const unsigned char BBox::HULL;
 
 BBox::Style BBox::parseStyle(const std::string& str)
 {
-	if (str == "INVALID") return INVALID;
-	if (str == "POINT") return POINT;
-	if (str == "BOX") return BOX;
-	if (str == "HULL") return HULL;
-	throw_consistency_error("parsing BBox style", "cannot parse BBox style '"+str+"': only INVALID and BOX are supported");
+    if (str == "INVALID") return Style::INVALID;
+    if (str == "POINT") return Style::POINT;
+    if (str == "BOX") return Style::BOX;
+    if (str == "HULL") return Style::HULL;
+    throw_consistency_error("parsing BBox style", "cannot parse BBox style '"+str+"': only INVALID and BOX are supported");
 }
 
 std::string BBox::formatStyle(BBox::Style s)
 {
-	switch (s)
-	{
-		//case BBox::NONE: return "NONE";
-		case BBox::INVALID: return "INVALID";
-		case BBox::POINT: return "POINT";
-		case BBox::BOX: return "BOX";
-		case BBox::HULL: return "HULL";
-		default:
-			std::stringstream str;
-			str << "(unknown " << (int)s << ")";
-			return str.str();
-	}
+    switch (s)
+    {
+        //case BBox::NONE: return "NONE";
+        case Style::INVALID: return "INVALID";
+        case Style::POINT: return "POINT";
+        case Style::BOX: return "BOX";
+        case Style::HULL: return "HULL";
+        default:
+            std::stringstream str;
+            str << "(unknown " << (int)s << ")";
+            return str.str();
+    }
 }
 
-unique_ptr<BBox> BBox::decode(BinaryDecoder& dec)
+unique_ptr<BBox> BBox::decode(core::BinaryDecoder& dec)
 {
     Style s = (Style)dec.pop_uint(1, "bbox style");
     switch (s)
     {
-        case INVALID:
+        case Style::INVALID:
             return createInvalid();
-        case POINT:
+        case Style::POINT:
             for (int i = 0; i < 2; ++i)
                 dec.pop_float("old POINT bbox value");
             return createInvalid();
-        case BOX:
+        case Style::BOX:
             for (int i = 0; i < 4; ++i)
                 dec.pop_float("old BOX bbox value");
             return createInvalid();
-        case HULL: {
+        case Style::HULL: {
             size_t pointCount = dec.pop_uint(2, "HULL bbox vertex count");
             for (size_t i = 0; i < pointCount * 2; ++i)
                 dec.pop_float("old HULL bbox vertex data");
@@ -90,7 +78,7 @@ unique_ptr<BBox> BBox::decodeString(const std::string& val)
     return createInvalid();
 }
 
-unique_ptr<BBox> BBox::decodeMapping(const emitter::memory::Mapping& val)
+std::unique_ptr<BBox> BBox::decode_structure(const structured::Keys& keys, const structured::Reader& val)
 {
     return createInvalid();
 }
@@ -103,9 +91,9 @@ unique_ptr<BBox> BBox::createInvalid()
 
 namespace bbox {
 
-BBox::Style INVALID::style() const { return BBox::INVALID; }
+BBox::Style INVALID::style() const { return Style::INVALID; }
 
-void INVALID::encodeWithoutEnvelope(BinaryEncoder& enc) const
+void INVALID::encodeWithoutEnvelope(core::BinaryEncoder& enc) const
 {
     BBox::encodeWithoutEnvelope(enc);
 }
@@ -113,10 +101,11 @@ std::ostream& INVALID::writeToOstream(std::ostream& o) const
 {
     return o << formatStyle(style()) << "()";
 }
-const char* INVALID::lua_type_name() const { return "arki.types.bbox.invalid"; }
 
 int INVALID::compare_local(const BBox& o) const
 {
+    if (int res = BBox::compare_local(o)) return res;
+
 	// We should be the same kind, so upcast
 	const INVALID* v = dynamic_cast<const INVALID*>(&o);
 	if (!v)
@@ -153,5 +142,5 @@ void BBox::init()
 
 }
 }
-#include <arki/types.tcc>
-// vim:set ts=4 sw=4:
+
+#include <arki/types/styled.tcc>

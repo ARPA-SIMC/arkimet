@@ -8,24 +8,33 @@
  */
 
 
-#include <arki/types.h>
-
-struct lua_State;
+#include <arki/types/styled.h>
 
 namespace arki {
 namespace types {
+
+namespace bbox {
+
+/// Style values
+enum class Style: unsigned char {
+    INVALID = 1,
+    POINT = 2,
+    BOX = 3,
+    HULL = 4,
+};
+
+}
 
 struct BBox;
 
 template<>
 struct traits<BBox>
 {
-	static const char* type_tag;
-	static const types::Code type_code;
-	static const size_t type_sersize_bytes;
-	static const char* type_lua_tag;
+    static const char* type_tag;
+    static const types::Code type_code;
+    static const size_t type_sersize_bytes;
 
-	typedef unsigned char Style;
+    typedef bbox::Style Style;
 };
 
 /**
@@ -36,22 +45,15 @@ struct traits<BBox>
  */
 struct BBox : public types::StyledType<BBox>
 {
-	/// Style values
-	//static const Style NONE = 0;
-	static const Style INVALID = 1;
-	static const Style POINT = 2;
-	static const Style BOX = 3;
-	static const Style HULL = 4;
-
 	/// Convert a string into a style
 	static Style parseStyle(const std::string& str);
 	/// Convert a style into its string representation
 	static std::string formatStyle(Style s);
 
     /// CODEC functions
-    static std::unique_ptr<BBox> decode(BinaryDecoder& dec);
+    static std::unique_ptr<BBox> decode(core::BinaryDecoder& dec);
     static std::unique_ptr<BBox> decodeString(const std::string& val);
-    static std::unique_ptr<BBox> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<BBox> decode_structure(const structured::Keys& keys, const structured::Reader& val);
 
     // Register this type tree with the type system
     static void init();
@@ -64,9 +66,8 @@ namespace bbox {
 struct INVALID : public BBox
 {
     Style style() const override;
-    void encodeWithoutEnvelope(BinaryEncoder& enc) const override;
+    void encodeWithoutEnvelope(core::BinaryEncoder& enc) const override;
     std::ostream& writeToOstream(std::ostream& o) const override;
-    const char* lua_type_name() const override;
 
     int compare_local(const BBox& o) const override;
     bool equals(const Type& o) const override;

@@ -40,18 +40,19 @@ std::string tempfile_to_string(std::function<void(arki::utils::sys::NamedFileDes
 void fill(Metadata& md)
 {
     using namespace arki::types;
+    using namespace arki::types::values;
 
     ValueBag testValues;
-    testValues.set("foo", Value::createInteger(5));
-    testValues.set("bar", Value::createInteger(5000));
-    testValues.set("baz", Value::createInteger(-200));
-    testValues.set("moo", Value::createInteger(0x5ffffff));
-    testValues.set("antani", Value::createInteger(-1));
-    testValues.set("blinda", Value::createInteger(0));
-    testValues.set("supercazzola", Value::createInteger(-1234567));
-    testValues.set("pippo", Value::createString("pippo"));
-    testValues.set("pluto", Value::createString("12"));
-    testValues.set("cippo", Value::createString(""));
+    testValues.set("foo", Value::create_integer(5));
+    testValues.set("bar", Value::create_integer(5000));
+    testValues.set("baz", Value::create_integer(-200));
+    testValues.set("moo", Value::create_integer(0x5ffffff));
+    testValues.set("antani", Value::create_integer(-1));
+    testValues.set("blinda", Value::create_integer(0));
+    testValues.set("supercazzola", Value::create_integer(-1234567));
+    testValues.set("pippo", Value::create_string("pippo"));
+    testValues.set("pluto", Value::create_string("12"));
+    testValues.set("cippo", Value::create_string(""));
 
     md.set(Reftime::createPosition(core::Time(2006, 5, 4, 3, 2, 1)));
     md.set(origin::GRIB1::create(1, 2, 3));
@@ -69,15 +70,15 @@ inline bool cmpmd(Metadata& md1, Metadata& md2)
     if (md1 != md2)
     {
         cerr << "----- The two metadata differ.  First one:" << endl;
-        md1.write_yaml(cerr);
-        if (md1.source().style() == types::Source::INLINE)
+        cerr << md1.to_yaml();
+        if (md1.source().style() == types::Source::Style::INLINE)
         {
             const auto& buf = md1.get_data().read();
             cerr << "-- Inline data:" << string((const char*)buf.data(), buf.size()) << endl;
         }
         cerr << "----- Second one:" << endl;
-        md2.write_yaml(cerr);
-        if (md2.source().style() == types::Source::INLINE)
+        cerr << md2.to_yaml();
+        if (md2.source().style() == types::Source::Style::INLINE)
         {
             const auto& buf = md2.get_data().read();
             cerr << "-- Inline data:" << string((const char*)buf.data(), buf.size()) << endl;
@@ -127,45 +128,45 @@ add_method("stream", [] {
 
 	size_t cur = 0;
 
-	// Not a full metadata yet
-	mdstream.readData(input.data() + cur, end1 - 20);
-	cur += end1-20;
-	ensure_equals(results.size(), 0u);
+    // Not a full metadata yet
+    mdstream.readData(input.data() + cur, end1 - 20);
+    cur += end1-20;
+    wassert(actual(results.size()) == 0u);
 
-	// The full metadata but not the data
-	mdstream.readData(input.data() + cur, 10);
-	cur += 10;
-	ensure_equals(results.size(), 0u);
+    // The full metadata but not the data
+    mdstream.readData(input.data() + cur, 10);
+    cur += 10;
+    wassert(actual(results.size()) == 0u);
 
-	// The full metadata and the data and part of the next metadata
-	mdstream.readData(input.data() + cur, 40);
-	cur += 40;
-	ensure_equals(results.size(), 1u);
+    // The full metadata and the data and part of the next metadata
+    mdstream.readData(input.data() + cur, 40);
+    cur += 40;
+    wassert(actual(results.size()) == 1u);
 
 	// All the rest
 	mdstream.readData(input.data() + cur, end2-cur);
 	cur = end2;
 
-	// No bytes must be left to decode
-	ensure_equals(mdstream.countBytesUnprocessed(), 0u);
+    // No bytes must be left to decode
+    wassert(actual(mdstream.countBytesUnprocessed()) == 0u);
 
-	// See that we've got what we expect
-	ensure_equals(results.size(), 2u);
-	ensure(cmpmd(md1, results[0]));
-	ensure(cmpmd(md2, results[1]));
-	
+    // See that we've got what we expect
+    wassert(actual(results.size()) == 2u);
+    wassert_true(cmpmd(md1, results[0]));
+    wassert_true(cmpmd(md2, results[1]));
+
 	results.clear();
 
 	// Try feeding all the data at the same time
 	mdstream.readData(input.data(), input.size());
 
-	// No bytes must be left to decode
-	ensure_equals(mdstream.countBytesUnprocessed(), 0u);
+    // No bytes must be left to decode
+    wassert(actual(mdstream.countBytesUnprocessed()) == 0u);
 
-	// See that we've got what we expect
-	ensure_equals(results.size(), 2u);
-	ensure(cmpmd(md1, results[0]));
-	ensure(cmpmd(md2, results[1]));
+    // See that we've got what we expect
+    wassert(actual(results.size()) == 2u);
+    wassert_true(cmpmd(md1, results[0]));
+    wassert_true(cmpmd(md2, results[1]));
 });
 
 // Send data split in less chunks than we have metadata
@@ -190,17 +191,17 @@ add_method("split", [] {
 
     // Send the data in two halves
     mdstream.readData(str.data(), str.size() / 2);
-    ensure_equals(results.size(), 1u);
+    wassert(actual(results.size()) == 1u);
     mdstream.readData(str.data() + str.size() / 2, str.size() - (str.size() / 2));
 
     // No bytes must be left to decode
-    ensure_equals(mdstream.countBytesUnprocessed(), 0u);
+    wassert(actual(mdstream.countBytesUnprocessed()) == 0u);
 
     // See that we've got what we expect
-    ensure_equals(results.size(), 3u);
-    ensure(cmpmd(md, results[0]));
-    ensure(cmpmd(md, results[1]));
-    ensure(cmpmd(md, results[2]));
+    wassert(actual(results.size()) == 3u);
+    wassert_true(cmpmd(md, results[0]));
+    wassert_true(cmpmd(md, results[1]));
+    wassert_true(cmpmd(md, results[2]));
 });
 
 }

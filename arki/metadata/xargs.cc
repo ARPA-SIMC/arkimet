@@ -1,7 +1,6 @@
 #include "xargs.h"
 #include "arki/exceptions.h"
 #include "arki/metadata.h"
-#include "arki/utils.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/string.h"
 #include "arki/utils/subprocess.h"
@@ -48,10 +47,10 @@ void Xargs::start_batch(const std::string& new_format)
     tempfile = File::mkstemp(tf.get());
 }
 
-void Xargs::add_to_batch(Metadata& md)
+void Xargs::add_to_batch(std::shared_ptr<Metadata> md)
 {
     metadata::Clusterer::add_to_batch(md);
-    md.stream_data(tempfile);
+    md->stream_data(tempfile);
 }
 
 void Xargs::flush_batch()
@@ -132,9 +131,9 @@ static size_t parse_interval(const std::string& str)
     throw std::runtime_error("cannot parse interval name: unsupported interval: " + str + ".  Valid intervals are minute, hour, day, month and year");
 }
 
-void Xargs::set_max_bytes(const std::string& val)
+void Xargs::set_max_bytes(size_t val)
 {
-    max_bytes = parse_size(val);
+    max_bytes = val;
 }
 
 void Xargs::set_interval(const std::string& val)

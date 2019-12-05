@@ -52,8 +52,8 @@ the risk of accidentally corrupting existing data.
 
 ### Metadata
 
-The extraction of metadata is very flexible, and it can be customized with the
-simple and well known LUA scripting language.
+The extraction of metadata is very flexible, and it can be customized with
+Python scripts.
 
 Metadata contains timestamped annotations to track data workflow.
 
@@ -129,7 +129,7 @@ The formats used to handle metadata are:
 
 The file formats that can be scanned are:
  * WMO GRIB (edition 1 and edition 2), any template can be
-   supported via grib_api and LUA scripts
+   supported via eccodes and Python scripts
  * WMO BUFR (edition 3 and edition 4), via DB-All.e
  * HDF5, currently only used for ODIM radar data
  * VM2 ascii line-based format used by ARPAE-SIMC
@@ -173,7 +173,7 @@ Arkimet is Free Software, licensed under the GNU General Public License version 
 Arkimet should build and run on any reasonably recent Unix system, and has been
 tested on Debian, RedHat, Suse Linux and AIX systems.
 
-LUA version 5.0 or later is required for the import scripts http://www.lua.org/
+Python version 3.6 or later is required for the import scripts http://www.lua.org/
 
 SQLite is required for indexed datasets http://www.sqlite.org/ and an embedded
 version is included with arkimet and used if the system does not provide one.

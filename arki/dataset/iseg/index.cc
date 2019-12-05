@@ -1,8 +1,8 @@
-#include "config.h"
 #include "index.h"
 #include "arki/dataset/maintenance.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
+#include "arki/metadata/sort.h"
 #include "arki/matcher.h"
 #include "arki/matcher/reftime.h"
 #include "arki/dataset.h"
@@ -13,10 +13,8 @@
 #include "arki/types/value.h"
 #include "arki/summary.h"
 #include "arki/summary/stats.h"
-#include "arki/utils/files.h"
-#include "arki/sort.h"
 #include "arki/nag.h"
-#include "arki/runtime/io.h"
+#include "arki/utils/files.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
 
@@ -77,9 +75,9 @@ Index::~Index()
     delete m_others;
 }
 
-Pending Index::begin_transaction()
+core::Pending Index::begin_transaction()
 {
-    return Pending(new SqliteTransaction(m_db));
+    return core::Pending(new SqliteTransaction(m_db));
 }
 
 std::set<types::Code> Index::available_other_tables() const

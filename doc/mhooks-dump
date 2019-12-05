@@ -1,18 +1,17 @@
-DESCRIPTION end
-|\fBarki-dump\fP reads a stream of metadata and outputs a human-readable text
-|representation of its input.
-|.P
-|For convenience of parsing, the output of \fBarki-dump\fP follows the YAML
-|text file convensions.
+[DESCRIPTION]
+\fBarki-dump\fP reads a stream of metadata and outputs a human-readable text
+representation of its input.
+.P
+For convenience of parsing, the output of \fBarki-dump\fP follows the YAML
+text file convensions.
 
-OPTIONS end
-|.SH EXAMPLES
-|Here are some example invocations of \fBarki-dump\fP:
-|.P
-|.nf
-|  # Look at the contents of a grib file
-|  arki-scan-grib file.grib | arki-dump
-|
-|  # Look at the summary of the contents of a grib file
-|  arki-scan-grib file.grib | arki-summarise | arki-dump
+[EXAMPLES]
+Here are some example invocations of \fBarki-dump\fP:
+.P
+.nf
+  # Look at the contents of a grib file
+  arki-scan-grib file.grib | arki-dump
+
+  # Look at the summary of the contents of a grib file
+  arki-scan-grib file.grib | arki-summarise | arki-dump
 .fi

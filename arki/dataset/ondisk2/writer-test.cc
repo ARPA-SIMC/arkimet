@@ -7,14 +7,10 @@
 #include "arki/metadata/collection.h"
 #include "arki/types/source/blob.h"
 #include "arki/core/file.h"
-#include "arki/utils.h"
-#include "arki/core/file.h"
 #include "arki/utils/files.h"
 #include "arki/utils/sys.h"
 #include "arki/summary.h"
 #include "arki/nag.h"
-#include <sstream>
-#include <iostream>
 #include <algorithm>
 #include <unistd.h>
 #include <sys/types.h>
@@ -62,10 +58,10 @@ add_method("summary_invalidate", [](Fixture& f) {
     // Query the summary, there should be no data
     {
         auto reader = f.makeOndisk2Reader();
-        ensure(reader->hasWorkingIndex());
+        wassert_true(reader->hasWorkingIndex());
         Summary s;
         reader->query_summary(Matcher(), s);
-        ensure_equals(s.count(), 0u);
+        wassert(actual(s.count()) == 0u);
     }
 
     // Acquire files
@@ -74,10 +70,10 @@ add_method("summary_invalidate", [](Fixture& f) {
     // Query the summary again, there should be data
     {
         auto reader = f.makeOndisk2Reader();
-        ensure(reader->hasWorkingIndex());
+        wassert_true(reader->hasWorkingIndex());
         Summary s;
         reader->query_summary(Matcher(), s);
-        ensure_equals(s.count(), 3u);
+        wassert(actual(s.count()) == 3u);
     }
 });
 
@@ -136,19 +132,19 @@ add_method("testacquire", [](Fixture& f) {
     }
     metadata::TestCollection mdc("inbound/test.grib1");
     while (mdc.size() > 1) mdc.pop_back();
-    stringstream ss;
+
     auto batch = mdc.make_import_batch();
-    wassert(ondisk2::Writer::test_acquire(f.cfg, batch, ss));
+    wassert(ondisk2::Writer::test_acquire(f.cfg, batch));
     wassert(actual(batch[0]->result) == dataset::ACQ_OK);
     wassert(actual(batch[0]->dataset_name) == "testds");
 
     f.cfg.set("archive age", "1");
-    wassert(ondisk2::Writer::test_acquire(f.cfg, batch, ss));
+    wassert(ondisk2::Writer::test_acquire(f.cfg, batch));
     wassert(actual(batch[0]->result) == dataset::ACQ_ERROR);
     wassert(actual(batch[0]->dataset_name) == "");
 
     f.cfg.set("delete age", "1");
-    wassert(ondisk2::Writer::test_acquire(f.cfg, batch, ss));
+    wassert(ondisk2::Writer::test_acquire(f.cfg, batch));
     wassert(actual(batch[0]->result) == dataset::ACQ_OK);
     wassert(actual(batch[0]->dataset_name) == "testds");
 });

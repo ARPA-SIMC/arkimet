@@ -144,7 +144,6 @@ class Reader : public dataset::Reader
 protected:
     std::shared_ptr<const Config> m_config;
     http::CurlEasy m_curl;
-    bool m_mischief;
     void set_post_query(Request& request, const std::string& query);
     void set_post_query(Request& request, const dataset::DataQuery& q);
 
@@ -159,6 +158,7 @@ public:
     bool query_data(const dataset::DataQuery& q, metadata_dest_func) override;
     void query_summary(const Matcher& matcher, Summary& summary) override;
     void query_bytes(const dataset::ByteQuery& q, core::NamedFileDescriptor& out) override;
+    void query_bytes(const dataset::ByteQuery& q, core::AbstractOutputFile& out) override;
 
     static core::cfg::Sections load_cfg_sections(const std::string& path);
     static core::cfg::Section load_cfg_section(const std::string& path);
@@ -173,15 +173,7 @@ public:
      */
     static core::cfg::Sections getAliasDatabase(const std::string& server);
 
-    /**
-     * Introduce a syntax error in the next query sent to the server.
-     *
-     * This is only used by test suites: since the queries are preparsed
-     * client-side, there is no other obvious way to produce a repeatable error
-     * message in the server.  You have to call it before every query you want
-     * to fail.
-     */
-    void produce_one_wrong_query();
+    static std::string expand_remote_query(const core::cfg::Sections& remotes, const std::string& query);
 
     /**
      * Check if all the datasets in the given config are remote and from

@@ -3,13 +3,11 @@
 #include "arki/types/source/blob.h"
 #include "arki/segment.h"
 #include "arki/core/file.h"
-#include "arki/metadata/consumer.h"
+#include "arki/metadata/sort.h"
 #include "arki/matcher.h"
 #include "arki/summary.h"
-#include "arki/postprocess.h"
-#include "arki/sort.h"
-#include "arki/utils/files.h"
 #include "arki/scan.h"
+#include "arki/utils/files.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
 #include <sys/types.h>
@@ -59,8 +57,7 @@ core::cfg::Section File::read_config(const std::string& fname)
     {
         section.set("path", sys::abspath(fname));
         section.set("format", scan::Scanner::format_from_filename(fname, "arkimet"));
-        string name = str::basename(fname);
-        section.set("name", name);
+        section.set("name", fname);
     } else {
         size_t fpos = fname.find(':');
         if (fpos == string::npos)
@@ -79,10 +76,18 @@ core::cfg::Section File::read_config(const std::string& fname)
             throw runtime_error(ss.str());
         }
         section.set("path", sys::abspath(fname1));
-        section.set("name", str::basename(fname1));
+        section.set("name", fname1);
     }
 
     return section;
+}
+
+core::cfg::Sections File::read_configs(const std::string& fname)
+{
+    auto sec = read_config(fname);
+    core::cfg::Sections res;
+    res.obtain(sec.value("name")) = std::move(sec);
+    return res;
 }
 
 
@@ -96,20 +101,20 @@ FdFile::~FdFile()
 }
 
 
-static shared_ptr<sort::Stream> wrap_with_query(const dataset::DataQuery& q, metadata_dest_func& dest)
+static std::shared_ptr<metadata::sort::Stream> wrap_with_query(const dataset::DataQuery& q, metadata_dest_func& dest)
 {
     // Wrap with a stream sorter if we need sorting
-    shared_ptr<sort::Stream> sorter;
+    shared_ptr<metadata::sort::Stream> sorter;
     if (q.sorter)
     {
-        sorter.reset(new sort::Stream(*q.sorter, dest));
-        dest = [sorter](unique_ptr<Metadata> md) { return sorter->add(move(md)); };
+        sorter.reset(new metadata::sort::Stream(*q.sorter, dest));
+        dest = [sorter](std::shared_ptr<Metadata> md) { return sorter->add(md); };
     }
 
-    dest = [dest, &q](unique_ptr<Metadata> md) {
+    dest = [dest, &q](std::shared_ptr<Metadata> md) {
         // And filter using the query matcher
         if (!q.matcher(*md)) return true;
-        return dest(move(md));
+        return dest(md);
     };
 
     return sorter;
@@ -126,7 +131,7 @@ bool ArkimetFile::scan(const dataset::DataQuery& q, metadata_dest_func dest)
         if (!Metadata::read_file(fd, dest))
             return false;
     } else {
-        if (!Metadata::read_file(fd, [&](unique_ptr<Metadata>&& md) {
+        if (!Metadata::read_file(fd, [&](std::shared_ptr<Metadata> md) {
                     if (md->has_source_blob())
                     {
                         const auto& blob = md->sourceBlob();
@@ -135,7 +140,7 @@ bool ArkimetFile::scan(const dataset::DataQuery& q, metadata_dest_func dest)
                                 std::make_shared<core::lock::Null>());
                         md->sourceBlob().lock(reader);
                     }
-                    return dest(move(md));
+                    return dest(md);
                 }))
             return false;
     }

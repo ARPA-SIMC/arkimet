@@ -2,6 +2,7 @@
 #define ARKI_TYPES_UTILS_H
 
 #include <arki/types.h>
+#include <arki/core/fwd.h>
 #include <stdexcept>
 #include <string>
 #include <sstream>
@@ -10,23 +11,7 @@
 
 #include <arki/libconfig.h>
 
-#ifdef HAVE_LUA
-#include <arki/utils/lua.h>
-#endif
-
-#define LUATAG_TYPES "arki.types"
-
-struct lua_State;
-
 namespace arki {
-struct BinaryDecoder;
-
-namespace emitter {
-namespace memory {
-struct Mapping;
-}
-}
-
 namespace types {
 
 template<class F>
@@ -39,7 +24,7 @@ struct is_item_decoder<R(Args...)>
 };
 
 template<class R>
-struct is_item_decoder<R(BinaryDecoder&)>
+struct is_item_decoder<R(core::BinaryDecoder&)>
 {
     static constexpr bool value = true;
 };
@@ -52,73 +37,49 @@ struct is_item_decoder<R(BinaryDecoder&)>
  */
 struct MetadataType
 {
-    typedef std::unique_ptr<Type> (*item_decoder)(BinaryDecoder& dec);
+    typedef std::unique_ptr<Type> (*item_decoder)(core::BinaryDecoder& dec);
     typedef std::unique_ptr<Type> (*string_decoder)(const std::string& val);
-    typedef std::unique_ptr<Type> (*mapping_decoder)(const emitter::memory::Mapping& val);
-    typedef void (*lua_libloader)(lua_State* L);
-    typedef void (*intern_stats)();
+    typedef std::unique_ptr<Type> (*structure_decoder)(const structured::Keys& keys, const structured::Reader& reader);
 
-	types::Code type_code;
-	int serialisationSizeLen;
-	std::string tag;
-	item_decoder decode_func;
-	string_decoder string_decode_func;
-	mapping_decoder mapping_decode_func;
-	lua_libloader lua_loadlib_func;
-	intern_stats intern_stats_func;
-	
-	MetadataType(
-		types::Code type_code,
-		int serialisationSizeLen,
-		const std::string& tag,
-		item_decoder decode_func,
-		string_decoder string_decode_func,
-		mapping_decoder mapping_decode_func,
-		lua_libloader lua_loadlib_func,
-		intern_stats intern_stats_func = 0
-		);
-	~MetadataType();
+    types::Code type_code;
+    int serialisationSizeLen;
+    std::string tag;
+    item_decoder decode_func;
+    string_decoder string_decode_func;
+    structure_decoder structure_decode_func;
+
+    MetadataType(
+        types::Code type_code,
+        int serialisationSizeLen,
+        const std::string& tag,
+        item_decoder decode_func,
+        string_decoder string_decode_func,
+        structure_decoder structure_decode_func
+    );
+    ~MetadataType();
 
 	// Get information about the given metadata
 	static const MetadataType* get(types::Code);
 
     template<typename T>
-    static MetadataType create(intern_stats intern_stats_func = 0)
-    {
-        return MetadataType(
-            traits<T>::type_code,
-            traits<T>::type_sersize_bytes,
-            traits<T>::type_tag,
-            (MetadataType::item_decoder)T::decode,
-            (MetadataType::string_decoder)T::decodeString,
-            (MetadataType::mapping_decoder)T::decodeMapping,
-            T::lua_loadlib,
-            intern_stats_func
-        );
-    }
-
-    template<typename T>
-    static void register_type(intern_stats intern_stats_func = 0)
+    static void register_type()
     {
         static_assert(is_item_decoder<decltype(T::decode)>::value, "decode function must take a BinaryDecoder as argument");
         // FIXME: when we remove create() we can make MetadataType not register
         // itself and remove the need of this awkward new
-        new MetadataType(
+        auto type = new MetadataType(
             traits<T>::type_code,
             traits<T>::type_sersize_bytes,
             traits<T>::type_tag,
             (MetadataType::item_decoder)T::decode,
             (MetadataType::string_decoder)T::decodeString,
-            (MetadataType::mapping_decoder)T::decodeMapping,
-            T::lua_loadlib,
-            intern_stats_func
+            (MetadataType::structure_decoder)T::decode_structure
         );
+        register_type(type);
     }
 
-	static void lua_loadlib(lua_State* L);
+    static void register_type(MetadataType* type);
 };
-
-void debug_intern_stats();
 
 // Parse the outer style of a TYPE(val1, val2...) string
 template<typename T>

@@ -3,7 +3,10 @@
 
 #include <arki/core/fwd.h>
 #include <arki/types/fwd.h>
-#include <arki/itemset.h>
+#include <arki/metadata/fwd.h>
+#include <arki/structured/fwd.h>
+#include <arki/matcher/fwd.h>
+#include <arki/types/itemset.h>
 #include <arki/utils/geosfwd.h>
 #include <vector>
 #include <map>
@@ -12,32 +15,13 @@
 #include <memory>
 #include <iosfwd>
 
-struct lua_State;
-
 namespace arki {
-class Metadata;
-class Matcher;
-class Formatter;
-class BinaryDecoder;
-class Emitter;
-
-namespace emitter {
-namespace memory {
-class Mapping;
-}
-}
-
 namespace summary {
 struct Table;
 struct Stats;
 }
 
-namespace matcher {
-class AND;
-}
-
 namespace summary {
-class LuaIter;
 
 struct Visitor
 {
@@ -135,15 +119,15 @@ public:
      *
      * @returns false when end-of-file is reached
      */
-    bool read(BinaryDecoder& dec, const std::string& filename);
+    bool read(core::BinaryDecoder& dec, const std::string& filename);
 
     /**
      * Decode the summary, without the outer bundle headers, from the given buffer.
      */
-    void read_inner(BinaryDecoder& dec, unsigned version, const std::string& filename);
+    void read_inner(core::BinaryDecoder& dec, unsigned version, const std::string& filename);
 
     /// Decode from structured data
-	void read(const emitter::memory::Mapping& val);
+    void read(const structured::Keys& keys, const structured::Reader& val);
 
 	/**
 	 * Read data from the given file
@@ -166,7 +150,15 @@ public:
      * The filename string is used to generate nicer parse error messages when
      * throwing exceptions, and can be anything.
      */
-    void write(int out, const std::string& filename) const;
+    void write(core::NamedFileDescriptor& out) const;
+
+    /**
+     * Write the summary to the given output file.
+     *
+     * The filename string is used to generate nicer parse error messages when
+     * throwing exceptions, and can be anything.
+     */
+    void write(core::AbstractOutputFile& out) const;
 
 	/**
 	 * Write the summary to the given file name.
@@ -178,13 +170,21 @@ public:
 	 */
 	void writeAtomically(const std::string& filename);
 
+    /// Format the summary as a yaml string
+    std::string to_yaml(const Formatter* formatter=nullptr) const;
+
     /**
      * Write the summary as YAML text to the given output stream.
      */
-    void write_yaml(std::ostream& out, const Formatter* f=nullptr) const;
+    void write_yaml(core::NamedFileDescriptor& out, const Formatter* f=nullptr) const;
+
+    /**
+     * Write the summary as YAML text to the given output stream.
+     */
+    void write_yaml(core::AbstractOutputFile& out, const Formatter* f=nullptr) const;
 
     /// Serialise using an emitter
-    void serialise(Emitter& e, const Formatter* f=0) const;
+    void serialise(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const;
 
     /**
      * Encode to a string
@@ -265,45 +265,27 @@ public:
 	 */
 	std::unique_ptr<arki::utils::geos::Geometry> getConvexHull() const;
 
-	/**
-	 * Return all the unique combination of metadata items that are found
-	 * by the matcher in this summary.
-	 *
-	 * Only metadata items for which there is an expression in matcher are
-	 * present in the output.
-	 */
-	std::vector<ItemSet> resolveMatcher(const Matcher& matcher) const;
+    /**
+     * Return all the unique combination of metadata items that are found
+     * by the matcher in this summary.
+     *
+     * Only metadata items for which there is an expression in matcher are
+     * present in the output.
+     */
+    std::vector<types::ItemSet> resolveMatcher(const Matcher& matcher) const;
 
-	/**
-	 * Return all the unique combination of metadata items that are found
-	 * by the matcher in this summary.
-	 *
-	 * Metadata are added to res, sorted and avoiding duplicated.
-	 *
-	 * Return the number of matching items found (0 if nothing matched)
-	 */
-	size_t resolveMatcher(const Matcher& matcher, std::vector<ItemSet>& res) const;
+    /**
+     * Return all the unique combination of metadata items that are found
+     * by the matcher in this summary.
+     *
+     * Metadata are added to res, sorted and avoiding duplicated.
+     *
+     * Return the number of matching items found (0 if nothing matched)
+     */
+    size_t resolveMatcher(const Matcher& matcher, std::vector<types::ItemSet>& res) const;
 
-	// LUA functions
-	/// Push to the LUA stack a userdata to access this Origin
-	void lua_push(lua_State* L);
-
-	/**
-	 * Check that the element at \a idx is a Summary userdata
-	 *
-	 * @return the Summary element, or 0 if the check failed
-	 */
-	static Summary* lua_check(lua_State* L, int idx);
-
-	/**
-	 * Load summary functions into a lua VM
-	 */
-	static void lua_openlib(lua_State* L);
-
-	friend class matcher::AND;
+    friend class matcher::AND;
 };
-
-std::ostream& operator<<(std::ostream& o, const Summary& s);
 
 }
 #endif

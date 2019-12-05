@@ -1,8 +1,7 @@
 #include "config.h"
 
-#include <arki/matcher/quantity.h>
-#include <arki/matcher/utils.h>
-#include <arki/types/utils.h>
+#include "quantity.h"
+#include "arki/types/utils.h"
 
 #include <set>
 #include <string>
@@ -58,7 +57,7 @@ unique_ptr<MatchQuantity> MatchQuantity::parse(const std::string& pattern)
 
 void MatchQuantity::init()
 {
-    Matcher::register_matcher("quantity", TYPE_QUANTITY, (MatcherType::subexpr_parser)MatchQuantity::parse);
+    MatcherType::register_matcher("quantity", TYPE_QUANTITY, (MatcherType::subexpr_parser)MatchQuantity::parse);
 }
 
 }

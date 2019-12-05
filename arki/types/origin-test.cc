@@ -25,7 +25,7 @@ add_generic_test(
 add_method("grib1_details", [] {
     using namespace arki::types;
     unique_ptr<Origin> o = Origin::createGRIB1(1, 2, 3);
-    wassert(actual(o->style()) == Origin::GRIB1);
+    wassert(actual(o->style()) == Origin::Style::GRIB1);
     const origin::GRIB1* v = dynamic_cast<origin::GRIB1*>(o.get());
     wassert(actual(v->centre()) == 1u);
     wassert(actual(v->subcentre()) == 2u);
@@ -43,7 +43,7 @@ add_generic_test(
 add_method("grib2_details", [] {
     using namespace arki::types;
     unique_ptr<Origin> o = Origin::createGRIB2(1, 2, 3, 4, 5);
-    wassert(actual(o->style()) == Origin::GRIB2);
+    wassert(actual(o->style()) == Origin::Style::GRIB2);
     const origin::GRIB2* v = dynamic_cast<origin::GRIB2*>(o.get());
     wassert(actual(v->centre()) == 1u);
     wassert(actual(v->subcentre()) == 2u);
@@ -63,7 +63,7 @@ add_generic_test(
 add_method("bufr_details", [] {
     using namespace arki::types;
     unique_ptr<Origin> o = Origin::createBUFR(1, 2);
-    wassert(actual(o->style()) == Origin::BUFR);
+    wassert(actual(o->style()) == Origin::Style::BUFR);
     const origin::BUFR* v = dynamic_cast<origin::BUFR*>(o.get());
     wassert(actual(v->centre()) == 1u);
     wassert(actual(v->subcentre()) == 2u);
@@ -88,31 +88,19 @@ add_generic_test(
 add_method("odim_details", [] {
     using namespace arki::types;
     unique_ptr<Origin> o = Origin::createODIMH5("1", "2", "3");
-    wassert(actual(o->style()) == Origin::ODIMH5);
+    wassert(actual(o->style()) == Origin::Style::ODIMH5);
     const origin::ODIMH5* v = dynamic_cast<origin::ODIMH5*>(o.get());
     wassert(actual(v->getWMO()) == "1");
     wassert(actual(v->getRAD()) == "2");
     wassert(actual(v->getPLC()) == "3");
 
     o = Origin::createODIMH5("", "2", "3");
-    wassert(actual(o->style()) == Origin::ODIMH5);
+    wassert(actual(o->style()) == Origin::Style::ODIMH5);
     v = dynamic_cast<origin::ODIMH5*>(o.get());
     wassert(actual(v->getWMO()) == "");
     wassert(actual(v->getRAD()) == "2");
     wassert(actual(v->getPLC()) == "3");
 });
-
-add_lua_test("lua", "GRIB1(1, 2, 3)", R"(
-    function test(o)
-      if o.style ~= 'GRIB1' then return 'style is '..o.style..' instead of GRIB1' end
-      if o.centre ~= 1 then return 'o.centre first item is '..o.centre..' instead of 1' end
-      if o.subcentre ~= 2 then return 'o.subcentre first item is '..o.subcentre..' instead of 2' end
-      if o.process ~= 3 then return 'o.process first item is '..o.process..' instead of 3' end
-      if tostring(o) ~= 'GRIB1(001, 002, 003)' then return 'tostring gave '..tostring(o)..' instead of GRIB1(001, 002, 003)' end
-      local o1 = arki_origin.grib1(1, 2, 3)
-      if o ~= o1 then return 'new origin is '..tostring(o1)..' instead of '..tostring(o) end
-    end
-)");
 
 }
 

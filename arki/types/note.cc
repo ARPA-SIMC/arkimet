@@ -1,10 +1,10 @@
 #include "note.h"
 #include "utils.h"
 #include "arki/exceptions.h"
-#include "arki/binary.h"
-#include "arki/emitter.h"
-#include "arki/emitter/memory.h"
-#include "arki/utils/lua.h"
+#include "arki/core/binary.h"
+#include "arki/structured/emitter.h"
+#include "arki/structured/memory.h"
+#include "arki/structured/keys.h"
 #include "config.h"
 #include <sstream>
 #include <cmath>
@@ -23,7 +23,6 @@ namespace types {
 const char* traits<Note>::type_tag = TAG;
 const types::Code traits<Note>::type_code = CODE;
 const size_t traits<Note>::type_sersize_bytes = SERSIZELEN;
-const char* traits<Note>::type_lua_tag = LUATAG_TYPES ".note";
 
 int Note::compare(const Type& o) const
 {
@@ -55,14 +54,14 @@ bool Note::equals(const Type& o) const
 	return time == v->time && content == v->content;
 }
 
-void Note::encodeWithoutEnvelope(BinaryEncoder& enc) const
+void Note::encodeWithoutEnvelope(core::BinaryEncoder& enc) const
 {
     time.encodeWithoutEnvelope(enc);
     enc.add_varint(content.size());
     enc.add_raw(content);
 }
 
-unique_ptr<Note> Note::decode(BinaryDecoder& dec)
+unique_ptr<Note> Note::decode(core::BinaryDecoder& dec)
 {
     Time t = Time::decode(dec);
     size_t msg_len = dec.pop_varint<size_t>("note text size");
@@ -75,17 +74,17 @@ std::ostream& Note::writeToOstream(std::ostream& o) const
 	return o << "[" << time << "]" << content;
 }
 
-void Note::serialiseLocal(Emitter& e, const Formatter* f) const
+void Note::serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f) const
 {
-    e.add("ti"); time.serialiseList(e);
-    e.add("va", content);
+    e.add(keys.note_time); e.add(time);
+    e.add(keys.note_value, content);
 }
 
-unique_ptr<Note> Note::decodeMapping(const emitter::memory::Mapping& val)
+std::unique_ptr<Note> Note::decode_structure(const structured::Keys& keys, const structured::Reader& val)
 {
     return Note::create(
-            Time::decodeList(val["ti"].want_list("parsing Note time")),
-            val["va"].want_string("parsing Note content"));
+            val.as_time(keys.note_time, "Note time"),
+            val.as_string(keys.note_value, "Note content"));
 }
 
 unique_ptr<Note> Note::decodeString(const std::string& val)
@@ -99,19 +98,6 @@ unique_ptr<Note> Note::decodeString(const std::string& val)
         throw_consistency_error("parsing Note", "no closed square bracket found");
     return Note::create(Time::create_iso8601(val.substr(1, pos-1)), val.substr(pos+1));
 }
-
-#ifdef HAVE_LUA
-bool Note::lua_lookup(lua_State* L, const std::string& name) const
-{
-    if (name == "time")
-        time.lua_push(L);
-    else if (name == "content")
-        lua_pushlstring(L, content.data(), content.size());
-    else
-        return CoreType<Note>::lua_lookup(L, name);
-    return true;
-}
-#endif
 
 Note* Note::clone() const
 {
@@ -135,5 +121,5 @@ void Note::init()
 
 }
 }
-#include <arki/types.tcc>
-// vim:set ts=4 sw=4:
+
+#include <arki/types/core.tcc>

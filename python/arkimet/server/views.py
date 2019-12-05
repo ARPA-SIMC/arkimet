@@ -41,16 +41,16 @@ class ArkiView:
         """
         name = self.kwargs["name"]
         self.info["dataset"] = name
-        if not self.handler.server.cfg.has_section(name):
+        if name not in self.handler.server.cfg:
             raise NotFound("Dataset {} not found".format(name))
-        return dict(self.handler.server.cfg.items(name))
+        return self.handler.server.cfg[name]
 
     def get_dataset_reader(self):
         """
-        Return the arki.DatasetReader for the dataset named in
+        Return the arki.dataset.Reader for the dataset named in
         self.kwargs["name"]
         """
-        return arki.DatasetReader(self.get_dataset_config())
+        return arki.dataset.Reader(self.get_dataset_config())
 
     def get_query(self):
         """
@@ -204,9 +204,9 @@ class ArkiIndex(ArkiView):
             with page.body():
                 page.p("Available datasets:")
                 with page.ul():
-                    for sec in self.handler.server.cfg.sections():
+                    for name in self.handler.server.cfg.keys():
                         with page.li():
-                            page.a("/dataset/" + sec, sec)
+                            page.a("/dataset/" + name, name)
             page.a("/query", "Perform a query")
         self.send_headers()
         self.handler.wfile.write(page.out.getvalue().encode("utf-8"))
@@ -242,8 +242,10 @@ class ArkiAliases(ArkiView):
     def stream(self):
         # ./run-local arki-query "" http://localhost:8080
         self.send_headers()
-        out = arki.matcher_alias_database()
-        self.handler.wfile.write(out.encode("utf-8"))
+        out = arki.get_alias_database()
+        with io.StringIO() as buf:
+            out.write(buf)
+            self.handler.wfile.write(buf.getvalue().encode())
 
 
 class ArkiDatasetConfig(ArkiView):
@@ -325,31 +327,6 @@ class DatasetQueryData(ArkiDatasetQuery):
             data_start_hook=self.send_headers)
 
 
-class DatasetQueryRepMetadata(ArkiDatasetQuery):
-    content_type = "text/plain"
-    headers_ext = "txt"
-
-    def stream(self):
-        self.get_dataset_reader().query_bytes(
-            file=self.handler.wfile,
-            matcher=self.get_query(),
-            sort=self.get_sort(),
-            data_start_hook=self.send_headers,
-            metadata_report=self.request.values.get("command", ""))
-
-
-class DatasetQueryRepSummary(ArkiDatasetQuery):
-    content_type = "text/plain"
-    headers_ext = "txt"
-
-    def stream(self):
-        self.get_dataset_reader().query_bytes(
-            file=self.handler.wfile,
-            matcher=self.get_query(),
-            data_start_hook=self.send_headers,
-            summary_report=self.request.values.get("command", ""))
-
-
 class DatasetQueryMetadata(ArkiDatasetQuery):
     headers_ext = "arkimet"
 
@@ -424,10 +401,6 @@ def get_view_for_style(style):
         return DatasetQueryData
     elif style == "postprocess":
         return DatasetQueryPostprocess
-    elif style == "rep_metadata":
-        return DatasetQueryRepMetadata
-    elif style == "rep_summary":
-        return DatasetQueryRepSummary
     else:
         raise NotFound("TODO: query style {}".format(style))
 

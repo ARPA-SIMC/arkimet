@@ -5,17 +5,12 @@
 #include <arki/defs.h>
 #include <arki/core/fwd.h>
 #include <arki/types/fwd.h>
+#include <arki/structured/fwd.h>
 #include <string>
 #include <vector>
 #include <memory>
 
-struct lua_State;
-
 namespace arki {
-struct BinaryEncoder;
-struct BinaryDecoder;
-struct Emitter;
-struct Formatter;
 
 /// dynamic cast between two unique_ptr
 template<typename B, typename A>
@@ -48,12 +43,6 @@ template<typename B, typename A>
 std::unique_ptr<B> upcast(std::unique_ptr<A> orig)
 {
     return std::unique_ptr<B>(orig.release());
-}
-
-namespace emitter {
-namespace memory {
-struct Mapping;
-}
 }
 
 namespace types {
@@ -114,20 +103,20 @@ struct Type
 	/// Length in bytes of the size field when serialising
 	virtual size_t serialisationSizeLength() const = 0;
 
-	/**
-	 * Encoding to compact binary representation, without identification
-	 * envelope
-	 */
-	virtual void encodeWithoutEnvelope(BinaryEncoder& enc) const = 0;
+    /**
+     * Encoding to compact binary representation, without identification
+     * envelope
+     */
+    virtual void encodeWithoutEnvelope(core::BinaryEncoder& enc) const = 0;
 
     /**
      * Version of encode_without_envelope without redundant data, used for
      * indexing
      */
-    virtual void encode_for_indexing(BinaryEncoder& enc) const;
+    virtual void encode_for_indexing(core::BinaryEncoder& enc) const;
 
     /// Encode to compact binary representation, with identification envelope
-    void encodeBinary(BinaryEncoder& enc) const;
+    void encodeBinary(core::BinaryEncoder& enc) const;
 
     /// Encode to compact binary representation, with identification envelope
     std::vector<uint8_t> encodeBinary() const;
@@ -138,52 +127,14 @@ struct Type
     std::string to_string() const;
 
     /// Serialise using an emitter
-    virtual void serialise(Emitter& e, const Formatter* f=0) const;
-    virtual void serialiseLocal(Emitter& e, const Formatter* f=0) const = 0;
+    virtual void serialise(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const;
+    virtual void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const = 0;
 
 	/**
 	 * Return a matcher query (without the metadata type prefix) that
 	 * exactly matches this metadata item
 	 */
 	virtual std::string exactQuery() const;
-
-    /// Push to the LUA stack a userdata with a copy of this item
-    void lua_push(lua_State* L) const;
-
-	/**
-	 * Lookup members by name and push them in the Lua stack
-	 *
-	 * @return true if name matched a member and an element was pushed on
-	 *         stack, else false
-	 */
-	virtual bool lua_lookup(lua_State* L, const std::string& name) const;
-
-	/**
-	 * Return the lua type name (i.e. arki.type.<something>)
-	 * used to register the metatable for this type
-	 */
-	virtual const char* lua_type_name() const = 0;
-
-	/**
-	 * Given a metatable on top of the stack, register methods for this
-	 * object on it
-	 */
-	virtual void lua_register_methods(lua_State* L) const;
-
-    /**
-     * Check that the element at \a idx is a Type userdata
-     *
-     * @return the Type element, or undefined if the check failed
-     */
-    static Type* lua_check(lua_State* L, int idx, const char* prefix = "arki.types");
-
-    template<typename T>
-    static T* lua_check(lua_State* L, int idx)
-    {
-        return dynamic_cast<T*>(lua_check(L, idx, traits<T>::type_lua_tag));
-    }
-
-    static void lua_loadlib(lua_State* L);
 
     /**
      * Return true of either both pointers are null, or if they are both
@@ -225,87 +176,17 @@ inline std::ostream& operator<<(std::ostream& o, const Type& t)
 }
 
 
-
-template<typename BASE>
-struct CoreType : public Type
-{
-    types::Code type_code() const override { return traits<BASE>::type_code; }
-    size_t serialisationSizeLength() const override { return traits<BASE>::type_sersize_bytes; }
-    std::string tag() const override { return traits<BASE>::type_tag; }
-    const char* lua_type_name() const override { return traits<BASE>::type_lua_tag; }
-    static void lua_loadlib(lua_State* L);
-};
-
-template<typename BASE>
-struct StyledType : public CoreType<BASE>
-{
-	typedef typename traits<BASE>::Style Style;
-
-	// Get the element style
-	virtual Style style() const = 0;
-
-    // Default implementations of Type methods
-    void encodeWithoutEnvelope(BinaryEncoder& enc) const override;
-    int compare(const Type& o) const override;
-    virtual int compare_local(const BASE& o) const { return style() - o.style(); }
-
-    virtual void serialiseLocal(Emitter& e, const Formatter* f=0) const;
-
-	virtual bool lua_lookup(lua_State* L, const std::string& name) const;
-
-    static Style style_from_mapping(const emitter::memory::Mapping& m);
-};
-
-
 /**
  * Decode an item encoded in binary representation with envelope, from a
  * decoder
  */
-std::unique_ptr<Type> decode(BinaryDecoder& dec);
+std::unique_ptr<Type> decode(core::BinaryDecoder& dec);
 
-std::unique_ptr<Type> decodeInner(types::Code, BinaryDecoder& dec);
+std::unique_ptr<Type> decodeInner(types::Code, core::BinaryDecoder& dec);
 std::unique_ptr<Type> decodeString(types::Code, const std::string& val);
-std::unique_ptr<Type> decodeMapping(const emitter::memory::Mapping& m);
-/// Same as decodeMapping, but does not look for the item type in the mapping
-std::unique_ptr<Type> decodeMapping(types::Code, const emitter::memory::Mapping& m);
+std::unique_ptr<Type> decode_structure(const structured::Keys& keys, const structured::Reader& reader);
+std::unique_ptr<Type> decode_structure(const structured::Keys& keys, types::Code code, const structured::Reader& reader);
 std::string tag(types::Code);
-
-
-/**
- * Read a data bundle from a POSIX file descriptor
- */
-struct Bundle
-{
-    /// Bundle signature
-    std::string signature;
-    /// Bundle version
-    unsigned version;
-    /// Data length
-    size_t length;
-    /// Bundle data
-    std::vector<uint8_t> data;
-
-    /**
-     * Read only the bundle header
-     *
-     * @return true if a bundle header was read, false on end of file
-     */
-    bool read_header(core::NamedFileDescriptor& fd);
-
-    /**
-     * Read the bundle data after read_header has been called
-     *
-     * @return true if all bundle data was read, false on end of file
-     */
-    bool read_data(core::NamedFileDescriptor& fd);
-
-    /**
-     * read_header and read_data together
-     *
-     * @return true if all was read, false on end of file
-     */
-    bool read(core::NamedFileDescriptor& fd);
-};
 
 }
 

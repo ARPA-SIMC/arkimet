@@ -32,16 +32,16 @@ struct FixedTime : public SessionTime
 
 }
 
-SessionTime::Override::Override(SessionTime* orig)
+SessionTimeOverride::SessionTimeOverride(SessionTime* orig)
     : orig(orig) {}
 
-SessionTime::Override::Override(Override&& o)
+SessionTimeOverride::SessionTimeOverride(SessionTimeOverride&& o)
     : orig(o.orig)
 {
     o.orig = nullptr;
 }
 
-SessionTime::Override& SessionTime::Override::operator=(Override&& o)
+SessionTimeOverride& SessionTimeOverride::operator=(SessionTimeOverride&& o)
 {
     if (&o == this) return *this;
     orig = o.orig;
@@ -49,7 +49,7 @@ SessionTime::Override& SessionTime::Override::operator=(Override&& o)
     return *this;
 }
 
-SessionTime::Override::~Override()
+SessionTimeOverride::~SessionTimeOverride()
 {
     if (orig != nullptr)
     {
@@ -81,12 +81,12 @@ core::Time SessionTime::age_threshold(unsigned age) const
     return core::Time(t);
 }
 
-SessionTime::Override SessionTime::local_override(time_t new_value)
+SessionTimeOverride SessionTime::local_override(time_t new_value)
 {
     if (!current_session_time)
         current_session_time = new CurrentTime;
 
-    SessionTime::Override res(current_session_time);
+    SessionTimeOverride res(current_session_time);
     current_session_time = new FixedTime(new_value);
     return res;
 }

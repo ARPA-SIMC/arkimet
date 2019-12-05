@@ -1,10 +1,8 @@
 #ifndef ARKI_TYPES_NOTE_H
 #define ARKI_TYPES_NOTE_H
 
-#include <arki/types.h>
+#include <arki/types/core.h>
 #include <arki/core/time.h>
-
-struct lua_State;
 
 namespace arki {
 namespace types {
@@ -14,12 +12,9 @@ struct Note;
 template<>
 struct traits<Note>
 {
-	static const char* type_tag;
-	static const types::Code type_code;
-	static const size_t type_sersize_bytes;
-	static const char* type_lua_tag;
-
-	typedef unsigned char Style;
+    static const char* type_tag;
+    static const types::Code type_code;
+    static const size_t type_sersize_bytes;
 };
 
 /**
@@ -38,12 +33,11 @@ struct Note : public CoreType<Note>
     bool equals(const Type& o) const override;
 
     /// CODEC functions
-    void encodeWithoutEnvelope(BinaryEncoder& enc) const override;
-    static std::unique_ptr<Note> decode(BinaryDecoder& dec);
+    void encodeWithoutEnvelope(core::BinaryEncoder& enc) const override;
+    static std::unique_ptr<Note> decode(core::BinaryDecoder& dec);
     static std::unique_ptr<Note> decodeString(const std::string& val);
     std::ostream& writeToOstream(std::ostream& o) const override;
-    void serialiseLocal(Emitter& e, const Formatter* f=0) const override;
-    bool lua_lookup(lua_State* L, const std::string& name) const override;
+    void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
 
     Note* clone() const override;
 
@@ -55,7 +49,7 @@ struct Note : public CoreType<Note>
 
     /// Create a note with the given time and content
     static std::unique_ptr<Note> create(const core::Time& time, const std::string& content);
-    static std::unique_ptr<Note> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<Note> decode_structure(const structured::Keys& keys, const structured::Reader& val);
 };
 
 }

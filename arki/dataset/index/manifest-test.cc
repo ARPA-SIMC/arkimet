@@ -1,10 +1,8 @@
-#include "config.h"
 #include "arki/core/file.h"
 #include "arki/dataset/tests.h"
 #include "arki/dataset/index/manifest.h"
 #include "arki/dataset/maintenance.h"
 #include "arki/metadata.h"
-#include "arki/metadata/consumer.h"
 #include "arki/metadata/collection.h"
 #include "arki/matcher.h"
 #include "arki/summary.h"
@@ -45,16 +43,16 @@ add_method("exists", [] {
     clean();
 
     // Empty dirs do not show up as having a manifest
-    ensure(!Manifest::exists("testds/.archive/last"));
+    wassert_false(Manifest::exists("testds/.archive/last"));
 
     // An empty MANIFEST file counts as an empty manifest
     system("touch testds/.archive/last/MANIFEST");
-    ensure(Manifest::exists("testds/.archive/last"));
+    wassert_true(Manifest::exists("testds/.archive/last"));
     sys::unlink_ifexists("testds/.archive/last/MANIFEST");
 
     // Same if there is a sqlite manifest
     system("touch testds/.archive/last/index.sqlite");
-    ensure(Manifest::exists("testds/.archive/last"));
+    wassert_true(Manifest::exists("testds/.archive/last"));
     sys::unlink_ifexists("testds/.archive/last/index.sqlite");
 });
 
@@ -84,7 +82,7 @@ add_method("empty", [] {
     m->openRO();
 
     vector<string> files = m->file_list(Matcher());
-    ensure(files.empty());
+    wassert_true(files.empty());
 });
 
 // Test creating a new manifest
@@ -92,11 +90,11 @@ add_method("create", [] {
     clean();
 
     // Opening a missing manifest read-write creates a new one
-    ensure(!sys::exists("testds/.archive/last/" + idxfname()));
+    wassert(actual_file("testds/.archive/last/" + idxfname()).not_exists());
     std::unique_ptr<Manifest> m = Manifest::create("testds/.archive/last", core::lock::policy_ofd);
     m->openRW();
     m->flush();
-    ensure(sys::exists("testds/.archive/last/" + idxfname()));
+    wassert(actual_file("testds/.archive/last/" + idxfname()).exists());
 
     size_t count = 0;
     m->list_segments([&](const std::string&) { ++count; });
@@ -118,20 +116,20 @@ add_method("add_remove", [] {
 
     Summary s;
     auto reader = Segment::detect_reader("grib", ".", "inbound/test.grib1", "inbound/test.grib1", std::make_shared<core::lock::Null>());
-    reader->scan([&](unique_ptr<Metadata> md) { s.add(*md); return true; });
+    reader->scan([&](std::shared_ptr<Metadata> md) { s.add(*md); return true; });
 
     m->acquire("a.grib1", 1000010, s);
     m->acquire("foo/b.grib1", 1000011, s);
 
     vector<string> files = m->file_list(Matcher());
-    ensure_equals(files.size(), 2u);
-    ensure_equals(files[0], "a.grib1");
-    ensure_equals(files[1], "foo/b.grib1");
+    wassert(actual(files.size()) == 2u);
+    wassert(actual(files[0]) == "a.grib1");
+    wassert(actual(files[1]) == "foo/b.grib1");
 
     m->remove("a.grib1");
     files = m->file_list(Matcher());
-    ensure_equals(files.size(), 1u);
-    ensure_equals(files[0], "foo/b.grib1");
+    wassert(actual(files.size()) == 1u);
+    wassert(actual(files[0]) == "foo/b.grib1");
 });
 
 // TODO: Retest with sqlite

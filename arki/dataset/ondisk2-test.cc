@@ -12,8 +12,6 @@
 #include "arki/utils/sys.h"
 #include "arki/types/reftime.h"
 #include <unistd.h>
-#include <sys/fcntl.h>
-#include <sstream>
 #include <iostream>
 
 using namespace std;
@@ -199,11 +197,11 @@ add_method("acquire_replace", [](Fixture& f) {
 
         // Make sure we're not getting the deleted element
         const source::Blob& blob0 = mdc[0].sourceBlob();
-        ensure(blob0.offset > 0);
+        wassert(actual(blob0.offset) > 0);
         const source::Blob& blob1 = mdc[1].sourceBlob();
-        ensure(blob1.offset > 0);
+        wassert(actual(blob1.offset) > 0);
         const source::Blob& blob2 = mdc[2].sourceBlob();
-        ensure(blob2.offset > 0);
+        wassert(actual(blob2.offset) > 0);
     }
 
     // Test querying the summary
@@ -224,7 +222,7 @@ add_method("query_first_reftime_extreme", [](Fixture& f) {
     wassert(actual(summary.count()) == 3u);
 
     unique_ptr<Reftime> rt = summary.getReferenceTime();
-    ensure_equals(rt->style(), Reftime::PERIOD);
+    wassert(actual(rt->style()) == Reftime::Style::PERIOD);
     unique_ptr<reftime::Period> p = downcast<reftime::Period>(move(rt));
     metadata::Collection mdc(*reader, Matcher::parse("origin:GRIB1,80; reftime:=" + p->begin.to_iso8601()));
     wassert(actual(mdc.size()) == 1u);

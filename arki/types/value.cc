@@ -1,16 +1,13 @@
-#include <arki/types/value.h>
-#include <arki/types/utils.h>
-#include <arki/binary.h>
-#include <arki/utils/string.h>
-#include <arki/emitter.h>
-#include <arki/emitter/memory.h>
-#include "config.h"
+#include "arki/types/value.h"
+#include "arki/types/utils.h"
+#include "arki/core/binary.h"
+#include "arki/utils/string.h"
+#include "arki/structured/emitter.h"
+#include "arki/structured/memory.h"
+#include "arki/structured/keys.h"
+#include "arki/libconfig.h"
 #include <iomanip>
 #include <sstream>
-
-#ifdef HAVE_LUA
-#include <arki/utils/lua.h>
-#endif
 
 #define CODE TYPE_VALUE
 #define TAG "value"
@@ -25,7 +22,6 @@ namespace types {
 const char* traits<Value>::type_tag = TAG;
 const types::Code traits<Value>::type_code = CODE;
 const size_t traits<Value>::type_sersize_bytes = SERSIZELEN;
-const char* traits<Value>::type_lua_tag = LUATAG_TYPES ".run";
 
 bool Value::equals(const Type& o) const
 {
@@ -54,7 +50,7 @@ int Value::compare(const Type& o) const
     return 1;
 }
 
-void Value::encodeWithoutEnvelope(BinaryEncoder& enc) const
+void Value::encodeWithoutEnvelope(core::BinaryEncoder& enc) const
 {
     enc.add_raw(buffer);
 }
@@ -64,12 +60,12 @@ std::ostream& Value::writeToOstream(std::ostream& o) const
     return o << str::encode_cstring(buffer);
 }
 
-void Value::serialiseLocal(Emitter& e, const Formatter* f) const
+void Value::serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f) const
 {
-    e.add("va", buffer);
+    e.add(keys.value_value, buffer);
 }
 
-unique_ptr<Value> Value::decode(BinaryDecoder& dec)
+unique_ptr<Value> Value::decode(core::BinaryDecoder& dec)
 {
     return Value::create(dec.pop_string(dec.size, "'value' metadata type"));
 }
@@ -80,10 +76,11 @@ unique_ptr<Value> Value::decodeString(const std::string& val)
     return Value::create(str::decode_cstring(val, len));
 }
 
-unique_ptr<Value> Value::decodeMapping(const emitter::memory::Mapping& val)
+std::unique_ptr<Value> Value::decode_structure(const structured::Keys& keys, const structured::Reader& val)
 {
-    return Value::create(val["va"].want_string("parsing item value encoded in metadata"));
+    return Value::create(val.as_string(keys.value_value, "item value encoded in metadata"));
 }
+
 
 Value* Value::clone() const
 {
@@ -99,18 +96,6 @@ unique_ptr<Value> Value::create(const std::string& buf)
     return unique_ptr<Value>(val);
 }
 
-void Value::lua_loadlib(lua_State* L)
-{
-#if 0
-	static const struct luaL_Reg lib [] = {
-		{ "minute", arkilua_new_minute },
-		{ NULL, NULL }
-	};
-	luaL_openlib(L, "arki_run", lib, 0);
-	lua_pop(L, 1);
-#endif
-}
-
 void Value::init()
 {
     MetadataType::register_type<Value>();
@@ -118,5 +103,4 @@ void Value::init()
 
 }
 }
-#include <arki/types.tcc>
-// vim:set ts=4 sw=4:
+#include <arki/types/core.tcc>

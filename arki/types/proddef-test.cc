@@ -26,18 +26,6 @@ add_generic_test("grib_1",
     "GRIB(count=1,pippo=pippo)",
     { "GRIB(count=2,pippo=pippo)" });
 
-add_lua_test("lua", "GRIB(uno=1,pippo=pippo)", R"(
-    function test(o)
-      if o.style ~= 'GRIB' then return 'style is '..o.style..' instead of GRIB' end
-      v = o.val
-      if v['uno'] ~= 1 then return 'v[\'uno\'] is '..v['uno']..' instead of 1' end
-      if v['pippo'] ~= 'pippo' then return 'v[\'pippo\'] is '..v['pippo']..' instead of \'pippo\'' end
-      if tostring(o) ~= 'GRIB(pippo=pippo, uno=1)' then return 'tostring gave '..tostring(o)..' instead of GRIB(pippo=pippo, uno=1)' end
-      o1 = arki_proddef.grib{uno=1, pippo='pippo'}
-      if o ~= o1 then return 'new proddef is '..tostring(o1)..' instead of '..tostring(o) end
-    end
-)");
-
 }
 
 }

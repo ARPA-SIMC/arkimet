@@ -91,12 +91,15 @@ public:
     ~LocalReader();
 
     // Base implementations that queries the archives if they exist
-    bool query_data(const dataset::DataQuery& q, std::function<bool(std::unique_ptr<Metadata>)> dest) override;
+    bool query_data(const dataset::DataQuery& q, metadata_dest_func dest) override;
 
     // Base implementations that queries the archives if they exist
     void query_summary(const Matcher& matcher, Summary& summary) override;
 
+    /// Read the configuration for the given dataset. path must point to a directory
     static core::cfg::Section read_config(const std::string& path);
+
+    static core::cfg::Sections read_configs(const std::string& path);
 };
 
 class LocalWriter : public Writer
@@ -110,7 +113,7 @@ public:
     /// Return the dataset path
     const std::string& path() const { return config().path; }
 
-    static void test_acquire(const core::cfg::Section& cfg, WriterBatch& batch, std::ostream& out);
+    static void test_acquire(const core::cfg::Section& cfg, WriterBatch& batch);
 };
 
 struct LocalChecker : public LocalBase<Checker, ArchivesChecker>

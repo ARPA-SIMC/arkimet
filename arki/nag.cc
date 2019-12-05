@@ -1,44 +1,7 @@
-/*
- * nag - Verbose and debug output support
- *
- * Copyright (C) 2005--2011  ARPAE-SIMC <simc-urp@arpae.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
-#include "config.h"
-
-#include <arki/nag.h>
-
-#include <cstdlib>
+#include "nag.h"
 #include <cstdio>
 #include <cstdarg>
-
-#ifdef __DATE__
-#define DATE __DATE__
-#else
-#define DATE "??? ?? ????"
-#endif
-
-#ifdef __TIME__
-#define TIME __TIME__
-#else
-#define TIME "??:??:??"
-#endif
+#include <stdexcept>
 
 using namespace std;
 
@@ -47,110 +10,179 @@ namespace nag {
 
 static bool _verbose = false;
 static bool _debug = false;
-static bool _testing = false;
-static TestCollect* collector = 0;
+static Handler* handler = nullptr;
+
+
+Handler::~Handler()
+{
+    if (installed)
+        handler = orig;
+}
+
+void Handler::install()
+{
+    if (installed)
+        throw std::runtime_error("Cannot install the same nag handler twice");
+    orig = handler;
+    handler = this;
+    installed = true;
+}
+
+std::string Handler::format(const char* fmt, va_list ap)
+{
+    // Use a copy of ap to compute the size, since a va_list can be iterated
+    // only once
+    va_list ap1;
+    va_copy(ap1, ap);
+    auto size = vsnprintf(nullptr, 0, fmt, ap1);
+    va_end(ap1);
+
+    std::string res(size + 1, '\0');
+    // TODO: remove the const cast when we have C++17
+    vsnprintf(const_cast<char*>(res.data()), size + 1, fmt, ap);
+    res.resize(size);
+
+    return res;
+}
+
+
+void StderrHandler::warning(const char* fmt, va_list ap)
+{
+    vfprintf(stderr, fmt, ap);
+    putc('\n', stderr);
+}
+
+void StderrHandler::verbose(const char* fmt, va_list ap)
+{
+    vfprintf(stderr, fmt, ap);
+    putc('\n', stderr);
+}
+
+void StderrHandler::debug(const char* fmt, va_list ap)
+{
+    vfprintf(stderr, fmt, ap);
+    putc('\n', stderr);
+}
+
+
+CollectHandler::CollectHandler(bool verbose, bool debug)
+    : _verbose(verbose), _debug(debug)
+{
+}
+
+CollectHandler::~CollectHandler()
+{
+    for (const auto& str: collected)
+    {
+        fwrite(str.data(), str.size(), 1, stderr);
+        putc('\n', stderr);
+    }
+}
+
+void CollectHandler::clear()
+{
+    collected.clear();
+}
+
+void CollectHandler::warning(const char* fmt, va_list ap)
+{
+    collected.push_back("W:" + format(fmt, ap));
+}
+
+void CollectHandler::verbose(const char* fmt, va_list ap)
+{
+    if (!_verbose)
+        return;
+    collected.push_back("V:" + format(fmt, ap));
+}
+
+void CollectHandler::debug(const char* fmt, va_list ap)
+{
+    if (!_debug)
+        return;
+    collected.push_back("D:" + format(fmt, ap));
+}
+
 
 void init(bool verbose, bool debug, bool testing)
 {
-	_testing = testing;
-	_verbose = verbose;
-	if (debug)
-		_debug = _verbose = true;
+    if (testing)
+    {
+        _verbose = true;
+        _debug = true;
+    } else {
+        _verbose = verbose;
+        if (debug)
+            _debug = _verbose = true;
+
+        if (!handler)
+            handler = new StderrHandler;
+    }
 }
 
 bool is_verbose() { return _verbose; }
 bool is_debug() { return _debug; }
 
+
 void warning(const char* fmt, ...)
 {
-    if (collector)
-    {
-        va_list ap;
-        va_start(ap, fmt);
-        collector->collect(fmt, ap);
+    if (!handler) return;
+
+    va_list ap;
+    va_start(ap, fmt);
+    try {
+        handler->warning(fmt, ap);
+    } catch (...) {
         va_end(ap);
-        return;
+        throw;
     }
-
-	if (_testing) return;
-
-	va_list ap;
-	va_start(ap, fmt);
-	vfprintf(stderr, fmt, ap);
-	va_end(ap);
-	putc('\n', stderr);
+    va_end(ap);
 }
 
 void verbose(const char* fmt, ...)
 {
-    if (collector && collector->verbose)
-    {
-        va_list ap;
-        va_start(ap, fmt);
-        collector->collect(fmt, ap);
+    if (!_verbose || !handler) return;
+
+    va_list ap;
+    va_start(ap, fmt);
+    try {
+        handler->verbose(fmt, ap);
+    } catch (...) {
         va_end(ap);
-        return;
+        throw;
     }
-
-	if (!_verbose) return;
-
-	va_list ap;
-	va_start(ap, fmt);
-	vfprintf(stderr, fmt, ap);
-	va_end(ap);
-	putc('\n', stderr);
+    va_end(ap);
 }
 
 void debug(const char* fmt, ...)
 {
-    if (collector && collector->debug)
-    {
-        va_list ap;
-        va_start(ap, fmt);
-        collector->collect(fmt, ap);
+    if (!_debug || !handler) return;
+
+    va_list ap;
+    va_start(ap, fmt);
+    try {
+        handler->debug(fmt, ap);
+    } catch (...) {
         va_end(ap);
+        throw;
+    }
+    va_end(ap);
+}
+
+void debug_tty(const char* fmt, ...)
+{
+    FILE* tty = fopen("/dev/tty", "wt");
+    if (!tty)
         return;
-    }
 
-	if (!_debug) return;
-
-	va_list ap;
-	va_start(ap, fmt);
-	vfprintf(stderr, fmt, ap);
-	va_end(ap);
-	putc('\n', stderr);
+    va_list ap;
+    va_start(ap, fmt);
+    vfprintf(tty, fmt, ap);
+    putc('\n', tty);
+    va_end(ap);
+    fclose(tty);
 }
 
-TestCollect::TestCollect(bool verbose, bool debug)
-    : previous_collector(collector), verbose(verbose), debug(debug)
-{
-    collector = this;
-}
-
-TestCollect::~TestCollect()
-{
-    collector = previous_collector;
-    for (vector<string>::const_iterator i = collected.begin();
-            i != collected.end(); ++i)
-    {
-        fwrite(i->data(), i->size(), 1, stderr);
-        putc('\n', stderr);
-    }
-}
-
-void TestCollect::collect(const char* fmt, va_list ap)
-{
-    char buf[1024];
-    int size = vsnprintf(buf, 1024, fmt, ap);
-    if (size > 1024)
-        size = 1024;
-    collected.push_back(string(buf, size));
-}
-
-void TestCollect::clear()
-{
-    collected.clear();
-}
 
 }
 }

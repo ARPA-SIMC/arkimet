@@ -2,8 +2,8 @@
 #include "metadata/data.h"
 #include "metadata/collection.h"
 #include "core/file.h"
+#include "core/binary.h"
 #include "metadata/tests.h"
-#include "tests/lua.h"
 #include "types/origin.h"
 #include "types/product.h"
 #include "types/level.h"
@@ -13,9 +13,9 @@
 #include "types/proddef.h"
 #include "types/assigneddataset.h"
 #include "types/source/blob.h"
-#include "binary.h"
-#include "emitter/json.h"
-#include "emitter/memory.h"
+#include "structured/keys.h"
+#include "structured/json.h"
+#include "structured/memory.h"
 #include "utils/sys.h"
 #include "utils/files.h"
 #include <fcntl.h>
@@ -35,16 +35,17 @@ struct Fixture : public arki::utils::tests::Fixture
 
     Fixture()
     {
-        testValues.set("foo", Value::createInteger(5));
-        testValues.set("bar", Value::createInteger(5000));
-        testValues.set("baz", Value::createInteger(-200));
-        testValues.set("moo", Value::createInteger(0x5ffffff));
-        testValues.set("antani", Value::createInteger(-1));
-        testValues.set("blinda", Value::createInteger(0));
-        testValues.set("supercazzola", Value::createInteger(-1234567));
-        testValues.set("pippo", Value::createString("pippo"));
-        testValues.set("pluto", Value::createString("12"));
-        testValues.set("cippo", Value::createString(""));
+        using namespace arki::types::values;
+        testValues.set("foo", Value::create_integer(5));
+        testValues.set("bar", Value::create_integer(5000));
+        testValues.set("baz", Value::create_integer(-200));
+        testValues.set("moo", Value::create_integer(0x5ffffff));
+        testValues.set("antani", Value::create_integer(-1));
+        testValues.set("blinda", Value::create_integer(0));
+        testValues.set("supercazzola", Value::create_integer(-1234567));
+        testValues.set("pippo", Value::create_string("pippo"));
+        testValues.set("pluto", Value::create_string("12"));
+        testValues.set("cippo", Value::create_string(""));
     }
 
     void fill(Metadata& md)
@@ -98,7 +99,7 @@ void test_inline()
     wfd.close();
 
     unsigned count = 0;
-    Metadata::read_file("test.md", [&](unique_ptr<Metadata> md) {
+    Metadata::read_file("test.md", [&](std::shared_ptr<Metadata> md) {
         md->get_data();
         ++count;
         return true;
@@ -114,7 +115,7 @@ void Tests::register_tests() {
 add_method("sources", [](Fixture& f) {
     Metadata md;
     md.set_source(Source::createBlobUnlocked("grib", "", "inbound/test.grib1", 1, 2));
-    wassert(actual(md.source().style()) == Source::BLOB);
+    wassert(actual(md.source().style()) == Source::Style::BLOB);
     wassert(actual(md.source().format) == "grib");
 
     const source::Blob& blob = md.sourceBlob();
@@ -149,7 +150,7 @@ add_method("binary", [](Fixture& f) {
     sys::write_file("test.md", encoded.data(), encoded.size());
 
     Metadata md1;
-    BinaryDecoder dec(encoded);
+    core::BinaryDecoder dec(encoded);
     wassert(md1.read(dec, metadata::ReadContext("(test memory buffer)", dir)));
 
     wassert(actual_type(md1.source()).is_source_blob("grib", dir, "inbound/test.grib1", 1, 2));
@@ -162,7 +163,7 @@ add_method("binary", [](Fixture& f) {
 
     encoded = md.encodeBinary();
     Metadata md2;
-    BinaryDecoder dec1(encoded);
+    core::BinaryDecoder dec1(encoded);
     wassert(md2.read(dec1, metadata::ReadContext("(test memory buffer)", ""), false));
 
     wassert(actual(Reftime::createPeriod(Time(2007, 6, 5, 4, 3, 2), Time(2008, 7, 6, 5, 4, 3))) == md2.get<Reftime>());
@@ -192,10 +193,8 @@ add_method("yaml", [](Fixture& f) {
     md.set_source(Source::createBlobUnlocked("grib", "", "inbound/test.grib1", 1, 2));
     f.fill(md);
 
-    stringstream output;
-    md.write_yaml(output);
+    string s = md.to_yaml();
     Metadata md1;
-    string s(output.str());
     auto reader = LineReader::from_chars(s.data(), s.size());
     md1.readYaml(*reader, "(test memory buffer)");
 
@@ -206,10 +205,8 @@ add_method("yaml", [](Fixture& f) {
     // Test PERIOD reference times
     md.set(Reftime::createPeriod(Time(2007, 6, 5, 4, 3, 2), Time(2008, 7, 6, 5, 4, 3)));
 
-    stringstream output1;
-    md.write_yaml(output1);
+    s = md.to_yaml();
     Metadata md2;
-    s = output1.str();
     reader = LineReader::from_chars(s.data(), s.size());
     md2.readYaml(*reader, "(test memory buffer)");
 
@@ -224,16 +221,16 @@ add_method("json", [](Fixture& f) {
 
     // Serialise to JSON;
     stringstream output;
-    emitter::JSON json(output);
-    md.serialise(json);
+    structured::JSON json(output);
+    md.serialise(json, structured::keys_json);
 
     // Parse back
     stringstream stream(output.str(), ios_base::in);
-    emitter::Memory parsed;
-    emitter::JSON::parse(stream, parsed);
+    structured::Memory parsed;
+    structured::JSON::parse(stream, parsed);
 
     Metadata md1;
-    md1.read(parsed.root().want_mapping("parsing metadata"));
+    md1.read(structured::keys_json, parsed.root());
 
     wassert(actual(Source::createBlobUnlocked("grib", "", "inbound/test.grib1", 1, 2)) == md1.source());
     wassert(actual(md1.source().format) == "grib");
@@ -245,16 +242,16 @@ add_method("json", [](Fixture& f) {
 
     // Serialise to JSON
     stringstream output1;
-    emitter::JSON json1(output1);
-    md.serialise(json1);
+    structured::JSON json1(output1);
+    md.serialise(json1, structured::keys_json);
 
     // Parse back
     stringstream stream1(output1.str(), ios_base::in);
-    emitter::Memory parsed1;
-    emitter::JSON::parse(stream1, parsed1);
+    structured::Memory parsed1;
+    structured::JSON::parse(stream1, parsed1);
 
     Metadata md2;
-    md2.read(parsed1.root().want_mapping("parsing metadata"));
+    md2.read(structured::keys_json, parsed1.root());
 
     wassert(actual(Reftime::createPeriod(Time(2007, 6, 5, 4, 3, 2), Time(2008, 7, 6, 5, 4, 3))) == md2.get<Reftime>());
 });
@@ -304,46 +301,14 @@ add_method("binary_fd", [](Fixture& f) {
 // Reproduce decoding error at #24
 add_method("decode_issue_24", [](Fixture& f) {
     unsigned count = 0;
-    Metadata::read_file("inbound/issue24.arkimet", [&](unique_ptr<Metadata> md) { ++count; return true; });
+    Metadata::read_file("inbound/issue24.arkimet", [&](std::shared_ptr<Metadata> md) { ++count; return true; });
     wassert(actual(count) == 1u);
-});
-
-// Test Lua functions
-add_method("lua", [](Fixture& f) {
-    skip_unless_lua();
-    Metadata md;
-    md.set_source(Source::createBlobUnlocked("grib", "", "inbound/test.grib1", 1, 2));
-    f.fill(md);
-
-    arki::tests::Lua test(
-		"function test(md) \n"
-		"  if md.source == nil then return 'source is nil' end \n"
-		"  if md.origin == nil then return 'origin is nil' end \n"
-		"  if md.product == nil then return 'product is nil' end \n"
-		"  if md.level == nil then return 'level is nil' end \n"
-		"  if md.timerange == nil then return 'timerange is nil' end \n"
-		"  if md.area == nil then return 'area is nil' end \n"
-		"  if md.proddef == nil then return 'proddef is nil' end \n"
-		"  if md.assigneddataset == nil then return 'assigneddataset is nil' end \n"
-		"  if md.reftime == nil then return 'reftime is nil' end \n"
-		"  if md.bbox ~= nil then return 'bbox is not nil' end \n"
-		"  notes = md:notes() \n"
-		"  if #notes ~= 1 then return 'table has '..#notes..' elements instead of 1' end \n"
-//		"  i = 0 \n"
-//		"  for name, value in md.iter do \n"
-//		"    i = i + 1 \n"
-//		"  end \n"
-//		"  if i ~= 8 then return 'iterated '..i..' items instead of 8' end \n"
-		"  return nil\n"
-		"end \n"
-	);
-	test.pusharg(md);
-	ensure_equals(test.run(), "");
 });
 
 add_method("stream_grib", [](Fixture& f) {
     skip_unless_grib();
-    metadata::TestCollection grib("inbound/test.grib1");
+    metadata::TestCollection grib("inbound/fixture.grib1");
+    wassert(actual(grib.size()) == 3u);
     File fd("tmpfile", O_WRONLY | O_CREAT | O_TRUNC);
     wassert(actual(grib[0].stream_data(fd)) == grib[0].sourceBlob().size);
     fd.close();
@@ -369,7 +334,6 @@ add_method("stream_vm2", [](Fixture& f) {
 });
 
 add_method("stream_odim", [](Fixture& f) {
-    skip_unless_odimh5();
     metadata::TestCollection odim("inbound/odimh5/XSEC_v21.h5");
     File fd("tmpfile", O_WRONLY | O_CREAT | O_TRUNC);
     wassert(actual(odim[0].stream_data(fd)) == odim[0].sourceBlob().size);
@@ -380,7 +344,7 @@ add_method("stream_odim", [](Fixture& f) {
 add_method("issue107_binary", [](Fixture& f) {
     unsigned count = 0;
     try {
-        Metadata::read_file("inbound/issue107.yaml", [&](unique_ptr<Metadata> md) { ++count; return true; });
+        Metadata::read_file("inbound/issue107.yaml", [&](std::shared_ptr<Metadata> md) { ++count; return true; });
         wassert(actual(0) == 1);
     } catch (std::runtime_error& e) {
         wassert(actual(e.what()).contains("metadata entry does not start with "));
@@ -402,7 +366,7 @@ add_method("wrongsize", [](Fixture& f) {
     fd.close();
 
     unsigned count = 0;
-    Metadata::read_file("test.md", [&](unique_ptr<Metadata> md) { ++count; return true; });
+    Metadata::read_file("test.md", [&](std::shared_ptr<Metadata> md) { ++count; return true; });
     wassert(actual(count) == 0u);
 });
 

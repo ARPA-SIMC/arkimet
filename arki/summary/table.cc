@@ -3,13 +3,14 @@
 #include "arki/core/file.h"
 #include "arki/metadata.h"
 #include "arki/matcher.h"
+#include "arki/matcher/utils.h"
 #include "arki/types/utils.h"
-#include "arki/emitter/memory.h"
+#include "arki/structured/keys.h"
+#include "arki/structured/reader.h"
 #include "arki/summary.h"
 #include "arki/utils/yaml.h"
 #include <system_error>
 #include <algorithm>
-#include <iostream>
 
 using namespace std;
 using namespace arki::core;
@@ -212,21 +213,25 @@ void Table::merge(const std::vector<const types::Type*>& md, const Stats& st, co
     merge(new_row);
 }
 
-void Table::merge(const emitter::memory::Mapping& m)
+void Table::merge(const structured::Keys& keys, const structured::Reader& val)
 {
-    using namespace emitter::memory;
+    using namespace structured::memory;
 
-    unique_ptr<summary::Stats> stats = summary::Stats::decodeMapping(
-            m["summarystats"].want_mapping("parsing summary item stats"));
+    unique_ptr<summary::Stats> stats;
+    val.sub(keys.summary_stats, "summary stats", [&](const structured::Reader& summarystats) {
+        stats = summary::Stats::decode_structure(keys, summarystats);
+    });
     Row new_row(*stats);
     new_row.set_to_zero();
 
     for (size_t pos = 0; pos < msoSize; ++pos)
     {
         types::Code code = summary::Visitor::codeForPos(pos);
-        const Node& n = m[types::tag(code)];
-        if (n.is_mapping())
-            new_row.items[pos] = interns[pos].intern(types::decodeMapping(code, n.get_mapping()));
+        if (!val.has_key(types::tag(code), structured::NodeType::MAPPING))
+            continue;
+        val.sub(types::tag(code), "summary item", [&](const structured::Reader& item) {
+            new_row.items[pos] = interns[pos].intern(types::decode_structure(keys, code, item));
+        });
     }
 
     merge(new_row);
@@ -274,48 +279,12 @@ bool Table::merge_yaml(LineReader& in, const std::string& filename)
     return !in.eof();
 }
 
-#if 0
-static void test_consistency(Row* rows, unsigned size, const char* context)
-{
-    for (unsigned i = 0; i < size; ++i)
-    {
-        for (unsigned j = 0; j < Row::mso_size; ++j)
-        {
-            const Type* t = rows[i].items[j];
-            if (t == 0) continue;
-            if (t->type_code() != Table::mso[j])
-                cerr << "FAIL " << context << endl;
-        }
-    }
-}
-#endif
-
 void Table::merge(const Row& row)
 {
     // Occasionally clean the table in case we are adding a lot of metadata one
     // by one, to prevent the intermediate table from exploding in size
     if (dirty > 100000)
         want_clean();
-//    cerr << "MERGE " << this << " cur_size: " << row_count << " [" << rows << ", " << (rows + row_count) << ")" << " stats count " << row.stats.count << endl;
-//    row.dump(cerr);
-#if 0
-    // Find the insertion point
-    //
-    // This works well even in case rows == 0, since it works in the [0, 0)
-    // range, returning 0 and later matching the append case
-    auto pos = lower_bound(rows.begin(), rows.end(), row);
-
-    if (pos == rows.end())
-    {
-        rows.emplace_back(row);
-    } else if (*pos == row) {
-        // Just merge stats
-        pos->stats.merge(row.stats);
-    } else {
-        rows.emplace(pos, row);
-    }
-    stats.merge(row.stats);
-#endif
     rows.emplace_back(row);
     stats.merge(row.stats);
     ++dirty;

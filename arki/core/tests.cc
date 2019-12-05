@@ -1,7 +1,7 @@
 #include "tests.h"
-#include "arki/binary.h"
-#include "arki/emitter/json.h"
-#include "arki/emitter/memory.h"
+#include "arki/core/binary.h"
+#include "arki/structured/json.h"
+#include "arki/structured/memory.h"
 #include "arki/exceptions.h"
 #include "arki/libconfig.h"
 #include "arki/utils/files.h"
@@ -63,9 +63,9 @@ void ActualTime::serializes() const
 {
     // Binary encoding, without envelope
     std::vector<uint8_t> enc;
-    BinaryEncoder e(enc);
+    core::BinaryEncoder e(enc);
     _actual.encodeWithoutEnvelope(e);
-    BinaryDecoder dec(enc);
+    core::BinaryDecoder dec(enc);
     wassert(actual(Time::decode(dec)) == _actual);
 
     // String encoding
@@ -76,13 +76,13 @@ void ActualTime::serializes() const
     // JSON encoding
     {
         std::stringstream jbuf;
-        emitter::JSON json(jbuf);
-        _actual.serialise(json);
+        structured::JSON json(jbuf);
+        json.add(_actual);
         jbuf.seekg(0);
-        emitter::Memory parsed;
-        emitter::JSON::parse(jbuf, parsed);
-        wassert(actual(parsed.root().is_mapping()).istrue());
-        Time iparsed = Time::decodeMapping(parsed.root().get_mapping());
+        structured::Memory parsed;
+        structured::JSON::parse(jbuf, parsed);
+        wassert(actual(parsed.root().type()) == structured::NodeType::LIST);
+        Time iparsed = parsed.root().as_time("time");
         wassert(actual(iparsed) == _actual);
     }
 }
@@ -151,22 +151,10 @@ void skip_unless_vm2()
     throw TestSkipped("VM2 support not available");
 #endif
 }
-void skip_unless_odimh5()
-{
-#ifndef HAVE_HDF5
-    throw TestSkipped("ODIMH5 support not available");
-#endif
-}
 void skip_unless_geos()
 {
 #ifndef HAVE_GEOS
     throw TestSkipped("GEOS support not available");
-#endif
-}
-void skip_unless_lua()
-{
-#ifndef HAVE_LUA
-    throw TestSkipped("Lua support not available");
 #endif
 }
 

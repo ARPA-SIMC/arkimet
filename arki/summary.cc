@@ -2,20 +2,22 @@
 #include "summary/table.h"
 #include "summary/codec.h"
 #include "summary/stats.h"
+#include "core/file.h"
+#include "core/binary.h"
 #include "exceptions.h"
 #include "metadata.h"
 #include "matcher.h"
-#include "binary.h"
 #include "formatter.h"
 #include "core/time.h"
+#include "types/bundle.h"
 #include "types/utils.h"
 #include "types/area.h"
 #include "utils/geos.h"
 #include "utils/compress.h"
-#include "emitter.h"
-#include "emitter/memory.h"
+#include "structured/emitter.h"
+#include "structured/memory.h"
+#include "structured/keys.h"
 #include "iotrace.h"
-#include "utils/lua.h"
 #include "utils/string.h"
 #include "utils/sys.h"
 #include <sys/types.h>
@@ -40,212 +42,6 @@ Summary::~Summary()
 {
     delete root;
 }
-
-#ifdef HAVE_LUA
-namespace {
-
-struct LuaPusher: public summary::Visitor
-{
-    lua_State* L;
-    int index;
-
-    LuaPusher(lua_State* L) : L(L), index(1) {}
-    virtual bool operator()(const std::vector<const Type*>& md, const Stats& stats)
-    {
-        // Table with the couple
-        lua_newtable(L);
-        // Table with the items
-        lua_newtable(L);
-        // Push the items
-        for (size_t i = 0; i < md.size(); ++i)
-        {
-            // Name
-            if (md[i])
-            {
-                // Key
-                string name = str::lower(types::formatCode(codeForPos(i)));
-                lua_pushlstring(L, name.data(), name.size());
-                // Value
-                md[i]->lua_push(L);
-                lua_rawset(L, -3);
-            }
-        }
-        lua_rawseti(L, -2, 1);
-        // Push the stats
-        stats.lua_push(L);
-        lua_rawseti(L, -2, 2);
-        // Push the couple into the table we are populating
-        lua_rawseti(L, -2, index++);
-        return true;
-    }
-};
-
-}
-
-typedef utils::lua::ManagedUD<Summary> SummaryUD;
-
-static void arkilua_getmetatable(lua_State* L);
-
-static int arkilua_count(lua_State* L)
-{
-    Summary* s = Summary::lua_check(L, 1);
-    luaL_argcheck(L, s != NULL, 1, "`arki.summary' expected");
-    lua_pushinteger(L, s->count());
-    return 1;
-}
-
-static int arkilua_size(lua_State* L)
-{
-    Summary* s = Summary::lua_check(L, 1);
-    luaL_argcheck(L, s != NULL, 1, "`arki.summary' expected");
-    lua_pushinteger(L, s->size());
-    return 1;
-}
-
-static int arkilua_data(lua_State* L)
-{
-    Summary* s = Summary::lua_check(L, 1);
-    luaL_argcheck(L, s != NULL, 1, "`arki.summary' expected");
-    // Return a big table with a dump of the summary inside
-    lua_newtable(L);
-    LuaPusher pusher(L);
-    s->visit(pusher);
-    return 1;
-}
-
-static int arkilua_filter(lua_State* L)
-{
-    // utils::lua::dumpstack(L, "FILTER", cerr);
-    Summary* s = Summary::lua_check(L, 1);
-    luaL_argcheck(L, s != NULL, 1, "`arki.summary' expected");
-    Matcher m = Matcher::lua_check(L, 2);
-    if (lua_gettop(L) > 2)
-    {
-        // s.filter(matcher, s1)
-        Summary* s1 = Summary::lua_check(L, 3);
-        luaL_argcheck(L, s1 != NULL, 3, "`arki.summary' expected");
-        s->filter(m, *s1);
-        return 0;
-    } else {
-        unique_ptr<Summary> new_summary(new Summary);
-        s->filter(m, *new_summary);
-        SummaryUD::create(L, new_summary.release(), true);
-        return 1;
-    }
-}
-
-// Make a new summary
-// Memory management of the copy will be done by Lua
-static int arkilua_new(lua_State* L)
-{
-    // Make a new copy
-    SummaryUD::create(L, new Summary, true);
-
-    // Set the summary for the userdata
-    arkilua_getmetatable(L);
-    lua_setmetatable(L, -2);
-
-    return 1;
-}
-
-// Make a copy of the metadata.
-// Memory management of the copy will be done by Lua
-static int arkilua_copy(lua_State* L)
-{
-    Summary* s = Summary::lua_check(L, 1);
-    luaL_argcheck(L, s != NULL, 1, "`arki.summary' expected");
-
-    // Make a new copy
-    SummaryUD* ud = SummaryUD::create(L, new Summary, true);
-    ud->val->add(*s);
-
-    // Set the summary for the userdata
-    arkilua_getmetatable(L);
-    lua_setmetatable(L, -2);
-
-    return 1;
-}
-
-// Add a summary to this summary
-static int arkilua_add_summary(lua_State* L)
-{
-    Summary* s = Summary::lua_check(L, 1);
-    luaL_argcheck(L, s != NULL, 1, "`arki.summary' expected");
-    Summary* s1 = Summary::lua_check(L, 2);
-    luaL_argcheck(L, s != NULL, 2, "`arki.summary' expected");
-
-    s->add(*s1);
-
-    return 0;
-}
-
-
-
-static int arkilua_gc (lua_State *L)
-{
-    SummaryUD* ud = (SummaryUD*)luaL_checkudata(L, 1, "arki.summary");
-    if (ud != NULL && ud->collected)
-        delete ud->val;
-    return 0;
-}
-
-static int arkilua_tostring (lua_State *L)
-{
-    lua_pushstring(L, "summary");
-    return 1;
-}
-
-static const struct luaL_Reg summaryclasslib [] = {
-    { "new", arkilua_new },
-    { NULL, NULL }
-};
-
-static const struct luaL_Reg summarylib [] = {
-    { "count", arkilua_count },
-    { "size", arkilua_size },
-    { "data", arkilua_data },
-    { "filter", arkilua_filter },
-    { "copy", arkilua_copy },
-    { "add_summary", arkilua_add_summary },
-    { "__gc", arkilua_gc },
-    { "__tostring", arkilua_tostring },
-    { NULL, NULL }
-};
-
-static void arkilua_getmetatable(lua_State* L)
-{
-    // Set the metatable for the userdata
-    if (luaL_newmetatable(L, "arki.summary"))
-    {
-        // If the metatable wasn't previously created, create it now
-        lua_pushstring(L, "__index");
-        lua_pushvalue(L, -2);  /* pushes the metatable */
-        lua_settable(L, -3);  /* metatable.__index = metatable */
-
-        // Load normal methods
-        utils::lua::add_functions(L, summarylib);
-    }
-}
-
-void Summary::lua_push(lua_State* L)
-{
-    SummaryUD::create(L, this, false);
-    arkilua_getmetatable(L);
-    lua_setmetatable(L, -2);
-}
-
-void Summary::lua_openlib(lua_State* L)
-{
-    utils::lua::add_arki_global_library(L, "summary", summaryclasslib);
-}
-
-Summary* Summary::lua_check(lua_State* L, int idx)
-{
-    SummaryUD* ud = (SummaryUD*)luaL_checkudata(L, idx, "arki.summary");
-    if (ud) return ud->val;
-    return NULL;
-}
-#endif
 
 bool Summary::operator==(const Summary& m) const
 {
@@ -286,15 +82,13 @@ struct StatsHull : public ItemVisitor
     {
         const Area& a = *dynamic_cast<const Area*>(&type);
         vector<uint8_t> encoded;
-        BinaryEncoder enc(encoded);
+        core::BinaryEncoder enc(encoded);
         a.encodeBinary(enc);
         pair<set<vector<uint8_t>>::iterator, bool> i = seen.insert(encoded);
         if (i.second)
         {
             const arki::utils::geos::Geometry* g = a.bbox();
-            //cerr << "Got: " << g << g->getGeometryType() << endl;
             if (!g) return true;
-            //cerr << "Adding: " << g->toString() << endl;
             geoms->push_back(g->clone());
         }
         return true;
@@ -355,11 +149,11 @@ void Summary::expand_date_range(unique_ptr<Time>& begin, unique_ptr<Time>& end) 
 namespace {
 struct ResolveVisitor : public summary::Visitor
 {
-    std::vector<ItemSet>& result;
+    std::vector<types::ItemSet>& result;
     std::vector<types::Code> codes;
     size_t added;
 
-    ResolveVisitor(std::vector<ItemSet>& result, const Matcher& m) : result(result), added(0)
+    ResolveVisitor(std::vector<types::ItemSet>& result, const Matcher& m) : result(result), added(0)
     {
         m.foreach_type([&](types::Code code, const matcher::OR&) {
             codes.push_back(code);
@@ -368,7 +162,7 @@ struct ResolveVisitor : public summary::Visitor
     virtual ~ResolveVisitor() {}
     virtual bool operator()(const std::vector<const Type*>& md, const summary::Stats& stats)
     {
-        ItemSet is;
+        types::ItemSet is;
         for (std::vector<types::Code>::const_iterator i = codes.begin();
                 i != codes.end(); ++i)
         {
@@ -378,7 +172,7 @@ struct ResolveVisitor : public summary::Visitor
         }
         ++added;
         // Insertion sort, as we expect to have lots of duplicates
-        std::vector<ItemSet>::iterator i = std::lower_bound(result.begin(), result.end(), is);
+        std::vector<types::ItemSet>::iterator i = std::lower_bound(result.begin(), result.end(), is);
         if (i == result.end())
             result.push_back(is);
         else if (*i != is)
@@ -389,18 +183,18 @@ struct ResolveVisitor : public summary::Visitor
 };
 }
 
-std::vector<ItemSet> Summary::resolveMatcher(const Matcher& matcher) const
+std::vector<types::ItemSet> Summary::resolveMatcher(const Matcher& matcher) const
 {
-    if (matcher.empty()) return std::vector<ItemSet>();
+    if (matcher.empty()) return std::vector<types::ItemSet>();
 
-    std::vector<ItemSet> result;
+    std::vector<types::ItemSet> result;
     ResolveVisitor visitor(result, matcher);
     visitFiltered(matcher, visitor);
 
     return result;
 }
 
-size_t Summary::resolveMatcher(const Matcher& matcher, std::vector<ItemSet>& res) const
+size_t Summary::resolveMatcher(const Matcher& matcher, std::vector<types::ItemSet>& res) const
 {
     if (matcher.empty()) return 0;
 
@@ -437,17 +231,17 @@ bool Summary::read(int fd, const std::string& filename)
     if (!bundle.read_data(f))
         return false;
 
-    BinaryDecoder dec(bundle.data);
+    core::BinaryDecoder dec(bundle.data);
     read_inner(dec, bundle.version, filename);
 
     return true;
 }
 
-bool Summary::read(BinaryDecoder& dec, const std::string& filename)
+bool Summary::read(core::BinaryDecoder& dec, const std::string& filename)
 {
     string signature;
     unsigned version;
-    BinaryDecoder inner = dec.pop_metadata_bundle(signature, version);
+    core::BinaryDecoder inner = dec.pop_metadata_bundle(signature, version);
 
     // Ensure first 2 bytes are SU
     if (signature != "SU")
@@ -458,7 +252,7 @@ bool Summary::read(BinaryDecoder& dec, const std::string& filename)
     return true;
 }
 
-void Summary::read_inner(BinaryDecoder& dec, unsigned version, const std::string& filename)
+void Summary::read_inner(core::BinaryDecoder& dec, unsigned version, const std::string& filename)
 {
     using namespace summary;
     summary::decode(dec, version, filename, *root);
@@ -468,7 +262,7 @@ std::vector<uint8_t> Summary::encode(bool compressed) const
 {
     // Encode
     vector<uint8_t> inner;
-    BinaryEncoder innerenc(inner);
+    core::BinaryEncoder innerenc(inner);
     if (!root->empty())
     {
         EncodingVisitor visitor(innerenc);
@@ -477,7 +271,7 @@ std::vector<uint8_t> Summary::encode(bool compressed) const
 
     // Prepend header
     vector<uint8_t> res;
-    BinaryEncoder enc(res);
+    core::BinaryEncoder enc(res);
     // Signature
     enc.add_string("SU");
     // Version
@@ -511,15 +305,25 @@ std::vector<uint8_t> Summary::encode(bool compressed) const
     return res;
 }
 
-void Summary::write(int outfd, const std::string& filename) const
+void Summary::write(NamedFileDescriptor& out) const
 {
     // Prepare the encoded data
     vector<uint8_t> encoded = encode(true);
 
-    iotrace::trace_file(filename, 0, encoded.size(), "write summary");
+    iotrace::trace_file(out, 0, encoded.size(), "write summary");
 
     // Write out
-    sys::NamedFileDescriptor out(outfd, filename);
+    out.write(encoded.data(), encoded.size());
+}
+
+void Summary::write(AbstractOutputFile& out) const
+{
+    // Prepare the encoded data
+    vector<uint8_t> encoded = encode(true);
+
+    iotrace::trace_file(out, 0, encoded.size(), "write summary");
+
+    // Write out
     out.write(encoded.data(), encoded.size());
 }
 
@@ -549,7 +353,7 @@ struct YamlPrinter : public Visitor
             ucfirst[0] = toupper(ucfirst[0]);
             out << indent << ucfirst << ": ";
             (*i)->writeToOstream(out);
-            if (f) out << "\t# " << (*f)(**i);
+            if (f) out << "\t# " << f->format(**i);
             out << endl;
         }
 
@@ -579,26 +383,41 @@ bool Summary::visitFiltered(const Matcher& matcher, summary::Visitor& visitor) c
         return root->visitFiltered(matcher, visitor);
 }
 
-void Summary::write_yaml(std::ostream& out, const Formatter* f) const
+std::string Summary::to_yaml(const Formatter* formatter) const
 {
-    if (root->empty()) return;
-    summary::YamlPrinter printer(out, 2, f);
+    std::stringstream buf;
+    if (root->empty()) return buf.str();
+    summary::YamlPrinter printer(buf, 2, formatter);
     visit(printer);
+    return buf.str();
 }
 
-void Summary::serialise(Emitter& e, const Formatter* f) const
+void Summary::write_yaml(core::NamedFileDescriptor& out, const Formatter* formatter) const
+{
+    std::string yaml = to_yaml(formatter);
+    out.write_all_or_retry(yaml.data(), yaml.size());
+}
+
+void Summary::write_yaml(core::AbstractOutputFile& out, const Formatter* formatter) const
+{
+    std::string yaml = to_yaml(formatter);
+    out.write(yaml.data(), yaml.size());
+}
+
+void Summary::serialise(structured::Emitter& e, const structured::Keys& keys, const Formatter* f) const
 {
     e.start_mapping();
-    e.add("items");
+    e.add(keys.summary_items);
     e.start_list();
     if (!root->empty())
     {
         struct Serialiser : public summary::Visitor
         {
-            Emitter& e;
+            structured::Emitter& e;
+            const structured::Keys& keys;
             const Formatter* f;
 
-            Serialiser(Emitter& e, const Formatter* f) : e(e), f(f) {}
+            Serialiser(structured::Emitter& e, const structured::Keys& keys, const Formatter* f) : e(e), keys(keys), f(f) {}
 
             virtual bool operator()(const std::vector<const Type*>& md, const Stats& stats)
             {
@@ -609,18 +428,18 @@ void Summary::serialise(Emitter& e, const Formatter* f) const
                     if (!*i) continue;
                     e.add((*i)->tag());
                     e.start_mapping();
-                    if (f) e.add("desc", (*f)(**i));
-                    (*i)->serialiseLocal(e, f);
+                    if (f) e.add(keys.summary_desc, f->format(**i));
+                    (*i)->serialise_local(e, keys, f);
                     e.end_mapping();
                 }
-                e.add("summarystats");
+                e.add(keys.summary_stats);
                 e.start_mapping();
                 stats.serialiseLocal(e, f);
                 e.end_mapping();
                 e.end_mapping();
                 return true;
             }
-        } visitor(e, f);
+        } visitor(e, keys, f);
 
         visit(visitor);
     }
@@ -628,16 +447,19 @@ void Summary::serialise(Emitter& e, const Formatter* f) const
     e.end_mapping();
 }
 
-void Summary::read(const emitter::memory::Mapping& val)
+void Summary::read(const structured::Keys& keys, const structured::Reader& val)
 {
-    using namespace emitter::memory;
+    using namespace structured::memory;
 
-    const List& items = val["items"].want_list("parsing summary item list");
-    for (std::vector<const Node*>::const_iterator i = items.val.begin(); i != items.val.end(); ++i)
-    {
-        const Mapping& m = (*i)->want_mapping("parsing summary item");
-        root->merge(m);
-    }
+    val.sub(keys.summary_items, "summary item list", [&](const structured::Reader& items) {
+        unsigned size = items.list_size("summary item list");
+        for (unsigned i = 0; i < size; ++i)
+        {
+            items.sub(i, "summary item", [&](const structured::Reader& item) {
+                root->merge(keys, item);
+            });
+        }
+    });
 }
 
 void Summary::readFile(const std::string& fname)
@@ -741,12 +563,6 @@ void Summary::filter(const Matcher& matcher, Summary& result) const
     if (root->empty()) return;
     summary::SummaryMerger merger(*result.root);
     visitFiltered(matcher, merger);
-}
-
-std::ostream& operator<<(std::ostream& o, const Summary& s)
-{
-    s.write_yaml(o);
-    return o;
 }
 
 }

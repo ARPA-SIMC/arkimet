@@ -3,10 +3,24 @@
 
 namespace arki {
 class Metadata;
+class Formatter;
+class BBox;
 
 namespace metadata {
 class Data;
 class Collection;
+class ReadContext;
+
+class Validator;
+class ValidatorRepository;
+
+class Postprocess;
+
+namespace sort {
+class Compare;
+class Stream;
+}
+
 }
 
 }

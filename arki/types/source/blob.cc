@@ -1,12 +1,12 @@
 #include "blob.h"
-#include "arki/binary.h"
 #include "arki/segment.h"
+#include "arki/core/binary.h"
 #include "arki/core/file.h"
-#include "arki/utils/lua.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
-#include "arki/emitter.h"
-#include "arki/emitter/memory.h"
+#include "arki/structured/emitter.h"
+#include "arki/structured/memory.h"
+#include "arki/structured/keys.h"
 #include "arki/exceptions.h"
 
 using namespace std;
@@ -17,9 +17,9 @@ namespace arki {
 namespace types {
 namespace source {
 
-Source::Style Blob::style() const { return Source::BLOB; }
+Source::Style Blob::style() const { return source::Style::BLOB; }
 
-void Blob::encodeWithoutEnvelope(BinaryEncoder& enc) const
+void Blob::encodeWithoutEnvelope(core::BinaryEncoder& enc) const
 {
     Source::encodeWithoutEnvelope(enc);
     enc.add_varint(filename.size());
@@ -35,46 +35,28 @@ std::ostream& Blob::writeToOstream(std::ostream& o) const
              << ")";
 }
 
-void Blob::serialiseLocal(Emitter& e, const Formatter* f) const
+void Blob::serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f) const
 {
-    Source::serialiseLocal(e, f);
-    e.add("b", basedir);
-    e.add("file", filename);
-    e.add("ofs", offset);
-    e.add("sz", size);
+    Source::serialise_local(e, keys, f);
+    e.add(keys.source_basedir, basedir);
+    e.add(keys.source_file, filename);
+    e.add(keys.source_offset, offset);
+    e.add(keys.source_size, size);
 }
 
-std::unique_ptr<Blob> Blob::decodeMapping(const emitter::memory::Mapping& val)
+std::unique_ptr<Blob> Blob::decode_structure(const structured::Keys& keys, const structured::Reader& reader)
 {
-    const arki::emitter::memory::Node& rd = val["b"];
-    string basedir;
-    if (rd.is_string())
-        basedir = rd.get_string();
+    std::string basedir;
+    if (reader.has_key(keys.source_basedir, structured::NodeType::STRING))
+        basedir = reader.as_string(keys.source_basedir, "source base directory");
 
     return Blob::create_unlocked(
-            val["f"].want_string("parsing blob source format"),
+            reader.as_string(keys.source_format, "source format"),
             basedir,
-            val["file"].want_string("parsing blob source filename"),
-            val["ofs"].want_int("parsing blob source offset"),
-            val["sz"].want_int("parsing blob source size"));
+            reader.as_string(keys.source_file, "source file name"),
+            reader.as_int(keys.source_offset, "source offset"),
+            reader.as_int(keys.source_size, "source size"));
 }
-
-const char* Blob::lua_type_name() const { return "arki.types.source.blob"; }
-
-#ifdef HAVE_LUA
-bool Blob::lua_lookup(lua_State* L, const std::string& name) const
-{
-    if (name == "file")
-        lua_pushlstring(L, filename.data(), filename.size());
-    else if (name == "offset")
-        lua_pushnumber(L, offset);
-    else if (name == "size")
-        lua_pushnumber(L, size);
-    else
-        return Source::lua_lookup(L, name);
-    return true;
-}
-#endif
 
 int Blob::compare_local(const Source& o) const
 {
@@ -194,6 +176,12 @@ std::vector<uint8_t> Blob::read_data() const
 }
 
 size_t Blob::stream_data(NamedFileDescriptor& out) const
+{
+    if (!reader) throw std::runtime_error("readData() called on an unlocked source");
+    return reader->stream(*this, out);
+}
+
+size_t Blob::stream_data(AbstractOutputFile& out) const
 {
     if (!reader) throw std::runtime_error("readData() called on an unlocked source");
     return reader->stream(*this, out);

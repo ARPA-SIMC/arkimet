@@ -9,8 +9,7 @@
 #include "arki/utils/accounting.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
-#include "arki/validator.h"
-#include <iostream>
+#include "arki/metadata/validator.h"
 
 namespace {
 using namespace std;
@@ -133,10 +132,10 @@ add_method("regression01", [] {
     auto config = core::cfg::Sections::parse(conf);
 
     metadata::TestCollection source("inbound/tempforecast.bufr", true);
-    ensure_equals(source.size(), 1u);
+    wassert(actual(source.size()) == 1u);
 
     Matcher matcher = Matcher::parse("origin:BUFR,200; product:BUFR:t=temp");
-    ensure(matcher(source[0]));
+    wassert_true(matcher(source[0]));
 
     RealDispatcher dispatcher(config);
     auto batch = source.make_import_batch();
@@ -150,7 +149,7 @@ add_method("regression01", [] {
 add_method("validation", [] {
     auto config = setup1();
     RealDispatcher dispatcher(config);
-    validators::FailAlways fail_always;
+    metadata::validators::FailAlways fail_always;
     dispatcher.add_validator(fail_always);
     metadata::TestCollection mdc("inbound/test.grib1", true);
     auto batch = mdc.make_import_batch();

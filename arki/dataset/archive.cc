@@ -19,9 +19,6 @@
 #include "arki/utils/sys.h"
 #include <ctime>
 #include <fcntl.h>
-#ifdef HAVE_LUA
-#include "arki/report.h"
-#endif
 
 using namespace std;
 using namespace arki;
@@ -282,6 +279,14 @@ bool ArchivesReader::query_data(const dataset::DataQuery& q, metadata_dest_func 
 }
 
 void ArchivesReader::query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out)
+{
+    archives->iter([&](Reader& r) {
+        r.query_bytes(q, out);
+        return true;
+    });
+}
+
+void ArchivesReader::query_bytes(const dataset::ByteQuery& q, AbstractOutputFile& out)
 {
     archives->iter([&](Reader& r) {
         r.query_bytes(q, out);

@@ -17,33 +17,21 @@ dist_doc_DATA = \
 		mhooks-check \
 		mhooks-mergeconf \
 		mhooks-xargs \
-		mhooks-bufr-prepare \
-		lua-examples/area.lua \
-		lua-examples/bbox.lua \
-		lua-examples/proddef.lua \
-		lua-examples/origin.lua \
-		lua-examples/level.lua \
-		lua-examples/product.lua \
-		lua-examples/quantity.lua \
-		lua-examples/reftime.lua \
-		lua-examples/run.lua \
-		lua-examples/task.lua \
-		lua-examples/time.lua \
-		lua-examples/timerange.lua
+		mhooks-bufr-prepare
 
 doc_matcherdir = $(docdir)/matcher
 
 dist_doc_matcher_DATA = \
-		   matcher/origin.txt \
-		   matcher/product.txt \
-		   matcher/level.txt \
-		   matcher/timerange.txt \
-		   matcher/reftime.txt \
-		   matcher/area.txt \
-		   matcher/proddef.txt \
-		   matcher/run.txt \
-		   matcher/aliases.txt \
-		   matcher/expressions.txt
+		   matcher/origin.md \
+		   matcher/product.md \
+		   matcher/level.md \
+		   matcher/timerange.md \
+		   matcher/reftime.md \
+		   matcher/area.md \
+		   matcher/proddef.md \
+		   matcher/run.md \
+		   matcher/aliases.md \
+		   matcher/expressions.md
 
 CLEANFILES =
 

@@ -1,8 +1,5 @@
 #include "config.h"
-
-#include <arki/matcher/level.h>
-#include <arki/matcher/utils.h>
-
+#include "level.h"
 #include <set>
 #include <stdexcept>
 #include <sstream>
@@ -267,17 +264,17 @@ unique_ptr<MatchLevel> MatchLevel::parse(const std::string& pattern)
     }
     switch (types::Level::parseStyle(name))
     {
-        case types::Level::GRIB1: return unique_ptr<MatchLevel>(new MatchLevelGRIB1(rest));
-        case types::Level::GRIB2S: return unique_ptr<MatchLevel>(new MatchLevelGRIB2S(rest));
-        case types::Level::GRIB2D: return unique_ptr<MatchLevel>(new MatchLevelGRIB2D(rest));
-        case types::Level::ODIMH5: return unique_ptr<MatchLevel>(new MatchLevelODIMH5(rest));
-        default: throw std::runtime_error("cannot parse type of level to match:  unsupported level style: " + name);
+        case types::Level::Style::GRIB1: return unique_ptr<MatchLevel>(new MatchLevelGRIB1(rest));
+        case types::Level::Style::GRIB2S: return unique_ptr<MatchLevel>(new MatchLevelGRIB2S(rest));
+        case types::Level::Style::GRIB2D: return unique_ptr<MatchLevel>(new MatchLevelGRIB2D(rest));
+        case types::Level::Style::ODIMH5: return unique_ptr<MatchLevel>(new MatchLevelODIMH5(rest));
+        default: throw std::invalid_argument("cannot parse type of level to match:  unsupported level style: " + name);
     }
 }
 
 void MatchLevel::init()
 {
-    Matcher::register_matcher("level", TYPE_LEVEL, (MatcherType::subexpr_parser)MatchLevel::parse);
+    MatcherType::register_matcher("level", TYPE_LEVEL, (MatcherType::subexpr_parser)MatchLevel::parse);
 }
 
 }

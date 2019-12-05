@@ -1,23 +1,11 @@
 #ifndef ARKI_CORE_TIME_H
 #define ARKI_CORE_TIME_H
 
+#include <arki/core/fwd.h>
 #include <vector>
 #include <string>
 
-struct lua_State;
-
 namespace arki {
-struct BinaryEncoder;
-struct BinaryDecoder;
-struct Emitter;
-
-namespace emitter {
-namespace memory {
-struct List;
-struct Mapping;
-}
-}
-
 namespace core {
 
 class TimeBase
@@ -188,11 +176,6 @@ public:
     void encodeWithoutEnvelope(BinaryEncoder& enc) const;
     static Time decode(BinaryDecoder& dec);
     static Time decodeString(const std::string& val);
-    static Time decodeMapping(const emitter::memory::Mapping& val);
-    static Time decodeList(const emitter::memory::List& val);
-    void serialise(Emitter& e) const;
-    void serialiseLocal(Emitter& e) const;
-    void serialiseList(Emitter& e) const;
 
     /**
      * Generate a sequence of Position reftime values.
@@ -228,15 +211,6 @@ public:
      * Return the number of seconds between `begin` and `until`
      */
     static long long int duration(const Time& begin, const Time& until);
-
-    /// Push this time on the Lua stack
-    void lua_push(lua_State* L) const;
-
-    /// Return the Time at the given position in the Lua stack
-    static Time lua_check(lua_State* L, int idx);
-
-    /// Load Time functions in the Lua stack
-    static void lua_loadlib(lua_State* L);
 };
 
 static inline std::ostream& operator<<(std::ostream& o, const Time& i)

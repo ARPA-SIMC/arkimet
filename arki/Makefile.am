@@ -2,7 +2,7 @@
 
 SUBDIRS = .
 
-AM_CPPFLAGS = -I$(top_srcdir) -I$(top_builddir) $(SQLITE3_CFLAGS) -DCONF_DIR=\"$(confdir)\" -DPOSTPROC_DIR=\"$(postprocdir)\" $(ZLIB_CFLAGS) $(LIBARCHIVE_CFLAGS) $(LIBZIP_CFLAGS)
+AM_CPPFLAGS = -I$(top_srcdir) -I$(top_builddir) $(SQLITE3_CFLAGS) -DCONF_DIR=\"$(confdir)\" -DPOSTPROC_DIR=\"$(postprocdir)\" $(ZLIB_CFLAGS) $(LIBARCHIVE_CFLAGS) $(LIBZIP_CFLAGS) $(LIBSSL_CFLAGS)
 if FILE_OFFSET_BITS_64
 AM_CPPFLAGS += -D_FILE_OFFSET_BITS=64
 endif
@@ -19,7 +19,8 @@ nobase_dist_arkiinclude_HEADERS = \
 		core/file.h \
 		core/cfg.h \
 		core/tests.h \
-		binary.h \
+		core/binary.h \
+		core/transaction.h \
 		defs.h \
 		exceptions.h \
 		bbox.h \
@@ -35,7 +36,6 @@ nobase_dist_arkiinclude_HEADERS = \
 		dataset/fromfunction.h \
 		dataset/testlarge.h \
 		dataset/file.h \
-		dataset/gridquery.h \
 		dataset.h \
 		dataset/index.h \
 		dataset/index/attr.h \
@@ -69,17 +69,20 @@ nobase_dist_arkiinclude_HEADERS = \
 		dataset/step.h \
 		dataset/tests.h \
 		dataset/maintenance-test.h \
-		datasets.h \
+		dataset/querymacro.h \
+		dataset/pool.h \
 		dispatcher.h \
-		emitter.h \
-		emitter/json.h \
-		emitter/memory.h \
+		structured/emitter.h \
+		structured/keys.h \
+		structured/reader.h \
+		structured/json.h \
+		structured/memory.h \
 		formatter.h \
-		validator.h \
 		iotrace.h \
-		itemset.h \
-		matcher/area.h \
 		matcher.h \
+		matcher/fwd.h \
+		matcher/aliases.h \
+		matcher/area.h \
 		matcher/level.h \
 		matcher/origin.h \
 		matcher/proddef.h \
@@ -88,7 +91,6 @@ nobase_dist_arkiinclude_HEADERS = \
 		matcher/reftime.h \
 		matcher/reftime/parser.h \
 		matcher/run.h \
-		matcher/source.h \
 		matcher/task.h \
 		matcher/tests.h \
 		matcher/timerange.h \
@@ -96,34 +98,23 @@ nobase_dist_arkiinclude_HEADERS = \
 		metadata.h \
 		metadata/data.h \
 		metadata/collection.h \
-		metadata/consumer.h \
 		metadata/clusterer.h \
 		metadata/xargs.h \
 		metadata/libarchive.h \
 		metadata/fwd.h \
+		metadata/postprocess.h \
+		metadata/sort.h \
 		metadata/stream.h \
 		metadata/tests.h \
 		metadata/test-generator.h \
-		metadatagrid.h \
+		metadata/validator.h \
 		nag.h \
-		postprocess.h \
-		querymacro.h \
-		runtime/config.h \
-		runtime/inputs.h \
 		runtime.h \
-		runtime/io.h \
-		runtime/source.h \
-		runtime/dispatch.h \
-		runtime/processor.h \
-		runtime/module.h \
-		runtime/tests.h \
-		runtime/arki-query.h \
-		runtime/arki-check.h \
-		runtime/arki-scan.h \
-		runtime/arki-mergeconf.h \
 		scan.h \
 		scan/fwd.h \
 		scan/validator.h \
+		scan/mock.h \
+		scan/odimh5.h \
 		segment.h \
 		segment/fwd.h \
 		segment/base.h \
@@ -138,23 +129,25 @@ nobase_dist_arkiinclude_HEADERS = \
 		segment/seqfile.h \
 		segment/tests.h \
 		segment/tests.tcc \
-		sort.h \
 		summary.h \
 		summary/intern.h \
 		summary/table.h \
 		summary/codec.h \
 		summary/stats.h \
 		summary/short.h \
-		targetfile.h \
 		tests/daemon.h \
 		tests/tests.h \
-		transaction.h \
 		types/fwd.h \
+		types/bundle.h \
 		types/area.h \
 		types/assigneddataset.h \
 		types/bbox.h \
 		types.h \
 		types-init.h \
+		types/core.h \
+		types/core.tcc \
+		types/styled.h \
+		types/styled.tcc \
 		types/level.h \
 		types/note.h \
 		types/origin.h \
@@ -168,21 +161,20 @@ nobase_dist_arkiinclude_HEADERS = \
 		types/source/inline.h \
 		types/source/url.h \
 		types/task.h \
-		types.tcc \
 		types/tests.h \
 		types/timerange.h \
 		types/utils.h \
 		types/value.h \
 		types/typevector.h \
 		types/typeset.h \
+		types/values.h \
 		utils/accounting.h \
+		utils/iostream.h \
 		utils/gzip.h \
 		utils/compress.h \
 		utils/files.h \
 		utils/geos.h \
 		utils/geosfwd.h \
-		utils/h5.h \
-		utils.h \
 		utils/process.h \
 		utils/regexp.h \
 		utils/sqlite.h \
@@ -192,16 +184,9 @@ nobase_dist_arkiinclude_HEADERS = \
 		utils/yaml.h \
 		utils/tar.h \
 		utils/zip.h \
-		utils/commandline/core.h \
-		utils/commandline/doc.h \
-		utils/commandline/engine.h \
-		utils/commandline/options.h \
-		utils/commandline/parser.h \
-		utils/commandline/wordwrap.h \
 		utils/term.h \
 		utils/tests.h \
-		utils/testrunner.h \
-		values.h
+		utils/testrunner.h
 
 reftime_parser_built_sources = \
 		matcher/reftime/reftime-lex.h \
@@ -224,7 +209,7 @@ noinst_LTLIBRARIES = libarkimet-test.la
 # Build these incrementally
 libarkimet_la_CPPFLAGS = $(AM_CPPFLAGS) -Werror
 libarkimet_la_SOURCES =
-libarkimet_la_LDFLAGS = -version-info @LIBARKI_VERSION_INFO@ $(SQLITE3_LDFLAGS) $(ZLIB_LIBS) $(LIBARCHIVE_LIBS) $(LIBZIP_LIBS) $(DEVEL_LIBS) -lpthread
+libarkimet_la_LDFLAGS = -version-info @LIBARKI_VERSION_INFO@ $(SQLITE3_LDFLAGS) $(ZLIB_LIBS) $(LIBARCHIVE_LIBS) $(LIBZIP_LIBS) $(LIBSSL_LIBS) $(DEVEL_LIBS) -lpthread
 libarkimet_test_la_SOURCES = tests/main.cpp
 tests_arki_test_SOURCES =
 tests_arki_test_LDADD =
@@ -233,15 +218,15 @@ tests_arki_test_LDADD =
 #
 # Core functions
 #
-if DEVEL_DO_TYPES
 libarkimet_la_SOURCES += \
 		core/time.cc \
 		core/fuzzytime.cc \
 		core/file.cc \
 		core/cfg.cc \
+		core/binary.cc \
+		core/transaction.cc \
 		exceptions.cc \
 		nag.cc \
-		utils.cc \
 		utils/accounting.cc \
 		utils/geos.cc \
 		utils/gzip.cc \
@@ -255,21 +240,16 @@ libarkimet_la_SOURCES += \
 		utils/tar.cc \
 		utils/zip.cc \
 		utils/term.cc \
-		utils/commandline/core.cpp \
-		utils/commandline/options.cpp \
-		utils/commandline/doc.cpp \
-		utils/commandline/parser.cpp \
-		utils/commandline/engine.cpp \
-		utils/commandline/wordwrap.cpp \
-		binary.cc \
-		transaction.cc \
-		emitter.cc \
-		emitter/memory.cc \
-		emitter/json.cc \
-		values.cc \
+		structured/emitter.cc \
+		structured/keys.cc \
+		structured/reader.cc \
+		structured/memory.cc \
+		structured/json.cc \
 		bbox.cc \
 		types.cc \
+		types/bundle.cc \
 		types/utils.cc \
+		types/values.cc \
 		types/source.cc \
 		types/source/blob.cc \
 		types/source/inline.cc \
@@ -290,8 +270,9 @@ libarkimet_la_SOURCES += \
 		types/value.cc \
 		types/typevector.cc \
 		types/typeset.cc \
-		itemset.cc \
+		types/itemset.cc \
 		matcher.cc \
+		matcher/aliases.cc \
 		matcher/utils.cc \
 		matcher/origin.cc \
 		matcher/product.cc \
@@ -304,13 +285,41 @@ libarkimet_la_SOURCES += \
 		matcher/area.cc \
 		matcher/proddef.cc \
 		matcher/run.cc \
-		matcher/source.cc \
 		matcher/task.cc \
 		matcher/quantity.cc \
-		runtime/config.cc \
-		runtime/inputs.cc \
-		runtime/io.cc \
-		types-init.cc
+		types-init.cc \
+		utils/compress.cc \
+		utils/sqlite.cc \
+		metadata.cc \
+		metadata/sort.cc \
+		metadata/data.cc \
+		metadata/collection.cc \
+		metadata/stream.cc \
+		metadata/clusterer.cc \
+		metadata/libarchive.cc \
+		metadata/validator.cc \
+		metadata/postprocess.cc \
+		metadata/test-generator.cc \
+		summary/stats.cc \
+		summary/intern.cc \
+		summary/table.cc \
+		summary/codec.cc \
+		summary/short.cc \
+		summary.cc \
+		segment.cc \
+		segment/common.cc \
+		segment/missing.cc \
+		segment/fd.cc \
+		segment/dir.cc \
+		segment/tar.cc \
+		segment/zip.cc \
+		segment/gz.cc \
+		segment/seqfile.cc \
+		formatter.cc \
+		scan.cc \
+		scan/validator.cc \
+		scan/mock.cc \
+		scan/odimh5.cc
 
 libarkimet_test_la_SOURCES += \
 		tests/daemon.cc \
@@ -326,7 +335,8 @@ tests_arki_test_SOURCES += \
 		core/fuzzytime-test.cc \
 		core/file-test.cc \
 		core/cfg-test.cc \
-		utils-test.cc \
+		core/binary-test.cc \
+		core/transaction-test.cc \
 		utils/accounting-test.cc \
 		utils/gzip-test.cc \
 		utils/yaml-test.cc \
@@ -336,13 +346,12 @@ tests_arki_test_SOURCES += \
 		utils/process-test.cc \
 		utils/regexp-test.cc \
 		utils/geos-test.cc \
-		binary-test.cc \
-		transaction-test.cc \
-		emitter/memory-test.cc \
-		emitter/json-test.cc \
-		values-test.cc \
+		structured/memory-test.cc \
+		structured/json-test.cc \
 		types-test.cc \
+		types/bundle-test.cc \
 		types/utils-test.cc \
+		types/values-test.cc \
 		types/source-test.cc \
 		types/reftime-test.cc \
 		types/origin-test.cc \
@@ -360,7 +369,55 @@ tests_arki_test_SOURCES += \
 		types/value-test.cc \
 		types/typevector-test.cc \
 		types/typeset-test.cc \
-		itemset-test.cc
+		types/itemset-test.cc \
+		metadata/tests.cc \
+		matcher/tests.cc \
+		utils/compress-test.cc \
+		utils/sqlite-test.cc \
+		formatter-test.cc \
+		bbox-test.cc \
+		metadata-test.cc \
+		metadata/sort-test.cc \
+		metadata/data-test.cc \
+		metadata/collection-test.cc \
+		metadata/clusterer-test.cc \
+		metadata/stream-test.cc \
+		metadata/libarchive-test.cc \
+		metadata/validator-test.cc \
+		metadata/test-generator-test.cc \
+		summary-test.cc \
+		summary/intern-test.cc \
+		summary/table-test.cc \
+		summary/stats-test.cc \
+		summary/short-test.cc \
+		matcher-test.cc \
+		matcher/aliases-test.cc \
+		matcher/utils-test.cc \
+		matcher/origin-test.cc \
+		matcher/product-test.cc \
+		matcher/level-test.cc \
+		matcher/timerange-test.cc \
+		matcher/reftime-test.cc \
+		matcher/reftime/parser-test.cc \
+		matcher/area-test.cc \
+		matcher/proddef-test.cc \
+		matcher/run-test.cc \
+		matcher/task-test.cc \
+		matcher/quantity-test.cc \
+		scan-test.cc \
+		scan/validator-test.cc \
+		scan/mock-test.cc \
+		scan/odimh5-test.cc \
+		segment-test.cc \
+		segment/common-test.cc \
+		segment/missing-test.cc \
+		segment/fd-test.cc \
+		segment/seqfile-test.cc \
+		segment/dir-test.cc \
+		segment/tar-test.cc \
+		segment/zip-test.cc \
+		segment/gz-test.cc \
+		segment/tests.cc
 
 if IOTRACE
 libarkimet_la_SOURCES += iotrace.cc
@@ -372,126 +429,17 @@ AM_CPPFLAGS += $(LZO_CFLAGS)
 libarkimet_la_LDFLAGS += $(LZO_LIBS)
 endif
 
-if LUA
-nobase_dist_arkiinclude_HEADERS += report.h formatter/lua.h utils/lua.h tests/lua.h
-libarkimet_la_SOURCES += formatter/lua.cc utils/lua.cc
-tests_arki_test_SOURCES += formatter/lua-test.cc utils/lua-test.cc tests/lua.cc
-AM_CPPFLAGS += $(LUA_CFLAGS)
-libarkimet_la_LDFLAGS += $(LUA_LIBS)
-tests_arki_test_LDADD += $(LUA_LIBS)
-endif
-
 if GEOS
 AM_CPPFLAGS += $(GEOS_CFLAGS)
 libarkimet_la_LDFLAGS += $(GEOS_LIBS)
 endif
 
-if VM2
-AM_CPPFLAGS += $(VM2_CFLAGS)
-nobase_dist_arkiinclude_HEADERS += scan/vm2.h utils/vm2.h
-libarkimet_la_SOURCES += utils/vm2.cc
-libarkimet_la_LDFLAGS += $(VM2_LIBS)
-tests_arki_test_SOURCES += utils/vm2-test.cc
-tests_arki_test_LDADD += $(VM2_LIBS)
-endif
-
-endif
-
-#
-# Metadata types
-#
-if DEVEL_DO_METADATA
-libarkimet_la_SOURCES += \
-		utils/h5.cc \
-		utils/compress.cc \
-		utils/sqlite.cc \
-		metadata.cc \
-		metadata/data.cc \
-		metadata/collection.cc \
-		metadata/stream.cc \
-		metadata/clusterer.cc \
-		metadata/consumer.cc \
-		metadata/libarchive.cc \
-		metadata/test-generator.cc \
-		summary/stats.cc \
-		summary/intern.cc \
-		summary/table.cc \
-		summary/codec.cc \
-		summary/short.cc \
-		summary.cc \
-		segment.cc \
-		segment/common.cc \
-		segment/missing.cc \
-		segment/fd.cc \
-		segment/dir.cc \
-		segment/tar.cc \
-		segment/zip.cc \
-		segment/gz.cc \
-		segment/seqfile.cc \
-		sort.cc \
-		formatter.cc \
-		validator.cc \
-		postprocess.cc \
-		scan.cc \
-		scan/validator.cc
-
-tests_arki_test_SOURCES += \
-		metadata/tests.cc \
-		matcher/tests.cc \
-		utils/compress-test.cc \
-		utils/sqlite-test.cc \
-		sort-test.cc \
-		formatter-test.cc \
-		validator-test.cc \
-		bbox-test.cc \
-		metadata-test.cc \
-		metadata/data-test.cc \
-		metadata/collection-test.cc \
-		metadata/clusterer-test.cc \
-		metadata/stream-test.cc \
-		metadata/libarchive-test.cc \
-		metadata/test-generator-test.cc \
-		summary-test.cc \
-		summary/intern-test.cc \
-		summary/table-test.cc \
-		summary/stats-test.cc \
-		summary/short-test.cc \
-		matcher-test.cc \
-		matcher/utils-test.cc \
-		matcher/origin-test.cc \
-		matcher/product-test.cc \
-		matcher/level-test.cc \
-		matcher/timerange-test.cc \
-		matcher/reftime-test.cc \
-		matcher/reftime/parser-test.cc \
-		matcher/area-test.cc \
-		matcher/proddef-test.cc \
-		matcher/run-test.cc \
-		matcher/source-test.cc \
-		matcher/task-test.cc \
-		matcher/quantity-test.cc \
-		scan-test.cc \
-		scan/validator-test.cc \
-		segment-test.cc \
-		segment/common-test.cc \
-		segment/missing-test.cc \
-		segment/fd-test.cc \
-		segment/seqfile-test.cc \
-		segment/dir-test.cc \
-		segment/tar-test.cc \
-		segment/zip-test.cc \
-		segment/gz-test.cc \
-		segment/tests.cc \
-		runtime/io-test.cc \
-		runtime/inputs-test.cc \
-		runtime/config-test.cc
-
 if GRIBAPI
 nobase_dist_arkiinclude_HEADERS += scan/grib.h
 libarkimet_la_SOURCES += scan/grib.cc
 tests_arki_test_SOURCES += scan/grib-test.cc
-AM_CPPFLAGS += $(GRIBAPI_CFLAGS) $(LUA_CFLAGS)
-libarkimet_la_LDFLAGS += $(GRIBAPI_LIBS) $(LUA_LIBS)
+AM_CPPFLAGS += $(GRIBAPI_CFLAGS)
+libarkimet_la_LDFLAGS += $(GRIBAPI_LIBS)
 endif
 
 if DBALLE
@@ -500,28 +448,21 @@ libarkimet_la_SOURCES += scan/bufr.cc
 libarkimet_la_LDFLAGS += $(DBALLE_LIBS)
 AM_CPPFLAGS += $(DBALLE_CFLAGS)
 tests_arki_test_SOURCES += scan/bufr-test.cc
-if LUA
-nobase_dist_arkiinclude_HEADERS += scan/bufrlua.h
-libarkimet_la_SOURCES += scan/bufrlua.cc
-tests_arki_test_SOURCES += scan/bufrlua-test.cc
-endif
-endif
-
-if HDF5
-AM_CPPFLAGS += $(HDF5_CFLAGS)
-nobase_dist_arkiinclude_HEADERS += scan/odimh5.h
-libarkimet_la_SOURCES += scan/odimh5.cc
-libarkimet_la_LDFLAGS += $(HDF5_LIBS)
-tests_arki_test_SOURCES += utils/h5-test.cc scan/odimh5-test.cc
-tests_arki_test_LDADD += $(HDF5_LIBS)
 endif
 
 if VM2
-libarkimet_la_SOURCES += scan/vm2.cc
-tests_arki_test_SOURCES += scan/vm2-test.cc
+AM_CPPFLAGS += $(VM2_CFLAGS)
+nobase_dist_arkiinclude_HEADERS += scan/vm2.h utils/vm2.h
+libarkimet_la_SOURCES += utils/vm2.cc scan/vm2.cc
+libarkimet_la_LDFLAGS += $(VM2_LIBS)
+tests_arki_test_SOURCES += utils/vm2-test.cc scan/vm2-test.cc
+
+if LUA
+AM_CPPFLAGS += $(LUA_CFLAGS)
+libarkimet_la_LDFLAGS += $(LUA_LIBS)
+endif
 endif
 
-endif
 
 #
 # Datasets
@@ -529,7 +470,6 @@ endif
 if DEVEL_DO_DATASETS
 libarkimet_la_SOURCES += \
 		metadata/xargs.cc \
-		targetfile.cc \
 		dataset.cc \
 		dataset/lock.cc \
 		dataset/reporter.cc \
@@ -570,19 +510,14 @@ libarkimet_la_SOURCES += \
 		dataset/fromfunction.cc \
 		dataset/testlarge.cc \
 		dataset/merged.cc \
-		dataset/gridquery.cc \
-		datasets.cc \
-		metadatagrid.cc \
+		dataset/querymacro.cc \
+		dataset/pool.cc \
 		dispatcher.cc \
-		querymacro.cc \
-		runtime/arki-query.cc \
-		runtime/arki-check.cc \
-		runtime/arki-scan.cc \
-		runtime/arki-mergeconf.cc
+		runtime.cc
 
 tests_arki_test_SOURCES += \
-		targetfile-test.cc \
 		metadata/xargs-test.cc \
+		metadata/postprocess-test.cc \
 		dataset/tests.cc \
 		dataset/lock-test.cc \
 		dataset/reporter-test.cc \
@@ -627,25 +562,14 @@ tests_arki_test_SOURCES += \
 		dataset/fromfunction-test.cc \
 		dataset/testlarge-test.cc \
 		dataset/merged-test.cc \
-		dataset/gridquery-test.cc \
+		dataset/querymacro-test.cc \
+		dataset/pool-test.cc \
 		dataset-test.cc \
 		dataset-reader-test.cc \
 		dataset-writer-test.cc \
 		dataset-checker-test.cc \
 		dataset-concurrency-test.cc \
-		metadatagrid-test.cc \
-		postprocess-test.cc \
-		querymacro-test.cc \
-		datasets-test.cc \
 		dispatcher-test.cc \
-		runtime/tests.cc \
-		runtime/processor-test.cc \
-		runtime/source-test.cc \
-		runtime/dispatch-test.cc \
-		runtime/arki-query-test.cc \
-		runtime/arki-check-test.cc \
-		runtime/arki-scan-test.cc \
-		runtime/arki-mergeconf-test.cc \
 		runtime-test.cc
 
 if CURL
@@ -656,22 +580,6 @@ libarkimet_la_LDFLAGS += @LIBCURL@
 tests_arki_test_SOURCES += dataset/http-test.cc
 endif
 
-if LUA
-libarkimet_la_SOURCES += report.cc
-tests_arki_test_SOURCES += report-test.cc
-endif
-
-endif
-
-#
-# Runtime
-#
-if DEVEL_DO_RUNTIME
-libarkimet_la_SOURCES += \
-		runtime/source.cc \
-		runtime/dispatch.cc \
-		runtime/processor.cc \
-		runtime.cc
 endif
 
 if GCOV
@@ -688,7 +596,20 @@ check-local:
 		$(TESTS_ENVIRONMENT) $$test ; \
 	done
 
-tests_arki_test_LDADD += libarkimet.la libarkimet-test.la $(SQLITE3_LDFLAGS) $(LIBARCHIVE_LIBS) $(LIBZIP_LIBS) $(DEVEL_LIBS) -lpthread
+tests_arki_test_LDADD += libarkimet.la libarkimet-test.la 
+if GEOS
+tests_arki_test_LDADD += $(GEOS_LIBS)
+endif
+if VM2
+tests_arki_test_LDADD += $(VM2_LIBS)
+if LUA
+tests_arki_test_LDADD += $(LUA_LIBS)
+endif
+endif
+if LZO
+tests_arki_test_LDADD += $(LZO_LIBS)
+endif
+tests_arki_test_LDADD += $(SQLITE3_LDFLAGS) $(ZLIB_LIBS) $(LIBARCHIVE_LIBS) $(LIBZIP_LIBS) $(LIBSSL_LIBS) $(DEVEL_LIBS) -lpthread
 
 tests/testdata.json: tests/arki-test
 	$(top_srcdir)/doc/update --testsuite=$< --cache-testsuite=$@
@@ -698,4 +619,5 @@ EXTRA_DIST = runtest buildbison buildflex \
 	     matcher/reftime/reftime-parse.yy \
 	     $(reftime_parser_built_sources) \
 	     tests/testdata.json \
-	     dataset/http-redirect-daemon
+	     dataset/http-redirect-daemon \
+	     dataset/http-aliases-daemon

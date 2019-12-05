@@ -1,29 +1,8 @@
 #ifndef ARKI_MATCHER_AREA
 #define ARKI_MATCHER_AREA
 
-/*
- * matcher/area - Area matcher
- *
- * Copyright (C) 2007--2014  ARPAE-SIMC <simc-urp@arpae.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include <arki/matcher.h>
+#include <arki/matcher/utils.h>
 #include <arki/types/area.h>
 #include <arki/utils/geosfwd.h>
 
@@ -43,7 +22,7 @@ struct MatchArea : public Implementation
 
 struct MatchAreaGRIB : public MatchArea
 {
-	ValueBag expr;
+    types::ValueBag expr;
 
     MatchAreaGRIB(const std::string& pattern);
     bool matchItem(const types::Type& o) const override;
@@ -52,7 +31,7 @@ struct MatchAreaGRIB : public MatchArea
 
 struct MatchAreaODIMH5 : public MatchArea
 {
-	ValueBag expr;
+    types::ValueBag expr;
 
     MatchAreaODIMH5(const std::string& pattern);
     bool matchItem(const types::Type& o) const override;
@@ -63,7 +42,7 @@ struct MatchAreaVM2 : public MatchArea
 {
     // This is -1 when should be ignored
     int station_id;
-    ValueBag expr;
+    types::ValueBag expr;
     std::vector<int> idlist;
 
     MatchAreaVM2(const std::string& pattern);
@@ -122,5 +101,4 @@ struct MatchAreaBBoxCoveredBy : public MatchAreaBBox
 }
 }
 
-// vim:set ts=4 sw=4:
 #endif

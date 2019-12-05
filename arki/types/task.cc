@@ -1,16 +1,13 @@
-#include <arki/exceptions.h>
-#include <arki/types/task.h>
-#include <arki/types/utils.h>
-#include <arki/binary.h>
-#include <arki/emitter.h>
-#include <arki/emitter/memory.h>
-#include "config.h"
+#include "arki/exceptions.h"
+#include "arki/types/task.h"
+#include "arki/types/utils.h"
+#include "arki/core/binary.h"
+#include "arki/structured/emitter.h"
+#include "arki/structured/memory.h"
+#include "arki/structured/keys.h"
+#include "arki/libconfig.h"
 #include <sstream>
 #include <cmath>
-
-#ifdef HAVE_LUA
-#include <arki/utils/lua.h>
-#endif
 
 #define CODE TYPE_TASK
 #define TAG "task"
@@ -25,7 +22,6 @@ namespace types {
 const char* traits<Task>::type_tag = TAG;
 const types::Code traits<Task>::type_code = CODE;
 const size_t traits<Task>::type_sersize_bytes = SERSIZELEN;
-const char* traits<Task>::type_lua_tag = LUATAG_TYPES ".task";
 
 int Task::compare(const Type& o) const
 {
@@ -49,13 +45,13 @@ bool Task::equals(const Type& o) const
 	return task == v->task;
 }
 
-void Task::encodeWithoutEnvelope(BinaryEncoder& enc) const
+void Task::encodeWithoutEnvelope(core::BinaryEncoder& enc) const
 {
     enc.add_varint(task.size());
     enc.add_raw(task);
 }
 
-unique_ptr<Task> Task::decode(BinaryDecoder& dec)
+unique_ptr<Task> Task::decode(core::BinaryDecoder& dec)
 {
     size_t vallen = dec.pop_varint<size_t>("task text size");
     string val = dec.pop_string(vallen, "task text");
@@ -67,14 +63,14 @@ std::ostream& Task::writeToOstream(std::ostream& o) const
 	return o << task;
 }
 
-void Task::serialiseLocal(Emitter& e, const Formatter* f) const
+void Task::serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f) const
 {
-    e.add("va", task);
+    e.add(keys.task_value, task);
 }
 
-unique_ptr<Task> Task::decodeMapping(const emitter::memory::Mapping& val)
+std::unique_ptr<Task> Task::decode_structure(const structured::Keys& keys, const structured::Reader& val)
 {
-    return Task::create(val["va"].want_string("parsing Task value"));
+    return Task::create(val.as_string(keys.task_value, "Task value"));
 }
 
 unique_ptr<Task> Task::decodeString(const std::string& val)
@@ -88,33 +84,6 @@ unique_ptr<Task> Task::decodeString(const std::string& val)
 	//	throw_consistency_error("parsing Task", "no closed square bracket found");
 	return Task::create(val);
 }
-
-#ifdef HAVE_LUA
-bool Task::lua_lookup(lua_State* L, const std::string& name) const
-{
-	if (name == "task")
-		lua_pushlstring(L, task.data(), task.size());
-	else
-		return CoreType<Task>::lua_lookup(L, name);
-	return true;
-}
-
-static int arkilua_new_task(lua_State* L)
-{
-	const char* value = luaL_checkstring(L, 1);
-	Task::create(value)->lua_push(L);
-	return 1;
-}
-
-void Task::lua_loadlib(lua_State* L)
-{
-	static const struct luaL_Reg lib [] = {
-		{ "new", arkilua_new_task },
-		{ NULL, NULL }
-	};
-    utils::lua::add_global_library(L, "arki_task", lib);
-}
-#endif
 
 Task* Task::clone() const
 {
@@ -138,5 +107,4 @@ void Task::init()
 }
 }
 
-#include <arki/types.tcc>
-// vim:set ts=4 sw=4:
+#include <arki/types/core.tcc>

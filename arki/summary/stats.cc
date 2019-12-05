@@ -1,13 +1,13 @@
 #include "arki/summary/stats.h"
 #include "arki/metadata.h"
 #include "arki/core/file.h"
+#include "arki/core/binary.h"
 #include "arki/types/utils.h"
-#include "arki/binary.h"
-#include "arki/utils/lua.h"
 #include "arki/utils/string.h"
 #include "arki/utils/yaml.h"
-#include "arki/emitter.h"
-#include "arki/emitter/memory.h"
+#include "arki/structured/emitter.h"
+#include "arki/structured/reader.h"
+#include "arki/structured/keys.h"
 #include "arki/exceptions.h"
 
 using namespace std;
@@ -22,7 +22,6 @@ namespace types {
 const char* traits<summary::Stats>::type_tag = "summarystats";
 const types::Code traits<summary::Stats>::type_code = TYPE_SUMMARYSTATS;
 const size_t traits<summary::Stats>::type_sersize_bytes = 2;
-const char* traits<summary::Stats>::type_lua_tag = LUATAG_TYPES ".summary.stats";
 }
 */
 
@@ -101,11 +100,11 @@ std::unique_ptr<types::Reftime> Stats::make_reftime() const
     return Reftime::create(begin, end);
 }
 
-void Stats::encodeBinary(BinaryEncoder& enc) const
+void Stats::encodeBinary(core::BinaryEncoder& enc) const
 {
     vector<uint8_t> contents;
     contents.reserve(256);
-    BinaryEncoder contentsenc(contents);
+    core::BinaryEncoder contentsenc(contents);
     encodeWithoutEnvelope(contentsenc);
 
     enc.add_varint((unsigned)TYPE_SUMMARYSTATS);
@@ -113,7 +112,7 @@ void Stats::encodeBinary(BinaryEncoder& enc) const
     enc.add_raw(contents);
 }
 
-void Stats::encodeWithoutEnvelope(BinaryEncoder& enc) const
+void Stats::encodeWithoutEnvelope(core::BinaryEncoder& enc) const
 {
     unique_ptr<types::Reftime> reftime(Reftime::create(begin, end));
     enc.add_unsigned(count, 4);
@@ -126,27 +125,27 @@ std::ostream& Stats::writeToOstream(std::ostream& o) const
     return o << toYaml(0);
 }
 
-void Stats::serialiseLocal(Emitter& e, const Formatter* f) const
+void Stats::serialiseLocal(structured::Emitter& e, const Formatter* f) const
 {
     if (count > 0)
     {
-        e.add("b"); begin.serialiseList(e);
-        e.add("e"); end.serialiseList(e);
+        e.add("b"); e.add(begin);
+        e.add("e"); e.add(end);
     }
     e.add("c", count);
     e.add("s", size);
 }
 
-unique_ptr<Stats> Stats::decodeMapping(const emitter::memory::Mapping& val)
+unique_ptr<Stats> Stats::decode_structure(const structured::Keys& keys, const structured::Reader& val)
 {
-    using namespace emitter::memory;
+    using namespace structured::memory;
     unique_ptr<Stats> res(new Stats);
-    res->count = val["c"].want_int("parsing summary stats count");
-    res->size = val["s"].want_int("parsing summary stats size");
+    res->count = val.as_int(keys.summarystats_count, "summary stats count");
+    res->size = val.as_int(keys.summarystats_size, "summary stats size");
     if (res->count)
     {
-        res->begin = core::Time::decodeList(val["b"].want_list("parsing summary stats begin"));
-        res->end = core::Time::decodeList(val["e"].want_list("parsing summary stats end"));
+        res->begin = val.as_time(keys.summarystats_begin, "summary stats begin");
+        res->end = val.as_time(keys.summarystats_end, "summary stats end");
     }
     return res;
 }
@@ -167,7 +166,7 @@ void Stats::toYaml(std::ostream& out, size_t indent) const
     out << ind << "Reftime: " << *reftime << endl;
 }
 
-unique_ptr<Stats> Stats::decode(BinaryDecoder& dec)
+unique_ptr<Stats> Stats::decode(core::BinaryDecoder& dec)
 {
     unique_ptr<Stats> res(new Stats);
 
@@ -176,7 +175,7 @@ unique_ptr<Stats> Stats::decode(BinaryDecoder& dec)
 
     // Then decode the reftime
     TypeCode code;
-    BinaryDecoder inner = dec.pop_type_envelope(code);
+    core::BinaryDecoder inner = dec.pop_type_envelope(code);
     if (code == TYPE_REFTIME)
     {
         unique_ptr<Reftime> rt(Reftime::decode(inner));
@@ -221,34 +220,6 @@ unique_ptr<Stats> Stats::decodeString(const std::string& str)
     }
     return res;
 }
-
-#ifdef HAVE_LUA
-void Stats::lua_push(lua_State* L) const
-{
-    lua_newtable(L);
-
-    lua_pushstring(L, "count");
-    lua_pushnumber(L, count);
-    lua_settable(L, -3);
-
-    lua_pushstring(L, "size");
-    lua_pushnumber(L, size);
-    lua_settable(L, -3);
-
-    lua_pushstring(L, "reftime");
-    Reftime::create(begin, end)->lua_push(L);
-    lua_settable(L, -3);
-}
-
-bool Stats::lua_lookup(lua_State* L, const std::string& name) const
-{
-    if (name == "count")
-        lua_pushnumber(L, count);
-    else if (name == "reftime")
-        Reftime::create(begin, end)->lua_push(L);
-    return true;
-}
-#endif
 
 }
 }

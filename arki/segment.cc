@@ -9,7 +9,6 @@
 #include "arki/metadata/collection.h"
 #include "arki/metadata.h"
 #include "arki/types/source/blob.h"
-#include "arki/utils.h"
 #include "arki/utils/files.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
@@ -350,9 +349,9 @@ bool Reader::scan(metadata_dest_func dest)
     if (st_md.get() && st_md->st_mtime >= segment().timestamp())
     {
         std::string root(str::dirname(segment().abspath));
-        return Metadata::read_file(metadata::ReadContext(md_abspath, root), [&](unique_ptr<Metadata> md) {
+        return Metadata::read_file(metadata::ReadContext(md_abspath, root), [&](std::shared_ptr<Metadata> md) {
             md->sourceBlob().lock(shared_from_this());
-            return dest(move(md));
+            return dest(md);
         });
     }
 
@@ -360,6 +359,19 @@ bool Reader::scan(metadata_dest_func dest)
     return scan_data(dest);
 }
 
+size_t Reader::stream(const types::source::Blob& src, core::AbstractOutputFile& out)
+{
+    vector<uint8_t> buf = read(src);
+    if (src.format == "vm2")
+    {
+        out.write(buf.data(), buf.size());
+        out.write("\n", 1);
+        return buf.size() + 1;
+    } else {
+        out.write(buf.data(), buf.size());
+        return buf.size();
+    }
+}
 
 
 Writer::PendingMetadata::PendingMetadata(Metadata& md, std::unique_ptr<types::source::Blob> new_source, bool drop_cached_data_on_commit)
@@ -368,7 +380,7 @@ Writer::PendingMetadata::PendingMetadata(Metadata& md, std::unique_ptr<types::so
 }
 
 Writer::PendingMetadata::PendingMetadata(PendingMetadata&& o)
-    : md(o.md), new_source(o.new_source)
+    : md(o.md), new_source(o.new_source), drop_cached_data_on_commit(o.drop_cached_data_on_commit)
 {
     o.new_source = nullptr;
 }

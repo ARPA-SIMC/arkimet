@@ -1,17 +1,13 @@
-#include "config.h"
 #include <arki/dataset/tests.h>
 #include <arki/dataset/ondisk2.h>
 #include <arki/metadata.h>
 #include <arki/metadata/collection.h>
 #include <arki/matcher.h>
 #include <arki/summary.h>
-#include <arki/utils.h>
 #include <arki/utils/files.h>
 #include <arki/utils/sys.h>
 #include <arki/iotrace.h>
 #include <unistd.h>
-#include <sstream>
-#include <iostream>
 
 using namespace std;
 using namespace arki;

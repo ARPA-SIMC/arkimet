@@ -1,20 +1,19 @@
-DESCRIPTION end
-|\fBarki-check\fP performs checks and maintenance on datasets.
-|Datasets can be specified by name or read from a configuration file.
+[DESCRIPTION]
+\fBarki-check\fP performs checks and maintenance on datasets.
+Datasets can be specified by name or read from a configuration file.
 
-OPTIONS end
-|.SH EXAMPLES
-|Here are some example invocations of \fBarki-check\fP:
-|.P
-|.nf
-|  # Check a dataset, reporting what it finds
-|  arki-check datasetdir
-|  # Check all datasets listed in a configuration file
-|  arki-check -C file.conf
-|  # Check a dataset, reporting what it finds and fixing problems
-|  arki-check -f datasetdir
-|  # Show what a repack would do
-|  arki-check -r datasetdir
-|  # Repack a dataset
-|  arki-check -r -f datasetdir
-|.fi
+[EXAMPLES]
+Here are some example invocations of \fBarki-check\fP:
+.P
+.nf
+  # Check a dataset, reporting what it finds
+  arki-check datasetdir
+  # Check all datasets listed in a configuration file
+  arki-check -C file.conf
+  # Check a dataset, reporting what it finds and fixing problems
+  arki-check -f datasetdir
+  # Show what a repack would do
+  arki-check -r datasetdir
+  # Repack a dataset
+  arki-check -r -f datasetdir
+.fi

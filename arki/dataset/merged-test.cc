@@ -3,8 +3,6 @@
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
 #include "arki/matcher.h"
-#include <sstream>
-#include <iostream>
 
 using namespace std;
 using namespace arki;

@@ -19,13 +19,6 @@ add_generic_test("task",
     "task",
     { "zask" });
 
-add_lua_test("lua", "task", R"(
-    function test(o)
-      if o.task ~= 'task' then return 'content is '..o.task..' instead of task' end
-      if tostring(o) ~= 'task' then return 'tostring gave '..tostring(o)..' instead of task' end
-    end
-)");
-
 }
 
 }

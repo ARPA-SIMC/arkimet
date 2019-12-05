@@ -1,9 +1,10 @@
 #include "inline.h"
-#include <arki/binary.h>
-#include <arki/utils/lua.h>
-#include <arki/emitter.h>
-#include <arki/emitter/memory.h>
-#include <arki/exceptions.h>
+#include "arki/core/binary.h"
+#include "arki/structured/emitter.h"
+#include "arki/structured/memory.h"
+#include "arki/structured/keys.h"
+#include "arki/exceptions.h"
+#include <ostream>
 
 using namespace std;
 using namespace arki::utils;
@@ -12,9 +13,9 @@ namespace arki {
 namespace types {
 namespace source {
 
-Source::Style Inline::style() const { return Source::INLINE; }
+source::Style Inline::style() const { return source::Style::INLINE; }
 
-void Inline::encodeWithoutEnvelope(BinaryEncoder& enc) const
+void Inline::encodeWithoutEnvelope(core::BinaryEncoder& enc) const
 {
     Source::encodeWithoutEnvelope(enc);
     enc.add_varint(size);
@@ -26,30 +27,18 @@ std::ostream& Inline::writeToOstream(std::ostream& o) const
              << format << "," << size
              << ")";
 }
-void Inline::serialiseLocal(Emitter& e, const Formatter* f) const
+void Inline::serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f) const
 {
-    Source::serialiseLocal(e, f);
-    e.add("sz", size);
+    Source::serialise_local(e, keys, f);
+    e.add(keys.source_size, size);
 }
-std::unique_ptr<Inline> Inline::decodeMapping(const emitter::memory::Mapping& val)
+
+std::unique_ptr<Inline> Inline::decode_structure(const structured::Keys& keys, const structured::Reader& reader)
 {
     return Inline::create(
-            val["f"].want_string("parsing inline source format"),
-            val["sz"].want_int("parsing inline source size"));
+            reader.as_string(keys.source_format, "source format"),
+            reader.as_int(keys.source_size, "source size"));
 }
-
-const char* Inline::lua_type_name() const { return "arki.types.source.inline"; }
-
-#ifdef HAVE_LUA
-bool Inline::lua_lookup(lua_State* L, const std::string& name) const
-{
-    if (name == "size")
-        lua_pushnumber(L, size);
-    else
-        return Source::lua_lookup(L, name);
-    return true;
-}
-#endif
 
 int Inline::compare_local(const Source& o) const
 {

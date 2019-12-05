@@ -1,7 +1,5 @@
 #include "config.h"
-
-#include <arki/matcher/proddef.h>
-#include <arki/matcher/utils.h>
+#include "proddef.h"
 
 using namespace std;
 using namespace arki::types;
@@ -43,14 +41,14 @@ unique_ptr<MatchProddef> MatchProddef::parse(const std::string& pattern)
     }
     switch (types::Proddef::parseStyle(name))
     {
-        case types::Proddef::GRIB: return unique_ptr<MatchProddef>(new MatchProddefGRIB(rest));
-        default: throw runtime_error("cannot parse type of proddef to match: unsupported proddef style: " + name);
+        case types::Proddef::Style::GRIB: return unique_ptr<MatchProddef>(new MatchProddefGRIB(rest));
+        default: throw invalid_argument("cannot parse type of proddef to match: unsupported proddef style: " + name);
     }
 }
 
 void MatchProddef::init()
 {
-    Matcher::register_matcher("proddef", TYPE_PRODDEF, (MatcherType::subexpr_parser)MatchProddef::parse);
+    MatcherType::register_matcher("proddef", TYPE_PRODDEF, (MatcherType::subexpr_parser)MatchProddef::parse);
 }
 
 }

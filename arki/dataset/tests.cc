@@ -14,10 +14,8 @@
 #include "arki/dataset/iseg/checker.h"
 #include "arki/dataset/index/manifest.h"
 #include "arki/dataset/reporter.h"
-#include "arki/dispatcher.h"
 #include "arki/scan/grib.h"
 #include "arki/scan/vm2.h"
-#include "arki/utils.h"
 #include "arki/utils/files.h"
 #include "arki/types/timerange.h"
 #include "arki/types/area.h"
@@ -32,8 +30,6 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <fcntl.h>
-#include <iostream>
 
 using namespace std;
 using namespace arki;
@@ -130,9 +126,8 @@ const Config& DatasetTest::config()
     if (!m_config)
     {
         sys::mkdir_ifmissing(ds_root);
-        std::stringstream ss;
-        cfg.write(ss, "memory");
-        sys::write_file(str::joinpath(ds_root, "config"), ss.str());
+        sys::File out(str::joinpath(ds_root, "config"), O_WRONLY | O_CREAT | O_TRUNC, 0666);
+        cfg.write(out);
         m_config = dataset::Config::create(cfg);
     }
     return *m_config;
@@ -349,9 +344,8 @@ void DatasetTest::clean()
 {
     if (sys::exists(ds_root)) sys::rmtree(ds_root);
     sys::mkdir_ifmissing(ds_root);
-    std::stringstream ss;
-    cfg.write(ss, "memory");
-    sys::write_file(str::joinpath(ds_root, "config"), ss.str());
+    sys::File out(str::joinpath(ds_root, "config"), O_WRONLY | O_CREAT | O_TRUNC, 0666);
+    cfg.write(out);
     import_results.clear();
 }
 
@@ -401,7 +395,8 @@ metadata::Collection DatasetTest::query(const dataset::DataQuery& q)
 
 void DatasetTest::ensure_localds_clean(size_t filecount, size_t resultcount, bool quick)
 {
-    nag::TestCollect tc;
+    nag::CollectHandler tc;
+    tc.install();
     auto state = scan_state(quick);
     wassert(actual(state.count(segment::SEGMENT_OK)) == filecount);
     wassert(actual(state.size()) == filecount);
@@ -467,7 +462,7 @@ void DatasetTest::query_results(const std::vector<int>& expected)
 void DatasetTest::query_results(const dataset::DataQuery& q, const std::vector<int>& expected)
 {
     vector<int> found;
-    config().create_reader()->query_data(q, [&](unique_ptr<Metadata>&& md) {
+    config().create_reader()->query_data(q, [&](std::shared_ptr<Metadata>&& md) {
         unsigned idx;
         for (idx = 0; idx < import_results.size(); ++idx)
             if (import_results[idx].compare_items(*md) == 0)

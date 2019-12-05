@@ -5,9 +5,6 @@
 #include <arki/types.h>
 #include <arki/core/time.h>
 #include <arki/libconfig.h>
-#ifdef HAVE_LUA
-#include <arki/tests/lua.h>
-#endif
 #include <vector>
 #include <string>
 #include <cstdint>
@@ -131,18 +128,6 @@ struct TypeTestCase : public TestCase
     void add_generic_test(const char* name, const std::vector<std::string>& lower, const std::string& exact, const std::vector<std::string>& higher, const std::string& exact_match=std::string())
     {
         add_generic_test(name, lower, std::vector<std::string>({ exact }), higher, exact_match);
-    }
-
-    void add_lua_test(const char* name, const std::string& sample, const std::string& lua_code)
-    {
-#ifdef HAVE_LUA
-        add_method(name, [=] {
-            auto o = parse(sample);
-            tests::Lua test(lua_code);
-            test.pusharg(*o);
-            wassert(actual(test.run()) == "");
-        });
-#endif
     }
 };
 

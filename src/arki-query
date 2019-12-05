@@ -1,11 +1,10 @@
 #!/usr/bin/python3
-from arkimet import ArkiQuery
+from arkimet.cmdline.query import Query
 import sys
 
 
 def main():
-    arki_query = ArkiQuery()
-    sys.exit(arki_query.run(sys.argv))
+    sys.exit(Query.main())
 
 
 if __name__ == "__main__":

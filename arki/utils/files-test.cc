@@ -1,10 +1,7 @@
-#include "config.h"
-#include <arki/tests/tests.h>
-#include <arki/utils.h>
-#include <arki/utils/files.h>
-#include <arki/utils/sys.h>
-#include <sstream>
-#include <iostream>
+#include "arki/tests/tests.h"
+#include "arki/utils/files.h"
+#include "arki/utils/sys.h"
+#include <system_error>
 
 namespace {
 using namespace std;
@@ -29,15 +26,6 @@ add_method("dontpack", [] {
     string name = "commontest";
     wassert(actual(hasDontpackFlagfile(name)).isfalse());
     wassert(createDontpackFlagfile(name));
-    wassert(actual(hasDontpackFlagfile(name)).istrue());
-    try {
-        createNewDontpackFlagfile(name);
-        ensure(false);
-    } catch (...) {
-    }
-    wassert(removeDontpackFlagfile(name));
-    wassert(actual(hasDontpackFlagfile(name)).isfalse());
-    wassert(createNewDontpackFlagfile(name));
     wassert(actual(hasDontpackFlagfile(name)).istrue());
     wassert(removeDontpackFlagfile(name));
     wassert(actual(hasDontpackFlagfile(name)).isfalse());

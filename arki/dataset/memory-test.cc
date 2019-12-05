@@ -28,18 +28,18 @@ add_method("query", [] {
     reader->scan(c.inserter_func());
 
     metadata::Collection mdc(c, Matcher::parse("origin:GRIB1,200"));
-    ensure_equals(mdc.size(), 1u);
+    wassert(actual(mdc.size()) == 1u);
     wassert(actual(mdc[0].source().cloneType()).is_source_blob("grib", sys::abspath("."), "inbound/test.grib1", 0, 7218));
 
     mdc.clear();
 
     mdc.add(c, Matcher::parse("origin:GRIB1,80"));
-    ensure_equals(mdc.size(), 1u);
+    wassert(actual(mdc.size()) == 1u);
     wassert(actual(mdc[0].source().cloneType()).is_source_blob("grib", sys::abspath("."), "inbound/test.grib1", 7218, 34960u));
 
     mdc.clear();
     mdc.add(c, Matcher::parse("origin:GRIB1,98"));
-    ensure_equals(mdc.size(), 1u);
+    wassert(actual(mdc.size()) == 1u);
     wassert(actual(mdc[0].source().cloneType()).is_source_blob("grib", sys::abspath("."), "inbound/test.grib1", 42178, 2234));
 });
 
@@ -51,7 +51,7 @@ add_method("query_summary", [] {
 
     Summary summary;
     c.query_summary(Matcher::parse("origin:GRIB1,200"), summary);
-    ensure_equals(summary.count(), 1u);
+    wassert(actual(summary.count()) == 1u);
 });
 
 // Test querying the summary by reftime
@@ -63,7 +63,7 @@ add_method("query_summary_reftime", [] {
     Summary summary;
     //system("bash");
     c.query_summary(Matcher::parse("reftime:>=2007-07"), summary);
-    ensure_equals(summary.count(), 3u);
+    wassert(actual(summary.count()) == 3u);
 });
 
 }

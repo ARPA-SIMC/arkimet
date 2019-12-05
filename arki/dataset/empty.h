@@ -40,9 +40,10 @@ public:
     const dataset::Config& config() const override { return *m_config; }
     std::string type() const override { return "empty"; }
 
-    bool query_data(const dataset::DataQuery& q, std::function<bool(std::unique_ptr<Metadata>)>) override { return true; }
+    bool query_data(const dataset::DataQuery& q, metadata_dest_func) override { return true; }
     void query_summary(const Matcher& matcher, Summary& summary) override {}
     void query_bytes(const dataset::ByteQuery& q, core::NamedFileDescriptor& out) override {}
+    void query_bytes(const dataset::ByteQuery& q, core::AbstractOutputFile& out) override {}
 };
 
 
@@ -69,7 +70,7 @@ public:
         // in the dataset
     }
 
-    static void test_acquire(const core::cfg::Section& cfg, WriterBatch& batch, std::ostream& out);
+    static void test_acquire(const core::cfg::Section& cfg, WriterBatch& batch);
 };
 
 

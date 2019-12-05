@@ -12,11 +12,11 @@
 #include "arki/matcher.h"
 #include "arki/metadata/collection.h"
 #include "arki/utils/files.h"
-#include "arki/sort.h"
+#include "arki/metadata/sort.h"
 #include "arki/nag.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/string.h"
-#include "arki/binary.h"
+#include "arki/core/binary.h"
 #include <system_error>
 #include <algorithm>
 #include <cstring>
@@ -43,7 +43,7 @@ struct IDMaker
     vector<uint8_t> make_string(const Metadata& md) const
     {
         vector<uint8_t> res;
-        BinaryEncoder enc(res);
+        core::BinaryEncoder enc(res);
         for (set<types::Code>::const_iterator i = components.begin(); i != components.end(); ++i)
             if (const Type* t = md.get(*i))
                 t->encodeBinary(enc);
@@ -409,18 +409,17 @@ public:
         IDMaker id_maker(idx().unique_codes());
 
         map<vector<uint8_t>, const Metadata*> finddupes;
-        for (metadata::Collection::const_iterator i = mds.begin(); i != mds.end(); ++i)
+        for (const auto& md: mds)
         {
-            vector<uint8_t> id = id_maker.make_string(**i);
+            vector<uint8_t> id = id_maker.make_string(*md);
             if (id.empty())
                 continue;
             auto dup = finddupes.find(id);
             if (dup == finddupes.end())
-                finddupes.insert(make_pair(id, *i));
+                finddupes.insert(make_pair(id, md.get()));
             else
-                dup->second = *i;
+                dup->second = md.get();
         }
-        // cerr << " DUPECHECKED " << pathname << ": " << finddupes.size() << endl;
 
         // Send the remaining metadata to the reindexer
         std::string basename = str::basename(segment->segment().relpath);
@@ -444,14 +443,12 @@ public:
                 // sqlite will take care of transaction consistency
             }
         }
-        // cerr << " REINDEXED " << pathname << endl;
 
         // TODO: if scan fails, remove all info from the index and rename the
         // file to something like .broken
 
         // Commit the changes on the database
         p.commit();
-        // cerr << " COMMITTED" << endl;
 
         // TODO: remove relevant summary
     }

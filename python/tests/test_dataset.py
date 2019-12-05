@@ -1,21 +1,43 @@
 import unittest
 import tempfile
 import arkimet as arki
+import os
+import io
+import shutil
+from arkimet.test import daemon
+
+
+class TestReadConfig(unittest.TestCase):
+    def test_file(self):
+        pathname = os.path.abspath("inbound/test.grib1")
+        section = arki.dataset.read_config(pathname)
+        contents = list(section.items())
+        self.assertEqual(contents, [
+            ('format', 'grib'),
+            ('name', pathname),
+            ('path', pathname),
+            ('type', 'file'),
+        ])
+
+    def test_http(self):
+        with daemon(os.path.join(os.environ["TOP_SRCDIR"], "arki/dataset/http-redirect-daemon")) as url:
+            sections = arki.dataset.http.load_cfg_sections(url)
+            self.assertEqual(sections.keys(), ('error', 'test200', 'test80'))
 
 
 class TestDatasetReader(unittest.TestCase):
     def test_create(self):
-        ds = arki.DatasetReader({
+        ds = arki.dataset.Reader({
             "format": "grib",
             "name": "test.grib1",
             "path": "inbound/test.grib1",
             "type": "file",
         })
-        self.assertEqual(str(ds), "DatasetReader(file, test.grib1)")
-        self.assertEqual(repr(ds), "DatasetReader(file, test.grib1)")
+        self.assertEqual(str(ds), "dataset.Reader(file, test.grib1)")
+        self.assertEqual(repr(ds), "dataset.Reader(file, test.grib1)")
 
     def test_query_data(self):
-        ds = arki.DatasetReader({
+        ds = arki.dataset.Reader({
             "format": "grib",
             "name": "test.grib1",
             "path": "inbound/test.grib1",
@@ -51,11 +73,11 @@ class TestDatasetReader(unittest.TestCase):
             res = []
 
             def on_metadata(md):
-                info = md.to_python()["i"]
+                info = md.to_python()["items"]
                 for i in info:
-                    if i["t"] != "reftime":
+                    if i["type"] != "reftime":
                         continue
-                    res.append(i["ti"][1:3])
+                    res.append([i["time"].month, i["time"].day])
                     break
             ds.query_data(matcher=matcher, sort=sort, on_metadata=on_metadata)
             return res
@@ -70,7 +92,7 @@ class TestDatasetReader(unittest.TestCase):
         # self.fail("no way yet to test with_data")
 
     def test_query_summary(self):
-        ds = arki.DatasetReader({
+        ds = arki.dataset.Reader({
             "format": "grib",
             "name": "test.grib1",
             "path": "inbound/test.grib1",
@@ -100,9 +122,9 @@ class TestDatasetReader(unittest.TestCase):
         self.assertEqual(queried[:2], b"SU")
 
     def test_query_bytes(self):
-        ds = arki.DatasetReader({
+        ds = arki.dataset.Reader({
             "format": "grib",
-            "name": "test.grib1",
+            "name": "inbound/test.grib1",
             "path": "inbound/test.grib1",
             "type": "file",
             "postprocess": "countbytes",
@@ -113,16 +135,26 @@ class TestDatasetReader(unittest.TestCase):
 
         # No arguments
         with tempfile.TemporaryFile() as fd:
-            ds.query_bytes(fd)
+            ds.query_bytes(file=fd)
             fd.seek(0)
             queried = fd.read()
         self.assertEqual(orig, queried)
 
+        with io.BytesIO() as fd:
+            ds.query_bytes(file=fd)
+            queried = fd.getvalue()
+        self.assertEqual(orig, queried)
+
         # matcher
         with tempfile.TemporaryFile() as fd:
-            ds.query_bytes(fd, matcher="reftime:>=1900")
+            ds.query_bytes(file=fd, matcher="reftime:>=1900")
             fd.seek(0)
             queried = fd.read()
+        self.assertEqual(orig, queried)
+
+        with io.BytesIO() as fd:
+            ds.query_bytes(file=fd, matcher="reftime:>=1900")
+            queried = fd.getvalue()
         self.assertEqual(orig, queried)
 
         # data_start_hook
@@ -132,7 +164,7 @@ class TestDatasetReader(unittest.TestCase):
             nonlocal triggered
             triggered = True
         with tempfile.TemporaryFile() as fd:
-            ds.query_bytes(fd, data_start_hook=data_start_hook)
+            ds.query_bytes(file=fd, data_start_hook=data_start_hook)
             fd.seek(0)
             queried = fd.read()
         self.assertEqual(orig, queried)
@@ -140,26 +172,24 @@ class TestDatasetReader(unittest.TestCase):
 
         # postprocess
         with tempfile.TemporaryFile() as fd:
-            ds.query_bytes(fd, postprocess="countbytes")
+            ds.query_bytes(file=fd, postprocess="countbytes")
             fd.seek(0)
             queried = fd.read()
         # This is bigger than 44412 because postprocessors are also sent
         # metadata, so that arki-xargs can work.
         self.assertEqual(queried, b"44937\n")
 
-        # metadata_report
-        with tempfile.TemporaryFile() as fd:
-            ds.query_bytes(fd, metadata_report="count")
-            fd.seek(0)
-            queried = fd.read()
-        self.assertEqual(queried, b"3\n")
+        with io.BytesIO() as fd:
+            ds.query_bytes(file=fd, postprocess="countbytes")
+            queried = fd.getvalue()
+        # This is bigger than 44412 because postprocessors are also sent
+        # metadata, so that arki-xargs can work.
+        self.assertEqual(queried, b"44937\n")
 
-        # summary_report
-        with tempfile.TemporaryFile() as fd:
-            ds.query_bytes(fd, summary_report="count")
-            fd.seek(0)
-            queried = fd.read()
-        self.assertEqual(queried, b"3\n")
+        queried = ds.query_bytes(postprocess="countbytes")
+        # This is bigger than 44412 because postprocessors are also sent
+        # metadata, so that arki-xargs can work.
+        self.assertEqual(queried, b"44937\n")
 
     def test_query_data_qmacro(self):
         ds = arki.make_qmacro_dataset(
@@ -207,7 +237,7 @@ type = file
         self.assertEquals(count, 3)
 
     def test_query_data_memoryusage(self):
-        ds = arki.DatasetReader({
+        ds = arki.dataset.Reader({
             "type": "testlarge",
         })
         count = 0
@@ -219,3 +249,50 @@ type = file
         # No arguments
         ds.query_data(on_metadata=count_results)
         self.assertEquals(count, 24841)
+
+
+class TestDatasetWriter(unittest.TestCase):
+    def test_import(self):
+        try:
+            shutil.rmtree("testds")
+        except FileNotFoundError:
+            pass
+        os.mkdir("testds")
+
+        dest = arki.dataset.Writer({
+            "format": "grib",
+            "name": "testds",
+            "path": "testds",
+            "type": "iseg",
+            "step": "daily",
+        })
+
+        source = arki.dataset.Reader({
+            "format": "grib",
+            "name": "test.grib1",
+            "path": "inbound/test.grib1",
+            "type": "file",
+        })
+
+        def do_import(md):
+            dest.acquire(md)
+
+        source.query_data(on_metadata=do_import)
+        dest.flush()
+
+        dest = arki.dataset.Reader({
+            "format": "grib",
+            "name": "testds",
+            "path": "testds",
+            "type": "iseg",
+            "step": "daily",
+        })
+
+        count = 0
+
+        def count_results(md):
+            nonlocal count
+            count += 1
+
+        dest.query_data(on_metadata=count_results)
+        self.assertEqual(count, 3)

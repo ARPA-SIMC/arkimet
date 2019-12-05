@@ -4,7 +4,7 @@
 #include <arki/defs.h>
 #include <arki/utils/sys.h>
 #include <arki/exceptions.h>
-#include <arki/transaction.h>
+#include <arki/core/transaction.h>
 #include <string>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -35,10 +35,10 @@ bool filesystem_has_ofd_locks(const std::string& dir);
 // Flagfile handling
 
 /// Create an empty file, succeeding if it already exists
-void createDontpackFlagfile(const std::string& dir);
+void createFlagfile(const std::string& pathname);
 
-/// Create an empty file, failing if it already exists
-void createNewDontpackFlagfile(const std::string& dir);
+/// Create an empty file, succeeding if it already exists
+void createDontpackFlagfile(const std::string& dir);
 
 /// Remove a file, succeeding if it does not exists
 void removeDontpackFlagfile(const std::string& dir);
@@ -91,7 +91,7 @@ struct PreserveFileTimes
     ~PreserveFileTimes() noexcept(false);
 };
 
-struct RenameTransaction : public Transaction
+struct RenameTransaction : public core::Transaction
 {
     std::string tmpabspath;
     std::string abspath;
@@ -110,7 +110,7 @@ struct RenameTransaction : public Transaction
  *
  * On rollback, unlink all tmpfiles
  */
-struct FinalizeTempfilesTransaction : public Transaction
+struct FinalizeTempfilesTransaction : public core::Transaction
 {
     std::vector<std::string> tmpfiles;
     std::function<void(const std::vector<std::string>& tmpfiles)> on_commit;

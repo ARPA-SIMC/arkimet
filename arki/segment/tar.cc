@@ -164,7 +164,7 @@ std::vector<uint8_t> Reader::read(const types::source::Blob& src)
         throw std::runtime_error(msg.str());
     }
     acct::plain_data_read_count.incr();
-    iotrace::trace_file(fd.name(), src.offset, src.size, "read data");
+    iotrace::trace_file(fd, src.offset, src.size, "read data");
 
     return buf;
 }
@@ -184,30 +184,10 @@ size_t Reader::stream(const types::source::Blob& src, core::NamedFileDescriptor&
             throw_system_error("cannot write " + to_string(buf.size() + 1) + " bytes to " + out.name());
         return buf.size() + 1;
     } else {
-        // TODO: add a stream method to sys::FileDescriptor that does the
-        // right thing depending on what's available in the system, and
-        // potentially also handles retries. Retry can trivially be done
-        // because offset is updated, and size can just be decreased by the
-        // return value
-        off_t offset = src.offset;
-        ssize_t res = sendfile(out, fd, &offset, src.size);
-        if (res < 0)
-        {
-            stringstream msg;
-            msg << "cannot stream " << src.size << " bytes of " << src.format << " data from " << fd.name() << ":"
-                << src.offset;
-            throw_system_error(msg.str());
-        } else if ((size_t)res != src.size) {
-            // TODO: retry instead
-            stringstream msg;
-            msg << "cannot read " << src.size << " bytes of " << src.format << " data from " << fd.name() << ":"
-                << src.offset << ": only " << res << "/" << src.size << " bytes have been read";
-            throw std::runtime_error(msg.str());
-        }
-
+        fd.sendfile(out, src.offset, src.size);
         acct::plain_data_read_count.incr();
-        iotrace::trace_file(fd.name(), src.offset, src.size, "streamed data");
-        return res;
+        iotrace::trace_file(fd, src.offset, src.size, "streamed data");
+        return src.size;
     }
 }
 
@@ -282,11 +262,11 @@ size_t Checker::remove()
     return size;
 }
 
-Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, const RepackConfig& cfg)
+core::Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, const RepackConfig& cfg)
 {
     string tmpabspath = segment().abspath + ".repack";
 
-    Pending p(new files::RenameTransaction(tmpabspath, tarabspath));
+    core::Pending p(new files::RenameTransaction(tmpabspath, tarabspath));
 
     Creator creator(rootdir, segment().relpath, mds, tmpabspath);
     creator.validator = &scan::Validator::by_filename(segment().abspath);

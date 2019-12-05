@@ -12,7 +12,6 @@
 #include "arki/types/run.h"
 #include "arki/types/task.h"
 #include "arki/types/quantity.h"
-#include <sstream>
 
 using namespace std;
 using namespace arki;
@@ -51,7 +50,6 @@ VM2Data::VM2Data()
 ODIMData::ODIMData()
     : TestData("odimh5")
 {
-    skip_unless_odimh5();
 #if 0
     mds.scan_from_file("inbound/fixture.odimh5", format, true);
 #else
@@ -80,18 +78,19 @@ Metadata make_large_mock(const std::string& format, size_t size, unsigned month,
 
 void fill(Metadata& md)
 {
+    using namespace arki::types::values;
     ValueBag testValues;
-    testValues.set("aaa", Value::createInteger(0));
-    testValues.set("foo", Value::createInteger(5));
-    testValues.set("bar", Value::createInteger(5000));
-    testValues.set("baz", Value::createInteger(-200));
-    testValues.set("moo", Value::createInteger(0x5ffffff));
-    testValues.set("antani", Value::createInteger(-1));
-    testValues.set("blinda", Value::createInteger(0));
-    testValues.set("supercazzola", Value::createInteger(-1234567));
-    testValues.set("pippo", Value::createString("pippo"));
-    testValues.set("pluto", Value::createString("12"));
-    testValues.set("zzz", Value::createInteger(1));
+    testValues.set("aaa", Value::create_integer(0));
+    testValues.set("foo", Value::create_integer(5));
+    testValues.set("bar", Value::create_integer(5000));
+    testValues.set("baz", Value::create_integer(-200));
+    testValues.set("moo", Value::create_integer(0x5ffffff));
+    testValues.set("antani", Value::create_integer(-1));
+    testValues.set("blinda", Value::create_integer(0));
+    testValues.set("supercazzola", Value::create_integer(-1234567));
+    testValues.set("pippo", Value::create_string("pippo"));
+    testValues.set("pluto", Value::create_string("12"));
+    testValues.set("zzz", Value::create_integer(1));
 
     md.set(Origin::createGRIB1(1, 2, 3));
     md.set(Product::createGRIB1(1, 2, 3));
@@ -114,9 +113,9 @@ void ActualMetadata::operator==(const Metadata& expected) const
     if (_actual == expected) return;
     std::stringstream ss;
     ss << "value:" << endl;
-    _actual.write_yaml(ss);
+    ss << _actual.to_yaml();
     ss << "is different than the expected:" << endl;
-    expected.write_yaml(ss);
+    ss << expected.to_yaml();
     throw TestFailed(ss.str());
 }
 
@@ -125,9 +124,9 @@ void ActualMetadata::operator!=(const Metadata& expected) const
     if (_actual != expected) return;
     std::stringstream ss;
     ss << "value:" << endl;
-    _actual.write_yaml(ss);
+    ss << _actual.to_yaml();
     ss << "is not different than the expected:" << endl;
-    expected.write_yaml(ss);
+    ss << expected.to_yaml();
     throw TestFailed(ss.str());
 }
 

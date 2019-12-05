@@ -9,14 +9,6 @@
 #include <fcntl.h>
 #include <sstream>
 
-namespace std {
-static inline std::ostream& operator<<(std::ostream& o, const arki::Metadata& m)
-{
-    m.write_yaml(o);
-    return o;
-}
-}
-
 namespace {
 using namespace std;
 using namespace arki;

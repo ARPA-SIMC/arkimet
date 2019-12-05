@@ -1,25 +1,3 @@
-/*
- * nag - Verbose and debug output support
- *
- * Copyright (C) 2005--2014  ARPAE-SIMC <simc-urp@arpae.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #ifndef ARKI_NAG_H
 #define ARKI_NAG_H
 
@@ -35,6 +13,65 @@
 namespace arki {
 namespace nag {
 
+class Handler
+{
+private:
+    Handler* orig = nullptr;
+    bool installed = false;
+
+public:
+    virtual ~Handler();
+
+    virtual void warning(const char* fmt, va_list ap) = 0;
+    virtual void verbose(const char* fmt, va_list ap) = 0;
+    virtual void debug(const char* fmt, va_list ap) = 0;
+
+    /**
+     * Install the handler as the current handler.
+     *
+     * When the handler is destructed, it will restore the previous one.
+     */
+    void install();
+
+    /// Format vprintf-style arguments into a std::string
+    std::string format(const char* fmt, va_list ap);
+};
+
+
+struct NullHandler: public Handler
+{
+    void warning(const char* fmt, va_list ap) {}
+    void verbose(const char* fmt, va_list ap) {}
+    void debug(const char* fmt, va_list ap) {}
+};
+
+
+struct StderrHandler: public Handler
+{
+    void warning(const char* fmt, va_list ap) override;
+    void verbose(const char* fmt, va_list ap) override;
+    void debug(const char* fmt, va_list ap) override;
+};
+
+
+/// Collect messages during a test, and print them out during destruction
+struct CollectHandler : public Handler
+{
+    bool _verbose;
+    bool _debug;
+    std::vector<std::string> collected;
+
+    CollectHandler(bool verbose=true, bool debug=false);
+    ~CollectHandler();
+
+    void warning(const char* fmt, va_list ap) override;
+    void verbose(const char* fmt, va_list ap) override;
+    void debug(const char* fmt, va_list ap) override;
+
+    void collect(const char* fmt, va_list ap);
+    void clear();
+};
+
 /**
  * Initialize the verbose printing interface, taking the allowed verbose level
  * from the environment and printing a little informational banner if any
@@ -49,28 +86,16 @@ bool is_verbose();
 bool is_debug();
 
 /// Output a message, except during tests (a newline is automatically appended)
-void warning(const char* fmt, ...);
+void warning(const char* fmt, ...) __attribute__ ((format(printf, 1, 2)));
 
 /// Output a message, if verbose messages are allowed (a newline is automatically appended)
-void verbose(const char* fmt, ...);
+void verbose(const char* fmt, ...) __attribute__ ((format(printf, 1, 2)));
 
 /// Output a message, if debug messages are allowed (a newline is automatically appended)
-void debug(const char* fmt, ...);
+void debug(const char* fmt, ...) __attribute__ ((format(printf, 1, 2)));
 
-/// Collect messages during a test, and print them out during destruction
-struct TestCollect
-{
-    TestCollect* previous_collector;
-    bool verbose;
-    bool debug;
-    std::vector<std::string> collected;
-
-    TestCollect(bool verbose=true, bool debug=false);
-    ~TestCollect();
-
-    void collect(const char* fmt, va_list ap);
-    void clear();
-};
+/// Output a message to /dev/tty (used for debugging when the output is redirected)
+void debug_tty(const char* fmt, ...) __attribute__ ((format(printf, 1, 2)));
 
 }
 }

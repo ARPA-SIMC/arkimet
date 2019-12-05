@@ -5,7 +5,7 @@
 namespace arki {
 namespace python {
 
-PyObject* string_to_python(const char* str)
+PyObject* cstring_to_python(const char* str)
 {
     return throw_ifnull(PyUnicode_FromString(str));
 }
@@ -35,6 +35,18 @@ const char* cstring_from_python(PyObject* o)
     throw PythonException();
 }
 
+PyObject* bytes_to_python(const std::vector<uint8_t>& buffer)
+{
+    return throw_ifnull(PyBytes_FromStringAndSize((const char*)buffer.data(), buffer.size()));
+}
+
+bool bool_from_python(PyObject* o)
+{
+    int istrue = PyObject_IsTrue(o);
+    if (istrue == -1) throw PythonException();
+    return istrue == 1;
+}
+
 int int_from_python(PyObject* o)
 {
     int res = PyLong_AsLong(o);
@@ -48,6 +60,31 @@ PyObject* int_to_python(int val)
     return throw_ifnull(PyLong_FromLong(val));
 }
 
+PyObject* unsigned_int_to_python(unsigned int val)
+{
+    return throw_ifnull(PyLong_FromUnsignedLong(val));
+}
+
+PyObject* long_to_python(long int val)
+{
+    return throw_ifnull(PyLong_FromLong(val));
+}
+
+PyObject* unsigned_long_to_python(unsigned long val)
+{
+    return throw_ifnull(PyLong_FromUnsignedLong(val));
+}
+
+PyObject* long_long_to_python(long long val)
+{
+    return throw_ifnull(PyLong_FromLongLong(val));
+}
+
+PyObject* unsigned_long_long_to_python(unsigned long long val)
+{
+    return throw_ifnull(PyLong_FromUnsignedLongLong(val));
+}
+
 double double_from_python(PyObject* o)
 {
     double res = PyFloat_AsDouble(o);
@@ -59,6 +96,29 @@ double double_from_python(PyObject* o)
 PyObject* double_to_python(double val)
 {
     return throw_ifnull(PyFloat_FromDouble(val));
+}
+
+std::vector<std::string> stringlist_from_python(PyObject* o)
+{
+    pyo_unique_ptr iter(throw_ifnull(PyObject_GetIter(o)));
+
+    std::vector<std::string> res;
+    while (pyo_unique_ptr item = PyIter_Next(iter))
+        res.emplace_back(from_python<std::string>(item));
+
+    if (PyErr_Occurred())
+        throw PythonException();
+
+    return res;
+}
+
+PyObject* stringlist_to_python(const std::vector<std::string>& val)
+{
+    pyo_unique_ptr res(throw_ifnull(PyList_New(val.size())));
+    Py_ssize_t idx = 0;
+    for (const auto& str: val)
+        PyList_SET_ITEM(res.get(), idx++, to_python(str));
+    return res.release();
 }
 
 }

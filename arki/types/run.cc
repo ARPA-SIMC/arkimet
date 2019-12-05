@@ -1,17 +1,14 @@
-#include <arki/exceptions.h>
-#include <arki/types/run.h>
-#include <arki/types/utils.h>
-#include <arki/utils.h>
-#include <arki/binary.h>
-#include <arki/emitter.h>
-#include <arki/emitter/memory.h>
-#include "config.h"
+#include "arki/exceptions.h"
+#include "arki/types/run.h"
+#include "arki/types/utils.h"
+#include "arki/utils/iostream.h"
+#include "arki/core/binary.h"
+#include "arki/structured/emitter.h"
+#include "arki/structured/memory.h"
+#include "arki/structured/keys.h"
+#include "arki/libconfig.h"
 #include <iomanip>
 #include <sstream>
-
-#ifdef HAVE_LUA
-#include <arki/utils/lua.h>
-#endif
 
 #define CODE TYPE_RUN
 #define TAG "run"
@@ -26,37 +23,31 @@ namespace types {
 const char* traits<Run>::type_tag = TAG;
 const types::Code traits<Run>::type_code = CODE;
 const size_t traits<Run>::type_sersize_bytes = SERSIZELEN;
-const char* traits<Run>::type_lua_tag = LUATAG_TYPES ".run";
-
-// Style constants
-//const unsigned char Run::NONE;
-const unsigned char Run::MINUTE;
 
 Run::Style Run::parseStyle(const std::string& str)
 {
-	if (str == "MINUTE") return MINUTE;
-	throw_consistency_error("parsing Run style", "cannot parse Run style '"+str+"': only MINUTE is supported");
+    if (str == "MINUTE") return Style::MINUTE;
+    throw_consistency_error("parsing Run style", "cannot parse Run style '"+str+"': only MINUTE is supported");
 }
 
 std::string Run::formatStyle(Run::Style s)
 {
-	switch (s)
-	{
-		//case Run::NONE: return "NONE";
-		case Run::MINUTE: return "MINUTE";
-		default:
-			std::stringstream str;
-			str << "(unknown " << (int)s << ")";
-			return str.str();
-	}
+    switch (s)
+    {
+        case Style::MINUTE: return "MINUTE";
+        default:
+            std::stringstream str;
+            str << "(unknown " << (int)s << ")";
+            return str.str();
+    }
 }
 
-unique_ptr<Run> Run::decode(BinaryDecoder& dec)
+unique_ptr<Run> Run::decode(core::BinaryDecoder& dec)
 {
     Style s = (Style)dec.pop_uint(1, "run style");
     switch (s)
     {
-        case MINUTE: {
+        case Style::MINUTE: {
             unsigned int m = dec.pop_varint<unsigned>("run minute");
             return createMinute(m / 60, m % 60);
         }
@@ -67,11 +58,11 @@ unique_ptr<Run> Run::decode(BinaryDecoder& dec)
 
 unique_ptr<Run> Run::decodeString(const std::string& val)
 {
-	string inner;
-	Run::Style style = outerParse<Run>(val, inner);
-	switch (style)
-	{
-		case Run::MINUTE: {
+    std::string inner;
+    Run::Style style = outerParse<Run>(val, inner);
+    switch (style)
+    {
+        case Style::MINUTE: {
 			size_t sep = inner.find(':');
 			int hour, minute;
 			if (sep == string::npos)
@@ -91,42 +82,14 @@ unique_ptr<Run> Run::decodeString(const std::string& val)
     }
 }
 
-unique_ptr<Run> Run::decodeMapping(const emitter::memory::Mapping& val)
+std::unique_ptr<Run> Run::decode_structure(const structured::Keys& keys, const structured::Reader& val)
 {
-    using namespace emitter::memory;
-
-    switch (style_from_mapping(val))
+    switch (style_from_structure(keys, val))
     {
-        case Run::MINUTE: return upcast<Run>(run::Minute::decodeMapping(val));
-        default:
-            throw_consistency_error("parsing Run", "unknown Run style " + val.get_string());
+        case Style::MINUTE: return upcast<Run>(run::Minute::decode_structure(keys, val));
+        default: throw std::runtime_error("Unknown Run style");
     }
 }
-
-#ifdef HAVE_LUA
-static int arkilua_new_minute(lua_State* L)
-{
-	int nargs = lua_gettop(L);
-	int hour = luaL_checkint(L, 1);
-	if (nargs == 1)
-	{
-		run::Minute::create(hour, 0)->lua_push(L);
-	} else {
-		int minute = luaL_checkint(L, 2);
-		run::Minute::create(hour, minute)->lua_push(L);
-	}
-	return 1;
-}
-
-void Run::lua_loadlib(lua_State* L)
-{
-	static const struct luaL_Reg lib [] = {
-		{ "minute", arkilua_new_minute },
-		{ NULL, NULL }
-	};
-    utils::lua::add_global_library(L, "arki_run", lib);
-}
-#endif
 
 unique_ptr<Run> Run::createMinute(unsigned int hour, unsigned int minute)
 {
@@ -135,9 +98,9 @@ unique_ptr<Run> Run::createMinute(unsigned int hour, unsigned int minute)
 
 namespace run {
 
-Run::Style Minute::style() const { return Run::MINUTE; }
+Run::Style Minute::style() const { return Style::MINUTE; }
 
-void Minute::encodeWithoutEnvelope(BinaryEncoder& enc) const
+void Minute::encodeWithoutEnvelope(core::BinaryEncoder& enc) const
 {
     Run::encodeWithoutEnvelope(enc);
     enc.add_varint(m_minute);
@@ -150,37 +113,24 @@ std::ostream& Minute::writeToOstream(std::ostream& o) const
 			 << setw(2) << (m_minute / 60) << ":"
 			 << setw(2) << (m_minute % 60) << ")";
 }
-void Minute::serialiseLocal(Emitter& e, const Formatter* f) const
+void Minute::serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f) const
 {
-    Run::serialiseLocal(e, f);
-    e.add("va", (int)m_minute);
+    Run::serialise_local(e, keys, f);
+    e.add(keys.run_value, (int)m_minute);
 }
-unique_ptr<Minute> Minute::decodeMapping(const emitter::memory::Mapping& val)
+
+std::unique_ptr<Minute> Minute::decode_structure(const structured::Keys& keys, const structured::Reader& val)
 {
-    unsigned int m = val["va"].want_int("parsing Minute run value");
+    unsigned int m = val.as_int(keys.run_value, "run value");
     return run::Minute::create(m / 60, m % 60);
 }
+
 std::string Minute::exactQuery() const
 {
 	stringstream res;
 	res << "MINUTE," << setfill('0') << setw(2) << (m_minute/60) << ":" << setw(2) << (m_minute % 60);
 	return res.str();
 }
-const char* Minute::lua_type_name() const { return "arki.types.run.minute"; }
-
-#ifdef HAVE_LUA
-bool Minute::lua_lookup(lua_State* L, const std::string& name) const
-{
-	if (name == "hour")
-		lua_pushnumber(L, minute() / 60);
-	else if (name == "min")
-		lua_pushnumber(L, minute() % 60);
-	else
-		return Run::lua_lookup(L, name);
-	return true;
-}
-#endif
-
 
 int Minute::compare_local(const Run& o) const
 {
@@ -224,4 +174,4 @@ void Run::init()
 
 }
 }
-#include <arki/types.tcc>
+#include <arki/types/styled.tcc>

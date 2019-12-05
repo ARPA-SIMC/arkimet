@@ -6,14 +6,13 @@
 #include "arki/dataset/maintenance.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
-#include "arki/metadata/consumer.h"
+#include "arki/metadata/sort.h"
 #include "arki/types/source/blob.h"
 #include "arki/summary.h"
 #include "arki/types/reftime.h"
 #include "arki/matcher.h"
 #include "arki/utils/sqlite.h"
 #include "arki/utils/files.h"
-#include "arki/sort.h"
 #include "arki/nag.h"
 #include "arki/iotrace.h"
 #include "arki/utils/sys.h"
@@ -23,10 +22,6 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <ctime>
-
-#ifdef HAVE_LUA
-#include <arki/report.h>
-#endif
 
 using namespace std;
 using namespace arki;
@@ -70,15 +65,15 @@ bool Manifest::query_data(const dataset::DataQuery& q, SegmentManager& segs, met
 
     // TODO: does it make sense to check with the summary first?
 
-    shared_ptr<sort::Compare> compare;
+    std::shared_ptr<metadata::sort::Compare> compare;
     if (q.sorter)
         compare = q.sorter;
     else
         // If no sorter is provided, sort by reftime in case segment files have
         // not been sorted before archiving
-        compare = sort::Compare::parse("reftime");
+        compare = metadata::sort::Compare::parse("reftime");
 
-    sort::Stream sorter(*compare, dest);
+    metadata::sort::Stream sorter(*compare, dest);
 
     string absdir = sys::abspath(m_path);
     string prepend_fname;
@@ -94,7 +89,7 @@ bool Manifest::query_data(const dataset::DataQuery& q, SegmentManager& segs, met
             reader = segs.get_reader(scan::Scanner::format_from_filename(*i), *i, lock.lock());
         // This generates filenames relative to the metadata
         // We need to use absdir as the dirname, and prepend dirname(*i) to the filenames
-        Metadata::read_file(fullpath, [&](unique_ptr<Metadata> md) {
+        Metadata::read_file(fullpath, [&](std::shared_ptr<Metadata> md) {
             // Filter using the matcher in the query
             if (!q.matcher(*md)) return true;
 
@@ -106,7 +101,7 @@ bool Manifest::query_data(const dataset::DataQuery& q, SegmentManager& segs, met
                 else
                     md->set_source(Source::createBlobUnlocked(s->format, absdir, str::joinpath(prepend_fname, s->filename), s->offset, s->size));
             }
-            return sorter.add(move(md));
+            return sorter.add(md);
         });
         if (!sorter.flush())
             return false;
@@ -159,7 +154,7 @@ void Manifest::query_segment(const std::string& relpath, SegmentManager& segs, m
     string prepend_fname = str::dirname(relpath);
     string abspath = str::joinpath(m_path, relpath);
     auto reader = segs.get_reader(scan::Scanner::format_from_filename(relpath), relpath, lock.lock());
-    Metadata::read_file(abspath + ".metadata", [&](unique_ptr<Metadata> md) {
+    Metadata::read_file(abspath + ".metadata", [&](std::shared_ptr<Metadata> md) {
         // Tweak Blob sources replacing the file name with relpath
         if (const source::Blob* s = md->has_source_blob())
             md->set_source(Source::createBlob(s->format, absdir, str::joinpath(prepend_fname, s->filename), s->offset, s->size, reader));
@@ -420,9 +415,9 @@ public:
         return 0;
     }
 
-    Pending test_writelock()
+    core::Pending test_writelock()
     {
-        return Pending();
+        return core::Pending();
     }
 
     void acquire(const std::string& relpath, time_t mtime, const Summary& sum)
@@ -689,8 +684,6 @@ public:
             query += " ORDER BY start_time";
         }
 
-        // cerr << "Query: " << query << endl;
-
         Query q("sel_archive", m_db);
         q.compile(query);
         while (q.step())
@@ -743,9 +736,9 @@ public:
         return 0;
     }
 
-    Pending test_writelock()
+    core::Pending test_writelock()
     {
-        return Pending(new SqliteTransaction(m_db, "EXCLUSIVE"));
+        return core::Pending(new SqliteTransaction(m_db, "EXCLUSIVE"));
     }
 
     void acquire(const std::string& relpath, time_t mtime, const Summary& sum)
@@ -757,12 +750,12 @@ public:
 
         switch (rt->style())
         {
-            case types::Reftime::POSITION: {
+            case types::Reftime::Style::POSITION: {
                 const reftime::Position* p = dynamic_cast<const reftime::Position*>(rt.get());
                 bt = et = p->time.to_sql();
                 break;
             }
-            case types::Reftime::PERIOD: {
+            case types::Reftime::Style::PERIOD: {
                 const reftime::Period* p = dynamic_cast<const reftime::Period*>(rt.get());
                 bt = p->begin.to_sql();
                 et = p->end.to_sql();

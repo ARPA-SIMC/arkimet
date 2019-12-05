@@ -13,10 +13,9 @@
 #include "arki/summary.h"
 #include "arki/summary/stats.h"
 #include "arki/utils/files.h"
-#include "arki/sort.h"
+#include "arki/metadata/sort.h"
 #include "arki/scan.h"
 #include "arki/nag.h"
-#include "arki/runtime/io.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
 
@@ -984,9 +983,9 @@ void WIndex::initDB()
     if (m_others) m_db.exec("CREATE INDEX IF NOT EXISTS md_idx_other ON md (other)");
 }
 
-Pending WIndex::begin_transaction()
+core::Pending WIndex::begin_transaction()
 {
-    return Pending(new SqliteTransaction(m_db));
+    return core::Pending(new SqliteTransaction(m_db));
 }
 
 namespace {

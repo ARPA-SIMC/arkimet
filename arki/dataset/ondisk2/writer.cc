@@ -9,15 +9,13 @@
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
 #include "arki/scan.h"
-#include "arki/utils.h"
 #include "arki/utils/files.h"
 #include "arki/utils/accounting.h"
-#include "arki/nag.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
+#include "arki/nag.h"
 #include "index.h"
 #include <system_error>
-#include <sstream>
 
 using namespace std;
 using namespace arki::utils;
@@ -48,7 +46,7 @@ struct AppendSegment
 
     WriterAcquireResult acquire_replace_never(Metadata& md, bool drop_cached_data_on_commit)
     {
-        Pending p_idx = idx.begin_transaction();
+        auto p_idx = idx.begin_transaction();
         try {
             if (std::unique_ptr<types::source::Blob> old = idx.index(md, segment->segment().relpath, segment->next_offset()))
             {
@@ -68,7 +66,7 @@ struct AppendSegment
 
     WriterAcquireResult acquire_replace_always(Metadata& md, bool drop_cached_data_on_commit)
     {
-        Pending p_idx = idx.begin_transaction();
+        auto p_idx = idx.begin_transaction();
         try {
             idx.replace(md, segment->segment().relpath, segment->next_offset());
             segment->append(md, drop_cached_data_on_commit);
@@ -87,7 +85,7 @@ struct AppendSegment
 
     WriterAcquireResult acquire_replace_higher_usn(Metadata& md, SegmentManager& segs, bool drop_cached_data_on_commit)
     {
-        Pending p_idx = idx.begin_transaction();
+        auto p_idx = idx.begin_transaction();
 
         try {
             // Try to acquire without replacing
@@ -136,7 +134,7 @@ struct AppendSegment
 
     void acquire_batch_replace_never(WriterBatch& batch, bool drop_cached_data_on_commit)
     {
-        Pending p_idx = idx.begin_transaction();
+        auto p_idx = idx.begin_transaction();
 
         try {
             for (auto& e: batch)
@@ -165,7 +163,7 @@ struct AppendSegment
 
     void acquire_batch_replace_always(WriterBatch& batch, bool drop_cached_data_on_commit)
     {
-        Pending p_idx = idx.begin_transaction();
+        auto p_idx = idx.begin_transaction();
 
         try {
             for (auto& e: batch)
@@ -188,7 +186,7 @@ struct AppendSegment
 
     void acquire_batch_replace_higher_usn(WriterBatch& batch, SegmentManager& segs, bool drop_cached_data_on_commit)
     {
-        Pending p_idx = idx.begin_transaction();
+        auto p_idx = idx.begin_transaction();
 
         try {
             for (auto& e: batch)
@@ -352,7 +350,7 @@ void Writer::remove(Metadata& md)
     index::WIndex idx(m_config);
     idx.open();
     idx.lock = lock;
-    Pending p_del = idx.begin_transaction();
+    auto p_del = idx.begin_transaction();
     idx.remove(source->filename, source->offset);
 
     // Create flagfile
@@ -366,7 +364,7 @@ void Writer::remove(Metadata& md)
     md.unset(TYPE_ASSIGNEDDATASET);
 }
 
-void Writer::test_acquire(const core::cfg::Section& cfg, WriterBatch& batch, std::ostream& out)
+void Writer::test_acquire(const core::cfg::Section& cfg, WriterBatch& batch)
 {
     ReplaceStrategy replace;
     string repl = cfg.value("replace");
@@ -446,7 +444,7 @@ void Writer::test_acquire(const core::cfg::Section& cfg, WriterBatch& batch, std
         int old_usn;
         if (!scan::Scanner::update_sequence_number(*old, old_usn))
         {
-            out << "cannot acquire into dataset: insert reported a conflict, the new element has an Update Sequence Number but the old one does not, so they cannot be compared";
+            nag::warning("cannot acquire into dataset: insert reported a conflict, the new element has an Update Sequence Number but the old one does not, so they cannot be compared");
             e->result = ACQ_ERROR;
             e->dataset_name.clear();
         } else if (old_usn > new_usn) {

@@ -3,7 +3,6 @@
 
 #include <arki/types/area.h>
 #include <arki/utils/geosfwd.h>
-#include <arki/utils/lua.h>
 #include <string>
 #include <memory>
 
@@ -14,26 +13,16 @@ namespace arki {
  */
 class BBox
 {
-protected:
-    Lua *L;
-    unsigned funcCount;
-
 public:
-    BBox(const std::string& code = std::string());
     virtual ~BBox();
 
     /**
      * Compute the bounding box for an area.
-     *
-     * The lua code must produce a table called 'bbox' that contains a
-     * vector of (lat, lon) pairs.
-     *
-     * @return the Geometry object with the bounding box, or 0 if the
-     * computation is unsupported for this area.
      */
-    virtual std::unique_ptr<arki::utils::geos::Geometry> operator()(const types::Area& v) const;
+    virtual std::unique_ptr<arki::utils::geos::Geometry> compute(const types::Area& v) const = 0;
 
-    static const BBox& get_singleton();
+    static std::unique_ptr<BBox> create();
+    static void set_factory(std::function<std::unique_ptr<BBox>()> new_factory);
 };
 
 }

@@ -4,6 +4,7 @@
 #include <arki/utils/sys.h>
 #include <arki/core/fwd.h>
 #include <string>
+#include <vector>
 
 namespace arki {
 namespace core {
@@ -32,6 +33,55 @@ struct Stdout : public NamedFileDescriptor
 struct Stderr : public NamedFileDescriptor
 {
     Stderr();
+};
+
+
+/**
+ * Abstract input file implementation to use for output operation on things
+ * that are not file descriptors
+ */
+struct AbstractInputFile
+{
+    virtual ~AbstractInputFile();
+
+    virtual std::string name() const = 0;
+
+    /**
+     * Read up to \a size bytes into dest.
+     *
+     * Return the number of bytes read, or 0 for EOF
+     */
+    virtual size_t read(void* dest, size_t size) = 0;
+};
+
+
+/**
+ * Abstract output file implementation to use for output operation on things
+ * that are not file descriptors
+ */
+struct AbstractOutputFile
+{
+    virtual ~AbstractOutputFile();
+
+    virtual std::string name() const = 0;
+
+    /// Write \a size bytes of data
+    virtual void write(const void* data, size_t size) = 0;
+};
+
+
+class BufferOutputFile: public AbstractOutputFile
+{
+protected:
+    std::vector<uint8_t>& buffer;
+    std::string m_name;
+
+public:
+    BufferOutputFile(std::vector<uint8_t>& buffer, const std::string& name);
+
+    std::string name() const override;
+
+    void write(const void* data, size_t size) override;
 };
 
 
@@ -68,6 +118,20 @@ struct LineReader
      * line read.
      */
     static std::unique_ptr<LineReader> from_fd(NamedFileDescriptor& fd);
+
+    /**
+     * Create a LineReader from an abstract input file.
+     *
+     * The file descriptor is not managed by the LineReader, and will ned to be
+     * kept open by the caller for as long as the line reader is used, then closed
+     * at the end.
+     *
+     * Note that a LineReader on a file descriptor needs to do read ahead to avoid
+     * reading one character at a time, so if the caller stops calling getline(),
+     * the file descriptor is likely to be positioned further ahead than the last
+     * line read.
+     */
+    static std::unique_ptr<LineReader> from_abstract(AbstractInputFile& fd);
 
     /**
      * Create a LineReader from a buffer on a string.

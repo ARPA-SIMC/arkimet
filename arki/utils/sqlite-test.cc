@@ -24,14 +24,14 @@ add_method("oneshot", [] {
 	db.exec("INSERT INTO test (val) VALUES (1)");
 	int id = db.lastInsertID();
 
-	db.exec("INSERT INTO test (val) VALUES (2)");
-	ensure(db.lastInsertID() > id);
+    db.exec("INSERT INTO test (val) VALUES (2)");
+    wassert(actual(db.lastInsertID()) > id);
 
-	db.exec("INSERT INTO test (val) VALUES (3)");
-	ensure(db.lastInsertID() > id);
+    db.exec("INSERT INTO test (val) VALUES (3)");
+    wassert(actual(db.lastInsertID()) > id);
 
     db.exec("INSERT INTO test (val) VALUES (-2)");
-    ensure(db.lastInsertID() > id);
+    wassert(actual(db.lastInsertID()) > id);
 });
 
 // Test precompile queries
@@ -47,17 +47,17 @@ add_method("precompile", [] {
 	db.exec("INSERT INTO test (val) VALUES (2)");
 	db.exec("INSERT INTO test (val) VALUES (3)");
 
-	// Select all items > 1
-	select.reset();
-	select.bind(1, 1);
-	vector<int> results;
-	while (select.step())
-		results.push_back(select.fetch<int>(0));
-	ensure_equals(results.size(), 2u);
-	ensure_equals(results[0], 2);
-	ensure_equals(results[1], 3);
+    // Select all items > 1
+    select.reset();
+    select.bind(1, 1);
+    vector<int> results;
+    while (select.step())
+    results.push_back(select.fetch<int>(0));
+    wassert(actual(results.size()) == 2u);
+    wassert(actual(results[0]) == 2);
+    wassert(actual(results[1]) == 3);
 
-	db.exec("INSERT INTO test (val) VALUES (4)");
+    db.exec("INSERT INTO test (val) VALUES (4)");
 
 	// Select all items > 2
 	select.reset();
@@ -65,9 +65,9 @@ add_method("precompile", [] {
 	results.clear();
 	while (select.step())
 		results.push_back(select.fetch<int>(0));
-	ensure_equals(results.size(), 2u);
-	ensure_equals(results[0], 3);
-	ensure_equals(results[1], 4);
+    wassert(actual(results.size()) == 2u);
+    wassert(actual(results[0]) == 3);
+    wassert(actual(results[1]) == 4);
 });
 
 // Test rollback in the middle of a query
@@ -77,7 +77,7 @@ add_method("rollback", [] {
     db.exec("CREATE TABLE test (id INTEGER PRIMARY KEY, val INTEGER NOT NULL)");
 
     try {
-        Pending p(new SqliteTransaction(db));
+        core::Pending p(new SqliteTransaction(db));
         db.exec("INSERT INTO test (val) VALUES (1)");
         db.exec("INSERT INTO test (val) VALUES (2)");
         db.exec("INSERT INTO test (val) VALUES (3)");
@@ -91,7 +91,6 @@ add_method("rollback", [] {
         //p.rollback();
         throw std::runtime_error("no problem");
     } catch (std::runtime_error& e) {
-        //cerr << e.what() << endl;
         wassert(actual(e.what()).contains("no problem"));
     }
 });

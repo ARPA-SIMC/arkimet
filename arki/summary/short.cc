@@ -1,5 +1,5 @@
 #include "short.h"
-#include "arki/emitter.h"
+#include "arki/structured/emitter.h"
 #include "arki/formatter.h"
 #include "arki/utils/string.h"
 
@@ -9,7 +9,7 @@ using namespace arki::utils;
 namespace arki {
 namespace summary {
 
-void Short::serialise(Emitter& e, const Formatter* f) const
+void Short::serialise(structured::Emitter& e, const structured::Keys& keys, const Formatter* f) const
 {
     e.start_mapping();
 
@@ -24,7 +24,7 @@ void Short::serialise(Emitter& e, const Formatter* f) const
         e.add(str::lower(types::formatCode(i.first)));
         e.start_list();
         for (const auto& mi: i.second)
-            e.add_type(*mi, f);
+            e.add_type(*mi, keys, f);
         e.end_list();
     }
     e.end_mapping();
@@ -46,7 +46,7 @@ void Short::write_yaml(std::ostream& out, const Formatter* f) const
         for (const auto& mi: i.second) {
             out << "    " << *mi;
             if (f)
-                out << "\t# " << (*f)(*mi);
+                out << "\t# " << f->format(*mi);
             out << endl;
         }
     }

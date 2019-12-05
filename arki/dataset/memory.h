@@ -9,10 +9,6 @@
 namespace arki {
 struct Summary;
 
-namespace sort {
-struct Compare;
-}
-
 namespace dataset {
 
 /**
@@ -30,7 +26,7 @@ public:
     const Config& config() const override { return m_config; }
 
     std::string type() const override;
-    bool query_data(const dataset::DataQuery& q, std::function<bool(std::unique_ptr<Metadata>)> dest) override;
+    bool query_data(const dataset::DataQuery& q, metadata_dest_func dest) override;
     void query_summary(const Matcher& matcher, Summary& summary) override;
 };
 

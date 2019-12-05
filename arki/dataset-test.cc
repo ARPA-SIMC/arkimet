@@ -1,5 +1,6 @@
 #include "arki/dataset/tests.h"
 #include "arki/dataset.h"
+#include "arki/utils/sys.h"
 
 using namespace std;
 using namespace arki;
@@ -7,6 +8,60 @@ using namespace arki::utils;
 using namespace arki::tests;
 
 namespace {
+
+class Tests : public TestCase
+{
+    using TestCase::TestCase;
+
+    void register_tests() override;
+} test("arki_dataset");
+
+void write_test_config()
+{
+    sys::rmtree_ifexists("testds");
+    sys::makedirs("testds");
+    sys::write_file("testds/config", R"(
+type = iseg
+step = daily
+filter = origin: GRIB1,200
+index = origin, reftime
+)");
+}
+
+void Tests::register_tests() {
+
+add_method("read_config", [] {
+    auto cfg = dataset::Reader::read_config("inbound/test.grib1");
+    wassert(actual(cfg.value("name")) == "inbound/test.grib1");
+
+    cfg = dataset::Reader::read_config("grib:inbound/test.grib1");
+    wassert(actual(cfg.value("name")) == "inbound/test.grib1");
+
+    write_test_config();
+    cfg = dataset::Reader::read_config("testds");
+    wassert(actual(cfg.value("name")) == "testds");
+});
+
+add_method("read_configs", [] {
+    auto cfg = dataset::Reader::read_configs("inbound/test.grib1");
+    core::cfg::Section* sec = cfg.section("inbound/test.grib1");
+    wassert_true(sec);
+    wassert(actual(sec->value("name")) == "inbound/test.grib1");
+
+    cfg = dataset::Reader::read_configs("grib:inbound/test.grib1");
+    sec = cfg.section("inbound/test.grib1");
+    wassert_true(sec);
+    wassert(actual(sec->value("name")) == "inbound/test.grib1");
+
+    write_test_config();
+    cfg = dataset::Reader::read_configs("testds");
+    sec = cfg.section("testds");
+    wassert_true(sec);
+    wassert(actual(sec->value("name")) == "testds");
+});
+
+}
+
 
 struct Fixture : public DatasetTest
 {
@@ -20,22 +75,22 @@ struct Fixture : public DatasetTest
     }
 };
 
-class Tests : public FixtureTestCase<Fixture>
+class InstantiateTests : public FixtureTestCase<Fixture>
 {
     using FixtureTestCase::FixtureTestCase;
 
     void register_tests() override;
 };
 
-Tests test_simple("arki_dataset_instantiate_simple", "type=simple\n_reader=simple\n_writer=simple\n_checker=simple\n");
-Tests test_ondisk2("arki_dataset_instantiate_ondisk2", "type=ondisk2\n_reader=ondisk2\n_writer=ondisk2\n_checker=ondisk2\n");
-Tests test_iseg("arki_dataset_instantiate_iseg", "type=iseg\nformat=grib\n_reader=iseg\n_writer=iseg\n_checker=iseg\n");
-Tests test_error("arki_dataset_instantiate_error", "type=error\n_reader=simple\n_writer=simple\n_checker=simple\n");
-Tests test_duplicates("arki_dataset_instantiate_duplicates", "type=duplicates\n_reader=simple\n_writer=simple\n_checker=simple\n");
-Tests test_outbound("arki_dataset_instantiate_outbound", "type=outbound\n_reader=empty\n_writer=outbound\n");
-Tests test_discard("arki_dataset_instantiate_discard", "type=discard\n_reader=empty\n_writer=discard\n_checker=empty\n");
+InstantiateTests test_simple("arki_dataset_instantiate_simple", "type=simple\n_reader=simple\n_writer=simple\n_checker=simple\n");
+InstantiateTests test_ondisk2("arki_dataset_instantiate_ondisk2", "type=ondisk2\n_reader=ondisk2\n_writer=ondisk2\n_checker=ondisk2\n");
+InstantiateTests test_iseg("arki_dataset_instantiate_iseg", "type=iseg\nformat=grib\n_reader=iseg\n_writer=iseg\n_checker=iseg\n");
+InstantiateTests test_error("arki_dataset_instantiate_error", "type=error\n_reader=simple\n_writer=simple\n_checker=simple\n");
+InstantiateTests test_duplicates("arki_dataset_instantiate_duplicates", "type=duplicates\n_reader=simple\n_writer=simple\n_checker=simple\n");
+InstantiateTests test_outbound("arki_dataset_instantiate_outbound", "type=outbound\n_reader=empty\n_writer=outbound\n");
+InstantiateTests test_discard("arki_dataset_instantiate_discard", "type=discard\n_reader=empty\n_writer=discard\n_checker=empty\n");
 
-void Tests::register_tests() {
+void InstantiateTests::register_tests() {
 
 add_method("instantiate", [](Fixture& f) {
     std::string type;
@@ -63,4 +118,5 @@ add_method("instantiate", [](Fixture& f) {
 });
 
 }
+
 }

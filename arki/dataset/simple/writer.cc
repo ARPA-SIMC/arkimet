@@ -5,13 +5,12 @@
 #include "arki/dataset/lock.h"
 #include "arki/types/source/blob.h"
 #include "arki/types/reftime.h"
-#include "arki/utils/files.h"
 #include "arki/nag.h"
 #include "arki/scan.h"
-#include "arki/utils.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/string.h"
 #include "arki/utils/accounting.h"
+#include "arki/utils/files.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
 #include "arki/summary.h"
@@ -189,7 +188,7 @@ void Writer::remove(Metadata& md)
     throw std::runtime_error("cannot remove data from simple dataset: dataset does not support removing items");
 }
 
-void Writer::test_acquire(const core::cfg::Section& cfg, WriterBatch& batch, std::ostream& out)
+void Writer::test_acquire(const core::cfg::Section& cfg, WriterBatch& batch)
 {
     std::shared_ptr<const simple::Config> config(new simple::Config(cfg));
     for (auto& e: batch)

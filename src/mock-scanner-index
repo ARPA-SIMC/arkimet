@@ -1,0 +1,75 @@
+#!/usr/bin/python3
+from arkimet.cmdline.base import App, Fail
+import arkimet
+import io
+import os
+import sys
+import hashlib
+import sqlite3
+
+
+class DB:
+    def __init__(self, fname):
+        self.fname = fname
+        do_create = not os.path.exists(self.fname)
+        self.conn = sqlite3.connect(fname)
+        if do_create:
+            self.create()
+
+    def create(self):
+        with self.conn:
+            self.conn.execute("""
+                CREATE TABLE mds (
+                    sha256sum TEXT UNIQUE,
+                    md BLOB
+                )
+            """)
+
+    def add(self, md):
+        # Compute shasum of the data
+        buf = md.data
+        m = hashlib.sha256()
+        m.update(buf)
+
+        # Get the source
+        # source = md.to_python("source")
+
+        # Encode the metadata without source information and without notes
+        del md["source"]
+        md.del_notes()
+        with io.BytesIO() as binmd:
+            md.write(binmd)
+            md_encoded = binmd.getvalue()
+
+        # Index everything
+        with self.conn:
+            self.conn.execute("""
+                INSERT OR REPLACE INTO mds (sha256sum, md)
+                VALUES (?, ?)
+            """, (
+                # os.path.relpath(source["file"], os.getcwd()),
+                # source["format"], source["offset"], source["size"],
+                m.hexdigest(), md_encoded
+            ))
+
+
+class MockScannerIndexer(App):
+    def __init__(self):
+        super().__init__()
+        self.parser.add_argument("db", help="name of the sqlite file to write/update")
+        self.parser.add_argument("sources", nargs="*", action="store",
+                                 help="files to scan and add to the db")
+
+    def run(self):
+        super().run()
+        db = DB(self.args.db)
+        for source in self.args.sources:
+            cfg = arkimet.dataset.read_config(source)
+            ds = arkimet.dataset.Reader(cfg)
+            data = ds.query_data()
+            for md in data:
+                db.add(md)
+
+
+if __name__ == "__main__":
+    sys.exit(MockScannerIndexer.main())

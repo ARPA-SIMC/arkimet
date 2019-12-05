@@ -14,6 +14,7 @@
 #include "arki/types/run.h"
 #include "arki/types/timerange.h"
 #include "arki/scan/validator.h"
+#include "arki/scan/mock.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/files.h"
 #include "arki/libconfig.h"
@@ -21,10 +22,6 @@
 #include <cstring>
 #include <stdint.h>
 #include <arpa/inet.h>
-
-#ifdef HAVE_LUA
-#include "arki/scan/bufrlua.h"
-#endif
 
 using namespace std;
 using namespace wreport;
@@ -78,24 +75,9 @@ const Validator& validator() { return bufr_validator; }
 }
 
 
-Bufr::Bufr()
-{
-    auto opts = ImporterOptions::create();
-    opts->simplified = true;
-    importer = Importer::create(dballe::Encoding::BUFR, *opts).release();
-
-#ifdef HAVE_LUA
-    extras = new bufr::BufrLua;
-#endif
-}
-
-Bufr::~Bufr()
-{
-	if (importer) delete importer;
-#ifdef HAVE_LUA
-	if (extras) delete extras;
-#endif
-}
+/*
+ * BufrScanner
+ */
 
 namespace {
 class Harvest
@@ -211,8 +193,8 @@ public:
         msg = msgs[0];
 
         // Set the product from the msg type
-        ValueBag newvals;
-        newvals.set("t", Value::createString(format_message_type(msg->get_type())));
+        types::ValueBag newvals;
+        newvals.set("t", types::values::Value::create_string(format_message_type(msg->get_type())));
         product->addValues(newvals);
 
         // Set reference time from date and time if available
@@ -222,107 +204,137 @@ public:
 }
 
 
-void Bufr::do_scan(BinaryMessage& rmsg, Metadata& md)
+BufrScanner::BufrScanner()
+{
+    auto opts = ImporterOptions::create();
+    opts->simplified = true;
+    importer = Importer::create(dballe::Encoding::BUFR, *opts).release();
+}
+
+BufrScanner::~BufrScanner()
+{
+    if (importer) delete importer;
+}
+
+void BufrScanner::do_scan(BinaryMessage& rmsg, std::shared_ptr<Metadata> md)
 {
     Harvest harvest(*importer);
-    harvest.harvest_from_dballe(rmsg, md);
+    harvest.harvest_from_dballe(rmsg, *md);
 
-    md.set(move(harvest.reftime));
-    md.set(move(harvest.origin));
-    md.set(move(harvest.product));
+    md->set(move(harvest.reftime));
+    md->set(move(harvest.origin));
+    md->set(move(harvest.product));
 
-    if (extras && harvest.msg)
+    if (harvest.msg)
     {
-        // DB-All.e managed to make sense of the message: hand it down to Lua
-        // to extract further metadata
-        extras->scan(*harvest.msg, md);
+        // DB-All.e managed to make sense of the message: let the subclasser
+        // try to extract further metadata
+        scan_extra(rmsg, harvest.msg, md);
     }
 
     // Check that the date is a valid date, unset if it is rubbish
-    const reftime::Position* rt = md.get<types::reftime::Position>();
+    const reftime::Position* rt = md->get<types::reftime::Position>();
     if (rt)
     {
         if (rt->time.ye <= 0)
-            md.unset(TYPE_REFTIME);
+            md->unset(TYPE_REFTIME);
         else
         {
             core::Time t = rt->time;
             t.normalise();
-            if (t != rt->time) md.unset(TYPE_REFTIME);
+            if (t != rt->time) md->unset(TYPE_REFTIME);
         }
     }
 
     // Convert validity times to emission times
     // If md has a timedef, substract it from the reftime
-    const timerange::Timedef* timedef = md.get<types::timerange::Timedef>();
+    const timerange::Timedef* timedef = md->get<types::timerange::Timedef>();
     if (timedef)
-        if (const reftime::Position* p = md.get<types::reftime::Position>())
-            md.set(timedef->validity_time_to_emission_time(*p));
+        if (const reftime::Position* p = md->get<types::reftime::Position>())
+            md->set(timedef->validity_time_to_emission_time(*p));
 }
 
-std::unique_ptr<Metadata> Bufr::scan_data(const std::vector<uint8_t>& data)
+std::shared_ptr<Metadata> BufrScanner::scan_data(const std::vector<uint8_t>& data)
 {
-    std::unique_ptr<Metadata> md(new Metadata);
+    auto md = std::make_shared<Metadata>();
     md->set_source_inline("grib", metadata::DataManager::get().to_data("bufr", std::vector<uint8_t>(data)));
     BinaryMessage rmsg(Encoding::BUFR);
     rmsg.data = std::string(data.begin(), data.end());
-    do_scan(rmsg, *md);
+    do_scan(rmsg, md);
     return md;
 }
 
-bool Bufr::scan_segment(std::shared_ptr<segment::Reader> reader, metadata_dest_func dest)
+bool BufrScanner::scan_segment(std::shared_ptr<segment::Reader> reader, metadata_dest_func dest)
 {
     auto file = dballe::File::create(dballe::Encoding::BUFR, reader->segment().abspath.c_str(), "r");
     while (true)
     {
-        unique_ptr<Metadata> md(new Metadata);
+        auto md = std::make_shared<Metadata>();
         BinaryMessage rmsg = file->read();
         if (!rmsg) break;
         md->set_source(Source::createBlob(reader, rmsg.offset, rmsg.data.size()));
         md->set_cached_data(metadata::DataManager::get().to_data("bufr", vector<uint8_t>(rmsg.data.begin(), rmsg.data.end())));
-        do_scan(rmsg, *md);
-        if (!dest(std::move(md))) return false;
+        do_scan(rmsg, md);
+        if (!dest(md)) return false;
     }
     return true;
 }
 
-void Bufr::scan_singleton(const std::string& abspath, Metadata& md)
+std::shared_ptr<Metadata> BufrScanner::scan_singleton(const std::string& abspath)
 {
+    auto md = std::make_shared<Metadata>();
     auto file = dballe::File::create(dballe::Encoding::BUFR, abspath.c_str(), "r").release();
-    md.clear();
     BinaryMessage rmsg = file->read();
     if (!rmsg) throw std::runtime_error(abspath + " contains no BUFR data");
     do_scan(rmsg, md);
     if (file->read())
         throw std::runtime_error(abspath + " contains more than one BUFR");
+    return md;
 }
 
-bool Bufr::scan_pipe(core::NamedFileDescriptor& infd, metadata_dest_func dest)
+bool BufrScanner::scan_pipe(core::NamedFileDescriptor& infd, metadata_dest_func dest)
 {
     files::RAIIFILE in(infd, "rb");
     auto file = dballe::File::create(dballe::Encoding::BUFR, in, false, infd.name()).release();
     while (true)
     {
-        unique_ptr<Metadata> md(new Metadata);
+        auto md = std::make_shared<Metadata>();
         BinaryMessage rmsg = file->read();
         if (!rmsg) break;
         md->set_source_inline("bufr", metadata::DataManager::get().to_data("bufr", vector<uint8_t>(rmsg.data.begin(), rmsg.data.end())));
-        do_scan(rmsg, *md);
+        do_scan(rmsg, md);
         if (!dest(move(md))) return false;
     }
     return true;
 }
 
-static inline void inplace_tolower(std::string& buf)
-{
-	for (std::string::iterator i = buf.begin(); i != buf.end(); ++i)
-		*i = tolower(*i);
-}
 
-int Bufr::update_sequence_number(const std::string& buf)
+int BufrScanner::update_sequence_number(const std::string& buf)
 {
     auto bulletin = BufrBulletin::decode_header(buf);
     return bulletin->update_sequence_number;
+}
+
+
+/*
+ * MockBufrScanner
+ */
+
+MockBufrScanner::MockBufrScanner()
+{
+    engine = new MockEngine();
+}
+
+MockBufrScanner::~MockBufrScanner()
+{
+    delete engine;
+}
+
+void MockBufrScanner::scan_extra(dballe::BinaryMessage& rmsg, std::shared_ptr<dballe::Message> msg, std::shared_ptr<Metadata> md)
+{
+    auto new_md = engine->lookup(reinterpret_cast<const uint8_t*>(rmsg.data.data()), rmsg.data.size());
+    for (const auto& i: *new_md)
+        md->set(*i.second);
 }
 
 }

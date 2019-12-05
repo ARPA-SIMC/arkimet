@@ -3,7 +3,6 @@
 
 /// Core defines common to all arkimet code
 
-#include <arki/libconfig.h>
 #include <functional>
 #include <memory>
 
@@ -13,7 +12,7 @@ struct Metadata;
 /**
  * Function signature for metadata consumers
  */
-typedef std::function<bool(std::unique_ptr<Metadata>)> metadata_dest_func;
+typedef std::function<bool(std::shared_ptr<Metadata>)> metadata_dest_func;
 
 
 /// Identifier codes used for binary serialisation of Types

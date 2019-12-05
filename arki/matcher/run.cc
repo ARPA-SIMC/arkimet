@@ -1,7 +1,5 @@
 #include "config.h"
-
-#include <arki/matcher/run.h>
-#include <arki/matcher/utils.h>
+#include "run.h"
 #include <sstream>
 #include <iomanip>
 
@@ -63,14 +61,14 @@ unique_ptr<MatchRun> MatchRun::parse(const std::string& pattern)
     }
     switch (types::Run::parseStyle(name))
     {
-        case types::Run::MINUTE: return unique_ptr<MatchRun>(new MatchRunMinute(rest));
-        default: throw runtime_error("cannot parse type of run to match: unsupported run style: " + name);
+        case types::Run::Style::MINUTE: return unique_ptr<MatchRun>(new MatchRunMinute(rest));
+        default: throw invalid_argument("cannot parse type of run to match: unsupported run style: " + name);
     }
 }
 
 void MatchRun::init()
 {
-    Matcher::register_matcher("run", TYPE_RUN, (MatcherType::subexpr_parser)MatchRun::parse);
+    MatcherType::register_matcher("run", TYPE_RUN, (MatcherType::subexpr_parser)MatchRun::parse);
 }
 
 }

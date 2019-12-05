@@ -1,0 +1,33 @@
+Source: BLOB(grib,/home/enrico/lavori/arpa/arkimet/test/data/test.grib1:0+7218)
+Origin: GRIB1(200, 000, 101)
+Product: GRIB1(200, 140, 229)
+Level: GRIB1(001)
+Timerange: GRIB1(000, 000h)
+Reftime: 2007-07-08T13:00:00Z
+Area: GRIB(Ni=97, Nj=73, latfirst=40000000, latlast=46000000, lonfirst=12000000, lonlast=20000000, type=0)
+Proddef: GRIB(tod=1)
+Run: MINUTE(13:00)
+Note: [2019-07-09T19:14:35Z]Scanned from test.grib1:0+7218
+
+Source: BLOB(grib,/home/enrico/lavori/arpa/arkimet/test/data/test.grib1:7218+34960)
+Origin: GRIB1(080, 255, 100)
+Product: GRIB1(080, 002, 002)
+Level: GRIB1(102)
+Timerange: GRIB1(001)
+Reftime: 2007-07-07T00:00:00Z
+Area: GRIB(Ni=205, Nj=85, latfirst=30000000, latlast=72000000, lonfirst=-60000000, lonlast=42000000, type=0)
+Proddef: GRIB(tod=1)
+Run: MINUTE(00:00)
+Note: [2019-07-09T19:14:35Z]Scanned from test.grib1:7218+34960
+
+Source: BLOB(grib,/home/enrico/lavori/arpa/arkimet/test/data/test.grib1:42178+2234)
+Origin: GRIB1(098, 000, 129)
+Product: GRIB1(098, 128, 129)
+Level: GRIB1(100, 01000)
+Timerange: GRIB1(000, 000h)
+Reftime: 2007-10-09T00:00:00Z
+Area: GRIB(Ni=43, Nj=25, latfirst=55500000, latlast=31500000, lonfirst=-11500000, lonlast=30500000, type=0)
+Proddef: GRIB(tod=1)
+Run: MINUTE(00:00)
+Note: [2019-07-09T19:14:35Z]Scanned from test.grib1:42178+2234
+

@@ -11,35 +11,44 @@ struct grib_context;
 struct grib_handle;
 
 namespace arki {
-class Metadata;
-
 namespace scan {
-struct Validator;
+class MockEngine;
 
 namespace grib {
 const Validator& validator();
 }
 
-class Grib;
-struct GribLua;
-
-class Grib : public Scanner
+class GribScanner : public Scanner
 {
 protected:
     grib_context* context = nullptr;
-    GribLua* L;
+
+    void set_source_blob(grib_handle* gh, std::shared_ptr<segment::Reader> reader, FILE* in, Metadata& md);
+    void set_source_inline(grib_handle* gh, Metadata& md);
+
+    // Read from gh and add metadata to md
+    virtual std::shared_ptr<Metadata> scan(grib_handle* gh) = 0;
 
 public:
-    Grib(const std::string& grib1code=std::string(), const std::string& grib2code=std::string());
-    virtual ~Grib();
+    GribScanner();
 
     std::string name() const override { return "grib"; }
-    std::unique_ptr<Metadata> scan_data(const std::vector<uint8_t>& data) override;
-    bool scan_pipe(core::NamedFileDescriptor& in, metadata_dest_func dest) override;
+    std::shared_ptr<Metadata> scan_data(const std::vector<uint8_t>& data) override;
     bool scan_segment(std::shared_ptr<segment::Reader> reader, metadata_dest_func dest) override;
-    void scan_singleton(const std::string& abspath, Metadata& md) override;
+    bool scan_pipe(core::NamedFileDescriptor& in, metadata_dest_func dest) override;
+    std::shared_ptr<Metadata> scan_singleton(const std::string& abspath) override;
+};
 
-    friend class GribLua;
+class MockGribScanner : public GribScanner
+{
+protected:
+    MockEngine* engine;
+
+    std::shared_ptr<Metadata> scan(grib_handle* gh) override;
+
+public:
+    MockGribScanner();
+    virtual ~MockGribScanner();
 };
 
 }

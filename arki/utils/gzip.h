@@ -3,7 +3,6 @@
 
 /// zlib wrappers
 
-#include <arki/libconfig.h>
 #include <string>
 #include <zlib.h>
 #include <vector>

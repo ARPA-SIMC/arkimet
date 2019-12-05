@@ -1,7 +1,6 @@
 #include "arki/tests/tests.h"
 #include "arki/utils/sys.h"
 #include "compress.h"
-#include <iostream>
 
 namespace {
 using namespace std;

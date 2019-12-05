@@ -64,20 +64,20 @@ add_method("scan_missing_summary", [](Fixture& f) {
         void operator() ()
         {
             sys::unlink_ifexists("testds/2007/07-08.grib.summary");
-            ensure(sys::exists("testds/2007/07-08.grib"));
-            ensure(sys::exists("testds/2007/07-08.grib.metadata"));
-            ensure(!sys::exists("testds/2007/07-08.grib.summary"));
+            wassert(actual_file("testds/2007/07-08.grib").exists());
+            wassert(actual_file("testds/2007/07-08.grib.metadata").exists());
+            wassert(actual_file("testds/2007/07-08.grib.summary").not_exists());
         }
     } setup;
 
     f.clean_and_import();
     setup();
-    ensure(sys::exists("testds/" + f.idxfname()));
+    wassert(actual_file("testds/" + f.idxfname()).exists());
 
     // Query is ok
     {
         metadata::Collection mdc(*f.makeSimpleReader(), Matcher());
-        ensure_equals(mdc.size(), 3u);
+        wassert(actual(mdc.size()) == 3u);
     }
 
     // Maintenance should show one file to rescan
@@ -104,17 +104,17 @@ add_method("scan_missing_summary", [](Fixture& f) {
 
     // Everything should be fine now
     wassert(f.ensure_localds_clean(3, 3));
-    ensure(sys::exists("testds/2007/07-08.grib"));
-    ensure(sys::exists("testds/2007/07-08.grib.metadata"));
-    ensure(sys::exists("testds/2007/07-08.grib.summary"));
-    ensure(sys::exists("testds/" + f.idxfname()));
+    wassert(actual_file("testds/2007/07-08.grib").exists());
+    wassert(actual_file("testds/2007/07-08.grib.metadata").exists());
+    wassert(actual_file("testds/2007/07-08.grib.summary").exists());
+    wassert(actual_file("testds/" + f.idxfname()).exists());
 
 
     // Restart again
     f.clean_and_import();
     setup();
     files::removeDontpackFlagfile("testds");
-    ensure(sys::exists("testds/" + f.idxfname()));
+    wassert(actual_file("testds/" + f.idxfname()).exists());
 
     // Repack here should act as if the dataset were empty
     wassert(actual(*f.makeSimpleChecker()).repack_clean(true));
@@ -123,12 +123,12 @@ add_method("scan_missing_summary", [](Fixture& f) {
     {
         auto reader = f.makeSimpleReader();
         metadata::Collection mdc(*reader, Matcher());
-        ensure_equals(mdc.size(), 3u);
+        wassert(actual(mdc.size()) == 3u);
     }
-    ensure(sys::exists("testds/2007/07-08.grib"));
-    ensure(sys::exists("testds/2007/07-08.grib.metadata"));
-    ensure(!sys::exists("testds/2007/07-08.grib.summary"));
-    ensure(sys::exists("testds/" + f.idxfname()));
+    wassert(actual_file("testds/2007/07-08.grib").exists());
+    wassert(actual_file("testds/2007/07-08.grib.metadata").exists());
+    wassert(actual_file("testds/2007/07-08.grib.summary").not_exists());
+    wassert(actual_file("testds/" + f.idxfname()).exists());
 });
 
 // Test maintenance scan on compressed archives
@@ -147,7 +147,13 @@ add_method("scan_compressed", [](Fixture& f) {
 
     f.clean_and_import();
     setup();
-    ensure(sys::exists("testds/" + f.idxfname()));
+    wassert(actual_file("testds/2007/07-08.grib").not_exists());
+    wassert(actual_file("testds/2007/07-08.grib.gz").exists());
+    // Index was not created because there is only one group in the compressed file
+    wassert(actual_file("testds/2007/07-08.grib.gz.idx").not_exists());
+    wassert(actual_file("testds/2007/07-08.grib.metadata").exists());
+    wassert(actual_file("testds/2007/07-08.grib.summary").exists());
+    wassert(actual_file("testds/" + f.idxfname()).exists());
 
     // Query is ok
     wassert(f.ensure_localds_clean(3, 3));
@@ -155,16 +161,12 @@ add_method("scan_compressed", [](Fixture& f) {
     // Try removing summary and metadata
     removemd();
 
-    // Cannot query anymore
+    // We can still query
     {
         metadata::Collection mdc;
         auto reader = f.makeSimpleReader();
-        try {
-            mdc.add(*reader, Matcher());
-            ensure(false);
-        } catch (std::exception& e) {
-            ensure(str::endswith(e.what(), "file needs to be manually decompressed before scanning"));
-        }
+        mdc.add(*reader, Matcher());
+        wassert(actual(mdc.size()) == 2u);
     }
 
     // Maintenance should show one file to rescan
@@ -191,19 +193,20 @@ add_method("scan_compressed", [](Fixture& f) {
 
     // Everything should be fine now
     wassert(f.ensure_localds_clean(3, 3));
-    ensure(!sys::exists("testds/2007/07-08.grib"));
-    ensure(sys::exists("testds/2007/07-08.grib.gz"));
-    ensure(sys::exists("testds/2007/07-08.grib.gz.idx"));
-    ensure(sys::exists("testds/2007/07-08.grib.metadata"));
-    ensure(sys::exists("testds/2007/07-08.grib.summary"));
-    ensure(sys::exists("testds/" + f.idxfname()));
+    wassert(actual_file("testds/2007/07-08.grib").not_exists());
+    wassert(actual_file("testds/2007/07-08.grib.gz").exists());
+    // Index was not created because there is only one group in the compressed file
+    wassert(actual_file("testds/2007/07-08.grib.gz.idx").not_exists());
+    wassert(actual_file("testds/2007/07-08.grib.metadata").exists());
+    wassert(actual_file("testds/2007/07-08.grib.summary").exists());
+    wassert(actual_file("testds/" + f.idxfname()).exists());
 
 
     // Restart again
     f.clean_and_import();
     setup();
     files::removeDontpackFlagfile("testds");
-    ensure(sys::exists("testds/" + f.idxfname()));
+    wassert(actual_file("testds/" + f.idxfname()).exists());
     removemd();
 
     // Repack here should act as if the dataset were empty
@@ -217,19 +220,16 @@ add_method("scan_compressed", [](Fixture& f) {
     {
         metadata::Collection mdc;
         auto reader = f.makeSimpleReader();
-        try {
-            mdc.add(*reader, Matcher());
-            ensure(false);
-        } catch (std::exception& e) {
-            ensure(str::endswith(e.what(), "file needs to be manually decompressed before scanning"));
-        }
+        mdc.add(*reader, Matcher());
+        wassert(actual(mdc.size()) == 2u);
     }
-    ensure(!sys::exists("testds/2007/07-08.grib"));
-    ensure(sys::exists("testds/2007/07-08.grib.gz"));
-    ensure(sys::exists("testds/2007/07-08.grib.gz.idx"));
-    ensure(!sys::exists("testds/2007/07-08.grib.metadata"));
-    ensure(!sys::exists("testds/2007/07-08.grib.summary"));
-    ensure(sys::exists("testds/" + f.idxfname()));
+    wassert(actual_file("testds/2007/07-08.grib").not_exists());
+    wassert(actual_file("testds/2007/07-08.grib.gz").exists());
+    // Index was not created because there is only one group in the compressed file
+    wassert(actual_file("testds/2007/07-08.grib.gz.idx").not_exists());
+    wassert(actual_file("testds/2007/07-08.grib.metadata").not_exists());
+    wassert(actual_file("testds/2007/07-08.grib.summary").not_exists());
+    wassert(actual_file("testds/" + f.idxfname()).exists());
 });
 
 }

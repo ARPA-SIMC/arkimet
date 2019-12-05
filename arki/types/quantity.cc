@@ -1,17 +1,14 @@
-#include <arki/exceptions.h>
-#include <arki/types/quantity.h>
-#include <arki/types/utils.h>
-#include <arki/binary.h>
-#include <arki/utils/string.h>
-#include <arki/emitter.h>
-#include <arki/emitter/memory.h>
-#include "config.h"
+#include "arki/exceptions.h"
+#include "arki/types/quantity.h"
+#include "arki/types/utils.h"
+#include "arki/core/binary.h"
+#include "arki/utils/string.h"
+#include "arki/structured/emitter.h"
+#include "arki/structured/memory.h"
+#include "arki/structured/keys.h"
+#include "arki/libconfig.h"
 #include <sstream>
 #include <cmath>
-
-#ifdef HAVE_LUA
-#include <arki/utils/lua.h>
-#endif
 
 #define CODE TYPE_QUANTITY
 #define TAG "quantity"
@@ -26,7 +23,6 @@ namespace types {
 const char* traits<Quantity>::type_tag = TAG;
 const types::Code traits<Quantity>::type_code = CODE;
 const size_t traits<Quantity>::type_sersize_bytes = SERSIZELEN;
-const char* traits<Quantity>::type_lua_tag = LUATAG_TYPES ".quantity";
 
 int Quantity::compare(const Type& o) const
 {
@@ -57,7 +53,7 @@ bool Quantity::equals(const Type& o) const
 	return compare(*v) == 0;
 }
 
-void Quantity::encodeWithoutEnvelope(BinaryEncoder& enc) const
+void Quantity::encodeWithoutEnvelope(core::BinaryEncoder& enc) const
 {
     enc.add_varint(values.size());
 
@@ -68,7 +64,7 @@ void Quantity::encodeWithoutEnvelope(BinaryEncoder& enc) const
     }
 }
 
-unique_ptr<Quantity> Quantity::decode(BinaryDecoder& dec)
+unique_ptr<Quantity> Quantity::decode(core::BinaryDecoder& dec)
 {
     size_t num = dec.pop_varint<size_t>("quantity num elemetns");
     std::set<std::string> vals;
@@ -88,24 +84,23 @@ std::ostream& Quantity::writeToOstream(std::ostream& o) const
     return o << str::join(", ", values.begin(), values.end());
 }
 
-void Quantity::serialiseLocal(Emitter& e, const Formatter* f) const
+void Quantity::serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f) const
 {
-    e.add("va");
+    e.add(keys.quantity_value);
     e.start_list();
-    for (set<string>::const_iterator i = values.begin();
-            i != values.end(); ++i)
-        e.add(*i);
+    for (const auto& value: values)
+        e.add(value);
     e.end_list();
 }
 
-unique_ptr<Quantity> Quantity::decodeMapping(const emitter::memory::Mapping& val)
+std::unique_ptr<Quantity> Quantity::decode_structure(const structured::Keys& keys, const structured::Reader& val)
 {
-    using namespace emitter::memory;
-    const List& l = val["va"].want_list("parsing Quantity values");
-    set<string> vals;
-    for (vector<const Node*>::const_iterator i = l.val.begin();
-            i != l.val.end(); ++i)
-        vals.insert((*i)->want_string("parsing a Quantity value"));
+    std::set<string> vals;
+    val.sub(keys.quantity_value, "Quantity values", [&](const structured::Reader& list) {
+        unsigned size = list.list_size("Quantity values");
+        for (unsigned i = 0; i < size; ++i)
+            vals.insert(list.as_string(i, "quantity value"));
+    });
     return Quantity::create(vals);
 }
 
@@ -118,54 +113,6 @@ unique_ptr<Quantity> Quantity::decodeString(const std::string& val)
 	split(val, vals);
 	return Quantity::create(vals);
 }
-
-#ifdef HAVE_LUA
-bool Quantity::lua_lookup(lua_State* L, const std::string& name) const
-{
-	if (name == "quantity")
-	{
-		//TODO XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-		//lua_pushlstring(L, task.data(), task.size());
-	}
-	else
-		return CoreType<Quantity>::lua_lookup(L, name);
-	return true;
-}
-
-static int arkilua_new_quantity(lua_State* L)
-{
-	set<string> values;
-	if (lua_gettop(L) == 1 && lua_istable(L, 1))
-	{
-		// Iterate the table building the values vector
-
-		lua_pushnil(L); // first key
-		while (lua_next(L, 1) != 0) {
-			// Ignore index at -2
-			const char* val = lua_tostring(L, -1);
-			values.insert(val);
-			// removes 'value'; keeps 'key' for next iteration
-			lua_pop(L, 1);
-		}
-	} else {
-		unsigned count = lua_gettop(L);
-		for (unsigned i = 0; i != count; ++i)
-			values.insert(lua_tostring(L, i + 1));
-	}
-	
-	Quantity::create(values)->lua_push(L);
-	return 1;
-}
-
-void Quantity::lua_loadlib(lua_State* L)
-{
-	static const struct luaL_Reg lib [] = {
-		{ "new", arkilua_new_quantity },
-		{ NULL, NULL }
-	};
-    utils::lua::add_global_library(L, "arki_quantity", lib);
-}
-#endif
 
 Quantity* Quantity::clone() const
 {
@@ -192,4 +139,4 @@ void Quantity::init()
 
 }
 }
-#include <arki/types.tcc>
+#include <arki/types/core.tcc>

@@ -1,19 +1,16 @@
 #include "config.h"
-#include <arki/dataset/maintenance.h>
-#include <arki/dataset/segmented.h>
-#include <arki/dataset/archive.h>
-#include <arki/metadata/collection.h>
-#include <arki/dataset/step.h>
-#include <arki/dataset/reporter.h>
-#include <arki/utils.h>
-#include <arki/utils/files.h>
-#include <arki/utils/string.h>
-#include <arki/utils/sys.h>
-#include <arki/sort.h>
-#include <arki/nag.h>
+#include "arki/dataset/maintenance.h"
+#include "arki/dataset/segmented.h"
+#include "arki/dataset/archive.h"
+#include "arki/metadata/collection.h"
+#include "arki/metadata/sort.h"
+#include "arki/dataset/step.h"
+#include "arki/dataset/reporter.h"
+#include "arki/utils/files.h"
+#include "arki/utils/string.h"
+#include "arki/utils/sys.h"
+#include "arki/nag.h"
 #include <algorithm>
-#include <iostream>
-#include <ostream>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -46,7 +43,7 @@ namespace maintenance {
 
 void Dumper::operator()(segmented::CheckerSegment& file, segment::State state)
 {
-    cerr << file.path_relative() << " " << state.to_string() << endl;
+    nag::warning("%s %s", file.path_relative().c_str(), state.to_string().c_str());
 }
 
 // Agent

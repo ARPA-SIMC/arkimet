@@ -63,17 +63,17 @@ void Clusterer::start_batch(const std::string& new_format)
     size = 0;
 }
 
-void Clusterer::add_to_batch(Metadata& md)
+void Clusterer::add_to_batch(std::shared_ptr<Metadata> md)
 {
-    size += md.data_size();
+    size += md->data_size();
     ++count;
     if (cur_interval[0] == -1 && max_interval != 0)
-        md_to_interval(md, cur_interval);
-    const Reftime* rt = md.get<types::Reftime>();
+        md_to_interval(*md, cur_interval);
+    const Reftime* rt = md->get<types::Reftime>();
     if (!rt) return;
     rt->expand_date_range(timespan_begin, timespan_end);
     if (split_timerange and not last_timerange)
-        last_timerange = md.get<types::Timerange>()->clone();
+        last_timerange = md->get<types::Timerange>()->clone();
 }
 
 void Clusterer::flush_batch()
@@ -98,7 +98,7 @@ void Clusterer::flush()
         flush_batch();
 }
 
-bool Clusterer::eat(unique_ptr<Metadata>&& md)
+bool Clusterer::eat(std::shared_ptr<Metadata> md)
 {
     const auto& data = md->get_data();
 
@@ -109,7 +109,7 @@ bool Clusterer::eat(unique_ptr<Metadata>&& md)
         start_batch(md->source().format);
     }
 
-    add_to_batch(*md);
+    add_to_batch(md);
 
     return true;
 }

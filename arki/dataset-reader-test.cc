@@ -4,6 +4,8 @@
 #include "arki/metadata/data.h"
 #include "arki/metadata/collection.h"
 #include "arki/summary.h"
+#include "arki/scan.h"
+#include "arki/scan/validator.h"
 #include "arki/types/source.h"
 #include "arki/types/source/blob.h"
 #include "arki/utils/accounting.h"
@@ -233,8 +235,30 @@ this->add_method("querybytes_integrity", [](Fixture& f) {
     wassert(actual(sys::size(out.name())) >= total_size);
 
     // Check that they can be scanned again
-    metadata::TestCollection mdc;
-    wassert(mdc.scan_from_file("tempdata", f.td.format, false));
+    // Read chunks from tempdata and scan them individually, to allow scanning
+    // formats like ODIM that do not support concatenation
+    unsigned padding = 0;
+    if (f.td.format == "vm2")
+        padding = 1;
+    std::vector<uint8_t> buf1(f.td.mds[1].sourceBlob().size + padding);
+    std::vector<uint8_t> buf2(f.td.mds[0].sourceBlob().size + padding);
+    std::vector<uint8_t> buf3(f.td.mds[2].sourceBlob().size + padding);
+
+    sys::File in("tempdata", O_RDONLY);
+    wassert(actual(in.pread(buf1.data(), buf1.size(), 0)) == buf1.size());
+    wassert(actual(in.pread(buf2.data(), buf2.size(), buf1.size())) == buf2.size());
+    wassert(actual(in.pread(buf3.data(), buf3.size(), buf1.size() + buf2.size())) == buf3.size());
+    in.close();
+
+    const auto& validator = scan::Scanner::get_validator(f.td.format);
+    wassert(validator.validate_buf(buf1.data(), buf1.size()));
+    wassert(validator.validate_buf(buf2.data(), buf2.size()));
+    wassert(validator.validate_buf(buf3.data(), buf3.size()));
+
+    auto scanner = scan::Scanner::get_scanner(f.td.format);
+    wassert(scanner->scan_data(buf1));
+    wassert(scanner->scan_data(buf2));
+    wassert(scanner->scan_data(buf3));
 
     sys::unlink("tempdata");
 });
@@ -283,7 +307,7 @@ this->add_method("interrupted_read", [](Fixture& f) {
 
     unsigned count = 0;
     auto reader = f.dataset_config()->create_reader();
-    reader->query_data(dataset::DataQuery("", true), [&](unique_ptr<Metadata> md) {
+    reader->query_data(dataset::DataQuery("", true), [&](std::shared_ptr<Metadata> md) {
         auto data = md->get_data().read();
         wassert(actual(data) == orig_data);
         ++count;
@@ -300,7 +324,7 @@ this->add_method("read_missing_segment", [](Fixture& f) {
     unsigned count_ok = 0;
     unsigned count_err = 0;
     auto reader = f.dataset_config()->create_reader();
-    reader->query_data(dataset::DataQuery("", true), [&](unique_ptr<Metadata> md) {
+    reader->query_data(dataset::DataQuery("", true), [&](std::shared_ptr<Metadata> md) {
         try {
             md->get_data().read();
             ++count_ok;
@@ -324,7 +348,7 @@ this->add_method("read_missing_segment", [](Fixture& f) {
 this->add_method("issue116", [](Fixture& f) {
     unsigned count = 0;
     auto reader = f.dataset_config()->create_reader();
-    reader->query_data(dataset::DataQuery("reftime:==13:00"), [&](unique_ptr<Metadata> md) { ++count; return true; });
+    reader->query_data(dataset::DataQuery("reftime:==13:00"), [&](std::shared_ptr<Metadata> md) { ++count; return true; });
     wassert(actual(count) == 1u);
 });
 

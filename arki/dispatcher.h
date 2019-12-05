@@ -1,25 +1,23 @@
 #ifndef ARKI_DISPATCHER_H
 #define ARKI_DISPATCHER_H
 
-#include <arki/datasets.h>
-#include <arki/dataset.h>
-#include <arki/metadata.h>
+#include <arki/dataset/pool.h>
+#include <arki/core/cfg.h>
+#include <arki/metadata/fwd.h>
 #include <arki/matcher.h>
 #include <string>
 #include <vector>
 #include <map>
 
 namespace arki {
-class Metadata;
-class Validator;
 
 class Dispatcher
 {
 protected:
-	// Dispatching information
-	std::vector< std::pair<std::string, Matcher> > datasets;
-	std::vector< std::pair<std::string, Matcher> > outbounds;
-    std::vector<const Validator*> validators;
+    // Dispatching information
+    std::vector< std::pair<std::string, Matcher> > datasets;
+    std::vector< std::pair<std::string, Matcher> > outbounds;
+    std::vector<const metadata::Validator*> validators;
 
     /// True if we can import another one
     bool m_can_continue;
@@ -39,7 +37,7 @@ public:
      * Memory management is handled by the caller, so the validator must be
      * valid during the whole lifetime of the dispatcher.
      */
-    void add_validator(const Validator& v);
+    void add_validator(const metadata::Validator& v);
 
 	/**
 	 * Return true if the metadata consumer called by the last dispatch()
@@ -83,8 +81,8 @@ public:
 class RealDispatcher : public Dispatcher
 {
 protected:
-    Datasets datasets;
-    WriterPool pool;
+    dataset::Configs datasets;
+    dataset::WriterPool pool;
 
     void raw_dispatch_dataset(const std::string& name, dataset::WriterBatch& batch, bool drop_cached_data_on_commit) override;
 
@@ -109,13 +107,12 @@ public:
 class TestDispatcher : public Dispatcher
 {
 protected:
-    const core::cfg::Sections& cfg;
-    std::ostream& out;
+    core::cfg::Sections cfg;
 
     void raw_dispatch_dataset(const std::string& name, dataset::WriterBatch& batch, bool drop_cached_data_on_commit) override;
 
 public:
-    TestDispatcher(const core::cfg::Sections& cfg, std::ostream& out);
+    TestDispatcher(const core::cfg::Sections& cfg);
     ~TestDispatcher();
 
     void dispatch(dataset::WriterBatch& batch, bool drop_cached_data_on_commit) override;

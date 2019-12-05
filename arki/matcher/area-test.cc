@@ -19,17 +19,18 @@ class Tests : public TestCase
 void Tests::register_tests() {
 
 add_method("grib", [] {
+    using namespace arki::types::values;
     Metadata md;
     arki::tests::fill(md);
 
-	ValueBag testArea2;
-	testArea2.set("foo", Value::createInteger(15));
-	testArea2.set("bar", Value::createInteger(5000));
-	testArea2.set("baz", Value::createInteger(-1200));
-	testArea2.set("moo", Value::createInteger(0x1ffffff));
-	testArea2.set("antani", Value::createInteger(0));
-	testArea2.set("blinda", Value::createInteger(-1));
-	testArea2.set("supercazzola", Value::createInteger(-7654321));
+    ValueBag testArea2;
+    testArea2.set("foo", Value::create_integer(15));
+    testArea2.set("bar", Value::create_integer(5000));
+    testArea2.set("baz", Value::create_integer(-1200));
+    testArea2.set("moo", Value::create_integer(0x1ffffff));
+    testArea2.set("antani", Value::create_integer(0));
+    testArea2.set("blinda", Value::create_integer(-1));
+    testArea2.set("supercazzola", Value::create_integer(-7654321));
 
 	Matcher m;
 
@@ -147,14 +148,15 @@ add_method("bbox_coveredby", [] {
 
 // Try matching Area with ODIMH5
 add_method("odimh5", [] {
-	ValueBag testArea2;
-	testArea2.set("foo", Value::createInteger(15));
-	testArea2.set("bar", Value::createInteger(15000));
-	testArea2.set("baz", Value::createInteger(-1200));
-	testArea2.set("moo", Value::createInteger(0x1ffffff));
-	testArea2.set("antani", Value::createInteger(0));
-	testArea2.set("blinda", Value::createInteger(-1));
-	testArea2.set("supercazzola", Value::createInteger(-7654321));
+    using namespace arki::types::values;
+    ValueBag testArea2;
+    testArea2.set("foo", Value::create_integer(15));
+    testArea2.set("bar", Value::create_integer(15000));
+    testArea2.set("baz", Value::create_integer(-1200));
+    testArea2.set("moo", Value::create_integer(0x1ffffff));
+    testArea2.set("antani", Value::create_integer(0));
+    testArea2.set("blinda", Value::create_integer(-1));
+    testArea2.set("supercazzola", Value::create_integer(-7654321));
 
 	//Matcher m;
 
@@ -232,12 +234,9 @@ add_method("vm2", [] {
 	ensure_not_matches("area:VM2,2", md);
 	ensure_not_matches("area:GRIB:lon=0,lat=0", md);
 
-    try {
-        ensure_matches("area:VM2,ciccio=riccio", md);
-        ensure(false);
-    } catch (std::exception& e) {
-        ensure(string(e.what()).find("is not a number") != string::npos);
-    }
+    auto e1 = wassert_throws(std::invalid_argument, Matcher::parse("area:VM2,ciccio=riccio"));
+    wassert(actual(e1.what()).contains("is not a number"));
+
     ensure_not_matches("area: VM2:ciccio=riccio", md);
     ensure_not_matches("area: VM2,1:ciccio=riccio", md);
     ensure_matches("area: VM2,1:lon=1207738", md);

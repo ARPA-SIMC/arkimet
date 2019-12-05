@@ -48,24 +48,11 @@ add_generic_test(
 // Test VM2 derived values
 add_method("vm2_derived", [] {
     skip_unless_vm2();
-    ValueBag vb1 = ValueBag::parse("lon=1207738,lat=4460016,rep=locali");
+    auto vb1 = types::ValueBag::parse("lon=1207738,lat=4460016,rep=locali");
     wassert(actual(types::area::VM2::create(1)->derived_values() == vb1).istrue());
-    ValueBag vb2 = ValueBag::parse("lon=1207738,lat=4460016,rep=NONONO");
+    auto vb2 = types::ValueBag::parse("lon=1207738,lat=4460016,rep=NONONO");
     wassert(actual(types::area::VM2::create(1)->derived_values() != vb2).istrue());
 });
-
-// Test Lua functions
-add_lua_test("lua", "GRIB(uno=1,pippo=pippo)", R"(
-    function test(o)
-      if o.style ~= 'GRIB' then return 'style is '..o.style..' instead of GRIB' end
-      v = o.val
-      if v['uno'] ~= 1 then return 'v[\'uno\'] is '..v['uno']..' instead of 1' end
-      if v['pippo'] ~= 'pippo' then return 'v[\'pippo\'] is '..v['pippo']..' instead of \'pippo\'' end
-      if tostring(o) ~= 'GRIB(pippo=pippo, uno=1)' then return 'tostring gave '..tostring(o)..' instead of GRIB(pippo=pippo, uno=1)' end
-      o1 = arki_area.grib{uno=1, pippo='pippo'}
-      if o ~= o1 then return 'new area is '..tostring(o1)..' instead of '..tostring(o) end
-    end
-)");
 
 }
 

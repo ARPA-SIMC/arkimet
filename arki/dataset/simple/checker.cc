@@ -10,10 +10,10 @@
 #include "arki/types/reftime.h"
 #include "arki/matcher.h"
 #include "arki/metadata/collection.h"
-#include "arki/utils/files.h"
-#include "arki/sort.h"
+#include "arki/metadata/sort.h"
 #include "arki/scan.h"
 #include "arki/nag.h"
+#include "arki/utils/files.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/string.h"
 #include <ctime>
@@ -31,7 +31,7 @@ namespace simple {
 
 namespace {
 
-struct RepackSort : public sort::Compare
+struct RepackSort : public metadata::sort::Compare
 {
     int compare(const Metadata& a, const Metadata& b) const override
     {
@@ -107,14 +107,14 @@ public:
         if (ts_idx != ts_data || ts_md < ts_data || ts_sum < ts_md)
         {
             if (ts_idx != ts_data)
-                nag::verbose("%s: %s has a timestamp (%d) different than the one in the index (%d)",
-                        checker.config().path.c_str(), segment->segment().relpath.c_str(), ts_data, ts_idx);
+                nag::verbose("%s: %s has a timestamp (%ld) different than the one in the index (%ld)",
+                        checker.config().path.c_str(), segment->segment().relpath.c_str(), (long int)ts_data, (long int)ts_idx);
             if (ts_md < ts_data)
-                nag::verbose("%s: %s has a timestamp (%d) newer that its metadata (%d)",
-                        checker.config().path.c_str(), segment->segment().relpath.c_str(), ts_data, ts_md);
+                nag::verbose("%s: %s has a timestamp (%ld) newer that its metadata (%ld)",
+                        checker.config().path.c_str(), segment->segment().relpath.c_str(), (long int)ts_data, (long int)ts_md);
             if (ts_md < ts_data)
-                nag::verbose("%s: %s metadata has a timestamp (%d) newer that its summary (%d)",
-                        checker.config().path.c_str(), segment->segment().relpath.c_str(), ts_md, ts_sum);
+                nag::verbose("%s: %s metadata has a timestamp (%ld) newer that its summary (%ld)",
+                        checker.config().path.c_str(), segment->segment().relpath.c_str(), (long int)ts_md, (long int)ts_sum);
             state = segment::SEGMENT_UNALIGNED;
         }
 
@@ -127,11 +127,11 @@ public:
         metadata::Collection contents;
         if (sys::exists(segment->segment().abspath + ".metadata"))
         {
-            Metadata::read_file(metadata::ReadContext(segment->segment().abspath + ".metadata", checker.config().path), [&](unique_ptr<Metadata> md) {
+            Metadata::read_file(metadata::ReadContext(segment->segment().abspath + ".metadata", checker.config().path), [&](std::shared_ptr<Metadata> md) {
                 // Tweak Blob sources replacing the file name with segment->relpath
                 if (const source::Blob* s = md->has_source_blob())
                     md->set_source(Source::createBlobUnlocked(s->format, checker.config().path, segment->segment().relpath, s->offset, s->size));
-                contents.acquire(move(md));
+                contents.acquire(md);
                 return true;
             });
         }
@@ -210,7 +210,7 @@ public:
         segment::RepackConfig repack_config;
         repack_config.gz_group_size = config().gz_group_size;
         repack_config.test_flags = test_flags;
-        Pending p_repack = segment->repack(checker.config().path, mds, repack_config);
+        auto p_repack = segment->repack(checker.config().path, mds, repack_config);
 
         // Strip paths from mds sources
         mds.strip_source_paths();
@@ -384,10 +384,10 @@ public:
         metadata::Collection mds;
         segment->rescan_data(
                 [&](const std::string& msg) { reporter.segment_info(checker.name(), segment->segment().relpath, msg); },
-                lock, [&](std::unique_ptr<Metadata> md) {
+                lock, [&](std::shared_ptr<Metadata> md) {
                     auto& source = md->sourceBlob();
                     md->set_source(Source::createBlobUnlocked(segment->segment().format, dirname, basename, source.offset, source.size));
-                    mds.acquire(std::move(md));
+                    mds.acquire(md);
                     return true;
                 });
 

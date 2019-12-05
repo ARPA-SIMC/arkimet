@@ -23,8 +23,7 @@ Arkimet is a set of tools to archive, dispatch and distribute data files.
 ### Metadata
 
  * The extraction of metadata is flexible and customisable, and for generic
-   formats like GRIB or HDF5 it can be scripted using the simple and well
-   known LUA scripting language
+   formats like GRIB or HDF5 it can be scripted using Python
  * Metadata is stored in a compact binary representation to save space, but can
    be converted to standard formats when required
  * Metadata can have timestamped annotations to track its workflow
@@ -94,7 +93,7 @@ The formats used to handle metadata are:
 The file formats that can be scanned are:
 
  * WMO GRIB (edition 1 and edition 2), any template can be supported via
-   grib_api and LUA scripts
+   eccodes and Python scripts
  * WMO BUFR (edition 3 and edition 4), via DB-All.e
  * More can easily be added via plugins
 
@@ -131,8 +130,7 @@ Software dependencies
    suite using GCC version 3.3.3, 4.1.2 and 4.2.3.
  * It should run on any reasonable Unix system, and has been tested on Debian,
    RedHat and Suse Linux systems.
- * LUA version 5.0 or later is required for the customisable logic and GRIB import
-   http://www.lua.org/
+ * Python version 3.6 or later is required for the customisable logic and GRIB import
  * ECMWF grib_api is required for GRIB (edition 1 and 2) support
    http://www.ecmwf.int/products/data/software/grib_api.html
  * SQLite is optionally required for indexed datasets

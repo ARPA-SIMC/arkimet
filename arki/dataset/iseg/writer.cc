@@ -13,6 +13,7 @@
 #include "arki/nag.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/string.h"
+#include "arki/metadata.h"
 #include <system_error>
 #include <algorithm>
 
@@ -372,7 +373,7 @@ void Writer::remove(Metadata& md)
     scache.invalidate(md);
 }
 
-void Writer::test_acquire(const core::cfg::Section& cfg, WriterBatch& batch, std::ostream& out)
+void Writer::test_acquire(const core::cfg::Section& cfg, WriterBatch& batch)
 {
     std::shared_ptr<const iseg::Config> config(new iseg::Config(cfg));
     for (auto& e: batch)

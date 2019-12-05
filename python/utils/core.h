@@ -1,6 +1,7 @@
 #ifndef ARKI_PYTHON_CORE_H
 #define ARKI_PYTHON_CORE_H
 
+#define PY_SSIZE_T_CLEAN
 #include <Python.h>
 #include <stdexcept>
 
@@ -42,6 +43,12 @@ public:
         ptr = nullptr;
     }
 
+    void reset(Obj* o)
+    {
+        Py_XDECREF(ptr);
+        ptr = o;
+    }
+
     /// Release the reference without calling Py_DECREF
     Obj* release()
     {
@@ -50,17 +57,55 @@ public:
         return res;
     }
 
+    /// Call repr() on the object
+    std::string repr()
+    {
+        if (!ptr)
+            return "(null)";
+        py_unique_ptr<PyObject> py_repr(PyObject_Repr(ptr));
+        if (!py_repr)
+        {
+            PyErr_Clear();
+            return "(repr failed)";
+        }
+        Py_ssize_t size;
+        const char* res = PyUnicode_AsUTF8AndSize(py_repr, &size);
+        return std::string(res, size);
+    }
+
+    /// Call str() on the object
+    std::string str()
+    {
+        if (!ptr)
+            return "(null)";
+        py_unique_ptr<PyObject> py_repr(PyObject_Str(ptr));
+        if (!py_repr)
+        {
+            PyErr_Clear();
+            return "(str failed)";
+        }
+        Py_ssize_t size;
+        const char* res = PyUnicode_AsUTF8AndSize(py_repr, &size);
+        return std::string(res, size);
+    }
+
     /// Use it as a Obj
     operator Obj*() { return ptr; }
 
     /// Use it as a Obj
+    operator Obj*() const { return ptr; }
+
+    /// Use it as a Obj
     Obj* operator->() { return ptr; }
+
+    /// Use it as a Obj
+    Obj* operator->() const { return ptr; }
 
     /// Get the pointer (useful for passing to Py_BuildValue)
     Obj* get() { return ptr; }
 
-    /// Check if ptr is not nullptr
-    operator bool() const { return ptr; }
+    /// Get the pointer (useful for passing to Py_BuildValue)
+    Obj* get() const { return ptr; }
 };
 
 typedef py_unique_ptr<PyObject> pyo_unique_ptr;

@@ -2,14 +2,23 @@
 #define ARKI_TYPES_AREA_H
 
 #include <memory>
-#include <arki/types.h>
-#include <arki/values.h>
+#include <arki/types/styled.h>
+#include <arki/types/values.h>
 #include <arki/utils/geosfwd.h>
-
-struct lua_State;
 
 namespace arki {
 namespace types {
+
+namespace area {
+
+/// Style values
+enum class Style: unsigned char {
+    GRIB = 1,
+    ODIMH5 = 2,
+    VM2 = 3,
+};
+
+}
 
 template<>
 struct traits<Area>
@@ -17,8 +26,7 @@ struct traits<Area>
     static const char* type_tag;
     static const types::Code type_code;
     static const size_t type_sersize_bytes;
-    static const char* type_lua_tag;
-    typedef unsigned char Style;
+    typedef area::Style Style;
 };
 
 /**
@@ -30,11 +38,6 @@ struct Area : public types::StyledType<Area>
 {
     mutable arki::utils::geos::Geometry* cached_bbox = nullptr;
 
-	/// Style values
-	static const Style GRIB = 1;
-	static const Style ODIMH5 = 2;
-    static const Style VM2 = 3;
-
 	Area();
 
 	/// Convert a string into a style
@@ -43,14 +46,12 @@ struct Area : public types::StyledType<Area>
 	static std::string formatStyle(Style s);
 
     /// CODEC functions
-    static std::unique_ptr<Area> decode(BinaryDecoder& dec);
+    static std::unique_ptr<Area> decode(core::BinaryDecoder& dec);
     static std::unique_ptr<Area> decodeString(const std::string& val);
-    static std::unique_ptr<Area> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<Area> decode_structure(const structured::Keys& keys, const structured::Reader& val);
 
     /// Return the geographical bounding box
     const arki::utils::geos::Geometry* bbox() const;
-
-	static void lua_loadlib(lua_State* L);
 
     // Register this type tree with the type system
     static void init();
@@ -61,6 +62,9 @@ struct Area : public types::StyledType<Area>
 };
 
 namespace area {
+
+inline std::ostream& operator<<(std::ostream& o, Style s) { return o << Area::formatStyle(s); }
+
 
 class GRIB : public Area
 {
@@ -73,19 +77,17 @@ public:
 	const ValueBag& values() const { return m_values; }
 
     Style style() const override;
-    void encodeWithoutEnvelope(BinaryEncoder& enc) const override;
+    void encodeWithoutEnvelope(core::BinaryEncoder& enc) const override;
     std::ostream& writeToOstream(std::ostream& o) const override;
-    void serialiseLocal(Emitter& e, const Formatter* f=0) const override;
+    void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
     std::string exactQuery() const override;
-    const char* lua_type_name() const override;
-    bool lua_lookup(lua_State* L, const std::string& name) const override;
 
     int compare_local(const Area& o) const override;
     bool equals(const Type& o) const override;
 
     GRIB* clone() const override;
     static std::unique_ptr<GRIB> create(const ValueBag& values);
-    static std::unique_ptr<GRIB> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<GRIB> decode_structure(const structured::Keys& keys, const structured::Reader& val);
 };
 
 class ODIMH5 : public Area
@@ -99,19 +101,17 @@ public:
 	const ValueBag& values() const { return m_values; }
 
     Style style() const override;
-    void encodeWithoutEnvelope(BinaryEncoder& enc) const override;
+    void encodeWithoutEnvelope(core::BinaryEncoder& enc) const override;
     std::ostream& writeToOstream(std::ostream& o) const override;
-    void serialiseLocal(Emitter& e, const Formatter* f=0) const override;
+    void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
     std::string exactQuery() const override;
-    const char* lua_type_name() const override;
-    bool lua_lookup(lua_State* L, const std::string& name) const override;
 
     int compare_local(const Area& o) const override;
     bool equals(const Type& o) const override;
 
     ODIMH5* clone() const override;
     static std::unique_ptr<ODIMH5> create(const ValueBag& values);
-    static std::unique_ptr<ODIMH5> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<ODIMH5> decode_structure(const structured::Keys& keys, const structured::Reader& val);
 };
 
 class VM2 : public Area
@@ -127,20 +127,18 @@ public:
     const ValueBag& derived_values() const;
 
     Style style() const override;
-    void encodeWithoutEnvelope(BinaryEncoder& enc) const override;
-    void encode_for_indexing(BinaryEncoder& enc) const override;
+    void encodeWithoutEnvelope(core::BinaryEncoder& enc) const override;
+    void encode_for_indexing(core::BinaryEncoder& enc) const override;
     std::ostream& writeToOstream(std::ostream& o) const override;
-    void serialiseLocal(Emitter& e, const Formatter* f=0) const override;
+    void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
     std::string exactQuery() const override;
-    const char* lua_type_name() const override;
-    bool lua_lookup(lua_State* L, const std::string& name) const override;
 
     int compare_local(const Area& o) const override;
     bool equals(const Type& o) const override;
 
     VM2* clone() const override;
     static std::unique_ptr<VM2> create(unsigned station_id);
-    static std::unique_ptr<VM2> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<VM2> decode_structure(const structured::Keys& keys, const structured::Reader& val);
 };
 
 

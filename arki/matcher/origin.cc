@@ -144,18 +144,18 @@ unique_ptr<MatchOrigin> MatchOrigin::parse(const std::string& pattern)
     }
     switch (types::Origin::parseStyle(name))
     {
-        case types::Origin::GRIB1: return unique_ptr<MatchOrigin>(new MatchOriginGRIB1(rest));
-        case types::Origin::GRIB2: return unique_ptr<MatchOrigin>(new MatchOriginGRIB2(rest));
-        case types::Origin::BUFR: return unique_ptr<MatchOrigin>(new MatchOriginBUFR(rest));
-        case types::Origin::ODIMH5: return unique_ptr<MatchOrigin>(new MatchOriginODIMH5(rest));
+        case types::Origin::Style::GRIB1: return unique_ptr<MatchOrigin>(new MatchOriginGRIB1(rest));
+        case types::Origin::Style::GRIB2: return unique_ptr<MatchOrigin>(new MatchOriginGRIB2(rest));
+        case types::Origin::Style::BUFR: return unique_ptr<MatchOrigin>(new MatchOriginBUFR(rest));
+        case types::Origin::Style::ODIMH5: return unique_ptr<MatchOrigin>(new MatchOriginODIMH5(rest));
         default:
-            throw std::runtime_error("cannot parse type of origin to match: unsupported origin style: " + name);
+            throw std::invalid_argument("cannot parse type of origin to match: unsupported origin style: " + name);
     }
 }
 
 void MatchOrigin::init()
 {
-    Matcher::register_matcher("origin", TYPE_ORIGIN, (MatcherType::subexpr_parser)MatchOrigin::parse);
+    MatcherType::register_matcher("origin", TYPE_ORIGIN, (MatcherType::subexpr_parser)MatchOrigin::parse);
 }
 
 }

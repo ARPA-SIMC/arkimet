@@ -2,9 +2,6 @@
 #include "arki/matcher.h"
 #include "arki/matcher/reftime.h"
 #include "arki/metadata.h"
-#include "arki/libconfig.h"
-#include <sstream>
-#include <iostream>
 
 using namespace std;
 using namespace arki::tests;

@@ -1,0 +1,11 @@
+#!/usr/bin/python3
+from arkimet.cmdline.dump import Dump
+import sys
+
+
+def main():
+    sys.exit(Dump.main())
+
+
+if __name__ == "__main__":
+    main()

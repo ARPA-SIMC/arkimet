@@ -1,6 +1,6 @@
 #include "memory.h"
-#include <arki/summary.h>
-#include <arki/sort.h>
+#include "arki/summary.h"
+#include "arki/metadata/sort.h"
 
 using namespace std;
 
@@ -15,14 +15,14 @@ Memory::~Memory() {}
 
 std::string Memory::type() const { return "memory"; }
 
-bool Memory::query_data(const dataset::DataQuery& q, std::function<bool(std::unique_ptr<Metadata>)> dest)
+bool Memory::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 {
     if (q.sorter)
         sort(*q.sorter);
 
-    for (const_iterator i = begin(); i != end(); ++i)
-        if (q.matcher(**i))
-            if (!dest(Metadata::create_copy(**i)))
+    for (const auto& md: vals)
+        if (q.matcher(*md))
+            if (!dest(md))
                 return false;
 
     return true;

@@ -7,8 +7,6 @@
 #include "arki/metadata/collection.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
-#include <sstream>
-#include <iostream>
 
 namespace {
 using namespace std;
@@ -58,7 +56,7 @@ add_method("format_from_filename", [] {
     wassert(actual(scan::Scanner::format_from_filename("test.grib1.tar")) == "grib");
     wassert(actual(scan::Scanner::format_from_filename("test.grib2.tar")) == "grib");
     wassert(actual(scan::Scanner::format_from_filename("test.bufr.tar")) == "bufr");
-#ifdef HAVE_HDF5
+
     wassert(actual(scan::Scanner::format_from_filename("test.h5")) == "odimh5");
     wassert(actual(scan::Scanner::format_from_filename("test.hdf5")) == "odimh5");
     wassert(actual(scan::Scanner::format_from_filename("test.odim")) == "odimh5");
@@ -75,7 +73,7 @@ add_method("format_from_filename", [] {
     wassert(actual(scan::Scanner::format_from_filename("test.hdf5.tar")) == "odimh5");
     wassert(actual(scan::Scanner::format_from_filename("test.odim.tar")) == "odimh5");
     wassert(actual(scan::Scanner::format_from_filename("test.odimh5.tar")) == "odimh5");
-#endif
+
     wassert_throws(std::runtime_error, scan::Scanner::format_from_filename("test"));
     wassert_throws(std::runtime_error, scan::Scanner::format_from_filename("test.zip"));
     wassert_throws(std::runtime_error, scan::Scanner::format_from_filename("test.tar"));
@@ -93,7 +91,7 @@ for (auto td: test_data)
         metadata::Collection mds;
         scanner->test_scan_file(td.pathname, mds.inserter_func());
         wassert(actual(mds.size()) == td.count);
-        wassert(actual(mds[0].source().style()) == types::Source::BLOB);
+        wassert(actual(mds[0].source().style()) == types::Source::Style::BLOB);
     });
 
     add_method("scan_pipe_" + td.format, [=] {
@@ -104,7 +102,7 @@ for (auto td: test_data)
         wassert(actual(mds.size()) == td.count);
         for (const auto& md: mds)
         {
-            wassert(actual(md->source().style()) == types::Source::INLINE);
+            wassert(actual(md->source().style()) == types::Source::Style::INLINE);
             wassert(actual(md->source().format) == td.format);
         }
     });
@@ -114,9 +112,8 @@ for (auto td: {TestData("inbound/ship.bufr"), TestData("inbound/oddunits.grib"),
 {
     add_method("scan_singleton_" + td.format, [=] {
         auto scanner = scan::Scanner::get_scanner(td.format);
-        Metadata md;
-        scanner->scan_singleton(td.pathname, md);
-        wassert_false(md.has_source());
+        auto md = scanner->scan_singleton(td.pathname);
+        wassert_false(md->has_source());
     });
 }
 
@@ -128,22 +125,22 @@ add_method("usn", [] {
         // be left untouched
         metadata::TestCollection mdc("inbound/test.grib1");
         int usn = 42;
-        ensure_equals(scan::Scanner::update_sequence_number(mdc[0], usn), false);
-        ensure_equals(usn, 42);
+        wassert_false(scan::Scanner::update_sequence_number(mdc[0], usn));
+        wassert(actual(usn) == 42);
     }
 
     {
         metadata::TestCollection mdc("inbound/synop-gts.bufr");
         int usn;
-        ensure_equals(scan::Scanner::update_sequence_number(mdc[0], usn), true);
-        ensure_equals(usn, 0);
+        wassert_true(scan::Scanner::update_sequence_number(mdc[0], usn));
+        wassert(actual(usn) == 0);
     }
 
     {
         metadata::TestCollection mdc("inbound/synop-gts-usn2.bufr");
         int usn;
-        ensure_equals(scan::Scanner::update_sequence_number(mdc[0], usn), true);
-        ensure_equals(usn, 2);
+        wassert_true(scan::Scanner::update_sequence_number(mdc[0], usn));
+        wassert(actual(usn) == 2);
     }
 #endif
 });

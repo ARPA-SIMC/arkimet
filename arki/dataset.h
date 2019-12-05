@@ -5,24 +5,15 @@
 #include <arki/matcher.h>
 #include <arki/core/fwd.h>
 #include <arki/core/cfg.h>
+#include <arki/core/transaction.h>
+#include <arki/metadata/fwd.h>
 #include <arki/dataset/fwd.h>
-#include <arki/transaction.h>
 #include <string>
+#include <vector>
 #include <memory>
 
-struct lua_State;
-
 namespace arki {
-class Metadata;
 class Summary;
-
-namespace metadata {
-class Collection;
-}
-
-namespace sort {
-class Compare;
-}
 
 /**
  * Generic dataset interface.
@@ -86,15 +77,12 @@ struct DataQuery
     bool with_data;
 
     /// Optional compare function to define a custom ordering of the result
-    std::shared_ptr<sort::Compare> sorter;
+    std::shared_ptr<metadata::sort::Compare> sorter;
 
     DataQuery();
     DataQuery(const std::string& matcher, bool with_data=false);
     DataQuery(const Matcher& matcher, bool with_data=false);
     ~DataQuery();
-
-    void lua_from_table(lua_State* L, int idx);
-    void lua_push_table(lua_State* L, int idx) const;
 };
 
 struct ByteQuery : public DataQuery
@@ -102,8 +90,6 @@ struct ByteQuery : public DataQuery
     enum Type {
         BQ_DATA = 0,
         BQ_POSTPROCESS = 1,
-        BQ_REP_METADATA = 2,
-        BQ_REP_SUMMARY = 3
     };
 
     std::string param;
@@ -125,22 +111,6 @@ struct ByteQuery : public DataQuery
         type = BQ_POSTPROCESS;
         matcher = m;
         param = procname;
-    }
-
-    void setRepMetadata(const Matcher& m, const std::string& repname)
-    {
-        with_data = false;
-        type = BQ_REP_METADATA;
-        matcher = m;
-        param = repname;
-    }
-
-    void setRepSummary(const Matcher& m, const std::string& repname)
-    {
-        with_data = false;
-        type = BQ_REP_SUMMARY;
-        matcher = m;
-        param = repname;
     }
 };
 
@@ -237,6 +207,14 @@ public:
     virtual void query_bytes(const dataset::ByteQuery& q, core::NamedFileDescriptor& out);
 
     /**
+     * Query the dataset obtaining a byte stream, that gets written to a file
+     * descriptor.
+     *
+     * The default implementation in Reader is based on queryData.
+     */
+    virtual void query_bytes(const dataset::ByteQuery& q, core::AbstractOutputFile& out);
+
+    /**
      * Expand the given begin and end ranges to include the datetime extremes
      * of this dataset.
      *
@@ -245,27 +223,20 @@ public:
      */
     virtual void expand_date_range(std::unique_ptr<core::Time>& begin, std::unique_ptr<core::Time>& end);
 
-	// LUA functions
-	/// Push to the LUA stack a userdata to access this dataset
-	void lua_push(lua_State* L);
-
-	/**
-	 * Check that the element at \a idx is a Reader userdata
-	 *
-	 * @return the Reader element, or 0 if the check failed
-	 */
-	static Reader* lua_check(lua_State* L, int idx);
-
     /**
      * Instantiate an appropriate Reader for the given configuration
      */
     static std::unique_ptr<Reader> create(const core::cfg::Section& cfg);
 
     /**
-     * Read the configuration of the dataset(s) at the given path or URL,
-     * adding new sections to cfg
+     * Read the configuration of the dataset at the given path or URL
      */
     static core::cfg::Section read_config(const std::string& path);
+
+    /**
+     * Read a multi-dataset configuration at the given path or URL
+     */
+    static core::cfg::Sections read_configs(const std::string& path);
 };
 
 struct WriterBatchElement
@@ -367,7 +338,7 @@ public:
      *
      * This is only used for testing.
      */
-    virtual Pending test_writelock();
+    virtual core::Pending test_writelock();
 
     /**
      * Instantiate an appropriate Writer for the given configuration
@@ -380,7 +351,7 @@ public:
      *
      * No change of any kind happens to the dataset.
      */
-    static void test_acquire(const core::cfg::Section& cfg, WriterBatch& batch, std::ostream& out);
+    static void test_acquire(const core::cfg::Section& cfg, WriterBatch& batch);
 };
 
 struct CheckerConfig

@@ -3,7 +3,6 @@
 
 /// Process a stream of metadata in batches
 
-#include <arki/metadata/consumer.h>
 #include <arki/types/timerange.h>
 #include <arki/types/reftime.h>
 
@@ -46,7 +45,7 @@ protected:
      * Child classes can hook here for processing md and buf as members of the
      * current batch.
      */
-    virtual void add_to_batch(Metadata& md);
+    virtual void add_to_batch(std::shared_ptr<Metadata> md);
 
     /**
      * Reset information about the current batch, and start a new one.
@@ -95,7 +94,7 @@ public:
     // a chance to do their own flushing. Flushes must be explicit.
     ~Clusterer();
 
-    bool eat(std::unique_ptr<Metadata>&& md);
+    bool eat(std::shared_ptr<Metadata> md);
 
     /**
      * Signal that no more data will be sent, and close the current partial

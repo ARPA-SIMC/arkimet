@@ -1,0 +1,6 @@
+#!/usr/bin/python3
+from arkimet.cmdline.bufr_prepare import BufrPrepare
+import sys
+
+if __name__ == "__main__":
+    sys.exit(BufrPrepare.main())

@@ -1,6 +1,6 @@
 #include "arki/dataset/ondisk2/checker.h"
 #include "arki/exceptions.h"
-#include "arki/binary.h"
+#include "arki/core/binary.h"
 #include "arki/dataset/maintenance.h"
 #include "arki/dataset/archive.h"
 #include "arki/dataset/segment.h"
@@ -12,7 +12,6 @@
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
 #include "arki/matcher.h"
-#include "arki/utils.h"
 #include "arki/utils/files.h"
 #include "arki/summary.h"
 #include "arki/scan.h"
@@ -20,7 +19,6 @@
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
 #include <system_error>
-#include <sstream>
 #include <unistd.h>
 #include <cerrno>
 #include <cassert>
@@ -46,7 +44,7 @@ struct IDMaker
     vector<uint8_t> make_string(const Metadata& md) const
     {
         vector<uint8_t> res;
-        BinaryEncoder enc(res);
+        core::BinaryEncoder enc(res);
         for (set<types::Code>::const_iterator i = components.begin(); i != components.end(); ++i)
             if (const Type* t = md.get(*i))
                 t->encodeBinary(enc);
@@ -165,12 +163,12 @@ public:
     size_t reorder(metadata::Collection& mds, unsigned test_flags) override
     {
         // Lock away writes and reads
-        Pending p = checker.idx->begin_transaction();
+        auto p = checker.idx->begin_transaction();
 
         segment::RepackConfig repack_config;
         repack_config.gz_group_size = config().gz_group_size;
         repack_config.test_flags = test_flags;
-        Pending p_repack = segment->repack(checker.config().path, mds, repack_config);
+        auto p_repack = segment->repack(checker.config().path, mds, repack_config);
 
         // Reindex mds
         checker.idx->reset(segment->segment().relpath);
@@ -210,7 +208,7 @@ public:
             return;
 
         auto lock = checker.lock->write_lock();
-        Pending p = checker.idx->begin_transaction();
+        auto p = checker.idx->begin_transaction();
 
         // Rescan file
         metadata::Collection mds;
@@ -247,7 +245,7 @@ public:
             return;
 
         auto lock = checker.lock->write_lock();
-        Pending p = checker.idx->begin_transaction();
+        auto p = checker.idx->begin_transaction();
 
         // Rescan file
         metadata::Collection mds;
@@ -284,7 +282,7 @@ public:
             return 0;
 
         auto lock = checker.lock->write_lock();
-        Pending p = checker.idx->begin_transaction();
+        auto p = checker.idx->begin_transaction();
 
         // Rescan file
         metadata::Collection mds;
@@ -338,30 +336,27 @@ public:
                 lock, mds.inserter_func());
 
         // Lock away writes and reads
-        Pending p = checker.idx->begin_transaction();
-        // cerr << "LOCK" << endl;
+        auto p = checker.idx->begin_transaction();
 
         // Remove from the index all data about the file
         checker.idx->reset(segment->segment().relpath);
-        // cerr << " RESET " << file << endl;
 
         // Scan the list of metadata, looking for duplicates and marking all
         // the duplicates except the last one as deleted
         IDMaker id_maker(checker.idx->unique_codes());
 
         map<vector<uint8_t>, const Metadata*> finddupes;
-        for (metadata::Collection::const_iterator i = mds.begin(); i != mds.end(); ++i)
+        for (const auto& md: mds)
         {
-            vector<uint8_t> id = id_maker.make_string(**i);
+            vector<uint8_t> id = id_maker.make_string(*md);
             if (id.empty())
                 continue;
             auto dup = finddupes.find(id);
             if (dup == finddupes.end())
-                finddupes.insert(make_pair(id, *i));
+                finddupes.insert(make_pair(id, md.get()));
             else
-                dup->second = *i;
+                dup->second = md.get();
         }
-        // cerr << " DUPECHECKED " << pathname << ": " << finddupes.size() << endl;
 
         // Send the remaining metadata to the reindexer
         std::string basename = str::basename(segment->segment().relpath);
@@ -385,14 +380,12 @@ public:
                 // sqlite will take care of transaction consistency
             }
         }
-        // cerr << " REINDEXED " << pathname << endl;
 
         // TODO: if scan fails, remove all info from the index and rename the
         // file to something like .broken
 
         // Commit the changes on the database
         p.commit();
-        // cerr << " COMMITTED" << endl;
 
         // TODO: remove relevant summary
     }
@@ -400,7 +393,7 @@ public:
     void index(metadata::Collection&& contents) override
     {
         // Add to index
-        Pending p_idx = checker.idx->begin_transaction();
+        auto p_idx = checker.idx->begin_transaction();
         for (auto& md: contents)
             if (checker.idx->index(*md, segment->segment().relpath, md->sourceBlob().offset))
                 throw std::runtime_error("duplicate detected while reordering segment");
