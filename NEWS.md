@@ -1,15 +1,25 @@
-# New in version 1.x
+# New in version 1.17
 
  * Greatly enlarged Python API
+ * New HTTP API
+ * Redesigned and unified all the documentation (see https://arpa-simc.github.io/arkimet/)
  * Ported command line scripts to python
  * Removed unused gridspace querymacro
  * Removed unused --targetfile option
  * Removed unused --report option
  * Ported all Lua infrastructure and scripts to Python
+ * Ported to new dballe 8 API
+ * Cleaned up tests and autoconf checks
  * Use POSIX return values from command line tools (see https://www.freebsd.org/cgi/man.cgi?query=sysexits)
  * Work when sendfile is not available
  * ondisk2 datasets are deprecated from now on in favour of iseg, but still fully supported
  * sphinx-based documentation for python bindings
+ * Do not stop at reporting the first 'dirty' cause found in a segment (#187)
+ * Fixed order of iteration / overriding options of scanners (#177)
+ * Fixed --annotate when some timedef keys are missing (#202)
+ * Fixed errors in zip utils (#173)
+ * Fixed bug on dataset compression (#170)
+ * Fail a match on a metadata which does not have the data to match (#166)
 
 # New in version 1.12
 

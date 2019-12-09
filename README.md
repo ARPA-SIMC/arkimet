@@ -37,6 +37,8 @@ that more data for a query would be available but is currently offline.
 Arkimet is Free Software, licensed under the GNU General Public License version
 2 or later.
 
+[Arkimet documentation](https://arpa-simc.github.io/arkimet/).
+
 ## Features
 
 ### General

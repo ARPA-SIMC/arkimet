@@ -3,7 +3,7 @@
 
 Summary: Archive for weather information
 Name: arkimet
-Version: 1.16
+Version: 1.17
 Release: 1
 License: GPL
 Group: Applications/Meteo
@@ -50,6 +50,7 @@ BuildRequires: curl
 BuildRequires: curl-devel
 BuildRequires: geos-devel
 BuildRequires: popt-devel
+BuildRequires: hdf5-devel
 BuildRequires: help2man
 BuildRequires: pkgconfig
 BuildRequires: readline-devel
@@ -76,8 +77,8 @@ BuildRequires: libzip-devel
 BuildRequires: libarchive-devel
 BuildRequires: bzip2-devel
 
-# shapely is an optional dependency, not available on centos7
-%if ! 0%{?el7}
+# shapely is an optional dependency, not available on centos
+%if ! 0%{?rhel}
 BuildRequires: %{python3_vers}-shapely
 Requires: %{python3_vers}-shapely
 %endif
@@ -238,6 +239,25 @@ if [ "$1" = "1" ]; then
 fi
 
 %changelog
+* Mon Dec  9 2019 Daniele Branchini <dbranchini@arpae.it> - 1.17-1
+- Greatly enlarged Python API
+- New HTTP API
+- Redesigned and unified all the documentation (see https://arpa-simc.github.io/arkimet/)
+- Ported command line scripts to python
+- Removed unused gridspace querymacro
+- Removed unused --targetfile option
+- Removed unused --report option
+- Ported all Lua infrastructure and scripts to Python
+- Ported to new dballe 8 API
+- Cleaned up tests and autoconf checks
+- Use POSIX return values from command line tools (see https://www.freebsd.org/cgi/man.cgi?query=sysexits)
+- Work when sendfile is not available
+- ondisk2 datasets are deprecated from now on in favour of iseg, but still fully supported
+- sphinx-based documentation for python bindings
+- Fixed order of iteration / overriding options of scanners (#177)
+- Fixed --annotate when some timedef keys are missing (#202)
+- Do not stop at reporting the first 'dirty' cause found in a segment (#187)
+
 * Tue Apr 16 2019 Daniele Branchini <dbranchini@arpae.it> - 1.16-1
 - moving to python 3.6 on Centos7
 - fixed errors in zip utils (#173)
