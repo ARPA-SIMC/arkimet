@@ -19,6 +19,7 @@
    
   <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
   
+  
   <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
 
   </head><body>
@@ -27,6 +28,8 @@
     <div class="document">
       <div class="documentwrapper">
         <div class="bodywrapper">
+          
+
           <div class="body" role="main">
             
   <h1>Source code for arkimet.scan.odimh5</h1><div class="highlight"><pre>
@@ -45,18 +48,21 @@
 <div class="viewcode-block" id="Scanner"><a class="viewcode-back" href="../../../python/arkimet.scan.html#arkimet.scan.odimh5.Scanner">[docs]</a><span class="k">class</span> <span class="nc">Scanner</span><span class="p">:</span>
     <span class="n">scanners</span> <span class="o">=</span> <span class="p">[]</span>
 
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">scanners</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">p</span><span class="p">:</span> <span class="n">p</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
 <div class="viewcode-block" id="Scanner.scan"><a class="viewcode-back" href="../../../python/arkimet.scan.html#arkimet.scan.odimh5.Scanner.scan">[docs]</a>    <span class="k">def</span> <span class="nf">scan</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pathname</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">md</span><span class="p">:</span> <span class="n">arkimet</span><span class="o">.</span><span class="n">Metadata</span><span class="p">):</span>
         <span class="c1"># FIXME: hack to deal with Centos not having h5py for python3</span>
         <span class="k">if</span> <span class="n">HAVE_H5PY</span><span class="p">:</span>
             <span class="k">with</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">pathname</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
-                <span class="c1"># Try all scanner functions in the list, returning the result of the</span>
-                <span class="c1"># first that returns not-None.</span>
-                <span class="c1"># Iterate in reverse order, so that scanner functions loaded later</span>
-                <span class="c1"># (like from /etc) can be called earlier and fall back on the shipped</span>
-                <span class="c1"># ones</span>
-                <span class="k">for</span> <span class="n">scan</span> <span class="ow">in</span> <span class="nb">reversed</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">scanners</span><span class="p">):</span>
+                <span class="c1"># Try all scanner functions in the list, in priority order, stopping at</span>
+                <span class="c1"># the first one that returns False.</span>
+                <span class="c1"># Note that False is explicitly required: returning None will not stop</span>
+                <span class="c1"># the scanner chain.</span>
+                <span class="k">for</span> <span class="n">prio</span><span class="p">,</span> <span class="n">scan</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">scanners</span><span class="p">:</span>
                     <span class="k">try</span><span class="p">:</span>
-                        <span class="n">scan</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">md</span><span class="p">)</span>
+                        <span class="k">if</span> <span class="n">scan</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">md</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">:</span>
+                            <span class="k">break</span>
                     <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
                         <span class="n">log</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="s2">&quot;scanner function failed&quot;</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
@@ -64,7 +70,7 @@
             <span class="kn">import</span> <span class="nn">inspect</span>
             <span class="kn">import</span> <span class="nn">subprocess</span>
             <span class="n">metadata</span> <span class="o">=</span> <span class="p">{}</span>
-            <span class="k">for</span> <span class="n">scan</span> <span class="ow">in</span> <span class="nb">reversed</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">scanners</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">prio</span><span class="p">,</span> <span class="n">scan</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">scanners</span><span class="p">:</span>
                 <span class="n">scanner</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">getfile</span><span class="p">(</span><span class="n">scan</span><span class="p">)</span>
                 <span class="n">proc</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">Popen</span><span class="p">([</span><span class="s2">&quot;python&quot;</span><span class="p">,</span> <span class="n">scanner</span><span class="p">,</span> <span class="n">pathname</span><span class="p">],</span>
                                         <span class="n">stdin</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span><span class="p">,</span> <span class="n">stdout</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span><span class="p">,</span>
@@ -80,12 +86,13 @@
                 <span class="n">md</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">v</span></div>
 
 <div class="viewcode-block" id="Scanner.register"><a class="viewcode-back" href="../../../python/arkimet.scan.html#arkimet.scan.odimh5.Scanner.register">[docs]</a>    <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">register</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">scanner</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="s2">&quot;h5py.File&quot;</span><span class="p">,</span> <span class="n">arkimet</span><span class="o">.</span><span class="n">Metadata</span><span class="p">],</span> <span class="kc">None</span><span class="p">]):</span>
+    <span class="k">def</span> <span class="nf">register</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">scanner</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="s2">&quot;h5py.File&quot;</span><span class="p">,</span> <span class="n">arkimet</span><span class="o">.</span><span class="n">Metadata</span><span class="p">],</span> <span class="kc">None</span><span class="p">],</span> <span class="n">priority</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">scanner</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">scanners</span><span class="p">:</span>
-            <span class="bp">cls</span><span class="o">.</span><span class="n">scanners</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">scanner</span><span class="p">)</span></div></div>
+            <span class="bp">cls</span><span class="o">.</span><span class="n">scanners</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">priority</span><span class="p">,</span> <span class="n">scanner</span><span class="p">))</span></div></div>
 </pre></div>
 
           </div>
+          
         </div>
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
@@ -133,6 +140,14 @@
     </div>
 </div>
 <script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
         </div>
       </div>
       <div class="clearer"></div>
@@ -142,7 +157,7 @@
       
       |
       Powered by <a href="http://sphinx-doc.org/">Sphinx 1.8.4</a>
-      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.8</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
     </div>
 

@@ -21,6 +21,7 @@
    
   <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
   
+  
   <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
 
   </head><body>
@@ -29,6 +30,8 @@
     <div class="document">
       <div class="documentwrapper">
         <div class="bodywrapper">
+          
+
           <div class="body" role="main">
             
   <div class="section" id="arkimet-scan-package">
@@ -48,7 +51,7 @@
 
 <dl class="classmethod">
 <dt id="arkimet.scan.bufr.Scanner.register">
-<em class="property">classmethod </em><code class="descname">register</code><span class="sig-paren">(</span><em>type: str, scanner: Callable[[dballe.Message, arkimet.Metadata], None]</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/arkimet/scan/bufr.html#Scanner.register"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.scan.bufr.Scanner.register" title="Permalink to this definition">¶</a></dt>
+<em class="property">classmethod </em><code class="descname">register</code><span class="sig-paren">(</span><em>type: str, scanner: Callable[[dballe.Message, arkimet.Metadata], None], priority=0</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/arkimet/scan/bufr.html#Scanner.register"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.scan.bufr.Scanner.register" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="method">
@@ -127,7 +130,7 @@
 
 <dl class="classmethod">
 <dt id="arkimet.scan.grib.Scanner.register">
-<em class="property">classmethod </em><code class="descname">register</code><span class="sig-paren">(</span><em>edition: int, scanner: Callable[[arkimet.scan.grib.Grib, arkimet.Metadata], None]</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/arkimet/scan/grib.html#Scanner.register"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.scan.grib.Scanner.register" title="Permalink to this definition">¶</a></dt>
+<em class="property">classmethod </em><code class="descname">register</code><span class="sig-paren">(</span><em>edition: int, scanner: Callable[[arkimet.scan.grib.Grib, arkimet.Metadata], None], priority=0</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/arkimet/scan/grib.html#Scanner.register"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.scan.grib.Scanner.register" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="method">
@@ -145,7 +148,7 @@
 <em class="property">class </em><code class="descclassname">arkimet.scan.odimh5.</code><code class="descname">Scanner</code><a class="reference internal" href="../_modules/arkimet/scan/odimh5.html#Scanner"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.scan.odimh5.Scanner" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="classmethod">
 <dt id="arkimet.scan.odimh5.Scanner.register">
-<em class="property">classmethod </em><code class="descname">register</code><span class="sig-paren">(</span><em>scanner: Callable[[h5py.File, arkimet.Metadata], None]</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/arkimet/scan/odimh5.html#Scanner.register"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.scan.odimh5.Scanner.register" title="Permalink to this definition">¶</a></dt>
+<em class="property">classmethod </em><code class="descname">register</code><span class="sig-paren">(</span><em>scanner: Callable[[h5py.File, arkimet.Metadata], None], priority=0</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/arkimet/scan/odimh5.html#Scanner.register"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.scan.odimh5.Scanner.register" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="method">
@@ -180,6 +183,7 @@
 
 
           </div>
+          
         </div>
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
@@ -237,6 +241,14 @@
     </div>
 </div>
 <script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
         </div>
       </div>
       <div class="clearer"></div>
@@ -246,7 +258,7 @@
       
       |
       Powered by <a href="http://sphinx-doc.org/">Sphinx 1.8.4</a>
-      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.8</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |
       <a href="../_sources/python/arkimet.scan.rst.txt"
