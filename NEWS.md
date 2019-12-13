@@ -1,3 +1,7 @@
+# New in version 1.18
+
+ * Ported documentation to sphinx
+
 # New in version 1.17
 
  * Greatly enlarged Python API

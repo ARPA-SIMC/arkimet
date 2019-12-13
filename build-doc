@@ -1,5 +1,0 @@
-#!/bin/sh
-make -j4
-rm -rf python/doc/_build
-rm -rf python-doc-html
-./run-local sphinx-build -b html python/doc python-doc-html
