@@ -172,6 +172,18 @@ def scan_grib2(grib, md):
         if "derivedForecast" in grib:
             proddef["d"] = grib["derivedForecast"]
 
+    if "percentileValue" in grib:
+        proddef["pv"] = grib["percentileValue"]
+
+    if "probabilityType" in grib:
+        proddef["pt"] = grib.get_long("probabilityType")
+        proddef["pl"] = "{},{},{},{}".format(
+            grib["scaleFactorOfLowerLimit"],
+            grib["scaledValueOfLowerLimit"],
+            grib["scaleFactorOfUpperLimit"],
+            grib["scaledValueOfUpperLimit"],
+        )
+
     md["proddef"] = {
         "style": "GRIB",
         "value": proddef,

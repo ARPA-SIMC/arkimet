@@ -224,7 +224,7 @@ class TestScanGrib(unittest.TestCase):
         self.assertEqual(md["reftime"], "2013-10-22T00:00:00Z")
         self.assertEqual(md["run"], "MINUTE(00:00)")
 
-    def test_issue120(self):
+    def test_issue120_and_issue201(self):
         mds = self.read("inbound/oddunits.grib")
         self.assertEqual(len(mds), 1)
         md = mds[0]
@@ -238,7 +238,8 @@ class TestScanGrib(unittest.TestCase):
                 md["area"],
                 "GRIB(Ni=576, Nj=701, latfirst=-8500000, latlast=5500000, latp=-47000000,"
                 " lonfirst=-3800000, lonlast=7700000, lonp=10000000, rot=0, tn=1)")
-        self.assertEqual(md["proddef"], "GRIB(tod=5)")
+        # issue201: set pl and pt
+        self.assertEqual(md["proddef"], "GRIB(pl=-1,3,0,0, pt=3, tod=5)")
         self.assertEqual(md["reftime"], "2018-01-25T21:00:00Z")
         self.assertEqual(md["run"], "MINUTE(21:00)")
 
