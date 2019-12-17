@@ -59,13 +59,16 @@ def do_serve(args):
                 sections.write(self.wfile)
             else:
                 name = path.split("/")[1]
-                self.send_response(200)
-                self.send_header('Content-type', 'plain/text')
-                self.end_headers()
-                section = sections[name]
-                s = arki.cfg.Sections()
-                s[name] = section
-                s.write(self.wfile)
+                if name in sections:
+                    section = sections[name]
+                    s = arki.cfg.Sections()
+                    s[name] = section
+                    self.send_response(200)
+                    self.send_header('Content-type', 'plain/text')
+                    self.end_headers()
+                    s.write(self.wfile)
+                else:
+                    self.send_response(404)
 
     server = HTTPServer((args.host, args.port), ConfigHandler)
     server.serve_forever()
