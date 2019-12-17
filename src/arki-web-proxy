@@ -21,10 +21,10 @@ def parse_sections(configs):
         if cfg.startswith("http://") or cfg.startswith("https://"):
             for name, section in arki.dataset.http.load_cfg_sections(cfg).items():
                 sections[name] = section
-        elif cfg.endswith("/config"):
+        elif os.path.isfile(cfg):
             for name, section in arki.dataset.read_configs(cfg).items():
                 sections[name] = section
-        else:
+        elif os.path.isdir(cfg) and os.path.exists(os.path.join(cfg, "config")):
             section = arki.dataset.read_config(cfg)
             sections[section["name"]] = section
 
