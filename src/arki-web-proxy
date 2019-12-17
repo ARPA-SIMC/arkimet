@@ -58,14 +58,14 @@ def do_serve(args):
                 log.exception(e)
 
         def handle_request(self):
-            path = urlparse(self.path).path[1:]
-            if path == "":
+            path = urlparse(self.path).path
+            if path == "/":
                 self.send_response(200)
                 self.send_header('Content-type', 'plain/text')
                 self.end_headers()
                 sections.write(self.wfile)
-            else:
-                name = path.split("/")[1]
+            elif path.startswith("/dataset/"):
+                name = os.path.split(path)[1]
                 if name in sections:
                     section = sections[name]
                     s = arki.cfg.Sections()
@@ -76,6 +76,10 @@ def do_serve(args):
                     s.write(self.wfile)
                 else:
                     self.send_response(404)
+                    self.end_headers()
+            else:
+                self.send_response(404)
+                self.end_headers()
 
     server = HTTPServer((args.host, args.port), ConfigHandler)
     server.serve_forever()
