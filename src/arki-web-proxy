@@ -51,6 +51,13 @@ def do_serve(args):
 
     class ConfigHandler(BaseHTTPRequestHandler):
         def do_GET(self):
+            try:
+                self.handle_request()
+            except Exception as e:
+                self.send_response(500)
+                log.exception(e)
+
+        def handle_request(self):
             path = urlparse(self.path).path[1:]
             if path == "":
                 self.send_response(200)
