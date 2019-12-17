@@ -77,8 +77,8 @@ Style control how the query results are returned, and can be one of:
  * ``rep_summary``: return the output of the summary report named by ``command``
 
 
-`/summary?query=<query>&style=<style>`
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+``/summary?query=<query>&style=<style>``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Query the merged summary of all datasets.
 
