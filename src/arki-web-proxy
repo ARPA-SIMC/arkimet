@@ -1,9 +1,12 @@
 #!/usr/bin/python3
 import argparse
-import arkimet.cfg
+import arkimet as arki
 import logging
 import sys
 import os
+from http.server import BaseHTTPRequestHandler, HTTPServer
+from urllib.parse import urlparse
+
 
 log = logging.getLogger("mock-arki-server")
 
@@ -12,13 +15,87 @@ class Fail(Exception):
     pass
 
 
+def parse_sections(configs):
+    sections = arki.cfg.Sections()
+    for cfg in configs:
+        if cfg.startswith("http://") or cfg.startswith("https://"):
+            for name, section in arki.dataset.http.load_cfg_sections(cfg).items():
+                sections[name] = section
+        elif cfg.endswith("/config"):
+            for name, section in arki.dataset.read_configs(cfg).items():
+                sections[name] = section
+        else:
+            section = arki.dataset.read_config(cfg)
+            sections[section["name"]] = section
+
+    return sections
+
+
+def do_dump(args):
+    sections = parse_sections(args.config)
+    os.makedirs(args.dest, exist_ok=True)
+    with open(os.path.join(args.dest, "config"), "wt") as fd:
+        sections.write(fd)
+
+    for name, section in sections.items():
+        destdir = os.path.join(args.dest, "dataset", name)
+        os.makedirs(destdir, exist_ok=True)
+        with open(os.path.join(destdir, "config"), "wt") as fd:
+            s = arki.cfg.Sections()
+            s[name] = section
+            s.write(fd)
+
+
+
+
+def do_serve(args):
+    sections = parse_sections(args.config)
+
+    class ConfigHandler(BaseHTTPRequestHandler):
+        def do_GET(self):
+            path = urlparse(self.path).path[1:]
+            if path == "":
+                self.send_response(200)
+                self.send_header('Content-type', 'plain/text')
+                self.end_headers()
+                sections.write(self.wfile)
+            else:
+                name = path.split("/")[1]
+                self.send_response(200)
+                self.send_header('Content-type', 'plain/text')
+                self.end_headers()
+                section = sections[name]
+                s = arki.cfg.Sections()
+                s[name] = section
+                s.write(self.wfile)
+
+    server = HTTPServer((args.host, args.port), ConfigHandler)
+    server.serve_forever()
+
+
 def main():
-    parser = argparse.ArgumentParser(description="Build a mock arki-server configuration tree")
+    parser = argparse.ArgumentParser(description="Arkimet proxy")
     parser.add_argument("--verbose", "-v", action="store_true", help="verbose output")
     parser.add_argument("--debug", action="store_true", help="debug output")
-    parser.add_argument("-d", "--dest", action="store", metavar="dir",
-                        default=".", help="destination dir (default: '.')")
-    parser.add_argument("config", nargs="?", help="config file to read")
+
+    subparsers = parser.add_subparsers(title='subcommands',
+                                       description='valid subcommands')
+
+    dump_parser = subparsers.add_parser('dump', help='Write config to file')
+    dump_parser.add_argument("-d", "--dest", action="store", metavar="dir",
+                             default=".", help="destination dir (default: .)")
+    dump_parser.add_argument("config",
+                             nargs="*",
+                             help="Dataset or config")
+    dump_parser.set_defaults(execute=do_dump)
+
+    serve_parser = subparsers.add_parser('serve', help='Web server')
+    serve_parser.add_argument("-H", "--host", default="localhost")
+    serve_parser.add_argument("-p", "--port", type=int, default="8080")
+    serve_parser.add_argument("config",
+                              nargs="*",
+                              help="Dataset or config")
+    serve_parser.set_defaults(execute=do_serve)
 
     args = parser.parse_args()
 
@@ -30,22 +107,7 @@ def main():
         level = logging.INFO
     logging.basicConfig(level=level, stream=sys.stderr, format=log_format)
 
-    if args.config:
-        sections = arkimet.cfg.Sections.parse(args.config)
-    else:
-        sections = arkimet.cfg.Sections.parse(sys.stdin)
-
-    os.makedirs(args.dest, exist_ok=True)
-    with open(os.path.join(args.dest, "config"), "wt") as fd:
-        sections.write(fd)
-
-    for name, section in sections.items():
-        destdir = os.path.join(args.dest, "dataset", name)
-        os.makedirs(destdir, exist_ok=True)
-        with open(os.path.join(destdir, "config"), "wt") as fd:
-            s = arkimet.cfg.Sections()
-            s[name] = section
-            s.write(fd)
+    args.execute(args)
 
 
 if __name__ == "__main__":
