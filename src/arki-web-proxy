@@ -46,8 +46,6 @@ def do_dump(args):
             s.write(fd)
 
 
-
-
 def do_serve(args):
     sections = parse_sections(args.config)
 
