@@ -1,0 +1,58 @@
+#!/usr/bin/python3
+import argparse
+import arkimet.cfg
+import logging
+import sys
+import os
+
+log = logging.getLogger("mock-arki-server")
+
+
+class Fail(Exception):
+    pass
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Build a mock arki-server configuration tree")
+    parser.add_argument("--verbose", "-v", action="store_true", help="verbose output")
+    parser.add_argument("--debug", action="store_true", help="debug output")
+    parser.add_argument("-d", "--dest", action="store", metavar="dir",
+                        default=".", help="destination dir (default: '.')")
+    parser.add_argument("config", nargs="?", help="config file to read")
+
+    args = parser.parse_args()
+
+    log_format = "%(levelname)s %(message)s"
+    level = logging.WARN
+    if args.debug:
+        level = logging.DEBUG
+    elif args.verbose:
+        level = logging.INFO
+    logging.basicConfig(level=level, stream=sys.stderr, format=log_format)
+
+    if args.config:
+        sections = arkimet.cfg.Sections.parse(args.config)
+    else:
+        sections = arkimet.cfg.Sections.parse(sys.stdin)
+
+    os.makedirs(args.dest, exist_ok=True)
+    with open(os.path.join(args.dest, "config"), "wt") as fd:
+        sections.write(fd)
+
+    for name, section in sections.items():
+        destdir = os.path.join(args.dest, "dataset", name)
+        os.makedirs(destdir, exist_ok=True)
+        with open(os.path.join(destdir, "config"), "wt") as fd:
+            s = arkimet.cfg.Sections()
+            s[name] = section
+            s.write(fd)
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except Fail as e:
+        print(e, file=sys.stderr)
+        sys.exit(1)
+    except Exception:
+        log.exception("uncaught exception")
