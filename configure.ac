@@ -354,7 +354,7 @@ then
     fi
     AX_PYTHON_MODULE(jinja2, yes)
     AX_PYTHON_MODULE(wreport, yes)
-    AX_PYTHON_MODULE(dballe, yes)
+    AX_PYTHON_MODULE_VERSION(dballe, 8.3)
     AX_PYTHON_MODULE(h5py)
     AX_PYTHON_MODULE(shapely)
 fi
