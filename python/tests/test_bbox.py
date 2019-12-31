@@ -221,7 +221,7 @@ class TestBBox(unittest.TestCase):
 
     def test_vm2(self):
         """
-        Experimental UTM areas
+        Test VM2 areas
         """
         skip_unless_geos()
         skip_unless_shapely()
