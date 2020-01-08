@@ -3,7 +3,7 @@
 
 Summary: Archive for weather information
 Name: arkimet
-Version: 1.17
+Version: 1.18
 Release: 1
 License: GPL
 Group: Applications/Meteo
@@ -76,6 +76,9 @@ BuildRequires: h5py
 BuildRequires: libzip-devel
 BuildRequires: libarchive-devel
 BuildRequires: bzip2-devel
+%if ! 0%{?rhel}
+BuildRequires: %{python3_vers}-sphinx
+%endif
 
 # shapely is an optional dependency, not available on centos
 %if ! 0%{?rhel}
@@ -239,6 +242,11 @@ if [ "$1" = "1" ]; then
 fi
 
 %changelog
+* Wed Jan  8 2020 Emanuele Di Giacomo <edigiacomo@arpae.it> - 1.18-1
+- Ported documentation to sphinx
+- Fixed arki-server
+- arki-web-proxy command
+
 * Mon Dec  9 2019 Daniele Branchini <dbranchini@arpae.it> - 1.17-1
 - Greatly enlarged Python API
 - New HTTP API

@@ -1,6 +1,8 @@
 # New in version 1.18
 
  * Ported documentation to sphinx
+ * Fixed arki-server
+ * arki-web-proxy command
 
 # New in version 1.17
 
