@@ -254,12 +254,12 @@ class ArkiDatasetConfig(ArkiView):
     def stream(self):
         # ./run-local arki-query "" http://localhost:8080/dataset/<name>
         # curl http://localhost:8080/dataset/<name>/config
-        if not self.handler.server.remote_cfg.has_section(self.kwargs["name"]):
+        if self.kwargs["name"] not in self.handler.server.remote_cfg:
             raise NotFound("Dataset {} not found".format(self.kwargs["name"]))
         self.headers_filename = self.kwargs["name"] + ".config"
         cfg = configparser.ConfigParser()
         cfg.add_section(self.kwargs["name"])
-        for k, v in self.handler.server.remote_cfg.items(self.kwargs["name"]):
+        for k, v in self.handler.server.remote_cfg[self.kwargs["name"]].items():
             cfg.set(self.kwargs["name"], k, v)
 
         out = io.StringIO()
