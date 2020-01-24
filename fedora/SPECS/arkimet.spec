@@ -4,7 +4,7 @@
 Summary: Archive for weather information
 Name: arkimet
 Version: 1.14
-Release: 1
+Release: 2
 License: GPL
 Group: Applications/Meteo
 URL: https://github.com/arpa-simc/%{name}
@@ -17,7 +17,7 @@ Source3: https://github.com/arpa-simc/%{name}/raw/v%{version}-%{release}/fedora/
 %{?el7:BuildRequires: systemd}
 
 # Python 3 package names
-%{?el7:%define python3_vers python34}
+%{?el7:%define python3_vers python36}
 %{?fedora:%define python3_vers python3}
 
 %if 0%{?fedora} <= 24
