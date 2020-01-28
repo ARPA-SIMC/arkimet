@@ -39,16 +39,12 @@ Arkimet documentation: https://arpa-simc.github.io/arkimet/
 
 ## Installing arkimet
 
-Arkimet is already packaged in both .rpm and .deb formats, and that provides
-easy installation for most Linux distributions.
+Arkimet is already packaged in .rpm format.
 
 For CentOS and Fedora, rpm files are hosted in a copr repo:
 https://copr.fedorainfracloud.org/coprs/simc/stable/
 
-For Debian, arkimet is available in the testing distribution:
-https://packages.debian.org/testing/dballe
-
-Using docker images with arkimet preinstalled is also possible:
+Docker images with arkimet preinstalled are also available:
 
 ```
 docker run -it arpaesimc/fedora:31 /bin/bash
