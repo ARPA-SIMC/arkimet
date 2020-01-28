@@ -1,7 +1,5 @@
 # Arkimet
 
-## Build status
-
 [![Build Status](https://badges.herokuapp.com/travis/ARPA-SIMC/arkimet?branch=master&env=DOCKER_IMAGE=centos:7&label=centos7)](https://travis-ci.org/ARPA-SIMC/arkimet)
 [![Build Status](https://badges.herokuapp.com/travis/ARPA-SIMC/arkimet?branch=master&env=DOCKER_IMAGE=centos:8&label=centos8)](https://travis-ci.org/ARPA-SIMC/arkimet)
 [![Build Status](https://badges.herokuapp.com/travis/ARPA-SIMC/arkimet?branch=master&env=DOCKER_IMAGE=fedora:29&label=fedora29)](https://travis-ci.org/ARPA-SIMC/arkimet)
@@ -37,7 +35,39 @@ that more data for a query would be available but is currently offline.
 Arkimet is Free Software, licensed under the GNU General Public License version
 2 or later.
 
-[Arkimet documentation](https://arpa-simc.github.io/arkimet/).
+Arkimet documentation: https://arpa-simc.github.io/arkimet/
+
+## Installing arkimet
+
+Arkimet is already packaged in both .rpm and .deb formats, and that provides
+easy installation for most Linux distributions.
+
+For CentOS and Fedora, rpm files are hosted in a copr repo:
+https://copr.fedorainfracloud.org/coprs/simc/stable/
+
+For Debian, arkimet is available in the testing distribution:
+https://packages.debian.org/testing/dballe
+
+Using docker images with arkimet preinstalled is also possible:
+
+```
+docker run -it arpaesimc/fedora:31 /bin/bash
+docker run -it arpaesimc/centos:8 /bin/bash
+```
+
+If you want to build and install arkimet yourself, you'll need to install the
+automake/autoconf/libtool packages then you can proceed as in most other Unix 
+software:
+
+```
+autoreconf -if 
+./configure
+make
+make install
+```
+
+if you're familiar with .rpm and .deb packaging you'll find the packaging 
+files in the `debian` and `fedora` directories
 
 ## Features
 
@@ -166,9 +196,14 @@ area: bbox intersects LINESTRING(10 43, 10 45, 12 45, 12 43, 10 43)
 area: italy
 ```
 
-## Licensing and acquisition
+## Contact and copyright information
 
-Arkimet is Free Software, licensed under the GNU General Public License version 2 or later.
+The author of arkimet is Enrico Zini <enrico@enricozini.com>
+
+Arkimet is Copyright (C) 2005-2020 ARPAE-SIMC <urpsim@arpae.it>
+
+Arkimet is Free Software, licensed under the terms of the GNU General Public License version
+2.
 
 ## Software dependencies
 
