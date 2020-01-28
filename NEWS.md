@@ -1,3 +1,7 @@
+# New in version 1.19
+
+ * Fixed level and timerange formatter for GRIB1 and GRIB2 (#207)
+
 # New in version 1.18
 
  * Ported documentation to sphinx
