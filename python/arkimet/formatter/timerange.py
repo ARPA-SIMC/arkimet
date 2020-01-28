@@ -42,9 +42,9 @@ timedef_prefixes = {
 def format_timerange(v):
     if v["style"] == "GRIB1":
         timerange = GribTable.load(1, "5")
-        if not timerange.has(v["type"]):
+        if not timerange.has(v["trange_type"]):
             return None
-        desc = timerange.desc(v["type"]) + " - "
+        desc = timerange.desc(v["trange_type"]) + " - "
         if v["p1"]:
             desc += "p1 {}".format(v["p1"])
         if v["p2"]:
