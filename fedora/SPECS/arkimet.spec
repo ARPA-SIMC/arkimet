@@ -3,7 +3,7 @@
 
 Summary: Archive for weather information
 Name: arkimet
-Version: 1.18
+Version: 1.19
 Release: 1
 License: GPL
 Group: Applications/Meteo
@@ -242,6 +242,9 @@ if [ "$1" = "1" ]; then
 fi
 
 %changelog
+* Tue Jan 28 2020 Emanuele Di Giacomo <edigiacomo@arpae.it> - 1.19-1
+- Fixed level and timerange formatter for GRIB1 and GRIB2 (#207)
+
 * Wed Jan  8 2020 Emanuele Di Giacomo <edigiacomo@arpae.it> - 1.18-1
 - Ported documentation to sphinx
 - Fixed arki-server
