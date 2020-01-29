@@ -1370,9 +1370,11 @@ bool Timedef::equals(const Type& o) const
 unique_ptr<reftime::Position> Timedef::validity_time_to_emission_time(const reftime::Position& src) const
 {
     // Compute our forecast step in seconds
-    int secs;
-    bool is_secs;
-    get_forecast_step(secs, is_secs);
+    int secs = 0;
+    bool is_secs = false;
+    bool can_compute = get_forecast_step(secs, is_secs);
+    if (!can_compute)
+        throw_consistency_error("converting validity time to emission time", "cannot compute the forecast step");
     if (!is_secs)
         throw_consistency_error("converting validity time to emission time", "timedef has a step that cannot be converted to seconds");
 
