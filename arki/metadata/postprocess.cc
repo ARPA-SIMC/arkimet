@@ -281,6 +281,17 @@ void Postprocess::start()
 
     // Spawn the command
     m_child->subproc.fork();
+
+    // set the stdin/stdout/stderr fds to nonblocking
+    sys::FileDescriptor child_stdin(m_child->cmd.get_stdin());
+    if (child_stdin != -1)
+        child_stdin.setfl(child_stdin.getfl() | O_NONBLOCK);
+    sys::FileDescriptor child_stdout(m_child->cmd.get_stdout());
+    if (child_stdout != -1)
+        child_stdout.setfl(child_stdout.getfl() | O_NONBLOCK);
+    sys::FileDescriptor child_stderr(m_child->cmd.get_stderr());
+    if (child_stderr != -1)
+        child_stderr.setfl(child_stderr.getfl() | O_NONBLOCK);
 }
 
 bool Postprocess::process(std::shared_ptr<Metadata> md)
