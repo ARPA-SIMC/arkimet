@@ -1,6 +1,7 @@
 #include "arki/tests/tests.h"
 #include "arki/segment.h"
 #include "arki/metadata/data.h"
+#include "arki/types/source/blob.h"
 #include "arki/core/file.h"
 #include "arki/core/cfg.h"
 #include "arki/core/binary.h"
@@ -159,6 +160,26 @@ add_method("zeroes_arg_large", [] {
     wassert(actual(sys::size(fname)) == 4096*1024u);
 
     sys::unlink(fname);
+});
+
+add_method("issue209", [] {
+    metadata::DataManager& data_manager = metadata::DataManager::get();
+
+    Postprocess p("issue209");
+
+    sys::File fd("/dev/null", O_WRONLY);
+    p.set_output(fd);
+    p.start();
+
+    Metadata::read_file("inbound/issue209.arkimet", [&](std::shared_ptr<Metadata> md) {
+        md->set_source_inline("bufr",
+                data_manager.to_data("bufr",
+                    std::vector<uint8_t>(md->sourceBlob().size)));
+        p.process(md);
+        return true;
+    });
+
+    p.flush();
 });
 
 }
