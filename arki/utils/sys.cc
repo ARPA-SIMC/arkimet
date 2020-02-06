@@ -558,26 +558,30 @@ ManagedNamedFileDescriptor& ManagedNamedFileDescriptor::operator=(ManagedNamedFi
  * Path
  */
 
-Path::Path(const char* pathname, int flags)
+Path::Path(const char* pathname, int flags, mode_t mode)
     : ManagedNamedFileDescriptor(-1, pathname)
 {
-    fd = open(pathname, flags | O_PATH);
-    if (fd == -1)
-        throw_error("cannot open path");
+    open(flags, mode);
 }
 
-Path::Path(const std::string& pathname, int flags)
+Path::Path(const std::string& pathname, int flags, mode_t mode)
     : ManagedNamedFileDescriptor(-1, pathname)
 {
-    fd = open(pathname.c_str(), flags | O_PATH);
-    if (fd == -1)
-        throw_error("cannot open path");
+    open(flags, mode);
 }
 
-Path::Path(Path& parent, const char* pathname, int flags)
-    : ManagedNamedFileDescriptor(parent.openat(pathname, flags | O_PATH),
+Path::Path(Path& parent, const char* pathname, int flags, mode_t mode)
+    : ManagedNamedFileDescriptor(parent.openat(pathname, flags | O_PATH, mode),
             str::joinpath(parent.name(), pathname))
 {
+}
+
+void Path::open(int flags, mode_t mode)
+{
+    close();
+    fd = ::open(pathname.c_str(), flags | O_PATH, mode);
+    if (fd == -1)
+        throw_error("cannot open path");
 }
 
 DIR* Path::fdopendir()
@@ -669,6 +673,12 @@ void Path::unlinkat(const char* pathname)
 {
     if (::unlinkat(fd, pathname, 0) == -1)
         throw_error("cannot unlinkat");
+}
+
+void Path::mkdirat(const char* pathname, mode_t mode)
+{
+    if (::mkdirat(fd, pathname, mode) == -1)
+        throw_error("cannot mkdirat");
 }
 
 void Path::rmdirat(const char* pathname)
@@ -840,6 +850,30 @@ void Path::rmtree()
     rmdir(name());
 }
 
+std::string Path::mkdtemp(const std::string& prefix)
+{
+    char* fbuf = (char*)alloca(prefix.size() + 7);
+    memcpy(fbuf, prefix.data(), prefix.size());
+    memcpy(fbuf + prefix.size(), "XXXXXX", 7);
+    return mkdtemp(fbuf);
+}
+
+std::string Path::mkdtemp(const char* prefix)
+{
+    size_t prefix_size = strlen(prefix);
+    char* fbuf = (char*)alloca(prefix_size + 7);
+    memcpy(fbuf, prefix, prefix_size);
+    memcpy(fbuf + prefix_size, "XXXXXX", 7);
+    return mkdtemp(fbuf);
+}
+
+std::string Path::mkdtemp(char* pathname_template)
+{
+    if (char* pathname = ::mkdtemp(pathname_template))
+        return pathname;
+    throw std::system_error(errno, std::system_category(), std::string("mkdtemp failed on ") + pathname_template);
+}
+
 /*
  * File
  */
@@ -898,6 +932,10 @@ File File::mkstemp(char* pathname_template)
 }
 
 
+/*
+ * Tempfile
+ */
+
 Tempfile::Tempfile() : sys::File(sys::File::mkstemp("")) {}
 Tempfile::Tempfile(const std::string& prefix) : sys::File(sys::File::mkstemp(prefix)) {}
 Tempfile::Tempfile(const char* prefix) : sys::File(sys::File::mkstemp(prefix)) {}
@@ -916,6 +954,29 @@ void Tempfile::unlink_on_exit(bool val)
 void Tempfile::unlink()
 {
     sys::unlink(name());
+}
+
+
+/*
+ * Tempdir
+ */
+
+Tempdir::Tempdir() : sys::Path(sys::Path::mkdtemp("")) {}
+Tempdir::Tempdir(const std::string& prefix) : sys::Path(sys::Path::mkdtemp(prefix)) {}
+Tempdir::Tempdir(const char* prefix) : sys::Path(sys::Path::mkdtemp(prefix)) {}
+
+Tempdir::~Tempdir()
+{
+    if (m_rmtree_on_exit)
+        try {
+            rmtree();
+        } catch (...) {
+        }
+}
+
+void Tempdir::rmtree_on_exit(bool val)
+{
+    m_rmtree_on_exit = val;
 }
 
 

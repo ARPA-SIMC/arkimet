@@ -416,19 +416,22 @@ struct Path : public ManagedNamedFileDescriptor
     /**
      * Open the given pathname with flags | O_PATH.
      */
-    Path(const char* pathname, int flags=0);
+    Path(const char* pathname, int flags=0, mode_t mode=0777);
     /**
      * Open the given pathname with flags | O_PATH.
      */
-    Path(const std::string& pathname, int flags=0);
+    Path(const std::string& pathname, int flags=0, mode_t mode=0777);
     /**
      * Open the given pathname calling parent.openat, with flags | O_PATH
      */
-    Path(Path& parent, const char* pathname, int flags=0);
+    Path(Path& parent, const char* pathname, int flags=0, mode_t mode=0777);
     Path(const Path&) = delete;
     Path(Path&&) = default;
     Path& operator=(const Path&) = delete;
     Path& operator=(Path&&) = default;
+
+    /// Wrapper around open(2) with flags | O_PATH
+    void open(int flags, mode_t mode=0777);
 
     DIR* fdopendir();
 
@@ -458,6 +461,8 @@ struct Path : public ManagedNamedFileDescriptor
 
     void unlinkat(const char* pathname);
 
+    void mkdirat(const char* pathname, mode_t mode=0777);
+
     /// unlinkat with the AT_REMOVEDIR flag set
     void rmdirat(const char* pathname);
 
@@ -467,6 +472,10 @@ struct Path : public ManagedNamedFileDescriptor
      * The path must point to a directory.
      */
     void rmtree();
+
+    static std::string mkdtemp(const std::string& prefix);
+    static std::string mkdtemp(const char* prefix);
+    static std::string mkdtemp(char* pathname_template);
 };
 
 
@@ -528,6 +537,28 @@ public:
 
     /// Unlink the file right now
     void unlink();
+};
+
+
+/**
+ * Open a temporary directory.
+ *
+ * By default, the temporary directory will be deleted when the object is
+ * deleted.
+ */
+class Tempdir : public Path
+{
+protected:
+    bool m_rmtree_on_exit = true;
+
+public:
+    Tempdir();
+    Tempdir(const std::string& prefix);
+    Tempdir(const char* prefix);
+    ~Tempdir();
+
+    /// Change the rmtree-on-exit behaviour
+    void rmtree_on_exit(bool val);
 };
 
 
