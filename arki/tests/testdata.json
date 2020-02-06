@@ -2721,6 +2721,11 @@
  },
  {
   "doc": "",
+  "group": "arki_metadata_postprocess",
+  "method": "issue209"
+ },
+ {
+  "doc": "",
   "group": "arki_dataset_lock",
   "method": "reader_reader"
  },

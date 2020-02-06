@@ -404,6 +404,21 @@ bool FileDescriptor::ofd_getlk(struct flock& lk)
     return lk.l_type == F_UNLCK;
 }
 
+int FileDescriptor::getfl()
+{
+    int res = fcntl(fd, F_GETFL, 0);
+    if (res == -1)
+        throw_error("cannot get file flags (fcntl F_GETFL)");
+    return res;
+}
+
+void FileDescriptor::setfl(int flags)
+{
+    if (fcntl(fd, F_SETFL, flags) == -1)
+        throw_error("cannot set file flags (fcntl F_SETFL)");
+}
+
+
 namespace {
 
 struct TransferBuffer

@@ -281,6 +281,12 @@ public:
      */
     void sendfile(FileDescriptor& out_fd, off_t offset, size_t count);
 
+    /// Get open flags for the file
+    int getfl();
+
+    /// Set open flags for the file
+    void setfl(int flags);
+
     operator int() const { return fd; }
 };
 
