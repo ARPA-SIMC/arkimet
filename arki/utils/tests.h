@@ -182,6 +182,45 @@ void assert_false(const A& actual)
 
 void assert_false(std::nullptr_t actual);
 
+template<typename LIST>
+static inline void _format_list(std::ostream& o, const LIST& list) {
+    bool first = true;
+    o << "[";
+    for (const auto& v: list)
+    {
+        if (first)
+            first = false;
+        else
+            o << ", ";
+        o << v;
+    }
+    o << "]";
+};
+
+template<typename T>
+void assert_equal(const std::vector<T>& actual, const std::vector<T>& expected)
+{
+    if (actual == expected) return;
+    std::stringstream ss;
+    ss << "value ";
+    _format_list(ss, actual);
+    ss << " is different than the expected ";
+    _format_list(ss, expected);
+    throw TestFailed(ss.str());
+}
+
+template<typename T>
+void assert_equal(const std::vector<T>& actual, const std::initializer_list<T>& expected)
+{
+    if (actual == expected) return;
+    std::stringstream ss;
+    ss << "value ";
+    _format_list(ss, actual);
+    ss << " is different than the expected ";
+    _format_list(ss, expected);
+    throw TestFailed(ss.str());
+}
+
 /**
  * Test function that ensures that the actual value is the same as a reference
  * one
