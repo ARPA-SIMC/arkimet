@@ -372,16 +372,17 @@ add_method("wrongsize", [](Fixture& f) {
 });
 
 add_method("read_partial", [](Fixture& f) {
-    // Create a large-ish mock input file with inline data
+    // Create a mock input file with inline data
     sys::Tempfile tf;
     metadata::DataManager& data_manager = metadata::DataManager::get();
-    Metadata::read_file("inbound/issue209.arkimet", [&](std::shared_ptr<Metadata> md) {
+    Metadata::read_file("inbound/test.grib1.arkimet", [&](std::shared_ptr<Metadata> md) {
         md->set_source_inline("bufr",
                 data_manager.to_data("bufr",
                     std::vector<uint8_t>(md->sourceBlob().size)));
         md->write(tf);
         return true;
     });
+    // fprintf(stderr, "TO READ: %d\n", (int)tf.lseek(0, SEEK_CUR));
     tf.lseek(0);
 
     // Read it a bit at a time, to try to cause partial reads in the reader
@@ -418,7 +419,7 @@ add_method("read_partial", [](Fixture& f) {
 
     unsigned count = 0;
     Metadata::read_file(in, [&](std::shared_ptr<Metadata>) { ++count; return true; });
-    wassert(actual(count) == 73u);
+    wassert(actual(count) == 3u);
 
     wassert(actual(child.wait()) == 0);
 });
