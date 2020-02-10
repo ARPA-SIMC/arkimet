@@ -198,6 +198,15 @@ public:
     size_t read(void* buf, size_t count);
 
     /**
+     * Read `count` bytes into bufr, retrying partial reads, stopping at EOF.
+     *
+     * Return true if `count` bytes have been read, false in case of eof, and
+     * raise an exception in case EOF was found after reading between 0 and
+     * count-1 bytes.
+     */
+    bool read_all_or_retry(void* buf, size_t count);
+
+    /**
      * Read all the data into buf, throwing runtime_error in case of a partial
      * read
      */

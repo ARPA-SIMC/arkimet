@@ -1,0 +1,7 @@
+#!/bin/sh
+
+dd if=/dev/stdin of=/dev/null bs=512 count=4 status=none
+
+echo "test: simulating stopping read with an error" >&2
+
+exit 1

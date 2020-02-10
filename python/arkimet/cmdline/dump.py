@@ -41,7 +41,7 @@ class Dump(App):
     @contextmanager
     def input(self, mode):
         if not self.args.input or self.args.input == "-":
-            yield self.stdin
+            yield sys.stdin
         else:
             with open(self.args.input, mode) as fd:
                 yield fd

@@ -1,6 +1,7 @@
 # New in version 1.20
 
  * Fixed hanging of arki-query when using postprocessor (#209)
+ * Fixed arki-dump from stdin
 
 # New in version 1.19
 

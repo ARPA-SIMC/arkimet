@@ -952,6 +952,11 @@
  {
   "doc": "",
   "group": "arki_metadata",
+  "method": "read_partial"
+ },
+ {
+  "doc": "",
+  "group": "arki_metadata",
   "method": "inline_grib"
  },
  {
@@ -2723,6 +2728,11 @@
   "doc": "",
   "group": "arki_metadata_postprocess",
   "method": "issue209"
+ },
+ {
+  "doc": "",
+  "group": "arki_metadata_postprocess",
+  "method": "partialread"
  },
  {
   "doc": "",

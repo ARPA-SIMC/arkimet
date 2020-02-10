@@ -131,7 +131,7 @@ size_t IODispatcher::send(const void* buf, size_t size)
         if (res == 0)
             throw std::runtime_error("timeout waiting for activity on filter child process");
 
-        if (stdin_idx != -1)
+        if (stdin_idx != -1 && fds[stdin_idx].revents)
         {
             if (fds[stdin_idx].revents & POLLOUT)
             {
@@ -150,22 +150,42 @@ size_t IODispatcher::send(const void* buf, size_t size)
             }
             else if (fds[stdin_idx].revents & POLLHUP)
                 subproc.close_stdin();
+            else if (fds[stdin_idx].revents & POLLERR)
+            {
+                Sigignore ignpipe(SIGPIPE);
+                ssize_t res = write(subproc.get_stdin(), (unsigned char*)buf, 0);
+                if (res < 0)
+                {
+                    if (errno == EPIPE)
+                        subproc.close_stdin();
+                    else
+                        throw_system_error("cannot write to child process");
+                } else
+                    // POLLERR is also returned "for a file descriptor
+                    // referring to the write end of a pipe when the read end
+                    // has been closed."
+                    subproc.close_stdin();
+            }
+            else
+                fprintf(stderr, "Unexpected poll results on stdin: %d %s %s %s %s %s %s %s\n",
+                        (int)fds[stdin_idx].revents,
+                        (fds[stdin_idx].revents & POLLIN) ? "pollin" : "-",
+                        (fds[stdin_idx].revents & POLLPRI) ? "pollpri" : "-",
+                        (fds[stdin_idx].revents & POLLOUT) ? "pollout" : "-",
+                        (fds[stdin_idx].revents & POLLRDHUP) ? "pollrdhup" : "-",
+                        (fds[stdin_idx].revents & POLLERR) ? "pollerr" : "-",
+                        (fds[stdin_idx].revents & POLLHUP) ? "pollhup" : "-",
+                        (fds[stdin_idx].revents & POLLNVAL) ? "pollnval" : "-");
         }
 
-        if (stdout_idx != -1)
+        if (stdout_idx != -1 && fds[stdout_idx].revents)
         {
-            if (fds[stdout_idx].revents & POLLIN)
-                read_stdout();
-            else if (fds[stdout_idx].revents & POLLHUP)
-                subproc.close_stdout();
+            on_stdout(fds[stdout_idx].revents);
         }
 
-        if (stderr_idx != -1)
+        if (stderr_idx != -1 && fds[stderr_idx].revents)
         {
-            if (fds[stderr_idx].revents & POLLIN)
-                read_stderr();
-            else if (fds[stderr_idx].revents & POLLHUP)
-                subproc.close_stderr();
+            on_stderr(fds[stderr_idx].revents);
         }
     }
     return written;
@@ -213,22 +233,72 @@ void IODispatcher::flush()
         if (res == 0)
             throw std::runtime_error("timeout waiting for activity on filter child process");
 
-        if (stdout_idx != -1)
-        {
-            if (fds[stdout_idx].revents & POLLIN)
-                read_stdout();
-            else if (fds[stdout_idx].revents & POLLHUP)
-                subproc.close_stdout();
-        }
+        if (stdout_idx != -1 && fds[stdout_idx].revents)
+            on_stdout(fds[stdout_idx].revents);
 
-        if (stderr_idx != -1)
+        if (stderr_idx != -1 && fds[stderr_idx].revents)
+            on_stderr(fds[stderr_idx].revents);
+    }
+}
+
+void IODispatcher::on_stdout(short revents)
+{
+    if (revents & POLLIN)
+        read_stdout();
+    else if (revents & POLLHUP)
+        subproc.close_stdout();
+    else if (revents & POLLERR)
+    {
+        char buf[1];
+        ssize_t res = ::read(subproc.get_stdout(), (unsigned char*)buf, 0);
+        if (res < 0)
         {
-            if (fds[stderr_idx].revents & POLLIN)
-                read_stderr();
-            else if (fds[stderr_idx].revents & POLLHUP)
-                subproc.close_stderr();
+            if (errno == EPIPE)
+                subproc.close_stdout();
+            else
+                throw_system_error("cannot read stdout from child process");
         }
     }
+    else
+        fprintf(stderr, "Unexpected poll results on stdout: %d %s %s %s %s %s %s %s\n",
+                (int)revents,
+                (revents & POLLIN) ? "pollin" : "-",
+                (revents & POLLPRI) ? "pollpri" : "-",
+                (revents & POLLOUT) ? "pollout" : "-",
+                (revents & POLLRDHUP) ? "pollrdhup" : "-",
+                (revents & POLLERR) ? "pollerr" : "-",
+                (revents & POLLHUP) ? "pollhup" : "-",
+                (revents & POLLNVAL) ? "pollnval" : "-");
+}
+
+void IODispatcher::on_stderr(short revents)
+{
+    if (revents & POLLIN)
+        read_stderr();
+    else if (revents & POLLHUP)
+        subproc.close_stderr();
+    else if (revents & POLLERR)
+    {
+        char buf[1];
+        ssize_t res = ::read(subproc.get_stderr(), (unsigned char*)buf, 0);
+        if (res < 0)
+        {
+            if (errno == EPIPE)
+                subproc.close_stderr();
+            else
+                throw_system_error("cannot read stderr from child process");
+        }
+    }
+    else
+        fprintf(stderr, "Unexpected poll results on stderr: %d %s %s %s %s %s %s %s\n",
+                (int)revents,
+                (revents & POLLIN) ? "pollin" : "-",
+                (revents & POLLPRI) ? "pollpri" : "-",
+                (revents & POLLOUT) ? "pollout" : "-",
+                (revents & POLLRDHUP) ? "pollrdhup" : "-",
+                (revents & POLLERR) ? "pollerr" : "-",
+                (revents & POLLHUP) ? "pollhup" : "-",
+                (revents & POLLNVAL) ? "pollnval" : "-");
 }
 
 }

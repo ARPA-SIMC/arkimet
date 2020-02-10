@@ -349,7 +349,8 @@ void Metadata::read_inline_data(NamedFileDescriptor& fd)
     iotrace::trace_file(fd, 0, s->size, "read inline data");
 
     // Read the inline data
-    fd.read_all_or_throw(buf.data(), s->size);
+    if (!fd.read_all_or_retry(buf.data(), s->size))
+        fd.throw_runtime_error("inline data not found after arkimet metadata");
     m_data = metadata::DataManager::get().to_data(m_source->format, move(buf));
 }
 
