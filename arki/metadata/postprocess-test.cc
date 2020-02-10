@@ -8,6 +8,9 @@
 #include "arki/utils/sys.h"
 #include "arki/metadata.h"
 #include "postprocess.h"
+#include <unistd.h>
+#include <signal.h>
+#include <csetjmp>
 
 #ifndef STDERR_FILENO
 #define STDERR_FILENO 2
@@ -20,6 +23,43 @@ using namespace arki::core;
 using namespace arki::tests;
 using namespace arki::utils;
 using namespace arki::metadata;
+
+std::jmp_buf timeout_jump;
+
+[[noreturn]] static void timed_out(int signum)
+{
+    std::longjmp(timeout_jump, 1);
+}
+
+struct Timeout
+{
+    int seconds;
+
+    Timeout(int seconds)
+        : seconds(seconds)
+    {
+    }
+
+    ~Timeout()
+    {
+        alarm(0);
+        signal(SIGALRM, SIG_DFL);
+    }
+
+    void arm()
+    {
+        signal(SIGALRM, timed_out);
+        alarm(seconds);
+    }
+};
+
+#define TIMEOUT(secs) \
+    Timeout timeout(secs); \
+    switch (setjmp(timeout_jump)) { \
+        case 0: timeout.arm(); break; \
+        case 1: throw std::runtime_error("test timed out"); \
+        default: throw std::runtime_error("unexpected value from signal handler"); \
+    }
 
 void produceGRIB(Postprocess& p)
 {
@@ -166,6 +206,8 @@ add_method("issue209", [] {
     metadata::DataManager& data_manager = metadata::DataManager::get();
 
     Postprocess p("issue209");
+
+    TIMEOUT(2);
 
     sys::File fd("/dev/null", O_WRONLY);
     p.set_output(fd);
