@@ -18,6 +18,7 @@
 #include "structured/memory.h"
 #include "utils/sys.h"
 #include "utils/files.h"
+#include "utils/subprocess.h"
 #include <fcntl.h>
 
 namespace {
@@ -368,6 +369,58 @@ add_method("wrongsize", [](Fixture& f) {
     unsigned count = 0;
     Metadata::read_file("test.md", [&](std::shared_ptr<Metadata> md) { ++count; return true; });
     wassert(actual(count) == 0u);
+});
+
+add_method("read_partial", [](Fixture& f) {
+    // Create a large-ish mock input file with inline data
+    sys::Tempfile tf;
+    metadata::DataManager& data_manager = metadata::DataManager::get();
+    Metadata::read_file("inbound/issue209.arkimet", [&](std::shared_ptr<Metadata> md) {
+        md->set_source_inline("bufr",
+                data_manager.to_data("bufr",
+                    std::vector<uint8_t>(md->sourceBlob().size)));
+        md->write(tf);
+        return true;
+    });
+    tf.lseek(0);
+
+    // Read it a bit at a time, to try to cause partial reads in the reader
+    struct Writer : public subprocess::Child
+    {
+        sys::NamedFileDescriptor& in;
+
+        Writer(sys::NamedFileDescriptor& in)
+            : in(in)
+        {
+        }
+
+        int main() noexcept override
+        {
+            sys::NamedFileDescriptor out(1, "stdout");
+            while (true)
+            {
+                char buf[1];
+                if (!in.read(buf, 1))
+                    break;
+
+                out.write_all_or_throw(buf, 1);
+            }
+            return 0;
+        }
+    };
+
+    Writer child(tf);
+    child.pass_fds.push_back(tf);
+    child.set_stdout(subprocess::Redirect::PIPE);
+    child.fork();
+
+    sys::NamedFileDescriptor in(child.get_stdout(), "child pipe");
+
+    unsigned count = 0;
+    Metadata::read_file(in, [&](std::shared_ptr<Metadata>) { ++count; return true; });
+    wassert(actual(count) == 73u);
+
+    wassert(actual(child.wait()) == 0);
 });
 
 add_method("inline_grib", [](Fixture& f) { wassert(test_inline<GRIBData>()); });
