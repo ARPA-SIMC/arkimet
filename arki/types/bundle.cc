@@ -24,8 +24,8 @@ bool Bundle::read_header(NamedFileDescriptor& fd)
     // Read the rest of the first 8 bytes
     unsigned char hdr[8];
     hdr[0] = c;
-    size_t res = fd.read(hdr + 1, 7);
-    if (res < 7) return false; // EOF
+    if (!fd.read_all_or_retry(hdr + 1, 7))
+        return false; // EOF
 
     core::BinaryDecoder dec(hdr, 8);
 
