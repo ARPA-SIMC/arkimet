@@ -2726,6 +2726,11 @@
  },
  {
   "doc": "",
+  "group": "arki_metadata_postprocess",
+  "method": "partialread"
+ },
+ {
+  "doc": "",
   "group": "arki_dataset_lock",
   "method": "reader_reader"
  },

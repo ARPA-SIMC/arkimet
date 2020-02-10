@@ -224,6 +224,28 @@ add_method("issue209", [] {
     p.flush();
 });
 
+add_method("partialread", [] {
+    metadata::DataManager& data_manager = metadata::DataManager::get();
+
+    Postprocess p("partialread");
+
+    TIMEOUT(2);
+
+    sys::File fd("/dev/null", O_WRONLY);
+    p.set_output(fd);
+    p.start();
+
+    Metadata::read_file("inbound/issue209.arkimet", [&](std::shared_ptr<Metadata> md) {
+        md->set_source_inline("bufr",
+                data_manager.to_data("bufr",
+                    std::vector<uint8_t>(md->sourceBlob().size)));
+        p.process(md);
+        return true;
+    });
+
+    p.flush();
+});
+
 }
 
 }
