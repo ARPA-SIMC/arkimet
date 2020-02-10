@@ -296,6 +296,26 @@ size_t FileDescriptor::read(void* buf, size_t count)
     return res;
 }
 
+bool FileDescriptor::read_all_or_retry(void* buf, size_t count)
+{
+    char* dest = (char*)buf;
+    size_t remaining = count;
+    while (remaining > 0)
+    {
+        size_t res = read(dest, remaining);
+        if (res == 0)
+        {
+            if (remaining == count)
+                return false;
+
+            throw_runtime_error("partial read before EOF");
+        }
+        dest += res;
+        remaining -= res;
+    }
+    return true;
+}
+
 void FileDescriptor::read_all_or_throw(void* buf, size_t count)
 {
     size_t res = read(buf, count);
