@@ -1,28 +1,6 @@
 #ifndef ARKI_UTILS_PROCESS_H
 #define ARKI_UTILS_PROCESS_H
 
-/*
- * postprocess - postprocessing of result data
- *
- * Copyright (C) 2008--2010  ARPAE-SIMC <simc-urp@arpae.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include <string>
 #include <map>
 #include <vector>
@@ -88,6 +66,12 @@ struct IODispatcher
      * from them gives EOF.
      */
     void flush();
+
+    /// Handle activity on the child process' stdout
+    void on_stdout(short revents);
+
+    /// Handle activity on the child process' stderr
+    void on_stderr(short revents);
 
     /**
      * Copy data from an input file descriptor to a stream.
