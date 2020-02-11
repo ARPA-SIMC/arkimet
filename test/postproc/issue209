@@ -1,9 +1,0 @@
-#!/bin/sh
-if [ x"$ARKI_XARGS_FORMAT" == x ]
-then
-    # Controllo che i parametri siano esattamente 4
-    [[ $# -eq 0 ]] || { print_usage >&2 ; exit 1 ; }
-        exec arki-xargs --max-size=1M -- $0 $@
-fi
-
-cat $1

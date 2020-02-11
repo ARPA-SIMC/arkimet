@@ -205,7 +205,7 @@ add_method("zeroes_arg_large", [] {
 add_method("issue209", [] {
     metadata::DataManager& data_manager = metadata::DataManager::get();
 
-    Postprocess p("issue209");
+    Postprocess p("cat");
 
     TIMEOUT(2);
 
