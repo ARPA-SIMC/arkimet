@@ -1,3 +1,7 @@
+# New in version 1.22
+
+ * Fixed error with large expa (#213)
+
 # New in version 1.21
 
  * Fixed sorted data queries in python bindings (#212)

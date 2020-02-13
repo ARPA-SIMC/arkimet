@@ -3,8 +3,8 @@
 
 Summary: Archive for weather information
 Name: arkimet
-Version: 1.21
-Release: 1
+Version: 1.22
+Release: 0.1
 License: GPL
 Group: Applications/Meteo
 URL: https://github.com/arpa-simc/%{name}
@@ -242,6 +242,9 @@ if [ "$1" = "1" ]; then
 fi
 
 %changelog
+* Tue Feb 13 2020 Daniele Branchini <dbranchini@arpae.it> - 1.22-0.1
+- Fixed error with large expa (#213)
+
 * Tue Feb 13 2020 Daniele Branchini <dbranchini@arpae.it> - 1.21-1
 - Fixed sorted data queries in python bindings (#212)
 
