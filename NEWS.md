@@ -1,3 +1,7 @@
+# New in version 1.21
+
+ * Fixed sorted data queries in python bindings (#212)
+
 # New in version 1.20
 
  * Fixed hanging of arki-query when using postprocessor (#209)
