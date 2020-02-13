@@ -75,19 +75,29 @@ class Querymacro:
         # Sort rows by reftime
         self.rows.sort(key=lambda x: x.reftime)
 
+        # Cache open readers for reuse
+        self.readers = {}
+
+    def get_reader(self, name):
+        res = self.readers.get(name)
+        if res is None:
+            res = arki.dataset.Reader(self.datasets_cfg[name])
+            self.readers[name] = res
+        return res
+
     def row_to_md(self, row, with_data):
         datasets = DATASET_ALIASES.get(row.dsname)
         if datasets is None:
             datasets = [row.dsname]
         for ds in datasets:
-            with arki.dataset.Reader(self.datasets_cfg[ds]) as reader:
-                mds = reader.query_data(matcher=row.matcher, with_data=with_data)
-                if not mds:
-                    raise RuntimeError("row {}:{} did not produce any results".format(row.lineno, repr(row.line)))
-                if len(mds) > 1:
-                    raise RuntimeError("row {}:{} produced {} results instead of one".format(
-                        row.lineno, repr(row.line), len(mds)))
-                return mds[0]
+            reader = self.get_reader(ds)
+            mds = reader.query_data(matcher=row.matcher, with_data=with_data)
+            if not mds:
+                raise RuntimeError("row {}:{} did not produce any results".format(row.lineno, repr(row.line)))
+            if len(mds) > 1:
+                raise RuntimeError("row {}:{} produced {} results instead of one".format(
+                    row.lineno, repr(row.line), len(mds)))
+            return mds[0]
 
     def query_data(self, matcher=None, with_data=False, on_metadata=None):
         # Note: matcher and sort are currently ignored
