@@ -242,10 +242,10 @@ if [ "$1" = "1" ]; then
 fi
 
 %changelog
-* Tue Feb 13 2020 Daniele Branchini <dbranchini@arpae.it> - 1.22-0.1
+* Thu Feb 13 2020 Daniele Branchini <dbranchini@arpae.it> - 1.22-0.1
 - Fixed error with large expa (#213)
 
-* Tue Feb 13 2020 Daniele Branchini <dbranchini@arpae.it> - 1.21-1
+* Thu Feb 13 2020 Daniele Branchini <dbranchini@arpae.it> - 1.21-1
 - Fixed sorted data queries in python bindings (#212)
 
 * Mon Feb 10 2020 Emanuele Di Giacomo <edigiacomo@arpae.it> - 1.20-1
