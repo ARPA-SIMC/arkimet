@@ -402,5 +402,5 @@ class TestArkiServer(unittest.TestCase):
 
         res = ds.query_bytes("origin:GRIB1,200", sort="day:timerange")
         self.assertEqual(len(res), 7218)
-        self.assertEqual(res.startswith(b"GRIB"))
-        self.assertEqual(res.endswith(b"7777"))
+        self.assertTrue(res.startswith(b"GRIB"))
+        self.assertTrue(res.endswith(b"7777"))
