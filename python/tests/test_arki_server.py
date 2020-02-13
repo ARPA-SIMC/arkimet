@@ -392,3 +392,15 @@ class TestArkiServer(unittest.TestCase):
         })
         res.raise_for_status()
         self.assertEqual(res.text[:12], "SummaryStats")
+
+    def test_issue202(self):
+        """
+        Test querying the datasets, with data, sorted
+        """
+        config = arki.dataset.http.load_cfg_sections(self.server_url)
+        ds = arki.dataset.Reader(config["test200"])
+
+        res = ds.query_bytes("origin:GRIB1,200", sort="day:timerange")
+        self.assertEqual(len(res), 7218)
+        self.assertEqual(res.startswith(b"GRIB"))
+        self.assertEqual(res.endswith(b"7777"))
