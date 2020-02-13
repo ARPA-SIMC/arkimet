@@ -221,11 +221,13 @@ struct query_bytes : public MethKwargs<query_bytes, arkipy_DatasetReader>
 
             arki::dataset::ByteQuery query;
             query.with_data = with_data;
-            if (!sort.empty()) query.sorter = metadata::sort::Compare::parse(sort);
-            else if (!postprocess.empty())
+            if (!postprocess.empty())
                 query.setPostprocess(matcher, postprocess);
             else
                 query.setData(matcher);
+
+            if (!sort.empty())
+                query.sorter = metadata::sort::Compare::parse(sort);
 
             pyo_unique_ptr data_start_hook_args;
             if (arg_data_start_hook != Py_None)
