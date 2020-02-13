@@ -80,14 +80,14 @@ class Querymacro:
         if datasets is None:
             datasets = [row.dsname]
         for ds in datasets:
-            reader = arki.dataset.Reader(self.datasets_cfg[ds])
-            mds = reader.query_data(matcher=row.matcher, with_data=with_data)
-            if not mds:
-                raise RuntimeError("row {}:{} did not produce any results".format(row.lineno, repr(row.line)))
-            if len(mds) > 1:
-                raise RuntimeError("row {}:{} produced {} results instead of one".format(
-                    row.lineno, repr(row.line), len(mds)))
-            return mds[0]
+            with arki.dataset.Reader(self.datasets_cfg[ds]) as reader:
+                mds = reader.query_data(matcher=row.matcher, with_data=with_data)
+                if not mds:
+                    raise RuntimeError("row {}:{} did not produce any results".format(row.lineno, repr(row.line)))
+                if len(mds) > 1:
+                    raise RuntimeError("row {}:{} produced {} results instead of one".format(
+                        row.lineno, repr(row.line), len(mds)))
+                return mds[0]
 
     def query_data(self, matcher=None, with_data=False, on_metadata=None):
         # Note: matcher and sort are currently ignored

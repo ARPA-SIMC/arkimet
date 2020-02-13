@@ -268,6 +268,32 @@ struct query_bytes : public MethKwargs<query_bytes, arkipy_DatasetReader>
     }
 };
 
+template<typename Impl>
+struct __exit__ : public MethKwargs<__exit__<Impl>, Impl>
+{
+    constexpr static const char* name = "__exit__";
+    constexpr static const char* signature = "ext_type, ext_val, ext_tb";
+    constexpr static const char* returns = "";
+    constexpr static const char* summary = "";
+
+    static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
+    {
+        static const char* kwlist[] = { "exc_type", "exc_val", "exc_tb", nullptr };
+        PyObject* exc_type = nullptr;
+        PyObject* exc_val = nullptr;
+        PyObject* exc_tb = nullptr;
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "OOO", const_cast<char**>(kwlist),
+                &exc_type, &exc_val, &exc_tb))
+            return nullptr;
+
+        try {
+            self->ds.reset();
+            Py_RETURN_NONE;
+        } ARKI_CATCH_RETURN_PYO
+    }
+};
+
+
 struct DatasetReaderDef : public Type<DatasetReaderDef, arkipy_DatasetReader>
 {
     constexpr static const char* name = "Reader";
@@ -282,7 +308,7 @@ Examples::
     TODO: add examples
 )";
     GetSetters<> getsetters;
-    Methods<query_data, query_summary, query_bytes> methods;
+    Methods<MethGenericEnter<Impl>, __exit__<Impl>, query_data, query_summary, query_bytes> methods;
 
     static void _dealloc(Impl* self)
     {
@@ -430,7 +456,7 @@ Examples::
     TODO: add examples
 )";
     GetSetters<> getsetters;
-    Methods<acquire, flush> methods;
+    Methods<MethGenericEnter<Impl>, __exit__<Impl>, acquire, flush> methods;
 
     static void _dealloc(Impl* self)
     {
@@ -595,7 +621,7 @@ Examples::
     TODO: add examples
 )";
     GetSetters<> getsetters;
-    Methods<repack, check, segment_state> methods;
+    Methods<MethGenericEnter<Impl>, __exit__<Impl>, repack, check, segment_state> methods;
 
     static void _dealloc(Impl* self)
     {
@@ -641,23 +667,7 @@ DatasetCheckerDef* checker_def = nullptr;
  * dataset.SessionTimeOverride
  */
 
-struct __enter__ : public MethNoargs<__enter__, arkipy_DatasetSessionTimeOverride>
-{
-    constexpr static const char* name = "__enter__";
-    constexpr static const char* signature = "";
-    constexpr static const char* returns = "";
-    constexpr static const char* summary = "";
-
-    static PyObject* run(Impl* self)
-    {
-        try {
-            Py_INCREF(self);
-            return (PyObject*)self;
-        } ARKI_CATCH_RETURN_PYO
-    }
-};
-
-struct __exit__ : public MethKwargs<__exit__, arkipy_DatasetSessionTimeOverride>
+struct sto__exit__ : public MethKwargs<sto__exit__, arkipy_DatasetSessionTimeOverride>
 {
     constexpr static const char* name = "__exit__";
     constexpr static const char* signature = "ext_type, ext_val, ext_tb";
@@ -696,7 +706,7 @@ Examples::
     TODO: add examples
 )";
     GetSetters<> getsetters;
-    Methods<__enter__, __exit__> methods;
+    Methods<MethGenericEnter<Impl>, sto__exit__> methods;
 
     static void _dealloc(Impl* self)
     {
