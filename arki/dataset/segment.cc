@@ -19,9 +19,28 @@ SegmentManager::~SegmentManager()
 {
 }
 
+std::shared_ptr<segment::Reader> SegmentManager::reader_from_pool(const std::string& relpath)
+{
+    auto res = reader_pool.find(relpath);
+    if (res == reader_pool.end())
+        return std::shared_ptr<segment::Reader>();
+    if (res->second.expired())
+    {
+        reader_pool.erase(res);
+        return std::shared_ptr<segment::Reader>();
+    }
+    return res->second.lock();
+}
+
 std::shared_ptr<segment::Reader> SegmentManager::get_reader(const std::string& format, const std::string& relpath, std::shared_ptr<core::Lock> lock)
 {
-    return Segment::detect_reader(format, root, relpath, str::joinpath(root, relpath), lock);
+    auto res = reader_from_pool(relpath);
+    if (!res)
+    {
+        res = Segment::detect_reader(format, root, relpath, str::joinpath(root, relpath), lock);
+        reader_pool[relpath] = res;
+    }
+    return res;
 }
 
 std::shared_ptr<segment::Writer> SegmentManager::get_writer(const std::string& format, const std::string& relpath)

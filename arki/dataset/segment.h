@@ -10,6 +10,7 @@
 #include <string>
 #include <iosfwd>
 #include <memory>
+#include <unordered_map>
 
 namespace arki {
 class ConfigFile;
@@ -26,6 +27,10 @@ class SegmentManager
 {
 protected:
     std::string root;
+
+    std::unordered_map<std::string, std::weak_ptr<segment::Reader>> reader_pool;
+
+    std::shared_ptr<segment::Reader> reader_from_pool(const std::string& relpath);
 
     virtual std::shared_ptr<segment::Writer> create_writer_for_format(const std::string& format, const std::string& relpath, const std::string& abspath) = 0;
     virtual std::shared_ptr<segment::Checker> create_checker_for_format(const std::string& format, const std::string& relpath, const std::string& abspath) = 0;
