@@ -111,6 +111,7 @@ public:
         COUNTED_MAX,
     };
 
+    std::shared_ptr<dataset::Session> session;
     /*
      * Default dataset configuration, regenerated each time by test_setup by
      * concatenating cfg_default and cfg_instance.

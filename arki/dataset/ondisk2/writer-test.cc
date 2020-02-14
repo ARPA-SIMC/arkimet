@@ -90,7 +90,7 @@ add_method("regression_0", [](Fixture& f) {
     cfg.set("filter", "product:BUFR:t=temp");
     cfg.set("replace", "USN");
 
-    auto config = dataset::Config::create(cfg);
+    auto config = dataset::Config::create(f.session, cfg);
     auto writer = config->create_writer();
 
     metadata::TestCollection mds("inbound/conflicting-temp-same-usn.bufr");
@@ -134,17 +134,17 @@ add_method("testacquire", [](Fixture& f) {
     while (mdc.size() > 1) mdc.pop_back();
 
     auto batch = mdc.make_import_batch();
-    wassert(ondisk2::Writer::test_acquire(f.cfg, batch));
+    wassert(ondisk2::Writer::test_acquire(f.session, f.cfg, batch));
     wassert(actual(batch[0]->result) == dataset::ACQ_OK);
     wassert(actual(batch[0]->dataset_name) == "testds");
 
     f.cfg.set("archive age", "1");
-    wassert(ondisk2::Writer::test_acquire(f.cfg, batch));
+    wassert(ondisk2::Writer::test_acquire(f.session, f.cfg, batch));
     wassert(actual(batch[0]->result) == dataset::ACQ_ERROR);
     wassert(actual(batch[0]->dataset_name) == "");
 
     f.cfg.set("delete age", "1");
-    wassert(ondisk2::Writer::test_acquire(f.cfg, batch));
+    wassert(ondisk2::Writer::test_acquire(f.session, f.cfg, batch));
     wassert(actual(batch[0]->result) == dataset::ACQ_OK);
     wassert(actual(batch[0]->dataset_name) == "testds");
 });

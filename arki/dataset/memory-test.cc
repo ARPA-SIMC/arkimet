@@ -23,8 +23,9 @@ void Tests::register_tests() {
 
 // Test querying
 add_method("query", [] {
+    auto session = make_shared<dataset::Session>();
     auto reader = Segment::detect_reader("grib", sys::abspath("."), "inbound/test.grib1", "inbound/test.grib1", std::make_shared<core::lock::Null>());
-    dataset::Memory c;
+    dataset::Memory c(session);
     reader->scan(c.inserter_func());
 
     metadata::Collection mdc(c, Matcher::parse("origin:GRIB1,200"));
@@ -45,8 +46,9 @@ add_method("query", [] {
 
 // Test querying the summary
 add_method("query_summary", [] {
+    auto session = make_shared<dataset::Session>();
     auto reader = Segment::detect_reader("grib", sys::abspath("."), "inbound/test.grib1", "inbound/test.grib1", std::make_shared<core::lock::Null>());
-    dataset::Memory c;
+    dataset::Memory c(session);
     reader->scan(c.inserter_func());
 
     Summary summary;
@@ -56,8 +58,9 @@ add_method("query_summary", [] {
 
 // Test querying the summary by reftime
 add_method("query_summary_reftime", [] {
+    auto session = make_shared<dataset::Session>();
     auto reader = Segment::detect_reader("grib", sys::abspath("."), "inbound/test.grib1", "inbound/test.grib1", std::make_shared<core::lock::Null>());
-    dataset::Memory c;
+    dataset::Memory c(session);
     reader->scan(c.inserter_func());
 
     Summary summary;

@@ -94,6 +94,7 @@ DatasetTest::~DatasetTest()
 
 void DatasetTest::test_setup(const std::string& cfg_default)
 {
+    session = make_shared<dataset::Session>();
     std::string cfg_all = cfg_instance + "\n" + cfg_default + "\n";
     cfg = core::cfg::Section::parse(cfg_all);
     cfg.set("path", ds_root);
@@ -107,6 +108,7 @@ void DatasetTest::test_teardown()
     delete segment_manager;
     segment_manager = nullptr;
     m_config.reset();
+    session.reset();
 }
 
 void DatasetTest::test_reread_config()
@@ -128,7 +130,7 @@ const Config& DatasetTest::config()
         sys::mkdir_ifmissing(ds_root);
         sys::File out(str::joinpath(ds_root, "config"), O_WRONLY | O_CREAT | O_TRUNC, 0666);
         cfg.write(out);
-        m_config = dataset::Config::create(cfg);
+        m_config = dataset::Config::create(session, cfg);
     }
     return *m_config;
 }

@@ -67,13 +67,14 @@ void Tests::register_tests() {
 add_method("simple", [] {
     using namespace arki::utils::acct;
 
+    auto session = std::make_shared<dataset::Session>();
     auto config = setup1();
 
     plain_data_read_count.reset();
     metadata::TrackedData tracked_data(metadata::DataManager::get());
 
     metadata::TestCollection mdc("inbound/test.grib1", true);
-    RealDispatcher dispatcher(config);
+    RealDispatcher dispatcher(session, config);
     auto batch = mdc.make_import_batch();
     wassert(dispatcher.dispatch(batch, false));
     wassert(actual(batch[0]->dataset_name) == "test200");
@@ -92,13 +93,14 @@ add_method("simple", [] {
 add_method("drop_cached_data", [] {
     using namespace arki::utils::acct;
 
+    auto session = std::make_shared<dataset::Session>();
     auto config = setup1();
 
     plain_data_read_count.reset();
     metadata::TrackedData tracked_data(metadata::DataManager::get());
 
     metadata::TestCollection mdc("inbound/test.grib1", true);
-    RealDispatcher dispatcher(config);
+    RealDispatcher dispatcher(session, config);
     auto batch = mdc.make_import_batch();
     wassert(dispatcher.dispatch(batch, true));
     wassert(actual(batch[0]->dataset_name) == "test200");
@@ -131,13 +133,15 @@ add_method("regression01", [] {
         "name = error\n";
     auto config = core::cfg::Sections::parse(conf);
 
+    auto session = std::make_shared<dataset::Session>();
+
     metadata::TestCollection source("inbound/tempforecast.bufr", true);
     wassert(actual(source.size()) == 1u);
 
     Matcher matcher = Matcher::parse("origin:BUFR,200; product:BUFR:t=temp");
     wassert_true(matcher(source[0]));
 
-    RealDispatcher dispatcher(config);
+    RealDispatcher dispatcher(session, config);
     auto batch = source.make_import_batch();
     wassert(dispatcher.dispatch(batch, false));
     wassert(actual(batch[0]->dataset_name) == "lami_temp");
@@ -147,8 +151,9 @@ add_method("regression01", [] {
 
 // Test dispatch to error datasets after validation errors
 add_method("validation", [] {
+    auto session = std::make_shared<dataset::Session>();
     auto config = setup1();
-    RealDispatcher dispatcher(config);
+    RealDispatcher dispatcher(session, config);
     metadata::validators::FailAlways fail_always;
     dispatcher.add_validator(fail_always);
     metadata::TestCollection mdc("inbound/test.grib1", true);
@@ -165,11 +170,12 @@ add_method("validation", [] {
 
 // Test dispatching files with no reftime, they should end up in the error dataset
 add_method("missing_reftime", [] {
+    auto session = std::make_shared<dataset::Session>();
     auto config = setup1();
     metadata::TestCollection source("inbound/wrongdate.bufr", true);
     wassert(actual(source.size()) == 6u);
 
-    RealDispatcher dispatcher(config);
+    RealDispatcher dispatcher(session, config);
     auto batch = source.make_import_batch();
     wassert(dispatcher.dispatch(batch, false));
     wassert(actual(batch[0]->dataset_name) == "error");

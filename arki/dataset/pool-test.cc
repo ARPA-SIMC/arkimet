@@ -1,5 +1,6 @@
 #include "arki/core/cfg.h"
 #include "arki/tests/tests.h"
+#include "arki/dataset.h"
 #include "pool.h"
 
 namespace {
@@ -42,9 +43,10 @@ void Tests::register_tests() {
 add_method("instantiate", [] {
     using namespace arki::dataset;
     // In-memory dataset configuration
+    auto session = std::make_shared<dataset::Session>();
     auto config = core::cfg::Sections::parse(sample_config, "(memory)");
 
-    Configs datasets(config);
+    Configs datasets(session, config);
     WriterPool pool(datasets);
     wassert(actual(pool.get("error")).istrue());
     wassert(actual(pool.get("test200")).istrue());

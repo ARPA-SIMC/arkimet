@@ -30,8 +30,9 @@ using namespace arki::tests;
 template<typename INDEX>
 inline unique_ptr<WIndex> createIndex(std::shared_ptr<core::Lock> lock, const std::string& text_cfg)
 {
+    auto session = std::make_shared<dataset::Session>();
     auto cfg = core::cfg::Section::parse(text_cfg);
-    auto config = dataset::ondisk2::Config::create(cfg);
+    auto config = dataset::ondisk2::Config::create(session, cfg);
     auto res = unique_ptr<INDEX>(new INDEX(config));
     res->lock = lock;
     return res;
@@ -95,7 +96,8 @@ struct ReadHang : public subprocess::Child
     int main() noexcept override
     {
         try {
-            auto config = dataset::ondisk2::Config::create(cfg);
+            auto session = std::make_shared<dataset::Session>();
+            auto config = dataset::ondisk2::Config::create(session, cfg);
             auto lock = make_shared<core::lock::Null>();
             auto segs = config->create_segment_manager();
             RIndex idx(config);

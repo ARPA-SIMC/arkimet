@@ -42,7 +42,8 @@ add_method("grib_strangename", [] {
     wassert(actual(cfg.value("format")) == "grib");
 
     // Scan it to be sure it can be read
-    unique_ptr<dataset::Reader> ds(dataset::Reader::create(cfg));
+    auto session = std::make_shared<dataset::Session>();
+    unique_ptr<dataset::Reader> ds(dataset::Reader::create(session, cfg));
     metadata::Collection mdc(*ds, Matcher());
     wassert(actual(mdc.size()) == 3u);
 });
@@ -54,7 +55,8 @@ add_method("metadata", [] {
     wassert(actual(cfg.value("format")) == "arkimet");
 
     // Scan it to be sure it can be read
-    unique_ptr<dataset::Reader> ds(dataset::Reader::create(cfg));
+    auto session = std::make_shared<dataset::Session>();
+    unique_ptr<dataset::Reader> ds(dataset::Reader::create(session, cfg));
     metadata::Collection mdc(*ds, Matcher());
     wassert(actual(mdc.size()) == 1u);
 });
@@ -66,7 +68,8 @@ add_method("yaml", [] {
     wassert(actual(cfg.value("format")) == "yaml");
 
     // Scan it to be sure it can be read
-    unique_ptr<dataset::Reader> ds(dataset::Reader::create(cfg));
+    auto session = std::make_shared<dataset::Session>();
+    unique_ptr<dataset::Reader> ds(dataset::Reader::create(session, cfg));
     metadata::Collection mdc(*ds, Matcher());
     wassert(actual(mdc.size()) == 1u);
 });
