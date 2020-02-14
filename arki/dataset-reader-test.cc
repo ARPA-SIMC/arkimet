@@ -352,11 +352,20 @@ this->add_method("issue116", [](Fixture& f) {
     wassert(actual(count) == 1u);
 });
 
-this->add_method("issue213", [](Fixture& f) {
+this->add_method("issue213_manyquery", [](Fixture& f) {
     auto reader = f.dataset_config()->create_reader();
     metadata::Collection coll;
     for (unsigned i = 0; i < 2000; ++i)
         reader->query_data(dataset::DataQuery("reftime:==13:00", true), coll.inserter_func());
+});
+
+this->add_method("issue213_manyds", [](Fixture& f) {
+    metadata::Collection coll;
+    for (unsigned i = 0; i < 2000; ++i)
+    {
+        auto reader = f.dataset_config()->create_reader();
+        reader->query_data(dataset::DataQuery("reftime:==13:00", true), coll.inserter_func());
+    }
 });
 
 #if 0
