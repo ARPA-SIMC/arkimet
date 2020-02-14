@@ -124,9 +124,9 @@ struct Config : public dataset::Config
     std::string baseurl;
     std::string qmacro;
 
-    Config(const core::cfg::Section& cfg);
+    Config(std::shared_ptr<Session> session, const core::cfg::Section& cfg);
 
-    static std::shared_ptr<const Config> create(const core::cfg::Section& cfg);
+    static std::shared_ptr<const Config> create(std::shared_ptr<Session> session, const core::cfg::Section& cfg);
 
     std::unique_ptr<dataset::Reader> create_reader() const override;
 };

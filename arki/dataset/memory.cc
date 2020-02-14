@@ -7,7 +7,8 @@ using namespace std;
 namespace arki {
 namespace dataset {
 
-Memory::Memory()
+Memory::Memory(std::shared_ptr<Session> session)
+    : m_config(session)
 {
     m_config.name = "memory";
 }

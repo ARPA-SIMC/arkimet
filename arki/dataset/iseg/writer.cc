@@ -373,9 +373,9 @@ void Writer::remove(Metadata& md)
     scache.invalidate(md);
 }
 
-void Writer::test_acquire(const core::cfg::Section& cfg, WriterBatch& batch)
+void Writer::test_acquire(std::shared_ptr<Session> session, const core::cfg::Section& cfg, WriterBatch& batch)
 {
-    std::shared_ptr<const iseg::Config> config(new iseg::Config(cfg));
+    std::shared_ptr<const iseg::Config> config(new iseg::Config(session, cfg));
     for (auto& e: batch)
     {
         auto age_check = config->check_acquire_age(e->md);

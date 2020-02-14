@@ -87,7 +87,7 @@ protected:
     void raw_dispatch_dataset(const std::string& name, dataset::WriterBatch& batch, bool drop_cached_data_on_commit) override;
 
 public:
-    RealDispatcher(const core::cfg::Sections& cfg);
+    RealDispatcher(std::shared_ptr<dataset::Session> session, const core::cfg::Sections& cfg);
     ~RealDispatcher();
 
 	/**
@@ -107,12 +107,13 @@ public:
 class TestDispatcher : public Dispatcher
 {
 protected:
+    std::shared_ptr<dataset::Session> session;
     core::cfg::Sections cfg;
 
     void raw_dispatch_dataset(const std::string& name, dataset::WriterBatch& batch, bool drop_cached_data_on_commit) override;
 
 public:
-    TestDispatcher(const core::cfg::Sections& cfg);
+    TestDispatcher(std::shared_ptr<dataset::Session> session, const core::cfg::Sections& cfg);
     ~TestDispatcher();
 
     void dispatch(dataset::WriterBatch& batch, bool drop_cached_data_on_commit) override;

@@ -12,6 +12,7 @@
 #include "common.h"
 #include "matcher.h"
 #include "files.h"
+#include "dataset.h"
 
 using namespace arki::python;
 using namespace arki::utils;
@@ -87,7 +88,7 @@ bool foreach_file(BinaryInputFile& file, const std::string& format, std::functio
     core::cfg::Section cfg;
     cfg.set("format", format);
     cfg.set("name", "stdin:" + scanner->name());
-    auto config = dataset::fromfunction::Config::create(cfg);
+    auto config = dataset::fromfunction::Config::create(arki::python::get_dataset_session(), cfg);
 
     auto reader = std::make_shared<dataset::fromfunction::Reader>(config);
 
@@ -121,7 +122,7 @@ bool foreach_sections(const core::cfg::Sections& inputs, std::function<void(data
     // Query all the datasets in sequence
     for (auto si: inputs)
     {
-        auto reader = dataset::Reader::create(si.second);
+        auto reader = dataset::Reader::create(arki::python::get_dataset_session(), si.second);
         bool success = true;
         try {
             dest(*reader);

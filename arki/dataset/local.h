@@ -35,7 +35,7 @@ public:
 
     const core::lock::Policy* lock_policy;
 
-    LocalConfig(const core::cfg::Section& cfg);
+    LocalConfig(std::shared_ptr<Session> session, const core::cfg::Section& cfg);
 
     /**
      * Check if the data to be acquired is older than acquire or delete age.
@@ -113,7 +113,7 @@ public:
     /// Return the dataset path
     const std::string& path() const { return config().path; }
 
-    static void test_acquire(const core::cfg::Section& cfg, WriterBatch& batch);
+    static void test_acquire(std::shared_ptr<Session> session, const core::cfg::Section& cfg, WriterBatch& batch);
 };
 
 struct LocalChecker : public LocalBase<Checker, ArchivesChecker>

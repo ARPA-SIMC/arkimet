@@ -21,8 +21,8 @@ using namespace arki::utils;
 namespace arki {
 namespace dataset {
 
-LocalConfig::LocalConfig(const core::cfg::Section& cfg)
-    : Config(cfg), path(sys::abspath(cfg.value("path")))
+LocalConfig::LocalConfig(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
+    : Config(session, cfg), path(sys::abspath(cfg.value("path")))
 {
     string tmp = cfg.value("archive age");
     if (!tmp.empty())
@@ -61,7 +61,7 @@ std::pair<bool, WriterAcquireResult> LocalConfig::check_acquire_age(Metadata& md
 std::shared_ptr<ArchivesConfig> LocalConfig::archives_config() const
 {
     if (!m_archives_config)
-        m_archives_config = std::shared_ptr<ArchivesConfig>(new ArchivesConfig(path));
+        m_archives_config = std::shared_ptr<ArchivesConfig>(new ArchivesConfig(session, path));
     return m_archives_config;
 }
 
@@ -176,9 +176,9 @@ LocalWriter::~LocalWriter()
 {
 }
 
-void LocalWriter::test_acquire(const core::cfg::Section& cfg, WriterBatch& batch)
+void LocalWriter::test_acquire(std::shared_ptr<Session> session, const core::cfg::Section& cfg, WriterBatch& batch)
 {
-    return segmented::Writer::test_acquire(cfg, batch);
+    return segmented::Writer::test_acquire(session, cfg, batch);
 }
 
 

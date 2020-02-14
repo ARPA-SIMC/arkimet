@@ -114,25 +114,32 @@ struct ByteQuery : public DataQuery
     }
 };
 
+struct Session
+{
+};
+
 /// Base dataset configuration
 struct Config : public std::enable_shared_from_this<Config>
 {
+    /// Work session
+    std::shared_ptr<Session> session;
+
     /// Dataset name
     std::string name;
 
     /// Raw configuration key-value pairs
     core::cfg::Section cfg;
 
-    Config();
-    Config(const std::string& name);
-    Config(const core::cfg::Section& cfg);
+    Config(std::shared_ptr<Session> session);
+    Config(std::shared_ptr<Session> session, const std::string& name);
+    Config(std::shared_ptr<Session> session, const core::cfg::Section& cfg);
     virtual ~Config() {}
 
     virtual std::unique_ptr<Reader> create_reader() const;
     virtual std::unique_ptr<Writer> create_writer() const;
     virtual std::unique_ptr<Checker> create_checker() const;
 
-    static std::shared_ptr<const Config> create(const core::cfg::Section& cfg);
+    static std::shared_ptr<const Config> create(std::shared_ptr<Session> session, const core::cfg::Section& cfg);
 };
 
 /**
@@ -226,7 +233,7 @@ public:
     /**
      * Instantiate an appropriate Reader for the given configuration
      */
-    static std::unique_ptr<Reader> create(const core::cfg::Section& cfg);
+    static std::unique_ptr<Reader> create(std::shared_ptr<Session> session, const core::cfg::Section& cfg);
 
     /**
      * Read the configuration of the dataset at the given path or URL
@@ -322,15 +329,15 @@ public:
      */
     virtual void acquire_batch(WriterBatch& batch, const AcquireConfig& cfg=AcquireConfig()) = 0;
 
-	/**
-	 * Remove the given metadata from the database.
-	 */
-	virtual void remove(Metadata& md) = 0;
+    /**
+     * Remove the given metadata from the database.
+     */
+    virtual void remove(Metadata& md) = 0;
 
-	/**
-	 * Flush pending changes to disk
-	 */
-	virtual void flush();
+    /**
+     * Flush pending changes to disk
+     */
+    virtual void flush();
 
     /**
      * Obtain a write lock on the database, held until the Pending is committed
@@ -343,7 +350,7 @@ public:
     /**
      * Instantiate an appropriate Writer for the given configuration
      */
-    static std::unique_ptr<Writer> create(const core::cfg::Section& cfg);
+    static std::unique_ptr<Writer> create(std::shared_ptr<Session> session, const core::cfg::Section& cfg);
 
     /**
      * Simulate acquiring the given metadata item (and related data) in this
@@ -351,7 +358,7 @@ public:
      *
      * No change of any kind happens to the dataset.
      */
-    static void test_acquire(const core::cfg::Section& cfg, WriterBatch& batch);
+    static void test_acquire(std::shared_ptr<Session> session, const core::cfg::Section& cfg, WriterBatch& batch);
 };
 
 struct CheckerConfig
@@ -422,7 +429,7 @@ struct Checker : public dataset::Base
     /**
      * Instantiate an appropriate Checker for the given configuration
      */
-    static std::unique_ptr<Checker> create(const core::cfg::Section& cfg);
+    static std::unique_ptr<Checker> create(std::shared_ptr<Session> session, const core::cfg::Section& cfg);
 };
 
 }

@@ -364,7 +364,7 @@ void Writer::remove(Metadata& md)
     md.unset(TYPE_ASSIGNEDDATASET);
 }
 
-void Writer::test_acquire(const core::cfg::Section& cfg, WriterBatch& batch)
+void Writer::test_acquire(std::shared_ptr<Session> session, const core::cfg::Section& cfg, WriterBatch& batch)
 {
     ReplaceStrategy replace;
     string repl = cfg.value("replace");
@@ -378,7 +378,7 @@ void Writer::test_acquire(const core::cfg::Section& cfg, WriterBatch& batch)
         throw std::runtime_error("Replace strategy '" + repl + "' is not recognised in dataset configuration");
 
     // Refuse if md is before "archive age"
-    std::shared_ptr<const ondisk2::Config> config(new ondisk2::Config(cfg));
+    std::shared_ptr<const ondisk2::Config> config(new ondisk2::Config(session, cfg));
     auto segs = config->create_segment_manager();
     for (auto& e: batch)
     {

@@ -14,6 +14,7 @@
 #include "cfg.h"
 #include "cmdline.h"
 #include "cmdline/processor.h"
+#include "dataset.h"
 
 using namespace arki::python;
 using namespace arki::utils;
@@ -64,7 +65,7 @@ struct FileSource
     {
         if (!movework.empty() && cfg.value("type") == "file")
             cfg.set("path", moveFile(cfg.value("path"), movework));
-        reader = arki::dataset::Reader::create(cfg);
+        reader = arki::dataset::Reader::create(arki::python::get_dataset_session(), cfg);
     }
 
     void close(bool successful)
@@ -110,11 +111,11 @@ std::unique_ptr<arki_scan::MetadataDispatch> build_dispatcher(cmdline::DatasetPr
 
     if (testdispatch)
     {
-        res->dispatcher = new arki::TestDispatcher(sections_from_python(testdispatch));
+        res->dispatcher = new arki::TestDispatcher(arki::python::get_dataset_session(), sections_from_python(testdispatch));
     }
     else if (dispatch)
     {
-        res->dispatcher = new arki::RealDispatcher(sections_from_python(dispatch));
+        res->dispatcher = new arki::RealDispatcher(arki::python::get_dataset_session(), sections_from_python(dispatch));
     }
     else
         throw std::runtime_error("cannot create MetadataDispatch with no --dispatch or --testdispatch information");

@@ -59,7 +59,7 @@ public:
     unsigned gz_group_size = 512;
 
 
-    Config(const core::cfg::Section& cfg);
+    Config(std::shared_ptr<Session> session, const core::cfg::Section& cfg);
     ~Config();
 
     virtual bool relpath_timespan(const std::string& path, core::Time& start_time, core::Time& end_time) const;
@@ -68,7 +68,7 @@ public:
 
     std::unique_ptr<SegmentManager> create_segment_manager() const;
 
-    static std::shared_ptr<const Config> create(const core::cfg::Section& cfg);
+    static std::shared_ptr<const Config> create(std::shared_ptr<Session> session, const core::cfg::Section& cfg);
 };
 
 /**
@@ -111,7 +111,7 @@ public:
     const Config& config() const override = 0;
     SegmentManager& segment_manager();
 
-    static void test_acquire(const core::cfg::Section& cfg, WriterBatch& batch);
+    static void test_acquire(std::shared_ptr<Session>, const core::cfg::Section& cfg, WriterBatch& batch);
 };
 
 

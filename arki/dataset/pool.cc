@@ -71,10 +71,10 @@ struct PathMatch
 namespace arki {
 namespace dataset {
 
-Configs::Configs(const core::cfg::Sections& cfg)
+Configs::Configs(std::shared_ptr<Session> session, const core::cfg::Sections& cfg)
 {
     for (const auto& si: cfg)
-        configs.insert(make_pair(si.first, dataset::Config::create(si.second)));
+        configs.insert(make_pair(si.first, dataset::Config::create(session, si.second)));
 }
 
 std::shared_ptr<const dataset::Config> Configs::get(const std::string& name) const

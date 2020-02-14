@@ -14,15 +14,15 @@ namespace arki {
 namespace dataset {
 namespace simple {
 
-Config::Config(const core::cfg::Section& cfg)
-    : dataset::IndexedConfig(cfg),
+Config::Config(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
+    : dataset::IndexedConfig(session, cfg),
       index_type(cfg.value("index_type"))
 {
 }
 
-std::shared_ptr<const Config> Config::create(const core::cfg::Section& cfg)
+std::shared_ptr<const Config> Config::create(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
 {
-    return std::shared_ptr<const Config>(new Config(cfg));
+    return std::shared_ptr<const Config>(new Config(session, cfg));
 }
 
 std::unique_ptr<dataset::Reader> Config::create_reader() const

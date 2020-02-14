@@ -16,8 +16,8 @@ namespace arki {
 namespace dataset {
 namespace iseg {
 
-Config::Config(const core::cfg::Section& cfg)
-    : segmented::Config(cfg),
+Config::Config(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
+    : segmented::Config(session, cfg),
       format(cfg.value("format")),
       index(index::parseMetadataBitmask(cfg.value("index"))),
       unique(index::parseMetadataBitmask(cfg.value("unique"))),
@@ -30,9 +30,9 @@ Config::Config(const core::cfg::Section& cfg)
     unique.erase(TYPE_REFTIME);
 }
 
-std::shared_ptr<const Config> Config::create(const core::cfg::Section& cfg)
+std::shared_ptr<const Config> Config::create(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
 {
-    return std::shared_ptr<const Config>(new Config(cfg));
+    return std::shared_ptr<const Config>(new Config(session, cfg));
 }
 
 std::unique_ptr<dataset::Reader> Config::create_reader() const

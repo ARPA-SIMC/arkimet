@@ -20,7 +20,7 @@ protected:
     dataset::Config m_config;
 
 public:
-    Memory();
+    Memory(std::shared_ptr<Session> session);
     virtual ~Memory();
 
     const Config& config() const override { return m_config; }

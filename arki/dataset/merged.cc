@@ -148,10 +148,10 @@ public:
     }
 };
 
-Merged::Merged()
+Merged::Merged(std::shared_ptr<Session> session)
 {
     dataset::Config* cfg;
-    m_config = std::shared_ptr<const dataset::Config>(cfg = new dataset::Config);
+    m_config = std::shared_ptr<dataset::Config>(cfg = new dataset::Config(session));
     cfg->name = "merged";
 }
 
@@ -168,7 +168,7 @@ void Merged::add_dataset(std::shared_ptr<Reader> ds)
 
 void Merged::add_dataset(const core::cfg::Section& cfg)
 {
-    add_dataset(move(dataset::Reader::create(cfg)));
+    add_dataset(move(dataset::Reader::create(m_config->session, cfg)));
 }
 
 bool Merged::query_data(const dataset::DataQuery& q, metadata_dest_func dest)

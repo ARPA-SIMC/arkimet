@@ -13,6 +13,7 @@
 #include "utils/values.h"
 #include "dataset/reporter.h"
 #include "common.h"
+#include "dataset.h"
 #include "cfg.h"
 #include <sstream>
 
@@ -61,7 +62,7 @@ struct remove : public MethKwargs<remove, arkipy_ArkiCheck>
 
             {
                 ReleaseGIL rg;
-                arki::dataset::Configs datasets(self->config);
+                arki::dataset::Configs datasets(arki::python::get_dataset_session(), self->config);
                 arki::dataset::WriterPool pool(datasets);
                 // Read all metadata from the file specified in --remove
                 arki::metadata::Collection todolist;
@@ -136,7 +137,7 @@ struct checker_base : public MethKwargs<Base, Impl>
                     try {
                         std::unique_ptr<arki::dataset::Checker> checker;
                         try {
-                            checker = arki::dataset::Checker::create(si.second);
+                            checker = arki::dataset::Checker::create(arki::python::get_dataset_session(), si.second);
                         } catch (std::exception& e) {
                             throw SkipDataset(e.what());
                         }
@@ -259,7 +260,7 @@ struct compress : public checker_base<compress, arkipy_ArkiCheck>
                     try {
                         std::unique_ptr<arki::dataset::Checker> checker;
                         try {
-                            checker = arki::dataset::Checker::create(si.second);
+                            checker = arki::dataset::Checker::create(arki::python::get_dataset_session(), si.second);
                         } catch (std::exception& e) {
                             throw SkipDataset(e.what());
                         }
@@ -297,7 +298,7 @@ struct unarchive : public checker_base<unarchive, arkipy_ArkiCheck>
                     try {
                         std::unique_ptr<arki::dataset::Checker> checker;
                         try {
-                            checker = arki::dataset::Checker::create(si.second);
+                            checker = arki::dataset::Checker::create(arki::python::get_dataset_session(), si.second);
                         } catch (std::exception& e) {
                             throw SkipDataset(e.what());
                         }

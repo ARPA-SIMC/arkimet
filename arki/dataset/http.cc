@@ -224,8 +224,8 @@ size_t Request::writefunc(void *ptr, size_t size, size_t nmemb, void *stream)
 
 
 
-Config::Config(const core::cfg::Section& cfg)
-    : dataset::Config(cfg),
+Config::Config(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
+    : dataset::Config(session, cfg),
       baseurl(cfg.value("path")),
       qmacro(cfg.value("qmacro"))
 {
@@ -236,9 +236,9 @@ std::unique_ptr<dataset::Reader> Config::create_reader() const
     return std::unique_ptr<dataset::Reader>(new Reader(dynamic_pointer_cast<const Config>(shared_from_this())));
 }
 
-std::shared_ptr<const Config> Config::create(const core::cfg::Section& cfg)
+std::shared_ptr<const Config> Config::create(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
 {
-    return std::shared_ptr<const Config>(new Config(cfg));
+    return std::shared_ptr<const Config>(new Config(session, cfg));
 }
 
 Reader::Reader(std::shared_ptr<const Config> config)

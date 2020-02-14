@@ -33,7 +33,7 @@ protected:
 public:
     core::cfg::Sections datasets_cfg;
 
-    Base(const Options& opts);
+    Base(std::shared_ptr<Session> session, const Options& opts);
     ~Base();
 
     const dataset::Config& config() const override { return *m_config; }

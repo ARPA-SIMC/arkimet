@@ -22,16 +22,16 @@ using namespace arki::utils;
 namespace arki {
 namespace dataset {
 
-FileConfig::FileConfig(const core::cfg::Section& cfg)
-    : dataset::Config(cfg),
+FileConfig::FileConfig(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
+    : dataset::Config(session, cfg),
       pathname(cfg.value("path")),
       format(cfg.value("format"))
 {
 }
 
-std::shared_ptr<const FileConfig> FileConfig::create(const core::cfg::Section& cfg)
+std::shared_ptr<const FileConfig> FileConfig::create(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
 {
-    return std::shared_ptr<const FileConfig>(new FileConfig(cfg));
+    return std::shared_ptr<const FileConfig>(new FileConfig(session, cfg));
 }
 
 std::unique_ptr<Reader> FileConfig::create_reader() const

@@ -176,14 +176,14 @@ struct ArchivesRoot
         {
             if (index::Manifest::exists(pathname))
             {
-                std::shared_ptr<const simple::Config> config(new simple::Config(make_config(pathname)));
+                std::shared_ptr<const simple::Config> config(new simple::Config(parent.config().session, make_config(pathname)));
                 res.reset(new simple::Reader(config));
             } else {
-                std::shared_ptr<const OfflineConfig> config(new OfflineConfig(pathname));
+                std::shared_ptr<const OfflineConfig> config(new OfflineConfig(parent.config().session, pathname));
                 res.reset(new OfflineReader(config));
             }
         } else {
-            std::shared_ptr<const simple::Config> config(new simple::Config(make_config(pathname)));
+            std::shared_ptr<const simple::Config> config(new simple::Config(parent.config().session, make_config(pathname)));
             res.reset(new simple::Reader(config));
         }
         res->set_parent(parent);
@@ -237,7 +237,7 @@ struct ArchivesCheckerRoot: public ArchivesRoot<Checker>
         if (sys::exists(pathname + ".summary"))
             return res;
 
-        std::shared_ptr<const simple::Config> config(new simple::Config(make_config(pathname)));
+        std::shared_ptr<const simple::Config> config(new simple::Config(parent.config().session, make_config(pathname)));
         res.reset(new simple::Checker(config));
         res->set_parent(parent);
         return res;
@@ -246,15 +246,15 @@ struct ArchivesCheckerRoot: public ArchivesRoot<Checker>
 
 }
 
-ArchivesConfig::ArchivesConfig(const std::string& root)
-    : root(root)
+ArchivesConfig::ArchivesConfig(std::shared_ptr<Session> session, const std::string& root)
+    : dataset::Config(session), root(root)
 {
     name = "archives";
 }
 
-std::shared_ptr<const ArchivesConfig> ArchivesConfig::create(const std::string& root)
+std::shared_ptr<const ArchivesConfig> ArchivesConfig::create(std::shared_ptr<Session> session, const std::string& root)
 {
-    return std::shared_ptr<const ArchivesConfig>(new ArchivesConfig(root));
+    return std::shared_ptr<const ArchivesConfig>(new ArchivesConfig(session, root));
 }
 
 

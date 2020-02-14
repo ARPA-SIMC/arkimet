@@ -20,14 +20,14 @@ namespace arki {
 namespace dataset {
 namespace outbound {
 
-Config::Config(const core::cfg::Section& cfg)
-    : segmented::Config(cfg)
+Config::Config(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
+    : segmented::Config(session, cfg)
 {
 }
 
-std::shared_ptr<const Config> Config::create(const core::cfg::Section& cfg)
+std::shared_ptr<const Config> Config::create(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
 {
-    return std::shared_ptr<const Config>(new Config(cfg));
+    return std::shared_ptr<const Config>(new Config(session, cfg));
 }
 
 std::unique_ptr<dataset::Reader> Config::create_reader() const { return std::unique_ptr<dataset::Reader>(new empty::Reader(shared_from_this())); }
@@ -96,9 +96,9 @@ void Writer::remove(Metadata&)
     throw std::runtime_error("cannot remove data from outbound dataset: dataset does not support removing items");
 }
 
-void Writer::test_acquire(const core::cfg::Section& cfg, WriterBatch& batch)
+void Writer::test_acquire(std::shared_ptr<Session> session, const core::cfg::Section& cfg, WriterBatch& batch)
 {
-    std::shared_ptr<const outbound::Config> config(new outbound::Config(cfg));
+    std::shared_ptr<const outbound::Config> config(new outbound::Config(session, cfg));
     for (auto& e: batch)
     {
         auto age_check = config->check_acquire_age(e->md);

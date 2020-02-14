@@ -44,9 +44,9 @@ struct ArchivesConfig : public dataset::Config
 {
     std::string root;
 
-    ArchivesConfig(const std::string& root);
+    ArchivesConfig(std::shared_ptr<Session> session, const std::string& root);
 
-    static std::shared_ptr<const ArchivesConfig> create(const std::string& root);
+    static std::shared_ptr<const ArchivesConfig> create(std::shared_ptr<Session> session, const std::string& root);
 };
 
 /**

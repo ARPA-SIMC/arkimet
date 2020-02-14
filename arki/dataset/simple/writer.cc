@@ -188,9 +188,9 @@ void Writer::remove(Metadata& md)
     throw std::runtime_error("cannot remove data from simple dataset: dataset does not support removing items");
 }
 
-void Writer::test_acquire(const core::cfg::Section& cfg, WriterBatch& batch)
+void Writer::test_acquire(std::shared_ptr<Session> session, const core::cfg::Section& cfg, WriterBatch& batch)
 {
-    std::shared_ptr<const simple::Config> config(new simple::Config(cfg));
+    std::shared_ptr<const simple::Config> config(new simple::Config(session, cfg));
     for (auto& e: batch)
     {
         auto age_check = config->check_acquire_age(e->md);

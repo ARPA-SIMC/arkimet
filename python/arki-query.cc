@@ -15,6 +15,7 @@
 #include "common.h"
 #include "cmdline.h"
 #include "cmdline/processor.h"
+#include "dataset.h"
 
 using namespace arki::python;
 using namespace arki::utils;
@@ -130,11 +131,11 @@ struct query_merged : public MethKwargs<query_merged, arkipy_ArkiQuery>
             {
                 ReleaseGIL rg;
 
-                arki::dataset::Merged reader;
+                arki::dataset::Merged reader(arki::python::get_dataset_session());
 
                 // Instantiate the datasets and add them to the merger
                 for (auto si: self->inputs)
-                    reader.add_dataset(arki::dataset::Reader::create(si.second));
+                    reader.add_dataset(arki::dataset::Reader::create(arki::python::get_dataset_session(), si.second));
 
                 try {
                     self->processor->process(reader, reader.name());
@@ -201,7 +202,7 @@ struct query_qmacro : public MethKwargs<query_qmacro, arkipy_ArkiQuery>
                     cfg.set("type", "remote");
                     cfg.set("path", baseurl);
                     cfg.set("qmacro", macro_query);
-                    reader = arki::dataset::Reader::create(cfg);
+                    reader = arki::dataset::Reader::create(arki::python::get_dataset_session(), cfg);
                 }
 
                 try {

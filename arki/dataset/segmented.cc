@@ -53,8 +53,8 @@ void SegmentState::check_age(const std::string& relpath, const Config& cfg, data
     }
 }
 
-Config::Config(const core::cfg::Section& cfg)
-    : LocalConfig(cfg),
+Config::Config(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
+    : LocalConfig(session, cfg),
       step_name(str::lower(cfg.value("step"))),
       force_dir_segments(cfg.value("segments") == "dir"),
       mock_data(cfg.value("mockdata") == "true"),
@@ -96,9 +96,9 @@ std::unique_ptr<SegmentManager> Config::create_segment_manager() const
     return SegmentManager::get(path, force_dir_segments, mock_data);
 }
 
-std::shared_ptr<const Config> Config::create(const core::cfg::Section& cfg)
+std::shared_ptr<const Config> Config::create(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
 {
-    return std::shared_ptr<const Config>(new Config(cfg));
+    return std::shared_ptr<const Config>(new Config(session, cfg));
 }
 
 
@@ -184,18 +184,18 @@ std::map<std::string, WriterBatch> Writer::batch_by_segment(WriterBatch& batch)
     return by_segment;
 }
 
-void Writer::test_acquire(const core::cfg::Section& cfg, WriterBatch& batch)
+void Writer::test_acquire(std::shared_ptr<Session> session, const core::cfg::Section& cfg, WriterBatch& batch)
 {
     string type = str::lower(cfg.value("type"));
     if (type.empty())
         type = "local";
 
     if (type == "iseg")
-        return dataset::iseg::Writer::test_acquire(cfg, batch);
+        return dataset::iseg::Writer::test_acquire(session, cfg, batch);
     if (type == "ondisk2" || type == "test")
-        return dataset::ondisk2::Writer::test_acquire(cfg, batch);
+        return dataset::ondisk2::Writer::test_acquire(session, cfg, batch);
     if (type == "simple" || type == "error" || type == "duplicates")
-        return dataset::simple::Writer::test_acquire(cfg, batch);
+        return dataset::simple::Writer::test_acquire(session, cfg, batch);
 
     throw std::runtime_error("cannot simulate dataset acquisition: unknown dataset type \""+type+"\"");
 }

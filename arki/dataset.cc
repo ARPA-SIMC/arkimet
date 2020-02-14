@@ -34,12 +34,12 @@ DataQuery::DataQuery(const std::string& matcher, bool with_data) : matcher(Match
 DataQuery::DataQuery(const Matcher& matcher, bool with_data) : matcher(matcher), with_data(with_data), sorter(0) {}
 DataQuery::~DataQuery() {}
 
-Config::Config() {}
+Config::Config(std::shared_ptr<Session> session) : session(session) {}
 
-Config::Config(const std::string& name) : name(name) {}
+Config::Config(std::shared_ptr<Session> session, const std::string& name) : session(session), name(name) {}
 
-Config::Config(const core::cfg::Section& cfg)
-    : name(cfg.value("name")), cfg(cfg)
+Config::Config(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
+    : session(session), name(cfg.value("name")), cfg(cfg)
 {
 }
 
@@ -47,30 +47,30 @@ std::unique_ptr<Reader> Config::create_reader() const { throw std::runtime_error
 std::unique_ptr<Writer> Config::create_writer() const { throw std::runtime_error("writer not implemented for dataset " + name); }
 std::unique_ptr<Checker> Config::create_checker() const { throw std::runtime_error("checker not implemented for dataset " + name); }
 
-std::shared_ptr<const Config> Config::create(const core::cfg::Section& cfg)
+std::shared_ptr<const Config> Config::create(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
 {
     string type = str::lower(cfg.value("type"));
 
     if (type == "iseg")
-        return dataset::iseg::Config::create(cfg);
+        return dataset::iseg::Config::create(session, cfg);
     if (type == "ondisk2")
-        return dataset::ondisk2::Config::create(cfg);
+        return dataset::ondisk2::Config::create(session, cfg);
     if (type == "simple" || type == "error" || type == "duplicates")
-        return dataset::simple::Config::create(cfg);
+        return dataset::simple::Config::create(session, cfg);
 #ifdef HAVE_LIBCURL
     if (type == "remote")
-        return dataset::http::Config::create(cfg);
+        return dataset::http::Config::create(session, cfg);
 #endif
     if (type == "outbound")
-        return outbound::Config::create(cfg);
+        return outbound::Config::create(session, cfg);
     if (type == "discard")
-        return empty::Config::create(cfg);
+        return empty::Config::create(session, cfg);
     if (type == "file")
-        return dataset::FileConfig::create(cfg);
+        return dataset::FileConfig::create(session, cfg);
     if (type == "fromfunction")
-        return fromfunction::Config::create(cfg);
+        return fromfunction::Config::create(session, cfg);
     if (type == "testlarge")
-        return testlarge::Config::create(cfg);
+        return testlarge::Config::create(session, cfg);
 
     throw std::runtime_error("cannot use configuration: unknown dataset type \""+type+"\"");
 }
@@ -168,9 +168,9 @@ void Reader::expand_date_range(std::unique_ptr<core::Time>& begin, std::unique_p
 {
 }
 
-std::unique_ptr<Reader> Reader::create(const core::cfg::Section& cfg)
+std::unique_ptr<Reader> Reader::create(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
 {
-    auto config = Config::create(cfg);
+    auto config = Config::create(session, cfg);
     return config->create_reader();
 }
 
@@ -287,23 +287,23 @@ void Writer::flush() {}
 
 Pending Writer::test_writelock() { return Pending(); }
 
-std::unique_ptr<Writer> Writer::create(const core::cfg::Section& cfg)
+std::unique_ptr<Writer> Writer::create(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
 {
-    auto config = Config::create(cfg);
+    auto config = Config::create(session, cfg);
     return config->create_writer();
 }
 
-void Writer::test_acquire(const core::cfg::Section& cfg, WriterBatch& batch)
+void Writer::test_acquire(std::shared_ptr<Session> session, const core::cfg::Section& cfg, WriterBatch& batch)
 {
     string type = str::lower(cfg.value("type"));
     if (type == "remote")
         throw std::runtime_error("cannot simulate dataset acquisition: remote datasets are not writable");
     if (type == "outbound")
-        return outbound::Writer::test_acquire(cfg, batch);
+        return outbound::Writer::test_acquire(session, cfg, batch);
     if (type == "discard")
-        return empty::Writer::test_acquire(cfg, batch);
+        return empty::Writer::test_acquire(session, cfg, batch);
 
-    return dataset::LocalWriter::test_acquire(cfg, batch);
+    return dataset::LocalWriter::test_acquire(session, cfg, batch);
 }
 
 CheckerConfig::CheckerConfig()
@@ -317,9 +317,9 @@ CheckerConfig::CheckerConfig(std::shared_ptr<dataset::Reporter> reporter, bool r
 }
 
 
-std::unique_ptr<Checker> Checker::create(const core::cfg::Section& cfg)
+std::unique_ptr<Checker> Checker::create(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
 {
-    auto config = Config::create(cfg);
+    auto config = Config::create(session, cfg);
     return config->create_checker();
 }
 
