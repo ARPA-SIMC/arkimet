@@ -41,8 +41,8 @@ def scan_grib2(grib, md):
     # Level
     ltype1, lscale1, lvalue1 = grib.get_long("typeOfFirstFixedSurface"), 0, 0
     if grib.get_long("scaleFactorOfFirstFixedSurface") != -1:
-        lscale1 = grib.get_long("scaleFactorOfFirstFixedSurface)")
-        lvalue1 = grib.get_long("scaledValueOfFirstFixedSurface)")
+        lscale1 = grib.get_long("scaleFactorOfFirstFixedSurface")
+        lvalue1 = grib.get_long("scaledValueOfFirstFixedSurface")
 
     if "typeOfSecondFixedSurface" in grib and grib["typeOfSecondFixedSurface"] != 255:
         level = {
