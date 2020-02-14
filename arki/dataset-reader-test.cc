@@ -352,6 +352,13 @@ this->add_method("issue116", [](Fixture& f) {
     wassert(actual(count) == 1u);
 });
 
+this->add_method("issue213", [](Fixture& f) {
+    auto reader = f.dataset_config()->create_reader();
+    metadata::Collection coll;
+    for (unsigned i = 0; i < 2000; ++i)
+        reader->query_data(dataset::DataQuery("reftime:==13:00", true), coll.inserter_func());
+});
+
 #if 0
 // TODO: with_data is currently ignored by all datasets except http
 this->add_method("read_data_missing_segment", [](Fixture& f) {
