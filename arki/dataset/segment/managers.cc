@@ -15,34 +15,6 @@ namespace dataset {
 
 BaseManager::BaseManager(const std::string& root, bool mockdata) : SegmentManager(root), mockdata(mockdata) {}
 
-void BaseManager::scan_dir(std::function<void(const std::string& relpath)> dest)
-{
-    // Trim trailing '/'
-    string m_root = root;
-    while (m_root.size() > 1 and m_root[m_root.size()-1] == '/')
-        m_root.resize(m_root.size() - 1);
-
-    files::PathWalk walker(m_root);
-    walker.consumer = [&](const std::string& relpath, sys::Path::iterator& entry, struct stat& st) {
-        // Skip '.', '..' and hidden files
-        if (entry->d_name[0] == '.')
-            return false;
-
-        string name = entry->d_name;
-        string abspath = str::joinpath(m_root, relpath, name);
-        if (Segment::is_segment(abspath))
-        {
-            string basename = Segment::basename(name);
-            dest(str::joinpath(relpath, basename));
-            return false;
-        }
-
-        return true;
-    };
-
-    walker.walk();
-}
-
 
 AutoManager::AutoManager(const std::string& root, bool mockdata)
     : BaseManager(root, mockdata) {}

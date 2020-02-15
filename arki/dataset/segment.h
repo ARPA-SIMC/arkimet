@@ -43,12 +43,6 @@ public:
     std::shared_ptr<segment::Writer> get_writer(const std::string& format, const std::string& relpath);
     std::shared_ptr<segment::Checker> get_checker(const std::string& format, const std::string& relpath);
 
-    /**
-     * Scan a dataset for data files, returning a set of pathnames relative to
-     * root.
-     */
-    virtual void scan_dir(std::function<void(const std::string& relpath)> dest) = 0;
-
     /// Create a Manager
     static std::unique_ptr<SegmentManager> get(const std::string& root, bool force_dir=false, bool mock_data=false);
 };

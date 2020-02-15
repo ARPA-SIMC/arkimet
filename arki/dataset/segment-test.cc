@@ -30,16 +30,8 @@ add_method("scan_dir_empty", [] {
     mkdir("dirscanner", 0777);
 
     {
-        auto sm = SegmentManager::get("dirscanner", false);
         std::vector<std::string> res;
-        sm->scan_dir([&](const std::string& relpath) { res.push_back(relpath); });
-        wassert(actual(res.size()) == 0u);
-    }
-
-    {
-        auto sm = SegmentManager::get("dirscanner", true);
-        std::vector<std::string> res;
-        sm->scan_dir([&](const std::string& relpath) { res.push_back(relpath); });
+        segmented::Checker::scan_dir("dirscanner", [&](const std::string& relpath) { res.push_back(relpath); });
         wassert(actual(res.size()) == 0u);
     }
 });
@@ -65,9 +57,8 @@ add_method("scan_dir_dir1", [] {
     sys::write_file("dirscanner/.archive/z.grib", "");
 
     {
-        auto sm = SegmentManager::get("dirscanner", false);
         std::vector<std::string> res;
-        sm->scan_dir([&](const std::string& relpath) { res.push_back(relpath); });
+        segmented::Checker::scan_dir("dirscanner", [&](const std::string& relpath) { res.push_back(relpath); });
         wassert(actual(res.size()) == 7u);
         std::sort(res.begin(), res.end());
 
@@ -96,9 +87,8 @@ add_method("scan_dir_dir2", [] {
     sys::write_file("dirscanner/2009/b.grib", "");
 
     {
-        auto sm = SegmentManager::get("dirscanner", false);
         std::vector<std::string> res;
-        sm->scan_dir([&](const std::string& relpath) { res.push_back(relpath); });
+        segmented::Checker::scan_dir("dirscanner", [&](const std::string& relpath) { res.push_back(relpath); });
         wassert(actual(res.size()) == 5u);
         std::sort(res.begin(), res.end());
 
@@ -118,16 +108,15 @@ add_method("scan_dir_dir2", [] {
     sys::write_file("dirscanner/2008/01.odimh5", "");
 
     {
-        auto sm = SegmentManager::get("dirscanner", false);
         std::vector<std::string> res;
-        sm->scan_dir([&](const std::string& relpath) { res.push_back(relpath); });
+        segmented::Checker::scan_dir("dirscanner", [&](const std::string& relpath) { res.push_back(relpath); });
         wassert(actual(res.size()) == 0u);
     }
 
     {
         auto sm = SegmentManager::get("dirscanner", true);
         std::vector<std::string> res;
-        sm->scan_dir([&](const std::string& relpath) { res.push_back(relpath); });
+        segmented::Checker::scan_dir("dirscanner", [&](const std::string& relpath) { res.push_back(relpath); });
         wassert(actual(res.size()) == 0u);
     }
 });

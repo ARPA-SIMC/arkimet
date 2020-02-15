@@ -14,8 +14,6 @@ struct BaseManager : public SegmentManager
     bool mockdata;
 
     BaseManager(const std::string& root, bool mockdata=false);
-
-    void scan_dir(std::function<void(const std::string& relpath)> dest) override;
 };
 
 /// Segment manager that picks the right readers/writers based on file types

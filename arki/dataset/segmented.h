@@ -385,6 +385,13 @@ public:
      * This is used to simulate anomalies in the dataset during tests.
      */
     virtual void test_invalidate_in_index(const std::string& relpath) = 0;
+
+    /**
+     * Scan a dataset for data files, returning a set of pathnames relative to
+     * root.
+     */
+    static void scan_dir(const std::string& root, std::function<void(const std::string& relpath)> dest);
+
 };
 
 }
