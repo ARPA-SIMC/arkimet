@@ -34,6 +34,7 @@ DataQuery::DataQuery(const std::string& matcher, bool with_data) : matcher(Match
 DataQuery::DataQuery(const Matcher& matcher, bool with_data) : matcher(matcher), with_data(with_data), sorter(0) {}
 DataQuery::~DataQuery() {}
 
+
 Config::Config(std::shared_ptr<Session> session) : session(session) {}
 
 Config::Config(std::shared_ptr<Session> session, const std::string& name) : session(session), name(name) {}

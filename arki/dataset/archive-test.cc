@@ -9,6 +9,7 @@
 #include "arki/summary.h"
 #include "arki/utils/files.h"
 #include "arki/iotrace.h"
+#include "arki/dataset/session.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/string.h"
 

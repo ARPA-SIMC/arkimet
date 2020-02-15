@@ -1,5 +1,6 @@
 #include "arki/dataset/tests.h"
 #include "arki/dataset/merged.h"
+#include "arki/dataset/session.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
 #include "arki/matcher.h"

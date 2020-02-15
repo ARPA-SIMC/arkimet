@@ -114,9 +114,6 @@ struct ByteQuery : public DataQuery
     }
 };
 
-struct Session
-{
-};
 
 /// Base dataset configuration
 struct Config : public std::enable_shared_from_this<Config>

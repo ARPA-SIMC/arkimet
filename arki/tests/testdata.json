@@ -2796,6 +2796,11 @@
  },
  {
   "doc": "",
+  "group": "arki_dataset_session",
+  "method": "empty"
+ },
+ {
+  "doc": "",
   "group": "arki_dataset_segment",
   "method": "scan_dir_empty"
  },

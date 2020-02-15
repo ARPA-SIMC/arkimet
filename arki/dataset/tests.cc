@@ -14,6 +14,7 @@
 #include "arki/dataset/iseg/checker.h"
 #include "arki/dataset/index/manifest.h"
 #include "arki/dataset/reporter.h"
+#include "arki/dataset/session.h"
 #include "arki/scan/grib.h"
 #include "arki/scan/vm2.h"
 #include "arki/utils/files.h"

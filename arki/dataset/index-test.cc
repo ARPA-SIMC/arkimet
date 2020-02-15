@@ -1,5 +1,5 @@
-#include "config.h"
 #include "arki/dataset/tests.h"
+#include "arki/dataset/session.h"
 #include "index.h"
 #include "index/manifest.h"
 #include "ondisk2/index.h"

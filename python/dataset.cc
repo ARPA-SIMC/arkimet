@@ -18,6 +18,7 @@
 #include "arki/dataset/http.h"
 #include "arki/dataset/time.h"
 #include "arki/dataset/segmented.h"
+#include "arki/dataset/session.h"
 #include "arki/nag.h"
 #include "dataset/reporter.h"
 #include <vector>

@@ -1,6 +1,7 @@
 #include "arki/core/cfg.h"
 #include "arki/tests/tests.h"
 #include "arki/dataset.h"
+#include "arki/dataset/session.h"
 #include "pool.h"
 
 namespace {
