@@ -1,6 +1,7 @@
 # New in version 1.22
 
- * Fixed error with large expa (#213)
+ * Keep a Sesssion structure which tracks and reuses Segment objects, and as a consequence, file descriptors (#213)
+ * Fixed typo in GRIB2 scanner and related GRIB2 test
 
 # New in version 1.21
 

@@ -4,7 +4,7 @@
 Summary: Archive for weather information
 Name: arkimet
 Version: 1.22
-Release: 0.1
+Release: 1
 License: GPL
 Group: Applications/Meteo
 URL: https://github.com/arpa-simc/%{name}
@@ -154,12 +154,6 @@ sh autogen.sh
 %{?fedora:%define arpae_tests 1}
 %{?rhel:%define arpae_tests 1}
 
-%if 0%{?fc20}
-# see issue https://github.com/ARPA-SIMC/arkimet/issues/142
-# default value inferred from `rpm --eval %optflags`
-export CXXFLAGS="-O1 -g -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fstack-protector-strong --param=ssp-buffer-size=4 -grecord-gcc-switches -m64 -mtune=generic"
-%endif
-
 %if 0%{?arpae_tests}
 
 echo 'Enabling ARPAE tests'
@@ -242,8 +236,9 @@ if [ "$1" = "1" ]; then
 fi
 
 %changelog
-* Thu Feb 13 2020 Daniele Branchini <dbranchini@arpae.it> - 1.22-0.1
-- Fixed error with large expa (#213)
+* Mon Feb 17 2020 Daniele Branchini <dbranchini@arpae.it> - 1.22-1
+- Keep a Sesssion structure which tracks and reuses Segment objects, and as a consequence, file descriptors (#213)
+- Fixed typo in GRIB2 scanner and related GRIB2 test
 
 * Thu Feb 13 2020 Daniele Branchini <dbranchini@arpae.it> - 1.21-1
 - Fixed sorted data queries in python bindings (#212)
