@@ -59,7 +59,7 @@ add_method("acquire_replace", [](Fixture& f) {
     {
         auto cfg(f.cfg);
         cfg.set("replace", "true");
-        auto config = dataset::iseg::Config::create(f.session, cfg);
+        auto config = dataset::iseg::Config::create(f.session(), cfg);
         auto writer = config->create_writer();
         for (auto& md: mdc)
             wassert(actual(writer->acquire(*md)) == dataset::ACQ_OK);

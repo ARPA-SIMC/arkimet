@@ -23,7 +23,7 @@ struct Fixture : public arki::tests::DatasetTest
     /// Size of the first datum in test_relepath
     unsigned test_datum_size;
 
-    Fixture(const std::string& format, const std::string& cfg_instance=std::string());
+    Fixture(const std::string& format, const std::string& cfg_instance=std::string(), DatasetTest::TestVariant variant=DatasetTest::TEST_NORMAL);
 
     static bool segment_can_delete_data() { return true; }
     static bool segment_can_append_data() { return true; }

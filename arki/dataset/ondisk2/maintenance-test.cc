@@ -125,14 +125,14 @@ void Tests<TestFixture>::register_tests()
 }
 
 Tests<FixtureConcat> test_ondisk2_grib("arki_dataset_ondisk2_maintenance_grib", "grib", "type=ondisk2\n");
-Tests<FixtureDir> test_ondisk2_grib_dir("arki_dataset_ondisk2_maintenance_grib_dirs", "grib", "type=ondisk2\nsegments=dir\n");
-Tests<FixtureZip> test_ondisk2_grib_zip("arki_dataset_ondisk2_maintenance_grib_zip", "grib", "type=ondisk2\nsegments=dir\n");
+Tests<FixtureDir> test_ondisk2_grib_dir("arki_dataset_ondisk2_maintenance_grib_dirs", "grib", "type=ondisk2\n", DatasetTest::TEST_FORCE_DIR);
+Tests<FixtureZip> test_ondisk2_grib_zip("arki_dataset_ondisk2_maintenance_grib_zip", "grib", "type=ondisk2\n", DatasetTest::TEST_FORCE_DIR);
 Tests<FixtureConcat> test_ondisk2_bufr("arki_dataset_ondisk2_maintenance_bufr", "bufr", "type=ondisk2\n");
-Tests<FixtureDir> test_ondisk2_bufr_dir("arki_dataset_ondisk2_maintenance_bufr_dirs", "bufr", "type=ondisk2\nsegments=dir\n");
-Tests<FixtureZip> test_ondisk2_bufr_zip("arki_dataset_ondisk2_maintenance_bufr_zip", "bufr", "type=ondisk2\nsegments=dir\n");
+Tests<FixtureDir> test_ondisk2_bufr_dir("arki_dataset_ondisk2_maintenance_bufr_dirs", "bufr", "type=ondisk2\n", DatasetTest::TEST_FORCE_DIR);
+Tests<FixtureZip> test_ondisk2_bufr_zip("arki_dataset_ondisk2_maintenance_bufr_zip", "bufr", "type=ondisk2\n", DatasetTest::TEST_FORCE_DIR);
 Tests<FixtureConcat> test_ondisk2_vm2("arki_dataset_ondisk2_maintenance_vm2", "vm2", "type=ondisk2\n");
-Tests<FixtureDir> test_ondisk2_vm2_dir("arki_dataset_ondisk2_maintenance_vm2_dirs", "vm2", "type=ondisk2\nsegments=dir\n");
-Tests<FixtureZip> test_ondisk2_vm2_zip("arki_dataset_ondisk2_maintenance_vm2_zip", "vm2", "type=ondisk2\nsegments=dir\n");
+Tests<FixtureDir> test_ondisk2_vm2_dir("arki_dataset_ondisk2_maintenance_vm2_dirs", "vm2", "type=ondisk2\n", DatasetTest::TEST_FORCE_DIR);
+Tests<FixtureZip> test_ondisk2_vm2_zip("arki_dataset_ondisk2_maintenance_vm2_zip", "vm2", "type=ondisk2\n", DatasetTest::TEST_FORCE_DIR);
 Tests<FixtureDir> test_ondisk2_odimh5_dir("arki_dataset_ondisk2_maintenance_odimh5", "odimh5", "type=ondisk2\n");
 Tests<FixtureZip> test_ondisk2_odimh5_zip("arki_dataset_ondisk2_maintenance_odimh5_zip", "odimh5", "type=ondisk2\n");
 

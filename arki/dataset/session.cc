@@ -76,88 +76,14 @@ std::shared_ptr<segment::Checker> Session::segment_checker(const std::string& fo
     } else if (format == "odimh5" || format == "h5" || format == "odim") {
         res.reset(new segment::dir::Checker(format, root, relpath, abspath));
     } else if (format == "vm2") {
-        res.reset(new segment::lines::Checker(format, root, relpath, abspath));
-    } else {
-        throw std::runtime_error(
-                "getting writer for " + format + " file " + relpath +
-                ": format not supported");
-    }
-    return res;
+    res.reset(new segment::lines::Checker(format, root, relpath, abspath));
+} else {
+    throw std::runtime_error(
+            "getting writer for " + format + " file " + relpath +
+            ": format not supported");
 }
-
-#if 0
-
-struct BaseManager : public SegmentManager
-{
-    bool mockdata;
-
-    BaseManager(const std::string& root, bool mockdata=false);
-};
-
-/// Segment manager that picks the right readers/writers based on file types
-struct AutoManager : public BaseManager
-{
-    AutoManager(const std::string& root, bool mockdata=false);
-
-    std::shared_ptr<segment::Writer> create_writer_for_format(const std::string& format, const std::string& relpath, const std::string& abspath);
-
-    std::shared_ptr<segment::Checker> create_checker_for_format(const std::string& format, const std::string& relpath, const std::string& abspath);
-};
-
-/// Segment manager that always picks directory segments
-struct ForceDirManager : public BaseManager
-{
-    ForceDirManager(const std::string& root);
-
-    std::shared_ptr<segment::Writer> create_writer_for_format(const std::string& format, const std::string& relpath, const std::string& abspath) override;
-
-    std::shared_ptr<segment::Checker> create_checker_for_format(const std::string& format, const std::string& relpath, const std::string& abspath) override;
-};
-
-/// Segment manager that always uses hole file segments
-struct HoleDirManager : public ForceDirManager
-{
-    HoleDirManager(const std::string& root);
-
-    std::shared_ptr<segment::Writer> create_writer_for_format(const std::string& format, const std::string& relpath, const std::string& abspath) override;
-};
-
-
-AutoManager::AutoManager(const std::string& root, bool mockdata)
-    : BaseManager(root, mockdata) {}
-
-std::shared_ptr<segment::Writer> AutoManager::create_writer_for_format(const std::string& format, const std::string& relpath, const std::string& abspath)
-{
+return res;
 }
-
-std::shared_ptr<segment::Checker> AutoManager::create_checker_for_format(const std::string& format, const std::string& relpath, const std::string& abspath)
-{
-}
-
-ForceDirManager::ForceDirManager(const std::string& root) : BaseManager(root) {}
-
-std::shared_ptr<segment::Writer> ForceDirManager::create_writer_for_format(const std::string& format, const std::string& relpath, const std::string& abspath)
-{
-    auto res(Segment::detect_writer(format, root, relpath, abspath, mockdata));
-    if (res) return res;
-    return std::shared_ptr<segment::Writer>(new segment::dir::Writer(format, root, relpath, abspath));
-}
-
-std::shared_ptr<segment::Checker> ForceDirManager::create_checker_for_format(const std::string& format, const std::string& relpath, const std::string& abspath)
-{
-    auto res(Segment::detect_checker(format, root, relpath, abspath, mockdata));
-    if (res) return res;
-    return std::shared_ptr<segment::Checker>(new segment::dir::Checker(format, root, relpath, abspath));
-}
-
-
-HoleDirManager::HoleDirManager(const std::string& root) : ForceDirManager(root) {}
-
-std::shared_ptr<segment::Writer> HoleDirManager::create_writer_for_format(const std::string& format, const std::string& relpath, const std::string& abspath)
-{
-    return std::shared_ptr<segment::Writer>(new segment::dir::HoleWriter(format, root, relpath, abspath));
-}
-#endif
 
 }
 }
