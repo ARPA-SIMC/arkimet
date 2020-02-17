@@ -29,13 +29,7 @@ fi
 ## Set up the test environment
 
 ORIGDIR=`pwd`
-if which mktemp > /dev/null
-then
-    TESTDIR="`mktemp -d`"
-else
-    TESTDIR="/tmp/arkitest.$$"
-    mkdir $TESTDIR
-fi
+TESTDIR="`mktemp -d`"
 
 echo "Moving to test directory $TESTDIR"
 cd "$TESTDIR"
