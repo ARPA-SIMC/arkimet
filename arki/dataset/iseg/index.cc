@@ -7,6 +7,7 @@
 #include "arki/matcher/reftime.h"
 #include "arki/dataset.h"
 #include "arki/dataset/lock.h"
+#include "arki/dataset/session.h"
 #include "arki/types/reftime.h"
 #include "arki/types/source.h"
 #include "arki/types/source/blob.h"
@@ -161,7 +162,7 @@ void Index::setup_pragmas()
     m_db.exec("PRAGMA legacy_file_format = 0");
 }
 
-void Index::scan(SegmentManager& segs, metadata_dest_func dest, const std::string& order_by) const
+void Index::scan(dataset::Session& session, metadata_dest_func dest, const std::string& order_by) const
 {
     string query = "SELECT m.offset, m.size, m.notes, m.reftime";
     if (m_uniques) query += ", m.uniq";
@@ -173,7 +174,7 @@ void Index::scan(SegmentManager& segs, metadata_dest_func dest, const std::strin
     Query mdq("scan_file_md", m_db);
     mdq.compile(query);
 
-    auto reader = segs.get_reader(config().format, data_relpath, lock);
+    auto reader = session.segment_reader(config().format, config().path, data_relpath, lock);
 
     while (mdq.step())
     {
@@ -184,9 +185,9 @@ void Index::scan(SegmentManager& segs, metadata_dest_func dest, const std::strin
     }
 }
 
-void Index::query_segment(SegmentManager& segs, metadata_dest_func dest) const
+void Index::query_segment(dataset::Session& session, metadata_dest_func dest) const
 {
-    scan(segs, dest);
+    scan(session, dest);
 }
 
 static void db_time_extremes(utils::sqlite::SQLiteDB& db, unique_ptr<Time>& begin, unique_ptr<Time>& end)
@@ -321,7 +322,7 @@ void Index::build_md(Query& q, Metadata& md, std::shared_ptr<arki::segment::Read
     }
 }
 
-bool Index::query_data(const dataset::DataQuery& q, SegmentManager& segs, metadata_dest_func dest)
+bool Index::query_data(const dataset::DataQuery& q, dataset::Session& session, metadata_dest_func dest)
 {
     string query = "SELECT m.offset, m.size, m.notes, m.reftime";
 
@@ -346,7 +347,7 @@ bool Index::query_data(const dataset::DataQuery& q, SegmentManager& segs, metada
     metadata::Collection mdbuf;
     std::shared_ptr<arki::segment::Reader> reader;
     if (q.with_data)
-        reader = segs.get_reader(config().format, data_relpath, lock);
+        reader = session.segment_reader(config().format, config().path, data_relpath, lock);
 
     // Limited scope for mdq, so we finalize the query before starting to
     // emit results

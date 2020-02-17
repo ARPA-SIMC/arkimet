@@ -4,6 +4,7 @@
 #include "arki/dataset/ondisk2/reader.h"
 #include "arki/dataset/ondisk2/index.h"
 #include "arki/dataset/reporter.h"
+#include "arki/dataset/session.h"
 #include "arki/metadata.h"
 #include "arki/metadata/data.h"
 #include "arki/metadata/collection.h"
@@ -60,7 +61,7 @@ add_method("reindex_with_duplicates", [](Fixture& f) {
     sys::makedirs("testds/2007/07");
     // TODO: use segments also in the other tests, and instantiate a new test suite for different segment types
     {
-        auto s = f.segments().get_writer("grib", "2007/07.grib");
+        auto s = f.session->segment_writer("grib", f.local_config()->path, "2007/07.grib");
         s->append(data.mds[1], false);
         s->append(data.mds[1], false);
         s->append(data.mds[0], false);

@@ -1,10 +1,10 @@
 #include "arki/dataset/simple/checker.h"
 #include "arki/dataset/index/manifest.h"
 #include "arki/dataset/maintenance.h"
-#include "arki/dataset/segment.h"
 #include "arki/dataset/reporter.h"
 #include "arki/dataset/step.h"
 #include "arki/dataset/lock.h"
+#include "arki/dataset/session.h"
 #include "arki/types/source/blob.h"
 #include "arki/summary.h"
 #include "arki/types/reftime.h"
@@ -60,7 +60,7 @@ public:
     CheckerSegment(Checker& checker, const std::string& relpath, std::shared_ptr<dataset::CheckLock> lock)
         : segmented::CheckerSegment(lock), checker(checker)
     {
-        segment = checker.segment_manager().get_checker(scan::Scanner::format_from_filename(relpath), relpath);
+        segment = checker.config().session->segment_checker(scan::Scanner::format_from_filename(relpath), config().path, relpath);
     }
 
     std::string path_relative() const override { return segment->segment().relpath; }

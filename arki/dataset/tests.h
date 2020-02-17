@@ -8,7 +8,6 @@
 #include <arki/metadata/collection.h>
 #include <arki/matcher.h>
 #include <arki/dataset.h>
-#include <arki/dataset/segment.h>
 #include <arki/dataset/segmented.h>
 #include <arki/libconfig.h>
 #include <vector>
@@ -128,7 +127,6 @@ public:
     std::string ds_name;
     // Dataset root directory
     std::string ds_root;
-    dataset::SegmentManager* segment_manager = nullptr;
     std::vector<Metadata> import_results;
 
     /**
@@ -156,8 +154,6 @@ public:
     std::shared_ptr<const dataset::Config> dataset_config();
     std::shared_ptr<const dataset::LocalConfig> local_config();
     std::shared_ptr<const dataset::ondisk2::Config> ondisk2_config();
-
-    dataset::SegmentManager& segments();
 
     // Return the file name of the index of the current dataset
     std::string idxfname(const core::cfg::Section* wcfg = 0) const;

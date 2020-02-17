@@ -6,6 +6,7 @@
 #include "arki/matcher.h"
 #include "arki/matcher/reftime.h"
 #include "arki/dataset.h"
+#include "arki/dataset/session.h"
 #include "arki/types/reftime.h"
 #include "arki/types/source.h"
 #include "arki/types/source/blob.h"
@@ -280,7 +281,7 @@ bool Contents::has_segment(const std::string& relpath) const
     return res;
 }
 
-void Contents::scan_file(SegmentManager& segs, const std::string& relpath, metadata_dest_func dest, const std::string& order_by) const
+void Contents::scan_file(dataset::Session& session, const std::string& relpath, metadata_dest_func dest, const std::string& order_by) const
 {
     if (lock.expired())
         throw std::runtime_error("cannot scan_file while there is no lock held");
@@ -295,7 +296,7 @@ void Contents::scan_file(SegmentManager& segs, const std::string& relpath, metad
     mdq.compile(query);
     mdq.bind(1, relpath);
 
-    auto reader = segs.get_reader(scan::Scanner::format_from_filename(relpath), relpath, lock.lock());
+    auto reader = session.segment_reader(scan::Scanner::format_from_filename(relpath), m_config->path, relpath, lock.lock());
     while (mdq.step())
     {
         // Rebuild the Metadata
@@ -305,7 +306,7 @@ void Contents::scan_file(SegmentManager& segs, const std::string& relpath, metad
     }
 }
 
-void Contents::query_segment(const std::string& relpath, SegmentManager& segs, metadata_dest_func dest) const
+void Contents::query_segment(const std::string& relpath, dataset::Session& segs, metadata_dest_func dest) const
 {
     scan_file(segs, relpath, dest);
 }
@@ -461,7 +462,7 @@ void Contents::build_md(Query& q, Metadata& md, std::shared_ptr<arki::segment::R
     }
 }
 
-bool Contents::query_data(const dataset::DataQuery& q, SegmentManager& segs, metadata_dest_func dest)
+bool Contents::query_data(const dataset::DataQuery& q, dataset::Session& segs, metadata_dest_func dest)
 {
     if (lock.expired())
         throw std::runtime_error("cannot query_data while there is no lock held");
@@ -503,7 +504,7 @@ bool Contents::query_data(const dataset::DataQuery& q, SegmentManager& segs, met
         if (srcname != last_fname)
         {
             if (q.with_data)
-                reader = segs.get_reader(scan::Scanner::format_from_filename(srcname), srcname, lock.lock());
+                reader = segs.segment_reader(scan::Scanner::format_from_filename(srcname), m_config->path, srcname, lock.lock());
 
             if (!mdbuf.empty())
             {

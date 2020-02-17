@@ -1,9 +1,9 @@
 #include "arki/dataset/iseg/writer.h"
 #include "arki/dataset/iseg/index.h"
-#include "arki/dataset/segment.h"
 #include "arki/dataset/step.h"
 #include "arki/dataset/time.h"
 #include "arki/dataset/lock.h"
+#include "arki/dataset/session.h"
 #include "arki/types/source/blob.h"
 #include "arki/summary.h"
 #include "arki/types/reftime.h"
@@ -81,7 +81,7 @@ struct AppendSegment
         }
     }
 
-    WriterAcquireResult acquire_replace_higher_usn(Metadata& md, SegmentManager& segs, index::SummaryCache& scache, bool drop_cached_data_on_commit)
+    WriterAcquireResult acquire_replace_higher_usn(Metadata& md, index::SummaryCache& scache, bool drop_cached_data_on_commit)
     {
         Pending p_idx = idx.begin_transaction();
 
@@ -97,7 +97,7 @@ struct AppendSegment
                     return ACQ_ERROR_DUPLICATE;
 
                 // Read the update sequence number of the old BUFR
-                auto reader = segs.get_reader(config->format, old->filename, append_lock);
+                auto reader = config->session->segment_reader(config->format, config->path, old->filename, append_lock);
                 old->lock(reader);
                 int old_usn;
                 if (!scan::Scanner::update_sequence_number(*old, old_usn))
@@ -188,7 +188,7 @@ struct AppendSegment
         p_idx.commit();
     }
 
-    void acquire_batch_replace_higher_usn(WriterBatch& batch, SegmentManager& segs, index::SummaryCache& scache, bool drop_cached_data_on_commit)
+    void acquire_batch_replace_higher_usn(WriterBatch& batch, index::SummaryCache& scache, bool drop_cached_data_on_commit)
     {
         Pending p_idx = idx.begin_transaction();
 
@@ -212,7 +212,7 @@ struct AppendSegment
                     }
 
                     // Read the update sequence number of the old BUFR
-                    auto reader = segs.get_reader(config->format, old->filename, append_lock);
+                    auto reader = config->session->segment_reader(config->format, config->path, old->filename, append_lock);
                     old->lock(reader);
                     int old_usn;
                     if (!scan::Scanner::update_sequence_number(*old, old_usn))
@@ -282,7 +282,7 @@ std::unique_ptr<AppendSegment> Writer::file(const std::string& relpath)
 {
     sys::makedirs(str::dirname(str::joinpath(config().path, relpath)));
     std::shared_ptr<dataset::AppendLock> append_lock(config().append_lock_segment(relpath));
-    auto segment = segment_manager().get_writer(config().format, relpath);
+    auto segment = config().session->segment_writer(config().format, config().path, relpath);
     return std::unique_ptr<AppendSegment>(new AppendSegment(m_config, append_lock, segment));
 }
 
@@ -302,7 +302,7 @@ WriterAcquireResult Writer::acquire(Metadata& md, const AcquireConfig& cfg)
     {
         case REPLACE_NEVER: return segment->acquire_replace_never(md, scache, cfg.drop_cached_data_on_commit);
         case REPLACE_ALWAYS: return segment->acquire_replace_always(md, scache, cfg.drop_cached_data_on_commit);
-        case REPLACE_HIGHER_USN: return segment->acquire_replace_higher_usn(md, segment_manager(), scache, cfg.drop_cached_data_on_commit);
+        case REPLACE_HIGHER_USN: return segment->acquire_replace_higher_usn(md, scache, cfg.drop_cached_data_on_commit);
         default:
         {
             stringstream ss;
@@ -339,7 +339,7 @@ void Writer::acquire_batch(WriterBatch& batch, const AcquireConfig& cfg)
                 segment->acquire_batch_replace_always(s.second, scache, cfg.drop_cached_data_on_commit);
                 break;
             case REPLACE_HIGHER_USN:
-                segment->acquire_batch_replace_higher_usn(s.second, segment_manager(), scache, cfg.drop_cached_data_on_commit);
+                segment->acquire_batch_replace_higher_usn(s.second, scache, cfg.drop_cached_data_on_commit);
                 break;
             default: throw std::runtime_error("programming error: unsupported replace value " + std::to_string(replace));
         }

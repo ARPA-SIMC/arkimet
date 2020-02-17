@@ -90,7 +90,6 @@ DatasetTest::DatasetTest(const std::string& cfg_instance)
 }
 DatasetTest::~DatasetTest()
 {
-    if (segment_manager) delete segment_manager;
 }
 
 void DatasetTest::test_setup(const std::string& cfg_default)
@@ -106,8 +105,6 @@ void DatasetTest::test_setup(const std::string& cfg_default)
 
 void DatasetTest::test_teardown()
 {
-    delete segment_manager;
-    segment_manager = nullptr;
     m_config.reset();
     session.reset();
 }
@@ -115,6 +112,7 @@ void DatasetTest::test_teardown()
 void DatasetTest::test_reread_config()
 {
     test_teardown();
+    session = make_shared<dataset::Session>();
     config();
 }
 
@@ -152,17 +150,6 @@ std::shared_ptr<const dataset::ondisk2::Config> DatasetTest::ondisk2_config()
 {
     config();
     return dynamic_pointer_cast<const dataset::ondisk2::Config>(m_config);
-}
-
-SegmentManager& DatasetTest::segments()
-{
-    if (!segment_manager)
-    {
-        const dataset::segmented::Config* c = dynamic_cast<const dataset::segmented::Config*>(dataset_config().get());
-        if (!c) throw std::runtime_error("DatasetTest::segments called on a non-segmented dataset");
-        segment_manager = c->create_segment_manager().release();
-    }
-    return *segment_manager;
 }
 
 std::string DatasetTest::idxfname(const core::cfg::Section* wcfg) const

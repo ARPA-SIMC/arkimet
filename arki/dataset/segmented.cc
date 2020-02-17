@@ -1,4 +1,5 @@
 #include "segmented.h"
+#include "session.h"
 #include "step.h"
 #include "time.h"
 #include "ondisk2/writer.h"
@@ -56,11 +57,11 @@ void SegmentState::check_age(const std::string& relpath, const Config& cfg, data
 Config::Config(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
     : LocalConfig(session, cfg),
       step_name(str::lower(cfg.value("step"))),
-      force_dir_segments(cfg.value("segments") == "dir"),
-      mock_data(cfg.value("mockdata") == "true"),
       offline(cfg.value("offline") == "true"),
       smallfiles(cfg.value_bool("smallfiles"))
 {
+    if (cfg.has("segments")) throw std::runtime_error("segments used in config");
+    if (cfg.has("mockdata")) throw std::runtime_error("mockdata used in config");
     if (step_name.empty())
         throw std::runtime_error("Dataset " + name + " misses step= configuration");
 
@@ -91,11 +92,6 @@ bool Config::relpath_timespan(const std::string& path, core::Time& start_time, c
     return step().path_timespan(path, start_time, end_time);
 }
 
-std::unique_ptr<SegmentManager> Config::create_segment_manager() const
-{
-    return SegmentManager::get(path, force_dir_segments, mock_data);
-}
-
 std::shared_ptr<const Config> Config::create(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
 {
     return std::shared_ptr<const Config>(new Config(session, cfg));
@@ -104,34 +100,18 @@ std::shared_ptr<const Config> Config::create(std::shared_ptr<Session> session, c
 
 Reader::~Reader()
 {
-    delete m_segment_manager;
-}
-
-SegmentManager& Reader::segment_manager()
-{
-    if (!m_segment_manager)
-        m_segment_manager = config().create_segment_manager().release();
-    return *m_segment_manager;
 }
 
 
 Writer::~Writer()
 {
-    delete m_segment_manager;
-}
-
-SegmentManager& Writer::segment_manager()
-{
-    if (!m_segment_manager)
-        m_segment_manager = config().create_segment_manager().release();
-    return *m_segment_manager;
 }
 
 std::shared_ptr<segment::Writer> Writer::file(const Metadata& md, const std::string& format)
 {
     const core::Time& time = md.get<types::reftime::Position>()->time;
     string relpath = config().step()(time) + "." + md.source().format;
-    return segment_manager().get_writer(format, relpath);
+    return config().session->segment_writer(format, config().path, relpath);
 }
 
 static bool writer_batch_element_lt(const std::shared_ptr<WriterBatchElement>& a, const std::shared_ptr<WriterBatchElement>& b)
@@ -258,14 +238,6 @@ void CheckerSegment::unarchive()
 
 Checker::~Checker()
 {
-    delete m_segment_manager;
-}
-
-SegmentManager& Checker::segment_manager()
-{
-    if (!m_segment_manager)
-        m_segment_manager = config().create_segment_manager().release();
-    return *m_segment_manager;
 }
 
 void Checker::segments_all(std::function<void(segmented::CheckerSegment& segment)> dest)

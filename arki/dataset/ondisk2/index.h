@@ -148,13 +148,13 @@ public:
     /**
      * Send the metadata of all data items inside a file to the given consumer
      */
-    void scan_file(SegmentManager& segs, const std::string& relpath, metadata_dest_func consumer, const std::string& order_by="offset") const;
+    void scan_file(dataset::Session& session, const std::string& relpath, metadata_dest_func consumer, const std::string& order_by="offset") const;
 
     bool segment_timespan(const std::string& relpath, core::Time& start_time, core::Time& end_time) const override;
 
-    bool query_data(const dataset::DataQuery& q, SegmentManager& segs, metadata_dest_func dest) override;
+    bool query_data(const dataset::DataQuery& q, dataset::Session& segs, metadata_dest_func dest) override;
     bool query_summary(const Matcher& m, Summary& summary) override;
-    void query_segment(const std::string& relpath, SegmentManager& segs, metadata_dest_func) const override;
+    void query_segment(const std::string& relpath, dataset::Session& segs, metadata_dest_func) const override;
 
 	/**
 	 * Query this index, returning a summary
