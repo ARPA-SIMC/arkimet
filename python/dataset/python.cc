@@ -14,7 +14,7 @@ namespace dataset {
 
 struct PyDatasetReader : public arki::dataset::Reader
 {
-    std::shared_ptr<const arki::dataset::Config> m_config;
+    std::shared_ptr<arki::dataset::Config> m_config;
     std::string m_type;
 
     PyObject* o;
@@ -22,7 +22,7 @@ struct PyDatasetReader : public arki::dataset::Reader
     PyObject* meth_query_summary = nullptr;
 
     PyDatasetReader(const arki::core::cfg::Section& config, PyObject* o)
-        : m_config(std::shared_ptr<const arki::dataset::Config>(new arki::dataset::Config(get_dataset_session(), config))),
+        : m_config(std::make_shared<arki::dataset::Config>(get_dataset_session(), config)),
           o(o)
     {
         AcquireGIL gil;
@@ -60,6 +60,9 @@ struct PyDatasetReader : public arki::dataset::Reader
     }
 
     const arki::dataset::Config& config() const override { return *m_config; }
+    const arki::dataset::Config& dataset() const override { return *m_config; }
+    arki::dataset::Config& dataset() override { return *m_config; }
+
     std::string type() const override { return m_type; }
 
     bool query_data(const arki::dataset::DataQuery& q, arki::metadata_dest_func dest) override
@@ -111,18 +114,18 @@ struct PyDatasetReader : public arki::dataset::Reader
     }
 };
 
-std::unique_ptr<arki::dataset::Reader> create_reader(const arki::core::cfg::Section& cfg, PyObject* o)
+std::shared_ptr<arki::dataset::Reader> create_reader(const arki::core::cfg::Section& cfg, PyObject* o)
 {
-    return std::unique_ptr<arki::dataset::Reader>(new PyDatasetReader(cfg, o));
+    return std::make_shared<PyDatasetReader>(cfg, o);
 }
 
-std::unique_ptr<arki::dataset::Writer> create_writer(PyObject* o)
+std::shared_ptr<arki::dataset::Writer> create_writer(PyObject* o)
 {
     PyErr_SetString(PyExc_NotImplementedError, "creating python dataset writer not implemented yet");
     throw PythonException();
 }
 
-std::unique_ptr<arki::dataset::Checker> create_checker(PyObject* o)
+std::shared_ptr<arki::dataset::Checker> create_checker(PyObject* o)
 {
     PyErr_SetString(PyExc_NotImplementedError, "creating python dataset checker not implemented yet");
     throw PythonException();

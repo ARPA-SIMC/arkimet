@@ -116,13 +116,17 @@ struct ByteQuery : public DataQuery
 
 
 /// Base dataset configuration
-struct Dataset : public std::enable_shared_from_this<Dataset>
+class Dataset : public std::enable_shared_from_this<Dataset>
 {
-    /// Work session
-    std::shared_ptr<Session> session;
+protected:
+    std::shared_ptr<Dataset> m_parent;
 
     /// Dataset name
-    std::string name;
+    std::string m_name;
+
+public:
+    /// Work session
+    std::shared_ptr<Session> session;
 
     /// Raw configuration key-value pairs
     core::cfg::Section cfg;
@@ -132,9 +136,21 @@ struct Dataset : public std::enable_shared_from_this<Dataset>
     Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg);
     virtual ~Dataset() {}
 
-    virtual std::unique_ptr<Reader> create_reader() const;
-    virtual std::unique_ptr<Writer> create_writer() const;
-    virtual std::unique_ptr<Checker> create_checker() const;
+    /// Return the dataset name
+    std::string name() const;
+
+    virtual std::shared_ptr<Reader> create_reader();
+    virtual std::shared_ptr<Writer> create_writer();
+    virtual std::shared_ptr<Checker> create_checker();
+
+    /**
+     * Set a parent dataset.
+     *
+     * Datasets can be nested to delegate management of part of the dataset
+     * contents to a separate dataset. Hierarchy is tracked so that at least a
+     * full dataset name can be computed in error messages.
+     */
+    void set_parent(std::shared_ptr<Dataset> parent);
 };
 
 typedef Dataset Config;
@@ -144,14 +160,6 @@ typedef Dataset Config;
  */
 struct Base
 {
-protected:
-    /**
-     * Parent dataset.
-     *
-     * If nullptr, this dataset has no parent.
-     */
-    Base* m_parent = nullptr;
-
 public:
     Base() {}
     Base(const Base&) = delete;
@@ -160,26 +168,23 @@ public:
     Base& operator=(const Base&) = delete;
     Base& operator=(Base&&) = delete;
 
-    /// Return the dataset configuration
-    virtual const Config& config() const = 0;
+    /// Return the dataset (legacy compatibility, use dataset() )
+    virtual const Dataset& config() const = 0;
+
+    /// Return the dataset
+    virtual const Dataset& dataset() const { return config(); }
+
+    /// Return the dataset
+    virtual Dataset& dataset() = 0;
+
+    /// Return the dataset name
+    std::string name() const { return config().name(); }
 
     /// Return the dataset configuration
     const core::cfg::Section& cfg() const { return config().cfg; }
 
     /// Return a name identifying the dataset type
     virtual std::string type() const = 0;
-
-    /// Return the dataset name
-    std::string name() const;
-
-    /**
-     * Set a parent dataset.
-     *
-     * Datasets can be nested to delegate management of part of the dataset
-     * contents to a separate dataset. Hierarchy is tracked so that at least a
-     * full dataset name can be computed in error messages.
-     */
-    void set_parent(Base& p);
 };
 
 class Reader : public dataset::Base
@@ -226,11 +231,6 @@ public:
      * dataset.
      */
     virtual void expand_date_range(std::unique_ptr<core::Time>& begin, std::unique_ptr<core::Time>& end);
-
-    /**
-     * Instantiate an appropriate Reader for the given configuration
-     */
-    static std::unique_ptr<Reader> create(std::shared_ptr<Session> session, const core::cfg::Section& cfg);
 };
 
 struct WriterBatchElement
@@ -335,11 +335,6 @@ public:
     virtual core::Pending test_writelock();
 
     /**
-     * Instantiate an appropriate Writer for the given configuration
-     */
-    static std::unique_ptr<Writer> create(std::shared_ptr<Session> session, const core::cfg::Section& cfg);
-
-    /**
      * Simulate acquiring the given metadata item (and related data) in this
      * dataset.
      *
@@ -412,11 +407,6 @@ struct Checker : public dataset::Base
      * See https://github.com/ARPAE-SIMC/arkimet/issues/51 for details.
      */
     virtual void check_issue51(CheckerConfig& opts);
-
-    /**
-     * Instantiate an appropriate Checker for the given configuration
-     */
-    static std::unique_ptr<Checker> create(std::shared_ptr<Session> session, const core::cfg::Section& cfg);
 };
 
 }

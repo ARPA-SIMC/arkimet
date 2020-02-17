@@ -31,22 +31,19 @@ Dataset::Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg
         index = "origin, product, level, timerange, area, proddef, run";
 }
 
-std::unique_ptr<dataset::Reader> Dataset::create_reader() const
+std::shared_ptr<dataset::Reader> Dataset::create_reader()
 {
-    auto cfg = dynamic_pointer_cast<const ondisk2::Dataset>(shared_from_this());
-    return std::unique_ptr<dataset::Reader>(new ondisk2::Reader(cfg));
+    return std::make_shared<ondisk2::Reader>(static_pointer_cast<Dataset>(shared_from_this()));
 }
 
-std::unique_ptr<dataset::Writer> Dataset::create_writer() const
+std::shared_ptr<dataset::Writer> Dataset::create_writer()
 {
-    auto cfg = dynamic_pointer_cast<const ondisk2::Dataset>(shared_from_this());
-    return std::unique_ptr<dataset::Writer>(new ondisk2::Writer(cfg));
+    return std::make_shared<ondisk2::Writer>(static_pointer_cast<Dataset>(shared_from_this()));
 }
 
-std::unique_ptr<dataset::Checker> Dataset::create_checker() const
+std::shared_ptr<dataset::Checker> Dataset::create_checker()
 {
-    auto cfg = dynamic_pointer_cast<const ondisk2::Dataset>(shared_from_this());
-    return std::unique_ptr<dataset::Checker>(new ondisk2::Checker(cfg));
+    return std::make_shared<ondisk2::Checker>(static_pointer_cast<Dataset>(shared_from_this()));
 }
 
 }

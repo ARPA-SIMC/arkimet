@@ -1,7 +1,7 @@
-#include "config.h"
 #include "empty.h"
 #include "arki/metadata/collection.h"
 #include "arki/utils/accounting.h"
+#include "session.h"
 #include <ostream>
 
 using namespace std;
@@ -15,12 +15,12 @@ Dataset::Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg
 {
 }
 
-std::unique_ptr<dataset::Reader> Dataset::create_reader() const { return std::unique_ptr<dataset::Reader>(new Reader(shared_from_this())); }
-std::unique_ptr<dataset::Writer> Dataset::create_writer() const { return std::unique_ptr<dataset::Writer>(new Writer(shared_from_this())); }
-std::unique_ptr<dataset::Checker> Dataset::create_checker() const { return std::unique_ptr<dataset::Checker>(new Checker(shared_from_this())); }
+std::shared_ptr<dataset::Reader> Dataset::create_reader() { return std::make_shared<Reader>(shared_from_this()); }
+std::shared_ptr<dataset::Writer> Dataset::create_writer() { return std::make_shared<Writer>(shared_from_this()); }
+std::shared_ptr<dataset::Checker> Dataset::create_checker() { return std::make_shared<Checker>(shared_from_this()); }
 
 
-Reader::Reader(std::shared_ptr<const dataset::Dataset> config) : m_config(config) {}
+Reader::Reader(std::shared_ptr<dataset::Dataset> config) : m_config(config) {}
 Reader::~Reader() {}
 
 
@@ -42,11 +42,11 @@ void Writer::acquire_batch(WriterBatch& batch, const AcquireConfig& cfg)
 
 void Writer::test_acquire(std::shared_ptr<Session> session, const core::cfg::Section& cfg, WriterBatch& batch)
 {
-    std::shared_ptr<const empty::Dataset> config(new empty::Dataset(session, cfg));
+    auto dataset = session->dataset(cfg);
     for (auto& e: batch)
     {
         e->result = ACQ_OK;
-        e->dataset_name = config->name;
+        e->dataset_name = dataset->name();
     }
 }
 

@@ -69,17 +69,19 @@ struct Dataset : public dataset::Dataset
 class Reader : public dataset::Reader
 {
 protected:
-    std::shared_ptr<const Dataset> m_config;
+    std::shared_ptr<Dataset> m_config;
     archive::ArchivesReaderRoot* archives = nullptr;
 
     void summary_for_all(Summary& out);
 
 public:
-    Reader(std::shared_ptr<const Dataset> config);
+    Reader(std::shared_ptr<Dataset> dataset);
     virtual ~Reader();
 
     std::string type() const override;
     const Dataset& config() const override { return *m_config; }
+    const Dataset& dataset() const override { return *m_config; }
+    Dataset& dataset() override { return *m_config; }
 
     void expand_date_range(std::unique_ptr<core::Time>& begin, std::unique_ptr<core::Time>& end) const;
     bool query_data(const dataset::DataQuery& q, metadata_dest_func) override;
@@ -94,16 +96,18 @@ public:
 class Checker : public dataset::Checker
 {
 protected:
-    std::shared_ptr<const Dataset> m_config;
+    std::shared_ptr<Dataset> m_config;
     archive::ArchivesCheckerRoot* archives = nullptr;
 
 public:
     /// Create an archive for the dataset at the given root dir.
-    Checker(std::shared_ptr<const Dataset> config);
+    Checker(std::shared_ptr<Dataset> dataset);
     virtual ~Checker();
 
     std::string type() const override;
     const Dataset& config() const override { return *m_config; }
+    const Dataset& dataset() const override { return *m_config; }
+    Dataset& dataset() override { return *m_config; }
 
     void index_segment(const std::string& relpath, metadata::Collection&& mds);
     void release_segment(const std::string& relpath, const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath);

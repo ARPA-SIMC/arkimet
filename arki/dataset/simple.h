@@ -14,9 +14,9 @@ struct Dataset : public dataset::indexed::Dataset
     Dataset(const Dataset&) = default;
     Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg);
 
-    std::unique_ptr<dataset::Reader> create_reader() const override;
-    std::unique_ptr<dataset::Writer> create_writer() const override;
-    std::unique_ptr<dataset::Checker> create_checker() const override;
+    std::shared_ptr<dataset::Reader> create_reader() override;
+    std::shared_ptr<dataset::Writer> create_writer() override;
+    std::shared_ptr<dataset::Checker> create_checker() override;
 };
 
 }

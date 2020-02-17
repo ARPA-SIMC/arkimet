@@ -68,7 +68,7 @@ public:
 
     std::string path_relative() const override { return segment->segment().relpath; }
     const ondisk2::Dataset& config() const override { return checker.config(); }
-    dataset::archive::Checker& archives() const { return checker.archive(); }
+    std::shared_ptr<dataset::archive::Checker> archives() override { return checker.archive(); }
 
     void get_metadata(std::shared_ptr<core::Lock> lock, metadata::Collection& mds) override
     {
@@ -419,7 +419,7 @@ public:
 };
 
 
-Checker::Checker(std::shared_ptr<const ondisk2::Dataset> config)
+Checker::Checker(std::shared_ptr<ondisk2::Dataset> config)
     : m_config(config), idx(new index::WIndex(config))
 {
     m_idx = idx;

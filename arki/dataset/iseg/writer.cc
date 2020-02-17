@@ -46,7 +46,7 @@ struct AppendSegment
         try {
             if (std::unique_ptr<types::source::Blob> old = idx.index(md, segment->next_offset()))
             {
-                md.add_note("Failed to store in dataset '" + config->name + "' because the dataset already has the data in " + segment->segment().relpath + ":" + std::to_string(old->offset));
+                md.add_note("Failed to store in dataset '" + config->name() + "' because the dataset already has the data in " + segment->segment().relpath + ":" + std::to_string(old->offset));
                 return ACQ_ERROR_DUPLICATE;
             }
             // Invalidate the summary cache for this month
@@ -57,7 +57,7 @@ struct AppendSegment
             return ACQ_OK;
         } catch (std::exception& e) {
             // sqlite will take care of transaction consistency
-            md.add_note("Failed to store in dataset '" + config->name + "': " + e.what());
+            md.add_note("Failed to store in dataset '" + config->name() + "': " + e.what());
             return ACQ_ERROR;
         }
     }
@@ -76,7 +76,7 @@ struct AppendSegment
             return ACQ_OK;
         } catch (std::exception& e) {
             // sqlite will take care of transaction consistency
-            md.add_note("Failed to store in dataset '" + config->name + "': " + e.what());
+            md.add_note("Failed to store in dataset '" + config->name() + "': " + e.what());
             return ACQ_ERROR;
         }
     }
@@ -102,7 +102,7 @@ struct AppendSegment
                 int old_usn;
                 if (!scan::Scanner::update_sequence_number(*old, old_usn))
                 {
-                    md.add_note("Failed to store in dataset '" + config->name + "': a similar element exists, the new element has an Update Sequence Number but the old one does not, so they cannot be compared");
+                    md.add_note("Failed to store in dataset '" + config->name() + "': a similar element exists, the new element has an Update Sequence Number but the old one does not, so they cannot be compared");
                     return ACQ_ERROR;
                 }
 
@@ -126,7 +126,7 @@ struct AppendSegment
             }
         } catch (std::exception& e) {
             // sqlite will take care of transaction consistency
-            md.add_note("Failed to store in dataset '" + config->name + "': " + e.what());
+            md.add_note("Failed to store in dataset '" + config->name() + "': " + e.what());
             return ACQ_ERROR;
         }
     }
@@ -142,7 +142,7 @@ struct AppendSegment
 
                 if (std::unique_ptr<types::source::Blob> old = idx.index(e->md, segment->next_offset()))
                 {
-                    e->md.add_note("Failed to store in dataset '" + config->name + "' because the dataset already has the data in " + segment->segment().relpath + ":" + std::to_string(old->offset));
+                    e->md.add_note("Failed to store in dataset '" + config->name() + "' because the dataset already has the data in " + segment->segment().relpath + ":" + std::to_string(old->offset));
                     e->result = ACQ_ERROR_DUPLICATE;
                     continue;
                 }
@@ -151,11 +151,11 @@ struct AppendSegment
                 scache.invalidate(e->md);
                 segment->append(e->md, drop_cached_data_on_commit);
                 e->result = ACQ_OK;
-                e->dataset_name = config->name;
+                e->dataset_name = config->name();
             }
         } catch (std::exception& e) {
             // sqlite will take care of transaction consistency
-            batch.set_all_error("Failed to store in dataset '" + config->name + "': " + e.what());
+            batch.set_all_error("Failed to store in dataset '" + config->name() + "': " + e.what());
             return;
         }
 
@@ -176,11 +176,11 @@ struct AppendSegment
                 scache.invalidate(e->md);
                 segment->append(e->md, drop_cached_data_on_commit);
                 e->result = ACQ_OK;
-                e->dataset_name = config->name;
+                e->dataset_name = config->name();
             }
         } catch (std::exception& e) {
             // sqlite will take care of transaction consistency
-            batch.set_all_error("Failed to store in dataset '" + config->name + "': " + e.what());
+            batch.set_all_error("Failed to store in dataset '" + config->name() + "': " + e.what());
             return;
         }
 
@@ -206,7 +206,7 @@ struct AppendSegment
                     int new_usn;
                     if (!scan::Scanner::update_sequence_number(e->md, new_usn))
                     {
-                        e->md.add_note("Failed to store in dataset '" + config->name + "' because the dataset already has the data in " + segment->segment().relpath + ":" + std::to_string(old->offset) + " and there is no Update Sequence Number to compare");
+                        e->md.add_note("Failed to store in dataset '" + config->name() + "' because the dataset already has the data in " + segment->segment().relpath + ":" + std::to_string(old->offset) + " and there is no Update Sequence Number to compare");
                         e->result = ACQ_ERROR_DUPLICATE;
                         continue;
                     }
@@ -217,7 +217,7 @@ struct AppendSegment
                     int old_usn;
                     if (!scan::Scanner::update_sequence_number(*old, old_usn))
                     {
-                        e->md.add_note("Failed to store in dataset '" + config->name + "': a similar element exists, the new element has an Update Sequence Number but the old one does not, so they cannot be compared");
+                        e->md.add_note("Failed to store in dataset '" + config->name() + "': a similar element exists, the new element has an Update Sequence Number but the old one does not, so they cannot be compared");
                         e->result = ACQ_ERROR;
                         continue;
                     }
@@ -225,7 +225,7 @@ struct AppendSegment
                     // If the new element has no higher Update Sequence Number, report a duplicate
                     if (old_usn > new_usn)
                     {
-                        e->md.add_note("Failed to store in dataset '" + config->name + "' because the dataset already has the data in " + segment->segment().relpath + ":" + std::to_string(old->offset) + " with a higher Update Sequence Number");
+                        e->md.add_note("Failed to store in dataset '" + config->name() + "' because the dataset already has the data in " + segment->segment().relpath + ":" + std::to_string(old->offset) + " with a higher Update Sequence Number");
                         e->result = ACQ_ERROR_DUPLICATE;
                         continue;
                     }
@@ -234,19 +234,19 @@ struct AppendSegment
                     idx.replace(e->md, segment->next_offset());
                     segment->append(e->md, drop_cached_data_on_commit);
                     e->result = ACQ_OK;
-                    e->dataset_name = config->name;
+                    e->dataset_name = config->name();
                     continue;
                 } else {
                     // Invalidate the summary cache for this month
                     scache.invalidate(e->md);
                     segment->append(e->md, drop_cached_data_on_commit);
                     e->result = ACQ_OK;
-                    e->dataset_name = config->name;
+                    e->dataset_name = config->name();
                 }
             }
         } catch (std::exception& e) {
             // sqlite will take care of transaction consistency
-            batch.set_all_error("Failed to store in dataset '" + config->name + "': " + e.what());
+            batch.set_all_error("Failed to store in dataset '" + config->name() + "': " + e.what());
             return;
         }
 
@@ -256,7 +256,7 @@ struct AppendSegment
 };
 
 
-Writer::Writer(std::shared_ptr<const iseg::Dataset> config)
+Writer::Writer(std::shared_ptr<iseg::Dataset> config)
     : m_config(config), scache(config->summary_cache_pathname)
 {
     // Create the directory if it does not exist
@@ -383,13 +383,13 @@ void Writer::test_acquire(std::shared_ptr<Session> session, const core::cfg::Sec
         {
             e->result = age_check.second;
             if (age_check.second == ACQ_OK)
-                e->dataset_name = config->name;
+                e->dataset_name = config->name();
             else
                 e->dataset_name.clear();
         } else {
             // TODO: check for duplicates
             e->result = ACQ_OK;
-            e->dataset_name = config->name;
+            e->dataset_name = config->name();
         }
     }
 }

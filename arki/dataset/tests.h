@@ -166,10 +166,10 @@ public:
     void set_session(std::shared_ptr<dataset::Session> session);
 
     std::shared_ptr<dataset::Session> session();
-    const dataset::Dataset& config();
-    std::shared_ptr<const dataset::Dataset> dataset_config();
-    std::shared_ptr<const dataset::local::Dataset> local_config();
-    std::shared_ptr<const dataset::ondisk2::Dataset> ondisk2_config();
+    dataset::Dataset& config();
+    std::shared_ptr<dataset::Dataset> dataset_config();
+    std::shared_ptr<dataset::local::Dataset> local_config();
+    std::shared_ptr<dataset::ondisk2::Dataset> ondisk2_config();
 
     // Return the file name of the index of the current dataset
     std::string idxfname(const core::cfg::Section* wcfg = 0) const;
@@ -204,18 +204,18 @@ public:
     /// Scan the dataset and return its state
     State scan_state(const Matcher& matcher, bool quick=true);
 
-    std::unique_ptr<dataset::segmented::Reader> makeSegmentedReader();
-    std::unique_ptr<dataset::segmented::Writer> makeSegmentedWriter();
-    std::unique_ptr<dataset::segmented::Checker> makeSegmentedChecker();
-    std::unique_ptr<dataset::ondisk2::Reader> makeOndisk2Reader();
-    std::unique_ptr<dataset::ondisk2::Writer> makeOndisk2Writer();
-    std::unique_ptr<dataset::ondisk2::Checker> makeOndisk2Checker();
-    std::unique_ptr<dataset::simple::Reader> makeSimpleReader();
-    std::unique_ptr<dataset::simple::Writer> makeSimpleWriter();
-    std::unique_ptr<dataset::simple::Checker> makeSimpleChecker();
-    std::unique_ptr<dataset::iseg::Reader> makeIsegReader();
-    std::unique_ptr<dataset::iseg::Writer> makeIsegWriter();
-    std::unique_ptr<dataset::iseg::Checker> makeIsegChecker();
+    std::shared_ptr<dataset::segmented::Reader> makeSegmentedReader();
+    std::shared_ptr<dataset::segmented::Writer> makeSegmentedWriter();
+    std::shared_ptr<dataset::segmented::Checker> makeSegmentedChecker();
+    std::shared_ptr<dataset::ondisk2::Reader> makeOndisk2Reader();
+    std::shared_ptr<dataset::ondisk2::Writer> makeOndisk2Writer();
+    std::shared_ptr<dataset::ondisk2::Checker> makeOndisk2Checker();
+    std::shared_ptr<dataset::simple::Reader> makeSimpleReader();
+    std::shared_ptr<dataset::simple::Writer> makeSimpleWriter();
+    std::shared_ptr<dataset::simple::Checker> makeSimpleChecker();
+    std::shared_ptr<dataset::iseg::Reader> makeIsegReader();
+    std::shared_ptr<dataset::iseg::Writer> makeIsegWriter();
+    std::shared_ptr<dataset::iseg::Checker> makeIsegChecker();
 
     // Clean the dataset directory
     void clean();

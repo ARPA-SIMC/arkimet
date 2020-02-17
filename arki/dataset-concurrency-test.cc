@@ -149,9 +149,9 @@ struct ConcurrentImporter : public subprocess::Child
 
 struct ReadHang : public TestSubprocess
 {
-    std::shared_ptr<const dataset::Config> config;
+    std::shared_ptr<dataset::Config> config;
 
-    ReadHang(std::shared_ptr<const dataset::Config> config) : config(config) {}
+    ReadHang(std::shared_ptr<dataset::Config> config) : config(config) {}
 
     bool eat(std::shared_ptr<Metadata> md)
     {

@@ -51,8 +51,6 @@ public:
     virtual bool relpath_timespan(const std::string& path, core::Time& start_time, core::Time& end_time) const;
 
     const Step& step() const { return *m_step; }
-
-    static std::shared_ptr<const Dataset> create(std::shared_ptr<Session> session, const core::cfg::Section& cfg);
 };
 
 /**
@@ -145,7 +143,7 @@ public:
 
     virtual std::string path_relative() const = 0;
     virtual const segmented::Dataset& config() const = 0;
-    virtual dataset::archive::Checker& archives() const = 0;
+    virtual std::shared_ptr<dataset::archive::Checker> archives() = 0;
 
     virtual SegmentState scan(dataset::Reporter& reporter, bool quick=true) = 0;
 

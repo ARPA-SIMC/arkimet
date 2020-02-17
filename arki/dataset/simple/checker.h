@@ -22,7 +22,7 @@ class CheckerSegment;
 class Checker : public indexed::Checker
 {
 protected:
-    std::shared_ptr<const simple::Dataset> m_config;
+    std::shared_ptr<simple::Dataset> m_config;
     index::Manifest* m_mft;
     std::shared_ptr<dataset::CheckLock> lock;
 
@@ -30,10 +30,12 @@ protected:
     Segment* file(const Metadata& md, const std::string& format);
 
 public:
-    Checker(std::shared_ptr<const simple::Dataset> config);
+    Checker(std::shared_ptr<simple::Dataset> config);
     virtual ~Checker();
 
     const simple::Dataset& config() const override { return *m_config; }
+    const simple::Dataset& dataset() const override { return *m_config; }
+    simple::Dataset& dataset() override { return *m_config; }
 
     std::string type() const override;
 

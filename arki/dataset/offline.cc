@@ -19,7 +19,7 @@ std::shared_ptr<const Dataset> Dataset::create(std::shared_ptr<Session> session,
 }
 
 
-Reader::Reader(std::shared_ptr<const Dataset> config)
+Reader::Reader(std::shared_ptr<Dataset> config)
     : m_config(config)
 {
     sum.readFile(config->summary_pathname);

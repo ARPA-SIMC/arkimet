@@ -13,13 +13,15 @@ namespace ondisk2 {
 class Reader : public indexed::Reader
 {
 protected:
-    std::shared_ptr<const ondisk2::Dataset> m_config;
+    std::shared_ptr<ondisk2::Dataset> m_config;
 
 public:
-    Reader(std::shared_ptr<const ondisk2::Dataset> config);
+    Reader(std::shared_ptr<ondisk2::Dataset> config);
     virtual ~Reader();
 
     const ondisk2::Dataset& config() const override { return *m_config; }
+    const ondisk2::Dataset& dataset() const override { return *m_config; }
+    ondisk2::Dataset& dataset() override { return *m_config; }
 
     std::string type() const override;
 };

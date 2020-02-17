@@ -24,9 +24,9 @@ struct Dataset : public dataset::Dataset
 {
     Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg);
 
-    std::unique_ptr<dataset::Reader> create_reader() const override;
-    std::unique_ptr<dataset::Writer> create_writer() const override;
-    std::unique_ptr<dataset::Checker> create_checker() const override;
+    std::shared_ptr<dataset::Reader> create_reader() override;
+    std::shared_ptr<dataset::Writer> create_writer() override;
+    std::shared_ptr<dataset::Checker> create_checker() override;
 };
 
 
@@ -36,15 +36,18 @@ struct Dataset : public dataset::Dataset
 class Reader : public dataset::Reader
 {
 protected:
-    std::shared_ptr<const dataset::Dataset> m_config;
+    std::shared_ptr<dataset::Dataset> m_config;
 
     bool generate(const core::Time& begin, const core::Time& until, std::function<bool(std::unique_ptr<Metadata>)> out) const;
 
 public:
-    Reader(std::shared_ptr<const dataset::Dataset> config);
+    Reader(std::shared_ptr<dataset::Dataset> config);
     virtual ~Reader();
 
     const dataset::Dataset& config() const override { return *m_config; }
+    const dataset::Dataset& dataset() const override { return *m_config; }
+    dataset::Dataset& dataset() override { return *m_config; }
+
     std::string type() const override { return "empty"; }
 
     // Nothing to do: the dataset is always empty

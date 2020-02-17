@@ -105,6 +105,16 @@ static void compressAndWrite(const std::vector<uint8_t>& buf, AbstractOutputFile
         out.write(buf.data(), buf.size());
 }
 
+Collection::Collection(dataset::Dataset& ds, const dataset::DataQuery& q)
+{
+    add(*ds.create_reader(), q);
+}
+
+Collection::Collection(dataset::Dataset& ds, const std::string& q)
+{
+    add(*ds.create_reader(), dataset::DataQuery(q));
+}
+
 Collection::Collection(dataset::Reader& ds, const dataset::DataQuery& q)
 {
     add(ds, q);

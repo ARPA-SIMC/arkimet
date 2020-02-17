@@ -28,27 +28,27 @@ namespace arki {
 namespace dataset {
 namespace segmented {
 
-void SegmentState::check_age(const std::string& relpath, const Dataset& cfg, dataset::Reporter& reporter)
+void SegmentState::check_age(const std::string& relpath, const Dataset& dataset, dataset::Reporter& reporter)
 {
     core::Time archive_threshold(0, 0, 0);
     core::Time delete_threshold(0, 0, 0);
     const auto& st = SessionTime::get();
 
-    if (cfg.archive_age != -1)
-        archive_threshold = st.age_threshold(cfg.archive_age);
-    if (cfg.delete_age != -1)
-        delete_threshold = st.age_threshold(cfg.delete_age);
+    if (dataset.archive_age != -1)
+        archive_threshold = st.age_threshold(dataset.archive_age);
+    if (dataset.delete_age != -1)
+        delete_threshold = st.age_threshold(dataset.delete_age);
 
     if (delete_threshold.ye != 0 && delete_threshold >= until)
     {
-        reporter.segment_info(cfg.name, relpath, "segment old enough to be deleted");
+        reporter.segment_info(dataset.name(), relpath, "segment old enough to be deleted");
         state = state + segment::SEGMENT_DELETE_AGE;
         return;
     }
 
     if (archive_threshold.ye != 0 && archive_threshold >= until)
     {
-        reporter.segment_info(cfg.name, relpath, "segment old enough to be archived");
+        reporter.segment_info(dataset.name(), relpath, "segment old enough to be archived");
         state = state + segment::SEGMENT_ARCHIVE_AGE;
         return;
     }
@@ -63,7 +63,7 @@ Dataset::Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg
     if (cfg.has("segments")) throw std::runtime_error("segments used in config");
     if (cfg.has("mockdata")) throw std::runtime_error("mockdata used in config");
     if (step_name.empty())
-        throw std::runtime_error("Dataset " + name + " misses step= configuration");
+        throw std::runtime_error("Dataset " + name() + " misses step= configuration");
 
     string repl = cfg.value("replace");
     if (repl == "yes" || repl == "true" || repl == "always")
@@ -73,7 +73,7 @@ Dataset::Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg
     else if (repl == "" || repl == "no" || repl == "never")
         default_replace_strategy = REPLACE_NEVER;
     else
-        throw std::runtime_error("Replace strategy '" + repl + "' is not recognised in the configuration of dataset " + name);
+        throw std::runtime_error("Replace strategy '" + repl + "' is not recognised in the configuration of dataset " + name());
 
     std::string shard = cfg.value("shard");
     m_step = Step::create(step_name);
@@ -90,11 +90,6 @@ Dataset::~Dataset()
 bool Dataset::relpath_timespan(const std::string& path, core::Time& start_time, core::Time& end_time) const
 {
     return step().path_timespan(path, start_time, end_time);
-}
-
-std::shared_ptr<const Dataset> Dataset::create(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
-{
-    return std::shared_ptr<const Dataset>(new Dataset(session, cfg));
 }
 
 
@@ -222,13 +217,13 @@ void CheckerSegment::archive()
     release(new_root, new_relpath, new_abspath);
 
     // Acquire in the achive
-    archives().index_segment(str::joinpath("last", new_relpath), move(mdc));
+    archives()->index_segment(str::joinpath("last", new_relpath), move(mdc));
 }
 
 void CheckerSegment::unarchive()
 {
     string arcrelpath = str::joinpath("last", segment->segment().relpath);
-    archives().release_segment(arcrelpath, segment->segment().root, segment->segment().relpath, segment->segment().abspath);
+    archives()->release_segment(arcrelpath, segment->segment().root, segment->segment().relpath, segment->segment().abspath);
     auto reader = segment->segment().reader(lock);
     metadata::Collection mdc;
     reader->scan(mdc.inserter_func());
@@ -271,8 +266,8 @@ void Checker::segments_recursive(CheckerConfig& opts, std::function<void(segment
 {
     if ((opts.online && !config().offline) || (opts.offline && config().offline))
         segments(opts, [&](CheckerSegment& segment) { dest(*this, segment); });
-    if (opts.offline && hasArchive())
-        archive().segments_recursive(opts, dest);
+    if (opts.offline && dataset().hasArchive())
+        archive()->segments_recursive(opts, dest);
 }
 
 void Checker::remove_old(CheckerConfig& opts)

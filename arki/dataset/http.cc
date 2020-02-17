@@ -231,13 +231,13 @@ Dataset::Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg
 {
 }
 
-std::unique_ptr<dataset::Reader> Dataset::create_reader() const
+std::shared_ptr<dataset::Reader> Dataset::create_reader()
 {
-    return std::unique_ptr<dataset::Reader>(new Reader(dynamic_pointer_cast<const Dataset>(shared_from_this())));
+    return std::make_shared<Reader>(static_pointer_cast<Dataset>(shared_from_this()));
 }
 
 
-Reader::Reader(std::shared_ptr<const Dataset> config)
+Reader::Reader(std::shared_ptr<Dataset> config)
     : m_config(config)
 {
 }

@@ -25,15 +25,17 @@ class RealFixer;
 class Checker : public indexed::Checker
 {
 protected:
-    std::shared_ptr<const ondisk2::Dataset> m_config;
+    std::shared_ptr<ondisk2::Dataset> m_config;
     index::WIndex* idx;
     std::shared_ptr<dataset::CheckLock> lock;
 
 public:
-    Checker(std::shared_ptr<const ondisk2::Dataset> config);
+    Checker(std::shared_ptr<ondisk2::Dataset> config);
     ~Checker();
 
     const ondisk2::Dataset& config() const override { return *m_config; }
+    const ondisk2::Dataset& dataset() const override { return *m_config; }
+    ondisk2::Dataset& dataset() override { return *m_config; }
 
     std::string type() const override;
 

@@ -20,22 +20,19 @@ Dataset::Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg
 {
 }
 
-std::unique_ptr<dataset::Reader> Dataset::create_reader() const
+std::shared_ptr<dataset::Reader> Dataset::create_reader()
 {
-    auto cfg = dynamic_pointer_cast<const simple::Dataset>(shared_from_this());
-    return std::unique_ptr<dataset::Reader>(new simple::Reader(cfg));
+    return std::make_shared<simple::Reader>(static_pointer_cast<Dataset>(shared_from_this()));
 }
 
-std::unique_ptr<dataset::Writer> Dataset::create_writer() const
+std::shared_ptr<dataset::Writer> Dataset::create_writer()
 {
-    auto cfg = dynamic_pointer_cast<const simple::Dataset>(shared_from_this());
-    return std::unique_ptr<dataset::Writer>(new simple::Writer(cfg));
+    return std::make_shared<simple::Writer>(static_pointer_cast<Dataset>(shared_from_this()));
 }
 
-std::unique_ptr<dataset::Checker> Dataset::create_checker() const
+std::shared_ptr<dataset::Checker> Dataset::create_checker()
 {
-    auto cfg = dynamic_pointer_cast<const simple::Dataset>(shared_from_this());
-    return std::unique_ptr<dataset::Checker>(new simple::Checker(cfg));
+    return std::make_shared<simple::Checker>(static_pointer_cast<Dataset>(shared_from_this()));
 }
 
 }

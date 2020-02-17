@@ -3,6 +3,7 @@
 #include "arki/core/cfg.h"
 #include "arki/core/file.h"
 #include "arki/scan.h"
+#include "arki/dataset/session.h"
 #include "arki/dataset/fromfunction.h"
 #include "arki/nag.h"
 #include "utils/core.h"
@@ -122,7 +123,7 @@ bool foreach_sections(const core::cfg::Sections& inputs, std::function<void(data
     // Query all the datasets in sequence
     for (auto si: inputs)
     {
-        auto reader = dataset::Reader::create(arki::python::get_dataset_session(), si.second);
+        auto reader = arki::python::get_dataset_session()->dataset(si.second)->create_reader();
         bool success = true;
         try {
             dest(*reader);

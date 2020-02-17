@@ -28,6 +28,8 @@ public:
     Collection(const Collection& o) = default;
     Collection(Collection&& o) = default;
     /// Construct a collection filled by the results of query_data
+    Collection(dataset::Dataset& ds, const dataset::DataQuery& q);
+    Collection(dataset::Dataset& ds, const std::string& q);
     Collection(dataset::Reader& ds, const dataset::DataQuery& q);
     Collection(dataset::Reader& ds, const std::string& q);
     ~Collection();

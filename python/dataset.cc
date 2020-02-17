@@ -342,7 +342,7 @@ Examples::
             else
                 cfg = section_from_python(py_cfg);
 
-            new (&(self->ds)) shared_ptr<arki::dataset::Reader>(arki::dataset::Reader::create(arki::python::get_dataset_session(), cfg));
+            new (&(self->ds)) shared_ptr<arki::dataset::Reader>(arki::python::get_dataset_session()->dataset(cfg)->create_reader());
             return 0;
         } ARKI_CATCH_RETURN_INT;
     }
@@ -490,7 +490,7 @@ Examples::
             else
                 cfg = section_from_python(py_cfg);
 
-            new (&(self->ds)) std::shared_ptr<arki::dataset::Writer>(arki::dataset::Writer::create(get_dataset_session(), cfg));
+            new (&(self->ds)) std::shared_ptr<arki::dataset::Writer>(arki::python::get_dataset_session()->dataset(cfg)->create_writer());
             return 0;
         } ARKI_CATCH_RETURN_INT;
     }
@@ -655,7 +655,7 @@ Examples::
             else
                 cfg = section_from_python(py_cfg);
 
-            new (&(self->ds)) std::shared_ptr<arki::dataset::Checker>(arki::dataset::Checker::create(get_dataset_session(), cfg));
+            new (&(self->ds)) std::shared_ptr<arki::dataset::Checker>(arki::python::get_dataset_session()->dataset(cfg)->create_checker());
             return 0;
         } ARKI_CATCH_RETURN_INT;
     }

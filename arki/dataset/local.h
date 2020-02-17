@@ -28,7 +28,7 @@ namespace local {
 class Dataset : public dataset::Dataset
 {
 protected:
-    mutable std::shared_ptr<archive::Dataset> m_archives_config;
+    std::shared_ptr<archive::Dataset> m_archive;
 
 public:
     /// Root path of the dataset
@@ -50,7 +50,11 @@ public:
      */
     std::pair<bool, WriterAcquireResult> check_acquire_age(Metadata& md) const;
 
-    std::shared_ptr<archive::Dataset> archives_config() const;
+    /// Return the Archives for this dataset
+    std::shared_ptr<archive::Dataset> archive();
+
+    /// Check if the dataset has archived data
+    bool hasArchive() const;
 
     /**
      * Create/open a dataset-wide lockfile, returning the Lock instance
@@ -63,36 +67,30 @@ public:
     std::shared_ptr<dataset::CheckLock> check_lock_segment(const std::string& relpath) const;
 };
 
-template<typename Parent, typename Archives>
+template<typename Parent>
 class Base : public Parent
 {
-protected:
-    Archives* m_archive = nullptr;
-
 public:
     using Parent::Parent;
-    ~Base();
 
     const local::Dataset& config() const override = 0;
-
-    /// Return the dataset path
-    const std::string& path() const { return config().path; }
-
-    /// Check if the dataset has archived data
-    bool hasArchive() const;
-
-    /// Return the Archives for this dataset
-    Archives& archive();
+    const local::Dataset& dataset() const override = 0;
+    local::Dataset& dataset() override = 0;
 };
 
 /**
  * Base class for local datasets
  */
-class Reader : public Base<dataset::Reader, archive::Reader>
+class Reader : public Base<dataset::Reader>
 {
+    std::shared_ptr<archive::Reader> m_archive;
+
 public:
     using Base::Base;
     ~Reader();
+
+    /// Return the Reader for this dataset archives
+    std::shared_ptr<archive::Reader> archive();
 
     // Base implementations that queries the archives if they exist
     bool query_data(const dataset::DataQuery& q, metadata_dest_func dest) override;
@@ -106,25 +104,25 @@ public:
     static core::cfg::Sections read_configs(const std::string& path);
 };
 
-class Writer : public dataset::Writer
+class Writer : public Base<dataset::Writer>
 {
 public:
-    using dataset::Writer::Writer;
+    using Base::Base;
     ~Writer();
-
-    const local::Dataset& config() const override = 0;
-
-    /// Return the dataset path
-    const std::string& path() const { return config().path; }
 
     static void test_acquire(std::shared_ptr<Session> session, const core::cfg::Section& cfg, WriterBatch& batch);
 };
 
-struct Checker : public Base<dataset::Checker, archive::Checker>
+struct Checker : public Base<dataset::Checker>
 {
+    std::shared_ptr<archive::Checker> m_archive;
+
 public:
     using Base::Base;
     ~Checker();
+
+    /// Return the Checker for this dataset archives
+    std::shared_ptr<archive::Checker> archive();
 
     void repack(CheckerConfig& opts, unsigned test_flags=0) override;
     void check(CheckerConfig& opts) override;

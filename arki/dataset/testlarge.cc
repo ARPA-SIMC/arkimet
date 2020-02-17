@@ -18,12 +18,12 @@ Dataset::Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg
 {
 }
 
-std::unique_ptr<dataset::Reader> Dataset::create_reader() const { return std::unique_ptr<dataset::Reader>(new Reader(shared_from_this())); }
-std::unique_ptr<dataset::Writer> Dataset::create_writer() const { return std::unique_ptr<dataset::Writer>(new empty::Writer(shared_from_this())); }
-std::unique_ptr<dataset::Checker> Dataset::create_checker() const { return std::unique_ptr<dataset::Checker>(new empty::Checker(shared_from_this())); }
+std::shared_ptr<dataset::Reader> Dataset::create_reader() { return std::make_shared<Reader>(shared_from_this()); }
+std::shared_ptr<dataset::Writer> Dataset::create_writer() { return std::make_shared<empty::Writer>(shared_from_this()); }
+std::shared_ptr<dataset::Checker> Dataset::create_checker() { return std::make_shared<empty::Checker>(shared_from_this()); }
 
 
-Reader::Reader(std::shared_ptr<const dataset::Dataset> config) : m_config(config) {}
+Reader::Reader(std::shared_ptr<dataset::Dataset> config) : m_config(config) {}
 Reader::~Reader() {}
 
 bool Reader::generate(const core::Time& begin, const core::Time& until, std::function<bool(std::unique_ptr<Metadata>)> out) const

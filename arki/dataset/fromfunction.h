@@ -15,7 +15,7 @@ struct Dataset : public dataset::Dataset
 {
     Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg);
 
-    std::unique_ptr<dataset::Reader> create_reader() const override;
+    std::shared_ptr<dataset::Reader> create_reader() override;
 };
 
 
@@ -25,15 +25,18 @@ struct Dataset : public dataset::Dataset
 class Reader : public dataset::Reader
 {
 protected:
-    std::shared_ptr<const dataset::Dataset> m_config;
+    std::shared_ptr<dataset::Dataset> m_config;
 
 public:
     std::function<bool(metadata_dest_func)> generator;
 
-    Reader(std::shared_ptr<const dataset::Dataset> config);
+    Reader(std::shared_ptr<dataset::Dataset> config);
     virtual ~Reader();
 
     const dataset::Dataset& config() const override { return *m_config; }
+    const dataset::Dataset& dataset() const override { return *m_config; }
+    dataset::Dataset& dataset() override { return *m_config; }
+
     std::string type() const override { return "fromfunction"; }
 
     bool query_data(const dataset::DataQuery& q, metadata_dest_func dest) override;

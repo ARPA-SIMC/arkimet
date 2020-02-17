@@ -170,7 +170,7 @@ std::shared_ptr<dataset::Session> DatasetTest::session()
     return m_session;
 }
 
-const Dataset& DatasetTest::config()
+Dataset& DatasetTest::config()
 {
     if (!m_dataset)
     {
@@ -182,22 +182,22 @@ const Dataset& DatasetTest::config()
     return *m_dataset;
 }
 
-std::shared_ptr<const dataset::Dataset> DatasetTest::dataset_config()
+std::shared_ptr<dataset::Dataset> DatasetTest::dataset_config()
 {
     config();
     return m_dataset;
 }
 
-std::shared_ptr<const dataset::local::Dataset> DatasetTest::local_config()
+std::shared_ptr<dataset::local::Dataset> DatasetTest::local_config()
 {
     config();
-    return dynamic_pointer_cast<const dataset::local::Dataset>(m_dataset);
+    return dynamic_pointer_cast<dataset::local::Dataset>(m_dataset);
 }
 
-std::shared_ptr<const dataset::ondisk2::Dataset> DatasetTest::ondisk2_config()
+std::shared_ptr<dataset::ondisk2::Dataset> DatasetTest::ondisk2_config()
 {
     config();
-    return dynamic_pointer_cast<const dataset::ondisk2::Dataset>(m_dataset);
+    return dynamic_pointer_cast<dataset::ondisk2::Dataset>(m_dataset);
 }
 
 std::string DatasetTest::idxfname(const core::cfg::Section* wcfg) const
@@ -270,112 +270,88 @@ State DatasetTest::scan_state(const Matcher& matcher, bool quick)
     return res;
 }
 
-std::unique_ptr<dataset::segmented::Reader> DatasetTest::makeSegmentedReader()
+std::shared_ptr<dataset::segmented::Reader> DatasetTest::makeSegmentedReader()
 {
-    auto ds = config().create_reader();
-    dataset::segmented::Reader* r = dynamic_cast<dataset::segmented::Reader*>(ds.get());
+    auto r = dynamic_pointer_cast<dataset::segmented::Reader>(config().create_reader());
     if (!r) throw std::runtime_error("makeSegmentedReader called while testing a non-segmented dataset");
-    ds.release();
-    return unique_ptr<dataset::segmented::Reader>(r);
+    return r;
 }
 
-std::unique_ptr<dataset::segmented::Writer> DatasetTest::makeSegmentedWriter()
+std::shared_ptr<dataset::segmented::Writer> DatasetTest::makeSegmentedWriter()
 {
-    auto ds = config().create_writer();
-    dataset::segmented::Writer* r = dynamic_cast<dataset::segmented::Writer*>(ds.get());
+    auto r = dynamic_pointer_cast<dataset::segmented::Writer>(config().create_writer());
     if (!r) throw std::runtime_error("makeSegmentedWriter called while testing a non-segmented dataset");
-    ds.release();
-    return unique_ptr<dataset::segmented::Writer>(r);
+    return r;
 }
 
-std::unique_ptr<dataset::segmented::Checker> DatasetTest::makeSegmentedChecker()
+std::shared_ptr<dataset::segmented::Checker> DatasetTest::makeSegmentedChecker()
 {
-    auto ds = config().create_checker();
-    dataset::segmented::Checker* r = dynamic_cast<dataset::segmented::Checker*>(ds.get());
+    auto r = dynamic_pointer_cast<dataset::segmented::Checker>(config().create_checker());
     if (!r) throw std::runtime_error("makeSegmentedChecker called while testing a non-segmented dataset");
-    ds.release();
-    return unique_ptr<dataset::segmented::Checker>(r);
+    return r;
 }
 
-std::unique_ptr<dataset::ondisk2::Reader> DatasetTest::makeOndisk2Reader()
+std::shared_ptr<dataset::ondisk2::Reader> DatasetTest::makeOndisk2Reader()
 {
-    auto ds = config().create_reader();
-    dataset::ondisk2::Reader* r = dynamic_cast<dataset::ondisk2::Reader*>(ds.get());
+    auto r = dynamic_pointer_cast<dataset::ondisk2::Reader>(config().create_reader());
     if (!r) throw std::runtime_error("makeOndisk2Reader called while testing a non-ondisk2 dataset");
-    ds.release();
-    return unique_ptr<dataset::ondisk2::Reader>(r);
+    return r;
 }
 
-std::unique_ptr<dataset::ondisk2::Writer> DatasetTest::makeOndisk2Writer()
+std::shared_ptr<dataset::ondisk2::Writer> DatasetTest::makeOndisk2Writer()
 {
-    auto ds = config().create_writer();
-    dataset::ondisk2::Writer* r = dynamic_cast<dataset::ondisk2::Writer*>(ds.get());
+    auto r = dynamic_pointer_cast<dataset::ondisk2::Writer>(config().create_writer());
     if (!r) throw std::runtime_error("makeOndisk2Writer called while testing a non-ondisk2 dataset");
-    ds.release();
-    return unique_ptr<dataset::ondisk2::Writer>(r);
+    return r;
 }
 
-std::unique_ptr<dataset::ondisk2::Checker> DatasetTest::makeOndisk2Checker()
+std::shared_ptr<dataset::ondisk2::Checker> DatasetTest::makeOndisk2Checker()
 {
-    auto ds = config().create_checker();
-    dataset::ondisk2::Checker* r = dynamic_cast<dataset::ondisk2::Checker*>(ds.get());
+    auto r = dynamic_pointer_cast<dataset::ondisk2::Checker>(config().create_checker());
     if (!r) throw std::runtime_error("makeOndisk2Checker called while testing a non-ondisk2 dataset");
-    ds.release();
-    return unique_ptr<dataset::ondisk2::Checker>(r);
+    return r;
 }
 
-std::unique_ptr<dataset::simple::Reader> DatasetTest::makeSimpleReader()
+std::shared_ptr<dataset::simple::Reader> DatasetTest::makeSimpleReader()
 {
-    auto ds = config().create_reader();
-    dataset::simple::Reader* r = dynamic_cast<dataset::simple::Reader*>(ds.get());
+    auto r = dynamic_pointer_cast<dataset::simple::Reader>(config().create_reader());
     if (!r) throw std::runtime_error("makeSimpleReader called while testing a non-simple dataset");
-    ds.release();
-    return unique_ptr<dataset::simple::Reader>(r);
+    return r;
 }
 
-std::unique_ptr<dataset::simple::Writer> DatasetTest::makeSimpleWriter()
+std::shared_ptr<dataset::simple::Writer> DatasetTest::makeSimpleWriter()
 {
-    auto ds = config().create_writer();
-    dataset::simple::Writer* r = dynamic_cast<dataset::simple::Writer*>(ds.get());
+    auto r = dynamic_pointer_cast<dataset::simple::Writer>(config().create_writer());
     if (!r) throw std::runtime_error("makeSimpleWriter called while testing a non-simple dataset");
-    ds.release();
-    return unique_ptr<dataset::simple::Writer>(r);
+    return r;
 }
 
-std::unique_ptr<dataset::simple::Checker> DatasetTest::makeSimpleChecker()
+std::shared_ptr<dataset::simple::Checker> DatasetTest::makeSimpleChecker()
 {
-    auto ds = config().create_checker();
-    dataset::simple::Checker* r = dynamic_cast<dataset::simple::Checker*>(ds.get());
+    auto r = dynamic_pointer_cast<dataset::simple::Checker>(config().create_checker());
     if (!r) throw std::runtime_error("makeSimpleChecker called while testing a non-simple dataset");
-    ds.release();
-    return unique_ptr<dataset::simple::Checker>(r);
+    return r;
 }
 
-std::unique_ptr<dataset::iseg::Reader> DatasetTest::makeIsegReader()
+std::shared_ptr<dataset::iseg::Reader> DatasetTest::makeIsegReader()
 {
-    auto ds = config().create_reader();
-    dataset::iseg::Reader* r = dynamic_cast<dataset::iseg::Reader*>(ds.get());
+    auto r = dynamic_pointer_cast<dataset::iseg::Reader>(config().create_reader());
     if (!r) throw std::runtime_error("makeIsegReader called while testing a non-iseg dataset");
-    ds.release();
-    return unique_ptr<dataset::iseg::Reader>(r);
+    return r;
 }
 
-std::unique_ptr<dataset::iseg::Writer> DatasetTest::makeIsegWriter()
+std::shared_ptr<dataset::iseg::Writer> DatasetTest::makeIsegWriter()
 {
-    auto ds = config().create_writer();
-    dataset::iseg::Writer* r = dynamic_cast<dataset::iseg::Writer*>(ds.get());
+    auto r = dynamic_pointer_cast<dataset::iseg::Writer>(config().create_writer());
     if (!r) throw std::runtime_error("makeIsegWriter called while testing a non-iseg dataset");
-    ds.release();
-    return unique_ptr<dataset::iseg::Writer>(r);
+    return r;
 }
 
-std::unique_ptr<dataset::iseg::Checker> DatasetTest::makeIsegChecker()
+std::shared_ptr<dataset::iseg::Checker> DatasetTest::makeIsegChecker()
 {
-    auto ds = config().create_checker();
-    dataset::iseg::Checker* r = dynamic_cast<dataset::iseg::Checker*>(ds.get());
+    auto r = dynamic_pointer_cast<dataset::iseg::Checker>(config().create_checker());
     if (!r) throw std::runtime_error("makeIsegChecker called while testing a non-iseg dataset");
-    ds.release();
-    return unique_ptr<dataset::iseg::Checker>(r);
+    return r;
 }
 
 void DatasetTest::clean()
@@ -390,12 +366,12 @@ void DatasetTest::clean()
 void DatasetTest::import(metadata::Collection& mds)
 {
     {
-        std::unique_ptr<Writer> writer(config().create_writer());
+        auto writer(config().create_writer());
         auto batch = mds.make_import_batch();
         writer->acquire_batch(batch);
         for (const auto& e: batch)
         {
-            wassert(actual(e->dataset_name) == config().name);
+            wassert(actual(e->dataset_name) == config().name());
             wassert(actual(e->result) == ACQ_OK);
             import_results.push_back(e->md);
             import_results.back().sourceBlob().unlock();
@@ -415,7 +391,7 @@ void DatasetTest::import(const std::string& testfile)
 void DatasetTest::import(Metadata& md, dataset::WriterAcquireResult expected_result)
 {
     import_results.push_back(md);
-    std::unique_ptr<Writer> writer(config().create_writer());
+    auto writer(config().create_writer());
     WriterAcquireResult res = writer->acquire(import_results.back());
     wassert(actual(res) == expected_result);
 }
@@ -444,7 +420,7 @@ void DatasetTest::ensure_localds_clean(size_t filecount, size_t resultcount, boo
     wassert(actual(mdc.size()) == resultcount);
 
     if (filecount > 0 && reader->type() != "iseg")
-        wassert(actual_file(str::joinpath(reader->path(), idxfname())).exists());
+        wassert(actual_file(str::joinpath(reader->dataset().path, idxfname())).exists());
     tc.clear();
 }
 

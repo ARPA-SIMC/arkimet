@@ -90,7 +90,7 @@ struct AppendSegment
             return ACQ_OK;
         } catch (std::exception& e) {
             // sqlite will take care of transaction consistency
-            md.add_note("Failed to store in dataset '" + config->name + "': " + e.what());
+            md.add_note("Failed to store in dataset '" + config->name() + "': " + e.what());
             return ACQ_ERROR;
         }
     }
@@ -108,11 +108,11 @@ struct AppendSegment
                 const types::source::Blob& new_source = segment->append(e->md, drop_cached_data_on_commit);
                 add(e->md, new_source);
                 e->result = ACQ_OK;
-                e->dataset_name = config->name;
+                e->dataset_name = config->name();
             }
         } catch (std::exception& e) {
             // sqlite will take care of transaction consistency
-            batch.set_all_error("Failed to store in dataset '" + config->name + "': " + e.what());
+            batch.set_all_error("Failed to store in dataset '" + config->name() + "': " + e.what());
             return;
         }
 
@@ -126,7 +126,7 @@ struct AppendSegment
 };
 
 
-Writer::Writer(std::shared_ptr<const simple::Dataset> config)
+Writer::Writer(std::shared_ptr<simple::Dataset> config)
     : m_config(config)
 {
     // Create the directory if it does not exist
@@ -198,14 +198,14 @@ void Writer::test_acquire(std::shared_ptr<Session> session, const core::cfg::Sec
         {
             e->result = age_check.second;
             if (age_check.second == ACQ_OK)
-                e->dataset_name = config->name;
+                e->dataset_name = config->name();
             else
                 e->dataset_name.clear();
         } else {
             // Acquire on simple datasets always succeeds except in case of envrionment
             // issues like I/O errors and full disks
             e->result = ACQ_OK;
-            e->dataset_name = config->name;
+            e->dataset_name = config->name();
         }
     }
 }

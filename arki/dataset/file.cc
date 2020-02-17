@@ -30,13 +30,13 @@ Dataset::Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg
 {
 }
 
-std::unique_ptr<Reader> Dataset::create_reader() const
+std::shared_ptr<Reader> Dataset::create_reader()
 {
     if (format == "arkimet")
-        return std::unique_ptr<Reader>(new ArkimetFile(dynamic_pointer_cast<const Dataset>(shared_from_this())));
+        return std::make_shared<ArkimetFile>(static_pointer_cast<Dataset>(shared_from_this()));
     if (format == "yaml")
-        return std::unique_ptr<Reader>(new YamlFile(dynamic_pointer_cast<const Dataset>(shared_from_this())));
-    return std::unique_ptr<Reader>(new RawFile(dynamic_pointer_cast<const Dataset>(shared_from_this())));
+        return std::make_shared<YamlFile>(static_pointer_cast<Dataset>(shared_from_this()));
+    return std::make_shared<RawFile>(static_pointer_cast<Dataset>(shared_from_this()));
 }
 
 bool File::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
@@ -44,7 +44,7 @@ bool File::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
     return scan(q, dest);
 }
 
-core::cfg::Section File::read_config(const std::string& fname)
+core::cfg::Section read_config(const std::string& fname)
 {
     core::cfg::Section section;
 
@@ -78,7 +78,7 @@ core::cfg::Section File::read_config(const std::string& fname)
     return section;
 }
 
-core::cfg::Sections File::read_configs(const std::string& fname)
+core::cfg::Sections read_configs(const std::string& fname)
 {
     auto sec = read_config(fname);
     core::cfg::Sections res;
@@ -87,7 +87,7 @@ core::cfg::Sections File::read_configs(const std::string& fname)
 }
 
 
-FdFile::FdFile(std::shared_ptr<const Dataset> config)
+FdFile::FdFile(std::shared_ptr<Dataset> config)
     : m_config(config), fd(config->pathname, O_RDONLY)
 {
 }
@@ -146,7 +146,7 @@ bool ArkimetFile::scan(const dataset::DataQuery& q, metadata_dest_func dest)
 }
 
 
-YamlFile::YamlFile(std::shared_ptr<const Dataset> config)
+YamlFile::YamlFile(std::shared_ptr<Dataset> config)
     : FdFile(config), reader(LineReader::from_fd(fd).release()) {}
 
 YamlFile::~YamlFile() { delete reader; }
@@ -172,7 +172,7 @@ bool YamlFile::scan(const dataset::DataQuery& q, metadata_dest_func dest)
 }
 
 
-RawFile::RawFile(std::shared_ptr<const Dataset> config)
+RawFile::RawFile(std::shared_ptr<Dataset> config)
     : m_config(config)
 {
 }

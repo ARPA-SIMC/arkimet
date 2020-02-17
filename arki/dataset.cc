@@ -26,30 +26,29 @@ DataQuery::~DataQuery() {}
 
 Dataset::Dataset(std::shared_ptr<Session> session) : session(session) {}
 
-Dataset::Dataset(std::shared_ptr<Session> session, const std::string& name) : session(session), name(name) {}
+Dataset::Dataset(std::shared_ptr<Session> session, const std::string& name) : m_name(name), session(session) {}
 
 Dataset::Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
-    : session(session), name(cfg.value("name")), cfg(cfg)
+    : m_name(cfg.value("name")), session(session), cfg(cfg)
 {
 }
 
-std::unique_ptr<Reader> Dataset::create_reader() const { throw std::runtime_error("reader not implemented for dataset " + name); }
-std::unique_ptr<Writer> Dataset::create_writer() const { throw std::runtime_error("writer not implemented for dataset " + name); }
-std::unique_ptr<Checker> Dataset::create_checker() const { throw std::runtime_error("checker not implemented for dataset " + name); }
-
-
-std::string Base::name() const
+std::string Dataset::name() const
 {
     if (m_parent)
-        return m_parent->name() + "." + config().name;
+        return m_parent->name() + "." + m_name;
     else
-        return config().name;
+        return m_name;
 }
 
-void Base::set_parent(Base& p)
+void Dataset::set_parent(std::shared_ptr<Dataset> parent)
 {
-    m_parent = &p;
+    m_parent = parent;
 }
+
+std::shared_ptr<Reader> Dataset::create_reader() { throw std::runtime_error("reader not implemented for dataset " + name()); }
+std::shared_ptr<Writer> Dataset::create_writer() { throw std::runtime_error("writer not implemented for dataset " + name()); }
+std::shared_ptr<Checker> Dataset::create_checker() { throw std::runtime_error("checker not implemented for dataset " + name()); }
 
 
 void Reader::query_summary(const Matcher& matcher, Summary& summary)
@@ -130,11 +129,6 @@ void Reader::expand_date_range(std::unique_ptr<core::Time>& begin, std::unique_p
 {
 }
 
-std::unique_ptr<Reader> Reader::create(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
-{
-    return session->dataset(cfg)->create_reader();
-}
-
 
 void WriterBatch::set_all_error(const std::string& note)
 {
@@ -150,11 +144,6 @@ void WriterBatch::set_all_error(const std::string& note)
 void Writer::flush() {}
 
 Pending Writer::test_writelock() { return Pending(); }
-
-std::unique_ptr<Writer> Writer::create(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
-{
-    return session->dataset(cfg)->create_writer();
-}
 
 void Writer::test_acquire(std::shared_ptr<Session> session, const core::cfg::Section& cfg, WriterBatch& batch)
 {
@@ -180,14 +169,9 @@ CheckerConfig::CheckerConfig(std::shared_ptr<dataset::Reporter> reporter, bool r
 }
 
 
-std::unique_ptr<Checker> Checker::create(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
-{
-    return session->dataset(cfg)->create_checker();
-}
-
 void Checker::check_issue51(CheckerConfig& opts)
 {
-    throw std::runtime_error(name() + ": check_issue51 not implemented for this dataset");
+    throw std::runtime_error(config().name() + ": check_issue51 not implemented for this dataset");
 }
 
 

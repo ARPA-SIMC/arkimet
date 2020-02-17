@@ -28,10 +28,16 @@ public:
     virtual ~Merged();
 
     const Config& config() const override { return *m_config; }
+    const Config& dataset() const override { return *m_config; }
+    Config& dataset() override { return *m_config; }
+
     std::string type() const override;
 
     /// Add a dataset to the group of datasets to merge
     void add_dataset(std::shared_ptr<Reader> ds);
+
+    /// Add a dataset to the group of datasets to merge
+    void add_dataset(std::shared_ptr<Dataset> ds);
 
     /// Add a dataset to the group of datasets to merge
     void add_dataset(const core::cfg::Section& cfg);

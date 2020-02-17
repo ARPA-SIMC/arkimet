@@ -13,10 +13,10 @@ Dataset::Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg
 {
 }
 
-std::unique_ptr<dataset::Reader> Dataset::create_reader() const { return std::unique_ptr<dataset::Reader>(new Reader(shared_from_this())); }
+std::shared_ptr<dataset::Reader> Dataset::create_reader() { return std::make_shared<Reader>(shared_from_this()); }
 
 
-Reader::Reader(std::shared_ptr<const dataset::Dataset> config) : m_config(config) {}
+Reader::Reader(std::shared_ptr<dataset::Dataset> config) : m_config(config) {}
 Reader::~Reader() {}
 
 bool Reader::query_data(const dataset::DataQuery& q, metadata_dest_func dest)

@@ -78,7 +78,7 @@ Configs::Configs(std::shared_ptr<Session> session, const core::cfg::Sections& cf
         configs.insert(make_pair(si.first, session->dataset(si.second)));
 }
 
-std::shared_ptr<const dataset::Config> Configs::get(const std::string& name) const
+std::shared_ptr<dataset::Config> Configs::get(const std::string& name) const
 {
     auto res = configs.find(name);
     if (res == configs.end())
@@ -128,7 +128,7 @@ std::shared_ptr<dataset::Writer> WriterPool::get(const std::string& name)
     if (ci == cache.end())
     {
         auto config = datasets.get(name);
-        shared_ptr<dataset::Writer> writer(config->create_writer());
+        auto writer(config->create_writer());
         cache.insert(make_pair(name, writer));
         return writer;
     } else {

@@ -16,14 +16,16 @@ namespace simple {
 class Reader : public indexed::Reader
 {
 protected:
-    std::shared_ptr<const simple::Dataset> m_config;
+    std::shared_ptr<simple::Dataset> m_config;
     index::Manifest* m_mft = nullptr;
 
 public:
-    Reader(std::shared_ptr<const simple::Dataset> config);
+    Reader(std::shared_ptr<simple::Dataset> config);
     virtual ~Reader();
 
     const simple::Dataset& config() const override { return *m_config; }
+    const simple::Dataset& dataset() const override { return *m_config; }
+    simple::Dataset& dataset() override { return *m_config; }
 
     std::string type() const override;
 

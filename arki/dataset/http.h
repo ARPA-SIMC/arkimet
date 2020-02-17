@@ -126,7 +126,7 @@ struct Dataset : public dataset::Dataset
 
     Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg);
 
-    std::unique_ptr<dataset::Reader> create_reader() const override;
+    std::shared_ptr<dataset::Reader> create_reader() override;
 };
 
 /**
@@ -140,17 +140,19 @@ struct Dataset : public dataset::Dataset
 class Reader : public dataset::Reader
 {
 protected:
-    std::shared_ptr<const Dataset> m_config;
+    std::shared_ptr<Dataset> m_config;
     http::CurlEasy m_curl;
     void set_post_query(Request& request, const std::string& query);
     void set_post_query(Request& request, const dataset::DataQuery& q);
 
 public:
-    // Initialise the dataset with the information from the configurationa in 'cfg'
-    Reader(std::shared_ptr<const Dataset> config);
+    Reader(std::shared_ptr<Dataset> config);
     virtual ~Reader();
 
     const Dataset& config() const override { return *m_config; }
+    const Dataset& dataset() const override { return *m_config; }
+    Dataset& dataset() override { return *m_config; }
+
     std::string type() const override;
 
     bool query_data(const dataset::DataQuery& q, metadata_dest_func) override;

@@ -19,13 +19,13 @@ namespace dataset {
 class Configs
 {
 protected:
-    std::map<std::string, std::shared_ptr<const dataset::Config>> configs;
+    std::map<std::string, std::shared_ptr<dataset::Config>> configs;
 
 public:
     explicit Configs(std::shared_ptr<Session>, const core::cfg::Sections& cfg);
 
     /// Get the configuration for the given dataset
-    std::shared_ptr<const dataset::Config> get(const std::string& name) const;
+    std::shared_ptr<dataset::Config> get(const std::string& name) const;
 
     /// Check if the pool has a dataset with the given name
     bool has(const std::string& name) const;

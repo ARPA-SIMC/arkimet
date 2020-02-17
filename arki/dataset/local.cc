@@ -59,11 +59,20 @@ std::pair<bool, WriterAcquireResult> Dataset::check_acquire_age(Metadata& md) co
     return make_pair(false, ACQ_OK);
 }
 
-std::shared_ptr<archive::Dataset> Dataset::archives_config() const
+std::shared_ptr<archive::Dataset> Dataset::archive()
 {
-    if (!m_archives_config)
-        m_archives_config = std::shared_ptr<archive::Dataset>(new archive::Dataset(session, path));
-    return m_archives_config;
+    if (!m_archive)
+    {
+        m_archive = std::shared_ptr<archive::Dataset>(new archive::Dataset(session, path));
+        m_archive->set_parent(shared_from_this());
+    }
+    return m_archive;
+}
+
+bool Dataset::hasArchive() const
+{
+    string arcdir = str::joinpath(path, ".archive");
+    return sys::exists(arcdir);
 }
 
 std::shared_ptr<dataset::ReadLock> Dataset::read_lock_dataset() const
@@ -97,45 +106,27 @@ std::shared_ptr<dataset::CheckLock> Dataset::check_lock_segment(const std::strin
 }
 
 
-template<typename Parent, typename Archive>
-Base<Parent, Archive>::~Base()
-{
-    delete m_archive;
-}
-
-template<typename Parent, typename Archive>
-bool Base<Parent, Archive>::hasArchive() const
-{
-    string arcdir = str::joinpath(path(), ".archive");
-    return sys::exists(arcdir);
-}
-
-template<typename Parent, typename Archive>
-Archive& Base<Parent, Archive>::archive()
-{
-    if (!m_archive)
-    {
-        m_archive = new Archive(config().archives_config());
-        m_archive->set_parent(*this);
-    }
-    return *m_archive;
-}
-
-
 Reader::~Reader()
 {
 }
 
+std::shared_ptr<archive::Reader> Reader::archive()
+{
+    if (!m_archive)
+        m_archive = std::make_shared<archive::Reader>(dataset().archive());
+    return m_archive;
+}
+
 bool Reader::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 {
-    if (!hasArchive()) return true;
-    return archive().query_data(q, dest);
+    if (!dataset().hasArchive()) return true;
+    return archive()->query_data(q, dest);
 }
 
 void Reader::query_summary(const Matcher& matcher, Summary& summary)
 {
-    if (hasArchive())
-        archive().query_summary(matcher, summary);
+    if (dataset().hasArchive())
+        archive()->query_summary(matcher, summary);
 }
 
 core::cfg::Section Reader::read_config(const std::string& path)
@@ -187,62 +178,69 @@ Checker::~Checker()
 {
 }
 
+std::shared_ptr<archive::Checker> Checker::archive()
+{
+    if (!m_archive)
+        m_archive = std::make_shared<archive::Checker>(dataset().archive());
+    return m_archive;
+}
+
 void Checker::repack(CheckerConfig& opts, unsigned test_flags)
 {
-    if (opts.offline && hasArchive())
-        archive().repack(opts, test_flags);
+    if (opts.offline && dataset().hasArchive())
+        archive()->repack(opts, test_flags);
 }
 
 void Checker::check(CheckerConfig& opts)
 {
-    if (opts.offline && hasArchive())
-        archive().check(opts);
+    if (opts.offline && dataset().hasArchive())
+        archive()->check(opts);
 }
 
 void Checker::remove_old(CheckerConfig& opts)
 {
-    if (opts.offline && hasArchive())
-        archive().remove_old(opts);
+    if (opts.offline && dataset().hasArchive())
+        archive()->remove_old(opts);
 }
 
 void Checker::remove_all(CheckerConfig& opts)
 {
-    if (opts.offline && hasArchive())
-        archive().remove_all(opts);
+    if (opts.offline && dataset().hasArchive())
+        archive()->remove_all(opts);
 }
 
 void Checker::tar(CheckerConfig& opts)
 {
-    if (opts.offline && hasArchive())
-        archive().tar(opts);
+    if (opts.offline && dataset().hasArchive())
+        archive()->tar(opts);
 }
 
 void Checker::zip(CheckerConfig& opts)
 {
-    if (opts.offline && hasArchive())
-        archive().zip(opts);
+    if (opts.offline && dataset().hasArchive())
+        archive()->zip(opts);
 }
 
 void Checker::compress(CheckerConfig& opts, unsigned groupsize)
 {
-    if (opts.offline && hasArchive())
-        archive().compress(opts, groupsize);
+    if (opts.offline && dataset().hasArchive())
+        archive()->compress(opts, groupsize);
 }
 
 void Checker::check_issue51(CheckerConfig& opts)
 {
-    if (opts.offline && hasArchive())
-        archive().check_issue51(opts);
+    if (opts.offline && dataset().hasArchive())
+        archive()->check_issue51(opts);
 }
 
 void Checker::state(CheckerConfig& opts)
 {
-    if (opts.offline && hasArchive())
-        archive().state(opts);
+    if (opts.offline && dataset().hasArchive())
+        archive()->state(opts);
 }
 
-template class Base<Reader, archive::Reader>;
-template class Base<Checker, archive::Checker>;
+template class Base<Reader>;
+template class Base<Checker>;
 
 }
 }

@@ -27,13 +27,15 @@ struct Dataset : public dataset::Config
  */
 struct Reader : public dataset::Reader
 {
-    std::shared_ptr<const Dataset> m_config;
+    std::shared_ptr<Dataset> m_config;
     Summary sum;
 
-    Reader(std::shared_ptr<const Dataset> config);
+    Reader(std::shared_ptr<Dataset> config);
     ~Reader() {}
 
     const Dataset& config() const override { return *m_config; }
+    const Dataset& dataset() const override { return *m_config; }
+    Dataset& dataset() override { return *m_config; }
 
     std::string type() const override;
 

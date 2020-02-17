@@ -44,8 +44,7 @@ add_method("grib_strangename", [] {
 
     // Scan it to be sure it can be read
     auto session = std::make_shared<dataset::Session>();
-    unique_ptr<dataset::Reader> ds(dataset::Reader::create(session, cfg));
-    metadata::Collection mdc(*ds, Matcher());
+    metadata::Collection mdc(*session->dataset(cfg), Matcher());
     wassert(actual(mdc.size()) == 3u);
 });
 
@@ -57,8 +56,7 @@ add_method("metadata", [] {
 
     // Scan it to be sure it can be read
     auto session = std::make_shared<dataset::Session>();
-    unique_ptr<dataset::Reader> ds(dataset::Reader::create(session, cfg));
-    metadata::Collection mdc(*ds, Matcher());
+    metadata::Collection mdc(*session->dataset(cfg), Matcher());
     wassert(actual(mdc.size()) == 1u);
 });
 
@@ -70,8 +68,7 @@ add_method("yaml", [] {
 
     // Scan it to be sure it can be read
     auto session = std::make_shared<dataset::Session>();
-    unique_ptr<dataset::Reader> ds(dataset::Reader::create(session, cfg));
-    metadata::Collection mdc(*ds, Matcher());
+    metadata::Collection mdc(*session->dataset(cfg), Matcher());
     wassert(actual(mdc.size()) == 1u);
 });
 
