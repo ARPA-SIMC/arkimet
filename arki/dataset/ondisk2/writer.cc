@@ -1,7 +1,7 @@
 #include "arki/dataset/ondisk2/writer.h"
 #include "arki/exceptions.h"
 #include "arki/dataset/archive.h"
-#include "arki/dataset/segment.h"
+#include "arki/dataset/session.h"
 #include "arki/dataset/step.h"
 #include "arki/dataset/lock.h"
 #include "arki/types/source/blob.h"
@@ -83,7 +83,7 @@ struct AppendSegment
         }
     }
 
-    WriterAcquireResult acquire_replace_higher_usn(Metadata& md, SegmentManager& segs, bool drop_cached_data_on_commit)
+    WriterAcquireResult acquire_replace_higher_usn(Metadata& md, dataset::Session& session, bool drop_cached_data_on_commit)
     {
         auto p_idx = idx.begin_transaction();
 
@@ -99,7 +99,7 @@ struct AppendSegment
                     return ACQ_ERROR_DUPLICATE;
 
                 // Read the update sequence number of the old BUFR
-                auto reader = segs.get_reader(scan::Scanner::format_from_filename(old->filename), old->filename, lock);
+                auto reader = session.segment_reader(scan::Scanner::format_from_filename(old->filename), config->path, old->filename, lock);
                 old->lock(reader);
                 int old_usn;
                 if (!scan::Scanner::update_sequence_number(*old, old_usn))
@@ -184,7 +184,7 @@ struct AppendSegment
         p_idx.commit();
     }
 
-    void acquire_batch_replace_higher_usn(WriterBatch& batch, SegmentManager& segs, bool drop_cached_data_on_commit)
+    void acquire_batch_replace_higher_usn(WriterBatch& batch, dataset::Session& session, bool drop_cached_data_on_commit)
     {
         auto p_idx = idx.begin_transaction();
 
@@ -208,7 +208,7 @@ struct AppendSegment
                     }
 
                     // Read the update sequence number of the old BUFR
-                    auto reader = segs.get_reader(segment->segment().format, old->filename, lock);
+                    auto reader = session.segment_reader(segment->segment().format, config->path, old->filename, lock);
                     old->lock(reader);
                     int old_usn;
                     if (!scan::Scanner::update_sequence_number(*old, old_usn))
@@ -278,7 +278,7 @@ std::unique_ptr<AppendSegment> Writer::segment(const std::string& relpath)
 {
     sys::makedirs(str::dirname(str::joinpath(config().path, relpath)));
     auto lock = config().append_lock_dataset();
-    auto segment = segment_manager().get_writer(scan::Scanner::format_from_filename(relpath), relpath);
+    auto segment = config().session->segment_writer(scan::Scanner::format_from_filename(relpath), config().path, relpath);
     return std::unique_ptr<AppendSegment>(new AppendSegment(m_config, lock, segment));
 }
 
@@ -296,7 +296,7 @@ WriterAcquireResult Writer::acquire(Metadata& md, const AcquireConfig& cfg)
     {
         case REPLACE_NEVER: return w->acquire_replace_never(md, cfg.drop_cached_data_on_commit);
         case REPLACE_ALWAYS: return w->acquire_replace_always(md, cfg.drop_cached_data_on_commit);
-        case REPLACE_HIGHER_USN: return w->acquire_replace_higher_usn(md, segment_manager(), cfg.drop_cached_data_on_commit);
+        case REPLACE_HIGHER_USN: return w->acquire_replace_higher_usn(md, *config().session, cfg.drop_cached_data_on_commit);
         default:
         {
             stringstream ss;
@@ -326,7 +326,7 @@ void Writer::acquire_batch(WriterBatch& batch, const AcquireConfig& cfg)
                 seg->acquire_batch_replace_always(s.second, cfg.drop_cached_data_on_commit);
                 break;
             case REPLACE_HIGHER_USN:
-                seg->acquire_batch_replace_higher_usn(s.second, segment_manager(), cfg.drop_cached_data_on_commit);
+                seg->acquire_batch_replace_higher_usn(s.second, *config().session, cfg.drop_cached_data_on_commit);
                 break;
             default: throw std::runtime_error("programming error: unsupported replace value " + std::to_string(replace));
         }
@@ -364,7 +364,7 @@ void Writer::remove(Metadata& md)
     md.unset(TYPE_ASSIGNEDDATASET);
 }
 
-void Writer::test_acquire(const core::cfg::Section& cfg, WriterBatch& batch)
+void Writer::test_acquire(std::shared_ptr<Session> session, const core::cfg::Section& cfg, WriterBatch& batch)
 {
     ReplaceStrategy replace;
     string repl = cfg.value("replace");
@@ -378,8 +378,7 @@ void Writer::test_acquire(const core::cfg::Section& cfg, WriterBatch& batch)
         throw std::runtime_error("Replace strategy '" + repl + "' is not recognised in dataset configuration");
 
     // Refuse if md is before "archive age"
-    std::shared_ptr<const ondisk2::Config> config(new ondisk2::Config(cfg));
-    auto segs = config->create_segment_manager();
+    std::shared_ptr<const ondisk2::Config> config(new ondisk2::Config(session, cfg));
     for (auto& e: batch)
     {
         auto age_check = config->check_acquire_age(e->md);
@@ -439,7 +438,7 @@ void Writer::test_acquire(const core::cfg::Section& cfg, WriterBatch& batch)
         }
 
         // Read the update sequence number of the old BUFR
-        auto reader = segs->get_reader(scan::Scanner::format_from_filename(old->filename), old->filename, lock);
+        auto reader = session->segment_reader(scan::Scanner::format_from_filename(old->filename), config->path, old->filename, lock);
         old->lock(reader);
         int old_usn;
         if (!scan::Scanner::update_sequence_number(*old, old_usn))

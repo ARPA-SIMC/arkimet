@@ -1,6 +1,7 @@
 #include "arki/dataset/tests.h"
 #include "arki/dataset.h"
 #include "arki/dataset/time.h"
+#include "arki/dataset/session.h"
 #include "arki/metadata/data.h"
 #include "arki/metadata/collection.h"
 #include "arki/types/source.h"
@@ -11,6 +12,7 @@
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
 #include "arki/exceptions.h"
+#include "arki/segment/dir.h"
 #include <sys/fcntl.h>
 
 using namespace std;
@@ -20,6 +22,16 @@ using namespace arki::tests;
 using namespace arki::core;
 
 namespace {
+
+struct ForceDirMockDataSession : public arki::dataset::Session
+{
+public:
+    std::shared_ptr<arki::segment::Writer> segment_writer(const std::string& format, const std::string& root, const std::string& relpath) override
+    {
+        std::string abspath = str::joinpath(root, relpath);
+        return std::shared_ptr<arki::segment::Writer>(new arki::segment::dir::HoleWriter(format, root, relpath, abspath));
+    }
+};
 
 template<class Data>
 struct FixtureWriter : public DatasetTest
@@ -84,11 +96,10 @@ void Tests::register_tests() {
 // Test a dataset with very large mock files in it
 add_method("import_largefile", [](Fixture& f) {
     skip_unless_filesystem_has_holes(".");
-
     // A dataset with hole files
     f.cfg.set("step", "daily");
-    f.cfg.set("segments", "dir");
-    f.cfg.set("mockdata", "true");
+    f.set_session(std::make_shared<ForceDirMockDataSession>());
+
 
     {
         // Import 24*30*10Mb=7.2Gb of data

@@ -6,6 +6,7 @@
 namespace arki {
 namespace dataset {
 
+struct Session;
 struct DataQuery;
 struct ByteQuery;
 struct Config;
@@ -15,7 +16,6 @@ struct WriterBatchElement;
 struct WriterBatch;
 struct Checker;
 struct Reporter;
-struct SegmentManager;
 struct Merged;
 struct SessionTime;
 struct SessionTimeOverride;

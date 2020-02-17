@@ -4,6 +4,7 @@
 #include "arki/core/file.h"
 #include "arki/dataset.h"
 #include "arki/dataset/maintenance.h"
+#include "arki/dataset/session.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
 #include "arki/metadata/sort.h"
@@ -36,7 +37,10 @@ namespace arki {
 namespace dataset {
 namespace index {
 
-Manifest::Manifest(const std::string& path, const core::lock::Policy* lock_policy) : m_path(path), lock_policy(lock_policy) {}
+Manifest::Manifest(const std::string& path, const core::lock::Policy* lock_policy)
+    : m_path(path), lock_policy(lock_policy)
+{
+}
 Manifest::~Manifest() {}
 
 void Manifest::querySummaries(const Matcher& matcher, Summary& summary)
@@ -57,7 +61,7 @@ void Manifest::querySummaries(const Matcher& matcher, Summary& summary)
     }
 }
 
-bool Manifest::query_data(const dataset::DataQuery& q, SegmentManager& segs, metadata_dest_func dest)
+bool Manifest::query_data(const dataset::DataQuery& q, dataset::Session& session, metadata_dest_func dest)
 {
     if (lock.expired())
         throw std::runtime_error("cannot query_data while there is no lock held");
@@ -86,7 +90,7 @@ bool Manifest::query_data(const dataset::DataQuery& q, SegmentManager& segs, met
         if (!sys::exists(fullpath)) continue;
         std::shared_ptr<arki::segment::Reader> reader;
         if (q.with_data)
-            reader = segs.get_reader(scan::Scanner::format_from_filename(*i), *i, lock.lock());
+            reader = session.segment_reader(scan::Scanner::format_from_filename(*i), m_path, *i, lock.lock());
         // This generates filenames relative to the metadata
         // We need to use absdir as the dirname, and prepend dirname(*i) to the filenames
         Metadata::read_file(fullpath, [&](std::shared_ptr<Metadata> md) {
@@ -146,14 +150,14 @@ bool Manifest::query_summary(const Matcher& matcher, Summary& summary)
     return true;
 }
 
-void Manifest::query_segment(const std::string& relpath, SegmentManager& segs, metadata_dest_func dest) const
+void Manifest::query_segment(const std::string& relpath, dataset::Session& session, metadata_dest_func dest) const
 {
     if (lock.expired())
         throw std::runtime_error("cannot query_segment while there is no lock held");
     string absdir = sys::abspath(m_path);
     string prepend_fname = str::dirname(relpath);
     string abspath = str::joinpath(m_path, relpath);
-    auto reader = segs.get_reader(scan::Scanner::format_from_filename(relpath), relpath, lock.lock());
+    auto reader = session.segment_reader(scan::Scanner::format_from_filename(relpath), m_path, relpath, lock.lock());
     Metadata::read_file(abspath + ".metadata", [&](std::shared_ptr<Metadata> md) {
         // Tweak Blob sources replacing the file name with relpath
         if (const source::Blob* s = md->has_source_blob())
@@ -648,7 +652,7 @@ public:
 
         m_db.open(pathname);
         setupPragmas();
-        
+
         if (need_create)
             initDB();
 

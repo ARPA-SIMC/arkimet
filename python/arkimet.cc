@@ -117,7 +117,7 @@ Arguments:
                 cfg.set("type", "remote");
                 cfg.set("path", baseurl);
                 cfg.set("qmacro", query);
-                ds = arki::dataset::Reader::create(cfg);
+                ds = arki::dataset::Reader::create(arki::python::get_dataset_session(), cfg);
             }
 
             return (PyObject*)dataset_reader_create(ds);
@@ -144,7 +144,7 @@ struct make_merged_dataset : public MethKwargs<make_merged_dataset, PyObject>
         try {
             core::cfg::Sections cfg = sections_from_python(arg_cfg);
 
-            std::unique_ptr<arki::dataset::Merged> ds(new arki::dataset::Merged);
+            std::unique_ptr<arki::dataset::Merged> ds(new arki::dataset::Merged(arki::python::get_dataset_session()));
             for (auto si: cfg)
                 ds->add_dataset(si.second);
             return (PyObject*)dataset_reader_create(move(ds));

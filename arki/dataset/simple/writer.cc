@@ -1,8 +1,8 @@
 #include "arki/dataset/simple/writer.h"
 #include "arki/dataset/index/manifest.h"
-#include "arki/dataset/segment.h"
 #include "arki/dataset/step.h"
 #include "arki/dataset/lock.h"
+#include "arki/dataset/session.h"
 #include "arki/types/source/blob.h"
 #include "arki/types/reftime.h"
 #include "arki/nag.h"
@@ -155,7 +155,7 @@ std::unique_ptr<AppendSegment> Writer::file(const std::string& relpath)
 {
     sys::makedirs(str::dirname(str::joinpath(config().path, relpath)));
     auto lock = config().append_lock_dataset();
-    auto segment = segment_manager().get_writer(scan::Scanner::format_from_filename(relpath), relpath);
+    auto segment = config().session->segment_writer(scan::Scanner::format_from_filename(relpath), config().path, relpath);
     return std::unique_ptr<AppendSegment>(new AppendSegment(m_config, lock, segment));
 }
 
@@ -188,9 +188,9 @@ void Writer::remove(Metadata& md)
     throw std::runtime_error("cannot remove data from simple dataset: dataset does not support removing items");
 }
 
-void Writer::test_acquire(const core::cfg::Section& cfg, WriterBatch& batch)
+void Writer::test_acquire(std::shared_ptr<Session> session, const core::cfg::Section& cfg, WriterBatch& batch)
 {
-    std::shared_ptr<const simple::Config> config(new simple::Config(cfg));
+    std::shared_ptr<const simple::Config> config(new simple::Config(session, cfg));
     for (auto& e: batch)
     {
         auto age_check = config->check_acquire_age(e->md);

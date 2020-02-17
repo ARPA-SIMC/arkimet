@@ -18,6 +18,7 @@
 #include "arki/dataset/http.h"
 #include "arki/dataset/time.h"
 #include "arki/dataset/segmented.h"
+#include "arki/dataset/session.h"
 #include "arki/nag.h"
 #include "dataset/reporter.h"
 #include <vector>
@@ -341,7 +342,7 @@ Examples::
             else
                 cfg = section_from_python(py_cfg);
 
-            new (&(self->ds)) shared_ptr<arki::dataset::Reader>(arki::dataset::Reader::create(cfg));
+            new (&(self->ds)) shared_ptr<arki::dataset::Reader>(arki::dataset::Reader::create(arki::python::get_dataset_session(), cfg));
             return 0;
         } ARKI_CATCH_RETURN_INT;
     }
@@ -489,7 +490,7 @@ Examples::
             else
                 cfg = section_from_python(py_cfg);
 
-            new (&(self->ds)) std::shared_ptr<arki::dataset::Writer>(arki::dataset::Writer::create(cfg));
+            new (&(self->ds)) std::shared_ptr<arki::dataset::Writer>(arki::dataset::Writer::create(get_dataset_session(), cfg));
             return 0;
         } ARKI_CATCH_RETURN_INT;
     }
@@ -654,7 +655,7 @@ Examples::
             else
                 cfg = section_from_python(py_cfg);
 
-            new (&(self->ds)) std::shared_ptr<arki::dataset::Checker>(arki::dataset::Checker::create(cfg));
+            new (&(self->ds)) std::shared_ptr<arki::dataset::Checker>(arki::dataset::Checker::create(get_dataset_session(), cfg));
             return 0;
         } ARKI_CATCH_RETURN_INT;
     }
@@ -907,6 +908,15 @@ static PyModuleDef http_module = {
 
 namespace arki {
 namespace python {
+
+static thread_local std::shared_ptr<arki::dataset::Session> dataset_session;
+
+std::shared_ptr<arki::dataset::Session> get_dataset_session()
+{
+    if (!dataset_session)
+        dataset_session = make_shared<arki::dataset::Session>();
+    return dataset_session;
+}
 
 arkipy_DatasetReader* dataset_reader_create()
 {

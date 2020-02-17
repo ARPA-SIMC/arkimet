@@ -19,9 +19,9 @@ struct OfflineConfig : public dataset::Config
      */
     std::string summary_pathname;
 
-    OfflineConfig(const std::string& pathname);
+    OfflineConfig(std::shared_ptr<Session> session, const std::string& pathname);
 
-    static std::shared_ptr<const OfflineConfig> create(const std::string& pathname);
+    static std::shared_ptr<const OfflineConfig> create(std::shared_ptr<Session> session, const std::string& pathname);
 };
 
 

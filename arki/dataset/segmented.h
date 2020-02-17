@@ -27,20 +27,6 @@ public:
     dataset::ReplaceStrategy default_replace_strategy;
 
     /**
-     * If false, autodetect segment types base on data types.
-     *
-     * If true, directory segments are always used regardless of data type.
-     */
-    bool force_dir_segments = false;
-
-    /**
-     * If true, segments on disk will contain holes and allocate no disk space.
-     *
-     * This is only used for testing.
-     */
-    bool mock_data = false;
-
-    /**
      * If true, this dataset is used as an archive for offline data
      */
     bool offline = false;
@@ -59,16 +45,14 @@ public:
     unsigned gz_group_size = 512;
 
 
-    Config(const core::cfg::Section& cfg);
+    Config(std::shared_ptr<Session> session, const core::cfg::Section& cfg);
     ~Config();
 
     virtual bool relpath_timespan(const std::string& path, core::Time& start_time, core::Time& end_time) const;
 
     const Step& step() const { return *m_step; }
 
-    std::unique_ptr<SegmentManager> create_segment_manager() const;
-
-    static std::shared_ptr<const Config> create(const core::cfg::Section& cfg);
+    static std::shared_ptr<const Config> create(std::shared_ptr<Session> session, const core::cfg::Section& cfg);
 };
 
 /**
@@ -76,15 +60,11 @@ public:
  */
 class Reader : public LocalReader
 {
-private:
-    SegmentManager* m_segment_manager = nullptr;
-
 public:
     using LocalReader::LocalReader;
     ~Reader();
 
     const Config& config() const override = 0;
-    SegmentManager& segment_manager();
 };
 
 /**
@@ -92,9 +72,6 @@ public:
  */
 class Writer : public LocalWriter
 {
-private:
-    SegmentManager* m_segment_manager = nullptr;
-
 protected:
     /**
      * Return an instance of the Segment for the file where the given metadata
@@ -109,9 +86,8 @@ public:
     ~Writer();
 
     const Config& config() const override = 0;
-    SegmentManager& segment_manager();
 
-    static void test_acquire(const core::cfg::Section& cfg, WriterBatch& batch);
+    static void test_acquire(std::shared_ptr<Session>, const core::cfg::Section& cfg, WriterBatch& batch);
 };
 
 
@@ -237,15 +213,11 @@ public:
  */
 class Checker : public LocalChecker
 {
-private:
-    SegmentManager* m_segment_manager = nullptr;
-
 public:
     using LocalChecker::LocalChecker;
     ~Checker();
 
     const Config& config() const override = 0;
-    SegmentManager& segment_manager();
 
     void check(CheckerConfig& opts) override;
     void repack(CheckerConfig& opts, unsigned test_flags=0) override;
@@ -385,6 +357,13 @@ public:
      * This is used to simulate anomalies in the dataset during tests.
      */
     virtual void test_invalidate_in_index(const std::string& relpath) = 0;
+
+    /**
+     * Scan a dataset for data files, returning a set of pathnames relative to
+     * root.
+     */
+    static void scan_dir(const std::string& root, std::function<void(const std::string& relpath)> dest);
+
 };
 
 }

@@ -178,7 +178,7 @@ add_method("acquire_replace", [](Fixture& f) {
     {
         auto cfg(f.cfg);
         cfg.set("replace", "true");
-        auto config = dataset::ondisk2::Config::create(cfg);
+        auto config = dataset::ondisk2::Config::create(f.session(), cfg);
         auto writer = config->create_writer();
         for (auto& md: mdc)
             wassert(actual(writer->acquire(*md)) == dataset::ACQ_OK);
@@ -197,11 +197,11 @@ add_method("acquire_replace", [](Fixture& f) {
 
         // Make sure we're not getting the deleted element
         const source::Blob& blob0 = mdc[0].sourceBlob();
-        wassert(actual(blob0.offset) > 0);
+        wassert(actual(blob0.offset) > 0u);
         const source::Blob& blob1 = mdc[1].sourceBlob();
-        wassert(actual(blob1.offset) > 0);
+        wassert(actual(blob1.offset) > 0u);
         const source::Blob& blob2 = mdc[2].sourceBlob();
-        wassert(actual(blob2.offset) > 0);
+        wassert(actual(blob2.offset) > 0u);
     }
 
     // Test querying the summary

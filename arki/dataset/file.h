@@ -17,14 +17,14 @@ namespace dataset {
 class FileConfig : public dataset::Config
 {
 public:
-    FileConfig(const core::cfg::Section& cfg);
+    FileConfig(std::shared_ptr<Session> session, const core::cfg::Section& cfg);
 
     std::string pathname;
     std::string format;
 
     std::unique_ptr<Reader> create_reader() const override;
 
-    static std::shared_ptr<const FileConfig> create(const core::cfg::Section& cfg);
+    static std::shared_ptr<const FileConfig> create(std::shared_ptr<Session> session, const core::cfg::Section& cfg);
 };
 
 /**

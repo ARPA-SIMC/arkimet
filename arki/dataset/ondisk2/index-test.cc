@@ -1,7 +1,7 @@
 #include "arki/metadata/tests.h"
 #include "arki/exceptions.h"
 #include "arki/dataset.h"
-#include "arki/dataset/segment.h"
+#include "arki/dataset/session.h"
 #include "arki/core/file.h"
 #include "arki/metadata.h"
 #include "arki/metadata/data.h"
@@ -30,8 +30,9 @@ using namespace arki::tests;
 template<typename INDEX>
 inline unique_ptr<WIndex> createIndex(std::shared_ptr<core::Lock> lock, const std::string& text_cfg)
 {
+    auto session = std::make_shared<dataset::Session>();
     auto cfg = core::cfg::Section::parse(text_cfg);
-    auto config = dataset::ondisk2::Config::create(cfg);
+    auto config = dataset::ondisk2::Config::create(session, cfg);
     auto res = unique_ptr<INDEX>(new INDEX(config));
     res->lock = lock;
     return res;
@@ -79,8 +80,8 @@ Metadata make_md1()
 
 void query_index(WIndex& idx, const dataset::DataQuery& q, metadata::Collection& dest)
 {
-    auto segs = dataset::SegmentManager::get(".");
-    idx.query_data(q, *segs, dest.inserter_func());
+    auto session = std::make_shared<dataset::Session>();
+    idx.query_data(q, *session, dest.inserter_func());
 }
 
 struct ReadHang : public subprocess::Child
@@ -95,13 +96,13 @@ struct ReadHang : public subprocess::Child
     int main() noexcept override
     {
         try {
-            auto config = dataset::ondisk2::Config::create(cfg);
+            auto session = std::make_shared<dataset::Session>();
+            auto config = dataset::ondisk2::Config::create(session, cfg);
             auto lock = make_shared<core::lock::Null>();
-            auto segs = config->create_segment_manager();
             RIndex idx(config);
             idx.lock = lock;
             idx.open();
-            idx.query_data(Matcher::parse("origin:GRIB1"), *segs, [&](std::shared_ptr<Metadata> md) {
+            idx.query_data(Matcher::parse("origin:GRIB1"), *session, [&](std::shared_ptr<Metadata> md) {
                 fputs("H\n", stdout);
                 fflush(stdout);
                 fclose(stdout);
@@ -347,9 +348,9 @@ add_method("query_file", [] {
     p.commit();
 
     // Get the metadata corresponding to one file
+    auto session = std::make_shared<dataset::Session>();
     metadata::Collection mdc;
-    auto segs = dataset::SegmentManager::get(".");
-    test->scan_file(*segs, "inbound/padded.grib1", mdc.inserter_func());
+    test->scan_file(*session, "inbound/padded.grib1", mdc.inserter_func());
     wassert(actual(mdc.size()) == 2u);
 
     // Check that the metadata came out fine

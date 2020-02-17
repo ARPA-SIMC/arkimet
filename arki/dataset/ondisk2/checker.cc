@@ -3,7 +3,7 @@
 #include "arki/core/binary.h"
 #include "arki/dataset/maintenance.h"
 #include "arki/dataset/archive.h"
-#include "arki/dataset/segment.h"
+#include "arki/dataset/session.h"
 #include "arki/dataset/reporter.h"
 #include "arki/dataset/step.h"
 #include "arki/dataset/lock.h"
@@ -63,7 +63,7 @@ public:
     CheckerSegment(Checker& checker, const std::string& relpath, std::shared_ptr<dataset::CheckLock> lock)
         : segmented::CheckerSegment(lock), checker(checker)
     {
-        segment = checker.segment_manager().get_checker(scan::Scanner::format_from_filename(relpath), relpath);
+        segment = checker.config().session->segment_checker(scan::Scanner::format_from_filename(relpath), checker.config().path, relpath);
     }
 
     std::string path_relative() const override { return segment->segment().relpath; }
@@ -72,7 +72,7 @@ public:
 
     void get_metadata(std::shared_ptr<core::Lock> lock, metadata::Collection& mds) override
     {
-        checker.idx->scan_file(checker.segment_manager(), segment->segment().relpath, mds.inserter_func(), "reftime, offset");
+        checker.idx->scan_file(*checker.config().session, segment->segment().relpath, mds.inserter_func(), "reftime, offset");
     }
 
     segmented::SegmentState scan(dataset::Reporter& reporter, bool quick=true) override
@@ -94,7 +94,7 @@ public:
         }
 
         metadata::Collection mds;
-        checker.idx->scan_file(checker.segment_manager(), segment->segment().relpath, mds.inserter_func(), "m.file, m.reftime, m.offset");
+        checker.idx->scan_file(*checker.config().session, segment->segment().relpath, mds.inserter_func(), "m.file, m.reftime, m.offset");
 
         segment::State state = segment::SEGMENT_OK;
         bool untrusted_index = files::hasDontpackFlagfile(checker.config().path);
@@ -156,7 +156,7 @@ public:
     {
         auto lock = checker.lock->write_lock();
         metadata::Collection mds;
-        checker.idx->scan_file(checker.segment_manager(), segment->segment().relpath, mds.inserter_func(), "reftime, offset");
+        checker.idx->scan_file(*checker.config().session, segment->segment().relpath, mds.inserter_func(), "reftime, offset");
         return reorder(mds, test_flags);
     }
 
@@ -212,7 +212,7 @@ public:
 
         // Rescan file
         metadata::Collection mds;
-        checker.idx->scan_file(checker.segment_manager(), segment->segment().relpath, mds.inserter_func(), "reftime, offset");
+        checker.idx->scan_file(*checker.config().session, segment->segment().relpath, mds.inserter_func(), "reftime, offset");
 
         // Create the .tar segment
         segment = segment->tar(mds);
@@ -249,7 +249,7 @@ public:
 
         // Rescan file
         metadata::Collection mds;
-        checker.idx->scan_file(checker.segment_manager(), segment->segment().relpath, mds.inserter_func(), "reftime, offset");
+        checker.idx->scan_file(*checker.config().session, segment->segment().relpath, mds.inserter_func(), "reftime, offset");
 
         // Create the .tar segment
         segment = segment->zip(mds);
@@ -286,7 +286,7 @@ public:
 
         // Rescan file
         metadata::Collection mds;
-        checker.idx->scan_file(checker.segment_manager(), segment->segment().relpath, mds.inserter_func(), "reftime, offset");
+        checker.idx->scan_file(*checker.config().session, segment->segment().relpath, mds.inserter_func(), "reftime, offset");
 
         // Create the .tar segment
         size_t old_size = segment->size();
@@ -408,7 +408,7 @@ public:
     {
         // Rebuild the metadata
         metadata::Collection mds;
-        checker.idx->scan_file(checker.segment_manager(), segment->segment().relpath, mds.inserter_func());
+        checker.idx->scan_file(*checker.config().session, segment->segment().relpath, mds.inserter_func());
         mds.writeAtomically(segment->segment().abspath + ".metadata");
 
         // Remove from index
@@ -483,7 +483,7 @@ void Checker::segments_tracked_filtered(const Matcher& matcher, std::function<vo
 
 void Checker::segments_untracked(std::function<void(segmented::CheckerSegment& relpath)> dest)
 {
-    segment_manager().scan_dir([&](const std::string& relpath) {
+    scan_dir(config().path, [&](const std::string& relpath) {
         if (m_idx->has_segment(relpath)) return;
         CheckerSegment segment(*this, relpath, lock);
         dest(segment);
@@ -496,7 +496,7 @@ void Checker::segments_untracked_filtered(const Matcher& matcher, std::function<
     auto m = matcher.get(TYPE_REFTIME);
     if (!m) return segments_untracked(dest);
 
-    segment_manager().scan_dir([&](const std::string& relpath) {
+    scan_dir(config().path, [&](const std::string& relpath) {
         if (m_idx->has_segment(relpath)) return;
         if (!config().step().pathMatches(relpath, *m)) return;
         CheckerSegment segment(*this, relpath, lock);
@@ -532,7 +532,7 @@ size_t Checker::vacuum(dataset::Reporter& reporter)
 void Checker::test_change_metadata(const std::string& relpath, Metadata& md, unsigned data_idx)
 {
     metadata::Collection mds;
-    idx->query_segment(relpath, segment_manager(), mds.inserter_func());
+    idx->query_segment(relpath, *config().session, mds.inserter_func());
     md.set_source(std::unique_ptr<arki::types::Source>(mds[data_idx].source().clone()));
     md.sourceBlob().unlock();
     mds[data_idx] = md;

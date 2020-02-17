@@ -1,10 +1,10 @@
 #include "arki/dataset/simple/checker.h"
 #include "arki/dataset/index/manifest.h"
 #include "arki/dataset/maintenance.h"
-#include "arki/dataset/segment.h"
 #include "arki/dataset/reporter.h"
 #include "arki/dataset/step.h"
 #include "arki/dataset/lock.h"
+#include "arki/dataset/session.h"
 #include "arki/types/source/blob.h"
 #include "arki/summary.h"
 #include "arki/types/reftime.h"
@@ -60,7 +60,7 @@ public:
     CheckerSegment(Checker& checker, const std::string& relpath, std::shared_ptr<dataset::CheckLock> lock)
         : segmented::CheckerSegment(lock), checker(checker)
     {
-        segment = checker.segment_manager().get_checker(scan::Scanner::format_from_filename(relpath), relpath);
+        segment = checker.config().session->segment_checker(scan::Scanner::format_from_filename(relpath), config().path, relpath);
     }
 
     std::string path_relative() const override { return segment->segment().relpath; }
@@ -488,7 +488,7 @@ void Checker::segments_tracked_filtered(const Matcher& matcher, std::function<vo
 
 void Checker::segments_untracked(std::function<void(segmented::CheckerSegment& relpath)> dest)
 {
-    segment_manager().scan_dir([&](const std::string& relpath) {
+    scan_dir(config().path, [&](const std::string& relpath) {
         if (m_idx->has_segment(relpath)) return;
         CheckerSegment segment(*this, relpath, lock);
         dest(segment);
@@ -501,7 +501,7 @@ void Checker::segments_untracked_filtered(const Matcher& matcher, std::function<
     auto m = matcher.get(TYPE_REFTIME);
     if (!m) return segments_untracked(dest);
 
-    segment_manager().scan_dir([&](const std::string& relpath) {
+    scan_dir(config().path, [&](const std::string& relpath) {
         if (m_idx->has_segment(relpath)) return;
         if (!config().step().pathMatches(relpath, *m)) return;
         CheckerSegment segment(*this, relpath, lock);

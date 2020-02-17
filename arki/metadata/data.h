@@ -74,6 +74,8 @@ struct DataManager;
 /**
  * Track all data elements that get cached in metadata during the lifetime of
  * this object.
+ *
+ * This is used for testing.
  */
 class TrackedData
 {

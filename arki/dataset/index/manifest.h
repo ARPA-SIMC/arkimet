@@ -25,8 +25,8 @@ public:
     Manifest(const std::string& path, const core::lock::Policy* lock_policy);
     virtual ~Manifest();
 
-	virtual void openRO() = 0;
-	virtual void openRW() = 0;
+    virtual void openRO() = 0;
+    virtual void openRW() = 0;
 
     /// Return the list of segments, sorted by the start reftime of their contents
     virtual std::vector<std::string> file_list(const Matcher& matcher) = 0;
@@ -52,9 +52,9 @@ public:
      */
     virtual void expand_date_range(std::unique_ptr<core::Time>& begin, std::unique_ptr<core::Time>& end) const = 0;
 
-    bool query_data(const dataset::DataQuery& q, SegmentManager& segs, metadata_dest_func) override;
+    bool query_data(const dataset::DataQuery& q, dataset::Session& session, metadata_dest_func) override;
     bool query_summary(const Matcher& matcher, Summary& summary) override;
-    void query_segment(const std::string& relpath, SegmentManager& segs, metadata_dest_func) const override;
+    void query_segment(const std::string& relpath, dataset::Session& session, metadata_dest_func) const override;
     void list_segments(std::function<void(const std::string&)> dest) override = 0;
     void list_segments_filtered(const Matcher& matcher, std::function<void(const std::string&)> dest) override = 0;
     virtual time_t segment_mtime(const std::string& relpath) const = 0;

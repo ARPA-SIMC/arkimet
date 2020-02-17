@@ -15,12 +15,12 @@ namespace outbound {
 
 struct Config : public segmented::Config
 {
-    Config(const core::cfg::Section& cfg);
+    Config(std::shared_ptr<Session> session, const core::cfg::Section& cfg);
 
     std::unique_ptr<dataset::Reader> create_reader() const override;
     std::unique_ptr<dataset::Writer> create_writer() const override;
 
-    static std::shared_ptr<const Config> create(const core::cfg::Section& cfg);
+    static std::shared_ptr<const Config> create(std::shared_ptr<Session> session, const core::cfg::Section& cfg);
 };
 
 /**
@@ -57,7 +57,7 @@ public:
 
     virtual void remove(Metadata& id);
 
-    static void test_acquire(const core::cfg::Section& cfg, WriterBatch& batch);
+    static void test_acquire(std::shared_ptr<Session> session, const core::cfg::Section& cfg, WriterBatch& batch);
 };
 
 }

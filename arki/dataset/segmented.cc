@@ -1,4 +1,5 @@
 #include "segmented.h"
+#include "session.h"
 #include "step.h"
 #include "time.h"
 #include "ondisk2/writer.h"
@@ -53,14 +54,14 @@ void SegmentState::check_age(const std::string& relpath, const Config& cfg, data
     }
 }
 
-Config::Config(const core::cfg::Section& cfg)
-    : LocalConfig(cfg),
+Config::Config(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
+    : LocalConfig(session, cfg),
       step_name(str::lower(cfg.value("step"))),
-      force_dir_segments(cfg.value("segments") == "dir"),
-      mock_data(cfg.value("mockdata") == "true"),
       offline(cfg.value("offline") == "true"),
       smallfiles(cfg.value_bool("smallfiles"))
 {
+    if (cfg.has("segments")) throw std::runtime_error("segments used in config");
+    if (cfg.has("mockdata")) throw std::runtime_error("mockdata used in config");
     if (step_name.empty())
         throw std::runtime_error("Dataset " + name + " misses step= configuration");
 
@@ -91,47 +92,26 @@ bool Config::relpath_timespan(const std::string& path, core::Time& start_time, c
     return step().path_timespan(path, start_time, end_time);
 }
 
-std::unique_ptr<SegmentManager> Config::create_segment_manager() const
+std::shared_ptr<const Config> Config::create(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
 {
-    return SegmentManager::get(path, force_dir_segments, mock_data);
-}
-
-std::shared_ptr<const Config> Config::create(const core::cfg::Section& cfg)
-{
-    return std::shared_ptr<const Config>(new Config(cfg));
+    return std::shared_ptr<const Config>(new Config(session, cfg));
 }
 
 
 Reader::~Reader()
 {
-    delete m_segment_manager;
-}
-
-SegmentManager& Reader::segment_manager()
-{
-    if (!m_segment_manager)
-        m_segment_manager = config().create_segment_manager().release();
-    return *m_segment_manager;
 }
 
 
 Writer::~Writer()
 {
-    delete m_segment_manager;
-}
-
-SegmentManager& Writer::segment_manager()
-{
-    if (!m_segment_manager)
-        m_segment_manager = config().create_segment_manager().release();
-    return *m_segment_manager;
 }
 
 std::shared_ptr<segment::Writer> Writer::file(const Metadata& md, const std::string& format)
 {
     const core::Time& time = md.get<types::reftime::Position>()->time;
     string relpath = config().step()(time) + "." + md.source().format;
-    return segment_manager().get_writer(format, relpath);
+    return config().session->segment_writer(format, config().path, relpath);
 }
 
 static bool writer_batch_element_lt(const std::shared_ptr<WriterBatchElement>& a, const std::shared_ptr<WriterBatchElement>& b)
@@ -184,18 +164,18 @@ std::map<std::string, WriterBatch> Writer::batch_by_segment(WriterBatch& batch)
     return by_segment;
 }
 
-void Writer::test_acquire(const core::cfg::Section& cfg, WriterBatch& batch)
+void Writer::test_acquire(std::shared_ptr<Session> session, const core::cfg::Section& cfg, WriterBatch& batch)
 {
     string type = str::lower(cfg.value("type"));
     if (type.empty())
         type = "local";
 
     if (type == "iseg")
-        return dataset::iseg::Writer::test_acquire(cfg, batch);
+        return dataset::iseg::Writer::test_acquire(session, cfg, batch);
     if (type == "ondisk2" || type == "test")
-        return dataset::ondisk2::Writer::test_acquire(cfg, batch);
+        return dataset::ondisk2::Writer::test_acquire(session, cfg, batch);
     if (type == "simple" || type == "error" || type == "duplicates")
-        return dataset::simple::Writer::test_acquire(cfg, batch);
+        return dataset::simple::Writer::test_acquire(session, cfg, batch);
 
     throw std::runtime_error("cannot simulate dataset acquisition: unknown dataset type \""+type+"\"");
 }
@@ -258,14 +238,6 @@ void CheckerSegment::unarchive()
 
 Checker::~Checker()
 {
-    delete m_segment_manager;
-}
-
-SegmentManager& Checker::segment_manager()
-{
-    if (!m_segment_manager)
-        m_segment_manager = config().create_segment_manager().release();
-    return *m_segment_manager;
 }
 
 void Checker::segments_all(std::function<void(segmented::CheckerSegment& segment)> dest)
@@ -458,6 +430,34 @@ void Checker::check(CheckerConfig& opts)
         files::removeDontpackFlagfile(root);
     }
     LocalChecker::check(opts);
+}
+
+void Checker::scan_dir(const std::string& root, std::function<void(const std::string& relpath)> dest)
+{
+    // Trim trailing '/'
+    string m_root = root;
+    while (m_root.size() > 1 and m_root[m_root.size()-1] == '/')
+        m_root.resize(m_root.size() - 1);
+
+    files::PathWalk walker(m_root);
+    walker.consumer = [&](const std::string& relpath, sys::Path::iterator& entry, struct stat& st) {
+        // Skip '.', '..' and hidden files
+        if (entry->d_name[0] == '.')
+            return false;
+
+        string name = entry->d_name;
+        string abspath = str::joinpath(m_root, relpath, name);
+        if (Segment::is_segment(abspath))
+        {
+            string basename = Segment::basename(name);
+            dest(str::joinpath(relpath, basename));
+            return false;
+        }
+
+        return true;
+    };
+
+    walker.walk();
 }
 
 }

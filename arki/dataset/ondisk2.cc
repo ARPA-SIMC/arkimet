@@ -12,8 +12,8 @@ namespace arki {
 namespace dataset {
 namespace ondisk2 {
 
-Config::Config(const core::cfg::Section& cfg)
-    : dataset::IndexedConfig(cfg),
+Config::Config(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
+    : dataset::IndexedConfig(session, cfg),
       summary_cache_pathname(str::joinpath(path, ".summaries")),
       indexfile(cfg.value("indexfile")),
       index(cfg.value("index")),
@@ -31,9 +31,9 @@ Config::Config(const core::cfg::Section& cfg)
         index = "origin, product, level, timerange, area, proddef, run";
 }
 
-std::shared_ptr<const Config> Config::create(const core::cfg::Section& cfg)
+std::shared_ptr<const Config> Config::create(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
 {
-    return std::shared_ptr<const Config>(new Config(cfg));
+    return std::shared_ptr<const Config>(new Config(session, cfg));
 }
 
 std::unique_ptr<dataset::Reader> Config::create_reader() const

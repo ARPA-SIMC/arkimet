@@ -22,7 +22,7 @@ protected:
     std::map<std::string, std::shared_ptr<const dataset::Config>> configs;
 
 public:
-    explicit Configs(const core::cfg::Sections& cfg);
+    explicit Configs(std::shared_ptr<Session>, const core::cfg::Sections& cfg);
 
     /// Get the configuration for the given dataset
     std::shared_ptr<const dataset::Config> get(const std::string& name) const;

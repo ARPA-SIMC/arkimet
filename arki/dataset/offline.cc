@@ -7,14 +7,14 @@ using namespace arki::utils;
 namespace arki {
 namespace dataset {
 
-OfflineConfig::OfflineConfig(const std::string& pathname)
-    : summary_pathname(pathname + ".summary")
+OfflineConfig::OfflineConfig(std::shared_ptr<Session> session, const std::string& pathname)
+    : dataset::Config(session), summary_pathname(pathname + ".summary")
 {
 }
 
-std::shared_ptr<const OfflineConfig> OfflineConfig::create(const std::string& pathname)
+std::shared_ptr<const OfflineConfig> OfflineConfig::create(std::shared_ptr<Session> session, const std::string& pathname)
 {
-    return std::shared_ptr<const OfflineConfig>(new OfflineConfig(pathname));
+    return std::shared_ptr<const OfflineConfig>(new OfflineConfig(session, pathname));
 }
 
 

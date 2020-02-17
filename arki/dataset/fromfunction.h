@@ -13,11 +13,11 @@ namespace fromfunction {
 
 struct Config : public dataset::Config
 {
-    Config(const core::cfg::Section& cfg);
+    Config(std::shared_ptr<Session> session, const core::cfg::Section& cfg);
 
     std::unique_ptr<dataset::Reader> create_reader() const override;
 
-    static std::shared_ptr<const Config> create(const core::cfg::Section& cfg);
+    static std::shared_ptr<const Config> create(std::shared_ptr<Session> session, const core::cfg::Section& cfg);
 };
 
 

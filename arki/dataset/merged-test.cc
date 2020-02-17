@@ -1,5 +1,6 @@
 #include "arki/dataset/tests.h"
 #include "arki/dataset/merged.h"
+#include "arki/dataset/session.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
 #include "arki/matcher.h"
@@ -12,16 +13,12 @@ namespace {
 
 struct Fixture : public arki::utils::tests::Fixture
 {
+    std::shared_ptr<dataset::Session> session;
+    std::shared_ptr<dataset::Merged> ds;
     core::cfg::Sections config;
-    dataset::Merged ds;
 
     Fixture()
     {
-        // Cleanup the test datasets
-        system("rm -rf test200/*");
-        system("rm -rf test80/*");
-        system("rm -rf error/*");
-
         // In-memory dataset configuration
         string conf =
             "[test200]\n"
@@ -46,20 +43,30 @@ struct Fixture : public arki::utils::tests::Fixture
             "name = error\n"
             "path = error\n";
         config = core::cfg::Sections::parse(conf, "(memory)");
+    }
+
+    void test_setup()
+    {
+        session = std::make_shared<dataset::Session>();
+        // Cleanup the test datasets
+        system("rm -rf test200/*");
+        system("rm -rf test80/*");
+        system("rm -rf error/*");
 
         // Import data into the datasets
         metadata::TestCollection mdc("inbound/test.grib1");
         wassert(import("test200", mdc[0]));
         wassert(import("test80", mdc[1]));
         wassert(import("error", mdc[2]));
-        ds.add_dataset(*config.section("test200"));
-        ds.add_dataset(*config.section("test80"));
-        ds.add_dataset(*config.section("error"));
+        ds = std::make_shared<dataset::Merged>(session);
+        ds->add_dataset(*config.section("test200"));
+        ds->add_dataset(*config.section("test80"));
+        ds->add_dataset(*config.section("error"));
     }
 
     void import(const std::string& dsname, Metadata& md)
     {
-        auto writer = dataset::Config::create(*config.section(dsname))->create_writer();
+        auto writer = dataset::Config::create(session, *config.section(dsname))->create_writer();
         wassert(tests::actual(writer.get()).import(md));
     }
 };
@@ -75,7 +82,7 @@ void Tests::register_tests() {
 
 // Test querying the datasets
 add_method("query", [](Fixture& f) {
-    metadata::Collection mdc(f.ds, Matcher());
+    metadata::Collection mdc(*f.ds, Matcher());
     wassert(actual(mdc.size()) == 3u);
 });
 

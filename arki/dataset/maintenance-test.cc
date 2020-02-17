@@ -32,8 +32,8 @@ namespace arki {
 namespace dataset {
 namespace maintenance_test {
 
-Fixture::Fixture(const std::string& format, const std::string& cfg_instance)
-    : DatasetTest(cfg_instance), format(format)
+Fixture::Fixture(const std::string& format, const std::string& cfg_instance, DatasetTest::TestVariant variant)
+    : DatasetTest(cfg_instance, variant), format(format)
 {
     if (format == "grib")
     {

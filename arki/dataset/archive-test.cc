@@ -9,6 +9,7 @@
 #include "arki/summary.h"
 #include "arki/utils/files.h"
 #include "arki/iotrace.h"
+#include "arki/dataset/session.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/string.h"
 
@@ -23,6 +24,7 @@ namespace {
 
 struct Fixture : public arki::utils::tests::Fixture
 {
+    std::shared_ptr<dataset::Session> session;
     core::cfg::Section cfg;
     metadata::TestCollection orig;
     std::shared_ptr<const ArchivesConfig> config;
@@ -34,6 +36,8 @@ struct Fixture : public arki::utils::tests::Fixture
 
     void test_setup()
     {
+        session = make_shared<dataset::Session>();
+
         if (sys::exists("testds")) sys::rmtree("testds");
         sys::makedirs("testds/.archive/last");
 
@@ -45,7 +49,7 @@ struct Fixture : public arki::utils::tests::Fixture
         cfg.set("unique", "origin, reftime");
         cfg.set("archive age", "7");
 
-        config = ArchivesConfig::create("testds");
+        config = ArchivesConfig::create(session, "testds");
 
         iotrace::init();
     }
@@ -139,7 +143,7 @@ add_method("reader_empty_last", [](Fixture& f) {
         cfg.set("path", sys::abspath("testds/.archive/foo"));
         cfg.set("type", "simple");
         cfg.set("step", "daily");
-        auto config = dataset::Config::create(cfg);
+        auto config = dataset::Config::create(f.session, cfg);
         auto writer = config->create_writer();
         writer->flush();
     }

@@ -29,9 +29,8 @@ nobase_dist_arkiinclude_HEADERS = \
 		dataset/lock.h \
 		dataset/reporter.h \
 		dataset/time.h \
+		dataset/session.h \
 		dataset/archive.h \
-		dataset/segment.h \
-		dataset/segment/managers.h \
 		dataset/empty.h \
 		dataset/fromfunction.h \
 		dataset/testlarge.h \
@@ -474,8 +473,7 @@ libarkimet_la_SOURCES += \
 		dataset/lock.cc \
 		dataset/reporter.cc \
 		dataset/time.cc \
-		dataset/segment.cc \
-		dataset/segment/managers.cc \
+		dataset/session.cc \
 		dataset/maintenance.cc \
 		dataset/memory.cc \
 		dataset/index.cc \
@@ -522,8 +520,7 @@ tests_arki_test_SOURCES += \
 		dataset/lock-test.cc \
 		dataset/reporter-test.cc \
 		dataset/time-test.cc \
-		dataset/segment-test.cc \
-		dataset/segment/managers-test.cc \
+		dataset/session-test.cc \
 		dataset/maintenance-test.cc \
 		dataset/memory-test.cc \
 		dataset/index-test.cc \

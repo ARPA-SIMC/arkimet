@@ -2,6 +2,7 @@
 #include "python/matcher.h"
 #include "python/metadata.h"
 #include "python/summary.h"
+#include "python/dataset.h"
 #include "python/utils/values.h"
 #include "python/utils/dict.h"
 #include "arki/metadata/sort.h"
@@ -21,7 +22,7 @@ struct PyDatasetReader : public arki::dataset::Reader
     PyObject* meth_query_summary = nullptr;
 
     PyDatasetReader(const arki::core::cfg::Section& config, PyObject* o)
-        : m_config(std::shared_ptr<const arki::dataset::Config>(new arki::dataset::Config(config))),
+        : m_config(std::shared_ptr<const arki::dataset::Config>(new arki::dataset::Config(get_dataset_session(), config))),
           o(o)
     {
         AcquireGIL gil;

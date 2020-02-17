@@ -14,6 +14,7 @@
 #include "arki/dataset/iseg/checker.h"
 #include "arki/dataset/index/manifest.h"
 #include "arki/dataset/reporter.h"
+#include "arki/dataset/session.h"
 #include "arki/scan/grib.h"
 #include "arki/scan/vm2.h"
 #include "arki/utils/files.h"
@@ -23,6 +24,7 @@
 #include "arki/types/source/blob.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
+#include "arki/segment/dir.h"
 #include "arki/nag.h"
 #include <algorithm>
 #include <cstring>
@@ -38,6 +40,31 @@ using namespace arki::types;
 using namespace arki::utils;
 using namespace arki::dataset;
 using arki::core::Time;
+
+namespace {
+
+struct ForceDirSession : public arki::dataset::Session
+{
+public:
+    std::shared_ptr<segment::Writer> segment_writer(const std::string& format, const std::string& root, const std::string& relpath) override
+    {
+        std::string abspath = str::joinpath(root, relpath);
+        auto res(arki::Segment::detect_writer(format, root, relpath, abspath, false));
+        if (res) return res;
+        return std::shared_ptr<segment::Writer>(new arki::segment::dir::Writer(format, root, relpath, abspath));
+    }
+
+    std::shared_ptr<segment::Checker> segment_checker(const std::string& format, const std::string& root, const std::string& relpath) override
+    {
+        std::string abspath = str::joinpath(root, relpath);
+        auto res(Segment::detect_checker(format, root, relpath, abspath, false));
+        if (res) return res;
+        return std::shared_ptr<segment::Checker>(new segment::dir::Checker(format, root, relpath, abspath));
+    }
+};
+
+}
+
 
 namespace arki {
 namespace tests {
@@ -81,15 +108,14 @@ void State::dump(FILE* out) const
 }
 
 
-DatasetTest::DatasetTest(const std::string& cfg_instance)
-    : cfg_instance(cfg_instance), ds_name("testds"), ds_root(sys::abspath("testds"))
+DatasetTest::DatasetTest(const std::string& cfg_instance, TestVariant variant)
+    : variant(variant), cfg_instance(cfg_instance), ds_name("testds"), ds_root(sys::abspath("testds"))
 {
     //if (default_datasettest_config)
         //cfg = *default_datasettest_config;
 }
 DatasetTest::~DatasetTest()
 {
-    if (segment_manager) delete segment_manager;
 }
 
 void DatasetTest::test_setup(const std::string& cfg_default)
@@ -104,9 +130,8 @@ void DatasetTest::test_setup(const std::string& cfg_default)
 
 void DatasetTest::test_teardown()
 {
-    delete segment_manager;
-    segment_manager = nullptr;
     m_config.reset();
+    m_session.reset();
 }
 
 void DatasetTest::test_reread_config()
@@ -121,6 +146,32 @@ void DatasetTest::reset_test(const std::string& cfg_default)
     test_setup(cfg_default);
 }
 
+void DatasetTest::set_session(std::shared_ptr<dataset::Session> session)
+{
+    test_teardown();
+    m_session = session;
+    config();
+}
+
+std::shared_ptr<dataset::Session> DatasetTest::session()
+{
+    if (!m_session.get())
+    {
+        switch (variant)
+        {
+            case TEST_NORMAL:
+                m_session = make_shared<dataset::Session>();
+                break;
+            case TEST_FORCE_DIR:
+                m_session = make_shared<ForceDirSession>();
+                break;
+            case TEST_MOCK_DATA:
+                throw std::runtime_error("mock_data sessions not yet implemented");
+        }
+    }
+    return m_session;
+}
+
 const Config& DatasetTest::config()
 {
     if (!m_config)
@@ -128,7 +179,7 @@ const Config& DatasetTest::config()
         sys::mkdir_ifmissing(ds_root);
         sys::File out(str::joinpath(ds_root, "config"), O_WRONLY | O_CREAT | O_TRUNC, 0666);
         cfg.write(out);
-        m_config = dataset::Config::create(cfg);
+        m_config = dataset::Config::create(session(), cfg);
     }
     return *m_config;
 }
@@ -149,17 +200,6 @@ std::shared_ptr<const dataset::ondisk2::Config> DatasetTest::ondisk2_config()
 {
     config();
     return dynamic_pointer_cast<const dataset::ondisk2::Config>(m_config);
-}
-
-SegmentManager& DatasetTest::segments()
-{
-    if (!segment_manager)
-    {
-        const dataset::segmented::Config* c = dynamic_cast<const dataset::segmented::Config*>(dataset_config().get());
-        if (!c) throw std::runtime_error("DatasetTest::segments called on a non-segmented dataset");
-        segment_manager = c->create_segment_manager().release();
-    }
-    return *segment_manager;
 }
 
 std::string DatasetTest::idxfname(const core::cfg::Section* wcfg) const

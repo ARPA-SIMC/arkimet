@@ -22,6 +22,7 @@
 #include "arki/utils/sys.h"
 #include <sys/resource.h>
 #include <time.h>
+#include <algorithm>
 
 namespace {
 using namespace std;
@@ -745,13 +746,13 @@ class Tests103 : public FixtureTestCase<Issue103Fixture>
 };
 
 Tests103 test103_ondisk2("arki_dataset_segmented_issue103_ondisk2", "type=ondisk2\n");
-Tests103 test103_ondisk2_dir("arki_dataset_segmented_issue103_ondisk2_dir", "type=ondisk2\nsegments=dir\n");
+Tests103 test103_ondisk2_dir("arki_dataset_segmented_issue103_ondisk2_dir", "type=ondisk2\n", DatasetTest::TEST_FORCE_DIR);
 Tests103 test103_simple_plain("arki_dataset_segmented_issue103_simple_plain", "type=simple\nindex_type=plain\n");
-Tests103 test103_simple_plain_dir("arki_dataset_segmented_issue103_simple_plain_dir", "type=simple\nindex_type=plain\nsegments=dir\n");
+Tests103 test103_simple_plain_dir("arki_dataset_segmented_issue103_simple_plain_dir", "type=simple\nindex_type=plain\n", DatasetTest::TEST_FORCE_DIR);
 Tests103 test103_simple_sqlite("arki_dataset_segmented_issue103_simple_sqlite", "type=simple\nindex_type=sqlite\n");
-Tests103 test103_simple_sqlite_dir("arki_dataset_segmented_issue103_simple_sqlite_dir", "type=simple\nindex_type=sqlite\nsegments=dir\n");
+Tests103 test103_simple_sqlite_dir("arki_dataset_segmented_issue103_simple_sqlite_dir", "type=simple\nindex_type=sqlite\n", DatasetTest::TEST_FORCE_DIR);
 Tests103 test103_iseg("arki_dataset_segmented_issue103_iseg", "type=iseg\nformat=vm2\n");
-Tests103 test103_iseg_dir("arki_dataset_segmented_issue103_iseg_dir", "type=iseg\nformat=vm2\nsegments=dir\n");
+Tests103 test103_iseg_dir("arki_dataset_segmented_issue103_iseg_dir", "type=iseg\nformat=vm2\n", DatasetTest::TEST_FORCE_DIR);
 
 void Tests103::register_tests() {
 
@@ -812,6 +813,112 @@ add_method("issue103", [](Fixture& f) {
         ++count; return true;
     }));
     wassert(actual(count) == max_files + 1);
+});
+
+}
+
+class ScanDirTests : public TestCase
+{
+    using TestCase::TestCase;
+    void register_tests() override;
+} test("arki_dataset_segmented_scan_dir");
+
+void ScanDirTests::register_tests() {
+
+// Test scan_dir on an empty directory
+add_method("scan_dir_empty", [] {
+    system("rm -rf dirscanner");
+    mkdir("dirscanner", 0777);
+
+    {
+        std::vector<std::string> res;
+        segmented::Checker::scan_dir("dirscanner", [&](const std::string& relpath) { res.push_back(relpath); });
+        wassert(actual(res.size()) == 0u);
+    }
+});
+
+// Test scan_dir on a populated directory
+add_method("scan_dir_dir1", [] {
+    system("rm -rf dirscanner");
+    mkdir("dirscanner", 0777);
+    sys::write_file("dirscanner/index.sqlite", "");
+    mkdir("dirscanner/2007", 0777);
+    mkdir("dirscanner/2008", 0777);
+    sys::write_file("dirscanner/2008/a.grib", "");
+    sys::write_file("dirscanner/2008/b.grib", "");
+    sys::write_file("dirscanner/2008/c.grib.gz", "");
+    sys::write_file("dirscanner/2008/d.grib.tar", "");
+    sys::write_file("dirscanner/2008/e.grib.zip", "");
+    mkdir("dirscanner/2008/temp", 0777);
+    mkdir("dirscanner/2009", 0777);
+    sys::write_file("dirscanner/2009/a.grib", "");
+    sys::write_file("dirscanner/2009/b.grib", "");
+    mkdir("dirscanner/2009/temp", 0777);
+    mkdir("dirscanner/.archive", 0777);
+    sys::write_file("dirscanner/.archive/z.grib", "");
+
+    {
+        std::vector<std::string> res;
+        segmented::Checker::scan_dir("dirscanner", [&](const std::string& relpath) { res.push_back(relpath); });
+        wassert(actual(res.size()) == 7u);
+        std::sort(res.begin(), res.end());
+
+        wassert(actual(res[0]) == "2008/a.grib");
+        wassert(actual(res[1]) == "2008/b.grib");
+        wassert(actual(res[2]) == "2008/c.grib");
+        wassert(actual(res[3]) == "2008/d.grib");
+        wassert(actual(res[4]) == "2008/e.grib");
+        wassert(actual(res[5]) == "2009/a.grib");
+        wassert(actual(res[6]) == "2009/b.grib");
+    }
+});
+
+// Test file names interspersed with directory names
+add_method("scan_dir_dir2", [] {
+    system("rm -rf dirscanner");
+    mkdir("dirscanner", 0777);
+    sys::write_file("dirscanner/index.sqlite", "");
+    mkdir("dirscanner/2008", 0777);
+    sys::write_file("dirscanner/2008/a.grib", "");
+    sys::write_file("dirscanner/2008/b.grib", "");
+    mkdir("dirscanner/2008/a", 0777);
+    sys::write_file("dirscanner/2008/a/a.grib", "");
+    mkdir("dirscanner/2009", 0777);
+    sys::write_file("dirscanner/2009/a.grib", "");
+    sys::write_file("dirscanner/2009/b.grib", "");
+
+    {
+        std::vector<std::string> res;
+        segmented::Checker::scan_dir("dirscanner", [&](const std::string& relpath) { res.push_back(relpath); });
+        wassert(actual(res.size()) == 5u);
+        std::sort(res.begin(), res.end());
+
+        wassert(actual(res[0]) == "2008/a.grib");
+        wassert(actual(res[1]) == "2008/a/a.grib");
+        wassert(actual(res[2]) == "2008/b.grib");
+        wassert(actual(res[3]) == "2009/a.grib");
+        wassert(actual(res[4]) == "2009/b.grib");
+    }
+});
+
+// odimh5 files are not considered segments
+add_method("scan_dir_dir2", [] {
+    system("rm -rf dirscanner");
+    mkdir("dirscanner", 0777);
+    mkdir("dirscanner/2008", 0777);
+    sys::write_file("dirscanner/2008/01.odimh5", "");
+
+    {
+        std::vector<std::string> res;
+        segmented::Checker::scan_dir("dirscanner", [&](const std::string& relpath) { res.push_back(relpath); });
+        wassert(actual(res.size()) == 0u);
+    }
+
+    {
+        std::vector<std::string> res;
+        segmented::Checker::scan_dir("dirscanner", [&](const std::string& relpath) { res.push_back(relpath); });
+        wassert(actual(res.size()) == 0u);
+    }
 });
 
 }

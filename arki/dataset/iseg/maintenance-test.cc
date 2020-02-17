@@ -51,14 +51,14 @@ void Tests<TestFixture>::register_tests()
 }
 
 Tests<FixtureConcat> test_iseg_grib("arki_dataset_iseg_maintenance_grib", "grib", "type=iseg\nformat=grib\n");
-Tests<FixtureDir> test_iseg_grib_dir("arki_dataset_iseg_maintenance_grib_dirs", "grib", "type=iseg\nformat=grib\nsegments=dir\n");
-Tests<FixtureZip> test_iseg_grib_zip("arki_dataset_iseg_maintenance_grib_zip", "grib", "type=iseg\nformat=grib\nsegments=dir\n");
+Tests<FixtureDir> test_iseg_grib_dir("arki_dataset_iseg_maintenance_grib_dirs", "grib", "type=iseg\nformat=grib\n", DatasetTest::TEST_FORCE_DIR);
+Tests<FixtureZip> test_iseg_grib_zip("arki_dataset_iseg_maintenance_grib_zip", "grib", "type=iseg\nformat=grib\n", DatasetTest::TEST_FORCE_DIR);
 Tests<FixtureConcat> test_iseg_bufr("arki_dataset_iseg_maintenance_bufr", "bufr", "type=iseg\nformat=bufr\n");
-Tests<FixtureDir> test_iseg_bufr_dir("arki_dataset_iseg_maintenance_bufr_dirs", "bufr", "type=iseg\nformat=bufr\nsegments=dir\n");
-Tests<FixtureZip> test_iseg_bufr_zip("arki_dataset_iseg_maintenance_bufr_zip", "bufr", "type=iseg\nformat=bufr\nsegments=dir\n");
+Tests<FixtureDir> test_iseg_bufr_dir("arki_dataset_iseg_maintenance_bufr_dirs", "bufr", "type=iseg\nformat=bufr\n", DatasetTest::TEST_FORCE_DIR);
+Tests<FixtureZip> test_iseg_bufr_zip("arki_dataset_iseg_maintenance_bufr_zip", "bufr", "type=iseg\nformat=bufr\n", DatasetTest::TEST_FORCE_DIR);
 Tests<FixtureConcat> test_iseg_vm2("arki_dataset_iseg_maintenance_vm2", "vm2", "type=iseg\nformat=vm2\n");
-Tests<FixtureDir> test_iseg_vm2_dir("arki_dataset_iseg_maintenance_vm2_dirs", "vm2", "type=iseg\nformat=vm2\nsegments=dir\n");
-Tests<FixtureZip> test_iseg_vm2_zip("arki_dataset_iseg_maintenance_vm2_zip", "vm2", "type=iseg\nformat=vm2\nsegments=dir\n");
+Tests<FixtureDir> test_iseg_vm2_dir("arki_dataset_iseg_maintenance_vm2_dirs", "vm2", "type=iseg\nformat=vm2\n", DatasetTest::TEST_FORCE_DIR);
+Tests<FixtureZip> test_iseg_vm2_zip("arki_dataset_iseg_maintenance_vm2_zip", "vm2", "type=iseg\nformat=vm2\n", DatasetTest::TEST_FORCE_DIR);
 Tests<FixtureDir> test_iseg_odimh5_dir("arki_dataset_iseg_maintenance_odimh5", "odimh5", "type=iseg\nformat=odimh5\n");
 Tests<FixtureZip> test_iseg_odimh5_zip("arki_dataset_iseg_maintenance_odimh5_zip", "odimh5", "type=iseg\nformat=odimh5\n");
 

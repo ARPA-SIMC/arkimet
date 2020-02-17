@@ -174,8 +174,8 @@ void Dispatcher::dispatch(dataset::WriterBatch& batch, bool drop_cached_data_on_
 }
 
 
-RealDispatcher::RealDispatcher(const core::cfg::Sections& cfg)
-    : Dispatcher(cfg), datasets(cfg), pool(datasets)
+RealDispatcher::RealDispatcher(std::shared_ptr<dataset::Session> session, const core::cfg::Sections& cfg)
+    : Dispatcher(cfg), datasets(session, cfg), pool(datasets)
 {
 }
 
@@ -195,8 +195,8 @@ void RealDispatcher::flush() { pool.flush(); }
 
 
 
-TestDispatcher::TestDispatcher(const core::cfg::Sections& cfg)
-    : Dispatcher(cfg), cfg(cfg)
+TestDispatcher::TestDispatcher(std::shared_ptr<dataset::Session> session, const core::cfg::Sections& cfg)
+    : Dispatcher(cfg), session(session), cfg(cfg)
 {
     if (!cfg.section("error"))
         throw std::runtime_error("no [error] dataset found");
@@ -207,7 +207,7 @@ void TestDispatcher::raw_dispatch_dataset(const std::string& name, dataset::Writ
 {
     if (batch.empty()) return;
     // TODO: forward drop_cached_data_on_commit
-    dataset::Writer::test_acquire(*cfg.section(name), batch);
+    dataset::Writer::test_acquire(session, *cfg.section(name), batch);
 }
 
 void TestDispatcher::dispatch(dataset::WriterBatch& batch, bool drop_cached_data_on_commit)

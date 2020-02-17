@@ -7,6 +7,7 @@
 #include "arki/metadata.h"
 #include "arki/metadata/validator.h"
 #include "arki/types/source/blob.h"
+#include "python/dataset.h"
 
 using namespace std;
 using namespace arki::utils;
@@ -17,7 +18,7 @@ namespace arki_scan {
 
 
 MetadataDispatch::MetadataDispatch(cmdline::DatasetProcessor& next)
-    : next(next)
+    : partial_batch(get_dataset_session()), results(get_dataset_session()), next(next)
 {
 }
 

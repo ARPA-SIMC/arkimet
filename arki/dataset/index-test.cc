@@ -1,5 +1,5 @@
-#include "config.h"
 #include "arki/dataset/tests.h"
+#include "arki/dataset/session.h"
 #include "index.h"
 #include "index/manifest.h"
 #include "ondisk2/index.h"
@@ -25,10 +25,12 @@ class Tests : public FixtureTestCase<FIXTURE>
 
 struct BaseFixture : public Fixture
 {
+    std::shared_ptr<dataset::Session> session;
     metadata::TestCollection mdc;
 
     void test_setup()
     {
+        session = std::make_shared<dataset::Session>();
         mdc.clear();
         mdc.scan_from_file("inbound/fixture.grib1", false);
         sys::rmtree_ifexists("testds");
@@ -84,7 +86,7 @@ type = ondisk2
 name = test
 step = daily
 )";
-        auto cfg = dataset::ondisk2::Config::create(core::cfg::Section::parse(config));
+        auto cfg = dataset::ondisk2::Config::create(session, core::cfg::Section::parse(config));
         {
             WIndex idx(cfg);
             idx.open();

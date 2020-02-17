@@ -65,8 +65,10 @@ extern PyTypeObject* arkipy_DatasetSessionTimeOverride_Type;
 namespace arki {
 namespace python {
 
+std::shared_ptr<arki::dataset::Session> get_dataset_session();
+
 arkipy_DatasetReader* dataset_reader_create();
-arkipy_DatasetReader* dataset_reader_create(std::shared_ptr<dataset::Reader> ds);
+arkipy_DatasetReader* dataset_reader_create(std::shared_ptr<arki::dataset::Reader> ds);
 
 void register_dataset(PyObject* m);
 

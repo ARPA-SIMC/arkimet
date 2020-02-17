@@ -1,5 +1,6 @@
 #include "arki/dataset/tests.h"
 #include "arki/dataset.h"
+#include "arki/dataset/session.h"
 #include "arki/core/file.h"
 #include "arki/metadata/data.h"
 #include "arki/metadata/collection.h"
@@ -319,7 +320,7 @@ this->add_method("interrupted_read", [](Fixture& f) {
 
 this->add_method("read_missing_segment", [](Fixture& f) {
     // Delete a segment, leaving it in the index
-    f.segments().get_checker(f.td.format, f.import_results[0].sourceBlob().filename)->remove();
+    f.session()->segment_checker(f.td.format, f.local_config()->path, f.import_results[0].sourceBlob().filename)->remove();
 
     unsigned count_ok = 0;
     unsigned count_err = 0;
@@ -350,6 +351,22 @@ this->add_method("issue116", [](Fixture& f) {
     auto reader = f.dataset_config()->create_reader();
     reader->query_data(dataset::DataQuery("reftime:==13:00"), [&](std::shared_ptr<Metadata> md) { ++count; return true; });
     wassert(actual(count) == 1u);
+});
+
+this->add_method("issue213_manyquery", [](Fixture& f) {
+    auto reader = f.dataset_config()->create_reader();
+    metadata::Collection coll;
+    for (unsigned i = 0; i < 2000; ++i)
+        reader->query_data(dataset::DataQuery("reftime:==13:00", true), coll.inserter_func());
+});
+
+this->add_method("issue213_manyds", [](Fixture& f) {
+    metadata::Collection coll;
+    for (unsigned i = 0; i < 2000; ++i)
+    {
+        auto reader = f.dataset_config()->create_reader();
+        reader->query_data(dataset::DataQuery("reftime:==13:00", true), coll.inserter_func());
+    }
 });
 
 #if 0

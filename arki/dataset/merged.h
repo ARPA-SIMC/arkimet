@@ -19,12 +19,12 @@ namespace dataset {
 class Merged : public Reader
 {
 protected:
-    std::shared_ptr<const Config> m_config;
+    std::shared_ptr<Config> m_config;
 
 public:
     std::vector<std::shared_ptr<Reader>> datasets;
 
-    Merged();
+    Merged(std::shared_ptr<Session> session);
     virtual ~Merged();
 
     const Config& config() const override { return *m_config; }

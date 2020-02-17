@@ -22,7 +22,7 @@ struct Index
      * @return true if the index could be used for the query, false if the
      * query does not use the index and a full scan should be used instead
      */
-    virtual bool query_data(const dataset::DataQuery& q, SegmentManager& segs, metadata_dest_func) = 0;
+    virtual bool query_data(const dataset::DataQuery& q, dataset::Session& session, metadata_dest_func) = 0;
 
     /**
      * Query this index, returning a summary
@@ -61,7 +61,7 @@ struct Index
     /**
      * Get the metadata for a segment.
      */
-    virtual void query_segment(const std::string& relpath, SegmentManager& segs, metadata_dest_func) const = 0;
+    virtual void query_segment(const std::string& relpath, dataset::Session& session, metadata_dest_func) const = 0;
 
     /**
      * Rename a segment in the index.
