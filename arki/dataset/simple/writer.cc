@@ -30,7 +30,7 @@ namespace simple {
 /// Accumulate metadata and summaries while writing
 struct AppendSegment
 {
-    std::shared_ptr<const simple::Config> config;
+    std::shared_ptr<const simple::Dataset> config;
     std::shared_ptr<dataset::AppendLock> lock;
     std::shared_ptr<segment::Writer> segment;
     utils::sys::Path dir;
@@ -39,7 +39,7 @@ struct AppendSegment
     metadata::Collection mds;
     Summary sum;
 
-    AppendSegment(std::shared_ptr<const simple::Config> config, std::shared_ptr<dataset::AppendLock> lock, std::shared_ptr<segment::Writer> segment)
+    AppendSegment(std::shared_ptr<const simple::Dataset> config, std::shared_ptr<dataset::AppendLock> lock, std::shared_ptr<segment::Writer> segment)
         : config(config), lock(lock), segment(segment),
           dir(str::dirname(segment->segment().abspath)),
           basename(str::basename(segment->segment().abspath))
@@ -126,7 +126,7 @@ struct AppendSegment
 };
 
 
-Writer::Writer(std::shared_ptr<const simple::Config> config)
+Writer::Writer(std::shared_ptr<const simple::Dataset> config)
     : m_config(config)
 {
     // Create the directory if it does not exist
@@ -190,7 +190,7 @@ void Writer::remove(Metadata& md)
 
 void Writer::test_acquire(std::shared_ptr<Session> session, const core::cfg::Section& cfg, WriterBatch& batch)
 {
-    std::shared_ptr<const simple::Config> config(new simple::Config(session, cfg));
+    std::shared_ptr<const simple::Dataset> config(new simple::Dataset(session, cfg));
     for (auto& e: batch)
     {
         auto age_check = config->check_acquire_age(e->md);

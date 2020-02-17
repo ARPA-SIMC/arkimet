@@ -116,7 +116,7 @@ struct ByteQuery : public DataQuery
 
 
 /// Base dataset configuration
-struct Config : public std::enable_shared_from_this<Config>
+struct Dataset : public std::enable_shared_from_this<Dataset>
 {
     /// Work session
     std::shared_ptr<Session> session;
@@ -127,17 +127,17 @@ struct Config : public std::enable_shared_from_this<Config>
     /// Raw configuration key-value pairs
     core::cfg::Section cfg;
 
-    Config(std::shared_ptr<Session> session);
-    Config(std::shared_ptr<Session> session, const std::string& name);
-    Config(std::shared_ptr<Session> session, const core::cfg::Section& cfg);
-    virtual ~Config() {}
+    Dataset(std::shared_ptr<Session> session);
+    Dataset(std::shared_ptr<Session> session, const std::string& name);
+    Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg);
+    virtual ~Dataset() {}
 
     virtual std::unique_ptr<Reader> create_reader() const;
     virtual std::unique_ptr<Writer> create_writer() const;
     virtual std::unique_ptr<Checker> create_checker() const;
-
-    static std::shared_ptr<const Config> create(std::shared_ptr<Session> session, const core::cfg::Section& cfg);
 };
+
+typedef Dataset Config;
 
 /**
  * Base class for all dataset Readers, Writers and Checkers.
@@ -231,16 +231,6 @@ public:
      * Instantiate an appropriate Reader for the given configuration
      */
     static std::unique_ptr<Reader> create(std::shared_ptr<Session> session, const core::cfg::Section& cfg);
-
-    /**
-     * Read the configuration of the dataset at the given path or URL
-     */
-    static core::cfg::Section read_config(const std::string& path);
-
-    /**
-     * Read a multi-dataset configuration at the given path or URL
-     */
-    static core::cfg::Sections read_configs(const std::string& path);
 };
 
 struct WriterBatchElement

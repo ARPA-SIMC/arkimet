@@ -12,8 +12,8 @@ namespace arki {
 namespace dataset {
 namespace ondisk2 {
 
-Config::Config(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
-    : dataset::IndexedConfig(session, cfg),
+Dataset::Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
+    : dataset::indexed::Dataset(session, cfg),
       summary_cache_pathname(str::joinpath(path, ".summaries")),
       indexfile(cfg.value("indexfile")),
       index(cfg.value("index")),
@@ -31,26 +31,21 @@ Config::Config(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
         index = "origin, product, level, timerange, area, proddef, run";
 }
 
-std::shared_ptr<const Config> Config::create(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
+std::unique_ptr<dataset::Reader> Dataset::create_reader() const
 {
-    return std::shared_ptr<const Config>(new Config(session, cfg));
-}
-
-std::unique_ptr<dataset::Reader> Config::create_reader() const
-{
-    auto cfg = dynamic_pointer_cast<const ondisk2::Config>(shared_from_this());
+    auto cfg = dynamic_pointer_cast<const ondisk2::Dataset>(shared_from_this());
     return std::unique_ptr<dataset::Reader>(new ondisk2::Reader(cfg));
 }
 
-std::unique_ptr<dataset::Writer> Config::create_writer() const
+std::unique_ptr<dataset::Writer> Dataset::create_writer() const
 {
-    auto cfg = dynamic_pointer_cast<const ondisk2::Config>(shared_from_this());
+    auto cfg = dynamic_pointer_cast<const ondisk2::Dataset>(shared_from_this());
     return std::unique_ptr<dataset::Writer>(new ondisk2::Writer(cfg));
 }
 
-std::unique_ptr<dataset::Checker> Config::create_checker() const
+std::unique_ptr<dataset::Checker> Dataset::create_checker() const
 {
-    auto cfg = dynamic_pointer_cast<const ondisk2::Config>(shared_from_this());
+    auto cfg = dynamic_pointer_cast<const ondisk2::Dataset>(shared_from_this());
     return std::unique_ptr<dataset::Checker>(new ondisk2::Checker(cfg));
 }
 

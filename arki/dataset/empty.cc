@@ -10,22 +10,17 @@ namespace arki {
 namespace dataset {
 namespace empty {
 
-Config::Config(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
-    : dataset::Config(session, cfg)
+Dataset::Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
+    : dataset::Dataset(session, cfg)
 {
 }
 
-std::shared_ptr<const Config> Config::create(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
-{
-    return std::shared_ptr<const Config>(new Config(session, cfg));
-}
-
-std::unique_ptr<dataset::Reader> Config::create_reader() const { return std::unique_ptr<dataset::Reader>(new Reader(shared_from_this())); }
-std::unique_ptr<dataset::Writer> Config::create_writer() const { return std::unique_ptr<dataset::Writer>(new Writer(shared_from_this())); }
-std::unique_ptr<dataset::Checker> Config::create_checker() const { return std::unique_ptr<dataset::Checker>(new Checker(shared_from_this())); }
+std::unique_ptr<dataset::Reader> Dataset::create_reader() const { return std::unique_ptr<dataset::Reader>(new Reader(shared_from_this())); }
+std::unique_ptr<dataset::Writer> Dataset::create_writer() const { return std::unique_ptr<dataset::Writer>(new Writer(shared_from_this())); }
+std::unique_ptr<dataset::Checker> Dataset::create_checker() const { return std::unique_ptr<dataset::Checker>(new Checker(shared_from_this())); }
 
 
-Reader::Reader(std::shared_ptr<const dataset::Config> config) : m_config(config) {}
+Reader::Reader(std::shared_ptr<const dataset::Dataset> config) : m_config(config) {}
 Reader::~Reader() {}
 
 
@@ -47,7 +42,7 @@ void Writer::acquire_batch(WriterBatch& batch, const AcquireConfig& cfg)
 
 void Writer::test_acquire(std::shared_ptr<Session> session, const core::cfg::Section& cfg, WriterBatch& batch)
 {
-    std::shared_ptr<const empty::Config> config(new empty::Config(session, cfg));
+    std::shared_ptr<const empty::Dataset> config(new empty::Dataset(session, cfg));
     for (auto& e: batch)
     {
         e->result = ACQ_OK;

@@ -23,27 +23,28 @@ using namespace arki::utils;
 
 namespace arki {
 namespace dataset {
+namespace indexed {
 
-IndexedReader::~IndexedReader()
+Reader::~Reader()
 {
     delete m_idx;
 }
 
-bool IndexedReader::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
+bool Reader::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 {
     auto lock = config().read_lock_dataset();
-    if (!LocalReader::query_data(q, dest))
+    if (!local::Reader::query_data(q, dest))
         return false;
     if (!m_idx) return true;
     m_idx->lock = lock;
     return m_idx->query_data(q, *config().session, dest);
 }
 
-void IndexedReader::query_summary(const Matcher& matcher, Summary& summary)
+void Reader::query_summary(const Matcher& matcher, Summary& summary)
 {
     auto lock = config().read_lock_dataset();
     // Query the archives first
-    LocalReader::query_summary(matcher, summary);
+    local::Reader::query_summary(matcher, summary);
     if (!m_idx) return;
     m_idx->lock = lock;
     // FIXME: this is cargo culted from the old ondisk2 reader: what is the use case for this?
@@ -52,7 +53,7 @@ void IndexedReader::query_summary(const Matcher& matcher, Summary& summary)
 }
 
 
-IndexedChecker::~IndexedChecker()
+Checker::~Checker()
 {
     delete m_idx;
 }
@@ -60,7 +61,7 @@ IndexedChecker::~IndexedChecker()
 // TODO: during checks, run file:///usr/share/doc/sqlite3-doc/pragma.html#debug
 // and delete the index if it fails
 
-void IndexedChecker::check_issue51(CheckerConfig& opts)
+void Checker::check_issue51(CheckerConfig& opts)
 {
     if (!opts.online && !config().offline) return;
     if (!opts.offline && config().offline) return;
@@ -153,7 +154,7 @@ void IndexedChecker::check_issue51(CheckerConfig& opts)
     return segmented::Checker::check_issue51(opts);
 }
 
-void IndexedChecker::test_make_overlap(const std::string& relpath, unsigned overlap_size, unsigned data_idx)
+void Checker::test_make_overlap(const std::string& relpath, unsigned overlap_size, unsigned data_idx)
 {
     metadata::Collection mds;
     m_idx->query_segment(relpath, *config().session, mds.inserter_func());
@@ -161,7 +162,7 @@ void IndexedChecker::test_make_overlap(const std::string& relpath, unsigned over
     m_idx->test_make_overlap(relpath, overlap_size, data_idx);
 }
 
-void IndexedChecker::test_make_hole(const std::string& relpath, unsigned hole_size, unsigned data_idx)
+void Checker::test_make_hole(const std::string& relpath, unsigned hole_size, unsigned data_idx)
 {
     metadata::Collection mds;
     m_idx->query_segment(relpath, *config().session, mds.inserter_func());
@@ -169,21 +170,21 @@ void IndexedChecker::test_make_hole(const std::string& relpath, unsigned hole_si
     m_idx->test_make_hole(relpath, hole_size, data_idx);
 }
 
-void IndexedChecker::test_corrupt_data(const std::string& relpath, unsigned data_idx)
+void Checker::test_corrupt_data(const std::string& relpath, unsigned data_idx)
 {
     metadata::Collection mds;
     m_idx->query_segment(relpath, *config().session, mds.inserter_func());
     config().session->segment_checker(scan::Scanner::format_from_filename(relpath), config().path, relpath)->test_corrupt(mds, data_idx);
 }
 
-void IndexedChecker::test_truncate_data(const std::string& relpath, unsigned data_idx)
+void Checker::test_truncate_data(const std::string& relpath, unsigned data_idx)
 {
     metadata::Collection mds;
     m_idx->query_segment(relpath, *config().session, mds.inserter_func());
     config().session->segment_checker(scan::Scanner::format_from_filename(relpath), config().path, relpath)->test_truncate(mds, data_idx);
 }
 
-void IndexedChecker::test_swap_data(const std::string& relpath, unsigned d1_idx, unsigned d2_idx)
+void Checker::test_swap_data(const std::string& relpath, unsigned d1_idx, unsigned d2_idx)
 {
     metadata::Collection mds;
     m_idx->query_segment(relpath, *config().session, mds.inserter_func());
@@ -192,7 +193,7 @@ void IndexedChecker::test_swap_data(const std::string& relpath, unsigned d1_idx,
     segment(relpath)->reorder(mds);
 }
 
-void IndexedChecker::test_rename(const std::string& relpath, const std::string& new_relpath)
+void Checker::test_rename(const std::string& relpath, const std::string& new_relpath)
 {
     auto segment = config().session->segment_checker(scan::Scanner::format_from_filename(relpath), config().path, relpath);
     m_idx->test_rename(relpath, new_relpath);
@@ -201,4 +202,4 @@ void IndexedChecker::test_rename(const std::string& relpath, const std::string& 
 
 }
 }
-
+}

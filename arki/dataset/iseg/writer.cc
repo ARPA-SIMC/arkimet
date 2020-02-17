@@ -29,12 +29,12 @@ namespace iseg {
 
 struct AppendSegment
 {
-    std::shared_ptr<const iseg::Config> config;
+    std::shared_ptr<const iseg::Dataset> config;
     std::shared_ptr<dataset::AppendLock> append_lock;
     std::shared_ptr<segment::Writer> segment;
     AIndex idx;
 
-    AppendSegment(std::shared_ptr<const iseg::Config> config, std::shared_ptr<dataset::AppendLock> append_lock, std::shared_ptr<segment::Writer> segment)
+    AppendSegment(std::shared_ptr<const iseg::Dataset> config, std::shared_ptr<dataset::AppendLock> append_lock, std::shared_ptr<segment::Writer> segment)
         : config(config), append_lock(append_lock), segment(segment), idx(config, segment, append_lock)
     {
     }
@@ -256,7 +256,7 @@ struct AppendSegment
 };
 
 
-Writer::Writer(std::shared_ptr<const iseg::Config> config)
+Writer::Writer(std::shared_ptr<const iseg::Dataset> config)
     : m_config(config), scache(config->summary_cache_pathname)
 {
     // Create the directory if it does not exist
@@ -375,7 +375,7 @@ void Writer::remove(Metadata& md)
 
 void Writer::test_acquire(std::shared_ptr<Session> session, const core::cfg::Section& cfg, WriterBatch& batch)
 {
-    std::shared_ptr<const iseg::Config> config(new iseg::Config(session, cfg));
+    std::shared_ptr<const iseg::Dataset> config(new iseg::Dataset(session, cfg));
     for (auto& e: batch)
     {
         auto age_check = config->check_acquire_age(e->md);

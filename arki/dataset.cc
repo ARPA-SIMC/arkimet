@@ -1,26 +1,15 @@
 #include "arki/dataset.h"
-#include "arki/libconfig.h"
-#include "arki/dataset/file.h"
-#include "arki/dataset/ondisk2.h"
-#include "arki/dataset/iseg.h"
-#include "arki/dataset/simple/reader.h"
+#include "arki/dataset/reporter.h"
+#include "arki/dataset/session.h"
 #include "arki/dataset/outbound.h"
 #include "arki/dataset/empty.h"
-#include "arki/dataset/fromfunction.h"
-#include "arki/dataset/testlarge.h"
-#include "arki/dataset/reporter.h"
 #include "arki/metadata.h"
 #include "arki/metadata/sort.h"
 #include "arki/metadata/postprocess.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
 #include "arki/summary.h"
-#include "arki/scan.h"
 #include "arki/nag.h"
-
-#ifdef HAVE_LIBCURL
-#include "arki/dataset/http.h"
-#endif
 
 using namespace std;
 using namespace arki::core;
@@ -35,46 +24,18 @@ DataQuery::DataQuery(const Matcher& matcher, bool with_data) : matcher(matcher),
 DataQuery::~DataQuery() {}
 
 
-Config::Config(std::shared_ptr<Session> session) : session(session) {}
+Dataset::Dataset(std::shared_ptr<Session> session) : session(session) {}
 
-Config::Config(std::shared_ptr<Session> session, const std::string& name) : session(session), name(name) {}
+Dataset::Dataset(std::shared_ptr<Session> session, const std::string& name) : session(session), name(name) {}
 
-Config::Config(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
+Dataset::Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
     : session(session), name(cfg.value("name")), cfg(cfg)
 {
 }
 
-std::unique_ptr<Reader> Config::create_reader() const { throw std::runtime_error("reader not implemented for dataset " + name); }
-std::unique_ptr<Writer> Config::create_writer() const { throw std::runtime_error("writer not implemented for dataset " + name); }
-std::unique_ptr<Checker> Config::create_checker() const { throw std::runtime_error("checker not implemented for dataset " + name); }
-
-std::shared_ptr<const Config> Config::create(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
-{
-    string type = str::lower(cfg.value("type"));
-
-    if (type == "iseg")
-        return dataset::iseg::Config::create(session, cfg);
-    if (type == "ondisk2")
-        return dataset::ondisk2::Config::create(session, cfg);
-    if (type == "simple" || type == "error" || type == "duplicates")
-        return dataset::simple::Config::create(session, cfg);
-#ifdef HAVE_LIBCURL
-    if (type == "remote")
-        return dataset::http::Config::create(session, cfg);
-#endif
-    if (type == "outbound")
-        return outbound::Config::create(session, cfg);
-    if (type == "discard")
-        return empty::Config::create(session, cfg);
-    if (type == "file")
-        return dataset::FileConfig::create(session, cfg);
-    if (type == "fromfunction")
-        return fromfunction::Config::create(session, cfg);
-    if (type == "testlarge")
-        return testlarge::Config::create(session, cfg);
-
-    throw std::runtime_error("cannot use configuration: unknown dataset type \""+type+"\"");
-}
+std::unique_ptr<Reader> Dataset::create_reader() const { throw std::runtime_error("reader not implemented for dataset " + name); }
+std::unique_ptr<Writer> Dataset::create_writer() const { throw std::runtime_error("writer not implemented for dataset " + name); }
+std::unique_ptr<Checker> Dataset::create_checker() const { throw std::runtime_error("checker not implemented for dataset " + name); }
 
 
 std::string Base::name() const
@@ -171,105 +132,7 @@ void Reader::expand_date_range(std::unique_ptr<core::Time>& begin, std::unique_p
 
 std::unique_ptr<Reader> Reader::create(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
 {
-    auto config = Config::create(session, cfg);
-    return config->create_reader();
-}
-
-core::cfg::Section Reader::read_config(const std::string& path)
-{
-    if (path == "-")
-    {
-        // Parse the config file from stdin
-        Stdin in;
-        return core::cfg::Section::parse(in);
-    }
-
-    // Remove trailing slashes, if any
-    string fname = path;
-    while (!fname.empty() && fname[fname.size() - 1] == '/')
-        fname.resize(fname.size() - 1);
-
-    std::unique_ptr<struct stat> st = sys::stat(fname);
-
-    if (st.get() == 0)
-    {
-        // If it does not exist, it could be a URL or a format:filename URL-like
-        size_t pos = path.find(':');
-        if (pos == string::npos)
-        {
-            stringstream ss;
-            ss << "cannot read configuration from " << fname << " because it does not exist";
-            throw runtime_error(ss.str());
-        }
-
-        std::string prefix = path.substr(0, pos);
-#ifdef HAVE_LIBCURL
-        if (prefix == "http" or prefix == "https")
-            return dataset::http::Reader::load_cfg_section(path);
-        else
-#endif
-            return dataset::File::read_config(path);
-    }
-
-    if (S_ISDIR(st->st_mode))
-        return dataset::LocalReader::read_config(fname);
-    else
-        return dataset::File::read_config(fname);
-}
-
-
-core::cfg::Sections Reader::read_configs(const std::string& path)
-{
-    if (path == "-")
-    {
-        // Parse the config file from stdin
-        Stdin in;
-        return core::cfg::Sections::parse(in);
-    }
-
-    // Remove trailing slashes, if any
-    string fname = path;
-    while (!fname.empty() && fname[fname.size() - 1] == '/')
-        fname.resize(fname.size() - 1);
-
-    std::unique_ptr<struct stat> st = sys::stat(fname);
-
-    if (st.get() == 0)
-    {
-        // If it does not exist, it could be a URL or a format:filename URL-like
-        size_t pos = path.find(':');
-        if (pos == string::npos)
-        {
-            stringstream ss;
-            ss << "cannot read configuration from " << fname << " because it does not exist";
-            throw runtime_error(ss.str());
-        }
-
-        std::string prefix = path.substr(0, pos);
-#ifdef HAVE_LIBCURL
-        if (prefix == "http" or prefix == "https")
-            return dataset::http::Reader::load_cfg_sections(path);
-        else
-#endif
-            return dataset::File::read_configs(path);
-    }
-
-    if (S_ISDIR(st->st_mode))
-    {
-        // A directory, read the dataset config
-        return dataset::LocalReader::read_configs(fname);
-    }
-    else
-    {
-        // A file, check for known extensions
-        std::string format = scan::Scanner::format_from_filename(fname, "");
-        if (!format.empty())
-            return dataset::File::read_configs(fname);
-
-        // Read the contents as configuration
-        sys::File in(fname, O_RDONLY);
-        return core::cfg::Sections::parse(in);
-    }
+    return session->dataset(cfg)->create_reader();
 }
 
 
@@ -290,8 +153,7 @@ Pending Writer::test_writelock() { return Pending(); }
 
 std::unique_ptr<Writer> Writer::create(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
 {
-    auto config = Config::create(session, cfg);
-    return config->create_writer();
+    return session->dataset(cfg)->create_writer();
 }
 
 void Writer::test_acquire(std::shared_ptr<Session> session, const core::cfg::Section& cfg, WriterBatch& batch)
@@ -304,7 +166,7 @@ void Writer::test_acquire(std::shared_ptr<Session> session, const core::cfg::Sec
     if (type == "discard")
         return empty::Writer::test_acquire(session, cfg, batch);
 
-    return dataset::LocalWriter::test_acquire(session, cfg, batch);
+    return dataset::local::Writer::test_acquire(session, cfg, batch);
 }
 
 CheckerConfig::CheckerConfig()
@@ -320,8 +182,7 @@ CheckerConfig::CheckerConfig(std::shared_ptr<dataset::Reporter> reporter, bool r
 
 std::unique_ptr<Checker> Checker::create(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
 {
-    auto config = Config::create(session, cfg);
-    return config->create_checker();
+    return session->dataset(cfg)->create_checker();
 }
 
 void Checker::check_issue51(CheckerConfig& opts)

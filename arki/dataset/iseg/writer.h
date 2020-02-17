@@ -17,7 +17,7 @@ class AppendSegment;
 class Writer : public segmented::Writer
 {
 protected:
-    std::shared_ptr<const iseg::Config> m_config;
+    std::shared_ptr<const iseg::Dataset> m_config;
     index::SummaryCache scache;
 
     /// Return an inserter for the given Metadata
@@ -27,10 +27,10 @@ protected:
     std::unique_ptr<AppendSegment> file(const std::string& relpath);
 
 public:
-    Writer(std::shared_ptr<const iseg::Config> config);
+    Writer(std::shared_ptr<const iseg::Dataset> config);
     virtual ~Writer();
 
-    const iseg::Config& config() const override { return *m_config; }
+    const iseg::Dataset& config() const override { return *m_config; }
 
     std::string type() const override;
 

@@ -28,8 +28,8 @@ add_method("read", []() {
     sum.writeAtomically("test-offline.summary");
 
     auto session = std::make_shared<dataset::Session>();
-    auto config = dataset::OfflineConfig::create(session, "test-offline");
-    dataset::OfflineReader reader(config);
+    auto config = std::make_shared<dataset::offline::Dataset>(session, "test-offline");
+    dataset::offline::Reader reader(config);
     size_t count = 0;
     reader.query_data(Matcher(), [&](std::shared_ptr<Metadata>) { ++count; return true; });
     wassert(actual(count) == 0u);

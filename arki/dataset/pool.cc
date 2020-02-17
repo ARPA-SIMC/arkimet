@@ -3,6 +3,7 @@
 #include "arki/core/cfg.h"
 #include "arki/dataset.h"
 #include "arki/dataset/local.h"
+#include "arki/dataset/session.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/string.h"
 #include "arki/metadata.h"
@@ -74,7 +75,7 @@ namespace dataset {
 Configs::Configs(std::shared_ptr<Session> session, const core::cfg::Sections& cfg)
 {
     for (const auto& si: cfg)
-        configs.insert(make_pair(si.first, dataset::Config::create(session, si.second)));
+        configs.insert(make_pair(si.first, session->dataset(si.second)));
 }
 
 std::shared_ptr<const dataset::Config> Configs::get(const std::string& name) const
@@ -99,7 +100,7 @@ std::shared_ptr<const dataset::Config> Configs::locate_metadata(Metadata& md)
 
     for (const auto& dsi: configs)
     {
-        auto lcfg = dynamic_pointer_cast<const dataset::LocalConfig>(dsi.second);
+        auto lcfg = dynamic_pointer_cast<const dataset::local::Dataset>(dsi.second);
         if (!lcfg) continue;
         if (pmatch.is_under(lcfg->path))
         {
@@ -108,7 +109,7 @@ std::shared_ptr<const dataset::Config> Configs::locate_metadata(Metadata& md)
         }
     }
 
-    return std::shared_ptr<const dataset::LocalConfig>();
+    return std::shared_ptr<const dataset::local::Dataset>();
 }
 
 

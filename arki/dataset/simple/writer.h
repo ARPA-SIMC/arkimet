@@ -19,17 +19,17 @@ class AppendSegment;
 class Writer : public segmented::Writer
 {
 protected:
-    std::shared_ptr<const simple::Config> m_config;
+    std::shared_ptr<const simple::Dataset> m_config;
 
     /// Return a (shared) instance of the Datafile for the given relative pathname
     std::unique_ptr<AppendSegment> file(const Metadata& md, const std::string& format);
     std::unique_ptr<AppendSegment> file(const std::string& relpath);
 
 public:
-    Writer(std::shared_ptr<const simple::Config> config);
+    Writer(std::shared_ptr<const simple::Dataset> config);
     virtual ~Writer();
 
-    const simple::Config& config() const override { return *m_config; }
+    const simple::Dataset& config() const override { return *m_config; }
 
     std::string type() const override;
 

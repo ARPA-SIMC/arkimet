@@ -64,8 +64,8 @@ public:
     }
 
     std::string path_relative() const override { return segment->segment().relpath; }
-    const simple::Config& config() const override { return checker.config(); }
-    dataset::ArchivesChecker& archives() const { return checker.archive(); }
+    const simple::Dataset& config() const override { return checker.config(); }
+    dataset::archive::Checker& archives() const { return checker.archive(); }
 
     void get_metadata(std::shared_ptr<core::Lock> lock, metadata::Collection& mds) override
     {
@@ -412,7 +412,7 @@ public:
 };
 
 
-Checker::Checker(std::shared_ptr<const simple::Config> config)
+Checker::Checker(std::shared_ptr<const simple::Dataset> config)
     : m_config(config), m_mft(0)
 {
     // Create the directory if it does not exist
@@ -441,13 +441,13 @@ std::string Checker::type() const { return "simple"; }
 
 void Checker::repack(CheckerConfig& opts, unsigned test_flags)
 {
-    IndexedChecker::repack(opts, test_flags);
+    indexed::Checker::repack(opts, test_flags);
     m_mft->flush();
 }
 
 void Checker::check(CheckerConfig& opts)
 {
-    IndexedChecker::check(opts);
+    indexed::Checker::check(opts);
     m_mft->flush();
 }
 

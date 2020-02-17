@@ -8,20 +8,15 @@ namespace arki {
 namespace dataset {
 namespace fromfunction {
 
-Config::Config(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
-    : dataset::Config(session, cfg)
+Dataset::Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
+    : dataset::Dataset(session, cfg)
 {
 }
 
-std::shared_ptr<const Config> Config::create(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
-{
-    return std::shared_ptr<const Config>(new Config(session, cfg));
-}
-
-std::unique_ptr<dataset::Reader> Config::create_reader() const { return std::unique_ptr<dataset::Reader>(new Reader(shared_from_this())); }
+std::unique_ptr<dataset::Reader> Dataset::create_reader() const { return std::unique_ptr<dataset::Reader>(new Reader(shared_from_this())); }
 
 
-Reader::Reader(std::shared_ptr<const dataset::Config> config) : m_config(config) {}
+Reader::Reader(std::shared_ptr<const dataset::Dataset> config) : m_config(config) {}
 Reader::~Reader() {}
 
 bool Reader::query_data(const dataset::DataQuery& q, metadata_dest_func dest)

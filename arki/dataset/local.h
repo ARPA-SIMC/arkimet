@@ -16,15 +16,19 @@ class Lock;
 class ReadLock;
 class AppendLock;
 class CheckLock;
-class LocalConfig;
-class ArchivesConfig;
-class ArchivesReader;
-class ArchivesChecker;
 
-class LocalConfig : public Config
+namespace archive {
+class Dataset;
+class Reader;
+class Checker;
+}
+
+namespace local {
+
+class Dataset : public dataset::Dataset
 {
 protected:
-    mutable std::shared_ptr<ArchivesConfig> m_archives_config;
+    mutable std::shared_ptr<archive::Dataset> m_archives_config;
 
 public:
     /// Root path of the dataset
@@ -35,7 +39,7 @@ public:
 
     const core::lock::Policy* lock_policy;
 
-    LocalConfig(std::shared_ptr<Session> session, const core::cfg::Section& cfg);
+    Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg);
 
     /**
      * Check if the data to be acquired is older than acquire or delete age.
@@ -46,7 +50,7 @@ public:
      */
     std::pair<bool, WriterAcquireResult> check_acquire_age(Metadata& md) const;
 
-    std::shared_ptr<ArchivesConfig> archives_config() const;
+    std::shared_ptr<archive::Dataset> archives_config() const;
 
     /**
      * Create/open a dataset-wide lockfile, returning the Lock instance
@@ -60,16 +64,16 @@ public:
 };
 
 template<typename Parent, typename Archives>
-class LocalBase : public Parent
+class Base : public Parent
 {
 protected:
     Archives* m_archive = nullptr;
 
 public:
     using Parent::Parent;
-    ~LocalBase();
+    ~Base();
 
-    const LocalConfig& config() const override = 0;
+    const local::Dataset& config() const override = 0;
 
     /// Return the dataset path
     const std::string& path() const { return config().path; }
@@ -84,11 +88,11 @@ public:
 /**
  * Base class for local datasets
  */
-class LocalReader : public LocalBase<Reader, ArchivesReader>
+class Reader : public Base<dataset::Reader, archive::Reader>
 {
 public:
-    using LocalBase::LocalBase;
-    ~LocalReader();
+    using Base::Base;
+    ~Reader();
 
     // Base implementations that queries the archives if they exist
     bool query_data(const dataset::DataQuery& q, metadata_dest_func dest) override;
@@ -102,13 +106,13 @@ public:
     static core::cfg::Sections read_configs(const std::string& path);
 };
 
-class LocalWriter : public Writer
+class Writer : public dataset::Writer
 {
 public:
-    using Writer::Writer;
-    ~LocalWriter();
+    using dataset::Writer::Writer;
+    ~Writer();
 
-    const LocalConfig& config() const override = 0;
+    const local::Dataset& config() const override = 0;
 
     /// Return the dataset path
     const std::string& path() const { return config().path; }
@@ -116,11 +120,11 @@ public:
     static void test_acquire(std::shared_ptr<Session> session, const core::cfg::Section& cfg, WriterBatch& batch);
 };
 
-struct LocalChecker : public LocalBase<Checker, ArchivesChecker>
+struct Checker : public Base<dataset::Checker, archive::Checker>
 {
 public:
-    using LocalBase::LocalBase;
-    ~LocalChecker();
+    using Base::Base;
+    ~Checker();
 
     void repack(CheckerConfig& opts, unsigned test_flags=0) override;
     void check(CheckerConfig& opts) override;
@@ -133,6 +137,7 @@ public:
     void state(CheckerConfig& opts) override;
 };
 
+}
 }
 }
 #endif

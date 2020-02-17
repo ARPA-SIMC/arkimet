@@ -19,21 +19,16 @@ namespace arki {
 namespace dataset {
 namespace outbound {
 
-Config::Config(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
-    : segmented::Config(session, cfg)
+Dataset::Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
+    : segmented::Dataset(session, cfg)
 {
 }
 
-std::shared_ptr<const Config> Config::create(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
-{
-    return std::shared_ptr<const Config>(new Config(session, cfg));
-}
-
-std::unique_ptr<dataset::Reader> Config::create_reader() const { return std::unique_ptr<dataset::Reader>(new empty::Reader(shared_from_this())); }
-std::unique_ptr<dataset::Writer> Config::create_writer() const { return std::unique_ptr<dataset::Writer>(new Writer(dynamic_pointer_cast<const Config>(shared_from_this()))); }
+std::unique_ptr<dataset::Reader> Dataset::create_reader() const { return std::unique_ptr<dataset::Reader>(new empty::Reader(shared_from_this())); }
+std::unique_ptr<dataset::Writer> Dataset::create_writer() const { return std::unique_ptr<dataset::Writer>(new Writer(dynamic_pointer_cast<const Dataset>(shared_from_this()))); }
 
 
-Writer::Writer(std::shared_ptr<const segmented::Config> config)
+Writer::Writer(std::shared_ptr<const segmented::Dataset> config)
     : m_config(config)
 {
     // Create the directory if it does not exist
@@ -97,7 +92,7 @@ void Writer::remove(Metadata&)
 
 void Writer::test_acquire(std::shared_ptr<Session> session, const core::cfg::Section& cfg, WriterBatch& batch)
 {
-    std::shared_ptr<const outbound::Config> config(new outbound::Config(session, cfg));
+    std::shared_ptr<const outbound::Dataset> config(new outbound::Dataset(session, cfg));
     for (auto& e: batch)
     {
         auto age_check = config->check_acquire_age(e->md);

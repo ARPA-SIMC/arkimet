@@ -28,12 +28,12 @@ namespace ondisk2 {
 
 struct AppendSegment
 {
-    std::shared_ptr<const ondisk2::Config> config;
+    std::shared_ptr<const ondisk2::Dataset> config;
     std::shared_ptr<dataset::AppendLock> lock;
     index::WIndex idx;
     std::shared_ptr<segment::Writer> segment;
 
-    AppendSegment(std::shared_ptr<const ondisk2::Config> config, std::shared_ptr<dataset::AppendLock> lock, std::shared_ptr<segment::Writer> segment)
+    AppendSegment(std::shared_ptr<const ondisk2::Dataset> config, std::shared_ptr<dataset::AppendLock> lock, std::shared_ptr<segment::Writer> segment)
         : config(config), lock(lock), idx(config), segment(segment)
     {
         idx.lock = lock;
@@ -249,7 +249,7 @@ struct AppendSegment
     }
 };
 
-Writer::Writer(std::shared_ptr<const ondisk2::Config> config)
+Writer::Writer(std::shared_ptr<const ondisk2::Dataset> config)
     : m_config(config)
 {
     // Create the directory if it does not exist
@@ -378,7 +378,7 @@ void Writer::test_acquire(std::shared_ptr<Session> session, const core::cfg::Sec
         throw std::runtime_error("Replace strategy '" + repl + "' is not recognised in dataset configuration");
 
     // Refuse if md is before "archive age"
-    std::shared_ptr<const ondisk2::Config> config(new ondisk2::Config(session, cfg));
+    std::shared_ptr<const ondisk2::Dataset> config(new ondisk2::Dataset(session, cfg));
     for (auto& e: batch)
     {
         auto age_check = config->check_acquire_age(e->md);

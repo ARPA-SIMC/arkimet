@@ -6,7 +6,9 @@
 
 namespace arki {
 namespace dataset {
-struct LocalConfig;
+namespace local {
+struct Dataset;
+}
 
 struct Lock : public core::Lock
 {
@@ -49,32 +51,32 @@ struct CheckLock : public Lock
 
 struct DatasetReadLock : public ReadLock
 {
-    DatasetReadLock(const LocalConfig& config);
+    DatasetReadLock(const local::Dataset& dataset);
 };
 
 struct DatasetAppendLock : public AppendLock
 {
-    DatasetAppendLock(const LocalConfig& config);
+    DatasetAppendLock(const local::Dataset& dataset);
 };
 
 struct DatasetCheckLock : public CheckLock
 {
-    DatasetCheckLock(const LocalConfig& config);
+    DatasetCheckLock(const local::Dataset& dataset);
 };
 
 struct SegmentReadLock : public ReadLock
 {
-    SegmentReadLock(const LocalConfig& config, const std::string& relpath);
+    SegmentReadLock(const local::Dataset& dataset, const std::string& relpath);
 };
 
 struct SegmentAppendLock : public AppendLock
 {
-    SegmentAppendLock(const LocalConfig& config, const std::string& relpath);
+    SegmentAppendLock(const local::Dataset& dataset, const std::string& relpath);
 };
 
 struct SegmentCheckLock : public CheckLock
 {
-    SegmentCheckLock(const LocalConfig& config, const std::string& relpath);
+    SegmentCheckLock(const local::Dataset& dataset, const std::string& relpath);
 };
 
 

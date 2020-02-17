@@ -13,14 +13,12 @@ class Matcher;
 namespace dataset {
 namespace outbound {
 
-struct Config : public segmented::Config
+struct Dataset : public segmented::Dataset
 {
-    Config(std::shared_ptr<Session> session, const core::cfg::Section& cfg);
+    Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg);
 
     std::unique_ptr<dataset::Reader> create_reader() const override;
     std::unique_ptr<dataset::Writer> create_writer() const override;
-
-    static std::shared_ptr<const Config> create(std::shared_ptr<Session> session, const core::cfg::Section& cfg);
 };
 
 /**
@@ -32,16 +30,16 @@ struct Config : public segmented::Config
 class Writer : public segmented::Writer
 {
 protected:
-    std::shared_ptr<const segmented::Config> m_config;
+    std::shared_ptr<const segmented::Dataset> m_config;
 
     void storeBlob(Metadata& md, const std::string& reldest, bool drop_cached_data_on_commit);
 
 public:
     // Initialise the dataset with the information from the configurationa in 'cfg'
-    Writer(std::shared_ptr<const segmented::Config> config);
+    Writer(std::shared_ptr<const segmented::Dataset> config);
     virtual ~Writer();
 
-    const segmented::Config& config() const override { return *m_config; }
+    const segmented::Dataset& config() const override { return *m_config; }
 
     std::string type() const override;
 

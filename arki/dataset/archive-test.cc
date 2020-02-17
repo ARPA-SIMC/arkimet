@@ -27,7 +27,7 @@ struct Fixture : public arki::utils::tests::Fixture
     std::shared_ptr<dataset::Session> session;
     core::cfg::Section cfg;
     metadata::TestCollection orig;
-    std::shared_ptr<const ArchivesConfig> config;
+    std::shared_ptr<archive::Dataset> config;
 
     Fixture()
         : orig("inbound/test-sorted.grib1")
@@ -49,7 +49,7 @@ struct Fixture : public arki::utils::tests::Fixture
         cfg.set("unique", "origin, reftime");
         cfg.set("archive age", "7");
 
-        config = ArchivesConfig::create(session, "testds");
+        config = std::make_shared<archive::Dataset>(session, "testds");
 
         iotrace::init();
     }
@@ -68,7 +68,7 @@ void Tests::register_tests() {
 add_method("acquire_last", [](Fixture& f) {
     // Acquire
     {
-        ArchivesChecker checker(f.config);
+        archive::Checker checker(f.config);
         system("cp -a inbound/test-sorted.grib1 testds/.archive/last/test-sorted.grib1");
         wassert(checker.index_segment("last/test-sorted.grib1", metadata::Collection(f.orig)));
         wassert(actual_file("testds/.archive/last/test-sorted.grib1").exists());
@@ -86,7 +86,7 @@ add_method("acquire_last", [](Fixture& f) {
 
     // Query
     {
-        ArchivesReader reader(f.config);
+        archive::Reader reader(f.config);
         metadata::Collection res(reader, Matcher());
         metadata::TestCollection orig("inbound/test-sorted.grib1");
         // Results are in the same order as the files that have been indexed
@@ -101,12 +101,12 @@ add_method("maintenance_nonindexed", [](Fixture& f) {
 
     // Query now has empty results
     {
-        ArchivesReader reader(f.config);
+        archive::Reader reader(f.config);
         metadata::Collection mdc(reader, dataset::DataQuery(Matcher()));
         wassert(actual(mdc.size()) == 0u);
 
         // Maintenance should show one file to index
-        ArchivesChecker checker(f.config);
+        archive::Checker checker(f.config);
         ReporterExpected e;
         e.rescanned.emplace_back("archives.last", "test-sorted.grib1");
         wassert(actual(checker).check(e, false, true));
@@ -115,7 +115,7 @@ add_method("maintenance_nonindexed", [](Fixture& f) {
     // Reindex
     {
         // Checker should reindex
-        ArchivesChecker checker(f.config);
+        archive::Checker checker(f.config);
         ReporterExpected e;
         e.rescanned.emplace_back("archives.last", "test-sorted.grib1");
         wassert(actual(checker).check(e, true, true));
@@ -128,7 +128,7 @@ add_method("maintenance_nonindexed", [](Fixture& f) {
 
     // Query now has all data
     {
-        ArchivesReader reader(f.config);
+        archive::Reader reader(f.config);
         metadata::Collection mdc(reader, dataset::DataQuery(Matcher()));
         wassert(actual(mdc.size()) == 3u);
     }
@@ -143,8 +143,7 @@ add_method("reader_empty_last", [](Fixture& f) {
         cfg.set("path", sys::abspath("testds/.archive/foo"));
         cfg.set("type", "simple");
         cfg.set("step", "daily");
-        auto config = dataset::Config::create(f.session, cfg);
-        auto writer = config->create_writer();
+        auto writer = f.session->dataset(cfg)->create_writer();
         writer->flush();
     }
 
@@ -152,7 +151,7 @@ add_method("reader_empty_last", [](Fixture& f) {
     {
         system("cp inbound/test-sorted.grib1 testds/.archive/foo/");
 
-        ArchivesChecker checker(f.config);
+        archive::Checker checker(f.config);
         wassert(checker.index_segment("foo/test-sorted.grib1", metadata::Collection(f.orig)));
 
         wassert(actual(checker).check_clean(true, true));
@@ -161,7 +160,7 @@ add_method("reader_empty_last", [](Fixture& f) {
 
     // Query has all data
     {
-        ArchivesReader reader(f.config);
+        archive::Reader reader(f.config);
         metadata::Collection mdc(reader, dataset::DataQuery(Matcher()));
         wassert(actual(mdc.size()) == 3u);
     }
@@ -177,7 +176,7 @@ add_method("enumerate_no_manifest", [](Fixture& f) {
 
     // Run check
     {
-        ArchivesChecker checker(f.config);
+        archive::Checker checker(f.config);
         wassert(actual(checker.test_count_archives()) == 1u);
         ReporterExpected e;
         e.rescanned.emplace_back("archives.2007", "07.grib");
@@ -186,7 +185,7 @@ add_method("enumerate_no_manifest", [](Fixture& f) {
 
     // Query has all data
     {
-        ArchivesReader reader(f.config);
+        archive::Reader reader(f.config);
         metadata::Collection mdc(reader, dataset::DataQuery(Matcher()));
         wassert(actual(mdc.size()) == 3u);
 
@@ -198,13 +197,13 @@ add_method("enumerate_no_manifest", [](Fixture& f) {
 
     // Check doesn't find it anymore
     {
-        ArchivesChecker checker(f.config);
+        archive::Checker checker(f.config);
         wassert(actual(checker.test_count_archives()) == 0u);
     }
 
     // Query still has all data
     {
-        ArchivesReader reader(f.config);
+        archive::Reader reader(f.config);
         metadata::Collection mdc(reader, dataset::DataQuery(Matcher()));
         wassert(actual(mdc.size()) == 3u);
 

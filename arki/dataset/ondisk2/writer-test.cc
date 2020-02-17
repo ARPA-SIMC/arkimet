@@ -3,6 +3,7 @@
 #include "arki/dataset/ondisk2/reader.h"
 #include "arki/dataset/ondisk2/index.h"
 #include "arki/dataset/reporter.h"
+#include "arki/dataset/session.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
 #include "arki/types/source/blob.h"
@@ -90,8 +91,7 @@ add_method("regression_0", [](Fixture& f) {
     cfg.set("filter", "product:BUFR:t=temp");
     cfg.set("replace", "USN");
 
-    auto config = dataset::Config::create(f.session(), cfg);
-    auto writer = config->create_writer();
+    auto writer = f.session()->dataset(cfg)->create_writer();
 
     metadata::TestCollection mds("inbound/conflicting-temp-same-usn.bufr");
     wassert(actual(*writer).import(mds));

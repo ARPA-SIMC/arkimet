@@ -9,7 +9,7 @@ namespace arki {
 namespace dataset {
 namespace iseg {
 
-struct Config : public segmented::Config
+struct Dataset : public segmented::Dataset
 {
     std::string format;
     std::string index_type;
@@ -18,14 +18,12 @@ struct Config : public segmented::Config
     std::string summary_cache_pathname;
     bool trace_sql;
 
-    Config(const Config&) = default;
-    Config(std::shared_ptr<Session> session, const core::cfg::Section& cfg);
+    Dataset(const Dataset&) = default;
+    Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg);
 
     std::unique_ptr<dataset::Reader> create_reader() const override;
     std::unique_ptr<dataset::Writer> create_writer() const override;
     std::unique_ptr<dataset::Checker> create_checker() const override;
-
-    static std::shared_ptr<const Config> create(std::shared_ptr<Session> session, const core::cfg::Section& cfg);
 };
 
 }

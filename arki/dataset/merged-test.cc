@@ -66,7 +66,7 @@ struct Fixture : public arki::utils::tests::Fixture
 
     void import(const std::string& dsname, Metadata& md)
     {
-        auto writer = dataset::Config::create(session, *config.section(dsname))->create_writer();
+        auto writer = session->dataset(*config.section(dsname))->create_writer();
         wassert(tests::actual(writer.get()).import(md));
     }
 };

@@ -86,7 +86,7 @@ type = ondisk2
 name = test
 step = daily
 )";
-        auto cfg = dataset::ondisk2::Config::create(session, core::cfg::Section::parse(config));
+        auto cfg = std::make_shared<dataset::ondisk2::Dataset>(session, core::cfg::Section::parse(config));
         {
             WIndex idx(cfg);
             idx.open();

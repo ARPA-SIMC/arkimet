@@ -20,9 +20,10 @@ using namespace arki::utils;
 
 namespace arki {
 namespace dataset {
+namespace local {
 
-LocalConfig::LocalConfig(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
-    : Config(session, cfg), path(sys::abspath(cfg.value("path")))
+Dataset::Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
+    : dataset::Dataset(session, cfg), path(sys::abspath(cfg.value("path")))
 {
     string tmp = cfg.value("archive age");
     if (!tmp.empty())
@@ -38,7 +39,7 @@ LocalConfig::LocalConfig(std::shared_ptr<Session> session, const core::cfg::Sect
         lock_policy = core::lock::policy_ofd;
 }
 
-std::pair<bool, WriterAcquireResult> LocalConfig::check_acquire_age(Metadata& md) const
+std::pair<bool, WriterAcquireResult> Dataset::check_acquire_age(Metadata& md) const
 {
     const auto& st = SessionTime::get();
     const types::reftime::Position* rt = md.get<types::reftime::Position>();
@@ -58,59 +59,59 @@ std::pair<bool, WriterAcquireResult> LocalConfig::check_acquire_age(Metadata& md
     return make_pair(false, ACQ_OK);
 }
 
-std::shared_ptr<ArchivesConfig> LocalConfig::archives_config() const
+std::shared_ptr<archive::Dataset> Dataset::archives_config() const
 {
     if (!m_archives_config)
-        m_archives_config = std::shared_ptr<ArchivesConfig>(new ArchivesConfig(session, path));
+        m_archives_config = std::shared_ptr<archive::Dataset>(new archive::Dataset(session, path));
     return m_archives_config;
 }
 
-std::shared_ptr<dataset::ReadLock> LocalConfig::read_lock_dataset() const
+std::shared_ptr<dataset::ReadLock> Dataset::read_lock_dataset() const
 {
     return std::make_shared<DatasetReadLock>(*this);
 }
 
-std::shared_ptr<dataset::AppendLock> LocalConfig::append_lock_dataset() const
+std::shared_ptr<dataset::AppendLock> Dataset::append_lock_dataset() const
 {
     return std::make_shared<DatasetAppendLock>(*this);
 }
 
-std::shared_ptr<dataset::CheckLock> LocalConfig::check_lock_dataset() const
+std::shared_ptr<dataset::CheckLock> Dataset::check_lock_dataset() const
 {
     return std::make_shared<DatasetCheckLock>(*this);
 }
 
-std::shared_ptr<dataset::ReadLock> LocalConfig::read_lock_segment(const std::string& relpath) const
+std::shared_ptr<dataset::ReadLock> Dataset::read_lock_segment(const std::string& relpath) const
 {
     return std::make_shared<SegmentReadLock>(*this, relpath);
 }
 
-std::shared_ptr<dataset::AppendLock> LocalConfig::append_lock_segment(const std::string& relpath) const
+std::shared_ptr<dataset::AppendLock> Dataset::append_lock_segment(const std::string& relpath) const
 {
     return std::make_shared<SegmentAppendLock>(*this, relpath);
 }
 
-std::shared_ptr<dataset::CheckLock> LocalConfig::check_lock_segment(const std::string& relpath) const
+std::shared_ptr<dataset::CheckLock> Dataset::check_lock_segment(const std::string& relpath) const
 {
     return std::make_shared<SegmentCheckLock>(*this, relpath);
 }
 
 
 template<typename Parent, typename Archive>
-LocalBase<Parent, Archive>::~LocalBase()
+Base<Parent, Archive>::~Base()
 {
     delete m_archive;
 }
 
 template<typename Parent, typename Archive>
-bool LocalBase<Parent, Archive>::hasArchive() const
+bool Base<Parent, Archive>::hasArchive() const
 {
     string arcdir = str::joinpath(path(), ".archive");
     return sys::exists(arcdir);
 }
 
 template<typename Parent, typename Archive>
-Archive& LocalBase<Parent, Archive>::archive()
+Archive& Base<Parent, Archive>::archive()
 {
     if (!m_archive)
     {
@@ -121,23 +122,23 @@ Archive& LocalBase<Parent, Archive>::archive()
 }
 
 
-LocalReader::~LocalReader()
+Reader::~Reader()
 {
 }
 
-bool LocalReader::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
+bool Reader::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 {
     if (!hasArchive()) return true;
     return archive().query_data(q, dest);
 }
 
-void LocalReader::query_summary(const Matcher& matcher, Summary& summary)
+void Reader::query_summary(const Matcher& matcher, Summary& summary)
 {
     if (hasArchive())
         archive().query_summary(matcher, summary);
 }
 
-core::cfg::Section LocalReader::read_config(const std::string& path)
+core::cfg::Section Reader::read_config(const std::string& path)
 {
     // Read the config file inside the directory
     string name = str::basename(path);
@@ -152,7 +153,7 @@ core::cfg::Section LocalReader::read_config(const std::string& path)
     return res;
 }
 
-core::cfg::Sections LocalReader::read_configs(const std::string& path)
+core::cfg::Sections Reader::read_configs(const std::string& path)
 {
     // Read the config file inside the directory
     string name = str::basename(path);
@@ -172,75 +173,77 @@ core::cfg::Sections LocalReader::read_configs(const std::string& path)
 }
 
 
-LocalWriter::~LocalWriter()
+Writer::~Writer()
 {
 }
 
-void LocalWriter::test_acquire(std::shared_ptr<Session> session, const core::cfg::Section& cfg, WriterBatch& batch)
+void Writer::test_acquire(std::shared_ptr<Session> session, const core::cfg::Section& cfg, WriterBatch& batch)
 {
     return segmented::Writer::test_acquire(session, cfg, batch);
 }
 
 
-LocalChecker::~LocalChecker()
+Checker::~Checker()
 {
 }
 
-void LocalChecker::repack(CheckerConfig& opts, unsigned test_flags)
+void Checker::repack(CheckerConfig& opts, unsigned test_flags)
 {
     if (opts.offline && hasArchive())
         archive().repack(opts, test_flags);
 }
 
-void LocalChecker::check(CheckerConfig& opts)
+void Checker::check(CheckerConfig& opts)
 {
     if (opts.offline && hasArchive())
         archive().check(opts);
 }
 
-void LocalChecker::remove_old(CheckerConfig& opts)
+void Checker::remove_old(CheckerConfig& opts)
 {
     if (opts.offline && hasArchive())
         archive().remove_old(opts);
 }
 
-void LocalChecker::remove_all(CheckerConfig& opts)
+void Checker::remove_all(CheckerConfig& opts)
 {
     if (opts.offline && hasArchive())
         archive().remove_all(opts);
 }
 
-void LocalChecker::tar(CheckerConfig& opts)
+void Checker::tar(CheckerConfig& opts)
 {
     if (opts.offline && hasArchive())
         archive().tar(opts);
 }
 
-void LocalChecker::zip(CheckerConfig& opts)
+void Checker::zip(CheckerConfig& opts)
 {
     if (opts.offline && hasArchive())
         archive().zip(opts);
 }
 
-void LocalChecker::compress(CheckerConfig& opts, unsigned groupsize)
+void Checker::compress(CheckerConfig& opts, unsigned groupsize)
 {
     if (opts.offline && hasArchive())
         archive().compress(opts, groupsize);
 }
 
-void LocalChecker::check_issue51(CheckerConfig& opts)
+void Checker::check_issue51(CheckerConfig& opts)
 {
     if (opts.offline && hasArchive())
         archive().check_issue51(opts);
 }
 
-void LocalChecker::state(CheckerConfig& opts)
+void Checker::state(CheckerConfig& opts)
 {
     if (opts.offline && hasArchive())
         archive().state(opts);
 }
 
-template class LocalBase<Reader, ArchivesReader>;
-template class LocalBase<Checker, ArchivesChecker>;
+template class Base<Reader, archive::Reader>;
+template class Base<Checker, archive::Checker>;
+
+}
 }
 }

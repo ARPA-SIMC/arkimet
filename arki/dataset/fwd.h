@@ -9,7 +9,8 @@ namespace dataset {
 struct Session;
 struct DataQuery;
 struct ByteQuery;
-struct Config;
+struct Dataset;
+typedef Dataset Config;
 struct Reader;
 struct Writer;
 struct WriterBatchElement;

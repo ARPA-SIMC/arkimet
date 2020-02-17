@@ -22,14 +22,14 @@ class Tests : public TestCase
 void Tests::register_tests() {
 
 add_method("grib", [] {
-    auto cfg = dataset::File::read_config("inbound/test.grib1");
+    auto cfg = dataset::file::File::read_config("inbound/test.grib1");
     wassert(actual(cfg.value("name")) == "inbound/test.grib1");
     wassert(actual(cfg.value("type")) == "file");
     wassert(actual(cfg.value("format")) == "grib");
 });
 
 add_method("grib_as_bufr", [] {
-    auto cfg = dataset::File::read_config("bUFr:inbound/test.grib1");
+    auto cfg = dataset::file::File::read_config("bUFr:inbound/test.grib1");
     wassert(actual(cfg.value("name")) == "inbound/test.grib1");
     wassert(actual(cfg.value("type")) == "file");
     wassert(actual(cfg.value("format")) == "bufr");
@@ -37,7 +37,7 @@ add_method("grib_as_bufr", [] {
 
 add_method("grib_strangename", [] {
     system("cp inbound/test.grib1 strangename");
-    auto cfg = dataset::File::read_config("GRIB:strangename");
+    auto cfg = dataset::file::File::read_config("GRIB:strangename");
     wassert(actual(cfg.value("name")) == "strangename");
     wassert(actual(cfg.value("type")) == "file");
     wassert(actual(cfg.value("format")) == "grib");
@@ -50,7 +50,7 @@ add_method("grib_strangename", [] {
 });
 
 add_method("metadata", [] {
-    auto cfg = dataset::File::read_config("inbound/odim1.arkimet");
+    auto cfg = dataset::file::File::read_config("inbound/odim1.arkimet");
     wassert(actual(cfg.value("name")) == "inbound/odim1.arkimet");
     wassert(actual(cfg.value("type")) == "file");
     wassert(actual(cfg.value("format")) == "arkimet");
@@ -63,7 +63,7 @@ add_method("metadata", [] {
 });
 
 add_method("yaml", [] {
-    auto cfg = dataset::File::read_config("inbound/issue107.yaml");
+    auto cfg = dataset::file::File::read_config("inbound/issue107.yaml");
     wassert(actual(cfg.value("name")) == "inbound/issue107.yaml");
     wassert(actual(cfg.value("type")) == "file");
     wassert(actual(cfg.value("format")) == "yaml");

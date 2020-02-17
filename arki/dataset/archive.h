@@ -38,15 +38,11 @@ class ArchivesCheckerRoot;
 
 bool is_archive(const std::string& dir);
 
-}
-
-struct ArchivesConfig : public dataset::Config
+struct Dataset : public dataset::Dataset
 {
     std::string root;
 
-    ArchivesConfig(std::shared_ptr<Session> session, const std::string& root);
-
-    static std::shared_ptr<const ArchivesConfig> create(std::shared_ptr<Session> session, const std::string& root);
+    Dataset(std::shared_ptr<Session> session, const std::string& root);
 };
 
 /**
@@ -70,20 +66,20 @@ struct ArchivesConfig : public dataset::Config
  * When querying, all archives are queried, following the archive order:
  * alphabetical order except the archive named "last" is queried last.
  */
-class ArchivesReader : public Reader
+class Reader : public dataset::Reader
 {
 protected:
-    std::shared_ptr<const ArchivesConfig> m_config;
+    std::shared_ptr<const Dataset> m_config;
     archive::ArchivesReaderRoot* archives = nullptr;
 
     void summary_for_all(Summary& out);
 
 public:
-    ArchivesReader(std::shared_ptr<const ArchivesConfig> config);
-    virtual ~ArchivesReader();
+    Reader(std::shared_ptr<const Dataset> config);
+    virtual ~Reader();
 
     std::string type() const override;
-    const ArchivesConfig& config() const override { return *m_config; }
+    const Dataset& config() const override { return *m_config; }
 
     void expand_date_range(std::unique_ptr<core::Time>& begin, std::unique_ptr<core::Time>& end) const;
     bool query_data(const dataset::DataQuery& q, metadata_dest_func) override;
@@ -95,19 +91,19 @@ public:
     unsigned test_count_archives() const;
 };
 
-class ArchivesChecker : public Checker
+class Checker : public dataset::Checker
 {
 protected:
-    std::shared_ptr<const ArchivesConfig> m_config;
+    std::shared_ptr<const Dataset> m_config;
     archive::ArchivesCheckerRoot* archives = nullptr;
 
 public:
     /// Create an archive for the dataset at the given root dir.
-    ArchivesChecker(std::shared_ptr<const ArchivesConfig> config);
-    virtual ~ArchivesChecker();
+    Checker(std::shared_ptr<const Dataset> config);
+    virtual ~Checker();
 
     std::string type() const override;
-    const ArchivesConfig& config() const override { return *m_config; }
+    const Dataset& config() const override { return *m_config; }
 
     void index_segment(const std::string& relpath, metadata::Collection&& mds);
     void release_segment(const std::string& relpath, const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath);
@@ -129,5 +125,7 @@ public:
 
 }
 }
+}
+
 
 #endif

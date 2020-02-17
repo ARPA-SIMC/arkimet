@@ -88,9 +88,9 @@ bool foreach_file(BinaryInputFile& file, const std::string& format, std::functio
     core::cfg::Section cfg;
     cfg.set("format", format);
     cfg.set("name", "stdin:" + scanner->name());
-    auto config = dataset::fromfunction::Config::create(arki::python::get_dataset_session(), cfg);
+    auto dataset = std::make_shared<dataset::fromfunction::Dataset>(arki::python::get_dataset_session(), cfg);
 
-    auto reader = std::make_shared<dataset::fromfunction::Reader>(config);
+    auto reader = std::make_shared<dataset::fromfunction::Reader>(dataset);
 
     if (file.fd)
     {

@@ -10,7 +10,7 @@ namespace arki {
 namespace dataset {
 namespace simple {
 
-Reader::Reader(std::shared_ptr<const simple::Config> config)
+Reader::Reader(std::shared_ptr<const simple::Dataset> config)
     : m_config(config)
 {
     // Create the directory if it does not exist

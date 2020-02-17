@@ -10,16 +10,16 @@ namespace arki {
 namespace dataset {
 namespace ondisk2 {
 
-class Reader : public IndexedReader
+class Reader : public indexed::Reader
 {
 protected:
-    std::shared_ptr<const ondisk2::Config> m_config;
+    std::shared_ptr<const ondisk2::Dataset> m_config;
 
 public:
-    Reader(std::shared_ptr<const ondisk2::Config> config);
+    Reader(std::shared_ptr<const ondisk2::Dataset> config);
     virtual ~Reader();
 
-    const ondisk2::Config& config() const override { return *m_config; }
+    const ondisk2::Dataset& config() const override { return *m_config; }
 
     std::string type() const override;
 };

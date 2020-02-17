@@ -338,7 +338,7 @@ Examples::
             core::cfg::Section cfg;
 
             if (PyUnicode_Check(py_cfg))
-                cfg = arki::dataset::Reader::read_config(from_python<std::string>(py_cfg));
+                cfg = arki::dataset::Session::read_config(from_python<std::string>(py_cfg));
             else
                 cfg = section_from_python(py_cfg);
 
@@ -486,7 +486,7 @@ Examples::
             core::cfg::Section cfg;
 
             if (PyUnicode_Check(py_cfg))
-                cfg = arki::dataset::Reader::read_config(from_python<std::string>(py_cfg));
+                cfg = arki::dataset::Session::read_config(from_python<std::string>(py_cfg));
             else
                 cfg = section_from_python(py_cfg);
 
@@ -651,7 +651,7 @@ Examples::
             core::cfg::Section cfg;
 
             if (PyUnicode_Check(py_cfg))
-                cfg = arki::dataset::Reader::read_config(from_python<std::string>(py_cfg));
+                cfg = arki::dataset::Session::read_config(from_python<std::string>(py_cfg));
             else
                 cfg = section_from_python(py_cfg);
 
@@ -763,7 +763,7 @@ struct read_config : public MethKwargs<read_config, PyObject>
             return nullptr;
 
         try {
-            auto section = arki::dataset::Reader::read_config(std::string(pathname, pathname_len));
+            auto section = arki::dataset::Session::read_config(std::string(pathname, pathname_len));
             return cfg_section(std::move(section));
         } ARKI_CATCH_RETURN_PYO
     }
@@ -786,7 +786,7 @@ struct read_configs : public MethKwargs<read_configs, PyObject>
             return nullptr;
 
         try {
-            auto sections = arki::dataset::Reader::read_configs(std::string(pathname, pathname_len));
+            auto sections = arki::dataset::Session::read_configs(std::string(pathname, pathname_len));
             return cfg_sections(std::move(sections));
         } ARKI_CATCH_RETURN_PYO
     }

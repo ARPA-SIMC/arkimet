@@ -11,13 +11,11 @@ class Matcher;
 namespace dataset {
 namespace fromfunction {
 
-struct Config : public dataset::Config
+struct Dataset : public dataset::Dataset
 {
-    Config(std::shared_ptr<Session> session, const core::cfg::Section& cfg);
+    Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg);
 
     std::unique_ptr<dataset::Reader> create_reader() const override;
-
-    static std::shared_ptr<const Config> create(std::shared_ptr<Session> session, const core::cfg::Section& cfg);
 };
 
 
@@ -27,15 +25,15 @@ struct Config : public dataset::Config
 class Reader : public dataset::Reader
 {
 protected:
-    std::shared_ptr<const dataset::Config> m_config;
+    std::shared_ptr<const dataset::Dataset> m_config;
 
 public:
     std::function<bool(metadata_dest_func)> generator;
 
-    Reader(std::shared_ptr<const dataset::Config> config);
+    Reader(std::shared_ptr<const dataset::Dataset> config);
     virtual ~Reader();
 
-    const dataset::Config& config() const override { return *m_config; }
+    const dataset::Dataset& config() const override { return *m_config; }
     std::string type() const override { return "fromfunction"; }
 
     bool query_data(const dataset::DataQuery& q, metadata_dest_func dest) override;

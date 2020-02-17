@@ -15,15 +15,15 @@ class CheckerSegment;
 class Checker : public segmented::Checker
 {
 protected:
-    std::shared_ptr<const iseg::Config> m_config;
+    std::shared_ptr<const iseg::Dataset> m_config;
 
     void list_segments(std::function<void(const std::string& relpath)> dest);
     void list_segments(const Matcher& matcher, std::function<void(const std::string& relpath)> dest);
 
 public:
-    Checker(std::shared_ptr<const iseg::Config> config);
+    Checker(std::shared_ptr<const iseg::Dataset> config);
 
-    const iseg::Config& config() const override { return *m_config; }
+    const iseg::Dataset& config() const override { return *m_config; }
 
     std::string type() const override;
 

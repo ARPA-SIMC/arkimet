@@ -28,7 +28,7 @@ namespace arki {
 namespace dataset {
 namespace segmented {
 
-void SegmentState::check_age(const std::string& relpath, const Config& cfg, dataset::Reporter& reporter)
+void SegmentState::check_age(const std::string& relpath, const Dataset& cfg, dataset::Reporter& reporter)
 {
     core::Time archive_threshold(0, 0, 0);
     core::Time delete_threshold(0, 0, 0);
@@ -54,8 +54,8 @@ void SegmentState::check_age(const std::string& relpath, const Config& cfg, data
     }
 }
 
-Config::Config(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
-    : LocalConfig(session, cfg),
+Dataset::Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
+    : local::Dataset(session, cfg),
       step_name(str::lower(cfg.value("step"))),
       offline(cfg.value("offline") == "true"),
       smallfiles(cfg.value_bool("smallfiles"))
@@ -83,18 +83,18 @@ Config::Config(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
         this->gz_group_size = std::stoul(gz_group_size);
 }
 
-Config::~Config()
+Dataset::~Dataset()
 {
 }
 
-bool Config::relpath_timespan(const std::string& path, core::Time& start_time, core::Time& end_time) const
+bool Dataset::relpath_timespan(const std::string& path, core::Time& start_time, core::Time& end_time) const
 {
     return step().path_timespan(path, start_time, end_time);
 }
 
-std::shared_ptr<const Config> Config::create(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
+std::shared_ptr<const Dataset> Dataset::create(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
 {
-    return std::shared_ptr<const Config>(new Config(session, cfg));
+    return std::shared_ptr<const Dataset>(new Dataset(session, cfg));
 }
 
 
@@ -289,7 +289,7 @@ void Checker::remove_old(CheckerConfig& opts)
         }
     });
 
-    LocalChecker::remove_all(opts);
+    local::Checker::remove_all(opts);
 }
 
 void Checker::remove_all(CheckerConfig& opts)
@@ -304,7 +304,7 @@ void Checker::remove_all(CheckerConfig& opts)
         }
     });
 
-    LocalChecker::remove_all(opts);
+    local::Checker::remove_all(opts);
 }
 
 void Checker::tar(CheckerConfig& opts)
@@ -320,7 +320,7 @@ void Checker::tar(CheckerConfig& opts)
         }
     });
 
-    LocalChecker::tar(opts);
+    local::Checker::tar(opts);
 }
 
 void Checker::zip(CheckerConfig& opts)
@@ -336,7 +336,7 @@ void Checker::zip(CheckerConfig& opts)
         }
     });
 
-    LocalChecker::zip(opts);
+    local::Checker::zip(opts);
 }
 
 void Checker::compress(CheckerConfig& opts, unsigned groupsize)
@@ -352,7 +352,7 @@ void Checker::compress(CheckerConfig& opts, unsigned groupsize)
         }
     });
 
-    LocalChecker::compress(opts, groupsize);
+    local::Checker::compress(opts, groupsize);
 }
 
 void Checker::state(CheckerConfig& opts)
@@ -363,7 +363,7 @@ void Checker::state(CheckerConfig& opts)
                 state.state.to_string() + " " + state.begin.to_iso8601(' ') + " to " + state.until.to_iso8601(' '));
     });
 
-    LocalChecker::state(opts);
+    local::Checker::state(opts);
 }
 
 void Checker::repack(CheckerConfig& opts, unsigned test_flags)
@@ -398,7 +398,7 @@ void Checker::repack(CheckerConfig& opts, unsigned test_flags)
         throw;
     }
 
-    LocalChecker::repack(opts, test_flags);
+    local::Checker::repack(opts, test_flags);
 }
 
 void Checker::check(CheckerConfig& opts)
@@ -429,7 +429,7 @@ void Checker::check(CheckerConfig& opts)
 
         files::removeDontpackFlagfile(root);
     }
-    LocalChecker::check(opts);
+    local::Checker::check(opts);
 }
 
 void Checker::scan_dir(const std::string& root, std::function<void(const std::string& relpath)> dest)

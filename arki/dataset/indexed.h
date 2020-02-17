@@ -7,23 +7,25 @@ namespace arki {
 namespace dataset {
 class Index;
 
-struct IndexedConfig : public segmented::Config
+namespace indexed {
+
+struct Dataset : public segmented::Dataset
 {
-    using segmented::Config::Config;
+    using segmented::Dataset::Dataset;
 };
 
 
 /// segmented::Reader that can make use of an index
-class IndexedReader : public segmented::Reader
+class Reader : public segmented::Reader
 {
 protected:
     Index* m_idx = nullptr;
 
 public:
     using segmented::Reader::Reader;
-    ~IndexedReader();
+    ~Reader();
 
-    const IndexedConfig& config() const override = 0;
+    const Dataset& config() const override = 0;
 
     bool query_data(const dataset::DataQuery& q, metadata_dest_func dest) override;
     void query_summary(const Matcher& matcher, Summary& summary) override;
@@ -36,16 +38,16 @@ public:
     bool hasWorkingIndex() const { return m_idx != 0; }
 };
 
-class IndexedChecker : public segmented::Checker
+class Checker : public segmented::Checker
 {
 protected:
     Index* m_idx = nullptr;
 
 public:
     using segmented::Checker::Checker;
-    ~IndexedChecker();
+    ~Checker();
 
-    const IndexedConfig& config() const override = 0;
+    const Dataset& config() const override = 0;
 
     void check_issue51(CheckerConfig& opts) override;
 
@@ -57,6 +59,7 @@ public:
     void test_rename(const std::string& relpath, const std::string& new_relpath) override;
 };
 
+}
 }
 }
 #endif

@@ -56,7 +56,7 @@ struct IndexGlobalData
 };
 static IndexGlobalData igd;
 
-Index::Index(std::shared_ptr<const iseg::Config> config, const std::string& data_relpath, std::shared_ptr<dataset::Lock> lock)
+Index::Index(std::shared_ptr<const iseg::Dataset> config, const std::string& data_relpath, std::shared_ptr<dataset::Lock> lock)
     : m_config(config),
       data_relpath(data_relpath),
       data_pathname(str::joinpath(config->path, data_relpath)),
@@ -444,7 +444,7 @@ bool Index::query_summary_from_db(const Matcher& m, Summary& summary) const
 }
 
 
-RIndex::RIndex(std::shared_ptr<const iseg::Config> config, const std::string& data_relpath, std::shared_ptr<dataset::ReadLock> lock)
+RIndex::RIndex(std::shared_ptr<const iseg::Dataset> config, const std::string& data_relpath, std::shared_ptr<dataset::ReadLock> lock)
     : Index(config, data_relpath, lock)
 {
     if (!sys::access(index_pathname, F_OK))
@@ -461,7 +461,7 @@ RIndex::RIndex(std::shared_ptr<const iseg::Config> config, const std::string& da
 }
 
 
-WIndex::WIndex(std::shared_ptr<const iseg::Config> config, const std::string& data_relpath, std::shared_ptr<dataset::Lock> lock)
+WIndex::WIndex(std::shared_ptr<const iseg::Dataset> config, const std::string& data_relpath, std::shared_ptr<dataset::Lock> lock)
     : Index(config, data_relpath, lock), m_get_current("get_current", m_db), m_insert(m_db), m_replace("replace", m_db)
 {
     bool need_create = !sys::access(index_pathname, F_OK);
@@ -732,12 +732,12 @@ void WIndex::test_make_hole(unsigned hole_size, unsigned data_idx)
     });
 }
 
-AIndex::AIndex(std::shared_ptr<const iseg::Config> config, std::shared_ptr<segment::Writer> segment, std::shared_ptr<dataset::AppendLock> lock)
+AIndex::AIndex(std::shared_ptr<const iseg::Dataset> config, std::shared_ptr<segment::Writer> segment, std::shared_ptr<dataset::AppendLock> lock)
     : WIndex(config, segment->segment().relpath, lock)
 {
 }
 
-CIndex::CIndex(std::shared_ptr<const iseg::Config> config, const std::string& data_relpath, std::shared_ptr<dataset::CheckLock> lock)
+CIndex::CIndex(std::shared_ptr<const iseg::Dataset> config, const std::string& data_relpath, std::shared_ptr<dataset::CheckLock> lock)
     : WIndex(config, data_relpath, lock)
 {
 }

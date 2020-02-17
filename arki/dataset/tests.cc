@@ -130,7 +130,7 @@ void DatasetTest::test_setup(const std::string& cfg_default)
 
 void DatasetTest::test_teardown()
 {
-    m_config.reset();
+    m_dataset.reset();
     m_session.reset();
 }
 
@@ -160,46 +160,44 @@ std::shared_ptr<dataset::Session> DatasetTest::session()
         switch (variant)
         {
             case TEST_NORMAL:
-                m_session = make_shared<dataset::Session>();
+                m_session = std::make_shared<dataset::Session>();
                 break;
             case TEST_FORCE_DIR:
-                m_session = make_shared<ForceDirSession>();
+                m_session = std::make_shared<ForceDirSession>();
                 break;
-            case TEST_MOCK_DATA:
-                throw std::runtime_error("mock_data sessions not yet implemented");
         }
     }
     return m_session;
 }
 
-const Config& DatasetTest::config()
+const Dataset& DatasetTest::config()
 {
-    if (!m_config)
+    if (!m_dataset)
     {
         sys::mkdir_ifmissing(ds_root);
         sys::File out(str::joinpath(ds_root, "config"), O_WRONLY | O_CREAT | O_TRUNC, 0666);
         cfg.write(out);
-        m_config = dataset::Config::create(session(), cfg);
+        m_dataset = session()->dataset(cfg);
     }
-    return *m_config;
+    return *m_dataset;
 }
 
-std::shared_ptr<const dataset::Config> DatasetTest::dataset_config()
+std::shared_ptr<const dataset::Dataset> DatasetTest::dataset_config()
 {
     config();
-    return m_config;
+    return m_dataset;
 }
 
-std::shared_ptr<const dataset::LocalConfig> DatasetTest::local_config()
+std::shared_ptr<const dataset::local::Dataset> DatasetTest::local_config()
 {
     config();
-    return dynamic_pointer_cast<const dataset::LocalConfig>(m_config);
+    return dynamic_pointer_cast<const dataset::local::Dataset>(m_dataset);
 }
 
-std::shared_ptr<const dataset::ondisk2::Config> DatasetTest::ondisk2_config()
+std::shared_ptr<const dataset::ondisk2::Dataset> DatasetTest::ondisk2_config()
 {
     config();
-    return dynamic_pointer_cast<const dataset::ondisk2::Config>(m_config);
+    return dynamic_pointer_cast<const dataset::ondisk2::Dataset>(m_dataset);
 }
 
 std::string DatasetTest::idxfname(const core::cfg::Section* wcfg) const
@@ -522,7 +520,7 @@ void DatasetTest::query_results(const dataset::DataQuery& q, const std::vector<i
 void DatasetTest::online_segment_exists(const std::string& relpath, const std::vector<std::string>& extensions)
 {
     auto cfg = local_config();
-    if (std::dynamic_pointer_cast<const simple::Config>(cfg))
+    if (std::dynamic_pointer_cast<const simple::Dataset>(cfg))
     {
         std::vector<std::string> exts(extensions);
         exts.push_back(".metadata");
@@ -1084,9 +1082,9 @@ void ActualChecker<Dataset>::remove_all_filtered(const Matcher& matcher, const R
 }
 
 template class ActualWriter<dataset::Writer>;
-template class ActualWriter<dataset::LocalWriter>;
+template class ActualWriter<dataset::local::Writer>;
 template class ActualWriter<dataset::segmented::Writer>;
 template class ActualChecker<dataset::Checker>;
-template class ActualChecker<dataset::LocalChecker>;
+template class ActualChecker<dataset::local::Checker>;
 template class ActualChecker<dataset::segmented::Checker>;
 }
