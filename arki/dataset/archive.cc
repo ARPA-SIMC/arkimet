@@ -54,12 +54,12 @@ struct ArchivesRoot
 {
     std::string dataset_root;
     std::string archive_root;
-    dataset::Base& parent;
+    std::shared_ptr<dataset::Dataset> parent;
 
-    std::map<std::string, Archive*> archives;
-    Archive* last = nullptr;
+    std::map<std::string, std::shared_ptr<Archive>> archives;
+    std::shared_ptr<Archive> last;
 
-    ArchivesRoot(const std::string& dataset_root, dataset::Base& parent)
+    ArchivesRoot(const std::string& dataset_root, std::shared_ptr<dataset::Dataset> parent)
         : dataset_root(dataset_root), archive_root(str::joinpath(dataset_root, ".archive")), parent(parent)
           // m_scache_root(str::joinpath(root, ".summaries"))
     {
@@ -74,12 +74,8 @@ struct ArchivesRoot
 
     void clear()
     {
-        for (auto& i: archives)
-            delete i.second;
         archives.clear();
-        if (last)
-            delete last;
-        last = nullptr;
+        last.reset();
     }
 
     void rescan(bool include_invalid=false)
@@ -113,13 +109,13 @@ struct ArchivesRoot
         // Look for existing archives
         for (const auto& i: names)
         {
-            unique_ptr<Archive> a(this->instantiate(i));
+            auto a(this->instantiate(i));
             if (a.get())
             {
                 if (i == "last")
-                    last = a.release();
+                    last = a;
                 else
-                    archives.insert(make_pair(i, a.release()));
+                    archives.insert(make_pair(i, a));
             }
         }
     }
@@ -135,7 +131,7 @@ struct ArchivesRoot
     }
 
     // Look up an archive, returns 0 if not found
-    Archive* lookup(const std::string& name)
+    std::shared_ptr<Archive> lookup(const std::string& name)
     {
         if (name == "last")
             return last;
@@ -168,53 +164,47 @@ struct ArchivesRoot
             s.writeAtomically(sum_file);
     }
 
-    std::unique_ptr<Reader> instantiate_reader(const std::string& name)
+    std::shared_ptr<dataset::Reader> instantiate_reader(const std::string& name)
     {
         string pathname = str::joinpath(archive_root, name);
-        unique_ptr<Reader> res;
+        std::shared_ptr<dataset::Dataset> ds;
         if (sys::exists(pathname + ".summary"))
         {
             if (index::Manifest::exists(pathname))
-            {
-                std::shared_ptr<const simple::Config> config(new simple::Config(parent.config().session, make_config(pathname)));
-                res.reset(new simple::Reader(config));
-            } else {
-                std::shared_ptr<const OfflineConfig> config(new OfflineConfig(parent.config().session, pathname));
-                res.reset(new OfflineReader(config));
-            }
-        } else {
-            std::shared_ptr<const simple::Config> config(new simple::Config(parent.config().session, make_config(pathname)));
-            res.reset(new simple::Reader(config));
-        }
-        res->set_parent(parent);
-        return res;
+                ds = std::make_shared<simple::Dataset>(parent->session, make_config(pathname));
+            else
+                ds = std::make_shared<offline::Dataset>(parent->session, pathname);
+        } else
+            ds = std::make_shared<simple::Dataset>(parent->session, make_config(pathname));
+        ds->set_parent(parent);
+        return ds->create_reader();
     }
 
-    virtual std::unique_ptr<Archive> instantiate(const std::string& name) = 0;
+    virtual std::shared_ptr<Archive> instantiate(const std::string& name) = 0;
 };
 
-struct ArchivesReaderRoot: public ArchivesRoot<Reader>
+struct ArchivesReaderRoot: public ArchivesRoot<dataset::Reader>
 {
     using ArchivesRoot::ArchivesRoot;
 
-    std::unique_ptr<Reader> instantiate(const std::string& name) override
+    std::shared_ptr<dataset::Reader> instantiate(const std::string& name) override
     {
         return instantiate_reader(name);
     }
 };
 
-struct ArchivesCheckerRoot: public ArchivesRoot<Checker>
+struct ArchivesCheckerRoot: public ArchivesRoot<dataset::Checker>
 {
     using ArchivesRoot::ArchivesRoot;
 
     void rescan()
     {
-        ArchivesRoot<Checker>::rescan(true);
+        ArchivesRoot<dataset::Checker>::rescan(true);
 
         // Instantiate the 'last' archive even if the directory does not exist
         if (!last)
         {
-            last = instantiate("last").release();
+            last = instantiate("last");
 
             // FIXME: this fails if a file has already been placed there.
             // Use a new Checker::create function instead, that just makes sure
@@ -230,71 +220,62 @@ struct ArchivesCheckerRoot: public ArchivesRoot<Checker>
         }
     }
 
-    std::unique_ptr<Checker> instantiate(const std::string& name) override
+    std::shared_ptr<dataset::Checker> instantiate(const std::string& name) override
     {
         string pathname = str::joinpath(archive_root, name);
-        unique_ptr<Checker> res;
+        unique_ptr<dataset::Checker> res;
         if (sys::exists(pathname + ".summary"))
             return res;
 
-        std::shared_ptr<const simple::Config> config(new simple::Config(parent.config().session, make_config(pathname)));
-        res.reset(new simple::Checker(config));
-        res->set_parent(parent);
-        return res;
+        auto ds = std::make_shared<simple::Dataset>(parent->session, make_config(pathname));
+        ds->set_parent(parent);
+        return ds->create_checker();
     }
 };
 
-}
-
-ArchivesConfig::ArchivesConfig(std::shared_ptr<Session> session, const std::string& root)
-    : dataset::Config(session), root(root)
+Dataset::Dataset(std::shared_ptr<Session> session, const std::string& root)
+    : dataset::Config(session, "archives"), root(root)
 {
-    name = "archives";
-}
-
-std::shared_ptr<const ArchivesConfig> ArchivesConfig::create(std::shared_ptr<Session> session, const std::string& root)
-{
-    return std::shared_ptr<const ArchivesConfig>(new ArchivesConfig(session, root));
 }
 
 
-ArchivesReader::ArchivesReader(std::shared_ptr<const ArchivesConfig> config)
-    : m_config(config), archives(new archive::ArchivesReaderRoot(config->root, *this))
+Reader::Reader(std::shared_ptr<Dataset> dataset)
+    : m_config(dataset), archives(new archive::ArchivesReaderRoot(dataset->root, dataset))
 {
     archives->rescan();
 }
 
-ArchivesReader::~ArchivesReader()
+Reader::~Reader()
 {
     delete archives;
 }
 
-std::string ArchivesReader::type() const { return "archives"; }
+std::string Reader::type() const { return "archives"; }
 
-bool ArchivesReader::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
+bool Reader::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 {
-    return archives->iter([&](Reader& r) {
+    return archives->iter([&](dataset::Reader& r) {
         return r.query_data(q, dest);
     });
 }
 
-void ArchivesReader::query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out)
+void Reader::query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out)
 {
-    archives->iter([&](Reader& r) {
+    archives->iter([&](dataset::Reader& r) {
         r.query_bytes(q, out);
         return true;
     });
 }
 
-void ArchivesReader::query_bytes(const dataset::ByteQuery& q, AbstractOutputFile& out)
+void Reader::query_bytes(const dataset::ByteQuery& q, AbstractOutputFile& out)
 {
-    archives->iter([&](Reader& r) {
+    archives->iter([&](dataset::Reader& r) {
         r.query_bytes(q, out);
         return true;
     });
 }
 
-void ArchivesReader::summary_for_all(Summary& out)
+void Reader::summary_for_all(Summary& out)
 {
     string sum_file = str::joinpath(archives->dataset_root, ".summaries/archives.summary");
     sys::File fd(sum_file);
@@ -304,14 +285,14 @@ void ArchivesReader::summary_for_all(Summary& out)
     {
         // Query the summaries of all archives
         Matcher m;
-        archives->iter([&](Reader& a) {
+        archives->iter([&](dataset::Reader& a) {
             a.query_summary(m, out);
             return true;
         });
     }
 }
 
-void ArchivesReader::query_summary(const Matcher& matcher, Summary& summary)
+void Reader::query_summary(const Matcher& matcher, Summary& summary)
 {
     unique_ptr<Time> matcher_begin;
     unique_ptr<Time> matcher_end;
@@ -330,7 +311,7 @@ void ArchivesReader::query_summary(const Matcher& matcher, Summary& summary)
     }
 
     // Query only archives that fit that date range
-    archives->iter([&](Reader& a) {
+    archives->iter([&](dataset::Reader& a) {
         unique_ptr<Time> arc_begin;
         unique_ptr<Time> arc_end;
         a.expand_date_range(arc_begin, arc_end);
@@ -340,29 +321,29 @@ void ArchivesReader::query_summary(const Matcher& matcher, Summary& summary)
     });
 }
 
-unsigned ArchivesReader::test_count_archives() const
+unsigned Reader::test_count_archives() const
 {
     return archives->archives.size();
 }
 
 
 
-ArchivesChecker::ArchivesChecker(std::shared_ptr<const ArchivesConfig> config)
-    : m_config(config), archives(new archive::ArchivesCheckerRoot(config->root, *this))
+Checker::Checker(std::shared_ptr<Dataset> dataset)
+    : m_config(dataset), archives(new ArchivesCheckerRoot(dataset->root, dataset))
 {
     archives->rescan();
 }
 
-ArchivesChecker::~ArchivesChecker()
+Checker::~Checker()
 {
     delete archives;
 }
 
-std::string ArchivesChecker::type() const { return "archives"; }
+std::string Checker::type() const { return "archives"; }
 
-void ArchivesChecker::segments_recursive(CheckerConfig& opts, std::function<void(segmented::Checker&, segmented::CheckerSegment&)> dest)
+void Checker::segments_recursive(CheckerConfig& opts, std::function<void(segmented::Checker&, segmented::CheckerSegment&)> dest)
 {
-    archives->iter([&](Checker& a) {
+    archives->iter([&](dataset::Checker& a) {
         if (segmented::Checker* sc = dynamic_cast<segmented::Checker*>(&a))
         {
             sc->segments(opts, [&](segmented::CheckerSegment& segment) {
@@ -373,78 +354,78 @@ void ArchivesChecker::segments_recursive(CheckerConfig& opts, std::function<void
     });
 }
 
-void ArchivesChecker::remove_old(CheckerConfig& opts)
+void Checker::remove_old(CheckerConfig& opts)
 {
-    archives->iter([&](Checker& a) {
+    archives->iter([&](dataset::Checker& a) {
         a.remove_all(opts);
         return true;
     });
 }
 
-void ArchivesChecker::remove_all(CheckerConfig& opts)
+void Checker::remove_all(CheckerConfig& opts)
 {
-    archives->iter([&](Checker& a) {
+    archives->iter([&](dataset::Checker& a) {
         a.remove_all(opts);
         return true;
     });
 }
 
-void ArchivesChecker::tar(CheckerConfig& opts)
+void Checker::tar(CheckerConfig& opts)
 {
     if (!opts.offline) return;
-    archives->iter([&](Checker& a) {
+    archives->iter([&](dataset::Checker& a) {
         a.tar(opts);
         return true;
     });
 }
 
-void ArchivesChecker::zip(CheckerConfig& opts)
+void Checker::zip(CheckerConfig& opts)
 {
     if (!opts.offline) return;
-    archives->iter([&](Checker& a) {
+    archives->iter([&](dataset::Checker& a) {
         a.zip(opts);
         return true;
     });
 }
 
-void ArchivesChecker::compress(CheckerConfig& opts, unsigned groupsize)
+void Checker::compress(CheckerConfig& opts, unsigned groupsize)
 {
     if (!opts.offline) return;
-    archives->iter([&](Checker& a) {
+    archives->iter([&](dataset::Checker& a) {
         a.compress(opts, groupsize);
         return true;
     });
 }
 
-void ArchivesChecker::repack(CheckerConfig& opts, unsigned test_flags)
+void Checker::repack(CheckerConfig& opts, unsigned test_flags)
 {
-    archives->iter([&](Checker& a) {
+    archives->iter([&](dataset::Checker& a) {
         a.repack(opts, test_flags);
         return true;
     });
 }
 
-void ArchivesChecker::check(CheckerConfig& opts)
+void Checker::check(CheckerConfig& opts)
 {
-    archives->iter([&](Checker& a) {
+    archives->iter([&](dataset::Checker& a) {
         a.check(opts);
         return true;
     });
 }
 
-void ArchivesChecker::check_issue51(CheckerConfig& opts)
+void Checker::check_issue51(CheckerConfig& opts)
 {
     if (!opts.offline) return;
-    archives->iter([&](Checker& a) {
+    archives->iter([&](dataset::Checker& a) {
         a.check_issue51(opts);
         return true;
     });
 }
 
-void ArchivesChecker::state(CheckerConfig& opts)
+void Checker::state(CheckerConfig& opts)
 {
     if (!opts.offline) return;
-    archives->iter([&](Checker& a) {
+    archives->iter([&](dataset::Checker& a) {
         a.state(opts);
         return true;
     });
@@ -466,13 +447,13 @@ static std::string poppath(std::string& path)
 	return res;
 }
 
-void ArchivesChecker::index_segment(const std::string& relpath, metadata::Collection&& mds)
+void Checker::index_segment(const std::string& relpath, metadata::Collection&& mds)
 {
     string path = relpath;
     string name = poppath(path);
-    if (Checker* a = archives->lookup(name))
+    if (auto a = archives->lookup(name))
     {
-        if (segmented::Checker* sc = dynamic_cast<segmented::Checker*>(a))
+        if (auto sc = dynamic_pointer_cast<segmented::Checker>(a))
             sc->segment(path)->index(move(mds));
         else
             throw std::runtime_error(this->name() + ": cannot acquire " + relpath + ": archive " + name + " is not writable");
@@ -482,15 +463,15 @@ void ArchivesChecker::index_segment(const std::string& relpath, metadata::Collec
     archives->invalidate_summary_cache();
 }
 
-void ArchivesChecker::release_segment(const std::string& relpath, const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath)
+void Checker::release_segment(const std::string& relpath, const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath)
 {
     string path = utils::str::normpath(relpath);
     string name = poppath(path);
     if (name != "last") throw std::runtime_error(this->name() + ": cannot release segment " + relpath + ": segment is not in last/ archive");
 
-    if (Checker* a = archives->lookup(name))
+    if (auto a = archives->lookup(name))
     {
-        if (segmented::Checker* sc = dynamic_cast<segmented::Checker*>(a))
+        if (auto sc = dynamic_pointer_cast<segmented::Checker>(a))
             sc->segment(path)->release(new_root, new_relpath, new_abspath);
         else
             throw std::runtime_error(this->name() + ": cannot acquire " + relpath + ": archive " + name + " is not writable");
@@ -500,10 +481,11 @@ void ArchivesChecker::release_segment(const std::string& relpath, const std::str
     archives->invalidate_summary_cache();
 }
 
-unsigned ArchivesChecker::test_count_archives() const
+unsigned Checker::test_count_archives() const
 {
     return archives->archives.size();
 }
 
+}
 }
 }

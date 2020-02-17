@@ -23,6 +23,7 @@
 #include "arki-bufr-prepare.h"
 #include "arki/matcher/aliases.h"
 #include "arki/runtime.h"
+#include "arki/dataset/session.h"
 #include "arki/dataset/merged.h"
 #include "arki/dataset/http.h"
 #include "arki/dataset/querymacro.h"
@@ -117,7 +118,7 @@ Arguments:
                 cfg.set("type", "remote");
                 cfg.set("path", baseurl);
                 cfg.set("qmacro", query);
-                ds = arki::dataset::Reader::create(arki::python::get_dataset_session(), cfg);
+                ds = arki::python::get_dataset_session()->dataset(cfg)->create_reader();
             }
 
             return (PyObject*)dataset_reader_create(ds);

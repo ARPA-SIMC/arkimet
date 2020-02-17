@@ -16,8 +16,8 @@ namespace arki {
 namespace dataset {
 namespace iseg {
 
-Config::Config(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
-    : segmented::Config(session, cfg),
+Dataset::Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
+    : segmented::Dataset(session, cfg),
       format(cfg.value("format")),
       index(index::parseMetadataBitmask(cfg.value("index"))),
       unique(index::parseMetadataBitmask(cfg.value("unique"))),
@@ -25,32 +25,24 @@ Config::Config(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
       trace_sql(cfg.value_bool("trace_sql"))
 {
     if (format.empty())
-        throw std::runtime_error("Dataset " + name + " misses format= configuration");
+        throw std::runtime_error("Dataset " + name() + " misses format= configuration");
 
     unique.erase(TYPE_REFTIME);
 }
 
-std::shared_ptr<const Config> Config::create(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
+std::shared_ptr<dataset::Reader> Dataset::create_reader()
 {
-    return std::shared_ptr<const Config>(new Config(session, cfg));
+    return std::make_shared<iseg::Reader>(static_pointer_cast<Dataset>(shared_from_this()));
 }
 
-std::unique_ptr<dataset::Reader> Config::create_reader() const
+std::shared_ptr<dataset::Writer> Dataset::create_writer()
 {
-    auto cfg = dynamic_pointer_cast<const iseg::Config>(shared_from_this());
-    return std::unique_ptr<dataset::Reader>(new iseg::Reader(cfg));
+    return std::make_shared<iseg::Writer>(static_pointer_cast<Dataset>(shared_from_this()));
 }
 
-std::unique_ptr<dataset::Writer> Config::create_writer() const
+std::shared_ptr<dataset::Checker> Dataset::create_checker()
 {
-    auto cfg = dynamic_pointer_cast<const iseg::Config>(shared_from_this());
-    return std::unique_ptr<dataset::Writer>(new iseg::Writer(cfg));
-}
-
-std::unique_ptr<dataset::Checker> Config::create_checker() const
-{
-    auto cfg = dynamic_pointer_cast<const iseg::Config>(shared_from_this());
-    return std::unique_ptr<dataset::Checker>(new iseg::Checker(cfg));
+    return std::make_shared<iseg::Checker>(static_pointer_cast<Dataset>(shared_from_this()));
 }
 
 }

@@ -2797,7 +2797,12 @@
  {
   "doc": "",
   "group": "arki_dataset_session",
-  "method": "empty"
+  "method": "read_config"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_session",
+  "method": "read_configs"
  },
  {
   "doc": "",
@@ -12128,16 +12133,6 @@
   "doc": "",
   "group": "arki_dataset_datasets",
   "method": "instantiate"
- },
- {
-  "doc": "",
-  "group": "arki_dataset",
-  "method": "read_config"
- },
- {
-  "doc": "",
-  "group": "arki_dataset",
-  "method": "read_configs"
  },
  {
   "doc": "",

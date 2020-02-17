@@ -11,13 +11,13 @@ class Step;
 
 namespace segmented {
 
-struct Config : public LocalConfig
+struct Dataset : public local::Dataset
 {
 protected:
     /// dataset::Step for this configuration
     std::shared_ptr<Step> m_step;
 
-    Config(const Config& cfg) = default;
+    Dataset(const Dataset& cfg) = default;
 
 public:
     /// Name of the dataset::Step used to dispatch data into segments
@@ -45,32 +45,30 @@ public:
     unsigned gz_group_size = 512;
 
 
-    Config(std::shared_ptr<Session> session, const core::cfg::Section& cfg);
-    ~Config();
+    Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg);
+    ~Dataset();
 
     virtual bool relpath_timespan(const std::string& path, core::Time& start_time, core::Time& end_time) const;
 
     const Step& step() const { return *m_step; }
-
-    static std::shared_ptr<const Config> create(std::shared_ptr<Session> session, const core::cfg::Section& cfg);
 };
 
 /**
  * LocalReader dataset with data stored in segment files
  */
-class Reader : public LocalReader
+class Reader : public local::Reader
 {
 public:
-    using LocalReader::LocalReader;
+    using local::Reader::Reader;
     ~Reader();
 
-    const Config& config() const override = 0;
+    const Dataset& config() const override = 0;
 };
 
 /**
  * LocalWriter dataset with data stored in segment files
  */
-class Writer : public LocalWriter
+class Writer : public local::Writer
 {
 protected:
     /**
@@ -82,10 +80,10 @@ protected:
     std::map<std::string, WriterBatch> batch_by_segment(WriterBatch& batch);
 
 public:
-    using LocalWriter::LocalWriter;
+    using local::Writer::Writer;
     ~Writer();
 
-    const Config& config() const override = 0;
+    const Dataset& config() const override = 0;
 
     static void test_acquire(std::shared_ptr<Session>, const core::cfg::Section& cfg, WriterBatch& batch);
 };
@@ -111,7 +109,7 @@ struct SegmentState
     SegmentState(SegmentState&&) = default;
 
     /// Check if this segment is old enough to be deleted or archived
-    void check_age(const std::string& relpath, const Config& cfg, dataset::Reporter& reporter);
+    void check_age(const std::string& relpath, const Dataset& cfg, dataset::Reporter& reporter);
 };
 
 
@@ -144,8 +142,8 @@ public:
     virtual size_t compress(unsigned groupsize) = 0;
 
     virtual std::string path_relative() const = 0;
-    virtual const segmented::Config& config() const = 0;
-    virtual dataset::ArchivesChecker& archives() const = 0;
+    virtual const segmented::Dataset& config() const = 0;
+    virtual std::shared_ptr<dataset::archive::Checker> archives() = 0;
 
     virtual SegmentState scan(dataset::Reporter& reporter, bool quick=true) = 0;
 
@@ -211,13 +209,13 @@ public:
 /**
  * LocalChecker with data stored in segment files
  */
-class Checker : public LocalChecker
+class Checker : public local::Checker
 {
 public:
-    using LocalChecker::LocalChecker;
+    using local::Checker::Checker;
     ~Checker();
 
-    const Config& config() const override = 0;
+    const Dataset& config() const override = 0;
 
     void check(CheckerConfig& opts) override;
     void repack(CheckerConfig& opts, unsigned test_flags=0) override;

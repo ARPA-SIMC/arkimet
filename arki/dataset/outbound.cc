@@ -19,21 +19,16 @@ namespace arki {
 namespace dataset {
 namespace outbound {
 
-Config::Config(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
-    : segmented::Config(session, cfg)
+Dataset::Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
+    : segmented::Dataset(session, cfg)
 {
 }
 
-std::shared_ptr<const Config> Config::create(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
-{
-    return std::shared_ptr<const Config>(new Config(session, cfg));
-}
-
-std::unique_ptr<dataset::Reader> Config::create_reader() const { return std::unique_ptr<dataset::Reader>(new empty::Reader(shared_from_this())); }
-std::unique_ptr<dataset::Writer> Config::create_writer() const { return std::unique_ptr<dataset::Writer>(new Writer(dynamic_pointer_cast<const Config>(shared_from_this()))); }
+std::shared_ptr<dataset::Reader> Dataset::create_reader() { return std::make_shared<empty::Reader>(static_pointer_cast<Dataset>(shared_from_this())); }
+std::shared_ptr<dataset::Writer> Dataset::create_writer() { return std::make_shared<outbound::Writer>(static_pointer_cast<Dataset>(shared_from_this())); }
 
 
-Writer::Writer(std::shared_ptr<const segmented::Config> config)
+Writer::Writer(std::shared_ptr<segmented::Dataset> config)
     : m_config(config)
 {
     // Create the directory if it does not exist
@@ -60,8 +55,8 @@ WriterAcquireResult Writer::acquire(Metadata& md, const AcquireConfig& cfg)
     if (age_check.first) return age_check.second;
 
     const core::Time& time = md.get<types::reftime::Position>()->time;
-    string reldest = config().step()(time);
-    string dest = path() + "/" + reldest;
+    string reldest = dataset().step()(time);
+    string dest = dataset().path + "/" + reldest;
 
     sys::makedirs(str::dirname(dest));
 
@@ -97,7 +92,7 @@ void Writer::remove(Metadata&)
 
 void Writer::test_acquire(std::shared_ptr<Session> session, const core::cfg::Section& cfg, WriterBatch& batch)
 {
-    std::shared_ptr<const outbound::Config> config(new outbound::Config(session, cfg));
+    std::shared_ptr<const outbound::Dataset> config(new outbound::Dataset(session, cfg));
     for (auto& e: batch)
     {
         auto age_check = config->check_acquire_age(e->md);
@@ -105,7 +100,7 @@ void Writer::test_acquire(std::shared_ptr<Session> session, const core::cfg::Sec
         {
             e->result = age_check.second;
             if (age_check.second == ACQ_OK)
-                e->dataset_name = config->name;
+                e->dataset_name = config->name();
             else
                 e->dataset_name.clear();
             continue;
@@ -116,7 +111,7 @@ void Writer::test_acquire(std::shared_ptr<Session> session, const core::cfg::Sec
         string dest = cfg.value("path") + "/" + (*tf)(time) + "." + e->md.source().format;
         nag::verbose("Assigning to dataset %s in file %s", cfg.value("name").c_str(), dest.c_str());
         e->result = ACQ_OK;
-        e->dataset_name = config->name;
+        e->dataset_name = config->name();
     }
 }
 

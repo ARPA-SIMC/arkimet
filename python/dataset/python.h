@@ -9,9 +9,9 @@ namespace arki {
 namespace python {
 namespace dataset {
 
-std::unique_ptr<arki::dataset::Reader> create_reader(const arki::core::cfg::Section& cfg, PyObject* o);
-std::unique_ptr<arki::dataset::Writer> create_writer(PyObject* o);
-std::unique_ptr<arki::dataset::Checker> create_checker(PyObject* o);
+std::shared_ptr<arki::dataset::Reader> create_reader(const arki::core::cfg::Section& cfg, PyObject* o);
+std::shared_ptr<arki::dataset::Writer> create_writer(PyObject* o);
+std::shared_ptr<arki::dataset::Checker> create_checker(PyObject* o);
 
 }
 }

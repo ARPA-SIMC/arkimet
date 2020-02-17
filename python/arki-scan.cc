@@ -4,6 +4,7 @@
 #include "arki/dispatcher.h"
 #include "arki/utils/string.h"
 #include "arki/exceptions.h"
+#include "arki/dataset/session.h"
 #include "arki/dataset/file.h"
 #include "arki/metadata/validator.h"
 #include "utils/core.h"
@@ -38,7 +39,7 @@ static std::string moveFile(const std::string& source, const std::string& target
 
 static std::string moveFile(const arki::dataset::Reader& ds, const std::string& targetdir)
 {
-    if (const arki::dataset::File* d = dynamic_cast<const arki::dataset::File*>(&ds))
+    if (const arki::dataset::file::File* d = dynamic_cast<const arki::dataset::file::File*>(&ds))
         return moveFile(d->config().pathname, targetdir);
     else
         return std::string();
@@ -65,7 +66,7 @@ struct FileSource
     {
         if (!movework.empty() && cfg.value("type") == "file")
             cfg.set("path", moveFile(cfg.value("path"), movework));
-        reader = arki::dataset::Reader::create(arki::python::get_dataset_session(), cfg);
+        reader = arki::python::get_dataset_session()->dataset(cfg)->create_reader();
     }
 
     void close(bool successful)

@@ -49,7 +49,7 @@ struct Others;
 class Contents : public dataset::Index
 {
 protected:
-    std::shared_ptr<const ondisk2::Config> m_config;
+    std::shared_ptr<const ondisk2::Dataset> m_config;
 
     mutable utils::sqlite::SQLiteDB m_db;
     mutable utils::sqlite::PrecompiledQuery m_get_current;
@@ -90,12 +90,12 @@ protected:
      */
     void build_md(utils::sqlite::Query& q, Metadata& md, std::shared_ptr<arki::segment::Reader> reader) const;
 
-    Contents(std::shared_ptr<const ondisk2::Config> config);
+    Contents(std::shared_ptr<const ondisk2::Dataset> config);
 
 public:
     ~Contents();
 
-    const ondisk2::Config& config() const { return *m_config; }
+    const ondisk2::Dataset& config() const { return *m_config; }
 
     const std::string& pathname() const { return config().index_pathname; }
 
@@ -216,7 +216,7 @@ protected:
 	void initQueries();
 
 public:
-    RIndex(std::shared_ptr<const ondisk2::Config> config);
+    RIndex(std::shared_ptr<const ondisk2::Dataset > config);
     ~RIndex();
 
     /// Initialise access to the index
@@ -247,7 +247,7 @@ protected:
 	void initDB();
 
 public:
-    WIndex(std::shared_ptr<const ondisk2::Config> config);
+    WIndex(std::shared_ptr<const ondisk2::Dataset > config);
     ~WIndex();
 
 	/**

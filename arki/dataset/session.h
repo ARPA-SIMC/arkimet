@@ -10,13 +10,11 @@
 namespace arki {
 namespace dataset {
 
-class Session
+class Session: public std::enable_shared_from_this<Session>
 {
 protected:
     /// Map segment absolute paths to possibly reusable reader instances
     std::unordered_map<std::string, std::weak_ptr<segment::Reader>> reader_pool;
-
-    std::shared_ptr<segment::Reader> reader_from_pool(const std::string& abspath);
 
 public:
     virtual ~Session();
@@ -24,6 +22,18 @@ public:
     virtual std::shared_ptr<segment::Reader> segment_reader(const std::string& format, const std::string& root, const std::string& relpath, std::shared_ptr<core::Lock> lock);
     virtual std::shared_ptr<segment::Writer> segment_writer(const std::string& format, const std::string& root, const std::string& relpath);
     virtual std::shared_ptr<segment::Checker> segment_checker(const std::string& format, const std::string& root, const std::string& relpath);
+
+    std::shared_ptr<Dataset> dataset(const core::cfg::Section& cfg);
+
+    /**
+     * Read the configuration of the dataset at the given path or URL
+     */
+    static core::cfg::Section read_config(const std::string& path);
+
+    /**
+     * Read a multi-dataset configuration at the given path or URL
+     */
+    static core::cfg::Sections read_configs(const std::string& path);
 };
 
 }

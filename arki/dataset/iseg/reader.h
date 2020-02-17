@@ -14,7 +14,7 @@ namespace iseg {
 class Reader : public segmented::Reader
 {
 protected:
-    std::shared_ptr<const iseg::Config> m_config;
+    std::shared_ptr<iseg::Dataset> m_config;
     index::SummaryCache scache;
 
     /// List all existing segments matched by the reftime part of matcher
@@ -40,10 +40,12 @@ protected:
     void summary_from_indices(const Matcher& matcher, Summary& summary);
 
 public:
-    Reader(std::shared_ptr<const iseg::Config> config);
+    Reader(std::shared_ptr<iseg::Dataset> config);
     virtual ~Reader();
 
-    const iseg::Config& config() const override { return *m_config; }
+    const iseg::Dataset& config() const override { return *m_config; }
+    const iseg::Dataset& dataset() const override { return *m_config; }
+    iseg::Dataset& dataset() override { return *m_config; }
 
     std::string type() const override;
 

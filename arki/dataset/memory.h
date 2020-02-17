@@ -24,6 +24,8 @@ public:
     virtual ~Memory();
 
     const Config& config() const override { return m_config; }
+    const Config& dataset() const override { return m_config; }
+    Config& dataset() override { return m_config; }
 
     std::string type() const override;
     bool query_data(const dataset::DataQuery& q, metadata_dest_func dest) override;

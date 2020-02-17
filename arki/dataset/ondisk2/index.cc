@@ -58,7 +58,7 @@ struct IndexGlobalData
 static IndexGlobalData igd;
 
 
-Contents::Contents(std::shared_ptr<const ondisk2::Config> config)
+Contents::Contents(std::shared_ptr<const ondisk2::Dataset> config)
     : m_config(config),  m_get_current("getcurrent", m_db),
       m_uniques(0), m_others(0), scache(config->summary_cache_pathname)
 {
@@ -821,7 +821,7 @@ bool Contents::checkSummaryCache(const dataset::Base& ds, Reporter& reporter) co
     return scache.check(ds, reporter);
 }
 
-RIndex::RIndex(std::shared_ptr<const ondisk2::Config> config)
+RIndex::RIndex(std::shared_ptr<const ondisk2::Dataset> config)
     : Contents(config) {}
 
 RIndex::~RIndex()
@@ -877,7 +877,7 @@ void RIndex::test_make_hole(const std::string& relpath, unsigned hole_size, unsi
 }
 
 
-WIndex::WIndex(std::shared_ptr<const ondisk2::Config> config)
+WIndex::WIndex(std::shared_ptr<const ondisk2::Dataset> config)
     : Contents(config), m_insert(m_db), m_delete("delete", m_db), m_replace("replace", m_db)
 {
 }

@@ -6,37 +6,36 @@
 #include <string>
 
 namespace arki {
-class Matcher;
-
 namespace dataset {
-class DataQuery;
-class ByteQuery;
+namespace offline {
 
-struct OfflineConfig : public dataset::Config
+struct Dataset : public dataset::Config
 {
     /**
      * Pathname to the .summary file which describes the data that is offline
      */
     std::string summary_pathname;
 
-    OfflineConfig(std::shared_ptr<Session> session, const std::string& pathname);
+    Dataset(std::shared_ptr<Session> session, const std::string& pathname);
 
-    static std::shared_ptr<const OfflineConfig> create(std::shared_ptr<Session> session, const std::string& pathname);
+    static std::shared_ptr<const Dataset> create(std::shared_ptr<Session> session, const std::string& pathname);
 };
 
 
 /**
  * Archive that has been put offline (only a summary file is left)
  */
-struct OfflineReader : public Reader
+struct Reader : public dataset::Reader
 {
-    std::shared_ptr<const OfflineConfig> m_config;
+    std::shared_ptr<Dataset> m_config;
     Summary sum;
 
-    OfflineReader(std::shared_ptr<const OfflineConfig> config);
-    ~OfflineReader() {}
+    Reader(std::shared_ptr<Dataset> config);
+    ~Reader() {}
 
-    const OfflineConfig& config() const override { return *m_config; }
+    const Dataset& config() const override { return *m_config; }
+    const Dataset& dataset() const override { return *m_config; }
+    Dataset& dataset() override { return *m_config; }
 
     std::string type() const override;
 
@@ -45,6 +44,7 @@ struct OfflineReader : public Reader
     void expand_date_range(std::unique_ptr<core::Time>& begin, std::unique_ptr<core::Time>& end) override;
 };
 
+}
 }
 }
 #endif

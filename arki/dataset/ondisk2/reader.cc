@@ -11,7 +11,7 @@ namespace arki {
 namespace dataset {
 namespace ondisk2 {
 
-Reader::Reader(std::shared_ptr<const ondisk2::Config> config)
+Reader::Reader(std::shared_ptr<ondisk2::Dataset> config)
     : m_config(config)
 {
     if (sys::access(str::joinpath(config->path, "index.sqlite"), F_OK))

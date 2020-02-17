@@ -14,33 +14,25 @@ namespace arki {
 namespace dataset {
 namespace simple {
 
-Config::Config(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
-    : dataset::IndexedConfig(session, cfg),
+Dataset::Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
+    : dataset::indexed::Dataset(session, cfg),
       index_type(cfg.value("index_type"))
 {
 }
 
-std::shared_ptr<const Config> Config::create(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
+std::shared_ptr<dataset::Reader> Dataset::create_reader()
 {
-    return std::shared_ptr<const Config>(new Config(session, cfg));
+    return std::make_shared<simple::Reader>(static_pointer_cast<Dataset>(shared_from_this()));
 }
 
-std::unique_ptr<dataset::Reader> Config::create_reader() const
+std::shared_ptr<dataset::Writer> Dataset::create_writer()
 {
-    auto cfg = dynamic_pointer_cast<const simple::Config>(shared_from_this());
-    return std::unique_ptr<dataset::Reader>(new simple::Reader(cfg));
+    return std::make_shared<simple::Writer>(static_pointer_cast<Dataset>(shared_from_this()));
 }
 
-std::unique_ptr<dataset::Writer> Config::create_writer() const
+std::shared_ptr<dataset::Checker> Dataset::create_checker()
 {
-    auto cfg = dynamic_pointer_cast<const simple::Config>(shared_from_this());
-    return std::unique_ptr<dataset::Writer>(new simple::Writer(cfg));
-}
-
-std::unique_ptr<dataset::Checker> Config::create_checker() const
-{
-    auto cfg = dynamic_pointer_cast<const simple::Config>(shared_from_this());
-    return std::unique_ptr<dataset::Checker>(new simple::Checker(cfg));
+    return std::make_shared<simple::Checker>(static_pointer_cast<Dataset>(shared_from_this()));
 }
 
 }

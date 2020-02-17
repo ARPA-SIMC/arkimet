@@ -2,6 +2,7 @@
 #include "arki/core/file.h"
 #include "arki/matcher.h"
 #include "arki/dataset.h"
+#include "arki/dataset/session.h"
 #include "arki/dataset/http.h"
 #include "arki/dataset/merged.h"
 #include "arki/dataset/querymacro.h"
@@ -135,7 +136,7 @@ struct query_merged : public MethKwargs<query_merged, arkipy_ArkiQuery>
 
                 // Instantiate the datasets and add them to the merger
                 for (auto si: self->inputs)
-                    reader.add_dataset(arki::dataset::Reader::create(arki::python::get_dataset_session(), si.second));
+                    reader.add_dataset(si.second);
 
                 try {
                     self->processor->process(reader, reader.name());
@@ -202,7 +203,7 @@ struct query_qmacro : public MethKwargs<query_qmacro, arkipy_ArkiQuery>
                     cfg.set("type", "remote");
                     cfg.set("path", baseurl);
                     cfg.set("qmacro", macro_query);
-                    reader = arki::dataset::Reader::create(arki::python::get_dataset_session(), cfg);
+                    reader = arki::python::get_dataset_session()->dataset(cfg)->create_reader();
                 }
 
                 try {

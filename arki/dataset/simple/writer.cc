@@ -30,7 +30,7 @@ namespace simple {
 /// Accumulate metadata and summaries while writing
 struct AppendSegment
 {
-    std::shared_ptr<const simple::Config> config;
+    std::shared_ptr<const simple::Dataset> config;
     std::shared_ptr<dataset::AppendLock> lock;
     std::shared_ptr<segment::Writer> segment;
     utils::sys::Path dir;
@@ -39,7 +39,7 @@ struct AppendSegment
     metadata::Collection mds;
     Summary sum;
 
-    AppendSegment(std::shared_ptr<const simple::Config> config, std::shared_ptr<dataset::AppendLock> lock, std::shared_ptr<segment::Writer> segment)
+    AppendSegment(std::shared_ptr<const simple::Dataset> config, std::shared_ptr<dataset::AppendLock> lock, std::shared_ptr<segment::Writer> segment)
         : config(config), lock(lock), segment(segment),
           dir(str::dirname(segment->segment().abspath)),
           basename(str::basename(segment->segment().abspath))
@@ -90,7 +90,7 @@ struct AppendSegment
             return ACQ_OK;
         } catch (std::exception& e) {
             // sqlite will take care of transaction consistency
-            md.add_note("Failed to store in dataset '" + config->name + "': " + e.what());
+            md.add_note("Failed to store in dataset '" + config->name() + "': " + e.what());
             return ACQ_ERROR;
         }
     }
@@ -108,11 +108,11 @@ struct AppendSegment
                 const types::source::Blob& new_source = segment->append(e->md, drop_cached_data_on_commit);
                 add(e->md, new_source);
                 e->result = ACQ_OK;
-                e->dataset_name = config->name;
+                e->dataset_name = config->name();
             }
         } catch (std::exception& e) {
             // sqlite will take care of transaction consistency
-            batch.set_all_error("Failed to store in dataset '" + config->name + "': " + e.what());
+            batch.set_all_error("Failed to store in dataset '" + config->name() + "': " + e.what());
             return;
         }
 
@@ -126,7 +126,7 @@ struct AppendSegment
 };
 
 
-Writer::Writer(std::shared_ptr<const simple::Config> config)
+Writer::Writer(std::shared_ptr<simple::Dataset> config)
     : m_config(config)
 {
     // Create the directory if it does not exist
@@ -190,7 +190,7 @@ void Writer::remove(Metadata& md)
 
 void Writer::test_acquire(std::shared_ptr<Session> session, const core::cfg::Section& cfg, WriterBatch& batch)
 {
-    std::shared_ptr<const simple::Config> config(new simple::Config(session, cfg));
+    std::shared_ptr<const simple::Dataset> config(new simple::Dataset(session, cfg));
     for (auto& e: batch)
     {
         auto age_check = config->check_acquire_age(e->md);
@@ -198,14 +198,14 @@ void Writer::test_acquire(std::shared_ptr<Session> session, const core::cfg::Sec
         {
             e->result = age_check.second;
             if (age_check.second == ACQ_OK)
-                e->dataset_name = config->name;
+                e->dataset_name = config->name();
             else
                 e->dataset_name.clear();
         } else {
             // Acquire on simple datasets always succeeds except in case of envrionment
             // issues like I/O errors and full disks
             e->result = ACQ_OK;
-            e->dataset_name = config->name;
+            e->dataset_name = config->name();
         }
     }
 }

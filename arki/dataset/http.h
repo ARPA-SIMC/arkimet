@@ -119,16 +119,14 @@ struct BufState : public Request
 };
 
 
-struct Config : public dataset::Config
+struct Dataset : public dataset::Dataset
 {
     std::string baseurl;
     std::string qmacro;
 
-    Config(std::shared_ptr<Session> session, const core::cfg::Section& cfg);
+    Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg);
 
-    static std::shared_ptr<const Config> create(std::shared_ptr<Session> session, const core::cfg::Section& cfg);
-
-    std::unique_ptr<dataset::Reader> create_reader() const override;
+    std::shared_ptr<dataset::Reader> create_reader() override;
 };
 
 /**
@@ -142,17 +140,19 @@ struct Config : public dataset::Config
 class Reader : public dataset::Reader
 {
 protected:
-    std::shared_ptr<const Config> m_config;
+    std::shared_ptr<Dataset> m_config;
     http::CurlEasy m_curl;
     void set_post_query(Request& request, const std::string& query);
     void set_post_query(Request& request, const dataset::DataQuery& q);
 
 public:
-    // Initialise the dataset with the information from the configurationa in 'cfg'
-    Reader(std::shared_ptr<const Config> config);
+    Reader(std::shared_ptr<Dataset> config);
     virtual ~Reader();
 
-    const Config& config() const override { return *m_config; }
+    const Dataset& config() const override { return *m_config; }
+    const Dataset& dataset() const override { return *m_config; }
+    Dataset& dataset() override { return *m_config; }
+
     std::string type() const override;
 
     bool query_data(const dataset::DataQuery& q, metadata_dest_func) override;

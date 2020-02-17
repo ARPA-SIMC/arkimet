@@ -2,6 +2,7 @@
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
 #include "arki/dataset.h"
+#include "arki/dataset/session.h"
 #include "arki/dataset/segmented.h"
 #include "arki/dataset/pool.h"
 #include "arki/nag.h"
@@ -89,8 +90,8 @@ struct remove : public MethKwargs<remove, arkipy_ArkiCheck>
                         throw std::runtime_error(ss.str());
                     }
 
-                    dsnames.push_back(ds->name);
-                    ++counts[ds->name];
+                    dsnames.push_back(ds->name());
+                    ++counts[ds->name()];
                     ++idx;
                 }
                 if (not self->checker_config.readonly)
@@ -135,9 +136,9 @@ struct checker_base : public MethKwargs<Base, Impl>
                 for (auto si: self->config)
                 {
                     try {
-                        std::unique_ptr<arki::dataset::Checker> checker;
+                        std::shared_ptr<arki::dataset::Checker> checker;
                         try {
-                            checker = arki::dataset::Checker::create(arki::python::get_dataset_session(), si.second);
+                            checker = arki::python::get_dataset_session()->dataset(si.second)->create_checker();
                         } catch (std::exception& e) {
                             throw SkipDataset(e.what());
                         }
@@ -258,9 +259,9 @@ struct compress : public checker_base<compress, arkipy_ArkiCheck>
                 for (auto si: self->config)
                 {
                     try {
-                        std::unique_ptr<arki::dataset::Checker> checker;
+                        std::shared_ptr<arki::dataset::Checker> checker;
                         try {
-                            checker = arki::dataset::Checker::create(arki::python::get_dataset_session(), si.second);
+                            checker = arki::python::get_dataset_session()->dataset(si.second)->create_checker();
                         } catch (std::exception& e) {
                             throw SkipDataset(e.what());
                         }
@@ -296,9 +297,9 @@ struct unarchive : public checker_base<unarchive, arkipy_ArkiCheck>
                 for (auto si: self->config)
                 {
                     try {
-                        std::unique_ptr<arki::dataset::Checker> checker;
+                        std::shared_ptr<arki::dataset::Checker> checker;
                         try {
-                            checker = arki::dataset::Checker::create(arki::python::get_dataset_session(), si.second);
+                            checker = arki::python::get_dataset_session()->dataset(si.second)->create_checker();
                         } catch (std::exception& e) {
                             throw SkipDataset(e.what());
                         }

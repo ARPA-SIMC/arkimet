@@ -79,8 +79,8 @@ public:
         return *m_idx;
     }
     std::string path_relative() const override { return segment->segment().relpath; }
-    const iseg::Config& config() const override { return checker.config(); }
-    dataset::ArchivesChecker& archives() const { return checker.archive(); }
+    const iseg::Dataset& config() const override { return checker.config(); }
+    std::shared_ptr<dataset::archive::Checker> archives() override { return checker.archive(); }
 
     void get_metadata(std::shared_ptr<core::Lock> lock, metadata::Collection& mds) override
     {
@@ -461,7 +461,7 @@ public:
 };
 
 
-Checker::Checker(std::shared_ptr<const iseg::Config> config)
+Checker::Checker(std::shared_ptr<iseg::Dataset> config)
     : m_config(config)
 {
     // Create the directory if it does not exist

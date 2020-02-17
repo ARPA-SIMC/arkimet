@@ -135,33 +135,33 @@ const std::string& ensure_path(const std::string& pathname)
 }
 
 
-DatasetReadLock::DatasetReadLock(const LocalConfig& config)
-    : ReadLock(str::joinpath(config.path, "lock"), config.lock_policy)
+DatasetReadLock::DatasetReadLock(const local::Dataset& dataset)
+    : ReadLock(str::joinpath(dataset.path, "lock"), dataset.lock_policy)
 {
 }
 
-SegmentReadLock::SegmentReadLock(const LocalConfig& config, const std::string& relpath)
-    : ReadLock(str::joinpath(config.path, relpath + ".lock"), config.lock_policy)
+SegmentReadLock::SegmentReadLock(const local::Dataset& dataset, const std::string& relpath)
+    : ReadLock(str::joinpath(dataset.path, relpath + ".lock"), dataset.lock_policy)
 {
 }
 
-DatasetAppendLock::DatasetAppendLock(const LocalConfig& config)
-    : AppendLock(str::joinpath(config.path, "lock"), config.lock_policy)
+DatasetAppendLock::DatasetAppendLock(const local::Dataset& dataset)
+    : AppendLock(str::joinpath(dataset.path, "lock"), dataset.lock_policy)
 {
 }
 
-SegmentAppendLock::SegmentAppendLock(const LocalConfig& config, const std::string& relpath)
-    : AppendLock(str::joinpath(config.path, relpath + ".lock"), config.lock_policy)
+SegmentAppendLock::SegmentAppendLock(const local::Dataset& dataset, const std::string& relpath)
+    : AppendLock(str::joinpath(dataset.path, relpath + ".lock"), dataset.lock_policy)
 {
 }
 
-DatasetCheckLock::DatasetCheckLock(const LocalConfig& config)
-    : CheckLock(str::joinpath(config.path, "lock"), config.lock_policy)
+DatasetCheckLock::DatasetCheckLock(const local::Dataset& dataset)
+    : CheckLock(str::joinpath(dataset.path, "lock"), dataset.lock_policy)
 {
 }
 
-SegmentCheckLock::SegmentCheckLock(const LocalConfig& config, const std::string& relpath)
-    : CheckLock(ensure_path(str::joinpath(config.path, relpath + ".lock")), config.lock_policy)
+SegmentCheckLock::SegmentCheckLock(const local::Dataset& dataset, const std::string& relpath)
+    : CheckLock(ensure_path(str::joinpath(dataset.path, relpath + ".lock")), dataset.lock_policy)
 {
 }
 

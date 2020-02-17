@@ -1,4 +1,5 @@
 #include "arki/dataset/merged.h"
+#include "arki/dataset/session.h"
 #include "arki/exceptions.h"
 #include "arki/metadata.h"
 #include "arki/metadata/sort.h"
@@ -149,10 +150,8 @@ public:
 };
 
 Merged::Merged(std::shared_ptr<Session> session)
+    : m_config(std::make_shared<dataset::Config>(dataset::Config(session, "merged")))
 {
-    dataset::Config* cfg;
-    m_config = std::shared_ptr<dataset::Config>(cfg = new dataset::Config(session));
-    cfg->name = "merged";
 }
 
 Merged::~Merged()
@@ -166,9 +165,14 @@ void Merged::add_dataset(std::shared_ptr<Reader> ds)
     datasets.emplace_back(ds);
 }
 
+void Merged::add_dataset(std::shared_ptr<Dataset> ds)
+{
+    datasets.emplace_back(ds->create_reader());
+}
+
 void Merged::add_dataset(const core::cfg::Section& cfg)
 {
-    add_dataset(move(dataset::Reader::create(m_config->session, cfg)));
+    add_dataset(m_config->session->dataset(cfg));
 }
 
 bool Merged::query_data(const dataset::DataQuery& q, metadata_dest_func dest)

@@ -14,7 +14,7 @@ namespace arki {
 namespace dataset {
 namespace iseg {
 
-Reader::Reader(std::shared_ptr<const iseg::Config> config)
+Reader::Reader(std::shared_ptr<iseg::Dataset> config)
     : m_config(config), scache(config->summary_cache_pathname)
 {
     // Create the directory if it does not exist

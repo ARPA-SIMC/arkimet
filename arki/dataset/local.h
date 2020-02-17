@@ -16,15 +16,19 @@ class Lock;
 class ReadLock;
 class AppendLock;
 class CheckLock;
-class LocalConfig;
-class ArchivesConfig;
-class ArchivesReader;
-class ArchivesChecker;
 
-class LocalConfig : public Config
+namespace archive {
+class Dataset;
+class Reader;
+class Checker;
+}
+
+namespace local {
+
+class Dataset : public dataset::Dataset
 {
 protected:
-    mutable std::shared_ptr<ArchivesConfig> m_archives_config;
+    std::shared_ptr<archive::Dataset> m_archive;
 
 public:
     /// Root path of the dataset
@@ -35,7 +39,7 @@ public:
 
     const core::lock::Policy* lock_policy;
 
-    LocalConfig(std::shared_ptr<Session> session, const core::cfg::Section& cfg);
+    Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg);
 
     /**
      * Check if the data to be acquired is older than acquire or delete age.
@@ -46,7 +50,11 @@ public:
      */
     std::pair<bool, WriterAcquireResult> check_acquire_age(Metadata& md) const;
 
-    std::shared_ptr<ArchivesConfig> archives_config() const;
+    /// Return the Archives for this dataset
+    std::shared_ptr<archive::Dataset> archive();
+
+    /// Check if the dataset has archived data
+    bool hasArchive() const;
 
     /**
      * Create/open a dataset-wide lockfile, returning the Lock instance
@@ -59,36 +67,30 @@ public:
     std::shared_ptr<dataset::CheckLock> check_lock_segment(const std::string& relpath) const;
 };
 
-template<typename Parent, typename Archives>
-class LocalBase : public Parent
+template<typename Parent>
+class Base : public Parent
 {
-protected:
-    Archives* m_archive = nullptr;
-
 public:
     using Parent::Parent;
-    ~LocalBase();
 
-    const LocalConfig& config() const override = 0;
-
-    /// Return the dataset path
-    const std::string& path() const { return config().path; }
-
-    /// Check if the dataset has archived data
-    bool hasArchive() const;
-
-    /// Return the Archives for this dataset
-    Archives& archive();
+    const local::Dataset& config() const override = 0;
+    const local::Dataset& dataset() const override = 0;
+    local::Dataset& dataset() override = 0;
 };
 
 /**
  * Base class for local datasets
  */
-class LocalReader : public LocalBase<Reader, ArchivesReader>
+class Reader : public Base<dataset::Reader>
 {
+    std::shared_ptr<archive::Reader> m_archive;
+
 public:
-    using LocalBase::LocalBase;
-    ~LocalReader();
+    using Base::Base;
+    ~Reader();
+
+    /// Return the Reader for this dataset archives
+    std::shared_ptr<archive::Reader> archive();
 
     // Base implementations that queries the archives if they exist
     bool query_data(const dataset::DataQuery& q, metadata_dest_func dest) override;
@@ -102,25 +104,25 @@ public:
     static core::cfg::Sections read_configs(const std::string& path);
 };
 
-class LocalWriter : public Writer
+class Writer : public Base<dataset::Writer>
 {
 public:
-    using Writer::Writer;
-    ~LocalWriter();
-
-    const LocalConfig& config() const override = 0;
-
-    /// Return the dataset path
-    const std::string& path() const { return config().path; }
+    using Base::Base;
+    ~Writer();
 
     static void test_acquire(std::shared_ptr<Session> session, const core::cfg::Section& cfg, WriterBatch& batch);
 };
 
-struct LocalChecker : public LocalBase<Checker, ArchivesChecker>
+struct Checker : public Base<dataset::Checker>
 {
+    std::shared_ptr<archive::Checker> m_archive;
+
 public:
-    using LocalBase::LocalBase;
-    ~LocalChecker();
+    using Base::Base;
+    ~Checker();
+
+    /// Return the Checker for this dataset archives
+    std::shared_ptr<archive::Checker> archive();
 
     void repack(CheckerConfig& opts, unsigned test_flags=0) override;
     void check(CheckerConfig& opts) override;
@@ -133,6 +135,7 @@ public:
     void state(CheckerConfig& opts) override;
 };
 
+}
 }
 }
 #endif
