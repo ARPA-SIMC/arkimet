@@ -14,7 +14,7 @@ namespace {
 struct Fixture : public arki::utils::tests::Fixture
 {
     std::shared_ptr<dataset::Session> session;
-    std::shared_ptr<dataset::Merged> ds;
+    std::shared_ptr<dataset::merged::Dataset> ds;
     core::cfg::Sections config;
 
     Fixture()
@@ -58,7 +58,7 @@ struct Fixture : public arki::utils::tests::Fixture
         wassert(import("test200", mdc[0]));
         wassert(import("test80", mdc[1]));
         wassert(import("error", mdc[2]));
-        ds = std::make_shared<dataset::Merged>(session);
+        ds = std::make_shared<dataset::merged::Dataset>(session);
         ds->add_dataset(*config.section("test200"));
         ds->add_dataset(*config.section("test80"));
         ds->add_dataset(*config.section("error"));

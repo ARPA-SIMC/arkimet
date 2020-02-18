@@ -72,35 +72,35 @@ struct PathMatch
 namespace arki {
 namespace dataset {
 
-Configs::Configs(std::shared_ptr<Session> session, const core::cfg::Sections& cfg)
+Datasets::Datasets(std::shared_ptr<Session> session, const core::cfg::Sections& cfg)
 {
     for (const auto& si: cfg)
-        configs.insert(make_pair(si.first, session->dataset(si.second)));
+        datasets.insert(make_pair(si.first, session->dataset(si.second)));
 }
 
-std::shared_ptr<dataset::Config> Configs::get(const std::string& name) const
+std::shared_ptr<dataset::Dataset> Datasets::get(const std::string& name) const
 {
-    auto res = configs.find(name);
-    if (res == configs.end())
+    auto res = datasets.find(name);
+    if (res == datasets.end())
         throw std::runtime_error("dataset " + name + " not found");
     return res->second;
 }
 
-bool Configs::has(const std::string& name) const
+bool Datasets::has(const std::string& name) const
 {
-    return configs.find(name) != configs.end();
+    return datasets.find(name) != datasets.end();
 }
 
-std::shared_ptr<const dataset::Config> Configs::locate_metadata(Metadata& md)
+std::shared_ptr<dataset::Dataset> Datasets::locate_metadata(Metadata& md)
 {
     const auto& source = md.sourceBlob();
     std::string pathname = source.absolutePathname();
 
     PathMatch pmatch(pathname);
 
-    for (const auto& dsi: configs)
+    for (const auto& dsi: datasets)
     {
-        auto lcfg = dynamic_pointer_cast<const dataset::local::Dataset>(dsi.second);
+        auto lcfg = dynamic_pointer_cast<dataset::local::Dataset>(dsi.second);
         if (!lcfg) continue;
         if (pmatch.is_under(lcfg->path))
         {
@@ -109,11 +109,11 @@ std::shared_ptr<const dataset::Config> Configs::locate_metadata(Metadata& md)
         }
     }
 
-    return std::shared_ptr<const dataset::local::Dataset>();
+    return std::shared_ptr<dataset::local::Dataset>();
 }
 
 
-WriterPool::WriterPool(const Configs& datasets)
+WriterPool::WriterPool(const Datasets& datasets)
     : datasets(datasets)
 {
 }

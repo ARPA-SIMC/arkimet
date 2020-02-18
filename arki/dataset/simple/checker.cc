@@ -60,11 +60,12 @@ public:
     CheckerSegment(Checker& checker, const std::string& relpath, std::shared_ptr<dataset::CheckLock> lock)
         : segmented::CheckerSegment(lock), checker(checker)
     {
-        segment = checker.config().session->segment_checker(scan::Scanner::format_from_filename(relpath), config().path, relpath);
+        segment = checker.dataset().session->segment_checker(scan::Scanner::format_from_filename(relpath), dataset().path, relpath);
     }
 
     std::string path_relative() const override { return segment->segment().relpath; }
-    const simple::Dataset& config() const override { return checker.config(); }
+    const simple::Dataset& dataset() const override { return checker.dataset(); }
+    simple::Dataset& dataset() override { return checker.dataset(); }
     std::shared_ptr<dataset::archive::Checker> archives() override { return checker.archive(); }
 
     void get_metadata(std::shared_ptr<core::Lock> lock, metadata::Collection& mds) override
@@ -88,7 +89,7 @@ public:
                 reporter.segment_info(checker.name(), segment->segment().relpath, "empty segment found on disk with no associated index data");
                 return segmented::SegmentState(segment::SEGMENT_DELETED);
             } else {
-                //bool untrusted_index = files::hasDontpackFlagfile(checker.config().path);
+                //bool untrusted_index = files::hasDontpackFlagfile(checker.dataset().path);
                 reporter.segment_info(checker.name(), segment->segment().relpath, "segment found on disk with no associated index data");
                 //return segmented::SegmentState(untrusted_index ? segment::SEGMENT_UNALIGNED : segment::SEGMENT_DELETED);
                 return segmented::SegmentState(segment::SEGMENT_UNALIGNED);
@@ -108,13 +109,13 @@ public:
         {
             if (ts_idx != ts_data)
                 nag::verbose("%s: %s has a timestamp (%ld) different than the one in the index (%ld)",
-                        checker.config().path.c_str(), segment->segment().relpath.c_str(), (long int)ts_data, (long int)ts_idx);
+                        checker.dataset().path.c_str(), segment->segment().relpath.c_str(), (long int)ts_data, (long int)ts_idx);
             if (ts_md < ts_data)
                 nag::verbose("%s: %s has a timestamp (%ld) newer that its metadata (%ld)",
-                        checker.config().path.c_str(), segment->segment().relpath.c_str(), (long int)ts_data, (long int)ts_md);
+                        checker.dataset().path.c_str(), segment->segment().relpath.c_str(), (long int)ts_data, (long int)ts_md);
             if (ts_md < ts_data)
                 nag::verbose("%s: %s metadata has a timestamp (%ld) newer that its summary (%ld)",
-                        checker.config().path.c_str(), segment->segment().relpath.c_str(), (long int)ts_md, (long int)ts_sum);
+                        checker.dataset().path.c_str(), segment->segment().relpath.c_str(), (long int)ts_md, (long int)ts_sum);
             state = segment::SEGMENT_UNALIGNED;
         }
 
@@ -127,10 +128,10 @@ public:
         metadata::Collection contents;
         if (sys::exists(segment->segment().abspath + ".metadata"))
         {
-            Metadata::read_file(metadata::ReadContext(segment->segment().abspath + ".metadata", checker.config().path), [&](std::shared_ptr<Metadata> md) {
+            Metadata::read_file(metadata::ReadContext(segment->segment().abspath + ".metadata", checker.dataset().path), [&](std::shared_ptr<Metadata> md) {
                 // Tweak Blob sources replacing the file name with segment->relpath
                 if (const source::Blob* s = md->has_source_blob())
-                    md->set_source(Source::createBlobUnlocked(s->format, checker.config().path, segment->segment().relpath, s->offset, s->size));
+                    md->set_source(Source::createBlobUnlocked(s->format, checker.dataset().path, segment->segment().relpath, s->offset, s->size));
                 contents.acquire(md);
                 return true;
             });
@@ -164,7 +165,7 @@ public:
                 // Ensure that the reftime span fits inside the segment step
                 Time seg_begin;
                 Time seg_until;
-                if (checker.config().step().path_timespan(segment->segment().relpath, seg_begin, seg_until))
+                if (checker.dataset().step().path_timespan(segment->segment().relpath, seg_begin, seg_until))
                 {
                     if (*md_begin < seg_begin || *md_until > seg_until)
                     {
@@ -185,7 +186,7 @@ public:
             state = segment->check([&](const std::string& msg) { reporter.segment_info(checker.name(), segment->segment().relpath, msg); }, contents, quick);
 
         auto res = segmented::SegmentState(state, *md_begin, *md_until);
-        res.check_age(segment->segment().relpath, checker.config(), reporter);
+        res.check_age(segment->segment().relpath, checker.dataset(), reporter);
         return res;
     }
 
@@ -208,9 +209,9 @@ public:
     {
         // Write out the data with the new order
         segment::RepackConfig repack_config;
-        repack_config.gz_group_size = config().gz_group_size;
+        repack_config.gz_group_size = dataset().gz_group_size;
         repack_config.test_flags = test_flags;
-        auto p_repack = segment->repack(checker.config().path, mds, repack_config);
+        auto p_repack = segment->repack(checker.dataset().path, mds, repack_config);
 
         // Strip paths from mds sources
         mds.strip_source_paths();
@@ -412,20 +413,20 @@ public:
 };
 
 
-Checker::Checker(std::shared_ptr<simple::Dataset> config)
-    : m_config(config), m_mft(0)
+Checker::Checker(std::shared_ptr<simple::Dataset> dataset)
+    : DatasetAccess(dataset), m_mft(0)
 {
     // Create the directory if it does not exist
-    sys::makedirs(config->path);
+    sys::makedirs(dataset->path);
 
-    lock = config->check_lock_dataset();
+    lock = dataset->check_lock_dataset();
 
     // If the index is missing, take note not to perform a repack until a
     // check is made
-    if (!index::Manifest::exists(config->path))
-        files::createDontpackFlagfile(config->path);
+    if (!index::Manifest::exists(dataset->path))
+        files::createDontpackFlagfile(dataset->path);
 
-    unique_ptr<index::Manifest> mft = index::Manifest::create(config->path, config->lock_policy, config->index_type);
+    unique_ptr<index::Manifest> mft = index::Manifest::create(dataset, dataset->index_type);
     m_mft = mft.release();
     m_mft->lock = lock;
     m_mft->openRW();
@@ -488,7 +489,7 @@ void Checker::segments_tracked_filtered(const Matcher& matcher, std::function<vo
 
 void Checker::segments_untracked(std::function<void(segmented::CheckerSegment& relpath)> dest)
 {
-    scan_dir(config().path, [&](const std::string& relpath) {
+    scan_dir(dataset().path, [&](const std::string& relpath) {
         if (m_idx->has_segment(relpath)) return;
         CheckerSegment segment(*this, relpath, lock);
         dest(segment);
@@ -501,9 +502,9 @@ void Checker::segments_untracked_filtered(const Matcher& matcher, std::function<
     auto m = matcher.get(TYPE_REFTIME);
     if (!m) return segments_untracked(dest);
 
-    scan_dir(config().path, [&](const std::string& relpath) {
+    scan_dir(dataset().path, [&](const std::string& relpath) {
         if (m_idx->has_segment(relpath)) return;
-        if (!config().step().pathMatches(relpath, *m)) return;
+        if (!dataset().step().pathMatches(relpath, *m)) return;
         CheckerSegment segment(*this, relpath, lock);
         dest(segment);
     });
@@ -518,7 +519,7 @@ size_t Checker::vacuum(dataset::Reporter& reporter)
 void Checker::test_delete_from_index(const std::string& relpath)
 {
     m_idx->test_deindex(relpath);
-    string pathname = str::joinpath(config().path, relpath);
+    string pathname = str::joinpath(dataset().path, relpath);
     sys::unlink_ifexists(pathname + ".metadata");
     sys::unlink_ifexists(pathname + ".summary");
 }
@@ -526,12 +527,12 @@ void Checker::test_delete_from_index(const std::string& relpath)
 void Checker::test_invalidate_in_index(const std::string& relpath)
 {
     m_idx->test_deindex(relpath);
-    sys::touch(str::joinpath(config().path, relpath + ".metadata"), 1496167200);
+    sys::touch(str::joinpath(dataset().path, relpath + ".metadata"), 1496167200);
 }
 
 void Checker::test_change_metadata(const std::string& relpath, Metadata& md, unsigned data_idx)
 {
-    string md_pathname = str::joinpath(config().path, relpath) + ".metadata";
+    string md_pathname = str::joinpath(dataset().path, relpath) + ".metadata";
     metadata::Collection mds;
     mds.read_from_file(md_pathname);
     md.set_source(std::unique_ptr<arki::types::Source>(mds[data_idx].source().clone()));

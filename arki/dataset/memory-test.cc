@@ -26,21 +26,21 @@ void Tests::register_tests() {
 add_method("query", [] {
     auto session = make_shared<dataset::Session>();
     auto reader = Segment::detect_reader("grib", sys::abspath("."), "inbound/test.grib1", "inbound/test.grib1", std::make_shared<core::lock::Null>());
-    dataset::Memory c(session);
-    reader->scan(c.inserter_func());
+    auto ds = std::make_shared<dataset::memory::Dataset>(session);
+    reader->scan(ds->inserter_func());
 
-    metadata::Collection mdc(c, Matcher::parse("origin:GRIB1,200"));
+    metadata::Collection mdc(*ds, Matcher::parse("origin:GRIB1,200"));
     wassert(actual(mdc.size()) == 1u);
     wassert(actual(mdc[0].source().cloneType()).is_source_blob("grib", sys::abspath("."), "inbound/test.grib1", 0, 7218));
 
     mdc.clear();
 
-    mdc.add(c, Matcher::parse("origin:GRIB1,80"));
+    mdc.add(*ds, Matcher::parse("origin:GRIB1,80"));
     wassert(actual(mdc.size()) == 1u);
     wassert(actual(mdc[0].source().cloneType()).is_source_blob("grib", sys::abspath("."), "inbound/test.grib1", 7218, 34960u));
 
     mdc.clear();
-    mdc.add(c, Matcher::parse("origin:GRIB1,98"));
+    mdc.add(*ds, Matcher::parse("origin:GRIB1,98"));
     wassert(actual(mdc.size()) == 1u);
     wassert(actual(mdc[0].source().cloneType()).is_source_blob("grib", sys::abspath("."), "inbound/test.grib1", 42178, 2234));
 });
@@ -49,11 +49,11 @@ add_method("query", [] {
 add_method("query_summary", [] {
     auto session = make_shared<dataset::Session>();
     auto reader = Segment::detect_reader("grib", sys::abspath("."), "inbound/test.grib1", "inbound/test.grib1", std::make_shared<core::lock::Null>());
-    dataset::Memory c(session);
-    reader->scan(c.inserter_func());
+    auto ds = std::make_shared<dataset::memory::Dataset>(session);
+    reader->scan(ds->inserter_func());
 
     Summary summary;
-    c.query_summary(Matcher::parse("origin:GRIB1,200"), summary);
+    ds->create_reader()->query_summary(Matcher::parse("origin:GRIB1,200"), summary);
     wassert(actual(summary.count()) == 1u);
 });
 
@@ -61,12 +61,11 @@ add_method("query_summary", [] {
 add_method("query_summary_reftime", [] {
     auto session = make_shared<dataset::Session>();
     auto reader = Segment::detect_reader("grib", sys::abspath("."), "inbound/test.grib1", "inbound/test.grib1", std::make_shared<core::lock::Null>());
-    dataset::Memory c(session);
-    reader->scan(c.inserter_func());
+    auto ds = std::make_shared<dataset::memory::Dataset>(session);
+    reader->scan(ds->inserter_func());
 
     Summary summary;
-    //system("bash");
-    c.query_summary(Matcher::parse("reftime:>=2007-07"), summary);
+    ds->create_reader()->query_summary(Matcher::parse("reftime:>=2007-07"), summary);
     wassert(actual(summary.count()) == 3u);
 });
 

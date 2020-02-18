@@ -234,13 +234,13 @@ struct ArchivesCheckerRoot: public ArchivesRoot<dataset::Checker>
 };
 
 Dataset::Dataset(std::shared_ptr<Session> session, const std::string& root)
-    : dataset::Config(session, "archives"), root(root)
+    : dataset::Dataset(session, "archives"), root(root)
 {
 }
 
 
 Reader::Reader(std::shared_ptr<Dataset> dataset)
-    : m_config(dataset), archives(new archive::ArchivesReaderRoot(dataset->root, dataset))
+    : DatasetAccess(dataset), archives(new archive::ArchivesReaderRoot(dataset->root, dataset))
 {
     archives->rescan();
 }
@@ -329,7 +329,7 @@ unsigned Reader::test_count_archives() const
 
 
 Checker::Checker(std::shared_ptr<Dataset> dataset)
-    : m_config(dataset), archives(new ArchivesCheckerRoot(dataset->root, dataset))
+    : DatasetAccess(dataset), archives(new ArchivesCheckerRoot(dataset->root, dataset))
 {
     archives->rescan();
 }

@@ -1,4 +1,3 @@
-#include "config.h"
 #include "reader.h"
 #include "arki/dataset/index/manifest.h"
 #include "arki/utils/sys.h"
@@ -10,15 +9,15 @@ namespace arki {
 namespace dataset {
 namespace simple {
 
-Reader::Reader(std::shared_ptr<simple::Dataset> config)
-    : m_config(config)
+Reader::Reader(std::shared_ptr<simple::Dataset> dataset)
+    : DatasetAccess(dataset)
 {
     // Create the directory if it does not exist
-    sys::makedirs(config->path);
+    sys::makedirs(dataset->path);
 
-    if (index::Manifest::exists(config->path))
+    if (index::Manifest::exists(dataset->path))
     {
-        unique_ptr<index::Manifest> mft = index::Manifest::create(config->path, config->lock_policy);
+        unique_ptr<index::Manifest> mft = index::Manifest::create(m_dataset);
         mft->openRO();
         m_idx = m_mft = mft.release();
     }

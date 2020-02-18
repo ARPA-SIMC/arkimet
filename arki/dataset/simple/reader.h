@@ -4,6 +4,7 @@
 /// Reader for simple datasets with no duplicate checks
 
 #include <arki/dataset/simple.h>
+#include <arki/dataset/impl.h>
 #include <string>
 
 namespace arki {
@@ -13,19 +14,14 @@ class Manifest;
 }
 namespace simple {
 
-class Reader : public indexed::Reader
+class Reader : public DatasetAccess<simple::Dataset, indexed::Reader>
 {
 protected:
-    std::shared_ptr<simple::Dataset> m_config;
     index::Manifest* m_mft = nullptr;
 
 public:
-    Reader(std::shared_ptr<simple::Dataset> config);
+    Reader(std::shared_ptr<simple::Dataset> dataset);
     virtual ~Reader();
-
-    const simple::Dataset& config() const override { return *m_config; }
-    const simple::Dataset& dataset() const override { return *m_config; }
-    simple::Dataset& dataset() override { return *m_config; }
 
     std::string type() const override;
 

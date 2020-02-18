@@ -39,8 +39,8 @@ static std::string moveFile(const std::string& source, const std::string& target
 
 static std::string moveFile(const arki::dataset::Reader& ds, const std::string& targetdir)
 {
-    if (const arki::dataset::file::File* d = dynamic_cast<const arki::dataset::file::File*>(&ds))
-        return moveFile(d->config().pathname, targetdir);
+    if (const arki::dataset::file::Reader* d = dynamic_cast<const arki::dataset::file::Reader*>(&ds))
+        return moveFile(d->dataset().pathname, targetdir);
     else
         return std::string();
 }

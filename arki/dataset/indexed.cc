@@ -32,24 +32,24 @@ Reader::~Reader()
 
 bool Reader::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 {
-    auto lock = config().read_lock_dataset();
+    auto lock = dataset().read_lock_dataset();
     if (!local::Reader::query_data(q, dest))
         return false;
     if (!m_idx) return true;
     m_idx->lock = lock;
-    return m_idx->query_data(q, *config().session, dest);
+    return m_idx->query_data(q, dest);
 }
 
 void Reader::query_summary(const Matcher& matcher, Summary& summary)
 {
-    auto lock = config().read_lock_dataset();
+    auto lock = dataset().read_lock_dataset();
     // Query the archives first
     local::Reader::query_summary(matcher, summary);
     if (!m_idx) return;
     m_idx->lock = lock;
     // FIXME: this is cargo culted from the old ondisk2 reader: what is the use case for this?
     if (!m_idx->query_summary(matcher, summary))
-        throw std::runtime_error("cannot query " + config().path + ": index could not be used");
+        throw std::runtime_error("cannot query " + dataset().path + ": index could not be used");
 }
 
 
@@ -63,8 +63,8 @@ Checker::~Checker()
 
 void Checker::check_issue51(CheckerConfig& opts)
 {
-    if (!opts.online && !config().offline) return;
-    if (!opts.offline && config().offline) return;
+    if (!opts.online && !dataset().offline) return;
+    if (!opts.offline && dataset().offline) return;
 
     // Broken metadata for each segment
     std::map<string, metadata::Collection> broken_mds;
@@ -72,9 +72,9 @@ void Checker::check_issue51(CheckerConfig& opts)
     // Iterate all segments
     m_idx->list_segments([&](const std::string& relpath) {
         metadata::Collection mds;
-        m_idx->query_segment(relpath, *config().session, mds.inserter_func());
+        m_idx->query_segment(relpath, mds.inserter_func());
         if (mds.empty()) return;
-        File datafile(str::joinpath(config().path, relpath), O_RDONLY);
+        File datafile(str::joinpath(dataset().path, relpath), O_RDONLY);
         // Iterate all metadata in the segment
         unsigned count_otherformat = 0;
         unsigned count_ok = 0;
@@ -122,7 +122,7 @@ void Checker::check_issue51(CheckerConfig& opts)
         for (const auto& i: broken_mds)
         {
             // Make a backup copy with .issue51 extension, if it doesn't already exist
-            std::string abspath = str::joinpath(config().path, i.first);
+            std::string abspath = str::joinpath(dataset().path, i.first);
             utils::files::PreserveFileTimes pf(abspath);
             std::string backup = abspath + ".issue51";
             if (!sys::exists(backup))
@@ -157,37 +157,37 @@ void Checker::check_issue51(CheckerConfig& opts)
 void Checker::test_make_overlap(const std::string& relpath, unsigned overlap_size, unsigned data_idx)
 {
     metadata::Collection mds;
-    m_idx->query_segment(relpath, *config().session, mds.inserter_func());
-    config().session->segment_checker(scan::Scanner::format_from_filename(relpath), config().path, relpath)->test_make_overlap(mds, overlap_size, data_idx);
+    m_idx->query_segment(relpath, mds.inserter_func());
+    dataset().session->segment_checker(scan::Scanner::format_from_filename(relpath), dataset().path, relpath)->test_make_overlap(mds, overlap_size, data_idx);
     m_idx->test_make_overlap(relpath, overlap_size, data_idx);
 }
 
 void Checker::test_make_hole(const std::string& relpath, unsigned hole_size, unsigned data_idx)
 {
     metadata::Collection mds;
-    m_idx->query_segment(relpath, *config().session, mds.inserter_func());
-    config().session->segment_checker(scan::Scanner::format_from_filename(relpath), config().path, relpath)->test_make_hole(mds, hole_size, data_idx);
+    m_idx->query_segment(relpath, mds.inserter_func());
+    dataset().session->segment_checker(scan::Scanner::format_from_filename(relpath), dataset().path, relpath)->test_make_hole(mds, hole_size, data_idx);
     m_idx->test_make_hole(relpath, hole_size, data_idx);
 }
 
 void Checker::test_corrupt_data(const std::string& relpath, unsigned data_idx)
 {
     metadata::Collection mds;
-    m_idx->query_segment(relpath, *config().session, mds.inserter_func());
-    config().session->segment_checker(scan::Scanner::format_from_filename(relpath), config().path, relpath)->test_corrupt(mds, data_idx);
+    m_idx->query_segment(relpath, mds.inserter_func());
+    dataset().session->segment_checker(scan::Scanner::format_from_filename(relpath), dataset().path, relpath)->test_corrupt(mds, data_idx);
 }
 
 void Checker::test_truncate_data(const std::string& relpath, unsigned data_idx)
 {
     metadata::Collection mds;
-    m_idx->query_segment(relpath, *config().session, mds.inserter_func());
-    config().session->segment_checker(scan::Scanner::format_from_filename(relpath), config().path, relpath)->test_truncate(mds, data_idx);
+    m_idx->query_segment(relpath, mds.inserter_func());
+    dataset().session->segment_checker(scan::Scanner::format_from_filename(relpath), dataset().path, relpath)->test_truncate(mds, data_idx);
 }
 
 void Checker::test_swap_data(const std::string& relpath, unsigned d1_idx, unsigned d2_idx)
 {
     metadata::Collection mds;
-    m_idx->query_segment(relpath, *config().session, mds.inserter_func());
+    m_idx->query_segment(relpath, mds.inserter_func());
     std::swap(mds[d1_idx], mds[d2_idx]);
 
     segment(relpath)->reorder(mds);
@@ -195,9 +195,9 @@ void Checker::test_swap_data(const std::string& relpath, unsigned d1_idx, unsign
 
 void Checker::test_rename(const std::string& relpath, const std::string& new_relpath)
 {
-    auto segment = config().session->segment_checker(scan::Scanner::format_from_filename(relpath), config().path, relpath);
+    auto segment = dataset().session->segment_checker(scan::Scanner::format_from_filename(relpath), dataset().path, relpath);
     m_idx->test_rename(relpath, new_relpath);
-    segment->move(config().path, new_relpath, str::joinpath(config().path, new_relpath));
+    segment->move(dataset().path, new_relpath, str::joinpath(dataset().path, new_relpath));
 }
 
 }

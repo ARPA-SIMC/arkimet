@@ -4,6 +4,7 @@
 /// dataset/iseg/writer - Writer for datasets with one index per segment
 
 #include <arki/dataset/iseg.h>
+#include <arki/dataset/impl.h>
 #include <arki/dataset/index/summarycache.h>
 #include <string>
 
@@ -14,10 +15,9 @@ class Reader;
 class AIndex;
 class AppendSegment;
 
-class Writer : public segmented::Writer
+class Writer : public DatasetAccess<iseg::Dataset, segmented::Writer>
 {
 protected:
-    std::shared_ptr<iseg::Dataset> m_config;
     index::SummaryCache scache;
 
     /// Return an inserter for the given Metadata
@@ -29,10 +29,6 @@ protected:
 public:
     Writer(std::shared_ptr<iseg::Dataset> config);
     virtual ~Writer();
-
-    const iseg::Dataset& config() const override { return *m_config; }
-    const iseg::Dataset& dataset() const override { return *m_config; }
-    iseg::Dataset& dataset() override { return *m_config; }
 
     std::string type() const override;
 

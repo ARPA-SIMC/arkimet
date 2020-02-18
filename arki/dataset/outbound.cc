@@ -28,11 +28,11 @@ std::shared_ptr<dataset::Reader> Dataset::create_reader() { return std::make_sha
 std::shared_ptr<dataset::Writer> Dataset::create_writer() { return std::make_shared<outbound::Writer>(static_pointer_cast<Dataset>(shared_from_this())); }
 
 
-Writer::Writer(std::shared_ptr<segmented::Dataset> config)
-    : m_config(config)
+Writer::Writer(std::shared_ptr<Dataset> dataset)
+    : DatasetAccess(dataset)
 {
     // Create the directory if it does not exist
-    sys::makedirs(config->path);
+    sys::makedirs(dataset->path);
 }
 
 Writer::~Writer()
@@ -51,7 +51,7 @@ void Writer::storeBlob(Metadata& md, const std::string& reldest, bool drop_cache
 WriterAcquireResult Writer::acquire(Metadata& md, const AcquireConfig& cfg)
 {
     acct::acquire_single_count.incr();
-    auto age_check = config().check_acquire_age(md);
+    auto age_check = dataset().check_acquire_age(md);
     if (age_check.first) return age_check.second;
 
     const core::Time& time = md.get<types::reftime::Position>()->time;

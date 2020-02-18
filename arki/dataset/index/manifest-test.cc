@@ -2,6 +2,8 @@
 #include "arki/dataset/tests.h"
 #include "arki/dataset/index/manifest.h"
 #include "arki/dataset/maintenance.h"
+#include "arki/dataset/session.h"
+#include "arki/dataset/simple.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
 #include "arki/matcher.h"
@@ -37,6 +39,19 @@ std::string idxfname()
     return Manifest::get_force_sqlite() ? "index.sqlite" : "MANIFEST";
 }
 
+std::shared_ptr<simple::Dataset> mkds(const std::string& pathname, const std::string& index_type="plain")
+{
+    core::cfg::Section cfg;
+    cfg.set("name", "test");
+    cfg.set("path", pathname);
+    cfg.set("index_type", index_type);
+    cfg.set("locking", "yes");
+    cfg.set("step", "daily");
+
+    auto session = std::make_shared<dataset::Session>();
+    return std::make_shared<simple::Dataset>(session, cfg);
+}
+
 void Tests::register_tests() {
 
 add_method("exists", [] {
@@ -63,7 +78,7 @@ add_method("empty", [] {
     // Opening a missing manifest read only fails
     {
         wassert(actual(Manifest::exists("testds/.archive/last/" + idxfname())).isfalse());
-        std::unique_ptr<Manifest> m = Manifest::create("testds/.archive/last", core::lock::policy_ofd);
+        std::unique_ptr<Manifest> m = Manifest::create(mkds("testds/.archive/last"));
         try {
             m->openRO();
             wassert(actual(false).istrue());
@@ -74,11 +89,11 @@ add_method("empty", [] {
 
     // But an empty dataset
     {
-    std::unique_ptr<Manifest> m = Manifest::create("testds/.archive/last", core::lock::policy_ofd);
+    std::unique_ptr<Manifest> m = Manifest::create(mkds("testds/.archive/last"));
     m->openRW();
     }
 
-    std::unique_ptr<Manifest> m = Manifest::create("testds/.archive/last", core::lock::policy_ofd);
+    std::unique_ptr<Manifest> m = Manifest::create(mkds("testds/.archive/last"));
     m->openRO();
 
     vector<string> files = m->file_list(Matcher());
@@ -91,7 +106,7 @@ add_method("create", [] {
 
     // Opening a missing manifest read-write creates a new one
     wassert(actual_file("testds/.archive/last/" + idxfname()).not_exists());
-    std::unique_ptr<Manifest> m = Manifest::create("testds/.archive/last", core::lock::policy_ofd);
+    std::unique_ptr<Manifest> m = Manifest::create(mkds("testds/.archive/last"));
     m->openRW();
     m->flush();
     wassert(actual_file("testds/.archive/last/" + idxfname()).exists());
@@ -111,7 +126,7 @@ add_method("add_remove", [] {
 	system("mkdir testds/.archive/last/foo");
 	system("cp inbound/test.grib1 testds/.archive/last/foo/b.grib1");
 
-    std::unique_ptr<Manifest> m = Manifest::create("testds/.archive/last", core::lock::policy_ofd);
+    std::unique_ptr<Manifest> m = Manifest::create(mkds("testds/.archive/last"));
     m->openRW();
 
     Summary s;
@@ -149,7 +164,7 @@ add_method("modify_while_scanning", [] {
 
     // Build index
     {
-        std::unique_ptr<Manifest> m = Manifest::create("testds/.archive/last", core::lock::policy_ofd);
+        std::unique_ptr<Manifest> m = Manifest::create(mkds("testds/.archive/last"));
         m->openRW();
         m->acquire("10.grib1", mtime, s);
         m->acquire("20.grib1", mtime, s);
@@ -158,7 +173,7 @@ add_method("modify_while_scanning", [] {
 
     // Enumerate with list_segments while adding files
     {
-        std::unique_ptr<Manifest> m = Manifest::create("testds/.archive/last", core::lock::policy_ofd);
+        std::unique_ptr<Manifest> m = Manifest::create(mkds("testds/.archive/last"));
         m->openRW();
         size_t count = 0;
         m->list_segments([&](const std::string&) {
@@ -171,7 +186,7 @@ add_method("modify_while_scanning", [] {
 
     // Check again, we should have all that we added so far
     {
-        std::unique_ptr<Manifest> m = Manifest::create("testds/.archive/last", core::lock::policy_ofd);
+        std::unique_ptr<Manifest> m = Manifest::create(mkds("testds/.archive/last"));
         m->openRW();
         size_t count = 0;
         m->list_segments([&](const std::string&) { ++count; });

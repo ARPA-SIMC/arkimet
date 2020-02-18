@@ -54,8 +54,10 @@ namespace iseg {
  */
 class Index
 {
+public:
+    std::shared_ptr<iseg::Dataset> dataset;
+
 protected:
-    std::shared_ptr<const iseg::Dataset> m_config;
     mutable utils::sqlite::SQLiteDB m_db;
 
     /// Relative pathname of the segment from the root of the dataset
@@ -108,7 +110,7 @@ protected:
      */
     void build_md(utils::sqlite::Query& q, Metadata& md, std::shared_ptr<arki::segment::Reader> reader) const;
 
-    Index(std::shared_ptr<const iseg::Dataset> config, const std::string& data_relpath, std::shared_ptr<dataset::Lock> lock=nullptr);
+    Index(std::shared_ptr<iseg::Dataset> config, const std::string& data_relpath, std::shared_ptr<dataset::Lock> lock=nullptr);
 
 public:
     ~Index();
@@ -117,8 +119,6 @@ public:
     index::Aggregate& uniques() { return *m_uniques; }
     bool has_others() const { return m_others != nullptr; }
     index::Aggregate& others() { return *m_others; }
-
-    const iseg::Dataset& config() const { return *m_config; }
 
     utils::sqlite::SQLiteDB& db() { return m_db; }
 
@@ -133,7 +133,7 @@ public:
     /**
      * Send the metadata of all data items known by the index
      */
-    void scan(dataset::Session& session, metadata_dest_func consumer, const std::string& order_by="offset") const;
+    void scan(metadata_dest_func consumer, const std::string& order_by="offset") const;
 
     /**
      * Query data sending the results to the given consumer.
@@ -156,13 +156,13 @@ public:
     /**
      * Get the metadata for this segment
      */
-    void query_segment(dataset::Session& session, metadata_dest_func) const;
+    void query_segment(metadata_dest_func) const;
 };
 
 class RIndex : public Index
 {
 public:
-    RIndex(std::shared_ptr<const iseg::Dataset> config, const std::string& data_relpath, std::shared_ptr<dataset::ReadLock> lock=nullptr);
+    RIndex(std::shared_ptr<iseg::Dataset> dataset, const std::string& data_relpath, std::shared_ptr<dataset::ReadLock> lock=nullptr);
 };
 
 class WIndex : public Index
@@ -177,7 +177,7 @@ protected:
 
     void compile_insert();
 
-    WIndex(std::shared_ptr<const iseg::Dataset> config, const std::string& data_relpath, std::shared_ptr<dataset::Lock> lock=nullptr);
+    WIndex(std::shared_ptr<iseg::Dataset> dataset, const std::string& data_relpath, std::shared_ptr<dataset::Lock> lock=nullptr);
 public:
 
     /**
@@ -228,14 +228,14 @@ public:
 class AIndex : public WIndex
 {
 public:
-    AIndex(std::shared_ptr<const iseg::Dataset> config, std::shared_ptr<segment::Writer> segment, std::shared_ptr<dataset::AppendLock> lock);
+    AIndex(std::shared_ptr<iseg::Dataset> config, std::shared_ptr<segment::Writer> segment, std::shared_ptr<dataset::AppendLock> lock);
 };
 
 
 class CIndex : public WIndex
 {
 public:
-    CIndex(std::shared_ptr<const iseg::Dataset> config, const std::string& data_relpath, std::shared_ptr<dataset::CheckLock> lock);
+    CIndex(std::shared_ptr<iseg::Dataset> config, const std::string& data_relpath, std::shared_ptr<dataset::CheckLock> lock);
 };
 
 }

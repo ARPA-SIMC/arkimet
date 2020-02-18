@@ -20,10 +20,6 @@ std::shared_ptr<dataset::Writer> Dataset::create_writer() { return std::make_sha
 std::shared_ptr<dataset::Checker> Dataset::create_checker() { return std::make_shared<Checker>(shared_from_this()); }
 
 
-Reader::Reader(std::shared_ptr<dataset::Dataset> config) : m_config(config) {}
-Reader::~Reader() {}
-
-
 WriterAcquireResult Writer::acquire(Metadata& md, const AcquireConfig& cfg)
 {
     utils::acct::acquire_single_count.incr();

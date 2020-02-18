@@ -25,10 +25,10 @@ struct MetadataDispatch
 {
     core::cfg::Sections cfg;
     Dispatcher* dispatcher = nullptr;
-    dataset::Memory partial_batch;
+    std::shared_ptr<dataset::memory::Dataset> partial_batch;
     size_t flush_threshold = 128 * 1024 * 1024;
     size_t partial_batch_data_size = 0;
-    dataset::Memory results;
+    std::shared_ptr<dataset::memory::Dataset> results;
     cmdline::DatasetProcessor& next;
 
     /// Directory where we store copyok files

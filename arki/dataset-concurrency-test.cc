@@ -149,9 +149,9 @@ struct ConcurrentImporter : public subprocess::Child
 
 struct ReadHang : public TestSubprocess
 {
-    std::shared_ptr<dataset::Config> config;
+    std::shared_ptr<dataset::Dataset> dataset;
 
-    ReadHang(std::shared_ptr<dataset::Config> config) : config(config) {}
+    ReadHang(std::shared_ptr<dataset::Dataset> dataset) : dataset(dataset) {}
 
     bool eat(std::shared_ptr<Metadata> md)
     {
@@ -165,7 +165,7 @@ struct ReadHang : public TestSubprocess
     int main() noexcept override
     {
         try {
-            auto reader = config->create_reader();
+            auto reader = dataset->create_reader();
             reader->query_data(Matcher(), [&](std::shared_ptr<Metadata> md) { return eat(md); });
         } catch (std::exception& e) {
             fprintf(stderr, "%s\n", e.what());

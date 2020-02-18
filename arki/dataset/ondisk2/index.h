@@ -48,9 +48,10 @@ struct Others;
  */
 class Contents : public dataset::Index
 {
-protected:
-    std::shared_ptr<const ondisk2::Dataset> m_config;
+public:
+    std::shared_ptr<ondisk2::Dataset> dataset;
 
+protected:
     mutable utils::sqlite::SQLiteDB m_db;
     mutable utils::sqlite::PrecompiledQuery m_get_current;
 
@@ -90,14 +91,12 @@ protected:
      */
     void build_md(utils::sqlite::Query& q, Metadata& md, std::shared_ptr<arki::segment::Reader> reader) const;
 
-    Contents(std::shared_ptr<const ondisk2::Dataset> config);
+    Contents(std::shared_ptr<ondisk2::Dataset> config);
 
 public:
     ~Contents();
 
-    const ondisk2::Dataset& config() const { return *m_config; }
-
-    const std::string& pathname() const { return config().index_pathname; }
+    const std::string& pathname() const { return dataset->index_pathname; }
 
     bool exists() const;
 
@@ -148,13 +147,13 @@ public:
     /**
      * Send the metadata of all data items inside a file to the given consumer
      */
-    void scan_file(dataset::Session& session, const std::string& relpath, metadata_dest_func consumer, const std::string& order_by="offset") const;
+    void scan_file(const std::string& relpath, metadata_dest_func consumer, const std::string& order_by="offset") const;
 
     bool segment_timespan(const std::string& relpath, core::Time& start_time, core::Time& end_time) const override;
 
-    bool query_data(const dataset::DataQuery& q, dataset::Session& segs, metadata_dest_func dest) override;
+    bool query_data(const dataset::DataQuery& q, metadata_dest_func dest) override;
     bool query_summary(const Matcher& m, Summary& summary) override;
-    void query_segment(const std::string& relpath, dataset::Session& segs, metadata_dest_func) const override;
+    void query_segment(const std::string& relpath, metadata_dest_func) const override;
 
 	/**
 	 * Query this index, returning a summary
@@ -216,7 +215,7 @@ protected:
 	void initQueries();
 
 public:
-    RIndex(std::shared_ptr<const ondisk2::Dataset > config);
+    RIndex(std::shared_ptr<ondisk2::Dataset> dataset);
     ~RIndex();
 
     /// Initialise access to the index
@@ -247,7 +246,7 @@ protected:
 	void initDB();
 
 public:
-    WIndex(std::shared_ptr<const ondisk2::Dataset > config);
+    WIndex(std::shared_ptr<ondisk2::Dataset> dataset);
     ~WIndex();
 
 	/**

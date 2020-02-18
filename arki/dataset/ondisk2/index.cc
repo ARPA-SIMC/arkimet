@@ -58,14 +58,14 @@ struct IndexGlobalData
 static IndexGlobalData igd;
 
 
-Contents::Contents(std::shared_ptr<const ondisk2::Dataset> config)
-    : m_config(config),  m_get_current("getcurrent", m_db),
-      m_uniques(0), m_others(0), scache(config->summary_cache_pathname)
+Contents::Contents(std::shared_ptr<ondisk2::Dataset> dataset)
+    : dataset(dataset),  m_get_current("getcurrent", m_db),
+      m_uniques(0), m_others(0), scache(dataset->summary_cache_pathname)
 {
-    m_components_indexed = parseMetadataBitmask(config->index);
+    m_components_indexed = parseMetadataBitmask(dataset->index);
 
     // What metadata components we use to create a unique id
-    std::set<types::Code> unique_members = parseMetadataBitmask(config->unique);
+    std::set<types::Code> unique_members = parseMetadataBitmask(dataset->unique);
     unique_members.erase(TYPE_REFTIME);
     if (not unique_members.empty())
         m_uniques = new Aggregate(m_db, "mduniq", unique_members);
@@ -199,7 +199,7 @@ std::unique_ptr<types::source::Blob> Contents::get_current(const Metadata& md) c
     while (m_get_current.step())
         res = types::source::Blob::create_unlocked(
                 m_get_current.fetchString(0),
-                config().path,
+                dataset->path,
                 m_get_current.fetchString(1),
                 m_get_current.fetch<uint64_t>(2),
                 m_get_current.fetch<uint64_t>(3));
@@ -281,14 +281,14 @@ bool Contents::has_segment(const std::string& relpath) const
     return res;
 }
 
-void Contents::scan_file(dataset::Session& session, const std::string& relpath, metadata_dest_func dest, const std::string& order_by) const
+void Contents::scan_file(const std::string& relpath, metadata_dest_func dest, const std::string& order_by) const
 {
     if (lock.expired())
         throw std::runtime_error("cannot scan_file while there is no lock held");
     string query = "SELECT m.id, m.format, m.file, m.offset, m.size, m.notes, m.reftime";
     if (m_uniques) query += ", m.uniq";
     if (m_others) query += ", m.other";
-    if (config().smallfiles) query += ", m.data";
+    if (dataset->smallfiles) query += ", m.data";
     query += " FROM md AS m";
     query += " WHERE m.file=? ORDER BY " + order_by;
 
@@ -296,7 +296,7 @@ void Contents::scan_file(dataset::Session& session, const std::string& relpath, 
     mdq.compile(query);
     mdq.bind(1, relpath);
 
-    auto reader = session.segment_reader(scan::Scanner::format_from_filename(relpath), m_config->path, relpath, lock.lock());
+    auto reader = dataset->segment_reader(relpath, lock.lock());
     while (mdq.step())
     {
         // Rebuild the Metadata
@@ -306,9 +306,9 @@ void Contents::scan_file(dataset::Session& session, const std::string& relpath, 
     }
 }
 
-void Contents::query_segment(const std::string& relpath, dataset::Session& segs, metadata_dest_func dest) const
+void Contents::query_segment(const std::string& relpath, metadata_dest_func dest) const
 {
-    scan_file(segs, relpath, dest);
+    scan_file(relpath, dest);
 }
 
 bool Contents::segment_timespan(const std::string& relpath, Time& start_time, Time& end_time) const
@@ -431,7 +431,7 @@ void Contents::build_md(Query& q, Metadata& md, std::shared_ptr<arki::segment::R
 {
     // Rebuild the Metadata
     md.set_source(Source::createBlob(
-            q.fetchString(1), config().path, q.fetchString(2),
+            q.fetchString(1), dataset->path, q.fetchString(2),
             q.fetch<uint64_t>(3), q.fetch<uint64_t>(4), reader));
     // md.notes = mdq.fetchItems<types::Note>(5);
     const uint8_t* notes_p = (const uint8_t*)q.fetchBlob(5);
@@ -451,7 +451,7 @@ void Contents::build_md(Query& q, Metadata& md, std::shared_ptr<arki::segment::R
             m_others->read(q.fetch<int>(j), md);
         ++j;
     }
-    if (config().smallfiles)
+    if (dataset->smallfiles)
     {
         if (!q.isNULL(j))
         {
@@ -462,7 +462,7 @@ void Contents::build_md(Query& q, Metadata& md, std::shared_ptr<arki::segment::R
     }
 }
 
-bool Contents::query_data(const dataset::DataQuery& q, dataset::Session& segs, metadata_dest_func dest)
+bool Contents::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 {
     if (lock.expired())
         throw std::runtime_error("cannot query_data while there is no lock held");
@@ -470,7 +470,7 @@ bool Contents::query_data(const dataset::DataQuery& q, dataset::Session& segs, m
 
     if (m_uniques) query += ", m.uniq";
     if (m_others) query += ", m.other";
-    if (config().smallfiles) query += ", m.data";
+    if (dataset->smallfiles) query += ", m.data";
 
     query += " FROM md AS m";
 
@@ -504,7 +504,7 @@ bool Contents::query_data(const dataset::DataQuery& q, dataset::Session& segs, m
         if (srcname != last_fname)
         {
             if (q.with_data)
-                reader = segs.segment_reader(scan::Scanner::format_from_filename(srcname), m_config->path, srcname, lock.lock());
+                reader = dataset->segment_reader(srcname, lock.lock());
 
             if (!mdbuf.empty())
             {
@@ -821,8 +821,8 @@ bool Contents::checkSummaryCache(const dataset::Base& ds, Reporter& reporter) co
     return scache.check(ds, reporter);
 }
 
-RIndex::RIndex(std::shared_ptr<const ondisk2::Dataset> config)
-    : Contents(config) {}
+RIndex::RIndex(std::shared_ptr<ondisk2::Dataset> dataset)
+    : Contents(dataset) {}
 
 RIndex::~RIndex()
 {
@@ -877,8 +877,8 @@ void RIndex::test_make_hole(const std::string& relpath, unsigned hole_size, unsi
 }
 
 
-WIndex::WIndex(std::shared_ptr<const ondisk2::Dataset> config)
-    : Contents(config), m_insert(m_db), m_delete("delete", m_db), m_replace("replace", m_db)
+WIndex::WIndex(std::shared_ptr<ondisk2::Dataset> dataset)
+    : Contents(dataset), m_insert(m_db), m_delete("delete", m_db), m_replace("replace", m_db)
 {
 }
 
@@ -935,7 +935,7 @@ void WIndex::initQueries()
         un_ot += ", other";
         placeholders += ", ?";
     }
-    if (config().smallfiles)
+    if (dataset->smallfiles)
     {
         un_ot += ", data";
         placeholders += ", ?";
@@ -969,7 +969,7 @@ void WIndex::initDB()
         " reftime TEXT NOT NULL";
     if (m_uniques) query += ", uniq INTEGER NOT NULL";
     if (m_others) query += ", other INTEGER NOT NULL";
-    if (config().smallfiles) query += ", data TEXT";
+    if (dataset->smallfiles) query += ", data TEXT";
     if (m_uniques)
         query += ", UNIQUE(reftime, uniq)";
     else
@@ -1043,7 +1043,7 @@ struct Inserter
 
         if (id_uniques != -1) q.bind(++qidx, id_uniques);
         if (id_others != -1) q.bind(++qidx, id_others);
-        if (idx.config().smallfiles)
+        if (idx.dataset->smallfiles)
         {
             if (const types::Value* v = md.get<types::Value>())
             {
@@ -1068,7 +1068,7 @@ std::unique_ptr<types::source::Blob> WIndex::index(const Metadata& md, const std
     while (m_get_current.step())
         res = types::source::Blob::create_unlocked(
                 m_get_current.fetchString(0),
-                config().path,
+                dataset->path,
                 m_get_current.fetchString(1),
                 m_get_current.fetch<uint64_t>(2),
                 m_get_current.fetch<uint64_t>(3));

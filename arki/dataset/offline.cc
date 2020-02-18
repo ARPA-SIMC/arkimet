@@ -9,20 +9,15 @@ namespace dataset {
 namespace offline {
 
 Dataset::Dataset(std::shared_ptr<Session> session, const std::string& pathname)
-    : dataset::Config(session), summary_pathname(pathname + ".summary")
+    : dataset::Dataset(session), summary_pathname(pathname + ".summary")
 {
 }
 
-std::shared_ptr<const Dataset> Dataset::create(std::shared_ptr<Session> session, const std::string& pathname)
-{
-    return std::shared_ptr<const Dataset>(new Dataset(session, pathname));
-}
 
-
-Reader::Reader(std::shared_ptr<Dataset> config)
-    : m_config(config)
+Reader::Reader(std::shared_ptr<Dataset> dataset)
+    : DatasetAccess(dataset)
 {
-    sum.readFile(config->summary_pathname);
+    sum.readFile(dataset->summary_pathname);
 }
 
 std::string Reader::type() const { return "offline"; }

@@ -76,7 +76,7 @@ void Reader::query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out)
         case dataset::ByteQuery::BQ_POSTPROCESS: {
             metadata::Postprocess postproc(q.param);
             postproc.set_output(out);
-            postproc.validate(config().cfg);
+            postproc.validate(dataset().cfg);
             postproc.set_data_start_hook(q.data_start_hook);
             postproc.start();
             query_data(q, [&](std::shared_ptr<Metadata> md) { return postproc.process(md); });
@@ -109,7 +109,7 @@ void Reader::query_bytes(const dataset::ByteQuery& q, AbstractOutputFile& out)
         case dataset::ByteQuery::BQ_POSTPROCESS: {
             metadata::Postprocess postproc(q.param);
             postproc.set_output(out);
-            postproc.validate(config().cfg);
+            postproc.validate(dataset().cfg);
             postproc.set_data_start_hook(q.data_start_hook);
             postproc.start();
             query_data(q, [&](std::shared_ptr<Metadata> md) { return postproc.process(move(md)); });
@@ -171,7 +171,7 @@ CheckerConfig::CheckerConfig(std::shared_ptr<dataset::Reporter> reporter, bool r
 
 void Checker::check_issue51(CheckerConfig& opts)
 {
-    throw std::runtime_error(config().name() + ": check_issue51 not implemented for this dataset");
+    throw std::runtime_error(dataset().name() + ": check_issue51 not implemented for this dataset");
 }
 
 

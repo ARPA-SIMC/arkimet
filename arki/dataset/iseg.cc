@@ -4,6 +4,7 @@
 #include "iseg/checker.h"
 #include "step.h"
 #include "arki/defs.h"
+#include "arki/dataset/session.h"
 #include "arki/dataset/index/base.h"
 #include "arki/utils/string.h"
 #include "arki/metadata.h"
@@ -45,8 +46,11 @@ std::shared_ptr<dataset::Checker> Dataset::create_checker()
     return std::make_shared<iseg::Checker>(static_pointer_cast<Dataset>(shared_from_this()));
 }
 
-}
-}
+std::shared_ptr<segment::Reader> Dataset::segment_reader(const std::string& relpath, std::shared_ptr<core::Lock> lock)
+{
+    return session->segment_reader(format, path, relpath, lock);
 }
 
-
+}
+}
+}

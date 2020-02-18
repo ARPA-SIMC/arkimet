@@ -10,14 +10,12 @@ struct Session;
 struct DataQuery;
 struct ByteQuery;
 struct Dataset;
-typedef Dataset Config;
 struct Reader;
 struct Writer;
 struct WriterBatchElement;
 struct WriterBatch;
 struct Checker;
 struct Reporter;
-struct Merged;
 struct SessionTime;
 struct SessionTimeOverride;
 

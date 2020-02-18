@@ -4,6 +4,7 @@
 /// dataset/simple/writer - Writer for simple datasets with no duplicate checks
 
 #include <arki/dataset/simple.h>
+#include <arki/dataset/impl.h>
 #include <string>
 
 namespace arki {
@@ -16,7 +17,7 @@ namespace simple {
 class Reader;
 class AppendSegment;
 
-class Writer : public segmented::Writer
+class Writer : public DatasetAccess<simple::Dataset, segmented::Writer>
 {
 protected:
     std::shared_ptr<simple::Dataset> m_config;
@@ -26,12 +27,8 @@ protected:
     std::unique_ptr<AppendSegment> file(const std::string& relpath);
 
 public:
-    Writer(std::shared_ptr<simple::Dataset> config);
+    Writer(std::shared_ptr<simple::Dataset> dataset);
     virtual ~Writer();
-
-    const simple::Dataset& config() const override { return *m_config; }
-    const simple::Dataset& dataset() const override { return *m_config; }
-    simple::Dataset& dataset() override { return *m_config; }
 
     std::string type() const override;
 

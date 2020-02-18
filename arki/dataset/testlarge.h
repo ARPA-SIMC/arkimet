@@ -7,6 +7,7 @@
  */
 
 #include <arki/dataset.h>
+#include <arki/dataset/impl.h>
 #include <string>
 
 namespace arki {
@@ -33,20 +34,12 @@ struct Dataset : public dataset::Dataset
 /**
  * Dataset that is always empty
  */
-class Reader : public dataset::Reader
+class Reader : public DatasetAccess<dataset::Dataset, dataset::Reader>
 {
-protected:
-    std::shared_ptr<dataset::Dataset> m_config;
-
     bool generate(const core::Time& begin, const core::Time& until, std::function<bool(std::unique_ptr<Metadata>)> out) const;
 
 public:
-    Reader(std::shared_ptr<dataset::Dataset> config);
-    virtual ~Reader();
-
-    const dataset::Dataset& config() const override { return *m_config; }
-    const dataset::Dataset& dataset() const override { return *m_config; }
-    dataset::Dataset& dataset() override { return *m_config; }
+    using DatasetAccess::DatasetAccess;
 
     std::string type() const override { return "empty"; }
 

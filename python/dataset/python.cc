@@ -7,22 +7,22 @@
 #include "python/utils/dict.h"
 #include "arki/metadata/sort.h"
 #include "arki/summary.h"
+#include "arki/dataset/impl.h"
 
 namespace arki {
 namespace python {
 namespace dataset {
 
-struct PyDatasetReader : public arki::dataset::Reader
+struct PyDatasetReader : public arki::dataset::DatasetAccess<arki::dataset::Dataset, arki::dataset::Reader>
 {
-    std::shared_ptr<arki::dataset::Config> m_config;
     std::string m_type;
 
     PyObject* o;
     PyObject* meth_query_data = nullptr;
     PyObject* meth_query_summary = nullptr;
 
-    PyDatasetReader(const arki::core::cfg::Section& config, PyObject* o)
-        : m_config(std::make_shared<arki::dataset::Config>(get_dataset_session(), config)),
+    PyDatasetReader(const arki::core::cfg::Section& dataset, PyObject* o)
+        : DatasetAccess(std::make_shared<arki::dataset::Dataset>(get_dataset_session(), dataset)),
           o(o)
     {
         AcquireGIL gil;
@@ -32,7 +32,7 @@ struct PyDatasetReader : public arki::dataset::Reader
         if (!meth_query_summary)
             PyErr_Clear();
 
-        m_type = config.value("type");
+        m_type = dataset.value("type");
         if (m_type.empty())
         {
             pyo_unique_ptr type(PyObject_GetAttrString(o, "type"));
@@ -58,10 +58,6 @@ struct PyDatasetReader : public arki::dataset::Reader
         Py_XDECREF(meth_query_data);
         Py_XDECREF(o);
     }
-
-    const arki::dataset::Config& config() const override { return *m_config; }
-    const arki::dataset::Config& dataset() const override { return *m_config; }
-    arki::dataset::Config& dataset() override { return *m_config; }
 
     std::string type() const override { return m_type; }
 

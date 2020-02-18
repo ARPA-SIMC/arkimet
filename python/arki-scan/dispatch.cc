@@ -18,7 +18,8 @@ namespace arki_scan {
 
 
 MetadataDispatch::MetadataDispatch(cmdline::DatasetProcessor& next)
-    : partial_batch(get_dataset_session()), results(get_dataset_session()), next(next)
+    : partial_batch(std::make_shared<arki::dataset::memory::Dataset>(get_dataset_session())),
+      results(std::make_shared<arki::dataset::memory::Dataset>(get_dataset_session())), next(next)
 {
 }
 
@@ -33,7 +34,7 @@ DispatchResults MetadataDispatch::process(dataset::Reader& ds, const std::string
     DispatchResults stats;
     stats.name = name;
 
-    results.clear();
+    results->clear();
 
     if (!dir_copyok.empty())
         copyok.reset(new core::File(str::joinpath(dir_copyok, str::basename(name))));
@@ -49,21 +50,21 @@ DispatchResults MetadataDispatch::process(dataset::Reader& ds, const std::string
     try {
         ds.query_data(Matcher(), [&](std::shared_ptr<Metadata> md) {
             partial_batch_data_size += md->data_size();
-            partial_batch.acquire(move(md));
+            partial_batch->acquire(move(md));
             if (flush_threshold && partial_batch_data_size > flush_threshold)
                 process_partial_batch(name, stats);
             return true;
         });
-        if (!partial_batch.empty())
+        if (!partial_batch->empty())
             process_partial_batch(name, stats);
     } catch (std::exception& e) {
         nag::warning("%s: cannot read contents: %s", name.c_str(), e.what());
-        next.process(results, name);
+        next.process(*results->create_reader(), name);
         throw;
     }
 
     // Process the resulting annotated metadata as a dataset
-    next.process(results, name);
+    next.process(*results->create_reader(), name);
 
     stats.end();
 
@@ -77,12 +78,12 @@ void MetadataDispatch::process_partial_batch(const std::string& name, DispatchRe
     bool drop_cached_data_on_commit = !(copyok || copyko);
 
     // Dispatch
-    auto batch = partial_batch.make_import_batch();
+    auto batch = partial_batch->make_import_batch();
     try {
         dispatcher->dispatch(batch, drop_cached_data_on_commit);
     } catch (std::exception& e) {
         nag::warning("%s: cannot dispatch contents: %s", name.c_str(), e.what());
-        partial_batch.move_to(results.inserter_func());
+        partial_batch->move_to(results->inserter_func());
         throw;
     }
 
@@ -114,7 +115,7 @@ void MetadataDispatch::process_partial_batch(const std::string& name, DispatchRe
     }
 
     // Process the resulting annotated metadata as a dataset
-    partial_batch.move_to(results.inserter_func());
+    partial_batch->move_to(results->inserter_func());
     partial_batch_data_size = 0;
 }
 

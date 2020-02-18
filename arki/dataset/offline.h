@@ -2,6 +2,7 @@
 #define ARKI_DATASET_OFFLINE_H
 
 #include <arki/dataset.h>
+#include <arki/dataset/impl.h>
 #include <arki/summary.h>
 #include <string>
 
@@ -9,7 +10,7 @@ namespace arki {
 namespace dataset {
 namespace offline {
 
-struct Dataset : public dataset::Config
+struct Dataset : public dataset::Dataset
 {
     /**
      * Pathname to the .summary file which describes the data that is offline
@@ -17,25 +18,18 @@ struct Dataset : public dataset::Config
     std::string summary_pathname;
 
     Dataset(std::shared_ptr<Session> session, const std::string& pathname);
-
-    static std::shared_ptr<const Dataset> create(std::shared_ptr<Session> session, const std::string& pathname);
 };
 
 
 /**
  * Archive that has been put offline (only a summary file is left)
  */
-struct Reader : public dataset::Reader
+struct Reader : public DatasetAccess<Dataset, dataset::Reader>
 {
-    std::shared_ptr<Dataset> m_config;
     Summary sum;
 
-    Reader(std::shared_ptr<Dataset> config);
+    Reader(std::shared_ptr<Dataset> dataset);
     ~Reader() {}
-
-    const Dataset& config() const override { return *m_config; }
-    const Dataset& dataset() const override { return *m_config; }
-    Dataset& dataset() override { return *m_config; }
 
     std::string type() const override;
 

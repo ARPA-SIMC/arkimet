@@ -2,6 +2,7 @@
 #define ARKI_DATASET_FROMFUNCTION_H
 
 #include <arki/dataset.h>
+#include <arki/dataset/impl.h>
 #include <string>
 
 namespace arki {
@@ -13,7 +14,7 @@ namespace fromfunction {
 
 struct Dataset : public dataset::Dataset
 {
-    Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg);
+    using dataset::Dataset::Dataset;
 
     std::shared_ptr<dataset::Reader> create_reader() override;
 };
@@ -22,20 +23,12 @@ struct Dataset : public dataset::Dataset
 /**
  * Dataset that is always empty
  */
-class Reader : public dataset::Reader
+class Reader : public DatasetAccess<dataset::Dataset, dataset::Reader>
 {
-protected:
-    std::shared_ptr<dataset::Dataset> m_config;
-
 public:
+    using DatasetAccess::DatasetAccess;
+
     std::function<bool(metadata_dest_func)> generator;
-
-    Reader(std::shared_ptr<dataset::Dataset> config);
-    virtual ~Reader();
-
-    const dataset::Dataset& config() const override { return *m_config; }
-    const dataset::Dataset& dataset() const override { return *m_config; }
-    dataset::Dataset& dataset() override { return *m_config; }
 
     std::string type() const override { return "fromfunction"; }
 

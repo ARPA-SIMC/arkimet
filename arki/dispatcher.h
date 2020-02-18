@@ -81,7 +81,7 @@ public:
 class RealDispatcher : public Dispatcher
 {
 protected:
-    dataset::Configs datasets;
+    dataset::Datasets datasets;
     dataset::WriterPool pool;
 
     void raw_dispatch_dataset(const std::string& name, dataset::WriterBatch& batch, bool drop_cached_data_on_commit) override;

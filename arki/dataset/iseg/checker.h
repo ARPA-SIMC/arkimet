@@ -2,6 +2,7 @@
 #define ARKI_DATASET_ISEG_CHECKER_H
 
 #include <arki/dataset/iseg.h>
+#include <arki/dataset/impl.h>
 #include <string>
 
 namespace arki {
@@ -12,20 +13,14 @@ namespace iseg {
 class WIndex;
 class CheckerSegment;
 
-class Checker : public segmented::Checker
+class Checker : public DatasetAccess<iseg::Dataset, segmented::Checker>
 {
 protected:
-    std::shared_ptr<iseg::Dataset> m_config;
-
     void list_segments(std::function<void(const std::string& relpath)> dest);
     void list_segments(const Matcher& matcher, std::function<void(const std::string& relpath)> dest);
 
 public:
-    Checker(std::shared_ptr<iseg::Dataset> config);
-
-    const iseg::Dataset& config() const override { return *m_config; }
-    const iseg::Dataset& dataset() const override { return *m_config; }
-    iseg::Dataset& dataset() override { return *m_config; }
+    Checker(std::shared_ptr<iseg::Dataset> dataset);
 
     std::string type() const override;
 

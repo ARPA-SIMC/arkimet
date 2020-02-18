@@ -6,6 +6,7 @@
 #include <arki/defs.h>
 #include <arki/core/file.h>
 #include <arki/dataset.h>
+#include <arki/dataset/impl.h>
 #include <string>
 
 namespace arki {
@@ -15,50 +16,40 @@ namespace file {
 core::cfg::Section read_config(const std::string& path);
 core::cfg::Sections read_configs(const std::string& path);
 
+/// Dataset on a single file
 class Dataset : public dataset::Dataset
 {
 public:
-    Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg);
-
     std::string pathname;
     std::string format;
 
-    std::shared_ptr<Reader> create_reader() override;
-};
+    Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg);
 
-/**
- * Dataset on a single file
- */
-class File : public Reader
-{
-protected:
+    std::shared_ptr<dataset::Reader> create_reader() override;
+
     virtual bool scan(const dataset::DataQuery& q, metadata_dest_func dest) = 0;
 
-public:
-    std::string type() const override { return "file"; }
-    const Dataset& config() const override = 0;
-    const Dataset& dataset() const override = 0;
-    Dataset& dataset() override = 0;
-
-    bool query_data(const dataset::DataQuery& q, metadata_dest_func) override;
-
-    static core::cfg::Section read_config(const std::string& path) { return file::read_config(path); }
-    static core::cfg::Sections read_configs(const std::string& path) { return file::read_configs(path); }
+    static std::shared_ptr<Dataset> from_config(std::shared_ptr<Session> session, const core::cfg::Section& cfg);
 };
 
-class FdFile : public File
+class Reader : public DatasetAccess<file::Dataset, dataset::Reader>
+{
+public:
+    using DatasetAccess::DatasetAccess;
+
+    std::string type() const override { return "file"; }
+
+    bool query_data(const dataset::DataQuery& q, metadata_dest_func) override;
+};
+
+class FdFile : public Dataset
 {
 protected:
-    std::shared_ptr<Dataset> m_config;
     core::File fd;
 
 public:
-    FdFile(std::shared_ptr<Dataset> config);
+    FdFile(std::shared_ptr<Session> session, const core::cfg::Section& cfg);
     virtual ~FdFile();
-
-    const Dataset& config() const override { return *m_config; }
-    const Dataset& dataset() const override { return *m_config; }
-    Dataset& dataset() override { return *m_config; }
 };
 
 class ArkimetFile : public FdFile
@@ -78,25 +69,16 @@ protected:
 
 public:
     // Initialise the dataset with the information from the configurationa in 'cfg'
-    YamlFile(std::shared_ptr<Dataset> config);
+    YamlFile(std::shared_ptr<Session> session, const core::cfg::Section& cfg);
     virtual ~YamlFile();
 
     bool scan(const dataset::DataQuery& q, metadata_dest_func consumer) override;
 };
 
-class RawFile : public File
+class RawFile : public Dataset
 {
-protected:
-    std::shared_ptr<Dataset> m_config;
-
 public:
-    // Initialise the dataset with the information from the configuration in 'cfg'
-    RawFile(std::shared_ptr<Dataset> config);
-    virtual ~RawFile();
-
-    const Dataset& config() const override { return *m_config; }
-    const Dataset& dataset() const override { return *m_config; }
-    Dataset& dataset() override { return *m_config; }
+    using Dataset::Dataset;
 
     bool scan(const dataset::DataQuery& q, metadata_dest_func consumer) override;
 };

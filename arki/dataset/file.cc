@@ -30,18 +30,25 @@ Dataset::Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg
 {
 }
 
-std::shared_ptr<Reader> Dataset::create_reader()
+std::shared_ptr<dataset::Reader> Dataset::create_reader()
 {
-    if (format == "arkimet")
-        return std::make_shared<ArkimetFile>(static_pointer_cast<Dataset>(shared_from_this()));
-    if (format == "yaml")
-        return std::make_shared<YamlFile>(static_pointer_cast<Dataset>(shared_from_this()));
-    return std::make_shared<RawFile>(static_pointer_cast<Dataset>(shared_from_this()));
+    return std::make_shared<Reader>(static_pointer_cast<Dataset>(shared_from_this()));
 }
 
-bool File::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
+std::shared_ptr<Dataset> Dataset::from_config(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
 {
-    return scan(q, dest);
+    std::string format(cfg.value("format"));
+    if (format == "arkimet")
+        return std::make_shared<ArkimetFile>(session, cfg);
+    if (format == "yaml")
+        return std::make_shared<YamlFile>(session, cfg);
+    return std::make_shared<RawFile>(session, cfg);
+}
+
+
+bool Reader::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
+{
+    return dataset().scan(q, dest);
 }
 
 core::cfg::Section read_config(const std::string& fname)
@@ -87,8 +94,8 @@ core::cfg::Sections read_configs(const std::string& fname)
 }
 
 
-FdFile::FdFile(std::shared_ptr<Dataset> config)
-    : m_config(config), fd(config->pathname, O_RDONLY)
+FdFile::FdFile(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
+    : Dataset(session, cfg), fd(pathname, O_RDONLY)
 {
 }
 
@@ -146,8 +153,8 @@ bool ArkimetFile::scan(const dataset::DataQuery& q, metadata_dest_func dest)
 }
 
 
-YamlFile::YamlFile(std::shared_ptr<Dataset> config)
-    : FdFile(config), reader(LineReader::from_fd(fd).release()) {}
+YamlFile::YamlFile(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
+    : FdFile(session, cfg), reader(LineReader::from_fd(fd).release()) {}
 
 YamlFile::~YamlFile() { delete reader; }
 
@@ -172,19 +179,12 @@ bool YamlFile::scan(const dataset::DataQuery& q, metadata_dest_func dest)
 }
 
 
-RawFile::RawFile(std::shared_ptr<Dataset> config)
-    : m_config(config)
-{
-}
-
-RawFile::~RawFile() {}
-
 bool RawFile::scan(const dataset::DataQuery& q, metadata_dest_func dest)
 {
     string basedir, relpath;
-    files::resolve_path(config().pathname, basedir, relpath);
+    files::resolve_path(pathname, basedir, relpath);
     auto sorter = wrap_with_query(q, dest);
-    auto reader = Segment::detect_reader(config().format, basedir, relpath, config().pathname, std::make_shared<core::lock::Null>());
+    auto reader = Segment::detect_reader(format, basedir, relpath, pathname, std::make_shared<core::lock::Null>());
     if (!reader->scan(dest))
         return false;
     if (sorter) return sorter->flush();
