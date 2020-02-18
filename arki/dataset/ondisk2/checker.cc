@@ -73,7 +73,7 @@ public:
 
     void get_metadata(std::shared_ptr<core::Lock> lock, metadata::Collection& mds) override
     {
-        checker.idx->scan_file(*checker.dataset().session, segment->segment().relpath, mds.inserter_func(), "reftime, offset");
+        checker.idx->scan_file(segment->segment().relpath, mds.inserter_func(), "reftime, offset");
     }
 
     segmented::SegmentState scan(dataset::Reporter& reporter, bool quick=true) override
@@ -95,7 +95,7 @@ public:
         }
 
         metadata::Collection mds;
-        checker.idx->scan_file(*checker.dataset().session, segment->segment().relpath, mds.inserter_func(), "m.file, m.reftime, m.offset");
+        checker.idx->scan_file(segment->segment().relpath, mds.inserter_func(), "m.file, m.reftime, m.offset");
 
         segment::State state = segment::SEGMENT_OK;
         bool untrusted_index = files::hasDontpackFlagfile(checker.dataset().path);
@@ -157,7 +157,7 @@ public:
     {
         auto lock = checker.lock->write_lock();
         metadata::Collection mds;
-        checker.idx->scan_file(*checker.dataset().session, segment->segment().relpath, mds.inserter_func(), "reftime, offset");
+        checker.idx->scan_file(segment->segment().relpath, mds.inserter_func(), "reftime, offset");
         return reorder(mds, test_flags);
     }
 
@@ -213,7 +213,7 @@ public:
 
         // Rescan file
         metadata::Collection mds;
-        checker.idx->scan_file(*checker.dataset().session, segment->segment().relpath, mds.inserter_func(), "reftime, offset");
+        checker.idx->scan_file(segment->segment().relpath, mds.inserter_func(), "reftime, offset");
 
         // Create the .tar segment
         segment = segment->tar(mds);
@@ -250,7 +250,7 @@ public:
 
         // Rescan file
         metadata::Collection mds;
-        checker.idx->scan_file(*checker.dataset().session, segment->segment().relpath, mds.inserter_func(), "reftime, offset");
+        checker.idx->scan_file(segment->segment().relpath, mds.inserter_func(), "reftime, offset");
 
         // Create the .tar segment
         segment = segment->zip(mds);
@@ -287,7 +287,7 @@ public:
 
         // Rescan file
         metadata::Collection mds;
-        checker.idx->scan_file(*checker.dataset().session, segment->segment().relpath, mds.inserter_func(), "reftime, offset");
+        checker.idx->scan_file(segment->segment().relpath, mds.inserter_func(), "reftime, offset");
 
         // Create the .tar segment
         size_t old_size = segment->size();
@@ -409,7 +409,7 @@ public:
     {
         // Rebuild the metadata
         metadata::Collection mds;
-        checker.idx->scan_file(*checker.dataset().session, segment->segment().relpath, mds.inserter_func());
+        checker.idx->scan_file(segment->segment().relpath, mds.inserter_func());
         mds.writeAtomically(segment->segment().abspath + ".metadata");
 
         // Remove from index
@@ -533,7 +533,7 @@ size_t Checker::vacuum(dataset::Reporter& reporter)
 void Checker::test_change_metadata(const std::string& relpath, Metadata& md, unsigned data_idx)
 {
     metadata::Collection mds;
-    idx->query_segment(relpath, *dataset().session, mds.inserter_func());
+    idx->query_segment(relpath, mds.inserter_func());
     md.set_source(std::unique_ptr<arki::types::Source>(mds[data_idx].source().clone()));
     md.sourceBlob().unlock();
     mds[data_idx] = md;

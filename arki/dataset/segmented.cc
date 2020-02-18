@@ -12,6 +12,7 @@
 #include "arki/dataset/lock.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
+#include "arki/scan.h"
 #include "arki/types/reftime.h"
 #include "arki/types/source.h"
 #include "arki/utils/string.h"
@@ -90,6 +91,11 @@ Dataset::~Dataset()
 bool Dataset::relpath_timespan(const std::string& path, core::Time& start_time, core::Time& end_time) const
 {
     return step().path_timespan(path, start_time, end_time);
+}
+
+std::shared_ptr<segment::Reader> Dataset::segment_reader(const std::string& relpath, std::shared_ptr<core::Lock> lock)
+{
+    return session->segment_reader(scan::Scanner::format_from_filename(relpath), path, relpath, lock);
 }
 
 

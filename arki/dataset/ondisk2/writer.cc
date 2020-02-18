@@ -28,12 +28,12 @@ namespace ondisk2 {
 
 struct AppendSegment
 {
-    std::shared_ptr<const ondisk2::Dataset> dataset;
+    std::shared_ptr<ondisk2::Dataset> dataset;
     std::shared_ptr<dataset::AppendLock> lock;
     index::WIndex idx;
     std::shared_ptr<segment::Writer> segment;
 
-    AppendSegment(std::shared_ptr<const ondisk2::Dataset> dataset, std::shared_ptr<dataset::AppendLock> lock, std::shared_ptr<segment::Writer> segment)
+    AppendSegment(std::shared_ptr<ondisk2::Dataset> dataset, std::shared_ptr<dataset::AppendLock> lock, std::shared_ptr<segment::Writer> segment)
         : dataset(dataset), lock(lock), idx(dataset), segment(segment)
     {
         idx.lock = lock;
@@ -378,7 +378,7 @@ void Writer::test_acquire(std::shared_ptr<Session> session, const core::cfg::Sec
         throw std::runtime_error("Replace strategy '" + repl + "' is not recognised in dataset configuration");
 
     // Refuse if md is before "archive age"
-    std::shared_ptr<const ondisk2::Dataset> dataset(new ondisk2::Dataset(session, cfg));
+    auto dataset = std::make_shared<ondisk2::Dataset>(session, cfg);
     for (auto& e: batch)
     {
         auto age_check = dataset->check_acquire_age(e->md);

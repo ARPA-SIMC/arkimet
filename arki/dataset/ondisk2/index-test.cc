@@ -81,7 +81,7 @@ Metadata make_md1()
 void query_index(WIndex& idx, const dataset::DataQuery& q, metadata::Collection& dest)
 {
     auto session = std::make_shared<dataset::Session>();
-    idx.query_data(q, *session, dest.inserter_func());
+    idx.query_data(q, dest.inserter_func());
 }
 
 struct ReadHang : public subprocess::Child
@@ -102,7 +102,7 @@ struct ReadHang : public subprocess::Child
             RIndex idx(config);
             idx.lock = lock;
             idx.open();
-            idx.query_data(Matcher::parse("origin:GRIB1"), *session, [&](std::shared_ptr<Metadata> md) {
+            idx.query_data(Matcher::parse("origin:GRIB1"), [&](std::shared_ptr<Metadata> md) {
                 fputs("H\n", stdout);
                 fflush(stdout);
                 fclose(stdout);
@@ -348,9 +348,8 @@ add_method("query_file", [] {
     p.commit();
 
     // Get the metadata corresponding to one file
-    auto session = std::make_shared<dataset::Session>();
     metadata::Collection mdc;
-    test->scan_file(*session, "inbound/padded.grib1", mdc.inserter_func());
+    test->scan_file("inbound/padded.grib1", mdc.inserter_func());
     wassert(actual(mdc.size()) == 2u);
 
     // Check that the metadata came out fine

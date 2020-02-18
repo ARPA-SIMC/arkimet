@@ -51,6 +51,8 @@ public:
     virtual bool relpath_timespan(const std::string& path, core::Time& start_time, core::Time& end_time) const;
 
     const Step& step() const { return *m_step; }
+
+    virtual std::shared_ptr<segment::Reader> segment_reader(const std::string& relpath, std::shared_ptr<core::Lock> lock);
 };
 
 /**

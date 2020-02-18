@@ -29,12 +29,12 @@ namespace iseg {
 
 struct AppendSegment
 {
-    std::shared_ptr<const iseg::Dataset> dataset;
+    std::shared_ptr<iseg::Dataset> dataset;
     std::shared_ptr<dataset::AppendLock> append_lock;
     std::shared_ptr<segment::Writer> segment;
     AIndex idx;
 
-    AppendSegment(std::shared_ptr<const iseg::Dataset> dataset, std::shared_ptr<dataset::AppendLock> append_lock, std::shared_ptr<segment::Writer> segment)
+    AppendSegment(std::shared_ptr<iseg::Dataset> dataset, std::shared_ptr<dataset::AppendLock> append_lock, std::shared_ptr<segment::Writer> segment)
         : dataset(dataset), append_lock(append_lock), segment(segment), idx(dataset, segment, append_lock)
     {
     }

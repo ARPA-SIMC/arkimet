@@ -38,8 +38,8 @@ namespace arki {
 namespace dataset {
 namespace index {
 
-Manifest::Manifest(const std::string& path, const core::lock::Policy* lock_policy)
-    : m_path(path), lock_policy(lock_policy)
+Manifest::Manifest(std::shared_ptr<simple::Dataset> dataset)
+    : dataset(dataset), m_path(dataset->path), lock_policy(dataset->lock_policy)
 {
 }
 Manifest::~Manifest() {}
@@ -62,7 +62,7 @@ void Manifest::querySummaries(const Matcher& matcher, Summary& summary)
     }
 }
 
-bool Manifest::query_data(const dataset::DataQuery& q, dataset::Session& session, metadata_dest_func dest)
+bool Manifest::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 {
     if (lock.expired())
         throw std::runtime_error("cannot query_data while there is no lock held");
@@ -91,7 +91,7 @@ bool Manifest::query_data(const dataset::DataQuery& q, dataset::Session& session
         if (!sys::exists(fullpath)) continue;
         std::shared_ptr<arki::segment::Reader> reader;
         if (q.with_data)
-            reader = session.segment_reader(scan::Scanner::format_from_filename(*i), m_path, *i, lock.lock());
+            reader = dataset->segment_reader(*i, lock.lock());
         // This generates filenames relative to the metadata
         // We need to use absdir as the dirname, and prepend dirname(*i) to the filenames
         Metadata::read_file(fullpath, [&](std::shared_ptr<Metadata> md) {
@@ -151,14 +151,14 @@ bool Manifest::query_summary(const Matcher& matcher, Summary& summary)
     return true;
 }
 
-void Manifest::query_segment(const std::string& relpath, dataset::Session& session, metadata_dest_func dest) const
+void Manifest::query_segment(const std::string& relpath, metadata_dest_func dest) const
 {
     if (lock.expired())
         throw std::runtime_error("cannot query_segment while there is no lock held");
     string absdir = sys::abspath(m_path);
     string prepend_fname = str::dirname(relpath);
     string abspath = str::joinpath(m_path, relpath);
-    auto reader = session.segment_reader(scan::Scanner::format_from_filename(relpath), m_path, relpath, lock.lock());
+    auto reader = dataset->segment_reader(relpath, lock.lock());
     Metadata::read_file(abspath + ".metadata", [&](std::shared_ptr<Metadata> md) {
         // Tweak Blob sources replacing the file name with relpath
         if (const source::Blob* s = md->has_source_blob())
@@ -252,9 +252,9 @@ class PlainManifest : public Manifest
         }
     };
     vector<Info> info;
-    ino_t last_inode;
-    bool dirty;
-    bool rw;
+    ino_t last_inode = 0;
+    bool dirty = false;
+    bool rw = false;
 
     /**
      * Reread the MANIFEST file.
@@ -326,10 +326,7 @@ class PlainManifest : public Manifest
     }
 
 public:
-    PlainManifest(const std::string& dir, const core::lock::Policy* lock_policy)
-        : Manifest(dir, lock_policy), last_inode(0), dirty(false), rw(false)
-    {
-    }
+    using Manifest::Manifest;
 
     virtual ~PlainManifest()
     {
@@ -608,8 +605,8 @@ class SqliteManifest : public Manifest
 
 
 public:
-    SqliteManifest(const std::string& dir, const core::lock::Policy* lock_policy)
-        : Manifest(dir, lock_policy), m_insert(m_db)
+    SqliteManifest(std::shared_ptr<simple::Dataset> dataset)
+        : Manifest(dataset), m_insert(m_db)
     {
     }
 
@@ -907,14 +904,14 @@ std::unique_ptr<Manifest> Manifest::create(std::shared_ptr<simple::Dataset> data
     if (index_type.empty())
     {
         if (manifest::mft_force_sqlite || manifest::SqliteManifest::exists(dataset->path))
-            return unique_ptr<Manifest>(new manifest::SqliteManifest(dataset->path, dataset->lock_policy));
+            return unique_ptr<Manifest>(new manifest::SqliteManifest(dataset));
         else
-            return unique_ptr<Manifest>(new manifest::PlainManifest(dataset->path, dataset->lock_policy));
+            return unique_ptr<Manifest>(new manifest::PlainManifest(dataset));
     }
     else if (index_type == "plain")
-        return unique_ptr<Manifest>(new manifest::PlainManifest(dataset->path, dataset->lock_policy));
+        return unique_ptr<Manifest>(new manifest::PlainManifest(dataset));
     else if (index_type == "sqlite")
-        return unique_ptr<Manifest>(new manifest::SqliteManifest(dataset->path, dataset->lock_policy));
+        return unique_ptr<Manifest>(new manifest::SqliteManifest(dataset));
     else
         throw std::runtime_error("unsupported index_type " + index_type);
 }
