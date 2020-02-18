@@ -63,16 +63,16 @@ public:
     CheckerSegment(Checker& checker, const std::string& relpath, std::shared_ptr<dataset::CheckLock> lock)
         : segmented::CheckerSegment(lock), checker(checker)
     {
-        segment = checker.config().session->segment_checker(scan::Scanner::format_from_filename(relpath), checker.config().path, relpath);
+        segment = checker.dataset().session->segment_checker(scan::Scanner::format_from_filename(relpath), checker.dataset().path, relpath);
     }
 
     std::string path_relative() const override { return segment->segment().relpath; }
-    const ondisk2::Dataset& config() const override { return checker.config(); }
+    const ondisk2::Dataset& config() const override { return checker.dataset(); }
     std::shared_ptr<dataset::archive::Checker> archives() override { return checker.archive(); }
 
     void get_metadata(std::shared_ptr<core::Lock> lock, metadata::Collection& mds) override
     {
-        checker.idx->scan_file(*checker.config().session, segment->segment().relpath, mds.inserter_func(), "reftime, offset");
+        checker.idx->scan_file(*checker.dataset().session, segment->segment().relpath, mds.inserter_func(), "reftime, offset");
     }
 
     segmented::SegmentState scan(dataset::Reporter& reporter, bool quick=true) override
@@ -87,17 +87,17 @@ public:
                 reporter.segment_info(checker.name(), segment->segment().relpath, "empty segment found on disk with no associated index data");
                 return segmented::SegmentState(segment::SEGMENT_DELETED);
             } else {
-                bool untrusted_index = files::hasDontpackFlagfile(checker.config().path);
+                bool untrusted_index = files::hasDontpackFlagfile(checker.dataset().path);
                 reporter.segment_info(checker.name(), segment->segment().relpath, "segment found on disk with no associated index data");
                 return segmented::SegmentState(untrusted_index ? segment::SEGMENT_UNALIGNED : segment::SEGMENT_DELETED);
             }
         }
 
         metadata::Collection mds;
-        checker.idx->scan_file(*checker.config().session, segment->segment().relpath, mds.inserter_func(), "m.file, m.reftime, m.offset");
+        checker.idx->scan_file(*checker.dataset().session, segment->segment().relpath, mds.inserter_func(), "m.file, m.reftime, m.offset");
 
         segment::State state = segment::SEGMENT_OK;
-        bool untrusted_index = files::hasDontpackFlagfile(checker.config().path);
+        bool untrusted_index = files::hasDontpackFlagfile(checker.dataset().path);
 
         // Compute the span of reftimes inside the segment
         unique_ptr<Time> md_begin;
@@ -119,7 +119,7 @@ public:
                 // Ensure that the reftime span fits inside the segment step
                 Time seg_begin;
                 Time seg_until;
-                if (checker.config().step().path_timespan(segment->segment().relpath, seg_begin, seg_until))
+                if (checker.dataset().step().path_timespan(segment->segment().relpath, seg_begin, seg_until))
                 {
                     if (*md_begin < seg_begin || *md_until > seg_until)
                     {
@@ -148,7 +148,7 @@ public:
             state = state - segment::SEGMENT_DIRTY + segment::SEGMENT_UNALIGNED;
 
         auto res = segmented::SegmentState(state, *md_begin, *md_until);
-        res.check_age(segment->segment().relpath, checker.config(), reporter);
+        res.check_age(segment->segment().relpath, checker.dataset(), reporter);
         return res;
     }
 
@@ -156,7 +156,7 @@ public:
     {
         auto lock = checker.lock->write_lock();
         metadata::Collection mds;
-        checker.idx->scan_file(*checker.config().session, segment->segment().relpath, mds.inserter_func(), "reftime, offset");
+        checker.idx->scan_file(*checker.dataset().session, segment->segment().relpath, mds.inserter_func(), "reftime, offset");
         return reorder(mds, test_flags);
     }
 
@@ -168,7 +168,7 @@ public:
         segment::RepackConfig repack_config;
         repack_config.gz_group_size = config().gz_group_size;
         repack_config.test_flags = test_flags;
-        auto p_repack = segment->repack(checker.config().path, mds, repack_config);
+        auto p_repack = segment->repack(checker.dataset().path, mds, repack_config);
 
         // Reindex mds
         checker.idx->reset(segment->segment().relpath);
@@ -212,7 +212,7 @@ public:
 
         // Rescan file
         metadata::Collection mds;
-        checker.idx->scan_file(*checker.config().session, segment->segment().relpath, mds.inserter_func(), "reftime, offset");
+        checker.idx->scan_file(*checker.dataset().session, segment->segment().relpath, mds.inserter_func(), "reftime, offset");
 
         // Create the .tar segment
         segment = segment->tar(mds);
@@ -249,7 +249,7 @@ public:
 
         // Rescan file
         metadata::Collection mds;
-        checker.idx->scan_file(*checker.config().session, segment->segment().relpath, mds.inserter_func(), "reftime, offset");
+        checker.idx->scan_file(*checker.dataset().session, segment->segment().relpath, mds.inserter_func(), "reftime, offset");
 
         // Create the .tar segment
         segment = segment->zip(mds);
@@ -286,7 +286,7 @@ public:
 
         // Rescan file
         metadata::Collection mds;
-        checker.idx->scan_file(*checker.config().session, segment->segment().relpath, mds.inserter_func(), "reftime, offset");
+        checker.idx->scan_file(*checker.dataset().session, segment->segment().relpath, mds.inserter_func(), "reftime, offset");
 
         // Create the .tar segment
         size_t old_size = segment->size();
@@ -408,7 +408,7 @@ public:
     {
         // Rebuild the metadata
         metadata::Collection mds;
-        checker.idx->scan_file(*checker.config().session, segment->segment().relpath, mds.inserter_func());
+        checker.idx->scan_file(*checker.dataset().session, segment->segment().relpath, mds.inserter_func());
         mds.writeAtomically(segment->segment().abspath + ".metadata");
 
         // Remove from index
@@ -419,21 +419,21 @@ public:
 };
 
 
-Checker::Checker(std::shared_ptr<ondisk2::Dataset> config)
-    : m_config(config), idx(new index::WIndex(config))
+Checker::Checker(std::shared_ptr<ondisk2::Dataset> dataset)
+    : DatasetAccess(dataset), idx(new index::WIndex(dataset))
 {
     m_idx = idx;
 
     // Create the directory if it does not exist
-    bool dir_created = sys::makedirs(config->path);
+    bool dir_created = sys::makedirs(dataset->path);
 
-    lock = config->check_lock_dataset();
+    lock = dataset->check_lock_dataset();
     m_idx->lock = lock;
 
     // If the index is missing, take note not to perform a repack until a
     // check is made
-    if (!dir_created && !sys::exists(config->index_pathname))
-        files::createDontpackFlagfile(config->path);
+    if (!dir_created && !sys::exists(dataset->index_pathname))
+        files::createDontpackFlagfile(dataset->path);
 
     idx->open();
 }
@@ -483,7 +483,7 @@ void Checker::segments_tracked_filtered(const Matcher& matcher, std::function<vo
 
 void Checker::segments_untracked(std::function<void(segmented::CheckerSegment& relpath)> dest)
 {
-    scan_dir(config().path, [&](const std::string& relpath) {
+    scan_dir(dataset().path, [&](const std::string& relpath) {
         if (m_idx->has_segment(relpath)) return;
         CheckerSegment segment(*this, relpath, lock);
         dest(segment);
@@ -496,9 +496,9 @@ void Checker::segments_untracked_filtered(const Matcher& matcher, std::function<
     auto m = matcher.get(TYPE_REFTIME);
     if (!m) return segments_untracked(dest);
 
-    scan_dir(config().path, [&](const std::string& relpath) {
+    scan_dir(dataset().path, [&](const std::string& relpath) {
         if (m_idx->has_segment(relpath)) return;
-        if (!config().step().pathMatches(relpath, *m)) return;
+        if (!dataset().step().pathMatches(relpath, *m)) return;
         CheckerSegment segment(*this, relpath, lock);
         dest(segment);
     });
@@ -519,7 +519,7 @@ size_t Checker::vacuum(dataset::Reporter& reporter)
     }
 
     // Rebuild the cached summaries, if needed
-    if (!sys::exists(str::joinpath(config().path, ".summaries/all.summary")))
+    if (!sys::exists(str::joinpath(dataset().path, ".summaries/all.summary")))
     {
         reporter.operation_progress(name(), "repack", "rebuilding the summary cache");
         Summary s;
@@ -532,7 +532,7 @@ size_t Checker::vacuum(dataset::Reporter& reporter)
 void Checker::test_change_metadata(const std::string& relpath, Metadata& md, unsigned data_idx)
 {
     metadata::Collection mds;
-    idx->query_segment(relpath, *config().session, mds.inserter_func());
+    idx->query_segment(relpath, *dataset().session, mds.inserter_func());
     md.set_source(std::unique_ptr<arki::types::Source>(mds[data_idx].source().clone()));
     md.sourceBlob().unlock();
     mds[data_idx] = md;
@@ -556,7 +556,7 @@ void Checker::test_delete_from_index(const std::string& relpath)
 void Checker::test_invalidate_in_index(const std::string& relpath)
 {
     m_idx->test_deindex(relpath);
-    files::createDontpackFlagfile(config().path);
+    files::createDontpackFlagfile(dataset().path);
 }
 
 

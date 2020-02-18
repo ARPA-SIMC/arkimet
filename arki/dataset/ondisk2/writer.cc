@@ -28,13 +28,13 @@ namespace ondisk2 {
 
 struct AppendSegment
 {
-    std::shared_ptr<const ondisk2::Dataset> config;
+    std::shared_ptr<const ondisk2::Dataset> dataset;
     std::shared_ptr<dataset::AppendLock> lock;
     index::WIndex idx;
     std::shared_ptr<segment::Writer> segment;
 
-    AppendSegment(std::shared_ptr<const ondisk2::Dataset> config, std::shared_ptr<dataset::AppendLock> lock, std::shared_ptr<segment::Writer> segment)
-        : config(config), lock(lock), idx(config), segment(segment)
+    AppendSegment(std::shared_ptr<const ondisk2::Dataset> dataset, std::shared_ptr<dataset::AppendLock> lock, std::shared_ptr<segment::Writer> segment)
+        : dataset(dataset), lock(lock), idx(dataset), segment(segment)
     {
         idx.lock = lock;
         idx.open();
@@ -50,7 +50,7 @@ struct AppendSegment
         try {
             if (std::unique_ptr<types::source::Blob> old = idx.index(md, segment->segment().relpath, segment->next_offset()))
             {
-                md.add_note("Failed to store in dataset '" + config->name() + "' because the dataset already has the data in " + old->filename + ":" + std::to_string(old->offset));
+                md.add_note("Failed to store in dataset '" + dataset->name() + "' because the dataset already has the data in " + old->filename + ":" + std::to_string(old->offset));
                 return ACQ_ERROR_DUPLICATE;
             }
             segment->append(md, drop_cached_data_on_commit);
@@ -59,7 +59,7 @@ struct AppendSegment
             return ACQ_OK;
         } catch (std::exception& e) {
             // sqlite will take care of transaction consistency
-            md.add_note("Failed to store in dataset '" + config->name() + "': " + e.what());
+            md.add_note("Failed to store in dataset '" + dataset->name() + "': " + e.what());
             return ACQ_ERROR;
         }
     }
@@ -78,7 +78,7 @@ struct AppendSegment
             return ACQ_OK;
         } catch (std::exception& e) {
             // sqlite will take care of transaction consistency
-            md.add_note("Failed to store in dataset '" + config->name() + "': " + e.what());
+            md.add_note("Failed to store in dataset '" + dataset->name() + "': " + e.what());
             return ACQ_ERROR;
         }
     }
@@ -99,12 +99,12 @@ struct AppendSegment
                     return ACQ_ERROR_DUPLICATE;
 
                 // Read the update sequence number of the old BUFR
-                auto reader = session.segment_reader(scan::Scanner::format_from_filename(old->filename), config->path, old->filename, lock);
+                auto reader = session.segment_reader(scan::Scanner::format_from_filename(old->filename), dataset->path, old->filename, lock);
                 old->lock(reader);
                 int old_usn;
                 if (!scan::Scanner::update_sequence_number(*old, old_usn))
                 {
-                    md.add_note("Failed to store in dataset '" + config->name() + "': a similar element exists, the new element has an Update Sequence Number but the old one does not, so they cannot be compared");
+                    md.add_note("Failed to store in dataset '" + dataset->name() + "': a similar element exists, the new element has an Update Sequence Number but the old one does not, so they cannot be compared");
                     return ACQ_ERROR;
                 }
 
@@ -126,7 +126,7 @@ struct AppendSegment
             }
         } catch (std::exception& e) {
             // sqlite will take care of transaction consistency
-            md.add_note("Failed to store in dataset '" + config->name() + "': " + e.what());
+            md.add_note("Failed to store in dataset '" + dataset->name() + "': " + e.what());
             return ACQ_ERROR;
         }
     }
@@ -143,17 +143,17 @@ struct AppendSegment
 
                 if (std::unique_ptr<types::source::Blob> old = idx.index(e->md, segment->segment().relpath, segment->next_offset()))
                 {
-                    e->md.add_note("Failed to store in dataset '" + config->name() + "' because the dataset already has the data in " + old->filename + ":" + std::to_string(old->offset));
+                    e->md.add_note("Failed to store in dataset '" + dataset->name() + "' because the dataset already has the data in " + old->filename + ":" + std::to_string(old->offset));
                     e->result = ACQ_ERROR_DUPLICATE;
                     continue;
                 }
                 segment->append(e->md, drop_cached_data_on_commit);
                 e->result = ACQ_OK;
-                e->dataset_name = config->name();
+                e->dataset_name = dataset->name();
             }
         } catch (std::exception& e) {
             // sqlite will take care of transaction consistency
-            batch.set_all_error("Failed to store in dataset '" + config->name() + "': " + e.what());
+            batch.set_all_error("Failed to store in dataset '" + dataset->name() + "': " + e.what());
             return;
         }
 
@@ -172,11 +172,11 @@ struct AppendSegment
                 idx.replace(e->md, segment->segment().relpath, segment->next_offset());
                 segment->append(e->md, drop_cached_data_on_commit);
                 e->result = ACQ_OK;
-                e->dataset_name = config->name();
+                e->dataset_name = dataset->name();
             }
         } catch (std::exception& e) {
             // sqlite will take care of transaction consistency
-            batch.set_all_error("Failed to store in dataset '" + config->name() + "': " + e.what());
+            batch.set_all_error("Failed to store in dataset '" + dataset->name() + "': " + e.what());
             return;
         }
 
@@ -202,18 +202,18 @@ struct AppendSegment
                     int new_usn;
                     if (!scan::Scanner::update_sequence_number(e->md, new_usn))
                     {
-                        e->md.add_note("Failed to store in dataset '" + config->name() + "' because the dataset already has the data in " + segment->segment().relpath + ":" + std::to_string(old->offset) + " and there is no Update Sequence Number to compare");
+                        e->md.add_note("Failed to store in dataset '" + dataset->name() + "' because the dataset already has the data in " + segment->segment().relpath + ":" + std::to_string(old->offset) + " and there is no Update Sequence Number to compare");
                         e->result = ACQ_ERROR_DUPLICATE;
                         continue;
                     }
 
                     // Read the update sequence number of the old BUFR
-                    auto reader = session.segment_reader(segment->segment().format, config->path, old->filename, lock);
+                    auto reader = session.segment_reader(segment->segment().format, dataset->path, old->filename, lock);
                     old->lock(reader);
                     int old_usn;
                     if (!scan::Scanner::update_sequence_number(*old, old_usn))
                     {
-                        e->md.add_note("Failed to store in dataset '" + config->name() + "': a similar element exists, the new element has an Update Sequence Number but the old one does not, so they cannot be compared");
+                        e->md.add_note("Failed to store in dataset '" + dataset->name() + "': a similar element exists, the new element has an Update Sequence Number but the old one does not, so they cannot be compared");
                         e->result = ACQ_ERROR;
                         continue;
                     }
@@ -221,7 +221,7 @@ struct AppendSegment
                     // If the new element has no higher Update Sequence Number, report a duplicate
                     if (old_usn > new_usn)
                     {
-                        e->md.add_note("Failed to store in dataset '" + config->name() + "' because the dataset already has the data in " + segment->segment().relpath + ":" + std::to_string(old->offset) + " with a higher Update Sequence Number");
+                        e->md.add_note("Failed to store in dataset '" + dataset->name() + "' because the dataset already has the data in " + segment->segment().relpath + ":" + std::to_string(old->offset) + " with a higher Update Sequence Number");
                         e->result = ACQ_ERROR_DUPLICATE;
                         continue;
                     }
@@ -230,17 +230,17 @@ struct AppendSegment
                     idx.replace(e->md, segment->segment().relpath, segment->next_offset());
                     segment->append(e->md, drop_cached_data_on_commit);
                     e->result = ACQ_OK;
-                    e->dataset_name = config->name();
+                    e->dataset_name = dataset->name();
                     continue;
                 } else {
                     segment->append(e->md, drop_cached_data_on_commit);
                     e->result = ACQ_OK;
-                    e->dataset_name = config->name();
+                    e->dataset_name = dataset->name();
                 }
             }
         } catch (std::exception& e) {
             // sqlite will take care of transaction consistency
-            batch.set_all_error("Failed to store in dataset '" + config->name() + "': " + e.what());
+            batch.set_all_error("Failed to store in dataset '" + dataset->name() + "': " + e.what());
             return;
         }
 
@@ -249,16 +249,16 @@ struct AppendSegment
     }
 };
 
-Writer::Writer(std::shared_ptr<ondisk2::Dataset> config)
-    : m_config(config)
+Writer::Writer(std::shared_ptr<ondisk2::Dataset> dataset)
+    : DatasetAccess(dataset)
 {
     // Create the directory if it does not exist
-    bool dir_created = sys::makedirs(config->path);
+    bool dir_created = sys::makedirs(dataset->path);
 
     // If the index is missing, take note not to perform a repack until a
     // check is made
-    if (!dir_created and !sys::exists(config->index_pathname))
-        files::createDontpackFlagfile(config->path);
+    if (!dir_created and !sys::exists(dataset->index_pathname))
+        files::createDontpackFlagfile(dataset->path);
 }
 
 Writer::~Writer()
@@ -270,25 +270,25 @@ std::string Writer::type() const { return "ondisk2"; }
 
 std::unique_ptr<AppendSegment> Writer::segment(const Metadata& md, const std::string& format)
 {
-    auto lock = config().append_lock_dataset();
-    return std::unique_ptr<AppendSegment>(new AppendSegment(m_config, lock, segmented::Writer::file(md, format)));
+    auto lock = dataset().append_lock_dataset();
+    return std::unique_ptr<AppendSegment>(new AppendSegment(m_dataset, lock, segmented::Writer::file(md, format)));
 }
 
 std::unique_ptr<AppendSegment> Writer::segment(const std::string& relpath)
 {
-    sys::makedirs(str::dirname(str::joinpath(config().path, relpath)));
-    auto lock = config().append_lock_dataset();
-    auto segment = config().session->segment_writer(scan::Scanner::format_from_filename(relpath), config().path, relpath);
-    return std::unique_ptr<AppendSegment>(new AppendSegment(m_config, lock, segment));
+    sys::makedirs(str::dirname(str::joinpath(dataset().path, relpath)));
+    auto lock = dataset().append_lock_dataset();
+    auto segment = dataset().session->segment_writer(scan::Scanner::format_from_filename(relpath), dataset().path, relpath);
+    return std::unique_ptr<AppendSegment>(new AppendSegment(m_dataset, lock, segment));
 }
 
 WriterAcquireResult Writer::acquire(Metadata& md, const AcquireConfig& cfg)
 {
     acct::acquire_single_count.incr();
-    auto age_check = config().check_acquire_age(md);
+    auto age_check = dataset().check_acquire_age(md);
     if (age_check.first) return age_check.second;
 
-    ReplaceStrategy replace = cfg.replace == REPLACE_DEFAULT ? config().default_replace_strategy : cfg.replace;
+    ReplaceStrategy replace = cfg.replace == REPLACE_DEFAULT ? dataset().default_replace_strategy : cfg.replace;
 
     auto w = segment(md, md.source().format);
 
@@ -296,7 +296,7 @@ WriterAcquireResult Writer::acquire(Metadata& md, const AcquireConfig& cfg)
     {
         case REPLACE_NEVER: return w->acquire_replace_never(md, cfg.drop_cached_data_on_commit);
         case REPLACE_ALWAYS: return w->acquire_replace_always(md, cfg.drop_cached_data_on_commit);
-        case REPLACE_HIGHER_USN: return w->acquire_replace_higher_usn(md, *config().session, cfg.drop_cached_data_on_commit);
+        case REPLACE_HIGHER_USN: return w->acquire_replace_higher_usn(md, *dataset().session, cfg.drop_cached_data_on_commit);
         default:
         {
             stringstream ss;
@@ -309,7 +309,7 @@ WriterAcquireResult Writer::acquire(Metadata& md, const AcquireConfig& cfg)
 void Writer::acquire_batch(WriterBatch& batch, const AcquireConfig& cfg)
 {
     acct::acquire_batch_count.incr();
-    ReplaceStrategy replace = cfg.replace == REPLACE_DEFAULT ? config().default_replace_strategy : cfg.replace;
+    ReplaceStrategy replace = cfg.replace == REPLACE_DEFAULT ? dataset().default_replace_strategy : cfg.replace;
 
     std::map<std::string, WriterBatch> by_segment = batch_by_segment(batch);
 
@@ -326,7 +326,7 @@ void Writer::acquire_batch(WriterBatch& batch, const AcquireConfig& cfg)
                 seg->acquire_batch_replace_always(s.second, cfg.drop_cached_data_on_commit);
                 break;
             case REPLACE_HIGHER_USN:
-                seg->acquire_batch_replace_higher_usn(s.second, *config().session, cfg.drop_cached_data_on_commit);
+                seg->acquire_batch_replace_higher_usn(s.second, *dataset().session, cfg.drop_cached_data_on_commit);
                 break;
             default: throw std::runtime_error("programming error: unsupported replace value " + std::to_string(replace));
         }
@@ -339,22 +339,22 @@ void Writer::remove(Metadata& md)
     if (!source)
         throw std::runtime_error("cannot remove metadata from dataset, because it has no Blob source");
 
-    if (source->basedir != config().path)
-        throw std::runtime_error("cannot remove metadata from dataset: its basedir is " + source->basedir + " but this dataset is at " + config().path);
+    if (source->basedir != dataset().path)
+        throw std::runtime_error("cannot remove metadata from dataset: its basedir is " + source->basedir + " but this dataset is at " + dataset().path);
 
     // TODO: refuse if md is in the archive
 
-    auto lock = config().append_lock_dataset();
+    auto lock = dataset().append_lock_dataset();
 
     // Delete from DB, and get file name
-    index::WIndex idx(m_config);
+    index::WIndex idx(m_dataset);
     idx.open();
     idx.lock = lock;
     auto p_del = idx.begin_transaction();
     idx.remove(source->filename, source->offset);
 
     // Create flagfile
-    //createPackFlagfile(str::joinpath(config().path, file));
+    //createPackFlagfile(str::joinpath(dataset().path, file));
 
     // Commit delete from DB
     p_del.commit();
@@ -378,15 +378,15 @@ void Writer::test_acquire(std::shared_ptr<Session> session, const core::cfg::Sec
         throw std::runtime_error("Replace strategy '" + repl + "' is not recognised in dataset configuration");
 
     // Refuse if md is before "archive age"
-    std::shared_ptr<const ondisk2::Dataset> config(new ondisk2::Dataset(session, cfg));
+    std::shared_ptr<const ondisk2::Dataset> dataset(new ondisk2::Dataset(session, cfg));
     for (auto& e: batch)
     {
-        auto age_check = config->check_acquire_age(e->md);
+        auto age_check = dataset->check_acquire_age(e->md);
         if (age_check.first)
         {
             e->result = age_check.second;
             if (age_check.second == ACQ_OK)
-                e->dataset_name = config->name();
+                e->dataset_name = dataset->name();
             else
                 e->dataset_name.clear();
             continue;
@@ -395,18 +395,18 @@ void Writer::test_acquire(std::shared_ptr<Session> session, const core::cfg::Sec
         if (replace == REPLACE_ALWAYS)
         {
             e->result = ACQ_OK;
-            e->dataset_name = config->name();
+            e->dataset_name = dataset->name();
             continue;
         }
 
-        auto lock = config->read_lock_dataset();
+        auto lock = dataset->read_lock_dataset();
 
-        index::RIndex idx(config);
+        index::RIndex idx(dataset);
         if (!idx.exists())
         {
             // If there is no index, there can be no duplicates
             e->result = ACQ_OK;
-            e->dataset_name = config->name();
+            e->dataset_name = dataset->name();
             continue;
         }
         idx.lock = lock;
@@ -416,7 +416,7 @@ void Writer::test_acquire(std::shared_ptr<Session> session, const core::cfg::Sec
         if (!old)
         {
             e->result = ACQ_OK;
-            e->dataset_name = config->name();
+            e->dataset_name = dataset->name();
             continue;
         }
 
@@ -438,7 +438,7 @@ void Writer::test_acquire(std::shared_ptr<Session> session, const core::cfg::Sec
         }
 
         // Read the update sequence number of the old BUFR
-        auto reader = session->segment_reader(scan::Scanner::format_from_filename(old->filename), config->path, old->filename, lock);
+        auto reader = session->segment_reader(scan::Scanner::format_from_filename(old->filename), dataset->path, old->filename, lock);
         old->lock(reader);
         int old_usn;
         if (!scan::Scanner::update_sequence_number(*old, old_usn))
@@ -452,7 +452,7 @@ void Writer::test_acquire(std::shared_ptr<Session> session, const core::cfg::Sec
             e->dataset_name.clear();
         } else {
             e->result = ACQ_OK;
-            e->dataset_name = config->name();
+            e->dataset_name = dataset->name();
         }
     }
 }

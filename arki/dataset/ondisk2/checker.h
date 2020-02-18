@@ -5,6 +5,7 @@
 
 #include <arki/dataset/ondisk2.h>
 #include <arki/dataset/ondisk2/index.h>
+#include <arki/dataset/impl.h>
 #include <string>
 #include <memory>
 
@@ -22,20 +23,15 @@ class RealRepacker;
 class RealFixer;
 }
 
-class Checker : public indexed::Checker
+class Checker : public DatasetAccess<ondisk2::Dataset, indexed::Checker>
 {
 protected:
-    std::shared_ptr<ondisk2::Dataset> m_config;
     index::WIndex* idx;
     std::shared_ptr<dataset::CheckLock> lock;
 
 public:
-    Checker(std::shared_ptr<ondisk2::Dataset> config);
+    Checker(std::shared_ptr<ondisk2::Dataset> dataset);
     ~Checker();
-
-    const ondisk2::Dataset& config() const override { return *m_config; }
-    const ondisk2::Dataset& dataset() const override { return *m_config; }
-    ondisk2::Dataset& dataset() override { return *m_config; }
 
     std::string type() const override;
 

@@ -1,9 +1,8 @@
 #ifndef ARKI_DATASET_ONDISK2_WRITER_H
 #define ARKI_DATASET_ONDISK2_WRITER_H
 
-/// dataset/ondisk2/writer - Local on disk dataset writer
-
 #include <arki/dataset/ondisk2.h>
+#include <arki/dataset/impl.h>
 #include <string>
 #include <memory>
 
@@ -14,20 +13,15 @@ namespace dataset {
 namespace ondisk2 {
 struct AppendSegment;
 
-class Writer : public segmented::Writer
+class Writer : public DatasetAccess<ondisk2::Dataset, segmented::Writer>
 {
 protected:
-    std::shared_ptr<ondisk2::Dataset> m_config;
     std::unique_ptr<AppendSegment> segment(const Metadata& md, const std::string& format);
     std::unique_ptr<AppendSegment> segment(const std::string& relpath);
 
 public:
-    Writer(std::shared_ptr<ondisk2::Dataset> config);
+    Writer(std::shared_ptr<ondisk2::Dataset> dataset);
     virtual ~Writer();
-
-    const ondisk2::Dataset& config() const override { return *m_config; }
-    const ondisk2::Dataset& dataset() const override { return *m_config; }
-    ondisk2::Dataset& dataset() override { return *m_config; }
 
     std::string type() const override;
 

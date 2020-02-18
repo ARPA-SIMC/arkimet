@@ -14,11 +14,11 @@ namespace arki {
 namespace dataset {
 namespace iseg {
 
-Reader::Reader(std::shared_ptr<iseg::Dataset> config)
-    : m_config(config), scache(config->summary_cache_pathname)
+Reader::Reader(std::shared_ptr<iseg::Dataset> dataset)
+    : DatasetAccess(dataset), scache(dataset->summary_cache_pathname)
 {
     // Create the directory if it does not exist
-    sys::makedirs(config->path);
+    sys::makedirs(dataset->path);
     scache.openRW();
 }
 
@@ -53,7 +53,7 @@ bool Reader::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
         return false;
 
     return list_segments(q.matcher, [&](const std::string& relpath) {
-        RIndex idx(m_config, relpath, config().read_lock_segment(relpath));
+        RIndex idx(m_dataset, relpath, config().read_lock_segment(relpath));
         return idx.query_data(q, *config().session, dest);
     });
 }
@@ -61,7 +61,7 @@ bool Reader::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 void Reader::summary_from_indices(const Matcher& matcher, Summary& summary)
 {
     list_segments(matcher, [&](const std::string& relpath) {
-        RIndex idx(m_config, relpath, config().read_lock_segment(relpath));
+        RIndex idx(m_dataset, relpath, config().read_lock_segment(relpath));
         idx.query_summary_from_db(matcher, summary);
         return true;
     });

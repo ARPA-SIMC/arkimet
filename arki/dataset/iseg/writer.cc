@@ -256,11 +256,11 @@ struct AppendSegment
 };
 
 
-Writer::Writer(std::shared_ptr<iseg::Dataset> config)
-    : m_config(config), scache(config->summary_cache_pathname)
+Writer::Writer(std::shared_ptr<iseg::Dataset> dataset)
+    : DatasetAccess(dataset), scache(dataset->summary_cache_pathname)
 {
     // Create the directory if it does not exist
-    sys::makedirs(config->path);
+    sys::makedirs(dataset->path);
     scache.openRW();
 }
 
@@ -283,7 +283,7 @@ std::unique_ptr<AppendSegment> Writer::file(const std::string& relpath)
     sys::makedirs(str::dirname(str::joinpath(config().path, relpath)));
     std::shared_ptr<dataset::AppendLock> append_lock(config().append_lock_segment(relpath));
     auto segment = config().session->segment_writer(config().format, config().path, relpath);
-    return std::unique_ptr<AppendSegment>(new AppendSegment(m_config, append_lock, segment));
+    return std::unique_ptr<AppendSegment>(new AppendSegment(m_dataset, append_lock, segment));
 }
 
 WriterAcquireResult Writer::acquire(Metadata& md, const AcquireConfig& cfg)

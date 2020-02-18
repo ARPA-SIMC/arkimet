@@ -61,11 +61,11 @@ public:
     CIndex* m_idx = nullptr;
 
     CheckerSegment(Checker& checker, const std::string& relpath)
-        : CheckerSegment(checker, relpath, checker.config().check_lock_segment(relpath)) {}
+        : CheckerSegment(checker, relpath, checker.dataset().check_lock_segment(relpath)) {}
     CheckerSegment(Checker& checker, const std::string& relpath, std::shared_ptr<dataset::CheckLock> lock)
         : segmented::CheckerSegment(lock), checker(checker)
     {
-        segment = checker.config().session->segment_checker(checker.config().format, checker.config().path, relpath);
+        segment = checker.dataset().session->segment_checker(checker.dataset().format, checker.dataset().path, relpath);
     }
     ~CheckerSegment()
     {
@@ -75,7 +75,7 @@ public:
     CIndex& idx()
     {
         if (!m_idx)
-            m_idx = new CIndex(checker.m_config, path_relative(), lock);
+            m_idx = new CIndex(checker.m_dataset, path_relative(), lock);
         return *m_idx;
     }
     std::string path_relative() const override { return segment->segment().relpath; }
@@ -84,7 +84,7 @@ public:
 
     void get_metadata(std::shared_ptr<core::Lock> lock, metadata::Collection& mds) override
     {
-        idx().scan(*checker.config().session, mds.inserter_func(), "reftime, offset");
+        idx().scan(*checker.dataset().session, mds.inserter_func(), "reftime, offset");
     }
 
     segmented::SegmentState scan(dataset::Reporter& reporter, bool quick=true) override
@@ -92,14 +92,14 @@ public:
         if (!segment->exists_on_disk())
             return segmented::SegmentState(segment::SEGMENT_MISSING);
 
-        if (!sys::stat(str::joinpath(checker.config().path, segment->segment().relpath + ".index")))
+        if (!sys::stat(str::joinpath(checker.dataset().path, segment->segment().relpath + ".index")))
         {
             if (segment->is_empty())
             {
                 reporter.segment_info(checker.name(), segment->segment().relpath, "empty segment found on disk with no associated index data");
                 return segmented::SegmentState(segment::SEGMENT_DELETED);
             } else {
-                //bool untrusted_index = files::hasDontpackFlagfile(checker.config().path);
+                //bool untrusted_index = files::hasDontpackFlagfile(checker.dataset().path);
                 reporter.segment_info(checker.name(), segment->segment().relpath, "segment found on disk with no associated index data");
                 //return segmented::SegmentState(untrusted_index ? segment::SEGMENT_UNALIGNED : segment::SEGMENT_DELETED);
                 return segmented::SegmentState(segment::SEGMENT_UNALIGNED);
@@ -122,7 +122,7 @@ public:
 #endif
 
         metadata::Collection mds;
-        idx().scan(*checker.config().session, mds.inserter_func(), "reftime, offset");
+        idx().scan(*checker.dataset().session, mds.inserter_func(), "reftime, offset");
         segment::State state = segment::SEGMENT_OK;
 
         // Compute the span of reftimes inside the segment
@@ -145,7 +145,7 @@ public:
                 // Ensure that the reftime span fits inside the segment step
                 core::Time seg_begin;
                 core::Time seg_until;
-                if (checker.config().step().path_timespan(segment->segment().relpath, seg_begin, seg_until))
+                if (checker.dataset().step().path_timespan(segment->segment().relpath, seg_begin, seg_until))
                 {
                     if (*md_begin < seg_begin || *md_until > seg_until)
                     {
@@ -166,7 +166,7 @@ public:
             state = segment->check([&](const std::string& msg) { reporter.segment_info(checker.name(), segment->segment().relpath, msg); }, mds, quick);
 
         auto res = segmented::SegmentState(state, *md_begin, *md_until);
-        res.check_age(segment->segment().relpath, checker.config(), reporter);
+        res.check_age(segment->segment().relpath, checker.dataset(), reporter);
         return res;
     }
 
@@ -180,7 +180,7 @@ public:
 
         // Rescan file
         metadata::Collection mds;
-        idx().scan(*checker.config().session, mds.inserter_func(), "reftime, offset");
+        idx().scan(*checker.dataset().session, mds.inserter_func(), "reftime, offset");
 
         // Create the .tar segment
         segment = segment->tar(mds);
@@ -219,7 +219,7 @@ public:
 
         // Rescan file
         metadata::Collection mds;
-        idx().scan(*checker.config().session, mds.inserter_func(), "reftime, offset");
+        idx().scan(*checker.dataset().session, mds.inserter_func(), "reftime, offset");
 
         // Create the .tar segment
         segment = segment->zip(mds);
@@ -258,7 +258,7 @@ public:
 
         // Rescan file
         metadata::Collection mds;
-        idx().scan(*checker.config().session, mds.inserter_func(), "reftime, offset");
+        idx().scan(*checker.dataset().session, mds.inserter_func(), "reftime, offset");
 
         // Create the .tar segment
         size_t old_size = segment->size();
@@ -301,7 +301,7 @@ public:
         Pending p = idx().begin_transaction();
 
         metadata::Collection mds;
-        idx().scan(*checker.config().session, mds.inserter_func(), "reftime, offset");
+        idx().scan(*checker.dataset().session, mds.inserter_func(), "reftime, offset");
 
         auto res = reorder_segment_backend(p, mds, test_flags);
 
@@ -455,17 +455,17 @@ public:
 
     void release(const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath) override
     {
-        sys::unlink_ifexists(str::joinpath(checker.config().path, segment->segment().relpath + ".index"));
+        sys::unlink_ifexists(str::joinpath(checker.dataset().path, segment->segment().relpath + ".index"));
         segment = segment->move(new_root, new_relpath, new_abspath);
     }
 };
 
 
-Checker::Checker(std::shared_ptr<iseg::Dataset> config)
-    : m_config(config)
+Checker::Checker(std::shared_ptr<iseg::Dataset> dataset)
+    : DatasetAccess(dataset)
 {
     // Create the directory if it does not exist
-    sys::makedirs(config->path);
+    sys::makedirs(dataset->path);
 }
 
 std::string Checker::type() const { return "iseg"; }
@@ -478,8 +478,8 @@ void Checker::list_segments(std::function<void(const std::string& relpath)> dest
 void Checker::list_segments(const Matcher& matcher, std::function<void(const std::string& relpath)> dest)
 {
     vector<string> seg_relpaths;
-    step::SegmentQuery squery(config().path, config().format, "\\.index$", matcher);
-    config().step().list_segments(squery, [&](std::string&& s) {
+    step::SegmentQuery squery(dataset().path, dataset().format, "\\.index$", matcher);
+    dataset().step().list_segments(squery, [&](std::string&& s) {
         seg_relpaths.emplace_back(move(s));
     });
     std::sort(seg_relpaths.begin(), seg_relpaths.end());
@@ -517,9 +517,9 @@ void Checker::segments_untracked(std::function<void(segmented::CheckerSegment& r
 
 void Checker::segments_untracked_filtered(const Matcher& matcher, std::function<void(segmented::CheckerSegment& segment)> dest)
 {
-    step::SegmentQuery squery(config().path, config().format, matcher);
-    config().step().list_segments(squery, [&](std::string&& relpath) {
-        if (sys::stat(str::joinpath(config().path, relpath + ".index"))) return;
+    step::SegmentQuery squery(dataset().path, dataset().format, matcher);
+    dataset().step().list_segments(squery, [&](std::string&& relpath) {
+        if (sys::stat(str::joinpath(dataset().path, relpath + ".index"))) return;
         CheckerSegment segment(*this, relpath);
         dest(segment);
     });
@@ -527,20 +527,20 @@ void Checker::segments_untracked_filtered(const Matcher& matcher, std::function<
 
 void Checker::check_issue51(CheckerConfig& opts)
 {
-    if (!opts.online && !config().offline) return;
-    if (!opts.offline && config().offline) return;
+    if (!opts.online && !dataset().offline) return;
+    if (!opts.offline && dataset().offline) return;
 
     // Broken metadata for each segment
     std::map<string, metadata::Collection> broken_mds;
 
     // Iterate all segments
     list_segments([&](const std::string& relpath) {
-        auto lock = config().check_lock_segment(relpath);
-        CIndex idx(m_config, relpath, lock);
+        auto lock = dataset().check_lock_segment(relpath);
+        CIndex idx(m_dataset, relpath, lock);
         metadata::Collection mds;
-        idx.scan(*config().session, mds.inserter_func(), "reftime, offset");
+        idx.scan(*dataset().session, mds.inserter_func(), "reftime, offset");
         if (mds.empty()) return;
-        File datafile(str::joinpath(config().path, relpath), O_RDONLY);
+        File datafile(str::joinpath(dataset().path, relpath), O_RDONLY);
         // Iterate all metadata in the segment
         unsigned count_otherformat = 0;
         unsigned count_ok = 0;
@@ -588,7 +588,7 @@ void Checker::check_issue51(CheckerConfig& opts)
         for (const auto& i: broken_mds)
         {
             // Make a backup copy with .issue51 extension, if it doesn't already exist
-            std::string abspath = str::joinpath(config().path, i.first);
+            std::string abspath = str::joinpath(dataset().path, i.first);
             std::string backup = abspath + ".issue51";
             if (!sys::exists(backup))
             {
@@ -626,53 +626,53 @@ size_t Checker::vacuum(dataset::Reporter& reporter)
 
 void Checker::test_make_overlap(const std::string& relpath, unsigned overlap_size, unsigned data_idx)
 {
-    auto lock = config().check_lock_segment(relpath);
+    auto lock = dataset().check_lock_segment(relpath);
     auto wrlock = lock->write_lock();
-    CIndex idx(m_config, relpath, lock);
+    CIndex idx(m_dataset, relpath, lock);
     metadata::Collection mds;
-    idx.query_segment(*config().session, mds.inserter_func());
-    config().session->segment_checker(config().format, config().path, relpath)->test_make_overlap(mds, overlap_size, data_idx);
+    idx.query_segment(*dataset().session, mds.inserter_func());
+    dataset().session->segment_checker(dataset().format, dataset().path, relpath)->test_make_overlap(mds, overlap_size, data_idx);
     idx.test_make_overlap(overlap_size, data_idx);
 }
 
 void Checker::test_make_hole(const std::string& relpath, unsigned hole_size, unsigned data_idx)
 {
-    auto lock = config().check_lock_segment(relpath);
+    auto lock = dataset().check_lock_segment(relpath);
     auto wrlock = lock->write_lock();
-    CIndex idx(m_config, relpath, lock);
+    CIndex idx(m_dataset, relpath, lock);
     metadata::Collection mds;
-    idx.query_segment(*config().session, mds.inserter_func());
-    config().session->segment_checker(config().format, config().path, relpath)->test_make_hole(mds, hole_size, data_idx);
+    idx.query_segment(*dataset().session, mds.inserter_func());
+    dataset().session->segment_checker(dataset().format, dataset().path, relpath)->test_make_hole(mds, hole_size, data_idx);
     idx.test_make_hole(hole_size, data_idx);
 }
 
 void Checker::test_corrupt_data(const std::string& relpath, unsigned data_idx)
 {
-    auto lock = config().check_lock_segment(relpath);
+    auto lock = dataset().check_lock_segment(relpath);
     auto wrlock = lock->write_lock();
-    CIndex idx(m_config, relpath, lock);
+    CIndex idx(m_dataset, relpath, lock);
     metadata::Collection mds;
-    idx.query_segment(*config().session, mds.inserter_func());
-    config().session->segment_checker(config().format, config().path, relpath)->test_corrupt(mds, data_idx);
+    idx.query_segment(*dataset().session, mds.inserter_func());
+    dataset().session->segment_checker(dataset().format, dataset().path, relpath)->test_corrupt(mds, data_idx);
 }
 
 void Checker::test_truncate_data(const std::string& relpath, unsigned data_idx)
 {
-    auto lock = config().check_lock_segment(relpath);
+    auto lock = dataset().check_lock_segment(relpath);
     auto wrlock = lock->write_lock();
-    CIndex idx(m_config, relpath, lock);
+    CIndex idx(m_dataset, relpath, lock);
     metadata::Collection mds;
-    idx.query_segment(*config().session, mds.inserter_func());
-    config().session->segment_checker(config().format, config().path, relpath)->test_truncate(mds, data_idx);
+    idx.query_segment(*dataset().session, mds.inserter_func());
+    dataset().session->segment_checker(dataset().format, dataset().path, relpath)->test_truncate(mds, data_idx);
 }
 
 void Checker::test_swap_data(const std::string& relpath, unsigned d1_idx, unsigned d2_idx)
 {
-    auto lock = config().check_lock_segment(relpath);
+    auto lock = dataset().check_lock_segment(relpath);
     metadata::Collection mds;
     {
-        CIndex idx(m_config, relpath, lock);
-        idx.scan(*config().session, mds.inserter_func(), "offset");
+        CIndex idx(m_dataset, relpath, lock);
+        idx.scan(*dataset().session, mds.inserter_func(), "offset");
         std::swap(mds[d1_idx], mds[d2_idx]);
     }
     segment_prelocked(relpath, lock)->reorder(mds);
@@ -680,14 +680,14 @@ void Checker::test_swap_data(const std::string& relpath, unsigned d1_idx, unsign
 
 void Checker::test_rename(const std::string& relpath, const std::string& new_relpath)
 {
-    auto lock = config().check_lock_segment(relpath);
+    auto lock = dataset().check_lock_segment(relpath);
     auto wrlock = lock->write_lock();
 
-    string abspath = str::joinpath(config().path, relpath);
-    string new_abspath = str::joinpath(config().path, new_relpath);
+    string abspath = str::joinpath(dataset().path, relpath);
+    string new_abspath = str::joinpath(dataset().path, new_relpath);
 
-    auto segment = config().session->segment_checker(config().format, config().path, relpath);
-    segment->move(config().path, new_relpath, new_abspath);
+    auto segment = dataset().session->segment_checker(dataset().format, dataset().path, relpath);
+    segment->move(dataset().path, new_relpath, new_abspath);
 
     sys::rename(abspath + ".index", new_abspath + ".index");
 
@@ -695,11 +695,11 @@ void Checker::test_rename(const std::string& relpath, const std::string& new_rel
 
 void Checker::test_change_metadata(const std::string& relpath, Metadata& md, unsigned data_idx)
 {
-    auto lock = config().check_lock_segment(relpath);
+    auto lock = dataset().check_lock_segment(relpath);
     auto wrlock = lock->write_lock();
-    CIndex idx(m_config, relpath, lock);
+    CIndex idx(m_dataset, relpath, lock);
     metadata::Collection mds;
-    idx.query_segment(*config().session, mds.inserter_func());
+    idx.query_segment(*dataset().session, mds.inserter_func());
     md.set_source(std::unique_ptr<arki::types::Source>(mds[data_idx].source().clone()));
     md.sourceBlob().unlock();
     mds[data_idx] = md;
@@ -718,15 +718,15 @@ void Checker::test_change_metadata(const std::string& relpath, Metadata& md, uns
 
 void Checker::test_delete_from_index(const std::string& relpath)
 {
-    auto lock = config().check_lock_segment(relpath);
+    auto lock = dataset().check_lock_segment(relpath);
     auto wrlock = lock->write_lock();
-    CIndex idx(m_config, relpath, lock);
+    CIndex idx(m_dataset, relpath, lock);
     idx.reset();
 }
 
 void Checker::test_invalidate_in_index(const std::string& relpath)
 {
-    sys::unlink_ifexists(str::joinpath(config().path, relpath + ".index"));
+    sys::unlink_ifexists(str::joinpath(dataset().path, relpath + ".index"));
 }
 
 }
