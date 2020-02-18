@@ -223,9 +223,8 @@ struct ArchivesCheckerRoot: public ArchivesRoot<dataset::Checker>
     std::shared_ptr<dataset::Checker> instantiate(const std::string& name) override
     {
         string pathname = str::joinpath(archive_root, name);
-        unique_ptr<dataset::Checker> res;
         if (sys::exists(pathname + ".summary"))
-            return res;
+            return std::shared_ptr<dataset::Checker>();
 
         auto ds = std::make_shared<simple::Dataset>(parent->session, make_config(pathname));
         ds->set_parent(parent);
