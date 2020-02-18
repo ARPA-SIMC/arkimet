@@ -132,18 +132,20 @@ struct query_merged : public MethKwargs<query_merged, arkipy_ArkiQuery>
             {
                 ReleaseGIL rg;
 
-                arki::dataset::Merged reader(arki::python::get_dataset_session());
+                auto dataset = std::make_shared<arki::dataset::merged::Dataset>(arki::python::get_dataset_session());
 
                 // Instantiate the datasets and add them to the merger
                 for (auto si: self->inputs)
-                    reader.add_dataset(si.second);
+                    dataset->add_dataset(si.second);
+
+                auto reader = dataset->create_reader();
 
                 try {
-                    self->processor->process(reader, reader.name());
+                    self->processor->process(*reader, dataset->name());
                 } catch (PythonException& e) {
                     throw;
                 } catch (std::exception& e) {
-                    arki::nag::warning("%s failed: %s", reader.name().c_str(), e.what());
+                    arki::nag::warning("%s failed: %s", dataset->name().c_str(), e.what());
                     all_successful = false;
                 }
 

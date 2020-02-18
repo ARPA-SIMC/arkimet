@@ -63,7 +63,7 @@ struct remove : public MethKwargs<remove, arkipy_ArkiCheck>
 
             {
                 ReleaseGIL rg;
-                arki::dataset::Configs datasets(arki::python::get_dataset_session(), self->config);
+                arki::dataset::Datasets datasets(arki::python::get_dataset_session(), self->config);
                 arki::dataset::WriterPool pool(datasets);
                 // Read all metadata from the file specified in --remove
                 arki::metadata::Collection todolist;

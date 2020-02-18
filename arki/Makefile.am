@@ -27,6 +27,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		libconfig.h \
 		dataset/fwd.h \
 		dataset/lock.h \
+		dataset/impl.h \
 		dataset/reporter.h \
 		dataset/time.h \
 		dataset/session.h \

@@ -153,7 +153,6 @@ public:
     void set_parent(std::shared_ptr<Dataset> parent);
 };
 
-typedef Dataset Config;
 
 /**
  * Base class for all dataset Readers, Writers and Checkers.

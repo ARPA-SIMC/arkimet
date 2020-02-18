@@ -4,6 +4,7 @@
 /// Handle archived data
 
 #include <arki/dataset.h>
+#include <arki/dataset/impl.h>
 #include <arki/summary.h>
 #include <arki/core/fwd.h>
 #include <arki/metadata/fwd.h>
@@ -66,10 +67,9 @@ struct Dataset : public dataset::Dataset
  * When querying, all archives are queried, following the archive order:
  * alphabetical order except the archive named "last" is queried last.
  */
-class Reader : public dataset::Reader
+class Reader : public DatasetAccess<Dataset, dataset::Reader>
 {
 protected:
-    std::shared_ptr<Dataset> m_config;
     archive::ArchivesReaderRoot* archives = nullptr;
 
     void summary_for_all(Summary& out);
@@ -79,9 +79,6 @@ public:
     virtual ~Reader();
 
     std::string type() const override;
-    const Dataset& config() const override { return *m_config; }
-    const Dataset& dataset() const override { return *m_config; }
-    Dataset& dataset() override { return *m_config; }
 
     void expand_date_range(std::unique_ptr<core::Time>& begin, std::unique_ptr<core::Time>& end) const;
     bool query_data(const dataset::DataQuery& q, metadata_dest_func) override;
@@ -93,10 +90,9 @@ public:
     unsigned test_count_archives() const;
 };
 
-class Checker : public dataset::Checker
+class Checker : public DatasetAccess<Dataset, dataset::Checker>
 {
 protected:
-    std::shared_ptr<Dataset> m_config;
     archive::ArchivesCheckerRoot* archives = nullptr;
 
 public:
@@ -105,9 +101,6 @@ public:
     virtual ~Checker();
 
     std::string type() const override;
-    const Dataset& config() const override { return *m_config; }
-    const Dataset& dataset() const override { return *m_config; }
-    Dataset& dataset() override { return *m_config; }
 
     void index_segment(const std::string& relpath, metadata::Collection&& mds);
     void release_segment(const std::string& relpath, const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath);

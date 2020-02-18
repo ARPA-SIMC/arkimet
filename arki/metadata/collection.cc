@@ -107,12 +107,12 @@ static void compressAndWrite(const std::vector<uint8_t>& buf, AbstractOutputFile
 
 Collection::Collection(dataset::Dataset& ds, const dataset::DataQuery& q)
 {
-    add(*ds.create_reader(), q);
+    add(ds, q);
 }
 
 Collection::Collection(dataset::Dataset& ds, const std::string& q)
 {
-    add(*ds.create_reader(), dataset::DataQuery(q));
+    add(ds, dataset::DataQuery(q));
 }
 
 Collection::Collection(dataset::Reader& ds, const dataset::DataQuery& q)
@@ -161,9 +161,14 @@ metadata_dest_func Collection::inserter_func()
     return [=](std::shared_ptr<Metadata> md) { acquire(md); return true; };
 }
 
-void Collection::add(dataset::Reader& ds, const dataset::DataQuery& q)
+void Collection::add(dataset::Dataset& ds, const dataset::DataQuery& q)
 {
-    ds.query_data(q, inserter_func());
+    ds.create_reader()->query_data(q, inserter_func());
+}
+
+void Collection::add(dataset::Reader& reader, const dataset::DataQuery& q)
+{
+    reader.query_data(q, inserter_func());
 }
 
 void Collection::push_back(const Metadata& md)

@@ -17,6 +17,7 @@ using namespace arki::utils;
 
 namespace arki {
 namespace dataset {
+namespace merged {
 
 /// Fixed size synchronised queue
 class SyncBuffer
@@ -92,7 +93,7 @@ public:
 class MetadataReader
 {
 public:
-    Reader* dataset = 0;
+    std::shared_ptr<dataset::Reader> dataset;
     const DataQuery* query = 0;
     string errorbuf;
     SyncBuffer mdbuf;
@@ -116,9 +117,9 @@ public:
         }
     }
 
-    void init(Reader& dataset, const DataQuery* query)
+    void init(std::shared_ptr<dataset::Reader> dataset, const DataQuery* query)
     {
-        this->dataset = &dataset;
+        this->dataset = dataset;
         this->query = query;
     }
 };
@@ -126,8 +127,8 @@ public:
 class SummaryReader
 {
 public:
-    const Matcher* matcher = 0;
-    Reader* dataset = 0;
+    std::shared_ptr<dataset::Reader> dataset;
+    Matcher matcher;
     Summary summary;
     string errorbuf;
 
@@ -136,47 +137,56 @@ public:
     void main()
     {
         try {
-            dataset->query_summary(*matcher, summary);
+            dataset->query_summary(matcher, summary);
         } catch (std::exception& e) {
             errorbuf = e.what();
         }
     }
 
-    void init(const Matcher& matcher, Reader& dataset)
+    void init(std::shared_ptr<dataset::Reader> dataset, const Matcher& matcher)
     {
-        this->matcher = &matcher;
-        this->dataset = &dataset;
+        this->matcher = matcher;
+        this->dataset = dataset;
     }
 };
 
-Merged::Merged(std::shared_ptr<Session> session)
-    : m_config(std::make_shared<dataset::Config>(dataset::Config(session, "merged")))
+
+Dataset::Dataset(std::shared_ptr<Session> session)
+    : dataset::Dataset(session, "merged")
 {
 }
 
-Merged::~Merged()
-{
-}
-
-std::string Merged::type() const { return "merged"; }
-
-void Merged::add_dataset(std::shared_ptr<Reader> ds)
+void Dataset::add_dataset(std::shared_ptr<dataset::Reader> ds)
 {
     datasets.emplace_back(ds);
 }
 
-void Merged::add_dataset(std::shared_ptr<Dataset> ds)
+void Dataset::add_dataset(std::shared_ptr<dataset::Dataset> ds)
 {
     datasets.emplace_back(ds->create_reader());
 }
 
-void Merged::add_dataset(const core::cfg::Section& cfg)
+void Dataset::add_dataset(const core::cfg::Section& cfg)
 {
-    add_dataset(m_config->session->dataset(cfg));
+    add_dataset(session->dataset(cfg));
 }
 
-bool Merged::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
+std::shared_ptr<dataset::Reader> Dataset::create_reader()
 {
+    return std::make_shared<Reader>(static_pointer_cast<Dataset>(shared_from_this()));
+}
+
+
+Reader::~Reader()
+{
+}
+
+std::string Reader::type() const { return "merged"; }
+
+bool Reader::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
+{
+    auto& datasets = dataset().datasets;
+
     // Handle the trivial case of only one dataset
     if (datasets.size() == 1)
         return datasets[0]->query_data(q, dest);
@@ -187,7 +197,7 @@ bool Merged::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
     // Start all the readers
     for (size_t i = 0; i < datasets.size(); ++i)
     {
-        readers[i].init(*datasets[i], &q);
+        readers[i].init(datasets[i], &q);
         threads.emplace_back(&MetadataReader::main, &readers[i]);
     }
 
@@ -239,8 +249,10 @@ bool Merged::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
     return canceled;
 }
 
-void Merged::query_summary(const Matcher& matcher, Summary& summary)
+void Reader::query_summary(const Matcher& matcher, Summary& summary)
 {
+    auto& datasets = dataset().datasets;
+
     // Handle the trivial case of only one dataset
     if (datasets.size() == 1)
     {
@@ -254,7 +266,7 @@ void Merged::query_summary(const Matcher& matcher, Summary& summary)
     // Start all the readers
     for (size_t i = 0; i < datasets.size(); ++i)
     {
-        readers[i].init(matcher, *datasets[i]);
+        readers[i].init(datasets[i], matcher);
         threads.emplace_back(&SummaryReader::main, &readers[i]);
     }
 
@@ -272,7 +284,7 @@ void Merged::query_summary(const Matcher& matcher, Summary& summary)
         throw_consistency_error("running summary queries on multiple datasets", str::join("; ", errors.begin(), errors.end()));
 }
 
-void Merged::query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out)
+void Reader::query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out)
 {
     // Here we must serialize, as we do not know how to merge raw data streams
     //
@@ -285,11 +297,11 @@ void Merged::query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out)
     // many datasets from the same server we can run it all there; if we're
     // merging all local datasets, wrap queryData; and so on.
 
-    for (auto i: datasets)
+    for (auto i: dataset().datasets)
         i->query_bytes(q, out);
 }
 
-void Merged::query_bytes(const dataset::ByteQuery& q, AbstractOutputFile& out)
+void Reader::query_bytes(const dataset::ByteQuery& q, AbstractOutputFile& out)
 {
     // Here we must serialize, as we do not know how to merge raw data streams
     //
@@ -302,9 +314,10 @@ void Merged::query_bytes(const dataset::ByteQuery& q, AbstractOutputFile& out)
     // many datasets from the same server we can run it all there; if we're
     // merging all local datasets, wrap queryData; and so on.
 
-    for (auto i: datasets)
+    for (auto i: dataset().datasets)
         i->query_bytes(q, out);
 }
 
+}
 }
 }

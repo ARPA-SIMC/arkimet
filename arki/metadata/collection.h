@@ -76,7 +76,10 @@ public:
     metadata_dest_func inserter_func();
 
     /// Append results from a query_data
-    void add(dataset::Reader& ds, const dataset::DataQuery& q);
+    void add(dataset::Dataset& ds, const dataset::DataQuery& q);
+
+    /// Append results from a query_data
+    void add(dataset::Reader& reader, const dataset::DataQuery& q);
 
     /// Append md
     void acquire(std::shared_ptr<Metadata> md, bool with_data=false);
