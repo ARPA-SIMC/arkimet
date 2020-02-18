@@ -17,7 +17,6 @@ public:
 
     DatasetAccess(std::shared_ptr<Dataset> dataset) : m_dataset(dataset) {}
 
-    const Dataset& config() const override { return *m_dataset; }
     const Dataset& dataset() const override { return *m_dataset; }
     Dataset& dataset() override { return *m_dataset; }
 };

@@ -62,7 +62,8 @@ public:
     using local::Reader::Reader;
     ~Reader();
 
-    const Dataset& config() const override = 0;
+    const Dataset& dataset() const override = 0;
+    Dataset& dataset() override = 0;
 };
 
 /**
@@ -83,7 +84,8 @@ public:
     using local::Writer::Writer;
     ~Writer();
 
-    const Dataset& config() const override = 0;
+    const Dataset& dataset() const override = 0;
+    Dataset& dataset() override = 0;
 
     static void test_acquire(std::shared_ptr<Session>, const core::cfg::Section& cfg, WriterBatch& batch);
 };
@@ -142,7 +144,8 @@ public:
     virtual size_t compress(unsigned groupsize) = 0;
 
     virtual std::string path_relative() const = 0;
-    virtual const segmented::Dataset& config() const = 0;
+    virtual const segmented::Dataset& dataset() const = 0;
+    virtual segmented::Dataset& dataset() = 0;
     virtual std::shared_ptr<dataset::archive::Checker> archives() = 0;
 
     virtual SegmentState scan(dataset::Reporter& reporter, bool quick=true) = 0;
@@ -215,7 +218,8 @@ public:
     using local::Checker::Checker;
     ~Checker();
 
-    const Dataset& config() const override = 0;
+    const Dataset& dataset() const override = 0;
+    Dataset& dataset() override = 0;
 
     void check(CheckerConfig& opts) override;
     void repack(CheckerConfig& opts, unsigned test_flags=0) override;

@@ -67,7 +67,8 @@ public:
     }
 
     std::string path_relative() const override { return segment->segment().relpath; }
-    const ondisk2::Dataset& config() const override { return checker.dataset(); }
+    const ondisk2::Dataset& dataset() const override { return checker.dataset(); }
+    ondisk2::Dataset& dataset() override { return checker.dataset(); }
     std::shared_ptr<dataset::archive::Checker> archives() override { return checker.archive(); }
 
     void get_metadata(std::shared_ptr<core::Lock> lock, metadata::Collection& mds) override
@@ -166,7 +167,7 @@ public:
         auto p = checker.idx->begin_transaction();
 
         segment::RepackConfig repack_config;
-        repack_config.gz_group_size = config().gz_group_size;
+        repack_config.gz_group_size = dataset().gz_group_size;
         repack_config.test_flags = test_flags;
         auto p_repack = segment->repack(checker.dataset().path, mds, repack_config);
 

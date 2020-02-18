@@ -30,7 +30,7 @@ namespace simple {
 /// Accumulate metadata and summaries while writing
 struct AppendSegment
 {
-    std::shared_ptr<const simple::Dataset> config;
+    std::shared_ptr<const simple::Dataset> dataset;
     std::shared_ptr<dataset::AppendLock> lock;
     std::shared_ptr<segment::Writer> segment;
     utils::sys::Path dir;
@@ -39,8 +39,8 @@ struct AppendSegment
     metadata::Collection mds;
     Summary sum;
 
-    AppendSegment(std::shared_ptr<const simple::Dataset> config, std::shared_ptr<dataset::AppendLock> lock, std::shared_ptr<segment::Writer> segment)
-        : config(config), lock(lock), segment(segment),
+    AppendSegment(std::shared_ptr<const simple::Dataset> dataset, std::shared_ptr<dataset::AppendLock> lock, std::shared_ptr<segment::Writer> segment)
+        : dataset(dataset), lock(lock), segment(segment),
           dir(str::dirname(segment->segment().abspath)),
           basename(str::basename(segment->segment().abspath))
     {
@@ -63,7 +63,7 @@ struct AppendSegment
 
         // Replace the pathname with its basename
         unique_ptr<Metadata> copy(md.clone());
-        if (!config->smallfiles)
+        if (!dataset->smallfiles)
             copy->unset(TYPE_VALUE);
         copy->set_source(Source::createBlobUnlocked(source.format, dir.name(), basename, source.offset, source.size));
         sum.add(*copy);
@@ -73,7 +73,7 @@ struct AppendSegment
 
     WriterAcquireResult acquire(Metadata& md, bool drop_cached_data_on_commit)
     {
-        auto mft = index::Manifest::create(config->path, config->lock_policy, config->index_type);
+        auto mft = index::Manifest::create(dataset->path, dataset->lock_policy, dataset->index_type);
         mft->lock = lock;
         mft->openRW();
 
@@ -90,14 +90,14 @@ struct AppendSegment
             return ACQ_OK;
         } catch (std::exception& e) {
             // sqlite will take care of transaction consistency
-            md.add_note("Failed to store in dataset '" + config->name() + "': " + e.what());
+            md.add_note("Failed to store in dataset '" + dataset->name() + "': " + e.what());
             return ACQ_ERROR;
         }
     }
 
     void acquire_batch(WriterBatch& batch, bool drop_cached_data_on_commit)
     {
-        auto mft = index::Manifest::create(config->path, config->lock_policy, config->index_type);
+        auto mft = index::Manifest::create(dataset->path, dataset->lock_policy, dataset->index_type);
         mft->lock = lock;
         mft->openRW();
 
@@ -108,11 +108,11 @@ struct AppendSegment
                 const types::source::Blob& new_source = segment->append(e->md, drop_cached_data_on_commit);
                 add(e->md, new_source);
                 e->result = ACQ_OK;
-                e->dataset_name = config->name();
+                e->dataset_name = dataset->name();
             }
         } catch (std::exception& e) {
             // sqlite will take care of transaction consistency
-            batch.set_all_error("Failed to store in dataset '" + config->name() + "': " + e.what());
+            batch.set_all_error("Failed to store in dataset '" + dataset->name() + "': " + e.what());
             return;
         }
 
@@ -126,16 +126,16 @@ struct AppendSegment
 };
 
 
-Writer::Writer(std::shared_ptr<simple::Dataset> config)
-    : m_config(config)
+Writer::Writer(std::shared_ptr<simple::Dataset> dataset)
+    : DatasetAccess(dataset)
 {
     // Create the directory if it does not exist
-    sys::makedirs(config->path);
+    sys::makedirs(dataset->path);
 
     // If the index is missing, take note not to perform a repack until a
     // check is made
-    if (!index::Manifest::exists(config->path))
-        files::createDontpackFlagfile(config->path);
+    if (!index::Manifest::exists(dataset->path))
+        files::createDontpackFlagfile(dataset->path);
 }
 
 Writer::~Writer()
@@ -147,22 +147,22 @@ std::string Writer::type() const { return "simple"; }
 
 std::unique_ptr<AppendSegment> Writer::file(const Metadata& md, const std::string& format)
 {
-    auto lock = config().append_lock_dataset();
-    return std::unique_ptr<AppendSegment>(new AppendSegment(m_config, lock, segmented::Writer::file(md, format)));
+    auto lock = dataset().append_lock_dataset();
+    return std::unique_ptr<AppendSegment>(new AppendSegment(m_dataset, lock, segmented::Writer::file(md, format)));
 }
 
 std::unique_ptr<AppendSegment> Writer::file(const std::string& relpath)
 {
-    sys::makedirs(str::dirname(str::joinpath(config().path, relpath)));
-    auto lock = config().append_lock_dataset();
-    auto segment = config().session->segment_writer(scan::Scanner::format_from_filename(relpath), config().path, relpath);
-    return std::unique_ptr<AppendSegment>(new AppendSegment(m_config, lock, segment));
+    sys::makedirs(str::dirname(str::joinpath(dataset().path, relpath)));
+    auto lock = dataset().append_lock_dataset();
+    auto segment = dataset().session->segment_writer(scan::Scanner::format_from_filename(relpath), dataset().path, relpath);
+    return std::unique_ptr<AppendSegment>(new AppendSegment(m_dataset, lock, segment));
 }
 
 WriterAcquireResult Writer::acquire(Metadata& md, const AcquireConfig& cfg)
 {
     acct::acquire_single_count.incr();
-    auto age_check = config().check_acquire_age(md);
+    auto age_check = dataset().check_acquire_age(md);
     if (age_check.first) return age_check.second;
 
     auto segment = file(md, md.source().format);
@@ -190,22 +190,22 @@ void Writer::remove(Metadata& md)
 
 void Writer::test_acquire(std::shared_ptr<Session> session, const core::cfg::Section& cfg, WriterBatch& batch)
 {
-    std::shared_ptr<const simple::Dataset> config(new simple::Dataset(session, cfg));
+    std::shared_ptr<const simple::Dataset> dataset(new simple::Dataset(session, cfg));
     for (auto& e: batch)
     {
-        auto age_check = config->check_acquire_age(e->md);
+        auto age_check = dataset->check_acquire_age(e->md);
         if (age_check.first)
         {
             e->result = age_check.second;
             if (age_check.second == ACQ_OK)
-                e->dataset_name = config->name();
+                e->dataset_name = dataset->name();
             else
                 e->dataset_name.clear();
         } else {
             // Acquire on simple datasets always succeeds except in case of envrionment
             // issues like I/O errors and full disks
             e->result = ACQ_OK;
-            e->dataset_name = config->name();
+            e->dataset_name = dataset->name();
         }
     }
 }

@@ -4,25 +4,22 @@
 /// dataset/simple/writer - Writer for simple datasets with no duplicate checks
 
 #include <arki/dataset/simple.h>
+#include <arki/dataset/impl.h>
 #include <string>
 #include <iosfwd>
 
 namespace arki {
-class Matcher;
-
 namespace dataset {
 namespace index {
 class Manifest;
 }
 
 namespace simple {
-class Reader;
 class CheckerSegment;
 
-class Checker : public indexed::Checker
+class Checker : public DatasetAccess<simple::Dataset, indexed::Checker>
 {
 protected:
-    std::shared_ptr<simple::Dataset> m_config;
     index::Manifest* m_mft;
     std::shared_ptr<dataset::CheckLock> lock;
 
@@ -30,12 +27,8 @@ protected:
     Segment* file(const Metadata& md, const std::string& format);
 
 public:
-    Checker(std::shared_ptr<simple::Dataset> config);
+    Checker(std::shared_ptr<simple::Dataset> dataset);
     virtual ~Checker();
-
-    const simple::Dataset& config() const override { return *m_config; }
-    const simple::Dataset& dataset() const override { return *m_config; }
-    simple::Dataset& dataset() override { return *m_config; }
 
     std::string type() const override;
 

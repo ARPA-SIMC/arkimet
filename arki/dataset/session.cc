@@ -114,7 +114,7 @@ std::shared_ptr<Dataset> Session::dataset(const core::cfg::Section& cfg)
     if (type == "discard")
         return std::make_shared<empty::Dataset>(shared_from_this(), cfg);
     if (type == "file")
-        return std::make_shared<file::Dataset>(shared_from_this(), cfg);
+        return file::Dataset::from_config(shared_from_this(), cfg);
     if (type == "fromfunction")
         return std::make_shared<fromfunction::Dataset>(shared_from_this(), cfg);
     if (type == "testlarge")
@@ -156,13 +156,13 @@ core::cfg::Section Session::read_config(const std::string& path)
             return dataset::http::Reader::load_cfg_section(path);
         else
 #endif
-            return dataset::file::File::read_config(path);
+            return dataset::file::read_config(path);
     }
 
     if (S_ISDIR(st->st_mode))
         return dataset::local::Reader::read_config(fname);
     else
-        return dataset::file::File::read_config(fname);
+        return dataset::file::read_config(fname);
 }
 
 core::cfg::Sections Session::read_configs(const std::string& path)
@@ -198,7 +198,7 @@ core::cfg::Sections Session::read_configs(const std::string& path)
             return dataset::http::Reader::load_cfg_sections(path);
         else
 #endif
-            return dataset::file::File::read_configs(path);
+            return dataset::file::read_configs(path);
     }
 
     if (S_ISDIR(st->st_mode))
@@ -211,7 +211,7 @@ core::cfg::Sections Session::read_configs(const std::string& path)
         // A file, check for known extensions
         std::string format = scan::Scanner::format_from_filename(fname, "");
         if (!format.empty())
-            return dataset::file::File::read_configs(fname);
+            return dataset::file::read_configs(fname);
 
         // Read the contents as configuration
         sys::File in(fname, O_RDONLY);

@@ -105,8 +105,8 @@ Writer::~Writer()
 std::shared_ptr<segment::Writer> Writer::file(const Metadata& md, const std::string& format)
 {
     const core::Time& time = md.get<types::reftime::Position>()->time;
-    string relpath = config().step()(time) + "." + md.source().format;
-    return config().session->segment_writer(format, config().path, relpath);
+    string relpath = dataset().step()(time) + "." + md.source().format;
+    return dataset().session->segment_writer(format, dataset().path, relpath);
 }
 
 static bool writer_batch_element_lt(const std::shared_ptr<WriterBatchElement>& a, const std::shared_ptr<WriterBatchElement>& b)
@@ -139,7 +139,7 @@ std::map<std::string, WriterBatch> Writer::batch_by_segment(WriterBatch& batch)
             continue;
         }
 
-        auto age_check = config().check_acquire_age(e->md);
+        auto age_check = dataset().check_acquire_age(e->md);
         if (age_check.first)
         {
             e->result = age_check.second;
@@ -149,7 +149,7 @@ std::map<std::string, WriterBatch> Writer::batch_by_segment(WriterBatch& batch)
         }
 
         const core::Time& time = e->md.get<types::reftime::Position>()->time;
-        string relpath = config().step()(time) + "." + format;
+        string relpath = dataset().step()(time) + "." + format;
         by_segment[relpath].push_back(e);
     }
 
@@ -203,7 +203,7 @@ void CheckerSegment::archive()
 
     // Get the time range for this relpath
     core::Time start_time, end_time;
-    if (!config().relpath_timespan(segment->segment().relpath, start_time, end_time))
+    if (!dataset().relpath_timespan(segment->segment().relpath, start_time, end_time))
         throw std::runtime_error("cannot archive segment " + segment->segment().abspath + " because its name does not match the dataset step");
 
     // Get the contents of this segment
@@ -211,8 +211,8 @@ void CheckerSegment::archive()
     get_metadata(wlock, mdc);
 
     // Move the segment to the archive and deindex it
-    string new_root = str::joinpath(config().path, ".archive", "last");
-    string new_relpath = config().step()(start_time) + "." + format;
+    string new_root = str::joinpath(dataset().path, ".archive", "last");
+    string new_relpath = dataset().step()(start_time) + "." + format;
     string new_abspath = str::joinpath(new_root, new_relpath);
     release(new_root, new_relpath, new_abspath);
 
@@ -249,8 +249,8 @@ void Checker::segments_all_filtered(const Matcher& matcher, std::function<void(s
 
 void Checker::segments(CheckerConfig& opts, std::function<void(segmented::CheckerSegment& segment)> dest)
 {
-    if (!opts.online && !config().offline) return;
-    if (!opts.offline && config().offline) return;
+    if (!opts.online && !dataset().offline) return;
+    if (!opts.offline && dataset().offline) return;
 
     if (opts.segment_filter.empty())
     {
@@ -264,7 +264,7 @@ void Checker::segments(CheckerConfig& opts, std::function<void(segmented::Checke
 
 void Checker::segments_recursive(CheckerConfig& opts, std::function<void(segmented::Checker&, segmented::CheckerSegment&)> dest)
 {
-    if ((opts.online && !config().offline) || (opts.offline && config().offline))
+    if ((opts.online && !dataset().offline) || (opts.offline && dataset().offline))
         segments(opts, [&](CheckerSegment& segment) { dest(*this, segment); });
     if (opts.offline && dataset().hasArchive())
         archive()->segments_recursive(opts, dest);
@@ -363,7 +363,7 @@ void Checker::state(CheckerConfig& opts)
 
 void Checker::repack(CheckerConfig& opts, unsigned test_flags)
 {
-    const string& root = config().path;
+    const string& root = dataset().path;
 
     if (files::hasDontpackFlagfile(root))
     {
@@ -398,7 +398,7 @@ void Checker::repack(CheckerConfig& opts, unsigned test_flags)
 
 void Checker::check(CheckerConfig& opts)
 {
-    const string& root = config().path;
+    const string& root = dataset().path;
 
     if (opts.readonly)
     {

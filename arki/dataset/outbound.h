@@ -4,6 +4,7 @@
 /// Local, non queryable, on disk dataset
 
 #include <arki/dataset/segmented.h>
+#include <arki/dataset/impl.h>
 #include <string>
 
 namespace arki {
@@ -27,21 +28,15 @@ struct Dataset : public segmented::Dataset
  * This dataset is not used for archival, but only to store data as an outbound
  * area.
  */
-class Writer : public segmented::Writer
+class Writer : public DatasetAccess<Dataset, segmented::Writer>
 {
 protected:
-    std::shared_ptr<segmented::Dataset> m_config;
-
     void storeBlob(Metadata& md, const std::string& reldest, bool drop_cached_data_on_commit);
 
 public:
     // Initialise the dataset with the information from the configurationa in 'cfg'
-    Writer(std::shared_ptr<segmented::Dataset> config);
+    Writer(std::shared_ptr<Dataset> config);
     virtual ~Writer();
-
-    const segmented::Dataset& config() const override { return *m_config; }
-    const segmented::Dataset& dataset() const override { return *m_config; }
-    segmented::Dataset& dataset() override { return *m_config; }
 
     std::string type() const override;
 

@@ -3,7 +3,8 @@
 
 /// Remote HTTP dataset access
 
-#include <arki/dataset/local.h>
+#include <arki/dataset.h>
+#include <arki/dataset/impl.h>
 #include <curl/curl.h>
 #include <string>
 #include <sstream>
@@ -137,21 +138,15 @@ struct Dataset : public dataset::Dataset
  *
  * The dataset is read only: remote import of new data is not supported.
  */
-class Reader : public dataset::Reader
+class Reader : public DatasetAccess<Dataset, dataset::Reader>
 {
 protected:
-    std::shared_ptr<Dataset> m_config;
     http::CurlEasy m_curl;
     void set_post_query(Request& request, const std::string& query);
     void set_post_query(Request& request, const dataset::DataQuery& q);
 
 public:
-    Reader(std::shared_ptr<Dataset> config);
-    virtual ~Reader();
-
-    const Dataset& config() const override { return *m_config; }
-    const Dataset& dataset() const override { return *m_config; }
-    Dataset& dataset() override { return *m_config; }
+    using DatasetAccess::DatasetAccess;
 
     std::string type() const override;
 

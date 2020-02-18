@@ -73,7 +73,6 @@ class Base : public Parent
 public:
     using Parent::Parent;
 
-    const local::Dataset& config() const override = 0;
     const local::Dataset& dataset() const override = 0;
     local::Dataset& dataset() override = 0;
 };

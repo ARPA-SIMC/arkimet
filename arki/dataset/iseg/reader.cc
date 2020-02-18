@@ -1,4 +1,3 @@
-#include "config.h"
 #include "reader.h"
 #include "index.h"
 #include "arki/dataset/step.h"
@@ -36,8 +35,8 @@ bool Reader::is_dataset(const std::string& dir)
 bool Reader::list_segments(const Matcher& matcher, std::function<bool(const std::string& relpath)> dest)
 {
     vector<string> seg_relpaths;
-    step::SegmentQuery squery(config().path, config().format, "\\.index$", matcher);
-    config().step().list_segments(squery, [&](std::string&& s) {
+    step::SegmentQuery squery(dataset().path, dataset().format, "\\.index$", matcher);
+    dataset().step().list_segments(squery, [&](std::string&& s) {
         seg_relpaths.emplace_back(move(s));
     });
     std::sort(seg_relpaths.begin(), seg_relpaths.end());
@@ -53,15 +52,15 @@ bool Reader::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
         return false;
 
     return list_segments(q.matcher, [&](const std::string& relpath) {
-        RIndex idx(m_dataset, relpath, config().read_lock_segment(relpath));
-        return idx.query_data(q, *config().session, dest);
+        RIndex idx(m_dataset, relpath, dataset().read_lock_segment(relpath));
+        return idx.query_data(q, *dataset().session, dest);
     });
 }
 
 void Reader::summary_from_indices(const Matcher& matcher, Summary& summary)
 {
     list_segments(matcher, [&](const std::string& relpath) {
-        RIndex idx(m_dataset, relpath, config().read_lock_segment(relpath));
+        RIndex idx(m_dataset, relpath, dataset().read_lock_segment(relpath));
         idx.query_summary_from_db(matcher, summary);
         return true;
     });
@@ -89,7 +88,7 @@ void Reader::summary_for_all(Summary& out)
     // Find the datetime extremes in the database
     unique_ptr<core::Time> begin;
     unique_ptr<core::Time> end;
-    config().step().time_extremes(step::SegmentQuery(config().path, config().format), begin, end);
+    dataset().step().time_extremes(step::SegmentQuery(dataset().path, dataset().format), begin, end);
 
     // If there is data in the database, get all the involved
     // monthly summaries
@@ -150,7 +149,7 @@ void Reader::query_summary(const Matcher& matcher, Summary& summary)
     // Amend open ends with the bounds from the database
     unique_ptr<core::Time> db_begin;
     unique_ptr<core::Time> db_end;
-    config().step().time_extremes(step::SegmentQuery(config().path, config().format), db_begin, db_end);
+    dataset().step().time_extremes(step::SegmentQuery(dataset().path, dataset().format), db_begin, db_end);
     // If the database is empty then the result is empty:
     // we are done
     if (!db_begin.get())

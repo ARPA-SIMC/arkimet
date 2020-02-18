@@ -167,20 +167,17 @@ public:
     Base& operator=(const Base&) = delete;
     Base& operator=(Base&&) = delete;
 
-    /// Return the dataset (legacy compatibility, use dataset() )
-    virtual const Dataset& config() const = 0;
-
     /// Return the dataset
-    virtual const Dataset& dataset() const { return config(); }
+    virtual const Dataset& dataset() const = 0;
 
     /// Return the dataset
     virtual Dataset& dataset() = 0;
 
     /// Return the dataset name
-    std::string name() const { return config().name(); }
+    std::string name() const { return dataset().name(); }
 
     /// Return the dataset configuration
-    const core::cfg::Section& cfg() const { return config().cfg; }
+    const core::cfg::Section& cfg() const { return dataset().cfg; }
 
     /// Return a name identifying the dataset type
     virtual std::string type() const = 0;

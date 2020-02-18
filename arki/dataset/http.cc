@@ -237,15 +237,6 @@ std::shared_ptr<dataset::Reader> Dataset::create_reader()
 }
 
 
-Reader::Reader(std::shared_ptr<Dataset> config)
-    : m_config(config)
-{
-}
-
-Reader::~Reader()
-{
-}
-
 std::string Reader::type() const { return "http"; }
 
 struct OstreamState : public Request
@@ -303,11 +294,11 @@ struct MDStreamState : public Request
 
 void Reader::set_post_query(Request& request, const std::string& query)
 {
-    if (config().qmacro.empty())
+    if (dataset().qmacro.empty())
         request.post_data.add_string("query", query);
     else
     {
-        request.post_data.add_string("query", config().qmacro);
+        request.post_data.add_string("query", dataset().qmacro);
         request.post_data.add_string("qmacro", name());
     }
 }
@@ -323,8 +314,8 @@ bool Reader::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 {
     m_curl.reset();
 
-    MDStreamState request(m_curl, dest, config().baseurl);
-    request.set_url(str::joinpath(config().baseurl, "query"));
+    MDStreamState request(m_curl, dest, dataset().baseurl);
+    request.set_url(str::joinpath(dataset().baseurl, "query"));
     request.set_method("POST");
     set_post_query(request, q);
     if (q.with_data)
@@ -339,7 +330,7 @@ void Reader::query_summary(const Matcher& matcher, Summary& summary)
     m_curl.reset();
 
     BufState<std::vector<uint8_t>> request(m_curl);
-    request.set_url(str::joinpath(config().baseurl, "summary"));
+    request.set_url(str::joinpath(dataset().baseurl, "summary"));
     request.set_method("POST");
     set_post_query(request, matcher.toStringExpanded());
     request.perform();
@@ -353,7 +344,7 @@ void Reader::query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out)
     m_curl.reset();
 
     OstreamState request(m_curl, out, q.data_start_hook);
-    request.set_url(str::joinpath(config().baseurl, "query"));
+    request.set_url(str::joinpath(dataset().baseurl, "query"));
     request.set_method("POST");
     set_post_query(request, q);
 
@@ -392,7 +383,7 @@ void Reader::query_bytes(const dataset::ByteQuery& q, AbstractOutputFile& out)
     m_curl.reset();
 
     AbstractOutputState request(m_curl, out);
-    request.set_url(str::joinpath(config().baseurl, "query"));
+    request.set_url(str::joinpath(dataset().baseurl, "query"));
     request.set_method("POST");
     set_post_query(request, q);
 

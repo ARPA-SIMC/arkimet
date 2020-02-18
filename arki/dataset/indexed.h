@@ -25,7 +25,8 @@ public:
     using segmented::Reader::Reader;
     ~Reader();
 
-    const Dataset& config() const override = 0;
+    const Dataset& dataset() const override = 0;
+    Dataset& dataset() override = 0;
 
     bool query_data(const dataset::DataQuery& q, metadata_dest_func dest) override;
     void query_summary(const Matcher& matcher, Summary& summary) override;
@@ -47,7 +48,8 @@ public:
     using segmented::Checker::Checker;
     ~Checker();
 
-    const Dataset& config() const override = 0;
+    const Dataset& dataset() const override = 0;
+    Dataset& dataset() override = 0;
 
     void check_issue51(CheckerConfig& opts) override;
 

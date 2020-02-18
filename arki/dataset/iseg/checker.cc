@@ -79,7 +79,8 @@ public:
         return *m_idx;
     }
     std::string path_relative() const override { return segment->segment().relpath; }
-    const iseg::Dataset& config() const override { return checker.config(); }
+    const iseg::Dataset& dataset() const override { return checker.dataset(); }
+    iseg::Dataset& dataset() override { return checker.dataset(); }
     std::shared_ptr<dataset::archive::Checker> archives() override { return checker.archive(); }
 
     void get_metadata(std::shared_ptr<core::Lock> lock, metadata::Collection& mds) override
@@ -113,7 +114,7 @@ public:
          * operations, making the test rather useless, because it's likely that the
          * index timestamp would get updated before the mismatch is detected.
          */
-        string abspath = str::joinpath(config().path, relpath);
+        string abspath = str::joinpath(dataset().path, relpath);
         if (sys::timestamp(abspath) > sys::timestamp(abspath + ".index"))
         {
             segments_state.insert(make_pair(relpath, segmented::SegmentState(segment::SEGMENT_UNALIGNED)));
@@ -325,9 +326,9 @@ public:
         // Make a copy of the file with the right data in it, sorted by
         // reftime, and update the offsets in the index
         segment::RepackConfig repack_config;
-        repack_config.gz_group_size = config().gz_group_size;
+        repack_config.gz_group_size = dataset().gz_group_size;
         repack_config.test_flags = test_flags;
-        Pending p_repack = segment->repack(checker.config().path, mds, repack_config);
+        Pending p_repack = segment->repack(checker.dataset().path, mds, repack_config);
 
         // Reindex mds
         idx().reset();
