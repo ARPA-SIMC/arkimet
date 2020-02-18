@@ -5,6 +5,7 @@
 #include "arki/dataset.h"
 #include "arki/dataset/maintenance.h"
 #include "arki/dataset/session.h"
+#include "arki/dataset/simple.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
 #include "arki/metadata/sort.h"
@@ -901,19 +902,19 @@ bool Manifest::exists(const std::string& dir)
         manifest::SqliteManifest::exists(dir);
 }
 
-std::unique_ptr<Manifest> Manifest::create(const std::string& dir, const core::lock::Policy* lock_policy, const std::string& index_type)
+std::unique_ptr<Manifest> Manifest::create(std::shared_ptr<simple::Dataset> dataset, const std::string& index_type)
 {
     if (index_type.empty())
     {
-        if (manifest::mft_force_sqlite || manifest::SqliteManifest::exists(dir))
-            return unique_ptr<Manifest>(new manifest::SqliteManifest(dir, lock_policy));
+        if (manifest::mft_force_sqlite || manifest::SqliteManifest::exists(dataset->path))
+            return unique_ptr<Manifest>(new manifest::SqliteManifest(dataset->path, dataset->lock_policy));
         else
-            return unique_ptr<Manifest>(new manifest::PlainManifest(dir, lock_policy));
+            return unique_ptr<Manifest>(new manifest::PlainManifest(dataset->path, dataset->lock_policy));
     }
     else if (index_type == "plain")
-        return unique_ptr<Manifest>(new manifest::PlainManifest(dir, lock_policy));
+        return unique_ptr<Manifest>(new manifest::PlainManifest(dataset->path, dataset->lock_policy));
     else if (index_type == "sqlite")
-        return unique_ptr<Manifest>(new manifest::SqliteManifest(dir, lock_policy));
+        return unique_ptr<Manifest>(new manifest::SqliteManifest(dataset->path, dataset->lock_policy));
     else
         throw std::runtime_error("unsupported index_type " + index_type);
 }

@@ -426,7 +426,7 @@ Checker::Checker(std::shared_ptr<simple::Dataset> dataset)
     if (!index::Manifest::exists(dataset->path))
         files::createDontpackFlagfile(dataset->path);
 
-    unique_ptr<index::Manifest> mft = index::Manifest::create(dataset->path, dataset->lock_policy, dataset->index_type);
+    unique_ptr<index::Manifest> mft = index::Manifest::create(dataset, dataset->index_type);
     m_mft = mft.release();
     m_mft->lock = lock;
     m_mft->openRW();

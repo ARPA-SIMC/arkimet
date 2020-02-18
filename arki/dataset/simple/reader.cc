@@ -17,7 +17,7 @@ Reader::Reader(std::shared_ptr<simple::Dataset> dataset)
 
     if (index::Manifest::exists(dataset->path))
     {
-        unique_ptr<index::Manifest> mft = index::Manifest::create(dataset->path, dataset->lock_policy);
+        unique_ptr<index::Manifest> mft = index::Manifest::create(m_dataset);
         mft->openRO();
         m_idx = m_mft = mft.release();
     }

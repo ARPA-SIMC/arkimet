@@ -30,7 +30,7 @@ namespace simple {
 /// Accumulate metadata and summaries while writing
 struct AppendSegment
 {
-    std::shared_ptr<const simple::Dataset> dataset;
+    std::shared_ptr<simple::Dataset> dataset;
     std::shared_ptr<dataset::AppendLock> lock;
     std::shared_ptr<segment::Writer> segment;
     utils::sys::Path dir;
@@ -39,7 +39,7 @@ struct AppendSegment
     metadata::Collection mds;
     Summary sum;
 
-    AppendSegment(std::shared_ptr<const simple::Dataset> dataset, std::shared_ptr<dataset::AppendLock> lock, std::shared_ptr<segment::Writer> segment)
+    AppendSegment(std::shared_ptr<simple::Dataset> dataset, std::shared_ptr<dataset::AppendLock> lock, std::shared_ptr<segment::Writer> segment)
         : dataset(dataset), lock(lock), segment(segment),
           dir(str::dirname(segment->segment().abspath)),
           basename(str::basename(segment->segment().abspath))
@@ -73,7 +73,7 @@ struct AppendSegment
 
     WriterAcquireResult acquire(Metadata& md, bool drop_cached_data_on_commit)
     {
-        auto mft = index::Manifest::create(dataset->path, dataset->lock_policy, dataset->index_type);
+        auto mft = index::Manifest::create(dataset, dataset->index_type);
         mft->lock = lock;
         mft->openRW();
 
@@ -97,7 +97,7 @@ struct AppendSegment
 
     void acquire_batch(WriterBatch& batch, bool drop_cached_data_on_commit)
     {
-        auto mft = index::Manifest::create(dataset->path, dataset->lock_policy, dataset->index_type);
+        auto mft = index::Manifest::create(dataset, dataset->index_type);
         mft->lock = lock;
         mft->openRW();
 

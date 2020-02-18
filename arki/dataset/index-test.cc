@@ -1,5 +1,6 @@
 #include "arki/dataset/tests.h"
 #include "arki/dataset/session.h"
+#include "arki/dataset/simple.h"
 #include "index.h"
 #include "index/manifest.h"
 #include "ondisk2/index.h"
@@ -64,7 +65,16 @@ struct ManifestPlainFixture : ManifestFixture
 {
     std::unique_ptr<Manifest> create() override
     {
-        return Manifest::create("testds", core::lock::policy_ofd, "plain");
+        core::cfg::Section cfg;
+        cfg.set("name", "testds");
+        cfg.set("path", "testds");
+        cfg.set("index_type", "plain");
+        cfg.set("locking", "yes");
+        cfg.set("step", "daily");
+
+        auto session = std::make_shared<dataset::Session>();
+        auto ds = std::make_shared<dataset::simple::Dataset>(session, cfg);
+        return Manifest::create(ds, "plain");
     }
 };
 
@@ -72,7 +82,16 @@ struct ManifestSqliteFixture : ManifestFixture
 {
     std::unique_ptr<Manifest> create() override
     {
-        return Manifest::create("testds", core::lock::policy_ofd, "sqlite");
+        core::cfg::Section cfg;
+        cfg.set("name", "testds");
+        cfg.set("path", "testds");
+        cfg.set("index_type", "sqlite");
+        cfg.set("locking", "yes");
+        cfg.set("step", "daily");
+
+        auto session = std::make_shared<dataset::Session>();
+        auto ds = std::make_shared<dataset::simple::Dataset>(session, cfg);
+        return Manifest::create(ds, "sqlite");
     }
 };
 

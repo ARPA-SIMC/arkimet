@@ -12,6 +12,10 @@ class Matcher;
 class Summary;
 
 namespace dataset {
+namespace simple {
+struct Dataset;
+}
+
 namespace index {
 
 class Manifest : public dataset::Index
@@ -61,7 +65,7 @@ public:
 
     /// Check if the given directory contains a manifest file
     static bool exists(const std::string& dir);
-    static std::unique_ptr<Manifest> create(const std::string& dir, const core::lock::Policy* lock_policy, const std::string& index_type=std::string());
+    static std::unique_ptr<Manifest> create(std::shared_ptr<simple::Dataset> dataset, const std::string& index_type=std::string());
 
     static bool get_force_sqlite();
     static void set_force_sqlite(bool val);
