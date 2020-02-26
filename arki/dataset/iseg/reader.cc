@@ -51,10 +51,13 @@ bool Reader::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
     if (!segmented::Reader::query_data(q, dest))
         return false;
 
-    return list_segments(q.matcher, [&](const std::string& relpath) {
+    if (q.progress) q.progress->start();
+    bool res = list_segments(q.matcher, [&](const std::string& relpath) {
         RIndex idx(m_dataset, relpath, dataset().read_lock_segment(relpath));
         return idx.query_data(q, *dataset().session, dest);
     });
+    if (q.progress) q.progress->done();
+    return res;
 }
 
 void Reader::summary_from_indices(const Matcher& matcher, Summary& summary)
