@@ -376,6 +376,46 @@ this->add_method("issue215", [](Fixture& f) {
     wassert(actual(count) == 3u);
 });
 
+this->add_method("progress", [](Fixture& f) {
+    struct TestProgress : public dataset::QueryProgress
+    {
+        using dataset::QueryProgress::count;
+        using dataset::QueryProgress::bytes;
+        unsigned start_called = 0;
+        unsigned update_called = 0;
+        unsigned done_called = 0;
+
+        void start(size_t expected_count=0, size_t expected_bytes=0) override
+        {
+            QueryProgress::start(expected_count, expected_bytes);
+            ++start_called;
+        }
+        void update(size_t count, size_t bytes) override
+        {
+            QueryProgress::update(count, bytes);
+            ++update_called;
+        }
+        void done() override
+        {
+            QueryProgress::done();
+            ++done_called;
+        }
+    };
+    auto progress = make_shared<TestProgress>();
+
+    auto reader = f.dataset_config()->create_reader();
+    dataset::DataQuery query;
+    query.progress = progress;
+    size_t count = 0;
+    reader->query_data(query, [&](std::shared_ptr<Metadata> md) { ++count; return true; });
+    wassert(actual(count) == 3u);
+    wassert(actual(progress->count) == 3u);
+    wassert(actual(progress->bytes) > 90u);
+    wassert(actual(progress->start_called) == 1u);
+    wassert(actual(progress->update_called) == 3u);
+    wassert(actual(progress->done_called) == 1u);
+});
+
 #if 0
 // TODO: with_data is currently ignored by all datasets except http
 this->add_method("read_data_missing_segment", [](Fixture& f) {

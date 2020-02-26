@@ -12241,6 +12241,11 @@
  },
  {
   "doc": "",
+  "group": "arki_dataset_reader_grib_ondisk2",
+  "method": "progress"
+ },
+ {
+  "doc": "",
   "group": "arki_dataset_reader_grib_simple_plain",
   "method": "querydata"
  },
@@ -12308,6 +12313,11 @@
   "doc": "",
   "group": "arki_dataset_reader_grib_simple_plain",
   "method": "issue215"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_reader_grib_simple_plain",
+  "method": "progress"
  },
  {
   "doc": "",
@@ -12381,6 +12391,11 @@
  },
  {
   "doc": "",
+  "group": "arki_dataset_reader_grib_simple_sqlite",
+  "method": "progress"
+ },
+ {
+  "doc": "",
   "group": "arki_dataset_reader_grib_iseg",
   "method": "querydata"
  },
@@ -12451,6 +12466,11 @@
  },
  {
   "doc": "",
+  "group": "arki_dataset_reader_grib_iseg",
+  "method": "progress"
+ },
+ {
+  "doc": "",
   "group": "arki_dataset_reader_bufr_ondisk2",
   "method": "querydata"
  },
@@ -12521,6 +12541,11 @@
  },
  {
   "doc": "",
+  "group": "arki_dataset_reader_bufr_ondisk2",
+  "method": "progress"
+ },
+ {
+  "doc": "",
   "group": "arki_dataset_reader_bufr_simple_plain",
   "method": "querydata"
  },
@@ -12591,6 +12616,11 @@
  },
  {
   "doc": "",
+  "group": "arki_dataset_reader_bufr_simple_plain",
+  "method": "progress"
+ },
+ {
+  "doc": "",
   "group": "arki_dataset_reader_bufr_simple_sqlite",
   "method": "querydata"
  },
@@ -12661,6 +12691,11 @@
  },
  {
   "doc": "",
+  "group": "arki_dataset_reader_bufr_simple_sqlite",
+  "method": "progress"
+ },
+ {
+  "doc": "",
   "group": "arki_dataset_reader_bufr_iseg",
   "method": "querydata"
  },
@@ -12731,6 +12766,11 @@
  },
  {
   "doc": "",
+  "group": "arki_dataset_reader_bufr_iseg",
+  "method": "progress"
+ },
+ {
+  "doc": "",
   "group": "arki_dataset_reader_vm2_ondisk2",
   "method": "querydata"
  },
@@ -12801,6 +12841,11 @@
  },
  {
   "doc": "",
+  "group": "arki_dataset_reader_vm2_ondisk2",
+  "method": "progress"
+ },
+ {
+  "doc": "",
   "group": "arki_dataset_reader_vm2_simple_plain",
   "method": "querydata"
  },
@@ -12871,6 +12916,11 @@
  },
  {
   "doc": "",
+  "group": "arki_dataset_reader_vm2_simple_plain",
+  "method": "progress"
+ },
+ {
+  "doc": "",
   "group": "arki_dataset_reader_vm2_simple_sqlite",
   "method": "querydata"
  },
@@ -12941,6 +12991,11 @@
  },
  {
   "doc": "",
+  "group": "arki_dataset_reader_vm2_simple_sqlite",
+  "method": "progress"
+ },
+ {
+  "doc": "",
   "group": "arki_dataset_reader_vm2_iseg",
   "method": "querydata"
  },
@@ -13011,6 +13066,11 @@
  },
  {
   "doc": "",
+  "group": "arki_dataset_reader_vm2_iseg",
+  "method": "progress"
+ },
+ {
+  "doc": "",
   "group": "arki_dataset_reader_odim_ondisk2",
   "method": "querydata"
  },
@@ -13081,6 +13141,11 @@
  },
  {
   "doc": "",
+  "group": "arki_dataset_reader_odim_ondisk2",
+  "method": "progress"
+ },
+ {
+  "doc": "",
   "group": "arki_dataset_reader_odim_simple_plain",
   "method": "querydata"
  },
@@ -13151,6 +13216,11 @@
  },
  {
   "doc": "",
+  "group": "arki_dataset_reader_odim_simple_plain",
+  "method": "progress"
+ },
+ {
+  "doc": "",
   "group": "arki_dataset_reader_odim_simple_sqlite",
   "method": "querydata"
  },
@@ -13221,6 +13291,11 @@
  },
  {
   "doc": "",
+  "group": "arki_dataset_reader_odim_simple_sqlite",
+  "method": "progress"
+ },
+ {
+  "doc": "",
   "group": "arki_dataset_reader_odim_iseg",
   "method": "querydata"
  },
@@ -13288,6 +13363,11 @@
   "doc": "",
   "group": "arki_dataset_reader_odim_iseg",
   "method": "issue215"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_reader_odim_iseg",
+  "method": "progress"
  },
  {
   "doc": "",
