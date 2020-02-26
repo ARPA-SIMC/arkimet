@@ -373,7 +373,7 @@ this->add_method("issue215", [](Fixture& f) {
     unsigned count = 0;
     auto reader = f.dataset_config()->create_reader();
     reader->query_data(dataset::DataQuery("reftime:;area:GRIB: or VM2:"), [&](std::shared_ptr<Metadata> md) { ++count; return true; });
-    wassert(actual(count) == 0u);
+    wassert(actual(count) == 3u);
 });
 
 #if 0
