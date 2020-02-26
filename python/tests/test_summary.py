@@ -1,4 +1,5 @@
 import unittest
+import io
 import os
 import arkimet as arki
 
@@ -23,3 +24,12 @@ class TestSummary(unittest.TestCase):
         items = data["items"]
         count = sum(i["summarystats"]["c"] for i in items)
         self.assertEquals(count, 3)
+
+    def test_write(self):
+        s = self.read("inbound/test.grib1")
+        with io.BytesIO() as out:
+            s.write(out, format="binary")
+        with io.BytesIO() as out:
+            s.write(out, format="yaml")
+        with io.BytesIO() as out:
+            s.write(out, format="json")
