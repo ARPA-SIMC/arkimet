@@ -369,6 +369,13 @@ this->add_method("issue213_manyds", [](Fixture& f) {
     }
 });
 
+this->add_method("issue215", [](Fixture& f) {
+    unsigned count = 0;
+    auto reader = f.dataset_config()->create_reader();
+    reader->query_data(dataset::DataQuery("reftime:;area:GRIB: or VM2:"), [&](std::shared_ptr<Metadata> md) { ++count; return true; });
+    wassert(actual(count) == 3u);
+});
+
 #if 0
 // TODO: with_data is currently ignored by all datasets except http
 this->add_method("read_data_missing_segment", [](Fixture& f) {

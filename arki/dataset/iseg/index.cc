@@ -227,7 +227,11 @@ void Index::add_joins_and_constraints(const Matcher& m, std::string& query) cons
             // No restriction on a range of reftimes, but still add sql
             // constraints if there is an unbounded reftime matcher (#116)
             if (auto reftime = m.get(TYPE_REFTIME))
-                constraints.push_back(reftime->toReftimeSQL("reftime"));
+            {
+                std::string sql = reftime->toReftimeSQL("reftime");
+                if (!sql.empty())
+                    constraints.push_back(sql);
+            }
         } else {
             // Compare with the reftime bounds in the database
             unique_ptr<Time> db_begin;

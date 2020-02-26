@@ -122,6 +122,9 @@ bool OR::restrict_date_range(std::unique_ptr<core::Time>& begin, std::unique_ptr
 
 std::string OR::toReftimeSQL(const std::string& column) const
 {
+    if (components.empty())
+        return std::string();
+
     if (components.size() == 1)
     {
         const matcher::MatchReftime* mr = dynamic_cast<const matcher::MatchReftime*>(components[0].get());
