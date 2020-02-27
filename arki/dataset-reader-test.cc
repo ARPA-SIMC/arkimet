@@ -379,6 +379,8 @@ this->add_method("issue215", [](Fixture& f) {
 });
 
 this->add_method("progress", [](Fixture& f) {
+    auto reader = f.dataset_config()->create_reader();
+
     struct TestProgress : public dataset::QueryProgress
     {
         using dataset::QueryProgress::count;
@@ -405,12 +407,22 @@ this->add_method("progress", [](Fixture& f) {
     };
     auto progress = make_shared<TestProgress>();
 
-    auto reader = f.dataset_config()->create_reader();
-    dataset::DataQuery query;
-    query.progress = progress;
+    dataset::DataQuery dq;
+    dq.progress = progress;
     size_t count = 0;
-    reader->query_data(query, [&](std::shared_ptr<Metadata> md) { ++count; return true; });
+    reader->query_data(dq, [&](std::shared_ptr<Metadata> md) { ++count; return true; });
     wassert(actual(count) == 3u);
+    wassert(actual(progress->count) == 3u);
+    wassert(actual(progress->bytes) > 90u);
+    wassert(actual(progress->start_called) == 1u);
+    wassert(actual(progress->update_called) == 3u);
+    wassert(actual(progress->done_called) == 1u);
+
+
+    dataset::ByteQuery bq;
+    bq.progress = make_shared<TestProgress>();
+    sys::File out("/dev/null", O_WRONLY);
+    reader->query_bytes(bq, out);
     wassert(actual(progress->count) == 3u);
     wassert(actual(progress->bytes) > 90u);
     wassert(actual(progress->start_called) == 1u);
