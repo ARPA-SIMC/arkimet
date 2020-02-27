@@ -7,7 +7,7 @@ if [ "$1" = "NOSE" ]
 then
     NOSE="${NOSE:-nose}"
     CMD="$NOSE -s `pwd`"
-    DEBUG_CMD="$PYTHON $NOSE -s `pwd`"
+    DEBUG_CMD="$PYTHON `which $NOSE` -s `pwd`"
 else
     CMD=`pwd`/"$1"
     DEBUG_CMD="$CMD"
