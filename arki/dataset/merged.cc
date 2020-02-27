@@ -1,6 +1,7 @@
 #include "arki/dataset/merged.h"
 #include "arki/dataset/session.h"
 #include "arki/dataset/query.h"
+#include "arki/dataset/progress.h"
 #include "arki/exceptions.h"
 #include "arki/metadata.h"
 #include "arki/metadata/sort.h"
@@ -95,7 +96,7 @@ class MetadataReader
 {
 public:
     std::shared_ptr<dataset::Reader> dataset;
-    const DataQuery* query = 0;
+    DataQuery query;
     string errorbuf;
     SyncBuffer mdbuf;
     std::thread thread;
@@ -105,9 +106,7 @@ public:
     void main()
     {
         try {
-            if (!query)
-                throw_consistency_error("executing query in subthread", "no query has been set");
-            dataset->query_data(*query, [&](std::shared_ptr<Metadata> md) {
+            dataset->query_data(query, [&](std::shared_ptr<Metadata> md) {
                 mdbuf.push(md);
                 return true;
             });
@@ -118,10 +117,11 @@ public:
         }
     }
 
-    void init(std::shared_ptr<dataset::Reader> dataset, const DataQuery* query)
+    void init(std::shared_ptr<dataset::Reader> dataset, const DataQuery& query)
     {
         this->dataset = dataset;
         this->query = query;
+        this->query.progress.reset();
     }
 };
 
@@ -186,6 +186,9 @@ std::string Reader::type() const { return "merged"; }
 
 bool Reader::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 {
+    dataset::TrackProgress track(q.progress);
+    dest = track.wrap(dest);
+
     auto& datasets = dataset().datasets;
 
     // Handle the trivial case of only one dataset
@@ -198,7 +201,7 @@ bool Reader::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
     // Start all the readers
     for (size_t i = 0; i < datasets.size(); ++i)
     {
-        readers[i].init(datasets[i], &q);
+        readers[i].init(datasets[i], q);
         threads.emplace_back(&MetadataReader::main, &readers[i]);
     }
 
@@ -285,6 +288,32 @@ void Reader::query_summary(const Matcher& matcher, Summary& summary)
         throw_consistency_error("running summary queries on multiple datasets", str::join("; ", errors.begin(), errors.end()));
 }
 
+namespace {
+
+class QueryBytesProgress : public QueryProgress
+{
+    std::shared_ptr<QueryProgress> wrapped;
+
+public:
+    QueryBytesProgress(std::shared_ptr<QueryProgress> wrapped)
+        : wrapped(wrapped)
+    {
+        if (wrapped) wrapped->start();
+    }
+    ~QueryBytesProgress()
+    {
+        if (wrapped) wrapped->done();
+    }
+    void start(size_t expected_count=0, size_t expected_bytes=0) override {}
+    void update(size_t count, size_t bytes) override
+    {
+        if (wrapped) wrapped->update(count, bytes);
+    }
+    void done() override {}
+};
+
+}
+
 void Reader::query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out)
 {
     // Here we must serialize, as we do not know how to merge raw data streams
@@ -297,9 +326,11 @@ void Reader::query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out)
     // TODO: we might be able to do something smarter, like if we're merging
     // many datasets from the same server we can run it all there; if we're
     // merging all local datasets, wrap queryData; and so on.
+    dataset::ByteQuery localq(q);
+    localq.progress = std::make_shared<QueryBytesProgress>(q.progress);
 
     for (auto i: dataset().datasets)
-        i->query_bytes(q, out);
+        i->query_bytes(localq, out);
 }
 
 void Reader::query_bytes(const dataset::ByteQuery& q, AbstractOutputFile& out)
@@ -314,9 +345,11 @@ void Reader::query_bytes(const dataset::ByteQuery& q, AbstractOutputFile& out)
     // TODO: we might be able to do something smarter, like if we're merging
     // many datasets from the same server we can run it all there; if we're
     // merging all local datasets, wrap queryData; and so on.
+    dataset::ByteQuery localq(q);
+    localq.progress = std::make_shared<QueryBytesProgress>(q.progress);
 
     for (auto i: dataset().datasets)
-        i->query_bytes(q, out);
+        i->query_bytes(localq, out);
 }
 
 }
