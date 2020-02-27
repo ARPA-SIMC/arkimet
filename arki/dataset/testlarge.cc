@@ -1,5 +1,6 @@
 #include "testlarge.h"
 #include "empty.h"
+#include "query.h"
 #include "arki/core/time.h"
 #include "arki/types/reftime.h"
 #include "arki/metadata.h"

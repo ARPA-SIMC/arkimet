@@ -2,6 +2,7 @@
 #include "index.h"
 #include "arki/dataset/step.h"
 #include "arki/dataset/progress.h"
+#include "arki/dataset/query.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/string.h"
 #include "arki/summary.h"

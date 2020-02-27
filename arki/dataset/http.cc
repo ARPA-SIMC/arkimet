@@ -1,5 +1,7 @@
 #include "config.h"
 #include "arki/dataset/http.h"
+#include "arki/dataset/progress.h"
+#include "arki/dataset/query.h"
 #include "arki/core/file.h"
 #include "arki/metadata.h"
 #include "arki/metadata/stream.h"
@@ -312,6 +314,9 @@ void Reader::set_post_query(Request& request, const dataset::DataQuery& q)
 
 bool Reader::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 {
+    dataset::TrackProgress track(q.progress);
+    dest = track.wrap(dest);
+
     m_curl.reset();
 
     MDStreamState request(m_curl, dest, dataset().baseurl);

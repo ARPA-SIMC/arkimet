@@ -5,6 +5,7 @@
 #include "arki/dataset/ondisk2/index.h"
 #include "arki/dataset/reporter.h"
 #include "arki/dataset/session.h"
+#include "arki/dataset/query.h"
 #include "arki/metadata.h"
 #include "arki/metadata/data.h"
 #include "arki/metadata/collection.h"

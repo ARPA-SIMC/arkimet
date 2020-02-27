@@ -4,6 +4,7 @@
 #include "arki/types/source.h"
 #include "arki/formatter.h"
 #include "arki/dataset.h"
+#include "arki/dataset/query.h"
 #include "arki/dataset/index/base.h"
 #include "arki/structured/json.h"
 #include "arki/structured/keys.h"

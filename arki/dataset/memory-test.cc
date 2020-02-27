@@ -2,6 +2,7 @@
 #include "arki/core/file.h"
 #include "arki/types/source.h"
 #include "arki/metadata.h"
+#include "arki/dataset/query.h"
 #include "arki/dataset/session.h"
 #include "arki/summary.h"
 #include "arki/segment.h"

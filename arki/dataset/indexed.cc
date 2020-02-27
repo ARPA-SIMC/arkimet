@@ -5,6 +5,7 @@
 #include "session.h"
 #include "arki/dataset/time.h"
 #include "arki/dataset/lock.h"
+#include "arki/dataset/query.h"
 #include "arki/dataset/progress.h"
 #include "arki/metadata.h"
 #include "arki/types/source/blob.h"

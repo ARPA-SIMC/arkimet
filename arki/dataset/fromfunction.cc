@@ -1,5 +1,6 @@
 #include "fromfunction.h"
 #include "arki/metadata.h"
+#include "arki/dataset/query.h"
 #include <ostream>
 
 using namespace std;

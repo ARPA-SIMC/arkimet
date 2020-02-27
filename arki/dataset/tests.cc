@@ -2,6 +2,7 @@
 #include "arki/segment/tests.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
+#include "arki/dataset/query.h"
 #include "arki/dataset/local.h"
 #include "arki/dataset/ondisk2/reader.h"
 #include "arki/dataset/ondisk2/writer.h"

@@ -2781,6 +2781,11 @@
  },
  {
   "doc": "",
+  "group": "arki_dataset_query",
+  "method": "empty"
+ },
+ {
+  "doc": "",
   "group": "arki_dataset_reporter",
   "method": "empty"
  },

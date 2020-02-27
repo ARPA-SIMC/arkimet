@@ -2,6 +2,7 @@
 #include "iseg/writer.h"
 #include "arki/scan.h"
 #include "arki/types/source/blob.h"
+#include "arki/dataset/query.h"
 
 namespace {
 using namespace std;

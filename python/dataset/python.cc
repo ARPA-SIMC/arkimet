@@ -8,6 +8,7 @@
 #include "arki/metadata/sort.h"
 #include "arki/summary.h"
 #include "arki/dataset/impl.h"
+#include "arki/dataset/query.h"
 
 namespace arki {
 namespace python {

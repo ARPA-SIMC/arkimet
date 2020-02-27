@@ -4,6 +4,7 @@
 #include "arki/matcher.h"
 #include "arki/dataset/file.h"
 #include "arki/dataset/session.h"
+#include "arki/dataset/query.h"
 #include "arki/metadata/collection.h"
 #include <memory>
 

@@ -1,5 +1,6 @@
 #include "arki/dataset/tests.h"
 #include "arki/exceptions.h"
+#include "arki/dataset/query.h"
 #include "arki/dataset/ondisk2/reader.h"
 #include "arki/dataset/ondisk2/writer.h"
 #include "arki/metadata.h"

@@ -2,6 +2,7 @@
 #include "fromfunction.h"
 #include "arki/matcher.h"
 #include "arki/scan.h"
+#include "arki/dataset/query.h"
 
 namespace {
 using namespace std;

@@ -2,6 +2,7 @@
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
 #include "arki/dataset/session.h"
+#include "arki/dataset/query.h"
 #include "offline.h"
 
 using namespace std;

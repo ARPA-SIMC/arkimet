@@ -1,5 +1,6 @@
 #include "arki/dataset/merged.h"
 #include "arki/dataset/session.h"
+#include "arki/dataset/query.h"
 #include "arki/exceptions.h"
 #include "arki/metadata.h"
 #include "arki/metadata/sort.h"

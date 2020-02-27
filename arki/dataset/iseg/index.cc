@@ -8,6 +8,7 @@
 #include "arki/dataset.h"
 #include "arki/dataset/lock.h"
 #include "arki/dataset/session.h"
+#include "arki/dataset/query.h"
 #include "arki/types/reftime.h"
 #include "arki/types/source.h"
 #include "arki/types/source/blob.h"

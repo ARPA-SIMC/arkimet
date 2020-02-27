@@ -15,6 +15,7 @@
 #include "arki/core/cfg.h"
 #include "arki/metadata/sort.h"
 #include "arki/dataset.h"
+#include "arki/dataset/query.h"
 #include "arki/dataset/http.h"
 #include "arki/dataset/time.h"
 #include "arki/dataset/segmented.h"

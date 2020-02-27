@@ -2,6 +2,7 @@
 #include "arki/dataset.h"
 #include "arki/dataset/local.h"
 #include "arki/dataset/time.h"
+#include "arki/dataset/query.h"
 #include "arki/metadata/collection.h"
 #include "arki/types/source.h"
 #include "arki/types/source/blob.h"
