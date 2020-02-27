@@ -250,6 +250,62 @@ type = file
         ds.query_data(on_metadata=count_results)
         self.assertEquals(count, 24841)
 
+    def test_progress(self):
+        class Progress:
+            def __init__(self):
+                self.start_called = 0
+                self.update_called = 0
+                self.done_called = 0
+                self.total_count = 0
+                self.total_bytes = 0
+
+            def start(self, expected_count=0, expected_bytes=0):
+                self.start_called += 1
+
+            def update(self, count, bytes):
+                self.update_called += 1
+
+            def done(self, total_count, total_bytes):
+                self.done_called += 1
+                self.total_count = total_count
+                self.total_bytes = total_bytes
+
+        ds = arki.dataset.Reader({
+            "format": "grib",
+            "name": "test.grib1",
+            "path": "inbound/test.grib1",
+            "type": "file",
+        })
+
+        count = 0
+
+        def count_results(md):
+            nonlocal count
+            count += 1
+
+        progress = Progress()
+        ds.query_data(on_metadata=count_results, progress=progress)
+        self.assertEquals(count, 3)
+        self.assertEqual(progress.total_count, 3)
+        self.assertGreaterEqual(progress.total_bytes, 90)
+        self.assertEqual(progress.start_called, 1)
+        # Initial and final calls at least, but intermediate calls are
+        # throttled at no more than one each 200ms
+        self.assertGreaterEqual(progress.update_called, 2)
+        self.assertEqual(progress.done_called, 1)
+
+        progress = Progress()
+        res = ds.query_bytes(progress=progress)
+        self.assertEquals(len(res), 44412)
+
+        self.assertEqual(progress.total_count, 3)
+        self.assertGreaterEqual(progress.total_bytes, 90)
+        self.assertEqual(progress.start_called, 1)
+        # Initial and final calls at least, but intermediate calls are
+        # throttled at no more than one each 200ms
+        self.assertGreaterEqual(progress.update_called, 2)
+        self.assertEqual(progress.done_called, 1)
+
 
 class TestDatasetWriter(unittest.TestCase):
     def test_import(self):
