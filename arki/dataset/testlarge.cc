@@ -1,6 +1,7 @@
 #include "testlarge.h"
 #include "empty.h"
 #include "query.h"
+#include "progress.h"
 #include "arki/core/time.h"
 #include "arki/types/reftime.h"
 #include "arki/metadata.h"
@@ -49,8 +50,11 @@ bool Reader::generate(const core::Time& begin, const core::Time& until, std::fun
     return true;
 }
 
-bool Reader::query_data(const dataset::DataQuery& q, metadata_dest_func out)
+bool Reader::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 {
+    dataset::TrackProgress track(q.progress);
+    dest = track.wrap(dest);
+
     std::unique_ptr<core::Time> begin;
     std::unique_ptr<core::Time> until;
     if (!q.matcher.restrict_date_range(begin, until))
@@ -62,7 +66,7 @@ bool Reader::query_data(const dataset::DataQuery& q, metadata_dest_func out)
     // TODO: implement support for q.sort
     return generate(*begin, *until, [&](std::unique_ptr<Metadata> md) {
         if (!q.matcher(*md)) return true;
-        return out(move(md));
+        return dest(move(md));
     });
 }
 
