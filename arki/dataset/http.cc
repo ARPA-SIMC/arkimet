@@ -245,10 +245,21 @@ struct OstreamState : public Request
 {
     NamedFileDescriptor& out;
     std::function<void(NamedFileDescriptor&)> data_start_hook;
+    std::shared_ptr<dataset::QueryProgress> progress;
 
     OstreamState(CurlEasy& curl, NamedFileDescriptor& out, std::function<void(NamedFileDescriptor&)> data_start_hook=0)
         : Request(curl), out(out), data_start_hook(data_start_hook)
     {
+    }
+    ~OstreamState()
+    {
+        if (progress) progress->done();
+    }
+
+    void perform()
+    {
+        if (progress) progress->start();
+        Request::perform();
     }
 
     size_t process_body_chunk(void *ptr, size_t size, size_t nmemb, void *stream) override
@@ -258,22 +269,36 @@ struct OstreamState : public Request
             data_start_hook(out);
             data_start_hook = nullptr;
         }
-        return out.write((const char*)ptr, size * nmemb);
+        size_t res = out.write((const char*)ptr, size * nmemb);
+        if (progress) progress->update(0, size * nmemb);
+        return res;
     }
 };
 
 struct AbstractOutputState : public Request
 {
     AbstractOutputFile& out;
+    std::shared_ptr<dataset::QueryProgress> progress;
 
     AbstractOutputState(CurlEasy& curl, AbstractOutputFile& out)
         : Request(curl), out(out)
     {
     }
+    ~AbstractOutputState()
+    {
+        if (progress) progress->done();
+    }
+
+    void perform()
+    {
+        if (progress) progress->start();
+        Request::perform();
+    }
 
     size_t process_body_chunk(void *ptr, size_t size, size_t nmemb, void *stream) override
     {
         out.write((const char*)ptr, size * nmemb);
+        if (progress) progress->update(0, size * nmemb);
         return size * nmemb;
     }
 };
@@ -351,6 +376,7 @@ void Reader::query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out)
     OstreamState request(m_curl, out, q.data_start_hook);
     request.set_url(str::joinpath(dataset().baseurl, "query"));
     request.set_method("POST");
+    request.progress = q.progress;
     set_post_query(request, q);
 
     const char* toupload = getenv("ARKI_POSTPROC_FILES");
@@ -390,6 +416,7 @@ void Reader::query_bytes(const dataset::ByteQuery& q, AbstractOutputFile& out)
     AbstractOutputState request(m_curl, out);
     request.set_url(str::joinpath(dataset().baseurl, "query"));
     request.set_method("POST");
+    request.progress = q.progress;
     set_post_query(request, q);
 
     const char* toupload = getenv("ARKI_POSTPROC_FILES");
