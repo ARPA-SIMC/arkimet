@@ -55,7 +55,6 @@ struct DataProcessor : public DatasetProcessor
         : query(query), printer(std::move(printer)),
           data_inline(data_inline), server_side(server_side)
     {
-        this->query.progress = std::make_shared<python::dataset::PythonProgress>();
     }
 
     virtual ~DataProcessor() {}
@@ -96,10 +95,12 @@ struct LibarchiveProcessor : public DatasetProcessor
     arki::dataset::DataQuery query;
     arki::metadata::LibarchiveOutput arc_out;
 
-    LibarchiveProcessor(Matcher matcher, std::shared_ptr<sys::NamedFileDescriptor> out, const std::string& format)
+    LibarchiveProcessor(
+            Matcher matcher, std::shared_ptr<sys::NamedFileDescriptor> out,
+            const std::string& format, std::shared_ptr<arki::dataset::QueryProgress> progress)
         : query(matcher, true), arc_out(format, *out)
     {
-        query.progress = std::make_shared<python::dataset::PythonProgress>();
+        query.progress = progress;
     }
 
     virtual ~LibarchiveProcessor() {}
@@ -211,7 +212,6 @@ struct BinaryProcessor : public DatasetProcessor
     BinaryProcessor(const arki::dataset::ByteQuery& query, std::shared_ptr<Output> out)
         : output(out), query(query)
     {
-        this->query.progress = std::make_shared<python::dataset::PythonProgress>();
     }
 
     void process(arki::dataset::Reader& ds, const std::string& name) override
@@ -236,6 +236,7 @@ std::unique_ptr<DatasetProcessor> ProcessorMaker::make_binary(Matcher matcher, s
 
     if (!sort.empty())
         query.sorter = metadata::sort::Compare::parse(sort);
+    query.progress = progress;
 
     return unique_ptr<DatasetProcessor>(new BinaryProcessor<Output>(query, out));
 }
@@ -302,25 +303,32 @@ std::unique_ptr<DatasetProcessor> ProcessorMaker::make_metadata(Matcher matcher,
     arki::dataset::DataQuery query(matcher, data_inline);
     if (!sort.empty())
         query.sorter = metadata::sort::Compare::parse(sort);
+    query.progress = progress;
 
     return std::unique_ptr<DatasetProcessor>(new DataProcessor(query, printer, server_side, data_inline));
 }
 
 std::unique_ptr<DatasetProcessor> ProcessorMaker::make(Matcher matcher, std::shared_ptr<sys::NamedFileDescriptor> out)
 {
+    if (!progress)
+        progress = std::make_shared<python::dataset::PythonProgress>();
+
     if (data_only || !postprocess.empty())
         return make_binary(matcher, out);
     else if (summary || summary_short)
         return make_summary(matcher, out);
     else if (!archive.empty())
         // Metadata output from the dataset
-        return std::unique_ptr<DatasetProcessor>(new LibarchiveProcessor(matcher, out, archive));
+        return std::unique_ptr<DatasetProcessor>(new LibarchiveProcessor(matcher, out, archive, progress));
     else
         return make_metadata(matcher, out);
 }
 
 std::unique_ptr<DatasetProcessor> ProcessorMaker::make(Matcher matcher, std::shared_ptr<core::AbstractOutputFile> out)
 {
+    if (!progress)
+        progress = std::make_shared<python::dataset::PythonProgress>();
+
     if (data_only || !postprocess.empty())
         return make_binary(matcher, out);
     else if (summary || summary_short)

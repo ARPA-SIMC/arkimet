@@ -4,6 +4,7 @@
 /// Run user requested operations on datasets
 
 #include <arki/core/fwd.h>
+#include <arki/dataset/fwd.h>
 #include <arki/utils/sys.h>
 #include <string>
 #include <memory>
@@ -44,6 +45,7 @@ struct ProcessorMaker
     std::string archive;
     std::string summary_restrict;
     std::string sort;
+    std::shared_ptr<arki::dataset::QueryProgress> progress;
 
     /// Create the processor maker for this configuration
     std::unique_ptr<DatasetProcessor> make(Matcher matcher, std::shared_ptr<core::NamedFileDescriptor> out);
