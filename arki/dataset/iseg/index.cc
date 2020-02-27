@@ -379,12 +379,7 @@ bool Index::query_data(const dataset::DataQuery& q, dataset::Session& session, m
     if (q.sorter) mdbuf.sort(*q.sorter);
 
     // pass it to consumer
-    bool res;
-    if (q.progress)
-    {
-        res = mdbuf.move_to(q.progress->wrap(dest));
-    } else
-        res = mdbuf.move_to(dest);
+    bool res = mdbuf.move_to(dest);
 
 //fprintf(stderr, "POSTQ %zd\n", mdbuf.size());
 //system(str::fmtf("ps u %d >&2", getpid()).c_str());

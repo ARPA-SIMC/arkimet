@@ -5,6 +5,7 @@
 #include "session.h"
 #include "arki/dataset/time.h"
 #include "arki/dataset/lock.h"
+#include "arki/dataset/progress.h"
 #include "arki/metadata.h"
 #include "arki/types/source/blob.h"
 #include "arki/core/time.h"
@@ -32,6 +33,9 @@ Reader::~Reader()
 
 bool Reader::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 {
+    dataset::TrackProgress track(q.progress);
+    dest = track.wrap(dest);
+
     auto lock = dataset().read_lock_dataset();
     if (!local::Reader::query_data(q, dest))
         return false;

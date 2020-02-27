@@ -1,6 +1,7 @@
 #include "arki/dataset/tests.h"
 #include "arki/dataset.h"
 #include "arki/dataset/session.h"
+#include "arki/dataset/progress.h"
 #include "arki/core/file.h"
 #include "arki/metadata/data.h"
 #include "arki/metadata/collection.h"

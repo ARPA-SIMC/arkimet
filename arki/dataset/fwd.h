@@ -16,6 +16,7 @@ struct WriterBatchElement;
 struct WriterBatch;
 struct Checker;
 struct Reporter;
+struct QueryProgress;
 struct SessionTime;
 struct SessionTimeOverride;
 

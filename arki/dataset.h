@@ -59,26 +59,6 @@ class Summary;
  */
 namespace dataset {
 
-/// Interface for generating progress updates on queries
-class QueryProgress
-{
-protected:
-    size_t expected_count = 0;
-    size_t expected_bytes = 0;
-    size_t count = 0;
-    size_t bytes = 0;
-
-public:
-    virtual ~QueryProgress();
-
-    virtual void start(size_t expected_count=0, size_t expected_bytes=0);
-    virtual void update(size_t count, size_t bytes);
-    virtual void done();
-
-    /// Wrap a metadata_dest_func to provide updates to this QueryProgress
-    metadata_dest_func wrap(metadata_dest_func);
-};
-
 struct DataQuery
 {
     /// Matcher used to select data
