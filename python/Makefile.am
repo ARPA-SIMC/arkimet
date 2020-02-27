@@ -63,6 +63,7 @@ _arkimet_la_SOURCES = \
     matcher.cc \
     scan.cc \
     dataset.cc \
+    dataset/progress.cc \
     dataset/python.cc \
     dataset/querymacro.cc \
     counters.cc \
@@ -117,6 +118,7 @@ EXTRA_DIST = \
     scan.h \
     dataset.h \
     dataset/python.h \
+    dataset/progress.h \
     dataset/reporter.h \
     dataset/querymacro.h \
     counters.h \

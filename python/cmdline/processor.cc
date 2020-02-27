@@ -15,6 +15,7 @@
 #include "arki/core/file.h"
 #include "arki/summary/stats.h"
 #include "arki/nag.h"
+#include "python/dataset/progress.h"
 #include <cassert>
 
 using namespace std;
@@ -45,20 +46,21 @@ typedef std::function<void(const Summary&)> summary_print_func;
 
 struct DataProcessor : public DatasetProcessor
 {
-    dataset::DataQuery query;
+    arki::dataset::DataQuery query;
     metadata_print_func printer;
     bool data_inline;
     bool server_side;
 
-    DataProcessor(const dataset::DataQuery& query, metadata_print_func printer, bool server_side, bool data_inline=false)
+    DataProcessor(const arki::dataset::DataQuery& query, metadata_print_func printer, bool server_side, bool data_inline=false)
         : query(query), printer(std::move(printer)),
           data_inline(data_inline), server_side(server_side)
     {
+        this->query.progress = std::make_shared<python::dataset::PythonProgress>();
     }
 
     virtual ~DataProcessor() {}
 
-    void process(dataset::Reader& ds, const std::string& name) override
+    void process(arki::dataset::Reader& ds, const std::string& name) override
     {
         if (data_inline)
         {
@@ -91,17 +93,18 @@ struct DataProcessor : public DatasetProcessor
 
 struct LibarchiveProcessor : public DatasetProcessor
 {
-    dataset::DataQuery query;
+    arki::dataset::DataQuery query;
     arki::metadata::LibarchiveOutput arc_out;
 
     LibarchiveProcessor(Matcher matcher, std::shared_ptr<sys::NamedFileDescriptor> out, const std::string& format)
         : query(matcher, true), arc_out(format, *out)
     {
+        query.progress = std::make_shared<python::dataset::PythonProgress>();
     }
 
     virtual ~LibarchiveProcessor() {}
 
-    void process(dataset::Reader& ds, const std::string& name) override
+    void process(arki::dataset::Reader& ds, const std::string& name) override
     {
         ds.query_data(query, [&](std::shared_ptr<Metadata> md) { arc_out.append(*md); return true; });
     }
@@ -129,7 +132,7 @@ struct SummaryProcessor : public DatasetProcessor
 
     virtual ~SummaryProcessor() {}
 
-    void process(dataset::Reader& ds, const std::string& name) override
+    void process(arki::dataset::Reader& ds, const std::string& name) override
     {
         ds.query_summary(matcher, summary);
     }
@@ -139,7 +142,7 @@ struct SummaryProcessor : public DatasetProcessor
         if (!summary_restrict.empty())
         {
             Summary s;
-            s.add(summary, dataset::index::parseMetadataBitmask(summary_restrict));
+            s.add(summary, arki::dataset::index::parseMetadataBitmask(summary_restrict));
             do_output(s);
         } else
             do_output(summary);
@@ -171,7 +174,7 @@ struct SummaryShortProcessor : public DatasetProcessor
 
     virtual ~SummaryShortProcessor() {}
 
-    void process(dataset::Reader& ds, const std::string& name) override
+    void process(arki::dataset::Reader& ds, const std::string& name) override
     {
         ds.query_summary(matcher, summary);
     }
@@ -203,14 +206,15 @@ template<typename Output>
 struct BinaryProcessor : public DatasetProcessor
 {
     std::shared_ptr<Output> output;
-    dataset::ByteQuery query;
+    arki::dataset::ByteQuery query;
 
-    BinaryProcessor(const dataset::ByteQuery& query, std::shared_ptr<Output> out)
+    BinaryProcessor(const arki::dataset::ByteQuery& query, std::shared_ptr<Output> out)
         : output(out), query(query)
     {
+        this->query.progress = std::make_shared<python::dataset::PythonProgress>();
     }
 
-    void process(dataset::Reader& ds, const std::string& name) override
+    void process(arki::dataset::Reader& ds, const std::string& name) override
     {
         // TODO: validate query's postprocessor with ds' config
         ds.query_bytes(query, *this->output);
@@ -295,7 +299,7 @@ std::unique_ptr<DatasetProcessor> ProcessorMaker::make_metadata(Matcher matcher,
             do_output(*out, std::string("\n"));
         };
 
-    dataset::DataQuery query(matcher, data_inline);
+    arki::dataset::DataQuery query(matcher, data_inline);
     if (!sort.empty())
         query.sorter = metadata::sort::Compare::parse(sort);
 

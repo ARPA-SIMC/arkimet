@@ -21,9 +21,9 @@
 #include "arki/dataset/segmented.h"
 #include "arki/dataset/session.h"
 #include "arki/dataset/progress.h"
-#include "arki/exceptions.h"
 #include "arki/nag.h"
 #include "dataset/reporter.h"
+#include "dataset/progress.h"
 #include "time.h"
 #include <vector>
 
@@ -46,100 +46,6 @@ PyObject* arkipy_ImportFailedError = nullptr;
 }
 
 namespace {
-
-class PythonProgress: public arki::dataset::QueryProgress
-{
-protected:
-    struct timespec last_call = { 0, 0 };
-    PyObject* meth_start = nullptr;
-    PyObject* meth_update = nullptr;
-    PyObject* meth_done = nullptr;
-    size_t partial_count = 0;
-    size_t partial_bytes = 0;
-
-    void call_update()
-    {
-        pyo_unique_ptr py_count(to_python(partial_count));
-        pyo_unique_ptr py_bytes(to_python(partial_bytes));
-        pyo_unique_ptr args(throw_ifnull(PyTuple_Pack(2, py_count.get(), py_bytes.get())));
-        pyo_unique_ptr res(throw_ifnull(PyObject_Call(meth_update, args.get(), nullptr)));
-        partial_count = 0;
-        partial_bytes = 0;
-    }
-
-public:
-    PythonProgress(PyObject* progress=nullptr)
-    {
-        if (progress)
-        {
-            meth_start = throw_ifnull(PyObject_GetAttrString(progress, "start"));
-            meth_update = throw_ifnull(PyObject_GetAttrString(progress, "update"));
-            meth_done = throw_ifnull(PyObject_GetAttrString(progress, "done"));
-        }
-    }
-    ~PythonProgress()
-    {
-        Py_XDECREF(meth_done);
-        Py_XDECREF(meth_update);
-        Py_XDECREF(meth_start);
-    }
-
-    void start(size_t expected_count=0, size_t expected_bytes=0) override
-    {
-        arki::dataset::QueryProgress::start(expected_count, expected_bytes);
-
-        if (meth_start)
-        {
-            AcquireGIL gil;
-            pyo_unique_ptr count(to_python(expected_count));
-            pyo_unique_ptr bytes(to_python(expected_bytes));
-            pyo_unique_ptr args(throw_ifnull(PyTuple_Pack(2, count.get(), bytes.get())));
-            pyo_unique_ptr res(throw_ifnull(PyObject_Call(meth_start, args.get(), nullptr)));
-        }
-    }
-
-    void update(size_t count, size_t bytes)
-    {
-        arki::dataset::QueryProgress::update(count, bytes);
-
-        partial_count += count;
-        partial_bytes += bytes;
-
-        // Don't trigger more than once every 0.2 seconds
-        struct timespec now;
-        if (clock_gettime(CLOCK_MONOTONIC_COARSE, &now) == -1)
-            throw_system_error("clock_gettime failed");
-        int diff = (now.tv_sec - last_call.tv_sec) * 1000 + (now.tv_nsec - last_call.tv_nsec) / 1000000;
-        if (diff < 200)
-            return;
-        last_call = now;
-
-        AcquireGIL gil;
-        if (meth_update)
-            call_update();
-        else
-            if (PyErr_CheckSignals() == -1)
-                throw PythonException();
-    }
-
-    void done()
-    {
-        arki::dataset::QueryProgress::done();
-
-        AcquireGIL gil;
-        if (meth_update and (partial_count or partial_bytes))
-            call_update();
-
-        if (meth_done)
-        {
-            pyo_unique_ptr py_count(to_python(count));
-            pyo_unique_ptr py_bytes(to_python(bytes));
-            pyo_unique_ptr args(throw_ifnull(PyTuple_Pack(2, py_count.get(), py_bytes.get())));
-            pyo_unique_ptr res(throw_ifnull(PyObject_Call(meth_done, args.get(), nullptr)));
-        }
-    }
-};
-
 
 /*
  * dataset.Reader
@@ -185,9 +91,9 @@ struct query_data : public MethKwargs<query_data, arkipy_DatasetReader>
                 sort = string_from_python(arg_sort);
             if (!sort.empty()) query.sorter = metadata::sort::Compare::parse(sort);
             if (arg_progress == Py_None)
-                query.progress = std::make_shared<PythonProgress>();
+                query.progress = std::make_shared<python::dataset::PythonProgress>();
             else
-                query.progress = std::make_shared<PythonProgress>(arg_progress);
+                query.progress = std::make_shared<python::dataset::PythonProgress>(arg_progress);
 
             metadata_dest_func dest;
             pyo_unique_ptr res_list;
@@ -341,9 +247,9 @@ struct query_bytes : public MethKwargs<query_bytes, arkipy_DatasetReader>
                 query.sorter = metadata::sort::Compare::parse(sort);
 
             if (arg_progress == Py_None)
-                query.progress = std::make_shared<PythonProgress>();
+                query.progress = std::make_shared<python::dataset::PythonProgress>();
             else
-                query.progress = std::make_shared<PythonProgress>(arg_progress);
+                query.progress = std::make_shared<python::dataset::PythonProgress>(arg_progress);
 
             pyo_unique_ptr data_start_hook_args;
             if (arg_data_start_hook != Py_None)
