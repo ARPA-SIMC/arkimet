@@ -2,6 +2,40 @@ import arkimet
 from arkimet.cmdline.base import AppConfigMixin, AppWithProcessor
 import sys
 import logging
+try:
+    import progressbar
+except ModuleNotFoundError:
+    progressbar = None
+
+
+class Progress:
+    def __init__(self):
+        self.fd = sys.stderr
+        self.pbar = None
+        self.total_bytes = 0
+
+    def start(self, expected_count=0, expected_bytes=0):
+        if progressbar is not None:
+            self.pbar = progressbar.ProgressBar(
+                    maxval=expected_bytes or progressbar.widgets.UnknownLength,
+                    fd=self.fd, widgets=[
+                        progressbar.Timer(), " ",
+                        progressbar.AnimatedMarker(), " ",
+                        progressbar.Counter(), " ",
+                        progressbar.FileTransferSpeed(),
+                    ])
+            self.pbar.start()
+        else:
+            self.pbar = None
+
+    def update(self, count, bytes):
+        self.total_bytes += bytes
+        if self.pbar is not None:
+            self.pbar.update(self.total_bytes)
+
+    def done(self, total_count, total_bytes):
+        if self.pbar is not None:
+            self.pbar.finish()
 
 
 class Query(AppConfigMixin, AppWithProcessor):
@@ -40,6 +74,8 @@ class Query(AppConfigMixin, AppWithProcessor):
 
         self.parser.add_argument("--qmacro", metavar="name",
                                  help="run the given query macro instead of a plain query")
+        self.parser.add_argument("--progress", action="store_true",
+                                 help="show a progress bar on stderr")
 
     def build_config(self):
         self.query = None
@@ -113,6 +149,9 @@ class Query(AppConfigMixin, AppWithProcessor):
         with self.outfile() as outfd:
             arki_query = arkimet.cmdline.ArkiQuery()
             arki_query.set_inputs(self.config)
+            progress = None
+            if self.args.progress:
+                progress = Progress()
             arki_query.set_processor(
                     query=query,
                     outfile=outfd,
@@ -128,6 +167,7 @@ class Query(AppConfigMixin, AppWithProcessor):
                     postproc=self.args.postproc,
                     postproc_data=self.args.postproc_data,
                     sort=self.args.sort,
+                    progress=progress,
             )
 
             if self.args.stdin:
