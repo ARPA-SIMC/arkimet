@@ -61,6 +61,7 @@ struct DataProcessor : public DatasetProcessor
 
     void process(arki::dataset::Reader& ds, const std::string& name) override
     {
+        arki::nag::verbose("Processing %s...", ds.name().c_str());
         if (data_inline)
         {
             ds.query_data(query, [&](std::shared_ptr<Metadata> md) { md->makeInline(); printer(*md); return true; });
@@ -107,6 +108,7 @@ struct LibarchiveProcessor : public DatasetProcessor
 
     void process(arki::dataset::Reader& ds, const std::string& name) override
     {
+        arki::nag::verbose("Processing %s...", ds.name().c_str());
         ds.query_data(query, [&](std::shared_ptr<Metadata> md) { arc_out.append(*md); return true; });
     }
 
@@ -135,6 +137,7 @@ struct SummaryProcessor : public DatasetProcessor
 
     void process(arki::dataset::Reader& ds, const std::string& name) override
     {
+        arki::nag::verbose("Processing %s...", ds.name().c_str());
         ds.query_summary(matcher, summary);
     }
 
@@ -177,6 +180,7 @@ struct SummaryShortProcessor : public DatasetProcessor
 
     void process(arki::dataset::Reader& ds, const std::string& name) override
     {
+        arki::nag::verbose("Processing %s...", ds.name().c_str());
         ds.query_summary(matcher, summary);
     }
 
@@ -216,6 +220,7 @@ struct BinaryProcessor : public DatasetProcessor
 
     void process(arki::dataset::Reader& ds, const std::string& name) override
     {
+        arki::nag::verbose("Processing %s...", ds.name().c_str());
         // TODO: validate query's postprocessor with ds' config
         ds.query_bytes(query, *this->output);
     }

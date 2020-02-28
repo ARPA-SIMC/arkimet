@@ -129,6 +129,7 @@ class Query(AppConfigMixin, AppWithProcessor):
 
     def run(self):
         super().run()
+
         self.build_config()
 
         # Parse the matcher query
