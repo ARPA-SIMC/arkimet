@@ -1,6 +1,7 @@
 #include "arki/dataset/tests.h"
 #include "arki/dataset.h"
 #include "arki/dataset/time.h"
+#include "arki/dataset/query.h"
 #include "arki/dataset/reporter.h"
 #include "arki/metadata/data.h"
 #include "arki/metadata/collection.h"

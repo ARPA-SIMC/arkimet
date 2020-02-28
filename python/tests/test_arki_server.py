@@ -8,6 +8,35 @@ import arkimet.test
 from arkimet.cmdline.server import make_server
 
 
+class Progress:
+    def __init__(self):
+        self.start_called = 0
+        self.update_called = 0
+        self.done_called = 0
+        self.total_count = 0
+        self.total_bytes = 0
+
+    def start(self, expected_count=0, expected_bytes=0):
+        self.start_called += 1
+
+    def update(self, count, bytes):
+        self.update_called += 1
+
+    def done(self, total_count, total_bytes):
+        self.done_called += 1
+        self.total_count = total_count
+        self.total_bytes = total_bytes
+
+
+class ExpectedFailure(Exception):
+    pass
+
+
+class ProgressFailUpdate(Progress):
+    def update(self, *args):
+        raise ExpectedFailure()
+
+
 class ServerThread(multiprocessing.Process):
     def __init__(self, server):
         super().__init__()
@@ -404,3 +433,35 @@ class TestArkiServer(unittest.TestCase):
         self.assertEqual(len(res), 7218)
         self.assertTrue(res.startswith(b"GRIB"))
         self.assertTrue(res.endswith(b"7777"))
+
+    def test_progress(self):
+        """
+        Test querying the datasets, metadata only
+        """
+        config = arki.dataset.http.load_cfg_sections(self.server_url)
+        ds = arki.dataset.Reader(config["test200"])
+
+        progress = Progress()
+        mdc = ds.query_data(progress=progress)
+        self.assertEqual(len(mdc), 1)
+        self.assertEqual(progress.total_count, 1)
+        # This is 0 because we do not request data, and we get URL sources that
+        # do not carry length information
+        self.assertEqual(progress.total_bytes, 0)
+        self.assertEqual(progress.start_called, 1)
+        self.assertGreaterEqual(progress.update_called, 1)
+        self.assertEqual(progress.done_called, 1)
+
+        progress = Progress()
+        buf = ds.query_bytes(progress=progress)
+        self.assertEqual(len(buf), 7218)
+        self.assertEqual(progress.total_count, 0)
+        self.assertEqual(progress.total_bytes, 7218)
+        self.assertEqual(progress.start_called, 1)
+        self.assertGreaterEqual(progress.update_called, 1)
+        self.assertEqual(progress.done_called, 1)
+
+        with self.assertRaises(ExpectedFailure):
+            ds.query_data(progress=ProgressFailUpdate())
+        with self.assertRaises(ExpectedFailure):
+            ds.query_bytes(progress=ProgressFailUpdate())

@@ -49,16 +49,26 @@ struct ArkiRunner
 
     bool setup()
     {
-        if (const char* whitelist = getenv("TEST_WHITELIST"))
+        if (const char* allowlist = getenv("TEST_WHITELIST"))
         {
             run_all = false;
-            controller->whitelist = whitelist;
+            controller->allowlist = allowlist;
+        }
+        if (const char* allowlist = getenv("TEST_ONLY"))
+        {
+            run_all = false;
+            controller->allowlist = allowlist;
         }
 
-        if (const char* blacklist = getenv("TEST_BLACKLIST"))
+        if (const char* blocklist = getenv("TEST_BLACKLIST"))
         {
             run_all = false;
-            controller->blacklist = blacklist;
+            controller->blocklist = blocklist;
+        }
+        if (const char* blocklist = getenv("TEST_EXCEPT"))
+        {
+            run_all = false;
+            controller->blocklist = blocklist;
         }
         return false;
     }

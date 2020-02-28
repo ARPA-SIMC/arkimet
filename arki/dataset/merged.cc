@@ -1,5 +1,7 @@
 #include "arki/dataset/merged.h"
 #include "arki/dataset/session.h"
+#include "arki/dataset/query.h"
+#include "arki/dataset/progress.h"
 #include "arki/exceptions.h"
 #include "arki/metadata.h"
 #include "arki/metadata/sort.h"
@@ -10,6 +12,7 @@
 #include <thread>
 #include <mutex>
 #include <condition_variable>
+#include <atomic>
 
 using namespace std;
 using namespace arki::core;
@@ -90,25 +93,50 @@ public:
     }
 };
 
-class MetadataReader
+class ReaderThread
+{
+protected:
+    std::thread thread;
+    std::atomic_bool all_ok;
+
+public:
+    ReaderThread()
+        : all_ok(true)
+    {
+    }
+    virtual ~ReaderThread()
+    {
+        all_ok.store(false);
+        if (thread.joinable())
+            thread.join();
+    }
+    virtual void main() = 0;
+    void start()
+    {
+        thread = std::thread([this]{main();});
+    }
+    void join()
+    {
+        thread.join();
+    }
+};
+
+class MetadataReader : public ReaderThread
 {
 public:
     std::shared_ptr<dataset::Reader> dataset;
-    const DataQuery* query = 0;
+    DataQuery query;
     string errorbuf;
     SyncBuffer mdbuf;
-    std::thread thread;
 
     MetadataReader() {}
 
-    void main()
+    void main() override
     {
         try {
-            if (!query)
-                throw_consistency_error("executing query in subthread", "no query has been set");
-            dataset->query_data(*query, [&](std::shared_ptr<Metadata> md) {
+            dataset->query_data(query, [&](std::shared_ptr<Metadata> md) {
                 mdbuf.push(md);
-                return true;
+                return all_ok.load();
             });
             mdbuf.done();
         } catch (std::exception& e) {
@@ -117,14 +145,16 @@ public:
         }
     }
 
-    void init(std::shared_ptr<dataset::Reader> dataset, const DataQuery* query)
+    void start(std::shared_ptr<dataset::Reader> dataset, const DataQuery& query)
     {
         this->dataset = dataset;
         this->query = query;
+        this->query.progress.reset();
+        ReaderThread::start();
     }
 };
 
-class SummaryReader
+class SummaryReader : public ReaderThread
 {
 public:
     std::shared_ptr<dataset::Reader> dataset;
@@ -134,7 +164,7 @@ public:
 
     SummaryReader() {}
 
-    void main()
+    void main() override
     {
         try {
             dataset->query_summary(matcher, summary);
@@ -143,10 +173,11 @@ public:
         }
     }
 
-    void init(std::shared_ptr<dataset::Reader> dataset, const Matcher& matcher)
+    void start(std::shared_ptr<dataset::Reader> dataset, const Matcher& matcher)
     {
         this->matcher = matcher;
         this->dataset = dataset;
+        ReaderThread::start();
     }
 };
 
@@ -185,21 +216,23 @@ std::string Reader::type() const { return "merged"; }
 
 bool Reader::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 {
+    dataset::TrackProgress track(q.progress);
+    dest = track.wrap(dest);
+
     auto& datasets = dataset().datasets;
 
     // Handle the trivial case of only one dataset
     if (datasets.size() == 1)
-        return datasets[0]->query_data(q, dest);
+        return track.done(datasets[0]->query_data(q, dest));
 
-    vector<MetadataReader> readers(datasets.size());
-    vector<std::thread> threads;
+    bool canceled = false;
+    // TODO: we need to join or detach the threads, otehrwise if we raise an exception before the join further down, we get
+    // https://stackoverflow.com/questions/7381757/c-terminate-called-without-an-active-exception
 
     // Start all the readers
+    std::vector<MetadataReader> readers(datasets.size());
     for (size_t i = 0; i < datasets.size(); ++i)
-    {
-        readers[i].init(datasets[i], &q);
-        threads.emplace_back(&MetadataReader::main, &readers[i]);
-    }
+        readers[i].start(datasets[i], q);
 
     // Output items in time-sorted order or in the order asked by q
     // Note: we assume that every dataset will give us data sorted as q
@@ -208,7 +241,6 @@ bool Reader::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
     if (!sorter)
         sorter = metadata::sort::Compare::parse("");
 
-    bool canceled = false;
     while (true)
     {
         const Metadata* minmd = 0;
@@ -232,21 +264,21 @@ bool Reader::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 
     // Collect all the results
     vector<string> errors;
-    for (size_t i = 0; i < datasets.size(); ++i)
+    for (auto& reader: readers)
     {
         try {
-            threads[i].join();
+            reader.join();
         } catch (std::exception& e) {
             errors.push_back(e.what());
             continue;
         }
-        if (!readers[i].errorbuf.empty())
-            errors.push_back(readers[i].errorbuf);
+        if (!reader.errorbuf.empty())
+            errors.push_back(reader.errorbuf);
     }
     if (!errors.empty())
         throw_consistency_error("running metadata queries on multiple datasets", str::join("; ", errors.begin(), errors.end()));
 
-    return canceled;
+    return track.done(canceled);
 }
 
 void Reader::query_summary(const Matcher& matcher, Summary& summary)
@@ -260,28 +292,53 @@ void Reader::query_summary(const Matcher& matcher, Summary& summary)
         return;
     }
 
-    vector<SummaryReader> readers(datasets.size());
-    vector<std::thread> threads;
-
     // Start all the readers
+    vector<SummaryReader> readers(datasets.size());
     for (size_t i = 0; i < datasets.size(); ++i)
-    {
-        readers[i].init(datasets[i], matcher);
-        threads.emplace_back(&SummaryReader::main, &readers[i]);
-    }
+        readers[i].start(datasets[i], matcher);
 
     // Collect all the results
     vector<string> errors;
-    for (size_t i = 0; i < datasets.size(); ++i)
+    for (auto& reader: readers)
     {
-        threads[i].join();
-        if (readers[i].errorbuf.empty())
-            summary.add(readers[i].summary);
+        reader.join();
+        if (reader.errorbuf.empty())
+            summary.add(reader.summary);
         else
-            errors.push_back(readers[i].errorbuf);
+            errors.push_back(reader.errorbuf);
     }
     if (!errors.empty())
         throw_consistency_error("running summary queries on multiple datasets", str::join("; ", errors.begin(), errors.end()));
+}
+
+namespace {
+
+class QueryBytesProgress : public QueryProgress
+{
+    std::shared_ptr<QueryProgress> wrapped;
+
+public:
+    QueryBytesProgress(std::shared_ptr<QueryProgress> wrapped)
+        : wrapped(wrapped)
+    {
+        if (wrapped) wrapped->start();
+    }
+    ~QueryBytesProgress()
+    {
+    }
+    void start(size_t expected_count=0, size_t expected_bytes=0) override {}
+    void update(size_t count, size_t bytes) override
+    {
+        if (wrapped) wrapped->update(count, bytes);
+    }
+    void done() override {}
+
+    void actual_done()
+    {
+        if (wrapped) wrapped->done();
+    }
+};
+
 }
 
 void Reader::query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out)
@@ -296,9 +353,14 @@ void Reader::query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out)
     // TODO: we might be able to do something smarter, like if we're merging
     // many datasets from the same server we can run it all there; if we're
     // merging all local datasets, wrap queryData; and so on.
+    dataset::ByteQuery localq(q);
+    auto wrapped_progress = std::make_shared<QueryBytesProgress>(q.progress);
+    localq.progress = wrapped_progress;
 
     for (auto i: dataset().datasets)
-        i->query_bytes(q, out);
+        i->query_bytes(localq, out);
+
+    wrapped_progress->actual_done();
 }
 
 void Reader::query_bytes(const dataset::ByteQuery& q, AbstractOutputFile& out)
@@ -313,9 +375,14 @@ void Reader::query_bytes(const dataset::ByteQuery& q, AbstractOutputFile& out)
     // TODO: we might be able to do something smarter, like if we're merging
     // many datasets from the same server we can run it all there; if we're
     // merging all local datasets, wrap queryData; and so on.
+    dataset::ByteQuery localq(q);
+    auto wrapped_progress = std::make_shared<QueryBytesProgress>(q.progress);
+    localq.progress = wrapped_progress;
 
     for (auto i: dataset().datasets)
-        i->query_bytes(q, out);
+        i->query_bytes(localq, out);
+
+    wrapped_progress->actual_done();
 }
 
 }

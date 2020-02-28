@@ -1,4 +1,5 @@
 #include "arki/dataset.h"
+#include "arki/dataset/query.h"
 #include "arki/dataset/reporter.h"
 #include "arki/dataset/session.h"
 #include "arki/dataset/outbound.h"
@@ -17,12 +18,6 @@ using namespace arki::utils;
 
 namespace arki {
 namespace dataset {
-
-DataQuery::DataQuery() : with_data(false) {}
-DataQuery::DataQuery(const std::string& matcher, bool with_data) : matcher(Matcher::parse(matcher)), with_data(with_data), sorter(0) {}
-DataQuery::DataQuery(const Matcher& matcher, bool with_data) : matcher(matcher), with_data(with_data), sorter(0) {}
-DataQuery::~DataQuery() {}
-
 
 Dataset::Dataset(std::shared_ptr<Session> session) : session(session) {}
 

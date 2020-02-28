@@ -7,6 +7,35 @@ import shutil
 from arkimet.test import daemon
 
 
+class Progress:
+    def __init__(self):
+        self.start_called = 0
+        self.update_called = 0
+        self.done_called = 0
+        self.total_count = 0
+        self.total_bytes = 0
+
+    def start(self, expected_count=0, expected_bytes=0):
+        self.start_called += 1
+
+    def update(self, count, bytes):
+        self.update_called += 1
+
+    def done(self, total_count, total_bytes):
+        self.done_called += 1
+        self.total_count = total_count
+        self.total_bytes = total_bytes
+
+
+class ExpectedFailure(Exception):
+    pass
+
+
+class ProgressFailUpdate(Progress):
+    def update(self, *args):
+        raise ExpectedFailure()
+
+
 class TestReadConfig(unittest.TestCase):
     def test_file(self):
         pathname = os.path.abspath("inbound/test.grib1")
@@ -249,6 +278,145 @@ type = file
         # No arguments
         ds.query_data(on_metadata=count_results)
         self.assertEquals(count, 24841)
+
+    def test_progress(self):
+        ds = arki.dataset.Reader({
+            "format": "grib",
+            "name": "test.grib1",
+            "path": "inbound/test.grib1",
+            "type": "file",
+        })
+
+        count = 0
+
+        def count_results(md):
+            nonlocal count
+            count += 1
+
+        progress = Progress()
+        ds.query_data(on_metadata=count_results, progress=progress)
+        self.assertEquals(count, 3)
+        self.assertEqual(progress.total_count, 3)
+        self.assertGreaterEqual(progress.total_bytes, 90)
+        self.assertEqual(progress.start_called, 1)
+        # Initial and final calls at least, but intermediate calls are
+        # throttled at no more than one each 200ms
+        self.assertGreaterEqual(progress.update_called, 2)
+        self.assertEqual(progress.done_called, 1)
+
+        progress = Progress()
+        res = ds.query_bytes(progress=progress)
+        self.assertEquals(len(res), 44412)
+
+        self.assertEqual(progress.total_count, 3)
+        self.assertGreaterEqual(progress.total_bytes, 90)
+        self.assertEqual(progress.start_called, 1)
+        # Initial and final calls at least, but intermediate calls are
+        # throttled at no more than one each 200ms
+        self.assertGreaterEqual(progress.update_called, 2)
+        self.assertEqual(progress.done_called, 1)
+
+        with self.assertRaises(ExpectedFailure):
+            ds.query_data(progress=ProgressFailUpdate())
+        with self.assertRaises(ExpectedFailure):
+            ds.query_bytes(progress=ProgressFailUpdate())
+
+    def test_progress_qmacro(self):
+        ds = arki.make_qmacro_dataset(
+            {},
+            """
+[test200]
+format = grib
+name = test.grib1
+path = inbound/test.grib1
+type = file
+""",
+            "expa 2007-07-08",
+            "ds:test200. d:@. t:1300. s:GRIB1/0/0h/0h. l:GRIB1/1. v:GRIB1/200/140/229.\n",
+        )
+
+        count = 0
+
+        def count_results(md):
+            nonlocal count
+            count += 1
+
+        progress = Progress()
+
+        # No arguments
+        ds.query_data(on_metadata=count_results, progress=progress)
+        self.assertEquals(count, 1)
+        self.assertEqual(progress.total_count, 1)
+        self.assertEqual(progress.total_bytes, 7218)
+        self.assertEqual(progress.start_called, 1)
+        self.assertEqual(progress.update_called, 1)
+        self.assertEqual(progress.done_called, 1)
+
+        progress = Progress()
+        res = ds.query_bytes(progress=progress)
+        self.assertEquals(len(res), 7218)
+        self.assertEqual(progress.total_count, 1)
+        self.assertEqual(progress.total_bytes, 7218)
+        self.assertEqual(progress.start_called, 1)
+        self.assertEqual(progress.update_called, 1)
+        self.assertEqual(progress.done_called, 1)
+
+        with self.assertRaises(ExpectedFailure):
+            ds.query_data(progress=ProgressFailUpdate())
+        with self.assertRaises(ExpectedFailure):
+            ds.query_bytes(progress=ProgressFailUpdate())
+
+    def test_progress_merged(self):
+        ds = arki.make_merged_dataset(
+            """
+[test1]
+format = grib
+name = test.grib1
+path = inbound/test.grib1
+type = file
+
+[test2]
+format = bufr
+name = test.bufr
+path = inbound/test.bufr
+type = file
+""",
+        )
+
+        count = 0
+
+        def count_results(md):
+            nonlocal count
+            count += 1
+
+        progress = Progress()
+
+        # No arguments
+        ds.query_data(on_metadata=count_results, progress=progress)
+        self.assertEquals(count, 6)
+        self.assertEqual(progress.total_count, 6)
+        self.assertEqual(progress.total_bytes, 45046)
+        self.assertEqual(progress.start_called, 1)
+        # Initial and final calls at least, but intermediate calls are
+        # throttled at no more than one each 200ms
+        self.assertGreaterEqual(progress.update_called, 2)
+        self.assertEqual(progress.done_called, 1)
+
+        progress = Progress()
+        res = ds.query_bytes(progress=progress)
+        self.assertEquals(len(res), 45046)
+        self.assertEqual(progress.total_count, 6)
+        self.assertEqual(progress.total_bytes, 45046)
+        self.assertEqual(progress.start_called, 1)
+        # Initial and final calls at least, but intermediate calls are
+        # throttled at no more than one each 200ms
+        self.assertGreaterEqual(progress.update_called, 2)
+        self.assertEqual(progress.done_called, 1)
+
+        with self.assertRaises(ExpectedFailure):
+            ds.query_data(progress=ProgressFailUpdate())
+        with self.assertRaises(ExpectedFailure):
+            ds.query_bytes(progress=ProgressFailUpdate())
 
 
 class TestDatasetWriter(unittest.TestCase):

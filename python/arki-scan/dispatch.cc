@@ -7,6 +7,7 @@
 #include "arki/metadata.h"
 #include "arki/metadata/validator.h"
 #include "arki/types/source/blob.h"
+#include "arki/dataset/query.h"
 #include "python/dataset.h"
 
 using namespace std;

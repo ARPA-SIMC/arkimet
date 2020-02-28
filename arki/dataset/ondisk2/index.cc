@@ -6,6 +6,7 @@
 #include "arki/matcher.h"
 #include "arki/matcher/reftime.h"
 #include "arki/dataset.h"
+#include "arki/dataset/query.h"
 #include "arki/dataset/session.h"
 #include "arki/types/reftime.h"
 #include "arki/types/source.h"

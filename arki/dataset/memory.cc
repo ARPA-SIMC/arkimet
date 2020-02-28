@@ -1,6 +1,7 @@
 #include "memory.h"
 #include "arki/summary.h"
 #include "arki/metadata/sort.h"
+#include "arki/dataset/query.h"
 
 using namespace std;
 

@@ -1,5 +1,6 @@
 #include "cmdline.h"
 #include "cmdline/processor.h"
+#include "dataset/progress.h"
 #include "arki/core/cfg.h"
 #include "arki/core/file.h"
 #include "arki/scan.h"
@@ -28,7 +29,7 @@ std::unique_ptr<cmdline::DatasetProcessor> build_processor(PyObject* args, PyObj
         "yaml", "json", "annotate", "inline", "data",
         "summary", "summary_short", "summary_restrict",
         "archive", "postproc", "postproc_data",
-        "sort", nullptr };
+        "sort", "progress", nullptr };
 
     PyObject* py_query = nullptr;
     PyObject* py_outfile = nullptr;
@@ -41,12 +42,13 @@ std::unique_ptr<cmdline::DatasetProcessor> build_processor(PyObject* args, PyObj
     PyObject* postproc_data = nullptr;
     const char* sort = nullptr;
     Py_ssize_t sort_len;
-    if (!PyArg_ParseTupleAndKeywords(args, kw, "OO|ppppp" "ppz#" "Oz#O" "z#", const_cast<char**>(kwlist),
+    PyObject* progress = Py_None;
+    if (!PyArg_ParseTupleAndKeywords(args, kw, "OO|ppppp" "ppz#" "Oz#O" "z#O", const_cast<char**>(kwlist),
                 &py_query, &py_outfile,
                 &yaml, &json, &annotate, &out_inline, &data,
                 &summary, &summary_short, &summary_restrict, &summary_restrict_len,
                 &archive, &postproc, &postproc_len, &postproc_data,
-                &sort, &sort_len))
+                &sort, &sort_len, &progress))
         throw PythonException();
 
     arki::Matcher query = matcher_from_python(py_query);
@@ -65,6 +67,7 @@ std::unique_ptr<cmdline::DatasetProcessor> build_processor(PyObject* args, PyObj
     if (sort) pmaker.sort = std::string(sort, sort_len);
     if (archive && archive != Py_None)
         pmaker.archive = string_from_python(archive);
+    pmaker.progress = std::make_shared<dataset::PythonProgress>(progress);
 
     BinaryOutputFile outfile(py_outfile);
 
@@ -82,16 +85,16 @@ std::unique_ptr<cmdline::DatasetProcessor> build_processor(PyObject* args, PyObj
     }
 }
 
-bool foreach_file(BinaryInputFile& file, const std::string& format, std::function<void(dataset::Reader&)> dest)
+bool foreach_file(BinaryInputFile& file, const std::string& format, std::function<void(arki::dataset::Reader&)> dest)
 {
     auto scanner = scan::Scanner::get_scanner(format);
 
     core::cfg::Section cfg;
     cfg.set("format", format);
     cfg.set("name", "stdin:" + scanner->name());
-    auto dataset = std::make_shared<dataset::fromfunction::Dataset>(arki::python::get_dataset_session(), cfg);
+    auto dataset = std::make_shared<arki::dataset::fromfunction::Dataset>(arki::python::get_dataset_session(), cfg);
 
-    auto reader = std::make_shared<dataset::fromfunction::Reader>(dataset);
+    auto reader = std::make_shared<arki::dataset::fromfunction::Reader>(dataset);
 
     if (file.fd)
     {
@@ -117,7 +120,7 @@ bool foreach_file(BinaryInputFile& file, const std::string& format, std::functio
     return success;
 }
 
-bool foreach_sections(const core::cfg::Sections& inputs, std::function<void(dataset::Reader&)> dest)
+bool foreach_sections(const core::cfg::Sections& inputs, std::function<void(arki::dataset::Reader&)> dest)
 {
     bool all_successful = true;
     // Query all the datasets in sequence

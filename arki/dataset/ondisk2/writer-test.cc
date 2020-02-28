@@ -2,6 +2,7 @@
 #include "arki/dataset/ondisk2/writer.h"
 #include "arki/dataset/ondisk2/reader.h"
 #include "arki/dataset/ondisk2/index.h"
+#include "arki/dataset/query.h"
 #include "arki/dataset/reporter.h"
 #include "arki/dataset/session.h"
 #include "arki/metadata.h"

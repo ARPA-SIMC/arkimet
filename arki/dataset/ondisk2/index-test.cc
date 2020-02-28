@@ -2,6 +2,7 @@
 #include "arki/exceptions.h"
 #include "arki/dataset.h"
 #include "arki/dataset/session.h"
+#include "arki/dataset/query.h"
 #include "arki/core/file.h"
 #include "arki/metadata.h"
 #include "arki/metadata/data.h"

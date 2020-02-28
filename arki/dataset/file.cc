@@ -1,5 +1,7 @@
 #include "arki/libconfig.h"
 #include "arki/dataset/file.h"
+#include "arki/dataset/query.h"
+#include "arki/dataset/progress.h"
 #include "arki/types/source/blob.h"
 #include "arki/segment.h"
 #include "arki/core/file.h"
@@ -48,7 +50,9 @@ std::shared_ptr<Dataset> Dataset::from_config(std::shared_ptr<Session> session, 
 
 bool Reader::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 {
-    return dataset().scan(q, dest);
+    dataset::TrackProgress track(q.progress);
+    dest = track.wrap(dest);
+    return track.done(dataset().scan(q, dest));
 }
 
 core::cfg::Section read_config(const std::string& fname)

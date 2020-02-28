@@ -2,6 +2,7 @@
 #include "archive.h"
 #include "reporter.h"
 #include "simple/writer.h"
+#include "arki/dataset/query.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
 #include "arki/types/source/blob.h"

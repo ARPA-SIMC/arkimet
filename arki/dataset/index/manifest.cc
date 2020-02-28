@@ -4,6 +4,7 @@
 #include "arki/core/file.h"
 #include "arki/dataset.h"
 #include "arki/dataset/maintenance.h"
+#include "arki/dataset/query.h"
 #include "arki/dataset/session.h"
 #include "arki/dataset/simple.h"
 #include "arki/metadata.h"

@@ -1,5 +1,6 @@
 #include "tests.h"
 #include "arki/matcher.h"
+#include "arki/dataset/query.h"
 
 namespace {
 using namespace std;

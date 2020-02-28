@@ -15,14 +15,17 @@
 #include "arki/core/cfg.h"
 #include "arki/metadata/sort.h"
 #include "arki/dataset.h"
+#include "arki/dataset/query.h"
 #include "arki/dataset/http.h"
 #include "arki/dataset/time.h"
 #include "arki/dataset/segmented.h"
 #include "arki/dataset/session.h"
+#include "arki/dataset/progress.h"
 #include "arki/nag.h"
 #include "dataset/reporter.h"
+#include "dataset/progress.h"
+#include "time.h"
 #include <vector>
-#include "config.h"
 
 using namespace std;
 using namespace arki;
@@ -44,7 +47,6 @@ PyObject* arkipy_ImportFailedError = nullptr;
 
 namespace {
 
-
 /*
  * dataset.Reader
  */
@@ -62,17 +64,22 @@ struct query_data : public MethKwargs<query_data, arkipy_DatasetReader>
 :arg on_metadata: a function called on each metadata, with the Metadata
                   object as its only argument. Return None or True to
                   continue processing results, False to stop.
+:arg progress: an object with 3 methods: ``start(expected_count: int=0, expected_bytes: int=0)``,
+               ``update(count: int, bytes: int)``, and ``done(total_count: int, total_bytes: int)``,
+               to call for progress updates.
 )";
 
     static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
     {
-        static const char* kwlist[] = { "matcher", "with_data", "sort", "on_metadata", nullptr };
+        static const char* kwlist[] = { "matcher", "with_data", "sort", "on_metadata", "progress", nullptr };
         PyObject* arg_matcher = Py_None;
         PyObject* arg_with_data = Py_None;
         PyObject* arg_sort = Py_None;
         PyObject* arg_on_metadata = Py_None;
+        PyObject* arg_progress = Py_None;
 
-        if (!PyArg_ParseTupleAndKeywords(args, kw, "|OOOO", const_cast<char**>(kwlist), &arg_matcher, &arg_with_data, &arg_sort, &arg_on_metadata))
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "|OOOOO", const_cast<char**>(kwlist),
+                    &arg_matcher, &arg_with_data, &arg_sort, &arg_on_metadata, &arg_progress))
             return nullptr;
 
         try {
@@ -83,6 +90,10 @@ struct query_data : public MethKwargs<query_data, arkipy_DatasetReader>
             if (arg_sort != Py_None)
                 sort = string_from_python(arg_sort);
             if (!sort.empty()) query.sorter = metadata::sort::Compare::parse(sort);
+            if (arg_progress == Py_None)
+                query.progress = std::make_shared<python::dataset::PythonProgress>();
+            else
+                query.progress = std::make_shared<python::dataset::PythonProgress>(arg_progress);
 
             metadata_dest_func dest;
             pyo_unique_ptr res_list;
@@ -119,7 +130,7 @@ struct query_data : public MethKwargs<query_data, arkipy_DatasetReader>
 struct query_summary : public MethKwargs<query_summary, arkipy_DatasetReader>
 {
     constexpr static const char* name = "query_summary";
-    constexpr static const char* signature = "matcher: Union[arki.Matcher, str]=None, summary: arkimet.Summary=None";
+    constexpr static const char* signature = "matcher: Union[arki.Matcher, str]=None, summary: arkimet.Summary=None, progress=None";
     constexpr static const char* returns = "arkimet.Summary";
     constexpr static const char* summary = "query a dataset, returning an arkimet.Summary with the results";
     constexpr static const char* doc = R"(
@@ -171,7 +182,7 @@ struct query_summary : public MethKwargs<query_summary, arkipy_DatasetReader>
 struct query_bytes : public MethKwargs<query_bytes, arkipy_DatasetReader>
 {
     constexpr static const char* name = "query_bytes";
-    constexpr static const char* signature = "matcher: Union[arki.Matcher, str]=None, with_data: bool=False, sort: str=None, data_start_hook: Callable[[], None]=None, postprocess: str=None, metadata_report: str=None, summary_report: str=None, file: Union[int, BinaryIO]=None";
+    constexpr static const char* signature = "matcher: Union[arki.Matcher, str]=None, with_data: bool=False, sort: str=None, data_start_hook: Callable[[], None]=None, postprocess: str=None, metadata_report: str=None, summary_report: str=None, file: Union[int, BinaryIO]=None, progres=None";
     constexpr static const char* returns = "Union[None, bytes]";
     constexpr static const char* summary = "query a dataset, piping results to a file";
     constexpr static const char* doc = R"(
@@ -184,19 +195,24 @@ struct query_bytes : public MethKwargs<query_bytes, arkipy_DatasetReader>
 :arg summary_report: name of the server-side report function to run on results summary
 :arg file: the output file. The file can be a file-like object, or an integer file
            or socket handle. If missing, data is returned in a bytes object
+:arg progress: an object with 3 methods: ``start(expected_count: int=0, expected_bytes: int=0)``,
+               ``update(count: int, bytes: int)``, and ``done(total_count: int, total_bytes: int)``,
+               to call for progress updates.
 )";
 
     static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
     {
-        static const char* kwlist[] = { "matcher", "with_data", "sort", "data_start_hook", "postprocess", "file", nullptr };
+        static const char* kwlist[] = { "matcher", "with_data", "sort", "data_start_hook", "postprocess", "file", "progress", nullptr };
         PyObject* arg_matcher = Py_None;
         PyObject* arg_with_data = Py_None;
         PyObject* arg_sort = Py_None;
         PyObject* arg_data_start_hook = Py_None;
         PyObject* arg_postprocess = Py_None;
         PyObject* arg_file = Py_None;
+        PyObject* arg_progress = Py_None;
 
-        if (!PyArg_ParseTupleAndKeywords(args, kw, "|OOOOOO", const_cast<char**>(kwlist), &arg_matcher, &arg_with_data, &arg_sort, &arg_data_start_hook, &arg_postprocess, &arg_file))
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "|OOOOOOO", const_cast<char**>(kwlist),
+                    &arg_matcher, &arg_with_data, &arg_sort, &arg_data_start_hook, &arg_postprocess, &arg_file, &arg_progress))
             return nullptr;
 
         try {
@@ -229,6 +245,11 @@ struct query_bytes : public MethKwargs<query_bytes, arkipy_DatasetReader>
 
             if (!sort.empty())
                 query.sorter = metadata::sort::Compare::parse(sort);
+
+            if (arg_progress == Py_None)
+                query.progress = std::make_shared<python::dataset::PythonProgress>();
+            else
+                query.progress = std::make_shared<python::dataset::PythonProgress>(arg_progress);
 
             pyo_unique_ptr data_start_hook_args;
             if (arg_data_start_hook != Py_None)

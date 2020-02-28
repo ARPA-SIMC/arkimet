@@ -78,6 +78,7 @@ struct Request
     std::string actual_url;
     std::stringstream response_error;
     std::string arkimet_exception_message;
+    std::exception_ptr callback_exception;
 
     Request(CurlEasy& curl);
     virtual ~Request();

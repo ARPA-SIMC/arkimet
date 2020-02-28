@@ -186,16 +186,16 @@ struct TestController
 };
 
 /**
- * Test controller that filters tests via a blacklist/whitelist system
+ * Test controller that filters tests via a blocklist/allowlist system
  * containing glob patterns on testcase.testmethod names
  */
 struct FilteringTestController : public TestController
 {
     /// Any method not matching this glob expression will not be run
-    std::string whitelist;
+    std::string allowlist;
 
     /// Any method matching this glob expression will not be run
-    std::string blacklist;
+    std::string blocklist;
 
     bool test_method_should_run(const std::string& fullname) const;
 };

@@ -55,10 +55,10 @@ unsigned long long TestCaseResult::elapsed_ns() const
 
 bool FilteringTestController::test_method_should_run(const std::string& fullname) const
 {
-    if (!whitelist.empty() && fnmatch(whitelist.c_str(), fullname.c_str(), 0) == FNM_NOMATCH)
+    if (!allowlist.empty() && fnmatch(allowlist.c_str(), fullname.c_str(), 0) == FNM_NOMATCH)
         return false;
 
-    if (!blacklist.empty() && fnmatch(blacklist.c_str(), fullname.c_str(), 0) != FNM_NOMATCH)
+    if (!blocklist.empty() && fnmatch(blocklist.c_str(), fullname.c_str(), 0) != FNM_NOMATCH)
         return false;
 
     return true;

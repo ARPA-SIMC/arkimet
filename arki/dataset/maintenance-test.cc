@@ -1,6 +1,6 @@
 #include "arki/dataset/tests.h"
 #include "arki/dataset/maintenance-test.h"
-#include "arki/exceptions.h"
+#include "arki/dataset/query.h"
 #include "arki/dataset/maintenance.h"
 #include "arki/dataset/segmented.h"
 #include "arki/dataset/reporter.h"
@@ -10,6 +10,7 @@
 #include "arki/segment/seqfile.h"
 #include "arki/utils/files.h"
 #include "arki/utils/sys.h"
+#include "arki/exceptions.h"
 #include "arki/nag.h"
 #include <cstdlib>
 #include <cstdio>
