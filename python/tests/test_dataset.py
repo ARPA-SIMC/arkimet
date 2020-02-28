@@ -27,6 +27,15 @@ class Progress:
         self.total_bytes = total_bytes
 
 
+class ExpectedFailure(Exception):
+    pass
+
+
+class ProgressFailUpdate(Progress):
+    def update(self, *args):
+        raise ExpectedFailure()
+
+
 class TestReadConfig(unittest.TestCase):
     def test_file(self):
         pathname = os.path.abspath("inbound/test.grib1")
@@ -307,7 +316,12 @@ type = file
         self.assertGreaterEqual(progress.update_called, 2)
         self.assertEqual(progress.done_called, 1)
 
-    def test_progess_qmacro(self):
+        with self.assertRaises(ExpectedFailure):
+            ds.query_data(progress=ProgressFailUpdate())
+        with self.assertRaises(ExpectedFailure):
+            ds.query_bytes(progress=ProgressFailUpdate())
+
+    def test_progress_qmacro(self):
         ds = arki.make_qmacro_dataset(
             {},
             """
@@ -346,6 +360,11 @@ type = file
         self.assertEqual(progress.start_called, 1)
         self.assertEqual(progress.update_called, 1)
         self.assertEqual(progress.done_called, 1)
+
+        with self.assertRaises(ExpectedFailure):
+            ds.query_data(progress=ProgressFailUpdate())
+        with self.assertRaises(ExpectedFailure):
+            ds.query_bytes(progress=ProgressFailUpdate())
 
     def test_progress_merged(self):
         ds = arki.make_merged_dataset(
@@ -393,6 +412,11 @@ type = file
         # throttled at no more than one each 200ms
         self.assertGreaterEqual(progress.update_called, 2)
         self.assertEqual(progress.done_called, 1)
+
+        with self.assertRaises(ExpectedFailure):
+            ds.query_data(progress=ProgressFailUpdate())
+        with self.assertRaises(ExpectedFailure):
+            ds.query_bytes(progress=ProgressFailUpdate())
 
 
 class TestDatasetWriter(unittest.TestCase):

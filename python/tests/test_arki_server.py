@@ -28,6 +28,15 @@ class Progress:
         self.total_bytes = total_bytes
 
 
+class ExpectedFailure(Exception):
+    pass
+
+
+class ProgressFailUpdate(Progress):
+    def update(self, *args):
+        raise ExpectedFailure()
+
+
 class ServerThread(multiprocessing.Process):
     def __init__(self, server):
         super().__init__()
@@ -451,3 +460,8 @@ class TestArkiServer(unittest.TestCase):
         self.assertEqual(progress.start_called, 1)
         self.assertGreaterEqual(progress.update_called, 1)
         self.assertEqual(progress.done_called, 1)
+
+        with self.assertRaises(ExpectedFailure):
+            ds.query_data(progress=ProgressFailUpdate())
+        with self.assertRaises(ExpectedFailure):
+            ds.query_bytes(progress=ProgressFailUpdate())
