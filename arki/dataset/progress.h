@@ -47,7 +47,6 @@ struct TrackProgress
 
     ~TrackProgress()
     {
-        if (progress) progress->done();
     }
 
     metadata_dest_func wrap(metadata_dest_func dest)
@@ -56,6 +55,19 @@ struct TrackProgress
             return progress->wrap(dest);
         else
             return dest;
+    }
+
+    /// Returns res, so it can be called to wrap the last function in a
+    /// query_data
+    bool done(bool res)
+    {
+        if (progress) progress->done();
+        return res;
+    }
+
+    void done()
+    {
+        if (progress) progress->done();
     }
 };
 

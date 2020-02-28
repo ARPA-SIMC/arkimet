@@ -64,10 +64,10 @@ bool Reader::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
     if (!until || *until > core::Time(2017, 1, 1))
         until.reset(new core::Time(2017, 1, 1));
     // TODO: implement support for q.sort
-    return generate(*begin, *until, [&](std::unique_ptr<Metadata> md) {
+    return track.done(generate(*begin, *until, [&](std::unique_ptr<Metadata> md) {
         if (!q.matcher(*md)) return true;
         return dest(move(md));
-    });
+    }));
 }
 
 void Reader::query_summary(const Matcher& matcher, Summary& summary)

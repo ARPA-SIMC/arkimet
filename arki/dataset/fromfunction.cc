@@ -17,11 +17,11 @@ bool Reader::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 {
     dataset::TrackProgress track(q.progress);
     dest = track.wrap(dest);
-    return generator([&](std::shared_ptr<Metadata> md) {
+    return track.done(generator([&](std::shared_ptr<Metadata> md) {
         if (!q.matcher(*md))
             return true;
         return dest(md);
-    });
+    }));
 }
 
 }

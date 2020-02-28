@@ -52,7 +52,7 @@ bool Reader::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 {
     dataset::TrackProgress track(q.progress);
     dest = track.wrap(dest);
-    return dataset().scan(q, dest);
+    return track.done(dataset().scan(q, dest));
 }
 
 core::cfg::Section read_config(const std::string& fname)

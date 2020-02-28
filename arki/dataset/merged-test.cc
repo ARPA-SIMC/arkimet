@@ -2,13 +2,16 @@
 #include "arki/dataset/merged.h"
 #include "arki/dataset/query.h"
 #include "arki/dataset/session.h"
+#include "arki/dataset/progress.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
 #include "arki/matcher.h"
+#include "arki/utils/sys.h"
 
 using namespace std;
 using namespace arki;
 using namespace arki::tests;
+using namespace arki::utils;
 
 namespace {
 
@@ -68,7 +71,7 @@ struct Fixture : public arki::utils::tests::Fixture
     void import(const std::string& dsname, Metadata& md)
     {
         auto writer = session->dataset(*config.section(dsname))->create_writer();
-        wassert(tests::actual(writer.get()).import(md));
+        wassert(arki::tests::actual(writer.get()).import(md));
     }
 };
 
@@ -85,6 +88,80 @@ void Tests::register_tests() {
 add_method("query", [](Fixture& f) {
     metadata::Collection mdc(*f.ds, Matcher());
     wassert(actual(mdc.size()) == 3u);
+});
+
+add_method("progess", [](Fixture& f) {
+    auto reader = f.ds->create_reader();
+
+    struct TestProgress : public dataset::QueryProgress
+    {
+        using dataset::QueryProgress::count;
+        using dataset::QueryProgress::bytes;
+        unsigned start_called = 0;
+        unsigned update_called = 0;
+        unsigned done_called = 0;
+
+        void start(size_t expected_count=0, size_t expected_bytes=0) override
+        {
+            QueryProgress::start(expected_count, expected_bytes);
+            ++start_called;
+        }
+        void update(size_t count, size_t bytes) override
+        {
+            QueryProgress::update(count, bytes);
+            ++update_called;
+        }
+        void done() override
+        {
+            QueryProgress::done();
+            ++done_called;
+        }
+    };
+    auto progress = make_shared<TestProgress>();
+
+    dataset::DataQuery dq;
+    dq.progress = progress;
+    size_t count = 0;
+    reader->query_data(dq, [&](std::shared_ptr<Metadata> md) { ++count; return true; });
+    wassert(actual(count) == 3u);
+    wassert(actual(progress->count) == 3u);
+    wassert(actual(progress->bytes) == 44412u);
+    wassert(actual(progress->start_called) == 1u);
+    wassert(actual(progress->update_called) == 3u);
+    wassert(actual(progress->done_called) == 1u);
+
+
+    progress = make_shared<TestProgress>();
+    dataset::ByteQuery bq;
+    bq.progress = progress;
+    sys::File out("/dev/null", O_WRONLY);
+    reader->query_bytes(bq, out);
+    wassert(actual(progress->count) == 3u);
+    wassert(actual(progress->bytes) == 44412u);
+    wassert(actual(progress->start_called) == 1u);
+    wassert(actual(progress->update_called) == 3u);
+    wassert(actual(progress->done_called) == 1u);
+
+
+    struct TestProgressThrowing : public TestProgress
+    {
+        void update(size_t count, size_t bytes) override
+        {
+            TestProgress::update(count, bytes);
+            throw std::runtime_error("Expected error");
+        }
+    };
+
+    auto progress1 = make_shared<TestProgressThrowing>();
+    dq.progress = progress1;
+    count = 0;
+    auto e = wassert_throws(std::runtime_error, reader->query_data(dq, [&](std::shared_ptr<Metadata> md) { ++count; return true; }));
+    wassert(actual(e.what()) = "Expected error");
+
+    progress1 = make_shared<TestProgressThrowing>();
+    bq.progress = progress1;
+    e = wassert_throws(std::runtime_error, reader->query_bytes(bq, out));
+    wassert(actual(e.what()) = "Expected error");
 });
 
 }

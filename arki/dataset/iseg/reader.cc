@@ -60,7 +60,7 @@ bool Reader::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
         RIndex idx(m_dataset, relpath, dataset().read_lock_segment(relpath));
         return idx.query_data(q, *dataset().session, dest);
     });
-    return res;
+    return track.done(res);
 }
 
 void Reader::summary_from_indices(const Matcher& matcher, Summary& summary)

@@ -251,10 +251,6 @@ struct OstreamState : public Request
         : Request(curl), out(out), data_start_hook(data_start_hook)
     {
     }
-    ~OstreamState()
-    {
-        if (progress) progress->done();
-    }
 
     void perform()
     {
@@ -283,10 +279,6 @@ struct AbstractOutputState : public Request
     AbstractOutputState(CurlEasy& curl, AbstractOutputFile& out)
         : Request(curl), out(out)
     {
-    }
-    ~AbstractOutputState()
-    {
-        if (progress) progress->done();
     }
 
     void perform()
@@ -352,7 +344,7 @@ bool Reader::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
         request.post_data.add_string("style", "inline");
     request.perform();
 
-    return !request.mdc.consumer_canceled();
+    return track.done(!request.mdc.consumer_canceled());
 }
 
 void Reader::query_summary(const Matcher& matcher, Summary& summary)
@@ -404,6 +396,7 @@ void Reader::query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out)
         }
     }
     request.perform();
+    if (q.progress) q.progress->done();
 }
 
 void Reader::query_bytes(const dataset::ByteQuery& q, AbstractOutputFile& out)
@@ -444,6 +437,7 @@ void Reader::query_bytes(const dataset::ByteQuery& q, AbstractOutputFile& out)
         }
     }
     request.perform();
+    if (q.progress) q.progress->done();
 }
 
 core::cfg::Sections Reader::load_cfg_sections(const std::string& path)
