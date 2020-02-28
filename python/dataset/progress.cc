@@ -18,7 +18,7 @@ void PythonProgress::call_update()
 
 PythonProgress::PythonProgress(PyObject* progress)
 {
-    if (progress)
+    if (progress and progress != Py_None)
     {
         meth_start = throw_ifnull(PyObject_GetAttrString(progress, "start"));
         meth_update = throw_ifnull(PyObject_GetAttrString(progress, "update"));
@@ -28,6 +28,7 @@ PythonProgress::PythonProgress(PyObject* progress)
 
 PythonProgress::~PythonProgress()
 {
+    AcquireGIL gil;
     Py_XDECREF(meth_done);
     Py_XDECREF(meth_update);
     Py_XDECREF(meth_start);
@@ -64,11 +65,10 @@ void PythonProgress::update(size_t count, size_t bytes)
     last_call = now;
 
     AcquireGIL gil;
+    if (PyErr_CheckSignals() == -1)
+        throw PythonException();
     if (meth_update)
         call_update();
-    else
-        if (PyErr_CheckSignals() == -1)
-            throw PythonException();
 }
 
 void PythonProgress::done()
