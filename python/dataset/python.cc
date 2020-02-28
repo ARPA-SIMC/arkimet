@@ -86,12 +86,12 @@ struct PyDatasetReader : public arki::dataset::DatasetAccess<arki::dataset::Data
         pyo_unique_ptr res(throw_ifnull(PyObject_Call(meth_query_data, args, kwargs)));
 
         if (sorter)
-            return sorter->flush();
+            return track.done(sorter->flush());
         else
         {
             if (res == Py_None)
-                return true;
-            return from_python<bool>(res);
+                return track.done(true);
+            return track.done(from_python<bool>(res));
         }
     }
 

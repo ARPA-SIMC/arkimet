@@ -39,18 +39,6 @@ Options::Options(const core::cfg::Section& macro_cfg, const core::cfg::Sections&
 
 }
 
-#if 0
-Base::Base(std::shared_ptr<Session> session, const Options& opts)
-    : m_config(std::shared_ptr<const dataset::Config>(new dataset::Config(session, opts.macro_cfg))),
-      datasets_cfg(opts.datasets_cfg)
-{
-}
-
-Base::~Base()
-{
-}
-#endif
-
 
 std::vector<std::pair<std::string, std::function<std::shared_ptr<dataset::Reader>(const std::string& source, const Options& opts)>>> parsers;
 

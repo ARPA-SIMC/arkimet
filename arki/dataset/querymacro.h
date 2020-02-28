@@ -24,23 +24,6 @@ struct Options
     Options(const core::cfg::Section& macro_cfg, const core::cfg::Sections& datasets_cfg, const std::string& name, const std::string& query);
 };
 
-#if 0
-struct Base : public dataset::Reader
-{
-protected:
-    std::shared_ptr<dataset::Dataset> m_config;
-
-public:
-    core::cfg::Sections datasets_cfg;
-
-    Base(std::shared_ptr<Session> session, const Options& opts);
-    ~Base();
-
-    const dataset::Config& config() const override { return *m_config; }
-    std::string type() const override { return "querymacro"; }
-};
-#endif
-
 
 /**
  * Get a Querymacro dataset reader.
