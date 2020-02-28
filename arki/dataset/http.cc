@@ -139,7 +139,11 @@ void Request::perform()
 
         CURLcode code = curl_easy_perform(curl);
         if (code != CURLE_OK)
+        {
+            if (callback_exception)
+                std::rethrow_exception(callback_exception);
             throw http::Exception(code, curl.m_errbuf, "Cannot query " + actual_url);
+        }
 
         if (response_code == -1)
             checked("reading response code", curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response_code));
@@ -221,7 +225,12 @@ size_t Request::writefunc(void *ptr, size_t size, size_t nmemb, void *stream)
         return size * nmemb;
     }
 
-    return req.process_body_chunk(ptr, size, nmemb, stream);
+    try {
+        return req.process_body_chunk(ptr, size, nmemb, stream);
+    } catch (...) {
+        req.callback_exception = std::current_exception();
+        return 0;
+    }
 }
 
 
