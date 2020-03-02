@@ -3,7 +3,7 @@
 
 Summary: Archive for weather information
 Name: arkimet
-Version: 1.22
+Version: 1.23
 Release: 1
 License: GPL
 Group: Applications/Meteo
@@ -236,6 +236,13 @@ if [ "$1" = "1" ]; then
 fi
 
 %changelog
+* Mon Mar  2 2020 Daniele Branchini <dbranchini@arpae.it> - 1.23-1
+- Added `arki-query --progress`
+- Restored `processing..` message on `arki-query --verbose` (#216)
+- Added a periodic callback during queries, used to check for SIGINT and raising KeyboardError (#210)
+- Removed spurious returns in `Summary.write` (#214)
+- Fixed database queries with empty reftime values (#215)
+
 * Mon Feb 17 2020 Daniele Branchini <dbranchini@arpae.it> - 1.22-1
 - Keep a Sesssion structure which tracks and reuses Segment objects, and as a consequence, file descriptors (#213)
 - Fixed typo in GRIB2 scanner and related GRIB2 test
