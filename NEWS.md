@@ -1,3 +1,11 @@
+# New in version 1.23
+
+ * Added `arki-query --progress`
+ * Restored `processing..` message on `arki-query --verbose` (#216)
+ * Added a periodic callback during queries, used to check for SIGINT and raising KeyboardError (#210)
+ * Removed spurious returns in `Summary.write` (#214)
+ * Fixed database queries with empty reftime values (#215)
+
 # New in version 1.22
 
  * Keep a Sesssion structure which tracks and reuses Segment objects, and as a consequence, file descriptors (#213)
