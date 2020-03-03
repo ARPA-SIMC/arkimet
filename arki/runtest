@@ -6,7 +6,7 @@ PYTHON=${PYTHON:-python3}
 if [ "$1" = "NOSE" ]
 then
     NOSE="${NOSE:-nose}"
-    CMD="$NOSE -s `pwd`"
+    CMD="$NOSE --verbose -s `pwd`"
     DEBUG_CMD="$PYTHON `which $NOSE` -s `pwd`"
 else
     CMD=`pwd`/"$1"
