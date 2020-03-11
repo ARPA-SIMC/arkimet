@@ -149,27 +149,28 @@ Requires: bzip2-devel
 sh autogen.sh
 
 %build
-
 # enabling arpae tests on almost all builds
 %{?fedora:%define arpae_tests 1}
 %{?rhel:%define arpae_tests 1}
 
 %if 0%{?arpae_tests}
-
 echo 'Enabling ARPAE tests'
 %if %grib_sw == "eccodes"
 source %{_sysconfdir}/profile.d/eccodes-simc.sh
 %endif
 %configure --enable-arpae-tests
-make
-make check
-
 %else
-
 %configure
-make
-make check TEST_VERBOSE=1
+%endif
 
+make
+
+%check
+%if 0%{?el7}
+# See https://github.com/ARPA-SIMC/arkimet/issues/217
+make check TEST_VERBOSE=1 ISSUE217=1
+%else
+make check
 %endif
 
 %install

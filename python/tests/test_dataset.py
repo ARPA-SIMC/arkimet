@@ -367,8 +367,9 @@ type = file
             ds.query_bytes(progress=ProgressFailUpdate())
 
     def test_progress_merged(self):
-        if os.environ.get("TRAVIS") == "true":
-            raise unittest.SkipTest("This test hangs under Travis, see #217")
+        # https://github.com/ARPA-SIMC/arkimet/issues/217
+        if os.environ.get("ISSUE217"):
+            raise unittest.SkipTest("Test skipped, see #217")
 
         ds = arki.make_merged_dataset(
             """
