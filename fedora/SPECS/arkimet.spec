@@ -163,9 +163,6 @@ source %{_sysconfdir}/profile.d/eccodes-simc.sh
 %configure
 %endif
 make
-
-%check
-make
 %if 0%{?el7}
 # See https://github.com/ARPA-SIMC/arkimet/issues/217
 make check TEST_VERBOSE=1 ISSUE217=1
