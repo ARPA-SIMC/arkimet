@@ -1,5 +1,5 @@
 import arkimet
-from arkimet.cmdline.base import AppConfigMixin, AppWithProcessor
+from arkimet.cmdline.base import AppConfigMixin, AppWithProcessor, Exit
 import sys
 import logging
 try:
@@ -172,10 +172,10 @@ class Query(AppConfigMixin, AppWithProcessor):
             )
 
             if self.args.stdin:
-                arki_query.query_file(sys.stdin, self.args.stdin)
+                raise Exit(arki_query.query_file(sys.stdin, self.args.stdin))
             elif self.args.merged:
-                arki_query.query_merged()
+                raise Exit(arki_query.query_merged())
             elif self.args.qmacro:
-                arki_query.query_qmacro(self.args.qmacro, qmacro_query)
+                raise Exit(arki_query.query_qmacro(self.args.qmacro, qmacro_query))
             else:
-                arki_query.query_sections()
+                raise Exit(arki_query.query_sections())
