@@ -17,7 +17,7 @@ class TestArkiDump(CmdlineTestMixin, unittest.TestCase):
         self.assertEqual(out[:7], "[level]")
 
     def test_aliases_remote(self):
-        with daemon(os.path.join(os.environ["TOP_SRCDIR"], "arki/dataset/http-aliases-daemon")) as url:
+        with daemon(os.path.join(os.environ["TOP_SRCDIR"], "arki/dataset/http-test-daemon"), "--action=aliases") as url:
             out = self.call_output_success("--aliases", url)
             self.assertEqual(out, "[level]\ng00 = GRIB1,1 or GRIB2S,1,0,0\n")
 

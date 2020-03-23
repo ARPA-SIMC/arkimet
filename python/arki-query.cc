@@ -17,6 +17,7 @@
 #include "cmdline.h"
 #include "cmdline/processor.h"
 #include "dataset.h"
+#include "sysexits.h"
 
 using namespace arki::python;
 using namespace arki::utils;
@@ -105,9 +106,9 @@ struct query_file : public MethKwargs<query_file, arkipy_ArkiQuery>
             }
 
             if (all_successful)
-                return throw_ifnull(PyLong_FromLong(0));
+                return throw_ifnull(PyLong_FromLong(EX_OK));
             else
-                return throw_ifnull(PyLong_FromLong(1));
+                return throw_ifnull(PyLong_FromLong(EX_SOFTWARE));
         } ARKI_CATCH_RETURN_PYO
     }
 };
@@ -153,9 +154,9 @@ struct query_merged : public MethKwargs<query_merged, arkipy_ArkiQuery>
             }
 
             if (all_successful)
-                return throw_ifnull(PyLong_FromLong(0));
+                return throw_ifnull(PyLong_FromLong(EX_OK));
             else
-                return throw_ifnull(PyLong_FromLong(1));
+                return throw_ifnull(PyLong_FromLong(EX_SOFTWARE));
         } ARKI_CATCH_RETURN_PYO
     }
 };
@@ -221,9 +222,9 @@ struct query_qmacro : public MethKwargs<query_qmacro, arkipy_ArkiQuery>
             }
 
             if (all_successful)
-                return throw_ifnull(PyLong_FromLong(0));
+                return throw_ifnull(PyLong_FromLong(EX_OK));
             else
-                return throw_ifnull(PyLong_FromLong(1));
+                return throw_ifnull(PyLong_FromLong(EX_SOFTWARE));
         } ARKI_CATCH_RETURN_PYO
     }
 };
@@ -255,9 +256,9 @@ struct query_sections : public MethKwargs<query_sections, arkipy_ArkiQuery>
             }
 
             if (all_successful)
-                return throw_ifnull(PyLong_FromLong(0));
+                return throw_ifnull(PyLong_FromLong(EX_OK));
             else
-                return throw_ifnull(PyLong_FromLong(1));
+                return throw_ifnull(PyLong_FromLong(EX_SOFTWARE));
         } ARKI_CATCH_RETURN_PYO
     }
 };

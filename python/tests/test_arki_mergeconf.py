@@ -9,7 +9,8 @@ class TestArkiMergeconf(CmdlineTestMixin, unittest.TestCase):
     command = Mergeconf
 
     def test_http(self):
-        with daemon(os.path.join(os.environ["TOP_SRCDIR"], "arki/dataset/http-redirect-daemon")) as url:
+        with daemon(
+                os.path.join(os.environ["TOP_SRCDIR"], "arki/dataset/http-test-daemon"), "--action=redirect") as url:
             out = self.call_output_success(url)
             self.assertEqual(out.splitlines(), [
                 "[error]",
@@ -30,7 +31,8 @@ class TestArkiMergeconf(CmdlineTestMixin, unittest.TestCase):
             ])
 
     def test_ignore_system_datasets(self):
-        with daemon(os.path.join(os.environ["TOP_SRCDIR"], "arki/dataset/http-redirect-daemon")) as url:
+        with daemon(
+                os.path.join(os.environ["TOP_SRCDIR"], "arki/dataset/http-test-daemon"), "--action=redirect") as url:
             out = self.call_output_success("--ignore-system-datasets", url)
             self.assertEqual(out.splitlines(), [
                 "[test200]",
@@ -46,7 +48,8 @@ class TestArkiMergeconf(CmdlineTestMixin, unittest.TestCase):
             ])
 
     def test_restrict(self):
-        with daemon(os.path.join(os.environ["TOP_SRCDIR"], "arki/dataset/http-redirect-daemon")) as url:
+        with daemon(
+                os.path.join(os.environ["TOP_SRCDIR"], "arki/dataset/http-test-daemon"), "--action=redirect") as url:
             out = self.call_output_success("--restrict=test,test1", url)
             self.assertEqual(out.splitlines(), [
                 "[test200]",
