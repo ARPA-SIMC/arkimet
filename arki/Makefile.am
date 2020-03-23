@@ -623,5 +623,4 @@ EXTRA_DIST = runtest buildbison buildflex \
 	     matcher/reftime/reftime-parse.yy \
 	     $(reftime_parser_built_sources) \
 	     tests/testdata.json \
-	     dataset/http-redirect-daemon \
-	     dataset/http-aliases-daemon
+	     dataset/http-test-daemon

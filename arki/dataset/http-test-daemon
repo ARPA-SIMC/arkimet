@@ -12,7 +12,7 @@ redirects = {
 }
 
 
-class Handler(http.server.BaseHTTPRequestHandler):
+class RedirectHandler(http.server.BaseHTTPRequestHandler):
     def do_GET(self):
         dest = redirects.get(self.path)
         if dest is not None:
@@ -47,10 +47,29 @@ path = http://foo.bar/foo/dataset/error
         logging.info(fmt, *args, **kw)
 
 
+class AliasesHandler(http.server.BaseHTTPRequestHandler):
+    def do_GET(self):
+        if self.path == "/aliases":
+            self.send_response(200)
+            self.end_headers()
+            self.wfile.write("""
+[level]
+g00    = GRIB1,1 or GRIB2S,1,0,0
+""".encode())
+        else:
+            self.send_response(404)
+            self.end_headers()
+            self.wfile.write("{} not found\n".format(self.path).encode())
+
+    def log_message(self, fmt, *args, **kw):
+        logging.info(fmt, *args, **kw)
+
+
 def main():
     parser = argparse.ArgumentParser(description="HTTP server to test HTTP redirects")
     parser.add_argument("--verbose", "-v", action="store_true", help="verbose output")
     parser.add_argument("--debug", action="store_true", help="debug output")
+    parser.add_argument("--action", action="store", help="test action")
     args = parser.parse_args()
 
     # Setup logging
@@ -63,6 +82,13 @@ def main():
         logging.basicConfig(level=logging.WARN, stream=sys.stderr, format=FORMAT)
 
     PORT = 18001
+
+    if args.action == "redirect":
+        Handler = RedirectHandler
+    elif args.action == "aliases":
+        Handler = AliasesHandler
+    else:
+        raise RuntimeError("unsupported action {}".format(args.action))
 
     with http.server.HTTPServer(("localhost", PORT), Handler) as httpd:
         print("OK {}".format(PORT))

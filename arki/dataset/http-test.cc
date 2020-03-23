@@ -71,7 +71,7 @@ add_method("allsameremoteserver", [] {
 });
 
 add_method("redirect", [] {
-    tests::Daemon server({"arki/dataset/http-redirect-daemon"});
+    tests::Daemon server({"arki/dataset/http-test-daemon", "--action=redirect"});
     int port;
     sscanf(server.daemon_start_string.c_str(), "OK %d\n", &port);
     char url[512];

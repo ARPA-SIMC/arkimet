@@ -49,7 +49,8 @@ class TestReadConfig(unittest.TestCase):
         ])
 
     def test_http(self):
-        with daemon(os.path.join(os.environ["TOP_SRCDIR"], "arki/dataset/http-redirect-daemon")) as url:
+        with daemon(
+                os.path.join(os.environ["TOP_SRCDIR"], "arki/dataset/http-test-daemon"), "--action=redirect") as url:
             sections = arki.dataset.http.load_cfg_sections(url)
             self.assertEqual(sections.keys(), ('error', 'test200', 'test80'))
 
