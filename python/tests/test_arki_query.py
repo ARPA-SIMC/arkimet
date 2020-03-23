@@ -4,7 +4,7 @@ import posix
 import json
 from contextlib import contextmanager
 from arkimet.cmdline.query import Query
-from arkimet.test import Env, CmdlineTestMixin
+from arkimet.test import Env, CmdlineTestMixin, daemon
 
 
 class TestArkiQuery(CmdlineTestMixin, unittest.TestCase):
@@ -80,3 +80,10 @@ class TestArkiQuery(CmdlineTestMixin, unittest.TestCase):
         self.assertIn("--stdin cannot be used together with --config", err)
         self.assertEqual(out, "")
         self.assertEqual(res, posix.EX_USAGE)
+
+    def test_issue_221(self):
+        with daemon(
+                os.path.join(os.environ["TOP_SRCDIR"], "arki/dataset/http-test-daemon"), "--action=query500") as url:
+            out, err, res = self.call_output("--data", "--qmacro='expa 2020-03-16'", "--file=/dev/null", url)
+            self.assertIsNotNone(res)
+            self.assertIn("simulating server POST error", err)
