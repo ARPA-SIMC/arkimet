@@ -16183,5 +16183,10 @@
   "doc": "",
   "group": "arki_dataset_http",
   "method": "redirect"
+ },
+ {
+  "doc": "",
+  "group": "arki_dataset_http",
+  "method": "server_error"
  }
 ]

@@ -65,6 +65,39 @@ g00    = GRIB1,1 or GRIB2S,1,0,0
         logging.info(fmt, *args, **kw)
 
 
+class Query500Handler(http.server.BaseHTTPRequestHandler):
+    def do_GET(self):
+        if self.path == "/config":
+            self.send_response(200)
+            self.end_headers()
+            self.wfile.write("""
+[test200]
+type = remote
+path = http://localhost:18001/dataset/test200
+restrict = test
+
+[test80]
+type = remote
+path = http://localhost:18001/dataset/test80
+
+[error]
+type = remote
+path = http://localhost:18001/dataset/error
+""".encode())
+        else:
+            self.send_response(500)
+            self.end_headers()
+            self.wfile.write("{} simulating server GET error\n".format(self.path).encode())
+
+    def do_POST(self):
+        self.send_response(500)
+        self.end_headers()
+        self.wfile.write("{} simulating server POST error\n".format(self.path).encode())
+
+    def log_message(self, fmt, *args, **kw):
+        logging.info(fmt, *args, **kw)
+
+
 def main():
     parser = argparse.ArgumentParser(description="HTTP server to test HTTP redirects")
     parser.add_argument("--verbose", "-v", action="store_true", help="verbose output")
@@ -87,6 +120,8 @@ def main():
         Handler = RedirectHandler
     elif args.action == "aliases":
         Handler = AliasesHandler
+    elif args.action == "query500":
+        Handler = Query500Handler
     else:
         raise RuntimeError("unsupported action {}".format(args.action))
 
