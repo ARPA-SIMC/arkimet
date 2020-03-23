@@ -86,7 +86,7 @@ class TestArkiQuery(CmdlineTestMixin, unittest.TestCase):
                 os.path.join(os.environ["TOP_SRCDIR"], "arki/dataset/http-test-daemon"), "--action=query500") as url:
             with self.assertLogs() as log:
                 out, err, res = self.call_output("--data", "--qmacro='expa 2020-03-16'", "--file=/dev/null", url)
-                self.assertEqual(res, 1)
+                self.assertEqual(res, posix.EX_SOFTWARE)
                 self.assertFalse(err)
             self.assertEqual(log.output, [
                 "WARNING:arkimet:'expa 2020-03-16' failed: POST http://localhost:18001/query "
