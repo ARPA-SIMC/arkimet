@@ -1,3 +1,7 @@
+# New in version 1.24
+
+* Fixed return value of arki-query (#221)
+
 # New in version 1.23
 
  * Added `arki-query --progress`

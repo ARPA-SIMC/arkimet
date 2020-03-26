@@ -3,7 +3,7 @@
 
 Summary: Archive for weather information
 Name: arkimet
-Version: 1.23
+Version: 1.24
 Release: 1
 License: GPL
 Group: Applications/Meteo
@@ -234,6 +234,9 @@ if [ "$1" = "1" ]; then
 fi
 
 %changelog
+* Thu Mar 26 2020 Daniele Branchini <dbranchini@arpae.it> - 1.24-1
+- Fixed return value of arki-query (#221)
+
 * Mon Mar  2 2020 Daniele Branchini <dbranchini@arpae.it> - 1.23-1
 - Added `arki-query --progress`
 - Restored `processing..` message on `arki-query --verbose` (#216)
