@@ -89,7 +89,11 @@ struct StatsHull : public ItemVisitor
         {
             const arki::utils::geos::Geometry* g = a.bbox();
             if (!g) return true;
+#if GEOS_VERSION_MAJOR >= 3 && GEOS_VERSION_MINOR >= 8
+            geoms->push_back(g->clone().release());
+#else
             geoms->push_back(g->clone());
+#endif
         }
         return true;
     }
