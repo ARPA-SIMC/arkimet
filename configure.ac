@@ -278,7 +278,7 @@ then
     else
         GEOS_VERSION=`geos-config --version | cut -d. -f1`
         GEOS_CFLAGS=`geos-config --cflags`
-        GEOS_LIBS=`geos-config --libs`
+        GEOS_LIBS=`geos-config --cclibs`
         AC_SUBST(GEOS_CFLAGS)
         AC_SUBST(GEOS_LIBS)
     fi
