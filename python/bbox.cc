@@ -129,8 +129,13 @@ struct PythonBBox : public arki::BBox
                     cas.add(arki::utils::geos::Coordinate(point.second, point.first));
                 }
                 std::unique_ptr<arki::utils::geos::LinearRing> lr(gf->createLinearRing(cas));
+#if GEOS_VERSION_MAJOR >= 3 && GEOS_VERSION_MINOR >= 8
+                return std::unique_ptr<arki::utils::geos::Geometry>(
+                        gf->createPolygon(*lr, std::vector<arki::utils::geos::LinearRing*>()));
+#else
                 return std::unique_ptr<arki::utils::geos::Geometry>(
                         gf->createPolygon(*lr, std::vector<arki::utils::geos::Geometry*>()));
+#endif
             }
         }
     }
