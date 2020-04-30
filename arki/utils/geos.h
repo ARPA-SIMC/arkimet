@@ -27,6 +27,7 @@
 #include <memory>
 
 #ifdef HAVE_GEOS
+#include <geos/version.h>
 
 #if GEOS_VERSION < 3
 
