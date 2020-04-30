@@ -125,7 +125,11 @@ MatchAreaBBox::MatchAreaBBox(const std::string& verb, const std::string& geom)
 {
     auto gf = arki::utils::geos::GeometryFactory::getDefaultInstance();
     arki::utils::geos::WKTReader reader(gf);
+#if GEOS_VERSION_MAJOR >= 3 && GEOS_VERSION_MINOR >= 8
+    this->geom = reader.read(geom).release()
+#else
     this->geom = reader.read(geom);
+#endif
     geom_str = geom;
 }
 
