@@ -1,3 +1,7 @@
+# New in version 1.25
+
+* Fixes for geos ≥ 3.8.0 (#224)
+
 # New in version 1.24
 
 * Fixed return value of arki-query (#221)
