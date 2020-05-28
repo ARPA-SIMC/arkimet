@@ -11,6 +11,7 @@ import logging
 
 log = logging.getLogger("main")
 
+
 class Renderer:
     def __init__(self, srcdir, dstdir, testsuite):
         self.srcdir = srcdir
@@ -50,7 +51,8 @@ class Renderer:
         return new_data
 
     def read_testsuite(self):
-        if not self.testsuite: return
+        if not self.testsuite:
+            return
 
         if os.access(self.testsuite, os.X_OK):
             self.testdoc_data = self.read_testsuite_from_executable()
@@ -76,9 +78,11 @@ class Renderer:
         regex = re.compile(fnmatch.translate(pattern))
         res = []
         for d in self.testdoc_data:
-            if not d["doc"]: continue
+            if not d["doc"]:
+                continue
             s = d["group"] + "." + d["method"]
-            if not regex.match(s): continue
+            if not regex.match(s):
+                continue
             res.append(d["doc"])
         return "\n".join(res)
 
@@ -105,7 +109,8 @@ def main():
     parser.add_argument(
         "--testsuite", action="store", help="pathname to the executable wobble testsuite to load documentation from")
     parser.add_argument(
-        "--cache-testsuite", action="store", help="do not render documentation: load test suite data and write it to the given file")
+        "--cache-testsuite", action="store",
+        help="do not render documentation: load test suite data and write it to the given file")
     parser.add_argument(
         "src", nargs="?", help="file to render (default: all files in doc directory)")
 
@@ -136,7 +141,8 @@ def main():
     else:
         for root, dirs, files in os.walk("."):
             for f in files:
-                if not f.endswith(".md.j2"): continue
+                if not f.endswith(".md.j2"):
+                    continue
                 renderer.render(os.path.join(root, f))
 
 
