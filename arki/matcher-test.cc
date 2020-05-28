@@ -42,54 +42,57 @@ void Tests::register_tests() {
 // Test toString()
 // Kind of pointless now, since it just returns the original unparsed string
 add_method("tostring", [](Fixture& f) {
-    wassert(actual(Matcher::parse("origin:GRIB1,1,,3 or BUFR,1").toString()) == "origin:GRIB1,1,,3 or BUFR,1");
-    wassert(actual(Matcher::parse("reftime:>2015-06-01 09:00:00 % 24h").toStringExpanded()) == "reftime:>2015-06-01 09:00:00 % 24");
+    matcher::Parser parser;
+    wassert(actual(parser.parse("origin:GRIB1,1,,3 or BUFR,1").toString()) == "origin:GRIB1,1,,3 or BUFR,1");
+    wassert(actual(parser.parse("reftime:>2015-06-01 09:00:00 % 24h").toStringExpanded()) == "reftime:>2015-06-01 09:00:00 % 24");
 });
 
 // Try OR matches
 add_method("or", [](Fixture& f) {
+    matcher::Parser parser;
     Matcher m;
 
-    m = Matcher::parse("origin:GRIB1 OR BUFR");
+    m = parser.parse("origin:GRIB1 OR BUFR");
     wassert_true(m(f.md));
 
-    m = Matcher::parse("origin:BUFR or GRIB1");
+    m = parser.parse("origin:BUFR or GRIB1");
     wassert_true(m(f.md));
 
-    m = Matcher::parse("origin:BUFR or BUFR");
+    m = parser.parse("origin:BUFR or BUFR");
     wassert_false(m(f.md));
 });
 
 // Try matching an unset metadata (see #166)
 add_method("unset", [](Fixture& f) {
+    matcher::Parser parser;
     Metadata md;
     Matcher m;
 
-    m = Matcher::parse("origin:GRIB1");
+    m = parser.parse("origin:GRIB1");
     wassert_false(m(md));
 
-    m = Matcher::parse("product:BUFR");
+    m = parser.parse("product:BUFR");
     wassert_false(m(md));
 
-    m = Matcher::parse("level:GRIB1");
+    m = parser.parse("level:GRIB1");
     wassert_false(m(md));
 
-    m = Matcher::parse("timerange:GRIB1");
+    m = parser.parse("timerange:GRIB1");
     wassert_false(m(md));
 
-    m = Matcher::parse("proddef:GRIB");
+    m = parser.parse("proddef:GRIB");
     wassert_false(m(md));
 
-    m = Matcher::parse("area:GRIB:foo=5");
+    m = parser.parse("area:GRIB:foo=5");
     wassert_false(m(md));
 
-    m = Matcher::parse("quantity:VRAD");
+    m = parser.parse("quantity:VRAD");
     wassert_false(m(md));
 
-    m = Matcher::parse("task:test");
+    m = parser.parse("task:test");
     wassert_false(m(md));
 
-    m = Matcher::parse("reftime:=2018");
+    m = parser.parse("reftime:=2018");
     wassert_false(m(md));
 });
 

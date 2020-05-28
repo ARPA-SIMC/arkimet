@@ -13,7 +13,6 @@
 #include "arki/metadata/sort.h"
 #include "arki/metadata/postprocess.h"
 #include "arki/dataset.h"
-#include "arki/dataset/query.h"
 #include <algorithm>
 #include <memory>
 #include <fcntl.h>
