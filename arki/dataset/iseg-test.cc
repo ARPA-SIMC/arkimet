@@ -116,7 +116,7 @@ add_method("acquire_replace_usn", [](Fixture& f) {
 
     // Try to query the element and see if it is the right one
     {
-        metadata::Collection mdc_read = f.query(dataset::DataQuery("origin:BUFR", true));
+        metadata::Collection mdc_read = f.query(dataset::DataQuery(Matcher::parse("origin:BUFR"), true));
         wassert(actual(mdc_read.size()) == 1u);
         int usn;
         wassert(actual(scan::Scanner::update_sequence_number(mdc_read[0], usn)).istrue());

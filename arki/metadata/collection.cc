@@ -113,7 +113,7 @@ Collection::Collection(dataset::Dataset& ds, const dataset::DataQuery& q)
 
 Collection::Collection(dataset::Dataset& ds, const std::string& q)
 {
-    add(ds, dataset::DataQuery(q));
+    add(ds, dataset::DataQuery(Matcher::parse(q)));
 }
 
 Collection::Collection(dataset::Reader& ds, const dataset::DataQuery& q)
@@ -123,7 +123,7 @@ Collection::Collection(dataset::Reader& ds, const dataset::DataQuery& q)
 
 Collection::Collection(dataset::Reader& ds, const std::string& q)
 {
-    add(ds, dataset::DataQuery(q));
+    add(ds, dataset::DataQuery(Matcher::parse(q)));
 }
 
 Collection::~Collection()

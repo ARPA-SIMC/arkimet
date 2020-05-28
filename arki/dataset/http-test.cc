@@ -99,7 +99,7 @@ add_method("server_error", [] {
     auto ds = std::make_shared<http::Dataset>(session, *sec);
     auto reader = ds->create_reader();
     unsigned count = 0;
-    wassert_throws(std::runtime_error, reader->query_data(dataset::DataQuery(""), [&](std::shared_ptr<Metadata>) { ++count; return true; }));
+    wassert_throws(std::runtime_error, reader->query_data(dataset::DataQuery(), [&](std::shared_ptr<Metadata>) { ++count; return true; }));
     wassert(actual(count) == 0u);
 });
 

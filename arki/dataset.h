@@ -175,10 +175,25 @@ public:
      * Returns true if dest always returned true, false if iteration stopped
      * because dest returned false.
      */
+    bool query_data(const std::string& q, metadata_dest_func dest);
+
+    /**
+     * Query the dataset using the given matcher, and sending the results to
+     * the given function.
+     *
+     * Returns true if dest always returned true, false if iteration stopped
+     * because dest returned false.
+     */
     bool query_data(const dataset::DataQuery& q, metadata_dest_func dest)
     {
         return impl_query_data(q, dest);
     }
+
+    /**
+     * Add to summary the summary of the data that would be extracted with the
+     * given query.
+     */
+    void query_summary(const std::string& matcher, Summary& summary);
 
     /**
      * Add to summary the summary of the data that would be extracted with the

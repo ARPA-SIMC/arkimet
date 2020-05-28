@@ -310,7 +310,7 @@ this->add_method("interrupted_read", [](Fixture& f) {
 
     unsigned count = 0;
     auto reader = f.dataset_config()->create_reader();
-    reader->query_data(dataset::DataQuery("", true), [&](std::shared_ptr<Metadata> md) {
+    reader->query_data(dataset::DataQuery(Matcher(), true), [&](std::shared_ptr<Metadata> md) {
         auto data = md->get_data().read();
         wassert(actual(data) == orig_data);
         ++count;
@@ -327,7 +327,7 @@ this->add_method("read_missing_segment", [](Fixture& f) {
     unsigned count_ok = 0;
     unsigned count_err = 0;
     auto reader = f.dataset_config()->create_reader();
-    reader->query_data(dataset::DataQuery("", true), [&](std::shared_ptr<Metadata> md) {
+    reader->query_data(dataset::DataQuery(Matcher(), true), [&](std::shared_ptr<Metadata> md) {
         try {
             md->get_data().read();
             ++count_ok;
@@ -351,7 +351,7 @@ this->add_method("read_missing_segment", [](Fixture& f) {
 this->add_method("issue116", [](Fixture& f) {
     unsigned count = 0;
     auto reader = f.dataset_config()->create_reader();
-    reader->query_data(dataset::DataQuery("reftime:==13:00"), [&](std::shared_ptr<Metadata> md) { ++count; return true; });
+    reader->query_data("reftime:==13:00", [&](std::shared_ptr<Metadata> md) { ++count; return true; });
     wassert(actual(count) == 1u);
 });
 
@@ -359,7 +359,7 @@ this->add_method("issue213_manyquery", [](Fixture& f) {
     auto reader = f.dataset_config()->create_reader();
     metadata::Collection coll;
     for (unsigned i = 0; i < 2000; ++i)
-        reader->query_data(dataset::DataQuery("reftime:==13:00", true), coll.inserter_func());
+        reader->query_data(dataset::DataQuery(Matcher::parse("reftime:==13:00"), true), coll.inserter_func());
 });
 
 this->add_method("issue213_manyds", [](Fixture& f) {
@@ -367,14 +367,14 @@ this->add_method("issue213_manyds", [](Fixture& f) {
     for (unsigned i = 0; i < 2000; ++i)
     {
         auto reader = f.dataset_config()->create_reader();
-        reader->query_data(dataset::DataQuery("reftime:==13:00", true), coll.inserter_func());
+        reader->query_data(dataset::DataQuery(Matcher::parse("reftime:==13:00"), true), coll.inserter_func());
     }
 });
 
 this->add_method("issue215", [](Fixture& f) {
     unsigned count = 0;
     auto reader = f.dataset_config()->create_reader();
-    reader->query_data(dataset::DataQuery("reftime:;area:GRIB: or VM2:"), [&](std::shared_ptr<Metadata> md) { ++count; return true; });
+    reader->query_data("reftime:;area:GRIB: or VM2:", [&](std::shared_ptr<Metadata> md) { ++count; return true; });
     wassert(actual(count) == 3u);
 });
 
