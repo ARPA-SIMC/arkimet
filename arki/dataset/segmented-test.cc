@@ -366,7 +366,7 @@ add_method("query_archived", [](Fixture& f) {
     }
 
     auto reader = f.config().create_reader();
-    metadata::Collection mdc(*reader, Matcher::parse(""));
+    metadata::Collection mdc(*reader, "");
     wassert(actual(mdc.size()) == 3u);
 
     mdc.clear();
@@ -381,16 +381,16 @@ add_method("query_archived", [](Fixture& f) {
     wassert(actual(buf.size()) == 7218u);
 
     mdc.clear();
-    mdc.add(*reader, Matcher::parse("reftime:=2007-07-08"));
+    mdc.add(*reader, "reftime:=2007-07-08");
     wassert(actual(mdc.size()) == 1u);
     wassert(actual(mdc[0].data_size()) == 7218u);
 
     mdc.clear();
-    mdc.add(*reader, Matcher::parse("origin:GRIB1,80"));
+    mdc.add(*reader, "origin:GRIB1,80");
     wassert(actual(mdc.size()) == 1u);
 
     mdc.clear();
-    mdc.add(*reader, Matcher::parse("origin:GRIB1,98"));
+    mdc.add(*reader, "origin:GRIB1,98");
     wassert(actual(mdc.size()) == 1u);
 
     // Query bytes
@@ -422,17 +422,17 @@ add_method("query_archived", [](Fixture& f) {
 
     // Query summary
     Summary s;
-    reader->query_summary(Matcher::parse(""), s);
+    reader->query_summary("", s);
     wassert(actual(s.count()) == 3u);
     wassert(actual(s.size()) == 44412u);
 
     s.clear();
-    reader->query_summary(Matcher::parse("origin:GRIB1,200"), s);
+    reader->query_summary("origin:GRIB1,200", s);
     wassert(actual(s.count()) == 1u);
     wassert(actual(s.size()) == 7218u);
 
     s.clear();
-    reader->query_summary(Matcher::parse("reftime:=2007-07-08"), s);
+    reader->query_summary("reftime:=2007-07-08", s);
     wassert(actual(s.count()) == 1u);
     wassert(actual(s.size()) == 7218u);
 });
@@ -447,7 +447,7 @@ add_method("empty_dirs", [](Fixture& f) {
     wassert_true(mdc.empty());
 
     Summary s;
-    reader->query_summary(Matcher::parse(""), s);
+    reader->query_summary("", s);
     wassert(actual(s.count()) == 0u);
 
     sys::File out(sys::File::mkstemp("test"));
@@ -793,7 +793,7 @@ add_method("issue103", [](Fixture& f) {
     // Query without data
     auto reader = f.config().create_reader();
     metadata::Collection mdc;
-    wassert(mdc.add(*reader, Matcher::parse("")));
+    wassert(mdc.add(*reader, ""));
     wassert(actual(mdc.size()) == max_files + 1);
     wassert(actual(mdc[0].sourceBlob().reader).isfalse());
 

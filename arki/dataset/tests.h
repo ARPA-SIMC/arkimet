@@ -233,6 +233,7 @@ public:
     void clean_and_import(const std::string& testfile="inbound/test.grib1");
 
     metadata::Collection query(const dataset::DataQuery& q);
+    metadata::Collection query(const std::string& q);
 
     void ensure_localds_clean(size_t filecount, size_t resultcount, bool quick=true);
 

@@ -408,6 +408,11 @@ metadata::Collection DatasetTest::query(const dataset::DataQuery& q)
     return metadata::Collection(*config().create_reader(), q);
 }
 
+metadata::Collection DatasetTest::query(const std::string& q)
+{
+    return metadata::Collection(*config().create_reader(), q);
+}
+
 void DatasetTest::ensure_localds_clean(size_t filecount, size_t resultcount, bool quick)
 {
     nag::CollectHandler tc;

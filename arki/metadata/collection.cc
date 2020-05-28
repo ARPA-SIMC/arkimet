@@ -113,7 +113,7 @@ Collection::Collection(dataset::Dataset& ds, const dataset::DataQuery& q)
 
 Collection::Collection(dataset::Dataset& ds, const std::string& q)
 {
-    add(ds, dataset::DataQuery(Matcher::parse(q)));
+    add(ds, q);
 }
 
 Collection::Collection(dataset::Reader& ds, const dataset::DataQuery& q)
@@ -123,7 +123,7 @@ Collection::Collection(dataset::Reader& ds, const dataset::DataQuery& q)
 
 Collection::Collection(dataset::Reader& ds, const std::string& q)
 {
-    add(ds, dataset::DataQuery(Matcher::parse(q)));
+    add(ds, q);
 }
 
 Collection::~Collection()
@@ -167,7 +167,17 @@ void Collection::add(dataset::Dataset& ds, const dataset::DataQuery& q)
     ds.create_reader()->query_data(q, inserter_func());
 }
 
+void Collection::add(dataset::Dataset& ds, const std::string& q)
+{
+    ds.create_reader()->query_data(q, inserter_func());
+}
+
 void Collection::add(dataset::Reader& reader, const dataset::DataQuery& q)
+{
+    reader.query_data(q, inserter_func());
+}
+
+void Collection::add(dataset::Reader& reader, const std::string& q)
 {
     reader.query_data(q, inserter_func());
 }
