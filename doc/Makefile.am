@@ -38,6 +38,9 @@ if DO_DOCS
 sphinx_packaged_sources = \
 	datasets.rst segments.rst \
 	datasets/archive.rst \
+	datasets/simple.rst \
+	datasets/ondisk2.rst \
+	datasets/iseg.rst \
 	segments/concat.rst segments/dir.rst segments/gz.rst \
 	segments/tar.rst segments/zip.rst \
 	matcher.rst \
@@ -54,18 +57,8 @@ sphinx_packaged_sources = \
 	matcher/timerange.rst \
 	http-api.rst
 
-sphinx_generated_sources = \
-	datasets/simple.rst datasets/ondisk2.rst datasets/iseg.rst
-
-EXTRA_DIST += \
-	update \
-	datasets/simple.rst.j2 datasets/ondisk2.rst.j2 datasets/iseg.rst.j2
 
 sphinx_sources = $(sphinx_packaged_sources) $(sphinx_generated_sources)
-
-%.rst: %.rst.j2 $(top_srcdir)/arki/tests/testdata.json
-	$(srcdir)/update --srcdir=$(srcdir) --dstdir=$(builddir) --testsuite=$(top_srcdir)/arki/tests/testdata.json $<
-
 
 EXTRA_DIST += $(sphinx_packaged_sources)
 
@@ -79,29 +72,6 @@ build-docs: $(sphinx_sources)
 	$(top_srcdir)/run-local $(SPHINX_BUILD) -b html . html/
 
 html/index.html: build-docs
-
-# aliases.dox: $(top_srcdir)/dballe/core/aliases.gperf mksnippet
-# 	$(top_srcdir)/doc/mksnippet alias dox < $< > $@ || rm $@
-# 
-# ltypes.dox: $(top_srcdir)/dballe/msg/ltypes.txt mksnippet
-# 	$(top_srcdir)/doc/mksnippet levels dox < $< > $@ || rm $@
-# 
-# tranges.dox: mksnippet
-# 	$(top_srcdir)/doc/mksnippet tranges dox > $@ || rm $@
-# 
-# src/btable.rst: ../tables/dballe.txt mksnippet
-# 	$(top_srcdir)/doc/mksnippet btable rst < $< > $@ || rm $@
-# 
-# src/ltypes.rst: $(top_srcdir)/dballe/msg/ltypes.txt mksnippet
-# 	$(top_srcdir)/doc/mksnippet levels rst < $< > $@ || rm $@
-# 
-# src/tranges.rst: mksnippet
-# 	$(top_srcdir)/doc/mksnippet tranges rst > $@ || rm $@
-# 
-# src/aliases.rst: $(top_srcdir)/dballe/core/aliases.gperf mksnippet
-# 	$(top_srcdir)/doc/mksnippet alias rst < $< > $@ || rm $@
-#
-# EXTRA_DIST += make_fortran_reference
 
 noinst_DATA += build-docs
 
