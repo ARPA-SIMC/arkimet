@@ -73,22 +73,6 @@ struct ArkiRunner
         return false;
     }
 
-    void doc()
-    {
-        using namespace arki::utils::tests;
-        auto& tests = TestRegistry::get();
-        arki::structured::JSON out(cout);
-        out.start_list();
-        tests.iterate_test_methods([&](const TestCase& tc, const TestMethod& tm) {
-            out.start_mapping();
-            out.add("group", tc.name);
-            out.add("method", tm.name);
-            out.add("doc", tm.doc);
-            out.end_mapping();
-        });
-        out.end_list();
-    }
-
     bool run()
     {
         using namespace arki::utils::tests;
@@ -116,12 +100,6 @@ int main(int argc, const char* argv[])
     ArkiRunner arki_runner;
     if (arki_runner.setup())
         return 0;
-
-    if (argc > 1 && strcmp(argv[1], "--doc") == 0)
-    {
-        arki_runner.doc();
-        return 0;
-    }
 
     bool success = arki_runner.run();
 
