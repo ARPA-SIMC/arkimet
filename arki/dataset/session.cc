@@ -86,13 +86,13 @@ std::shared_ptr<segment::Checker> Session::segment_checker(const std::string& fo
     } else if (format == "odimh5" || format == "h5" || format == "odim") {
         res.reset(new segment::dir::Checker(format, root, relpath, abspath));
     } else if (format == "vm2") {
-    res.reset(new segment::lines::Checker(format, root, relpath, abspath));
-} else {
-    throw std::runtime_error(
-            "getting writer for " + format + " file " + relpath +
-            ": format not supported");
-}
-return res;
+        res.reset(new segment::lines::Checker(format, root, relpath, abspath));
+    } else {
+        throw std::runtime_error(
+                "getting writer for " + format + " file " + relpath +
+                ": format not supported");
+    }
+    return res;
 }
 
 std::shared_ptr<Dataset> Session::dataset(const core::cfg::Section& cfg)
