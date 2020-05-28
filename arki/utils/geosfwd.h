@@ -39,8 +39,10 @@
 
 // Forward-declare geos components
 #ifdef HAVE_GEOS
+#include <geos/version.h>
+
 namespace geos {
-#if GEOS_VERSION < 3
+#if GEOS_VERSION_MAJOR < 3
 struct Geometry;
 struct GeometryFactory;
 struct Coordinate;
@@ -48,7 +50,6 @@ struct CoordinateArraySequence;
 struct LinearRing;
 struct WKTReader;
 #else
-#define ARKI_NEW_GEOS
 namespace geom {
 struct Geometry;
 struct GeometryFactory;
@@ -70,7 +71,7 @@ namespace geos {
 
 #ifdef HAVE_GEOS
 
-#if GEOS_VERSION < 3
+#if GEOS_VERSION_MAJOR < 3
 using ::geos::Geometry;
 using ::geos::GeometryFactory;
 using ::geos::Coordinate;

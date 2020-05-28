@@ -29,7 +29,7 @@
 #ifdef HAVE_GEOS
 #include <geos/version.h>
 
-#if GEOS_VERSION < 3
+#if GEOS_VERSION_MAJOR < 3
 
 #include <geos/geom.h>
 #include <geos/io.h>

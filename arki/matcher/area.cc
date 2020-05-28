@@ -156,7 +156,7 @@ unique_ptr<MatchAreaBBox> MatchAreaBBox::parse(const std::string& pattern)
         return unique_ptr<MatchAreaBBox>(new MatchAreaBBoxEquals(rest));
     } else if (verb == "intersects") {
         return unique_ptr<MatchAreaBBox>(new MatchAreaBBoxIntersects(rest));
-#ifdef ARKI_NEW_GEOS
+#if GEOS_VERSION_MAJOR >= 3
     } else if (verb == "covers") {
         return unique_ptr<MatchAreaBBox>(new MatchAreaBBoxCovers(rest));
     } else if (verb == "coveredby") {
@@ -202,7 +202,7 @@ bool MatchAreaBBoxIntersects::matchGeom(const arki::utils::geos::Geometry* val) 
 	return val->intersects(geom);
 }
 
-#ifdef ARKI_NEW_GEOS
+#if GEOS_VERSION_MAJOR >= 3
 MatchAreaBBoxCovers::MatchAreaBBoxCovers(const std::string& geom) : MatchAreaBBox("covers", geom) {}
 
 bool MatchAreaBBoxCovers::matchGeom(const arki::utils::geos::Geometry* val) const

@@ -276,7 +276,6 @@ then
         AC_MSG_WARN([geos-config not found])
         have_geos=no
     else
-        GEOS_VERSION=`geos-config --version | cut -d. -f1`
         GEOS_CFLAGS=`geos-config --cflags`
         GEOS_LIBS=`geos-config --cclibs`
         AC_SUBST(GEOS_CFLAGS)
@@ -285,7 +284,6 @@ then
     if test x$have_geos = xyes
     then
         AC_DEFINE([HAVE_GEOS], 1, [GEOS is available])
-        AC_DEFINE_UNQUOTED([GEOS_VERSION], $GEOS_VERSION, [GEOS version number])
     fi
 else
     have_geos=no
@@ -462,7 +460,7 @@ AS_HELP_STRING([GRIB 1+2 via grib_api:], [$have_gribapi])
 AS_HELP_STRING([VM2 support:], [$have_vm2])
 AS_HELP_STRING([CURL support:], [$have_curl])
 AS_HELP_STRING([Lua support:], [$have_lua])
-AS_HELP_STRING([GEOS support:], [$have_geos, version $GEOS_VERSION])
+AS_HELP_STRING([GEOS support:], [$have_geos])
 AS_HELP_STRING([GNU readline support:], [$have_readline])
 AS_HELP_STRING([libarchive support:], [$have_libarchive])
 AS_HELP_STRING([libzip support:], [$have_libzip])
