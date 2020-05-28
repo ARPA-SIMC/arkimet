@@ -19,10 +19,10 @@ namespace python {
 
 namespace {
 
-PyObject* instantiate_qmacro_pydataset(const std::string& source, const arki::dataset::qmacro::Options& opts)
+PyObject* instantiate_qmacro_pydataset(const std::string& source, std::shared_ptr<arki::dataset::QueryMacro> dataset)
 {
     // Check if the qmacro module had already been imported
-    std::string module_name = "arki.python.dataset.qmacro." + opts.macro_name;
+    std::string module_name = "arki.python.dataset.qmacro." + dataset->name();
     pyo_unique_ptr py_module_name(string_to_python(module_name));
     pyo_unique_ptr module(ArkiPyImport_GetModule(py_module_name));
     if (PyErr_Occurred())
@@ -42,13 +42,13 @@ PyObject* instantiate_qmacro_pydataset(const std::string& source, const arki::da
     // Get module.Querymacro
     pyo_unique_ptr cls(throw_ifnull(PyObject_GetAttrString(module, "Querymacro")));
 
-    pyo_unique_ptr datasets_cfg(cfg_sections(opts.datasets_cfg));
+    pyo_unique_ptr datasets_cfg(cfg_sections(dataset->datasets));
 
     // Instantiate obj = Querymacro(macro_cfg, datasets_cfg, args, query)
     pyo_unique_ptr obj(throw_ifnull(PyObject_CallFunction(cls, "Os#s#",
                     datasets_cfg.get(),
-                    opts.macro_args.data(), (Py_ssize_t)opts.macro_args.size(),
-                    opts.query.data(), (Py_ssize_t)opts.query.size())));
+                    dataset->macro_args.data(), (Py_ssize_t)dataset->macro_args.size(),
+                    dataset->query.data(), (Py_ssize_t)dataset->query.size())));
 
     return obj.release();
 };
@@ -60,9 +60,9 @@ namespace qmacro {
 
 void init()
 {
-    arki::dataset::qmacro::register_parser("py", [](const std::string& source, const arki::dataset::qmacro::Options& opts) {
+    arki::dataset::qmacro::register_parser("py", [](const std::string& source, std::shared_ptr<arki::dataset::QueryMacro> datasets) {
         AcquireGIL gil;
-        pyo_unique_ptr o(instantiate_qmacro_pydataset(source, opts));
+        pyo_unique_ptr o(instantiate_qmacro_pydataset(source, datasets));
         return python::dataset::create_reader(o);
     });
 }

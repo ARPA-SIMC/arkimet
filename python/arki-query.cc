@@ -185,6 +185,7 @@ struct query_qmacro : public MethKwargs<query_qmacro, arkipy_ArkiQuery>
             {
                 ReleaseGIL rg;
 
+                auto session = arki::python::get_dataset_session();
                 std::shared_ptr<arki::dataset::Reader> reader;
                 std::string macro_name(arg_macro_name, arg_macro_name_len);
                 std::string macro_query(arg_macro_query, arg_macro_query_len);
@@ -200,8 +201,8 @@ struct query_qmacro : public MethKwargs<query_qmacro, arkipy_ArkiQuery>
 
                     // TODO: download and merge alias databases from all the servers
 
-                    arki::dataset::qmacro::Options opts(self->inputs, macro_name, macro_query);
-                    reader = arki::dataset::qmacro::get(opts);
+                    auto dataset = std::make_shared<arki::dataset::QueryMacro>(session, self->inputs, macro_name, macro_query);
+                    reader = dataset->create_reader();
                 } else {
                     // Create the remote query macro
                     arki::nag::verbose("Running query macro %s remotely on %s", macro_name.c_str(), baseurl.c_str());
@@ -210,7 +211,7 @@ struct query_qmacro : public MethKwargs<query_qmacro, arkipy_ArkiQuery>
                     cfg.set("type", "remote");
                     cfg.set("path", baseurl);
                     cfg.set("qmacro", macro_query);
-                    reader = arki::python::get_dataset_session()->dataset(cfg)->create_reader();
+                    reader = session->dataset(cfg)->create_reader();
                 }
 
                 try {

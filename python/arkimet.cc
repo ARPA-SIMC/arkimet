@@ -99,16 +99,17 @@ Arguments:
             return nullptr;
 
         try {
+            auto session = arki::python::get_dataset_session();
             core::cfg::Sections datasets;
             datasets = sections_from_python(arg_datasets);
 
-            std::shared_ptr<arki::dataset::Reader> ds;
+            std::shared_ptr<arki::dataset::Reader> reader;
             string baseurl = arki::dataset::http::Reader::allSameRemoteServer(datasets);
             if (baseurl.empty())
             {
                 // Create the local query macro
-                arki::dataset::qmacro::Options opts(datasets, name, query);
-                ds = arki::dataset::qmacro::get(opts);
+                auto dataset = std::make_shared<arki::dataset::QueryMacro>(session, datasets, name, query);
+                reader = dataset->create_reader();
             } else {
                 // Create the remote query macro
                 core::cfg::Section cfg;
@@ -116,10 +117,10 @@ Arguments:
                 cfg.set("type", "remote");
                 cfg.set("path", baseurl);
                 cfg.set("qmacro", query);
-                ds = arki::python::get_dataset_session()->dataset(cfg)->create_reader();
+                reader = session->dataset(cfg)->create_reader();
             }
 
-            return (PyObject*)dataset_reader_create(ds);
+            return (PyObject*)dataset_reader_create(reader);
         } ARKI_CATCH_RETURN_PYO
     }
 };

@@ -11,41 +11,31 @@
 namespace arki {
 namespace dataset {
 
-#if 0
+/**
+ * Dataset that builds results by querying one or more other datasets.
+ *
+ * * `datasets` is the set of available datasets.
+ * * `name` is a macro name, optionally followed by as space and macro arguments.
+ * * `query` is a description of how to build results from other datasets, in a
+ * language defined by the named macro.
+ */
 class QueryMacro : public dataset::Dataset
 {
 public:
-    QueryMacro(std::shared_ptr<Session> session, const std::string& name, const std::string& query);
-
-};
-#endif
-
-namespace qmacro {
-
-struct Options
-{
-    core::cfg::Sections datasets_cfg;
-    std::string macro_name;
+    core::cfg::Sections datasets;
     std::string macro_args;
     std::string query;
 
-    Options(const core::cfg::Sections& datasets_cfg, const std::string& name, const std::string& query);
+    QueryMacro(std::shared_ptr<Session> session, const core::cfg::Sections& datasets, const std::string& name, const std::string& query);
+
+    std::shared_ptr<Reader> create_reader() override;
 };
 
-
-/**
- * Get a Querymacro dataset reader.
- *
- * macro_cfg: the configuration of the querymacro reader
- * datasets_cfg: the datasets available to the querymacro code
- * name: the macro name and arguments, space separated
- * query: the macro script
- */
-std::shared_ptr<dataset::Reader> get(const Options& opts);
+namespace qmacro {
 
 void register_parser(
         const std::string& ext,
-        std::function<std::shared_ptr<dataset::Reader>(const std::string& source, const Options& opts)> parser);
+        std::function<std::shared_ptr<dataset::Reader>(const std::string& source, std::shared_ptr<QueryMacro> dataset)> parser);
 
 void init();
 
