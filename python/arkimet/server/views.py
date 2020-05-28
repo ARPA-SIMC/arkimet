@@ -432,7 +432,7 @@ class QMacroMixin:
         if not qmacro:
             return arki.make_merged_dataset(cfg.getvalue())
         return arki.make_qmacro_dataset(
-            "url = " + self.handler.server.url,
+            # "url = " + self.handler.server.url,
             cfg.getvalue(),
             qmacro,
             self.request.values.get("query", "").strip()

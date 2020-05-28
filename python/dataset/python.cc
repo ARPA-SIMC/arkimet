@@ -23,8 +23,8 @@ struct PyDatasetReader : public arki::dataset::DatasetAccess<arki::dataset::Data
     PyObject* meth_query_data = nullptr;
     PyObject* meth_query_summary = nullptr;
 
-    PyDatasetReader(const arki::core::cfg::Section& dataset, PyObject* o)
-        : DatasetAccess(std::make_shared<arki::dataset::Dataset>(get_dataset_session(), dataset)),
+    PyDatasetReader(PyObject* o)
+        : DatasetAccess(std::make_shared<arki::dataset::Dataset>(get_dataset_session())),
           o(o)
     {
         AcquireGIL gil;
@@ -34,15 +34,11 @@ struct PyDatasetReader : public arki::dataset::DatasetAccess<arki::dataset::Data
         if (!meth_query_summary)
             PyErr_Clear();
 
-        m_type = dataset.value("type");
-        if (m_type.empty())
-        {
-            pyo_unique_ptr type(PyObject_GetAttrString(o, "type"));
-            if (!type)
-                PyErr_Clear();
-            else
-                m_type = from_python<std::string>(type);
-        }
+        pyo_unique_ptr type(PyObject_GetAttrString(o, "type"));
+        if (!type)
+            PyErr_Clear();
+        else
+            m_type = from_python<std::string>(type);
 
         if (m_type.empty())
             m_type = o->ob_type->tp_name;
@@ -115,9 +111,9 @@ struct PyDatasetReader : public arki::dataset::DatasetAccess<arki::dataset::Data
     }
 };
 
-std::shared_ptr<arki::dataset::Reader> create_reader(const arki::core::cfg::Section& cfg, PyObject* o)
+std::shared_ptr<arki::dataset::Reader> create_reader(PyObject* o)
 {
-    return std::make_shared<PyDatasetReader>(cfg, o);
+    return std::make_shared<PyDatasetReader>(o);
 }
 
 std::shared_ptr<arki::dataset::Writer> create_writer(PyObject* o)

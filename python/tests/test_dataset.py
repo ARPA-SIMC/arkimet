@@ -223,7 +223,6 @@ class TestDatasetReader(unittest.TestCase):
 
     def test_query_data_qmacro(self):
         ds = arki.make_qmacro_dataset(
-            {},
             """
 [test200]
 format = grib
@@ -324,7 +323,6 @@ type = file
 
     def test_progress_qmacro(self):
         ds = arki.make_qmacro_dataset(
-            {},
             """
 [test200]
 format = grib

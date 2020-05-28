@@ -36,7 +36,7 @@ class TestNoop(QmacroTestMixin, unittest.TestCase):
     def test_noop(self):
         # Python script that simply passes through the queries
         with self.datasets() as env:
-            reader = arki.make_qmacro_dataset(arki.cfg.Section(), env.config, "noop", "testds")
+            reader = arki.make_qmacro_dataset(env.config, "noop", "testds")
             mdc = reader.query_data()
             self.assertEqual(len(mdc), 9)
 
@@ -50,7 +50,7 @@ class TestNoop(QmacroTestMixin, unittest.TestCase):
     def test_noopcopy(self):
         # Querymacro script that simply passes through the queries, making temporary copies of data
         with self.datasets() as env:
-            reader = arki.make_qmacro_dataset(arki.cfg.Section(), env.config, "noopcopy", "testds")
+            reader = arki.make_qmacro_dataset(env.config, "noopcopy", "testds")
             mdc = reader.query_data()
             self.assertEqual(len(mdc), 9)
 
@@ -66,7 +66,7 @@ class TestExpa(QmacroTestMixin, unittest.TestCase):
     def test_expa(self):
         with self.datasets() as env:
             reader = arki.make_qmacro_dataset(
-                    arki.cfg.Section(), env.config, "expa",
+                    env.config, "expa",
                     "ds:testds. d:2009-08-07. t:0000. s:AN. l:G00. v:GRIB1/200/140/229.\n"
                     "ds:testds. d:2009-08-07. t:0000. s:GRIB1/1. l:MSL. v:GRIB1/80/2/2.\n")
             mdc = reader.query_data()
@@ -82,7 +82,7 @@ class TestExpa(QmacroTestMixin, unittest.TestCase):
         # Try "expa" matchers with parameter
         with self.datasets() as env:
             reader = arki.make_qmacro_dataset(
-                    arki.cfg.Section(), env.config, "expa 2009-08-08",
+                    env.config, "expa 2009-08-08",
                     "ds:testds. d:@. t:0000. s:AN. l:G00. v:GRIB1/200/140/229.\n"
                     "ds:testds. d:@-1. t:0000. s:GRIB1/1. l:MSL. v:GRIB1/80/2/2.\n")
             mdc = reader.query_data()
@@ -98,7 +98,7 @@ class TestExpa(QmacroTestMixin, unittest.TestCase):
         # Try "expa" matchers with inline option
         with self.datasets() as env:
             reader = arki.make_qmacro_dataset(
-                    arki.cfg.Section(), env.config, "expa",
+                    env.config, "expa",
                     "ds:testds. d:2009-08-07. t:0000. s:AN. l:G00. v:GRIB1/200/140/229.\n"
                     "ds:testds. d:2009-08-07. t:0000. s:GRIB1/1. l:MSL. v:GRIB1/80/2/2.\n")
             mdc = reader.query_data(with_data=True)
@@ -115,7 +115,7 @@ class TestExpa(QmacroTestMixin, unittest.TestCase):
         with self.datasets() as env:
             # Try "expa" matchers with sort option
             reader = arki.make_qmacro_dataset(
-                    arki.cfg.Section(), env.config, "expa",
+                    env.config, "expa",
                     "ds:testds. d:2009-08-07. t:0000. s:AN. l:G00. v:GRIB1/200/140/229.\n"
                     "ds:testds. d:2009-08-08. t:0000. s:GRIB1/1. l:MSL. v:GRIB1/80/2/2.\n")
             mdc = reader.query_data(sort="month:-reftime")

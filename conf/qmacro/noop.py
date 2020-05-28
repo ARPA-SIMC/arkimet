@@ -2,8 +2,7 @@ import arkimet as arki
 
 
 class Querymacro:
-    def __init__(self, macro_cfg, datasets_cfg, macro_args, query):
-        self.macro_cfg = macro_cfg,
+    def __init__(self, datasets_cfg, macro_args, query):
         self.datasets_cfg = datasets_cfg
         self.macro_args = macro_args
         self.query = query

@@ -4,7 +4,6 @@
 #include "core/cfg.h"
 #include "metadata.h"
 #include "utils/string.h"
-#include "utils/string.h"
 #include <memory>
 
 using namespace std;
@@ -117,12 +116,12 @@ bool Matcher::restrict_date_range(unique_ptr<core::Time>& begin, unique_ptr<core
 
 Matcher Matcher::parse(const std::string& pattern)
 {
-	return matcher::AND::parse(pattern);
+    return matcher::AND::parse(pattern);
 }
 
 std::ostream& operator<<(std::ostream& o, const Matcher& m)
 {
-	return o << m.toString();
+    return o << m.toString();
 }
 
 }

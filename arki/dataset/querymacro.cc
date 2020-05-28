@@ -25,21 +25,6 @@ Options::Options(const core::cfg::Sections& datasets_cfg, const std::string& nam
 
 }
 
-Options::Options(const core::cfg::Section& macro_cfg, const core::cfg::Sections& datasets_cfg, const std::string& name, const std::string& query)
-    : macro_cfg(macro_cfg), datasets_cfg(datasets_cfg), query(query)
-{
-    size_t pos = name.find(" ");
-    if (pos == string::npos)
-    {
-        macro_name = name;
-    } else {
-        macro_name = name.substr(0, pos);
-        macro_args = str::strip(name.substr(pos + 1));
-    }
-
-}
-
-
 std::vector<std::pair<std::string, std::function<std::shared_ptr<dataset::Reader>(const std::string& source, const Options& opts)>>> parsers;
 
 std::shared_ptr<dataset::Reader> get(const Options& opts)

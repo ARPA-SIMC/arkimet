@@ -42,12 +42,10 @@ PyObject* instantiate_qmacro_pydataset(const std::string& source, const arki::da
     // Get module.Querymacro
     pyo_unique_ptr cls(throw_ifnull(PyObject_GetAttrString(module, "Querymacro")));
 
-    pyo_unique_ptr macro_cfg(cfg_section(opts.macro_cfg));
     pyo_unique_ptr datasets_cfg(cfg_sections(opts.datasets_cfg));
 
     // Instantiate obj = Querymacro(macro_cfg, datasets_cfg, args, query)
-    pyo_unique_ptr obj(throw_ifnull(PyObject_CallFunction(cls, "OOs#s#",
-                    macro_cfg.get(),
+    pyo_unique_ptr obj(throw_ifnull(PyObject_CallFunction(cls, "Os#s#",
                     datasets_cfg.get(),
                     opts.macro_args.data(), (Py_ssize_t)opts.macro_args.size(),
                     opts.query.data(), (Py_ssize_t)opts.query.size())));
@@ -65,7 +63,7 @@ void init()
     arki::dataset::qmacro::register_parser("py", [](const std::string& source, const arki::dataset::qmacro::Options& opts) {
         AcquireGIL gil;
         pyo_unique_ptr o(instantiate_qmacro_pydataset(source, opts));
-        return python::dataset::create_reader(opts.macro_cfg, o);
+        return python::dataset::create_reader(o);
     });
 }
 

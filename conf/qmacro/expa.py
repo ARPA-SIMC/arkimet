@@ -35,8 +35,7 @@ class Querymacro:
     re_date_iso = re.compile(r"^\d{4}-\d{2}-\d{2}$")
     re_time = re.compile(r"^(?P<h>\d{2})(?P<m>\d{2})$")
 
-    def __init__(self, macro_cfg, datasets_cfg, macro_args, query):
-        self.macro_cfg = macro_cfg,
+    def __init__(self, datasets_cfg, macro_args, query):
         self.datasets_cfg = datasets_cfg
 
         # The argument, if provided, is a date used to expand @ in date expressions

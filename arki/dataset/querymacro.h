@@ -10,18 +10,26 @@
 
 namespace arki {
 namespace dataset {
+
+#if 0
+class QueryMacro : public dataset::Dataset
+{
+public:
+    QueryMacro(std::shared_ptr<Session> session, const std::string& name, const std::string& query);
+
+};
+#endif
+
 namespace qmacro {
 
 struct Options
 {
-    core::cfg::Section macro_cfg;
     core::cfg::Sections datasets_cfg;
     std::string macro_name;
     std::string macro_args;
     std::string query;
 
     Options(const core::cfg::Sections& datasets_cfg, const std::string& name, const std::string& query);
-    Options(const core::cfg::Section& macro_cfg, const core::cfg::Sections& datasets_cfg, const std::string& name, const std::string& query);
 };
 
 

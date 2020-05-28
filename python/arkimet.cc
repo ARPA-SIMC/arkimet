@@ -78,7 +78,7 @@ struct get_alias_database : public MethNoargs<get_alias_database, PyObject>
 struct make_qmacro_dataset : public MethKwargs<make_qmacro_dataset, PyObject>
 {
     constexpr static const char* name = "make_qmacro_dataset";
-    constexpr static const char* signature = "cfg: Union[str, dict, arkimet.cfg.Section], datasets: Union[str, arkimet.cfg.Sections], name: str, query: str";
+    constexpr static const char* signature = "datasets: Union[str, arkimet.cfg.Sections], name: str, query: str";
     constexpr static const char* returns = "arkimet.DatasetReader";
     constexpr static const char* summary = "create a QueryMacro dataset that aggregates the contents of multiple datasets";
     constexpr static const char* doc = R"(
@@ -90,17 +90,15 @@ Arguments:
 
     static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
     {
-        static const char* kwlist[] = { "cfg", "datasets", "name", "query", NULL };
-        PyObject* arg_cfg = Py_None;
+        static const char* kwlist[] = { "datasets", "name", "query", NULL };
         PyObject* arg_datasets = Py_None;
         const char* name = nullptr;
         const char* query = "";
 
-        if (!PyArg_ParseTupleAndKeywords(args, kw, "OOs|s", (char**)kwlist, &arg_cfg, &arg_datasets, &name, &query))
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "Os|s", (char**)kwlist, &arg_datasets, &name, &query))
             return nullptr;
 
         try {
-            core::cfg::Section cfg = section_from_python(arg_cfg);
             core::cfg::Sections datasets;
             datasets = sections_from_python(arg_datasets);
 
@@ -109,7 +107,7 @@ Arguments:
             if (baseurl.empty())
             {
                 // Create the local query macro
-                arki::dataset::qmacro::Options opts(cfg, datasets, name, query);
+                arki::dataset::qmacro::Options opts(datasets, name, query);
                 ds = arki::dataset::qmacro::get(opts);
             } else {
                 // Create the remote query macro

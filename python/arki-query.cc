@@ -185,22 +185,26 @@ struct query_qmacro : public MethKwargs<query_qmacro, arkipy_ArkiQuery>
             {
                 ReleaseGIL rg;
 
-                arki::core::cfg::Section cfg;
                 std::shared_ptr<arki::dataset::Reader> reader;
                 std::string macro_name(arg_macro_name, arg_macro_name_len);
                 std::string macro_query(arg_macro_query, arg_macro_query_len);
+
+                // TODO: merge this code with python/arkimet.cc:make_qmacro_dataset
 
                 // Create the virtual qmacro dataset
                 std::string baseurl = arki::dataset::http::Reader::allSameRemoteServer(self->inputs);
                 if (baseurl.empty())
                 {
                     // Create the local query macro
-                    arki::nag::verbose("Running query macro %s on local datasets", macro_name.c_str());
-                    arki::dataset::qmacro::Options opts(cfg, self->inputs, macro_name, macro_query);
+                    arki::nag::verbose("Running query macro %s locally", macro_name.c_str());
+
+                    // TODO: download and merge alias databases from all the servers
+
+                    arki::dataset::qmacro::Options opts(self->inputs, macro_name, macro_query);
                     reader = arki::dataset::qmacro::get(opts);
                 } else {
                     // Create the remote query macro
-                    arki::nag::verbose("Running query macro %s on %s", macro_name.c_str(), baseurl.c_str());
+                    arki::nag::verbose("Running query macro %s remotely on %s", macro_name.c_str(), baseurl.c_str());
                     arki::core::cfg::Section cfg;
                     cfg.set("name", macro_name);
                     cfg.set("type", "remote");
