@@ -117,13 +117,13 @@ std::shared_ptr<archive::Reader> Reader::archive()
     return m_archive;
 }
 
-bool Reader::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
+bool Reader::impl_query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 {
     if (!dataset().hasArchive()) return true;
     return archive()->query_data(q, dest);
 }
 
-void Reader::query_summary(const Matcher& matcher, Summary& summary)
+void Reader::impl_query_summary(const Matcher& matcher, Summary& summary)
 {
     if (dataset().hasArchive())
         archive()->query_summary(matcher, summary);

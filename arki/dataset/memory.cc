@@ -24,7 +24,7 @@ Reader::~Reader() {}
 
 std::string Reader::type() const { return "memory"; }
 
-bool Reader::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
+bool Reader::impl_query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 {
     if (q.sorter)
         m_dataset->sort(*q.sorter);
@@ -37,7 +37,7 @@ bool Reader::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
     return true;
 }
 
-void Reader::query_summary(const Matcher& matcher, Summary& summary)
+void Reader::impl_query_summary(const Matcher& matcher, Summary& summary)
 {
     for (const auto& md: *m_dataset)
         if (matcher(*md))

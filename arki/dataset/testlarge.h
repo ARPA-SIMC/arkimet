@@ -38,14 +38,14 @@ class Reader : public DatasetAccess<dataset::Dataset, dataset::Reader>
 {
     bool generate(const core::Time& begin, const core::Time& until, std::function<bool(std::unique_ptr<Metadata>)> out) const;
 
+protected:
+    bool impl_query_data(const dataset::DataQuery& q, metadata_dest_func) override;
+    void impl_query_summary(const Matcher& matcher, Summary& summary) override;
+
 public:
     using DatasetAccess::DatasetAccess;
 
     std::string type() const override { return "empty"; }
-
-    // Nothing to do: the dataset is always empty
-    bool query_data(const dataset::DataQuery& q, metadata_dest_func) override;
-    void query_summary(const Matcher& matcher, Summary& summary) override;
 };
 
 }

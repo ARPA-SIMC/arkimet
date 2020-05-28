@@ -251,14 +251,14 @@ Reader::~Reader()
 
 std::string Reader::type() const { return "archives"; }
 
-bool Reader::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
+bool Reader::impl_query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 {
     return archives->iter([&](dataset::Reader& r) {
         return r.query_data(q, dest);
     });
 }
 
-void Reader::query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out)
+void Reader::impl_fd_query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out)
 {
     archives->iter([&](dataset::Reader& r) {
         r.query_bytes(q, out);
@@ -266,7 +266,7 @@ void Reader::query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out)
     });
 }
 
-void Reader::query_bytes(const dataset::ByteQuery& q, AbstractOutputFile& out)
+void Reader::impl_abstract_query_bytes(const dataset::ByteQuery& q, AbstractOutputFile& out)
 {
     archives->iter([&](dataset::Reader& r) {
         r.query_bytes(q, out);
@@ -291,7 +291,7 @@ void Reader::summary_for_all(Summary& out)
     }
 }
 
-void Reader::query_summary(const Matcher& matcher, Summary& summary)
+void Reader::impl_query_summary(const Matcher& matcher, Summary& summary)
 {
     unique_ptr<Time> matcher_begin;
     unique_ptr<Time> matcher_end;

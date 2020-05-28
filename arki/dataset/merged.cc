@@ -214,7 +214,7 @@ Reader::~Reader()
 
 std::string Reader::type() const { return "merged"; }
 
-bool Reader::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
+bool Reader::impl_query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 {
     dataset::TrackProgress track(q.progress);
     dest = track.wrap(dest);
@@ -281,7 +281,7 @@ bool Reader::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
     return track.done(canceled);
 }
 
-void Reader::query_summary(const Matcher& matcher, Summary& summary)
+void Reader::impl_query_summary(const Matcher& matcher, Summary& summary)
 {
     auto& datasets = dataset().datasets;
 
@@ -341,7 +341,7 @@ public:
 
 }
 
-void Reader::query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out)
+void Reader::impl_fd_query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out)
 {
     // Here we must serialize, as we do not know how to merge raw data streams
     //
@@ -363,7 +363,7 @@ void Reader::query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out)
     wrapped_progress->actual_done();
 }
 
-void Reader::query_bytes(const dataset::ByteQuery& q, AbstractOutputFile& out)
+void Reader::impl_abstract_query_bytes(const dataset::ByteQuery& q, AbstractOutputFile& out)
 {
     // Here we must serialize, as we do not know how to merge raw data streams
     //

@@ -59,7 +59,7 @@ struct PyDatasetReader : public arki::dataset::DatasetAccess<arki::dataset::Data
 
     std::string type() const override { return m_type; }
 
-    bool query_data(const arki::dataset::DataQuery& q, arki::metadata_dest_func dest) override
+    bool impl_query_data(const arki::dataset::DataQuery& q, arki::metadata_dest_func dest) override
     {
         arki::dataset::TrackProgress track(q.progress);
         dest = track.wrap(dest);
@@ -91,7 +91,7 @@ struct PyDatasetReader : public arki::dataset::DatasetAccess<arki::dataset::Data
         }
     }
 
-    void query_summary(const Matcher& matcher, Summary& summary) override
+    void impl_query_summary(const Matcher& matcher, Summary& summary) override
     {
         if (meth_query_summary)
         {

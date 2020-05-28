@@ -32,24 +32,24 @@ Reader::~Reader()
     delete m_idx;
 }
 
-bool Reader::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
+bool Reader::impl_query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 {
     dataset::TrackProgress track(q.progress);
     dest = track.wrap(dest);
 
     auto lock = dataset().read_lock_dataset();
-    if (!local::Reader::query_data(q, dest))
+    if (!local::Reader::impl_query_data(q, dest))
         return false;
     if (!m_idx) return true;
     m_idx->lock = lock;
     return track.done(m_idx->query_data(q, dest));
 }
 
-void Reader::query_summary(const Matcher& matcher, Summary& summary)
+void Reader::impl_query_summary(const Matcher& matcher, Summary& summary)
 {
     auto lock = dataset().read_lock_dataset();
     // Query the archives first
-    local::Reader::query_summary(matcher, summary);
+    local::Reader::impl_query_summary(matcher, summary);
     if (!m_idx) return;
     m_idx->lock = lock;
     // FIXME: this is cargo culted from the old ondisk2 reader: what is the use case for this?

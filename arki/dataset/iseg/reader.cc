@@ -48,12 +48,12 @@ bool Reader::list_segments(const Matcher& matcher, std::function<bool(const std:
     return true;
 }
 
-bool Reader::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
+bool Reader::impl_query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 {
     dataset::TrackProgress track(q.progress);
     dest = track.wrap(dest);
 
-    if (!segmented::Reader::query_data(q, dest))
+    if (!segmented::Reader::impl_query_data(q, dest))
         return false;
 
     bool res = list_segments(q.matcher, [&](const std::string& relpath) {
@@ -131,10 +131,10 @@ inline bool range_envelopes_full_month(const core::Time& begin, const core::Time
 }
 }
 
-void Reader::query_summary(const Matcher& matcher, Summary& summary)
+void Reader::impl_query_summary(const Matcher& matcher, Summary& summary)
 {
     // Query the archives first
-    segmented::Reader::query_summary(matcher, summary);
+    segmented::Reader::impl_query_summary(matcher, summary);
 
     // Check if the matcher discriminates on reference times
     unique_ptr<core::Time> begin;

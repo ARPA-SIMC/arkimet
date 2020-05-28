@@ -34,12 +34,13 @@ public:
 
 class Reader : public DatasetAccess<file::Dataset, dataset::Reader>
 {
+protected:
+    bool impl_query_data(const dataset::DataQuery& q, metadata_dest_func) override;
+
 public:
     using DatasetAccess::DatasetAccess;
 
     std::string type() const override { return "file"; }
-
-    bool query_data(const dataset::DataQuery& q, metadata_dest_func) override;
 };
 
 class FdFile : public Dataset

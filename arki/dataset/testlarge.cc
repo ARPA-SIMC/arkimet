@@ -50,7 +50,7 @@ bool Reader::generate(const core::Time& begin, const core::Time& until, std::fun
     return true;
 }
 
-bool Reader::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
+bool Reader::impl_query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 {
     dataset::TrackProgress track(q.progress);
     dest = track.wrap(dest);
@@ -70,7 +70,7 @@ bool Reader::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
     }));
 }
 
-void Reader::query_summary(const Matcher& matcher, Summary& summary)
+void Reader::impl_query_summary(const Matcher& matcher, Summary& summary)
 {
     std::unique_ptr<core::Time> begin;
     std::unique_ptr<core::Time> until;

@@ -25,14 +25,15 @@ struct Dataset : public dataset::Dataset
  */
 class Reader : public DatasetAccess<dataset::Dataset, dataset::Reader>
 {
+protected:
+    bool impl_query_data(const dataset::DataQuery& q, metadata_dest_func dest) override;
+
 public:
     using DatasetAccess::DatasetAccess;
 
     std::function<bool(metadata_dest_func)> generator;
 
     std::string type() const override { return "fromfunction"; }
-
-    bool query_data(const dataset::DataQuery& q, metadata_dest_func dest) override;
 };
 
 }

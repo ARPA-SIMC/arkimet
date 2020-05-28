@@ -396,7 +396,7 @@ void Reader::set_post_query(Request& request, const dataset::DataQuery& q)
         request.post_data.add_string("sort", q.sorter->toString());
 }
 
-bool Reader::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
+bool Reader::impl_query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 {
     dataset::TrackProgress track(q.progress);
     dest = track.wrap(dest);
@@ -414,7 +414,7 @@ bool Reader::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
     return track.done(!request.mdc.consumer_canceled());
 }
 
-void Reader::query_summary(const Matcher& matcher, Summary& summary)
+void Reader::impl_query_summary(const Matcher& matcher, Summary& summary)
 {
     m_curl.reset();
 
@@ -428,7 +428,7 @@ void Reader::query_summary(const Matcher& matcher, Summary& summary)
     summary.read(dec, request.url);
 }
 
-void Reader::query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out)
+void Reader::impl_fd_query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out)
 {
     m_curl.reset();
 
@@ -466,7 +466,7 @@ void Reader::query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out)
     if (q.progress) q.progress->done();
 }
 
-void Reader::query_bytes(const dataset::ByteQuery& q, AbstractOutputFile& out)
+void Reader::impl_abstract_query_bytes(const dataset::ByteQuery& q, AbstractOutputFile& out)
 {
     if (q.data_start_hook)
         throw std::runtime_error("Cannot use data_start_hook on abstract output files");

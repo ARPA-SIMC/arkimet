@@ -161,15 +161,15 @@ protected:
     void set_post_query(Request& request, const std::string& query);
     void set_post_query(Request& request, const dataset::DataQuery& q);
 
+    bool impl_query_data(const dataset::DataQuery& q, metadata_dest_func) override;
+    void impl_query_summary(const Matcher& matcher, Summary& summary) override;
+    void impl_fd_query_bytes(const dataset::ByteQuery& q, core::NamedFileDescriptor& out) override;
+    void impl_abstract_query_bytes(const dataset::ByteQuery& q, core::AbstractOutputFile& out) override;
+
 public:
     using DatasetAccess::DatasetAccess;
 
     std::string type() const override;
-
-    bool query_data(const dataset::DataQuery& q, metadata_dest_func) override;
-    void query_summary(const Matcher& matcher, Summary& summary) override;
-    void query_bytes(const dataset::ByteQuery& q, core::NamedFileDescriptor& out) override;
-    void query_bytes(const dataset::ByteQuery& q, core::AbstractOutputFile& out) override;
 
     static core::cfg::Sections load_cfg_sections(const std::string& path);
     static core::cfg::Section load_cfg_section(const std::string& path);

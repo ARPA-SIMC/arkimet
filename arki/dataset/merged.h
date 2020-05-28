@@ -35,16 +35,17 @@ struct Dataset : public dataset::Dataset
  */
 class Reader : public DatasetAccess<Dataset, dataset::Reader>
 {
+protected:
+    bool impl_query_data(const dataset::DataQuery& q, metadata_dest_func dest) override;
+    void impl_query_summary(const Matcher& matcher, Summary& summary) override;
+    void impl_fd_query_bytes(const dataset::ByteQuery& q, core::NamedFileDescriptor& out) override;
+    void impl_abstract_query_bytes(const dataset::ByteQuery& q, core::AbstractOutputFile& out) override;
+
 public:
     using DatasetAccess::DatasetAccess;
     virtual ~Reader();
 
     std::string type() const override;
-
-    bool query_data(const dataset::DataQuery& q, metadata_dest_func dest) override;
-    void query_summary(const Matcher& matcher, Summary& summary) override;
-    void query_bytes(const dataset::ByteQuery& q, core::NamedFileDescriptor& out) override;
-    void query_bytes(const dataset::ByteQuery& q, core::AbstractOutputFile& out) override;
 };
 
 }

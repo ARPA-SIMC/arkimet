@@ -74,6 +74,11 @@ protected:
 
     void summary_for_all(Summary& out);
 
+    bool impl_query_data(const dataset::DataQuery& q, metadata_dest_func) override;
+    void impl_query_summary(const Matcher& matcher, Summary& summary) override;
+    void impl_fd_query_bytes(const dataset::ByteQuery& q, core::NamedFileDescriptor& out) override;
+    void impl_abstract_query_bytes(const dataset::ByteQuery& q, core::AbstractOutputFile& out) override;
+
 public:
     Reader(std::shared_ptr<Dataset> dataset);
     virtual ~Reader();
@@ -81,10 +86,6 @@ public:
     std::string type() const override;
 
     void expand_date_range(std::unique_ptr<core::Time>& begin, std::unique_ptr<core::Time>& end) const;
-    bool query_data(const dataset::DataQuery& q, metadata_dest_func) override;
-    void query_bytes(const dataset::ByteQuery& q, core::NamedFileDescriptor& out) override;
-    void query_bytes(const dataset::ByteQuery& q, core::AbstractOutputFile& out) override;
-    void query_summary(const Matcher& matcher, Summary& summary) override;
 
     /// Return the number of archives found, used for testing
     unsigned test_count_archives() const;

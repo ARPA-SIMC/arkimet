@@ -46,12 +46,12 @@ std::shared_ptr<Writer> Dataset::create_writer() { throw std::runtime_error("wri
 std::shared_ptr<Checker> Dataset::create_checker() { throw std::runtime_error("checker not implemented for dataset " + name()); }
 
 
-void Reader::query_summary(const Matcher& matcher, Summary& summary)
+void Reader::impl_query_summary(const Matcher& matcher, Summary& summary)
 {
     query_data(DataQuery(matcher), [&](std::shared_ptr<Metadata> md) { summary.add(*md); return true; });
 }
 
-void Reader::query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out)
+void Reader::impl_fd_query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out)
 {
     switch (q.type)
     {
@@ -87,7 +87,7 @@ void Reader::query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out)
     }
 }
 
-void Reader::query_bytes(const dataset::ByteQuery& q, AbstractOutputFile& out)
+void Reader::impl_abstract_query_bytes(const dataset::ByteQuery& q, AbstractOutputFile& out)
 {
     if (q.data_start_hook)
         throw std::runtime_error("Cannot use data_start_hook on abstract output files");

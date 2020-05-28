@@ -48,7 +48,7 @@ std::shared_ptr<Dataset> Dataset::from_config(std::shared_ptr<Session> session, 
 }
 
 
-bool Reader::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
+bool Reader::impl_query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 {
     dataset::TrackProgress track(q.progress);
     dest = track.wrap(dest);

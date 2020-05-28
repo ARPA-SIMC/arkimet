@@ -39,14 +39,15 @@ protected:
 
     void summary_from_indices(const Matcher& matcher, Summary& summary);
 
+    bool impl_query_data(const dataset::DataQuery& q, metadata_dest_func dest) override;
+    void impl_query_summary(const Matcher& matcher, Summary& summary) override;
+
 public:
     Reader(std::shared_ptr<iseg::Dataset> dataset);
     virtual ~Reader();
 
     std::string type() const override;
 
-    bool query_data(const dataset::DataQuery& q, metadata_dest_func dest) override;
-    void query_summary(const Matcher& matcher, Summary& summary) override;
     void expand_date_range(std::unique_ptr<core::Time>& begin, std::unique_ptr<core::Time>& end) override;
 
     static bool is_dataset(const std::string& dir);
