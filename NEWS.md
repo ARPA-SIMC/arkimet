@@ -1,3 +1,7 @@
+# New in version 1.26
+
+* Fixed use of geos compile-time version detection (#225)
+
 # New in version 1.25
 
 * Fixes for geos ≥ 3.8.0 (#224)
