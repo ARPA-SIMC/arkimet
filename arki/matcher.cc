@@ -124,4 +124,41 @@ std::ostream& operator<<(std::ostream& o, const Matcher& m)
     return o << m.toString();
 }
 
+
+namespace matcher {
+
+Parser::Parser()
+    : aliases(new AliasDatabase)
+{
+}
+
+Parser::Parser(Parser&& o)
+    : aliases(o.aliases)
+{
+    o.aliases = nullptr;
+}
+
+Parser::~Parser()
+{
+    delete aliases;
+}
+
+Parser& Parser::operator=(Parser&& o)
+{
+    if (&o == this)
+        return *this;
+
+    delete aliases;
+    aliases = o.aliases;
+    o.aliases = nullptr;
+    return *this;
+}
+
+Matcher Parser::parse(const std::string& pattern) const
+{
+    return matcher::AND::parse(pattern);
+}
+
+}
+
 }

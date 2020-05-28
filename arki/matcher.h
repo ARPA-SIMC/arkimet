@@ -94,6 +94,28 @@ public:
 /// Write as a string to an output stream
 std::ostream& operator<<(std::ostream& o, const Matcher& m);
 
+
+namespace matcher {
+
+class Parser
+{
+protected:
+    AliasDatabase* aliases = nullptr;
+
+public:
+    Parser();
+    Parser(const Parser&) = delete;
+    Parser(Parser&&);
+    ~Parser();
+
+    Parser& operator=(const Parser&) = delete;
+    Parser& operator=(Parser&&);
+
+    Matcher parse(const std::string& pattern) const;
+};
+
+}
+
 }
 
 #endif

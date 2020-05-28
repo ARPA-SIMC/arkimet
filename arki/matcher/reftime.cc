@@ -13,13 +13,13 @@ namespace matcher {
 
 MatchReftime::MatchReftime(const std::string& pattern)
 {
-	// TODO: error reporting needs work
-	Parser p;
-	p.parse(pattern);
+    // TODO: error reporting needs work
+    reftime::Parser p;
+    p.parse(pattern);
 
-	// Copy the results into tests
-	tests = p.res;
-	p.res.clear();
+    // Copy the results into tests
+    tests = p.res;
+    p.res.clear();
 }
 
 MatchReftime::~MatchReftime()
