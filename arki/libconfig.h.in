@@ -1,6 +1,3 @@
-/* GEOS version number */
-#undef GEOS_VERSION
-
 /* dballe functions are available */
 #undef HAVE_DBALLE
 

@@ -82,7 +82,7 @@ struct MatchAreaBBoxIntersects : public MatchAreaBBox
     virtual bool matchGeom(const arki::utils::geos::Geometry* val) const override;
 };
 
-#ifdef ARKI_NEW_GEOS
+#if GEOS_VERSION_MAJOR >= 3
 struct MatchAreaBBoxCovers : public MatchAreaBBox
 {
     MatchAreaBBoxCovers(const std::string& geom);
