@@ -1,7 +1,9 @@
 #include "config.h"
 #include "arki/dataset/http.h"
+#include "arki/dataset/session.h"
 #include "arki/dataset/progress.h"
 #include "arki/dataset/query.h"
+#include "arki/dataset/querymacro.h"
 #include "arki/core/file.h"
 #include "arki/metadata.h"
 #include "arki/metadata/stream.h"
@@ -247,6 +249,62 @@ std::shared_ptr<dataset::Reader> Dataset::create_reader()
     return std::make_shared<Reader>(static_pointer_cast<Dataset>(shared_from_this()));
 }
 
+std::shared_ptr<dataset::Reader> Dataset::create_querymacro_reader(
+        std::shared_ptr<Session> session,
+        const core::cfg::Sections& datasets,
+        const std::string& macro_name,
+        const std::string& macro_query)
+{
+    // If all the datasets are on the same server, we can run the macro remotely
+    std::string baseurl = all_same_remote_server(datasets);
+
+    // TODO: macro_arg seems to be ignored (and lost) here
+
+    if (baseurl.empty())
+    {
+        // Either all datasets are local, or they are on different servers: run the macro locally
+        arki::nag::verbose("Running query macro %s locally", macro_name.c_str());
+
+        // TODO: download and merge alias databases from all the servers
+
+        auto dataset = std::make_shared<arki::dataset::QueryMacro>(session, datasets, macro_name, macro_query);
+        return dataset->create_reader();
+    } else {
+        // Create the remote query macro
+        arki::nag::verbose("Running query macro %s remotely on %s", macro_name.c_str(), baseurl.c_str());
+        arki::core::cfg::Section cfg;
+        cfg.set("name", macro_name);
+        cfg.set("type", "remote");
+        cfg.set("path", baseurl);
+        cfg.set("qmacro", macro_query);
+        return session->dataset(cfg)->create_reader();
+    }
+}
+
+static string geturlprefix(const std::string& s)
+{
+    // Take until /dataset/
+    size_t pos = s.rfind("/dataset/");
+    if (pos == string::npos) return string();
+    return s.substr(0, pos);
+}
+
+std::string Dataset::all_same_remote_server(const core::cfg::Sections& cfg)
+{
+    string base;
+    for (const auto& si: cfg)
+    {
+        string type = str::lower(si.second.value("type"));
+        if (type != "remote") return string();
+        string urlprefix = geturlprefix(si.second.value("path"));
+        if (urlprefix.empty()) return string();
+        if (base.empty())
+            base = urlprefix;
+        else if (base != urlprefix)
+            return string();
+    }
+    return base;
+}
 
 std::string Reader::type() const { return "http"; }
 
@@ -563,30 +621,6 @@ std::string Reader::expand_remote_query(const core::cfg::Sections& remotes, cons
     return query;
 }
 
-static string geturlprefix(const std::string& s)
-{
-    // Take until /dataset/
-    size_t pos = s.rfind("/dataset/");
-    if (pos == string::npos) return string();
-    return s.substr(0, pos);
-}
-
-std::string Reader::allSameRemoteServer(const core::cfg::Sections& cfg)
-{
-    string base;
-    for (const auto& si: cfg)
-    {
-        string type = str::lower(si.second.value("type"));
-        if (type != "remote") return string();
-        string urlprefix = geturlprefix(si.second.value("path"));
-        if (urlprefix.empty()) return string();
-        if (base.empty())
-            base = urlprefix;
-        else if (base != urlprefix)
-            return string();
-    }
-    return base;
-}
 
 HTTPInbound::HTTPInbound(const std::string& baseurl)
     : m_baseurl(baseurl)

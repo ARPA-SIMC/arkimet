@@ -103,22 +103,8 @@ Arguments:
             core::cfg::Sections datasets;
             datasets = sections_from_python(arg_datasets);
 
-            std::shared_ptr<arki::dataset::Reader> reader;
-            string baseurl = arki::dataset::http::Reader::allSameRemoteServer(datasets);
-            if (baseurl.empty())
-            {
-                // Create the local query macro
-                auto dataset = std::make_shared<arki::dataset::QueryMacro>(session, datasets, name, query);
-                reader = dataset->create_reader();
-            } else {
-                // Create the remote query macro
-                core::cfg::Section cfg;
-                cfg.set("name", name);
-                cfg.set("type", "remote");
-                cfg.set("path", baseurl);
-                cfg.set("qmacro", query);
-                reader = session->dataset(cfg)->create_reader();
-            }
+            std::shared_ptr<arki::dataset::Reader> reader = arki::dataset::http::Dataset::create_querymacro_reader(
+                    session, datasets, name, query);
 
             return (PyObject*)dataset_reader_create(reader);
         } ARKI_CATCH_RETURN_PYO

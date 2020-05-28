@@ -186,33 +186,11 @@ struct query_qmacro : public MethKwargs<query_qmacro, arkipy_ArkiQuery>
                 ReleaseGIL rg;
 
                 auto session = arki::python::get_dataset_session();
-                std::shared_ptr<arki::dataset::Reader> reader;
                 std::string macro_name(arg_macro_name, arg_macro_name_len);
                 std::string macro_query(arg_macro_query, arg_macro_query_len);
 
-                // TODO: merge this code with python/arkimet.cc:make_qmacro_dataset
-
-                // Create the virtual qmacro dataset
-                std::string baseurl = arki::dataset::http::Reader::allSameRemoteServer(self->inputs);
-                if (baseurl.empty())
-                {
-                    // Create the local query macro
-                    arki::nag::verbose("Running query macro %s locally", macro_name.c_str());
-
-                    // TODO: download and merge alias databases from all the servers
-
-                    auto dataset = std::make_shared<arki::dataset::QueryMacro>(session, self->inputs, macro_name, macro_query);
-                    reader = dataset->create_reader();
-                } else {
-                    // Create the remote query macro
-                    arki::nag::verbose("Running query macro %s remotely on %s", macro_name.c_str(), baseurl.c_str());
-                    arki::core::cfg::Section cfg;
-                    cfg.set("name", macro_name);
-                    cfg.set("type", "remote");
-                    cfg.set("path", baseurl);
-                    cfg.set("qmacro", macro_query);
-                    reader = session->dataset(cfg)->create_reader();
-                }
+                std::shared_ptr<arki::dataset::Reader> reader = arki::dataset::http::Dataset::create_querymacro_reader(
+                        session, self->inputs, macro_name, macro_query);
 
                 try {
                     self->processor->process(*reader, reader->name());

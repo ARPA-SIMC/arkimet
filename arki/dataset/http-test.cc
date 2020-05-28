@@ -34,7 +34,7 @@ add_method("allsameremoteserver", [] {
             "type = remote\n"
             "path = http://foo.bar/foo/dataset/error\n";
         auto cfg = core::cfg::Sections::parse(conf);
-        wassert(actual(http::Reader::allSameRemoteServer(cfg)) == "http://foo.bar/foo");
+        wassert(actual(http::Dataset::all_same_remote_server(cfg)) == "http://foo.bar/foo");
     }
 
     {
@@ -51,7 +51,7 @@ add_method("allsameremoteserver", [] {
             "type = remote\n"
             "path = http://foo.bar/foo/dataset/error\n";
         auto cfg = core::cfg::Sections::parse(conf);
-        wassert(actual(http::Reader::allSameRemoteServer(cfg)) == "");
+        wassert(actual(http::Dataset::all_same_remote_server(cfg)) == "");
     }
 
     {
@@ -68,7 +68,7 @@ add_method("allsameremoteserver", [] {
             "type = remote\n"
             "path = http://foo.bar/foo/dataset/error\n";
         auto cfg = core::cfg::Sections::parse(conf);
-        wassert(actual(http::Reader::allSameRemoteServer(cfg)) == "");
+        wassert(actual(http::Dataset::all_same_remote_server(cfg)) == "");
     }
 });
 
