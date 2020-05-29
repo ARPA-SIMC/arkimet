@@ -84,6 +84,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		matcher.h \
 		matcher/fwd.h \
 		matcher/aliases.h \
+		matcher/parser.h \
 		matcher/area.h \
 		matcher/level.h \
 		matcher/origin.h \
@@ -275,6 +276,7 @@ libarkimet_la_SOURCES += \
 		types/itemset.cc \
 		matcher.cc \
 		matcher/aliases.cc \
+		matcher/parser.cc \
 		matcher/utils.cc \
 		matcher/origin.cc \
 		matcher/product.cc \
@@ -394,6 +396,7 @@ tests_arki_test_SOURCES += \
 		summary/short-test.cc \
 		matcher-test.cc \
 		matcher/aliases-test.cc \
+		matcher/parser-test.cc \
 		matcher/utils-test.cc \
 		matcher/origin-test.cc \
 		matcher/product-test.cc \
