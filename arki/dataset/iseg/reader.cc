@@ -220,11 +220,11 @@ void Reader::impl_query_summary(const Matcher& matcher, Summary& summary)
             s.filter(matcher, summary);
         } else if (next <= *end) {
             Summary s;
-            summary_from_indices(Matcher::parse("reftime:>=" + begin->to_sql() + ",<" + next.to_sql()), s);
+            summary_from_indices(Matcher::match_interval(*begin, next), s);
             s.filter(matcher, summary);
         } else {
             Summary s;
-            summary_from_indices(Matcher::parse("reftime:>=" + begin->to_sql() + ",<" + end->to_sql()), s);
+            summary_from_indices(Matcher::match_interval(*begin, *end), s);
             s.filter(matcher, summary);
         }
 

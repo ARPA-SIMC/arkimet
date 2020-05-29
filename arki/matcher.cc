@@ -113,7 +113,7 @@ bool Matcher::intersect_interval(unique_ptr<core::Time>& begin, unique_ptr<core:
     return true;
 }
 
-Matcher match_interval(const core::Time& begin, const core::Time& end)
+Matcher Matcher::match_interval(const core::Time& begin, const core::Time& end)
 {
     // TODO: construct directly the right matcher, skipping the writing and parsing
     return matcher::AND::parse("reftime:>=" + begin.to_sql() + ",<" + end.to_sql());
