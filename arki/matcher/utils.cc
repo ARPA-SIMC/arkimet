@@ -2,6 +2,7 @@
 #include "utils.h"
 #include "aliases.h"
 #include "reftime.h"
+#include "reftime/parser.h"
 #include "arki/types/itemset.h"
 #include "arki/utils/string.h"
 #include "arki/utils/regexp.h"
@@ -149,29 +150,29 @@ std::string OR::toReftimeSQL(const std::string& column) const
     }
 }
 
-unique_ptr<OR> OR::parse(const MatcherType& mt, const std::string& pattern)
+unique_ptr<OR> OR::parse(const Aliases* aliases, const MatcherType& mt, const std::string& pattern)
 {
-    // Fetch the alias database for this type
-    return parse(mt, pattern, AliasDatabase::get(mt.name));
-}
-
-unique_ptr<OR> OR::parse(const MatcherType& mt, const std::string& pattern, const Aliases* aliases)
-{
-    unique_ptr<OR> res(new OR(pattern));
+    std::unique_ptr<OR> res(new OR(pattern));
 
     // Split 'patterns' on /\s*or\s*/i
     Splitter splitter("[ \t]+or[ \t]+", REG_EXTENDED | REG_ICASE);
 
     for (Splitter::const_iterator i = splitter.begin(pattern); i != splitter.end(); ++i)
     {
-        shared_ptr<OR> exprs = aliases ? aliases->get(str::lower(*i)) : nullptr;
-        if (exprs)
+        if (shared_ptr<OR> exprs = aliases ? aliases->get(str::lower(*i)) : nullptr)
             for (auto j: exprs->components)
                 res->components.push_back(j);
         else
             res->components.push_back(mt.parse_func(*i));
     }
 
+    return res;
+}
+
+std::unique_ptr<OR> OR::wrap(std::unique_ptr<Implementation> impl)
+{
+    std::unique_ptr<OR> res(new OR(std::string()));
+    res->components.emplace_back(std::move(impl));
     return res;
 }
 
@@ -268,7 +269,7 @@ void AND::split(const std::set<types::Code>& codes, AND& with, AND& without) con
     }
 }
 
-unique_ptr<AND> AND::parse(const std::string& pattern)
+unique_ptr<AND> AND::parse(const AliasDatabase& aliases, const std::string& pattern)
 {
     unique_ptr<AND> res(new AND);
 
@@ -283,15 +284,26 @@ unique_ptr<AND> AND::parse(const std::string& pattern)
         if (pos == string::npos)
             throw std::invalid_argument("cannot parse matcher subexpression '" + expr + "' does not contain a colon (':')");
 
-        string type = str::lower(str::strip(expr.substr(0, pos)));
-        string patterns = str::strip(expr.substr(pos+1));
+        std::string type = str::lower(str::strip(expr.substr(0, pos)));
+        std::string patterns = str::strip(expr.substr(pos+1));
 
         MatcherType* mt = MatcherType::find(type);
         if (mt == 0)
             throw std::invalid_argument("cannot parse matcher subexpression: unknown match type: '" + type + "'");
 
-        res->components.insert(make_pair(mt->code, OR::parse(*mt, patterns)));
+        res->components.insert(make_pair(mt->code, OR::parse(aliases.get(type), *mt, patterns)));
     }
+
+    return res;
+}
+
+std::unique_ptr<AND> AND::match_interval(const core::Time& begin, const core::Time& end)
+{
+    std::unique_ptr<matcher::MatchReftime> reftime(new matcher::MatchReftime);
+    reftime->tests.push_back(matcher::reftime::DTMatch::createInterval(begin, end));
+
+    std::unique_ptr<AND> res(new AND);
+    res->components.insert(make_pair(TYPE_REFTIME, OR::wrap(std::move(reftime))));
 
     return res;
 }

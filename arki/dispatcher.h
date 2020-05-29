@@ -28,7 +28,7 @@ protected:
     virtual void raw_dispatch_dataset(const std::string& name, dataset::WriterBatch& batch, bool drop_cached_data_on_commit) = 0;
 
 public:
-    Dispatcher(const core::cfg::Sections& cfg);
+    Dispatcher(std::shared_ptr<dataset::Session> session, const core::cfg::Sections& cfg);
     virtual ~Dispatcher();
 
     /**

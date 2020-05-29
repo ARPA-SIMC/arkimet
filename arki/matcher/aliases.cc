@@ -56,7 +56,7 @@ void Aliases::add(const MatcherType& type, const core::cfg::Section& entries)
 
             // If instantiation fails, try it again later
             try {
-                val = OR::parse(type, alias.second, this);
+                val = OR::parse(this, type, alias.second);
             } catch (std::exception& e) {
                 failed.push_back(alias);
                 continue;
@@ -73,7 +73,7 @@ void Aliases::add(const MatcherType& type, const core::cfg::Section& entries)
         if (!failed.empty() && failed.size() == aliases.size())
             // If no new aliases were successfully parsed, reparse one of the
             // failing ones to raise the appropriate exception
-            OR::parse(type, failed.front().second);
+            OR::parse(nullptr, type, failed.front().second);
         aliases = failed;
     }
 }
@@ -104,12 +104,8 @@ void AliasDatabase::addGlobal(const core::cfg::Sections& cfg)
         matcher::aliasdb->add(cfg);
 }
 
-const matcher::Aliases* AliasDatabase::get(const std::string& type)
+const matcher::Aliases* AliasDatabase::get(const std::string& type) const
 {
-    if (!matcher::aliasdb)
-        return 0;
-
-    const std::map<std::string, matcher::Aliases>& aliasDatabase = matcher::aliasdb->aliasDatabase;
     std::map<std::string, matcher::Aliases>::const_iterator i = aliasDatabase.find(type);
     if (i == aliasDatabase.end())
         return 0;
@@ -118,11 +114,8 @@ const matcher::Aliases* AliasDatabase::get(const std::string& type)
 
 core::cfg::Sections AliasDatabase::serialise()
 {
-    if (!matcher::aliasdb)
-        return core::cfg::Sections();
-
     core::cfg::Sections res;
-    for (const auto& i: matcher::aliasdb->aliasDatabase)
+    for (const auto& i: aliasDatabase)
     {
         core::cfg::Section& s = res.obtain(i.first);
         i.second.serialise(s);
@@ -140,24 +133,6 @@ void AliasDatabase::debug_dump(core::AbstractOutputFile& out)
 {
     auto cfg = serialise();
     cfg.write(out);
-}
-
-
-AliasDatabaseOverride::AliasDatabaseOverride()
-    : orig(matcher::aliasdb)
-{
-    matcher::aliasdb = &newdb;
-}
-
-AliasDatabaseOverride::AliasDatabaseOverride(const core::cfg::Sections& cfg)
-    : newdb(cfg), orig(matcher::aliasdb)
-{
-    matcher::aliasdb = &newdb;
-}
-
-AliasDatabaseOverride::~AliasDatabaseOverride()
-{
-    matcher::aliasdb = orig;
 }
 
 

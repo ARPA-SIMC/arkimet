@@ -115,21 +115,14 @@ bool Matcher::intersect_interval(unique_ptr<core::Time>& begin, unique_ptr<core:
 
 Matcher Matcher::match_interval(const core::Time& begin, const core::Time& end)
 {
-    // TODO: construct directly the right matcher, skipping the writing and parsing
-    return matcher::AND::parse("reftime:>=" + begin.to_sql() + ",<" + end.to_sql());
+    return matcher::AND::match_interval(begin, end);
 }
 
 Matcher Matcher::match_month(unsigned year, unsigned month)
 {
-    // TODO: construct directly the right matcher, skipping the writing and parsing
-    char buf[128];
-    snprintf(buf, 128, "reftime:=%04u-%02u", year, month);
-    return matcher::AND::parse(buf);
-}
-
-Matcher Matcher::parse(const std::string& pattern)
-{
-    return matcher::AND::parse(pattern);
+    core::Time begin(year, month);
+    core::Time end(begin.start_of_next_month());
+    return match_interval(begin, end);
 }
 
 std::ostream& operator<<(std::ostream& o, const Matcher& m)

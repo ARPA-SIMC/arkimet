@@ -13,6 +13,7 @@
 #include "arki/metadata/data.h"
 #include "arki/metadata/collection.h"
 #include "arki/matcher.h"
+#include "arki/matcher/parser.h"
 #include "arki/summary.h"
 #include "arki/utils/files.h"
 #include "arki/utils/accounting.h"
@@ -354,6 +355,7 @@ add_method("zipped", [](Fixture& f) {
 add_method("query_archived", [](Fixture& f) {
     // Test querying with archived data
     using namespace arki::types;
+    matcher::Parser parser;
     f.clean_and_import();
     f.cfg.set("archive age", days_since(2007, 9, 1));
     f.test_reread_config();
@@ -370,7 +372,7 @@ add_method("query_archived", [](Fixture& f) {
     wassert(actual(mdc.size()) == 3u);
 
     mdc.clear();
-    mdc.add(*reader, dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), true));
+    mdc.add(*reader, dataset::DataQuery(parser.parse("origin:GRIB1,200"), true));
     wassert(actual(mdc.size()) == 1u);
 
     // Check that the source record that comes out is ok
@@ -402,13 +404,13 @@ add_method("query_archived", [](Fixture& f) {
     wassert(actual(res.size()) == 44412u);
 
     out.lseek(0); out.ftruncate(0);
-    bq.matcher = Matcher::parse("origin:GRIB1,200");
+    bq.matcher = parser.parse("origin:GRIB1,200");
     reader->query_bytes(bq, out);
     res = sys::read_file(out.name());
     wassert(actual(res.size()) == 7218u);
 
     out.lseek(0); out.ftruncate(0);
-    bq.matcher = Matcher::parse("reftime:=2007-07-08");
+    bq.matcher = parser.parse("reftime:=2007-07-08");
     reader->query_bytes(bq, out);
     res = sys::read_file(out.name());
     wassert(actual(res.size()) == 7218u);
@@ -437,6 +439,7 @@ add_method("query_archived", [](Fixture& f) {
     wassert(actual(s.size()) == 7218u);
 });
 add_method("empty_dirs", [](Fixture& f) {
+    matcher::Parser parser;
     // Tolerate empty dirs
     // Start with an empty dir
     f.clean();
@@ -452,7 +455,7 @@ add_method("empty_dirs", [](Fixture& f) {
 
     sys::File out(sys::File::mkstemp("test"));
     dataset::ByteQuery bq;
-    bq.setData(Matcher::parse(""));
+    bq.setData(parser.parse(""));
     reader->query_bytes(bq, out);
     out.close();
     wassert(actual(sys::size(out.name())) == 0u);
@@ -460,6 +463,7 @@ add_method("empty_dirs", [](Fixture& f) {
 add_method("query_lots", [](Fixture& f) {
     // Test querying with lots of data, to trigger on disk metadata buffering
     using namespace arki::types;
+    matcher::Parser parser;
 
     f.reset_test("step=daily\nformat=vm2\nunique=product,area,reftime\n");
 
@@ -540,7 +544,7 @@ add_method("query_lots", [](Fixture& f) {
     {
         auto reader = f.config().create_reader();
         CheckAllSortOrder cso;
-        dataset::DataQuery dq(Matcher::parse(""));
+        dataset::DataQuery dq(parser.parse(""));
         dq.sorter = metadata::sort::Compare::parse("reftime,area,product");
         reader->query_data(dq, [&](std::shared_ptr<Metadata> md) { return cso.eat(md); });
         wassert(actual(cso.seen) == 16128u);
@@ -762,6 +766,7 @@ add_method("issue103", [](Fixture& f) {
     skip_unless_vm2();
     static const unsigned max_files = 100;
     sys::OverrideRlimit(RLIMIT_NOFILE, max_files);
+    matcher::Parser parser;
 
     // TODO: speed up by lowering RLIMIT_NOFILE for the duration of this test
 
@@ -798,7 +803,7 @@ add_method("issue103", [](Fixture& f) {
     wassert(actual(mdc[0].sourceBlob().reader).isfalse());
 
     // Query with data, without storing all the results on a collection
-    dataset::DataQuery dq(Matcher::parse(""), true);
+    dataset::DataQuery dq(parser.parse(""), true);
     unsigned count = 0;
     wassert(reader->query_data(dq, [&](std::shared_ptr<Metadata> md) {
         wassert(actual(md->sourceBlob().reader).istrue());

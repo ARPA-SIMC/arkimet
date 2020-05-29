@@ -42,7 +42,7 @@ add_method("read", [](Fixture& f) {
         auto scanner = scan::Scanner::get_scanner("grib");
         return scanner->test_scan_file("inbound/test.grib1", dest);
     };
-    metadata::Collection mdc(*reader, Matcher::parse("origin:GRIB1 or BUFR or GRIB2"));
+    metadata::Collection mdc(*reader, "origin:GRIB1 or BUFR or GRIB2");
     wassert(actual(mdc.size()) == 3u);
 });
 
@@ -53,7 +53,7 @@ add_method("query", [](Fixture& f) {
         auto scanner = scan::Scanner::get_scanner("grib");
         return scanner->test_scan_file("inbound/test.grib1", dest);
     };
-    metadata::Collection mdc(*reader, Matcher::parse("origin:GRIB1,200"));
+    metadata::Collection mdc(*reader, "origin:GRIB1,200");
     wassert(actual(mdc.size()) == 1u);
 });
 

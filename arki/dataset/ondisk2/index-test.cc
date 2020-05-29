@@ -9,6 +9,7 @@
 #include "arki/metadata/collection.h"
 #include "arki/types/source/blob.h"
 #include "arki/matcher.h"
+#include "arki/matcher/parser.h"
 #include "arki/summary.h"
 #include "arki/iotrace.h"
 #include "arki/utils/sys.h"
@@ -97,13 +98,14 @@ struct ReadHang : public subprocess::Child
     int main() noexcept override
     {
         try {
+            matcher::Parser parser;
             auto session = std::make_shared<dataset::Session>();
             auto config = std::make_shared<dataset::ondisk2::Dataset>(session, cfg);
             auto lock = make_shared<core::lock::Null>();
             RIndex idx(config);
             idx.lock = lock;
             idx.open();
-            idx.query_data(Matcher::parse("origin:GRIB1"), [&](std::shared_ptr<Metadata> md) {
+            idx.query_data(parser.parse("origin:GRIB1"), [&](std::shared_ptr<Metadata> md) {
                 fputs("H\n", stdout);
                 fflush(stdout);
                 fclose(stdout);
@@ -147,6 +149,7 @@ void Tests::register_tests() {
 
 // Trying indexing a few metadata
 add_method("index", [] {
+    matcher::Parser parser;
     auto md = make_md();
     auto md1 = make_md1();
 
@@ -173,13 +176,13 @@ add_method("index", [] {
 
     // Query various kinds of metadata
     metadata::Collection mdc;
-    wassert(query_index(*test, Matcher::parse("origin:GRIB1,200"), mdc));
+    wassert(query_index(*test, parser.parse("origin:GRIB1,200"), mdc));
     wassert(actual(mdc.size()) == 1u);
     wassert(actual(mdc[0].notes().size()) == 1u);
     wassert(actual(mdc[0].notes()[0].content) == "this is a test");
 
     mdc.clear();
-    wassert(query_index(*test, Matcher::parse("product:GRIB1,3"), mdc));
+    wassert(query_index(*test, parser.parse("product:GRIB1,3"), mdc));
     wassert(actual(mdc.size()) == 1u);
 
     // TODO: level, timerange, area, proddef, reftime
@@ -188,6 +191,7 @@ add_method("index", [] {
 
 // See if remove works
 add_method("remove", [] {
+    matcher::Parser parser;
     auto md = make_md();
     auto md1 = make_md1();
 
@@ -221,7 +225,7 @@ add_method("remove", [] {
 
     // Ensure that we have two items
     metadata::Collection mdc;
-    query_index(*test, Matcher::parse("origin:GRIB1"), mdc);
+    query_index(*test, parser.parse("origin:GRIB1"), mdc);
     wassert(actual(mdc.size()) == 2u);
     mdc.clear();
 
@@ -234,7 +238,7 @@ add_method("remove", [] {
     p.commit();
 
     // There should be only one result now
-    query_index(*test, Matcher::parse("origin:GRIB1"), mdc);
+    query_index(*test, parser.parse("origin:GRIB1"), mdc);
     wassert(actual(mdc.size()) == 1u);
 
     // It should be the second item we inserted
@@ -246,7 +250,7 @@ add_method("remove", [] {
     test->replace(md1, "inbound/test.grib1", 0);
 
     // See that it changed
-    query_index(*test, Matcher::parse("origin:GRIB1"), mdc);
+    query_index(*test, parser.parse("origin:GRIB1"), mdc);
     wassert(actual(mdc.size()) == 1u);
     const source::Blob& blob = mdc[0].sourceBlob();
     wassert(actual(blob.filename) == "inbound/test.grib1");
@@ -365,6 +369,7 @@ add_method("query_file", [] {
 
 // Try a summary query that used to be badly generated
 add_method("reproduce_old_issue1", [] {
+    matcher::Parser parser;
     auto md = make_md();
     auto md1 = make_md1();
 
@@ -404,22 +409,22 @@ add_method("reproduce_old_issue1", [] {
 
     // Query an interval with a partial month only
     Summary summary;
-    test->query_summary(Matcher::parse("reftime:>=2005-01-10,<=2005-01-25"), summary);
+    test->query_summary(parser.parse("reftime:>=2005-01-10,<=2005-01-25"), summary);
     wassert(actual(summary.count()) == 1u);
 
     // Query an interval with a partial month and a full month
     summary.clear();
-    test->query_summary(Matcher::parse("reftime:>=2004-12-10,<=2005-01-31"), summary);
+    test->query_summary(parser.parse("reftime:>=2004-12-10,<=2005-01-31"), summary);
     wassert(actual(summary.count()) == 1u);
 
     // Query an interval with a full month and a partial month
     summary.clear();
-    test->query_summary(Matcher::parse("reftime:>=2005-01-01,<=2005-02-15"), summary);
+    test->query_summary(parser.parse("reftime:>=2005-01-01,<=2005-02-15"), summary);
     wassert(actual(summary.count()) == 1u);
 
     // Query an interval with a partial month, a full month and a partial month
     summary.clear();
-    test->query_summary(Matcher::parse("reftime:>=2004-12-10,<=2005-02-15"), summary);
+    test->query_summary(parser.parse("reftime:>=2004-12-10,<=2005-02-15"), summary);
     wassert(actual(summary.count()) == 1u);
 });
 

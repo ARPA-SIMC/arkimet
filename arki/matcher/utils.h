@@ -28,7 +28,7 @@
 #include <vector>
 #include <string>
 #include <map>
-#include <stdint.h>
+#include <cstdint>
 
 namespace arki {
 namespace matcher {
@@ -120,8 +120,8 @@ public:
 
     bool intersect_interval(std::unique_ptr<core::Time>& begin, std::unique_ptr<core::Time>& end) const;
 
-    static std::unique_ptr<OR> parse(const MatcherType& type, const std::string& pattern);
-    static std::unique_ptr<OR> parse(const MatcherType& type, const std::string& pattern, const Aliases* aliases);
+    static std::unique_ptr<OR> parse(const Aliases* aliases, const MatcherType& type, const std::string& pattern);
+    static std::unique_ptr<OR> wrap(std::unique_ptr<Implementation> impl);
 };
 
 
@@ -153,7 +153,8 @@ public:
     std::string toString() const override;
     std::string toStringExpanded() const override;
 
-    static std::unique_ptr<AND> parse(const std::string& pattern);
+    static std::unique_ptr<AND> parse(const AliasDatabase& aliases, const std::string& pattern);
+    static std::unique_ptr<AND> match_interval(const core::Time& begin, const core::Time& end);
 };
 
 

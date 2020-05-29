@@ -1,5 +1,6 @@
 #include "arki/matcher/tests.h"
 #include "arki/matcher.h"
+#include "arki/matcher/parser.h"
 #include "arki/matcher/reftime.h"
 #include "arki/metadata.h"
 
@@ -28,13 +29,14 @@ void Tests::register_tests() {
 
 // Try matching reference times
 add_method("match_position", [] {
+    matcher::Parser parser;
     Metadata md;
     arki::tests::fill(md);
 
     // md.set(reftime::Position::create(types::Time::create(2007, 1, 2, 3, 4, 5)));
 
     wassert(actual_matcher("reftime:>=2007").matches(md));
-    wassert(actual(sql(Matcher::parse("reftime:>=2007"), "foo")) == "(foo>='2007-01-01 00:00:00')");
+    wassert(actual(sql(parser.parse("reftime:>=2007"), "foo")) == "(foo>='2007-01-01 00:00:00')");
     wassert(actual_matcher("reftime:<=2007").matches(md));
     wassert(actual_matcher("reftime:>2006").matches(md));
     wassert(actual_matcher("reftime:<2008").matches(md));
@@ -45,7 +47,7 @@ add_method("match_position", [] {
     wassert(actual_matcher("reftime:>2007").not_matches(md));
     wassert(actual_matcher("reftime:<2007").not_matches(md));
     wassert(actual_matcher("reftime:==2006").not_matches(md));
-    wassert(actual(sql(Matcher::parse("reftime:==2006"), "foo")) == "((foo>='2006-01-01 00:00:00' AND foo<='2006-12-31 23:59:59'))");
+    wassert(actual(sql(parser.parse("reftime:==2006"), "foo")) == "((foo>='2006-01-01 00:00:00' AND foo<='2006-12-31 23:59:59'))");
 
     wassert(actual_matcher("reftime:>=2007-01").matches(md));
     wassert(actual_matcher("reftime:<=2007-01").matches(md));
@@ -209,6 +211,7 @@ add_method("regression1", [] {
 
 // Try matching times
 add_method("times", [] {
+    matcher::Parser parser;
     Metadata md;
     arki::tests::fill(md);
 
@@ -227,9 +230,9 @@ add_method("times", [] {
     wassert(actual_matcher("reftime:>02").matches(md));
     wassert(actual_matcher("reftime:<04").matches(md));
     wassert(actual_matcher("reftime:>03").not_matches(md));
-    wassert(actual(sql(Matcher::parse("reftime:>03"), "foo")) == "(TIME(foo)>'03:59:59')");
+    wassert(actual(sql(parser.parse("reftime:>03"), "foo")) == "(TIME(foo)>'03:59:59')");
     wassert(actual_matcher("reftime:<03").not_matches(md));
-    wassert(actual(sql(Matcher::parse("reftime:<03"), "foo")) == "(TIME(foo)<'03:00:00')");
+    wassert(actual(sql(parser.parse("reftime:<03"), "foo")) == "(TIME(foo)<'03:00:00')");
 
     wassert(actual_matcher("reftime:=03:04").matches(md));
     wassert(actual_matcher("reftime:=03:03").not_matches(md));
@@ -244,9 +247,9 @@ add_method("times", [] {
     wassert(actual_matcher("reftime:>03:03").matches(md));
     wassert(actual_matcher("reftime:<03:05").matches(md));
     wassert(actual_matcher("reftime:>03:04").not_matches(md));
-    wassert(actual(sql(Matcher::parse("reftime:>03:04"), "foo")) == "(TIME(foo)>'03:04:59')");
+    wassert(actual(sql(parser.parse("reftime:>03:04"), "foo")) == "(TIME(foo)>'03:04:59')");
     wassert(actual_matcher("reftime:<03:04").not_matches(md));
-    wassert(actual(sql(Matcher::parse("reftime:<03:04"), "foo")) == "(TIME(foo)<'03:04:00')");
+    wassert(actual(sql(parser.parse("reftime:<03:04"), "foo")) == "(TIME(foo)<'03:04:00')");
 
     wassert(actual_matcher("reftime:=03:04:05").matches(md));
     wassert(actual_matcher("reftime:=03:04:04").not_matches(md));
@@ -261,13 +264,14 @@ add_method("times", [] {
     wassert(actual_matcher("reftime:>03:04:04").matches(md));
     wassert(actual_matcher("reftime:<03:04:06").matches(md));
     wassert(actual_matcher("reftime:>03:04:05").not_matches(md));
-    wassert(actual(sql(Matcher::parse("reftime:>03:04:05"), "foo")) == "(TIME(foo)>'03:04:05')");
+    wassert(actual(sql(parser.parse("reftime:>03:04:05"), "foo")) == "(TIME(foo)>'03:04:05')");
     wassert(actual_matcher("reftime:<03:04:05").not_matches(md));
-    wassert(actual(sql(Matcher::parse("reftime:<03:04:05"), "foo")) == "(TIME(foo)<'03:04:05')");
+    wassert(actual(sql(parser.parse("reftime:<03:04:05"), "foo")) == "(TIME(foo)<'03:04:05')");
 });
 
 // Try matching time repetitions
 add_method("time_repetition", [] {
+    matcher::Parser parser;
     Metadata md;
     arki::tests::fill(md);
 
@@ -275,7 +279,7 @@ add_method("time_repetition", [] {
     wassert(actual_matcher("reftime:>2007-01-02 00:04:05%3h").matches(md));
     wassert(actual_matcher("reftime:<2007-01-02 06:04:05%3h").matches(md));
     wassert(actual_matcher("reftime:>2007-01-02 00:04:05%6h").not_matches(md));
-    wassert(actual(sql(Matcher::parse("reftime:>2007-01-02 00:04:05%6h"), "foo")) == "(foo>'2007-01-02 00:04:05' AND (TIME(foo)=='00:04:05' OR TIME(foo)=='06:04:05' OR TIME(foo)=='12:04:05' OR TIME(foo)=='18:04:05'))");
+    wassert(actual(sql(parser.parse("reftime:>2007-01-02 00:04:05%6h"), "foo")) == "(foo>'2007-01-02 00:04:05' AND (TIME(foo)=='00:04:05' OR TIME(foo)=='06:04:05' OR TIME(foo)=='12:04:05' OR TIME(foo)=='18:04:05'))");
 });
 
 // Try matching times

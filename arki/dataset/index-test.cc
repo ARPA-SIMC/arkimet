@@ -1,6 +1,7 @@
 #include "arki/dataset/tests.h"
 #include "arki/dataset/session.h"
 #include "arki/dataset/simple.h"
+#include "arki/matcher/parser.h"
 #include "index.h"
 #include "index/manifest.h"
 #include "ondisk2/index.h"
@@ -165,7 +166,8 @@ this->add_method("list_segments_filtered", [](Fixture& f) {
     auto idx = f.make_index();
 
     auto query = [&](const std::string& matcher) {
-        Matcher m = Matcher::parse(matcher);
+        matcher::Parser parser;
+        Matcher m = parser.parse(matcher);
         vector<string> res;
         idx->list_segments_filtered(m, [&](const std::string& str) { res.push_back(str); });
         return res;

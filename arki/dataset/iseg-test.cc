@@ -3,6 +3,7 @@
 #include "arki/scan.h"
 #include "arki/types/source/blob.h"
 #include "arki/dataset/query.h"
+#include "arki/matcher/parser.h"
 
 namespace {
 using namespace std;
@@ -82,6 +83,7 @@ add_method("acquire_replace", [](Fixture& f) {
 
 // Test Update Sequence Number replacement strategy
 add_method("acquire_replace_usn", [](Fixture& f) {
+    matcher::Parser parser;
     f.reset_test("type=iseg\nstep=daily\nformat=bufr");
     auto writer = f.makeIsegWriter();
 
@@ -116,7 +118,7 @@ add_method("acquire_replace_usn", [](Fixture& f) {
 
     // Try to query the element and see if it is the right one
     {
-        metadata::Collection mdc_read = f.query(dataset::DataQuery(Matcher::parse("origin:BUFR"), true));
+        metadata::Collection mdc_read = f.query(dataset::DataQuery(parser.parse("origin:BUFR"), true));
         wassert(actual(mdc_read.size()) == 1u);
         int usn;
         wassert(actual(scan::Scanner::update_sequence_number(mdc_read[0], usn)).istrue());

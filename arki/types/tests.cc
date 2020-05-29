@@ -7,6 +7,7 @@
 #include "reftime.h"
 #include "arki/types.h"
 #include "arki/matcher.h"
+#include "arki/matcher/parser.h"
 #include "arki/core/binary.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/string.h"
@@ -104,9 +105,10 @@ void TestGenericType::check() const
 
     if (!exact_query.empty())
     {
+        matcher::Parser parser;
         wassert(actual(item->exactQuery()) == exact_query);
 
-        Matcher m = Matcher::parse(item->tag() + ":" + item->exactQuery());
+        Matcher m = parser.parse(item->tag() + ":" + item->exactQuery());
         wassert(actual(m(*item)).istrue());
     }
 }

@@ -8,6 +8,7 @@
 #include "arki/types/source/blob.h"
 #include "arki/summary.h"
 #include "arki/matcher.h"
+#include "arki/matcher/parser.h"
 #include "arki/scan.h"
 #include "arki/core/file.h"
 #include "arki/utils/sys.h"
@@ -75,9 +76,10 @@ add_method("acquire", [](Fixture& f) {
 
 // Test replacing an element
 add_method("replace", [](Fixture& f) {
+    matcher::Parser parser;
     f.import();
 
-    metadata::Collection mdc = f.query(dataset::DataQuery(Matcher::parse("origin:GRIB1,80"), true));
+    metadata::Collection mdc = f.query(dataset::DataQuery(parser.parse("origin:GRIB1,80"), true));
     wassert(actual(mdc.size()) == 1u);
 
     // Take note of the original source
@@ -97,7 +99,7 @@ add_method("replace", [](Fixture& f) {
     }
 
     // Fetch the element again
-    mdc = f.query(Matcher::parse("origin:GRIB1,80"));
+    mdc = f.query("origin:GRIB1,80");
     wassert(actual(mdc.size()) == 1u);
 
     // Get the new source
@@ -117,7 +119,7 @@ add_method("replace", [](Fixture& f) {
 add_method("remove", [](Fixture& f) {
     f.import();
 
-    metadata::Collection mdc = f.query(Matcher::parse("origin:GRIB1,200"));
+    metadata::Collection mdc = f.query("origin:GRIB1,200");
 
     // Check that it has a source and metadata element
     wassert(actual(mdc[0].has_source_blob()).istrue());
@@ -133,7 +135,7 @@ add_method("remove", [](Fixture& f) {
     wassert(actual(mdc[0].has_source()).isfalse());
 
     // Try to fetch the element again
-    mdc = f.query(Matcher::parse("origin:GRIB1,200"));
+    mdc = f.query("origin:GRIB1,200");
     wassert(actual(mdc.size()) == 0u);
 });
 
@@ -142,7 +144,7 @@ add_method("query_summary", [](Fixture& f) {
     f.import();
     auto reader = f.makeOndisk2Reader();
     Summary summary;
-    reader->query_summary(Matcher::parse("origin:GRIB1,200"), summary);
+    reader->query_summary("origin:GRIB1,200", summary);
     wassert(actual(summary.count()) == 1u);
 });
 
@@ -151,7 +153,7 @@ add_method("query_summary_reftime", [](Fixture& f) {
     f.import();
     auto reader = f.makeOndisk2Reader();
     Summary summary;
-    reader->query_summary(Matcher::parse("reftime:>=2007-10"), summary);
+    reader->query_summary("reftime:>=2007-10", summary);
     wassert(actual(summary.count()) == 1u);
 });
 
@@ -225,11 +227,11 @@ add_method("query_first_reftime_extreme", [](Fixture& f) {
     unique_ptr<Reftime> rt = summary.getReferenceTime();
     wassert(actual(rt->style()) == Reftime::Style::PERIOD);
     unique_ptr<reftime::Period> p = downcast<reftime::Period>(move(rt));
-    metadata::Collection mdc(*reader, Matcher::parse("origin:GRIB1,80; reftime:=" + p->begin.to_iso8601()));
+    metadata::Collection mdc(*reader, "origin:GRIB1,80; reftime:=" + p->begin.to_iso8601());
     wassert(actual(mdc.size()) == 1u);
 
     mdc.clear();
-    mdc.add(*reader, Matcher::parse("origin:GRIB1,98; reftime:=" + p->end.to_iso8601()));
+    mdc.add(*reader, "origin:GRIB1,98; reftime:=" + p->end.to_iso8601());
     wassert(actual(mdc.size()) == 1u);
 });
 
@@ -301,7 +303,8 @@ add_method("acquire_replace_usn", [](Fixture& f) {
 
     // Try to query the element and see if it is the right one
     {
-        metadata::Collection mdc_read = f.query(dataset::DataQuery(Matcher::parse("origin:BUFR"), true));
+        matcher::Parser parser;
+        metadata::Collection mdc_read = f.query(dataset::DataQuery(parser.parse("origin:BUFR"), true));
         wassert(actual(mdc_read.size()) == 1u);
         int usn;
         wassert(actual(scan::Scanner::update_sequence_number(mdc_read[0], usn)).istrue());

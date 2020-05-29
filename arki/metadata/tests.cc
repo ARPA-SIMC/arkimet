@@ -1,6 +1,7 @@
 #include "arki/metadata/tests.h"
 #include "arki/metadata/data.h"
 #include "arki/matcher.h"
+#include "arki/matcher/parser.h"
 #include "arki/types/origin.h"
 #include "arki/types/product.h"
 #include "arki/types/level.h"
@@ -223,7 +224,8 @@ void ActualMetadata::is_not_set(const std::string& field)
 
 void ActualMetadata::matches(const std::string& expr)
 {
-    Matcher m = Matcher::parse(expr);
+    matcher::Parser parser;
+    Matcher m = parser.parse(expr);
 
     // Check that it should match as expected
     wassert(actual(m(_actual)));
@@ -231,7 +233,8 @@ void ActualMetadata::matches(const std::string& expr)
 
 void ActualMetadata::not_matches(const std::string& expr)
 {
-    Matcher m = Matcher::parse(expr);
+    matcher::Parser parser;
+    Matcher m = parser.parse(expr);
 
     wassert(actual(not m(_actual)));
 }

@@ -6,6 +6,7 @@
 #include "arki/metadata/data.h"
 #include "arki/metadata/collection.h"
 #include "arki/matcher.h"
+#include "arki/matcher/parser.h"
 #include "arki/types/source/blob.h"
 #include "arki/utils/accounting.h"
 #include "arki/utils/string.h"
@@ -120,6 +121,7 @@ add_method("drop_cached_data", [] {
 // Test a case where dispatch is known to fail
 add_method("regression01", [] {
     skip_unless_bufr();
+    matcher::Parser parser;
     // In-memory dataset configuration
     sys::rmtree_ifexists("lami_temp");
     sys::rmtree_ifexists("error");
@@ -139,7 +141,7 @@ add_method("regression01", [] {
     metadata::TestCollection source("inbound/tempforecast.bufr", true);
     wassert(actual(source.size()) == 1u);
 
-    Matcher matcher = Matcher::parse("origin:BUFR,200; product:BUFR:t=temp");
+    Matcher matcher = parser.parse("origin:BUFR,200; product:BUFR:t=temp");
     wassert_true(matcher(source[0]));
 
     RealDispatcher dispatcher(session, config);

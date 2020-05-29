@@ -97,6 +97,14 @@ add_method("unset", [](Fixture& f) {
     wassert_false(m(md));
 });
 
+add_method("regression", [](Fixture& f) {
+    matcher::Parser parser;
+
+    auto m1 = parser.parse("origin:GRIB1 OR BUFR\n    ");
+    auto m2 = parser.parse("origin:GRIB1 OR BUFR;\n   \n;   \n  ;\n");
+    wassert(actual(m1.toString()) == m2.toString());
+});
+
 }
 
 }

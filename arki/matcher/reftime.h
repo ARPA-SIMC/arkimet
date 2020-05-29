@@ -42,10 +42,12 @@ class DTMatch;
  */
 struct MatchReftime : public matcher::Implementation
 {
-	std::vector<reftime::DTMatch*> tests;
+    /// Sequences of reftime matches, ANDed together
+    std::vector<reftime::DTMatch*> tests;
 
-	MatchReftime(const std::string& pattern);
-	~MatchReftime();
+    MatchReftime();
+    MatchReftime(const std::string& pattern);
+    ~MatchReftime();
 
     //MatchType type() const { return MATCH_REFTIME; }
     std::string name() const override;

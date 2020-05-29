@@ -42,7 +42,7 @@ Parser& Parser::operator=(Parser&& o)
 
 Matcher Parser::parse(const std::string& pattern) const
 {
-    return matcher::AND::parse(pattern);
+    return matcher::AND::parse(*aliases, pattern);
 }
 
 void Parser::load_system_aliases()
@@ -71,6 +71,26 @@ void Parser::load_system_aliases()
 #endif
 
     // Else, nothing is loaded.
+}
+
+void Parser::load_aliases(const core::cfg::Sections& cfg)
+{
+    aliases->add(cfg);
+}
+
+core::cfg::Sections Parser::serialise_aliases()
+{
+    return aliases->serialise();
+}
+
+void Parser::debug_dump_aliases(core::NamedFileDescriptor& out)
+{
+    aliases->debug_dump(out);
+}
+
+void Parser::debug_dump_aliases(core::AbstractOutputFile& out)
+{
+    aliases->debug_dump(out);
 }
 
 }

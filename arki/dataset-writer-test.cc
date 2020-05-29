@@ -121,7 +121,7 @@ add_method("import_largefile", [](Fixture& f) {
 
     // Query it, without data
     auto reader = f.config().create_reader();
-    metadata::Collection mdc(*reader, Matcher::parse(""));
+    metadata::Collection mdc(*reader, "");
     wassert(actual(mdc.size()) == 720u);
 
     // Query it, streaming its data to /dev/null

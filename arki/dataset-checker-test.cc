@@ -4,6 +4,7 @@
 #include "arki/dataset/time.h"
 #include "arki/dataset/query.h"
 #include "arki/metadata/collection.h"
+#include "arki/matcher/parser.h"
 #include "arki/types/source.h"
 #include "arki/types/source/blob.h"
 #include "arki/utils/files.h"
@@ -126,13 +127,14 @@ this->add_method("check_archives", [](Fixture& f) {
 });
 
 this->add_method("check_filtered", [](Fixture& f) {
+    matcher::Parser parser;
     wassert(f.import_all_packed(f.td.mds));
 
     auto checker(f.makeSegmentedChecker());
 
     ReporterExpected e;
     e.report.emplace_back("testds", "check", "2 files ok");
-    wassert(actual(checker.get()).check_filtered(Matcher::parse("reftime:>=2007-07-08"), e, true));
+    wassert(actual(checker.get()).check_filtered(parser.parse("reftime:>=2007-07-08"), e, true));
 });
 
 this->add_method("remove_all", [](Fixture& f) {
@@ -158,6 +160,7 @@ this->add_method("remove_all", [](Fixture& f) {
 });
 
 this->add_method("remove_all_filtered", [](Fixture& f) {
+    matcher::Parser parser;
     wassert(f.import_all_packed(f.td.mds));
 
     {
@@ -165,7 +168,7 @@ this->add_method("remove_all_filtered", [](Fixture& f) {
 
         ReporterExpected e;
         e.deleted.emplace_back("testds", "2007/07-08." + f.td.format);
-        wassert(actual(checker.get()).remove_all_filtered(Matcher::parse("reftime:=2007-07-08"), e, true));
+        wassert(actual(checker.get()).remove_all_filtered(parser.parse("reftime:=2007-07-08"), e, true));
     }
 
     auto state = f.scan_state();

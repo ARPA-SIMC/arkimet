@@ -4,6 +4,7 @@
 #include "matcher.h"
 #include "dataset.h"
 #include "dataset/local.h"
+#include "dataset/session.h"
 #include "types/reftime.h"
 #include "types/source.h"
 #include "utils/string.h"
@@ -17,12 +18,7 @@ using arki::core::Time;
 
 namespace arki {
 
-static inline Matcher getFilter(const core::cfg::Section& cfg)
-{
-    return Matcher::parse(cfg.value("filter"));
-}
-
-Dispatcher::Dispatcher(const core::cfg::Sections& cfg)
+Dispatcher::Dispatcher(std::shared_ptr<dataset::Session> session, const core::cfg::Sections& cfg)
     : m_can_continue(true), m_outbound_failures(0)
 {
     // Validate the configuration, and split normal datasets from outbound
@@ -35,12 +31,12 @@ Dispatcher::Dispatcher(const core::cfg::Sections& cfg)
         {
             if (si.second.value("filter").empty())
                 throw std::runtime_error("configuration of dataset '" + si.first + "' does not have a 'filter' directive");
-            outbounds.push_back(make_pair(si.first, getFilter(si.second)));
+            outbounds.push_back(make_pair(si.first, session->matcher(si.second.value("filter"))));
         }
         else {
             if (si.second.value("filter").empty())
                 throw std::runtime_error("configuration of dataset '" + si.first + "' does not have a 'filter' directive");
-            datasets.push_back(make_pair(si.first, getFilter(si.second)));
+            datasets.push_back(make_pair(si.first, session->matcher(si.second.value("filter"))));
         }
     }
 }
@@ -175,7 +171,7 @@ void Dispatcher::dispatch(dataset::WriterBatch& batch, bool drop_cached_data_on_
 
 
 RealDispatcher::RealDispatcher(std::shared_ptr<dataset::Session> session, const core::cfg::Sections& cfg)
-    : Dispatcher(cfg), datasets(session, cfg), pool(datasets)
+    : Dispatcher(session, cfg), datasets(session, cfg), pool(datasets)
 {
 }
 
@@ -196,7 +192,7 @@ void RealDispatcher::flush() { pool.flush(); }
 
 
 TestDispatcher::TestDispatcher(std::shared_ptr<dataset::Session> session, const core::cfg::Sections& cfg)
-    : Dispatcher(cfg), session(session), cfg(cfg)
+    : Dispatcher(session, cfg), session(session), cfg(cfg)
 {
     if (!cfg.section("error"))
         throw std::runtime_error("no [error] dataset found");

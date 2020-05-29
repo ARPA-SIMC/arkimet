@@ -65,7 +65,7 @@ add_method("query_summary_reftime", [] {
     reader->scan(ds->inserter_func());
 
     Summary summary;
-    ds->create_reader()->query_summary(Matcher::parse("reftime:>=2007-07"), summary);
+    ds->create_reader()->query_summary("reftime:>=2007-07", summary);
     wassert(actual(summary.count()) == 3u);
 });
 

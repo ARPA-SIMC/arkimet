@@ -37,6 +37,14 @@ public:
     Matcher matcher(const std::string& expr);
 
     /**
+     * Expand the given query on the local session and all remote servers.
+     *
+     * If the results are consistent, return the expanded query. Else, raises
+     * std::runtime_error.
+     */
+    std::string expand_remote_query(const core::cfg::Sections& remotes, const std::string& query);
+
+    /**
      * Read the configuration of the dataset at the given path or URL
      */
     static core::cfg::Section read_config(const std::string& path);

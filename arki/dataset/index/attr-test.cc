@@ -2,6 +2,7 @@
 #include "arki/types/origin.h"
 #include "arki/metadata.h"
 #include "arki/matcher.h"
+#include "arki/matcher/parser.h"
 #include "arki/types.h"
 #include "attr.h"
 
@@ -20,6 +21,7 @@ class Tests : public TestCase
 void Tests::register_tests() {
 
 add_method("basic", [] {
+    matcher::Parser parser;
     utils::sqlite::SQLiteDB db;
     db.open(":memory:");
     dataset::index::AttrSubIndex(db, TYPE_ORIGIN).initDB();
@@ -50,7 +52,7 @@ add_method("basic", [] {
     attr.read(1, md1);
     wassert(actual_type(md1.get<types::Origin>()) == origin);
 
-    Matcher m = Matcher::parse("origin:GRIB1,200");
+    Matcher m = parser.parse("origin:GRIB1,200");
     auto matcher = m.get(TYPE_ORIGIN);
     wassert_true((bool)matcher);
     vector<int> ids = attr.query(*matcher);
@@ -60,6 +62,7 @@ add_method("basic", [] {
 
 // Same as <1> but instantiates attr every time to always test with a cold cache
 add_method("cold_cache", [] {
+    matcher::Parser parser;
     utils::sqlite::SQLiteDB db;
     db.open(":memory:");
     dataset::index::AttrSubIndex(db, TYPE_ORIGIN).initDB();
@@ -89,7 +92,7 @@ add_method("cold_cache", [] {
     wassert(actual_type(md1.get<types::Origin>()) == origin);
 
     // Query the database
-    Matcher m = Matcher::parse("origin:GRIB1,200");
+    Matcher m = parser.parse("origin:GRIB1,200");
     auto matcher = m.get(TYPE_ORIGIN);
     wassert_true((bool)matcher);
     vector<int> ids = dataset::index::AttrSubIndex(db, TYPE_ORIGIN).query(*matcher);

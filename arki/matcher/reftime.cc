@@ -11,6 +11,10 @@ using arki::core::Time;
 namespace arki {
 namespace matcher {
 
+MatchReftime::MatchReftime()
+{
+}
+
 MatchReftime::MatchReftime(const std::string& pattern)
 {
     // TODO: error reporting needs work
@@ -24,8 +28,8 @@ MatchReftime::MatchReftime(const std::string& pattern)
 
 MatchReftime::~MatchReftime()
 {
-	for (vector<DTMatch*>::iterator i = tests.begin(); i != tests.end(); ++i)
-		delete *i;
+    for (auto& i: tests)
+        delete i;
 }
 
 std::string MatchReftime::name() const { return "reftime"; }
@@ -34,15 +38,15 @@ bool MatchReftime::matchItem(const Type& o) const
 {
     if (const types::reftime::Position* po = dynamic_cast<const types::reftime::Position*>(&o))
     {
-        for (vector<DTMatch*>::const_iterator i = tests.begin(); i < tests.end(); ++i)
-            if (!(*i)->match(po->time))
+        for (const auto& i: tests)
+            if (!i->match(po->time))
                 return false;
         return true;
     }
     else if (const types::reftime::Period* pe = dynamic_cast<const types::reftime::Period*>(&o))
     {
-        for (vector<DTMatch*>::const_iterator i = tests.begin(); i < tests.end(); ++i)
-            if (!(*i)->match(pe->begin, pe->end))
+        for (const auto& i: tests)
+            if (!i->match(pe->begin, pe->end))
                 return false;
         return true;
     }

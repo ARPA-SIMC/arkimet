@@ -38,6 +38,8 @@ struct AliasDatabase
 
     void add(const core::cfg::Sections& cfg);
 
+    const matcher::Aliases* get(const std::string& type) const;
+
     /**
      * Add global aliases from the given config file.
      *
@@ -49,39 +51,21 @@ struct AliasDatabase
      */
     static void addGlobal(const core::cfg::Sections& cfg);
 
-    static const matcher::Aliases* get(const std::string& type);
-    static core::cfg::Sections serialise();
+    core::cfg::Sections serialise();
 
     /**
      * Dump the alias database to the given output stream
      *
      * (used for debugging purposes)
      */
-    static void debug_dump(core::NamedFileDescriptor& out);
+    void debug_dump(core::NamedFileDescriptor& out);
 
     /**
      * Dump the alias database to the given output stream
      *
      * (used for debugging purposes)
      */
-    static void debug_dump(core::AbstractOutputFile& out);
-};
-
-
-class AliasDatabaseOverride
-{
-protected:
-    AliasDatabase newdb;
-    AliasDatabase* orig;
-
-public:
-    AliasDatabaseOverride();
-    AliasDatabaseOverride(const core::cfg::Sections& cfg);
-    AliasDatabaseOverride(const AliasDatabaseOverride&) = delete;
-    AliasDatabaseOverride(AliasDatabaseOverride&&) = delete;
-    AliasDatabaseOverride& operator=(const AliasDatabaseOverride&) = delete;
-    AliasDatabaseOverride& operator=(AliasDatabaseOverride&&) = delete;
-    ~AliasDatabaseOverride();
+    void debug_dump(core::AbstractOutputFile& out);
 };
 
 

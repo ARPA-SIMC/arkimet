@@ -31,6 +31,26 @@ public:
      * Else, nothing is loaded.
      */
     void load_system_aliases();
+
+    /// Load aliases from the given parsed configuration file
+    void load_aliases(const core::cfg::Sections& cfg);
+
+    /// Return aliases serialized as a parsed config file
+    core::cfg::Sections serialise_aliases();
+
+    /**
+     * Dump the alias database to the given output stream
+     *
+     * (used for debugging purposes)
+     */
+    void debug_dump_aliases(core::NamedFileDescriptor& out);
+
+    /**
+     * Dump the alias database to the given output stream
+     *
+     * (used for debugging purposes)
+     */
+    void debug_dump_aliases(core::AbstractOutputFile& out);
 };
 
 }

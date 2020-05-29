@@ -51,7 +51,7 @@ add_method("summaries", [](Fixture& f) {
     auto reader = f.makeSegmentedReader();
 
     Summary s;
-    reader->query_summary(Matcher::parse("reftime:=2007"), s);
+    reader->query_summary("reftime:=2007", s);
     wassert(actual(s.count()) == 3u);
     wassert(actual(s.size()) == 44412u);
 

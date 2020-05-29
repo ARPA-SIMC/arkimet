@@ -183,8 +183,6 @@ public:
      * Read the alias database from the given remote dataset
      */
     static core::cfg::Sections getAliasDatabase(const std::string& server);
-
-    static std::string expand_remote_query(const core::cfg::Sections& remotes, const std::string& query);
 };
 
 class HTTPInbound

@@ -19,6 +19,15 @@ static int lowerbound_sec(const FuzzyTime& t)
     return res;
 }
 
+static int lowerbound_sec(const Time& t)
+{
+    int res = 0;
+    res += t.ho * 3600;
+    res += t.mi * 60;
+    res += t.se;
+    return res;
+}
+
 static int lowerbound_sec(const int* src)
 {
     int res = 0;
@@ -200,6 +209,7 @@ DTMatch* DTMatch::createGT(FuzzyTime* tt)
     return new DateGT(tt);
 }
 
+
 struct DateEQ : public DTMatch
 {
     Time geref;
@@ -253,6 +263,57 @@ struct DateEQ : public DTMatch
 DTMatch* DTMatch::createEQ(FuzzyTime* tt)
 {
     return new DateEQ(tt);
+}
+
+
+struct DateInterval : public DTMatch
+{
+    Time geref;
+    Time ltref;
+    int tbase;
+    DateInterval(const Time& begin, const Time& end)
+        : geref(begin), ltref(end), tbase(lowerbound_sec(begin))
+    {
+    }
+    bool match(const core::Time& tt) const
+    {
+        return geref <= tt && tt < ltref;
+    }
+    bool match(const core::Time& begin, const core::Time& end) const
+    {
+        // If it's an interval, return true if we intersect it
+        return (geref < end && begin < ltref);
+    }
+    string sql(const std::string& column) const
+    {
+        return '(' + column + ">='" + geref.to_sql() + "' AND " + column + "<'" + ltref.to_sql() + "')";
+    }
+    string toString() const
+    {
+        return ">=" + geref.to_sql() + ",<" + ltref.to_sql();
+    }
+    int timebase() const { return tbase; }
+    bool intersect_interval(std::unique_ptr<Time>& begin, std::unique_ptr<Time>& end) const override
+    {
+        if (begin.get() && *begin >= ltref)
+            return false;
+
+        if (end.get() && *end <= geref)
+            return false;
+
+        if (!end.get() || *end > ltref)
+            end.reset(new Time(ltref));
+
+        if (!begin.get() || *begin < geref)
+            begin.reset(new Time(geref));
+
+        return true;
+    }
+};
+
+DTMatch* DTMatch::createInterval(const core::Time& begin, const core::Time& until)
+{
+    return new DateInterval(begin, until);
 }
 
 

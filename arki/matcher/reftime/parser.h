@@ -47,6 +47,7 @@ struct DTMatch
     static DTMatch* createGE(core::FuzzyTime* tt);
     static DTMatch* createGT(core::FuzzyTime* tt);
     static DTMatch* createEQ(core::FuzzyTime* tt);
+    static DTMatch* createInterval(const core::Time& begin, const core::Time& until);
 
     static DTMatch* createTimeLE(const int* tt);
     static DTMatch* createTimeLT(const int* tt);
