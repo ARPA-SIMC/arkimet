@@ -87,6 +87,9 @@ public:
      */
     std::string toStringExpanded() const;
 
+    /// Return a matcher matching a time interval (from begin included, to end excluded)
+    static Matcher match_interval(const core::Time& begin, const core::Time& end);
+
     /// Return a matcher matching a whole month
     static Matcher match_month(unsigned year, unsigned month);
 
