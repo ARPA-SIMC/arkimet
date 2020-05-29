@@ -106,7 +106,7 @@ struct PyDatasetReader : public arki::dataset::DatasetAccess<arki::dataset::Data
         } else {
             // If the class does not implement query_summary, use the default
             // implementation based on query_data
-            arki::dataset::Reader::query_summary(matcher, summary);
+            arki::dataset::Reader::impl_query_summary(matcher, summary);
         }
     }
 };
