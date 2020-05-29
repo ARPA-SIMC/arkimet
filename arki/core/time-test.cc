@@ -109,7 +109,8 @@ add_method("range_overlaps", [] {
     wassert(actual(Time::range_overlaps(t2010.get(), topen.get(), t2005.get(), topen.get())).istrue());
     wassert(actual(Time::range_overlaps(topen.get(), t2005.get(), topen.get(), t2010.get())).istrue());
     wassert(actual(Time::range_overlaps(topen.get(), t2010.get(), topen.get(), t2005.get())).istrue());
-    wassert(actual(Time::range_overlaps(t2010.get(), topen.get(), topen.get(), t2010.get())).istrue());
+    // End extreme excluded
+    wassert(actual(Time::range_overlaps(t2010.get(), topen.get(), topen.get(), t2010.get())).isfalse());
     wassert(actual(Time::range_overlaps(t2000.get(), t2005.get(), t2007.get(), t2010.get())).isfalse());
     wassert(actual(Time::range_overlaps(t2007.get(), t2010.get(), t2000.get(), t2005.get())).isfalse());
     wassert(actual(Time::range_overlaps(t2010.get(), topen.get(), topen.get(), t2005.get())).isfalse());

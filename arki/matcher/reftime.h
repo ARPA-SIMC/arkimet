@@ -56,9 +56,9 @@ struct MatchReftime : public matcher::Implementation
 
     /**
      * Restrict a datetime range, returning the new range endpoints in begin
-     * and end.
+     * and end. Begin is considered included in the range, end excluded.
      *
-     * A NULL unique_ptr means an open end.
+     * A nullptr unique_ptr means an open end.
      *
      * Returns true if the result is a valid interval, false if this match does
      * not match the given interval at all.
@@ -66,7 +66,7 @@ struct MatchReftime : public matcher::Implementation
      * There can be further restrictions than this interval (for example,
      * restrictions on the time of the day).
      */
-    bool restrict_date_range(std::unique_ptr<core::Time>& begin, std::unique_ptr<core::Time>& end) const;
+    bool intersect_interval(std::unique_ptr<core::Time>& begin, std::unique_ptr<core::Time>& end) const;
 
     static std::unique_ptr<MatchReftime> parse(const std::string& pattern);
     static void init();

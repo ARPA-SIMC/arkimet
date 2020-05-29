@@ -64,10 +64,10 @@ std::string MatchReftime::sql(const std::string& column) const
 	return res + ")";
 }
 
-bool MatchReftime::restrict_date_range(unique_ptr<Time>& begin, unique_ptr<Time>& end) const
+bool MatchReftime::intersect_interval(unique_ptr<Time>& begin, unique_ptr<Time>& end) const
 {
-    for (vector<DTMatch*>::const_iterator i = tests.begin(); i < tests.end(); ++i)
-        if (!(*i)->restrict_date_range(begin, end))
+    for (const auto& i: tests)
+        if (!i->intersect_interval(begin, end))
             return false;
     return true;
 }

@@ -191,6 +191,7 @@ void Index::query_segment(metadata_dest_func dest) const
     scan(dest);
 }
 
+/// Begin extreme is included in the range, end extreme is excluded
 static void db_time_extremes(utils::sqlite::SQLiteDB& db, unique_ptr<Time>& begin, unique_ptr<Time>& end)
 {
     // SQLite can compute min and max of an indexed column very fast,
@@ -206,7 +207,11 @@ static void db_time_extremes(utils::sqlite::SQLiteDB& db, unique_ptr<Time>& begi
     while (q2.step())
     {
         if (!q2.isNULL(0))
+        {
             end.reset(new Time(Time::create_sql(q2.fetchString(0))));
+            ++(end->se);
+            end->normalise();
+        }
     }
 }
 
@@ -219,7 +224,7 @@ void Index::add_joins_and_constraints(const Matcher& m, std::string& query) cons
     {
         unique_ptr<Time> begin;
         unique_ptr<Time> end;
-        if (!m.restrict_date_range(begin, end))
+        if (!m.intersect_interval(begin, end))
             // The matcher matches an impossible datetime span: convert it
             // into an impossible clause that evaluates quickly
             constraints.push_back("1 == 2");
@@ -258,8 +263,8 @@ void Index::add_joins_and_constraints(const Matcher& m, std::string& query) cons
                 if (dbrange > 0 && qrange * 100 / dbrange < 20)
                 {
                     query += " INDEXED BY md_idx_reftime";
-                    constraints.push_back("reftime BETWEEN \'" + begin->to_sql()
-                            + "\' AND \'" + end->to_sql() + "\'");
+                    constraints.push_back(
+                        "reftime >= \'" + begin->to_sql() + "\' AND reftime < \'" + end->to_sql() + "\'");
                 }
             }
 

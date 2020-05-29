@@ -295,7 +295,7 @@ void Reader::impl_query_summary(const Matcher& matcher, Summary& summary)
 {
     unique_ptr<Time> matcher_begin;
     unique_ptr<Time> matcher_end;
-    if (!matcher.restrict_date_range(matcher_begin, matcher_end))
+    if (!matcher.intersect_interval(matcher_begin, matcher_end))
         // If the matcher is inconsistent, return now
         return;
 

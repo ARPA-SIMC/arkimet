@@ -30,14 +30,17 @@ struct DTMatch
 
     /**
      * Restrict a datetime range, returning the new range endpoints in begin
-     * and end.
+     * and end. Begin is considered included in the range, end excluded.
      *
-     * A NULL unique_ptr means an open end.
+     * A nullptr unique_ptr means an open end.
      *
      * Returns true if the result is a valid interval, false if this match does
      * not match the given interval at all.
+     *
+     * There can be further restrictions than this interval (for example,
+     * restrictions on the time of the day).
      */
-    virtual bool restrict_date_range(std::unique_ptr<core::Time>& begin, std::unique_ptr<core::Time>& end) const = 0;
+    virtual bool intersect_interval(std::unique_ptr<core::Time>& begin, std::unique_ptr<core::Time>& end) const = 0;
 
     static DTMatch* createLE(core::FuzzyTime* tt);
     static DTMatch* createLT(core::FuzzyTime* tt);

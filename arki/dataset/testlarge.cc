@@ -57,7 +57,7 @@ bool Reader::impl_query_data(const dataset::DataQuery& q, metadata_dest_func des
 
     std::unique_ptr<core::Time> begin;
     std::unique_ptr<core::Time> until;
-    if (!q.matcher.restrict_date_range(begin, until))
+    if (!q.matcher.intersect_interval(begin, until))
         return true;
     if (!begin || *begin < core::Time(2000, 1, 1))
         begin.reset(new core::Time(2000, 1, 1));
@@ -74,7 +74,7 @@ void Reader::impl_query_summary(const Matcher& matcher, Summary& summary)
 {
     std::unique_ptr<core::Time> begin;
     std::unique_ptr<core::Time> until;
-    if (!matcher.restrict_date_range(begin, until))
+    if (!matcher.intersect_interval(begin, until))
         return;
     if (!begin || *begin < core::Time(2000, 1, 1))
         begin.reset(new core::Time(2000, 1, 1));

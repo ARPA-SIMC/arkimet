@@ -198,6 +198,9 @@ public:
      * Ranges can be open ended: an open end is represented by a Time object
      * with all its values set to zero.
      *
+     * start points are considered included in the range.
+     * end points are considered not included in the range.
+     *
      * @param ts1 start of the first range
      * @param te1 end of the first range
      * @param ts2 start of the second range
@@ -208,7 +211,7 @@ public:
             const Time* ts2, const Time* te2);
 
     /**
-     * Return the number of seconds between `begin` and `until`
+     * Return the number of seconds between `begin` (included) and `until` (excluded)
      */
     static long long int duration(const Time& begin, const Time& until);
 };

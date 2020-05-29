@@ -263,11 +263,6 @@ public:
     void segments_all(std::function<void(segmented::CheckerSegment& segment)>);
 
     /**
-     * List all segments, both known to this dataset or unknown but found on disk
-     */
-    void segments_all_filtered(const Matcher& matcher, std::function<void(segmented::CheckerSegment& segment)>);
-
-    /**
      * List all segments, both known to the dataset and unknown but found on
      * disk, for this dataset and all its archives
      */

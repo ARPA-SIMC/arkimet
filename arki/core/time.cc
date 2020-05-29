@@ -386,13 +386,13 @@ bool Time::range_overlaps(
     if (!ts1 && !te1) return true;
     if (!ts2 && !te2) return true;
 
-    if (!ts1) return !ts2 || ts2->compare(*te1) <= 0;
-    if (!te1) return !te2 || te2->compare(*ts1) >= 0;
+    if (!ts1) return !ts2 || ts2->compare(*te1) < 0;
+    if (!te1) return !te2 || te2->compare(*ts1) > 0;
 
-    if (!ts2) return te2->compare(*ts1) >= 0;
-    if (!te2) return ts2->compare(*te1) <= 0;
+    if (!ts2) return te2->compare(*ts1) > 0;
+    if (!te2) return ts2->compare(*te1) < 0;
 
-    return !(te1->compare(*ts2) < 0 || ts1->compare(*te2) > 0);
+    return te1->compare(*ts2) > 0 && ts1->compare(*te2) < 0;
 }
 
 static long long int seconds_from(int year, const Time& t)

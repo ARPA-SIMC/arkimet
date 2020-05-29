@@ -356,7 +356,7 @@ public:
         string query;
         unique_ptr<Time> begin;
         unique_ptr<Time> end;
-        if (!matcher.restrict_date_range(begin, end))
+        if (!matcher.intersect_interval(begin, end))
             return files;
 
         std::vector<const Info*> res;
@@ -370,7 +370,7 @@ public:
             for (const auto& i: info)
             {
                 if (begin.get() && i.end_time < *begin) continue;
-                if (end.get() && i.start_time > *end) continue;
+                if (end.get() && i.start_time >= *end) continue;
                 res.push_back(&i);
             }
         }
@@ -471,7 +471,7 @@ public:
 
         unique_ptr<Time> begin;
         unique_ptr<Time> end;
-        if (!matcher.restrict_date_range(begin, end))
+        if (!matcher.intersect_interval(begin, end))
             // The matcher matches an impossible datetime span: convert it
             // into an impossible clause that evaluates quickly
             return;
@@ -483,7 +483,7 @@ public:
         if (begin.get() && end.get())
         {
             for (const auto& i: this->info)
-                if (i.start_time <= *end && i.end_time >= *begin)
+                if (i.start_time < *end && i.end_time >= *begin)
                     dest(i.file);
         }
         else if (begin.get())
@@ -495,7 +495,7 @@ public:
         else
         {
             for (const auto& i: this->info)
-                if (i.start_time <= *end)
+                if (i.start_time < *end)
                     dest(i.file);
         }
     }
@@ -664,7 +664,7 @@ public:
         string query;
         unique_ptr<Time> begin;
         unique_ptr<Time> end;
-        if (!matcher.restrict_date_range(begin, end))
+        if (!matcher.intersect_interval(begin, end))
             return files;
 
         if (!begin.get() && !end.get())
@@ -679,9 +679,9 @@ public:
             if (end.get())
             {
                 if (begin.get())
-                    query += " AND start_time <= '" + end->to_sql() + "'";
+                    query += " AND start_time < '" + end->to_sql() + "'";
                 else
-                    query += " WHERE start_time <= '" + end->to_sql() + "'";
+                    query += " WHERE start_time < '" + end->to_sql() + "'";
             }
 
             query += " ORDER BY start_time";
@@ -804,7 +804,7 @@ public:
 
         unique_ptr<Time> begin;
         unique_ptr<Time> end;
-        if (!matcher.restrict_date_range(begin, end))
+        if (!matcher.intersect_interval(begin, end))
             // The matcher matches an impossible datetime span: convert it
             // into an impossible clause that evaluates quickly
             return;
@@ -815,7 +815,7 @@ public:
         if (begin.get() && end.get())
         {
             Query sq("list_segments", m_db);
-            sq.compile("SELECT DISTINCT file FROM files WHERE start_time <= ? AND end_time >= ? ORDER BY start_time");
+            sq.compile("SELECT DISTINCT file FROM files WHERE start_time < ? AND end_time >= ? ORDER BY start_time");
             string b = begin->to_sql();
             string e = end->to_sql();
             sq.bind(1, e);
@@ -835,7 +835,7 @@ public:
         else
         {
             Query sq("list_segments", m_db);
-            sq.compile("SELECT DISTINCT file FROM files WHERE start_time <= ? ORDER BY start_time");
+            sq.compile("SELECT DISTINCT file FROM files WHERE start_time < ? ORDER BY start_time");
             string e = end->to_sql();
             sq.bind(1, e);
             while (sq.step())

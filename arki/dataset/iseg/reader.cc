@@ -119,7 +119,7 @@ inline bool range_envelopes_full_month(const core::Time& begin, const core::Time
 {
     bool begins_at_beginning = begin.da == 1 && begin.ho == 0 && begin.mi == 0 && begin.se == 0;
     if (begins_at_beginning)
-        return end >= begin.end_of_month();
+        return end > begin.end_of_month();
 
     bool ends_at_end = end.da == core::Time::days_in_month(end.ye, end.mo) && end.ho == 23 && end.mi == 59 && end.se == 59;
     if (ends_at_end)
@@ -137,7 +137,7 @@ void Reader::impl_query_summary(const Matcher& matcher, Summary& summary)
     // Check if the matcher discriminates on reference times
     unique_ptr<core::Time> begin;
     unique_ptr<core::Time> end;
-    if (!matcher.restrict_date_range(begin, end))
+    if (!matcher.intersect_interval(begin, end))
         return; // If the matcher contains an impossible reftime, return right away
 
     if (!begin.get() && !end.get())
@@ -208,17 +208,17 @@ void Reader::impl_query_summary(const Matcher& matcher, Summary& summary)
 
     // Query partial month at beginning, middle whole months, partial
     // month at end. Query whole months at extremes if they are indeed whole
-    while (*begin <= *end)
+    while (*begin < *end)
     {
         core::Time endmonth = begin->end_of_month();
 
         bool starts_at_beginning = (begin->da == 1 && begin->ho == 0 && begin->mi == 0 && begin->se == 0);
-        if (starts_at_beginning && endmonth <= *end)
+        if (starts_at_beginning && endmonth < *end)
         {
             Summary s;
             summary_for_month(begin->ye, begin->mo, s);
             s.filter(matcher, summary);
-        } else if (endmonth <= *end) {
+        } else if (endmonth < *end) {
             Summary s;
             summary_from_indices(Matcher::parse("reftime:>=" + begin->to_sql() + ",<=" + endmonth.to_sql()), s);
             s.filter(matcher, summary);

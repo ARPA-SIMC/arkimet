@@ -232,7 +232,7 @@ void Contents::list_segments_filtered(const Matcher& matcher, std::function<void
 
     unique_ptr<Time> begin;
     unique_ptr<Time> end;
-    if (!matcher.restrict_date_range(begin, end))
+    if (!matcher.intersect_interval(begin, end))
         // The matcher matches an impossible datetime span: convert it
         // into an impossible clause that evaluates quickly
         return;
@@ -243,7 +243,7 @@ void Contents::list_segments_filtered(const Matcher& matcher, std::function<void
     if (begin.get() && end.get())
     {
         Query sq("list_segments", m_db);
-        sq.compile("SELECT DISTINCT file, MIN(reftime) AS begin, MAX(reftime) AS end FROM md GROUP BY file HAVING begin <= ? AND end >= ? ORDER BY file");
+        sq.compile("SELECT DISTINCT file, MIN(reftime) AS begin, MAX(reftime) AS end FROM md GROUP BY file HAVING begin < ? AND end >= ? ORDER BY file");
         string b = begin->to_sql();
         string e = end->to_sql();
         sq.bind(1, e);
@@ -263,7 +263,7 @@ void Contents::list_segments_filtered(const Matcher& matcher, std::function<void
     else
     {
         Query sq("list_segments", m_db);
-        sq.compile("SELECT DISTINCT file, MIN(reftime) AS begin FROM md GROUP BY file HAVING begin <= ? ORDER BY file");
+        sq.compile("SELECT DISTINCT file, MIN(reftime) AS begin FROM md GROUP BY file HAVING begin < ? ORDER BY file");
         string e = end->to_sql();
         sq.bind(1, e);
         while (sq.step())
@@ -342,7 +342,11 @@ static void db_time_extremes(utils::sqlite::SQLiteDB& db, unique_ptr<Time>& begi
     while (q2.step())
     {
         if (!q2.isNULL(0))
+        {
             end.reset(new Time(Time::create_sql(q2.fetchString(0))));
+            ++(end->se);
+            end->normalise();
+        }
     }
 }
 
@@ -355,7 +359,7 @@ bool Contents::addJoinsAndConstraints(const Matcher& m, std::string& query) cons
     {
         unique_ptr<Time> begin;
         unique_ptr<Time> end;
-        if (!m.restrict_date_range(begin, end))
+        if (!m.intersect_interval(begin, end))
             // The matcher matches an impossible datetime span: convert it
             // into an impossible clause that evaluates quickly
             constraints.push_back("1 == 2");
@@ -394,8 +398,8 @@ bool Contents::addJoinsAndConstraints(const Matcher& m, std::string& query) cons
                 if (dbrange > 0 && qrange * 100 / dbrange < 20)
                 {
                     query += " INDEXED BY md_idx_reftime";
-                    constraints.push_back("reftime BETWEEN \'" + begin->to_sql()
-                            + "\' AND \'" + end->to_sql() + "\'");
+                    constraints.push_back(
+                        "reftime >= \'" + begin->to_sql() + "\' AND reftime < \'" + end->to_sql() + "\'");
                 }
             }
 
@@ -727,7 +731,7 @@ bool Contents::query_summary(const Matcher& matcher, Summary& summary)
     // Check if the matcher discriminates on reference times
     unique_ptr<Time> begin;
     unique_ptr<Time> end;
-    if (!matcher.restrict_date_range(begin, end))
+    if (!matcher.intersect_interval(begin, end))
         return true; // If the matcher contains an impossible reftime, return right away
 
     if (!begin.get() && !end.get())
@@ -782,7 +786,7 @@ bool Contents::query_summary(const Matcher& matcher, Summary& summary)
     {
         // Round up to month end, so we reuse the cached summary if
         // available
-        *end = end->end_of_month();
+        *end = end->start_of_next_month();
     }
 
     // If the selected interval does not envelope any whole month, query
@@ -797,15 +801,15 @@ bool Contents::query_summary(const Matcher& matcher, Summary& summary)
         Time endmonth = begin->end_of_month();
 
         bool starts_at_beginning = (begin->da == 1 && begin->ho == 0 && begin->mi == 0 && begin->se == 0);
-        if (starts_at_beginning && endmonth <= *end)
+        if (starts_at_beginning && endmonth < *end)
         {
             Summary s;
             summaryForMonth(begin->ye, begin->mo, s);
             s.filter(matcher, summary);
-        } else if (endmonth <= *end) {
+        } else if (endmonth < *end) {
             Summary s;
             querySummaryFromDB("reftime >= '" + begin->to_sql() + "'"
-                       " AND reftime < '" + endmonth.to_sql() + "'", s);
+                       " AND reftime <= '" + endmonth.to_sql() + "'", s);
             s.filter(matcher, summary);
         } else {
             Summary s;

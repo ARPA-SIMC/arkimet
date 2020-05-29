@@ -95,7 +95,7 @@ void Matcher::split(const std::set<types::Code>& codes, Matcher& with, Matcher& 
     }
 }
 
-bool Matcher::restrict_date_range(unique_ptr<core::Time>& begin, unique_ptr<core::Time>& end) const
+bool Matcher::intersect_interval(unique_ptr<core::Time>& begin, unique_ptr<core::Time>& end) const
 {
     shared_ptr<matcher::OR> reftime;
 
@@ -107,7 +107,7 @@ bool Matcher::restrict_date_range(unique_ptr<core::Time>& begin, unique_ptr<core
     // We have no reftime to match: we match the open range
     if (!reftime) return true;
 
-    if (!reftime->restrict_date_range(begin, end))
+    if (!reftime->intersect_interval(begin, end))
         return false;
 
     return true;

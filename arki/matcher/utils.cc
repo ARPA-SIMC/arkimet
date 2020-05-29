@@ -108,13 +108,13 @@ std::string OR::toStringValueOnlyExpanded() const
     return res;
 }
 
-bool OR::restrict_date_range(std::unique_ptr<core::Time>& begin, std::unique_ptr<core::Time>& end) const
+bool OR::intersect_interval(std::unique_ptr<core::Time>& begin, std::unique_ptr<core::Time>& end) const
 {
     for (auto i: components)
     {
         const matcher::MatchReftime* rt = dynamic_cast<const matcher::MatchReftime*>(i.get());
         assert(rt != nullptr);
-        if (!rt->restrict_date_range(begin, end))
+        if (!rt->intersect_interval(begin, end))
             return false;
     }
     return true;
