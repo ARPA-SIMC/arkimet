@@ -167,7 +167,7 @@ make
 # See https://github.com/ARPA-SIMC/arkimet/issues/217
 make check ISSUE217=1
 %else
-make check
+make check TEST_VERBOSE=1
 %endif
 
 %install
