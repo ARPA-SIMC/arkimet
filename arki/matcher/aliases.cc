@@ -79,8 +79,6 @@ void Aliases::add(const MatcherType& type, const core::cfg::Section& entries)
 }
 
 
-static AliasDatabase* aliasdb = 0;
-
 AliasDatabase::AliasDatabase() {}
 AliasDatabase::AliasDatabase(const core::cfg::Sections& cfg) { add(cfg); }
 
@@ -94,14 +92,6 @@ void AliasDatabase::add(const core::cfg::Sections& cfg)
             continue;
         aliasDatabase[si.first].add(*mt, si.second);
     }
-}
-
-void AliasDatabase::addGlobal(const core::cfg::Sections& cfg)
-{
-    if (!matcher::aliasdb)
-        matcher::aliasdb = new AliasDatabase(cfg);
-    else
-        matcher::aliasdb->add(cfg);
 }
 
 const matcher::Aliases* AliasDatabase::get(const std::string& type) const
@@ -133,35 +123,6 @@ void AliasDatabase::debug_dump(core::AbstractOutputFile& out)
 {
     auto cfg = serialise();
     cfg.write(out);
-}
-
-
-void read_matcher_alias_database()
-{
-    // Otherwise the file given in the environment variable ARKI_ALIASES is tried.
-    char* fromEnv = getenv("ARKI_ALIASES");
-    if (fromEnv)
-    {
-        sys::File in(fromEnv, O_RDONLY);
-        auto sections = core::cfg::Sections::parse(in);
-        matcher::AliasDatabase::addGlobal(sections);
-        return;
-    }
-
-#ifdef CONF_DIR
-    // Else, CONF_DIR is tried.
-    std::string name = std::string(CONF_DIR) + "/match-alias.conf";
-    std::unique_ptr<struct stat> st = sys::stat(name);
-    if (st.get())
-    {
-        sys::File in(name, O_RDONLY);
-        auto sections = core::cfg::Sections::parse(in);
-        matcher::AliasDatabase::addGlobal(sections);
-        return;
-    }
-#endif
-
-    // Else, nothing is loaded.
 }
 
 }

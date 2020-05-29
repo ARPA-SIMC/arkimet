@@ -137,7 +137,6 @@ void init()
 
     if (initialized) return;
     types::init_default_types();
-    matcher::read_matcher_alias_database();
     iotrace::init();
     scan::init();
     dataset::qmacro::init();

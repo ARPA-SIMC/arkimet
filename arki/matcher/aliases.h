@@ -40,17 +40,6 @@ struct AliasDatabase
 
     const matcher::Aliases* get(const std::string& type) const;
 
-    /**
-     * Add global aliases from the given config file.
-     *
-     * If there are already existing aliases, they are preserved unless cfg
-     * overwrites some of them.
-     *
-     * The aliases will be used by all newly instantiated Matcher expressions,
-     * for all the lifetime of the program.
-     */
-    static void addGlobal(const core::cfg::Sections& cfg);
-
     core::cfg::Sections serialise();
 
     /**
@@ -67,19 +56,6 @@ struct AliasDatabase
      */
     void debug_dump(core::AbstractOutputFile& out);
 };
-
-
-/**
- * Read the Matcher alias database.
- *
- * The file given in the environment variable ARKI_ALIASES is tried.
- * Else, $(sysconfdir)/arkimet/match-alias.conf is tried.
- * Else, nothing is loaded.
- *
- * The alias database is kept statically for all the lifetime of the program,
- * and is automatically used by readQuery.
- */
-void read_matcher_alias_database();
 
 }
 }
