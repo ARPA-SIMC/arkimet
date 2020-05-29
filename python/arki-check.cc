@@ -373,7 +373,7 @@ arki-check implementation
             new (&(self->checker_config)) arki::dataset::CheckerConfig(reporter, arg_readonly);
 
             if (arg_filter)
-                self->checker_config.segment_filter = arki::Matcher::parse(std::string(arg_filter, arg_filter_len));
+                self->checker_config.segment_filter = get_dataset_session()->matcher(std::string(arg_filter, arg_filter_len));
             self->checker_config.accurate = arg_accurate;
             self->checker_config.online = arg_online;
             self->checker_config.offline = arg_offline;

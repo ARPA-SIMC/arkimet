@@ -6,6 +6,8 @@
 #include "utils/values.h"
 #include "common.h"
 #include "arki/metadata.h"
+#include "arki/dataset/session.h"
+#include "dataset.h"
 
 using namespace arki::python;
 
@@ -102,7 +104,7 @@ Precompiled matcher for arkimet metadata
                 if (arkipy_Matcher_Check(arg_matcher))
                     new(&(self->matcher)) arki::Matcher(((arkipy_Matcher*)arg_matcher)->matcher);
                 else
-                    new(&(self->matcher)) arki::Matcher(arki::Matcher::parse(from_python<std::string>(arg_matcher)));
+                    new(&(self->matcher)) arki::Matcher(get_dataset_session()->matcher(from_python<std::string>(arg_matcher)));
             }
             else
                 new(&(self->matcher)) arki::Matcher();
@@ -134,7 +136,7 @@ arki::Matcher matcher_from_python(PyObject* o)
     if (arkipy_Matcher_Check(o))
         return ((arkipy_Matcher*)o)->matcher;
 
-    return arki::Matcher::parse(from_python<std::string>(o));
+    return get_dataset_session()->matcher(from_python<std::string>(o));
 }
 
 void register_matcher(PyObject* m)

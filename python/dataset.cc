@@ -886,7 +886,7 @@ struct expand_remote_query : public MethKwargs<expand_remote_query, PyObject>
             return nullptr;
 
         try {
-            std::string expanded = arki::dataset::http::Reader::expand_remote_query(
+            std::string expanded = get_dataset_session()->expand_remote_query(
                     sections_from_python(remotes), std::string(query, query_len));
             return to_python(expanded);
         } ARKI_CATCH_RETURN_PYO
@@ -936,6 +936,7 @@ std::shared_ptr<arki::dataset::Session> get_dataset_session()
 {
     if (!dataset_session)
         dataset_session = make_shared<arki::dataset::Session>();
+        // TODO: load aliases
     return dataset_session;
 }
 

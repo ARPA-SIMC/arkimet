@@ -53,7 +53,7 @@ struct expand_query : public MethKwargs<expand_query, PyObject>
             return nullptr;
 
         try {
-            Matcher m = Matcher::parse(query);
+            Matcher m = get_dataset_session()->matcher(query);
             return to_python(m.toStringExpanded());
         } ARKI_CATCH_RETURN_PYO
     }
@@ -70,7 +70,7 @@ struct get_alias_database : public MethNoargs<get_alias_database, PyObject>
     static PyObject* run(Impl* self)
     {
         try {
-            return cfg_sections(matcher::AliasDatabase::serialise());
+            return cfg_sections(get_dataset_session()->get_alias_database());
         } ARKI_CATCH_RETURN_PYO
     }
 };
