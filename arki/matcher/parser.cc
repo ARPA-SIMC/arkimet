@@ -78,17 +78,17 @@ void Parser::load_aliases(const core::cfg::Sections& cfg)
     aliases->add(cfg);
 }
 
-core::cfg::Sections Parser::serialise_aliases()
+core::cfg::Sections Parser::serialise_aliases() const
 {
     return aliases->serialise();
 }
 
-void Parser::debug_dump_aliases(core::NamedFileDescriptor& out)
+void Parser::debug_dump_aliases(core::NamedFileDescriptor& out) const
 {
     aliases->debug_dump(out);
 }
 
-void Parser::debug_dump_aliases(core::AbstractOutputFile& out)
+void Parser::debug_dump_aliases(core::AbstractOutputFile& out) const
 {
     aliases->debug_dump(out);
 }

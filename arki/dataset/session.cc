@@ -28,8 +28,10 @@ using namespace arki::utils;
 namespace arki {
 namespace dataset {
 
-Session::Session()
+Session::Session(bool load_aliases)
 {
+    if (load_aliases)
+        matcher_parser.load_system_aliases();
 }
 
 Session::~Session()
@@ -226,6 +228,11 @@ core::cfg::Sections Session::read_configs(const std::string& path)
 Matcher Session::matcher(const std::string& expr)
 {
     return matcher_parser.parse(expr);
+}
+
+core::cfg::Sections Session::get_alias_database() const
+{
+    return matcher_parser.serialise_aliases();
 }
 
 std::string Session::expand_remote_query(const core::cfg::Sections& remotes, const std::string& query)

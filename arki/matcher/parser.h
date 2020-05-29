@@ -36,21 +36,21 @@ public:
     void load_aliases(const core::cfg::Sections& cfg);
 
     /// Return aliases serialized as a parsed config file
-    core::cfg::Sections serialise_aliases();
+    core::cfg::Sections serialise_aliases() const;
 
     /**
      * Dump the alias database to the given output stream
      *
      * (used for debugging purposes)
      */
-    void debug_dump_aliases(core::NamedFileDescriptor& out);
+    void debug_dump_aliases(core::NamedFileDescriptor& out) const;
 
     /**
      * Dump the alias database to the given output stream
      *
      * (used for debugging purposes)
      */
-    void debug_dump_aliases(core::AbstractOutputFile& out);
+    void debug_dump_aliases(core::AbstractOutputFile& out) const;
 };
 
 }

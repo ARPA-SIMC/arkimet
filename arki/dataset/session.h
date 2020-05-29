@@ -19,7 +19,7 @@ protected:
     matcher::Parser matcher_parser;
 
 public:
-    Session();
+    Session(bool load_aliases=true);
     Session(const Session&) = delete;
     Session(Session&&) = delete;
     virtual ~Session();
@@ -43,6 +43,11 @@ public:
      * std::runtime_error.
      */
     std::string expand_remote_query(const core::cfg::Sections& remotes, const std::string& query);
+
+    /**
+     * Return the current alias database
+     */
+    core::cfg::Sections get_alias_database() const;
 
     /**
      * Read the configuration of the dataset at the given path or URL
