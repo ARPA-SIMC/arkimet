@@ -27,6 +27,9 @@ using namespace arki::utils;
 namespace arki {
 namespace dataset {
 
+Session::Session()
+{
+}
 
 Session::~Session()
 {
@@ -219,6 +222,10 @@ core::cfg::Sections Session::read_configs(const std::string& path)
     }
 }
 
+Matcher Session::matcher(const std::string& expr)
+{
+    return matcher_parser.parse(expr);
+}
 
 }
 }

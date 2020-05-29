@@ -122,13 +122,13 @@ void Reader::impl_abstract_query_bytes(const dataset::ByteQuery& q, AbstractOutp
 
 bool Reader::query_data(const std::string& q, metadata_dest_func dest)
 {
-    dataset::DataQuery dq(Matcher::parse(q));
+    dataset::DataQuery dq(dataset().session->matcher(q));
     return impl_query_data(dq, dest);
 }
 
 void Reader::query_summary(const std::string& matcher, Summary& summary)
 {
-    impl_query_summary(Matcher::parse(matcher), summary);
+    impl_query_summary(dataset().session->matcher(matcher), summary);
 }
 
 

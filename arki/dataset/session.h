@@ -4,6 +4,7 @@
 #include <arki/segment/fwd.h>
 #include <arki/core/fwd.h>
 #include <arki/dataset/fwd.h>
+#include <arki/matcher/parser.h>
 #include <unordered_map>
 #include <string>
 
@@ -15,15 +16,25 @@ class Session: public std::enable_shared_from_this<Session>
 protected:
     /// Map segment absolute paths to possibly reusable reader instances
     std::unordered_map<std::string, std::weak_ptr<segment::Reader>> reader_pool;
+    matcher::Parser matcher_parser;
 
 public:
+    Session();
+    Session(const Session&) = delete;
+    Session(Session&&) = delete;
     virtual ~Session();
+    Session& operator=(const Session&) = delete;
+    Session& operator=(Session&&) = delete;
 
     virtual std::shared_ptr<segment::Reader> segment_reader(const std::string& format, const std::string& root, const std::string& relpath, std::shared_ptr<core::Lock> lock);
     virtual std::shared_ptr<segment::Writer> segment_writer(const std::string& format, const std::string& root, const std::string& relpath);
     virtual std::shared_ptr<segment::Checker> segment_checker(const std::string& format, const std::string& root, const std::string& relpath);
 
+    /// Insantiate a dataset give its configuration
     std::shared_ptr<Dataset> dataset(const core::cfg::Section& cfg);
+
+    /// Compile a matcher expression
+    Matcher matcher(const std::string& expr);
 
     /**
      * Read the configuration of the dataset at the given path or URL
