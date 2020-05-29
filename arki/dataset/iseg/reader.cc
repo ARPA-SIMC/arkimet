@@ -210,17 +210,17 @@ void Reader::impl_query_summary(const Matcher& matcher, Summary& summary)
     // month at end. Query whole months at extremes if they are indeed whole
     while (*begin < *end)
     {
-        core::Time endmonth = begin->end_of_month();
+        core::Time next = begin->start_of_next_month();
 
         bool starts_at_beginning = (begin->da == 1 && begin->ho == 0 && begin->mi == 0 && begin->se == 0);
-        if (starts_at_beginning && endmonth < *end)
+        if (starts_at_beginning && next <= *end)
         {
             Summary s;
             summary_for_month(begin->ye, begin->mo, s);
             s.filter(matcher, summary);
-        } else if (endmonth < *end) {
+        } else if (next <= *end) {
             Summary s;
-            summary_from_indices(Matcher::parse("reftime:>=" + begin->to_sql() + ",<=" + endmonth.to_sql()), s);
+            summary_from_indices(Matcher::parse("reftime:>=" + begin->to_sql() + ",<" + next.to_sql()), s);
             s.filter(matcher, summary);
         } else {
             Summary s;
@@ -229,7 +229,7 @@ void Reader::impl_query_summary(const Matcher& matcher, Summary& summary)
         }
 
         // Advance to the beginning of the next month
-        *begin = begin->start_of_next_month();
+        *begin = next;
     }
 }
 
