@@ -87,6 +87,10 @@ public:
      */
     std::string toStringExpanded() const;
 
+    /// Return a matcher matching a whole month
+    static Matcher match_month(unsigned year, unsigned month);
+
+//private:
     /// Parse a string into a matcher
     static Matcher parse(const std::string& pattern);
 };

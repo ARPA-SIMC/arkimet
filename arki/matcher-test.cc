@@ -1,6 +1,7 @@
 #include "config.h"
 #include "arki/matcher/tests.h"
 #include "arki/matcher.h"
+#include "arki/matcher/parser.h"
 #include "arki/metadata.h"
 #include "arki/core/cfg.h"
 #include "arki/utils/sys.h"

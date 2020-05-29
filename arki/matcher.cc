@@ -1,6 +1,7 @@
 #include "matcher.h"
 #include "matcher/aliases.h"
 #include "matcher/utils.h"
+#include "core/time.h"
 #include "utils/string.h"
 #include "utils/sys.h"
 #include <memory>
@@ -112,6 +113,13 @@ bool Matcher::restrict_date_range(unique_ptr<core::Time>& begin, unique_ptr<core
     return true;
 }
 
+Matcher Matcher::match_month(unsigned year, unsigned month)
+{
+    // TODO: construct directly the right matcher, skipping the writing and parsing
+    char buf[128];
+    snprintf(buf, 128, "reftime:=%04u-%02u", year, month);
+    return matcher::AND::parse(buf);
+}
 
 Matcher Matcher::parse(const std::string& pattern)
 {

@@ -76,9 +76,7 @@ void Reader::summary_for_month(int year, int month, Summary& out)
 {
     if (scache.read(out, year, month)) return;
 
-    char buf[128];
-    snprintf(buf, 128, "reftime:=%04d-%02d", year, month);
-    Matcher matcher = Matcher::parse(buf);
+    Matcher matcher = Matcher::match_month(year, month);
 
     Summary summary;
     summary_from_indices(matcher, summary);
