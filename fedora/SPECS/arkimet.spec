@@ -3,7 +3,7 @@
 
 Summary: Archive for weather information
 Name: arkimet
-Version: 1.25
+Version: 1.26
 Release: 1
 License: GPL
 Group: Applications/Meteo
@@ -163,12 +163,6 @@ source %{_sysconfdir}/profile.d/eccodes-simc.sh
 %configure
 %endif
 make
-%if 0%{?el7}
-# See https://github.com/ARPA-SIMC/arkimet/issues/217
-make check ISSUE217=1
-%else
-make check
-%endif
 
 %install
 [ "%{buildroot}" != / ] && rm -rf %{buildroot}
@@ -177,6 +171,16 @@ make check
 install -D -m0644 %{SOURCE1} %{buildroot}%{_unitdir}/%{name}.service
 install -bD -m0644 %{SOURCE2} %{buildroot}%{_sysconfdir}/sysconfig/%{name}
 install -D -m 0644 -p %{SOURCE3} %{buildroot}%{_sysconfdir}/logrotate.d/%{name}
+
+%check
+
+%if 0%{?el7}
+# See https://github.com/ARPA-SIMC/arkimet/issues/217
+make check ISSUE217=1
+%else
+make check
+%endif
+
 
 %clean
 [ "%{buildroot}" != / ] && rm -rf %{buildroot}
@@ -234,6 +238,11 @@ if [ "$1" = "1" ]; then
 fi
 
 %changelog
+* Mon Jun  1 2020 Daniele Branchini <dbranchini@arpae.it> - 1.26-1
+- Fixed use of geos compile-time version detection (#225)
+- Removed make install depending on make check (#218)
+- Fix ODIM scanner for volumes with missing 'radhoriz' parameter (#227)
+
 * Fri May  8 2020 Daniele Branchini <dbranchini@arpae.it> - 1.25-1
 - Fixes for geos ≥ 3.8.0 (#224)
 

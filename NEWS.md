@@ -1,6 +1,8 @@
 # New in version 1.26
 
 * Fixed use of geos compile-time version detection (#225)
+* Removed make install depending on make check (#218)
+* Fix ODIM scanner for volumes with missing 'radhoriz' parameter (#227)
 
 # New in version 1.25
 
