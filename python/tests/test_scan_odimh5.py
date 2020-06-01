@@ -60,6 +60,22 @@ class TestScanODIMH5(unittest.TestCase):
         self.assertNotIn("run", md)
         self.assertNotIn("timerange", md)
 
+    def test_pvol_without_how(self):
+        """
+        Scan an ODIMH5 polar volume without how group
+        """
+        md = self.read("inbound/odimh5/ZOUFPLAN.h5", 516709)
+        self.assertEqual(md["origin"], "ODIMH5(16106, , )")
+        self.assertEqual(md["product"], "ODIMH5(PVOL, SCAN)")
+        self.assertEqual(md["level"], "ODIMH5(-0.2, 16)")
+        self.assertEqual(md["task"], "DPC Standard Scan")
+        self.assertEqual(md["quantity"], "DBZH, QIND, VRAD")
+        self.assertEqual(md["area"], "ODIMH5(lat=46562500, lon=12970300, radius=0)")
+        self.assertEqual(md["reftime"], "2020-05-29T15:03:00Z")
+        self.assertNotIn("run", md)
+        self.assertNotIn("timerange", md)
+
+
     def test_comp_cappi(self):
         md = self.read("inbound/odimh5/COMP_CAPPI_v20.h5", 49113)
         self.assertEqual(md["origin"], "ODIMH5(16144, IY46, itspc)")
