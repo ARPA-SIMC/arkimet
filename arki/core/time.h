@@ -12,22 +12,22 @@ class TimeBase
 {
 public:
     /// Year
-    int ye;
+    int ye = 0;
 
     /// Month
-    int mo;
+    int mo = 0;
 
     /// Day
-    int da;
+    int da = 0;
 
     /// Hour
-    int ho;
+    int ho = 0;
 
     /// Minute
-    int mi;
+    int mi = 0;
 
     /// Second
-    int se;
+    int se = 0;
 
     TimeBase() = default;
     TimeBase(const TimeBase&) = default;
@@ -39,6 +39,9 @@ public:
 
     /// A time from a struct tm
     TimeBase(struct tm& t);
+
+    /// Return true if the time value has been set to non-zero
+    const bool is_set() const;
 
     /// Set from a struct tm
     void set_tm(struct tm& t);
@@ -221,6 +224,62 @@ static inline std::ostream& operator<<(std::ostream& o, const Time& i)
     return o << i.to_iso8601();
 }
 
+
+/**
+ * An interval between two moments in time.
+ *
+ * The point at the start is included in the interval; the point at the end is
+ * excluded from the interval.
+ *
+ * Intervals can be open ended on either or both sides, and open ended extremes
+ * are represented as Time() instances, that is, with all values set to zero.
+ */
+struct Interval
+{
+    Time begin;
+    Time end;
+
+    Interval() = default;
+    Interval(const Time& begin, const Time& end);
+    Interval(const Interval&) = default;
+    Interval(Interval&&) = default;
+    Interval& operator=(const Interval&) = default;
+    Interval& operator=(Interval&&) = default;
+
+    bool operator==(const Interval& other) const
+    {
+        return begin == other.begin && end == other.end;
+    }
+
+    bool operator!=(const Interval& other) const
+    {
+        return begin != other.begin || end != other.end;
+    }
+
+
+    /**
+     * Set this interval as the shortest common interval betwen this and ``o``,
+     * and return true.
+     *
+     * If the two intervals are disjoint, it does nothing and returns false.
+     */
+    bool intersect(const Interval& other);
+
+    /**
+     * Set this interval as the smallest interval that contains both this and
+     * ``other``.
+     */
+    void extend(const Interval& o);
+
+    /// Return a string representation
+    std::string to_string() const;
+};
+
+
+static inline std::ostream& operator<<(std::ostream& o, const Interval& i)
+{
+    return o << i.to_string();
+}
 
 }
 }

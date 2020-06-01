@@ -1,7 +1,7 @@
 #include "time.h"
 #include "binary.h"
 #include "arki/exceptions.h"
-#include "config.h"
+#include <ostream>
 #include <cmath>
 #include <cstring>
 #include <ctime>
@@ -13,6 +13,13 @@ namespace arki {
 namespace core {
 
 TimeBase::TimeBase(struct tm& t) { set_tm(t); }
+
+const bool TimeBase::is_set() const
+{
+    // Don't bother checking all elements, since we don't work with dates in
+    // year zero.
+    return ye != 0;
+}
 
 void TimeBase::set_tm(struct tm& t)
 {
@@ -431,6 +438,80 @@ std::vector<Time> Time::generate(const Time& begin, const Time& end, int step)
         cur.se += step;
         cur.normalise();
     }
+    return res;
+}
+
+
+/*
+ * Interval
+ */
+
+Interval::Interval(const Time& begin, const Time& end)
+    : begin(begin), end(end)
+{
+}
+
+bool Interval::intersect(const Interval& other)
+{
+    // Check for disjoint sets
+    if (begin.is_set() && other.end.is_set() && other.end <= begin)
+        return false;
+    if (end.is_set() && other.begin.is_set() && end <= other.begin)
+        return false;
+
+    if (!other.begin.is_set())
+    {
+        // other is open ended at the beginning
+        if (!other.end.is_set())
+        {
+            // other is open ended at both ends, we stay unchanged
+            return true;
+        } else {
+            // other has an endpoint, and we know we are not disjoint, so it
+            // ends after we begin
+            if (!end.is_set() || end > other.end)
+                end = other.end;
+            return true;
+        }
+    }
+
+    if (!other.end.is_set())
+    {
+        // other is open ended at the end /only/, and we know we are not
+        // disjoint, so it begins before we end
+        if (!begin.is_set() || begin < other.begin)
+            begin = other.begin;
+        return true;
+    }
+
+    // other is not open ended, and the two sets are not disjoint
+
+    if (!end.is_set() || end > other.end)
+        end = other.end;
+    if (!begin.is_set() || begin < other.begin)
+        begin = other.begin;
+    return true;
+}
+
+void Interval::extend(const Interval& other)
+{
+    if (begin.is_set())
+        if (!other.begin.is_set() || other.begin < begin)
+            begin = other.begin;
+
+    if (end.is_set())
+        if (!other.end.is_set() || other.end > end)
+            end = other.end;
+}
+
+std::string Interval::to_string() const
+{
+    std::string res;
+    if (begin.is_set())
+        res = begin.to_iso8601();
+    res += "…";
+    if (end.is_set())
+        res += end.to_iso8601();
     return res;
 }
 

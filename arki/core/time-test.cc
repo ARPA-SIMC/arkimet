@@ -6,6 +6,7 @@ using namespace std;
 using namespace arki;
 using namespace arki::tests;
 using arki::core::Time;
+using arki::core::Interval;
 
 class Tests : public TestCase
 {
@@ -130,6 +131,202 @@ add_method("regression1", [] {
     stringstream ss;
     ss << decoded;
     wassert(actual(ss.str()) == "2005-12-01T18:00:00Z");
+});
+
+// Test intersection
+add_method("interval_intersection", [] {
+    Interval test;
+
+    static const int _ = 0;
+
+    auto interval = [](int begin, int end)
+    {
+        return Interval(begin == 0 ? Time() : Time(begin, 1), end == 0 ? Time() : Time(end, 1));
+    };
+
+    auto intersect = [&](int begin, int end)
+    {
+        Interval res = test;
+        wassert_true(res.intersect(interval(begin, end)));
+        return actual(res);
+    };
+
+    auto intersect_fails = [&](int begin, int end)
+    {
+        Interval res = test;
+        wassert_false(res.intersect(interval(begin, end)));
+        wassert(actual(res) == test);
+    };
+
+    // Test intersection with interval open on both ends
+    wassert(intersect(2000, _) == interval(2000, _));
+    wassert(intersect(_, 2000) == interval(_, 2000));
+    wassert(intersect(1999, 2000) == interval(1999, 2000));
+
+
+    // Test intersection with interval open at end
+    test = interval(2000, _);
+
+    // Disjoint
+    wassert(intersect_fails(_, 1999));
+    wassert(intersect_fails(_, 2000));
+    wassert(intersect_fails(1999, 2000));
+
+    // Fully open ended
+    wassert(intersect(_, _) == interval(2000, _));
+
+    // Self
+    wassert(intersect(2000, _) == interval(2000, _));
+    wassert(intersect(1999, _) == interval(2000, _));
+    wassert(intersect(2001, _) == interval(2001, _));
+    wassert(intersect(_, 2001) == interval(2000, 2001));
+    wassert(intersect(1999, 2001) == interval(2000, 2001));
+    wassert(intersect(2001, 2002) == interval(2001, 2002));
+
+
+    // Test intersection with interval open at begin
+    test = interval(_, 2000);
+
+    // Disjoint
+    wassert(intersect_fails(2000, _));
+    wassert(intersect_fails(2001, _));
+    wassert(intersect_fails(2000, 2001));
+
+    // Fully open ended
+    wassert(intersect(_, _) == interval(_, 2000));
+
+    // Self
+    wassert(intersect(_, 2000) == interval(_, 2000));
+    wassert(intersect(_, 1999) == interval(_, 1999));
+    wassert(intersect(_, 2001) == interval(_, 2000));
+    wassert(intersect(1999, _) == interval(1999, 2000));
+    wassert(intersect(1999, 2001) == interval(1999, 2000));
+    wassert(intersect(1998, 1999) == interval(1998, 1999));
+
+
+    // Test intersection with interval closed at both ends
+    test = interval(2000, 2010);
+
+    // Disjoint
+    wassert(intersect_fails(2010, _));
+    wassert(intersect_fails(2011, _));
+    wassert(intersect_fails(_, 2000));
+    wassert(intersect_fails(_, 1999));
+    wassert(intersect_fails(1990, 1995));
+    wassert(intersect_fails(2015, 2020));
+
+    // Fully open ended
+    wassert(intersect(_, _) == interval(2000, 2010));
+
+    // Self
+    wassert(intersect(2000, 2010) == interval(2000, 2010));
+    wassert(intersect(2000, _) == interval(2000, 2010));
+    wassert(intersect(_, 2010) == interval(2000, 2010));
+    wassert(intersect(_, 2001) == interval(2000, 2001));
+    wassert(intersect(2009, _) == interval(2009, 2010));
+    wassert(intersect(2000, 2009) == interval(2000, 2009));
+    wassert(intersect(2001, 2010) == interval(2001, 2010));
+    wassert(intersect(2001, 2009) == interval(2001, 2009));
+    wassert(intersect(1995, 2010) == interval(2000, 2010));
+    wassert(intersect(2000, 2015) == interval(2000, 2010));
+    wassert(intersect(1995, 2005) == interval(2000, 2005));
+    wassert(intersect(2005, 2015) == interval(2005, 2010));
+    wassert(intersect(1995, 2015) == interval(2000, 2010));
+});
+
+add_method("interval_extend", [] {
+    Interval test;
+
+    static const int _ = 0;
+
+    auto interval = [](int begin, int end)
+    {
+        return Interval(begin == 0 ? Time() : Time(begin, 1), end == 0 ? Time() : Time(end, 1));
+    };
+
+    auto extend = [&](int begin, int end)
+    {
+        Interval res = test;
+        res.extend(interval(begin, end));
+        return actual(res);
+    };
+
+    // Test extend with interval open on both ends
+    test = Interval();
+    wassert(extend(_, _) == Interval());
+    wassert(extend(2000, _) == Interval());
+    wassert(extend(_, 2000) == Interval());
+    wassert(extend(1999, 2000) == Interval());
+
+    // Test intersection with interval open at end
+    test = interval(2000, _);
+
+    // Disjoint
+    wassert(extend(_, 1999) == Interval());
+    wassert(extend(_, 2000) == Interval());
+    wassert(extend(1999, 2000) == interval(1999, _));
+
+    // Fully open ended
+    wassert(extend(_, _) == Interval());
+
+    // Self
+    wassert(extend(2000, _) == interval(2000, _));
+    wassert(extend(1999, _) == interval(1999, _));
+    wassert(extend(2001, _) == interval(2000, _));
+    wassert(extend(_, 2001) == Interval());
+    wassert(extend(1999, 2001) == interval(1999, _));
+    wassert(extend(2001, 2002) == interval(2000, _));
+
+
+    // Test intersection with interval open at begin
+    test = interval(_, 2000);
+
+    // Disjoint
+    wassert(extend(2000, _) == Interval());
+    wassert(extend(2001, _) == Interval());
+    wassert(extend(2000, 2001) == interval(_, 2001));
+    wassert(extend(2001, 2002) == interval(_, 2002));
+
+    // Fully open ended
+    wassert(extend(_, _) == Interval());
+
+    // Self
+    wassert(extend(_, 2000) == interval(_, 2000));
+    wassert(extend(_, 1999) == interval(_, 2000));
+    wassert(extend(_, 2001) == interval(_, 2001));
+    wassert(extend(1999, _) == Interval());
+    wassert(extend(1999, 2001) == interval(_, 2001));
+    wassert(extend(1998, 1999) == interval(_, 2000));
+
+
+    // Test intersection with interval closed at both ends
+    test = interval(2000, 2010);
+
+    // Disjoint
+    wassert(extend(2010, _) == interval(2000, _));
+    wassert(extend(2011, _) == interval(2000, _));
+    wassert(extend(_, 2000) == interval(_, 2010));
+    wassert(extend(_, 1999) == interval(_, 2010));
+    wassert(extend(1990, 1995) == interval(1990, 2010));
+    wassert(extend(2015, 2020) == interval(2000, 2020));
+
+    // Fully open ended
+    wassert(extend(_, _) == Interval());
+
+    // Self
+    wassert(extend(2000, 2010) == interval(2000, 2010));
+    wassert(extend(2000, _) == interval(2000, _));
+    wassert(extend(_, 2010) == interval(_, 2010));
+    wassert(extend(_, 2001) == interval(_, 2010));
+    wassert(extend(2009, _) == interval(2000, _));
+    wassert(extend(2000, 2009) == interval(2000, 2010));
+    wassert(extend(2001, 2010) == interval(2000, 2010));
+    wassert(extend(2001, 2009) == interval(2000, 2010));
+    wassert(extend(1995, 2010) == interval(1995, 2010));
+    wassert(extend(2000, 2015) == interval(2000, 2015));
+    wassert(extend(1995, 2005) == interval(1995, 2010));
+    wassert(extend(2005, 2015) == interval(2000, 2015));
+    wassert(extend(1995, 2015) == interval(1995, 2015));
 });
 
 #if 0
