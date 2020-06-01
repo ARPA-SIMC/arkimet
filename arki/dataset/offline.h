@@ -38,7 +38,7 @@ public:
 
     std::string type() const override;
 
-    void expand_date_range(std::unique_ptr<core::Time>& begin, std::unique_ptr<core::Time>& end) override;
+    void expand_date_range(core::Interval& interval) override;
 };
 
 }

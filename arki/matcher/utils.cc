@@ -109,13 +109,13 @@ std::string OR::toStringValueOnlyExpanded() const
     return res;
 }
 
-bool OR::intersect_interval(std::unique_ptr<core::Time>& begin, std::unique_ptr<core::Time>& end) const
+bool OR::intersect_interval(core::Interval& interval) const
 {
     for (auto i: components)
     {
         const matcher::MatchReftime* rt = dynamic_cast<const matcher::MatchReftime*>(i.get());
         assert(rt != nullptr);
-        if (!rt->intersect_interval(begin, end))
+        if (!rt->intersect_interval(interval))
             return false;
     }
     return true;
@@ -297,10 +297,10 @@ unique_ptr<AND> AND::parse(const AliasDatabase& aliases, const std::string& patt
     return res;
 }
 
-std::unique_ptr<AND> AND::match_interval(const core::Time& begin, const core::Time& end)
+std::unique_ptr<AND> AND::match_interval(const core::Interval& interval)
 {
     std::unique_ptr<matcher::MatchReftime> reftime(new matcher::MatchReftime);
-    reftime->tests.push_back(matcher::reftime::DTMatch::createInterval(begin, end));
+    reftime->tests.push_back(matcher::reftime::DTMatch::createInterval(interval));
 
     std::unique_ptr<AND> res(new AND);
     res->components.insert(make_pair(TYPE_REFTIME, OR::wrap(std::move(reftime))));

@@ -14,6 +14,24 @@ class Tests : public TestCase
     void register_tests() override;
 } test("arki_core_time");
 
+static const int _ = 0;
+
+Interval interval(int begin, int end)
+{
+    return Interval(begin == 0 ? Time() : Time(begin, 1), end == 0 ? Time() : Time(end, 1));
+};
+
+Interval interval(const Time& begin, int end)
+{
+    return Interval(begin, end == 0 ? Time() : Time(end, 1));
+};
+
+Interval interval(int begin, const Time& end)
+{
+    return Interval(begin == 0 ? Time() : Time(begin, 1), end);
+};
+
+
 void Tests::register_tests() {
 
 // Check 'now' time
@@ -133,16 +151,146 @@ add_method("regression1", [] {
     wassert(actual(ss.str()) == "2005-12-01T18:00:00Z");
 });
 
+add_method("interval_contains_point", [] {
+    wassert_true(interval(_, _).contains(Time(2000, 1)));
+
+    wassert_true(interval(2000, _).contains(Time(2000, 1)));
+    wassert_true(interval(2000, _).contains(Time(2010, 1)));
+    wassert_false(interval(2000, _).contains(Time(1999, 1)));
+    wassert_false(interval(2000, _).contains(Time(1999, 12, 31, 23, 59, 59)));
+
+    wassert_false(interval(_, 2000).contains(Time(2000, 1)));
+    wassert_false(interval(_, 2000).contains(Time(2010, 1)));
+    wassert_true(interval(_, 2000).contains(Time(1999, 12, 31, 23, 59, 59)));
+    wassert_true(interval(_, 2000).contains(Time(1999, 1)));
+});
+
+add_method("interval_contains_range", [] {
+    wassert_true(interval(_, _).contains(interval(_, _)));
+    wassert_true(interval(_, _).contains(interval(2000, _)));
+    wassert_true(interval(_, _).contains(interval(_, 2000)));
+    wassert_true(interval(_, _).contains(interval(2000, 2010)));
+
+    wassert_true(interval(_, 2000).contains(interval(1995, 1998)));
+    wassert_true(interval(_, 2000).contains(interval(1995, 2000)));
+    wassert_true(interval(_, 2000).contains(interval(_, 1998)));
+    wassert_true(interval(_, 2000).contains(interval(_, 2000)));
+    wassert_false(interval(_, 2000).contains(interval(2000, 2000)));
+    wassert_false(interval(_, 2000).contains(interval(_, 2001)));
+    wassert_false(interval(_, 2000).contains(interval(1998, 2001)));
+    wassert_false(interval(_, 2000).contains(interval(2001, _)));
+    wassert_false(interval(_, 2000).contains(interval(_, _)));
+
+    wassert_true(interval(2000, _).contains(interval(2005, 2006)));
+    wassert_true(interval(2000, _).contains(interval(2000, 2005)));
+    wassert_true(interval(2000, _).contains(interval(2005, _)));
+    wassert_true(interval(2000, _).contains(interval(2000, _)));
+    wassert_false(interval(2000, _).contains(interval(2000, 2000)));
+    wassert_false(interval(2000, _).contains(interval(1999, 2000)));
+    wassert_false(interval(2000, _).contains(interval(1999, _)));
+    wassert_false(interval(2000, _).contains(interval(1998, 2001)));
+    wassert_false(interval(2000, _).contains(interval(_, 2001)));
+    wassert_false(interval(2000, _).contains(interval(_, _)));
+
+    wassert_true(interval(2000, 2010).contains(interval(2000, 2010)));
+    wassert_true(interval(2000, 2010).contains(interval(2000, 2005)));
+    wassert_true(interval(2000, 2010).contains(interval(2005, 2010)));
+    wassert_true(interval(2000, 2010).contains(interval(2005, 2006)));
+
+    wassert_false(interval(2000, 2010).contains(interval(_, 1995)));
+    wassert_false(interval(2000, 2010).contains(interval(_, 2000)));
+    wassert_false(interval(2000, 2010).contains(interval(_, 2005)));
+    wassert_false(interval(2000, 2010).contains(interval(_, 2010)));
+    wassert_false(interval(2000, 2010).contains(interval(_, 2015)));
+    wassert_false(interval(2000, 2010).contains(interval(1995, _)));
+    wassert_false(interval(2000, 2010).contains(interval(2000, _)));
+    wassert_false(interval(2000, 2010).contains(interval(2005, _)));
+    wassert_false(interval(2000, 2010).contains(interval(2010, _)));
+    wassert_false(interval(2000, 2010).contains(interval(2015, _)));
+    wassert_false(interval(2000, 2010).contains(interval(_, _)));
+    wassert_false(interval(2000, 2010).contains(interval(2000, 2011)));
+    wassert_false(interval(2000, 2010).contains(interval(1999, 2010)));
+    wassert_false(interval(2000, 2010).contains(interval(2000, 2000)));
+    wassert_false(interval(2000, 2010).contains(interval(2010, 2010)));
+    wassert_false(interval(2000, 2010).contains(interval(1995, 2015)));
+});
+
+add_method("interval_intersects", [] {
+    wassert_true(interval(_, _).intersects(interval(_, _)));
+    wassert_true(interval(_, _).intersects(interval(2000, _)));
+    wassert_true(interval(_, _).intersects(interval(_, 2000)));
+    wassert_true(interval(_, _).intersects(interval(2000, 2010)));
+
+    wassert_true(interval(_, 2000).intersects(interval(1995, 1998)));
+    wassert_true(interval(_, 2000).intersects(interval(1995, 2000)));
+    wassert_true(interval(_, 2000).intersects(interval(_, 1998)));
+    wassert_true(interval(_, 2000).intersects(interval(_, 2000)));
+    wassert_true(interval(_, 2000).intersects(interval(_, 2001)));
+    wassert_true(interval(_, 2000).intersects(interval(1998, 2001)));
+    wassert_true(interval(_, 2000).intersects(interval(_, _)));
+    wassert_false(interval(_, 2000).intersects(interval(2000, 2000)));
+    wassert_false(interval(_, 2000).intersects(interval(2000, 2001)));
+    wassert_false(interval(_, 2000).intersects(interval(2001, 2002)));
+    wassert_false(interval(_, 2000).intersects(interval(2000, _)));
+    wassert_false(interval(_, 2000).intersects(interval(2001, _)));
+
+    wassert_true(interval(2000, _).intersects(interval(2005, 2006)));
+    wassert_true(interval(2000, _).intersects(interval(2000, 2005)));
+    wassert_true(interval(2000, _).intersects(interval(1999, _)));
+    wassert_true(interval(2000, _).intersects(interval(2000, _)));
+    wassert_true(interval(2000, _).intersects(interval(2005, _)));
+    wassert_true(interval(2000, _).intersects(interval(1998, 2001)));
+    wassert_true(interval(2000, _).intersects(interval(_, 2001)));
+    wassert_true(interval(2000, _).intersects(interval(_, _)));
+    wassert_false(interval(2000, _).intersects(interval(1998, 1999)));
+    wassert_false(interval(2000, _).intersects(interval(1999, 2000)));
+    wassert_false(interval(2000, _).intersects(interval(2000, 2000)));
+    wassert_false(interval(2000, _).intersects(interval(_, 2000)));
+    wassert_false(interval(2000, _).intersects(interval(_, 1997)));
+
+    wassert_true(interval(2000, 2010).intersects(interval(2000, 2010)));
+    wassert_true(interval(2000, 2010).intersects(interval(2000, 2005)));
+    wassert_true(interval(2000, 2010).intersects(interval(2005, 2010)));
+    wassert_true(interval(2000, 2010).intersects(interval(2005, 2006)));
+
+    wassert_false(interval(2000, 2010).intersects(interval(_, 1995)));
+    wassert_false(interval(2000, 2010).intersects(interval(_, 2000)));
+    wassert_true(interval(2000, 2010).intersects(interval(_, 2005)));
+    wassert_true(interval(2000, 2010).intersects(interval(_, 2010)));
+    wassert_true(interval(2000, 2010).intersects(interval(_, 2015)));
+    wassert_true(interval(2000, 2010).intersects(interval(1995, _)));
+    wassert_true(interval(2000, 2010).intersects(interval(2000, _)));
+    wassert_true(interval(2000, 2010).intersects(interval(2005, _)));
+    wassert_false(interval(2000, 2010).intersects(interval(2010, _)));
+    wassert_false(interval(2000, 2010).intersects(interval(2015, _)));
+    wassert_true(interval(2000, 2010).intersects(interval(_, _)));
+    wassert_true(interval(2000, 2010).intersects(interval(2000, 2011)));
+    wassert_true(interval(2000, 2010).intersects(interval(1999, 2010)));
+    wassert_false(interval(2000, 2010).intersects(interval(2000, 2000)));
+    wassert_false(interval(2000, 2010).intersects(interval(2010, 2010)));
+    wassert_true(interval(2000, 2010).intersects(interval(1995, 2015)));
+});
+
+add_method("spans_one_whole_month", [] {
+    wassert_true(interval(_, _).spans_one_whole_month());
+    wassert_true(interval(_, 2000).spans_one_whole_month());
+    wassert_true(interval(2000, _).spans_one_whole_month());
+    wassert_true(interval(2000, 2001).spans_one_whole_month());
+
+    wassert_true(Interval(Time(2000, 1, 1), Time(2000, 2, 1)).spans_one_whole_month());
+    wassert_true(Interval(Time(2000, 1, 1), Time(2000, 2, 15)).spans_one_whole_month());
+    wassert_true(Interval(Time(1999, 12, 15), Time(2000, 2, 1)).spans_one_whole_month());
+    wassert_true(Interval(Time(1999, 12, 15), Time(2000, 2, 15)).spans_one_whole_month());
+
+    wassert_false(interval(2000, 2000).spans_one_whole_month());
+
+    wassert_false(Interval(Time(2000, 1, 1), Time(2000, 1, 31)).spans_one_whole_month());
+    wassert_false(Interval(Time(2000, 1, 1), Time(2000, 1, 31, 23, 59, 59)).spans_one_whole_month());
+});
+
 // Test intersection
 add_method("interval_intersection", [] {
     Interval test;
-
-    static const int _ = 0;
-
-    auto interval = [](int begin, int end)
-    {
-        return Interval(begin == 0 ? Time() : Time(begin, 1), end == 0 ? Time() : Time(end, 1));
-    };
 
     auto intersect = [&](int begin, int end)
     {
@@ -236,13 +384,6 @@ add_method("interval_intersection", [] {
 
 add_method("interval_extend", [] {
     Interval test;
-
-    static const int _ = 0;
-
-    auto interval = [](int begin, int end)
-    {
-        return Interval(begin == 0 ? Time() : Time(begin, 1), end == 0 ? Time() : Time(end, 1));
-    };
 
     auto extend = [&](int begin, int end)
     {

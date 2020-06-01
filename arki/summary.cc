@@ -134,20 +134,12 @@ unique_ptr<types::Reftime> Summary::getReferenceTime() const
         return root->stats.make_reftime();
 }
 
-void Summary::expand_date_range(unique_ptr<Time>& begin, unique_ptr<Time>& end) const
+void Summary::expand_date_range(core::Interval& interval) const
 {
     if (root->empty())
         return;
 
-    if (!begin.get())
-        begin.reset(new Time(root->stats.begin));
-    else if (*begin > root->stats.begin)
-        *begin = root->stats.begin;
-
-    if (!end.get())
-        end.reset(new Time(root->stats.end));
-    else if (*end < root->stats.end)
-        *end = root->stats.end;
+    interval.extend(Interval(root->stats.begin, root->stats.end));
 }
 
 namespace {

@@ -143,11 +143,10 @@ this->add_method("has_segment", [](Fixture& f) {
 this->add_method("segment_timespan", [](Fixture& f) {
     auto idx = f.make_index();
 
-    core::Time start;
-    core::Time end;
-    wassert(actual(idx->segment_timespan("2007/07-07.grib", start, end)).istrue());
-    wassert(actual(start.to_sql()) == "2007-07-07 00:00:00");
-    wassert(actual(end.to_sql()) == "2007-07-07 00:00:00");
+    core::Interval interval;
+    wassert(actual(idx->segment_timespan("2007/07-07.grib", interval)).istrue());
+    wassert(actual(interval.begin.to_sql()) == "2007-07-07 00:00:00");
+    wassert(actual(interval.end.to_sql()) == "2007-07-07 00:00:00");
 });
 
 this->add_method("list_segments", [](Fixture& f) {

@@ -4,6 +4,7 @@
 #include <arki/core/fwd.h>
 #include <vector>
 #include <string>
+#include <functional>
 
 namespace arki {
 namespace core {
@@ -135,8 +136,13 @@ public:
     Time start_of_month() const;
     /// Return the time at the start of the next month
     Time start_of_next_month() const;
+    /// Return the time at the start of the previous month
+    Time start_of_previous_month() const;
     /// Return the time at the very end of this month
     Time end_of_month() const;
+
+    /// Check if this time is the beginning of a month
+    bool is_start_of_month() const;
 
     /**
      * Normalise out of bound values.
@@ -217,6 +223,11 @@ public:
      * Return the number of seconds between `begin` (included) and `until` (excluded)
      */
     static long long int duration(const Time& begin, const Time& until);
+
+    /**
+     * Return the number of seconds between `begin` (included) and `until` (excluded)
+     */
+    static long long int duration(const core::Interval& interval);
 };
 
 static inline std::ostream& operator<<(std::ostream& o, const Time& i)
@@ -256,6 +267,23 @@ struct Interval
         return begin != other.begin || end != other.end;
     }
 
+    /// Return true if the interval has no begin and end bounds
+    bool is_unbounded() const;
+
+    /// Check if time is contained in this interval
+    bool contains(const Time& time) const;
+
+    /// Check if interval is fully contained in this interval
+    bool contains(const Interval& interval) const;
+
+    /// Check if interval is partially contained in this interval
+    bool intersects(const Interval& interval) const;
+
+    /// Check if the interval spans one whole month
+    bool spans_one_whole_month() const;
+
+    /// Call the function for each (full or partial) month in the interval
+    void iter_months(std::function<bool(const Interval&)>) const;
 
     /**
      * Set this interval as the shortest common interval betwen this and ``o``,

@@ -390,7 +390,7 @@ struct StepQuery
         : root(root), format(format) {}
 
     virtual void list_segments(const Matcher& m, std::function<void(std::string&&)> dest) const = 0;
-    virtual void time_extremes(std::unique_ptr<core::Time>& begin, std::unique_ptr<core::Time>& until) const = 0;
+    virtual void time_extremes(core::Interval& interval) const = 0;
 };
 
 
@@ -434,7 +434,7 @@ struct BaseStep : public Step
         throw std::runtime_error("Step::explore not available for " + query.root);
     }
 
-    void time_extremes(const step::SegmentQuery& query, std::unique_ptr<core::Time>& begin, std::unique_ptr<core::Time>& until) const override
+    void time_extremes(const step::SegmentQuery& query, core::Interval& interval) const override
     {
         auto dirs(explore(query));
         std::unique_ptr<types::reftime::Period> first;
@@ -443,11 +443,11 @@ struct BaseStep : public Step
 
         if (!first)
         {
-            begin.reset();
-            until.reset();
+            interval.begin = Time();
+            interval.end = Time();
         } else {
-            begin.reset(new Time(first->begin));
-            until.reset(new Time(last->end));
+            interval.begin = first->begin;
+            interval.end = last->end;
         }
     }
 

@@ -36,7 +36,7 @@ struct Dataset : public dataset::Dataset
  */
 class Reader : public DatasetAccess<dataset::Dataset, dataset::Reader>
 {
-    bool generate(const core::Time& begin, const core::Time& until, std::function<bool(std::unique_ptr<Metadata>)> out) const;
+    bool generate(const core::Interval& interval, std::function<bool(std::unique_ptr<Metadata>)> out) const;
 
 protected:
     bool impl_query_data(const dataset::DataQuery& q, metadata_dest_func) override;

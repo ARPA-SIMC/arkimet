@@ -118,7 +118,7 @@ public:
     // If we match Reftime elements, build a SQL query for it. Else, throw an exception.
     std::string toReftimeSQL(const std::string& column) const;
 
-    bool intersect_interval(std::unique_ptr<core::Time>& begin, std::unique_ptr<core::Time>& end) const;
+    bool intersect_interval(core::Interval& interval) const;
 
     static std::unique_ptr<OR> parse(const Aliases* aliases, const MatcherType& type, const std::string& pattern);
     static std::unique_ptr<OR> wrap(std::unique_ptr<Implementation> impl);
@@ -154,7 +154,7 @@ public:
     std::string toStringExpanded() const override;
 
     static std::unique_ptr<AND> parse(const AliasDatabase& aliases, const std::string& pattern);
-    static std::unique_ptr<AND> match_interval(const core::Time& begin, const core::Time& end);
+    static std::unique_ptr<AND> match_interval(const core::Interval& interval);
 };
 
 

@@ -147,7 +147,7 @@ struct Step
      * available segment, and the theoretical end of the last available
      * segment.
      */
-    virtual void time_extremes(const step::SegmentQuery& query, std::unique_ptr<core::Time>& begin, std::unique_ptr<core::Time>& until) const = 0;
+    virtual void time_extremes(const step::SegmentQuery& query, core::Interval& interval) const = 0;
 
     /**
      * Create a Step according to the given step type name.

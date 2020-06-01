@@ -4,6 +4,7 @@
 
 using namespace std;
 using arki::core::Time;
+using arki::core::Interval;
 using arki::core::FuzzyTime;
 
 namespace arki {
@@ -75,333 +76,209 @@ static int time_to_seconds(const Time& t)
 }
 
 
-struct DateLE : public DTMatch
+struct DateInterval : public DTMatch
 {
-    Time ref;
+    Interval interval;
     int tbase;
 
-    DateLE(FuzzyTime* tt)
-        : ref(tt->upperbound()), tbase(lowerbound_sec(*tt))
+    DateInterval(const core::Interval& interval, int tbase)
+        : interval(interval), tbase(tbase)
     {
-        delete tt;
     }
-    bool match(const core::Time& tt) const { return tt <= ref; }
-    bool match(const core::Time& begin, const core::Time& end) const { return begin <= ref; }
-    string sql(const std::string& column) const { return column + "<='" + ref.to_sql() + "'"; }
-    string toString() const { return "<=" + ref.to_sql(); }
-    int timebase() const { return tbase; }
-    bool intersect_interval(std::unique_ptr<Time>& begin, std::unique_ptr<Time>& end) const override
+
+    bool match(const core::Time& tt) const override
     {
-        if (begin.get() && *begin > ref)
-            return false;
-
-        if (!end.get() || *end > ref)
-        {
-            end.reset(new Time(ref));
-            ++(end->se);
-            end->normalise();
-        }
-
-        return true;
+        return interval.contains(tt);
     }
+
+    bool match(const core::Interval& interval) const override
+    {
+        return this->interval.intersects(interval);
+    }
+
+    int timebase() const override { return tbase; }
+
+    bool intersect_interval(core::Interval& interval) const override
+    {
+        return interval.intersect(this->interval);
+    }
+};
+
+struct DateLT : public DateInterval
+{
+    DateLT(Time ref, int tbase)
+        : DateInterval(Interval(Time(), ref), tbase)
+    {
+    }
+    string sql(const std::string& column) const override { return column + "<'" + interval.end.to_sql() + "'"; }
+    string toString() const override { return "<" + interval.end.to_sql(); }
 };
 
 DTMatch* DTMatch::createLE(FuzzyTime* tt)
 {
-    return new DateLE(tt);
+    Time ref = tt->upperbound();
+    ++ref.se;
+    ref.normalise();
+    int tbase = lowerbound_sec(*tt);
+    delete tt;
+    return new DateLT(ref, tbase);
 }
-
-struct DateLT : public DTMatch
-{
-    Time ref;
-    int tbase;
-
-    DateLT(FuzzyTime* tt)
-        : ref(tt->lowerbound()), tbase(lowerbound_sec(*tt))
-    {
-        delete tt;
-    }
-    bool match(const core::Time& tt) const { return tt < ref; }
-    bool match(const core::Time& begin, const core::Time& end) const { return begin < ref; }
-    string sql(const std::string& column) const { return column + "<'" + ref.to_sql() + "'"; }
-    string toString() const { return "<" + ref.to_sql(); }
-    int timebase() const { return tbase; }
-    bool intersect_interval(std::unique_ptr<Time>& begin, std::unique_ptr<Time>& end) const override
-    {
-        if (begin.get() && *begin >= ref)
-            return false;
-
-        if (!end.get() || *end > ref)
-            end.reset(new Time(ref));
-
-        return true;
-    }
-};
 
 DTMatch* DTMatch::createLT(FuzzyTime* tt)
 {
-    return new DateLT(tt);
+    Time ref = tt->lowerbound();
+    int tbase = lowerbound_sec(*tt);
+    delete tt;
+    return new DateLT(ref, tbase);
 }
 
-struct DateGE : public DTMatch
+struct DateGE : public DateInterval
 {
-    Time ref;
-    int tbase;
-    DateGE(FuzzyTime* tt)
-        : ref(tt->lowerbound()), tbase(lowerbound_sec(*tt))
+    DateGE(Time ref, int tbase)
+        : DateInterval(Interval(ref, Time()), tbase)
     {
-        delete tt;
     }
-    bool match(const core::Time& tt) const { return ref <= tt; }
-    bool match(const core::Time& begin, const core::Time& end) const { return ref <= end; }
-    string sql(const std::string& column) const { return column + ">='" + ref.to_sql() + "'"; }
-    string toString() const { return ">=" + ref.to_sql(); }
-    int timebase() const { return tbase; }
-    bool intersect_interval(std::unique_ptr<Time>& begin, std::unique_ptr<Time>& end) const override
-    {
-        if (end.get() && *end < ref)
-            return false;
-
-        if (!begin.get() || *begin < ref)
-            begin.reset(new Time(ref));
-
-        return true;
-    }
+    string sql(const std::string& column) const { return column + ">='" + interval.begin.to_sql() + "'"; }
+    string toString() const { return ">=" + interval.begin.to_sql(); }
 };
 
 DTMatch* DTMatch::createGE(FuzzyTime* tt)
 {
-    return new DateGE(tt);
+    Time ref(tt->lowerbound());
+    int tbase = lowerbound_sec(*tt);
+    delete tt;
+    return new DateGE(ref, tbase);
 }
-
-struct DateGT : public DTMatch
-{
-    Time ref;
-    int tbase;
-    DateGT(FuzzyTime* tt)
-        : ref(tt->upperbound()), tbase(lowerbound_sec(*tt))
-    {
-        delete tt;
-    }
-    bool match(const core::Time& tt) const { return ref < tt; }
-    bool match(const core::Time& begin, const core::Time& end) const { return ref < end; }
-    string sql(const std::string& column) const { return column + ">'" + ref.to_sql() + "'"; }
-    string toString() const { return ">" + ref.to_sql(); }
-    int timebase() const { return tbase; }
-    bool intersect_interval(std::unique_ptr<Time>& begin, std::unique_ptr<Time>& end) const override
-    {
-        if (end.get() && *end <= ref)
-            return false;
-
-        if (!begin.get() || *begin <= ref)
-        {
-            begin.reset(new Time(ref));
-            ++(begin->se);
-            begin->normalise();
-        }
-
-        return true;
-    }
-};
 
 DTMatch* DTMatch::createGT(FuzzyTime* tt)
 {
-    return new DateGT(tt);
+    Time ref(tt->upperbound());
+    ++ref.se;
+    ref.normalise();
+    int tbase = lowerbound_sec(*tt);
+    delete tt;
+    return new DateGE(ref, tbase);
 }
 
 
-struct DateEQ : public DTMatch
+struct DateEQ : public DateInterval
 {
-    Time geref;
-    Time leref;
-    int tbase;
-    DateEQ(FuzzyTime* tt)
-        : geref(tt->lowerbound()), leref(tt->upperbound()), tbase(lowerbound_sec(*tt))
-    {
-        delete tt;
-    }
-    bool match(const core::Time& tt) const
-    {
-        return geref <= tt && tt <= leref;
-    }
-    bool match(const core::Time& begin, const core::Time& end) const
-    {
-        // If it's an interval, return true if we intersect it
-        return (geref <= end && begin <= leref);
-    }
+    using DateInterval::DateInterval;
     string sql(const std::string& column) const
     {
-        return '(' + column + ">='" + geref.to_sql() + "' AND " + column + "<='" + leref.to_sql() + "')";
+        return '(' + column + ">='" + interval.begin.to_sql() + "' AND " + column + "<'" + interval.end.to_sql() + "')";
     }
     string toString() const
     {
-        return ">=" + geref.to_sql() + ",<=" + leref.to_sql();
-    }
-    int timebase() const { return tbase; }
-    bool intersect_interval(std::unique_ptr<Time>& begin, std::unique_ptr<Time>& end) const override
-    {
-        if (begin.get() && *begin > leref)
-            return false;
-
-        if (end.get() && *end < geref)
-            return false;
-
-        if (!end.get() || *end > leref)
-        {
-            end.reset(new Time(leref));
-            ++(end->se);
-            end->normalise();
-        }
-
-        if (!begin.get() || *begin < geref)
-            begin.reset(new Time(geref));
-
-        return true;
+        return ">=" + interval.begin.to_sql() + ",<" + interval.end.to_sql();
     }
 };
 
 DTMatch* DTMatch::createEQ(FuzzyTime* tt)
 {
-    return new DateEQ(tt);
+    Time geref(tt->lowerbound());
+    Time ltref(tt->upperbound());
+    ++ltref.se;
+    ltref.normalise();
+    int tbase = lowerbound_sec(*tt);
+    delete tt;
+    return new DateEQ(Interval(geref, ltref), tbase);
+}
+
+DTMatch* DTMatch::createInterval(const core::Interval& interval)
+{
+    return new DateEQ(interval, lowerbound_sec(interval.begin));
 }
 
 
-struct DateInterval : public DTMatch
-{
-    Time geref;
-    Time ltref;
-    int tbase;
-    DateInterval(const Time& begin, const Time& end)
-        : geref(begin), ltref(end), tbase(lowerbound_sec(begin))
-    {
-    }
-    bool match(const core::Time& tt) const
-    {
-        return geref <= tt && tt < ltref;
-    }
-    bool match(const core::Time& begin, const core::Time& end) const
-    {
-        // If it's an interval, return true if we intersect it
-        return (geref < end && begin < ltref);
-    }
-    string sql(const std::string& column) const
-    {
-        return '(' + column + ">='" + geref.to_sql() + "' AND " + column + "<'" + ltref.to_sql() + "')";
-    }
-    string toString() const
-    {
-        return ">=" + geref.to_sql() + ",<" + ltref.to_sql();
-    }
-    int timebase() const { return tbase; }
-    bool intersect_interval(std::unique_ptr<Time>& begin, std::unique_ptr<Time>& end) const override
-    {
-        if (begin.get() && *begin >= ltref)
-            return false;
-
-        if (end.get() && *end <= geref)
-            return false;
-
-        if (!end.get() || *end > ltref)
-            end.reset(new Time(ltref));
-
-        if (!begin.get() || *begin < geref)
-            begin.reset(new Time(geref));
-
-        return true;
-    }
-};
-
-DTMatch* DTMatch::createInterval(const core::Time& begin, const core::Time& until)
-{
-    return new DateInterval(begin, until);
-}
-
-
-struct TimeLE : public DTMatch
+struct TimeMatch : public DTMatch
 {
     int ref;
-    TimeLE(const int* tt) : ref(upperbound_sec(tt)) {}
-    bool match(const core::Time& tt) const { return time_to_seconds(tt) <= ref; }
-    bool match(const core::Time& begin, const core::Time& end) const
+
+    TimeMatch(int ref) : ref(ref) {}
+
+    int timebase() const override { return ref; }
+    bool intersect_interval(core::Interval& interval) const override { return true; }
+};
+
+struct TimeLE : public TimeMatch
+{
+    TimeLE(const int* tt) : TimeMatch(upperbound_sec(tt)) {}
+    bool match(const core::Time& tt) const override { return time_to_seconds(tt) <= ref; }
+    bool match(const core::Interval& interval) const override
     {
-        if (Time::duration(begin, end) >= 3600*24) return true;
-        if (time_to_seconds(begin) <= ref) return true;
-        if (time_to_seconds(end) <= ref) return true;
+        if (Time::duration(interval) >= 3600*24) return true;
+        if (time_to_seconds(interval.begin) <= ref) return true;
+        if (time_to_seconds(interval.end) <= ref) return true;
         return false;
     }
-    string sql(const std::string& column) const { return "TIME(" + column + ")<=" + tosqlTime(ref); }
-    string toString() const { return "<="+formatTime(ref); }
-    int timebase() const { return ref; }
-    bool intersect_interval(std::unique_ptr<Time>& begin, std::unique_ptr<Time>& end) const override { return true; }
+    string sql(const std::string& column) const override { return "TIME(" + column + ")<=" + tosqlTime(ref); }
+    string toString() const override { return "<="+formatTime(ref); }
 };
-struct TimeLT : public DTMatch
+
+struct TimeLT : public TimeMatch
 {
-    int ref;
-    TimeLT(const int* tt) : ref(lowerbound_sec(tt)) {}
-    bool match(const core::Time& tt) const { return time_to_seconds(tt) < ref; }
-    bool match(const core::Time& begin, const core::Time& end) const
+    TimeLT(const int* tt) : TimeMatch(lowerbound_sec(tt)) {}
+    bool match(const core::Time& tt) const override { return time_to_seconds(tt) < ref; }
+    bool match(const core::Interval& interval) const override
     {
-        if (Time::duration(begin, end) >= 3600*24) return true;
-        if (time_to_seconds(begin) < ref) return true;
-        if (time_to_seconds(end) < ref) return true;
+        if (Time::duration(interval) >= 3600*24) return true;
+        if (time_to_seconds(interval.begin) < ref) return true;
+        if (time_to_seconds(interval.end) < ref) return true;
         return false;
     }
-    string sql(const std::string& column) const { return "TIME(" + column + ")<" + tosqlTime(ref); }
-    string toString() const { return "<"+formatTime(ref); }
-    int timebase() const { return ref; }
-    bool intersect_interval(std::unique_ptr<Time>& begin, std::unique_ptr<Time>& end) const override { return true; }
+    string sql(const std::string& column) const override { return "TIME(" + column + ")<" + tosqlTime(ref); }
+    string toString() const override { return "<"+formatTime(ref); }
 };
-struct TimeGT : public DTMatch
+
+struct TimeGT : public TimeMatch
 {
-    int ref;
-    TimeGT(const int* tt) : ref(upperbound_sec(tt)) {}
-    bool match(const core::Time& tt) const { return time_to_seconds(tt) > ref; }
-    bool match(const core::Time& begin, const core::Time& end) const
+    TimeGT(const int* tt) : TimeMatch(upperbound_sec(tt)) {}
+    bool match(const core::Time& tt) const override { return time_to_seconds(tt) > ref; }
+    bool match(const core::Interval& interval) const override
     {
-        if (Time::duration(begin, end) >= 3600*24) return true;
-        if (time_to_seconds(begin) > ref) return true;
-        if (time_to_seconds(end) > ref) return true;
+        if (Time::duration(interval) >= 3600*24) return true;
+        if (time_to_seconds(interval.begin) > ref) return true;
+        if (time_to_seconds(interval.end) > ref) return true;
         return false;
     }
-    string sql(const std::string& column) const { return "TIME(" + column + ")>" + tosqlTime(ref); }
-    string toString() const { return ">"+formatTime(ref); }
-    int timebase() const { return ref; }
-    bool intersect_interval(std::unique_ptr<Time>& begin, std::unique_ptr<Time>& end) const override { return true; }
+    string sql(const std::string& column) const override { return "TIME(" + column + ")>" + tosqlTime(ref); }
+    string toString() const override { return ">"+formatTime(ref); }
 };
-struct TimeGE : public DTMatch
+
+struct TimeGE : public TimeMatch
 {
-    int ref;
-    TimeGE(const int* tt) : ref(lowerbound_sec(tt)) {}
-    bool match(const core::Time& tt) const { return time_to_seconds(tt) >= ref; }
-    bool match(const core::Time& begin, const core::Time& end) const
+    TimeGE(const int* tt) : TimeMatch(lowerbound_sec(tt)) {}
+    bool match(const core::Time& tt) const override { return time_to_seconds(tt) >= ref; }
+    bool match(const core::Interval& interval) const override
     {
-        if (Time::duration(begin, end) >= 3600*24) return true;
-        if (time_to_seconds(begin) >= ref) return true;
-        if (time_to_seconds(end) >= ref) return true;
+        if (Time::duration(interval) >= 3600*24) return true;
+        if (time_to_seconds(interval.begin) >= ref) return true;
+        if (time_to_seconds(interval.end) >= ref) return true;
         return false;
     }
     string sql(const std::string& column) const { return "TIME(" + column + ")>=" + tosqlTime(ref); }
     string toString() const { return ">="+formatTime(ref); }
     int timebase() const { return ref; }
-    bool intersect_interval(std::unique_ptr<Time>& begin, std::unique_ptr<Time>& end) const override { return true; }
+    bool intersect_interval(core::Interval& interval) const override { return true; }
 };
 struct TimeEQ : public DTMatch
 {
     int geref;
     int leref;
     TimeEQ(const int* tt) : geref(lowerbound_sec(tt)), leref(upperbound_sec(tt)) {}
-    bool match(const core::Time& tt) const
+    bool match(const core::Time& tt) const override
     {
         int t = time_to_seconds(tt);
         return t >= geref and t <= leref;
     }
-    bool match(const core::Time& begin, const core::Time& end) const
+    bool match(const core::Interval& interval) const override
     {
         // If the times are more than 24hours apart, then we necessarily cover a whole day
-        if (Time::duration(begin, end) >= 3600*24) return true;
+        if (Time::duration(interval) >= 3600*24) return true;
 
-        int rb = time_to_seconds(begin);
-        int re = time_to_seconds(end);
+        int rb = time_to_seconds(interval.begin);
+        int re = time_to_seconds(interval.end);
         if (rb <= re)
         {
             if (rb <= geref && leref <= re)
@@ -415,23 +292,24 @@ struct TimeEQ : public DTMatch
 
         return false;
     }
-    string sql(const std::string& column) const
+    string sql(const std::string& column) const override
     {
         if (geref == leref)
             return "(TIME(" + column + ")==" + tosqlTime(geref) + ")";
         else
             return "(TIME(" + column + ")>=" + tosqlTime(geref) + " AND TIME(" + column + ")<=" + tosqlTime(leref) + ")";
     }
-    string toString() const
+    string toString() const override
     {
         if (geref == leref)
             return "=="+formatTime(geref);
         else
             return ">="+formatTime(geref)+",<="+formatTime(leref);
     }
-    int timebase() const { return geref; }
-    bool intersect_interval(std::unique_ptr<Time>& begin, std::unique_ptr<Time>& end) const override { return true; }
+    int timebase() const override { return geref; }
+    bool intersect_interval(core::Interval& interval) const override { return true; }
 };
+
 struct TimeExact : public DTMatch
 {
     set<int> times;
@@ -442,17 +320,17 @@ struct TimeExact : public DTMatch
         //fprintf(stderr, "CREATED %zd times lead %d\n", times.size(), lead);
     }
     bool isLead() const { return lead; }
-    bool match(const core::Time& tt) const
+    bool match(const core::Time& tt) const override
     {
         int t = time_to_seconds(tt);
         return times.find(t) != times.end();
     }
-    bool intersect_interval(std::unique_ptr<Time>& begin, std::unique_ptr<Time>& end) const override { return true; }
-    bool match(const core::Time& begin, const core::Time& end) const
+    bool intersect_interval(core::Interval& interval) const override { return true; }
+    bool match(const core::Interval& interval) const override
     {
-        if (Time::duration(begin, end) >= 3600*24) return true;
-        int rb = time_to_seconds(begin);
-        int re = time_to_seconds(end);
+        if (Time::duration(interval) >= 3600*24) return true;
+        int rb = time_to_seconds(interval.begin);
+        int re = time_to_seconds(interval.end);
         for (set<int>::const_iterator i = times.begin(); i != times.end(); ++i)
         {
             if (rb <= re)
@@ -468,7 +346,7 @@ struct TimeExact : public DTMatch
         }
         return false;
     }
-    string sql(const std::string& column) const
+    string sql(const std::string& column) const override
     {
         string res = "(";
         bool first = true;
@@ -482,7 +360,7 @@ struct TimeExact : public DTMatch
         }
         return res + ")";
     }
-    string toString() const
+    string toString() const override
     {
         //fprintf(stderr, "STOS %zd %d\n", times.size(), lead);
         if (times.size() == 1)
@@ -509,7 +387,7 @@ struct TimeExact : public DTMatch
             }
         }
     }
-    int timebase() const { return times.empty() ? 0 : *times.begin(); }
+    int timebase() const override { return times.empty() ? 0 : *times.begin(); }
 };
 
 

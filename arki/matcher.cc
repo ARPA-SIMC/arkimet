@@ -95,7 +95,7 @@ void Matcher::split(const std::set<types::Code>& codes, Matcher& with, Matcher& 
     }
 }
 
-bool Matcher::intersect_interval(unique_ptr<core::Time>& begin, unique_ptr<core::Time>& end) const
+bool Matcher::intersect_interval(core::Interval& interval) const
 {
     shared_ptr<matcher::OR> reftime;
 
@@ -107,22 +107,22 @@ bool Matcher::intersect_interval(unique_ptr<core::Time>& begin, unique_ptr<core:
     // We have no reftime to match: we match the open range
     if (!reftime) return true;
 
-    if (!reftime->intersect_interval(begin, end))
+    if (!reftime->intersect_interval(interval))
         return false;
 
     return true;
 }
 
-Matcher Matcher::match_interval(const core::Time& begin, const core::Time& end)
+Matcher Matcher::match_interval(const core::Interval& interval)
 {
-    return matcher::AND::match_interval(begin, end);
+    return matcher::AND::match_interval(interval);
 }
 
 Matcher Matcher::match_month(unsigned year, unsigned month)
 {
     core::Time begin(year, month);
     core::Time end(begin.start_of_next_month());
-    return match_interval(begin, end);
+    return match_interval(core::Interval(begin, end));
 }
 
 std::ostream& operator<<(std::ostream& o, const Matcher& m)

@@ -25,13 +25,13 @@ std::shared_ptr<dataset::Writer> Dataset::create_writer() { return std::make_sha
 std::shared_ptr<dataset::Checker> Dataset::create_checker() { return std::make_shared<empty::Checker>(shared_from_this()); }
 
 
-bool Reader::generate(const core::Time& begin, const core::Time& until, std::function<bool(std::unique_ptr<Metadata>)> out) const
+bool Reader::generate(const core::Interval& interval, std::function<bool(std::unique_ptr<Metadata>)> out) const
 {
-    core::Time cur = begin;
+    core::Time cur = interval.begin;
     cur.ho = 0;
     cur.mi = 0;
     cur.se = 0;
-    while (cur <= until)
+    while (cur <= interval.end)
     {
         unique_ptr<Metadata> md(new Metadata);
         md->set(types::Reftime::createPosition(cur));
@@ -55,16 +55,12 @@ bool Reader::impl_query_data(const dataset::DataQuery& q, metadata_dest_func des
     dataset::TrackProgress track(q.progress);
     dest = track.wrap(dest);
 
-    std::unique_ptr<core::Time> begin;
-    std::unique_ptr<core::Time> until;
-    if (!q.matcher.intersect_interval(begin, until))
+    core::Interval interval;
+    if (!q.matcher.intersect_interval(interval))
         return true;
-    if (!begin || *begin < core::Time(2000, 1, 1))
-        begin.reset(new core::Time(2000, 1, 1));
-    if (!until || *until > core::Time(2017, 1, 1))
-        until.reset(new core::Time(2017, 1, 1));
+    interval.intersect(core::Interval(core::Time(2000, 1, 1), core::Time(2017, 1, 1)));
     // TODO: implement support for q.sort
-    return track.done(generate(*begin, *until, [&](std::unique_ptr<Metadata> md) {
+    return track.done(generate(interval, [&](std::unique_ptr<Metadata> md) {
         if (!q.matcher(*md)) return true;
         return dest(move(md));
     }));
@@ -72,15 +68,11 @@ bool Reader::impl_query_data(const dataset::DataQuery& q, metadata_dest_func des
 
 void Reader::impl_query_summary(const Matcher& matcher, Summary& summary)
 {
-    std::unique_ptr<core::Time> begin;
-    std::unique_ptr<core::Time> until;
-    if (!matcher.intersect_interval(begin, until))
+    core::Interval interval;
+    if (!matcher.intersect_interval(interval))
         return;
-    if (!begin || *begin < core::Time(2000, 1, 1))
-        begin.reset(new core::Time(2000, 1, 1));
-    if (!until || *until > core::Time(2017, 1, 1))
-        until.reset(new core::Time(2017, 1, 1));
-    generate(*begin, *until, [&](std::unique_ptr<Metadata> md) {
+    interval.intersect(core::Interval(core::Time(2000, 1, 1), core::Time(2017, 1, 1)));
+    generate(interval, [&](std::unique_ptr<Metadata> md) {
         if (!matcher(*md)) return true;
         summary.add(*md);
         return true;

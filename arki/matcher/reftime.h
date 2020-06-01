@@ -68,7 +68,7 @@ struct MatchReftime : public matcher::Implementation
      * There can be further restrictions than this interval (for example,
      * restrictions on the time of the day).
      */
-    bool intersect_interval(std::unique_ptr<core::Time>& begin, std::unique_ptr<core::Time>& end) const;
+    bool intersect_interval(core::Interval& interval) const;
 
     static std::unique_ptr<MatchReftime> parse(const std::string& pattern);
     static void init();

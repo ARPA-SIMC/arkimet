@@ -46,7 +46,7 @@ bool MatchReftime::matchItem(const Type& o) const
     else if (const types::reftime::Period* pe = dynamic_cast<const types::reftime::Period*>(&o))
     {
         for (const auto& i: tests)
-            if (!i->match(pe->begin, pe->end))
+            if (!i->match(core::Interval(pe->begin, pe->end)))
                 return false;
         return true;
     }
@@ -68,10 +68,10 @@ std::string MatchReftime::sql(const std::string& column) const
 	return res + ")";
 }
 
-bool MatchReftime::intersect_interval(unique_ptr<Time>& begin, unique_ptr<Time>& end) const
+bool MatchReftime::intersect_interval(core::Interval& interval) const
 {
     for (const auto& i: tests)
-        if (!i->intersect_interval(begin, end))
+        if (!i->intersect_interval(interval))
             return false;
     return true;
 }

@@ -226,12 +226,23 @@ bool Time::operator==(const std::string& o) const
 
 Time Time::start_of_month() const
 {
-    return Time(ye, mo, 1, 0, 0, 0);
+    return Time(ye, mo, 1);
 }
 
 Time Time::start_of_next_month() const
 {
-    return Time(ye + mo / 12, (mo % 12) + 1, 1, 0, 0, 0);
+    if (mo == 12)
+        return Time(ye + 1, 1, 1);
+    else
+        return Time(ye, mo + 1, 1);
+}
+
+Time Time::start_of_previous_month() const
+{
+    if (mo == 1)
+        return Time(ye - 1, 12, 1);
+    else
+        return Time(ye, mo - 1, 1);
 }
 
 Time Time::end_of_month() const
@@ -239,6 +250,10 @@ Time Time::end_of_month() const
     return Time(ye, mo, days_in_month(ye, mo), 23, 59, 59);
 }
 
+bool Time::is_start_of_month() const
+{
+    return da == 1 && ho == 0 && mi == 0 && se == 0;
+}
 
 /*
  * Make sure `lo` fits between >= 0 and < N.
@@ -429,6 +444,11 @@ long long int Time::duration(const Time& begin, const Time& until)
     return seconds_from(y, until) - seconds_from(y, begin);
 }
 
+long long int Time::duration(const core::Interval& interval)
+{
+    return duration(interval.begin, interval.end);
+}
+
 std::vector<Time> Time::generate(const Time& begin, const Time& end, int step)
 {
     vector<Time> res;
@@ -449,6 +469,103 @@ std::vector<Time> Time::generate(const Time& begin, const Time& end, int step)
 Interval::Interval(const Time& begin, const Time& end)
     : begin(begin), end(end)
 {
+}
+
+bool Interval::is_unbounded() const
+{
+    return !begin.is_set() && !end.is_set();
+}
+
+bool Interval::contains(const Time& time) const
+{
+    if (begin.is_set() && time < begin) return false;
+    if (end.is_set() && time >= end) return false;
+    return true;
+}
+
+bool Interval::contains(const Interval& interval) const
+{
+    if (!begin.is_set())
+    {
+        if (!end.is_set())
+            return true;
+        else
+        {
+            if (interval.begin.is_set() && interval.begin >= end) return false;
+            return interval.end.is_set() && interval.end <= end;
+        }
+    }
+
+    // begin is set
+
+    if (!end.is_set())
+    {
+        if (interval.end.is_set() && interval.end <= begin) return false;
+        return interval.begin.is_set() && interval.begin >= begin;
+    }
+
+    // begin and end are set
+
+    if (!interval.begin.is_set()) return false;
+    if (!interval.end.is_set()) return false;
+
+    return interval.begin >= begin && interval.begin < end &&
+           interval.end > begin && interval.end <= end;
+}
+
+bool Interval::intersects(const Interval& interval) const
+{
+    if (!begin.is_set())
+    {
+        if (!end.is_set())
+            return true;
+        else
+            return !interval.begin.is_set() || interval.begin < end;
+    }
+
+    // begin is set
+
+    if (!end.is_set())
+        return !interval.end.is_set() || interval.end > begin;
+
+    // begin and end are set
+
+    if (!interval.begin.is_set())
+        return !interval.end.is_set() || interval.end > begin;
+
+    if (!interval.end.is_set())
+        return interval.begin < end;
+
+    return !(interval.end <= begin) && !(interval.begin >= end);
+}
+
+bool Interval::spans_one_whole_month() const
+{
+    if (!begin.is_set() || !end.is_set())
+        return true;
+
+    if (begin.is_start_of_month())
+        return end >= begin.start_of_next_month();
+    else
+        return end >= begin.start_of_next_month().start_of_next_month();
+}
+
+void Interval::iter_months(std::function<bool(const Interval&)> f) const
+{
+    core::Time pos = begin;
+
+    while (true)
+    {
+        core::Time next = pos.start_of_next_month();
+        if (next > end)
+        {
+            f(Interval(pos, end));
+            break;
+        } else {
+            f(Interval(pos, next));
+            pos = next;
+        }
+    }
 }
 
 bool Interval::intersect(const Interval& other)

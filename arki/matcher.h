@@ -76,7 +76,7 @@ public:
      * @returns true if the matcher has consistent reference time expressions,
      * false if the match is impossible (like reftime:<2014,>2015)
      */
-    bool intersect_interval(std::unique_ptr<core::Time>& begin, std::unique_ptr<core::Time>& end) const;
+    bool intersect_interval(core::Interval& interval) const;
 
     /// Format back into a string that can be parsed again
     std::string toString() const;
@@ -88,7 +88,7 @@ public:
     std::string toStringExpanded() const;
 
     /// Return a matcher matching a time interval (from begin included, to end excluded)
-    static Matcher match_interval(const core::Time& begin, const core::Time& end);
+    static Matcher match_interval(const core::Interval& interval);
 
     /// Return a matcher matching a whole month
     static Matcher match_month(unsigned year, unsigned month);

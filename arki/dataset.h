@@ -233,7 +233,7 @@ public:
      * If begin and end are unset, set them to the datetime extremes of this
      * dataset.
      */
-    virtual void expand_date_range(std::unique_ptr<core::Time>& begin, std::unique_ptr<core::Time>& end);
+    virtual void expand_date_range(core::Interval& interval);
 };
 
 struct WriterBatchElement

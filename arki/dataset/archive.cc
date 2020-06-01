@@ -293,14 +293,13 @@ void Reader::summary_for_all(Summary& out)
 
 void Reader::impl_query_summary(const Matcher& matcher, Summary& summary)
 {
-    unique_ptr<Time> matcher_begin;
-    unique_ptr<Time> matcher_end;
-    if (!matcher.intersect_interval(matcher_begin, matcher_end))
+    core::Interval interval;
+    if (!matcher.intersect_interval(interval))
         // If the matcher is inconsistent, return now
         return;
 
     // Extract date range from matcher
-    if (!matcher_begin.get() && !matcher_end.get())
+    if (!interval.begin.is_set() && !interval.end.is_set())
     {
         // Use archive summary cache
         Summary s;
@@ -311,10 +310,9 @@ void Reader::impl_query_summary(const Matcher& matcher, Summary& summary)
 
     // Query only archives that fit that date range
     archives->iter([&](dataset::Reader& a) {
-        unique_ptr<Time> arc_begin;
-        unique_ptr<Time> arc_end;
-        a.expand_date_range(arc_begin, arc_end);
-        if (Time::range_overlaps(matcher_begin.get(), matcher_end.get(), arc_begin.get(), arc_end.get()))
+        core::Interval i;
+        a.expand_date_range(i);
+        if (interval.intersects(i))
             a.query_summary(matcher, summary);
         return true;
     });

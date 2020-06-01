@@ -15,7 +15,7 @@ struct DTMatch
 {
     virtual ~DTMatch() {}
     virtual bool match(const core::Time& tt) const = 0;
-    virtual bool match(const core::Time& begin, const core::Time& end) const = 0;
+    virtual bool match(const core::Interval& interval) const = 0;
     virtual std::string sql(const std::string& column) const = 0;
     virtual std::string toString() const = 0;
 
@@ -40,14 +40,14 @@ struct DTMatch
      * There can be further restrictions than this interval (for example,
      * restrictions on the time of the day).
      */
-    virtual bool intersect_interval(std::unique_ptr<core::Time>& begin, std::unique_ptr<core::Time>& end) const = 0;
+    virtual bool intersect_interval(core::Interval& interval) const = 0;
 
     static DTMatch* createLE(core::FuzzyTime* tt);
     static DTMatch* createLT(core::FuzzyTime* tt);
     static DTMatch* createGE(core::FuzzyTime* tt);
     static DTMatch* createGT(core::FuzzyTime* tt);
     static DTMatch* createEQ(core::FuzzyTime* tt);
-    static DTMatch* createInterval(const core::Time& begin, const core::Time& until);
+    static DTMatch* createInterval(const core::Interval& interval);
 
     static DTMatch* createTimeLE(const int* tt);
     static DTMatch* createTimeLT(const int* tt);

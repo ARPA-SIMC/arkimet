@@ -257,7 +257,7 @@ public:
      * If begin and end are unset, set them to the datetime extremes of this
      * summary.
      */
-    void expand_date_range(std::unique_ptr<core::Time>& begin, std::unique_ptr<core::Time>& end) const;
+    void expand_date_range(core::Interval& interval) const;
 
 	/**
 	 * Get the convex hull of the union of all bounding boxes covered by the

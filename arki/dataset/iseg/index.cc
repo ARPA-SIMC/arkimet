@@ -33,6 +33,7 @@ using namespace arki::utils;
 using namespace arki::utils::sqlite;
 using namespace arki::dataset::index;
 using arki::core::Time;
+using arki::core::Interval;
 
 namespace arki {
 namespace dataset {
@@ -192,7 +193,7 @@ void Index::query_segment(metadata_dest_func dest) const
 }
 
 /// Begin extreme is included in the range, end extreme is excluded
-static void db_time_extremes(utils::sqlite::SQLiteDB& db, unique_ptr<Time>& begin, unique_ptr<Time>& end)
+static void db_time_extremes(utils::sqlite::SQLiteDB& db, core::Interval& interval)
 {
     // SQLite can compute min and max of an indexed column very fast,
     // provided that it is the ONLY thing queried.
@@ -200,7 +201,7 @@ static void db_time_extremes(utils::sqlite::SQLiteDB& db, unique_ptr<Time>& begi
     q1.compile("SELECT MIN(reftime) FROM md");
     while (q1.step())
         if (!q1.isNULL(0))
-            begin.reset(new Time(Time::create_sql(q1.fetchString(0))));
+            interval.begin.set_sql(q1.fetchString(0));
 
     Query q2("min_date", db);
     q2.compile("SELECT MAX(reftime) FROM md");
@@ -208,9 +209,9 @@ static void db_time_extremes(utils::sqlite::SQLiteDB& db, unique_ptr<Time>& begi
     {
         if (!q2.isNULL(0))
         {
-            end.reset(new Time(Time::create_sql(q2.fetchString(0))));
-            ++(end->se);
-            end->normalise();
+            interval.end.set_sql(q2.fetchString(0));
+            ++interval.end.se;
+            interval.end.normalise();
         }
     }
 }
@@ -222,13 +223,12 @@ void Index::add_joins_and_constraints(const Matcher& m, std::string& query) cons
     // Add database constraints
     if (not m.empty())
     {
-        unique_ptr<Time> begin;
-        unique_ptr<Time> end;
-        if (!m.intersect_interval(begin, end))
+        Interval interval;
+        if (!m.intersect_interval(interval))
             // The matcher matches an impossible datetime span: convert it
             // into an impossible clause that evaluates quickly
             constraints.push_back("1 == 2");
-        else if (!begin.get() && !end.get())
+        else if (!interval.begin.is_set() && !interval.end.is_set())
         {
             // No restriction on a range of reftimes, but still add sql
             // constraints if there is an unbounded reftime matcher (#116)
@@ -240,23 +240,15 @@ void Index::add_joins_and_constraints(const Matcher& m, std::string& query) cons
             }
         } else {
             // Compare with the reftime bounds in the database
-            unique_ptr<Time> db_begin;
-            unique_ptr<Time> db_end;
-            db_time_extremes(m_db, db_begin, db_end);
-            if (db_begin.get() && db_end.get())
+            core::Interval db_interval;
+            db_time_extremes(m_db, db_interval);
+            if (db_interval.begin.is_set() && db_interval.end.is_set())
             {
                 // Intersect the time bounds of the query with the time
                 // bounds of the database
-                if (!begin.get())
-                   begin.reset(new Time(*db_begin));
-                else if (*begin < *db_begin)
-                   *begin = *db_begin;
-                if (!end.get())
-                   end.reset(new Time(*db_end));
-                else if (*end > *db_end)
-                   *end = *db_end;
-                long long int qrange = Time::duration(*begin, *end);
-                long long int dbrange = Time::duration(*db_begin, *db_end);
+                interval.intersect(db_interval);
+                long long int qrange = Time::duration(interval);
+                long long int dbrange = Time::duration(db_interval);
                 // If the query chooses less than 20%
                 // if the time span, force the use of
                 // the reftime index
@@ -264,7 +256,7 @@ void Index::add_joins_and_constraints(const Matcher& m, std::string& query) cons
                 {
                     query += " INDEXED BY md_idx_reftime";
                     constraints.push_back(
-                        "reftime >= \'" + begin->to_sql() + "\' AND reftime < \'" + end->to_sql() + "\'");
+                        "reftime >= \'" + interval.begin.to_sql() + "\' AND reftime < \'" + interval.end.to_sql() + "\'");
                 }
             }
 

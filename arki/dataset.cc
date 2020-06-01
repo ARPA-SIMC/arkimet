@@ -132,7 +132,7 @@ void Reader::query_summary(const std::string& matcher, Summary& summary)
 }
 
 
-void Reader::expand_date_range(std::unique_ptr<core::Time>& begin, std::unique_ptr<core::Time>& end)
+void Reader::expand_date_range(core::Interval& interval)
 {
 }
 

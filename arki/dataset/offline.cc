@@ -32,9 +32,9 @@ void Reader::impl_query_summary(const Matcher& matcher, Summary& summary)
     sum.filter(matcher, summary);
 }
 
-void Reader::expand_date_range(unique_ptr<core::Time>& begin, unique_ptr<core::Time>& end)
+void Reader::expand_date_range(core::Interval& interval)
 {
-    sum.expand_date_range(begin, end);
+    sum.expand_date_range(interval);
 }
 
 }
