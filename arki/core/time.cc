@@ -250,6 +250,22 @@ Time Time::end_of_month() const
     return Time(ye, mo, days_in_month(ye, mo), 23, 59, 59);
 }
 
+Time Time::prev_instant() const
+{
+    Time res(*this);
+    res.se -= 1;
+    res.normalise();
+    return res;
+}
+
+Time Time::next_instant() const
+{
+    Time res(*this);
+    res.se += 1;
+    res.normalise();
+    return res;
+}
+
 bool Time::is_start_of_month() const
 {
     return da == 1 && ho == 0 && mi == 0 && se == 0;

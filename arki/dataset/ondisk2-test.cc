@@ -228,9 +228,7 @@ add_method("query_first_reftime_extreme", [](Fixture& f) {
     metadata::Collection mdc(*reader, "origin:GRIB1,80; reftime:=" + rt.begin.to_iso8601());
     wassert(actual(mdc.size()) == 1u);
 
-    core::Time end = rt.end;
-    end.se -= 1;
-    end.normalise();
+    core::Time end = rt.end.prev_instant();
     mdc.clear();
     mdc.add(*reader, "origin:GRIB1,98; reftime:=" + end.to_iso8601());
     wassert(actual(mdc.size()) == 1u);

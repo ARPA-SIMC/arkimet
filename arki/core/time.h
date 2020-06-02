@@ -141,6 +141,11 @@ public:
     /// Return the time at the very end of this month
     Time end_of_month() const;
 
+    /// Return the time one second before this one
+    Time prev_instant() const;
+    /// Return the time one second after this one
+    Time next_instant() const;
+
     /// Check if this time is the beginning of a month
     bool is_start_of_month() const;
 
