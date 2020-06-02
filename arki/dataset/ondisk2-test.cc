@@ -224,14 +224,15 @@ add_method("query_first_reftime_extreme", [](Fixture& f) {
     reader->query_summary(Matcher(), summary);
     wassert(actual(summary.count()) == 3u);
 
-    unique_ptr<Reftime> rt = summary.getReferenceTime();
-    wassert(actual(rt->style()) == Reftime::Style::PERIOD);
-    unique_ptr<reftime::Period> p = downcast<reftime::Period>(move(rt));
-    metadata::Collection mdc(*reader, "origin:GRIB1,80; reftime:=" + p->begin.to_iso8601());
+    core::Interval rt = summary.get_reference_time();
+    metadata::Collection mdc(*reader, "origin:GRIB1,80; reftime:=" + rt.begin.to_iso8601());
     wassert(actual(mdc.size()) == 1u);
 
+    core::Time end = rt.end;
+    end.se -= 1;
+    end.normalise();
     mdc.clear();
-    mdc.add(*reader, "origin:GRIB1,98; reftime:=" + p->end.to_iso8601());
+    mdc.add(*reader, "origin:GRIB1,98; reftime:=" + end.to_iso8601());
     wassert(actual(mdc.size()) == 1u);
 });
 

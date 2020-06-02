@@ -146,7 +146,7 @@ this->add_method("segment_timespan", [](Fixture& f) {
     core::Interval interval;
     wassert(actual(idx->segment_timespan("2007/07-07.grib", interval)).istrue());
     wassert(actual(interval.begin.to_sql()) == "2007-07-07 00:00:00");
-    wassert(actual(interval.end.to_sql()) == "2007-07-07 00:00:00");
+    wassert(actual(interval.end.to_sql()) == "2007-07-07 00:00:01");
 });
 
 this->add_method("list_segments", [](Fixture& f) {

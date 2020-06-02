@@ -245,10 +245,8 @@ public:
 
     /**
      * Get the reference time interval covered by the metadata bundle.
-     *
-     * Note: an end period of (0, 0, 0, 0, 0, 0) means "now".
      */
-    std::unique_ptr<types::Reftime> getReferenceTime() const;
+    core::Interval get_reference_time() const;
 
     /**
      * Expand the given begin and end ranges to include the datetime extremes

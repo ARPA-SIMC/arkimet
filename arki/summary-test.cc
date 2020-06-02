@@ -359,14 +359,11 @@ add_method("zero_timestamp", [](Fixture& f) {
     s.readFile("inbound/00-00.bufr.summary");
 
     // Check that ranges are computed correctly even with all zeroes
-    unique_ptr<types::Reftime> rt = s.getReferenceTime();
-    wassert(actual(rt->period_begin()) == Time(0, 0, 0, 0, 0, 0));
-    wassert(actual(rt->period_end()) == Time(0, 0, 0, 0, 0, 14));
+    core::Interval rt = s.get_reference_time();
+    wassert(actual(rt.begin) == Time(0, 0, 0, 0, 0, 0));
+    wassert(actual(rt.end) == Time(0, 0, 0, 0, 0, 14));
 
     // Check that serialization does not throw exceptions
-    stringstream out_yaml;
-    out_yaml << *rt << endl;
-
     utils::sys::File out("/dev/null", O_WRONLY);
     s.write(out);
 });

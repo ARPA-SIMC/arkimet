@@ -320,7 +320,11 @@ bool Contents::segment_timespan(const std::string& relpath, core::Interval& inte
     while (sq.step())
     {
         interval.begin.set_sql(sq.fetchString(0));
-        interval.end.set_sql(sq.fetchString(1));
+        // Timespans are stored extreme included
+        core::Time end = core::Time::create_sql(sq.fetchString(1));
+        end.se += 1;
+        end.normalise();
+        interval.end = end;
         res = true;
     }
     return res;

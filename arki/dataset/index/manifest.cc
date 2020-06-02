@@ -245,8 +245,12 @@ class PlainManifest : public Manifest
 
         void write(NamedFileDescriptor& out) const
         {
-            stringstream ss;
-            ss << file << ";" << mtime << ";" << time.begin.to_sql() << ";" << time.end.to_sql() << endl;
+            // Time is stored with the right extreme included
+            core::Time end = time.end;
+            end.se -= 1;
+            end.normalise();
+            std::stringstream ss;
+            ss << file << ";" << mtime << ";" << time.begin.to_sql() << ";" << end.to_sql() << endl;
             out.write_all_or_throw(ss.str());
         }
     };
@@ -313,10 +317,13 @@ class PlainManifest : public Manifest
                 throw runtime_error(ss.str());
             }
 
+            // Times are saved with extremes included
+            Time interval_end = Time::create_sql(line.substr(end+1));
+            interval_end.se += 1;
+            interval_end.normalise();
             info.push_back(Info(
                         file, mtime,
-                        Interval(Time::create_sql(line.substr(beg, end-beg)),
-                        Time::create_sql(line.substr(end+1)))));
+                        Interval(Time::create_sql(line.substr(beg, end-beg)), interval_end)));
         }
 
         infd.close();
@@ -357,7 +364,7 @@ public:
             return files;
 
         std::vector<const Info*> res;
-        if (!interval.begin.is_set() && !interval.end.is_set())
+        if (interval.is_unbounded())
         {
             // No restrictions on reftime: get all files
             for (const auto& i: info)
@@ -421,9 +428,7 @@ public:
         reread();
 
         // Add to index
-        unique_ptr<Reftime> rt = sum.getReferenceTime();
-
-        Info item(relpath, mtime, Interval(rt->period_begin(), rt->period_end()));
+        Info item(relpath, mtime, sum.get_reference_time());
 
         // Insertion sort; at the end, everything is already sorted and we
         // avoid inserting lots of duplicate items
@@ -725,29 +730,11 @@ public:
     void acquire(const std::string& relpath, time_t mtime, const Summary& sum)
     {
         // Add to index
-        unique_ptr<types::Reftime> rt = sum.getReferenceTime();
+        core::Interval rt = sum.get_reference_time();
 
-        string bt, et;
-
-        switch (rt->style())
-        {
-            case types::Reftime::Style::POSITION: {
-                const reftime::Position* p = dynamic_cast<const reftime::Position*>(rt.get());
-                bt = et = p->time.to_sql();
-                break;
-            }
-            case types::Reftime::Style::PERIOD: {
-                const reftime::Period* p = dynamic_cast<const reftime::Period*>(rt.get());
-                bt = p->begin.to_sql();
-                et = p->end.to_sql();
-                break;
-            }
-            default: {
-                stringstream ss;
-                ss << "unsupported reference time " << types::Reftime::formatStyle(rt->style());
-                throw runtime_error(ss.str());
-            }
-        }
+        std::string bt, et;
+        bt = rt.begin.to_sql();
+        et = rt.end.to_sql();
 
         m_insert.reset();
         m_insert.bind(1, relpath);

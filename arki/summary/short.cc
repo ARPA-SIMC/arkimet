@@ -33,10 +33,11 @@ void Short::serialise(structured::Emitter& e, const structured::Keys& keys, cons
 
 void Short::write_yaml(std::ostream& out, const Formatter* f) const
 {
+    auto reftime = types::Reftime::create(stats.begin, stats.end);
     out << "SummaryStats:" << endl;
     out << "  " << "Size: " << stats.size << endl;
     out << "  " << "Count: " << stats.count << endl;
-    out << "  " << "Reftime: " << *stats.make_reftime() << endl;
+    out << "  " << "Reftime: " << *reftime << endl;
     out << "Items:" << endl;
     for (const auto& i: items)
     {

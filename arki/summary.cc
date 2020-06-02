@@ -126,12 +126,12 @@ void Summary::dump(std::ostream& out) const
     root->dump(out);
 }
 
-unique_ptr<types::Reftime> Summary::getReferenceTime() const
+core::Interval Summary::get_reference_time() const
 {
     if (root->empty())
         throw_consistency_error("get summary reference time", "summary is empty");
     else
-        return root->stats.make_reftime();
+        return root->stats.make_interval();
 }
 
 void Summary::expand_date_range(core::Interval& interval) const
@@ -355,7 +355,7 @@ struct YamlPrinter : public Visitor
 
         // Write the stats
         out << "SummaryStats:" << endl;
-        unique_ptr<Reftime> reftime(stats.make_reftime());
+        auto reftime = Reftime::create(stats.begin, stats.end);
         out << indent << "Count: " << stats.count << endl;
         out << indent << "Size: " << stats.size << endl;
         out << indent << "Reftime: " << *reftime << endl;
