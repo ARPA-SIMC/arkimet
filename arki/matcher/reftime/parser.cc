@@ -11,24 +11,6 @@ namespace arki {
 namespace matcher {
 namespace reftime {
 
-static int lowerbound_sec(const FuzzyTime& t)
-{
-    int res = 0;
-    if (t.ho != -1) res += t.ho * 3600;
-    if (t.mi != -1) res += t.mi * 60;
-    if (t.se != -1) res += t.se;
-    return res;
-}
-
-static int lowerbound_sec(const Time& t)
-{
-    int res = 0;
-    res += t.ho * 3600;
-    res += t.mi * 60;
-    res += t.se;
-    return res;
-}
-
 static int lowerbound_sec(const int* src)
 {
     int res = 0;
@@ -75,14 +57,12 @@ static int time_to_seconds(const Time& t)
     return t.ho * 3600 + t.mi * 60 + t.se;
 }
 
-
 struct DateInterval : public DTMatch
 {
     Interval interval;
-    int tbase;
 
-    DateInterval(const core::Interval& interval, int tbase)
-        : interval(interval), tbase(tbase)
+    DateInterval(const core::Interval& interval)
+        : interval(interval)
     {
     }
 
@@ -96,22 +76,44 @@ struct DateInterval : public DTMatch
         return this->interval.intersects(interval);
     }
 
-    int timebase() const override { return tbase; }
-
     bool intersect_interval(core::Interval& interval) const override
     {
         return interval.intersect(this->interval);
     }
-};
 
-struct DateLT : public DateInterval
-{
-    DateLT(Time ref, int tbase)
-        : DateInterval(Interval(Time(), ref), tbase)
+    std::string sql(const std::string& column) const override
     {
+        std::stringstream res;
+        if (interval.begin.is_set())
+        {
+            if (interval.end.is_set())
+                res << "(" << column << ">='" << interval.begin.to_sql() << "' AND " << column << "<'" << interval.end.to_sql() << "')";
+            else
+                res << column << ">='" << interval.begin.to_sql() << "'";
+        } else {
+            if (interval.end.is_set())
+                res << column << "<'" << interval.end.to_sql() << "'";
+            else
+                res << "1=1";
+        }
+        return res.str();
     }
-    string sql(const std::string& column) const override { return column + "<'" + interval.end.to_sql() + "'"; }
-    string toString() const override { return "<" + interval.end.to_sql(); }
+
+    std::string toString() const override
+    {
+        std::stringstream res;
+        if (interval.begin.is_set())
+        {
+            if (interval.end.is_set())
+                res << ">=" << interval.begin.to_sql() << ",<" << interval.end.to_sql();
+            else
+                res << ">=" << interval.begin.to_sql();
+        } else {
+            if (interval.end.is_set())
+                res << "<" << interval.end.to_sql();
+        }
+        return res.str();
+    }
 };
 
 DTMatch* DTMatch::createLE(FuzzyTime* tt)
@@ -119,35 +121,22 @@ DTMatch* DTMatch::createLE(FuzzyTime* tt)
     Time ref = tt->upperbound();
     ++ref.se;
     ref.normalise();
-    int tbase = lowerbound_sec(*tt);
     delete tt;
-    return new DateLT(ref, tbase);
+    return new DateInterval(Interval(Time(), ref));
 }
 
 DTMatch* DTMatch::createLT(FuzzyTime* tt)
 {
     Time ref = tt->lowerbound();
-    int tbase = lowerbound_sec(*tt);
     delete tt;
-    return new DateLT(ref, tbase);
+    return new DateInterval(Interval(Time(), ref));
 }
-
-struct DateGE : public DateInterval
-{
-    DateGE(Time ref, int tbase)
-        : DateInterval(Interval(ref, Time()), tbase)
-    {
-    }
-    string sql(const std::string& column) const { return column + ">='" + interval.begin.to_sql() + "'"; }
-    string toString() const { return ">=" + interval.begin.to_sql(); }
-};
 
 DTMatch* DTMatch::createGE(FuzzyTime* tt)
 {
     Time ref(tt->lowerbound());
-    int tbase = lowerbound_sec(*tt);
     delete tt;
-    return new DateGE(ref, tbase);
+    return new DateInterval(Interval(ref, Time()));
 }
 
 DTMatch* DTMatch::createGT(FuzzyTime* tt)
@@ -155,24 +144,9 @@ DTMatch* DTMatch::createGT(FuzzyTime* tt)
     Time ref(tt->upperbound());
     ++ref.se;
     ref.normalise();
-    int tbase = lowerbound_sec(*tt);
     delete tt;
-    return new DateGE(ref, tbase);
+    return new DateInterval(Interval(ref, Time()));
 }
-
-
-struct DateEQ : public DateInterval
-{
-    using DateInterval::DateInterval;
-    string sql(const std::string& column) const
-    {
-        return '(' + column + ">='" + interval.begin.to_sql() + "' AND " + column + "<'" + interval.end.to_sql() + "')";
-    }
-    string toString() const
-    {
-        return ">=" + interval.begin.to_sql() + ",<" + interval.end.to_sql();
-    }
-};
 
 DTMatch* DTMatch::createEQ(FuzzyTime* tt)
 {
@@ -180,14 +154,13 @@ DTMatch* DTMatch::createEQ(FuzzyTime* tt)
     Time ltref(tt->upperbound());
     ++ltref.se;
     ltref.normalise();
-    int tbase = lowerbound_sec(*tt);
     delete tt;
-    return new DateEQ(Interval(geref, ltref), tbase);
+    return new DateInterval(Interval(geref, ltref));
 }
 
 DTMatch* DTMatch::createInterval(const core::Interval& interval)
 {
-    return new DateEQ(interval, lowerbound_sec(interval.begin));
+    return new DateInterval(interval);
 }
 
 
@@ -197,7 +170,6 @@ struct TimeMatch : public DTMatch
 
     TimeMatch(int ref) : ref(ref) {}
 
-    int timebase() const override { return ref; }
     bool intersect_interval(core::Interval& interval) const override { return true; }
 };
 
@@ -259,7 +231,6 @@ struct TimeGE : public TimeMatch
     }
     string sql(const std::string& column) const { return "TIME(" + column + ")>=" + tosqlTime(ref); }
     string toString() const { return ">="+formatTime(ref); }
-    int timebase() const { return ref; }
     bool intersect_interval(core::Interval& interval) const override { return true; }
 };
 struct TimeEQ : public DTMatch
@@ -306,7 +277,6 @@ struct TimeEQ : public DTMatch
         else
             return ">="+formatTime(geref)+",<="+formatTime(leref);
     }
-    int timebase() const override { return geref; }
     bool intersect_interval(core::Interval& interval) const override { return true; }
 };
 
@@ -387,7 +357,6 @@ struct TimeExact : public DTMatch
             }
         }
     }
-    int timebase() const override { return times.empty() ? 0 : *times.begin(); }
 };
 
 
@@ -415,7 +384,7 @@ void Parser::add_step(int val, int idx, DTMatch* base)
     // Compute all the hh:mm:ss points we want in every day that gets matched,
     // expressed as seconds from midnight.
     set<int> times;
-    int timebase = base ? base->timebase() : 0;
+    int timebase = 0;
     times.insert(timebase);
     int repetition = timesecs(val, idx);
     for (int tstep = timebase + repetition; tstep < 3600*24; tstep += repetition)

@@ -47,7 +47,7 @@ add_method("match_position", [] {
     wassert(actual_matcher("reftime:>2007").not_matches(md));
     wassert(actual_matcher("reftime:<2007").not_matches(md));
     wassert(actual_matcher("reftime:==2006").not_matches(md));
-    wassert(actual(sql(parser.parse("reftime:==2006"), "foo")) == "((foo>='2006-01-01 00:00:00' AND foo<='2006-12-31 23:59:59'))");
+    wassert(actual(sql(parser.parse("reftime:==2006"), "foo")) == "((foo>='2006-01-01 00:00:00' AND foo<'2007-01-01 00:00:00'))");
 
     wassert(actual_matcher("reftime:>=2007-01").matches(md));
     wassert(actual_matcher("reftime:<=2007-01").matches(md));

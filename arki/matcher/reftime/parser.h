@@ -25,7 +25,6 @@ struct DTMatch
      * "reftime:>yesterday every 12h" may become ">=yyyy-mm-dd 23:59:59" but
      * the step should still match 00:00 and 12:00, and not 23:59 and 11:59
      */
-    virtual int timebase() const = 0;
     virtual bool isLead() const { return true; }
 
     /**
