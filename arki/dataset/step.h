@@ -73,7 +73,7 @@ public:
      * Return the Reftime periods of the first and last segment under this
      * directory.
      */
-    virtual void extremes(std::unique_ptr<types::reftime::Period>& first, std::unique_ptr<types::reftime::Period>& last) const = 0;
+    virtual void extremes(core::Interval& first, core::Interval& last) const = 0;
 };
 
 /**
@@ -97,12 +97,12 @@ public:
     /**
      * Return the first segment in this directory, with path relative to dirs.root
      */
-    virtual std::unique_ptr<types::reftime::Period> first() const = 0;
+    virtual core::Interval first() const = 0;
 
     /**
      * Return the last segment in this directory, with path relative to dirs.root
      */
-    virtual std::unique_ptr<types::reftime::Period> last() const = 0;
+    virtual core::Interval last() const = 0;
 };
 
 }

@@ -53,6 +53,14 @@ bool MatchReftime::matchItem(const Type& o) const
     return true;
 }
 
+bool MatchReftime::match_interval(const core::Interval& o) const
+{
+    for (const auto& i: tests)
+        if (!i->match(o))
+            return false;
+    return true;
+}
+
 std::string MatchReftime::sql(const std::string& column) const
 {
 	bool first = true;

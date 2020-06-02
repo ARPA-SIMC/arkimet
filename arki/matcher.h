@@ -60,6 +60,9 @@ public:
     /// Match a full ItemSet
     bool operator()(const types::ItemSet& md) const;
 
+    /// Match a time interval
+    bool operator()(const core::Interval& interval) const;
+
     std::shared_ptr<matcher::OR> get(types::Code code) const;
 
     void foreach_type(std::function<void(types::Code, const matcher::OR&)> dest) const;
@@ -88,10 +91,10 @@ public:
     std::string toStringExpanded() const;
 
     /// Return a matcher matching a time interval (from begin included, to end excluded)
-    static Matcher match_interval(const core::Interval& interval);
+    static Matcher for_interval(const core::Interval& interval);
 
     /// Return a matcher matching a whole month
-    static Matcher match_month(unsigned year, unsigned month);
+    static Matcher for_month(unsigned year, unsigned month);
 };
 
 /// Write as a string to an output stream

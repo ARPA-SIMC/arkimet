@@ -105,6 +105,7 @@ public:
 
     std::string name() const override;
     bool matchItem(const types::Type& t) const override;
+    bool match_interval(const core::Interval& interval) const;
 
     // Serialise as "type:original definition"
     std::string toString() const override;
@@ -143,6 +144,7 @@ public:
 
     bool matchItem(const types::Type& t) const override;
     bool matchItemSet(const types::ItemSet& s) const;
+    bool match_interval(const core::Interval& interval) const;
 
     std::shared_ptr<OR> get(types::Code code) const;
 
@@ -154,7 +156,7 @@ public:
     std::string toStringExpanded() const override;
 
     static std::unique_ptr<AND> parse(const AliasDatabase& aliases, const std::string& pattern);
-    static std::unique_ptr<AND> match_interval(const core::Interval& interval);
+    static std::unique_ptr<AND> for_interval(const core::Interval& interval);
 };
 
 

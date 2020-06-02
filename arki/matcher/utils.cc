@@ -80,6 +80,17 @@ bool OR::matchItem(const types::Type& t) const
     return false;
 }
 
+
+bool OR::match_interval(const core::Interval& t) const
+{
+    if (components.empty()) return true;
+
+    for (auto i: components)
+        if (static_pointer_cast<matcher::MatchReftime>(i)->match_interval(t))
+            return true;
+    return false;
+}
+
 std::string OR::toString() const
 {
     if (components.empty()) return string();
@@ -217,6 +228,16 @@ bool AND::matchItemSet(const types::ItemSet& md) const
     return true;
 }
 
+bool AND::match_interval(const core::Interval& interval) const
+{
+    if (empty()) return true;
+
+    auto i = components.find(TYPE_REFTIME);
+    if (i == components.end()) return true;
+
+    return i->second->match_interval(interval);
+}
+
 shared_ptr<OR> AND::get(types::Code code) const
 {
     auto i = components.find(code);
@@ -297,7 +318,7 @@ unique_ptr<AND> AND::parse(const AliasDatabase& aliases, const std::string& patt
     return res;
 }
 
-std::unique_ptr<AND> AND::match_interval(const core::Interval& interval)
+std::unique_ptr<AND> AND::for_interval(const core::Interval& interval)
 {
     std::unique_ptr<matcher::MatchReftime> reftime(new matcher::MatchReftime);
     reftime->tests.push_back(matcher::reftime::DTMatch::createInterval(interval));

@@ -53,6 +53,7 @@ struct MatchReftime : public matcher::Implementation
     std::string name() const override;
 
     bool matchItem(const types::Type& o) const override;
+    bool match_interval(const core::Interval& o) const;
     std::string toString() const override;
     std::string sql(const std::string& column) const;
 

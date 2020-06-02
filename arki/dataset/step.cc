@@ -49,7 +49,7 @@ struct BaseFiles : public Files
     using Files::Files;
 
     virtual std::unique_ptr<utils::Regexp> make_regexp() const = 0;
-    virtual std::unique_ptr<types::reftime::Period> to_period(const utils::Regexp& re) const = 0;
+    virtual core::Interval to_period(const utils::Regexp& re) const = 0;
     virtual std::string to_relpath(const Regexp& re) const = 0;
     virtual std::string to_format(const utils::Regexp& re) const = 0;
 
@@ -67,17 +67,17 @@ struct BaseFiles : public Files
             if (!dirs.query.matcher.empty())
             {
                 auto rt = to_period(*re);
-                if (!dirs.query.matcher(*rt)) continue;
+                if (!dirs.query.matcher(rt)) continue;
             }
 
             dest(str::joinpath(relpath, to_relpath(*re)));
         }
     }
 
-    std::unique_ptr<types::reftime::Period> first() const override
+    core::Interval first() const override
     {
-        string res_name;
-        std::unique_ptr<types::reftime::Period> res;
+        std::string res_name;
+        core::Interval res;
 
         auto re = make_regexp();
         sys::Path dir(str::joinpath(dirs.query.root, this->relpath));
@@ -90,19 +90,19 @@ struct BaseFiles : public Files
             if (res_name.empty() || f->d_name < res_name)
             {
                 auto rt = to_period(*re);
-                if (!dirs.query.matcher(*rt)) continue;
+                if (!dirs.query.matcher(rt)) continue;
 
                 res_name = f->d_name;
-                res = std::move(rt);
+                res = rt;
             }
         }
         return res;
     }
 
-    std::unique_ptr<types::reftime::Period> last() const override
+    core::Interval last() const override
     {
-        string res_name;
-        std::unique_ptr<types::reftime::Period> res;
+        std::string res_name;
+        core::Interval res;
 
         auto re = make_regexp();
         sys::Path dir(str::joinpath(dirs.query.root, this->relpath));
@@ -114,10 +114,10 @@ struct BaseFiles : public Files
             if (res_name.empty() || res_name < f->d_name)
             {
                 auto rt = to_period(*re);
-                if (!dirs.query.matcher(*rt)) continue;
+                if (!dirs.query.matcher(rt)) continue;
 
                 res_name = f->d_name;
-                res = std::move(rt);
+                res = rt;
             }
         }
         return res;
@@ -138,18 +138,18 @@ struct SingleFiles : public Files
         dest(move(relpath));
     }
 
-    std::unique_ptr<types::reftime::Period> first() const override
+    core::Interval first() const override
     {
-        return unique_ptr<types::reftime::Period>(new reftime::Period(
+        return core::Interval(
             core::Time::create_lowerbound(1000),
-            core::Time::create_upperbound(99999)));
+            core::Time::create_lowerbound(100000));
     }
 
-    std::unique_ptr<types::reftime::Period> last() const override
+    core::Interval last() const override
     {
-        return unique_ptr<types::reftime::Period>(new reftime::Period(
+        return core::Interval(
             core::Time::create_lowerbound(1000),
-            core::Time::create_upperbound(99999)));
+            core::Time::create_lowerbound(100000));
     }
 };
 
@@ -163,12 +163,12 @@ struct YearFiles : public BaseFiles
         return unique_ptr<Regexp>(new ERegexp(re, 4));
     }
 
-    std::unique_ptr<types::reftime::Period> to_period(const Regexp& re) const override
+    core::Interval to_period(const Regexp& re) const override
     {
         unsigned year = std::stoul(re[2]);
-        return unique_ptr<types::reftime::Period>(new reftime::Period(
+        return core::Interval(
                 core::Time::create_lowerbound(year),
-                core::Time::create_upperbound(year)));
+                core::Time::create_lowerbound(year + 1));
     }
 
     std::string to_format(const Regexp& re) const override { return re[3]; }
@@ -185,12 +185,11 @@ struct MonthFiles : public BaseFiles
         return unique_ptr<Regexp>(new ERegexp(re, 4));
     }
 
-    std::unique_ptr<types::reftime::Period> to_period(const Regexp& re) const override
+    core::Interval to_period(const Regexp& re) const override
     {
         unsigned month = std::stoul(re[2]);
-        return unique_ptr<types::reftime::Period>(new reftime::Period(
-                core::Time::create_lowerbound(value, month),
-                core::Time::create_upperbound(value, month)));
+        core::Time begin = core::Time::create_lowerbound(value, month);
+        return core::Interval(begin, begin.start_of_next_month());
     }
 
     std::string to_format(const Regexp& re) const override { return re[3]; }
@@ -207,13 +206,15 @@ struct MonthDayFiles : public BaseFiles
         return unique_ptr<Regexp>(new ERegexp(re, 5));
     }
 
-    std::unique_ptr<types::reftime::Period> to_period(const Regexp& re) const override
+    core::Interval to_period(const Regexp& re) const override
     {
         unsigned month = std::stoul(re[2]);
         unsigned day = std::stoul(re[3]);
-        return unique_ptr<types::reftime::Period>(new reftime::Period(
-                core::Time::create_lowerbound(value, month, day),
-                core::Time::create_upperbound(value, month, day)));
+        core::Time begin = core::Time::create_lowerbound(value, month, day);
+        core::Time end = begin;
+        end.da += 1;
+        end.normalise();
+        return core::Interval(begin, end);
     }
 
     std::string to_format(const Regexp& re) const override { return re[4]; }
@@ -231,7 +232,7 @@ Dirs::Dirs(const SegmentQuery& query)
 struct BaseDirs : public Dirs
 {
     virtual bool parse(const char* name, int& value) const = 0;
-    virtual std::unique_ptr<types::reftime::Period> to_period(int value) const = 0;
+    virtual core::Interval to_period(int value) const = 0;
     virtual std::unique_ptr<Files> make_files(const std::string& name, int value) const = 0;
 
     using Dirs::Dirs;
@@ -250,14 +251,14 @@ struct BaseDirs : public Dirs
             if (!query.matcher.empty())
             {
                 auto rt = to_period(value);
-                if (!query.matcher(*rt)) continue;
+                if (!query.matcher(rt)) continue;
             }
 
             dest(move(make_files(f->d_name, value)));
         }
     }
 
-    void extremes(std::unique_ptr<types::reftime::Period>& first, std::unique_ptr<types::reftime::Period>& last) const override
+    void extremes(core::Interval& first, core::Interval& last) const override
     {
         sys::Path dir(query.root);
 
@@ -273,8 +274,8 @@ struct BaseDirs : public Dirs
 
         if (subdirs.empty())
         {
-            first.reset();
-            last.reset();
+            first = core::Interval();
+            last = core::Interval();
             return;
         }
 
@@ -284,14 +285,14 @@ struct BaseDirs : public Dirs
         {
             auto files = make_files(sd.second, sd.first);
             first = files->first();
-            if (first) break;
+            if (!first.is_unbounded()) break;
         }
 
         for (auto i = subdirs.crbegin(); i != subdirs.crend(); ++i)
         {
             auto files = make_files(i->second, i->first);
             last = files->last();
-            if (first) break;
+            if (!last.is_unbounded()) break;
         }
     }
 };
@@ -306,21 +307,21 @@ struct SingleDirs : public Dirs
         dest(std::unique_ptr<Files>(new SingleFiles(*this, "", 0)));
     }
 
-    void extremes(std::unique_ptr<types::reftime::Period>& first, std::unique_ptr<types::reftime::Period>& last) const override
+    void extremes(core::Interval& first, core::Interval& last) const override
     {
         if (!sys::exists(str::joinpath(query.root, "all") + "." + query.format))
         {
-            first.reset();
-            last.reset();
+            first = core::Interval();
+            last = core::Interval();
             return;
         }
 
-        first.reset(new reftime::Period(
+        first = core::Interval(
             core::Time::create_lowerbound(1000),
-            core::Time::create_upperbound(99999)));
-        last.reset(new reftime::Period(
+            core::Time::create_lowerbound(100000));
+        last = core::Interval(
             core::Time::create_lowerbound(1000),
-            core::Time::create_upperbound(99999)));
+            core::Time::create_lowerbound(100000));
     }
 };
 
@@ -338,14 +339,14 @@ struct CenturyDirs : public BaseDirs
         return true;
     }
 
-    virtual std::unique_ptr<types::reftime::Period> to_period(int value) const
+    core::Interval to_period(int value) const override
     {
-        return unique_ptr<types::reftime::Period>(new reftime::Period(
+        return core::Interval(
             core::Time::create_lowerbound(value * 100),
-            core::Time::create_upperbound(value * 100 + 99)));
+            core::Time::create_lowerbound((value + 1) * 100));
     }
 
-    virtual std::unique_ptr<Files> make_files(const std::string& name, int value) const
+    std::unique_ptr<Files> make_files(const std::string& name, int value) const override
     {
         return std::unique_ptr<Files>(new FILES(*this, name, value));
     }
@@ -365,14 +366,14 @@ struct YearDirs : public BaseDirs
         return true;
     }
 
-    virtual std::unique_ptr<types::reftime::Period> to_period(int value) const
+    core::Interval to_period(int value) const override
     {
-        return unique_ptr<types::reftime::Period>(new reftime::Period(
+        return core::Interval(
             core::Time::create_lowerbound(value),
-            core::Time::create_upperbound(value)));
+            core::Time::create_lowerbound(value + 1));
     }
 
-    virtual std::unique_ptr<Files> make_files(const std::string& name, int value) const
+    std::unique_ptr<Files> make_files(const std::string& name, int value) const override
     {
         return std::unique_ptr<Files>(new FILES(*this, name, value));
     }
@@ -437,17 +438,17 @@ struct BaseStep : public Step
     void time_extremes(const step::SegmentQuery& query, core::Interval& interval) const override
     {
         auto dirs(explore(query));
-        std::unique_ptr<types::reftime::Period> first;
-        std::unique_ptr<types::reftime::Period> last;
+        core::Interval first;
+        core::Interval last;
         dirs->extremes(first, last);
 
-        if (!first)
+        if (first.is_unbounded())
         {
             interval.begin = Time();
             interval.end = Time();
         } else {
-            interval.begin = first->begin;
-            interval.end = last->end;
+            interval.begin = first.begin;
+            interval.end = last.end;
         }
     }
 

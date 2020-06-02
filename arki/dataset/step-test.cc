@@ -230,7 +230,7 @@ add_method("daily", [](Fixture& f) {
     wassert_true(interval.begin.is_set());
     wassert_true(interval.end.is_set());
     wassert(actual(interval.begin) == core::Time(2007, 1, 1));
-    wassert(actual(interval.end) == core::Time(2010, 1, 1));
+    wassert(actual(interval.end) == core::Time(2009, 12, 31));
 });
 
 }

@@ -76,7 +76,7 @@ void Reader::summary_for_month(int year, int month, Summary& out)
 {
     if (scache.read(out, year, month)) return;
 
-    Matcher matcher = Matcher::match_month(year, month);
+    Matcher matcher = Matcher::for_month(year, month);
 
     Summary summary;
     summary_from_indices(matcher, summary);
@@ -192,7 +192,7 @@ void Reader::impl_query_summary(const Matcher& matcher, Summary& summary)
             s.filter(matcher, summary);
         } else {
             Summary s;
-            summary_from_indices(Matcher::match_interval(month), s);
+            summary_from_indices(Matcher::for_interval(month), s);
             s.filter(matcher, summary);
         }
         return true;

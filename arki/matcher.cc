@@ -44,6 +44,13 @@ bool Matcher::operator()(const types::ItemSet& md) const
     return true;
 }
 
+bool Matcher::operator()(const core::Interval& interval) const
+{
+    if (m_impl.get()) return m_impl->match_interval(interval);
+    // An empty matcher always matches
+    return true;
+}
+
 std::shared_ptr<matcher::OR> Matcher::get(types::Code code) const
 {
     if (m_impl) return m_impl->get(code);
@@ -113,16 +120,16 @@ bool Matcher::intersect_interval(core::Interval& interval) const
     return true;
 }
 
-Matcher Matcher::match_interval(const core::Interval& interval)
+Matcher Matcher::for_interval(const core::Interval& interval)
 {
-    return matcher::AND::match_interval(interval);
+    return matcher::AND::for_interval(interval);
 }
 
-Matcher Matcher::match_month(unsigned year, unsigned month)
+Matcher Matcher::for_month(unsigned year, unsigned month)
 {
     core::Time begin(year, month);
     core::Time end(begin.start_of_next_month());
-    return match_interval(core::Interval(begin, end));
+    return for_interval(core::Interval(begin, end));
 }
 
 std::ostream& operator<<(std::ostream& o, const Matcher& m)
