@@ -88,6 +88,9 @@ public:
 	 */
 	void clear();
 
+    /// Return true if the summary contains no information
+    bool empty() const;
+
 	/**
 	 * Return the number of metadata described by this summary.
 	 */

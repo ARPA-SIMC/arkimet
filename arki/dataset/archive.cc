@@ -310,12 +310,27 @@ void Reader::impl_query_summary(const Matcher& matcher, Summary& summary)
 
     // Query only archives that fit that date range
     archives->iter([&](dataset::Reader& a) {
-        core::Interval i;
-        a.expand_date_range(i);
+        core::Interval i = a.get_stored_time_interval();
+        if (i.is_unbounded())
+            return true;
         if (interval.intersects(i))
             a.query_summary(matcher, summary);
         return true;
     });
+}
+
+core::Interval Reader::get_stored_time_interval()
+{
+    core::Interval res;
+    // Query only archives that fit that date range
+    archives->iter([&](dataset::Reader& a) {
+        if (res.is_unbounded())
+            res = a.get_stored_time_interval();
+        else
+            res.extend(a.get_stored_time_interval());
+        return true;
+    });
+    return res;
 }
 
 unsigned Reader::test_count_archives() const

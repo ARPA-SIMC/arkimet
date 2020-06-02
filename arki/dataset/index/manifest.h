@@ -48,14 +48,7 @@ public:
     /// Invalidate summary for file \a relpath and global summary
     void invalidate_summary(const std::string& relpath);
 
-    /**
-     * Expand the given begin and end ranges to include the datetime extremes
-     * of this manifest.
-     *
-     * If begin and end are unset, set them to the datetime extremes of this
-     * manifest.
-     */
-    virtual void expand_date_range(core::Interval& interval) const = 0;
+    virtual core::Interval get_stored_time_interval() const = 0;
 
     bool query_data(const dataset::DataQuery& q, metadata_dest_func) override;
     bool query_summary(const Matcher& matcher, Summary& summary) override;

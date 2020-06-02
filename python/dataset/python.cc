@@ -109,6 +109,11 @@ struct PyDatasetReader : public arki::dataset::DatasetAccess<arki::dataset::Data
             arki::dataset::Reader::impl_query_summary(matcher, summary);
         }
     }
+
+    core::Interval get_stored_time_interval() override
+    {
+        throw std::runtime_error("python::Reader::get_stored_time_interval not yet implemented");
+    }
 };
 
 std::shared_ptr<arki::dataset::Reader> create_reader(PyObject* o)

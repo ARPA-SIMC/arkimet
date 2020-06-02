@@ -79,6 +79,11 @@ void Reader::impl_query_summary(const Matcher& matcher, Summary& summary)
     });
 }
 
+core::Interval Reader::get_stored_time_interval()
+{
+    throw std::runtime_error("testlarge::Reader::get_stored_time_interval not yet implemented");
+}
+
 }
 }
 }

@@ -46,6 +46,8 @@ public:
     using DatasetAccess::DatasetAccess;
 
     std::string type() const override { return "empty"; }
+
+    core::Interval get_stored_time_interval() override;
 };
 
 }

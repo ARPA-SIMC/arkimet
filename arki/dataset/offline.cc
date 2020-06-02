@@ -1,5 +1,6 @@
 #include "offline.h"
 #include "arki/utils/string.h"
+#include "arki/core/time.h"
 
 using namespace std;
 using namespace arki::utils;
@@ -32,9 +33,11 @@ void Reader::impl_query_summary(const Matcher& matcher, Summary& summary)
     sum.filter(matcher, summary);
 }
 
-void Reader::expand_date_range(core::Interval& interval)
+core::Interval Reader::get_stored_time_interval()
 {
-    sum.expand_date_range(interval);
+    if (sum.empty())
+        return core::Interval();
+    return sum.get_reference_time();
 }
 
 }

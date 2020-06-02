@@ -19,7 +19,6 @@ std::shared_ptr<dataset::Reader> Dataset::create_reader()
     return std::make_shared<Reader>(static_pointer_cast<Dataset>(shared_from_this()));
 }
 
-
 Reader::~Reader() {}
 
 std::string Reader::type() const { return "memory"; }
@@ -44,6 +43,10 @@ void Reader::impl_query_summary(const Matcher& matcher, Summary& summary)
             summary.add(*md);
 }
 
+core::Interval Reader::get_stored_time_interval()
+{
+    throw std::runtime_error("memory::Reader::get_stored_time_interval not yet implemented");
+}
 
 }
 }

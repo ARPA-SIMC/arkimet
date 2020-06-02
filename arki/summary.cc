@@ -111,6 +111,11 @@ struct StatsHull : public ItemVisitor
 #endif
 }
 
+bool Summary::empty() const
+{
+    return root->empty();
+}
+
 size_t Summary::count() const
 {
     return root->stats.count;

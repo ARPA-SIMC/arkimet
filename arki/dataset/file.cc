@@ -55,6 +55,11 @@ bool Reader::impl_query_data(const dataset::DataQuery& q, metadata_dest_func des
     return track.done(dataset().scan(q, dest));
 }
 
+core::Interval Reader::get_stored_time_interval()
+{
+    throw std::runtime_error("file::Reader::get_stored_time_interval not yet implemented");
+}
+
 core::cfg::Section read_config(const std::string& fname)
 {
     core::cfg::Section section;

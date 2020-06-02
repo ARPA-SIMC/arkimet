@@ -41,6 +41,8 @@ public:
     using DatasetAccess::DatasetAccess;
 
     std::string type() const override { return "file"; }
+
+    core::Interval get_stored_time_interval() override;
 };
 
 class FdFile : public Dataset

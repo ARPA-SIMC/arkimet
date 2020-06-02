@@ -132,11 +132,6 @@ void Reader::query_summary(const std::string& matcher, Summary& summary)
 }
 
 
-void Reader::expand_date_range(core::Interval& interval)
-{
-}
-
-
 void WriterBatch::set_all_error(const std::string& note)
 {
     for (auto& e: *this)

@@ -98,10 +98,7 @@ void Stats::merge(const Metadata& md)
 core::Interval Stats::make_interval() const
 {
     // Stats has extremes inclusive
-    Time interval_end = end;
-    interval_end.se += 1;
-    interval_end.normalise();
-    return core::Interval(begin, interval_end);
+    return core::Interval(begin, end.next_instant());
 }
 
 void Stats::encodeBinary(core::BinaryEncoder& enc) const

@@ -85,7 +85,7 @@ public:
 
     std::string type() const override;
 
-    void expand_date_range(std::unique_ptr<core::Time>& begin, std::unique_ptr<core::Time>& end) const;
+    core::Interval get_stored_time_interval() override;
 
     /// Return the number of archives found, used for testing
     unsigned test_count_archives() const;

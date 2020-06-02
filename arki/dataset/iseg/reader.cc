@@ -199,9 +199,9 @@ void Reader::impl_query_summary(const Matcher& matcher, Summary& summary)
     });
 }
 
-void Reader::expand_date_range(core::Interval& interval)
+core::Interval Reader::get_stored_time_interval()
 {
-    //m_mft->expand_date_range(begin, end);
+    throw std::runtime_error("iseg::Reader::get_stored_time_interval not yet implemented");
 }
 
 }

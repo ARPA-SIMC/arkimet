@@ -402,15 +402,15 @@ public:
         }
     }
 
-    void expand_date_range(core::Interval& interval) const override
+    core::Interval get_stored_time_interval() const override
     {
+        core::Interval res;
         for (const auto& i: info)
-        {
-            if (!interval.begin.is_set() && !interval.end.is_set())
-                interval = i.time;
+            if (res.is_unbounded())
+                res = i.time;
             else
-                interval.extend(i.time);
-        }
+                res.extend(i.time);
+        return res;
     }
 
     size_t vacuum()
@@ -692,8 +692,9 @@ public:
         return found;
     }
 
-    void expand_date_range(Interval& interval) const override
+    core::Interval get_stored_time_interval() const override
     {
+        Interval res;
         Query q("sel_date_extremes", m_db);
         q.compile("SELECT MIN(start_time), MAX(end_time) FROM files");
 
@@ -703,11 +704,13 @@ public:
                 Time::create_sql(q.fetchString(0)),
                 Time::create_sql(q.fetchString(1)));
 
-            if (!interval.begin.is_set() && !interval.end.is_set())
-                interval = i;
+            if (res.is_unbounded())
+                res = i;
             else
-                interval.extend(i);
+                res.extend(i);
         }
+
+        return res;
     }
 
     size_t vacuum()

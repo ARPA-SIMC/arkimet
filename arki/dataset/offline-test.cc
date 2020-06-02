@@ -39,10 +39,9 @@ add_method("read", []() {
     reader->query_summary(Matcher(), sum1);
     wassert(actual(sum == sum1));
 
-    core::Interval interval;
-    reader->expand_date_range(interval);
+    core::Interval interval = reader->get_stored_time_interval();
     wassert(actual(interval.begin) == "2007-07-07T00:00:00Z");
-    wassert(actual(interval.end) == "2007-10-09T00:00:00Z");
+    wassert(actual(interval.end) == "2007-10-09T00:00:01Z");
 });
 
 }

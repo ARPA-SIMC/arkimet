@@ -361,7 +361,8 @@ add_method("zero_timestamp", [](Fixture& f) {
     // Check that ranges are computed correctly even with all zeroes
     core::Interval rt = s.get_reference_time();
     wassert(actual(rt.begin) == Time(0, 0, 0, 0, 0, 0));
-    wassert(actual(rt.end) == Time(0, 0, 0, 0, 0, 14));
+    // This is actually 0000-00-00 00:00:14 + 1 second, normalised
+    wassert(actual(rt.end) == Time(-1, 11, 30, 0, 0, 15));
 
     // Check that serialization does not throw exceptions
     utils::sys::File out("/dev/null", O_WRONLY);

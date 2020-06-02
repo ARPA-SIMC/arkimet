@@ -24,6 +24,11 @@ bool Reader::impl_query_data(const dataset::DataQuery& q, metadata_dest_func des
     }));
 }
 
+core::Interval Reader::get_stored_time_interval()
+{
+    throw std::runtime_error("fromfunction::Reader::get_stored_time_interval not yet implemented");
+}
+
 }
 }
 }

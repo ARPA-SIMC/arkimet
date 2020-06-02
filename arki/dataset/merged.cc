@@ -385,6 +385,11 @@ void Reader::impl_abstract_query_bytes(const dataset::ByteQuery& q, AbstractOutp
     wrapped_progress->actual_done();
 }
 
+core::Interval Reader::get_stored_time_interval()
+{
+    throw std::runtime_error("merged::Reader::get_stored_time_interval not yet implemented");
+}
+
 }
 }
 }

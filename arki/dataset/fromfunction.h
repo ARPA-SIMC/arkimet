@@ -34,6 +34,8 @@ public:
     std::function<bool(metadata_dest_func)> generator;
 
     std::string type() const override { return "fromfunction"; }
+
+    core::Interval get_stored_time_interval() override;
 };
 
 }

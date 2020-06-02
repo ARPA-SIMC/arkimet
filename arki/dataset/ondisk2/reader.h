@@ -18,6 +18,8 @@ public:
     virtual ~Reader();
 
     std::string type() const override;
+
+    core::Interval get_stored_time_interval() override;
 };
 
 }

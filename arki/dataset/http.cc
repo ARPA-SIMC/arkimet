@@ -507,6 +507,11 @@ void Reader::impl_abstract_query_bytes(const dataset::ByteQuery& q, AbstractOutp
     if (q.progress) q.progress->done();
 }
 
+core::Interval Reader::get_stored_time_interval()
+{
+    throw std::runtime_error("http::Reader::get_stored_time_interval not yet implemented");
+}
+
 core::cfg::Sections Reader::load_cfg_sections(const std::string& path)
 {
     using namespace http;

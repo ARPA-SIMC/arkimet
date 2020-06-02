@@ -38,7 +38,7 @@ public:
 
     std::string type() const override;
 
-    void expand_date_range(core::Interval& interval) override;
+    core::Interval get_stored_time_interval() override;
 };
 
 }

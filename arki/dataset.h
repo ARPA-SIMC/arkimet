@@ -227,13 +227,11 @@ public:
     }
 
     /**
-     * Expand the given begin and end ranges to include the datetime extremes
-     * of this dataset.
+     * Return the time interval of available data stored in this dataset.
      *
-     * If begin and end are unset, set them to the datetime extremes of this
-     * dataset.
+     * If there is no data, it returns an unbound interval.
      */
-    virtual void expand_date_range(core::Interval& interval);
+    virtual core::Interval get_stored_time_interval() = 0;
 };
 
 struct WriterBatchElement
