@@ -167,11 +167,11 @@ void Reader::impl_query_summary(const Matcher& matcher, Summary& summary)
         // available
         interval.begin = interval.begin.start_of_month();
     }
-    if (end_from_db)
+    if (end_from_db && !interval.end.is_start_of_month())
     {
         // Round up to month end, so we reuse the cached summary if
         // available
-        interval.end = interval.end.end_of_month();
+        interval.end = interval.end.start_of_next_month();
     }
 
     // If the selected interval does not envelope any whole month, query

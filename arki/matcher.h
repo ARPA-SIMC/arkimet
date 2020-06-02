@@ -73,9 +73,6 @@ public:
      * Restrict date extremes to be no wider than what is matched by this
      * matcher.
      *
-     * A unique_ptr set to nullptr means an open end in the range. Date
-     * extremes are inclusive on both ends.
-     *
      * @returns true if the matcher has consistent reference time expressions,
      * false if the match is impossible (like reftime:<2014,>2015)
      */

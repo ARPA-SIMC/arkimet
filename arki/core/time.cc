@@ -573,7 +573,7 @@ void Interval::iter_months(std::function<bool(const Interval&)> f) const
     while (true)
     {
         core::Time next = pos.start_of_next_month();
-        if (next > end)
+        if (next >= end)
         {
             f(Interval(pos, end));
             break;

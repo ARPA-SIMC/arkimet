@@ -726,6 +726,7 @@ bool Contents::query_summary(const Matcher& matcher, Summary& summary)
     // Amend open ends with the bounds from the database
     core::Interval db_interval;
     db_time_extremes(m_db, db_interval);
+
     // If the database is empty then the result is empty:
     // we are done
     if (!db_interval.begin.is_set())
@@ -754,7 +755,7 @@ bool Contents::query_summary(const Matcher& matcher, Summary& summary)
         // available
         interval.begin = interval.begin.start_of_month();
     }
-    if (end_from_db)
+    if (end_from_db && !interval.end.is_start_of_month())
     {
         // Round up to month end, so we reuse the cached summary if
         // available
@@ -777,7 +778,7 @@ bool Contents::query_summary(const Matcher& matcher, Summary& summary)
         } else {
             Summary s;
             querySummaryFromDB("reftime >= '" + month.begin.to_sql() + "'"
-                       " AND reftime <= '" + month.end.to_sql() + "'", s);
+                       " AND reftime < '" + month.end.to_sql() + "'", s);
             s.filter(matcher, summary);
         }
         return true;
