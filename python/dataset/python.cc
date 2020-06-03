@@ -23,8 +23,8 @@ struct PyDatasetReader : public arki::dataset::DatasetAccess<arki::dataset::Data
     PyObject* meth_query_data = nullptr;
     PyObject* meth_query_summary = nullptr;
 
-    PyDatasetReader(PyObject* o)
-        : DatasetAccess(std::make_shared<arki::dataset::Dataset>(get_dataset_session())),
+    PyDatasetReader(std::shared_ptr<arki::dataset::Session> session, PyObject* o)
+        : DatasetAccess(std::make_shared<arki::dataset::Dataset>(session)),
           o(o)
     {
         AcquireGIL gil;
@@ -116,18 +116,18 @@ struct PyDatasetReader : public arki::dataset::DatasetAccess<arki::dataset::Data
     }
 };
 
-std::shared_ptr<arki::dataset::Reader> create_reader(PyObject* o)
+std::shared_ptr<arki::dataset::Reader> create_reader(std::shared_ptr<arki::dataset::Session> session, PyObject* o)
 {
-    return std::make_shared<PyDatasetReader>(o);
+    return std::make_shared<PyDatasetReader>(session, o);
 }
 
-std::shared_ptr<arki::dataset::Writer> create_writer(PyObject* o)
+std::shared_ptr<arki::dataset::Writer> create_writer(std::shared_ptr<arki::dataset::Session> session, PyObject* o)
 {
     PyErr_SetString(PyExc_NotImplementedError, "creating python dataset writer not implemented yet");
     throw PythonException();
 }
 
-std::shared_ptr<arki::dataset::Checker> create_checker(PyObject* o)
+std::shared_ptr<arki::dataset::Checker> create_checker(std::shared_ptr<arki::dataset::Session> session, PyObject* o)
 {
     PyErr_SetString(PyExc_NotImplementedError, "creating python dataset checker not implemented yet");
     throw PythonException();

@@ -63,7 +63,7 @@ void init()
     arki::dataset::qmacro::register_parser("py", [](const std::string& source, std::shared_ptr<arki::dataset::QueryMacro> datasets) {
         AcquireGIL gil;
         pyo_unique_ptr o(instantiate_qmacro_pydataset(source, datasets));
-        return python::dataset::create_reader(o);
+        return python::dataset::create_reader(datasets->session, o);
     });
 }
 
