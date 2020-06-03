@@ -63,6 +63,7 @@ _arkimet_la_SOURCES = \
     matcher.cc \
     scan.cc \
     dataset.cc \
+    dataset/session.cc \
     dataset/reader.cc \
     dataset/writer.cc \
     dataset/checker.cc \
@@ -120,6 +121,7 @@ EXTRA_DIST = \
     matcher.h \
     scan.h \
     dataset.h \
+    dataset/session.h \
     dataset/reader.h \
     dataset/writer.h \
     dataset/checker.h \

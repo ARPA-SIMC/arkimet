@@ -2,33 +2,18 @@
 #include <Python.h>
 #include "dataset.h"
 #include "common.h"
-#include "metadata.h"
-#include "summary.h"
 #include "cfg.h"
-#include "files.h"
-#include "matcher.h"
 #include "utils/values.h"
 #include "utils/methods.h"
 #include "utils/type.h"
 #include "utils/dict.h"
+#include "dataset/session.h"
 #include "dataset/reader.h"
 #include "dataset/writer.h"
 #include "dataset/checker.h"
-#include "dataset/reporter.h"
-#include "dataset/progress.h"
-#include "arki/core/file.h"
-#include "arki/core/cfg.h"
-#include "arki/metadata/sort.h"
-#include "arki/dataset.h"
-#include "arki/dataset/query.h"
 #include "arki/dataset/http.h"
 #include "arki/dataset/time.h"
-#include "arki/dataset/segmented.h"
 #include "arki/dataset/session.h"
-#include "arki/dataset/progress.h"
-#include "arki/nag.h"
-#include <ctime>
-#include <vector>
 
 using namespace std;
 using namespace arki;
@@ -304,6 +289,7 @@ void register_dataset(PyObject* m)
 
     pyo_unique_ptr dataset = throw_ifnull(PyModule_Create(&dataset_module));
 
+    register_dataset_session(dataset);
     register_dataset_reader(dataset);
     register_dataset_writer(dataset);
     register_dataset_checker(dataset);
