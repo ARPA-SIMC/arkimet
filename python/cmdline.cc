@@ -22,7 +22,7 @@ using namespace arki::utils;
 namespace arki {
 namespace python {
 
-std::unique_ptr<cmdline::DatasetProcessor> build_processor(PyObject* args, PyObject* kw)
+std::unique_ptr<cmdline::DatasetProcessor> build_processor(std::shared_ptr<arki::dataset::Session> session, PyObject* args, PyObject* kw)
 {
     static const char* kwlist[] = {
         "query", "outfile",

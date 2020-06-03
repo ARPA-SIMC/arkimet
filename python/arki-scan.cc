@@ -183,7 +183,7 @@ struct set_processor : public MethKwargs<set_processor, arkipy_ArkiScan>
     static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
     {
         try {
-            auto processor = build_processor(args, kw);
+            auto processor = build_processor(self->session, args, kw);
             self->processor = processor.release();
             Py_RETURN_NONE;
         } ARKI_CATCH_RETURN_PYO
