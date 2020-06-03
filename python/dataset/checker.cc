@@ -66,7 +66,7 @@ static arki::dataset::CheckerConfig get_checker_config(std::shared_ptr<arki::dat
         cfg.reporter = make_shared<python::dataset::ProxyReporter>(arg_reporter);
 
     if (arg_segment_filter)
-        cfg.segment_filter = matcher_from_python(arg_segment_filter);
+        cfg.segment_filter = matcher_from_python(session, arg_segment_filter);
 
     cfg.offline = arg_offline;
     cfg.online = arg_online;

@@ -229,7 +229,11 @@ struct expand_remote_query : public MethKwargs<expand_remote_query, PyObject>
             return nullptr;
 
         try {
-            std::string expanded = get_dataset_session()->expand_remote_query(
+            if (PyErr_WarnEx(PyExc_DeprecationWarning, "arkimet.dataset.http.expand_remote_query() will be replaced by something else, unfortunately not yet designed", 1))
+                return nullptr;
+
+            auto session = std::make_shared<arki::dataset::Session>();
+            std::string expanded = session->expand_remote_query(
                     sections_from_python(remotes), std::string(query, query_len));
             return to_python(expanded);
         } ARKI_CATCH_RETURN_PYO

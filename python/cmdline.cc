@@ -51,7 +51,7 @@ std::unique_ptr<cmdline::DatasetProcessor> build_processor(std::shared_ptr<arki:
                 &sort, &sort_len, &progress))
         throw PythonException();
 
-    arki::Matcher query = matcher_from_python(py_query);
+    arki::Matcher query = matcher_from_python(session, py_query);
 
     cmdline::ProcessorMaker pmaker;
     // Initialize the processor maker
