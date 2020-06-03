@@ -7,6 +7,8 @@
   tomorrow at 00:30, 06:30, and so on, now it will match today at 18:00,
   tomorrow at 00:00, tomorrow at 06:00, and so on.
   (side effect of fixing #206)
+* Added Python bindings for arki.dataset.Session
+  (side effect of fixing #206)
 
 # New in version 1.26
 
