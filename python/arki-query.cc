@@ -101,7 +101,7 @@ struct query_file : public MethKwargs<query_file, arkipy_ArkiQuery>
                 BinaryInputFile in(file);
                 ReleaseGIL rg;
                 all_successful = foreach_file(
-                        in, std::string(format, format_len), dest);
+                        self->session, in, std::string(format, format_len), dest);
                 self->processor->end();
             }
 
@@ -133,7 +133,7 @@ struct query_merged : public MethKwargs<query_merged, arkipy_ArkiQuery>
             {
                 ReleaseGIL rg;
 
-                auto dataset = std::make_shared<arki::dataset::merged::Dataset>(arki::python::get_dataset_session());
+                auto dataset = std::make_shared<arki::dataset::merged::Dataset>(self->session);
 
                 // Instantiate the datasets and add them to the merger
                 for (auto si: self->inputs)
@@ -185,12 +185,11 @@ struct query_qmacro : public MethKwargs<query_qmacro, arkipy_ArkiQuery>
             {
                 ReleaseGIL rg;
 
-                auto session = arki::python::get_dataset_session();
                 std::string macro_name(arg_macro_name, arg_macro_name_len);
                 std::string macro_query(arg_macro_query, arg_macro_query_len);
 
                 std::shared_ptr<arki::dataset::Reader> reader = arki::dataset::http::Dataset::create_querymacro_reader(
-                        session, self->inputs, macro_name, macro_query);
+                        self->session, self->inputs, macro_name, macro_query);
 
                 try {
                     self->processor->process(*reader, reader->name());
@@ -234,7 +233,7 @@ struct query_sections : public MethKwargs<query_sections, arkipy_ArkiQuery>
             bool all_successful = true;
             {
                 ReleaseGIL rg;
-                all_successful = foreach_sections(self->inputs, dest);
+                all_successful = foreach_sections(self->session, self->inputs, dest);
                 self->processor->end();
             }
 
@@ -284,6 +283,7 @@ arki-query implementation
 
         try {
             new (&(self->inputs)) arki::core::cfg::Sections;
+            new (&(self->session)) std::shared_ptr<arki::dataset::Session>(std::make_shared<arki::dataset::Session>());
             self->processor = nullptr;
         } ARKI_CATCH_RETURN_INT
 

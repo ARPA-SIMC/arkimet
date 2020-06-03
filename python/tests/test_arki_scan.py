@@ -5,7 +5,7 @@ import os
 import posix
 from contextlib import contextmanager
 from arkimet.cmdline.scan import Scan
-from arkimet.test import CmdlineTestMixin, skip_unless_vm2, LogCapture
+from arkimet.test import CmdlineTestMixin, skip_unless_vm2
 
 
 class Env(arki.test.Env):
@@ -347,8 +347,8 @@ class TestArkiScan(CmdlineTestMixin, unittest.TestCase):
             with open("testenv/import.lst", "wt") as fd:
                 print("grib:inbound/test.grib1", file=fd)
             with open("testenv/config", "wt") as fd:
-                print("[error]\ntype=discard", file=fd)
-            with LogCapture() as log:
+                print("[error]\ntype=discard\nname=error\n", file=fd)
+            with self.assertLogs() as log:
                 out = self.call_output_success(
                         "--dispatch=testenv/config",
                         "--dump", "--status", "--summary",
@@ -356,11 +356,11 @@ class TestArkiScan(CmdlineTestMixin, unittest.TestCase):
                         binary=True,
                         returncode=posix.EX_DATAERR,
                     )
-            self.assertEqual(len(log), 1)
-            self.assertEqual(log[0].name, "arkimet")
-            self.assertEqual(log[0].levelname, "WARNING")
-            self.assertRegex(log[0].getMessage(),
-                             r"inbound/test.grib1:"
-                             r" serious problems: 0 ok, 0 duplicates, 0 in error dataset,"
-                             r" 3 NOT imported in [0-9.]+ seconds")
+            self.assertRegex(
+                    log.output[0],
+                    r"WARNING:arkimet:inbound/test.grib1:"
+                    r" some problems: 0 ok, 0 duplicates, 3 in error dataset"
+                    r" in [0-9.]+ seconds")
+            self.assertEqual(log.output[1:], [])
+
             self.assertRegex(out, b"^SummaryItem:")

@@ -20,8 +20,8 @@ struct DatasetProcessor;
  */
 std::unique_ptr<cmdline::DatasetProcessor> build_processor(PyObject* args, PyObject* kw);
 
-bool foreach_file(BinaryInputFile& file, const std::string& format, std::function<void(dataset::Reader&)> dest);
-bool foreach_sections(const core::cfg::Sections& inputs, std::function<void(dataset::Reader&)> dest);
+bool foreach_file(std::shared_ptr<arki::dataset::Session> session, BinaryInputFile& file, const std::string& format, std::function<void(dataset::Reader&)> dest);
+bool foreach_sections(std::shared_ptr<arki::dataset::Session> session, const core::cfg::Sections& inputs, std::function<void(dataset::Reader&)> dest);
 
 }
 }

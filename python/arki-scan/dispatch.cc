@@ -17,10 +17,10 @@ namespace arki {
 namespace python {
 namespace arki_scan {
 
-
-MetadataDispatch::MetadataDispatch(cmdline::DatasetProcessor& next)
-    : partial_batch(std::make_shared<arki::dataset::memory::Dataset>(get_dataset_session())),
-      results(std::make_shared<arki::dataset::memory::Dataset>(get_dataset_session())), next(next)
+MetadataDispatch::MetadataDispatch(std::shared_ptr<arki::dataset::Session> session, cmdline::DatasetProcessor& next)
+    : session(session),
+      partial_batch(std::make_shared<arki::dataset::memory::Dataset>(session)),
+      results(std::make_shared<arki::dataset::memory::Dataset>(session)), next(next)
 {
 }
 

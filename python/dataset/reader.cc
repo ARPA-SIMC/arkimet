@@ -332,7 +332,11 @@ Examples::
             else
                 cfg = section_from_python(py_cfg);
 
-            new (&(self->ptr)) shared_ptr<arki::dataset::Reader>(arki::python::get_dataset_session()->dataset(cfg)->create_reader());
+            if (PyErr_WarnEx(PyExc_DeprecationWarning, "Use arki.dataset.Session().checker(cfg) instead of arki.dataset.Checker(cfg)", 1))
+                return -1;
+
+            auto session = std::make_shared<arki::dataset::Session>();
+            new (&(self->ptr)) std::shared_ptr<arki::dataset::Reader>(session->dataset(cfg)->create_reader());
             return 0;
         } ARKI_CATCH_RETURN_INT;
     }

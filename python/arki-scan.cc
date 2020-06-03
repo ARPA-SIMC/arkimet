@@ -50,6 +50,7 @@ static std::string moveFile(const arki::dataset::Reader& ds, const std::string& 
  */
 struct FileSource
 {
+    std::shared_ptr<arki::dataset::Session> session;
     std::shared_ptr<arki::dataset::Reader> reader;
 
     arki::core::cfg::Section cfg;
@@ -57,8 +58,8 @@ struct FileSource
     std::string moveok;
     std::string moveko;
 
-    FileSource(const arki::core::cfg::Section& info)
-        : cfg(info)
+    FileSource(std::shared_ptr<arki::dataset::Session> session, const arki::core::cfg::Section& info)
+        : session(session), cfg(info)
     {
     }
 
@@ -66,7 +67,7 @@ struct FileSource
     {
         if (!movework.empty() && cfg.value("type") == "file")
             cfg.set("path", moveFile(cfg.value("path"), movework));
-        reader = arki::python::get_dataset_session()->dataset(cfg)->create_reader();
+        reader = session->dataset(cfg)->create_reader();
     }
 
     void close(bool successful)
@@ -83,7 +84,8 @@ struct FileSource
 /**
  * Build a MetadataDispatcher from the given python function args/kwargs
  */
-std::unique_ptr<arki_scan::MetadataDispatch> build_dispatcher(cmdline::DatasetProcessor& processor, PyObject* args, PyObject* kw)
+std::unique_ptr<arki_scan::MetadataDispatch> build_dispatcher(
+        std::shared_ptr<arki::dataset::Session> session, cmdline::DatasetProcessor& processor, PyObject* args, PyObject* kw)
 {
     static const char* kwlist[] = {
         "copyok", "copyko",
@@ -108,15 +110,15 @@ std::unique_ptr<arki_scan::MetadataDispatch> build_dispatcher(cmdline::DatasetPr
                 &flush_threshold))
         throw PythonException();
 
-    std::unique_ptr<arki_scan::MetadataDispatch> res(new arki_scan::MetadataDispatch(processor));
+    std::unique_ptr<arki_scan::MetadataDispatch> res(new arki_scan::MetadataDispatch(session, processor));
 
     if (testdispatch)
     {
-        res->dispatcher = new arki::TestDispatcher(arki::python::get_dataset_session(), sections_from_python(testdispatch));
+        res->dispatcher = new arki::TestDispatcher(session, sections_from_python(testdispatch));
     }
     else if (dispatch)
     {
-        res->dispatcher = new arki::RealDispatcher(arki::python::get_dataset_session(), sections_from_python(dispatch));
+        res->dispatcher = new arki::RealDispatcher(session, sections_from_python(dispatch));
     }
     else
         throw std::runtime_error("cannot create MetadataDispatch with no --dispatch or --testdispatch information");
@@ -199,7 +201,7 @@ struct set_dispatcher : public MethKwargs<set_dispatcher, arkipy_ArkiScan>
     static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
     {
         try {
-            auto dispatcher = build_dispatcher(*(self->processor), args, kw);
+            auto dispatcher = build_dispatcher(self->session, *(self->processor), args, kw);
             self->dispatcher = dispatcher.release();
             Py_RETURN_NONE;
         } ARKI_CATCH_RETURN_PYO
@@ -230,7 +232,7 @@ struct scan_file : public MethKwargs<scan_file, arkipy_ArkiScan>
             {
                 BinaryInputFile in(file);
                 ReleaseGIL rg;
-                all_successful = foreach_file(in, std::string(format, format_len), [&](arki::dataset::Reader& reader) {
+                all_successful = foreach_file(self->session, in, std::string(format, format_len), [&](arki::dataset::Reader& reader) {
                     self->processor->process(reader, reader.name());
                 });
                 self->processor->end();
@@ -261,7 +263,7 @@ struct scan_sections : public MethKwargs<scan_sections, arkipy_ArkiScan>
             bool all_successful;
             {
                 ReleaseGIL rg;
-                all_successful = foreach_sections(self->inputs, [&](arki::dataset::Reader& reader) {
+                all_successful = foreach_sections(self->session, self->inputs, [&](arki::dataset::Reader& reader) {
                     self->processor->process(reader, reader.name());
                 });
                 self->processor->end();
@@ -302,7 +304,7 @@ struct dispatch_file : public MethKwargs<dispatch_file, arkipy_ArkiScan>
                 ReleaseGIL rg;
 
                 bool dispatch_ok = true;
-                bool res = foreach_file(in, std::string(format, format_len), [&](arki::dataset::Reader& reader) {
+                bool res = foreach_file(self->session, in, std::string(format, format_len), [&](arki::dataset::Reader& reader) {
                     auto stats = self->dispatcher->process(reader, reader.name());
 
                     if (status)
@@ -358,7 +360,7 @@ struct dispatch_sections : public MethKwargs<dispatch_sections, arkipy_ArkiScan>
                 // Query all the datasets in sequence
                 for (auto si: self->inputs)
                 {
-                    FileSource source(si.second);
+                    FileSource source(self->session, si.second);
                     if (movework) source.movework = std::string(movework, movework_len);
                     if (moveok) source.moveok = std::string(moveok, moveok_len);
                     if (moveko) source.moveko = std::string(moveko, moveko_len);
@@ -430,6 +432,7 @@ arki-scan implementation
 
         try {
             new (&(self->inputs)) arki::core::cfg::Sections;
+            new (&(self->session)) std::shared_ptr<arki::dataset::Session>(std::make_shared<arki::dataset::Session>());
             self->processor = nullptr;
             self->dispatcher = nullptr;
         } ARKI_CATCH_RETURN_INT

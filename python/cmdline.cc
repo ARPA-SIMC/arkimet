@@ -85,14 +85,14 @@ std::unique_ptr<cmdline::DatasetProcessor> build_processor(PyObject* args, PyObj
     }
 }
 
-bool foreach_file(BinaryInputFile& file, const std::string& format, std::function<void(arki::dataset::Reader&)> dest)
+bool foreach_file(std::shared_ptr<arki::dataset::Session> session, BinaryInputFile& file, const std::string& format, std::function<void(arki::dataset::Reader&)> dest)
 {
     auto scanner = scan::Scanner::get_scanner(format);
 
     core::cfg::Section cfg;
     cfg.set("format", format);
     cfg.set("name", "stdin:" + scanner->name());
-    auto dataset = std::make_shared<arki::dataset::fromfunction::Dataset>(arki::python::get_dataset_session(), cfg);
+    auto dataset = std::make_shared<arki::dataset::fromfunction::Dataset>(session, cfg);
 
     auto reader = std::make_shared<arki::dataset::fromfunction::Reader>(dataset);
 
@@ -120,13 +120,13 @@ bool foreach_file(BinaryInputFile& file, const std::string& format, std::functio
     return success;
 }
 
-bool foreach_sections(const core::cfg::Sections& inputs, std::function<void(arki::dataset::Reader&)> dest)
+bool foreach_sections(std::shared_ptr<arki::dataset::Session> session, const core::cfg::Sections& inputs, std::function<void(arki::dataset::Reader&)> dest)
 {
     bool all_successful = true;
     // Query all the datasets in sequence
     for (auto si: inputs)
     {
-        auto reader = arki::python::get_dataset_session()->dataset(si.second)->create_reader();
+        auto reader = session->dataset(si.second)->create_reader();
         bool success = true;
         try {
             dest(*reader);

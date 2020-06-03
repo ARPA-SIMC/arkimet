@@ -4,6 +4,7 @@
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
 #include <arki/core/cfg.h>
+#include <arki/dataset/fwd.h>
 #include <memory>
 
 namespace arki {
@@ -20,6 +21,7 @@ typedef struct {
     PyObject_HEAD
     arki::core::cfg::Sections inputs;
     arki::python::cmdline::DatasetProcessor* processor = nullptr;
+    std::shared_ptr<arki::dataset::Session> session;
 } arkipy_ArkiQuery;
 
 extern PyTypeObject* arkipy_ArkiQuery_Type;
