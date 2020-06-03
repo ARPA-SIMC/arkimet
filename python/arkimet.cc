@@ -54,7 +54,11 @@ struct expand_query : public MethKwargs<expand_query, PyObject>
             return nullptr;
 
         try {
-            Matcher m = get_dataset_session()->matcher(query);
+            if (PyErr_WarnEx(PyExc_DeprecationWarning, "arkimet.expand_query() will be replaced by something else, unfortunately not yet designed", 1))
+                return nullptr;
+
+            auto session = std::make_shared<arki::dataset::Session>();
+            Matcher m = session->matcher(query);
             return to_python(m.toStringExpanded());
         } ARKI_CATCH_RETURN_PYO
     }
@@ -71,7 +75,11 @@ struct get_alias_database : public MethNoargs<get_alias_database, PyObject>
     static PyObject* run(Impl* self)
     {
         try {
-            return cfg_sections(get_dataset_session()->get_alias_database());
+            if (PyErr_WarnEx(PyExc_DeprecationWarning, "Use arki.dataset.Session().get_alias_database() instead of arkimet.get_alias_database()", 1))
+                return nullptr;
+
+            auto session = std::make_shared<arki::dataset::Session>();
+            return cfg_sections(session->get_alias_database());
         } ARKI_CATCH_RETURN_PYO
     }
 };
@@ -100,7 +108,11 @@ Arguments:
             return nullptr;
 
         try {
-            auto session = arki::python::get_dataset_session();
+            if (PyErr_WarnEx(PyExc_DeprecationWarning, "arkimet.make_qmacro_dataset() will be replaced by something else, unfortunately not yet designed", 1))
+                return nullptr;
+
+            auto session = std::make_shared<arki::dataset::Session>();
+
             core::cfg::Sections datasets;
             datasets = sections_from_python(arg_datasets);
 
@@ -129,9 +141,14 @@ struct make_merged_dataset : public MethKwargs<make_merged_dataset, PyObject>
             return nullptr;
 
         try {
+            if (PyErr_WarnEx(PyExc_DeprecationWarning, "arkimet.make_merged_dataset() will be replaced by something else, unfortunately not yet designed", 1))
+                return nullptr;
+
+            auto session = std::make_shared<arki::dataset::Session>();
+
             core::cfg::Sections cfg = sections_from_python(arg_cfg);
 
-            auto ds(std::make_shared<arki::dataset::merged::Dataset>(arki::python::get_dataset_session()));
+            auto ds(std::make_shared<arki::dataset::merged::Dataset>(session));
             for (auto si: cfg)
                 ds->add_dataset(si.second);
             return (PyObject*)dataset_reader_create(ds->create_reader());
