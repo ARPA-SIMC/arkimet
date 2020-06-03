@@ -15,8 +15,11 @@
 #include "arki/dataset/empty.h"
 #include "arki/dataset/fromfunction.h"
 #include "arki/dataset/testlarge.h"
+#include "arki/metadata.h"
+#include "arki/types/source/blob.h"
 #include "arki/nag.h"
 #include "arki/libconfig.h"
+#include <memory>
 
 #ifdef HAVE_LIBCURL
 #include "arki/dataset/http.h"
@@ -101,6 +104,22 @@ std::shared_ptr<segment::Checker> Session::segment_checker(const std::string& fo
     return res;
 }
 
+void Session::add_dataset(const core::cfg::Section& cfg)
+{
+    auto ds = dataset(cfg);
+    if (dataset_pool.find(ds->name()) != dataset_pool.end())
+        throw std::runtime_error(
+                "cannot load dataset " + ds->name() + " multiple times");
+    dataset_pool.emplace(ds->name(), ds);
+
+    // TODO: handle merging remote aliases
+}
+
+bool Session::has_dataset(const std::string& name) const
+{
+    return dataset_pool.find(name) != dataset_pool.end();
+}
+
 std::shared_ptr<Dataset> Session::dataset(const core::cfg::Section& cfg)
 {
     std::string type = str::lower(cfg.value("type"));
@@ -127,6 +146,14 @@ std::shared_ptr<Dataset> Session::dataset(const core::cfg::Section& cfg)
         return std::make_shared<testlarge::Dataset>(shared_from_this(), cfg);
 
     throw std::runtime_error("cannot use configuration: unknown dataset type \""+type+"\"");
+}
+
+std::shared_ptr<Dataset> Session::dataset(const std::string& name)
+{
+    auto res = dataset_pool.find(name);
+    if (res == dataset_pool.end())
+        throw std::runtime_error("dataset " + name + " not found in session pool");
+    return res->second;
 }
 
 core::cfg::Section Session::read_config(const std::string& path)
@@ -280,6 +307,83 @@ std::string Session::expand_remote_query(const core::cfg::Sections& remotes, con
     if (!first)
         return expanded;
     return query;
+}
+
+namespace {
+
+struct FSPos
+{
+    dev_t dev;
+    ino_t ino;
+
+    FSPos(const struct stat& st)
+        : dev(st.st_dev), ino(st.st_ino)
+    {
+    }
+
+    bool operator<(const FSPos& o) const
+    {
+        if (dev < o.dev) return true;
+        if (dev > o.dev) return false;
+        return ino < o.ino;
+    }
+
+    bool operator==(const FSPos& o) const
+    {
+        return dev == o.dev && ino == o.ino;
+    }
+};
+
+struct PathMatch
+{
+    std::set<FSPos> parents;
+
+    PathMatch(const std::string& pathname)
+    {
+        fill_parents(pathname);
+    }
+
+    void fill_parents(const std::string& pathname)
+    {
+        struct stat st;
+        sys::stat(pathname, st);
+        auto i = parents.insert(FSPos(st));
+        // If we already knew of that fs position, stop here: we reached the
+        // top or a loop
+        if (i.second == false) return;
+        // Otherwise, go up a level and scan again
+        fill_parents(str::normpath(str::joinpath(pathname, "..")));
+    }
+
+    bool is_under(const std::string& pathname)
+    {
+        struct stat st;
+        sys::stat(pathname, st);
+        return parents.find(FSPos(st)) != parents.end();
+    }
+};
+
+}
+
+std::shared_ptr<dataset::Dataset> Session::locate_metadata(Metadata& md)
+{
+    const auto& source = md.sourceBlob();
+    std::string pathname = source.absolutePathname();
+
+    PathMatch pmatch(pathname);
+
+    for (const auto& dsi: dataset_pool)
+    {
+        auto lcfg = std::dynamic_pointer_cast<dataset::local::Dataset>(dsi.second);
+        if (!lcfg) continue;
+        if (pmatch.is_under(lcfg->path))
+        {
+            md.set_source(source.makeRelativeTo(lcfg->path));
+            return dsi.second;
+        }
+    }
+
+    return std::shared_ptr<dataset::local::Dataset>();
 }
 
 }

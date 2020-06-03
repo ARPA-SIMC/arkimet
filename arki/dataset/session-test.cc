@@ -60,6 +60,17 @@ add_method("read_configs", [] {
     wassert(actual(sec->value("name")) == "testds");
 });
 
+add_method("add_local", [] {
+    auto session = std::make_shared<dataset::Session>();
+    auto cfg = dataset::Session::read_configs("inbound/test.grib1");
+    core::cfg::Section* sec = cfg.section("inbound/test.grib1");
+    session->add_dataset(*sec);
+    wassert_true(session->has_dataset("inbound/test.grib1"));
+
+    auto ds = session->dataset("inbound/test.grib1");
+    wassert_true(ds);
+});
+
 }
 
 }
