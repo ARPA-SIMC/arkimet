@@ -277,16 +277,6 @@ static PyModuleDef http_module = {
 namespace arki {
 namespace python {
 
-static thread_local std::shared_ptr<arki::dataset::Session> dataset_session;
-
-std::shared_ptr<arki::dataset::Session> get_dataset_session()
-{
-    if (!dataset_session)
-        dataset_session = make_shared<arki::dataset::Session>();
-        // TODO: load aliases
-    return dataset_session;
-}
-
 void register_dataset(PyObject* m)
 {
     pyo_unique_ptr http = throw_ifnull(PyModule_Create(&http_module));

@@ -27,8 +27,6 @@ extern PyTypeObject* arkipy_DatasetSessionTimeOverride_Type;
 namespace arki {
 namespace python {
 
-std::shared_ptr<arki::dataset::Session> get_dataset_session();
-
 void register_dataset(PyObject* m);
 
 }
