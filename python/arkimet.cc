@@ -14,6 +14,7 @@
 #include "utils/values.h"
 #include "utils/methods.h"
 #include "utils/dict.h"
+#include "dataset/reader.h"
 #include "dataset/querymacro.h"
 #include "arki-query.h"
 #include "arki-scan.h"

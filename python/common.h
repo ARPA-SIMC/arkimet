@@ -74,6 +74,29 @@ PyObject *ArkiPyImport_GetModule(PyObject *name);
  */
 std::unique_ptr<core::LineReader> linereader_from_python(PyObject* o);
 
+
+/**
+ * Base class for python objects what wrap a std::shared_ptr
+ */
+template<typename Class>
+struct SharedPtrWrapper
+{
+    PyObject_HEAD
+    std::shared_ptr<Class> ptr;
+
+    typedef Class value_type;
+
+    PyObject* python__exit__()
+    {
+        try {
+            ptr.reset();
+            Py_RETURN_NONE;
+        } ARKI_CATCH_RETURN_PYO
+    }
+};
+
+
+
 /**
  * Initialize the python bits to use used by the common functions.
  *
