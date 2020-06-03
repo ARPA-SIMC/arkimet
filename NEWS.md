@@ -1,4 +1,4 @@
-# New in version 1.28
+# New in version 1.27
 
 * reftime match expressions using repeating intervals (like `reftime:=yesterday
   %3h`) now always base the interval or a round time, instead of the time
@@ -6,6 +6,7 @@
   `reftime:>=today 12:30 %6h` would match today at 12:30 and 18:30, then
   tomorrow at 00:30, 06:30, and so on, now it will match today at 18:00,
   tomorrow at 00:00, tomorrow at 06:00, and so on.
+  (side effect of fixing #206)
 
 # New in version 1.26
 
