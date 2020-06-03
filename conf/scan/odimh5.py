@@ -95,9 +95,10 @@ def odimh5_pvol_set_area(h5f, md):
     for name, group in h5f.items():
         if not name.startswith("dataset"):
             continue
-        radhor = group["how"].attrs.get("radhoriz")
-        if radhor is not None and radhor > radius:
-            radius = radhor
+        if "how" in group:
+            radhor = group["how"].attrs.get("radhoriz")
+            if radhor is not None and radhor > radius:
+                radius = radhor
 
     md["area"] = {"style": "ODIMH5", "value": {
         "lat": int(round(lat * 1000000)),
