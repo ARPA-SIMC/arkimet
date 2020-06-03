@@ -47,7 +47,7 @@ namespace {
  * dataset.Checker
  */
 
-static arki::dataset::CheckerConfig get_checker_config(PyObject* args, PyObject* kw)
+static arki::dataset::CheckerConfig get_checker_config(std::shared_ptr<arki::dataset::Session> session, PyObject* args, PyObject* kw)
 {
     static const char* kwlist[] = { "reporter", "segment_filter", "offline", "online", "readonly", "accurate", nullptr };
     PyObject* arg_reporter = nullptr;
@@ -86,7 +86,7 @@ struct repack : public MethKwargs<repack, arkipy_DatasetChecker>
     static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
     {
         try {
-            auto cfg = get_checker_config(args, kw);
+            auto cfg = get_checker_config(self->ptr->dataset().session, args, kw);
 
             {
                 ReleaseGIL gil;
@@ -108,7 +108,7 @@ struct check : public MethKwargs<check, arkipy_DatasetChecker>
     static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
     {
         try {
-            auto cfg = get_checker_config(args, kw);
+            auto cfg = get_checker_config(self->ptr->dataset().session, args, kw);
 
             {
                 ReleaseGIL gil;
@@ -130,7 +130,7 @@ struct segment_state : public MethKwargs<segment_state, arkipy_DatasetChecker>
     static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
     {
         try {
-            auto cfg = get_checker_config(args, kw);
+            auto cfg = get_checker_config(self->ptr->dataset().session, args, kw);
 
             arki::dataset::segmented::Checker* checker = dynamic_cast<arki::dataset::segmented::Checker*>(self->ptr.get());
             if (!checker)
