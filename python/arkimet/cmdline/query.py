@@ -1,3 +1,4 @@
+from __future__ import annotations
 import arkimet
 from arkimet.cmdline.base import AppConfigMixin, AppWithProcessor, Exit
 import sys
@@ -112,18 +113,18 @@ class Query(AppConfigMixin, AppWithProcessor):
                 for name, section in cfg.items():
                     self.add_config_section(section, name)
 
-            if not self.config:
+            if not self.session.has_datasets():
                 self.parser.error("you need to specify at least one input file or dataset")
 
             # Remove unallowed entries
             if self.args.restrict:
                 self.filter_restrict(self.args.restrict)
 
-            if not self.config:
+            if not self.session.has_datasets():
                 self.parser.error("no accessible datasets found for the given --restrict value")
 
             # Some things cannot be done when querying multiple datasets at the same time
-            if len(self.config) > 1 and not self.args.qmacro and self.args.postproc:
+            if self.session.dataset_pool_size() > 1 and not self.args.qmacro and self.args.postproc:
                 self.parser.error(
                         "postprocessing is not possible when querying more than one dataset at the same time")
 

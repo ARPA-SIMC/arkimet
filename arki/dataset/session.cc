@@ -127,6 +127,16 @@ bool Session::has_dataset(const std::string& name) const
     return dataset_pool.find(name) != dataset_pool.end();
 }
 
+bool Session::has_datasets() const
+{
+    return !dataset_pool.empty();
+}
+
+size_t Session::dataset_pool_size() const
+{
+    return dataset_pool.size();
+}
+
 bool Session::foreach_dataset(std::function<bool(std::shared_ptr<dataset::Dataset>)> dest)
 {
     for (auto& i: dataset_pool)

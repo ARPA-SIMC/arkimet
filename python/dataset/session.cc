@@ -26,7 +26,6 @@ namespace {
 struct get_alias_database : public MethNoargs<get_alias_database, arkipy_DatasetSession>
 {
     constexpr static const char* name = "get_alias_database";
-    constexpr static const char* signature = "";
     constexpr static const char* returns = "arkimet.cfg.Sections";
     constexpr static const char* summary = "return matcher alias database for this session";
     constexpr static const char* doc = nullptr;
@@ -35,6 +34,39 @@ struct get_alias_database : public MethNoargs<get_alias_database, arkipy_Dataset
     {
         try {
             return cfg_sections(self->ptr->get_alias_database());
+        } ARKI_CATCH_RETURN_PYO
+    }
+};
+
+struct has_datasets : public MethNoargs<has_datasets, arkipy_DatasetSession>
+{
+    constexpr static const char* name = "has_datasets";
+    constexpr static const char* returns = "bool";
+    constexpr static const char* summary = "return True if the session contains datasets in the dataset pool";
+    constexpr static const char* doc = nullptr;
+
+    static PyObject* run(Impl* self)
+    {
+        try {
+            if (self->ptr->has_datasets())
+                Py_RETURN_TRUE;
+            else
+                Py_RETURN_FALSE;
+        } ARKI_CATCH_RETURN_PYO
+    }
+};
+
+struct dataset_pool_size : public MethNoargs<dataset_pool_size, arkipy_DatasetSession>
+{
+    constexpr static const char* name = "dataset_pool_size";
+    constexpr static const char* returns = "int";
+    constexpr static const char* summary = "return how many datasets are in the dataset pool";
+    constexpr static const char* doc = nullptr;
+
+    static PyObject* run(Impl* self)
+    {
+        try {
+            return to_python(self->ptr->dataset_pool_size());
         } ARKI_CATCH_RETURN_PYO
     }
 };
@@ -200,7 +232,7 @@ Examples::
 )";
     GetSetters<> getsetters;
     Methods<MethGenericEnter<Impl>, MethGenericExit<Impl>, get_alias_database, matcher, load_aliases,
-            add_dataset, dataset_reader, dataset_writer, dataset_checker> methods;
+            has_datasets, dataset_pool_size, add_dataset, dataset_reader, dataset_writer, dataset_checker> methods;
 
     static void _dealloc(Impl* self)
     {

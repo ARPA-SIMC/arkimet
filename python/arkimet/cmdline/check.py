@@ -1,3 +1,4 @@
+from __future__ import annotations
 import arkimet
 from arkimet.cmdline.base import App, AppConfigMixin
 import logging
@@ -78,14 +79,14 @@ class Check(AppConfigMixin, App):
             section = arkimet.dataset.read_config(dataset)
             self.add_config_section(section)
 
-        if not self.config:
+        if not self.session.has_datasets():
             self.parser.error("you need to specify at least one dataset to work on")
 
         # Remove unallowed entries
         if self.args.restrict:
             self.filter_restrict(self.args.restrict)
 
-        if not self.config:
+        if not self.session.has_datasets():
             self.parser.error("no accessible datasets found for the given --restrict value")
 
     def run(self):

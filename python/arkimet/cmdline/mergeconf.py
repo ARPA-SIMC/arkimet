@@ -1,3 +1,4 @@
+from __future__ import annotations
 import arkimet as arki
 from arkimet.cmdline.base import App, AppConfigMixin, Fail
 import sys
@@ -48,7 +49,7 @@ class Mergeconf(AppConfigMixin, App):
                 section = arki.dataset.read_config(path)
                 self.add_config_section(section)
 
-        if not self.config:
+        if not self.session.has_datasets():
             raise Fail("you need to specify at least one config file or dataset")
 
         # Remove unallowed entries
@@ -69,7 +70,7 @@ class Mergeconf(AppConfigMixin, App):
             for name in to_remove:
                 del self.config[name]
 
-        if not self.config:
+        if not self.session.has_datasets():
             raise Fail("none of the configuration provided were useable")
 
         # Validate the configuration

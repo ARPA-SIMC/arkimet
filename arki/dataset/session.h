@@ -47,6 +47,12 @@ public:
     /// Check if the dataset pool has a dataset with the given name
     bool has_dataset(const std::string& name) const;
 
+    /// Check if the dataset pool contains datasets
+    bool has_datasets() const;
+
+    /// Return how many datasets are in the dataset pool
+    size_t dataset_pool_size() const;
+
     /**
      * Iterate all datasets in the pool.
      *

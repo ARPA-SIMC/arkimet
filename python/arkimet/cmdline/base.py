@@ -1,3 +1,4 @@
+from __future__ import annotations
 import arkimet as arki
 import argparse
 import logging
@@ -140,21 +141,12 @@ class AppConfigMixin:
     def __init__(self):
         super().__init__()
         self.session = arki.dataset.Session()
-        self.config = arki.cfg.Sections()
 
     def add_config_section(self, section, name=None):
         if name is None:
             name = section["name"]
         section["name"] = name
         self.session.add_dataset(section)
-
-        old = self.config.section(name)
-        if old is not None:
-            self.log.warning("ignoring dataset %s in %s, which has the same name as the dataset in %s",
-                             name, section["path"], old["path"])
-            return
-
-        self.config[name] = section
 
     re_stringlist = re.compile(r"[\s,]+")
 

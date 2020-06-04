@@ -1,3 +1,4 @@
+from __future__ import annotations
 import arkimet
 from arkimet.cmdline.base import AppConfigMixin, AppWithProcessor, Exit
 import sys
@@ -93,7 +94,7 @@ class Scan(AppConfigMixin, AppWithProcessor):
                 section = arkimet.dataset.read_config(source)
                 self.add_config_section(section)
 
-            if not self.config:
+            if not self.session.has_datasets():
                 self.parser.error("you need to specify at least one input file or dataset")
 
         if (self.args.dispatch or self.args.testdispatch) and self.args.stdin:
