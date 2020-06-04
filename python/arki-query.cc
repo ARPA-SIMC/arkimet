@@ -259,6 +259,7 @@ arki-query implementation
     static void _dealloc(Impl* self)
     {
         self->inputs.~Sections();
+        self->session.~shared_ptr<arki::dataset::Session>();
         delete self->processor;
         Py_TYPE(self)->tp_free(self);
     }

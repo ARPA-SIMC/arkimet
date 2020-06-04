@@ -139,6 +139,7 @@ class App:
 class AppConfigMixin:
     def __init__(self):
         super().__init__()
+        self.session = arki.dataset.Session()
         self.config = arki.cfg.Sections()
 
     def add_config_section(self, section, name=None):

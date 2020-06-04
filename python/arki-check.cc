@@ -334,6 +334,7 @@ arki-check implementation
     {
         self->config.~Sections();
         self->checker_config.~CheckerConfig();
+        self->session.~shared_ptr<arki::dataset::Session>();
         Py_TYPE(self)->tp_free(self);
     }
 
