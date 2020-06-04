@@ -3,6 +3,7 @@
 #include "python/dataset/session.h"
 #include "python/dataset.h"
 #include "python/cfg.h"
+#include "python/matcher.h"
 #include "arki/dataset/session.h"
 
 using namespace std;
@@ -34,6 +35,27 @@ struct get_alias_database : public MethNoargs<get_alias_database, arkipy_Dataset
     }
 };
 
+struct matcher : public MethKwargs<matcher, arkipy_DatasetSession>
+{
+    constexpr static const char* name = "matcher";
+    constexpr static const char* signature = "query: str";
+    constexpr static const char* returns = "arkimet.Matcher";
+    constexpr static const char* summary = "parse an arkimet matcher expression, using the aliases in this session, and return the Matcher object for it";
+    constexpr static const char* doc = nullptr;
+
+    static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
+    {
+        static const char* kwlist[] = { "query", nullptr };
+        const char* query = nullptr;
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "s", const_cast<char**>(kwlist), &query))
+            return nullptr;
+
+        try {
+            return matcher_to_python(self->ptr->matcher(query));
+        } ARKI_CATCH_RETURN_PYO
+    }
+};
+
 struct DatasetSessionDef : public Type<DatasetSessionDef, arkipy_DatasetSession>
 {
     constexpr static const char* name = "Session";
@@ -48,7 +70,7 @@ Examples::
     TODO: add examples
 )";
     GetSetters<> getsetters;
-    Methods<MethGenericEnter<Impl>, MethGenericExit<Impl>, get_alias_database> methods;
+    Methods<MethGenericEnter<Impl>, MethGenericExit<Impl>, get_alias_database, matcher> methods;
 
     static void _dealloc(Impl* self)
     {

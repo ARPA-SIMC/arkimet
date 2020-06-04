@@ -6,7 +6,7 @@ import arkimet as arki
 class TestSession(unittest.TestCase):
     def test_aliases(self):
         with arki.dataset.Session(load_aliases=False) as session:
-            with self.assertRaises(ValueError):
+            with self.assertRaises(RuntimeError):
                 session.matcher("origin:test")
 
             session.load_aliases({
