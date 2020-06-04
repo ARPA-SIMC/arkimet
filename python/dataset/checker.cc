@@ -199,7 +199,7 @@ Examples::
             else
                 cfg = section_from_python(py_cfg);
 
-            if (PyErr_WarnEx(PyExc_DeprecationWarning, "Use arki.dataset.Session().checker(cfg) instead of arki.dataset.Checker(cfg)", 1))
+            if (PyErr_WarnEx(PyExc_DeprecationWarning, "Use arki.dataset.Session().dataset_checker(cfg) instead of arki.dataset.Checker(cfg)", 1))
                 return -1;
 
             auto session = std::make_shared<arki::dataset::Session>();
@@ -216,6 +216,14 @@ DatasetCheckerDef* checker_def = nullptr;
 
 namespace arki {
 namespace python {
+
+arkipy_DatasetChecker* dataset_checker_create(std::shared_ptr<arki::dataset::Checker> ds)
+{
+    arkipy_DatasetChecker* result = PyObject_New(arkipy_DatasetChecker, arkipy_DatasetChecker_Type);
+    if (!result) return nullptr;
+    new (&(result->ptr)) std::shared_ptr<arki::dataset::Checker>(ds);
+    return result;
+}
 
 void register_dataset_checker(PyObject* module)
 {

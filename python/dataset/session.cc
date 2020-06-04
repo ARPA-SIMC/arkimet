@@ -2,8 +2,12 @@
 #include <Python.h>
 #include "python/dataset/session.h"
 #include "python/dataset.h"
+#include "python/dataset/reader.h"
+#include "python/dataset/writer.h"
+#include "python/dataset/checker.h"
 #include "python/cfg.h"
 #include "python/matcher.h"
+#include "arki/dataset.h"
 #include "arki/dataset/session.h"
 
 using namespace std;
@@ -66,13 +70,76 @@ struct load_aliases : public MethKwargs<load_aliases, arkipy_DatasetSession>
     static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
     {
         static const char* kwlist[] = { "aliases", nullptr };
-        PyObject* arg_aliases = Py_None;
+        PyObject* arg_aliases = nullptr;
         if (!PyArg_ParseTupleAndKeywords(args, kw, "O", const_cast<char**>(kwlist), &arg_aliases))
             return nullptr;
 
         try {
             self->ptr->load_aliases(sections_from_python(arg_aliases));
             Py_RETURN_NONE;
+        } ARKI_CATCH_RETURN_PYO
+    }
+};
+
+struct dataset_reader : public MethKwargs<dataset_reader, arkipy_DatasetSession>
+{
+    constexpr static const char* name = "dataset_reader";
+    constexpr static const char* signature = "cfg: Union[str, arkimet.cfg.Section, Dict[str, str]]";
+    constexpr static const char* returns = "arkimet.dataset.Reader";
+    constexpr static const char* summary = "return a dataset reader give its configuration";
+    constexpr static const char* doc = nullptr;
+
+    static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
+    {
+        static const char* kwlist[] = { "cfg", nullptr };
+        PyObject* arg_cfg = nullptr;
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "O", const_cast<char**>(kwlist), &arg_cfg))
+            return nullptr;
+
+        try {
+            return (PyObject*)dataset_reader_create(self->ptr->dataset(section_from_python(arg_cfg))->create_reader());
+        } ARKI_CATCH_RETURN_PYO
+    }
+};
+
+struct dataset_writer : public MethKwargs<dataset_writer, arkipy_DatasetSession>
+{
+    constexpr static const char* name = "dataset_writer";
+    constexpr static const char* signature = "cfg: Union[str, arkimet.cfg.Section, Dict[str, str]]";
+    constexpr static const char* returns = "arkimet.dataset.Writer";
+    constexpr static const char* summary = "return a dataset writer give its configuration";
+    constexpr static const char* doc = nullptr;
+
+    static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
+    {
+        static const char* kwlist[] = { "cfg", nullptr };
+        PyObject* arg_cfg = nullptr;
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "O", const_cast<char**>(kwlist), &arg_cfg))
+            return nullptr;
+
+        try {
+            return (PyObject*)dataset_writer_create(self->ptr->dataset(section_from_python(arg_cfg))->create_writer());
+        } ARKI_CATCH_RETURN_PYO
+    }
+};
+
+struct dataset_checker : public MethKwargs<dataset_checker, arkipy_DatasetSession>
+{
+    constexpr static const char* name = "dataset_checker";
+    constexpr static const char* signature = "cfg: Union[str, arkimet.cfg.Section, Dict[str, str]]";
+    constexpr static const char* returns = "arkimet.dataset.Checker";
+    constexpr static const char* summary = "return a dataset checker give its configuration";
+    constexpr static const char* doc = nullptr;
+
+    static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
+    {
+        static const char* kwlist[] = { "cfg", nullptr };
+        PyObject* arg_cfg = nullptr;
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "O", const_cast<char**>(kwlist), &arg_cfg))
+            return nullptr;
+
+        try {
+            return (PyObject*)dataset_checker_create(self->ptr->dataset(section_from_python(arg_cfg))->create_checker());
         } ARKI_CATCH_RETURN_PYO
     }
 };
@@ -91,7 +158,8 @@ Examples::
     TODO: add examples
 )";
     GetSetters<> getsetters;
-    Methods<MethGenericEnter<Impl>, MethGenericExit<Impl>, get_alias_database, matcher, load_aliases> methods;
+    Methods<MethGenericEnter<Impl>, MethGenericExit<Impl>, get_alias_database, matcher, load_aliases,
+            dataset_reader, dataset_writer, dataset_checker> methods;
 
     static void _dealloc(Impl* self)
     {

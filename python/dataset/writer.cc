@@ -185,7 +185,7 @@ Examples::
             else
                 cfg = section_from_python(py_cfg);
 
-            if (PyErr_WarnEx(PyExc_DeprecationWarning, "Use arki.dataset.Session().checker(cfg) instead of arki.dataset.Checker(cfg)", 1))
+            if (PyErr_WarnEx(PyExc_DeprecationWarning, "Use arki.dataset.Session().dataset_checker(cfg) instead of arki.dataset.Checker(cfg)", 1))
                 return -1;
 
             auto session = std::make_shared<arki::dataset::Session>();
@@ -202,6 +202,14 @@ DatasetWriterDef* writer_def = nullptr;
 
 namespace arki {
 namespace python {
+
+arkipy_DatasetWriter* dataset_writer_create(std::shared_ptr<arki::dataset::Writer> ds)
+{
+    arkipy_DatasetWriter* result = PyObject_New(arkipy_DatasetWriter, arkipy_DatasetWriter_Type);
+    if (!result) return nullptr;
+    new (&(result->ptr)) std::shared_ptr<arki::dataset::Writer>(ds);
+    return result;
+}
 
 void register_dataset_writer(PyObject* module)
 {

@@ -27,6 +27,8 @@ extern PyObject* arkipy_ImportFailedError;
 namespace arki {
 namespace python {
 
+arkipy_DatasetWriter* dataset_writer_create(std::shared_ptr<arki::dataset::Writer> ds);
+
 void register_dataset_writer(PyObject* module);
 
 }

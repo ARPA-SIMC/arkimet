@@ -22,6 +22,8 @@ extern PyTypeObject* arkipy_DatasetChecker_Type;
 namespace arki {
 namespace python {
 
+arkipy_DatasetChecker* dataset_checker_create(std::shared_ptr<arki::dataset::Checker> ds);
+
 void register_dataset_checker(PyObject* module);
 
 }
