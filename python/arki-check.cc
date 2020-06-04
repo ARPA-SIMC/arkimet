@@ -15,6 +15,7 @@
 #include "dataset/reporter.h"
 #include "common.h"
 #include "dataset.h"
+#include "dataset/session.h"
 #include "cfg.h"
 #include <sstream>
 #include <memory>
@@ -352,7 +353,8 @@ arki-check implementation
 
     static int _init(Impl* self, PyObject* args, PyObject* kw)
     {
-        static const char* kwlist[] = { "config", "filter", "accurate", "offline", "online", "readonly", nullptr };
+        static const char* kwlist[] = { "session", "config", "filter", "accurate", "offline", "online", "readonly", nullptr };
+        arkipy_DatasetSession* session = nullptr;
         PyObject* arg_config;
         const char* arg_filter = nullptr;
         Py_ssize_t arg_filter_len;
@@ -360,7 +362,8 @@ arki-check implementation
         int arg_offline = 0;
         int arg_online = 0;
         int arg_readonly = 0;
-        if (!PyArg_ParseTupleAndKeywords(args, kw, "O|z#pppp", const_cast<char**>(kwlist),
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "O!O|z#pppp", const_cast<char**>(kwlist),
+                    arkipy_DatasetSession_Type, &session,
                     &arg_config,
                     &arg_filter, &arg_filter_len,
                     &arg_accurate, &arg_offline, &arg_online, &arg_readonly))
