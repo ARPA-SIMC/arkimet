@@ -9,10 +9,9 @@ class TestSession(unittest.TestCase):
             with self.assertRaises(RuntimeError):
                 session.matcher("origin:test")
 
-            session.load_aliases({
-                "origin": {
-                    "test": "GRIB1 or GRIB2",
-                },
-            })
+            session.load_aliases("""
+[origin]
+test = GRIB1 or GRIB2
+""")
 
             self.assertIsInstance(session.matcher("origin:test"), arki.Matcher)

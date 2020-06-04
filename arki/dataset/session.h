@@ -83,6 +83,11 @@ public:
     core::cfg::Sections get_alias_database() const;
 
     /**
+     * Add the given set of aliases to the alias database in this session
+     */
+    void load_aliases(const core::cfg::Sections& aliases);
+
+    /**
      * Look for the dataset in the pool that contains the given metadata item,
      * and make the metadata source relative to it.
      *

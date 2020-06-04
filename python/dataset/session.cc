@@ -56,6 +56,27 @@ struct matcher : public MethKwargs<matcher, arkipy_DatasetSession>
     }
 };
 
+struct load_aliases : public MethKwargs<load_aliases, arkipy_DatasetSession>
+{
+    constexpr static const char* name = "load_aliases";
+    constexpr static const char* signature = "aliases: Union[str, arkimet.cfg.Sections]";
+    constexpr static const char* summary = "add the given set of aliases to the alias database in this session";
+    constexpr static const char* doc = nullptr;
+
+    static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
+    {
+        static const char* kwlist[] = { "aliases", nullptr };
+        PyObject* arg_aliases = Py_None;
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "O", const_cast<char**>(kwlist), &arg_aliases))
+            return nullptr;
+
+        try {
+            self->ptr->load_aliases(sections_from_python(arg_aliases));
+            Py_RETURN_NONE;
+        } ARKI_CATCH_RETURN_PYO
+    }
+};
+
 struct DatasetSessionDef : public Type<DatasetSessionDef, arkipy_DatasetSession>
 {
     constexpr static const char* name = "Session";
@@ -70,7 +91,7 @@ Examples::
     TODO: add examples
 )";
     GetSetters<> getsetters;
-    Methods<MethGenericEnter<Impl>, MethGenericExit<Impl>, get_alias_database, matcher> methods;
+    Methods<MethGenericEnter<Impl>, MethGenericExit<Impl>, get_alias_database, matcher, load_aliases> methods;
 
     static void _dealloc(Impl* self)
     {

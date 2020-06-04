@@ -262,6 +262,11 @@ core::cfg::Sections Session::get_alias_database() const
     return matcher_parser.serialise_aliases();
 }
 
+void Session::load_aliases(const core::cfg::Sections& aliases)
+{
+    matcher_parser.load_aliases(aliases);
+}
+
 std::string Session::expand_remote_query(const core::cfg::Sections& remotes, const std::string& query)
 {
     // Resolve the query on each server (including the local system, if
