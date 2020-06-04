@@ -17,6 +17,7 @@
 #include "cmdline.h"
 #include "cmdline/processor.h"
 #include "dataset.h"
+#include "dataset/session.h"
 #include "sysexits.h"
 
 using namespace arki::python;
@@ -278,13 +279,14 @@ arki-query implementation
 
     static int _init(Impl* self, PyObject* args, PyObject* kw)
     {
-        static const char* kwlist[] = { nullptr };
-        if (!PyArg_ParseTupleAndKeywords(args, kw, "", const_cast<char**>(kwlist)))
+        static const char* kwlist[] = { "session", nullptr };
+        arkipy_DatasetSession* session = nullptr;
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "O!", const_cast<char**>(kwlist), arkipy_DatasetSession_Type, &session))
             return -1;
 
         try {
             new (&(self->inputs)) arki::core::cfg::Sections;
-            new (&(self->session)) std::shared_ptr<arki::dataset::Session>(std::make_shared<arki::dataset::Session>());
+            new (&(self->session)) std::shared_ptr<arki::dataset::Session>(session->ptr);
             self->processor = nullptr;
         } ARKI_CATCH_RETURN_INT
 
