@@ -81,6 +81,34 @@ struct load_aliases : public MethKwargs<load_aliases, arkipy_DatasetSession>
     }
 };
 
+struct add_dataset : public MethKwargs<add_dataset, arkipy_DatasetSession>
+{
+    constexpr static const char* name = "add_dataset";
+    constexpr static const char* signature = "cfg: Union[str, arkimet.cfg.Section, Dict[str, str]]";
+    constexpr static const char* summary = "add a dataset to the Session pool";
+    constexpr static const char* doc = R"(
+If a dataset with the same name already exists in the pool, it raises an
+exception.
+
+If the dataset is remote, the aliases used by the remote server will be
+added to the session alias database. If different servers define some
+aliases differently, it raises an exception.
+)";
+
+    static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
+    {
+        static const char* kwlist[] = { "cfg", nullptr };
+        PyObject* arg_cfg = nullptr;
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "O", const_cast<char**>(kwlist), &arg_cfg))
+            return nullptr;
+
+        try {
+            self->ptr->add_dataset(section_from_python(arg_cfg));
+            Py_RETURN_NONE;
+        } ARKI_CATCH_RETURN_PYO
+    }
+};
+
 struct dataset_reader : public MethKwargs<dataset_reader, arkipy_DatasetSession>
 {
     constexpr static const char* name = "dataset_reader";
@@ -159,7 +187,7 @@ Examples::
 )";
     GetSetters<> getsetters;
     Methods<MethGenericEnter<Impl>, MethGenericExit<Impl>, get_alias_database, matcher, load_aliases,
-            dataset_reader, dataset_writer, dataset_checker> methods;
+            add_dataset, dataset_reader, dataset_writer, dataset_checker> methods;
 
     static void _dealloc(Impl* self)
     {
