@@ -75,6 +75,9 @@ class TestScanODIMH5(unittest.TestCase):
         self.assertNotIn("run", md)
         self.assertNotIn("timerange", md)
 
+    def test_time_without_seconds(self):
+        md = self.read("inbound/odimh5/000461.odimh5", 458556)
+        self.assertEqual(md["reftime"], "2020-05-30T04:40:00Z")
 
     def test_comp_cappi(self):
         md = self.read("inbound/odimh5/COMP_CAPPI_v20.h5", 49113)
