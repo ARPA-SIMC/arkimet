@@ -73,15 +73,6 @@ class Scan(AppConfigMixin, AppWithProcessor):
                                           " this amount of megabytes (default: 128Mi; use 0 to load all"
                                           " in RAM no matter what)")
 
-    def merge_config(self, dest_sections, sections):
-        for name, section in sections.items():
-            old = dest_sections.section(name)
-            if old is not None:
-                self.log.warning("ignoring dataset %s in %s, which has the same name as the dataset in %s",
-                                 name, section["path"], old["path"])
-                continue
-            dest_sections[name] = section
-
     def build_config(self):
         self.sources = []
         if self.args.stdin is not None:
@@ -142,15 +133,19 @@ class Scan(AppConfigMixin, AppWithProcessor):
                 )
 
                 if self.args.dispatch:
-                    dispatch_cfg = arkimet.cfg.Sections()
+                    dispatch_session = arkimet.dataset.Session()
                     for source in self.args.dispatch:
-                        self.merge_config(dispatch_cfg, arkimet.cfg.Sections.parse(source))
-                    kw["dispatch"] = dispatch_cfg
+                        for name, cfg in arkimet.cfg.Sections.parse(source).items():
+                            cfg["name"] = name
+                            dispatch_session.add_dataset(cfg)
+                    kw["dispatch"] = dispatch_session
                 elif self.args.testdispatch:
-                    dispatch_cfg = arkimet.cfg.Sections()
+                    dispatch_session = arkimet.dataset.Session()
                     for source in self.args.testdispatch:
-                        self.merge_config(dispatch_cfg, arkimet.cfg.Sections.parse(source))
-                    kw["testdispatch"] = dispatch_cfg
+                        for name, cfg in arkimet.cfg.Sections.parse(source).items():
+                            cfg["name"] = name
+                            dispatch_session.add_dataset(cfg)
+                    kw["testdispatch"] = dispatch_session
 
                 arki_scan.set_dispatcher(**kw)
 

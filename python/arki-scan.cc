@@ -16,6 +16,7 @@
 #include "cmdline.h"
 #include "cmdline/processor.h"
 #include "dataset.h"
+#include "dataset/session.h"
 
 using namespace arki::python;
 using namespace arki::utils;
@@ -114,11 +115,11 @@ std::unique_ptr<arki_scan::MetadataDispatch> build_dispatcher(
 
     if (testdispatch)
     {
-        res->dispatcher = new arki::TestDispatcher(session, sections_from_python(testdispatch));
+        res->dispatcher = new arki::TestDispatcher(session_from_python(testdispatch));
     }
     else if (dispatch)
     {
-        res->dispatcher = new arki::RealDispatcher(session, sections_from_python(dispatch));
+        res->dispatcher = new arki::RealDispatcher(session_from_python(dispatch));
     }
     else
         throw std::runtime_error("cannot create MetadataDispatch with no --dispatch or --testdispatch information");

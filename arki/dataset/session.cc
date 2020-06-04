@@ -120,6 +120,14 @@ bool Session::has_dataset(const std::string& name) const
     return dataset_pool.find(name) != dataset_pool.end();
 }
 
+bool Session::foreach_dataset(std::function<bool(std::shared_ptr<dataset::Dataset>)> dest)
+{
+    for (auto& i: dataset_pool)
+        if (!dest(i.second))
+            return false;
+    return true;
+}
+
 std::shared_ptr<Dataset> Session::dataset(const core::cfg::Section& cfg)
 {
     std::string type = str::lower(cfg.value("type"));

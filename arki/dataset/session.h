@@ -48,6 +48,15 @@ public:
     bool has_dataset(const std::string& name) const;
 
     /**
+     * Iterate all datasets in the pool.
+     *
+     * Return true if dest returned true each time it was called.
+     *
+     * If dest returns false, stop iteration and return false.
+     */
+    bool foreach_dataset(std::function<bool(std::shared_ptr<dataset::Dataset>)> dest);
+
+    /**
      * Instantiate a dataset give its configuration.
      *
      * If the dataset has been previously added to the pool, it will be reused.

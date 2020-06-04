@@ -24,6 +24,11 @@ namespace python {
 
 arkipy_DatasetSession* dataset_session_create(std::shared_ptr<arki::dataset::Session> ptr);
 
+/**
+ * Return a arki::dataset::Session from a Python object that contains it
+ */
+std::shared_ptr<arki::dataset::Session> session_from_python(PyObject* o);
+
 void register_dataset_session(PyObject* module);
 
 }

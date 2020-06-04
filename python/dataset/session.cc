@@ -235,6 +235,17 @@ arkipy_DatasetSession* dataset_session_create(std::shared_ptr<arki::dataset::Ses
     return result;
 }
 
+std::shared_ptr<arki::dataset::Session> session_from_python(PyObject* o)
+{
+    try {
+        if (arkipy_DatasetSession_Check(o)) {
+            return ((arkipy_DatasetSession*)o)->ptr;
+        }
+        PyErr_SetString(PyExc_TypeError, "value must be an instance of arkimet.dataset.Session");
+        throw PythonException();
+    } ARKI_CATCH_RETHROW_PYTHON
+}
+
 void register_dataset_session(PyObject* module)
 {
     session_def = new DatasetSessionDef;

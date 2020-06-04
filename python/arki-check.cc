@@ -64,8 +64,10 @@ struct remove : public MethKwargs<remove, arkipy_ArkiCheck>
 
             {
                 ReleaseGIL rg;
-                arki::dataset::Datasets datasets(self->session, self->config);
-                arki::dataset::WriterPool pool(datasets);
+                auto session = std::make_shared<arki::dataset::Session>();
+                for (auto i: self->config)
+                    session->add_dataset(i.second);
+                arki::dataset::WriterPool pool(session);
                 // Read all metadata from the file specified in --remove
                 arki::metadata::Collection todolist;
                 todolist.read_from_file(metadata_file);
@@ -83,7 +85,7 @@ struct remove : public MethKwargs<remove, arkipy_ArkiCheck>
                         throw std::runtime_error(ss.str());
                     }
 
-                    auto ds = datasets.locate_metadata(*md);
+                    auto ds = session->locate_metadata(*md);
                     if (!ds)
                     {
                         std::stringstream ss;

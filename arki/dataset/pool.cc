@@ -15,31 +15,8 @@ using namespace arki::utils;
 namespace arki {
 namespace dataset {
 
-Datasets::Datasets(std::shared_ptr<Session> session, const core::cfg::Sections& cfg)
+WriterPool::WriterPool(std::shared_ptr<Session> session)
     : session(session)
-{
-    for (const auto& si: cfg)
-        session->add_dataset(si.second);
-}
-
-std::shared_ptr<dataset::Dataset> Datasets::get(const std::string& name) const
-{
-    return session->dataset(name);
-}
-
-bool Datasets::has(const std::string& name) const
-{
-    return session->has_dataset(name);
-}
-
-std::shared_ptr<dataset::Dataset> Datasets::locate_metadata(Metadata& md)
-{
-    return session->locate_metadata(md);
-}
-
-
-WriterPool::WriterPool(const Datasets& datasets)
-    : datasets(datasets)
 {
 }
 
@@ -52,8 +29,8 @@ std::shared_ptr<dataset::Writer> WriterPool::get(const std::string& name)
     auto ci = cache.find(name);
     if (ci == cache.end())
     {
-        auto config = datasets.get(name);
-        auto writer(config->create_writer());
+        auto ds = session->dataset(name);
+        auto writer(ds->create_writer());
         cache.insert(make_pair(name, writer));
         return writer;
     } else {
@@ -68,7 +45,7 @@ std::shared_ptr<dataset::Writer> WriterPool::get_error()
 
 std::shared_ptr<dataset::Writer> WriterPool::get_duplicates()
 {
-    if (datasets.has("duplicates"))
+    if (session->has_dataset("duplicates"))
         return get("duplicates");
     else
         return get_error();
