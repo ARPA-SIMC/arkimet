@@ -10,8 +10,8 @@ using namespace arki::utils;
 namespace arki {
 namespace dataset {
 
-QueryMacro::QueryMacro(std::shared_ptr<Session> session, const core::cfg::Sections& datasets, const std::string& name, const std::string& query)
-    : dataset::Dataset(session), datasets(datasets), query(query)
+QueryMacro::QueryMacro(std::shared_ptr<Session> session, const std::string& name, const std::string& query)
+    : dataset::Dataset(session), query(query)
 {
     size_t pos = name.find(" ");
     if (pos == string::npos)

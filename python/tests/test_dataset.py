@@ -61,7 +61,7 @@ class TestDatasetReader(unittest.TestCase):
         self.session = arki.dataset.Session()
 
     def test_create(self):
-        with self.session.dataset_reader({
+        with self.session.dataset_reader(cfg={
                     "format": "grib",
                     "name": "test.grib1",
                     "path": "inbound/test.grib1",
@@ -71,7 +71,7 @@ class TestDatasetReader(unittest.TestCase):
             self.assertEqual(repr(ds), "dataset.Reader(file, test.grib1)")
 
     def test_query_data(self):
-        ds = self.session.dataset_reader({
+        ds = self.session.dataset_reader(cfg={
             "format": "grib",
             "name": "test.grib1",
             "path": "inbound/test.grib1",
@@ -126,7 +126,7 @@ class TestDatasetReader(unittest.TestCase):
         # self.fail("no way yet to test with_data")
 
     def test_query_summary(self):
-        ds = self.session.dataset_reader({
+        ds = self.session.dataset_reader(cfg={
             "format": "grib",
             "name": "test.grib1",
             "path": "inbound/test.grib1",
@@ -156,7 +156,7 @@ class TestDatasetReader(unittest.TestCase):
         self.assertEqual(queried[:2], b"SU")
 
     def test_query_bytes(self):
-        ds = self.session.dataset_reader({
+        ds = self.session.dataset_reader(cfg={
             "format": "grib",
             "name": "inbound/test.grib1",
             "path": "inbound/test.grib1",
@@ -230,7 +230,7 @@ class TestDatasetReader(unittest.TestCase):
             """
 [test200]
 format = grib
-name = test.grib1
+name = test200
 path = inbound/test.grib1
 type = file
 """,
@@ -253,7 +253,7 @@ type = file
             """
 [test200]
 format = grib
-name = test.grib1
+name = test200
 path = inbound/test.grib1
 type = file
 """,
@@ -330,7 +330,7 @@ type = file
             """
 [test200]
 format = grib
-name = test.grib1
+name = test200
 path = inbound/test.grib1
 type = file
 """,

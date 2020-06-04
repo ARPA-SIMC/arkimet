@@ -65,10 +65,7 @@ struct remove : public MethKwargs<remove, arkipy_ArkiCheck>
 
             {
                 ReleaseGIL rg;
-                auto session = std::make_shared<arki::dataset::Session>();
-                for (auto i: self->config)
-                    session->add_dataset(i.second);
-                arki::dataset::WriterPool pool(session);
+                arki::dataset::WriterPool pool(self->session);
                 // Read all metadata from the file specified in --remove
                 arki::metadata::Collection todolist;
                 todolist.read_from_file(metadata_file);
@@ -86,7 +83,7 @@ struct remove : public MethKwargs<remove, arkipy_ArkiCheck>
                         throw std::runtime_error(ss.str());
                     }
 
-                    auto ds = session->locate_metadata(*md);
+                    auto ds = self->session->locate_metadata(*md);
                     if (!ds)
                     {
                         std::stringstream ss;
@@ -137,21 +134,9 @@ struct checker_base : public MethKwargs<Base, Impl>
         try {
             ReleaseGIL rg;
             {
-                for (auto si: self->config)
-                {
-                    try {
-                        std::shared_ptr<arki::dataset::Checker> checker;
-                        try {
-                            checker = self->session->dataset(si.second)->create_checker();
-                        } catch (std::exception& e) {
-                            throw SkipDataset(e.what());
-                        }
-                        Base::process(self, *checker);
-                    } catch (SkipDataset& e) {
-                        arki::nag::warning("Skipping dataset %s: %s", si.second.value("name").c_str(), e.what());
-                        continue;
-                    }
-                }
+                foreach_checker(self->session, [&](std::shared_ptr<arki::dataset::Checker> checker) {
+                    Base::process(self, *checker);
+                });
             }
             Py_RETURN_NONE;
         } ARKI_CATCH_RETURN_PYO
@@ -246,6 +231,21 @@ struct check : public checker_base<check, arkipy_ArkiCheck>
     }
 };
 
+void foreach_checker(std::shared_ptr<arki::dataset::Session> session, std::function<void(std::shared_ptr<arki::dataset::Checker>)> dest)
+{
+    session->foreach_dataset([&](std::shared_ptr<arki::dataset::Dataset> ds) {
+        std::shared_ptr<arki::dataset::Checker> checker;
+        try {
+            checker = ds->create_checker();
+        } catch (std::exception& e) {
+            arki::nag::warning("Skipping dataset %s: %s", ds->name().c_str(), e.what());
+            return true;
+        }
+        dest(checker);
+        return true;
+    });
+}
+
 struct compress : public checker_base<compress, arkipy_ArkiCheck>
 {
     constexpr static const char* name = "compress";
@@ -260,21 +260,9 @@ struct compress : public checker_base<compress, arkipy_ArkiCheck>
         try {
             ReleaseGIL rg;
             {
-                for (auto si: self->config)
-                {
-                    try {
-                        std::shared_ptr<arki::dataset::Checker> checker;
-                        try {
-                            checker = self->session->dataset(si.second)->create_checker();
-                        } catch (std::exception& e) {
-                            throw SkipDataset(e.what());
-                        }
-                        checker->compress(self->checker_config, group_size);
-                    } catch (SkipDataset& e) {
-                        arki::nag::warning("Skipping dataset %s: %s", si.second.value("name").c_str(), e.what());
-                        continue;
-                    }
-                }
+                foreach_checker(self->session, [&](std::shared_ptr<arki::dataset::Checker> checker) {
+                    checker->compress(self->checker_config, group_size);
+                });
             }
             Py_RETURN_NONE;
         } ARKI_CATCH_RETURN_PYO
@@ -298,22 +286,10 @@ struct unarchive : public checker_base<unarchive, arkipy_ArkiCheck>
             std::string pathname(arg_pathname, arg_pathname_len);
             ReleaseGIL rg;
             {
-                for (auto si: self->config)
-                {
-                    try {
-                        std::shared_ptr<arki::dataset::Checker> checker;
-                        try {
-                            checker = self->session->dataset(si.second)->create_checker();
-                        } catch (std::exception& e) {
-                            throw SkipDataset(e.what());
-                        }
-                        if (arki::dataset::segmented::Checker* c = dynamic_cast<arki::dataset::segmented::Checker*>(checker.get()))
-                            c->segment(pathname)->unarchive();
-                    } catch (SkipDataset& e) {
-                        arki::nag::warning("Skipping dataset %s: %s", si.second.value("name").c_str(), e.what());
-                        continue;
-                    }
-                }
+                foreach_checker(self->session, [&](std::shared_ptr<arki::dataset::Checker> checker) {
+                    if (auto c = std::dynamic_pointer_cast<arki::dataset::segmented::Checker>(checker))
+                        c->segment(pathname)->unarchive();
+                });
             }
             Py_RETURN_NONE;
         } ARKI_CATCH_RETURN_PYO
@@ -333,7 +309,6 @@ arki-check implementation
 
     static void _dealloc(Impl* self)
     {
-        self->config.~Sections();
         self->checker_config.~CheckerConfig();
         self->session.~shared_ptr<arki::dataset::Session>();
         Py_TYPE(self)->tp_free(self);
@@ -353,18 +328,16 @@ arki-check implementation
 
     static int _init(Impl* self, PyObject* args, PyObject* kw)
     {
-        static const char* kwlist[] = { "session", "config", "filter", "accurate", "offline", "online", "readonly", nullptr };
+        static const char* kwlist[] = { "session", "filter", "accurate", "offline", "online", "readonly", nullptr };
         arkipy_DatasetSession* session = nullptr;
-        PyObject* arg_config;
         const char* arg_filter = nullptr;
         Py_ssize_t arg_filter_len;
         int arg_accurate = 0;
         int arg_offline = 0;
         int arg_online = 0;
         int arg_readonly = 0;
-        if (!PyArg_ParseTupleAndKeywords(args, kw, "O!O|z#pppp", const_cast<char**>(kwlist),
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "O!|z#pppp", const_cast<char**>(kwlist),
                     arkipy_DatasetSession_Type, &session,
-                    &arg_config,
                     &arg_filter, &arg_filter_len,
                     &arg_accurate, &arg_offline, &arg_online, &arg_readonly))
             return -1;
@@ -376,9 +349,8 @@ arki-check implementation
             pyo_unique_ptr py_stdout(throw_ifnull(PyObject_GetAttrString(mod_sys, "stdout")));
             reporter = std::make_shared<dataset::TextIOReporter>(py_stdout);
 
-            new (&(self->config)) arki::core::cfg::Sections(std::move(sections_from_python(arg_config)));
             new (&(self->checker_config)) arki::dataset::CheckerConfig(reporter, arg_readonly);
-            new (&(self->session)) std::shared_ptr<arki::dataset::Session>(std::make_shared<arki::dataset::Session>());
+            new (&(self->session)) std::shared_ptr<arki::dataset::Session>(session->ptr);
 
             if (arg_filter)
                 self->checker_config.segment_filter = self->session->matcher(std::string(arg_filter, arg_filter_len));

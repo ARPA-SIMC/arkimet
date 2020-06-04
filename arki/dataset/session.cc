@@ -15,6 +15,7 @@
 #include "arki/dataset/empty.h"
 #include "arki/dataset/fromfunction.h"
 #include "arki/dataset/testlarge.h"
+#include "arki/dataset/querymacro.h"
 #include "arki/metadata.h"
 #include "arki/types/source/blob.h"
 #include "arki/nag.h"
@@ -107,9 +108,15 @@ std::shared_ptr<segment::Checker> Session::segment_checker(const std::string& fo
 void Session::add_dataset(const core::cfg::Section& cfg)
 {
     auto ds = dataset(cfg);
-    if (dataset_pool.find(ds->name()) != dataset_pool.end())
-        throw std::runtime_error(
-                "cannot load dataset " + ds->name() + " multiple times");
+    auto old = dataset_pool.find(ds->name());
+    if (old != dataset_pool.end())
+    {
+        nag::warning(
+            "dataset \"%s\" in \"%s\" already loaded from \"%s\": keeping only the first one",
+            ds->name().c_str(), ds->cfg.value("path").c_str(),
+            old->second->cfg.value("path").c_str());
+        return;
+    }
     dataset_pool.emplace(ds->name(), ds);
 
     // TODO: handle merging remote aliases
@@ -153,7 +160,7 @@ std::shared_ptr<Dataset> Session::dataset(const core::cfg::Section& cfg)
     if (type == "testlarge")
         return std::make_shared<testlarge::Dataset>(shared_from_this(), cfg);
 
-    throw std::runtime_error("cannot use configuration: unknown dataset type \""+type+"\"");
+    throw std::runtime_error("cannot use configuration for \"" + cfg.value("name") + "\": unknown dataset type \""+type+"\"");
 }
 
 std::shared_ptr<Dataset> Session::dataset(const std::string& name)
@@ -162,6 +169,58 @@ std::shared_ptr<Dataset> Session::dataset(const std::string& name)
     if (res == dataset_pool.end())
         throw std::runtime_error("dataset " + name + " not found in session pool");
     return res->second;
+}
+
+std::shared_ptr<Dataset> Session::querymacro(const std::string& macro_name, const std::string& macro_query)
+{
+    // If all the datasets are on the same server, we can run the macro remotely
+    std::string baseurl = get_common_remote_server();
+
+    // TODO: macro_arg seems to be ignored (and lost) here
+
+    if (baseurl.empty())
+    {
+        // Either all datasets are local, or they are on different servers: run the macro locally
+        arki::nag::verbose("Running query macro %s locally", macro_name.c_str());
+
+        // TODO: download and merge alias databases from all the servers
+
+        return std::make_shared<arki::dataset::QueryMacro>(shared_from_this(), macro_name, macro_query);
+    } else {
+        // Create the remote query macro
+        arki::nag::verbose("Running query macro %s remotely on %s", macro_name.c_str(), baseurl.c_str());
+        arki::core::cfg::Section cfg;
+        cfg.set("name", macro_name);
+        cfg.set("type", "remote");
+        cfg.set("path", baseurl);
+        cfg.set("qmacro", macro_query);
+        return dataset(cfg);
+    }
+}
+
+static std::string geturlprefix(const std::string& s)
+{
+    // Take until /dataset/
+    size_t pos = s.rfind("/dataset/");
+    if (pos == std::string::npos) return std::string();
+    return s.substr(0, pos);
+}
+
+std::string Session::get_common_remote_server() const
+{
+    std::string base;
+    for (const auto& si: dataset_pool)
+    {
+        std::string type = str::lower(si.second->cfg.value("type"));
+        if (type != "remote") return std::string();
+        std::string urlprefix = geturlprefix(si.second->cfg.value("path"));
+        if (urlprefix.empty()) return std::string();
+        if (base.empty())
+            base = urlprefix;
+        else if (base != urlprefix)
+            return std::string();
+    }
+    return base;
 }
 
 core::cfg::Section Session::read_config(const std::string& path)

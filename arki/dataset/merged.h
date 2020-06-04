@@ -18,15 +18,6 @@ struct Dataset : public dataset::Dataset
 
     Dataset(std::shared_ptr<Session> session);
 
-    /// Add a dataset to the group of datasets to merge
-    void add_dataset(std::shared_ptr<dataset::Reader> ds);
-
-    /// Add a dataset to the group of datasets to merge
-    void add_dataset(std::shared_ptr<dataset::Dataset> ds);
-
-    /// Add a dataset to the group of datasets to merge
-    void add_dataset(const core::cfg::Section& cfg);
-
     std::shared_ptr<dataset::Reader> create_reader() override;
 };
 

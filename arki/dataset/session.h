@@ -75,8 +75,22 @@ public:
      */
     std::shared_ptr<Dataset> dataset(const std::string& name);
 
+    /**
+     * Create a QueryMacro dataset querying datasets from this session's pool.
+     */
+    std::shared_ptr<Dataset> querymacro(const std::string& macro_name, const std::string& macro_query);
+
     /// Compile a matcher expression
     Matcher matcher(const std::string& expr);
+
+    /**
+     * Check if all the datasets in the session pool are remote and from the
+     * same server.
+     *
+     * @return the common server URL, or the empty string if some datasets
+     * are local or from different servers
+     */
+    std::string get_common_remote_server() const;
 
     /**
      * Expand the given query on the local session and all remote servers.

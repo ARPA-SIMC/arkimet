@@ -120,13 +120,12 @@ bool foreach_file(std::shared_ptr<arki::dataset::Session> session, BinaryInputFi
     return success;
 }
 
-bool foreach_sections(std::shared_ptr<arki::dataset::Session> session, const core::cfg::Sections& inputs, std::function<void(arki::dataset::Reader&)> dest)
+bool foreach_sections(std::shared_ptr<arki::dataset::Session> session, std::function<void(arki::dataset::Reader&)> dest)
 {
     bool all_successful = true;
     // Query all the datasets in sequence
-    for (auto si: inputs)
-    {
-        auto reader = session->dataset(si.second)->create_reader();
+    session->foreach_dataset([&](std::shared_ptr<arki::dataset::Dataset> dataset) {
+        auto reader = dataset->create_reader();
         bool success = true;
         try {
             dest(*reader);
@@ -137,7 +136,8 @@ bool foreach_sections(std::shared_ptr<arki::dataset::Session> session, const cor
             success = false;
         }
         if (!success) all_successful = false;
-    }
+        return true;
+    });
     return all_successful;
 }
 

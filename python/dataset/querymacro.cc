@@ -12,6 +12,7 @@
 #include "python/utils/values.h"
 #include "python/utils/dict.h"
 #include "python/dataset/python.h"
+#include "python/dataset/session.h"
 
 
 namespace arki {
@@ -42,11 +43,12 @@ PyObject* instantiate_qmacro_pydataset(const std::string& source, std::shared_pt
     // Get module.Querymacro
     pyo_unique_ptr cls(throw_ifnull(PyObject_GetAttrString(module, "Querymacro")));
 
-    pyo_unique_ptr datasets_cfg(cfg_sections(dataset->datasets));
+    // Create a python proxy for the dataset session
+    pyo_unique_ptr session((PyObject*)dataset_session_create(dataset->session));
 
     // Instantiate obj = Querymacro(macro_cfg, datasets_cfg, args, query)
     pyo_unique_ptr obj(throw_ifnull(PyObject_CallFunction(cls, "Os#s#",
-                    datasets_cfg.get(),
+                    session.get(),
                     dataset->macro_args.data(), (Py_ssize_t)dataset->macro_args.size(),
                     dataset->query.data(), (Py_ssize_t)dataset->query.size())));
 

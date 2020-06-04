@@ -18,7 +18,7 @@ test = GRIB1 or GRIB2
 
     def test_dataset_access(self):
         with arki.dataset.Session() as session:
-            reader = session.dataset_reader({
+            reader = session.dataset_reader(cfg={
                 "format": "grib",
                 "name": "test.grib1",
                 "path": "inbound/test.grib1",
@@ -27,7 +27,7 @@ test = GRIB1 or GRIB2
             self.assertEqual(str(reader), "dataset.Reader(file, test.grib1)")
             self.assertEqual(repr(reader), "dataset.Reader(file, test.grib1)")
 
-            with session.dataset_writer({
+            with session.dataset_writer(cfg={
                         "format": "grib",
                         "name": "testds",
                         "path": "testds",
@@ -40,7 +40,7 @@ test = GRIB1 or GRIB2
                 reader.query_data(on_metadata=do_import)
                 writer.flush()
 
-            with session.dataset_checker({
+            with session.dataset_checker(cfg={
                         "format": "grib",
                         "name": "testds",
                         "path": "testds",

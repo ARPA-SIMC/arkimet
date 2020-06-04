@@ -108,7 +108,6 @@ class Check(AppConfigMixin, App):
 
         arki_check = arkimet.cmdline.ArkiCheck(
                 self.session,
-                self.config,
                 filter=self.args.filter,
                 accurate=self.args.accurate,
                 online=online,

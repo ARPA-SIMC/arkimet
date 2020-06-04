@@ -62,10 +62,11 @@ struct Fixture : public arki::utils::tests::Fixture
         wassert(import("test200", mdc[0]));
         wassert(import("test80", mdc[1]));
         wassert(import("error", mdc[2]));
+        session->add_dataset(*config.section("test200"));
+        session->add_dataset(*config.section("test80"));
+        session->add_dataset(*config.section("error"));
+
         ds = std::make_shared<dataset::merged::Dataset>(session);
-        ds->add_dataset(*config.section("test200"));
-        ds->add_dataset(*config.section("test80"));
-        ds->add_dataset(*config.section("error"));
     }
 
     void import(const std::string& dsname, Metadata& md)

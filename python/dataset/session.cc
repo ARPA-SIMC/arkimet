@@ -109,66 +109,79 @@ aliases differently, it raises an exception.
     }
 };
 
-struct dataset_reader : public MethKwargs<dataset_reader, arkipy_DatasetSession>
+
+template<typename Base, typename Impl>
+struct dataset_accessor_factory : public MethKwargs<Base, Impl>
+{
+    constexpr static const char* signature = "cfg: Union[str, arkimet.cfg.Section, Dict[str, str]] = None, name: str = None";
+
+    static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
+    {
+        static const char* kwlist[] = { "cfg", "name", nullptr };
+        PyObject* arg_cfg = nullptr;
+        const char* arg_name = nullptr;
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "|$Os", const_cast<char**>(kwlist), &arg_cfg, &arg_name))
+            return nullptr;
+
+        try {
+            std::shared_ptr<arki::dataset::Dataset> ds;
+            if (arg_cfg)
+            {
+                if (arg_name)
+                {
+                    PyErr_SetString(PyExc_ValueError, "only one of cfg or name must be passed");
+                    throw PythonException();
+                }
+                ds = self->ptr->dataset(section_from_python(arg_cfg));
+            } else if (arg_name) {
+                ds = self->ptr->dataset(arg_name);
+            } else {
+                // Error
+                PyErr_SetString(PyExc_ValueError, "one of cfg or name must be passed");
+                throw PythonException();
+            }
+            return Base::create_accessor(ds);
+        } ARKI_CATCH_RETURN_PYO
+    }
+};
+
+
+struct dataset_reader : public dataset_accessor_factory<dataset_reader, arkipy_DatasetSession>
 {
     constexpr static const char* name = "dataset_reader";
-    constexpr static const char* signature = "cfg: Union[str, arkimet.cfg.Section, Dict[str, str]]";
     constexpr static const char* returns = "arkimet.dataset.Reader";
     constexpr static const char* summary = "return a dataset reader give its configuration";
     constexpr static const char* doc = nullptr;
 
-    static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
+    static PyObject* create_accessor(std::shared_ptr<arki::dataset::Dataset> dataset)
     {
-        static const char* kwlist[] = { "cfg", nullptr };
-        PyObject* arg_cfg = nullptr;
-        if (!PyArg_ParseTupleAndKeywords(args, kw, "O", const_cast<char**>(kwlist), &arg_cfg))
-            return nullptr;
-
-        try {
-            return (PyObject*)dataset_reader_create(self->ptr->dataset(section_from_python(arg_cfg))->create_reader());
-        } ARKI_CATCH_RETURN_PYO
+        return (PyObject*)dataset_reader_create(dataset->create_reader());
     }
 };
 
-struct dataset_writer : public MethKwargs<dataset_writer, arkipy_DatasetSession>
+struct dataset_writer : public dataset_accessor_factory<dataset_writer, arkipy_DatasetSession>
 {
     constexpr static const char* name = "dataset_writer";
-    constexpr static const char* signature = "cfg: Union[str, arkimet.cfg.Section, Dict[str, str]]";
     constexpr static const char* returns = "arkimet.dataset.Writer";
     constexpr static const char* summary = "return a dataset writer give its configuration";
     constexpr static const char* doc = nullptr;
 
-    static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
+    static PyObject* create_accessor(std::shared_ptr<arki::dataset::Dataset> dataset)
     {
-        static const char* kwlist[] = { "cfg", nullptr };
-        PyObject* arg_cfg = nullptr;
-        if (!PyArg_ParseTupleAndKeywords(args, kw, "O", const_cast<char**>(kwlist), &arg_cfg))
-            return nullptr;
-
-        try {
-            return (PyObject*)dataset_writer_create(self->ptr->dataset(section_from_python(arg_cfg))->create_writer());
-        } ARKI_CATCH_RETURN_PYO
+        return (PyObject*)dataset_writer_create(dataset->create_writer());
     }
 };
 
-struct dataset_checker : public MethKwargs<dataset_checker, arkipy_DatasetSession>
+struct dataset_checker : public dataset_accessor_factory<dataset_checker, arkipy_DatasetSession>
 {
     constexpr static const char* name = "dataset_checker";
-    constexpr static const char* signature = "cfg: Union[str, arkimet.cfg.Section, Dict[str, str]]";
     constexpr static const char* returns = "arkimet.dataset.Checker";
     constexpr static const char* summary = "return a dataset checker give its configuration";
     constexpr static const char* doc = nullptr;
 
-    static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
+    static PyObject* create_accessor(std::shared_ptr<arki::dataset::Dataset> dataset)
     {
-        static const char* kwlist[] = { "cfg", nullptr };
-        PyObject* arg_cfg = nullptr;
-        if (!PyArg_ParseTupleAndKeywords(args, kw, "O", const_cast<char**>(kwlist), &arg_cfg))
-            return nullptr;
-
-        try {
-            return (PyObject*)dataset_checker_create(self->ptr->dataset(section_from_python(arg_cfg))->create_checker());
-        } ARKI_CATCH_RETURN_PYO
+        return (PyObject*)dataset_checker_create(dataset->create_checker());
     }
 };
 

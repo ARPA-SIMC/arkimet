@@ -129,21 +129,6 @@ struct Dataset : public dataset::Dataset
     Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg);
 
     std::shared_ptr<dataset::Reader> create_reader() override;
-
-    static std::shared_ptr<dataset::Reader> create_querymacro_reader(
-            std::shared_ptr<Session> session,
-            const core::cfg::Sections& datasets,
-            const std::string& macro_name,
-            const std::string& macro_query);
-
-    /**
-     * Check if all the datasets in the given config are remote and from
-     * the same server.
-     *
-     * @return the common server URL, or the empty string if some datasets
-     * are local or from different servers
-     */
-    static std::string all_same_remote_server(const core::cfg::Sections& cfg);
 };
 
 /**

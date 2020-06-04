@@ -105,7 +105,6 @@ class Scan(AppConfigMixin, AppWithProcessor):
 
         with self.outfile() as outfd:
             arki_scan = arkimet.cmdline.ArkiScan(self.session)
-            arki_scan.set_inputs(self.config)
             arki_scan.set_processor(
                     query=arkimet.Matcher(),
                     outfile=outfd,

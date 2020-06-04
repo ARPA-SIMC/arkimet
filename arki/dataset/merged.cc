@@ -185,21 +185,10 @@ public:
 Dataset::Dataset(std::shared_ptr<Session> session)
     : dataset::Dataset(session, "merged")
 {
-}
-
-void Dataset::add_dataset(std::shared_ptr<dataset::Reader> ds)
-{
-    datasets.emplace_back(ds);
-}
-
-void Dataset::add_dataset(std::shared_ptr<dataset::Dataset> ds)
-{
-    datasets.emplace_back(ds->create_reader());
-}
-
-void Dataset::add_dataset(const core::cfg::Section& cfg)
-{
-    add_dataset(session->dataset(cfg));
+    session->foreach_dataset([&](std::shared_ptr<arki::dataset::Dataset> ds) {
+        datasets.emplace_back(ds->create_reader());
+        return true;
+    });
 }
 
 std::shared_ptr<dataset::Reader> Dataset::create_reader()

@@ -145,14 +145,16 @@ class AppConfigMixin:
     def add_config_section(self, section, name=None):
         if name is None:
             name = section["name"]
+        section["name"] = name
+        self.session.add_dataset(section)
 
         old = self.config.section(name)
         if old is not None:
             self.log.warning("ignoring dataset %s in %s, which has the same name as the dataset in %s",
                              name, section["path"], old["path"])
             return
+
         self.config[name] = section
-        self.config[name]["name"] = name
 
     re_stringlist = re.compile(r"[\s,]+")
 

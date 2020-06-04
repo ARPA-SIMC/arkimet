@@ -51,7 +51,7 @@ static std::string moveFile(const arki::dataset::Reader& ds, const std::string& 
  */
 struct FileSource
 {
-    std::shared_ptr<arki::dataset::Session> session;
+    std::shared_ptr<arki::dataset::Dataset> dataset;
     std::shared_ptr<arki::dataset::Reader> reader;
 
     arki::core::cfg::Section cfg;
@@ -59,8 +59,8 @@ struct FileSource
     std::string moveok;
     std::string moveko;
 
-    FileSource(std::shared_ptr<arki::dataset::Session> session, const arki::core::cfg::Section& info)
-        : session(session), cfg(info)
+    FileSource(std::shared_ptr<arki::dataset::Dataset> dataset)
+        : dataset(dataset)
     {
     }
 
@@ -68,7 +68,7 @@ struct FileSource
     {
         if (!movework.empty() && cfg.value("type") == "file")
             cfg.set("path", moveFile(cfg.value("path"), movework));
-        reader = session->dataset(cfg)->create_reader();
+        reader = dataset->create_reader();
     }
 
     void close(bool successful)
@@ -150,28 +150,6 @@ std::unique_ptr<arki_scan::MetadataDispatch> build_dispatcher(
 
     return res;
 }
-
-struct set_inputs : public MethKwargs<set_inputs, arkipy_ArkiScan>
-{
-    constexpr static const char* name = "set_inputs";
-    constexpr static const char* signature = "config: arkimet.cfg.Sections";
-    constexpr static const char* returns = "";
-    constexpr static const char* summary = "set input configuration";
-    constexpr static const char* doc = nullptr;
-
-    static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
-    {
-        static const char* kwlist[] = { "config", nullptr };
-        PyObject* py_config = nullptr;
-        if (!PyArg_ParseTupleAndKeywords(args, kw, "O", const_cast<char**>(kwlist), &py_config))
-            return nullptr;
-
-        try {
-            self->inputs = sections_from_python(py_config);
-            Py_RETURN_NONE;
-        } ARKI_CATCH_RETURN_PYO
-    }
-};
 
 struct set_processor : public MethKwargs<set_processor, arkipy_ArkiScan>
 {
@@ -264,7 +242,7 @@ struct scan_sections : public MethKwargs<scan_sections, arkipy_ArkiScan>
             bool all_successful;
             {
                 ReleaseGIL rg;
-                all_successful = foreach_sections(self->session, self->inputs, [&](arki::dataset::Reader& reader) {
+                all_successful = foreach_sections(self->session, [&](arki::dataset::Reader& reader) {
                     self->processor->process(reader, reader.name());
                 });
                 self->processor->end();
@@ -359,9 +337,8 @@ struct dispatch_sections : public MethKwargs<dispatch_sections, arkipy_ArkiScan>
                 ReleaseGIL rg;
 
                 // Query all the datasets in sequence
-                for (auto si: self->inputs)
-                {
-                    FileSource source(self->session, si.second);
+                self->session->foreach_dataset([&](std::shared_ptr<arki::dataset::Dataset> ds) {
+                    FileSource source(ds);
                     if (movework) source.movework = std::string(movework, movework_len);
                     if (moveok) source.moveok = std::string(moveok, moveok_len);
                     if (moveko) source.moveko = std::string(moveko, moveko_len);
@@ -382,7 +359,8 @@ struct dispatch_sections : public MethKwargs<dispatch_sections, arkipy_ArkiScan>
                     }
                     source.close(success);
                     if (!success) all_successful = false;
-                }
+                    return true;
+                });
 
                 self->processor->end();
             }
@@ -403,11 +381,10 @@ struct ArkiScanDef : public Type<ArkiScanDef, arkipy_ArkiScan>
 arki-scan implementation
 )";
     GetSetters<> getsetters;
-    Methods<set_inputs, set_processor, set_dispatcher, scan_file, scan_sections, dispatch_file, dispatch_sections> methods;
+    Methods<set_processor, set_dispatcher, scan_file, scan_sections, dispatch_file, dispatch_sections> methods;
 
     static void _dealloc(Impl* self)
     {
-        self->inputs.~Sections();
         self->session.~shared_ptr<arki::dataset::Session>();
         delete self->processor;
         delete self->dispatcher;
@@ -434,7 +411,6 @@ arki-scan implementation
             return -1;
 
         try {
-            new (&(self->inputs)) arki::core::cfg::Sections;
             new (&(self->session)) std::shared_ptr<arki::dataset::Session>(session->ptr);
             self->processor = nullptr;
             self->dispatcher = nullptr;

@@ -149,7 +149,6 @@ class Query(AppConfigMixin, AppWithProcessor):
 
         with self.outfile() as outfd:
             arki_query = arkimet.cmdline.ArkiQuery(self.session)
-            arki_query.set_inputs(self.config)
             progress = None
             if self.args.progress:
                 progress = Progress()

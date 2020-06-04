@@ -71,6 +71,69 @@ add_method("add_local", [] {
     wassert_true(ds);
 });
 
+add_method("get_common_remote_server", [] {
+    {
+        std::string conf =
+            "[test200]\n"
+            "type = remote\n"
+            "path = http://foo.bar/foo/dataset/test200\n"
+            "\n"
+            "[test80]\n"
+            "type = remote\n"
+            "path = http://foo.bar/foo/dataset/test80\n"
+            "\n"
+            "[error]\n"
+            "type = remote\n"
+            "path = http://foo.bar/foo/dataset/error\n";
+        auto cfg = core::cfg::Sections::parse(conf);
+        auto session = std::make_shared<dataset::Session>();
+        for (const auto& si: cfg)
+            session->add_dataset(si.second);
+
+        wassert(actual(session->get_common_remote_server()) == "http://foo.bar/foo");
+    }
+
+    {
+        string conf =
+            "[test200]\n"
+            "type = remote\n"
+            "path = http://bar.foo.bar/foo/dataset/test200\n"
+            "\n"
+            "[test80]\n"
+            "type = remote\n"
+            "path = http://foo.bar/foo/dataset/test80\n"
+            "\n"
+            "[error]\n"
+            "type = remote\n"
+            "path = http://foo.bar/foo/dataset/error\n";
+        auto cfg = core::cfg::Sections::parse(conf);
+        auto session = std::make_shared<dataset::Session>();
+        for (const auto& si: cfg)
+            session->add_dataset(si.second);
+        wassert(actual(session->get_common_remote_server()) == "");
+    }
+
+    {
+        string conf =
+            "[test200]\n"
+            "type = ondisk2\n"
+            "path = http://foo.bar/foo/dataset/test200\n"
+            "\n"
+            "[test80]\n"
+            "type = remote\n"
+            "path = http://foo.bar/foo/dataset/test80\n"
+            "\n"
+            "[error]\n"
+            "type = remote\n"
+            "path = http://foo.bar/foo/dataset/error\n";
+        auto cfg = core::cfg::Sections::parse(conf);
+        auto session = std::make_shared<dataset::Session>();
+        for (const auto& si: cfg)
+            session->add_dataset(si.second);
+        wassert(actual(session->get_common_remote_server()) == "");
+    }
+});
+
 }
 
 }

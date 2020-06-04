@@ -18,60 +18,6 @@ class Tests : public TestCase
 
 void Tests::register_tests() {
 
-// Test allSameRemoteServer
-add_method("allsameremoteserver", [] {
-    {
-        string conf =
-            "[test200]\n"
-            "type = remote\n"
-            "path = http://foo.bar/foo/dataset/test200\n"
-            "\n"
-            "[test80]\n"
-            "type = remote\n"
-            "path = http://foo.bar/foo/dataset/test80\n"
-            "\n"
-            "[error]\n"
-            "type = remote\n"
-            "path = http://foo.bar/foo/dataset/error\n";
-        auto cfg = core::cfg::Sections::parse(conf);
-        wassert(actual(http::Dataset::all_same_remote_server(cfg)) == "http://foo.bar/foo");
-    }
-
-    {
-        string conf =
-            "[test200]\n"
-            "type = remote\n"
-            "path = http://bar.foo.bar/foo/dataset/test200\n"
-            "\n"
-            "[test80]\n"
-            "type = remote\n"
-            "path = http://foo.bar/foo/dataset/test80\n"
-            "\n"
-            "[error]\n"
-            "type = remote\n"
-            "path = http://foo.bar/foo/dataset/error\n";
-        auto cfg = core::cfg::Sections::parse(conf);
-        wassert(actual(http::Dataset::all_same_remote_server(cfg)) == "");
-    }
-
-    {
-        string conf =
-            "[test200]\n"
-            "type = ondisk2\n"
-            "path = http://foo.bar/foo/dataset/test200\n"
-            "\n"
-            "[test80]\n"
-            "type = remote\n"
-            "path = http://foo.bar/foo/dataset/test80\n"
-            "\n"
-            "[error]\n"
-            "type = remote\n"
-            "path = http://foo.bar/foo/dataset/error\n";
-        auto cfg = core::cfg::Sections::parse(conf);
-        wassert(actual(http::Dataset::all_same_remote_server(cfg)) == "");
-    }
-});
-
 add_method("redirect", [] {
     tests::Daemon server({"arki/dataset/http-test-daemon", "--action=redirect"});
     int port;

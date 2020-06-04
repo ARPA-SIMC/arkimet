@@ -25,7 +25,6 @@ extern "C" {
 
 typedef struct {
     PyObject_HEAD
-    arki::core::cfg::Sections inputs;
     arki::python::cmdline::DatasetProcessor* processor = nullptr;
     arki::python::arki_scan::MetadataDispatch* dispatcher = nullptr;
     std::shared_ptr<arki::dataset::Session> session;

@@ -11,7 +11,6 @@ extern "C" {
 
 typedef struct {
     PyObject_HEAD
-    arki::core::cfg::Sections config;
     arki::dataset::CheckerConfig checker_config;
     std::shared_ptr<arki::dataset::Session> session;
 } arkipy_ArkiCheck;
