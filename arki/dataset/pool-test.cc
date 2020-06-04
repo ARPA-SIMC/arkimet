@@ -46,9 +46,10 @@ add_method("instantiate", [] {
     // In-memory dataset configuration
     auto session = std::make_shared<dataset::Session>();
     auto config = core::cfg::Sections::parse(sample_config, "(memory)");
+    for (const auto& i: config)
+        session->add_dataset(i.second);
 
-    Datasets datasets(session, config);
-    WriterPool pool(datasets);
+    WriterPool pool(session);
     wassert(actual(pool.get("error")).istrue());
     wassert(actual(pool.get("test200")).istrue());
     wassert(actual(pool.get("test80")).istrue());
