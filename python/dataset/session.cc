@@ -18,13 +18,28 @@ PyTypeObject* arkipy_DatasetSession_Type = nullptr;
 
 namespace {
 
+struct get_alias_database : public MethNoargs<get_alias_database, arkipy_DatasetSession>
+{
+    constexpr static const char* name = "get_alias_database";
+    constexpr static const char* signature = "";
+    constexpr static const char* returns = "arkimet.cfg.Sections";
+    constexpr static const char* summary = "return matcher alias database for this session";
+    constexpr static const char* doc = nullptr;
+
+    static PyObject* run(Impl* self)
+    {
+        try {
+            return cfg_sections(self->ptr->get_alias_database());
+        } ARKI_CATCH_RETURN_PYO
+    }
+};
 
 struct DatasetSessionDef : public Type<DatasetSessionDef, arkipy_DatasetSession>
 {
     constexpr static const char* name = "Session";
     constexpr static const char* qual_name = "arkimet.dataset.Session";
     constexpr static const char* doc = R"(
-Read functions for an arkimet dataset.
+Shared configuration and data used to work with arkimet datasets.
 
 TODO: document
 
@@ -33,7 +48,7 @@ Examples::
     TODO: add examples
 )";
     GetSetters<> getsetters;
-    Methods<MethGenericEnter<Impl>, MethGenericExit<Impl>> methods;
+    Methods<MethGenericEnter<Impl>, MethGenericExit<Impl>, get_alias_database> methods;
 
     static void _dealloc(Impl* self)
     {
@@ -53,26 +68,19 @@ Examples::
 
     static int _init(Impl* self, PyObject* args, PyObject* kw)
     {
-        static const char* kwlist[] = { "cfg", nullptr };
-        PyObject* py_cfg = Py_None;
-        if (!PyArg_ParseTupleAndKeywords(args, kw, "O", const_cast<char**>(kwlist), &py_cfg))
+        static const char* kwlist[] = { "load_aliases", nullptr };
+        int load_aliases = 1;
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "|p", const_cast<char**>(kwlist), &load_aliases))
             return -1;
 
         try {
-            core::cfg::Section cfg;
-
-            if (PyUnicode_Check(py_cfg))
-                cfg = arki::dataset::Session::read_config(from_python<std::string>(py_cfg));
-            else
-                cfg = section_from_python(py_cfg);
-
-            new (&(self->ptr)) shared_ptr<arki::dataset::Session>(std::make_shared<arki::dataset::Session>());
+            new (&(self->ptr)) shared_ptr<arki::dataset::Session>(std::make_shared<arki::dataset::Session>(load_aliases));
             return 0;
         } ARKI_CATCH_RETURN_INT;
     }
 };
 
-DatasetSessionDef* reader_def = nullptr;
+DatasetSessionDef* session_def = nullptr;
 
 }
 
@@ -90,10 +98,9 @@ arkipy_DatasetSession* dataset_session_create(std::shared_ptr<arki::dataset::Ses
 
 void register_dataset_session(PyObject* module)
 {
-    reader_def = new DatasetSessionDef;
-    reader_def->define(arkipy_DatasetSession_Type, module);
+    session_def = new DatasetSessionDef;
+    session_def->define(arkipy_DatasetSession_Type, module);
 }
 
 }
 }
-

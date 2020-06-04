@@ -1,3 +1,4 @@
+from __future__ import annotations
 import unittest
 import tempfile
 import arkimet as arki

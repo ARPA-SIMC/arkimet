@@ -279,9 +279,8 @@ namespace python {
 
 void register_dataset(PyObject* m)
 {
-    pyo_unique_ptr http = throw_ifnull(PyModule_Create(&http_module));
-
     pyo_unique_ptr dataset = throw_ifnull(PyModule_Create(&dataset_module));
+    pyo_unique_ptr http = throw_ifnull(PyModule_Create(&http_module));
 
     register_dataset_session(dataset);
     register_dataset_reader(dataset);
