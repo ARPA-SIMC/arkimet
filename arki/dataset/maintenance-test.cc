@@ -599,7 +599,7 @@ void MaintenanceTest<TestFixture>::register_tests()
     this->add_method("check_archive_age", R"(
         - find segments that can only contain data older than `archive age` days [archive_age]
     )", [&](Fixture& f) {
-        f.cfg.set("archive age", "1");
+        f.cfg->set("archive age", "1");
         f.test_reread_config();
 
         {
@@ -618,7 +618,7 @@ void MaintenanceTest<TestFixture>::register_tests()
     this->add_method("check_delete_age", R"(
         - find segments that can only contain data older than `delete age` days [delete_age]
     )", [&](Fixture& f) {
-        f.cfg.set("delete age", "1");
+        f.cfg->set("delete age", "1");
         f.test_reread_config();
 
         {
@@ -769,7 +769,7 @@ void MaintenanceTest<TestFixture>::register_tests()
     this->add_method("fix_archive_age", R"(
         - [archive age] segments are not touched
     )", [&](Fixture& f) {
-        f.cfg.set("archive age", "1");
+        f.cfg->set("archive age", "1");
         f.test_reread_config();
 
         {
@@ -787,7 +787,7 @@ void MaintenanceTest<TestFixture>::register_tests()
     this->add_method("fix_delete_age", R"(
         - [delete age] segments are not touched
     )", [&](Fixture& f) {
-        f.cfg.set("delete age", "1");
+        f.cfg->set("delete age", "1");
         f.test_reread_config();
 
         {
@@ -865,7 +865,7 @@ void MaintenanceTest<TestFixture>::register_tests()
         - [archive age] segments are repacked if needed, then moved to .archive/last
     )", [&](Fixture& f) {
         f.make_hole_middle();
-        f.cfg.set("archive age", "1");
+        f.cfg->set("archive age", "1");
         f.test_reread_config();
 
         auto o = SessionTime::local_override(t20070707 + 2 * 86400);
@@ -892,7 +892,7 @@ void MaintenanceTest<TestFixture>::register_tests()
         - [delete age] segments are deleted
     )", [&](Fixture& f) {
         f.make_hole_middle();
-        f.cfg.set("delete age", "1");
+        f.cfg->set("delete age", "1");
         f.test_reread_config();
 
         auto o = SessionTime::local_override(t20070707 + 2 * 86400);
@@ -913,7 +913,7 @@ void MaintenanceTest<TestFixture>::register_tests()
           deleted, gets deleted without repacking
     )", [&](Fixture& f) {
         f.make_hole_middle();
-        f.cfg.set("delete age", "1");
+        f.cfg->set("delete age", "1");
         f.test_reread_config();
 
         auto o = SessionTime::local_override(t20070707 + 2 * 86400);
@@ -943,7 +943,7 @@ void MaintenanceTest<TestFixture>::register_tests()
           archived, gets repacked before archiving
     )", [&](Fixture& f) {
         f.make_hole_middle();
-        f.cfg.set("archive age", "1");
+        f.cfg->set("archive age", "1");
         f.test_reread_config();
 
         auto o = SessionTime::local_override(t20070707 + 2 * 86400);

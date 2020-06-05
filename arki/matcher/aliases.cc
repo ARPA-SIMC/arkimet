@@ -90,7 +90,7 @@ void AliasDatabase::add(const core::cfg::Sections& cfg)
         if (!mt)
             // Ignore unwanted sections
             continue;
-        aliasDatabase[si.first].add(*mt, si.second);
+        aliasDatabase[si.first].add(*mt, *si.second);
     }
 }
 
@@ -107,8 +107,8 @@ core::cfg::Sections AliasDatabase::serialise()
     core::cfg::Sections res;
     for (const auto& i: aliasDatabase)
     {
-        core::cfg::Section& s = res.obtain(i.first);
-        i.second.serialise(s);
+        auto s = res.obtain(i.first);
+        i.second.serialise(*s);
     }
     return res;
 }

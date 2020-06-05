@@ -34,7 +34,7 @@ inline unique_ptr<WIndex> createIndex(std::shared_ptr<core::Lock> lock, const st
 {
     auto session = std::make_shared<dataset::Session>();
     auto cfg = core::cfg::Section::parse(text_cfg);
-    auto dataset = std::make_shared<dataset::ondisk2::Dataset>(session, cfg);
+    auto dataset = std::make_shared<dataset::ondisk2::Dataset>(session, *cfg);
     auto res = unique_ptr<INDEX>(new INDEX(dataset));
     res->lock = lock;
     return res;
@@ -91,7 +91,7 @@ struct ReadHang : public subprocess::Child
     core::cfg::Section cfg;
 
     ReadHang(const std::string& cfgstr)
-        : cfg(core::cfg::Section::parse(cfgstr))
+        : cfg(*core::cfg::Section::parse(cfgstr))
     {
     }
 

@@ -38,7 +38,7 @@ struct FixtureWriter : public DatasetTest
 
     bool smallfiles() const
     {
-        return cfg.value_bool("smallfiles") || (td.format == "vm2" && cfg.value("type") == "simple");
+        return cfg->value_bool("smallfiles") || (td.format == "vm2" && cfg->value("type") == "simple");
     }
 };
 

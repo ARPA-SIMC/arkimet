@@ -28,19 +28,19 @@ add_method("parse_section", [] {
         "due=2\n"
         "  t r e  = 3\n"
         "\n";
-    cfg::Section conf = cfg::Section::parse(test, "(memory)");
+    auto conf = cfg::Section::parse(test, "(memory)");
 
     size_t count = 0;
-    for (const auto& v: conf)
+    for (const auto& v: *conf)
         ++count;
     wassert(actual(count) == 4u);
 
-    wassert(actual(conf.value("zero")) == "0");
-    wassert(actual(conf.value("uno")) == "1");
-    wassert(actual(conf.value("due")) == "2");
-    wassert(actual(conf.value("t r e")) == "3");
-    conf.set("due", "DUE");
-    wassert(actual(conf.value("due")) == "DUE");
+    wassert(actual(conf->value("zero")) == "0");
+    wassert(actual(conf->value("uno")) == "1");
+    wassert(actual(conf->value("due")) == "2");
+    wassert(actual(conf->value("t r e")) == "3");
+    conf->set("due", "DUE");
+    wassert(actual(conf->value("due")) == "DUE");
 });
 
 add_method("parse_sections", [] {
@@ -61,19 +61,19 @@ add_method("parse_sections", [] {
     auto conf = cfg::Sections::parse(test, "(memory)");
 
     size_t count = 0;
-    for (const auto& v: conf)
+    for (const auto& v: *conf)
         ++count;
     wassert(actual(count) == 2u);
 
-    wassert_true(conf.section("first"));
-    wassert_true(conf.section("second"));
-    wassert_false(conf.section("third"));
+    wassert_true(conf->section("first"));
+    wassert_true(conf->section("second"));
+    wassert_false(conf->section("third"));
 
-    const auto* s = conf.section("first");
+    auto s = conf->section("first");
     wassert(actual(s->value("zero")) == "");
     wassert(actual(s->value("uno")) == "1");
     wassert(actual(s->value("t r e")) == "");
-    s = conf.section("second");
+    s = conf->section("second");
     wassert(actual(s->value("uno")) == "");
     wassert(actual(s->value("due")) == "2");
     wassert(actual(s->value("t r e")) == "3");

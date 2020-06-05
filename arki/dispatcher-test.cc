@@ -49,7 +49,7 @@ name = error
 path = error
 )";
 
-static core::cfg::Sections setup1()
+static std::shared_ptr<core::cfg::Sections> setup1()
 {
     sys::rmtree_ifexists("test200");
     sys::rmtree_ifexists("test80");
@@ -70,8 +70,8 @@ add_method("simple", [] {
     using namespace arki::utils::acct;
 
     auto session = std::make_shared<dataset::Session>();
-    for (const auto& i: setup1())
-        session->add_dataset(i.second);
+    for (const auto& i: *setup1())
+        session->add_dataset(*i.second);
 
     plain_data_read_count.reset();
     metadata::TrackedData tracked_data(metadata::DataManager::get());
@@ -97,8 +97,8 @@ add_method("drop_cached_data", [] {
     using namespace arki::utils::acct;
 
     auto session = std::make_shared<dataset::Session>();
-    for (const auto& i: setup1())
-        session->add_dataset(i.second);
+    for (const auto& i: *setup1())
+        session->add_dataset(*i.second);
 
     plain_data_read_count.reset();
     metadata::TrackedData tracked_data(metadata::DataManager::get());
@@ -139,8 +139,8 @@ add_method("regression01", [] {
     auto config = core::cfg::Sections::parse(conf);
 
     auto session = std::make_shared<dataset::Session>();
-    for (const auto& i: config)
-        session->add_dataset(i.second);
+    for (const auto& i: *config)
+        session->add_dataset(*i.second);
 
     metadata::TestCollection source("inbound/tempforecast.bufr", true);
     wassert(actual(source.size()) == 1u);
@@ -159,8 +159,8 @@ add_method("regression01", [] {
 // Test dispatch to error datasets after validation errors
 add_method("validation", [] {
     auto session = std::make_shared<dataset::Session>();
-    for (const auto& i: setup1())
-        session->add_dataset(i.second);
+    for (const auto& i: *setup1())
+        session->add_dataset(*i.second);
     RealDispatcher dispatcher(session);
     metadata::validators::FailAlways fail_always;
     dispatcher.add_validator(fail_always);
@@ -179,8 +179,8 @@ add_method("validation", [] {
 // Test dispatching files with no reftime, they should end up in the error dataset
 add_method("missing_reftime", [] {
     auto session = std::make_shared<dataset::Session>();
-    for (const auto& i: setup1())
-        session->add_dataset(i.second);
+    for (const auto& i: *setup1())
+        session->add_dataset(*i.second);
     metadata::TestCollection source("inbound/wrongdate.bufr", true);
     wassert(actual(source.size()) == 6u);
 

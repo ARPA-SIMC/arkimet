@@ -129,7 +129,7 @@ void Reader::impl_query_summary(const Matcher& matcher, Summary& summary)
         archive()->query_summary(matcher, summary);
 }
 
-core::cfg::Section Reader::read_config(const std::string& path)
+std::shared_ptr<core::cfg::Section> Reader::read_config(const std::string& path)
 {
     // Read the config file inside the directory
     string name = str::basename(path);
@@ -139,12 +139,12 @@ core::cfg::Section Reader::read_config(const std::string& path)
     // Parse the config file into a new section
     auto res = core::cfg::Section::parse(in);
     // Fill in missing bits
-    res.set("name", name);
-    res.set("path", sys::abspath(path));
+    res->set("name", name);
+    res->set("path", sys::abspath(path));
     return res;
 }
 
-core::cfg::Sections Reader::read_configs(const std::string& path)
+std::shared_ptr<core::cfg::Sections> Reader::read_configs(const std::string& path)
 {
     // Read the config file inside the directory
     string name = str::basename(path);
@@ -154,12 +154,12 @@ core::cfg::Sections Reader::read_configs(const std::string& path)
     // Parse the config file into a new section
     auto sec = core::cfg::Section::parse(in);
     // Fill in missing bits
-    sec.set("name", name);
-    sec.set("path", sys::abspath(path));
+    sec->set("name", name);
+    sec->set("path", sys::abspath(path));
 
     // Return a Sections with only this section
-    core::cfg::Sections res;
-    res.obtain(name) = std::move(sec);
+    auto res = std::make_shared<core::cfg::Sections>();
+    res->emplace(name, sec);
     return res;
 }
 

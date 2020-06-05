@@ -128,12 +128,12 @@ public:
     /**
      * Read the configuration of the dataset at the given path or URL
      */
-    static core::cfg::Section read_config(const std::string& path);
+    static std::shared_ptr<core::cfg::Section> read_config(const std::string& path);
 
     /**
      * Read a multi-dataset configuration at the given path or URL
      */
-    static core::cfg::Sections read_configs(const std::string& path);
+    static std::shared_ptr<core::cfg::Sections> read_configs(const std::string& path);
 };
 
 }

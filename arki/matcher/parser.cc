@@ -53,7 +53,7 @@ void Parser::load_system_aliases()
     {
         sys::File in(fromEnv, O_RDONLY);
         auto sections = core::cfg::Sections::parse(in);
-        aliases->add(sections);
+        aliases->add(*sections);
         return;
     }
 
@@ -65,7 +65,7 @@ void Parser::load_system_aliases()
     {
         sys::File in(name, O_RDONLY);
         auto sections = core::cfg::Sections::parse(in);
-        aliases->add(sections);
+        aliases->add(*sections);
         return;
     }
 #endif

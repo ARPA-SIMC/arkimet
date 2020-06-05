@@ -133,7 +133,7 @@ public:
      *
      * The 'name' value of the configuration will always be set to ds_name.
      */
-    core::cfg::Section cfg;
+    std::shared_ptr<core::cfg::Section> cfg;
     // Extra configuration for this instance of this fixture
     std::string cfg_instance;
     // Dataset name (always "testds")

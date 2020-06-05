@@ -60,8 +60,8 @@ add_method("acquire_replace", [](Fixture& f) {
     // Import again with replace=true, make sure they're all ok
     {
         auto cfg(f.cfg);
-        cfg.set("replace", "true");
-        auto config = std::make_shared<dataset::iseg::Dataset>(f.session(), cfg);
+        cfg->set("replace", "true");
+        auto config = std::make_shared<dataset::iseg::Dataset>(f.session(), *cfg);
         auto writer = config->create_writer();
         for (auto& md: mdc)
             wassert(actual(writer->acquire(*md)) == dataset::ACQ_OK);

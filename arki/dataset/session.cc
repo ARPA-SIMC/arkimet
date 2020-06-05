@@ -233,7 +233,7 @@ std::string Session::get_common_remote_server() const
     return base;
 }
 
-core::cfg::Section Session::read_config(const std::string& path)
+std::shared_ptr<core::cfg::Section> Session::read_config(const std::string& path)
 {
     if (path == "-")
     {
@@ -275,7 +275,7 @@ core::cfg::Section Session::read_config(const std::string& path)
         return dataset::file::read_config(fname);
 }
 
-core::cfg::Sections Session::read_configs(const std::string& path)
+std::shared_ptr<core::cfg::Sections> Session::read_configs(const std::string& path)
 {
     if (path == "-")
     {
@@ -356,7 +356,7 @@ std::string Session::expand_remote_query(const core::cfg::Sections& remotes, con
     bool first = true;
     for (auto si: remotes)
     {
-        std::string server = si.second.value("server");
+        std::string server = si.second->value("server");
         if (servers_seen.find(server) != servers_seen.end()) continue;
         std::string got;
         try {

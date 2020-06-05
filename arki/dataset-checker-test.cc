@@ -97,7 +97,7 @@ this->add_method("check", [](Fixture& f) {
 this->add_method("check_archives", [](Fixture& f) {
     auto o = dataset::SessionTime::local_override(1184018400); // date +%s --date="2007-07-10"
     wassert(f.import_all(f.td.mds));
-    f.cfg.set("archive age", "1");
+    f.cfg->set("archive age", "1");
     f.test_reread_config();
 
     auto checker(f.makeSegmentedChecker());
@@ -182,7 +182,7 @@ this->add_method("remove_all_filtered", [](Fixture& f) {
 
 // Test check_issue51
 this->add_method("check_issue51", [](Fixture& f) {
-    f.cfg.set("step", "yearly");
+    f.cfg->set("step", "yearly");
     if (f.td.format != "grib" && f.td.format != "bufr") return;
     wassert(f.import_all_packed(f.td.mds));
 

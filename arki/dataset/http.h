@@ -158,8 +158,8 @@ public:
 
     core::Interval get_stored_time_interval() override;
 
-    static core::cfg::Sections load_cfg_sections(const std::string& path);
-    static core::cfg::Section load_cfg_section(const std::string& path);
+    static std::shared_ptr<core::cfg::Sections> load_cfg_sections(const std::string& path);
+    static std::shared_ptr<core::cfg::Section> load_cfg_section(const std::string& path);
 
     /**
      * Expand the given matcher expression using the aliases on this server
@@ -169,7 +169,7 @@ public:
     /**
      * Read the alias database from the given remote dataset
      */
-    static core::cfg::Sections getAliasDatabase(const std::string& server);
+    static std::shared_ptr<core::cfg::Sections> getAliasDatabase(const std::string& server);
 };
 
 class HTTPInbound

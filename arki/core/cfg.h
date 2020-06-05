@@ -5,6 +5,7 @@
 #include <stdexcept>
 #include <map>
 #include <string>
+#include <memory>
 
 namespace arki {
 namespace core {
@@ -83,53 +84,53 @@ public:
     void dump(FILE* out) const;
 
     /// Parse configuration from the given LineReader
-    static Section parse(core::LineReader& in, const std::string& pathname);
+    static std::shared_ptr<Section> parse(core::LineReader& in, const std::string& pathname);
 
     /// Parse configuration from the given input file
-    static Section parse(core::NamedFileDescriptor& in);
+    static std::shared_ptr<Section> parse(core::NamedFileDescriptor& in);
 
     /// Parse configuration from the given string
-    static Section parse(const std::string& in, const std::string& pathname="memory buffer");
+    static std::shared_ptr<Section> parse(const std::string& in, const std::string& pathname="memory buffer");
 };
 
 
 /**
  * name -> section mapping of configuration file sections
  */
-class Sections : protected std::map<std::string, Section>
+class Sections : protected std::map<std::string, std::shared_ptr<Section>>
 {
 protected:
 
 public:
-    using std::map<std::string, Section>::map;
-    using std::map<std::string, Section>::clear;
-    using std::map<std::string, Section>::empty;
-    using std::map<std::string, Section>::size;
-    using std::map<std::string, Section>::begin;
-    using std::map<std::string, Section>::end;
-    using std::map<std::string, Section>::cbegin;
-    using std::map<std::string, Section>::cend;
-    using std::map<std::string, Section>::find;
-    using std::map<std::string, Section>::erase;
-    using std::map<std::string, Section>::emplace;
-    using std::map<std::string, Section>::operator=;
+    using std::map<std::string, std::shared_ptr<Section>>::map;
+    using std::map<std::string, std::shared_ptr<Section>>::clear;
+    using std::map<std::string, std::shared_ptr<Section>>::empty;
+    using std::map<std::string, std::shared_ptr<Section>>::size;
+    using std::map<std::string, std::shared_ptr<Section>>::begin;
+    using std::map<std::string, std::shared_ptr<Section>>::end;
+    using std::map<std::string, std::shared_ptr<Section>>::cbegin;
+    using std::map<std::string, std::shared_ptr<Section>>::cend;
+    using std::map<std::string, std::shared_ptr<Section>>::find;
+    using std::map<std::string, std::shared_ptr<Section>>::erase;
+    using std::map<std::string, std::shared_ptr<Section>>::emplace;
+    using std::map<std::string, std::shared_ptr<Section>>::operator=;
 
     /**
      * Retrieve a section from this config file.
      *
      * nullptr is returned if there is no such section.
      */
-    const Section* section(const std::string& key) const;
+    std::shared_ptr<const Section> section(const std::string& key) const;
 
     /**
      * Retrieve a section from this config file.
      *
      * nullptr is returned if there is no such section.
      */
-    Section* section(const std::string& key);
+    std::shared_ptr<Section> section(const std::string& key);
 
     /// Retrieve a section from this config file, creating it if it is missing.
-    Section& obtain(const std::string& key);
+    std::shared_ptr<Section> obtain(const std::string& key);
 
     /// Write this configuration to the given output stream
     void write(core::NamedFileDescriptor& out) const;
@@ -141,13 +142,13 @@ public:
     void dump(FILE* out) const;
 
     /// Parse configuration from the given LineReader
-    static Sections parse(core::LineReader& in, const std::string& pathname);
+    static std::shared_ptr<Sections> parse(core::LineReader& in, const std::string& pathname);
 
     /// Parse configuration from the given input file.
-    static Sections parse(core::NamedFileDescriptor& in);
+    static std::shared_ptr<Sections> parse(core::NamedFileDescriptor& in);
 
     /// Parse configuration from the given string
-    static Sections parse(const std::string& in, const std::string& pathname="memory buffer");
+    static std::shared_ptr<Sections> parse(const std::string& in, const std::string& pathname="memory buffer");
 
     friend class SectionParser;
 };

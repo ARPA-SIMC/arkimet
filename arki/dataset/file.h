@@ -13,8 +13,8 @@ namespace arki {
 namespace dataset {
 namespace file {
 
-core::cfg::Section read_config(const std::string& path);
-core::cfg::Sections read_configs(const std::string& path);
+std::shared_ptr<core::cfg::Section> read_config(const std::string& path);
+std::shared_ptr<core::cfg::Sections> read_configs(const std::string& path);
 
 /// Dataset on a single file
 class Dataset : public dataset::Dataset

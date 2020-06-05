@@ -99,9 +99,9 @@ public:
     std::shared_ptr<archive::Reader> archive();
 
     /// Read the configuration for the given dataset. path must point to a directory
-    static core::cfg::Section read_config(const std::string& path);
+    static std::shared_ptr<core::cfg::Section> read_config(const std::string& path);
 
-    static core::cfg::Sections read_configs(const std::string& path);
+    static std::shared_ptr<core::cfg::Sections> read_configs(const std::string& path);
 };
 
 class Writer : public Base<dataset::Writer>

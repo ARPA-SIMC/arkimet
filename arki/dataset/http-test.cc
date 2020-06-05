@@ -26,7 +26,7 @@ add_method("redirect", [] {
     snprintf(url, 512, "http://localhost:%d", port);
 
     auto cfg = http::Reader::load_cfg_sections(url);
-    auto sec = cfg.section("test200");
+    auto sec = cfg->section("test200");
     wassert(actual(sec->value("type")) == "remote");
     wassert(actual(sec->value("path")) == "http://foo.bar/foo/dataset/test200");
 });
@@ -40,7 +40,7 @@ add_method("server_error", [] {
 
     auto cfg = http::Reader::load_cfg_sections(url);
     auto session = std::make_shared<dataset::Session>();
-    auto sec = cfg.section("test200");
+    auto sec = cfg->section("test200");
     wassert(actual(sec->value("type")) == "remote");
     auto ds = std::make_shared<http::Dataset>(session, *sec);
     auto reader = ds->create_reader();

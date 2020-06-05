@@ -455,7 +455,7 @@ core::Interval Reader::get_stored_time_interval()
     throw std::runtime_error("http::Reader::get_stored_time_interval not yet implemented");
 }
 
-core::cfg::Sections Reader::load_cfg_sections(const std::string& path)
+std::shared_ptr<core::cfg::Sections> Reader::load_cfg_sections(const std::string& path)
 {
     using namespace http;
 
@@ -468,12 +468,12 @@ core::cfg::Sections Reader::load_cfg_sections(const std::string& path)
 
     auto res = core::cfg::Sections::parse(request.buf, request.url);
     // Make sure name=* is present in each section
-    for (auto& si: res)
-        si.second.set("name", si.first);
+    for (auto& si: *res)
+        si.second->set("name", si.first);
     return res;
 }
 
-core::cfg::Section Reader::load_cfg_section(const std::string& path)
+std::shared_ptr<core::cfg::Section> Reader::load_cfg_section(const std::string& path)
 {
     using namespace http;
 
@@ -485,11 +485,11 @@ core::cfg::Section Reader::load_cfg_section(const std::string& path)
     request.perform();
 
     auto sections = core::cfg::Sections::parse(request.buf, request.url);
-    if (sections.size() != 1)
-        throw std::runtime_error(request.url + ": only 1 section expected in resulting configuration, found " + std::to_string(sections.size()));
+    if (sections->size() != 1)
+        throw std::runtime_error(request.url + ": only 1 section expected in resulting configuration, found " + std::to_string(sections->size()));
 
-    auto res = sections.begin()->second;
-    res.set("name", sections.begin()->first);
+    auto res = sections->begin()->second;
+    res->set("name", sections->begin()->first);
     return res;
 }
 
@@ -509,7 +509,7 @@ std::string Reader::expandMatcher(const std::string& matcher, const std::string&
     return str::strip(request.buf);
 }
 
-core::cfg::Sections Reader::getAliasDatabase(const std::string& server)
+std::shared_ptr<core::cfg::Sections> Reader::getAliasDatabase(const std::string& server)
 {
     using namespace http;
 

@@ -40,13 +40,13 @@ struct FixtureReader : public DatasetTest
             unique = product, area, reftime
         )");
         if (td.format == "vm2")
-            cfg.set("smallfiles", "true");
+            cfg->set("smallfiles", "true");
         import_all_packed(td.mds);
     }
 
     bool smallfiles() const
     {
-        return cfg.value_bool("smallfiles") || (td.format == "vm2" && cfg.value("type") == "simple");
+        return cfg->value_bool("smallfiles") || (td.format == "vm2" && cfg->value("type") == "simple");
     }
 };
 

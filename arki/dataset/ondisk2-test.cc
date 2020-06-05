@@ -180,8 +180,8 @@ add_method("acquire_replace", [](Fixture& f) {
     // Import again with replace=true, make sure they're all ok
     {
         auto cfg(f.cfg);
-        cfg.set("replace", "true");
-        auto dataset = std::make_shared<dataset::ondisk2::Dataset>(f.session(), cfg);
+        cfg->set("replace", "true");
+        auto dataset = std::make_shared<dataset::ondisk2::Dataset>(f.session(), *cfg);
         auto writer = dataset->create_writer();
         for (auto& md: mdc)
             wassert(actual(writer->acquire(*md)) == dataset::ACQ_OK);
@@ -236,7 +236,7 @@ add_method("query_first_reftime_extreme", [](Fixture& f) {
 
 // Test acquiring data on a compressed file
 add_method("acquire_compressed", [](Fixture& f) {
-    f.cfg.set("step", "yearly");
+    f.cfg->set("step", "yearly");
 
     metadata::TestCollection mdc("inbound/test.grib1");
 

@@ -41,21 +41,21 @@ void InstantiateTests::register_tests() {
 add_method("instantiate", [](Fixture& f) {
     std::string type;
 
-    type = f.cfg.value("_reader");
+    type = f.cfg->value("_reader");
     if (!type.empty())
     {
         auto reader = f.config().create_reader();
         wassert(actual(reader->type()) == type);
     }
 
-    type = f.cfg.value("_writer");
+    type = f.cfg->value("_writer");
     if (!type.empty())
     {
         auto writer = f.config().create_writer();
         wassert(actual(writer->type()) == type);
     }
 
-    type = f.cfg.value("_checker");
+    type = f.cfg->value("_checker");
     if (!type.empty())
     {
         auto checker = f.config().create_checker();

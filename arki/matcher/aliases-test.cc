@@ -47,7 +47,7 @@ add_method("use", [] {
         "invalid = <2007\n";
     auto conf = core::cfg::Sections::parse(test, "memory");
     matcher::Parser parser;
-    parser.load_aliases(conf);
+    parser.load_aliases(*conf);
 
     Metadata md;
     arki::tests::fill(md);
@@ -78,7 +78,7 @@ add_method("multilevel", [] {
         "a = c or b\n";
     auto conf = core::cfg::Sections::parse(test, "memory");
     matcher::Parser parser;
-    parser.load_aliases(conf);
+    parser.load_aliases(*conf);
 
     Metadata md;
     arki::tests::fill(md);
@@ -94,7 +94,7 @@ add_method("recursive_1", [] {
         "[origin]\n"
         "a = a or a\n";
     auto conf = core::cfg::Sections::parse(test, "memory");
-    wassert_throws(std::runtime_error, matcher::AliasDatabase db(conf));
+    wassert_throws(std::runtime_error, matcher::AliasDatabase db(*conf));
 });
 
 // Recursive aliases should fail
@@ -104,7 +104,7 @@ add_method("recursive_2", [] {
         "a = b\n"
         "b = a\n";
     auto conf = core::cfg::Sections::parse(test, "memory");
-    wassert_throws(std::runtime_error, matcher::AliasDatabase db(conf));
+    wassert_throws(std::runtime_error, matcher::AliasDatabase db(*conf));
 });
 
 // Recursive aliases should fail
@@ -115,14 +115,14 @@ add_method("recursive_3", [] {
         "b = c\n"
         "c = a\n";
     auto conf = core::cfg::Sections::parse(test, "memory");
-    wassert_throws(std::runtime_error, matcher::AliasDatabase db(conf));
+    wassert_throws(std::runtime_error, matcher::AliasDatabase db(*conf));
 });
 
 // Load a file with aliases referring to other aliases
 add_method("multilevel_load", [] {
     matcher::Parser parser;
     File in("misc/rec-ts-alias.conf", O_RDONLY);
-    parser.load_aliases(core::cfg::Sections::parse(in));
+    parser.load_aliases(*core::cfg::Sections::parse(in));
     Matcher m = parser.parse("timerange:f_3");
 });
 
