@@ -26,16 +26,16 @@ Dispatcher::Dispatcher(std::shared_ptr<dataset::Session> session)
     session->foreach_dataset([&](std::shared_ptr<dataset::Dataset> ds) {
         if (ds->name() == "error" or ds->name() == "duplicates")
             return true;
-        else if (ds->cfg.value("type") == "outbound")
+        else if (ds->config.value("type") == "outbound")
         {
-            if (ds->cfg.value("filter").empty())
+            if (ds->config.value("filter").empty())
                 throw std::runtime_error("configuration of dataset '" + ds->name() + "' does not have a 'filter' directive");
-            outbounds.push_back(make_pair(ds->name(), session->matcher(ds->cfg.value("filter"))));
+            outbounds.push_back(make_pair(ds->name(), session->matcher(ds->config.value("filter"))));
         }
         else {
-            if (ds->cfg.value("filter").empty())
+            if (ds->config.value("filter").empty())
                 throw std::runtime_error("configuration of dataset '" + ds->name() + "' does not have a 'filter' directive");
-            datasets.push_back(make_pair(ds->name(), session->matcher(ds->cfg.value("filter"))));
+            datasets.push_back(make_pair(ds->name(), session->matcher(ds->config.value("filter"))));
         }
         return true;
     });
@@ -203,7 +203,7 @@ void TestDispatcher::raw_dispatch_dataset(const std::string& name, dataset::Writ
 {
     if (batch.empty()) return;
     // TODO: forward drop_cached_data_on_commit
-    dataset::Writer::test_acquire(session, session->dataset(name)->cfg, batch);
+    dataset::Writer::test_acquire(session, session->dataset(name)->config, batch);
 }
 
 void TestDispatcher::dispatch(dataset::WriterBatch& batch, bool drop_cached_data_on_commit)

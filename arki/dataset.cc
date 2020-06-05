@@ -24,7 +24,7 @@ Dataset::Dataset(std::shared_ptr<Session> session) : session(session) {}
 Dataset::Dataset(std::shared_ptr<Session> session, const std::string& name) : m_name(name), session(session) {}
 
 Dataset::Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
-    : m_name(cfg.value("name")), session(session), cfg(cfg)
+    : m_name(cfg.value("name")), session(session), config(cfg)
 {
 }
 
@@ -71,7 +71,7 @@ void Reader::impl_fd_query_bytes(const dataset::ByteQuery& q, NamedFileDescripto
         case dataset::ByteQuery::BQ_POSTPROCESS: {
             metadata::Postprocess postproc(q.param);
             postproc.set_output(out);
-            postproc.validate(dataset().cfg);
+            postproc.validate(dataset().config);
             postproc.set_data_start_hook(q.data_start_hook);
             postproc.start();
             query_data(q, [&](std::shared_ptr<Metadata> md) { return postproc.process(md); });
@@ -104,7 +104,7 @@ void Reader::impl_abstract_query_bytes(const dataset::ByteQuery& q, AbstractOutp
         case dataset::ByteQuery::BQ_POSTPROCESS: {
             metadata::Postprocess postproc(q.param);
             postproc.set_output(out);
-            postproc.validate(dataset().cfg);
+            postproc.validate(dataset().config);
             postproc.set_data_start_hook(q.data_start_hook);
             postproc.start();
             query_data(q, [&](std::shared_ptr<Metadata> md) { return postproc.process(move(md)); });

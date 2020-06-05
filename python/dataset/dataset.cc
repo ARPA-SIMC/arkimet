@@ -23,6 +23,20 @@ PyTypeObject* arkipy_DatasetDataset_Type = nullptr;
 
 namespace {
 
+struct config : public Getter<config, arkipy_DatasetDataset>
+{
+    constexpr static const char* name = "config";
+    constexpr static const char* doc = "dataset configuration as an arkimet.cfg.Section object";
+    constexpr static void* closure = nullptr;
+
+    static PyObject* get(Impl* self, void* closure)
+    {
+        try {
+            return cfg_section_reference((PyObject*)self, &self->ptr->config);
+        } ARKI_CATCH_RETURN_PYO;
+    }
+};
+
 struct reader : public MethNoargs<reader, arkipy_DatasetDataset>
 {
     constexpr static const char* name = "dataset_reader";
@@ -82,7 +96,7 @@ Examples::
 
     TODO: add examples
 )";
-    GetSetters<> getsetters;
+    GetSetters<config> getsetters;
     Methods<MethGenericEnter<Impl>, MethGenericExit<Impl>, reader, writer, checker> methods;
 
     static void _dealloc(Impl* self)

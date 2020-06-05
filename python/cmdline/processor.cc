@@ -59,29 +59,29 @@ struct DataProcessor : public DatasetProcessor
 
     virtual ~DataProcessor() {}
 
-    void process(arki::dataset::Reader& ds, const std::string& name) override
+    void process(arki::dataset::Reader& reader, const std::string& name) override
     {
-        arki::nag::verbose("Processing %s...", ds.name().c_str());
+        arki::nag::verbose("Processing %s...", reader.name().c_str());
         if (data_inline)
         {
-            ds.query_data(query, [&](std::shared_ptr<Metadata> md) { md->makeInline(); printer(*md); return true; });
+            reader.query_data(query, [&](std::shared_ptr<Metadata> md) { md->makeInline(); printer(*md); return true; });
         } else if (server_side) {
-            if (ds.cfg().has("url"))
+            if (reader.config().has("url"))
             {
-                ds.query_data(query, [&](std::shared_ptr<Metadata> md) {
-                    md->set_source(types::Source::createURL(md->source().format, ds.cfg().value("url")));
+                reader.query_data(query, [&](std::shared_ptr<Metadata> md) {
+                    md->set_source(types::Source::createURL(md->source().format, reader.config().value("url")));
                     printer(*md);
                     return true;
                 });
             } else {
-                ds.query_data(query, [&](std::shared_ptr<Metadata> md) {
+                reader.query_data(query, [&](std::shared_ptr<Metadata> md) {
                     md->make_absolute();
                     printer(*md);
                     return true;
                 });
             }
         } else {
-            ds.query_data(query, [&](std::shared_ptr<Metadata> md) {
+            reader.query_data(query, [&](std::shared_ptr<Metadata> md) {
                 md->make_absolute();
                 printer(*md);
                 return true;
@@ -106,10 +106,10 @@ struct LibarchiveProcessor : public DatasetProcessor
 
     virtual ~LibarchiveProcessor() {}
 
-    void process(arki::dataset::Reader& ds, const std::string& name) override
+    void process(arki::dataset::Reader& reader, const std::string& name) override
     {
-        arki::nag::verbose("Processing %s...", ds.name().c_str());
-        ds.query_data(query, [&](std::shared_ptr<Metadata> md) { arc_out.append(*md); return true; });
+        arki::nag::verbose("Processing %s...", reader.name().c_str());
+        reader.query_data(query, [&](std::shared_ptr<Metadata> md) { arc_out.append(*md); return true; });
     }
 
     void end() override
@@ -135,10 +135,10 @@ struct SummaryProcessor : public DatasetProcessor
 
     virtual ~SummaryProcessor() {}
 
-    void process(arki::dataset::Reader& ds, const std::string& name) override
+    void process(arki::dataset::Reader& reader, const std::string& name) override
     {
-        arki::nag::verbose("Processing %s...", ds.name().c_str());
-        ds.query_summary(matcher, summary);
+        arki::nag::verbose("Processing %s...", reader.name().c_str());
+        reader.query_summary(matcher, summary);
     }
 
     void end() override
@@ -178,10 +178,10 @@ struct SummaryShortProcessor : public DatasetProcessor
 
     virtual ~SummaryShortProcessor() {}
 
-    void process(arki::dataset::Reader& ds, const std::string& name) override
+    void process(arki::dataset::Reader& reader, const std::string& name) override
     {
-        arki::nag::verbose("Processing %s...", ds.name().c_str());
-        ds.query_summary(matcher, summary);
+        arki::nag::verbose("Processing %s...", reader.name().c_str());
+        reader.query_summary(matcher, summary);
     }
 
     void end() override
@@ -218,11 +218,11 @@ struct BinaryProcessor : public DatasetProcessor
     {
     }
 
-    void process(arki::dataset::Reader& ds, const std::string& name) override
+    void process(arki::dataset::Reader& reader, const std::string& name) override
     {
-        arki::nag::verbose("Processing %s...", ds.name().c_str());
-        // TODO: validate query's postprocessor with ds' config
-        ds.query_bytes(query, *this->output);
+        arki::nag::verbose("Processing %s...", reader.name().c_str());
+        // TODO: validate query's postprocessor with reader' config
+        reader.query_bytes(query, *this->output);
     }
 };
 

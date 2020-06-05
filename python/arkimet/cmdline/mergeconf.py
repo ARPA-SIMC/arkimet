@@ -63,7 +63,7 @@ class Mergeconf(AppConfigMixin, App):
                 continue
 
             try:
-                arki.Matcher(filter)
+                self.session.matcher(filter)
             except ValueError as e:
                 print("{}: {}".format(name, e), file=sys.stderr)
                 has_errors = True

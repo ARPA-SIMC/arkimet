@@ -73,7 +73,7 @@ public:
     std::shared_ptr<Session> session;
 
     /// Raw configuration key-value pairs
-    core::cfg::Section cfg;
+    core::cfg::Section config;
 
     Dataset(std::shared_ptr<Session> session);
     Dataset(std::shared_ptr<Session> session, const std::string& name);
@@ -121,7 +121,7 @@ public:
     std::string name() const { return dataset().name(); }
 
     /// Return the dataset configuration
-    const core::cfg::Section& cfg() const { return dataset().cfg; }
+    const core::cfg::Section& config() const { return dataset().config; }
 
     /// Return a name identifying the dataset type
     virtual std::string type() const = 0;

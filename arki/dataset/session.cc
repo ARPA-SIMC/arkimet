@@ -113,8 +113,8 @@ void Session::add_dataset(const core::cfg::Section& cfg)
     {
         nag::warning(
             "dataset \"%s\" in \"%s\" already loaded from \"%s\": keeping only the first one",
-            ds->name().c_str(), ds->cfg.value("path").c_str(),
-            old->second->cfg.value("path").c_str());
+            ds->name().c_str(), ds->config.value("path").c_str(),
+            old->second->config.value("path").c_str());
         return;
     }
     dataset_pool.emplace(ds->name(), ds);
@@ -221,9 +221,9 @@ std::string Session::get_common_remote_server() const
     std::string base;
     for (const auto& si: dataset_pool)
     {
-        std::string type = str::lower(si.second->cfg.value("type"));
+        std::string type = str::lower(si.second->config.value("type"));
         if (type != "remote") return std::string();
-        std::string urlprefix = geturlprefix(si.second->cfg.value("path"));
+        std::string urlprefix = geturlprefix(si.second->config.value("path"));
         if (urlprefix.empty()) return std::string();
         if (base.empty())
             base = urlprefix;
