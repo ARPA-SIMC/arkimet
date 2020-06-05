@@ -46,7 +46,7 @@ struct config : public Getter<config, arkipy_DatasetDataset>
     static PyObject* get(Impl* self, void* closure)
     {
         try {
-            return cfg_section_reference((PyObject*)self, &self->ptr->config);
+            return to_python(self->ptr->config);
         } ARKI_CATCH_RETURN_PYO;
     }
 };

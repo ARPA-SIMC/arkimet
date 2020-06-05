@@ -129,7 +129,7 @@ struct read_config : public MethKwargs<read_config, PyObject>
 
         try {
             auto section = arki::dataset::Session::read_config(std::string(pathname, pathname_len));
-            return cfg_section(std::move(section));
+            return to_python(section);
         } ARKI_CATCH_RETURN_PYO
     }
 };
@@ -152,7 +152,7 @@ struct read_configs : public MethKwargs<read_configs, PyObject>
 
         try {
             auto sections = arki::dataset::Session::read_configs(std::string(pathname, pathname_len));
-            return cfg_sections(std::move(sections));
+            return to_python(sections);
         } ARKI_CATCH_RETURN_PYO
     }
 };
@@ -183,7 +183,7 @@ struct load_cfg_sections : public MethKwargs<load_cfg_sections, PyObject>
 
         try {
             auto sections = arki::dataset::http::Reader::load_cfg_sections(std::string(url, url_len));
-            return cfg_sections(std::move(sections));
+            return to_python(sections);
         } ARKI_CATCH_RETURN_PYO
     }
 };
@@ -206,7 +206,7 @@ struct get_alias_database : public MethKwargs<get_alias_database, PyObject>
 
         try {
             auto sections = arki::dataset::http::Reader::getAliasDatabase(std::string(url, url_len));
-            return cfg_sections(std::move(sections));
+            return to_python(sections);
         } ARKI_CATCH_RETURN_PYO
     }
 };

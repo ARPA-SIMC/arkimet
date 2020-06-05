@@ -113,8 +113,8 @@ void Session::add_dataset(const core::cfg::Section& cfg)
     {
         nag::warning(
             "dataset \"%s\" in \"%s\" already loaded from \"%s\": keeping only the first one",
-            ds->name().c_str(), ds->config.value("path").c_str(),
-            old->second->config.value("path").c_str());
+            ds->name().c_str(), ds->config->value("path").c_str(),
+            old->second->config->value("path").c_str());
         return;
     }
     dataset_pool.emplace(ds->name(), ds);
@@ -221,9 +221,9 @@ std::string Session::get_common_remote_server() const
     std::string base;
     for (const auto& si: dataset_pool)
     {
-        std::string type = str::lower(si.second->config.value("type"));
+        std::string type = str::lower(si.second->config->value("type"));
         if (type != "remote") return std::string();
-        std::string urlprefix = geturlprefix(si.second->config.value("path"));
+        std::string urlprefix = geturlprefix(si.second->config->value("path"));
         if (urlprefix.empty()) return std::string();
         if (base.empty())
             base = urlprefix;
@@ -334,7 +334,7 @@ Matcher Session::matcher(const std::string& expr)
     return matcher_parser.parse(expr);
 }
 
-core::cfg::Sections Session::get_alias_database() const
+std::shared_ptr<core::cfg::Sections> Session::get_alias_database() const
 {
     return matcher_parser.serialise_aliases();
 }
@@ -344,7 +344,7 @@ void Session::load_aliases(const core::cfg::Sections& aliases)
     matcher_parser.load_aliases(aliases);
 }
 
-std::string Session::expand_remote_query(const core::cfg::Sections& remotes, const std::string& query)
+std::string Session::expand_remote_query(std::shared_ptr<const core::cfg::Sections> remotes, const std::string& query)
 {
     // Resolve the query on each server (including the local system, if
     // queried). If at least one server can expand it, send that
@@ -354,7 +354,7 @@ std::string Session::expand_remote_query(const core::cfg::Sections& remotes, con
     std::string expanded;
     std::string resolved_by;
     bool first = true;
-    for (auto si: remotes)
+    for (auto si: *remotes)
     {
         std::string server = si.second->value("server");
         if (servers_seen.find(server) != servers_seen.end()) continue;

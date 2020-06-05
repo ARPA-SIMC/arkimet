@@ -113,7 +113,12 @@ public:
     using std::map<std::string, std::shared_ptr<Section>>::find;
     using std::map<std::string, std::shared_ptr<Section>>::erase;
     using std::map<std::string, std::shared_ptr<Section>>::emplace;
-    using std::map<std::string, std::shared_ptr<Section>>::operator=;
+
+    Sections() = default;
+    Sections(const Sections&);
+    Sections(Sections&&) = default;
+    Sections& operator=(const Sections&);
+    Sections& operator=(Sections &&) = default;
 
     /**
      * Retrieve a section from this config file.

@@ -102,12 +102,12 @@ const matcher::Aliases* AliasDatabase::get(const std::string& type) const
     return &(i->second);
 }
 
-core::cfg::Sections AliasDatabase::serialise()
+std::shared_ptr<core::cfg::Sections> AliasDatabase::serialise()
 {
-    core::cfg::Sections res;
+    auto res = std::make_shared<core::cfg::Sections>();
     for (const auto& i: aliasDatabase)
     {
-        auto s = res.obtain(i.first);
+        auto s = res->obtain(i.first);
         i.second.serialise(*s);
     }
     return res;
@@ -116,13 +116,13 @@ core::cfg::Sections AliasDatabase::serialise()
 void AliasDatabase::debug_dump(core::NamedFileDescriptor& out)
 {
     auto cfg = serialise();
-    cfg.write(out);
+    cfg->write(out);
 }
 
 void AliasDatabase::debug_dump(core::AbstractOutputFile& out)
 {
     auto cfg = serialise();
-    cfg.write(out);
+    cfg->write(out);
 }
 
 }

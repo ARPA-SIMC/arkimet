@@ -37,7 +37,7 @@ class ProgressFailUpdate(Progress):
         raise ExpectedFailure()
 
 
-class ServerThread(multiprocessing.Process):
+class ServerProcess(multiprocessing.Process):
     def __init__(self, server):
         super().__init__()
         self.server = server
@@ -102,14 +102,15 @@ class TestArkiServer(unittest.TestCase):
         # TODO: randomly allocate a port
         self.server = make_server("localhost", 0, self.env.config)
         self.server_url = self.server.url
-        self.server_thread = ServerThread(self.server)
-        self.server_thread.start()
+        self.server_process = ServerProcess(self.server)
+        self.server_process.start()
 
     def tearDown(self):
-        self.server_thread.terminate()
-        self.server_thread.join()
-        if self.server_thread.server_exception is not None:
-            raise self.server_thread.server_exception
+        self.server_process.terminate()
+        self.server_process.join()
+        # FIXME: this is never found, given that we're using a multiprocessing.Process
+        if self.server_process.server_exception is not None:
+            raise self.server_process.server_exception
 
     def test_config(self):
         """

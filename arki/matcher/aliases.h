@@ -40,7 +40,7 @@ struct AliasDatabase
 
     const matcher::Aliases* get(const std::string& type) const;
 
-    core::cfg::Sections serialise();
+    std::shared_ptr<core::cfg::Sections> serialise();
 
     /**
      * Dump the alias database to the given output stream

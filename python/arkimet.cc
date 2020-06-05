@@ -79,7 +79,7 @@ struct get_alias_database : public MethNoargs<get_alias_database, PyObject>
                 return nullptr;
 
             auto session = std::make_shared<arki::dataset::Session>();
-            return cfg_sections(session->get_alias_database());
+            return to_python(session->get_alias_database());
         } ARKI_CATCH_RETURN_PYO
     }
 };
@@ -112,8 +112,9 @@ Arguments:
                 return nullptr;
 
             auto session = std::make_shared<arki::dataset::Session>();
-            for (const auto si: sections_from_python(arg_datasets))
-                session->add_dataset(si.second);
+            auto cfg = sections_from_python(arg_datasets);
+            for (const auto si: *cfg)
+                session->add_dataset(*si.second);
 
             auto ds = session->querymacro(name, query);
             auto reader = ds->create_reader();
@@ -144,8 +145,9 @@ struct make_merged_dataset : public MethKwargs<make_merged_dataset, PyObject>
                 return nullptr;
 
             auto session = std::make_shared<arki::dataset::Session>();
-            for (auto si: sections_from_python(arg_cfg))
-                session->add_dataset(si.second);
+            auto cfg = sections_from_python(arg_cfg);
+            for (auto si: *cfg)
+                session->add_dataset(*si.second);
 
             auto ds(std::make_shared<arki::dataset::merged::Dataset>(session));
             return (PyObject*)dataset_reader_create(ds->create_reader());

@@ -53,7 +53,7 @@ class ArkiServer(ForkingMixIn, HTTPServer):
         # Amend configuration turning local datasets into remote dataset
         self.remote_cfg = arki.cfg.Sections()
         for name, sec in self.cfg.items():
-            self.remote_cfg[name] = sec
+            self.remote_cfg[name] = sec.copy()
             self.remote_cfg[name]["path"] = self.url + "/dataset/" + name
             self.remote_cfg[name]["type"] = "remote"
             self.remote_cfg[name]["server"] = self.url

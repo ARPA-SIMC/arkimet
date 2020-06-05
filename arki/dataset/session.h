@@ -104,12 +104,12 @@ public:
      * If the results are consistent, return the expanded query. Else, raises
      * std::runtime_error.
      */
-    std::string expand_remote_query(const core::cfg::Sections& remotes, const std::string& query);
+    std::string expand_remote_query(std::shared_ptr<const core::cfg::Sections> remotes, const std::string& query);
 
     /**
      * Return the current alias database
      */
-    core::cfg::Sections get_alias_database() const;
+    std::shared_ptr<core::cfg::Sections> get_alias_database() const;
 
     /**
      * Add the given set of aliases to the alias database in this session

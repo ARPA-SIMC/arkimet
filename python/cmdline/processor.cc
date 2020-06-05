@@ -66,10 +66,10 @@ struct DataProcessor : public DatasetProcessor
         {
             reader.query_data(query, [&](std::shared_ptr<Metadata> md) { md->makeInline(); printer(*md); return true; });
         } else if (server_side) {
-            if (reader.config().has("url"))
+            if (reader.config()->has("url"))
             {
                 reader.query_data(query, [&](std::shared_ptr<Metadata> md) {
-                    md->set_source(types::Source::createURL(md->source().format, reader.config().value("url")));
+                    md->set_source(types::Source::createURL(md->source().format, reader.config()->value("url")));
                     printer(*md);
                     return true;
                 });

@@ -238,6 +238,22 @@ std::shared_ptr<Section> Section::parse(core::LineReader& in, const std::string&
  * Sections
  */
 
+Sections::Sections(const Sections& o)
+{
+    for (const auto& i: o)
+        emplace(i.first, std::make_shared<Section>(*i.second));
+}
+
+Sections& Sections::operator=(const Sections& o)
+{
+    if (this == &o)
+        return *this;
+    clear();
+    for (const auto& i: o)
+        emplace(i.first, std::make_shared<Section>(*i.second));
+    return *this;
+}
+
 std::shared_ptr<const Section> Sections::section(const std::string& key) const
 {
     auto i = find(key);

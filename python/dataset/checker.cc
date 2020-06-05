@@ -192,7 +192,7 @@ Examples::
             return -1;
 
         try {
-            core::cfg::Section cfg;
+            std::shared_ptr<core::cfg::Section> cfg;
 
             if (PyUnicode_Check(py_cfg))
                 cfg = arki::dataset::Session::read_config(from_python<std::string>(py_cfg));
@@ -203,7 +203,7 @@ Examples::
                 return -1;
 
             auto session = std::make_shared<arki::dataset::Session>();
-            new (&(self->ptr)) std::shared_ptr<arki::dataset::Checker>(session->dataset(cfg)->create_checker());
+            new (&(self->ptr)) std::shared_ptr<arki::dataset::Checker>(session->dataset(*cfg)->create_checker());
             return 0;
         } ARKI_CATCH_RETURN_INT;
     }

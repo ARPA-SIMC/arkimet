@@ -78,7 +78,7 @@ void Parser::load_aliases(const core::cfg::Sections& cfg)
     aliases->add(cfg);
 }
 
-core::cfg::Sections Parser::serialise_aliases() const
+std::shared_ptr<core::cfg::Sections> Parser::serialise_aliases() const
 {
     return aliases->serialise();
 }

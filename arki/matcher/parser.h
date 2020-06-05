@@ -36,7 +36,7 @@ public:
     void load_aliases(const core::cfg::Sections& cfg);
 
     /// Return aliases serialized as a parsed config file
-    core::cfg::Sections serialise_aliases() const;
+    std::shared_ptr<core::cfg::Sections> serialise_aliases() const;
 
     /**
      * Dump the alias database to the given output stream

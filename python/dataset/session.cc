@@ -34,7 +34,7 @@ struct get_alias_database : public MethNoargs<get_alias_database, arkipy_Dataset
     static PyObject* run(Impl* self)
     {
         try {
-            return cfg_sections(self->ptr->get_alias_database());
+            return to_python(self->ptr->get_alias_database());
         } ARKI_CATCH_RETURN_PYO
     }
 };
@@ -131,7 +131,7 @@ struct load_aliases : public MethKwargs<load_aliases, arkipy_DatasetSession>
             return nullptr;
 
         try {
-            self->ptr->load_aliases(sections_from_python(arg_aliases));
+            self->ptr->load_aliases(*sections_from_python(arg_aliases));
             Py_RETURN_NONE;
         } ARKI_CATCH_RETURN_PYO
     }
@@ -159,7 +159,7 @@ aliases differently, it raises an exception.
             return nullptr;
 
         try {
-            self->ptr->add_dataset(section_from_python(arg_cfg));
+            self->ptr->add_dataset(*section_from_python(arg_cfg));
             Py_RETURN_NONE;
         } ARKI_CATCH_RETURN_PYO
     }
@@ -188,7 +188,7 @@ struct dataset_accessor_factory : public MethKwargs<Base, Impl>
                     PyErr_SetString(PyExc_ValueError, "only one of cfg or name must be passed");
                     throw PythonException();
                 }
-                ds = self->ptr->dataset(section_from_python(arg_cfg));
+                ds = self->ptr->dataset(*section_from_python(arg_cfg));
             } else if (arg_name) {
                 ds = self->ptr->dataset(arg_name);
             } else {
