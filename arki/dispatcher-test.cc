@@ -70,7 +70,8 @@ add_method("simple", [] {
     using namespace arki::utils::acct;
 
     auto session = std::make_shared<dataset::Session>();
-    for (const auto& i: *setup1())
+    auto cfg = setup1();
+    for (const auto i: *cfg)
         session->add_dataset(*i.second);
 
     plain_data_read_count.reset();
@@ -97,7 +98,8 @@ add_method("drop_cached_data", [] {
     using namespace arki::utils::acct;
 
     auto session = std::make_shared<dataset::Session>();
-    for (const auto& i: *setup1())
+    auto cfg = setup1();
+    for (const auto& i: *cfg)
         session->add_dataset(*i.second);
 
     plain_data_read_count.reset();
@@ -159,7 +161,8 @@ add_method("regression01", [] {
 // Test dispatch to error datasets after validation errors
 add_method("validation", [] {
     auto session = std::make_shared<dataset::Session>();
-    for (const auto& i: *setup1())
+    auto cfg = setup1();
+    for (const auto& i: *cfg)
         session->add_dataset(*i.second);
     RealDispatcher dispatcher(session);
     metadata::validators::FailAlways fail_always;
@@ -179,7 +182,8 @@ add_method("validation", [] {
 // Test dispatching files with no reftime, they should end up in the error dataset
 add_method("missing_reftime", [] {
     auto session = std::make_shared<dataset::Session>();
-    for (const auto& i: *setup1())
+    auto cfg = setup1();
+    for (const auto& i: *cfg)
         session->add_dataset(*i.second);
     metadata::TestCollection source("inbound/wrongdate.bufr", true);
     wassert(actual(source.size()) == 6u);
