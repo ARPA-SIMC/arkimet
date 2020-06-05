@@ -2,6 +2,7 @@
 #include <Python.h>
 #include "python/dataset/session.h"
 #include "python/dataset.h"
+#include "python/dataset/dataset.h"
 #include "python/dataset/reader.h"
 #include "python/dataset/writer.h"
 #include "python/dataset/checker.h"
@@ -34,6 +35,29 @@ struct get_alias_database : public MethNoargs<get_alias_database, arkipy_Dataset
     {
         try {
             return cfg_sections(self->ptr->get_alias_database());
+        } ARKI_CATCH_RETURN_PYO
+    }
+};
+
+struct datasets : public MethNoargs<datasets, arkipy_DatasetSession>
+{
+    constexpr static const char* name = "datasets";
+    constexpr static const char* returns = "List[arkimet.dataset.Dataset]";
+    constexpr static const char* summary = "return a list of all datasets in the session pool";
+    constexpr static const char* doc = nullptr;
+
+    static PyObject* run(Impl* self)
+    {
+        try {
+            pyo_unique_ptr res(throw_ifnull(PyList_New(0)));
+            PyObject* list = res.get();
+            self->ptr->foreach_dataset([&](std::shared_ptr<arki::dataset::Dataset> dataset) {
+                pyo_unique_ptr ds((PyObject*)dataset_dataset_create(dataset));
+                if (PyList_Append(list, ds))
+                    throw PythonException();
+                return true;
+            });
+            return res.release();
         } ARKI_CATCH_RETURN_PYO
     }
 };
@@ -178,6 +202,19 @@ struct dataset_accessor_factory : public MethKwargs<Base, Impl>
 };
 
 
+struct dataset : public dataset_accessor_factory<dataset, arkipy_DatasetSession>
+{
+    constexpr static const char* name = "dataset";
+    constexpr static const char* returns = "arkimet.dataset.Dataset";
+    constexpr static const char* summary = "return a Dataset give its configuration";
+    constexpr static const char* doc = nullptr;
+
+    static PyObject* create_accessor(std::shared_ptr<arki::dataset::Dataset> dataset)
+    {
+        return (PyObject*)dataset_dataset_create(dataset);
+    }
+};
+
 struct dataset_reader : public dataset_accessor_factory<dataset_reader, arkipy_DatasetSession>
 {
     constexpr static const char* name = "dataset_reader";
@@ -232,7 +269,8 @@ Examples::
 )";
     GetSetters<> getsetters;
     Methods<MethGenericEnter<Impl>, MethGenericExit<Impl>, get_alias_database, matcher, load_aliases,
-            has_datasets, dataset_pool_size, add_dataset, dataset_reader, dataset_writer, dataset_checker> methods;
+            datasets, has_datasets, dataset_pool_size, add_dataset,
+            dataset, dataset_reader, dataset_writer, dataset_checker> methods;
 
     static void _dealloc(Impl* self)
     {

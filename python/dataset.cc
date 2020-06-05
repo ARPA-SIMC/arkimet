@@ -8,6 +8,7 @@
 #include "utils/type.h"
 #include "utils/dict.h"
 #include "dataset/session.h"
+#include "dataset/dataset.h"
 #include "dataset/reader.h"
 #include "dataset/writer.h"
 #include "dataset/checker.h"
@@ -283,6 +284,7 @@ void register_dataset(PyObject* m)
     pyo_unique_ptr http = throw_ifnull(PyModule_Create(&http_module));
 
     register_dataset_session(dataset);
+    register_dataset_dataset(dataset);
     register_dataset_reader(dataset);
     register_dataset_writer(dataset);
     register_dataset_checker(dataset);

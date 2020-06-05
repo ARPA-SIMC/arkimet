@@ -3,7 +3,7 @@ from . import http
 
 _export = (
     "Reader", "Writer", "Checker", "SessionTimeOverride", "read_config", "read_configs",
-    "ImportError", "ImportDuplicateError", "ImportFailedError", "Session",
+    "ImportError", "ImportDuplicateError", "ImportFailedError", "Session", "Dataset",
 )
 __all__ = ["http"]
 

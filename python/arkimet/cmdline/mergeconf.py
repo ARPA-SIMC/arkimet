@@ -56,9 +56,9 @@ class Mergeconf(AppConfigMixin, App):
 
         # Validate the configuration
         has_errors = False
-        for name, section in self.config.items():
+        for dataset in self.session.datasets():
             # Validate filters
-            filter = section.get("filter")
+            filter = dataset.config.get("filter")
             if filter is None:
                 continue
 

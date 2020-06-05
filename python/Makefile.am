@@ -64,6 +64,7 @@ _arkimet_la_SOURCES = \
     scan.cc \
     dataset.cc \
     dataset/session.cc \
+    dataset/dataset.cc \
     dataset/reader.cc \
     dataset/writer.cc \
     dataset/checker.cc \
@@ -122,6 +123,7 @@ EXTRA_DIST = \
     scan.h \
     dataset.h \
     dataset/session.h \
+    dataset/dataset.h \
     dataset/reader.h \
     dataset/writer.h \
     dataset/checker.h \
