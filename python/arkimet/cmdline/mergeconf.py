@@ -50,28 +50,9 @@ class Mergeconf(AppConfigMixin, App):
                 self.add_config_section(section)
 
         if not self.session.has_datasets():
+            if self.config_filter_discarded:
+                raise Fail("none of the configuration provided were useable")
             raise Fail("you need to specify at least one config file or dataset")
-
-        # Remove unallowed entries
-        if self.args.restrict:
-            self.filter_restrict(self.args.restrict)
-
-        if self.args.ignore_system_datasets:
-            to_remove = []
-
-            for name, section in self.config.items():
-                type = section.get("type")
-                name = section.get("name")
-
-                if (type == "error" or type == "duplicates" or
-                        (type == "remote" and (name == "error" or name == "duplicates"))):
-                    to_remove.append(name)
-
-            for name in to_remove:
-                del self.config[name]
-
-        if not self.session.has_datasets():
-            raise Fail("none of the configuration provided were useable")
 
         # Validate the configuration
         has_errors = False

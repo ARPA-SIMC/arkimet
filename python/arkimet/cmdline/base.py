@@ -137,42 +137,70 @@ class App:
             raise ValueError("invalid suffix {} in {}".format(repr(suffix), repr(val)))
 
 
+class RestrictSectionFilter:
+    """
+    Filter config sections based on 'restrict' values
+    """
+    re_stringlist = re.compile(r"[\s,]+")
+
+    def __init__(self, restrict_pattern):
+        self.allowed = frozenset(x for x in self.re_stringlist.split(restrict_pattern) if x)
+
+    def is_allowed(self, cfg):
+        if not self.allowed:
+            return True
+
+        r = cfg.get("restrict", None)
+        if r is None:
+            return False
+
+        offered = frozenset(x for x in self.re_stringlist.split(r) if x)
+        if not (self.allowed & offered):
+            return False
+
+        return True
+
+
+class SystemDatasetSectionFilter:
+    """
+    Discard "error" and "duplicates" config sections
+    """
+    def is_allowed(self, cfg):
+        type = cfg.get("type")
+        name = cfg.get("name")
+
+        return not (type == "error" or type == "duplicates" or
+                    (type == "remote" and (name == "error" or name == "duplicates")))
+
+
 class AppConfigMixin:
     def __init__(self):
         super().__init__()
         self.session = arki.dataset.Session()
 
+    def parse_args(self, args=None):
+        super().parse_args(args=args)
+        self.config_filters = []
+        self.config_filter_discarded = 0
+
+        restrict = getattr(self.args, "restrict", None)
+        if restrict is not None:
+            self.config_filters.append(RestrictSectionFilter(restrict))
+
+        if getattr(self.args, "ignore_system_datasets", False):
+            self.config_filters.append(SystemDatasetSectionFilter())
+
     def add_config_section(self, section, name=None):
+        # Ignore sections any of the current filters discards
+        for filter in self.config_filters:
+            if not filter.is_allowed(section):
+                self.config_filter_discarded += 1
+                return
+
         if name is None:
             name = section["name"]
         section["name"] = name
         self.session.add_dataset(section)
-
-    re_stringlist = re.compile(r"[\s,]+")
-
-    def filter_restrict(self, restrict):
-        """
-        Filter self.config leaving only those sections whose restrict entry
-        matches the given filter
-        """
-        to_remove = []
-        allowed = frozenset(x for x in self.re_stringlist.split(restrict) if x)
-
-        # An empty filter matches every config entry
-        if not allowed:
-            return
-
-        for name, section in self.config.items():
-            r = section.get("restrict", None)
-            if r is None:
-                to_remove.append(name)
-                continue
-            offered = frozenset(x for x in self.re_stringlist.split(r) if x)
-            if not (allowed & offered):
-                to_remove.append(name)
-
-        for name in to_remove:
-            del self.config[name]
 
 
 class AppWithProcessor(App):

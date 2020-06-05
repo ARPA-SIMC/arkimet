@@ -114,14 +114,10 @@ class Query(AppConfigMixin, AppWithProcessor):
                     self.add_config_section(section, name)
 
             if not self.session.has_datasets():
-                self.parser.error("you need to specify at least one input file or dataset")
-
-            # Remove unallowed entries
-            if self.args.restrict:
-                self.filter_restrict(self.args.restrict)
-
-            if not self.session.has_datasets():
-                self.parser.error("no accessible datasets found for the given --restrict value")
+                if self.config_filter_discarded:
+                    self.parser.error("no accessible datasets found for the given --restrict value")
+                else:
+                    self.parser.error("you need to specify at least one input file or dataset")
 
             # Some things cannot be done when querying multiple datasets at the same time
             if self.session.dataset_pool_size() > 1 and not self.args.qmacro and self.args.postproc:
