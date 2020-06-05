@@ -140,7 +140,7 @@ class Query(AppConfigMixin, AppWithProcessor):
             qmacro_query = None
 
         if strquery:
-            query = arkimet.Matcher(arkimet.dataset.http.expand_remote_query(self.config, strquery))
+            query = self.session.matcher(strquery)
         else:
             query = arkimet.Matcher()
 
