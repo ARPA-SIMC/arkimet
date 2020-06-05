@@ -23,6 +23,20 @@ PyTypeObject* arkipy_DatasetDataset_Type = nullptr;
 
 namespace {
 
+struct _name : public Getter<_name, arkipy_DatasetDataset>
+{
+    constexpr static const char* name = "name";
+    constexpr static const char* doc = "dataset name";
+    constexpr static void* closure = nullptr;
+
+    static PyObject* get(Impl* self, void* closure)
+    {
+        try {
+            return to_python(self->ptr->name());
+        } ARKI_CATCH_RETURN_PYO;
+    }
+};
+
 struct config : public Getter<config, arkipy_DatasetDataset>
 {
     constexpr static const char* name = "config";
@@ -39,7 +53,7 @@ struct config : public Getter<config, arkipy_DatasetDataset>
 
 struct reader : public MethNoargs<reader, arkipy_DatasetDataset>
 {
-    constexpr static const char* name = "dataset_reader";
+    constexpr static const char* name = "reader";
     constexpr static const char* returns = "arkimet.dataset.Reader";
     constexpr static const char* summary = "return a reader for this dataset";
     constexpr static const char* doc = nullptr;
@@ -54,7 +68,7 @@ struct reader : public MethNoargs<reader, arkipy_DatasetDataset>
 
 struct writer : public MethNoargs<writer, arkipy_DatasetDataset>
 {
-    constexpr static const char* name = "dataset_writer";
+    constexpr static const char* name = "writer";
     constexpr static const char* returns = "arkimet.dataset.Writer";
     constexpr static const char* summary = "return a writer for this dataset";
     constexpr static const char* doc = nullptr;
@@ -69,7 +83,7 @@ struct writer : public MethNoargs<writer, arkipy_DatasetDataset>
 
 struct checker : public MethNoargs<checker, arkipy_DatasetDataset>
 {
-    constexpr static const char* name = "dataset_checker";
+    constexpr static const char* name = "checker";
     constexpr static const char* returns = "arkimet.dataset.Checker";
     constexpr static const char* summary = "return a checker for this dataset";
     constexpr static const char* doc = nullptr;
@@ -96,7 +110,7 @@ Examples::
 
     TODO: add examples
 )";
-    GetSetters<config> getsetters;
+    GetSetters<_name, config> getsetters;
     Methods<MethGenericEnter<Impl>, MethGenericExit<Impl>, reader, writer, checker> methods;
 
     static void _dealloc(Impl* self)

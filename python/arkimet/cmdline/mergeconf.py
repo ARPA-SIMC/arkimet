@@ -72,19 +72,23 @@ class Mergeconf(AppConfigMixin, App):
 
         # If requested, compute extra information
         if self.args.extra:
-            for name, section in self.config.items():
-                # Instantiate the dataset
-                ds = arki.dataset.Reader(section)
-                # Get the summary
-                summary = ds.query_summary()
-                # Compute bounding box, and store the WKT in bounding
-                bbox = summary.get_convex_hull()
-                if bbox:
-                    section["bounding"] = bbox
+            for dataset in self.session.datasets():
+                with dataset.reader() as reader:
+                    # Get the summary
+                    summary = reader.query_summary()
+                    # Compute bounding box, and store the WKT in bounding
+                    bbox = summary.get_convex_hull()
+                    if bbox:
+                        dataset.config["bounding"] = bbox
+
+        # Build the merged configuration
+        config = arki.cfg.Sections()
+        for dataset in self.session.datasets():
+            config[dataset.name] = dataset.config
 
         # Output the merged configuration
         if self.args.output:
             with open(self.args.output, "wt") as fd:
-                self.config.write(fd)
+                config.write(fd)
         else:
-            self.config.write(sys.stdout)
+            config.write(sys.stdout)

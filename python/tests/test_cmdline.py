@@ -3,23 +3,20 @@ import arkimet.cmdline
 import arkimet.cmdline.base
 
 
-class RestrictTester(arkimet.cmdline.base.AppConfigMixin):
-    def __init__(self, restrict):
-        super().__init__()
-        self.config.obtain("testds")["restrict"] = restrict
-
-
 class TestRestrict(unittest.TestCase):
+    def _restrict(self, restrict_pattern, restrict_value):
+        from arkimet.cmdline.base import RestrictSectionFilter
+        f = RestrictSectionFilter(restrict_pattern)
+        config = arkimet.cfg.Section()
+        config["restrict"] = restrict_value
+        return f.is_allowed(config)
+
     def assertRestrictPasses(self, restrict, filter):
-        tester = RestrictTester(restrict)
-        tester.filter_restrict(filter)
-        if not tester.config:
+        if not self._restrict(filter, restrict):
             self.fail("restrict value of {} was not accepted by filter {}".format(restrict, filter))
 
     def assertRestrictNotPasses(self, restrict, filter):
-        tester = RestrictTester(restrict)
-        tester.filter_restrict(filter)
-        if tester.config:
+        if self._restrict(filter, restrict):
             self.fail("restrict value of {} was unexpectedly accepted by filter {}".format(restrict, filter))
 
     def test_restrict(self):
