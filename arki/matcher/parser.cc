@@ -84,6 +84,10 @@ void Parser::load_remote_aliases(const std::string& server_url)
         return;
 
     auto cfg = load_remote_alias_database(server_url);
+
+    // Verify alias conflicts, and bail out with an exception if they exist
+    aliases->validate(*cfg);
+
     aliases->add(*cfg);
     servers_seen.emplace(server_url);
 }

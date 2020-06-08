@@ -37,6 +37,22 @@ void Aliases::serialise(core::cfg::Section& cfg) const
         cfg.set(i.first, i.second->toStringValueOnly());
 }
 
+void Aliases::validate(const Aliases& other)
+{
+    for (const auto& i: other.db)
+    {
+        auto old = db.find(i.first);
+        if (old == db.end())
+            // Aliases with names we do not have, do not conflict
+            continue;
+
+        std::string cur = old->second->toStringExpanded();
+        std::string o = i.second->toStringExpanded();
+        if (cur != o)
+            throw std::runtime_error("current alias \"" + cur + "\" conflicts with new alias \"" + o + "\"");
+    }
+}
+
 void Aliases::add(const MatcherType& type, const core::cfg::Section& entries)
 {
     std::vector<std::pair<std::string, std::string>> aliases;
@@ -66,7 +82,7 @@ void Aliases::add(const MatcherType& type, const core::cfg::Section& entries)
             auto j = db.find(alias.first);
             if (j == db.end())
             {
-                db.insert(make_pair(alias.first, move(val)));
+                db.emplace(alias.first, std::move(val));
             } else {
                 j->second = move(val);
             }
@@ -82,6 +98,24 @@ void Aliases::add(const MatcherType& type, const core::cfg::Section& entries)
 
 AliasDatabase::AliasDatabase() {}
 AliasDatabase::AliasDatabase(const core::cfg::Sections& cfg) { add(cfg); }
+
+void AliasDatabase::validate(const core::cfg::Sections& cfg)
+{
+    // Load cfg in a temporary alias database, to resolve and expand aliases,
+    // and aliases that refer to aliases, and so on
+    AliasDatabase temp;
+    temp.add(cfg);
+
+    for (const auto& i: temp.aliasDatabase)
+    {
+        auto current = aliasDatabase.find(i.first);
+        if (current == aliasDatabase.end())
+            // Aliases of types we do not have, do not conflict
+            continue;
+
+        current->second.validate(i.second);
+    }
+}
 
 void AliasDatabase::add(const core::cfg::Sections& cfg)
 {

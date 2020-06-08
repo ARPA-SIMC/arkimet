@@ -95,6 +95,30 @@ struct dataset_pool_size : public MethNoargs<dataset_pool_size, arkipy_DatasetSe
     }
 };
 
+struct has_dataset : public MethKwargs<has_dataset, arkipy_DatasetSession>
+{
+    constexpr static const char* name = "has_dataset";
+    constexpr static const char* signature = "name: str";
+    constexpr static const char* returns = "bool";
+    constexpr static const char* summary = "check if the dataset pool has a dataset with the given name";
+    constexpr static const char* doc = nullptr;
+
+    static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
+    {
+        static const char* kwlist[] = { "name", nullptr };
+        const char* query = nullptr;
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "s", const_cast<char**>(kwlist), &query))
+            return nullptr;
+
+        try {
+            if (self->ptr->has_dataset(query))
+                Py_RETURN_TRUE;
+            else
+                Py_RETURN_FALSE;
+        } ARKI_CATCH_RETURN_PYO
+    }
+};
+
 struct matcher : public MethKwargs<matcher, arkipy_DatasetSession>
 {
     constexpr static const char* name = "matcher";
@@ -269,7 +293,7 @@ Examples::
 )";
     GetSetters<> getsetters;
     Methods<MethGenericEnter<Impl>, MethGenericExit<Impl>, get_alias_database, matcher, load_aliases,
-            datasets, has_datasets, dataset_pool_size, add_dataset,
+            datasets, has_datasets, has_dataset, dataset_pool_size, add_dataset,
             dataset, dataset_reader, dataset_writer, dataset_checker> methods;
 
     static void _dealloc(Impl* self)

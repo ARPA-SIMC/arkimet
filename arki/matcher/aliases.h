@@ -20,6 +20,7 @@ public:
     ~Aliases();
 
     std::shared_ptr<OR> get(const std::string& name) const;
+    void validate(const Aliases& other);
     void add(const MatcherType& type, const core::cfg::Section& entries);
     void reset();
     void serialise(core::cfg::Section& cfg) const;
@@ -36,6 +37,18 @@ struct AliasDatabase
     AliasDatabase();
     AliasDatabase(const core::cfg::Sections& cfg);
 
+    /**
+     * Validate an alias database, throwing std::runtime_error if it contains
+     * aliases with the same name as the existing ones, but different
+     * expansions
+     */
+    void validate(const core::cfg::Sections& cfg);
+
+    /**
+     * Add an alias database.
+     *
+     * If an alias already exists, it is replaced
+     */
     void add(const core::cfg::Sections& cfg);
 
     const matcher::Aliases* get(const std::string& type) const;

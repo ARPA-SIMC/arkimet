@@ -117,3 +117,5 @@ server={url}
 """)
                     self.assertEqual(session.matcher("level:g00 or g01").expanded,
                                      "level:GRIB1,1 or GRIB2S,1,0,0 or GRIB1,2 or GRIB2S,2,0,0")
+
+                    self.assertFalse(session.has_dataset("remote3"))
