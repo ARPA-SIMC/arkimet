@@ -140,6 +140,28 @@ struct matcher : public MethKwargs<matcher, arkipy_DatasetSession>
     }
 };
 
+struct expand_query : public MethKwargs<expand_query, arkipy_DatasetSession>
+{
+    constexpr static const char* name = "expand_query";
+    constexpr static const char* signature = "query: str";
+    constexpr static const char* returns = "str";
+    constexpr static const char* summary = "expand aliases in an Arkimet query, returning the same query without use of aliases";
+    constexpr static const char* doc = nullptr;
+
+    static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
+    {
+        static const char* kwlist[] = { "query", nullptr };
+        const char* query = nullptr;
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "s", const_cast<char**>(kwlist), &query))
+            return nullptr;
+
+        try {
+            Matcher m = self->ptr->matcher(query);
+            return to_python(m.toStringExpanded());
+        } ARKI_CATCH_RETURN_PYO
+    }
+};
+
 struct load_aliases : public MethKwargs<load_aliases, arkipy_DatasetSession>
 {
     constexpr static const char* name = "load_aliases";
@@ -339,7 +361,8 @@ Examples::
                 result = reader.query_data("level:ground")
 )";
     GetSetters<> getsetters;
-    Methods<MethGenericEnter<Impl>, MethGenericExit<Impl>, get_alias_database, matcher, load_aliases,
+    Methods<MethGenericEnter<Impl>, MethGenericExit<Impl>,
+            get_alias_database, matcher, expand_query, load_aliases,
             datasets, has_datasets, has_dataset, dataset_pool_size, add_dataset,
             dataset, dataset_reader, dataset_writer, dataset_checker,
             querymacro> methods;

@@ -54,7 +54,7 @@ struct expand_query : public MethKwargs<expand_query, PyObject>
             return nullptr;
 
         try {
-            if (PyErr_WarnEx(PyExc_DeprecationWarning, "arkimet.expand_query() will be replaced by something else, unfortunately not yet designed (TODO)", 1))
+            if (PyErr_WarnEx(PyExc_DeprecationWarning, "Use arki.dataset.Session().expand_query instead of arkimet.expand_query()", 1))
                 return nullptr;
 
             auto session = std::make_shared<arki::dataset::Session>();

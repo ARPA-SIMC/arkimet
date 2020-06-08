@@ -16,6 +16,8 @@
   `arkimet.dataset.Session.querymacro()`
 * Python function `arkimet.get_alias_database()` deprecated in favour of
   `arkimet.dataset.Session.get_alias_database()`
+* Python function `arkimet.expand_query()` deprecated in favour of
+  `arki.dataset.Session().expand_query()`
 
 # New in version 1.26
 

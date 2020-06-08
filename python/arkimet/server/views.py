@@ -237,7 +237,7 @@ class ArkiQExpand(ArkiView):
     def stream(self):
         # ./run-local arki-query "" http://localhost:8080
         query = self.request.values["query"].strip()
-        expanded = arki.expand_query(query)
+        expanded = self.session.expand_query(query)
         self.send_headers()
         self.handler.wfile.write(expanded.encode("utf-8"))
 
