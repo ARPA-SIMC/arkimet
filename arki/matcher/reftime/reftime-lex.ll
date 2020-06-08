@@ -32,24 +32,24 @@ timeunit  (h|hour|hours|m|min|minute|minutes|s|sec|second|seconds)
 %%
 
 [0-9]{4}(-[0-9]{1,2}(-[0-9]{1,2}T?)?)?  {
-		yylval->dtspec = parse_datetime(std::string(yytext, yyleng));
-		return DATE;
+        yylval->dtspec = parse_datetime(std::string(yytext, yyleng));
+        return DATE;
 }
 [0-9]{1,2}(:[0-9]{2}(:[0-9]{2}Z?)?)?  {
-		parse_time(std::string(yytext, yyleng), yylval->tspec);
-		return TIME;
+        parse_time(std::string(yytext, yyleng), yylval->tspec);
+        return TIME;
 }
 [0-9]+{space}?{unit} {
-		IParser p(std::string(yytext, yyleng), yylval->lexInterval);
-		return INTERVAL;
+        IParser p(std::string(yytext, yyleng), yylval->lexInterval);
+        return INTERVAL;
 }
 an?{space}{unit} {
-		IParser p(std::string(yytext, yyleng), yylval->lexInterval);
-		return INTERVAL;
+        IParser p(std::string(yytext, yyleng), yylval->lexInterval);
+        return INTERVAL;
 }
 (%|every){space}?[0-9]+{space}?{timeunit} {
-		SParser p(std::string(yytext, yyleng), yylval->lexInterval);
-		return STEP;
+        SParser p(std::string(yytext, yyleng), yylval->lexInterval);
+        return STEP;
 }
 easter{space}?[0-9]{4} {
         yylval->dtspec = parse_easter(std::string(yytext, yyleng));
@@ -82,18 +82,18 @@ midday      { return MIDDAY; }
 noon        { return NOON; }
 midnight    { return MIDNIGHT; }
 
-from		{ return GE; }
-\>=			{ return GE; }
-\>			{ return GT; }
-until		{ return LE; }
-\<=			{ return LE; }
-\<			{ return LT; }
-==?			{ return EQ; }
+from        { return GE; }
+\>=         { return GE; }
+\>          { return GT; }
+until       { return LE; }
+\<=         { return LE; }
+\<          { return LT; }
+==?         { return EQ; }
 
-,			{ return COMMA; }
+,           { return COMMA; }
 
 {space}     { /* space */ }
 
-.			{ yylval->error = yytext[0]; return UNEXPECTED; }
+.           { yylval->error = yytext[0]; return UNEXPECTED; }
 
 %%

@@ -162,12 +162,12 @@ static void mergetime(arki::core::FuzzyTime& dt, const int* time)
 %}
 
 %union {
-	arki::core::FuzzyTime* dtspec;
-	int tspec[3];
-	struct arki::matcher::reftime::lexer::LexInterval lexInterval;
-	int interval[6];
-	struct DTMatch* dtmatch;
-	char error;
+    arki::core::FuzzyTime* dtspec;
+    int tspec[3];
+    struct arki::matcher::reftime::lexer::LexInterval lexInterval;
+    int interval[6];
+    struct DTMatch* dtmatch;
+    char error;
 }
 
 %defines
@@ -194,41 +194,41 @@ static void mergetime(arki::core::FuzzyTime& dt, const int* time)
 
 %%
 
-Input	: DateExpr			{ state.add($1); }
-        | DateExpr STEP		{ state.add($1); state.add_step($2.val, $2.idx, $1); }
-        | TimeExpr			{ state.add($1); }
-        | TimeExpr STEP		{ state.add($1); state.add_step($2.val, $2.idx, $1); }
-        | STEP				{ state.add_step($1.val, $1.idx); }
-		| Input COMMA Input {}
-		| error Unexpected  {
-								std::string msg = "before '";
-								msg += state.unexpected;
-								msg += "'";
-								arki_reftimeerror(yyscanner, state, msg.c_str());
-								yyclearin;
-								YYERROR;
-							}
+Input   : DateExpr          { state.add($1); }
+        | DateExpr STEP     { state.add($1); state.add_step($2.val, $2.idx, $1); }
+        | TimeExpr          { state.add($1); }
+        | TimeExpr STEP     { state.add($1); state.add_step($2.val, $2.idx, $1); }
+        | STEP              { state.add_step($1.val, $1.idx); }
+        | Input COMMA Input {}
+        | error Unexpected  {
+                                std::string msg = "before '";
+                                msg += state.unexpected;
+                                msg += "'";
+                                arki_reftimeerror(yyscanner, state, msg.c_str());
+                                yyclearin;
+                                YYERROR;
+                            }
         ;
 
 // Accumulate unexpected characters to generate nicer error messages
-Unexpected: UNEXPECTED		{ state.unexpected = std::string() + $1; }
-		 | Unexpected UNEXPECTED
-		 					{ state.unexpected += $2; }
-		 ;
+Unexpected: UNEXPECTED      { state.unexpected = std::string() + $1; }
+         | Unexpected UNEXPECTED
+                            { state.unexpected += $2; }
+         ;
 
-DateExpr : GE Absolute		{ $$ = DTMatch::createGE($2); }
-         | GT Absolute		{ $$ = DTMatch::createGT($2); }
-		 | LE Absolute		{ $$ = DTMatch::createLE($2); }
-		 | LT Absolute		{ $$ = DTMatch::createLT($2); }
-		 | EQ Absolute		{ $$ = DTMatch::createEQ($2); }
-		 ;
+DateExpr : GE Absolute      { $$ = DTMatch::createGE($2); }
+         | GT Absolute      { $$ = DTMatch::createGT($2); }
+         | LE Absolute      { $$ = DTMatch::createLE($2); }
+         | LT Absolute      { $$ = DTMatch::createLT($2); }
+         | EQ Absolute      { $$ = DTMatch::createEQ($2); }
+         ;
 
-TimeExpr : GE Daytime		{ $$ = DTMatch::createTimeGE($2); }
-         | GT Daytime		{ $$ = DTMatch::createTimeGT($2); }
-		 | LE Daytime		{ $$ = DTMatch::createTimeLE($2); }
-		 | LT Daytime		{ $$ = DTMatch::createTimeLT($2); }
-		 | EQ Daytime		{ $$ = DTMatch::createTimeEQ($2); }
-		 ;
+TimeExpr : GE Daytime       { $$ = DTMatch::createTimeGE($2); }
+         | GT Daytime       { $$ = DTMatch::createTimeGT($2); }
+         | LE Daytime       { $$ = DTMatch::createTimeLE($2); }
+         | LT Daytime       { $$ = DTMatch::createTimeLT($2); }
+         | EQ Daytime       { $$ = DTMatch::createTimeEQ($2); }
+         ;
 
 Interval : INTERVAL                     { init_interval($$, $1); }
          | Interval INTERVAL            { interval_copy($$, $1); $2.add_to($$); }
@@ -251,19 +251,19 @@ Date     : TODAY                        { $$ = state.mktoday(); }
          | DATE                         { }
          ;
 
-Daytime : MIDDAY						{ $$[0] = 12; $$[1] = 0; $$[2] = 0; }
-        | NOON							{ $$[0] = 12; $$[1] = 0; $$[2] = 0; }
-        | MIDNIGHT						{ $$[0] = 0; $$[1] = 0; $$[2] = 0; }
-        | TIME							{ }
+Daytime : MIDDAY                        { $$[0] = 12; $$[1] = 0; $$[2] = 0; }
+        | NOON                          { $$[0] = 12; $$[1] = 0; $$[2] = 0; }
+        | MIDNIGHT                      { $$[0] = 0; $$[1] = 0; $$[2] = 0; }
+        | TIME                          { }
         ;
 
 %%
 
 void arki_reftimeerror(yyscan_t yyscanner, arki::matcher::reftime::Parser& state, const char* s)
 {
-	state.errors.push_back(s);
-	//tagcoll::TagexprParser::instance()->addError(s);
-	//fprintf(stderr, "%s\n", s);
+    state.errors.push_back(s);
+    //tagcoll::TagexprParser::instance()->addError(s);
+    //fprintf(stderr, "%s\n", s);
 }
 
 namespace arki {
@@ -276,21 +276,21 @@ void Parser::parse(const std::string& str)
         delete i;
     res.clear();
 
-	yyscan_t scanner;
-	arki_reftimelex_init(&scanner);
+    yyscan_t scanner;
+    arki_reftimelex_init(&scanner);
 
-	YY_BUFFER_STATE buf = arki_reftime_scan_string(str.c_str(), scanner);
+    YY_BUFFER_STATE buf = arki_reftime_scan_string(str.c_str(), scanner);
 
-	int res = yyparse(scanner, *this);
-	arki_reftime_delete_buffer(buf, scanner);
-	arki_reftimelex_destroy(scanner);
+    int res = yyparse(scanner, *this);
+    arki_reftime_delete_buffer(buf, scanner);
+    arki_reftimelex_destroy(scanner);
 
-	switch (res)
-	{
-		case 0:
-			// Parse successful
-			break;
-		case 1: {
+    switch (res)
+    {
+        case 0:
+            // Parse successful
+            break;
+        case 1: {
             // Syntax error
             std::stringstream ss;
             ss << "cannot parse '" << str << "': ";
