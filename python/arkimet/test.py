@@ -1,5 +1,6 @@
 import arkimet as arki
 from contextlib import contextmanager
+import multiprocessing
 import subprocess
 import shutil
 import os
@@ -286,3 +287,29 @@ class LogCapture(logging.Handler):
 
     def __exit__(self, type, value, traceback):
         self.uninstall()
+
+
+class ServerProcess(multiprocessing.Process):
+    def __init__(self, server):
+        super().__init__()
+        self.server = server
+        self.server_exception = None
+
+    def run(self):
+        with arki.test.LogCapture():
+            try:
+                self.server.serve_forever()
+            except Exception as e:
+                self.server_exception = e
+                self.server.shutdown()
+
+    def __enter__(self):
+        self.start()
+        return self
+
+    def __exit__(self, type, value, traceback):
+        self.terminate()
+        self.join()
+        # FIXME: this is never found, given that we're using a multiprocessing.Process
+        if self.server_exception is not None:
+            raise self.server_exception

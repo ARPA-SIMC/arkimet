@@ -1,5 +1,6 @@
+from __future__ import annotations
 import unittest
-import multiprocessing
+import contextlib
 import os
 import io
 import requests
@@ -35,21 +36,6 @@ class ExpectedFailure(Exception):
 class ProgressFailUpdate(Progress):
     def update(self, *args):
         raise ExpectedFailure()
-
-
-class ServerProcess(multiprocessing.Process):
-    def __init__(self, server):
-        super().__init__()
-        self.server = server
-        self.server_exception = None
-
-    def run(self):
-        with arki.test.LogCapture():
-            try:
-                self.server.serve_forever()
-            except Exception as e:
-                self.server_exception = e
-                self.server.shutdown()
 
 
 class Env(arkimet.test.Env):
@@ -98,19 +84,15 @@ class Env(arkimet.test.Env):
 class TestArkiServer(unittest.TestCase):
     def setUp(self):
         super().setUp()
+        self.ctx = contextlib.ExitStack().__enter__()
         self.env = Env(format="grib")
         # TODO: randomly allocate a port
         self.server = make_server("localhost", 0, self.env.config)
         self.server_url = self.server.url
-        self.server_process = ServerProcess(self.server)
-        self.server_process.start()
+        self.server_process = self.ctx.enter_context(arkimet.test.ServerProcess(self.server))
 
     def tearDown(self):
-        self.server_process.terminate()
-        self.server_process.join()
-        # FIXME: this is never found, given that we're using a multiprocessing.Process
-        if self.server_process.server_exception is not None:
-            raise self.server_process.server_exception
+        self.ctx.__exit__(None, None, None)
 
     def test_config(self):
         """

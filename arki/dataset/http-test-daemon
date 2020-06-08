@@ -14,9 +14,10 @@ redirects = {
 
 class RedirectHandler(http.server.BaseHTTPRequestHandler):
     def do_GET(self):
+        server_url = f"http://{self.server.server_name}:{self.server.server_port}"
         dest = redirects.get(self.path)
         if dest is not None:
-            url = "http://{0.server_name}:{0.server_port}{1}".format(self.server, dest)
+            url = f"{server_url}{dest}"
             self.send_response(307)
             self.send_header("Location", url)
             self.end_headers()
@@ -24,20 +25,26 @@ class RedirectHandler(http.server.BaseHTTPRequestHandler):
         elif self.path == "/final/config":
             self.send_response(200)
             self.end_headers()
-            self.wfile.write("""
+            self.wfile.write(f"""
 [test200]
 type = remote
-path = http://foo.bar/foo/dataset/test200
+path = {server_url}/foo/dataset/test200
+server = {server_url}/foo/
 restrict = test
 
 [test80]
 type = remote
-path = http://foo.bar/foo/dataset/test80
+path = {server_url}/foo/dataset/test80
+server = {server_url}/foo/
 
 [error]
 type = remote
-path = http://foo.bar/foo/dataset/error
+path = {server_url}/foo/dataset/error
+server = {server_url}/foo/
 """.encode())
+        elif self.path == "/foo/aliases":
+            self.send_response(200)
+            self.end_headers()
         else:
             self.send_response(404)
             self.end_headers()
@@ -69,23 +76,30 @@ g00    = GRIB1,1 or GRIB2S,1,0,0
 
 class Query500Handler(http.server.BaseHTTPRequestHandler):
     def do_GET(self):
+        server_url = f"http://{self.server.server_name}:{self.server.server_port}"
         if self.path == "/config":
             self.send_response(200)
             self.end_headers()
-            self.wfile.write("""
+            self.wfile.write(f"""
 [test200]
 type = remote
-path = http://localhost:18001/dataset/test200
+path = {server_url}/dataset/test200
+server = {server_url}
 restrict = test
 
 [test80]
 type = remote
-path = http://localhost:18001/dataset/test80
+path = {server_url}/dataset/test80
+server = {server_url}
 
 [error]
 type = remote
-path = http://localhost:18001/dataset/error
+path = {server_url}/dataset/error
+server = {server_url}
 """.encode())
+        elif self.path == "/aliases":
+            self.send_response(200)
+            self.end_headers()
         else:
             self.send_response(500)
             self.end_headers()

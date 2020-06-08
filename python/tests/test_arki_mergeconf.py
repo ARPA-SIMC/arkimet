@@ -16,18 +16,21 @@ class TestArkiMergeconf(CmdlineTestMixin, unittest.TestCase):
             self.assertEqual(out.splitlines(), [
                 "[error]",
                 "name = error",
-                "path = http://foo.bar/foo/dataset/error",
+                f"path = {url}/foo/dataset/error",
+                f"server = {url}/foo/",
                 "type = remote",
                 "",
                 "[test200]",
                 "name = test200",
-                "path = http://foo.bar/foo/dataset/test200",
+                f"path = {url}/foo/dataset/test200",
                 "restrict = test",
+                f"server = {url}/foo/",
                 "type = remote",
                 "",
                 "[test80]",
                 "name = test80",
-                "path = http://foo.bar/foo/dataset/test80",
+                f"path = {url}/foo/dataset/test80",
+                f"server = {url}/foo/",
                 "type = remote",
             ])
 
@@ -38,13 +41,15 @@ class TestArkiMergeconf(CmdlineTestMixin, unittest.TestCase):
             self.assertEqual(out.splitlines(), [
                 "[test200]",
                 "name = test200",
-                "path = http://foo.bar/foo/dataset/test200",
+                f"path = {url}/foo/dataset/test200",
                 "restrict = test",
+                f"server = {url}/foo/",
                 "type = remote",
                 "",
                 "[test80]",
                 "name = test80",
-                "path = http://foo.bar/foo/dataset/test80",
+                f"path = {url}/foo/dataset/test80",
+                f"server = {url}/foo/",
                 "type = remote",
             ])
 
@@ -55,8 +60,9 @@ class TestArkiMergeconf(CmdlineTestMixin, unittest.TestCase):
             self.assertEqual(out.splitlines(), [
                 "[test200]",
                 "name = test200",
-                "path = http://foo.bar/foo/dataset/test200",
+                f"path = {url}/foo/dataset/test200",
                 "restrict = test",
+                f"server = {url}/foo/",
                 "type = remote",
             ])
 
