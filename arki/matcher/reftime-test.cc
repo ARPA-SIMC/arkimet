@@ -274,18 +274,20 @@ add_method("time_repetition", [] {
     matcher::Parser parser;
     Metadata md;
     arki::tests::fill(md);
-    md.set("reftime", "2007-01-02 03:00:00");
 
     wassert(actual_matcher("reftime:>2007-01-02 00:04:05%3h").matches(md));
     wassert(actual_matcher("reftime:<2007-01-02 06:04:05%3h").matches(md));
     wassert(actual_matcher("reftime:>2007-01-02 00:04:05%6h").not_matches(md));
     wassert(actual_matcher("reftime:>2007-01-02 03:00:00%3h").not_matches(md));
-    wassert(actual(sql(parser.parse("reftime:>2007-01-02 00:04:05%6h"), "foo")) == "(foo>='2007-01-02 00:04:06' AND (TIME(foo)=='00:00:00' OR TIME(foo)=='06:00:00' OR TIME(foo)=='12:00:00' OR TIME(foo)=='18:00:00'))");
+    wassert(actual(sql(parser.parse("reftime:>2007-01-02 00:04:05%6h"), "foo")) ==
+            "(foo>='2007-01-02 00:04:06' AND (TIME(foo)=='00:04:05' OR TIME(foo)=='06:04:05' OR TIME(foo)=='12:04:05' OR TIME(foo)=='18:04:05'))");
 
     wassert(actual_matcher("reftime:>=2007-01-01 00:00 %24h").matches("reftime:2007-01-01T00:00:00Z"));
     wassert(actual_matcher("reftime:>=2007-01-01 00:00 %24h").matches("reftime:2007-01-03T00:00:00Z"));
     wassert(actual_matcher("reftime:>=2007-01-01 00:00 %24h").not_matches("reftime:2006-12-31T00:00:00Z"));
     wassert(actual_matcher("reftime:>=2007-01-01 00:00 %24h").not_matches("reftime:2007-01-01T12:00:00Z"));
+
+    wassert(actual_matcher("reftime:>=2007-01-01 12:00 @12:00 every 24h").matches("reftime:2007-01-01T12:00:00Z"));
 
     wassert(actual_matcher("reftime:>=2007-01-01 12:00 % 24h").matches("reftime:2007-01-01T12:00:00Z"));
     wassert(actual_matcher("reftime:>=2007-01-01 12:00 % 24h").matches("reftime:2007-01-03T12:00:00Z"));

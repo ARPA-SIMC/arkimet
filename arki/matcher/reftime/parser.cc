@@ -116,53 +116,6 @@ struct DateInterval : public DTMatch
     }
 };
 
-DTMatch* DTMatch::createLE(FuzzyTime* tt)
-{
-    Time ref = tt->upperbound();
-    ++ref.se;
-    ref.normalise();
-    delete tt;
-    return new DateInterval(Interval(Time(), ref));
-}
-
-DTMatch* DTMatch::createLT(FuzzyTime* tt)
-{
-    Time ref = tt->lowerbound();
-    delete tt;
-    return new DateInterval(Interval(Time(), ref));
-}
-
-DTMatch* DTMatch::createGE(FuzzyTime* tt)
-{
-    Time ref(tt->lowerbound());
-    delete tt;
-    return new DateInterval(Interval(ref, Time()));
-}
-
-DTMatch* DTMatch::createGT(FuzzyTime* tt)
-{
-    Time ref(tt->upperbound());
-    ++ref.se;
-    ref.normalise();
-    delete tt;
-    return new DateInterval(Interval(ref, Time()));
-}
-
-DTMatch* DTMatch::createEQ(FuzzyTime* tt)
-{
-    Time geref(tt->lowerbound());
-    Time ltref(tt->upperbound());
-    ++ltref.se;
-    ltref.normalise();
-    delete tt;
-    return new DateInterval(Interval(geref, ltref));
-}
-
-DTMatch* DTMatch::createInterval(const core::Interval& interval)
-{
-    return new DateInterval(interval);
-}
-
 
 struct TimeMatch : public DTMatch
 {
@@ -175,7 +128,7 @@ struct TimeMatch : public DTMatch
 
 struct TimeLE : public TimeMatch
 {
-    TimeLE(const int* tt) : TimeMatch(upperbound_sec(tt)) {}
+    using TimeMatch::TimeMatch;
     bool match(const core::Time& tt) const override { return time_to_seconds(tt) <= ref; }
     bool match(const core::Interval& interval) const override
     {
@@ -190,7 +143,7 @@ struct TimeLE : public TimeMatch
 
 struct TimeLT : public TimeMatch
 {
-    TimeLT(const int* tt) : TimeMatch(lowerbound_sec(tt)) {}
+    using TimeMatch::TimeMatch;
     bool match(const core::Time& tt) const override { return time_to_seconds(tt) < ref; }
     bool match(const core::Interval& interval) const override
     {
@@ -205,7 +158,7 @@ struct TimeLT : public TimeMatch
 
 struct TimeGT : public TimeMatch
 {
-    TimeGT(const int* tt) : TimeMatch(upperbound_sec(tt)) {}
+    using TimeMatch::TimeMatch;
     bool match(const core::Time& tt) const override { return time_to_seconds(tt) > ref; }
     bool match(const core::Interval& interval) const override
     {
@@ -220,7 +173,7 @@ struct TimeGT : public TimeMatch
 
 struct TimeGE : public TimeMatch
 {
-    TimeGE(const int* tt) : TimeMatch(lowerbound_sec(tt)) {}
+    using TimeMatch::TimeMatch;
     bool match(const core::Time& tt) const override { return time_to_seconds(tt) >= ref; }
     bool match(const core::Interval& interval) const override
     {
@@ -233,11 +186,12 @@ struct TimeGE : public TimeMatch
     string toString() const { return ">="+formatTime(ref); }
     bool intersect_interval(core::Interval& interval) const override { return true; }
 };
+
 struct TimeEQ : public DTMatch
 {
     int geref;
     int leref;
-    TimeEQ(const int* tt) : geref(lowerbound_sec(tt)), leref(upperbound_sec(tt)) {}
+    TimeEQ(int geref, int leref) : geref(geref), leref(leref) {}
     bool match(const core::Time& tt) const override
     {
         int t = time_to_seconds(tt);
@@ -282,14 +236,11 @@ struct TimeEQ : public DTMatch
 
 struct TimeExact : public DTMatch
 {
-    set<int> times;
-    // Set to true when we're not followed by a time to which we provide an interval
-    bool lead;
-    TimeExact(const set<int>& times, bool lead=false) : times(times), lead(lead)
+    std::set<int> times;
+    TimeExact(const set<int>& times) : times(times)
     {
         //fprintf(stderr, "CREATED %zd times lead %d\n", times.size(), lead);
     }
-    bool isLead() const { return lead; }
     bool match(const core::Time& tt) const override
     {
         int t = time_to_seconds(tt);
@@ -332,30 +283,30 @@ struct TimeExact : public DTMatch
     }
     string toString() const override
     {
+        std::string res;
+        std::set<int>::const_iterator i = times.begin();
+
+        if (*i)
+        {
+            res += '@';
+            res += formatTime(*i);
+        }
+
         //fprintf(stderr, "STOS %zd %d\n", times.size(), lead);
         if (times.size() == 1)
         {
-            if (lead)
-                return "==" + formatTime(*times.begin());
-            else
-                return "% 24h";
+            res += "%24h";
         }
         else
         {
-            set<int>::const_iterator i = times.begin();
             int a = *i;
             ++i;
             int b = *i;
-            if (lead)
-            {
-                string res = "==" + formatTime(a) + "%";
-                return res + tostringInterval(b-a);
-            }
-            else
-            {
-                return "%" + tostringInterval(b-a);
-            }
+            res += '%';
+            res += tostringInterval(b-a);
         }
+
+        return res;
     }
 };
 
@@ -371,28 +322,111 @@ static inline int timesecs(int val, int idx)
     }
 }
 
-DTMatch* DTMatch::createTimeLE(const int* tt) { return new TimeLE(tt); }
-DTMatch* DTMatch::createTimeLT(const int* tt) { return new TimeLT(tt); }
-DTMatch* DTMatch::createTimeGE(const int* tt) { return new TimeGE(tt); }
-DTMatch* DTMatch::createTimeGT(const int* tt) { return new TimeGT(tt); }
-DTMatch* DTMatch::createTimeEQ(const int* tt) { return new TimeEQ(tt); }
-
-void Parser::add_step(int val, int idx, DTMatch* base)
+DTMatch* Parser::createLE(FuzzyTime* tt)
 {
-    //fprintf(stderr, "ADD STEP %d %d %s\n", val, idx, base ? base->toString().c_str() : "NONE");
+    if (timebase == -1) timebase = time_to_seconds(tt->lowerbound());
+    Time ref = tt->upperbound();
+    ++ref.se;
+    ref.normalise();
+    delete tt;
+    return new DateInterval(Interval(Time(), ref));
+}
 
-    // Compute all the hh:mm:ss points we want in every day that gets matched,
-    // expressed as seconds from midnight.
-    set<int> times;
-    int timebase = 0;
-    times.insert(timebase);
+DTMatch* Parser::createLT(FuzzyTime* tt)
+{
+    Time ref = tt->lowerbound();
+    if (timebase == -1) timebase = time_to_seconds(ref);
+    delete tt;
+    return new DateInterval(Interval(Time(), ref));
+}
+
+DTMatch* Parser::createGE(FuzzyTime* tt)
+{
+    Time ref(tt->lowerbound());
+    if (timebase == -1) timebase = time_to_seconds(ref);
+    delete tt;
+    return new DateInterval(Interval(ref, Time()));
+}
+
+DTMatch* Parser::createGT(FuzzyTime* tt)
+{
+    if (timebase == -1) timebase = time_to_seconds(tt->lowerbound());
+    Time ref(tt->upperbound());
+    ++ref.se;
+    ref.normalise();
+    delete tt;
+    return new DateInterval(Interval(ref, Time()));
+}
+
+DTMatch* Parser::createEQ(FuzzyTime* tt)
+{
+    Time geref(tt->lowerbound());
+    if (timebase == -1) timebase = time_to_seconds(geref);
+    Time ltref(tt->upperbound());
+    ++ltref.se;
+    ltref.normalise();
+    delete tt;
+    return new DateInterval(Interval(geref, ltref));
+}
+
+DTMatch* DTMatch::createInterval(const core::Interval& interval)
+{
+    return new DateInterval(interval);
+}
+
+DTMatch* Parser::createTimeLE(const int* tt)
+{
+    if (timebase == -1) timebase = lowerbound_sec(tt);
+    return new TimeLE(upperbound_sec(tt));
+}
+
+DTMatch* Parser::createTimeLT(const int* tt)
+{
+    int val = lowerbound_sec(tt);
+    if (timebase == -1) timebase = val;
+    return new TimeLT(val);
+}
+
+DTMatch* Parser::createTimeGE(const int* tt)
+{
+    int val = lowerbound_sec(tt);
+    if (timebase == -1) timebase = val;
+    return new TimeGE(val);
+}
+
+DTMatch* Parser::createTimeGT(const int* tt)
+{
+    timebase = lowerbound_sec(tt);
+    return new TimeGT(upperbound_sec(tt));
+}
+
+DTMatch* Parser::createTimeEQ(const int* tt)
+{
+    int val = lowerbound_sec(tt);
+    if (timebase == -1) timebase = val;
+    return new TimeEQ(val, upperbound_sec(tt));
+}
+
+DTMatch* Parser::createStep(int val, int idx, const int* tt)
+{
+    if (tt)
+        timebase = lowerbound_sec(tt);
+    else if (timebase == -1)
+        timebase = 0;
+
+    std::set<int> times;
     int repetition = timesecs(val, idx);
-    for (int tstep = timebase + repetition; tstep < 3600*24; tstep += repetition)
-        times.insert(tstep);
-    for (int tstep = timebase - repetition; tstep >= 0; tstep -= repetition)
-        times.insert(tstep);
 
-    res.push_back(new TimeExact(times, base==0));
+    for (int step = timebase % repetition; step < 3600 * 24; step += repetition)
+        times.emplace(step);
+
+    return new TimeExact(times);
+}
+
+void Parser::add(DTMatch* val)
+{
+    //fprintf(stderr, "ADD %s\n", t->toString().c_str());
+    res.push_back(val);
 }
 
 arki::core::FuzzyTime* Parser::mknow()

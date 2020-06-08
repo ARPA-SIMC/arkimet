@@ -41,18 +41,7 @@ struct DTMatch
      */
     virtual bool intersect_interval(core::Interval& interval) const = 0;
 
-    static DTMatch* createLE(core::FuzzyTime* tt);
-    static DTMatch* createLT(core::FuzzyTime* tt);
-    static DTMatch* createGE(core::FuzzyTime* tt);
-    static DTMatch* createGT(core::FuzzyTime* tt);
-    static DTMatch* createEQ(core::FuzzyTime* tt);
     static DTMatch* createInterval(const core::Interval& interval);
-
-    static DTMatch* createTimeLE(const int* tt);
-    static DTMatch* createTimeLT(const int* tt);
-    static DTMatch* createTimeGE(const int* tt);
-    static DTMatch* createTimeGT(const int* tt);
-    static DTMatch* createTimeEQ(const int* tt);
 };
 
 struct Parser
@@ -60,6 +49,7 @@ struct Parser
     time_t tnow;
     std::vector<std::string> errors;
     std::string unexpected;
+    int timebase = 0;
 
     std::vector<DTMatch*> res;
 
@@ -72,13 +62,9 @@ struct Parser
         for (auto& i: res) delete i;
     }
 
-	void add(DTMatch* t)
-	{
-		//fprintf(stderr, "ADD %s\n", t->toString().c_str());
-		res.push_back(t);
-	}
+    void add(DTMatch* val);
 
-    void add_step(int val, int idx, DTMatch* base=0);
+    void add_step(int val, int idx, const int* time=nullptr);
 
     void parse(const std::string& str);
 
@@ -86,6 +72,20 @@ struct Parser
     arki::core::FuzzyTime* mktoday();
     arki::core::FuzzyTime* mkyesterday();
     arki::core::FuzzyTime* mktomorrow();
+
+    DTMatch* createLE(core::FuzzyTime* tt);
+    DTMatch* createLT(core::FuzzyTime* tt);
+    DTMatch* createGE(core::FuzzyTime* tt);
+    DTMatch* createGT(core::FuzzyTime* tt);
+    DTMatch* createEQ(core::FuzzyTime* tt);
+
+    DTMatch* createTimeLE(const int* tt);
+    DTMatch* createTimeLT(const int* tt);
+    DTMatch* createTimeGE(const int* tt);
+    DTMatch* createTimeGT(const int* tt);
+    DTMatch* createTimeEQ(const int* tt);
+
+    DTMatch* createStep(int val, int idx, const int* tt=nullptr);
 };
 
 }

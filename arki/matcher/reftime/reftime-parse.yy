@@ -180,7 +180,7 @@ static void mergetime(arki::core::FuzzyTime& dt, const int* time)
 
 %start Input
 %token <dtspec> DATE
-%token <tspec> TIME
+%token <tspec> TIME TIMEBASE
 %token <lexInterval> INTERVAL STEP
 %token <error> UNEXPECTED
 %token NOW TODAY YESTERDAY TOMORROW AGO BEFORE AFTER AND PLUS MINUS MIDDAY NOON MIDNIGHT
@@ -190,16 +190,16 @@ static void mergetime(arki::core::FuzzyTime& dt, const int* time)
 %type <tspec> Daytime
 %type <interval> Interval
 %type <void> Input
-%type <dtmatch> DateExpr TimeExpr
+%type <dtmatch> DateExpr TimeExpr Step
 
 %%
 
 Input   : DateExpr          { state.add($1); }
-        | DateExpr STEP     { state.add($1); state.add_step($2.val, $2.idx, $1); }
+        | DateExpr Step     { state.add($1); state.add($2); }
         | TimeExpr          { state.add($1); }
-        | TimeExpr STEP     { state.add($1); state.add_step($2.val, $2.idx, $1); }
-        | STEP              { state.add_step($1.val, $1.idx); }
-        | Input COMMA Input {}
+        | TimeExpr Step     { state.add($1); state.add($2); }
+        | Step              { state.add($1); }
+        | Input Comma Input {}
         | error Unexpected  {
                                 std::string msg = "before '";
                                 msg += state.unexpected;
@@ -210,24 +210,31 @@ Input   : DateExpr          { state.add($1); }
                             }
         ;
 
+Comma   : COMMA             { state.timebase = -1; }
+        ;
+
+Step    : STEP              { $$ = state.createStep($1.val, $1.idx); }
+        | TIMEBASE STEP     { $$ = state.createStep($2.val, $2.idx, $1); }
+        ;
+
 // Accumulate unexpected characters to generate nicer error messages
 Unexpected: UNEXPECTED      { state.unexpected = std::string() + $1; }
          | Unexpected UNEXPECTED
                             { state.unexpected += $2; }
          ;
 
-DateExpr : GE Absolute      { $$ = DTMatch::createGE($2); }
-         | GT Absolute      { $$ = DTMatch::createGT($2); }
-         | LE Absolute      { $$ = DTMatch::createLE($2); }
-         | LT Absolute      { $$ = DTMatch::createLT($2); }
-         | EQ Absolute      { $$ = DTMatch::createEQ($2); }
+DateExpr : GE Absolute      { $$ = state.createGE($2); }
+         | GT Absolute      { $$ = state.createGT($2); }
+         | LE Absolute      { $$ = state.createLE($2); }
+         | LT Absolute      { $$ = state.createLT($2); }
+         | EQ Absolute      { $$ = state.createEQ($2); }
          ;
 
-TimeExpr : GE Daytime       { $$ = DTMatch::createTimeGE($2); }
-         | GT Daytime       { $$ = DTMatch::createTimeGT($2); }
-         | LE Daytime       { $$ = DTMatch::createTimeLE($2); }
-         | LT Daytime       { $$ = DTMatch::createTimeLT($2); }
-         | EQ Daytime       { $$ = DTMatch::createTimeEQ($2); }
+TimeExpr : GE Daytime       { $$ = state.createTimeGE($2); }
+         | GT Daytime       { $$ = state.createTimeGT($2); }
+         | LE Daytime       { $$ = state.createTimeLE($2); }
+         | LT Daytime       { $$ = state.createTimeLT($2); }
+         | EQ Daytime       { $$ = state.createTimeEQ($2); }
          ;
 
 Interval : INTERVAL                     { init_interval($$, $1); }
@@ -274,7 +281,9 @@ void Parser::parse(const std::string& str)
 {
     for (auto& i: res)
         delete i;
+    errors.clear();
     res.clear();
+    timebase = -1;
 
     yyscan_t scanner;
     arki_reftimelex_init(&scanner);

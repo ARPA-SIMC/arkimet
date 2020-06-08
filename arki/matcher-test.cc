@@ -45,7 +45,7 @@ void Tests::register_tests() {
 add_method("tostring", [](Fixture& f) {
     matcher::Parser parser;
     wassert(actual(parser.parse("origin:GRIB1,1,,3 or BUFR,1").toString()) == "origin:GRIB1,1,,3 or BUFR,1");
-    wassert(actual(parser.parse("reftime:>2015-06-01 09:00:00 % 24h").toStringExpanded()) == "reftime:>=2015-06-01 09:00:01 % 24");
+    wassert(actual(parser.parse("reftime:>2015-06-01 09:00:00 % 24h").toStringExpanded()) == "reftime:>=2015-06-01 09:00:01,@09:00:00%24h");
 });
 
 // Try OR matches

@@ -25,9 +25,10 @@ using namespace arki::matcher::reftime::lexer;
 %option noyywrap nounput
 %option header-file="reftime-lex.h"
 
-space   [ \t]+
-unit    (h|hour|hours|m|min|minute|minutes|s|sec|second|seconds|w|week|weeks|d|da|day|days|month|months|y|year|years)
+space     [ \t]+
+unit      (h|hour|hours|m|min|minute|minutes|s|sec|second|seconds|w|week|weeks|d|da|day|days|month|months|y|year|years)
 timeunit  (h|hour|hours|m|min|minute|minutes|s|sec|second|seconds)
+time      [0-9]{1,2}(:[0-9]{2}(:[0-9]{2}Z?)?)? 
 
 %%
 
@@ -35,27 +36,31 @@ timeunit  (h|hour|hours|m|min|minute|minutes|s|sec|second|seconds)
         yylval->dtspec = parse_datetime(std::string(yytext, yyleng));
         return DATE;
 }
-[0-9]{1,2}(:[0-9]{2}(:[0-9]{2}Z?)?)?  {
+{time} {
         parse_time(std::string(yytext, yyleng), yylval->tspec);
         return TIME;
 }
-[0-9]+{space}?{unit} {
+[0-9]+{space}*{unit} {
         IParser p(std::string(yytext, yyleng), yylval->lexInterval);
         return INTERVAL;
 }
-an?{space}{unit} {
+an?{space}+{unit} {
         IParser p(std::string(yytext, yyleng), yylval->lexInterval);
         return INTERVAL;
 }
-(%|every){space}?[0-9]+{space}?{timeunit} {
+@{time} {
+        parse_time(std::string(yytext + 1, yyleng - 1), yylval->tspec);
+        return TIMEBASE;
+}
+(%|every){space}*[0-9]+{space}*{timeunit} {
         SParser p(std::string(yytext, yyleng), yylval->lexInterval);
         return STEP;
 }
-easter{space}?[0-9]{4} {
+easter{space}*[0-9]{4} {
         yylval->dtspec = parse_easter(std::string(yytext, yyleng));
         return DATE;
 }
-(processione{space})?san{space}?luca{space}?[0-9]{4} {
+(processione{space}*)?san{space}*?luca{space}*?[0-9]{4} {
         // Compute easter
         yylval->dtspec = parse_easter(std::string(yytext, yyleng));
         // Lowerbound

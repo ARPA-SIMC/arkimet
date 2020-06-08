@@ -75,6 +75,7 @@ struct DTParser : public Parser
 {
     DTParser(const std::string& str) : Parser(str) {}
 
+    /// Parse a number
     int num()
     {
         std::string val;
