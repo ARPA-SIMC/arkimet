@@ -40,7 +40,7 @@ struct _name : public Getter<_name, arkipy_DatasetDataset>
 struct config : public Getter<config, arkipy_DatasetDataset>
 {
     constexpr static const char* name = "config";
-    constexpr static const char* doc = "dataset configuration as an arkimet.cfg.Section object";
+    constexpr static const char* doc = "dataset configuration as an :class:`arkimet.cfg.Section` object";
     constexpr static void* closure = nullptr;
 
     static PyObject* get(Impl* self, void* closure)
@@ -106,9 +106,9 @@ and allows to create readers, writers, and checkers to work with the dataset.
 
 You can avoid the intermediate step of accessing Dataset objects, by calling
 directly :class:`arkimet.dataset.Session` functions
-:fun:`arkimet.dataset.Session.create_reader`,
-:fun:`arkimet.dataset.Session.create_writer`, and
-:fun:`arkimet.dataset.Session.create_checker`.
+:meth:`arkimet.dataset.Session.dataset_reader`,
+:meth:`arkimet.dataset.Session.dataset_writer`, and
+:meth:`arkimet.dataset.Session.dataset_checker`.
 
 If in some cases it can be useful to instantiate a Dataset and pass it around,
 this class is available, matching the C++ API.

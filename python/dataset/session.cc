@@ -308,7 +308,7 @@ struct DatasetSessionDef : public Type<DatasetSessionDef, arkipy_DatasetSession>
     constexpr static const char* doc = R"(
 Shared configuration, aliases, and working data used to work with arkimet datasets.
 
-A Session stores alias information, and preloads :class:`arki.dataset.Dataset` objects.
+A Session stores alias information, and preloads :class:`arkimet.dataset.Dataset` objects.
 
 Adding a remote dataset to the Session dataset pool will download the alias
 database of its server and merge it into the current one, raising an error in
