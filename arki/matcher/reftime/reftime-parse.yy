@@ -1,26 +1,15 @@
 %{
 #include "config.h"
 #include "parser.h"
+#include "lexer.h"
 #include "arki/core/fuzzytime.h"
 #include <string>
 #include <stdexcept>
 #include <ctime>
 #include <sstream>
 
-using namespace std;
 using namespace arki::matcher::reftime;
-
-struct LexInterval {
-    /// Value of the interval
-    int val;
-    /// Unit of the interval (0: year... 5: second)
-    int idx;
-
-    void add_to(int* vals) const
-    {
-        vals[idx] += val;
-    }
-};
+using arki::matcher::reftime::lexer::LexInterval;
 
 #include "reftime-parse.hh"
 #include "reftime-lex.h"
@@ -91,7 +80,7 @@ static void interval_add(arki::core::FuzzyTime& dst, const int* val, bool subtra
     pdate(" add to", dst);
 
     // Compute what's the last valid item between dst and val
-    unsigned depth = max(interval_depth(val), interval_depth(dst));
+    unsigned depth = std::max(interval_depth(val), interval_depth(dst));
 
     // Lowerbound dst, adding val values to it
     arki::core::Time lb = dst.lowerbound();
@@ -175,7 +164,7 @@ static void mergetime(arki::core::FuzzyTime& dt, const int* time)
 %union {
 	arki::core::FuzzyTime* dtspec;
 	int tspec[3];
-	struct LexInterval lexInterval;
+	struct arki::matcher::reftime::lexer::LexInterval lexInterval;
 	int interval[6];
 	struct DTMatch* dtmatch;
 	char error;
@@ -212,7 +201,7 @@ Input	: DateExpr			{ state.add($1); }
         | STEP				{ state.add_step($1.val, $1.idx); }
 		| Input COMMA Input {}
 		| error Unexpected  {
-								string msg = "before '";
+								std::string msg = "before '";
 								msg += state.unexpected;
 								msg += "'";
 								arki_reftimeerror(yyscanner, state, msg.c_str());
@@ -222,7 +211,7 @@ Input	: DateExpr			{ state.add($1); }
         ;
 
 // Accumulate unexpected characters to generate nicer error messages
-Unexpected: UNEXPECTED		{ state.unexpected = string() + $1; }
+Unexpected: UNEXPECTED		{ state.unexpected = std::string() + $1; }
 		 | Unexpected UNEXPECTED
 		 					{ state.unexpected += $2; }
 		 ;
@@ -283,9 +272,9 @@ namespace reftime {
 
 void Parser::parse(const std::string& str)
 {
-	for (vector<DTMatch*>::iterator i = res.begin(); i != res.end(); ++i)
-		delete *i;
-	res.clear();
+    for (auto& i: res)
+        delete i;
+    res.clear();
 
 	yyscan_t scanner;
 	arki_reftimelex_init(&scanner);
@@ -305,7 +294,7 @@ void Parser::parse(const std::string& str)
             // Syntax error
             std::stringstream ss;
             ss << "cannot parse '" << str << "': ";
-            for (vector<string>::const_iterator i = errors.begin();
+            for (std::vector<std::string>::const_iterator i = errors.begin();
                     i != errors.end(); ++i)
             {
                 if (i != errors.begin())
@@ -319,7 +308,7 @@ void Parser::parse(const std::string& str)
             throw std::runtime_error("parser out of memory");
         default: {
             // Should never happen
-            stringstream ss;
+            std::stringstream ss;
             ss << "cannot parse '" << str << "': Bison parser function returned unexpected value " << res;
             throw std::runtime_error(ss.str());
         }

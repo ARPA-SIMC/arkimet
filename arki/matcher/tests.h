@@ -25,6 +25,12 @@ public:
 
     /// Ensure that the matcher does not match this metadata
     void not_matches(const Metadata& md) const;
+
+    /// Ensure that the matcher matches this metadata item
+    void matches(const std::string& item) const;
+
+    /// Ensure that the matcher does not match this metadata item
+    void not_matches(const std::string& item) const;
 };
 
 inline arki::tests::ActualMatcher actual_matcher(const std::string& actual)

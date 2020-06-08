@@ -65,5 +65,54 @@ void ActualMatcher::not_matches(const Metadata& md) const
     wassert(actual(m2(md)) == _actual(md));
 }
 
+static std::unique_ptr<Type> from_string(const std::string& s)
+{
+    auto pos = s.find(":");
+    auto type = s.substr(0, pos);
+    auto desc = s.substr(pos + 1);
+    return decodeString(parseCodeName(type.c_str()), desc);
+}
+
+
+void ActualMatcher::matches(const std::string& sitem) const
+{
+    auto item = from_string(sitem);
+
+    wassert(actual(_actual(*item)).istrue());
+
+    // Check stringification and reparsing
+    Matcher m1 = wcallchecked(parse(_actual.toString()));
+
+    //fprintf(stderr, "%s -> %s -> %s\n", expr.c_str(), _actual.toString().c_str(), m1.toString().c_str());
+
+    wassert(actual(m1.toString()) == _actual.toString());
+    wassert(actual(m1(*item)) == _actual(*item));
+
+    // Retry with an expanded stringification
+    Matcher m2 = wcallchecked(parse(_actual.toStringExpanded()));
+    wassert(actual(m2.toStringExpanded()) == _actual.toStringExpanded());
+    wassert(actual(m2(*item)) == _actual(*item));
+}
+
+void ActualMatcher::not_matches(const std::string& sitem) const
+{
+    auto item = from_string(sitem);
+
+    wassert(actual(_actual(*item)).isfalse());
+
+    // Check stringification and reparsing
+    Matcher m1 = wcallchecked(parse(_actual.toString()));
+
+    //fprintf(stderr, "%s -> %s -> %s\n", expr.c_str(), _actual.toString().c_str(), m1.toString().c_str());
+
+    wassert(actual(m1.toString()) == _actual.toString());
+    wassert(actual(m1(*item)) == _actual(*item));
+
+    // Retry with an expanded stringification
+    Matcher m2 = wcallchecked(parse(_actual.toStringExpanded()));
+    wassert(actual(m2.toStringExpanded()) == _actual.toStringExpanded());
+    wassert(actual(m2(*item)) == _actual(*item));
+}
+
 }
 }

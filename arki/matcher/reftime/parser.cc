@@ -338,7 +338,7 @@ struct TimeExact : public DTMatch
             if (lead)
                 return "==" + formatTime(*times.begin());
             else
-                return "% 24";
+                return "% 24h";
         }
         else
         {

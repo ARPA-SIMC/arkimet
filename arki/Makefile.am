@@ -93,6 +93,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		matcher/product.h \
 		matcher/quantity.h \
 		matcher/reftime.h \
+		matcher/reftime/lexer.h \
 		matcher/reftime/parser.h \
 		matcher/run.h \
 		matcher/task.h \
@@ -285,6 +286,7 @@ libarkimet_la_SOURCES += \
 		matcher/level.cc \
 		matcher/timerange.cc \
 		matcher/reftime.cc \
+		matcher/reftime/lexer.cc \
 		matcher/reftime/parser.cc \
 		matcher/reftime/reftime-lex.cc \
 		matcher/reftime/reftime-parse.cc \
@@ -406,6 +408,7 @@ tests_arki_test_SOURCES += \
 		matcher/level-test.cc \
 		matcher/timerange-test.cc \
 		matcher/reftime-test.cc \
+		matcher/reftime/lexer-test.cc \
 		matcher/reftime/parser-test.cc \
 		matcher/area-test.cc \
 		matcher/proddef-test.cc \
