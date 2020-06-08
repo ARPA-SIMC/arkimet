@@ -42,7 +42,7 @@ public:
      * added to the session alias database. If different servers define some
      * aliases differently, it throws std::runtime_error
      */
-    void add_dataset(const core::cfg::Section& cfg);
+    void add_dataset(const core::cfg::Section& cfg, bool load_aliases=true);
 
     /// Check if the dataset pool has a dataset with the given name
     bool has_dataset(const std::string& name) const;

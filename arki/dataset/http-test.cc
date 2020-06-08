@@ -22,13 +22,13 @@ add_method("redirect", [] {
     tests::Daemon server({"arki/dataset/http-test-daemon", "--action=redirect"});
     int port;
     sscanf(server.daemon_start_string.c_str(), "OK %d\n", &port);
-    char url[512];
-    snprintf(url, 512, "http://localhost:%d", port);
+    std::string url = "http://localhost:";
+    url += std::to_string(port);
 
     auto cfg = http::Reader::load_cfg_sections(url);
     auto sec = cfg->section("test200");
     wassert(actual(sec->value("type")) == "remote");
-    wassert(actual(sec->value("path")) == "http://foo.bar/foo/dataset/test200");
+    wassert(actual(sec->value("path")) == url + "/foo/dataset/test200");
 });
 
 add_method("server_error", [] {

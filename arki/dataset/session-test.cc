@@ -78,22 +78,25 @@ add_method("get_common_remote_server", [] {
             "name = test200\n"
             "type = remote\n"
             "path = http://foo.bar/foo/dataset/test200\n"
+            "server = http://foo.bar/foo/\n"
             "\n"
             "[test80]\n"
             "name = test80\n"
             "type = remote\n"
             "path = http://foo.bar/foo/dataset/test80\n"
+            "server = http://foo.bar/foo/\n"
             "\n"
             "[error]\n"
             "name = error\n"
             "type = remote\n"
-            "path = http://foo.bar/foo/dataset/error\n";
+            "path = http://foo.bar/foo/dataset/error\n"
+            "server = http://foo.bar/foo/\n";
         auto cfg = core::cfg::Sections::parse(conf);
         auto session = std::make_shared<dataset::Session>();
         for (const auto& si: *cfg)
-            session->add_dataset(*si.second);
+            session->add_dataset(*si.second, false);
 
-        wassert(actual(session->get_common_remote_server()) == "http://foo.bar/foo");
+        wassert(actual(session->get_common_remote_server()) == "http://foo.bar/foo/");
     }
 
     {
@@ -102,20 +105,23 @@ add_method("get_common_remote_server", [] {
             "name = test200\n"
             "type = remote\n"
             "path = http://bar.foo.bar/foo/dataset/test200\n"
+            "server = http://bar.foo.bar/foo/\n"
             "\n"
             "[test80]\n"
             "name = test80\n"
             "type = remote\n"
             "path = http://foo.bar/foo/dataset/test80\n"
+            "server = http://foo.bar/foo/\n"
             "\n"
             "[error]\n"
             "name = error\n"
             "type = remote\n"
-            "path = http://foo.bar/foo/dataset/error\n";
+            "path = http://foo.bar/foo/dataset/error\n"
+            "server = http://foo.bar/foo/\n";
         auto cfg = core::cfg::Sections::parse(conf);
         auto session = std::make_shared<dataset::Session>();
         for (const auto& si: *cfg)
-            session->add_dataset(*si.second);
+            session->add_dataset(*si.second, false);
         wassert(actual(session->get_common_remote_server()) == "");
     }
 
@@ -126,20 +132,23 @@ add_method("get_common_remote_server", [] {
             "type = ondisk2\n"
             "step = daily\n"
             "path = http://foo.bar/foo/dataset/test200\n"
+            "server = http://foo.bar/foo/\n"
             "\n"
             "[test80]\n"
             "name = test80\n"
             "type = remote\n"
             "path = http://foo.bar/foo/dataset/test80\n"
+            "server = http://foo.bar/foo/\n"
             "\n"
             "[error]\n"
             "name = error\n"
             "type = remote\n"
-            "path = http://foo.bar/foo/dataset/error\n";
+            "path = http://foo.bar/foo/dataset/error\n"
+            "server = http://foo.bar/foo/\n";
         auto cfg = core::cfg::Sections::parse(conf);
         auto session = std::make_shared<dataset::Session>();
         for (const auto& si: *cfg)
-            session->add_dataset(*si.second);
+            session->add_dataset(*si.second, false);
         wassert(actual(session->get_common_remote_server()) == "");
     }
 });

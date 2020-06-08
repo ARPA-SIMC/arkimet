@@ -105,7 +105,7 @@ std::shared_ptr<segment::Checker> Session::segment_checker(const std::string& fo
     return res;
 }
 
-void Session::add_dataset(const core::cfg::Section& cfg)
+void Session::add_dataset(const core::cfg::Section& cfg, bool load_aliases)
 {
     auto ds = dataset(cfg);
     auto old = dataset_pool.find(ds->name());
@@ -119,7 +119,7 @@ void Session::add_dataset(const core::cfg::Section& cfg)
     }
 
     // Handle merging remote aliases
-    if (ds->config->value("type") == "remote")
+    if (load_aliases && ds->config->value("type") == "remote")
     {
         // Skip if we have already loaded aliases from this server
         auto server = ds->config->value("server");
@@ -199,9 +199,6 @@ std::shared_ptr<Dataset> Session::querymacro(const std::string& macro_name, cons
     {
         // Either all datasets are local, or they are on different servers: run the macro locally
         arki::nag::verbose("Running query macro %s locally", macro_name.c_str());
-
-        // TODO: download and merge alias databases from all the servers
-
         return std::make_shared<arki::dataset::QueryMacro>(shared_from_this(), macro_name, macro_query);
     } else {
         // Create the remote query macro
@@ -215,6 +212,7 @@ std::shared_ptr<Dataset> Session::querymacro(const std::string& macro_name, cons
     }
 }
 
+#if 0
 static std::string geturlprefix(const std::string& s)
 {
     // Take until /dataset/
@@ -222,6 +220,7 @@ static std::string geturlprefix(const std::string& s)
     if (pos == std::string::npos) return std::string();
     return s.substr(0, pos);
 }
+#endif
 
 std::string Session::get_common_remote_server() const
 {
@@ -230,11 +229,10 @@ std::string Session::get_common_remote_server() const
     {
         std::string type = str::lower(si.second->config->value("type"));
         if (type != "remote") return std::string();
-        std::string urlprefix = geturlprefix(si.second->config->value("path"));
-        if (urlprefix.empty()) return std::string();
+        std::string server = si.second->config->value("server");
         if (base.empty())
-            base = urlprefix;
-        else if (base != urlprefix)
+            base = server;
+        else if (base != server)
             return std::string();
     }
     return base;
