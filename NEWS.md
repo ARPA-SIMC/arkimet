@@ -1,11 +1,10 @@
 # New in version 1.27
 
 * reftime match expressions using repeating intervals (like `reftime:=yesterday
-  %3h`) now always base the interval or a round time, instead of the time
-  specified in the previous part of the query. Where previously something like
-  `reftime:>=today 12:30 %6h` would match today at 12:30 and 18:30, then
-  tomorrow at 00:30, 06:30, and so on, now it will match today at 18:00,
-  tomorrow at 00:00, tomorrow at 06:00, and so on.
+  %3h`) now have a new `@hh:mm:ss` syntax to explicitly reference the starting
+  point of the repetitions. For example, `arki-dump --query 'reftime:=2020-01-01 20:30%8h'`
+  yields `reftime:>=2020-01-01 20:30:00,<2020-01-01 20:31:00,@04:30:00%8h`,
+  meaning a match in that interval and at 20:30 every 8 hours.
   (side effect of fixing #206)
 * Added Python bindings for arki.dataset.Session
   (side effect of fixing #206)
