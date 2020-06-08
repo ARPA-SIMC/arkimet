@@ -15,6 +15,7 @@
 #include "arki/dataset/http.h"
 #include "arki/dataset/time.h"
 #include "arki/dataset/session.h"
+#include "arki/matcher/aliases.h"
 
 using namespace std;
 using namespace arki;
@@ -205,7 +206,7 @@ struct get_alias_database : public MethKwargs<get_alias_database, PyObject>
             return nullptr;
 
         try {
-            auto sections = arki::dataset::http::Reader::getAliasDatabase(std::string(url, url_len));
+            auto sections = matcher::load_remote_alias_database(std::string(url, url_len));
             return to_python(sections);
         } ARKI_CATCH_RETURN_PYO
     }

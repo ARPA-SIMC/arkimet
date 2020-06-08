@@ -48,14 +48,16 @@ path = http://foo.bar/foo/dataset/error
 
 
 class AliasesHandler(http.server.BaseHTTPRequestHandler):
+    ALIASES = """
+[level]
+g00    = GRIB1,1 or GRIB2S,1,0,0
+"""
+
     def do_GET(self):
         if self.path == "/aliases":
             self.send_response(200)
             self.end_headers()
-            self.wfile.write("""
-[level]
-g00    = GRIB1,1 or GRIB2S,1,0,0
-""".encode())
+            self.wfile.write(self.ALIASES.encode())
         else:
             self.send_response(404)
             self.end_headers()
@@ -103,6 +105,9 @@ def main():
     parser.add_argument("--verbose", "-v", action="store_true", help="verbose output")
     parser.add_argument("--debug", action="store_true", help="debug output")
     parser.add_argument("--action", action="store", help="test action")
+    # TODO: auto allocate it
+    parser.add_argument("--port", action="store", default=18001, type=int, help="listening port (default: 18001)")
+    parser.add_argument("--alias-file", action="store", help="alias file to use (default: an internal version)")
     args = parser.parse_args()
 
     # Setup logging
@@ -114,8 +119,6 @@ def main():
     else:
         logging.basicConfig(level=logging.WARN, stream=sys.stderr, format=FORMAT)
 
-    PORT = 18001
-
     if args.action == "redirect":
         Handler = RedirectHandler
     elif args.action == "aliases":
@@ -125,8 +128,12 @@ def main():
     else:
         raise RuntimeError("unsupported action {}".format(args.action))
 
-    with http.server.HTTPServer(("localhost", PORT), Handler) as httpd:
-        print("OK {}".format(PORT))
+    if args.alias_file:
+        with open(args.alias_file, "rt") as fd:
+            AliasesHandler.ALIASES = fd.read()
+
+    with http.server.HTTPServer(("localhost", args.port), Handler) as httpd:
+        print("OK {}".format(args.port))
         sys.stdout.flush()
         httpd.serve_forever()
 

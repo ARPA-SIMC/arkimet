@@ -57,6 +57,13 @@ struct AliasDatabase
     void debug_dump(core::AbstractOutputFile& out);
 };
 
+
+/**
+ * Read the alias database from the given remote dataset
+ */
+std::shared_ptr<core::cfg::Sections> load_remote_alias_database(const std::string& server);
+
+
 }
 }
 

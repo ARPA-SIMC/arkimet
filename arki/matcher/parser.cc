@@ -78,6 +78,16 @@ void Parser::load_aliases(const core::cfg::Sections& cfg)
     aliases->add(cfg);
 }
 
+void Parser::load_remote_aliases(const std::string& server_url)
+{
+    if (servers_seen.find(server_url) != servers_seen.end())
+        return;
+
+    auto cfg = load_remote_alias_database(server_url);
+    aliases->add(*cfg);
+    servers_seen.emplace(server_url);
+}
+
 std::shared_ptr<core::cfg::Sections> Parser::serialise_aliases() const
 {
     return aliases->serialise();

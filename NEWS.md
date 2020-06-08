@@ -9,6 +9,10 @@
   (side effect of fixing #206)
 * Added Python bindings for arki.dataset.Session
   (side effect of fixing #206)
+* Added Python bindings for arkimet.dataset.Dataset
+  (side effect of fixing #206)
+* Python code should now instantiate datasets and matchers using Session; the
+  old way still works, and raises `DeprecationWarning`s
 
 # New in version 1.26
 

@@ -117,9 +117,16 @@ void Session::add_dataset(const core::cfg::Section& cfg)
             old->second->config->value("path").c_str());
         return;
     }
-    dataset_pool.emplace(ds->name(), ds);
 
-    // TODO: handle merging remote aliases
+    // Handle merging remote aliases
+    if (ds->config->value("type") == "remote")
+    {
+        // Skip if we have already loaded aliases from this server
+        auto server = ds->config->value("server");
+        matcher_parser.load_remote_aliases(server);
+    }
+
+    dataset_pool.emplace(ds->name(), ds);
 }
 
 bool Session::has_dataset(const std::string& name) const

@@ -3,6 +3,7 @@
 
 /// Metadata match expressions
 #include <arki/matcher.h>
+#include <unordered_set>
 
 namespace arki {
 namespace matcher {
@@ -11,6 +12,7 @@ class Parser
 {
 protected:
     AliasDatabase* aliases = nullptr;
+    std::unordered_set<std::string> servers_seen;
 
 public:
     Parser();
@@ -34,6 +36,13 @@ public:
 
     /// Load aliases from the given parsed configuration file
     void load_aliases(const core::cfg::Sections& cfg);
+
+    /**
+     * Load aliases from a remote arki-server.
+     *
+     * If aliasese have already been loaded from that server, it does nothing.
+     */
+    void load_remote_aliases(const std::string& server_url);
 
     /// Return aliases serialized as a parsed config file
     std::shared_ptr<core::cfg::Sections> serialise_aliases() const;

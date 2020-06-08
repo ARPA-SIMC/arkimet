@@ -3,6 +3,7 @@
 #include "arki/core/cfg.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
+#include "arki/core/curl.h"
 #include <vector>
 #include <string>
 
@@ -123,6 +124,18 @@ void AliasDatabase::debug_dump(core::AbstractOutputFile& out)
 {
     auto cfg = serialise();
     cfg->write(out);
+}
+
+
+std::shared_ptr<core::cfg::Sections> load_remote_alias_database(const std::string& server)
+{
+    core::curl::CurlEasy m_curl;
+    m_curl.reset();
+
+    core::curl::BufState<std::string> request(m_curl);
+    request.set_url(str::joinpath(server, "aliases"));
+    request.perform();
+    return core::cfg::Sections::parse(request.buf, server);
 }
 
 }
