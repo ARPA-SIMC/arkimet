@@ -104,11 +104,21 @@ struct DatasetDatasetDef : public Type<DatasetDatasetDef, arkipy_DatasetDataset>
 A dataset in arkimet. It provides information about the dataset configuration,
 and allows to create readers, writers, and checkers to work with the dataset.
 
-TODO: document
+You can avoid the intermediate step of accessing Dataset objects, by calling
+directly :class:`arkimet.dataset.Session` functions
+:fun:`arkimet.dataset.Session.create_reader`,
+:fun:`arkimet.dataset.Session.create_writer`, and
+:fun:`arkimet.dataset.Session.create_checker`.
+
+If in some cases it can be useful to instantiate a Dataset and pass it around,
+this class is available, matching the C++ API.
 
 Examples::
 
-    TODO: add examples
+    with session.dataset("dsname") as dataset:
+        print(dataset.name)
+        with dataset.reader() as reader:
+            return reader.query_data()
 )";
     GetSetters<_name, config> getsetters;
     Methods<MethGenericEnter<Impl>, MethGenericExit<Impl>, reader, writer, checker> methods;

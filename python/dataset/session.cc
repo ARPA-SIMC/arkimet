@@ -306,13 +306,37 @@ struct DatasetSessionDef : public Type<DatasetSessionDef, arkipy_DatasetSession>
     constexpr static const char* name = "Session";
     constexpr static const char* qual_name = "arkimet.dataset.Session";
     constexpr static const char* doc = R"(
-Shared configuration and data used to work with arkimet datasets.
+Shared configuration, aliases, and working data used to work with arkimet datasets.
 
-TODO: document
+A Session stores alias information, and preloads :class:`arki.dataset.Dataset` objects.
+
+Adding a remote dataset to the Session dataset pool will download the alias
+database of its server and merge it into the current one, raising an error in
+case of inconsistencies.
+
+Datasets in the pool can be referred by name. It is possible to create datasets
+given their configuration, without adding them to the pool.
+
+Session is also used to instantiate matchers using its alias database.
 
 Examples::
 
-    TODO: add examples
+    # Long version
+    with arkimet.dataset.Session() as session:
+        for section in config.values():
+            session.add_dataset(section)
+        matcher = session.matcher("level:ground")
+        with session.dataset("dsname") as dataset:
+            with dataset.reader() as reader:
+                result = reader.query_data(matcher)
+
+    # Short version
+    with arkimet.dataset.Session() as session:
+        for section in config.values():
+            session.add_dataset(section)
+        with session.dataset_reader("dsname") as reader:
+            with dataset.reader() as reader:
+                result = reader.query_data("level:ground")
 )";
     GetSetters<> getsetters;
     Methods<MethGenericEnter<Impl>, MethGenericExit<Impl>, get_alias_database, matcher, load_aliases,

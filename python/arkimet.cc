@@ -108,7 +108,7 @@ Arguments:
             return nullptr;
 
         try {
-            if (PyErr_WarnEx(PyExc_DeprecationWarning, "arkimet.make_qmacro_dataset() will be replaced by something else, unfortunately not yet designed (TODO)", 1))
+            if (PyErr_WarnEx(PyExc_DeprecationWarning, "Use arki.dataset.Session.querymacro() instead of arkimet.make_qmacro_dataset()", 1))
                 return nullptr;
 
             auto session = std::make_shared<arki::dataset::Session>();

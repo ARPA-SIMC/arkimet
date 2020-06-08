@@ -13,6 +13,10 @@
   (side effect of fixing #206)
 * Python code should now instantiate datasets and matchers using Session; the
   old way still works, and raises `DeprecationWarning`s
+* Python function `arkimet.make_qmacro_dataset()` deprecated in favour of
+  `arkimet.dataset.Session.querymacro()`
+* Python function `arkimet.get_alias_database()` deprecated in favour of
+  `arkimet.dataset.Session.get_alias_database()`
 
 # New in version 1.26
 
