@@ -1,3 +1,4 @@
+from __future__ import annotations
 import re
 import logging
 import datetime
@@ -35,6 +36,8 @@ class ArkiServer(ForkingMixIn, HTTPServer):
             Rule('/dataset/<name>/summaryshort', endpoint='ArkiDatasetSummaryShort'),
             Rule('/dataset/<name>/config', endpoint='ArkiDatasetConfig'),
         ])
+        # Session to use to manage aliases and datasets
+        self.session = arki.dataset.Session()
 
     def server_bind(self):
         if self.server_address[1] != 0:

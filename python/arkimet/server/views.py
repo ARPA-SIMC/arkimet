@@ -26,6 +26,7 @@ class ArkiView:
         """
         self.request = request
         self.handler = handler
+        self.session = handler.server.session
         self.kwargs = kw
         self.headers_sent = False
         # Information to be logged about this query
@@ -50,7 +51,7 @@ class ArkiView:
         Return the arki.dataset.Reader for the dataset named in
         self.kwargs["name"]
         """
-        return arki.dataset.Reader(self.get_dataset_config())
+        return self.session.dataset_reader(cfg=self.get_dataset_config())
 
     def get_query(self):
         """
@@ -242,7 +243,7 @@ class ArkiAliases(ArkiView):
     def stream(self):
         # ./run-local arki-query "" http://localhost:8080
         self.send_headers()
-        out = arki.get_alias_database()
+        out = self.session.get_alias_database()
         with io.StringIO() as buf:
             out.write(buf)
             self.handler.wfile.write(buf.getvalue().encode())
