@@ -51,7 +51,12 @@ class ArkiView:
         Return the arki.dataset.Reader for the dataset named in
         self.kwargs["name"]
         """
-        return self.session.dataset_reader(cfg=self.get_dataset_config())
+        name = self.kwargs["name"]
+        self.info["dataset"] = name
+        try:
+            return self.session.dataset_reader(name=name)
+        except RuntimeError:
+            raise NotFound(f"Dataset {name} not found")
 
     def get_query(self):
         """
