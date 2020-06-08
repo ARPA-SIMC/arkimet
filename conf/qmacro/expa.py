@@ -1,5 +1,4 @@
 from __future__ import annotations
-import arkimet as arki
 import re
 import datetime
 
@@ -60,7 +59,7 @@ class Querymacro:
                     self._to_date(mo.group("d")),
                     self._to_time(mo.group("t")))
 
-            matcher = arki.Matcher(
+            matcher = self.session.matcher(
                 "reftime: ={reftime:%Y-%m-%dT%H:%M:%S}Z; "
                 "timerange: {trange}; level: {level}; product: {product}".format(
                     reftime=reftime,

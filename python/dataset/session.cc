@@ -278,6 +278,29 @@ struct dataset_checker : public dataset_accessor_factory<dataset_checker, arkipy
     }
 };
 
+struct querymacro : public MethKwargs<querymacro, arkipy_DatasetSession>
+{
+    constexpr static const char* name = "querymacro";
+    constexpr static const char* signature = "name: str, macro: str";
+    constexpr static const char* returns = "arkimet.dataset.Dataset";
+    constexpr static const char* summary = "create a QueryMacro dataset querying datasets from this session's pool";
+    constexpr static const char* doc = nullptr;
+
+    static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
+    {
+        static const char* kwlist[] = { "name", "macro", nullptr };
+        const char* name = nullptr;
+        const char* macro = nullptr;
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "ss", const_cast<char**>(kwlist), &name, &macro))
+            return nullptr;
+
+        try {
+            return (PyObject*)dataset_dataset_create(self->ptr->querymacro(name, macro));
+        } ARKI_CATCH_RETURN_PYO
+    }
+};
+
+
 struct DatasetSessionDef : public Type<DatasetSessionDef, arkipy_DatasetSession>
 {
     constexpr static const char* name = "Session";
@@ -294,7 +317,8 @@ Examples::
     GetSetters<> getsetters;
     Methods<MethGenericEnter<Impl>, MethGenericExit<Impl>, get_alias_database, matcher, load_aliases,
             datasets, has_datasets, has_dataset, dataset_pool_size, add_dataset,
-            dataset, dataset_reader, dataset_writer, dataset_checker> methods;
+            dataset, dataset_reader, dataset_writer, dataset_checker,
+            querymacro> methods;
 
     static void _dealloc(Impl* self)
     {
