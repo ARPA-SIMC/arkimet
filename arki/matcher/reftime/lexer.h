@@ -33,6 +33,8 @@ struct Parser
 
     Parser(const char* sbuf, unsigned slen) : orig_buf(sbuf), buf(sbuf), len(slen) {}
 
+    bool string_in(std::initializer_list<const char*> values) const;
+
     void error(const std::string& msg)
     {
         std::string lead(orig_buf, buf - orig_buf);
@@ -74,7 +76,7 @@ struct Parser
 /**
  * Parser for Easter times
  */
-arki::core::FuzzyTime* parse_easter(const std::string& str);
+arki::core::FuzzyTime* parse_easter(const char* buf, unsigned len);
 
 /**
  * Simple recursive descent parser for reftimes

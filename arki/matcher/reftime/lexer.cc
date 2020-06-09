@@ -5,50 +5,52 @@ namespace matcher {
 namespace reftime {
 namespace lexer {
 
+bool Parser::string_in(std::initializer_list<const char*> values) const
+{
+    for (const char* val: values)
+        if (strncmp(buf, val, len) == 0)
+            return true;
+    return false;
+}
+
 char Parser::itype()
 {
     switch (*buf)
     {
         case 'h': {
-            std::string name(buf, len);
-            if (name == "h" || name == "hour" || name == "hours")
+            if (string_in({"h", "hour", "hours"}))
                 return 'h';
             error("expected h, hour or hours");
             break;
         }
         case 'm': {
-            std::string name(buf, len);
-            if (name == "m" || name == "min" || name == "minute" || name == "minutes")
+            if (string_in({"m", "min", "minute", "minutes"}))
                 return 'm';
-            if (name == "month" || name == "months")
+            if (string_in({"month", "months"}))
                 return 'M';
             error("expected m, min, minute, minutes, month or months");
             break;
         }
         case 's': {
-            std::string name(buf, len);
-            if (name == "s" || name == "sec" || name == "second" || name == "seconds")
+            if (string_in({"s", "sec", "second", "seconds"}))
                 return 's';
             error("expected s, sec, second or seconds");
             break;
         }
         case 'w': {
-            std::string name(buf, len);
-            if (name == "w" || name == "week" || name == "weeks")
+            if (string_in({"w", "week", "weeks"}))
                 return 'w';
             error("expected w, week or weeks");
             break;
         }
         case 'd': {
-            std::string name(buf, len);
-            if (name == "d" || name == "day" || name == "days")
+            if (string_in({"d", "day", "days"}))
                 return 'd';
             error("expected d, day or days");
             break;
         }
         case 'y': {
-            std::string name(buf, len);
-            if (name == "y" || name == "year" || name == "years")
+            if (string_in({"y", "year", "years"}))
                 return 'y';
             error("expected y, year or years");
             break;
@@ -59,13 +61,13 @@ char Parser::itype()
     return 0;
 }
 
-arki::core::FuzzyTime* parse_easter(const std::string& str)
+arki::core::FuzzyTime* parse_easter(const char* buf, unsigned len)
 {
-    if (str.size() < 4)
-        throw std::invalid_argument("cannot parse reftime match expression \"" + str + "\": expecting at least 4 characters");
+    if (len < 4)
+        throw std::invalid_argument("cannot parse reftime match expression \"" + std::string(buf, len) + "\": expecting at least 4 characters");
     std::unique_ptr<arki::core::FuzzyTime> res(new arki::core::FuzzyTime);
     // Parse the year directly
-    res->set_easter(std::stoi(str.substr(str.size() - 4)));
+    res->set_easter(strtoul(buf + len - 4, nullptr, 10));
     return res.release();
 }
 
@@ -109,8 +111,7 @@ void IParser::itype()
     switch (*buf)
     {
         case 'h': {
-            std::string name(buf, len);
-            if (name == "h" || name == "hour" || name == "hours")
+            if (string_in({"h", "hour", "hours"}))
             {
                 res.idx = 3;
                 return;
@@ -119,13 +120,12 @@ void IParser::itype()
             break;
         }
         case 'm': {
-            std::string name(buf, len);
-            if (name == "m" || name == "min" || name == "minute" || name == "minutes")
+            if (string_in({"m", "min", "minute", "minutes"}))
             {
                 res.idx = 4;
                 return;
             }
-            if (name == "month" || name == "months")
+            if (string_in({"month", "months"}))
             {
                 res.idx = 1;
                 return;
@@ -134,8 +134,7 @@ void IParser::itype()
             break;
         }
         case 's': {
-            std::string name(buf, len);
-            if (name == "s" || name == "sec" || name == "second" || name == "seconds")
+            if (string_in({"s", "sec", "second", "seconds"}))
             {
                 res.idx = 5;
                 return;
@@ -144,8 +143,7 @@ void IParser::itype()
             break;
         }
         case 'w': {
-            std::string name(buf, len);
-            if (name == "w" || name == "week" || name == "weeks")
+            if (string_in({"w", "week", "weeks"}))
             {
                 res.val *= 7;
                 res.idx = 2;
@@ -155,8 +153,7 @@ void IParser::itype()
             break;
         }
         case 'd': {
-            std::string name(buf, len);
-            if (name == "d" || name == "day" || name == "days")
+            if (string_in({"d", "day", "days"}))
             {
                 res.idx = 2;
                 return;
@@ -165,8 +162,7 @@ void IParser::itype()
             break;
         }
         case 'y': {
-            std::string name(buf, len);
-            if (name == "y" || name == "year" || name == "years")
+            if (string_in({"y", "year", "years"}))
             {
                 res.idx = 0;
                 return;
@@ -201,8 +197,7 @@ void SParser::itype()
     switch (*buf)
     {
         case 'h': {
-            std::string name(buf, len);
-            if (name == "h" || name == "hour" || name == "hours")
+            if (string_in({"h", "hour", "hours"}))
             {
                 res.idx = 3;
                 return;
@@ -211,8 +206,7 @@ void SParser::itype()
             break;
         }
         case 'm': {
-            std::string name(buf, len);
-            if (name == "m" || name == "min" || name == "minute" || name == "minutes")
+            if (string_in({"m", "min", "minute", "minutes"}))
             {
                 res.idx = 4;
                 return;
@@ -221,8 +215,7 @@ void SParser::itype()
             break;
         }
         case 's': {
-            std::string name(buf, len);
-            if (name == "s" || name == "sec" || name == "second" || name == "seconds")
+            if (string_in({"s", "sec", "second", "seconds"}))
             {
                 res.idx = 5;
                 return;

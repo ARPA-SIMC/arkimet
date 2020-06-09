@@ -4,10 +4,8 @@
 #include "arki/core/fuzzytime.h"
 #include "arki/matcher/reftime/lexer.h"
 #include "reftime-parse.hh"
-#include <string>
 #include <ctype.h>
 
-using namespace std;
 using namespace arki::matcher::reftime::lexer;
 
 #pragma GCC diagnostic ignored "-Wsign-compare"
@@ -57,12 +55,12 @@ an?{space}+{unit} {
         return STEP;
 }
 easter{space}*[0-9]{4} {
-        yylval->dtspec = parse_easter(std::string(yytext, yyleng));
+        yylval->dtspec = parse_easter(yytext, yyleng);
         return DATE;
 }
 (processione{space}*)?san{space}*?luca{space}*?[0-9]{4} {
         // Compute easter
-        yylval->dtspec = parse_easter(std::string(yytext, yyleng));
+        yylval->dtspec = parse_easter(yytext, yyleng);
         // Lowerbound
         arki::core::Time lb = yylval->dtspec->lowerbound();
         // Add 5 weeks - 1 day
