@@ -20,6 +20,8 @@
   `arkimet.dataset.Session.get_alias_database()`
 * Python function `arkimet.expand_query()` deprecated in favour of
   `arki.dataset.Session().expand_query()`
+* Correctly query multiple remote servers with different but compatible alias
+  configurations, in merged and querymacro datasets (#206)
 
 # New in version 1.26
 
