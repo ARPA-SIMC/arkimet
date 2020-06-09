@@ -433,12 +433,12 @@ class QMacroMixin:
     def get_dataset_reader(self):
         qmacro = self.request.values.get("qmacro", "").strip()
         if not qmacro:
-            return self.session.merged()
+            return self.session.merged().reader()
         else:
-            return self.session.qmacro(
+            return self.session.querymacro(
                 qmacro,
                 self.request.values.get("query", "").strip()
-            )
+            ).reader()
 
     def get_query(self):
         return ""
