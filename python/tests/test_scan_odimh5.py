@@ -71,10 +71,13 @@ class TestScanODIMH5(unittest.TestCase):
         self.assertEqual(md["task"], "DPC Standard Scan")
         self.assertEqual(md["quantity"], "DBZH, QIND, VRAD")
         self.assertEqual(md["area"], "ODIMH5(lat=46562500, lon=12970300, radius=0)")
-        self.assertEqual(md["reftime"], "2020-05-29T15:03:00Z")
+        self.assertEqual(md["reftime"], "2020-05-29T15:30:00Z")
         self.assertNotIn("run", md)
         self.assertNotIn("timerange", md)
 
+    def test_time_without_seconds(self):
+        md = self.read("inbound/odimh5/000461.odimh5", 458556)
+        self.assertEqual(md["reftime"], "2020-05-30T04:40:00Z")
 
     def test_comp_cappi(self):
         md = self.read("inbound/odimh5/COMP_CAPPI_v20.h5", 49113)

@@ -19,9 +19,11 @@ def odimh5_set_reftime(h5f, md):
     what = h5f["what"]
     date = what.attrs["date"]
     time = what.attrs["time"]
+    timefmt = "%Y%m%d%H%M%S" if len(time) == 6 else "%Y%m%d%H%M"
+
     md["reftime"] = {
         "style": "POSITION",
-        "time": datetime.datetime.strptime((date + time).decode(), "%Y%m%d%H%M%S"),
+        "time": datetime.datetime.strptime((date + time).decode(), timefmt)
     }
 
 
