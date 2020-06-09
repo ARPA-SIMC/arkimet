@@ -60,6 +60,9 @@ public:
     /// Match a full ItemSet
     bool operator()(const types::ItemSet& md) const;
 
+    /// Match a time interval
+    bool operator()(const core::Interval& interval) const;
+
     std::shared_ptr<matcher::OR> get(types::Code code) const;
 
     void foreach_type(std::function<void(types::Code, const matcher::OR&)> dest) const;
@@ -70,13 +73,10 @@ public:
      * Restrict date extremes to be no wider than what is matched by this
      * matcher.
      *
-     * An unique_ptr set to NULL means an open end in the range. Date extremes
-     * are inclusive on both ends.
-     *
      * @returns true if the matcher has consistent reference time expressions,
      * false if the match is impossible (like reftime:<2014,>2015)
      */
-    bool restrict_date_range(std::unique_ptr<core::Time>& begin, std::unique_ptr<core::Time>& end) const;
+    bool intersect_interval(core::Interval& interval) const;
 
     /// Format back into a string that can be parsed again
     std::string toString() const;
@@ -87,8 +87,11 @@ public:
      */
     std::string toStringExpanded() const;
 
-    /// Parse a string into a matcher
-    static Matcher parse(const std::string& pattern);
+    /// Return a matcher matching a time interval (from begin included, to end excluded)
+    static Matcher for_interval(const core::Interval& interval);
+
+    /// Return a matcher matching a whole month
+    static Matcher for_month(unsigned year, unsigned month);
 };
 
 /// Write as a string to an output stream

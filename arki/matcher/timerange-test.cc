@@ -1,5 +1,6 @@
 #include "arki/matcher/tests.h"
 #include "arki/matcher.h"
+#include "arki/matcher/parser.h"
 #include "arki/metadata.h"
 #include "arki/types/timerange.h"
 #include "arki/matcher/timerange.h"
@@ -361,17 +362,18 @@ add_method("timedef_wellknown", [] {
 
 // Test some serialisation scenarios
 add_method("serialize", [] {
-    Matcher m = Matcher::parse("timerange:Timedef,,1,3h");
+    matcher::Parser parser;
+    Matcher m = parser.parse("timerange:Timedef,,1,3h");
     //Matcher m1 = Matcher::parse(m.toStringExpanded());
     //ensure_equals(m, m1);
     wassert(actual(m.toStringExpanded()) == "timerange:Timedef,,1,10800s");
 
     // Ensure that timerange expansion skips irrelevant arguments
-    m = Matcher::parse("timerange:GRIB1,0,1h,2h");
+    m = parser.parse("timerange:GRIB1,0,1h,2h");
     wassert(actual(m.toStringExpanded()) == "timerange:GRIB1,0,3600s");
-    m = Matcher::parse("timerange:GRIB1,124,1h,2h");
+    m = parser.parse("timerange:GRIB1,124,1h,2h");
     wassert(actual(m.toStringExpanded()) == "timerange:GRIB1,124,,7200s");
-    m = Matcher::parse("timerange:GRIB1,6,1h,2h");
+    m = parser.parse("timerange:GRIB1,6,1h,2h");
     wassert(actual(m.toStringExpanded()) == "timerange:GRIB1,6,3600s,7200s");
 });
 

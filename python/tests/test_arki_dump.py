@@ -10,7 +10,7 @@ class TestArkiDump(CmdlineTestMixin, unittest.TestCase):
 
     def test_query(self):
         out = self.call_output_success("--query", "reftime:=2019-07-07")
-        self.assertEqual(out, "reftime:>=2019-07-07 00:00:00,<=2019-07-07 23:59:59\n")
+        self.assertEqual(out, "reftime:>=2019-07-07 00:00:00,<2019-07-08 00:00:00\n")
 
     def test_aliases_local(self):
         out = self.call_output_success("--aliases")

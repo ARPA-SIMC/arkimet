@@ -8,7 +8,6 @@ import html
 from urllib.parse import quote
 from contextlib import contextmanager
 import logging
-import arkimet as arki
 from werkzeug.exceptions import NotFound
 
 
@@ -26,6 +25,7 @@ class ArkiView:
         """
         self.request = request
         self.handler = handler
+        self.session = handler.server.session
         self.kwargs = kw
         self.headers_sent = False
         # Information to be logged about this query
@@ -50,7 +50,12 @@ class ArkiView:
         Return the arki.dataset.Reader for the dataset named in
         self.kwargs["name"]
         """
-        return arki.dataset.Reader(self.get_dataset_config())
+        name = self.kwargs["name"]
+        self.info["dataset"] = name
+        try:
+            return self.session.dataset_reader(name=name)
+        except RuntimeError:
+            raise NotFound(f"Dataset {name} not found")
 
     def get_query(self):
         """
@@ -231,7 +236,7 @@ class ArkiQExpand(ArkiView):
     def stream(self):
         # ./run-local arki-query "" http://localhost:8080
         query = self.request.values["query"].strip()
-        expanded = arki.expand_query(query)
+        expanded = self.session.expand_query(query)
         self.send_headers()
         self.handler.wfile.write(expanded.encode("utf-8"))
 
@@ -242,7 +247,7 @@ class ArkiAliases(ArkiView):
     def stream(self):
         # ./run-local arki-query "" http://localhost:8080
         self.send_headers()
-        out = arki.get_alias_database()
+        out = self.session.get_alias_database()
         with io.StringIO() as buf:
             out.write(buf)
             self.handler.wfile.write(buf.getvalue().encode())
@@ -426,17 +431,14 @@ class QMacroMixin:
         return self.handler.server.url + "/query"
 
     def get_dataset_reader(self):
-        cfg = io.StringIO()
-        self.handler.server.cfg.write(cfg)
         qmacro = self.request.values.get("qmacro", "").strip()
         if not qmacro:
-            return arki.make_merged_dataset(cfg.getvalue())
-        return arki.make_qmacro_dataset(
-            "url = " + self.handler.server.url,
-            cfg.getvalue(),
-            qmacro,
-            self.request.values.get("query", "").strip()
-        )
+            return self.session.merged().reader()
+        else:
+            return self.session.querymacro(
+                qmacro,
+                self.request.values.get("query", "").strip()
+            ).reader()
 
     def get_query(self):
         return ""

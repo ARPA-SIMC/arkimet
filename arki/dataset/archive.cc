@@ -251,14 +251,14 @@ Reader::~Reader()
 
 std::string Reader::type() const { return "archives"; }
 
-bool Reader::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
+bool Reader::impl_query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 {
     return archives->iter([&](dataset::Reader& r) {
         return r.query_data(q, dest);
     });
 }
 
-void Reader::query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out)
+void Reader::impl_fd_query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out)
 {
     archives->iter([&](dataset::Reader& r) {
         r.query_bytes(q, out);
@@ -266,7 +266,7 @@ void Reader::query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out)
     });
 }
 
-void Reader::query_bytes(const dataset::ByteQuery& q, AbstractOutputFile& out)
+void Reader::impl_abstract_query_bytes(const dataset::ByteQuery& q, AbstractOutputFile& out)
 {
     archives->iter([&](dataset::Reader& r) {
         r.query_bytes(q, out);
@@ -291,16 +291,15 @@ void Reader::summary_for_all(Summary& out)
     }
 }
 
-void Reader::query_summary(const Matcher& matcher, Summary& summary)
+void Reader::impl_query_summary(const Matcher& matcher, Summary& summary)
 {
-    unique_ptr<Time> matcher_begin;
-    unique_ptr<Time> matcher_end;
-    if (!matcher.restrict_date_range(matcher_begin, matcher_end))
+    core::Interval interval;
+    if (!matcher.intersect_interval(interval))
         // If the matcher is inconsistent, return now
         return;
 
     // Extract date range from matcher
-    if (!matcher_begin.get() && !matcher_end.get())
+    if (!interval.begin.is_set() && !interval.end.is_set())
     {
         // Use archive summary cache
         Summary s;
@@ -311,13 +310,27 @@ void Reader::query_summary(const Matcher& matcher, Summary& summary)
 
     // Query only archives that fit that date range
     archives->iter([&](dataset::Reader& a) {
-        unique_ptr<Time> arc_begin;
-        unique_ptr<Time> arc_end;
-        a.expand_date_range(arc_begin, arc_end);
-        if (Time::range_overlaps(matcher_begin.get(), matcher_end.get(), arc_begin.get(), arc_end.get()))
+        core::Interval i = a.get_stored_time_interval();
+        if (i.is_unbounded())
+            return true;
+        if (interval.intersects(i))
             a.query_summary(matcher, summary);
         return true;
     });
+}
+
+core::Interval Reader::get_stored_time_interval()
+{
+    core::Interval res;
+    // Query only archives that fit that date range
+    archives->iter([&](dataset::Reader& a) {
+        if (res.is_unbounded())
+            res = a.get_stored_time_interval();
+        else
+            res.extend(a.get_stored_time_interval());
+        return true;
+    });
+    return res;
 }
 
 unsigned Reader::test_count_archives() const

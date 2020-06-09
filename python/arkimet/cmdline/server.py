@@ -1,3 +1,4 @@
+from __future__ import annotations
 import re
 import logging
 import datetime
@@ -18,7 +19,7 @@ from arkimet.cmdline.base import App
 
 
 class ArkiServer(ForkingMixIn, HTTPServer):
-    def __init__(self, *args, **kw):
+    def __init__(self, *args, aliases=None, **kw):
         super().__init__(*args, **kw)
         from werkzeug.routing import Map, Rule
         self.url = "http://{s.server_name}:{s.server_port}".format(s=self)
@@ -35,6 +36,13 @@ class ArkiServer(ForkingMixIn, HTTPServer):
             Rule('/dataset/<name>/summaryshort', endpoint='ArkiDatasetSummaryShort'),
             Rule('/dataset/<name>/config', endpoint='ArkiDatasetConfig'),
         ])
+        # Session to use to manage aliases and datasets
+        if aliases is None:
+            # Load default system aliases
+            self.session = arki.dataset.Session()
+        else:
+            self.session = arki.dataset.Session(load_aliases=False)
+            self.session.load_aliases(aliases)
 
     def server_bind(self):
         if self.server_address[1] != 0:
@@ -53,7 +61,9 @@ class ArkiServer(ForkingMixIn, HTTPServer):
         # Amend configuration turning local datasets into remote dataset
         self.remote_cfg = arki.cfg.Sections()
         for name, sec in self.cfg.items():
-            self.remote_cfg[name] = sec
+            # Add the dataset to the session pool
+            self.session.add_dataset(sec)
+            self.remote_cfg[name] = sec.copy()
             self.remote_cfg[name]["path"] = self.url + "/dataset/" + name
             self.remote_cfg[name]["type"] = "remote"
             self.remote_cfg[name]["server"] = self.url
@@ -196,8 +206,8 @@ class DefaultLogFilter:
         return getattr(record, "perf", None) is None
 
 
-def make_server(host, port, config, url=None):
-    httpd = ArkiServer((host, port), Handler)
+def make_server(host, port, config, url=None, aliases=None):
+    httpd = ArkiServer((host, port), Handler, aliases=aliases)
     if url is not None:
         httpd.url = url
     httpd.set_config(config)

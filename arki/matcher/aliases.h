@@ -20,6 +20,7 @@ public:
     ~Aliases();
 
     std::shared_ptr<OR> get(const std::string& name) const;
+    void validate(const Aliases& other);
     void add(const MatcherType& type, const core::cfg::Section& entries);
     void reset();
     void serialise(core::cfg::Section& cfg) const;
@@ -36,66 +37,45 @@ struct AliasDatabase
     AliasDatabase();
     AliasDatabase(const core::cfg::Sections& cfg);
 
+    /**
+     * Validate an alias database, throwing std::runtime_error if it contains
+     * aliases with the same name as the existing ones, but different
+     * expansions
+     */
+    void validate(const core::cfg::Sections& cfg);
+
+    /**
+     * Add an alias database.
+     *
+     * If an alias already exists, it is replaced
+     */
     void add(const core::cfg::Sections& cfg);
 
-    /**
-     * Add global aliases from the given config file.
-     *
-     * If there are already existing aliases, they are preserved unless cfg
-     * overwrites some of them.
-     *
-     * The aliases will be used by all newly instantiated Matcher expressions,
-     * for all the lifetime of the program.
-     */
-    static void addGlobal(const core::cfg::Sections& cfg);
+    const matcher::Aliases* get(const std::string& type) const;
 
-    static const matcher::Aliases* get(const std::string& type);
-    static core::cfg::Sections serialise();
+    std::shared_ptr<core::cfg::Sections> serialise();
 
     /**
      * Dump the alias database to the given output stream
      *
      * (used for debugging purposes)
      */
-    static void debug_dump(core::NamedFileDescriptor& out);
+    void debug_dump(core::NamedFileDescriptor& out);
 
     /**
      * Dump the alias database to the given output stream
      *
      * (used for debugging purposes)
      */
-    static void debug_dump(core::AbstractOutputFile& out);
-};
-
-
-class AliasDatabaseOverride
-{
-protected:
-    AliasDatabase newdb;
-    AliasDatabase* orig;
-
-public:
-    AliasDatabaseOverride();
-    AliasDatabaseOverride(const core::cfg::Sections& cfg);
-    AliasDatabaseOverride(const AliasDatabaseOverride&) = delete;
-    AliasDatabaseOverride(AliasDatabaseOverride&&) = delete;
-    AliasDatabaseOverride& operator=(const AliasDatabaseOverride&) = delete;
-    AliasDatabaseOverride& operator=(AliasDatabaseOverride&&) = delete;
-    ~AliasDatabaseOverride();
+    void debug_dump(core::AbstractOutputFile& out);
 };
 
 
 /**
- * Read the Matcher alias database.
- *
- * The file given in the environment variable ARKI_ALIASES is tried.
- * Else, $(sysconfdir)/arkimet/match-alias.conf is tried.
- * Else, nothing is loaded.
- *
- * The alias database is kept statically for all the lifetime of the program,
- * and is automatically used by readQuery.
+ * Read the alias database from the given remote dataset
  */
-void read_matcher_alias_database();
+std::shared_ptr<core::cfg::Sections> load_remote_alias_database(const std::string& server);
+
 
 }
 }

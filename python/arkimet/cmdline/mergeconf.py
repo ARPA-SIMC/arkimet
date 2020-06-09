@@ -1,3 +1,4 @@
+from __future__ import annotations
 import arkimet as arki
 from arkimet.cmdline.base import App, AppConfigMixin, Fail
 import sys
@@ -48,40 +49,21 @@ class Mergeconf(AppConfigMixin, App):
                 section = arki.dataset.read_config(path)
                 self.add_config_section(section)
 
-        if not self.config:
+        if not self.session.has_datasets():
+            if self.config_filter_discarded:
+                raise Fail("none of the configuration provided were useable")
             raise Fail("you need to specify at least one config file or dataset")
-
-        # Remove unallowed entries
-        if self.args.restrict:
-            self.filter_restrict(self.args.restrict)
-
-        if self.args.ignore_system_datasets:
-            to_remove = []
-
-            for name, section in self.config.items():
-                type = section.get("type")
-                name = section.get("name")
-
-                if (type == "error" or type == "duplicates" or
-                        (type == "remote" and (name == "error" or name == "duplicates"))):
-                    to_remove.append(name)
-
-            for name in to_remove:
-                del self.config[name]
-
-        if not self.config:
-            raise Fail("none of the configuration provided were useable")
 
         # Validate the configuration
         has_errors = False
-        for name, section in self.config.items():
+        for dataset in self.session.datasets():
             # Validate filters
-            filter = section.get("filter")
+            filter = dataset.config.get("filter")
             if filter is None:
                 continue
 
             try:
-                arki.Matcher(filter)
+                self.session.matcher(filter)
             except ValueError as e:
                 print("{}: {}".format(name, e), file=sys.stderr)
                 has_errors = True
@@ -90,19 +72,23 @@ class Mergeconf(AppConfigMixin, App):
 
         # If requested, compute extra information
         if self.args.extra:
-            for name, section in self.config.items():
-                # Instantiate the dataset
-                ds = arki.dataset.Reader(section)
-                # Get the summary
-                summary = ds.query_summary()
-                # Compute bounding box, and store the WKT in bounding
-                bbox = summary.get_convex_hull()
-                if bbox:
-                    section["bounding"] = bbox
+            for dataset in self.session.datasets():
+                with dataset.reader() as reader:
+                    # Get the summary
+                    summary = reader.query_summary()
+                    # Compute bounding box, and store the WKT in bounding
+                    bbox = summary.get_convex_hull()
+                    if bbox:
+                        dataset.config["bounding"] = bbox
+
+        # Build the merged configuration
+        config = arki.cfg.Sections()
+        for dataset in self.session.datasets():
+            config[dataset.name] = dataset.config
 
         # Output the merged configuration
         if self.args.output:
             with open(self.args.output, "wt") as fd:
-                self.config.write(fd)
+                config.write(fd)
         else:
-            self.config.write(sys.stdout)
+            config.write(sys.stdout)

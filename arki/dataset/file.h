@@ -13,8 +13,8 @@ namespace arki {
 namespace dataset {
 namespace file {
 
-core::cfg::Section read_config(const std::string& path);
-core::cfg::Sections read_configs(const std::string& path);
+std::shared_ptr<core::cfg::Section> read_config(const std::string& path);
+std::shared_ptr<core::cfg::Sections> read_configs(const std::string& path);
 
 /// Dataset on a single file
 class Dataset : public dataset::Dataset
@@ -34,12 +34,15 @@ public:
 
 class Reader : public DatasetAccess<file::Dataset, dataset::Reader>
 {
+protected:
+    bool impl_query_data(const dataset::DataQuery& q, metadata_dest_func) override;
+
 public:
     using DatasetAccess::DatasetAccess;
 
     std::string type() const override { return "file"; }
 
-    bool query_data(const dataset::DataQuery& q, metadata_dest_func) override;
+    core::Interval get_stored_time_interval() override;
 };
 
 class FdFile : public Dataset

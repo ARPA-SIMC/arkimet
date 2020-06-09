@@ -23,8 +23,8 @@ struct PyDatasetReader : public arki::dataset::DatasetAccess<arki::dataset::Data
     PyObject* meth_query_data = nullptr;
     PyObject* meth_query_summary = nullptr;
 
-    PyDatasetReader(const arki::core::cfg::Section& dataset, PyObject* o)
-        : DatasetAccess(std::make_shared<arki::dataset::Dataset>(get_dataset_session(), dataset)),
+    PyDatasetReader(std::shared_ptr<arki::dataset::Session> session, PyObject* o)
+        : DatasetAccess(std::make_shared<arki::dataset::Dataset>(session)),
           o(o)
     {
         AcquireGIL gil;
@@ -34,15 +34,11 @@ struct PyDatasetReader : public arki::dataset::DatasetAccess<arki::dataset::Data
         if (!meth_query_summary)
             PyErr_Clear();
 
-        m_type = dataset.value("type");
-        if (m_type.empty())
-        {
-            pyo_unique_ptr type(PyObject_GetAttrString(o, "type"));
-            if (!type)
-                PyErr_Clear();
-            else
-                m_type = from_python<std::string>(type);
-        }
+        pyo_unique_ptr type(PyObject_GetAttrString(o, "type"));
+        if (!type)
+            PyErr_Clear();
+        else
+            m_type = from_python<std::string>(type);
 
         if (m_type.empty())
             m_type = o->ob_type->tp_name;
@@ -63,7 +59,7 @@ struct PyDatasetReader : public arki::dataset::DatasetAccess<arki::dataset::Data
 
     std::string type() const override { return m_type; }
 
-    bool query_data(const arki::dataset::DataQuery& q, arki::metadata_dest_func dest) override
+    bool impl_query_data(const arki::dataset::DataQuery& q, arki::metadata_dest_func dest) override
     {
         arki::dataset::TrackProgress track(q.progress);
         dest = track.wrap(dest);
@@ -95,7 +91,7 @@ struct PyDatasetReader : public arki::dataset::DatasetAccess<arki::dataset::Data
         }
     }
 
-    void query_summary(const Matcher& matcher, Summary& summary) override
+    void impl_query_summary(const Matcher& matcher, Summary& summary) override
     {
         if (meth_query_summary)
         {
@@ -110,23 +106,28 @@ struct PyDatasetReader : public arki::dataset::DatasetAccess<arki::dataset::Data
         } else {
             // If the class does not implement query_summary, use the default
             // implementation based on query_data
-            arki::dataset::Reader::query_summary(matcher, summary);
+            arki::dataset::Reader::impl_query_summary(matcher, summary);
         }
+    }
+
+    core::Interval get_stored_time_interval() override
+    {
+        throw std::runtime_error("python::Reader::get_stored_time_interval not yet implemented");
     }
 };
 
-std::shared_ptr<arki::dataset::Reader> create_reader(const arki::core::cfg::Section& cfg, PyObject* o)
+std::shared_ptr<arki::dataset::Reader> create_reader(std::shared_ptr<arki::dataset::Session> session, PyObject* o)
 {
-    return std::make_shared<PyDatasetReader>(cfg, o);
+    return std::make_shared<PyDatasetReader>(session, o);
 }
 
-std::shared_ptr<arki::dataset::Writer> create_writer(PyObject* o)
+std::shared_ptr<arki::dataset::Writer> create_writer(std::shared_ptr<arki::dataset::Session> session, PyObject* o)
 {
     PyErr_SetString(PyExc_NotImplementedError, "creating python dataset writer not implemented yet");
     throw PythonException();
 }
 
-std::shared_ptr<arki::dataset::Checker> create_checker(PyObject* o)
+std::shared_ptr<arki::dataset::Checker> create_checker(std::shared_ptr<arki::dataset::Session> session, PyObject* o)
 {
     PyErr_SetString(PyExc_NotImplementedError, "creating python dataset checker not implemented yet");
     throw PythonException();

@@ -27,29 +27,25 @@ add_method("parse", [] {
 
     p.parse("=03");
     wassert(actual(p.res.size()) == 1u);
-    wassert(actual(p.res[0]->timebase()) == 3*3600);
     wassert(actual(p.res[0]->toString()) == ">=03:00:00,<=03:59:59");
 
     p.parse("==9999");
     wassert(actual(p.res.size()) == 1u);
-    wassert(actual(p.res[0]->timebase()) == 0);
-    wassert(actual(p.res[0]->toString()) == ">=9999-01-01 00:00:00,<=9999-12-31 23:59:59");
+    wassert(actual(p.res[0]->toString()) == ">=9999-01-01 00:00:00,<10000-01-01 00:00:00");
 
     p.parse("every 3 hours");
     wassert(actual(p.res.size()) == 1u);
-    wassert(actual(p.res[0]->toString()) == "==00:00:00%3h");
+    wassert(actual(p.res[0]->toString()) == "%3h");
 
     p.parse(">2007-01-02 03:04:05%3h");
     wassert(actual(p.res.size()) == 2u);
-    wassert(actual(p.res[0]->toString()) == ">2007-01-02 03:04:05");
-    wassert(actual(p.res[0]->timebase()) == 3*3600+4*60+5);
-    wassert(actual(p.res[1]->toString()) == "%3h");
+    wassert(actual(p.res[0]->toString()) == ">=2007-01-02 03:04:06");
+    wassert(actual(p.res[1]->toString()) == "@00:04:05%3h");
 
     p.parse("<2007-01-02 03:04:05%3h");
     wassert(actual(p.res.size()) == 2u);
     wassert(actual(p.res[0]->toString()) == "<2007-01-02 03:04:05");
-    wassert(actual(p.res[0]->timebase()) == 3*3600+4*60+5);
-    wassert(actual(p.res[1]->toString()) == "%3h");
+    wassert(actual(p.res[1]->toString()) == "@00:04:05%3h");
 
     p.parse("==12:00:00");
     wassert(actual(p.res.size()) == 1u);
@@ -58,6 +54,11 @@ add_method("parse", [] {
     p.parse(">=12:00:00Z");
     wassert(actual(p.res.size()) == 1u);
     wassert(actual(p.res[0]->toString()) == ">=12:00:00");
+
+    p.parse(">=2007-01-01 12:00 @12:00 every 24h");
+    wassert(actual(p.res.size()) == 2u);
+    wassert(actual(p.res[0]->toString()) == ">=2007-01-01 12:00:00");
+    wassert(actual(p.res[1]->toString()) == "@12:00:00%24h");
 });
 
 // Check that relative times are what we want
@@ -75,11 +76,11 @@ add_method("relative", [] {
 
     p.parse("<= tomorrow");
     wassert(actual(p.res.size()) == 1u);
-    wassert(actual(p.res[0]->toString()) == "<=2008-03-26 23:59:59");
+    wassert(actual(p.res[0]->toString()) == "<2008-03-27 00:00:00");
 
     p.parse("until tomorrow");
     wassert(actual(p.res.size()) == 1u);
-    wassert(actual(p.res[0]->toString()) == "<=2008-03-26 23:59:59");
+    wassert(actual(p.res[0]->toString()) == "<2008-03-27 00:00:00");
 
     p.parse(">= yesterday 12:00");
     wassert(actual(p.res.size()) == 1u);
@@ -95,14 +96,14 @@ add_method("mix", [] {
 
     p.parse("=2008-03-01 12:00%30m");
     wassert(actual(p.res.size()) == 2u);
-    wassert(actual(p.res[0]->toString()) == ">=2008-03-01 12:00:00,<=2008-03-01 12:00:59");
+    wassert(actual(p.res[0]->toString()) == ">=2008-03-01 12:00:00,<2008-03-01 12:01:00");
     wassert(actual(p.res[1]->toString()) == "%30m");
 
     p.parse(">=2008,>=12:30%1h,<18:30");
     wassert(actual(p.res.size()) == 4u);
     wassert(actual(p.res[0]->toString()) == ">=2008-01-01 00:00:00");
     wassert(actual(p.res[1]->toString()) == ">=12:30:00");
-    wassert(actual(p.res[2]->toString()) == "%1h");
+    wassert(actual(p.res[2]->toString()) == "@00:30:00%1h");
     wassert(actual(p.res[3]->toString()) == "<18:30:00");
 });
 
@@ -114,15 +115,15 @@ add_method("serialize_relative", [] {
 
     p.parse("=today");
     wassert(actual(p.res.size()) == 1u);
-    wassert(actual(p.res[0]->toString()) == ">=2008-03-25 00:00:00,<=2008-03-25 23:59:59");
+    wassert(actual(p.res[0]->toString()) == ">=2008-03-25 00:00:00,<2008-03-26 00:00:00");
 
     p.parse("=yesterday");
     wassert(actual(p.res.size()) == 1u);
-    wassert(actual(p.res[0]->toString()) == ">=2008-03-24 00:00:00,<=2008-03-24 23:59:59");
+    wassert(actual(p.res[0]->toString()) == ">=2008-03-24 00:00:00,<2008-03-25 00:00:00");
 
     p.parse("=tomorrow");
     wassert(actual(p.res.size()) == 1u);
-    wassert(actual(p.res[0]->toString()) == ">=2008-03-26 00:00:00,<=2008-03-26 23:59:59");
+    wassert(actual(p.res[0]->toString()) == ">=2008-03-26 00:00:00,<2008-03-27 00:00:00");
 
     // Combine with the time
 
@@ -132,7 +133,7 @@ add_method("serialize_relative", [] {
 
     p.parse("<=tomorrow 12:00");
     wassert(actual(p.res.size()) == 1u);
-    wassert(actual(p.res[0]->toString()) == "<=2008-03-26 12:00:59");
+    wassert(actual(p.res[0]->toString()) == "<2008-03-26 12:01:00");
 });
 
 // Add a time offset before date and time
@@ -245,7 +246,7 @@ add_method("from_until", [] {
 
     p.parse("until 3 years after today");
     wassert(actual(p.res.size()) == 1u);
-    wassert(actual(p.res[0]->toString()) == "<=2011-03-25 23:59:59");
+    wassert(actual(p.res[0]->toString()) == "<2011-03-26 00:00:00");
 });
 
 // 'at' users can use midday, midnight and noon
@@ -261,7 +262,7 @@ add_method("midday_midnight_noon", [] {
     p.parse("from yesterday midnight, until tomorrow midday");
     wassert(actual(p.res.size()) == 2u);
     wassert(actual(p.res[0]->toString()) == ">=2008-03-24 00:00:00");
-    wassert(actual(p.res[1]->toString()) == "<=2008-03-26 12:00:00");
+    wassert(actual(p.res[1]->toString()) == "<2008-03-26 12:00:01");
 });
 
 // % can be replaced with 'every'
@@ -272,16 +273,21 @@ add_method("every", [] {
 
     p.parse("% 30 minutes");
     wassert(actual(p.res.size()) == 1u);
-    wassert(actual(p.res[0]->toString()) == "==00:00:00%30m");
+    wassert(actual(p.res[0]->toString()) == "%30m");
 
     p.parse("every 30 minutes");
     wassert(actual(p.res.size()) == 1u);
-    wassert(actual(p.res[0]->toString()) == "==00:00:00%30m");
+    wassert(actual(p.res[0]->toString()) == "%30m");
 
     p.parse("from yesterday midnight every 3 hours");
     wassert(actual(p.res.size()) == 2u);
     wassert(actual(p.res[0]->toString()) == ">=2008-03-24 00:00:00");
     wassert(actual(p.res[1]->toString()) == "%3h");
+
+    p.parse("from yesterday 03:00 every 6 hours");
+    wassert(actual(p.res.size()) == 2u);
+    wassert(actual(p.res[0]->toString()) == ">=2008-03-24 03:00:00");
+    wassert(actual(p.res[1]->toString()) == "@03:00:00%6h");
 });
 
 // To be elegant, 'a' or 'an' can be used instead of 1
@@ -306,12 +312,12 @@ add_method("intervals_in_day", [] {
     // Set the date to: Tue Mar 25 00:00:00 UTC 2008
     p.tnow = 1206403200;
 
-    p.parse("=1 month ago, from 03:00, until 18:00, every 1 hour");
+    p.parse("=1 month ago, from 03:00, until 18:30, every 1 hour");
     wassert(actual(p.res.size()) == 4u);
-    wassert(actual(p.res[0]->toString()) == ">=2008-02-01 00:00:00,<=2008-02-29 23:59:59");
+    wassert(actual(p.res[0]->toString()) == ">=2008-02-01 00:00:00,<2008-03-01 00:00:00");
     wassert(actual(p.res[1]->toString()) == ">=03:00:00");
-    wassert(actual(p.res[2]->toString()) == "<=18:00:59");
-    wassert(actual(p.res[3]->toString()) == "==00:00:00%1h");
+    wassert(actual(p.res[2]->toString()) == "<=18:30:59");
+    wassert(actual(p.res[3]->toString()) == "%1h");
 });
 
 // Check Easter-related dates

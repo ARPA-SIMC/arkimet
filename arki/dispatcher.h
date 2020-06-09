@@ -14,6 +14,8 @@ namespace arki {
 class Dispatcher
 {
 protected:
+    std::shared_ptr<dataset::Session> session;
+
     // Dispatching information
     std::vector< std::pair<std::string, Matcher> > datasets;
     std::vector< std::pair<std::string, Matcher> > outbounds;
@@ -28,7 +30,7 @@ protected:
     virtual void raw_dispatch_dataset(const std::string& name, dataset::WriterBatch& batch, bool drop_cached_data_on_commit) = 0;
 
 public:
-    Dispatcher(const core::cfg::Sections& cfg);
+    Dispatcher(std::shared_ptr<dataset::Session> session);
     virtual ~Dispatcher();
 
     /**
@@ -81,13 +83,12 @@ public:
 class RealDispatcher : public Dispatcher
 {
 protected:
-    dataset::Datasets datasets;
     dataset::WriterPool pool;
 
     void raw_dispatch_dataset(const std::string& name, dataset::WriterBatch& batch, bool drop_cached_data_on_commit) override;
 
 public:
-    RealDispatcher(std::shared_ptr<dataset::Session> session, const core::cfg::Sections& cfg);
+    RealDispatcher(std::shared_ptr<dataset::Session> session);
     ~RealDispatcher();
 
 	/**
@@ -107,13 +108,10 @@ public:
 class TestDispatcher : public Dispatcher
 {
 protected:
-    std::shared_ptr<dataset::Session> session;
-    core::cfg::Sections cfg;
-
     void raw_dispatch_dataset(const std::string& name, dataset::WriterBatch& batch, bool drop_cached_data_on_commit) override;
 
 public:
-    TestDispatcher(std::shared_ptr<dataset::Session> session, const core::cfg::Sections& cfg);
+    TestDispatcher(std::shared_ptr<dataset::Session> session);
     ~TestDispatcher();
 
     void dispatch(dataset::WriterBatch& batch, bool drop_cached_data_on_commit) override;

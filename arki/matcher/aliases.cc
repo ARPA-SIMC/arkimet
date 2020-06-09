@@ -3,6 +3,7 @@
 #include "arki/core/cfg.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
+#include "arki/core/curl.h"
 #include <vector>
 #include <string>
 
@@ -36,6 +37,22 @@ void Aliases::serialise(core::cfg::Section& cfg) const
         cfg.set(i.first, i.second->toStringValueOnly());
 }
 
+void Aliases::validate(const Aliases& other)
+{
+    for (const auto& i: other.db)
+    {
+        auto old = db.find(i.first);
+        if (old == db.end())
+            // Aliases with names we do not have, do not conflict
+            continue;
+
+        std::string cur = old->second->toStringExpanded();
+        std::string o = i.second->toStringExpanded();
+        if (cur != o)
+            throw std::runtime_error("current alias \"" + cur + "\" conflicts with new alias \"" + o + "\"");
+    }
+}
+
 void Aliases::add(const MatcherType& type, const core::cfg::Section& entries)
 {
     std::vector<std::pair<std::string, std::string>> aliases;
@@ -56,7 +73,7 @@ void Aliases::add(const MatcherType& type, const core::cfg::Section& entries)
 
             // If instantiation fails, try it again later
             try {
-                val = OR::parse(type, alias.second, this);
+                val = OR::parse(this, type, alias.second);
             } catch (std::exception& e) {
                 failed.push_back(alias);
                 continue;
@@ -65,7 +82,7 @@ void Aliases::add(const MatcherType& type, const core::cfg::Section& entries)
             auto j = db.find(alias.first);
             if (j == db.end())
             {
-                db.insert(make_pair(alias.first, move(val)));
+                db.emplace(alias.first, std::move(val));
             } else {
                 j->second = move(val);
             }
@@ -73,16 +90,32 @@ void Aliases::add(const MatcherType& type, const core::cfg::Section& entries)
         if (!failed.empty() && failed.size() == aliases.size())
             // If no new aliases were successfully parsed, reparse one of the
             // failing ones to raise the appropriate exception
-            OR::parse(type, failed.front().second);
+            OR::parse(nullptr, type, failed.front().second);
         aliases = failed;
     }
 }
 
 
-static AliasDatabase* aliasdb = 0;
-
 AliasDatabase::AliasDatabase() {}
 AliasDatabase::AliasDatabase(const core::cfg::Sections& cfg) { add(cfg); }
+
+void AliasDatabase::validate(const core::cfg::Sections& cfg)
+{
+    // Load cfg in a temporary alias database, to resolve and expand aliases,
+    // and aliases that refer to aliases, and so on
+    AliasDatabase temp;
+    temp.add(cfg);
+
+    for (const auto& i: temp.aliasDatabase)
+    {
+        auto current = aliasDatabase.find(i.first);
+        if (current == aliasDatabase.end())
+            // Aliases of types we do not have, do not conflict
+            continue;
+
+        current->second.validate(i.second);
+    }
+}
 
 void AliasDatabase::add(const core::cfg::Sections& cfg)
 {
@@ -92,40 +125,25 @@ void AliasDatabase::add(const core::cfg::Sections& cfg)
         if (!mt)
             // Ignore unwanted sections
             continue;
-        aliasDatabase[si.first].add(*mt, si.second);
+        aliasDatabase[si.first].add(*mt, *si.second);
     }
 }
 
-void AliasDatabase::addGlobal(const core::cfg::Sections& cfg)
+const matcher::Aliases* AliasDatabase::get(const std::string& type) const
 {
-    if (!matcher::aliasdb)
-        matcher::aliasdb = new AliasDatabase(cfg);
-    else
-        matcher::aliasdb->add(cfg);
-}
-
-const matcher::Aliases* AliasDatabase::get(const std::string& type)
-{
-    if (!matcher::aliasdb)
-        return 0;
-
-    const std::map<std::string, matcher::Aliases>& aliasDatabase = matcher::aliasdb->aliasDatabase;
     std::map<std::string, matcher::Aliases>::const_iterator i = aliasDatabase.find(type);
     if (i == aliasDatabase.end())
         return 0;
     return &(i->second);
 }
 
-core::cfg::Sections AliasDatabase::serialise()
+std::shared_ptr<core::cfg::Sections> AliasDatabase::serialise()
 {
-    if (!matcher::aliasdb)
-        return core::cfg::Sections();
-
-    core::cfg::Sections res;
-    for (const auto& i: matcher::aliasdb->aliasDatabase)
+    auto res = std::make_shared<core::cfg::Sections>();
+    for (const auto& i: aliasDatabase)
     {
-        core::cfg::Section& s = res.obtain(i.first);
-        i.second.serialise(s);
+        auto s = res->obtain(i.first);
+        i.second.serialise(*s);
     }
     return res;
 }
@@ -133,60 +151,25 @@ core::cfg::Sections AliasDatabase::serialise()
 void AliasDatabase::debug_dump(core::NamedFileDescriptor& out)
 {
     auto cfg = serialise();
-    cfg.write(out);
+    cfg->write(out);
 }
 
 void AliasDatabase::debug_dump(core::AbstractOutputFile& out)
 {
     auto cfg = serialise();
-    cfg.write(out);
+    cfg->write(out);
 }
 
 
-AliasDatabaseOverride::AliasDatabaseOverride()
-    : orig(matcher::aliasdb)
+std::shared_ptr<core::cfg::Sections> load_remote_alias_database(const std::string& server)
 {
-    matcher::aliasdb = &newdb;
-}
+    core::curl::CurlEasy m_curl;
+    m_curl.reset();
 
-AliasDatabaseOverride::AliasDatabaseOverride(const core::cfg::Sections& cfg)
-    : newdb(cfg), orig(matcher::aliasdb)
-{
-    matcher::aliasdb = &newdb;
-}
-
-AliasDatabaseOverride::~AliasDatabaseOverride()
-{
-    matcher::aliasdb = orig;
-}
-
-
-void read_matcher_alias_database()
-{
-    // Otherwise the file given in the environment variable ARKI_ALIASES is tried.
-    char* fromEnv = getenv("ARKI_ALIASES");
-    if (fromEnv)
-    {
-        sys::File in(fromEnv, O_RDONLY);
-        auto sections = core::cfg::Sections::parse(in);
-        matcher::AliasDatabase::addGlobal(sections);
-        return;
-    }
-
-#ifdef CONF_DIR
-    // Else, CONF_DIR is tried.
-    std::string name = std::string(CONF_DIR) + "/match-alias.conf";
-    std::unique_ptr<struct stat> st = sys::stat(name);
-    if (st.get())
-    {
-        sys::File in(name, O_RDONLY);
-        auto sections = core::cfg::Sections::parse(in);
-        matcher::AliasDatabase::addGlobal(sections);
-        return;
-    }
-#endif
-
-    // Else, nothing is loaded.
+    core::curl::BufState<std::string> request(m_curl);
+    request.set_url(str::joinpath(server, "aliases"));
+    request.perform();
+    return core::cfg::Sections::parse(request.buf, server);
 }
 
 }

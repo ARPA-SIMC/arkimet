@@ -19,12 +19,11 @@ std::shared_ptr<dataset::Reader> Dataset::create_reader()
     return std::make_shared<Reader>(static_pointer_cast<Dataset>(shared_from_this()));
 }
 
-
 Reader::~Reader() {}
 
 std::string Reader::type() const { return "memory"; }
 
-bool Reader::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
+bool Reader::impl_query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 {
     if (q.sorter)
         m_dataset->sort(*q.sorter);
@@ -37,13 +36,17 @@ bool Reader::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
     return true;
 }
 
-void Reader::query_summary(const Matcher& matcher, Summary& summary)
+void Reader::impl_query_summary(const Matcher& matcher, Summary& summary)
 {
     for (const auto& md: *m_dataset)
         if (matcher(*md))
             summary.add(*md);
 }
 
+core::Interval Reader::get_stored_time_interval()
+{
+    throw std::runtime_error("memory::Reader::get_stored_time_interval not yet implemented");
+}
 
 }
 }

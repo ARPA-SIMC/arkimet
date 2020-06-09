@@ -34,6 +34,9 @@ class TestArkiQuery(CmdlineTestMixin, unittest.TestCase):
         out = self.call_output_success("--data", "", "inbound/test.grib1.arkimet", binary=True)
         self.assertEqual(out[:4], b"GRIB")
 
+        out = self.call_output_success("--data", "product:GRIB1,200,140,229", "inbound/test.grib1.arkimet", binary=True)
+        self.assertEqual(out[:4], b"GRIB")
+
     def test_query_yaml_summary(self):
         self.maxDiff = None
         out = self.call_output_success("--summary", "--yaml", "", "inbound/test.grib1.arkimet", binary=True)

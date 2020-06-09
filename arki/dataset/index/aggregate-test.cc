@@ -3,6 +3,7 @@
 #include "arki/types/product.h"
 #include "arki/metadata.h"
 #include "arki/matcher.h"
+#include "arki/matcher/parser.h"
 #include "arki/types.h"
 #include "aggregate.h"
 
@@ -22,6 +23,7 @@ class Tests : public TestCase
 void Tests::register_tests() {
 
 add_method("basic", [] {
+    matcher::Parser parser;
     utils::sqlite::SQLiteDB db;
     db.open(":memory:");
 
@@ -57,7 +59,7 @@ add_method("basic", [] {
     wassert(actual_type(md1.get<types::Origin>()) == origin);
     wassert(actual_type(md1.get<types::Product>()) == product);
 
-    Matcher m = Matcher::parse("origin:GRIB1,200; product:GRIB1,200,1");
+    Matcher m = parser.parse("origin:GRIB1,200; product:GRIB1,200,1");
     vector<string> constraints;
     wassert(actual(u.add_constraints(m, constraints, "t")) == 2);
     wassert(actual(constraints.size()) == 2u);

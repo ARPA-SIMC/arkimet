@@ -1,5 +1,6 @@
 #include "arki/matcher/tests.h"
 #include "arki/matcher.h"
+#include "arki/matcher/parser.h"
 #include "arki/metadata.h"
 #include "arki/types/product.h"
 
@@ -63,9 +64,11 @@ add_method("bufr", [] {
 	ensure_not_matches("product:BUFR,1,2,3:name=antani1", md);
 	ensure_not_matches("product:BUFR,1,2,3:enam=antani", md);
 	ensure_not_matches("product:GRIB1,1,2,3", md);
-    auto e1 = wassert_throws(std::invalid_argument, Matcher::parse("product:BUFR,name=antani"));
+
+    matcher::Parser parser;
+    auto e1 = wassert_throws(std::invalid_argument, parser.parse("product:BUFR,name=antani"));
     wassert(actual(e1.what()).contains("is not a number"));
-    auto e2 = wassert_throws(std::runtime_error, Matcher::parse("product:BUFR:0,,2"));
+    auto e2 = wassert_throws(std::runtime_error, parser.parse("product:BUFR:0,,2"));
     wassert(actual(e2.what()).contains("key=value"));
 });
 
@@ -82,7 +85,8 @@ add_method("vm2", [] {
 	ensure_not_matches("product:GRIB1,1,2,3", md);
     ensure_not_matches("product:VM2,2", md);
 
-    auto e1 = wassert_throws(std::invalid_argument, Matcher::parse("product:VM2,ciccio=riccio"));
+    matcher::Parser parser;
+    auto e1 = wassert_throws(std::invalid_argument, parser.parse("product:VM2,ciccio=riccio"));
     wassert(actual(e1.what()).contains("is not a number"));
 
     ensure_not_matches("product: VM2:ciccio=riccio", md);

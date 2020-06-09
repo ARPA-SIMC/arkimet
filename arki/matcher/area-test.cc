@@ -1,5 +1,6 @@
 #include "arki/matcher/tests.h"
 #include "arki/matcher.h"
+#include "arki/matcher/parser.h"
 #include "arki/metadata.h"
 #include "arki/types/area.h"
 
@@ -225,6 +226,7 @@ add_method("bbox_odimh5", [] {
 // Try matching Area with VM2
 add_method("vm2", [] {
     skip_unless_vm2();
+    matcher::Parser parser;
     Metadata md;
     md.set(area::VM2::create(1));
 
@@ -234,7 +236,7 @@ add_method("vm2", [] {
 	ensure_not_matches("area:VM2,2", md);
 	ensure_not_matches("area:GRIB:lon=0,lat=0", md);
 
-    auto e1 = wassert_throws(std::invalid_argument, Matcher::parse("area:VM2,ciccio=riccio"));
+    auto e1 = wassert_throws(std::invalid_argument, parser.parse("area:VM2,ciccio=riccio"));
     wassert(actual(e1.what()).contains("is not a number"));
 
     ensure_not_matches("area: VM2:ciccio=riccio", md);

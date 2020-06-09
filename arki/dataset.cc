@@ -24,7 +24,7 @@ Dataset::Dataset(std::shared_ptr<Session> session) : session(session) {}
 Dataset::Dataset(std::shared_ptr<Session> session, const std::string& name) : m_name(name), session(session) {}
 
 Dataset::Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
-    : m_name(cfg.value("name")), session(session), cfg(cfg)
+    : m_name(cfg.value("name")), session(session), config(std::make_shared<core::cfg::Section>(cfg))
 {
 }
 
@@ -46,12 +46,12 @@ std::shared_ptr<Writer> Dataset::create_writer() { throw std::runtime_error("wri
 std::shared_ptr<Checker> Dataset::create_checker() { throw std::runtime_error("checker not implemented for dataset " + name()); }
 
 
-void Reader::query_summary(const Matcher& matcher, Summary& summary)
+void Reader::impl_query_summary(const Matcher& matcher, Summary& summary)
 {
     query_data(DataQuery(matcher), [&](std::shared_ptr<Metadata> md) { summary.add(*md); return true; });
 }
 
-void Reader::query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out)
+void Reader::impl_fd_query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out)
 {
     switch (q.type)
     {
@@ -71,7 +71,7 @@ void Reader::query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out)
         case dataset::ByteQuery::BQ_POSTPROCESS: {
             metadata::Postprocess postproc(q.param);
             postproc.set_output(out);
-            postproc.validate(dataset().cfg);
+            postproc.validate(*dataset().config);
             postproc.set_data_start_hook(q.data_start_hook);
             postproc.start();
             query_data(q, [&](std::shared_ptr<Metadata> md) { return postproc.process(md); });
@@ -87,7 +87,7 @@ void Reader::query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out)
     }
 }
 
-void Reader::query_bytes(const dataset::ByteQuery& q, AbstractOutputFile& out)
+void Reader::impl_abstract_query_bytes(const dataset::ByteQuery& q, AbstractOutputFile& out)
 {
     if (q.data_start_hook)
         throw std::runtime_error("Cannot use data_start_hook on abstract output files");
@@ -104,7 +104,7 @@ void Reader::query_bytes(const dataset::ByteQuery& q, AbstractOutputFile& out)
         case dataset::ByteQuery::BQ_POSTPROCESS: {
             metadata::Postprocess postproc(q.param);
             postproc.set_output(out);
-            postproc.validate(dataset().cfg);
+            postproc.validate(*dataset().config);
             postproc.set_data_start_hook(q.data_start_hook);
             postproc.start();
             query_data(q, [&](std::shared_ptr<Metadata> md) { return postproc.process(move(md)); });
@@ -120,8 +120,15 @@ void Reader::query_bytes(const dataset::ByteQuery& q, AbstractOutputFile& out)
     }
 }
 
-void Reader::expand_date_range(std::unique_ptr<core::Time>& begin, std::unique_ptr<core::Time>& end)
+bool Reader::query_data(const std::string& q, metadata_dest_func dest)
 {
+    dataset::DataQuery dq(dataset().session->matcher(q));
+    return impl_query_data(dq, dest);
+}
+
+void Reader::query_summary(const std::string& matcher, Summary& summary)
+{
+    impl_query_summary(dataset().session->matcher(matcher), summary);
 }
 
 

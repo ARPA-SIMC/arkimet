@@ -111,6 +111,11 @@ struct StatsHull : public ItemVisitor
 #endif
 }
 
+bool Summary::empty() const
+{
+    return root->empty();
+}
+
 size_t Summary::count() const
 {
     return root->stats.count;
@@ -126,28 +131,20 @@ void Summary::dump(std::ostream& out) const
     root->dump(out);
 }
 
-unique_ptr<types::Reftime> Summary::getReferenceTime() const
+core::Interval Summary::get_reference_time() const
 {
     if (root->empty())
         throw_consistency_error("get summary reference time", "summary is empty");
     else
-        return root->stats.make_reftime();
+        return root->stats.make_interval();
 }
 
-void Summary::expand_date_range(unique_ptr<Time>& begin, unique_ptr<Time>& end) const
+void Summary::expand_date_range(core::Interval& interval) const
 {
     if (root->empty())
         return;
 
-    if (!begin.get())
-        begin.reset(new Time(root->stats.begin));
-    else if (*begin > root->stats.begin)
-        *begin = root->stats.begin;
-
-    if (!end.get())
-        end.reset(new Time(root->stats.end));
-    else if (*end < root->stats.end)
-        *end = root->stats.end;
+    interval.extend(Interval(root->stats.begin, root->stats.end));
 }
 
 namespace {
@@ -363,7 +360,7 @@ struct YamlPrinter : public Visitor
 
         // Write the stats
         out << "SummaryStats:" << endl;
-        unique_ptr<Reftime> reftime(stats.make_reftime());
+        auto reftime = Reftime::create(stats.begin, stats.end);
         out << indent << "Count: " << stats.count << endl;
         out << indent << "Size: " << stats.size << endl;
         out << indent << "Reftime: " << *reftime << endl;

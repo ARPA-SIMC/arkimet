@@ -39,7 +39,7 @@ struct Index
      *
      * If the segment does not exist in the index, return false
      */
-    virtual bool segment_timespan(const std::string& relpath, core::Time& start_time, core::Time& end_time) const = 0;
+    virtual bool segment_timespan(const std::string& relpath, core::Interval& interval) const = 0;
 
     /**
      * List all segments known to the index.

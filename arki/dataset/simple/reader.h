@@ -25,7 +25,7 @@ public:
 
     std::string type() const override;
 
-    void expand_date_range(std::unique_ptr<core::Time>& begin, std::unique_ptr<core::Time>& end) override;
+    core::Interval get_stored_time_interval() override;
 
     static bool is_dataset(const std::string& dir);
 };

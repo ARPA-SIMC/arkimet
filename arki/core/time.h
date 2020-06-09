@@ -4,6 +4,7 @@
 #include <arki/core/fwd.h>
 #include <vector>
 #include <string>
+#include <functional>
 
 namespace arki {
 namespace core {
@@ -12,22 +13,22 @@ class TimeBase
 {
 public:
     /// Year
-    int ye;
+    int ye = 0;
 
     /// Month
-    int mo;
+    int mo = 0;
 
     /// Day
-    int da;
+    int da = 0;
 
     /// Hour
-    int ho;
+    int ho = 0;
 
     /// Minute
-    int mi;
+    int mi = 0;
 
     /// Second
-    int se;
+    int se = 0;
 
     TimeBase() = default;
     TimeBase(const TimeBase&) = default;
@@ -39,6 +40,9 @@ public:
 
     /// A time from a struct tm
     TimeBase(struct tm& t);
+
+    /// Return true if the time value has been set to non-zero
+    const bool is_set() const;
 
     /// Set from a struct tm
     void set_tm(struct tm& t);
@@ -132,8 +136,18 @@ public:
     Time start_of_month() const;
     /// Return the time at the start of the next month
     Time start_of_next_month() const;
+    /// Return the time at the start of the previous month
+    Time start_of_previous_month() const;
     /// Return the time at the very end of this month
     Time end_of_month() const;
+
+    /// Return the time one second before this one
+    Time prev_instant() const;
+    /// Return the time one second after this one
+    Time next_instant() const;
+
+    /// Check if this time is the beginning of a month
+    bool is_start_of_month() const;
 
     /**
      * Normalise out of bound values.
@@ -198,6 +212,9 @@ public:
      * Ranges can be open ended: an open end is represented by a Time object
      * with all its values set to zero.
      *
+     * start points are considered included in the range.
+     * end points are considered not included in the range.
+     *
      * @param ts1 start of the first range
      * @param te1 end of the first range
      * @param ts2 start of the second range
@@ -208,9 +225,14 @@ public:
             const Time* ts2, const Time* te2);
 
     /**
-     * Return the number of seconds between `begin` and `until`
+     * Return the number of seconds between `begin` (included) and `until` (excluded)
      */
     static long long int duration(const Time& begin, const Time& until);
+
+    /**
+     * Return the number of seconds between `begin` (included) and `until` (excluded)
+     */
+    static long long int duration(const core::Interval& interval);
 };
 
 static inline std::ostream& operator<<(std::ostream& o, const Time& i)
@@ -218,6 +240,79 @@ static inline std::ostream& operator<<(std::ostream& o, const Time& i)
     return o << i.to_iso8601();
 }
 
+
+/**
+ * An interval between two moments in time.
+ *
+ * The point at the start is included in the interval; the point at the end is
+ * excluded from the interval.
+ *
+ * Intervals can be open ended on either or both sides, and open ended extremes
+ * are represented as Time() instances, that is, with all values set to zero.
+ */
+struct Interval
+{
+    Time begin;
+    Time end;
+
+    Interval() = default;
+    Interval(const Time& begin, const Time& end);
+    Interval(const Interval&) = default;
+    Interval(Interval&&) = default;
+    Interval& operator=(const Interval&) = default;
+    Interval& operator=(Interval&&) = default;
+
+    bool operator==(const Interval& other) const
+    {
+        return begin == other.begin && end == other.end;
+    }
+
+    bool operator!=(const Interval& other) const
+    {
+        return begin != other.begin || end != other.end;
+    }
+
+    /// Return true if the interval has no begin and end bounds
+    bool is_unbounded() const;
+
+    /// Check if time is contained in this interval
+    bool contains(const Time& time) const;
+
+    /// Check if interval is fully contained in this interval
+    bool contains(const Interval& interval) const;
+
+    /// Check if interval is partially contained in this interval
+    bool intersects(const Interval& interval) const;
+
+    /// Check if the interval spans one whole month
+    bool spans_one_whole_month() const;
+
+    /// Call the function for each (full or partial) month in the interval
+    void iter_months(std::function<bool(const Interval&)>) const;
+
+    /**
+     * Set this interval as the shortest common interval betwen this and ``o``,
+     * and return true.
+     *
+     * If the two intervals are disjoint, it does nothing and returns false.
+     */
+    bool intersect(const Interval& other);
+
+    /**
+     * Set this interval as the smallest interval that contains both this and
+     * ``other``.
+     */
+    void extend(const Interval& o);
+
+    /// Return a string representation
+    std::string to_string() const;
+};
+
+
+static inline std::ostream& operator<<(std::ostream& o, const Interval& i)
+{
+    return o << i.to_string();
+}
 
 }
 }

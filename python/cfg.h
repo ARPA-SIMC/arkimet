@@ -5,6 +5,7 @@
 #include <Python.h>
 #include <memory>
 #include "arki/core/cfg.h"
+#include "python/common.h"
 
 namespace arki {
 namespace runtime {
@@ -14,11 +15,7 @@ struct ArkiMergeconf;
 
 extern "C" {
 
-typedef struct {
-    PyObject_HEAD
-    arki::core::cfg::Sections sections;
-} arkipy_cfgSections;
-
+typedef arki::python::SharedPtrWrapper<arki::core::cfg::Sections> arkipy_cfgSections;
 extern PyTypeObject* arkipy_cfgSections_Type;
 
 #define arkipy_cfgSections_Check(ob) \
@@ -26,12 +23,7 @@ extern PyTypeObject* arkipy_cfgSections_Type;
      PyType_IsSubtype(Py_TYPE(ob), arkipy_cfgSections_Type))
 
 
-typedef struct {
-    PyObject_HEAD
-    PyObject* owner;
-    arki::core::cfg::Section* section;
-} arkipy_cfgSection;
-
+typedef arki::python::SharedPtrWrapper<arki::core::cfg::Section> arkipy_cfgSection;
 extern PyTypeObject* arkipy_cfgSection_Type;
 
 #define arkipy_cfgSection_Check(ob) \
@@ -50,7 +42,7 @@ namespace python {
  *  - str or bytes, that will get parsed
  *  - dict, that will be set as key->val into out
  */
-core::cfg::Section section_from_python(PyObject* o);
+std::shared_ptr<core::cfg::Section> section_from_python(PyObject* o);
 
 /**
  * Create a cfg::Sections from python.
@@ -58,13 +50,19 @@ core::cfg::Section section_from_python(PyObject* o);
  * Currently this only supports:
  *  - str or bytes, that will get parsed
  */
-core::cfg::Sections sections_from_python(PyObject* o);
+std::shared_ptr<core::cfg::Sections> sections_from_python(PyObject* o);
 
-PyObject* cfg_sections(const core::cfg::Sections& sections);
-PyObject* cfg_sections(core::cfg::Sections&& sections);
-PyObject* cfg_section(const core::cfg::Section& section);
-PyObject* cfg_section(core::cfg::Section&& section);
-PyObject* cfg_section_reference(PyObject* owner, core::cfg::Section* section);
+/**
+ * Pass a mutable reference to a Sections to Python
+ */
+PyObject* sections_to_python(std::shared_ptr<core::cfg::Sections> ptr);
+inline PyObject* to_python(std::shared_ptr<core::cfg::Sections> ptr) { return sections_to_python(ptr); }
+
+/**
+ * Pass a mutable reference to a Section to Python
+ */
+PyObject* section_to_python(std::shared_ptr<core::cfg::Section> ptr);
+inline PyObject* to_python(std::shared_ptr<core::cfg::Section> ptr) { return section_to_python(ptr); }
 
 void register_cfg(PyObject* m);
 

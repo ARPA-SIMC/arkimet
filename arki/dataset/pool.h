@@ -13,44 +13,16 @@
 namespace arki {
 namespace dataset {
 
-/**
- * Manage a pool of datasets
- */
-class Datasets
-{
-protected:
-    std::map<std::string, std::shared_ptr<dataset::Dataset>> datasets;
-
-public:
-    explicit Datasets(std::shared_ptr<Session>, const core::cfg::Sections& cfg);
-
-    /// Get the configuration for the given dataset
-    std::shared_ptr<dataset::Dataset> get(const std::string& name) const;
-
-    /// Check if the pool has a dataset with the given name
-    bool has(const std::string& name) const;
-
-    /**
-     * Look for the dataset that contains the given metadata item, and make the
-     * metadata source relative to it.
-     *
-     * If not dataset contains the metadata, returns an empty shared_ptr and
-     * leaves \a md untouched.
-     */
-    std::shared_ptr<dataset::Dataset> locate_metadata(Metadata& md);
-};
-
-
 class WriterPool
 {
 protected:
-    const Datasets& datasets;
+    std::shared_ptr<Session> session;
 
     // Dataset cache
     std::map<std::string, std::shared_ptr<dataset::Writer>> cache;
 
 public:
-    WriterPool(const Datasets& datasets);
+    WriterPool(std::shared_ptr<Session> session);
     ~WriterPool();
 
     /**

@@ -52,10 +52,7 @@ bool Row::matches(const Matcher& matcher) const
         if (!items[i]) return false;
         if (!item_matcher->matchItem(*items[i])) return false;
     }
-    shared_ptr<matcher::OR> reftime_matcher = matcher.get(TYPE_REFTIME);
-    if (reftime_matcher && !reftime_matcher->matchItem(*stats.make_reftime()))
-        return false;
-    return true;
+    return matcher(stats.make_interval());
 }
 
 void Row::dump(std::ostream& out, unsigned indent) const

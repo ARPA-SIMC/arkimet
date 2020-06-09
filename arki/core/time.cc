@@ -1,7 +1,7 @@
 #include "time.h"
 #include "binary.h"
 #include "arki/exceptions.h"
-#include "config.h"
+#include <ostream>
 #include <cmath>
 #include <cstring>
 #include <ctime>
@@ -13,6 +13,13 @@ namespace arki {
 namespace core {
 
 TimeBase::TimeBase(struct tm& t) { set_tm(t); }
+
+const bool TimeBase::is_set() const
+{
+    // Don't bother checking all elements, since we don't work with dates in
+    // year zero.
+    return ye != 0;
+}
 
 void TimeBase::set_tm(struct tm& t)
 {
@@ -219,12 +226,23 @@ bool Time::operator==(const std::string& o) const
 
 Time Time::start_of_month() const
 {
-    return Time(ye, mo, 1, 0, 0, 0);
+    return Time(ye, mo, 1);
 }
 
 Time Time::start_of_next_month() const
 {
-    return Time(ye + mo / 12, (mo % 12) + 1, 1, 0, 0, 0);
+    if (mo == 12)
+        return Time(ye + 1, 1, 1);
+    else
+        return Time(ye, mo + 1, 1);
+}
+
+Time Time::start_of_previous_month() const
+{
+    if (mo == 1)
+        return Time(ye - 1, 12, 1);
+    else
+        return Time(ye, mo - 1, 1);
 }
 
 Time Time::end_of_month() const
@@ -232,6 +250,26 @@ Time Time::end_of_month() const
     return Time(ye, mo, days_in_month(ye, mo), 23, 59, 59);
 }
 
+Time Time::prev_instant() const
+{
+    Time res(*this);
+    res.se -= 1;
+    res.normalise();
+    return res;
+}
+
+Time Time::next_instant() const
+{
+    Time res(*this);
+    res.se += 1;
+    res.normalise();
+    return res;
+}
+
+bool Time::is_start_of_month() const
+{
+    return da == 1 && ho == 0 && mi == 0 && se == 0;
+}
 
 /*
  * Make sure `lo` fits between >= 0 and < N.
@@ -386,13 +424,13 @@ bool Time::range_overlaps(
     if (!ts1 && !te1) return true;
     if (!ts2 && !te2) return true;
 
-    if (!ts1) return !ts2 || ts2->compare(*te1) <= 0;
-    if (!te1) return !te2 || te2->compare(*ts1) >= 0;
+    if (!ts1) return !ts2 || ts2->compare(*te1) < 0;
+    if (!te1) return !te2 || te2->compare(*ts1) > 0;
 
-    if (!ts2) return te2->compare(*ts1) >= 0;
-    if (!te2) return ts2->compare(*te1) <= 0;
+    if (!ts2) return te2->compare(*ts1) > 0;
+    if (!te2) return ts2->compare(*te1) < 0;
 
-    return !(te1->compare(*ts2) < 0 || ts1->compare(*te2) > 0);
+    return te1->compare(*ts2) > 0 && ts1->compare(*te2) < 0;
 }
 
 static long long int seconds_from(int year, const Time& t)
@@ -422,6 +460,11 @@ long long int Time::duration(const Time& begin, const Time& until)
     return seconds_from(y, until) - seconds_from(y, begin);
 }
 
+long long int Time::duration(const core::Interval& interval)
+{
+    return duration(interval.begin, interval.end);
+}
+
 std::vector<Time> Time::generate(const Time& begin, const Time& end, int step)
 {
     vector<Time> res;
@@ -431,6 +474,177 @@ std::vector<Time> Time::generate(const Time& begin, const Time& end, int step)
         cur.se += step;
         cur.normalise();
     }
+    return res;
+}
+
+
+/*
+ * Interval
+ */
+
+Interval::Interval(const Time& begin, const Time& end)
+    : begin(begin), end(end)
+{
+}
+
+bool Interval::is_unbounded() const
+{
+    return !begin.is_set() && !end.is_set();
+}
+
+bool Interval::contains(const Time& time) const
+{
+    if (begin.is_set() && time < begin) return false;
+    if (end.is_set() && time >= end) return false;
+    return true;
+}
+
+bool Interval::contains(const Interval& interval) const
+{
+    if (!begin.is_set())
+    {
+        if (!end.is_set())
+            return true;
+        else
+        {
+            if (interval.begin.is_set() && interval.begin >= end) return false;
+            return interval.end.is_set() && interval.end <= end;
+        }
+    }
+
+    // begin is set
+
+    if (!end.is_set())
+    {
+        if (interval.end.is_set() && interval.end <= begin) return false;
+        return interval.begin.is_set() && interval.begin >= begin;
+    }
+
+    // begin and end are set
+
+    if (!interval.begin.is_set()) return false;
+    if (!interval.end.is_set()) return false;
+
+    return interval.begin >= begin && interval.begin < end &&
+           interval.end > begin && interval.end <= end;
+}
+
+bool Interval::intersects(const Interval& interval) const
+{
+    if (!begin.is_set())
+    {
+        if (!end.is_set())
+            return true;
+        else
+            return !interval.begin.is_set() || interval.begin < end;
+    }
+
+    // begin is set
+
+    if (!end.is_set())
+        return !interval.end.is_set() || interval.end > begin;
+
+    // begin and end are set
+
+    if (!interval.begin.is_set())
+        return !interval.end.is_set() || interval.end > begin;
+
+    if (!interval.end.is_set())
+        return interval.begin < end;
+
+    return !(interval.end <= begin) && !(interval.begin >= end);
+}
+
+bool Interval::spans_one_whole_month() const
+{
+    if (!begin.is_set() || !end.is_set())
+        return true;
+
+    if (begin.is_start_of_month())
+        return end >= begin.start_of_next_month();
+    else
+        return end >= begin.start_of_next_month().start_of_next_month();
+}
+
+void Interval::iter_months(std::function<bool(const Interval&)> f) const
+{
+    core::Time pos = begin;
+
+    while (true)
+    {
+        core::Time next = pos.start_of_next_month();
+        if (next >= end)
+        {
+            f(Interval(pos, end));
+            break;
+        } else {
+            f(Interval(pos, next));
+            pos = next;
+        }
+    }
+}
+
+bool Interval::intersect(const Interval& other)
+{
+    // Check for disjoint sets
+    if (begin.is_set() && other.end.is_set() && other.end <= begin)
+        return false;
+    if (end.is_set() && other.begin.is_set() && end <= other.begin)
+        return false;
+
+    if (!other.begin.is_set())
+    {
+        // other is open ended at the beginning
+        if (!other.end.is_set())
+        {
+            // other is open ended at both ends, we stay unchanged
+            return true;
+        } else {
+            // other has an endpoint, and we know we are not disjoint, so it
+            // ends after we begin
+            if (!end.is_set() || end > other.end)
+                end = other.end;
+            return true;
+        }
+    }
+
+    if (!other.end.is_set())
+    {
+        // other is open ended at the end /only/, and we know we are not
+        // disjoint, so it begins before we end
+        if (!begin.is_set() || begin < other.begin)
+            begin = other.begin;
+        return true;
+    }
+
+    // other is not open ended, and the two sets are not disjoint
+
+    if (!end.is_set() || end > other.end)
+        end = other.end;
+    if (!begin.is_set() || begin < other.begin)
+        begin = other.begin;
+    return true;
+}
+
+void Interval::extend(const Interval& other)
+{
+    if (begin.is_set())
+        if (!other.begin.is_set() || other.begin < begin)
+            begin = other.begin;
+
+    if (end.is_set())
+        if (!other.end.is_set() || other.end > end)
+            end = other.end;
+}
+
+std::string Interval::to_string() const
+{
+    std::string res;
+    if (begin.is_set())
+        res = begin.to_iso8601();
+    res += "…";
+    if (end.is_set())
+        res += end.to_iso8601();
     return res;
 }
 

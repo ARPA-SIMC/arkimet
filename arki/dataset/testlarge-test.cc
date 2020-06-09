@@ -35,7 +35,7 @@ void Tests::register_tests() {
 // Test accessing the data
 add_method("read", [](Fixture& f) {
     auto reader = f.config().create_reader();
-    metadata::Collection mdc(*reader, Matcher::parse("reftime:=2016-01-01"));
+    metadata::Collection mdc(*reader, "reftime:=2016-01-01");
     wassert(actual(mdc.size()) == 4u);
 });
 

@@ -32,7 +32,6 @@ struct DataQuery
     std::shared_ptr<QueryProgress> progress;
 
     DataQuery();
-    DataQuery(const std::string& matcher, bool with_data=false);
     DataQuery(const Matcher& matcher, bool with_data=false);
     ~DataQuery();
 };

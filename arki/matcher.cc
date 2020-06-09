@@ -1,10 +1,9 @@
 #include "matcher.h"
 #include "matcher/aliases.h"
 #include "matcher/utils.h"
-#include "core/cfg.h"
-#include "metadata.h"
+#include "core/time.h"
 #include "utils/string.h"
-#include "utils/string.h"
+#include "utils/sys.h"
 #include <memory>
 
 using namespace std;
@@ -41,6 +40,13 @@ bool Matcher::operator()(const types::Type& t) const
 bool Matcher::operator()(const types::ItemSet& md) const
 {
     if (m_impl.get()) return m_impl->matchItemSet(md);
+    // An empty matcher always matches
+    return true;
+}
+
+bool Matcher::operator()(const core::Interval& interval) const
+{
+    if (m_impl.get()) return m_impl->match_interval(interval);
     // An empty matcher always matches
     return true;
 }
@@ -96,7 +102,7 @@ void Matcher::split(const std::set<types::Code>& codes, Matcher& with, Matcher& 
     }
 }
 
-bool Matcher::restrict_date_range(unique_ptr<core::Time>& begin, unique_ptr<core::Time>& end) const
+bool Matcher::intersect_interval(core::Interval& interval) const
 {
     shared_ptr<matcher::OR> reftime;
 
@@ -108,21 +114,27 @@ bool Matcher::restrict_date_range(unique_ptr<core::Time>& begin, unique_ptr<core
     // We have no reftime to match: we match the open range
     if (!reftime) return true;
 
-    if (!reftime->restrict_date_range(begin, end))
+    if (!reftime->intersect_interval(interval))
         return false;
 
     return true;
 }
 
-
-Matcher Matcher::parse(const std::string& pattern)
+Matcher Matcher::for_interval(const core::Interval& interval)
 {
-	return matcher::AND::parse(pattern);
+    return matcher::AND::for_interval(interval);
+}
+
+Matcher Matcher::for_month(unsigned year, unsigned month)
+{
+    core::Time begin(year, month);
+    core::Time end(begin.start_of_next_month());
+    return for_interval(core::Interval(begin, end));
 }
 
 std::ostream& operator<<(std::ostream& o, const Matcher& m)
 {
-	return o << m.toString();
+    return o << m.toString();
 }
 
 }

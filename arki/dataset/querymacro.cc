@@ -9,55 +9,42 @@ using namespace arki::utils;
 
 namespace arki {
 namespace dataset {
-namespace qmacro {
 
-Options::Options(const core::cfg::Sections& datasets_cfg, const std::string& name, const std::string& query)
-    : datasets_cfg(datasets_cfg), query(query)
+QueryMacro::QueryMacro(std::shared_ptr<Session> session, const std::string& name, const std::string& query)
+    : dataset::Dataset(session), query(query)
 {
     size_t pos = name.find(" ");
     if (pos == string::npos)
     {
-        macro_name = name;
+        m_name = name;
     } else {
-        macro_name = name.substr(0, pos);
+        m_name = name.substr(0, pos);
         macro_args = str::strip(name.substr(pos + 1));
     }
-
 }
 
-Options::Options(const core::cfg::Section& macro_cfg, const core::cfg::Sections& datasets_cfg, const std::string& name, const std::string& query)
-    : macro_cfg(macro_cfg), datasets_cfg(datasets_cfg), query(query)
-{
-    size_t pos = name.find(" ");
-    if (pos == string::npos)
-    {
-        macro_name = name;
-    } else {
-        macro_name = name.substr(0, pos);
-        macro_args = str::strip(name.substr(pos + 1));
-    }
-
+namespace {
+std::vector<std::pair<std::string, std::function<std::shared_ptr<dataset::Reader>(const std::string& source, std::shared_ptr<QueryMacro> dataset)>>> parsers;
 }
 
-
-std::vector<std::pair<std::string, std::function<std::shared_ptr<dataset::Reader>(const std::string& source, const Options& opts)>>> parsers;
-
-std::shared_ptr<dataset::Reader> get(const Options& opts)
+std::shared_ptr<Reader> QueryMacro::create_reader()
 {
     for (const auto& entry: parsers)
     {
-        std::string fname = arki::Config::get().dir_qmacro.find_file_noerror(opts.macro_name + "." + entry.first);
+        std::string fname = arki::Config::get().dir_qmacro.find_file_noerror(m_name + "." + entry.first);
         if (!fname.empty())
         {
-            return entry.second(fname, opts);
+            return entry.second(fname, dynamic_pointer_cast<QueryMacro>(shared_from_this()));
         }
     }
-    throw std::runtime_error("querymacro source not found for macro " + opts.macro_name);
+    throw std::runtime_error("querymacro source not found for macro " + m_name);
 }
+
+namespace qmacro {
 
 void register_parser(
         const std::string& ext,
-        std::function<std::shared_ptr<dataset::Reader>(const std::string& source, const Options& opts)> parser)
+        std::function<std::shared_ptr<dataset::Reader>(const std::string& source, std::shared_ptr<QueryMacro> opts)> parser)
 {
     for (const auto& entry: parsers)
         if (entry.first == ext)

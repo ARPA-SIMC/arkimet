@@ -88,6 +88,9 @@ public:
 	 */
 	void clear();
 
+    /// Return true if the summary contains no information
+    bool empty() const;
+
 	/**
 	 * Return the number of metadata described by this summary.
 	 */
@@ -245,10 +248,8 @@ public:
 
     /**
      * Get the reference time interval covered by the metadata bundle.
-     *
-     * Note: an end period of (0, 0, 0, 0, 0, 0) means "now".
      */
-    std::unique_ptr<types::Reftime> getReferenceTime() const;
+    core::Interval get_reference_time() const;
 
     /**
      * Expand the given begin and end ranges to include the datetime extremes
@@ -257,7 +258,7 @@ public:
      * If begin and end are unset, set them to the datetime extremes of this
      * summary.
      */
-    void expand_date_range(std::unique_ptr<core::Time>& begin, std::unique_ptr<core::Time>& end) const;
+    void expand_date_range(core::Interval& interval) const;
 
 	/**
 	 * Get the convex hull of the union of all bounding boxes covered by the

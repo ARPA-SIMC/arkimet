@@ -90,7 +90,7 @@ add_method("null_validate", [] {
     Postprocess p("null");
     Stderr out;
     p.set_output(out);
-    p.validate(config);
+    p.validate(*config);
     p.start();
 
     produceGRIB(p);

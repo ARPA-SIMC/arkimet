@@ -6,7 +6,6 @@ namespace arki {
 namespace dataset {
 
 DataQuery::DataQuery() : with_data(false) {}
-DataQuery::DataQuery(const std::string& matcher, bool with_data) : matcher(Matcher::parse(matcher)), with_data(with_data), sorter(0) {}
 DataQuery::DataQuery(const Matcher& matcher, bool with_data) : matcher(matcher), with_data(with_data), sorter(0) {}
 DataQuery::~DataQuery() {}
 

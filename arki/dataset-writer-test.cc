@@ -51,7 +51,7 @@ struct FixtureWriter : public DatasetTest
 
     bool smallfiles() const
     {
-        return cfg.value_bool("smallfiles") || (td.format == "vm2" && cfg.value("type") == "simple");
+        return cfg->value_bool("smallfiles") || (td.format == "vm2" && cfg->value("type") == "simple");
     }
 };
 
@@ -98,7 +98,7 @@ void Tests::register_tests() {
 add_method("import_largefile", [](Fixture& f) {
     skip_unless_filesystem_has_holes(".");
     // A dataset with hole files
-    f.cfg.set("step", "daily");
+    f.cfg->set("step", "daily");
     f.set_session(std::make_shared<ForceDirMockDataSession>());
 
 
@@ -121,7 +121,7 @@ add_method("import_largefile", [](Fixture& f) {
 
     // Query it, without data
     auto reader = f.config().create_reader();
-    metadata::Collection mdc(*reader, Matcher::parse(""));
+    metadata::Collection mdc(*reader, "");
     wassert(actual(mdc.size()) == 720u);
 
     // Query it, streaming its data to /dev/null
@@ -132,8 +132,8 @@ add_method("import_largefile", [](Fixture& f) {
 });
 
 add_method("import_batch_replace_usn", [](Fixture& f) {
-    f.cfg.set("format", "bufr");
-    f.cfg.set("step", "daily");
+    f.cfg->set("format", "bufr");
+    f.cfg->set("step", "daily");
     metadata::TestCollection mdc("inbound/synop-gts.bufr");
     metadata::TestCollection mdc_upd("inbound/synop-gts-usn2.bufr");
 
@@ -194,7 +194,7 @@ this->add_method("import", [](Fixture& f) {
 });
 
 this->add_method("import_error", [](Fixture& f) {
-    std::string format = f.cfg.value("format");
+    std::string format = f.cfg->value("format");
     Metadata md;
     fill(md);
     md.set("reftime", "2018-01-01T00:00:00");
@@ -282,7 +282,7 @@ this->add_method("import_batch_replace_always", [](Fixture& f) {
 
 this->add_method("import_before_archive_age", [](Fixture& f) {
     auto o = dataset::SessionTime::local_override(1483225200); // date +%s --date="2017-01-01"
-    f.cfg.set("archive age", "1");
+    f.cfg->set("archive age", "1");
     auto ds = f.config().create_writer();
 
     for (unsigned i = 0; i < 3; ++i)
@@ -298,7 +298,7 @@ this->add_method("import_before_archive_age", [](Fixture& f) {
 
 this->add_method("import_before_delete_age", [](Fixture& f) {
     auto o = dataset::SessionTime::local_override(1483225200); // date +%s --date="2017-01-01"
-    f.cfg.set("delete age", "1");
+    f.cfg->set("delete age", "1");
     auto ds = f.config().create_writer();
 
     for (unsigned i = 0; i < 3; ++i)
@@ -335,7 +335,7 @@ auto test_same_segment_fail = [](Fixture& f, unsigned fail_idx, dataset::Replace
     sys::rmtree_ifexists("testds");
     Metadata md;
     fill(md);
-    std::string format = f.cfg.value("format");
+    std::string format = f.cfg->value("format");
 
     // Make a batch that ends up all in the same segment
     metadata::Collection mds;
@@ -384,7 +384,7 @@ auto test_different_segment_fail = [](Fixture& f, unsigned fail_idx, dataset::Re
     sys::rmtree_ifexists("testds");
     Metadata md;
     fill(md);
-    std::string format = f.cfg.value("format");
+    std::string format = f.cfg->value("format");
 
     // Make a batch that ends up all in the same segment
     metadata::Collection mds;

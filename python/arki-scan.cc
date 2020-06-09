@@ -16,6 +16,7 @@
 #include "cmdline.h"
 #include "cmdline/processor.h"
 #include "dataset.h"
+#include "dataset/session.h"
 
 using namespace arki::python;
 using namespace arki::utils;
@@ -50,6 +51,7 @@ static std::string moveFile(const arki::dataset::Reader& ds, const std::string& 
  */
 struct FileSource
 {
+    std::shared_ptr<arki::dataset::Dataset> dataset;
     std::shared_ptr<arki::dataset::Reader> reader;
 
     arki::core::cfg::Section cfg;
@@ -57,8 +59,8 @@ struct FileSource
     std::string moveok;
     std::string moveko;
 
-    FileSource(const arki::core::cfg::Section& info)
-        : cfg(info)
+    FileSource(std::shared_ptr<arki::dataset::Dataset> dataset)
+        : dataset(dataset)
     {
     }
 
@@ -66,7 +68,7 @@ struct FileSource
     {
         if (!movework.empty() && cfg.value("type") == "file")
             cfg.set("path", moveFile(cfg.value("path"), movework));
-        reader = arki::python::get_dataset_session()->dataset(cfg)->create_reader();
+        reader = dataset->create_reader();
     }
 
     void close(bool successful)
@@ -83,7 +85,8 @@ struct FileSource
 /**
  * Build a MetadataDispatcher from the given python function args/kwargs
  */
-std::unique_ptr<arki_scan::MetadataDispatch> build_dispatcher(cmdline::DatasetProcessor& processor, PyObject* args, PyObject* kw)
+std::unique_ptr<arki_scan::MetadataDispatch> build_dispatcher(
+        std::shared_ptr<arki::dataset::Session> session, cmdline::DatasetProcessor& processor, PyObject* args, PyObject* kw)
 {
     static const char* kwlist[] = {
         "copyok", "copyko",
@@ -108,15 +111,15 @@ std::unique_ptr<arki_scan::MetadataDispatch> build_dispatcher(cmdline::DatasetPr
                 &flush_threshold))
         throw PythonException();
 
-    std::unique_ptr<arki_scan::MetadataDispatch> res(new arki_scan::MetadataDispatch(processor));
+    std::unique_ptr<arki_scan::MetadataDispatch> res(new arki_scan::MetadataDispatch(session, processor));
 
     if (testdispatch)
     {
-        res->dispatcher = new arki::TestDispatcher(arki::python::get_dataset_session(), sections_from_python(testdispatch));
+        res->dispatcher = new arki::TestDispatcher(session_from_python(testdispatch));
     }
     else if (dispatch)
     {
-        res->dispatcher = new arki::RealDispatcher(arki::python::get_dataset_session(), sections_from_python(dispatch));
+        res->dispatcher = new arki::RealDispatcher(session_from_python(dispatch));
     }
     else
         throw std::runtime_error("cannot create MetadataDispatch with no --dispatch or --testdispatch information");
@@ -148,28 +151,6 @@ std::unique_ptr<arki_scan::MetadataDispatch> build_dispatcher(cmdline::DatasetPr
     return res;
 }
 
-struct set_inputs : public MethKwargs<set_inputs, arkipy_ArkiScan>
-{
-    constexpr static const char* name = "set_inputs";
-    constexpr static const char* signature = "config: arkimet.cfg.Sections";
-    constexpr static const char* returns = "";
-    constexpr static const char* summary = "set input configuration";
-    constexpr static const char* doc = nullptr;
-
-    static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
-    {
-        static const char* kwlist[] = { "config", nullptr };
-        PyObject* py_config = nullptr;
-        if (!PyArg_ParseTupleAndKeywords(args, kw, "O", const_cast<char**>(kwlist), &py_config))
-            return nullptr;
-
-        try {
-            self->inputs = sections_from_python(py_config);
-            Py_RETURN_NONE;
-        } ARKI_CATCH_RETURN_PYO
-    }
-};
-
 struct set_processor : public MethKwargs<set_processor, arkipy_ArkiScan>
 {
     constexpr static const char* name = "set_processor";
@@ -181,7 +162,7 @@ struct set_processor : public MethKwargs<set_processor, arkipy_ArkiScan>
     static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
     {
         try {
-            auto processor = build_processor(args, kw);
+            auto processor = build_processor(self->session, args, kw);
             self->processor = processor.release();
             Py_RETURN_NONE;
         } ARKI_CATCH_RETURN_PYO
@@ -199,7 +180,7 @@ struct set_dispatcher : public MethKwargs<set_dispatcher, arkipy_ArkiScan>
     static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
     {
         try {
-            auto dispatcher = build_dispatcher(*(self->processor), args, kw);
+            auto dispatcher = build_dispatcher(self->session, *(self->processor), args, kw);
             self->dispatcher = dispatcher.release();
             Py_RETURN_NONE;
         } ARKI_CATCH_RETURN_PYO
@@ -230,7 +211,7 @@ struct scan_file : public MethKwargs<scan_file, arkipy_ArkiScan>
             {
                 BinaryInputFile in(file);
                 ReleaseGIL rg;
-                all_successful = foreach_file(in, std::string(format, format_len), [&](arki::dataset::Reader& reader) {
+                all_successful = foreach_file(self->session, in, std::string(format, format_len), [&](arki::dataset::Reader& reader) {
                     self->processor->process(reader, reader.name());
                 });
                 self->processor->end();
@@ -261,7 +242,7 @@ struct scan_sections : public MethKwargs<scan_sections, arkipy_ArkiScan>
             bool all_successful;
             {
                 ReleaseGIL rg;
-                all_successful = foreach_sections(self->inputs, [&](arki::dataset::Reader& reader) {
+                all_successful = foreach_sections(self->session, [&](arki::dataset::Reader& reader) {
                     self->processor->process(reader, reader.name());
                 });
                 self->processor->end();
@@ -302,7 +283,7 @@ struct dispatch_file : public MethKwargs<dispatch_file, arkipy_ArkiScan>
                 ReleaseGIL rg;
 
                 bool dispatch_ok = true;
-                bool res = foreach_file(in, std::string(format, format_len), [&](arki::dataset::Reader& reader) {
+                bool res = foreach_file(self->session, in, std::string(format, format_len), [&](arki::dataset::Reader& reader) {
                     auto stats = self->dispatcher->process(reader, reader.name());
 
                     if (status)
@@ -356,9 +337,8 @@ struct dispatch_sections : public MethKwargs<dispatch_sections, arkipy_ArkiScan>
                 ReleaseGIL rg;
 
                 // Query all the datasets in sequence
-                for (auto si: self->inputs)
-                {
-                    FileSource source(si.second);
+                self->session->foreach_dataset([&](std::shared_ptr<arki::dataset::Dataset> ds) {
+                    FileSource source(ds);
                     if (movework) source.movework = std::string(movework, movework_len);
                     if (moveok) source.moveok = std::string(moveok, moveok_len);
                     if (moveko) source.moveko = std::string(moveko, moveko_len);
@@ -379,7 +359,8 @@ struct dispatch_sections : public MethKwargs<dispatch_sections, arkipy_ArkiScan>
                     }
                     source.close(success);
                     if (!success) all_successful = false;
-                }
+                    return true;
+                });
 
                 self->processor->end();
             }
@@ -400,11 +381,11 @@ struct ArkiScanDef : public Type<ArkiScanDef, arkipy_ArkiScan>
 arki-scan implementation
 )";
     GetSetters<> getsetters;
-    Methods<set_inputs, set_processor, set_dispatcher, scan_file, scan_sections, dispatch_file, dispatch_sections> methods;
+    Methods<set_processor, set_dispatcher, scan_file, scan_sections, dispatch_file, dispatch_sections> methods;
 
     static void _dealloc(Impl* self)
     {
-        self->inputs.~Sections();
+        self->session.~shared_ptr<arki::dataset::Session>();
         delete self->processor;
         delete self->dispatcher;
         Py_TYPE(self)->tp_free(self);
@@ -424,12 +405,13 @@ arki-scan implementation
 
     static int _init(Impl* self, PyObject* args, PyObject* kw)
     {
-        static const char* kwlist[] = { nullptr };
-        if (!PyArg_ParseTupleAndKeywords(args, kw, "", const_cast<char**>(kwlist)))
+        static const char* kwlist[] = { "session", nullptr };
+        arkipy_DatasetSession* session = nullptr;
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "O!", const_cast<char**>(kwlist), arkipy_DatasetSession_Type, &session))
             return -1;
 
         try {
-            new (&(self->inputs)) arki::core::cfg::Sections;
+            new (&(self->session)) std::shared_ptr<arki::dataset::Session>(session->ptr);
             self->processor = nullptr;
             self->dispatcher = nullptr;
         } ARKI_CATCH_RETURN_INT

@@ -6,6 +6,7 @@
 #include "arki/core/file.h"
 #include "arki/metadata/data.h"
 #include "arki/metadata/collection.h"
+#include "arki/matcher/parser.h"
 #include "arki/summary.h"
 #include "arki/scan.h"
 #include "arki/scan/validator.h"
@@ -39,13 +40,13 @@ struct FixtureReader : public DatasetTest
             unique = product, area, reftime
         )");
         if (td.format == "vm2")
-            cfg.set("smallfiles", "true");
+            cfg->set("smallfiles", "true");
         import_all_packed(td.mds);
     }
 
     bool smallfiles() const
     {
-        return cfg.value_bool("smallfiles") || (td.format == "vm2" && cfg.value("type") == "simple");
+        return cfg->value_bool("smallfiles") || (td.format == "vm2" && cfg->value("type") == "simple");
     }
 };
 
@@ -81,6 +82,7 @@ void TestsReader<Data>::register_tests() {
 typedef FixtureReader<Data> Fixture;
 
 this->add_method("querydata", [](Fixture& f) {
+    matcher::Parser parser;
     auto ds(f.config().create_reader());
 
     acct::plain_data_read_count.reset();
@@ -95,7 +97,7 @@ this->add_method("querydata", [](Fixture& f) {
     for (unsigned i = 0; i < 3; ++i)
     {
         using namespace arki::types;
-        Matcher matcher = Matcher::parse(f.matchers[i]);
+        Matcher matcher = parser.parse(f.matchers[i]);
 
         // Check that what we imported can be queried
         metadata::Collection mdc(*ds, dataset::DataQuery(matcher, true));
@@ -135,11 +137,10 @@ this->add_method("querysummary", [](Fixture& f) {
     for (unsigned i = 0; i < 3; ++i)
     {
         using namespace arki::types;
-        Matcher matcher = Matcher::parse(f.matchers[i]);
 
         // Query summary of single items
         Summary s;
-        ds->query_summary(matcher, s);
+        ds->query_summary(f.matchers[i], s);
 
         wassert(actual(s.count()) == 1u);
 
@@ -149,12 +150,13 @@ this->add_method("querysummary", [](Fixture& f) {
 });
 
 this->add_method("querybytes", [](Fixture& f) {
+    matcher::Parser parser;
     auto ds(f.config().create_reader());
 
     for (unsigned i = 0; i < 3; ++i)
     {
         using namespace arki::types;
-        Matcher matcher = Matcher::parse(f.matchers[i]);
+        Matcher matcher = parser.parse(f.matchers[i]);
 
         // Query into a file
         dataset::ByteQuery bq;
@@ -177,9 +179,10 @@ this->add_method("querybytes", [](Fixture& f) {
 });
 
 this->add_method("query_data", [](Fixture& f) {
+    matcher::Parser parser;
     // Test querying with data only
     auto reader(f.config().create_reader());
-    Matcher matcher = Matcher::parse(f.matchers[1]);
+    Matcher matcher = parser.parse(f.matchers[1]);
 
     sys::File out(sys::File::mkstemp("test"));
     dataset::ByteQuery bq;
@@ -196,7 +199,8 @@ this->add_method("query_data", [](Fixture& f) {
 this->add_method("query_inline", [](Fixture& f) {
     // Test querying with inline data
     using namespace arki::types;
-    Matcher matcher = Matcher::parse(f.matchers[0]);
+    matcher::Parser parser;
+    Matcher matcher = parser.parse(f.matchers[0]);
 
     auto reader(f.config().create_reader());
 
@@ -211,11 +215,11 @@ this->add_method("query_inline", [](Fixture& f) {
     wassert(actual(buf.size()) == f.td.mds[0].sourceBlob().size);
 
     mdc.clear();
-    mdc.add(*reader, Matcher::parse(f.matchers[1]));
+    mdc.add(*reader, f.matchers[1]);
     wassert(actual(mdc.size()) == 1u);
 
     mdc.clear();
-    mdc.add(*reader, Matcher::parse(f.matchers[2]));
+    mdc.add(*reader, f.matchers[2]);
     wassert(actual(mdc.size()) == 1u);
 });
 
@@ -268,7 +272,8 @@ this->add_method("querybytes_integrity", [](Fixture& f) {
 
 this->add_method("postprocess", [](Fixture& f) {
     auto ds(f.config().create_reader());
-    Matcher matcher = Matcher::parse(f.matchers[0]);
+    matcher::Parser parser;
+    Matcher matcher = parser.parse(f.matchers[0]);
 
     // Do a simple export first, to get the exact metadata that would come
     // out
@@ -310,7 +315,7 @@ this->add_method("interrupted_read", [](Fixture& f) {
 
     unsigned count = 0;
     auto reader = f.dataset_config()->create_reader();
-    reader->query_data(dataset::DataQuery("", true), [&](std::shared_ptr<Metadata> md) {
+    reader->query_data(dataset::DataQuery(Matcher(), true), [&](std::shared_ptr<Metadata> md) {
         auto data = md->get_data().read();
         wassert(actual(data) == orig_data);
         ++count;
@@ -327,7 +332,7 @@ this->add_method("read_missing_segment", [](Fixture& f) {
     unsigned count_ok = 0;
     unsigned count_err = 0;
     auto reader = f.dataset_config()->create_reader();
-    reader->query_data(dataset::DataQuery("", true), [&](std::shared_ptr<Metadata> md) {
+    reader->query_data(dataset::DataQuery(Matcher(), true), [&](std::shared_ptr<Metadata> md) {
         try {
             md->get_data().read();
             ++count_ok;
@@ -351,30 +356,34 @@ this->add_method("read_missing_segment", [](Fixture& f) {
 this->add_method("issue116", [](Fixture& f) {
     unsigned count = 0;
     auto reader = f.dataset_config()->create_reader();
-    reader->query_data(dataset::DataQuery("reftime:==13:00"), [&](std::shared_ptr<Metadata> md) { ++count; return true; });
+    reader->query_data("reftime:==13:00", [&](std::shared_ptr<Metadata> md) { ++count; return true; });
     wassert(actual(count) == 1u);
 });
 
 this->add_method("issue213_manyquery", [](Fixture& f) {
+    matcher::Parser parser;
+    dataset::DataQuery dq(parser.parse("reftime:==13:00"), true);
     auto reader = f.dataset_config()->create_reader();
     metadata::Collection coll;
     for (unsigned i = 0; i < 2000; ++i)
-        reader->query_data(dataset::DataQuery("reftime:==13:00", true), coll.inserter_func());
+        reader->query_data(dq, coll.inserter_func());
 });
 
 this->add_method("issue213_manyds", [](Fixture& f) {
+    matcher::Parser parser;
+    dataset::DataQuery dq(parser.parse("reftime:==13:00"), true);
     metadata::Collection coll;
     for (unsigned i = 0; i < 2000; ++i)
     {
         auto reader = f.dataset_config()->create_reader();
-        reader->query_data(dataset::DataQuery("reftime:==13:00", true), coll.inserter_func());
+        reader->query_data(dq, coll.inserter_func());
     }
 });
 
 this->add_method("issue215", [](Fixture& f) {
     unsigned count = 0;
     auto reader = f.dataset_config()->create_reader();
-    reader->query_data(dataset::DataQuery("reftime:;area:GRIB: or VM2:"), [&](std::shared_ptr<Metadata> md) { ++count; return true; });
+    reader->query_data("reftime:;area:GRIB: or VM2:", [&](std::shared_ptr<Metadata> md) { ++count; return true; });
     wassert(actual(count) == 3u);
 });
 

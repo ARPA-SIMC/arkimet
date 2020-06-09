@@ -1,26 +1,15 @@
 %{
 #include "config.h"
 #include "parser.h"
+#include "lexer.h"
 #include "arki/core/fuzzytime.h"
 #include <string>
 #include <stdexcept>
 #include <ctime>
 #include <sstream>
 
-using namespace std;
 using namespace arki::matcher::reftime;
-
-struct LexInterval {
-    /// Value of the interval
-    int val;
-    /// Unit of the interval (0: year... 5: second)
-    int idx;
-
-    void add_to(int* vals) const
-    {
-        vals[idx] += val;
-    }
-};
+using arki::matcher::reftime::lexer::LexInterval;
 
 #include "reftime-parse.hh"
 #include "reftime-lex.h"
@@ -91,7 +80,7 @@ static void interval_add(arki::core::FuzzyTime& dst, const int* val, bool subtra
     pdate(" add to", dst);
 
     // Compute what's the last valid item between dst and val
-    unsigned depth = max(interval_depth(val), interval_depth(dst));
+    unsigned depth = std::max(interval_depth(val), interval_depth(dst));
 
     // Lowerbound dst, adding val values to it
     arki::core::Time lb = dst.lowerbound();
@@ -173,12 +162,12 @@ static void mergetime(arki::core::FuzzyTime& dt, const int* time)
 %}
 
 %union {
-	arki::core::FuzzyTime* dtspec;
-	int tspec[3];
-	struct LexInterval lexInterval;
-	int interval[6];
-	struct DTMatch* dtmatch;
-	char error;
+    arki::core::FuzzyTime* dtspec;
+    int tspec[3];
+    struct arki::matcher::reftime::lexer::LexInterval lexInterval;
+    int interval[6];
+    struct DTMatch* dtmatch;
+    char error;
 }
 
 %defines
@@ -191,7 +180,7 @@ static void mergetime(arki::core::FuzzyTime& dt, const int* time)
 
 %start Input
 %token <dtspec> DATE
-%token <tspec> TIME
+%token <tspec> TIME TIMEBASE
 %token <lexInterval> INTERVAL STEP
 %token <error> UNEXPECTED
 %token NOW TODAY YESTERDAY TOMORROW AGO BEFORE AFTER AND PLUS MINUS MIDDAY NOON MIDNIGHT
@@ -201,45 +190,52 @@ static void mergetime(arki::core::FuzzyTime& dt, const int* time)
 %type <tspec> Daytime
 %type <interval> Interval
 %type <void> Input
-%type <dtmatch> DateExpr TimeExpr
+%type <dtmatch> DateExpr TimeExpr Step
 
 %%
 
-Input	: DateExpr			{ state.add($1); }
-        | DateExpr STEP		{ state.add($1); state.add_step($2.val, $2.idx, $1); }
-        | TimeExpr			{ state.add($1); }
-        | TimeExpr STEP		{ state.add($1); state.add_step($2.val, $2.idx, $1); }
-        | STEP				{ state.add_step($1.val, $1.idx); }
-		| Input COMMA Input {}
-		| error Unexpected  {
-								string msg = "before '";
-								msg += state.unexpected;
-								msg += "'";
-								arki_reftimeerror(yyscanner, state, msg.c_str());
-								yyclearin;
-								YYERROR;
-							}
+Input   : DateExpr          { state.add($1); }
+        | DateExpr Step     { state.add($1); state.add($2); }
+        | TimeExpr          { state.add($1); }
+        | TimeExpr Step     { state.add($1); state.add($2); }
+        | Step              { state.add($1); }
+        | Input Comma Input {}
+        | error Unexpected  {
+                                std::string msg = "before '";
+                                msg += state.unexpected;
+                                msg += "'";
+                                arki_reftimeerror(yyscanner, state, msg.c_str());
+                                yyclearin;
+                                YYERROR;
+                            }
+        ;
+
+Comma   : COMMA             { state.timebase = -1; }
+        ;
+
+Step    : STEP              { $$ = state.createStep($1.val, $1.idx); }
+        | TIMEBASE STEP     { $$ = state.createStep($2.val, $2.idx, $1); }
         ;
 
 // Accumulate unexpected characters to generate nicer error messages
-Unexpected: UNEXPECTED		{ state.unexpected = string() + $1; }
-		 | Unexpected UNEXPECTED
-		 					{ state.unexpected += $2; }
-		 ;
+Unexpected: UNEXPECTED      { state.unexpected = std::string() + $1; }
+         | Unexpected UNEXPECTED
+                            { state.unexpected += $2; }
+         ;
 
-DateExpr : GE Absolute		{ $$ = DTMatch::createGE($2); }
-         | GT Absolute		{ $$ = DTMatch::createGT($2); }
-		 | LE Absolute		{ $$ = DTMatch::createLE($2); }
-		 | LT Absolute		{ $$ = DTMatch::createLT($2); }
-		 | EQ Absolute		{ $$ = DTMatch::createEQ($2); }
-		 ;
+DateExpr : GE Absolute      { $$ = state.createGE($2); }
+         | GT Absolute      { $$ = state.createGT($2); }
+         | LE Absolute      { $$ = state.createLE($2); }
+         | LT Absolute      { $$ = state.createLT($2); }
+         | EQ Absolute      { $$ = state.createEQ($2); }
+         ;
 
-TimeExpr : GE Daytime		{ $$ = DTMatch::createTimeGE($2); }
-         | GT Daytime		{ $$ = DTMatch::createTimeGT($2); }
-		 | LE Daytime		{ $$ = DTMatch::createTimeLE($2); }
-		 | LT Daytime		{ $$ = DTMatch::createTimeLT($2); }
-		 | EQ Daytime		{ $$ = DTMatch::createTimeEQ($2); }
-		 ;
+TimeExpr : GE Daytime       { $$ = state.createTimeGE($2); }
+         | GT Daytime       { $$ = state.createTimeGT($2); }
+         | LE Daytime       { $$ = state.createTimeLE($2); }
+         | LT Daytime       { $$ = state.createTimeLT($2); }
+         | EQ Daytime       { $$ = state.createTimeEQ($2); }
+         ;
 
 Interval : INTERVAL                     { init_interval($$, $1); }
          | Interval INTERVAL            { interval_copy($$, $1); $2.add_to($$); }
@@ -262,19 +258,19 @@ Date     : TODAY                        { $$ = state.mktoday(); }
          | DATE                         { }
          ;
 
-Daytime : MIDDAY						{ $$[0] = 12; $$[1] = 0; $$[2] = 0; }
-        | NOON							{ $$[0] = 12; $$[1] = 0; $$[2] = 0; }
-        | MIDNIGHT						{ $$[0] = 0; $$[1] = 0; $$[2] = 0; }
-        | TIME							{ }
+Daytime : MIDDAY                        { $$[0] = 12; $$[1] = 0; $$[2] = 0; }
+        | NOON                          { $$[0] = 12; $$[1] = 0; $$[2] = 0; }
+        | MIDNIGHT                      { $$[0] = 0; $$[1] = 0; $$[2] = 0; }
+        | TIME                          { }
         ;
 
 %%
 
 void arki_reftimeerror(yyscan_t yyscanner, arki::matcher::reftime::Parser& state, const char* s)
 {
-	state.errors.push_back(s);
-	//tagcoll::TagexprParser::instance()->addError(s);
-	//fprintf(stderr, "%s\n", s);
+    state.errors.push_back(s);
+    //tagcoll::TagexprParser::instance()->addError(s);
+    //fprintf(stderr, "%s\n", s);
 }
 
 namespace arki {
@@ -283,29 +279,31 @@ namespace reftime {
 
 void Parser::parse(const std::string& str)
 {
-	for (vector<DTMatch*>::iterator i = res.begin(); i != res.end(); ++i)
-		delete *i;
-	res.clear();
+    for (auto& i: res)
+        delete i;
+    errors.clear();
+    res.clear();
+    timebase = -1;
 
-	yyscan_t scanner;
-	arki_reftimelex_init(&scanner);
+    yyscan_t scanner;
+    arki_reftimelex_init(&scanner);
 
-	YY_BUFFER_STATE buf = arki_reftime_scan_string(str.c_str(), scanner);
+    YY_BUFFER_STATE buf = arki_reftime_scan_string(str.c_str(), scanner);
 
-	int res = yyparse(scanner, *this);
-	arki_reftime_delete_buffer(buf, scanner);
-	arki_reftimelex_destroy(scanner);
+    int res = yyparse(scanner, *this);
+    arki_reftime_delete_buffer(buf, scanner);
+    arki_reftimelex_destroy(scanner);
 
-	switch (res)
-	{
-		case 0:
-			// Parse successful
-			break;
-		case 1: {
+    switch (res)
+    {
+        case 0:
+            // Parse successful
+            break;
+        case 1: {
             // Syntax error
             std::stringstream ss;
             ss << "cannot parse '" << str << "': ";
-            for (vector<string>::const_iterator i = errors.begin();
+            for (std::vector<std::string>::const_iterator i = errors.begin();
                     i != errors.end(); ++i)
             {
                 if (i != errors.begin())
@@ -319,7 +317,7 @@ void Parser::parse(const std::string& str)
             throw std::runtime_error("parser out of memory");
         default: {
             // Should never happen
-            stringstream ss;
+            std::stringstream ss;
             ss << "cannot parse '" << str << "': Bison parser function returned unexpected value " << res;
             throw std::runtime_error(ss.str());
         }

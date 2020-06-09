@@ -14,6 +14,7 @@
 #include "utils/values.h"
 #include "utils/methods.h"
 #include "utils/dict.h"
+#include "dataset/reader.h"
 #include "dataset/querymacro.h"
 #include "arki-query.h"
 #include "arki-scan.h"
@@ -53,7 +54,11 @@ struct expand_query : public MethKwargs<expand_query, PyObject>
             return nullptr;
 
         try {
-            Matcher m = Matcher::parse(query);
+            if (PyErr_WarnEx(PyExc_DeprecationWarning, "Use arki.dataset.Session().expand_query instead of arkimet.expand_query()", 1))
+                return nullptr;
+
+            auto session = std::make_shared<arki::dataset::Session>();
+            Matcher m = session->matcher(query);
             return to_python(m.toStringExpanded());
         } ARKI_CATCH_RETURN_PYO
     }
@@ -70,7 +75,11 @@ struct get_alias_database : public MethNoargs<get_alias_database, PyObject>
     static PyObject* run(Impl* self)
     {
         try {
-            return cfg_sections(matcher::AliasDatabase::serialise());
+            if (PyErr_WarnEx(PyExc_DeprecationWarning, "Use arki.dataset.Session().get_alias_database() instead of arkimet.get_alias_database()", 1))
+                return nullptr;
+
+            auto session = std::make_shared<arki::dataset::Session>();
+            return to_python(session->get_alias_database());
         } ARKI_CATCH_RETURN_PYO
     }
 };
@@ -78,7 +87,7 @@ struct get_alias_database : public MethNoargs<get_alias_database, PyObject>
 struct make_qmacro_dataset : public MethKwargs<make_qmacro_dataset, PyObject>
 {
     constexpr static const char* name = "make_qmacro_dataset";
-    constexpr static const char* signature = "cfg: Union[str, dict, arkimet.cfg.Section], datasets: Union[str, arkimet.cfg.Sections], name: str, query: str";
+    constexpr static const char* signature = "datasets: Union[str, arkimet.cfg.Sections], name: str, query: str";
     constexpr static const char* returns = "arkimet.DatasetReader";
     constexpr static const char* summary = "create a QueryMacro dataset that aggregates the contents of multiple datasets";
     constexpr static const char* doc = R"(
@@ -90,38 +99,27 @@ Arguments:
 
     static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
     {
-        static const char* kwlist[] = { "cfg", "datasets", "name", "query", NULL };
-        PyObject* arg_cfg = Py_None;
+        static const char* kwlist[] = { "datasets", "name", "query", NULL };
         PyObject* arg_datasets = Py_None;
         const char* name = nullptr;
         const char* query = "";
 
-        if (!PyArg_ParseTupleAndKeywords(args, kw, "OOs|s", (char**)kwlist, &arg_cfg, &arg_datasets, &name, &query))
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "Os|s", (char**)kwlist, &arg_datasets, &name, &query))
             return nullptr;
 
         try {
-            core::cfg::Section cfg = section_from_python(arg_cfg);
-            core::cfg::Sections datasets;
-            datasets = sections_from_python(arg_datasets);
+            if (PyErr_WarnEx(PyExc_DeprecationWarning, "Use arki.dataset.Session.querymacro() instead of arkimet.make_qmacro_dataset()", 1))
+                return nullptr;
 
-            std::shared_ptr<arki::dataset::Reader> ds;
-            string baseurl = arki::dataset::http::Reader::allSameRemoteServer(datasets);
-            if (baseurl.empty())
-            {
-                // Create the local query macro
-                arki::dataset::qmacro::Options opts(cfg, datasets, name, query);
-                ds = arki::dataset::qmacro::get(opts);
-            } else {
-                // Create the remote query macro
-                core::cfg::Section cfg;
-                cfg.set("name", name);
-                cfg.set("type", "remote");
-                cfg.set("path", baseurl);
-                cfg.set("qmacro", query);
-                ds = arki::python::get_dataset_session()->dataset(cfg)->create_reader();
-            }
+            auto session = std::make_shared<arki::dataset::Session>();
+            auto cfg = sections_from_python(arg_datasets);
+            for (const auto si: *cfg)
+                session->add_dataset(*si.second);
 
-            return (PyObject*)dataset_reader_create(ds);
+            auto ds = session->querymacro(name, query);
+            auto reader = ds->create_reader();
+
+            return (PyObject*)dataset_reader_create(reader);
         } ARKI_CATCH_RETURN_PYO
     }
 };
@@ -143,11 +141,15 @@ struct make_merged_dataset : public MethKwargs<make_merged_dataset, PyObject>
             return nullptr;
 
         try {
-            core::cfg::Sections cfg = sections_from_python(arg_cfg);
+            if (PyErr_WarnEx(PyExc_DeprecationWarning, "Use arkimet.Session.merged() instead of arkimet.make_merged_dataset()", 1))
+                return nullptr;
 
-            auto ds(std::make_shared<arki::dataset::merged::Dataset>(arki::python::get_dataset_session()));
-            for (auto si: cfg)
-                ds->add_dataset(si.second);
+            auto session = std::make_shared<arki::dataset::Session>();
+            auto cfg = sections_from_python(arg_cfg);
+            for (auto si: *cfg)
+                session->add_dataset(*si.second);
+
+            auto ds(std::make_shared<arki::dataset::merged::Dataset>(session));
             return (PyObject*)dataset_reader_create(ds->create_reader());
         } ARKI_CATCH_RETURN_PYO
     }

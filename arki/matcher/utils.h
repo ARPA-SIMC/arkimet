@@ -28,7 +28,7 @@
 #include <vector>
 #include <string>
 #include <map>
-#include <stdint.h>
+#include <cstdint>
 
 namespace arki {
 namespace matcher {
@@ -105,6 +105,7 @@ public:
 
     std::string name() const override;
     bool matchItem(const types::Type& t) const override;
+    bool match_interval(const core::Interval& interval) const;
 
     // Serialise as "type:original definition"
     std::string toString() const override;
@@ -118,20 +119,10 @@ public:
     // If we match Reftime elements, build a SQL query for it. Else, throw an exception.
     std::string toReftimeSQL(const std::string& column) const;
 
-    /**
-     * Restrict date extremes to be no wider than what is matched by this
-     * matcher.
-     *
-     * An unique_ptr set to NULL means an open end in the range. Date extremes
-     * are inclusive on both ends.
-     *
-     * @returns true if the matcher has consistent reference time expressions,
-     * false if the match is impossible (like reftime:<2014,>2015)
-     */
-    bool restrict_date_range(std::unique_ptr<core::Time>& begin, std::unique_ptr<core::Time>& end) const;
+    bool intersect_interval(core::Interval& interval) const;
 
-    static std::unique_ptr<OR> parse(const MatcherType& type, const std::string& pattern);
-    static std::unique_ptr<OR> parse(const MatcherType& type, const std::string& pattern, const Aliases* aliases);
+    static std::unique_ptr<OR> parse(const Aliases* aliases, const MatcherType& type, const std::string& pattern);
+    static std::unique_ptr<OR> wrap(std::unique_ptr<Implementation> impl);
 };
 
 
@@ -153,6 +144,7 @@ public:
 
     bool matchItem(const types::Type& t) const override;
     bool matchItemSet(const types::ItemSet& s) const;
+    bool match_interval(const core::Interval& interval) const;
 
     std::shared_ptr<OR> get(types::Code code) const;
 
@@ -163,7 +155,8 @@ public:
     std::string toString() const override;
     std::string toStringExpanded() const override;
 
-    static std::unique_ptr<AND> parse(const std::string& pattern);
+    static std::unique_ptr<AND> parse(const AliasDatabase& aliases, const std::string& pattern);
+    static std::unique_ptr<AND> for_interval(const core::Interval& interval);
 };
 
 

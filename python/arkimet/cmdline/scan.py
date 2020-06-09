@@ -1,3 +1,4 @@
+from __future__ import annotations
 import arkimet
 from arkimet.cmdline.base import AppConfigMixin, AppWithProcessor, Exit
 import sys
@@ -73,15 +74,6 @@ class Scan(AppConfigMixin, AppWithProcessor):
                                           " this amount of megabytes (default: 128Mi; use 0 to load all"
                                           " in RAM no matter what)")
 
-    def merge_config(self, dest_sections, sections):
-        for name, section in sections.items():
-            old = dest_sections.section(name)
-            if old is not None:
-                self.log.warning("ignoring dataset %s in %s, which has the same name as the dataset in %s",
-                                 name, section["path"], old["path"])
-                continue
-            dest_sections[name] = section
-
     def build_config(self):
         self.sources = []
         if self.args.stdin is not None:
@@ -102,7 +94,7 @@ class Scan(AppConfigMixin, AppWithProcessor):
                 section = arkimet.dataset.read_config(source)
                 self.add_config_section(section)
 
-            if not self.config:
+            if not self.session.has_datasets():
                 self.parser.error("you need to specify at least one input file or dataset")
 
         if (self.args.dispatch or self.args.testdispatch) and self.args.stdin:
@@ -113,8 +105,7 @@ class Scan(AppConfigMixin, AppWithProcessor):
         self.build_config()
 
         with self.outfile() as outfd:
-            arki_scan = arkimet.cmdline.ArkiScan()
-            arki_scan.set_inputs(self.config)
+            arki_scan = arkimet.cmdline.ArkiScan(self.session)
             arki_scan.set_processor(
                     query=arkimet.Matcher(),
                     outfile=outfd,
@@ -142,15 +133,19 @@ class Scan(AppConfigMixin, AppWithProcessor):
                 )
 
                 if self.args.dispatch:
-                    dispatch_cfg = arkimet.cfg.Sections()
+                    dispatch_session = arkimet.dataset.Session()
                     for source in self.args.dispatch:
-                        self.merge_config(dispatch_cfg, arkimet.cfg.Sections.parse(source))
-                    kw["dispatch"] = dispatch_cfg
+                        for name, cfg in arkimet.cfg.Sections.parse(source).items():
+                            cfg["name"] = name
+                            dispatch_session.add_dataset(cfg)
+                    kw["dispatch"] = dispatch_session
                 elif self.args.testdispatch:
-                    dispatch_cfg = arkimet.cfg.Sections()
+                    dispatch_session = arkimet.dataset.Session()
                     for source in self.args.testdispatch:
-                        self.merge_config(dispatch_cfg, arkimet.cfg.Sections.parse(source))
-                    kw["testdispatch"] = dispatch_cfg
+                        for name, cfg in arkimet.cfg.Sections.parse(source).items():
+                            cfg["name"] = name
+                            dispatch_session.add_dataset(cfg)
+                    kw["testdispatch"] = dispatch_session
 
                 arki_scan.set_dispatcher(**kw)
 

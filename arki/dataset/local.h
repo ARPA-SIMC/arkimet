@@ -84,6 +84,13 @@ class Reader : public Base<dataset::Reader>
 {
     std::shared_ptr<archive::Reader> m_archive;
 
+protected:
+    // Base implementations that queries the archives if they exist
+    bool impl_query_data(const dataset::DataQuery& q, metadata_dest_func dest) override;
+
+    // Base implementations that queries the archives if they exist
+    void impl_query_summary(const Matcher& matcher, Summary& summary) override;
+
 public:
     using Base::Base;
     ~Reader();
@@ -91,16 +98,10 @@ public:
     /// Return the Reader for this dataset archives
     std::shared_ptr<archive::Reader> archive();
 
-    // Base implementations that queries the archives if they exist
-    bool query_data(const dataset::DataQuery& q, metadata_dest_func dest) override;
-
-    // Base implementations that queries the archives if they exist
-    void query_summary(const Matcher& matcher, Summary& summary) override;
-
     /// Read the configuration for the given dataset. path must point to a directory
-    static core::cfg::Section read_config(const std::string& path);
+    static std::shared_ptr<core::cfg::Section> read_config(const std::string& path);
 
-    static core::cfg::Sections read_configs(const std::string& path);
+    static std::shared_ptr<core::cfg::Sections> read_configs(const std::string& path);
 };
 
 class Writer : public Base<dataset::Writer>

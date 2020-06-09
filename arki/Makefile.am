@@ -21,6 +21,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		core/tests.h \
 		core/binary.h \
 		core/transaction.h \
+		core/curl.h \
 		defs.h \
 		exceptions.h \
 		bbox.h \
@@ -84,6 +85,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		matcher.h \
 		matcher/fwd.h \
 		matcher/aliases.h \
+		matcher/parser.h \
 		matcher/area.h \
 		matcher/level.h \
 		matcher/origin.h \
@@ -91,6 +93,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		matcher/product.h \
 		matcher/quantity.h \
 		matcher/reftime.h \
+		matcher/reftime/lexer.h \
 		matcher/reftime/parser.h \
 		matcher/run.h \
 		matcher/task.h \
@@ -227,6 +230,7 @@ libarkimet_la_SOURCES += \
 		core/cfg.cc \
 		core/binary.cc \
 		core/transaction.cc \
+		core/curl.cc \
 		exceptions.cc \
 		nag.cc \
 		utils/accounting.cc \
@@ -275,12 +279,14 @@ libarkimet_la_SOURCES += \
 		types/itemset.cc \
 		matcher.cc \
 		matcher/aliases.cc \
+		matcher/parser.cc \
 		matcher/utils.cc \
 		matcher/origin.cc \
 		matcher/product.cc \
 		matcher/level.cc \
 		matcher/timerange.cc \
 		matcher/reftime.cc \
+		matcher/reftime/lexer.cc \
 		matcher/reftime/parser.cc \
 		matcher/reftime/reftime-lex.cc \
 		matcher/reftime/reftime-parse.cc \
@@ -339,6 +345,7 @@ tests_arki_test_SOURCES += \
 		core/cfg-test.cc \
 		core/binary-test.cc \
 		core/transaction-test.cc \
+		core/curl-test.cc \
 		utils/accounting-test.cc \
 		utils/gzip-test.cc \
 		utils/yaml-test.cc \
@@ -394,12 +401,14 @@ tests_arki_test_SOURCES += \
 		summary/short-test.cc \
 		matcher-test.cc \
 		matcher/aliases-test.cc \
+		matcher/parser-test.cc \
 		matcher/utils-test.cc \
 		matcher/origin-test.cc \
 		matcher/product-test.cc \
 		matcher/level-test.cc \
 		matcher/timerange-test.cc \
 		matcher/reftime-test.cc \
+		matcher/reftime/lexer-test.cc \
 		matcher/reftime/parser-test.cc \
 		matcher/area-test.cc \
 		matcher/proddef-test.cc \

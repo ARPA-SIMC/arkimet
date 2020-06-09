@@ -48,23 +48,28 @@ std::shared_ptr<Dataset> Dataset::from_config(std::shared_ptr<Session> session, 
 }
 
 
-bool Reader::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
+bool Reader::impl_query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 {
     dataset::TrackProgress track(q.progress);
     dest = track.wrap(dest);
     return track.done(dataset().scan(q, dest));
 }
 
-core::cfg::Section read_config(const std::string& fname)
+core::Interval Reader::get_stored_time_interval()
 {
-    core::cfg::Section section;
+    throw std::runtime_error("file::Reader::get_stored_time_interval not yet implemented");
+}
 
-    section.set("type", "file");
+std::shared_ptr<core::cfg::Section> read_config(const std::string& fname)
+{
+    auto section = std::make_shared<core::cfg::Section>();
+
+    section->set("type", "file");
     if (sys::exists(fname))
     {
-        section.set("path", sys::abspath(fname));
-        section.set("format", scan::Scanner::format_from_filename(fname, "arkimet"));
-        section.set("name", fname);
+        section->set("path", sys::abspath(fname));
+        section->set("format", scan::Scanner::format_from_filename(fname, "arkimet"));
+        section->set("name", fname);
     } else {
         size_t fpos = fname.find(':');
         if (fpos == string::npos)
@@ -73,7 +78,7 @@ core::cfg::Section read_config(const std::string& fname)
             ss << "file " << fname << " does not exist";
             throw runtime_error(ss.str());
         }
-        section.set("format", scan::Scanner::normalise_format(fname.substr(0, fpos)));
+        section->set("format", scan::Scanner::normalise_format(fname.substr(0, fpos)));
 
         string fname1 = fname.substr(fpos+1);
         if (!sys::exists(fname1))
@@ -82,18 +87,18 @@ core::cfg::Section read_config(const std::string& fname)
             ss << "file " << fname1 << " does not exist";
             throw runtime_error(ss.str());
         }
-        section.set("path", sys::abspath(fname1));
-        section.set("name", fname1);
+        section->set("path", sys::abspath(fname1));
+        section->set("name", fname1);
     }
 
     return section;
 }
 
-core::cfg::Sections read_configs(const std::string& fname)
+std::shared_ptr<core::cfg::Sections> read_configs(const std::string& fname)
 {
     auto sec = read_config(fname);
-    core::cfg::Sections res;
-    res.obtain(sec.value("name")) = std::move(sec);
+    auto res = std::make_shared<core::cfg::Sections>();
+    res->emplace(sec->value("name"), sec);
     return res;
 }
 

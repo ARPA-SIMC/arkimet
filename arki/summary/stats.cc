@@ -95,9 +95,10 @@ void Stats::merge(const Metadata& md)
     size += md.data_size();
 }
 
-std::unique_ptr<types::Reftime> Stats::make_reftime() const
+core::Interval Stats::make_interval() const
 {
-    return Reftime::create(begin, end);
+    // Stats has extremes inclusive
+    return core::Interval(begin, end.next_instant());
 }
 
 void Stats::encodeBinary(core::BinaryEncoder& enc) const

@@ -33,7 +33,7 @@ struct Stats
     void merge(const Stats& s);
     void merge(const Metadata& md);
 
-    std::unique_ptr<types::Reftime> make_reftime() const;
+    core::Interval make_interval() const;
 
     void encodeBinary(core::BinaryEncoder& enc) const;
 

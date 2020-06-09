@@ -5,10 +5,12 @@ namespace arki {
 class Matcher;
 
 namespace matcher {
+class Parser;
 class MatcherType;
 class OR;
 class AND;
 class Aliases;
+class AliasDatabase;
 }
 
 }

@@ -13,6 +13,7 @@
 #include "arki/metadata/data.h"
 #include "arki/metadata/collection.h"
 #include "arki/matcher.h"
+#include "arki/matcher/parser.h"
 #include "arki/summary.h"
 #include "arki/utils/files.h"
 #include "arki/utils/accounting.h"
@@ -66,8 +67,8 @@ add_method("gz", [](Fixture& f) {
     f.clean_and_import();
 
     // Test moving into archive data that have been compressed
-    f.cfg.set("archive age", days_since(2007, 9, 1));
-    f.cfg.set("gz group size", 0);
+    f.cfg->set("archive age", days_since(2007, 9, 1));
+    f.cfg->set("gz group size", 0);
     f.test_reread_config();
 
     // Compress segments
@@ -145,8 +146,8 @@ add_method("gzidx", [](Fixture& f) {
     wassert(f.import(mds));
 
     // Test moving into archive data that have been compressed
-    f.cfg.set("archive age", days_since(2007, 9, 1));
-    f.cfg.set("gz group size", 1);
+    f.cfg->set("archive age", days_since(2007, 9, 1));
+    f.cfg->set("gz group size", 1);
     f.test_reread_config();
 
     // Compress segments
@@ -215,7 +216,7 @@ add_method("tarred", [](Fixture& f) {
     f.clean_and_import();
 
     // Test moving into archive data that have been tarred
-    f.cfg.set("archive age", days_since(2007, 9, 1));
+    f.cfg->set("archive age", days_since(2007, 9, 1));
     f.test_reread_config();
 
     // tar segments
@@ -287,7 +288,7 @@ add_method("zipped", [](Fixture& f) {
     f.clean_and_import();
 
     // Test moving into archive data that have been tarred
-    f.cfg.set("archive age", days_since(2007, 9, 1));
+    f.cfg->set("archive age", days_since(2007, 9, 1));
     f.test_reread_config();
 
     // tar segments
@@ -354,8 +355,9 @@ add_method("zipped", [](Fixture& f) {
 add_method("query_archived", [](Fixture& f) {
     // Test querying with archived data
     using namespace arki::types;
+    matcher::Parser parser;
     f.clean_and_import();
-    f.cfg.set("archive age", days_since(2007, 9, 1));
+    f.cfg->set("archive age", days_since(2007, 9, 1));
     f.test_reread_config();
     {
         auto writer(f.makeSegmentedChecker());
@@ -366,11 +368,11 @@ add_method("query_archived", [](Fixture& f) {
     }
 
     auto reader = f.config().create_reader();
-    metadata::Collection mdc(*reader, Matcher::parse(""));
+    metadata::Collection mdc(*reader, "");
     wassert(actual(mdc.size()) == 3u);
 
     mdc.clear();
-    mdc.add(*reader, dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), true));
+    mdc.add(*reader, dataset::DataQuery(parser.parse("origin:GRIB1,200"), true));
     wassert(actual(mdc.size()) == 1u);
 
     // Check that the source record that comes out is ok
@@ -381,16 +383,16 @@ add_method("query_archived", [](Fixture& f) {
     wassert(actual(buf.size()) == 7218u);
 
     mdc.clear();
-    mdc.add(*reader, Matcher::parse("reftime:=2007-07-08"));
+    mdc.add(*reader, "reftime:=2007-07-08");
     wassert(actual(mdc.size()) == 1u);
     wassert(actual(mdc[0].data_size()) == 7218u);
 
     mdc.clear();
-    mdc.add(*reader, Matcher::parse("origin:GRIB1,80"));
+    mdc.add(*reader, "origin:GRIB1,80");
     wassert(actual(mdc.size()) == 1u);
 
     mdc.clear();
-    mdc.add(*reader, Matcher::parse("origin:GRIB1,98"));
+    mdc.add(*reader, "origin:GRIB1,98");
     wassert(actual(mdc.size()) == 1u);
 
     // Query bytes
@@ -402,13 +404,13 @@ add_method("query_archived", [](Fixture& f) {
     wassert(actual(res.size()) == 44412u);
 
     out.lseek(0); out.ftruncate(0);
-    bq.matcher = Matcher::parse("origin:GRIB1,200");
+    bq.matcher = parser.parse("origin:GRIB1,200");
     reader->query_bytes(bq, out);
     res = sys::read_file(out.name());
     wassert(actual(res.size()) == 7218u);
 
     out.lseek(0); out.ftruncate(0);
-    bq.matcher = Matcher::parse("reftime:=2007-07-08");
+    bq.matcher = parser.parse("reftime:=2007-07-08");
     reader->query_bytes(bq, out);
     res = sys::read_file(out.name());
     wassert(actual(res.size()) == 7218u);
@@ -422,21 +424,22 @@ add_method("query_archived", [](Fixture& f) {
 
     // Query summary
     Summary s;
-    reader->query_summary(Matcher::parse(""), s);
+    reader->query_summary("", s);
     wassert(actual(s.count()) == 3u);
     wassert(actual(s.size()) == 44412u);
 
     s.clear();
-    reader->query_summary(Matcher::parse("origin:GRIB1,200"), s);
+    reader->query_summary("origin:GRIB1,200", s);
     wassert(actual(s.count()) == 1u);
     wassert(actual(s.size()) == 7218u);
 
     s.clear();
-    reader->query_summary(Matcher::parse("reftime:=2007-07-08"), s);
+    reader->query_summary("reftime:=2007-07-08", s);
     wassert(actual(s.count()) == 1u);
     wassert(actual(s.size()) == 7218u);
 });
 add_method("empty_dirs", [](Fixture& f) {
+    matcher::Parser parser;
     // Tolerate empty dirs
     // Start with an empty dir
     f.clean();
@@ -447,12 +450,12 @@ add_method("empty_dirs", [](Fixture& f) {
     wassert_true(mdc.empty());
 
     Summary s;
-    reader->query_summary(Matcher::parse(""), s);
+    reader->query_summary("", s);
     wassert(actual(s.count()) == 0u);
 
     sys::File out(sys::File::mkstemp("test"));
     dataset::ByteQuery bq;
-    bq.setData(Matcher::parse(""));
+    bq.setData(parser.parse(""));
     reader->query_bytes(bq, out);
     out.close();
     wassert(actual(sys::size(out.name())) == 0u);
@@ -460,6 +463,7 @@ add_method("empty_dirs", [](Fixture& f) {
 add_method("query_lots", [](Fixture& f) {
     // Test querying with lots of data, to trigger on disk metadata buffering
     using namespace arki::types;
+    matcher::Parser parser;
 
     f.reset_test("step=daily\nformat=vm2\nunique=product,area,reftime\n");
 
@@ -490,7 +494,7 @@ add_method("query_lots", [](Fixture& f) {
         wassert(f.import(mds));
     }
 
-    utils::files::removeDontpackFlagfile(f.cfg.value("path"));
+    utils::files::removeDontpackFlagfile(f.cfg->value("path"));
 
     // Query all the dataset and make sure the results are in the right order
     struct CheckSortOrder
@@ -540,7 +544,7 @@ add_method("query_lots", [](Fixture& f) {
     {
         auto reader = f.config().create_reader();
         CheckAllSortOrder cso;
-        dataset::DataQuery dq(Matcher::parse(""));
+        dataset::DataQuery dq(parser.parse(""));
         dq.sorter = metadata::sort::Compare::parse("reftime,area,product");
         reader->query_data(dq, [&](std::shared_ptr<Metadata> md) { return cso.eat(md); });
         wassert(actual(cso.seen) == 16128u);
@@ -551,7 +555,7 @@ add_method("query_lots", [](Fixture& f) {
 // after the archive cutoff (regardless of the data currently in the
 // segment)
 add_method("archive_age", [](Fixture& f) {
-    f.cfg.set("step", "yearly");
+    f.cfg->set("step", "yearly");
     f.test_reread_config();
 
     // Import a file with a known reftime
@@ -562,7 +566,7 @@ add_method("archive_age", [](Fixture& f) {
 
     // TZ=UTC date --date="2008-01-01 00:00:00" +%s
     time_t start2008 = 1199145600;
-    f.cfg.set("archive age", "1");
+    f.cfg->set("archive age", "1");
     f.test_reread_config();
 
 
@@ -583,7 +587,7 @@ add_method("archive_age", [](Fixture& f) {
 // after the archive cutoff (regardless of the data currently in the
 // segment)
 add_method("delete_age", [](Fixture& f) {
-    f.cfg.set("step", "yearly");
+    f.cfg->set("step", "yearly");
     f.test_reread_config();
 
     // Import a file with a known reftime
@@ -594,7 +598,7 @@ add_method("delete_age", [](Fixture& f) {
 
     // TZ=UTC date --date="2008-01-01 00:00:00" +%s
     time_t start2008 = 1199145600;
-    f.cfg.set("delete age", "1");
+    f.cfg->set("delete age", "1");
     f.test_reread_config();
 
     {
@@ -622,7 +626,7 @@ add_method("unarchive_segment", [](Fixture& f) {
 
     // TZ=UTC date --date="2007-07-09 00:00:00" +%s
     time_t now = 1183939200;
-    f.cfg.set("archive age", "1");
+    f.cfg->set("archive age", "1");
 
     f.test_reread_config();
 
@@ -675,7 +679,7 @@ add_method("unarchive_segment_lastonly", [](Fixture& f) {
 
     // TZ=UTC date --date="2007-07-09 00:00:00" +%s
     time_t now = 1183939200;
-    f.cfg.set("archive age", "1");
+    f.cfg->set("archive age", "1");
 
     f.test_reread_config();
 
@@ -762,6 +766,7 @@ add_method("issue103", [](Fixture& f) {
     skip_unless_vm2();
     static const unsigned max_files = 100;
     sys::OverrideRlimit(RLIMIT_NOFILE, max_files);
+    matcher::Parser parser;
 
     // TODO: speed up by lowering RLIMIT_NOFILE for the duration of this test
 
@@ -793,12 +798,12 @@ add_method("issue103", [](Fixture& f) {
     // Query without data
     auto reader = f.config().create_reader();
     metadata::Collection mdc;
-    wassert(mdc.add(*reader, Matcher::parse("")));
+    wassert(mdc.add(*reader, ""));
     wassert(actual(mdc.size()) == max_files + 1);
     wassert(actual(mdc[0].sourceBlob().reader).isfalse());
 
     // Query with data, without storing all the results on a collection
-    dataset::DataQuery dq(Matcher::parse(""), true);
+    dataset::DataQuery dq(parser.parse(""), true);
     unsigned count = 0;
     wassert(reader->query_data(dq, [&](std::shared_ptr<Metadata> md) {
         wassert(actual(md->sourceBlob().reader).istrue());

@@ -38,10 +38,10 @@ struct section : public MethKwargs<section, arkipy_cfgSections>
 
         try {
             std::string name(arg_name, arg_name_len);
-            arki::core::cfg::Section* res = self->sections.section(name);
+            auto res = self->ptr->section(name);
             if (!res)
                 Py_RETURN_NONE;
-            return cfg_section_reference((PyObject*)self, res);
+            return to_python(res);
         } ARKI_CATCH_RETURN_PYO
     }
 };
@@ -64,8 +64,8 @@ struct obtain : public MethKwargs<obtain, arkipy_cfgSections>
 
         try {
             std::string name(arg_name, arg_name_len);
-            arki::core::cfg::Section& res = self->sections.obtain(name);
-            return cfg_section_reference((PyObject*)self, &res);
+            auto res = self->ptr->obtain(name);
+            return to_python(res);
         } ARKI_CATCH_RETURN_PYO
     }
 };
@@ -89,9 +89,9 @@ struct sections_get : public MethKwargs<sections_get, arkipy_cfgSections>
 
         try {
             std::string name(arg_name, arg_name_len);
-            arki::core::cfg::Section* res = self->sections.section(name);
+            auto res = self->ptr->section(name);
             if (res)
-                return cfg_section_reference((PyObject*)self, res);
+                return to_python(res);
             if (!arg_default)
                 Py_RETURN_NONE;
             else
@@ -114,9 +114,9 @@ struct sections_keys : public MethNoargs<sections_keys, arkipy_cfgSections>
     static PyObject* run(Impl* self)
     {
         try {
-            pyo_unique_ptr res(throw_ifnull(PyTuple_New(self->sections.size())));
+            pyo_unique_ptr res(throw_ifnull(PyTuple_New(self->ptr->size())));
             unsigned pos = 0;
-            for (auto& si: self->sections)
+            for (auto& si: *(self->ptr))
             {
                 pyo_unique_ptr key(to_python(si.first));
                 PyTuple_SET_ITEM(res.get(), pos, key.release());
@@ -138,12 +138,12 @@ struct sections_items : public MethNoargs<sections_items, arkipy_cfgSections>
     static PyObject* run(Impl* self)
     {
         try {
-            pyo_unique_ptr res(throw_ifnull(PyTuple_New(self->sections.size())));
+            pyo_unique_ptr res(throw_ifnull(PyTuple_New(self->ptr->size())));
             unsigned pos = 0;
-            for (auto& si: self->sections)
+            for (auto& si: *(self->ptr))
             {
                 pyo_unique_ptr key(to_python(si.first));
-                pyo_unique_ptr val(cfg_section_reference((PyObject*)self, &si.second));
+                pyo_unique_ptr val(to_python(si.second));
                 pyo_unique_ptr pair(throw_ifnull(PyTuple_Pack(2, key.get(), val.get())));
                 PyTuple_SET_ITEM(res.get(), pos, pair.release());
                 ++pos;
@@ -173,8 +173,8 @@ struct section_get : public MethKwargs<section_get, arkipy_cfgSection>
 
         try {
             std::string name(arg_name, arg_name_len);
-            auto i = self->section->find(name);
-            if (i != self->section->end())
+            auto i = self->ptr->find(name);
+            if (i != self->ptr->end())
                 return to_python(i->second);
             if (!arg_default)
                 Py_RETURN_NONE;
@@ -197,9 +197,9 @@ struct section_keys : public MethNoargs<section_keys, arkipy_cfgSection>
     static PyObject* run(Impl* self)
     {
         try {
-            pyo_unique_ptr res(throw_ifnull(PyTuple_New(self->section->size())));
+            pyo_unique_ptr res(throw_ifnull(PyTuple_New(self->ptr->size())));
             unsigned pos = 0;
-            for (auto& si: *self->section)
+            for (auto& si: *self->ptr)
             {
                 pyo_unique_ptr key(to_python(si.first));
                 PyTuple_SET_ITEM(res.get(), pos, key.release());
@@ -221,9 +221,9 @@ struct section_items : public MethNoargs<section_items, arkipy_cfgSection>
     static PyObject* run(Impl* self)
     {
         try {
-            pyo_unique_ptr res(throw_ifnull(PyTuple_New(self->section->size())));
+            pyo_unique_ptr res(throw_ifnull(PyTuple_New(self->ptr->size())));
             unsigned pos = 0;
-            for (auto& si: *self->section)
+            for (auto& si: *self->ptr)
             {
                 pyo_unique_ptr key(to_python(si.first));
                 pyo_unique_ptr val(to_python(si.second));
@@ -260,14 +260,14 @@ struct parse_sections : public ClassMethKwargs<parse_sections>
                 auto parsed = arki::core::cfg::Sections::parse(in);
                 // If string, open file and parse it
                 py_unique_ptr<arkipy_cfgSections> res(throw_ifnull(PyObject_New(arkipy_cfgSections, arkipy_cfgSections_Type)));
-                new (&(res->sections)) arki::core::cfg::Sections(std::move(parsed));
+                new (&(res->ptr)) std::shared_ptr<arki::core::cfg::Sections>(parsed);
                 return (PyObject*)res.release();
             } else {
                 // Else iterator or TypeError
                 auto reader = linereader_from_python(arg_input);
                 auto parsed = arki::core::cfg::Sections::parse(*reader, "python object");
                 py_unique_ptr<arkipy_cfgSections> res(throw_ifnull(PyObject_New(arkipy_cfgSections, arkipy_cfgSections_Type)));
-                new (&(res->sections)) arki::core::cfg::Sections(std::move(parsed));
+                new (&(res->ptr)) std::shared_ptr<arki::core::cfg::Sections>(parsed);
                 return (PyObject*)res.release();
             }
         } ARKI_CATCH_RETURN_PYO
@@ -297,16 +297,14 @@ struct parse_section : public ClassMethKwargs<parse_section>
                 auto parsed = arki::core::cfg::Section::parse(in);
                 // If string, open file and parse it
                 py_unique_ptr<arkipy_cfgSection> res(throw_ifnull(PyObject_New(arkipy_cfgSection, arkipy_cfgSection_Type)));
-                res->owner = nullptr;
-                res->section = new arki::core::cfg::Section(std::move(parsed));
+                new (&(res->ptr)) std::shared_ptr<arki::core::cfg::Section>(parsed);
                 return (PyObject*)res.release();
             } else {
                 // Else iterator or TypeError
                 auto reader = linereader_from_python(arg_input);
                 auto parsed = arki::core::cfg::Section::parse(*reader, "python object");
                 py_unique_ptr<arkipy_cfgSection> res(throw_ifnull(PyObject_New(arkipy_cfgSection, arkipy_cfgSection_Type)));
-                res->owner = nullptr;
-                res->section = new arki::core::cfg::Section(std::move(parsed));
+                new (&(res->ptr)) std::shared_ptr<arki::core::cfg::Section>(parsed);
                 return (PyObject*)res.release();
             }
         } ARKI_CATCH_RETURN_PYO
@@ -331,9 +329,9 @@ struct write_sections : public MethKwargs<write_sections, arkipy_cfgSections>
         try {
             TextOutputFile out(arg_file);
             if (out.fd)
-                self->sections.write(*out.fd);
+                self->ptr->write(*out.fd);
             else
-                self->sections.write(*out.abstract);
+                self->ptr->write(*out.abstract);
             Py_RETURN_NONE;
         } ARKI_CATCH_RETURN_PYO
     }
@@ -357,12 +355,39 @@ struct write_section : public MethKwargs<write_section, arkipy_cfgSection>
         try {
             TextOutputFile out(arg_file);
             if (out.fd)
-                self->section->write(*out.fd);
+                self->ptr->write(*out.fd);
             else
-                self->section->write(*out.abstract);
+                self->ptr->write(*out.abstract);
             Py_RETURN_NONE;
         } ARKI_CATCH_RETURN_PYO
     }
+};
+
+template<typename Base, typename Impl>
+struct MethCopy : public MethNoargs<Base, Impl>
+{
+    constexpr static const char* name = "copy";
+    constexpr static const char* signature = "";
+    constexpr static const char* doc = nullptr;
+
+    static PyObject* run(Impl* self)
+    {
+        try {
+            return to_python(std::make_shared<typename Impl::value_type>(*self->ptr));
+        } ARKI_CATCH_RETURN_PYO
+    }
+};
+
+struct copy_sections : public MethCopy<copy_sections, arkipy_cfgSections>
+{
+    constexpr static const char* returns = "arkimet.cfg.Sections";
+    constexpr static const char* summary = "return a deep copy of this Sections object";
+};
+
+struct copy_section : public MethCopy<copy_section, arkipy_cfgSection>
+{
+    constexpr static const char* returns = "arkimet.cfg.Section";
+    constexpr static const char* summary = "return a deep copy of this Section object";
 };
 
 
@@ -374,11 +399,11 @@ struct SectionsDef : public Type<SectionsDef, arkipy_cfgSections>
 Arkimet configuration, as multiple sections of key/value options
 )";
     GetSetters<> getsetters;
-    Methods<section, obtain, sections_get, sections_keys, sections_items, parse_sections, write_sections> methods;
+    Methods<section, obtain, sections_get, sections_keys, sections_items, parse_sections, write_sections, copy_sections> methods;
 
     static void _dealloc(Impl* self)
     {
-        self->sections.~Sections();
+        self->ptr.~shared_ptr<arki::core::cfg::Sections>();
         Py_TYPE(self)->tp_free(self);
     }
 
@@ -398,31 +423,31 @@ Arkimet configuration, as multiple sections of key/value options
     {
         try {
             std::string key = from_python<std::string>(value);
-            return (self->sections.find(key) != self->sections.end()) ? 1 : 0;
+            return (self->ptr->find(key) != self->ptr->end()) ? 1 : 0;
         } ARKI_CATCH_RETURN_INT
     }
 
     static PyObject* _iter(Impl* self)
     {
-        py_unique_ptr<PyTupleObject> res((PyTupleObject*)PyTuple_New(self->sections.size()));
+        py_unique_ptr<PyTupleObject> res((PyTupleObject*)PyTuple_New(self->ptr->size()));
         unsigned pos = 0;
-        for (const auto& si: self->sections)
+        for (const auto& si: *(self->ptr))
             PyTuple_SET_ITEM(res, pos++, to_python(si.first));
         return PyObject_GetIter((PyObject*)res.get());
     }
 
     static Py_ssize_t mp_length(Impl* self)
     {
-        return self->sections.size();
+        return self->ptr->size();
     }
 
     static PyObject* mp_subscript(Impl* self, PyObject* key)
     {
         try {
             std::string name = from_python<std::string>(key);
-            arki::core::cfg::Section* res = self->sections.section(name);
+            auto res = self->ptr->section(name);
             if (res)
-                return cfg_section_reference((PyObject*)self, res);
+                return to_python(res);
             return PyErr_Format(PyExc_KeyError, "section not found: '%s'", name.c_str());
         } ARKI_CATCH_RETURN_PYO
     }
@@ -433,18 +458,18 @@ Arkimet configuration, as multiple sections of key/value options
             auto name = from_python<std::string>(key);
             if (!val)
             {
-                auto i = self->sections.find(name);
-                if (i == self->sections.end())
+                auto i = self->ptr->find(name);
+                if (i == self->ptr->end())
                 {
                     PyErr_Format(PyExc_KeyError, "section not found: '%s'", name.c_str());
                     return -1;
                 }
-                self->sections.erase(i);
+                self->ptr->erase(i);
             } else {
                 std::string k = from_python<std::string>(key);
-                auto i = self->sections.find(k);
-                if (i == self->sections.end())
-                    self->sections.emplace(k, section_from_python(val));
+                auto i = self->ptr->find(k);
+                if (i == self->ptr->end())
+                    self->ptr->emplace(k, section_from_python(val));
                 else
                     i->second = section_from_python(val);
             }
@@ -459,7 +484,7 @@ Arkimet configuration, as multiple sections of key/value options
             return -1;
 
         try {
-            new(&(self->sections)) arki::core::cfg::Sections();
+            new(&(self->ptr)) std::shared_ptr<arki::core::cfg::Sections>(std::make_shared<arki::core::cfg::Sections>());
         } ARKI_CATCH_RETURN_INT
 
         return 0;
@@ -488,14 +513,11 @@ struct SectionDef : public Type<SectionDef, arkipy_cfgSection>
 Arkimet configuration, as a section of key/value options
 )";
     GetSetters<> getsetters;
-    Methods<section_keys, section_get, section_items, parse_section, write_section> methods;
+    Methods<section_keys, section_get, section_items, parse_section, write_section, copy_section> methods;
 
     static void _dealloc(Impl* self)
     {
-        if (self->owner)
-            Py_DECREF(self->owner);
-        else
-            delete self->section;
+        self->ptr.~shared_ptr<arki::core::cfg::Section>();
         Py_TYPE(self)->tp_free(self);
     }
 
@@ -515,32 +537,32 @@ Arkimet configuration, as a section of key/value options
     {
         try {
             std::string key = from_python<std::string>(value);
-            return self->section->has(key) ? 1 : 0;
+            return self->ptr->has(key) ? 1 : 0;
         } ARKI_CATCH_RETURN_INT
     }
 
     static PyObject* _iter(Impl* self)
     {
-        py_unique_ptr<PyTupleObject> res((PyTupleObject*)PyTuple_New(self->section->size()));
+        py_unique_ptr<PyTupleObject> res((PyTupleObject*)PyTuple_New(self->ptr->size()));
         unsigned pos = 0;
-        for (const auto& si: *self->section)
+        for (const auto& si: *self->ptr)
             PyTuple_SET_ITEM(res, pos++, to_python(si.first));
         return PyObject_GetIter((PyObject*)res.get());
     }
 
     static Py_ssize_t mp_length(Impl* self)
     {
-        return self->section->size();
+        return self->ptr->size();
     }
 
     static PyObject* mp_subscript(Impl* self, PyObject* key)
     {
         try {
             std::string k = from_python<std::string>(key);
-            if (!self->section->has(k))
+            if (!self->ptr->has(k))
                 return PyErr_Format(PyExc_KeyError, "section not found: '%s'", k.c_str());
             else
-                return to_python(self->section->value(k));
+                return to_python(self->ptr->value(k));
         } ARKI_CATCH_RETURN_PYO
     }
 
@@ -550,15 +572,15 @@ Arkimet configuration, as a section of key/value options
             std::string k = from_python<std::string>(key);
             if (!val)
             {
-                auto i = self->section->find(name);
-                if (i == self->section->end())
+                auto i = self->ptr->find(name);
+                if (i == self->ptr->end())
                 {
                     PyErr_Format(PyExc_KeyError, "key not found: '%s'", k.c_str());
                     return -1;
                 }
-                self->section->erase(i);
+                self->ptr->erase(i);
             } else
-                self->section->set(k, from_python<std::string>(val));
+                self->ptr->set(k, from_python<std::string>(val));
             return 0;
         } ARKI_CATCH_RETURN_INT
     }
@@ -571,7 +593,7 @@ Arkimet configuration, as a section of key/value options
                 case Py_EQ:
                     if (arkipy_cfgSection_Check(other))
                     {
-                        if (self->section == ((Impl*)other)->section)
+                        if (self->ptr == ((Impl*)other)->ptr)
                             Py_RETURN_TRUE;
                         else
                             Py_RETURN_FALSE;
@@ -609,11 +631,10 @@ Arkimet configuration, as a section of key/value options
                 return -1;
             }
 
-            self->owner = nullptr;
-            self->section = new arki::core::cfg::Section;
+            new (&(self->ptr)) std::shared_ptr<arki::core::cfg::Section>(std::make_shared<arki::core::cfg::Section>());
 
             if (init_dict)
-                fill_section_from_dict(*(self->section), init_dict);
+                fill_section_from_dict(*(self->ptr), init_dict);
         } ARKI_CATCH_RETURN_INT
 
         return 0;
@@ -654,11 +675,11 @@ namespace python {
 // TODO: Section constructor with dict
 // TODO: Section constructor with sequence of (key, value)
 
-core::cfg::Section section_from_python(PyObject* o)
+std::shared_ptr<core::cfg::Section> section_from_python(PyObject* o)
 {
     try {
         if (arkipy_cfgSection_Check(o)) {
-            return *((arkipy_cfgSection*)o)->section;
+            return ((arkipy_cfgSection*)o)->ptr;
         }
 
         if (PyBytes_Check(o)) {
@@ -671,11 +692,11 @@ core::cfg::Section section_from_python(PyObject* o)
         }
         if (PyDict_Check(o))
         {
-            core::cfg::Section res;
+            auto res = std::make_shared<core::cfg::Section>();
             PyObject *key, *val;
             Py_ssize_t pos = 0;
             while (PyDict_Next(o, &pos, &key, &val))
-                res.set(string_from_python(key), string_from_python(val));
+                res->set(string_from_python(key), string_from_python(val));
             return res;
         }
         PyErr_SetString(PyExc_TypeError, "value must be an instance of str, bytes, or dict");
@@ -683,11 +704,11 @@ core::cfg::Section section_from_python(PyObject* o)
     } ARKI_CATCH_RETHROW_PYTHON
 }
 
-core::cfg::Sections sections_from_python(PyObject* o)
+std::shared_ptr<core::cfg::Sections> sections_from_python(PyObject* o)
 {
     try {
         if (arkipy_cfgSections_Check(o)) {
-            return ((arkipy_cfgSections*)o)->sections;
+            return ((arkipy_cfgSections*)o)->ptr;
         }
 
         if (PyBytes_Check(o)) {
@@ -704,42 +725,17 @@ core::cfg::Sections sections_from_python(PyObject* o)
 }
 
 
-PyObject* cfg_sections(const core::cfg::Sections& sections)
+PyObject* sections_to_python(std::shared_ptr<core::cfg::Sections> ptr)
 {
     py_unique_ptr<arkipy_cfgSections> res(throw_ifnull(PyObject_New(arkipy_cfgSections, arkipy_cfgSections_Type)));
-    new (&(res->sections)) core::cfg::Sections(sections);
+    new (&(res->ptr)) std::shared_ptr<arki::core::cfg::Sections>(ptr);
     return (PyObject*)res.release();
 }
 
-PyObject* cfg_sections(core::cfg::Sections&& sections)
-{
-    py_unique_ptr<arkipy_cfgSections> res(throw_ifnull(PyObject_New(arkipy_cfgSections, arkipy_cfgSections_Type)));
-    new (&(res->sections)) core::cfg::Sections(std::move(sections));
-    return (PyObject*)res.release();
-}
-
-PyObject* cfg_section(const core::cfg::Section& section)
+PyObject* section_to_python(std::shared_ptr<core::cfg::Section> ptr)
 {
     py_unique_ptr<arkipy_cfgSection> res(throw_ifnull(PyObject_New(arkipy_cfgSection, arkipy_cfgSection_Type)));
-    res->owner = nullptr;
-    res->section = new core::cfg::Section(section);
-    return (PyObject*)res.release();
-}
-
-PyObject* cfg_section(core::cfg::Section&& section)
-{
-    py_unique_ptr<arkipy_cfgSection> res(throw_ifnull(PyObject_New(arkipy_cfgSection, arkipy_cfgSection_Type)));
-    res->owner = nullptr;
-    res->section = new core::cfg::Section(std::move(section));
-    return (PyObject*)res.release();
-}
-
-PyObject* cfg_section_reference(PyObject* owner, core::cfg::Section* section)
-{
-    py_unique_ptr<arkipy_cfgSection> res(throw_ifnull(PyObject_New(arkipy_cfgSection, arkipy_cfgSection_Type)));
-    res->owner = owner;
-    res->section = section;
-    Py_INCREF(owner);
+    new (&(res->ptr)) std::shared_ptr<arki::core::cfg::Section>(ptr);
     return (PyObject*)res.release();
 }
 

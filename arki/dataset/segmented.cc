@@ -247,12 +247,6 @@ void Checker::segments_all(std::function<void(segmented::CheckerSegment& segment
     segments_untracked(dest);
 }
 
-void Checker::segments_all_filtered(const Matcher& matcher, std::function<void(segmented::CheckerSegment& segment)> dest)
-{
-    segments_tracked_filtered(matcher, dest);
-    segments_untracked_filtered(matcher, dest);
-}
-
 void Checker::segments(CheckerConfig& opts, std::function<void(segmented::CheckerSegment& segment)> dest)
 {
     if (!opts.online && !dataset().offline) return;

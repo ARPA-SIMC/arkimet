@@ -31,6 +31,7 @@ extern const Policy* policy_ofd;
 }
 
 struct Time;
+struct Interval;
 struct FuzzyTime;
 
 namespace cfg {

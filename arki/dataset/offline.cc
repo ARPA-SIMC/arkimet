@@ -1,5 +1,6 @@
 #include "offline.h"
 #include "arki/utils/string.h"
+#include "arki/core/time.h"
 
 using namespace std;
 using namespace arki::utils;
@@ -22,19 +23,21 @@ Reader::Reader(std::shared_ptr<Dataset> dataset)
 
 std::string Reader::type() const { return "offline"; }
 
-bool Reader::query_data(const dataset::DataQuery& q, metadata_dest_func)
+bool Reader::impl_query_data(const dataset::DataQuery& q, metadata_dest_func)
 {
     // TODO: if the matcher would match the summary, output some kind of note about it
     return true;
 }
-void Reader::query_summary(const Matcher& matcher, Summary& summary)
+void Reader::impl_query_summary(const Matcher& matcher, Summary& summary)
 {
     sum.filter(matcher, summary);
 }
 
-void Reader::expand_date_range(unique_ptr<core::Time>& begin, unique_ptr<core::Time>& end)
+core::Interval Reader::get_stored_time_interval()
 {
-    sum.expand_date_range(begin, end);
+    if (sum.empty())
+        return core::Interval();
+    return sum.get_reference_time();
 }
 
 }

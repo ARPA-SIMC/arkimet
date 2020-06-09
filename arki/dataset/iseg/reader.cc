@@ -48,12 +48,12 @@ bool Reader::list_segments(const Matcher& matcher, std::function<bool(const std:
     return true;
 }
 
-bool Reader::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
+bool Reader::impl_query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 {
     dataset::TrackProgress track(q.progress);
     dest = track.wrap(dest);
 
-    if (!segmented::Reader::query_data(q, dest))
+    if (!segmented::Reader::impl_query_data(q, dest))
         return false;
 
     bool res = list_segments(q.matcher, [&](const std::string& relpath) {
@@ -76,9 +76,7 @@ void Reader::summary_for_month(int year, int month, Summary& out)
 {
     if (scache.read(out, year, month)) return;
 
-    char buf[128];
-    snprintf(buf, 128, "reftime:=%04d-%02d", year, month);
-    Matcher matcher = Matcher::parse(buf);
+    Matcher matcher = Matcher::for_month(year, month);
 
     Summary summary;
     summary_from_indices(matcher, summary);
@@ -92,17 +90,16 @@ void Reader::summary_for_all(Summary& out)
     if (scache.read(out)) return;
 
     // Find the datetime extremes in the database
-    unique_ptr<core::Time> begin;
-    unique_ptr<core::Time> end;
-    dataset().step().time_extremes(step::SegmentQuery(dataset().path, dataset().format), begin, end);
+    core::Interval interval;
+    dataset().step().time_extremes(step::SegmentQuery(dataset().path, dataset().format), interval);
 
     // If there is data in the database, get all the involved
     // monthly summaries
-    if (begin.get() && end.get())
+    if (!interval.is_unbounded())
     {
-        int year = begin->ye;
-        int month = begin->mo;
-        while (year < end->ye || (year == end->ye && month <= end->mo))
+        int year = interval.begin.ye;
+        int month = interval.begin.mo;
+        while (year < interval.end.ye || (year == interval.end.ye && month <= interval.end.mo))
         {
             summary_for_month(year, month, out);
 
@@ -116,33 +113,17 @@ void Reader::summary_for_all(Summary& out)
     scache.write(out);
 }
 
-namespace {
-inline bool range_envelopes_full_month(const core::Time& begin, const core::Time& end)
-{
-    bool begins_at_beginning = begin.da == 1 && begin.ho == 0 && begin.mi == 0 && begin.se == 0;
-    if (begins_at_beginning)
-        return end >= begin.end_of_month();
-
-    bool ends_at_end = end.da == core::Time::days_in_month(end.ye, end.mo) && end.ho == 23 && end.mi == 59 && end.se == 59;
-    if (ends_at_end)
-        return begin <= end.start_of_month();
-
-    return end.ye == begin.ye + begin.mo / 12 && end.mo == (begin.mo % 12) + 1;
-}
-}
-
-void Reader::query_summary(const Matcher& matcher, Summary& summary)
+void Reader::impl_query_summary(const Matcher& matcher, Summary& summary)
 {
     // Query the archives first
-    segmented::Reader::query_summary(matcher, summary);
+    segmented::Reader::impl_query_summary(matcher, summary);
 
     // Check if the matcher discriminates on reference times
-    unique_ptr<core::Time> begin;
-    unique_ptr<core::Time> end;
-    if (!matcher.restrict_date_range(begin, end))
+    core::Interval interval;
+    if (!matcher.intersect_interval(interval))
         return; // If the matcher contains an impossible reftime, return right away
 
-    if (!begin.get() && !end.get())
+    if (!interval.begin.is_set() && !interval.end.is_set())
     {
         // The matcher does not contain reftime, or does not restrict on a
         // datetime range, we can work with a global summary
@@ -153,34 +134,27 @@ void Reader::query_summary(const Matcher& matcher, Summary& summary)
     }
 
     // Amend open ends with the bounds from the database
-    unique_ptr<core::Time> db_begin;
-    unique_ptr<core::Time> db_end;
-    dataset().step().time_extremes(step::SegmentQuery(dataset().path, dataset().format), db_begin, db_end);
+    core::Interval db_interval;
+    dataset().step().time_extremes(step::SegmentQuery(dataset().path, dataset().format), db_interval);
     // If the database is empty then the result is empty:
     // we are done
-    if (!db_begin.get())
+    if (!db_interval.begin.is_set())
         return;
     bool begin_from_db = false;
-    if (!begin.get())
+    if (!interval.begin.is_set() || interval.begin < db_interval.begin)
     {
-        begin.reset(new core::Time(*db_begin));
-        begin_from_db = true;
-    } else if (*begin < *db_begin) {
-        *begin = *db_begin;
+        interval.begin = db_interval.begin;
         begin_from_db = true;
     }
     bool end_from_db = false;
-    if (!end.get())
+    if (!interval.end.is_set() || interval.end > db_interval.end)
     {
-        end.reset(new core::Time(*db_end));
-        end_from_db = true;
-    } else if (*end > *db_end) {
-        *end = *db_end;
+        interval.end = db_interval.end;
         end_from_db = true;
     }
 
     // If the interval is under a week, query the DB directly
-    long long int range = core::Time::duration(*begin, *end);
+    long long int range = core::Time::duration(interval);
     if (range <= 7 * 24 * 3600)
     {
         summary_from_indices(matcher, summary);
@@ -191,18 +165,18 @@ void Reader::query_summary(const Matcher& matcher, Summary& summary)
     {
         // Round down to month begin, so we reuse the cached summary if
         // available
-        *begin = begin->start_of_month();
+        interval.begin = interval.begin.start_of_month();
     }
-    if (end_from_db)
+    if (end_from_db && !interval.end.is_start_of_month())
     {
         // Round up to month end, so we reuse the cached summary if
         // available
-        *end = end->end_of_month();
+        interval.end = interval.end.start_of_next_month();
     }
 
     // If the selected interval does not envelope any whole month, query
     // the DB directly
-    if (!range_envelopes_full_month(*begin, *end))
+    if (!interval.spans_one_whole_month())
     {
         summary_from_indices(matcher, summary);
         return;
@@ -210,34 +184,24 @@ void Reader::query_summary(const Matcher& matcher, Summary& summary)
 
     // Query partial month at beginning, middle whole months, partial
     // month at end. Query whole months at extremes if they are indeed whole
-    while (*begin <= *end)
-    {
-        core::Time endmonth = begin->end_of_month();
-
-        bool starts_at_beginning = (begin->da == 1 && begin->ho == 0 && begin->mi == 0 && begin->se == 0);
-        if (starts_at_beginning && endmonth <= *end)
+    interval.iter_months([&](const core::Interval& month) {
+        if (month.begin.is_start_of_month() && month.end.is_start_of_month())
         {
             Summary s;
-            summary_for_month(begin->ye, begin->mo, s);
-            s.filter(matcher, summary);
-        } else if (endmonth <= *end) {
-            Summary s;
-            summary_from_indices(Matcher::parse("reftime:>=" + begin->to_sql() + ",<=" + endmonth.to_sql()), s);
+            summary_for_month(month.begin.ye, month.begin.mo, s);
             s.filter(matcher, summary);
         } else {
             Summary s;
-            summary_from_indices(Matcher::parse("reftime:>=" + begin->to_sql() + ",<" + end->to_sql()), s);
+            summary_from_indices(Matcher::for_interval(month), s);
             s.filter(matcher, summary);
         }
-
-        // Advance to the beginning of the next month
-        *begin = begin->start_of_next_month();
-    }
+        return true;
+    });
 }
 
-void Reader::expand_date_range(unique_ptr<core::Time>& begin, unique_ptr<core::Time>& end)
+core::Interval Reader::get_stored_time_interval()
 {
-    //m_mft->expand_date_range(begin, end);
+    throw std::runtime_error("iseg::Reader::get_stored_time_interval not yet implemented");
 }
 
 }

@@ -101,7 +101,7 @@ add_method("regression_0", [](Fixture& f) {
 // Test removal of VM2 data
 add_method("issue57", [](Fixture& f) {
     skip_unless_vm2();
-    f.cfg.set("unique", "reftime, area, product");
+    f.cfg->set("unique", "reftime, area, product");
 
     // Import the sample file
     sys::write_file("issue57.vm2", "201610050000,12626,139,70,,,000000000\n");
@@ -135,17 +135,17 @@ add_method("testacquire", [](Fixture& f) {
     while (mdc.size() > 1) mdc.pop_back();
 
     auto batch = mdc.make_import_batch();
-    wassert(ondisk2::Writer::test_acquire(f.session(), f.cfg, batch));
+    wassert(ondisk2::Writer::test_acquire(f.session(), *f.cfg, batch));
     wassert(actual(batch[0]->result) == dataset::ACQ_OK);
     wassert(actual(batch[0]->dataset_name) == "testds");
 
-    f.cfg.set("archive age", "1");
-    wassert(ondisk2::Writer::test_acquire(f.session(), f.cfg, batch));
+    f.cfg->set("archive age", "1");
+    wassert(ondisk2::Writer::test_acquire(f.session(), *f.cfg, batch));
     wassert(actual(batch[0]->result) == dataset::ACQ_ERROR);
     wassert(actual(batch[0]->dataset_name) == "");
 
-    f.cfg.set("delete age", "1");
-    wassert(ondisk2::Writer::test_acquire(f.session(), f.cfg, batch));
+    f.cfg->set("delete age", "1");
+    wassert(ondisk2::Writer::test_acquire(f.session(), *f.cfg, batch));
     wassert(actual(batch[0]->result) == dataset::ACQ_OK);
     wassert(actual(batch[0]->dataset_name) == "testds");
 });

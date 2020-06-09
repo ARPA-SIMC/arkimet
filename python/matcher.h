@@ -5,6 +5,7 @@
 #include <Python.h>
 #include <memory>
 #include "arki/matcher.h"
+#include "arki/dataset/fwd.h"
 #include "utils/values.h"
 
 extern "C" {
@@ -32,8 +33,7 @@ inline PyObject* to_python(arki::Matcher matcher) { return matcher_to_python(mat
 /**
  * Return a Matcher from a python string or arkimet.Matcher object
  */
-arki::Matcher matcher_from_python(PyObject* o);
-template<> inline arki::Matcher from_python<arki::Matcher>(PyObject* o) { return matcher_from_python(o); }
+arki::Matcher matcher_from_python(std::shared_ptr<arki::dataset::Session> session, PyObject* o);
 
 void register_matcher(PyObject* m);
 

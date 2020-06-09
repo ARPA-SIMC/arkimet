@@ -33,7 +33,6 @@ using namespace arki::types;
 using namespace arki::utils;
 using namespace arki::utils::sqlite;
 using namespace arki::dataset::maintenance;
-using arki::core::Time;
 
 namespace arki {
 namespace dataset {
@@ -222,11 +221,10 @@ class PlainManifest : public Manifest
     {
         std::string file;
         time_t mtime;
-        core::Time start_time;
-        core::Time end_time;
+        core::Interval time;
 
-        Info(const std::string& file, time_t mtime, const Time& start, const Time& end)
-            : file(file), mtime(mtime), start_time(start), end_time(end)
+        Info(const std::string& file, time_t mtime, const Interval& time)
+            : file(file), mtime(mtime), time(time)
         {
         }
 
@@ -247,8 +245,12 @@ class PlainManifest : public Manifest
 
         void write(NamedFileDescriptor& out) const
         {
-            stringstream ss;
-            ss << file << ";" << mtime << ";" << start_time.to_sql() << ";" << end_time.to_sql() << endl;
+            // Time is stored with the right extreme included
+            core::Time end = time.end;
+            end.se -= 1;
+            end.normalise();
+            std::stringstream ss;
+            ss << file << ";" << mtime << ";" << time.begin.to_sql() << ";" << end.to_sql() << endl;
             out.write_all_or_throw(ss.str());
         }
     };
@@ -315,10 +317,13 @@ class PlainManifest : public Manifest
                 throw runtime_error(ss.str());
             }
 
+            // Times are saved with extremes included
+            Time interval_end = Time::create_sql(line.substr(end+1));
+            interval_end.se += 1;
+            interval_end.normalise();
             info.push_back(Info(
                         file, mtime,
-                        Time::create_sql(line.substr(beg, end-beg)),
-                        Time::create_sql(line.substr(end+1))));
+                        Interval(Time::create_sql(line.substr(beg, end-beg)), interval_end)));
         }
 
         infd.close();
@@ -353,14 +358,13 @@ public:
         std::vector<std::string> files;
         reread();
 
-        string query;
-        unique_ptr<Time> begin;
-        unique_ptr<Time> end;
-        if (!matcher.restrict_date_range(begin, end))
+        std::string query;
+        core::Interval interval;
+        if (!matcher.intersect_interval(interval))
             return files;
 
         std::vector<const Info*> res;
-        if (!begin.get() && !end.get())
+        if (interval.is_unbounded())
         {
             // No restrictions on reftime: get all files
             for (const auto& i: info)
@@ -368,17 +372,14 @@ public:
         } else {
             // Get files with matching reftime
             for (const auto& i: info)
-            {
-                if (begin.get() && i.end_time < *begin) continue;
-                if (end.get() && i.start_time > *end) continue;
-                res.push_back(&i);
-            }
+                if (interval.intersects(i.time))
+                    res.push_back(&i);
         }
 
         // Re-sort to maintain the invariant that results are sorted by
         // start_time even if we have segments with names outside the normal
         // dataset step that do not sort properly
-        std::sort(res.begin(), res.end(), [](const Info* a, const Info* b) { return a->start_time < b->start_time; });
+        std::sort(res.begin(), res.end(), [](const Info* a, const Info* b) { return a->time.begin < b->time.begin; });
 
         for (const auto* i: res)
             files.push_back(i->file);
@@ -386,31 +387,30 @@ public:
         return files;
     }
 
-    bool segment_timespan(const std::string& relpath, Time& start_time, Time& end_time) const override
+    bool segment_timespan(const std::string& relpath, Interval& interval) const override
     {
         // Lookup the file (FIXME: reimplement binary search so we
         // don't need to create a temporary Info)
-        Info sample(relpath, 0, Time(0, 0, 0), Time(0, 0, 0));
+        Info sample(relpath, 0, Interval());
         vector<Info>::const_iterator lb = lower_bound(info.begin(), info.end(), sample);
         if (lb != info.end() && lb->file == relpath)
         {
-            start_time = lb->start_time;
-            end_time = lb->end_time;
+            interval = lb->time;
             return true;
         } else {
             return false;
         }
     }
 
-    void expand_date_range(unique_ptr<Time>& begin, unique_ptr<Time>& end) const override
+    core::Interval get_stored_time_interval() const override
     {
-        for (vector<Info>::const_iterator i = info.begin(); i != info.end(); ++i)
-        {
-            if (!begin.get() || i->start_time < *begin)
-                begin.reset(new Time(i->start_time));
-            if (!end.get() || i->end_time > *end)
-                end.reset(new Time(i->end_time));
-        }
+        core::Interval res;
+        for (const auto& i: info)
+            if (res.is_unbounded())
+                res = i.time;
+            else
+                res.extend(i.time);
+        return res;
     }
 
     size_t vacuum()
@@ -428,9 +428,7 @@ public:
         reread();
 
         // Add to index
-        unique_ptr<Reftime> rt = sum.getReferenceTime();
-
-        Info item(relpath, mtime, rt->period_begin(), rt->period_end());
+        Info item(relpath, mtime, sum.get_reference_time());
 
         // Insertion sort; at the end, everything is already sorted and we
         // avoid inserting lots of duplicate items
@@ -469,42 +467,27 @@ public:
         if (matcher.empty())
             return list_segments(dest);
 
-        unique_ptr<Time> begin;
-        unique_ptr<Time> end;
-        if (!matcher.restrict_date_range(begin, end))
+        core::Interval interval;
+        if (!matcher.intersect_interval(interval))
             // The matcher matches an impossible datetime span: convert it
             // into an impossible clause that evaluates quickly
             return;
 
-        if (!begin.get() && !end.get())
+        if (!interval.begin.is_set() && !interval.end.is_set())
             return list_segments(dest);
 
         reread();
-        if (begin.get() && end.get())
-        {
-            for (const auto& i: this->info)
-                if (i.start_time <= *end && i.end_time >= *begin)
-                    dest(i.file);
-        }
-        else if (begin.get())
-        {
-            for (const auto& i: this->info)
-                if (i.end_time >= *begin)
-                    dest(i.file);
-        }
-        else
-        {
-            for (const auto& i: this->info)
-                if (i.start_time <= *end)
-                    dest(i.file);
-        }
+
+        for (const auto& i: this->info)
+            if (i.time.intersects(interval))
+                dest(i.file);
     }
 
     bool has_segment(const std::string& relpath) const override
     {
         // Lookup the file (FIXME: reimplement binary search so we
         // don't need to create a temporary Info)
-        Info sample(relpath, 0, Time(0, 0, 0), Time(0, 0, 0));
+        Info sample(relpath, 0, Interval());
         vector<Info>::const_iterator lb = lower_bound(info.begin(), info.end(), sample);
         return lb != info.end() && lb->file == relpath;
     }
@@ -513,7 +496,7 @@ public:
     {
         // Lookup the file (FIXME: reimplement binary search so we
         // don't need to create a temporary Info)
-        Info sample(relpath, 0, Time(0, 0, 0), Time(0, 0, 0));
+        Info sample(relpath, 0, Interval());
         vector<Info>::const_iterator lb = lower_bound(info.begin(), info.end(), sample);
         if (lb != info.end() && lb->file == relpath)
             return lb->mtime;
@@ -662,26 +645,25 @@ public:
     {
         std::vector<std::string> files;
         string query;
-        unique_ptr<Time> begin;
-        unique_ptr<Time> end;
-        if (!matcher.restrict_date_range(begin, end))
+        Interval interval;
+        if (!matcher.intersect_interval(interval))
             return files;
 
-        if (!begin.get() && !end.get())
+        if (!interval.begin.is_set() && !interval.end.is_set())
         {
             // No restrictions on reftime: get all files
             query = "SELECT file FROM files ORDER BY start_time";
         } else {
             query = "SELECT file FROM files";
 
-            if (begin.get())
-                query += " WHERE end_time >= '" + begin->to_sql() + "'";
-            if (end.get())
+            if (interval.begin.is_set())
+                query += " WHERE end_time >= '" + interval.begin.to_sql() + "'";
+            if (interval.end.is_set())
             {
-                if (begin.get())
-                    query += " AND start_time <= '" + end->to_sql() + "'";
+                if (interval.begin.is_set())
+                    query += " AND start_time < '" + interval.end.to_sql() + "'";
                 else
-                    query += " WHERE start_time <= '" + end->to_sql() + "'";
+                    query += " WHERE start_time < '" + interval.end.to_sql() + "'";
             }
 
             query += " ORDER BY start_time";
@@ -694,7 +676,7 @@ public:
         return files;
     }
 
-    bool segment_timespan(const std::string& relpath, Time& start_time, Time& end_time) const override
+    bool segment_timespan(const std::string& relpath, Interval& interval) const override
     {
         Query q("sel_file_ts", m_db);
         q.compile("SELECT start_time, end_time FROM files WHERE file=?");
@@ -703,28 +685,32 @@ public:
         bool found = false;
         while (q.step())
         {
-            start_time.set_sql(q.fetchString(0));
-            end_time.set_sql(q.fetchString(1));
+            interval.begin.set_sql(q.fetchString(0));
+            interval.end.set_sql(q.fetchString(1));
             found = true;
         }
         return found;
     }
 
-    void expand_date_range(unique_ptr<Time>& begin, unique_ptr<Time>& end) const override
+    core::Interval get_stored_time_interval() const override
     {
+        Interval res;
         Query q("sel_date_extremes", m_db);
         q.compile("SELECT MIN(start_time), MAX(end_time) FROM files");
 
         while (q.step())
         {
-            Time st(Time::create_sql(q.fetchString(0)));
-            Time et(Time::create_sql(q.fetchString(1)));
+            Interval i(
+                Time::create_sql(q.fetchString(0)),
+                Time::create_sql(q.fetchString(1)));
 
-            if (!begin.get() || st < *begin)
-                begin.reset(new Time(st));
-            if (!end.get() || et > *end)
-                end.reset(new Time(et));
+            if (res.is_unbounded())
+                res = i;
+            else
+                res.extend(i);
         }
+
+        return res;
     }
 
     size_t vacuum()
@@ -747,29 +733,11 @@ public:
     void acquire(const std::string& relpath, time_t mtime, const Summary& sum)
     {
         // Add to index
-        unique_ptr<types::Reftime> rt = sum.getReferenceTime();
+        core::Interval rt = sum.get_reference_time();
 
-        string bt, et;
-
-        switch (rt->style())
-        {
-            case types::Reftime::Style::POSITION: {
-                const reftime::Position* p = dynamic_cast<const reftime::Position*>(rt.get());
-                bt = et = p->time.to_sql();
-                break;
-            }
-            case types::Reftime::Style::PERIOD: {
-                const reftime::Period* p = dynamic_cast<const reftime::Period*>(rt.get());
-                bt = p->begin.to_sql();
-                et = p->end.to_sql();
-                break;
-            }
-            default: {
-                stringstream ss;
-                ss << "unsupported reference time " << types::Reftime::formatStyle(rt->style());
-                throw runtime_error(ss.str());
-            }
-        }
+        std::string bt, et;
+        bt = rt.begin.to_sql();
+        et = rt.end.to_sql();
 
         m_insert.reset();
         m_insert.bind(1, relpath);
@@ -802,32 +770,31 @@ public:
         if (matcher.empty())
             return list_segments(dest);
 
-        unique_ptr<Time> begin;
-        unique_ptr<Time> end;
-        if (!matcher.restrict_date_range(begin, end))
+        Interval interval;
+        if (!matcher.intersect_interval(interval))
             // The matcher matches an impossible datetime span: convert it
             // into an impossible clause that evaluates quickly
             return;
 
-        if (!begin.get() && !end.get())
+        if (!interval.begin.is_set() && !interval.end.is_set())
             return list_segments(dest);
 
-        if (begin.get() && end.get())
+        if (interval.begin.is_set() && interval.end.is_set())
         {
             Query sq("list_segments", m_db);
-            sq.compile("SELECT DISTINCT file FROM files WHERE start_time <= ? AND end_time >= ? ORDER BY start_time");
-            string b = begin->to_sql();
-            string e = end->to_sql();
+            sq.compile("SELECT DISTINCT file FROM files WHERE start_time < ? AND end_time >= ? ORDER BY start_time");
+            string b = interval.begin.to_sql();
+            string e = interval.end.to_sql();
             sq.bind(1, e);
             sq.bind(2, b);
             while (sq.step())
                 dest(sq.fetchString(0));
         }
-        else if (begin.get())
+        else if (interval.begin.is_set())
         {
             Query sq("list_segments", m_db);
             sq.compile("SELECT DISTINCT file FROM files WHERE end_time >= ? ORDER BY start_time");
-            string b = begin->to_sql();
+            string b = interval.begin.to_sql();
             sq.bind(1, b);
             while (sq.step())
                 dest(sq.fetchString(0));
@@ -835,8 +802,8 @@ public:
         else
         {
             Query sq("list_segments", m_db);
-            sq.compile("SELECT DISTINCT file FROM files WHERE start_time <= ? ORDER BY start_time");
-            string e = end->to_sql();
+            sq.compile("SELECT DISTINCT file FROM files WHERE start_time < ? ORDER BY start_time");
+            string e = interval.end.to_sql();
             sq.bind(1, e);
             while (sq.step())
                 dest(sq.fetchString(0));

@@ -14,6 +14,7 @@
 #include "structured/memory.h"
 #include "structured/keys.h"
 #include "matcher.h"
+#include "matcher/parser.h"
 #include "metadata/collection.h"
 #include "utils/files.h"
 #include "utils/sys.h"
@@ -37,6 +38,7 @@ struct Fixture : public arki::utils::tests::Fixture
     Summary s;
     Metadata md1;
     Metadata md2;
+    matcher::Parser parser;
 
     Fixture()
     {
@@ -92,12 +94,12 @@ add_method("compare", [](Fixture& f) {
 // Test matching
 add_method("match", [](Fixture& f) {
     Summary s1;
-    wassert(actual(f.s.match(Matcher::parse("origin:GRIB1,1"))).istrue());
-    f.s.filter(Matcher::parse("origin:GRIB1,1"), s1); wassert(actual(s1.count()) == 1u);
+    wassert(actual(f.s.match(f.parser.parse("origin:GRIB1,1"))).istrue());
+    f.s.filter(f.parser.parse("origin:GRIB1,1"), s1); wassert(actual(s1.count()) == 1u);
 
     s1.clear();
-    wassert(actual(f.s.match(Matcher::parse("origin:GRIB1,2"))).isfalse());
-    f.s.filter(Matcher::parse("origin:GRIB1,2"), s1); wassert(actual(s1.count()) == 0u);
+    wassert(actual(f.s.match(f.parser.parse("origin:GRIB1,2"))).isfalse());
+    f.s.filter(f.parser.parse("origin:GRIB1,2"), s1); wassert(actual(s1.count()) == 0u);
 });
 
 // Test matching runs
@@ -110,23 +112,23 @@ add_method("match_run", [](Fixture& f) {
     s.add(f.md2);
 
     Summary s1;
-    wassert(actual(s.match(Matcher::parse("run:MINUTE,0"))).istrue());
-    s.filter(Matcher::parse("run:MINUTE,0"), s1); wassert(actual(s1.count()) == 1u);
+    wassert(actual(s.match(f.parser.parse("run:MINUTE,0"))).istrue());
+    s.filter(f.parser.parse("run:MINUTE,0"), s1); wassert(actual(s1.count()) == 1u);
 
     s1.clear();
-    wassert(actual(s.match(Matcher::parse("run:MINUTE,12"))).istrue());
-    s.filter(Matcher::parse("run:MINUTE,12"), s1); wassert(actual(s1.count()) == 1u);
+    wassert(actual(s.match(f.parser.parse("run:MINUTE,12"))).istrue());
+    s.filter(f.parser.parse("run:MINUTE,12"), s1); wassert(actual(s1.count()) == 1u);
 });
 
 // Test filtering
 add_method("filter", [](Fixture& f) {
     Summary s1;
-    f.s.filter(Matcher::parse("origin:GRIB1,1"), s1);
+    f.s.filter(f.parser.parse("origin:GRIB1,1"), s1);
     wassert(actual(s1.count()) == 1u);
     wassert(actual(s1.size()) == 10u);
 
     Summary s2;
-    f.s.filter(Matcher::parse("origin:GRIB1,1"), s2);
+    f.s.filter(f.parser.parse("origin:GRIB1,1"), s2);
     wassert(actual(s2.count()) == 1u);
     wassert(actual(s2.size()) == 10u);
 
@@ -269,7 +271,7 @@ add_method("add_with_stats", [](Fixture& f) {
 
 // Test resolveMatcher
 add_method("resolvematcher", [](Fixture& f) {
-    std::vector<ItemSet> res = f.s.resolveMatcher(Matcher::parse("origin:GRIB1,1,2,3; product:GRIB1,1,2,3 or GRIB1,2,3,4"));
+    std::vector<ItemSet> res = f.s.resolveMatcher(f.parser.parse("origin:GRIB1,1,2,3; product:GRIB1,1,2,3 or GRIB1,2,3,4"));
     wassert(actual(res.size()) == 1u);
 
     ItemSet& is = res[0];
@@ -357,14 +359,12 @@ add_method("zero_timestamp", [](Fixture& f) {
     s.readFile("inbound/00-00.bufr.summary");
 
     // Check that ranges are computed correctly even with all zeroes
-    unique_ptr<types::Reftime> rt = s.getReferenceTime();
-    wassert(actual(rt->period_begin()) == Time(0, 0, 0, 0, 0, 0));
-    wassert(actual(rt->period_end()) == Time(0, 0, 0, 0, 0, 14));
+    core::Interval rt = s.get_reference_time();
+    wassert(actual(rt.begin) == Time(0, 0, 0, 0, 0, 0));
+    // This is actually 0000-00-00 00:00:14 + 1 second, normalised
+    wassert(actual(rt.end) == Time(-1, 11, 30, 0, 0, 15));
 
     // Check that serialization does not throw exceptions
-    stringstream out_yaml;
-    out_yaml << *rt << endl;
-
     utils::sys::File out("/dev/null", O_WRONLY);
     s.write(out);
 });

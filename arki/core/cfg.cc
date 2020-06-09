@@ -77,9 +77,9 @@ struct SectionParser : public ParserBase
      * Returns true if a new section follows, false if it stops at the end of
      * file.
      */
-    Section parse_section()
+    std::shared_ptr<Section> parse_section()
     {
-        Section dest;
+        auto dest = std::make_shared<Section>();
 
         while (readline())
         {
@@ -97,7 +97,7 @@ struct SectionParser : public ParserBase
                 // Strip double quotes, if they appear
                 if (value[0] == '"' && value[value.size()-1] == '"')
                     value = value.substr(1, value.size()-2);
-                dest.set(patterns.assignment[1], value);
+                dest->set(patterns.assignment[1], value);
             }
             else
                 throw_parse_error("line is not a comment, nor a section start, nor empty, nor a key=value assignment");
@@ -106,10 +106,10 @@ struct SectionParser : public ParserBase
         return dest;
     }
 
-    Sections parse_sections()
+    std::shared_ptr<Sections> parse_sections()
     {
-        Sections dest;
-        Section* section = nullptr;
+        auto dest = std::make_shared<Sections>();
+        std::shared_ptr<Section> section;
 
         while (readline())
         {
@@ -119,7 +119,7 @@ struct SectionParser : public ParserBase
             if (section)
             {
                 if (patterns.sec_start.match(line))
-                    section = &dest.obtain(patterns.sec_start[1]);
+                    section = dest->obtain(patterns.sec_start[1]);
                 else if (patterns.assignment.match(line)) {
                     std::string value = patterns.assignment[3];
                     // Strip leading and trailing spaces on the value
@@ -133,7 +133,7 @@ struct SectionParser : public ParserBase
                     throw_parse_error("line is not a comment, nor a section start, nor empty, nor a key=value assignment");
             } else {
                 if (patterns.sec_start.match(line))
-                    section = &dest.obtain(patterns.sec_start[1]);
+                    section = dest->obtain(patterns.sec_start[1]);
                 else
                     throw_parse_error("expected a [section] start");
             }
@@ -215,19 +215,19 @@ void Section::dump(FILE* out) const
             fprintf(out, "%s = %s\n", i.first.c_str(), i.second.c_str());
 }
 
-Section Section::parse(core::NamedFileDescriptor& in)
+std::shared_ptr<Section> Section::parse(core::NamedFileDescriptor& in)
 {
     auto reader = LineReader::from_fd(in);
     return parse(*reader, in.name());
 }
 
-Section Section::parse(const std::string& in, const std::string& pathname)
+std::shared_ptr<Section> Section::parse(const std::string& in, const std::string& pathname)
 {
     auto reader = LineReader::from_chars(in.data(), in.size());
     return parse(*reader, pathname);
 }
 
-Section Section::parse(core::LineReader& in, const std::string& pathname)
+std::shared_ptr<Section> Section::parse(core::LineReader& in, const std::string& pathname)
 {
     SectionParser parser(pathname, in);
     return parser.parse_section();
@@ -238,29 +238,45 @@ Section Section::parse(core::LineReader& in, const std::string& pathname)
  * Sections
  */
 
-const Section* Sections::section(const std::string& key) const
+Sections::Sections(const Sections& o)
+{
+    for (const auto& i: o)
+        emplace(i.first, std::make_shared<Section>(*i.second));
+}
+
+Sections& Sections::operator=(const Sections& o)
+{
+    if (this == &o)
+        return *this;
+    clear();
+    for (const auto& i: o)
+        emplace(i.first, std::make_shared<Section>(*i.second));
+    return *this;
+}
+
+std::shared_ptr<const Section> Sections::section(const std::string& key) const
 {
     auto i = find(key);
     if (i == end())
         return nullptr;
-    return &(i->second);
+    return i->second;
 }
 
-Section* Sections::section(const std::string& key)
+std::shared_ptr<Section> Sections::section(const std::string& key)
 {
     auto i = find(key);
     if (i == end())
         return nullptr;
-    return &(i->second);
+    return i->second;
 }
 
-Section& Sections::obtain(const std::string& name)
+std::shared_ptr<Section> Sections::obtain(const std::string& name)
 {
     iterator i = find(name);
     if (i != end())
         return i->second;
 
-    auto r = emplace(name, Section());
+    auto r = emplace(name, std::make_shared<Section>());
     return r.first->second;
 }
 
@@ -276,7 +292,7 @@ void Sections::write(core::NamedFileDescriptor& out) const
             buf << endl;
 
         buf << "[" << si.first << "]" << endl;
-        write_section(si.second, buf);
+        write_section(*si.second, buf);
     }
     out.write_all_or_retry(buf.str().data(), buf.str().size());
 }
@@ -293,7 +309,7 @@ void Sections::write(core::AbstractOutputFile& out) const
             buf << endl;
 
         buf << "[" << si.first << "]" << endl;
-        write_section(si.second, buf);
+        write_section(*si.second, buf);
     }
     out.write(buf.str().data(), buf.str().size());
 }
@@ -303,23 +319,23 @@ void Sections::dump(FILE* out) const
     for (const auto& i: *this)
     {
         fprintf(out, "[%s]\n", i.first.c_str());
-        i.second.dump(out);
+        i.second->dump(out);
     }
 }
 
-Sections Sections::parse(core::NamedFileDescriptor& in)
+std::shared_ptr<Sections> Sections::parse(core::NamedFileDescriptor& in)
 {
     auto reader = LineReader::from_fd(in);
     return parse(*reader, in.name());
 }
 
-Sections Sections::parse(const std::string& in, const std::string& pathname)
+std::shared_ptr<Sections> Sections::parse(const std::string& in, const std::string& pathname)
 {
     auto reader = LineReader::from_chars(in.data(), in.size());
     return parse(*reader, pathname);
 }
 
-Sections Sections::parse(core::LineReader& in, const std::string& pathname)
+std::shared_ptr<Sections> Sections::parse(core::LineReader& in, const std::string& pathname)
 {
     SectionParser parser(pathname, in);
     return parser.parse_sections();

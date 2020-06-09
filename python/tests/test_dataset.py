@@ -1,3 +1,4 @@
+from __future__ import annotations
 import unittest
 import tempfile
 import arkimet as arki
@@ -56,18 +57,21 @@ class TestReadConfig(unittest.TestCase):
 
 
 class TestDatasetReader(unittest.TestCase):
+    def setUp(self):
+        self.session = arki.dataset.Session()
+
     def test_create(self):
-        ds = arki.dataset.Reader({
-            "format": "grib",
-            "name": "test.grib1",
-            "path": "inbound/test.grib1",
-            "type": "file",
-        })
-        self.assertEqual(str(ds), "dataset.Reader(file, test.grib1)")
-        self.assertEqual(repr(ds), "dataset.Reader(file, test.grib1)")
+        with self.session.dataset_reader(cfg={
+                    "format": "grib",
+                    "name": "test.grib1",
+                    "path": "inbound/test.grib1",
+                    "type": "file",
+                }) as ds:
+            self.assertEqual(str(ds), "dataset.Reader(file, test.grib1)")
+            self.assertEqual(repr(ds), "dataset.Reader(file, test.grib1)")
 
     def test_query_data(self):
-        ds = arki.dataset.Reader({
+        ds = self.session.dataset_reader(cfg={
             "format": "grib",
             "name": "test.grib1",
             "path": "inbound/test.grib1",
@@ -122,7 +126,7 @@ class TestDatasetReader(unittest.TestCase):
         # self.fail("no way yet to test with_data")
 
     def test_query_summary(self):
-        ds = arki.dataset.Reader({
+        ds = self.session.dataset_reader(cfg={
             "format": "grib",
             "name": "test.grib1",
             "path": "inbound/test.grib1",
@@ -152,7 +156,7 @@ class TestDatasetReader(unittest.TestCase):
         self.assertEqual(queried[:2], b"SU")
 
     def test_query_bytes(self):
-        ds = arki.dataset.Reader({
+        ds = self.session.dataset_reader(cfg={
             "format": "grib",
             "name": "inbound/test.grib1",
             "path": "inbound/test.grib1",
@@ -223,11 +227,10 @@ class TestDatasetReader(unittest.TestCase):
 
     def test_query_data_qmacro(self):
         ds = arki.make_qmacro_dataset(
-            {},
             """
 [test200]
 format = grib
-name = test.grib1
+name = test200
 path = inbound/test.grib1
 type = file
 """,
@@ -250,7 +253,7 @@ type = file
             """
 [test200]
 format = grib
-name = test.grib1
+name = test200
 path = inbound/test.grib1
 type = file
 """,
@@ -324,11 +327,10 @@ type = file
 
     def test_progress_qmacro(self):
         ds = arki.make_qmacro_dataset(
-            {},
             """
 [test200]
 format = grib
-name = test.grib1
+name = test200
 path = inbound/test.grib1
 type = file
 """,

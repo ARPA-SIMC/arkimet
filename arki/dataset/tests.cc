@@ -110,7 +110,7 @@ void State::dump(FILE* out) const
 
 
 DatasetTest::DatasetTest(const std::string& cfg_instance, TestVariant variant)
-    : variant(variant), cfg_instance(cfg_instance), ds_name("testds"), ds_root(sys::abspath("testds"))
+    : variant(variant), cfg(std::make_shared<core::cfg::Section>()), cfg_instance(cfg_instance), ds_name("testds"), ds_root(sys::abspath("testds"))
 {
     //if (default_datasettest_config)
         //cfg = *default_datasettest_config;
@@ -123,8 +123,8 @@ void DatasetTest::test_setup(const std::string& cfg_default)
 {
     std::string cfg_all = cfg_instance + "\n" + cfg_default + "\n";
     cfg = core::cfg::Section::parse(cfg_all);
-    cfg.set("path", ds_root);
-    cfg.set("name", ds_name);
+    cfg->set("path", ds_root);
+    cfg->set("name", ds_name);
     if (sys::exists(ds_root))
         sys::rmtree(ds_root);
 }
@@ -177,8 +177,8 @@ Dataset& DatasetTest::config()
     {
         sys::mkdir_ifmissing(ds_root);
         sys::File out(str::joinpath(ds_root, "config"), O_WRONLY | O_CREAT | O_TRUNC, 0666);
-        cfg.write(out);
-        m_dataset = session()->dataset(cfg);
+        cfg->write(out);
+        m_dataset = session()->dataset(*cfg);
     }
     return *m_dataset;
 }
@@ -203,7 +203,7 @@ std::shared_ptr<dataset::ondisk2::Dataset> DatasetTest::ondisk2_config()
 
 std::string DatasetTest::idxfname(const core::cfg::Section* wcfg) const
 {
-    if (!wcfg) wcfg = &cfg;
+    if (!wcfg) wcfg = cfg.get();
     if (wcfg->value("type") == "ondisk2")
         return "index.sqlite";
     else if (wcfg->value("index_type") == "sqlite")
@@ -216,7 +216,7 @@ std::string DatasetTest::destfile(const Metadata& md) const
 {
     const auto* rt = md.get<types::reftime::Position>();
     char buf[32];
-    if (cfg.value("shard").empty())
+    if (cfg->value("shard").empty())
         snprintf(buf, 32, "%04d/%02d-%02d.%s", rt->time.ye, rt->time.mo, rt->time.da, md.source().format.c_str());
     else
         snprintf(buf, 32, "%04d/%02d/%02d.%s", rt->time.ye, rt->time.mo, rt->time.da, md.source().format.c_str());
@@ -360,7 +360,7 @@ void DatasetTest::clean()
     if (sys::exists(ds_root)) sys::rmtree(ds_root);
     sys::mkdir_ifmissing(ds_root);
     sys::File out(str::joinpath(ds_root, "config"), O_WRONLY | O_CREAT | O_TRUNC, 0666);
-    cfg.write(out);
+    cfg->write(out);
     import_results.clear();
 }
 
@@ -408,6 +408,11 @@ metadata::Collection DatasetTest::query(const dataset::DataQuery& q)
     return metadata::Collection(*config().create_reader(), q);
 }
 
+metadata::Collection DatasetTest::query(const std::string& q)
+{
+    return metadata::Collection(*config().create_reader(), q);
+}
+
 void DatasetTest::ensure_localds_clean(size_t filecount, size_t resultcount, bool quick)
 {
     nag::CollectHandler tc;
@@ -451,7 +456,7 @@ void DatasetTest::import_all(const metadata::Collection& mds)
         import_results.back().sourceBlob().unlock();
     }
 
-    utils::files::removeDontpackFlagfile(cfg.value("path"));
+    utils::files::removeDontpackFlagfile(cfg->value("path"));
 }
 
 void DatasetTest::import_all_packed(const metadata::Collection& mds)
@@ -518,7 +523,7 @@ void DatasetTest::archived_segment_exists(const std::string& relpath, const std:
 
 void DatasetTest::skip_if_type_simple()
 {
-    if (cfg.value("type") == "simple")
+    if (cfg->value("type") == "simple")
         throw TestSkipped("This test makes no sense on simple datasets");
 }
 

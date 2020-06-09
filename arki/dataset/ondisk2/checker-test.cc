@@ -57,7 +57,7 @@ void Tests::register_tests() {
 
 // Test recreating a dataset from just a datafile with duplicate data and a rebuild flagfile
 add_method("reindex_with_duplicates", [](Fixture& f) {
-    f.cfg.set("step", "monthly");
+    f.cfg->set("step", "monthly");
     GRIBData data;
     sys::makedirs("testds/2007/07");
     // TODO: use segments also in the other tests, and instantiate a new test suite for different segment types
@@ -96,12 +96,12 @@ add_method("reindex_with_duplicates", [](Fixture& f) {
         // duplicate items
         auto reader = f.makeOndisk2Reader();
         wassert_true(reader->hasWorkingIndex());
-        metadata::Collection mdc(*reader, Matcher::parse("reftime:=2007-07-07"));
+        metadata::Collection mdc(*reader, "reftime:=2007-07-07");
         wassert(actual(mdc.size()) == 1u);
         wassert(actual_type(mdc[0].source()).is_source_blob("grib", sys::abspath("testds"), "2007/07.grib", 34960, 34960));
 
         mdc.clear();
-        mdc.add(*reader, Matcher::parse("reftime:=2007-07-08"));
+        mdc.add(*reader, "reftime:=2007-07-08");
         wassert(actual(mdc.size()) == 1u);
         wassert(actual_type(mdc[0].source()).is_source_blob("grib", sys::abspath("testds"), "2007/07.grib", 34960*2, 7218));
     }
@@ -121,7 +121,7 @@ add_method("reindex_with_duplicates", [](Fixture& f) {
     // Test querying, and see that things have moved to the beginning
     auto reader = f.makeOndisk2Reader();
     wassert_true(reader->hasWorkingIndex());
-    metadata::Collection mdc(*reader, Matcher::parse("origin:GRIB1,80"));
+    metadata::Collection mdc(*reader, "origin:GRIB1,80");
     wassert(actual(mdc.size()) == 1u);
     wassert(actual_type(mdc[0].source()).is_source_blob("grib", sys::abspath("testds"), "2007/07.grib", 0, 34960));
 
@@ -129,7 +129,7 @@ add_method("reindex_with_duplicates", [](Fixture& f) {
     // (there used to be a bug where the rebuild would use the offsets of
     // the metadata instead of the data)
     mdc.clear();
-    mdc.add(*reader, Matcher::parse("reftime:=2007-07-08"));
+    mdc.add(*reader, "reftime:=2007-07-08");
     wassert(actual(mdc.size()) == 1u);
     wassert(actual_type(mdc[0].source()).is_source_blob("grib", sys::abspath("testds"), "2007/07.grib", 34960, 7218));
 
@@ -180,7 +180,7 @@ add_method("scan_reindex_compressed", [](Fixture& f) {
 
     // Compress one data file
     {
-        metadata::Collection mdc = f.query(Matcher::parse("origin:GRIB1,200"));
+        metadata::Collection mdc = f.query("origin:GRIB1,200");
         wassert(actual(mdc.size()) == 1u);
         string dest = mdc.ensureContiguousData("metadata file testds/2007/07-08.grib");
         auto checker = f.makeSegmentedChecker();
@@ -371,7 +371,7 @@ add_method("pack_vm2", [](Fixture& f) {
 
     // Take note of all the data and delete every second item
     vector<vector<uint8_t>> orig_data;
-    metadata::Collection mdc_imported = f.query(dataset::DataQuery("", true));
+    metadata::Collection mdc_imported = f.query(dataset::DataQuery(Matcher(), true));
     {
         orig_data.reserve(mdc_imported.size());
         for (unsigned i = 0; i < mdc_imported.size(); ++i)
@@ -412,7 +412,7 @@ add_method("pack_vm2", [](Fixture& f) {
     wassert(actual_file("testds/.archive").not_exists());
 
     // Ensure that the data hasn't been corrupted
-    metadata::Collection mdc_packed = f.query(dataset::DataQuery("", true));
+    metadata::Collection mdc_packed = f.query(dataset::DataQuery(Matcher(), true));
     wassert(actual(mdc_packed[0]).is_similar(mdc_imported[1]));
     wassert(actual(mdc_packed[1]).is_similar(mdc_imported[3]));
     wassert(actual(mdc_packed[0].get_data().read()) == orig_data[1]);

@@ -35,7 +35,7 @@ void Tests::register_tests() {
 // Test accessing the data
 add_method("read", [](Fixture& f) {
     auto reader = f.config().create_reader();
-    metadata::Collection mdc(*reader, Matcher::parse("origin:GRIB1 or BUFR or GRIB2"));
+    metadata::Collection mdc(*reader, "origin:GRIB1 or BUFR or GRIB2");
     wassert(actual(mdc.size()) == 0u);
 });
 
@@ -46,7 +46,7 @@ add_method("write", [](Fixture& f) {
 
     // Ensure that nothing can be read back
     auto reader = f.config().create_reader();
-    metadata::Collection mdc(*reader, Matcher::parse("origin:GRIB1 or BUFR or GRIB2"));
+    metadata::Collection mdc(*reader, "origin:GRIB1 or BUFR or GRIB2");
     wassert(actual(mdc.size()) == 0u);
 });
 

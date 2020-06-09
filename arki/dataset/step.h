@@ -73,7 +73,7 @@ public:
      * Return the Reftime periods of the first and last segment under this
      * directory.
      */
-    virtual void extremes(std::unique_ptr<types::reftime::Period>& first, std::unique_ptr<types::reftime::Period>& last) const = 0;
+    virtual void extremes(core::Interval& first, core::Interval& last) const = 0;
 };
 
 /**
@@ -97,12 +97,12 @@ public:
     /**
      * Return the first segment in this directory, with path relative to dirs.root
      */
-    virtual std::unique_ptr<types::reftime::Period> first() const = 0;
+    virtual core::Interval first() const = 0;
 
     /**
      * Return the last segment in this directory, with path relative to dirs.root
      */
-    virtual std::unique_ptr<types::reftime::Period> last() const = 0;
+    virtual core::Interval last() const = 0;
 };
 
 }
@@ -147,7 +147,7 @@ struct Step
      * available segment, and the theoretical end of the last available
      * segment.
      */
-    virtual void time_extremes(const step::SegmentQuery& query, std::unique_ptr<core::Time>& begin, std::unique_ptr<core::Time>& until) const = 0;
+    virtual void time_extremes(const step::SegmentQuery& query, core::Interval& interval) const = 0;
 
     /**
      * Create a Step according to the given step type name.

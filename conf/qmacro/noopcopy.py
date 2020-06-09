@@ -1,13 +1,12 @@
-import arkimet as arki
+from __future__ import annotations
 
 
 class Querymacro:
-    def __init__(self, macro_cfg, datasets_cfg, macro_args, query):
-        self.macro_cfg = macro_cfg,
-        self.datasets_cfg = datasets_cfg
+    def __init__(self, session, macro_args, query):
+        self.session = session
         self.macro_args = macro_args
         self.query = query
-        self.ds = arki.dataset.Reader(datasets_cfg[query])
+        self.ds = self.session.dataset_reader(name=query)
 
     def query_data(self, matcher=None, with_data=False, on_metadata=None):
         mds = self.ds.query_data(matcher=matcher, with_data=with_data)

@@ -1,4 +1,4 @@
-import arkimet as arki
+from __future__ import annotations
 import re
 import datetime
 
@@ -35,9 +35,8 @@ class Querymacro:
     re_date_iso = re.compile(r"^\d{4}-\d{2}-\d{2}$")
     re_time = re.compile(r"^(?P<h>\d{2})(?P<m>\d{2})$")
 
-    def __init__(self, macro_cfg, datasets_cfg, macro_args, query):
-        self.macro_cfg = macro_cfg,
-        self.datasets_cfg = datasets_cfg
+    def __init__(self, session, macro_args, query):
+        self.session = session
 
         # The argument, if provided, is a date used to expand @ in date expressions
         macro_args = macro_args.strip()
@@ -60,7 +59,7 @@ class Querymacro:
                     self._to_date(mo.group("d")),
                     self._to_time(mo.group("t")))
 
-            matcher = arki.Matcher(
+            matcher = self.session.matcher(
                 "reftime: ={reftime:%Y-%m-%dT%H:%M:%S}Z; "
                 "timerange: {trange}; level: {level}; product: {product}".format(
                     reftime=reftime,
@@ -81,7 +80,7 @@ class Querymacro:
     def get_reader(self, name):
         res = self.readers.get(name)
         if res is None:
-            res = arki.dataset.Reader(self.datasets_cfg[name])
+            res = self.session.dataset_reader(name=name)
             self.readers[name] = res
         return res
 

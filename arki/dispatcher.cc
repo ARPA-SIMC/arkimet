@@ -4,6 +4,7 @@
 #include "matcher.h"
 #include "dataset.h"
 #include "dataset/local.h"
+#include "dataset/session.h"
 #include "types/reftime.h"
 #include "types/source.h"
 #include "utils/string.h"
@@ -17,32 +18,27 @@ using arki::core::Time;
 
 namespace arki {
 
-static inline Matcher getFilter(const core::cfg::Section& cfg)
-{
-    return Matcher::parse(cfg.value("filter"));
-}
-
-Dispatcher::Dispatcher(const core::cfg::Sections& cfg)
-    : m_can_continue(true), m_outbound_failures(0)
+Dispatcher::Dispatcher(std::shared_ptr<dataset::Session> session)
+    : session(session), m_can_continue(true), m_outbound_failures(0)
 {
     // Validate the configuration, and split normal datasets from outbound
     // datasets
-    for (const auto& si: cfg)
-    {
-        if (si.first == "error" or si.first == "duplicates")
-            continue;
-        else if (si.second.value("type") == "outbound")
+    session->foreach_dataset([&](std::shared_ptr<dataset::Dataset> ds) {
+        if (ds->name() == "error" or ds->name() == "duplicates")
+            return true;
+        else if (ds->config->value("type") == "outbound")
         {
-            if (si.second.value("filter").empty())
-                throw std::runtime_error("configuration of dataset '" + si.first + "' does not have a 'filter' directive");
-            outbounds.push_back(make_pair(si.first, getFilter(si.second)));
+            if (ds->config->value("filter").empty())
+                throw std::runtime_error("configuration of dataset '" + ds->name() + "' does not have a 'filter' directive");
+            outbounds.push_back(make_pair(ds->name(), session->matcher(ds->config->value("filter"))));
         }
         else {
-            if (si.second.value("filter").empty())
-                throw std::runtime_error("configuration of dataset '" + si.first + "' does not have a 'filter' directive");
-            datasets.push_back(make_pair(si.first, getFilter(si.second)));
+            if (ds->config->value("filter").empty())
+                throw std::runtime_error("configuration of dataset '" + ds->name() + "' does not have a 'filter' directive");
+            datasets.push_back(make_pair(ds->name(), session->matcher(ds->config->value("filter"))));
         }
-    }
+        return true;
+    });
 }
 
 Dispatcher::~Dispatcher()
@@ -174,8 +170,8 @@ void Dispatcher::dispatch(dataset::WriterBatch& batch, bool drop_cached_data_on_
 }
 
 
-RealDispatcher::RealDispatcher(std::shared_ptr<dataset::Session> session, const core::cfg::Sections& cfg)
-    : Dispatcher(cfg), datasets(session, cfg), pool(datasets)
+RealDispatcher::RealDispatcher(std::shared_ptr<dataset::Session> session)
+    : Dispatcher(session), pool(session)
 {
 }
 
@@ -195,10 +191,10 @@ void RealDispatcher::flush() { pool.flush(); }
 
 
 
-TestDispatcher::TestDispatcher(std::shared_ptr<dataset::Session> session, const core::cfg::Sections& cfg)
-    : Dispatcher(cfg), session(session), cfg(cfg)
+TestDispatcher::TestDispatcher(std::shared_ptr<dataset::Session> session)
+    : Dispatcher(session)
 {
-    if (!cfg.section("error"))
+    if (!session->has_dataset("error"))
         throw std::runtime_error("no [error] dataset found");
 }
 TestDispatcher::~TestDispatcher() {}
@@ -207,7 +203,7 @@ void TestDispatcher::raw_dispatch_dataset(const std::string& name, dataset::Writ
 {
     if (batch.empty()) return;
     // TODO: forward drop_cached_data_on_commit
-    dataset::Writer::test_acquire(session, *cfg.section(name), batch);
+    dataset::Writer::test_acquire(session, *session->dataset(name)->config, batch);
 }
 
 void TestDispatcher::dispatch(dataset::WriterBatch& batch, bool drop_cached_data_on_commit)

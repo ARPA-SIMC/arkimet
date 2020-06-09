@@ -230,32 +230,31 @@ void Contents::list_segments_filtered(const Matcher& matcher, std::function<void
     if (matcher.empty())
         return list_segments(dest);
 
-    unique_ptr<Time> begin;
-    unique_ptr<Time> end;
-    if (!matcher.restrict_date_range(begin, end))
+    core::Interval interval;
+    if (!matcher.intersect_interval(interval))
         // The matcher matches an impossible datetime span: convert it
         // into an impossible clause that evaluates quickly
         return;
 
-    if (!begin.get() && !end.get())
+    if (interval.is_unbounded())
         return list_segments(dest);
 
-    if (begin.get() && end.get())
+    if (interval.begin.is_set() && interval.end.is_set())
     {
         Query sq("list_segments", m_db);
-        sq.compile("SELECT DISTINCT file, MIN(reftime) AS begin, MAX(reftime) AS end FROM md GROUP BY file HAVING begin <= ? AND end >= ? ORDER BY file");
-        string b = begin->to_sql();
-        string e = end->to_sql();
+        sq.compile("SELECT DISTINCT file, MIN(reftime) AS begin, MAX(reftime) AS end FROM md GROUP BY file HAVING begin < ? AND end >= ? ORDER BY file");
+        string b = interval.begin.to_sql();
+        string e = interval.end.to_sql();
         sq.bind(1, e);
         sq.bind(2, b);
         while (sq.step())
             dest(sq.fetchString(0));
     }
-    else if (begin.get())
+    else if (interval.begin.is_set())
     {
         Query sq("list_segments", m_db);
         sq.compile("SELECT DISTINCT file, MAX(reftime) AS end FROM md GROUP BY file HAVING end >= ? ORDER BY file");
-        string b = begin->to_sql();
+        string b = interval.begin.to_sql();
         sq.bind(1, b);
         while (sq.step())
             dest(sq.fetchString(0));
@@ -263,8 +262,8 @@ void Contents::list_segments_filtered(const Matcher& matcher, std::function<void
     else
     {
         Query sq("list_segments", m_db);
-        sq.compile("SELECT DISTINCT file, MIN(reftime) AS begin FROM md GROUP BY file HAVING begin <= ? ORDER BY file");
-        string e = end->to_sql();
+        sq.compile("SELECT DISTINCT file, MIN(reftime) AS begin FROM md GROUP BY file HAVING begin < ? ORDER BY file");
+        string e = interval.end.to_sql();
         sq.bind(1, e);
         while (sq.step())
             dest(sq.fetchString(0));
@@ -312,7 +311,7 @@ void Contents::query_segment(const std::string& relpath, metadata_dest_func dest
     scan_file(relpath, dest);
 }
 
-bool Contents::segment_timespan(const std::string& relpath, Time& start_time, Time& end_time) const
+bool Contents::segment_timespan(const std::string& relpath, core::Interval& interval) const
 {
     Query sq("max_file_reftime", m_db);
     sq.compile("SELECT MIN(reftime), MAX(reftime) FROM md WHERE file=?");
@@ -320,14 +319,18 @@ bool Contents::segment_timespan(const std::string& relpath, Time& start_time, Ti
     bool res = false;
     while (sq.step())
     {
-        start_time.set_sql(sq.fetchString(0));
-        end_time.set_sql(sq.fetchString(1));
+        interval.begin.set_sql(sq.fetchString(0));
+        // Timespans are stored extreme included
+        core::Time end = core::Time::create_sql(sq.fetchString(1));
+        end.se += 1;
+        end.normalise();
+        interval.end = end;
         res = true;
     }
     return res;
 }
 
-static void db_time_extremes(utils::sqlite::SQLiteDB& db, unique_ptr<Time>& begin, unique_ptr<Time>& end)
+static void db_time_extremes(utils::sqlite::SQLiteDB& db, core::Interval& interval)
 {
     // SQLite can compute min and max of an indexed column very fast,
     // provided that it is the ONLY thing queried.
@@ -335,14 +338,18 @@ static void db_time_extremes(utils::sqlite::SQLiteDB& db, unique_ptr<Time>& begi
     q1.compile("SELECT MIN(reftime) FROM md");
     while (q1.step())
         if (!q1.isNULL(0))
-            begin.reset(new Time(Time::create_sql(q1.fetchString(0))));
+            interval.begin.set_sql(q1.fetchString(0));
 
     Query q2("min_date", db);
     q2.compile("SELECT MAX(reftime) FROM md");
     while (q2.step())
     {
         if (!q2.isNULL(0))
-            end.reset(new Time(Time::create_sql(q2.fetchString(0))));
+        {
+            interval.end.set_sql(q2.fetchString(0));
+            ++interval.end.se;
+            interval.end.normalise();
+        }
     }
 }
 
@@ -353,13 +360,12 @@ bool Contents::addJoinsAndConstraints(const Matcher& m, std::string& query) cons
     // Add database constraints
     if (not m.empty())
     {
-        unique_ptr<Time> begin;
-        unique_ptr<Time> end;
-        if (!m.restrict_date_range(begin, end))
+        core::Interval interval;
+        if (!m.intersect_interval(interval))
             // The matcher matches an impossible datetime span: convert it
             // into an impossible clause that evaluates quickly
             constraints.push_back("1 == 2");
-        else if (!begin.get() && !end.get())
+        else if (interval.is_unbounded())
         {
             // No restriction on a range of reftimes, but still add sql
             // constraints if there is an unbounded reftime matcher (#116)
@@ -371,31 +377,23 @@ bool Contents::addJoinsAndConstraints(const Matcher& m, std::string& query) cons
             }
         } else {
             // Compare with the reftime bounds in the database
-            unique_ptr<Time> db_begin;
-            unique_ptr<Time> db_end;
-            db_time_extremes(m_db, db_begin, db_end);
-            if (db_begin.get() && db_end.get())
+            core::Interval db_interval;
+            db_time_extremes(m_db, db_interval);
+            if (db_interval.begin.is_set() && db_interval.end.is_set())
             {
                 // Intersect the time bounds of the query with the time
                 // bounds of the database
-                if (!begin.get())
-                   begin.reset(new Time(*db_begin));
-                else if (*begin < *db_begin)
-                   *begin = *db_begin;
-                if (!end.get())
-                   end.reset(new Time(*db_end));
-                else if (*end > *db_end)
-                   *end = *db_end;
-                long long int qrange = Time::duration(*begin, *end);
-                long long int dbrange = Time::duration(*db_begin, *db_end);
+                interval.intersect(db_interval);
+                long long int qrange = Time::duration(interval);
+                long long int dbrange = Time::duration(db_interval);
                 // If the query chooses less than 20%
                 // if the time span, force the use of
                 // the reftime index
                 if (dbrange > 0 && qrange * 100 / dbrange < 20)
                 {
                     query += " INDEXED BY md_idx_reftime";
-                    constraints.push_back("reftime BETWEEN \'" + begin->to_sql()
-                            + "\' AND \'" + end->to_sql() + "\'");
+                    constraints.push_back(
+                        "reftime >= \'" + interval.begin.to_sql() + "\' AND reftime < \'" + interval.end.to_sql() + "\'");
                 }
             }
 
@@ -622,17 +620,16 @@ void Contents::summaryForAll(Summary& out) const
     if (!scache.read(out))
     {
         // Find the datetime extremes in the database
-        unique_ptr<Time> begin;
-        unique_ptr<Time> end;
-        db_time_extremes(m_db, begin, end);
+        core::Interval interval;
+        db_time_extremes(m_db, interval);
 
         // If there is data in the database, get all the involved
         // monthly summaries
-        if (begin.get() && end.get())
+        if (interval.begin.is_set() && interval.end.is_set())
         {
-            int year = begin->ye;
-            int month = begin->mo;
-            while (year < end->ye || (year == end->ye && month <= end->mo))
+            int year = interval.begin.ye;
+            int month = interval.begin.mo;
+            while (year < interval.end.ye || (year == interval.end.ye && month <= interval.end.mo))
             {
                 summaryForMonth(year, month, out);
 
@@ -709,28 +706,14 @@ bool Contents::querySummaryFromDB(const Matcher& m, Summary& summary) const
     return true;
 }
 
-static inline bool range_envelopes_full_month(const Time& begin, const Time& end)
-{
-    bool begins_at_beginning = begin.da == 1 && begin.ho == 0 && begin.mi == 0 && begin.se == 0;
-    if (begins_at_beginning)
-        return end >= begin.end_of_month();
-
-    bool ends_at_end = end.da == Time::days_in_month(end.ye, end.mo) && end.ho == 23 && end.mi == 59 && end.se == 59;
-    if (ends_at_end)
-        return begin <= end.start_of_month();
-
-    return end.ye == begin.ye + begin.mo / 12 && end.mo == (begin.mo % 12) + 1;
-}
-
 bool Contents::query_summary(const Matcher& matcher, Summary& summary)
 {
     // Check if the matcher discriminates on reference times
-    unique_ptr<Time> begin;
-    unique_ptr<Time> end;
-    if (!matcher.restrict_date_range(begin, end))
+    core::Interval interval;
+    if (!matcher.intersect_interval(interval))
         return true; // If the matcher contains an impossible reftime, return right away
 
-    if (!begin.get() && !end.get())
+    if (interval.is_unbounded())
     {
         // The matcher does not contain reftime, or does not restrict on a
         // datetime range, we can work with a global summary
@@ -741,34 +724,28 @@ bool Contents::query_summary(const Matcher& matcher, Summary& summary)
     }
 
     // Amend open ends with the bounds from the database
-    unique_ptr<Time> db_begin;
-    unique_ptr<Time> db_end;
-    db_time_extremes(m_db, db_begin, db_end);
+    core::Interval db_interval;
+    db_time_extremes(m_db, db_interval);
+
     // If the database is empty then the result is empty:
     // we are done
-    if (!db_begin.get())
+    if (!db_interval.begin.is_set())
         return true;
     bool begin_from_db = false;
-    if (!begin.get())
+    if (!interval.begin.is_set() || interval.begin < db_interval.begin)
     {
-        begin.reset(new Time(*db_begin));
-        begin_from_db = true;
-    } else if (*begin < *db_begin) {
-        *begin = *db_begin;
+        interval.begin = db_interval.begin;
         begin_from_db = true;
     }
     bool end_from_db = false;
-    if (!end.get())
+    if (!interval.end.is_set() || interval.end > db_interval.end)
     {
-        end.reset(new Time(*db_end));
-        end_from_db = true;
-    } else if (*end > *db_end) {
-        *end = *db_end;
+        interval.end = db_interval.end;
         end_from_db = true;
     }
 
     // If the interval is under a week, query the DB directly
-    long long int range = Time::duration(*begin, *end);
+    long long int range = Time::duration(interval);
     if (range <= 7 * 24 * 3600)
         return querySummaryFromDB(matcher, summary);
 
@@ -776,47 +753,36 @@ bool Contents::query_summary(const Matcher& matcher, Summary& summary)
     {
         // Round down to month begin, so we reuse the cached summary if
         // available
-        *begin = begin->start_of_month();
+        interval.begin = interval.begin.start_of_month();
     }
-    if (end_from_db)
+    if (end_from_db && !interval.end.is_start_of_month())
     {
         // Round up to month end, so we reuse the cached summary if
         // available
-        *end = end->end_of_month();
+        interval.end = interval.end.start_of_next_month();
     }
 
     // If the selected interval does not envelope any whole month, query
     // the DB directly
-    if (!range_envelopes_full_month(*begin, *end))
+    if (!interval.spans_one_whole_month())
         return querySummaryFromDB(matcher, summary);
 
     // Query partial month at beginning, middle whole months, partial
     // month at end. Query whole months at extremes if they are indeed whole
-    while (*begin <= *end)
-    {
-        Time endmonth = begin->end_of_month();
-
-        bool starts_at_beginning = (begin->da == 1 && begin->ho == 0 && begin->mi == 0 && begin->se == 0);
-        if (starts_at_beginning && endmonth <= *end)
+    interval.iter_months([&](const core::Interval& month) {
+        if (month.begin.is_start_of_month() && month.end.is_start_of_month())
         {
             Summary s;
-            summaryForMonth(begin->ye, begin->mo, s);
-            s.filter(matcher, summary);
-        } else if (endmonth <= *end) {
-            Summary s;
-            querySummaryFromDB("reftime >= '" + begin->to_sql() + "'"
-                       " AND reftime < '" + endmonth.to_sql() + "'", s);
+            summaryForMonth(month.begin.ye, month.begin.mo, s);
             s.filter(matcher, summary);
         } else {
             Summary s;
-            querySummaryFromDB("reftime >= '" + begin->to_sql() + "'"
-                       " AND reftime < '" + end->to_sql() + "'", s);
+            querySummaryFromDB("reftime >= '" + month.begin.to_sql() + "'"
+                       " AND reftime < '" + month.end.to_sql() + "'", s);
             s.filter(matcher, summary);
         }
-
-        // Advance to the beginning of the next month
-        *begin = begin->start_of_next_month();
-    }
+        return true;
+    });
 
     return true;
 }

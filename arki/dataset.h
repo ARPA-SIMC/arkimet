@@ -73,7 +73,7 @@ public:
     std::shared_ptr<Session> session;
 
     /// Raw configuration key-value pairs
-    core::cfg::Section cfg;
+    std::shared_ptr<core::cfg::Section> config;
 
     Dataset(std::shared_ptr<Session> session);
     Dataset(std::shared_ptr<Session> session, const std::string& name);
@@ -121,7 +121,7 @@ public:
     std::string name() const { return dataset().name(); }
 
     /// Return the dataset configuration
-    const core::cfg::Section& cfg() const { return dataset().cfg; }
+    std::shared_ptr<const core::cfg::Section> config() const { return dataset().config; }
 
     /// Return a name identifying the dataset type
     virtual std::string type() const = 0;
@@ -129,6 +129,42 @@ public:
 
 class Reader : public dataset::Base
 {
+protected:
+    // Use explicitly nonambiguous names in implementation methods, to prevent
+    // shadowing/hide-by-name to kick in if child classes implement only some
+    // of them
+
+    /**
+     * Query the dataset using the given matcher, and sending the results to
+     * the given function.
+     *
+     * Returns true if dest always returned true, false if iteration stopped
+     * because dest returned false.
+     */
+    virtual bool impl_query_data(const dataset::DataQuery& q, metadata_dest_func dest) = 0;
+
+    /**
+     * Add to summary the summary of the data that would be extracted with the
+     * given query.
+     */
+    virtual void impl_query_summary(const Matcher& matcher, Summary& summary);
+
+    /**
+     * Query the dataset obtaining a byte stream, that gets written to a file
+     * descriptor.
+     *
+     * The default implementation in Reader is based on queryData.
+     */
+    virtual void impl_fd_query_bytes(const dataset::ByteQuery& q, core::NamedFileDescriptor& out);
+
+    /**
+     * Query the dataset obtaining a byte stream, that gets written to a file
+     * descriptor.
+     *
+     * The default implementation in Reader is based on queryData.
+     */
+    virtual void impl_abstract_query_bytes(const dataset::ByteQuery& q, core::AbstractOutputFile& out);
+
 public:
     using Base::Base;
 
@@ -139,13 +175,34 @@ public:
      * Returns true if dest always returned true, false if iteration stopped
      * because dest returned false.
      */
-    virtual bool query_data(const dataset::DataQuery& q, metadata_dest_func dest) = 0;
+    bool query_data(const std::string& q, metadata_dest_func dest);
+
+    /**
+     * Query the dataset using the given matcher, and sending the results to
+     * the given function.
+     *
+     * Returns true if dest always returned true, false if iteration stopped
+     * because dest returned false.
+     */
+    bool query_data(const dataset::DataQuery& q, metadata_dest_func dest)
+    {
+        return impl_query_data(q, dest);
+    }
 
     /**
      * Add to summary the summary of the data that would be extracted with the
      * given query.
      */
-    virtual void query_summary(const Matcher& matcher, Summary& summary);
+    void query_summary(const std::string& matcher, Summary& summary);
+
+    /**
+     * Add to summary the summary of the data that would be extracted with the
+     * given query.
+     */
+    void query_summary(const Matcher& matcher, Summary& summary)
+    {
+        return impl_query_summary(matcher, summary);
+    }
 
     /**
      * Query the dataset obtaining a byte stream, that gets written to a file
@@ -153,7 +210,10 @@ public:
      *
      * The default implementation in Reader is based on queryData.
      */
-    virtual void query_bytes(const dataset::ByteQuery& q, core::NamedFileDescriptor& out);
+    void query_bytes(const dataset::ByteQuery& q, core::NamedFileDescriptor& out)
+    {
+        return impl_fd_query_bytes(q, out);
+    }
 
     /**
      * Query the dataset obtaining a byte stream, that gets written to a file
@@ -161,16 +221,17 @@ public:
      *
      * The default implementation in Reader is based on queryData.
      */
-    virtual void query_bytes(const dataset::ByteQuery& q, core::AbstractOutputFile& out);
+    void query_bytes(const dataset::ByteQuery& q, core::AbstractOutputFile& out)
+    {
+        return impl_abstract_query_bytes(q, out);
+    }
 
     /**
-     * Expand the given begin and end ranges to include the datetime extremes
-     * of this dataset.
+     * Return the time interval of available data stored in this dataset.
      *
-     * If begin and end are unset, set them to the datetime extremes of this
-     * dataset.
+     * If there is no data, it returns an unbound interval.
      */
-    virtual void expand_date_range(std::unique_ptr<core::Time>& begin, std::unique_ptr<core::Time>& end);
+    virtual core::Interval get_stored_time_interval() = 0;
 };
 
 struct WriterBatchElement

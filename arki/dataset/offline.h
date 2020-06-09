@@ -26,6 +26,11 @@ struct Dataset : public dataset::Dataset
  */
 struct Reader : public DatasetAccess<Dataset, dataset::Reader>
 {
+protected:
+    bool impl_query_data(const dataset::DataQuery& q, metadata_dest_func) override;
+    void impl_query_summary(const Matcher& matcher, Summary& summary) override;
+
+public:
     Summary sum;
 
     Reader(std::shared_ptr<Dataset> dataset);
@@ -33,9 +38,7 @@ struct Reader : public DatasetAccess<Dataset, dataset::Reader>
 
     std::string type() const override;
 
-    bool query_data(const dataset::DataQuery& q, metadata_dest_func) override;
-    void query_summary(const Matcher& matcher, Summary& summary) override;
-    void expand_date_range(std::unique_ptr<core::Time>& begin, std::unique_ptr<core::Time>& end) override;
+    core::Interval get_stored_time_interval() override;
 };
 
 }

@@ -6,6 +6,7 @@
 #include "arki/metadata/data.h"
 #include "arki/metadata/collection.h"
 #include "arki/matcher.h"
+#include "arki/matcher/parser.h"
 #include "arki/types/source/blob.h"
 #include "arki/utils/accounting.h"
 #include "arki/utils/string.h"
@@ -48,7 +49,7 @@ name = error
 path = error
 )";
 
-static core::cfg::Sections setup1()
+static std::shared_ptr<core::cfg::Sections> setup1()
 {
     sys::rmtree_ifexists("test200");
     sys::rmtree_ifexists("test80");
@@ -69,13 +70,15 @@ add_method("simple", [] {
     using namespace arki::utils::acct;
 
     auto session = std::make_shared<dataset::Session>();
-    auto config = setup1();
+    auto cfg = setup1();
+    for (const auto i: *cfg)
+        session->add_dataset(*i.second);
 
     plain_data_read_count.reset();
     metadata::TrackedData tracked_data(metadata::DataManager::get());
 
     metadata::TestCollection mdc("inbound/test.grib1", true);
-    RealDispatcher dispatcher(session, config);
+    RealDispatcher dispatcher(session);
     auto batch = mdc.make_import_batch();
     wassert(dispatcher.dispatch(batch, false));
     wassert(actual(batch[0]->dataset_name) == "test200");
@@ -95,13 +98,15 @@ add_method("drop_cached_data", [] {
     using namespace arki::utils::acct;
 
     auto session = std::make_shared<dataset::Session>();
-    auto config = setup1();
+    auto cfg = setup1();
+    for (const auto& i: *cfg)
+        session->add_dataset(*i.second);
 
     plain_data_read_count.reset();
     metadata::TrackedData tracked_data(metadata::DataManager::get());
 
     metadata::TestCollection mdc("inbound/test.grib1", true);
-    RealDispatcher dispatcher(session, config);
+    RealDispatcher dispatcher(session);
     auto batch = mdc.make_import_batch();
     wassert(dispatcher.dispatch(batch, true));
     wassert(actual(batch[0]->dataset_name) == "test200");
@@ -120,6 +125,7 @@ add_method("drop_cached_data", [] {
 // Test a case where dispatch is known to fail
 add_method("regression01", [] {
     skip_unless_bufr();
+    matcher::Parser parser;
     // In-memory dataset configuration
     sys::rmtree_ifexists("lami_temp");
     sys::rmtree_ifexists("error");
@@ -135,14 +141,16 @@ add_method("regression01", [] {
     auto config = core::cfg::Sections::parse(conf);
 
     auto session = std::make_shared<dataset::Session>();
+    for (const auto& i: *config)
+        session->add_dataset(*i.second);
 
     metadata::TestCollection source("inbound/tempforecast.bufr", true);
     wassert(actual(source.size()) == 1u);
 
-    Matcher matcher = Matcher::parse("origin:BUFR,200; product:BUFR:t=temp");
+    Matcher matcher = parser.parse("origin:BUFR,200; product:BUFR:t=temp");
     wassert_true(matcher(source[0]));
 
-    RealDispatcher dispatcher(session, config);
+    RealDispatcher dispatcher(session);
     auto batch = source.make_import_batch();
     wassert(dispatcher.dispatch(batch, false));
     wassert(actual(batch[0]->dataset_name) == "lami_temp");
@@ -153,8 +161,10 @@ add_method("regression01", [] {
 // Test dispatch to error datasets after validation errors
 add_method("validation", [] {
     auto session = std::make_shared<dataset::Session>();
-    auto config = setup1();
-    RealDispatcher dispatcher(session, config);
+    auto cfg = setup1();
+    for (const auto& i: *cfg)
+        session->add_dataset(*i.second);
+    RealDispatcher dispatcher(session);
     metadata::validators::FailAlways fail_always;
     dispatcher.add_validator(fail_always);
     metadata::TestCollection mdc("inbound/test.grib1", true);
@@ -172,11 +182,13 @@ add_method("validation", [] {
 // Test dispatching files with no reftime, they should end up in the error dataset
 add_method("missing_reftime", [] {
     auto session = std::make_shared<dataset::Session>();
-    auto config = setup1();
+    auto cfg = setup1();
+    for (const auto& i: *cfg)
+        session->add_dataset(*i.second);
     metadata::TestCollection source("inbound/wrongdate.bufr", true);
     wassert(actual(source.size()) == 6u);
 
-    RealDispatcher dispatcher(session, config);
+    RealDispatcher dispatcher(session);
     auto batch = source.make_import_batch();
     wassert(dispatcher.dispatch(batch, false));
     wassert(actual(batch[0]->dataset_name) == "error");

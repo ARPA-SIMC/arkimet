@@ -18,15 +18,6 @@ struct Dataset : public dataset::Dataset
 
     Dataset(std::shared_ptr<Session> session);
 
-    /// Add a dataset to the group of datasets to merge
-    void add_dataset(std::shared_ptr<dataset::Reader> ds);
-
-    /// Add a dataset to the group of datasets to merge
-    void add_dataset(std::shared_ptr<dataset::Dataset> ds);
-
-    /// Add a dataset to the group of datasets to merge
-    void add_dataset(const core::cfg::Section& cfg);
-
     std::shared_ptr<dataset::Reader> create_reader() override;
 };
 
@@ -35,16 +26,19 @@ struct Dataset : public dataset::Dataset
  */
 class Reader : public DatasetAccess<Dataset, dataset::Reader>
 {
+protected:
+    bool impl_query_data(const dataset::DataQuery& q, metadata_dest_func dest) override;
+    void impl_query_summary(const Matcher& matcher, Summary& summary) override;
+    void impl_fd_query_bytes(const dataset::ByteQuery& q, core::NamedFileDescriptor& out) override;
+    void impl_abstract_query_bytes(const dataset::ByteQuery& q, core::AbstractOutputFile& out) override;
+
 public:
     using DatasetAccess::DatasetAccess;
     virtual ~Reader();
 
     std::string type() const override;
 
-    bool query_data(const dataset::DataQuery& q, metadata_dest_func dest) override;
-    void query_summary(const Matcher& matcher, Summary& summary) override;
-    void query_bytes(const dataset::ByteQuery& q, core::NamedFileDescriptor& out) override;
-    void query_bytes(const dataset::ByteQuery& q, core::AbstractOutputFile& out) override;
+    core::Interval get_stored_time_interval() override;
 };
 
 }
