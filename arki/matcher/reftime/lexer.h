@@ -27,28 +27,35 @@ struct LexInterval
 
 struct Parser
 {
-    std::string str;
-    std::string::const_iterator cur;
+    const char* orig_buf;
+    const char* buf;
+    unsigned len;
 
-    Parser(const char* buf, unsigned len) : str(buf, len), cur(str.begin()) {}
+    Parser(const char* sbuf, unsigned slen) : orig_buf(sbuf), buf(sbuf), len(slen) {}
 
     void error(const std::string& msg)
     {
-        std::string lead = str.substr(0, cur - str.begin());
-        std::string trail = str.substr(cur - str.begin());
+        std::string lead(orig_buf, buf - orig_buf);
+        std::string trail(buf, len);
         throw std::invalid_argument("cannot parse reftime match expression \"" + lead + "[HERE]" + trail + "\": " + msg);
     }
 
     void eatNonSpaces()
     {
-        while (!isspace(*cur))
-            ++cur;
+        while (len && !isspace(*buf))
+        {
+            ++buf;
+            --len;
+        }
     }
 
     void eatSpaces()
     {
-        while (isspace(*cur))
-            ++cur;
+        while (len && isspace(*buf))
+        {
+            ++buf;
+            --len;
+        }
     }
 
     char itype();
@@ -56,10 +63,11 @@ struct Parser
     void eatInsensitive(const char* s)
     {
         if (*s == 0) return;
-        if (cur == str.end() || ::tolower(*cur) != s[0])
+        if (!len || ::tolower(*buf) != s[0])
             error(std::string("expecting ") + s);
-        ++cur;
-        eatInsensitive(s+1);
+        ++buf;
+        --len;
+        eatInsensitive(s + 1);
     }
 };
 
@@ -73,36 +81,38 @@ arki::core::FuzzyTime* parse_easter(const std::string& str);
  */
 struct DTParser : public Parser
 {
-    DTParser(const char* buf, unsigned len) : Parser(buf, len) {}
+    using Parser::Parser;
 
     /// Parse a number
     int num()
     {
         std::string val;
-        for ( ; cur != str.end() && isdigit(*cur); ++cur)
-            val += *cur;
+        for ( ; len && isdigit(*buf); ++buf, --len)
+            val += *buf;
         if (val.empty())
             error("number expected");
         return strtoul(val.c_str(), 0, 10);
     }
     bool eat(char c)
     {
-        if (cur == str.end() || *cur != c)
+        if (!len || *buf != c)
             return false;
-        ++cur;
+        ++buf;
+        --len;
         return true;
         //error(string("expected '") + c + "'");
     }
     bool eatOneOf(const char* chars)
     {
-        if (cur == str.end() || strchr(chars, *cur) == NULL)
+        if (!len || strchr(chars, *buf) == NULL)
             return false;
-        ++cur;
+        ++buf;
+        --len;
         return true;
     }
     void end()
     {
-        if (cur != str.end())
+        if (len)
             error("trailing characters found");
     }
     std::unique_ptr<arki::core::FuzzyTime> getDate()
@@ -118,11 +128,11 @@ struct DTParser : public Parser
         if (!eat('-')) return res;
         res->da = num();
         // Eat optional 'T' at the end of the date
-        if (cur != str.end() && (*cur == 'T' || *cur == 't')) ++cur;
+        if (len && (*buf == 'T' || *buf == 't')) { ++buf; --len; }
         // Eat optional spaces
         eatSpaces();
         // Hour
-        if (cur == str.end()) return res;
+        if (!len) return res;
         res->ho = num();
         // Minute
         if (!eat(':')) return res;
@@ -155,15 +165,15 @@ struct ISParser : public Parser
 {
     struct LexInterval& res;
 
-    ISParser(const char* buf, unsigned len, struct LexInterval& res) : Parser(buf, len), res(res)
+    ISParser(const char* sbuf, unsigned slen, struct LexInterval& res) : Parser(sbuf, slen), res(res)
     {
     }
 
     unsigned long int num()
     {
         std::string val;
-        for ( ; cur != str.end() && isdigit(*cur); ++cur)
-            val += *cur;
+        for ( ; len && isdigit(*buf); ++buf, --len)
+            val += *buf;
         if (val.empty())
             error("number expected");
         return strtoul(val.c_str(), 0, 10);
@@ -174,7 +184,7 @@ struct ISParser : public Parser
 /// Parser for time intervals
 struct IParser : public ISParser
 {
-    IParser(const char* buf, unsigned len, struct LexInterval& res);
+    IParser(const char* sbuf, unsigned slen, struct LexInterval& res);
 
     void itype();
 };
@@ -182,7 +192,7 @@ struct IParser : public ISParser
 /// Parser for time steps
 struct SParser : public ISParser
 {
-    SParser(const char* buf, unsigned len, struct LexInterval& res);
+    SParser(const char* sbuf, unsigned slen, struct LexInterval& res);
 
     void itype();
 };

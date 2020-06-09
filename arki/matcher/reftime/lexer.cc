@@ -7,17 +7,17 @@ namespace lexer {
 
 char Parser::itype()
 {
-    switch (*cur)
+    switch (*buf)
     {
         case 'h': {
-            std::string name(cur, str.cend());
+            std::string name(buf, len);
             if (name == "h" || name == "hour" || name == "hours")
                 return 'h';
             error("expected h, hour or hours");
             break;
         }
         case 'm': {
-            std::string name(cur, str.cend());
+            std::string name(buf, len);
             if (name == "m" || name == "min" || name == "minute" || name == "minutes")
                 return 'm';
             if (name == "month" || name == "months")
@@ -26,28 +26,28 @@ char Parser::itype()
             break;
         }
         case 's': {
-            std::string name(cur, str.cend());
+            std::string name(buf, len);
             if (name == "s" || name == "sec" || name == "second" || name == "seconds")
                 return 's';
             error("expected s, sec, second or seconds");
             break;
         }
         case 'w': {
-            std::string name(cur, str.cend());
+            std::string name(buf, len);
             if (name == "w" || name == "week" || name == "weeks")
                 return 'w';
             error("expected w, week or weeks");
             break;
         }
         case 'd': {
-            std::string name(cur, str.cend());
+            std::string name(buf, len);
             if (name == "d" || name == "day" || name == "days")
                 return 'd';
             error("expected d, day or days");
             break;
         }
         case 'y': {
-            std::string name(cur, str.cend());
+            std::string name(buf, len);
             if (name == "y" || name == "year" || name == "years")
                 return 'y';
             error("expected y, year or years");
@@ -88,12 +88,12 @@ void parse_time(const char* buf, unsigned len, int* res)
 };
 
 
-IParser::IParser(const char* buf, unsigned len, struct LexInterval& res)
-    : ISParser(buf, len, res)
+IParser::IParser(const char* sbuf, unsigned slen, struct LexInterval& res)
+    : ISParser(sbuf, slen, res)
 {
-    if (cur == str.end())
+    if (!len)
         error("number or 'a' expected");
-    if (*cur == 'a' || *cur == 'A')
+    if (*buf == 'a' || *buf == 'A')
     {
         res.val = 1;
         eatNonSpaces();
@@ -106,10 +106,10 @@ IParser::IParser(const char* buf, unsigned len, struct LexInterval& res)
 
 void IParser::itype()
 {
-    switch (*cur)
+    switch (*buf)
     {
         case 'h': {
-            std::string name(cur, str.cend());
+            std::string name(buf, len);
             if (name == "h" || name == "hour" || name == "hours")
             {
                 res.idx = 3;
@@ -119,7 +119,7 @@ void IParser::itype()
             break;
         }
         case 'm': {
-            std::string name(cur, str.cend());
+            std::string name(buf, len);
             if (name == "m" || name == "min" || name == "minute" || name == "minutes")
             {
                 res.idx = 4;
@@ -134,7 +134,7 @@ void IParser::itype()
             break;
         }
         case 's': {
-            std::string name(cur, str.cend());
+            std::string name(buf, len);
             if (name == "s" || name == "sec" || name == "second" || name == "seconds")
             {
                 res.idx = 5;
@@ -144,7 +144,7 @@ void IParser::itype()
             break;
         }
         case 'w': {
-            std::string name(cur, str.cend());
+            std::string name(buf, len);
             if (name == "w" || name == "week" || name == "weeks")
             {
                 res.val *= 7;
@@ -155,7 +155,7 @@ void IParser::itype()
             break;
         }
         case 'd': {
-            std::string name(cur, str.cend());
+            std::string name(buf, len);
             if (name == "d" || name == "day" || name == "days")
             {
                 res.idx = 2;
@@ -165,7 +165,7 @@ void IParser::itype()
             break;
         }
         case 'y': {
-            std::string name(cur, str.cend());
+            std::string name(buf, len);
             if (name == "y" || name == "year" || name == "years")
             {
                 res.idx = 0;
@@ -179,12 +179,15 @@ void IParser::itype()
 }
 
 
-SParser::SParser(const char* buf, unsigned len, struct LexInterval& res) : ISParser(buf, len, res)
+SParser::SParser(const char* sbuf, unsigned slen, struct LexInterval& res) : ISParser(sbuf, slen, res)
 {
-    if (cur == str.end())
+    if (!len)
         error("expecting time step");
-    if (*cur == '%')
-        ++cur;
+    if (*buf == '%')
+    {
+        ++buf;
+        --len;
+    }
     else
         eatInsensitive("every");
     eatSpaces();
@@ -195,10 +198,10 @@ SParser::SParser(const char* buf, unsigned len, struct LexInterval& res) : ISPar
 
 void SParser::itype()
 {
-    switch (*cur)
+    switch (*buf)
     {
         case 'h': {
-            std::string name(cur, str.cend());
+            std::string name(buf, len);
             if (name == "h" || name == "hour" || name == "hours")
             {
                 res.idx = 3;
@@ -208,7 +211,7 @@ void SParser::itype()
             break;
         }
         case 'm': {
-            std::string name(cur, str.cend());
+            std::string name(buf, len);
             if (name == "m" || name == "min" || name == "minute" || name == "minutes")
             {
                 res.idx = 4;
@@ -218,7 +221,7 @@ void SParser::itype()
             break;
         }
         case 's': {
-            std::string name(cur, str.cend());
+            std::string name(buf, len);
             if (name == "s" || name == "sec" || name == "second" || name == "seconds")
             {
                 res.idx = 5;
