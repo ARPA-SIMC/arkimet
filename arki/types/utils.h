@@ -29,6 +29,14 @@ struct is_item_decoder<R(core::BinaryDecoder&)>
     static constexpr bool value = true;
 };
 
+template<typename T>
+struct complete_traits : public arki::types::traits<T>
+{
+    static inline Type* decode(core::BinaryDecoder& dec) { return T::decode(dec).release(); }
+    static inline Type* decodeString(const std::string& val) { return T::decodeString(val).release(); }
+    static inline Type* decode_structure(const structured::Keys& keys, const structured::Reader& reader) { return T::decode_structure(keys, reader).release(); }
+};
+
 /**
  * This class is used to register types with the arkimet metadata type system.
  *
@@ -37,9 +45,9 @@ struct is_item_decoder<R(core::BinaryDecoder&)>
  */
 struct MetadataType
 {
-    typedef std::unique_ptr<Type> (*item_decoder)(core::BinaryDecoder& dec);
-    typedef std::unique_ptr<Type> (*string_decoder)(const std::string& val);
-    typedef std::unique_ptr<Type> (*structure_decoder)(const structured::Keys& keys, const structured::Reader& reader);
+    typedef Type* (*item_decoder)(core::BinaryDecoder& dec);
+    typedef Type* (*string_decoder)(const std::string& val);
+    typedef Type* (*structure_decoder)(const structured::Keys& keys, const structured::Reader& reader);
 
     types::Code type_code;
     int serialisationSizeLen;
@@ -71,9 +79,9 @@ struct MetadataType
             traits<T>::type_code,
             traits<T>::type_sersize_bytes,
             traits<T>::type_tag,
-            (MetadataType::item_decoder)T::decode,
-            (MetadataType::string_decoder)T::decodeString,
-            (MetadataType::structure_decoder)T::decode_structure
+            complete_traits<T>::decode,
+            complete_traits<T>::decodeString,
+            complete_traits<T>::decode_structure
         );
         register_type(type);
     }

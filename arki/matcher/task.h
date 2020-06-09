@@ -22,7 +22,7 @@ struct MatchTask : public Implementation
     bool matchItem(const types::Type& o) const override;
     std::string toString() const override;
 
-    static std::unique_ptr<MatchTask> parse(const std::string& pattern);
+    static Implementation* parse(const std::string& pattern);
     static void init();
 };
 

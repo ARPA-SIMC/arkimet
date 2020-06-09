@@ -171,8 +171,13 @@ add_method("regression", [] {
 
 // Test timedef matcher parsing
 add_method("timedef_parse", [] {
+    auto parse = [](const char* str) {
+        matcher::Implementation* impl = matcher::MatchTimerange::parse(str);
+        return std::unique_ptr<matcher::MatchTimerange>(dynamic_cast<matcher::MatchTimerange*>(impl));
+
+    };
     {
-        unique_ptr<matcher::MatchTimerange> matcher(matcher::MatchTimerange::parse("Timedef,+72h,1,6h"));
+        auto matcher = parse("Timedef,+72h,1,6h");
         const matcher::MatchTimerangeTimedef* m = dynamic_cast<const matcher::MatchTimerangeTimedef*>(matcher.get());
         wassert_true(m);
 
@@ -189,7 +194,7 @@ add_method("timedef_parse", [] {
     }
 
     {
-        unique_ptr<matcher::MatchTimerange> matcher(matcher::MatchTimerange::parse("Timedef,72h"));
+        auto matcher = parse("Timedef,72h");
         const matcher::MatchTimerangeTimedef* m = dynamic_cast<const matcher::MatchTimerangeTimedef*>(matcher.get());
         wassert_true(m);
 
@@ -202,7 +207,7 @@ add_method("timedef_parse", [] {
     }
 
     {
-        unique_ptr<matcher::MatchTimerange> matcher(matcher::MatchTimerange::parse("Timedef,,-"));
+        auto matcher = parse("Timedef,,-");
         const matcher::MatchTimerangeTimedef* m = dynamic_cast<const matcher::MatchTimerangeTimedef*>(matcher.get());
         wassert_true(m);
 

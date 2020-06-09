@@ -250,7 +250,7 @@ std::string MatchLevelODIMH5::toString() const
 	return ss.str();
 }
 
-unique_ptr<MatchLevel> MatchLevel::parse(const std::string& pattern)
+Implementation* MatchLevel::parse(const std::string& pattern)
 {
     size_t beg = 0;
     size_t pos = pattern.find(',', beg);
@@ -264,10 +264,10 @@ unique_ptr<MatchLevel> MatchLevel::parse(const std::string& pattern)
     }
     switch (types::Level::parseStyle(name))
     {
-        case types::Level::Style::GRIB1: return unique_ptr<MatchLevel>(new MatchLevelGRIB1(rest));
-        case types::Level::Style::GRIB2S: return unique_ptr<MatchLevel>(new MatchLevelGRIB2S(rest));
-        case types::Level::Style::GRIB2D: return unique_ptr<MatchLevel>(new MatchLevelGRIB2D(rest));
-        case types::Level::Style::ODIMH5: return unique_ptr<MatchLevel>(new MatchLevelODIMH5(rest));
+        case types::Level::Style::GRIB1: return new MatchLevelGRIB1(rest);
+        case types::Level::Style::GRIB2S: return new MatchLevelGRIB2S(rest);
+        case types::Level::Style::GRIB2D: return new MatchLevelGRIB2D(rest);
+        case types::Level::Style::ODIMH5: return new MatchLevelODIMH5(rest);
         default: throw std::invalid_argument("cannot parse type of level to match:  unsupported level style: " + name);
     }
 }

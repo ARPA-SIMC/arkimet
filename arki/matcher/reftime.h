@@ -71,7 +71,7 @@ struct MatchReftime : public matcher::Implementation
      */
     bool intersect_interval(core::Interval& interval) const;
 
-    static std::unique_ptr<MatchReftime> parse(const std::string& pattern);
+    static Implementation* parse(const std::string& pattern);
     static void init();
 };
 

@@ -188,7 +188,7 @@ std::string MatchProductVM2::toString() const
 	return res.str();
 }
 
-unique_ptr<MatchProduct> MatchProduct::parse(const std::string& pattern)
+Implementation* MatchProduct::parse(const std::string& pattern)
 {
     size_t beg = 0;
     size_t pos = pattern.find_first_of(":,", beg);
@@ -202,11 +202,11 @@ unique_ptr<MatchProduct> MatchProduct::parse(const std::string& pattern)
     }
     switch (types::Product::parseStyle(name))
     {
-        case types::Product::Style::GRIB1: return unique_ptr<MatchProduct>(new MatchProductGRIB1(rest));
-        case types::Product::Style::GRIB2: return unique_ptr<MatchProduct>(new MatchProductGRIB2(rest));
-        case types::Product::Style::BUFR: return unique_ptr<MatchProduct>(new MatchProductBUFR(rest));
-        case types::Product::Style::ODIMH5: return unique_ptr<MatchProduct>(new MatchProductODIMH5(rest));
-        case types::Product::Style::VM2: return unique_ptr<MatchProduct>(new MatchProductVM2(rest));
+        case types::Product::Style::GRIB1: return new MatchProductGRIB1(rest);
+        case types::Product::Style::GRIB2: return new MatchProductGRIB2(rest);
+        case types::Product::Style::BUFR: return new MatchProductBUFR(rest);
+        case types::Product::Style::ODIMH5: return new MatchProductODIMH5(rest);
+        case types::Product::Style::VM2: return new MatchProductVM2(rest);
         default: throw std::invalid_argument("cannot parse type of product to match: unsupported product style: " + name);
     }
 }

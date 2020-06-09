@@ -239,6 +239,7 @@ std::shared_ptr<Section> Section::parse(core::LineReader& in, const std::string&
  */
 
 Sections::Sections(const Sections& o)
+    : Sections()
 {
     for (const auto& i: o)
         emplace(i.first, std::make_shared<Section>(*i.second));

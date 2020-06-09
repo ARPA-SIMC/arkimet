@@ -50,9 +50,9 @@ std::string MatchQuantity::toString() const
     return res.join();
 }
 
-unique_ptr<MatchQuantity> MatchQuantity::parse(const std::string& pattern)
+Implementation* MatchQuantity::parse(const std::string& pattern)
 {
-    return unique_ptr<MatchQuantity>(new MatchQuantity(pattern));
+    return new MatchQuantity(pattern);
 }
 
 void MatchQuantity::init()

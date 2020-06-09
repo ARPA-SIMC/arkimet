@@ -27,7 +27,7 @@ std::string MatchProddefGRIB::toString() const
 	return "GRIB:" + expr.toString();
 }
 
-unique_ptr<MatchProddef> MatchProddef::parse(const std::string& pattern)
+Implementation* MatchProddef::parse(const std::string& pattern)
 {
     size_t beg = 0;
     size_t pos = pattern.find(':', beg);
@@ -41,7 +41,7 @@ unique_ptr<MatchProddef> MatchProddef::parse(const std::string& pattern)
     }
     switch (types::Proddef::parseStyle(name))
     {
-        case types::Proddef::Style::GRIB: return unique_ptr<MatchProddef>(new MatchProddefGRIB(rest));
+        case types::Proddef::Style::GRIB: return new MatchProddefGRIB(rest);
         default: throw invalid_argument("cannot parse type of proddef to match: unsupported proddef style: " + name);
     }
 }

@@ -395,7 +395,7 @@ std::string MatchTimerangeTimedef::toString() const
     return res.join();
 }
 
-unique_ptr<MatchTimerange> MatchTimerange::parse(const std::string& pattern)
+Implementation* MatchTimerange::parse(const std::string& pattern)
 {
     size_t beg = 0;
     size_t pos = pattern.find(',', beg);
@@ -410,10 +410,10 @@ unique_ptr<MatchTimerange> MatchTimerange::parse(const std::string& pattern)
 
     switch (types::Timerange::parseStyle(name))
     {
-        case types::Timerange::Style::GRIB1: return unique_ptr<MatchTimerange>(new MatchTimerangeGRIB1(rest));
-        case types::Timerange::Style::GRIB2: return unique_ptr<MatchTimerange>(new MatchTimerangeGRIB2(rest));
-        case types::Timerange::Style::TIMEDEF: return unique_ptr<MatchTimerange>(new MatchTimerangeTimedef(rest));
-        case types::Timerange::Style::BUFR: return unique_ptr<MatchTimerange>(new MatchTimerangeBUFR(rest));
+        case types::Timerange::Style::GRIB1: return new MatchTimerangeGRIB1(rest);
+        case types::Timerange::Style::GRIB2: return new MatchTimerangeGRIB2(rest);
+        case types::Timerange::Style::TIMEDEF: return new MatchTimerangeTimedef(rest);
+        case types::Timerange::Style::BUFR: return new MatchTimerangeBUFR(rest);
         default: throw std::invalid_argument("cannot parse type of timerange to match: unsupported timerange style: " + name);
     }
 }

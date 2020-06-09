@@ -15,7 +15,7 @@ struct MatchProduct : public Implementation
 {
     std::string name() const override;
 
-    static std::unique_ptr<MatchProduct> parse(const std::string& pattern);
+    static Implementation* parse(const std::string& pattern);
     static void init();
 };
 

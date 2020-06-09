@@ -15,7 +15,7 @@ struct MatchLevel : public Implementation
 {
     std::string name() const;
 
-    static std::unique_ptr<MatchLevel> parse(const std::string& pattern);
+    static Implementation* parse(const std::string& pattern);
     static void init();
 };
 

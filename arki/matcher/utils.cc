@@ -174,7 +174,7 @@ unique_ptr<OR> OR::parse(const Aliases* aliases, const MatcherType& mt, const st
             for (auto j: exprs->components)
                 res->components.push_back(j);
         else
-            res->components.push_back(mt.parse_func(*i));
+            res->components.emplace_back(mt.parse_func(*i));
     }
 
     return res;

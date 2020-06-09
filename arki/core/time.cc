@@ -14,7 +14,7 @@ namespace core {
 
 TimeBase::TimeBase(struct tm& t) { set_tm(t); }
 
-const bool TimeBase::is_set() const
+bool TimeBase::is_set() const
 {
     // Don't bother checking all elements, since we don't work with dates in
     // year zero.

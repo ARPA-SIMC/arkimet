@@ -125,7 +125,7 @@ public:
 
 	void initDB();
 
-	const size_t size() const { return m_attrs.size(); }
+    size_t size() const { return m_attrs.size(); }
 
 	/**
 	 * Obtain the IDs of the metadata items in this metadata that

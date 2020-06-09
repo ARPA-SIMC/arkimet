@@ -408,7 +408,7 @@ dnl def_tabledir=`echo "${sharedstatedir}/lib/$PACKAGE/tables"`
 dnl AC_DEFINE_UNQUOTED(TABLE_DIR, "$def_tabledir", "Default location for table files")
 
 if test x"$GXX" = x"yes"; then
-	EXTRA_CXXFLAGS="-Wall"
+	EXTRA_CXXFLAGS="-Wall -Wextra -Wno-unused-parameter"
 	EXTRA_LDFLAGS=""
 fi
 if test x"$CXX" = x"xlc" -o x"$CXX" = x"xlC"; then

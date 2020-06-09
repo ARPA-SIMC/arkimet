@@ -88,30 +88,30 @@ std::string MatchAreaVM2::toString() const
 }
 
 
-unique_ptr<MatchArea> MatchArea::parse(const std::string& pattern)
+Implementation* MatchArea::parse(const std::string& pattern)
 {
     string p = str::strip(pattern);
     if (strncasecmp(p.c_str(), "grib:", 5) == 0)
     {
-        return unique_ptr<MatchArea>(new MatchAreaGRIB(str::strip(p.substr(5))));
-    } 
+        return new MatchAreaGRIB(str::strip(p.substr(5)));
+    }
     else if (strncasecmp(p.c_str(), "odimh5:", 7) == 0)
     {
-        return unique_ptr<MatchArea>(new MatchAreaODIMH5(str::strip(p.substr(7))));
+        return new MatchAreaODIMH5(str::strip(p.substr(7)));
     }
 #ifdef HAVE_VM2
     else if (strncasecmp(p.c_str(), "vm2", 3) == 0)
     {
         if (strncasecmp(p.c_str(), "vm2,", 4) == 0)
-            return unique_ptr<MatchArea>(new MatchAreaVM2(str::strip(p.substr(4))));
+            return new MatchAreaVM2(str::strip(p.substr(4)));
         else
-            return unique_ptr<MatchArea>(new MatchAreaVM2(str::strip(p.substr(3))));
+            return new MatchAreaVM2(str::strip(p.substr(3)));
     }
 #endif
 #ifdef HAVE_GEOS
     else if (strncasecmp(p.c_str(), "bbox ", 5) == 0) 
     {
-        return unique_ptr<MatchArea>(MatchAreaBBox::parse(str::strip(p.substr(5))));
+        return MatchAreaBBox::parse(str::strip(p.substr(5)));
     }
 #endif
     else
@@ -138,7 +138,7 @@ MatchAreaBBox::~MatchAreaBBox()
 	if (geom) delete geom;
 }
 
-unique_ptr<MatchAreaBBox> MatchAreaBBox::parse(const std::string& pattern)
+Implementation* MatchAreaBBox::parse(const std::string& pattern)
 {
     size_t beg = 0;
     size_t pos = pattern.find(' ', beg);
@@ -153,14 +153,14 @@ unique_ptr<MatchAreaBBox> MatchAreaBBox::parse(const std::string& pattern)
 
     if (verb == "equals")
     {
-        return unique_ptr<MatchAreaBBox>(new MatchAreaBBoxEquals(rest));
+        return new MatchAreaBBoxEquals(rest);
     } else if (verb == "intersects") {
-        return unique_ptr<MatchAreaBBox>(new MatchAreaBBoxIntersects(rest));
+        return new MatchAreaBBoxIntersects(rest);
 #if GEOS_VERSION_MAJOR >= 3
     } else if (verb == "covers") {
-        return unique_ptr<MatchAreaBBox>(new MatchAreaBBoxCovers(rest));
+        return new MatchAreaBBoxCovers(rest);
     } else if (verb == "coveredby") {
-        return unique_ptr<MatchAreaBBox>(new MatchAreaBBoxCoveredBy(rest));
+        return new MatchAreaBBoxCoveredBy(rest);
 #endif
     } else {
         throw std::invalid_argument("cannot parse type of bbox match: unsupported match type: " + verb);

@@ -19,7 +19,7 @@ struct MatchTimerange : public Implementation
 {
     std::string name() const override;
 
-    static std::unique_ptr<MatchTimerange> parse(const std::string& pattern);
+    static Implementation* parse(const std::string& pattern);
     static void init();
 };
 

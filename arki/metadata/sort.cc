@@ -158,10 +158,10 @@ void Stream::setEndOfPeriod(const types::Reftime& rt)
     int se = begin.se;
     switch (sorter.interval())
     {
-        case Compare::YEAR: mo = -1;
-        case Compare::MONTH: da = -1;
-        case Compare::DAY: ho = -1;
-        case Compare::HOUR: mi = -1;
+        case Compare::YEAR: mo = -1; // Falls through
+        case Compare::MONTH: da = -1; // Falls through
+        case Compare::DAY: ho = -1; // Falls through
+        case Compare::HOUR: mi = -1; // Falls through
         case Compare::MINUTE: se = -1; break;
         default:
         {

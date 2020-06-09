@@ -11,6 +11,8 @@
 using namespace arki::matcher::reftime;
 using arki::matcher::reftime::lexer::LexInterval;
 
+// #pragma GCC diagnostic ignored "-Wimplicit-fallthrough"
+
 #include "reftime-parse.hh"
 #include "reftime-lex.h"
 
@@ -110,11 +112,11 @@ static void interval_add(arki::core::FuzzyTime& dst, const int* val, bool subtra
     // Restore all the values not defined in dst and val to -1
     switch (depth)
     {
-        case 0: dst.ye = -1;
-        case 1: dst.mo = -1;
-        case 2: dst.da = -1;
-        case 3: dst.ho = -1;
-        case 4: dst.mi = -1;
+        case 0: dst.ye = -1; // Falls through
+        case 1: dst.mo = -1; // Falls through
+        case 2: dst.da = -1; // Falls through
+        case 3: dst.ho = -1; // Falls through
+        case 4: dst.mi = -1; // Falls through
         case 5: dst.se = -1;
     }
     pdate(" readded missing", dst);
@@ -139,11 +141,11 @@ arki::core::FuzzyTime* interval_ago(const int* val, time_t now)
     // Set all the elements after the position of the last nonzero item to -1
     switch (depth)
     {
-        case 0: res->ye = -1;
-        case 1: res->mo = -1;
-        case 2: res->da = -1;
-        case 3: res->ho = -1;
-        case 4: res->mi = -1;
+        case 0: res->ye = -1; // Falls through
+        case 1: res->mo = -1; // Falls through
+        case 2: res->da = -1; // Falls through
+        case 3: res->ho = -1; // Falls through
+        case 4: res->mi = -1; // Falls through
         case 5: res->se = -1;
     }
 

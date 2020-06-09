@@ -40,9 +40,9 @@ std::string MatchTask::toString() const
     return res.join();
 }
 
-unique_ptr<MatchTask> MatchTask::parse(const std::string& pattern)
+Implementation* MatchTask::parse(const std::string& pattern)
 {
-    return unique_ptr<MatchTask>(new MatchTask(pattern));
+    return new MatchTask(pattern);
 }
 
 void MatchTask::init()

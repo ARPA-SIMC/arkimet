@@ -16,7 +16,7 @@ struct MatchArea : public Implementation
 {
     std::string name() const override;
 
-    static std::unique_ptr<MatchArea> parse(const std::string& pattern);
+    static Implementation* parse(const std::string& pattern);
     static void init();
 };
 
@@ -67,7 +67,7 @@ struct MatchAreaBBox : public MatchArea
     std::string toString() const override;
     virtual bool matchGeom(const arki::utils::geos::Geometry* val) const = 0;
 
-    static std::unique_ptr<MatchAreaBBox> parse(const std::string& pattern);
+    static Implementation* parse(const std::string& pattern);
 };
 
 struct MatchAreaBBoxEquals : public MatchAreaBBox

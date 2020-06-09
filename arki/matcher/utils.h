@@ -44,7 +44,7 @@ struct Implementation;
  */
 struct MatcherType
 {
-    typedef std::unique_ptr<Implementation> (*subexpr_parser)(const std::string& pattern);
+    typedef Implementation* (*subexpr_parser)(const std::string& pattern);
 
     std::string name;
     types::Code code;

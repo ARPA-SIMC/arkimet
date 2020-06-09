@@ -385,6 +385,7 @@ ValueBag::~ValueBag()
 }
 
 ValueBag::ValueBag(const ValueBag& vb)
+    : ValueBag()
 {
 	iterator inspos = begin();
 	for (ValueBag::const_iterator i = vb.begin(); i != vb.end(); ++i)

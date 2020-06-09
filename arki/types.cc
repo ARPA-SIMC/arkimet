@@ -156,12 +156,12 @@ unique_ptr<Type> decode(core::BinaryDecoder& dec)
 
 unique_ptr<Type> decodeInner(types::Code code, core::BinaryDecoder& dec)
 {
-    return types::MetadataType::get(code)->decode_func(dec);
+    return std::unique_ptr<Type>(types::MetadataType::get(code)->decode_func(dec));
 }
 
 unique_ptr<Type> decodeString(types::Code code, const std::string& val)
 {
-	return types::MetadataType::get(code)->string_decode_func(val);
+    return std::unique_ptr<Type>(types::MetadataType::get(code)->string_decode_func(val));
 }
 
 std::unique_ptr<Type> decode_structure(const structured::Keys& keys, const structured::Reader& reader)
@@ -172,7 +172,7 @@ std::unique_ptr<Type> decode_structure(const structured::Keys& keys, const struc
 
 std::unique_ptr<Type> decode_structure(const structured::Keys& keys, types::Code code, const structured::Reader& reader)
 {
-    return types::MetadataType::get(code)->structure_decode_func(keys, reader);
+    return std::unique_ptr<Type>(types::MetadataType::get(code)->structure_decode_func(keys, reader));
 }
 
 std::string tag(types::Code code)

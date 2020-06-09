@@ -1510,7 +1510,7 @@ bool Timedef::timeunit_parse_suffix(const char*& str, TimedefUnit& unit)
                         unit = UNIT_12HOURS;
                         break;
                     }
-                    // Fallover to the next case
+                    // Falls through
                 default: unit = UNIT_HOUR; break;
             }
             return true;

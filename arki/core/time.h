@@ -42,7 +42,7 @@ public:
     TimeBase(struct tm& t);
 
     /// Return true if the time value has been set to non-zero
-    const bool is_set() const;
+    bool is_set() const;
 
     /// Set from a struct tm
     void set_tm(struct tm& t);
