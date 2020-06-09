@@ -27,10 +27,10 @@ struct LexInterval
 
 struct Parser
 {
-    const std::string& str;
+    std::string str;
     std::string::const_iterator cur;
 
-    Parser(const std::string& str) : str(str), cur(str.begin()) {}
+    Parser(const char* buf, unsigned len) : str(buf, len), cur(str.begin()) {}
 
     void error(const std::string& msg)
     {
@@ -73,7 +73,7 @@ arki::core::FuzzyTime* parse_easter(const std::string& str);
  */
 struct DTParser : public Parser
 {
-    DTParser(const std::string& str) : Parser(str) {}
+    DTParser(const char* buf, unsigned len) : Parser(buf, len) {}
 
     /// Parse a number
     int num()
@@ -147,15 +147,15 @@ struct DTParser : public Parser
     }
 };
 
-arki::core::FuzzyTime* parse_datetime(const std::string& str);
-void parse_time(const std::string& str, int* res);
+arki::core::FuzzyTime* parse_datetime(const char* buf, unsigned len);
+void parse_time(const char* buf, unsigned len, int* res);
 
 
 struct ISParser : public Parser
 {
     struct LexInterval& res;
 
-    ISParser(const std::string& str, struct LexInterval& res) : Parser(str), res(res)
+    ISParser(const char* buf, unsigned len, struct LexInterval& res) : Parser(buf, len), res(res)
     {
     }
 
@@ -174,7 +174,7 @@ struct ISParser : public Parser
 /// Parser for time intervals
 struct IParser : public ISParser
 {
-    IParser(const std::string& str, struct LexInterval& res);
+    IParser(const char* buf, unsigned len, struct LexInterval& res);
 
     void itype();
 };
@@ -182,7 +182,7 @@ struct IParser : public ISParser
 /// Parser for time steps
 struct SParser : public ISParser
 {
-    SParser(const std::string& str, struct LexInterval& res);
+    SParser(const char* buf, unsigned len, struct LexInterval& res);
 
     void itype();
 };

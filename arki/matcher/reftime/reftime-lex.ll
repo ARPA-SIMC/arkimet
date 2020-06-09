@@ -33,27 +33,27 @@ time      [0-9]{1,2}(:[0-9]{2}(:[0-9]{2}Z?)?)?
 %%
 
 [0-9]{4}(-[0-9]{1,2}(-[0-9]{1,2}T?)?)?  {
-        yylval->dtspec = parse_datetime(std::string(yytext, yyleng));
+        yylval->dtspec = parse_datetime(yytext, yyleng);
         return DATE;
 }
 {time} {
-        parse_time(std::string(yytext, yyleng), yylval->tspec);
+        parse_time(yytext, yyleng, yylval->tspec);
         return TIME;
 }
 [0-9]+{space}*{unit} {
-        IParser p(std::string(yytext, yyleng), yylval->lexInterval);
+        IParser p(yytext, yyleng, yylval->lexInterval);
         return INTERVAL;
 }
 an?{space}+{unit} {
-        IParser p(std::string(yytext, yyleng), yylval->lexInterval);
+        IParser p(yytext, yyleng, yylval->lexInterval);
         return INTERVAL;
 }
 @{time} {
-        parse_time(std::string(yytext + 1, yyleng - 1), yylval->tspec);
+        parse_time(yytext + 1, yyleng - 1, yylval->tspec);
         return TIMEBASE;
 }
 (%|every){space}*[0-9]+{space}*{timeunit} {
-        SParser p(std::string(yytext, yyleng), yylval->lexInterval);
+        SParser p(yytext, yyleng, yylval->lexInterval);
         return STEP;
 }
 easter{space}*[0-9]{4} {

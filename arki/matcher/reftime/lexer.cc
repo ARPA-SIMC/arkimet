@@ -10,14 +10,14 @@ char Parser::itype()
     switch (*cur)
     {
         case 'h': {
-            std::string name(cur, str.end());
+            std::string name(cur, str.cend());
             if (name == "h" || name == "hour" || name == "hours")
                 return 'h';
             error("expected h, hour or hours");
             break;
         }
         case 'm': {
-            std::string name(cur, str.end());
+            std::string name(cur, str.cend());
             if (name == "m" || name == "min" || name == "minute" || name == "minutes")
                 return 'm';
             if (name == "month" || name == "months")
@@ -26,28 +26,28 @@ char Parser::itype()
             break;
         }
         case 's': {
-            std::string name(cur, str.end());
+            std::string name(cur, str.cend());
             if (name == "s" || name == "sec" || name == "second" || name == "seconds")
                 return 's';
             error("expected s, sec, second or seconds");
             break;
         }
         case 'w': {
-            std::string name(cur, str.end());
+            std::string name(cur, str.cend());
             if (name == "w" || name == "week" || name == "weeks")
                 return 'w';
             error("expected w, week or weeks");
             break;
         }
         case 'd': {
-            std::string name(cur, str.end());
+            std::string name(cur, str.cend());
             if (name == "d" || name == "day" || name == "days")
                 return 'd';
             error("expected d, day or days");
             break;
         }
         case 'y': {
-            std::string name(cur, str.end());
+            std::string name(cur, str.cend());
             if (name == "y" || name == "year" || name == "years")
                 return 'y';
             error("expected y, year or years");
@@ -69,17 +69,17 @@ arki::core::FuzzyTime* parse_easter(const std::string& str)
     return res.release();
 }
 
-arki::core::FuzzyTime* parse_datetime(const std::string& str)
+arki::core::FuzzyTime* parse_datetime(const char* buf, unsigned len)
 {
-    DTParser parser(str);
+    DTParser parser(buf, len);
     auto res = parser.getDate();
     parser.end();
     return res.release();
 }
 
-void parse_time(const std::string& str, int* res)
+void parse_time(const char* buf, unsigned len, int* res)
 {
-    DTParser parser(str);
+    DTParser parser(buf, len);
     for (int i = 0; i < 3; ++i)
         res[i] = -1;
     parser.getTime(res);
@@ -88,7 +88,8 @@ void parse_time(const std::string& str, int* res)
 };
 
 
-IParser::IParser(const std::string& str, struct LexInterval& res) : ISParser(str, res)
+IParser::IParser(const char* buf, unsigned len, struct LexInterval& res)
+    : ISParser(buf, len, res)
 {
     if (cur == str.end())
         error("number or 'a' expected");
@@ -108,7 +109,7 @@ void IParser::itype()
     switch (*cur)
     {
         case 'h': {
-            std::string name(cur, str.end());
+            std::string name(cur, str.cend());
             if (name == "h" || name == "hour" || name == "hours")
             {
                 res.idx = 3;
@@ -118,7 +119,7 @@ void IParser::itype()
             break;
         }
         case 'm': {
-            std::string name(cur, str.end());
+            std::string name(cur, str.cend());
             if (name == "m" || name == "min" || name == "minute" || name == "minutes")
             {
                 res.idx = 4;
@@ -133,7 +134,7 @@ void IParser::itype()
             break;
         }
         case 's': {
-            std::string name(cur, str.end());
+            std::string name(cur, str.cend());
             if (name == "s" || name == "sec" || name == "second" || name == "seconds")
             {
                 res.idx = 5;
@@ -143,7 +144,7 @@ void IParser::itype()
             break;
         }
         case 'w': {
-            std::string name(cur, str.end());
+            std::string name(cur, str.cend());
             if (name == "w" || name == "week" || name == "weeks")
             {
                 res.val *= 7;
@@ -154,7 +155,7 @@ void IParser::itype()
             break;
         }
         case 'd': {
-            std::string name(cur, str.end());
+            std::string name(cur, str.cend());
             if (name == "d" || name == "day" || name == "days")
             {
                 res.idx = 2;
@@ -164,7 +165,7 @@ void IParser::itype()
             break;
         }
         case 'y': {
-            std::string name(cur, str.end());
+            std::string name(cur, str.cend());
             if (name == "y" || name == "year" || name == "years")
             {
                 res.idx = 0;
@@ -178,7 +179,7 @@ void IParser::itype()
 }
 
 
-SParser::SParser(const std::string& str, struct LexInterval& res) : ISParser(str, res)
+SParser::SParser(const char* buf, unsigned len, struct LexInterval& res) : ISParser(buf, len, res)
 {
     if (cur == str.end())
         error("expecting time step");
@@ -197,7 +198,7 @@ void SParser::itype()
     switch (*cur)
     {
         case 'h': {
-            std::string name(cur, str.end());
+            std::string name(cur, str.cend());
             if (name == "h" || name == "hour" || name == "hours")
             {
                 res.idx = 3;
@@ -207,7 +208,7 @@ void SParser::itype()
             break;
         }
         case 'm': {
-                      std::string name(cur, str.end());
+            std::string name(cur, str.cend());
             if (name == "m" || name == "min" || name == "minute" || name == "minutes")
             {
                 res.idx = 4;
@@ -217,7 +218,7 @@ void SParser::itype()
             break;
         }
         case 's': {
-            std::string name(cur, str.end());
+            std::string name(cur, str.cend());
             if (name == "s" || name == "sec" || name == "second" || name == "seconds")
             {
                 res.idx = 5;
