@@ -86,6 +86,11 @@ public:
      */
     std::shared_ptr<Dataset> querymacro(const std::string& macro_name, const std::string& macro_query);
 
+    /**
+     * Create a Merged dataset querying datasets from this session's pool.
+     */
+    std::shared_ptr<Dataset> merged();
+
     /// Compile a matcher expression
     Matcher matcher(const std::string& expr);
 

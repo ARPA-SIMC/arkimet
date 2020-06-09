@@ -16,6 +16,7 @@
 #include "arki/dataset/fromfunction.h"
 #include "arki/dataset/testlarge.h"
 #include "arki/dataset/querymacro.h"
+#include "arki/dataset/merged.h"
 #include "arki/metadata.h"
 #include "arki/types/source/blob.h"
 #include "arki/nag.h"
@@ -210,6 +211,11 @@ std::shared_ptr<Dataset> Session::querymacro(const std::string& macro_name, cons
         cfg.set("qmacro", macro_query);
         return dataset(cfg);
     }
+}
+
+std::shared_ptr<Dataset> Session::merged()
+{
+    return std::make_shared<merged::Dataset>(shared_from_this());
 }
 
 #if 0

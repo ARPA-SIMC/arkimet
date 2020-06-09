@@ -322,6 +322,21 @@ struct querymacro : public MethKwargs<querymacro, arkipy_DatasetSession>
     }
 };
 
+struct merged : public MethNoargs<merged, arkipy_DatasetSession>
+{
+    constexpr static const char* name = "merged";
+    constexpr static const char* returns = "arkimet.dataset.Dataset";
+    constexpr static const char* summary = "return a merged dataset querying all datasets in this session";
+    constexpr static const char* doc = nullptr;
+
+    static PyObject* run(Impl* self)
+    {
+        try {
+            return (PyObject*)dataset_dataset_create(self->ptr->merged());
+        } ARKI_CATCH_RETURN_PYO
+    }
+};
+
 
 struct DatasetSessionDef : public Type<DatasetSessionDef, arkipy_DatasetSession>
 {
@@ -365,7 +380,7 @@ Examples::
             get_alias_database, matcher, expand_query, load_aliases,
             datasets, has_datasets, has_dataset, dataset_pool_size, add_dataset,
             dataset, dataset_reader, dataset_writer, dataset_checker,
-            querymacro> methods;
+            querymacro, merged> methods;
 
     static void _dealloc(Impl* self)
     {

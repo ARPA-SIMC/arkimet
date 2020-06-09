@@ -8,7 +8,6 @@ import html
 from urllib.parse import quote
 from contextlib import contextmanager
 import logging
-import arkimet as arki
 from werkzeug.exceptions import NotFound
 
 
@@ -432,17 +431,14 @@ class QMacroMixin:
         return self.handler.server.url + "/query"
 
     def get_dataset_reader(self):
-        cfg = io.StringIO()
-        self.handler.server.cfg.write(cfg)
         qmacro = self.request.values.get("qmacro", "").strip()
         if not qmacro:
-            return arki.make_merged_dataset(cfg.getvalue())
-        return arki.make_qmacro_dataset(
-            # "url = " + self.handler.server.url,
-            cfg.getvalue(),
-            qmacro,
-            self.request.values.get("query", "").strip()
-        )
+            return self.session.merged()
+        else:
+            return self.session.qmacro(
+                qmacro,
+                self.request.values.get("query", "").strip()
+            )
 
     def get_query(self):
         return ""

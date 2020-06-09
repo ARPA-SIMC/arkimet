@@ -14,6 +14,8 @@
   old way still works, and raises `DeprecationWarning`s
 * Python function `arkimet.make_qmacro_dataset()` deprecated in favour of
   `arkimet.dataset.Session.querymacro()`
+* Python function `arkimet.make_merged_dataset()` deprecated in favour of
+  `arkimet.Session.merged()`
 * Python function `arkimet.get_alias_database()` deprecated in favour of
   `arkimet.dataset.Session.get_alias_database()`
 * Python function `arkimet.expand_query()` deprecated in favour of

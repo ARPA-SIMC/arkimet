@@ -141,7 +141,7 @@ struct make_merged_dataset : public MethKwargs<make_merged_dataset, PyObject>
             return nullptr;
 
         try {
-            if (PyErr_WarnEx(PyExc_DeprecationWarning, "arkimet.make_merged_dataset() will be replaced by something else, unfortunately not yet designed (TODO)", 1))
+            if (PyErr_WarnEx(PyExc_DeprecationWarning, "Use arkimet.Session.merged() instead of arkimet.make_merged_dataset()", 1))
                 return nullptr;
 
             auto session = std::make_shared<arki::dataset::Session>();
