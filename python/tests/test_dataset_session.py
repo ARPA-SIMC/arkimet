@@ -2,6 +2,7 @@
 import unittest
 import os
 import tempfile
+import shutil
 import arkimet as arki
 from arkimet.test import daemon
 
@@ -30,6 +31,8 @@ test = GRIB1 or GRIB2
             self.assertEqual(str(reader), "dataset.Reader(file, test.grib1)")
             self.assertEqual(repr(reader), "dataset.Reader(file, test.grib1)")
 
+            if os.path.exists("testds"):
+                shutil.rmtree("testds")
             with session.dataset_writer(cfg={
                         "format": "grib",
                         "name": "testds",
