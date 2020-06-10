@@ -81,9 +81,34 @@ def push_trenta():
     push("trenta")
 
 
+@hosts("trentuno")
+def push_trentuno():
+    push("trentuno")
+
+
+@hosts("trentadue")
+def push_trentadue():
+    push("trentadue")
+
+
 @hosts("sette")
 def test_sette():
     run_test("sette")
+
+
+@hosts("otto")
+def test_otto():
+    run_test("otto")
+
+
+@hosts("trentuno")
+def test_trentuno():
+    run_test("trentuno")
+
+
+@hosts("trentadue")
+def test_trentadue():
+    run_test("trentadue")
 
 
 def test():
