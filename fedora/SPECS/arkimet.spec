@@ -3,7 +3,7 @@
 
 Summary: Archive for weather information
 Name: arkimet
-Version: 1.26
+Version: 1.27
 Release: 1
 License: GPL
 Group: Applications/Meteo
@@ -246,6 +246,30 @@ if [ "$1" = "1" ]; then
 fi
 
 %changelog
+* Wed Jun 10 2020 Daniele Branchini <dbranchini@arpae.it> - 1.27-1
+- reftime match expressions using repeating intervals (like `reftime:=yesterday
+  %3h`) now have a new `@hh:mm:ss` syntax to explicitly reference the starting
+  point of the repetitions. For example, `arki-dump --query 'reftime:=2020-01-01 20:30%8h'`
+  yields `reftime:>=2020-01-01 20:30:00,<2020-01-01 20:31:00,@04:30:00%8h`,
+  meaning a match in that interval and at 20:30 every 8 hours.
+  (side effect of fixing #206)
+- Added Python bindings for arki.dataset.Session
+  (side effect of fixing #206)
+- Added Python bindings for arkimet.dataset.Dataset
+  (side effect of fixing #206)
+- Python code should now instantiate datasets and matchers using Session; the
+  old way still works, and raises `DeprecationWarning`s
+- Python function `arkimet.make_qmacro_dataset()` deprecated in favour of
+  `arkimet.dataset.Session.querymacro()`
+- Python function `arkimet.make_merged_dataset()` deprecated in favour of
+  `arkimet.Session.merged()`
+- Python function `arkimet.get_alias_database()` deprecated in favour of
+  `arkimet.dataset.Session.get_alias_database()`
+- Python function `arkimet.expand_query()` deprecated in favour of
+  `arki.dataset.Session().expand_query()`
+- Correctly query multiple remote servers with different but compatible alias
+  configurations, in merged and querymacro datasets (#206)
+
 * Mon Jun  1 2020 Daniele Branchini <dbranchini@arpae.it> - 1.26-1
 - Fixed use of geos compile-time version detection (#225)
 - Removed make install depending on make check (#218)
