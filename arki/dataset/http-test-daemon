@@ -14,7 +14,7 @@ redirects = {
 
 class RedirectHandler(http.server.BaseHTTPRequestHandler):
     def do_GET(self):
-        server_url = f"http://{self.server.server_name}:{self.server.server_port}"
+        server_url = f"http://localhost:{self.server.server_port}"
         dest = redirects.get(self.path)
         if dest is not None:
             url = f"{server_url}{dest}"
@@ -76,7 +76,7 @@ g00    = GRIB1,1 or GRIB2S,1,0,0
 
 class Query500Handler(http.server.BaseHTTPRequestHandler):
     def do_GET(self):
-        server_url = f"http://{self.server.server_name}:{self.server.server_port}"
+        server_url = f"http://localhost:{self.server.server_port}"
         if self.path == "/config":
             self.send_response(200)
             self.end_headers()
