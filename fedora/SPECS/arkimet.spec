@@ -174,6 +174,14 @@ install -D -m 0644 -p %{SOURCE3} %{buildroot}%{_sysconfdir}/logrotate.d/%{name}
 
 %check
 
+%if 0%{?arpae_tests}
+echo 'Enabling ARPAE tests'
+%if %grib_sw == "eccodes"
+source %{_sysconfdir}/profile.d/eccodes-simc.sh
+%endif
+%endif
+
+
 %if 0%{?el7}
 # See https://github.com/ARPA-SIMC/arkimet/issues/217
 make check ISSUE217=1
