@@ -1,4 +1,4 @@
-from __future__ import annotations
+# python 3.7+ from __future__ import annotations
 import arkimet
 from arkimet.cmdline.base import AppConfigMixin, AppWithProcessor, Exit
 import sys

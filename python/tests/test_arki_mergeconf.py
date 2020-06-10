@@ -1,4 +1,4 @@
-from __future__ import annotations
+# python 3.7+ from __future__ import annotations
 import unittest
 from arkimet.cmdline.mergeconf import Mergeconf
 import os

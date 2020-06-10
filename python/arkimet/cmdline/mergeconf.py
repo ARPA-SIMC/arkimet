@@ -1,4 +1,4 @@
-from __future__ import annotations
+# python 3.7+ from __future__ import annotations
 import arkimet as arki
 from arkimet.cmdline.base import App, AppConfigMixin, Fail
 import sys
