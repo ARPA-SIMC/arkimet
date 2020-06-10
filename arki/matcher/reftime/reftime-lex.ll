@@ -10,6 +10,9 @@ using namespace arki::matcher::reftime::lexer;
 
 #pragma GCC diagnostic ignored "-Wsign-compare"
 
+// This is needed for centos7:
+#pragma GCC diagnostic ignored "-Wtype-limits"
+
 %}
 
 %option case-insensitive
