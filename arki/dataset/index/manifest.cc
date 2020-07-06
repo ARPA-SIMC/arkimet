@@ -57,7 +57,7 @@ void Manifest::querySummaries(const Matcher& matcher, Summary& summary)
             continue;
 
         Summary s;
-        s.readFile(pathname + ".summary");
+        s.read_file(pathname + ".summary");
         s.filter(matcher, summary);
     }
 }
@@ -129,7 +129,7 @@ bool Manifest::query_summary(const Matcher& matcher, Summary& summary)
         if (sys::access(cache_pathname, R_OK))
         {
             Summary s;
-            s.readFile(cache_pathname);
+            s.read_file(cache_pathname);
             s.filter(matcher, summary);
         } else if (sys::access(m_path, W_OK)) {
             // Rebuild the cache

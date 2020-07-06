@@ -462,7 +462,7 @@ void Summary::read(const structured::Keys& keys, const structured::Reader& val)
     });
 }
 
-void Summary::readFile(const std::string& fname)
+void Summary::read_file(const std::string& fname)
 {
     // Read all the metadata
     sys::File in(fname, O_RDONLY);

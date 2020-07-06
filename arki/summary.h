@@ -129,10 +129,10 @@ public:
     /// Decode from structured data
     void read(const structured::Keys& keys, const structured::Reader& val);
 
-	/**
-	 * Read data from the given file
-	 */
-	void readFile(const std::string& fname);
+    /**
+     * Read data from the given file
+     */
+    void read_file(const std::string& fname);
 
     /**
      * Read a summary document encoded in Yaml from the given file descriptor.
