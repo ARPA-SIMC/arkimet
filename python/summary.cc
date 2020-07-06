@@ -137,9 +137,12 @@ struct write : public MethKwargs<write, arkipy_Summary>
                 else
                     out.abstract->write(yaml.data(), yaml.size());
             } else if (strcmp(format, "json") == 0) {
+                std::unique_ptr<arki::Formatter> formatter;
+                if (annotate)
+                    formatter = arki::Formatter::create();
                 std::stringstream buf;
                 arki::structured::JSON output(buf);
-                self->summary->serialise(output, arki::structured::keys_json);
+                self->summary->serialise(output, arki::structured::keys_json, formatter.get());
                 if (out.fd)
                     out.fd->write_all_or_retry(buf.str());
                 else
