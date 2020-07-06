@@ -492,7 +492,9 @@ For example::
         md.write(fd, format="json")
 )";
     GetSetters<data, data_size> getsetters;
-    Methods<has_source, write, make_absolute, make_inline, make_url, to_string, to_python, get_notes, del_notes, read_bundle, write_bundle> methods;
+    Methods<
+        has_source, write, make_absolute, make_inline, make_url, to_string,
+        to_python, get_notes, del_notes, read_bundle, write_bundle> methods;
 
     static void _dealloc(Impl* self)
     {

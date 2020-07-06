@@ -13,6 +13,7 @@
 #include "arki/structured/keys.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/geos.h"
+#include "arki/core/binary.h"
 #include <sstream>
 
 using namespace std;
@@ -239,6 +240,58 @@ None is returned if the convex hull could not be computed.
     }
 };
 
+struct read_binary : public ClassMethKwargs<read_binary>
+{
+    constexpr static const char* name = "read_binary";
+    constexpr static const char* signature = "src: Union[bytes, ByteIO]";
+    constexpr static const char* returns = "arkimet.Summary";
+    constexpr static const char* summary = "Read a Summary from a binary file";
+
+    static PyObject* run(PyTypeObject* cls, PyObject* args, PyObject* kw)
+    {
+        static const char* kwlist[] = { "src", nullptr };
+        PyObject* py_src = nullptr;
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "O", const_cast<char**>(kwlist), &py_src))
+            return nullptr;
+
+        try {
+            if (PyBytes_Check(py_src))
+            {
+                char* buffer;
+                Py_ssize_t length;
+                if (PyBytes_AsStringAndSize(py_src, &buffer, &length) == -1)
+                    throw PythonException();
+
+                core::BinaryDecoder dec((const uint8_t*)(buffer), length);
+                std::unique_ptr<Summary> res(new Summary);
+                res->read(dec, "bytes buffer");
+                return (PyObject*)summary_create(std::move(res));
+            } else {
+                BinaryInputFile in(py_src);
+                ReleaseGIL gil;
+
+                std::unique_ptr<Summary> res(new Summary);
+
+                if (in.fd)
+                    res->read(*in.fd);
+                else
+                {
+                    gil.lock();
+                    PyErr_SetString(PyExc_NotImplementedError, "reading summaries from files without fileno() is not yet implemented");
+                    return nullptr;
+                }
+
+                //    res = arki::Metadata::read_file(*in.abstract, ctx, dest);
+                //    {
+                //        arki::metadata::ReadContext ctx(in.abstract->name());
+                //        res = arki::Metadata::read_file(*in.abstract, ctx, dest);
+                //    }
+                return (PyObject*)summary_create(std::move(res));
+            }
+        } ARKI_CATCH_RETURN_PYO
+    }
+};
+
 
 struct SummaryDef : public Type<SummaryDef, arkipy_Summary>
 {
@@ -254,7 +307,7 @@ Examples::
     TODO: add examples
 )";
     GetSetters<count, size> getsetters;
-    Methods<add, write, write_short, to_python, get_convex_hull> methods;
+    Methods<add, write, write_short, to_python, get_convex_hull, read_binary> methods;
 
     static void _dealloc(Impl* self)
     {
@@ -314,5 +367,3 @@ void register_summary(PyObject* m)
 
 }
 }
-
-

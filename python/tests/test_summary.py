@@ -1,3 +1,5 @@
+# python 3.7+ from __future__ import annotations
+from typing import Union
 import unittest
 import io
 import os
@@ -5,7 +7,7 @@ import arkimet as arki
 
 
 class TestSummary(unittest.TestCase):
-    def read(self, pathname, format="grib"):
+    def read(self, pathname: str, format: str = "grib", matcher: Union[arki.Matcher, str] = None):
         """
         Read all the metadata from a file
         """
@@ -16,7 +18,7 @@ class TestSummary(unittest.TestCase):
             "type": "file",
         })
 
-        return ds.query_summary()
+        return ds.query_summary(matcher=matcher)
 
     def test_to_python(self):
         s = self.read("inbound/test.grib1")
