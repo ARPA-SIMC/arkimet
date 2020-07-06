@@ -14,6 +14,7 @@
 #include "arki/utils/sys.h"
 #include "arki/utils/geos.h"
 #include "arki/core/binary.h"
+#include "arki/formatter.h"
 #include <sstream>
 
 using namespace std;
@@ -94,7 +95,7 @@ struct add : public MethKwargs<add, arkipy_Summary>
 struct write : public MethKwargs<write, arkipy_Summary>
 {
     constexpr static const char* name = "write";
-    constexpr static const char* signature = "file: Union[int, BinaryIO], format: str='binary'";
+    constexpr static const char* signature = "file: Union[int, BinaryIO], format: str = 'binary', annotate: bool = False";
     constexpr static const char* returns = "Optional[arki.cfg.Section]";
     constexpr static const char* summary = "write the summary to a file";
     constexpr static const char* doc = R"(
@@ -102,15 +103,18 @@ struct write : public MethKwargs<write, arkipy_Summary>
              socket handle, or a file-like object with a fileno() method
              that returns an integer handle.
 :param format: "binary", "yaml", or "json". Default: "binary".
+:param annotate: if True, use a :class:`arkimet.Formatter` to add metadata
+                 descriptions to the output
 )";
 
     static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
     {
-        static const char* kwlist[] = { "file", "format", NULL };
+        static const char* kwlist[] = { "file", "format", "annotate", NULL };
         PyObject* arg_file = Py_None;
         const char* format = nullptr;
+        int annotate = 0;
 
-        if (!PyArg_ParseTupleAndKeywords(args, kw, "O|s", const_cast<char**>(kwlist), &arg_file, &format))
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "O|sp", const_cast<char**>(kwlist), &arg_file, &format, &annotate))
             return nullptr;
 
         try {
@@ -123,7 +127,10 @@ struct write : public MethKwargs<write, arkipy_Summary>
                 else
                     self->summary->write(*out.abstract);
             } else if (strcmp(format, "yaml") == 0) {
-                std::string yaml = self->summary->to_yaml();
+                std::unique_ptr<arki::Formatter> formatter;
+                if (annotate)
+                    formatter = arki::Formatter::create();
+                std::string yaml = self->summary->to_yaml(formatter.get());
                 if (out.fd)
                     out.fd->write_all_or_retry(yaml);
                 else

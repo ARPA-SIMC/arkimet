@@ -1,7 +1,9 @@
 # New in version 1.28
 
 * Added `format_metadata.rst` to Python HOWTOs (#230)
-* Python: added `arki.Summary.read_binary` (#230)
+* Python: added `arkimet.Summary.read_binary` (#230)
+* Python: added `arkimet.Summary.read_yaml` (#230)
+* Python: added `annotate: bool = False` to `arkimet.Summary.write` (#230)
 
 # New in version 1.27
 
