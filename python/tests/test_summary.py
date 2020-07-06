@@ -33,3 +33,10 @@ class TestSummary(unittest.TestCase):
             s.write(out, format="yaml")
         with io.BytesIO() as out:
             s.write(out, format="json")
+
+    def test_write_short(self):
+        s = self.read("inbound/test.grib1")
+        with io.BytesIO() as out:
+            s.write_short(out, format="yaml")
+        with io.BytesIO() as out:
+            s.write_short(out, format="json")
