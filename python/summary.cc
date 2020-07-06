@@ -180,7 +180,6 @@ struct write_short : public MethKwargs<write_short, arkipy_Summary>
                     out.fd->write_all_or_retry(buf.str().data(), buf.str().size());
                 else
                     out.abstract->write(buf.str().data(), buf.str().size());
-                return nullptr;
             } else if (strcmp(format, "json") == 0) {
                 std::stringstream buf;
                 arki::structured::JSON output(buf);
@@ -189,7 +188,6 @@ struct write_short : public MethKwargs<write_short, arkipy_Summary>
                     out.fd->write_all_or_retry(buf.str().data(), buf.str().size());
                 else
                     out.abstract->write(buf.str().data(), buf.str().size());
-                return nullptr;
             } else {
                 PyErr_Format(PyExc_ValueError, "Unsupported metadata serialization format: %s", format);
                 return nullptr;
