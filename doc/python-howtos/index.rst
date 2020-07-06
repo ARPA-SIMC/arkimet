@@ -6,6 +6,7 @@ Arkimet Python HOWTOs
    :caption: Contents:
 
    read_inline_file
+   format_metadata
 
 
 Indices and tables

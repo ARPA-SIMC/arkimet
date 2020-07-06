@@ -62,6 +62,7 @@ sphinx_packaged_sources = \
 	python/arkimet.formatter.rst \
 	python/arkimet.rst \
 	python/arkimet.scan.rst \
+	python-howtos/format_metadata.rst \
 	python-howtos/index.rst \
 	python-howtos/read_inline_file.rst \
 	segments.rst \
