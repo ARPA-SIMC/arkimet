@@ -11,6 +11,7 @@
 #include "arki/summary/short.h"
 #include "arki/structured/json.h"
 #include "arki/structured/keys.h"
+#include "arki/structured/memory.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/geos.h"
 #include "arki/core/binary.h"
@@ -372,6 +373,71 @@ struct read_yaml : public ClassMethKwargs<read_yaml>
     }
 };
 
+struct read_json : public ClassMethKwargs<read_json>
+{
+    constexpr static const char* name = "read_json";
+    constexpr static const char* signature = "src: Union[str, StringIO, bytes, ByteIO]";
+    constexpr static const char* returns = "arkimet.Summary";
+    constexpr static const char* summary = "Read a Summary from a JSON file";
+
+    static PyObject* run(PyTypeObject* cls, PyObject* args, PyObject* kw)
+    {
+        static const char* kwlist[] = { "src", nullptr };
+        PyObject* py_src = nullptr;
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "O", const_cast<char**>(kwlist), &py_src))
+            return nullptr;
+
+        try {
+            arki::structured::Memory parsed;
+            if (PyBytes_Check(py_src))
+            {
+                char* buffer;
+                Py_ssize_t length;
+                if (PyBytes_AsStringAndSize(py_src, &buffer, &length) == -1)
+                    throw PythonException();
+                auto input = arki::core::BufferedReader::from_chars(buffer, length);
+                ReleaseGIL gil;
+                arki::structured::JSON::parse(*input, parsed);
+            } else if (PyUnicode_Check(py_src)) {
+                Py_ssize_t length;
+                const char* buffer = throw_ifnull(PyUnicode_AsUTF8AndSize(py_src, &length));
+                auto input = arki::core::BufferedReader::from_chars(buffer, length);
+                ReleaseGIL gil;
+                arki::structured::JSON::parse(*input, parsed);
+            } else if (PyObject_HasAttrString(py_src, "encoding")) {
+                TextInputFile input(py_src);
+
+                std::unique_ptr<arki::core::BufferedReader> reader;
+                if (input.fd)
+                    reader = arki::core::BufferedReader::from_fd(*input.fd);
+                else
+                    reader = arki::core::BufferedReader::from_abstract(*input.abstract);
+
+                ReleaseGIL gil;
+                arki::structured::JSON::parse(*reader, parsed);
+            } else {
+                BinaryInputFile input(py_src);
+
+                std::unique_ptr<arki::core::BufferedReader> reader;
+                if (input.fd)
+                    reader = arki::core::BufferedReader::from_fd(*input.fd);
+                else
+                    reader = arki::core::BufferedReader::from_abstract(*input.abstract);
+
+                ReleaseGIL gil;
+                arki::structured::JSON::parse(*reader, parsed);
+            }
+
+            ReleaseGIL gil;
+            std::unique_ptr<Summary> res(new Summary);
+            res->read(arki::structured::keys_json, parsed.root());
+
+            gil.lock();
+            return (PyObject*)summary_create(std::move(res));
+        } ARKI_CATCH_RETURN_PYO
+    }
+};
+
 struct SummaryDef : public Type<SummaryDef, arkipy_Summary>
 {
     constexpr static const char* name = "Summary";
@@ -386,7 +452,7 @@ Examples::
     TODO: add examples
 )";
     GetSetters<count, size> getsetters;
-    Methods<add, write, write_short, to_python, get_convex_hull, read_binary, read_yaml> methods;
+    Methods<add, write, write_short, to_python, get_convex_hull, read_binary, read_yaml, read_json> methods;
 
     static void _dealloc(Impl* self)
     {
