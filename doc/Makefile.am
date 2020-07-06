@@ -36,13 +36,13 @@ if DO_DOCS
 # Sphinx sources
 
 sphinx_packaged_sources = \
-	datasets.rst segments.rst \
+	datasets.rst \
 	datasets/archive.rst \
-	datasets/simple.rst \
-	datasets/ondisk2.rst \
 	datasets/iseg.rst \
-	segments/concat.rst segments/dir.rst segments/gz.rst \
-	segments/tar.rst segments/zip.rst \
+	datasets/ondisk2.rst \
+	datasets/simple.rst \
+	http-api.rst \
+	index.rst \
 	matcher.rst \
 	matcher/aliases.rst \
 	matcher/area.rst \
@@ -55,7 +55,18 @@ sphinx_packaged_sources = \
 	matcher/run.rst \
 	matcher/task.rst \
 	matcher/timerange.rst \
-	http-api.rst
+	python/index.rst \
+	python/arkimet.bbox.rst \
+	python/arkimet.cfg.rst \
+	python/arkimet.dataset.rst \
+	python/arkimet.formatter.rst \
+	python/arkimet.rst \
+	python/arkimet.scan.rst \
+	python-howtos/index.rst \
+	python-howtos/read_inline_file.rst \
+	segments.rst \
+	segments/concat.rst segments/dir.rst segments/gz.rst \
+	segments/tar.rst segments/zip.rst
 
 
 sphinx_sources = $(sphinx_packaged_sources) $(sphinx_generated_sources)
