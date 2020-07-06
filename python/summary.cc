@@ -286,12 +286,84 @@ struct read_binary : public ClassMethKwargs<read_binary>
                 //        arki::metadata::ReadContext ctx(in.abstract->name());
                 //        res = arki::Metadata::read_file(*in.abstract, ctx, dest);
                 //    }
+                gil.lock();
                 return (PyObject*)summary_create(std::move(res));
             }
         } ARKI_CATCH_RETURN_PYO
     }
 };
 
+struct read_yaml : public ClassMethKwargs<read_yaml>
+{
+    constexpr static const char* name = "read_yaml";
+    constexpr static const char* signature = "src: Union[str, StringIO, bytes, ByteIO]";
+    constexpr static const char* returns = "arkimet.Summary";
+    constexpr static const char* summary = "Read a Summary from a YAML file";
+
+    static PyObject* run(PyTypeObject* cls, PyObject* args, PyObject* kw)
+    {
+        static const char* kwlist[] = { "src", nullptr };
+        PyObject* py_src = nullptr;
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "O", const_cast<char**>(kwlist), &py_src))
+            return nullptr;
+
+        try {
+            std::unique_ptr<Summary> res(new Summary);
+            if (PyBytes_Check(py_src))
+            {
+                char* buffer;
+                Py_ssize_t length;
+                if (PyBytes_AsStringAndSize(py_src, &buffer, &length) == -1)
+                    throw PythonException();
+                ReleaseGIL gil;
+                auto reader = arki::core::LineReader::from_chars(buffer, length);
+                res->readYaml(*reader, "bytes buffer");
+            } else if (PyUnicode_Check(py_src)) {
+                Py_ssize_t length;
+                const char* buffer = throw_ifnull(PyUnicode_AsUTF8AndSize(py_src, &length));
+                ReleaseGIL gil;
+                auto reader = arki::core::LineReader::from_chars(buffer, length);
+                res->readYaml(*reader, "str buffer");
+            } else if (PyObject_HasAttrString(py_src, "encoding")) {
+                TextInputFile input(py_src);
+                ReleaseGIL gil;
+
+                std::unique_ptr<arki::core::LineReader> reader;
+                std::string input_name;
+                if (input.fd)
+                {
+                    input_name = input.fd->name();
+                    reader = arki::core::LineReader::from_fd(*input.fd);
+                }
+                else
+                {
+                    input_name = input.abstract->name();
+                    reader = arki::core::LineReader::from_abstract(*input.abstract);
+                }
+
+                res->readYaml(*reader, input_name);
+            } else {
+                BinaryInputFile input(py_src);
+                ReleaseGIL gil;
+
+                std::unique_ptr<arki::core::LineReader> reader;
+                std::string input_name;
+                if (input.fd)
+                {
+                    input_name = input.fd->name();
+                    reader = arki::core::LineReader::from_fd(*input.fd);
+                }
+                else
+                {
+                    input_name = input.abstract->name();
+                    reader = arki::core::LineReader::from_abstract(*input.abstract);
+                }
+                res->readYaml(*reader, input_name);
+            }
+            return (PyObject*)summary_create(std::move(res));
+        } ARKI_CATCH_RETURN_PYO
+    }
+};
 
 struct SummaryDef : public Type<SummaryDef, arkipy_Summary>
 {
@@ -307,7 +379,7 @@ Examples::
     TODO: add examples
 )";
     GetSetters<count, size> getsetters;
-    Methods<add, write, write_short, to_python, get_convex_hull, read_binary> methods;
+    Methods<add, write, write_short, to_python, get_convex_hull, read_binary, read_yaml> methods;
 
     static void _dealloc(Impl* self)
     {

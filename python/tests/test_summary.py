@@ -27,14 +27,67 @@ class TestSummary(unittest.TestCase):
         count = sum(i["summarystats"]["c"] for i in items)
         self.assertEquals(count, 3)
 
-    def test_write(self):
+    def test_write_binary(self):
+        self.maxDiff = None
         s = self.read("inbound/test.grib1")
         with io.BytesIO() as out:
             s.write(out, format="binary")
+            self.assertEqual(out.getvalue()[:2], b"SU")
+
+            out.seek(0)
+            s1 = arki.Summary.read_binary(out)
+            self.assertEqual(s.to_python(), s1.to_python())
+
+    def test_write_yaml(self):
+        self.maxDiff = None
+        s = self.read("inbound/test.grib1")
         with io.BytesIO() as out:
             s.write(out, format="yaml")
+            self.assertEqual(out.getvalue()[:11], b"SummaryItem")
+
+            # Read from bytes()
+            s1 = arki.Summary.read_yaml(out.getvalue())
+            # self.assertCountEqual(s.to_python()["items"], s1.to_python()["items"])
+
+            # Read from str()
+            s1 = arki.Summary.read_yaml(out.getvalue().decode())
+            # self.assertCountEqual(s.to_python()["items"], s1.to_python()["items"])
+
+            # Read from binary abstract FD
+            out.seek(0)
+            s1 = arki.Summary.read_yaml(out)
+            # self.assertCountEqual(s.to_python()["items"], s1.to_python()["items"])
+
+            # Read from string abstract FD
+            with io.StringIO(out.getvalue().decode()) as infd:
+                s1 = arki.Summary.read_yaml(infd)
+                # self.assertCountEqual(s.to_python()["items"], s1.to_python()["items"])
+
+        with io.BytesIO() as out:
+            s.write(out, format="yaml", annotate=True)
+            self.assertEqual(out.getvalue()[:11], b"SummaryItem")
+
+            out.seek(0)
+            s1 = arki.Summary.read_yaml(out)
+            self.assertEqual(s.to_python(), s1.to_python())
+
+    def test_write_json(self):
+        s = self.read("inbound/test.grib1")
         with io.BytesIO() as out:
             s.write(out, format="json")
+            self.assertEqual(out.getvalue()[:21], b'{"items":[{"origin":{')
+
+            out.seek(0)
+            s1 = arki.Summary.read_json(out)
+            self.assertEqual(s.to_python(), s1.to_python())
+
+        with io.BytesIO() as out:
+            s.write(out, format="json", annotate=True)
+            self.assertEqual(out.getvalue()[:21], b'{"items":[{"origin":{')
+
+            out.seek(0)
+            s1 = arki.Summary.read_json(out)
+            self.assertEqual(s.to_python(), s1.to_python())
 
     def test_write_short(self):
         s = self.read("inbound/test.grib1")
