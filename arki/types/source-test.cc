@@ -107,9 +107,8 @@ add_method("blob_pathnames_encode", [] {
         std::stringstream jbuf;
         structured::JSON json(jbuf);
         o->serialise(json, structured::keys_json);
-        jbuf.seekg(0);
         structured::Memory parsed;
-        structured::JSON::parse(jbuf, parsed);
+        structured::JSON::parse(jbuf.str(), parsed);
 
         decoded = downcast<Source>(types::decode_structure(structured::keys_json, parsed.root()));
         wassert(actual(decoded).is_source_blob("test", "/tmp", "testfile", 21, 42));

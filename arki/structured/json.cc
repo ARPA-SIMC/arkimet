@@ -1,6 +1,7 @@
 #include "json.h"
 #include "arki/utils/string.h"
 #include "arki/exceptions.h"
+#include "arki/core/file.h"
 #include <cctype>
 #include <cmath>
 
@@ -154,13 +155,13 @@ struct JSONParseException : public std::runtime_error
         : std::runtime_error("cannot parse JSON: " + msg) {}
 };
 
-static void parse_spaces(std::istream& in)
+static void parse_spaces(core::BufferedReader& in)
 {
     while (isspace(in.peek()))
         in.get();
 }
 
-static void parse_fixed(std::istream& in, const char* expected)
+static void parse_fixed(core::BufferedReader& in, const char* expected)
 {
     const char* s = expected;
     while (*s)
@@ -179,7 +180,7 @@ static void parse_fixed(std::istream& in, const char* expected)
     }
 }
 
-static void parse_number(std::istream& in, Emitter& e)
+static void parse_number(core::BufferedReader& in, Emitter& e)
 {
     string num;
     bool done = false;
@@ -224,7 +225,7 @@ static void parse_number(std::istream& in, Emitter& e)
     parse_spaces(in);
 }
 
-static void parse_string(std::istream& in, Emitter& e)
+static void parse_string(core::BufferedReader& in, Emitter& e)
 {
     string res;
     in.get(); // Eat the leading '"'
@@ -262,9 +263,9 @@ static void parse_string(std::istream& in, Emitter& e)
     e.add(res);
 }
 
-static void parse_value(std::istream& in, Emitter& e);
+static void parse_value(core::BufferedReader& in, Emitter& e);
 
-static void parse_array(std::istream& in, Emitter& e)
+static void parse_array(core::BufferedReader& in, Emitter& e)
 {
     e.start_list();
     in.get(); // Eat the leading '['
@@ -281,7 +282,7 @@ static void parse_array(std::istream& in, Emitter& e)
     e.end_list();
 }
 
-static void parse_object(std::istream& in, Emitter& e)
+static void parse_object(core::BufferedReader& in, Emitter& e)
 {
     e.start_mapping();
     in.get(); // Eat the leading '{'
@@ -306,7 +307,7 @@ static void parse_object(std::istream& in, Emitter& e)
     e.end_mapping();
 }
 
-static void parse_value(std::istream& in, Emitter& e)
+static void parse_value(core::BufferedReader& in, Emitter& e)
 {
     parse_spaces(in);
     switch (in.peek())
@@ -352,9 +353,15 @@ static void parse_value(std::istream& in, Emitter& e)
     parse_spaces(in);
 }
 
-void JSON::parse(std::istream& in, Emitter& e)
+void JSON::parse(core::BufferedReader& in, Emitter& e)
 {
     parse_value(in, e);
+}
+
+void JSON::parse(const std::string& str, Emitter& e)
+{
+    auto reader = core::BufferedReader::from_string(str);
+    parse(*reader, e);
 }
 
 }

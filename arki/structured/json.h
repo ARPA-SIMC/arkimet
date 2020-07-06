@@ -4,6 +4,7 @@
 /// Emitter implementation that outputs JSON
 
 #include <arki/structured/emitter.h>
+#include <arki/core/fwd.h>
 #include <vector>
 #include <iosfwd>
 
@@ -48,7 +49,8 @@ public:
     void add_raw(const std::string& val) override;
     void add_raw(const std::vector<uint8_t>& val) override;
 
-    static void parse(std::istream& in, Emitter& e);
+    static void parse(arki::core::BufferedReader& in, Emitter& e);
+    static void parse(const std::string& str, Emitter& e);
 };
 
 }

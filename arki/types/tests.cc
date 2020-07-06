@@ -9,6 +9,7 @@
 #include "arki/matcher.h"
 #include "arki/matcher/parser.h"
 #include "arki/core/binary.h"
+#include "arki/core/file.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/string.h"
 #include "arki/structured/json.h"
@@ -202,8 +203,10 @@ void ActualType::serializes() const
         structured::JSON json(jbuf);
         _actual->serialise(json, structured::keys_json);
         jbuf.seekg(0);
+        std::string str(jbuf.str());
+        auto reader = core::BufferedReader::from_string(str);
         structured::Memory parsed;
-        structured::JSON::parse(jbuf, parsed);
+        structured::JSON::parse(*reader, parsed);
         wassert(actual(parsed.root().type()) == structured::NodeType::MAPPING);
 
         unique_ptr<Type> iparsed = wcallchecked(types::decode_structure(structured::keys_json, parsed.root()));

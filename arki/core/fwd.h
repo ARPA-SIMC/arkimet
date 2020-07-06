@@ -21,6 +21,7 @@ struct Stderr;
 struct AbstractInputFile;
 struct AbstractOutputFile;
 
+struct BufferedReader;
 struct LineReader;
 struct Lock;
 

@@ -25,7 +25,76 @@ void BufferOutputFile::write(const void* data, size_t size)
     buffer.insert(buffer.end(), static_cast<const uint8_t*>(data), static_cast<const uint8_t*>(data) + size);
 }
 
+
+/*
+ * BufferedReader
+ */
+
+BufferedReader::~BufferedReader()
+{
+}
+
+bool BufferedReader::refill()
+{
+    pos = 0;
+    end = read();
+    if (end == 0)
+        return false;
+    return true;
+}
+
+int BufferedReader::peek()
+{
+    if (pos >= end)
+        if (!refill())
+            return EOF;
+    return buffer[pos];
+}
+
+int BufferedReader::get()
+{
+    if (pos >= end)
+        if (!refill())
+            return EOF;
+    return buffer[pos++];
+}
+
+
 namespace {
+
+template<typename Input>
+struct FDBufferedReader : public BufferedReader
+{
+    Input& fd;
+
+    FDBufferedReader(Input& fd) : fd(fd) {}
+
+    unsigned read() override
+    {
+        return fd.read(buffer.data(), buffer.size());
+    }
+};
+
+struct StringBufferedReader : public BufferedReader
+{
+    const char* cur;
+    const char* end;
+
+    StringBufferedReader(const char* buf, size_t size)
+        : cur(buf), end(buf + size) {}
+
+    unsigned read() override
+    {
+        if (cur == end)
+            return 0;
+        unsigned size = buffer.size();
+        if (end - cur < size)
+            size = end - cur;
+        memcpy(buffer.data(), cur, size);
+        cur += size;
+        return size;
+    }
+};
 
 template<typename Input>
 struct FDLineReader : public LineReader
@@ -104,6 +173,26 @@ struct StringLineReader : public LineReader
     }
 };
 
+}
+
+std::unique_ptr<BufferedReader> BufferedReader::from_fd(NamedFileDescriptor& fd)
+{
+    return std::unique_ptr<BufferedReader>(new FDBufferedReader<NamedFileDescriptor>(fd));
+}
+
+std::unique_ptr<BufferedReader> BufferedReader::from_abstract(AbstractInputFile& fd)
+{
+    return std::unique_ptr<BufferedReader>(new FDBufferedReader<AbstractInputFile>(fd));
+}
+
+std::unique_ptr<BufferedReader> BufferedReader::from_chars(const char* buf, size_t size)
+{
+    return std::unique_ptr<BufferedReader>(new StringBufferedReader(buf, size));
+}
+
+std::unique_ptr<BufferedReader> BufferedReader::from_string(const std::string& str)
+{
+    return std::unique_ptr<BufferedReader>(new StringBufferedReader(str.data(), str.size()));
 }
 
 
