@@ -20,7 +20,9 @@ Writing annotated metadata
 
 TODO: annotate metadata
 
-TODO: annotate summary
+You can use ``annotate=True`` when calling :meth:`arkimet.Summary.write` and
+:meth:`arkimet.Summary.write_short` to write JSON and YAML with metadata item
+descriptions.
 
 
 Implementing new formatters

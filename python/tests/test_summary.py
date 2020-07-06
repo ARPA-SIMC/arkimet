@@ -44,6 +44,7 @@ class TestSummary(unittest.TestCase):
         with io.BytesIO() as out:
             s.write(out, format="yaml")
             self.assertEqual(out.getvalue()[:11], b"SummaryItem")
+            self.assertNotIn(b'# sfc Surface (of the Earth, which includes sea surface)', out.getvalue())
 
             # Read from bytes()
             s1 = arki.Summary.read_yaml(out.getvalue())
@@ -77,6 +78,7 @@ class TestSummary(unittest.TestCase):
         with io.BytesIO() as out:
             s.write(out, format="json")
             self.assertEqual(out.getvalue()[:21], b'{"items":[{"origin":{')
+            self.assertNotIn(b'"desc":"', out.getvalue())
 
             # Read from bytes()
             s1 = arki.Summary.read_json(out.getvalue())

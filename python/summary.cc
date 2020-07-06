@@ -159,7 +159,7 @@ struct write : public MethKwargs<write, arkipy_Summary>
 struct write_short : public MethKwargs<write_short, arkipy_Summary>
 {
     constexpr static const char* name = "write_short";
-    constexpr static const char* signature = "file: Union[int, BinaryIO], format: str='binary'";
+    constexpr static const char* signature = "file: Union[int, BinaryIO], format: str='binary', annotate: bool = False";
     constexpr static const char* returns = "Optional[arki.cfg.Section]";
     constexpr static const char* summary = "write the short summary to a file";
     constexpr static const char* doc = R"(
@@ -167,19 +167,26 @@ struct write_short : public MethKwargs<write_short, arkipy_Summary>
              socket handle, or a file-like object with a fileno() method
              that returns an integer handle.
 :param format: "binary", "yaml", or "json". Default: "binary".
+:param annotate: if True, use a :class:`arkimet.Formatter` to add metadata
+                 descriptions to the output
 )";
 
     static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
     {
-        static const char* kwlist[] = { "file", "format", NULL };
+        static const char* kwlist[] = { "file", "format", "annotate", NULL };
         PyObject* arg_file = Py_None;
         const char* format = nullptr;
+        int annotate = 0;
 
-        if (!PyArg_ParseTupleAndKeywords(args, kw, "O|s", const_cast<char**>(kwlist), &arg_file, &format))
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "O|sp", const_cast<char**>(kwlist), &arg_file, &format, &annotate))
             return nullptr;
 
         try {
             BinaryOutputFile out(arg_file);
+
+            std::unique_ptr<arki::Formatter> formatter;
+            if (annotate)
+                formatter = arki::Formatter::create();
 
             summary::Short shrt;
             self->summary->visit(shrt);
@@ -187,7 +194,7 @@ struct write_short : public MethKwargs<write_short, arkipy_Summary>
             if (!format || strcmp(format, "yaml") == 0)
             {
                 std::stringstream buf;
-                shrt.write_yaml(buf);
+                shrt.write_yaml(buf, formatter.get());
                 if (out.fd)
                     out.fd->write_all_or_retry(buf.str().data(), buf.str().size());
                 else
@@ -195,7 +202,7 @@ struct write_short : public MethKwargs<write_short, arkipy_Summary>
             } else if (strcmp(format, "json") == 0) {
                 std::stringstream buf;
                 arki::structured::JSON output(buf);
-                shrt.serialise(output, arki::structured::keys_python);
+                shrt.serialise(output, arki::structured::keys_python, formatter.get());
                 if (out.fd)
                     out.fd->write_all_or_retry(buf.str().data(), buf.str().size());
                 else
