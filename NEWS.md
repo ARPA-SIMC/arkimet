@@ -1,3 +1,8 @@
+# New in version 1.28
+
+* Added `format_metadata.rst` to Python HOWTOs (#230)
+* Python: added `arki.Summary.read_binary` (#230)
+
 # New in version 1.27
 
 * reftime match expressions using repeating intervals (like `reftime:=yesterday
