@@ -36,7 +36,7 @@ class TestSummary(unittest.TestCase):
 
             out.seek(0)
             s1 = arki.Summary.read_binary(out)
-            self.assertEqual(s.to_python(), s1.to_python())
+            self.assertCountEqual(s.to_python()["items"], s1.to_python()["items"])
 
     def test_write_yaml(self):
         self.maxDiff = None

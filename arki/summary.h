@@ -112,6 +112,13 @@ public:
     bool read(core::NamedFileDescriptor& in);
 
     /**
+     * Read a summary from an AbstractInputFile
+     *
+     * @returns false when end-of-file is reached
+     */
+    bool read(core::AbstractInputFile& in);
+
+    /**
      * Read a summary from a buffer.
      *
      * The filename string is used to generate nicer parse error messages when

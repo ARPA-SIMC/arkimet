@@ -293,17 +293,8 @@ struct read_binary : public ClassMethKwargs<read_binary>
                 if (in.fd)
                     res->read(*in.fd);
                 else
-                {
-                    gil.lock();
-                    PyErr_SetString(PyExc_NotImplementedError, "reading summaries from files without fileno() is not yet implemented");
-                    return nullptr;
-                }
+                    res->read(*in.abstract);
 
-                //    res = arki::Metadata::read_file(*in.abstract, ctx, dest);
-                //    {
-                //        arki::metadata::ReadContext ctx(in.abstract->name());
-                //        res = arki::Metadata::read_file(*in.abstract, ctx, dest);
-                //    }
                 gil.lock();
                 return (PyObject*)summary_create(std::move(res));
             }
