@@ -180,8 +180,12 @@ public:
 /**
  * Abstract interface to things that return a line of text at a time
  */
-struct LineReader
+class LineReader
 {
+protected:
+    bool fd_eof = false;
+
+public:
     virtual ~LineReader() {}
 
     /**
@@ -195,7 +199,7 @@ struct LineReader
      * Check if the last getline returned eof. This is always false before
      * getline is called for the first time.
      */
-    virtual bool eof() const = 0;
+    bool eof() const { return fd_eof; }
 
     /**
      * Create a LineReader from a file descriptor.
@@ -232,6 +236,14 @@ struct LineReader
      * line reader is used.
      */
     static std::unique_ptr<LineReader> from_chars(const char* buf, size_t size);
+
+    /**
+     * Create a LineReader from a buffer on a string.
+     *
+     * No copy is made of the data: the buffer must remain valid for as long as the
+     * reader is used.
+     */
+    static std::unique_ptr<LineReader> from_string(const std::string& str);
 };
 
 

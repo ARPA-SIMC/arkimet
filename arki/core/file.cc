@@ -96,80 +96,28 @@ struct StringBufferedReader : public BufferedReader
     }
 };
 
-template<typename Input>
-struct FDLineReader : public LineReader
+template<typename Buffer>
+struct LineReaderImpl : public LineReader, Buffer
 {
-    Input& fd;
-    std::deque<char> linebuf;
-    bool fd_eof = false;
-
-    FDLineReader(Input& fd) : fd(fd) {}
-
-    bool eof() const override { return fd_eof && linebuf.empty(); }
+    using Buffer::Buffer;
 
     bool getline(std::string& line) override
     {
         line.clear();
         while (true)
         {
-            std::deque<char>::iterator i = std::find(linebuf.begin(), linebuf.end(), '\n');
-            if (i != linebuf.end())
+            int c = this->get();
+            if (c == EOF)
             {
-                line.append(linebuf.begin(), i);
-                linebuf.erase(linebuf.begin(), i + 1);
-                return true;
-            }
-
-            if (fd_eof)
-            {
-                if (i == linebuf.end())
-                    return false;
-
-                line.append(linebuf.begin(), linebuf.end());
-                linebuf.clear();
-                return true;
-            }
-
-            // Read more and retry
-            char buf[4096];
-            size_t count = fd.read(buf, 4096);
-            if (count == 0)
-                fd_eof = true;
-            else
-                linebuf.insert(linebuf.end(), buf, buf + count);
-        }
-    }
-};
-
-struct StringLineReader : public LineReader
-{
-    const char* cur;
-    const char* end;
-
-    StringLineReader(const char* buf, size_t size)
-        : cur(buf), end(buf + size) {}
-
-    bool eof() const override { return cur == end; }
-
-    bool getline(std::string& line) override
-    {
-        const char* pos = std::find(cur, end, '\n');
-        if (pos == end)
-        {
-            if (cur == end)
-            {
-                line.clear();
+                this->fd_eof = true;
                 return false;
             }
 
-            line.assign(cur, end);
-            cur = end;
-            return true;
-        }
+            if (c == '\n')
+                return true;
 
-        line.assign(cur, pos);
-        cur = pos + 1;
-        return true;
+            line += (char)c;
+        }
     }
 };
 
@@ -198,17 +146,22 @@ std::unique_ptr<BufferedReader> BufferedReader::from_string(const std::string& s
 
 std::unique_ptr<LineReader> LineReader::from_fd(NamedFileDescriptor& fd)
 {
-    return std::unique_ptr<LineReader>(new FDLineReader<NamedFileDescriptor>(fd));
+    return std::unique_ptr<LineReader>(new LineReaderImpl<FDBufferedReader<NamedFileDescriptor>>(fd));
 }
 
 std::unique_ptr<LineReader> LineReader::from_abstract(AbstractInputFile& fd)
 {
-    return std::unique_ptr<LineReader>(new FDLineReader<AbstractInputFile>(fd));
+    return std::unique_ptr<LineReader>(new LineReaderImpl<FDBufferedReader<AbstractInputFile>>(fd));
 }
 
 std::unique_ptr<LineReader> LineReader::from_chars(const char* buf, size_t size)
 {
-    return std::unique_ptr<LineReader>(new StringLineReader(buf, size));
+    return std::unique_ptr<LineReader>(new LineReaderImpl<StringBufferedReader>(buf, size));
+}
+
+std::unique_ptr<LineReader> LineReader::from_string(const std::string& str)
+{
+    return std::unique_ptr<LineReader>(new LineReaderImpl<StringBufferedReader>(str.data(), str.size()));
 }
 
 
