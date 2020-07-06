@@ -279,7 +279,7 @@ void Reader::summary_for_all(Summary& out)
     string sum_file = str::joinpath(archives->dataset_root, ".summaries/archives.summary");
     sys::File fd(sum_file);
     if (fd.open_ifexists(O_RDONLY))
-        out.read(fd, sum_file);
+        out.read(fd);
     else
     {
         // Query the summaries of all archives

@@ -216,24 +216,23 @@ std::unique_ptr<arki::utils::geos::Geometry> Summary::getConvexHull() const
 }
 
 
-bool Summary::read(int fd, const std::string& filename)
+bool Summary::read(core::NamedFileDescriptor& in)
 {
-    iotrace::trace_file(filename, 0, 0, "read summary");
+    iotrace::trace_file(in, 0, 0, "read summary");
 
     types::Bundle bundle;
-    NamedFileDescriptor f(fd, filename);
-    if (!bundle.read_header(f))
+    if (!bundle.read_header(in))
         return false;
 
     // Ensure first 2 bytes are SU
     if (bundle.signature != "SU")
-        throw_consistency_error("parsing file " + filename, "summary entry does not start with 'SU'");
+        throw_consistency_error("parsing file " + in.name(), "summary entry does not start with 'SU'");
 
-    if (!bundle.read_data(f))
+    if (!bundle.read_data(in))
         return false;
 
     core::BinaryDecoder dec(bundle.data);
-    read_inner(dec, bundle.version, filename);
+    read_inner(dec, bundle.version, in.name());
 
     return true;
 }
@@ -467,7 +466,7 @@ void Summary::readFile(const std::string& fname)
 {
     // Read all the metadata
     sys::File in(fname, O_RDONLY);
-    read(in, fname);
+    read(in);
     in.close();
 }
 

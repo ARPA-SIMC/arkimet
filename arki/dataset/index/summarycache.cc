@@ -52,7 +52,7 @@ bool SummaryCache::read(Summary& s)
     sys::File fd(sum_file);
     if (!fd.open_ifexists(O_RDONLY))
         return false;
-    s.read(fd, sum_file);
+    s.read(fd);
     return true;
 }
 
@@ -62,7 +62,7 @@ bool SummaryCache::read(Summary& s, int year, int month)
     sys::File fd(sum_file);
     if (!fd.open_ifexists(O_RDONLY))
         return false;
-    s.read(fd, sum_file);
+    s.read(fd);
     return true;
 }
 

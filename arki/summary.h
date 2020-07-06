@@ -104,15 +104,12 @@ public:
     /// Dump the internal structure of this summary for debugging purposes
     void dump(std::ostream& out) const;
 
-	/**
-	 * Read a summary from a POSIX file descriptor.
-	 *
-	 * The filename string is used to generate nicer parse error messages when
-	 * throwing exceptions, and can be anything.
-	 *
-	 * @returns false when end-of-file is reached
-	 */
-	bool read(int fd, const std::string& filename);
+    /**
+     * Read a summary from a file descriptor.
+     *
+     * @returns false when end-of-file is reached
+     */
+    bool read(core::NamedFileDescriptor& in);
 
     /**
      * Read a summary from a buffer.
