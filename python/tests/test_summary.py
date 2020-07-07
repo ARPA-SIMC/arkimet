@@ -107,9 +107,26 @@ class TestSummary(unittest.TestCase):
             s1 = arki.Summary.read_json(out)
             self.assertCountEqual(s.to_python()["items"], s1.to_python()["items"])
 
-    def test_write_short(self):
+    def test_write_short_yaml(self):
         s = self.read("inbound/test.grib1")
         with io.BytesIO() as out:
             s.write_short(out, format="yaml")
+            self.assertEqual(out.getvalue()[:11], b"SummaryStat")
+            self.assertNotIn(b'# sfc Surface (of the Earth, which includes sea surface)', out.getvalue())
+
+        with io.BytesIO() as out:
+            s.write_short(out, format="yaml", annotate=True)
+            self.assertEqual(out.getvalue()[:11], b"SummaryStat")
+            self.assertIn(b'# sfc Surface (of the Earth, which includes sea surface)', out.getvalue())
+
+    def test_write_short_json(self):
+        s = self.read("inbound/test.grib1")
         with io.BytesIO() as out:
             s.write_short(out, format="json")
+            self.assertEqual(out.getvalue()[:26], b'{"items":{"summarystats":{')
+            self.assertNotIn(b'"desc":"', out.getvalue())
+
+        with io.BytesIO() as out:
+            s.write_short(out, format="json", annotate=True)
+            self.assertEqual(out.getvalue()[:26], b'{"items":{"summarystats":{')
+            self.assertIn(b'"desc":"', out.getvalue())
