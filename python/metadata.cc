@@ -487,6 +487,7 @@ struct write_bundle : public ClassMethKwargs<write_bundle>
     }
 };
 
+// TODO: if one needs to read a stream of yaml metadata, we can implement read_yaml_bundle/read_bundle_yaml
 struct read_yaml : public ClassMethKwargs<read_yaml>
 {
     constexpr static const char* name = "read_yaml";
@@ -559,6 +560,7 @@ struct read_yaml : public ClassMethKwargs<read_yaml>
     }
 };
 
+// TODO: if one needs to read a stream of json metadata, we can implement read_json_bundle/read_bundle_json
 struct read_json : public ClassMethKwargs<read_json>
 {
     constexpr static const char* name = "read_json";
