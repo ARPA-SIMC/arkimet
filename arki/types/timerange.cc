@@ -504,9 +504,9 @@ std::ostream& GRIB1::writeNumbers(std::ostream& o) const
 	switch ((t_enum_GRIB_TIMERANGE)m_type)
 	{
 		case GRIB_TIMERANGE_FORECAST_AT_REFTIME_PLUS_P1: {
-			string suffix = formatTimeUnit((t_enum_GRIB_TIMEUNIT)m_unit);
-			o << setw(3) << (int)m_type << ", " << setw(3) << (int)m_p1 << suffix;
-			break;
+            std::string suffix = formatTimeUnit((t_enum_GRIB_TIMEUNIT)m_unit);
+            o << setw(3) << (int)m_type << ", " << setw(3) << (int)m_p1 << suffix;
+            break;
 		}
 		case GRIB_TIMERANGE_ANALYSIS_AT_REFTIME:
 			o << setw(3) << (int)m_type;
@@ -893,6 +893,20 @@ unique_ptr<GRIB1> GRIB1::create(unsigned char type, unsigned char unit, unsigned
     res->m_unit = unit;
     res->m_p1 = p1;
     res->m_p2 = p2;
+
+    // Normalise values to make comparison easier
+    switch ((t_enum_GRIB_TIMERANGE)type)
+    {
+        case GRIB_TIMERANGE_ANALYSIS_AT_REFTIME:
+            // Units do not matter for this timerange type, force everything to
+            // hours
+            if (p1 == 0 && p2 == 0)
+                res->m_unit = 1;
+            break;
+        default:
+            break;
+    }
+
     return unique_ptr<GRIB1>(res);
 }
 

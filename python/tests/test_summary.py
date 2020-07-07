@@ -48,21 +48,21 @@ class TestSummary(unittest.TestCase):
 
             # Read from bytes()
             s1 = arki.Summary.read_yaml(out.getvalue())
-            # self.assertCountEqual(s.to_python()["items"], s1.to_python()["items"])
+            self.assertCountEqual(s.to_python()["items"], s1.to_python()["items"])
 
             # Read from str()
             s1 = arki.Summary.read_yaml(out.getvalue().decode())
-            # self.assertCountEqual(s.to_python()["items"], s1.to_python()["items"])
+            self.assertCountEqual(s.to_python()["items"], s1.to_python()["items"])
 
             # Read from binary abstract FD
             out.seek(0)
             s1 = arki.Summary.read_yaml(out)
-            # self.assertCountEqual(s.to_python()["items"], s1.to_python()["items"])
+            self.assertCountEqual(s.to_python()["items"], s1.to_python()["items"])
 
             # Read from string abstract FD
             with io.StringIO(out.getvalue().decode()) as infd:
                 s1 = arki.Summary.read_yaml(infd)
-                # self.assertCountEqual(s.to_python()["items"], s1.to_python()["items"])
+                self.assertCountEqual(s.to_python()["items"], s1.to_python()["items"])
 
         with io.BytesIO() as out:
             s.write(out, format="yaml", annotate=True)
@@ -71,7 +71,7 @@ class TestSummary(unittest.TestCase):
 
             out.seek(0)
             s1 = arki.Summary.read_yaml(out)
-            # self.assertCountEqual(s.to_python()["items"], s1.to_python()["items"])
+            self.assertCountEqual(s.to_python()["items"], s1.to_python()["items"])
 
     def test_write_json(self):
         s = self.read("inbound/test.grib1")
