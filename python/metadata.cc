@@ -9,11 +9,14 @@
 #include "arki/core/file.h"
 #include "arki/types/source.h"
 #include "arki/structured/keys.h"
+#include "arki/structured/json.h"
+#include "arki/formatter.h"
 #include "utils/core.h"
 #include "utils/methods.h"
 #include "utils/type.h"
 #include "utils/values.h"
 #include "files.h"
+#include <sstream>
 
 using namespace std;
 using namespace arki;
@@ -85,22 +88,25 @@ struct has_source : public MethNoargs<has_source, arkipy_Metadata>
 struct write : public MethKwargs<write, arkipy_Metadata>
 {
     constexpr static const char* name = "write";
-    constexpr static const char* signature = "file: Union[int, BytesIO], format: str='binary'";
+    constexpr static const char* signature = "file: Union[int, BytesIO], format: str='binary', annotate: bool = False";
     constexpr static const char* returns = "None";
     constexpr static const char* summary = "Write the metadata to a file";
     constexpr static const char* doc = R"(
 :param file: the output file. The file can be a normal file-like object or an
              integer file or socket handle
 :param format: "binary", "yaml", or "json". Default: "binary".
+:param annotate: if True, use a :class:`arkimet.Formatter` to add metadata
+                 descriptions to the output
 )";
 
     static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
     {
-        static const char* kwlist[] = { "file", "format", NULL };
+        static const char* kwlist[] = { "file", "format", "annotate", nullptr };
         PyObject* arg_file = Py_None;
         const char* format = nullptr;
+        int annotate = 0;
 
-        if (!PyArg_ParseTupleAndKeywords(args, kw, "O|s", (char**)kwlist, &arg_file, &format))
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "O|sp", (char**)kwlist, &arg_file, &format, &annotate))
             return nullptr;
 
         try {
@@ -113,11 +119,25 @@ struct write : public MethKwargs<write, arkipy_Metadata>
                 else
                     self->md->write(*out.abstract);
             } else if (strcmp(format, "yaml") == 0) {
-                PyErr_SetString(PyExc_NotImplementedError, "serializing to YAML is not yet implemented");
-                return nullptr;
+                std::unique_ptr<arki::Formatter> formatter;
+                if (annotate)
+                    formatter = arki::Formatter::create();
+                std::string yaml = self->md->to_yaml(formatter.get());
+                if (out.fd)
+                    out.fd->write_all_or_retry(yaml);
+                else
+                    out.abstract->write(yaml.data(), yaml.size());
             } else if (strcmp(format, "json") == 0) {
-                PyErr_SetString(PyExc_NotImplementedError, "serializing to JSON is not yet implemented");
-                return nullptr;
+                std::unique_ptr<arki::Formatter> formatter;
+                if (annotate)
+                    formatter = arki::Formatter::create();
+                std::stringstream buf;
+                arki::structured::JSON output(buf);
+                self->md->serialise(output, arki::structured::keys_json, formatter.get());
+                if (out.fd)
+                    out.fd->write_all_or_retry(buf.str());
+                else
+                    out.abstract->write(buf.str().data(), buf.str().size());
             } else {
                 PyErr_Format(PyExc_ValueError, "Unsupported metadata serializati format: %s", format);
                 return nullptr;

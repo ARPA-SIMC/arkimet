@@ -171,7 +171,7 @@ class TestMetadata(unittest.TestCase):
         md = self.read("inbound/test.grib1")[0]
         with io.BytesIO() as out:
             md.write(out, format="yaml")
-            self.assertEqual(out.getvalue()[:11], b"SummaryItem")
+            self.assertEqual(out.getvalue()[:12], b"Source: BLOB")
             self.assertNotIn(b'# sfc Surface (of the Earth, which includes sea surface)', out.getvalue())
 
             # Read from bytes()
@@ -205,7 +205,7 @@ class TestMetadata(unittest.TestCase):
         md = self.read("inbound/test.grib1")[0]
         with io.BytesIO() as out:
             md.write(out, format="json")
-            self.assertEqual(out.getvalue()[:21], b'{"items":[{"origin":{')
+            self.assertEqual(out.getvalue()[:20], b'{"i":[{"t":"source",')
             self.assertNotIn(b'"desc":"', out.getvalue())
 
             # Read from bytes()
@@ -228,7 +228,7 @@ class TestMetadata(unittest.TestCase):
 
         with io.BytesIO() as out:
             md.write(out, format="json", annotate=True)
-            self.assertEqual(out.getvalue()[:21], b'{"items":[{"origin":{')
+            self.assertEqual(out.getvalue()[:20], b'{"i":[{"t":"source",')
             self.assertIn(b'"desc":"', out.getvalue())
 
             out.seek(0)

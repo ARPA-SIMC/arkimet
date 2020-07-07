@@ -18,7 +18,8 @@ description as a string::
 Writing annotated metadata
 --------------------------
 
-TODO: annotate metadata
+You can use ``annotate=True`` when calling :meth:`arkimet.Metadata.write` and
+to write JSON and YAML with metadata item descriptions.
 
 You can use ``annotate=True`` when calling :meth:`arkimet.Summary.write` and
 :meth:`arkimet.Summary.write_short` to write JSON and YAML with metadata item
