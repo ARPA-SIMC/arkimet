@@ -71,6 +71,7 @@ struct PythonLineReader : public core::LineReader
             if (PyErr_Occurred())
                 throw PythonException();
             Py_DECREF(iter);
+            fd_eof = true;
             iter = nullptr;
             return false;
         }
@@ -85,11 +86,6 @@ struct PythonLineReader : public core::LineReader
                 break;
         }
         return true;
-    }
-
-    bool eof() const override
-    {
-        return iter == nullptr;
     }
 };
 

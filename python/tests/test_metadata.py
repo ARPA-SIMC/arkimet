@@ -165,3 +165,72 @@ class TestMetadata(unittest.TestCase):
             arki.Metadata.write_bundle(res, fd)
             res = arki.Metadata.read_bundle(fd.getvalue())
         self.assertEqual(res, orig_md)
+
+    def test_write_yaml(self):
+        self.maxDiff = None
+        md = self.read(os.path.abspath("inbound/test.grib1"))[0]
+        with io.BytesIO() as out:
+            md.write(out, format="yaml")
+            self.assertEqual(out.getvalue()[:12], b"Source: BLOB")
+            self.assertNotIn(b'# sfc Surface (of the Earth, which includes sea surface)', out.getvalue())
+
+            # Read from bytes()
+            md1 = arki.Metadata.read_yaml(out.getvalue())
+            self.assertEqual(md.to_python(), md1.to_python())
+
+            # Read from str()
+            md1 = arki.Metadata.read_yaml(out.getvalue().decode())
+            self.assertEqual(md.to_python(), md1.to_python())
+
+            # Read from binary abstract FD
+            out.seek(0)
+            md1 = arki.Metadata.read_yaml(out)
+            self.assertEqual(md.to_python(), md1.to_python())
+
+            # Read from string abstract FD
+            with io.StringIO(out.getvalue().decode()) as infd:
+                md1 = arki.Metadata.read_yaml(infd)
+                self.assertEqual(md.to_python(), md1.to_python())
+
+        with io.BytesIO() as out:
+            md.write(out, format="yaml", annotate=True)
+            self.assertEqual(out.getvalue()[:12], b"Source: BLOB")
+            self.assertIn(b'# sfc Surface (of the Earth, which includes sea surface)', out.getvalue())
+
+            out.seek(0)
+            md1 = arki.Metadata.read_yaml(out)
+            self.assertEqual(md.to_python(), md1.to_python())
+
+    def test_write_json(self):
+        md = self.read("inbound/test.grib1")[0]
+        with io.BytesIO() as out:
+            md.write(out, format="json")
+            self.assertEqual(out.getvalue()[:20], b'{"i":[{"t":"source",')
+            self.assertNotIn(b'"desc":"', out.getvalue())
+
+            # Read from bytes()
+            md1 = arki.Metadata.read_json(out.getvalue())
+            self.assertEqual(md.to_python(), md1.to_python())
+
+            # Read from str()
+            md1 = arki.Metadata.read_json(out.getvalue().decode())
+            self.assertEqual(md.to_python(), md1.to_python())
+
+            # Read from binary abstract FD
+            out.seek(0)
+            md1 = arki.Metadata.read_json(out)
+            self.assertEqual(md.to_python(), md1.to_python())
+
+            # Read from string abstract FD
+            with io.StringIO(out.getvalue().decode()) as infd:
+                md1 = arki.Metadata.read_json(infd)
+                self.assertEqual(md.to_python(), md1.to_python())
+
+        with io.BytesIO() as out:
+            md.write(out, format="json", annotate=True)
+            self.assertEqual(out.getvalue()[:20], b'{"i":[{"t":"source",')
+            self.assertIn(b'"desc":"', out.getvalue())
+
+            out.seek(0)
+            md1 = arki.Metadata.read_json(out)
+            self.assertEqual(md.to_python(), md1.to_python())

@@ -1,3 +1,16 @@
+# New in version 1.28
+
+* Added `format_metadata.rst` to Python HOWTOs (#230)
+* Python: added `arkimet.Summary.read_binary` (#230)
+* Python: added `arkimet.Summary.read_yaml` (#230)
+* Python: added `arkimet.Summary.read_json` (#230)
+* Python: added `annotate: bool = False` to `arkimet.Summary.write` (#230)
+* Python: added `annotate: bool = False` to `arkimet.Summary.write_short` (#230)
+* Python: implemented `arkimet.Metadata.write` for `yaml` and `json` formats (#230)
+* Python: added `annotate: bool = False` to `arkimet.Metadata.write` (#230)
+* Python: added `arkimet.Metadata.read_yaml` (#230)
+* Python: added `arkimet.Metadata.read_json` (#230)
+
 # New in version 1.27
 
 * reftime match expressions using repeating intervals (like `reftime:=yesterday

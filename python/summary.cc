@@ -11,8 +11,11 @@
 #include "arki/summary/short.h"
 #include "arki/structured/json.h"
 #include "arki/structured/keys.h"
+#include "arki/structured/memory.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/geos.h"
+#include "arki/core/binary.h"
+#include "arki/formatter.h"
 #include <sstream>
 
 using namespace std;
@@ -93,7 +96,7 @@ struct add : public MethKwargs<add, arkipy_Summary>
 struct write : public MethKwargs<write, arkipy_Summary>
 {
     constexpr static const char* name = "write";
-    constexpr static const char* signature = "file: Union[int, BinaryIO], format: str='binary'";
+    constexpr static const char* signature = "file: Union[int, BinaryIO], format: str = 'binary', annotate: bool = False";
     constexpr static const char* returns = "Optional[arki.cfg.Section]";
     constexpr static const char* summary = "write the summary to a file";
     constexpr static const char* doc = R"(
@@ -101,15 +104,18 @@ struct write : public MethKwargs<write, arkipy_Summary>
              socket handle, or a file-like object with a fileno() method
              that returns an integer handle.
 :param format: "binary", "yaml", or "json". Default: "binary".
+:param annotate: if True, use a :class:`arkimet.Formatter` to add metadata
+                 descriptions to the output
 )";
 
     static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
     {
-        static const char* kwlist[] = { "file", "format", NULL };
+        static const char* kwlist[] = { "file", "format", "annotate", NULL };
         PyObject* arg_file = Py_None;
         const char* format = nullptr;
+        int annotate = 0;
 
-        if (!PyArg_ParseTupleAndKeywords(args, kw, "O|s", const_cast<char**>(kwlist), &arg_file, &format))
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "O|sp", const_cast<char**>(kwlist), &arg_file, &format, &annotate))
             return nullptr;
 
         try {
@@ -122,15 +128,21 @@ struct write : public MethKwargs<write, arkipy_Summary>
                 else
                     self->summary->write(*out.abstract);
             } else if (strcmp(format, "yaml") == 0) {
-                std::string yaml = self->summary->to_yaml();
+                std::unique_ptr<arki::Formatter> formatter;
+                if (annotate)
+                    formatter = arki::Formatter::create();
+                std::string yaml = self->summary->to_yaml(formatter.get());
                 if (out.fd)
                     out.fd->write_all_or_retry(yaml);
                 else
                     out.abstract->write(yaml.data(), yaml.size());
             } else if (strcmp(format, "json") == 0) {
+                std::unique_ptr<arki::Formatter> formatter;
+                if (annotate)
+                    formatter = arki::Formatter::create();
                 std::stringstream buf;
                 arki::structured::JSON output(buf);
-                self->summary->serialise(output, arki::structured::keys_json);
+                self->summary->serialise(output, arki::structured::keys_json, formatter.get());
                 if (out.fd)
                     out.fd->write_all_or_retry(buf.str());
                 else
@@ -147,7 +159,7 @@ struct write : public MethKwargs<write, arkipy_Summary>
 struct write_short : public MethKwargs<write_short, arkipy_Summary>
 {
     constexpr static const char* name = "write_short";
-    constexpr static const char* signature = "file: Union[int, BinaryIO], format: str='binary'";
+    constexpr static const char* signature = "file: Union[int, BinaryIO], format: str='binary', annotate: bool = False";
     constexpr static const char* returns = "Optional[arki.cfg.Section]";
     constexpr static const char* summary = "write the short summary to a file";
     constexpr static const char* doc = R"(
@@ -155,19 +167,26 @@ struct write_short : public MethKwargs<write_short, arkipy_Summary>
              socket handle, or a file-like object with a fileno() method
              that returns an integer handle.
 :param format: "binary", "yaml", or "json". Default: "binary".
+:param annotate: if True, use a :class:`arkimet.Formatter` to add metadata
+                 descriptions to the output
 )";
 
     static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
     {
-        static const char* kwlist[] = { "file", "format", NULL };
+        static const char* kwlist[] = { "file", "format", "annotate", NULL };
         PyObject* arg_file = Py_None;
         const char* format = nullptr;
+        int annotate = 0;
 
-        if (!PyArg_ParseTupleAndKeywords(args, kw, "O|s", const_cast<char**>(kwlist), &arg_file, &format))
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "O|sp", const_cast<char**>(kwlist), &arg_file, &format, &annotate))
             return nullptr;
 
         try {
             BinaryOutputFile out(arg_file);
+
+            std::unique_ptr<arki::Formatter> formatter;
+            if (annotate)
+                formatter = arki::Formatter::create();
 
             summary::Short shrt;
             self->summary->visit(shrt);
@@ -175,21 +194,19 @@ struct write_short : public MethKwargs<write_short, arkipy_Summary>
             if (!format || strcmp(format, "yaml") == 0)
             {
                 std::stringstream buf;
-                shrt.write_yaml(buf);
+                shrt.write_yaml(buf, formatter.get());
                 if (out.fd)
                     out.fd->write_all_or_retry(buf.str().data(), buf.str().size());
                 else
                     out.abstract->write(buf.str().data(), buf.str().size());
-                return nullptr;
             } else if (strcmp(format, "json") == 0) {
                 std::stringstream buf;
                 arki::structured::JSON output(buf);
-                shrt.serialise(output, arki::structured::keys_python);
+                shrt.serialise(output, arki::structured::keys_python, formatter.get());
                 if (out.fd)
                     out.fd->write_all_or_retry(buf.str().data(), buf.str().size());
                 else
                     out.abstract->write(buf.str().data(), buf.str().size());
-                return nullptr;
             } else {
                 PyErr_Format(PyExc_ValueError, "Unsupported metadata serialization format: %s", format);
                 return nullptr;
@@ -241,6 +258,186 @@ None is returned if the convex hull could not be computed.
     }
 };
 
+struct read_binary : public ClassMethKwargs<read_binary>
+{
+    constexpr static const char* name = "read_binary";
+    constexpr static const char* signature = "src: Union[bytes, ByteIO]";
+    constexpr static const char* returns = "arkimet.Summary";
+    constexpr static const char* summary = "Read a Summary from a binary file";
+
+    static PyObject* run(PyTypeObject* cls, PyObject* args, PyObject* kw)
+    {
+        static const char* kwlist[] = { "src", nullptr };
+        PyObject* py_src = nullptr;
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "O", const_cast<char**>(kwlist), &py_src))
+            return nullptr;
+
+        try {
+            if (PyBytes_Check(py_src))
+            {
+                char* buffer;
+                Py_ssize_t length;
+                if (PyBytes_AsStringAndSize(py_src, &buffer, &length) == -1)
+                    throw PythonException();
+
+                core::BinaryDecoder dec((const uint8_t*)(buffer), length);
+                std::unique_ptr<Summary> res(new Summary);
+                res->read(dec, "bytes buffer");
+                return (PyObject*)summary_create(std::move(res));
+            } else {
+                BinaryInputFile in(py_src);
+                ReleaseGIL gil;
+
+                std::unique_ptr<Summary> res(new Summary);
+
+                if (in.fd)
+                    res->read(*in.fd);
+                else
+                    res->read(*in.abstract);
+
+                gil.lock();
+                return (PyObject*)summary_create(std::move(res));
+            }
+        } ARKI_CATCH_RETURN_PYO
+    }
+};
+
+struct read_yaml : public ClassMethKwargs<read_yaml>
+{
+    constexpr static const char* name = "read_yaml";
+    constexpr static const char* signature = "src: Union[str, StringIO, bytes, ByteIO]";
+    constexpr static const char* returns = "arkimet.Summary";
+    constexpr static const char* summary = "Read a Summary from a YAML file";
+
+    static PyObject* run(PyTypeObject* cls, PyObject* args, PyObject* kw)
+    {
+        static const char* kwlist[] = { "src", nullptr };
+        PyObject* py_src = nullptr;
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "O", const_cast<char**>(kwlist), &py_src))
+            return nullptr;
+
+        try {
+            std::unique_ptr<Summary> res(new Summary);
+            if (PyBytes_Check(py_src))
+            {
+                char* buffer;
+                Py_ssize_t length;
+                if (PyBytes_AsStringAndSize(py_src, &buffer, &length) == -1)
+                    throw PythonException();
+                ReleaseGIL gil;
+                auto reader = arki::core::LineReader::from_chars(buffer, length);
+                res->readYaml(*reader, "bytes buffer");
+            } else if (PyUnicode_Check(py_src)) {
+                Py_ssize_t length;
+                const char* buffer = throw_ifnull(PyUnicode_AsUTF8AndSize(py_src, &length));
+                ReleaseGIL gil;
+                auto reader = arki::core::LineReader::from_chars(buffer, length);
+                res->readYaml(*reader, "str buffer");
+            } else if (PyObject_HasAttrString(py_src, "encoding")) {
+                TextInputFile input(py_src);
+                ReleaseGIL gil;
+
+                std::unique_ptr<arki::core::LineReader> reader;
+                std::string input_name;
+                if (input.fd)
+                {
+                    input_name = input.fd->name();
+                    reader = arki::core::LineReader::from_fd(*input.fd);
+                }
+                else
+                {
+                    input_name = input.abstract->name();
+                    reader = arki::core::LineReader::from_abstract(*input.abstract);
+                }
+
+                res->readYaml(*reader, input_name);
+            } else {
+                BinaryInputFile input(py_src);
+                ReleaseGIL gil;
+
+                std::unique_ptr<arki::core::LineReader> reader;
+                std::string input_name;
+                if (input.fd)
+                {
+                    input_name = input.fd->name();
+                    reader = arki::core::LineReader::from_fd(*input.fd);
+                }
+                else
+                {
+                    input_name = input.abstract->name();
+                    reader = arki::core::LineReader::from_abstract(*input.abstract);
+                }
+                res->readYaml(*reader, input_name);
+            }
+            return (PyObject*)summary_create(std::move(res));
+        } ARKI_CATCH_RETURN_PYO
+    }
+};
+
+struct read_json : public ClassMethKwargs<read_json>
+{
+    constexpr static const char* name = "read_json";
+    constexpr static const char* signature = "src: Union[str, StringIO, bytes, ByteIO]";
+    constexpr static const char* returns = "arkimet.Summary";
+    constexpr static const char* summary = "Read a Summary from a JSON file";
+
+    static PyObject* run(PyTypeObject* cls, PyObject* args, PyObject* kw)
+    {
+        static const char* kwlist[] = { "src", nullptr };
+        PyObject* py_src = nullptr;
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "O", const_cast<char**>(kwlist), &py_src))
+            return nullptr;
+
+        try {
+            arki::structured::Memory parsed;
+            if (PyBytes_Check(py_src))
+            {
+                char* buffer;
+                Py_ssize_t length;
+                if (PyBytes_AsStringAndSize(py_src, &buffer, &length) == -1)
+                    throw PythonException();
+                auto input = arki::core::BufferedReader::from_chars(buffer, length);
+                ReleaseGIL gil;
+                arki::structured::JSON::parse(*input, parsed);
+            } else if (PyUnicode_Check(py_src)) {
+                Py_ssize_t length;
+                const char* buffer = throw_ifnull(PyUnicode_AsUTF8AndSize(py_src, &length));
+                auto input = arki::core::BufferedReader::from_chars(buffer, length);
+                ReleaseGIL gil;
+                arki::structured::JSON::parse(*input, parsed);
+            } else if (PyObject_HasAttrString(py_src, "encoding")) {
+                TextInputFile input(py_src);
+
+                std::unique_ptr<arki::core::BufferedReader> reader;
+                if (input.fd)
+                    reader = arki::core::BufferedReader::from_fd(*input.fd);
+                else
+                    reader = arki::core::BufferedReader::from_abstract(*input.abstract);
+
+                ReleaseGIL gil;
+                arki::structured::JSON::parse(*reader, parsed);
+            } else {
+                BinaryInputFile input(py_src);
+
+                std::unique_ptr<arki::core::BufferedReader> reader;
+                if (input.fd)
+                    reader = arki::core::BufferedReader::from_fd(*input.fd);
+                else
+                    reader = arki::core::BufferedReader::from_abstract(*input.abstract);
+
+                ReleaseGIL gil;
+                arki::structured::JSON::parse(*reader, parsed);
+            }
+
+            ReleaseGIL gil;
+            std::unique_ptr<Summary> res(new Summary);
+            res->read(arki::structured::keys_json, parsed.root());
+
+            gil.lock();
+            return (PyObject*)summary_create(std::move(res));
+        } ARKI_CATCH_RETURN_PYO
+    }
+};
 
 struct SummaryDef : public Type<SummaryDef, arkipy_Summary>
 {
@@ -256,7 +453,7 @@ Examples::
     TODO: add examples
 )";
     GetSetters<count, size> getsetters;
-    Methods<add, write, write_short, to_python, get_convex_hull> methods;
+    Methods<add, write, write_short, to_python, get_convex_hull, read_binary, read_yaml, read_json> methods;
 
     static void _dealloc(Impl* self)
     {
@@ -316,5 +513,3 @@ void register_summary(PyObject* m)
 
 }
 }
-
-

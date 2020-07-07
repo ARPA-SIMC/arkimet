@@ -1,4 +1,5 @@
 #include "arki/tests/tests.h"
+#include "arki/core/file.h"
 #include "json.h"
 #include "memory.h"
 
@@ -23,9 +24,8 @@ add_method("null", [] {
     json.add_null();
     wassert(actual(str.str()) == "null");
 
-    str.seekg(0);
     Memory m;
-    JSON::parse(str, m);
+    JSON::parse(str.str(), m);
     wassert(actual(m.root().type()) = NodeType::NONE);
 });
 
@@ -37,9 +37,8 @@ add_method("bool", [] {
         json.add(true);
         wassert(actual(str.str()) == "true");
 
-        str.seekg(0);
         Memory m;
-        JSON::parse(str, m);
+        JSON::parse(str.str(), m);
         wassert(actual(m.root().type()) == NodeType::BOOL);
     }
 
@@ -49,9 +48,8 @@ add_method("bool", [] {
         json.add(false);
         wassert(actual(str.str()) == "false");
 
-        str.seekg(0);
         Memory m;
-        JSON::parse(str, m);
+        JSON::parse(str.str(), m);
         wassert(actual(m.root().type()) == NodeType::BOOL);
     }
 });
@@ -64,9 +62,8 @@ add_method("int", [] {
         json.add(1);
         wassert(actual(str.str()) == "1");
 
-        str.seekg(0);
         Memory m;
-        JSON::parse(str, m);
+        JSON::parse(str.str(), m);
         wassert(actual(m.root().type()) == NodeType::INT);
         wassert(actual(m.root().as_int("test")) == 1);
     }
@@ -77,9 +74,8 @@ add_method("int", [] {
         json.add(-1234567);
         wassert(actual(str.str()) == "-1234567");
 
-        str.seekg(0);
         Memory m;
-        JSON::parse(str, m);
+        JSON::parse(str.str(), m);
         wassert(actual(m.root().type()) == NodeType::INT);
         wassert(actual(m.root().as_int("test")) == -1234567);
     }
@@ -93,9 +89,8 @@ add_method("double", [] {
         json.add(1.1);
         wassert(actual(str.str()) == "1.1");
 
-        str.seekg(0);
         Memory m;
-        JSON::parse(str, m);
+        JSON::parse(str.str(), m);
         wassert(actual(m.root().type()) == NodeType::DOUBLE);
         wassert(actual(m.root().as_double("test")) == 1.1);
     }
@@ -106,9 +101,8 @@ add_method("double", [] {
         json.add(-1.1);
         wassert(actual(str.str()) == "-1.1");
 
-        str.seekg(0);
         Memory m;
-        JSON::parse(str, m);
+        JSON::parse(str.str(), m);
         wassert(actual(m.root().type()) == NodeType::DOUBLE);
         wassert(actual(m.root().as_double("test")) == -1.1);
     }
@@ -119,9 +113,8 @@ add_method("double", [] {
         json.add(1.0);
         wassert(actual(str.str()) == "1.0");
 
-        str.seekg(0);
         Memory m;
-        JSON::parse(str, m);
+        JSON::parse(str.str(), m);
         wassert(actual(m.root().type()) == NodeType::DOUBLE);
         wassert(actual(m.root().as_double("test")) == 1.0);
     }
@@ -132,9 +125,8 @@ add_method("double", [] {
         json.add(-1.0);
         wassert(actual(str.str()) == "-1.0");
 
-        str.seekg(0);
         Memory m;
-        JSON::parse(str, m);
+        JSON::parse(str.str(), m);
         wassert(actual(m.root().type()) == NodeType::DOUBLE);
         wassert(actual(m.root().as_double("test")) == -1.0);
     }
@@ -148,9 +140,8 @@ add_method("string", [] {
         json.add("");
         wassert(actual(str.str()) == "\"\"");
 
-        str.seekg(0);
         Memory m;
-        JSON::parse(str, m);
+        JSON::parse(str.str(), m);
         wassert(actual(m.root().type()) == NodeType::STRING);
         wassert(actual(m.root().as_string("test")) == "");
     }
@@ -161,9 +152,8 @@ add_method("string", [] {
         json.add("antani");
         wassert(actual(str.str()) == "\"antani\"");
 
-        str.seekg(0);
         Memory m;
-        JSON::parse(str, m);
+        JSON::parse(str.str(), m);
         wassert(actual(m.root().type()) == NodeType::STRING);
         wassert(actual(m.root().as_string("test")) == "antani");
     }
@@ -180,9 +170,8 @@ add_method("list", [] {
     json.end_list();
     wassert(actual(str.str()) == "[\"\",1,1.0]");
 
-    str.seekg(0);
     Memory m;
-    JSON::parse(str, m);
+    JSON::parse(str.str(), m);
     wassert(actual(m.root().type()) == NodeType::LIST);
     // wassert(actual(m.root().get_list()[0].is_string(), true);
     wassert(actual(m.root().as_string(0, "test")) == "");
@@ -202,9 +191,8 @@ add_method("mapping", [] {
     json.end_mapping();
     wassert(actual(str.str()) == "{\"\":1,\"antani\":1.0}");
 
-    str.seekg(0);
     Memory m;
-    JSON::parse(str, m);
+    JSON::parse(str.str(), m);
     wassert(actual(m.root().type()) == NodeType::MAPPING);
     // ensure_equals(m.root().get_mapping()[""].is_int(), true);
     wassert(actual(m.root().as_int("", "test")) == 1);

@@ -226,9 +226,8 @@ add_method("json", [](Fixture& f) {
     md.serialise(json, structured::keys_json);
 
     // Parse back
-    stringstream stream(output.str(), ios_base::in);
     structured::Memory parsed;
-    structured::JSON::parse(stream, parsed);
+    structured::JSON::parse(output.str(), parsed);
 
     Metadata md1;
     md1.read(structured::keys_json, parsed.root());
@@ -247,9 +246,8 @@ add_method("json", [](Fixture& f) {
     md.serialise(json1, structured::keys_json);
 
     // Parse back
-    stringstream stream1(output1.str(), ios_base::in);
     structured::Memory parsed1;
-    structured::JSON::parse(stream1, parsed1);
+    structured::JSON::parse(output1.str(), parsed1);
 
     Metadata md2;
     md2.read(structured::keys_json, parsed1.root());

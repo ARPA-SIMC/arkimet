@@ -5,6 +5,7 @@
 #include <arki/core/fwd.h>
 #include <string>
 #include <vector>
+#include <array>
 
 namespace arki {
 namespace core {
@@ -70,6 +71,9 @@ struct AbstractOutputFile
 };
 
 
+/**
+ * AbstractOutputFile that writes characters to a memory buffer
+ */
 class BufferOutputFile: public AbstractOutputFile
 {
 protected:
@@ -86,10 +90,102 @@ public:
 
 
 /**
+ * Generic abstract input interface, with buffering
+ */
+struct BufferedReader
+{
+protected:
+    std::array<uint8_t, 65536> buffer;
+    unsigned pos = 0;
+    unsigned end = 0;
+
+    /**
+     * Assume the buffer is empty. Read into the buffer, returning the number
+     * of bytes read.
+     *
+     * Return 0 in case end-of-file is reached.
+     */
+    virtual unsigned read() = 0;
+
+    /**
+     * Call read() to refill an empty input buffer.
+     *
+     * Return false if end-of-file is reached.
+     */
+    bool refill();
+
+public:
+    virtual ~BufferedReader();
+
+    /**
+     * Return the next character in the input buffer, or EOF if we are at the
+     * end of file.
+     *
+     * Does not advance the current position
+     */
+    int peek();
+
+    /**
+     * Return the next character in the input buffer, or EOF if we are at the
+     * end of file.
+     *
+     * It advances the current position
+     */
+    int get();
+
+    /**
+     * Create a BufferedReader from a file descriptor.
+     *
+     * The file descriptor is not managed by the BufferedReader, and will need
+     * to be kept open by the caller for as long as the reader is used, then
+     * closed at the end.
+     *
+     * Note that a BufferedReader reads data in chunks from its input, so if
+     * the caller stops calling get(), the file descriptor is likely to be
+     * positioned further ahead than the character read
+     */
+    static std::unique_ptr<BufferedReader> from_fd(NamedFileDescriptor& fd);
+
+    /**
+     * Create a BufferedReader from an abstract input file.
+     *
+     * The file descriptor is not managed by the BufferedReader, and will ned
+     * to be kept open by the caller for as long as the reader is used, then
+     * closed at the end.
+     *
+     * Note that a BufferedReader reads data in chunks from its input, so if
+     * the caller stops calling get(), the file descriptor is likely to be
+     * positioned further ahead than the character read
+     */
+    static std::unique_ptr<BufferedReader> from_abstract(AbstractInputFile& fd);
+
+    /**
+     * Create a BufferedReader from a buffer on a string.
+     *
+     * No copy is made of the data: the buffer must remain valid for as long as the
+     * reader is used.
+     */
+    static std::unique_ptr<BufferedReader> from_chars(const char* buf, size_t size);
+
+    /**
+     * Create a BufferedReader from a buffer on a string.
+     *
+     * No copy is made of the data: the buffer must remain valid for as long as the
+     * reader is used.
+     */
+    static std::unique_ptr<BufferedReader> from_string(const std::string& str);
+};
+
+
+/**
  * Abstract interface to things that return a line of text at a time
  */
-struct LineReader
+class LineReader
 {
+protected:
+    bool fd_eof = false;
+
+public:
     virtual ~LineReader() {}
 
     /**
@@ -103,7 +199,7 @@ struct LineReader
      * Check if the last getline returned eof. This is always false before
      * getline is called for the first time.
      */
-    virtual bool eof() const = 0;
+    bool eof() const { return fd_eof; }
 
     /**
      * Create a LineReader from a file descriptor.
@@ -140,6 +236,14 @@ struct LineReader
      * line reader is used.
      */
     static std::unique_ptr<LineReader> from_chars(const char* buf, size_t size);
+
+    /**
+     * Create a LineReader from a buffer on a string.
+     *
+     * No copy is made of the data: the buffer must remain valid for as long as the
+     * reader is used.
+     */
+    static std::unique_ptr<LineReader> from_string(const std::string& str);
 };
 
 

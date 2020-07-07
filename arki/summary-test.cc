@@ -171,9 +171,8 @@ add_method("json", [](Fixture& f) {
     f.s.serialise(json, structured::keys_json);
 
     // Parse back
-    stringstream stream2(stream1.str(), ios_base::in);
     structured::Memory parsed;
-    structured::JSON::parse(stream2, parsed);
+    structured::JSON::parse(stream1.str(), parsed);
 
     Summary s2;
     wassert(s2.read(structured::keys_json, parsed.root()));
@@ -283,7 +282,7 @@ add_method("resolvematcher", [](Fixture& f) {
 // Test loading an old summary
 add_method("binary_old", [](Fixture& f) {
     Summary s;
-    s.readFile("inbound/old.summary");
+    s.read_file("inbound/old.summary");
     wassert_true(s.count() > 0);
     // Compare with a summary with different msoSerLen
     {
@@ -339,7 +338,7 @@ add_method("regression1", [](Fixture& f) {
 // Test loading an old summary
 add_method("binary_old1", [](Fixture& f) {
     Summary s;
-    s.readFile("inbound/all.summary");
+    s.read_file("inbound/all.summary");
     wassert_true(s.count() > 0);
 });
 
@@ -356,7 +355,7 @@ add_method("filter_empty_matcher", [](Fixture& f) {
 // 0000-00-00T00:00:00Z is a valid timestamp
 add_method("zero_timestamp", [](Fixture& f) {
     Summary s;
-    s.readFile("inbound/00-00.bufr.summary");
+    s.read_file("inbound/00-00.bufr.summary");
 
     // Check that ranges are computed correctly even with all zeroes
     core::Interval rt = s.get_reference_time();

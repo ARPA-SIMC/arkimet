@@ -1,5 +1,6 @@
 #include "tests.h"
 #include "arki/core/binary.h"
+#include "arki/core/file.h"
 #include "arki/structured/json.h"
 #include "arki/structured/memory.h"
 #include "arki/exceptions.h"
@@ -78,9 +79,10 @@ void ActualTime::serializes() const
         std::stringstream jbuf;
         structured::JSON json(jbuf);
         json.add(_actual);
-        jbuf.seekg(0);
         structured::Memory parsed;
-        structured::JSON::parse(jbuf, parsed);
+        std::string str = jbuf.str();
+        auto reader = core::BufferedReader::from_string(str);
+        structured::JSON::parse(*reader, parsed);
         wassert(actual(parsed.root().type()) == structured::NodeType::LIST);
         Time iparsed = parsed.root().as_time("time");
         wassert(actual(iparsed) == _actual);

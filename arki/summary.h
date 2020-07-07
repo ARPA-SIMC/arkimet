@@ -104,15 +104,19 @@ public:
     /// Dump the internal structure of this summary for debugging purposes
     void dump(std::ostream& out) const;
 
-	/**
-	 * Read a summary from a POSIX file descriptor.
-	 *
-	 * The filename string is used to generate nicer parse error messages when
-	 * throwing exceptions, and can be anything.
-	 *
-	 * @returns false when end-of-file is reached
-	 */
-	bool read(int fd, const std::string& filename);
+    /**
+     * Read a summary from a file descriptor.
+     *
+     * @returns false when end-of-file is reached
+     */
+    bool read(core::NamedFileDescriptor& in);
+
+    /**
+     * Read a summary from an AbstractInputFile
+     *
+     * @returns false when end-of-file is reached
+     */
+    bool read(core::AbstractInputFile& in);
 
     /**
      * Read a summary from a buffer.
@@ -132,10 +136,10 @@ public:
     /// Decode from structured data
     void read(const structured::Keys& keys, const structured::Reader& val);
 
-	/**
-	 * Read data from the given file
-	 */
-	void readFile(const std::string& fname);
+    /**
+     * Read data from the given file
+     */
+    void read_file(const std::string& fname);
 
     /**
      * Read a summary document encoded in Yaml from the given file descriptor.

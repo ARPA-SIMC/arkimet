@@ -18,7 +18,7 @@ Dataset::Dataset(std::shared_ptr<Session> session, const std::string& pathname)
 Reader::Reader(std::shared_ptr<Dataset> dataset)
     : DatasetAccess(dataset)
 {
-    sum.readFile(dataset->summary_pathname);
+    sum.read_file(dataset->summary_pathname);
 }
 
 std::string Reader::type() const { return "offline"; }
