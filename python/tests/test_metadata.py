@@ -168,7 +168,7 @@ class TestMetadata(unittest.TestCase):
 
     def test_write_yaml(self):
         self.maxDiff = None
-        md = self.read("inbound/test.grib1")[0]
+        md = self.read(os.path.abspath("inbound/test.grib1"))[0]
         with io.BytesIO() as out:
             md.write(out, format="yaml")
             self.assertEqual(out.getvalue()[:12], b"Source: BLOB")
@@ -194,7 +194,7 @@ class TestMetadata(unittest.TestCase):
 
         with io.BytesIO() as out:
             md.write(out, format="yaml", annotate=True)
-            self.assertEqual(out.getvalue()[:11], b"SummaryItem")
+            self.assertEqual(out.getvalue()[:12], b"Source: BLOB")
             self.assertIn(b'# sfc Surface (of the Earth, which includes sea surface)', out.getvalue())
 
             out.seek(0)
