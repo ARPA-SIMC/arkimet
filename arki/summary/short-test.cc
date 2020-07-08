@@ -67,7 +67,7 @@ add_method("json", [](Fixture& f) {
     structured::JSON json(ss);
     shrt.serialise(json, structured::keys_json);
 
-    wassert(actual(ss.str()) == R"({"items":{"summarystats":{"b":[2006,5,4,3,2,1],"e":[2007,1,2,3,4,5],"c":2,"s":30},"origin":[{"t":"origin","s":"GRIB1","ce":1,"sc":2,"pr":3},{"t":"origin","s":"GRIB1","ce":3,"sc":4,"pr":5}],"product":[{"t":"product","s":"GRIB1","or":1,"ta":2,"pr":3},{"t":"product","s":"GRIB1","or":2,"ta":3,"pr":4}],"timerange":[{"t":"timerange","s":"GRIB1","ty":1,"un":0,"p1":0,"p2":0}]}})");
+    wassert(actual(ss.str()) == R"({"items":{"summarystats":{"b":[2006,5,4,3,2,1],"e":[2007,1,2,3,4,5],"c":2,"s":30},"origin":[{"t":"origin","s":"GRIB1","ce":1,"sc":2,"pr":3},{"t":"origin","s":"GRIB1","ce":3,"sc":4,"pr":5}],"product":[{"t":"product","s":"GRIB1","or":1,"ta":2,"pr":3},{"t":"product","s":"GRIB1","or":2,"ta":3,"pr":4}],"timerange":[{"t":"timerange","s":"GRIB1","ty":1,"un":1,"p1":0,"p2":0}]}})");
 });
 
 add_method("yaml", [](Fixture& f) {
