@@ -9,11 +9,17 @@ Build-Depends: debhelper (>= 9), dh-python, dh-autoreconf, dh-buildinfo,
   libcurl4-openssl-dev | libcurl-ssl-dev,
   libgeos++-dev,
   libdballe-dev (>= 5.0),
-  libgrib-api-dev,
+  libmeteo-vm2-dev,
+  libeccodes-dev,
   libhdf5-dev,
   libarchive-dev,
+  libzip-dev,
+  libssl-dev,
+  libxapian-dev,
+  gawk,
   curl,
-  python3-all-dev, python3-nose2, python3-werkzeug, python3-setproctitle
+  python3-all-dev, python3-nose2, python3-werkzeug,
+  python3-setproctitle, python3-h5py
 Standards-Version: 3.7.2.0
 XS-Python-Version: >= 2.5
 XS-Vcs-Svn: https://svn.smr.arpa.emr.it/arkimet
