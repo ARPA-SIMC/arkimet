@@ -481,6 +481,10 @@ struct Path : public ManagedNamedFileDescriptor
     /// unlinkat with the AT_REMOVEDIR flag set
     void rmdirat(const char* pathname);
 
+    void symlinkat(const char* target, const char* linkpath);
+
+    std::string readlinkat(const char* pathname);
+
     /**
      * Delete the directory pointed to by this Path, with all its contents.
      *

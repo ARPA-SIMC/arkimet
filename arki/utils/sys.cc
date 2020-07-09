@@ -722,6 +722,31 @@ void Path::rmdirat(const char* pathname)
         throw_error("cannot unlinkat");
 }
 
+void Path::symlinkat(const char* target, const char* linkpath)
+{
+    if (::symlinkat(target, fd, linkpath) == -1)
+        throw_error("cannot symlinkat");
+}
+
+std::string Path::readlinkat(const char* pathname)
+{
+    std::string res(256, 0);
+    while (true)
+    {
+        // TODO: remove the cast to char* after C++14
+        ssize_t sz = ::readlinkat(fd, pathname, (char*)res.data(), res.size());
+        if (sz == -1)
+            throw_error("cannot readlinkat");
+        if (sz < (ssize_t)res.size())
+        {
+            res.resize(sz);
+            return res;
+        }
+        res.resize(res.size() * 2);
+    }
+}
+
+
 Path::iterator::iterator()
 {
 }
