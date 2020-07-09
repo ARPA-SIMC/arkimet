@@ -3,7 +3,7 @@
 
 Summary: Archive for weather information
 Name: arkimet
-Version: 1.27
+Version: 1.28
 Release: 1
 License: GPL
 Group: Applications/Meteo
@@ -246,6 +246,18 @@ if [ "$1" = "1" ]; then
 fi
 
 %changelog
+* Thu Jul 09 2020 Emanuele Di Giacomo <edigiacomo@arpae.it> - 1.28-1
+- Added `format_metadata.rst` to Python HOWTOs (#230)
+- Python: added `arkimet.Summary.read_binary` (#230)
+- Python: added `arkimet.Summary.read_yaml` (#230)
+- Python: added `arkimet.Summary.read_json` (#230)
+- Python: added `annotate: bool = False` to `arkimet.Summary.write` (#230)
+- Python: added `annotate: bool = False` to `arkimet.Summary.write_short` (#230)
+- Python: implemented `arkimet.Metadata.write` for `yaml` and `json` formats (#230)
+- Python: added `annotate: bool = False` to `arkimet.Metadata.write` (#230)
+- Python: added `arkimet.Metadata.read_yaml` (#230)
+- Python: added `arkimet.Metadata.read_json` (#230)
+
 * Wed Jun 10 2020 Daniele Branchini <dbranchini@arpae.it> - 1.27-1
 - reftime match expressions using repeating intervals (like `reftime:=yesterday
   %3h`) now have a new `@hh:mm:ss` syntax to explicitly reference the starting
