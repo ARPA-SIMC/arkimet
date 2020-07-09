@@ -171,15 +171,6 @@ class TestSummary(unittest.TestCase):
         p = summary.to_python()
         self.assertIn("items", p)
 
-        with arki.dataset.Session() as session:
-            cfg = arki.dataset.read_config("/home/enrico/lavori/arpa/arkimet/t/arkimet/lm5")
-            with session.dataset_reader(cfg=cfg) as reader:
-                summary = reader.query_summary('level:GRIB1,1;product:GRIB1,80,2,1')
-
-        p = summary.to_python()
-        self.assertIn("items", p)
-        self.assertEqual(len(p['items']), 0)
-
         ds = arki.dataset.Reader({
             "format": "arkimet",
             "name": "issue230",
