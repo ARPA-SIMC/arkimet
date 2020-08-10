@@ -14,6 +14,11 @@ Dataset::Dataset(std::shared_ptr<Session> session, const std::string& pathname)
 {
 }
 
+std::shared_ptr<dataset::Reader> Dataset::create_reader()
+{
+    return std::make_shared<offline::Reader>(static_pointer_cast<Dataset>(shared_from_this()));
+}
+
 
 Reader::Reader(std::shared_ptr<Dataset> dataset)
     : DatasetAccess(dataset)

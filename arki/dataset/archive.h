@@ -44,6 +44,9 @@ struct Dataset : public dataset::Dataset
     std::string root;
 
     Dataset(std::shared_ptr<Session> session, const std::string& root);
+
+    std::shared_ptr<dataset::Reader> create_reader() override;
+    std::shared_ptr<dataset::Checker> create_checker() override;
 };
 
 /**

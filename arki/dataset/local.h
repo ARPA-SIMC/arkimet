@@ -82,7 +82,7 @@ public:
  */
 class Reader : public Base<dataset::Reader>
 {
-    std::shared_ptr<archive::Reader> m_archive;
+    std::shared_ptr<dataset::Reader> m_archive;
 
 protected:
     // Base implementations that queries the archives if they exist
@@ -96,7 +96,7 @@ public:
     ~Reader();
 
     /// Return the Reader for this dataset archives
-    std::shared_ptr<archive::Reader> archive();
+    std::shared_ptr<dataset::Reader> archive();
 
     /// Read the configuration for the given dataset. path must point to a directory
     static std::shared_ptr<core::cfg::Section> read_config(const std::string& path);
@@ -115,14 +115,14 @@ public:
 
 struct Checker : public Base<dataset::Checker>
 {
-    std::shared_ptr<archive::Checker> m_archive;
+    std::shared_ptr<dataset::Checker> m_archive;
 
 public:
     using Base::Base;
     ~Checker();
 
     /// Return the Checker for this dataset archives
-    std::shared_ptr<archive::Checker> archive();
+    std::shared_ptr<dataset::Checker> archive();
 
     void repack(CheckerConfig& opts, unsigned test_flags=0) override;
     void check(CheckerConfig& opts) override;

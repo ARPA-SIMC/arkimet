@@ -18,6 +18,8 @@ struct Dataset : public dataset::Dataset
     std::string summary_pathname;
 
     Dataset(std::shared_ptr<Session> session, const std::string& pathname);
+
+    std::shared_ptr<dataset::Reader> create_reader() override;
 };
 
 

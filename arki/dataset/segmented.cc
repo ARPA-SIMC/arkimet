@@ -267,7 +267,7 @@ void Checker::segments_recursive(CheckerConfig& opts, std::function<void(segment
     if ((opts.online && !dataset().offline) || (opts.offline && dataset().offline))
         segments(opts, [&](CheckerSegment& segment) { dest(*this, segment); });
     if (opts.offline && dataset().hasArchive())
-        archive()->segments_recursive(opts, dest);
+        dynamic_pointer_cast<archive::Checker>(archive())->segments_recursive(opts, dest);
 }
 
 void Checker::remove_old(CheckerConfig& opts)

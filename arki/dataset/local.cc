@@ -110,10 +110,10 @@ Reader::~Reader()
 {
 }
 
-std::shared_ptr<archive::Reader> Reader::archive()
+std::shared_ptr<dataset::Reader> Reader::archive()
 {
     if (!m_archive)
-        m_archive = std::make_shared<archive::Reader>(dataset().archive());
+        m_archive = dataset().archive()->create_reader();
     return m_archive;
 }
 
@@ -178,10 +178,10 @@ Checker::~Checker()
 {
 }
 
-std::shared_ptr<archive::Checker> Checker::archive()
+std::shared_ptr<dataset::Checker> Checker::archive()
 {
     if (!m_archive)
-        m_archive = std::make_shared<archive::Checker>(dataset().archive());
+        m_archive = dataset().archive()->create_checker();
     return m_archive;
 }
 

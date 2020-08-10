@@ -237,6 +237,16 @@ Dataset::Dataset(std::shared_ptr<Session> session, const std::string& root)
 {
 }
 
+std::shared_ptr<dataset::Reader> Dataset::create_reader()
+{
+    return std::make_shared<archive::Reader>(static_pointer_cast<Dataset>(shared_from_this()));
+}
+
+std::shared_ptr<dataset::Checker> Dataset::create_checker()
+{
+    return std::make_shared<archive::Checker>(static_pointer_cast<Dataset>(shared_from_this()));
+}
+
 
 Reader::Reader(std::shared_ptr<Dataset> dataset)
     : DatasetAccess(dataset), archives(new archive::ArchivesReaderRoot(dataset->root, dataset))

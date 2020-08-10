@@ -6,6 +6,7 @@
 #include "arki/dataset/reporter.h"
 #include "arki/dataset/time.h"
 #include "arki/dataset/lock.h"
+#include "arki/dataset/archive.h"
 #include "arki/types/source/blob.h"
 #include "arki/summary.h"
 #include "arki/types/reftime.h"
@@ -81,7 +82,7 @@ public:
     std::string path_relative() const override { return segment->segment().relpath; }
     const iseg::Dataset& dataset() const override { return checker.dataset(); }
     iseg::Dataset& dataset() override { return checker.dataset(); }
-    std::shared_ptr<dataset::archive::Checker> archives() override { return checker.archive(); }
+    std::shared_ptr<dataset::archive::Checker> archives() override { return dynamic_pointer_cast<dataset::archive::Checker>(checker.archive()); }
 
     void get_metadata(std::shared_ptr<core::Lock> lock, metadata::Collection& mds) override
     {

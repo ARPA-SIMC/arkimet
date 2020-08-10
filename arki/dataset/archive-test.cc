@@ -220,7 +220,7 @@ add_method("reader_offline", [](Fixture& f) {
     {
         archive::Reader reader(f.config);
         metadata::Collection mdc(reader, dataset::DataQuery(Matcher()));
-        wassert(actual(mdc.size()) == 3u);
+        wassert(actual(mdc.size()) == 0u);
     }
 });
 
