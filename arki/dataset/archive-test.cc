@@ -212,6 +212,19 @@ add_method("enumerate_no_manifest", [](Fixture& f) {
     }
 });
 
+// Test handling of empty archive dirs (such as last with everything moved away)
+add_method("reader_offline", [](Fixture& f) {
+    system("cp inbound/test.summary testds/.archive/2007.summary");
+
+    // Query has all data
+    {
+        archive::Reader reader(f.config);
+        metadata::Collection mdc(reader, dataset::DataQuery(Matcher()));
+        wassert(actual(mdc.size()) == 3u);
+    }
+});
+
+
 }
 
 }
