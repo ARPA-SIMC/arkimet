@@ -141,6 +141,18 @@ public:
     static std::shared_ptr<core::cfg::Sections> read_configs(const std::string& path);
 };
 
+
+class DirSegmentsSession : public Session
+{
+public:
+    using Session::Session;
+
+    std::shared_ptr<segment::Reader> segment_reader(const std::string& format, const std::string& root, const std::string& relpath, std::shared_ptr<core::Lock> lock) override;
+    std::shared_ptr<segment::Writer> segment_writer(const std::string& format, const std::string& root, const std::string& relpath) override;
+    std::shared_ptr<segment::Checker> segment_checker(const std::string& format, const std::string& root, const std::string& relpath) override;
+
+};
+
 }
 }
 #endif

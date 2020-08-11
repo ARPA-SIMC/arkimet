@@ -400,13 +400,17 @@ Examples::
 
     static int _init(Impl* self, PyObject* args, PyObject* kw)
     {
-        static const char* kwlist[] = { "load_aliases", nullptr };
+        static const char* kwlist[] = { "load_aliases", "force_dir_segments", nullptr };
         int load_aliases = 1;
-        if (!PyArg_ParseTupleAndKeywords(args, kw, "|p", const_cast<char**>(kwlist), &load_aliases))
+        int force_dir_segments = 0;
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "|pp", const_cast<char**>(kwlist), &load_aliases, &force_dir_segments))
             return -1;
 
         try {
-            new (&(self->ptr)) shared_ptr<arki::dataset::Session>(std::make_shared<arki::dataset::Session>(load_aliases));
+            if (force_dir_segments)
+                new (&(self->ptr)) shared_ptr<arki::dataset::Session>(std::make_shared<arki::dataset::DirSegmentsSession>(load_aliases));
+            else
+                new (&(self->ptr)) shared_ptr<arki::dataset::Session>(std::make_shared<arki::dataset::Session>(load_aliases));
             return 0;
         } ARKI_CATCH_RETURN_INT;
     }

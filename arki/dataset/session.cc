@@ -479,5 +479,42 @@ std::shared_ptr<dataset::Dataset> Session::locate_metadata(Metadata& md)
     return std::shared_ptr<dataset::local::Dataset>();
 }
 
+std::shared_ptr<segment::Reader> DirSegmentsSession::segment_reader(const std::string& format, const std::string& root, const std::string& relpath, std::shared_ptr<core::Lock> lock)
+{
+    std::string abspath = str::joinpath(root, relpath);
+    auto res = reader_pool.find(abspath);
+    if (res == reader_pool.end() || res->second.expired())
+    {
+        auto seg = Segment::detect_reader(format, root, relpath, str::joinpath(root, relpath), lock);
+        reader_pool[abspath] = seg;
+        return seg;
+    }
+    return res->second.lock();
+}
+
+std::shared_ptr<segment::Writer> DirSegmentsSession::segment_writer(const std::string& format, const std::string& root, const std::string& relpath)
+{
+    // Ensure that the directory containing the segment exists
+    std::string abspath = str::joinpath(root, relpath);
+    sys::makedirs(str::dirname(abspath));
+
+    auto res(Segment::detect_writer(format, root, relpath, abspath, false));
+    if (res) return res;
+
+    res.reset(new segment::dir::Writer(format, root, relpath, abspath));
+    return res;
+}
+
+std::shared_ptr<segment::Checker> DirSegmentsSession::segment_checker(const std::string& format, const std::string& root, const std::string& relpath)
+{
+    std::string abspath = str::joinpath(root, relpath);
+
+    auto res(Segment::detect_checker(format, root, relpath, abspath, false));
+    if (res) return res;
+
+    res.reset(new segment::dir::Checker(format, root, relpath, abspath));
+    return res;
+}
+
 }
 }
