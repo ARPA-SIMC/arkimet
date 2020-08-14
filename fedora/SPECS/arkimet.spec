@@ -3,7 +3,7 @@
 
 Summary: Archive for weather information
 Name: arkimet
-Version: 1.28
+Version: 1.29
 Release: 1
 License: GPL
 Group: Applications/Meteo
@@ -246,6 +246,11 @@ if [ "$1" = "1" ]; then
 fi
 
 %changelog
+* Fri Aug 14 2020 Emanuele Di Giacomo <edigiacomo@arpae.it> - 1.29-1
+- Fixed error reading offline archives (#232)
+- Allow to create an arkimet session with `force_dir_segments=True` to always
+  store each data in a separate file, to help arkimaps prototyping.
+
 * Thu Jul 09 2020 Emanuele Di Giacomo <edigiacomo@arpae.it> - 1.28-1
 - Added `format_metadata.rst` to Python HOWTOs (#230)
 - Python: added `arkimet.Summary.read_binary` (#230)
