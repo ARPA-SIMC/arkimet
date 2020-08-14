@@ -389,14 +389,14 @@ fi
 - Updated dballe dependency
 - Changed Requires and BuildRequires style (one package per line)
 
-* Thu Jun 7 2018 Daniele Branchini <dbranchini@arpae.it> - 1.7-4%{dist}
+* Thu Jun 7 2018 Daniele Branchini <dbranchini@arpae.it> - 1.7-4
 - arki-mergeconf can ignore error and duplicates datasets
 - patch for f20 compiler bug (#142)
 
-* Fri May 18 2018 Daniele Branchini <dbranchini@arpae.it> - 1.7-3%{dist}
+* Fri May 18 2018 Daniele Branchini <dbranchini@arpae.it> - 1.7-3
 - skipped largefile tests for tmpfs (#140)
 
-* Mon May 7 2018 Daniele Branchini <dbranchini@arpae.it> - 1.7-1%{dist}
+* Mon May 7 2018 Daniele Branchini <dbranchini@arpae.it> - 1.7-1
 - implemented arki-check --remove-old (#94)
 - implemented --archive=[tar|tar.gz|tar.xz|zip] in arki-query and arki-scan (#131) (#95)
 - implemented arki-check --compress
@@ -406,73 +406,73 @@ fi
 - timerange metadata for generic BUFR (#125)
 - xargs unlink tmpfile if exists (#134)
     
-* Thu Feb 15 2018 Daniele Branchini <dbranchini@arpae.it> - 1.6-3%{dist}
+* Thu Feb 15 2018 Daniele Branchini <dbranchini@arpae.it> - 1.6-3
 - fixed #124
 
-* Wed Feb 14 2018 Daniele Branchini <dbranchini@arpae.it> - 1.6-2%{dist}
+* Wed Feb 14 2018 Daniele Branchini <dbranchini@arpae.it> - 1.6-2
 - fixed #120, addressed #123
 
-* Tue Jan 23 2018 Daniele Branchini <dbranchini@arpae.it> - 1.6-1%{dist}
+* Tue Jan 23 2018 Daniele Branchini <dbranchini@arpae.it> - 1.6-1
 - fixed #76, #107, #110, #115, #116, #117, #118, #119, #121, #122
 
-* Mon Nov 27 2017 Daniele Branchini <dbranchini@arpae.it> - 1.5-2%{dist}
+* Mon Nov 27 2017 Daniele Branchini <dbranchini@arpae.it> - 1.5-2
 - fixed #103, #108, #109, #111, #113
 
-* Tue Oct 17 2017 Daniele Branchini <dbranchini@arpae.it> - 1.4-3%{dist}
+* Tue Oct 17 2017 Daniele Branchini <dbranchini@arpae.it> - 1.4-3
 - fixed #104
 - added local arki-server for test suite
 - aliases for COSMO-5M
 
-* Thu Sep 14 2017 Daniele Branchini <dbranchini@arpae.it> - 1.4-2%{dist}
+* Thu Sep 14 2017 Daniele Branchini <dbranchini@arpae.it> - 1.4-2
 - fixed error testing arkimet user
 - fixed #102
 
-* Mon Sep 4 2017 Daniele Branchini <dbranchini@arpae.it> - 1.4-1%{dist}
+* Mon Sep 4 2017 Daniele Branchini <dbranchini@arpae.it> - 1.4-1
 - Fixed #65, #73, #75, #79, #80, #87, #93, #100
 
-* Mon Jun 26 2017 Daniele Branchini <dbranchini@arpae.it> - 1.3-2%{dist}
+* Mon Jun 26 2017 Daniele Branchini <dbranchini@arpae.it> - 1.3-2
 - Added logrotate conf (#98)
 
-* Thu Jun 22 2017 Daniele Branchini <dbranchini@arpae.it> - 1.3-1%{dist}
+* Thu Jun 22 2017 Daniele Branchini <dbranchini@arpae.it> - 1.3-1
 - Fixed issues in arki-check (#90, #91)
 - Use exception.code in response (if possible)
 - Test code cleanup
     
-* Wed Jun 7 2017 Daniele Branchini <dbranchini@arpae.it> - 1.2-1%{dist}
+* Wed Jun 7 2017 Daniele Branchini <dbranchini@arpae.it> - 1.2-1
 - Added documentation for dataset formats and check/fix/repack procedures (#88)
 - Added verbose reporting to vacuum operations, and some test refactoring (#89)
 - HTTP authentication method (any) and optional .netrc (#81)
 
-* Thu Apr 6 2017 Daniele Branchini <dbranchini@arpae.it> - 1.1-2%{dist}
+* Thu Apr 6 2017 Daniele Branchini <dbranchini@arpae.it> - 1.1-2
 - fixed #83
 
-* Tue Feb 14 2017 Daniele Branchini <dbranchini@arpae.it> - 1.1-1%{dist}
+* Tue Feb 14 2017 Daniele Branchini <dbranchini@arpae.it> - 1.1-1
 - New dataset format: one index per segment (#60)
 
-* Tue Jan 3 2017 Daniele Branchini <dbranchini@arpae.it> - 1.0-18%{dist}
+* Tue Jan 3 2017 Daniele Branchini <dbranchini@arpae.it> - 1.0-18
 - fixed #63, #64, #66, #68, #70
 
-* Thu Dec 15 2016 Daniele Branchini <dbranchini@arpae.it> - 1.0-17%{dist}
+* Thu Dec 15 2016 Daniele Branchini <dbranchini@arpae.it> - 1.0-17
 - fixed #9, #61, #62
 
-* Tue Oct 18 2016 Daniele Branchini <dbranchini@arpae.it> - 1.0-16%{dist}
+* Tue Oct 18 2016 Daniele Branchini <dbranchini@arpae.it> - 1.0-16
 - fixed #55, #56, #57, #43, #48
 - fixed #54 (implemented --copyok/copyko)
 
-* Mon Sep 26 2016 Daniele Branchini <dbranchini@arpae.it> - 1.0-15%{dist}
+* Mon Sep 26 2016 Daniele Branchini <dbranchini@arpae.it> - 1.0-15
 - fixed #53
 - fixed #51
 
-* Tue Sep 20 2016 Daniele Branchini <dbranchini@arpae.it> - 1.0-14%{dist}
+* Tue Sep 20 2016 Daniele Branchini <dbranchini@arpae.it> - 1.0-14
 - fixed dependencies
 - commented out directive in systemd script that caused fedora20 server to hang
 
-* Tue Sep 13 2016 Daniele Branchini <dbranchini@arpae.it> - 1.0-13%{dist}
+* Tue Sep 13 2016 Daniele Branchini <dbranchini@arpae.it> - 1.0-13
 - fixed #49
 - implemented output format `arki-server --journald`
 - implemented output format `arki-server --perflog`
 
-* Wed Sep 7 2016 Daniele Branchini <dbranchini@arpae.it> - 1.0-12%{dist}
+* Wed Sep 7 2016 Daniele Branchini <dbranchini@arpae.it> - 1.0-12
 - fixed #47
 - implemented `arki-check --unarchive=segment`, to move a segment from
     `.archives/last` back to the main dataset.
@@ -485,56 +485,56 @@ fi
 - implemented `arki-check --state` to show the computed state of each segment
     in a dataset.
 
-* Wed Aug 10 2016 Davide Cesari <dcesari@arpae.it> - 1.0-10%{dist}
+* Wed Aug 10 2016 Davide Cesari <dcesari@arpae.it> - 1.0-10
 - switch to systemd
 
-* Fri Jul 22 2016 Daniele Branchini <dbranchini@arpae.it> - 1.0-9%{dist}
+* Fri Jul 22 2016 Daniele Branchini <dbranchini@arpae.it> - 1.0-9
 - fixed tests
 - fixed #37
 
-* Thu May 19 2016 Daniele Branchini <dbranchini@arpa.emr.it> - 1.0-8%{dist}
+* Thu May 19 2016 Daniele Branchini <dbranchini@arpa.emr.it> - 1.0-8
 - arki-server rewrote in python
 
-* Thu Jan  7 2016 Daniele Branchini <dbranchini@arpa.emr.it> - 1.0-7%{dist}
+* Thu Jan  7 2016 Daniele Branchini <dbranchini@arpa.emr.it> - 1.0-7
 - Fixed #8, #10, #14, #18, #26, #34
 - Addressed #7
 
-* Thu Jan  7 2016 Daniele Branchini <dbranchini@arpa.emr.it> - 1.0-1%{dist}
+* Thu Jan  7 2016 Daniele Branchini <dbranchini@arpa.emr.it> - 1.0-1
 - Ported to c++11
 
-* Tue Oct 13 2015 Daniele Branchini <dbranchini@arpa.emr.it> - 0.81-1%{dist}
+* Tue Oct 13 2015 Daniele Branchini <dbranchini@arpa.emr.it> - 0.81-1
 - Ported to wreport 3
 - Fixed argument passing, that caused use of a deallocated string
 
-* Wed Feb  4 2015 Daniele Branchini <dbranchini@arpa.emr.it> - 0.80-3153%{dist}
+* Wed Feb  4 2015 Daniele Branchini <dbranchini@arpa.emr.it> - 0.80-3153
 - fixed arki-scan out of memory bug
 
-* Wed Jan 21 2015 Daniele Branchini <dbranchini@arpa.emr.it> - 0.80-3146%{dist}
+* Wed Jan 21 2015 Daniele Branchini <dbranchini@arpa.emr.it> - 0.80-3146
 - fixed large query bug
 
-* Thu Mar 20 2014 Emanuele Di Giacomo <edigiacomo@arpa.emr.it> - 0.75-2876%{dist}
+* Thu Mar 20 2014 Emanuele Di Giacomo <edigiacomo@arpa.emr.it> - 0.75-2876
 - libwibble-devel dependency (--enable-wibble-standalone in configure)
 - VM2 derived values in serialization
 
-* Tue Sep 10 2013 Daniele Branchini <dbranchini@arpa.emr.it> - 0.75-2784%{dist}
+* Tue Sep 10 2013 Daniele Branchini <dbranchini@arpa.emr.it> - 0.75-2784
 - SmallFiles support
 - split SummaryCache in its own file
 - arkiguide.it
 
-* Wed Jun 12 2013 Daniele Branchini <dbranchini@arpa.emr.it> - 0.74-2763%{dist}
+* Wed Jun 12 2013 Daniele Branchini <dbranchini@arpa.emr.it> - 0.74-2763
 - corretto bug nel sort dei dati
 
-* Wed May 22 2013 Daniele Branchini <dbranchini@arpa.emr.it> - 0.74-2759%{dist}
+* Wed May 22 2013 Daniele Branchini <dbranchini@arpa.emr.it> - 0.74-2759
 - arki-check now can do repack and archival in a single run
 - arki-check now does not do repack if a file is to be deleted
 - added support for VM2 data
 - arki-scan now supports bufr:- for scanning BUFR files from standard input
 - ODIMH5 support moves towards a generic HDF5 support
 
-* Wed Jan  9 2013 Emanuele Di Giacomo <edigiacomo@arpa.emr.it> - 0.73-2711%{dist}
+* Wed Jan  9 2013 Emanuele Di Giacomo <edigiacomo@arpa.emr.it> - 0.73-2711
 - Rebuild to reflect upstream changes (fixed arki-xargs serialization)
 
-* Mon Nov 26 2012 Daniele Branchini <dbranchini@arpa.emr.it> - 0.73-2677%{dist}
+* Mon Nov 26 2012 Daniele Branchini <dbranchini@arpa.emr.it> - 0.73-2677
 - Rebuild to reflect upstream changes (adding meteo-vm2)
 
 * Tue Jul  1 2008 root <enrico@enricozini.org> - 0.4-1
