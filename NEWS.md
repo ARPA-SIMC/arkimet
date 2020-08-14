@@ -1,3 +1,9 @@
+# New in version 1.29
+
+* Fixed error reading offline archives (#232)
+* Allow to create an arkimet session with `force_dir_segments=True` to always
+  store each data in a separate file, to help arkimaps prototyping.
+
 # New in version 1.28
 
 * Added `format_metadata.rst` to Python HOWTOs (#230)
