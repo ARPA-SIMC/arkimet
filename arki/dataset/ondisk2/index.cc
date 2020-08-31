@@ -155,17 +155,14 @@ std::set<types::Code> Contents::unique_codes() const
 
 void Contents::setupPragmas()
 {
-    // Faster but riskier, since we do not have a flagfile to trap
-    // interrupted transactions
-    //m_db.exec("PRAGMA synchronous = OFF");
-    // Faster but riskier, since we do not have a flagfile to trap
-    // interrupted transactions
-    //m_db.exec("PRAGMA journal_mode = MEMORY");
-    // Truncate the journal instead of delete: faster on many file systems
-    // m_db.exec("PRAGMA journal_mode = TRUNCATE");
-    // Zero the header of the journal instead of delete: faster on many file systems
-    // Use a WAL journal, which allows reads and writes together
-    m_db.exec("PRAGMA journal_mode = WAL");
+    if (dataset->eatmydata)
+    {
+        m_db.exec("PRAGMA synchronous = OFF");
+        m_db.exec("PRAGMA journal_mode = MEMORY");
+    } else {
+        // Use a WAL journal, which allows reads and writes together
+        m_db.exec("PRAGMA journal_mode = WAL");
+    }
     // Also, since the way we do inserts cause no trouble if a reader reads a
     // partial insert, we do not need read locking
     //m_db.exec("PRAGMA read_uncommitted = 1");
