@@ -23,8 +23,8 @@ protected:
     std::shared_ptr<simple::Dataset> m_config;
 
     /// Return a (shared) instance of the Datafile for the given relative pathname
-    std::unique_ptr<AppendSegment> file(const Metadata& md, const std::string& format);
-    std::unique_ptr<AppendSegment> file(const std::string& relpath);
+    std::unique_ptr<AppendSegment> file(const segment::WriterConfig& writer_config, const Metadata& md, const std::string& format);
+    std::unique_ptr<AppendSegment> file(const segment::WriterConfig& writer_config, const std::string& relpath);
 
 public:
     Writer(std::shared_ptr<simple::Dataset> dataset);

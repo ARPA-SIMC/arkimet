@@ -176,8 +176,8 @@ size_t Reader<Segment>::stream(const types::source::Blob& src, core::NamedFileDe
 
 
 template<typename Segment, typename File>
-Writer<Segment, File>::Writer(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, int mode)
-    : BaseWriter<Segment>(format, root, relpath, abspath), fd(abspath, O_WRONLY | O_CREAT | mode, 0666)
+Writer<Segment, File>::Writer(const WriterConfig& config, const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, int mode)
+    : BaseWriter<Segment>(config, format, root, relpath, abspath), fd(abspath, O_WRONLY | O_CREAT | mode, 0666)
 {
     struct stat st;
     this->fd.fstat(st);
@@ -196,12 +196,12 @@ template<typename Segment, typename File>
 size_t Writer<Segment, File>::next_offset() const { return current_pos; }
 
 template<typename Segment, typename File>
-const types::source::Blob& Writer<Segment, File>::append(Metadata& md, bool drop_cached_data_on_commit)
+const types::source::Blob& Writer<Segment, File>::append(Metadata& md)
 {
     const auto& segment = this->segment();
     this->fired = false;
     const metadata::Data& data = md.get_data();
-    pending.emplace_back(md, source::Blob::create_unlocked(segment.format, segment.root, segment.relpath, current_pos, data.size()), drop_cached_data_on_commit);
+    pending.emplace_back(this->config, md, source::Blob::create_unlocked(segment.format, segment.root, segment.relpath, current_pos, data.size()));
     current_pos += fd.write_data(data);
     return *pending.back().new_source;
 }
@@ -210,7 +210,8 @@ template<typename Segment, typename File>
 void Writer<Segment, File>::commit()
 {
     if (this->fired) return;
-    fd.fsync();
+    if (!this->config.eatmydata)
+        fd.fsync();
     for (auto& p: pending)
         p.set_source();
     pending.clear();
@@ -449,9 +450,9 @@ std::shared_ptr<segment::Checker> Segment::checker() const
 {
     return make_shared<Checker>(format, root, relpath, abspath);
 }
-std::shared_ptr<segment::Writer> Segment::make_writer(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath)
+std::shared_ptr<segment::Writer> Segment::make_writer(const WriterConfig& config, const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath)
 {
-    return make_shared<Writer>(format, rootdir, relpath, abspath);
+    return make_shared<Writer>(config, format, rootdir, relpath, abspath);
 }
 std::shared_ptr<segment::Checker> Segment::make_checker(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath)
 {
@@ -479,9 +480,9 @@ std::shared_ptr<segment::Checker> HoleSegment::checker() const
 {
     return make_shared<HoleChecker>(format, root, relpath, abspath);
 }
-std::shared_ptr<segment::Writer> HoleSegment::make_writer(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath)
+std::shared_ptr<segment::Writer> HoleSegment::make_writer(const WriterConfig& config, const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath)
 {
-    return make_shared<HoleWriter>(format, root, relpath, abspath);
+    return make_shared<HoleWriter>(config, format, root, relpath, abspath);
 }
 std::shared_ptr<segment::Checker> HoleSegment::make_checker(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath)
 {
@@ -526,9 +527,9 @@ std::shared_ptr<segment::Checker> Segment::checker() const
 {
     return make_shared<Checker>(format, root, relpath, abspath);
 }
-std::shared_ptr<segment::Writer> Segment::make_writer(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath)
+std::shared_ptr<segment::Writer> Segment::make_writer(const WriterConfig& config, const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath)
 {
-    return make_shared<Writer>(format, rootdir, relpath, abspath);
+    return make_shared<Writer>(config, format, rootdir, relpath, abspath);
 }
 std::shared_ptr<segment::Checker> Segment::make_checker(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath)
 {

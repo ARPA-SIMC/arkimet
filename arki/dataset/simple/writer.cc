@@ -71,7 +71,7 @@ struct AppendSegment
         flushed = false;
     }
 
-    WriterAcquireResult acquire(Metadata& md, bool drop_cached_data_on_commit)
+    WriterAcquireResult acquire(Metadata& md)
     {
         auto mft = index::Manifest::create(dataset, dataset->index_type);
         mft->lock = lock;
@@ -79,7 +79,7 @@ struct AppendSegment
 
         // Try appending
         try {
-            const types::source::Blob& new_source = segment->append(md, drop_cached_data_on_commit);
+            const types::source::Blob& new_source = segment->append(md);
             add(md, new_source);
             segment->commit();
             time_t ts = segment->segment().timestamp();
@@ -95,7 +95,7 @@ struct AppendSegment
         }
     }
 
-    void acquire_batch(WriterBatch& batch, bool drop_cached_data_on_commit)
+    void acquire_batch(WriterBatch& batch)
     {
         auto mft = index::Manifest::create(dataset, dataset->index_type);
         mft->lock = lock;
@@ -105,7 +105,7 @@ struct AppendSegment
             for (auto& e: batch)
             {
                 e->dataset_name.clear();
-                const types::source::Blob& new_source = segment->append(e->md, drop_cached_data_on_commit);
+                const types::source::Blob& new_source = segment->append(e->md);
                 add(e->md, new_source);
                 e->result = ACQ_OK;
                 e->dataset_name = dataset->name();
@@ -145,17 +145,20 @@ Writer::~Writer()
 
 std::string Writer::type() const { return "simple"; }
 
-std::unique_ptr<AppendSegment> Writer::file(const Metadata& md, const std::string& format)
+std::unique_ptr<AppendSegment> Writer::file(const segment::WriterConfig& writer_config, const Metadata& md, const std::string& format)
 {
     auto lock = dataset().append_lock_dataset();
-    return std::unique_ptr<AppendSegment>(new AppendSegment(m_dataset, lock, segmented::Writer::file(md, format)));
+    const core::Time& time = md.get<types::reftime::Position>()->time;
+    std::string relpath = dataset().step()(time) + "." + md.source().format;
+    auto writer = dataset().session->segment_writer(writer_config, format, dataset().path, relpath);
+    return std::unique_ptr<AppendSegment>(new AppendSegment(m_dataset, lock, writer));
 }
 
-std::unique_ptr<AppendSegment> Writer::file(const std::string& relpath)
+std::unique_ptr<AppendSegment> Writer::file(const segment::WriterConfig& writer_config, const std::string& relpath)
 {
     sys::makedirs(str::dirname(str::joinpath(dataset().path, relpath)));
     auto lock = dataset().append_lock_dataset();
-    auto segment = dataset().session->segment_writer(scan::Scanner::format_from_filename(relpath), dataset().path, relpath);
+    auto segment = dataset().session->segment_writer(writer_config, scan::Scanner::format_from_filename(relpath), dataset().path, relpath);
     return std::unique_ptr<AppendSegment>(new AppendSegment(m_dataset, lock, segment));
 }
 
@@ -165,20 +168,29 @@ WriterAcquireResult Writer::acquire(Metadata& md, const AcquireConfig& cfg)
     auto age_check = dataset().check_acquire_age(md);
     if (age_check.first) return age_check.second;
 
-    auto segment = file(md, md.source().format);
-    return segment->acquire(md, cfg.drop_cached_data_on_commit);
+    segment::WriterConfig writer_config;
+    writer_config.drop_cached_data_on_commit = cfg.drop_cached_data_on_commit;
+    writer_config.eatmydata = dataset().eatmydata;
+
+    auto segment = file(writer_config, md, md.source().format);
+    return segment->acquire(md);
 }
 
 void Writer::acquire_batch(WriterBatch& batch, const AcquireConfig& cfg)
 {
     acct::acquire_batch_count.incr();
+
+    segment::WriterConfig writer_config;
+    writer_config.drop_cached_data_on_commit = cfg.drop_cached_data_on_commit;
+    writer_config.eatmydata = dataset().eatmydata;
+
     std::map<std::string, WriterBatch> by_segment = batch_by_segment(batch);
 
     // Import segment by segment
     for (auto& s: by_segment)
     {
-        auto segment = file(s.first);
-        segment->acquire_batch(s.second, cfg.drop_cached_data_on_commit);
+        auto segment = file(writer_config, s.first);
+        segment->acquire_batch(s.second);
     }
 }
 

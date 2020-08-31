@@ -57,11 +57,11 @@ struct Writer : public segment::BaseWriter<Segment>
     off_t current_pos;
     std::vector<segment::Writer::PendingMetadata> pending;
 
-    Writer(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, int mode=0);
+    Writer(const WriterConfig& config, const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, int mode=0);
     ~Writer();
 
     size_t next_offset() const override;
-    const types::source::Blob& append(Metadata& md, bool drop_cached_data_on_commit) override;
+    const types::source::Blob& append(Metadata& md) override;
 
     void commit() override;
     void rollback() override;
@@ -121,7 +121,7 @@ struct Segment : public fd::Segment
     std::shared_ptr<segment::Reader> reader(std::shared_ptr<core::Lock> lock) const override;
     std::shared_ptr<segment::Checker> checker() const override;
 
-    static std::shared_ptr<segment::Writer> make_writer(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath);
+    static std::shared_ptr<segment::Writer> make_writer(const WriterConfig& config, const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath);
     static std::shared_ptr<segment::Checker> make_checker(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath);
     static std::shared_ptr<segment::Checker> create(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds, const RepackConfig& cfg=RepackConfig());
     static bool can_store(const std::string& format);
@@ -138,7 +138,7 @@ struct HoleSegment : public Segment
     bool single_file() const override;
     std::shared_ptr<segment::Reader> reader(std::shared_ptr<core::Lock> lock) const override;
     std::shared_ptr<segment::Checker> checker() const override;
-    static std::shared_ptr<segment::Writer> make_writer(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath);
+    static std::shared_ptr<segment::Writer> make_writer(const WriterConfig& config, const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath);
     static std::shared_ptr<segment::Checker> make_checker(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath);
 };
 
@@ -190,7 +190,7 @@ struct Segment : public fd::Segment
     std::shared_ptr<segment::Reader> reader(std::shared_ptr<core::Lock> lock) const override;
     std::shared_ptr<segment::Checker> checker() const override;
 
-    static std::shared_ptr<Writer> make_writer(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath);
+    static std::shared_ptr<Writer> make_writer(const WriterConfig& config, const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath);
     static std::shared_ptr<Checker> make_checker(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath);
     static std::shared_ptr<Checker> create(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds, const RepackConfig& cfg=RepackConfig());
     static bool can_store(const std::string& format);

@@ -27,7 +27,6 @@ static const unsigned SEGMENT_CORRUPTED   = 1 << 4; /// File is broken in a way 
 static const unsigned SEGMENT_ARCHIVE_AGE = 1 << 5; /// File is old enough to be archived
 static const unsigned SEGMENT_DELETE_AGE  = 1 << 6; /// File is old enough to be deleted
 
-
 /**
  * State of a segment
  */
@@ -153,7 +152,7 @@ public:
     static std::shared_ptr<segment::Reader> detect_reader(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock);
 
     /// Instantiate the right Writer implementation for a segment that already exists
-    static std::shared_ptr<segment::Writer> detect_writer(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, bool mock_data=false);
+    static std::shared_ptr<segment::Writer> detect_writer(const segment::WriterConfig& config, const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, bool mock_data=false);
 
     /// Instantiate the right Checker implementation for a segment that already exists
     static std::shared_ptr<segment::Checker> detect_checker(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, bool mock_data=false);
@@ -196,15 +195,29 @@ struct Reader : public std::enable_shared_from_this<Reader>
     virtual size_t stream(const types::source::Blob& src, core::AbstractOutputFile& out);
 };
 
-struct Writer : public core::Transaction, public std::enable_shared_from_this<Writer>
+struct WriterConfig
+{
+    /**
+     * Drop cached data from Metadata objects after it has been written to the
+     * segment
+     */
+    bool drop_cached_data_on_commit = false;
+
+    /**
+     * Skip fdatasync/fsync operations to trade consistency for speed
+     */
+    bool eatmydata = false;
+};
+
+struct Writer : public core::Transaction, std::enable_shared_from_this<Writer>
 {
     struct PendingMetadata
     {
+        const WriterConfig& config;
         Metadata& md;
         types::source::Blob* new_source;
-        bool drop_cached_data_on_commit;
 
-        PendingMetadata(Metadata& md, std::unique_ptr<types::source::Blob> new_source, bool drop_cached_data_on_commit);
+        PendingMetadata(const WriterConfig& config, Metadata& md, std::unique_ptr<types::source::Blob> new_source);
         PendingMetadata(const PendingMetadata&) = delete;
         PendingMetadata(PendingMetadata&& o);
         ~PendingMetadata();
@@ -214,7 +227,11 @@ struct Writer : public core::Transaction, public std::enable_shared_from_this<Wr
         void set_source();
     };
 
+    WriterConfig config;
     bool fired = false;
+
+    Writer() = default;
+    Writer(const WriterConfig& config) : config(config) {}
 
     virtual const Segment& segment() const = 0;
 
@@ -233,7 +250,7 @@ struct Writer : public core::Transaction, public std::enable_shared_from_this<Wr
      * Returns a reference to the blob source that will be set into \a md on
      * commit.
      */
-    virtual const types::source::Blob& append(Metadata& md, bool drop_cached_data_on_commit) = 0;
+    virtual const types::source::Blob& append(Metadata& md) = 0;
 };
 
 

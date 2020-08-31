@@ -34,8 +34,8 @@ protected:
     Segment m_segment;
 
 public:
-    BaseWriter(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath)
-        : m_segment(format, root, relpath, abspath)
+    BaseWriter(const WriterConfig& config, const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath)
+        : segment::Writer(config), m_segment(format, root, relpath, abspath)
     {
     }
 

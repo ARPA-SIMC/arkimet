@@ -21,10 +21,10 @@ protected:
     index::SummaryCache scache;
 
     /// Return an inserter for the given Metadata
-    std::unique_ptr<AppendSegment> file(const Metadata& md);
+    std::unique_ptr<AppendSegment> file(const segment::WriterConfig& writer_config, const Metadata& md);
 
     /// Return an inserter for the given relative pathname
-    std::unique_ptr<AppendSegment> file(const std::string& relpath);
+    std::unique_ptr<AppendSegment> file(const segment::WriterConfig& writer_config, const std::string& relpath);
 
 public:
     Writer(std::shared_ptr<iseg::Dataset> config);

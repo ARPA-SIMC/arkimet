@@ -29,7 +29,7 @@ public:
     Session& operator=(Session&&) = delete;
 
     virtual std::shared_ptr<segment::Reader> segment_reader(const std::string& format, const std::string& root, const std::string& relpath, std::shared_ptr<core::Lock> lock);
-    virtual std::shared_ptr<segment::Writer> segment_writer(const std::string& format, const std::string& root, const std::string& relpath);
+    virtual std::shared_ptr<segment::Writer> segment_writer(const segment::WriterConfig& config, const std::string& format, const std::string& root, const std::string& relpath);
     virtual std::shared_ptr<segment::Checker> segment_checker(const std::string& format, const std::string& root, const std::string& relpath);
 
     /**
@@ -148,7 +148,7 @@ public:
     using Session::Session;
 
     std::shared_ptr<segment::Reader> segment_reader(const std::string& format, const std::string& root, const std::string& relpath, std::shared_ptr<core::Lock> lock) override;
-    std::shared_ptr<segment::Writer> segment_writer(const std::string& format, const std::string& root, const std::string& relpath) override;
+    std::shared_ptr<segment::Writer> segment_writer(const segment::WriterConfig& config, const std::string& format, const std::string& root, const std::string& relpath) override;
     std::shared_ptr<segment::Checker> segment_checker(const std::string& format, const std::string& root, const std::string& relpath) override;
 
 };

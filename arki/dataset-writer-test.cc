@@ -27,10 +27,10 @@ namespace {
 struct ForceDirMockDataSession : public arki::dataset::Session
 {
 public:
-    std::shared_ptr<arki::segment::Writer> segment_writer(const std::string& format, const std::string& root, const std::string& relpath) override
+    std::shared_ptr<arki::segment::Writer> segment_writer(const segment::WriterConfig& writer_config, const std::string& format, const std::string& root, const std::string& relpath) override
     {
         std::string abspath = str::joinpath(root, relpath);
-        return std::shared_ptr<arki::segment::Writer>(new arki::segment::dir::HoleWriter(format, root, relpath, abspath));
+        return std::shared_ptr<arki::segment::Writer>(new arki::segment::dir::HoleWriter(writer_config, format, root, relpath, abspath));
     }
 };
 

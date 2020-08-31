@@ -42,31 +42,6 @@ using namespace arki::utils;
 using namespace arki::dataset;
 using arki::core::Time;
 
-namespace {
-
-struct ForceDirSession : public arki::dataset::Session
-{
-public:
-    std::shared_ptr<segment::Writer> segment_writer(const std::string& format, const std::string& root, const std::string& relpath) override
-    {
-        std::string abspath = str::joinpath(root, relpath);
-        auto res(arki::Segment::detect_writer(format, root, relpath, abspath, false));
-        if (res) return res;
-        return std::shared_ptr<segment::Writer>(new arki::segment::dir::Writer(format, root, relpath, abspath));
-    }
-
-    std::shared_ptr<segment::Checker> segment_checker(const std::string& format, const std::string& root, const std::string& relpath) override
-    {
-        std::string abspath = str::joinpath(root, relpath);
-        auto res(Segment::detect_checker(format, root, relpath, abspath, false));
-        if (res) return res;
-        return std::shared_ptr<segment::Checker>(new segment::dir::Checker(format, root, relpath, abspath));
-    }
-};
-
-}
-
-
 namespace arki {
 namespace tests {
 
@@ -164,7 +139,7 @@ std::shared_ptr<dataset::Session> DatasetTest::session()
                 m_session = std::make_shared<dataset::Session>();
                 break;
             case TEST_FORCE_DIR:
-                m_session = std::make_shared<ForceDirSession>();
+                m_session = std::make_shared<DirSegmentsSession>();
                 break;
         }
     }

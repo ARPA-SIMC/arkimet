@@ -31,7 +31,7 @@ struct Dataset : public segmented::Dataset
 class Writer : public DatasetAccess<Dataset, segmented::Writer>
 {
 protected:
-    void storeBlob(Metadata& md, const std::string& reldest, bool drop_cached_data_on_commit);
+    void storeBlob(const segment::WriterConfig& writer_config, Metadata& md, const std::string& reldest);
 
 public:
     // Initialise the dataset with the information from the configurationa in 'cfg'

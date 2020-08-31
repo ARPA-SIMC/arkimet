@@ -331,8 +331,8 @@ size_t Reader::stream(const types::source::Blob& src, core::NamedFileDescriptor&
 
 
 template<typename Segment>
-BaseWriter<Segment>::BaseWriter(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath)
-    : segment::BaseWriter<Segment>(format, root, relpath, abspath), seqfile(abspath)
+BaseWriter<Segment>::BaseWriter(const WriterConfig& config, const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath)
+    : segment::BaseWriter<Segment>(config, format, root, relpath, abspath), seqfile(abspath)
 {
     // Ensure that the directory 'abspath' exists
     sys::makedirs(abspath);
@@ -356,7 +356,7 @@ size_t BaseWriter<Segment>::next_offset() const
 }
 
 template<typename Segment>
-const types::source::Blob& BaseWriter<Segment>::append(Metadata& md, bool drop_cached_data_on_commit)
+const types::source::Blob& BaseWriter<Segment>::append(Metadata& md)
 {
     this->fired = false;
 
@@ -370,7 +370,7 @@ const types::source::Blob& BaseWriter<Segment>::append(Metadata& md, bool drop_c
     }
     written.push_back(fd.name());
     fd.close();
-    pending.emplace_back(md, source::Blob::create_unlocked(md.source().format, this->segment().root, this->segment().relpath, current_pos, md.data_size()), drop_cached_data_on_commit);
+    pending.emplace_back(this->config, md, source::Blob::create_unlocked(md.source().format, this->segment().root, this->segment().relpath, current_pos, md.data_size()));
     ++current_pos;
     return *pending.back().new_source;
 }
@@ -414,8 +414,9 @@ void Writer::write_file(Metadata& md, NamedFileDescriptor& fd)
 {
     const metadata::Data& data = md.get_data();
     data.write(fd);
-    if (fdatasync(fd) < 0)
-        fd.throw_error("cannot flush write");
+    if (!config.eatmydata)
+        if (fdatasync(fd) < 0)
+            fd.throw_error("cannot flush write");
 }
 
 

@@ -60,13 +60,13 @@ struct BaseWriter : public segment::BaseWriter<Segment>
     std::vector<segment::Writer::PendingMetadata> pending;
     size_t current_pos;
 
-    BaseWriter(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath);
+    BaseWriter(const WriterConfig& config, const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath);
     ~BaseWriter();
 
     virtual void write_file(Metadata& md, core::NamedFileDescriptor& fd) = 0;
 
     size_t next_offset() const override;
-    const types::source::Blob& append(Metadata& md, bool drop_cached_data_on_commit) override;
+    const types::source::Blob& append(Metadata& md) override;
 
     void commit() override;
     void rollback() override;

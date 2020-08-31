@@ -63,7 +63,8 @@ add_method("auto_instantiate_existing", [] {
     make_samples();
 
     auto get_writer = [&](const char* format, const char* name) {
-        return Segment::detect_writer(format, ".", name, sys::abspath(name));
+        segment::WriterConfig writer_config;
+        return Segment::detect_writer(writer_config, format, ".", name, sys::abspath(name));
     };
     auto get_checker = [&](const char* format, const char* name) {
         return Segment::detect_checker(format, ".", name, sys::abspath(name));
