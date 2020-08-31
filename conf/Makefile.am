@@ -14,6 +14,8 @@ nobase_dist_conf_DATA = \
 	qmacro/expa.py \
 	vm2/source.lua
 
+dist_doc_DATA = match-alias.simc.conf
+
 EXTRA_DIST = \
 	     qmacro/test0.lua \
 	     qmacro/noopcopy.lua
