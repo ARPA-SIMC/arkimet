@@ -514,7 +514,8 @@ public:
             for (vector<Info>::const_iterator i = info.begin();
                     i != info.end(); ++i)
                 i->write(out);
-            out.fdatasync();
+            if (!dataset->eatmydata)
+                out.fdatasync();
             out.close();
 
             if (::rename(pathname.c_str(), str::joinpath(m_path, "MANIFEST").c_str()) < 0)
@@ -555,16 +556,19 @@ class SqliteManifest : public Manifest
     mutable utils::sqlite::SQLiteDB m_db;
     utils::sqlite::InsertQuery m_insert;
 
-    void setupPragmas()
+    void setup_pragmas()
     {
-        // Also, since the way we do inserts cause no trouble if a reader reads a
-        // partial insert, we do not need read locking
-        //m_db.exec("PRAGMA read_uncommitted = 1");
+        if (dataset->eatmydata)
+        {
+            m_db.exec("PRAGMA synchronous = OFF");
+            m_db.exec("PRAGMA journal_mode = MEMORY");
+        } else {
+            // Use a WAL journal, which allows reads and writes together
+            m_db.exec("PRAGMA journal_mode = WAL");
+        }
         // Use new features, if we write we read it, so we do not need to
         // support sqlite < 3.3.0 if we are above that version
         m_db.exec("PRAGMA legacy_file_format = 0");
-        // Enable WAL journaling, which doesn't lock reads while writing
-        m_db.exec("PRAGMA journal_mode = WAL");
     }
 
     void initQueries()
@@ -615,7 +619,7 @@ public:
             throw std::runtime_error("opening archive index: index " + pathname + " does not exist");
 
         m_db.open(pathname);
-        setupPragmas();
+        setup_pragmas();
 
         initQueries();
     }
@@ -633,7 +637,7 @@ public:
         bool need_create = !sys::access(pathname, F_OK);
 
         m_db.open(pathname);
-        setupPragmas();
+        setup_pragmas();
 
         if (need_create)
             initDB();
