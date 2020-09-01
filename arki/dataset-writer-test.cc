@@ -27,10 +27,10 @@ namespace {
 struct ForceDirMockDataSession : public arki::dataset::Session
 {
 public:
-    std::shared_ptr<arki::segment::Writer> segment_writer(const std::string& format, const std::string& root, const std::string& relpath) override
+    std::shared_ptr<arki::segment::Writer> segment_writer(const segment::WriterConfig& writer_config, const std::string& format, const std::string& root, const std::string& relpath) override
     {
         std::string abspath = str::joinpath(root, relpath);
-        return std::shared_ptr<arki::segment::Writer>(new arki::segment::dir::HoleWriter(format, root, relpath, abspath));
+        return std::shared_ptr<arki::segment::Writer>(new arki::segment::dir::HoleWriter(writer_config, format, root, relpath, abspath));
     }
 };
 
@@ -437,6 +437,28 @@ this->add_method("transaction_different_segment_fail_last", [=](Fixture& f) {
 this->add_method("test_acquire", [](Fixture& f) {
     // TODO: add tests for test_acquire
 });
+
+this->add_method("import_eatmydata", [](Fixture& f) {
+    f.cfg->set("eatmydata", "yes");
+
+    {
+        auto ds = f.config().create_writer();
+        for (auto& md: f.td.mds)
+            wassert(actual(*ds).import(*md));
+
+        dataset::WriterBatch batch;
+        for (auto& md: f.td.mds)
+            batch.emplace_back(make_shared<dataset::WriterBatchElement>(*md));
+        wassert(ds->acquire_batch(batch, dataset::REPLACE_ALWAYS));
+    }
+
+    metadata::Collection mdc(*f.config().create_reader(), "");
+    if (f.cfg->value("type") == "simple")
+        wassert(actual(mdc.size()) == 6u);
+    else
+        wassert(actual(mdc.size()) == 3u);
+});
+
 
 }
 }

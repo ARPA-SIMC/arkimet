@@ -3,6 +3,10 @@
 * Fixed error reading offline archives (#232)
 * Allow to create an arkimet session with `force_dir_segments=True` to always
   store each data in a separate file, to help arkimaps prototyping.
+* New `eatmydata = yes` dataset configuration (disabled by default) to turn off
+  multi-process dataset access and consistency guarantees on the datasets in
+  case of system crashes, in favour of speed. This is useful when creating, for
+  example, a temporary work dataset in a temporary directory (#233)
 
 # New in version 1.28
 

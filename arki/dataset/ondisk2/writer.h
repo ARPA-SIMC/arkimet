@@ -16,8 +16,8 @@ struct AppendSegment;
 class Writer : public DatasetAccess<ondisk2::Dataset, segmented::Writer>
 {
 protected:
-    std::unique_ptr<AppendSegment> segment(const Metadata& md, const std::string& format);
-    std::unique_ptr<AppendSegment> segment(const std::string& relpath);
+    std::unique_ptr<AppendSegment> segment(const segment::WriterConfig& writer_config, const Metadata& md, const std::string& format);
+    std::unique_ptr<AppendSegment> segment(const segment::WriterConfig& writer_config, const std::string& relpath);
 
 public:
     Writer(std::shared_ptr<ondisk2::Dataset> dataset);

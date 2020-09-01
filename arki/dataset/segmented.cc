@@ -82,6 +82,9 @@ Dataset::Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg
     std::string gz_group_size = cfg.value("gz group size");
     if (!gz_group_size.empty())
         this->gz_group_size = std::stoul(gz_group_size);
+
+    if (cfg.value("eatmydata") == "yes")
+        eatmydata = true;
 }
 
 Dataset::~Dataset()
@@ -106,13 +109,6 @@ Reader::~Reader()
 
 Writer::~Writer()
 {
-}
-
-std::shared_ptr<segment::Writer> Writer::file(const Metadata& md, const std::string& format)
-{
-    const core::Time& time = md.get<types::reftime::Position>()->time;
-    string relpath = dataset().step()(time) + "." + md.source().format;
-    return dataset().session->segment_writer(format, dataset().path, relpath);
 }
 
 static bool writer_batch_element_lt(const std::shared_ptr<WriterBatchElement>& a, const std::shared_ptr<WriterBatchElement>& b)

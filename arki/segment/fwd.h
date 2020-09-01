@@ -9,6 +9,7 @@ struct Segment;
 namespace segment {
 struct Reader;
 struct Writer;
+struct WriterConfig;
 struct Checker;
 struct CheckerSegment;
 struct Manager;

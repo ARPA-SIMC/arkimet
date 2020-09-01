@@ -160,7 +160,7 @@ std::shared_ptr<segment::Reader> Segment::detect_reader(const std::string& forma
     return res;
 }
 
-std::shared_ptr<segment::Writer> Segment::detect_writer(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, bool mock_data)
+std::shared_ptr<segment::Writer> Segment::detect_writer(const segment::WriterConfig& config, const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, bool mock_data)
 {
     std::shared_ptr<segment::Writer> res;
 
@@ -172,9 +172,9 @@ std::shared_ptr<segment::Writer> Segment::detect_writer(const std::string& forma
             if (segment::dir::Segment::can_store(format))
             {
                 if (mock_data)
-                    res.reset(new segment::dir::HoleWriter(format, root, relpath, abspath));
+                    res.reset(new segment::dir::HoleWriter(config, format, root, relpath, abspath));
                 else
-                    res.reset(new segment::dir::Writer(format, root, relpath, abspath));
+                    res.reset(new segment::dir::Writer(config, format, root, relpath, abspath));
             } else {
                 throw_consistency_error(
                         "getting writer for " + format + " file " + relpath,
@@ -184,14 +184,14 @@ std::shared_ptr<segment::Writer> Segment::detect_writer(const std::string& forma
             if (format == "grib" || format == "bufr")
             {
                 if (mock_data)
-                    res.reset(new segment::concat::HoleWriter(format, root, relpath, abspath));
+                    res.reset(new segment::concat::HoleWriter(config, format, root, relpath, abspath));
                 else
-                    res.reset(new segment::concat::Writer(format, root, relpath, abspath));
+                    res.reset(new segment::concat::Writer(config, format, root, relpath, abspath));
             } else if (format == "vm2") {
                 if (mock_data)
                     throw_consistency_error("mock_data single-file line-based segments are not implemented");
                 else
-                    res.reset(new segment::lines::Writer(format, root, relpath, abspath));
+                    res.reset(new segment::lines::Writer(config, format, root, relpath, abspath));
             } else if (format == "odimh5") {
                 throw_consistency_error("segment is a file, but odimh5 data can only be stored into directory segments");
             } else {
@@ -374,13 +374,13 @@ size_t Reader::stream(const types::source::Blob& src, core::AbstractOutputFile& 
 }
 
 
-Writer::PendingMetadata::PendingMetadata(Metadata& md, std::unique_ptr<types::source::Blob> new_source, bool drop_cached_data_on_commit)
-    : md(md), new_source(new_source.release()), drop_cached_data_on_commit(drop_cached_data_on_commit)
+Writer::PendingMetadata::PendingMetadata(const WriterConfig& config, Metadata& md, std::unique_ptr<types::source::Blob> new_source)
+    : config(config), md(md), new_source(new_source.release())
 {
 }
 
 Writer::PendingMetadata::PendingMetadata(PendingMetadata&& o)
-    : md(o.md), new_source(o.new_source), drop_cached_data_on_commit(o.drop_cached_data_on_commit)
+    : config(o.config), md(o.md), new_source(o.new_source)
 {
     o.new_source = nullptr;
 }
@@ -395,7 +395,7 @@ void Writer::PendingMetadata::set_source()
     std::unique_ptr<types::source::Blob> source(new_source);
     new_source = 0;
     md.set_source(move(source));
-    if (drop_cached_data_on_commit)
+    if (config.drop_cached_data_on_commit)
         md.drop_cached_data();
 }
 

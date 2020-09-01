@@ -39,7 +39,7 @@ struct AppendSegment
     {
     }
 
-    WriterAcquireResult acquire_replace_never(Metadata& md, index::SummaryCache& scache, bool drop_cached_data_on_commit)
+    WriterAcquireResult acquire_replace_never(Metadata& md, index::SummaryCache& scache)
     {
         Pending p_idx = idx.begin_transaction();
 
@@ -51,7 +51,7 @@ struct AppendSegment
             }
             // Invalidate the summary cache for this month
             scache.invalidate(md);
-            segment->append(md, drop_cached_data_on_commit);
+            segment->append(md);
             segment->commit();
             p_idx.commit();
             return ACQ_OK;
@@ -62,7 +62,7 @@ struct AppendSegment
         }
     }
 
-    WriterAcquireResult acquire_replace_always(Metadata& md, index::SummaryCache& scache, bool drop_cached_data_on_commit)
+    WriterAcquireResult acquire_replace_always(Metadata& md, index::SummaryCache& scache)
     {
         Pending p_idx = idx.begin_transaction();
 
@@ -70,7 +70,7 @@ struct AppendSegment
             idx.replace(md, segment->next_offset());
             // Invalidate the summary cache for this month
             scache.invalidate(md);
-            segment->append(md, drop_cached_data_on_commit);
+            segment->append(md);
             segment->commit();
             p_idx.commit();
             return ACQ_OK;
@@ -81,7 +81,7 @@ struct AppendSegment
         }
     }
 
-    WriterAcquireResult acquire_replace_higher_usn(Metadata& md, index::SummaryCache& scache, bool drop_cached_data_on_commit)
+    WriterAcquireResult acquire_replace_higher_usn(Metadata& md, index::SummaryCache& scache)
     {
         Pending p_idx = idx.begin_transaction();
 
@@ -112,12 +112,12 @@ struct AppendSegment
 
                 // Replace, reusing the pending datafile transaction from earlier
                 idx.replace(md, segment->next_offset());
-                segment->append(md, drop_cached_data_on_commit);
+                segment->append(md);
                 segment->commit();
                 p_idx.commit();
                 return ACQ_OK;
             } else {
-                segment->append(md, drop_cached_data_on_commit);
+                segment->append(md);
                 // Invalidate the summary cache for this month
                 scache.invalidate(md);
                 segment->commit();
@@ -131,7 +131,7 @@ struct AppendSegment
         }
     }
 
-    void acquire_batch_replace_never(WriterBatch& batch, index::SummaryCache& scache, bool drop_cached_data_on_commit)
+    void acquire_batch_replace_never(WriterBatch& batch, index::SummaryCache& scache)
     {
         Pending p_idx = idx.begin_transaction();
 
@@ -149,7 +149,7 @@ struct AppendSegment
 
                 // Invalidate the summary cache for this month
                 scache.invalidate(e->md);
-                segment->append(e->md, drop_cached_data_on_commit);
+                segment->append(e->md);
                 e->result = ACQ_OK;
                 e->dataset_name = dataset->name();
             }
@@ -163,7 +163,7 @@ struct AppendSegment
         p_idx.commit();
     }
 
-    void acquire_batch_replace_always(WriterBatch& batch, index::SummaryCache& scache, bool drop_cached_data_on_commit)
+    void acquire_batch_replace_always(WriterBatch& batch, index::SummaryCache& scache)
     {
         Pending p_idx = idx.begin_transaction();
 
@@ -174,7 +174,7 @@ struct AppendSegment
                 idx.replace(e->md, segment->next_offset());
                 // Invalidate the summary cache for this month
                 scache.invalidate(e->md);
-                segment->append(e->md, drop_cached_data_on_commit);
+                segment->append(e->md);
                 e->result = ACQ_OK;
                 e->dataset_name = dataset->name();
             }
@@ -188,7 +188,7 @@ struct AppendSegment
         p_idx.commit();
     }
 
-    void acquire_batch_replace_higher_usn(WriterBatch& batch, index::SummaryCache& scache, bool drop_cached_data_on_commit)
+    void acquire_batch_replace_higher_usn(WriterBatch& batch, index::SummaryCache& scache)
     {
         Pending p_idx = idx.begin_transaction();
 
@@ -232,14 +232,14 @@ struct AppendSegment
 
                     // Replace, reusing the pending datafile transaction from earlier
                     idx.replace(e->md, segment->next_offset());
-                    segment->append(e->md, drop_cached_data_on_commit);
+                    segment->append(e->md);
                     e->result = ACQ_OK;
                     e->dataset_name = dataset->name();
                     continue;
                 } else {
                     // Invalidate the summary cache for this month
                     scache.invalidate(e->md);
-                    segment->append(e->md, drop_cached_data_on_commit);
+                    segment->append(e->md);
                     e->result = ACQ_OK;
                     e->dataset_name = dataset->name();
                 }
@@ -271,18 +271,18 @@ Writer::~Writer()
 
 std::string Writer::type() const { return "iseg"; }
 
-std::unique_ptr<AppendSegment> Writer::file(const Metadata& md)
+std::unique_ptr<AppendSegment> Writer::file(const segment::WriterConfig& writer_config, const Metadata& md)
 {
     const core::Time& time = md.get<types::reftime::Position>()->time;
     string relpath = dataset().step()(time) + "." + dataset().format;
-    return file(relpath);
+    return file(writer_config, relpath);
 }
 
-std::unique_ptr<AppendSegment> Writer::file(const std::string& relpath)
+std::unique_ptr<AppendSegment> Writer::file(const segment::WriterConfig& writer_config, const std::string& relpath)
 {
     sys::makedirs(str::dirname(str::joinpath(dataset().path, relpath)));
     std::shared_ptr<dataset::AppendLock> append_lock(dataset().append_lock_segment(relpath));
-    auto segment = dataset().session->segment_writer(dataset().format, dataset().path, relpath);
+    auto segment = dataset().session->segment_writer(writer_config, dataset().format, dataset().path, relpath);
     return std::unique_ptr<AppendSegment>(new AppendSegment(m_dataset, append_lock, segment));
 }
 
@@ -297,12 +297,16 @@ WriterAcquireResult Writer::acquire(Metadata& md, const AcquireConfig& cfg)
 
     ReplaceStrategy replace = cfg.replace == REPLACE_DEFAULT ? dataset().default_replace_strategy : cfg.replace;
 
-    auto segment = file(md);
+    segment::WriterConfig writer_config;
+    writer_config.drop_cached_data_on_commit = cfg.drop_cached_data_on_commit;
+    writer_config.eatmydata = dataset().eatmydata;
+
+    auto segment = file(writer_config, md);
     switch (replace)
     {
-        case REPLACE_NEVER: return segment->acquire_replace_never(md, scache, cfg.drop_cached_data_on_commit);
-        case REPLACE_ALWAYS: return segment->acquire_replace_always(md, scache, cfg.drop_cached_data_on_commit);
-        case REPLACE_HIGHER_USN: return segment->acquire_replace_higher_usn(md, scache, cfg.drop_cached_data_on_commit);
+        case REPLACE_NEVER: return segment->acquire_replace_never(md, scache);
+        case REPLACE_ALWAYS: return segment->acquire_replace_always(md, scache);
+        case REPLACE_HIGHER_USN: return segment->acquire_replace_higher_usn(md, scache);
         default:
         {
             stringstream ss;
@@ -324,22 +328,26 @@ void Writer::acquire_batch(WriterBatch& batch, const AcquireConfig& cfg)
         return;
     }
 
+    segment::WriterConfig writer_config;
+    writer_config.drop_cached_data_on_commit = cfg.drop_cached_data_on_commit;
+    writer_config.eatmydata = dataset().eatmydata;
+
     std::map<std::string, WriterBatch> by_segment = batch_by_segment(batch);
 
     // Import segment by segment
     for (auto& s: by_segment)
     {
-        auto segment = file(s.first);
+        auto segment = file(writer_config, s.first);
         switch (replace)
         {
             case REPLACE_NEVER:
-                segment->acquire_batch_replace_never(s.second, scache, cfg.drop_cached_data_on_commit);
+                segment->acquire_batch_replace_never(s.second, scache);
                 break;
             case REPLACE_ALWAYS:
-                segment->acquire_batch_replace_always(s.second, scache, cfg.drop_cached_data_on_commit);
+                segment->acquire_batch_replace_always(s.second, scache);
                 break;
             case REPLACE_HIGHER_USN:
-                segment->acquire_batch_replace_higher_usn(s.second, scache, cfg.drop_cached_data_on_commit);
+                segment->acquire_batch_replace_higher_usn(s.second, scache);
                 break;
             default: throw std::runtime_error("programming error: unsupported replace value " + std::to_string(replace));
         }
@@ -348,7 +356,11 @@ void Writer::acquire_batch(WriterBatch& batch, const AcquireConfig& cfg)
 
 void Writer::remove(Metadata& md)
 {
-    auto segment = file(md);
+    segment::WriterConfig writer_config;
+    writer_config.drop_cached_data_on_commit = false;
+    writer_config.eatmydata = dataset().eatmydata;
+
+    auto segment = file(writer_config, md);
 
     const types::source::Blob* source = md.has_source_blob();
     if (!source)

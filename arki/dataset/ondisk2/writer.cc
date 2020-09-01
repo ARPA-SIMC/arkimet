@@ -44,7 +44,7 @@ struct AppendSegment
         idx.flush();
     }
 
-    WriterAcquireResult acquire_replace_never(Metadata& md, bool drop_cached_data_on_commit)
+    WriterAcquireResult acquire_replace_never(Metadata& md)
     {
         auto p_idx = idx.begin_transaction();
         try {
@@ -53,7 +53,7 @@ struct AppendSegment
                 md.add_note("Failed to store in dataset '" + dataset->name() + "' because the dataset already has the data in " + old->filename + ":" + std::to_string(old->offset));
                 return ACQ_ERROR_DUPLICATE;
             }
-            segment->append(md, drop_cached_data_on_commit);
+            segment->append(md);
             segment->commit();
             p_idx.commit();
             return ACQ_OK;
@@ -64,12 +64,12 @@ struct AppendSegment
         }
     }
 
-    WriterAcquireResult acquire_replace_always(Metadata& md, bool drop_cached_data_on_commit)
+    WriterAcquireResult acquire_replace_always(Metadata& md)
     {
         auto p_idx = idx.begin_transaction();
         try {
             idx.replace(md, segment->segment().relpath, segment->next_offset());
-            segment->append(md, drop_cached_data_on_commit);
+            segment->append(md);
             // In a replace, we necessarily replace inside the same file,
             // as it depends on the metadata reftime
             //createPackFlagfile(df->pathname);
@@ -83,7 +83,7 @@ struct AppendSegment
         }
     }
 
-    WriterAcquireResult acquire_replace_higher_usn(Metadata& md, dataset::Session& session, bool drop_cached_data_on_commit)
+    WriterAcquireResult acquire_replace_higher_usn(Metadata& md, dataset::Session& session)
     {
         auto p_idx = idx.begin_transaction();
 
@@ -114,12 +114,12 @@ struct AppendSegment
 
                 // Replace, reusing the pending datafile transaction from earlier
                 idx.replace(md, segment->segment().relpath, segment->next_offset());
-                segment->append(md, drop_cached_data_on_commit);
+                segment->append(md);
                 segment->commit();
                 p_idx.commit();
                 return ACQ_OK;
             } else {
-                segment->append(md, drop_cached_data_on_commit);
+                segment->append(md);
                 segment->commit();
                 p_idx.commit();
                 return ACQ_OK;
@@ -132,7 +132,7 @@ struct AppendSegment
     }
 
 
-    void acquire_batch_replace_never(WriterBatch& batch, bool drop_cached_data_on_commit)
+    void acquire_batch_replace_never(WriterBatch& batch)
     {
         auto p_idx = idx.begin_transaction();
 
@@ -147,7 +147,7 @@ struct AppendSegment
                     e->result = ACQ_ERROR_DUPLICATE;
                     continue;
                 }
-                segment->append(e->md, drop_cached_data_on_commit);
+                segment->append(e->md);
                 e->result = ACQ_OK;
                 e->dataset_name = dataset->name();
             }
@@ -161,7 +161,7 @@ struct AppendSegment
         p_idx.commit();
     }
 
-    void acquire_batch_replace_always(WriterBatch& batch, bool drop_cached_data_on_commit)
+    void acquire_batch_replace_always(WriterBatch& batch)
     {
         auto p_idx = idx.begin_transaction();
 
@@ -170,7 +170,7 @@ struct AppendSegment
             {
                 e->dataset_name.clear();
                 idx.replace(e->md, segment->segment().relpath, segment->next_offset());
-                segment->append(e->md, drop_cached_data_on_commit);
+                segment->append(e->md);
                 e->result = ACQ_OK;
                 e->dataset_name = dataset->name();
             }
@@ -184,7 +184,7 @@ struct AppendSegment
         p_idx.commit();
     }
 
-    void acquire_batch_replace_higher_usn(WriterBatch& batch, dataset::Session& session, bool drop_cached_data_on_commit)
+    void acquire_batch_replace_higher_usn(WriterBatch& batch, dataset::Session& session)
     {
         auto p_idx = idx.begin_transaction();
 
@@ -228,12 +228,12 @@ struct AppendSegment
 
                     // Replace, reusing the pending datafile transaction from earlier
                     idx.replace(e->md, segment->segment().relpath, segment->next_offset());
-                    segment->append(e->md, drop_cached_data_on_commit);
+                    segment->append(e->md);
                     e->result = ACQ_OK;
                     e->dataset_name = dataset->name();
                     continue;
                 } else {
-                    segment->append(e->md, drop_cached_data_on_commit);
+                    segment->append(e->md);
                     e->result = ACQ_OK;
                     e->dataset_name = dataset->name();
                 }
@@ -268,17 +268,20 @@ Writer::~Writer()
 
 std::string Writer::type() const { return "ondisk2"; }
 
-std::unique_ptr<AppendSegment> Writer::segment(const Metadata& md, const std::string& format)
+std::unique_ptr<AppendSegment> Writer::segment(const segment::WriterConfig& writer_config, const Metadata& md, const std::string& format)
 {
     auto lock = dataset().append_lock_dataset();
-    return std::unique_ptr<AppendSegment>(new AppendSegment(m_dataset, lock, segmented::Writer::file(md, format)));
+    const core::Time& time = md.get<types::reftime::Position>()->time;
+    std::string relpath = dataset().step()(time) + "." + md.source().format;
+    auto writer = dataset().session->segment_writer(writer_config, format, dataset().path, relpath);
+    return std::unique_ptr<AppendSegment>(new AppendSegment(m_dataset, lock, writer));
 }
 
-std::unique_ptr<AppendSegment> Writer::segment(const std::string& relpath)
+std::unique_ptr<AppendSegment> Writer::segment(const segment::WriterConfig& writer_config, const std::string& relpath)
 {
     sys::makedirs(str::dirname(str::joinpath(dataset().path, relpath)));
     auto lock = dataset().append_lock_dataset();
-    auto segment = dataset().session->segment_writer(scan::Scanner::format_from_filename(relpath), dataset().path, relpath);
+    auto segment = dataset().session->segment_writer(writer_config, scan::Scanner::format_from_filename(relpath), dataset().path, relpath);
     return std::unique_ptr<AppendSegment>(new AppendSegment(m_dataset, lock, segment));
 }
 
@@ -290,13 +293,17 @@ WriterAcquireResult Writer::acquire(Metadata& md, const AcquireConfig& cfg)
 
     ReplaceStrategy replace = cfg.replace == REPLACE_DEFAULT ? dataset().default_replace_strategy : cfg.replace;
 
-    auto w = segment(md, md.source().format);
+    segment::WriterConfig writer_config;
+    writer_config.drop_cached_data_on_commit = cfg.drop_cached_data_on_commit;
+    writer_config.eatmydata = dataset().eatmydata;
+
+    auto w = segment(writer_config, md, md.source().format);
 
     switch (replace)
     {
-        case REPLACE_NEVER: return w->acquire_replace_never(md, cfg.drop_cached_data_on_commit);
-        case REPLACE_ALWAYS: return w->acquire_replace_always(md, cfg.drop_cached_data_on_commit);
-        case REPLACE_HIGHER_USN: return w->acquire_replace_higher_usn(md, *dataset().session, cfg.drop_cached_data_on_commit);
+        case REPLACE_NEVER: return w->acquire_replace_never(md);
+        case REPLACE_ALWAYS: return w->acquire_replace_always(md);
+        case REPLACE_HIGHER_USN: return w->acquire_replace_higher_usn(md, *dataset().session);
         default:
         {
             stringstream ss;
@@ -313,20 +320,24 @@ void Writer::acquire_batch(WriterBatch& batch, const AcquireConfig& cfg)
 
     std::map<std::string, WriterBatch> by_segment = batch_by_segment(batch);
 
+    segment::WriterConfig writer_config;
+    writer_config.drop_cached_data_on_commit = cfg.drop_cached_data_on_commit;
+    writer_config.eatmydata = dataset().eatmydata;
+
     // Import segment by segment
     for (auto& s: by_segment)
     {
-        auto seg = segment(s.first);
+        auto seg = segment(writer_config, s.first);
         switch (replace)
         {
             case REPLACE_NEVER:
-                seg->acquire_batch_replace_never(s.second, cfg.drop_cached_data_on_commit);
+                seg->acquire_batch_replace_never(s.second);
                 break;
             case REPLACE_ALWAYS:
-                seg->acquire_batch_replace_always(s.second, cfg.drop_cached_data_on_commit);
+                seg->acquire_batch_replace_always(s.second);
                 break;
             case REPLACE_HIGHER_USN:
-                seg->acquire_batch_replace_higher_usn(s.second, *dataset().session, cfg.drop_cached_data_on_commit);
+                seg->acquire_batch_replace_higher_usn(s.second, *dataset().session);
                 break;
             default: throw std::runtime_error("programming error: unsupported replace value " + std::to_string(replace));
         }

@@ -44,6 +44,13 @@ public:
      */
     unsigned gz_group_size = 512;
 
+    /**
+     * Trade write reliability and write concurrency in favour of performance.
+     *
+     * Useful for writing fast to temporary private datasets.
+     */
+    bool eatmydata = false;
+
 
     Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg);
     ~Dataset();
@@ -74,12 +81,6 @@ public:
 class Writer : public local::Writer
 {
 protected:
-    /**
-     * Return an instance of the Segment for the file where the given metadata
-     * should be written
-     */
-    std::shared_ptr<segment::Writer> file(const Metadata& md, const std::string& format);
-
     std::map<std::string, WriterBatch> batch_by_segment(WriterBatch& batch);
 
 public:

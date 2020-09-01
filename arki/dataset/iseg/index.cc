@@ -145,17 +145,14 @@ std::set<types::Code> Index::unique_codes() const
 
 void Index::setup_pragmas()
 {
-    // Faster but riskier, since we do not have a flagfile to trap
-    // interrupted transactions
-    //m_db.exec("PRAGMA synchronous = OFF");
-    // Faster but riskier, since we do not have a flagfile to trap
-    // interrupted transactions
-    //m_db.exec("PRAGMA journal_mode = MEMORY");
-    // Truncate the journal instead of delete: faster on many file systems
-    // m_db.exec("PRAGMA journal_mode = TRUNCATE");
-    // Zero the header of the journal instead of delete: faster on many file systems
-    // Use a WAL journal, which allows reads and writes together
-    m_db.exec("PRAGMA journal_mode = WAL");
+    if (dataset->eatmydata)
+    {
+        m_db.exec("PRAGMA synchronous = OFF");
+        m_db.exec("PRAGMA journal_mode = MEMORY");
+    } else {
+        // Use a WAL journal, which allows reads and writes together
+        m_db.exec("PRAGMA journal_mode = WAL");
+    }
     // Also, since the way we do inserts cause no trouble if a reader reads a
     // partial insert, we do not need read locking
     //m_db.exec("PRAGMA read_uncommitted = 1");
@@ -483,6 +480,7 @@ WIndex::WIndex(std::shared_ptr<iseg::Dataset> dataset, const std::string& data_r
     } else {
         m_db.open(index_pathname);
         if (dataset->trace_sql) m_db.trace();
+        setup_pragmas();
         init_others();
     }
 }

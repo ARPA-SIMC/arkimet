@@ -29,7 +29,8 @@ this->add_method("append", [](Fixture& f) {
     sys::unlink_ifexists(relpath);
     wassert(actual_file(relpath).not_exists());
     {
-        auto w = Segment::make_writer(f.td.format, sys::getcwd(), relpath, abspath);
+        segment::WriterConfig writer_config;
+        auto w = Segment::make_writer(writer_config, f.td.format, sys::getcwd(), relpath, abspath);
 
         // It should exist but be empty
         //wassert(actual(fname).fileexists());
@@ -69,7 +70,8 @@ this->add_method("large", [](Fixture& f) {
     }
 
     {
-        auto dw = Segment::make_writer(f.td.format, sys::getcwd(), relpath, abspath);
+        segment::WriterConfig writer_config;
+        auto dw = Segment::make_writer(writer_config, f.td.format, sys::getcwd(), relpath, abspath);
 
         // Try a successful transaction
         wassert(test_append_transaction_ok(dw.get(), f.td.mds[0], Segment::padding));

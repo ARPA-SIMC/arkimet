@@ -1,6 +1,7 @@
 #include "outbound.h"
 #include "step.h"
 #include "empty.h"
+#include "session.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
 #include "arki/types/reftime.h"
@@ -41,11 +42,13 @@ Writer::~Writer()
 
 std::string Writer::type() const { return "outbound"; }
 
-void Writer::storeBlob(Metadata& md, const std::string& reldest, bool drop_cached_data_on_commit)
+void Writer::storeBlob(const segment::WriterConfig& writer_config, Metadata& md, const std::string& reldest)
 {
     // Write using segment::Writer
-    auto w = file(md, md.source().format);
-    w->append(md, drop_cached_data_on_commit);
+    const core::Time& time = md.get<types::reftime::Position>()->time;
+    std::string relpath = dataset().step()(time) + "." + md.source().format;
+    auto w = dataset().session->segment_writer(writer_config, md.source().format, dataset().path, relpath);
+    w->append(md);
 }
 
 WriterAcquireResult Writer::acquire(Metadata& md, const AcquireConfig& cfg)
@@ -60,8 +63,12 @@ WriterAcquireResult Writer::acquire(Metadata& md, const AcquireConfig& cfg)
 
     sys::makedirs(str::dirname(dest));
 
+    segment::WriterConfig writer_config;
+    writer_config.drop_cached_data_on_commit = cfg.drop_cached_data_on_commit;
+    writer_config.eatmydata = dataset().eatmydata;
+
     try {
-        storeBlob(md, reldest, cfg.drop_cached_data_on_commit);
+        storeBlob(writer_config, md, reldest);
         return ACQ_OK;
     } catch (std::exception& e) {
         md.add_note("Failed to store in dataset '" + name() + "': " + e.what());

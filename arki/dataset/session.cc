@@ -56,24 +56,24 @@ std::shared_ptr<segment::Reader> Session::segment_reader(const std::string& form
     return res->second.lock();
 }
 
-std::shared_ptr<segment::Writer> Session::segment_writer(const std::string& format, const std::string& root, const std::string& relpath)
+std::shared_ptr<segment::Writer> Session::segment_writer(const segment::WriterConfig& config, const std::string& format, const std::string& root, const std::string& relpath)
 {
     // Ensure that the directory containing the segment exists
     std::string abspath = str::joinpath(root, relpath);
     sys::makedirs(str::dirname(abspath));
 
-    auto res(Segment::detect_writer(format, root, relpath, abspath, false));
+    auto res(Segment::detect_writer(config, format, root, relpath, abspath, false));
     if (res) return res;
 
     if (format == "grib" || format == "grib1" || format == "grib2")
     {
-        res.reset(new segment::concat::Writer(format, root, relpath, abspath));
+        res.reset(new segment::concat::Writer(config, format, root, relpath, abspath));
     } else if (format == "bufr") {
-        res.reset(new segment::concat::Writer(format, root, relpath, abspath));
+        res.reset(new segment::concat::Writer(config, format, root, relpath, abspath));
     } else if (format == "odimh5" || format == "h5" || format == "odim") {
-        res.reset(new segment::dir::Writer(format, root, relpath, abspath));
+        res.reset(new segment::dir::Writer(config, format, root, relpath, abspath));
     } else if (format == "vm2") {
-        res.reset(new segment::lines::Writer(format, root, relpath, abspath));
+        res.reset(new segment::lines::Writer(config, format, root, relpath, abspath));
     } else {
         throw std::runtime_error(
                 "cannot writer for " + format + " file " + relpath +
@@ -492,16 +492,16 @@ std::shared_ptr<segment::Reader> DirSegmentsSession::segment_reader(const std::s
     return res->second.lock();
 }
 
-std::shared_ptr<segment::Writer> DirSegmentsSession::segment_writer(const std::string& format, const std::string& root, const std::string& relpath)
+std::shared_ptr<segment::Writer> DirSegmentsSession::segment_writer(const segment::WriterConfig& config, const std::string& format, const std::string& root, const std::string& relpath)
 {
     // Ensure that the directory containing the segment exists
     std::string abspath = str::joinpath(root, relpath);
     sys::makedirs(str::dirname(abspath));
 
-    auto res(Segment::detect_writer(format, root, relpath, abspath, false));
+    auto res(Segment::detect_writer(config, format, root, relpath, abspath, false));
     if (res) return res;
 
-    res.reset(new segment::dir::Writer(format, root, relpath, abspath));
+    res.reset(new segment::dir::Writer(config, format, root, relpath, abspath));
     return res;
 }
 
