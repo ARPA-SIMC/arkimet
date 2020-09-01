@@ -438,5 +438,27 @@ this->add_method("test_acquire", [](Fixture& f) {
     // TODO: add tests for test_acquire
 });
 
+this->add_method("import_eatmydata", [](Fixture& f) {
+    f.cfg->set("eatmydata", "yes");
+
+    {
+        auto ds = f.config().create_writer();
+        for (auto& md: f.td.mds)
+            wassert(actual(*ds).import(*md));
+
+        dataset::WriterBatch batch;
+        for (auto& md: f.td.mds)
+            batch.emplace_back(make_shared<dataset::WriterBatchElement>(*md));
+        wassert(ds->acquire_batch(batch, dataset::REPLACE_ALWAYS));
+    }
+
+    metadata::Collection mdc(*f.config().create_reader(), "");
+    if (f.cfg->value("type") == "simple")
+        wassert(actual(mdc.size()) == 6u);
+    else
+        wassert(actual(mdc.size()) == 3u);
+});
+
+
 }
 }
