@@ -153,7 +153,7 @@ std::set<types::Code> Contents::unique_codes() const
     return res;
 }
 
-void Contents::setupPragmas()
+void Contents::setup_pragmas()
 {
     if (dataset->eatmydata)
     {
@@ -869,7 +869,7 @@ bool WIndex::open()
 
     if (need_create)
     {
-        setupPragmas();
+        setup_pragmas();
         if (!m_others)
         {
             std::set<types::Code> other_members = all_other_tables();
@@ -877,6 +877,8 @@ bool WIndex::open()
                 m_others = new Aggregate(m_db, "mdother", other_members);
         }
         initDB();
+    } else {
+        setup_pragmas();
     }
 
     initQueries();

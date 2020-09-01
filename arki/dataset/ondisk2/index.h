@@ -123,8 +123,8 @@ public:
 	 */
 	void initQueries();
 
-	/// Run PRAGMA calls to setup database behaviour
-	void setupPragmas();
+    /// Run PRAGMA calls to setup database behaviour
+    void setup_pragmas();
 
     /**
      * Return the metadata for the version of \a md that is already in the

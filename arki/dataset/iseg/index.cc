@@ -480,6 +480,7 @@ WIndex::WIndex(std::shared_ptr<iseg::Dataset> dataset, const std::string& data_r
     } else {
         m_db.open(index_pathname);
         if (dataset->trace_sql) m_db.trace();
+        setup_pragmas();
         init_others();
     }
 }
