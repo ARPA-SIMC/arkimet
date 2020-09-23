@@ -816,7 +816,7 @@ Note: [2017-01-13T09:18:02Z]Scanned from /autofs/ftpuser/radar/INPUT_MSE/MSS1701
 $ arki-query 'reftime:=2017-01-13 9:15' /dataset/odimSPC/ > /tmp/delete.md
 
 # cancello il dato
-$ arki-check --remove=/tmp/delete.md /dataset/odimSPC/
+$ arki-check --fix --remove /tmp/delete.md /dataset/odimSPC/
 ----
 
 E' possibile concatenare i file di metadata:
