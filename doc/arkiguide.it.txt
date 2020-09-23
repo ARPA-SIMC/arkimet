@@ -245,7 +245,7 @@ $ arki-scan --dispatch=$HOME/config $HOME/input.h5 $HOME/input.grib1 > /dev/null
 
 [TIP]
 =========
-Il comando `arki-scan` scrive su standard outpout i metadati dei file di input.
+Il comando `arki-scan` scrive su standard output i metadati dei file di input.
 Tali metadati sono in formato binario, ma se vogliamo un formato human-readable
 possiamo usare l'opzione `--dump`.
 
@@ -256,7 +256,7 @@ Un'altra opzione utile è `--testdispatch=FILE` da usare al posto di
 I dati saranno stati importati nel dataset corretto, oppure in `error` se i
 metadati del file non facevano match con __uno solo__ dei dataset (quindi, se
 nessuno o più di uno) oppure in `duplicates` se si tratta di un dato già
-presente in un dataset senza la possibilità di sovrascritttura.
+presente in un dataset senza la possibilità di sovrascrittura.
 
 Se si vogliono reimportare dei dati che sono finiti in `error`, basta toglierli
 dal dataset `error` e cercare di reimportarli.
