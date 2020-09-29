@@ -44,7 +44,7 @@ arki-query.1: src/arki-query doc/mhooks-query
 	COLUMNS=200 $(srcdir)/run-local help2man --include doc/mhooks-query --name='Query the datasets in the given config file for data matching the given expression, and output the matching metadata.' --section=1 --no-info --version-string="$(PACKAGE_VERSION)" $< > $@ || rm -f $@
 
 arki-scan.1: src/arki-scan doc/mhooks-scan
-	COLUMNS=200 $(srcdir)/run-local help2man --include doc/mhooks-scan --name='Query the datasets in the given config file for data matching the given expression, and output the matching metadata.' --section=1 --no-info --version-string="$(PACKAGE_VERSION)" $< > $@ || rm -f $@
+	COLUMNS=200 $(srcdir)/run-local help2man --include doc/mhooks-scan --name='Reads messages from files and datasets then outputs it or imports it into arkimet datasets.' --section=1 --no-info --version-string="$(PACKAGE_VERSION)" $< > $@ || rm -f $@
 
 arki-check.1: src/arki-check doc/mhooks-check
 	COLUMNS=200 $(srcdir)/run-local help2man --include doc/mhooks-check --name='Perform maintenance on arkimet datasets.' --section=1 --no-info --version-string="$(PACKAGE_VERSION)" $< > $@ || rm -f $@

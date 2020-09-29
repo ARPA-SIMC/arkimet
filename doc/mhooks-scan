@@ -28,9 +28,6 @@ Here are some example invocations of \fBarki-scan\fP:
 
 [SEE ALSO]
 .BR arki-grep (1),
-.BR arki-scan (1),
 .BR arki-query (1)
 .br
 .BR grib_dump (1)
-.br
-.BR http://www.lua.org/
