@@ -10,8 +10,8 @@ Here are some example invocations of \fBarki-dump\fP:
 .P
 .nf
   # Look at the contents of a grib file
-  arki-scan-grib file.grib | arki-dump
+  arki-scan file.grib | arki-dump
 
   # Look at the summary of the contents of a grib file
-  arki-scan-grib file.grib | arki-summarise | arki-dump
+  arki-scan file.grib | arki-summarise | arki-dump
 .fi

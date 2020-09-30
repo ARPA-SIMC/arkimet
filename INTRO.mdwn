@@ -147,11 +147,11 @@ Software dependencies
 
 To extract metadata:
 
-	$ arki-scan-grib --dump --annotate file.grib
+	$ arki-scan --dump --annotate file.grib
 
 To create a summary of the content of many GRIB files:
 
-	$ arki-scan-grib --summary *.grib > summary
+	$ arki-scan --summary *.grib > summary
 
 To view the contents of the generated summary file:
 
@@ -159,12 +159,12 @@ To view the contents of the generated summary file:
 
 To select GRIB messages from a file:
 
-	$ arki-scan-grib file.grib | arki-grep --data 'origin:GRIB1,98;reftime:>=2008' > file1.grib
+	$ arki-scan file.grib | arki-grep --data 'origin:GRIB1,98;reftime:>=2008' > file1.grib
 
 To dispatch grib messages into datasets:
 
 	$ arki-mergeconf datasets/* > allowed-datasets
-	$ arki-scan-grib --dispatch=allowed-datasets file.grib > dispatched.md
+	$ arki-scan --dispatch=allowed-datasets file.grib > dispatched.md
 
 To query:
 
