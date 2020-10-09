@@ -76,7 +76,6 @@ Dataset::Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg
     else
         throw std::runtime_error("Replace strategy '" + repl + "' is not recognised in the configuration of dataset " + name());
 
-    std::string shard = cfg.value("shard");
     m_step = Step::create(step_name);
 
     std::string gz_group_size = cfg.value("gz group size");
