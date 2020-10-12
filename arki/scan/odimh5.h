@@ -48,7 +48,7 @@ public:
 };
 
 
-void register_odimh5_lua();
+void register_odimh5_scanner();
 
 }
 }

@@ -120,6 +120,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		scan/validator.h \
 		scan/mock.h \
 		scan/odimh5.h \
+		scan/netcdf.h \
 		segment.h \
 		segment/fwd.h \
 		segment/base.h \
@@ -327,7 +328,8 @@ libarkimet_la_SOURCES += \
 		scan.cc \
 		scan/validator.cc \
 		scan/mock.cc \
-		scan/odimh5.cc
+		scan/odimh5.cc \
+		scan/netcdf.cc
 
 libarkimet_test_la_SOURCES += \
 		tests/daemon.cc \
@@ -419,6 +421,7 @@ tests_arki_test_SOURCES += \
 		scan/validator-test.cc \
 		scan/mock-test.cc \
 		scan/odimh5-test.cc \
+		scan/netcdf-test.cc \
 		segment-test.cc \
 		segment/common-test.cc \
 		segment/missing-test.cc \

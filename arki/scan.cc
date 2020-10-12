@@ -43,7 +43,7 @@ void init()
     };
 #endif
 
-    register_odimh5_lua();
+    register_odimh5_scanner();
 
 #ifdef HAVE_VM2
     factories["vm2"] = [] {

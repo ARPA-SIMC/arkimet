@@ -170,7 +170,7 @@ std::shared_ptr<Metadata> MockOdimScanner::scan_h5_data(const std::vector<uint8_
 }
 
 
-void register_odimh5_lua()
+void register_odimh5_scanner()
 {
     Scanner::register_factory("odimh5", [] {
         return std::make_shared<scan::MockOdimScanner>();
