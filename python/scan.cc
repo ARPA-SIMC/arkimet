@@ -14,6 +14,7 @@
 #include "arki/scan/grib.h"
 #include "arki/scan/bufr.h"
 #include "arki/scan/odimh5.h"
+#include "arki/scan/netcdf.h"
 #include "arki/nag.h"
 #include <grib_api.h>
 #ifdef HAVE_DBALLE
@@ -435,6 +436,63 @@ public:
 
 
 /*
+ * scan.netcdf module contents
+ */
+
+PyObject* netcdfscanner_object = nullptr;
+
+void load_netcdfscanner_object()
+{
+    load_scanners();
+
+    // Get arkimet.scan.netcdf.BufrScanner
+    pyo_unique_ptr module(throw_ifnull(PyImport_ImportModule("arkimet.scan.netcdf")));
+    pyo_unique_ptr cls(throw_ifnull(PyObject_GetAttrString(module, "Scanner")));
+    pyo_unique_ptr obj(throw_ifnull(PyObject_CallFunction(cls, nullptr)));
+
+    // Hold a reference to arki.python.BBox forever once loaded the first time
+    netcdfscanner_object = obj.release();
+}
+
+
+class PythonNetCDFScanner : public arki::scan::NetCDFScanner
+{
+protected:
+    std::shared_ptr<Metadata> scan_nc_file(const std::string& pathname) override
+    {
+        auto md = std::make_shared<Metadata>();
+
+        AcquireGIL gil;
+        if (!netcdfscanner_object)
+            load_netcdfscanner_object();
+
+        pyo_unique_ptr pyfname(to_python(pathname));
+        pyo_unique_ptr pymd((PyObject*)metadata_create(md));
+        pyo_unique_ptr obj(throw_ifnull(PyObject_CallMethod(
+                        netcdfscanner_object, "scan", "OO", pyfname.get(), pymd.get())));
+
+        // If use_count is > 1, it means we are potentially and unexpectedly
+        // holding all the metadata (and potentially their data) in memory,
+        // while a supported and important use case is to stream out one
+        // metadata at a time
+        pymd.reset(nullptr);
+        if (md.use_count() != 1)
+            arki::nag::warning("metadata use count after scanning is %ld instead of 1", md.use_count());
+
+        return md;
+    }
+
+public:
+    PythonNetCDFScanner()
+    {
+    }
+    virtual ~PythonNetCDFScanner()
+    {
+    }
+};
+
+
+/*
  * scan.vm2 module functions
  */
 
@@ -490,6 +548,7 @@ Methods<> grib_methods;
 Methods<> bufr_methods;
 Methods<vm2_get_station, vm2_get_variable> vm2_methods;
 Methods<> odimh5_methods;
+Methods<> netcdf_methods;
 
 }
 
@@ -555,6 +614,18 @@ static PyModuleDef odimh5_module = {
     nullptr,           /* m_free */
 };
 
+static PyModuleDef netcdf_module = {
+    PyModuleDef_HEAD_INIT,
+    "netcdf",             /* m_name */
+    "Arkimet NetCDF-specific functions",  /* m_doc */
+    -1,                /* m_size */
+    netcdf_methods.as_py(),  /* m_methods */
+    nullptr,           /* m_slots */
+    nullptr,           /* m_traverse */
+    nullptr,           /* m_clear */
+    nullptr,           /* m_free */
+};
+
 static PyModuleDef vm2_module = {
     PyModuleDef_HEAD_INIT,
     "vm2",             /* m_name */
@@ -585,6 +656,7 @@ void register_scan(PyObject* m)
 
     pyo_unique_ptr bufr = throw_ifnull(PyModule_Create(&bufr_module));
     pyo_unique_ptr odimh5 = throw_ifnull(PyModule_Create(&odimh5_module));
+    pyo_unique_ptr netcdf = throw_ifnull(PyModule_Create(&netcdf_module));
     pyo_unique_ptr vm2 = throw_ifnull(PyModule_Create(&vm2_module));
     pyo_unique_ptr scan = throw_ifnull(PyModule_Create(&scan_module));
     pyo_unique_ptr scanners = throw_ifnull(PyModule_Create(&scanners_module));
@@ -599,6 +671,9 @@ void register_scan(PyObject* m)
         throw PythonException();
 
     if (PyModule_AddObject(scan, "odimh5", odimh5.release()) == -1)
+        throw PythonException();
+
+    if (PyModule_AddObject(scan, "netcdf", netcdf.release()) == -1)
         throw PythonException();
 
     if (PyModule_AddObject(scan, "vm2", vm2.release()) == -1)
@@ -624,6 +699,9 @@ void init()
 #endif
     arki::scan::Scanner::register_factory("odimh5", [] {
         return std::make_shared<PythonOdimh5Scanner>();
+    });
+    arki::scan::Scanner::register_factory("netcdf", [] {
+        return std::unique_ptr<arki::scan::Scanner>(new PythonNetCDFScanner);
     });
 }
 }
