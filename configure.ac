@@ -355,6 +355,7 @@ then
     AX_PYTHON_MODULE_VERSION(dballe, 8.3)
     AX_PYTHON_MODULE(h5py)
     AX_PYTHON_MODULE(shapely)
+    AX_PYTHON_MODULE(netcdf4)
 fi
 fi
 AM_CONDITIONAL([DO_PYTHON], [test "$enable_python" != "no"])
