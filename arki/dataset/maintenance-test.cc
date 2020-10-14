@@ -759,6 +759,7 @@ void MaintenanceTest<TestFixture>::register_tests()
             auto checker(f.makeSegmentedChecker());
             ReporterExpected e;
             e.report.emplace_back("testds", "check", "2 files ok");
+            e.segment_manual_intervention.emplace_back("testds", f.test_relpath);
             wassert(actual(checker.get()).check(e, true));
         }
 

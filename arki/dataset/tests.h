@@ -324,6 +324,7 @@ struct ReporterExpected
     std::vector<SegmentMatch> tarred;
     std::vector<SegmentMatch> compressed;
     std::vector<SegmentMatch> issue51;
+    std::vector<SegmentMatch> segment_manual_intervention;
 
     int count_repacked = -1;
     int count_archived = -1;
@@ -333,6 +334,7 @@ struct ReporterExpected
     int count_tarred = -1;
     int count_compressed = -1;
     int count_issue51 = -1;
+    int count_manual_intervention = -1;
 
     unsigned flags;
 
