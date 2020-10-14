@@ -235,6 +235,10 @@ void RealFixer::operator()(segmented::CheckerSegment& segment, segment::State st
             break;
     }
     */
+    if (state.has(segment::SEGMENT_CORRUPTED))
+    {
+        reporter.segment_manual_intervention(w.name(), segment.path_relative(), "segment is CORRUPTED and requires fixing manually");
+    }
     if (state.has(segment::SEGMENT_UNALIGNED))
     {
         segment.rescan(reporter);

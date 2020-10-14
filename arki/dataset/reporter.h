@@ -28,6 +28,7 @@ struct Reporter
     virtual void segment_tar(const std::string& ds, const std::string& relpath, const std::string& message) = 0;
     virtual void segment_compress(const std::string& ds, const std::string& relpath, const std::string& message) = 0;
     virtual void segment_issue51(const std::string& ds, const std::string& relpath, const std::string& message) = 0;
+    virtual void segment_manual_intervention(const std::string& ds, const std::string& relpath, const std::string& message) = 0;
 };
 
 struct NullReporter : public Reporter
@@ -45,6 +46,7 @@ struct NullReporter : public Reporter
     void segment_tar(const std::string& ds, const std::string& relpath, const std::string& message) override {}
     void segment_compress(const std::string& ds, const std::string& relpath, const std::string& message) override {}
     void segment_issue51(const std::string& ds, const std::string& relpath, const std::string& message) override {}
+    void segment_manual_intervention(const std::string& ds, const std::string& relpath, const std::string& message) override {}
 };
 
 struct OstreamReporter : public Reporter
@@ -66,6 +68,7 @@ struct OstreamReporter : public Reporter
     void segment_tar(const std::string& ds, const std::string& relpath, const std::string& message) override;
     void segment_compress(const std::string& ds, const std::string& relpath, const std::string& message) override;
     void segment_issue51(const std::string& ds, const std::string& relpath, const std::string& message) override;
+    void segment_manual_intervention(const std::string& ds, const std::string& relpath, const std::string& message) override;
 };
 
 }
