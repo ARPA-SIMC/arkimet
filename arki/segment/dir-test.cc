@@ -90,10 +90,7 @@ this->add_method("create_last_sequence", [](Fixture& f) {
 });
 
 this->add_method("append_last_sequence", [](Fixture& f) {
-    if (sys::isdir(relpath))
-        sys::rmtree_ifexists(relpath);
-    else
-        sys::unlink_ifexists(relpath);
+    delete_if_exists(relpath);
     wassert(actual_file(relpath).not_exists());
 
     // Append 3 items

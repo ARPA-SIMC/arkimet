@@ -13,23 +13,15 @@ using namespace arki::types;
 using namespace arki::utils;
 using namespace arki::tests;
 
-void clear(const std::string& name)
-{
-    if (sys::isdir(name))
-        sys::rmtree(name);
-    else if (sys::exists(name))
-        sys::unlink(name);
-}
-
 void make_file(const std::string& name)
 {
-    clear(name);
+    delete_if_exists(name);
     sys::write_file(name, "");
 }
 
 void make_dir(const std::string& name)
 {
-    clear(name);
+    delete_if_exists(name);
     sys::mkdir_ifmissing(name);
     sys::write_file(name + "/.sequence", "");
 }

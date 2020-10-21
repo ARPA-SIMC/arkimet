@@ -179,10 +179,7 @@ void Fixture::reset_seqfile()
 void Fixture::remove_segment()
 {
     std::string pathname = "testds/" + test_relpath;
-    if (sys::isdir(pathname))
-        sys::rmtree(pathname);
-    else
-        sys::unlink(pathname);
+    delete_if_exists(pathname);
 }
 
 
@@ -211,10 +208,7 @@ void FixtureZip::test_setup()
 void FixtureZip::remove_segment()
 {
     std::string pathname = "testds/" + test_relpath + ".zip";
-    if (sys::isdir(pathname))
-        sys::rmtree(pathname);
-    else
-        sys::unlink(pathname);
+    delete_if_exists(pathname);
 }
 
 void FixtureZip::make_overlap()

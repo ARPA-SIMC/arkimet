@@ -26,7 +26,7 @@ SegmentTests<Segment, Data>::register_tests();
 this->add_method("append", [](Fixture& f) {
     string relpath = "testfile." + f.td.format;
     string abspath = sys::abspath(relpath);
-    sys::unlink_ifexists(relpath);
+    delete_if_exists(relpath);
     wassert(actual_file(relpath).not_exists());
     {
         segment::WriterConfig writer_config;
@@ -61,7 +61,7 @@ this->add_method("append", [](Fixture& f) {
 this->add_method("large", [](Fixture& f) {
     string relpath = "testfile." + f.td.format;
     string abspath = sys::abspath(relpath);
-    sys::unlink_ifexists(relpath);
+    delete_if_exists(relpath);
     {
         // Make a file that looks HUGE, so that appending will make its size
         // not fit in a 32bit off_t
