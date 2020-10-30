@@ -256,69 +256,6 @@ void CheckTest<Fixture>::register_tests_concat()
 }
 
 template<typename Fixture>
-void FixTest<Fixture>::register_tests_concat()
-{
-    this->add_method("fix_hugefile", [&](Fixture& f) {
-        f.make_hugefile();
-        wassert(f.state_is(3, segment::SEGMENT_DIRTY));
-
-        {
-            auto checker(f.makeSegmentedChecker());
-            ReporterExpected e;
-            e.report.emplace_back("testds", "check", "2 files ok");
-            wassert(actual(checker.get()).check(e, true));
-        }
-
-        wassert(f.state_is(3, segment::SEGMENT_DIRTY));
-        wassert(f.query_results({1, -1, 3, 0, 2}));
-    });
-}
-
-template<typename Fixture>
-void RepackTest<Fixture>::register_tests_concat()
-{
-    this->add_method("repack_hugefile", [&](Fixture& f) {
-        f.make_hugefile();
-        wassert(f.state_is(3, segment::SEGMENT_DIRTY));
-
-        {
-            auto checker(f.makeSegmentedChecker());
-            ReporterExpected e;
-            e.report.emplace_back("testds", "repack", "2 files ok");
-            e.repacked.emplace_back("testds", f.test_relpath);
-            wassert(actual(checker.get()).repack(e, true));
-        }
-
-        wassert(f.all_clean(3));
-        wassert(f.query_results({1, -1, 3, 0, 2}));
-    });
-
-    this->add_method("repack_timestamps", [&](Fixture& f) {
-        // Set the segment to a past timestamp and rescan it, making it as if
-        // it were imported a long time ago
-        {
-            sys::touch("testds/" + f.test_relpath, 199926000);
-
-            NullReporter reporter;
-            f.makeSegmentedChecker()->segment(f.test_relpath)->rescan(reporter);
-        }
-
-        // Ensure that the archive is still clean
-        wassert(f.all_clean(3));
-
-        // Do a repack, it should change the timestamp
-        {
-            auto checker(f.makeSegmentedChecker());
-            wassert(actual(checker->segment(f.test_relpath)->repack()) == 0u);
-        }
-
-        // Ensure that the archive is still clean
-        wassert(f.all_clean(3));
-        wassert(f.query_results({1, 3, 0, 2}));
-    });
-}
-
-template<typename Fixture>
 void CheckTest<Fixture>::register_tests_dir()
 {
     this->add_method("check_isdir", R"(
@@ -360,68 +297,6 @@ void CheckTest<Fixture>::register_tests_dir()
         wassert(f.state_is(3, segment::SEGMENT_UNALIGNED));
         wassert(f.query_results({1, 3, 0, 2}));
     });
-}
-
-template<typename Fixture>
-void FixTest<Fixture>::register_tests_dir()
-{
-    this->add_method("fix_files_above_sequence", R"(
-       - [unaligned] fix low sequence file value by setting it to the highest
-         sequence number found.
-    )", [&](Fixture& f) {
-        f.reset_seqfile();
-
-        {
-            auto checker(f.makeSegmentedChecker());
-            ReporterExpected e;
-            e.report.emplace_back("testds", "check", "2 files ok");
-            e.rescanned.emplace_back("testds", f.test_relpath);
-            wassert(actual(checker.get()).check(e, true));
-        }
-
-        wassert(f.ensure_localds_clean(3, 4));
-        wassert(f.query_results({1, 3, 0, 2}));
-    });
-
-    this->add_method("fix_truncated_file_above_sequence", R"(
-       - [unaligned] fix low sequence file value by setting it to the highest
-         sequence number found, with one file truncated / partly written.
-    )", [&](Fixture& f) {
-        f.makeSegmentedChecker()->test_invalidate_in_index(f.test_relpath);
-        f.reset_seqfile();
-        {
-            sys::File df("testds/" + f.test_relpath + "/000000." + f.format, O_RDWR);
-            df.ftruncate(f.test_datum_size / 2);
-        }
-
-        wassert(f.state_is(3, segment::SEGMENT_UNALIGNED));
-
-        {
-            auto checker(f.makeSegmentedChecker());
-            ReporterExpected e;
-            e.report.emplace_back("testds", "check", "2 files ok");
-            e.rescanned.emplace_back("testds", f.test_relpath);
-            wassert(actual(checker.get()).check(e, true));
-        }
-
-        wassert(f.state_is(3, segment::SEGMENT_DIRTY));
-
-        {
-            auto checker(f.makeSegmentedChecker());
-            ReporterExpected e;
-            e.report.emplace_back("testds", "repack", "2 files ok");
-            e.repacked.emplace_back("testds", f.test_relpath);
-            wassert(actual(checker.get()).repack(e, true));
-        }
-
-        wassert(f.ensure_localds_clean(3, 3));
-        wassert(f.query_results({3, 0, 2}));
-    });
-}
-
-template<typename Fixture>
-void RepackTest<Fixture>::register_tests_dir()
-{
 }
 
 
@@ -657,6 +532,82 @@ void CheckTest<TestFixture>::register_tests()
     });
 }
 
+template<typename Fixture>
+void FixTest<Fixture>::register_tests_concat()
+{
+    this->add_method("fix_hugefile", [&](Fixture& f) {
+        f.make_hugefile();
+        wassert(f.state_is(3, segment::SEGMENT_DIRTY));
+
+        {
+            auto checker(f.makeSegmentedChecker());
+            ReporterExpected e;
+            e.report.emplace_back("testds", "check", "2 files ok");
+            wassert(actual(checker.get()).check(e, true));
+        }
+
+        wassert(f.state_is(3, segment::SEGMENT_DIRTY));
+        wassert(f.query_results({1, -1, 3, 0, 2}));
+    });
+}
+
+template<typename Fixture>
+void FixTest<Fixture>::register_tests_dir()
+{
+    this->add_method("fix_files_above_sequence", R"(
+       - [unaligned] fix low sequence file value by setting it to the highest
+         sequence number found.
+    )", [&](Fixture& f) {
+        f.reset_seqfile();
+
+        {
+            auto checker(f.makeSegmentedChecker());
+            ReporterExpected e;
+            e.report.emplace_back("testds", "check", "2 files ok");
+            e.rescanned.emplace_back("testds", f.test_relpath);
+            wassert(actual(checker.get()).check(e, true));
+        }
+
+        wassert(f.ensure_localds_clean(3, 4));
+        wassert(f.query_results({1, 3, 0, 2}));
+    });
+
+    this->add_method("fix_truncated_file_above_sequence", R"(
+       - [unaligned] fix low sequence file value by setting it to the highest
+         sequence number found, with one file truncated / partly written.
+    )", [&](Fixture& f) {
+        f.makeSegmentedChecker()->test_invalidate_in_index(f.test_relpath);
+        f.reset_seqfile();
+        {
+            sys::File df("testds/" + f.test_relpath + "/000000." + f.format, O_RDWR);
+            df.ftruncate(f.test_datum_size / 2);
+        }
+
+        wassert(f.state_is(3, segment::SEGMENT_UNALIGNED));
+
+        {
+            auto checker(f.makeSegmentedChecker());
+            ReporterExpected e;
+            e.report.emplace_back("testds", "check", "2 files ok");
+            e.rescanned.emplace_back("testds", f.test_relpath);
+            wassert(actual(checker.get()).check(e, true));
+        }
+
+        wassert(f.state_is(3, segment::SEGMENT_DIRTY));
+
+        {
+            auto checker(f.makeSegmentedChecker());
+            ReporterExpected e;
+            e.report.emplace_back("testds", "repack", "2 files ok");
+            e.repacked.emplace_back("testds", f.test_relpath);
+            wassert(actual(checker.get()).repack(e, true));
+        }
+
+        wassert(f.ensure_localds_clean(3, 3));
+        wassert(f.query_results({3, 0, 2}));
+    });
+}
+
 template<typename TestFixture>
 void FixTest<TestFixture>::register_tests()
 {
@@ -805,6 +756,56 @@ void FixTest<TestFixture>::register_tests()
         wassert(f.state_is(3, segment::SEGMENT_DELETE_AGE));
         wassert(f.query_results({1, 3, 0, 2}));
     });
+}
+
+
+template<typename Fixture>
+void RepackTest<Fixture>::register_tests_concat()
+{
+    this->add_method("repack_hugefile", [&](Fixture& f) {
+        f.make_hugefile();
+        wassert(f.state_is(3, segment::SEGMENT_DIRTY));
+
+        {
+            auto checker(f.makeSegmentedChecker());
+            ReporterExpected e;
+            e.report.emplace_back("testds", "repack", "2 files ok");
+            e.repacked.emplace_back("testds", f.test_relpath);
+            wassert(actual(checker.get()).repack(e, true));
+        }
+
+        wassert(f.all_clean(3));
+        wassert(f.query_results({1, -1, 3, 0, 2}));
+    });
+
+    this->add_method("repack_timestamps", [&](Fixture& f) {
+        // Set the segment to a past timestamp and rescan it, making it as if
+        // it were imported a long time ago
+        {
+            sys::touch("testds/" + f.test_relpath, 199926000);
+
+            NullReporter reporter;
+            f.makeSegmentedChecker()->segment(f.test_relpath)->rescan(reporter);
+        }
+
+        // Ensure that the archive is still clean
+        wassert(f.all_clean(3));
+
+        // Do a repack, it should change the timestamp
+        {
+            auto checker(f.makeSegmentedChecker());
+            wassert(actual(checker->segment(f.test_relpath)->repack()) == 0u);
+        }
+
+        // Ensure that the archive is still clean
+        wassert(f.all_clean(3));
+        wassert(f.query_results({1, 3, 0, 2}));
+    });
+}
+
+template<typename Fixture>
+void RepackTest<Fixture>::register_tests_dir()
+{
 }
 
 template<typename TestFixture>
