@@ -138,12 +138,12 @@ struct FixtureZip : public Fixture
 
 
 template<typename TestFixture>
-struct MaintenanceTest : public arki::tests::FixtureTestCase<TestFixture>
+struct CheckTest : public arki::tests::FixtureTestCase<TestFixture>
 {
     using arki::tests::FixtureTestCase<TestFixture>::FixtureTestCase;
     typedef TestFixture Fixture;
 
-    virtual ~MaintenanceTest();
+    virtual ~CheckTest();
 
     /**
      * Return true if this dataset can represent and detect overlapping data.
@@ -166,6 +166,66 @@ struct MaintenanceTest : public arki::tests::FixtureTestCase<TestFixture>
     virtual void register_tests_concat();
     virtual void register_tests_dir();
     virtual void register_tests_zip();
+};
+
+template<typename TestFixture>
+struct FixTest : public arki::tests::FixtureTestCase<TestFixture>
+{
+    using arki::tests::FixtureTestCase<TestFixture>::FixtureTestCase;
+    typedef TestFixture Fixture;
+
+    virtual ~FixTest();
+
+    /**
+     * Return true if this dataset can represent and detect overlapping data.
+     */
+    virtual bool can_detect_overlap() const = 0;
+
+    /**
+     * Return true if this dataset can deal with segments whose name does not
+     * fit the segment step.
+     */
+    virtual bool can_detect_segments_out_of_step() const = 0;
+
+    /**
+     * Return true if this dataset can delete data.
+     */
+    virtual bool can_delete_data() const = 0;
+
+    void register_tests() override;
+
+    virtual void register_tests_concat();
+    virtual void register_tests_dir();
+};
+
+template<typename TestFixture>
+struct RepackTest : public arki::tests::FixtureTestCase<TestFixture>
+{
+    using arki::tests::FixtureTestCase<TestFixture>::FixtureTestCase;
+    typedef TestFixture Fixture;
+
+    virtual ~RepackTest();
+
+    /**
+     * Return true if this dataset can represent and detect overlapping data.
+     */
+    virtual bool can_detect_overlap() const = 0;
+
+    /**
+     * Return true if this dataset can deal with segments whose name does not
+     * fit the segment step.
+     */
+    virtual bool can_detect_segments_out_of_step() const = 0;
+
+    /**
+     * Return true if this dataset can delete data.
+     */
+    virtual bool can_delete_data() const = 0;
+
+    void register_tests() override;
+
+    virtual void register_tests_concat();
+    virtual void register_tests_dir();
 };
 
 }
