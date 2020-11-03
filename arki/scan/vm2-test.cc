@@ -144,5 +144,19 @@ add_method("corrupted", []() {
     system("rm inbound/test-corrupted.vm2");
 });
 
+add_method("issue237", [] {
+    metadata::TestCollection mdc("inbound/issue237.vm2");
+    wassert(actual(mdc.size()) == 1u);
+    wassert(actual(mdc[0].source().cloneType()).is_source_blob("vm2", sys::abspath("."), "inbound/issue237.vm2", 0, 36));
+
+    auto data = mdc[0].get_data().read();
+    wassert(actual(data.size()) == 36u);
+    wassert(actual(std::string((const char*)data.data(), data.size())) == "20201031230000,12865,158,9.409990,,,");
+
+    auto value = mdc[0].get<types::Value>();
+    auto buf = scan::Vm2::reconstruct(mdc[0], value->buffer);
+    wassert(actual(string((const char*)buf.data(), buf.size())) == "20201031230000,12865,158,9.409990,,,");
+});
+
 }
 }
