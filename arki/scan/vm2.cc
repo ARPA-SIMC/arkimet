@@ -196,6 +196,7 @@ std::shared_ptr<Metadata> Vm2::scan_singleton(const std::string& abspath)
     if (!input.next())
         throw std::runtime_error(abspath + " contains no VM2 data");
     input.to_metadata(*md);
+    md->set_cached_data(metadata::DataManager::get().to_data("vm2", std::vector<uint8_t>(input.line.begin(), input.line.end())));
 
     if (input.next())
         throw std::runtime_error(abspath + " contains more than one VM2 data");
@@ -228,6 +229,7 @@ bool Vm2::scan_segment(std::shared_ptr<segment::Reader> reader, metadata_dest_fu
         if (!input.next_with_offset()) break;
         input.to_metadata(*md);
         md->set_source(Source::createBlob(reader, input.offset, input.line.size()));
+        md->set_cached_data(metadata::DataManager::get().to_data("vm2", std::vector<uint8_t>(input.line.begin(), input.line.end())));
         if (!dest(move(md))) return false;
     }
     return true;

@@ -145,7 +145,7 @@ add_method("corrupted", []() {
 });
 
 add_method("issue237", [] {
-    metadata::TestCollection mdc("inbound/issue237.vm2");
+    metadata::TestCollection mdc("inbound/issue237.vm2", true);
     wassert(actual(mdc.size()) == 1u);
     wassert(actual(mdc[0].source().cloneType()).is_source_blob("vm2", sys::abspath("."), "inbound/issue237.vm2", 0, 36));
 
@@ -155,7 +155,7 @@ add_method("issue237", [] {
 
     auto value = mdc[0].get<types::Value>();
     auto buf = scan::Vm2::reconstruct(mdc[0], value->buffer);
-    wassert(actual(string((const char*)buf.data(), buf.size())) == "20201031230000,12865,158,9.409990,,,");
+    wassert(actual(string((const char*)buf.data(), buf.size())) == "202010312300,12865,158,9.409990,,,");
 });
 
 }
