@@ -174,6 +174,7 @@ add_method("import_batch_replace_usn", [](Fixture& f) {
 });
 
 add_method("issue237", [](Fixture& f) {
+    skip_unless_vm2();
     f.cfg->set("format", "vm2");
     f.cfg->set("step", "daily");
     f.cfg->set("smallfiles", "yes");
