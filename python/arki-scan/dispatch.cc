@@ -8,6 +8,7 @@
 #include "arki/metadata/validator.h"
 #include "arki/types/source/blob.h"
 #include "arki/dataset/query.h"
+#include "arki/scan.h"
 #include "python/dataset.h"
 
 using namespace std;
@@ -50,6 +51,8 @@ DispatchResults MetadataDispatch::process(dataset::Reader& ds, const std::string
     // Read
     try {
         ds.query_data(Matcher(), [&](std::shared_ptr<Metadata> md) {
+            auto scanner = scan::Scanner::get_scanner(md->source().format);
+            scanner->normalize_before_dispatch(*md);
             // TODO: preprocess here, leave untouched or return inline
             partial_batch_data_size += md->data_size();
             partial_batch->acquire(move(md));

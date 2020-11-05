@@ -235,9 +235,9 @@ bool Vm2::scan_segment(std::shared_ptr<segment::Reader> reader, metadata_dest_fu
     return true;
 }
 
-vector<uint8_t> Vm2::reconstruct(const Metadata& md, const std::string& value)
+std::vector<uint8_t> Vm2::reconstruct(const Metadata& md, const std::string& value)
 {
-    stringstream res;
+    std::stringstream res;
 
     const reftime::Position* rt = md.get<reftime::Position>();
     const area::VM2* area = dynamic_cast<const area::VM2*>(md.get<Area>());
@@ -258,6 +258,20 @@ vector<uint8_t> Vm2::reconstruct(const Metadata& md, const std::string& value)
 
     string reconstructed = res.str();
     return vector<uint8_t>(reconstructed.begin(), reconstructed.end());
+}
+
+void Vm2::normalize_before_dispatch(Metadata& md)
+{
+    if (const Value* value = md.get<types::Value>())
+    {
+        auto orig = md.get_data().read();
+        auto normalized = reconstruct(md, value->buffer);
+        if (orig != normalized)
+        {
+            md.set_cached_data(metadata::DataManager::get().to_data("vm2", std::move(normalized)));
+            md.makeInline();
+        }
+    }
 }
 
 }

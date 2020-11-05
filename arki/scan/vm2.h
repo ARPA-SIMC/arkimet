@@ -38,6 +38,7 @@ public:
     bool scan_pipe(core::NamedFileDescriptor& in, metadata_dest_func dest) override;
     bool scan_segment(std::shared_ptr<segment::Reader> reader, metadata_dest_func dest) override;
     std::shared_ptr<Metadata> scan_singleton(const std::string& abspath) override;
+    void normalize_before_dispatch(Metadata& md) override;
 
     /// Reconstruct a VM2 based on metadata and a string value
     static std::vector<uint8_t> reconstruct(const Metadata& md, const std::string& value);

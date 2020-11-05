@@ -341,6 +341,35 @@ class TestArkiScan(CmdlineTestMixin, unittest.TestCase):
                     "201101010300,12,2,50,,,000000000\n",
                 ])
 
+    def test_dispatch_issue237(self):
+        # Test VM2 normalisation in dispatching
+        skip_unless_vm2()
+        with self.datasets(filter="area:VM2", format="vm2", smallfiles="no"):
+            out = self.call_output_success(
+                    "--dispatch=testenv/config",
+                    "inbound/issue237.vm2",
+                    binary=True,
+                )
+            mds = parse_metadata(out)
+            self.assertEqual(len(mds), 1)
+
+            # After import, the size shrinks from 36 to 34
+            self.assertEqual(mds[0].to_python("source"), {
+                "type": "source",
+                "style": "BLOB",
+                "basedir": "",
+                "file": os.path.abspath("testenv/testds/2020/10-31.vm2"),
+                "format": "vm2",
+                "offset": 0,
+                "size": 34,
+            })
+
+            # In the dataset, the extra 00 seconds are gone
+            with open("testenv/testds/2020/10-31.vm2", "rt") as fd:
+                self.assertEqual(fd.readlines(), [
+                    "202010312300,12865,158,9.409990,,,\n"
+                ])
+
     def test_files(self):
         # Reproduce https://github.com/ARPA-SIMC/arkimet/issues/19
         with self.datasets():

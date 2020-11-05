@@ -56,6 +56,18 @@ struct Scanner
     virtual std::shared_ptr<Metadata> scan_singleton(const std::string& abspath) = 0;
 
     /**
+     * Normalize metadata and data before dispatch, if required.
+     *
+     * For most formats, this function does nothing.
+     *
+     * When a format has a use for a normalization pass before dispatching to a
+     * dataset, and such a normalization pass actually changes the data the
+     * metadata is turned into an inline metadata, with the normalised data
+     * attached.
+     */
+    virtual void normalize_before_dispatch(Metadata& md);
+
+    /**
      * Create a scanner for the given format
      */
     static std::shared_ptr<Scanner> get_scanner(const std::string& format);
