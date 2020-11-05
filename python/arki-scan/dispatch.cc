@@ -50,6 +50,7 @@ DispatchResults MetadataDispatch::process(dataset::Reader& ds, const std::string
     // Read
     try {
         ds.query_data(Matcher(), [&](std::shared_ptr<Metadata> md) {
+            // TODO: preprocess here, leave untouched or return inline
             partial_batch_data_size += md->data_size();
             partial_batch->acquire(move(md));
             if (flush_threshold && partial_batch_data_size > flush_threshold)

@@ -176,24 +176,27 @@ add_method("import_batch_replace_usn", [](Fixture& f) {
 add_method("issue237", [](Fixture& f) {
     f.cfg->set("format", "vm2");
     f.cfg->set("step", "daily");
-    metadata::TestCollection mdc("inbound/issue237.vm2");
+    f.cfg->set("smallfiles", "yes");
+    metadata::TestCollection mdc("inbound/issue237.vm2", true);
     wassert(actual_type(mdc[0].source()).is_source_blob("vm2", sys::abspath("."), "inbound/issue237.vm2", 0, 36));
 
     // Acquire value
     {
         auto ds = f.config().create_writer();
         wassert(actual(ds->acquire(mdc[0], dataset::REPLACE_NEVER)) == dataset::ACQ_OK);
-        wassert(actual_type(mdc[0].source()).is_source_blob("vm2", f.ds_root, "2020/10-31.vm2", 0, 34));
+        wassert(actual_type(mdc[0].source()).is_source_blob("vm2", f.ds_root, "2020/10-31.vm2", 0, 36));
     }
 
     // Read it back
     {
         metadata::Collection mdc1(*f.config().create_reader(), Matcher());
         wassert(actual(mdc1.size()) == 1u);
-        wassert(actual_type(mdc[0].source()).is_source_blob("vm2", f.ds_root, "2020/10-31.vm2", 0, 34));
+        wassert(actual_type(mdc1[0].source()).is_source_blob("vm2", f.ds_root, "2020/10-31.vm2", 0, 36));
+        auto data = mdc1[0].get_data().read();
+        wassert(actual(std::string((const char*)data.data(), data.size())) == "202010312300,12865,158,9.409990,,,");
     }
 
-    wassert(actual_file(str::joinpath(f.ds_root, "2020/10-31.vm2")).contents_equal("202010312300,12865,158,9.409990,,,\n"));
+    wassert(actual_file(str::joinpath(f.ds_root, "2020/10-31.vm2")).contents_equal("20201031230000,12865,158,9.409990,,,\n"));
 
     auto state = f.scan_state();
     wassert(actual(state.size()) == 1u);
