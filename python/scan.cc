@@ -615,15 +615,15 @@ namespace scan {
 void init()
 {
     arki::scan::Scanner::register_factory("grib", [] {
-        return std::unique_ptr<arki::scan::Scanner>(new PythonGribScanner);
+        return std::make_shared<PythonGribScanner>();
     });
 #ifdef HAVE_DBALLE
     arki::scan::Scanner::register_factory("bufr", [] {
-        return std::unique_ptr<arki::scan::Scanner>(new PythonBufrScanner);
+        return std::make_shared<PythonBufrScanner>();
     });
 #endif
     arki::scan::Scanner::register_factory("odimh5", [] {
-        return std::unique_ptr<arki::scan::Scanner>(new PythonOdimh5Scanner);
+        return std::make_shared<PythonOdimh5Scanner>();
     });
 }
 }

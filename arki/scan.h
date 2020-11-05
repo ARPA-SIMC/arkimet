@@ -58,7 +58,7 @@ struct Scanner
     /**
      * Create a scanner for the given format
      */
-    static std::unique_ptr<Scanner> get_scanner(const std::string& format);
+    static std::shared_ptr<Scanner> get_scanner(const std::string& format);
 
     static const Validator& get_validator(const std::string& format);
 
@@ -116,8 +116,7 @@ struct Scanner
     /**
      * Register the scanner factory function for the given format
      */
-    static void register_factory(const std::string& name, std::function<std::unique_ptr<Scanner>()> factory);
-
+    static void register_factory(const std::string& name, std::function<std::shared_ptr<Scanner>()> factory);
 };
 
 /// Initialize scanner registry
