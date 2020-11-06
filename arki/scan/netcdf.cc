@@ -198,7 +198,7 @@ std::shared_ptr<Metadata> MockNetCDFScanner::scan_nc_data(const std::vector<uint
 void register_netcdf_scanner()
 {
     Scanner::register_factory("netcdf", [] {
-        return std::unique_ptr<Scanner>(new scan::MockNetCDFScanner);
+        return std::make_shared<scan::MockNetCDFScanner>();
     });
 }
 

@@ -701,7 +701,7 @@ void init()
         return std::make_shared<PythonOdimh5Scanner>();
     });
     arki::scan::Scanner::register_factory("netcdf", [] {
-        return std::unique_ptr<arki::scan::Scanner>(new PythonNetCDFScanner);
+        return std::make_shared<PythonNetCDFScanner>();
     });
 }
 }
