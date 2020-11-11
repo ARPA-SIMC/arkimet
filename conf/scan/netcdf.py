@@ -25,6 +25,17 @@ def scan_area_default(dataset, md):
 
 
 def scan_reftime_default(dataset, md):
+    time = getattr(dataset, "forecast_reference_time", None)
+    if time is None:
+        time = getattr(dataset, "time", None)
+    if time is not None:
+        dt = datetime.datetime.strptime(time, "%Y-%m-%d %H:%M:%S")
+        md["reftime"] = {
+            "style": "POSITION",
+            "time": dt,
+        }
+        return
+
     for name in POSSIBLE_TIME_DIMENSIONS:
         if name in dataset.variables:
             times = dataset["/" + name]
