@@ -35,6 +35,11 @@ struct ODIMData : TestData
     ODIMData();
 };
 
+struct NCData : TestData
+{
+    NCData();
+};
+
 Metadata make_large_mock(const std::string& format, size_t size, unsigned month, unsigned day, unsigned hour=0);
 
 void fill(Metadata& md);
