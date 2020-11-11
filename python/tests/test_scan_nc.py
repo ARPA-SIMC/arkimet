@@ -5,7 +5,7 @@ import datetime
 
 
 class TestScanNetCDF(unittest.TestCase):
-    def read(self, pathname, size, format="netcdf"):
+    def read(self, pathname, size, format="nc"):
         """
         Read all the metadata from a file
         """
@@ -23,7 +23,7 @@ class TestScanNetCDF(unittest.TestCase):
         self.assertEqual(source, {
             "type": "source",
             "style": "BLOB",
-            "format": "netcdf",
+            "format": "nc",
             "basedir": os.getcwd(),
             "file": pathname,
             "offset": 0,
@@ -105,7 +105,7 @@ class TestScanNetCDF(unittest.TestCase):
         Check that the scanner silently discard an empty file
         """
         ds = arki.dataset.Reader({
-            "format": "netcdf",
+            "format": "nc",
             "name": "empty.nc",
             "path": "inbound/netcdf/empty.nc",
             "type": "file",

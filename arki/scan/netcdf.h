@@ -25,7 +25,7 @@ protected:
     virtual std::shared_ptr<Metadata> scan_nc_data(const std::vector<uint8_t>& data);
 
 public:
-    std::string name() const override { return "netcdf"; }
+    std::string name() const override { return "nc"; }
 
     std::shared_ptr<Metadata> scan_data(const std::vector<uint8_t>& data) override;
     bool scan_pipe(core::NamedFileDescriptor& in, metadata_dest_func dest) override;

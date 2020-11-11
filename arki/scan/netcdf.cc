@@ -126,7 +126,7 @@ std::shared_ptr<Metadata> NetCDFScanner::scan_nc_data(const std::vector<uint8_t>
 std::shared_ptr<Metadata> NetCDFScanner::scan_data(const std::vector<uint8_t>& data)
 {
     std::shared_ptr<Metadata> md = scan_nc_data(data);
-    md->set_source_inline("netcdf", metadata::DataManager::get().to_data("netcdf", std::vector<uint8_t>(data)));
+    md->set_source_inline("nc", metadata::DataManager::get().to_data("nc", std::vector<uint8_t>(data)));
     return md;
 }
 
@@ -197,7 +197,7 @@ std::shared_ptr<Metadata> MockNetCDFScanner::scan_nc_data(const std::vector<uint
 
 void register_netcdf_scanner()
 {
-    Scanner::register_factory("netcdf", [] {
+    Scanner::register_factory("nc", [] {
         return std::make_shared<scan::MockNetCDFScanner>();
     });
 }

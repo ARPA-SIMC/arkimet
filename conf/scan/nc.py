@@ -1,4 +1,4 @@
-from arkimet.scan.netcdf import Scanner
+from arkimet.scan.nc import Scanner
 import netCDF4
 import datetime
 

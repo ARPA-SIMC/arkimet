@@ -49,7 +49,7 @@ add_method("validator_7", [] {
 });
 
 add_method("validator_nonnc", [] {
-    sys::File in("inbound/netcdf/test.grib1", O_RDONLY);
+    sys::File in("inbound/test.grib1", O_RDONLY);
     const scan::Validator& validator = scan::netcdf::validator();
     wassert_throws(std::runtime_error, validator.validate_file(in, 0, 44412));
 });

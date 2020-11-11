@@ -116,7 +116,7 @@ const Validator& Scanner::get_validator(const std::string& format)
     if (format == "odimh5")
         return odimh5::validator();
 
-    if (format == "netcdf")
+    if (format == "nc")
         return netcdf::validator();
 
 #ifdef HAVE_VM2
@@ -141,8 +141,8 @@ std::string Scanner::normalise_format(const std::string& format, const char* def
     if (f == "odim")   return "odimh5";
     if (f == "odimh5") return "odimh5";
 
-    if (f == "nc") return "netcdf";
-    if (f == "netcdf") return "netcdf";
+    if (f == "nc") return "nc";
+    if (f == "netcdf") return "nc";
 
     if (f == "yaml") return "yaml";
     if (f == "arkimet") return "arkimet";

@@ -3,7 +3,7 @@ import arkimet
 import netCDF4
 import logging
 
-log = logging.getLogger("arkimet.scan.netcdf")
+log = logging.getLogger("arkimet.scan.nc")
 
 
 class Scanner:
