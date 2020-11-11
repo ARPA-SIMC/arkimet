@@ -46,9 +46,11 @@ class TestScanNetCDF(unittest.TestCase):
         self.assertNotIn("product", md)
         self.assertNotIn("level", md)
         self.assertNotIn("task", md)
-        self.assertNotIn("quantity", md)
-        self.assertNotIn("area", md)
-        self.assertNotIn("reftime", md)
+        # TODO: when quantity becomes product, reactivate this
+        # self.assertNotIn("quantity", md)
+        # TODO: when area scanning finalizes out of a stub, fix this
+        # self.assertNotIn("area", md)
+        self.assertEqual(md["reftime"], "2019-06-10T00:30:00Z")
         # self.assertEqual(md["origin"], "ODIMH5(wmo, rad, plc)")
         # self.assertEqual(md["product"], "ODIMH5(PVOL, SCAN)")
         # self.assertEqual(md["level"], "ODIMH5(0, 27)")
@@ -110,3 +112,14 @@ class TestScanNetCDF(unittest.TestCase):
         })
         mds = ds.query_data()
         self.assertEqual(len(mds), 0)
+
+    def test_default_fixture(self):
+        """
+        Scan the files in the default fixture for dataset tests
+        """
+        md = self.read("inbound/fixture.nc/00.nc", 9544)
+        self.assertEqual(md["reftime"], "2007-07-08T13:00:00Z")
+        md = self.read("inbound/fixture.nc/01.nc", 9544)
+        self.assertEqual(md["reftime"], "2007-07-07T00:00:00Z")
+        md = self.read("inbound/fixture.nc/02.nc", 9544)
+        self.assertEqual(md["reftime"], "2007-10-09T00:00:00Z")
