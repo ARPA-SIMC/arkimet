@@ -50,17 +50,17 @@ def scan_reftime_default(dataset, md):
 
 
 def scan_product_default(dataset, md):
-    # TODO: use product instead
+    # TODO: use product instead (#239)
     md["quantity"] = {"value": list(dataset.variables)}
 
 
 def scan_arpa(dataset, md):
-    # TODO: What do we use as origin?
+    # TODO: What do we use as origin? (#241)
     md["origin"] = {"style": "GRIB1", "centre": 255, "subcentre": 255, "process": 255}
 
     region = getattr(dataset, "region", None)
     if region is not None:
-        # TODO: hardcode the area to use for the adriatic sea
+        # TODO: hardcode the area to use for the adriatic sea (#240)
         md["area"] = {"style": "GRIB", "value": {}}
     else:
         scan_area_default(dataset, md)
