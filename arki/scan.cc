@@ -15,6 +15,7 @@
 #include "arki/scan/bufr.h"
 #endif
 #include "arki/scan/odimh5.h"
+#include "arki/scan/netcdf.h"
 #ifdef HAVE_VM2
 #include "arki/scan/vm2.h"
 #endif
@@ -43,7 +44,8 @@ void init()
     };
 #endif
 
-    register_odimh5_lua();
+    register_odimh5_scanner();
+    register_netcdf_scanner();
 
 #ifdef HAVE_VM2
     factories["vm2"] = [] {
@@ -114,6 +116,9 @@ const Validator& Scanner::get_validator(const std::string& format)
     if (format == "odimh5")
         return odimh5::validator();
 
+    if (format == "nc")
+        return netcdf::validator();
+
 #ifdef HAVE_VM2
    if (format == "vm2")
        return vm2::validator();
@@ -135,6 +140,9 @@ std::string Scanner::normalise_format(const std::string& format, const char* def
     if (f == "hdf5")   return "odimh5";
     if (f == "odim")   return "odimh5";
     if (f == "odimh5") return "odimh5";
+
+    if (f == "nc") return "nc";
+    if (f == "netcdf") return "nc";
 
     if (f == "yaml") return "yaml";
     if (f == "arkimet") return "arkimet";

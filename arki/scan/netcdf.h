@@ -1,5 +1,5 @@
-#ifndef ARKI_SCAN_ODIMH5_H
-#define ARKI_SCAN_ODIMH5_H
+#ifndef ARKI_SCAN_NETCDF_H
+#define ARKI_SCAN_NETCDF_H
 
 #include <arki/scan.h>
 #include <string>
@@ -12,20 +12,20 @@ namespace scan {
 struct Validator;
 class MockEngine;
 
-namespace odimh5 {
+namespace netcdf {
 const Validator& validator();
 }
 
-class OdimScanner : public Scanner
+class NetCDFScanner : public Scanner
 {
     void set_blob_source(Metadata& md, std::shared_ptr<segment::Reader> reader);
 
 protected:
-    virtual std::shared_ptr<Metadata> scan_h5_file(const std::string& pathname) = 0;
-    virtual std::shared_ptr<Metadata> scan_h5_data(const std::vector<uint8_t>& data);
+    virtual std::shared_ptr<Metadata> scan_nc_file(const std::string& pathname) = 0;
+    virtual std::shared_ptr<Metadata> scan_nc_data(const std::vector<uint8_t>& data);
 
 public:
-    std::string name() const override { return "odimh5"; }
+    std::string name() const override { return "nc"; }
 
     std::shared_ptr<Metadata> scan_data(const std::vector<uint8_t>& data) override;
     bool scan_pipe(core::NamedFileDescriptor& in, metadata_dest_func dest) override;
@@ -34,23 +34,24 @@ public:
 };
 
 
-class MockOdimScanner : public OdimScanner
+class MockNetCDFScanner : public NetCDFScanner
 {
 protected:
     MockEngine* engine;
 
-    std::shared_ptr<Metadata> scan_h5_file(const std::string& pathname) override;
-    std::shared_ptr<Metadata> scan_h5_data(const std::vector<uint8_t>& data) override;
+    std::shared_ptr<Metadata> scan_nc_file(const std::string& pathname) override;
+    std::shared_ptr<Metadata> scan_nc_data(const std::vector<uint8_t>& data) override;
 
 public:
-    MockOdimScanner();
-    virtual ~MockOdimScanner();
+    MockNetCDFScanner();
+    virtual ~MockNetCDFScanner();
 };
 
 
-void register_odimh5_scanner();
+void register_netcdf_scanner();
 
 }
 }
 
 #endif
+

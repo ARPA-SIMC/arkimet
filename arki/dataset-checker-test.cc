@@ -72,6 +72,10 @@ TestsChecker<ODIMData> test_checker_odim_ondisk2("arki_dataset_checker_odim_ondi
 TestsChecker<ODIMData> test_checker_odim_simple_plain("arki_dataset_checker_odim_simple_plain", "type=simple\nindex_type=plain\n");
 TestsChecker<ODIMData> test_checker_odim_simple_sqlite("arki_dataset_checker_odim_simple_sqlite", "type=simple\nindex_type=sqlite");
 TestsChecker<ODIMData> test_checker_odim_iseg("arki_dataset_checker_odim_iseg", "type=iseg\nformat=odimh5\n");
+TestsChecker<NCData> test_checker_nc_ondisk2("arki_dataset_checker_nc_ondisk2", "type=ondisk2\n");
+TestsChecker<NCData> test_checker_nc_simple_plain("arki_dataset_checker_nc_simple_plain", "type=simple\nindex_type=plain\n");
+TestsChecker<NCData> test_checker_nc_simple_sqlite("arki_dataset_checker_nc_simple_sqlite", "type=simple\nindex_type=sqlite");
+TestsChecker<NCData> test_checker_nc_iseg("arki_dataset_checker_nc_iseg", "type=iseg\nformat=nc\n");
 
 template<class Data>
 void TestsChecker<Data>::register_tests() {

@@ -63,12 +63,13 @@ class MockScannerIndexer(App):
     def run(self):
         super().run()
         db = DB(self.args.db)
-        for source in self.args.sources:
-            cfg = arkimet.dataset.read_config(source)
-            ds = arkimet.dataset.Reader(cfg)
-            data = ds.query_data()
-            for md in data:
-                db.add(md)
+        with arkimet.dataset.Session() as session:
+            for source in self.args.sources:
+                cfg = arkimet.dataset.read_config(source)
+                ds = session.dataset_reader(cfg=cfg)
+                data = ds.query_data()
+                for md in data:
+                    db.add(md)
 
 
 if __name__ == "__main__":

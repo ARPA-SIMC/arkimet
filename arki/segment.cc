@@ -107,7 +107,7 @@ std::shared_ptr<segment::Reader> Segment::detect_reader(const std::string& forma
                 res.reset(new segment::concat::Reader(format, root, relpath, abspath, lock));
             } else if (format == "vm2") {
                 res.reset(new segment::lines::Reader(format, root, relpath, abspath, lock));
-            } else if (format == "odimh5") {
+            } else if (format == "odimh5" || format == "nc") {
                 res.reset(new segment::concat::Reader(format, root, relpath, abspath, lock));
             } else {
                 throw_consistency_error(
@@ -131,7 +131,7 @@ std::shared_ptr<segment::Reader> Segment::detect_reader(const std::string& forma
                 res.reset(new segment::gzconcat::Reader(format, root, relpath, abspath, lock));
             } else if (format == "vm2") {
                 res.reset(new segment::gzlines::Reader(format, root, relpath, abspath, lock));
-            } else if (format == "odimh5") {
+            } else if (format == "odimh5" || format == "nc") {
                 res.reset(new segment::gzconcat::Reader(format, root, relpath, abspath, lock));
             } else {
                 throw_consistency_error(
@@ -194,6 +194,8 @@ std::shared_ptr<segment::Writer> Segment::detect_writer(const segment::WriterCon
                     res.reset(new segment::lines::Writer(config, format, root, relpath, abspath));
             } else if (format == "odimh5") {
                 throw_consistency_error("segment is a file, but odimh5 data can only be stored into directory segments");
+            } else if (format == "nc") {
+                throw_consistency_error("segment is a file, but netcdf data can only be stored into directory segments");
             } else {
                 throw_consistency_error(
                         "getting segment for " + format + " file " + relpath,
@@ -263,7 +265,7 @@ std::shared_ptr<segment::Checker> Segment::detect_checker(const std::string& for
                     throw_consistency_error("mockdata single-file line-based segments not implemented");
                 else
                     res.reset(new segment::lines::Checker(format, root, relpath, abspath));
-            } else if (format == "odimh5") {
+            } else if (format == "odimh5" || format == "nc") {
                 // If it's a file and we need a directory, still get a checker
                 // so it can deal with it
                 if (mock_data)
@@ -296,6 +298,10 @@ std::shared_ptr<segment::Checker> Segment::detect_checker(const std::string& for
             throw_consistency_error(
                     "getting checker for " + format + " file " + relpath,
                     "cannot handle a gzipped odim file as a segment");
+        } else if (format == "nc") {
+            throw_consistency_error(
+                    "getting checker for " + format + " file " + relpath,
+                    "cannot handle a gzipped netcdf file as a segment");
         } else {
             throw_consistency_error(
                     "getting segment for " + format + " file " + relpath,

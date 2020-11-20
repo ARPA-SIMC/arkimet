@@ -70,13 +70,13 @@ std::shared_ptr<segment::Writer> Session::segment_writer(const segment::WriterCo
         res.reset(new segment::concat::Writer(config, format, root, relpath, abspath));
     } else if (format == "bufr") {
         res.reset(new segment::concat::Writer(config, format, root, relpath, abspath));
-    } else if (format == "odimh5" || format == "h5" || format == "odim") {
+    } else if (format == "odimh5" || format == "h5" || format == "odim" || format == "nc") {
         res.reset(new segment::dir::Writer(config, format, root, relpath, abspath));
     } else if (format == "vm2") {
         res.reset(new segment::lines::Writer(config, format, root, relpath, abspath));
     } else {
         throw std::runtime_error(
-                "cannot writer for " + format + " file " + relpath +
+                "cannot create writer for " + format + " file " + relpath +
                 ": format not supported");
     }
     return res;
@@ -94,7 +94,7 @@ std::shared_ptr<segment::Checker> Session::segment_checker(const std::string& fo
         res.reset(new segment::concat::Checker(format, root, relpath, abspath));
     } else if (format == "bufr") {
         res.reset(new segment::concat::Checker(format, root, relpath, abspath));
-    } else if (format == "odimh5" || format == "h5" || format == "odim") {
+    } else if (format == "odimh5" || format == "h5" || format == "odim" || format == "nc") {
         res.reset(new segment::dir::Checker(format, root, relpath, abspath));
     } else if (format == "vm2") {
         res.reset(new segment::lines::Checker(format, root, relpath, abspath));

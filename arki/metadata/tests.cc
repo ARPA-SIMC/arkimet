@@ -51,13 +51,17 @@ VM2Data::VM2Data()
 ODIMData::ODIMData()
     : TestData("odimh5")
 {
-#if 0
-    mds.scan_from_file("inbound/fixture.odimh5", format, true);
-#else
     mds.scan_from_file("inbound/fixture.odimh5/00.odimh5", format, true);
     mds.scan_from_file("inbound/fixture.odimh5/01.odimh5", format, true);
     mds.scan_from_file("inbound/fixture.odimh5/02.odimh5", format, true);
-#endif
+}
+
+NCData::NCData()
+    : TestData("nc")
+{
+    mds.scan_from_file("inbound/fixture.nc/00.nc", format, true);
+    mds.scan_from_file("inbound/fixture.nc/01.nc", format, true);
+    mds.scan_from_file("inbound/fixture.nc/02.nc", format, true);
 }
 
 
