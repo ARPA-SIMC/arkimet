@@ -1,6 +1,6 @@
 #!/bin/sh -e
 
-TOP_SRCDIR=`pwd`/`dirname $0`/..
+TOP_SRCDIR=$(readlink -f $(dirname $0)/..)
 PYTHON=${PYTHON:-python3}
 
 if [ "$1" = "NOSE" ]
@@ -9,7 +9,7 @@ then
     CMD="$NOSE --verbose -s `pwd`"
     DEBUG_CMD="$PYTHON `which $NOSE` -s `pwd`"
 else
-    CMD=`pwd`/"$1"
+    CMD=$(readlink -f "$1")
     DEBUG_CMD="$CMD"
 fi
 
