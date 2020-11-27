@@ -93,6 +93,8 @@ public:
     TrackedData& operator=(TrackedData&&) = delete;
 
     unsigned count_used() const;
+
+    void track(std::shared_ptr<Data> data);
 };
 
 

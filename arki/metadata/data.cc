@@ -114,6 +114,14 @@ TrackedData::~TrackedData()
     manager.stop_tracking(this);
 }
 
+void TrackedData::track(std::shared_ptr<Data> data)
+{
+    while (!tracked.empty() && tracked.back().expired())
+        tracked.pop_back();
+
+    tracked.emplace_back(data);
+}
+
 unsigned TrackedData::count_used() const
 {
     unsigned res = 0;
@@ -144,7 +152,7 @@ std::shared_ptr<Data> DataManager::to_data(const std::string& format, std::vecto
         res = std::make_shared<DataBuffer>(std::move(data));
 
     for (auto& tracker: trackers)
-        tracker->tracked.emplace_back(res);
+        tracker->track(res);
 
     return res;
 }
@@ -154,7 +162,7 @@ std::shared_ptr<Data> DataManager::to_unreadable_data(size_t size)
     std::shared_ptr<Data> res = std::make_shared<DataUnreadable>(size);
 
     for (auto& tracker: trackers)
-        tracker->tracked.emplace_back(res);
+        tracker->track(res);
 
     return res;
 }
