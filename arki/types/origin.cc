@@ -25,9 +25,6 @@ const char* traits<Origin>::type_tag = TAG;
 const types::Code traits<Origin>::type_code = CODE;
 const size_t traits<Origin>::type_sersize_bytes = SERSIZELEN;
 
-// Deprecated
-int Origin::getMaxIntCount() { return 5; }
-
 Origin::Style Origin::parseStyle(const std::string& str)
 {
     if (str == "GRIB1") return Style::GRIB1;
@@ -250,15 +247,6 @@ unique_ptr<GRIB1> GRIB1::create(unsigned char centre, unsigned char subcentre, u
     return unique_ptr<GRIB1>(res);
 }
 
-std::vector<int> GRIB1::toIntVector() const
-{
-	vector<int> res;
-	res.push_back(m_centre);
-	res.push_back(m_subcentre);
-	res.push_back(m_process);
-	return res;
-}
-
 GRIB2::~GRIB2() { /* cache_grib2.uncache(this); */ }
 
 Origin::Style GRIB2::style() const { return Style::GRIB2; }
@@ -359,17 +347,6 @@ unique_ptr<GRIB2> GRIB2::create(
     return unique_ptr<GRIB2>(res);
 }
 
-std::vector<int> GRIB2::toIntVector() const
-{
-	vector<int> res;
-	res.push_back(m_centre);
-	res.push_back(m_subcentre);
-	res.push_back(m_processtype);
-	res.push_back(m_bgprocessid);
-	res.push_back(m_processid);
-	return res;
-}
-
 BUFR::~BUFR() { /* cache_bufr.uncache(this); */ }
 
 Origin::Style BUFR::style() const { return Style::BUFR; }
@@ -445,14 +422,6 @@ unique_ptr<BUFR> BUFR::create(unsigned char centre, unsigned char subcentre)
     res->m_centre = centre;
     res->m_subcentre = subcentre;
     return unique_ptr<BUFR>(res);
-}
-
-std::vector<int> BUFR::toIntVector() const
-{
-	vector<int> res;
-	res.push_back(m_centre);
-	res.push_back(m_subcentre);
-	return res;
 }
 
 ODIMH5::~ODIMH5() { /* cache_grib1.uncache(this); */ }
@@ -536,20 +505,6 @@ unique_ptr<ODIMH5> ODIMH5::create(const std::string& wmo, const std::string& rad
     res->m_RAD = rad;
     res->m_PLC = plc;
     return unique_ptr<ODIMH5>(res);
-}
-
-std::vector<int> ODIMH5::toIntVector() const
-{
-	vector<int> res;
-
-/* XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX */
-/* XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX */
-/* XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX */
-
-	//res.push_back(m_centre);
-	//res.push_back(m_subcentre);
-	//res.push_back(m_process);
-	return res;
 }
 
 }

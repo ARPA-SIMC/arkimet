@@ -46,10 +46,6 @@ struct Origin : public types::StyledType<Origin>
     static std::unique_ptr<Origin> decodeString(const std::string& val);
     static std::unique_ptr<Origin> decode_structure(const structured::Keys& keys, const structured::Reader& val);
 
-	// Deprecated functions
-	virtual std::vector<int> toIntVector() const = 0;
-	static int getMaxIntCount();
-
     // Register this type tree with the type system
     static void init();
 
@@ -94,9 +90,6 @@ public:
     GRIB1* clone() const override;
     static std::unique_ptr<GRIB1> create(unsigned char centre, unsigned char subcentre, unsigned char process);
     static std::unique_ptr<GRIB1> decode_structure(const structured::Keys& keys, const structured::Reader& val);
-
-    // Deprecated functions
-    std::vector<int> toIntVector() const override;
 };
 
 class GRIB2 : public Origin
@@ -133,9 +126,6 @@ public:
     static std::unique_ptr<GRIB2> create(unsigned short centre, unsigned short subcentre,
             unsigned char processtype, unsigned char bgprocessid, unsigned char processid);
     static std::unique_ptr<GRIB2> decode_structure(const structured::Keys& keys, const structured::Reader& val);
-
-    // Deprecated functions
-    std::vector<int> toIntVector() const override;
 };
 
 class BUFR : public Origin
@@ -165,9 +155,6 @@ public:
     BUFR* clone() const override;
     static std::unique_ptr<BUFR> create(unsigned char centre, unsigned char subcentre);
     static std::unique_ptr<BUFR> decode_structure(const structured::Keys& keys, const structured::Reader& val);
-
-    // Deprecated functions
-    std::vector<int> toIntVector() const override;
 };
 
 class ODIMH5 : public Origin
@@ -199,9 +186,6 @@ public:
     ODIMH5* clone() const override;
     static std::unique_ptr<ODIMH5> create(const std::string& wmo, const std::string& rad, const std::string& plc);
     static std::unique_ptr<ODIMH5> decode_structure(const structured::Keys& keys, const structured::Reader& val);
-
-    // Deprecated functions
-    std::vector<int> toIntVector() const override;
 };
 
 }
