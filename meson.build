@@ -102,6 +102,8 @@ if python3.found()
     # FIXME: python3.path() is only available from meson 0.50: this is a workaround
     python3_path = python3.get_variable('BINDIR') / python3.get_variable('PYTHON') + python3.language_version()
 
+    nose = find_program('nose2-3', 'nosetests-3.6', 'nosetests-3.5', 'nosetests-3.4', 'nosetests-3.3', 'nosetests-' + python3.language_version())
+
     sphinx = find_program('sphinx-build', 'sphinx-build-3', 'sphinx-build-' + python3.language_version(), required: false)
 
     build_docs = sphinx.found()
@@ -116,10 +118,10 @@ configure_file(output: 'config.h', configuration: conf_data)
 
 subdir('arki')
 
-# if python3.found()
-#     subdir('python')
-# endif
-# 
+if python3.found()
+    subdir('python')
+endif
+
 # if build_docs
 #     subdir('doc')
 # endif
