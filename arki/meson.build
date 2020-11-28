@@ -387,4 +387,4 @@ test_arkimet = executable('test-arkimet', test_arkimet_sources,
 
 runtest = find_program('runtest')
 
-test('dballe', runtest, args: [test_arkimet], timeout: 600)
+test('arkimet', runtest, args: [test_arkimet], timeout: 600)
