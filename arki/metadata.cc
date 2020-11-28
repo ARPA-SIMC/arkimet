@@ -46,25 +46,6 @@ ReadContext::ReadContext(const std::string& pathname, const std::string& basedir
 
 }
 
-static inline void ensureSize(size_t len, size_t req, const char* what)
-{
-    if (len < req)
-    {
-        stringstream s;
-        s << "cannot parse " << what << ": size is " << len << " but we need at least " << req << " for the " << what << " style";
-        throw runtime_error(s.str());
-    }
-}
-
-template<typename ITER>
-static std::string encodeItemList(const ITER& begin, const ITER& end)
-{
-    string res;
-    for (ITER i = begin; i != end; ++i)
-        res += i->encode();
-    return res;
-}
-
 Metadata::Metadata()
 {
 }
