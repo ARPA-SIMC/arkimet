@@ -7,16 +7,16 @@ dist_doc_DATA = \
 		DATASET \
 		arkiguide.it.txt \
 		adding-formats.txt \
-		mhooks-dump \
-		mhooks-gzip \
-		mhooks-query \
-		mhooks-scan \
-		mhooks-check \
-		mhooks-mergeconf \
-		mhooks-xargs \
-		mhooks-bufr-prepare
-
-doc_matcherdir = $(docdir)/matcher
+		mhooks-arki-dump \
+		mhooks-arki-query \
+		mhooks-arki-scan \
+		mhooks-arki-check \
+		mhooks-arki-mergeconf \
+		mhooks-arki-xargs \
+		mhooks-arki-bufr-prepare \
+		mhooks-arki-server \
+		mhooks-arki-testtar \
+		mhooks-arki-proxy
 
 CLEANFILES =
 

@@ -1,15 +1,23 @@
 #!/bin/sh -e
 
-TOP_SRCDIR=`pwd`/`dirname $0`/..
+TOP_SRCDIR=$(readlink -f $(dirname $0)/..)
 PYTHON=${PYTHON:-python3}
 
 if [ "$1" = "NOSE" ]
 then
     NOSE="${NOSE:-nose}"
-    CMD="$NOSE --verbose -s `pwd`"
-    DEBUG_CMD="$PYTHON `which $NOSE` -s `pwd`"
+    for n in "$NOSE" nose2-3 nosetests-3.8 nosetests-3.7 nosetests-3.6 nosetests-3.5 nosetests-3.4 nosetests-3.3
+    do
+        if which "$n"
+        then
+            NOSE="$n"
+            break
+        fi
+    done
+    CMD="$NOSE --verbose -s `pwd` -s ${TOP_SRCDIR}/python"
+    DEBUG_CMD="$PYTHON `which $NOSE` -s `pwd` -s ${TOP_SRCDIR}/python"
 else
-    CMD=`pwd`/"$1"
+    CMD=$(readlink -f "$1")
     DEBUG_CMD="$CMD"
 fi
 
