@@ -3,7 +3,7 @@ project('arkimet', 'cpp', version: '1.29', license : 'GPL-2.0-or-later', default
 add_global_arguments('-Wextra', '-Wno-unused-parameter', language : 'cpp')
 
 conf_dir = get_option('sysconfdir') / 'arkimet'
-doc_dir = get_option('datadir') / 'arkimet'
+doc_dir = get_option('datadir') / 'doc' / 'arkimet'
 
 conf_data = configuration_data()
 conf_data.set_quoted('PACKAGE_VERSION', meson.project_version())
