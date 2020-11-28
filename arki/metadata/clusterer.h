@@ -92,7 +92,7 @@ public:
 
     // Cannot flush here, since flush is virtual and we won't give subclassers
     // a chance to do their own flushing. Flushes must be explicit.
-    ~Clusterer();
+    virtual ~Clusterer();
 
     bool eat(std::shared_ptr<Metadata> md);
 

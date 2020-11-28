@@ -502,6 +502,7 @@ add_method("query_lots", [](Fixture& f) {
         uint64_t last_value;
         unsigned seen;
         CheckSortOrder() : last_value(0), seen(0) {}
+        virtual ~CheckSortOrder() {}
         virtual uint64_t make_key(const Metadata& md) const = 0;
         bool eat(std::shared_ptr<Metadata> md)
         {
