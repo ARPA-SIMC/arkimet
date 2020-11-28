@@ -1,4 +1,6 @@
-project('arkimet', 'cpp', version: '1.29', license : 'GPL-2.0-or-later')
+project('arkimet', 'cpp', version: '1.29', license : 'GPL-2.0-or-later', default_options: ['warning_level=3', 'cpp_std=c++11'])
+
+add_global_arguments('-Wextra', '-Wno-unused-parameter', language : 'cpp')
 
 conf_data = configuration_data()
 conf_data.set_quoted('PACKAGE_VERSION', meson.project_version())
@@ -129,9 +131,6 @@ endif
 # subdir('src')
 # subdir('conf')
 
-#dnl Use c++11
-#AX_CXX_COMPILE_STDCXX_11
-#
 #AC_SYS_LARGEFILE
 #
 #dnl Check for missing functions in libc
@@ -146,11 +145,8 @@ endif
 #])
 #
 #dnl Enable extra compiler warnings
-#AX_CXXFLAGS_WARN_ALL
-#AX_APPEND_FLAG([-Wextra -Wno-unused-parameter])
 #AX_CHECK_COMPILE_FLAG([-Wredundant-move], [has_redundant_move=yes], [has_redundant_move=no])
 #if test $has_redundant_move = yes
 #then
 #       AX_APPEND_FLAG([-Wno-error=redundant-move])
 #fi
-
