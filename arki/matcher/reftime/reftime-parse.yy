@@ -1,7 +1,7 @@
 %{
 #include "config.h"
-#include "parser.h"
-#include "lexer.h"
+#include "arki/matcher/reftime/parser.h"
+#include "arki/matcher/reftime/lexer.h"
 #include "arki/core/fuzzytime.h"
 #include <string>
 #include <stdexcept>

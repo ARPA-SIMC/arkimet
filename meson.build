@@ -11,6 +11,9 @@ conf_data.set_quoted('POSTPROC_DIR', get_option('libdir') / 'arkimet')
 toplevel_inc = include_directories('.')
 
 # Dependencies
+flex = find_program('flex')
+bison = find_program('bison')
+
 thread_dep = dependency('threads')
 
 geos_dep = dependency('', required: false)

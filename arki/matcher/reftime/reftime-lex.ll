@@ -1,6 +1,6 @@
 %{
 #include "config.h"
-#include "parser.h"
+#include "arki/matcher/reftime/parser.h"
 #include "arki/core/fuzzytime.h"
 #include "arki/matcher/reftime/lexer.h"
 #include "reftime-parse.hh"
@@ -21,10 +21,8 @@ using namespace arki::matcher::reftime::lexer;
 %option bison-bridge
 %option reentrant
 %option prefix="arki_reftime"
-%option outfile="reftime-lex.cc"
 %option fast
 %option noyywrap nounput
-%option header-file="reftime-lex.h"
 
 space     [ \t]+
 unit      (h|hour|hours|m|min|minute|minutes|s|sec|second|seconds|w|week|weeks|d|da|day|days|month|months|y|year|years)

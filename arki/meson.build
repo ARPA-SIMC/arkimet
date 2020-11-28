@@ -2,11 +2,6 @@
 # Autobuilt files
 #
 
-# TODO: matcher/reftime/reftime-lex.h
-# TODO: matcher/reftime/reftime-lex.cc
-# TODO: matcher/reftime/reftime-parse.hh
-# TODO: matcher/reftime/reftime-parse.cc
-
 libconfig = configure_file(output: 'libconfig.h', configuration: conf_data)
 
 libarkimet_sources = [
@@ -73,10 +68,6 @@ libarkimet_sources = [
     'matcher/level.cc',
     'matcher/timerange.cc',
     'matcher/reftime.cc',
-    'matcher/reftime/lexer.cc',
-    'matcher/reftime/parser.cc',
-    'matcher/reftime/reftime-lex.cc',
-    'matcher/reftime/reftime-parse.cc',
     'matcher/area.cc',
     'matcher/proddef.cc',
     'matcher/run.cc',
@@ -164,6 +155,8 @@ libarkimet_sources = [
     'runtime.cc',
     'iotrace.cc',
 ]
+
+subdir('matcher/reftime')
 
 if eccodes_dep.found()
     libarkimet_sources += ['scan/grib.cc']
