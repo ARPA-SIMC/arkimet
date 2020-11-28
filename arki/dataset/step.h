@@ -63,6 +63,7 @@ public:
     const SegmentQuery& query;
 
     Dirs(const SegmentQuery& query);
+    virtual ~Dirs() {}
 
     /**
      * Generate all the matching file-containing directories under this one.
@@ -88,6 +89,7 @@ protected:
 
 public:
     Files(const Dirs& dirs, const std::string& relpath, int value);
+    virtual ~Files() {}
 
     /**
      * List all matching segments in this directory, with paths relative to dirs.root
