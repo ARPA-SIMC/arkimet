@@ -73,11 +73,14 @@ protected:
 	unsigned char m_process;
 
 public:
-	virtual ~GRIB1();
+    virtual ~GRIB1();
 
-	unsigned centre() const { return m_centre; }
-	unsigned subcentre() const { return m_subcentre; }
-	unsigned process() const { return m_process; }
+    void get_GRIB1(unsigned& centre, unsigned& subcentre, unsigned& process) const
+    {
+        centre = m_centre;
+        subcentre = m_subcentre;
+        process = m_process;
+    }
 
     Style style() const override;
     void encodeWithoutEnvelope(core::BinaryEncoder& enc) const override;
@@ -106,13 +109,16 @@ protected:
 	unsigned char m_processid;
 
 public:
-	virtual ~GRIB2();
+    virtual ~GRIB2();
 
-	unsigned centre() const { return m_centre; }
-	unsigned subcentre() const { return m_subcentre; }
-	unsigned processtype() const { return m_processtype; }
-	unsigned bgprocessid() const { return m_bgprocessid; }
-	unsigned processid() const { return m_processid; }
+    void get_GRIB2(unsigned& centre, unsigned& subcentre, unsigned& processtype, unsigned& bgprocessid, unsigned& processid) const
+    {
+        centre = m_centre;
+        subcentre = m_subcentre;
+        processtype = m_processtype;
+        bgprocessid = m_bgprocessid;
+        processid = m_processid;
+    }
 
     Style style() const override;
     void encodeWithoutEnvelope(core::BinaryEncoder& enc) const override;
@@ -139,10 +145,13 @@ protected:
 	unsigned char m_subcentre;
 
 public:
-	virtual ~BUFR();
+    virtual ~BUFR();
 
-	unsigned centre() const { return m_centre; }
-	unsigned subcentre() const { return m_subcentre; }
+    void get_BUFR(unsigned& centre, unsigned& subcentre) const
+    {
+        centre = m_centre;
+        subcentre = m_subcentre;
+    }
 
     Style style() const override;
     void encodeWithoutEnvelope(core::BinaryEncoder& enc) const override;
@@ -169,11 +178,14 @@ protected:
 	std::string m_PLC;
 
 public:
-	virtual ~ODIMH5();
+    virtual ~ODIMH5();
 
-	const std::string& getWMO() const { return m_WMO; }
-	const std::string& getRAD() const { return m_RAD; }
-	const std::string& getPLC() const { return m_PLC; }
+    void get_ODIMH5(std::string& WMO, std::string& RAD, std::string& PLC) const
+    {
+        WMO = m_WMO;
+        RAD = m_RAD;
+        PLC = m_PLC;
+    }
 
     Style style() const override;
     void encodeWithoutEnvelope(core::BinaryEncoder& enc) const override;
