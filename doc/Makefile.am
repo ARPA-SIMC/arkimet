@@ -16,8 +16,6 @@ dist_doc_DATA = \
 		mhooks-xargs \
 		mhooks-bufr-prepare
 
-doc_matcherdir = $(docdir)/matcher
-
 CLEANFILES =
 
 if ASCIIDOC

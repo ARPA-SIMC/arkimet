@@ -2,10 +2,13 @@ project('arkimet', 'cpp', version: '1.29', license : 'GPL-2.0-or-later', default
 
 add_global_arguments('-Wextra', '-Wno-unused-parameter', language : 'cpp')
 
+conf_dir = get_option('sysconfdir') / 'arkimet'
+doc_dir = get_option('datadir') / 'arkimet'
+
 conf_data = configuration_data()
 conf_data.set_quoted('PACKAGE_VERSION', meson.project_version())
 conf_data.set('ARKI_IOTRACE', true)
-conf_data.set_quoted('CONF_DIR', get_option('sysconfdir') / 'arkimet')
+conf_data.set_quoted('CONF_DIR', conf_dir)
 conf_data.set_quoted('POSTPROC_DIR', get_option('libdir') / 'arkimet')
 
 toplevel_inc = include_directories('.')
@@ -110,6 +113,7 @@ if python3.found()
     nose = find_program('nose2-3', 'nosetests-3.6', 'nosetests-3.5', 'nosetests-3.4', 'nosetests-3.3', 'nosetests-' + python3.language_version())
 
     sphinx = find_program('sphinx-build', 'sphinx-build-3', 'sphinx-build-' + python3.language_version(), required: false)
+    asciidoc = find_program('asciidoc', required: false)
 
     build_docs = sphinx.found()
     docdir = get_option('datadir') / 'doc' / meson.project_name()
@@ -127,12 +131,13 @@ if python3.found()
     subdir('python')
 endif
 
-# if build_docs
-#     subdir('doc')
-# endif
-# 
-# subdir('src')
-# subdir('conf')
+subdir('src')
+subdir('conf')
+
+if build_docs
+    subdir('doc')
+endif
+
 
 #AC_SYS_LARGEFILE
 #
