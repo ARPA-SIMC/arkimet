@@ -18,6 +18,7 @@
 #include <fcntl.h>
 #include <vector>
 #include <algorithm>
+#include <map>
 #include <sys/uio.h>
 #include <system_error>
 

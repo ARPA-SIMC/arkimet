@@ -204,8 +204,8 @@ int Metadata::compare(const Metadata& m) const
 int Metadata::compare_items(const Metadata& m) const
 {
     // Compare skipping VALUE items
-    const_iterator a = begin();
-    const_iterator b = m.begin();
+    auto a = begin();
+    auto b = m.begin();
     if (a != end() && a->first == TYPE_VALUE) ++a;
     if (b != m.end() && b->first == TYPE_VALUE) ++b;
     auto incr_a = [&] {
@@ -312,7 +312,7 @@ void Metadata::read_inner(core::BinaryDecoder& dec, unsigned version, const meta
                 set_source(types::Source::decodeRelative(inner, rc.basedir));
                 break;
             default:
-                m_vals.insert(make_pair(el_type, types::decodeInner(el_type, inner).release()));
+                set(types::decodeInner(el_type, inner));
                 break;
         }
     }
@@ -377,7 +377,7 @@ bool Metadata::readYaml(LineReader& in, const std::string& filename)
             case TYPE_NOTE: add_note(*types::Note::decodeString(val)); break;
             case TYPE_SOURCE: set_source(types::Source::decodeString(val)); break;
             default:
-                m_vals.insert(make_pair(type, types::decodeString(type, val).release()));
+                set(types::decodeString(type, val));
         }
     }
     return !in.eof();
@@ -540,8 +540,8 @@ void Metadata::encodeBinary(core::BinaryEncoder& enc) const
     // Encode the various information
     vector<uint8_t> encoded;
     core::BinaryEncoder subenc(encoded);
-    for (map<types::Code, types::Type*>::const_iterator i = m_vals.begin(); i != m_vals.end(); ++i)
-        i->second->encodeBinary(subenc);
+    for (const auto& i: m_vals)
+        i.second->encodeBinary(subenc);
     subenc.add_raw(m_notes);
     if (m_source)
        m_source->encodeBinary(subenc);
