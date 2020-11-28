@@ -80,16 +80,8 @@ pymod = import('python')
 python3 = pymod.find_installation('python3', required: false)
 
 # dnl Check for python
-# if test $enable_python = yes
-# then
-# AM_PATH_PYTHON([3.3], [enable_python=$am_cv_python_version], [enable_python=no])
 # if test $enable_python != no
 # then
-#     PYTHON_CFLAGS=`unset CFLAGS; $PYTHON-config --cflags`
-#     PYTHON_LDFLAGS=`unset CFLAGS; $PYTHON-config --ldflags`
-#     AC_SUBST(PYTHON_CFLAGS)
-#     AC_SUBST(PYTHON_LDFLAGS)
-#     AC_DEFINE(HAVE_PYTHON, 1, [Have Python bindings])
 #     AX_PYTHON_MODULE(werkzeug, yes)
 #     AX_PYTHON_MODULE(setproctitle, yes)
 #     AC_CHECK_PROGS(NOSE, [nose2-3 nosetests-3.6 nosetests-3.5 nosetests-3.4 nosetests-3.3 nosetests-$PYTHON_VERSION])
@@ -104,8 +96,6 @@ python3 = pymod.find_installation('python3', required: false)
 #     AX_PYTHON_MODULE(shapely)
 #     AX_PYTHON_MODULE(netcdf4)
 # fi
-# fi
-# AM_CONDITIONAL([DO_PYTHON], [test "$enable_python" != "no"])
 
 if python3.found()
     # FIXME: python3.path() is only available from meson 0.50: this is a workaround
