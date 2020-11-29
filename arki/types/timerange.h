@@ -3,6 +3,7 @@
 
 #include <arki/types.h>
 #include <arki/types/reftime.h>
+#include <arki/types/encoded.h>
 #include <stdint.h>
 
 namespace arki {
@@ -143,10 +144,13 @@ protected:
 	unsigned char m_p1, m_p2;
 
 public:
-	unsigned type() const { return m_type; }
-	unsigned unit() const { return m_unit; }
-	unsigned p1() const { return m_p1; }
-	unsigned p2() const { return m_p2; }
+    void get_GRIB1(unsigned& type, unsigned& unit, unsigned& p1, unsigned& p2) const
+    {
+        type = m_type;
+        unit = m_unit;
+        p1 = m_p1;
+        p2 = m_p2;
+    }
 
     Style style() const override;
     void encodeWithoutEnvelope(core::BinaryEncoder& enc) const override;
@@ -176,10 +180,13 @@ protected:
 	signed long m_p1, m_p2;
 
 public:
-	unsigned type() const { return m_type; }
-	unsigned unit() const { return m_unit; }
-	signed p1() const { return m_p1; }
-	signed p2() const { return m_p2; }
+    void get_GRIB2(unsigned& type, unsigned& unit, signed long& p1, signed long& p2) const
+    {
+        type = m_type;
+        unit = m_unit;
+        p1 = m_p1;
+        p2 = m_p2;
+    }
 
     Style style() const override;
     void encodeWithoutEnvelope(core::BinaryEncoder& enc) const override;
@@ -216,11 +223,14 @@ protected:
     uint32_t m_stat_len;
 
 public:
-    TimedefUnit step_unit() const { return m_step_unit; }
-    unsigned step_len() const { return m_step_len; }
-    uint8_t stat_type() const { return m_stat_type; }
-    TimedefUnit stat_unit() const { return m_stat_unit; }
-    unsigned stat_len() const { return m_stat_len; }
+    void get_Timedef(TimedefUnit& step_unit, unsigned& step_len, unsigned& stat_type, TimedefUnit& stat_unit, unsigned& stat_len) const
+    {
+        step_unit = m_step_unit;
+        step_len = m_step_len;
+        stat_type = m_stat_type;
+        stat_unit = m_stat_unit;
+        stat_len = m_stat_len;
+    }
 
     Style style() const override;
     void encodeWithoutEnvelope(core::BinaryEncoder& enc) const override;
@@ -280,8 +290,11 @@ protected:
 	unsigned m_value;
 
 public:
-	unsigned unit() const { return m_unit; }
-	unsigned value() const { return m_value; }
+    void get_BUFR(unsigned& unit, unsigned& value) const
+    {
+        unit = m_unit;
+        value = m_value;
+    }
 
 	bool is_seconds() const;
 	unsigned seconds() const;

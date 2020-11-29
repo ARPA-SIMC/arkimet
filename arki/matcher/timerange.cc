@@ -219,11 +219,14 @@ bool MatchTimerangeGRIB2::matchItem(const Type& o) const
 {
     const types::timerange::GRIB2* v = dynamic_cast<const types::timerange::GRIB2*>(&o);
     if (!v) return false;
-	if (type != -1 && (unsigned)type != v->type()) return false;
-	if (unit != -1 && (unsigned)unit != v->unit()) return false;
-	if (p1 >= 0 && p1 != v->p1()) return false;
-	if (p2 >= 0 && p2 != v->p2()) return false;
-	return true;
+    unsigned vtype, vunit;
+    signed long vp1, vp2;
+    v->get_GRIB2(vtype, vunit, vp1, vp2);
+    if (type != -1 && (unsigned)type != vtype) return false;
+    if (unit != -1 && (unsigned)unit != vunit) return false;
+    if (p1 >= 0 && p1 != vp1) return false;
+    if (p2 >= 0 && p2 != vp2) return false;
+    return true;
 }
 
 std::string MatchTimerangeGRIB2::toString() const
@@ -257,8 +260,10 @@ bool MatchTimerangeBUFR::matchItem(const Type& o) const
 {
     const types::timerange::BUFR* v = dynamic_cast<const types::timerange::BUFR*>(&o);
     if (!v) return false;
-	if (!has_forecast) return true;
-	if (value == 0) return v->value() == 0;
+    unsigned vunit, vvalue;
+    v->get_BUFR(vunit, vvalue);
+    if (!has_forecast) return true;
+    if (value == 0) return vvalue == 0;
 	if (is_seconds != v->is_seconds()) return false;
 	if (is_seconds)
 		return value == v->seconds();
