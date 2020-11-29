@@ -26,9 +26,11 @@ add_method("grib1_details", [] {
     unique_ptr<Product> o = Product::createGRIB1(1, 2, 3);
     wassert(actual(o->style()) == Product::Style::GRIB1);
     const product::GRIB1* v = dynamic_cast<product::GRIB1*>(o.get());
-    wassert(actual(v->origin()) == 1u);
-    wassert(actual(v->table()) == 2u);
-    wassert(actual(v->product()) == 3u);
+    unsigned ori, tab, pro;
+    v->get_GRIB1(ori, tab, pro);
+    wassert(actual(ori) == 1u);
+    wassert(actual(tab) == 2u);
+    wassert(actual(pro) == 3u);
 });
 
 // Check GRIB2
@@ -56,36 +58,40 @@ add_method("grib2_details", [] {
     using namespace arki::types;
     unique_ptr<Product> o;
     const product::GRIB2* v;
+    unsigned ce, di, ca, nu, ta, lo;
 
     o = Product::createGRIB2(1, 2, 3, 4);
     wassert(actual(o->style()) == Product::Style::GRIB2);
     v = dynamic_cast<product::GRIB2*>(o.get());
-    wassert(actual(v->centre()) == 1u);
-    wassert(actual(v->discipline()) == 2u);
-    wassert(actual(v->category()) == 3u);
-    wassert(actual(v->number()) == 4u);
-    wassert(actual(v->table_version()) == 4u);
-    wassert(actual(v->local_table_version()) == 255u);
+    v->get_GRIB2(ce, di, ca, nu, ta, lo);
+    wassert(actual(ce) == 1u);
+    wassert(actual(di) == 2u);
+    wassert(actual(ca) == 3u);
+    wassert(actual(nu) == 4u);
+    wassert(actual(ta) == 4u);
+    wassert(actual(lo) == 255u);
 
     o = Product::createGRIB2(1, 2, 3, 4, 5);
     wassert(actual(o->style()) == Product::Style::GRIB2);
     v = dynamic_cast<product::GRIB2*>(o.get());
-    wassert(actual(v->centre()) == 1u);
-    wassert(actual(v->discipline()) == 2u);
-    wassert(actual(v->category()) == 3u);
-    wassert(actual(v->number()) == 4u);
-    wassert(actual(v->table_version()) == 5u);
-    wassert(actual(v->local_table_version()) == 255u);
+    v->get_GRIB2(ce, di, ca, nu, ta, lo);
+    wassert(actual(ce) == 1u);
+    wassert(actual(di) == 2u);
+    wassert(actual(ca) == 3u);
+    wassert(actual(nu) == 4u);
+    wassert(actual(ta) == 5u);
+    wassert(actual(lo) == 255u);
 
     o = Product::createGRIB2(1, 2, 3, 4, 4, 5);
     wassert(actual(o->style()) == Product::Style::GRIB2);
     v = dynamic_cast<product::GRIB2*>(o.get());
-    wassert(actual(v->centre()) == 1u);
-    wassert(actual(v->discipline()) == 2u);
-    wassert(actual(v->category()) == 3u);
-    wassert(actual(v->number()) == 4u);
-    wassert(actual(v->table_version()) == 4u);
-    wassert(actual(v->local_table_version()) == 5u);
+    v->get_GRIB2(ce, di, ca, nu, ta, lo);
+    wassert(actual(ce) == 1u);
+    wassert(actual(di) == 2u);
+    wassert(actual(ca) == 3u);
+    wassert(actual(nu) == 4u);
+    wassert(actual(ta) == 4u);
+    wassert(actual(lo) == 5u);
 });
 
 // Check BUFR
@@ -102,10 +108,13 @@ add_method("bufr_details", [] {
     unique_ptr<Product> o = Product::createBUFR(1, 2, 3, vb);
     wassert(actual(o->style()) == Product::Style::BUFR);
     product::BUFR* v = dynamic_cast<product::BUFR*>(o.get());
-    wassert(actual(v->type()) == 1u);
-    wassert(actual(v->subtype()) == 2u);
-    wassert(actual(v->localsubtype()) == 3u);
-    wassert(actual(v->values()) == vb);
+    unsigned ty, su, lo;
+    ValueBag va;
+    v->get_BUFR(ty, su, lo, va);
+    wassert(actual(ty) == 1u);
+    wassert(actual(su) == 2u);
+    wassert(actual(lo) == 3u);
+    wassert(actual(va) == vb);
 
     ValueBag vb2;
     vb2.set("val", values::Value::create_string("blinda"));
@@ -113,6 +122,24 @@ add_method("bufr_details", [] {
     stringstream tmp;
     tmp << *o;
     wassert(actual(tmp.str()) == "BUFR(001, 002, 003, name=antani, val=blinda)");
+});
+
+// Check ODIMH5
+add_generic_test("odimh5",
+    { "ODIMH5(obj, pro)", "GRIB2(2, 3, 4, 5)", "ODIMH5(ob, prod)", },
+    "ODIMH5(obj, prod)",
+    { "ODIMH5(obj1, prod)", "ODIMH5(obj, prod1)", },
+    "ODIMH5,obj,prod");
+
+add_method("odim_details", [] {
+    using namespace arki::types;
+    std::unique_ptr<Product> o = Product::createODIMH5("obj", "prod");
+    wassert(actual(o->style()) == Product::Style::ODIMH5);
+    product::ODIMH5* v = dynamic_cast<product::ODIMH5*>(o.get());
+    std::string obj, prod;
+    v->get_ODIMH5(obj, prod);
+    wassert(actual(obj) == "obj");
+    wassert(actual(prod) == "prod");
 });
 
 // Check VM2
@@ -127,7 +154,9 @@ add_method("vm2_details", [] {
     unique_ptr<Product> o = Product::createVM2(1);
     wassert(actual(o->style()) == Product::Style::VM2);
     const product::VM2* v = dynamic_cast<product::VM2*>(o.get());
-    wassert(actual(v->variable_id()) == 1ul);
+    unsigned vi;
+    v->get_VM2(vi);
+    wassert(actual(vi) == 1ul);
 
     // Test derived values
     ValueBag vb1 = ValueBag::parse("bcode=B20013,lt1=256,l1=0,lt2=258,l2=0,tr=254,p1=0,p2=0,unit=m");

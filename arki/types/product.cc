@@ -507,9 +507,12 @@ std::unique_ptr<BUFR> BUFR::decode_structure(const structured::Keys& keys, const
 std::string BUFR::exactQuery() const
 {
     stringstream ss;
-    ss << "BUFR," << type() << "," << subtype() << "," << localsubtype();
-    if (!m_values.empty())
-        ss << ":" << m_values.toString();
+    unsigned ty, su, lo;
+    ValueBag va;
+    get_BUFR(ty, su, lo, va);
+    ss << "BUFR," << ty << "," << su << "," << lo;
+    if (!va.empty())
+        ss << ":" << va.toString();
     return ss.str();
 }
 

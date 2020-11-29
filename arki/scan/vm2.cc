@@ -242,6 +242,8 @@ std::vector<uint8_t> Vm2::reconstruct(const Metadata& md, const std::string& val
     const reftime::Position* rt = md.get<reftime::Position>();
     const area::VM2* area = dynamic_cast<const area::VM2*>(md.get<Area>());
     const product::VM2* product = dynamic_cast<const product::VM2*>(md.get<Product>());
+    unsigned vi;
+    product->get_VM2(vi);
 
     res << setfill('0') << setw(4) << rt->time.ye
         << setfill('0') << setw(2) << rt->time.mo
@@ -253,7 +255,7 @@ std::vector<uint8_t> Vm2::reconstruct(const Metadata& md, const std::string& val
         res << setfill('0') << setw(2) << rt->time.se;
 
     res << "," << area->station_id()
-        << "," << product->variable_id()
+        << "," << vi
         << "," << value;
 
     string reconstructed = res.str();

@@ -80,9 +80,12 @@ protected:
 	unsigned char m_product;
 
 public:
-	unsigned origin() const { return m_origin; }
-	unsigned table() const { return m_table; }
-	unsigned product() const { return m_product; }
+    void get_GRIB1(unsigned& origin, unsigned& table, unsigned& product) const
+    {
+        origin = m_origin;
+        table = m_table;
+        product = m_product;
+    }
 
     Style style() const override;
     void encodeWithoutEnvelope(core::BinaryEncoder& enc) const override;
@@ -112,12 +115,15 @@ protected:
     unsigned char m_local_table_version;
 
 public:
-	unsigned centre() const { return m_centre; }
-	unsigned discipline() const { return m_discipline; }
-	unsigned category() const { return m_category; }
-	unsigned number() const { return m_number; }
-    unsigned table_version() const { return m_table_version; }
-    unsigned local_table_version() const { return m_local_table_version; }
+    void get_GRIB2(unsigned& centre, unsigned& discipline, unsigned& category, unsigned& number, unsigned& table_version, unsigned& local_table_version) const
+    {
+        centre = m_centre;
+        discipline = m_discipline;
+        category = m_category;
+        number = m_number;
+        table_version = m_table_version;
+        local_table_version = m_local_table_version;
+    }
 
     Style style() const override;
     void encodeWithoutEnvelope(core::BinaryEncoder& enc) const override;
@@ -151,10 +157,13 @@ protected:
 	ValueBag m_values;
 
 public:
-	unsigned type() const { return m_type; }
-	unsigned subtype() const { return m_subtype; }
-	unsigned localsubtype() const { return m_localsubtype; }
-	const ValueBag& values() const { return m_values; }
+    void get_BUFR(unsigned& type, unsigned& subtype, unsigned& localsubtype, ValueBag& values) const
+    {
+        type = m_type;
+        subtype = m_subtype;
+        localsubtype = m_localsubtype;
+        values = m_values;
+    }
 
     // Add/replace these key,value pairs into m_values
     void addValues(const ValueBag& newvalues);
@@ -188,11 +197,11 @@ protected:
 	/* REMOVED: double 		m_prodpar2;	 attribute /dataset/what.prodpar BIS */
 
 public:
-	inline std::string obj() 	const { return m_obj; }
-	inline std::string prod() 	const { return m_prod; }
-
-	/* REMOVED: inline double prodpar1() 	const { return m_prodpar1; } */
-	/* REMOVED: inline double prodpar2() 	const { return m_prodpar2; } */
+    void get_ODIMH5(std::string& obj, std::string& prod) const
+    {
+        obj = m_obj;
+        prod = m_prod;
+    }
 
     Style style() const override;
     void encodeWithoutEnvelope(core::BinaryEncoder& enc) const override;
@@ -222,7 +231,11 @@ protected:
 public:
     virtual ~VM2() {}
 
-    unsigned variable_id() const { return m_variable_id; }
+    void get_VM2(unsigned& variable_id) const
+    {
+        variable_id = m_variable_id;
+    }
+
     const ValueBag& derived_values() const;
 
     Style style() const override;

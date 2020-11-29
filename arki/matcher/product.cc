@@ -29,10 +29,12 @@ bool MatchProductGRIB1::matchItem(const Type& o) const
 {
     const types::product::GRIB1* v = dynamic_cast<const types::product::GRIB1*>(&o);
     if (!v) return false;
-	if (origin != -1 && (unsigned)origin != v->origin()) return false;
-	if (table != -1 && (unsigned)table != v->table()) return false;
-	if (product != -1 && (unsigned)product != v->product()) return false;
-	return true;
+    unsigned ori, tab, pro;
+    v->get_GRIB1(ori, tab, pro);
+    if (origin != -1 && (unsigned)origin != ori) return false;
+    if (table != -1 && (unsigned)table != tab) return false;
+    if (product != -1 && (unsigned)product != pro) return false;
+    return true;
 }
 
 std::string MatchProductGRIB1::toString() const
@@ -60,13 +62,15 @@ bool MatchProductGRIB2::matchItem(const Type& o) const
 {
     const types::product::GRIB2* v = dynamic_cast<const types::product::GRIB2*>(&o);
     if (!v) return false;
-	if (centre != -1 && (unsigned)centre != v->centre()) return false;
-	if (discipline != -1 && (unsigned)discipline != v->discipline()) return false;
-	if (category != -1 && (unsigned)category != v->category()) return false;
-    if (number != -1 && (unsigned)number != v->number()) return false;
-    if (table_version != -1 && (unsigned)table_version != v->table_version()) return false;
-    if (local_table_version != -1 && (unsigned)local_table_version != v->local_table_version()) return false;
-	return true;
+    unsigned ce, di, ca, nu, ta, lo;
+    v->get_GRIB2(ce, di, ca, nu, ta, lo);
+    if (centre != -1 && (unsigned)centre != ce) return false;
+    if (discipline != -1 && (unsigned)discipline != di) return false;
+    if (category != -1 && (unsigned)category != ca) return false;
+    if (number != -1 && (unsigned)number != nu) return false;
+    if (table_version != -1 && (unsigned)table_version != ta) return false;
+    if (local_table_version != -1 && (unsigned)local_table_version != lo) return false;
+    return true;
 }
 
 std::string MatchProductGRIB2::toString() const
@@ -95,10 +99,13 @@ bool MatchProductBUFR::matchItem(const Type& o) const
 {
     const types::product::BUFR* v = dynamic_cast<const types::product::BUFR*>(&o);
     if (!v) return false;
-	if (type != -1 && (unsigned)type != v->type()) return false;
-	if (subtype != -1 && (unsigned)subtype != v->subtype()) return false;
-	if (localsubtype != -1 && (unsigned)localsubtype != v->localsubtype()) return false;
-	return v->values().contains(values);
+    unsigned ty, su, lo;
+    ValueBag va;
+    v->get_BUFR(ty, su, lo, va);
+    if (type != -1 && (unsigned)type != ty) return false;
+    if (subtype != -1 && (unsigned)subtype != su) return false;
+    if (localsubtype != -1 && (unsigned)localsubtype != lo) return false;
+    return va.contains(values);
 }
 
 std::string MatchProductBUFR::toString() const
@@ -136,11 +143,11 @@ bool MatchProductODIMH5::matchItem(const Type& o) const
 {
     const types::product::ODIMH5* v = dynamic_cast<const types::product::ODIMH5*>(&o);
     if (!v) return false;
-	if (obj.size() && 		obj != v->obj()) 	return false;
-	if (prod.size() && 		prod != v->prod()) 	return false;
-	/*REMOVED:if (!isnan(prodpar1) && 	prodpar1 != v->prodpar1()) 	return false; */
-	/*REMOVED:if (!isnan(prodpar2) && 	prodpar2 != v->prodpar2()) 	return false; */
-	return true;
+    std::string ob, pr;
+    v->get_ODIMH5(ob, pr);
+    if (obj.size() &&  obj != ob)  return false;
+    if (prod.size() && prod != pr) return false;
+    return true;
 }
 
 std::string MatchProductODIMH5::toString() const
@@ -168,10 +175,12 @@ bool MatchProductVM2::matchItem(const Type& o) const
 {
     const types::product::VM2* v = dynamic_cast<const types::product::VM2*>(&o);
     if (!v) return false;
+    unsigned vi;
+    v->get_VM2(vi);
 
-    if (variable_id != -1 && (unsigned)variable_id != v->variable_id()) return false;
-    if (!expr.empty() && 
-        std::find(idlist.begin(), idlist.end(), v->variable_id()) == idlist.end())
+    if (variable_id != -1 && (unsigned)variable_id != vi) return false;
+    if (!expr.empty() &&
+        std::find(idlist.begin(), idlist.end(), vi) == idlist.end())
             return false;
     return true;
 }
