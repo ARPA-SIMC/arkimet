@@ -27,7 +27,7 @@ struct StyledType : public CoreType<BASE>
         return 0;
     }
 
-    virtual void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const;
+    void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
 
     static Style style_from_structure(const structured::Keys& keys, const structured::Reader& reader);
 };

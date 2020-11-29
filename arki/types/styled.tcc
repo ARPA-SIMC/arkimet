@@ -29,6 +29,7 @@ int StyledType<BASE>::compare(const Type& o) const
     {
         std::stringstream ss;
         ss << "cannot compare metadata types: second element claims to be `" << traits<BASE>::type_tag << "', but it is `" << typeid(&o).name() << "' instead";
+        throw std::runtime_error(ss.str());
     }
 
     return this->compare_local(*v);

@@ -22,8 +22,9 @@ MatchOriginGRIB1::MatchOriginGRIB1(const std::string& pattern)
 
 bool MatchOriginGRIB1::matchItem(const Type& o) const
 {
-    const types::origin::GRIB1* v = dynamic_cast<const types::origin::GRIB1*>(&o);
+    const types::Origin* v = dynamic_cast<const types::Origin*>(&o);
     if (!v) return false;
+    if (v->style() != origin::Style::GRIB1) return false;
     unsigned v_centre, v_subcentre, v_process;
     v->get_GRIB1(v_centre, v_subcentre, v_process);
     if (centre != -1 && (unsigned)centre != v_centre) return false;
@@ -54,8 +55,9 @@ MatchOriginGRIB2::MatchOriginGRIB2(const std::string& pattern)
 
 bool MatchOriginGRIB2::matchItem(const Type& o) const
 {
-    const types::origin::GRIB2* v = dynamic_cast<const types::origin::GRIB2*>(&o);
+    const types::Origin* v = dynamic_cast<const types::Origin*>(&o);
     if (!v) return false;
+    if (v->style() != origin::Style::GRIB2) return false;
     unsigned v_centre, v_subcentre, v_processtype, v_bgprocessid, v_processid;
     v->get_GRIB2(v_centre, v_subcentre, v_processtype, v_bgprocessid, v_processid);
     if (centre      != -1 && (unsigned)centre      != v_centre) return false;
@@ -87,8 +89,9 @@ MatchOriginBUFR::MatchOriginBUFR(const std::string& pattern)
 
 bool MatchOriginBUFR::matchItem(const Type& o) const
 {
-    const types::origin::BUFR* v = dynamic_cast<const types::origin::BUFR*>(&o);
+    const types::Origin* v = dynamic_cast<const types::Origin*>(&o);
     if (!v) return false;
+    if (v->style() != origin::Style::BUFR) return false;
     unsigned v_centre, v_subcentre;
     v->get_BUFR(v_centre, v_subcentre);
     if (centre != -1 && (unsigned)centre != v_centre) return false;
@@ -115,8 +118,9 @@ MatchOriginODIMH5::MatchOriginODIMH5(const std::string& pattern)
 
 bool MatchOriginODIMH5::matchItem(const Type& o) const
 {
-    const types::origin::ODIMH5* v = dynamic_cast<const types::origin::ODIMH5*>(&o);
+    const types::Origin* v = dynamic_cast<const types::Origin*>(&o);
     if (!v) return false;
+    if (v->style() != origin::Style::ODIMH5) return false;
     std::string v_WMO, v_RAD, v_PLC;
     v->get_ODIMH5(v_WMO, v_RAD, v_PLC);
     if (WMO.size() && (WMO != v_WMO)) return false;

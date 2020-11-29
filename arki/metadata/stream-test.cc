@@ -55,7 +55,7 @@ void fill(Metadata& md)
     testValues.set("cippo", Value::create_string(""));
 
     md.set(Reftime::createPosition(core::Time(2006, 5, 4, 3, 2, 1)));
-    md.set(origin::GRIB1::create(1, 2, 3));
+    md.set(Origin::createGRIB1(1, 2, 3));
     md.set(product::GRIB1::create(1, 2, 3));
     md.set(level::GRIB1::create(114, 12, 34));
     md.set(timerange::GRIB1::create(1, 1, 2, 3));
@@ -106,7 +106,7 @@ add_method("stream", [] {
 
     Metadata md2;
     md2 = md1;
-    md2.set(types::origin::BUFR::create(1, 2));
+    md2.set(types::Origin::createBUFR(1, 2));
 
     const char* teststr = "this is a test";
     md1.set_source_inline("test", metadata::DataManager::get().to_data("test", vector<uint8_t>(teststr, teststr + 14)));

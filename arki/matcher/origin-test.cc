@@ -42,7 +42,7 @@ add_method("grib1", [] {
 add_method("bufr", [] {
     Metadata md;
     arki::tests::fill(md);
-    md.set(origin::BUFR::create(1, 2));
+    md.set(Origin::createBUFR(1, 2));
 
 	ensure_matches("origin:BUFR", md);
 	ensure_matches("origin:BUFR,,", md);
@@ -59,7 +59,7 @@ add_method("bufr", [] {
 add_method("odimh5", [] {
     Metadata md;
     arki::tests::fill(md);
-    md.set(origin::ODIMH5::create("wmo", "rad", "plc"));
+    md.set(Origin::createODIMH5("wmo", "rad", "plc"));
 
 	ensure_matches("origin:ODIMH5", md);
 	ensure_matches("origin:ODIMH5,,,", md);

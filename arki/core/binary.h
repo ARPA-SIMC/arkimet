@@ -222,6 +222,15 @@ struct BinaryDecoder
         return res;
     }
 
+    std::vector<uint8_t> pop_data_copy(size_t bytes, const char* what)
+    {
+        ensure_size(bytes, what);
+        std::vector<uint8_t> res(buf, buf + bytes);
+        buf += bytes;
+        size -= bytes;
+        return res;
+    }
+
     /**
      * Return a line of text that ends with the given separator.
      *
