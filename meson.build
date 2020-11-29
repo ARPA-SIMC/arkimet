@@ -140,6 +140,11 @@ if build_docs
     subdir('doc')
 endif
 
+# In order not to wait for sphinx to build documentation before tests are run,
+# `built_docs` now has build_by_default: false, and we use this to add a 'ninja
+# doc' target. It feeles kludgy, better would be to find out why built_docs is
+# seen as a dependency of the tests
+run_target('doc', command: ['/bin/true'], depends: [built_docs])
 
 #AC_SYS_LARGEFILE
 #
