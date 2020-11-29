@@ -201,16 +201,12 @@ public:
             /*REMOVED:, double prodpar1, double prodpar2*/
     );
     static std::unique_ptr<ODIMH5> decode_structure(const structured::Keys& keys, const structured::Reader& val);
-
-    // Deprecated functions
-    std::vector<int> toIntVector() const override;
 };
 
 class VM2 : public Product
 {
 protected:
     unsigned m_variable_id;
-    mutable std::unique_ptr<ValueBag> m_derived_values;
 
 public:
     virtual ~VM2() {}
@@ -220,7 +216,7 @@ public:
         variable_id = m_variable_id;
     }
 
-    const ValueBag& derived_values() const;
+    ValueBag derived_values() const;
 
     Style style() const override;
     void encodeWithoutEnvelope(core::BinaryEncoder& enc) const override;

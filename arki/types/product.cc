@@ -644,15 +644,13 @@ unique_ptr<ODIMH5> ODIMH5::create(const std::string& obj, const std::string& pro
 }
 
 
-const ValueBag& VM2::derived_values() const {
-    if (m_derived_values.get() == 0) {
+ValueBag VM2::derived_values() const
+{
 #ifdef HAVE_VM2
-        m_derived_values.reset(new ValueBag(utils::vm2::get_variable(m_variable_id)));
+    return utils::vm2::get_variable(m_variable_id);
 #else
-        m_derived_values.reset(new ValueBag);
+    return ValueBag();
 #endif
-    }
-    return *m_derived_values;
 }
 
 Product::Style VM2::style() const { return Style::VM2; }
@@ -665,9 +663,10 @@ void VM2::encodeWithoutEnvelope(core::BinaryEncoder& enc) const
 }
 std::ostream& VM2::writeToOstream(std::ostream& o) const
 {
-	o << formatStyle(style()) << "(" << m_variable_id;
-    if (!derived_values().empty())
-        o << ", " << derived_values().toString();
+    o << formatStyle(style()) << "(" << m_variable_id;
+    auto dv = derived_values();
+    if (!dv.empty())
+        o << ", " << dv.toString();
     return o << ")";
 }
 void VM2::serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f) const
