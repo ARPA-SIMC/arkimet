@@ -10,12 +10,32 @@ namespace types {
 class Encoded : public Type
 {
 protected:
-    std::vector<uint8_t> data;
+    uint8_t* data = nullptr;
+    unsigned size = 0;
 
 public:
-    Encoded(const std::vector<uint8_t>& data);
-    Encoded(std::vector<uint8_t>&& data);
+    /// Construct copying a vector contents
+    Encoded(const std::vector<uint8_t>& buf);
+
+    /// Construct copying a buffer
+    Encoded(const uint8_t* buf, unsigned size);
+
+    /**
+     * Construct stealing a buffer pointer
+     *
+     * buf will be memory managed by the Encoded object
+     */
+    Encoded(uint8_t*&& buf, unsigned&& size);
+
+    Encoded(const Encoded&) = delete;
+    Encoded(Encoded&& o) = delete;
     ~Encoded();
+
+    Encoded& operator=(const Encoded&) = delete;
+    Encoded& operator=(Encoded&&) = delete;
+
+    bool equals(const Type& o) const override;
+    void encodeWithoutEnvelope(core::BinaryEncoder& enc) const override;
 
 #if 0
     // Default implementations of Type methods

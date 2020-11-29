@@ -27,7 +27,7 @@ const size_t traits<Origin>::type_sersize_bytes = SERSIZELEN;
 
 Origin* Origin::clone() const
 {
-    return new Origin(data);
+    return new Origin(data, size);
 }
 
 int Origin::compare(const Type& o) const
@@ -97,21 +97,14 @@ int Origin::compare(const Type& o) const
     }
 }
 
-bool Origin::equals(const Type& o) const
-{
-    const Origin* v = dynamic_cast<const Origin*>(&o);
-    if (!v) return false;
-    return data == v->data;
-}
-
 origin::Style Origin::style() const
 {
-    return (origin::Style)core::BinaryDecoder::decode_uint(data.data(), 1);
+    return (origin::Style)data[0];
 }
 
 void Origin::get_GRIB1(unsigned& centre, unsigned& subcentre, unsigned& process) const
 {
-    core::BinaryDecoder dec(data.data() + 1, data.size() - 1);
+    core::BinaryDecoder dec(data + 1, size - 1);
     centre = dec.pop_uint(1, "GRIB1 origin centre");
     subcentre = dec.pop_uint(1, "GRIB1 origin subcentre");
     process = dec.pop_uint(1, "GRIB1 origin process");
@@ -119,7 +112,7 @@ void Origin::get_GRIB1(unsigned& centre, unsigned& subcentre, unsigned& process)
 
 void Origin::get_GRIB2(unsigned& centre, unsigned& subcentre, unsigned& processtype, unsigned& bgprocessid, unsigned& processid) const
 {
-    core::BinaryDecoder dec(data.data() + 1, data.size() - 1);
+    core::BinaryDecoder dec(data + 1, size - 1);
     centre = dec.pop_uint(2, "GRIB2 origin centre");
     subcentre = dec.pop_uint(2, "GRIB2 origin subcentre");
     processtype = dec.pop_uint(1, "GRIB2 origin process type");
@@ -129,14 +122,14 @@ void Origin::get_GRIB2(unsigned& centre, unsigned& subcentre, unsigned& processt
 
 void Origin::get_BUFR(unsigned& centre, unsigned& subcentre) const
 {
-    core::BinaryDecoder dec(data.data() + 1, data.size() - 1);
+    core::BinaryDecoder dec(data + 1, size - 1);
     centre = dec.pop_uint(1, "BUFR origin centre");
     subcentre = dec.pop_uint(1, "BUFR origin subcentre");
 }
 
 void Origin::get_ODIMH5(std::string& WMO, std::string& RAD, std::string& PLC) const
 {
-    core::BinaryDecoder dec(data.data() + 1, data.size() - 1);
+    core::BinaryDecoder dec(data + 1, size - 1);
 
     uint16_t wmosize = dec.pop_varint<uint16_t>("ODIMH5 wmo length");
     WMO = dec.pop_string(wmosize, "ODIMH5 wmo");
@@ -170,11 +163,6 @@ std::string Origin::formatStyle(origin::Style s)
             str << "(unknown " << (int)s << ")";
             return str.str();
     }
-}
-
-void Origin::encodeWithoutEnvelope(core::BinaryEncoder& enc) const
-{
-    enc.add_raw(data);
 }
 
 std::ostream& Origin::writeToOstream(std::ostream& o) const
@@ -283,7 +271,9 @@ void Origin::serialise_local(structured::Emitter& e, const structured::Keys& key
 std::unique_ptr<Origin> Origin::decode(core::BinaryDecoder& dec)
 {
     dec.ensure_size(1, "Origin style");
-    return std::unique_ptr<Origin>(new Origin(dec.pop_data_copy(dec.size, "encoded Origin")));
+    std::unique_ptr<Origin> res(new Origin(dec.buf, dec.size));
+    dec.skip(dec.size);
+    return res;
 }
 
 std::unique_ptr<Origin> Origin::decodeString(const std::string& val)
@@ -397,41 +387,40 @@ std::string Origin::exactQuery() const
 
 std::unique_ptr<Origin> Origin::createGRIB1(unsigned char centre, unsigned char subcentre, unsigned char process)
 {
-    std::vector<uint8_t> buf;
-    core::BinaryEncoder enc(buf);
-    enc.add_unsigned((unsigned)origin::Style::GRIB1, 1);
-    enc.add_unsigned(centre, 1);
-    enc.add_unsigned(subcentre, 1);
-    enc.add_unsigned(process, 1);
-    return std::unique_ptr<Origin>(new Origin(std::move(buf)));
+    uint8_t* buf = new uint8_t[4];
+    buf[0] = (uint8_t)origin::Style::GRIB1;
+    buf[1] = centre;
+    buf[2] = subcentre;
+    buf[3] = process;
+    return std::unique_ptr<Origin>(new Origin(buf, 4));
 }
 
 std::unique_ptr<Origin> Origin::createGRIB2(unsigned short centre, unsigned short subcentre,
                                             unsigned char processtype, unsigned char bgprocessid, unsigned char processid)
 {
-    std::vector<uint8_t> buf;
-    core::BinaryEncoder enc(buf);
-    enc.add_unsigned((unsigned)origin::Style::GRIB2, 1);
-    enc.add_unsigned(centre, 2);
-    enc.add_unsigned(subcentre, 2);
-    enc.add_unsigned(processtype, 1);
-    enc.add_unsigned(bgprocessid, 1);
-    enc.add_unsigned(processid, 1);
-    return std::unique_ptr<Origin>(new Origin(std::move(buf)));
+    uint8_t* buf = new uint8_t[8];
+    buf[0] = (uint8_t)origin::Style::GRIB2;
+    core::BinaryEncoder::set_unsigned(buf + 1, centre, 2);
+    core::BinaryEncoder::set_unsigned(buf + 3, subcentre, 2);
+    buf[5] = processtype;
+    buf[6] = bgprocessid;
+    buf[7] = processid;
+    return std::unique_ptr<Origin>(new Origin(buf, 8));
 }
 
 std::unique_ptr<Origin> Origin::createBUFR(unsigned char centre, unsigned char subcentre)
 {
-    std::vector<uint8_t> buf;
-    core::BinaryEncoder enc(buf);
-    enc.add_unsigned((unsigned)origin::Style::BUFR, 1);
-    enc.add_unsigned(centre, 1);
-    enc.add_unsigned(subcentre, 1);
-    return std::unique_ptr<Origin>(new Origin(std::move(buf)));
+    uint8_t* buf = new uint8_t[3];
+    buf[0] = (uint8_t)origin::Style::BUFR;
+    buf[1] = centre;
+    buf[2] = subcentre;
+    return std::unique_ptr<Origin>(new Origin(buf, 3));
 }
 
 std::unique_ptr<Origin> Origin::createODIMH5(const std::string& wmo, const std::string& rad, const std::string& plc)
 {
+    // TODO: optimize encoding by precomputing buffer size and not using a vector?
+    // to do that, we first need a function that estimates the size of the varints
     std::vector<uint8_t> buf;
     core::BinaryEncoder enc(buf);
     enc.add_unsigned((unsigned)origin::Style::ODIMH5, 1);
@@ -441,7 +430,7 @@ std::unique_ptr<Origin> Origin::createODIMH5(const std::string& wmo, const std::
     enc.add_raw(rad);
     enc.add_varint(plc.size());
     enc.add_raw(plc);
-    return std::unique_ptr<Origin>(new Origin(std::move(buf)));
+    return std::unique_ptr<Origin>(new Origin(buf));
 }
 
 void Origin::init()

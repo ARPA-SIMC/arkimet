@@ -43,6 +43,17 @@ struct BinaryEncoder
             dest.push_back((val >> ((bytes - i - 1) * 8)) & 0xff);
     }
 
+    /// Encode an unsigned integer in the given amount of bytes, big endian
+    template<typename T>
+    static void set_unsigned(uint8_t* buf, T val, unsigned bytes)
+    {
+        // Only work with unsigned
+        static_assert(std::is_unsigned<T>(), "source integer must be unsigned");
+
+        for (unsigned i = 0; i < bytes; ++i)
+            buf[i] = (val >> ((bytes - i - 1) * 8)) & 0xff;
+    }
+
     /// Encode a signed integer in the given amount of bytes, big endian
     void add_signed(int val, unsigned int bytes)
     {

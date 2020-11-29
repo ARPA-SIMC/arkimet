@@ -48,7 +48,6 @@ public:
     Origin* clone() const override;
 
     int compare(const Type& o) const override;
-    bool equals(const Type& o) const override;
 
     // Get the element style
     origin::Style style() const;
@@ -63,7 +62,6 @@ public:
     static std::string formatStyle(origin::Style s);
 
     /// CODEC functions
-    void encodeWithoutEnvelope(core::BinaryEncoder& enc) const override;
     std::ostream& writeToOstream(std::ostream& o) const override;
     void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
 

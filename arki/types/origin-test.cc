@@ -90,7 +90,7 @@ add_generic_test(
 
 add_method("odim_details", [] {
     using namespace arki::types;
-    unique_ptr<Origin> o = Origin::createODIMH5("1", "2", "3");
+    std::unique_ptr<Origin> o = Origin::createODIMH5("1", "2", "3");
     wassert(actual(o->style()) == Origin::Style::ODIMH5);
     std::string WMO, RAD, PLC;
     o->get_ODIMH5(WMO, RAD, PLC);
