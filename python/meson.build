@@ -123,7 +123,7 @@ python3.install_sources(
 
 runtest = find_program('../arki/runtest')
 
-test('pyarkimet', runtest, args: ['NOSE'],
+test('python', runtest, args: ['NOSE'],
      env: [
          'PYTHON=' + python3_path,
          'PYTHONPATH=' + meson.current_build_dir() + ':' + meson.current_source_dir(),
