@@ -571,11 +571,6 @@ unique_ptr<BUFR> BUFR::create(unsigned char type, unsigned char subtype, unsigne
     return unique_ptr<BUFR>(res);
 }
 
-void BUFR::addValues(const ValueBag& newvalues)
-{
-    m_values.update(newvalues);
-}
-
 std::vector<int> BUFR::toIntVector() const
 {
 	return vector<int>();

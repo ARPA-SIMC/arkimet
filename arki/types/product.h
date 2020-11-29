@@ -165,9 +165,6 @@ public:
         values = m_values;
     }
 
-    // Add/replace these key,value pairs into m_values
-    void addValues(const ValueBag& newvalues);
-
     Style style() const override;
     void encodeWithoutEnvelope(core::BinaryEncoder& enc) const override;
     std::ostream& writeToOstream(std::ostream& o) const override;

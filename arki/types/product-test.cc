@@ -115,13 +115,6 @@ add_method("bufr_details", [] {
     wassert(actual(su) == 2u);
     wassert(actual(lo) == 3u);
     wassert(actual(va) == vb);
-
-    ValueBag vb2;
-    vb2.set("val", values::Value::create_string("blinda"));
-    v->addValues(vb2);
-    stringstream tmp;
-    tmp << *o;
-    wassert(actual(tmp.str()) == "BUFR(001, 002, 003, name=antani, val=blinda)");
 });
 
 // Check ODIMH5
