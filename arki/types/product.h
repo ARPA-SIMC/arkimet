@@ -46,11 +46,7 @@ struct Product : public types::StyledType<Product>
     static std::unique_ptr<Product> decodeString(const std::string& val);
     static std::unique_ptr<Product> decode_structure(const structured::Keys& keys, const structured::Reader& val);
 
-	// Deprecated functions
-	virtual std::vector<int> toIntVector() const = 0;
-	static int getMaxIntCount();
-
-	static void init();
+    static void init();
 
     static std::unique_ptr<Product> createGRIB1(unsigned char origin, unsigned char table, unsigned char product);
     static std::unique_ptr<Product> createGRIB2(
@@ -99,9 +95,6 @@ public:
     GRIB1* clone() const override;
     static std::unique_ptr<GRIB1> create(unsigned char origin, unsigned char table, unsigned char product);
     static std::unique_ptr<GRIB1> decode_structure(const structured::Keys& keys, const structured::Reader& val);
-
-    // Deprecated functions
-    std::vector<int> toIntVector() const override;
 };
 
 class GRIB2 : public Product
@@ -143,9 +136,6 @@ public:
             unsigned char table_version=4,
             unsigned char local_table_version=255);
     static std::unique_ptr<GRIB2> decode_structure(const structured::Keys& keys, const structured::Reader& val);
-
-    // Deprecated functions
-    std::vector<int> toIntVector() const override;
 };
 
 class BUFR : public Product
@@ -178,9 +168,6 @@ public:
     static std::unique_ptr<BUFR> create(unsigned char type, unsigned char subtype, unsigned char localsubtype);
     static std::unique_ptr<BUFR> create(unsigned char type, unsigned char subtype, unsigned char localsubtype, const ValueBag& name);
     static std::unique_ptr<BUFR> decode_structure(const structured::Keys& keys, const structured::Reader& val);
-
-    // Deprecated functions
-    std::vector<int> toIntVector() const override;
 };
 
 class ODIMH5 : public Product
@@ -247,8 +234,6 @@ public:
     VM2* clone() const override;
     static std::unique_ptr<VM2> create(unsigned variable_id);
     static std::unique_ptr<VM2> decode_structure(const structured::Keys& keys, const structured::Reader& val);
-
-    std::vector<int> toIntVector() const override;
 };
 
 }

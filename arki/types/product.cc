@@ -29,9 +29,6 @@ const char* traits<Product>::type_tag = TAG;
 const types::Code traits<Product>::type_code = CODE;
 const size_t traits<Product>::type_sersize_bytes = SERSIZELEN;
 
-// Deprecated
-int Product::getMaxIntCount() { return 4; }
-
 Product::Style Product::parseStyle(const std::string& str)
 {
     if (str == "GRIB1") return Style::GRIB1;
@@ -295,15 +292,6 @@ unique_ptr<GRIB1> GRIB1::create(unsigned char origin, unsigned char table, unsig
     return unique_ptr<GRIB1>(res);
 }
 
-std::vector<int> GRIB1::toIntVector() const
-{
-	vector<int> res;
-	res.push_back(m_origin);
-	res.push_back(m_table);
-	res.push_back(m_product);
-	return res;
-}
-
 
 Product::Style GRIB2::style() const { return Style::GRIB2; }
 void GRIB2::encodeWithoutEnvelope(core::BinaryEncoder& enc) const
@@ -433,18 +421,6 @@ unique_ptr<GRIB2> GRIB2::create(unsigned short centre, unsigned char discipline,
     return unique_ptr<GRIB2>(res);
 }
 
-std::vector<int> GRIB2::toIntVector() const
-{
-    vector<int> res;
-    res.push_back(m_centre);
-    res.push_back(m_discipline);
-    res.push_back(m_category);
-    res.push_back(m_number);
-    res.push_back(m_table_version);
-    res.push_back(m_local_table_version);
-    return res;
-}
-
 
 Product::Style BUFR::style() const { return Style::BUFR; }
 
@@ -571,11 +547,6 @@ unique_ptr<BUFR> BUFR::create(unsigned char type, unsigned char subtype, unsigne
     return unique_ptr<BUFR>(res);
 }
 
-std::vector<int> BUFR::toIntVector() const
-{
-	return vector<int>();
-}
-
 
 Product::Style ODIMH5::style() const { return Style::ODIMH5; }
 
@@ -672,11 +643,6 @@ unique_ptr<ODIMH5> ODIMH5::create(const std::string& obj, const std::string& pro
     return unique_ptr<ODIMH5>(res);
 }
 
-std::vector<int> ODIMH5::toIntVector() const
-{
-	return vector<int>();
-}
-
 
 const ValueBag& VM2::derived_values() const {
     if (m_derived_values.get() == 0) {
@@ -757,12 +723,6 @@ unique_ptr<VM2> VM2::create(unsigned variable_id)
 std::unique_ptr<VM2> VM2::decode_structure(const structured::Keys& keys, const structured::Reader& val)
 {
     return VM2::create(val.as_int(keys.product_id, "product id"));
-}
-
-
-std::vector<int> VM2::toIntVector() const
-{
-	return vector<int>();
 }
 
 }
