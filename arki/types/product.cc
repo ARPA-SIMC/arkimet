@@ -55,49 +55,370 @@ std::string Product::formatStyle(Product::Style s)
     }
 }
 
-unique_ptr<Product> Product::decode(core::BinaryDecoder& dec)
+Product* Product::clone() const
 {
-    Style s = (Style)dec.pop_uint(1, "product");
-    switch (s)
+    return new Product(data, size);
+}
+
+product::Style Product::style() const
+{
+    return (product::Style)data[0];
+}
+
+void Product::get_GRIB1(unsigned& origin, unsigned& table, unsigned& product) const
+{
+    core::BinaryDecoder dec(data + 1, size - 1);
+    origin  = dec.pop_uint(1, "GRIB1 origin");
+    table   = dec.pop_uint(1, "GRIB1 table");
+    product = dec.pop_uint(1, "GRIB1 product");
+}
+
+void Product::get_GRIB2(unsigned& centre, unsigned& discipline, unsigned& category, unsigned& number, unsigned& table_version, unsigned& local_table_version) const
+{
+    core::BinaryDecoder dec(data + 1, size - 1);
+    centre    = dec.pop_uint(2, "GRIB2 centre");
+    discipline = dec.pop_uint(1, "GRIB2 discipline");
+    category   = dec.pop_uint(1, "GRIB2 category");
+    number     = dec.pop_uint(1, "GRIB2 number");
+    table_version = 4;
+    if (dec) table_version = dec.pop_uint(1, "GRIB2 table version");
+    local_table_version = 255;
+    if (dec) local_table_version = dec.pop_uint(1, "GRIB2 local table version");
+}
+
+void Product::get_BUFR(unsigned& type, unsigned& subtype, unsigned& localsubtype, ValueBag& values) const
+{
+    core::BinaryDecoder dec(data + 1, size - 1);
+    type         = dec.pop_uint(1, "GRIB1 type");
+    subtype      = dec.pop_uint(1, "GRIB1 subtype");
+    localsubtype = dec.pop_uint(1, "GRIB1 localsubtype");
+    values = ValueBag::decode(dec);
+}
+
+void Product::get_ODIMH5(std::string& obj, std::string& prod) const
+{
+    core::BinaryDecoder dec(data + 1, size - 1);
+    size_t len;
+    len = dec.pop_varint<size_t>("ODIMH5 obj len");
+    obj = dec.pop_string(len, "ODIMH5 obj");
+    len = dec.pop_varint<size_t>("ODIMH5 product len");
+    prod = dec.pop_string(len, "ODIMH5 product ");
+}
+
+void Product::get_VM2(unsigned& variable_id) const
+{
+    core::BinaryDecoder dec(data + 1, size - 1);
+    variable_id = dec.pop_uint(4, "VM2 variable id");
+}
+
+ValueBag Product::get_VM2_derived_values(unsigned variable_id)
+{
+#ifdef HAVE_VM2
+    return utils::vm2::get_variable(variable_id);
+#else
+    return ValueBag();
+#endif
+}
+
+int Product::compare(const Type& o) const
+{
+    int res = Encoded::compare(o);
+    if (res != 0) return res;
+
+    // We should be the same kind, so upcast
+    const Product* v = dynamic_cast<const Product*>(&o);
+    if (!v)
     {
-        case Style::GRIB1: {
-            uint8_t origin  = dec.pop_uint(1, "GRIB1 origin");
-            uint8_t table   = dec.pop_uint(1, "GRIB1 table");
-            uint8_t product = dec.pop_uint(1, "GRIB1 product");
-            return createGRIB1(origin, table, product);
+        std::stringstream ss;
+        ss << "cannot compare metadata types: second element claims to be `Product`, but it is `" << typeid(&o).name() << "' instead";
+        throw std::runtime_error(ss.str());
+    }
+
+    auto sty = style();
+
+    // Compare style
+    if (int res = (int)sty - (int)v->style()) return res;
+
+    // Styles are the same, compare the rest
+    switch (sty)
+    {
+        case product::Style::GRIB1:
+        {
+            // TODO: can probably do lexicographical compare of raw data here?
+            unsigned o, t, p, vo, vt, vp;
+            get_GRIB1(o, t, p);
+            v->get_GRIB1(vo, vt, vp);
+            if (int res = o - vo) return res;
+            if (int res = t - vt) return res;
+            return p - vp;
         }
-        case Style::GRIB2: {
-            uint16_t centre    = dec.pop_uint(2, "GRIB2 centre");
-            uint8_t discipline = dec.pop_uint(1, "GRIB2 discipline");
-            uint8_t category   = dec.pop_uint(1, "GRIB2 category");
-            uint8_t number     = dec.pop_uint(1, "GRIB2 number");
-            uint8_t table_version = 4;
-            if (dec) table_version = dec.pop_uint(1, "GRIB2 table version");
-            uint8_t local_table_version = 255;
-            if (dec) local_table_version = dec.pop_uint(1, "GRIB2 local table version");
-            return createGRIB2(centre, discipline, category, number, table_version, local_table_version);
+        case product::Style::GRIB2:
+        {
+            // TODO: can probably do lexicographical compare of raw data here?
+            unsigned ce, di, ca, nu, ta, lo;
+            unsigned vce, vdi, vca, vnu, vta, vlo;
+            get_GRIB2(ce, di, ca, nu, ta, lo);
+            v->get_GRIB2(vce, vdi, vca, vnu, vta, vlo);
+            if (int res = ce - vce) return res;
+            if (int res = di - vdi) return res;
+            if (int res = ca - vca) return res;
+            if (int res = nu - vnu) return res;
+            if (int res = ta - vta) return res;
+            return lo - vlo;
         }
-        case Style::BUFR: {
-            uint8_t type         = dec.pop_uint(1, "GRIB1 type");
-            uint8_t subtype      = dec.pop_uint(1, "GRIB1 subtype");
-            uint8_t localsubtype = dec.pop_uint(1, "GRIB1 localsubtype");
-            ValueBag values = ValueBag::decode(dec);
-            return createBUFR(type, subtype, localsubtype, values);
+        case product::Style::BUFR:
+        {
+            // TODO: can probably do lexicographical compare of raw data here?
+            unsigned ty, su, lo, vty, vsu, vlo;
+            ValueBag va, vva;
+            get_BUFR(ty, su, lo, va);
+            v->get_BUFR(vty, vsu, vlo, vva);
+            if (int res = ty - vty) return res;
+            if (int res = su - vsu) return res;
+            if (int res = lo - vlo) return res;
+            return va.compare(vva);
         }
-        case Style::ODIMH5: {
-            size_t len;
-            len = dec.pop_varint<size_t>("ODIMH5 obj len");
-            string o = dec.pop_string(len, "ODIMH5 obj");
-            len = dec.pop_varint<size_t>("ODIMH5 product len");
-            string p = dec.pop_string(len, "ODIMH5 product ");
-            return createODIMH5(o, p);
+        case product::Style::ODIMH5:
+        {
+            std::string ob, pr, vob, vpr;
+            get_ODIMH5(ob, pr);
+            v->get_ODIMH5(vob, vpr);
+            if (int res = ob.compare(vob)) return res;
+            if (int res = pr.compare(vpr)) return res;
+            return 0;
         }
-        case Style::VM2: {
-            return createVM2(dec.pop_uint(4, "VM2 variable id"));
+        case product::Style::VM2:
+        {
+            unsigned vi, vvi;
+            get_VM2(vi);
+            v->get_VM2(vvi);
+            if (vi == vvi) return 0;
+            return (vi > vvi ? 1 : -1);
         }
         default:
-            throw_consistency_error("parsing Product", "style is " + formatStyle(s) + "but we can only decode GRIB1, GRIB2 and BUFR");
+            throw_consistency_error("parsing Product", "unknown Product style " + formatStyle(sty));
     }
+}
+
+std::ostream& Product::writeToOstream(std::ostream& o) const
+{
+    auto sty = style();
+    switch (sty)
+    {
+        case product::Style::GRIB1:
+        {
+            unsigned ori, tab, pro;
+            get_GRIB1(ori, tab, pro);
+            return o << formatStyle(sty) << "("
+                     << setfill('0')
+                     << setw(3) << ori << ", "
+                     << setw(3) << tab << ", "
+                     << setw(3) << pro
+                     << setfill(' ')
+                     << ")";
+        }
+        case product::Style::GRIB2:
+        {
+            unsigned ce, di, ca, nu, ta, lo;
+            get_GRIB2(ce, di, ca, nu, ta, lo);
+            o << formatStyle(sty) << "("
+              << setfill('0')
+              << setw(5) << ce << ", "
+              << setw(3) << di << ", "
+              << setw(3) << ca << ", "
+              << setw(3) << nu;
+            if (ta != 4 || ta != 255)
+            {
+                o << ", " << setw(3) << ta;
+                if (ta != 255)
+                    o << ", " << setw(3) << lo;
+            }
+            o << setfill(' ')
+              << ")";
+            return o;
+        }
+        case product::Style::BUFR:
+        {
+            unsigned ty, su, lo;
+            ValueBag va;
+            get_BUFR(ty, su, lo, va);
+            o << formatStyle(sty) << "("
+              << setfill('0')
+              << setw(3) << ty << ", "
+              << setw(3) << su << ", "
+              << setw(3) << lo
+              << setfill(' ');
+            if (va.empty())
+                o << ")";
+            else
+                o << ", " << va << ")";
+            return o;
+        }
+        case product::Style::ODIMH5:
+        {
+            std::string ob, pr;
+            get_ODIMH5(ob, pr);
+            return o << formatStyle(sty) << "("
+                    << ob << ", "
+                    << pr
+                    << ")";
+        }
+        case product::Style::VM2:
+        {
+            unsigned vi;
+            get_VM2(vi);
+            o << formatStyle(sty) << "(" << vi;
+            auto dv = get_VM2_derived_values(vi);
+            if (!dv.empty())
+                o << ", " << dv.toString();
+            return o << ")";
+        }
+        default:
+            throw_consistency_error("parsing Product", "unknown Product style " + formatStyle(sty));
+    }
+}
+
+void Product::serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f) const
+{
+    auto sty = style();
+    e.add(keys.type_style, formatStyle(sty));
+    switch (sty)
+    {
+        case product::Style::GRIB1:
+        {
+            unsigned o, t, p;
+            get_GRIB1(o, t, p);
+            e.add(keys.product_origin, o);
+            e.add(keys.product_table, t);
+            e.add(keys.product_product, p);
+            break;
+        }
+        case product::Style::GRIB2:
+        {
+            unsigned ce, di, ca, nu, ta, lo;
+            get_GRIB2(ce, di, ca, nu, ta, lo);
+            e.add(keys.product_centre, ce);
+            e.add(keys.product_discipline, di);
+            e.add(keys.product_category, ca);
+            e.add(keys.product_number, nu);
+            e.add(keys.product_table_version, ta);
+            e.add(keys.product_local_table_version, lo);
+            break;
+        }
+        case product::Style::BUFR:
+        {
+            unsigned ty, su, lo;
+            ValueBag va;
+            get_BUFR(ty, su, lo, va);
+            e.add(keys.product_type, ty);
+            e.add(keys.product_subtype, su);
+            e.add(keys.product_local_subtype, lo);
+            if (!va.empty())
+            {
+                e.add(keys.product_value);
+                va.serialise(e);
+            }
+            break;
+        }
+        case product::Style::ODIMH5:
+        {
+            std::string ob, pr;
+            get_ODIMH5(ob, pr);
+            e.add(keys.product_object, ob);
+            e.add(keys.product_product, pr);
+            break;
+        }
+        case product::Style::VM2:
+        {
+            unsigned vi;
+            get_VM2(vi);
+            e.add(keys.product_id, vi);
+            auto dv = get_VM2_derived_values(vi);
+            if (!dv.empty()) {
+                e.add(keys.product_value);
+                dv.serialise(e);
+            }
+            break;
+        }
+        default:
+            throw_consistency_error("parsing Product", "unknown Product style " + formatStyle(sty));
+    }
+}
+
+std::string Product::exactQuery() const
+{
+    switch (style())
+    {
+        case product::Style::GRIB1:
+        {
+            unsigned o, t, p;
+            get_GRIB1(o, t, p);
+
+            char buf[128];
+            snprintf(buf, 128, "GRIB1,%u,%u,%u", o, t, p);
+            return buf;
+        }
+        case product::Style::GRIB2:
+        {
+            unsigned ce, di, ca, nu, ta, lo;
+            get_GRIB2(ce, di, ca, nu, ta, lo);
+
+            std::stringstream ss;
+            ss << "GRIB2," << ce << "," << di << "," << ca << "," << nu;
+            if (ta != 4 || lo != 255)
+            {
+                ss << "," << ta;
+                if (lo != 255)
+                    ss << "," << lo;
+            }
+            return ss.str();
+        }
+        case product::Style::BUFR:
+        {
+            unsigned ty, su, lo;
+            ValueBag va;
+            get_BUFR(ty, su, lo, va);
+
+            std::stringstream ss;
+            ss << "BUFR," << ty << "," << su << "," << lo;
+            if (!va.empty())
+                ss << ":" << va.toString();
+            return ss.str();
+        }
+        case product::Style::ODIMH5:
+        {
+            std::string ob, pr;
+            get_ODIMH5(ob, pr);
+
+            std::ostringstream ss;
+            ss << formatStyle(style()) << ","
+               << ob << ","
+               << pr;
+            return ss.str();
+        }
+        case product::Style::VM2:
+        {
+            unsigned vi;
+            get_VM2(vi);
+
+            std::stringstream ss;
+            ss << "VM2," << vi;
+            auto dv = get_VM2_derived_values(vi);
+            if (!dv.empty())
+                ss << ":" << dv.toString();
+            return ss.str();
+        }
+        default:
+            throw_consistency_error("parsing Product", "unknown Product style " + formatStyle(style()));
+    }
+}
+
+unique_ptr<Product> Product::decode(core::BinaryDecoder& dec)
+{
+    dec.ensure_size(1, "Product style");
+    std::unique_ptr<Product> res(new Product(dec.buf, dec.size));
+    dec.skip(dec.size);
+    return res;
 }
 
 /*
@@ -112,10 +433,10 @@ static double parseDouble(const std::string& val)
 
 unique_ptr<Product> Product::decodeString(const std::string& val)
 {
-	string inner;
-	Product::Style style = outerParse<Product>(val, inner);
-	switch (style)
-	{
+    std::string inner;
+    product::Style style = outerParse<Product>(val, inner);
+    switch (style)
+    {
         //case Product::NONE: return Product();
         case Style::GRIB1: {
             NumberList<3> nums(inner, "Product");
@@ -164,22 +485,68 @@ unique_ptr<Product> Product::decodeString(const std::string& val)
 
 std::unique_ptr<Product> Product::decode_structure(const structured::Keys& keys, const structured::Reader& val)
 {
-    switch (style_from_structure(keys, val))
+    product::Style sty = parseStyle(val.as_string(keys.type_style, "type style"));
+    switch (sty)
     {
-        case Style::GRIB1: return upcast<Product>(product::GRIB1::decode_structure(keys, val));
-        case Style::GRIB2: return upcast<Product>(product::GRIB2::decode_structure(keys, val));
-        case Style::BUFR: return upcast<Product>(product::BUFR::decode_structure(keys, val));
-        case Style::ODIMH5: return upcast<Product>(product::ODIMH5::decode_structure(keys, val));
-        case Style::VM2: return upcast<Product>(product::VM2::decode_structure(keys, val));
-        default: throw std::runtime_error("Unknown Product style");
+        case Style::GRIB1:
+            return createGRIB1(
+                    val.as_int(keys.product_origin, "product origin"),
+                    val.as_int(keys.product_table, "product table"),
+                    val.as_int(keys.product_product, "product product"));
+        case Style::GRIB2:
+        {
+            int tv = 4;
+            int ltv = 255;
+            if (val.has_key(keys.product_table_version, structured::NodeType::INT))
+                tv = val.as_int(keys.product_table_version, "product table version");
+            if (val.has_key(keys.product_local_table_version, structured::NodeType::INT))
+                ltv = val.as_int(keys.product_local_table_version, "product local table version");
+            return createGRIB2(
+                    val.as_int(keys.product_centre, "product centre"),
+                    val.as_int(keys.product_discipline, "product discipline"),
+                    val.as_int(keys.product_category, "product category"),
+                    val.as_int(keys.product_number, "product number"),
+                    tv, ltv);
+        }
+        case Style::BUFR:
+            if (val.has_key(keys.product_value, structured::NodeType::MAPPING))
+            {
+                ValueBag values;
+                val.sub(keys.product_value, "product value", [&](const structured::Reader& value) {
+                    values = ValueBag::parse(value);
+                });
+                return createBUFR(
+                        val.as_int(keys.product_type, "product type"),
+                        val.as_int(keys.product_subtype, "product subtype"),
+                        val.as_int(keys.product_local_subtype, "product localsubtype"),
+                        values);
+            } else {
+                return createBUFR(
+                        val.as_int(keys.product_type, "product type"),
+                        val.as_int(keys.product_subtype, "product subtype"),
+                        val.as_int(keys.product_local_subtype, "product localsubtype"));
+            }
+        case Style::ODIMH5:
+            return createODIMH5(
+                    val.as_string(keys.product_object, "product object"),
+                    val.as_string(keys.product_product, "product name"));
+        case Style::VM2:
+            return createVM2(val.as_int(keys.product_id, "product id"));
+        default:
+            throw std::runtime_error("Unknown Product style");
     }
 }
 
-
 std::unique_ptr<Product> Product::createGRIB1(unsigned char origin, unsigned char table, unsigned char product)
 {
-    return upcast<Product>(product::GRIB1::create(origin, table, product));
+    uint8_t* buf = new uint8_t[4];
+    buf[0] = (uint8_t)product::Style::GRIB1;
+    buf[1] = origin;
+    buf[2] = table;
+    buf[3] = product;
+    return std::unique_ptr<Product>(new Product(buf, 4));
 }
+
 std::unique_ptr<Product> Product::createGRIB2(
         unsigned short centre,
         unsigned char discipline,
@@ -188,543 +555,75 @@ std::unique_ptr<Product> Product::createGRIB2(
         unsigned char table_version,
         unsigned char local_table_version)
 {
-    return upcast<Product>(product::GRIB2::create(centre, discipline, category, number, table_version, local_table_version));
+    unsigned size = 6;
+    if (table_version != 4 || local_table_version != 255)
+    {
+        ++size;
+        if (local_table_version != 255)
+            ++size;
+    }
+    uint8_t* buf = new uint8_t[size];
+    buf[0] = (uint8_t)product::Style::GRIB2;
+    core::BinaryEncoder::set_unsigned(buf + 1, centre, 2);
+    buf[3] = discipline;
+    buf[4] = category;
+    buf[5] = number;
+    if (size > 6)
+    {
+        buf[6] = table_version;
+        if (size > 7)
+            buf[7] = local_table_version;
+    }
+    return std::unique_ptr<Product>(new Product(buf, size));
 }
+
 std::unique_ptr<Product> Product::createBUFR(unsigned char type, unsigned char subtype, unsigned char localsubtype)
 {
-    return upcast<Product>(product::BUFR::create(type, subtype, localsubtype));
+    uint8_t* buf = new uint8_t[4];
+    buf[0] = (uint8_t)product::Style::BUFR;
+    buf[1] = type;
+    buf[2] = subtype;
+    buf[3] = localsubtype;
+    return std::unique_ptr<Product>(new Product(buf, 4));
 }
+
 std::unique_ptr<Product> Product::createBUFR(unsigned char type, unsigned char subtype, unsigned char localsubtype, const ValueBag& name)
 {
-    return upcast<Product>(product::BUFR::create(type, subtype, localsubtype, name));
+    // TODO: optimize encoding by precomputing buffer size and not using a vector?
+    // to do that, we first need a function that estimates the size of the ValueBag
+    std::vector<uint8_t> buf;
+    core::BinaryEncoder enc(buf);
+    enc.add_unsigned((unsigned)product::Style::BUFR, 1);
+    enc.add_unsigned(type, 1);
+    enc.add_unsigned(subtype, 1);
+    enc.add_unsigned(localsubtype, 1);
+    name.encode(enc);
+    return std::unique_ptr<Product>(new Product(buf));
 }
+
 std::unique_ptr<Product> Product::createODIMH5(const std::string& obj, const std::string& prod)
 {
-    return upcast<Product>(product::ODIMH5::create(obj, prod));
+    // TODO: optimize encoding by precomputing buffer size and not using a vector?
+    // to do that, we first need a function that estimates the size of the varints
+    std::vector<uint8_t> buf;
+    core::BinaryEncoder enc(buf);
+    enc.add_unsigned((unsigned)product::Style::ODIMH5, 1);
+    enc.add_varint(obj.size());
+    enc.add_raw(obj);
+    enc.add_varint(prod.size());
+    enc.add_raw(prod);
+    return std::unique_ptr<Product>(new Product(buf));
 }
+
 std::unique_ptr<Product> Product::createVM2(unsigned variable_id)
 {
-    return upcast<Product>(product::VM2::create(variable_id));
+    uint8_t* buf = new uint8_t[5];
+    buf[0] = (uint8_t)product::Style::VM2;
+    core::BinaryEncoder::set_unsigned(buf + 1, variable_id, 4);
+    // TODO: also add derived values to the binary representation? Really? derived_values().encode(enc);
+    return std::unique_ptr<Product>(new Product(buf, 5));
 }
 
-
-namespace product {
-
-Product::Style GRIB1::style() const { return Style::GRIB1; }
-void GRIB1::encodeWithoutEnvelope(core::BinaryEncoder& enc) const
-{
-    Product::encodeWithoutEnvelope(enc);
-    enc.add_unsigned(m_origin, 1);
-    enc.add_unsigned(m_table, 1);
-    enc.add_unsigned(m_product, 1);
-}
-std::ostream& GRIB1::writeToOstream(std::ostream& o) const
-{
-    return o << formatStyle(style()) << "("
-	     << setfill('0')
-	     << setw(3) << (int)m_origin << ", "
-	     << setw(3) << (int)m_table << ", "
-	     << setw(3) << (int)m_product
-	     << setfill(' ')
-	     << ")";
-}
-void GRIB1::serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f) const
-{
-    Product::serialise_local(e, keys, f);
-    e.add(keys.product_origin, m_origin);
-    e.add(keys.product_table, m_table);
-    e.add(keys.product_product, m_product);
-}
-
-std::unique_ptr<GRIB1> GRIB1::decode_structure(const structured::Keys& keys, const structured::Reader& val)
-{
-    return GRIB1::create(
-            val.as_int(keys.product_origin, "product origin"),
-            val.as_int(keys.product_table, "product table"),
-            val.as_int(keys.product_product, "product product"));
-}
-
-std::string GRIB1::exactQuery() const
-{
-    char buf[128];
-    snprintf(buf, 128, "GRIB1,%d,%d,%d", (int)m_origin, (int)m_table, (int)m_product);
-    return buf;
-}
-
-int GRIB1::compare_local(const Product& o) const
-{
-    if (int res = Product::compare_local(o)) return res;
-
-    // We should be the same kind, so upcast
-    const GRIB1* v = dynamic_cast<const GRIB1*>(&o);
-    if (!v)
-        throw_consistency_error(
-            "comparing metadata types",
-            string("second element claims to be a GRIB1 Product, but it is a ") + typeid(&o).name() + " instead");
-
-    if (int res = m_origin - v->m_origin) return res;
-    if (int res = m_table - v->m_table) return res;
-	return m_product - v->m_product;
-}
-
-bool GRIB1::equals(const Type& o) const
-{
-	const GRIB1* v = dynamic_cast<const GRIB1*>(&o);
-	if (!v) return false;
-	return m_origin == v->m_origin && m_table == v->m_table && m_product == v->m_product;
-}
-
-GRIB1* GRIB1::clone() const
-{
-    GRIB1* res = new GRIB1;
-    res->m_origin = m_origin;
-    res->m_table = m_table;
-    res->m_product = m_product;
-    return res;
-}
-
-unique_ptr<GRIB1> GRIB1::create(unsigned char origin, unsigned char table, unsigned char product)
-{
-    GRIB1* res = new GRIB1;
-    res->m_origin = origin;
-    res->m_table = table;
-    res->m_product = product;
-    return unique_ptr<GRIB1>(res);
-}
-
-
-Product::Style GRIB2::style() const { return Style::GRIB2; }
-void GRIB2::encodeWithoutEnvelope(core::BinaryEncoder& enc) const
-{
-    Product::encodeWithoutEnvelope(enc);
-    enc.add_unsigned(m_centre, 2);
-    enc.add_unsigned(m_discipline, 1);
-    enc.add_unsigned(m_category, 1);
-    enc.add_unsigned(m_number, 1);
-    if (m_table_version != 4 || m_local_table_version != 255)
-    {
-        enc.add_unsigned(m_table_version, 1);
-        if (m_local_table_version != 255)
-            enc.add_unsigned(m_local_table_version, 1);
-    }
-}
-std::ostream& GRIB2::writeToOstream(std::ostream& o) const
-{
-    o << formatStyle(style()) << "("
-      << setfill('0')
-      << setw(5) << (int)m_centre << ", "
-      << setw(3) << (int)m_discipline << ", "
-      << setw(3) << (int)m_category << ", "
-      << setw(3) << (int)m_number;
-    if (m_table_version != 4 || m_local_table_version != 255)
-    {
-        o << ", " << setw(3) << (int)m_table_version;
-        if (m_local_table_version != 255)
-            o << ", " << setw(3) << (int)m_local_table_version;
-    }
-    o << setfill(' ')
-      << ")";
-    return o;
-}
-void GRIB2::serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f) const
-{
-    Product::serialise_local(e, keys, f);
-    e.add(keys.product_centre, m_centre);
-    e.add(keys.product_discipline, m_discipline);
-    e.add(keys.product_category, m_category);
-    e.add(keys.product_number, m_number);
-    e.add(keys.product_table_version, m_table_version);
-    e.add(keys.product_local_table_version, m_local_table_version);
-}
-
-std::unique_ptr<GRIB2> GRIB2::decode_structure(const structured::Keys& keys, const structured::Reader& val)
-{
-    int tv = 4;
-    int ltv = 255;
-    if (val.has_key(keys.product_table_version, structured::NodeType::INT))
-        tv = val.as_int(keys.product_table_version, "product table version");
-    if (val.has_key(keys.product_local_table_version, structured::NodeType::INT))
-        ltv = val.as_int(keys.product_local_table_version, "product local table version");
-    return GRIB2::create(
-            val.as_int(keys.product_centre, "product centre"),
-            val.as_int(keys.product_discipline, "product discipline"),
-            val.as_int(keys.product_category, "product category"),
-            val.as_int(keys.product_number, "product number"),
-            tv, ltv);
-}
-
-std::string GRIB2::exactQuery() const
-{
-    stringstream ss;
-    ss << "GRIB2," << (int)m_centre << "," << (int)m_discipline << "," << (int)m_category << "," << (int)m_number;
-    if (m_table_version != 4 || m_local_table_version != 255)
-    {
-        ss << "," << (int)m_table_version;
-        if (m_local_table_version != 255)
-            ss << "," << (int)m_local_table_version;
-    }
-    return ss.str();
-}
-
-int GRIB2::compare_local(const Product& o) const
-{
-    if (int res = Product::compare_local(o)) return res;
-
-    // We should be the same kind, so upcast
-    const GRIB2* v = dynamic_cast<const GRIB2*>(&o);
-    if (!v)
-        throw_consistency_error(
-            "comparing metadata types",
-            string("second element claims to be a GRIB2 Product, but it is a ") + typeid(&o).name() + " instead");
-
-    if (int res = m_centre - v->m_centre) return res;
-    if (int res = m_discipline - v->m_discipline) return res;
-    if (int res = m_category - v->m_category) return res;
-    if (int res = m_number - v->m_number) return res;
-    if (int res = m_table_version - v->m_table_version) return res;
-    return m_local_table_version - v->m_local_table_version;
-}
-
-bool GRIB2::equals(const Type& o) const
-{
-    const GRIB2* v = dynamic_cast<const GRIB2*>(&o);
-    if (!v) return false;
-    return m_centre == v->m_centre
-        && m_discipline == v->m_discipline
-        && m_category == v->m_category
-        && m_number == v->m_number
-        && m_table_version == v->m_table_version
-        && m_local_table_version == v->m_local_table_version;
-}
-
-GRIB2* GRIB2::clone() const
-{
-    GRIB2* res = new GRIB2;
-    res->m_centre = m_centre;
-    res->m_discipline = m_discipline;
-    res->m_category = m_category;
-    res->m_number = m_number;
-    res->m_table_version = m_table_version;
-    res->m_local_table_version = m_local_table_version;
-    return res;
-}
-
-unique_ptr<GRIB2> GRIB2::create(unsigned short centre, unsigned char discipline, unsigned char category, unsigned char number, unsigned char table_version, unsigned char local_table_version)
-{
-    GRIB2* res = new GRIB2;
-    res->m_centre = centre;
-    res->m_discipline = discipline;
-    res->m_category = category;
-    res->m_number = number;
-    res->m_table_version = table_version;
-    res->m_local_table_version = local_table_version;
-    return unique_ptr<GRIB2>(res);
-}
-
-
-Product::Style BUFR::style() const { return Style::BUFR; }
-
-void BUFR::encodeWithoutEnvelope(core::BinaryEncoder& enc) const
-{
-    Product::encodeWithoutEnvelope(enc);
-    enc.add_unsigned(m_type, 1);
-    enc.add_unsigned(m_subtype, 1);
-    enc.add_unsigned(m_localsubtype, 1);
-    m_values.encode(enc);
-}
-std::ostream& BUFR::writeToOstream(std::ostream& o) const
-{
-	o << formatStyle(style()) << "("
-	  << setfill('0')
-	  << setw(3) << (int)m_type << ", "
-	  << setw(3) << (int)m_subtype << ", "
-	  << setw(3) << (int)m_localsubtype
-	  << setfill(' ');
-	if (m_values.empty())
-		o << ")";
-	else
-		o << ", " << m_values << ")";
-	return o;
-}
-void BUFR::serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f) const
-{
-    Product::serialise_local(e, keys, f);
-    e.add(keys.product_type, m_type);
-    e.add(keys.product_subtype, m_subtype);
-    e.add(keys.product_local_subtype, m_localsubtype);
-    if (!m_values.empty())
-    {
-        e.add(keys.product_value);
-        m_values.serialise(e);
-    }
-}
-
-std::unique_ptr<BUFR> BUFR::decode_structure(const structured::Keys& keys, const structured::Reader& val)
-{
-    if (val.has_key(keys.product_value, structured::NodeType::MAPPING))
-    {
-        ValueBag values;
-        val.sub(keys.product_value, "product value", [&](const structured::Reader& value) {
-            values = ValueBag::parse(value);
-        });
-        return BUFR::create(
-                val.as_int(keys.product_type, "product type"),
-                val.as_int(keys.product_subtype, "product subtype"),
-                val.as_int(keys.product_local_subtype, "product localsubtype"),
-                values);
-    } else {
-        return BUFR::create(
-                val.as_int(keys.product_type, "product type"),
-                val.as_int(keys.product_subtype, "product subtype"),
-                val.as_int(keys.product_local_subtype, "product localsubtype"));
-    }
-}
-
-std::string BUFR::exactQuery() const
-{
-    stringstream ss;
-    unsigned ty, su, lo;
-    ValueBag va;
-    get_BUFR(ty, su, lo, va);
-    ss << "BUFR," << ty << "," << su << "," << lo;
-    if (!va.empty())
-        ss << ":" << va.toString();
-    return ss.str();
-}
-
-int BUFR::compare_local(const Product& o) const
-{
-    if (int res = Product::compare_local(o)) return res;
-
-    // We should be the same kind, so upcast
-    const BUFR* v = dynamic_cast<const BUFR*>(&o);
-    if (!v)
-        throw_consistency_error(
-            "comparing metadata types",
-            string("second element claims to be a BUFR Product, but it is a ") + typeid(&o).name() + " instead");
-
-    if (int res = m_type - v->m_type) return res;
-    if (int res = m_subtype - v->m_subtype) return res;
-    if (int res = m_localsubtype - v->m_localsubtype) return res;
-    return m_values.compare(v->m_values);
-}
-bool BUFR::equals(const Type& o) const
-{
-	const BUFR* v = dynamic_cast<const BUFR*>(&o);
-	if (!v) return false;
-	return m_type == v->m_type
-	    && m_subtype == v->m_subtype
-	    && m_localsubtype == v->m_localsubtype
-	    && m_values == v->m_values;
-}
-
-BUFR* BUFR::clone() const
-{
-    BUFR* res = new BUFR;
-    res->m_type = m_type;
-    res->m_subtype = m_subtype;
-    res->m_localsubtype = m_localsubtype;
-    res->m_values = m_values;
-    return res;
-}
-
-unique_ptr<BUFR> BUFR::create(unsigned char type, unsigned char subtype, unsigned char localsubtype)
-{
-    BUFR* res = new BUFR;
-    res->m_type = type;
-    res->m_subtype = subtype;
-    res->m_localsubtype = localsubtype;
-    return unique_ptr<BUFR>(res);
-}
-
-unique_ptr<BUFR> BUFR::create(unsigned char type, unsigned char subtype, unsigned char localsubtype, const ValueBag& values)
-{
-	BUFR* res = new BUFR;
-	res->m_type = type;
-	res->m_subtype = subtype;
-	res->m_localsubtype = localsubtype;
-	res->m_values = values;
-    return unique_ptr<BUFR>(res);
-}
-
-
-Product::Style ODIMH5::style() const { return Style::ODIMH5; }
-
-void ODIMH5::encodeWithoutEnvelope(core::BinaryEncoder& enc) const
-{
-    Product::encodeWithoutEnvelope(enc);
-    enc.add_varint(m_obj.size());
-    enc.add_raw(m_obj);
-    enc.add_varint(m_prod.size());
-    enc.add_raw(m_prod);
-    /*REMOVED: enc.addDouble(m_prodpar1); */
-    /*REMOVED: enc.addDouble(m_prodpar2); */
-}
-
-std::ostream& ODIMH5::writeToOstream(std::ostream& o) const
-{
-	return o << formatStyle(style()) << "("
-		<< m_obj << ", "
-		<< m_prod 
-		/* REMOVED: << "," << std::fixed << std::setprecision(5) << m_prodpar1 << "," << std::fixed << std::setprecision(5) << m_prodpar2 << ")" */
-		<< ")"
-		;
-}
-
-void ODIMH5::serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f) const
-{
-    Product::serialise_local(e, keys, f);
-    e.add(keys.product_object, m_obj);
-    e.add(keys.product_product, m_prod);
-}
-
-std::unique_ptr<ODIMH5> ODIMH5::decode_structure(const structured::Keys& keys, const structured::Reader& val)
-{
-    return ODIMH5::create(
-            val.as_string(keys.product_object, "product object"),
-            val.as_string(keys.product_product, "product name"));
-}
-
-std::string ODIMH5::exactQuery() const
-{
-	std::ostringstream ss;
-	ss 	<< formatStyle(style()) << ","
-		<< m_obj << ","
-		<< m_prod 
-		/*REMOVED: << "," << std::fixed << std::setprecision(5) << m_prodpar1 << "," << std::fixed << std::setprecision(5) << m_prodpar2 */
-		;
-	return ss.str();
-}
-
-int ODIMH5::compare_local(const Product& o) const
-{
-    if (int res = Product::compare_local(o)) return res;
-
-    // We should be the same kind, so upcast
-    const ODIMH5* v = dynamic_cast<const ODIMH5*>(&o);
-    if (!v)
-        throw_consistency_error(
-                "comparing metadata types",
-                string("second element claims to be a ODIMH5 Product, but it is a ") + typeid(&o).name() + " instead");
-
-    if (int resi = m_obj.compare(v->m_obj)) 	return resi;
-	if (int resi = m_prod.compare(v->m_prod)) 	return resi;
-	/*REMOVED: if (double resd = m_prodpar1 - v->m_prodpar1) 	return resd > 0 ? 1 : -1; */
-	/*REMOVED: if (double resd = m_prodpar2 - v->m_prodpar2) 	return resd > 0 ? 1 : -1; */
-	return 0;
-}
-
-bool ODIMH5::equals(const Type& o) const
-{
-	const ODIMH5* v = dynamic_cast<const ODIMH5*>(&o);
-	if (!v) return false;
-	return (m_obj == v->m_obj) && (m_prod == v->m_prod) 
-		/*REMOVED: && (m_prodpar1 == v->m_prodpar1) && (m_prodpar2 == v->m_prodpar2) */
-		;
-}
-
-ODIMH5* ODIMH5::clone() const
-{
-    ODIMH5* res = new ODIMH5;
-    res->m_obj = m_obj;
-    res->m_prod = m_prod;
-    return res;
-}
-
-unique_ptr<ODIMH5> ODIMH5::create(const std::string& obj, const std::string& prod
-	/*PRODPAR: , double prodpar1, double prodpar2 */
-)
-{
-    ODIMH5* res = new ODIMH5;
-    res->m_obj = obj;
-    res->m_prod = prod;
-    /*REMOVED: res->m_prodpar1 = prodpar1; */
-    /*REMOVED: res->m_prodpar2  = prodpar2; */
-    return unique_ptr<ODIMH5>(res);
-}
-
-
-ValueBag VM2::derived_values() const
-{
-#ifdef HAVE_VM2
-    return utils::vm2::get_variable(m_variable_id);
-#else
-    return ValueBag();
-#endif
-}
-
-Product::Style VM2::style() const { return Style::VM2; }
-
-void VM2::encodeWithoutEnvelope(core::BinaryEncoder& enc) const
-{
-    Product::encodeWithoutEnvelope(enc);
-    enc.add_unsigned(m_variable_id, 4);
-    derived_values().encode(enc);
-}
-std::ostream& VM2::writeToOstream(std::ostream& o) const
-{
-    o << formatStyle(style()) << "(" << m_variable_id;
-    auto dv = derived_values();
-    if (!dv.empty())
-        o << ", " << dv.toString();
-    return o << ")";
-}
-void VM2::serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f) const
-{
-    Product::serialise_local(e, keys, f);
-    e.add(keys.product_id, m_variable_id);
-    if (!derived_values().empty()) {
-        e.add(keys.product_value);
-        derived_values().serialise(e);
-    }
-}
-std::string VM2::exactQuery() const
-{
-    stringstream ss;
-    ss << "VM2," << m_variable_id;
-    if (!derived_values().empty())
-        ss << ":" << derived_values().toString();
-    return ss.str();
-}
-int VM2::compare_local(const Product& o) const
-{
-    if (int res = Product::compare_local(o)) return res;
-
-    const VM2* v = dynamic_cast<const VM2*>(&o);
-    if (!v)
-        throw_consistency_error(
-            "comparing metadata types",
-            string("second element claims to be a VM2 Product, but it is a ") + typeid(&o).name() + " instead");
-    if (m_variable_id == v->m_variable_id) return 0;
-    return (m_variable_id > v->m_variable_id ? 1 : -1);
-}
-bool VM2::equals(const Type& o) const
-{
-    const VM2* v = dynamic_cast<const VM2*>(&o);
-    if (!v) return false;
-    return m_variable_id == v->m_variable_id;
-}
-
-VM2* VM2::clone() const
-{
-    VM2* res = new VM2;
-    res->m_variable_id = m_variable_id;
-    return res;
-}
-
-unique_ptr<VM2> VM2::create(unsigned variable_id)
-{
-    VM2* res = new VM2;
-    res->m_variable_id = variable_id;
-    return unique_ptr<VM2>(res);
-}
-
-std::unique_ptr<VM2> VM2::decode_structure(const structured::Keys& keys, const structured::Reader& val)
-{
-    return VM2::create(val.as_int(keys.product_id, "product id"));
-}
-
-}
 
 void Product::init()
 {

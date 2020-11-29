@@ -167,13 +167,14 @@ std::string Origin::formatStyle(origin::Style s)
 
 std::ostream& Origin::writeToOstream(std::ostream& o) const
 {
-    switch (style())
+    auto sty = style();
+    switch (sty)
     {
         case origin::Style::GRIB1:
         {
             unsigned c, s, p;
             get_GRIB1(c, s, p);
-            return o << formatStyle(style()) << "("
+            return o << formatStyle(sty) << "("
                      << setfill('0')
                      << setw(3) << (int)c << ", "
                      << setw(3) << (int)s << ", "
@@ -185,7 +186,7 @@ std::ostream& Origin::writeToOstream(std::ostream& o) const
         {
             unsigned ce, su, pt, bg, pi;
             get_GRIB2(ce, su, pt, bg, pi);
-            return o << formatStyle(style()) << "("
+            return o << formatStyle(sty) << "("
                      << setfill('0')
                      << setw(5) << (int)ce << ", "
                      << setw(5) << (int)su << ", "
@@ -199,7 +200,7 @@ std::ostream& Origin::writeToOstream(std::ostream& o) const
         {
             unsigned c, s;
             get_BUFR(c, s);
-            return o << formatStyle(style()) << "("
+            return o << formatStyle(sty) << "("
                      << setfill('0')
                      << setw(3) << (int)c << ", "
                      << setw(3) << (int)s
@@ -210,13 +211,13 @@ std::ostream& Origin::writeToOstream(std::ostream& o) const
         {
             std::string WMO, RAD, PLC;
             get_ODIMH5(WMO, RAD, PLC);
-            return o << formatStyle(style()) << "("
+            return o << formatStyle(sty) << "("
                      << WMO << ", "
                      << RAD << ", "
                      << PLC << ")";
         }
         default:
-            throw_consistency_error("parsing Origin", "unknown Origin style " + formatStyle(style()));
+            throw_consistency_error("parsing Origin", "unknown Origin style " + formatStyle(sty));
     }
 }
 

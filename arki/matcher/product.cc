@@ -27,8 +27,9 @@ MatchProductGRIB1::MatchProductGRIB1(const std::string& pattern)
 
 bool MatchProductGRIB1::matchItem(const Type& o) const
 {
-    const types::product::GRIB1* v = dynamic_cast<const types::product::GRIB1*>(&o);
+    const types::Product* v = dynamic_cast<const types::Product*>(&o);
     if (!v) return false;
+    if (v->style() != product::Style::GRIB1) return false;
     unsigned ori, tab, pro;
     v->get_GRIB1(ori, tab, pro);
     if (origin != -1 && (unsigned)origin != ori) return false;
@@ -60,8 +61,9 @@ MatchProductGRIB2::MatchProductGRIB2(const std::string& pattern)
 
 bool MatchProductGRIB2::matchItem(const Type& o) const
 {
-    const types::product::GRIB2* v = dynamic_cast<const types::product::GRIB2*>(&o);
+    const types::Product* v = dynamic_cast<const types::Product*>(&o);
     if (!v) return false;
+    if (v->style() != product::Style::GRIB2) return false;
     unsigned ce, di, ca, nu, ta, lo;
     v->get_GRIB2(ce, di, ca, nu, ta, lo);
     if (centre != -1 && (unsigned)centre != ce) return false;
@@ -97,8 +99,9 @@ MatchProductBUFR::MatchProductBUFR(const std::string& pattern)
 
 bool MatchProductBUFR::matchItem(const Type& o) const
 {
-    const types::product::BUFR* v = dynamic_cast<const types::product::BUFR*>(&o);
+    const types::Product* v = dynamic_cast<const types::Product*>(&o);
     if (!v) return false;
+    if (v->style() != product::Style::BUFR) return false;
     unsigned ty, su, lo;
     ValueBag va;
     v->get_BUFR(ty, su, lo, va);
@@ -141,8 +144,9 @@ MatchProductODIMH5::MatchProductODIMH5(const std::string& pattern)
 
 bool MatchProductODIMH5::matchItem(const Type& o) const
 {
-    const types::product::ODIMH5* v = dynamic_cast<const types::product::ODIMH5*>(&o);
+    const types::Product* v = dynamic_cast<const types::Product*>(&o);
     if (!v) return false;
+    if (v->style() != product::Style::ODIMH5) return false;
     std::string ob, pr;
     v->get_ODIMH5(ob, pr);
     if (obj.size() &&  obj != ob)  return false;
@@ -173,8 +177,9 @@ MatchProductVM2::MatchProductVM2(const std::string& pattern)
 }
 bool MatchProductVM2::matchItem(const Type& o) const
 {
-    const types::product::VM2* v = dynamic_cast<const types::product::VM2*>(&o);
+    const types::Product* v = dynamic_cast<const types::Product*>(&o);
     if (!v) return false;
+    if (v->style() != product::Style::VM2) return false;
     unsigned vi;
     v->get_VM2(vi);
 

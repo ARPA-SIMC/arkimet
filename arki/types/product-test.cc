@@ -25,9 +25,8 @@ add_method("grib1_details", [] {
     using namespace arki::types;
     unique_ptr<Product> o = Product::createGRIB1(1, 2, 3);
     wassert(actual(o->style()) == Product::Style::GRIB1);
-    const product::GRIB1* v = dynamic_cast<product::GRIB1*>(o.get());
     unsigned ori, tab, pro;
-    v->get_GRIB1(ori, tab, pro);
+    o->get_GRIB1(ori, tab, pro);
     wassert(actual(ori) == 1u);
     wassert(actual(tab) == 2u);
     wassert(actual(pro) == 3u);
@@ -57,13 +56,11 @@ add_generic_test("grib2_local_table",
 add_method("grib2_details", [] {
     using namespace arki::types;
     unique_ptr<Product> o;
-    const product::GRIB2* v;
     unsigned ce, di, ca, nu, ta, lo;
 
     o = Product::createGRIB2(1, 2, 3, 4);
     wassert(actual(o->style()) == Product::Style::GRIB2);
-    v = dynamic_cast<product::GRIB2*>(o.get());
-    v->get_GRIB2(ce, di, ca, nu, ta, lo);
+    o->get_GRIB2(ce, di, ca, nu, ta, lo);
     wassert(actual(ce) == 1u);
     wassert(actual(di) == 2u);
     wassert(actual(ca) == 3u);
@@ -73,8 +70,7 @@ add_method("grib2_details", [] {
 
     o = Product::createGRIB2(1, 2, 3, 4, 5);
     wassert(actual(o->style()) == Product::Style::GRIB2);
-    v = dynamic_cast<product::GRIB2*>(o.get());
-    v->get_GRIB2(ce, di, ca, nu, ta, lo);
+    o->get_GRIB2(ce, di, ca, nu, ta, lo);
     wassert(actual(ce) == 1u);
     wassert(actual(di) == 2u);
     wassert(actual(ca) == 3u);
@@ -84,8 +80,7 @@ add_method("grib2_details", [] {
 
     o = Product::createGRIB2(1, 2, 3, 4, 4, 5);
     wassert(actual(o->style()) == Product::Style::GRIB2);
-    v = dynamic_cast<product::GRIB2*>(o.get());
-    v->get_GRIB2(ce, di, ca, nu, ta, lo);
+    o->get_GRIB2(ce, di, ca, nu, ta, lo);
     wassert(actual(ce) == 1u);
     wassert(actual(di) == 2u);
     wassert(actual(ca) == 3u);
@@ -107,10 +102,9 @@ add_method("bufr_details", [] {
     vb.set("name", values::Value::create_string("antani"));
     unique_ptr<Product> o = Product::createBUFR(1, 2, 3, vb);
     wassert(actual(o->style()) == Product::Style::BUFR);
-    product::BUFR* v = dynamic_cast<product::BUFR*>(o.get());
     unsigned ty, su, lo;
     ValueBag va;
-    v->get_BUFR(ty, su, lo, va);
+    o->get_BUFR(ty, su, lo, va);
     wassert(actual(ty) == 1u);
     wassert(actual(su) == 2u);
     wassert(actual(lo) == 3u);
@@ -128,9 +122,8 @@ add_method("odim_details", [] {
     using namespace arki::types;
     std::unique_ptr<Product> o = Product::createODIMH5("obj", "prod");
     wassert(actual(o->style()) == Product::Style::ODIMH5);
-    product::ODIMH5* v = dynamic_cast<product::ODIMH5*>(o.get());
     std::string obj, prod;
-    v->get_ODIMH5(obj, prod);
+    o->get_ODIMH5(obj, prod);
     wassert(actual(obj) == "obj");
     wassert(actual(prod) == "prod");
 });
@@ -146,16 +139,15 @@ add_method("vm2_details", [] {
     using namespace arki::types;
     unique_ptr<Product> o = Product::createVM2(1);
     wassert(actual(o->style()) == Product::Style::VM2);
-    const product::VM2* v = dynamic_cast<product::VM2*>(o.get());
     unsigned vi;
-    v->get_VM2(vi);
+    o->get_VM2(vi);
     wassert(actual(vi) == 1ul);
 
     // Test derived values
     ValueBag vb1 = ValueBag::parse("bcode=B20013,lt1=256,l1=0,lt2=258,l2=0,tr=254,p1=0,p2=0,unit=m");
-    wassert_true(product::VM2::create(1)->derived_values() == vb1);
+    wassert_true(Product::get_VM2_derived_values(1) == vb1);
     ValueBag vb2 = ValueBag::parse("bcode=NONONO,lt1=256,l1=0,lt2=258,tr=254,p1=0,p2=0,unit=m");
-    wassert_true(product::VM2::create(1)->derived_values() != vb2);
+    wassert_true(Product::get_VM2_derived_values(1) != vb2);
 });
 
 }

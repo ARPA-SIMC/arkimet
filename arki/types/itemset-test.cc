@@ -54,7 +54,7 @@ struct Fixture : public arki::utils::tests::Fixture
     void fill(ItemSet& md)
     {
         md.set(Origin::createGRIB1(1, 2, 3));
-        md.set(product::GRIB1::create(1, 2, 3));
+        md.set(Product::createGRIB1(1, 2, 3));
         md.set(level::GRIB1::create(114, 12, 34));
         md.set(timerange::GRIB1::create(1, 1, 2, 3));
         md.set(area::GRIB::create(testValues));

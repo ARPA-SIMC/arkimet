@@ -529,7 +529,7 @@ add_method("query_lots", [](Fixture& f) {
         {
             const reftime::Position* rt = md.get<types::reftime::Position>();
             const area::VM2* area = dynamic_cast<const area::VM2*>(md.get(TYPE_AREA));
-            const product::VM2* prod = dynamic_cast<const product::VM2*>(md.get(TYPE_PRODUCT));
+            const Product* prod = md.get<Product>();
             uint64_t dt = rt->time.mo * 10000 + rt->time.da * 100 + rt->time.ho;
             unsigned vi;
             prod->get_VM2(vi);

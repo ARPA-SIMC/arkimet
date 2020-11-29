@@ -89,7 +89,7 @@ public:
     dballe::Importer& importer;
     unique_ptr<reftime::Position> reftime;
     unique_ptr<Origin> origin;
-    unique_ptr<product::BUFR> product;
+    unique_ptr<Product> product;
     std::shared_ptr<Message> msg;
 
     Harvest(dballe::Importer& importer) : importer(importer), msg(0) {}
@@ -194,7 +194,7 @@ public:
         // Set the product from the msg type
         types::ValueBag newvals;
         newvals.set("t", types::values::Value::create_string(format_message_type(msg->get_type())));
-        product = product::BUFR::create(bulletin->data_category, bulletin->data_subcategory, bulletin->data_subcategory_local, newvals);
+        product = Product::createBUFR(bulletin->data_category, bulletin->data_subcategory, bulletin->data_subcategory_local, newvals);
 
         // Set reference time from date and time if available
         refine_reftime(*msg);

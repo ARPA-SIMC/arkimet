@@ -241,7 +241,7 @@ std::vector<uint8_t> Vm2::reconstruct(const Metadata& md, const std::string& val
 
     const reftime::Position* rt = md.get<reftime::Position>();
     const area::VM2* area = dynamic_cast<const area::VM2*>(md.get<Area>());
-    const product::VM2* product = dynamic_cast<const product::VM2*>(md.get<Product>());
+    const Product* product = md.get<Product>();
     unsigned vi;
     product->get_VM2(vi);
 

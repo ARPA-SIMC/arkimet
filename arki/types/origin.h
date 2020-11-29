@@ -34,7 +34,7 @@ struct traits<Origin>
  * It can contain information like centre, process, subcentre, subprocess and
  * other similar data.
  */
-struct Origin : public types::Encoded
+class Origin : public types::Encoded
 {
 public:
     using Encoded::Encoded;
