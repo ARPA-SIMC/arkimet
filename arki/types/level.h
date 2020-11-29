@@ -70,9 +70,12 @@ protected:
 	unsigned char m_l2;
 
 public:
-	unsigned type() const { return m_type; }
-	unsigned l1() const { return m_l1; }
-	unsigned l2() const { return m_l2; }
+    void get_GRIB1(unsigned& type, unsigned& l1, unsigned& l2) const
+    {
+        type = m_type;
+        l1 = m_l1;
+        l2 = m_l2;
+    }
 
     Style style() const override;
     void encodeWithoutEnvelope(core::BinaryEncoder& enc) const override;
@@ -125,9 +128,12 @@ public:
     static const uint8_t MISSING_SCALE;
     static const uint32_t MISSING_VALUE;
 
-    uint8_t type() const { return m_type; }
-    uint8_t scale() const { return m_scale; }
-    uint32_t value() const { return m_value; }
+    void get_GRIB2S(unsigned& type, unsigned& scale, unsigned& value) const
+    {
+        type = m_type;
+        scale = m_scale;
+        value = m_value;
+    }
 
     Style style() const override;
     void encodeWithoutEnvelope(core::BinaryEncoder& enc) const override;
@@ -154,12 +160,15 @@ protected:
 	uint32_t m_value2;
 
 public:
-	uint8_t type1() const { return m_type1; }
-	uint8_t scale1() const { return m_scale1; }
-	uint32_t value1() const { return m_value1; }
-	uint8_t type2() const { return m_type2; }
-	uint8_t scale2() const { return m_scale2; }
-	uint32_t value2() const { return m_value2; }
+    void get_GRIB2D(unsigned& type1, unsigned& scale1, unsigned& value1, unsigned& type2, unsigned& scale2, unsigned& value2) const
+    {
+        type1 = m_type1;
+        scale1 = m_scale1;
+        value1 = m_value1;
+        type2 = m_type2;
+        scale2 = m_scale2;
+        value2 = m_value2;
+    }
 
     Style style() const override;
     void encodeWithoutEnvelope(core::BinaryEncoder& enc) const override;
@@ -184,8 +193,11 @@ protected:
 	double m_min;
 
 public:
-	double max() const { return m_max; }
-	double min() const { return m_min; }
+    void get_ODIMH5(double& min, double& max) const
+    {
+        min = m_min;
+        max = m_max;
+    }
 
     Style style() const override;
     void encodeWithoutEnvelope(core::BinaryEncoder& enc) const override;

@@ -27,17 +27,22 @@ bool MatchLevelGRIB1::matchItem(const Type& o) const
 {
     const types::level::GRIB1* v = dynamic_cast<const types::level::GRIB1*>(&o);
     if (!v) return false;
-	if (type != -1 && (unsigned)type != v->type()) return false;
-	int ol1 = -1, ol2 = -1;
-	switch (v->valType())
-	{
-		case 0: break;
-		case 1: ol1 = v->l1(); break;
-		case 2: ol1 = v->l1(); ol2 = v->l2(); break;
-	}
-	if (l1 != -1 && l1 != ol1) return false;
-	if (l2 != -1 && l2 != ol2) return false;
-	return true;
+    unsigned vtype, vl1, vl2;
+    v->get_GRIB1(vtype, vl1, vl2);
+    if (type != -1 && (unsigned)type != vtype) return false;
+    switch (v->valType())
+    {
+        case 0: break;
+        case 1:
+            if (l1 >= 0 && (unsigned)l1 != vl1)
+                return false;
+            break;
+        case 2:
+            if (l1 >= 0 && (unsigned)l1 != vl1) return false;
+            if (l2 >= 0 && (unsigned)l2 != vl2) return false;
+            break;
+    }
+    return true;
 }
 
 std::string MatchLevelGRIB1::toString() const
@@ -63,9 +68,11 @@ bool MatchLevelGRIB2S::matchItem(const Type& o) const
 {
     const types::level::GRIB2S* v = dynamic_cast<const types::level::GRIB2S*>(&o);
     if (!v) return false;
-    if (has_type && type != v->type()) return false;
-    if (has_scale && scale != v->scale()) return false;
-    if (has_value && value != v->value()) return false;
+    unsigned ty, sc, va;
+    v->get_GRIB2S(ty, sc, va);
+    if (has_type && type != ty) return false;
+    if (has_scale && scale != sc) return false;
+    if (has_value && value != va) return false;
     return true;
 }
 
@@ -95,12 +102,14 @@ bool MatchLevelGRIB2D::matchItem(const Type& o) const
 {
     const types::level::GRIB2D* v = dynamic_cast<const types::level::GRIB2D*>(&o);
     if (!v) return false;
-    if (has_type1 && type1 != v->type1()) return false;
-    if (has_scale1 && scale1 != v->scale1()) return false;
-    if (has_value1 && value1 != v->value1()) return false;
-    if (has_type2 && type2 != v->type2()) return false;
-    if (has_scale2 && scale2 != v->scale2()) return false;
-    if (has_value2 && value2 != v->value2()) return false;
+    unsigned ty1, sc1, va1, ty2, sc2, va2;
+    v->get_GRIB2D(ty1, sc1, va1, ty2, sc2, va2);
+    if (has_type1 && type1 != ty1) return false;
+    if (has_scale1 && scale1 != sc1) return false;
+    if (has_value1 && value1 != va1) return false;
+    if (has_type2 && type2 != ty2) return false;
+    if (has_scale2 && scale2 != sc2) return false;
+    if (has_value2 && value2 != va2) return false;
     return true;
 }
 
@@ -206,25 +215,27 @@ bool MatchLevelODIMH5::matchItem(const Type& o) const
 {
     const types::level::ODIMH5* v = dynamic_cast<const types::level::ODIMH5*>(&o);
     if (!v) return false;
+    double vmin, vmax;
+    v->get_ODIMH5(vmin, vmax);
 
 	if (vals.size())
 	{
-		for (size_t i=0; i<vals.size(); i++)
+		for (size_t i=0; i < vals.size(); i++)
 		{
 			double min = vals[i] - vals_offset;
 			double max = vals[i] + vals_offset;
 			order(min, max);
-			if (!outside(v->min(), v->max(), min, max))
-				return true;
-		}
-	}
-	else
-	{
-		if (!outside(v->min(), v->max(), range_min, range_max))
-			return true;
-	}
+            if (!outside(vmin, vmax, min, max))
+                return true;
+        }
+    }
+    else
+    {
+        if (!outside(vmin, vmax, range_min, range_max))
+            return true;
+    }
 
-	return false;
+    return false;
 }
 
 std::string MatchLevelODIMH5::toString() const
