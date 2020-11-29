@@ -101,14 +101,20 @@ struct BinaryDecoder
             throw_insufficient_size(what, wanted);
     }
 
+    /// Skip the first `bytes` bytes in the buffer
+    inline void skip(size_t bytes)
+    {
+        buf += bytes;
+        size -= bytes;
+    }
+
     /// Return the first byte in the buffer
     template<typename STR>
     uint8_t pop_byte(STR what)
     {
         ensure_size(1, what);
         uint8_t res = buf[0];
-        ++buf;
-        --size;
+        skip(1);
         return res;
     }
 
@@ -122,8 +128,7 @@ struct BinaryDecoder
         T val;
         size_t res = decode_varint(buf, size, val);
         if (res == 0) throw_parse_error(what, "invalid varint data");
-        buf += res;
-        size -= res;
+        skip(res);
         return val;
     }
 
@@ -136,8 +141,7 @@ struct BinaryDecoder
     {
         ensure_size(bytes, what);
         uint32_t val = decode_uint(buf, bytes);
-        buf += bytes;
-        size -= bytes;
+        skip(bytes);
         return val;
     }
 
@@ -150,8 +154,7 @@ struct BinaryDecoder
     {
         ensure_size(bytes, what);
         int val = decode_sint(buf, bytes);
-        buf += bytes;
-        size -= bytes;
+        skip(bytes);
         return val;
     }
 
@@ -160,8 +163,7 @@ struct BinaryDecoder
     {
         ensure_size(bytes, what);
         uint64_t val = decode_ulint(buf, bytes);
-        buf += bytes;
-        size -= bytes;
+        skip(bytes);
         return val;
     }
 
@@ -176,8 +178,7 @@ struct BinaryDecoder
     {
         ensure_size(sizeof(float), what);
         float val = decode_float(buf);
-        buf += sizeof(float);
-        size -= sizeof(float);
+        skip(sizeof(float));
         return val;
     }
 
@@ -192,8 +193,7 @@ struct BinaryDecoder
     {
         ensure_size(sizeof(double), what);
         double val = decode_double(buf);
-        buf += sizeof(double);
-        size -= sizeof(double);
+        skip(sizeof(double));
         return val;
     }
 
@@ -204,8 +204,7 @@ struct BinaryDecoder
     {
         ensure_size(bytes, what);
         std::string res((const char*)buf, bytes);
-        buf += bytes;
-        size -= bytes;
+        skip(bytes);
         return res;
     }
 
@@ -217,8 +216,7 @@ struct BinaryDecoder
     {
         ensure_size(bytes, what);
         BinaryDecoder res(buf, bytes);
-        buf += bytes;
-        size -= bytes;
+        skip(bytes);
         return res;
     }
 
@@ -226,8 +224,7 @@ struct BinaryDecoder
     {
         ensure_size(bytes, what);
         std::vector<uint8_t> res(buf, buf + bytes);
-        buf += bytes;
-        size -= bytes;
+        skip(bytes);
         return res;
     }
 
