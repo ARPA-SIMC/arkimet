@@ -35,7 +35,7 @@ public:
         const types::Type* i = get(types::traits<T>::type_code);
         if (!i) return 0;
         return dynamic_cast<const T*>(i);
-    };
+    }
 
     /// Set an item
     void set(const types::Type& item);

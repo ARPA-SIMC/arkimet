@@ -389,6 +389,7 @@ struct StepQuery
 
     StepQuery(const std::string& root, const std::string& format)
         : root(root), format(format) {}
+    virtual ~StepQuery() {}
 
     virtual void list_segments(const Matcher& m, std::function<void(std::string&&)> dest) const = 0;
     virtual void time_extremes(core::Interval& interval) const = 0;
@@ -420,6 +421,7 @@ struct StepParser
     unsigned depth = 0;
 
     StepParser(unsigned max_depth) : max_depth(max_depth) {}
+    virtual ~StepParser() {}
 
     // Timespan of what has been parsed so far
     virtual void timespan(Time& start_time, Time& end_time) = 0;

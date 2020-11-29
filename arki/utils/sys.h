@@ -127,7 +127,7 @@ public:
     operator const T*() const { return reinterpret_cast<const T*>(addr); }
 
     template<typename T>
-    operator T*() const { return reinterpret_cast<T*>(addr); };
+    operator T*() const { return reinterpret_cast<T*>(addr); }
 };
 
 /**

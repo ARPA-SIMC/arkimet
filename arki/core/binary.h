@@ -82,6 +82,13 @@ struct BinaryEncoder
             dest.push_back(((const uint8_t*)&val)[i]);
     }
 
+    /// Encode a IEEE754 double
+    static void set_double(uint8_t* buf, double val)
+    {
+        for (unsigned int i = 0; i < sizeof(double); ++i)
+            buf[i] = ((const uint8_t*)&val)[i];
+    }
+
     void add_string(const char* str) { while (*str) dest.push_back(*str++); }
     void add_raw(const uint8_t* buf, size_t size) { dest.insert(dest.end(), buf, buf + size); }
     void add_raw(const std::string& str) { dest.insert(dest.end(), str.begin(), str.end()); }
