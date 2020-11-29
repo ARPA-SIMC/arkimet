@@ -25,12 +25,6 @@ const char* traits<Origin>::type_tag = TAG;
 const types::Code traits<Origin>::type_code = CODE;
 const size_t traits<Origin>::type_sersize_bytes = SERSIZELEN;
 
-Origin::Origin(const std::vector<uint8_t>& data)
-    : data(data) {}
-
-Origin::Origin(std::vector<uint8_t>&& data)
-    : data(data) {}
-
 Origin* Origin::clone() const
 {
     return new Origin(data);
@@ -38,7 +32,7 @@ Origin* Origin::clone() const
 
 int Origin::compare(const Type& o) const
 {
-    int res = CoreType<Origin>::compare(o);
+    int res = Encoded::compare(o);
     if (res != 0) return res;
 
     // We should be the same kind, so upcast

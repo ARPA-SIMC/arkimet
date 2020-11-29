@@ -1,7 +1,7 @@
 #ifndef ARKI_TYPES_ORIGIN_H
 #define ARKI_TYPES_ORIGIN_H
 
-#include <arki/types/styled.h>
+#include <arki/types/encoded.h>
 
 namespace arki {
 namespace types {
@@ -34,16 +34,16 @@ struct traits<Origin>
  * It can contain information like centre, process, subcentre, subprocess and
  * other similar data.
  */
-struct Origin : public types::CoreType<Origin>
+struct Origin : public types::Encoded
 {
-protected:
-    std::vector<uint8_t> data;
-
 public:
+    using Encoded::Encoded;
+
     typedef origin::Style Style;
 
-    Origin(const std::vector<uint8_t>& data);
-    Origin(std::vector<uint8_t>&& data);
+    types::Code type_code() const override { return traits<Origin>::type_code; }
+    size_t serialisationSizeLength() const override { return traits<Origin>::type_sersize_bytes; }
+    std::string tag() const override { return traits<Origin>::type_tag; }
 
     Origin* clone() const override;
 
