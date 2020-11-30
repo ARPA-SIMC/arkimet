@@ -68,6 +68,20 @@ struct BinaryEncoder
         add_unsigned(uns, bytes);
     }
 
+    /// Encode a signed integer in the given amount of bytes, big endian
+    static void set_signed(uint8_t* buf, int val, unsigned int bytes)
+    {
+        uint32_t uns;
+        if (val < 0)
+        {
+            // If it's negative, we encode the 2-complement of the positive value
+            uns = -val;
+            uns = ~uns + 1;
+        } else
+            uns = val;
+        set_unsigned(buf, uns, bytes);
+    }
+
     /// Encode a IEEE754 float
     void add_float(float val)
     {

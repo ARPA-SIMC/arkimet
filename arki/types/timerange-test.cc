@@ -301,7 +301,7 @@ add_method("grib2_details", [] {
 });
 
 add_method("timedef_details", [] {
-    unique_ptr<timerange::Timedef> v = timerange::Timedef::createFromYaml("6h,2,60m");
+    auto v = Timerange::decodeString("Timedef(6h,2,60m)");
     timerange::TimedefUnit step_unit, stat_unit;
     unsigned step_len, stat_type, stat_len;
     v->get_Timedef(step_unit, step_len, stat_type, stat_unit, stat_len);
@@ -312,9 +312,9 @@ add_method("timedef_details", [] {
     wassert(actual(stat_unit) == timerange::UNIT_MINUTE);
     wassert(actual(stat_len) == 60u);
 
-    wassert(actual(v) == timerange::Timedef::create(6, timerange::UNIT_HOUR, 2, 60, timerange::UNIT_MINUTE));
+    wassert(actual(v) == Timerange::createTimedef(6, timerange::UNIT_HOUR, 2, 60, timerange::UNIT_MINUTE));
 
-    v = timerange::Timedef::createFromYaml("1y,2,3mo");
+    v = Timerange::decodeString("Timedef(1y,2,3mo)");
     v->get_Timedef(step_unit, step_len, stat_type, stat_unit, stat_len);
     wassert(actual(v->style()) == Timerange::Style::TIMEDEF);
     wassert(actual(step_unit) == timerange::UNIT_YEAR);
@@ -323,10 +323,10 @@ add_method("timedef_details", [] {
     wassert(actual(stat_unit) == timerange::UNIT_MONTH);
     wassert(actual(stat_len) == 3u);
 
-    wassert(actual(v) == timerange::Timedef::create(1, timerange::UNIT_YEAR, 2, 3, timerange::UNIT_MONTH));
-    wassert(actual(v) == timerange::Timedef::createFromYaml("12mo, 2, 3mo"));
+    wassert(actual(v) == Timerange::createTimedef(1, timerange::UNIT_YEAR, 2, 3, timerange::UNIT_MONTH));
+    wassert(actual(v) == Timerange::decodeString("Timedef(12mo, 2, 3mo)"));
 
-    v = timerange::Timedef::createFromYaml("1d");
+    v = Timerange::decodeString("Timedef(1d)");
     v->get_Timedef(step_unit, step_len, stat_type, stat_unit, stat_len);
     wassert(actual(v->style()) == Timerange::Style::TIMEDEF);
     wassert(actual(step_unit) == timerange::UNIT_DAY);
@@ -335,9 +335,9 @@ add_method("timedef_details", [] {
     wassert(actual(stat_unit) == timerange::UNIT_MISSING);
     wassert(actual(stat_len) == 0u);
 
-    wassert(actual(v) == timerange::Timedef::create(1, timerange::UNIT_DAY));
+    wassert(actual(v) == Timerange::createTimedef(1, timerange::UNIT_DAY));
 
-    v = timerange::Timedef::createFromYaml("2ce");
+    v = Timerange::decodeString("Timedef(2ce)");
     v->get_Timedef(step_unit, step_len, stat_type, stat_unit, stat_len);
     wassert(actual(v->style()) == Timerange::Style::TIMEDEF);
     wassert(actual(step_unit) == timerange::UNIT_CENTURY);
@@ -346,9 +346,9 @@ add_method("timedef_details", [] {
     wassert(actual(stat_unit) == timerange::UNIT_MISSING);
     wassert(actual(stat_len) == 0u);
 
-    wassert(actual(v) == timerange::Timedef::create(2, timerange::UNIT_CENTURY));
+    wassert(actual(v) == Timerange::createTimedef(2, timerange::UNIT_CENTURY));
 
-    v = timerange::Timedef::createFromYaml("6h,2");
+    v = Timerange::decodeString("Timedef(6h,2)");
     v->get_Timedef(step_unit, step_len, stat_type, stat_unit, stat_len);
     wassert(actual(v->style()) == Timerange::Style::TIMEDEF);
     wassert(actual(step_unit) == timerange::UNIT_HOUR);
@@ -357,9 +357,9 @@ add_method("timedef_details", [] {
     wassert(actual(stat_unit) == timerange::UNIT_MISSING);
     wassert(actual(stat_len) == 0u);
 
-    wassert(actual(v) == timerange::Timedef::create(6, timerange::UNIT_HOUR, 2, 0, timerange::UNIT_MISSING));
+    wassert(actual(v) == Timerange::createTimedef(6, timerange::UNIT_HOUR, 2, 0, timerange::UNIT_MISSING));
 
-    v = timerange::Timedef::createFromYaml("6no,2");
+    v = Timerange::decodeString("Timedef(6no,2)");
     v->get_Timedef(step_unit, step_len, stat_type, stat_unit, stat_len);
     wassert(actual(v->style()) == Timerange::Style::TIMEDEF);
     wassert(actual(step_unit) == timerange::UNIT_NORMAL);
@@ -368,9 +368,9 @@ add_method("timedef_details", [] {
     wassert(actual(stat_unit) == timerange::UNIT_MISSING);
     wassert(actual(stat_len) == 0u);
 
-    wassert(actual(v) == timerange::Timedef::create(6, timerange::UNIT_NORMAL, 2, 0, timerange::UNIT_MISSING));
+    wassert(actual(v) == Timerange::createTimedef(6, timerange::UNIT_NORMAL, 2, 0, timerange::UNIT_MISSING));
 
-    v = timerange::Timedef::createFromYaml("1y,2,3d");
+    v = Timerange::decodeString("Timedef(1y,2,3d)");
     v->get_Timedef(step_unit, step_len, stat_type, stat_unit, stat_len);
     wassert(actual(v->style()) == Timerange::Style::TIMEDEF);
     wassert(actual(step_unit) == timerange::UNIT_YEAR);
@@ -379,7 +379,7 @@ add_method("timedef_details", [] {
     wassert(actual(stat_unit) == timerange::UNIT_DAY);
     wassert(actual(stat_len) == 3u);
 
-    wassert(actual(v) == timerange::Timedef::create(1, timerange::UNIT_YEAR, 2, 3, timerange::UNIT_DAY));
+    wassert(actual(v) == Timerange::createTimedef(1, timerange::UNIT_YEAR, 2, 3, timerange::UNIT_DAY));
 });
 
 add_method("timedef_details", [] {
@@ -430,11 +430,10 @@ add_method("timedef_info", [] {
 
 // Test Timedef's validity_time_to_emission_time
 add_method("timedef_validity_time_to_emission_time", [] {
-    using namespace timerange;
     using namespace reftime;
-    unique_ptr<Timedef> v = Timedef::createFromYaml("6h");
-    unique_ptr<Position> p = downcast<Position>(Reftime::decodeString("2009-02-13 12:00:00"));
-    unique_ptr<Position> p1 = v->validity_time_to_emission_time(*p);
+    auto v = Timerange::decodeString("Timedef(6h)");
+    auto p = downcast<Position>(Reftime::decodeString("2009-02-13 12:00:00"));
+    auto p1 = dynamic_cast<const timerange::Timedef*>(v.get())->validity_time_to_emission_time(*p);
     wassert(actual(p1->time).is(2009, 2, 13, 6));
 });
 

@@ -56,12 +56,12 @@ struct Fixture : public arki::utils::tests::Fixture
         md.set(Origin::createGRIB1(1, 2, 3));
         md.set(Product::createGRIB1(1, 2, 3));
         md.set(Level::createGRIB1(114, 12, 34));
-        md.set(timerange::GRIB1::create(1, 1, 2, 3));
-        md.set(area::GRIB::create(testValues));
-        md.set(proddef::GRIB::create(testValues));
+        md.set(Timerange::createGRIB1(1, 1, 2, 3));
+        md.set(Area::createGRIB(testValues));
+        md.set(Proddef::createGRIB(testValues));
         md.set(AssignedDataset::create("dsname", "dsid"));
         // Test POSITION reference times
-        md.set(reftime::Position::create(Time(2006, 5, 4, 3, 2, 1)));
+        md.set(Reftime::createPosition(Time(2006, 5, 4, 3, 2, 1)));
     }
 };
 

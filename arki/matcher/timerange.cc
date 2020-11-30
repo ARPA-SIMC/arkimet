@@ -264,11 +264,11 @@ bool MatchTimerangeBUFR::matchItem(const Type& o) const
     v->get_BUFR(vunit, vvalue);
     if (!has_forecast) return true;
     if (value == 0) return vvalue == 0;
-	if (is_seconds != v->is_seconds()) return false;
-	if (is_seconds)
-		return value == v->seconds();
-	else
-		return value == v->months();
+    if (is_seconds != types::timerange::BUFR::is_seconds(vunit)) return false;
+    if (is_seconds)
+        return value == types::timerange::BUFR::seconds(vunit, vvalue);
+    else
+        return value == types::timerange::BUFR::months(vunit, vvalue);
 }
 
 std::string MatchTimerangeBUFR::toString() const
