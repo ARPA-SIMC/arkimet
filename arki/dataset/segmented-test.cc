@@ -533,7 +533,8 @@ add_method("query_lots", [](Fixture& f) {
             uint64_t dt = rt->time.mo * 10000 + rt->time.da * 100 + rt->time.ho;
             unsigned vi;
             prod->get_VM2(vi);
-            return dt * 100 + area->station_id() * 10 + vi;
+            auto sid = area->get_VM2();
+            return dt * 100 + sid * 10 + vi;
         }
     };
 

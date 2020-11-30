@@ -27,7 +27,8 @@ bool MatchAreaGRIB::matchItem(const Type& o) const
 {
     const types::area::GRIB* v = dynamic_cast<const types::area::GRIB*>(&o);
     if (!v) return false;
-    return v->values().contains(expr);
+    auto values = v->get_GRIB();
+    return values.contains(expr);
 }
 
 std::string MatchAreaGRIB::toString() const
@@ -44,7 +45,8 @@ bool MatchAreaODIMH5::matchItem(const Type& o) const
 {
     const types::area::ODIMH5* v = dynamic_cast<const types::area::ODIMH5*>(&o);
     if (!v) return false;
-    return v->values().contains(expr);
+    auto values = v->get_ODIMH5();
+    return values.contains(expr);
 }
 
 std::string MatchAreaODIMH5::toString() const
@@ -67,10 +69,10 @@ bool MatchAreaVM2::matchItem(const Type& o) const
 {
     const types::area::VM2* v = dynamic_cast<const types::area::VM2*>(&o);
     if (!v) return false;
-    if (station_id != -1 && (unsigned) station_id != v->station_id()) return false;
-    if (!expr.empty() && 
-        std::find(idlist.begin(), idlist.end(), v->station_id()) == idlist.end())
-            return false;
+    auto vid = v->get_VM2();
+    if (station_id != -1 && (unsigned)station_id != vid) return false;
+    if (!expr.empty() && std::find(idlist.begin(), idlist.end(), vid) == idlist.end())
+        return false;
     return true;
 }
 

@@ -254,7 +254,8 @@ std::vector<uint8_t> Vm2::reconstruct(const Metadata& md, const std::string& val
     if (rt->time.se != 0)
         res << setfill('0') << setw(2) << rt->time.se;
 
-    res << "," << area->station_id()
+    auto sid = area->get_VM2();
+    res << "," << sid
         << "," << vi
         << "," << value;
 

@@ -74,7 +74,7 @@ protected:
 public:
 	virtual ~GRIB();
 
-	const ValueBag& values() const { return m_values; }
+    ValueBag get_GRIB() const { return m_values; }
 
     Style style() const override;
     void encodeWithoutEnvelope(core::BinaryEncoder& enc) const override;
@@ -98,7 +98,7 @@ protected:
 public:
 	virtual ~ODIMH5();
 
-	const ValueBag& values() const { return m_values; }
+    ValueBag get_ODIMH5() const { return m_values; }
 
     Style style() const override;
     void encodeWithoutEnvelope(core::BinaryEncoder& enc) const override;
@@ -123,7 +123,7 @@ protected:
 public:
     virtual ~VM2();
 
-    unsigned station_id() const { return m_station_id; }
+    unsigned get_VM2() const { return m_station_id; }
     const ValueBag& derived_values() const;
 
     Style style() const override;
