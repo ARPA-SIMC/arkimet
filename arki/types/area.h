@@ -122,6 +122,8 @@ public:
     using Area::Area;
     ~VM2();
 
+    bool equals(const Type& o) const override;
+    void encodeWithoutEnvelope(core::BinaryEncoder& enc) const override;
     void encode_for_indexing(core::BinaryEncoder& enc) const override;
     std::ostream& writeToOstream(std::ostream& o) const override;
     void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;

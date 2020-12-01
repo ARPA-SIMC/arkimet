@@ -301,6 +301,16 @@ std::string ODIMH5::exactQuery() const
 
 VM2::~VM2() {}
 
+bool VM2::equals(const Type& o) const
+{
+    const VM2* v = dynamic_cast<const VM2*>(&o);
+    if (!v) return false;
+    if (size < 5 || v->size < 5) return size != v->size;
+    // Compare only first 5 bytes, ignoring optional derived values appended to
+    // the encoded data
+    return memcmp(data, v->data, std::min(size, 5u)) == 0;
+}
+
 int VM2::compare_local(const VM2& o) const
 {
     return get_VM2() - o.get_VM2();
@@ -337,7 +347,19 @@ std::string VM2::exactQuery() const
 
 void VM2::encode_for_indexing(core::BinaryEncoder& enc) const
 {
-    enc.add_raw(data, 5);
+    enc.add_raw(data, min(size, 5u));
+}
+
+void VM2::encodeWithoutEnvelope(core::BinaryEncoder& enc) const
+{
+    enc.add_raw(data, min(size, 5u));
+
+    // Also add derived values to the binary representation, since we are
+    // encoding for transmission
+    auto station_id = get_VM2();
+    auto dv = get_VM2_derived_values(station_id);
+    if (!dv.empty())
+        dv.encode(enc);
 }
 
 ValueBag VM2::get_VM2_derived_values(unsigned station_id)
