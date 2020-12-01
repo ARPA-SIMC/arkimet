@@ -109,6 +109,13 @@ public:
     static std::unique_ptr<Position> decode_structure(const structured::Keys& keys, const structured::Reader& val);
 };
 
+/**
+ * Represent a period between two extremes (included, probably? To be verified).
+ *
+ * This is deprecated, and currently only used by summary stats to
+ * encode/decode the stats period. Ideally the stats binary format should be
+ * updated in a further version not to need this.
+ */
 struct Period : public Reftime
 {
 protected:

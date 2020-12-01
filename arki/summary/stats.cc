@@ -117,6 +117,14 @@ void Stats::encodeWithoutEnvelope(core::BinaryEncoder& enc) const
 {
     unique_ptr<types::Reftime> reftime(Reftime::create(begin, end));
     enc.add_unsigned(count, 4);
+    /*
+     * This is deprecated, a Period reftime is used only here.
+     * Ideally the stats binary format should be updated in a further version
+     * to not need this, and it would also be more compact.
+     *
+     * In a compatibility loader/writer, parsing of the period reftime headers
+     * could be hardcoded to allow to drop it from arki/types/reftime
+     */
     reftime->encodeBinary(enc);
     enc.add_unsigned(size, 8);
 }
