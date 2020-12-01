@@ -33,10 +33,13 @@ bool MatchLevelGRIB1::matchItem(const Type& o) const
     if (type != -1 && (unsigned)type != vtype) return false;
     switch (Level::GRIB1_type_vals(vtype))
     {
-        case 0: break;
+        case 0:
+            if (l1 >= 0) return false;
+            if (l2 >= 0) return false;
+            break;
         case 1:
-            if (l1 >= 0 && (unsigned)l1 != vl1)
-                return false;
+            if (l1 >= 0 && (unsigned)l1 != vl1) return false;
+            if (l2 >= 0) return false;
             break;
         case 2:
             if (l1 >= 0 && (unsigned)l1 != vl1) return false;
