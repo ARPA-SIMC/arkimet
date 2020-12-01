@@ -8,7 +8,7 @@ then
     NOSE="${NOSE:-nose}"
     for n in "$NOSE" nose2-3 nosetests-3.8 nosetests-3.7 nosetests-3.6 nosetests-3.5 nosetests-3.4 nosetests-3.3
     do
-        if which "$n"
+        if which "$n" > /dev/null
         then
             NOSE="$n"
             break
