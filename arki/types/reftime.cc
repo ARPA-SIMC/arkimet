@@ -154,13 +154,17 @@ bool Position::equals(const Type& o) const
 	return time == v->time;
 }
 
-void Position::expand_date_range(std::unique_ptr<Time>& begin, std::unique_ptr<Time>& end) const
+void Position::expand_date_range(core::Interval& interval) const
 {
-    if (!begin.get() || *begin > time)
-        begin.reset(new Time(time));
+    if (interval.begin.ye == 0 || interval.begin > time)
+        interval.begin = time;
 
-    if (!end.get() || *end < time)
-        end.reset(new Time(time));
+    if (interval.end.ye == 0 || interval.end <= time)
+    {
+        interval.end = time;
+        interval.end.se += 1;
+        interval.end.normalise();
+    }
 }
 
 void Position::expand_date_range(Time& begin, Time& end) const
@@ -231,13 +235,17 @@ bool Period::equals(const Type& o) const
 	return begin == v->begin && end == v->end;
 }
 
-void Period::expand_date_range(std::unique_ptr<Time>& begin, std::unique_ptr<Time>& end) const
+void Period::expand_date_range(core::Interval& interval) const
 {
-    if (!begin.get() || *begin > this->begin)
-        begin.reset(new Time(this->begin));
+    if (interval.begin.ye == 0 || interval.begin > begin)
+        interval.begin = begin;
 
-    if (!end.get() || *end < this->end)
-        end.reset(new Time(this->end));
+    if (interval.end.ye == 0 || interval.end <= end)
+    {
+        interval.end = end;
+        interval.end.se += 1;
+        interval.end.normalise();
+    }
 }
 
 void Period::expand_date_range(Time& begin, Time& end) const

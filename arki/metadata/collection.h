@@ -147,13 +147,13 @@ public:
      * Expand the given begin and end ranges to include the datetime extremes
      * of this collection.
      *
-     * If begin and end are unset, set them to the datetime extremes of this
-     * collection.
+     * If begin and end are set to zero, set them to the datetime extremes of
+     * this collection.
      *
      * Returns true if all the metadata items had a reftime set, false if some
      * elements had no reftime information.
      */
-    bool expand_date_range(std::unique_ptr<core::Time>& begin, std::unique_ptr<core::Time>& end) const;
+    bool expand_date_range(core::Interval& interval) const;
 
     /// Call drop_cached_data on all metadata in the collection
     void drop_cached_data();

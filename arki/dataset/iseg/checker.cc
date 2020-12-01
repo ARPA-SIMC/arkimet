@@ -128,35 +128,28 @@ public:
         segment::State state = segment::SEGMENT_OK;
 
         // Compute the span of reftimes inside the segment
-        unique_ptr<core::Time> md_begin;
-        unique_ptr<core::Time> md_until;
+        core::Interval segment_interval;
         if (mds.empty())
         {
             reporter.segment_info(checker.name(), segment->segment().relpath, "index knows of this segment but contains no data for it");
-            md_begin.reset(new core::Time(0, 0, 0));
-            md_until.reset(new core::Time(0, 0, 0));
             state = segment::SEGMENT_DELETED;
         } else {
-            if (!mds.expand_date_range(md_begin, md_until))
+            if (!mds.expand_date_range(segment_interval))
             {
                 reporter.segment_info(checker.name(), segment->segment().relpath, "index data for this segment has no reference time information");
                 state = segment::SEGMENT_CORRUPTED;
-                md_begin.reset(new core::Time(0, 0, 0));
-                md_until.reset(new core::Time(0, 0, 0));
             } else {
                 // Ensure that the reftime span fits inside the segment step
-                core::Time seg_begin;
-                core::Time seg_until;
-                if (checker.dataset().step().path_timespan(segment->segment().relpath, seg_begin, seg_until))
+                core::Interval interval;
+                if (checker.dataset().step().path_timespan(segment->segment().relpath, interval))
                 {
-                    if (*md_begin < seg_begin || *md_until > seg_until)
+                    if (segment_interval.begin < interval.begin || segment_interval.end > interval.end)
                     {
                         reporter.segment_info(checker.name(), segment->segment().relpath, "segment contents do not fit inside the step of this dataset");
                         state = segment::SEGMENT_CORRUPTED;
                     }
                     // Expand segment timespan to the full possible segment timespan
-                    *md_begin = seg_begin;
-                    *md_until = seg_until;
+                    segment_interval = interval;
                 } else {
                     reporter.segment_info(checker.name(), segment->segment().relpath, "segment name does not fit the step of this dataset");
                     state = segment::SEGMENT_CORRUPTED;
@@ -167,7 +160,7 @@ public:
         if (state.is_ok())
             state = segment->check([&](const std::string& msg) { reporter.segment_info(checker.name(), segment->segment().relpath, msg); }, mds, quick);
 
-        auto res = segmented::SegmentState(state, *md_begin, *md_until);
+        auto res = segmented::SegmentState(state, segment_interval);
         res.check_age(segment->segment().relpath, checker.dataset(), reporter);
         return res;
     }

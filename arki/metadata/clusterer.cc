@@ -71,7 +71,7 @@ void Clusterer::add_to_batch(std::shared_ptr<Metadata> md)
         md_to_interval(*md, cur_interval);
     const Reftime* rt = md->get<types::Reftime>();
     if (!rt) return;
-    rt->expand_date_range(timespan_begin, timespan_end);
+    rt->expand_date_range(timespan);
     if (split_timerange and not last_timerange)
         last_timerange = md->get<types::Timerange>()->clone();
 }
@@ -83,8 +83,7 @@ void Clusterer::flush_batch()
     count = 0;
     size = 0;
     cur_interval[0] = -1;
-    timespan_begin.reset(0);
-    timespan_end.reset(0);
+    timespan = core::Interval();
     if (split_timerange)
     {
         delete last_timerange;

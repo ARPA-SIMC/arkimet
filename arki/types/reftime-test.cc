@@ -61,29 +61,31 @@ add_method("period_details", [] {
 add_method("range", [] {
     // Check range expansion
     using namespace arki::types;
-    unique_ptr<Time> begin;
-    unique_ptr<Time> end;
+    core::Interval interval;
     Time t1(2007, 6, 5, 4, 3, 2);
+    Time t1e(2007, 6, 5, 4, 3, 3);
     Time t2(2008, 7, 6, 5, 4, 3);
+    Time t2e(2008, 7, 6, 5, 4, 4);
     Time t3(2007, 7, 6, 5, 4, 3);
     Time t4(2009, 8, 7, 6, 5, 4);
+    Time t4e(2009, 8, 7, 6, 5, 5);
     Time t5(2009, 7, 6, 5, 4, 3);
     Time t6(2010, 9, 8, 7, 6, 5);
 
     // Merge with position
-    reftime::Position(t1).expand_date_range(begin, end);
-    wassert(actual(*begin) == t1);
-    wassert(actual(*end) == t1);
+    reftime::Position(t1).expand_date_range(interval);
+    wassert(actual(interval.begin) == t1);
+    wassert(actual(interval.end) == t1e);
 
     // Merge with a second position
-    reftime::Position(t2).expand_date_range(begin, end);
-    wassert(actual(*begin) == t1);
-    wassert(actual(*end) == t2);
+    reftime::Position(t2).expand_date_range(interval);
+    wassert(actual(interval.begin) == t1);
+    wassert(actual(interval.end) == t2e);
 
     // Merge with a period
-    reftime::Period(t3, t4).expand_date_range(begin, end);
-    wassert(actual(*begin) == t1);
-    wassert(actual(*end) == t4);
+    reftime::Period(t3, t4).expand_date_range(interval);
+    wassert(actual(interval.begin) == t1);
+    wassert(actual(interval.end) == t4e);
 });
 
 // Reproduce bugs

@@ -80,7 +80,11 @@ unsigned State::count(segment::State state) const
 void State::dump(FILE* out) const
 {
     for (const auto& i: *this)
-        fprintf(out, "%s: %s %s to %s\n", i.first.c_str(), i.second.state.to_string().c_str(), i.second.begin.to_iso8601(' ').c_str(), i.second.until.to_iso8601(' ').c_str());
+        fprintf(out, "%s: %s %s to %s\n",
+                i.first.c_str(),
+                i.second.state.to_string().c_str(),
+                i.second.interval.begin.to_iso8601(' ').c_str(),
+                i.second.interval.end.to_iso8601(' ').c_str());
 }
 
 

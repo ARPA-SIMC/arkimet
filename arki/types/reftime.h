@@ -53,12 +53,8 @@ struct Reftime : public StyledType<Reftime>
     /**
      * Expand a datetime range, returning the new range endpoints in begin
      * and end.
-     *
-     * A NULL unique_ptr signifies the initial state of an invalid range, and
-     * both begin and end will be set to non-NULL as soon as the first
-     * expand_date_range is called on them.
      */
-    virtual void expand_date_range(std::unique_ptr<core::Time>& begin, std::unique_ptr<core::Time>& end) const = 0;
+    virtual void expand_date_range(core::Interval& interval) const = 0;
 
     /**
      * Expand a datetime range, returning the new range endpoints in begin
@@ -106,7 +102,7 @@ public:
 
     Position* clone() const override;
 
-    void expand_date_range(std::unique_ptr<core::Time>& begin, std::unique_ptr<core::Time>& end) const override;
+    void expand_date_range(core::Interval& interval) const override;
     void expand_date_range(core::Time& begin, core::Time& end) const override;
 
     static std::unique_ptr<Position> create(const core::Time& position);
@@ -141,7 +137,7 @@ public:
 
     Period* clone() const override;
 
-    void expand_date_range(std::unique_ptr<core::Time>& begin, std::unique_ptr<core::Time>& end) const override;
+    void expand_date_range(core::Interval& interval) const override;
     void expand_date_range(core::Time& begin, core::Time& end) const override;
 
     static std::unique_ptr<Period> create(const core::Time& begin, const core::Time& end);

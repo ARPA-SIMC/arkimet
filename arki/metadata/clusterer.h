@@ -23,8 +23,7 @@ protected:
     /// Timerange of all the items in the current batch, if split_timerange is true
     types::Timerange* last_timerange;
     /// Actual time span of the current batch
-    std::unique_ptr<core::Time> timespan_begin;
-    std::unique_ptr<core::Time> timespan_end;
+    core::Interval timespan;
 
     /**
      * Fill an int[6] with the datetime information in md, padding with -1 all
