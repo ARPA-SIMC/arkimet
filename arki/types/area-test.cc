@@ -49,9 +49,9 @@ add_generic_test(
 add_method("vm2_derived", [] {
     skip_unless_vm2();
     auto vb1 = types::ValueBag::parse("lon=1207738,lat=4460016,rep=locali");
-    wassert(actual(types::area::VM2::create(1)->derived_values() == vb1).istrue());
+    wassert(actual(types::area::VM2::get_VM2_derived_values(1) == vb1).istrue());
     auto vb2 = types::ValueBag::parse("lon=1207738,lat=4460016,rep=NONONO");
-    wassert(actual(types::area::VM2::create(1)->derived_values() != vb2).istrue());
+    wassert(actual(types::area::VM2::get_VM2_derived_values(1) != vb2).istrue());
 });
 
 }

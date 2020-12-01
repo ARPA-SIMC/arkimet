@@ -621,6 +621,9 @@ std::unique_ptr<Product> Product::createVM2(unsigned variable_id)
     buf[0] = (uint8_t)product::Style::VM2;
     core::BinaryEncoder::set_unsigned(buf + 1, variable_id, 4);
     // TODO: also add derived values to the binary representation? Really? derived_values().encode(enc);
+    // yes, but then implement encode_for_indexing
+    // better: reverse encoding: do not keep derived values in ram, pull them
+    // in only when serializing for transmission
     return std::unique_ptr<Product>(new Product(buf, 5));
 }
 

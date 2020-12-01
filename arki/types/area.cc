@@ -52,8 +52,64 @@ std::string Area::formatStyle(Area::Style s)
     }
 }
 
-Area::Area()
+ValueBag Area::get_GRIB() const
 {
+    core::BinaryDecoder dec(data + 1, size - 1);
+    return ValueBag::decode(dec);
+}
+ValueBag Area::get_ODIMH5() const
+{
+    core::BinaryDecoder dec(data + 1, size - 1);
+    return ValueBag::decode(dec);
+}
+unsigned Area::get_VM2() const
+{
+    core::BinaryDecoder dec(data + 1, size - 1);
+    return dec.pop_uint(4, "VM station id");
+}
+
+int Area::compare(const Type& o) const
+{
+    int res = Encoded::compare(o);
+    if (res != 0) return res;
+
+    // We should be the same kind, so upcast
+    const Area* v = dynamic_cast<const Area*>(&o);
+    if (!v)
+    {
+        std::stringstream ss;
+        ss << "cannot compare metadata types: second element claims to be `Area`, but it is `" << typeid(&o).name() << "' instead";
+        throw std::runtime_error(ss.str());
+    }
+
+    auto sty = style();
+
+    // Compare style
+    if (int res = (int)sty - (int)v->style()) return res;
+
+    // Styles are the same, compare the rest.
+    //
+    // We can safely reinterpret_cast, avoiding an expensive dynamic_cast,
+    // since we checked the style.
+    switch (sty)
+    {
+        case area::Style::GRIB:
+            return reinterpret_cast<const area::GRIB*>(this)->compare_local(
+                    *reinterpret_cast<const area::GRIB*>(v));
+        case area::Style::ODIMH5:
+            return reinterpret_cast<const area::ODIMH5*>(this)->compare_local(
+                    *reinterpret_cast<const area::ODIMH5*>(v));
+        case area::Style::VM2:
+            return reinterpret_cast<const area::VM2*>(this)->compare_local(
+                    *reinterpret_cast<const area::VM2*>(v));
+        default:
+            throw_consistency_error("parsing Area", "unknown Area style " + formatStyle(sty));
+    }
+}
+
+area::Style Area::style() const
+{
+    return (area::Style)data[0];
 }
 
 const arki::utils::geos::Geometry* Area::bbox() const
@@ -73,27 +129,37 @@ static thread_local std::unique_ptr<BBox> bbox;
     return cached_bbox;
 }
 
-unique_ptr<Area> Area::decode(core::BinaryDecoder& dec)
+std::unique_ptr<Area> Area::decode(core::BinaryDecoder& dec)
 {
-    Style s = (Style)dec.pop_uint(1, "area");
-    switch (s)
+    dec.ensure_size(1, "Area style");
+    Style sty = static_cast<area::Style>(dec.buf[0]);
+    std::unique_ptr<Area> res;
+    switch (sty)
     {
         case Style::GRIB:
-            return createGRIB(ValueBag::decode(dec));
+            res.reset(new area::GRIB(dec.buf, dec.size));
+            dec.skip(dec.size);
+            break;
         case Style::ODIMH5:
-            return createODIMH5(ValueBag::decode(dec));
+            res.reset(new area::ODIMH5(dec.buf, dec.size));
+            dec.skip(dec.size);
+            break;
         case Style::VM2:
-            return createVM2(dec.pop_uint(4, "VM station id"));
+            dec.ensure_size(5, "VM data");
+            res.reset(new area::VM2(dec.buf, dec.size));
+            dec.skip(dec.size);
+            break;
         default:
-            throw std::runtime_error("cannot parse Area: style is " + formatStyle(s) + " but we can only decode GRIB, ODIMH5 and VM2");
+            throw std::runtime_error("cannot parse Area: style is " + formatStyle(sty) + " but we can only decode GRIB, ODIMH5 and VM2");
     }
+    return res;
 }
 
 unique_ptr<Area> Area::decodeString(const std::string& val)
 {
-	string inner;
-	Area::Style style = outerParse<Area>(val, inner);
-    switch (style)
+    std::string inner;
+    Area::Style sty = outerParse<Area>(val, inner);
+    switch (sty)
     {
         case Style::GRIB: return createGRIB(ValueBag::parse(inner));
         case Style::ODIMH5: return createODIMH5(ValueBag::parse(inner));
@@ -106,260 +172,181 @@ unique_ptr<Area> Area::decodeString(const std::string& val)
             return createVM2(station_id);
         }
         default:
-            throw_consistency_error("parsing Area", "unknown Area style " + formatStyle(style));
+            throw_consistency_error("parsing Area", "unknown Area style " + formatStyle(sty));
     }
 }
 
 std::unique_ptr<Area> Area::decode_structure(const structured::Keys& keys, const structured::Reader& val)
 {
-    switch (style_from_structure(keys, val))
+    area::Style sty = parseStyle(val.as_string(keys.type_style, "type style"));
+    std::unique_ptr<Area> res;
+    switch (sty)
     {
-        case Style::GRIB: return upcast<Area>(area::GRIB::decode_structure(keys, val));
-        case Style::ODIMH5: return upcast<Area>(area::ODIMH5::decode_structure(keys, val));
-        case Style::VM2: return upcast<Area>(area::VM2::decode_structure(keys, val));
-        default: throw std::runtime_error("unknown area style");
+        case Style::GRIB:
+            val.sub(keys.area_value, "area value", [&](const structured::Reader& reader) {
+                res = createGRIB(ValueBag::parse(reader));
+            });
+            return res;
+        case Style::ODIMH5:
+            val.sub(keys.area_value, "area value", [&](const structured::Reader& reader) {
+                res = createODIMH5(ValueBag::parse(reader));
+            });
+            return res;
+        case Style::VM2:
+            return createVM2(val.as_int(keys.area_id, "vm2 id"));
+        default:
+            throw std::runtime_error("unknown area style");
     }
 }
 
-unique_ptr<Area> Area::createGRIB(const ValueBag& values)
+std::unique_ptr<Area> Area::createGRIB(const ValueBag& values)
 {
-    return upcast<Area>(area::GRIB::create(values));
+    std::vector<uint8_t> buf;
+    core::BinaryEncoder enc(buf);
+    enc.add_unsigned(static_cast<unsigned>(area::Style::GRIB), 1);
+    values.encode(enc);
+    return std::unique_ptr<Area>(new area::GRIB(buf));
 }
-unique_ptr<Area> Area::createODIMH5(const ValueBag& values)
+
+std::unique_ptr<Area> Area::createODIMH5(const ValueBag& values)
 {
-    return upcast<Area>(area::ODIMH5::create(values));
+    std::vector<uint8_t> buf;
+    core::BinaryEncoder enc(buf);
+    enc.add_unsigned(static_cast<unsigned>(area::Style::ODIMH5), 1);
+    values.encode(enc);
+    return std::unique_ptr<Area>(new area::ODIMH5(buf));
 }
-unique_ptr<Area> Area::createVM2(unsigned station_id)
+
+std::unique_ptr<Area> Area::createVM2(unsigned station_id)
 {
-    return upcast<Area>(area::VM2::create(station_id));
+    std::vector<uint8_t> buf;
+    core::BinaryEncoder enc(buf);
+    enc.add_unsigned(static_cast<unsigned>(area::Style::VM2), 1);
+    enc.add_unsigned(station_id, 4);
+    // TODO: add derived values? dv.encode(enc);
+    // but then implement encode_for_indexing without
+    // better: reverse encoding: do not keep derived values in ram, pull them
+    // in only when serializing for transmission
+    return std::unique_ptr<Area>(new area::VM2(buf));
 }
+
 
 namespace area {
 
-GRIB::~GRIB() { /* cache_grib.uncache(this); */ }
+/*
+ * GRIB
+ */
 
-Area::Style GRIB::style() const { return Style::GRIB; }
+GRIB::~GRIB() {}
 
-void GRIB::encodeWithoutEnvelope(core::BinaryEncoder& enc) const
+int GRIB::compare_local(const GRIB& o) const
 {
-    Area::encodeWithoutEnvelope(enc);
-    m_values.encode(enc);
+    return get_GRIB().compare(o.get_GRIB());
 }
+
 std::ostream& GRIB::writeToOstream(std::ostream& o) const
 {
-    return o << formatStyle(style()) << "(" << m_values.toString() << ")";
+    auto values = get_GRIB();
+    return o << formatStyle(area::Style::GRIB) << "(" << values.toString() << ")";
 }
+
 void GRIB::serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f) const
 {
-    Area::serialise_local(e, keys, f);
+    auto values = get_GRIB();
+    e.add(keys.type_style, formatStyle(Style::GRIB));
     e.add(keys.area_value);
-    m_values.serialise(e);
+    values.serialise(e);
 }
 
-std::unique_ptr<GRIB> GRIB::decode_structure(const structured::Keys& keys, const structured::Reader& val)
-{
-    std::unique_ptr<GRIB> res;
-    val.sub(keys.area_value, "area value", [&](const structured::Reader& reader) {
-        res = GRIB::create(ValueBag::parse(reader));
-    });
-    return res;
-}
 std::string GRIB::exactQuery() const
 {
-    return "GRIB:" + m_values.toString();
+    return "GRIB:" + get_GRIB().toString();
 }
 
-int GRIB::compare_local(const Area& o) const
+
+/*
+ * ODIMH5
+ */
+
+ODIMH5::~ODIMH5() {}
+
+int ODIMH5::compare_local(const ODIMH5& o) const
 {
-    if (int res = Area::compare_local(o)) return res;
-    // We should be the same kind, so upcast
-    const GRIB* v = dynamic_cast<const GRIB*>(&o);
-    if (!v)
-        throw_consistency_error(
-            "comparing metadata types",
-            string("second element claims to be a GRIB Area, but is a ") + typeid(&o).name() + " instead");
-
-    return m_values.compare(v->m_values);
+    return get_ODIMH5().compare(o.get_ODIMH5());
 }
 
-bool GRIB::equals(const Type& o) const
-{
-	const GRIB* v = dynamic_cast<const GRIB*>(&o);
-	if (!v) return false;
-	return m_values == v->m_values;
-}
-
-GRIB* GRIB::clone() const
-{
-    GRIB* res = new GRIB;
-    res->m_values = m_values;
-    return res;
-}
-
-unique_ptr<GRIB> GRIB::create(const ValueBag& values)
-{
-    GRIB* res = new GRIB;
-    res->m_values = values;
-    return unique_ptr<GRIB>(res);
-}
-
-ODIMH5::~ODIMH5() { /* cache_odimh5.uncache(this); */ }
-
-Area::Style ODIMH5::style() const { return Style::ODIMH5; }
-
-void ODIMH5::encodeWithoutEnvelope(core::BinaryEncoder& enc) const
-{
-    Area::encodeWithoutEnvelope(enc);
-    m_values.encode(enc);
-}
 std::ostream& ODIMH5::writeToOstream(std::ostream& o) const
 {
-    return o << formatStyle(style()) << "(" << m_values.toString() << ")";
+    auto values = get_ODIMH5();
+    return o << formatStyle(area::Style::ODIMH5) << "(" << values.toString() << ")";
 }
+
 void ODIMH5::serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f) const
 {
-    Area::serialise_local(e, keys, f);
+    auto values = get_ODIMH5();
+    e.add(keys.type_style, formatStyle(Style::ODIMH5));
     e.add(keys.area_value);
-    m_values.serialise(e);
+    values.serialise(e);
 }
 
-std::unique_ptr<ODIMH5> ODIMH5::decode_structure(const structured::Keys& keys, const structured::Reader& val)
-{
-    std::unique_ptr<ODIMH5> res;
-    val.sub(keys.area_value, "area value", [&](const structured::Reader& reader) {
-        res = ODIMH5::create(ValueBag::parse(reader));
-    });
-    return res;
-}
 std::string ODIMH5::exactQuery() const
 {
-    return "ODIMH5:" + m_values.toString();
+    return "ODIMH5:" + get_ODIMH5().toString();
 }
 
-int ODIMH5::compare_local(const Area& o) const
-{
-    if (int res = Area::compare_local(o)) return res;
-    // We should be the same kind, so upcast
-    const ODIMH5* v = dynamic_cast<const ODIMH5*>(&o);
-    if (!v)
-        throw_consistency_error(
-            "comparing metadata types",
-            string("second element claims to be a ODIMH5 Area, but is a ") + typeid(&o).name() + " instead");
 
-    return m_values.compare(v->m_values);
-}
-
-bool ODIMH5::equals(const Type& o) const
-{
-	const ODIMH5* v = dynamic_cast<const ODIMH5*>(&o);
-	if (!v) return false;
-	return m_values == v->m_values;
-}
-
-ODIMH5* ODIMH5::clone() const
-{
-    ODIMH5* res = new ODIMH5;
-    res->m_values = m_values;
-    return res;
-}
-
-unique_ptr<ODIMH5> ODIMH5::create(const ValueBag& values)
-{
-    ODIMH5* res = new ODIMH5;
-    res->m_values = values;
-    return unique_ptr<ODIMH5>(res);
-}
+/*
+ * VM2
+ */
 
 VM2::~VM2() {}
 
-const ValueBag& VM2::derived_values() const {
-    if (m_derived_values.get() == 0) {
-#ifdef HAVE_VM2
-        m_derived_values.reset(new ValueBag(utils::vm2::get_station(m_station_id)));
-#else
-        m_derived_values.reset(new ValueBag);
-#endif
-    }
-    return *m_derived_values;
-}
-
-Area::Style VM2::style() const { return Style::VM2; }
-
-void VM2::encodeWithoutEnvelope(core::BinaryEncoder& enc) const
+int VM2::compare_local(const VM2& o) const
 {
-    Area::encodeWithoutEnvelope(enc);
-    enc.add_unsigned(m_station_id, 4);
-    derived_values().encode(enc);
-}
-
-void VM2::encode_for_indexing(core::BinaryEncoder& enc) const
-{
-    Area::encodeWithoutEnvelope(enc);
-    enc.add_unsigned(m_station_id, 4);
+    return get_VM2() - o.get_VM2();
 }
 
 std::ostream& VM2::writeToOstream(std::ostream& o) const
 {
-    o << formatStyle(style()) << "(" << m_station_id;
-    if (!derived_values().empty())
-        o << "," << derived_values().toString();
+    auto station_id = get_VM2();
+    o << formatStyle(area::Style::VM2) << "(" << station_id;
+
+    auto dv = get_VM2_derived_values(station_id);
+    if (!dv.empty())
+        o << "," << dv.toString();
     return o << ")";
 }
+
 void VM2::serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f) const
 {
-    Area::serialise_local(e, keys, f);
-    e.add(keys.area_id, m_station_id);
-    if (!derived_values().empty()) {
+    auto station_id = get_VM2();
+    e.add(keys.type_style, formatStyle(Style::VM2));
+    e.add(keys.area_id, station_id);
+
+    auto dv = get_VM2_derived_values(station_id);
+    if (!dv.empty()) {
         e.add(keys.area_value);
-        derived_values().serialise(e);
+        dv.serialise(e);
     }
 }
 
 std::string VM2::exactQuery() const
 {
-    stringstream ss;
-    ss << "VM2," << m_station_id;
-    if (!derived_values().empty())
-        ss << ":" << derived_values().toString();
-    return ss.str();
+    return "VM2," + std::to_string(get_VM2());
 }
 
-int VM2::compare_local(const Area& o) const
+void VM2::encode_for_indexing(core::BinaryEncoder& enc) const
 {
-    if (int res = Area::compare_local(o)) return res;
-    const VM2* v = dynamic_cast<const VM2*>(&o);
-    if (!v)
-        throw_consistency_error(
-            "comparing metadata types",
-            string("second element claims to be a VM2 Area, but is a ") + typeid(&o).name() + " instead");
-    if (m_station_id == v->m_station_id) return 0;
-    return (m_station_id > v->m_station_id ? 1 : -1);
+    enc.add_raw(data, 5);
 }
 
-bool VM2::equals(const Type& o) const
+ValueBag VM2::get_VM2_derived_values(unsigned station_id)
 {
-    const VM2* v = dynamic_cast<const VM2*>(&o);
-    if (!v) return false;
-    return m_station_id == v->m_station_id;
-}
-
-VM2* VM2::clone() const
-{
-    VM2* res = new VM2;
-    res->m_station_id = m_station_id;
-    return res;
-}
-
-unique_ptr<VM2> VM2::create(unsigned station_id)
-{
-    VM2* res = new VM2;
-    res->m_station_id = station_id;
-    return unique_ptr<VM2>(res);
-}
-
-std::unique_ptr<VM2> VM2::decode_structure(const structured::Keys& keys, const structured::Reader& val)
-{
-    return VM2::create(val.as_int(keys.area_id, "vm2 id"));
+#ifdef HAVE_VM2
+    return ValueBag(utils::vm2::get_station(station_id));
+#else
+    return ValueBag();
+#endif
 }
 
 }
