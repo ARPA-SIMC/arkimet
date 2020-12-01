@@ -23,7 +23,7 @@ fi
 
 ## Run under eatmydata if available
 
-libeatmydata="/usr/lib/libeatmydata/libeatmydata.so"
+libeatmydata="/usr/lib/x86_64-linux-gnu/libeatmydata.so"
 if [ -e $libeatmydata ]
 then
     if [ -n "$LD_PRELOAD" ]; then
