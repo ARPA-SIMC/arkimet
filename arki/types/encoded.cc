@@ -35,9 +35,9 @@ Encoded::~Encoded()
 bool Encoded::equals(const Type& o) const
 {
     if (type_code() != o.type_code()) return false;
-    // FIXME: this could be a static_cast for performance, since we just
-    // validated the type code?
-    const Encoded* v = dynamic_cast<const Encoded*>(&o);
+    // This can be a reinterpret_cast for performance, since we just validated
+    // the type code
+    const Encoded* v = reinterpret_cast<const Encoded*>(&o);
     if (!v) return false;
     if (size != v->size) return false;
     return memcmp(data, v->data, size) == 0;
