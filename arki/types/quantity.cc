@@ -14,7 +14,6 @@
 #define TAG "quantity"
 #define SERSIZELEN 	1
 
-using namespace std;
 using namespace arki::utils;
 
 namespace arki {
@@ -45,12 +44,12 @@ int Quantity::compare(const Type& o) const
 	int res = Type::compare(o);
 	if (res != 0) return res;
 
-	// We should be the same kind, so upcast
-	const Quantity* v = dynamic_cast<const Quantity*>(&o);
-	if (!v)
-		throw_consistency_error(
-			"comparing metadata types",
-			string("second element claims to be a Task, but it is a ") + typeid(&o).name() + " instead");
+    // We should be the same kind, so upcast
+    const Quantity* v = dynamic_cast<const Quantity*>(&o);
+    if (!v)
+        throw_consistency_error(
+                "comparing metadata types",
+                std::string("second element claims to be a Task, but it is a ") + typeid(&o).name() + " instead");
 
     // TODO: we can probably do better than this
     std::ostringstream ss1;
@@ -86,7 +85,7 @@ void Quantity::serialise_local(structured::Emitter& e, const structured::Keys& k
 
 std::unique_ptr<Quantity> Quantity::decode_structure(const structured::Keys& keys, const structured::Reader& val)
 {
-    std::set<string> vals;
+    std::set<std::string> vals;
     val.sub(keys.quantity_value, "Quantity values", [&](const structured::Reader& list) {
         unsigned size = list.list_size("Quantity values");
         for (unsigned i = 0; i < size; ++i)
@@ -95,7 +94,7 @@ std::unique_ptr<Quantity> Quantity::decode_structure(const structured::Keys& key
     return Quantity::create(vals);
 }
 
-unique_ptr<Quantity> Quantity::decodeString(const std::string& val)
+std::unique_ptr<Quantity> Quantity::decodeString(const std::string& val)
 {
 	if (val.empty())
 		throw_consistency_error("parsing Quantity", "string is empty");
@@ -110,14 +109,14 @@ Quantity* Quantity::clone() const
     return new Quantity(data, size);
 }
 
-unique_ptr<Quantity> Quantity::create(const std::string& values)
+std::unique_ptr<Quantity> Quantity::create(const std::string& values)
 {
     std::set<std::string> vals;
     split(values, vals);
     return Quantity::create(vals);
 }
 
-unique_ptr<Quantity> Quantity::create(const std::set<std::string>& values)
+std::unique_ptr<Quantity> Quantity::create(const std::set<std::string>& values)
 {
     std::vector<uint8_t> buf;
     core::BinaryEncoder enc(buf);
@@ -138,4 +137,3 @@ void Quantity::init()
 
 }
 }
-#include <arki/types/core.tcc>

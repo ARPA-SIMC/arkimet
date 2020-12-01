@@ -26,6 +26,7 @@ struct Quantity : public Encoded
     size_t serialisationSizeLength() const override { return traits<Quantity>::type_sersize_bytes; }
     std::string tag() const override { return traits<Quantity>::type_tag; }
 
+    // TODO: use a sorted vector instead of a std::set, since we always store few values
     std::set<std::string> get() const;
 
     int compare(const Type& o) const override;
