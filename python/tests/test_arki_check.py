@@ -1,3 +1,4 @@
+# python 3.7+ from __future__ import annotations
 import arkimet as arki
 import unittest
 import os
@@ -437,6 +438,7 @@ class ArkiCheckTestsBase(CmdlineTestMixin):
                 self.assertQueryResults(env, imported, [1, 0, 2])
 
     def test_scan(self):
+        self.maxDiff = None
         with self.datasets(format="odimh5") as env:
             env.import_file("inbound/fixture.odimh5/00.odimh5")
             env.import_file("inbound/fixture.odimh5/01.odimh5")
@@ -453,20 +455,20 @@ class ArkiCheckTestsBase(CmdlineTestMixin):
                 out = self.call_output_success("testenv/testds", "--state")
                 self.assertEqual(
                         out,
-                        "testds:2007/07-08.odimh5: OK 2007-07-08 00:00:00Z to 2007-07-08 23:59:59Z\n"
-                        "testds:2007/10-09.odimh5: OK 2007-10-09 00:00:00Z to 2007-10-09 23:59:59Z\n"
-                        "testds.archives.last:2007/07-07.odimh5: OK 2007-07-01 00:00:00Z to 2007-07-31 23:59:59Z\n")
+                        "testds:2007/07-08.odimh5: OK 2007-07-08 00:00:00Z to 2007-07-09 00:00:00Z\n"
+                        "testds:2007/10-09.odimh5: OK 2007-10-09 00:00:00Z to 2007-10-10 00:00:00Z\n"
+                        "testds.archives.last:2007/07-07.odimh5: OK 2007-07-01 00:00:00Z to 2007-08-01 00:00:00Z\n")
 
                 out = self.call_output_success("testenv/testds", "--state", "--offline")
                 self.assertEqual(
                         out,
-                        "testds.archives.last:2007/07-07.odimh5: OK 2007-07-01 00:00:00Z to 2007-07-31 23:59:59Z\n")
+                        "testds.archives.last:2007/07-07.odimh5: OK 2007-07-01 00:00:00Z to 2007-08-01 00:00:00Z\n")
 
                 out = self.call_output_success("testenv/testds", "--state", "--online")
                 self.assertEqual(
                         out,
-                        "testds:2007/07-08.odimh5: OK 2007-07-08 00:00:00Z to 2007-07-08 23:59:59Z\n"
-                        "testds:2007/10-09.odimh5: OK 2007-10-09 00:00:00Z to 2007-10-09 23:59:59Z\n")
+                        "testds:2007/07-08.odimh5: OK 2007-07-08 00:00:00Z to 2007-07-09 00:00:00Z\n"
+                        "testds:2007/10-09.odimh5: OK 2007-10-09 00:00:00Z to 2007-10-10 00:00:00Z\n")
 
     def test_remove_old(self):
         with self.datasets(format="odimh5") as env:
