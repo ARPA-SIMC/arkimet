@@ -321,7 +321,7 @@ std::ostream& VM2::writeToOstream(std::ostream& o) const
     auto station_id = get_VM2();
     o << formatStyle(area::Style::VM2) << "(" << station_id;
 
-    auto dv = get_VM2_derived_values(station_id);
+    auto dv = derived_values();
     if (!dv.empty())
         o << "," << dv.toString();
     return o << ")";
@@ -333,7 +333,7 @@ void VM2::serialise_local(structured::Emitter& e, const structured::Keys& keys, 
     e.add(keys.type_style, formatStyle(Style::VM2));
     e.add(keys.area_id, station_id);
 
-    auto dv = get_VM2_derived_values(station_id);
+    auto dv = derived_values();
     if (!dv.empty()) {
         e.add(keys.area_value);
         dv.serialise(e);
@@ -352,20 +352,28 @@ void VM2::encode_for_indexing(core::BinaryEncoder& enc) const
 
 void VM2::encodeWithoutEnvelope(core::BinaryEncoder& enc) const
 {
-    enc.add_raw(data, min(size, 5u));
+    enc.add_raw(data, size);
 
     // Also add derived values to the binary representation, since we are
     // encoding for transmission
-    auto station_id = get_VM2();
-    auto dv = get_VM2_derived_values(station_id);
-    if (!dv.empty())
-        dv.encode(enc);
+    if (size <= 5)
+    {
+        auto dv = derived_values();
+        if (!dv.empty())
+            dv.encode(enc);
+    }
 }
 
-ValueBag VM2::get_VM2_derived_values(unsigned station_id)
+ValueBag VM2::derived_values() const
 {
 #ifdef HAVE_VM2
-    return ValueBag(utils::vm2::get_station(station_id));
+    if (size > 5u)
+    {
+        core::BinaryDecoder dec(data + 5, size - 5);
+        return ValueBag::decode(dec);
+    } else {
+        return utils::vm2::get_station(get_VM2());
+    }
 #else
     return ValueBag();
 #endif

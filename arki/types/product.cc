@@ -692,13 +692,16 @@ std::string VM2::exactQuery() const
 
 void VM2::encodeWithoutEnvelope(core::BinaryEncoder& enc) const
 {
-    enc.add_raw(data, min(size, 5u));
+    enc.add_raw(data, size);
 
     // Also add derived values to the binary representation, since we are
     // encoding for transmission
-    auto dv = derived_values();
-    if (!dv.empty())
-        dv.encode(enc);
+    if (size <= 5)
+    {
+        auto dv = derived_values();
+        if (!dv.empty())
+            dv.encode(enc);
+    }
 }
 
 void VM2::encode_for_indexing(core::BinaryEncoder& enc) const

@@ -132,7 +132,7 @@ public:
     int compare_local(const VM2& o) const;
     VM2* clone() const override { return new VM2(data, size); }
 
-    static ValueBag get_VM2_derived_values(unsigned station_id);
+    ValueBag derived_values() const;
 };
 
 

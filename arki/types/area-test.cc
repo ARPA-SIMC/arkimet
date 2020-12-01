@@ -47,11 +47,62 @@ add_generic_test(
 
 add_method("vm2_derived_lookup", [] {
     skip_unless_vm2();
+    using namespace arki::types;
     auto vb1 = types::ValueBag::parse("lon=1207738,lat=4460016,rep=locali");
-    wassert(actual(types::area::VM2::get_VM2_derived_values(1) == vb1).istrue());
     auto vb2 = types::ValueBag::parse("lon=1207738,lat=4460016,rep=NONONO");
-    wassert(actual(types::area::VM2::get_VM2_derived_values(1) != vb2).istrue());
+
+    // Create without derived values
+    std::unique_ptr<Area> p1 = Area::createVM2(1);
+    auto v1 = dynamic_cast<const area::VM2*>(p1.get());
+
+    // Try lookup
+    wassert_true(v1->derived_values() == vb1);
+    wassert_true(v1->derived_values() != vb2);
+
+    // Encode with a different set of derived values, and decode
+    std::unique_ptr<Type> p2;
+    {
+        std::vector<uint8_t> full;
+        core::BinaryEncoder enc(full);
+        p1->encode_for_indexing(enc);
+        vb2.encode(enc);
+
+        core::BinaryDecoder dec(full);
+        p2 = decodeInner(arki::TYPE_AREA, dec);
+    }
+    auto v2 = dynamic_cast<const area::VM2*>(p2.get());
+
+    // Try lookup, it should preserve the values that were transmitted
+    wassert_true(v2->derived_values() != vb1);
+    wassert_true(v2->derived_values() == vb2);
+
+    // It should also be able to retransmit them in turn
+    {
+        std::vector<uint8_t> full;
+        core::BinaryEncoder enc(full);
+        p2->encodeWithoutEnvelope(enc);
+
+        core::BinaryDecoder dec(full);
+        p2 = decodeInner(arki::TYPE_AREA, dec);
+    }
+    v2 = dynamic_cast<const area::VM2*>(p2.get());
+    wassert_true(v2->derived_values() != vb1);
+    wassert_true(v2->derived_values() == vb2);
+
+    // And it looks up again after being transmitted without them
+    {
+        std::vector<uint8_t> full;
+        core::BinaryEncoder enc(full);
+        p1->encode_for_indexing(enc);
+
+        core::BinaryDecoder dec(full);
+        p2 = decodeInner(arki::TYPE_AREA, dec);
+    }
+    v2 = dynamic_cast<const area::VM2*>(p2.get());
+    wassert_true(v2->derived_values() == vb1);
+    wassert_true(v2->derived_values() != vb2);
 });
+
 
 add_method("vm2_derived_encoding", [] {
     skip_unless_vm2();
