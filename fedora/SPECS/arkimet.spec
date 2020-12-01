@@ -14,7 +14,8 @@ Source2: https://github.com/arpa-simc/%{name}/raw/v%{version}-%{release}/fedora/
 Source3: https://github.com/arpa-simc/%{name}/raw/v%{version}-%{release}/fedora/SOURCES/%{name}-logrotate.conf
 
 # On fedora, we don't need systemd to build. But we do on centos.
-%{?el7:BuildRequires: systemd}
+# https://fedoraproject.org/wiki/Packaging:Systemd#Filesystem_locations
+BuildRequires: systemd
 
 # Python 3 package names
 %if 0%{?rhel} == 7
