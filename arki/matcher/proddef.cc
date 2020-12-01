@@ -19,7 +19,7 @@ bool MatchProddefGRIB::matchItem(const Type& o) const
 {
     const types::proddef::GRIB* v = dynamic_cast<const types::proddef::GRIB*>(&o);
     if (!v) return false;
-    return v->values().contains(expr);
+    return v->get_GRIB().contains(expr);
 }
 
 std::string MatchProddefGRIB::toString() const

@@ -1,7 +1,7 @@
 #ifndef ARKI_TYPES_PRODDEF_H
 #define ARKI_TYPES_PRODDEF_H
 
-#include <arki/types/styled.h>
+#include <arki/types/encoded.h>
 #include <arki/types/values.h>
 
 namespace arki {
@@ -33,12 +33,29 @@ struct traits<Proddef>
  *
  * It can contain information like proddef type and proddef value.
  */
-struct Proddef : public types::StyledType<Proddef>
+struct Proddef : public Encoded
 {
-	/// Convert a string into a style
-	static Style parseStyle(const std::string& str);
-	/// Convert a style into its string representation
-	static std::string formatStyle(Style s);
+    using Encoded::Encoded;
+
+    typedef proddef::Style Style;
+
+    types::Code type_code() const override { return traits<Proddef>::type_code; }
+    size_t serialisationSizeLength() const override { return traits<Proddef>::type_sersize_bytes; }
+    std::string tag() const override { return traits<Proddef>::type_tag; }
+
+    Proddef* clone() const override = 0;
+
+    int compare(const Type& o) const override;
+
+    // Get the element style
+    proddef::Style style() const;
+
+    ValueBag get_GRIB() const;
+
+    /// Convert a string into a style
+    static Style parseStyle(const std::string& str);
+    /// Convert a style into its string representation
+    static std::string formatStyle(Style s);
 
     /// CODEC functions
     static std::unique_ptr<Proddef> decode(core::BinaryDecoder& dec);
@@ -56,28 +73,19 @@ namespace proddef {
 inline std::ostream& operator<<(std::ostream& o, Style s) { return o << Proddef::formatStyle(s); }
 
 
-struct GRIB : public Proddef
+class GRIB : public Proddef
 {
-protected:
-	ValueBag m_values;
-
 public:
-	virtual ~GRIB();
+    using Proddef::Proddef;
+    virtual ~GRIB();
 
-	const ValueBag& values() const { return m_values; }
-
-    Style style() const override;
-    void encodeWithoutEnvelope(core::BinaryEncoder& enc) const override;
     std::ostream& writeToOstream(std::ostream& o) const override;
     void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
     std::string exactQuery() const override;
 
-    int compare_local(const Proddef& o) const override;
-    bool equals(const Type& o) const override;
+    int compare_local(const GRIB& o) const;
 
-    GRIB* clone() const override;
-    static std::unique_ptr<GRIB> create(const ValueBag& values);
-    static std::unique_ptr<GRIB> decode_structure(const structured::Keys& keys, const structured::Reader& val);
+    GRIB* clone() const override { return new GRIB(data, size); }
 };
 
 }
@@ -85,5 +93,4 @@ public:
 }
 }
 
-// vim:set ts=4 sw=4:
 #endif

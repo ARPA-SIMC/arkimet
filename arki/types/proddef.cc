@@ -41,112 +41,129 @@ std::string Proddef::formatStyle(Proddef::Style s)
     }
 }
 
-unique_ptr<Proddef> Proddef::decode(core::BinaryDecoder& dec)
+ValueBag Proddef::get_GRIB() const
 {
-    Style s = (Style)dec.pop_uint(1, "proddef style");
-    switch (s)
+    core::BinaryDecoder dec(data + 1, size - 1);
+    return ValueBag::decode(dec);
+}
+
+int Proddef::compare(const Type& o) const
+{
+    int res = Encoded::compare(o);
+    if (res != 0) return res;
+
+    // We should be the same kind, so upcast
+    const Proddef* v = dynamic_cast<const Proddef*>(&o);
+    if (!v)
+    {
+        std::stringstream ss;
+        ss << "cannot compare metadata types: second element claims to be `Proddef`, but it is `" << typeid(&o).name() << "' instead";
+        throw std::runtime_error(ss.str());
+    }
+
+    auto sty = style();
+
+    // Compare style
+    if (int res = (int)sty - (int)v->style()) return res;
+
+    // Styles are the same, compare the rest.
+    //
+    // We can safely reinterpret_cast, avoiding an expensive dynamic_cast,
+    // since we checked the style.
+    switch (sty)
+    {
+        case proddef::Style::GRIB:
+            return reinterpret_cast<const proddef::GRIB*>(this)->compare_local(
+                    *reinterpret_cast<const proddef::GRIB*>(v));
+        default:
+            throw_consistency_error("parsing Proddef", "unknown Proddef style " + formatStyle(sty));
+    }
+}
+
+proddef::Style Proddef::style() const
+{
+    return (proddef::Style)data[0];
+}
+
+std::unique_ptr<Proddef> Proddef::decode(core::BinaryDecoder& dec)
+{
+    dec.ensure_size(1, "Proddef style");
+    Style sty = static_cast<proddef::Style>(dec.buf[0]);
+    std::unique_ptr<Proddef> res;
+    switch (sty)
     {
         case Style::GRIB:
-            return createGRIB(ValueBag::decode(dec));
+            res.reset(new proddef::GRIB(dec.buf, dec.size));
+            dec.skip(dec.size);
+            break;
         default:
-            throw_consistency_error("parsing Proddef", "style is " + formatStyle(s) + " but we can only decode GRIB");
+            throw std::runtime_error("cannot parse Proddef: style is " + formatStyle(sty) + " but we can only decode GRIB");
     }
+    return res;
 }
 
 unique_ptr<Proddef> Proddef::decodeString(const std::string& val)
 {
-    string inner;
-    Proddef::Style style = outerParse<Proddef>(val, inner);
-    switch (style)
+    std::string inner;
+    Proddef::Style sty = outerParse<Proddef>(val, inner);
+    switch (sty)
     {
         case Style::GRIB: return createGRIB(ValueBag::parse(inner));
         default:
-            throw_consistency_error("parsing Proddef", "unknown Proddef style " + formatStyle(style));
+            throw_consistency_error("parsing Proddef", "unknown Proddef style " + formatStyle(sty));
     }
 }
 
 std::unique_ptr<Proddef> Proddef::decode_structure(const structured::Keys& keys, const structured::Reader& val)
 {
-    switch (style_from_structure(keys, val))
+    proddef::Style sty = parseStyle(val.as_string(keys.type_style, "type style"));
+    std::unique_ptr<Proddef> res;
+    switch (sty)
     {
-        case Style::GRIB: return upcast<Proddef>(proddef::GRIB::decode_structure(keys, val));
-        default: throw std::runtime_error("Unknown Proddef style");
+        case Style::GRIB:
+            val.sub(keys.proddef_value, "proddef value", [&](const structured::Reader& reader) {
+                res = createGRIB(ValueBag::parse(reader));
+            });
+            return res;
+        default:
+            throw std::runtime_error("unknown proddef style");
     }
 }
 
 unique_ptr<Proddef> Proddef::createGRIB(const ValueBag& values)
 {
-    return upcast<Proddef>(proddef::GRIB::create(values));
+    std::vector<uint8_t> buf;
+    core::BinaryEncoder enc(buf);
+    enc.add_unsigned(static_cast<unsigned>(proddef::Style::GRIB), 1);
+    values.encode(enc);
+    return std::unique_ptr<Proddef>(new proddef::GRIB(buf));
 }
 
 namespace proddef {
 
 GRIB::~GRIB() { /* cache_grib.uncache(this); */ }
 
-Proddef::Style GRIB::style() const { return Style::GRIB; }
-
-void GRIB::encodeWithoutEnvelope(core::BinaryEncoder& enc) const
-{
-    Proddef::encodeWithoutEnvelope(enc);
-    m_values.encode(enc);
-}
 std::ostream& GRIB::writeToOstream(std::ostream& o) const
 {
-    return o << formatStyle(style()) << "(" << m_values.toString() << ")";
+    return o << formatStyle(Style::GRIB) << "(" << get_GRIB().toString() << ")";
 }
+
 void GRIB::serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f) const
 {
-    Proddef::serialise_local(e, keys, f);
+    auto values = get_GRIB();
+    e.add(keys.type_style, formatStyle(Style::GRIB));
     e.add(keys.proddef_value);
-    m_values.serialise(e);
+    values.serialise(e);
 }
 
-std::unique_ptr<GRIB> GRIB::decode_structure(const structured::Keys& keys, const structured::Reader& val)
-{
-    std::unique_ptr<GRIB> res;
-    val.sub(keys.proddef_value, "proddef value", [&](const structured::Reader& values) {
-        res = GRIB::create(ValueBag::parse(values));
-    });
-    return res;
-}
 std::string GRIB::exactQuery() const
 {
-    return "GRIB:" + m_values.toString();
+    return "GRIB:" + get_GRIB().toString();
 }
 
-int GRIB::compare_local(const Proddef& o) const
+int GRIB::compare_local(const GRIB& o) const
 {
-    if (int res = Proddef::compare_local(o)) return res;
-
-	// We should be the same kind, so upcast
-	const GRIB* v = dynamic_cast<const GRIB*>(&o);
-	if (!v)
-		throw_consistency_error(
-			"comparing metadata types",
-			string("second element claims to be a GRIB Proddef, but is a ") + typeid(&o).name() + " instead");
-
-	return m_values.compare(v->m_values);
-}
-
-bool GRIB::equals(const Type& o) const
-{
-	const GRIB* v = dynamic_cast<const GRIB*>(&o);
-	if (!v) return false;
-	return m_values == v->m_values;
-}
-
-GRIB* GRIB::clone() const
-{
-    GRIB* res = new GRIB;
-    res->m_values = m_values;
-    return res;
-}
-
-unique_ptr<GRIB> GRIB::create(const ValueBag& values)
-{
-    GRIB* res = new GRIB;
-    res->m_values = values;
-    return unique_ptr<GRIB>(res);
+    return get_GRIB().compare(o.get_GRIB());
 }
 
 }
@@ -158,4 +175,3 @@ void Proddef::init()
 
 }
 }
-#include <arki/types/styled.tcc>
