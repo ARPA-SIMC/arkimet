@@ -358,5 +358,3 @@ void Area::init()
 
 }
 }
-
-#include <arki/types/styled.tcc>

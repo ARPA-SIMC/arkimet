@@ -1822,5 +1822,3 @@ void Timerange::init()
 
 }
 }
-
-#include <arki/types/styled.tcc>

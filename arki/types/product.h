@@ -45,8 +45,6 @@ public:
     size_t serialisationSizeLength() const override { return traits<Product>::type_sersize_bytes; }
     std::string tag() const override { return traits<Product>::type_tag; }
 
-    Product* clone() const override;
-
     Style style() const;
     void get_GRIB1(unsigned& origin, unsigned& table, unsigned& product) const;
     void get_GRIB2(unsigned& centre, unsigned& discipline, unsigned& category, unsigned& number, unsigned& table_version, unsigned& local_table_version) const;
@@ -63,10 +61,6 @@ public:
     static std::string formatStyle(Style s);
 
     /// CODEC functions
-    std::ostream& writeToOstream(std::ostream& o) const override;
-    void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
-
-    std::string exactQuery() const override;
 
     static std::unique_ptr<Product> decode(core::BinaryDecoder& dec);
     static std::unique_ptr<Product> decodeString(const std::string& val);
@@ -88,9 +82,76 @@ public:
     static std::unique_ptr<Product> createVM2(unsigned variable_id);
 };
 
-
 namespace product {
+
 inline std::ostream& operator<<(std::ostream& o, Style s) { return o << Product::formatStyle(s); }
+
+struct GRIB1 : public Product
+{
+public:
+    using Product::Product;
+
+    GRIB1* clone() const override { return new GRIB1(data, size); }
+
+    int compare_local(const GRIB1& o) const;
+    std::ostream& writeToOstream(std::ostream& o) const override;
+    void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
+    std::string exactQuery() const override;
+};
+
+struct GRIB2 : public Product
+{
+public:
+    using Product::Product;
+
+    GRIB2* clone() const override { return new GRIB2(data, size); }
+
+    int compare_local(const GRIB2& o) const;
+    std::ostream& writeToOstream(std::ostream& o) const override;
+    void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
+    std::string exactQuery() const override;
+};
+
+struct BUFR : public Product
+{
+public:
+    using Product::Product;
+
+    BUFR* clone() const override { return new BUFR(data, size); }
+
+    int compare_local(const BUFR& o) const;
+    std::ostream& writeToOstream(std::ostream& o) const override;
+    void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
+    std::string exactQuery() const override;
+};
+
+struct ODIMH5 : public Product
+{
+public:
+    using Product::Product;
+
+    ODIMH5* clone() const override { return new ODIMH5(data, size); }
+
+    int compare_local(const ODIMH5& o) const;
+    std::ostream& writeToOstream(std::ostream& o) const override;
+    void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
+    std::string exactQuery() const override;
+};
+
+struct VM2 : public Product
+{
+public:
+    using Product::Product;
+
+    VM2* clone() const override { return new VM2(data, size); }
+
+    int compare_local(const VM2& o) const;
+    std::ostream& writeToOstream(std::ostream& o) const override;
+    void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
+    std::string exactQuery() const override;
+};
+
+
 }
 
 }

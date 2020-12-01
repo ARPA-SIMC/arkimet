@@ -441,5 +441,3 @@ void Origin::init()
 
 }
 }
-
-#include <arki/types/styled.tcc>

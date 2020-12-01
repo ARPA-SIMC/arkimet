@@ -1,5 +1,6 @@
 #include "tests.h"
 #include "product.h"
+#include "arki/core/binary.h"
 
 namespace {
 using namespace std;
@@ -136,18 +137,56 @@ add_generic_test("vm2",
     "VM2,1:bcode=B20013, l1=0, l2=0, lt1=256, lt2=258, p1=0, p2=0, tr=254, unit=m");
 
 add_method("vm2_details", [] {
+    skip_unless_vm2();
     using namespace arki::types;
     unique_ptr<Product> o = Product::createVM2(1);
     wassert(actual(o->style()) == Product::Style::VM2);
     unsigned vi;
     o->get_VM2(vi);
     wassert(actual(vi) == 1ul);
+});
 
+add_method("vm2_derived_lookup", [] {
+    skip_unless_vm2();
+    using namespace arki::types;
     // Test derived values
     ValueBag vb1 = ValueBag::parse("bcode=B20013,lt1=256,l1=0,lt2=258,l2=0,tr=254,p1=0,p2=0,unit=m");
     wassert_true(Product::get_VM2_derived_values(1) == vb1);
     ValueBag vb2 = ValueBag::parse("bcode=NONONO,lt1=256,l1=0,lt2=258,tr=254,p1=0,p2=0,unit=m");
     wassert_true(Product::get_VM2_derived_values(1) != vb2);
+});
+
+add_method("vm2_derived_encoding", [] {
+    skip_unless_vm2();
+    using namespace arki::types;
+
+    std::unique_ptr<Product> o = Product::createVM2(1);
+
+    // Encode with derived values: encodeWithoutEnvelope adds the derived values
+    std::vector<uint8_t> full;
+    {
+        core::BinaryEncoder enc(full);
+        o->encodeWithoutEnvelope(enc);
+    }
+
+    std::vector<uint8_t> part;
+    {
+        core::BinaryEncoder enc(part);
+        o->encode_for_indexing(enc);
+    }
+    wassert(actual(full.size()) > part.size());
+
+    // Decode, they are the same
+    std::unique_ptr<Type> pfull, ppart;
+    {
+        core::BinaryDecoder dec(full);
+        pfull = decodeInner(arki::TYPE_PRODUCT, dec);
+    }
+    {
+        core::BinaryDecoder dec(part);
+        ppart = decodeInner(arki::TYPE_PRODUCT, dec);
+    }
+    wassert(actual(pfull) == ppart);
 });
 
 }

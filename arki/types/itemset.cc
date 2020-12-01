@@ -56,26 +56,24 @@ void ItemSet::set(const Type& item)
 
 void ItemSet::set(std::unique_ptr<Type> item)
 {
+    // TODO: in theory, this could be rewritten with rbegin/rend to optimize
+    // for the insertion of sorted data. In practice, after trying, it caused a
+    // decrease in performance, so abandoning that for now
     Code code = item->type_code();
-    // Use reverse iteration to optimize for the common case of insertion of
-    // pre-sorted data
-    for (auto i = m_vals.rbegin(); i != m_vals.rend(); ++i)
+    for (auto i = m_vals.begin(); i != m_vals.end(); ++i)
     {
         if (i->first == code)
         {
             delete i->second;
             i->second = item.release();
             return;
-        } else if (i->first <= code) {
-            // Use .base() to turn the reverse iterator into a normal iterator.
-            // Note that .base() returns an iterator pointing at the successor
-            // in the non-reversed sequence, which is exactly what we need here
-            m_vals.emplace(i.base(), code, item.release());
+        } else if (i->first > code) {
+            m_vals.emplace(i, code, item.release());
             return;
         }
     }
 
-    m_vals.emplace(m_vals.begin(), code, item.release());
+    m_vals.emplace_back(code, item.release());
 }
 
 void ItemSet::set(const std::string& type, const std::string& val)

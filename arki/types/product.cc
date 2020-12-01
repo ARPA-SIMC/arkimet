@@ -55,11 +55,6 @@ std::string Product::formatStyle(Product::Style s)
     }
 }
 
-Product* Product::clone() const
-{
-    return new Product(data, size);
-}
-
 product::Style Product::style() const
 {
     return (product::Style)data[0];
@@ -140,284 +135,66 @@ int Product::compare(const Type& o) const
     if (int res = (int)sty - (int)v->style()) return res;
 
     // Styles are the same, compare the rest
+    //
+    // We can safely reinterpret_cast, avoiding an expensive dynamic_cast,
+    // since we checked the style.
     switch (sty)
     {
         case product::Style::GRIB1:
-        {
-            // TODO: can probably do lexicographical compare of raw data here?
-            unsigned o, t, p, vo, vt, vp;
-            get_GRIB1(o, t, p);
-            v->get_GRIB1(vo, vt, vp);
-            if (int res = o - vo) return res;
-            if (int res = t - vt) return res;
-            return p - vp;
-        }
+            return reinterpret_cast<const product::GRIB1*>(this)->compare_local(
+                    *reinterpret_cast<const product::GRIB1*>(v));
         case product::Style::GRIB2:
-        {
-            // TODO: can probably do lexicographical compare of raw data here?
-            unsigned ce, di, ca, nu, ta, lo;
-            unsigned vce, vdi, vca, vnu, vta, vlo;
-            get_GRIB2(ce, di, ca, nu, ta, lo);
-            v->get_GRIB2(vce, vdi, vca, vnu, vta, vlo);
-            if (int res = ce - vce) return res;
-            if (int res = di - vdi) return res;
-            if (int res = ca - vca) return res;
-            if (int res = nu - vnu) return res;
-            if (int res = ta - vta) return res;
-            return lo - vlo;
-        }
+            return reinterpret_cast<const product::GRIB2*>(this)->compare_local(
+                    *reinterpret_cast<const product::GRIB2*>(v));
         case product::Style::BUFR:
-        {
-            // TODO: can probably do lexicographical compare of raw data here?
-            unsigned ty, su, lo, vty, vsu, vlo;
-            ValueBag va, vva;
-            get_BUFR(ty, su, lo, va);
-            v->get_BUFR(vty, vsu, vlo, vva);
-            if (int res = ty - vty) return res;
-            if (int res = su - vsu) return res;
-            if (int res = lo - vlo) return res;
-            return va.compare(vva);
-        }
+            return reinterpret_cast<const product::BUFR*>(this)->compare_local(
+                    *reinterpret_cast<const product::BUFR*>(v));
         case product::Style::ODIMH5:
-        {
-            std::string ob, pr, vob, vpr;
-            get_ODIMH5(ob, pr);
-            v->get_ODIMH5(vob, vpr);
-            if (int res = ob.compare(vob)) return res;
-            if (int res = pr.compare(vpr)) return res;
-            return 0;
-        }
+            return reinterpret_cast<const product::ODIMH5*>(this)->compare_local(
+                    *reinterpret_cast<const product::ODIMH5*>(v));
         case product::Style::VM2:
-        {
-            unsigned vi, vvi;
-            get_VM2(vi);
-            v->get_VM2(vvi);
-            if (vi == vvi) return 0;
-            return (vi > vvi ? 1 : -1);
-        }
+            return reinterpret_cast<const product::VM2*>(this)->compare_local(
+                    *reinterpret_cast<const product::VM2*>(v));
         default:
             throw_consistency_error("parsing Product", "unknown Product style " + formatStyle(sty));
-    }
-}
-
-std::ostream& Product::writeToOstream(std::ostream& o) const
-{
-    auto sty = style();
-    switch (sty)
-    {
-        case product::Style::GRIB1:
-        {
-            unsigned ori, tab, pro;
-            get_GRIB1(ori, tab, pro);
-            return o << formatStyle(sty) << "("
-                     << setfill('0')
-                     << setw(3) << ori << ", "
-                     << setw(3) << tab << ", "
-                     << setw(3) << pro
-                     << setfill(' ')
-                     << ")";
-        }
-        case product::Style::GRIB2:
-        {
-            unsigned ce, di, ca, nu, ta, lo;
-            get_GRIB2(ce, di, ca, nu, ta, lo);
-            o << formatStyle(sty) << "("
-              << setfill('0')
-              << setw(5) << ce << ", "
-              << setw(3) << di << ", "
-              << setw(3) << ca << ", "
-              << setw(3) << nu;
-            if (ta != 4 || ta != 255)
-            {
-                o << ", " << setw(3) << ta;
-                if (ta != 255)
-                    o << ", " << setw(3) << lo;
-            }
-            o << setfill(' ')
-              << ")";
-            return o;
-        }
-        case product::Style::BUFR:
-        {
-            unsigned ty, su, lo;
-            ValueBag va;
-            get_BUFR(ty, su, lo, va);
-            o << formatStyle(sty) << "("
-              << setfill('0')
-              << setw(3) << ty << ", "
-              << setw(3) << su << ", "
-              << setw(3) << lo
-              << setfill(' ');
-            if (va.empty())
-                o << ")";
-            else
-                o << ", " << va << ")";
-            return o;
-        }
-        case product::Style::ODIMH5:
-        {
-            std::string ob, pr;
-            get_ODIMH5(ob, pr);
-            return o << formatStyle(sty) << "("
-                    << ob << ", "
-                    << pr
-                    << ")";
-        }
-        case product::Style::VM2:
-        {
-            unsigned vi;
-            get_VM2(vi);
-            o << formatStyle(sty) << "(" << vi;
-            auto dv = get_VM2_derived_values(vi);
-            if (!dv.empty())
-                o << ", " << dv.toString();
-            return o << ")";
-        }
-        default:
-            throw_consistency_error("parsing Product", "unknown Product style " + formatStyle(sty));
-    }
-}
-
-void Product::serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f) const
-{
-    auto sty = style();
-    e.add(keys.type_style, formatStyle(sty));
-    switch (sty)
-    {
-        case product::Style::GRIB1:
-        {
-            unsigned o, t, p;
-            get_GRIB1(o, t, p);
-            e.add(keys.product_origin, o);
-            e.add(keys.product_table, t);
-            e.add(keys.product_product, p);
-            break;
-        }
-        case product::Style::GRIB2:
-        {
-            unsigned ce, di, ca, nu, ta, lo;
-            get_GRIB2(ce, di, ca, nu, ta, lo);
-            e.add(keys.product_centre, ce);
-            e.add(keys.product_discipline, di);
-            e.add(keys.product_category, ca);
-            e.add(keys.product_number, nu);
-            e.add(keys.product_table_version, ta);
-            e.add(keys.product_local_table_version, lo);
-            break;
-        }
-        case product::Style::BUFR:
-        {
-            unsigned ty, su, lo;
-            ValueBag va;
-            get_BUFR(ty, su, lo, va);
-            e.add(keys.product_type, ty);
-            e.add(keys.product_subtype, su);
-            e.add(keys.product_local_subtype, lo);
-            if (!va.empty())
-            {
-                e.add(keys.product_value);
-                va.serialise(e);
-            }
-            break;
-        }
-        case product::Style::ODIMH5:
-        {
-            std::string ob, pr;
-            get_ODIMH5(ob, pr);
-            e.add(keys.product_object, ob);
-            e.add(keys.product_product, pr);
-            break;
-        }
-        case product::Style::VM2:
-        {
-            unsigned vi;
-            get_VM2(vi);
-            e.add(keys.product_id, vi);
-            auto dv = get_VM2_derived_values(vi);
-            if (!dv.empty()) {
-                e.add(keys.product_value);
-                dv.serialise(e);
-            }
-            break;
-        }
-        default:
-            throw_consistency_error("parsing Product", "unknown Product style " + formatStyle(sty));
-    }
-}
-
-std::string Product::exactQuery() const
-{
-    switch (style())
-    {
-        case product::Style::GRIB1:
-        {
-            unsigned o, t, p;
-            get_GRIB1(o, t, p);
-
-            char buf[128];
-            snprintf(buf, 128, "GRIB1,%u,%u,%u", o, t, p);
-            return buf;
-        }
-        case product::Style::GRIB2:
-        {
-            unsigned ce, di, ca, nu, ta, lo;
-            get_GRIB2(ce, di, ca, nu, ta, lo);
-
-            std::stringstream ss;
-            ss << "GRIB2," << ce << "," << di << "," << ca << "," << nu;
-            if (ta != 4 || lo != 255)
-            {
-                ss << "," << ta;
-                if (lo != 255)
-                    ss << "," << lo;
-            }
-            return ss.str();
-        }
-        case product::Style::BUFR:
-        {
-            unsigned ty, su, lo;
-            ValueBag va;
-            get_BUFR(ty, su, lo, va);
-
-            std::stringstream ss;
-            ss << "BUFR," << ty << "," << su << "," << lo;
-            if (!va.empty())
-                ss << ":" << va.toString();
-            return ss.str();
-        }
-        case product::Style::ODIMH5:
-        {
-            std::string ob, pr;
-            get_ODIMH5(ob, pr);
-
-            std::ostringstream ss;
-            ss << formatStyle(style()) << ","
-               << ob << ","
-               << pr;
-            return ss.str();
-        }
-        case product::Style::VM2:
-        {
-            unsigned vi;
-            get_VM2(vi);
-
-            std::stringstream ss;
-            ss << "VM2," << vi;
-            auto dv = get_VM2_derived_values(vi);
-            if (!dv.empty())
-                ss << ":" << dv.toString();
-            return ss.str();
-        }
-        default:
-            throw_consistency_error("parsing Product", "unknown Product style " + formatStyle(style()));
     }
 }
 
 unique_ptr<Product> Product::decode(core::BinaryDecoder& dec)
 {
     dec.ensure_size(1, "Product style");
-    std::unique_ptr<Product> res(new Product(dec.buf, dec.size));
-    dec.skip(dec.size);
+    Style sty = static_cast<product::Style>(dec.buf[0]);
+    std::unique_ptr<Product> res;
+    switch (sty)
+    {
+        case product::Style::GRIB1:
+            dec.ensure_size(4, "GRIB1 data");
+            res.reset(new product::GRIB1(dec.buf, dec.size));
+            dec.skip(dec.size);
+            break;
+        case product::Style::GRIB2:
+            dec.ensure_size(6, "GRIB2 data");
+            res.reset(new product::GRIB2(dec.buf, dec.size));
+            dec.skip(dec.size);
+            break;
+        case product::Style::BUFR:
+            dec.ensure_size(4, "BUFR data");
+            res.reset(new product::BUFR(dec.buf, dec.size));
+            dec.skip(dec.size);
+            break;
+        case product::Style::ODIMH5:
+            dec.ensure_size(4, "ODIMH5 data");
+            res.reset(new product::ODIMH5(dec.buf, dec.size));
+            dec.skip(dec.size);
+            break;
+        case product::Style::VM2:
+            dec.ensure_size(5, "VM2 data");
+            res.reset(new product::VM2(dec.buf, dec.size));
+            dec.skip(dec.size);
+            break;
+        default:
+            throw_consistency_error("parsing Timerange", "unknown Timerange style " + formatStyle(sty));
+    }
     return res;
 }
 
@@ -544,7 +321,7 @@ std::unique_ptr<Product> Product::createGRIB1(unsigned char origin, unsigned cha
     buf[1] = origin;
     buf[2] = table;
     buf[3] = product;
-    return std::unique_ptr<Product>(new Product(buf, 4));
+    return std::unique_ptr<Product>(new product::GRIB1(buf, 4));
 }
 
 std::unique_ptr<Product> Product::createGRIB2(
@@ -574,7 +351,7 @@ std::unique_ptr<Product> Product::createGRIB2(
         if (size > 7)
             buf[7] = local_table_version;
     }
-    return std::unique_ptr<Product>(new Product(buf, size));
+    return std::unique_ptr<Product>(new product::GRIB2(buf, size));
 }
 
 std::unique_ptr<Product> Product::createBUFR(unsigned char type, unsigned char subtype, unsigned char localsubtype)
@@ -584,7 +361,7 @@ std::unique_ptr<Product> Product::createBUFR(unsigned char type, unsigned char s
     buf[1] = type;
     buf[2] = subtype;
     buf[3] = localsubtype;
-    return std::unique_ptr<Product>(new Product(buf, 4));
+    return std::unique_ptr<Product>(new product::BUFR(buf, 4));
 }
 
 std::unique_ptr<Product> Product::createBUFR(unsigned char type, unsigned char subtype, unsigned char localsubtype, const ValueBag& name)
@@ -598,7 +375,7 @@ std::unique_ptr<Product> Product::createBUFR(unsigned char type, unsigned char s
     enc.add_unsigned(subtype, 1);
     enc.add_unsigned(localsubtype, 1);
     name.encode(enc);
-    return std::unique_ptr<Product>(new Product(buf));
+    return std::unique_ptr<Product>(new product::BUFR(buf));
 }
 
 std::unique_ptr<Product> Product::createODIMH5(const std::string& obj, const std::string& prod)
@@ -612,7 +389,7 @@ std::unique_ptr<Product> Product::createODIMH5(const std::string& obj, const std
     enc.add_raw(obj);
     enc.add_varint(prod.size());
     enc.add_raw(prod);
-    return std::unique_ptr<Product>(new Product(buf));
+    return std::unique_ptr<Product>(new product::ODIMH5(buf));
 }
 
 std::unique_ptr<Product> Product::createVM2(unsigned variable_id)
@@ -624,7 +401,7 @@ std::unique_ptr<Product> Product::createVM2(unsigned variable_id)
     // yes, but then implement encode_for_indexing
     // better: reverse encoding: do not keep derived values in ram, pull them
     // in only when serializing for transmission
-    return std::unique_ptr<Product>(new Product(buf, 5));
+    return std::unique_ptr<Product>(new product::VM2(buf, 5));
 }
 
 
@@ -633,7 +410,289 @@ void Product::init()
     MetadataType::register_type<Product>();
 }
 
-}
+namespace product {
+
+/*
+ * GRIB1
+ */
+
+int GRIB1::compare_local(const GRIB1& v) const
+{
+    // TODO: can probably do lexicographical compare of raw data here?
+    unsigned o, t, p, vo, vt, vp;
+    get_GRIB1(o, t, p);
+    v.get_GRIB1(vo, vt, vp);
+    if (int res = o - vo) return res;
+    if (int res = t - vt) return res;
+    return p - vp;
 }
 
-#include <arki/types/styled.tcc>
+std::ostream& GRIB1::writeToOstream(std::ostream& o) const
+{
+    unsigned ori, tab, pro;
+    get_GRIB1(ori, tab, pro);
+    return o << formatStyle(Style::GRIB1) << "("
+             << setfill('0')
+             << setw(3) << ori << ", "
+             << setw(3) << tab << ", "
+             << setw(3) << pro
+             << setfill(' ')
+             << ")";
+}
+
+void GRIB1::serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f) const
+{
+    e.add(keys.type_style, formatStyle(Style::GRIB1));
+    unsigned o, t, p;
+    get_GRIB1(o, t, p);
+    e.add(keys.product_origin, o);
+    e.add(keys.product_table, t);
+    e.add(keys.product_product, p);
+}
+
+std::string GRIB1::exactQuery() const
+{
+    unsigned o, t, p;
+    get_GRIB1(o, t, p);
+
+    char buf[128];
+    snprintf(buf, 128, "GRIB1,%u,%u,%u", o, t, p);
+    return buf;
+}
+
+
+/*
+ * GRIB2
+ */
+
+int GRIB2::compare_local(const GRIB2& o) const
+{
+    // TODO: can probably do lexicographical compare of raw data here?
+    unsigned ce, di, ca, nu, ta, lo;
+    unsigned vce, vdi, vca, vnu, vta, vlo;
+    get_GRIB2(ce, di, ca, nu, ta, lo);
+    o.get_GRIB2(vce, vdi, vca, vnu, vta, vlo);
+    if (int res = ce - vce) return res;
+    if (int res = di - vdi) return res;
+    if (int res = ca - vca) return res;
+    if (int res = nu - vnu) return res;
+    if (int res = ta - vta) return res;
+    return lo - vlo;
+}
+
+std::ostream& GRIB2::writeToOstream(std::ostream& o) const
+{
+    unsigned ce, di, ca, nu, ta, lo;
+    get_GRIB2(ce, di, ca, nu, ta, lo);
+    o << formatStyle(Style::GRIB2) << "("
+      << setfill('0')
+      << setw(5) << ce << ", "
+      << setw(3) << di << ", "
+      << setw(3) << ca << ", "
+      << setw(3) << nu;
+    if (ta != 4 || ta != 255)
+    {
+        o << ", " << setw(3) << ta;
+        if (ta != 255)
+            o << ", " << setw(3) << lo;
+    }
+    o << setfill(' ')
+      << ")";
+    return o;
+}
+
+void GRIB2::serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f) const
+{
+    e.add(keys.type_style, formatStyle(Style::GRIB2));
+    unsigned ce, di, ca, nu, ta, lo;
+    get_GRIB2(ce, di, ca, nu, ta, lo);
+    e.add(keys.product_centre, ce);
+    e.add(keys.product_discipline, di);
+    e.add(keys.product_category, ca);
+    e.add(keys.product_number, nu);
+    e.add(keys.product_table_version, ta);
+    e.add(keys.product_local_table_version, lo);
+}
+
+std::string GRIB2::exactQuery() const
+{
+    unsigned ce, di, ca, nu, ta, lo;
+    get_GRIB2(ce, di, ca, nu, ta, lo);
+
+    std::stringstream ss;
+    ss << "GRIB2," << ce << "," << di << "," << ca << "," << nu;
+    if (ta != 4 || lo != 255)
+    {
+        ss << "," << ta;
+        if (lo != 255)
+            ss << "," << lo;
+    }
+    return ss.str();
+}
+
+
+/*
+ * BUFR
+ */
+
+int BUFR::compare_local(const BUFR& o) const
+{
+    // TODO: can probably do lexicographical compare of raw data here?
+    unsigned ty, su, lo, vty, vsu, vlo;
+    ValueBag va, vva;
+    get_BUFR(ty, su, lo, va);
+    o.get_BUFR(vty, vsu, vlo, vva);
+    if (int res = ty - vty) return res;
+    if (int res = su - vsu) return res;
+    if (int res = lo - vlo) return res;
+    return va.compare(vva);
+}
+
+std::ostream& BUFR::writeToOstream(std::ostream& o) const
+{
+    unsigned ty, su, lo;
+    ValueBag va;
+    get_BUFR(ty, su, lo, va);
+    o << formatStyle(Style::BUFR) << "("
+      << setfill('0')
+      << setw(3) << ty << ", "
+      << setw(3) << su << ", "
+      << setw(3) << lo
+      << setfill(' ');
+    if (va.empty())
+        o << ")";
+    else
+        o << ", " << va << ")";
+    return o;
+}
+
+void BUFR::serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f) const
+{
+    e.add(keys.type_style, formatStyle(Style::BUFR));
+    unsigned ty, su, lo;
+    ValueBag va;
+    get_BUFR(ty, su, lo, va);
+    e.add(keys.product_type, ty);
+    e.add(keys.product_subtype, su);
+    e.add(keys.product_local_subtype, lo);
+    if (!va.empty())
+    {
+        e.add(keys.product_value);
+        va.serialise(e);
+    }
+}
+
+std::string BUFR::exactQuery() const
+{
+    unsigned ty, su, lo;
+    ValueBag va;
+    get_BUFR(ty, su, lo, va);
+
+    std::stringstream ss;
+    ss << "BUFR," << ty << "," << su << "," << lo;
+    if (!va.empty())
+        ss << ":" << va.toString();
+    return ss.str();
+}
+
+
+/*
+ * ODIMH5
+ */
+
+int ODIMH5::compare_local(const ODIMH5& o) const
+{
+    std::string ob, pr, vob, vpr;
+    get_ODIMH5(ob, pr);
+    o.get_ODIMH5(vob, vpr);
+    if (int res = ob.compare(vob)) return res;
+    if (int res = pr.compare(vpr)) return res;
+    return 0;
+}
+
+std::ostream& ODIMH5::writeToOstream(std::ostream& o) const
+{
+    std::string ob, pr;
+    get_ODIMH5(ob, pr);
+    return o << formatStyle(Style::ODIMH5) << "("
+            << ob << ", "
+            << pr
+            << ")";
+}
+
+void ODIMH5::serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f) const
+{
+    e.add(keys.type_style, formatStyle(Style::ODIMH5));
+    std::string ob, pr;
+    get_ODIMH5(ob, pr);
+    e.add(keys.product_object, ob);
+    e.add(keys.product_product, pr);
+}
+
+std::string ODIMH5::exactQuery() const
+{
+    std::string ob, pr;
+    get_ODIMH5(ob, pr);
+
+    std::ostringstream ss;
+    ss << formatStyle(style()) << ","
+       << ob << ","
+       << pr;
+    return ss.str();
+}
+
+
+/*
+ * VM2
+ */
+
+int VM2::compare_local(const VM2& o) const
+{
+    unsigned vi, vvi;
+    get_VM2(vi);
+    o.get_VM2(vvi);
+    if (vi == vvi) return 0;
+    return (vi > vvi ? 1 : -1);
+}
+
+std::ostream& VM2::writeToOstream(std::ostream& o) const
+{
+    unsigned vi;
+    get_VM2(vi);
+    o << formatStyle(Style::VM2) << "(" << vi;
+    auto dv = get_VM2_derived_values(vi);
+    if (!dv.empty())
+        o << ", " << dv.toString();
+    return o << ")";
+}
+
+void VM2::serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f) const
+{
+    e.add(keys.type_style, formatStyle(Style::VM2));
+    unsigned vi;
+    get_VM2(vi);
+    e.add(keys.product_id, vi);
+    auto dv = get_VM2_derived_values(vi);
+    if (!dv.empty()) {
+        e.add(keys.product_value);
+        dv.serialise(e);
+    }
+}
+
+std::string VM2::exactQuery() const
+{
+    unsigned vi;
+    get_VM2(vi);
+
+    std::stringstream ss;
+    ss << "VM2," << vi;
+    auto dv = get_VM2_derived_values(vi);
+    if (!dv.empty())
+        ss << ":" << dv.toString();
+    return ss.str();
+}
+
+}
+
+}
+}
