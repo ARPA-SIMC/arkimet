@@ -3,7 +3,6 @@
 #include "arki/core/binary.h"
 
 namespace {
-using namespace std;
 using namespace arki;
 using namespace arki::tests;
 
@@ -24,7 +23,7 @@ add_generic_test("grib1",
 
 add_method("grib1_details", [] {
     using namespace arki::types;
-    unique_ptr<Product> o = Product::createGRIB1(1, 2, 3);
+    std::unique_ptr<Product> o = Product::createGRIB1(1, 2, 3);
     wassert(actual(o->style()) == Product::Style::GRIB1);
     unsigned ori, tab, pro;
     o->get_GRIB1(ori, tab, pro);
@@ -56,7 +55,7 @@ add_generic_test("grib2_local_table",
 
 add_method("grib2_details", [] {
     using namespace arki::types;
-    unique_ptr<Product> o;
+    std::unique_ptr<Product> o;
     unsigned ce, di, ca, nu, ta, lo;
 
     o = Product::createGRIB2(1, 2, 3, 4);
@@ -101,7 +100,7 @@ add_method("bufr_details", [] {
     using namespace arki::types;
     ValueBag vb;
     vb.set("name", values::Value::create_string("antani"));
-    unique_ptr<Product> o = Product::createBUFR(1, 2, 3, vb);
+    std::unique_ptr<Product> o = Product::createBUFR(1, 2, 3, vb);
     wassert(actual(o->style()) == Product::Style::BUFR);
     unsigned ty, su, lo;
     ValueBag va;
@@ -139,7 +138,7 @@ add_generic_test("vm2",
 add_method("vm2_details", [] {
     skip_unless_vm2();
     using namespace arki::types;
-    unique_ptr<Product> o = Product::createVM2(1);
+    std::unique_ptr<Product> o = Product::createVM2(1);
     wassert(actual(o->style()) == Product::Style::VM2);
     unsigned vi;
     o->get_VM2(vi);
@@ -149,11 +148,59 @@ add_method("vm2_details", [] {
 add_method("vm2_derived_lookup", [] {
     skip_unless_vm2();
     using namespace arki::types;
-    // Test derived values
     ValueBag vb1 = ValueBag::parse("bcode=B20013,lt1=256,l1=0,lt2=258,l2=0,tr=254,p1=0,p2=0,unit=m");
-    wassert_true(Product::get_VM2_derived_values(1) == vb1);
     ValueBag vb2 = ValueBag::parse("bcode=NONONO,lt1=256,l1=0,lt2=258,tr=254,p1=0,p2=0,unit=m");
-    wassert_true(Product::get_VM2_derived_values(1) != vb2);
+
+    // Create without derived values
+    std::unique_ptr<Product> p1 = Product::createVM2(1);
+    auto v1 = dynamic_cast<const product::VM2*>(p1.get());
+
+    // Try lookup
+    wassert_true(v1->derived_values() == vb1);
+    wassert_true(v1->derived_values() != vb2);
+
+    // Encode with a different set of derived values, and decode
+    std::unique_ptr<Type> p2;
+    {
+        std::vector<uint8_t> full;
+        core::BinaryEncoder enc(full);
+        p1->encode_for_indexing(enc);
+        vb2.encode(enc);
+
+        core::BinaryDecoder dec(full);
+        p2 = decodeInner(arki::TYPE_PRODUCT, dec);
+    }
+    auto v2 = dynamic_cast<const product::VM2*>(p2.get());
+
+    // Try lookup, it should preserve the values that were transmitted
+    wassert_true(v2->derived_values() != vb1);
+    wassert_true(v2->derived_values() == vb2);
+
+    // It should also be able to retransmit them in turn
+    {
+        std::vector<uint8_t> full;
+        core::BinaryEncoder enc(full);
+        p2->encodeWithoutEnvelope(enc);
+
+        core::BinaryDecoder dec(full);
+        p2 = decodeInner(arki::TYPE_PRODUCT, dec);
+    }
+    v2 = dynamic_cast<const product::VM2*>(p2.get());
+    wassert_true(v2->derived_values() != vb1);
+    wassert_true(v2->derived_values() == vb2);
+
+    // And it looks up again after being transmitted without them
+    {
+        std::vector<uint8_t> full;
+        core::BinaryEncoder enc(full);
+        p1->encode_for_indexing(enc);
+
+        core::BinaryDecoder dec(full);
+        p2 = decodeInner(arki::TYPE_PRODUCT, dec);
+    }
+    v2 = dynamic_cast<const product::VM2*>(p2.get());
+    wassert_true(v2->derived_values() == vb1);
+    wassert_true(v2->derived_values() != vb2);
 });
 
 add_method("vm2_derived_encoding", [] {

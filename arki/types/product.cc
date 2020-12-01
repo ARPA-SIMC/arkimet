@@ -107,15 +107,6 @@ void Product::get_VM2(unsigned& variable_id) const
     variable_id = dec.pop_uint(4, "VM2 variable id");
 }
 
-ValueBag Product::get_VM2_derived_values(unsigned variable_id)
-{
-#ifdef HAVE_VM2
-    return utils::vm2::get_variable(variable_id);
-#else
-    return ValueBag();
-#endif
-}
-
 int Product::compare(const Type& o) const
 {
     int res = Encoded::compare(o);
@@ -667,7 +658,7 @@ std::ostream& VM2::writeToOstream(std::ostream& o) const
     unsigned vi;
     get_VM2(vi);
     o << formatStyle(Style::VM2) << "(" << vi;
-    auto dv = get_VM2_derived_values(vi);
+    auto dv = derived_values();
     if (!dv.empty())
         o << ", " << dv.toString();
     return o << ")";
@@ -679,7 +670,7 @@ void VM2::serialise_local(structured::Emitter& e, const structured::Keys& keys, 
     unsigned vi;
     get_VM2(vi);
     e.add(keys.product_id, vi);
-    auto dv = get_VM2_derived_values(vi);
+    auto dv = derived_values();
     if (!dv.empty()) {
         e.add(keys.product_value);
         dv.serialise(e);
@@ -693,7 +684,7 @@ std::string VM2::exactQuery() const
 
     std::stringstream ss;
     ss << "VM2," << vi;
-    auto dv = get_VM2_derived_values(vi);
+    auto dv = derived_values();
     if (!dv.empty())
         ss << ":" << dv.toString();
     return ss.str();
@@ -705,9 +696,7 @@ void VM2::encodeWithoutEnvelope(core::BinaryEncoder& enc) const
 
     // Also add derived values to the binary representation, since we are
     // encoding for transmission
-    unsigned vi;
-    get_VM2(vi);
-    auto dv = get_VM2_derived_values(vi);
+    auto dv = derived_values();
     if (!dv.empty())
         dv.encode(enc);
 }
@@ -715,6 +704,23 @@ void VM2::encodeWithoutEnvelope(core::BinaryEncoder& enc) const
 void VM2::encode_for_indexing(core::BinaryEncoder& enc) const
 {
     enc.add_raw(data, min(size, 5u));
+}
+
+ValueBag VM2::derived_values() const
+{
+#ifdef HAVE_VM2
+    if (size > 5u)
+    {
+        core::BinaryDecoder dec(data + 5, size - 5);
+        return ValueBag::decode(dec);
+    } else {
+        unsigned variable_id;
+        get_VM2(variable_id);
+        return utils::vm2::get_variable(variable_id);
+    }
+#else
+    return ValueBag();
+#endif
 }
 
 

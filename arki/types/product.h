@@ -51,7 +51,6 @@ public:
     void get_BUFR(unsigned& type, unsigned& subtype, unsigned& localsubtype, ValueBag& values) const;
     void get_ODIMH5(std::string& obj, std::string& prod) const;
     void get_VM2(unsigned& variable_id) const;
-    static ValueBag get_VM2_derived_values(unsigned variable_id);
 
     int compare(const Type& o) const override;
 
@@ -152,6 +151,7 @@ public:
     std::string exactQuery() const override;
     void encodeWithoutEnvelope(core::BinaryEncoder& enc) const override;
     void encode_for_indexing(core::BinaryEncoder& enc) const override;
+    ValueBag derived_values() const;
 };
 
 
