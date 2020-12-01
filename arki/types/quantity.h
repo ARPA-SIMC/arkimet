@@ -1,7 +1,7 @@
 #ifndef ARKI_TYPES_QUANTITY_H
 #define ARKI_TYPES_QUANTITY_H
 
-#include <arki/types/core.h>
+#include <arki/types/encoded.h>
 #include <set>
 #include <string>
 
@@ -18,17 +18,19 @@ template<> struct traits<Quantity>
 /**
  * Quantity informations
  */
-struct Quantity : public CoreType<Quantity>
+struct Quantity : public Encoded
 {
-	std::set<std::string> values;
+    using Encoded::Encoded;
 
-	Quantity(const std::set<std::string>& values) : values(values) {}
+    types::Code type_code() const override { return traits<Quantity>::type_code; }
+    size_t serialisationSizeLength() const override { return traits<Quantity>::type_sersize_bytes; }
+    std::string tag() const override { return traits<Quantity>::type_tag; }
+
+    std::set<std::string> get() const;
 
     int compare(const Type& o) const override;
-    bool equals(const Type& o) const override;
 
     /// CODEC functions
-    void encodeWithoutEnvelope(core::BinaryEncoder& enc) const override;
     static std::unique_ptr<Quantity> decode(core::BinaryDecoder& dec);
     static std::unique_ptr<Quantity> decodeString(const std::string& val);
     std::ostream& writeToOstream(std::ostream& o) const override;

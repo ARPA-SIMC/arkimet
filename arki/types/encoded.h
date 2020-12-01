@@ -36,22 +36,6 @@ public:
 
     bool equals(const Type& o) const override;
     void encodeWithoutEnvelope(core::BinaryEncoder& enc) const override;
-
-#if 0
-    // Default implementations of Type methods
-    void encodeWithoutEnvelope(core::BinaryEncoder& enc) const override;
-    int compare(const Type& o) const override;
-    virtual int compare_local(const BASE& o) const
-    {
-        if (this->style() < o.style())
-            return -1;
-        if (this->style() > o.style())
-            return 1;
-        return 0;
-    }
-
-    void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
-#endif
 };
 
 }
