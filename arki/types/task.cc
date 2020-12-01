@@ -13,7 +13,6 @@
 #define TAG "task"
 #define SERSIZELEN 	1
 
-using namespace std;
 using namespace arki::utils;
 
 namespace arki {
@@ -23,49 +22,42 @@ const char* traits<Task>::type_tag = TAG;
 const types::Code traits<Task>::type_code = CODE;
 const size_t traits<Task>::type_sersize_bytes = SERSIZELEN;
 
+std::string Task::get() const
+{
+    core::BinaryDecoder dec(data, size);
+    size_t vallen = dec.pop_varint<size_t>("task text size");
+    return dec.pop_string(vallen, "task text");
+}
+
 int Task::compare(const Type& o) const
 {
 	int res = Type::compare(o);
 	if (res != 0) return res;
 
-	// We should be the same kind, so upcast
-	const Task* v = dynamic_cast<const Task*>(&o);
-	if (!v)
-		throw_consistency_error(
-			"comparing metadata types",
-			string("second element claims to be a Task, but it is a ") + typeid(&o).name() + " instead");
+    // We should be the same kind, so upcast
+    const Task* v = dynamic_cast<const Task*>(&o);
+    if (!v)
+        throw_consistency_error(
+                "comparing metadata types",
+                std::string("second element claims to be a Task, but it is a ") + typeid(&o).name() + " instead");
 
-    return task.compare(v->task);
+    return get().compare(v->get());
 }
 
-bool Task::equals(const Type& o) const
+std::unique_ptr<Task> Task::decode(core::BinaryDecoder& dec)
 {
-	const Task* v = dynamic_cast<const Task*>(&o);
-	if (!v) return false;
-	return task == v->task;
-}
-
-void Task::encodeWithoutEnvelope(core::BinaryEncoder& enc) const
-{
-    enc.add_varint(task.size());
-    enc.add_raw(task);
-}
-
-unique_ptr<Task> Task::decode(core::BinaryDecoder& dec)
-{
-    size_t vallen = dec.pop_varint<size_t>("task text size");
-    string val = dec.pop_string(vallen, "task text");
-    return Task::create(val);
+    dec.ensure_size(1, "Task data");
+    return std::unique_ptr<Task>(new Task(dec.buf, dec.size));
 }
 
 std::ostream& Task::writeToOstream(std::ostream& o) const
 {
-	return o << task;
+    return o << get();
 }
 
 void Task::serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f) const
 {
-    e.add(keys.task_value, task);
+    e.add(keys.task_value, get());
 }
 
 std::unique_ptr<Task> Task::decode_structure(const structured::Keys& keys, const structured::Reader& val)
@@ -73,38 +65,31 @@ std::unique_ptr<Task> Task::decode_structure(const structured::Keys& keys, const
     return Task::create(val.as_string(keys.task_value, "Task value"));
 }
 
-unique_ptr<Task> Task::decodeString(const std::string& val)
+std::unique_ptr<Task> Task::decodeString(const std::string& val)
 {
-	if (val.empty())
-		throw_consistency_error("parsing Task", "string is empty");
-	//if (val[0] != '[')
-	//	throw_consistency_error("parsing Task", "string does not start with open square bracket");
-	//size_t pos = val.find(']');
-	//if (pos == string::npos)
-	//	throw_consistency_error("parsing Task", "no closed square bracket found");
-	return Task::create(val);
+    if (val.empty())
+        throw_consistency_error("parsing Task", "string is empty");
+    return Task::create(val);
 }
 
 Task* Task::clone() const
 {
-    return new Task(task);
+    return new Task(data, size);
 }
 
-unique_ptr<Task> Task::create(const std::string& val)
+std::unique_ptr<Task> Task::create(const std::string& val)
 {
-    return unique_ptr<Task>(new Task(val));
+    std::vector<uint8_t> buf;
+    core::BinaryEncoder enc(buf);
+    enc.add_varint(val.size());
+    enc.add_raw(val);
+    return std::unique_ptr<Task>(new Task(buf));
 }
-
-/*============================================================================*/
 
 void Task::init()
 {
     MetadataType::register_type<Task>();
 }
 
-/*============================================================================*/
-
 }
 }
-
-#include <arki/types/core.tcc>

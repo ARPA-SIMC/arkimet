@@ -26,7 +26,7 @@ bool MatchTask::matchItem(const Type& o) const
     if (!v) return false;
     if (task.size())
     {
-        std::string utask = str::upper(v->task);
+        std::string utask = str::upper(v->get());
         if (utask.find(task) == std::string::npos)
             return false;
     }
