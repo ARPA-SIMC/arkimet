@@ -10,6 +10,7 @@
 #include <sstream>
 #include <iomanip>
 #include <stdexcept>
+#include <algorithm>
 
 #ifdef HAVE_VM2
 #include "arki/utils/vm2.h"
@@ -397,10 +398,6 @@ std::unique_ptr<Product> Product::createVM2(unsigned variable_id)
     uint8_t* buf = new uint8_t[5];
     buf[0] = (uint8_t)product::Style::VM2;
     core::BinaryEncoder::set_unsigned(buf + 1, variable_id, 4);
-    // TODO: also add derived values to the binary representation? Really? derived_values().encode(enc);
-    // yes, but then implement encode_for_indexing
-    // better: reverse encoding: do not keep derived values in ram, pull them
-    // in only when serializing for transmission
     return std::unique_ptr<Product>(new product::VM2(buf, 5));
 }
 
@@ -646,6 +643,16 @@ std::string ODIMH5::exactQuery() const
  * VM2
  */
 
+bool VM2::equals(const Type& o) const
+{
+    const VM2* v = dynamic_cast<const VM2*>(&o);
+    if (!v) return false;
+    if (size < 5 || v->size < 5) return size != v->size;
+    // Compare only first 5 bytes, ignoring optional derived values appended to
+    // the encoded data
+    return memcmp(data, v->data, std::min(size, 5u)) == 0;
+}
+
 int VM2::compare_local(const VM2& o) const
 {
     unsigned vi, vvi;
@@ -691,6 +698,25 @@ std::string VM2::exactQuery() const
         ss << ":" << dv.toString();
     return ss.str();
 }
+
+void VM2::encodeWithoutEnvelope(core::BinaryEncoder& enc) const
+{
+    enc.add_raw(data, min(size, 5u));
+
+    // Also add derived values to the binary representation, since we are
+    // encoding for transmission
+    unsigned vi;
+    get_VM2(vi);
+    auto dv = get_VM2_derived_values(vi);
+    if (!dv.empty())
+        dv.encode(enc);
+}
+
+void VM2::encode_for_indexing(core::BinaryEncoder& enc) const
+{
+    enc.add_raw(data, min(size, 5u));
+}
+
 
 }
 

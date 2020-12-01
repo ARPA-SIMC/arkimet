@@ -145,10 +145,13 @@ public:
 
     VM2* clone() const override { return new VM2(data, size); }
 
+    bool equals(const Type& o) const override;
     int compare_local(const VM2& o) const;
     std::ostream& writeToOstream(std::ostream& o) const override;
     void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
     std::string exactQuery() const override;
+    void encodeWithoutEnvelope(core::BinaryEncoder& enc) const override;
+    void encode_for_indexing(core::BinaryEncoder& enc) const override;
 };
 
 
