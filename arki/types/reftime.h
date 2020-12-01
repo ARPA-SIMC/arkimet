@@ -82,11 +82,15 @@ namespace reftime {
 inline std::ostream& operator<<(std::ostream& o, Style s) { return o << Reftime::formatStyle(s); }
 
 
-struct Position : public Reftime
+class Position : public Reftime
 {
+protected:
     core::Time time;
 
+public:
     Position(const core::Time& time);
+
+    core::Time get_Position() const { return time; }
 
     Style style() const override;
     void encodeWithoutEnvelope(core::BinaryEncoder& enc) const override;
@@ -111,10 +115,18 @@ struct Position : public Reftime
 
 struct Period : public Reftime
 {
+protected:
     core::Time begin;
     core::Time end;
 
+public:
     Period(const core::Time& begin, const core::Time& end);
+
+    void get_Period(core::Time& begin, core::Time& end) const
+    {
+        begin = this->begin;
+        end = this->end;
+    }
 
     Style style() const override;
     void encodeWithoutEnvelope(core::BinaryEncoder& enc) const override;

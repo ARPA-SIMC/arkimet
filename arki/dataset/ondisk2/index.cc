@@ -182,7 +182,7 @@ std::unique_ptr<types::source::Blob> Contents::get_current(const Metadata& md) c
     std::unique_ptr<types::source::Blob> res;
 
     int idx = 0;
-    string sqltime = rt->time.to_sql();
+    std::string sqltime = rt->get_Position().to_sql();
     m_get_current.bind(++idx, sqltime);
 
     int id_unique = -1;
@@ -975,7 +975,7 @@ struct Inserter
     {
         if (const reftime::Position* reftime = md.get<reftime::Position>())
         {
-            const auto& t = reftime->time;
+            auto t = reftime->get_Position();
             timebuf_len = snprintf(timebuf, 25, "%04d-%02d-%02d %02d:%02d:%02d", t.ye, t.mo, t.da, t.ho, t.mi, t.se);
         } else {
             timebuf[0] = 0;

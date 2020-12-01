@@ -125,7 +125,7 @@ size_t LibarchiveOutput::append(const Metadata& md)
     archive_entry_set_filetype(entry, AE_IFREG);
     archive_entry_set_perm(entry, 0644);
     if (const auto* reftime = stored_md->get<types::reftime::Position>())
-        archive_entry_set_mtime(entry, reftime->time.to_unix(), 0);
+        archive_entry_set_mtime(entry, reftime->get_Position().to_unix(), 0);
 
     if (archive_write_header(a, entry) != ARCHIVE_OK)
         throw archive_runtime_error(a, "cannot write entry header");

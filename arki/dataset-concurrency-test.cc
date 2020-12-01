@@ -362,7 +362,8 @@ this->add_method("write_write_same_segment", [](Fixture& f) {
     for (int i = 0; i < 60; ++i)
     {
         auto rt = mdc[i].get<types::reftime::Position>();
-        wassert(actual(rt->time.se) == i);
+        auto time = rt->get_Position();
+        wassert(actual(time.se) == i);
     }
 });
 
@@ -386,7 +387,8 @@ this->add_method("write_write_different_segments", [](Fixture& f) {
     for (int i = 0; i < 60; ++i)
     {
         auto rt = mdc[i].get<types::reftime::Position>();
-        wassert(actual(rt->time.ye) == 2000 + i);
+        auto time = rt->get_Position();
+        wassert(actual(time.ye) == 2000 + i);
     }
 });
 

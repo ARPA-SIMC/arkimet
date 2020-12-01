@@ -38,15 +38,18 @@ bool MatchReftime::matchItem(const Type& o) const
 {
     if (const types::reftime::Position* po = dynamic_cast<const types::reftime::Position*>(&o))
     {
+        core::Time t = po->get_Position();
         for (const auto& i: tests)
-            if (!i->match(po->time))
+            if (!i->match(t))
                 return false;
         return true;
     }
     else if (const types::reftime::Period* pe = dynamic_cast<const types::reftime::Period*>(&o))
     {
+        core::Time begin, end;
+        pe->get_Period(begin, end);
         for (const auto& i: tests)
-            if (!i->match(core::Interval(pe->begin, pe->end)))
+            if (!i->match(core::Interval(begin, end)))
                 return false;
         return true;
     }

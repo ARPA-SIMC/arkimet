@@ -563,7 +563,7 @@ struct Inserter
     {
         if (const reftime::Position* reftime = md.get<reftime::Position>())
         {
-            const auto& t = reftime->time;
+            auto t = reftime->get_Position();
             timebuf_len = snprintf(timebuf, 25, "%04d-%02d-%02d %02d:%02d:%02d", t.ye, t.mo, t.da, t.ho, t.mi, t.se);
         } else {
             timebuf[0] = 0;

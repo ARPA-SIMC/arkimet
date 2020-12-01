@@ -121,7 +121,8 @@ bool Generator::_generate(const Samples::const_iterator& i, Metadata& md, metada
         // Set run from Reftime
         const types::Reftime* rt = md.get<types::Reftime>();
         const types::reftime::Position* p = dynamic_cast<const types::reftime::Position*>(rt);
-        m->set(types::run::Minute::create(p->time.ho, p->time.mi));
+        auto t = p->get_Position();
+        m->set(types::run::Minute::create(t.ho, t.mi));
 
         // Set source and inline data
         m->set_source_inline(format, metadata::DataManager::get().to_data(format, vector<uint8_t>(5432)));

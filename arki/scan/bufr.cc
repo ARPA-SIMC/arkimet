@@ -87,9 +87,9 @@ protected:
 
 public:
     dballe::Importer& importer;
-    unique_ptr<reftime::Position> reftime;
-    unique_ptr<Origin> origin;
-    unique_ptr<Product> product;
+    std::unique_ptr<reftime::Position> reftime;
+    std::unique_ptr<Origin> origin;
+    std::unique_ptr<Product> product;
     std::shared_ptr<Message> msg;
 
     Harvest(dballe::Importer& importer) : importer(importer), msg(0) {}
@@ -103,9 +103,9 @@ public:
             return;
         }
         if (dt.is_missing()) return;
-        reftime->time = core::Time(
+        reftime = reftime::Position::create(core::Time(
                 dt.year, dt.month, dt.day,
-                dt.hour, dt.minute, dt.second);
+                dt.hour, dt.minute, dt.second));
     }
 
     void harvest_from_dballe(const BinaryMessage& rmsg, Metadata& md)
@@ -235,13 +235,15 @@ void BufrScanner::do_scan(BinaryMessage& rmsg, std::shared_ptr<Metadata> md)
     const reftime::Position* rt = md->get<types::reftime::Position>();
     if (rt)
     {
-        if (rt->time.ye <= 0)
+        auto time = rt->get_Position();
+        if (time.ye <= 0)
             md->unset(TYPE_REFTIME);
         else
         {
-            core::Time t = rt->time;
+            core::Time t = time;
             t.normalise();
-            if (t != rt->time) md->unset(TYPE_REFTIME);
+            if (t != time)
+                md->unset(TYPE_REFTIME);
         }
     }
 

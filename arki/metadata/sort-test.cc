@@ -37,10 +37,11 @@ void produce(int hour, int minute, int run, sort::Stream& c)
 vector<int> mdvals(const Metadata& md)
 {
     const reftime::Position* rt = dynamic_cast<const reftime::Position*>(md.get<Reftime>());
+    auto time = rt->get_Position();
     const run::Minute* run = dynamic_cast<const run::Minute*>(md.get<Run>());
     vector<int> res;
-    res.push_back(rt->time.ho);
-    res.push_back(rt->time.mi);
+    res.push_back(time.ho);
+    res.push_back(time.mi);
     res.push_back(run->minute()/60);
     return res;
 }

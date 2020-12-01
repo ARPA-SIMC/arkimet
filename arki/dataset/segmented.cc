@@ -149,7 +149,7 @@ std::map<std::string, WriterBatch> Writer::batch_by_segment(WriterBatch& batch)
             continue;
         }
 
-        const core::Time& time = e->md.get<types::reftime::Position>()->time;
+        core::Time time = e->md.get<types::reftime::Position>()->get_Position();
         string relpath = dataset().step()(time) + "." + format;
         by_segment[relpath].push_back(e);
     }

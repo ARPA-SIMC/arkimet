@@ -271,7 +271,7 @@ std::string Writer::type() const { return "ondisk2"; }
 std::unique_ptr<AppendSegment> Writer::segment(const segment::WriterConfig& writer_config, const Metadata& md, const std::string& format)
 {
     auto lock = dataset().append_lock_dataset();
-    const core::Time& time = md.get<types::reftime::Position>()->time;
+    core::Time time = md.get<types::reftime::Position>()->get_Position();
     std::string relpath = dataset().step()(time) + "." + md.source().format;
     auto writer = dataset().session->segment_writer(writer_config, format, dataset().path, relpath);
     return std::unique_ptr<AppendSegment>(new AppendSegment(m_dataset, lock, writer));

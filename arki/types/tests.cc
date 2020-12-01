@@ -323,14 +323,16 @@ void ActualType::is_source_inline(const std::string& format, uint64_t size)
 void ActualType::is_reftime_position(const Time& time)
 {
     const reftime::Position* item = get_specific_type<reftime::Position>(_actual);
-    wassert(actual(item->time) == time);
+    wassert(actual(item->get_Position()) == time);
 }
 
 void ActualType::is_reftime_period(const Time& begin, const Time& end)
 {
     const reftime::Period* item = get_specific_type<reftime::Period>(_actual);
-    wassert(actual(item->begin) == begin);
-    wassert(actual(item->end) == end);
+    core::Time abegin, aend;
+    item->get_Period(abegin, aend);
+    wassert(actual(abegin) == begin);
+    wassert(actual(aend) == end);
 }
 
 }

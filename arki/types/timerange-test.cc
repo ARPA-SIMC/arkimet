@@ -434,7 +434,7 @@ add_method("timedef_validity_time_to_emission_time", [] {
     auto v = Timerange::decodeString("Timedef(6h)");
     auto p = downcast<Position>(Reftime::decodeString("2009-02-13 12:00:00"));
     auto p1 = dynamic_cast<const timerange::Timedef*>(v.get())->validity_time_to_emission_time(*p);
-    wassert(actual(p1->time).is(2009, 2, 13, 6));
+    wassert(actual(p1->get_Position()).is(2009, 2, 13, 6));
 });
 
 }

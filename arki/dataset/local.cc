@@ -43,14 +43,15 @@ std::pair<bool, WriterAcquireResult> Dataset::check_acquire_age(Metadata& md) co
 {
     const auto& st = SessionTime::get();
     const types::reftime::Position* rt = md.get<types::reftime::Position>();
+    auto time = rt->get_Position();
 
-    if (delete_age != -1 && rt->time < st.age_threshold(delete_age))
+    if (delete_age != -1 && time < st.age_threshold(delete_age))
     {
         md.add_note("Safely discarded: data is older than delete age");
         return make_pair(true, ACQ_OK);
     }
 
-    if (archive_age != -1 && rt->time < st.age_threshold(archive_age))
+    if (archive_age != -1 && time < st.age_threshold(archive_age))
     {
         md.add_note("Import refused: data is older than archive age");
         return make_pair(true, ACQ_ERROR);

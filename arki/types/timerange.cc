@@ -1480,7 +1480,7 @@ std::unique_ptr<reftime::Position> Timedef::validity_time_to_emission_time(const
         throw_consistency_error("converting validity time to emission time", "timedef has a step that cannot be converted to seconds");
 
     // Compute the new time
-    Time new_time(src.time);
+    Time new_time(src.get_Position());
     new_time.se -= secs;
     new_time.normalise();
 

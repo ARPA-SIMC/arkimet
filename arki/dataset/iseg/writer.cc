@@ -273,7 +273,7 @@ std::string Writer::type() const { return "iseg"; }
 
 std::unique_ptr<AppendSegment> Writer::file(const segment::WriterConfig& writer_config, const Metadata& md)
 {
-    const core::Time& time = md.get<types::reftime::Position>()->time;
+    core::Time time = md.get<types::reftime::Position>()->get_Position();
     string relpath = dataset().step()(time) + "." + dataset().format;
     return file(writer_config, relpath);
 }

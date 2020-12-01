@@ -139,7 +139,7 @@ add_method("gzidx", [](Fixture& f) {
     metadata::TestCollection mds("inbound/fixture.grib1");
     for (auto& md: mds)
     {
-        Time t = md->get<types::reftime::Position>()->time;
+        Time t = md->get<types::reftime::Position>()->get_Position();
         t.se = 30;
         md->set(types::reftime::Position(t));
     }
@@ -519,7 +519,8 @@ add_method("query_lots", [](Fixture& f) {
         virtual uint64_t make_key(const Metadata& md) const
         {
             const reftime::Position* rt = md.get<types::reftime::Position>();
-            return rt->time.mo * 10000 + rt->time.da * 100 + rt->time.ho;
+            auto time = rt->get_Position();
+            return time.mo * 10000 + time.da * 100 + time.ho;
         }
     };
 
@@ -528,9 +529,10 @@ add_method("query_lots", [](Fixture& f) {
         virtual uint64_t make_key(const Metadata& md) const
         {
             const reftime::Position* rt = md.get<types::reftime::Position>();
+            auto time = rt->get_Position();
             const area::VM2* area = dynamic_cast<const area::VM2*>(md.get(TYPE_AREA));
             const Product* prod = md.get<Product>();
-            uint64_t dt = rt->time.mo * 10000 + rt->time.da * 100 + rt->time.ho;
+            uint64_t dt = time.mo * 10000 + time.da * 100 + time.ho;
             unsigned vi;
             prod->get_VM2(vi);
             auto sid = area->get_VM2();
