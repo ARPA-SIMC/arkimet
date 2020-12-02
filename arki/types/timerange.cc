@@ -1468,7 +1468,7 @@ bool Timedef::get_proc_duration(int& duration, bool& is_seconds) const
     return true;
 }
 
-std::unique_ptr<reftime::Position> Timedef::validity_time_to_emission_time(const reftime::Position& src) const
+std::unique_ptr<Reftime> Timedef::validity_time_to_emission_time(const reftime::Position& src) const
 {
     // Compute our forecast step in seconds
     int secs = 0;
@@ -1485,7 +1485,7 @@ std::unique_ptr<reftime::Position> Timedef::validity_time_to_emission_time(const
     new_time.normalise();
 
     // Return it
-    return unique_ptr<reftime::Position>(new reftime::Position(new_time));
+    return Reftime::createPosition(new_time);
 }
 
 

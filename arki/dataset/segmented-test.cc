@@ -141,7 +141,7 @@ add_method("gzidx", [](Fixture& f) {
     {
         Time t = md->get<types::reftime::Position>()->get_Position();
         t.se = 30;
-        md->set(types::reftime::Position(t));
+        md->set(types::Reftime::createPosition(t));
     }
     wassert(f.import(mds));
 

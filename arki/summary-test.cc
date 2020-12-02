@@ -282,7 +282,7 @@ add_method("resolvematcher", [](Fixture& f) {
 // Test loading an old summary
 add_method("binary_old", [](Fixture& f) {
     Summary s;
-    s.read_file("inbound/old.summary");
+    wassert(s.read_file("inbound/old.summary"));
     wassert_true(s.count() > 0);
     // Compare with a summary with different msoSerLen
     {

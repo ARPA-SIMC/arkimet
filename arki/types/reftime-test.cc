@@ -73,17 +73,17 @@ add_method("range", [] {
     Time t6(2010, 9, 8, 7, 6, 5);
 
     // Merge with position
-    reftime::Position(t1).expand_date_range(interval);
+    Reftime::createPosition(t1)->expand_date_range(interval);
     wassert(actual(interval.begin) == t1);
     wassert(actual(interval.end) == t1e);
 
     // Merge with a second position
-    reftime::Position(t2).expand_date_range(interval);
+    Reftime::createPosition(t2)->expand_date_range(interval);
     wassert(actual(interval.begin) == t1);
     wassert(actual(interval.end) == t2e);
 
     // Merge with a period
-    reftime::Period(t3, t4).expand_date_range(interval);
+    Reftime::createPeriod(t3, t4)->expand_date_range(interval);
     wassert(actual(interval.begin) == t1);
     wassert(actual(interval.end) == t4e);
 });

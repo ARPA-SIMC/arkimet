@@ -227,7 +227,7 @@ public:
      * emission time, shifting it by what is represented by this timedef
      */
     // TODO: take a core::Time instead of a reftime::Position
-    std::unique_ptr<reftime::Position> validity_time_to_emission_time(const reftime::Position& src) const;
+    std::unique_ptr<Reftime> validity_time_to_emission_time(const reftime::Position& src) const;
 
     // static std::unique_ptr<Timedef> createFromYaml(const std::string& str);
 

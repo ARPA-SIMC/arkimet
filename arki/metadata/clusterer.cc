@@ -117,7 +117,7 @@ void Clusterer::md_to_interval(const Metadata& md, int* interval) const
 {
     const Reftime* rt = md.get<Reftime>();
     if (!rt) throw runtime_error("cannot compute time interval: metadata has no reference time");
-    Time t(rt->period_end());
+    Time t = rt->get_Position();
     interval[0] = max_interval > 0 ? t.ye : -1;
     interval[1] = max_interval > 1 ? t.mo : -1;
     interval[2] = max_interval > 2 ? t.da : -1;

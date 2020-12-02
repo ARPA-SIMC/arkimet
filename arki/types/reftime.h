@@ -1,7 +1,7 @@
 #ifndef ARKI_TYPES_REFTIME_H
 #define ARKI_TYPES_REFTIME_H
 
-#include <arki/types/styled.h>
+#include <arki/types/encoded.h>
 #include <arki/core/time.h>
 
 namespace arki {
@@ -33,8 +33,26 @@ template<> struct traits<reftime::Period> : public traits<Reftime> {};
  *
  * It can contain information like reftimetype and reftime value.
  */
-struct Reftime : public StyledType<Reftime>
+struct Reftime : public Encoded
 {
+    using Encoded::Encoded;
+
+    typedef reftime::Style Style;
+
+    types::Code type_code() const override { return traits<Reftime>::type_code; }
+    size_t serialisationSizeLength() const override { return traits<Reftime>::type_sersize_bytes; }
+    std::string tag() const override { return traits<Reftime>::type_tag; }
+
+    Reftime* clone() const override = 0;
+
+    int compare(const Type& o) const override;
+
+    // Get the element style
+    reftime::Style style() const;
+
+    core::Time get_Position() const;
+    void get_Period(core::Time& begin, core::Time& end) const;
+
 	/// Convert a string into a style
 	static Style parseStyle(const std::string& str);
 	/// Convert a style into its string representation
@@ -45,24 +63,11 @@ struct Reftime : public StyledType<Reftime>
     static std::unique_ptr<Reftime> decodeString(const std::string& val);
     static std::unique_ptr<Reftime> decode_structure(const structured::Keys& keys, const structured::Reader& val);
 
-    /// Beginning of the period in this Reftime
-    virtual const core::Time& period_begin() const = 0;
-    /// End of the period in this Reftime
-    virtual const core::Time& period_end() const = 0;
-
     /**
      * Expand a datetime range, returning the new range endpoints in begin
      * and end.
      */
     virtual void expand_date_range(core::Interval& interval) const = 0;
-
-    /**
-     * Expand a datetime range, returning the new range endpoints in begin
-     * and end.
-     *
-     * begin and end are assumed to be valid times.
-     */
-    virtual void expand_date_range(core::Time& begin, core::Time& end) const = 0;
 
     // Register this type tree with the type system
     static void init();
@@ -80,37 +85,20 @@ inline std::ostream& operator<<(std::ostream& o, Style s) { return o << Reftime:
 
 class Position : public Reftime
 {
-protected:
-    core::Time time;
-
 public:
-    Position(const core::Time& time);
+    using Reftime::Reftime;
 
-    core::Time get_Position() const { return time; }
-
-    Style style() const override;
-    void encodeWithoutEnvelope(core::BinaryEncoder& enc) const override;
     std::ostream& writeToOstream(std::ostream& o) const override;
     void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
     std::string exactQuery() const override;
 
-    int compare_local(const Reftime& o) const override;
-    bool equals(const Type& o) const override;
-
-    const core::Time& period_begin() const override { return time; }
-    const core::Time& period_end() const override { return time; }
-
-    Position* clone() const override;
+    Position* clone() const override { return new Position(data, size); }
 
     void expand_date_range(core::Interval& interval) const override;
-    void expand_date_range(core::Time& begin, core::Time& end) const override;
-
-    static std::unique_ptr<Position> create(const core::Time& position);
-    static std::unique_ptr<Position> decode_structure(const structured::Keys& keys, const structured::Reader& val);
 };
 
 /**
- * Represent a period between two extremes (included, probably? To be verified).
+ * Represent a period between two extremes (extremes included)
  *
  * This is deprecated, and currently only used by summary stats to
  * encode/decode the stats period. Ideally the stats binary format should be
@@ -118,37 +106,15 @@ public:
  */
 struct Period : public Reftime
 {
-protected:
-    core::Time begin;
-    core::Time end;
-
 public:
-    Period(const core::Time& begin, const core::Time& end);
+    using Reftime::Reftime;
 
-    void get_Period(core::Time& begin, core::Time& end) const
-    {
-        begin = this->begin;
-        end = this->end;
-    }
-
-    Style style() const override;
-    void encodeWithoutEnvelope(core::BinaryEncoder& enc) const override;
     std::ostream& writeToOstream(std::ostream& o) const override;
     void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
 
-    int compare_local(const Reftime& o) const override;
-    bool equals(const Type& o) const override;
-
-    const core::Time& period_begin() const override { return begin; }
-    const core::Time& period_end() const override { return end; }
-
-    Period* clone() const override;
+    Period* clone() const override { return new Period(data, size); }
 
     void expand_date_range(core::Interval& interval) const override;
-    void expand_date_range(core::Time& begin, core::Time& end) const override;
-
-    static std::unique_ptr<Period> create(const core::Time& begin, const core::Time& end);
-    static std::unique_ptr<Period> decode_structure(const structured::Keys& keys, const structured::Reader& val);
 };
 
 }

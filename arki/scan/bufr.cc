@@ -87,7 +87,7 @@ protected:
 
 public:
     dballe::Importer& importer;
-    std::unique_ptr<reftime::Position> reftime;
+    std::unique_ptr<Reftime> reftime;
     std::unique_ptr<Origin> origin;
     std::unique_ptr<Product> product;
     std::shared_ptr<Message> msg;
@@ -103,7 +103,7 @@ public:
             return;
         }
         if (dt.is_missing()) return;
-        reftime = reftime::Position::create(core::Time(
+        reftime = Reftime::createPosition(core::Time(
                 dt.year, dt.month, dt.day,
                 dt.hour, dt.minute, dt.second));
     }
@@ -125,7 +125,7 @@ public:
 
         // Set reference time
         // FIXME: WRONG! The header date should ALWAYS be ignored
-        reftime = reftime::Position::create(core::Time(
+        reftime = Reftime::createPosition(core::Time(
                 bulletin->rep_year, bulletin->rep_month, bulletin->rep_day,
                 bulletin->rep_hour, bulletin->rep_minute, bulletin->rep_second));
 

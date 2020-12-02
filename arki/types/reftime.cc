@@ -15,7 +15,6 @@
 #define TAG "reftime"
 #define SERSIZELEN 1
 
-using namespace std;
 using namespace arki::utils;
 using arki::core::Time;
 
@@ -46,116 +45,151 @@ std::string Reftime::formatStyle(Reftime::Style s)
 	}
 }
 
-unique_ptr<Reftime> Reftime::decode(core::BinaryDecoder& dec)
+int Reftime::compare(const Type& o) const
 {
-    Style s = (Style)dec.pop_uint(1, "reftime style");
-    switch (s)
+    int res = Encoded::compare(o);
+    if (res != 0) return res;
+
+    // We should be the same kind, so upcast
+    const Reftime* v = dynamic_cast<const Reftime*>(&o);
+    if (!v)
     {
-        case Style::POSITION: return Reftime::createPosition(Time::decode(dec));
-        case Style::PERIOD:
-        {
-            auto begin = Time::decode(dec);
-            auto until = Time::decode(dec);
-            return Reftime::createPeriod(begin, until);
-        }
-        default:
-            throw std::runtime_error("cannot parse reference time: style is '" + std::to_string((int)s) + "' but onlt POSITION and PERIOD are valid values");
+        std::stringstream ss;
+        ss << "cannot compare metadata types: second element claims to be `Reftime`, but it is `" << typeid(&o).name() << "' instead";
+        throw std::runtime_error(ss.str());
     }
+
+    auto sty = style();
+
+    // Compare style
+    if (int res = (int)sty - (int)v->style()) return res;
+    if (int res = size - v->size) return res;
+
+    // All styles of reftime are encoded in a way that lexicographically
+    // compares
+    return memcmp(data, v->data, size);
+}
+
+reftime::Style Reftime::style() const
+{
+    return (reftime::Style)data[0];
+}
+
+core::Time Reftime::get_Position() const
+{
+    core::BinaryDecoder dec(data + 1, size - 1);
+    return Time::decode(dec);
+}
+
+void Reftime::get_Period(core::Time& begin, core::Time& end) const
+{
+    core::BinaryDecoder dec(data + 1, size - 1);
+    begin = Time::decode(dec);
+    end = Time::decode(dec);
+}
+
+std::unique_ptr<Reftime> Reftime::decode(core::BinaryDecoder& dec)
+{
+    dec.ensure_size(1, "Reftime style");
+    Style sty = static_cast<reftime::Style>(dec.buf[0]);
+    std::unique_ptr<Reftime> res;
+    switch (sty)
+    {
+        case Style::POSITION:
+            res.reset(new reftime::Position(dec.buf, dec.size));
+            dec.skip(dec.size);
+            break;
+        case Style::PERIOD:
+            res.reset(new reftime::Period(dec.buf, dec.size));
+            dec.skip(dec.size);
+            break;
+        default:
+            throw std::runtime_error("cannot parse Reftime: found unsupported style " + formatStyle(sty));
+    }
+    return res;
+}
+
+std::unique_ptr<Reftime> Reftime::decodeString(const std::string& val)
+{
+    size_t pos = val.find(" to ");
+    if (pos == std::string::npos) return createPosition(Time::decodeString(val));
+
+    return createPeriod(
+                Time::decodeString(val.substr(0, pos)),
+                Time::decodeString(val.substr(pos + 4)));
 }
 
 std::unique_ptr<Reftime> Reftime::decode_structure(const structured::Keys& keys, const structured::Reader& val)
 {
-    switch (style_from_structure(keys, val))
+    Style sty = parseStyle(val.as_string(keys.type_style, "type style"));
+    std::unique_ptr<Reftime> res;
+    switch (sty)
     {
-        case Style::POSITION: return upcast<Reftime>(reftime::Position::decode_structure(keys, val));
-        case Style::PERIOD: return upcast<Reftime>(reftime::Period::decode_structure(keys, val));
-        default: throw std::runtime_error("unknown Reftime style");
+        case Style::POSITION:
+            return createPosition(val.as_time(keys.reftime_position_time, "time"));
+        case Style::PERIOD:
+            return createPeriod(
+                    val.as_time(keys.reftime_period_begin, "period begin"),
+                    val.as_time(keys.reftime_period_end, "period end"));
+        default:
+            throw std::runtime_error("unknown reftime style");
     }
-}
-
-unique_ptr<Reftime> Reftime::decodeString(const std::string& val)
-{
-    size_t pos = val.find(" to ");
-    if (pos == string::npos) return Reftime::createPosition(Time::decodeString(val));
-
-    return Reftime::createPeriod(
-                Time::decodeString(val.substr(0, pos)),
-                Time::decodeString(val.substr(pos + 4)));
 }
 
 std::unique_ptr<Reftime> Reftime::create(const Time& begin, const Time& end)
 {
     if (begin == end)
-        return upcast<Reftime>(reftime::Position::create(begin));
+        return createPosition(begin);
     else
-        return upcast<Reftime>(reftime::Period::create(begin, end));
+        return createPeriod(begin, end);
 }
 
 std::unique_ptr<Reftime> Reftime::createPosition(const Time& position)
 {
-    return upcast<Reftime>(reftime::Position::create(position));
+    uint8_t* buf = new uint8_t[6];
+    buf[0] = (uint8_t)reftime::Style::POSITION;
+    position.encode_binary(buf + 1);
+    return std::unique_ptr<Reftime>(new reftime::Position(buf, 6));
 }
 
 std::unique_ptr<Reftime> Reftime::createPeriod(const Time& begin, const Time& end)
 {
-    return upcast<Reftime>(reftime::Period::create(begin, end));
+    uint8_t* buf = new uint8_t[11];
+    buf[0] = (uint8_t)reftime::Style::PERIOD;
+    begin.encode_binary(buf + 1);
+    end.encode_binary(buf + 6);
+    return std::unique_ptr<Reftime>(new reftime::Period(buf, 11));
 }
+
 
 namespace reftime {
 
-Position::Position(const Time& time) : time(time) {}
-
-Reftime::Style Position::style() const { return Style::POSITION; }
-
-void Position::encodeWithoutEnvelope(core::BinaryEncoder& enc) const
-{
-    Reftime::encodeWithoutEnvelope(enc);
-    time.encodeWithoutEnvelope(enc);
-}
+/*
+ * Position
+ */
 
 std::ostream& Position::writeToOstream(std::ostream& o) const
 {
+    auto time = get_Position();
     return o << time;
 }
 
 void Position::serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f) const
 {
-    Reftime::serialise_local(e, keys, f);
+    auto time = get_Position();
+    e.add(keys.type_style, formatStyle(Style::POSITION));
     e.add(keys.reftime_position_time);
     e.add(time);
 }
 
-std::unique_ptr<Position> Position::decode_structure(const structured::Keys& keys, const structured::Reader& val)
-{
-    return Position::create(val.as_time(keys.reftime_position_time, "time"));
-}
-
 std::string Position::exactQuery() const
 {
-    return "=" + time.to_iso8601();
-}
-
-int Position::compare_local(const Reftime& o) const
-{
-    if (int res = Reftime::compare_local(o)) return res;
-	// We should be the same kind, so upcast
-	const Position* v = dynamic_cast<const Position*>(&o);
-	if (!v)
-		throw_consistency_error(
-			"comparing metadata types",
-			string("second element claims to be a Position Reftime, but is a ") + typeid(&o).name() + " instead");
-	return time.compare(v->time);
-}
-
-bool Position::equals(const Type& o) const
-{
-	const Position* v = dynamic_cast<const Position*>(&o);
-	if (!v) return false;
-	return time == v->time;
+    return "=" + get_Position().to_iso8601();
 }
 
 void Position::expand_date_range(core::Interval& interval) const
 {
+    auto time = get_Position();
     if (interval.begin.ye == 0 || interval.begin > time)
         interval.begin = time;
 
@@ -167,76 +201,32 @@ void Position::expand_date_range(core::Interval& interval) const
     }
 }
 
-void Position::expand_date_range(Time& begin, Time& end) const
-{
-    if (begin > time) begin = time;
-    if (end < time) end = time;
-}
 
-Position* Position::clone() const
-{
-    return new Position(time);
-}
-
-unique_ptr<Position> Position::create(const Time& time)
-{
-    return unique_ptr<Position>(new Position(time));
-}
-
-Period::Period(const Time& begin, const Time& end)
-    : begin(begin), end(end) {}
-
-Reftime::Style Period::style() const { return Style::PERIOD; }
-
-void Period::encodeWithoutEnvelope(core::BinaryEncoder& enc) const
-{
-    Reftime::encodeWithoutEnvelope(enc);
-    begin.encodeWithoutEnvelope(enc);
-    end.encodeWithoutEnvelope(enc);
-}
+/*
+ * Period
+ */
 
 std::ostream& Period::writeToOstream(std::ostream& o) const
 {
+    core::Time begin, end;
+    get_Period(begin, end);
     return o << begin << " to " << end;
 }
 
 void Period::serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f) const
 {
-    Reftime::serialise_local(e, keys, f);
+    core::Time begin, end;
+    get_Period(begin, end);
+    e.add(keys.type_style, formatStyle(Style::PERIOD));
     e.add(keys.reftime_period_begin); e.add(begin);
     e.add(keys.reftime_period_end); e.add(end);
 }
 
-std::unique_ptr<Period> Period::decode_structure(const structured::Keys& keys, const structured::Reader& val)
-{
-    return Period::create(
-            val.as_time(keys.reftime_period_begin, "period begin"),
-            val.as_time(keys.reftime_period_end, "period end"));
-}
-
-int Period::compare_local(const Reftime& o) const
-{
-    if (int res = Reftime::compare_local(o)) return res;
-	// We should be the same kind, so upcast
-	const Period* v = dynamic_cast<const Period*>(&o);
-	if (!v)
-		throw_consistency_error(
-			"comparing metadata types",
-			string("second element claims to be a Period Reftime, but is a ") + typeid(&o).name() + " instead");
-
-    if (int res = begin.compare(v->begin)) return res;
-    return end.compare(v->end);
-}
-
-bool Period::equals(const Type& o) const
-{
-	const Period* v = dynamic_cast<const Period*>(&o);
-	if (!v) return false;
-	return begin == v->begin && end == v->end;
-}
-
 void Period::expand_date_range(core::Interval& interval) const
 {
+    core::Time begin, end;
+    get_Period(begin, end);
+
     if (interval.begin.ye == 0 || interval.begin > begin)
         interval.begin = begin;
 
@@ -248,22 +238,6 @@ void Period::expand_date_range(core::Interval& interval) const
     }
 }
 
-void Period::expand_date_range(Time& begin, Time& end) const
-{
-    if (begin > this->begin) begin = this->begin;
-    if (end < this->end) end = this->end;
-}
-
-Period* Period::clone() const
-{
-    return new Period(begin, end);
-}
-
-unique_ptr<Period> Period::create(const Time& begin, const Time& end)
-{
-    return unique_ptr<Period>(new Period(begin, end));
-}
-
 }
 
 void Reftime::init()
@@ -273,5 +247,3 @@ void Reftime::init()
 
 }
 }
-
-#include <arki/types/styled.tcc>
