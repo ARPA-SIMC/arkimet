@@ -159,17 +159,6 @@ add_method("binary", [](Fixture& f) {
     wassert(f.ensure_md_matches_prefill(md1));
 
 
-    // Test PERIOD reference times
-    md.set(Reftime::createPeriod(Time(2007, 6, 5, 4, 3, 2), Time(2008, 7, 6, 5, 4, 3)));
-
-    encoded = md.encodeBinary();
-    Metadata md2;
-    core::BinaryDecoder dec1(encoded);
-    wassert(md2.read(dec1, metadata::ReadContext("(test memory buffer)", ""), false));
-
-    wassert(actual(Reftime::createPeriod(Time(2007, 6, 5, 4, 3, 2), Time(2008, 7, 6, 5, 4, 3))) == md2.get<Reftime>());
-
-
     // Test methods to load metadata from files
     metadata::Collection mds;
 
@@ -202,16 +191,6 @@ add_method("yaml", [](Fixture& f) {
     wassert(actual(Source::createBlobUnlocked("grib", "", "inbound/test.grib1", 1, 2)) == md1.source());
     wassert(actual(md1.source().format) == "grib");
     wassert(f.ensure_md_matches_prefill(md1));
-
-    // Test PERIOD reference times
-    md.set(Reftime::createPeriod(Time(2007, 6, 5, 4, 3, 2), Time(2008, 7, 6, 5, 4, 3)));
-
-    s = md.to_yaml();
-    Metadata md2;
-    reader = LineReader::from_chars(s.data(), s.size());
-    md2.readYaml(*reader, "(test memory buffer)");
-
-    wassert(actual(Reftime::createPeriod(Time(2007, 6, 5, 4, 3, 2), Time(2008, 7, 6, 5, 4, 3))) == md2.get<Reftime>());
 });
 
 // Test JSON encoding and decoding
@@ -235,24 +214,6 @@ add_method("json", [](Fixture& f) {
     wassert(actual(Source::createBlobUnlocked("grib", "", "inbound/test.grib1", 1, 2)) == md1.source());
     wassert(actual(md1.source().format) == "grib");
     wassert(f.ensure_md_matches_prefill(md1));
-
-
-    // Test PERIOD reference times
-    md.set(Reftime::createPeriod(Time(2007, 6, 5, 4, 3, 2), Time(2008, 7, 6, 5, 4, 3)));
-
-    // Serialise to JSON
-    stringstream output1;
-    structured::JSON json1(output1);
-    md.serialise(json1, structured::keys_json);
-
-    // Parse back
-    structured::Memory parsed1;
-    structured::JSON::parse(output1.str(), parsed1);
-
-    Metadata md2;
-    md2.read(structured::keys_json, parsed1.root());
-
-    wassert(actual(Reftime::createPeriod(Time(2007, 6, 5, 4, 3, 2), Time(2008, 7, 6, 5, 4, 3))) == md2.get<Reftime>());
 });
 
 // Test encoding and decoding with inline data

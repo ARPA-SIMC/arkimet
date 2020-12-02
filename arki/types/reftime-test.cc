@@ -46,18 +46,6 @@ add_method("position_details", [] {
     wassert(actual(o).serializes());
 });
 
-add_method("period_details", [] {
-    using namespace arki::types;
-    unique_ptr<Reftime> o = Reftime::createPeriod(Time(2007, 6, 5, 4, 3, 2), Time(2008, 7, 6, 5, 4, 3));
-    wassert(actual(o).is_reftime_period(Time(2007, 6, 5, 4, 3, 2), Time(2008, 7, 6, 5, 4, 3)));
-
-    wassert(actual(o) == Reftime::createPeriod(Time(2007, 6, 5, 4, 3, 2), Time(2008, 7, 6, 5, 4, 3)));
-    wassert(actual(o) != Reftime::createPeriod(Time(2007, 6, 5, 4, 3, 3), Time(2008, 7, 6, 5, 4, 2)));
-
-    // Test encoding/decoding
-    wassert(actual(o).serializes());
-});
-
 add_method("range", [] {
     // Check range expansion
     using namespace arki::types;
@@ -82,10 +70,12 @@ add_method("range", [] {
     wassert(actual(interval.begin) == t1);
     wassert(actual(interval.end) == t2e);
 
+#if 0
     // Merge with a period
     Reftime::createPeriod(t3, t4)->expand_date_range(interval);
     wassert(actual(interval.begin) == t1);
     wassert(actual(interval.end) == t4e);
+#endif
 });
 
 // Reproduce bugs

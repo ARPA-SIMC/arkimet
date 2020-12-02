@@ -99,10 +99,6 @@ std::unique_ptr<Reftime> Reftime::decode(core::BinaryDecoder& dec)
             res.reset(new reftime::Position(dec.buf, dec.size));
             dec.skip(dec.size);
             break;
-        case Style::PERIOD:
-            res.reset(new reftime::Period(dec.buf, dec.size));
-            dec.skip(dec.size);
-            break;
         default:
             throw std::runtime_error("cannot parse Reftime: found unsupported style " + formatStyle(sty));
     }
@@ -111,12 +107,7 @@ std::unique_ptr<Reftime> Reftime::decode(core::BinaryDecoder& dec)
 
 std::unique_ptr<Reftime> Reftime::decodeString(const std::string& val)
 {
-    size_t pos = val.find(" to ");
-    if (pos == std::string::npos) return createPosition(Time::decodeString(val));
-
-    return createPeriod(
-                Time::decodeString(val.substr(0, pos)),
-                Time::decodeString(val.substr(pos + 4)));
+    return createPosition(Time::decodeString(val));
 }
 
 std::unique_ptr<Reftime> Reftime::decode_structure(const structured::Keys& keys, const structured::Reader& val)
@@ -127,21 +118,9 @@ std::unique_ptr<Reftime> Reftime::decode_structure(const structured::Keys& keys,
     {
         case Style::POSITION:
             return createPosition(val.as_time(keys.reftime_position_time, "time"));
-        case Style::PERIOD:
-            return createPeriod(
-                    val.as_time(keys.reftime_period_begin, "period begin"),
-                    val.as_time(keys.reftime_period_end, "period end"));
         default:
             throw std::runtime_error("unknown reftime style");
     }
-}
-
-std::unique_ptr<Reftime> Reftime::create(const Time& begin, const Time& end)
-{
-    if (begin == end)
-        return createPosition(begin);
-    else
-        return createPeriod(begin, end);
 }
 
 std::unique_ptr<Reftime> Reftime::createPosition(const Time& position)
@@ -150,15 +129,6 @@ std::unique_ptr<Reftime> Reftime::createPosition(const Time& position)
     buf[0] = (uint8_t)reftime::Style::POSITION;
     position.encode_binary(buf + 1);
     return std::unique_ptr<Reftime>(new reftime::Position(buf, 6));
-}
-
-std::unique_ptr<Reftime> Reftime::createPeriod(const Time& begin, const Time& end)
-{
-    uint8_t* buf = new uint8_t[11];
-    buf[0] = (uint8_t)reftime::Style::PERIOD;
-    begin.encode_binary(buf + 1);
-    end.encode_binary(buf + 6);
-    return std::unique_ptr<Reftime>(new reftime::Period(buf, 11));
 }
 
 
@@ -196,43 +166,6 @@ void Position::expand_date_range(core::Interval& interval) const
     if (interval.end.ye == 0 || interval.end <= time)
     {
         interval.end = time;
-        interval.end.se += 1;
-        interval.end.normalise();
-    }
-}
-
-
-/*
- * Period
- */
-
-std::ostream& Period::writeToOstream(std::ostream& o) const
-{
-    core::Time begin, end;
-    get_Period(begin, end);
-    return o << begin << " to " << end;
-}
-
-void Period::serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f) const
-{
-    core::Time begin, end;
-    get_Period(begin, end);
-    e.add(keys.type_style, formatStyle(Style::PERIOD));
-    e.add(keys.reftime_period_begin); e.add(begin);
-    e.add(keys.reftime_period_end); e.add(end);
-}
-
-void Period::expand_date_range(core::Interval& interval) const
-{
-    core::Time begin, end;
-    get_Period(begin, end);
-
-    if (interval.begin.ye == 0 || interval.begin > begin)
-        interval.begin = begin;
-
-    if (interval.end.ye == 0 || interval.end <= end)
-    {
-        interval.end = end;
         interval.end.se += 1;
         interval.end.normalise();
     }

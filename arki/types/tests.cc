@@ -326,14 +326,5 @@ void ActualType::is_reftime_position(const Time& time)
     wassert(actual(item->get_Position()) == time);
 }
 
-void ActualType::is_reftime_period(const Time& begin, const Time& end)
-{
-    const reftime::Period* item = get_specific_type<reftime::Period>(_actual);
-    core::Time abegin, aend;
-    item->get_Period(abegin, aend);
-    wassert(actual(abegin) == begin);
-    wassert(actual(aend) == end);
-}
-
 }
 }

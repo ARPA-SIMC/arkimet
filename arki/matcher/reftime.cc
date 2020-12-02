@@ -44,15 +44,6 @@ bool MatchReftime::matchItem(const Type& o) const
                 return false;
         return true;
     }
-    else if (const types::reftime::Period* pe = dynamic_cast<const types::reftime::Period*>(&o))
-    {
-        core::Time begin, end;
-        pe->get_Period(begin, end);
-        for (const auto& i: tests)
-            if (!i->match(core::Interval(begin, end)))
-                return false;
-        return true;
-    }
     return true;
 }
 

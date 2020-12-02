@@ -73,9 +73,7 @@ struct Reftime : public Encoded
     static void init();
 
     /// If begin == end create a Position reftime, else create a Period reftime
-    static std::unique_ptr<Reftime> create(const core::Time& begin, const core::Time& end);
     static std::unique_ptr<Reftime> createPosition(const core::Time& position);
-    static std::unique_ptr<Reftime> createPeriod(const core::Time& begin, const core::Time& end);
 };
 
 namespace reftime {
@@ -93,26 +91,6 @@ public:
     std::string exactQuery() const override;
 
     Position* clone() const override { return new Position(data, size); }
-
-    void expand_date_range(core::Interval& interval) const override;
-};
-
-/**
- * Represent a period between two extremes (extremes included)
- *
- * This is deprecated, and currently only used by summary stats to
- * encode/decode the stats period. Ideally the stats binary format should be
- * updated in a further version not to need this.
- */
-struct Period : public Reftime
-{
-public:
-    using Reftime::Reftime;
-
-    std::ostream& writeToOstream(std::ostream& o) const override;
-    void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
-
-    Period* clone() const override { return new Period(data, size); }
 
     void expand_date_range(core::Interval& interval) const override;
 };

@@ -290,7 +290,7 @@ void Metadata::read_inner(core::BinaryDecoder& dec, unsigned version, const meta
     // Check version and ensure we can decode
     if (version != 0)
     {
-        stringstream s;
+        std::stringstream s;
         s << "cannot parse file " << rc.pathname << ": version of the file is " << version << " but I can only decode version 0";
         throw runtime_error(s.str());
     }

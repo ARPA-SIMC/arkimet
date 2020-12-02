@@ -380,10 +380,9 @@ struct YamlPrinter : public Visitor
 
         // Write the stats
         out << "SummaryStats:" << endl;
-        auto reftime = Reftime::create(stats.begin, stats.end);
         out << indent << "Count: " << stats.count << endl;
         out << indent << "Size: " << stats.size << endl;
-        out << indent << "Reftime: " << *reftime << endl;
+        out << indent << "Reftime: " << stats.begin << " to " << stats.end << endl;
         return true;
     }
 };

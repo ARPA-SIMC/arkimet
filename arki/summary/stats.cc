@@ -115,17 +115,16 @@ void Stats::encodeBinary(core::BinaryEncoder& enc) const
 
 void Stats::encodeWithoutEnvelope(core::BinaryEncoder& enc) const
 {
-    unique_ptr<types::Reftime> reftime(Reftime::create(begin, end));
     enc.add_unsigned(count, 4);
     /*
-     * This is deprecated, a Period reftime is used only here.
-     * Ideally the stats binary format should be updated in a further version
-     * to not need this, and it would also be more compact.
-     *
-     * In a compatibility loader/writer, parsing of the period reftime headers
-     * could be hardcoded to allow to drop it from arki/types/reftime
+     * This is the serialization of a Reftime type with the obsolete PERIOD
+     * style, inlined so we can get rid of reftime::Period.
      */
-    reftime->encodeBinary(enc);
+    enc.add_varint(static_cast<unsigned>(arki::TYPE_REFTIME));
+    enc.add_varint(11u);
+    enc.add_unsigned(static_cast<uint8_t>(reftime::Style::PERIOD), 1);
+    begin.encodeWithoutEnvelope(enc);
+    end.encodeWithoutEnvelope(enc);
     enc.add_unsigned(size, 8);
 }
 
@@ -168,11 +167,10 @@ std::string Stats::toYaml(size_t indent) const
 
 void Stats::toYaml(std::ostream& out, size_t indent) const
 {
-    unique_ptr<types::Reftime> reftime(Reftime::create(begin, end));
     string ind(indent, ' ');
     out << ind << "Count: " << count << endl;
     out << ind << "Size: " << size << endl;
-    out << ind << "Reftime: " << *reftime << endl;
+    out << ind << "Reftime: " << begin << " to " << end << endl;
 }
 
 unique_ptr<Stats> Stats::decode(core::BinaryDecoder& dec)
