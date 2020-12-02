@@ -42,7 +42,7 @@ vector<int> mdvals(const Metadata& md)
     vector<int> res;
     res.push_back(time.ho);
     res.push_back(time.mi);
-    res.push_back(run->minute()/60);
+    res.push_back(run->get_Minute()/60);
     return res;
 }
 

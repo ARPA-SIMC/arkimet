@@ -56,7 +56,7 @@ protected:
 	unsigned int m_minute;
 
 public:
-	unsigned minute() const { return m_minute; }
+    unsigned get_Minute() const { return m_minute; }
 
     Style style() const override;
     void encodeWithoutEnvelope(core::BinaryEncoder& enc) const override;
