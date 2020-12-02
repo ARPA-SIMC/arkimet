@@ -324,7 +324,10 @@ this->add_method("import_before_archive_age", [](Fixture& f) {
     {
         Metadata md = f.td.mds[i];
         wassert(actual(ds->acquire(md)) == dataset::ACQ_ERROR);
-        wassert(actual(md.notes().back().content).contains("is older than archive age"));
+        core::Time time;
+        std::string content;
+        md.notes().back().get(time, content);
+        wassert(actual(content).contains("is older than archive age"));
     }
 
     metadata::Collection mdc(*f.config().create_reader(), Matcher());
@@ -340,7 +343,10 @@ this->add_method("import_before_delete_age", [](Fixture& f) {
     {
         Metadata md = f.td.mds[i];
         wassert(actual(*ds).import(md));
-        wassert(actual(md.notes().back().content).contains("is older than delete age"));
+        core::Time time;
+        std::string content;
+        md.notes().back().get(time, content);
+        wassert(actual(content).contains("is older than delete age"));
     }
 
     metadata::Collection mdc(*f.config().create_reader(), Matcher());

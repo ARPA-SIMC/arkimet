@@ -73,7 +73,10 @@ struct Fixture : public arki::utils::tests::Fixture
         wassert(actual(Proddef::createGRIB(testValues)) == md.get<Proddef>());
         wassert(actual(AssignedDataset::create("dsname", "dsid")) == md.get<AssignedDataset>());
         wassert(actual(md.notes().size()) == 1u);
-        wassert(actual((*md.notes().begin()).content) == "test note");
+        core::Time time;
+        std::string content;
+        md.notes().begin()->get(time, content);
+        wassert(actual(content) == "test note");
     }
 };
 

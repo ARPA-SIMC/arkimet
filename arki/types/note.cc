@@ -24,6 +24,12 @@ const char* traits<Note>::type_tag = TAG;
 const types::Code traits<Note>::type_code = CODE;
 const size_t traits<Note>::type_sersize_bytes = SERSIZELEN;
 
+void Note::get(core::Time& time, std::string& content) const
+{
+    time = this->time;
+    content = this->content;
+}
+
 int Note::compare(const Type& o) const
 {
 	int res = Type::compare(o);

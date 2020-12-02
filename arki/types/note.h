@@ -20,13 +20,17 @@ struct traits<Note>
 /**
  * A metadata annotation
  */
-struct Note : public CoreType<Note>
+class Note : public CoreType<Note>
 {
+protected:
     core::Time time;
     std::string content;
 
+public:
     Note(const std::string& content) : time(core::Time::create_now()), content(content) {}
     Note(const core::Time& time, const std::string& content) : time(time), content(content) {}
+
+    void get(core::Time& time, std::string& content) const;
 
     int compare(const Type& o) const override;
     virtual int compare(const Note& o) const;

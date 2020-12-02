@@ -209,6 +209,10 @@ void TestDispatcher::raw_dispatch_dataset(const std::string& name, dataset::Writ
 void TestDispatcher::dispatch(dataset::WriterBatch& batch, bool drop_cached_data_on_commit)
 {
     Dispatcher::dispatch(batch, drop_cached_data_on_commit);
+
+    if (!nag::is_verbose())
+        return;
+
     for (const auto& e: batch)
     {
         if (e->dataset_name.empty())
@@ -217,7 +221,12 @@ void TestDispatcher::dispatch(dataset::WriterBatch& batch, bool drop_cached_data
             nag::verbose("Message %s: imported into %s", e->md.source().to_string().c_str(), e->dataset_name.c_str());
         nag::verbose("  Notes:");
         for (const auto& note: e->md.notes())
-            nag::verbose("    %s", note.content.c_str());
+        {
+            core::Time time;
+            std::string content;
+            note.get(time, content);
+            nag::verbose("    %s", content.c_str());
+        }
     }
 }
 

@@ -179,7 +179,10 @@ add_method("index", [] {
     wassert(query_index(*test, parser.parse("origin:GRIB1,200"), mdc));
     wassert(actual(mdc.size()) == 1u);
     wassert(actual(mdc[0].notes().size()) == 1u);
-    wassert(actual(mdc[0].notes()[0].content) == "this is a test");
+    core::Time time;
+    std::string content;
+    mdc[0].notes()[0].get(time, content);
+    wassert(actual(content) == "this is a test");
 
     mdc.clear();
     wassert(query_index(*test, parser.parse("product:GRIB1,3"), mdc));
