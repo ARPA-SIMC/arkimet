@@ -30,7 +30,7 @@ add_method("minute", [] {
     wassert(actual_matcher("run:MINUTE,12:01").not_matches(md));
 
     // Set a different minute
-    md.set(run::Minute::create(9, 30));
+    md.set(Run::createMinute(9, 30));
     wassert(actual_matcher("run:MINUTE").matches(md));
     wassert(actual_matcher("run:MINUTE,09:30").matches(md));
     wassert(actual_matcher("run:MINUTE,09").not_matches(md));

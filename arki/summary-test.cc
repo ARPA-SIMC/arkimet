@@ -105,8 +105,8 @@ add_method("match", [](Fixture& f) {
 // Test matching runs
 add_method("match_run", [](Fixture& f) {
     Summary s;
-    f.md1.set(run::Minute::create(0, 0));
-    f.md2.set(run::Minute::create(12, 0));
+    f.md1.set(Run::createMinute(0, 0));
+    f.md2.set(Run::createMinute(12, 0));
     s.clear();
     s.add(f.md1);
     s.add(f.md2);
