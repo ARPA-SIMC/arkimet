@@ -46,10 +46,29 @@ std::string Source::formatStyle(Source::Style s)
     }
 }
 
+int Source::compare(const Type& o) const
+{
+    int res = Type::compare(o);
+    if (res != 0) return res;
+
+    // We should be the same kind, so upcast
+    const Source* v = dynamic_cast<const Source*>(&o);
+    if (!v)
+    {
+        std::stringstream ss;
+        ss << "cannot compare metadata types: second element claims to be `Source`, but it is `" << typeid(&o).name() << "' instead";
+        throw std::runtime_error(ss.str());
+    }
+
+    return this->compare_local(*v);
+}
+
 int Source::compare_local(const Source& o) const
 {
-    if (int res = StyledType<Source>::compare_local(o))
-        return res;
+    if (this->style() < o.style())
+        return -1;
+    if (this->style() > o.style())
+        return 1;
     if (format < o.format) return -1;
     if (format > o.format) return 1;
     return 0;
@@ -57,14 +76,14 @@ int Source::compare_local(const Source& o) const
 
 void Source::encodeWithoutEnvelope(core::BinaryEncoder& enc) const
 {
-    StyledType<Source>::encodeWithoutEnvelope(enc);
+    enc.add_unsigned(static_cast<unsigned>(style()), 1);
     enc.add_unsigned(format.size(), 1);
     enc.add_raw(format);
 }
 
 void Source::serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f) const
 {
-    types::StyledType<Source>::serialise_local(e, keys, f);
+    e.add(keys.type_style, formatStyle(style()));
     e.add(keys.source_format); e.add(format);
 }
 
@@ -136,7 +155,8 @@ unique_ptr<Source> Source::decodeString(const std::string& val)
 
 std::unique_ptr<Source> Source::decode_structure(const structured::Keys& keys, const structured::Reader& val)
 {
-    switch (style_from_structure(keys, val))
+    Style sty = parseStyle(val.as_string(keys.type_style, "type style"));
+    switch (sty)
     {
         case source::Style::BLOB: return upcast<Source>(source::Blob::decode_structure(keys, val));
         case source::Style::URL: return upcast<Source>(source::URL::decode_structure(keys, val));
@@ -177,4 +197,4 @@ void Source::init()
 
 }
 }
-#include <arki/types/styled.tcc>
+#include <arki/types/core.tcc>

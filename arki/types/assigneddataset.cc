@@ -121,4 +121,4 @@ void AssignedDataset::init()
 }
 }
 
-#include <arki/types/styled.tcc>
+#include <arki/types/core.tcc>

@@ -866,4 +866,3 @@ void Level::init()
 
 }
 }
-#include <arki/types/styled.tcc>

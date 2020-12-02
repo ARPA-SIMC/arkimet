@@ -1,7 +1,7 @@
 #ifndef ARKI_TYPES_ENCODED_H
 #define ARKI_TYPES_ENCODED_H
 
-#include <arki/types/core.h>
+#include <arki/types.h>
 #include <arki/core/fwd.h>
 
 namespace arki {
