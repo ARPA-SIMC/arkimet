@@ -154,7 +154,7 @@ std::vector<types::Note> Metadata::notes() const
         if (el_type != TYPE_NOTE)
             throw std::runtime_error("cannot decode note: item type is not a note");
 
-        res.push_back(*types::Note::decode(inner));
+        res.emplace_back(std::move(*types::Note::decode(inner)));
     }
     return res;
 }
@@ -185,7 +185,7 @@ void Metadata::add_note(const types::Note& note)
 void Metadata::add_note(const std::string& note)
 {
     core::BinaryEncoder enc(m_notes);
-    Note(note).encodeBinary(enc);
+    Note::create(note)->encodeBinary(enc);
 }
 
 bool Metadata::operator==(const Metadata& m) const

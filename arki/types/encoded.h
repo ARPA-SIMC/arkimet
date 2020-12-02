@@ -28,7 +28,14 @@ public:
     Encoded(uint8_t*&& buf, unsigned&& size);
 
     Encoded(const Encoded&) = delete;
-    Encoded(Encoded&& o) = delete;
+
+    Encoded(Encoded&& o)
+        : data(o.data), size(o.size)
+    {
+        o.data = nullptr;
+        o.size = 0;
+    }
+
     ~Encoded();
 
     Encoded& operator=(const Encoded&) = delete;
