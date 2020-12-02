@@ -52,10 +52,10 @@ struct Run : public Encoded
 
     unsigned get_Minute() const;
 
-	/// Convert a string into a style
-	static Style parseStyle(const std::string& str);
-	/// Convert a style into its string representation
-	static std::string formatStyle(Style s);
+    /// Convert a string into a style
+    static Style parseStyle(const std::string& str);
+    /// Convert a style into its string representation
+    static std::string formatStyle(Style s);
 
     /// CODEC functions
     static std::unique_ptr<Run> decode(core::BinaryDecoder& dec);
