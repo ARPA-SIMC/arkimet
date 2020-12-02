@@ -23,16 +23,8 @@ add_generic_test(
         { "2014-01-01T00:00:00" },
         "2015-01-02T03:04:05Z",
         // Period sorts later than Position
-        { "2015-01-03T00:00:00", "2014-01-01T00:00:00 to 2014-01-31T00:00:00" },
+        { "2015-01-03T00:00:00", "2015-01-03T00:00:00", "2015-01-02T03:04:06Z" },
         "=2015-01-02T03:04:05Z");
-
-add_generic_test(
-        "period",
-        { "2015-01-01T00:00:00", "2015-01-10T00:00:00", "2015-01-01T00:00:00 to 2015-01-03T12:00:00" },
-        "2015-01-02T00:00:00Z to 2015-01-03T00:00:00Z",
-        { "2015-01-02T12:00:00 to 2015-01-31T00:00:00" });
-//#warning This does not look like a query to match a period
-//    t.exact_query = "=2007-06-05T04:03:02Z";
 
 add_method("position_details", [] {
     using namespace arki::types;
