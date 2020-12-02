@@ -20,7 +20,6 @@
 #define TAG "area"
 #define SERSIZELEN 2
 
-using namespace std;
 using namespace arki::utils;
 
 namespace arki {
@@ -155,7 +154,7 @@ std::unique_ptr<Area> Area::decode(core::BinaryDecoder& dec)
     return res;
 }
 
-unique_ptr<Area> Area::decodeString(const std::string& val)
+std::unique_ptr<Area> Area::decodeString(const std::string& val)
 {
     std::string inner;
     Area::Style sty = outerParse<Area>(val, inner);
@@ -347,7 +346,7 @@ std::string VM2::exactQuery() const
 
 void VM2::encode_for_indexing(core::BinaryEncoder& enc) const
 {
-    enc.add_raw(data, min(size, 5u));
+    enc.add_raw(data, std::min(size, 5u));
 }
 
 void VM2::encodeWithoutEnvelope(core::BinaryEncoder& enc) const

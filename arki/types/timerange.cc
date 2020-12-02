@@ -16,7 +16,6 @@
 #define TAG "timerange"
 #define SERSIZELEN 1
 
-using namespace std;
 using namespace arki::utils;
 using arki::core::Time;
 
@@ -101,7 +100,7 @@ static bool GRIB1_get_timeunit_conversion(t_enum_GRIB_TIMEUNIT unit, int& timemu
         case GRIB_TIMEUNIT_SECOND: timemul = 1; break;
         default:
         {
-            stringstream ss;
+            std::stringstream ss;
             ss << "cannot normalise TimeRange: time unit is unknown (" << (unsigned)unit << ")";
             throw std::runtime_error(ss.str());
         }
@@ -129,7 +128,7 @@ static std::string formatTimeUnit(t_enum_GRIB_TIMEUNIT unit)
 		case GRIB_TIMEUNIT_SECOND: return "s";
 		default:
         {
-            stringstream ss;
+            std::stringstream ss;
             ss << "cannot normalise TimeRange: time unit is unknown (" << (int)unit << ")";
             throw std::runtime_error(ss.str());
         }
@@ -316,12 +315,12 @@ static int getNumber(const char * & start, const char* what)
     skipCommasAndSpaces(start);
 
     if (!*start)
-        throw_consistency_error("parsing TimeRange", string("no ") + what);
+        throw_consistency_error("parsing TimeRange", std::string("no ") + what);
 
     int res = strtol(start, &endptr, 10);
     if (endptr == start)
         throw_consistency_error("parsing TimeRange",
-                string("expected ") + what + ", but found \"" + start + "\"");
+                std::string("expected ") + what + ", but found \"" + start + "\"");
     start = endptr;
 
     skipCommasAndSpaces(start);
@@ -351,7 +350,7 @@ std::unique_ptr<Timerange> Timerange::decodeString(const std::string& val)
             const char* start = inner.c_str();
             char* endptr;
             int p1 = -1, p2 = -1;
-            string p1tu, p2tu;
+            std::string p1tu, p2tu;
 
             if (!*start)
                 throw_consistency_error("parsing TimeRange", "value is empty");
@@ -669,7 +668,7 @@ std::unique_ptr<Timerange> Timerange::createTimedef(uint32_t step_len, timerange
 
 }
 
-unique_ptr<Timerange> Timerange::createBUFR(unsigned value, unsigned char unit)
+std::unique_ptr<Timerange> Timerange::createBUFR(unsigned value, unsigned char unit)
 {
     // TODO: optimize encoding by precomputing buffer size and not using a vector?
     // to do that, we first need a function that estimates the size of the varints
@@ -748,6 +747,7 @@ std::string GRIB1::exactQuery() const
 
 std::ostream& GRIB1::writeNumbers(std::ostream& o) const
 {
+    using namespace std;
     unsigned type, unit, p1, p2;
     get_GRIB1(type, unit, p1, p2);
     o << setfill('0') << internal;
@@ -1210,6 +1210,7 @@ int GRIB2::compare_local(const GRIB2& o) const
 
 std::ostream& GRIB2::writeToOstream(std::ostream& o) const
 {
+    using namespace std;
     unsigned ty, un;
     signed long p1, p2;
     get_GRIB2(ty, un, p1, p2);
@@ -1360,6 +1361,7 @@ int Timedef::compare_local(const Timedef& o) const
 
 std::ostream& Timedef::writeToOstream(std::ostream& o) const
 {
+    using namespace std;
     timerange::TimedefUnit step_unit, stat_unit;
     unsigned step_len, stat_type, stat_len;
     get_Timedef(step_unit, step_len, stat_type, stat_unit, stat_len);
@@ -1511,7 +1513,7 @@ bool Timedef::timeunit_conversion(TimedefUnit unit, int& timemul)
             throw_consistency_error("normalising time", "time unit is missing (255)");
         default:
         {
-            stringstream ss;
+            std::stringstream ss;
             ss << "cannot normalise time: time unit is unknown (" << (int)unit << ")";
             throw std::runtime_error(ss.str());
         }
@@ -1642,7 +1644,7 @@ const char* Timedef::timeunit_suffix(TimedefUnit unit)
             throw_consistency_error("finding time unit suffix", "time unit is missing (255)");
         default:
         {
-            stringstream ss;
+            std::stringstream ss;
             ss << "cannot find find time unit suffix: time unit is unknown (" << (int)unit << ")";
             throw std::runtime_error(ss.str());
         }
@@ -1710,7 +1712,7 @@ std::string BUFR::exactQuery() const
     get_BUFR(un, va);
 
     std::stringstream o;
-    string suffix = formatTimeUnit((t_enum_GRIB_TIMEUNIT)un);
+    std::string suffix = formatTimeUnit((t_enum_GRIB_TIMEUNIT)un);
     o << formatStyle(Style::BUFR) << "," << va << suffix;
     return o.str();
 }
@@ -1760,7 +1762,7 @@ bool BUFR::is_seconds(unsigned unit)
 			return false;
         default:
         {
-            stringstream ss;
+            std::stringstream ss;
             ss << "cannot normalise TimeRange: time unit is unknown (" << unit << ")";
             throw std::runtime_error(ss.str());
         }
@@ -1784,7 +1786,7 @@ unsigned BUFR::seconds(unsigned unit, unsigned value)
         case GRIB_TIMEUNIT_SECOND: return value * 1;
         default:
         {
-            stringstream ss;
+            std::stringstream ss;
             ss << "cannot normalise TimeRange: time unit (" << unit << ") does not convert to seconds";
             throw std::runtime_error(ss.str());
         }
@@ -1806,7 +1808,7 @@ unsigned BUFR::months(unsigned unit, unsigned value)
         case GRIB_TIMEUNIT_CENTURY: return value * 12*100;
         default:
         {
-            stringstream ss;
+            std::stringstream ss;
             ss << "cannot normalise TimeRange: time unit (" << unit << ") does not convert to months";
             throw std::runtime_error(ss.str());
         }
