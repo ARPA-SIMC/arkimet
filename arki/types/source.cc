@@ -197,4 +197,3 @@ void Source::init()
 
 }
 }
-#include <arki/types/core.tcc>

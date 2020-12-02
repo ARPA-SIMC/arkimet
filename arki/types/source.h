@@ -4,7 +4,7 @@
 /// Represent where the data for a metadata can be found
 
 #include <arki/libconfig.h>
-#include <arki/types/core.h>
+#include <arki/types.h>
 #include <arki/segment/fwd.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -36,9 +36,13 @@ struct traits<Source>
 /**
  * The place where the data is stored
  */
-struct Source : public types::CoreType<Source>
+struct Source : public Type
 {
     std::string format;
+
+    types::Code type_code() const override { return traits<Source>::type_code; }
+    size_t serialisationSizeLength() const override { return traits<Source>::type_sersize_bytes; }
+    std::string tag() const override { return traits<Source>::type_tag; }
 
     typedef source::Style Style;
 

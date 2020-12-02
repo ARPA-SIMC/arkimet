@@ -1,7 +1,7 @@
 #ifndef ARKI_TYPES_VALUE_H
 #define ARKI_TYPES_VALUE_H
 
-#include <arki/types/core.h>
+#include <arki/types.h>
 #include <string>
 
 namespace arki {
@@ -24,9 +24,13 @@ struct traits<Value>
  * it can be extracted from metadata or dataset indices and completed using the
  * rest of metadata values, avoiding disk lookips
  */
-struct Value : public types::CoreType<Value>
+struct Value : public Type
 {
     std::string buffer;
+
+    types::Code type_code() const override { return traits<Value>::type_code; }
+    size_t serialisationSizeLength() const override { return traits<Value>::type_sersize_bytes; }
+    std::string tag() const override { return traits<Value>::type_tag; }
 
     bool equals(const Type& o) const override;
     int compare(const Type& o) const override;

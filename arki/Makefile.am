@@ -150,8 +150,6 @@ nobase_dist_arkiinclude_HEADERS = \
 		types/bbox.h \
 		types.h \
 		types-init.h \
-		types/core.h \
-		types/core.tcc \
 		types/encoded.h \
 		types/level.h \
 		types/note.h \
