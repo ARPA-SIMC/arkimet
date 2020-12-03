@@ -69,8 +69,10 @@ protected:
 
 public:
     Metadata();
+    Metadata(const Metadata&) = delete;
     ~Metadata();
-    Metadata(const Metadata&);
+
+    Metadata& operator=(const Metadata&) = delete;
 
     Metadata* clone() const;
 

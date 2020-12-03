@@ -50,11 +50,6 @@ Metadata::Metadata()
 {
 }
 
-Metadata::Metadata(const Metadata& o)
-    : m_items(o.m_items), m_notes(o.m_notes), m_source(o.m_source ? o.m_source->clone() : nullptr), m_data(o.m_data)
-{
-}
-
 Metadata::~Metadata()
 {
     delete m_source;
@@ -71,7 +66,12 @@ void Metadata::clear()
 
 Metadata* Metadata::clone() const
 {
-    return new Metadata(*this);
+    std::unique_ptr<Metadata> res(new Metadata);
+    res->m_items = m_items;
+    res->m_notes = m_notes;
+    res->m_source = m_source ? m_source->clone() : nullptr;
+    res->m_data = m_data;
+    return res.release();
 }
 
 unique_ptr<Metadata> Metadata::create_empty()
@@ -386,7 +386,8 @@ std::shared_ptr<Metadata> Metadata::read_yaml(LineReader& in, const std::string&
     for (YamlStream::const_iterator i = yamlStream.begin(in);
             i != yamlStream.end(); ++i)
     {
-        res = std::make_shared<Metadata>();
+        if (!res)
+            res = std::make_shared<Metadata>();
         types::Code type = types::parseCodeName(i->first);
         string val = str::strip(i->second);
         switch (type)

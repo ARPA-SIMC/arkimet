@@ -860,7 +860,7 @@ callback for producing one metadata element
             return nullptr;
 
         try {
-            std::unique_ptr<Metadata> md(new Metadata(*((arkipy_Metadata*)py_md)->md));
+            std::shared_ptr<Metadata> md(((arkipy_Metadata*)py_md)->md->clone());
             bool res = self->func(std::move(md));
             if (res)
                 Py_RETURN_TRUE;

@@ -142,7 +142,7 @@ void Fixture::make_hugefile()
 
     // Import a new datum, that will get appended to it
     {
-        std::shared_ptr<Metadata> md(import_results[0].clone());
+        std::shared_ptr<Metadata> md(import_results[0]->clone());
         md->test_set("reftime", "2007-07-07 06:00:00");
         md->makeInline();
 
@@ -475,7 +475,7 @@ void CheckTest<TestFixture>::register_tests()
       implied by the segment file name (FIXME: should this be disabled for
       archives, to deal with datasets that had a change of step in their lifetime?) [corrupted]
     )", [&](Fixture& f) {
-        std::shared_ptr<Metadata> md(f.import_results[1].clone());
+        std::shared_ptr<Metadata> md(f.import_results[1]->clone());
         md->test_set("reftime", "2007-07-06 00:00:00");
         md = f.makeSegmentedChecker()->test_change_metadata(f.test_relpath, md, 0);
 
@@ -705,7 +705,7 @@ void FixTest<TestFixture>::register_tests()
         - [corrupted] segments can only be fixed by manual intervention. They
           are reported and left untouched
     )", [&](Fixture& f) {
-        std::shared_ptr<Metadata> md(f.import_results[1].clone());
+        std::shared_ptr<Metadata> md(f.import_results[1]->clone());
         md->test_set("reftime", "2007-07-06 00:00:00");
         md = f.makeSegmentedChecker()->test_change_metadata(f.test_relpath, md, 0);
 
@@ -896,7 +896,7 @@ void RepackTest<TestFixture>::register_tests()
     this->add_method("repack_corrupted", R"(
         - [corrupted] segments are not touched
     )", [&](Fixture& f) {
-        std::shared_ptr<Metadata> md(f.import_results[1].clone());
+        std::shared_ptr<Metadata> md(f.import_results[1]->clone());
         md->test_set("reftime", "2007-07-06 00:00:00");
         md = f.makeSegmentedChecker()->test_change_metadata(f.test_relpath, md, 0);
 

@@ -10,9 +10,9 @@ using namespace arki;
 using namespace arki::tests;
 using namespace arki::utils;
 
-inline unique_ptr<Metadata> wrap(const Metadata& md)
+inline std::shared_ptr<Metadata> wrap(const Metadata& md)
 {
-    return unique_ptr<Metadata>(new Metadata(md));
+    return std::shared_ptr<Metadata>(md.clone());
 }
 
 class Tests : public TestCase

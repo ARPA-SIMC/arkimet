@@ -88,7 +88,7 @@ add_method("acquire", [](Fixture& f) {
     wassert(actual(sys::timestamp("testds/2007/07-08.grib")) <= sys::timestamp("testds/2007/07-08.grib.index"));
     wassert_false(files::hasDontpackFlagfile("testds"));
 
-    f.import_results.push_back(md);
+    f.import_results.emplace_back(md.clone());
 
     wassert(f.query_results({0}));
     wassert(f.all_clean(1));

@@ -38,13 +38,13 @@ add_method("yaml", [] {
     // Read back the two metadatas
     std::shared_ptr<Metadata> md1;
     {
-        string s(str1);
+        std::string s(str1);
         auto reader = LineReader::from_chars(s.data(), s.size());
         md1 = Metadata::read_yaml(*reader, "(test memory buffer)");
     }
     std::shared_ptr<Metadata> md2;
     {
-        string s(str2);
+        std::string s(str2);
         auto reader = LineReader::from_chars(s.data(), s.size());
         md2 = Metadata::read_yaml(*reader, "(test memory buffer)");
     }

@@ -355,8 +355,8 @@ void DatasetTest::import(metadata::Collection& mds)
         {
             wassert(actual(e->dataset_name) == config().name());
             wassert(actual(e->result) == ACQ_OK);
-            import_results.push_back(e->md);
-            import_results.back().sourceBlob().unlock();
+            import_results.emplace_back(e->md.clone());
+            import_results.back()->sourceBlob().unlock();
             //fprintf(stderr, "IDX %s %zd: %s\n", testfile.c_str(), import_results.size(), e->md.sourceBlob().to_string().c_str());
         }
     }
@@ -372,9 +372,9 @@ void DatasetTest::import(const std::string& testfile)
 
 void DatasetTest::import(Metadata& md, dataset::WriterAcquireResult expected_result)
 {
-    import_results.push_back(md);
+    import_results.emplace_back(md.clone());
     auto writer(config().create_writer());
-    WriterAcquireResult res = writer->acquire(import_results.back());
+    WriterAcquireResult res = writer->acquire(*import_results.back());
     wassert(actual(res) == expected_result);
 }
 
@@ -431,10 +431,10 @@ void DatasetTest::import_all(const metadata::Collection& mds)
     auto writer = config().create_writer();
     for (const auto& md: mds)
     {
-        import_results.push_back(*md);
-        WriterAcquireResult res = writer->acquire(import_results.back());
+        import_results.emplace_back(md->clone());
+        WriterAcquireResult res = writer->acquire(*import_results.back());
         wassert(actual(res) == ACQ_OK);
-        import_results.back().sourceBlob().unlock();
+        import_results.back()->sourceBlob().unlock();
     }
 
     utils::files::removeDontpackFlagfile(cfg->value("path"));
@@ -466,7 +466,7 @@ void DatasetTest::query_results(const dataset::DataQuery& q, const std::vector<i
     config().create_reader()->query_data(q, [&](std::shared_ptr<Metadata>&& md) {
         unsigned idx;
         for (idx = 0; idx < import_results.size(); ++idx)
-            if (import_results[idx].compare_items(*md) == 0)
+            if (import_results[idx]->compare_items(*md) == 0)
                 break;
         if (idx == import_results.size())
             found.push_back(-1);
