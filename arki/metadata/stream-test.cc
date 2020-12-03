@@ -99,23 +99,22 @@ void Tests::register_tests() {
 // Test compression
 add_method("stream", [] {
     // Create test metadata
-    Metadata md1;
-    md1.set_source(types::Source::createURL("grib", "http://www.example.org"));
-    fill(md1);
+    auto md1 = std::make_shared<Metadata>();
+    md1->set_source(types::Source::createURL("grib", "http://www.example.org"));
+    fill(*md1);
 
-    Metadata md2;
-    md2 = md1;
-    md2.test_set(types::Origin::createBUFR(1, 2));
+    std::shared_ptr<Metadata> md2(md1->clone());
+    md2->test_set(types::Origin::createBUFR(1, 2));
 
     const char* teststr = "this is a test";
-    md1.set_source_inline("test", metadata::DataManager::get().to_data("test", vector<uint8_t>(teststr, teststr + 14)));
+    md1->set_source_inline("test", metadata::DataManager::get().to_data("test", vector<uint8_t>(teststr, teststr + 14)));
 
     // Encode everything in a buffer
     size_t end1, end2;
     std::string input = tempfile_to_string([&](sys::NamedFileDescriptor& out) {
-        md1.write(out);
+        md1->write(out);
         end1 = out.lseek(0, SEEK_CUR);
-        md2.write(out);
+        md2->write(out);
         end2 = out.lseek(0, SEEK_CUR);
     });
 
@@ -151,8 +150,8 @@ add_method("stream", [] {
 
     // See that we've got what we expect
     wassert(actual(results.size()) == 2u);
-    wassert_true(cmpmd(md1, results[0]));
-    wassert_true(cmpmd(md2, results[1]));
+    wassert_true(cmpmd(*md1, results[0]));
+    wassert_true(cmpmd(*md2, results[1]));
 
 	results.clear();
 
@@ -164,8 +163,8 @@ add_method("stream", [] {
 
     // See that we've got what we expect
     wassert(actual(results.size()) == 2u);
-    wassert_true(cmpmd(md1, results[0]));
-    wassert_true(cmpmd(md2, results[1]));
+    wassert_true(cmpmd(*md1, results[0]));
+    wassert_true(cmpmd(*md2, results[1]));
 });
 
 // Send data split in less chunks than we have metadata

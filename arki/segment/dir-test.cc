@@ -59,7 +59,6 @@ void TestInternals::register_tests() {
 
 // Scan a well-known sample
 add_method("scanner", [] {
-    Metadata md;
     segment::dir::Scanner scanner("odimh5", "inbound/fixture.odimh5");
     scanner.list_files();
     wassert(actual(scanner.on_disk.size()) == 3u);
@@ -70,10 +69,9 @@ add_method("scanner", [] {
     metadata::Collection mds;
     scanner.scan(reader, mds.inserter_func());
     wassert(actual(mds.size()) == 3u);
-    md = mds[0];
 
     // Check the source info
-    wassert(actual(md.source().cloneType()).is_source_blob("odimh5", sys::abspath("."), "inbound/fixture.odimh5", 0, 49057));
+    wassert(actual(mds[0].source().cloneType()).is_source_blob("odimh5", sys::abspath("."), "inbound/fixture.odimh5", 0, 49057));
 });
 
 }

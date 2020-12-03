@@ -391,12 +391,13 @@ std::shared_ptr<Metadata> Metadata::read_yaml(LineReader& in, const std::string&
     if (in.eof())
         return std::shared_ptr<Metadata>();
 
-    auto res = std::make_shared<Metadata>();
+    std::shared_ptr<Metadata> res;
 
     YamlStream yamlStream;
     for (YamlStream::const_iterator i = yamlStream.begin(in);
             i != yamlStream.end(); ++i)
     {
+        res = std::make_shared<Metadata>();
         types::Code type = types::parseCodeName(i->first);
         string val = str::strip(i->second);
         switch (type)

@@ -18,6 +18,7 @@ namespace metadata {
 /**
  * Consumer that collects all metadata into a vector
  */
+// TODO: turn this into a clean vector of shared_ptrs, without the extra dereferencing on indexing
 class Collection
 {
 protected:

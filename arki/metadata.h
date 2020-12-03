@@ -67,12 +67,12 @@ protected:
     /// Inline data, or cached version of previously read data
     std::shared_ptr<metadata::Data> m_data;
 
+    Metadata& operator=(const Metadata&);
+
 public:
     Metadata();
     ~Metadata();
     Metadata(const Metadata&);
-
-    Metadata& operator=(const Metadata&);
 
     Metadata* clone() const;
 
