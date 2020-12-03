@@ -147,14 +147,14 @@ std::string Type::exactQuery() const
     return ss.str();
 }
 
-unique_ptr<Type> decode(core::BinaryDecoder& dec)
+unique_ptr<Type> Type::decode(core::BinaryDecoder& dec)
 {
     types::Code code;
     core::BinaryDecoder inner = dec.pop_type_envelope(code);
     return decodeInner(code, inner);
 }
 
-unique_ptr<Type> decodeInner(types::Code code, core::BinaryDecoder& dec)
+unique_ptr<Type> Type::decodeInner(types::Code code, core::BinaryDecoder& dec)
 {
     return std::unique_ptr<Type>(types::MetadataType::get(code)->decode_func(dec));
 }

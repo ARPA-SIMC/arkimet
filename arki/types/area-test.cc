@@ -68,7 +68,7 @@ add_method("vm2_derived_lookup", [] {
         vb2.encode(enc);
 
         core::BinaryDecoder dec(full);
-        p2 = decodeInner(arki::TYPE_AREA, dec);
+        p2 = Type::decodeInner(arki::TYPE_AREA, dec);
     }
     auto v2 = dynamic_cast<const area::VM2*>(p2.get());
 
@@ -83,7 +83,7 @@ add_method("vm2_derived_lookup", [] {
         p2->encodeWithoutEnvelope(enc);
 
         core::BinaryDecoder dec(full);
-        p2 = decodeInner(arki::TYPE_AREA, dec);
+        p2 = Type::decodeInner(arki::TYPE_AREA, dec);
     }
     v2 = dynamic_cast<const area::VM2*>(p2.get());
     wassert_true(v2->derived_values() != vb1);
@@ -96,7 +96,7 @@ add_method("vm2_derived_lookup", [] {
         p1->encode_for_indexing(enc);
 
         core::BinaryDecoder dec(full);
-        p2 = decodeInner(arki::TYPE_AREA, dec);
+        p2 = Type::decodeInner(arki::TYPE_AREA, dec);
     }
     v2 = dynamic_cast<const area::VM2*>(p2.get());
     wassert_true(v2->derived_values() == vb1);
@@ -127,11 +127,11 @@ add_method("vm2_derived_encoding", [] {
     std::unique_ptr<Type> pfull, ppart;
     {
         core::BinaryDecoder dec(full);
-        pfull = decodeInner(arki::TYPE_AREA, dec);
+        pfull = Type::decodeInner(arki::TYPE_AREA, dec);
     }
     {
         core::BinaryDecoder dec(part);
-        ppart = decodeInner(arki::TYPE_AREA, dec);
+        ppart = Type::decodeInner(arki::TYPE_AREA, dec);
     }
     wassert(actual(pfull) == ppart);
 });

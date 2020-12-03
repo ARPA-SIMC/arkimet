@@ -174,7 +174,7 @@ void ActualType::serializes() const
     _actual->encodeWithoutEnvelope(e);
     size_t inner_enc_size = enc.size();
     core::BinaryDecoder dec(enc);
-    wassert(actual(decodeInner(code, dec)) == _actual);
+    wassert(actual(Type::decodeInner(code, dec)) == _actual);
 
     // Binary encoding, with envelope
     enc.clear();
@@ -182,7 +182,7 @@ void ActualType::serializes() const
     // Rewritten in the next two lines due to, it seems, a bug in old gccs
     // inner_ensure_equals(types::decode((const unsigned char*)enc.data(), enc.size()).upcast<T>(), _actual);
     dec = core::BinaryDecoder(enc);
-    unique_ptr<Type> decoded = types::decode(dec);
+    unique_ptr<Type> decoded = types::Type::decode(dec);
     wassert(actual(decoded) == _actual);
 
     dec = core::BinaryDecoder(enc);
@@ -190,7 +190,7 @@ void ActualType::serializes() const
     core::BinaryDecoder inner = dec.pop_type_envelope(dec_code);
     wassert(actual(dec_code) == code);
     wassert(actual(inner.size) == inner_enc_size);
-    wassert(actual(decodeInner(code, inner)) == _actual);
+    wassert(actual(Type::decodeInner(code, inner)) == _actual);
 
     // String encoding
     stringstream ss;

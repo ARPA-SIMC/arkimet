@@ -54,7 +54,7 @@ unique_ptr<Type> AttrSubIndex::q_select_one(int id) const
         const void* buf = m_select_one->fetchBlob(0);
         int len = m_select_one->fetchBytes(0);
         core::BinaryDecoder dec((const uint8_t*)buf, len);
-        res = types::decodeInner(code, dec);
+        res = types::Type::decodeInner(code, dec);
     }
     return res;
 }
@@ -172,7 +172,7 @@ std::vector<int> AttrSubIndex::query(const matcher::OR& m) const
         const void* buf = m_select_all->fetchBlob(1);
         int len = m_select_all->fetchBytes(1);
         core::BinaryDecoder dec((const uint8_t*)buf, len);
-        unique_ptr<Type> t = types::decodeInner(code, dec);
+        unique_ptr<Type> t = types::Type::decodeInner(code, dec);
         if (m.matchItem(*t))
             ids.push_back(m_select_all->fetch<int>(0));
     }

@@ -312,7 +312,7 @@ void Metadata::read_inner(core::BinaryDecoder& dec, unsigned version, const meta
                 set_source(types::Source::decodeRelative(inner, rc.basedir));
                 break;
             default:
-                set(types::decodeInner(el_type, inner));
+                set(types::Type::decodeInner(el_type, inner));
                 break;
         }
     }
