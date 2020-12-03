@@ -334,8 +334,7 @@ MockBufrScanner::~MockBufrScanner()
 void MockBufrScanner::scan_extra(dballe::BinaryMessage& rmsg, std::shared_ptr<dballe::Message> msg, std::shared_ptr<Metadata> md)
 {
     auto new_md = engine->lookup(reinterpret_cast<const uint8_t*>(rmsg.data.data()), rmsg.data.size());
-    for (const auto& i: *new_md)
-        md->set(*i.second);
+    md->merge(*new_md);
 }
 
 }

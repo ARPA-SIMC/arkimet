@@ -52,12 +52,9 @@ class Formatter;
 /**
  * Metadata information about a message
  */
-struct Metadata : public types::ItemSet
+struct Metadata : protected types::ItemSet
 {
 protected:
-    /// Buffer with the encoded metadata
-    std::vector<uint8_t> buffer;
-
     /// Annotations, kept binary-serialized to string
     std::vector<uint8_t> m_notes;
 
@@ -75,6 +72,22 @@ public:
     Metadata& operator=(const Metadata&);
 
     Metadata* clone() const;
+
+    bool has(types::Code code) const { return ItemSet::has(code); }
+    const types::Type* get(types::Code code) const { return ItemSet::get(code); }
+    template<typename T>
+    const T* get() const { return ItemSet::get<T>(); }
+    void set(const types::Type& item) { ItemSet::set(item); }
+    template<typename T>
+    void set(std::unique_ptr<T> i) { ItemSet::set(std::move(i)); }
+    void set(const std::string& type, const std::string& val) { ItemSet::set(type, val); }
+    void unset(types::Code code) { ItemSet::unset(code); }
+    void clear();
+
+    /// Copy all types from md into this metadata
+    void merge(const Metadata& md);
+
+    void diff_items(const Metadata& o, std::function<void(types::Code code, const types::Type* first, const types::Type* second)> dest) const;
 
     void test_set(const types::Type& item)
     {

@@ -60,6 +60,9 @@ public:
     /// Match a full ItemSet
     bool operator()(const types::ItemSet& md) const;
 
+    /// Match a Metadata
+    bool operator()(const Metadata& md) const;
+
     /// Match a time interval
     bool operator()(const core::Interval& interval) const;
 

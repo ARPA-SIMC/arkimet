@@ -44,6 +44,13 @@ bool Matcher::operator()(const types::ItemSet& md) const
     return true;
 }
 
+bool Matcher::operator()(const Metadata& md) const
+{
+    if (m_impl.get()) return m_impl->matchMetadata(md);
+    // An empty matcher always matches
+    return true;
+}
+
 bool Matcher::operator()(const core::Interval& interval) const
 {
     if (m_impl.get()) return m_impl->match_interval(interval);

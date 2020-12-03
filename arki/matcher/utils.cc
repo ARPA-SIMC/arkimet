@@ -5,6 +5,7 @@
 #include "reftime/parser.h"
 #include "arki/core/binary.h"
 #include "arki/types/itemset.h"
+#include "arki/metadata.h"
 #include "arki/utils/string.h"
 #include "arki/utils/regexp.h"
 #include <cassert>
@@ -245,6 +246,20 @@ static bool mdmatch(const Implementation& matcher, const COLL& c)
 }
 
 bool AND::matchItemSet(const types::ItemSet& md) const
+{
+    if (empty()) return true;
+
+    for (const auto& i: components)
+    {
+        if (!i.second) return false;
+        const types::Type* item = md.get(i.first);
+        if (!item) return false;
+        if (!i.second->matchItem(*item)) return false;
+    }
+    return true;
+}
+
+bool AND::matchMetadata(const Metadata& md) const
 {
     if (empty()) return true;
 

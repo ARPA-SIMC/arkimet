@@ -71,6 +71,15 @@ Metadata& Metadata::operator=(const Metadata& o)
     return *this;
 }
 
+void Metadata::clear()
+{
+    ItemSet::clear();
+    m_notes.clear();
+    delete m_source;
+    m_source = nullptr;
+    m_data.reset();
+}
+
 Metadata* Metadata::clone() const
 {
     return new Metadata(*this);
@@ -84,6 +93,29 @@ unique_ptr<Metadata> Metadata::create_empty()
 unique_ptr<Metadata> Metadata::create_copy(const Metadata& md)
 {
     return unique_ptr<Metadata>(md.clone());
+}
+
+void Metadata::merge(const Metadata& md)
+{
+    for (const auto& i: md)
+        set(*i.second);
+}
+
+void Metadata::diff_items(const Metadata& o, std::function<void(types::Code code, const types::Type* first, const types::Type* second)> dest) const
+{
+    for (const auto& i: *this)
+    {
+        const Type* other = o.get(i.first);
+        if (other && (*i.second) == *other)
+            continue;
+        dest(i.first, i.second, other);
+    }
+
+    for (const auto& i: o)
+    {
+        if (!has(i.first))
+            dest(i.first, nullptr, i.second);
+    }
 }
 
 #if 0

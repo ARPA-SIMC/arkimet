@@ -170,37 +170,27 @@ void ActualMetadata::not_contains(const std::string& field, const std::string& e
 
 void ActualMetadata::is_similar(const Metadata& expected)
 {
-    for (Metadata::const_iterator i = expected.begin(); i != expected.end(); ++i)
-    {
-        if (i->first == TYPE_ASSIGNEDDATASET) continue;
+    _actual.diff_items(expected, [](types::Code code, const types::Type* iact, const types::Type* iexp) {
+        if (code == TYPE_ASSIGNEDDATASET) return;
 
-        const Type* other = _actual.get(i->first);
-        if (!other)
+        if (!iexp)
         {
             std::stringstream ss;
-            ss << "missing metadata item " << types::formatCode(i->first) << ": " << *(i->second);
+            ss << "unexpected metadata item " << types::formatCode(code) << ": " << *iact;
             throw TestFailed(ss.str());
         }
 
-        if ((*i->second) != *other)
+        if (!iact)
         {
             std::stringstream ss;
-            ss << i->first << " differ: " << types::formatCode(i->first) << ": expected " << *(i->second) << " got " << *other;
+            ss << "missing metadata item " << types::formatCode(code) << ": " << *iexp;
             throw TestFailed(ss.str());
         }
-    }
 
-    for (Metadata::const_iterator i = _actual.begin(); i != _actual.end(); ++i)
-    {
-        if (i->first == TYPE_ASSIGNEDDATASET) continue;
-
-        if (!expected.has(i->first))
-        {
-            std::stringstream ss;
-            ss << "unexpected metadata item " << i->first << ": " << (*i->second);
-            throw TestFailed(ss.str());
-        }
-    }
+        std::stringstream ss;
+        ss << "items differ: " << types::formatCode(code) << ": expected " << *iexp << " got " << *iact;
+        throw TestFailed(ss.str());
+    });
 }
 
 void ActualMetadata::is_set(const std::string& field)

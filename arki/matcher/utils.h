@@ -149,6 +149,7 @@ public:
     bool matchItem(const types::Type& t) const override;
     bool match_buffer(types::Code code, const uint8_t* data, unsigned size) const override;
     bool matchItemSet(const types::ItemSet& s) const;
+    bool matchMetadata(const Metadata& s) const;
     bool match_interval(const core::Interval& interval) const;
 
     std::shared_ptr<OR> get(types::Code code) const;
