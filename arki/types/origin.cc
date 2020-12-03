@@ -92,12 +92,12 @@ int Origin::compare(const Type& o) const
     }
 }
 
-origin::Style Origin::style() const
+origin::Style Origin::style(const uint8_t* data, unsigned size)
 {
     return (origin::Style)data[0];
 }
 
-void Origin::get_GRIB1(unsigned& centre, unsigned& subcentre, unsigned& process) const
+void Origin::get_GRIB1(const uint8_t* data, unsigned size, unsigned& centre, unsigned& subcentre, unsigned& process)
 {
     core::BinaryDecoder dec(data + 1, size - 1);
     centre = dec.pop_uint(1, "GRIB1 origin centre");
@@ -105,7 +105,7 @@ void Origin::get_GRIB1(unsigned& centre, unsigned& subcentre, unsigned& process)
     process = dec.pop_uint(1, "GRIB1 origin process");
 }
 
-void Origin::get_GRIB2(unsigned& centre, unsigned& subcentre, unsigned& processtype, unsigned& bgprocessid, unsigned& processid) const
+void Origin::get_GRIB2(const uint8_t* data, unsigned size, unsigned& centre, unsigned& subcentre, unsigned& processtype, unsigned& bgprocessid, unsigned& processid)
 {
     core::BinaryDecoder dec(data + 1, size - 1);
     centre = dec.pop_uint(2, "GRIB2 origin centre");
@@ -115,14 +115,14 @@ void Origin::get_GRIB2(unsigned& centre, unsigned& subcentre, unsigned& processt
     processid = dec.pop_uint(1, "GRIB2 origin process ID");
 }
 
-void Origin::get_BUFR(unsigned& centre, unsigned& subcentre) const
+void Origin::get_BUFR(const uint8_t* data, unsigned size, unsigned& centre, unsigned& subcentre)
 {
     core::BinaryDecoder dec(data + 1, size - 1);
     centre = dec.pop_uint(1, "BUFR origin centre");
     subcentre = dec.pop_uint(1, "BUFR origin subcentre");
 }
 
-void Origin::get_ODIMH5(std::string& WMO, std::string& RAD, std::string& PLC) const
+void Origin::get_ODIMH5(const uint8_t* data, unsigned size, std::string& WMO, std::string& RAD, std::string& PLC)
 {
     core::BinaryDecoder dec(data + 1, size - 1);
 

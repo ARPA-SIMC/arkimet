@@ -51,17 +51,22 @@ std::string Area::formatStyle(Area::Style s)
     }
 }
 
-ValueBag Area::get_GRIB() const
+area::Style Area::style(const uint8_t* data, unsigned size)
+{
+    return (area::Style)data[0];
+}
+
+ValueBag Area::get_GRIB(const uint8_t* data, unsigned size)
 {
     core::BinaryDecoder dec(data + 1, size - 1);
     return ValueBag::decode(dec);
 }
-ValueBag Area::get_ODIMH5() const
+ValueBag Area::get_ODIMH5(const uint8_t* data, unsigned size)
 {
     core::BinaryDecoder dec(data + 1, size - 1);
     return ValueBag::decode(dec);
 }
-unsigned Area::get_VM2() const
+unsigned Area::get_VM2(const uint8_t* data, unsigned size)
 {
     core::BinaryDecoder dec(data + 1, size - 1);
     return dec.pop_uint(4, "VM station id");
@@ -104,11 +109,6 @@ int Area::compare(const Type& o) const
         default:
             throw_consistency_error("parsing Area", "unknown Area style " + formatStyle(sty));
     }
-}
-
-area::Style Area::style() const
-{
-    return (area::Style)data[0];
 }
 
 const arki::utils::geos::Geometry* Area::bbox() const

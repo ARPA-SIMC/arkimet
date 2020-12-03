@@ -80,6 +80,9 @@ public:
     /// Match a metadata item
     virtual bool matchItem(const types::Type& t) const = 0;
 
+    /// Match a metadata item
+    virtual bool match_buffer(types::Code code, const uint8_t* data, unsigned size) const;
+
     /// Format back into a string that can be parsed again
     virtual std::string toString() const = 0;
 
@@ -105,6 +108,7 @@ public:
 
     std::string name() const override;
     bool matchItem(const types::Type& t) const override;
+    bool match_buffer(types::Code code, const uint8_t* data, unsigned size) const override;
     bool match_interval(const core::Interval& interval) const;
 
     // Serialise as "type:original definition"
@@ -143,6 +147,7 @@ public:
     std::string name() const override;
 
     bool matchItem(const types::Type& t) const override;
+    bool match_buffer(types::Code code, const uint8_t* data, unsigned size) const override;
     bool matchItemSet(const types::ItemSet& s) const;
     bool match_interval(const core::Interval& interval) const;
 

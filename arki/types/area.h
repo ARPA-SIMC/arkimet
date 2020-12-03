@@ -53,11 +53,15 @@ public:
     int compare(const Type& o) const override;
 
     // Get the element style
-    area::Style style() const;
+    static area::Style style(const uint8_t* data, unsigned size);
+    static ValueBag get_GRIB(const uint8_t* data, unsigned size);
+    static ValueBag get_ODIMH5(const uint8_t* data, unsigned size);
+    static unsigned get_VM2(const uint8_t* data, unsigned size);
 
-    ValueBag get_GRIB() const;
-    ValueBag get_ODIMH5() const;
-    unsigned get_VM2() const;
+    area::Style style() const { return style(data, size); }
+    ValueBag get_GRIB() const { return get_GRIB(data, size); }
+    ValueBag get_ODIMH5() const { return get_ODIMH5(data, size); }
+    unsigned get_VM2() const { return get_VM2(data, size); }
 
     /// Convert a string into a style
     static Style parseStyle(const std::string& str);

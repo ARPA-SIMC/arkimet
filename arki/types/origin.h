@@ -50,11 +50,26 @@ public:
     int compare(const Type& o) const override;
 
     // Get the element style
-    origin::Style style() const;
-    void get_GRIB1(unsigned& centre, unsigned& subcentre, unsigned& process) const;
-    void get_GRIB2(unsigned& centre, unsigned& subcentre, unsigned& processtype, unsigned& bgprocessid, unsigned& processid) const;
-    void get_BUFR(unsigned& centre, unsigned& subcentre) const;
-    void get_ODIMH5(std::string& WMO, std::string& RAD, std::string& PLC) const;
+    static origin::Style style(const uint8_t* data, unsigned size);
+    static void get_GRIB1(const uint8_t* data, unsigned size, unsigned& centre, unsigned& subcentre, unsigned& process);
+    static void get_GRIB2(const uint8_t* data, unsigned size, unsigned& centre, unsigned& subcentre, unsigned& processtype, unsigned& bgprocessid, unsigned& processid);
+    static void get_BUFR(const uint8_t* data, unsigned size, unsigned& centre, unsigned& subcentre);
+    static void get_ODIMH5(const uint8_t* data, unsigned size, std::string& WMO, std::string& RAD, std::string& PLC);
+
+    origin::Style style() const { return style(data, size); }
+    void get_GRIB1(unsigned& centre, unsigned& subcentre, unsigned& process) const { return get_GRIB1(data, size, centre, subcentre, process); }
+    void get_GRIB2(unsigned& centre, unsigned& subcentre, unsigned& processtype, unsigned& bgprocessid, unsigned& processid) const
+    {
+        return get_GRIB2(data, size, centre, subcentre, processtype, bgprocessid, processid);
+    }
+    void get_BUFR(unsigned& centre, unsigned& subcentre) const
+    {
+        return get_BUFR(data, size, centre, subcentre);
+    }
+    void get_ODIMH5(std::string& WMO, std::string& RAD, std::string& PLC) const
+    {
+        return get_ODIMH5(data, size, WMO, RAD, PLC);
+    }
 
     /// Convert a string into a style
     static origin::Style parseStyle(const std::string& str);

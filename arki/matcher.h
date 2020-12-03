@@ -63,6 +63,9 @@ public:
     /// Match a time interval
     bool operator()(const core::Interval& interval) const;
 
+    /// Match metadata item in a binary encoded buffer
+    bool operator()(types::Code code, const uint8_t* data, unsigned size) const;
+
     std::shared_ptr<matcher::OR> get(types::Code code) const;
 
     void foreach_type(std::function<void(types::Code, const matcher::OR&)> dest) const;

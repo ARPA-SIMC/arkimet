@@ -51,6 +51,13 @@ bool Matcher::operator()(const core::Interval& interval) const
     return true;
 }
 
+bool Matcher::operator()(types::Code code, const uint8_t* data, unsigned size) const
+{
+    if (m_impl.get()) return m_impl->match_buffer(code, data, size);
+    // An empty matcher always matches
+    return true;
+}
+
 std::shared_ptr<matcher::OR> Matcher::get(types::Code code) const
 {
     if (m_impl) return m_impl->get(code);
