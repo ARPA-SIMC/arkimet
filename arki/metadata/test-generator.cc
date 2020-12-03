@@ -132,7 +132,7 @@ bool Generator::_generate(const Samples::const_iterator& i, Metadata& md, metada
 
     for (vector<Type*>::const_iterator j = i->second.begin(); j != i->second.end(); ++j)
     {
-        md.set(**j);
+        md.test_set(**j);
         Samples::const_iterator next = i;
         ++next;
         if (!_generate(next, md, cons)) return false;

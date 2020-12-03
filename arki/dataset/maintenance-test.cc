@@ -143,7 +143,7 @@ void Fixture::make_hugefile()
     // Import a new datum, that will get appended to it
     {
         Metadata md = import_results[0];
-        md.set("reftime", "2007-07-07 06:00:00");
+        md.test_set("reftime", "2007-07-07 06:00:00");
         md.makeInline();
 
         auto writer(makeSegmentedWriter());
@@ -476,7 +476,7 @@ void CheckTest<TestFixture>::register_tests()
       archives, to deal with datasets that had a change of step in their lifetime?) [corrupted]
     )", [&](Fixture& f) {
         Metadata md = f.import_results[1];
-        md.set("reftime", "2007-07-06 00:00:00");
+        md.test_set("reftime", "2007-07-06 00:00:00");
         f.makeSegmentedChecker()->test_change_metadata(f.test_relpath, md, 0);
 
         wassert(f.state_is(3, segment::SEGMENT_CORRUPTED));
@@ -706,7 +706,7 @@ void FixTest<TestFixture>::register_tests()
           are reported and left untouched
     )", [&](Fixture& f) {
         Metadata md = f.import_results[1];
-        md.set("reftime", "2007-07-06 00:00:00");
+        md.test_set("reftime", "2007-07-06 00:00:00");
         f.makeSegmentedChecker()->test_change_metadata(f.test_relpath, md, 0);
 
         {
@@ -897,7 +897,7 @@ void RepackTest<TestFixture>::register_tests()
         - [corrupted] segments are not touched
     )", [&](Fixture& f) {
         Metadata md = f.import_results[1];
-        md.set("reftime", "2007-07-06 00:00:00");
+        md.test_set("reftime", "2007-07-06 00:00:00");
         f.makeSegmentedChecker()->test_change_metadata(f.test_relpath, md, 0);
 
         {

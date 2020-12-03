@@ -71,6 +71,25 @@ public:
 
     Metadata* clone() const;
 
+    void test_set(const types::Type& item)
+    {
+        std::unique_ptr<types::Type> clone(item.clone());
+        types::ItemSet::set(std::move(clone));
+    }
+
+    void test_set(std::unique_ptr<types::Type> item)
+    {
+        types::ItemSet::set(std::move(item));
+    }
+
+    template<typename T>
+    void test_set(std::unique_ptr<T> i) { test_set(std::unique_ptr<types::Type>(i.release())); }
+
+    void test_set(const std::string& type, const std::string& val)
+    {
+        test_set(types::decodeString(types::parseCodeName(type.c_str()), val));
+    }
+
     /// Check if a source has been set
     bool has_source() const { return m_source; }
     /// Return the source if present, else raise an exception

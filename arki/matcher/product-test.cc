@@ -39,7 +39,7 @@ add_method("grib", [] {
 	ensure_not_matches("product:BUFR,1,2,3", md);
 
     // If we have more than one product, we match any of them
-    md.set(Product::createGRIB1(2, 3, 4));
+    md.test_set(Product::createGRIB1(2, 3, 4));
     ensure_matches("product:GRIB1,2", md);
 });
 
@@ -50,7 +50,7 @@ add_method("bufr", [] {
 
     ValueBag vb;
     vb.set("name", values::Value::create_string("antani"));
-    md.set(Product::createBUFR(1, 2, 3, vb));
+    md.test_set(Product::createBUFR(1, 2, 3, vb));
 
 	ensure_matches("product:BUFR", md);
 	ensure_matches("product:BUFR,1", md);
@@ -77,7 +77,7 @@ add_method("vm2", [] {
     skip_unless_vm2();
     Metadata md;
     arki::tests::fill(md);
-    md.set(Product::createVM2(1));
+    md.test_set(Product::createVM2(1));
 
 	ensure_matches("product:VM2", md);
 	ensure_matches("product:VM2,", md);

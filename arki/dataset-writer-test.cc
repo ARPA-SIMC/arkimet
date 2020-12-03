@@ -232,7 +232,7 @@ this->add_method("import_error", [](Fixture& f) {
     std::string format = f.cfg->value("format");
     Metadata md;
     fill(md);
-    md.set("reftime", "2018-01-01T00:00:00");
+    md.test_set("reftime", "2018-01-01T00:00:00");
     md.set_source_inline(format, metadata::DataManager::get().to_unreadable_data(1));
 
     auto ds = f.config().create_writer();
@@ -355,7 +355,7 @@ this->add_method("import_before_delete_age", [](Fixture& f) {
 
 this->add_method("second_resolution", [](Fixture& f) {
     Metadata md(f.td.mds[1]);
-    md.set(types::Reftime::createPosition(Time(2007, 7, 7, 0, 0, 0)));
+    md.test_set(types::Reftime::createPosition(Time(2007, 7, 7, 0, 0, 0)));
 
     // Import a first metadata to create a segment to repack
     {
@@ -363,7 +363,7 @@ this->add_method("second_resolution", [](Fixture& f) {
         wassert(actual(*writer).import(md));
     }
 
-    md.set(types::Reftime::createPosition(Time(2007, 7, 7, 0, 0, 1)));
+    md.test_set(types::Reftime::createPosition(Time(2007, 7, 7, 0, 0, 1)));
     {
         auto writer = f.config().create_writer();
         wassert(actual(*writer).import(md));
@@ -382,7 +382,7 @@ auto test_same_segment_fail = [](Fixture& f, unsigned fail_idx, dataset::Replace
     metadata::Collection mds;
     for (unsigned idx = 0; idx < 3; ++idx)
     {
-        md.set(types::Reftime::createPosition(Time(2018, 1, 1, idx, 0, 0)));
+        md.test_set(types::Reftime::createPosition(Time(2018, 1, 1, idx, 0, 0)));
         if (idx == fail_idx)
             md.set_source_inline(format, metadata::DataManager::get().to_unreadable_data(1));
         else
@@ -431,7 +431,7 @@ auto test_different_segment_fail = [](Fixture& f, unsigned fail_idx, dataset::Re
     metadata::Collection mds;
     for (unsigned idx = 0; idx < 3; ++idx)
     {
-        md.set(types::Reftime::createPosition(Time(2018, idx + 1, 1, 0, 0, 0)));
+        md.test_set(types::Reftime::createPosition(Time(2018, idx + 1, 1, 0, 0, 0)));
         if (idx == fail_idx)
             md.set_source_inline(format, metadata::DataManager::get().to_unreadable_data(1));
         else

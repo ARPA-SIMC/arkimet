@@ -126,9 +126,9 @@ struct ConcurrentImporter : public subprocess::Child
             for (unsigned i = initial; i < 60; i += increment)
             {
                 if (increment_year)
-                    md.set(types::Reftime::createPosition(core::Time(2000 + i, 6, 1, 0, 0, 0)));
+                    md.test_set(types::Reftime::createPosition(core::Time(2000 + i, 6, 1, 0, 0, 0)));
                 else
-                    md.set(types::Reftime::createPosition(core::Time(2000, 6, 1, 0, 0, i)));
+                    md.test_set(types::Reftime::createPosition(core::Time(2000, 6, 1, 0, 0, i)));
                 //fprintf(stderr, "%d: %d\n", (int)getpid(), i);
                 auto res = ds->acquire(md);
                 if (res != dataset::ACQ_OK)
@@ -484,7 +484,7 @@ this->add_method("write_repack", [](Fixture& f) {
     core::lock::TestWait lock_wait;
 
     Metadata md(f.td.mds[1]);
-    md.set(types::Reftime::createPosition(Time(2007, 7, 7, 0, 0, 0)));
+    md.test_set(types::Reftime::createPosition(Time(2007, 7, 7, 0, 0, 0)));
 
     // Import a first metadata to create a segment to repack
     {
@@ -496,7 +496,7 @@ this->add_method("write_repack", [](Fixture& f) {
     rf.during([&]{
         for (unsigned minute = 0; minute < 60; ++minute)
         {
-            md.set(types::Reftime::createPosition(Time(2007, 7, 7, 1, minute, 0)));
+            md.test_set(types::Reftime::createPosition(Time(2007, 7, 7, 1, minute, 0)));
             auto writer = f.config().create_writer();
             wassert(actual(*writer).import(md));
         }

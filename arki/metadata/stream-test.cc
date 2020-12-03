@@ -105,7 +105,7 @@ add_method("stream", [] {
 
     Metadata md2;
     md2 = md1;
-    md2.set(types::Origin::createBUFR(1, 2));
+    md2.test_set(types::Origin::createBUFR(1, 2));
 
     const char* teststr = "this is a test";
     md1.set_source_inline("test", metadata::DataManager::get().to_data("test", vector<uint8_t>(teststr, teststr + 14)));
