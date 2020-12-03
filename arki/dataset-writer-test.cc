@@ -262,7 +262,7 @@ this->add_method("import_batch_replace_never", [](Fixture& f) {
 
     std::shared_ptr<Metadata> mds[3];
     for (unsigned i = 0; i < 3; ++i)
-        mds[i].reset(f.td.mds[i].clone());
+        mds[i] = f.td.mds[i].clone();
     batch.clear();
     batch.emplace_back(make_shared<dataset::WriterBatchElement>(*mds[0]));
     batch.emplace_back(make_shared<dataset::WriterBatchElement>(*mds[1]));
@@ -303,7 +303,7 @@ this->add_method("import_batch_replace_always", [](Fixture& f) {
 
     std::shared_ptr<Metadata> mds[3];
     for (unsigned i = 0; i < 3; ++i)
-        mds[i].reset(f.td.mds[i].clone());
+        mds[i] = f.td.mds[i].clone();
     batch.clear();
     batch.emplace_back(make_shared<dataset::WriterBatchElement>(*mds[0]));
     batch.emplace_back(make_shared<dataset::WriterBatchElement>(*mds[1]));

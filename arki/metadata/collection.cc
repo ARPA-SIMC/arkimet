@@ -183,7 +183,7 @@ void Collection::add(dataset::Reader& reader, const std::string& q)
 
 void Collection::push_back(const Metadata& md)
 {
-    acquire(Metadata::create_copy(md));
+    acquire(md.clone());
 }
 
 void Collection::acquire(std::shared_ptr<Metadata> md, bool with_data)

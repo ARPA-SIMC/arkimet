@@ -64,24 +64,14 @@ void Metadata::clear()
     m_data.reset();
 }
 
-Metadata* Metadata::clone() const
+std::shared_ptr<Metadata> Metadata::clone() const
 {
-    std::unique_ptr<Metadata> res(new Metadata);
+    auto res = std::make_shared<Metadata>();
     res->m_items = m_items;
     res->m_notes = m_notes;
     res->m_source = m_source ? m_source->clone() : nullptr;
     res->m_data = m_data;
-    return res.release();
-}
-
-unique_ptr<Metadata> Metadata::create_empty()
-{
-    return unique_ptr<Metadata>(new Metadata);
-}
-
-unique_ptr<Metadata> Metadata::create_copy(const Metadata& md)
-{
-    return unique_ptr<Metadata>(md.clone());
+    return res;
 }
 
 void Metadata::merge(const Metadata& md)

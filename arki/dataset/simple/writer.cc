@@ -62,7 +62,7 @@ struct AppendSegment
         using namespace arki::types;
 
         // Replace the pathname with its basename
-        unique_ptr<Metadata> copy(md.clone());
+        auto copy(md.clone());
         if (!dataset->smallfiles)
             copy->unset(TYPE_VALUE);
         copy->set_source(Source::createBlobUnlocked(source.format, dir.name(), basename, source.offset, source.size));

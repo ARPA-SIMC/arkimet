@@ -74,7 +74,7 @@ public:
 
     Metadata& operator=(const Metadata&) = delete;
 
-    Metadata* clone() const;
+    std::shared_ptr<Metadata> clone() const;
 
     bool has(types::Code code) const { return m_items.has(code); }
     const types::Type* get(types::Code code) const { return m_items.get(code); }
@@ -306,17 +306,6 @@ public:
 
     /// Return the size of the data, if known, else returns 0
     size_t data_size() const;
-
-    /// Create an empty Metadata
-    static std::unique_ptr<Metadata> create_empty();
-
-    /// Create a copy of a Metadata
-    static std::unique_ptr<Metadata> create_copy(const Metadata& md);
-
-#if 0
-    /// Read one Metadata from a Yaml stream and return it
-    static std::unique_ptr<Metadata> create_from_yaml(std::istream& in, const std::string& filename);
-#endif
 
     /// Read all metadata from a buffer into the given consumer
     static bool read_buffer(const std::vector<uint8_t>& buf, const metadata::ReadContext& file, metadata_dest_func dest);
