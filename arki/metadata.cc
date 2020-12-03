@@ -97,7 +97,7 @@ unique_ptr<Metadata> Metadata::create_copy(const Metadata& md)
 
 void Metadata::merge(const Metadata& md)
 {
-    for (const auto& i: m_items)
+    for (const auto& i: md.m_items)
         set(*i.second);
 }
 
