@@ -118,15 +118,6 @@ void Metadata::diff_items(const Metadata& o, std::function<void(types::Code code
     }
 }
 
-#if 0
-unique_ptr<Metadata> Metadata::create_from_yaml(std::istream& in, const std::string& filename)
-{
-    unique_ptr<Metadata> res(create_empty());
-    res->readYaml(in, filename);
-    return res;
-}
-#endif
-
 const Source& Metadata::source() const
 {
     if (!m_source)
@@ -395,9 +386,12 @@ void Metadata::readInlineData(core::BinaryDecoder& dec, const std::string& filen
     m_data = metadata::DataManager::get().to_data(m_source->format, std::vector<uint8_t>(data.buf, data.buf + s->size));
 }
 
-bool Metadata::readYaml(LineReader& in, const std::string& filename)
+std::shared_ptr<Metadata> Metadata::read_yaml(LineReader& in, const std::string& filename)
 {
-    clear();
+    if (in.eof())
+        return std::shared_ptr<Metadata>();
+
+    auto res = std::make_shared<Metadata>();
 
     YamlStream yamlStream;
     for (YamlStream::const_iterator i = yamlStream.begin(in);
@@ -407,13 +401,14 @@ bool Metadata::readYaml(LineReader& in, const std::string& filename)
         string val = str::strip(i->second);
         switch (type)
         {
-            case TYPE_NOTE: add_note(*types::Note::decodeString(val)); break;
-            case TYPE_SOURCE: set_source(types::Source::decodeString(val)); break;
+            case TYPE_NOTE: res->add_note(*types::Note::decodeString(val)); break;
+            case TYPE_SOURCE: res->set_source(types::Source::decodeString(val)); break;
             default:
-                set(types::decodeString(type, val));
+                res->set(types::decodeString(type, val));
         }
     }
-    return !in.eof();
+
+    return res;
 }
 
 void Metadata::write(NamedFileDescriptor& out) const

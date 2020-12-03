@@ -48,6 +48,9 @@ struct ActualMetadata : public arki::utils::tests::Actual<const Metadata&>
 {
     ActualMetadata(const Metadata& s) : Actual<const Metadata&>(s) {}
 
+    void operator==(std::shared_ptr<Metadata> expected) const { return operator==(*expected); }
+    void operator!=(std::shared_ptr<Metadata> expected) const { return operator!=(*expected); }
+
     void operator==(const Metadata& expected) const;
     void operator!=(const Metadata& expected) const;
 

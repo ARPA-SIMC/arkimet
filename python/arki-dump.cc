@@ -133,7 +133,6 @@ struct reverse_data : public MethKwargs<reverse_data, arkipy_ArkiDump>
 
             ReleaseGIL rg;
 
-            arki::Metadata md;
             std::unique_ptr<arki::core::LineReader> reader;
             std::string input_name;
             if (input.fd)
@@ -147,11 +146,11 @@ struct reverse_data : public MethKwargs<reverse_data, arkipy_ArkiDump>
                 reader = arki::core::LineReader::from_abstract(*input.abstract);
             }
             if (output.fd)
-                while (md.readYaml(*reader, input_name))
-                    md.write(*output.fd);
+                while (auto md = arki::Metadata::read_yaml(*reader, input_name))
+                    md->write(*output.fd);
             else
-                while (md.readYaml(*reader, input_name))
-                    md.write(*output.abstract);
+                while (auto md = arki::Metadata::read_yaml(*reader, input_name))
+                    md->write(*output.abstract);
 
             return throw_ifnull(PyLong_FromLong(0));
         } ARKI_CATCH_RETURN_PYO

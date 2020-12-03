@@ -220,9 +220,9 @@ public:
      * The filename string is used to generate nicer parse error messages when
      * throwing exceptions, and can be anything.
      *
-     * @returns false when end-of-file is reached
+     * @returns an empty shared_ptr when end-of-file is reached
      */
-    bool readYaml(core::LineReader& in, const std::string& filename);
+    static std::shared_ptr<Metadata> read_yaml(core::LineReader& in, const std::string& filename);
 
     /**
      * Write the metadata to the given output stream.

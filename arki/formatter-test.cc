@@ -36,17 +36,17 @@ add_method("yaml", [] {
     wassert(actual(str1.size()) < str2.size());
 
     // Read back the two metadatas
-    Metadata md1;
+    std::shared_ptr<Metadata> md1;
     {
         string s(str1);
         auto reader = LineReader::from_chars(s.data(), s.size());
-        md1.readYaml(*reader, "(test memory buffer)");
+        md1 = Metadata::read_yaml(*reader, "(test memory buffer)");
     }
-    Metadata md2;
+    std::shared_ptr<Metadata> md2;
     {
         string s(str2);
         auto reader = LineReader::from_chars(s.data(), s.size());
-        md2.readYaml(*reader, "(test memory buffer)");
+        md2 = Metadata::read_yaml(*reader, "(test memory buffer)");
     }
 
     // Once reparsed, they should have the same content

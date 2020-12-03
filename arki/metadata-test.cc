@@ -186,13 +186,12 @@ add_method("yaml", [](Fixture& f) {
     f.fill(md);
 
     string s = md.to_yaml();
-    Metadata md1;
     auto reader = LineReader::from_chars(s.data(), s.size());
-    md1.readYaml(*reader, "(test memory buffer)");
-
-    wassert(actual(Source::createBlobUnlocked("grib", "", "inbound/test.grib1", 1, 2)) == md1.source());
-    wassert(actual(md1.source().format) == "grib");
-    wassert(f.ensure_md_matches_prefill(md1));
+    auto md1 = Metadata::read_yaml(*reader, "(test memory buffer)");
+    wassert_true(md1);
+    wassert(actual(Source::createBlobUnlocked("grib", "", "inbound/test.grib1", 1, 2)) == md1->source());
+    wassert(actual(md1->source().format) == "grib");
+    wassert(f.ensure_md_matches_prefill(*md1));
 });
 
 // Test JSON encoding and decoding
@@ -317,7 +316,7 @@ add_method("issue107_yaml", [](Fixture& f) {
     File fd("inbound/issue107.yaml", O_RDONLY);
     auto reader = LineReader::from_fd(fd);
 
-    wassert(actual(md.readYaml(*reader, "inbound/issue107.yaml")).istrue());
+    wassert(actual(Metadata::read_yaml(*reader, "inbound/issue107.yaml")).istrue());
 });
 
 add_method("wrongsize", [](Fixture& f) {

@@ -492,8 +492,9 @@ struct read_yaml : public ClassMethKwargs<read_yaml>
 {
     constexpr static const char* name = "read_yaml";
     constexpr static const char* signature = "src: Union[str, StringIO, bytes, ByteIO]";
-    constexpr static const char* returns = "arkimet.Metadata";
+    constexpr static const char* returns = "Optional[arkimet.Metadata]";
     constexpr static const char* summary = "Read a Metadata from a YAML file";
+    constexpr static const char* doc = "Return None in case of end of file";
 
     static PyObject* run(PyTypeObject* cls, PyObject* args, PyObject* kw)
     {
@@ -503,7 +504,7 @@ struct read_yaml : public ClassMethKwargs<read_yaml>
             return nullptr;
 
         try {
-            std::unique_ptr<Metadata> res(new Metadata);
+            std::shared_ptr<Metadata> res;
             if (PyBytes_Check(py_src))
             {
                 char* buffer;
@@ -512,13 +513,13 @@ struct read_yaml : public ClassMethKwargs<read_yaml>
                     throw PythonException();
                 ReleaseGIL gil;
                 auto reader = arki::core::LineReader::from_chars(buffer, length);
-                res->readYaml(*reader, "bytes buffer");
+                res = Metadata::read_yaml(*reader, "bytes buffer");
             } else if (PyUnicode_Check(py_src)) {
                 Py_ssize_t length;
                 const char* buffer = throw_ifnull(PyUnicode_AsUTF8AndSize(py_src, &length));
                 ReleaseGIL gil;
                 auto reader = arki::core::LineReader::from_chars(buffer, length);
-                res->readYaml(*reader, "str buffer");
+                res = Metadata::read_yaml(*reader, "str buffer");
             } else if (PyObject_HasAttrString(py_src, "encoding")) {
                 TextInputFile input(py_src);
                 ReleaseGIL gil;
@@ -536,7 +537,7 @@ struct read_yaml : public ClassMethKwargs<read_yaml>
                     reader = arki::core::LineReader::from_abstract(*input.abstract);
                 }
 
-                res->readYaml(*reader, input_name);
+                res = Metadata::read_yaml(*reader, input_name);
             } else {
                 BinaryInputFile input(py_src);
                 ReleaseGIL gil;
@@ -553,9 +554,13 @@ struct read_yaml : public ClassMethKwargs<read_yaml>
                     input_name = input.abstract->name();
                     reader = arki::core::LineReader::from_abstract(*input.abstract);
                 }
-                res->readYaml(*reader, input_name);
+                res = Metadata::read_yaml(*reader, input_name);
             }
-            return (PyObject*)metadata_create(std::move(res));
+
+            if (res)
+                return (PyObject*)metadata_create(std::move(res));
+            else
+                Py_RETURN_NONE;
         } ARKI_CATCH_RETURN_PYO
     }
 };
