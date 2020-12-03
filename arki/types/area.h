@@ -78,10 +78,6 @@ public:
 
     // Register this type tree with the type system
     static void init();
-
-    static std::unique_ptr<Area> createGRIB(const ValueBag& values);
-    static std::unique_ptr<Area> createODIMH5(const ValueBag& values);
-    static std::unique_ptr<Area> createVM2(unsigned station_id);
 };
 
 namespace area {
@@ -101,6 +97,8 @@ public:
 
     int compare_local(const GRIB& o) const;
     GRIB* clone() const override { return new GRIB(data, size); }
+
+    static std::unique_ptr<Area> create(const ValueBag& values);
 };
 
 class ODIMH5 : public Area
@@ -115,6 +113,8 @@ public:
 
     int compare_local(const ODIMH5& o) const;
     ODIMH5* clone() const override { return new ODIMH5(data, size); }
+
+    static std::unique_ptr<Area> create(const ValueBag& values);
 };
 
 class VM2 : public Area
@@ -137,6 +137,8 @@ public:
     VM2* clone() const override { return new VM2(data, size); }
 
     ValueBag derived_values() const;
+
+    static std::unique_ptr<Area> create(unsigned station_id);
 };
 
 

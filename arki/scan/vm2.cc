@@ -152,7 +152,7 @@ struct Input
     {
         md.add_note(md_note);
         md.set(Reftime::createPosition(Time(value.year, value.month, value.mday, value.hour, value.min, value.sec)));
-        md.set(Area::createVM2(value.station_id));
+        md.set<area::VM2>(value.station_id);
         md.set(Product::createVM2(value.variable_id));
         store_value(md);
     }

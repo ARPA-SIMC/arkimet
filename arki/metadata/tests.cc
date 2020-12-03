@@ -101,7 +101,7 @@ void fill(Metadata& md)
     md.set(Product::createGRIB1(1, 2, 3));
     md.set(Level::createGRIB1(110, 12, 13));
     md.set(Timerange::createGRIB1(2, 254u, 22, 23));
-    md.set(Area::createGRIB(testValues));
+    md.set<area::GRIB>(testValues);
     md.set(Proddef::createGRIB(testValues));
     md.add_note("test note");
     md.set(Run::createMinute(12));

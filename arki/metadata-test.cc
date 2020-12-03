@@ -56,7 +56,7 @@ struct Fixture : public arki::utils::tests::Fixture
         md.set(Product::createGRIB1(1, 2, 3));
         md.set(Level::createGRIB1(114, 12, 34));
         md.set(Timerange::createGRIB1(1, 1, 2, 3));
-        md.set(Area::createGRIB(testValues));
+        md.set<area::GRIB>(testValues);
         md.set(Proddef::createGRIB(testValues));
         md.add_note("test note");
     }
@@ -68,7 +68,7 @@ struct Fixture : public arki::utils::tests::Fixture
         wassert(actual(Product::createGRIB1(1, 2, 3)) == md.get<Product>());
         wassert(actual(Level::createGRIB1(114, 12, 34)) == md.get<Level>());
         wassert(actual(Timerange::createGRIB1(1, 1, 2, 3)) == md.get<Timerange>());
-        wassert(actual(Area::createGRIB(testValues)) == md.get<Area>());
+        wassert(actual(area::GRIB::create(testValues)) == md.get<Area>());
         wassert(actual(Proddef::createGRIB(testValues)) == md.get<Proddef>());
         wassert(actual(md.notes().size()) == 1u);
         core::Time time;

@@ -52,7 +52,7 @@ add_method("vm2_derived_lookup", [] {
     auto vb2 = types::ValueBag::parse("lon=1207738,lat=4460016,rep=NONONO");
 
     // Create without derived values
-    std::unique_ptr<Area> p1 = Area::createVM2(1);
+    std::unique_ptr<Area> p1 = area::VM2::create(1);
     auto v1 = dynamic_cast<const area::VM2*>(p1.get());
 
     // Try lookup
@@ -107,7 +107,7 @@ add_method("vm2_derived_lookup", [] {
 add_method("vm2_derived_encoding", [] {
     skip_unless_vm2();
     using namespace arki::types;
-    std::unique_ptr<Area> o = Area::createVM2(1);
+    std::unique_ptr<Area> o = area::VM2::create(1);
 
     // Encode with derived values: encodeWithoutEnvelope adds the derived values
     std::vector<uint8_t> full;

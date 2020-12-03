@@ -59,7 +59,7 @@ void fill(Metadata& md)
     md.set(Product::createGRIB1(1, 2, 3));
     md.set(Level::createGRIB1(114, 12, 34));
     md.set(Timerange::createGRIB1(1, 1, 2, 3));
-    md.set(Area::createGRIB(testValues));
+    md.set<area::GRIB>(testValues);
     md.set(Proddef::createGRIB(testValues));
     md.add_note("test note");
 }

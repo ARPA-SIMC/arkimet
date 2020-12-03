@@ -160,15 +160,15 @@ std::unique_ptr<Area> Area::decodeString(const std::string& val)
     Area::Style sty = outerParse<Area>(val, inner);
     switch (sty)
     {
-        case Style::GRIB: return createGRIB(ValueBag::parse(inner));
-        case Style::ODIMH5: return createODIMH5(ValueBag::parse(inner));
+        case Style::GRIB: return area::GRIB::create(ValueBag::parse(inner));
+        case Style::ODIMH5: return area::ODIMH5::create(ValueBag::parse(inner));
         case Style::VM2: {
             const char* innerptr = inner.c_str();
             char* endptr;
             unsigned long station_id = strtoul(innerptr, &endptr, 10); 
             if (innerptr == endptr)
                 throw std::runtime_error("cannot parse" + inner + ": expected a number, but found \"" + inner +"\"");
-            return createVM2(station_id);
+            return area::VM2::create(station_id);
         }
         default:
             throw_consistency_error("parsing Area", "unknown Area style " + formatStyle(sty));
@@ -183,50 +183,19 @@ std::unique_ptr<Area> Area::decode_structure(const structured::Keys& keys, const
     {
         case Style::GRIB:
             val.sub(keys.area_value, "area value", [&](const structured::Reader& reader) {
-                res = createGRIB(ValueBag::parse(reader));
+                res = area::GRIB::create(ValueBag::parse(reader));
             });
             return res;
         case Style::ODIMH5:
             val.sub(keys.area_value, "area value", [&](const structured::Reader& reader) {
-                res = createODIMH5(ValueBag::parse(reader));
+                res = area::ODIMH5::create(ValueBag::parse(reader));
             });
             return res;
         case Style::VM2:
-            return createVM2(val.as_int(keys.area_id, "vm2 id"));
+            return area::VM2::create(val.as_int(keys.area_id, "vm2 id"));
         default:
             throw std::runtime_error("unknown area style");
     }
-}
-
-std::unique_ptr<Area> Area::createGRIB(const ValueBag& values)
-{
-    std::vector<uint8_t> buf;
-    core::BinaryEncoder enc(buf);
-    enc.add_unsigned(static_cast<unsigned>(area::Style::GRIB), 1);
-    values.encode(enc);
-    return std::unique_ptr<Area>(new area::GRIB(buf));
-}
-
-std::unique_ptr<Area> Area::createODIMH5(const ValueBag& values)
-{
-    std::vector<uint8_t> buf;
-    core::BinaryEncoder enc(buf);
-    enc.add_unsigned(static_cast<unsigned>(area::Style::ODIMH5), 1);
-    values.encode(enc);
-    return std::unique_ptr<Area>(new area::ODIMH5(buf));
-}
-
-std::unique_ptr<Area> Area::createVM2(unsigned station_id)
-{
-    std::vector<uint8_t> buf;
-    core::BinaryEncoder enc(buf);
-    enc.add_unsigned(static_cast<unsigned>(area::Style::VM2), 1);
-    enc.add_unsigned(station_id, 4);
-    // TODO: add derived values? dv.encode(enc);
-    // but then implement encode_for_indexing without
-    // better: reverse encoding: do not keep derived values in ram, pull them
-    // in only when serializing for transmission
-    return std::unique_ptr<Area>(new area::VM2(buf));
 }
 
 
@@ -262,6 +231,15 @@ std::string GRIB::exactQuery() const
     return "GRIB:" + get_GRIB().toString();
 }
 
+std::unique_ptr<Area> GRIB::create(const ValueBag& values)
+{
+    std::vector<uint8_t> buf;
+    core::BinaryEncoder enc(buf);
+    enc.add_unsigned(static_cast<unsigned>(area::Style::GRIB), 1);
+    values.encode(enc);
+    return std::unique_ptr<Area>(new area::GRIB(buf));
+}
+
 
 /*
  * ODIMH5
@@ -291,6 +269,15 @@ void ODIMH5::serialise_local(structured::Emitter& e, const structured::Keys& key
 std::string ODIMH5::exactQuery() const
 {
     return "ODIMH5:" + get_ODIMH5().toString();
+}
+
+std::unique_ptr<Area> ODIMH5::create(const ValueBag& values)
+{
+    std::vector<uint8_t> buf;
+    core::BinaryEncoder enc(buf);
+    enc.add_unsigned(static_cast<unsigned>(area::Style::ODIMH5), 1);
+    values.encode(enc);
+    return std::unique_ptr<Area>(new area::ODIMH5(buf));
 }
 
 
@@ -376,6 +363,19 @@ ValueBag VM2::derived_values() const
 #else
     return ValueBag();
 #endif
+}
+
+std::unique_ptr<Area> VM2::create(unsigned station_id)
+{
+    std::vector<uint8_t> buf;
+    core::BinaryEncoder enc(buf);
+    enc.add_unsigned(static_cast<unsigned>(area::Style::VM2), 1);
+    enc.add_unsigned(station_id, 4);
+    // TODO: add derived values? dv.encode(enc);
+    // but then implement encode_for_indexing without
+    // better: reverse encoding: do not keep derived values in ram, pull them
+    // in only when serializing for transmission
+    return std::unique_ptr<Area>(new area::VM2(buf));
 }
 
 }

@@ -84,6 +84,18 @@ public:
     void unset(types::Code code) { ItemSet::unset(code); }
     void clear();
 
+    template<typename T, typename ...Args>
+    void set(Args&&... args)
+    {
+        set(T::create(std::forward<Args>(args)...));
+    }
+
+    template<typename T, typename ...Args>
+    void test_set(Args&&... args)
+    {
+        test_set(T::create(std::forward<Args>(args)...));
+    }
+
     /// Copy all types from md into this metadata
     void merge(const Metadata& md);
 

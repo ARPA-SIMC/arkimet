@@ -56,7 +56,7 @@ add_method("grib", [] {
 	// Check matching a missing item at the end of the list
 	ensure_not_matches("area:GRIB:zzzz=1", md);
 
-    md.test_set(Area::createGRIB(testArea2));
+    md.test_set<area::GRIB>(testArea2);
 
 	ensure_not_matches("area:GRIB:foo=5", md);
 	ensure_matches("area:GRIB:foo=15", md);
@@ -186,7 +186,7 @@ add_method("odimh5", [] {
 	// Check matching a missing item at the end of the list
 	ensure_not_matches("area:ODIMH5:zzzz=1", md);
 
-    md.test_set(Area::createODIMH5(testArea2));
+    md.test_set<area::ODIMH5>(testArea2);
 
     ensure_not_matches("area:ODIMH5:foo=5", md);
     ensure_matches("area:ODIMH5:foo=15", md);
@@ -228,7 +228,7 @@ add_method("vm2", [] {
     skip_unless_vm2();
     matcher::Parser parser;
     Metadata md;
-    md.test_set(Area::createVM2(1));
+    md.test_set<area::VM2>(1);
 
 	ensure_matches("area:VM2", md);
 	ensure_matches("area:VM2,", md);
