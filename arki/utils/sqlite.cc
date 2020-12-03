@@ -267,20 +267,6 @@ void Query::bindType(int idx, const types::Type& item)
     bindTransient(idx, buf);
 }
 
-unique_ptr<types::Type> Query::fetchType(int column)
-{
-    const uint8_t* buf = (const uint8_t*)fetchBlob(column);
-    int len = fetchBytes(column);
-    if (len == 0) return unique_ptr<types::Type>();
-
-    core::BinaryDecoder dec(buf, len);
-
-    TypeCode el_type;
-    core::BinaryDecoder inner = dec.pop_type_envelope(el_type);
-
-    return types::decodeInner(el_type, inner);
-}
-
 bool Query::step()
 {
     int rc = sqlite3_step(m_stm);
