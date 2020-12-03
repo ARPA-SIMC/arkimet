@@ -59,8 +59,6 @@ struct Fixture : public arki::utils::tests::Fixture
         md.set(Timerange::createGRIB1(1, 1, 2, 3));
         md.set(Area::createGRIB(testValues));
         md.set(Proddef::createGRIB(testValues));
-        md.set(AssignedDataset::create("dsname", "dsid"));
-        // Test POSITION reference times
         md.set(Reftime::createPosition(Time(2006, 5, 4, 3, 2, 1)));
     }
 };

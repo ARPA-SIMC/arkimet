@@ -62,7 +62,6 @@ void fill(Metadata& md)
     md.set(Area::createGRIB(testValues));
     md.set(Proddef::createGRIB(testValues));
     md.add_note("test note");
-    md.set(AssignedDataset::create("dsname", "dsid"));
 }
 
 inline bool cmpmd(Metadata& md1, Metadata& md2)

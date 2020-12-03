@@ -58,7 +58,6 @@ struct Fixture : public arki::utils::tests::Fixture
         md.set(Timerange::createGRIB1(1, 1, 2, 3));
         md.set(Area::createGRIB(testValues));
         md.set(Proddef::createGRIB(testValues));
-        md.set(AssignedDataset::create("dsname", "dsid"));
         md.add_note("test note");
     }
 
@@ -71,7 +70,6 @@ struct Fixture : public arki::utils::tests::Fixture
         wassert(actual(Timerange::createGRIB1(1, 1, 2, 3)) == md.get<Timerange>());
         wassert(actual(Area::createGRIB(testValues)) == md.get<Area>());
         wassert(actual(Proddef::createGRIB(testValues)) == md.get<Proddef>());
-        wassert(actual(AssignedDataset::create("dsname", "dsid")) == md.get<AssignedDataset>());
         wassert(actual(md.notes().size()) == 1u);
         core::Time time;
         std::string content;

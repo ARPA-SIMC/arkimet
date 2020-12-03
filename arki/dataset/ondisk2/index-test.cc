@@ -361,11 +361,9 @@ add_method("query_file", [] {
     wassert(actual(mdc.size()) == 2u);
 
     // Check that the metadata came out fine
-    mdc[0].unset(TYPE_ASSIGNEDDATASET);
     mdc[0].set_source(unique_ptr<Source>(md.source().clone()));
     wassert_true(mdc[0] == md);
 
-    mdc[1].unset(TYPE_ASSIGNEDDATASET);
     mdc[1].set_source(unique_ptr<Source>(md1.source().clone()));
     wassert_true(mdc[1] == md1);
 });

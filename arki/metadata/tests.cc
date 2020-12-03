@@ -104,7 +104,6 @@ void fill(Metadata& md)
     md.set(Area::createGRIB(testValues));
     md.set(Proddef::createGRIB(testValues));
     md.add_note("test note");
-    md.set(AssignedDataset::create("dsname", "dsid"));
     md.set(Run::createMinute(12));
     md.set(Reftime::createPosition(Time(2007, 1, 2, 3, 4, 5)));
 

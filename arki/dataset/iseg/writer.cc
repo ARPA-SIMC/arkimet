@@ -380,7 +380,6 @@ void Writer::remove(Metadata& md)
 
     // reset source and dataset in the metadata
     md.unset_source();
-    md.unset(TYPE_ASSIGNEDDATASET);
 
     scache.invalidate(md);
 }

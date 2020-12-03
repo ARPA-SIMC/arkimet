@@ -372,7 +372,6 @@ void Writer::remove(Metadata& md)
 
     // reset source and dataset in the metadata
     md.unset_source();
-    md.unset(TYPE_ASSIGNEDDATASET);
 }
 
 void Writer::test_acquire(std::shared_ptr<Session> session, const core::cfg::Section& cfg, WriterBatch& batch)

@@ -26,7 +26,14 @@ struct traits<AssignedDataset>
  */
 struct AssignedDataset : public Encoded
 {
+protected:
     void get(core::Time& changed, std::string& name, std::string& id) const;
+
+    /// Create a attributed dataset definition with the current time
+    static std::unique_ptr<AssignedDataset> create(const std::string& name, const std::string& id);
+
+    /// Create a attributed dataset definition with the givem time
+    static std::unique_ptr<AssignedDataset> create(const core::Time& time, const std::string& name, const std::string& id);
 
 public:
     using Encoded::Encoded;
@@ -49,12 +56,6 @@ public:
 
     // Register this type with the type system
     static void init();
-
-    /// Create a attributed dataset definition with the current time
-    static std::unique_ptr<AssignedDataset> create(const std::string& name, const std::string& id);
-
-    /// Create a attributed dataset definition with the givem time
-    static std::unique_ptr<AssignedDataset> create(const core::Time& time, const std::string& name, const std::string& id);
 
     static std::unique_ptr<AssignedDataset> decode_structure(const structured::Keys& keys, const structured::Reader& val);
 };
