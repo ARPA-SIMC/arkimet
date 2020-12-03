@@ -180,9 +180,9 @@ public:
      * If it's false, then the reader needs to check from the Metadata source
      * if it is inline, and in that case proceed to read the inline data.
      *
-     * @returns false when end-of-file is reached
+     * @returns an empty shared_ptr when end-of-file is reached
      */
-    bool read(int in, const metadata::ReadContext& filename, bool readInline=true);
+    static std::shared_ptr<Metadata> read_binary(int in, const metadata::ReadContext& filename, bool readInline=true);
 
     /**
      * Read a metadata document from the given memory buffer.
@@ -196,14 +196,14 @@ public:
      * If it's false, then the reader needs to check from the Metadata source
      * if it is inline, and in that case proceed to read the inline data.
      *
-     * @returns false when end-of-file is reached
+     * @returns an empty shared_ptr when end-of-file is reached
      */
-    bool read(core::BinaryDecoder& dec, const metadata::ReadContext& filename, bool readInline=true);
+    static std::shared_ptr<Metadata> read_binary(core::BinaryDecoder& dec, const metadata::ReadContext& filename, bool readInline=true);
 
     /**
      * Decode the metadata, without the outer bundle headers, from the given buffer.
      */
-    void read_inner(core::BinaryDecoder& dec, unsigned version, const metadata::ReadContext& filename);
+    static std::shared_ptr<Metadata> read_binary_inner(core::BinaryDecoder& dec, unsigned version, const metadata::ReadContext& filename);
 
     /// Read the inline data from the given file handle
     void read_inline_data(core::NamedFileDescriptor& fd);

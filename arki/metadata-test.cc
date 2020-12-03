@@ -151,13 +151,14 @@ add_method("binary", [](Fixture& f) {
     wassert(actual((char)encoded[1]) == 'D');
     sys::write_file("test.md", encoded.data(), encoded.size());
 
-    Metadata md1;
+    std::shared_ptr<Metadata> md1;
     core::BinaryDecoder dec(encoded);
-    wassert(md1.read(dec, metadata::ReadContext("(test memory buffer)", dir)));
+    md1 = wcallchecked(Metadata::read_binary(dec, metadata::ReadContext("(test memory buffer)", dir)));
+    wassert_true(md1);
 
-    wassert(actual_type(md1.source()).is_source_blob("grib", dir, "inbound/test.grib1", 1, 2));
-    wassert(actual(md1.source().format) == "grib");
-    wassert(f.ensure_md_matches_prefill(md1));
+    wassert(actual_type(md1->source()).is_source_blob("grib", dir, "inbound/test.grib1", 1, 2));
+    wassert(actual(md1->source().format) == "grib");
+    wassert(f.ensure_md_matches_prefill(*md1));
 
 
     // Test methods to load metadata from files
@@ -230,12 +231,11 @@ add_method("binary_inline", [](Fixture& f) {
     temp.close();
 
     // Decode
-    Metadata md1;
     sys::File temp1("testfile", O_RDONLY);
-    wassert(md1.read(temp1, metadata::ReadContext("testfile"), true));
+    auto md1 = wcallchecked(Metadata::read_binary(temp1, metadata::ReadContext("testfile"), true));
     temp1.close();
 
-    wassert(actual(md1.get_data().read()) == buf);
+    wassert(actual(md1->get_data().read()) == buf);
 });
 
 // Serialise using unix file descriptors
@@ -252,11 +252,10 @@ add_method("binary_fd", [](Fixture& f) {
 
     // Decode
     sys::File in(tmpfile, O_RDONLY);
-    Metadata md1;
-    md1.read(in, metadata::ReadContext(tmpfile));
+    auto md1 = wcallchecked(Metadata::read_binary(in, metadata::ReadContext(tmpfile)));
     in.close();
 
-    wassert(actual(md) == md1);
+    wassert(actual(md) == *md1);
 });
 
 // Reproduce decoding error at #24

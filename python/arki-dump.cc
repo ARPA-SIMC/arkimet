@@ -36,7 +36,6 @@ namespace {
 template<typename Input>
 void addToSummary(Input& in, arki::Summary& s)
 {
-    arki::Metadata md;
     arki::Summary summary;
 
     arki::types::Bundle bundle;
@@ -46,10 +45,10 @@ void addToSummary(Input& in, arki::Summary& s)
         {
             if (!bundle.read_data(in)) break;
             arki::core::BinaryDecoder dec(bundle.data);
-            md.read_inner(dec, bundle.version, in.name());
-            if (md.source().style() == arki::types::Source::Style::INLINE)
-                md.read_inline_data(in);
-            s.add(md);
+            auto md = arki::Metadata::read_binary_inner(dec, bundle.version, in.name());
+            if (md->source().style() == arki::types::Source::Style::INLINE)
+                md->read_inline_data(in);
+            s.add(*md);
         }
         else if (bundle.signature == "SU")
         {
@@ -261,7 +260,6 @@ struct dump_yaml : public MethKwargs<dump_yaml, arkipy_ArkiDump>
                 };
             }
 
-            arki::Metadata md;
             arki::Summary summary;
 
             arki::types::Bundle bundle;
@@ -302,10 +300,10 @@ struct dump_yaml : public MethKwargs<dump_yaml, arkipy_ArkiDump>
                 {
                     if (!read_data()) break;
                     arki::core::BinaryDecoder dec(bundle.data);
-                    md.read_inner(dec, bundle.version, input_name);
-                    if (md.source().style() == arki::types::Source::Style::INLINE)
-                        read_inline_data(md);
-                    print_md(md);
+                    auto md = arki::Metadata::read_binary_inner(dec, bundle.version, input_name);
+                    if (md->source().style() == arki::types::Source::Style::INLINE)
+                        read_inline_data(*md);
+                    print_md(*md);
                 }
                 else if (bundle.signature == "SU")
                 {
