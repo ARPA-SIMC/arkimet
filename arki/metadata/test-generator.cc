@@ -116,7 +116,7 @@ bool Generator::_generate(const Samples::const_iterator& i, Metadata& md, metada
 {
     if (i == samples.end())
     {
-        unique_ptr<Metadata> m(new Metadata(md));
+        std::unique_ptr<Metadata> m(md.clone());
 
         // Set run from Reftime
         const types::Reftime* rt = md.get<types::Reftime>();

@@ -44,6 +44,7 @@ public:
     size_t size() const { return vals.size(); }
     /// Remove the last element
     void pop_back() { vals.pop_back(); }
+    void swap(unsigned idx1, unsigned idx2) { std::swap(vals[idx1], vals[idx2]); }
 
     /// Append a copy of md
     void push_back(const std::shared_ptr<Metadata> md) { vals.push_back(md); }

@@ -40,13 +40,13 @@ struct NCData : TestData
     NCData();
 };
 
-Metadata make_large_mock(const std::string& format, size_t size, unsigned month, unsigned day, unsigned hour=0);
+std::shared_ptr<Metadata> make_large_mock(const std::string& format, size_t size, unsigned month, unsigned day, unsigned hour=0);
 
 void fill(Metadata& md);
 
-struct ActualMetadata : public arki::utils::tests::Actual<Metadata>
+struct ActualMetadata : public arki::utils::tests::Actual<const Metadata&>
 {
-    ActualMetadata(const Metadata& s) : Actual<Metadata>(s) {}
+    ActualMetadata(const Metadata& s) : Actual<const Metadata&>(s) {}
 
     void operator==(const Metadata& expected) const;
     void operator!=(const Metadata& expected) const;

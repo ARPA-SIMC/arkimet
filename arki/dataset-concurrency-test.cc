@@ -121,20 +121,20 @@ struct ConcurrentImporter : public subprocess::Child
         try {
             auto ds(fixture.config().create_writer());
 
-            Metadata md = fixture.td.mds[0];
+            std::shared_ptr<Metadata> md(fixture.td.mds[0].clone());
 
             for (unsigned i = initial; i < 60; i += increment)
             {
                 if (increment_year)
-                    md.test_set(types::Reftime::createPosition(core::Time(2000 + i, 6, 1, 0, 0, 0)));
+                    md->test_set(types::Reftime::createPosition(core::Time(2000 + i, 6, 1, 0, 0, 0)));
                 else
-                    md.test_set(types::Reftime::createPosition(core::Time(2000, 6, 1, 0, 0, i)));
+                    md->test_set(types::Reftime::createPosition(core::Time(2000, 6, 1, 0, 0, i)));
                 //fprintf(stderr, "%d: %d\n", (int)getpid(), i);
-                auto res = ds->acquire(md);
+                auto res = ds->acquire(*md);
                 if (res != dataset::ACQ_OK)
                 {
                     fprintf(stderr, "ConcurrentImporter: Acquire result: %d\n", (int)res);
-                    for (const auto& note: md.notes())
+                    for (const auto& note: md->notes())
                     {
                         core::Time time;
                         std::string content;
@@ -483,22 +483,22 @@ this->add_method("read_repack2", [](Fixture& f) {
 this->add_method("write_repack", [](Fixture& f) {
     core::lock::TestWait lock_wait;
 
-    Metadata md(f.td.mds[1]);
-    md.test_set(types::Reftime::createPosition(Time(2007, 7, 7, 0, 0, 0)));
+    std::shared_ptr<Metadata> md(f.td.mds[1].clone());
+    md->test_set(types::Reftime::createPosition(Time(2007, 7, 7, 0, 0, 0)));
 
     // Import a first metadata to create a segment to repack
     {
         auto writer = f.config().create_writer();
-        wassert(actual(*writer).import(md));
+        wassert(actual(*writer).import(*md));
     }
 
     RepackForever<Fixture> rf(f);
     rf.during([&]{
         for (unsigned minute = 0; minute < 60; ++minute)
         {
-            md.test_set(types::Reftime::createPosition(Time(2007, 7, 7, 1, minute, 0)));
+            md->test_set(types::Reftime::createPosition(Time(2007, 7, 7, 1, minute, 0)));
             auto writer = f.config().create_writer();
-            wassert(actual(*writer).import(md));
+            wassert(actual(*writer).import(*md));
         }
     });
 

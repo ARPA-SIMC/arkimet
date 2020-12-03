@@ -44,6 +44,7 @@ struct ReadContext
      */
     ReadContext(const std::string& pathname, const std::string& basedir);
 };
+
 }
 
 class Formatter;
@@ -54,6 +55,9 @@ class Formatter;
 struct Metadata : public types::ItemSet
 {
 protected:
+    /// Buffer with the encoded metadata
+    std::vector<uint8_t> buffer;
+
     /// Annotations, kept binary-serialized to string
     std::vector<uint8_t> m_notes;
 
@@ -65,8 +69,9 @@ protected:
 
 public:
     Metadata();
-    Metadata(const Metadata&);
     ~Metadata();
+    Metadata(const Metadata&);
+
     Metadata& operator=(const Metadata&);
 
     Metadata* clone() const;

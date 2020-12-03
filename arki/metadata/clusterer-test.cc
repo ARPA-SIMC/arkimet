@@ -23,7 +23,7 @@ struct ClusterCounter : public metadata::Clusterer
 
 inline unique_ptr<Metadata> wrap(const Metadata& md)
 {
-    return unique_ptr<Metadata>(new Metadata(md));
+    return std::unique_ptr<Metadata>(md.clone());
 }
 
 

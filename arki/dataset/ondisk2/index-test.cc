@@ -40,41 +40,41 @@ inline unique_ptr<WIndex> createIndex(std::shared_ptr<core::Lock> lock, const st
     return res;
 }
 
-Metadata make_md()
+std::shared_ptr<Metadata> make_md()
 {
-    Metadata md;
-    md.set_source(types::Source::createBlobUnlocked("grib", "", "inbound/test.grib1", 10, 2000));
-    md.set("origin", "GRIB1(200, 10, 100)");
-    md.set("product", "GRIB1(3, 4, 5)");
-    md.set("level", "GRIB1(1, 2)");
-    md.set("timerange", "GRIB1(4, 5s, 6s)");
-    md.set("reftime", "2006-05-04T03:02:01Z");
-    md.set("area", "GRIB(foo=5,bar=5000,baz=-200)");
-    md.set("proddef", "GRIB(foo=5,bar=5000,baz=-200)");
-    md.add_note("this is a test");
+    auto md = std::make_shared<Metadata>();
+    md->set_source(types::Source::createBlobUnlocked("grib", "", "inbound/test.grib1", 10, 2000));
+    md->set("origin", "GRIB1(200, 10, 100)");
+    md->set("product", "GRIB1(3, 4, 5)");
+    md->set("level", "GRIB1(1, 2)");
+    md->set("timerange", "GRIB1(4, 5s, 6s)");
+    md->set("reftime", "2006-05-04T03:02:01Z");
+    md->set("area", "GRIB(foo=5,bar=5000,baz=-200)");
+    md->set("proddef", "GRIB(foo=5,bar=5000,baz=-200)");
+    md->add_note("this is a test");
     {
         File out("test-md.metadata", O_WRONLY | O_CREAT | O_TRUNC, 0666);
-        md.write(out);
+        md->write(out);
         out.close();
     }
     return md;
 }
 
-Metadata make_md1()
+std::shared_ptr<Metadata> make_md1()
 {
-    Metadata md1;
-    md1.set_source(types::Source::createBlobUnlocked("grib", "", "inbound/test-sorted.grib1", 20, 40000));
-    md1.set("origin", "GRIB1(201, 11, 3)");
-    md1.set("product", "GRIB1(102, 103, 104)");
-    md1.set("level", "GRIB1(1, 3)");
-    md1.set("timerange", "GRIB1(4, 6s, 6s)");
-    md1.set("reftime", "2003-04-05T06:07:08Z");
-    md1.set("area", "GRIB(foo=5,bar=5000,baz=-200)");
-    md1.set("proddef", "GRIB(foo=5,bar=5000,baz=-200)");
+    auto md1 = std::make_shared<Metadata>();
+    md1->set_source(types::Source::createBlobUnlocked("grib", "", "inbound/test-sorted.grib1", 20, 40000));
+    md1->set("origin", "GRIB1(201, 11, 3)");
+    md1->set("product", "GRIB1(102, 103, 104)");
+    md1->set("level", "GRIB1(1, 3)");
+    md1->set("timerange", "GRIB1(4, 6s, 6s)");
+    md1->set("reftime", "2003-04-05T06:07:08Z");
+    md1->set("area", "GRIB(foo=5,bar=5000,baz=-200)");
+    md1->set("proddef", "GRIB(foo=5,bar=5000,baz=-200)");
     {
         // Index one without notes
         File out("test-md1.metadata", O_WRONLY | O_CREAT | O_TRUNC, 0666);
-        md1.write(out);
+        md1->write(out);
         out.close();
     }
     return md1;
@@ -169,10 +169,10 @@ add_method("index", [] {
     p = test->begin_transaction();
 
     // Index a metadata
-    wassert(actual(test->index(md, "inbound/test.grib1", 0)).isfalse());
+    wassert(actual(test->index(*md, "inbound/test.grib1", 0)).isfalse());
 
     // Index a second one
-    wassert(actual(test->index(md1, "inbound/test-sorted.grib1", 0)).isfalse());
+    wassert(actual(test->index(*md1, "inbound/test-sorted.grib1", 0)).isfalse());
 
     // Query various kinds of metadata
     metadata::Collection mdc;
@@ -214,17 +214,17 @@ add_method("remove", [] {
     p = test->begin_transaction();
 
     // Index a metadata
-    auto res = test->index(md, "inbound/test.grib1", 0);
+    auto res = test->index(*md, "inbound/test.grib1", 0);
     wassert_false(res);
     //int id = test->id(md);
 
     // Index it again and ensure that it fails
-    res = test->index(md, "inbound/test.grib1", 0);
+    res = test->index(*md, "inbound/test.grib1", 0);
     wassert_true(res);
 
     // Index a second one
-    test->index(md1, "inbound/test-sorted.grib1", 0);
-    auto pos1 = test->get_current(md1);
+    test->index(*md1, "inbound/test-sorted.grib1", 0);
+    auto pos1 = test->get_current(*md1);
 
     // Ensure that we have two items
     metadata::Collection mdc;
@@ -250,7 +250,7 @@ add_method("remove", [] {
     mdc.clear();
 
     // Replace it with a different one
-    test->replace(md1, "inbound/test.grib1", 0);
+    test->replace(*md1, "inbound/test.grib1", 0);
 
     // See that it changed
     query_index(*test, parser.parse("origin:GRIB1"), mdc);
@@ -284,8 +284,8 @@ add_method("concurrent", [] {
         test1->open();
 
         Pending p = test1->begin_transaction();
-        wassert(test1->index(md, "inbound/test.grib1", 0));
-        wassert(test1->index(md1, "inbound/test-sorted.grib1", 0));
+        wassert(test1->index(*md, "inbound/test.grib1", 0));
+        wassert(test1->index(*md1, "inbound/test-sorted.grib1", 0));
         p.commit();
     }
 
@@ -345,8 +345,8 @@ add_method("query_file", [] {
     p = test->begin_transaction();
 
     // Index two metadata in one file
-    test->index(md, "inbound/padded.grib1", 0);
-    test->index(md1, "inbound/padded.grib1", 10);
+    test->index(*md, "inbound/padded.grib1", 0);
+    test->index(*md1, "inbound/padded.grib1", 10);
 
     // Index three other metadata in a separate file
     test->index(src[0], "inbound/test.grib1", 0);
@@ -361,11 +361,11 @@ add_method("query_file", [] {
     wassert(actual(mdc.size()) == 2u);
 
     // Check that the metadata came out fine
-    mdc[0].set_source(unique_ptr<Source>(md.source().clone()));
-    wassert_true(mdc[0] == md);
+    mdc[0].set_source(unique_ptr<Source>(md->source().clone()));
+    wassert(actual(mdc[0]) == *md);
 
-    mdc[1].set_source(unique_ptr<Source>(md1.source().clone()));
-    wassert_true(mdc[1] == md1);
+    mdc[1].set_source(unique_ptr<Source>(md1->source().clone()));
+    wassert(actual(mdc[1]) == *md1);
 });
 
 // Try a summary query that used to be badly generated
@@ -393,8 +393,8 @@ add_method("reproduce_old_issue1", [] {
     p = test->begin_transaction();
 
     // Index some metadata
-    test->index(md, "test-md", 0);
-    test->index(md1, "test-md1", 0);
+    test->index(*md, "test-md", 0);
+    test->index(*md1, "test-md1", 0);
     Metadata md2;
     md2.set_source(Source::createBlobUnlocked("grib", "", "inbound/test.bufr", 10, 2000));
     md2.set("origin", "GRIB1(202, 12, 102)");
@@ -435,8 +435,8 @@ add_method("largefile", [] {
     auto md1 = make_md1();
 
     // Pretend the data is in a very big file
-    md.set_source(Source::createBlobUnlocked("grib", "", "inbound/test.grib1", 0x100000000LLU, 2000));
-    md1.set_source(Source::createBlobUnlocked("grib", "", "inbound/test-sorted.grib1", 0xFFFFffffFFFF0000LLU, 0xFFFF));
+    md->set_source(Source::createBlobUnlocked("grib", "", "inbound/test.grib1", 0x100000000LLU, 2000));
+    md1->set_source(Source::createBlobUnlocked("grib", "", "inbound/test-sorted.grib1", 0xFFFFffffFFFF0000LLU, 0xFFFF));
 
     // Remove index if it exists
     unlink("file1");
@@ -457,8 +457,8 @@ add_method("largefile", [] {
     p = test->begin_transaction();
 
     // Index the two metadata
-    test->index(md, "inbound/test.grib1", md.sourceBlob().offset);
-    test->index(md1, "inbound/test-sorted.grib1", md1.sourceBlob().offset);
+    test->index(*md, "inbound/test.grib1", md->sourceBlob().offset);
+    test->index(*md1, "inbound/test-sorted.grib1", md1->sourceBlob().offset);
 
     // Query various kinds of metadata
     metadata::Collection mdc;
