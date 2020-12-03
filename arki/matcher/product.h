@@ -28,6 +28,7 @@ struct MatchProductGRIB1 : public MatchProduct
 
     MatchProductGRIB1(const std::string& pattern);
     bool matchItem(const types::Type& o) const override;
+    bool match_buffer(types::Code code, const uint8_t* data, unsigned size) const override;
     std::string toString() const override;
 };
 
@@ -43,6 +44,7 @@ struct MatchProductGRIB2 : public MatchProduct
 
     MatchProductGRIB2(const std::string& pattern);
     bool matchItem(const types::Type& o) const override;
+    bool match_buffer(types::Code code, const uint8_t* data, unsigned size) const override;
     std::string toString() const override;
 };
 
@@ -56,6 +58,7 @@ struct MatchProductBUFR : public MatchProduct
 
     MatchProductBUFR(const std::string& pattern);
     bool matchItem(const types::Type& o) const override;
+    bool match_buffer(types::Code code, const uint8_t* data, unsigned size) const override;
     std::string toString() const override;
 };
 
@@ -68,6 +71,7 @@ struct MatchProductODIMH5 : public MatchProduct
 
     MatchProductODIMH5(const std::string& pattern);
     bool matchItem(const types::Type& o) const override;
+    bool match_buffer(types::Code code, const uint8_t* data, unsigned size) const override;
     std::string toString() const override;
 };
 
@@ -80,6 +84,7 @@ struct MatchProductVM2 : public MatchProduct
 
     MatchProductVM2(const std::string& pattern);
     bool matchItem(const types::Type& o) const override;
+    bool match_buffer(types::Code code, const uint8_t* data, unsigned size) const override;
     std::string toString() const override;
 };
 

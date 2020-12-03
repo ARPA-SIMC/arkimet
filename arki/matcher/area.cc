@@ -31,6 +31,15 @@ bool MatchAreaGRIB::matchItem(const Type& o) const
     return values.contains(expr);
 }
 
+bool MatchAreaGRIB::match_buffer(types::Code code, const uint8_t* data, unsigned size) const
+{
+    if (code != TYPE_AREA) return false;
+    if (size < 1) return false;
+    if (Area::style(data, size) != area::Style::GRIB) return false;
+    auto values = Area::get_GRIB(data, size);
+    return values.contains(expr);
+}
+
 std::string MatchAreaGRIB::toString() const
 {
 	return "GRIB:" + expr.toString();
@@ -46,6 +55,15 @@ bool MatchAreaODIMH5::matchItem(const Type& o) const
     const types::area::ODIMH5* v = dynamic_cast<const types::area::ODIMH5*>(&o);
     if (!v) return false;
     auto values = v->get_ODIMH5();
+    return values.contains(expr);
+}
+
+bool MatchAreaODIMH5::match_buffer(types::Code code, const uint8_t* data, unsigned size) const
+{
+    if (code != TYPE_AREA) return false;
+    if (size < 1) return false;
+    if (Area::style(data, size) != area::Style::ODIMH5) return false;
+    auto values = Area::get_ODIMH5(data, size);
     return values.contains(expr);
 }
 
@@ -70,6 +88,18 @@ bool MatchAreaVM2::matchItem(const Type& o) const
     const types::area::VM2* v = dynamic_cast<const types::area::VM2*>(&o);
     if (!v) return false;
     auto vid = v->get_VM2();
+    if (station_id != -1 && (unsigned)station_id != vid) return false;
+    if (!expr.empty() && std::find(idlist.begin(), idlist.end(), vid) == idlist.end())
+        return false;
+    return true;
+}
+
+bool MatchAreaVM2::match_buffer(types::Code code, const uint8_t* data, unsigned size) const
+{
+    if (code != TYPE_AREA) return false;
+    if (size < 1) return false;
+    if (Area::style(data, size) != area::Style::VM2) return false;
+    auto vid = Area::get_VM2(data, size);
     if (station_id != -1 && (unsigned)station_id != vid) return false;
     if (!expr.empty() && std::find(idlist.begin(), idlist.end(), vid) == idlist.end())
         return false;

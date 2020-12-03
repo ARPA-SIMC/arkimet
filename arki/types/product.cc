@@ -56,12 +56,12 @@ std::string Product::formatStyle(Product::Style s)
     }
 }
 
-product::Style Product::style() const
+product::Style Product::style(const uint8_t* data, unsigned size)
 {
     return (product::Style)data[0];
 }
 
-void Product::get_GRIB1(unsigned& origin, unsigned& table, unsigned& product) const
+void Product::get_GRIB1(const uint8_t* data, unsigned size, unsigned& origin, unsigned& table, unsigned& product)
 {
     core::BinaryDecoder dec(data + 1, size - 1);
     origin  = dec.pop_uint(1, "GRIB1 origin");
@@ -69,7 +69,7 @@ void Product::get_GRIB1(unsigned& origin, unsigned& table, unsigned& product) co
     product = dec.pop_uint(1, "GRIB1 product");
 }
 
-void Product::get_GRIB2(unsigned& centre, unsigned& discipline, unsigned& category, unsigned& number, unsigned& table_version, unsigned& local_table_version) const
+void Product::get_GRIB2(const uint8_t* data, unsigned size, unsigned& centre, unsigned& discipline, unsigned& category, unsigned& number, unsigned& table_version, unsigned& local_table_version)
 {
     core::BinaryDecoder dec(data + 1, size - 1);
     centre    = dec.pop_uint(2, "GRIB2 centre");
@@ -82,7 +82,7 @@ void Product::get_GRIB2(unsigned& centre, unsigned& discipline, unsigned& catego
     if (dec) local_table_version = dec.pop_uint(1, "GRIB2 local table version");
 }
 
-void Product::get_BUFR(unsigned& type, unsigned& subtype, unsigned& localsubtype, ValueBag& values) const
+void Product::get_BUFR(const uint8_t* data, unsigned size, unsigned& type, unsigned& subtype, unsigned& localsubtype, ValueBag& values)
 {
     core::BinaryDecoder dec(data + 1, size - 1);
     type         = dec.pop_uint(1, "GRIB1 type");
@@ -91,7 +91,7 @@ void Product::get_BUFR(unsigned& type, unsigned& subtype, unsigned& localsubtype
     values = ValueBag::decode(dec);
 }
 
-void Product::get_ODIMH5(std::string& obj, std::string& prod) const
+void Product::get_ODIMH5(const uint8_t* data, unsigned size, std::string& obj, std::string& prod)
 {
     core::BinaryDecoder dec(data + 1, size - 1);
     size_t len;
@@ -101,7 +101,7 @@ void Product::get_ODIMH5(std::string& obj, std::string& prod) const
     prod = dec.pop_string(len, "ODIMH5 product ");
 }
 
-void Product::get_VM2(unsigned& variable_id) const
+void Product::get_VM2(const uint8_t* data, unsigned size, unsigned& variable_id)
 {
     core::BinaryDecoder dec(data + 1, size - 1);
     variable_id = dec.pop_uint(4, "VM2 variable id");

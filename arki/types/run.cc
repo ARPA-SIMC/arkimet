@@ -76,13 +76,13 @@ int Run::compare(const Type& o) const
     }
 }
 
-run::Style Run::style() const
+run::Style Run::style(const uint8_t* data, unsigned size)
 {
     return (run::Style)data[0];
 }
 
 
-unsigned Run::get_Minute() const
+unsigned Run::get_Minute(const uint8_t* data, unsigned size)
 {
     core::BinaryDecoder dec(data + 1, size - 1);
     return dec.pop_varint<unsigned>("run minute");

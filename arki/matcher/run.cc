@@ -36,6 +36,15 @@ bool MatchRunMinute::matchItem(const Type& o) const
     return true;
 }
 
+bool MatchRunMinute::match_buffer(types::Code code, const uint8_t* data, unsigned size) const
+{
+    if (code != TYPE_RUN) return false;
+    if (size < 1) return false;
+    if (types::Run::style(data, size) != run::Style::MINUTE) return false;
+    if (minute >= 0 && (unsigned)minute != Run::get_Minute(data, size)) return false;
+    return true;
+}
+
 std::string MatchRunMinute::toString() const
 {
 	stringstream res;

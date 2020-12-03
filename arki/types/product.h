@@ -45,12 +45,34 @@ public:
     size_t serialisationSizeLength() const override { return traits<Product>::type_sersize_bytes; }
     std::string tag() const override { return traits<Product>::type_tag; }
 
-    Style style() const;
-    void get_GRIB1(unsigned& origin, unsigned& table, unsigned& product) const;
-    void get_GRIB2(unsigned& centre, unsigned& discipline, unsigned& category, unsigned& number, unsigned& table_version, unsigned& local_table_version) const;
-    void get_BUFR(unsigned& type, unsigned& subtype, unsigned& localsubtype, ValueBag& values) const;
-    void get_ODIMH5(std::string& obj, std::string& prod) const;
-    void get_VM2(unsigned& variable_id) const;
+    static Style style(const uint8_t* data, unsigned size);
+    static void get_GRIB1(const uint8_t* data, unsigned size, unsigned& origin, unsigned& table, unsigned& product);
+    static void get_GRIB2(const uint8_t* data, unsigned size, unsigned& centre, unsigned& discipline, unsigned& category, unsigned& number, unsigned& table_version, unsigned& local_table_version);
+    static void get_BUFR(const uint8_t* data, unsigned size, unsigned& type, unsigned& subtype, unsigned& localsubtype, ValueBag& values);
+    static void get_ODIMH5(const uint8_t* data, unsigned size, std::string& obj, std::string& prod);
+    static void get_VM2(const uint8_t* data, unsigned size, unsigned& variable_id);
+
+    Style style() const { return style(data, size); }
+    void get_GRIB1(unsigned& origin, unsigned& table, unsigned& product) const
+    {
+        get_GRIB1(data, size, origin, table, product);
+    }
+    void get_GRIB2(unsigned& centre, unsigned& discipline, unsigned& category, unsigned& number, unsigned& table_version, unsigned& local_table_version) const
+    {
+        get_GRIB2(data, size, centre, discipline, category, number, table_version, local_table_version);
+    }
+    void get_BUFR(unsigned& type, unsigned& subtype, unsigned& localsubtype, ValueBag& values) const
+    {
+        get_BUFR(data, size, type, subtype, localsubtype, values);
+    }
+    void get_ODIMH5(std::string& obj, std::string& prod) const
+    {
+        get_ODIMH5(data, size, obj, prod);
+    }
+    void get_VM2(unsigned& variable_id) const
+    {
+        get_VM2(data, size, variable_id);
+    }
 
     int compare(const Type& o) const override;
 

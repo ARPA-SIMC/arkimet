@@ -60,7 +60,7 @@ add_method("basic", [] {
     wassert(actual(ids[0]) == 1);
 });
 
-// Same as <1> but instantiates attr every time to always test with a cold cache
+// Same as "basic" but instantiates attr every time to always test with a cold cache
 add_method("cold_cache", [] {
     matcher::Parser parser;
     utils::sqlite::SQLiteDB db;

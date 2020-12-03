@@ -118,6 +118,7 @@ struct TypeTestCase : public TestCase
                 t.alternates.push_back(exact[i]);
             t.lower = lower;
             t.higher = higher;
+            t.exact_query = exact_match;
             wassert(t.check());
         });
     }

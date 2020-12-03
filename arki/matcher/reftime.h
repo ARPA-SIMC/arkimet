@@ -53,6 +53,7 @@ struct MatchReftime : public matcher::Implementation
     std::string name() const override;
 
     bool matchItem(const types::Type& o) const override;
+    bool match_buffer(types::Code code, const uint8_t* data, unsigned size) const override;
     bool match_interval(const core::Interval& o) const;
     std::string toString() const override;
     std::string sql(const std::string& column) const;
@@ -78,5 +79,4 @@ struct MatchReftime : public matcher::Implementation
 }
 }
 
-// vim:set ts=4 sw=4:
 #endif

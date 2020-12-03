@@ -54,11 +54,20 @@ public:
     int compare(const Type& o) const override;
 
     // Get the element style
-    level::Style style() const;
-    void get_GRIB1(unsigned& type, unsigned& l1, unsigned& l2) const;
-    void get_GRIB2S(unsigned& type, unsigned& scale, unsigned& value) const;
-    void get_GRIB2D(unsigned& type1, unsigned& scale1, unsigned& value1, unsigned& type2, unsigned& scale2, unsigned& value2) const;
-    void get_ODIMH5(double& min, double& max) const;
+    static level::Style style(const uint8_t* data, unsigned size);
+    static void get_GRIB1(const uint8_t* data, unsigned size, unsigned& type, unsigned& l1, unsigned& l2);
+    static void get_GRIB2S(const uint8_t* data, unsigned size, unsigned& type, unsigned& scale, unsigned& value);
+    static void get_GRIB2D(const uint8_t* data, unsigned size, unsigned& type1, unsigned& scale1, unsigned& value1, unsigned& type2, unsigned& scale2, unsigned& value2);
+    static void get_ODIMH5(const uint8_t* data, unsigned size, double& min, double& max);
+
+    level::Style style() const { return style(data, size); }
+    void get_GRIB1(unsigned& type, unsigned& l1, unsigned& l2) const { get_GRIB1(data, size, type, l1, l2); }
+    void get_GRIB2S(unsigned& type, unsigned& scale, unsigned& value) const { get_GRIB2S(data, size, type, scale, value); }
+    void get_GRIB2D(unsigned& type1, unsigned& scale1, unsigned& value1, unsigned& type2, unsigned& scale2, unsigned& value2) const
+    {
+        get_GRIB2D(data, size, type1, scale1, value1, type2, scale2, value2);
+    }
+    void get_ODIMH5(double& min, double& max) const { get_ODIMH5(data, size, min, max); }
 
     /// Convert a string into a style
     static Style parseStyle(const std::string& str);

@@ -134,14 +134,8 @@ MatchTimerangeGRIB1::MatchTimerangeGRIB1(const std::string& pattern)
     }
 }
 
-bool MatchTimerangeGRIB1::matchItem(const Type& o) const
+bool MatchTimerangeGRIB1::match_data(int mtype, int munit, int mp1, int mp2, bool use_p1, bool use_p2) const
 {
-    const types::timerange::GRIB1* v = dynamic_cast<const types::timerange::GRIB1*>(&o);
-    if (!v) return false;
-    int mtype, mp1, mp2;
-    types::timerange::GRIB1Unit munit;
-    bool use_p1, use_p2;
-    v->getNormalised(mtype, munit, mp1, mp2, use_p1, use_p2);
     // FIXME: here FAILS for GRIB_TIMERANGE_VALID_AT_REFTIME_PLUS_P1P2:
     // normalisation does something else than reduction to months or seconds in
     // that case. GRIB1 match should in fact be deprecated in favour of
@@ -163,6 +157,29 @@ bool MatchTimerangeGRIB1::matchItem(const Type& o) const
             return false;
     }
     return true;
+}
+
+bool MatchTimerangeGRIB1::matchItem(const Type& o) const
+{
+    const types::timerange::GRIB1* v = dynamic_cast<const types::timerange::GRIB1*>(&o);
+    if (!v) return false;
+    int mtype, mp1, mp2;
+    types::timerange::GRIB1Unit munit;
+    bool use_p1, use_p2;
+    v->get_GRIB1_normalised(mtype, munit, mp1, mp2, use_p1, use_p2);
+    return match_data(mtype, munit, mp1, mp2, use_p1, use_p2);
+}
+
+bool MatchTimerangeGRIB1::match_buffer(types::Code code, const uint8_t* data, unsigned size) const
+{
+    if (code != TYPE_TIMERANGE) return false;
+    if (size < 1) return false;
+    if (Timerange::style(data, size) != timerange::Style::GRIB1) return false;
+    int mtype, mp1, mp2;
+    types::timerange::GRIB1Unit munit;
+    bool use_p1, use_p2;
+    Timerange::get_GRIB1_normalised(data, size, mtype, munit, mp1, mp2, use_p1, use_p2);
+    return match_data(mtype, munit, mp1, mp2, use_p1, use_p2);
 }
 
 std::string MatchTimerangeGRIB1::toString() const
@@ -229,6 +246,21 @@ bool MatchTimerangeGRIB2::matchItem(const Type& o) const
     return true;
 }
 
+bool MatchTimerangeGRIB2::match_buffer(types::Code code, const uint8_t* data, unsigned size) const
+{
+    if (code != TYPE_TIMERANGE) return false;
+    if (size < 1) return false;
+    if (Timerange::style(data, size) != timerange::Style::GRIB2) return false;
+    unsigned vtype, vunit;
+    signed long vp1, vp2;
+    Timerange::get_GRIB2(data, size, vtype, vunit, vp1, vp2);
+    if (type != -1 && (unsigned)type != vtype) return false;
+    if (unit != -1 && (unsigned)unit != vunit) return false;
+    if (p1 >= 0 && p1 != vp1) return false;
+    if (p2 >= 0 && p2 != vp2) return false;
+    return true;
+}
+
 std::string MatchTimerangeGRIB2::toString() const
 {
 	CommaJoiner res;
@@ -262,6 +294,22 @@ bool MatchTimerangeBUFR::matchItem(const Type& o) const
     if (!v) return false;
     unsigned vunit, vvalue;
     v->get_BUFR(vunit, vvalue);
+    if (!has_forecast) return true;
+    if (value == 0) return vvalue == 0;
+    if (is_seconds != types::timerange::BUFR::is_seconds(vunit)) return false;
+    if (is_seconds)
+        return value == types::timerange::BUFR::seconds(vunit, vvalue);
+    else
+        return value == types::timerange::BUFR::months(vunit, vvalue);
+}
+
+bool MatchTimerangeBUFR::match_buffer(types::Code code, const uint8_t* data, unsigned size) const
+{
+    if (code != TYPE_TIMERANGE) return false;
+    if (size < 1) return false;
+    if (Timerange::style(data, size) != timerange::Style::BUFR) return false;
+    unsigned vunit, vvalue;
+    Timerange::get_BUFR(data, size, vunit, vvalue);
     if (!has_forecast) return true;
     if (value == 0) return vvalue == 0;
     if (is_seconds != types::timerange::BUFR::is_seconds(vunit)) return false;

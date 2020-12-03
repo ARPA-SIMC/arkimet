@@ -22,6 +22,14 @@ bool MatchProddefGRIB::matchItem(const Type& o) const
     return v->get_GRIB().contains(expr);
 }
 
+bool MatchProddefGRIB::match_buffer(types::Code code, const uint8_t* data, unsigned size) const
+{
+    if (code != TYPE_PRODDEF) return false;
+    if (size < 1) return false;
+    if (types::Proddef::style(data, size) != proddef::Style::GRIB) return false;
+    return Proddef::get_GRIB(data, size).contains(expr);
+}
+
 std::string MatchProddefGRIB::toString() const
 {
 	return "GRIB:" + expr.toString();

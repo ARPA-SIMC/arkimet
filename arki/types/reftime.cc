@@ -70,18 +70,18 @@ int Reftime::compare(const Type& o) const
     return memcmp(data, v->data, size);
 }
 
-reftime::Style Reftime::style() const
+reftime::Style Reftime::style(const uint8_t* data, unsigned size)
 {
     return (reftime::Style)data[0];
 }
 
-core::Time Reftime::get_Position() const
+core::Time Reftime::get_Position(const uint8_t* data, unsigned size)
 {
     core::BinaryDecoder dec(data + 1, size - 1);
     return Time::decode(dec);
 }
 
-void Reftime::get_Period(core::Time& begin, core::Time& end) const
+void Reftime::get_Period(const uint8_t* data, unsigned size, core::Time& begin, core::Time& end)
 {
     core::BinaryDecoder dec(data + 1, size - 1);
     begin = Time::decode(dec);

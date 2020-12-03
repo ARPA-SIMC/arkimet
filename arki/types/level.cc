@@ -259,12 +259,12 @@ int Level::compare(const Type& o) const
 }
 
 
-level::Style Level::style() const
+level::Style Level::style(const uint8_t* data, unsigned size)
 {
     return (level::Style)data[0];
 }
 
-void Level::get_GRIB1(unsigned& type, unsigned& l1, unsigned& l2) const
+void Level::get_GRIB1(const uint8_t* data, unsigned size, unsigned& type, unsigned& l1, unsigned& l2)
 {
     core::BinaryDecoder dec(data + 1, size - 1);
     type = dec.pop_uint(1, "level type");
@@ -285,7 +285,7 @@ void Level::get_GRIB1(unsigned& type, unsigned& l1, unsigned& l2) const
         }
     }
 }
-void Level::get_GRIB2S(unsigned& type, unsigned& scale, unsigned& value) const
+void Level::get_GRIB2S(const uint8_t* data, unsigned size, unsigned& type, unsigned& scale, unsigned& value)
 {
     core::BinaryDecoder dec(data + 1, size - 1);
     type = dec.pop_uint(1, "GRIB2S level type");
@@ -293,7 +293,7 @@ void Level::get_GRIB2S(unsigned& type, unsigned& scale, unsigned& value) const
     value = dec.pop_varint<uint32_t>("GRIB2S level value");
 }
 
-void Level::get_GRIB2D(unsigned& type1, unsigned& scale1, unsigned& value1, unsigned& type2, unsigned& scale2, unsigned& value2) const
+void Level::get_GRIB2D(const uint8_t* data, unsigned size, unsigned& type1, unsigned& scale1, unsigned& value1, unsigned& type2, unsigned& scale2, unsigned& value2)
 {
     core::BinaryDecoder dec(data + 1, size - 1);
     type1 = dec.pop_uint(1, "GRIB2D level type1");
@@ -304,7 +304,7 @@ void Level::get_GRIB2D(unsigned& type1, unsigned& scale1, unsigned& value1, unsi
     value2 = dec.pop_varint<uint32_t>("GRIB2D level value2");
 }
 
-void Level::get_ODIMH5(double& min, double& max) const
+void Level::get_ODIMH5(const uint8_t* data, unsigned size, double& min, double& max)
 {
     core::BinaryDecoder dec(data + 1, size - 1);
     min = dec.pop_double("ODIMH5 min");

@@ -47,10 +47,11 @@ struct Run : public Encoded
 
     int compare(const Type& o) const override;
 
-    // Get the element style
-    run::Style style() const;
+    static run::Style style(const uint8_t* data, unsigned size);
+    static unsigned get_Minute(const uint8_t* data, unsigned size);
 
-    unsigned get_Minute() const;
+    run::Style style() const { return style(data, size); }
+    unsigned get_Minute() const { return get_Minute(data, size); }
 
     /// Convert a string into a style
     static Style parseStyle(const std::string& str);

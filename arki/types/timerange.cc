@@ -220,12 +220,12 @@ int Timerange::compare(const Type& o) const
     }
 }
 
-timerange::Style Timerange::style() const
+timerange::Style Timerange::style(const uint8_t* data, unsigned size)
 {
     return (timerange::Style)data[0];
 }
 
-void Timerange::get_GRIB1(unsigned& type, unsigned& unit, unsigned& p1, unsigned& p2) const
+void Timerange::get_GRIB1(const uint8_t* data, unsigned size, unsigned& type, unsigned& unit, unsigned& p1, unsigned& p2)
 {
     core::BinaryDecoder dec(data + 1, size - 1);
     type = dec.pop_uint(1, "GRIB1 type");
@@ -234,7 +234,82 @@ void Timerange::get_GRIB1(unsigned& type, unsigned& unit, unsigned& p1, unsigned
     p2   = dec.pop_sint(1, "GRIB1 p2");
 }
 
-void Timerange::get_GRIB2(unsigned& type, unsigned& unit, signed long& p1, signed long& p2) const
+void Timerange::get_GRIB1_normalised(const uint8_t* data, unsigned size, int& otype, timerange::GRIB1Unit& ounit, int& op1, int& op2, bool& use_op1, bool& use_op2)
+{
+    unsigned type, unit, p1, p2;
+    get_GRIB1(data, size, type, unit, p1, p2);
+
+    otype = type;
+
+    // Make sense of the time range unit
+    int timemul;
+    if (GRIB1_get_timeunit_conversion(static_cast<t_enum_GRIB_TIMEUNIT>(unit), timemul))
+        ounit = timerange::SECOND;
+    else
+        ounit = timerange::MONTH;
+
+    // Convert p1 and p2
+    op1 = 0, op2 = 0;
+    use_op1 = use_op2 = false;
+
+    switch ((t_enum_GRIB_TIMERANGE)type)
+    {
+        case GRIB_TIMERANGE_FORECAST_AT_REFTIME_PLUS_P1:
+            op1 = p1;
+            use_op1 = true;
+            break;
+		case GRIB_TIMERANGE_ANALYSIS_AT_REFTIME:
+			break;
+		case GRIB_TIMERANGE_VALID_IN_REFTIME_PLUS_P1_REFTIME_PLUS_P2:
+		case GRIB_TIMERANGE_AVERAGE_IN_REFTIME_PLUS_P1_REFTIME_PLUS_P2:
+		case GRIB_TIMERANGE_ACCUMULATED_INTERVAL_REFTIME_PLUS_P1_REFTIME_PLUS_P2:
+		case GRIB_TIMERANGE_DIFFERENCE_REFTIME_PLUS_P2_REFTIME_PLUS_P1:
+		case GRIB_TIMERANGE_AVERAGE_IN_REFTIME_MINUS_P1_REFTIME_MINUS_P2:
+        case GRIB_TIMERANGE_AVERAGE_IN_REFTIME_MINUS_P1_REFTIME_PLUS_P2:
+            op1 = p1; op2 = p2;
+            use_op1 = use_op2 = true;
+            break;
+        case GRIB_TIMERANGE_VALID_AT_REFTIME_PLUS_P1P2:
+            op1 = p1 << 8 | p2;
+            use_op1 = true;
+            use_op2 = false;
+            break;
+		case GRIB_TIMERANGE_CLIMATOLOGICAL_MEAN_OVER_MULTIPLE_YEARS_FOR_P2:
+		case GRIB_TIMERANGE_AVERAGE_OVER_FORECAST_OF_PERIOD_P1_REFTIME_PERIOD_P2:
+		case GRIB_TIMERANGE_ACCUMULATED_OVER_FORECAST_PERIOD_P1_REFTIME_PERIOD_P2:
+		case GRIB_TIMERANGE_AVERAGE_OVER_FORECAST_OF_PERIOD_P1_AT_INTERVALS_P2:
+		case GRIB_TIMERANGE_ACCUMULATION_OVER_FORECAST_PERIOD_P1_AT_INTERVALS_P2:
+		case GRIB_TIMERANGE_AVERAGE_OVER_FORECAST_FIRST_P1_OTHER_P2_REDUCED:
+		case GRIB_TIMERANGE_STDDEV_OF_FORECASTS_FIRST_P1_OTHER_P2_REDUCED:
+		case GRIB_TIMERANGE_STDDEV_OF_FORECASTS_RESPECT_TO_AVERAGE_OF_TENDENCY:
+		case GRIB_TIMERANGE_AVERAGE_OF_DAILY_FORECAST_ACCUMULATIONS:
+		case GRIB_TIMERANGE_AVERAGE_OF_SUCCESSIVE_FORECAST_ACCUMULATIONS:
+		case GRIB_TIMERANGE_AVERAGE_OF_DAILY_FORECAST_AVERAGES:
+        case GRIB_TIMERANGE_AVERAGE_OF_SUCCESSIVE_FORECAST_AVERAGES:
+            op1 = p1;
+            op2 = p2;
+            use_op1 = use_op2 = true;
+            break;
+		case GRIB_TIMERANGE_VARIANCE_OF_ANALYSES_WITH_REFERENCE_TIME_INTERVALS_P2:
+		case GRIB_TIMERANGE_AVERAGE_OVER_ANALYSES_AT_INTERVALS_OF_P2:
+        case GRIB_TIMERANGE_ACCUMULATION_OVER_ANALYSES_AT_INTERVALS_OF_P2:
+            op2 = p2;
+            use_op2 = true;
+            break;
+        default:
+            // Fallback for unknown time range types
+            op1 = p1;
+            op2 = p2;
+            use_op1 = use_op2 = true;
+            break;
+    }
+
+	op1 *= timemul;
+	op2 *= timemul;
+}
+
+
+void Timerange::get_GRIB2(const uint8_t* data, unsigned size, unsigned& type, unsigned& unit, signed long& p1, signed long& p2)
 {
     core::BinaryDecoder dec(data + 1, size - 1);
     type = dec.pop_uint(1, "GRIB2 type");
@@ -243,7 +318,7 @@ void Timerange::get_GRIB2(unsigned& type, unsigned& unit, signed long& p1, signe
     p2   = dec.pop_sint(4, "GRIB2 p2");
 }
 
-void Timerange::get_Timedef(timerange::TimedefUnit& step_unit, unsigned& step_len, unsigned& stat_type, timerange::TimedefUnit& stat_unit, unsigned& stat_len) const
+void Timerange::get_Timedef(const uint8_t* data, unsigned size, timerange::TimedefUnit& step_unit, unsigned& step_len, unsigned& stat_type, timerange::TimedefUnit& stat_unit, unsigned& stat_len)
 {
     core::BinaryDecoder dec(data + 1, size - 1);
     step_unit = static_cast<timerange::TimedefUnit>(dec.pop_byte("timedef forecast step unit"));
@@ -261,7 +336,7 @@ void Timerange::get_Timedef(timerange::TimedefUnit& step_unit, unsigned& step_le
     }
 }
 
-void Timerange::get_BUFR(unsigned& unit, unsigned& value) const
+void Timerange::get_BUFR(const uint8_t* data, unsigned size, unsigned& unit, unsigned& value)
 {
     core::BinaryDecoder dec(data + 1, size - 1);
     unit  = dec.pop_byte("BUFR unit");
@@ -694,8 +769,8 @@ bool GRIB1::equals(const Type& o) const
     int atype, ap1, ap2, btype, bp1, bp2;
     GRIB1Unit aunit, bunit;
     bool dummy_use_p1, dummy_use_p2;
-    getNormalised(atype, aunit, ap1, ap2, dummy_use_p1, dummy_use_p2);
-    v->getNormalised(btype, bunit, bp1, bp2, dummy_use_p1, dummy_use_p2);
+    get_GRIB1_normalised(atype, aunit, ap1, ap2, dummy_use_p1, dummy_use_p2);
+    v->get_GRIB1_normalised(btype, bunit, bp1, bp2, dummy_use_p1, dummy_use_p2);
 
     return atype == btype && aunit == bunit && ap1 == bp1 && ap2 == bp2;
 }
@@ -705,8 +780,8 @@ int GRIB1::compare_local(const GRIB1& o) const
     int atype, ap1, ap2, btype, bp1, bp2;
     GRIB1Unit aunit, bunit;
     bool dummy_use_p1, dummy_use_p2;
-    getNormalised(atype, aunit, ap1, ap2, dummy_use_p1, dummy_use_p2);
-    o.getNormalised(btype, bunit, bp1, bp2, dummy_use_p1, dummy_use_p2);
+    get_GRIB1_normalised(atype, aunit, ap1, ap2, dummy_use_p1, dummy_use_p2);
+    o.get_GRIB1_normalised(btype, bunit, bp1, bp2, dummy_use_p1, dummy_use_p2);
     if (int res = atype - btype) return res;
     if (int res = aunit - bunit) return res;
     if (int res = ap1 - bp1) return res;
@@ -1064,80 +1139,6 @@ bool GRIB1::get_proc_duration(int& duration, bool& is_seconds) const
 // end if
     }
     return false;
-}
-
-void GRIB1::getNormalised(int& otype, GRIB1Unit& ounit, int& op1, int& op2, bool& use_op1, bool& use_op2) const
-{
-    unsigned type, unit, p1, p2;
-    get_GRIB1(type, unit, p1, p2);
-
-    otype = type;
-
-    // Make sense of the time range unit
-    int timemul;
-    if (GRIB1_get_timeunit_conversion(static_cast<t_enum_GRIB_TIMEUNIT>(unit), timemul))
-        ounit = SECOND;
-    else
-        ounit = MONTH;
-
-    // Convert p1 and p2
-    op1 = 0, op2 = 0;
-    use_op1 = use_op2 = false;
-
-    switch ((t_enum_GRIB_TIMERANGE)type)
-    {
-        case GRIB_TIMERANGE_FORECAST_AT_REFTIME_PLUS_P1:
-            op1 = p1;
-            use_op1 = true;
-            break;
-		case GRIB_TIMERANGE_ANALYSIS_AT_REFTIME:
-			break;
-		case GRIB_TIMERANGE_VALID_IN_REFTIME_PLUS_P1_REFTIME_PLUS_P2:
-		case GRIB_TIMERANGE_AVERAGE_IN_REFTIME_PLUS_P1_REFTIME_PLUS_P2:
-		case GRIB_TIMERANGE_ACCUMULATED_INTERVAL_REFTIME_PLUS_P1_REFTIME_PLUS_P2:
-		case GRIB_TIMERANGE_DIFFERENCE_REFTIME_PLUS_P2_REFTIME_PLUS_P1:
-		case GRIB_TIMERANGE_AVERAGE_IN_REFTIME_MINUS_P1_REFTIME_MINUS_P2:
-        case GRIB_TIMERANGE_AVERAGE_IN_REFTIME_MINUS_P1_REFTIME_PLUS_P2:
-            op1 = p1; op2 = p2;
-            use_op1 = use_op2 = true;
-            break;
-        case GRIB_TIMERANGE_VALID_AT_REFTIME_PLUS_P1P2:
-            op1 = p1 << 8 | p2;
-            use_op1 = true;
-            use_op2 = false;
-            break;
-		case GRIB_TIMERANGE_CLIMATOLOGICAL_MEAN_OVER_MULTIPLE_YEARS_FOR_P2:
-		case GRIB_TIMERANGE_AVERAGE_OVER_FORECAST_OF_PERIOD_P1_REFTIME_PERIOD_P2:
-		case GRIB_TIMERANGE_ACCUMULATED_OVER_FORECAST_PERIOD_P1_REFTIME_PERIOD_P2:
-		case GRIB_TIMERANGE_AVERAGE_OVER_FORECAST_OF_PERIOD_P1_AT_INTERVALS_P2:
-		case GRIB_TIMERANGE_ACCUMULATION_OVER_FORECAST_PERIOD_P1_AT_INTERVALS_P2:
-		case GRIB_TIMERANGE_AVERAGE_OVER_FORECAST_FIRST_P1_OTHER_P2_REDUCED:
-		case GRIB_TIMERANGE_STDDEV_OF_FORECASTS_FIRST_P1_OTHER_P2_REDUCED:
-		case GRIB_TIMERANGE_STDDEV_OF_FORECASTS_RESPECT_TO_AVERAGE_OF_TENDENCY:
-		case GRIB_TIMERANGE_AVERAGE_OF_DAILY_FORECAST_ACCUMULATIONS:
-		case GRIB_TIMERANGE_AVERAGE_OF_SUCCESSIVE_FORECAST_ACCUMULATIONS:
-		case GRIB_TIMERANGE_AVERAGE_OF_DAILY_FORECAST_AVERAGES:
-        case GRIB_TIMERANGE_AVERAGE_OF_SUCCESSIVE_FORECAST_AVERAGES:
-            op1 = p1;
-            op2 = p2;
-            use_op1 = use_op2 = true;
-            break;
-		case GRIB_TIMERANGE_VARIANCE_OF_ANALYSES_WITH_REFERENCE_TIME_INTERVALS_P2:
-		case GRIB_TIMERANGE_AVERAGE_OVER_ANALYSES_AT_INTERVALS_OF_P2:
-        case GRIB_TIMERANGE_ACCUMULATION_OVER_ANALYSES_AT_INTERVALS_OF_P2:
-            op2 = p2;
-            use_op2 = true;
-            break;
-        default:
-            // Fallback for unknown time range types
-            op1 = p1;
-            op2 = p2;
-            use_op1 = use_op2 = true;
-            break;
-    }
-
-	op1 *= timemul;
-	op2 *= timemul;
 }
 
 void GRIB1::arg_significance(unsigned type, bool& use_p1, bool& use_p2)

@@ -3,6 +3,7 @@
 #include "aliases.h"
 #include "reftime.h"
 #include "reftime/parser.h"
+#include "arki/core/binary.h"
 #include "arki/types/itemset.h"
 #include "arki/utils/string.h"
 #include "arki/utils/regexp.h"
@@ -64,12 +65,10 @@ void MatcherType::register_matcher(const std::string& name, types::Code code, ma
 
 bool Implementation::match_buffer(types::Code code, const uint8_t* data, unsigned size) const
 {
-    throw std::runtime_error("match_buffer not implemented for matcher: " + toString());
-    /*
-        core::BinaryDecoder dec((const uint8_t*)buf, len);
-        unique_ptr<Type> t = types::Type::decodeInner(code, dec);
-        if (m.matchItem(*t))
-    */
+    core::BinaryDecoder dec(data, size);
+    // TODO: avoid a copy of the buffer if possible
+    auto t = types::Type::decodeInner(code, dec);
+    return matchItem(*t);
 }
 
 

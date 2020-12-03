@@ -47,11 +47,13 @@ struct Reftime : public Encoded
 
     int compare(const Type& o) const override;
 
-    // Get the element style
-    reftime::Style style() const;
+    static reftime::Style style(const uint8_t* data, unsigned size);
+    static core::Time get_Position(const uint8_t* data, unsigned size);
+    static void get_Period(const uint8_t* data, unsigned size, core::Time& begin, core::Time& end);
 
-    core::Time get_Position() const;
-    void get_Period(core::Time& begin, core::Time& end) const;
+    reftime::Style style() const { return style(data, size); }
+    core::Time get_Position() const { return get_Position(data, size); }
+    void get_Period(core::Time& begin, core::Time& end) const { return get_Period(data, size, begin, end); }
 
 	/// Convert a string into a style
 	static Style parseStyle(const std::string& str);

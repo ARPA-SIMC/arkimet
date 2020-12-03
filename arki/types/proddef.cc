@@ -41,7 +41,12 @@ std::string Proddef::formatStyle(Proddef::Style s)
     }
 }
 
-ValueBag Proddef::get_GRIB() const
+proddef::Style Proddef::style(const uint8_t* data, unsigned size)
+{
+    return (proddef::Style)data[0];
+}
+
+ValueBag Proddef::get_GRIB(const uint8_t* data, unsigned size)
 {
     core::BinaryDecoder dec(data + 1, size - 1);
     return ValueBag::decode(dec);
@@ -78,11 +83,6 @@ int Proddef::compare(const Type& o) const
         default:
             throw_consistency_error("parsing Proddef", "unknown Proddef style " + formatStyle(sty));
     }
-}
-
-proddef::Style Proddef::style() const
-{
-    return (proddef::Style)data[0];
 }
 
 std::unique_ptr<Proddef> Proddef::decode(core::BinaryDecoder& dec)

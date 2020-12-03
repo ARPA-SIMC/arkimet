@@ -168,7 +168,7 @@ add_method("grib1_details", [] {
     timerange::GRIB1Unit u;
     int t, p1, p2;
     bool use_p1, use_p2;
-    v->getNormalised(t, u, p1, p2, use_p1, use_p2);
+    v->get_GRIB1_normalised(t, u, p1, p2, use_p1, use_p2);
     wassert(actual(t) == 2);
     wassert(actual(u) == timerange::SECOND);
     wassert(actual(p1) == 2);
@@ -186,7 +186,7 @@ add_method("grib1_details", [] {
         wassert(actual(p2) == 3u);
     }
 
-    v->getNormalised(t, u, p1, p2, use_p1, use_p2);
+    v->get_GRIB1_normalised(t, u, p1, p2, use_p1, use_p2);
     wassert(actual(t) == 2);
     wassert(actual(u) == timerange::SECOND);
     wassert(actual(p1) == 2 * 3600);
@@ -204,7 +204,7 @@ add_method("grib1_details", [] {
         wassert(actual(p2) == 3u);
     }
 
-    v->getNormalised(t, u, p1, p2, use_p1, use_p2);
+    v->get_GRIB1_normalised(t, u, p1, p2, use_p1, use_p2);
     wassert(actual(t) == 2);
     wassert(actual(u) == timerange::MONTH);
     wassert(actual(p1) == 2 * 12);
@@ -222,7 +222,7 @@ add_method("grib1_details", [] {
         wassert(actual(p2) == 127u);
     }
 
-    v->getNormalised(t, u, p1, p2, use_p1, use_p2);
+    v->get_GRIB1_normalised(t, u, p1, p2, use_p1, use_p2);
     wassert(actual(t) == 250);
     wassert(actual(u) == timerange::SECOND);
     wassert(actual(p1) == 124 * 3600);

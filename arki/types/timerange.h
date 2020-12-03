@@ -85,12 +85,35 @@ public:
     int compare(const Type& o) const override;
 
     // Get the element style
-    timerange::Style style() const;
+    static timerange::Style style(const uint8_t* data, unsigned size);
+    static void get_GRIB1(const uint8_t* data, unsigned size, unsigned& type, unsigned& unit, unsigned& p1, unsigned& p2);
+    static void get_GRIB1_normalised(const uint8_t* data, unsigned size, int& type, timerange::GRIB1Unit& unit, int& p1, int& p2, bool& use_op1, bool& use_op2);
 
-    void get_GRIB1(unsigned& type, unsigned& unit, unsigned& p1, unsigned& p2) const;
-    void get_GRIB2(unsigned& type, unsigned& unit, signed long& p1, signed long& p2) const;
-    void get_Timedef(timerange::TimedefUnit& step_unit, unsigned& step_len, unsigned& stat_type, timerange::TimedefUnit& stat_unit, unsigned& stat_len) const;
-    void get_BUFR(unsigned& unit, unsigned& value) const;
+    static void get_GRIB2(const uint8_t* data, unsigned size, unsigned& type, unsigned& unit, signed long& p1, signed long& p2);
+    static void get_Timedef(const uint8_t* data, unsigned size, timerange::TimedefUnit& step_unit, unsigned& step_len, unsigned& stat_type, timerange::TimedefUnit& stat_unit, unsigned& stat_len);
+    static void get_BUFR(const uint8_t* data, unsigned size, unsigned& unit, unsigned& value);
+
+    timerange::Style style() const { return style(data, size); }
+    void get_GRIB1(unsigned& type, unsigned& unit, unsigned& p1, unsigned& p2) const
+    {
+        get_GRIB1(data, size, type, unit, p1, p2);
+    }
+    void get_GRIB1_normalised(int& type, timerange::GRIB1Unit& unit, int& p1, int& p2, bool& use_op1, bool& use_op2) const
+    {
+        get_GRIB1_normalised(data, size, type, unit, p1, p2, use_op1, use_op2);
+    }
+    void get_GRIB2(unsigned& type, unsigned& unit, signed long& p1, signed long& p2) const
+    {
+        get_GRIB2(data, size, type, unit, p1, p2);
+    }
+    void get_Timedef(timerange::TimedefUnit& step_unit, unsigned& step_len, unsigned& stat_type, timerange::TimedefUnit& stat_unit, unsigned& stat_len) const
+    {
+        get_Timedef(data, size, step_unit, step_len, stat_type, stat_unit, stat_len);
+    }
+    void get_BUFR(unsigned& unit, unsigned& value) const
+    {
+        get_BUFR(data, size, unit, value);
+    }
 
     /// Convert a string into a style
     static Style parseStyle(const std::string& str);
@@ -176,8 +199,6 @@ public:
     bool get_forecast_step(int& step, bool& is_seconds) const override;
     int get_proc_type() const override;
     bool get_proc_duration(int& duration, bool& is_seconds) const override;
-
-    void getNormalised(int& type, GRIB1Unit& unit, int& p1, int& p2, bool& use_op1, bool& use_op2) const;
 
     static void arg_significance(unsigned type, bool& use_p1, bool& use_p2);
 };

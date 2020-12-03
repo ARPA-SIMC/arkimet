@@ -43,7 +43,7 @@ add_generic_test(
         {},
         "VM2(1)",
         { "VM2(2)", },
-        "VM2,1:lat=4460016, lon=1207738, rep=locali");
+        "VM2,1");
 
 add_method("vm2_derived_lookup", [] {
     skip_unless_vm2();

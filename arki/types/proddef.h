@@ -47,10 +47,11 @@ struct Proddef : public Encoded
 
     int compare(const Type& o) const override;
 
-    // Get the element style
-    proddef::Style style() const;
+    static proddef::Style style(const uint8_t* data, unsigned size);
+    static ValueBag get_GRIB(const uint8_t* data, unsigned size);
 
-    ValueBag get_GRIB() const;
+    proddef::Style style() const { return style(data, size); }
+    ValueBag get_GRIB() const { return get_GRIB(data, size); }
 
     /// Convert a string into a style
     static Style parseStyle(const std::string& str);

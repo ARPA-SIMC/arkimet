@@ -111,6 +111,12 @@ void TestGenericType::check() const
 
         Matcher m = parser.parse(item->tag() + ":" + item->exactQuery());
         wassert(actual(m(*item)).istrue());
+
+        // Test matching the encoded buffer directly
+        std::vector<uint8_t> enc;
+        core::BinaryEncoder e(enc);
+        item->encodeWithoutEnvelope(e);
+        wassert(actual(m(item->type_code(), enc.data(), enc.size())).istrue());
     }
 }
 
