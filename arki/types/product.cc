@@ -313,7 +313,7 @@ std::unique_ptr<Product> Product::createGRIB1(unsigned char origin, unsigned cha
     buf[1] = origin;
     buf[2] = table;
     buf[3] = product;
-    return std::unique_ptr<Product>(new product::GRIB1(buf, 4));
+    return std::unique_ptr<Product>(new product::GRIB1(buf, 4, true));
 }
 
 std::unique_ptr<Product> Product::createGRIB2(
@@ -343,7 +343,7 @@ std::unique_ptr<Product> Product::createGRIB2(
         if (size > 7)
             buf[7] = local_table_version;
     }
-    return std::unique_ptr<Product>(new product::GRIB2(buf, size));
+    return std::unique_ptr<Product>(new product::GRIB2(buf, size, true));
 }
 
 std::unique_ptr<Product> Product::createBUFR(unsigned char type, unsigned char subtype, unsigned char localsubtype)
@@ -353,7 +353,7 @@ std::unique_ptr<Product> Product::createBUFR(unsigned char type, unsigned char s
     buf[1] = type;
     buf[2] = subtype;
     buf[3] = localsubtype;
-    return std::unique_ptr<Product>(new product::BUFR(buf, 4));
+    return std::unique_ptr<Product>(new product::BUFR(buf, 4, true));
 }
 
 std::unique_ptr<Product> Product::createBUFR(unsigned char type, unsigned char subtype, unsigned char localsubtype, const ValueBag& name)
@@ -389,7 +389,7 @@ std::unique_ptr<Product> Product::createVM2(unsigned variable_id)
     uint8_t* buf = new uint8_t[5];
     buf[0] = (uint8_t)product::Style::VM2;
     core::BinaryEncoder::set_unsigned(buf + 1, variable_id, 4);
-    return std::unique_ptr<Product>(new product::VM2(buf, 5));
+    return std::unique_ptr<Product>(new product::VM2(buf, 5, true));
 }
 
 

@@ -688,7 +688,7 @@ std::unique_ptr<Timerange> Timerange::createGRIB1(unsigned char type, unsigned c
     buf[2] = unit;
     buf[3] = p1;
     buf[4] = p2;
-    return std::unique_ptr<Timerange>(new timerange::GRIB1(buf, 5));
+    return std::unique_ptr<Timerange>(new timerange::GRIB1(buf, 5, true));
 }
 
 std::unique_ptr<Timerange> Timerange::createGRIB2(unsigned char type, unsigned char unit, signed long p1, signed long p2)
@@ -699,7 +699,7 @@ std::unique_ptr<Timerange> Timerange::createGRIB2(unsigned char type, unsigned c
     buf[2] = unit;
     core::BinaryEncoder::set_signed(buf + 3, p1, 4);
     core::BinaryEncoder::set_signed(buf + 7, p2, 4);
-    return std::unique_ptr<Timerange>(new timerange::GRIB2(buf, 11));
+    return std::unique_ptr<Timerange>(new timerange::GRIB2(buf, 11, true));
 }
 
 std::unique_ptr<Timerange> Timerange::createTimedef(uint32_t step_len, timerange::TimedefUnit step_unit)

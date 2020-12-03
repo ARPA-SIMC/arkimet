@@ -106,7 +106,7 @@ std::unique_ptr<BBox> BBox::createInvalid()
 {
     uint8_t* buf = new uint8_t[1];
     buf[0] = static_cast<uint8_t>(bbox::Style::INVALID);
-    return std::unique_ptr<BBox>(new BBox(buf, 1));
+    return std::unique_ptr<BBox>(new BBox(buf, 1, true));
 }
 
 std::ostream& BBox::writeToOstream(std::ostream& o) const

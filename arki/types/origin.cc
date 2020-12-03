@@ -388,7 +388,7 @@ std::unique_ptr<Origin> Origin::createGRIB1(unsigned char centre, unsigned char 
     buf[1] = centre;
     buf[2] = subcentre;
     buf[3] = process;
-    return std::unique_ptr<Origin>(new Origin(buf, 4));
+    return std::unique_ptr<Origin>(new Origin(buf, 4, true));
 }
 
 std::unique_ptr<Origin> Origin::createGRIB2(unsigned short centre, unsigned short subcentre,
@@ -401,7 +401,7 @@ std::unique_ptr<Origin> Origin::createGRIB2(unsigned short centre, unsigned shor
     buf[5] = processtype;
     buf[6] = bgprocessid;
     buf[7] = processid;
-    return std::unique_ptr<Origin>(new Origin(buf, 8));
+    return std::unique_ptr<Origin>(new Origin(buf, 8, true));
 }
 
 std::unique_ptr<Origin> Origin::createBUFR(unsigned char centre, unsigned char subcentre)
@@ -410,7 +410,7 @@ std::unique_ptr<Origin> Origin::createBUFR(unsigned char centre, unsigned char s
     buf[0] = (uint8_t)origin::Style::BUFR;
     buf[1] = centre;
     buf[2] = subcentre;
-    return std::unique_ptr<Origin>(new Origin(buf, 3));
+    return std::unique_ptr<Origin>(new Origin(buf, 3, true));
 }
 
 std::unique_ptr<Origin> Origin::createODIMH5(const std::string& wmo, const std::string& rad, const std::string& plc)

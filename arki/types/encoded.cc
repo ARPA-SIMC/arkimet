@@ -8,27 +8,28 @@ namespace types {
 Encoded::Encoded(const std::vector<uint8_t>& buf)
     : size(buf.size())
 {
-    data = new uint8_t[size];
-    memcpy(data, buf.data(), size);
+    uint8_t* tdata = new uint8_t[size];
+    memcpy(tdata, buf.data(), size);
+    data = tdata;
+}
+
+Encoded::Encoded(const uint8_t* buf, unsigned size, bool owned)
+    : data(buf), size(size), owned(owned)
+{
 }
 
 Encoded::Encoded(const uint8_t* buf, unsigned size)
     : size(size)
 {
-    data = new uint8_t[size];
-    memcpy(data, buf, size);
-}
-
-Encoded::Encoded(uint8_t*&& buf, unsigned&& size)
-    : data(buf), size(size)
-{
-    buf = nullptr;
-    size = 0;
+    uint8_t* tdata = new uint8_t[size];
+    memcpy(tdata, buf, size);
+    data = tdata;
 }
 
 Encoded::~Encoded()
 {
-    delete[] data;
+    if (owned)
+        delete[] data;
 }
 
 

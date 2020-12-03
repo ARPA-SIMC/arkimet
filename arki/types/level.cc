@@ -856,7 +856,7 @@ std::unique_ptr<Level> Level::createODIMH5(double min, double max)
     buf[0] = (uint8_t)level::Style::ODIMH5;
     core::BinaryEncoder::set_double(buf + 1, min);
     core::BinaryEncoder::set_double(buf + 1 + sizeof(double), max);
-    return std::unique_ptr<Level>(new Level(buf, bufsize));
+    return std::unique_ptr<Level>(new Level(buf, bufsize, true));
 }
 
 void Level::init()

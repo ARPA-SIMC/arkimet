@@ -128,7 +128,7 @@ std::unique_ptr<Reftime> Reftime::createPosition(const Time& position)
     uint8_t* buf = new uint8_t[6];
     buf[0] = (uint8_t)reftime::Style::POSITION;
     position.encode_binary(buf + 1);
-    return std::unique_ptr<Reftime>(new reftime::Position(buf, 6));
+    return std::unique_ptr<Reftime>(new reftime::Position(buf, 6, true));
 }
 
 

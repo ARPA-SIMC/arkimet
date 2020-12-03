@@ -10,8 +10,9 @@ namespace types {
 class Encoded : public Type
 {
 protected:
-    uint8_t* data = nullptr;
+    const uint8_t* data = nullptr;
     unsigned size = 0;
+    bool owned = true;
 
 public:
     /// Construct copying a vector contents
@@ -20,12 +21,8 @@ public:
     /// Construct copying a buffer
     Encoded(const uint8_t* buf, unsigned size);
 
-    /**
-     * Construct stealing a buffer pointer
-     *
-     * buf will be memory managed by the Encoded object
-     */
-    Encoded(uint8_t*&& buf, unsigned&& size);
+    /// Construct copying a buffer
+    Encoded(const uint8_t* buf, unsigned size, bool owned);
 
     Encoded(const Encoded&) = delete;
 
