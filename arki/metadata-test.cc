@@ -209,12 +209,11 @@ add_method("json", [](Fixture& f) {
     structured::Memory parsed;
     structured::JSON::parse(output.str(), parsed);
 
-    Metadata md1;
-    md1.read(structured::keys_json, parsed.root());
+    auto md1 = Metadata::read_structure(structured::keys_json, parsed.root());
 
-    wassert(actual(Source::createBlobUnlocked("grib", "", "inbound/test.grib1", 1, 2)) == md1.source());
-    wassert(actual(md1.source().format) == "grib");
-    wassert(f.ensure_md_matches_prefill(md1));
+    wassert(actual(Source::createBlobUnlocked("grib", "", "inbound/test.grib1", 1, 2)) == md1->source());
+    wassert(actual(md1->source().format) == "grib");
+    wassert(f.ensure_md_matches_prefill(*md1));
 });
 
 // Test encoding and decoding with inline data

@@ -528,18 +528,20 @@ void Metadata::serialise(structured::Emitter& e, const structured::Keys& keys, c
     }
 }
 
-void Metadata::read(const structured::Keys& keys, const structured::Reader& val)
+std::shared_ptr<Metadata> Metadata::read_structure(const structured::Keys& keys, const structured::Reader& val)
 {
+    auto res = std::make_shared<Metadata>();
+
     // Parse items
     val.sub(keys.metadata_items, "metadata items", [&](const structured::Reader& items) {
         unsigned size = items.list_size("metadata items");
         for (unsigned idx = 0; idx < size; ++idx)
         {
-            unique_ptr<types::Type> item = items.as_type(idx, "metadata item", keys);
+            std::unique_ptr<types::Type> item = items.as_type(idx, "metadata item", keys);
             if (item->type_code() == TYPE_SOURCE)
-                set_source(move(downcast<types::Source>(move(item))));
+                res->set_source(move(downcast<types::Source>(move(item))));
             else
-                set(move(item));
+                res->set(move(item));
         }
     });
 
@@ -550,9 +552,11 @@ void Metadata::read(const structured::Keys& keys, const structured::Reader& val)
         {
             unique_ptr<types::Type> item = notes.as_type(idx, "metadata note", keys);
             if (item->type_code() == TYPE_NOTE)
-                add_note(*downcast<types::Note>(move(item)));
+                res->add_note(*downcast<types::Note>(move(item)));
         }
     });
+
+    return res;
 }
 
 std::vector<uint8_t> Metadata::encodeBinary() const

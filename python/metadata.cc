@@ -622,8 +622,7 @@ struct read_json : public ClassMethKwargs<read_json>
             }
 
             ReleaseGIL gil;
-            std::unique_ptr<Metadata> res(new Metadata);
-            res->read(arki::structured::keys_json, parsed.root());
+            auto res = Metadata::read_structure(arki::structured::keys_json, parsed.root());
 
             gil.lock();
             return (PyObject*)metadata_create(std::move(res));

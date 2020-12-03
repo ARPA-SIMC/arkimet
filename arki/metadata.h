@@ -166,7 +166,7 @@ public:
     bool operator>=(const Metadata& o) const { return compare(o) >= 0; }
 
     /// Decode from structured data
-    void read(const structured::Keys& keys, const structured::Reader& val);
+    static std::shared_ptr<Metadata> read_structure(const structured::Keys& keys, const structured::Reader& val);
 
     /**
      * Read a metadata document from the given input stream.
