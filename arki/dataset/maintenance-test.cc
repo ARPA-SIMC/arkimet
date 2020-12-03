@@ -477,7 +477,7 @@ void CheckTest<TestFixture>::register_tests()
     )", [&](Fixture& f) {
         std::shared_ptr<Metadata> md(f.import_results[1].clone());
         md->test_set("reftime", "2007-07-06 00:00:00");
-        f.makeSegmentedChecker()->test_change_metadata(f.test_relpath, *md, 0);
+        md = f.makeSegmentedChecker()->test_change_metadata(f.test_relpath, md, 0);
 
         wassert(f.state_is(3, segment::SEGMENT_CORRUPTED));
         wassert(f.query_results({-1, 3, 0, 2}));
@@ -707,7 +707,7 @@ void FixTest<TestFixture>::register_tests()
     )", [&](Fixture& f) {
         std::shared_ptr<Metadata> md(f.import_results[1].clone());
         md->test_set("reftime", "2007-07-06 00:00:00");
-        f.makeSegmentedChecker()->test_change_metadata(f.test_relpath, *md, 0);
+        md = f.makeSegmentedChecker()->test_change_metadata(f.test_relpath, md, 0);
 
         {
             auto checker(f.makeSegmentedChecker());
@@ -898,7 +898,7 @@ void RepackTest<TestFixture>::register_tests()
     )", [&](Fixture& f) {
         std::shared_ptr<Metadata> md(f.import_results[1].clone());
         md->test_set("reftime", "2007-07-06 00:00:00");
-        f.makeSegmentedChecker()->test_change_metadata(f.test_relpath, *md, 0);
+        md = f.makeSegmentedChecker()->test_change_metadata(f.test_relpath, md, 0);
 
         {
             auto checker(f.makeSegmentedChecker());

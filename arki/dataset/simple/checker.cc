@@ -524,14 +524,15 @@ void Checker::test_invalidate_in_index(const std::string& relpath)
     sys::touch(str::joinpath(dataset().path, relpath + ".metadata"), 1496167200);
 }
 
-void Checker::test_change_metadata(const std::string& relpath, Metadata& md, unsigned data_idx)
+std::shared_ptr<Metadata> Checker::test_change_metadata(const std::string& relpath, std::shared_ptr<Metadata> md, unsigned data_idx)
 {
     string md_pathname = str::joinpath(dataset().path, relpath) + ".metadata";
     metadata::Collection mds;
     mds.read_from_file(md_pathname);
-    md.set_source(std::unique_ptr<arki::types::Source>(mds[data_idx].source().clone()));
-    mds[data_idx] = md;
+    md->set_source(std::unique_ptr<arki::types::Source>(mds[data_idx].source().clone()));
+    mds.replace(data_idx, md);
     mds.writeAtomically(md_pathname);
+    return md;
 }
 
 }

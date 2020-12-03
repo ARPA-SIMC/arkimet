@@ -688,16 +688,16 @@ void Checker::test_rename(const std::string& relpath, const std::string& new_rel
 
 }
 
-void Checker::test_change_metadata(const std::string& relpath, Metadata& md, unsigned data_idx)
+std::shared_ptr<Metadata> Checker::test_change_metadata(const std::string& relpath, std::shared_ptr<Metadata> md, unsigned data_idx)
 {
     auto lock = dataset().check_lock_segment(relpath);
     auto wrlock = lock->write_lock();
     CIndex idx(m_dataset, relpath, lock);
     metadata::Collection mds;
     idx.query_segment(mds.inserter_func());
-    md.set_source(std::unique_ptr<arki::types::Source>(mds[data_idx].source().clone()));
-    md.sourceBlob().unlock();
-    mds[data_idx] = md;
+    md->set_source(std::unique_ptr<arki::types::Source>(mds[data_idx].source().clone()));
+    md->sourceBlob().unlock();
+    mds.replace(data_idx, md);
 
     // Reindex mds
     idx.reset();
@@ -708,7 +708,7 @@ void Checker::test_change_metadata(const std::string& relpath, Metadata& md, uns
             throw std::runtime_error("duplicate detected in test_change_metadata");
     }
 
-    md = mds[data_idx];
+    return mds.get(data_idx);
 }
 
 void Checker::test_delete_from_index(const std::string& relpath)
