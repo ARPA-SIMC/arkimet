@@ -45,7 +45,7 @@ public:
     size_t serialisationSizeLength() const override { return traits<Origin>::type_sersize_bytes; }
     std::string tag() const override { return traits<Origin>::type_tag; }
 
-    Origin* clone() const override;
+    Origin* clone() const override { return new Origin(data, size); }
 
     int compare(const Type& o) const override;
 

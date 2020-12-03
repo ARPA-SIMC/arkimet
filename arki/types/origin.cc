@@ -25,11 +25,6 @@ const char* traits<Origin>::type_tag = TAG;
 const types::Code traits<Origin>::type_code = CODE;
 const size_t traits<Origin>::type_sersize_bytes = SERSIZELEN;
 
-Origin* Origin::clone() const
-{
-    return new Origin(data, size);
-}
-
 int Origin::compare(const Type& o) const
 {
     int res = Encoded::compare(o);
