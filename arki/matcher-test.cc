@@ -21,12 +21,12 @@ struct Fixture : public arki::utils::tests::Fixture
 {
     using arki::utils::tests::Fixture::Fixture;
 
-    Metadata md;
+    std::shared_ptr<Metadata> md;
 
     void test_setup()
     {
-        md.clear();
-        arki::tests::fill(md);
+        md = std::make_shared<Metadata>();
+        arki::tests::fill(*md);
     }
 };
 
@@ -50,51 +50,23 @@ add_method("tostring", [](Fixture& f) {
 
 // Try OR matches
 add_method("or", [](Fixture& f) {
-    matcher::Parser parser;
-    Matcher m;
-
-    m = parser.parse("origin:GRIB1 OR BUFR");
-    wassert_true(m(f.md));
-
-    m = parser.parse("origin:BUFR or GRIB1");
-    wassert_true(m(f.md));
-
-    m = parser.parse("origin:BUFR or BUFR");
-    wassert_false(m(f.md));
+    wassert(actual_matcher("origin:GRIB1 OR BUFR").matches(f.md));
+    wassert(actual_matcher("origin:BUFR or GRIB1").matches(f.md));
+    wassert(actual_matcher("origin:BUFR OR BUFR").not_matches(f.md));
 });
 
 // Try matching an unset metadata (see #166)
 add_method("unset", [](Fixture& f) {
-    matcher::Parser parser;
-    Metadata md;
-    Matcher m;
-
-    m = parser.parse("origin:GRIB1");
-    wassert_false(m(md));
-
-    m = parser.parse("product:BUFR");
-    wassert_false(m(md));
-
-    m = parser.parse("level:GRIB1");
-    wassert_false(m(md));
-
-    m = parser.parse("timerange:GRIB1");
-    wassert_false(m(md));
-
-    m = parser.parse("proddef:GRIB");
-    wassert_false(m(md));
-
-    m = parser.parse("area:GRIB:foo=5");
-    wassert_false(m(md));
-
-    m = parser.parse("quantity:VRAD");
-    wassert_false(m(md));
-
-    m = parser.parse("task:test");
-    wassert_false(m(md));
-
-    m = parser.parse("reftime:=2018");
-    wassert_false(m(md));
+    auto md = std::make_shared<Metadata>();
+    wassert(actual_matcher("origin:GRIB1").not_matches(md));
+    wassert(actual_matcher("product:BUFR").not_matches(md));
+    wassert(actual_matcher("level:GRIB1").not_matches(md));
+    wassert(actual_matcher("timerange:GRIB1").not_matches(md));
+    wassert(actual_matcher("proddef:GRIB").not_matches(md));
+    wassert(actual_matcher("area:GRIB:foo=5").not_matches(md));
+    wassert(actual_matcher("quantity:VRAD").not_matches(md));
+    wassert(actual_matcher("task:test").not_matches(md));
+    wassert(actual_matcher("reftime:=2018").not_matches(md));
 });
 
 add_method("regression", [](Fixture& f) {

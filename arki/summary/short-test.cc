@@ -21,8 +21,8 @@ using arki::core::Time;
 struct Fixture : public arki::utils::tests::Fixture
 {
     Summary summary;
-    Metadata md1;
-    Metadata md2;
+    std::shared_ptr<Metadata> md1;
+    std::shared_ptr<Metadata> md2;
 
     Fixture()
     {
@@ -30,23 +30,23 @@ struct Fixture : public arki::utils::tests::Fixture
 
     void test_setup()
     {
-        md1.clear();
-        md1.set(Origin::createGRIB1(1, 2, 3));
-        md1.set(Product::createGRIB1(1, 2, 3));
-        md1.set(Timerange::createGRIB1(1, timerange::SECOND, 0, 0));
-        md1.set(Reftime::createPosition(Time(2007, 1, 2, 3, 4, 5)));
-        md1.set_source(Source::createInline("grib1", 10));
+        md1 = std::make_shared<Metadata>();
+        md1->set(Origin::createGRIB1(1, 2, 3));
+        md1->set(Product::createGRIB1(1, 2, 3));
+        md1->set(Timerange::createGRIB1(1, timerange::SECOND, 0, 0));
+        md1->set(Reftime::createPosition(Time(2007, 1, 2, 3, 4, 5)));
+        md1->set_source(Source::createInline("grib1", 10));
 
-        md2.clear();
-        md2.set(Origin::createGRIB1(3, 4, 5));
-        md2.set(Product::createGRIB1(2, 3, 4));
-        md2.set(Timerange::createGRIB1(1, timerange::SECOND, 0, 0));
-        md2.set(Reftime::createPosition(Time(2006, 5, 4, 3, 2, 1)));
-        md2.set_source(Source::createInline("grib1", 20));
+        md2 = std::make_shared<Metadata>();
+        md2->set(Origin::createGRIB1(3, 4, 5));
+        md2->set(Product::createGRIB1(2, 3, 4));
+        md2->set(Timerange::createGRIB1(1, timerange::SECOND, 0, 0));
+        md2->set(Reftime::createPosition(Time(2006, 5, 4, 3, 2, 1)));
+        md2->set_source(Source::createInline("grib1", 20));
 
         summary.clear();
-        summary.add(md1);
-        summary.add(md2);
+        summary.add(*md1);
+        summary.add(*md2);
     }
 };
 

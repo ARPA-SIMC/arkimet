@@ -65,17 +65,6 @@ Metadata::~Metadata()
     delete m_source;
 }
 
-void Metadata::clear()
-{
-    delete m_encoded;
-    m_encoded = nullptr;
-    m_items.clear();
-    m_notes.clear();
-    delete m_source;
-    m_source = nullptr;
-    m_data.reset();
-}
-
 std::shared_ptr<Metadata> Metadata::clone() const
 {
     auto res = std::make_shared<Metadata>();

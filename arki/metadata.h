@@ -94,7 +94,6 @@ public:
     void set(std::unique_ptr<T> i) { m_items.set(std::move(i)); }
     void set(const std::string& type, const std::string& val) { m_items.set(type, val); }
     void unset(types::Code code) { m_items.unset(code); }
-    void clear();
 
     template<typename T, typename ...Args>
     void set(Args&&... args)
