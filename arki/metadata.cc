@@ -51,7 +51,7 @@ Metadata::Metadata()
 }
 
 Metadata::Metadata(const Metadata& o)
-    : ItemSet(o), m_notes(o.m_notes), m_source(o.m_source ? o.m_source->clone() : nullptr), m_data(o.m_data)
+    : m_items(o.m_items), m_notes(o.m_notes), m_source(o.m_source ? o.m_source->clone() : nullptr), m_data(o.m_data)
 {
 }
 
@@ -63,7 +63,7 @@ Metadata::~Metadata()
 Metadata& Metadata::operator=(const Metadata& o)
 {
     if (this == &o) return *this;
-    ItemSet::operator=(o);
+    m_items = o.m_items;
     delete m_source;
     m_source = o.m_source ? o.m_source->clone() : 0;
     m_notes = o.m_notes;
@@ -73,7 +73,7 @@ Metadata& Metadata::operator=(const Metadata& o)
 
 void Metadata::clear()
 {
-    ItemSet::clear();
+    m_items.clear();
     m_notes.clear();
     delete m_source;
     m_source = nullptr;
@@ -97,13 +97,13 @@ unique_ptr<Metadata> Metadata::create_copy(const Metadata& md)
 
 void Metadata::merge(const Metadata& md)
 {
-    for (const auto& i: md)
+    for (const auto& i: m_items)
         set(*i.second);
 }
 
 void Metadata::diff_items(const Metadata& o, std::function<void(types::Code code, const types::Type* first, const types::Type* second)> dest) const
 {
-    for (const auto& i: *this)
+    for (const auto& i: m_items)
     {
         const Type* other = o.get(i.first);
         if (other && (*i.second) == *other)
@@ -111,7 +111,7 @@ void Metadata::diff_items(const Metadata& o, std::function<void(types::Code code
         dest(i.first, i.second, other);
     }
 
-    for (const auto& i: o)
+    for (const auto& i: o.m_items)
     {
         if (!has(i.first))
             dest(i.first, nullptr, i.second);
@@ -222,34 +222,34 @@ void Metadata::add_note(const std::string& note)
 
 bool Metadata::operator==(const Metadata& m) const
 {
-    if (!ItemSet::operator==(m)) return false;
+    if (m_items != m.m_items) return false;
     if (m_notes != m.m_notes) return false;
     return Type::nullable_equals(m_source, m.m_source);
 }
 
 int Metadata::compare(const Metadata& m) const
 {
-    if (int res = ItemSet::compare(m)) return res;
+    if (int res = m_items.compare(m.m_items)) return res;
     return Type::nullable_compare(m_source, m.m_source);
 }
 
 int Metadata::compare_items(const Metadata& m) const
 {
     // Compare skipping VALUE items
-    auto a = begin();
-    auto b = m.begin();
-    if (a != end() && a->first == TYPE_VALUE) ++a;
-    if (b != m.end() && b->first == TYPE_VALUE) ++b;
+    auto a = m_items.begin();
+    auto b = m.m_items.begin();
+    if (a != m_items.end() && a->first == TYPE_VALUE) ++a;
+    if (b != m.m_items.end() && b->first == TYPE_VALUE) ++b;
     auto incr_a = [&] {
         ++a;
-        if (a != end() && a->first == TYPE_VALUE) ++a;
+        if (a != m_items.end() && a->first == TYPE_VALUE) ++a;
     };
     auto incr_b = [&] {
         ++b;
-        if (b != m.end() && b->first == TYPE_VALUE) ++b;
+        if (b != m.m_items.end() && b->first == TYPE_VALUE) ++b;
     };
 
-    for ( ; a != end() && b != m.end(); incr_a(), incr_b())
+    for ( ; a != m_items.end() && b != m.m_items.end(); incr_a(), incr_b())
     {
         if (a->first == TYPE_VALUE) ++a;
         if (b->first == TYPE_VALUE) ++b;
@@ -259,12 +259,12 @@ int Metadata::compare_items(const Metadata& m) const
             return 1;
         if (int res = a->second->compare(*b->second)) return res;
     }
-    if (a != end() && a->first == TYPE_VALUE) ++a;
-    if (b != m.end() && b->first == TYPE_VALUE) ++b;
+    if (a != m_items.end() && a->first == TYPE_VALUE) ++a;
+    if (b != m.m_items.end() && b->first == TYPE_VALUE) ++b;
 
-    if (a == end() && b == m.end())
+    if (a == m_items.end() && b == m.m_items.end())
         return 0;
-    if (a == end())
+    if (a == m_items.end())
         return -1;
     return 1;
 }
@@ -461,7 +461,7 @@ std::string Metadata::to_yaml(const Formatter* formatter) const
 {
     std::stringstream buf;
     if (m_source) buf << "Source: " << *m_source << endl;
-    for (const auto& i: m_vals)
+    for (const auto& i: m_items)
     {
         string uc = str::lower(i.second->tag());
         uc[0] = toupper(uc[0]);
@@ -506,7 +506,7 @@ void Metadata::serialise(structured::Emitter& e, const structured::Keys& keys, c
     e.add(keys.metadata_items);
     e.start_list();
     if (m_source) m_source->serialise(e, keys, f);
-    for (const auto& val: m_vals)
+    for (const auto& val: m_items)
         val.second->serialise(e, keys, f);
     e.end_list();
     e.add(keys.metadata_notes);
@@ -572,7 +572,7 @@ void Metadata::encodeBinary(core::BinaryEncoder& enc) const
     // Encode the various information
     vector<uint8_t> encoded;
     core::BinaryEncoder subenc(encoded);
-    for (const auto& i: m_vals)
+    for (const auto& i: m_items)
         i.second->encodeBinary(subenc);
     subenc.add_raw(m_notes);
     if (m_source)

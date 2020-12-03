@@ -52,9 +52,12 @@ class Formatter;
 /**
  * Metadata information about a message
  */
-struct Metadata : protected types::ItemSet
+struct Metadata
 {
 protected:
+    /// Metadata items currently set
+    types::ItemSet m_items;
+
     /// Annotations, kept binary-serialized to string
     std::vector<uint8_t> m_notes;
 
@@ -73,15 +76,15 @@ public:
 
     Metadata* clone() const;
 
-    bool has(types::Code code) const { return ItemSet::has(code); }
-    const types::Type* get(types::Code code) const { return ItemSet::get(code); }
+    bool has(types::Code code) const { return m_items.has(code); }
+    const types::Type* get(types::Code code) const { return m_items.get(code); }
     template<typename T>
-    const T* get() const { return ItemSet::get<T>(); }
-    void set(const types::Type& item) { ItemSet::set(item); }
+    const T* get() const { return m_items.get<T>(); }
+    void set(const types::Type& item) { m_items.set(item); }
     template<typename T>
-    void set(std::unique_ptr<T> i) { ItemSet::set(std::move(i)); }
-    void set(const std::string& type, const std::string& val) { ItemSet::set(type, val); }
-    void unset(types::Code code) { ItemSet::unset(code); }
+    void set(std::unique_ptr<T> i) { m_items.set(std::move(i)); }
+    void set(const std::string& type, const std::string& val) { m_items.set(type, val); }
+    void unset(types::Code code) { m_items.unset(code); }
     void clear();
 
     template<typename T, typename ...Args>
@@ -104,12 +107,12 @@ public:
     void test_set(const types::Type& item)
     {
         std::unique_ptr<types::Type> clone(item.clone());
-        types::ItemSet::set(std::move(clone));
+        m_items.set(std::move(clone));
     }
 
     void test_set(std::unique_ptr<types::Type> item)
     {
-        types::ItemSet::set(std::move(item));
+        m_items.set(std::move(item));
     }
 
     template<typename T>
