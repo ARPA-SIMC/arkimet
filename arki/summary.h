@@ -270,25 +270,6 @@ public:
 	 */
 	std::unique_ptr<arki::utils::geos::Geometry> getConvexHull() const;
 
-    /**
-     * Return all the unique combination of metadata items that are found
-     * by the matcher in this summary.
-     *
-     * Only metadata items for which there is an expression in matcher are
-     * present in the output.
-     */
-    std::vector<types::ItemSet> resolveMatcher(const Matcher& matcher) const;
-
-    /**
-     * Return all the unique combination of metadata items that are found
-     * by the matcher in this summary.
-     *
-     * Metadata are added to res, sorted and avoiding duplicated.
-     *
-     * Return the number of matching items found (0 if nothing matched)
-     */
-    size_t resolveMatcher(const Matcher& matcher, std::vector<types::ItemSet>& res) const;
-
     friend class matcher::AND;
 };
 

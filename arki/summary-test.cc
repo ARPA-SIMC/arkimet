@@ -268,17 +268,6 @@ add_method("add_with_stats", [](Fixture& f) {
     wassert(actual(f.s.size()) == 123486u);
 });
 
-// Test resolveMatcher
-add_method("resolvematcher", [](Fixture& f) {
-    std::vector<ItemSet> res = f.s.resolveMatcher(f.parser.parse("origin:GRIB1,1,2,3; product:GRIB1,1,2,3 or GRIB1,2,3,4"));
-    wassert(actual(res.size()) == 1u);
-
-    ItemSet& is = res[0];
-    wassert(actual(is.size()) == 2u);
-    wassert(actual(Origin::createGRIB1(1, 2, 3)) == is.get(TYPE_ORIGIN));
-    wassert(actual(Product::createGRIB1(1, 2, 3)) == is.get(TYPE_PRODUCT));
-});
-
 // Test loading an old summary
 add_method("binary_old", [](Fixture& f) {
     Summary s;
