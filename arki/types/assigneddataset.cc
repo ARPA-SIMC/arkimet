@@ -69,14 +69,16 @@ void AssignedDataset::get(core::Time& changed, std::string& name, std::string& i
     id = dec.pop_string(id_len, "dataset id");
 }
 
-unique_ptr<AssignedDataset> AssignedDataset::decode(core::BinaryDecoder& dec)
+std::unique_ptr<AssignedDataset> AssignedDataset::decode(core::BinaryDecoder& dec, bool reuse_buffer)
 {
-    Time changed = Time::decode(dec);
-    size_t name_len = dec.pop_uint(1, "length of dataset name");
-    string name = dec.pop_string(name_len, "dataset name");
-    size_t id_len = dec.pop_uint(2, "length of dataset id");
-    string id = dec.pop_string(id_len, "dataset id");
-    return AssignedDataset::create(changed, name, id);
+    dec.ensure_size(3, "Assigneddataset data");
+    std::unique_ptr<AssignedDataset> res;
+    if (reuse_buffer)
+        res.reset(new AssignedDataset(dec.buf, dec.size, false));
+    else
+        res.reset(new AssignedDataset(dec.buf, dec.size));
+    dec.skip(dec.size);
+    return res;
 }
 
 std::ostream& AssignedDataset::writeToOstream(std::ostream& o) const

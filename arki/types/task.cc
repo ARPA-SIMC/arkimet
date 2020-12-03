@@ -44,10 +44,16 @@ int Task::compare(const Type& o) const
     return get().compare(v->get());
 }
 
-std::unique_ptr<Task> Task::decode(core::BinaryDecoder& dec)
+std::unique_ptr<Task> Task::decode(core::BinaryDecoder& dec, bool reuse_buffer)
 {
     dec.ensure_size(1, "Task data");
-    return std::unique_ptr<Task>(new Task(dec.buf, dec.size));
+    std::unique_ptr<Task> res;
+    if (reuse_buffer)
+        res.reset(new Task(dec.buf, dec.size, false));
+    else
+        res.reset(new Task(dec.buf, dec.size));
+    dec.skip(dec.size);
+    return res;
 }
 
 std::ostream& Task::writeToOstream(std::ostream& o) const

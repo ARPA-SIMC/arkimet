@@ -88,7 +88,7 @@ unsigned Run::get_Minute(const uint8_t* data, unsigned size)
     return dec.pop_varint<unsigned>("run minute");
 }
 
-std::unique_ptr<Run> Run::decode(core::BinaryDecoder& dec)
+std::unique_ptr<Run> Run::decode(core::BinaryDecoder& dec, bool reuse_buffer)
 {
     dec.ensure_size(1, "run style");
     Style sty = static_cast<run::Style>(dec.buf[0]);
@@ -96,7 +96,10 @@ std::unique_ptr<Run> Run::decode(core::BinaryDecoder& dec)
     switch (sty)
     {
         case Style::MINUTE:
-            res.reset(new run::Minute(dec.buf, dec.size));
+            if (reuse_buffer)
+                res.reset(new run::Minute(dec.buf, dec.size, false));
+            else
+                res.reset(new run::Minute(dec.buf, dec.size));
             dec.skip(dec.size);
             break;
         default:

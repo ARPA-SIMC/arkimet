@@ -80,7 +80,7 @@ public:
 
     std::string exactQuery() const override;
 
-    static std::unique_ptr<Level> decode(core::BinaryDecoder& dec);
+    static std::unique_ptr<Level> decode(core::BinaryDecoder& dec, bool reuse_buffer);
     static std::unique_ptr<Level> decodeString(const std::string& val);
     static std::unique_ptr<Level> decode_structure(const structured::Keys& keys, const structured::Reader& val);
 

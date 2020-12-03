@@ -156,7 +156,12 @@ unique_ptr<Type> Type::decode(core::BinaryDecoder& dec)
 
 unique_ptr<Type> Type::decodeInner(types::Code code, core::BinaryDecoder& dec)
 {
-    return std::unique_ptr<Type>(types::MetadataType::get(code)->decode_func(dec));
+    return std::unique_ptr<Type>(types::MetadataType::get(code)->decode_func(dec, false));
+}
+
+unique_ptr<Type> Type::decode_inner(types::Code code, core::BinaryDecoder& dec, bool reuse_buffer)
+{
+    return std::unique_ptr<Type>(types::MetadataType::get(code)->decode_func(dec, reuse_buffer));
 }
 
 unique_ptr<Type> decodeString(types::Code code, const std::string& val)

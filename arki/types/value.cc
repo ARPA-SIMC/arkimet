@@ -65,7 +65,7 @@ void Value::serialise_local(structured::Emitter& e, const structured::Keys& keys
     e.add(keys.value_value, buffer);
 }
 
-unique_ptr<Value> Value::decode(core::BinaryDecoder& dec)
+unique_ptr<Value> Value::decode(core::BinaryDecoder& dec, bool reuse_buffer)
 {
     return Value::create(dec.pop_string(dec.size, "'value' metadata type"));
 }

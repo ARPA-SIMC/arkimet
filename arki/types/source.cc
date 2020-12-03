@@ -87,7 +87,7 @@ void Source::serialise_local(structured::Emitter& e, const structured::Keys& key
     e.add(keys.source_format); e.add(format);
 }
 
-unique_ptr<Source> Source::decode(core::BinaryDecoder& dec)
+unique_ptr<Source> Source::decode(core::BinaryDecoder& dec, bool reuse_buffer)
 {
     return decodeRelative(dec, string());
 }

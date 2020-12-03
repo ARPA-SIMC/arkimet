@@ -175,6 +175,7 @@ struct Type
      */
     static std::unique_ptr<Type> decode(core::BinaryDecoder& dec);
     static std::unique_ptr<Type> decodeInner(types::Code, core::BinaryDecoder& dec);
+    static std::unique_ptr<Type> decode_inner(types::Code, core::BinaryDecoder& dec, bool reuse_buffer);
 };
 
 /// Write as a string to an output stream

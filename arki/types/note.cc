@@ -54,10 +54,14 @@ int Note::compare(const Type& o) const
     return 0;
 }
 
-std::unique_ptr<Note> Note::decode(core::BinaryDecoder& dec)
+std::unique_ptr<Note> Note::decode(core::BinaryDecoder& dec, bool reuse_buffer)
 {
     dec.ensure_size(6, "Note data");
-    std::unique_ptr<Note> res(new Note(dec.buf, dec.size));
+    std::unique_ptr<Note> res;
+    if (reuse_buffer)
+        res.reset(new Note(dec.buf, dec.size, false));
+    else
+        res.reset(new Note(dec.buf, dec.size));
     dec.skip(dec.size);
     return res;
 }

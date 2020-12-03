@@ -264,10 +264,14 @@ void Origin::serialise_local(structured::Emitter& e, const structured::Keys& key
     }
 }
 
-std::unique_ptr<Origin> Origin::decode(core::BinaryDecoder& dec)
+std::unique_ptr<Origin> Origin::decode(core::BinaryDecoder& dec, bool reuse_buffer)
 {
     dec.ensure_size(1, "Origin style");
-    std::unique_ptr<Origin> res(new Origin(dec.buf, dec.size));
+    std::unique_ptr<Origin> res;
+    if (reuse_buffer)
+        res.reset(new Origin(dec.buf, dec.size, false));
+    else
+        res.reset(new Origin(dec.buf, dec.size));
     dec.skip(dec.size);
     return res;
 }

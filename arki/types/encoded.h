@@ -21,7 +21,15 @@ public:
     /// Construct copying a buffer
     Encoded(const uint8_t* buf, unsigned size);
 
-    /// Construct copying a buffer
+    /**
+     * Construct acquiring a pointer.
+     *
+     * No copy will be made, the pointer will be used as is.
+     *
+     * If owned is true, the buffer will be managed by Encoded and deallocated
+     * on destruction. If false, the buffer is supposed to remain allocated
+     * during the whole lifetime of the Encoded object
+     */
     Encoded(const uint8_t* buf, unsigned size, bool owned);
 
     Encoded(const Encoded&) = delete;

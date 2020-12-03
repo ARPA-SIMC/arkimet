@@ -85,7 +85,7 @@ int Proddef::compare(const Type& o) const
     }
 }
 
-std::unique_ptr<Proddef> Proddef::decode(core::BinaryDecoder& dec)
+std::unique_ptr<Proddef> Proddef::decode(core::BinaryDecoder& dec, bool reuse_buffer)
 {
     dec.ensure_size(1, "Proddef style");
     Style sty = static_cast<proddef::Style>(dec.buf[0]);
@@ -93,7 +93,10 @@ std::unique_ptr<Proddef> Proddef::decode(core::BinaryDecoder& dec)
     switch (sty)
     {
         case Style::GRIB:
-            res.reset(new proddef::GRIB(dec.buf, dec.size));
+            if (reuse_buffer)
+                res.reset(new proddef::GRIB(dec.buf, dec.size, false));
+            else
+                res.reset(new proddef::GRIB(dec.buf, dec.size));
             dec.skip(dec.size);
             break;
         default:

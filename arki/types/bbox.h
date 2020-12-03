@@ -69,7 +69,7 @@ struct BBox : public types::Encoded
     /// CODEC functions
     std::ostream& writeToOstream(std::ostream& o) const;
     void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const;
-    static std::unique_ptr<BBox> decode(core::BinaryDecoder& dec);
+    static std::unique_ptr<BBox> decode(core::BinaryDecoder& dec, bool reuse_buffer);
     static std::unique_ptr<BBox> decodeString(const std::string& val);
     static std::unique_ptr<BBox> decode_structure(const structured::Keys& keys, const structured::Reader& val);
 

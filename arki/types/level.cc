@@ -586,10 +586,14 @@ std::string Level::exactQuery() const
 }
 
 
-unique_ptr<Level> Level::decode(core::BinaryDecoder& dec)
+unique_ptr<Level> Level::decode(core::BinaryDecoder& dec, bool reuse_buffer)
 {
     dec.ensure_size(1, "Level style");
-    std::unique_ptr<Level> res(new Level(dec.buf, dec.size));
+    std::unique_ptr<Level> res;
+    if (reuse_buffer)
+        res.reset(new Level(dec.buf, dec.size, false));
+    else
+        res.reset(new Level(dec.buf, dec.size));
     dec.skip(dec.size);
     return res;
 }

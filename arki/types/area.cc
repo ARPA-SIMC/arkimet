@@ -128,7 +128,7 @@ static thread_local std::unique_ptr<BBox> bbox;
     return cached_bbox;
 }
 
-std::unique_ptr<Area> Area::decode(core::BinaryDecoder& dec)
+std::unique_ptr<Area> Area::decode(core::BinaryDecoder& dec, bool reuse_buffer)
 {
     dec.ensure_size(1, "Area style");
     Style sty = static_cast<area::Style>(dec.buf[0]);
@@ -136,16 +136,25 @@ std::unique_ptr<Area> Area::decode(core::BinaryDecoder& dec)
     switch (sty)
     {
         case Style::GRIB:
-            res.reset(new area::GRIB(dec.buf, dec.size));
+            if (reuse_buffer)
+                res.reset(new area::GRIB(dec.buf, dec.size, false));
+            else
+                res.reset(new area::GRIB(dec.buf, dec.size));
             dec.skip(dec.size);
             break;
         case Style::ODIMH5:
-            res.reset(new area::ODIMH5(dec.buf, dec.size));
+            if (reuse_buffer)
+                res.reset(new area::ODIMH5(dec.buf, dec.size, false));
+            else
+                res.reset(new area::ODIMH5(dec.buf, dec.size));
             dec.skip(dec.size);
             break;
         case Style::VM2:
             dec.ensure_size(5, "VM data");
-            res.reset(new area::VM2(dec.buf, dec.size));
+            if (reuse_buffer)
+                res.reset(new area::VM2(dec.buf, dec.size, false));
+            else
+                res.reset(new area::VM2(dec.buf, dec.size));
             dec.skip(dec.size);
             break;
         default:

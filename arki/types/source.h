@@ -60,7 +60,7 @@ struct Source : public Type
 
     /// CODEC functions
     virtual void encodeWithoutEnvelope(core::BinaryEncoder& enc) const;
-    static std::unique_ptr<Source> decode(core::BinaryDecoder& dec);
+    static std::unique_ptr<Source> decode(core::BinaryDecoder& dec, bool reuse_buffer);
     static std::unique_ptr<Source> decodeRelative(core::BinaryDecoder& dec, const std::string& basedir);
     static std::unique_ptr<Source> decodeString(const std::string& val);
     static std::unique_ptr<Source> decode_structure(const structured::Keys& keys, const structured::Reader& val);

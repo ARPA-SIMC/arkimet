@@ -88,7 +88,7 @@ void Reftime::get_Period(const uint8_t* data, unsigned size, core::Time& begin, 
     end = Time::decode(dec);
 }
 
-std::unique_ptr<Reftime> Reftime::decode(core::BinaryDecoder& dec)
+std::unique_ptr<Reftime> Reftime::decode(core::BinaryDecoder& dec, bool reuse_buffer)
 {
     dec.ensure_size(1, "Reftime style");
     Style sty = static_cast<reftime::Style>(dec.buf[0]);
@@ -96,7 +96,10 @@ std::unique_ptr<Reftime> Reftime::decode(core::BinaryDecoder& dec)
     switch (sty)
     {
         case Style::POSITION:
-            res.reset(new reftime::Position(dec.buf, dec.size));
+            if (reuse_buffer)
+                res.reset(new reftime::Position(dec.buf, dec.size, false));
+            else
+                res.reset(new reftime::Position(dec.buf, dec.size));
             dec.skip(dec.size);
             break;
         default:

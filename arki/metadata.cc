@@ -18,6 +18,7 @@
 #include "utils/yaml.h"
 #include <unistd.h>
 #include <cstdlib>
+#include <cstring>
 #include <cerrno>
 #include <stdexcept>
 #include <fcntl.h>
@@ -50,13 +51,24 @@ Metadata::Metadata()
 {
 }
 
+Metadata::Metadata(const uint8_t* encoded, unsigned size)
+    : m_encoded_size(size)
+{
+    uint8_t* tdata = new uint8_t[size];
+    memcpy(tdata, encoded, size);
+    m_encoded = tdata;
+}
+
 Metadata::~Metadata()
 {
+    delete m_encoded;
     delete m_source;
 }
 
 void Metadata::clear()
 {
+    delete m_encoded;
+    m_encoded = nullptr;
     m_items.clear();
     m_notes.clear();
     delete m_source;
@@ -156,7 +168,7 @@ std::vector<types::Note> Metadata::notes() const
         if (el_type != TYPE_NOTE)
             throw std::runtime_error("cannot decode note: item type is not a note");
 
-        res.emplace_back(std::move(*types::Note::decode(inner)));
+        res.emplace_back(std::move(*types::Note::decode(inner, false)));
     }
     return res;
 }
@@ -296,24 +308,26 @@ std::shared_ptr<Metadata> Metadata::read_binary_inner(core::BinaryDecoder& dec, 
     }
 
     // Parse the various elements
-    auto res = std::make_shared<Metadata>();
-    while (dec)
+    auto res = std::make_shared<Metadata>(dec.buf, dec.size);
+    core::BinaryDecoder mddec(res->m_encoded, res->m_encoded_size);
+    while (mddec)
     {
-        const uint8_t* encoded_start = dec.buf;
+        const uint8_t* encoded_start = mddec.buf;
         TypeCode el_type;
-        core::BinaryDecoder inner = dec.pop_type_envelope(el_type);
-        const uint8_t* encoded_end = dec.buf;
+        core::BinaryDecoder inner = mddec.pop_type_envelope(el_type);
+        const uint8_t* encoded_end = mddec.buf;
 
         switch (el_type)
         {
             case TYPE_NOTE:
+                // TODO: just store a vector of Note objects pointing to mddec
                 res->m_notes.insert(res->m_notes.end(), encoded_start, encoded_end);
                 break;
             case TYPE_SOURCE:
                 res->set_source(types::Source::decodeRelative(inner, rc.basedir));
                 break;
             default:
-                res->set(types::Type::decodeInner(el_type, inner));
+                res->set(types::Type::decode_inner(el_type, inner, true));
                 break;
         }
     }

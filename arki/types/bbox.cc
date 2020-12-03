@@ -84,10 +84,14 @@ bbox::Style BBox::style() const
     return (bbox::Style)data[0];
 }
 
-std::unique_ptr<BBox> BBox::decode(core::BinaryDecoder& dec)
+std::unique_ptr<BBox> BBox::decode(core::BinaryDecoder& dec, bool reuse_buffer)
 {
     dec.ensure_size(1, "bbox style");
-    std::unique_ptr<BBox> res(new BBox(dec.buf, dec.size));
+    std::unique_ptr<BBox> res;
+    if (reuse_buffer)
+        res.reset(new BBox(dec.buf, dec.size, false));
+    else
+        res.reset(new BBox(dec.buf, dec.size));
     dec.skip(dec.size);
     return res;
 }

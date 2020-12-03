@@ -146,7 +146,7 @@ public:
     virtual bool get_proc_duration(int& duration, bool& is_seconds) const = 0;
 
     /// CODEC functions
-    static std::unique_ptr<Timerange> decode(core::BinaryDecoder& dec);
+    static std::unique_ptr<Timerange> decode(core::BinaryDecoder& dec, bool reuse_buffer);
     static std::unique_ptr<Timerange> decodeString(const std::string& val);
     static std::unique_ptr<Timerange> decode_structure(const structured::Keys& keys, const structured::Reader& val);
 

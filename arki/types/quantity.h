@@ -32,7 +32,7 @@ struct Quantity : public Encoded
     int compare(const Type& o) const override;
 
     /// CODEC functions
-    static std::unique_ptr<Quantity> decode(core::BinaryDecoder& dec);
+    static std::unique_ptr<Quantity> decode(core::BinaryDecoder& dec, bool reuse_buffer);
     static std::unique_ptr<Quantity> decodeString(const std::string& val);
     std::ostream& writeToOstream(std::ostream& o) const override;
     void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;

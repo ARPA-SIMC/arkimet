@@ -343,7 +343,7 @@ void Timerange::get_BUFR(const uint8_t* data, unsigned size, unsigned& unit, uns
     value = dec.pop_varint<unsigned>("BUFR value");
 }
 
-std::unique_ptr<Timerange> Timerange::decode(core::BinaryDecoder& dec)
+std::unique_ptr<Timerange> Timerange::decode(core::BinaryDecoder& dec, bool reuse_buffer)
 {
     dec.ensure_size(1, "Timerange style");
     Style sty = static_cast<timerange::Style>(dec.buf[0]);
@@ -352,22 +352,34 @@ std::unique_ptr<Timerange> Timerange::decode(core::BinaryDecoder& dec)
     {
         case timerange::Style::GRIB1:
             dec.ensure_size(5, "GRIB1 data");
-            res.reset(new timerange::GRIB1(dec.buf, dec.size));
+            if (reuse_buffer)
+                res.reset(new timerange::GRIB1(dec.buf, dec.size, false));
+            else
+                res.reset(new timerange::GRIB1(dec.buf, dec.size));
             dec.skip(dec.size);
             break;
         case timerange::Style::GRIB2:
             dec.ensure_size(11, "GRIB2 data");
-            res.reset(new timerange::GRIB2(dec.buf, dec.size));
+            if (reuse_buffer)
+                res.reset(new timerange::GRIB2(dec.buf, dec.size, false));
+            else
+                res.reset(new timerange::GRIB2(dec.buf, dec.size));
             dec.skip(dec.size);
             break;
         case timerange::Style::TIMEDEF:
             dec.ensure_size(3, "Timedef data");
-            res.reset(new timerange::Timedef(dec.buf, dec.size));
+            if (reuse_buffer)
+                res.reset(new timerange::Timedef(dec.buf, dec.size, false));
+            else
+                res.reset(new timerange::Timedef(dec.buf, dec.size));
             dec.skip(dec.size);
             break;
         case timerange::Style::BUFR:
             dec.ensure_size(3, "BUFR data");
-            res.reset(new timerange::BUFR(dec.buf, dec.size));
+            if (reuse_buffer)
+                res.reset(new timerange::BUFR(dec.buf, dec.size, false));
+            else
+                res.reset(new timerange::BUFR(dec.buf, dec.size));
             dec.skip(dec.size);
             break;
         default:

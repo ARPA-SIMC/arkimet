@@ -36,7 +36,7 @@ public:
     void get(core::Time& time, std::string& content) const;
 
     /// CODEC functions
-    static std::unique_ptr<Note> decode(core::BinaryDecoder& dec);
+    static std::unique_ptr<Note> decode(core::BinaryDecoder& dec, bool reuse_buffer);
     static std::unique_ptr<Note> decodeString(const std::string& val);
     std::ostream& writeToOstream(std::ostream& o) const override;
     void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;

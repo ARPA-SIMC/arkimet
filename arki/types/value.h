@@ -39,7 +39,7 @@ struct Value : public Type
     void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
 
     /// CODEC functions
-    static std::unique_ptr<Value> decode(core::BinaryDecoder& dec);
+    static std::unique_ptr<Value> decode(core::BinaryDecoder& dec, bool reuse_buffer);
     static std::unique_ptr<Value> decodeString(const std::string& val);
     static std::unique_ptr<Value> decode_structure(const structured::Keys& keys, const structured::Reader& val);
 

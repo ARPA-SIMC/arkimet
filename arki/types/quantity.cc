@@ -61,10 +61,16 @@ int Quantity::compare(const Type& o) const
     return ss1.str().compare(ss2.str());
 }
 
-std::unique_ptr<Quantity> Quantity::decode(core::BinaryDecoder& dec)
+std::unique_ptr<Quantity> Quantity::decode(core::BinaryDecoder& dec, bool reuse_buffer)
 {
     dec.ensure_size(1, "Quantity data");
-    return std::unique_ptr<Quantity>(new Quantity(dec.buf, dec.size));
+    std::unique_ptr<Quantity> res;
+    if (reuse_buffer)
+        res.reset(new Quantity(dec.buf, dec.size, false));
+    else
+        res.reset(new Quantity(dec.buf, dec.size));
+    dec.skip(dec.size);
+    return res;
 }
 
 std::ostream& Quantity::writeToOstream(std::ostream& o) const

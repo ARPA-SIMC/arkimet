@@ -61,7 +61,7 @@ struct Reftime : public Encoded
 	static std::string formatStyle(Style s);
 
     /// CODEC functions
-    static std::unique_ptr<Reftime> decode(core::BinaryDecoder& dec);
+    static std::unique_ptr<Reftime> decode(core::BinaryDecoder& dec, bool reuse_buffer);
     static std::unique_ptr<Reftime> decodeString(const std::string& val);
     static std::unique_ptr<Reftime> decode_structure(const structured::Keys& keys, const structured::Reader& val);
 

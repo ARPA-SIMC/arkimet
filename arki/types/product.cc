@@ -152,7 +152,7 @@ int Product::compare(const Type& o) const
     }
 }
 
-unique_ptr<Product> Product::decode(core::BinaryDecoder& dec)
+unique_ptr<Product> Product::decode(core::BinaryDecoder& dec, bool reuse_buffer)
 {
     dec.ensure_size(1, "Product style");
     Style sty = static_cast<product::Style>(dec.buf[0]);
@@ -161,27 +161,42 @@ unique_ptr<Product> Product::decode(core::BinaryDecoder& dec)
     {
         case product::Style::GRIB1:
             dec.ensure_size(4, "GRIB1 data");
-            res.reset(new product::GRIB1(dec.buf, dec.size));
+            if (reuse_buffer)
+                res.reset(new product::GRIB1(dec.buf, dec.size, false));
+            else
+                res.reset(new product::GRIB1(dec.buf, dec.size));
             dec.skip(dec.size);
             break;
         case product::Style::GRIB2:
             dec.ensure_size(6, "GRIB2 data");
-            res.reset(new product::GRIB2(dec.buf, dec.size));
+            if (reuse_buffer)
+                res.reset(new product::GRIB2(dec.buf, dec.size, false));
+            else
+                res.reset(new product::GRIB2(dec.buf, dec.size));
             dec.skip(dec.size);
             break;
         case product::Style::BUFR:
             dec.ensure_size(4, "BUFR data");
-            res.reset(new product::BUFR(dec.buf, dec.size));
+            if (reuse_buffer)
+                res.reset(new product::BUFR(dec.buf, dec.size, false));
+            else
+                res.reset(new product::BUFR(dec.buf, dec.size));
             dec.skip(dec.size);
             break;
         case product::Style::ODIMH5:
             dec.ensure_size(4, "ODIMH5 data");
-            res.reset(new product::ODIMH5(dec.buf, dec.size));
+            if (reuse_buffer)
+                res.reset(new product::ODIMH5(dec.buf, dec.size, false));
+            else
+                res.reset(new product::ODIMH5(dec.buf, dec.size));
             dec.skip(dec.size);
             break;
         case product::Style::VM2:
             dec.ensure_size(5, "VM2 data");
-            res.reset(new product::VM2(dec.buf, dec.size));
+            if (reuse_buffer)
+                res.reset(new product::VM2(dec.buf, dec.size, false));
+            else
+                res.reset(new product::VM2(dec.buf, dec.size));
             dec.skip(dec.size);
             break;
         default:
