@@ -60,17 +60,6 @@ Metadata::~Metadata()
     delete m_source;
 }
 
-Metadata& Metadata::operator=(const Metadata& o)
-{
-    if (this == &o) return *this;
-    m_items = o.m_items;
-    delete m_source;
-    m_source = o.m_source ? o.m_source->clone() : 0;
-    m_notes = o.m_notes;
-    m_data = o.m_data;
-    return *this;
-}
-
 void Metadata::clear()
 {
     m_items.clear();
