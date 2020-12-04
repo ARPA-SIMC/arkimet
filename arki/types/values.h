@@ -23,14 +23,10 @@ namespace values {
  */
 class Value
 {
-protected:
-    std::string m_name;
-
 public:
-    Value(const std::string& name) : m_name(name) {}
     virtual ~Value() {}
 
-    const std::string& name() const { return m_name; }
+    virtual std::string name() const = 0;
 
     virtual bool operator==(const Value& v) const = 0;
     virtual bool operator!=(const Value& v) const { return !operator==(v); }

@@ -17,7 +17,6 @@ extern "C" {
 }
 #endif
 
-using namespace std;
 using namespace arki::utils;
 
 #if 0
@@ -70,12 +69,12 @@ static bool needsQuoting(const std::string& str)
 	if (isspace(str[str.size() - 1]) || str[str.size() - 1] == '"')
 		return true;
 
-	// Strings containing nulls need quoting
-	if (str.find('\0', 0) != string::npos)
-		return true;
+    // Strings containing nulls need quoting
+    if (str.find('\0', 0) != std::string::npos)
+        return true;
 
-	// Otherwise, no quoting is neeed as decoding should be unambiguous
-	return false;
+    // Otherwise, no quoting is neeed as decoding should be unambiguous
+    return false;
 }
 
 static inline size_t skipSpaces(const std::string& str, size_t cur)
@@ -117,10 +116,13 @@ template<typename TYPE>
 class Common : public Value
 {
 protected:
+    std::string m_name;
     TYPE m_val;
 
 public:
-    Common(const std::string& name, const TYPE& val) : Value(name), m_val(val) {}
+    Common(const std::string& name, const TYPE& val) : m_name(name), m_val(val) {}
+
+    std::string name() const override { return m_name; }
 
     bool operator==(const Value& v) const override
     {
@@ -135,13 +137,6 @@ public:
         if (name() < v.name()) return -1;
         if (name() > v.name()) return 1;
         return 0;
-    }
-
-    std::string toString() const override
-    {
-        stringstream ss;
-        ss << m_val;
-        return ss.str();
     }
 
     void encode(core::BinaryEncoder& enc) const override
@@ -177,6 +172,11 @@ struct Integer : public Common<int>
     int sortKey() const override { return 1; }
 
     int toInt() const { return m_val; }
+
+    std::string toString() const override
+    {
+        return std::to_string(m_val);
+    }
 
     void encode(core::BinaryEncoder& enc) const override
     {
@@ -221,7 +221,7 @@ struct Integer : public Common<int>
 			else if (val & 0x000000ff)
 				nbytes = 1;
             else
-                throw std::runtime_error("cannot encode integer number: value " + to_string(val) + " is too large to be encoded");
+                throw std::runtime_error("cannot encode integer number: value " + std::to_string(val) + " is too large to be encoded");
 
             type |= (nbytes-1);
             enc.add_raw(&type, 1u);
@@ -233,6 +233,7 @@ struct Integer : public Common<int>
 
     void serialise(structured::Emitter& e) const override
     {
+        e.add(m_name);
         e.add_int(m_val);
     }
 
@@ -284,7 +285,7 @@ struct String : public Common<std::string>
         }
         else
             // TODO: if needed, here we implement another string encoding type
-            throw_consistency_error("encoding short string", "string '"+m_val+"' is too long: the maximum length is 63 characters, but the string is " + to_string(m_val.size()) + " characters long");
+            throw_consistency_error("encoding short string", "string '"+m_val+"' is too long: the maximum length is 63 characters, but the string is " + std::to_string(m_val.size()) + " characters long");
     }
 
     std::string toString() const override
@@ -303,6 +304,7 @@ struct String : public Common<std::string>
 
     void serialise(structured::Emitter& e) const override
     {
+        e.add(m_name);
         e.add_string(m_val);
     }
 
@@ -341,7 +343,7 @@ Value* Value::decode(core::BinaryDecoder& dec)
                 case ENC_NUM_EXTENDED:
                     throw std::runtime_error("cannot decode value: the number value to decode has an extended type, but no extended type is currently implemented");
                 default:
-                    throw std::runtime_error("cannot decode value: control flow should never reach here (" __FILE__ ":" + to_string(__LINE__) + "), but the compiler cannot easily know it.  This is here to silence a compiler warning.");
+                    throw std::runtime_error("cannot decode value: control flow should never reach here (" __FILE__ ":" + std::to_string(__LINE__) + "), but the compiler cannot easily know it.  This is here to silence a compiler warning.");
             }
         }
         case ENC_NAME: {
@@ -351,7 +353,7 @@ Value* Value::decode(core::BinaryDecoder& dec)
         case ENC_EXTENDED:
             throw std::runtime_error("cannot decode value: the encoded value has an extended type, but no extended type is currently implemented");
         default:
-            throw std::runtime_error("cannot decode value: control flow should never reach here (" __FILE__ ":" + to_string(__LINE__) + "), but the compiler cannot easily know it.  This is here to silence a compiler warning.");
+            throw std::runtime_error("cannot decode value: control flow should never reach here (" __FILE__ ":" + std::to_string(__LINE__) + "), but the compiler cannot easily know it.  This is here to silence a compiler warning.");
     }
 }
 
@@ -369,7 +371,7 @@ Value* Value::parse(const std::string& name, const std::string& str, size_t& len
     if (begin == str.size())
     {
         lenParsed = begin;
-        return new String(name, string());
+        return new String(name, std::string());
     }
 
 	// Handle the quoted string
@@ -378,9 +380,9 @@ Value* Value::parse(const std::string& name, const std::string& str, size_t& len
 		// Skip the first double quote
 		++begin;
 
-		// Unescape the string
-		size_t parsed;
-		string res = str::decode_cstring(str.substr(begin), parsed);
+        // Unescape the string
+        size_t parsed;
+        std::string res = str::decode_cstring(str.substr(begin), parsed);
 
         lenParsed = skipSpaces(str, begin + parsed);
         return new String(name, res);
@@ -390,8 +392,8 @@ Value* Value::parse(const std::string& name, const std::string& str, size_t& len
 	size_t end = begin;
 	while (end != str.size() && !isspace(str[end]) && str[end] != ',' && str[end] != ';')
 		++end;
-	string res = str.substr(begin, end-begin);
-	lenParsed = skipSpaces(str, end);
+    std::string res = str.substr(begin, end-begin);
+    lenParsed = skipSpaces(str, end);
 
     // If it can be parsed as a number, with maybe leading and trailing
     // spaces, return the number
@@ -552,10 +554,7 @@ void ValueBag::update(const ValueBag& vb)
 void ValueBag::encode(core::BinaryEncoder& enc) const
 {
     for (const auto& v: values)
-    {
-        // Value
         v->encode(enc);
-    }
 }
 
 std::string ValueBag::toString() const
@@ -579,10 +578,7 @@ void ValueBag::serialise(structured::Emitter& e) const
 {
     e.start_mapping();
     for (const auto& i: values)
-    {
-        e.add(i->name());
         i->serialise(e);
-    }
     e.end_mapping();
 }
 
@@ -593,10 +589,7 @@ ValueBag ValueBag::decode(core::BinaryDecoder& dec)
 {
     ValueBag res;
     while (dec)
-    {
-        // Value
         res.set(values::Value::decode(dec));
-    }
     return res;
 }
 
@@ -614,9 +607,9 @@ ValueBag ValueBag::parse(const std::string& str)
 	{
 		// Take until the next '='
 		size_t cur = str.find('=', begin);
-		// If there are no more '=', check that we are at the end
-		if (cur == string::npos)
-		{
+        // If there are no more '=', check that we are at the end
+        if (cur == std::string::npos)
+        {
 			cur = skipSpaces(str, begin);
 			if (cur != str.size())
 				throw_consistency_error("parsing key=value list", "found invalid extra characters \""+str.substr(begin)+"\" at the end of the list");
@@ -634,7 +627,7 @@ ValueBag ValueBag::parse(const std::string& str)
 
         // Parse the value
         size_t lenParsed;
-        unique_ptr<values::Value> val(values::Value::parse(key, str.substr(cur), lenParsed));
+        std::unique_ptr<values::Value> val(values::Value::parse(key, str.substr(cur), lenParsed));
 
         // Set the value
         if (val.get())
@@ -680,7 +673,7 @@ void ValueBag::lua_push(lua_State* L) const
     lua_newtable(L);
     for (const auto& i: values)
     {
-        const string& name = i->name();
+        const std::string& name = i->name();
         lua_pushlstring(L, name.data(), name.size());
         if (const values::Integer* vs = dynamic_cast<const values::Integer*>(i))
         {
@@ -708,10 +701,10 @@ void ValueBag::load_lua_table(lua_State* L, int idx)
 	while (lua_next(L, idx))
 	{
         // Get key
-        string key;
+        std::string key;
         switch (lua_type(L, -2))
         {
-            case LUA_TNUMBER: key = to_string((int)lua_tonumber(L, -2)); break;
+            case LUA_TNUMBER: key = std::to_string((int)lua_tonumber(L, -2)); break;
             case LUA_TSTRING: key = lua_tostring(L, -2); break;
             default:
             {
