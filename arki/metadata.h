@@ -160,7 +160,7 @@ public:
 
     void clear_notes();
     std::vector<types::Note> notes() const;
-    const std::vector<uint8_t>& notes_encoded() const;
+    void encode_notes(core::BinaryEncoder& enc) const;
     void set_notes_encoded(const std::vector<uint8_t>& notes);
     void add_note(const std::string& note);
 

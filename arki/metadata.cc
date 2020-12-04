@@ -167,9 +167,9 @@ std::vector<types::Note> Metadata::notes() const
     return res;
 }
 
-const std::vector<uint8_t>& Metadata::notes_encoded() const
+void Metadata::encode_notes(core::BinaryEncoder& enc) const
 {
-    return m_notes;
+    enc.add_raw(m_notes);
 }
 
 #if 0
