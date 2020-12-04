@@ -309,8 +309,14 @@ struct String : public Common<std::string>
     Value* clone() const override { return new String(m_name, m_val); }
 };
 
-Value* Value::decode(const std::string& name, core::BinaryDecoder& dec)
+Value* Value::decode(core::BinaryDecoder& dec)
 {
+    // Key length
+    unsigned name_len = dec.pop_uint(1, "valuebag key length");
+
+    // Key
+    std::string name = dec.pop_string(name_len, "valuebag key");
+
     uint8_t lead = dec.pop_byte("valuebag value type");
     switch ((lead >> 6) & 0x3)
     {
@@ -588,14 +594,8 @@ ValueBag ValueBag::decode(core::BinaryDecoder& dec)
     ValueBag res;
     while (dec)
     {
-        // Key length
-        unsigned key_len = dec.pop_uint(1, "valuebag key length");
-
-        // Key
-        string key = dec.pop_string(key_len, "valuebag key");
-
         // Value
-        res.set(values::Value::decode(key, dec));
+        res.set(values::Value::decode(dec));
     }
     return res;
 }

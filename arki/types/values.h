@@ -53,7 +53,7 @@ public:
      *
      * @retval used The number of bytes decoded.
      */
-    static Value* decode(const std::string& name, core::BinaryDecoder& dec);
+    static Value* decode(core::BinaryDecoder& dec);
 
 	/**
 	 * Encode into a string representation

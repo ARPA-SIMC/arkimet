@@ -67,15 +67,15 @@ add_method("encoding", [] {
     std::unique_ptr<Value> minustenthousand(Value::create_integer("name", -10000));
 
     auto test = [](const Value& var, unsigned encsize) {
+        encsize += 1 + var.name().size();
         std::unique_ptr<Value> v;
         vector<uint8_t> enc;
         core::BinaryEncoder e(enc);
         var.encode(e);
-        wassert(actual(enc.size()) == 1 + var.name().size() + encsize);
+        wassert(actual(enc.size()) == encsize);
         core::BinaryDecoder dec(enc);
-        dec.skip(1 + var.name().size());
-        v.reset(Value::decode(var.name(), dec));
-        size_t decsize = dec.buf - enc.data() - 1 - var.name().size();
+        v.reset(Value::decode(dec));
+        size_t decsize = dec.buf - enc.data();
         wassert(actual(decsize) == (encsize));
         wassert_true(*v == var);
 
