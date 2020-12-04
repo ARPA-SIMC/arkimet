@@ -378,170 +378,184 @@ ValueBag::ValueBag() {}
 
 ValueBag::~ValueBag()
 {
-	// Deallocate all the Value pointers
-	for (iterator i = begin(); i != end(); ++i)
-		if (i->second)
-			delete i->second;
+    for (auto& i: values)
+        delete i;
+}
+
+ValueBag::ValueBag(ValueBag&& vb)
+    : values(std::move(vb.values))
+{
 }
 
 ValueBag::ValueBag(const ValueBag& vb)
     : ValueBag()
 {
-	iterator inspos = begin();
-	for (ValueBag::const_iterator i = vb.begin(); i != vb.end(); ++i)
-		inspos = insert(inspos, make_pair(i->first, i->second->clone()));
+    for (const auto& v: vb.values)
+        values.emplace_back(v->clone());
 }
 
 ValueBag& ValueBag::operator=(const ValueBag& vb)
 {
-	// Handle the case a=a
-	if (this == &vb)
-		return *this;
+    // Handle the case a=a
+    if (this == &vb) return *this;
 
-	clear();
-	
-	// Fill up again with the new values
-	iterator inspos = begin();
-	for (ValueBag::const_iterator i = vb.begin(); i != vb.end(); ++i)
-		inspos = insert(inspos, make_pair(i->first, i->second->clone()));
-	return *this;
+    clear();
+    for (const auto& v: vb.values)
+        values.emplace_back(v->clone());
+
+    return *this;
+}
+
+ValueBag& ValueBag::operator=(ValueBag&& vb)
+{
+    // Handle the case a=a
+    if (this == &vb) return *this;
+
+    values = std::move(vb.values);
+
+    return *this;
 }
 
 int ValueBag::compare(const ValueBag& vb) const
 {
-	const_iterator a = begin();
-	const_iterator b = vb.begin();
-	for ( ; a != end() && b != vb.end(); ++a, ++b)
-	{
-		if (a->first < b->first)
-			return -1;
-		if (a->first > b->first)
-			return 1;
-		if (int res = a->second->compare(*b->second)) return res;
-	}
-	if (a == end() && b == vb.end())
-		return 0;
-	if (a == end())
-		return -1;
-	return 1;
+    auto a = values.begin();
+    auto b = vb.values.begin();
+    for ( ; a != values.end() && b != vb.values.end(); ++a, ++b)
+    {
+        if ((*a)->name() < (*b)->name())
+            return -1;
+        if ((*a)->name() > (*b)->name())
+            return 1;
+        if (int res = (*a)->compare(**b)) return res;
+    }
+    if (a == values.end() && b == vb.values.end())
+        return 0;
+    if (a == values.end())
+        return -1;
+    return 1;
 }
 
 bool ValueBag::contains(const ValueBag& vb) const
 {
-	// Both a and b are sorted, so we can iterate them linearly together
+    // Both a and b are sorted, so we can iterate them linearly together
+    auto a = values.begin();
+    auto b = vb.values.begin();
 
-	ValueBag::const_iterator a = begin();
-	ValueBag::const_iterator b = vb.begin();
+    while (a != values.end())
+    {
+        // Nothing else wanted anymore
+        if (b == vb.values.end()) return true;
 
-	while (a != end())
-	{
-		// Nothing else wanted anymore
-		if (b == vb.end())
-			return true;
-		if (a->first < b->first)
-			// This value is not in the match expression
-			++a;
-		else if (b->first < a->first)
-			// This value is wanted but we don't have it
-			return false;
-		else if (*a->second != *b->second)
-			// Same key, check if the value is the same
-			return false;
-		else
-		{
-			// If also the value is the same, move on to the next item
-			++a;
-			++b;
-		}
-	}
-	// We got to the end of a.  If there are still things in b, we don't
-	// match.  If we are also to the end of b, then we matched everything
-	return b == vb.end();
+        if ((*a)->name() < (*b)->name())
+        {
+            // This value is not in the match expression
+            ++a;
+            continue;
+        }
+
+        if ((*b)->name() < (*a)->name())
+            // This value is wanted but we don't have it
+            return false;
+
+        if (**a != **b)
+            // Same key, check if the value is the same
+            return false;
+
+        // If also the value is the same, move on to the next item
+        ++a;
+        ++b;
+    }
+    // We got to the end of a.  If there are still things in b, we don't
+    // match.  If we are also to the end of b, then we matched everything
+    return b == vb.values.end();
 }
 
 bool ValueBag::operator==(const ValueBag& vb) const
 {
-	const_iterator a = begin();
-	const_iterator b = vb.begin();
-	for ( ; a != end() && b != vb.end(); ++a, ++b)
-		if (a->first != b->first || *a->second != *b->second)
-			return false;
-	return a == end() && b == vb.end();
+    auto a = values.begin();
+    auto b = vb.values.begin();
+    for ( ; a != values.end() && b != vb.values.end(); ++a, ++b)
+        if ((*a)->name() != (*b)->name() || **a != **b)
+            return false;
+    return a == values.end() && b == vb.values.end();
 }
 
 void ValueBag::clear()
 {
-	// Deallocate all the Value pointers
-	for (iterator i = begin(); i != end(); ++i)
-		if (i->second)
-			delete i->second;
-
-    // Empty the map
-    map<string, values::Value*>::clear();
+    for (auto* i: values)
+        delete i;
+    values.clear();
 }
 
 const values::Value* ValueBag::get(const std::string& key) const
 {
-    const_iterator i = find(key);
-    if (i == end())
-        return 0;
-    return i->second;
+    for (const auto& i: values)
+        if (i->name() == key)
+            return i;
+    return nullptr;
 }
 
-void ValueBag::set(const std::string& key, values::Value* val)
+void ValueBag::set(values::Value* val)
 {
-	iterator i = find(key);
-	if (i == end())
-		insert(make_pair(key, val));
-	else
-	{
-		if (i->second)
-			delete i->second;
-		i->second = val;
-	}
+    for (auto i = values.begin(); i != values.end(); ++i)
+    {
+        if ((*i)->name() == val->name())
+        {
+            delete *i;
+            *i = val;
+            return;
+        } else if ((*i)->name() > val->name()) {
+            values.emplace(i, val);
+            return;
+        }
+    }
+
+    values.emplace_back(val);
 }
 
 void ValueBag::update(const ValueBag& vb)
 {
-	for (ValueBag::const_iterator i = vb.begin();
-			i != vb.end(); ++i)
-		set(i->first, i->second->clone());
+    for (const auto& v: vb.values)
+        set(v->clone());
 }
 
 void ValueBag::encode(core::BinaryEncoder& enc) const
 {
-    for (const_iterator i = begin(); i != end(); ++i)
+    for (const auto& v: values)
     {
         // Key length
-        enc.add_unsigned(i->first.size(), 1);
+        enc.add_unsigned(v->name().size(), 1);
         // Key
-        enc.add_raw(i->first);
+        enc.add_raw(v->name());
         // Value
-        i->second->encode(enc);
+        v->encode(enc);
     }
 }
 
 std::string ValueBag::toString() const
 {
-	string res;
-	for (const_iterator i = begin(); i != end(); ++i)
-	{
-		if (i != begin())
-			res += ", ";
-		res += i->first;
-		res += '=';
-		res += i->second->toString();
-	}
-	return res;
+    std::string res;
+    bool first = true;
+    for (const auto& i : values)
+    {
+        if (first)
+            first = false;
+        else
+            res += ", ";
+        res += i->name();
+        res += '=';
+        res += i->toString();
+    }
+    return res;
 }
 
 void ValueBag::serialise(structured::Emitter& e) const
 {
     e.start_mapping();
-    for (const_iterator i = begin(); i != end(); ++i)
+    for (const auto& i: values)
     {
-        e.add(i->first);
-        i->second->serialise(e);
+        e.add(i->name());
+        i->serialise(e);
     }
     e.end_mapping();
 }
@@ -561,7 +575,7 @@ ValueBag ValueBag::decode(core::BinaryDecoder& dec)
         string key = dec.pop_string(key_len, "valuebag key");
 
         // Value
-        res.set(key, values::Value::decode(key, dec));
+        res.set(values::Value::decode(key, dec));
     }
     return res;
 }
@@ -604,7 +618,7 @@ ValueBag ValueBag::parse(const std::string& str)
 
         // Set the value
         if (val.get())
-            res.set(key, val.release());
+            res.set(val.release());
         else
             throw_consistency_error("parsing key=value list", "cannot parse value at \""+str.substr(cur)+"\"");
 
@@ -628,10 +642,10 @@ ValueBag ValueBag::parse(const structured::Reader& reader)
             case structured::NodeType::NONE:
                 break;
             case structured::NodeType::INT:
-                res.set(key, values::Value::create_integer(key, val.as_int("int value")));
+                res.set(key, val.as_int("int value"));
                 break;
             case structured::NodeType::STRING:
-                res.set(key, values::Value::create_string(key, val.as_string("string value")));
+                res.set(key, val.as_string("string value"));
                 break;
             default:
                 throw std::runtime_error("cannot decode value " + key + ": value is neither integer nor string");
@@ -644,18 +658,18 @@ ValueBag ValueBag::parse(const structured::Reader& reader)
 void ValueBag::lua_push(lua_State* L) const
 {
     lua_newtable(L);
-    for (const_iterator i = begin(); i != end(); ++i)
+    for (const auto& i: values)
     {
-        string name = i->first;
+        const string& name = i->name();
         lua_pushlstring(L, name.data(), name.size());
-        if (const values::Integer* vs = dynamic_cast<const values::Integer*>(i->second))
+        if (const values::Integer* vs = dynamic_cast<const values::Integer*>(i))
         {
             lua_pushnumber(L, vs->toInt());
-        } else if (const values::String* vs = dynamic_cast<const values::String*>(i->second)) {
-            string val = vs->toString();
+        } else if (const values::String* vs = dynamic_cast<const values::String*>(i)) {
+            std::string val = vs->toString();
             lua_pushlstring(L, val.data(), val.size());
         } else {
-            string val = i->second->toString();
+            std::string val = i->toString();
             lua_pushlstring(L, val.data(), val.size());
         }
         // Set name = val in the table
@@ -691,10 +705,10 @@ void ValueBag::load_lua_table(lua_State* L, int idx)
         switch (lua_type(L, -1))
         {
             case LUA_TNUMBER:
-                set(key, values::Value::create_integer(key, lua_tonumber(L, -1)));
+                set(key, lua_tonumber(L, -1));
                 break;
             case LUA_TSTRING:
-                set(key, values::Value::create_string(key, lua_tostring(L, -1)));
+                set(key, lua_tostring(L, -1));
                 break;
             default:
             {

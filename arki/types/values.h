@@ -4,7 +4,7 @@
 #include <arki/core/fwd.h>
 #include <arki/structured/fwd.h>
 #include <string>
-#include <map>
+#include <vector>
 #include <iosfwd>
 
 struct lua_State;
@@ -78,14 +78,29 @@ public:
 };
 }
 
-struct ValueBag : public std::map<std::string, values::Value*>
+struct ValueBag
 {
-public:
-	ValueBag();
-	ValueBag(const ValueBag& vb);
-	~ValueBag();
+protected:
+    std::vector<values::Value*> values;
 
-	ValueBag& operator=(const ValueBag& vb);
+    /**
+     * Sets a value.
+     *
+     * It takes ownership of the Value pointer.
+     */
+    void set(values::Value* val);
+
+public:
+    ValueBag();
+    ValueBag(const ValueBag& vb);
+    ValueBag(ValueBag&& vb);
+    ~ValueBag();
+    ValueBag& operator=(const ValueBag& vb);
+    ValueBag& operator=(ValueBag&& vb);
+
+    bool empty() const { return values.empty(); }
+    size_t size() const { return values.size(); }
+
 	bool operator==(const ValueBag& vb) const;
 	bool operator!=(const ValueBag& vb) const { return !operator==(vb); }
 	int compare(const ValueBag& vb) const;
@@ -103,18 +118,11 @@ public:
      */
     const values::Value* get(const std::string& key) const;
 
-    /**
-     * Sets a value.
-     *
-     * It takes ownership of the Value pointer.
-     */
-    void set(const std::string& key, values::Value* val);
-
     /// Set an integer value
-    void set(const std::string& key, int val) { set(key, values::Value::create_integer(key, val)); }
+    void set(const std::string& key, int val) { set(values::Value::create_integer(key, val)); }
 
     /// Set a string value
-    void set(const std::string& key, const std::string& val) { set(key, values::Value::create_string(key, val)); }
+    void set(const std::string& key, const std::string& val) { set(values::Value::create_string(key, val)); }
 
     /**
      * Encode into a compact binary representation
