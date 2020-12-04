@@ -21,10 +21,10 @@ metadata_dest_func make_adder(Table& root)
 
 void fill_md(Metadata& md)
 {
-    md.set(decodeString(TYPE_ORIGIN, "GRIB1(98, 1, 2)"));
-    md.set(decodeString(TYPE_PRODUCT, "GRIB1(98, 1, 2)"));
-    md.set(decodeString(TYPE_TIMERANGE, "GRIB1(1)"));
-    md.set(decodeString(TYPE_REFTIME, "2015-01-05T12:00:00Z"));
+    md.test_set(decodeString(TYPE_ORIGIN, "GRIB1(98, 1, 2)"));
+    md.test_set(decodeString(TYPE_PRODUCT, "GRIB1(98, 1, 2)"));
+    md.test_set(decodeString(TYPE_TIMERANGE, "GRIB1(1)"));
+    md.test_set(decodeString(TYPE_REFTIME, "2015-01-05T12:00:00Z"));
 }
 
 void fill_with_6_samples(Table& root)

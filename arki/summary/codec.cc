@@ -52,7 +52,7 @@ struct Format1Decoder : public DecoderBase
         if (itemsize)
         {
             core::BinaryDecoder inner = dec.pop_data(itemsize, "encoded metadata body");
-            return target.intern(msoIdx, decodeInner(Table::mso[msoIdx], inner));
+            return target.intern(msoIdx, Type::decodeInner(Table::mso[msoIdx], inner));
         }
         else
             return 0;
@@ -126,7 +126,7 @@ struct Format3Decoder : public DecoderBase
             unsigned count_added = dec.pop_varint<unsigned>("number of items to add/change");
             for (unsigned i = 0; i < count_added; ++i)
             {
-                unique_ptr<Type> item = types::decode(dec);
+                unique_ptr<Type> item = Type::decode(dec);
                 int pos = Visitor::posForCode(item->type_code());
                 if (pos < 0)
                 {

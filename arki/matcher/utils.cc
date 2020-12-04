@@ -3,7 +3,9 @@
 #include "aliases.h"
 #include "reftime.h"
 #include "reftime/parser.h"
+#include "arki/core/binary.h"
 #include "arki/types/itemset.h"
+#include "arki/metadata.h"
 #include "arki/utils/string.h"
 #include "arki/utils/regexp.h"
 #include <cassert>
@@ -62,6 +64,15 @@ void MatcherType::register_matcher(const std::string& name, types::Code code, ma
 }
 
 
+bool Implementation::match_buffer(types::Code code, const uint8_t* data, unsigned size) const
+{
+    core::BinaryDecoder dec(data, size);
+    // TODO: avoid a copy of the buffer if possible
+    auto t = types::Type::decodeInner(code, dec);
+    return matchItem(*t);
+}
+
+
 OR::~OR() {}
 
 std::string OR::name() const
@@ -80,6 +91,15 @@ bool OR::matchItem(const types::Type& t) const
     return false;
 }
 
+bool OR::match_buffer(types::Code code, const uint8_t* data, unsigned size) const
+{
+    if (components.empty()) return true;
+
+    for (auto i: components)
+        if (i->match_buffer(code, data, size))
+            return true;
+    return false;
+}
 
 bool OR::match_interval(const core::Interval& t) const
 {
@@ -205,6 +225,17 @@ bool AND::matchItem(const types::Type& t) const
     return i->second->matchItem(t);
 }
 
+bool AND::match_buffer(types::Code code, const uint8_t* data, unsigned size) const
+{
+    if (empty()) return true;
+
+    auto i = components.find(code);
+    if (i == components.end()) return true;
+
+    return i->second->match_buffer(code, data, size);
+}
+
+
 template<typename COLL>
 static bool mdmatch(const Implementation& matcher, const COLL& c)
 {
@@ -215,6 +246,20 @@ static bool mdmatch(const Implementation& matcher, const COLL& c)
 }
 
 bool AND::matchItemSet(const types::ItemSet& md) const
+{
+    if (empty()) return true;
+
+    for (const auto& i: components)
+    {
+        if (!i.second) return false;
+        const types::Type* item = md.get(i.first);
+        if (!item) return false;
+        if (!i.second->matchItem(*item)) return false;
+    }
+    return true;
+}
+
+bool AND::matchMetadata(const Metadata& md) const
 {
     if (empty()) return true;
 

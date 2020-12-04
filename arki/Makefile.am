@@ -150,10 +150,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		types/bbox.h \
 		types.h \
 		types-init.h \
-		types/core.h \
-		types/core.tcc \
-		types/styled.h \
-		types/styled.tcc \
+		types/encoded.h \
 		types/level.h \
 		types/note.h \
 		types/origin.h \
@@ -256,6 +253,7 @@ libarkimet_la_SOURCES += \
 		types.cc \
 		types/bundle.cc \
 		types/utils.cc \
+		types/encoded.cc \
 		types/values.cc \
 		types/source.cc \
 		types/source/blob.cc \
@@ -362,6 +360,7 @@ tests_arki_test_SOURCES += \
 		types-test.cc \
 		types/bundle-test.cc \
 		types/utils-test.cc \
+		types/encoded-test.cc \
 		types/values-test.cc \
 		types/source-test.cc \
 		types/reftime-test.cc \

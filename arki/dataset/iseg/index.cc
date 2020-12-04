@@ -13,6 +13,7 @@
 #include "arki/types/source.h"
 #include "arki/types/source/blob.h"
 #include "arki/types/value.h"
+#include "arki/core/binary.h"
 #include "arki/summary.h"
 #include "arki/summary/stats.h"
 #include "arki/nag.h"
@@ -557,13 +558,14 @@ struct Inserter
     int timebuf_len;
     int id_uniques = -1;
     int id_others = -1;
+    std::vector<uint8_t> buf;
 
     Inserter(WIndex& idx, const Metadata& md)
         : idx(idx), md(md)
     {
         if (const reftime::Position* reftime = md.get<reftime::Position>())
         {
-            const auto& t = reftime->time;
+            auto t = reftime->get_Position();
             timebuf_len = snprintf(timebuf, 25, "%04d-%02d-%02d %02d:%02d:%02d", t.ye, t.mo, t.da, t.ho, t.mi, t.se);
         } else {
             timebuf[0] = 0;
@@ -590,7 +592,10 @@ struct Inserter
 
         q.bind(++qidx, ofs);
         q.bind(++qidx, md.data_size());
-        q.bind(++qidx, md.notes_encoded());
+        buf.clear();
+        core::BinaryEncoder enc(buf);
+        md.encode_notes(enc);
+        q.bind(++qidx, buf);
 
         if (timebuf_len)
             q.bind(++qidx, timebuf, timebuf_len);

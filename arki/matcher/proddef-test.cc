@@ -54,7 +54,7 @@ add_method("grib", [] {
 	// Check matching a missing item at the end of the list
 	ensure_not_matches("proddef:GRIB:zzzz=1", md);
 
-	md.set(proddef::GRIB::create(testProddef2));
+    md.test_set(Proddef::createGRIB(testProddef2));
 
     ensure_not_matches("proddef:GRIB:foo=5", md);
     ensure_matches("proddef:GRIB:foo=15", md);

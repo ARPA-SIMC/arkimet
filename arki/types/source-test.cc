@@ -92,7 +92,7 @@ add_method("blob_pathnames_encode", [] {
     // Encode to binary, decode, we lose the root
     vector<uint8_t> enc = o->encodeBinary();
     BinaryDecoder dec(enc);
-    unique_ptr<Source> decoded = downcast<Source>(types::decode(dec));
+    unique_ptr<Source> decoded = downcast<Source>(types::Type::decode(dec));
     wassert(actual(decoded).is_source_blob("test", "", "testfile", 21, 42));
 
     // Encode to YAML, decode, basedir and filename have merged

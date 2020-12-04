@@ -11,56 +11,69 @@ ItemSet::ItemSet() {}
 
 ItemSet::ItemSet(const ItemSet& o)
 {
-    for (const_iterator i = o.begin(); i != o.end(); ++i)
-        m_vals.insert(make_pair(i->first, i->second->clone()));
+    m_vals.reserve(o.size());
+    for (const auto& i: o)
+        m_vals.emplace_back(i.first, i.second->clone());
 }
 
 ItemSet::~ItemSet()
 {
-    for (map<Code, Type*>::iterator i = m_vals.begin(); i != m_vals.end(); ++i)
-        delete i->second;
+    for (auto& i: m_vals)
+        delete i.second;
 }
 
 ItemSet& ItemSet::operator=(const ItemSet& o)
 {
     if (this == &o) return *this;
     clear();
-    for (const_iterator i = o.begin(); i != o.end(); ++i)
-        m_vals.insert(make_pair(i->first, i->second->clone()));
+    m_vals.reserve(o.size());
+    for (const auto& i: o)
+        m_vals.emplace_back(i.first, i.second->clone());
     return *this;
+}
+
+bool ItemSet::has(types::Code code) const
+{
+    for (const auto& i: m_vals)
+        if (i.first == code)
+            return true;
+    return false;
 }
 
 const Type* ItemSet::get(Code code) const
 {
-    const_iterator i = m_vals.find(code);
-    if (i == m_vals.end()) return 0;
-    return i->second;
+    for (const auto& i: m_vals)
+        if (i.first == code)
+            return i.second;
+    return nullptr;
 }
 
-void ItemSet::set(const Type& i)
+void ItemSet::set(const Type& item)
 {
-    Code code = i.type_code();
-    map<Code, Type*>::iterator it = m_vals.find(code);
-    if (it == end())
-        m_vals.insert(make_pair(code, i.clone()));
-    else
-    {
-        delete it->second;
-        it->second = i.clone();
-    }
+    std::unique_ptr<Type> clone(item.clone());
+    set(std::move(clone));
 }
 
-void ItemSet::set(unique_ptr<Type> i)
+void ItemSet::set(std::unique_ptr<Type> item)
 {
-    Code code = i->type_code();
-    map<Code, Type*>::iterator it = m_vals.find(code);
-    if (it == m_vals.end())
-        m_vals.insert(make_pair(code, i.release()));
-    else
+    // TODO: in theory, this could be rewritten with rbegin/rend to optimize
+    // for the insertion of sorted data. In practice, after trying, it caused a
+    // decrease in performance, so abandoning that for now
+    Code code = item->type_code();
+    for (auto i = m_vals.begin(); i != m_vals.end(); ++i)
     {
-        delete it->second;
-        it->second = i.release();
+        if (i->first == code)
+        {
+            delete i->second;
+            i->second = item.release();
+            return;
+        } else if (i->first > code) {
+            m_vals.emplace(i, code, item.release());
+            return;
+        }
     }
+
+    m_vals.emplace_back(code, item.release());
 }
 
 void ItemSet::set(const std::string& type, const std::string& val)
@@ -70,23 +83,25 @@ void ItemSet::set(const std::string& type, const std::string& val)
 
 void ItemSet::unset(Code code)
 {
-    map<Code, Type*>::iterator it = m_vals.find(code);
-    if (it == m_vals.end()) return;
-    delete it->second;
-    m_vals.erase(it);
+    for (auto i = m_vals.begin(); i != m_vals.end(); ++i)
+        if (i->first == code)
+        {
+            m_vals.erase(i);
+            return;
+        }
 }
 
 void ItemSet::clear()
 {
-    for (map<Code, Type*>::iterator i = m_vals.begin(); i != m_vals.end(); ++i)
-        delete i->second;
+    for (auto& i: m_vals)
+        delete i.second;
     m_vals.clear();
 }
 
 bool ItemSet::operator==(const ItemSet& m) const
 {
-    map<Code, Type*>::const_iterator it1 = m_vals.begin();
-    map<Code, Type*>::const_iterator it2 = m.m_vals.begin();
+    auto it1 = m_vals.begin();
+    auto it2 = m.m_vals.begin();
     while (it1 != m_vals.end() && it2 != m.m_vals.end())
     {
         if (it1->first != it2->first) return false;
@@ -99,8 +114,8 @@ bool ItemSet::operator==(const ItemSet& m) const
 
 int ItemSet::compare(const ItemSet& m) const
 {
-    const_iterator a = begin();
-    const_iterator b = m.begin();
+    auto a = begin();
+    auto b = m.begin();
     for ( ; a != end() && b != m.end(); ++a, ++b)
     {
         if (a->first < b->first)

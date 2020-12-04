@@ -1,7 +1,7 @@
 #ifndef ARKI_TYPES_REFTIME_H
 #define ARKI_TYPES_REFTIME_H
 
-#include <arki/types/styled.h>
+#include <arki/types/encoded.h>
 #include <arki/core/time.h>
 
 namespace arki {
@@ -33,48 +33,49 @@ template<> struct traits<reftime::Period> : public traits<Reftime> {};
  *
  * It can contain information like reftimetype and reftime value.
  */
-struct Reftime : public StyledType<Reftime>
+struct Reftime : public Encoded
 {
+    using Encoded::Encoded;
+
+    typedef reftime::Style Style;
+
+    types::Code type_code() const override { return traits<Reftime>::type_code; }
+    size_t serialisationSizeLength() const override { return traits<Reftime>::type_sersize_bytes; }
+    std::string tag() const override { return traits<Reftime>::type_tag; }
+
+    Reftime* clone() const override = 0;
+
+    int compare(const Type& o) const override;
+
+    static reftime::Style style(const uint8_t* data, unsigned size);
+    static core::Time get_Position(const uint8_t* data, unsigned size);
+    static void get_Period(const uint8_t* data, unsigned size, core::Time& begin, core::Time& end);
+
+    reftime::Style style() const { return style(data, size); }
+    core::Time get_Position() const { return get_Position(data, size); }
+    void get_Period(core::Time& begin, core::Time& end) const { return get_Period(data, size, begin, end); }
+
 	/// Convert a string into a style
 	static Style parseStyle(const std::string& str);
 	/// Convert a style into its string representation
 	static std::string formatStyle(Style s);
 
     /// CODEC functions
-    static std::unique_ptr<Reftime> decode(core::BinaryDecoder& dec);
+    static std::unique_ptr<Reftime> decode(core::BinaryDecoder& dec, bool reuse_buffer);
     static std::unique_ptr<Reftime> decodeString(const std::string& val);
     static std::unique_ptr<Reftime> decode_structure(const structured::Keys& keys, const structured::Reader& val);
 
-    /// Beginning of the period in this Reftime
-    virtual const core::Time& period_begin() const = 0;
-    /// End of the period in this Reftime
-    virtual const core::Time& period_end() const = 0;
-
     /**
      * Expand a datetime range, returning the new range endpoints in begin
      * and end.
-     *
-     * A NULL unique_ptr signifies the initial state of an invalid range, and
-     * both begin and end will be set to non-NULL as soon as the first
-     * expand_date_range is called on them.
      */
-    virtual void expand_date_range(std::unique_ptr<core::Time>& begin, std::unique_ptr<core::Time>& end) const = 0;
-
-    /**
-     * Expand a datetime range, returning the new range endpoints in begin
-     * and end.
-     *
-     * begin and end are assumed to be valid times.
-     */
-    virtual void expand_date_range(core::Time& begin, core::Time& end) const = 0;
+    virtual void expand_date_range(core::Interval& interval) const = 0;
 
     // Register this type tree with the type system
     static void init();
 
     /// If begin == end create a Position reftime, else create a Period reftime
-    static std::unique_ptr<Reftime> create(const core::Time& begin, const core::Time& end);
     static std::unique_ptr<Reftime> createPosition(const core::Time& position);
-    static std::unique_ptr<Reftime> createPeriod(const core::Time& begin, const core::Time& end);
 };
 
 namespace reftime {
@@ -82,58 +83,18 @@ namespace reftime {
 inline std::ostream& operator<<(std::ostream& o, Style s) { return o << Reftime::formatStyle(s); }
 
 
-struct Position : public Reftime
+class Position : public Reftime
 {
-    core::Time time;
+public:
+    using Reftime::Reftime;
 
-    Position(const core::Time& time);
-
-    Style style() const override;
-    void encodeWithoutEnvelope(core::BinaryEncoder& enc) const override;
     std::ostream& writeToOstream(std::ostream& o) const override;
     void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
     std::string exactQuery() const override;
 
-    int compare_local(const Reftime& o) const override;
-    bool equals(const Type& o) const override;
+    Position* clone() const override { return new Position(data, size); }
 
-    const core::Time& period_begin() const override { return time; }
-    const core::Time& period_end() const override { return time; }
-
-    Position* clone() const override;
-
-    void expand_date_range(std::unique_ptr<core::Time>& begin, std::unique_ptr<core::Time>& end) const override;
-    void expand_date_range(core::Time& begin, core::Time& end) const override;
-
-    static std::unique_ptr<Position> create(const core::Time& position);
-    static std::unique_ptr<Position> decode_structure(const structured::Keys& keys, const structured::Reader& val);
-};
-
-struct Period : public Reftime
-{
-    core::Time begin;
-    core::Time end;
-
-    Period(const core::Time& begin, const core::Time& end);
-
-    Style style() const override;
-    void encodeWithoutEnvelope(core::BinaryEncoder& enc) const override;
-    std::ostream& writeToOstream(std::ostream& o) const override;
-    void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
-
-    int compare_local(const Reftime& o) const override;
-    bool equals(const Type& o) const override;
-
-    const core::Time& period_begin() const override { return begin; }
-    const core::Time& period_end() const override { return end; }
-
-    Period* clone() const override;
-
-    void expand_date_range(std::unique_ptr<core::Time>& begin, std::unique_ptr<core::Time>& end) const override;
-    void expand_date_range(core::Time& begin, core::Time& end) const override;
-
-    static std::unique_ptr<Period> create(const core::Time& begin, const core::Time& end);
-    static std::unique_ptr<Period> decode_structure(const structured::Keys& keys, const structured::Reader& val);
+    void expand_date_range(core::Interval& interval) const override;
 };
 
 }

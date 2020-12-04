@@ -2,7 +2,7 @@
 #define ARKI_ITEMSET_H
 
 #include <arki/types/fwd.h>
-#include <map>
+#include <vector>
 #include <memory>
 
 namespace arki {
@@ -11,10 +11,12 @@ namespace types {
 class ItemSet
 {
 protected:
-    std::map<types::Code, types::Type*> m_vals;
+    std::vector<std::pair<types::Code, types::Type*>> m_vals;
+
+    void sort();
 
 public:
-    typedef std::map<types::Code, types::Type*>::const_iterator const_iterator;
+    typedef std::vector<std::pair<types::Code, types::Type*>>::const_iterator const_iterator;
 
     ItemSet();
     ItemSet(const ItemSet&);
@@ -25,7 +27,7 @@ public:
     const_iterator end() const { return m_vals.end(); }
     size_t empty() const { return m_vals.empty(); }
     size_t size() const { return m_vals.size(); }
-    bool has(types::Code code) const { return m_vals.find(code) != m_vals.end(); }
+    bool has(types::Code code) const;
     const types::Type* get(types::Code code) const;
     template<typename T>
     const T* get() const
@@ -33,12 +35,12 @@ public:
         const types::Type* i = get(types::traits<T>::type_code);
         if (!i) return 0;
         return dynamic_cast<const T*>(i);
-    };
+    }
 
     /// Set an item
-    void set(const types::Type& i);
+    void set(const types::Type& item);
 
-    void set(std::unique_ptr<types::Type> i);
+    void set(std::unique_ptr<types::Type> item);
 
     template<typename T>
     void set(std::unique_ptr<T> i) { set(std::unique_ptr<types::Type>(i.release())); }

@@ -65,18 +65,18 @@ NCData::NCData()
 }
 
 
-Metadata make_large_mock(const std::string& format, size_t size, unsigned month, unsigned day, unsigned hour)
+std::shared_ptr<Metadata> make_large_mock(const std::string& format, size_t size, unsigned month, unsigned day, unsigned hour)
 {
-    Metadata md;
-    md.set_source_inline(format, metadata::DataManager::get().to_data(format, vector<uint8_t>(size)));
-    md.set("origin", "GRIB1(200, 10, 100)");
-    md.set("product", "GRIB1(3, 4, 5)");
-    md.set("level", "GRIB1(1, 2)");
-    md.set("timerange", "GRIB1(4, 5s, 6s)");
-    md.set(Reftime::createPosition(Time(2014, month, day, hour, 0, 0)));
-    md.set("area", "GRIB(foo=5,bar=5000)");
-    md.set("proddef", "GRIB(foo=5,bar=5000)");
-    md.add_note("this is a test");
+    auto md = std::make_shared<Metadata>();
+    md->set_source_inline(format, metadata::DataManager::get().to_data(format, vector<uint8_t>(size)));
+    md->test_set("origin", "GRIB1(200, 10, 100)");
+    md->test_set("product", "GRIB1(3, 4, 5)");
+    md->test_set("level", "GRIB1(1, 2)");
+    md->test_set("timerange", "GRIB1(4, 5s, 6s)");
+    md->test_set(Reftime::createPosition(Time(2014, month, day, hour, 0, 0)));
+    md->test_set("area", "GRIB(foo=5,bar=5000)");
+    md->test_set("proddef", "GRIB(foo=5,bar=5000)");
+    md->add_note("this is a test");
     return md;
 }
 
@@ -97,20 +97,19 @@ void fill(Metadata& md)
     testValues.set("pluto", Value::create_string("12"));
     testValues.set("zzz", Value::create_integer(1));
 
-    md.set(Origin::createGRIB1(1, 2, 3));
-    md.set(Product::createGRIB1(1, 2, 3));
-    md.set(Level::createGRIB1(110, 12, 13));
-    md.set(Timerange::createGRIB1(2, 254u, 22, 23));
-    md.set(Area::createGRIB(testValues));
-    md.set(Proddef::createGRIB(testValues));
+    md.test_set(Origin::createGRIB1(1, 2, 3));
+    md.test_set(Product::createGRIB1(1, 2, 3));
+    md.test_set(Level::createGRIB1(110, 12, 13));
+    md.test_set(Timerange::createGRIB1(2, 254u, 22, 23));
+    md.test_set<area::GRIB>(testValues);
+    md.test_set(Proddef::createGRIB(testValues));
     md.add_note("test note");
-    md.set(AssignedDataset::create("dsname", "dsid"));
-    md.set(Run::createMinute(12));
-    md.set(Reftime::createPosition(Time(2007, 1, 2, 3, 4, 5)));
+    md.test_set(Run::createMinute(12));
+    md.test_set(Reftime::createPosition(Time(2007, 1, 2, 3, 4, 5)));
 
     /* metadati specifici di odimh5 */
-    md.set(Task::create("task1"));
-    md.set(Quantity::create("a,b,c"));
+    md.test_set(Task::create("task1"));
+    md.test_set(Quantity::create("a,b,c"));
 }
 
 void ActualMetadata::operator==(const Metadata& expected) const
@@ -171,37 +170,27 @@ void ActualMetadata::not_contains(const std::string& field, const std::string& e
 
 void ActualMetadata::is_similar(const Metadata& expected)
 {
-    for (Metadata::const_iterator i = expected.begin(); i != expected.end(); ++i)
-    {
-        if (i->first == TYPE_ASSIGNEDDATASET) continue;
+    _actual.diff_items(expected, [](types::Code code, const types::Type* iact, const types::Type* iexp) {
+        if (code == TYPE_ASSIGNEDDATASET) return;
 
-        const Type* other = _actual.get(i->first);
-        if (!other)
+        if (!iexp)
         {
             std::stringstream ss;
-            ss << "missing metadata item " << types::formatCode(i->first) << ": " << *(i->second);
+            ss << "unexpected metadata item " << types::formatCode(code) << ": " << *iact;
             throw TestFailed(ss.str());
         }
 
-        if ((*i->second) != *other)
+        if (!iact)
         {
             std::stringstream ss;
-            ss << i->first << " differ: " << types::formatCode(i->first) << ": expected " << *(i->second) << " got " << *other;
+            ss << "missing metadata item " << types::formatCode(code) << ": " << *iexp;
             throw TestFailed(ss.str());
         }
-    }
 
-    for (Metadata::const_iterator i = _actual.begin(); i != _actual.end(); ++i)
-    {
-        if (i->first == TYPE_ASSIGNEDDATASET) continue;
-
-        if (!expected.has(i->first))
-        {
-            std::stringstream ss;
-            ss << "unexpected metadata item " << i->first << ": " << (*i->second);
-            throw TestFailed(ss.str());
-        }
-    }
+        std::stringstream ss;
+        ss << "items differ: " << types::formatCode(code) << ": expected " << *iexp << " got " << *iact;
+        throw TestFailed(ss.str());
+    });
 }
 
 void ActualMetadata::is_set(const std::string& field)

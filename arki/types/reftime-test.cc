@@ -23,16 +23,8 @@ add_generic_test(
         { "2014-01-01T00:00:00" },
         "2015-01-02T03:04:05Z",
         // Period sorts later than Position
-        { "2015-01-03T00:00:00", "2014-01-01T00:00:00 to 2014-01-31T00:00:00" },
+        { "2015-01-03T00:00:00", "2015-01-03T00:00:00", "2015-01-02T03:04:06Z" },
         "=2015-01-02T03:04:05Z");
-
-add_generic_test(
-        "period",
-        { "2015-01-01T00:00:00", "2015-01-10T00:00:00", "2015-01-01T00:00:00 to 2015-01-03T12:00:00" },
-        "2015-01-02T00:00:00Z to 2015-01-03T00:00:00Z",
-        { "2015-01-02T12:00:00 to 2015-01-31T00:00:00" });
-//#warning This does not look like a query to match a period
-//    t.exact_query = "=2007-06-05T04:03:02Z";
 
 add_method("position_details", [] {
     using namespace arki::types;
@@ -46,44 +38,36 @@ add_method("position_details", [] {
     wassert(actual(o).serializes());
 });
 
-add_method("period_details", [] {
-    using namespace arki::types;
-    unique_ptr<Reftime> o = Reftime::createPeriod(Time(2007, 6, 5, 4, 3, 2), Time(2008, 7, 6, 5, 4, 3));
-    wassert(actual(o).is_reftime_period(Time(2007, 6, 5, 4, 3, 2), Time(2008, 7, 6, 5, 4, 3)));
-
-    wassert(actual(o) == Reftime::createPeriod(Time(2007, 6, 5, 4, 3, 2), Time(2008, 7, 6, 5, 4, 3)));
-    wassert(actual(o) != Reftime::createPeriod(Time(2007, 6, 5, 4, 3, 3), Time(2008, 7, 6, 5, 4, 2)));
-
-    // Test encoding/decoding
-    wassert(actual(o).serializes());
-});
-
 add_method("range", [] {
     // Check range expansion
     using namespace arki::types;
-    unique_ptr<Time> begin;
-    unique_ptr<Time> end;
+    core::Interval interval;
     Time t1(2007, 6, 5, 4, 3, 2);
+    Time t1e(2007, 6, 5, 4, 3, 3);
     Time t2(2008, 7, 6, 5, 4, 3);
+    Time t2e(2008, 7, 6, 5, 4, 4);
     Time t3(2007, 7, 6, 5, 4, 3);
     Time t4(2009, 8, 7, 6, 5, 4);
+    Time t4e(2009, 8, 7, 6, 5, 5);
     Time t5(2009, 7, 6, 5, 4, 3);
     Time t6(2010, 9, 8, 7, 6, 5);
 
     // Merge with position
-    reftime::Position(t1).expand_date_range(begin, end);
-    wassert(actual(*begin) == t1);
-    wassert(actual(*end) == t1);
+    Reftime::createPosition(t1)->expand_date_range(interval);
+    wassert(actual(interval.begin) == t1);
+    wassert(actual(interval.end) == t1e);
 
     // Merge with a second position
-    reftime::Position(t2).expand_date_range(begin, end);
-    wassert(actual(*begin) == t1);
-    wassert(actual(*end) == t2);
+    Reftime::createPosition(t2)->expand_date_range(interval);
+    wassert(actual(interval.begin) == t1);
+    wassert(actual(interval.end) == t2e);
 
+#if 0
     // Merge with a period
-    reftime::Period(t3, t4).expand_date_range(begin, end);
-    wassert(actual(*begin) == t1);
-    wassert(actual(*end) == t4);
+    Reftime::createPeriod(t3, t4)->expand_date_range(interval);
+    wassert(actual(interval.begin) == t1);
+    wassert(actual(interval.end) == t4e);
+#endif
 });
 
 // Reproduce bugs

@@ -80,7 +80,11 @@ unsigned State::count(segment::State state) const
 void State::dump(FILE* out) const
 {
     for (const auto& i: *this)
-        fprintf(out, "%s: %s %s to %s\n", i.first.c_str(), i.second.state.to_string().c_str(), i.second.begin.to_iso8601(' ').c_str(), i.second.until.to_iso8601(' ').c_str());
+        fprintf(out, "%s: %s %s to %s\n",
+                i.first.c_str(),
+                i.second.state.to_string().c_str(),
+                i.second.interval.begin.to_iso8601(' ').c_str(),
+                i.second.interval.end.to_iso8601(' ').c_str());
 }
 
 
@@ -190,19 +194,21 @@ std::string DatasetTest::idxfname(const core::cfg::Section* wcfg) const
 std::string DatasetTest::destfile(const Metadata& md) const
 {
     const auto* rt = md.get<types::reftime::Position>();
+    auto time = rt->get_Position();
     char buf[32];
     if (cfg->value("shard").empty())
-        snprintf(buf, 32, "%04d/%02d-%02d.%s", rt->time.ye, rt->time.mo, rt->time.da, md.source().format.c_str());
+        snprintf(buf, 32, "%04d/%02d-%02d.%s", time.ye, time.mo, time.da, md.source().format.c_str());
     else
-        snprintf(buf, 32, "%04d/%02d/%02d.%s", rt->time.ye, rt->time.mo, rt->time.da, md.source().format.c_str());
+        snprintf(buf, 32, "%04d/%02d/%02d.%s", time.ye, time.mo, time.da, md.source().format.c_str());
     return buf;
 }
 
 std::string DatasetTest::archive_destfile(const Metadata& md) const
 {
     const auto* rt = md.get<types::reftime::Position>();
+    auto time = rt->get_Position();
     char buf[64];
-    snprintf(buf, 64, ".archive/last/%04d/%02d-%02d.%s", rt->time.ye, rt->time.mo, rt->time.da, md.source().format.c_str());
+    snprintf(buf, 64, ".archive/last/%04d/%02d-%02d.%s", time.ye, time.mo, time.da, md.source().format.c_str());
     return buf;
 }
 
@@ -349,8 +355,8 @@ void DatasetTest::import(metadata::Collection& mds)
         {
             wassert(actual(e->dataset_name) == config().name());
             wassert(actual(e->result) == ACQ_OK);
-            import_results.push_back(e->md);
-            import_results.back().sourceBlob().unlock();
+            import_results.emplace_back(e->md.clone());
+            import_results.back()->sourceBlob().unlock();
             //fprintf(stderr, "IDX %s %zd: %s\n", testfile.c_str(), import_results.size(), e->md.sourceBlob().to_string().c_str());
         }
     }
@@ -366,9 +372,9 @@ void DatasetTest::import(const std::string& testfile)
 
 void DatasetTest::import(Metadata& md, dataset::WriterAcquireResult expected_result)
 {
-    import_results.push_back(md);
+    import_results.emplace_back(md.clone());
     auto writer(config().create_writer());
-    WriterAcquireResult res = writer->acquire(import_results.back());
+    WriterAcquireResult res = writer->acquire(*import_results.back());
     wassert(actual(res) == expected_result);
 }
 
@@ -425,10 +431,10 @@ void DatasetTest::import_all(const metadata::Collection& mds)
     auto writer = config().create_writer();
     for (const auto& md: mds)
     {
-        import_results.push_back(*md);
-        WriterAcquireResult res = writer->acquire(import_results.back());
+        import_results.emplace_back(md->clone());
+        WriterAcquireResult res = writer->acquire(*import_results.back());
         wassert(actual(res) == ACQ_OK);
-        import_results.back().sourceBlob().unlock();
+        import_results.back()->sourceBlob().unlock();
     }
 
     utils::files::removeDontpackFlagfile(cfg->value("path"));
@@ -457,10 +463,11 @@ void DatasetTest::query_results(const std::vector<int>& expected)
 void DatasetTest::query_results(const dataset::DataQuery& q, const std::vector<int>& expected)
 {
     vector<int> found;
+
     config().create_reader()->query_data(q, [&](std::shared_ptr<Metadata>&& md) {
         unsigned idx;
         for (idx = 0; idx < import_results.size(); ++idx)
-            if (import_results[idx].compare_items(*md) == 0)
+            if (import_results[idx]->items_equal(*md))
                 break;
         if (idx == import_results.size())
             found.push_back(-1);
@@ -885,8 +892,9 @@ void ActualWriter<Dataset>::import(Metadata& md)
                 break;
         }
 
-        for (const auto& note: md.notes())
-            ss << "\t" << note << endl;
+        auto notes = md.notes();
+        for (auto n = notes.first; n != notes.second; ++n)
+            ss << "\t" << **n << endl;
 
         throw TestFailed(ss.str());
     }
@@ -918,8 +926,9 @@ void ActualWriter<Dataset>::import(metadata::Collection& mds, dataset::ReplaceSt
                 break;
         }
 
-        for (const auto& note: e->md.notes())
-            ss << "\t" << note << endl;
+        auto notes = e->md.notes();
+        for (auto n = notes.first; n != notes.second; ++n)
+            ss << "\t" << **n << endl;
     }
     if (!ss.str().empty())
         throw TestFailed(ss.str());

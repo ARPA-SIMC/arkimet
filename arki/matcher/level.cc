@@ -23,22 +23,47 @@ MatchLevelGRIB1::MatchLevelGRIB1(const std::string& pattern)
 	l2 = args.getInt(2, -1);
 }
 
+bool MatchLevelGRIB1::match_data(unsigned vtype, unsigned vl1, unsigned vl2) const
+{
+    if (type != -1 && (unsigned)type != vtype) return false;
+    switch (Level::GRIB1_type_vals(vtype))
+    {
+        case 0:
+            if (l1 >= 0) return false;
+            if (l2 >= 0) return false;
+            break;
+        case 1:
+            if (l1 >= 0 && (unsigned)l1 != vl1) return false;
+            if (l2 >= 0) return false;
+            break;
+        case 2:
+            if (l1 >= 0 && (unsigned)l1 != vl1) return false;
+            if (l2 >= 0 && (unsigned)l2 != vl2) return false;
+            break;
+    }
+    return true;
+}
+
 bool MatchLevelGRIB1::matchItem(const Type& o) const
 {
-    const types::level::GRIB1* v = dynamic_cast<const types::level::GRIB1*>(&o);
+    const types::Level* v = dynamic_cast<const types::Level*>(&o);
     if (!v) return false;
-	if (type != -1 && (unsigned)type != v->type()) return false;
-	int ol1 = -1, ol2 = -1;
-	switch (v->valType())
-	{
-		case 0: break;
-		case 1: ol1 = v->l1(); break;
-		case 2: ol1 = v->l1(); ol2 = v->l2(); break;
-	}
-	if (l1 != -1 && l1 != ol1) return false;
-	if (l2 != -1 && l2 != ol2) return false;
-	return true;
+    if (v->style() != level::Style::GRIB1) return false;
+    unsigned vtype, vl1, vl2;
+    v->get_GRIB1(vtype, vl1, vl2);
+    return match_data(vtype, vl1, vl2);
 }
+
+bool MatchLevelGRIB1::match_buffer(types::Code code, const uint8_t* data, unsigned size) const
+{
+    if (code != TYPE_LEVEL) return false;
+    if (size < 1) return false;
+    if (Level::style(data, size) != level::Style::GRIB1) return false;
+    unsigned vtype, vl1, vl2;
+    Level::get_GRIB1(data, size, vtype, vl1, vl2);
+    return match_data(vtype, vl1, vl2);
+}
+
 
 std::string MatchLevelGRIB1::toString() const
 {
@@ -54,18 +79,34 @@ std::string MatchLevelGRIB1::toString() const
 MatchLevelGRIB2S::MatchLevelGRIB2S(const std::string& pattern)
 {
     OptionalCommaList args(pattern);
-    type = args.getUnsignedWithMissing(0, level::GRIB2S::MISSING_TYPE, has_type);
-    scale = args.getUnsignedWithMissing(1, level::GRIB2S::MISSING_SCALE, has_scale);
-    value = args.getUnsignedWithMissing(2, level::GRIB2S::MISSING_VALUE, has_value);
+    type = args.getUnsignedWithMissing(0, Level::GRIB2_MISSING_TYPE, has_type);
+    scale = args.getUnsignedWithMissing(1, Level::GRIB2_MISSING_SCALE, has_scale);
+    value = args.getUnsignedWithMissing(2, Level::GRIB2_MISSING_VALUE, has_value);
 }
 
 bool MatchLevelGRIB2S::matchItem(const Type& o) const
 {
-    const types::level::GRIB2S* v = dynamic_cast<const types::level::GRIB2S*>(&o);
+    const types::Level* v = dynamic_cast<const types::Level*>(&o);
     if (!v) return false;
-    if (has_type && type != v->type()) return false;
-    if (has_scale && scale != v->scale()) return false;
-    if (has_value && value != v->value()) return false;
+    if (v->style() != level::Style::GRIB2S) return false;
+    unsigned ty, sc, va;
+    v->get_GRIB2S(ty, sc, va);
+    if (has_type && type != ty) return false;
+    if (has_scale && scale != sc) return false;
+    if (has_value && value != va) return false;
+    return true;
+}
+
+bool MatchLevelGRIB2S::match_buffer(types::Code code, const uint8_t* data, unsigned size) const
+{
+    if (code != TYPE_LEVEL) return false;
+    if (size < 1) return false;
+    if (Level::style(data, size) != level::Style::GRIB2S) return false;
+    unsigned ty, sc, va;
+    Level::get_GRIB2S(data, size, ty, sc, va);
+    if (has_type && type != ty) return false;
+    if (has_scale && scale != sc) return false;
+    if (has_value && value != va) return false;
     return true;
 }
 
@@ -73,9 +114,9 @@ std::string MatchLevelGRIB2S::toString() const
 {
     CommaJoiner res;
     res.add("GRIB2S");
-    if (has_type) res.add((unsigned)type, (unsigned)level::GRIB2S::MISSING_TYPE); else res.addUndef();
-    if (has_scale) res.add((unsigned)scale, (unsigned)level::GRIB2S::MISSING_SCALE); else res.addUndef();
-    if (has_value) res.add(value, level::GRIB2S::MISSING_VALUE); else res.addUndef();
+    if (has_type) res.add((unsigned)type, (unsigned)Level::GRIB2_MISSING_TYPE); else res.addUndef();
+    if (has_scale) res.add((unsigned)scale, (unsigned)Level::GRIB2_MISSING_SCALE); else res.addUndef();
+    if (has_value) res.add(value, Level::GRIB2_MISSING_VALUE); else res.addUndef();
     return res.join();
 }
 
@@ -83,24 +124,43 @@ std::string MatchLevelGRIB2S::toString() const
 MatchLevelGRIB2D::MatchLevelGRIB2D(const std::string& pattern)
 {
     OptionalCommaList args(pattern);
-    type1 = args.getUnsignedWithMissing(0, level::GRIB2S::MISSING_TYPE, has_type1);
-    scale1 = args.getUnsignedWithMissing(1, level::GRIB2S::MISSING_SCALE, has_scale1);
-    value1 = args.getUnsignedWithMissing(2, level::GRIB2S::MISSING_VALUE, has_value1);
-    type2 = args.getUnsignedWithMissing(3, level::GRIB2S::MISSING_TYPE, has_type2);
-    scale2 = args.getUnsignedWithMissing(4, level::GRIB2S::MISSING_SCALE, has_scale2);
-    value2 = args.getUnsignedWithMissing(5, level::GRIB2S::MISSING_VALUE, has_value2);
+    type1 = args.getUnsignedWithMissing(0, Level::GRIB2_MISSING_TYPE, has_type1);
+    scale1 = args.getUnsignedWithMissing(1, Level::GRIB2_MISSING_SCALE, has_scale1);
+    value1 = args.getUnsignedWithMissing(2, Level::GRIB2_MISSING_VALUE, has_value1);
+    type2 = args.getUnsignedWithMissing(3, Level::GRIB2_MISSING_TYPE, has_type2);
+    scale2 = args.getUnsignedWithMissing(4, Level::GRIB2_MISSING_SCALE, has_scale2);
+    value2 = args.getUnsignedWithMissing(5, Level::GRIB2_MISSING_VALUE, has_value2);
 }
 
 bool MatchLevelGRIB2D::matchItem(const Type& o) const
 {
-    const types::level::GRIB2D* v = dynamic_cast<const types::level::GRIB2D*>(&o);
+    const types::Level* v = dynamic_cast<const types::Level*>(&o);
     if (!v) return false;
-    if (has_type1 && type1 != v->type1()) return false;
-    if (has_scale1 && scale1 != v->scale1()) return false;
-    if (has_value1 && value1 != v->value1()) return false;
-    if (has_type2 && type2 != v->type2()) return false;
-    if (has_scale2 && scale2 != v->scale2()) return false;
-    if (has_value2 && value2 != v->value2()) return false;
+    if (v->style() != level::Style::GRIB2D) return false;
+    unsigned ty1, sc1, va1, ty2, sc2, va2;
+    v->get_GRIB2D(ty1, sc1, va1, ty2, sc2, va2);
+    if (has_type1 && type1 != ty1) return false;
+    if (has_scale1 && scale1 != sc1) return false;
+    if (has_value1 && value1 != va1) return false;
+    if (has_type2 && type2 != ty2) return false;
+    if (has_scale2 && scale2 != sc2) return false;
+    if (has_value2 && value2 != va2) return false;
+    return true;
+}
+
+bool MatchLevelGRIB2D::match_buffer(types::Code code, const uint8_t* data, unsigned size) const
+{
+    if (code != TYPE_LEVEL) return false;
+    if (size < 1) return false;
+    if (Level::style(data, size) != level::Style::GRIB2D) return false;
+    unsigned ty1, sc1, va1, ty2, sc2, va2;
+    Level::get_GRIB2D(data, size, ty1, sc1, va1, ty2, sc2, va2);
+    if (has_type1 && type1 != ty1) return false;
+    if (has_scale1 && scale1 != sc1) return false;
+    if (has_value1 && value1 != va1) return false;
+    if (has_type2 && type2 != ty2) return false;
+    if (has_scale2 && scale2 != sc2) return false;
+    if (has_value2 && value2 != va2) return false;
     return true;
 }
 
@@ -108,12 +168,12 @@ std::string MatchLevelGRIB2D::toString() const
 {
     CommaJoiner res;
     res.add("GRIB2D");
-    if (has_type1) res.add((unsigned)type1, (unsigned)level::GRIB2S::MISSING_TYPE); else res.addUndef();
-    if (has_scale1) res.add((unsigned)scale1, (unsigned)level::GRIB2S::MISSING_SCALE); else res.addUndef();
-    if (has_value1) res.add(value1, level::GRIB2S::MISSING_VALUE); else res.addUndef();
-    if (has_type2) res.add((unsigned)type2, (unsigned)level::GRIB2S::MISSING_TYPE); else res.addUndef();
-    if (has_scale2) res.add((unsigned)scale2, (unsigned)level::GRIB2S::MISSING_SCALE); else res.addUndef();
-    if (has_value2) res.add(value2, level::GRIB2S::MISSING_VALUE); else res.addUndef();
+    if (has_type1) res.add((unsigned)type1, (unsigned)Level::GRIB2_MISSING_TYPE); else res.addUndef();
+    if (has_scale1) res.add((unsigned)scale1, (unsigned)Level::GRIB2_MISSING_SCALE); else res.addUndef();
+    if (has_value1) res.add(value1, Level::GRIB2_MISSING_VALUE); else res.addUndef();
+    if (has_type2) res.add((unsigned)type2, (unsigned)Level::GRIB2_MISSING_TYPE); else res.addUndef();
+    if (has_scale2) res.add((unsigned)scale2, (unsigned)Level::GRIB2_MISSING_SCALE); else res.addUndef();
+    if (has_value2) res.add(value2, Level::GRIB2_MISSING_VALUE); else res.addUndef();
     return res.join();
 }
 
@@ -202,29 +262,46 @@ MatchLevelODIMH5::MatchLevelODIMH5(const std::string& pattern)
 	}
 }
 
+bool MatchLevelODIMH5::match_data(double vmin, double vmax) const
+{
+    if (vals.size())
+    {
+        for (size_t i=0; i < vals.size(); i++)
+        {
+            double min = vals[i] - vals_offset;
+            double max = vals[i] + vals_offset;
+            order(min, max);
+            if (!outside(vmin, vmax, min, max))
+                return true;
+        }
+    }
+    else
+    {
+        if (!outside(vmin, vmax, range_min, range_max))
+            return true;
+    }
+
+    return false;
+}
+
 bool MatchLevelODIMH5::matchItem(const Type& o) const
 {
-    const types::level::ODIMH5* v = dynamic_cast<const types::level::ODIMH5*>(&o);
+    const types::Level* v = dynamic_cast<const types::Level*>(&o);
     if (!v) return false;
+    if (v->style() != level::Style::ODIMH5) return false;
+    double vmin, vmax;
+    v->get_ODIMH5(vmin, vmax);
+    return match_data(vmin, vmax);
+}
 
-	if (vals.size())
-	{
-		for (size_t i=0; i<vals.size(); i++)
-		{
-			double min = vals[i] - vals_offset;
-			double max = vals[i] + vals_offset;
-			order(min, max);
-			if (!outside(v->min(), v->max(), min, max))
-				return true;
-		}
-	}
-	else
-	{
-		if (!outside(v->min(), v->max(), range_min, range_max))
-			return true;
-	}
-
-	return false;
+bool MatchLevelODIMH5::match_buffer(types::Code code, const uint8_t* data, unsigned size) const
+{
+    if (code != TYPE_LEVEL) return false;
+    if (size < 1) return false;
+    if (Level::style(data, size) != level::Style::ODIMH5) return false;
+    double vmin, vmax;
+    Level::get_ODIMH5(data, size, vmin, vmax);
+    return match_data(vmin, vmax);
 }
 
 std::string MatchLevelODIMH5::toString() const

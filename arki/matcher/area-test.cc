@@ -56,7 +56,7 @@ add_method("grib", [] {
 	// Check matching a missing item at the end of the list
 	ensure_not_matches("area:GRIB:zzzz=1", md);
 
-	md.set(area::GRIB::create(testArea2));
+    md.test_set<area::GRIB>(testArea2);
 
 	ensure_not_matches("area:GRIB:foo=5", md);
 	ensure_matches("area:GRIB:foo=15", md);
@@ -67,7 +67,7 @@ add_method("bbox_equals", [] {
     skip_unless_geos();
     Metadata md;
     arki::tests::fill(md);
-    md.set(types::Area::decodeString("GRIB(Ni=441, Nj=181, latfirst=45000000, latlast=43000000, lonfirst=10000000, lonlast=12000000, type=0)"));
+    md.test_set(types::Area::decodeString("GRIB(Ni=441, Nj=181, latfirst=45000000, latlast=43000000, lonfirst=10000000, lonlast=12000000, type=0)"));
     ensure_matches("area: bbox equals POLYGON((10 43, 12 43, 12 45, 10 45, 10 43))", md);
     ensure_not_matches("area: bbox equals POINT EMPTY", md);
     ensure_not_matches("area: bbox equals POINT(11 44)", md);
@@ -79,7 +79,7 @@ add_method("bbox_covers", [] {
     skip_unless_geos();
     Metadata md;
     arki::tests::fill(md);
-	md.set(types::Area::decodeString("GRIB(Ni=441, Nj=181, latfirst=45000000, latlast=43000000, lonfirst=10000000, lonlast=12000000, type=0)"));
+    md.test_set(types::Area::decodeString("GRIB(Ni=441, Nj=181, latfirst=45000000, latlast=43000000, lonfirst=10000000, lonlast=12000000, type=0)"));
 	ensure_matches("area: bbox covers POINT(11 44)", md);
 	ensure_matches("area: bbox covers POINT(12 43)", md);
 	ensure_matches("area: bbox covers LINESTRING(10 43, 10 45, 12 45, 12 43, 10 43)", md);
@@ -95,7 +95,7 @@ add_method("bbox_covers", [] {
 	ensure_not_matches("area: bbox covers POLYGON((12 42, 10 44, 12 45, 12 42))", md);
 
     // Known cases that gave trouble
-    md.set(types::Area::decodeString("GRIB(Ni=441, Nj=181, latfirst=75000000, latlast=30000000, lonfirst=-45000000, lonlast=65000000, type=0)"));
+    md.test_set(types::Area::decodeString("GRIB(Ni=441, Nj=181, latfirst=75000000, latlast=30000000, lonfirst=-45000000, lonlast=65000000, type=0)"));
     ensure_matches("area:bbox covers POLYGON((30 60, -20 60, -20 30, 30 30, 30 60))", md);
 });
 
@@ -104,7 +104,7 @@ add_method("bbox_intersects", [] {
     skip_unless_geos();
     Metadata md;
     arki::tests::fill(md);
-    md.set(types::Area::decodeString("GRIB(Ni=441, Nj=181, latfirst=45000000, latlast=43000000, lonfirst=10000000, lonlast=12000000, type=0)"));
+    md.test_set(types::Area::decodeString("GRIB(Ni=441, Nj=181, latfirst=45000000, latlast=43000000, lonfirst=10000000, lonlast=12000000, type=0)"));
 	ensure_matches("area: bbox intersects POINT(11 44)", md);
 	ensure_matches("area: bbox intersects POINT(12 43)", md);
 	ensure_matches("area: bbox intersects LINESTRING(10 43, 10 45, 12 45, 12 43, 10 43)", md);
@@ -126,7 +126,7 @@ add_method("bbox_coveredby", [] {
     skip_unless_geos();
     Metadata md;
     arki::tests::fill(md);
-    md.set(types::Area::decodeString("GRIB(Ni=441, Nj=181, latfirst=45000000, latlast=43000000, lonfirst=10000000, lonlast=12000000, type=0)"));
+    md.test_set(types::Area::decodeString("GRIB(Ni=441, Nj=181, latfirst=45000000, latlast=43000000, lonfirst=10000000, lonlast=12000000, type=0)"));
 	ensure_matches("area: bbox coveredby POLYGON((10 43, 10 45, 12 45, 12 43, 10 43))", md); // Same shape
 	ensure_matches("area: bbox coveredby POLYGON((10 43, 10 45, 13 45, 13 43, 10 43))", md); // Trapezoid containing area
 	ensure_not_matches("area: bbox coveredby POINT(11 44)", md); // Intersection exists but area is 0
@@ -142,7 +142,7 @@ add_method("bbox_coveredby", [] {
 	ensure_not_matches("area: bbox coveredby LINESTRING(9 40, 10 42, 10 40, 9 40)", md); // Disjoint
 	ensure_not_matches("area: bbox coveredby POLYGON((9 40, 10 42, 10 40, 9 40))", md);  // Disjoint
 
-    md.set(types::Area::decodeString("GRIB(blo=0, lat=4502770, lon=966670, sta=101)"));
+    md.test_set(types::Area::decodeString("GRIB(blo=0, lat=4502770, lon=966670, sta=101)"));
     ensure_matches("area:bbox coveredby POLYGON((9 45, 10 45, 10 46, 9 46, 9 45))", md); // Point contained
 });
 
@@ -162,7 +162,7 @@ add_method("odimh5", [] {
 	//Matcher m;
 
     Metadata md;
-    md.set(types::Area::decodeString("ODIMH5(foo=5,bar=5000,baz=-200,blinda=0,pippo=\"pippo\",pluto=\"12\",aaa=0,zzz=1)"));
+    md.test_set(types::Area::decodeString("ODIMH5(foo=5,bar=5000,baz=-200,blinda=0,pippo=\"pippo\",pluto=\"12\",aaa=0,zzz=1)"));
 
 	ensure_matches("area:ODIMH5:foo=5", md);
 	ensure_matches("area:ODIMH5:bar=5000", md);
@@ -186,7 +186,7 @@ add_method("odimh5", [] {
 	// Check matching a missing item at the end of the list
 	ensure_not_matches("area:ODIMH5:zzzz=1", md);
 
-	md.set(area::ODIMH5::create(testArea2));
+    md.test_set<area::ODIMH5>(testArea2);
 
     ensure_not_matches("area:ODIMH5:foo=5", md);
     ensure_matches("area:ODIMH5:foo=15", md);
@@ -196,7 +196,7 @@ add_method("odimh5", [] {
 add_method("odimh5_octagon", [] {
     //Vediamo se la formula per calcolare un ottagono con centro e raggio del radar funziona
     Metadata md1;
-    md1.set(types::Area::decodeString("ODIMH5(lon=11623600,lat=44456700,radius=100000)"));
+    md1.test_set(types::Area::decodeString("ODIMH5(lon=11623600,lat=44456700,radius=100000)"));
 
 	//il valori devono corrispondere
 	ensure_matches("area:ODIMH5:lon=11623600", md1);
@@ -210,7 +210,7 @@ add_method("bbox_odimh5", [] {
 
     //Vediamo se la formula per calcolare un ottagono con centro e raggio del radar funziona
     Metadata md1;
-    md1.set(types::Area::decodeString("ODIMH5(lon=11623600,lat=44456700,radius=100000)"));
+    md1.test_set(types::Area::decodeString("ODIMH5(lon=11623600,lat=44456700,radius=100000)"));
 
 	//il centro deve starci per forza
 	ensure_matches("area: bbox covers POINT(11.6236 44.4567)", md1);   
@@ -228,7 +228,7 @@ add_method("vm2", [] {
     skip_unless_vm2();
     matcher::Parser parser;
     Metadata md;
-    md.set(area::VM2::create(1));
+    md.test_set<area::VM2>(1);
 
 	ensure_matches("area:VM2", md);
 	ensure_matches("area:VM2,", md);

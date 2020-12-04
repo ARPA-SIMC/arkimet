@@ -37,6 +37,7 @@ libarkimet_sources = [
     'types.cc',
     'types/bundle.cc',
     'types/utils.cc',
+    'types/encoded.cc',
     'types/values.cc',
     'types/source.cc',
     'types/source/blob.cc',
@@ -230,6 +231,7 @@ test_arkimet_sources = [
     'types-test.cc',
     'types/bundle-test.cc',
     'types/utils-test.cc',
+    'types/encoded-test.cc',
     'types/values-test.cc',
     'types/source-test.cc',
     'types/reftime-test.cc',
@@ -387,4 +389,4 @@ test_arkimet = executable('test-arkimet', test_arkimet_sources,
 
 runtest = find_program('runtest')
 
-test('arkimet', runtest, args: [test_arkimet], timeout: 600)
+test('arki', runtest, args: [test_arkimet], timeout: 600)

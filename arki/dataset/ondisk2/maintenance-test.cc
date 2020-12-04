@@ -127,7 +127,7 @@ void CheckTests<TestFixture>::register_tests()
             // Import the second datum of 2007/07-07.grib again
             {
                 auto w = f.makeSegmentedWriter();
-                wassert(actual(*w).import(f.import_results[3]));
+                wassert(actual(*w).import(*f.import_results[3]));
             }
 
             // Make sure that the segment is seen as unaligned instead of dirty

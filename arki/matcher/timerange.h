@@ -30,7 +30,9 @@ struct MatchTimerangeGRIB1 : public MatchTimerange
     int ptype, p1, p2;
 
     MatchTimerangeGRIB1(const std::string& pattern);
+    bool match_data(int mtype, int munit, int mp1, int mp2, bool use_p1, bool use_p2) const;
     bool matchItem(const types::Type& o) const override;
+    bool match_buffer(types::Code code, const uint8_t* data, unsigned size) const override;
     std::string toString() const override;
 };
 
@@ -43,6 +45,7 @@ struct MatchTimerangeGRIB2 : public MatchTimerange
 
     MatchTimerangeGRIB2(const std::string& pattern);
     bool matchItem(const types::Type& o) const override;
+    bool match_buffer(types::Code code, const uint8_t* data, unsigned size) const override;
     std::string toString() const override;
 };
 
@@ -54,6 +57,7 @@ struct MatchTimerangeBUFR : public MatchTimerange
 
     MatchTimerangeBUFR(const std::string& pattern);
     bool matchItem(const types::Type& o) const override;
+    bool match_buffer(types::Code code, const uint8_t* data, unsigned size) const override;
     std::string toString() const override;
 };
 

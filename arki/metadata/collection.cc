@@ -183,7 +183,7 @@ void Collection::add(dataset::Reader& reader, const std::string& q)
 
 void Collection::push_back(const Metadata& md)
 {
-    acquire(Metadata::create_copy(md));
+    acquire(md.clone());
 }
 
 void Collection::acquire(std::shared_ptr<Metadata> md, bool with_data)
@@ -349,13 +349,13 @@ void Collection::sort()
     sort("");
 }
 
-bool Collection::expand_date_range(std::unique_ptr<core::Time>& begin, std::unique_ptr<core::Time>& until) const
+bool Collection::expand_date_range(core::Interval& interval) const
 {
     for (const auto& md: *this)
     {
         auto rt = md->get<types::Reftime>();
         if (!rt) return false;
-        rt->expand_date_range(begin, until);
+        rt->expand_date_range(interval);
     }
     return true;
 }

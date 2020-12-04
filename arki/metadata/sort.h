@@ -87,7 +87,7 @@ protected:
     std::unique_ptr<core::Time> endofperiod;
     metadata::Collection buffer;
 
-    void setEndOfPeriod(const types::Reftime& rt);
+    void setEndOfPeriod(const core::Time& time);
 
 public:
     Stream(const Compare& sorter, metadata_dest_func next_dest)

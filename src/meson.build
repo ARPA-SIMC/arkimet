@@ -20,6 +20,7 @@ foreach script: scripts
                   input: [script[0], '../doc' / 'mhooks-' + script[0]],
                   output: script[0] + '.1',
                   command: [run_local, help2man, '--include', '@INPUT1@', '--name=' + script[1], '--section=1', '--no-info', '--version-string=' + meson.project_version(), '@INPUT0@'],
+                  depends: [py_arkimet],
                   capture: true,
                   install: true,
                   install_dir: get_option('mandir') / 'man1')

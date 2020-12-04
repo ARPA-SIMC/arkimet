@@ -36,10 +36,8 @@ Stats::Stats(const Metadata& md)
     : count(1), size(md.data_size()), begin(0, 0, 0), end(0, 0, 0)
 {
     if (const Reftime* rt = md.get<types::Reftime>())
-    {
-        begin = rt->period_begin();
-        end = rt->period_end();
-    } else
+        begin = end = rt->get_Position();
+    else
         throw_consistency_error("summarising metadata", "missing reference time");
 }
 
@@ -82,12 +80,14 @@ void Stats::merge(const Metadata& md)
 {
     if (const Reftime* rt = md.get<types::Reftime>())
     {
+        auto time = rt->get_Position();
         if (count == 0)
+            begin = end = time;
+        else
         {
-            begin = rt->period_begin();
-            end = rt->period_end();
-        } else
-            rt->expand_date_range(begin, end);
+            if (time < begin) begin = time;
+            if (end < time) end = time;
+        }
     }
     else
         throw_consistency_error("summarising metadata", "missing reference time");
@@ -115,9 +115,16 @@ void Stats::encodeBinary(core::BinaryEncoder& enc) const
 
 void Stats::encodeWithoutEnvelope(core::BinaryEncoder& enc) const
 {
-    unique_ptr<types::Reftime> reftime(Reftime::create(begin, end));
     enc.add_unsigned(count, 4);
-    reftime->encodeBinary(enc);
+    /*
+     * This is the serialization of a Reftime type with the obsolete PERIOD
+     * style, inlined so we can get rid of reftime::Period.
+     */
+    enc.add_varint(static_cast<unsigned>(arki::TYPE_REFTIME));
+    enc.add_varint(11u);
+    enc.add_unsigned(static_cast<uint8_t>(reftime::Style::PERIOD), 1);
+    begin.encodeWithoutEnvelope(enc);
+    end.encodeWithoutEnvelope(enc);
     enc.add_unsigned(size, 8);
 }
 
@@ -160,11 +167,10 @@ std::string Stats::toYaml(size_t indent) const
 
 void Stats::toYaml(std::ostream& out, size_t indent) const
 {
-    unique_ptr<types::Reftime> reftime(Reftime::create(begin, end));
     string ind(indent, ' ');
     out << ind << "Count: " << count << endl;
     out << ind << "Size: " << size << endl;
-    out << ind << "Reftime: " << *reftime << endl;
+    out << ind << "Reftime: " << begin << " to " << end << endl;
 }
 
 unique_ptr<Stats> Stats::decode(core::BinaryDecoder& dec)
@@ -179,13 +185,23 @@ unique_ptr<Stats> Stats::decode(core::BinaryDecoder& dec)
     core::BinaryDecoder inner = dec.pop_type_envelope(code);
     if (code == TYPE_REFTIME)
     {
-        unique_ptr<Reftime> rt(Reftime::decode(inner));
-        res->begin = rt->period_begin();
-        res->end = rt->period_end();
+        reftime::Style sty = static_cast<reftime::Style>(inner.pop_byte("Reftime style"));
+        switch (sty)
+        {
+            case reftime::Style::POSITION:
+                res->begin = res->end = Time::decode(inner);
+                break;
+            case reftime::Style::PERIOD:
+                res->begin = Time::decode(inner);
+                res->end = Time::decode(inner);
+                break;
+            default:
+                throw std::runtime_error("cannot parse Reftime: found unsupported style " + Reftime::formatStyle(sty));
+        }
     }
     else
     {
-        stringstream ss;
+        std::stringstream ss;
         ss << "cannot parse summary stats: cannot handle element " << formatCode(code);
         throw std::runtime_error(ss.str());
     }
@@ -214,9 +230,14 @@ unique_ptr<Stats> Stats::decodeString(const std::string& str)
             res->size = strtoull(i->second.c_str(), 0, 10);
         else if (name == "reftime")
         {
-            unique_ptr<Reftime> rt(Reftime::decodeString(i->second));
-            res->begin = rt->period_begin();
-            res->end = rt->period_end();
+            size_t pos = i->second.find(" to ");
+            if (pos == std::string::npos)
+                res->begin = res->end = Time::decodeString(i->second);
+            else
+            {
+                res->begin = Time::decodeString(i->second.substr(0, pos));
+                res->end = Time::decodeString(i->second.substr(pos + 4));
+            }
         }
     }
     return res;

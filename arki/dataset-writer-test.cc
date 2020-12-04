@@ -8,6 +8,7 @@
 #include "arki/types/source.h"
 #include "arki/types/source/blob.h"
 #include "arki/types/reftime.h"
+#include "arki/types/note.h"
 #include "arki/utils/files.h"
 #include "arki/utils/accounting.h"
 #include "arki/utils/string.h"
@@ -113,8 +114,8 @@ add_method("import_largefile", [](Fixture& f) {
         {
             for (unsigned hour = 0; hour < 24; ++hour)
             {
-                Metadata md = make_large_mock("grib", 10*1024*1024, 12, day, hour);
-                wassert(actual(*writer).import(md));
+                auto md = make_large_mock("grib", 10*1024*1024, 12, day, hour);
+                wassert(actual(*writer).import(*md));
             }
         }
         writer->flush();
@@ -221,10 +222,10 @@ this->add_method("import", [](Fixture& f) {
 
     for (unsigned i = 0; i < 3; ++i)
     {
-        Metadata md = f.td.mds[i];
-        wassert(actual(*ds).import(md));
+        std::shared_ptr<Metadata> md(f.td.mds[i].clone());
+        wassert(actual(*ds).import(*md));
         wassert(actual_file(str::joinpath(f.ds_root, f.destfile(f.td.mds[i]))).exists());
-        wassert(actual_type(md.source()).is_source_blob(f.td.format, f.ds_root, f.destfile(f.td.mds[i])));
+        wassert(actual_type(md->source()).is_source_blob(f.td.format, f.ds_root, f.destfile(f.td.mds[i])));
     }
 });
 
@@ -232,7 +233,7 @@ this->add_method("import_error", [](Fixture& f) {
     std::string format = f.cfg->value("format");
     Metadata md;
     fill(md);
-    md.set("reftime", "2018-01-01T00:00:00");
+    md.test_set("reftime", "2018-01-01T00:00:00");
     md.set_source_inline(format, metadata::DataManager::get().to_unreadable_data(1));
 
     auto ds = f.config().create_writer();
@@ -260,11 +261,13 @@ this->add_method("import_batch_replace_never", [](Fixture& f) {
         wassert(actual_type(f.td.mds[i].source()).is_source_blob(f.td.format, f.ds_root, f.destfile(f.td.mds[i])));
     }
 
-    Metadata mds[3] = { f.td.mds[0], f.td.mds[1], f.td.mds[2] };
+    std::shared_ptr<Metadata> mds[3];
+    for (unsigned i = 0; i < 3; ++i)
+        mds[i] = f.td.mds[i].clone();
     batch.clear();
-    batch.emplace_back(make_shared<dataset::WriterBatchElement>(mds[0]));
-    batch.emplace_back(make_shared<dataset::WriterBatchElement>(mds[1]));
-    batch.emplace_back(make_shared<dataset::WriterBatchElement>(mds[2]));
+    batch.emplace_back(make_shared<dataset::WriterBatchElement>(*mds[0]));
+    batch.emplace_back(make_shared<dataset::WriterBatchElement>(*mds[1]));
+    batch.emplace_back(make_shared<dataset::WriterBatchElement>(*mds[2]));
     wassert(ds->acquire_batch(batch, dataset::REPLACE_NEVER));
     for (unsigned i = 0; i < 3; ++i)
     {
@@ -272,9 +275,9 @@ this->add_method("import_batch_replace_never", [](Fixture& f) {
         {
             wassert(actual(batch[i]->result) == dataset::ACQ_OK);
             wassert(actual(batch[i]->dataset_name) == "testds");
-            wassert(actual(mds[i].sourceBlob().absolutePathname()) == f.td.mds[i].sourceBlob().absolutePathname());
-            wassert(actual(mds[i].sourceBlob().offset) > f.td.mds[i].sourceBlob().offset);
-            wassert(actual(mds[i].sourceBlob().size) == f.td.mds[i].sourceBlob().size);
+            wassert(actual(mds[i]->sourceBlob().absolutePathname()) == f.td.mds[i].sourceBlob().absolutePathname());
+            wassert(actual(mds[i]->sourceBlob().offset) > f.td.mds[i].sourceBlob().offset);
+            wassert(actual(mds[i]->sourceBlob().size) == f.td.mds[i].sourceBlob().size);
         } else {
             wassert(actual(batch[i]->result) == dataset::ACQ_ERROR_DUPLICATE);
             wassert(actual(batch[i]->dataset_name) == "");
@@ -299,19 +302,21 @@ this->add_method("import_batch_replace_always", [](Fixture& f) {
         wassert(actual_type(f.td.mds[i].source()).is_source_blob(f.td.format, f.ds_root, f.destfile(f.td.mds[i])));
     }
 
-    Metadata mds[3] = { f.td.mds[0], f.td.mds[1], f.td.mds[2] };
+    std::shared_ptr<Metadata> mds[3];
+    for (unsigned i = 0; i < 3; ++i)
+        mds[i] = f.td.mds[i].clone();
     batch.clear();
-    batch.emplace_back(make_shared<dataset::WriterBatchElement>(mds[0]));
-    batch.emplace_back(make_shared<dataset::WriterBatchElement>(mds[1]));
-    batch.emplace_back(make_shared<dataset::WriterBatchElement>(mds[2]));
+    batch.emplace_back(make_shared<dataset::WriterBatchElement>(*mds[0]));
+    batch.emplace_back(make_shared<dataset::WriterBatchElement>(*mds[1]));
+    batch.emplace_back(make_shared<dataset::WriterBatchElement>(*mds[2]));
     wassert(ds->acquire_batch(batch, dataset::REPLACE_ALWAYS));
     for (unsigned i = 0; i < 3; ++i)
     {
         wassert(actual(batch[i]->result) == dataset::ACQ_OK);
         wassert(actual(batch[i]->dataset_name) == "testds");
-        wassert(actual(mds[i].sourceBlob().absolutePathname()) == f.td.mds[i].sourceBlob().absolutePathname());
-        wassert(actual(mds[i].sourceBlob().offset) > f.td.mds[i].sourceBlob().offset);
-        wassert(actual(mds[i].sourceBlob().size) == f.td.mds[i].sourceBlob().size);
+        wassert(actual(mds[i]->sourceBlob().absolutePathname()) == f.td.mds[i].sourceBlob().absolutePathname());
+        wassert(actual(mds[i]->sourceBlob().offset) > f.td.mds[i].sourceBlob().offset);
+        wassert(actual(mds[i]->sourceBlob().size) == f.td.mds[i].sourceBlob().size);
     }
 });
 
@@ -322,9 +327,12 @@ this->add_method("import_before_archive_age", [](Fixture& f) {
 
     for (unsigned i = 0; i < 3; ++i)
     {
-        Metadata md = f.td.mds[i];
-        wassert(actual(ds->acquire(md)) == dataset::ACQ_ERROR);
-        wassert(actual(md.notes().back().content).contains("is older than archive age"));
+        std::shared_ptr<Metadata> md(f.td.mds[i].clone());
+        wassert(actual(ds->acquire(*md)) == dataset::ACQ_ERROR);
+        core::Time time;
+        std::string content;
+        md->get_last_note().get(time, content);
+        wassert(actual(content).contains("is older than archive age"));
     }
 
     metadata::Collection mdc(*f.config().create_reader(), Matcher());
@@ -338,9 +346,12 @@ this->add_method("import_before_delete_age", [](Fixture& f) {
 
     for (unsigned i = 0; i < 3; ++i)
     {
-        Metadata md = f.td.mds[i];
-        wassert(actual(*ds).import(md));
-        wassert(actual(md.notes().back().content).contains("is older than delete age"));
+        std::shared_ptr<Metadata> md(f.td.mds[i].clone());
+        wassert(actual(*ds).import(*md));
+        core::Time time;
+        std::string content;
+        md->get_last_note().get(time, content);
+        wassert(actual(content).contains("is older than delete age"));
     }
 
     metadata::Collection mdc(*f.config().create_reader(), Matcher());
@@ -348,19 +359,19 @@ this->add_method("import_before_delete_age", [](Fixture& f) {
 });
 
 this->add_method("second_resolution", [](Fixture& f) {
-    Metadata md(f.td.mds[1]);
-    md.set(types::Reftime::createPosition(Time(2007, 7, 7, 0, 0, 0)));
+    std::shared_ptr<Metadata> md(f.td.mds[1].clone());
+    md->test_set(types::Reftime::createPosition(Time(2007, 7, 7, 0, 0, 0)));
 
     // Import a first metadata to create a segment to repack
     {
         auto writer = f.config().create_writer();
-        wassert(actual(*writer).import(md));
+        wassert(actual(*writer).import(*md));
     }
 
-    md.set(types::Reftime::createPosition(Time(2007, 7, 7, 0, 0, 1)));
+    md->test_set(types::Reftime::createPosition(Time(2007, 7, 7, 0, 0, 1)));
     {
         auto writer = f.config().create_writer();
-        wassert(actual(*writer).import(md));
+        wassert(actual(*writer).import(*md));
     }
 
     wassert(f.ensure_localds_clean(1, 2));
@@ -376,7 +387,7 @@ auto test_same_segment_fail = [](Fixture& f, unsigned fail_idx, dataset::Replace
     metadata::Collection mds;
     for (unsigned idx = 0; idx < 3; ++idx)
     {
-        md.set(types::Reftime::createPosition(Time(2018, 1, 1, idx, 0, 0)));
+        md.test_set(types::Reftime::createPosition(Time(2018, 1, 1, idx, 0, 0)));
         if (idx == fail_idx)
             md.set_source_inline(format, metadata::DataManager::get().to_unreadable_data(1));
         else
@@ -425,7 +436,7 @@ auto test_different_segment_fail = [](Fixture& f, unsigned fail_idx, dataset::Re
     metadata::Collection mds;
     for (unsigned idx = 0; idx < 3; ++idx)
     {
-        md.set(types::Reftime::createPosition(Time(2018, idx + 1, 1, 0, 0, 0)));
+        md.test_set(types::Reftime::createPosition(Time(2018, idx + 1, 1, 0, 0, 0)));
         if (idx == fail_idx)
             md.set_source_inline(format, metadata::DataManager::get().to_unreadable_data(1));
         else

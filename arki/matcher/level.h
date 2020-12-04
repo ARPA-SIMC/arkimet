@@ -27,7 +27,9 @@ struct MatchLevelGRIB1 : public MatchLevel
 	int l2;
 
     MatchLevelGRIB1(const std::string& pattern);
+    bool match_data(unsigned vtype, unsigned vl1, unsigned vl2) const;
     bool matchItem(const types::Type& o) const override;
+    bool match_buffer(types::Code code, const uint8_t* data, unsigned size) const override;
     std::string toString() const override;
 };
 
@@ -42,6 +44,7 @@ struct MatchLevelGRIB2S : public MatchLevel
 
     MatchLevelGRIB2S(const std::string& pattern);
     bool matchItem(const types::Type& o) const override;
+    bool match_buffer(types::Code code, const uint8_t* data, unsigned size) const override;
     std::string toString() const override;
 };
 
@@ -62,6 +65,7 @@ struct MatchLevelGRIB2D : public MatchLevel
 
     MatchLevelGRIB2D(const std::string& pattern);
     bool matchItem(const types::Type& o) const override;
+    bool match_buffer(types::Code code, const uint8_t* data, unsigned size) const override;
     std::string toString() const override;
 };
 
@@ -74,7 +78,9 @@ struct MatchLevelODIMH5 : public MatchLevel
 	double range_max;
 
     MatchLevelODIMH5(const std::string& pattern);
+    bool match_data(double vmin, double vmax) const;
     bool matchItem(const types::Type& o) const override;
+    bool match_buffer(types::Code code, const uint8_t* data, unsigned size) const override;
     std::string toString() const override;
 };
 

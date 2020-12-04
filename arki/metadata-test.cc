@@ -13,6 +13,7 @@
 #include "types/proddef.h"
 #include "types/assigneddataset.h"
 #include "types/source/blob.h"
+#include "types/note.h"
 #include "structured/keys.h"
 #include "structured/json.h"
 #include "structured/memory.h"
@@ -51,14 +52,13 @@ struct Fixture : public arki::utils::tests::Fixture
 
     void fill(Metadata& md)
     {
-        md.set(Reftime::createPosition(Time(2006, 5, 4, 3, 2, 1)));
-        md.set(Origin::createGRIB1(1, 2, 3));
-        md.set(Product::createGRIB1(1, 2, 3));
-        md.set(Level::createGRIB1(114, 12, 34));
-        md.set(Timerange::createGRIB1(1, 1, 2, 3));
-        md.set(Area::createGRIB(testValues));
-        md.set(Proddef::createGRIB(testValues));
-        md.set(AssignedDataset::create("dsname", "dsid"));
+        md.test_set(Reftime::createPosition(Time(2006, 5, 4, 3, 2, 1)));
+        md.test_set(Origin::createGRIB1(1, 2, 3));
+        md.test_set(Product::createGRIB1(1, 2, 3));
+        md.test_set(Level::createGRIB1(114, 12, 34));
+        md.test_set(Timerange::createGRIB1(1, 1, 2, 3));
+        md.test_set<area::GRIB>(testValues);
+        md.test_set(Proddef::createGRIB(testValues));
         md.add_note("test note");
     }
 
@@ -69,11 +69,14 @@ struct Fixture : public arki::utils::tests::Fixture
         wassert(actual(Product::createGRIB1(1, 2, 3)) == md.get<Product>());
         wassert(actual(Level::createGRIB1(114, 12, 34)) == md.get<Level>());
         wassert(actual(Timerange::createGRIB1(1, 1, 2, 3)) == md.get<Timerange>());
-        wassert(actual(Area::createGRIB(testValues)) == md.get<Area>());
+        wassert(actual(area::GRIB::create(testValues)) == md.get<Area>());
         wassert(actual(Proddef::createGRIB(testValues)) == md.get<Proddef>());
-        wassert(actual(AssignedDataset::create("dsname", "dsid")) == md.get<AssignedDataset>());
-        wassert(actual(md.notes().size()) == 1u);
-        wassert(actual((*md.notes().begin()).content) == "test note");
+        auto notes = md.notes();
+        wassert(actual(notes.second - notes.first) == 1u);
+        core::Time time;
+        std::string content;
+        reinterpret_cast<const types::Note*>(*notes.first)->get(time, content);
+        wassert(actual(content) == "test note");
     }
 };
 
@@ -150,24 +153,14 @@ add_method("binary", [](Fixture& f) {
     wassert(actual((char)encoded[1]) == 'D');
     sys::write_file("test.md", encoded.data(), encoded.size());
 
-    Metadata md1;
+    std::shared_ptr<Metadata> md1;
     core::BinaryDecoder dec(encoded);
-    wassert(md1.read(dec, metadata::ReadContext("(test memory buffer)", dir)));
+    md1 = wcallchecked(Metadata::read_binary(dec, metadata::ReadContext("(test memory buffer)", dir)));
+    wassert_true(md1);
 
-    wassert(actual_type(md1.source()).is_source_blob("grib", dir, "inbound/test.grib1", 1, 2));
-    wassert(actual(md1.source().format) == "grib");
-    wassert(f.ensure_md_matches_prefill(md1));
-
-
-    // Test PERIOD reference times
-    md.set(Reftime::createPeriod(Time(2007, 6, 5, 4, 3, 2), Time(2008, 7, 6, 5, 4, 3)));
-
-    encoded = md.encodeBinary();
-    Metadata md2;
-    core::BinaryDecoder dec1(encoded);
-    wassert(md2.read(dec1, metadata::ReadContext("(test memory buffer)", ""), false));
-
-    wassert(actual(Reftime::createPeriod(Time(2007, 6, 5, 4, 3, 2), Time(2008, 7, 6, 5, 4, 3))) == md2.get<Reftime>());
+    wassert(actual_type(md1->source()).is_source_blob("grib", dir, "inbound/test.grib1", 1, 2));
+    wassert(actual(md1->source().format) == "grib");
+    wassert(f.ensure_md_matches_prefill(*md1));
 
 
     // Test methods to load metadata from files
@@ -195,23 +188,12 @@ add_method("yaml", [](Fixture& f) {
     f.fill(md);
 
     string s = md.to_yaml();
-    Metadata md1;
     auto reader = LineReader::from_chars(s.data(), s.size());
-    md1.readYaml(*reader, "(test memory buffer)");
-
-    wassert(actual(Source::createBlobUnlocked("grib", "", "inbound/test.grib1", 1, 2)) == md1.source());
-    wassert(actual(md1.source().format) == "grib");
-    wassert(f.ensure_md_matches_prefill(md1));
-
-    // Test PERIOD reference times
-    md.set(Reftime::createPeriod(Time(2007, 6, 5, 4, 3, 2), Time(2008, 7, 6, 5, 4, 3)));
-
-    s = md.to_yaml();
-    Metadata md2;
-    reader = LineReader::from_chars(s.data(), s.size());
-    md2.readYaml(*reader, "(test memory buffer)");
-
-    wassert(actual(Reftime::createPeriod(Time(2007, 6, 5, 4, 3, 2), Time(2008, 7, 6, 5, 4, 3))) == md2.get<Reftime>());
+    auto md1 = Metadata::read_yaml(*reader, "(test memory buffer)");
+    wassert_true(md1);
+    wassert(actual(Source::createBlobUnlocked("grib", "", "inbound/test.grib1", 1, 2)) == md1->source());
+    wassert(actual(md1->source().format) == "grib");
+    wassert(f.ensure_md_matches_prefill(*md1));
 });
 
 // Test JSON encoding and decoding
@@ -229,30 +211,11 @@ add_method("json", [](Fixture& f) {
     structured::Memory parsed;
     structured::JSON::parse(output.str(), parsed);
 
-    Metadata md1;
-    md1.read(structured::keys_json, parsed.root());
+    auto md1 = Metadata::read_structure(structured::keys_json, parsed.root());
 
-    wassert(actual(Source::createBlobUnlocked("grib", "", "inbound/test.grib1", 1, 2)) == md1.source());
-    wassert(actual(md1.source().format) == "grib");
-    wassert(f.ensure_md_matches_prefill(md1));
-
-
-    // Test PERIOD reference times
-    md.set(Reftime::createPeriod(Time(2007, 6, 5, 4, 3, 2), Time(2008, 7, 6, 5, 4, 3)));
-
-    // Serialise to JSON
-    stringstream output1;
-    structured::JSON json1(output1);
-    md.serialise(json1, structured::keys_json);
-
-    // Parse back
-    structured::Memory parsed1;
-    structured::JSON::parse(output1.str(), parsed1);
-
-    Metadata md2;
-    md2.read(structured::keys_json, parsed1.root());
-
-    wassert(actual(Reftime::createPeriod(Time(2007, 6, 5, 4, 3, 2), Time(2008, 7, 6, 5, 4, 3))) == md2.get<Reftime>());
+    wassert(actual(Source::createBlobUnlocked("grib", "", "inbound/test.grib1", 1, 2)) == md1->source());
+    wassert(actual(md1->source().format) == "grib");
+    wassert(f.ensure_md_matches_prefill(*md1));
 });
 
 // Test encoding and decoding with inline data
@@ -268,12 +231,11 @@ add_method("binary_inline", [](Fixture& f) {
     temp.close();
 
     // Decode
-    Metadata md1;
     sys::File temp1("testfile", O_RDONLY);
-    wassert(md1.read(temp1, metadata::ReadContext("testfile"), true));
+    auto md1 = wcallchecked(Metadata::read_binary(temp1, metadata::ReadContext("testfile"), true));
     temp1.close();
 
-    wassert(actual(md1.get_data().read()) == buf);
+    wassert(actual(md1->get_data().read()) == buf);
 });
 
 // Serialise using unix file descriptors
@@ -290,11 +252,10 @@ add_method("binary_fd", [](Fixture& f) {
 
     // Decode
     sys::File in(tmpfile, O_RDONLY);
-    Metadata md1;
-    md1.read(in, metadata::ReadContext(tmpfile));
+    auto md1 = wcallchecked(Metadata::read_binary(in, metadata::ReadContext(tmpfile)));
     in.close();
 
-    wassert(actual(md) == md1);
+    wassert(actual(md) == *md1);
 });
 
 // Reproduce decoding error at #24
@@ -356,7 +317,7 @@ add_method("issue107_yaml", [](Fixture& f) {
     File fd("inbound/issue107.yaml", O_RDONLY);
     auto reader = LineReader::from_fd(fd);
 
-    wassert(actual(md.readYaml(*reader, "inbound/issue107.yaml")).istrue());
+    wassert(actual(Metadata::read_yaml(*reader, "inbound/issue107.yaml")).istrue());
 });
 
 add_method("wrongsize", [](Fixture& f) {

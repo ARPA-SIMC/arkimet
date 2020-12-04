@@ -54,15 +54,14 @@ void fill(Metadata& md)
     testValues.set("pluto", Value::create_string("12"));
     testValues.set("cippo", Value::create_string(""));
 
-    md.set(Reftime::createPosition(core::Time(2006, 5, 4, 3, 2, 1)));
-    md.set(origin::GRIB1::create(1, 2, 3));
-    md.set(product::GRIB1::create(1, 2, 3));
-    md.set(level::GRIB1::create(114, 12, 34));
-    md.set(timerange::GRIB1::create(1, 1, 2, 3));
-    md.set(area::GRIB::create(testValues));
-    md.set(proddef::GRIB::create(testValues));
+    md.test_set(Reftime::createPosition(core::Time(2006, 5, 4, 3, 2, 1)));
+    md.test_set(Origin::createGRIB1(1, 2, 3));
+    md.test_set(Product::createGRIB1(1, 2, 3));
+    md.test_set(Level::createGRIB1(114, 12, 34));
+    md.test_set(Timerange::createGRIB1(1, 1, 2, 3));
+    md.test_set<area::GRIB>(testValues);
+    md.test_set(Proddef::createGRIB(testValues));
     md.add_note("test note");
-    md.set(AssignedDataset::create("dsname", "dsid"));
 }
 
 inline bool cmpmd(Metadata& md1, Metadata& md2)
@@ -100,23 +99,22 @@ void Tests::register_tests() {
 // Test compression
 add_method("stream", [] {
     // Create test metadata
-    Metadata md1;
-    md1.set_source(types::Source::createURL("grib", "http://www.example.org"));
-    fill(md1);
+    auto md1 = std::make_shared<Metadata>();
+    md1->set_source(types::Source::createURL("grib", "http://www.example.org"));
+    fill(*md1);
 
-    Metadata md2;
-    md2 = md1;
-    md2.set(types::origin::BUFR::create(1, 2));
+    std::shared_ptr<Metadata> md2(md1->clone());
+    md2->test_set(types::Origin::createBUFR(1, 2));
 
     const char* teststr = "this is a test";
-    md1.set_source_inline("test", metadata::DataManager::get().to_data("test", vector<uint8_t>(teststr, teststr + 14)));
+    md1->set_source_inline("test", metadata::DataManager::get().to_data("test", vector<uint8_t>(teststr, teststr + 14)));
 
     // Encode everything in a buffer
     size_t end1, end2;
     std::string input = tempfile_to_string([&](sys::NamedFileDescriptor& out) {
-        md1.write(out);
+        md1->write(out);
         end1 = out.lseek(0, SEEK_CUR);
-        md2.write(out);
+        md2->write(out);
         end2 = out.lseek(0, SEEK_CUR);
     });
 
@@ -152,8 +150,8 @@ add_method("stream", [] {
 
     // See that we've got what we expect
     wassert(actual(results.size()) == 2u);
-    wassert_true(cmpmd(md1, results[0]));
-    wassert_true(cmpmd(md2, results[1]));
+    wassert_true(cmpmd(*md1, results[0]));
+    wassert_true(cmpmd(*md2, results[1]));
 
 	results.clear();
 
@@ -165,8 +163,8 @@ add_method("stream", [] {
 
     // See that we've got what we expect
     wassert(actual(results.size()) == 2u);
-    wassert_true(cmpmd(md1, results[0]));
-    wassert_true(cmpmd(md2, results[1]));
+    wassert_true(cmpmd(*md1, results[0]));
+    wassert_true(cmpmd(*md2, results[1]));
 });
 
 // Send data split in less chunks than we have metadata

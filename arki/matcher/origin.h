@@ -28,6 +28,7 @@ struct MatchOriginGRIB1 : public MatchOrigin
 
     MatchOriginGRIB1(const std::string& pattern);
     bool matchItem(const types::Type& o) const override;
+    bool match_buffer(types::Code code, const uint8_t* data, unsigned size) const override;
     std::string toString() const override;
 };
 
@@ -42,6 +43,7 @@ struct MatchOriginGRIB2 : public MatchOrigin
 
     MatchOriginGRIB2(const std::string& pattern);
     bool matchItem(const types::Type& o) const override;
+    bool match_buffer(types::Code code, const uint8_t* data, unsigned size) const override;
     std::string toString() const override;
 };
 
@@ -53,6 +55,7 @@ struct MatchOriginBUFR : public MatchOrigin
 
     MatchOriginBUFR(const std::string& pattern);
     bool matchItem(const types::Type& o) const override;
+    bool match_buffer(types::Code code, const uint8_t* data, unsigned size) const override;
     std::string toString() const override;
 };
 
@@ -65,6 +68,7 @@ struct MatchOriginODIMH5 : public MatchOrigin
 
     MatchOriginODIMH5(const std::string& pattern);
     bool matchItem(const types::Type& o) const override;
+    bool match_buffer(types::Code code, const uint8_t* data, unsigned size) const override;
     std::string toString() const override;
 };
 

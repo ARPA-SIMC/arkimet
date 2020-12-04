@@ -148,14 +148,13 @@ unique_ptr<Compare> Compare::parse(const std::string& expr)
     }
 }
 
-void Stream::setEndOfPeriod(const types::Reftime& rt)
+void Stream::setEndOfPeriod(const core::Time& time)
 {
-    Time begin = rt.period_begin();
-    int mo = begin.mo;
-    int da = begin.da;
-    int ho = begin.ho;
-    int mi = begin.mi;
-    int se = begin.se;
+    int mo = time.mo;
+    int da = time.da;
+    int ho = time.ho;
+    int mi = time.mi;
+    int se = time.se;
     switch (sorter.interval())
     {
         case Compare::YEAR: mo = -1; // Falls through
@@ -171,20 +170,27 @@ void Stream::setEndOfPeriod(const types::Reftime& rt)
         }
     }
     endofperiod.reset(new Time());
-    endofperiod->set_upperbound(begin.ye, mo, da, ho, mi, se);
+    endofperiod->set_upperbound(time.ye, mo, da, ho, mi, se);
 }
 
 bool Stream::add(std::shared_ptr<Metadata> m)
 {
-    const Reftime* rt = m->get<Reftime>();
-    if (hasInterval && (!endofperiod.get() || !rt || rt->period_begin() > *endofperiod))
+    if (const Reftime* rt = m->get<Reftime>())
     {
-        flush();
+        auto time = rt->get_Position();
+        if (hasInterval && (!endofperiod.get() || time > *endofperiod))
+        {
+            flush();
+            buffer.push_back(m);
+            setEndOfPeriod(time);
+        }
+        else
+            buffer.push_back(m);
+    } else {
+        if (hasInterval)
+            flush();
         buffer.push_back(m);
-        if (rt) setEndOfPeriod(*rt);
     }
-    else
-        buffer.push_back(m);
     return true;
 }
 

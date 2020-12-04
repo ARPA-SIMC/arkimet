@@ -38,8 +38,7 @@ bool Stream::checkMetadata()
     core::BinaryDecoder inner = dec.pop_data(len, "encoded metadata body");
 
     metadata::ReadContext rc("http-connection", streamname);
-    md.reset(new Metadata);
-    md->read_inner(inner, version, rc);
+    md = Metadata::read_binary_inner(inner, version, rc);
 
     buffer = vector<uint8_t>(dec.buf, dec.buf + dec.size);
     if (md->source().style() == types::Source::Style::INLINE)

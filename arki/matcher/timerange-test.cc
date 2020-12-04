@@ -41,7 +41,7 @@ add_method("grib1", [] {
     // ensure_not_matches("timerange:GRIB1,2,22,23");
 
     // Match timerange in years, which gave problems
-    md.set(timerange::GRIB1::create(2, 4, 2, 3));
+    md.test_set(Timerange::createGRIB1(2, 4, 2, 3));
     ensure_matches("timerange:GRIB1,2,2y,3y", md);
 });
 
@@ -49,7 +49,7 @@ add_method("grib1", [] {
 add_method("grib2", [] {
     Metadata md;
     arki::tests::fill(md);
-    md.set(timerange::GRIB2::create(1, 2, 3, 4));
+    md.test_set(Timerange::createGRIB2(1, 2, 3, 4));
 
 	ensure_matches("timerange:GRIB2", md);
 	ensure_matches("timerange:GRIB2,,", md);
@@ -73,8 +73,8 @@ add_method("grib2", [] {
 add_method("timedef", [] {
     Metadata md;
     arki::tests::fill(md);
-    md.set(timerange::Timedef::createFromYaml("6h,1,3h"));
 
+    md.test_set(Timerange::decodeString("Timedef(6h,1,3h)"));
     ensure_matches("timerange:Timedef", md);
     ensure_matches("timerange:Timedef,,", md);
     ensure_matches("timerange:Timedef,6h", md);
@@ -95,7 +95,7 @@ add_method("timedef", [] {
     ensure_not_matches("timerange:Timedef,6h,-", md);
     ensure_not_matches("timerange:Timedef,6h,2,-", md);
 
-    md.set(timerange::Timedef::createFromYaml("6h"));
+    md.test_set(Timerange::decodeString("Timedef(6h)"));
     ensure_matches("timerange:Timedef", md);
     ensure_matches("timerange:Timedef,,", md);
     ensure_matches("timerange:Timedef,6h", md);
@@ -112,7 +112,7 @@ add_method("timedef", [] {
     ensure_not_matches("timerange:Timedef,-", md);
     ensure_not_matches("timerange:Timedef,6h,2,-", md);
 
-    md.set(timerange::Timedef::createFromYaml("6h,2"));
+    md.test_set(Timerange::decodeString("Timedef(6h,2)"));
     ensure_matches("timerange:Timedef", md);
     ensure_matches("timerange:Timedef,,", md);
     ensure_matches("timerange:Timedef,6h", md);
@@ -134,7 +134,7 @@ add_method("timedef", [] {
 add_method("bufr", [] {
     Metadata md;
     arki::tests::fill(md);
-    md.set(timerange::BUFR::create(2, 1));
+    md.test_set(Timerange::createBUFR(2, 1));
 
 	ensure_matches("timerange:BUFR", md);
 	ensure_matches("timerange:BUFR,2h", md);
@@ -145,7 +145,7 @@ add_method("bufr", [] {
 	ensure_not_matches("timerange:BUFR,3h", md);
 	ensure_not_matches("timerange:BUFR,2m", md);
 
-	md.set(timerange::BUFR::create());
+    md.test_set(Timerange::createBUFR());
 
 	ensure_matches("timerange:BUFR", md);
 	ensure_matches("timerange:BUFR,0", md);
@@ -160,7 +160,7 @@ add_method("bufr", [] {
 // Try some cases that have been buggy
 add_method("regression", [] {
     Metadata md;
-    md.set(timerange::GRIB1::create(0, 254, 0, 0));
+    md.test_set(Timerange::createGRIB1(0, 254, 0, 0));
     ensure_matches("timerange:GRIB1,0,0h", md);
     ensure_matches("timerange:GRIB1,0,0h,0h", md);
     ensure_not_matches("timerange:GRIB1,0,12h", md);
@@ -222,7 +222,7 @@ add_method("timedef_parse", [] {
 add_method("timedef_grib1", [] {
     Metadata md;
     arki::tests::fill(md);
-    md.set(timerange::GRIB1::create(0, 0, 60, 0));
+    md.test_set(Timerange::createGRIB1(0, 0, 60, 0));
     ensure_matches("timerange:Timedef,1h", md);
     ensure_matches("timerange:Timedef,1h,254", md);
     ensure_matches("timerange:Timedef,60m,254,0", md);
@@ -230,7 +230,7 @@ add_method("timedef_grib1", [] {
     ensure_not_matches("timerange:Timedef,1h,1,0", md);
     ensure_not_matches("timerange:Timedef,1h,254,1s", md);
 
-    md.set(timerange::GRIB1::create(3, 1, 1, 3));
+    md.test_set(Timerange::createGRIB1(3, 1, 1, 3));
     ensure_matches("timerange:Timedef,+3h", md);
     ensure_matches("timerange:Timedef,+3h,0", md);
     ensure_matches("timerange:Timedef,+3h,0,2h", md);
@@ -243,7 +243,7 @@ add_method("timedef_grib1", [] {
 add_method("timedef_grib2", [] {
     Metadata md;
     arki::tests::fill(md);
-    md.set(timerange::GRIB2::create(3, 1, 1, 3));
+    md.test_set(Timerange::createGRIB2(3, 1, 1, 3));
     // timerange:GRIB2 metadata items do not carry enough information to feed Timedef matchers
     ensure_matches("timerange:Timedef", md);
     ensure_matches("timerange:Timedef,-", md);
@@ -258,7 +258,7 @@ add_method("timedef_grib2", [] {
 add_method("timedef_timedef", [] {
     Metadata md;
     arki::tests::fill(md);
-    md.set(timerange::Timedef::createFromYaml("72h,1,6h"));
+    md.test_set(Timerange::decodeString("Timedef(72h,1,6h)"));
     ensure_matches("timerange:Timedef,+72h", md);
     ensure_matches("timerange:Timedef,+72h,1", md);
     ensure_matches("timerange:Timedef,+72h,1,6h", md);
@@ -271,7 +271,7 @@ add_method("timedef_timedef", [] {
     ensure_not_matches("timerange:Timedef,72h,-", md);
     ensure_not_matches("timerange:Timedef,72h,-", md);
 
-    md.set(timerange::Timedef::createFromYaml("72h"));
+    md.test_set(Timerange::decodeString("Timedef(72h)"));
     ensure_matches("timerange:Timedef,+72h", md);
     ensure_matches("timerange:Timedef,+72h,-", md);
     ensure_matches("timerange:Timedef,+72h,-,-", md);
@@ -282,7 +282,7 @@ add_method("timedef_timedef", [] {
     ensure_not_matches("timerange:Timedef,73h", md);
     ensure_not_matches("timerange:Timedef,72h,1", md);
 
-    md.set(timerange::Timedef::createFromYaml("72h,1"));
+    md.test_set(Timerange::decodeString("Timedef(72h,1)"));
     ensure_matches("timerange:Timedef,+72h", md);
     ensure_matches("timerange:Timedef,+72h,1", md);
     ensure_matches("timerange:Timedef,+72h,1,-", md);
@@ -294,7 +294,7 @@ add_method("timedef_timedef", [] {
     ensure_not_matches("timerange:Timedef,72h,2", md);
     ensure_not_matches("timerange:Timedef,72h,1,3h", md);
 
-    md.set(timerange::Timedef::createFromYaml("72d,1,6h"));
+    md.test_set(Timerange::decodeString("Timedef(72d,1,6h)"));
     ensure_matches("timerange:Timedef,+72d", md);
     ensure_matches("timerange:Timedef,+72d,1", md);
     ensure_matches("timerange:Timedef,+72d,1,6h", md);
@@ -312,7 +312,7 @@ add_method("timedef_timedef", [] {
 add_method("timedef_bufr", [] {
     Metadata md;
     arki::tests::fill(md);
-    md.set(timerange::BUFR::create(2, 1));
+    md.test_set(Timerange::createBUFR(2, 1));
     ensure_matches("timerange:Timedef,+2h", md);
     ensure_matches("timerange:Timedef,+2h,-", md);
     ensure_matches("timerange:Timedef,+2h,-,-", md);
@@ -325,43 +325,43 @@ add_method("timedef_bufr", [] {
 add_method("timedef_wellknown", [] {
     Metadata md;
     arki::tests::fill(md);
-    md.set(Timerange::decodeString("Timedef(3h)"));
+    md.test_set(Timerange::decodeString("Timedef(3h)"));
     ensure_matches("timerange:Timedef,+3h,-", md);
     ensure_not_matches("timerange:Timedef,+3h, 254", md);
 
-    md.set(Timerange::decodeString("Timedef(3h)"));
+    md.test_set(Timerange::decodeString("Timedef(3h)"));
     ensure_matches("timerange:Timedef,+3h,-", md);
     ensure_not_matches("timerange:Timedef,+3h, 254", md);
 
-    md.set(Timerange::decodeString("Timedef(3h,254)"));
+    md.test_set(Timerange::decodeString("Timedef(3h,254)"));
     ensure_matches("timerange:Timedef,+3h, 254", md);
 
-    md.set(Timerange::decodeString("GRIB1(000, 003h)"));
+    md.test_set(Timerange::decodeString("GRIB1(000, 003h)"));
     ensure_matches("timerange:Timedef,+3h, 254", md);
 
-    md.set(Timerange::decodeString("Timedef(0s,254)"));
+    md.test_set(Timerange::decodeString("Timedef(0s,254)"));
     ensure_matches("timerange:Timedef,0,254", md);
 
-    md.set(Timerange::decodeString("GRIB1(000, 000h)"));
+    md.test_set(Timerange::decodeString("GRIB1(000, 000h)"));
     ensure_matches("timerange:Timedef,0,254", md);
 
     /////
-    md.set(Timerange::decodeString("GRIB1(004, 000h, 003h)"));
+    md.test_set(Timerange::decodeString("GRIB1(004, 000h, 003h)"));
     ensure_not_matches("timerange:Timedef,3h,,1h", md);
 
-    md.set(Timerange::decodeString("GRIB1(000, 000h)"));
+    md.test_set(Timerange::decodeString("GRIB1(000, 000h)"));
     ensure_not_matches("timerange:Timedef,3h,,1h", md);
 
-    md.set(Timerange::decodeString("GRIB1(004, 000h, 012h)"));
+    md.test_set(Timerange::decodeString("GRIB1(004, 000h, 012h)"));
     ensure_not_matches("timerange:Timedef,,1,3h", md);
 
-    md.set(Timerange::decodeString("GRIB1(013, 000h, 012h)"));
+    md.test_set(Timerange::decodeString("GRIB1(013, 000h, 012h)"));
     ensure_not_matches("timerange:Timedef,,1,3h", md);
 
-    md.set(Timerange::decodeString("GRIB1(000, 000h)"));
+    md.test_set(Timerange::decodeString("GRIB1(000, 000h)"));
     ensure_not_matches("timerange:Timedef,,1,3h", md);
 
-    md.set(Timerange::decodeString("GRIB1(013, 000h, 012h)"));
+    md.test_set(Timerange::decodeString("GRIB1(013, 000h, 012h)"));
     ensure_matches("timerange:GRIB1,13,0", md);
 });
 

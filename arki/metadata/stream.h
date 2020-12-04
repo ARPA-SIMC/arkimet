@@ -15,7 +15,7 @@ namespace metadata {
 class Stream
 {
     metadata_dest_func consumer;
-    std::unique_ptr<Metadata> md;
+    std::shared_ptr<Metadata> md;
     std::string streamname;
     std::vector<uint8_t> buffer;
     enum { METADATA, DATA } state;

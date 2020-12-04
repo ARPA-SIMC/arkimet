@@ -18,6 +18,7 @@ namespace metadata {
 /**
  * Consumer that collects all metadata into a vector
  */
+// TODO: turn this into a clean vector of shared_ptrs, without the extra dereferencing on indexing
 class Collection
 {
 protected:
@@ -44,6 +45,9 @@ public:
     size_t size() const { return vals.size(); }
     /// Remove the last element
     void pop_back() { vals.pop_back(); }
+    void swap(unsigned idx1, unsigned idx2) { std::swap(vals[idx1], vals[idx2]); }
+    void replace(unsigned idx, std::shared_ptr<Metadata> md) { vals[idx] = md; }
+    std::shared_ptr<Metadata> get(unsigned idx) const { return vals[idx]; }
 
     /// Append a copy of md
     void push_back(const std::shared_ptr<Metadata> md) { vals.push_back(md); }
@@ -147,13 +151,13 @@ public:
      * Expand the given begin and end ranges to include the datetime extremes
      * of this collection.
      *
-     * If begin and end are unset, set them to the datetime extremes of this
-     * collection.
+     * If begin and end are set to zero, set them to the datetime extremes of
+     * this collection.
      *
      * Returns true if all the metadata items had a reftime set, false if some
      * elements had no reftime information.
      */
-    bool expand_date_range(std::unique_ptr<core::Time>& begin, std::unique_ptr<core::Time>& end) const;
+    bool expand_date_range(core::Interval& interval) const;
 
     /// Call drop_cached_data on all metadata in the collection
     void drop_cached_data();

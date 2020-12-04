@@ -107,13 +107,19 @@ int Xargs::run_child()
     snprintf(buf, 32, "%zd", count);
     child.setenv("ARKI_XARGS_COUNT", buf);
 
-    if (timespan_begin.get())
+    if (timespan.begin.ye != 0)
     {
-        child.setenv("ARKI_XARGS_TIME_START", timespan_begin->to_iso8601(' '));
-        if (timespan_end.get())
-            child.setenv("ARKI_XARGS_TIME_END", timespan_end->to_iso8601(' '));
+        child.setenv("ARKI_XARGS_TIME_START", timespan.begin.to_iso8601(' '));
+        if (timespan.end.ye != 0)
+        {
+            // Bring it from end exluded to end included
+            core::Time end = timespan.end;
+            end.se -= 1;
+            end.normalise();
+            child.setenv("ARKI_XARGS_TIME_END", end.to_iso8601(' '));
+        }
         else
-            child.setenv("ARKI_XARGS_TIME_END", timespan_begin->to_iso8601(' '));
+            child.setenv("ARKI_XARGS_TIME_END", timespan.begin.to_iso8601(' '));
     }
 
     child.fork();

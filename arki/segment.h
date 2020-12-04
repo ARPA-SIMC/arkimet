@@ -232,6 +232,7 @@ struct Writer : public core::Transaction, std::enable_shared_from_this<Writer>
 
     Writer() = default;
     Writer(const WriterConfig& config) : config(config) {}
+    virtual ~Writer() {}
 
     virtual const Segment& segment() const = 0;
 
@@ -280,6 +281,8 @@ protected:
     virtual void move_data(const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath) = 0;
 
 public:
+    virtual ~Checker() {}
+
     virtual const Segment& segment() const = 0;
     virtual segment::State check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick=true) = 0;
     virtual size_t remove() = 0;

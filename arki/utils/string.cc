@@ -232,7 +232,7 @@ std::string Split::const_iterator::remainder() const
         return std::string();
     else
         return split->str.substr(end);
-};
+}
 
 void Split::const_iterator::skip_separators()
 {

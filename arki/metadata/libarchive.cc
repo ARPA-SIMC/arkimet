@@ -115,7 +115,7 @@ size_t LibarchiveOutput::append(const Metadata& md)
         snprintf(filename_buf, 255, "%06zd.%s", ofs, md.source().format.c_str());
     else
         snprintf(filename_buf, 255, "%s/%06zd.%s", subdir.c_str(), ofs, md.source().format.c_str());
-    std::unique_ptr<Metadata> stored_md = Metadata::create_copy(md);
+    auto stored_md = md.clone();
     const auto& stored_data = stored_md->get_data().read();
     std::unique_ptr<types::Source> stored_source = types::Source::createBlobUnlocked(md.source().format, "", filename_buf, 0, stored_data.size());
 
@@ -125,7 +125,7 @@ size_t LibarchiveOutput::append(const Metadata& md)
     archive_entry_set_filetype(entry, AE_IFREG);
     archive_entry_set_perm(entry, 0644);
     if (const auto* reftime = stored_md->get<types::reftime::Position>())
-        archive_entry_set_mtime(entry, reftime->time.to_unix(), 0);
+        archive_entry_set_mtime(entry, reftime->get_Position().to_unix(), 0);
 
     if (archive_write_header(a, entry) != ARCHIVE_OK)
         throw archive_runtime_error(a, "cannot write entry header");

@@ -7,6 +7,7 @@
 #include "types/value.h"
 #include "types/source/blob.h"
 #include "types/source/inline.h"
+#include "types/note.h"
 #include "formatter.h"
 #include "utils/compress.h"
 #include "structured/emitter.h"
@@ -18,7 +19,9 @@
 #include "utils/yaml.h"
 #include <unistd.h>
 #include <cstdlib>
+#include <cstring>
 #include <cerrno>
+#include <cassert>
 #include <stdexcept>
 #include <fcntl.h>
 #include <sys/uio.h>
@@ -44,109 +47,351 @@ ReadContext::ReadContext(const std::string& pathname, const std::string& basedir
 {
 }
 
+
+/*
+ * Index
+ */
+
+Index::~Index()
+{
+    for (auto& i: items)
+        delete i;
 }
 
-static inline void ensureSize(size_t len, size_t req, const char* what)
+void Index::raw_append(std::unique_ptr<types::Type> t)
 {
-    if (len < req)
+    items.emplace_back(t.release());
+}
+
+Index::const_iterator Index::values_end() const
+{
+    const_iterator i = items.begin();
+    for ( ; i != items.end(); ++i)
     {
-        stringstream s;
-        s << "cannot parse " << what << ": size is " << len << " but we need at least " << req << " for the " << what << " style";
-        throw runtime_error(s.str());
+        auto c = (*i)->type_code();
+        if (c == TYPE_NOTE || c == TYPE_SOURCE)
+            break;
+    }
+    return i;
+}
+
+bool Index::has(types::Code code) const
+{
+    for (const auto& i: items)
+        if (i->type_code() == code)
+            return true;
+    return false;
+}
+
+const Type* Index::get(Code code) const
+{
+    for (const auto& i: items)
+        if (i->type_code() == code)
+            return i;
+    return nullptr;
+}
+
+const types::Source* Index::get_source() const
+{
+    if (items.empty())
+        return nullptr;
+
+    if (items.back()->type_code() != TYPE_SOURCE)
+        return nullptr;
+
+    // We checked the type_code, so we can reinterpret cast
+    return reinterpret_cast<types::Source*>(items.back());
+}
+
+types::Source* Index::get_source()
+{
+    if (items.empty())
+        return nullptr;
+
+    if (items.back()->type_code() != TYPE_SOURCE)
+        return nullptr;
+
+    // We checked the type_code, so we can reinterpret cast
+    return reinterpret_cast<types::Source*>(items.back());
+}
+
+void Index::set_source(std::unique_ptr<types::Source> s)
+{
+    if (items.empty() || items.back()->type_code() != TYPE_SOURCE)
+        items.emplace_back(s.release());
+    else
+    {
+        delete items.back();
+        items.back() = s.release();
     }
 }
 
-template<typename ITER>
-static std::string encodeItemList(const ITER& begin, const ITER& end)
+void Index::unset_source()
 {
-    string res;
-    for (ITER i = begin; i != end; ++i)
-        res += i->encode();
-    return res;
+    if (items.empty() || items.back()->type_code() != TYPE_SOURCE)
+        return;
+
+    delete items.back();
+    items.pop_back();
 }
+
+std::pair<Index::const_iterator, Index::const_iterator> Index::notes() const
+{
+    // TODO: is this faster if we iterate forward?
+    auto b = items.rbegin();
+    if (b != items.rend() && (*b)->type_code() == TYPE_SOURCE)
+        ++b;
+
+    auto e = b;
+    while (e != items.rend() && (*e)->type_code() == TYPE_NOTE)
+        ++e;
+
+    return std::make_pair(e.base(), b.base());
+}
+
+void Index::clear_notes()
+{
+    auto b = items.rbegin();
+    if (b != items.rend() && (*b)->type_code() == TYPE_SOURCE)
+        ++b;
+
+    auto e = b;
+    while (e != items.rend() && (*e)->type_code() == TYPE_NOTE)
+    {
+        delete *e;
+        ++e;
+    }
+
+    items.erase(e.base(), b.base());
+}
+
+void Index::append_note(std::unique_ptr<types::Note> n)
+{
+    auto pos = items.end();
+    if (!items.empty() && items.back()->type_code() == TYPE_SOURCE)
+        --pos;
+    items.emplace(pos, n.release());
+}
+
+const types::Note* Index::get_last_note() const
+{
+    auto n = items.rbegin();
+    if (n != items.rend() && (*n)->type_code() == TYPE_SOURCE)
+        ++n;
+    if ((*n)->type_code() == TYPE_NOTE)
+        return reinterpret_cast<const types::Note*>(*n);
+    return nullptr;
+}
+
+void Index::clone_fill(const Index& o)
+{
+    assert(items.empty());
+    for (const auto& i: o.items)
+        items.emplace_back(i->clone());
+}
+
+void Index::set_value(std::unique_ptr<types::Type> item)
+{
+    auto code = item->type_code();
+    assert(code != TYPE_SOURCE);
+    assert(code != TYPE_NOTE);
+
+    auto end = values_end();
+
+    // TODO: in theory, this could be rewritten with rbegin/rend to optimize
+    // for the insertion of sorted data. In practice, after trying, it caused a
+    // decrease in performance, so abandoning that for now
+    for (auto i = items.begin(); i != end; ++i)
+    {
+        auto icode = (*i)->type_code();
+        if (icode == code)
+        {
+            delete *i;
+            *i = item.release();
+            return;
+        } else if (icode > code) {
+            items.emplace(i, item.release());
+            return;
+        }
+    }
+
+    items.emplace(end, item.release());
+}
+
+void Index::unset_value(types::Code code)
+{
+    const_iterator i = items.begin();
+    for ( ; i != items.end(); ++i)
+    {
+        auto c = (*i)->type_code();
+        if (c == TYPE_NOTE || c == TYPE_SOURCE)
+            break;
+
+        if (c == code)
+        {
+            items.erase(i);
+            break;
+        }
+    }
+}
+
+}
+
+
+/*
+ * Metadata
+ */
 
 Metadata::Metadata()
 {
 }
 
-Metadata::Metadata(const Metadata& o)
-    : ItemSet(o), m_notes(o.m_notes), m_source(o.m_source ? o.m_source->clone() : nullptr), m_data(o.m_data)
+Metadata::Metadata(const uint8_t* encoded, unsigned size)
+    : m_encoded_size(size)
 {
+    uint8_t* tdata = new uint8_t[size];
+    memcpy(tdata, encoded, size);
+    m_encoded = tdata;
 }
 
 Metadata::~Metadata()
 {
-    delete m_source;
+    delete m_encoded;
 }
 
-Metadata& Metadata::operator=(const Metadata& o)
+std::shared_ptr<Metadata> Metadata::clone() const
 {
-    if (this == &o) return *this;
-    ItemSet::operator=(o);
-    delete m_source;
-    m_source = o.m_source ? o.m_source->clone() : 0;
-    m_notes = o.m_notes;
-    m_data = o.m_data;
-    return *this;
-}
-
-Metadata* Metadata::clone() const
-{
-    return new Metadata(*this);
-}
-
-unique_ptr<Metadata> Metadata::create_empty()
-{
-    return unique_ptr<Metadata>(new Metadata);
-}
-
-unique_ptr<Metadata> Metadata::create_copy(const Metadata& md)
-{
-    return unique_ptr<Metadata>(md.clone());
-}
-
-#if 0
-unique_ptr<Metadata> Metadata::create_from_yaml(std::istream& in, const std::string& filename)
-{
-    unique_ptr<Metadata> res(create_empty());
-    res->readYaml(in, filename);
+    auto res = std::make_shared<Metadata>();
+    res->m_index.clone_fill(m_index);
+    res->m_data = m_data;
     return res;
 }
-#endif
+
+void Metadata::set(const types::Type& item)
+{
+    m_index.set_value(std::unique_ptr<types::Type>(item.clone()));
+}
+
+void Metadata::test_set(const types::Type& item)
+{
+    std::unique_ptr<types::Type> clone(item.clone());
+    m_index.set_value(std::move(clone));
+}
+
+void Metadata::test_set(std::unique_ptr<types::Type> item)
+{
+    m_index.set_value(std::move(item));
+}
+
+void Metadata::test_set(const std::string& type, const std::string& val)
+{
+    test_set(types::decodeString(types::parseCodeName(type.c_str()), val));
+}
+
+void Metadata::merge(const Metadata& md)
+{
+    // TODO: this is currently only used in the mock BUFR scanner.
+    // If it gets used in more performance critical code, it should get
+    // rewritten with performance in mind
+    auto end = md.m_index.values_end();
+    for (auto i = md.m_index.begin(); i != end; ++i)
+    {
+        std::unique_ptr<Type> newval((*i)->clone());
+        m_index.set_value(std::move(newval));
+    }
+}
+
+void Metadata::diff_items(const Metadata& o, std::function<void(types::Code code, const types::Type* first, const types::Type* second)> dest) const
+{
+    auto values_end = m_index.values_end();
+    auto ovalues_end = o.m_index.values_end();
+
+    // Compare skipping VALUE items
+    auto a = m_index.begin();
+    auto b = o.m_index.begin();
+    while (a != values_end || b != ovalues_end)
+    {
+        if (a == values_end)
+        {
+            auto code = (*b)->type_code();
+            if (code != TYPE_VALUE)
+                dest(code, nullptr, *b);
+            ++b;
+            continue;
+        }
+        if (b == ovalues_end)
+        {
+            auto code = (*a)->type_code();
+            if (code != TYPE_VALUE)
+                dest(code, *a, nullptr);
+            ++a;
+            continue;
+        }
+
+        auto acode = (*a)->type_code();
+        auto bcode = (*b)->type_code();
+
+        if (acode < bcode)
+        {
+            if (acode != TYPE_VALUE)
+                dest(acode, *a, nullptr);
+            ++a;
+            continue;
+        }
+
+        if (acode > bcode)
+        {
+            if (bcode != TYPE_VALUE)
+                dest(bcode, nullptr, *b);
+            ++b;
+            continue;
+        }
+
+        if (**a != **b)
+            if (acode != TYPE_VALUE)
+                dest(acode, *a, *b);
+        ++a;
+        ++b;
+    }
+}
 
 const Source& Metadata::source() const
 {
-    if (!m_source)
+    const types::Source* s = m_index.get_source();
+    if (!s)
         throw_consistency_error("metadata has no source");
-    return *m_source;
+    return *s;
 }
 
 const types::source::Blob* Metadata::has_source_blob() const
 {
-    if (!m_source) return 0;
-    return dynamic_cast<source::Blob*>(m_source);
+    const types::Source* s = m_index.get_source();
+    if (!s) return nullptr;
+    if (s->style() != types::Source::Style::BLOB) return nullptr;
+    return reinterpret_cast<const source::Blob*>(s);
 }
 
 const source::Blob& Metadata::sourceBlob() const
 {
-    if (!m_source) throw_consistency_error("metadata has no source");
-    const source::Blob* res = dynamic_cast<const source::Blob*>(m_source);
-    if (!res) throw_consistency_error("metadata source is not a Blob source");
-    return *res;
+    const types::Source* s = m_index.get_source();
+    if (!s) throw_consistency_error("metadata has no source");
+    if (s->style() != types::Source::Style::BLOB)
+        throw_consistency_error("metadata source is not a Blob source");
+    return *reinterpret_cast<const source::Blob*>(s);
 }
 
 source::Blob& Metadata::sourceBlob()
 {
-    if (!m_source) throw_consistency_error("metadata has no source");
-    source::Blob* res = dynamic_cast<source::Blob*>(m_source);
-    if (!res) throw_consistency_error("metadata source is not a Blob source");
-    return *res;
+    types::Source* s = m_index.get_source();
+    if (!s) throw_consistency_error("metadata has no source");
+    if (s->style() != types::Source::Style::BLOB)
+        throw_consistency_error("metadata source is not a Blob source");
+    return *reinterpret_cast<source::Blob*>(s);
 }
 
-void Metadata::set_source(std::unique_ptr<types::Source>&& s)
+void Metadata::set_source(std::unique_ptr<types::Source> s)
 {
-    delete m_source;
-    m_source = s.release();
+    m_index.set_source(std::move(s));
 }
 
 void Metadata::set_source_inline(const std::string& format, std::shared_ptr<metadata::Data> data)
@@ -157,133 +402,109 @@ void Metadata::set_source_inline(const std::string& format, std::shared_ptr<meta
 
 void Metadata::unset_source()
 {
-    delete m_source;
-    m_source = 0;
+    m_index.unset_source();
 }
 
-std::vector<types::Note> Metadata::notes() const
+void Metadata::clear_notes()
 {
-    std::vector<types::Note> res;
-    core::BinaryDecoder dec(m_notes);
-    while (dec)
-    {
-        types::Code el_type;
-        core::BinaryDecoder inner = dec.pop_type_envelope(el_type);
-
-        if (el_type != TYPE_NOTE)
-            throw std::runtime_error("cannot decode note: item type is not a note");
-
-        res.push_back(*types::Note::decode(inner));
-    }
-    return res;
+    m_index.clear_notes();
 }
 
-const std::vector<uint8_t>& Metadata::notes_encoded() const
+void Metadata::encode_notes(core::BinaryEncoder& enc) const
 {
-    return m_notes;
-}
-
-void Metadata::set_notes(const std::vector<types::Note>& notes)
-{
-    m_notes.clear();
-    for (std::vector<types::Note>::const_iterator i = notes.begin(); i != notes.end(); ++i)
-        add_note(*i);
+    metadata::Index::const_iterator i, end;
+    std::tie(i, end) = m_index.notes();
+    for ( ; i != end; ++i)
+        (*i)->encodeBinary(enc);
 }
 
 void Metadata::set_notes_encoded(const std::vector<uint8_t>& notes)
 {
-    m_notes = notes;
+    // TODO: this could be optimizez by replacing existing notes instead of
+    // removing and readding.
+    // It is only called by iseg and ondisk2 indices while recomposing the
+    // metadata from index bits. That whole process could be refactored, and
+    // made to efficiently compose a metadata in the right order. That would
+    // make this method unnecessary.
+    clear_notes();
+    core::BinaryDecoder dec(notes);
+    while (dec)
+    {
+        TypeCode el_type;
+        core::BinaryDecoder inner = dec.pop_type_envelope(el_type);
+
+        auto n = types::Type::decode_inner(el_type, inner, false);
+        std::unique_ptr<Note> nn(reinterpret_cast<types::Note*>(n.release()));
+        m_index.append_note(std::move(nn));
+    }
 }
 
 void Metadata::add_note(const types::Note& note)
 {
-    core::BinaryEncoder enc(m_notes);
-    note.encodeBinary(enc);
+    m_index.append_note(std::unique_ptr<types::Note>(note.clone()));
 }
 
 void Metadata::add_note(const std::string& note)
 {
-    core::BinaryEncoder enc(m_notes);
-    Note(note).encodeBinary(enc);
+    m_index.append_note(Note::create(note));
 }
+
+const types::Note& Metadata::get_last_note() const
+{
+    auto n = m_index.get_last_note();
+    if (!n)
+        throw std::runtime_error("no notes found");
+    return *n;
+}
+
 
 bool Metadata::operator==(const Metadata& m) const
 {
-    if (!ItemSet::operator==(m)) return false;
-    if (m_notes != m.m_notes) return false;
-    return Type::nullable_equals(m_source, m.m_source);
+    if (m_index.size() != m.m_index.size())
+        return false;
+    auto a = m_index.begin();
+    auto b = m.m_index.begin();
+    for ( ; a != m_index.end(); ++a, ++b)
+        if (**a != **b)
+            return false;
+    return true;
 }
 
-int Metadata::compare(const Metadata& m) const
+bool Metadata::items_equal(const Metadata& o) const
 {
-    if (int res = ItemSet::compare(m)) return res;
-    return Type::nullable_compare(m_source, m.m_source);
+    bool res = true;
+    diff_items(o, [&](types::Code code, const types::Type* first, const types::Type* second) { res = false; });
+    return res;
 }
 
-int Metadata::compare_items(const Metadata& m) const
-{
-    // Compare skipping VALUE items
-    const_iterator a = begin();
-    const_iterator b = m.begin();
-    if (a != end() && a->first == TYPE_VALUE) ++a;
-    if (b != m.end() && b->first == TYPE_VALUE) ++b;
-    auto incr_a = [&] {
-        ++a;
-        if (a != end() && a->first == TYPE_VALUE) ++a;
-    };
-    auto incr_b = [&] {
-        ++b;
-        if (b != m.end() && b->first == TYPE_VALUE) ++b;
-    };
-
-    for ( ; a != end() && b != m.end(); incr_a(), incr_b())
-    {
-        if (a->first == TYPE_VALUE) ++a;
-        if (b->first == TYPE_VALUE) ++b;
-        if (a->first < b->first)
-            return -1;
-        if (a->first > b->first)
-            return 1;
-        if (int res = a->second->compare(*b->second)) return res;
-    }
-    if (a != end() && a->first == TYPE_VALUE) ++a;
-    if (b != m.end() && b->first == TYPE_VALUE) ++b;
-
-    if (a == end() && b == m.end())
-        return 0;
-    if (a == end())
-        return -1;
-    return 1;
-}
-
-bool Metadata::read(int in, const metadata::ReadContext& filename, bool readInline)
+std::shared_ptr<Metadata> Metadata::read_binary(int in, const metadata::ReadContext& filename, bool readInline)
 {
     types::Bundle bundle;
     NamedFileDescriptor f(in, filename.pathname);
     if (!bundle.read_header(f))
-        return false;
+        return std::shared_ptr<Metadata>();
 
     // Ensure first 2 bytes are MD or !D
     if (bundle.signature != "MD")
         throw_consistency_error("parsing file " + filename.pathname, "metadata entry does not start with 'MD'");
 
     if (!bundle.read_data(f))
-        return false;
+        return std::shared_ptr<Metadata>();
 
     core::BinaryDecoder inner(bundle.data);
 
-    read_inner(inner, bundle.version, filename);
+    auto res = read_binary_inner(inner, bundle.version, filename);
 
     // If the source is inline, then the data follows the metadata
-    if (readInline && source().style() == types::Source::Style::INLINE)
-        read_inline_data(f);
+    if (readInline && res->source().style() == types::Source::Style::INLINE)
+        res ->read_inline_data(f);
 
-    return true;
+    return res;
 }
 
-bool Metadata::read(core::BinaryDecoder& dec, const metadata::ReadContext& filename, bool readInline)
+std::shared_ptr<Metadata> Metadata::read_binary(core::BinaryDecoder& dec, const metadata::ReadContext& filename, bool readInline)
 {
-    if (!dec) return false;
+    if (!dec) return std::shared_ptr<Metadata>();
 
     string signature;
     unsigned version;
@@ -293,113 +514,133 @@ bool Metadata::read(core::BinaryDecoder& dec, const metadata::ReadContext& filen
     if (signature != "MD")
         throw std::runtime_error("cannot parse " + filename.pathname + ": metadata entry does not start with 'MD'");
 
-    read_inner(inner, version, filename);
+    auto res = read_binary_inner(inner, version, filename);
 
     // If the source is inline, then the data follows the metadata
-    if (readInline && source().style() == types::Source::Style::INLINE)
-        readInlineData(dec, filename.pathname);
+    if (readInline && res->source().style() == types::Source::Style::INLINE)
+        res->readInlineData(dec, filename.pathname);
 
-    return true;
+    return res;
 }
 
-void Metadata::read_inner(core::BinaryDecoder& dec, unsigned version, const metadata::ReadContext& rc)
+std::shared_ptr<Metadata> Metadata::read_binary_inner(core::BinaryDecoder& dec, unsigned version, const metadata::ReadContext& rc)
 {
-    clear();
-
     // Check version and ensure we can decode
     if (version != 0)
     {
-        stringstream s;
+        std::stringstream s;
         s << "cannot parse file " << rc.pathname << ": version of the file is " << version << " but I can only decode version 0";
-        throw runtime_error(s.str());
+        throw std::runtime_error(s.str());
     }
 
     // Parse the various elements
-    while (dec)
+    auto res = std::make_shared<Metadata>(dec.buf, dec.size);
+    core::BinaryDecoder mddec(res->m_encoded, res->m_encoded_size);
+    TypeCode last_code = TYPE_INVALID;
+    while (mddec)
     {
-        const uint8_t* encoded_start = dec.buf;
         TypeCode el_type;
-        core::BinaryDecoder inner = dec.pop_type_envelope(el_type);
-        const uint8_t* encoded_end = dec.buf;
+        core::BinaryDecoder inner = mddec.pop_type_envelope(el_type);
 
         switch (el_type)
         {
             case TYPE_NOTE:
-                m_notes.insert(m_notes.end(), encoded_start, encoded_end);
+                if (last_code == TYPE_SOURCE)
+                {
+                    std::stringstream s;
+                    s << "cannot parse file " << rc.pathname << ": element of type " << types::formatCode(el_type) << " should not follow one of type SOURCE";
+                    throw std::runtime_error(s.str());
+                }
+                res->m_index.raw_append(types::Type::decode_inner(el_type, inner, true));
                 break;
             case TYPE_SOURCE:
-                set_source(types::Source::decodeRelative(inner, rc.basedir));
+                res->m_index.raw_append(types::Source::decodeRelative(inner, rc.basedir));
                 break;
             default:
-                m_vals.insert(make_pair(el_type, types::decodeInner(el_type, inner).release()));
+                if (last_code == TYPE_SOURCE || last_code == TYPE_NOTE)
+                {
+                    std::stringstream s;
+                    s << "cannot parse file " << rc.pathname << ": element of type " << types::formatCode(el_type) << " should not follow one of type " << types::formatCode(last_code);
+                    throw std::runtime_error(s.str());
+                }
+                res->m_index.raw_append(types::Type::decode_inner(el_type, inner, true));
                 break;
         }
+
+        last_code = el_type;
     }
+
+    return res;
 }
 
 void Metadata::read_inline_data(NamedFileDescriptor& fd)
 {
     // If the source is inline, then the data follows the metadata
-    if (source().style() != types::Source::Style::INLINE) return;
-
-    source::Inline* s = dynamic_cast<source::Inline*>(m_source);
+    const Source& s = source();
+    if (s.style() != types::Source::Style::INLINE) return;
+    const source::Inline* si = reinterpret_cast<const source::Inline*>(&s);
     vector<uint8_t> buf;
-    buf.resize(s->size);
+    buf.resize(si->size);
 
-    iotrace::trace_file(fd, 0, s->size, "read inline data");
+    iotrace::trace_file(fd, 0, si->size, "read inline data");
 
     // Read the inline data
-    if (!fd.read_all_or_retry(buf.data(), s->size))
+    if (!fd.read_all_or_retry(buf.data(), si->size))
         fd.throw_runtime_error("inline data not found after arkimet metadata");
-    m_data = metadata::DataManager::get().to_data(m_source->format, move(buf));
+    m_data = metadata::DataManager::get().to_data(s.format, move(buf));
 }
 
 void Metadata::read_inline_data(core::AbstractInputFile& fd)
 {
     // If the source is inline, then the data follows the metadata
-    if (source().style() != types::Source::Style::INLINE) return;
-
-    source::Inline* s = dynamic_cast<source::Inline*>(m_source);
+    const Source& s = source();
+    if (s.style() != types::Source::Style::INLINE) return;
+    const source::Inline* si = reinterpret_cast<const source::Inline*>(&s);
     vector<uint8_t> buf;
-    buf.resize(s->size);
+    buf.resize(si->size);
 
-    iotrace::trace_file(fd, 0, s->size, "read inline data");
+    iotrace::trace_file(fd, 0, si->size, "read inline data");
 
     // Read the inline data
-    fd.read(buf.data(), s->size);
-    m_data = metadata::DataManager::get().to_data(m_source->format, move(buf));
+    fd.read(buf.data(), si->size);
+    m_data = metadata::DataManager::get().to_data(s.format, move(buf));
 }
 
 void Metadata::readInlineData(core::BinaryDecoder& dec, const std::string& filename)
 {
     // If the source is inline, then the data follows the metadata
-    if (source().style() != types::Source::Style::INLINE) return;
-
-    source::Inline* s = dynamic_cast<source::Inline*>(m_source);
-
-    core::BinaryDecoder data = dec.pop_data(s->size, "inline data");
-    m_data = metadata::DataManager::get().to_data(m_source->format, std::vector<uint8_t>(data.buf, data.buf + s->size));
+    const Source& s = source();
+    if (s.style() != types::Source::Style::INLINE) return;
+    const source::Inline* si = reinterpret_cast<const source::Inline*>(&s);
+    core::BinaryDecoder data = dec.pop_data(si->size, "inline data");
+    m_data = metadata::DataManager::get().to_data(s.format, std::vector<uint8_t>(data.buf, data.buf + si->size));
 }
 
-bool Metadata::readYaml(LineReader& in, const std::string& filename)
+std::shared_ptr<Metadata> Metadata::read_yaml(LineReader& in, const std::string& filename)
 {
-    clear();
+    if (in.eof())
+        return std::shared_ptr<Metadata>();
+
+    std::shared_ptr<Metadata> res;
 
     YamlStream yamlStream;
     for (YamlStream::const_iterator i = yamlStream.begin(in);
             i != yamlStream.end(); ++i)
     {
+        if (!res)
+            res = std::make_shared<Metadata>();
         types::Code type = types::parseCodeName(i->first);
         string val = str::strip(i->second);
         switch (type)
         {
-            case TYPE_NOTE: add_note(*types::Note::decodeString(val)); break;
-            case TYPE_SOURCE: set_source(types::Source::decodeString(val)); break;
+            case TYPE_NOTE: res->m_index.append_note(types::Note::decodeString(val)); break;
+            case TYPE_SOURCE: res->m_index.set_source(types::Source::decodeString(val)); break;
             default:
-                m_vals.insert(make_pair(type, types::decodeString(type, val).release()));
+                res->m_index.set_value(types::decodeString(type, val));
         }
     }
-    return !in.eof();
+
+    return res;
 }
 
 void Metadata::write(NamedFileDescriptor& out) const
@@ -411,16 +652,19 @@ void Metadata::write(NamedFileDescriptor& out) const
     out.write_all_or_retry(encoded.data(), encoded.size());
 
     // If the source is inline, then the data follows the metadata
-    if (const source::Inline* s = dynamic_cast<const source::Inline*>(m_source))
+    const Source* s = m_index.get_source();
+    if (s->style() != Source::Style::INLINE)
+        return;
+
+    // Having checked the style, we can reinterpret_cast
+    const source::Inline* si = reinterpret_cast<const source::Inline*>(s);
+    if (si->size != m_data->size())
     {
-        if (s->size != m_data->size())
-        {
-            stringstream ss;
-            ss << "cannot write metadata to file " << out.name() << ": metadata size " << s->size << " does not match the data size " << m_data->size();
-            throw runtime_error(ss.str());
-        }
-        m_data->write_inline(out);
+        stringstream ss;
+        ss << "cannot write metadata to file " << out.name() << ": metadata size " << si->size << " does not match the data size " << m_data->size();
+        throw runtime_error(ss.str());
     }
+    m_data->write_inline(out);
 }
 
 void Metadata::write(AbstractOutputFile& out) const
@@ -432,44 +676,56 @@ void Metadata::write(AbstractOutputFile& out) const
     out.write(encoded.data(), encoded.size());
 
     // If the source is inline, then the data follows the metadata
-    if (const source::Inline* s = dynamic_cast<const source::Inline*>(m_source))
+    const Source* s = m_index.get_source();
+    if (s->style() != Source::Style::INLINE)
+        return;
+
+    // Having checked the style, we can reinterpret_cast
+    const source::Inline* si = reinterpret_cast<const source::Inline*>(s);
+    if (si->size != m_data->size())
     {
-        if (s->size != m_data->size())
-        {
-            stringstream ss;
-            ss << "cannot write metadata to file " << out.name() << ": metadata size " << s->size << " does not match the data size " << m_data->size();
-            throw runtime_error(ss.str());
-        }
-        m_data->write_inline(out);
+        stringstream ss;
+        ss << "cannot write metadata to file " << out.name() << ": metadata size " << si->size << " does not match the data size " << m_data->size();
+        throw runtime_error(ss.str());
     }
+    m_data->write_inline(out);
 }
 
 std::string Metadata::to_yaml(const Formatter* formatter) const
 {
+    metadata::Index::const_iterator notes_begin, notes_end;
+    std::tie(notes_begin, notes_end) = m_index.notes();
+
     std::stringstream buf;
-    if (m_source) buf << "Source: " << *m_source << endl;
-    for (const auto& i: m_vals)
+
+    if (notes_end != m_index.end())
+        buf << "Source: " << **notes_end << endl;
+
+    auto i = m_index.begin();
+    for ( ; i != notes_begin; ++i)
     {
-        string uc = str::lower(i.second->tag());
+        std::string uc = str::lower((*i)->tag());
         uc[0] = toupper(uc[0]);
         buf << uc << ": ";
-        i.second->writeToOstream(buf);
+        (*i)->writeToOstream(buf);
         if (formatter)
-            buf << "\t# " << formatter->format(*i.second);
+            buf << "\t# " << formatter->format(**i);
         buf << endl;
     }
 
-    vector<Note> l(notes());
-    if (l.empty())
-        return buf.str();
-    buf << "Note: ";
-    if (l.size() == 1)
-        buf << *l.begin() << endl;
-    else
+    if (i != notes_end)
     {
-        buf << endl;
-        for (const auto& note: l)
-            buf << " " << note << endl;
+        buf << "Note: ";
+        if (i + 1 == notes_end)
+            buf << **i << endl;
+        else
+        {
+            for ( ; i != notes_end; ++i)
+            {
+                buf << endl;
+                buf << " " << **i << endl;
+            }
+        }
     }
 
     return buf.str();
@@ -489,48 +745,75 @@ void Metadata::write_yaml(core::AbstractOutputFile& out, const Formatter* format
 
 void Metadata::serialise(structured::Emitter& e, const structured::Keys& keys, const Formatter* f) const
 {
+    metadata::Index::const_iterator notes_begin, notes_end;
+    std::tie(notes_begin, notes_end) = m_index.notes();
+
     e.start_mapping();
     e.add(keys.metadata_items);
+
     e.start_list();
-    if (m_source) m_source->serialise(e, keys, f);
-    for (const auto& val: m_vals)
-        val.second->serialise(e, keys, f);
+    // Source
+    const Source* s = nullptr;
+    if (notes_end != m_index.end())
+    {
+        s = reinterpret_cast<const Source*>(*notes_end);
+        s->serialise(e, keys, f);
+    }
+    // Values
+    auto i = m_index.begin();
+    for ( ; i != notes_begin; ++i)
+        (*i)->serialise(e, keys, f);
     e.end_list();
+
     e.add(keys.metadata_notes);
     e.start_list();
-    std::vector<types::Note> n = notes();
-    for (const auto& note: n)
-        note.serialise(e, keys, f);
+    for ( ; i != notes_end; ++i)
+        (*i)->serialise(e, keys, f);
     e.end_list();
     e.end_mapping();
 
     e.add_break();
 
-    // If the source is inline, then the data follows the metadata
-    if (const source::Inline* s = dynamic_cast<const source::Inline*>(m_source))
+    // If the source is inline, we need to include the daata
+    if (s->style() != types::Source::Style::INLINE)
+        return;
+    const source::Inline* si = reinterpret_cast<const source::Inline*>(s);
+    if (si->size != m_data->size())
     {
-        if (s->size != m_data->size())
-        {
-            stringstream ss;
-            ss << "cannot write metadata to JSON: metadata source size " << s->size << " does not match the data size " << m_data->size();
-            throw runtime_error(ss.str());
-        }
-        m_data->emit(e);
+        stringstream ss;
+        ss << "cannot write metadata to JSON: metadata source size " << si->size << " does not match the data size " << m_data->size();
+        throw runtime_error(ss.str());
     }
+    m_data->emit(e);
 }
 
-void Metadata::read(const structured::Keys& keys, const structured::Reader& val)
+std::shared_ptr<Metadata> Metadata::read_structure(const structured::Keys& keys, const structured::Reader& val)
 {
+    auto res = std::make_shared<Metadata>();
+
     // Parse items
     val.sub(keys.metadata_items, "metadata items", [&](const structured::Reader& items) {
         unsigned size = items.list_size("metadata items");
         for (unsigned idx = 0; idx < size; ++idx)
         {
-            unique_ptr<types::Type> item = items.as_type(idx, "metadata item", keys);
-            if (item->type_code() == TYPE_SOURCE)
-                set_source(move(downcast<types::Source>(move(item))));
-            else
-                set(move(item));
+            std::unique_ptr<types::Type> item = items.as_type(idx, "metadata item", keys);
+            switch (item->type_code())
+            {
+                case TYPE_SOURCE:
+                {
+                    std::unique_ptr<Source> s(reinterpret_cast<Source*>(item.release()));
+                    res->m_index.set_source(std::move(s));
+                    break;
+                }
+                case TYPE_NOTE:
+                {
+                    std::unique_ptr<Note> n(reinterpret_cast<Note*>(item.release()));
+                    res->m_index.append_note(std::move(n));
+                    break;
+                }
+                default:
+                    res->m_index.set_value(std::move(item));
+            }
         }
     });
 
@@ -541,9 +824,11 @@ void Metadata::read(const structured::Keys& keys, const structured::Reader& val)
         {
             unique_ptr<types::Type> item = notes.as_type(idx, "metadata note", keys);
             if (item->type_code() == TYPE_NOTE)
-                add_note(*downcast<types::Note>(move(item)));
+                res->add_note(*downcast<types::Note>(move(item)));
         }
     });
+
+    return res;
 }
 
 std::vector<uint8_t> Metadata::encodeBinary() const
@@ -556,14 +841,11 @@ std::vector<uint8_t> Metadata::encodeBinary() const
 
 void Metadata::encodeBinary(core::BinaryEncoder& enc) const
 {
-    // Encode the various information
     vector<uint8_t> encoded;
     core::BinaryEncoder subenc(encoded);
-    for (map<types::Code, types::Type*>::const_iterator i = m_vals.begin(); i != m_vals.end(); ++i)
-        i->second->encodeBinary(subenc);
-    subenc.add_raw(m_notes);
-    if (m_source)
-       m_source->encodeBinary(subenc);
+
+    for (const auto& i: m_index)
+        i->encodeBinary(subenc);
 
     // Prepend header
     enc.add_string("MD");
@@ -579,17 +861,19 @@ const metadata::Data& Metadata::get_data()
     // First thing, try and return it from cache
     if (m_data) return *m_data;
 
-    // If we don't have it in cache, try reconstructing it from the Value metadata
-    if (const Value* value = get<types::Value>())
-        m_data = metadata::DataManager::get().to_data(m_source->format, scan::Scanner::reconstruct(m_source->format, *this, value->buffer));
-    if (m_data) return *m_data;
+    const Source* s = m_index.get_source();
 
     // If we don't have it in cache and we don't have a source, we cannot know
-    // how to load it: give up
-    if (!m_source) throw_consistency_error("retrieving data", "data source is not defined");
+    // how to load it or what to reconstruct: give up
+    if (!s) throw_consistency_error("cannot retrieve data: data source is not defined");
+
+    // If we don't have it in cache, try reconstructing it from the Value metadata
+    if (const Value* value = get<types::Value>())
+        m_data = metadata::DataManager::get().to_data(s->format, scan::Scanner::reconstruct(s->format, *this, value->buffer));
+    if (m_data) return *m_data;
 
     // Load it according to source
-    switch (m_source->style())
+    switch (s->style())
     {
         case Source::Style::INLINE:
             throw runtime_error("cannot retrieve data: data is not found on INLINE metadata");
@@ -597,92 +881,103 @@ const metadata::Data& Metadata::get_data()
             throw runtime_error("cannot retrieve data: data is not accessible for URL metadata");
         case Source::Style::BLOB:
         {
-            // Do not directly use m_data so that if dataReader.read throws an
-            // exception, m_data remains empty.
-            source::Blob& s = sourceBlob();
-            if (!s.reader)
+            const source::Blob* blob = reinterpret_cast<const source::Blob*>(s);
+            if (!blob->reader)
                 throw runtime_error("cannot retrieve data: BLOB source has no reader associated");
-            m_data = metadata::DataManager::get().to_data(m_source->format, s.read_data());
+            m_data = metadata::DataManager::get().to_data(blob->format, blob->read_data());
             return *m_data;
         }
         default:
-            throw_consistency_error("retrieving data", "unsupported source style");
+            throw_consistency_error("cannot retrieve data: unsupported source style");
     }
 }
 
 size_t Metadata::stream_data(NamedFileDescriptor& out)
 {
+    // This code is a copy of get_data, except that if the data is not
+    // previously cached and gets streamed, it won't be stored in m_data, to
+    // prevent turning a stream operation into a memory-filling operation
+
     // First thing, try and return it from cache
     if (m_data) return m_data->write(out);
 
-    // If we don't have it in cache, try reconstructing it from the Value metadata
-    if (const Value* value = get<types::Value>())
-        m_data = metadata::DataManager::get().to_data(m_source->format, scan::Scanner::reconstruct(m_source->format, *this, value->buffer));
-    if (m_data) return m_data->write(out);
+    const Source* s = m_index.get_source();
 
     // If we don't have it in cache and we don't have a source, we cannot know
-    // how to load it: give up
-    if (!m_source) throw_consistency_error("retrieving data", "data source is not defined");
+    // how to load it or what to reconstruct: give up
+    if (!s) throw_consistency_error("cannot stream data: data source is not defined");
+
+    // If we don't have it in cache, try reconstructing it from the Value metadata
+    if (const Value* value = get<types::Value>())
+        m_data = metadata::DataManager::get().to_data(s->format, scan::Scanner::reconstruct(s->format, *this, value->buffer));
+    if (m_data) return m_data->write(out);
 
     // Load it according to source
-    switch (m_source->style())
+    switch (s->style())
     {
         case Source::Style::INLINE:
-            throw runtime_error("cannot retrieve data: data is not found on INLINE metadata");
+            throw runtime_error("cannot stream data: data is not found on INLINE metadata");
         case Source::Style::URL:
-            throw runtime_error("cannot retrieve data: data is not accessible for URL metadata");
+            throw runtime_error("cannot stream data: data is not accessible for URL metadata");
         case Source::Style::BLOB:
         {
             // Do not directly use m_data so that if dataReader.read throws an
             // exception, m_data remains empty.
-            source::Blob& s = sourceBlob();
-            if (!s.reader)
-                throw runtime_error("cannot retrieve data: BLOB source has no reader associated");
-            return s.stream_data(out);
+            const source::Blob* blob = reinterpret_cast<const source::Blob*>(s);
+            if (!blob->reader)
+                throw runtime_error("cannot stream data: BLOB source has no reader associated");
+            return blob->stream_data(out);
         }
         default:
-            throw_consistency_error("retrieving data", "unsupported source style");
+            throw_consistency_error("cannot stream data: unsupported source style");
     }
 }
 
 size_t Metadata::stream_data(AbstractOutputFile& out)
 {
+    // This code is a copy of get_data, except that if the data is not
+    // previously cached and gets streamed, it won't be stored in m_data, to
+    // prevent turning a stream operation into a memory-filling operation
+
     // First thing, try and return it from cache
     if (m_data) return m_data->write(out);
 
-    // If we don't have it in cache, try reconstructing it from the Value metadata
-    if (const Value* value = get<types::Value>())
-        m_data = metadata::DataManager::get().to_data(m_source->format, scan::Scanner::reconstruct(m_source->format, *this, value->buffer));
-    if (m_data) return m_data->write(out);
+    const Source* s = m_index.get_source();
 
     // If we don't have it in cache and we don't have a source, we cannot know
-    // how to load it: give up
-    if (!m_source) throw_consistency_error("retrieving data", "data source is not defined");
+    // how to load it or what to reconstruct: give up
+    if (!s) throw_consistency_error("cannot stream data: data source is not defined");
+
+    // If we don't have it in cache, try reconstructing it from the Value metadata
+    if (const Value* value = get<types::Value>())
+        m_data = metadata::DataManager::get().to_data(s->format, scan::Scanner::reconstruct(s->format, *this, value->buffer));
+    if (m_data) return m_data->write(out);
 
     // Load it according to source
-    switch (m_source->style())
+    switch (s->style())
     {
         case Source::Style::INLINE:
-            throw runtime_error("cannot retrieve data: data is not found on INLINE metadata");
+            throw runtime_error("cannot stream data: data is not found on INLINE metadata");
         case Source::Style::URL:
-            throw runtime_error("cannot retrieve data: data is not accessible for URL metadata");
+            throw runtime_error("cannot stream data: data is not accessible for URL metadata");
         case Source::Style::BLOB:
         {
             // Do not directly use m_data so that if dataReader.read throws an
             // exception, m_data remains empty.
-            source::Blob& s = sourceBlob();
-            if (!s.reader)
-                throw runtime_error("cannot retrieve data: BLOB source has no reader associated");
-            return s.stream_data(out);
+            const source::Blob* blob = reinterpret_cast<const source::Blob*>(s);
+            if (!blob->reader)
+                throw runtime_error("cannot stream data: BLOB source has no reader associated");
+            return blob->stream_data(out);
         }
         default:
-            throw_consistency_error("retrieving data", "unsupported source style");
+            throw_consistency_error("cannot stream data: unsupported source style");
     }
 }
 
 void Metadata::drop_cached_data()
 {
-    if (/*const source::Blob* blob =*/ dynamic_cast<const source::Blob*>(m_source))
+    auto s = m_index.get_source();
+    if (s && s->style() == Source::Style::BLOB)
         m_data.reset();
 }
 
@@ -698,38 +993,55 @@ void Metadata::set_cached_data(std::shared_ptr<metadata::Data> data)
 
 void Metadata::makeInline()
 {
-    if (!m_source) throw_consistency_error("making source inline", "data source is not defined");
+    auto source = m_index.get_source();
+    if (!source) throw_consistency_error("cannot inline source in metadata: data source is not defined");
     get_data();
-    set_source(Source::createInline(m_source->format, m_data->size()));
+    set_source(Source::createInline(source->format, m_data->size()));
 }
 
 void Metadata::make_absolute()
 {
-    if (has_source())
-        if (const source::Blob* blob = dynamic_cast<const source::Blob*>(m_source))
-            set_source(blob->makeAbsolute());
+    const source::Blob* blob = has_source_blob();
+    if (!blob)
+        return;
+    set_source(blob->makeAbsolute());
 }
 
 size_t Metadata::data_size() const
 {
     if (m_data) return m_data->size();
-    if (!m_source) return 0;
+
+    const Source* s = m_index.get_source();
+    if (!s) return 0;
 
     // Query according to source
-    switch (m_source->style())
+    switch (s->style())
     {
         case Source::Style::INLINE:
-            return dynamic_cast<const source::Inline*>(m_source)->size;
+            return reinterpret_cast<const source::Inline*>(s)->size;
         case Source::Style::URL:
             // URL does not know about sizes
             return 0;
         case Source::Style::BLOB:
-            return dynamic_cast<const source::Blob*>(m_source)->size;
+            return reinterpret_cast<const source::Blob*>(s)->size;
         default:
             // An unsupported source type should make more noise than a 0
             // return type
-            throw_consistency_error("retrieving data", "unsupported source style");
+            throw_consistency_error("cannot retrieve data: unsupported source style" + Source::formatStyle(s->style()));
     }
+}
+
+void Metadata::dump_internals(FILE* out) const
+{
+    fprintf(out, "Metadata contents:\n");
+    if (m_encoded)
+        fprintf(out, "  Has encoded buffer %ub long\n", m_encoded_size);
+    if (m_data)
+        fprintf(out, "  Has cached data %zdb long\n", m_data->size());
+    fprintf(out, "  Item index:\n");
+    unsigned idx = 0;
+    for (const auto& i: m_index)
+        fprintf(out, "    %3u: %s: %s\n", idx++, i->tag().c_str(), i->to_string().c_str());
 }
 
 bool Metadata::read_buffer(const uint8_t* buf, std::size_t size, const metadata::ReadContext& file, metadata_dest_func dest)
@@ -764,14 +1076,13 @@ bool Metadata::read_buffer(core::BinaryDecoder& dec, const metadata::ReadContext
             iotrace::trace_file(file.pathname, 0, 0, "read metadata group");
             Metadata::read_group(inner, version, file, dest);
         } else {
-            unique_ptr<Metadata> md(new Metadata);
             iotrace::trace_file(file.pathname, 0, 0, "read metadata");
-            md->read_inner(inner, version, file);
+            auto res = read_binary_inner(inner, version, file);
 
             // If the source is inline, then the data follows the metadata
-            if (md->source().style() == types::Source::Style::INLINE)
-                md->readInlineData(dec, file.pathname);
-            canceled = !dest(move(md));
+            if (res->source().style() == types::Source::Style::INLINE)
+                res->readInlineData(dec, file.pathname);
+            canceled = !dest(move(res));
         }
     }
 
@@ -815,10 +1126,9 @@ bool Metadata::read_file(int in, const metadata::ReadContext& file, metadata_des
             core::BinaryDecoder dec(bundle.data);
             Metadata::read_group(dec, bundle.version, file, dest);
         } else {
-            unique_ptr<Metadata> md(new Metadata);
             iotrace::trace_file(file.pathname, 0, 0, "read metadata");
             core::BinaryDecoder dec(bundle.data);
-            md->read_inner(dec, bundle.version, file);
+            auto md = Metadata::read_binary_inner(dec, bundle.version, file);
 
             // If the source is inline, then the data follows the metadata
             if (md->source().style() == types::Source::Style::INLINE)
@@ -855,10 +1165,9 @@ bool Metadata::read_file(core::AbstractInputFile& fd, const metadata::ReadContex
             core::BinaryDecoder dec(bundle.data);
             Metadata::read_group(dec, bundle.version, file, dest);
         } else {
-            unique_ptr<Metadata> md(new Metadata);
             iotrace::trace_file(file.pathname, 0, 0, "read metadata");
             core::BinaryDecoder dec(bundle.data);
-            md->read_inner(dec, bundle.version, file);
+            auto md = Metadata::read_binary_inner(dec, bundle.version, file);
 
             // If the source is inline, then the data follows the metadata
             if (md->source().style() == types::Source::Style::INLINE)
@@ -894,8 +1203,7 @@ bool Metadata::read_group(core::BinaryDecoder& dec, unsigned version, const meta
     while (!canceled && unenc)
     {
         core::BinaryDecoder inner = unenc.pop_metadata_bundle(isig, iver);
-        unique_ptr<Metadata> md(new Metadata);
-        md->read_inner(inner, iver, file);
+        auto md = Metadata::read_binary_inner(inner, iver, file);
         canceled = !dest(move(md));
     }
 

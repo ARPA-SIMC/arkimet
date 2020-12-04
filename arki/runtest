@@ -8,7 +8,7 @@ then
     NOSE="${NOSE:-nose}"
     for n in "$NOSE" nose2-3 nosetests-3.8 nosetests-3.7 nosetests-3.6 nosetests-3.5 nosetests-3.4 nosetests-3.3
     do
-        if which "$n"
+        if which "$n" > /dev/null
         then
             NOSE="$n"
             break
@@ -23,7 +23,7 @@ fi
 
 ## Run under eatmydata if available
 
-libeatmydata="/usr/lib/libeatmydata/libeatmydata.so"
+libeatmydata="/usr/lib/x86_64-linux-gnu/libeatmydata.so"
 if [ -e $libeatmydata ]
 then
     if [ -n "$LD_PRELOAD" ]; then
@@ -54,7 +54,7 @@ export ARKI_BBOX=$TOP_SRCDIR/conf/bbox/
 export ARKI_QMACRO=$TOP_SRCDIR/conf/qmacro/
 export ARKI_ALIASES=$TOP_SRCDIR/test/conf/match-alias.conf
 export ARKI_POSTPROC=$TESTDIR/postproc
-export PYTHONPATH=$TOP_SRCDIR/python/
+export PYTHONPATH=$TOP_SRCDIR/python/:$ORIGDIR:$ORIGDIR/python
 export METEO_VM2_SOURCE="$TOP_SRCDIR/conf/vm2/source.lua"
 export TOP_SRCDIR
 ulimit -v 1048576 || true

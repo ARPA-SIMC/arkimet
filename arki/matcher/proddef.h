@@ -25,6 +25,7 @@ struct MatchProddefGRIB : public MatchProddef
 
     MatchProddefGRIB(const std::string& pattern);
     bool matchItem(const types::Type& o) const override;
+    bool match_buffer(types::Code code, const uint8_t* data, unsigned size) const override;
     std::string toString() const override;
 };
 

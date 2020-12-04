@@ -91,9 +91,6 @@ public:
 
     /// Check all components of a reftime::Position item
     void is_reftime_position(const core::Time&);
-
-    /// Check all components of a reftime::Position item
-    void is_reftime_period(const core::Time&, const core::Time&);
 };
 
 inline arki::tests::ActualType actual_type(const arki::types::Type& actual) { return arki::tests::ActualType(&actual); }
@@ -121,6 +118,7 @@ struct TypeTestCase : public TestCase
                 t.alternates.push_back(exact[i]);
             t.lower = lower;
             t.higher = higher;
+            t.exact_query = exact_match;
             wassert(t.check());
         });
     }

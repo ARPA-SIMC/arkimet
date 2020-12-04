@@ -111,6 +111,12 @@ void TestGenericType::check() const
 
         Matcher m = parser.parse(item->tag() + ":" + item->exactQuery());
         wassert(actual(m(*item)).istrue());
+
+        // Test matching the encoded buffer directly
+        std::vector<uint8_t> enc;
+        core::BinaryEncoder e(enc);
+        item->encodeWithoutEnvelope(e);
+        wassert(actual(m(item->type_code(), enc.data(), enc.size())).istrue());
     }
 }
 
@@ -174,7 +180,7 @@ void ActualType::serializes() const
     _actual->encodeWithoutEnvelope(e);
     size_t inner_enc_size = enc.size();
     core::BinaryDecoder dec(enc);
-    wassert(actual(decodeInner(code, dec)) == _actual);
+    wassert(actual(Type::decodeInner(code, dec)) == _actual);
 
     // Binary encoding, with envelope
     enc.clear();
@@ -182,7 +188,7 @@ void ActualType::serializes() const
     // Rewritten in the next two lines due to, it seems, a bug in old gccs
     // inner_ensure_equals(types::decode((const unsigned char*)enc.data(), enc.size()).upcast<T>(), _actual);
     dec = core::BinaryDecoder(enc);
-    unique_ptr<Type> decoded = types::decode(dec);
+    unique_ptr<Type> decoded = types::Type::decode(dec);
     wassert(actual(decoded) == _actual);
 
     dec = core::BinaryDecoder(enc);
@@ -190,7 +196,7 @@ void ActualType::serializes() const
     core::BinaryDecoder inner = dec.pop_type_envelope(dec_code);
     wassert(actual(dec_code) == code);
     wassert(actual(inner.size) == inner_enc_size);
-    wassert(actual(decodeInner(code, inner)) == _actual);
+    wassert(actual(Type::decodeInner(code, inner)) == _actual);
 
     // String encoding
     stringstream ss;
@@ -323,14 +329,7 @@ void ActualType::is_source_inline(const std::string& format, uint64_t size)
 void ActualType::is_reftime_position(const Time& time)
 {
     const reftime::Position* item = get_specific_type<reftime::Position>(_actual);
-    wassert(actual(item->time) == time);
-}
-
-void ActualType::is_reftime_period(const Time& begin, const Time& end)
-{
-    const reftime::Period* item = get_specific_type<reftime::Period>(_actual);
-    wassert(actual(item->begin) == begin);
-    wassert(actual(item->end) == end);
+    wassert(actual(item->get_Position()) == time);
 }
 
 }

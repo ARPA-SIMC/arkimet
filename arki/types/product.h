@@ -1,7 +1,7 @@
 #ifndef ARKI_TYPES_PRODUCT_H
 #define ARKI_TYPES_PRODUCT_H
 
-#include <arki/types/styled.h>
+#include <arki/types/encoded.h>
 #include <arki/types/values.h>
 #include <memory>
 
@@ -34,23 +34,60 @@ struct traits<Product>
  * Information on what product (variable measured, variable forecast, ...) is
  * contained in the data.
  */
-struct Product : public types::StyledType<Product>
+class Product : public types::Encoded
 {
-	/// Convert a string into a style
-	static Style parseStyle(const std::string& str);
-	/// Convert a style into its string representation
-	static std::string formatStyle(Style s);
+public:
+    using Encoded::Encoded;
+
+    typedef product::Style Style;
+
+    types::Code type_code() const override { return traits<Product>::type_code; }
+    size_t serialisationSizeLength() const override { return traits<Product>::type_sersize_bytes; }
+    std::string tag() const override { return traits<Product>::type_tag; }
+
+    static Style style(const uint8_t* data, unsigned size);
+    static void get_GRIB1(const uint8_t* data, unsigned size, unsigned& origin, unsigned& table, unsigned& product);
+    static void get_GRIB2(const uint8_t* data, unsigned size, unsigned& centre, unsigned& discipline, unsigned& category, unsigned& number, unsigned& table_version, unsigned& local_table_version);
+    static void get_BUFR(const uint8_t* data, unsigned size, unsigned& type, unsigned& subtype, unsigned& localsubtype, ValueBag& values);
+    static void get_ODIMH5(const uint8_t* data, unsigned size, std::string& obj, std::string& prod);
+    static void get_VM2(const uint8_t* data, unsigned size, unsigned& variable_id);
+
+    Style style() const { return style(data, size); }
+    void get_GRIB1(unsigned& origin, unsigned& table, unsigned& product) const
+    {
+        get_GRIB1(data, size, origin, table, product);
+    }
+    void get_GRIB2(unsigned& centre, unsigned& discipline, unsigned& category, unsigned& number, unsigned& table_version, unsigned& local_table_version) const
+    {
+        get_GRIB2(data, size, centre, discipline, category, number, table_version, local_table_version);
+    }
+    void get_BUFR(unsigned& type, unsigned& subtype, unsigned& localsubtype, ValueBag& values) const
+    {
+        get_BUFR(data, size, type, subtype, localsubtype, values);
+    }
+    void get_ODIMH5(std::string& obj, std::string& prod) const
+    {
+        get_ODIMH5(data, size, obj, prod);
+    }
+    void get_VM2(unsigned& variable_id) const
+    {
+        get_VM2(data, size, variable_id);
+    }
+
+    int compare(const Type& o) const override;
+
+    /// Convert a string into a style
+    static Style parseStyle(const std::string& str);
+    /// Convert a style into its string representation
+    static std::string formatStyle(Style s);
 
     /// CODEC functions
-    static std::unique_ptr<Product> decode(core::BinaryDecoder& dec);
+
+    static std::unique_ptr<Product> decode(core::BinaryDecoder& dec, bool reuse_buffer);
     static std::unique_ptr<Product> decodeString(const std::string& val);
     static std::unique_ptr<Product> decode_structure(const structured::Keys& keys, const structured::Reader& val);
 
-	// Deprecated functions
-	virtual std::vector<int> toIntVector() const = 0;
-	static int getMaxIntCount();
-
-	static void init();
+    static void init();
 
     static std::unique_ptr<Product> createGRIB1(unsigned char origin, unsigned char table, unsigned char product);
     static std::unique_ptr<Product> createGRIB2(
@@ -66,180 +103,79 @@ struct Product : public types::StyledType<Product>
     static std::unique_ptr<Product> createVM2(unsigned variable_id);
 };
 
-
 namespace product {
 
 inline std::ostream& operator<<(std::ostream& o, Style s) { return o << Product::formatStyle(s); }
 
-
-class GRIB1 : public Product
+struct GRIB1 : public Product
 {
-protected:
-	unsigned char m_origin;
-	unsigned char m_table;
-	unsigned char m_product;
-
 public:
-	unsigned origin() const { return m_origin; }
-	unsigned table() const { return m_table; }
-	unsigned product() const { return m_product; }
+    using Product::Product;
 
-    Style style() const override;
-    void encodeWithoutEnvelope(core::BinaryEncoder& enc) const override;
+    GRIB1* clone() const override { return new GRIB1(data, size); }
+
+    int compare_local(const GRIB1& o) const;
     std::ostream& writeToOstream(std::ostream& o) const override;
     void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
     std::string exactQuery() const override;
-
-    int compare_local(const Product& o) const override;
-    bool equals(const Type& o) const override;
-
-    GRIB1* clone() const override;
-    static std::unique_ptr<GRIB1> create(unsigned char origin, unsigned char table, unsigned char product);
-    static std::unique_ptr<GRIB1> decode_structure(const structured::Keys& keys, const structured::Reader& val);
-
-    // Deprecated functions
-    std::vector<int> toIntVector() const override;
 };
 
-class GRIB2 : public Product
+struct GRIB2 : public Product
 {
-protected:
-	unsigned short m_centre;
-	unsigned char m_discipline;
-	unsigned char m_category;
-	unsigned char m_number;
-    unsigned char m_table_version;
-    unsigned char m_local_table_version;
-
 public:
-	unsigned centre() const { return m_centre; }
-	unsigned discipline() const { return m_discipline; }
-	unsigned category() const { return m_category; }
-	unsigned number() const { return m_number; }
-    unsigned table_version() const { return m_table_version; }
-    unsigned local_table_version() const { return m_local_table_version; }
+    using Product::Product;
 
-    Style style() const override;
-    void encodeWithoutEnvelope(core::BinaryEncoder& enc) const override;
+    GRIB2* clone() const override { return new GRIB2(data, size); }
+
+    int compare_local(const GRIB2& o) const;
     std::ostream& writeToOstream(std::ostream& o) const override;
     void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
     std::string exactQuery() const override;
-
-    int compare_local(const Product& o) const override;
-    bool equals(const Type& o) const override;
-
-    GRIB2* clone() const override;
-    static std::unique_ptr<GRIB2> create(
-            unsigned short centre,
-            unsigned char discipline,
-            unsigned char category,
-            unsigned char number,
-            unsigned char table_version=4,
-            unsigned char local_table_version=255);
-    static std::unique_ptr<GRIB2> decode_structure(const structured::Keys& keys, const structured::Reader& val);
-
-    // Deprecated functions
-    std::vector<int> toIntVector() const override;
 };
 
-class BUFR : public Product
+struct BUFR : public Product
 {
-protected:
-	unsigned char m_type;
-	unsigned char m_subtype;
-	unsigned char m_localsubtype;
-	ValueBag m_values;
-
 public:
-	unsigned type() const { return m_type; }
-	unsigned subtype() const { return m_subtype; }
-	unsigned localsubtype() const { return m_localsubtype; }
-	const ValueBag& values() const { return m_values; }
+    using Product::Product;
 
-    // Add/replace these key,value pairs into m_values
-    void addValues(const ValueBag& newvalues);
+    BUFR* clone() const override { return new BUFR(data, size); }
 
-    Style style() const override;
-    void encodeWithoutEnvelope(core::BinaryEncoder& enc) const override;
+    int compare_local(const BUFR& o) const;
     std::ostream& writeToOstream(std::ostream& o) const override;
     void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
     std::string exactQuery() const override;
-
-    int compare_local(const Product& o) const override;
-    bool equals(const Type& o) const override;
-
-    BUFR* clone() const override;
-    static std::unique_ptr<BUFR> create(unsigned char type, unsigned char subtype, unsigned char localsubtype);
-    static std::unique_ptr<BUFR> create(unsigned char type, unsigned char subtype, unsigned char localsubtype, const ValueBag& name);
-    static std::unique_ptr<BUFR> decode_structure(const structured::Keys& keys, const structured::Reader& val);
-
-    // Deprecated functions
-    std::vector<int> toIntVector() const override;
 };
 
-class ODIMH5 : public Product
+struct ODIMH5 : public Product
 {
-protected:
-	std::string 	m_obj;		/* attribute /what.object */
-	std::string 	m_prod;		/* attribute /dataset/what.product */
-
-	/* NOTE: sometimes /dataset/product requires /dataset/prodpar, but we store prodpar values into other metadata */
-	/* REMOVED: double 		m_prodpar1;	 attribute /dataset/what.prodpar */
-	/* REMOVED: double 		m_prodpar2;	 attribute /dataset/what.prodpar BIS */
-
 public:
-	inline std::string obj() 	const { return m_obj; }
-	inline std::string prod() 	const { return m_prod; }
+    using Product::Product;
 
-	/* REMOVED: inline double prodpar1() 	const { return m_prodpar1; } */
-	/* REMOVED: inline double prodpar2() 	const { return m_prodpar2; } */
+    ODIMH5* clone() const override { return new ODIMH5(data, size); }
 
-    Style style() const override;
-    void encodeWithoutEnvelope(core::BinaryEncoder& enc) const override;
+    int compare_local(const ODIMH5& o) const;
     std::ostream& writeToOstream(std::ostream& o) const override;
     void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
     std::string exactQuery() const override;
-
-    int compare_local(const Product& o) const override;
-    bool equals(const Type& o) const override;
-
-    ODIMH5* clone() const override;
-    static std::unique_ptr<ODIMH5> create(const std::string& obj, const std::string& prod
-            /*REMOVED:, double prodpar1, double prodpar2*/
-    );
-    static std::unique_ptr<ODIMH5> decode_structure(const structured::Keys& keys, const structured::Reader& val);
-
-    // Deprecated functions
-    std::vector<int> toIntVector() const override;
 };
 
-class VM2 : public Product
+struct VM2 : public Product
 {
-protected:
-    unsigned m_variable_id;
-    mutable std::unique_ptr<ValueBag> m_derived_values;
-
 public:
-    virtual ~VM2() {}
+    using Product::Product;
 
-    unsigned variable_id() const { return m_variable_id; }
-    const ValueBag& derived_values() const;
+    VM2* clone() const override { return new VM2(data, size); }
 
-    Style style() const override;
-    void encodeWithoutEnvelope(core::BinaryEncoder& enc) const override;
+    bool equals(const Type& o) const override;
+    int compare_local(const VM2& o) const;
     std::ostream& writeToOstream(std::ostream& o) const override;
     void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
     std::string exactQuery() const override;
-
-    int compare_local(const Product& o) const override;
-    bool equals(const Type& o) const override;
-
-    VM2* clone() const override;
-    static std::unique_ptr<VM2> create(unsigned variable_id);
-    static std::unique_ptr<VM2> decode_structure(const structured::Keys& keys, const structured::Reader& val);
-
-    std::vector<int> toIntVector() const override;
+    void encodeWithoutEnvelope(core::BinaryEncoder& enc) const override;
+    void encode_for_indexing(core::BinaryEncoder& enc) const override;
+    ValueBag derived_values() const;
 };
+
 
 }
 

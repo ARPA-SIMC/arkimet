@@ -45,39 +45,39 @@ add_generic_test("grib1_l1_l2",
 add_method("grib1_details", [] {
     using namespace arki::types;
     unique_ptr<Level> o;
-    const level::GRIB1* v;
+    unsigned ty, l1, l2;
 
     o = Level::createGRIB1(1);
     wassert(actual(o->style()) == Level::Style::GRIB1);
-    v = dynamic_cast<level::GRIB1*>(o.get());
-    wassert(actual(v->type()) == 1u);
-    wassert(actual(v->l1()) == 0u);
-    wassert(actual(v->l2()) == 0u);
-    wassert(actual(v->valType()) == 0);
+    o->get_GRIB1(ty, l1, l2);
+    wassert(actual(ty) == 1u);
+    wassert(actual(l1) == 0u);
+    wassert(actual(l2) == 0u);
+    wassert(actual(Level::GRIB1_type_vals(ty)) == 0u);
 
     o = Level::createGRIB1(103, 132);
     wassert(actual(o->style()) == Level::Style::GRIB1);
-    v = dynamic_cast<level::GRIB1*>(o.get());
-    wassert(actual(v->type()) == 103u);
-    wassert(actual(v->l1()) == 132u);
-    wassert(actual(v->l2()) == 0u);
-    wassert(actual(v->valType()) == 1);
+    o->get_GRIB1(ty, l1, l2);
+    wassert(actual(ty) == 103u);
+    wassert(actual(l1) == 132u);
+    wassert(actual(l2) == 0u);
+    wassert(actual(Level::GRIB1_type_vals(ty)) == 1u);
 
     o = Level::createGRIB1(103, 13200);
     wassert(actual(o->style()) == Level::Style::GRIB1);
-    v = dynamic_cast<level::GRIB1*>(o.get());
-    wassert(actual(v->type()) == 103u);
-    wassert(actual(v->l1()) == 13200u);
-    wassert(actual(v->l2()) == 0u);
-    wassert(actual(v->valType()) == 1);
+    o->get_GRIB1(ty, l1, l2);
+    wassert(actual(ty) == 103u);
+    wassert(actual(l1) == 13200u);
+    wassert(actual(l2) == 0u);
+    wassert(actual(Level::GRIB1_type_vals(ty)) == 1u);
 
     o = Level::createGRIB1(104, 132, 231);
     wassert(actual(o->style()) == Level::Style::GRIB1);
-    v = dynamic_cast<level::GRIB1*>(o.get());
-    wassert(actual(v->type()) == 104u);
-    wassert(actual(v->l1()) == 132u);
-    wassert(actual(v->l2()) == 231u);
-    wassert(actual(v->valType()) == 2);
+    o->get_GRIB1(ty, l1, l2);
+    wassert(actual(ty) == 104u);
+    wassert(actual(l1) == 132u);
+    wassert(actual(l2) == 231u);
+    wassert(actual(Level::GRIB1_type_vals(ty)) == 2u);
 });
 
 // Check GRIB2S
@@ -100,21 +100,21 @@ add_generic_test("grib2s_missing",
 add_method("grib2s_details", [] {
     using namespace arki::types;
     unique_ptr<Level> o;
-    const level::GRIB2S* v;
 
     o = Level::createGRIB2S(100, 100, 500);
     wassert(actual(o->style()) == Level::Style::GRIB2S);
-    v = dynamic_cast<level::GRIB2S*>(o.get());
-    wassert(actual(v->type()) == 100u);
-    wassert(actual(v->scale()) == 100u);
-    wassert(actual(v->value()) == 500u);
+    unsigned ty, sc, va;
+    o->get_GRIB2S(ty, sc, va);
+    wassert(actual(ty) == 100u);
+    wassert(actual(sc) == 100u);
+    wassert(actual(va) == 500u);
 
-    o = Level::createGRIB2S(level::GRIB2S::MISSING_TYPE, level::GRIB2S::MISSING_SCALE, level::GRIB2S::MISSING_VALUE);
+    o = Level::createGRIB2S(Level::GRIB2_MISSING_TYPE, Level::GRIB2_MISSING_SCALE, Level::GRIB2_MISSING_VALUE);
     wassert(actual(o->style()) == Level::Style::GRIB2S);
-    v = dynamic_cast<level::GRIB2S*>(o.get());
-    wassert(actual(v->type()) == level::GRIB2S::MISSING_TYPE);
-    wassert(actual(v->scale()) == level::GRIB2S::MISSING_SCALE);
-    wassert(actual(v->value()) == level::GRIB2S::MISSING_VALUE);
+    o->get_GRIB2S(ty, sc, va);
+    wassert(actual(ty) == Level::GRIB2_MISSING_TYPE);
+    wassert(actual(sc) == Level::GRIB2_MISSING_SCALE);
+    wassert(actual(va) == Level::GRIB2_MISSING_VALUE);
 });
 
 // Check GRIB2D
@@ -151,29 +151,29 @@ add_generic_test("grib2d_missing",
 add_method("grib2d_details", [] {
     using namespace arki::types;
     unique_ptr<Level> o;
-    const level::GRIB2D* v;
+    unsigned ty1, sc1, va1, ty2, sc2, va2;
 
     o = Level::createGRIB2D(100, 100, 500, 100, 100, 1000);
     wassert(actual(o->style()) == Level::Style::GRIB2D);
-    v = dynamic_cast<level::GRIB2D*>(o.get());
-    wassert(actual(v->type1()) == 100u);
-    wassert(actual(v->scale1()) == 100u);
-    wassert(actual(v->value1()) == 500u);
-    wassert(actual(v->type2()) == 100u);
-    wassert(actual(v->scale2()) == 100u);
-    wassert(actual(v->value2()) == 1000u);
+    o->get_GRIB2D(ty1, sc1, va1, ty2, sc2, va2);
+    wassert(actual(ty1) == 100u);
+    wassert(actual(sc1) == 100u);
+    wassert(actual(va1) == 500u);
+    wassert(actual(ty2) == 100u);
+    wassert(actual(sc2) == 100u);
+    wassert(actual(va2) == 1000u);
 
     o = Level::createGRIB2D(
-            level::GRIB2S::MISSING_TYPE, level::GRIB2S::MISSING_SCALE, level::GRIB2S::MISSING_VALUE,
-            level::GRIB2S::MISSING_TYPE, level::GRIB2S::MISSING_SCALE, level::GRIB2S::MISSING_VALUE);
+            Level::GRIB2_MISSING_TYPE, Level::GRIB2_MISSING_SCALE, Level::GRIB2_MISSING_VALUE,
+            Level::GRIB2_MISSING_TYPE, Level::GRIB2_MISSING_SCALE, Level::GRIB2_MISSING_VALUE);
     wassert(actual(o->style()) == Level::Style::GRIB2D);
-    v = dynamic_cast<level::GRIB2D*>(o.get());
-    wassert(actual(v->type1()) == level::GRIB2S::MISSING_TYPE);
-    wassert(actual(v->scale1()) == level::GRIB2S::MISSING_SCALE);
-    wassert(actual(v->value1()) == level::GRIB2S::MISSING_VALUE);
-    wassert(actual(v->type1()) == level::GRIB2S::MISSING_TYPE);
-    wassert(actual(v->scale1()) == level::GRIB2S::MISSING_SCALE);
-    wassert(actual(v->value1()) == level::GRIB2S::MISSING_VALUE);
+    o->get_GRIB2D(ty1, sc1, va1, ty2, sc2, va2);
+    wassert(actual(ty1) == Level::GRIB2_MISSING_TYPE);
+    wassert(actual(sc1) == Level::GRIB2_MISSING_SCALE);
+    wassert(actual(va1) == Level::GRIB2_MISSING_VALUE);
+    wassert(actual(ty2) == Level::GRIB2_MISSING_TYPE);
+    wassert(actual(sc2) == Level::GRIB2_MISSING_SCALE);
+    wassert(actual(va2) == Level::GRIB2_MISSING_VALUE);
 });
 
 // Check ODIMH5
@@ -187,9 +187,10 @@ add_method("odimh5_details", [] {
     using namespace arki::types;
     unique_ptr<Level> o = Level::createODIMH5(10.123, 20.123);
     wassert(actual(o->style()) == Level::Style::ODIMH5);
-    const level::ODIMH5* v = dynamic_cast<level::ODIMH5*>(o.get());
-    wassert(actual(v->max()) == 20.123);
-    wassert(actual(v->min()) == 10.123);
+    double mi, ma;
+    o->get_ODIMH5(mi, ma);
+    wassert(actual(ma) == 20.123);
+    wassert(actual(mi) == 10.123);
 });
 
 }

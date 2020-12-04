@@ -48,6 +48,7 @@ struct Agent
     Agent(dataset::Reporter& reporter, segmented::Checker& w, unsigned test_flags=0);
     Agent(const Agent&) = delete;
     Agent& operator=(const Agent&) = delete;
+    virtual ~Agent() {}
 
     virtual void operator()(segmented::CheckerSegment& segment, segment::State state) = 0;
 

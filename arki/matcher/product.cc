@@ -27,12 +27,28 @@ MatchProductGRIB1::MatchProductGRIB1(const std::string& pattern)
 
 bool MatchProductGRIB1::matchItem(const Type& o) const
 {
-    const types::product::GRIB1* v = dynamic_cast<const types::product::GRIB1*>(&o);
+    const types::Product* v = dynamic_cast<const types::Product*>(&o);
     if (!v) return false;
-	if (origin != -1 && (unsigned)origin != v->origin()) return false;
-	if (table != -1 && (unsigned)table != v->table()) return false;
-	if (product != -1 && (unsigned)product != v->product()) return false;
-	return true;
+    if (v->style() != product::Style::GRIB1) return false;
+    unsigned ori, tab, pro;
+    v->get_GRIB1(ori, tab, pro);
+    if (origin != -1 && (unsigned)origin != ori) return false;
+    if (table != -1 && (unsigned)table != tab) return false;
+    if (product != -1 && (unsigned)product != pro) return false;
+    return true;
+}
+
+bool MatchProductGRIB1::match_buffer(types::Code code, const uint8_t* data, unsigned size) const
+{
+    if (code != TYPE_PRODUCT) return false;
+    if (size < 1) return false;
+    if (Product::style(data, size) != product::Style::GRIB1) return false;
+    unsigned ori, tab, pro;
+    Product::get_GRIB1(data, size, ori, tab, pro);
+    if (origin != -1 && (unsigned)origin != ori) return false;
+    if (table != -1 && (unsigned)table != tab) return false;
+    if (product != -1 && (unsigned)product != pro) return false;
+    return true;
 }
 
 std::string MatchProductGRIB1::toString() const
@@ -58,15 +74,34 @@ MatchProductGRIB2::MatchProductGRIB2(const std::string& pattern)
 
 bool MatchProductGRIB2::matchItem(const Type& o) const
 {
-    const types::product::GRIB2* v = dynamic_cast<const types::product::GRIB2*>(&o);
+    const types::Product* v = dynamic_cast<const types::Product*>(&o);
     if (!v) return false;
-	if (centre != -1 && (unsigned)centre != v->centre()) return false;
-	if (discipline != -1 && (unsigned)discipline != v->discipline()) return false;
-	if (category != -1 && (unsigned)category != v->category()) return false;
-    if (number != -1 && (unsigned)number != v->number()) return false;
-    if (table_version != -1 && (unsigned)table_version != v->table_version()) return false;
-    if (local_table_version != -1 && (unsigned)local_table_version != v->local_table_version()) return false;
-	return true;
+    if (v->style() != product::Style::GRIB2) return false;
+    unsigned ce, di, ca, nu, ta, lo;
+    v->get_GRIB2(ce, di, ca, nu, ta, lo);
+    if (centre != -1 && (unsigned)centre != ce) return false;
+    if (discipline != -1 && (unsigned)discipline != di) return false;
+    if (category != -1 && (unsigned)category != ca) return false;
+    if (number != -1 && (unsigned)number != nu) return false;
+    if (table_version != -1 && (unsigned)table_version != ta) return false;
+    if (local_table_version != -1 && (unsigned)local_table_version != lo) return false;
+    return true;
+}
+
+bool MatchProductGRIB2::match_buffer(types::Code code, const uint8_t* data, unsigned size) const
+{
+    if (code != TYPE_PRODUCT) return false;
+    if (size < 1) return false;
+    if (Product::style(data, size) != product::Style::GRIB2) return false;
+    unsigned ce, di, ca, nu, ta, lo;
+    Product::get_GRIB2(data, size, ce, di, ca, nu, ta, lo);
+    if (centre != -1 && (unsigned)centre != ce) return false;
+    if (discipline != -1 && (unsigned)discipline != di) return false;
+    if (category != -1 && (unsigned)category != ca) return false;
+    if (number != -1 && (unsigned)number != nu) return false;
+    if (table_version != -1 && (unsigned)table_version != ta) return false;
+    if (local_table_version != -1 && (unsigned)local_table_version != lo) return false;
+    return true;
 }
 
 std::string MatchProductGRIB2::toString() const
@@ -93,12 +128,30 @@ MatchProductBUFR::MatchProductBUFR(const std::string& pattern)
 
 bool MatchProductBUFR::matchItem(const Type& o) const
 {
-    const types::product::BUFR* v = dynamic_cast<const types::product::BUFR*>(&o);
+    const types::Product* v = dynamic_cast<const types::Product*>(&o);
     if (!v) return false;
-	if (type != -1 && (unsigned)type != v->type()) return false;
-	if (subtype != -1 && (unsigned)subtype != v->subtype()) return false;
-	if (localsubtype != -1 && (unsigned)localsubtype != v->localsubtype()) return false;
-	return v->values().contains(values);
+    if (v->style() != product::Style::BUFR) return false;
+    unsigned ty, su, lo;
+    ValueBag va;
+    v->get_BUFR(ty, su, lo, va);
+    if (type != -1 && (unsigned)type != ty) return false;
+    if (subtype != -1 && (unsigned)subtype != su) return false;
+    if (localsubtype != -1 && (unsigned)localsubtype != lo) return false;
+    return va.contains(values);
+}
+
+bool MatchProductBUFR::match_buffer(types::Code code, const uint8_t* data, unsigned size) const
+{
+    if (code != TYPE_PRODUCT) return false;
+    if (size < 1) return false;
+    if (Product::style(data, size) != product::Style::BUFR) return false;
+    unsigned ty, su, lo;
+    ValueBag va;
+    Product::get_BUFR(data, size, ty, su, lo, va);
+    if (type != -1 && (unsigned)type != ty) return false;
+    if (subtype != -1 && (unsigned)subtype != su) return false;
+    if (localsubtype != -1 && (unsigned)localsubtype != lo) return false;
+    return va.contains(values);
 }
 
 std::string MatchProductBUFR::toString() const
@@ -134,13 +187,26 @@ MatchProductODIMH5::MatchProductODIMH5(const std::string& pattern)
 
 bool MatchProductODIMH5::matchItem(const Type& o) const
 {
-    const types::product::ODIMH5* v = dynamic_cast<const types::product::ODIMH5*>(&o);
+    const types::Product* v = dynamic_cast<const types::Product*>(&o);
     if (!v) return false;
-	if (obj.size() && 		obj != v->obj()) 	return false;
-	if (prod.size() && 		prod != v->prod()) 	return false;
-	/*REMOVED:if (!isnan(prodpar1) && 	prodpar1 != v->prodpar1()) 	return false; */
-	/*REMOVED:if (!isnan(prodpar2) && 	prodpar2 != v->prodpar2()) 	return false; */
-	return true;
+    if (v->style() != product::Style::ODIMH5) return false;
+    std::string ob, pr;
+    v->get_ODIMH5(ob, pr);
+    if (obj.size() &&  obj != ob)  return false;
+    if (prod.size() && prod != pr) return false;
+    return true;
+}
+
+bool MatchProductODIMH5::match_buffer(types::Code code, const uint8_t* data, unsigned size) const
+{
+    if (code != TYPE_PRODUCT) return false;
+    if (size < 1) return false;
+    if (Product::style(data, size) != product::Style::ODIMH5) return false;
+    std::string ob, pr;
+    Product::get_ODIMH5(data, size, ob, pr);
+    if (obj.size() &&  obj != ob)  return false;
+    if (prod.size() && prod != pr) return false;
+    return true;
 }
 
 std::string MatchProductODIMH5::toString() const
@@ -166,15 +232,34 @@ MatchProductVM2::MatchProductVM2(const std::string& pattern)
 }
 bool MatchProductVM2::matchItem(const Type& o) const
 {
-    const types::product::VM2* v = dynamic_cast<const types::product::VM2*>(&o);
+    const types::Product* v = dynamic_cast<const types::Product*>(&o);
     if (!v) return false;
+    if (v->style() != product::Style::VM2) return false;
+    unsigned vi;
+    v->get_VM2(vi);
 
-    if (variable_id != -1 && (unsigned)variable_id != v->variable_id()) return false;
-    if (!expr.empty() && 
-        std::find(idlist.begin(), idlist.end(), v->variable_id()) == idlist.end())
+    if (variable_id != -1 && (unsigned)variable_id != vi) return false;
+    if (!expr.empty() &&
+        std::find(idlist.begin(), idlist.end(), vi) == idlist.end())
             return false;
     return true;
 }
+
+bool MatchProductVM2::match_buffer(types::Code code, const uint8_t* data, unsigned size) const
+{
+    if (code != TYPE_PRODUCT) return false;
+    if (size < 1) return false;
+    if (Product::style(data, size) != product::Style::VM2) return false;
+    unsigned vi;
+    Product::get_VM2(data, size, vi);
+
+    if (variable_id != -1 && (unsigned)variable_id != vi) return false;
+    if (!expr.empty() &&
+        std::find(idlist.begin(), idlist.end(), vi) == idlist.end())
+            return false;
+    return true;
+}
+
 std::string MatchProductVM2::toString() const
 {
 	stringstream res;

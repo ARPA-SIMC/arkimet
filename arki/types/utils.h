@@ -24,7 +24,7 @@ struct is_item_decoder<R(Args...)>
 };
 
 template<class R>
-struct is_item_decoder<R(core::BinaryDecoder&)>
+struct is_item_decoder<R(core::BinaryDecoder&, bool)>
 {
     static constexpr bool value = true;
 };
@@ -32,7 +32,7 @@ struct is_item_decoder<R(core::BinaryDecoder&)>
 template<typename T>
 struct complete_traits : public arki::types::traits<T>
 {
-    static inline Type* decode(core::BinaryDecoder& dec) { return T::decode(dec).release(); }
+    static inline Type* decode(core::BinaryDecoder& dec, bool reuse_buffer) { return T::decode(dec, reuse_buffer).release(); }
     static inline Type* decodeString(const std::string& val) { return T::decodeString(val).release(); }
     static inline Type* decode_structure(const structured::Keys& keys, const structured::Reader& reader) { return T::decode_structure(keys, reader).release(); }
 };
@@ -45,7 +45,7 @@ struct complete_traits : public arki::types::traits<T>
  */
 struct MetadataType
 {
-    typedef Type* (*item_decoder)(core::BinaryDecoder& dec);
+    typedef Type* (*item_decoder)(core::BinaryDecoder& dec, bool reuse_buffer);
     typedef Type* (*string_decoder)(const std::string& val);
     typedef Type* (*structure_decoder)(const structured::Keys& keys, const structured::Reader& reader);
 
@@ -72,7 +72,7 @@ struct MetadataType
     template<typename T>
     static void register_type()
     {
-        static_assert(is_item_decoder<decltype(T::decode)>::value, "decode function must take a BinaryDecoder as argument");
+        static_assert(is_item_decoder<decltype(T::decode)>::value, "decode function must take a BinaryDecoder and a bool as arguments");
         // FIXME: when we remove create() we can make MetadataType not register
         // itself and remove the need of this awkward new
         auto type = new MetadataType(

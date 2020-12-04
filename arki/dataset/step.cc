@@ -389,6 +389,7 @@ struct StepQuery
 
     StepQuery(const std::string& root, const std::string& format)
         : root(root), format(format) {}
+    virtual ~StepQuery() {}
 
     virtual void list_segments(const Matcher& m, std::function<void(std::string&&)> dest) const = 0;
     virtual void time_extremes(core::Interval& interval) const = 0;
@@ -420,6 +421,7 @@ struct StepParser
     unsigned depth = 0;
 
     StepParser(unsigned max_depth) : max_depth(max_depth) {}
+    virtual ~StepParser() {}
 
     // Timespan of what has been parsed so far
     virtual void timespan(Time& start_time, Time& end_time) = 0;
@@ -454,12 +456,10 @@ struct BaseStep : public Step
 
     bool pathMatches(const std::string& path, const matcher::OR& m) const override
     {
-        Time min;
-        Time max;
-        if (!path_timespan(path, min, max))
+        core::Interval interval;
+        if (!path_timespan(path, interval))
             return false;
-        auto rt = Reftime::createPeriod(min, max);
-        return m.matchItem(*rt);
+        return m.match_interval(interval);
     }
 
     void list_segments(const step::SegmentQuery& query, std::function<void(std::string&&)> dest) const override
@@ -486,10 +486,10 @@ struct Single : public BaseStep
         return std::unique_ptr<step::Dirs>(new step::SingleDirs(query));
     }
 
-    bool path_timespan(const std::string& path, Time& start_time, Time& end_time) const override
+    bool path_timespan(const std::string& path, core::Interval& interval) const override
     {
-        start_time.set_lowerbound(1000);
-        end_time.set_upperbound(99999);
+        interval.begin.set_lowerbound(1000);
+        interval.end.set_upperbound(100000);
         return true;
     }
 
@@ -509,15 +509,15 @@ struct Yearly : public BaseStep
         return std::unique_ptr<step::Dirs>(new step::CenturyDirs<step::YearFiles>(query));
     }
 
-    bool path_timespan(const std::string& path, Time& start_time, Time& end_time) const override
+    bool path_timespan(const std::string& path, core::Interval& interval) const override
     {
         int dummy;
         int ye;
         if (sscanf(path.c_str(), "%02d/%04d", &dummy, &ye) != 2)
             return false;
 
-        start_time.set_lowerbound(ye);
-        end_time.set_upperbound(ye);
+        interval.begin.set_lowerbound(ye);
+        interval.end.set_lowerbound(ye + 1);
         return true;
     }
 
@@ -539,14 +539,16 @@ struct Monthly : public BaseStep
         return std::unique_ptr<step::Dirs>(new step::YearDirs<step::MonthFiles>(query));
     }
 
-    bool path_timespan(const std::string& path, Time& start_time, Time& end_time) const override
+    bool path_timespan(const std::string& path, core::Interval& interval) const override
     {
         int ye, mo;
         if (sscanf(path.c_str(), "%04d/%02d", &ye, &mo) != 2)
             return false;
 
-        start_time.set_lowerbound(ye, mo);
-        end_time.set_upperbound(ye, mo);
+        interval.begin.set_lowerbound(ye, mo);
+        interval.end = interval.begin;
+        interval.end.mo += 1;
+        interval.end.normalise();
         return true;
     }
 
@@ -565,14 +567,16 @@ struct SubMonthly : public SubStep
 
     static const char* name() { return "monthly"; }
 
-    bool path_timespan(const std::string& path, Time& start_time, Time& end_time) const override
+    bool path_timespan(const std::string& path, core::Interval& interval) const override
     {
         int mo;
         if (sscanf(path.c_str(), "%02d", &mo) != 1)
             return false;
 
-        start_time.set_lowerbound(year, mo);
-        end_time.set_upperbound(year, mo);
+        interval.begin.set_lowerbound(year, mo);
+        interval.end = interval.begin;
+        interval.end.mo += 1;
+        interval.end.normalise();
         return true;
     }
 
@@ -589,22 +593,26 @@ struct Biweekly : public BaseStep
 {
     static const char* name() { return "biweekly"; }
 
-    bool path_timespan(const std::string& path, Time& start_time, Time& end_time) const override
+    bool path_timespan(const std::string& path, core::Interval& interval) const override
     {
         int ye, mo = -1, biweek = -1;
         if (sscanf(path.c_str(), "%04d/%02d-%d", &ye, &mo, &biweek) != 2)
             return false;
 
-        int min_da = -1;
-        int max_da = -1;
         switch (biweek)
         {
-            case 1: min_da = 1; max_da = 14; break;
-            case 2: min_da = 15; max_da = -1; break;
-            default: break;
+            case 1:
+                interval.begin.set_lowerbound(ye, mo, 1);
+                interval.end.set_lowerbound(ye, mo, 15);
+                break;
+            case 2:
+                interval.begin.set_lowerbound(ye, mo, 15);
+                interval.end.set_lowerbound(ye, mo + 1, 1);
+                interval.end.normalise();
+                break;
+            default:
+                break;
         }
-        start_time.set_lowerbound(ye, mo, min_da);
-        end_time.set_upperbound(ye, mo, max_da);
         return true;
     }
 
@@ -624,7 +632,7 @@ struct Weekly : public BaseStep
 {
     static const char* name() { return "weekly"; }
 
-    bool path_timespan(const std::string& path, Time& start_time, Time& end_time) const override
+    bool path_timespan(const std::string& path, core::Interval& interval) const override
     {
         int ye, mo = -1, week = -1;
         if (sscanf(path.c_str(), "%04d/%02d-%d", &ye, &mo, &week) != 2)
@@ -634,10 +642,11 @@ struct Weekly : public BaseStep
         if (week != -1)
         {
             min_da = (week - 1) * 7 + 1;
-            max_da = min_da + 6;
+            max_da = min_da + 7;
         }
-        start_time.set_lowerbound(ye, mo, min_da);
-        end_time.set_upperbound(ye, mo, max_da);
+        // TODO: are these normalised?
+        interval.begin.set_lowerbound(ye, mo, min_da);
+        interval.end.set_lowerbound(ye, mo, max_da);
         return true;
     }
 
@@ -659,7 +668,7 @@ struct SubWeekly : public SubStep
 
     static const char* name() { return "weekly"; }
 
-    bool path_timespan(const std::string& path, Time& start_time, Time& end_time) const override
+    bool path_timespan(const std::string& path, core::Interval& interval) const override
     {
         int mo = -1, week = -1;
         if (sscanf(path.c_str(), "%02d-%d", &mo, &week) != 2)
@@ -669,10 +678,10 @@ struct SubWeekly : public SubStep
         if (week != -1)
         {
             min_da = (week - 1) * 7 + 1;
-            max_da = min_da + 6;
+            max_da = min_da + 7;
         }
-        start_time.set_lowerbound(year, mo, min_da);
-        end_time.set_upperbound(year, mo, max_da);
+        interval.begin.set_lowerbound(year, mo, min_da);
+        interval.end.set_lowerbound(year, mo, max_da);
         return true;
     }
 
@@ -697,13 +706,15 @@ struct Daily : public BaseStep
         return std::unique_ptr<step::Dirs>(new step::YearDirs<step::MonthDayFiles>(query));
     }
 
-    bool path_timespan(const std::string& path, Time& start_time, Time& end_time) const override
+    bool path_timespan(const std::string& path, core::Interval& interval) const override
     {
         int ye, mo, da;
         if (sscanf(path.c_str(), "%04d/%02d-%02d", &ye, &mo, &da) != 3)
             return false;
-        start_time.set_lowerbound(ye, mo, da);
-        end_time.set_upperbound(ye, mo, da);
+        interval.begin.set_lowerbound(ye, mo, da);
+        interval.end = interval.begin;
+        interval.end.da += 1;
+        interval.end.normalise();
         return true;
     }
 
@@ -722,13 +733,15 @@ struct SubDaily : public SubStep
 
     static const char* name() { return "daily"; }
 
-    bool path_timespan(const std::string& path, Time& start_time, Time& end_time) const override
+    bool path_timespan(const std::string& path, core::Interval& interval) const override
     {
         int mo, da;
         if (sscanf(path.c_str(), "%02d/%02d", &mo, &da) != 2)
             return false;
-        start_time.set_lowerbound(year, mo, da);
-        end_time.set_upperbound(year, mo, da);
+        interval.begin.set_lowerbound(year, mo, da);
+        interval.end = interval.begin;
+        interval.end.da += 1;
+        interval.end.normalise();
         return true;
     }
 

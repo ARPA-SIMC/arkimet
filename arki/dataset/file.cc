@@ -173,8 +173,8 @@ bool YamlFile::scan(const dataset::DataQuery& q, metadata_dest_func dest)
 
     while (true)
     {
-        unique_ptr<Metadata> md(new Metadata);
-        if (!md->readYaml(*reader, fd.name()))
+        auto md = Metadata::read_yaml(*reader, fd.name());
+        if (!md)
             break;
         if (!q.matcher(*md))
             continue;

@@ -4,6 +4,7 @@
 #include "arki/core/binary.h"
 #include "arki/structured/emitter.h"
 #include "arki/structured/memory.h"
+#include "arki/structured/keys.h"
 #include "arki/libconfig.h"
 #include <iomanip>
 #include <sstream>
@@ -12,7 +13,6 @@
 #define TAG "bbox"
 #define SERSIZELEN 1
 
-using namespace std;
 using namespace arki::utils;
 
 namespace arki {
@@ -47,33 +47,56 @@ std::string BBox::formatStyle(BBox::Style s)
     }
 }
 
-unique_ptr<BBox> BBox::decode(core::BinaryDecoder& dec)
+bool BBox::equals(const Type& o) const
 {
-    Style s = (Style)dec.pop_uint(1, "bbox style");
-    switch (s)
-    {
-        case Style::INVALID:
-            return createInvalid();
-        case Style::POINT:
-            for (int i = 0; i < 2; ++i)
-                dec.pop_float("old POINT bbox value");
-            return createInvalid();
-        case Style::BOX:
-            for (int i = 0; i < 4; ++i)
-                dec.pop_float("old BOX bbox value");
-            return createInvalid();
-        case Style::HULL: {
-            size_t pointCount = dec.pop_uint(2, "HULL bbox vertex count");
-            for (size_t i = 0; i < pointCount * 2; ++i)
-                dec.pop_float("old HULL bbox vertex data");
-            return createInvalid();
-        }
-        default:
-            throw_consistency_error("parsing BBox", "style is " + formatStyle(s) + " but we can only decode INVALID and BOX");
-    }
+    if (type_code() != o.type_code()) return false;
+    // This can be a reinterpret_cast for performance, since we just validated
+    // the type code
+    const BBox* v = reinterpret_cast<const BBox*>(&o);
+    if (!v) return false;
+    return true;
 }
 
-unique_ptr<BBox> BBox::decodeString(const std::string& val)
+int BBox::compare(const Type& o) const
+{
+    int res = Encoded::compare(o);
+    if (res != 0) return res;
+
+    // We should be the same kind, so upcast
+    const BBox* v = dynamic_cast<const BBox*>(&o);
+    if (!v)
+    {
+        std::stringstream ss;
+        ss << "cannot compare metadata types: second element claims to be `BBox`, but it is `" << typeid(&o).name() << "' instead";
+        throw std::runtime_error(ss.str());
+    }
+
+    auto sty = style();
+
+    // Compare style
+    if (int res = (int)sty - (int)v->style()) return res;
+
+    return 0;
+}
+
+bbox::Style BBox::style() const
+{
+    return (bbox::Style)data[0];
+}
+
+std::unique_ptr<BBox> BBox::decode(core::BinaryDecoder& dec, bool reuse_buffer)
+{
+    dec.ensure_size(1, "bbox style");
+    std::unique_ptr<BBox> res;
+    if (reuse_buffer)
+        res.reset(new BBox(dec.buf, dec.size, false));
+    else
+        res.reset(new BBox(dec.buf, dec.size));
+    dec.skip(dec.size);
+    return res;
+}
+
+std::unique_ptr<BBox> BBox::decodeString(const std::string& val)
 {
     return createInvalid();
 }
@@ -83,56 +106,21 @@ std::unique_ptr<BBox> BBox::decode_structure(const structured::Keys& keys, const
     return createInvalid();
 }
 
-unique_ptr<BBox> BBox::createInvalid()
+std::unique_ptr<BBox> BBox::createInvalid()
 {
-    return upcast<BBox>(bbox::INVALID::create());
+    uint8_t* buf = new uint8_t[1];
+    buf[0] = static_cast<uint8_t>(bbox::Style::INVALID);
+    return std::unique_ptr<BBox>(new BBox(buf, 1, true));
 }
 
-
-namespace bbox {
-
-BBox::Style INVALID::style() const { return Style::INVALID; }
-
-void INVALID::encodeWithoutEnvelope(core::BinaryEncoder& enc) const
+std::ostream& BBox::writeToOstream(std::ostream& o) const
 {
-    BBox::encodeWithoutEnvelope(enc);
-}
-std::ostream& INVALID::writeToOstream(std::ostream& o) const
-{
-    return o << formatStyle(style()) << "()";
+    return o << formatStyle(Style::INVALID) << "()";
 }
 
-int INVALID::compare_local(const BBox& o) const
+void BBox::serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f) const
 {
-    if (int res = BBox::compare_local(o)) return res;
-
-	// We should be the same kind, so upcast
-	const INVALID* v = dynamic_cast<const INVALID*>(&o);
-	if (!v)
-		throw_consistency_error(
-			"comparing metadata types",
-			string("second element claims to be a GRIB1 BBox, but is a ") + typeid(&o).name() + " instead");
-
-	return 0;
-}
-
-bool INVALID::equals(const Type& o) const
-{
-	const INVALID* v = dynamic_cast<const INVALID*>(&o);
-	if (!v) return false;
-	return true;
-}
-
-INVALID* INVALID::clone() const
-{
-    return new INVALID;
-}
-
-unique_ptr<INVALID> INVALID::create()
-{
-    return unique_ptr<INVALID>(new INVALID);
-}
-
+    e.add(keys.type_style, formatStyle(Style::INVALID));
 }
 
 void BBox::init()
@@ -142,5 +130,3 @@ void BBox::init()
 
 }
 }
-
-#include <arki/types/styled.tcc>

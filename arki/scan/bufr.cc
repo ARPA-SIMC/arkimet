@@ -87,9 +87,9 @@ protected:
 
 public:
     dballe::Importer& importer;
-    unique_ptr<reftime::Position> reftime;
-    unique_ptr<Origin> origin;
-    unique_ptr<product::BUFR> product;
+    std::unique_ptr<Reftime> reftime;
+    std::unique_ptr<Origin> origin;
+    std::unique_ptr<Product> product;
     std::shared_ptr<Message> msg;
 
     Harvest(dballe::Importer& importer) : importer(importer), msg(0) {}
@@ -103,9 +103,9 @@ public:
             return;
         }
         if (dt.is_missing()) return;
-        reftime->time = core::Time(
+        reftime = Reftime::createPosition(core::Time(
                 dt.year, dt.month, dt.day,
-                dt.hour, dt.minute, dt.second);
+                dt.hour, dt.minute, dt.second));
     }
 
     void harvest_from_dballe(const BinaryMessage& rmsg, Metadata& md)
@@ -125,7 +125,7 @@ public:
 
         // Set reference time
         // FIXME: WRONG! The header date should ALWAYS be ignored
-        reftime = reftime::Position::create(core::Time(
+        reftime = Reftime::createPosition(core::Time(
                 bulletin->rep_year, bulletin->rep_month, bulletin->rep_day,
                 bulletin->rep_hour, bulletin->rep_minute, bulletin->rep_second));
 
@@ -137,7 +137,6 @@ public:
             case 4:
                 // No process?
                 origin = Origin::createBUFR(bulletin->originating_centre, bulletin->originating_subcentre);
-                product = product::BUFR::create(bulletin->data_category, bulletin->data_subcategory, bulletin->data_subcategory_local);
                 break;
             default: {
                 std::stringstream ss;
@@ -195,7 +194,7 @@ public:
         // Set the product from the msg type
         types::ValueBag newvals;
         newvals.set("t", types::values::Value::create_string(format_message_type(msg->get_type())));
-        product->addValues(newvals);
+        product = Product::createBUFR(bulletin->data_category, bulletin->data_subcategory, bulletin->data_subcategory_local, newvals);
 
         // Set reference time from date and time if available
         refine_reftime(*msg);
@@ -236,13 +235,15 @@ void BufrScanner::do_scan(BinaryMessage& rmsg, std::shared_ptr<Metadata> md)
     const reftime::Position* rt = md->get<types::reftime::Position>();
     if (rt)
     {
-        if (rt->time.ye <= 0)
+        auto time = rt->get_Position();
+        if (time.ye <= 0)
             md->unset(TYPE_REFTIME);
         else
         {
-            core::Time t = rt->time;
+            core::Time t = time;
             t.normalise();
-            if (t != rt->time) md->unset(TYPE_REFTIME);
+            if (t != time)
+                md->unset(TYPE_REFTIME);
         }
     }
 
@@ -333,8 +334,7 @@ MockBufrScanner::~MockBufrScanner()
 void MockBufrScanner::scan_extra(dballe::BinaryMessage& rmsg, std::shared_ptr<dballe::Message> msg, std::shared_ptr<Metadata> md)
 {
     auto new_md = engine->lookup(reinterpret_cast<const uint8_t*>(rmsg.data.data()), rmsg.data.size());
-    for (const auto& i: *new_md)
-        md->set(*i.second);
+    md->merge(*new_md);
 }
 
 }

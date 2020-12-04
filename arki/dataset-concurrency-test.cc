@@ -8,6 +8,7 @@
 #include "arki/types/source.h"
 #include "arki/types/source/blob.h"
 #include "arki/types/reftime.h"
+#include "arki/types/note.h"
 #include "arki/core/file.h"
 #include "arki/utils/accounting.h"
 #include "arki/utils/string.h"
@@ -121,21 +122,27 @@ struct ConcurrentImporter : public subprocess::Child
         try {
             auto ds(fixture.config().create_writer());
 
-            Metadata md = fixture.td.mds[0];
+            std::shared_ptr<Metadata> md(fixture.td.mds[0].clone());
 
             for (unsigned i = initial; i < 60; i += increment)
             {
                 if (increment_year)
-                    md.set(types::Reftime::createPosition(core::Time(2000 + i, 6, 1, 0, 0, 0)));
+                    md->test_set(types::Reftime::createPosition(core::Time(2000 + i, 6, 1, 0, 0, 0)));
                 else
-                    md.set(types::Reftime::createPosition(core::Time(2000, 6, 1, 0, 0, i)));
+                    md->test_set(types::Reftime::createPosition(core::Time(2000, 6, 1, 0, 0, i)));
                 //fprintf(stderr, "%d: %d\n", (int)getpid(), i);
-                auto res = ds->acquire(md);
+                auto res = ds->acquire(*md);
                 if (res != dataset::ACQ_OK)
                 {
                     fprintf(stderr, "ConcurrentImporter: Acquire result: %d\n", (int)res);
-                    for (const auto& note: md.notes())
-                        fprintf(stderr, "  note: %s\n", note.content.c_str());
+                    auto notes = md->notes();
+                    for (auto n = notes.first; n != notes.second; ++n)
+                    {
+                        core::Time time;
+                        std::string content;
+                        reinterpret_cast<const types::Note*>(*n)->get(time, content);
+                        fprintf(stderr, "  note: %s\n", content.c_str());
+                    }
                     return 2;
                 }
             }
@@ -362,7 +369,8 @@ this->add_method("write_write_same_segment", [](Fixture& f) {
     for (int i = 0; i < 60; ++i)
     {
         auto rt = mdc[i].get<types::reftime::Position>();
-        wassert(actual(rt->time.se) == i);
+        auto time = rt->get_Position();
+        wassert(actual(time.se) == i);
     }
 });
 
@@ -386,7 +394,8 @@ this->add_method("write_write_different_segments", [](Fixture& f) {
     for (int i = 0; i < 60; ++i)
     {
         auto rt = mdc[i].get<types::reftime::Position>();
-        wassert(actual(rt->time.ye) == 2000 + i);
+        auto time = rt->get_Position();
+        wassert(actual(time.ye) == 2000 + i);
     }
 });
 
@@ -476,22 +485,22 @@ this->add_method("read_repack2", [](Fixture& f) {
 this->add_method("write_repack", [](Fixture& f) {
     core::lock::TestWait lock_wait;
 
-    Metadata md(f.td.mds[1]);
-    md.set(types::Reftime::createPosition(Time(2007, 7, 7, 0, 0, 0)));
+    std::shared_ptr<Metadata> md(f.td.mds[1].clone());
+    md->test_set(types::Reftime::createPosition(Time(2007, 7, 7, 0, 0, 0)));
 
     // Import a first metadata to create a segment to repack
     {
         auto writer = f.config().create_writer();
-        wassert(actual(*writer).import(md));
+        wassert(actual(*writer).import(*md));
     }
 
     RepackForever<Fixture> rf(f);
     rf.during([&]{
         for (unsigned minute = 0; minute < 60; ++minute)
         {
-            md.set(types::Reftime::createPosition(Time(2007, 7, 7, 1, minute, 0)));
+            md->test_set(types::Reftime::createPosition(Time(2007, 7, 7, 1, minute, 0)));
             auto writer = f.config().create_writer();
-            wassert(actual(*writer).import(md));
+            wassert(actual(*writer).import(*md));
         }
     });
 

@@ -140,7 +140,7 @@ public:
     std::string ds_name;
     // Dataset root directory
     std::string ds_root;
-    std::vector<Metadata> import_results;
+    std::vector<std::shared_ptr<Metadata>> import_results;
 
     /**
      * @param cfg_tail

@@ -34,7 +34,7 @@ add_method("basic", [] {
     // ID is -1 if it is not in the database
     wassert(actual(attr.id(md)) == -1);
 
-    md.set(*origin);
+    md.test_set(*origin);
 
     // id() is read-only so it throws NotFound when the item does not exist
     wassert_throws(dataset::index::NotFound, attr.id(md));
@@ -60,7 +60,7 @@ add_method("basic", [] {
     wassert(actual(ids[0]) == 1);
 });
 
-// Same as <1> but instantiates attr every time to always test with a cold cache
+// Same as "basic" but instantiates attr every time to always test with a cold cache
 add_method("cold_cache", [] {
     matcher::Parser parser;
     utils::sqlite::SQLiteDB db;
@@ -73,7 +73,7 @@ add_method("cold_cache", [] {
     // ID is -1 if it is not in the database
     wassert(actual(dataset::index::AttrSubIndex(db, TYPE_ORIGIN).id(md)) == -1);
 
-    md.set(*origin);
+    md.test_set(*origin);
 
     // id() is read-only so it throws NotFound when the item does not exist
     wassert_throws(dataset::index::NotFound, dataset::index::AttrSubIndex(db, TYPE_ORIGIN).id(md));

@@ -59,9 +59,20 @@ void PythonProgress::update(size_t count, size_t bytes)
     struct timespec now;
     if (clock_gettime(CLOCK_MONOTONIC_COARSE, &now) == -1)
         throw_system_error("clock_gettime failed");
-    int diff = (now.tv_sec - last_call.tv_sec) * 1000 + (now.tv_nsec - last_call.tv_nsec) / 1000000;
-    if (diff < 200)
-        return;
+
+    // Check that the difference is under 0.2 seconds
+    time_t sdiff = now.tv_sec - last_call.tv_sec;
+    if (sdiff < 2)
+    {
+        long ndiff = now.tv_nsec - last_call.tv_sec;
+        if (ndiff < 0)
+        {
+            --sdiff;
+            ndiff += 1000000000L;
+        }
+        if (sdiff == 0 && ndiff < 200000000L)
+            return;
+    }
     last_call = now;
 
     AcquireGIL gil;

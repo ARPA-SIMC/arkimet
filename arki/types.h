@@ -168,6 +168,14 @@ struct Type
     {
         return nullable_compare(a.get(), b.get());
     }
+
+    /**
+     * Decode an item encoded in binary representation with envelope, from a
+     * decoder
+     */
+    static std::unique_ptr<Type> decode(core::BinaryDecoder& dec);
+    static std::unique_ptr<Type> decodeInner(types::Code, core::BinaryDecoder& dec);
+    static std::unique_ptr<Type> decode_inner(types::Code, core::BinaryDecoder& dec, bool reuse_buffer);
 };
 
 /// Write as a string to an output stream
@@ -177,13 +185,6 @@ inline std::ostream& operator<<(std::ostream& o, const Type& t)
 }
 
 
-/**
- * Decode an item encoded in binary representation with envelope, from a
- * decoder
- */
-std::unique_ptr<Type> decode(core::BinaryDecoder& dec);
-
-std::unique_ptr<Type> decodeInner(types::Code, core::BinaryDecoder& dec);
 std::unique_ptr<Type> decodeString(types::Code, const std::string& val);
 std::unique_ptr<Type> decode_structure(const structured::Keys& keys, const structured::Reader& reader);
 std::unique_ptr<Type> decode_structure(const structured::Keys& keys, types::Code code, const structured::Reader& reader);

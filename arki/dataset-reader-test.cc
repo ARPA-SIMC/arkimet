@@ -294,7 +294,7 @@ this->add_method("postprocess", [](Fixture& f) {
     // Verify that the data that was output was exactly as long as the
     // encoded metadata and its data
     string out = sys::read_file("testcountbytes.out");
-    unique_ptr<Metadata> copy(mdc[0].clone());
+    auto copy(mdc[0].clone());
     copy->makeInline();
     char buf[32];
     snprintf(buf, 32, "%zd\n", copy->encodeBinary().size() + copy->data_size());
@@ -331,7 +331,7 @@ this->add_method("interrupted_read", [](Fixture& f) {
 
 this->add_method("read_missing_segment", [](Fixture& f) {
     // Delete a segment, leaving it in the index
-    f.session()->segment_checker(f.td.format, f.local_config()->path, f.import_results[0].sourceBlob().filename)->remove();
+    f.session()->segment_checker(f.td.format, f.local_config()->path, f.import_results[0]->sourceBlob().filename)->remove();
 
     unsigned count_ok = 0;
     unsigned count_err = 0;

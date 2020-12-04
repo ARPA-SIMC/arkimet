@@ -30,6 +30,8 @@ std::ostream& operator<<(std::ostream& o, NodeType type);
 
 struct Reader
 {
+    virtual ~Reader() {}
+
     virtual NodeType type() const = 0;
     virtual std::string repr() const = 0;
 

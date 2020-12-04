@@ -62,7 +62,7 @@ struct AppendSegment
         using namespace arki::types;
 
         // Replace the pathname with its basename
-        unique_ptr<Metadata> copy(md.clone());
+        auto copy(md.clone());
         if (!dataset->smallfiles)
             copy->unset(TYPE_VALUE);
         copy->set_source(Source::createBlobUnlocked(source.format, dir.name(), basename, source.offset, source.size));
@@ -148,7 +148,7 @@ std::string Writer::type() const { return "simple"; }
 std::unique_ptr<AppendSegment> Writer::file(const segment::WriterConfig& writer_config, const Metadata& md, const std::string& format)
 {
     auto lock = dataset().append_lock_dataset();
-    const core::Time& time = md.get<types::reftime::Position>()->time;
+    core::Time time = md.get<types::reftime::Position>()->get_Position();
     std::string relpath = dataset().step()(time) + "." + md.source().format;
     auto writer = dataset().session->segment_writer(writer_config, format, dataset().path, relpath);
     return std::unique_ptr<AppendSegment>(new AppendSegment(m_dataset, lock, writer));

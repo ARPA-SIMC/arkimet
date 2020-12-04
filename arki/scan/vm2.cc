@@ -152,7 +152,7 @@ struct Input
     {
         md.add_note(md_note);
         md.set(Reftime::createPosition(Time(value.year, value.month, value.mday, value.hour, value.min, value.sec)));
-        md.set(Area::createVM2(value.station_id));
+        md.set<area::VM2>(value.station_id);
         md.set(Product::createVM2(value.variable_id));
         store_value(md);
     }
@@ -240,20 +240,24 @@ std::vector<uint8_t> Vm2::reconstruct(const Metadata& md, const std::string& val
     std::stringstream res;
 
     const reftime::Position* rt = md.get<reftime::Position>();
+    auto time = rt->get_Position();
     const area::VM2* area = dynamic_cast<const area::VM2*>(md.get<Area>());
-    const product::VM2* product = dynamic_cast<const product::VM2*>(md.get<Product>());
+    const Product* product = md.get<Product>();
+    unsigned vi;
+    product->get_VM2(vi);
 
-    res << setfill('0') << setw(4) << rt->time.ye
-        << setfill('0') << setw(2) << rt->time.mo
-        << setfill('0') << setw(2) << rt->time.da
-        << setfill('0') << setw(2) << rt->time.ho
-        << setfill('0') << setw(2) << rt->time.mi;
+    res << setfill('0') << setw(4) << time.ye
+        << setfill('0') << setw(2) << time.mo
+        << setfill('0') << setw(2) << time.da
+        << setfill('0') << setw(2) << time.ho
+        << setfill('0') << setw(2) << time.mi;
 
-    if (rt->time.se != 0)
-        res << setfill('0') << setw(2) << rt->time.se;
+    if (time.se != 0)
+        res << setfill('0') << setw(2) << time.se;
 
-    res << "," << area->station_id()
-        << "," << product->variable_id()
+    auto sid = area->get_VM2();
+    res << "," << sid
+        << "," << vi
         << "," << value;
 
     string reconstructed = res.str();

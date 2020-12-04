@@ -193,7 +193,7 @@ void Checker::test_swap_data(const std::string& relpath, unsigned d1_idx, unsign
 {
     metadata::Collection mds;
     m_idx->query_segment(relpath, mds.inserter_func());
-    std::swap(mds[d1_idx], mds[d2_idx]);
+    mds.swap(d1_idx, d2_idx);
 
     segment(relpath)->reorder(mds);
 }

@@ -22,12 +22,28 @@ MatchOriginGRIB1::MatchOriginGRIB1(const std::string& pattern)
 
 bool MatchOriginGRIB1::matchItem(const Type& o) const
 {
-    const types::origin::GRIB1* v = dynamic_cast<const types::origin::GRIB1*>(&o);
+    const types::Origin* v = dynamic_cast<const types::Origin*>(&o);
     if (!v) return false;
-	if (centre != -1 && (unsigned)centre != v->centre()) return false;
-	if (subcentre != -1 && (unsigned)subcentre != v->subcentre()) return false;
-	if (process != -1 && (unsigned)process != v->process()) return false;
-	return true;
+    if (v->style() != origin::Style::GRIB1) return false;
+    unsigned v_centre, v_subcentre, v_process;
+    v->get_GRIB1(v_centre, v_subcentre, v_process);
+    if (centre != -1 && (unsigned)centre != v_centre) return false;
+    if (subcentre != -1 && (unsigned)subcentre != v_subcentre) return false;
+    if (process != -1 && (unsigned)process != v_process) return false;
+    return true;
+}
+
+bool MatchOriginGRIB1::match_buffer(types::Code code, const uint8_t* data, unsigned size) const
+{
+    if (code != TYPE_ORIGIN) return false;
+    if (size < 1) return false;
+    if (Origin::style(data, size) != origin::Style::GRIB1) return false;
+    unsigned v_centre, v_subcentre, v_process;
+    Origin::get_GRIB1(data, size, v_centre, v_subcentre, v_process);
+    if (centre != -1 && (unsigned)centre != v_centre) return false;
+    if (subcentre != -1 && (unsigned)subcentre != v_subcentre) return false;
+    if (process != -1 && (unsigned)process != v_process) return false;
+    return true;
 }
 
 std::string MatchOriginGRIB1::toString() const
@@ -52,14 +68,33 @@ MatchOriginGRIB2::MatchOriginGRIB2(const std::string& pattern)
 
 bool MatchOriginGRIB2::matchItem(const Type& o) const
 {
-    const types::origin::GRIB2* v = dynamic_cast<const types::origin::GRIB2*>(&o);
+    const types::Origin* v = dynamic_cast<const types::Origin*>(&o);
     if (!v) return false;
-	if (centre      != -1 && (unsigned)centre      != v->centre()) return false;
-	if (subcentre   != -1 && (unsigned)subcentre   != v->subcentre()) return false;
-	if (processtype != -1 && (unsigned)processtype != v->processtype()) return false;
-	if (bgprocessid != -1 && (unsigned)bgprocessid != v->bgprocessid()) return false;
-	if (processid   != -1 && (unsigned)processid   != v->processid()) return false;
-	return true;
+    if (v->style() != origin::Style::GRIB2) return false;
+    unsigned v_centre, v_subcentre, v_processtype, v_bgprocessid, v_processid;
+    v->get_GRIB2(v_centre, v_subcentre, v_processtype, v_bgprocessid, v_processid);
+    if (centre      != -1 && (unsigned)centre      != v_centre) return false;
+    if (subcentre   != -1 && (unsigned)subcentre   != v_subcentre) return false;
+    if (processtype != -1 && (unsigned)processtype != v_processtype) return false;
+    if (bgprocessid != -1 && (unsigned)bgprocessid != v_bgprocessid) return false;
+    if (processid   != -1 && (unsigned)processid   != v_processid) return false;
+    return true;
+}
+
+bool MatchOriginGRIB2::match_buffer(types::Code code, const uint8_t* data, unsigned size) const
+{
+    if (code != TYPE_ORIGIN) return false;
+    if (size < 1) return false;
+    if (Origin::style(data, size) != origin::Style::GRIB2) return false;
+
+    unsigned v_centre, v_subcentre, v_processtype, v_bgprocessid, v_processid;
+    Origin::get_GRIB2(data, size, v_centre, v_subcentre, v_processtype, v_bgprocessid, v_processid);
+    if (centre      != -1 && (unsigned)centre      != v_centre) return false;
+    if (subcentre   != -1 && (unsigned)subcentre   != v_subcentre) return false;
+    if (processtype != -1 && (unsigned)processtype != v_processtype) return false;
+    if (bgprocessid != -1 && (unsigned)bgprocessid != v_bgprocessid) return false;
+    if (processid   != -1 && (unsigned)processid   != v_processid) return false;
+    return true;
 }
 
 std::string MatchOriginGRIB2::toString() const
@@ -83,11 +118,27 @@ MatchOriginBUFR::MatchOriginBUFR(const std::string& pattern)
 
 bool MatchOriginBUFR::matchItem(const Type& o) const
 {
-    const types::origin::BUFR* v = dynamic_cast<const types::origin::BUFR*>(&o);
+    const types::Origin* v = dynamic_cast<const types::Origin*>(&o);
     if (!v) return false;
-	if (centre != -1 && (unsigned)centre != v->centre()) return false;
-	if (subcentre != -1 && (unsigned)subcentre != v->subcentre()) return false;
-	return true;
+    if (v->style() != origin::Style::BUFR) return false;
+    unsigned v_centre, v_subcentre;
+    v->get_BUFR(v_centre, v_subcentre);
+    if (centre != -1 && (unsigned)centre != v_centre) return false;
+    if (subcentre != -1 && (unsigned)subcentre != v_subcentre) return false;
+    return true;
+}
+
+bool MatchOriginBUFR::match_buffer(types::Code code, const uint8_t* data, unsigned size) const
+{
+    if (code != TYPE_ORIGIN) return false;
+    if (size < 1) return false;
+    if (Origin::style(data, size) != origin::Style::BUFR) return false;
+
+    unsigned v_centre, v_subcentre;
+    Origin::get_BUFR(data, size, v_centre, v_subcentre);
+    if (centre != -1 && (unsigned)centre != v_centre) return false;
+    if (subcentre != -1 && (unsigned)subcentre != v_subcentre) return false;
+    return true;
 }
 
 std::string MatchOriginBUFR::toString() const
@@ -109,12 +160,29 @@ MatchOriginODIMH5::MatchOriginODIMH5(const std::string& pattern)
 
 bool MatchOriginODIMH5::matchItem(const Type& o) const
 {
-    const types::origin::ODIMH5* v = dynamic_cast<const types::origin::ODIMH5*>(&o);
+    const types::Origin* v = dynamic_cast<const types::Origin*>(&o);
     if (!v) return false;
-	if (WMO.size() && (WMO != v->getWMO())) return false;
-	if (RAD.size() && (RAD != v->getRAD())) return false;
-	if (PLC.size() && (PLC != v->getPLC())) return false;
-	return true;
+    if (v->style() != origin::Style::ODIMH5) return false;
+    std::string v_WMO, v_RAD, v_PLC;
+    v->get_ODIMH5(v_WMO, v_RAD, v_PLC);
+    if (WMO.size() && (WMO != v_WMO)) return false;
+    if (RAD.size() && (RAD != v_RAD)) return false;
+    if (PLC.size() && (PLC != v_PLC)) return false;
+    return true;
+}
+
+bool MatchOriginODIMH5::match_buffer(types::Code code, const uint8_t* data, unsigned size) const
+{
+    if (code != TYPE_ORIGIN) return false;
+    if (size < 1) return false;
+    if (Origin::style(data, size) != origin::Style::ODIMH5) return false;
+
+    std::string v_WMO, v_RAD, v_PLC;
+    Origin::get_ODIMH5(data, size, v_WMO, v_RAD, v_PLC);
+    if (WMO.size() && (WMO != v_WMO)) return false;
+    if (RAD.size() && (RAD != v_RAD)) return false;
+    if (PLC.size() && (PLC != v_PLC)) return false;
+    return true;
 }
 
 std::string MatchOriginODIMH5::toString() const

@@ -26,6 +26,7 @@ struct MatchAreaGRIB : public MatchArea
 
     MatchAreaGRIB(const std::string& pattern);
     bool matchItem(const types::Type& o) const override;
+    bool match_buffer(types::Code code, const uint8_t* data, unsigned size) const override;
     std::string toString() const override;
 };
 
@@ -35,6 +36,7 @@ struct MatchAreaODIMH5 : public MatchArea
 
     MatchAreaODIMH5(const std::string& pattern);
     bool matchItem(const types::Type& o) const override;
+    bool match_buffer(types::Code code, const uint8_t* data, unsigned size) const override;
     std::string toString() const override;
 };
 
@@ -47,6 +49,7 @@ struct MatchAreaVM2 : public MatchArea
 
     MatchAreaVM2(const std::string& pattern);
     bool matchItem(const types::Type& o) const override;
+    bool match_buffer(types::Code code, const uint8_t* data, unsigned size) const override;
     std::string toString() const override;
 };
 
