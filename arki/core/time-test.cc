@@ -21,16 +21,6 @@ Interval interval(int begin, int end)
     return Interval(begin == 0 ? Time() : Time(begin, 1), end == 0 ? Time() : Time(end, 1));
 }
 
-Interval interval(const Time& begin, int end)
-{
-    return Interval(begin, end == 0 ? Time() : Time(end, 1));
-}
-
-Interval interval(int begin, const Time& end)
-{
-    return Interval(begin == 0 ? Time() : Time(begin, 1), end);
-}
-
 
 void Tests::register_tests() {
 

@@ -53,7 +53,7 @@ PyObject* instantiate_qmacro_pydataset(const std::string& source, std::shared_pt
                     dataset->query.data(), (Py_ssize_t)dataset->query.size())));
 
     return obj.release();
-};
+}
 
 }
 

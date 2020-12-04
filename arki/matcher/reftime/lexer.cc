@@ -87,7 +87,7 @@ void parse_time(const char* buf, unsigned len, int* res)
     parser.getTime(res);
     parser.eatOneOf("zZ");
     parser.end();
-};
+}
 
 
 IParser::IParser(const char* sbuf, unsigned slen, struct LexInterval& res)

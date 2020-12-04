@@ -5,13 +5,6 @@
 #include "arki/types/run.h"
 #include "arki/utils/string.h"
 
-namespace std{
-static ostream& operator<<(ostream& out, const vector<int>& v)
-{
-    return out << arki::utils::str::join(", ", v.begin(), v.end());
-}
-}
-
 namespace {
 using namespace std;
 using namespace arki;

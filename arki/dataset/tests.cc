@@ -1054,12 +1054,13 @@ void ActualChecker<Dataset>::remove_all_filtered(const Matcher& matcher, const R
     wassert(reporter->check(expected));
 }
 
-}
-
 template class ActualWriter<dataset::Writer>;
 template class ActualWriter<dataset::local::Writer>;
 template class ActualWriter<dataset::segmented::Writer>;
 template class ActualChecker<dataset::Checker>;
 template class ActualChecker<dataset::local::Checker>;
 template class ActualChecker<dataset::segmented::Checker>;
+
+}
+
 }

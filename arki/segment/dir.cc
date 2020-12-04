@@ -279,7 +279,7 @@ sys::File Reader::open_src(const types::source::Blob& src)
     sys::File file_fd(fd, str::joinpath(dirfd.name(), dataname));
 
     if (posix_fadvise(file_fd, 0, src.size, POSIX_FADV_DONTNEED) != 0)
-        nag::debug("fadvise on %s failed: %m", file_fd.name().c_str());
+        nag::debug("fadvise on %s failed: %s", file_fd.name().c_str(), strerror(errno));
 
     return file_fd;
 }

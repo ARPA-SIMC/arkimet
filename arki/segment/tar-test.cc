@@ -50,7 +50,7 @@ struct Subprocess
             executable = args[0];
 
         // Set argv vector
-        char* argv[args.size() + 1];
+        std::unique_ptr<char*[]> argv(new char*[args.size() + 1]);
         for (unsigned i = 0; i < args.size(); ++i)
             argv[i] = const_cast<char*>(args[i].c_str());
         argv[args.size()] = nullptr;
@@ -76,7 +76,7 @@ struct Subprocess
                 if (chdir(cwd.c_str()) == -1)
                     throw_system_error("chdir failed");
 
-            execvpe(executable.c_str(), argv, environ);
+            execvpe(executable.c_str(), argv.get(), environ);
             throw_system_error("execve failed");
         } else {
             // Parent
