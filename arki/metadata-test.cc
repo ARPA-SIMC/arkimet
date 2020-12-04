@@ -13,6 +13,7 @@
 #include "types/proddef.h"
 #include "types/assigneddataset.h"
 #include "types/source/blob.h"
+#include "types/note.h"
 #include "structured/keys.h"
 #include "structured/json.h"
 #include "structured/memory.h"
@@ -51,13 +52,13 @@ struct Fixture : public arki::utils::tests::Fixture
 
     void fill(Metadata& md)
     {
-        md.set(Reftime::createPosition(Time(2006, 5, 4, 3, 2, 1)));
-        md.set(Origin::createGRIB1(1, 2, 3));
-        md.set(Product::createGRIB1(1, 2, 3));
-        md.set(Level::createGRIB1(114, 12, 34));
-        md.set(Timerange::createGRIB1(1, 1, 2, 3));
-        md.set<area::GRIB>(testValues);
-        md.set(Proddef::createGRIB(testValues));
+        md.test_set(Reftime::createPosition(Time(2006, 5, 4, 3, 2, 1)));
+        md.test_set(Origin::createGRIB1(1, 2, 3));
+        md.test_set(Product::createGRIB1(1, 2, 3));
+        md.test_set(Level::createGRIB1(114, 12, 34));
+        md.test_set(Timerange::createGRIB1(1, 1, 2, 3));
+        md.test_set<area::GRIB>(testValues);
+        md.test_set(Proddef::createGRIB(testValues));
         md.add_note("test note");
     }
 
@@ -70,10 +71,11 @@ struct Fixture : public arki::utils::tests::Fixture
         wassert(actual(Timerange::createGRIB1(1, 1, 2, 3)) == md.get<Timerange>());
         wassert(actual(area::GRIB::create(testValues)) == md.get<Area>());
         wassert(actual(Proddef::createGRIB(testValues)) == md.get<Proddef>());
-        wassert(actual(md.notes().size()) == 1u);
+        auto notes = md.notes();
+        wassert(actual(notes.second - notes.first) == 1u);
         core::Time time;
         std::string content;
-        md.notes().front()->get(time, content);
+        reinterpret_cast<const types::Note*>(*notes.first)->get(time, content);
         wassert(actual(content) == "test note");
     }
 };

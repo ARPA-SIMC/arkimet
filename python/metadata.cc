@@ -8,6 +8,7 @@
 #include "arki/metadata/data.h"
 #include "arki/core/file.h"
 #include "arki/types/source.h"
+#include "arki/types/note.h"
 #include "arki/structured/keys.h"
 #include "arki/structured/json.h"
 #include "arki/structured/memory.h"
@@ -296,16 +297,16 @@ struct get_notes : public MethNoargs<get_notes, arkipy_Metadata>
     {
         try {
             auto notes = self->md->notes();
-            pyo_unique_ptr res(throw_ifnull(PyList_New(notes.size())));
-            for (unsigned idx = 0; idx < notes.size(); ++idx)
+            pyo_unique_ptr res(throw_ifnull(PyList_New(notes.second - notes.first)));
+            for (auto n = notes.first; n != notes.second; ++n)
             {
                 arki::python::PythonEmitter e;
-                notes[idx]->serialise(e, arki::structured::keys_python);
+                reinterpret_cast<const arki::types::Note*>(*n)->serialise(e, arki::structured::keys_python);
                 // Note This macro “steals” a reference to item, and, unlike
                 // PyList_SetItem(), does not discard a reference to any item
                 // that is being replaced; any reference in list at position i
                 // will be leaked.
-                PyList_SET_ITEM(res.get(), idx, e.release());
+                PyList_SET_ITEM(res.get(), n - notes.first, e.release());
             }
             return res.release();
         } ARKI_CATCH_RETURN_PYO
@@ -695,7 +696,18 @@ For example::
         try {
             if (!arkipy_Metadata_Check(other))
                 return Py_NotImplemented;
-            Py_RETURN_RICHCOMPARE(*(self->md), *(((Impl*)other)->md), op);
+            const arki::Metadata& a = *self->md;
+            const arki::Metadata& b = *((Impl*)other)->md;
+            switch (op)
+            {
+                case Py_EQ: if (a == b) Py_RETURN_TRUE; Py_RETURN_FALSE;
+                case Py_NE: if (a != b) Py_RETURN_TRUE; Py_RETURN_FALSE;
+                case Py_LT: Py_RETURN_NOTIMPLEMENTED;
+                case Py_GT: Py_RETURN_NOTIMPLEMENTED;
+                case Py_LE: Py_RETURN_NOTIMPLEMENTED;
+                case Py_GE: Py_RETURN_NOTIMPLEMENTED;
+                default: Py_RETURN_NOTIMPLEMENTED;
+            }
         } ARKI_CATCH_RETURN_PYO
     }
 
@@ -746,11 +758,21 @@ For example::
                 {
                     std::string strval = from_python<std::string>(py_val);
                     std::unique_ptr<types::Type> val = types::decodeString(code, strval);
-                    self->md->set(std::move(val));
+                    if (code == TYPE_SOURCE)
+                    {
+                        std::unique_ptr<types::Source> s(reinterpret_cast<types::Source*>(val.release()));
+                        self->md->set_source(std::move(s));
+                    } else
+                        self->md->set(std::move(val));
                 } else {
                     PythonReader reader(py_val);
                     std::unique_ptr<types::Type> val = types::decode_structure(arki::structured::keys_python, code, reader);
-                    self->md->set(std::move(val));
+                    if (code == TYPE_SOURCE)
+                    {
+                        std::unique_ptr<types::Source> s(reinterpret_cast<types::Source*>(val.release()));
+                        self->md->set_source(std::move(s));
+                    } else
+                        self->md->set(std::move(val));
                 }
             }
             return 0;

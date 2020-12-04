@@ -7,6 +7,7 @@
 #include "dataset/session.h"
 #include "types/reftime.h"
 #include "types/source.h"
+#include "types/note.h"
 #include "utils/string.h"
 #include "utils/sys.h"
 #include "nag.h"
@@ -220,11 +221,13 @@ void TestDispatcher::dispatch(dataset::WriterBatch& batch, bool drop_cached_data
         else
             nag::verbose("Message %s: imported into %s", e->md.source().to_string().c_str(), e->dataset_name.c_str());
         nag::verbose("  Notes:");
-        for (const auto& note: e->md.notes())
+        // TODO: find a more elegant way of iterating notes that doesn't lose in efficiency
+        auto notes = e->md.notes();
+        for (auto n = notes.first; n != notes.second; ++n)
         {
             core::Time time;
             std::string content;
-            note->get(time, content);
+            reinterpret_cast<const types::Note*>(*n)->get(time, content);
             nag::verbose("    %s", content.c_str());
         }
     }

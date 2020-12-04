@@ -463,10 +463,11 @@ void DatasetTest::query_results(const std::vector<int>& expected)
 void DatasetTest::query_results(const dataset::DataQuery& q, const std::vector<int>& expected)
 {
     vector<int> found;
+
     config().create_reader()->query_data(q, [&](std::shared_ptr<Metadata>&& md) {
         unsigned idx;
         for (idx = 0; idx < import_results.size(); ++idx)
-            if (import_results[idx]->compare_items(*md) == 0)
+            if (import_results[idx]->items_equal(*md))
                 break;
         if (idx == import_results.size())
             found.push_back(-1);
@@ -891,8 +892,9 @@ void ActualWriter<Dataset>::import(Metadata& md)
                 break;
         }
 
-        for (const auto& note: md.notes())
-            ss << "\t" << note << endl;
+        auto notes = md.notes();
+        for (auto n = notes.first; n != notes.second; ++n)
+            ss << "\t" << **n << endl;
 
         throw TestFailed(ss.str());
     }
@@ -924,8 +926,9 @@ void ActualWriter<Dataset>::import(metadata::Collection& mds, dataset::ReplaceSt
                 break;
         }
 
-        for (const auto& note: e->md.notes())
-            ss << "\t" << note << endl;
+        auto notes = e->md.notes();
+        for (auto n = notes.first; n != notes.second; ++n)
+            ss << "\t" << **n << endl;
     }
     if (!ss.str().empty())
         throw TestFailed(ss.str());

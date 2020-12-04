@@ -27,7 +27,7 @@ struct Fixture : public DatasetTest {
             std::shared_ptr<Metadata> md(const_md->clone());
             for (unsigned i = 7; i <= 9; ++i)
             {
-                md->set(Reftime::createPosition(core::Time(2009, 8, i, 0, 0, 0)));
+                md->test_set(Reftime::createPosition(core::Time(2009, 8, i, 0, 0, 0)));
                 wassert(actual(*writer).import(*md));
             }
         }

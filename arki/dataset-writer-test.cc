@@ -8,6 +8,7 @@
 #include "arki/types/source.h"
 #include "arki/types/source/blob.h"
 #include "arki/types/reftime.h"
+#include "arki/types/note.h"
 #include "arki/utils/files.h"
 #include "arki/utils/accounting.h"
 #include "arki/utils/string.h"
@@ -330,7 +331,7 @@ this->add_method("import_before_archive_age", [](Fixture& f) {
         wassert(actual(ds->acquire(*md)) == dataset::ACQ_ERROR);
         core::Time time;
         std::string content;
-        md->notes().back()->get(time, content);
+        md->get_last_note().get(time, content);
         wassert(actual(content).contains("is older than archive age"));
     }
 
@@ -349,7 +350,7 @@ this->add_method("import_before_delete_age", [](Fixture& f) {
         wassert(actual(*ds).import(*md));
         core::Time time;
         std::string content;
-        md->notes().back()->get(time, content);
+        md->get_last_note().get(time, content);
         wassert(actual(content).contains("is older than delete age"));
     }
 

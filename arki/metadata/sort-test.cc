@@ -28,9 +28,9 @@ class Tests : public TestCase
 
 void produce(int hour, int minute, int run, sort::Stream& c)
 {
-    unique_ptr<Metadata> md(new Metadata);
-    md->set(Reftime::createPosition(Time(2008, 7, 6, hour, minute, 0)));
-    md->set(Run::createMinute(run));
+    std::unique_ptr<Metadata> md(new Metadata);
+    md->test_set(Reftime::createPosition(Time(2008, 7, 6, hour, minute, 0)));
+    md->test_set(Run::createMinute(run));
     c.add(move(md));
 }
 

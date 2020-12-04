@@ -8,6 +8,7 @@
 #include "arki/types/source.h"
 #include "arki/types/source/blob.h"
 #include "arki/types/reftime.h"
+#include "arki/types/note.h"
 #include "arki/core/file.h"
 #include "arki/utils/accounting.h"
 #include "arki/utils/string.h"
@@ -134,11 +135,12 @@ struct ConcurrentImporter : public subprocess::Child
                 if (res != dataset::ACQ_OK)
                 {
                     fprintf(stderr, "ConcurrentImporter: Acquire result: %d\n", (int)res);
-                    for (const auto& note: md->notes())
+                    auto notes = md->notes();
+                    for (auto n = notes.first; n != notes.second; ++n)
                     {
                         core::Time time;
                         std::string content;
-                        note->get(time, content);
+                        reinterpret_cast<const types::Note*>(*n)->get(time, content);
                         fprintf(stderr, "  note: %s\n", content.c_str());
                     }
                     return 2;

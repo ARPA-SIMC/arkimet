@@ -196,7 +196,7 @@ add_method("odimh5", [] {
 add_method("odimh5_octagon", [] {
     //Vediamo se la formula per calcolare un ottagono con centro e raggio del radar funziona
     Metadata md1;
-    md1.set(types::Area::decodeString("ODIMH5(lon=11623600,lat=44456700,radius=100000)"));
+    md1.test_set(types::Area::decodeString("ODIMH5(lon=11623600,lat=44456700,radius=100000)"));
 
 	//il valori devono corrispondere
 	ensure_matches("area:ODIMH5:lon=11623600", md1);
@@ -210,7 +210,7 @@ add_method("bbox_odimh5", [] {
 
     //Vediamo se la formula per calcolare un ottagono con centro e raggio del radar funziona
     Metadata md1;
-    md1.set(types::Area::decodeString("ODIMH5(lon=11623600,lat=44456700,radius=100000)"));
+    md1.test_set(types::Area::decodeString("ODIMH5(lon=11623600,lat=44456700,radius=100000)"));
 
 	//il centro deve starci per forza
 	ensure_matches("area: bbox covers POINT(11.6236 44.4567)", md1);   

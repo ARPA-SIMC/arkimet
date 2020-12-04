@@ -114,7 +114,7 @@ add_method("match_position", [] {
 add_method("regression1", [] {
     Metadata md;
 
-    md.set(Reftime::createPosition(Time(2007, 1, 1, 0, 0, 0)));
+    md.test_set(Reftime::createPosition(Time(2007, 1, 1, 0, 0, 0)));
     wassert(actual_matcher("reftime:>2006").matches(md));
     //ensure_equals(Matcher::parse("reftime:>2006").toString(), "reftime:>2006-12-31 23:59:59");
 });

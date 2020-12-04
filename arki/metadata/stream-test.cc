@@ -54,13 +54,13 @@ void fill(Metadata& md)
     testValues.set("pluto", Value::create_string("12"));
     testValues.set("cippo", Value::create_string(""));
 
-    md.set(Reftime::createPosition(core::Time(2006, 5, 4, 3, 2, 1)));
-    md.set(Origin::createGRIB1(1, 2, 3));
-    md.set(Product::createGRIB1(1, 2, 3));
-    md.set(Level::createGRIB1(114, 12, 34));
-    md.set(Timerange::createGRIB1(1, 1, 2, 3));
-    md.set<area::GRIB>(testValues);
-    md.set(Proddef::createGRIB(testValues));
+    md.test_set(Reftime::createPosition(core::Time(2006, 5, 4, 3, 2, 1)));
+    md.test_set(Origin::createGRIB1(1, 2, 3));
+    md.test_set(Product::createGRIB1(1, 2, 3));
+    md.test_set(Level::createGRIB1(114, 12, 34));
+    md.test_set(Timerange::createGRIB1(1, 1, 2, 3));
+    md.test_set<area::GRIB>(testValues);
+    md.test_set(Proddef::createGRIB(testValues));
     md.add_note("test note");
 }
 

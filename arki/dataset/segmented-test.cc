@@ -483,11 +483,11 @@ add_method("query_lots", [](Fixture& f) {
                                     month, day, hour, station, varid, value);
                             md->set_source_inline("vm2", metadata::DataManager::get().to_data("vm2", vector<uint8_t>(buf, buf+len)));
                             md->add_note("Generated from memory");
-                            md->set(Reftime::createPosition(Time(2013, month, day, hour, 0, 0)));
-                            md->set<area::VM2>(station);
-                            md->set(Product::createVM2(varid));
+                            md->test_set(Reftime::createPosition(Time(2013, month, day, hour, 0, 0)));
+                            md->test_set<area::VM2>(station);
+                            md->test_set(Product::createVM2(varid));
                             snprintf(buf, 40, "%d,,,000000000", value);
-                            md->set(types::Value::create(buf));
+                            md->test_set(types::Value::create(buf));
                             mds.acquire(std::move(md));
                         }
 

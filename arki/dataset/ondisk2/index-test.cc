@@ -8,6 +8,7 @@
 #include "arki/metadata/data.h"
 #include "arki/metadata/collection.h"
 #include "arki/types/source/blob.h"
+#include "arki/types/note.h"
 #include "arki/matcher.h"
 #include "arki/matcher/parser.h"
 #include "arki/summary.h"
@@ -44,13 +45,13 @@ std::shared_ptr<Metadata> make_md()
 {
     auto md = std::make_shared<Metadata>();
     md->set_source(types::Source::createBlobUnlocked("grib", "", "inbound/test.grib1", 10, 2000));
-    md->set("origin", "GRIB1(200, 10, 100)");
-    md->set("product", "GRIB1(3, 4, 5)");
-    md->set("level", "GRIB1(1, 2)");
-    md->set("timerange", "GRIB1(4, 5s, 6s)");
-    md->set("reftime", "2006-05-04T03:02:01Z");
-    md->set("area", "GRIB(foo=5,bar=5000,baz=-200)");
-    md->set("proddef", "GRIB(foo=5,bar=5000,baz=-200)");
+    md->test_set("origin", "GRIB1(200, 10, 100)");
+    md->test_set("product", "GRIB1(3, 4, 5)");
+    md->test_set("level", "GRIB1(1, 2)");
+    md->test_set("timerange", "GRIB1(4, 5s, 6s)");
+    md->test_set("reftime", "2006-05-04T03:02:01Z");
+    md->test_set("area", "GRIB(foo=5,bar=5000,baz=-200)");
+    md->test_set("proddef", "GRIB(foo=5,bar=5000,baz=-200)");
     md->add_note("this is a test");
     {
         File out("test-md.metadata", O_WRONLY | O_CREAT | O_TRUNC, 0666);
@@ -64,13 +65,13 @@ std::shared_ptr<Metadata> make_md1()
 {
     auto md1 = std::make_shared<Metadata>();
     md1->set_source(types::Source::createBlobUnlocked("grib", "", "inbound/test-sorted.grib1", 20, 40000));
-    md1->set("origin", "GRIB1(201, 11, 3)");
-    md1->set("product", "GRIB1(102, 103, 104)");
-    md1->set("level", "GRIB1(1, 3)");
-    md1->set("timerange", "GRIB1(4, 6s, 6s)");
-    md1->set("reftime", "2003-04-05T06:07:08Z");
-    md1->set("area", "GRIB(foo=5,bar=5000,baz=-200)");
-    md1->set("proddef", "GRIB(foo=5,bar=5000,baz=-200)");
+    md1->test_set("origin", "GRIB1(201, 11, 3)");
+    md1->test_set("product", "GRIB1(102, 103, 104)");
+    md1->test_set("level", "GRIB1(1, 3)");
+    md1->test_set("timerange", "GRIB1(4, 6s, 6s)");
+    md1->test_set("reftime", "2003-04-05T06:07:08Z");
+    md1->test_set("area", "GRIB(foo=5,bar=5000,baz=-200)");
+    md1->test_set("proddef", "GRIB(foo=5,bar=5000,baz=-200)");
     {
         // Index one without notes
         File out("test-md1.metadata", O_WRONLY | O_CREAT | O_TRUNC, 0666);
@@ -178,10 +179,11 @@ add_method("index", [] {
     metadata::Collection mdc;
     wassert(query_index(*test, parser.parse("origin:GRIB1,200"), mdc));
     wassert(actual(mdc.size()) == 1u);
-    wassert(actual(mdc[0].notes().size()) == 1u);
+    auto notes = mdc[0].notes();
+    wassert(actual(notes.second - notes.first) == 1u);
     core::Time time;
     std::string content;
-    mdc[0].notes()[0]->get(time, content);
+    reinterpret_cast<const types::Note*>(*notes.first)->get(time, content);
     wassert(actual(content) == "this is a test");
 
     mdc.clear();
@@ -297,13 +299,13 @@ add_method("concurrent", [] {
     // Now try to index another element
     Metadata md3;
     md3.set_source(Source::createBlobUnlocked("grib", "", "inbound/test.bufr", 10, 2000));
-    md3.set("origin", "GRIB1(202, 12, 102)");
-    md3.set("product", "GRIB1(3, 4, 5)");
-    md3.set("level", "GRIB1(1, 2)");
-    md3.set("timerange", "GRIB1(4, 5s, 6s)");
-    md3.set("reftime", "2006-05-04T03:02:01Z");
-    md3.set("area", "GRIB(foo=5,bar=5000,baz=-200)");
-    md3.set("proddef", "GRIB(foo=5,bar=5000,baz=-200)");
+    md3.test_set("origin", "GRIB1(202, 12, 102)");
+    md3.test_set("product", "GRIB1(3, 4, 5)");
+    md3.test_set("level", "GRIB1(1, 2)");
+    md3.test_set("timerange", "GRIB1(4, 5s, 6s)");
+    md3.test_set("reftime", "2006-05-04T03:02:01Z");
+    md3.test_set("area", "GRIB(foo=5,bar=5000,baz=-200)");
+    md3.test_set("proddef", "GRIB(foo=5,bar=5000,baz=-200)");
     md3.add_note("this is a test");
     {
         auto lock = make_shared<core::lock::Null>();
@@ -397,13 +399,13 @@ add_method("reproduce_old_issue1", [] {
     test->index(*md1, "test-md1", 0);
     Metadata md2;
     md2.set_source(Source::createBlobUnlocked("grib", "", "inbound/test.bufr", 10, 2000));
-    md2.set("origin", "GRIB1(202, 12, 102)");
-    md2.set("product", "GRIB1(3, 4, 5)");
-    md2.set("level", "GRIB1(1, 2)");
-    md2.set("timerange", "GRIB1(4, 5s, 6s)");
-    md2.set("reftime", "2005-01-15T12:00:00Z");
-    md2.set("area", "GRIB(foo=5,bar=5000,baz=-200)");
-    md2.set("proddef", "GRIB(foo=5,bar=5000,baz=-200)");
+    md2.test_set("origin", "GRIB1(202, 12, 102)");
+    md2.test_set("product", "GRIB1(3, 4, 5)");
+    md2.test_set("level", "GRIB1(1, 2)");
+    md2.test_set("timerange", "GRIB1(4, 5s, 6s)");
+    md2.test_set("reftime", "2005-01-15T12:00:00Z");
+    md2.test_set("area", "GRIB(foo=5,bar=5000,baz=-200)");
+    md2.test_set("proddef", "GRIB(foo=5,bar=5000,baz=-200)");
     test->index(md2, "test-md1", 0);
 
     p.commit();

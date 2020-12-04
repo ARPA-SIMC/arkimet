@@ -2,6 +2,7 @@
 #include "arki/metadata.h"
 #include "arki/dataset/query.h"
 #include "arki/dataset/progress.h"
+#include "arki/core/time.h"
 #include <ostream>
 
 using namespace std;
