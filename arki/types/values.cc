@@ -120,7 +120,7 @@ protected:
 	TYPE m_val;
 
 public:
-	Common(const TYPE& val) : m_val(val) {}
+	Common(const std::string& name, const TYPE& val) : Value(name), m_val(val) {}
 
     bool operator==(const Value& v) const override
     {
@@ -146,7 +146,7 @@ public:
 
 struct Integer : public Common<int>
 {
-	Integer(const int& val) : Common<int>(val) {}
+    Integer(const std::string& name, const int& val) : Common<int>(name, val) {}
 
     int compare(const Value& v) const override
     {
@@ -210,25 +210,25 @@ struct Integer : public Common<int>
         }
     }
 
-    static Integer* parse(const std::string& str);
+    static Integer* parse(const std::string& name, const std::string& str);
 
     void serialise(structured::Emitter& e) const override
     {
         e.add_int(m_val);
     }
 
-    Value* clone() const override { return new Integer(m_val); }
+    Value* clone() const override { return new Integer(m_name, m_val); }
 };
 
-Integer* Integer::parse(const std::string& str)
+Integer* Integer::parse(const std::string& name, const std::string& str)
 {
-	return new Integer(atoi(str.c_str()));
+    return new Integer(name, atoi(str.c_str()));
 }
 
 
 struct String : public Common<std::string>
 {
-	String(const std::string& val) : Common<std::string>(val) {}
+    String(const std::string& name, const std::string& val) : Common<std::string>(name, val) {}
 
     int sortKey() const override { return 2; }
 
@@ -277,19 +277,19 @@ struct String : public Common<std::string>
         e.add_string(m_val);
     }
 
-    Value* clone() const override { return new String(m_val); }
+    Value* clone() const override { return new String(m_name, m_val); }
 };
 
-Value* Value::decode(core::BinaryDecoder& dec)
+Value* Value::decode(const std::string& name, core::BinaryDecoder& dec)
 {
     uint8_t lead = dec.pop_byte("valuebag value type");
     switch ((lead >> 6) & 0x3)
     {
         case ENC_SINT6:
             if (lead & 0x20)
-                return new Integer(-((~(lead-1)) & 0x3f));
+                return new Integer(name, -((~(lead-1)) & 0x3f));
             else
-                return new Integer(lead & 0x3f);
+                return new Integer(name, lead & 0x3f);
         case ENC_NUMBER: {
             switch ((lead >> 4) & 0x3)
             {
@@ -297,7 +297,7 @@ Value* Value::decode(core::BinaryDecoder& dec)
                     // Sign in the next bit.  Number of bytes in the next 3 bits.
                     unsigned nbytes = (lead & 0x7) + 1;
                     unsigned val = dec.pop_uint(nbytes, "integer number value");
-                    return new Integer((lead & 0x8) ? -val : val);
+                    return new Integer(name, (lead & 0x8) ? -val : val);
                 }
                 case ENC_NUM_FLOAT:
                     throw std::runtime_error("cannot decode value: the number value to decode is a floating point number, but decoding floating point numbers is not currently implemented");
@@ -311,7 +311,7 @@ Value* Value::decode(core::BinaryDecoder& dec)
         }
         case ENC_NAME: {
             unsigned size = lead & 0x3f;
-            return new String(dec.pop_string(size, "valuebag string value"));
+            return new String(name, dec.pop_string(size, "valuebag string value"));
         }
         case ENC_EXTENDED:
             throw std::runtime_error("cannot decode value: the encoded value has an extended type, but no extended type is currently implemented");
@@ -320,13 +320,13 @@ Value* Value::decode(core::BinaryDecoder& dec)
     }
 }
 
-Value* Value::parse(const std::string& str)
+Value* Value::parse(const std::string& name, const std::string& str)
 {
 	size_t dummy;
-	return Value::parse(str, dummy);
+	return Value::parse(name, str, dummy);
 }
 
-Value* Value::parse(const std::string& str, size_t& lenParsed)
+Value* Value::parse(const std::string& name, const std::string& str, size_t& lenParsed)
 {
     size_t begin = skipSpaces(str, 0);
 
@@ -334,7 +334,7 @@ Value* Value::parse(const std::string& str, size_t& lenParsed)
     if (begin == str.size())
     {
         lenParsed = begin;
-        return new String(string());
+        return new String(name, string());
     }
 
 	// Handle the quoted string
@@ -348,7 +348,7 @@ Value* Value::parse(const std::string& str, size_t& lenParsed)
 		string res = str::decode_cstring(str.substr(begin), parsed);
 
         lenParsed = skipSpaces(str, begin + parsed);
-        return new String(res);
+        return new String(name, res);
     }
 
 	// No quoted string, so we can terminate the token at the next space, ',' or ';'
@@ -362,14 +362,14 @@ Value* Value::parse(const std::string& str, size_t& lenParsed)
     // spaces, return the number
     int val;
     if (parsesAsNumber(res, val))
-        return new Integer(val);
+        return new Integer(name, val);
 
     // Else return the string
-    return new String(res);
+    return new String(name, res);
 }
 
-Value* Value::create_integer(int val) { return new Integer(val); }
-Value* Value::create_string(const std::string& val) { return new String(val); }
+Value* Value::create_integer(const std::string& name, int val) { return new Integer(name, val); }
+Value* Value::create_string(const std::string& name, const std::string& val) { return new String(name, val); }
 
 }
 
@@ -405,28 +405,6 @@ ValueBag& ValueBag::operator=(const ValueBag& vb)
 	for (ValueBag::const_iterator i = vb.begin(); i != vb.end(); ++i)
 		inspos = insert(inspos, make_pair(i->first, i->second->clone()));
 	return *this;
-}
-
-bool ValueBag::operator<(const ValueBag& vb) const
-{
-	const_iterator a = begin();
-	const_iterator b = vb.begin();
-	for ( ; a != end() && b != vb.end(); ++a, ++b)
-	{
-		if (a->first < b->first)
-			return true;
-		if (a->first != b->first)
-			return false;
-		if (*a->second < *b->second)
-			return true;
-		if (*a->second != *b->second)
-			return false;
-	}
-	if (a == end() && b == vb.end())
-		return false;
-	if (a == end())
-		return true;
-	return false;
 }
 
 int ValueBag::compare(const ValueBag& vb) const
@@ -583,7 +561,7 @@ ValueBag ValueBag::decode(core::BinaryDecoder& dec)
         string key = dec.pop_string(key_len, "valuebag key");
 
         // Value
-        res.set(key, values::Value::decode(dec));
+        res.set(key, values::Value::decode(key, dec));
     }
     return res;
 }
@@ -610,9 +588,9 @@ ValueBag ValueBag::parse(const std::string& str)
 				throw_consistency_error("parsing key=value list", "found invalid extra characters \""+str.substr(begin)+"\" at the end of the list");
 			break;
 		}
-			
-		// Read the key
-		string key = str::strip(str.substr(begin, cur-begin));
+
+        // Read the key
+        std::string key = str::strip(str.substr(begin, cur-begin));
 
 		// Skip the '=' sign
 		++cur;
@@ -622,7 +600,7 @@ ValueBag ValueBag::parse(const std::string& str)
 
         // Parse the value
         size_t lenParsed;
-        unique_ptr<values::Value> val(values::Value::parse(str.substr(cur), lenParsed));
+        unique_ptr<values::Value> val(values::Value::parse(key, str.substr(cur), lenParsed));
 
         // Set the value
         if (val.get())
@@ -650,10 +628,10 @@ ValueBag ValueBag::parse(const structured::Reader& reader)
             case structured::NodeType::NONE:
                 break;
             case structured::NodeType::INT:
-                res.set(key, values::Value::create_integer(val.as_int("int value")));
+                res.set(key, values::Value::create_integer(key, val.as_int("int value")));
                 break;
             case structured::NodeType::STRING:
-                res.set(key, values::Value::create_string(val.as_string("string value")));
+                res.set(key, values::Value::create_string(key, val.as_string("string value")));
                 break;
             default:
                 throw std::runtime_error("cannot decode value " + key + ": value is neither integer nor string");
@@ -713,10 +691,10 @@ void ValueBag::load_lua_table(lua_State* L, int idx)
         switch (lua_type(L, -1))
         {
             case LUA_TNUMBER:
-                set(key, values::Value::create_integer(lua_tonumber(L, -1)));
+                set(key, values::Value::create_integer(key, lua_tonumber(L, -1)));
                 break;
             case LUA_TSTRING:
-                set(key, values::Value::create_string(lua_tostring(L, -1)));
+                set(key, values::Value::create_string(key, lua_tostring(L, -1)));
                 break;
             default:
             {
@@ -730,46 +708,6 @@ void ValueBag::load_lua_table(lua_State* L, int idx)
 	}
 	lua_pop(L, 1);
 }
-#endif
-
-#if 0
-
-template<typename Base>
-struct DataKeyVal : Base
-{
-	virtual bool match(const std::map<std::string, int>& wanted) const
-	{
-		// Both a and b are sorted, so we can iterate them linerly together
-
-		values_t::const_iterator a = values.begin();
-		std::map<std::string, int>::const_iterator b = wanted.begin();
-
-		while (a != values.end())
-		{
-			// Nothing else wanted anymore
-			if (b == wanted.end())
-				return true;
-			if (a->first < b->first)
-				// This value is not in the match expression
-				++a;
-			else if (b->first < a->first)
-				// This value is wanted but we don't have it
-				return false;
-			else if (a->second != b->second)
-				// Same key, check if the value is the same
-				return false;
-			else
-			{
-				// If also the value is the same, move on to the next item
-				++a;
-				++b;
-			}
-		}
-		// We got to the end of a.  If there are still things in b, we don't
-		// match.  If we are also to the end of b, then we matched everything
-		return b == wanted.end();
-	}
-};
 #endif
 
 }

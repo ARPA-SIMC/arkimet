@@ -193,7 +193,7 @@ public:
 
         // Set the product from the msg type
         types::ValueBag newvals;
-        newvals.set("t", types::values::Value::create_string(format_message_type(msg->get_type())));
+        newvals.set("t", format_message_type(msg->get_type()));
         product = Product::createBUFR(bulletin->data_category, bulletin->data_subcategory, bulletin->data_subcategory_local, newvals);
 
         // Set reference time from date and time if available

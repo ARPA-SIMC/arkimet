@@ -43,16 +43,16 @@ void fill(Metadata& md)
     using namespace arki::types::values;
 
     ValueBag testValues;
-    testValues.set("foo", Value::create_integer(5));
-    testValues.set("bar", Value::create_integer(5000));
-    testValues.set("baz", Value::create_integer(-200));
-    testValues.set("moo", Value::create_integer(0x5ffffff));
-    testValues.set("antani", Value::create_integer(-1));
-    testValues.set("blinda", Value::create_integer(0));
-    testValues.set("supercazzola", Value::create_integer(-1234567));
-    testValues.set("pippo", Value::create_string("pippo"));
-    testValues.set("pluto", Value::create_string("12"));
-    testValues.set("cippo", Value::create_string(""));
+    testValues.set("foo", 5);
+    testValues.set("bar", 5000);
+    testValues.set("baz", -200);
+    testValues.set("moo", 0x5ffffff);
+    testValues.set("antani", -1);
+    testValues.set("blinda", 0);
+    testValues.set("supercazzola", -1234567);
+    testValues.set("pippo", "pippo");
+    testValues.set("pluto", "12");
+    testValues.set("cippo", "");
 
     md.test_set(Reftime::createPosition(core::Time(2006, 5, 4, 3, 2, 1)));
     md.test_set(Origin::createGRIB1(1, 2, 3));

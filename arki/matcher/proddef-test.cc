@@ -25,13 +25,13 @@ add_method("grib", [] {
     arki::tests::fill(md);
 
     ValueBag testProddef2;
-    testProddef2.set("foo", Value::create_integer(15));
-    testProddef2.set("bar", Value::create_integer(15000));
-    testProddef2.set("baz", Value::create_integer(-1200));
-    testProddef2.set("moo", Value::create_integer(0x1ffffff));
-    testProddef2.set("antani", Value::create_integer(0));
-    testProddef2.set("blinda", Value::create_integer(-1));
-    testProddef2.set("supercazzola", Value::create_integer(-7654321));
+    testProddef2.set("foo", 15);
+    testProddef2.set("bar", 15000);
+    testProddef2.set("baz", -1200);
+    testProddef2.set("moo", 0x1ffffff);
+    testProddef2.set("antani", 0);
+    testProddef2.set("blinda", -1);
+    testProddef2.set("supercazzola", -7654321);
 
 	ensure_matches("proddef:GRIB:foo=5", md);
 	ensure_matches("proddef:GRIB:bar=5000", md);

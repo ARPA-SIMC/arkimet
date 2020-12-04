@@ -23,8 +23,14 @@ namespace values {
  */
 class Value
 {
+protected:
+    std::string m_name;
+
 public:
-	virtual ~Value() {}
+    Value(const std::string& name) : m_name(name) {}
+    virtual ~Value() {}
+
+    const std::string& name() const { return m_name; }
 
 	virtual bool operator==(const Value& v) const = 0;
 	virtual bool operator!=(const Value& v) const { return !operator==(v); }
@@ -47,7 +53,7 @@ public:
      *
      * @retval used The number of bytes decoded.
      */
-    static Value* decode(core::BinaryDecoder& dec);
+    static Value* decode(const std::string& name, core::BinaryDecoder& dec);
 
 	/**
 	 * Encode into a string representation
@@ -57,29 +63,29 @@ public:
     /// Send contents to an emitter
     virtual void serialise(structured::Emitter& e) const = 0;
 
-	/**
-	 * Parse from a string representation
-	 */
-	static Value* parse(const std::string& str);
+    /**
+     * Parse from a string representation
+     */
+    static Value* parse(const std::string& name, const std::string& str);
 
-	/**
-	 * Parse from a string representation
-	 */
-	static Value* parse(const std::string& str, size_t& lenParsed);
+    /**
+     * Parse from a string representation
+     */
+    static Value* parse(const std::string& name, const std::string& str, size_t& lenParsed);
 
-    static Value* create_integer(int val);
-    static Value* create_string(const std::string& val);
+    static Value* create_integer(const std::string& name, int val);
+    static Value* create_string(const std::string& name, const std::string& val);
 };
 }
 
 struct ValueBag : public std::map<std::string, values::Value*>
 {
+public:
 	ValueBag();
 	ValueBag(const ValueBag& vb);
 	~ValueBag();
 
 	ValueBag& operator=(const ValueBag& vb);
-	bool operator<(const ValueBag& vb) const;
 	bool operator==(const ValueBag& vb) const;
 	bool operator!=(const ValueBag& vb) const { return !operator==(vb); }
 	int compare(const ValueBag& vb) const;
@@ -103,6 +109,12 @@ struct ValueBag : public std::map<std::string, values::Value*>
      * It takes ownership of the Value pointer.
      */
     void set(const std::string& key, values::Value* val);
+
+    /// Set an integer value
+    void set(const std::string& key, int val) { set(key, values::Value::create_integer(key, val)); }
+
+    /// Set a string value
+    void set(const std::string& key, const std::string& val) { set(key, values::Value::create_string(key, val)); }
 
     /**
      * Encode into a compact binary representation

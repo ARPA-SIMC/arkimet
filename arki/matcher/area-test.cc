@@ -25,13 +25,13 @@ add_method("grib", [] {
     arki::tests::fill(md);
 
     ValueBag testArea2;
-    testArea2.set("foo", Value::create_integer(15));
-    testArea2.set("bar", Value::create_integer(5000));
-    testArea2.set("baz", Value::create_integer(-1200));
-    testArea2.set("moo", Value::create_integer(0x1ffffff));
-    testArea2.set("antani", Value::create_integer(0));
-    testArea2.set("blinda", Value::create_integer(-1));
-    testArea2.set("supercazzola", Value::create_integer(-7654321));
+    testArea2.set("foo", 15);
+    testArea2.set("bar", 5000);
+    testArea2.set("baz", -1200);
+    testArea2.set("moo", 0x1ffffff);
+    testArea2.set("antani", 0);
+    testArea2.set("blinda", -1);
+    testArea2.set("supercazzola", -7654321);
 
 	Matcher m;
 
@@ -151,13 +151,13 @@ add_method("bbox_coveredby", [] {
 add_method("odimh5", [] {
     using namespace arki::types::values;
     ValueBag testArea2;
-    testArea2.set("foo", Value::create_integer(15));
-    testArea2.set("bar", Value::create_integer(15000));
-    testArea2.set("baz", Value::create_integer(-1200));
-    testArea2.set("moo", Value::create_integer(0x1ffffff));
-    testArea2.set("antani", Value::create_integer(0));
-    testArea2.set("blinda", Value::create_integer(-1));
-    testArea2.set("supercazzola", Value::create_integer(-7654321));
+    testArea2.set("foo", 15);
+    testArea2.set("bar", 15000);
+    testArea2.set("baz", -1200);
+    testArea2.set("moo", 0x1ffffff);
+    testArea2.set("antani", 0);
+    testArea2.set("blinda", -1);
+    testArea2.set("supercazzola", -7654321);
 
 	//Matcher m;
 

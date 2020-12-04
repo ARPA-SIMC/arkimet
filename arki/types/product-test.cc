@@ -99,7 +99,7 @@ add_generic_test("bufr",
 add_method("bufr_details", [] {
     using namespace arki::types;
     ValueBag vb;
-    vb.set("name", values::Value::create_string("antani"));
+    vb.set("name", "antani");
     std::unique_ptr<Product> o = Product::createBUFR(1, 2, 3, vb);
     wassert(actual(o->style()) == Product::Style::BUFR);
     unsigned ty, su, lo;
