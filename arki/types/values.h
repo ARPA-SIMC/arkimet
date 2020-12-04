@@ -32,10 +32,10 @@ public:
 
     const std::string& name() const { return m_name; }
 
-	virtual bool operator==(const Value& v) const = 0;
-	virtual bool operator!=(const Value& v) const { return !operator==(v); }
-	virtual bool operator<(const Value& v) const = 0;
-	virtual int compare(const Value& v) const = 0;
+    virtual bool operator==(const Value& v) const = 0;
+    virtual bool operator!=(const Value& v) const { return !operator==(v); }
+    virtual int compare(const Value& v) const = 0;
+    virtual bool value_equals(const Value& v) const = 0;
 
 	// Provide a unique sorting key to allow sorting of values of different
 	// types.

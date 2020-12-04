@@ -37,12 +37,12 @@ add_method("comparison", [] {
     wassert_true(*vs1 != *vs3);
     wassert_true(*vs2 != *vs3);
 
-    wassert_true(*vi1 < *vi3);
-    wassert_false(*vi1 < *vi1);
-    wassert_false(*vi3 < *vi1);
-    wassert_true(*vs1 < *vs3);
-    wassert_false(*vs1 < *vs1);
-    wassert_false(*vs3 < *vs1);
+    wassert(actual(vi1->compare(*vi3)) < 0);
+    wassert(actual(vi1->compare(*vi1)) == 0);
+    wassert(actual(vi3->compare(*vi1)) > 0);
+    wassert(actual(vs1->compare(*vs3)) < 0);
+    wassert(actual(vs1->compare(*vs1)) == 0);
+    wassert(actual(vs3->compare(*vs1)) > 0);
 });
 
 // Check encoding

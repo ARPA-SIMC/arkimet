@@ -117,25 +117,26 @@ template<typename TYPE>
 class Common : public Value
 {
 protected:
-	TYPE m_val;
+    TYPE m_val;
 
 public:
-	Common(const std::string& name, const TYPE& val) : Value(name), m_val(val) {}
+    Common(const std::string& name, const TYPE& val) : Value(name), m_val(val) {}
 
     bool operator==(const Value& v) const override
     {
-		const Common<TYPE>* vi = dynamic_cast<const Common<TYPE>*>(&v);
-		if (vi == 0)
-			return false;
-		return m_val == vi->m_val;
+        if (name() != v.name()) return false;
+        const Common<TYPE>* vi = dynamic_cast<const Common<TYPE>*>(&v);
+        if (!vi) return false;
+        return m_val == vi->m_val;
     }
-    bool operator<(const Value& v) const override
+
+    int compare(const Value& v) const override
     {
-		const Common<TYPE>* vi = dynamic_cast<const Common<TYPE>*>(&v);
-		if (vi == 0)
-			return false;
-		return m_val < vi->m_val;
+        if (name() < v.name()) return -1;
+        if (name() > v.name()) return 1;
+        return 0;
     }
+
     std::string toString() const override
     {
         stringstream ss;
@@ -150,11 +151,20 @@ struct Integer : public Common<int>
 
     int compare(const Value& v) const override
     {
-		if (const Integer* v1 = dynamic_cast< const Integer* >(&v))
-			return m_val - v1->m_val;
-		else
-			return sortKey() - v.sortKey();
-	}
+        if (int res = Common<int>::compare(v)) return res;
+        if (const Integer* v1 = dynamic_cast<const Integer*>(&v))
+            return m_val - v1->m_val;
+        else
+            return sortKey() - v.sortKey();
+    }
+
+    bool value_equals(const Value& v) const override
+    {
+        if (const Integer* v1 = dynamic_cast<const Integer*>(&v))
+            return m_val == v1->m_val;
+        else
+            return false;
+    }
 
     int sortKey() const override { return 1; }
 
@@ -234,14 +244,23 @@ struct String : public Common<std::string>
 
     int compare(const Value& v) const override
     {
-		if (const String* v1 = dynamic_cast< const String* >(&v))
-		{
+        if (int res = Common<std::string>::compare(v)) return res;
+        if (const String* v1 = dynamic_cast<const String*>(&v))
+        {
 			if (m_val < v1->m_val) return -1;
 			if (m_val > v1->m_val) return 1;
 			return 0;
 		}
 		else
 			return sortKey() - v.sortKey();
+    }
+
+    bool value_equals(const Value& v) const override
+    {
+        if (const String* v1 = dynamic_cast<const String*>(&v))
+            return m_val == v1->m_val;
+        else
+            return false;
     }
 
     void encode(core::BinaryEncoder& enc) const override
@@ -421,13 +440,8 @@ int ValueBag::compare(const ValueBag& vb) const
     auto a = values.begin();
     auto b = vb.values.begin();
     for ( ; a != values.end() && b != vb.values.end(); ++a, ++b)
-    {
-        if ((*a)->name() < (*b)->name())
-            return -1;
-        if ((*a)->name() > (*b)->name())
-            return 1;
-        if (int res = (*a)->compare(**b)) return res;
-    }
+        if (int res = (*a)->compare(**b))
+            return res;
     if (a == values.end() && b == vb.values.end())
         return 0;
     if (a == values.end())
@@ -457,7 +471,7 @@ bool ValueBag::contains(const ValueBag& vb) const
             // This value is wanted but we don't have it
             return false;
 
-        if (**a != **b)
+        if (!(*a)->value_equals(**b))
             // Same key, check if the value is the same
             return false;
 
@@ -475,7 +489,7 @@ bool ValueBag::operator==(const ValueBag& vb) const
     auto a = values.begin();
     auto b = vb.values.begin();
     for ( ; a != values.end() && b != vb.values.end(); ++a, ++b)
-        if ((*a)->name() != (*b)->name() || **a != **b)
+        if (**a != **b)
             return false;
     return a == values.end() && b == vb.values.end();
 }
