@@ -143,6 +143,14 @@ public:
         ss << m_val;
         return ss.str();
     }
+
+    void encode(core::BinaryEncoder& enc) const override
+    {
+        // Key length
+        enc.add_unsigned(m_name.size(), 1);
+        // Key
+        enc.add_raw(m_name);
+    }
 };
 
 struct Integer : public Common<int>
@@ -172,6 +180,7 @@ struct Integer : public Common<int>
 
     void encode(core::BinaryEncoder& enc) const override
     {
+        Common<int>::encode(enc);
         if (m_val >= -32 && m_val < 31)
         {
             // If it's a small one, encode in the remaining 6 bits
@@ -265,6 +274,7 @@ struct String : public Common<std::string>
 
     void encode(core::BinaryEncoder& enc) const override
     {
+        Common<std::string>::encode(enc);
         if (m_val.size() < 64)
         {
             uint8_t type = ENC_NAME << 6;
@@ -537,10 +547,6 @@ void ValueBag::encode(core::BinaryEncoder& enc) const
 {
     for (const auto& v: values)
     {
-        // Key length
-        enc.add_unsigned(v->name().size(), 1);
-        // Key
-        enc.add_raw(v->name());
         // Value
         v->encode(enc);
     }
