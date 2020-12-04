@@ -33,13 +33,7 @@ public:
     Encoded(const uint8_t* buf, unsigned size, bool owned);
 
     Encoded(const Encoded&) = delete;
-
-    Encoded(Encoded&& o)
-        : data(o.data), size(o.size)
-    {
-        o.data = nullptr;
-        o.size = 0;
-    }
+    Encoded(Encoded&& o) = delete;
 
     ~Encoded();
 
