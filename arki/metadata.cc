@@ -158,21 +158,6 @@ void Metadata::clear_notes()
 const std::vector<types::Note*>& Metadata::notes() const
 {
     return m_notes;
-#if 0
-    std::vector<types::Note> res;
-    core::BinaryDecoder dec(m_notes);
-    while (dec)
-    {
-        types::Code el_type;
-        core::BinaryDecoder inner = dec.pop_type_envelope(el_type);
-
-        if (el_type != TYPE_NOTE)
-            throw std::runtime_error("cannot decode note: item type is not a note");
-
-        res.emplace_back(std::move(*types::Note::decode(inner, false)));
-    }
-    return res;
-#endif
 }
 
 void Metadata::encode_notes(core::BinaryEncoder& enc) const
@@ -180,15 +165,6 @@ void Metadata::encode_notes(core::BinaryEncoder& enc) const
     for (const auto& n: m_notes)
         n->encodeBinary(enc);
 }
-
-#if 0
-void Metadata::set_notes(const std::vector<types::Note>& notes)
-{
-    m_notes.clear();
-    for (std::vector<types::Note>::const_iterator i = notes.begin(); i != notes.end(); ++i)
-        add_note(*i);
-}
-#endif
 
 void Metadata::set_notes_encoded(const std::vector<uint8_t>& notes)
 {

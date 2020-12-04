@@ -50,7 +50,16 @@ struct ReadContext
 class Formatter;
 
 /**
- * Metadata information about a message
+ * Metadata information about a message.
+ *
+ * Binary representation of metadata:
+ *  - 'MD'
+ *  - 2b version (currently always 0)
+ *  - 4b length
+ *  - sequence of Type::encodeBinary for all types except NOTE and SOURCE,
+ *    ordered by type_code
+ *  - sequence of Type::encodeBinary for all NOTE types, in order of insertion
+ *  - Type::encodeBinary of the SOURCE metadata
  */
 struct Metadata
 {
