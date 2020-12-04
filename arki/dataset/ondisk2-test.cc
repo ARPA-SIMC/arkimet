@@ -90,9 +90,8 @@ add_method("replace", [](Fixture& f) {
         auto writer = f.makeOndisk2Writer();
         if (writer->acquire(mdc[0], dataset::REPLACE_ALWAYS) != dataset::ACQ_OK)
         {
-            std::vector<Note> notes = mdc[0].notes();
-            for (size_t i = 0; i < notes.size(); ++i)
-                cerr << " md note: " << notes[i] << endl;
+            for (const auto& n: mdc[0].notes())
+                cerr << " md note: " << *n << endl;
             wassert(throw TestFailed("acquire result was not ACQ_OK"));
         }
         writer->flush();

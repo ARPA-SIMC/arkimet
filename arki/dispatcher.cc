@@ -224,7 +224,7 @@ void TestDispatcher::dispatch(dataset::WriterBatch& batch, bool drop_cached_data
         {
             core::Time time;
             std::string content;
-            note.get(time, content);
+            note->get(time, content);
             nag::verbose("    %s", content.c_str());
         }
     }

@@ -295,12 +295,12 @@ struct get_notes : public MethNoargs<get_notes, arkipy_Metadata>
     static PyObject* run(Impl* self)
     {
         try {
-            std::vector<types::Note> notes = self->md->notes();
+            auto notes = self->md->notes();
             pyo_unique_ptr res(throw_ifnull(PyList_New(notes.size())));
             for (unsigned idx = 0; idx < notes.size(); ++idx)
             {
                 arki::python::PythonEmitter e;
-                notes[idx].serialise(e, arki::structured::keys_python);
+                notes[idx]->serialise(e, arki::structured::keys_python);
                 // Note This macro “steals” a reference to item, and, unlike
                 // PyList_SetItem(), does not discard a reference to any item
                 // that is being replaced; any reference in list at position i

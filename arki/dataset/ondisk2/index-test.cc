@@ -181,7 +181,7 @@ add_method("index", [] {
     wassert(actual(mdc[0].notes().size()) == 1u);
     core::Time time;
     std::string content;
-    mdc[0].notes()[0].get(time, content);
+    mdc[0].notes()[0]->get(time, content);
     wassert(actual(content) == "this is a test");
 
     mdc.clear();

@@ -65,7 +65,7 @@ protected:
     types::ItemSet m_items;
 
     /// Annotations, kept binary-serialized to string
-    std::vector<uint8_t> m_notes;
+    std::vector<types::Note*> m_notes;
 
     /// Source of this data
     types::Source* m_source = nullptr;
@@ -159,7 +159,7 @@ public:
      */
 
     void clear_notes();
-    std::vector<types::Note> notes() const;
+    const std::vector<types::Note*>& notes() const;
     void encode_notes(core::BinaryEncoder& enc) const;
     void set_notes_encoded(const std::vector<uint8_t>& notes);
     void add_note(const std::string& note);

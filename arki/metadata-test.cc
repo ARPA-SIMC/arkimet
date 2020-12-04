@@ -73,7 +73,7 @@ struct Fixture : public arki::utils::tests::Fixture
         wassert(actual(md.notes().size()) == 1u);
         core::Time time;
         std::string content;
-        md.notes().begin()->get(time, content);
+        md.notes().front()->get(time, content);
         wassert(actual(content) == "test note");
     }
 };

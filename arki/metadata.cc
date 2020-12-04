@@ -61,6 +61,8 @@ Metadata::Metadata(const uint8_t* encoded, unsigned size)
 
 Metadata::~Metadata()
 {
+    for (auto& n: m_notes)
+        delete n;
     delete m_encoded;
     delete m_source;
 }
@@ -69,7 +71,8 @@ std::shared_ptr<Metadata> Metadata::clone() const
 {
     auto res = std::make_shared<Metadata>();
     res->m_items = m_items;
-    res->m_notes = m_notes;
+    for (const auto& n: m_notes)
+        res->m_notes.emplace_back(n->clone());
     res->m_source = m_source ? m_source->clone() : nullptr;
     res->m_data = m_data;
     return res;
@@ -147,11 +150,15 @@ void Metadata::unset_source()
 
 void Metadata::clear_notes()
 {
+    for (auto& n: m_notes)
+        delete n;
     m_notes.clear();
 }
 
-std::vector<types::Note> Metadata::notes() const
+const std::vector<types::Note*>& Metadata::notes() const
 {
+    return m_notes;
+#if 0
     std::vector<types::Note> res;
     core::BinaryDecoder dec(m_notes);
     while (dec)
@@ -165,11 +172,13 @@ std::vector<types::Note> Metadata::notes() const
         res.emplace_back(std::move(*types::Note::decode(inner, false)));
     }
     return res;
+#endif
 }
 
 void Metadata::encode_notes(core::BinaryEncoder& enc) const
 {
-    enc.add_raw(m_notes);
+    for (const auto& n: m_notes)
+        n->encodeBinary(enc);
 }
 
 #if 0
@@ -183,25 +192,35 @@ void Metadata::set_notes(const std::vector<types::Note>& notes)
 
 void Metadata::set_notes_encoded(const std::vector<uint8_t>& notes)
 {
-    m_notes = notes;
+    clear_notes();
+    core::BinaryDecoder dec(notes);
+    while (dec)
+    {
+        TypeCode el_type;
+        core::BinaryDecoder inner = dec.pop_type_envelope(el_type);
+
+        auto n = types::Type::decode_inner(el_type, inner, false);
+        m_notes.emplace_back(reinterpret_cast<types::Note*>(n.release()));
+    }
 }
 
 void Metadata::add_note(const types::Note& note)
 {
-    core::BinaryEncoder enc(m_notes);
-    note.encodeBinary(enc);
+    m_notes.emplace_back(note.clone());
 }
 
 void Metadata::add_note(const std::string& note)
 {
-    core::BinaryEncoder enc(m_notes);
-    Note::create(note)->encodeBinary(enc);
+    m_notes.emplace_back(Note::create(note).release());
 }
 
 bool Metadata::operator==(const Metadata& m) const
 {
     if (m_items != m.m_items) return false;
-    if (m_notes != m.m_notes) return false;
+    if (m_notes.size() != m.m_notes.size()) return false;
+    for (unsigned i = 0; i < m_notes.size(); ++i)
+        if (*m_notes[i] != *m.m_notes[i])
+            return false;
     return Type::nullable_equals(m_source, m.m_source);
 }
 
@@ -308,17 +327,17 @@ std::shared_ptr<Metadata> Metadata::read_binary_inner(core::BinaryDecoder& dec, 
     core::BinaryDecoder mddec(res->m_encoded, res->m_encoded_size);
     while (mddec)
     {
-        const uint8_t* encoded_start = mddec.buf;
         TypeCode el_type;
         core::BinaryDecoder inner = mddec.pop_type_envelope(el_type);
-        const uint8_t* encoded_end = mddec.buf;
 
         switch (el_type)
         {
             case TYPE_NOTE:
-                // TODO: just store a vector of Note objects pointing to mddec
-                res->m_notes.insert(res->m_notes.end(), encoded_start, encoded_end);
+            {
+                auto n = types::Type::decode_inner(el_type, inner, true);
+                res->m_notes.emplace_back(reinterpret_cast<Note*>(n.release()));
                 break;
+            }
             case TYPE_SOURCE:
                 res->set_source(types::Source::decodeRelative(inner, rc.basedir));
                 break;
@@ -459,17 +478,16 @@ std::string Metadata::to_yaml(const Formatter* formatter) const
         buf << endl;
     }
 
-    vector<Note> l(notes());
-    if (l.empty())
+    if (m_notes.empty())
         return buf.str();
     buf << "Note: ";
-    if (l.size() == 1)
-        buf << *l.begin() << endl;
+    if (m_notes.size() == 1)
+        buf << *m_notes.front() << endl;
     else
     {
         buf << endl;
-        for (const auto& note: l)
-            buf << " " << note << endl;
+        for (const auto& note: m_notes)
+            buf << " " << *note << endl;
     }
 
     return buf.str();
@@ -498,9 +516,8 @@ void Metadata::serialise(structured::Emitter& e, const structured::Keys& keys, c
     e.end_list();
     e.add(keys.metadata_notes);
     e.start_list();
-    std::vector<types::Note> n = notes();
-    for (const auto& note: n)
-        note.serialise(e, keys, f);
+    for (const auto& note: m_notes)
+        note->serialise(e, keys, f);
     e.end_list();
     e.end_mapping();
 
@@ -565,7 +582,8 @@ void Metadata::encodeBinary(core::BinaryEncoder& enc) const
     core::BinaryEncoder subenc(encoded);
     for (const auto& i: m_items)
         i.second->encodeBinary(subenc);
-    subenc.add_raw(m_notes);
+    for (const auto& n: m_notes)
+        n->encodeBinary(subenc);
     if (m_source)
        m_source->encodeBinary(subenc);
 

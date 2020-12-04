@@ -138,7 +138,7 @@ struct ConcurrentImporter : public subprocess::Child
                     {
                         core::Time time;
                         std::string content;
-                        note.get(time, content);
+                        note->get(time, content);
                         fprintf(stderr, "  note: %s\n", content.c_str());
                     }
                     return 2;
