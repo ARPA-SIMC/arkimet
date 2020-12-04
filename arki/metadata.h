@@ -73,6 +73,8 @@ protected:
     /// Inline data, or cached version of previously read data
     std::shared_ptr<metadata::Data> m_data;
 
+    void add_note(const types::Note& note);
+
 public:
     Metadata();
     /// Create an empty metadata with a copy of the given buffer as encoded
@@ -131,6 +133,10 @@ public:
         test_set(types::decodeString(types::parseCodeName(type.c_str()), val));
     }
 
+    /*
+     * Source access and manipulation
+     */
+
     /// Check if a source has been set
     bool has_source() const { return m_source; }
     /// Return the source if present, else raise an exception
@@ -148,11 +154,14 @@ public:
     /// Unsets the source
     void unset_source();
 
+    /*
+     * Notes access and manipulation
+     */
+
+    void clear_notes();
     std::vector<types::Note> notes() const;
     const std::vector<uint8_t>& notes_encoded() const;
-    void set_notes(const std::vector<types::Note>& notes);
     void set_notes_encoded(const std::vector<uint8_t>& notes);
-    void add_note(const types::Note& note);
     void add_note(const std::string& note);
 
 	/**

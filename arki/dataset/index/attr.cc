@@ -248,4 +248,3 @@ std::vector<int> Attrs::obtainIDs(const Metadata& md) const
 }
 }
 }
-// vim:set ts=4 sw=4:

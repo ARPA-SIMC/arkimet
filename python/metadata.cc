@@ -322,7 +322,7 @@ struct del_notes : public MethNoargs<del_notes, arkipy_Metadata>
     static PyObject* run(Impl* self)
     {
         try {
-            self->md->set_notes(std::vector<types::Note>());
+            self->md->clear_notes();
             Py_RETURN_NONE;
         } ARKI_CATCH_RETURN_PYO
     }

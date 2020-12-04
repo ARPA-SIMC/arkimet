@@ -145,6 +145,11 @@ void Metadata::unset_source()
     m_source = 0;
 }
 
+void Metadata::clear_notes()
+{
+    m_notes.clear();
+}
+
 std::vector<types::Note> Metadata::notes() const
 {
     std::vector<types::Note> res;
@@ -167,12 +172,14 @@ const std::vector<uint8_t>& Metadata::notes_encoded() const
     return m_notes;
 }
 
+#if 0
 void Metadata::set_notes(const std::vector<types::Note>& notes)
 {
     m_notes.clear();
     for (std::vector<types::Note>::const_iterator i = notes.begin(); i != notes.end(); ++i)
         add_note(*i);
 }
+#endif
 
 void Metadata::set_notes_encoded(const std::vector<uint8_t>& notes)
 {
