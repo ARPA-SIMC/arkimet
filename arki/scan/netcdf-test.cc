@@ -30,11 +30,14 @@ add_method("validator_4", [] {
     validator.validate_file(in, 0, 9487);
 });
 
-add_method("validator_5", [] {
-    sys::File in("inbound/netcdf/empty1-5.nc", O_RDONLY);
-    const scan::Validator& validator = scan::netcdf::validator();
-    validator.validate_file(in, 0, 1988);
-});
+// NetCDF 5 does not seem supported on Centos 7 (see https://github.com/ARPA-SIMC/arkimet/issues/243)
+// and we currently do not need to support it.
+//
+// add_method("validator_5", [] {
+//     sys::File in("inbound/netcdf/empty1-5.nc", O_RDONLY);
+//     const scan::Validator& validator = scan::netcdf::validator();
+//     validator.validate_file(in, 0, 1988);
+// });
 
 add_method("validator_6", [] {
     sys::File in("inbound/netcdf/empty1-6.nc", O_RDONLY);

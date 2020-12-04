@@ -79,12 +79,15 @@ class TestScanNetCDF(unittest.TestCase):
         md = self.read("inbound/netcdf/empty1-4.nc", 9487)
         self.assert_empty1_contents(md)
 
-    def test_nc5(self):
-        """
-        Scan a NetCDF 5 file
-        """
-        md = self.read("inbound/netcdf/empty1-5.nc", 1988)
-        self.assert_empty1_contents(md)
+    # NetCDF 5 does not seem supported on Centos 7 (see https://github.com/ARPA-SIMC/arkimet/issues/243)
+    # and we currently do not need to support it.
+    # 
+    # def test_nc5(self):
+    #     """
+    #     Scan a NetCDF 5 file
+    #     """
+    #     md = self.read("inbound/netcdf/empty1-5.nc", 1988)
+    #     self.assert_empty1_contents(md)
 
     def test_nc6(self):
         """

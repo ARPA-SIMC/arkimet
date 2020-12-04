@@ -16,7 +16,7 @@ dist_doc_DATA = \
 		mhooks-arki-bufr-prepare \
 		mhooks-arki-server \
 		mhooks-arki-testtar \
-		mhooks-arki-proxy
+		mhooks-arki-web-proxy
 
 CLEANFILES =
 
