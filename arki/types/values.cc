@@ -163,29 +163,6 @@ int Value::compare_values(const Value& v) const
 class EncodedInt : public Value
 {
 protected:
-    unsigned encoded_size() const override
-    {
-        // Size of the key size and key
-        unsigned size = data[0] + 1;
-
-        uint8_t lead = data[size++];
-        switch ((lead >> 6) & 0x3)
-        {
-            case ENC_SINT6: break;
-            case ENC_NUMBER:
-                switch ((lead >> 4) & 0x3)
-                {
-                    case ENC_NUM_INTEGER:
-                        // Sign in the next bit.  Number of bytes in the next 3 bits.
-                        size += (lead & 0x7) + 1;
-                        break;
-                }
-                break;
-        }
-
-        return size;
-    }
-
     bool value_equals(const Value& v) const override
     {
         const EncodedInt* e = reinterpret_cast<const EncodedInt*>(&v);
@@ -203,37 +180,7 @@ public:
 
     unsigned type_id() const override { return 1; }
 
-    EncodedInt* clone() const
-    {
-        return new EncodedInt(data, encoded_size());
-    }
-
-    int value() const
-    {
-        // Skip key
-        unsigned pos = data[0] + 1;
-        uint8_t lead = data[pos];
-        switch ((lead >> 6) & 0x3)
-        {
-            case ENC_SINT6:
-                if (lead & 0x20)
-                    return -((~(lead-1)) & 0x3f);
-                else
-                    return lead & 0x3f;
-            case ENC_NUMBER:
-                switch ((lead >> 4) & 0x3)
-                {
-                    case ENC_NUM_INTEGER: {
-                        // Sign in the next bit.  Number of bytes in the next 3 bits.
-                        unsigned nbytes = (lead & 0x7) + 1;
-                        unsigned val = core::BinaryDecoder::decode_uint(data + pos + 1, nbytes);
-                        return (lead & 0x8) ? -val : val;
-                    }
-                }
-                break;
-        }
-        return 0;
-    }
+    virtual int value() const = 0;
 
     void serialise(structured::Emitter& e) const override
     {
@@ -244,6 +191,80 @@ public:
     std::string toString() const override
     {
         return std::to_string(value());
+    }
+};
+
+
+class EncodedSInt6 : public EncodedInt
+{
+    unsigned encoded_size() const override
+    {
+        // Size of the key size and key, and one byte of type and number
+        return data[0] + 2;
+    }
+
+public:
+    using EncodedInt::EncodedInt;
+
+    EncodedSInt6* clone() const
+    {
+        return new EncodedSInt6(data, encoded_size());
+    }
+
+    int value() const override
+    {
+        uint8_t lead = data[data[0] + 1];
+        if (lead & 0x20)
+            return -((~(lead-1)) & 0x3f);
+        else
+            return lead & 0x3f;
+    }
+};
+
+
+class EncodedNumber : public EncodedInt
+{
+protected:
+    unsigned encoded_size() const override
+    {
+        // Size of the key size and key
+        unsigned size = data[0] + 1;
+
+        uint8_t lead = data[size++];
+        switch ((lead >> 4) & 0x3)
+        {
+            case ENC_NUM_INTEGER:
+                // Sign in the next bit.  Number of bytes in the next 3 bits.
+                size += (lead & 0x7) + 1;
+                break;
+        }
+
+        return size;
+    }
+
+public:
+    using EncodedInt::EncodedInt;
+
+    EncodedNumber* clone() const
+    {
+        return new EncodedNumber(data, encoded_size());
+    }
+
+    int value() const override
+    {
+        // Skip key
+        unsigned pos = data[0] + 1;
+        uint8_t lead = data[pos];
+        switch ((lead >> 4) & 0x3)
+        {
+            case ENC_NUM_INTEGER: {
+                // Sign in the next bit.  Number of bytes in the next 3 bits.
+                unsigned nbytes = (lead & 0x7) + 1;
+                unsigned val = core::BinaryDecoder::decode_uint(data + pos + 1, nbytes);
+                return (lead & 0x8) ? -val : val;
+            }
+        }
+        return 0;
     }
 };
 
@@ -324,7 +345,7 @@ Value* Value::decode(core::BinaryDecoder& dec)
     switch ((lead >> 6) & 0x3)
     {
         case ENC_SINT6:
-            return new EncodedInt(begin, dec.buf - begin);
+            return new EncodedSInt6(begin, dec.buf - begin);
         case ENC_NUMBER: {
             switch ((lead >> 4) & 0x3)
             {
@@ -333,7 +354,7 @@ Value* Value::decode(core::BinaryDecoder& dec)
                     // Sign in the next bit.  Number of bytes in the next 3 bits.
                     unsigned nbytes = (lead & 0x7) + 1;
                     dec.skip(nbytes, "integer number value");
-                    return new EncodedInt(begin, dec.buf - begin);
+                    return new EncodedNumber(begin, dec.buf - begin);
                 }
                 case ENC_NUM_FLOAT:
                     throw std::runtime_error("cannot decode value: the number value to decode is a floating point number, but decoding floating point numbers is not currently implemented");
@@ -424,6 +445,7 @@ Value* Value::create_integer(const std::string& name, int val)
             encoded |= (val & 0x3f);
         }
         enc.add_raw(&encoded, 1u);
+        return new values::EncodedSInt6(buf.data(), buf.size());
     }
     else
     {
@@ -458,9 +480,9 @@ Value* Value::create_integer(const std::string& name, int val)
         type |= (nbytes-1);
         enc.add_raw(&type, 1u);
         enc.add_unsigned(encoded, nbytes);
-    }
 
-    return new values::EncodedInt(buf.data(), buf.size());
+        return new values::EncodedNumber(buf.data(), buf.size());
+    }
 }
 
 Value* Value::create_string(const std::string& name, const std::string& val)
