@@ -3,6 +3,7 @@
 #include "arki/matcher/parser.h"
 #include "arki/metadata.h"
 #include "arki/types/product.h"
+#include "arki/types/values.h"
 
 using namespace std;
 using namespace arki::tests;
@@ -48,8 +49,7 @@ add_method("bufr", [] {
     Metadata md;
     arki::tests::fill(md);
 
-    ValueBag vb;
-    vb.set("name", values::Value::create_string("antani"));
+    ValueBag vb = ValueBag::parse("name=antani");
     md.test_set(Product::createBUFR(1, 2, 3, vb));
 
 	ensure_matches("product:BUFR", md);

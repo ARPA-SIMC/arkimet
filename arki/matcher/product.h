@@ -3,7 +3,7 @@
 
 #include <arki/matcher.h>
 #include <arki/matcher/utils.h>
-#include <arki/types/product.h>
+#include <arki/types/values.h>
 
 namespace arki {
 namespace matcher {
@@ -54,7 +54,7 @@ struct MatchProductBUFR : public MatchProduct
     int type;
     int subtype;
     int localsubtype;
-    types::ValueBag values;
+    types::ValueBagMatcher values;
 
     MatchProductBUFR(const std::string& pattern);
     bool matchItem(const types::Type& o) const override;
@@ -79,7 +79,7 @@ struct MatchProductVM2 : public MatchProduct
 {
     // This is -1 when should be ignored
     int variable_id;
-    types::ValueBag expr;
+    types::ValueBagMatcher expr;
     std::vector<int> idlist;
 
     MatchProductVM2(const std::string& pattern);

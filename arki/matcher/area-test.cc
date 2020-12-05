@@ -3,6 +3,7 @@
 #include "arki/matcher/parser.h"
 #include "arki/metadata.h"
 #include "arki/types/area.h"
+#include "arki/types/values.h"
 
 using namespace std;
 using namespace arki::tests;
@@ -20,18 +21,11 @@ class Tests : public TestCase
 void Tests::register_tests() {
 
 add_method("grib", [] {
-    using namespace arki::types::values;
     Metadata md;
     arki::tests::fill(md);
 
-    ValueBag testArea2;
-    testArea2.set("foo", Value::create_integer(15));
-    testArea2.set("bar", Value::create_integer(5000));
-    testArea2.set("baz", Value::create_integer(-1200));
-    testArea2.set("moo", Value::create_integer(0x1ffffff));
-    testArea2.set("antani", Value::create_integer(0));
-    testArea2.set("blinda", Value::create_integer(-1));
-    testArea2.set("supercazzola", Value::create_integer(-7654321));
+    // 0x1ffffff = 33554431
+    ValueBag testArea2 = ValueBag::parse("foo=15, bar=15000, baz=-1200, moo=33554431, antani=0, blinda=-1, supercazzola=-7654321");
 
 	Matcher m;
 
@@ -150,14 +144,9 @@ add_method("bbox_coveredby", [] {
 // Try matching Area with ODIMH5
 add_method("odimh5", [] {
     using namespace arki::types::values;
-    ValueBag testArea2;
-    testArea2.set("foo", Value::create_integer(15));
-    testArea2.set("bar", Value::create_integer(15000));
-    testArea2.set("baz", Value::create_integer(-1200));
-    testArea2.set("moo", Value::create_integer(0x1ffffff));
-    testArea2.set("antani", Value::create_integer(0));
-    testArea2.set("blinda", Value::create_integer(-1));
-    testArea2.set("supercazzola", Value::create_integer(-7654321));
+
+    // 0x1ffffff = 33554431
+    ValueBag testArea2 = ValueBag::parse("foo=15, bar=15000, baz=-1200, moo=33554431, antani=0, blinda=-1, supercazzola=-7654321");
 
 	//Matcher m;
 

@@ -6,9 +6,14 @@
 #include "arki/structured/emitter.h"
 #include "arki/structured/memory.h"
 #include <memory>
+#include <cstring>
 #include <cstdlib>
 #include <cctype>
 #include <cstdio>
+#include <algorithm>
+#ifdef __cpp_lib_string_view
+#include <string_view>
+#endif
 
 #ifdef HAVE_LUA
 extern "C" {
@@ -17,29 +22,8 @@ extern "C" {
 }
 #endif
 
-using namespace std;
 using namespace arki::utils;
 
-#if 0
-static void dump(const char* name, const std::string& str)
-{
-	fprintf(stderr, "%s ", name);
-	for (string::const_iterator i = str.begin(); i != str.end(); ++i)
-	{
-		fprintf(stderr, "%02x ", (int)(unsigned char)*i);
-	}
-	fprintf(stderr, "\n");
-}
-static void dump(const char* name, const unsigned char* str, int len)
-{
-	fprintf(stderr, "%s ", name);
-	for (int i = 0; i < len; ++i)
-	{
-		fprintf(stderr, "%02x ", str[i]);
-	}
-	fprintf(stderr, "\n");
-}
-#endif
 
 static bool parsesAsNumber(const std::string& str, int& parsed)
 {
@@ -70,12 +54,12 @@ static bool needsQuoting(const std::string& str)
 	if (isspace(str[str.size() - 1]) || str[str.size() - 1] == '"')
 		return true;
 
-	// Strings containing nulls need quoting
-	if (str.find('\0', 0) != string::npos)
-		return true;
+    // Strings containing nulls need quoting
+    if (str.find('\0', 0) != std::string::npos)
+        return true;
 
-	// Otherwise, no quoting is neeed as decoding should be unambiguous
-	return false;
+    // Otherwise, no quoting is neeed as decoding should be unambiguous
+    return false;
 }
 
 static inline size_t skipSpaces(const std::string& str, size_t cur)
@@ -85,10 +69,80 @@ static inline size_t skipSpaces(const std::string& str, size_t cur)
 	return cur;
 }
 
-
 namespace arki {
 namespace types {
+
 namespace values {
+
+#ifdef __cpp_lib_string_view
+typedef std::string_view string_view;
+#else
+// Implement the subset of string_view that we need here, until we can use the
+// real one (it needs C++17, which is currently not available on Centos 7)
+struct string_view
+{
+    typedef std::string::size_type size_type;
+
+    const char* m_data;
+    size_type m_size;
+
+    constexpr string_view(const char* s, size_type count) noexcept
+        : m_data(s), m_size(count)
+    {
+    }
+
+    string_view(const std::string& str) noexcept
+        : m_data(str.data()), m_size(str.size())
+    {
+    }
+
+    const char* data() const { return m_data; }
+    size_type size() const { return m_size; }
+
+    template<typename S>
+    bool operator==(const S& o) const
+    {
+        if (m_size != o.size()) return false;
+        return memcmp(m_data, o.data(), o.size()) == 0;
+    }
+
+    bool operator!=(const string_view& o) const
+    {
+        if (m_size != o.m_size) return true;
+        return memcmp(m_data, o.m_data, m_size) != 0;
+    }
+
+    int compare(const string_view& o) const
+    {
+        if (int res = memcmp(m_data, o.m_data, std::min(m_size, o.m_size))) return res;
+        return m_size - o.m_size;
+    }
+
+    bool operator<(const string_view& o) const { return compare(o) < 0; }
+    bool operator<=(const string_view& o) const { return compare(o) <= 0; }
+    bool operator>(const string_view& o) const { return compare(o) > 0; }
+    bool operator>=(const string_view& o) const { return compare(o) >= 0; }
+
+    operator std::string() const { return std::string(m_data, m_size); }
+};
+
+#endif
+
+static std::string quote_if_needed(const std::string& str)
+{
+    std::string res;
+    int idummy;
+
+    if (parsesAsNumber(str, idummy) || needsQuoting(str))
+    {
+        // If it is surrounded by double quotes or it parses as a number, we need to escape it
+        return "\"" + str::encode_cstring(str) + "\"";
+    } else {
+        // Else, we can use the value as it is
+        return str;
+    }
+}
+
 
 // Main encoding type constants (fit 2 bits)
 
@@ -110,223 +164,283 @@ static const int ENC_NUM_UNUSED = 2;	// Unused.  Leave to 0.
 static const int ENC_NUM_EXTENDED = 3;	// Extension flag.  Type is given in the next 4 bits.
 
 
-/**
- * Implementation of Value methods common to all types
- */
-template<typename TYPE>
-class Common : public Value
+void encode_int(core::BinaryEncoder& enc, int value)
 {
-protected:
-	TYPE m_val;
-
-public:
-	Common(const TYPE& val) : m_val(val) {}
-
-    bool operator==(const Value& v) const override
+    if (value >= -32 && value < 31)
     {
-		const Common<TYPE>* vi = dynamic_cast<const Common<TYPE>*>(&v);
-		if (vi == 0)
-			return false;
-		return m_val == vi->m_val;
-    }
-    bool operator<(const Value& v) const override
-    {
-		const Common<TYPE>* vi = dynamic_cast<const Common<TYPE>*>(&v);
-		if (vi == 0)
-			return false;
-		return m_val < vi->m_val;
-    }
-    std::string toString() const override
-    {
-        stringstream ss;
-        ss << m_val;
-        return ss.str();
-    }
-};
-
-struct Integer : public Common<int>
-{
-	Integer(const int& val) : Common<int>(val) {}
-
-    int compare(const Value& v) const override
-    {
-		if (const Integer* v1 = dynamic_cast< const Integer* >(&v))
-			return m_val - v1->m_val;
-		else
-			return sortKey() - v.sortKey();
-	}
-
-    int sortKey() const override { return 1; }
-
-    int toInt() const { return m_val; }
-
-    void encode(core::BinaryEncoder& enc) const override
-    {
-        if (m_val >= -32 && m_val < 31)
+        // If it's a small one, encode in the remaining 6 bits
+        uint8_t lead = { ENC_SINT6 << 6 };
+        if (value < 0)
         {
-            // If it's a small one, encode in the remaining 6 bits
-            uint8_t encoded = { ENC_SINT6 << 6 };
-            if (m_val < 0)
-            {
-                encoded |= ((~(-m_val) + 1) & 0x3f);
-            } else {
-                encoded |= (m_val & 0x3f);
-            }
-            enc.add_raw(&encoded, 1u);
+            lead |= ((~(-value) + 1) & 0x3f);
+        } else {
+            lead |= (value & 0x3f);
         }
-        else 
+        enc.add_byte(lead);
+    }
+    else
+    {
+        // Else, encode as an integer Number
+
+        // Type
+        uint8_t lead = (ENC_NUMBER << 6) | (ENC_NUM_INTEGER << 4);
+        // Value to encode
+        unsigned int encoded;
+        if (value < 0)
         {
-            // Else, encode as an integer Number
-
-            // Type
-            uint8_t type = (ENC_NUMBER << 6) | (ENC_NUM_INTEGER << 4);
-            // Value to encode
-            unsigned int val;
-			if (m_val < 0)
-			{
-				// Sign bit
-				type |= 0x8;
-				val = -m_val;
-			}
-			else
-				val = m_val;
-			// Number of bytes
-			unsigned nbytes;
-			// TODO: add bits for 64 bits here if it's ever needed
-			if (val & 0xff000000)
-				nbytes = 4;
-			else if (val & 0x00ff0000)
-				nbytes = 3;
-			else if (val & 0x0000ff00)
-				nbytes = 2;
-			else if (val & 0x000000ff)
-				nbytes = 1;
-            else
-                throw std::runtime_error("cannot encode integer number: value " + to_string(val) + " is too large to be encoded");
-
-            type |= (nbytes-1);
-            enc.add_raw(&type, 1u);
-            enc.add_unsigned(val, nbytes);
-        }
-    }
-
-    static Integer* parse(const std::string& str);
-
-    void serialise(structured::Emitter& e) const override
-    {
-        e.add_int(m_val);
-    }
-
-    Value* clone() const override { return new Integer(m_val); }
-};
-
-Integer* Integer::parse(const std::string& str)
-{
-	return new Integer(atoi(str.c_str()));
-}
-
-
-struct String : public Common<std::string>
-{
-	String(const std::string& val) : Common<std::string>(val) {}
-
-    int sortKey() const override { return 2; }
-
-    int compare(const Value& v) const override
-    {
-		if (const String* v1 = dynamic_cast< const String* >(&v))
-		{
-			if (m_val < v1->m_val) return -1;
-			if (m_val > v1->m_val) return 1;
-			return 0;
-		}
-		else
-			return sortKey() - v.sortKey();
-    }
-
-    void encode(core::BinaryEncoder& enc) const override
-    {
-        if (m_val.size() < 64)
-        {
-            uint8_t type = ENC_NAME << 6;
-            type |= m_val.size() & 0x3f;
-            enc.add_raw(&type, 1u);
-            enc.add_raw(m_val);
+            // Sign bit
+            lead |= 0x8;
+            encoded = -value;
         }
         else
-            // TODO: if needed, here we implement another string encoding type
-            throw_consistency_error("encoding short string", "string '"+m_val+"' is too long: the maximum length is 63 characters, but the string is " + to_string(m_val.size()) + " characters long");
+            encoded = value;
+        // Number of bytes
+        unsigned nbytes;
+        // TODO: add bits for 64 bits here if it's ever needed
+        if (encoded & 0xff000000)
+            nbytes = 4;
+        else if (encoded & 0x00ff0000)
+            nbytes = 3;
+        else if (encoded & 0x0000ff00)
+            nbytes = 2;
+        else if (encoded & 0x000000ff)
+            nbytes = 1;
+        else
+            throw std::runtime_error("cannot encode integer number: value " + std::to_string(value) + " is too large to be encoded");
+
+        lead |= (nbytes-1);
+        enc.add_byte(lead);
+        enc.add_unsigned(encoded, nbytes);
     }
+}
 
-    std::string toString() const override
-    {
-		int idummy;
-
-		if (parsesAsNumber(m_val, idummy) || needsQuoting(m_val))
-		{
-			// If it is surrounded by double quotes or it parses as a number, we need to escape it
-			return "\"" + str::encode_cstring(m_val) + "\"";
-		} else {
-			// Else, we can use the value as it is
-			return m_val;
-		}
-	}
-
-    void serialise(structured::Emitter& e) const override
-    {
-        e.add_string(m_val);
-    }
-
-    Value* clone() const override { return new String(m_val); }
-};
-
-Value* Value::decode(core::BinaryDecoder& dec)
+int decode_sint6(uint8_t lead)
 {
-    uint8_t lead = dec.pop_byte("valuebag value type");
+    if (lead & 0x20)
+        return -((~(lead-1)) & 0x3f);
+    else
+        return lead & 0x3f;
+}
+
+int decode_number(core::BinaryDecoder& dec, uint8_t lead)
+{
+    switch ((lead >> 4) & 0x3)
+    {
+        case ENC_NUM_INTEGER: {
+            // Sign in the next bit.  Number of bytes in the next 3 bits.
+            unsigned nbytes = (lead & 0x7) + 1;
+            unsigned val = dec.pop_uint(nbytes, "integer number value");
+            return (lead & 0x8) ? -val : val;
+        }
+        case ENC_NUM_FLOAT:
+            throw std::runtime_error("cannot decode value: the number value to decode is a floating point number, but decoding floating point numbers is not currently implemented");
+        case ENC_NUM_UNUSED:
+            throw std::runtime_error("cannot decode value: the number value to decode has an unknown type");
+        case ENC_NUM_EXTENDED:
+            throw std::runtime_error("cannot decode value: the number value to decode has an extended type, but no extended type is currently implemented");
+        default:
+            throw std::runtime_error("cannot decode value: control flow should never reach here (" __FILE__ ":" + std::to_string(__LINE__) + "), but the compiler cannot easily know it.  This is here to silence a compiler warning.");
+    }
+    return 0;
+}
+
+int decode_int(core::BinaryDecoder& dec, uint8_t lead)
+{
     switch ((lead >> 6) & 0x3)
     {
         case ENC_SINT6:
-            if (lead & 0x20)
-                return new Integer(-((~(lead-1)) & 0x3f));
-            else
-                return new Integer(lead & 0x3f);
-        case ENC_NUMBER: {
-            switch ((lead >> 4) & 0x3)
-            {
-                case ENC_NUM_INTEGER: {
-                    // Sign in the next bit.  Number of bytes in the next 3 bits.
-                    unsigned nbytes = (lead & 0x7) + 1;
-                    unsigned val = dec.pop_uint(nbytes, "integer number value");
-                    return new Integer((lead & 0x8) ? -val : val);
-                }
-                case ENC_NUM_FLOAT:
-                    throw std::runtime_error("cannot decode value: the number value to decode is a floating point number, but decoding floating point numbers is not currently implemented");
-                case ENC_NUM_UNUSED:
-                    throw std::runtime_error("cannot decode value: the number value to decode has an unknown type");
-                case ENC_NUM_EXTENDED:
-                    throw std::runtime_error("cannot decode value: the number value to decode has an extended type, but no extended type is currently implemented");
-                default:
-                    throw std::runtime_error("cannot decode value: control flow should never reach here (" __FILE__ ":" + to_string(__LINE__) + "), but the compiler cannot easily know it.  This is here to silence a compiler warning.");
-            }
-        }
-        case ENC_NAME: {
-            unsigned size = lead & 0x3f;
-            return new String(dec.pop_string(size, "valuebag string value"));
-        }
+            return decode_sint6(lead);
+        case ENC_NUMBER:
+            return decode_number(dec, lead);
+        case ENC_NAME:
+            throw std::runtime_error("cannot decode number: the encoded value has type 'name'");
         case ENC_EXTENDED:
             throw std::runtime_error("cannot decode value: the encoded value has an extended type, but no extended type is currently implemented");
         default:
-            throw std::runtime_error("cannot decode value: control flow should never reach here (" __FILE__ ":" + to_string(__LINE__) + "), but the compiler cannot easily know it.  This is here to silence a compiler warning.");
+            throw std::runtime_error("cannot decode value: control flow should never reach here (" __FILE__ ":" + std::to_string(__LINE__) + "), but the compiler cannot easily know it.  This is here to silence a compiler warning.");
     }
 }
 
-Value* Value::parse(const std::string& str)
-{
-	size_t dummy;
-	return Value::parse(str, dummy);
-}
 
-Value* Value::parse(const std::string& str, size_t& lenParsed)
+/*
+ * Value
+ */
+
+class Value
+{
+public:
+    Value() = default;
+    Value(const Value&) = delete;
+    Value(Value&&) = delete;
+    virtual ~Value() {}
+    Value& operator=(const Value&) = delete;
+    Value& operator=(Value&&) = delete;
+
+    /// Key name
+    virtual values::string_view name() const = 0;
+
+    /**
+     * Implementation identifier, used for sorting and downcasting
+     *
+     * Currently this is 1 for int, 2 for string.
+     *
+     * The corrisponding as_* method is guaranteed not to throw consistently
+     * with type_id.
+     */
+    virtual unsigned type_id() const = 0;
+
+    /**
+     * Return the integer value, if type_id == 1, else throws an exception
+     */
+    virtual int as_int() const
+    {
+        throw std::runtime_error("as_int not implemented for this value");
+    }
+
+    /**
+     * Return the string value, if type_id == 2, else throws an exception
+     */
+    virtual std::string as_string() const
+    {
+        throw std::runtime_error("as_string not implemented for this value");
+    }
+
+    /**
+     * Compare two Values, keys and values
+     */
+    int compare(const Value& v) const
+    {
+        // key: compare common string prefix
+        if (int res = name().compare(v.name())) return res;
+        return compare_values(v);
+    }
+
+    /**
+     * Compare two Values, values only
+     */
+    int compare_values(const Value& v) const
+    {
+        if (int res = type_id() - v.type_id()) return res;
+        switch (type_id())
+        {
+            case 1: return as_int() - v.as_int();
+            case 2: return as_string().compare(v.as_string());
+            default: throw std::runtime_error("invalid typeid found: memory is corrupted?");
+        }
+    }
+
+    bool operator==(const Value& v) const { return compare(v) == 0; }
+    bool operator!=(const Value& v) const { return compare(v) != 0; }
+
+    /**
+     * Encode into a non-ambiguous string representation.
+     *
+     * Strings with special characters or strings that may be confused with
+     * numbers are quoted and escaped.
+     */
+    virtual std::string to_string() const = 0;
+
+    /// Encode to a binary representation
+    virtual void encode(core::BinaryEncoder& enc) const = 0;
+
+    /// Send contents to an emitter
+    virtual void serialise(structured::Emitter& e) const = 0;
+};
+
+
+/// Ephemeral value used for building ValueBag in ram
+class BuildValue : public Value
+{
+protected:
+    std::string m_name;
+
+public:
+    BuildValue(const std::string& name) : m_name(name) {}
+
+    values::string_view name() const override
+    {
+        return m_name;
+    }
+
+    static std::unique_ptr<Value> create(const std::string& name, int value);
+    static std::unique_ptr<Value> create(const std::string& name, const std::string& value);
+
+    static std::unique_ptr<Value> parse(const std::string& name, const std::string& str, size_t& lenParsed);
+    static std::unique_ptr<Value> parse(const std::string& name, const std::string& str)
+    {
+        size_t dummy;
+        return parse(name, str, dummy);
+    }
+};
+
+class BuildValueInt : public BuildValue
+{
+protected:
+    int m_value;
+
+public:
+    BuildValueInt(const std::string& name, int value) : BuildValue(name), m_value(value) {}
+
+    unsigned type_id() const override { return 1; }
+    int as_int() const override { return m_value; }
+
+    void encode(core::BinaryEncoder& enc) const override
+    {
+        // Key length
+        enc.add_unsigned(m_name.size(), 1);
+        // Key
+        enc.add_raw(m_name);
+        encode_int(enc, m_value);
+    }
+
+    void serialise(structured::Emitter& e) const override
+    {
+        e.add(m_name);
+        e.add_int(m_value);
+    }
+
+    std::string to_string() const override { return std::to_string(as_int()); }
+};
+
+class BuildValueString : public BuildValue
+{
+protected:
+    std::string m_value;
+
+public:
+    BuildValueString(const std::string& name, const std::string& value) : BuildValue(name), m_value(value) {}
+
+    unsigned type_id() const override { return 2; }
+    std::string as_string() const override { return m_value; }
+
+    void encode(core::BinaryEncoder& enc) const override
+    {
+        // Key length
+        enc.add_unsigned(m_name.size(), 1);
+        // Key
+        enc.add_raw(m_name);
+
+        // Type and value length
+        uint8_t type = ENC_NAME << 6;
+        type |= m_value.size() & 0x3f;
+        enc.add_byte(type);
+        // Value
+        enc.add_raw(m_value);
+    }
+
+    void serialise(structured::Emitter& e) const override
+    {
+        e.add(m_name);
+        e.add_string(m_value);
+    }
+
+    std::string to_string() const override { return quote_if_needed(as_string()); }
+};
+
+std::unique_ptr<Value> BuildValue::create(const std::string& name, int value) { return std::unique_ptr<Value>(new BuildValueInt(name, value)); }
+std::unique_ptr<Value> BuildValue::create(const std::string& name, const std::string& value) { return std::unique_ptr<Value>(new BuildValueString(name, value)); }
+
+std::unique_ptr<Value> BuildValue::parse(const std::string& name, const std::string& str, size_t& lenParsed)
 {
     size_t begin = skipSpaces(str, 0);
 
@@ -334,285 +448,539 @@ Value* Value::parse(const std::string& str, size_t& lenParsed)
     if (begin == str.size())
     {
         lenParsed = begin;
-        return new String(string());
+        return std::unique_ptr<Value>(new BuildValueString(name, std::string()));
     }
 
-	// Handle the quoted string
-	if (str[begin] == '"')
-	{
-		// Skip the first double quote
-		++begin;
+    // Handle the quoted string
+    if (str[begin] == '"')
+    {
+        // Skip the first double quote
+        ++begin;
 
-		// Unescape the string
-		size_t parsed;
-		string res = str::decode_cstring(str.substr(begin), parsed);
+        // Unescape the string
+        size_t parsed;
+        std::string res = str::decode_cstring(str.substr(begin), parsed);
 
         lenParsed = skipSpaces(str, begin + parsed);
-        return new String(res);
+        return std::unique_ptr<Value>(new BuildValueString(name, res));
     }
 
-	// No quoted string, so we can terminate the token at the next space, ',' or ';'
-	size_t end = begin;
-	while (end != str.size() && !isspace(str[end]) && str[end] != ',' && str[end] != ';')
-		++end;
-	string res = str.substr(begin, end-begin);
-	lenParsed = skipSpaces(str, end);
+    // No quoted string, so we can terminate the token at the next space, ',' or ';'
+    size_t end = begin;
+    while (end != str.size() && !isspace(str[end]) && str[end] != ',' && str[end] != ';')
+        ++end;
+    std::string res = str.substr(begin, end-begin);
+    lenParsed = skipSpaces(str, end);
 
     // If it can be parsed as a number, with maybe leading and trailing
     // spaces, return the number
     int val;
     if (parsesAsNumber(res, val))
-        return new Integer(val);
+        return std::unique_ptr<Value>(new BuildValueInt(name, val));
 
     // Else return the string
-    return new String(res);
+    return std::unique_ptr<Value>(new BuildValueString(name, res));
 }
 
-Value* Value::create_integer(int val) { return new Integer(val); }
-Value* Value::create_string(const std::string& val) { return new String(val); }
+/**
+ * Base class for generic scalar values.
+ *
+ * This is needed in order to store arbitrary types for the key=value kind of
+ * types (like Area and Proddef).
+ *
+ * In practice, we have to create a dynamic type system.
+ */
+class EncodedValue : public Value
+{
+protected:
+    const uint8_t* data = nullptr;
 
+    /// Size of the data buffer
+    virtual unsigned encoded_size() const = 0;
+
+    values::string_view name() const
+    {
+        unsigned size = static_cast<unsigned>(data[0]);
+        return values::string_view(reinterpret_cast<const char*>(data) + 1, size);
+    }
+
+public:
+    EncodedValue(const uint8_t* data)
+        : data(data)
+    {
+    }
+
+    /**
+     * Encode into a compact binary representation
+     */
+    void encode(core::BinaryEncoder& enc) const
+    {
+        enc.add_raw(data, encoded_size());
+    }
+
+    /**
+     * Decode from compact binary representation.
+     */
+    static std::unique_ptr<Value> decode(core::BinaryDecoder& dec);
+
+    /**
+     * Parse from a string representation
+     */
+    static std::unique_ptr<Value> parse(const std::string& name, const std::string& str);
+
+    /**
+     * Parse from a string representation
+     */
+    static std::unique_ptr<Value> parse(const std::string& name, const std::string& str, size_t& lenParsed);
+
+    static std::unique_ptr<Value> create_integer(const std::string& name, int val);
+    static std::unique_ptr<Value> create_string(const std::string& name, const std::string& val);
+
+    friend class Values;
+    friend class types::ValueBag;
+    friend class types::ValueBagMatcher;
+};
+
+
+/*
+ * IntValue
+ */
+
+class ValueInt : public EncodedValue
+{
+protected:
+    int m_value;
+
+public:
+    ValueInt(const uint8_t* data, int value)
+        : EncodedValue(data), m_value(value) {}
+
+    unsigned type_id() const override { return 1; }
+
+    void serialise(structured::Emitter& e) const override
+    {
+        auto n = this->name();
+        e.add(std::string(n.data(), n.size()));
+        e.add_int(as_int());
+    }
+
+    std::string to_string() const override { return std::to_string(as_int()); }
+};
+
+class ValueString : public EncodedValue
+{
+public:
+    ValueString(const uint8_t* data)
+        : EncodedValue(data) {}
+};
+
+
+/*
+ * EncodedSInt6
+ */
+
+class EncodedSInt6 : public ValueInt
+{
+    unsigned encoded_size() const override
+    {
+        // Size of the key size and key, and one byte of type and number
+        return this->data[0] + 2;
+    }
+
+public:
+    using ValueInt::ValueInt;
+
+    int as_int() const override
+    {
+        uint8_t lead = this->data[this->data[0] + 1];
+        if (lead & 0x20)
+            return -((~(lead-1)) & 0x3f);
+        else
+            return lead & 0x3f;
+    }
+};
+
+
+class EncodedNumber : public ValueInt
+{
+protected:
+    unsigned encoded_size() const override
+    {
+        // Size of the key size and key
+        unsigned size = this->data[0] + 1;
+
+        uint8_t lead = this->data[size++];
+        switch ((lead >> 4) & 0x3)
+        {
+            case ENC_NUM_INTEGER:
+                // Sign in the next bit.  Number of bytes in the next 3 bits.
+                size += (lead & 0x7) + 1;
+                break;
+        }
+
+        return size;
+    }
+
+public:
+    using ValueInt::ValueInt;
+
+    int as_int() const override
+    {
+        // Skip key
+        unsigned pos = this->data[0] + 1;
+        uint8_t lead = this->data[pos];
+        switch ((lead >> 4) & 0x3)
+        {
+            case ENC_NUM_INTEGER: {
+                // Sign in the next bit.  Number of bytes in the next 3 bits.
+                unsigned nbytes = (lead & 0x7) + 1;
+                unsigned val = core::BinaryDecoder::decode_uint(this->data + pos + 1, nbytes);
+                return (lead & 0x8) ? -val : val;
+            }
+        }
+        return 0;
+    }
+};
+
+
+class EncodedString : public ValueString
+{
+protected:
+    unsigned encoded_size() const override
+    {
+        return this->data[0] + 2 + (this->data[this->data[0] + 1] & 0x3f);
+    }
+
+public:
+    using ValueString::ValueString;
+
+    unsigned type_id() const override { return 2; }
+
+    // TODO: get rid of std::string. Use string_view or a local version if we don't have C++17
+    std::string as_string() const override
+    {
+        // Skip key
+        unsigned pos = this->data[0] + 1;
+        unsigned size = this->data[pos] & 0x3f;
+        return std::string(reinterpret_cast<const char*>(this->data) + pos + 1, size);
+    }
+
+    void serialise(structured::Emitter& e) const override
+    {
+        auto n = this->name();
+        e.add(std::string(n.data(), n.size()));
+        e.add_string(as_string());
+    }
+
+    std::string to_string() const override { return quote_if_needed(as_string()); }
+};
+
+std::unique_ptr<Value> EncodedValue::decode(core::BinaryDecoder& dec)
+{
+    // Mark the location of the beginning of the memory buffer
+    const uint8_t* begin = dec.buf;
+
+    // Key length
+    unsigned name_len = dec.pop_uint(1, "valuebag key length");
+
+    // Key
+    std::string name = dec.pop_string(name_len, "valuebag key");
+
+    uint8_t lead = dec.pop_byte("valuebag value type");
+    switch ((lead >> 6) & 0x3)
+    {
+        case ENC_SINT6:
+            return std::unique_ptr<Value>(new EncodedSInt6(begin, decode_sint6(lead)));
+        case ENC_NUMBER:
+            return std::unique_ptr<Value>(new EncodedNumber(begin, decode_number(dec, lead)));
+        case ENC_NAME:
+            dec.skip(lead & 0x3f, "string value");
+            return std::unique_ptr<Value>(new EncodedString(begin));
+        case ENC_EXTENDED:
+            throw std::runtime_error("cannot decode value: the encoded value has an extended type, but no extended type is currently implemented");
+        default:
+            throw std::runtime_error("cannot decode value: control flow should never reach here (" __FILE__ ":" + std::to_string(__LINE__) + "), but the compiler cannot easily know it.  This is here to silence a compiler warning.");
+    }
 }
 
 
-ValueBag::ValueBag() {}
+/*
+ * Values
+ */
+
+Values::~Values()
+{
+    for (auto& i: values)
+        delete i;
+}
+
+Values::Values(Values&& vb)
+    : values(std::move(vb.values))
+{
+}
+
+Values& Values::operator=(Values&& vb)
+{
+    // Handle the case a=a
+    if (this == &vb) return *this;
+
+    values = std::move(vb.values);
+
+    return *this;
+}
+
+size_t Values::size() const { return values.size(); }
+
+void Values::clear()
+{
+    for (auto* i: values)
+        delete i;
+    values.clear();
+}
+
+void Values::set(std::unique_ptr<Value> val)
+{
+    for (auto i = values.begin(); i != values.end(); ++i)
+    {
+        if ((*i)->name() == val->name())
+        {
+            delete *i;
+            *i = val.release();
+            return;
+        } else if ((*i)->name() > val->name()) {
+            values.emplace(i, val.release());
+            return;
+        }
+    }
+
+    values.emplace_back(val.release());
+}
+
+
+/*
+ * ValueBagBuilder
+ */
+
+void ValueBagBuilder::add(std::unique_ptr<Value> value)
+{
+    values.set(std::move(value));
+}
+
+void ValueBagBuilder::add(const std::string& key, const std::string& val)
+{
+    std::unique_ptr<values::Value> v(new values::BuildValueString(key, val));
+    values.set(std::move(v));
+}
+
+void ValueBagBuilder::add(const std::string& key, int val)
+{
+    std::unique_ptr<values::Value> v(new values::BuildValueInt(key, val));
+    values.set(std::move(v));
+}
+
+ValueBag ValueBagBuilder::build() const
+{
+    // Encode into a buffer
+    std::vector<uint8_t> buf;
+    core::BinaryEncoder enc(buf);
+    for (const auto& v: values.values)
+        v->encode(enc);
+
+    // FIXME: it would be great to detatch the vector's buffer, but we cannot.
+    // We need another copy instead.
+    // https://stackoverflow.com/questions/3667580/can-i-detach-a-stdvectorchar-from-the-data-it-contains
+    //   has a hack to do it
+    std::unique_ptr<uint8_t[]> priv(new uint8_t[buf.size()]);
+    memcpy(priv.get(), buf.data(), buf.size());
+
+    // FIXME: valuebag at this point doesn't have the values vector populated
+    return ValueBag(priv.release(), buf.size(), true);
+}
+
+}
+
+/*
+ * ValueBag
+ */
+
+ValueBag::ValueBag(const uint8_t* data, unsigned size, bool owned)
+    : data(data), size(size), owned(owned)
+{
+}
+
+ValueBag::ValueBag(ValueBag&& o)
+    : data(o.data), size(o.size), owned(o.owned)
+{
+    o.data = nullptr;
+    o.size = 0;
+    o.owned = false;
+}
 
 ValueBag::~ValueBag()
 {
-	// Deallocate all the Value pointers
-	for (iterator i = begin(); i != end(); ++i)
-		if (i->second)
-			delete i->second;
+    if (owned)
+        delete[] data;
 }
 
-ValueBag::ValueBag(const ValueBag& vb)
-    : ValueBag()
+ValueBag& ValueBag::operator=(ValueBag&& vb)
 {
-	iterator inspos = begin();
-	for (ValueBag::const_iterator i = vb.begin(); i != vb.end(); ++i)
-		inspos = insert(inspos, make_pair(i->first, i->second->clone()));
+    // Handle the case a=a
+    if (this == &vb) return *this;
+
+    if (owned)
+        delete[] data;
+
+    data = vb.data;
+    size = vb.size;
+    owned = vb.owned;
+
+    vb.data = nullptr;
+    vb.size = 0;
+    vb.owned = false;
+
+    return *this;
 }
 
-ValueBag& ValueBag::operator=(const ValueBag& vb)
+ValueBag::const_iterator::const_iterator(const core::BinaryDecoder& dec)
+    : dec(dec)
 {
-	// Handle the case a=a
-	if (this == &vb)
-		return *this;
-
-	clear();
-	
-	// Fill up again with the new values
-	iterator inspos = begin();
-	for (ValueBag::const_iterator i = vb.begin(); i != vb.end(); ++i)
-		inspos = insert(inspos, make_pair(i->first, i->second->clone()));
-	return *this;
+    if (dec.size)
+        value = values::EncodedValue::decode(this->dec).release();
 }
 
-bool ValueBag::operator<(const ValueBag& vb) const
+ValueBag::const_iterator::const_iterator(const_iterator&& o)
+    : dec(o.dec), value(o.value)
 {
-	const_iterator a = begin();
-	const_iterator b = vb.begin();
-	for ( ; a != end() && b != vb.end(); ++a, ++b)
-	{
-		if (a->first < b->first)
-			return true;
-		if (a->first != b->first)
-			return false;
-		if (*a->second < *b->second)
-			return true;
-		if (*a->second != *b->second)
-			return false;
-	}
-	if (a == end() && b == vb.end())
-		return false;
-	if (a == end())
-		return true;
-	return false;
+    o.value = nullptr;
+}
+
+ValueBag::const_iterator::~const_iterator()
+{
+    delete value;
+}
+
+ValueBag::const_iterator& ValueBag::const_iterator::operator=(const_iterator&& o)
+{
+    if (this == &o) return *this;
+    dec = o.dec;
+    delete value;
+    value = o.value;
+    o.value = nullptr;
+    return *this;
+}
+
+ValueBag::const_iterator& ValueBag::const_iterator::operator++()
+{
+    delete value;
+    value = nullptr;
+    if (dec.size)
+        value = values::EncodedValue::decode(dec).release();
+    return *this;
+}
+
+bool ValueBag::const_iterator::operator==(const const_iterator& o) const
+{
+    return dec == o.dec && bool(value) == bool(o.value);
+}
+
+bool ValueBag::const_iterator::operator!=(const const_iterator& o) const
+{
+    return dec != o.dec || bool(value) != bool(o.value);
 }
 
 int ValueBag::compare(const ValueBag& vb) const
 {
-	const_iterator a = begin();
-	const_iterator b = vb.begin();
-	for ( ; a != end() && b != vb.end(); ++a, ++b)
-	{
-		if (a->first < b->first)
-			return -1;
-		if (a->first > b->first)
-			return 1;
-		if (int res = a->second->compare(*b->second)) return res;
-	}
-	if (a == end() && b == vb.end())
-		return 0;
-	if (a == end())
-		return -1;
-	return 1;
-}
-
-bool ValueBag::contains(const ValueBag& vb) const
-{
-	// Both a and b are sorted, so we can iterate them linearly together
-
-	ValueBag::const_iterator a = begin();
-	ValueBag::const_iterator b = vb.begin();
-
-	while (a != end())
-	{
-		// Nothing else wanted anymore
-		if (b == vb.end())
-			return true;
-		if (a->first < b->first)
-			// This value is not in the match expression
-			++a;
-		else if (b->first < a->first)
-			// This value is wanted but we don't have it
-			return false;
-		else if (*a->second != *b->second)
-			// Same key, check if the value is the same
-			return false;
-		else
-		{
-			// If also the value is the same, move on to the next item
-			++a;
-			++b;
-		}
-	}
-	// We got to the end of a.  If there are still things in b, we don't
-	// match.  If we are also to the end of b, then we matched everything
-	return b == vb.end();
+    auto a = begin();
+    auto b = vb.begin();
+    for ( ; a != end() && b != vb.end(); ++a, ++b)
+        if (int res = a->compare(*b))
+            return res;
+    if (a == end() && b == vb.end())
+        return 0;
+    if (a == end())
+        return -1;
+    return 1;
 }
 
 bool ValueBag::operator==(const ValueBag& vb) const
 {
-	const_iterator a = begin();
-	const_iterator b = vb.begin();
-	for ( ; a != end() && b != vb.end(); ++a, ++b)
-		if (a->first != b->first || *a->second != *b->second)
-			return false;
-	return a == end() && b == vb.end();
+    auto a = begin();
+    auto b = vb.begin();
+    for ( ; a != end() && b != vb.end(); ++a, ++b)
+        if (*a != *b)
+            return false;
+    return a == end() && b == vb.end();
 }
 
-void ValueBag::clear()
-{
-	// Deallocate all the Value pointers
-	for (iterator i = begin(); i != end(); ++i)
-		if (i->second)
-			delete i->second;
-
-    // Empty the map
-    map<string, values::Value*>::clear();
-}
-
-const values::Value* ValueBag::get(const std::string& key) const
-{
-    const_iterator i = find(key);
-    if (i == end())
-        return 0;
-    return i->second;
-}
-
-void ValueBag::set(const std::string& key, values::Value* val)
-{
-	iterator i = find(key);
-	if (i == end())
-		insert(make_pair(key, val));
-	else
-	{
-		if (i->second)
-			delete i->second;
-		i->second = val;
-	}
-}
-
-void ValueBag::update(const ValueBag& vb)
-{
-	for (ValueBag::const_iterator i = vb.begin();
-			i != vb.end(); ++i)
-		set(i->first, i->second->clone());
-}
+#if 0
+void ValueBag::set(const std::string& key, int val) { values::Values::set(values::Value::create_integer(key, val)); }
+void ValueBag::set(const std::string& key, const std::string& val) { values::Values::set(values::Value::create_string(key, val)); }
+#endif
 
 void ValueBag::encode(core::BinaryEncoder& enc) const
 {
-    for (const_iterator i = begin(); i != end(); ++i)
-    {
-        // Key length
-        enc.add_unsigned(i->first.size(), 1);
-        // Key
-        enc.add_raw(i->first);
-        // Value
-        i->second->encode(enc);
-    }
+    for (const auto& v: *this)
+        v.encode(enc);
 }
 
 std::string ValueBag::toString() const
 {
-	string res;
-	for (const_iterator i = begin(); i != end(); ++i)
-	{
-		if (i != begin())
-			res += ", ";
-		res += i->first;
-		res += '=';
-		res += i->second->toString();
-	}
-	return res;
+    std::string res;
+    bool first = true;
+    for (const auto& i : *this)
+    {
+        if (first)
+            first = false;
+        else
+            res += ", ";
+        auto name = i.name();
+        res.append(name.data(), name.size());
+        // TODO: when we can have real string_view: res += i->name();
+        res += '=';
+        res += i.to_string();
+    }
+    return res;
 }
 
 void ValueBag::serialise(structured::Emitter& e) const
 {
     e.start_mapping();
-    for (const_iterator i = begin(); i != end(); ++i)
-    {
-        e.add(i->first);
-        i->second->serialise(e);
-    }
+    for (const auto& i: *this)
+        i.serialise(e);
     e.end_mapping();
 }
 
-/**
- * Decode from compact binary representation
- */
 ValueBag ValueBag::decode(core::BinaryDecoder& dec)
 {
-    ValueBag res;
-    while (dec)
-    {
-        // Key length
-        unsigned key_len = dec.pop_uint(1, "valuebag key length");
-
-        // Key
-        string key = dec.pop_string(key_len, "valuebag key");
-
-        // Value
-        res.set(key, values::Value::decode(dec));
-    }
-    return res;
+    std::unique_ptr<uint8_t[]> buf(new uint8_t[dec.size]);
+    memcpy(buf.get(), dec.buf, dec.size);
+    return ValueBag(buf.release(), dec.size, true);
 }
 
-/**
- * Parse from a string representation
- */
+ValueBag ValueBag::decode_reusing_buffer(core::BinaryDecoder& dec)
+{
+    return ValueBag(dec.buf, dec.size, false);
+}
+
 ValueBag ValueBag::parse(const std::string& str)
 {
-	// Parsa key\s*=\s*val
-	// Parsa \s*,\s*
-	// Loop
-	ValueBag res;
-	size_t begin = 0;
-	while (begin < str.size())
-	{
-		// Take until the next '='
-		size_t cur = str.find('=', begin);
-		// If there are no more '=', check that we are at the end
-		if (cur == string::npos)
-		{
+    values::ValueBagBuilder builder;
+    size_t begin = 0;
+    while (begin < str.size())
+    {
+        // Take until the next '='
+        size_t cur = str.find('=', begin);
+        // If there are no more '=', check that we are at the end
+        if (cur == std::string::npos)
+        {
 			cur = skipSpaces(str, begin);
 			if (cur != str.size())
 				throw_consistency_error("parsing key=value list", "found invalid extra characters \""+str.substr(begin)+"\" at the end of the list");
 			break;
 		}
-			
-		// Read the key
-		string key = str::strip(str.substr(begin, cur-begin));
+
+        // Read the key
+        std::string key = str::strip(str.substr(begin, cur-begin));
 
 		// Skip the '=' sign
 		++cur;
@@ -622,11 +990,11 @@ ValueBag ValueBag::parse(const std::string& str)
 
         // Parse the value
         size_t lenParsed;
-        unique_ptr<values::Value> val(values::Value::parse(str.substr(cur), lenParsed));
+        auto val(values::BuildValue::parse(key, str.substr(cur), lenParsed));
 
         // Set the value
         if (val.get())
-            res.set(key, val.release());
+            builder.add(std::move(val));
         else
             throw_consistency_error("parsing key=value list", "cannot parse value at \""+str.substr(cur)+"\"");
 
@@ -638,56 +1006,36 @@ ValueBag ValueBag::parse(const std::string& str)
 			++begin;
 	}
 
-	return res;
+    return builder.build();
 }
 
 ValueBag ValueBag::parse(const structured::Reader& reader)
 {
-    ValueBag res;
+    values::ValueBagBuilder builder;
     reader.items("values", [&](const std::string& key, const structured::Reader& val) {
         switch (val.type())
         {
             case structured::NodeType::NONE:
                 break;
             case structured::NodeType::INT:
-                res.set(key, values::Value::create_integer(val.as_int("int value")));
+                builder.add(key, val.as_int("int value"));
                 break;
             case structured::NodeType::STRING:
-                res.set(key, values::Value::create_string(val.as_string("string value")));
+                builder.add(key, val.as_string("string value"));
                 break;
             default:
                 throw std::runtime_error("cannot decode value " + key + ": value is neither integer nor string");
         }
     });
-    return res;
+
+    return builder.build();
 }
 
 #ifdef HAVE_LUA
-void ValueBag::lua_push(lua_State* L) const
+ValueBag ValueBag::load_lua_table(lua_State* L, int idx)
 {
-    lua_newtable(L);
-    for (const_iterator i = begin(); i != end(); ++i)
-    {
-        string name = i->first;
-        lua_pushlstring(L, name.data(), name.size());
-        if (const values::Integer* vs = dynamic_cast<const values::Integer*>(i->second))
-        {
-            lua_pushnumber(L, vs->toInt());
-        } else if (const values::String* vs = dynamic_cast<const values::String*>(i->second)) {
-            string val = vs->toString();
-            lua_pushlstring(L, val.data(), val.size());
-        } else {
-            string val = i->second->toString();
-            lua_pushlstring(L, val.data(), val.size());
-        }
-        // Set name = val in the table
-        lua_settable(L, -3);
-    }
-    // Leave the table on the stack: we pushed it
-}
+    values::ValueBagBuilder vb;
 
-void ValueBag::load_lua_table(lua_State* L, int idx)
-{
 	// Make the table index absolute
 	if (idx < 0) idx = lua_gettop(L) + idx + 1;
 
@@ -696,10 +1044,10 @@ void ValueBag::load_lua_table(lua_State* L, int idx)
 	while (lua_next(L, idx))
 	{
         // Get key
-        string key;
+        std::string key;
         switch (lua_type(L, -2))
         {
-            case LUA_TNUMBER: key = to_string((int)lua_tonumber(L, -2)); break;
+            case LUA_TNUMBER: key = std::to_string((int)lua_tonumber(L, -2)); break;
             case LUA_TSTRING: key = lua_tostring(L, -2); break;
             default:
             {
@@ -713,10 +1061,10 @@ void ValueBag::load_lua_table(lua_State* L, int idx)
         switch (lua_type(L, -1))
         {
             case LUA_TNUMBER:
-                set(key, values::Value::create_integer(lua_tonumber(L, -1)));
+                vb.add(key, lua_tonumber(L, -1));
                 break;
             case LUA_TSTRING:
-                set(key, values::Value::create_string(lua_tostring(L, -1)));
+                vb.add(key, lua_tostring(L, -1));
                 break;
             default:
             {
@@ -729,48 +1077,140 @@ void ValueBag::load_lua_table(lua_State* L, int idx)
 		lua_pop(L, 1);
 	}
 	lua_pop(L, 1);
+
+    return vb.build();
 }
 #endif
 
-#if 0
-
-template<typename Base>
-struct DataKeyVal : Base
+bool ValueBagMatcher::is_subset(const ValueBag& vb) const
 {
-	virtual bool match(const std::map<std::string, int>& wanted) const
-	{
-		// Both a and b are sorted, so we can iterate them linerly together
+    // Both a and b are sorted, so we can iterate them linearly together
+    auto a = values.begin();
+    auto b = vb.begin();
 
-		values_t::const_iterator a = values.begin();
-		std::map<std::string, int>::const_iterator b = wanted.begin();
+    while (b != vb.end())
+    {
+        // Nothing else wanted anymore
+        if (a == values.end()) return true;
 
-		while (a != values.end())
-		{
-			// Nothing else wanted anymore
-			if (b == wanted.end())
-				return true;
-			if (a->first < b->first)
-				// This value is not in the match expression
-				++a;
-			else if (b->first < a->first)
-				// This value is wanted but we don't have it
-				return false;
-			else if (a->second != b->second)
-				// Same key, check if the value is the same
-				return false;
-			else
-			{
-				// If also the value is the same, move on to the next item
-				++a;
-				++b;
-			}
-		}
-		// We got to the end of a.  If there are still things in b, we don't
-		// match.  If we are also to the end of b, then we matched everything
-		return b == wanted.end();
-	}
-};
+        if ((*a)->name() < b->name())
+            // This value is wanted but we don't have it
+            return false;
+
+        if (b->name() < (*a)->name())
+        {
+            // This value is not in the match expression
+            ++b;
+            continue;
+        }
+
+        if ((*a)->compare_values(*b) != 0)
+            // Same key, check if the value is the same
+            return false;
+
+        // If also the value is the same, move on to the next item
+        ++a;
+        ++b;
+    }
+    // We got to the end of a.  If there are still things in b, we don't
+    // match.  If we are also to the end of b, then we matched everything
+    return a == values.end();
+}
+
+std::string ValueBagMatcher::to_string() const
+{
+    std::string res;
+    bool first = true;
+    for (const auto& i : values)
+    {
+        if (first)
+            first = false;
+        else
+            res += ", ";
+        auto name = i->name();
+        res.append(name.data(), name.size());
+        // TODO: when we can have real string_view: res += i->name();
+        res += '=';
+        res += i->to_string();
+    }
+    return res;
+}
+
+#ifdef HAVE_LUA
+void ValueBagMatcher::lua_push(lua_State* L) const
+{
+    lua_newtable(L);
+    for (const auto& i: values)
+    {
+        auto name = i->name();
+        lua_pushlstring(L, name.data(), name.size());
+        switch (i->type_id())
+        {
+            case 1:
+                lua_pushnumber(L, i->as_int());
+                break;
+            case 2:
+            {
+                std::string val = i->as_string();
+                lua_pushlstring(L, val.data(), val.size());
+                break;
+            }
+            default:
+                throw std::runtime_error("unknown type_id found in lua_push");
+        }
+        // Set name = val in the table
+        lua_settable(L, -3);
+    }
+    // Leave the table on the stack: we pushed it
+}
 #endif
+
+ValueBagMatcher ValueBagMatcher::parse(const std::string& str)
+{
+    ValueBagMatcher res;
+    size_t begin = 0;
+    while (begin < str.size())
+    {
+        // Take until the next '='
+        size_t cur = str.find('=', begin);
+        // If there are no more '=', check that we are at the end
+        if (cur == std::string::npos)
+        {
+            cur = skipSpaces(str, begin);
+            if (cur != str.size())
+                throw_consistency_error("parsing key=value list", "found invalid extra characters \""+str.substr(begin)+"\" at the end of the list");
+            break;
+        }
+
+        // Read the key
+        std::string key = str::strip(str.substr(begin, cur-begin));
+
+        // Skip the '=' sign
+        ++cur;
+
+        // Skip spaces after the '='
+        cur = skipSpaces(str, cur);
+
+        // Parse the value
+        size_t lenParsed;
+        auto val(values::BuildValue::parse(key, str.substr(cur), lenParsed));
+
+        // Set the value
+        if (val.get())
+            res.set(std::move(val));
+        else
+            throw_consistency_error("parsing key=value list", "cannot parse value at \""+str.substr(cur)+"\"");
+
+        // Move on to the next one
+        begin = cur + lenParsed;
+
+        // Skip separators
+        while (begin != str.size() && (isspace(str[begin]) || str[begin] == ','))
+            ++begin;
+    }
+
+    return res;
+}
 
 }
 }

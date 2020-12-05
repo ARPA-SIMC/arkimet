@@ -5,6 +5,7 @@
 #include "arki/utils/string.h"
 #include "arki/runtime.h"
 #include <memory>
+#include <map>
 
 using namespace std;
 

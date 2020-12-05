@@ -14,6 +14,7 @@
 #include "types/assigneddataset.h"
 #include "types/source/blob.h"
 #include "types/note.h"
+#include "types/values.h"
 #include "structured/keys.h"
 #include "structured/json.h"
 #include "structured/memory.h"
@@ -38,16 +39,8 @@ struct Fixture : public arki::utils::tests::Fixture
     Fixture()
     {
         using namespace arki::types::values;
-        testValues.set("foo", Value::create_integer(5));
-        testValues.set("bar", Value::create_integer(5000));
-        testValues.set("baz", Value::create_integer(-200));
-        testValues.set("moo", Value::create_integer(0x5ffffff));
-        testValues.set("antani", Value::create_integer(-1));
-        testValues.set("blinda", Value::create_integer(0));
-        testValues.set("supercazzola", Value::create_integer(-1234567));
-        testValues.set("pippo", Value::create_string("pippo"));
-        testValues.set("pluto", Value::create_string("12"));
-        testValues.set("cippo", Value::create_string(""));
+        // 100663295 == 0x5ffffff
+        testValues = ValueBag::parse("foo=5, bar=5000, baz=-200, moo=100663295, antani=-1, blinda=0, supercazzola=-1234567, pippo=pippo, pluto=\"12\", cippo=\"\"");
     }
 
     void fill(Metadata& md)

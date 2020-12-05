@@ -2,6 +2,7 @@
 #include "area.h"
 #include "arki/utils/geos.h"
 #include "arki/utils/regexp.h"
+#include "arki/types/area.h"
 #include <strings.h>
 #include <algorithm>
 
@@ -20,7 +21,7 @@ std::string MatchArea::name() const { return "area"; }
 
 MatchAreaGRIB::MatchAreaGRIB(const std::string& pattern)
 {
-	expr = ValueBag::parse(pattern);
+    expr = ValueBagMatcher::parse(pattern);
 }
 
 bool MatchAreaGRIB::matchItem(const Type& o) const
@@ -28,7 +29,7 @@ bool MatchAreaGRIB::matchItem(const Type& o) const
     const types::area::GRIB* v = dynamic_cast<const types::area::GRIB*>(&o);
     if (!v) return false;
     auto values = v->get_GRIB();
-    return values.contains(expr);
+    return expr.is_subset(values);
 }
 
 bool MatchAreaGRIB::match_buffer(types::Code code, const uint8_t* data, unsigned size) const
@@ -37,17 +38,17 @@ bool MatchAreaGRIB::match_buffer(types::Code code, const uint8_t* data, unsigned
     if (size < 1) return false;
     if (Area::style(data, size) != area::Style::GRIB) return false;
     auto values = Area::get_GRIB(data, size);
-    return values.contains(expr);
+    return expr.is_subset(values);
 }
 
 std::string MatchAreaGRIB::toString() const
 {
-	return "GRIB:" + expr.toString();
+    return "GRIB:" + expr.to_string();
 }
 
 MatchAreaODIMH5::MatchAreaODIMH5(const std::string& pattern)
 {
-	expr = ValueBag::parse(pattern);
+    expr = ValueBagMatcher::parse(pattern);
 }
 
 bool MatchAreaODIMH5::matchItem(const Type& o) const
@@ -55,7 +56,7 @@ bool MatchAreaODIMH5::matchItem(const Type& o) const
     const types::area::ODIMH5* v = dynamic_cast<const types::area::ODIMH5*>(&o);
     if (!v) return false;
     auto values = v->get_ODIMH5();
-    return values.contains(expr);
+    return expr.is_subset(values);
 }
 
 bool MatchAreaODIMH5::match_buffer(types::Code code, const uint8_t* data, unsigned size) const
@@ -64,19 +65,19 @@ bool MatchAreaODIMH5::match_buffer(types::Code code, const uint8_t* data, unsign
     if (size < 1) return false;
     if (Area::style(data, size) != area::Style::ODIMH5) return false;
     auto values = Area::get_ODIMH5(data, size);
-    return values.contains(expr);
+    return expr.is_subset(values);
 }
 
 std::string MatchAreaODIMH5::toString() const
 {
-	return "ODIMH5:" + expr.toString();
+    return "ODIMH5:" + expr.to_string();
 }
 
 MatchAreaVM2::MatchAreaVM2(const std::string& pattern)
 {
     OptionalCommaList args(pattern, true);
-	station_id = args.getInt(0, -1);
-    expr = ValueBag::parse(args.tail);
+    station_id = args.getInt(0, -1);
+    expr = ValueBagMatcher::parse(args.tail);
 #ifdef HAVE_VM2
     if (!expr.empty())
         idlist = utils::vm2::find_stations(expr);
@@ -114,9 +115,9 @@ std::string MatchAreaVM2::toString() const
 	{
 		res << "," << station_id;
 	}
-	if (!expr.empty())
-		res << ":" << expr.toString();
-	return res.str();
+    if (!expr.empty())
+        res << ":" << expr.to_string();
+    return res.str();
 }
 
 

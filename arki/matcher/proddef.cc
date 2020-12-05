@@ -1,5 +1,6 @@
 #include "config.h"
 #include "proddef.h"
+#include "arki/types/proddef.h"
 
 using namespace std;
 using namespace arki::types;
@@ -12,14 +13,14 @@ std::string MatchProddef::name() const { return "proddef"; }
 
 MatchProddefGRIB::MatchProddefGRIB(const std::string& pattern)
 {
-	expr = ValueBag::parse(pattern);
+    expr = ValueBagMatcher::parse(pattern);
 }
 
 bool MatchProddefGRIB::matchItem(const Type& o) const
 {
     const types::proddef::GRIB* v = dynamic_cast<const types::proddef::GRIB*>(&o);
     if (!v) return false;
-    return v->get_GRIB().contains(expr);
+    return expr.is_subset(v->get_GRIB());
 }
 
 bool MatchProddefGRIB::match_buffer(types::Code code, const uint8_t* data, unsigned size) const
@@ -27,12 +28,12 @@ bool MatchProddefGRIB::match_buffer(types::Code code, const uint8_t* data, unsig
     if (code != TYPE_PRODDEF) return false;
     if (size < 1) return false;
     if (types::Proddef::style(data, size) != proddef::Style::GRIB) return false;
-    return Proddef::get_GRIB(data, size).contains(expr);
+    return expr.is_subset(Proddef::get_GRIB(data, size));
 }
 
 std::string MatchProddefGRIB::toString() const
 {
-	return "GRIB:" + expr.toString();
+    return "GRIB:" + expr.to_string();
 }
 
 Implementation* MatchProddef::parse(const std::string& pattern)

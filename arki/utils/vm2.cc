@@ -6,7 +6,7 @@ namespace arki {
 namespace utils {
 namespace vm2 {
 
-std::vector<int> find_stations(const types::ValueBag& query, meteo::vm2::Source* s)
+std::vector<int> find_stations(const types::ValueBagMatcher& query, meteo::vm2::Source* s)
 {
   meteo::vm2::Source* source = (s == nullptr ? meteo::vm2::Source::get() : s);
   lua_State* L = source->L;
@@ -24,7 +24,7 @@ std::vector<int> find_stations(const types::ValueBag& query, meteo::vm2::Source*
   return res;
 }
 
-std::vector<int> find_variables(const types::ValueBag& query, meteo::vm2::Source* s)
+std::vector<int> find_variables(const types::ValueBagMatcher& query, meteo::vm2::Source* s)
 {
   meteo::vm2::Source* source = (s == nullptr ? meteo::vm2::Source::get() : s);
   lua_State* L = source->L;
@@ -47,14 +47,13 @@ types::ValueBag get_station(int id, meteo::vm2::Source* s)
   meteo::vm2::Source* source = (s == nullptr ? meteo::vm2::Source::get() : s);
   lua_State* L = source->L;
 
-  types::ValueBag vb;
   source->lua_push_station(id);
   if (lua_istable(L, -1)) {
-    vb.load_lua_table(L, -1);
+    return types::ValueBag::load_lua_table(L, -1);
   } else {
     lua_pop(L,1);
+    return types::ValueBag();
   }
-  return vb;
 }
 
 types::ValueBag get_variable(int id, meteo::vm2::Source* s)
@@ -62,14 +61,13 @@ types::ValueBag get_variable(int id, meteo::vm2::Source* s)
   meteo::vm2::Source* source = (s == nullptr ? meteo::vm2::Source::get() : s);
   lua_State* L = source->L;
 
-  types::ValueBag vb;
   source->lua_push_variable(id);
   if (lua_istable(L, -1)) {
-    vb.load_lua_table(L, -1);
+    return types::ValueBag::load_lua_table(L, -1);
   } else {
     lua_pop(L,1);
+    return types::ValueBag();
   }
-  return vb;
 }
 
 }

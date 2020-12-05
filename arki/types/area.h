@@ -3,7 +3,6 @@
 
 #include <memory>
 #include <arki/types/encoded.h>
-#include <arki/types/values.h>
 #include <arki/utils/geosfwd.h>
 
 namespace arki {
@@ -58,10 +57,10 @@ public:
     static ValueBag get_ODIMH5(const uint8_t* data, unsigned size);
     static unsigned get_VM2(const uint8_t* data, unsigned size);
 
-    area::Style style() const { return style(data, size); }
-    ValueBag get_GRIB() const { return get_GRIB(data, size); }
-    ValueBag get_ODIMH5() const { return get_ODIMH5(data, size); }
-    unsigned get_VM2() const { return get_VM2(data, size); }
+    area::Style style() const;
+    ValueBag get_GRIB() const;
+    ValueBag get_ODIMH5() const;
+    unsigned get_VM2() const;
 
     /// Convert a string into a style
     static Style parseStyle(const std::string& str);
@@ -119,9 +118,6 @@ public:
 
 class VM2 : public Area
 {
-protected:
-    mutable std::unique_ptr<ValueBag> m_derived_values;
-
 public:
     using Area::Area;
     ~VM2();

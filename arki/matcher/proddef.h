@@ -3,7 +3,7 @@
 
 #include <arki/matcher.h>
 #include <arki/matcher/utils.h>
-#include <arki/types/proddef.h>
+#include <arki/types/values.h>
 
 namespace arki {
 namespace matcher {
@@ -21,7 +21,7 @@ struct MatchProddef : public Implementation
 
 struct MatchProddefGRIB : public MatchProddef
 {
-    types::ValueBag expr;
+    types::ValueBagMatcher expr;
 
     MatchProddefGRIB(const std::string& pattern);
     bool matchItem(const types::Type& o) const override;

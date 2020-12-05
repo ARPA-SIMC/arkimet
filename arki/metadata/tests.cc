@@ -9,10 +9,10 @@
 #include "arki/types/reftime.h"
 #include "arki/types/area.h"
 #include "arki/types/proddef.h"
-#include "arki/types/assigneddataset.h"
 #include "arki/types/run.h"
 #include "arki/types/task.h"
 #include "arki/types/quantity.h"
+#include "arki/types/values.h"
 
 using namespace std;
 using namespace arki;
@@ -84,18 +84,8 @@ std::shared_ptr<Metadata> make_large_mock(const std::string& format, size_t size
 void fill(Metadata& md)
 {
     using namespace arki::types::values;
-    ValueBag testValues;
-    testValues.set("aaa", Value::create_integer(0));
-    testValues.set("foo", Value::create_integer(5));
-    testValues.set("bar", Value::create_integer(5000));
-    testValues.set("baz", Value::create_integer(-200));
-    testValues.set("moo", Value::create_integer(0x5ffffff));
-    testValues.set("antani", Value::create_integer(-1));
-    testValues.set("blinda", Value::create_integer(0));
-    testValues.set("supercazzola", Value::create_integer(-1234567));
-    testValues.set("pippo", Value::create_string("pippo"));
-    testValues.set("pluto", Value::create_string("12"));
-    testValues.set("zzz", Value::create_integer(1));
+    // 100663295 == 0x5ffffff
+    ValueBag testValues = ValueBag::parse("aaa=0, foo=5, bar=5000, baz=-200, moo=100663295, antani=-1, blinda=0, supercazzola=-1234567, pippo=pippo, pluto=\"12\", zzz=1");
 
     md.test_set(Origin::createGRIB1(1, 2, 3));
     md.test_set(Product::createGRIB1(1, 2, 3));
