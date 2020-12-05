@@ -16,6 +16,14 @@ class Tests : public TestCase
     void register_tests() override;
 } test("arki_types_values");
 
+static unsigned vbsize(const ValueBag& vb)
+{
+    unsigned res = 0;
+    for (auto i = vb.begin(); i != vb.end(); ++i)
+        ++res;
+    return res;
+}
+
 void Tests::register_tests() {
 
 // Check comparison
@@ -137,22 +145,22 @@ add_method("valuebag", [] {
     wassert_true(*v1.test_get("test4") == *val);
 #endif
 
-    wassert(actual(v1.size()) == 4u);
-    wassert(actual(v2.size()) == 0u);
+    wassert(actual(vbsize(v1)) == 4u);
+    wassert(actual(vbsize(v2)) == 0u);
 
     // Test copy and comparison
     wassert_true(v1 != v2);
 
     v2 = ValueBag::parse("test1=1, test2=1000000, test3=-20, test4=\"1\"");
-    wassert(actual(v1.size()) == 4u);
-    wassert(actual(v2.size()) == 4u);
+    wassert(actual(vbsize(v1)) == 4u);
+    wassert(actual(vbsize(v2)) == 4u);
 
     wassert(actual(v1) == v2);
 
     // Test clear
     v2.clear();
-    wassert(actual(v1.size()) == 4u);
-    wassert(actual(v2.size()) == 0u);
+    wassert(actual(vbsize(v1)) == 4u);
+    wassert(actual(vbsize(v2)) == 0u);
 
     // Test encoding and decoding
     std::vector<uint8_t> enc;
@@ -163,19 +171,19 @@ add_method("valuebag", [] {
     v2 = ValueBag::decode(dec);
     wassert(actual(v1) == v2);
 
-    wassert(actual(v1.size()) == 4u);
-    wassert(actual(v2.size()) == 4u);
+    wassert(actual(vbsize(v1)) == 4u);
+    wassert(actual(vbsize(v2)) == 4u);
 
     v2.clear();
-    wassert(actual(v1.size()) == 4u);
-    wassert(actual(v2.size()) == 0u);
+    wassert(actual(vbsize(v1)) == 4u);
+    wassert(actual(vbsize(v2)) == 0u);
 
     string enc1 = v1.toString();
     wassert(actual(enc1) == "test1=1, test2=1000000, test3=-20, test4=\"1\"");
     v2 = ValueBag::parse(enc1);
 
-    wassert(actual(v1.size()) == 4u);
-    wassert(actual(v2.size()) == 4u);
+    wassert(actual(vbsize(v1)) == 4u);
+    wassert(actual(vbsize(v2)) == 4u);
 
     wassert(actual(v2) == v1);
 });

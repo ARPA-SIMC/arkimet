@@ -42,6 +42,8 @@ protected:
      */
     void set(std::unique_ptr<values::Value> val);
 
+    size_t size() const { return values.size(); }
+
 public:
     Values();
     Values(const Values& vb) = delete;
@@ -51,7 +53,6 @@ public:
     Values& operator=(Values&& vb);
 
     bool empty() const { return values.empty(); }
-    size_t size() const { return values.size(); }
     void clear();
 
     friend class arki::types::ValueBagMatcher;
@@ -69,6 +70,10 @@ protected:
 
 public:
     using values::Values::Values;
+
+    typedef std::vector<values::Value*>::const_iterator const_iterator;
+    const_iterator begin() const { return values.begin(); }
+    const_iterator end() const { return values.end(); }
 
 	bool operator==(const ValueBag& vb) const;
 	bool operator!=(const ValueBag& vb) const { return !operator==(vb); }
