@@ -8,6 +8,7 @@
 #include <string_view>
 #endif
 #include <vector>
+#include <memory>
 #include <iosfwd>
 
 struct lua_State;
@@ -17,6 +18,7 @@ namespace types {
 class ValueBag;
 
 namespace values {
+class Values;
 
 #ifdef __cpp_lib_string_view
 typedef std::string_view string_view;
@@ -76,7 +78,7 @@ public:
     int compare(const Value& v) const;
     int compare_values(const Value& v) const;
 
-    virtual Value* clone() const = 0;
+    virtual std::unique_ptr<Value> clone() const = 0;
 
     /**
      * Encode into a compact binary representation
@@ -86,7 +88,7 @@ public:
     /**
      * Decode from compact binary representation.
      */
-    static Value* decode(core::BinaryDecoder& dec);
+    static std::unique_ptr<Value> decode(core::BinaryDecoder& dec);
 
     /**
      * Decode from compact binary representation, reusing the data from the
@@ -95,7 +97,7 @@ public:
      * The buffer must remain valid during the whole lifetime of the ValueBag
      * object.
      */
-    static Value* decode_reusing_buffer(core::BinaryDecoder& dec);
+    static std::unique_ptr<Value> decode_reusing_buffer(core::BinaryDecoder& dec);
 
     /**
      * Encode into a string representation
@@ -108,21 +110,27 @@ public:
     /**
      * Parse from a string representation
      */
-    static Value* parse(const std::string& name, const std::string& str);
+    static std::unique_ptr<Value> parse(const std::string& name, const std::string& str);
 
     /**
      * Parse from a string representation
      */
-    static Value* parse(const std::string& name, const std::string& str, size_t& lenParsed);
+    static std::unique_ptr<Value> parse(const std::string& name, const std::string& str, size_t& lenParsed);
 
-    static Value* create_integer(const std::string& name, int val);
-    static Value* create_string(const std::string& name, const std::string& val);
+    static std::unique_ptr<Value> create_integer(const std::string& name, int val);
+    static std::unique_ptr<Value> create_string(const std::string& name, const std::string& val);
 
+    friend class Values;
     friend class types::ValueBag;
 };
-}
 
-struct ValueBag
+/**
+ * Sorted container for values.
+ *
+ * Values are sorted by name. Values with the same name are replaced, meaning
+ * that names are kept unique.
+ */
+class Values
 {
 protected:
     std::vector<values::Value*> values;
@@ -132,18 +140,30 @@ protected:
      *
      * It takes ownership of the Value pointer.
      */
-    void set(values::Value* val);
+    void set(std::unique_ptr<values::Value> val);
 
 public:
-    ValueBag();
-    ValueBag(const ValueBag& vb);
-    ValueBag(ValueBag&& vb);
-    ~ValueBag();
-    ValueBag& operator=(const ValueBag& vb);
-    ValueBag& operator=(ValueBag&& vb);
+    Values();
+    Values(const Values& vb);
+    Values(Values&& vb);
+    ~Values();
+    Values& operator=(const Values& vb);
+    Values& operator=(Values&& vb);
 
     bool empty() const { return values.empty(); }
     size_t size() const { return values.size(); }
+    void clear();
+};
+
+}
+
+struct ValueBag : public values::Values
+{
+protected:
+    using values::Values::set;
+
+public:
+    using values::Values::Values;
 
 	bool operator==(const ValueBag& vb) const;
 	bool operator!=(const ValueBag& vb) const { return !operator==(vb); }
@@ -153,8 +173,6 @@ public:
 
 	void update(const ValueBag& vb);
 
-	void clear();
-
     /**
      * Gets a value.
      *
@@ -163,10 +181,10 @@ public:
     const values::Value* get(const std::string& key) const;
 
     /// Set an integer value
-    void set(const std::string& key, int val) { set(values::Value::create_integer(key, val)); }
+    void set(const std::string& key, int val) { values::Values::set(values::Value::create_integer(key, val)); }
 
     /// Set a string value
-    void set(const std::string& key, const std::string& val) { set(values::Value::create_string(key, val)); }
+    void set(const std::string& key, const std::string& val) { values::Values::set(values::Value::create_string(key, val)); }
 
     /**
      * Encode into a compact binary representation
@@ -217,6 +235,10 @@ private:
     // Disable modifying subscription, because it'd be hard to deallocate the
     // old value
     values::Value*& operator[](const std::string& str);
+};
+
+struct ValueBagMatcher
+{
 };
 
 static inline std::ostream& operator<<(std::ostream& o, const values::Value& v)

@@ -287,9 +287,9 @@ class EncodedSInt6 : public EncodedInt<Alloc>
 public:
     using EncodedInt<Alloc>::EncodedInt;
 
-    EncodedSInt6* clone() const
+    std::unique_ptr<Value> clone() const
     {
-        return new EncodedSInt6(this->data, encoded_size());
+        return std::unique_ptr<Value>(new EncodedSInt6(this->data, encoded_size()));
     }
 
     int value() const override
@@ -327,9 +327,9 @@ protected:
 public:
     using EncodedInt<Alloc>::EncodedInt;
 
-    EncodedNumber* clone() const
+    std::unique_ptr<Value> clone() const
     {
-        return new EncodedNumber(this->data, encoded_size());
+        return std::unique_ptr<Value>(new EncodedNumber(this->data, encoded_size()));
     }
 
     int value() const override
@@ -375,9 +375,9 @@ protected:
 public:
     using ValueBase<Alloc>::ValueBase;
 
-    EncodedString* clone() const
+    std::unique_ptr<Value> clone() const
     {
-        return new EncodedString(this->data, encoded_size());
+        return std::unique_ptr<Value>(new EncodedString(this->data, encoded_size()));
     }
 
     unsigned type_id() const override { return 2; }
@@ -415,7 +415,7 @@ public:
 };
 
 template<typename Alloc>
-static Value* _decode(core::BinaryDecoder& dec)
+static std::unique_ptr<Value> _decode(core::BinaryDecoder& dec)
 {
     // Mark the location of the beginning of the memory buffer
     const uint8_t* begin = dec.buf;
@@ -430,7 +430,7 @@ static Value* _decode(core::BinaryDecoder& dec)
     switch ((lead >> 6) & 0x3)
     {
         case ENC_SINT6:
-            return new EncodedSInt6<Alloc>(begin, dec.buf - begin);
+            return std::unique_ptr<Value>(new EncodedSInt6<Alloc>(begin, dec.buf - begin));
         case ENC_NUMBER: {
             switch ((lead >> 4) & 0x3)
             {
@@ -439,7 +439,7 @@ static Value* _decode(core::BinaryDecoder& dec)
                     // Sign in the next bit.  Number of bytes in the next 3 bits.
                     unsigned nbytes = (lead & 0x7) + 1;
                     dec.skip(nbytes, "integer number value");
-                    return new EncodedNumber<Alloc>(begin, dec.buf - begin);
+                    return std::unique_ptr<Value>(new EncodedNumber<Alloc>(begin, dec.buf - begin));
                 }
                 case ENC_NUM_FLOAT:
                     throw std::runtime_error("cannot decode value: the number value to decode is a floating point number, but decoding floating point numbers is not currently implemented");
@@ -453,7 +453,7 @@ static Value* _decode(core::BinaryDecoder& dec)
         }
         case ENC_NAME:
             dec.skip(lead & 0x3f, "string value");
-            return new EncodedString<Alloc>(begin, dec.buf - begin);
+            return std::unique_ptr<Value>(new EncodedString<Alloc>(begin, dec.buf - begin));
         case ENC_EXTENDED:
             throw std::runtime_error("cannot decode value: the encoded value has an extended type, but no extended type is currently implemented");
         default:
@@ -461,23 +461,23 @@ static Value* _decode(core::BinaryDecoder& dec)
     }
 }
 
-Value* Value::decode(core::BinaryDecoder& dec)
+std::unique_ptr<Value> Value::decode(core::BinaryDecoder& dec)
 {
     return _decode<CopyAllocator>(dec);
 }
 
-Value* Value::decode_reusing_buffer(core::BinaryDecoder& dec)
+std::unique_ptr<Value> Value::decode_reusing_buffer(core::BinaryDecoder& dec)
 {
     return _decode<ReuseAllocator>(dec);
 }
 
-Value* Value::parse(const std::string& name, const std::string& str)
+std::unique_ptr<Value> Value::parse(const std::string& name, const std::string& str)
 {
-	size_t dummy;
-	return Value::parse(name, str, dummy);
+    size_t dummy;
+    return Value::parse(name, str, dummy);
 }
 
-Value* Value::parse(const std::string& name, const std::string& str, size_t& lenParsed)
+std::unique_ptr<Value> Value::parse(const std::string& name, const std::string& str, size_t& lenParsed)
 {
     size_t begin = skipSpaces(str, 0);
 
@@ -519,7 +519,7 @@ Value* Value::parse(const std::string& name, const std::string& str, size_t& len
     return values::Value::create_string(name, res);
 }
 
-Value* Value::create_integer(const std::string& name, int val)
+std::unique_ptr<Value> Value::create_integer(const std::string& name, int val)
 {
     std::vector<uint8_t> buf;
     core::BinaryEncoder enc(buf);
@@ -540,7 +540,7 @@ Value* Value::create_integer(const std::string& name, int val)
             encoded |= (val & 0x3f);
         }
         enc.add_raw(&encoded, 1u);
-        return new values::EncodedSInt6<CopyAllocator>(buf.data(), buf.size());
+        return std::unique_ptr<Value>(new values::EncodedSInt6<CopyAllocator>(buf.data(), buf.size()));
     }
     else
     {
@@ -576,11 +576,11 @@ Value* Value::create_integer(const std::string& name, int val)
         enc.add_raw(&type, 1u);
         enc.add_unsigned(encoded, nbytes);
 
-        return new values::EncodedNumber<CopyAllocator>(buf.data(), buf.size());
+        return std::unique_ptr<Value>(new values::EncodedNumber<CopyAllocator>(buf.data(), buf.size()));
     }
 }
 
-Value* Value::create_string(const std::string& name, const std::string& val)
+std::unique_ptr<Value> Value::create_string(const std::string& name, const std::string& val)
 {
     if (val.size() >= 64)
         throw std::runtime_error("cannot use string as a value: string '" + val + "' cannot be longer than 63 characters, but the string is " + std::to_string(val.size()) + " characters long");
@@ -599,45 +599,47 @@ Value* Value::create_string(const std::string& name, const std::string& val)
     // Value
     enc.add_raw(val);
 
-    return new values::EncodedString<CopyAllocator>(buf.data(), buf.size());
+    return std::unique_ptr<Value>(new values::EncodedString<CopyAllocator>(buf.data(), buf.size()));
 }
 
-}
 
+/*
+ * Values
+ */
 
-ValueBag::ValueBag() {}
+Values::Values() {}
 
-ValueBag::~ValueBag()
+Values::~Values()
 {
     for (auto& i: values)
         delete i;
 }
 
-ValueBag::ValueBag(ValueBag&& vb)
+Values::Values(Values&& vb)
     : values(std::move(vb.values))
 {
 }
 
-ValueBag::ValueBag(const ValueBag& vb)
-    : ValueBag()
+Values::Values(const Values& vb)
+    : Values()
 {
     for (const auto& v: vb.values)
-        values.emplace_back(v->clone());
+        values.emplace_back(v->clone().release());
 }
 
-ValueBag& ValueBag::operator=(const ValueBag& vb)
+Values& Values::operator=(const Values& vb)
 {
     // Handle the case a=a
     if (this == &vb) return *this;
 
     clear();
     for (const auto& v: vb.values)
-        values.emplace_back(v->clone());
+        values.emplace_back(v->clone().release());
 
     return *this;
 }
 
-ValueBag& ValueBag::operator=(ValueBag&& vb)
+Values& Values::operator=(Values&& vb)
 {
     // Handle the case a=a
     if (this == &vb) return *this;
@@ -646,6 +648,34 @@ ValueBag& ValueBag::operator=(ValueBag&& vb)
 
     return *this;
 }
+
+void Values::clear()
+{
+    for (auto* i: values)
+        delete i;
+    values.clear();
+}
+
+void Values::set(std::unique_ptr<values::Value> val)
+{
+    for (auto i = values.begin(); i != values.end(); ++i)
+    {
+        if ((*i)->name() == val->name())
+        {
+            delete *i;
+            *i = val.release();
+            return;
+        } else if ((*i)->name() > val->name()) {
+            values.emplace(i, val.release());
+            return;
+        }
+    }
+
+    values.emplace_back(val.release());
+}
+
+}
+
 
 int ValueBag::compare(const ValueBag& vb) const
 {
@@ -706,13 +736,6 @@ bool ValueBag::operator==(const ValueBag& vb) const
     return a == values.end() && b == vb.values.end();
 }
 
-void ValueBag::clear()
-{
-    for (auto* i: values)
-        delete i;
-    values.clear();
-}
-
 const values::Value* ValueBag::get(const std::string& key) const
 {
     for (const auto& i: values)
@@ -721,28 +744,10 @@ const values::Value* ValueBag::get(const std::string& key) const
     return nullptr;
 }
 
-void ValueBag::set(values::Value* val)
-{
-    for (auto i = values.begin(); i != values.end(); ++i)
-    {
-        if ((*i)->name() == val->name())
-        {
-            delete *i;
-            *i = val;
-            return;
-        } else if ((*i)->name() > val->name()) {
-            values.emplace(i, val);
-            return;
-        }
-    }
-
-    values.emplace_back(val);
-}
-
 void ValueBag::update(const ValueBag& vb)
 {
     for (const auto& v: vb.values)
-        set(v->clone());
+        values::Values::set(v->clone());
 }
 
 void ValueBag::encode(core::BinaryEncoder& enc) const
@@ -832,7 +837,7 @@ ValueBag ValueBag::parse(const std::string& str)
 
         // Set the value
         if (val.get())
-            res.set(val.release());
+            res.set(std::move(val));
         else
             throw_consistency_error("parsing key=value list", "cannot parse value at \""+str.substr(cur)+"\"");
 

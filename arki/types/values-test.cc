@@ -74,13 +74,13 @@ add_method("encoding", [] {
         wassert(var.encode(e));
         wassert(actual(enc.size()) == encsize);
         core::BinaryDecoder dec(enc);
-        wassert(v.reset(Value::decode(dec)));
+        wassert(v = Value::decode(dec));
         size_t decsize = dec.buf - enc.data();
         wassert(actual(decsize) == (encsize));
         wassert_true(*v == var);
 
         std::string enc1 = wcallchecked(var.toString());
-        wassert(v.reset(Value::parse("name", enc1)));
+        wassert(v = Value::parse("name", enc1));
         wassert_true(*v == var);
     };
 
@@ -114,13 +114,13 @@ add_method("valuebag", [] {
     v1.set("test4", "1");
 
     // Test accessors
-    val.reset(Value::create_integer("test1", 1));
+    val = Value::create_integer("test1", 1);
     wassert_true(*v1.get("test1") == *val);
-    val.reset(Value::create_integer("test2", 1000000));
+    val = Value::create_integer("test2", 1000000);
     wassert_true(*v1.get("test2") == *val);
-    val.reset(Value::create_integer("test3", -20));
+    val = Value::create_integer("test3", -20);
     wassert_true(*v1.get("test3") == *val);
-    val.reset(Value::create_string("test4", "1"));
+    val = Value::create_string("test4", "1");
     wassert_true(*v1.get("test4") == *val);
 
     wassert(actual(v1.size()) == 4u);
