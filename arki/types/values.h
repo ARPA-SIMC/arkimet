@@ -87,6 +87,14 @@ public:
      */
     void encode(core::BinaryEncoder& enc) const;
 
+	/**
+	 * Encode into a string representation
+	 */
+	std::string toString() const;
+
+    /// Send contents to an emitter
+    void serialise(structured::Emitter& e) const;
+
     /**
      * Decode from compact binary representation
      */
@@ -101,18 +109,10 @@ public:
      */
     static ValueBag decode_reusing_buffer(core::BinaryDecoder& dec);
 
-	/**
-	 * Encode into a string representation
-	 */
-	std::string toString() const;
-
-	/**
-	 * Parse from a string representation
-	 */
-	static ValueBag parse(const std::string& str);
-
-    /// Send contents to an emitter
-    void serialise(structured::Emitter& e) const;
+    /**
+     * Parse from a string representation
+     */
+    static ValueBag parse(const std::string& str);
 
     /// Parse from structured data
     static ValueBag parse(const structured::Reader& reader);

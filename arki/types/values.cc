@@ -846,63 +846,26 @@ void Values::set(std::unique_ptr<values::Value> val)
 
 int ValueBag::compare(const ValueBag& vb) const
 {
-    auto a = values.begin();
-    auto b = vb.values.begin();
-    for ( ; a != values.end() && b != vb.values.end(); ++a, ++b)
+    auto a = begin();
+    auto b = vb.begin();
+    for ( ; a != end() && b != vb.end(); ++a, ++b)
         if (int res = (*a)->compare(**b))
             return res;
-    if (a == values.end() && b == vb.values.end())
+    if (a == end() && b == vb.end())
         return 0;
-    if (a == values.end())
+    if (a == end())
         return -1;
     return 1;
 }
 
-#if 0
-bool ValueBag::contains(const ValueBag& vb) const
-{
-    // Both a and b are sorted, so we can iterate them linearly together
-    auto a = values.begin();
-    auto b = vb.values.begin();
-
-    while (a != values.end())
-    {
-        // Nothing else wanted anymore
-        if (b == vb.values.end()) return true;
-
-        if ((*a)->name() < (*b)->name())
-        {
-            // This value is not in the match expression
-            ++a;
-            continue;
-        }
-
-        if ((*b)->name() < (*a)->name())
-            // This value is wanted but we don't have it
-            return false;
-
-        if ((*a)->compare_values(**b) != 0)
-            // Same key, check if the value is the same
-            return false;
-
-        // If also the value is the same, move on to the next item
-        ++a;
-        ++b;
-    }
-    // We got to the end of a.  If there are still things in b, we don't
-    // match.  If we are also to the end of b, then we matched everything
-    return b == vb.values.end();
-}
-#endif
-
 bool ValueBag::operator==(const ValueBag& vb) const
 {
-    auto a = values.begin();
-    auto b = vb.values.begin();
-    for ( ; a != values.end() && b != vb.values.end(); ++a, ++b)
+    auto a = begin();
+    auto b = vb.begin();
+    for ( ; a != end() && b != vb.end(); ++a, ++b)
         if (**a != **b)
             return false;
-    return a == values.end() && b == vb.values.end();
+    return a == end() && b == vb.end();
 }
 
 void ValueBag::set(const std::string& key, int val) { values::Values::set(values::Value::create_integer(key, val)); }
@@ -910,7 +873,7 @@ void ValueBag::set(const std::string& key, const std::string& val) { values::Val
 
 void ValueBag::encode(core::BinaryEncoder& enc) const
 {
-    for (const auto& v: values)
+    for (const auto& v: *this)
         v->encode(enc);
 }
 
@@ -918,7 +881,7 @@ std::string ValueBag::toString() const
 {
     std::string res;
     bool first = true;
-    for (const auto& i : values)
+    for (const auto& i : *this)
     {
         if (first)
             first = false;
@@ -936,7 +899,7 @@ std::string ValueBag::toString() const
 void ValueBag::serialise(structured::Emitter& e) const
 {
     e.start_mapping();
-    for (const auto& i: values)
+    for (const auto& i: *this)
         i->serialise(e);
     e.end_mapping();
 }
