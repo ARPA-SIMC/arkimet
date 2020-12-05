@@ -21,7 +21,7 @@ struct MatchProddef : public Implementation
 
 struct MatchProddefGRIB : public MatchProddef
 {
-    types::ValueBag expr;
+    types::ValueBagMatcher expr;
 
     MatchProddefGRIB(const std::string& pattern);
     bool matchItem(const types::Type& o) const override;

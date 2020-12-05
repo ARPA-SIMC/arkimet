@@ -6,7 +6,7 @@ namespace arki {
 namespace utils {
 namespace vm2 {
 
-std::vector<int> find_stations(const types::ValueBag& query, meteo::vm2::Source* s)
+std::vector<int> find_stations(const types::ValueBagMatcher& query, meteo::vm2::Source* s)
 {
   meteo::vm2::Source* source = (s == nullptr ? meteo::vm2::Source::get() : s);
   lua_State* L = source->L;
@@ -24,7 +24,7 @@ std::vector<int> find_stations(const types::ValueBag& query, meteo::vm2::Source*
   return res;
 }
 
-std::vector<int> find_variables(const types::ValueBag& query, meteo::vm2::Source* s)
+std::vector<int> find_variables(const types::ValueBagMatcher& query, meteo::vm2::Source* s)
 {
   meteo::vm2::Source* source = (s == nullptr ? meteo::vm2::Source::get() : s);
   lua_State* L = source->L;

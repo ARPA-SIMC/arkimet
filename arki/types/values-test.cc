@@ -170,15 +170,14 @@ add_method("valuebag", [] {
 // problem was elsewhere)
 add_method("regression1", [] {
     ValueBag v1;
-    ValueBag v2;
+    auto v2 = ValueBagMatcher::parse("sta=88");
 
     v1.set("blo", 10);
     v1.set("lat", 5480000);
     v1.set("lon", 895000);
     v1.set("sta", 22);
-    v2.set("sta", 88);
 
-    wassert_false(v1.contains(v2));
+    wassert_false(v2.is_subset(v1));
 });
 
 }

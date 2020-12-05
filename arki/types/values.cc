@@ -691,6 +691,7 @@ int ValueBag::compare(const ValueBag& vb) const
     return 1;
 }
 
+#if 0
 bool ValueBag::contains(const ValueBag& vb) const
 {
     // Both a and b are sorted, so we can iterate them linearly together
@@ -725,6 +726,7 @@ bool ValueBag::contains(const ValueBag& vb) const
     // match.  If we are also to the end of b, then we matched everything
     return b == vb.values.end();
 }
+#endif
 
 bool ValueBag::operator==(const ValueBag& vb) const
 {
@@ -799,9 +801,6 @@ ValueBag ValueBag::decode_reusing_buffer(core::BinaryDecoder& dec)
     return res;
 }
 
-/**
- * Parse from a string representation
- */
 ValueBag ValueBag::parse(const std::string& str)
 {
 	// Parsa key\s*=\s*val
@@ -874,30 +873,6 @@ ValueBag ValueBag::parse(const structured::Reader& reader)
 }
 
 #ifdef HAVE_LUA
-void ValueBag::lua_push(lua_State* L) const
-{
-    lua_newtable(L);
-    for (const auto& i: values)
-    {
-        auto name = i->name();
-        lua_pushlstring(L, name.data(), name.size());
-        // TODO: reorganise the hierarchy to have int/string accessors not yet templatized?
-        if (auto vs = dynamic_cast<const values::EncodedInt<values::ReuseAllocator>*>(i))
-        {
-            lua_pushnumber(L, vs->value());
-        } else if (auto vs = dynamic_cast<const values::EncodedString<values::ReuseAllocator>*>(i)) {
-            std::string val = vs->toString();
-            lua_pushlstring(L, val.data(), val.size());
-        } else {
-            std::string val = i->toString();
-            lua_pushlstring(L, val.data(), val.size());
-        }
-        // Set name = val in the table
-        lua_settable(L, -3);
-    }
-    // Leave the table on the stack: we pushed it
-}
-
 void ValueBag::load_lua_table(lua_State* L, int idx)
 {
 	// Make the table index absolute
@@ -943,6 +918,134 @@ void ValueBag::load_lua_table(lua_State* L, int idx)
 	lua_pop(L, 1);
 }
 #endif
+
+bool ValueBagMatcher::is_subset(const values::Values& vb) const
+{
+    // Both a and b are sorted, so we can iterate them linearly together
+    auto a = values.begin();
+    auto b = vb.values.begin();
+
+    while (b != vb.values.end())
+    {
+        // Nothing else wanted anymore
+        if (a == values.end()) return true;
+
+        if ((*a)->name() < (*b)->name())
+            // This value is wanted but we don't have it
+            return false;
+
+        if ((*b)->name() < (*a)->name())
+        {
+            // This value is not in the match expression
+            ++b;
+            continue;
+        }
+
+        if ((*a)->compare_values(**b) != 0)
+            // Same key, check if the value is the same
+            return false;
+
+        // If also the value is the same, move on to the next item
+        ++a;
+        ++b;
+    }
+    // We got to the end of a.  If there are still things in b, we don't
+    // match.  If we are also to the end of b, then we matched everything
+    return a == values.end();
+}
+
+std::string ValueBagMatcher::to_string() const
+{
+    std::string res;
+    bool first = true;
+    for (const auto& i : values)
+    {
+        if (first)
+            first = false;
+        else
+            res += ", ";
+        auto name = i->name();
+        res.append(name.data(), name.size());
+        // TODO: when we can have real string_view: res += i->name();
+        res += '=';
+        res += i->toString();
+    }
+    return res;
+}
+
+#ifdef HAVE_LUA
+void ValueBagMatcher::lua_push(lua_State* L) const
+{
+    lua_newtable(L);
+    for (const auto& i: values)
+    {
+        auto name = i->name();
+        lua_pushlstring(L, name.data(), name.size());
+        // TODO: reorganise the hierarchy to have int/string accessors not yet templatized?
+        if (auto vs = dynamic_cast<const values::EncodedInt<values::ReuseAllocator>*>(i))
+        {
+            lua_pushnumber(L, vs->value());
+        } else if (auto vs = dynamic_cast<const values::EncodedString<values::ReuseAllocator>*>(i)) {
+            std::string val = vs->toString();
+            lua_pushlstring(L, val.data(), val.size());
+        } else {
+            std::string val = i->toString();
+            lua_pushlstring(L, val.data(), val.size());
+        }
+        // Set name = val in the table
+        lua_settable(L, -3);
+    }
+    // Leave the table on the stack: we pushed it
+}
+#endif
+
+ValueBagMatcher ValueBagMatcher::parse(const std::string& str)
+{
+    ValueBagMatcher res;
+    size_t begin = 0;
+    while (begin < str.size())
+    {
+        // Take until the next '='
+        size_t cur = str.find('=', begin);
+        // If there are no more '=', check that we are at the end
+        if (cur == std::string::npos)
+        {
+            cur = skipSpaces(str, begin);
+            if (cur != str.size())
+                throw_consistency_error("parsing key=value list", "found invalid extra characters \""+str.substr(begin)+"\" at the end of the list");
+            break;
+        }
+
+        // Read the key
+        std::string key = str::strip(str.substr(begin, cur-begin));
+
+        // Skip the '=' sign
+        ++cur;
+
+        // Skip spaces after the '='
+        cur = skipSpaces(str, cur);
+
+        // Parse the value
+        size_t lenParsed;
+        std::unique_ptr<values::Value> val(values::Value::parse(key, str.substr(cur), lenParsed));
+
+        // Set the value
+        if (val.get())
+            res.set(std::move(val));
+        else
+            throw_consistency_error("parsing key=value list", "cannot parse value at \""+str.substr(cur)+"\"");
+
+        // Move on to the next one
+        begin = cur + lenParsed;
+
+        // Skip separators
+        while (begin != str.size() && (isspace(str[begin]) || str[begin] == ','))
+            ++begin;
+    }
+
+    return res;
+}
+
 
 }
 }

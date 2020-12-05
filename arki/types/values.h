@@ -16,6 +16,7 @@ struct lua_State;
 namespace arki {
 namespace types {
 class ValueBag;
+class ValueBagMatcher;
 
 namespace values {
 class Values;
@@ -122,6 +123,7 @@ public:
 
     friend class Values;
     friend class types::ValueBag;
+    friend class types::ValueBagMatcher;
 };
 
 /**
@@ -153,6 +155,8 @@ public:
     bool empty() const { return values.empty(); }
     size_t size() const { return values.size(); }
     void clear();
+
+    friend class arki::types::ValueBagMatcher;
 };
 
 }
@@ -168,8 +172,6 @@ public:
 	bool operator==(const ValueBag& vb) const;
 	bool operator!=(const ValueBag& vb) const { return !operator==(vb); }
 	int compare(const ValueBag& vb) const;
-
-	bool contains(const ValueBag& vb) const;
 
 	void update(const ValueBag& vb);
 
@@ -224,12 +226,11 @@ public:
     // Lua functions are still here because they are needed by arki::utils::vm2::find_*
     // and can be removed otherwise
 
-	/// Push to the LUA stack a table with the data of this ValueBag
-	void lua_push(lua_State* L) const;
-
     // Fill in the ValueBag from the Lua table on top of the stack.
     // The values can be string or integer (numbers will be truncated).
 	void load_lua_table(lua_State* L, int idx = -1);
+
+    friend class ValueBagMatcher;
 
 private:
     // Disable modifying subscription, because it'd be hard to deallocate the
@@ -237,8 +238,24 @@ private:
     values::Value*& operator[](const std::string& str);
 };
 
-struct ValueBagMatcher
+struct ValueBagMatcher : public values::Values
 {
+    using values::Values::Values;
+
+    bool is_subset(const values::Values& vb) const;
+
+    /**
+     * Encode into a string representation
+     */
+    std::string to_string() const;
+
+    /// Push to the LUA stack a table with the data of this ValueBag
+    void lua_push(lua_State* L) const;
+
+    /**
+     * Parse from a string representation
+     */
+    static ValueBagMatcher parse(const std::string& str);
 };
 
 static inline std::ostream& operator<<(std::ostream& o, const values::Value& v)

@@ -22,7 +22,7 @@ struct MatchArea : public Implementation
 
 struct MatchAreaGRIB : public MatchArea
 {
-    types::ValueBag expr;
+    types::ValueBagMatcher expr;
 
     MatchAreaGRIB(const std::string& pattern);
     bool matchItem(const types::Type& o) const override;
@@ -32,7 +32,7 @@ struct MatchAreaGRIB : public MatchArea
 
 struct MatchAreaODIMH5 : public MatchArea
 {
-    types::ValueBag expr;
+    types::ValueBagMatcher expr;
 
     MatchAreaODIMH5(const std::string& pattern);
     bool matchItem(const types::Type& o) const override;
@@ -44,7 +44,7 @@ struct MatchAreaVM2 : public MatchArea
 {
     // This is -1 when should be ignored
     int station_id;
-    types::ValueBag expr;
+    types::ValueBagMatcher expr;
     std::vector<int> idlist;
 
     MatchAreaVM2(const std::string& pattern);

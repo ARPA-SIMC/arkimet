@@ -124,7 +124,7 @@ MatchProductBUFR::MatchProductBUFR(const std::string& pattern)
 	type = args.getInt(0, -1);
 	subtype = args.getInt(1, -1);
 	localsubtype = args.getInt(2, -1);
-	values = ValueBag::parse(args.tail);
+    values = ValueBagMatcher::parse(args.tail);
 }
 
 bool MatchProductBUFR::matchItem(const Type& o) const
@@ -138,7 +138,7 @@ bool MatchProductBUFR::matchItem(const Type& o) const
     if (type != -1 && (unsigned)type != ty) return false;
     if (subtype != -1 && (unsigned)subtype != su) return false;
     if (localsubtype != -1 && (unsigned)localsubtype != lo) return false;
-    return va.contains(values);
+    return values.is_subset(va);
 }
 
 bool MatchProductBUFR::match_buffer(types::Code code, const uint8_t* data, unsigned size) const
@@ -152,7 +152,7 @@ bool MatchProductBUFR::match_buffer(types::Code code, const uint8_t* data, unsig
     if (type != -1 && (unsigned)type != ty) return false;
     if (subtype != -1 && (unsigned)subtype != su) return false;
     if (localsubtype != -1 && (unsigned)localsubtype != lo) return false;
-    return va.contains(values);
+    return values.is_subset(va);
 }
 
 std::string MatchProductBUFR::toString() const
@@ -170,9 +170,9 @@ std::string MatchProductBUFR::toString() const
 			if (localsubtype != -1) res << "," << localsubtype;
 		}
 	}
-	if (!values.empty())
-		res << ":" << values.toString();
-	return res.str();
+    if (!values.empty())
+        res << ":" << values.to_string();
+    return res.str();
 }
 
 static const double DOUBLENAN = std::numeric_limits<double>::quiet_NaN();
@@ -224,8 +224,8 @@ std::string MatchProductODIMH5::toString() const
 MatchProductVM2::MatchProductVM2(const std::string& pattern)
 {
     OptionalCommaList args(pattern, true);
-	variable_id = args.getInt(0, -1);
-    expr = ValueBag::parse(args.tail);
+    variable_id = args.getInt(0, -1);
+    expr = ValueBagMatcher::parse(args.tail);
 #ifdef HAVE_VM2
     if (!expr.empty())
         idlist = utils::vm2::find_variables(expr);
@@ -269,9 +269,9 @@ std::string MatchProductVM2::toString() const
 	{
 		res << "," << variable_id;
 	}
-	if (!expr.empty())
-		res << ":" << expr.toString();
-	return res.str();
+    if (!expr.empty())
+        res << ":" << expr.to_string();
+    return res.str();
 }
 
 Implementation* MatchProduct::parse(const std::string& pattern)
