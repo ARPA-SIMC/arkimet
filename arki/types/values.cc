@@ -11,6 +11,9 @@
 #include <cctype>
 #include <cstdio>
 #include <algorithm>
+#ifdef __cpp_lib_string_view
+#include <string_view>
+#endif
 
 #ifdef HAVE_LUA
 extern "C" {
@@ -72,8 +75,9 @@ namespace types {
 
 namespace values {
 
-#ifndef __cpp_lib_string_view
-
+#ifdef __cpp_lib_string_view
+typedef std::string_view string_view;
+#else
 // Implement the subset of string_view that we need here, until we can use the
 // real one (it needs C++17, which is currently not available on Centos 7)
 struct string_view
@@ -137,6 +141,203 @@ static const int ENC_NUM_INTEGER = 0;	// Sign in the next bit.  Number of bytes 
 static const int ENC_NUM_FLOAT = 1;		// Floating point, type in the next 4 bits.
 static const int ENC_NUM_UNUSED = 2;	// Unused.  Leave to 0.
 static const int ENC_NUM_EXTENDED = 3;	// Extension flag.  Type is given in the next 4 bits.
+
+
+void encode_int(core::BinaryEncoder& enc, int value)
+{
+    if (value >= -32 && value < 31)
+    {
+        // If it's a small one, encode in the remaining 6 bits
+        uint8_t lead = { ENC_SINT6 << 6 };
+        if (value < 0)
+        {
+            lead |= ((~(-value) + 1) & 0x3f);
+        } else {
+            lead |= (value & 0x3f);
+        }
+        enc.add_byte(lead);
+    }
+    else
+    {
+        // Else, encode as an integer Number
+
+        // Type
+        uint8_t lead = (ENC_NUMBER << 6) | (ENC_NUM_INTEGER << 4);
+        // Value to encode
+        unsigned int encoded;
+        if (value < 0)
+        {
+            // Sign bit
+            lead |= 0x8;
+            encoded = -value;
+        }
+        else
+            encoded = value;
+        // Number of bytes
+        unsigned nbytes;
+        // TODO: add bits for 64 bits here if it's ever needed
+        if (encoded & 0xff000000)
+            nbytes = 4;
+        else if (encoded & 0x00ff0000)
+            nbytes = 3;
+        else if (encoded & 0x0000ff00)
+            nbytes = 2;
+        else if (encoded & 0x000000ff)
+            nbytes = 1;
+        else
+            throw std::runtime_error("cannot encode integer number: value " + std::to_string(value) + " is too large to be encoded");
+
+        lead |= (nbytes-1);
+        enc.add_byte(lead);
+        enc.add_unsigned(encoded, nbytes);
+    }
+}
+
+int decode_sint6(uint8_t lead)
+{
+    if (lead & 0x20)
+        return -((~(lead-1)) & 0x3f);
+    else
+        return lead & 0x3f;
+}
+
+int decode_number(core::BinaryDecoder& dec, uint8_t lead)
+{
+    switch ((lead >> 4) & 0x3)
+    {
+        case ENC_NUM_INTEGER: {
+            // Sign in the next bit.  Number of bytes in the next 3 bits.
+            unsigned nbytes = (lead & 0x7) + 1;
+            unsigned val = dec.pop_uint(nbytes, "integer number value");
+            return (lead & 0x8) ? -val : val;
+        }
+        case ENC_NUM_FLOAT:
+            throw std::runtime_error("cannot decode value: the number value to decode is a floating point number, but decoding floating point numbers is not currently implemented");
+        case ENC_NUM_UNUSED:
+            throw std::runtime_error("cannot decode value: the number value to decode has an unknown type");
+        case ENC_NUM_EXTENDED:
+            throw std::runtime_error("cannot decode value: the number value to decode has an extended type, but no extended type is currently implemented");
+        default:
+            throw std::runtime_error("cannot decode value: control flow should never reach here (" __FILE__ ":" + std::to_string(__LINE__) + "), but the compiler cannot easily know it.  This is here to silence a compiler warning.");
+    }
+    return 0;
+}
+
+int decode_int(core::BinaryDecoder& dec, uint8_t lead)
+{
+    switch ((lead >> 6) & 0x3)
+    {
+        case ENC_SINT6:
+            return decode_sint6(lead);
+        case ENC_NUMBER:
+            return decode_number(dec, lead);
+        case ENC_NAME:
+            throw std::runtime_error("cannot decode number: the encoded value has type 'name'");
+        case ENC_EXTENDED:
+            throw std::runtime_error("cannot decode value: the encoded value has an extended type, but no extended type is currently implemented");
+        default:
+            throw std::runtime_error("cannot decode value: control flow should never reach here (" __FILE__ ":" + std::to_string(__LINE__) + "), but the compiler cannot easily know it.  This is here to silence a compiler warning.");
+    }
+}
+
+
+/**
+ * Base class for generic scalar values.
+ *
+ * This is needed in order to store arbitrary types for the key=value kind of
+ * types (like Area and Proddef).
+ *
+ * In practice, we have to create a dynamic type system.
+ */
+class Value
+{
+protected:
+    const uint8_t* data = nullptr;
+
+    /// Size of the data buffer
+    virtual unsigned encoded_size() const = 0;
+
+    /**
+     * Implementation identifier, used for sorting and downcasting
+     */
+    virtual unsigned type_id() const = 0;
+
+    /**
+     * Check if two values are the same.
+     *
+     * When this function is called, it can be assumed that
+     * type_id() == v.type_id()
+     */
+    virtual bool value_equals(const Value& v) const = 0;
+
+    /**
+     * Compare two items, returning <0 ==0 or >0 depending on results.
+     *
+     * When this function is called, it can be assumed that
+     * type_id() == v.type_id()
+     */
+    virtual int value_compare(const Value& v) const = 0;
+
+    values::string_view name() const;
+
+public:
+    Value(const uint8_t* data);
+    Value(const Value&) = delete;
+    Value(Value&&) = delete;
+    virtual ~Value();
+    Value& operator=(const Value&) = delete;
+    Value& operator=(Value&&) = delete;
+
+    bool operator==(const Value& v) const;
+    bool operator!=(const Value& v) const { return !operator==(v); }
+    int compare(const Value& v) const;
+    int compare_values(const Value& v) const;
+
+    /**
+     * Encode into a compact binary representation
+     */
+    void encode(core::BinaryEncoder& enc) const;
+
+    /**
+     * Encode into a string representation
+     */
+    virtual std::string toString() const = 0;
+
+    /// Send contents to an emitter
+    virtual void serialise(structured::Emitter& e) const = 0;
+
+    /**
+     * Decode from compact binary representation.
+     */
+    static std::unique_ptr<Value> decode(core::BinaryDecoder& dec);
+
+    /**
+     * Decode from compact binary representation, reusing the data from the
+     * buffer in dec.
+     *
+     * The buffer must remain valid during the whole lifetime of the ValueBag
+     * object.
+     */
+    static std::unique_ptr<Value> decode_reusing_buffer(core::BinaryDecoder& dec);
+
+    /**
+     * Parse from a string representation
+     */
+    static std::unique_ptr<Value> parse(const std::string& name, const std::string& str);
+
+    /**
+     * Parse from a string representation
+     */
+    static std::unique_ptr<Value> parse(const std::string& name, const std::string& str, size_t& lenParsed);
+
+    static std::unique_ptr<Value> create_integer(const std::string& name, int val);
+    static std::unique_ptr<Value> create_string(const std::string& name, const std::string& val);
+
+    friend class Values;
+    friend class types::ValueBag;
+    friend class types::ValueBagMatcher;
+};
+
 
 
 Value::Value(const uint8_t* data)
@@ -704,13 +905,8 @@ bool ValueBag::operator==(const ValueBag& vb) const
     return a == values.end() && b == vb.values.end();
 }
 
-const values::Value* ValueBag::get(const std::string& key) const
-{
-    for (const auto& i: values)
-        if (i->name() == key)
-            return i;
-    return nullptr;
-}
+void ValueBag::set(const std::string& key, int val) { values::Values::set(values::Value::create_integer(key, val)); }
+void ValueBag::set(const std::string& key, const std::string& val) { values::Values::set(values::Value::create_string(key, val)); }
 
 void ValueBag::encode(core::BinaryEncoder& enc) const
 {

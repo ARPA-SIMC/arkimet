@@ -4,9 +4,6 @@
 #include <arki/core/fwd.h>
 #include <arki/structured/fwd.h>
 #include <string>
-#ifdef __cpp_lib_string_view
-#include <string_view>
-#endif
 #include <vector>
 #include <memory>
 #include <iosfwd>
@@ -20,109 +17,12 @@ class ValueBagMatcher;
 
 namespace values {
 class Values;
+class Value;
 
-#ifdef __cpp_lib_string_view
-typedef std::string_view string_view;
-#else
-class string_view;
-#endif
-
-/**
- * Base class for generic scalar values.
- *
- * This is needed in order to store arbitrary types for the key=value kind of
- * types (like Area and Proddef).
- *
- * In practice, we have to create a dynamic type system.
- */
-class Value
-{
-protected:
-    const uint8_t* data = nullptr;
-
-    /// Size of the data buffer
-    virtual unsigned encoded_size() const = 0;
-
-    /**
-     * Implementation identifier, used for sorting and downcasting
-     */
-    virtual unsigned type_id() const = 0;
-
-    /**
-     * Check if two values are the same.
-     *
-     * When this function is called, it can be assumed that
-     * type_id() == v.type_id()
-     */
-    virtual bool value_equals(const Value& v) const = 0;
-
-    /**
-     * Compare two items, returning <0 ==0 or >0 depending on results.
-     *
-     * When this function is called, it can be assumed that
-     * type_id() == v.type_id()
-     */
-    virtual int value_compare(const Value& v) const = 0;
-
-    values::string_view name() const;
-
-public:
-    Value(const uint8_t* data);
-    Value(const Value&) = delete;
-    Value(Value&&) = delete;
-    virtual ~Value();
-    Value& operator=(const Value&) = delete;
-    Value& operator=(Value&&) = delete;
-
-    bool operator==(const Value& v) const;
-    bool operator!=(const Value& v) const { return !operator==(v); }
-    int compare(const Value& v) const;
-    int compare_values(const Value& v) const;
-
-    /**
-     * Encode into a compact binary representation
-     */
-    void encode(core::BinaryEncoder& enc) const;
-
-    /**
-     * Encode into a string representation
-     */
-    virtual std::string toString() const = 0;
-
-    /// Send contents to an emitter
-    virtual void serialise(structured::Emitter& e) const = 0;
-
-    /**
-     * Decode from compact binary representation.
-     */
-    static std::unique_ptr<Value> decode(core::BinaryDecoder& dec);
-
-    /**
-     * Decode from compact binary representation, reusing the data from the
-     * buffer in dec.
-     *
-     * The buffer must remain valid during the whole lifetime of the ValueBag
-     * object.
-     */
-    static std::unique_ptr<Value> decode_reusing_buffer(core::BinaryDecoder& dec);
-
-    /**
-     * Parse from a string representation
-     */
-    static std::unique_ptr<Value> parse(const std::string& name, const std::string& str);
-
-    /**
-     * Parse from a string representation
-     */
-    static std::unique_ptr<Value> parse(const std::string& name, const std::string& str, size_t& lenParsed);
-
-    static std::unique_ptr<Value> create_integer(const std::string& name, int val);
-    static std::unique_ptr<Value> create_string(const std::string& name, const std::string& val);
-
-    friend class Values;
-    friend class types::ValueBag;
-    friend class types::ValueBagMatcher;
-};
+void encode_int(core::BinaryEncoder& enc, int value);
+int decode_sint6(uint8_t lead);
+int decode_number(core::BinaryDecoder& dec, uint8_t lead);
+int decode_int(core::BinaryDecoder& dec, uint8_t lead);
 
 /**
  * Sorted container for values.
@@ -171,18 +71,11 @@ public:
 	bool operator!=(const ValueBag& vb) const { return !operator==(vb); }
 	int compare(const ValueBag& vb) const;
 
-    /**
-     * Gets a value.
-     *
-     * It returns nullptr if the value is not found.
-     */
-    const values::Value* get(const std::string& key) const;
-
     /// Set an integer value
-    void set(const std::string& key, int val) { values::Values::set(values::Value::create_integer(key, val)); }
+    void set(const std::string& key, int val);
 
     /// Set a string value
-    void set(const std::string& key, const std::string& val) { values::Values::set(values::Value::create_string(key, val)); }
+    void set(const std::string& key, const std::string& val);
 
     /**
      * Encode into a compact binary representation
@@ -254,10 +147,6 @@ struct ValueBagMatcher : public values::Values
     static ValueBagMatcher parse(const std::string& str);
 };
 
-static inline std::ostream& operator<<(std::ostream& o, const values::Value& v)
-{
-    return o << v.toString();
-}
 static inline std::ostream& operator<<(std::ostream& o, const ValueBag& v)
 {
     return o << v.toString();
