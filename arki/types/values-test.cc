@@ -128,7 +128,12 @@ add_method("valuebag", [] {
 
     // Test copy and comparison
     wassert_true(v1 != v2);
-    v2 = v1;
+
+    v2.clear();
+    v2.set("test1", 1);
+    v2.set("test2", 1000000);
+    v2.set("test3", -20);
+    v2.set("test4", "1");
 
     wassert(actual(v1.size()) == 4u);
     wassert(actual(v2.size()) == 4u);

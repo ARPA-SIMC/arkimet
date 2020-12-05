@@ -98,6 +98,7 @@ inline arki::tests::ActualType actual_type(const arki::types::Type* actual) { re
 inline arki::tests::ActualType actual(const arki::types::Type& actual) { return arki::tests::ActualType(&actual); }
 template<typename T>
 inline arki::tests::ActualType actual(const std::unique_ptr<T>& actual) { return arki::tests::ActualType(actual.get()); }
+inline arki::tests::Actual<const types::ValueBag&> actual(const types::ValueBag& actual) { return arki::tests::Actual<const types::ValueBag&>(actual); }
 
 template<typename TYPE>
 struct TypeTestCase : public TestCase

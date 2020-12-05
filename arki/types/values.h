@@ -87,6 +87,14 @@ public:
     void encode(core::BinaryEncoder& enc) const;
 
     /**
+     * Encode into a string representation
+     */
+    virtual std::string toString() const = 0;
+
+    /// Send contents to an emitter
+    virtual void serialise(structured::Emitter& e) const = 0;
+
+    /**
      * Decode from compact binary representation.
      */
     static std::unique_ptr<Value> decode(core::BinaryDecoder& dec);
@@ -99,14 +107,6 @@ public:
      * object.
      */
     static std::unique_ptr<Value> decode_reusing_buffer(core::BinaryDecoder& dec);
-
-    /**
-     * Encode into a string representation
-     */
-    virtual std::string toString() const = 0;
-
-    /// Send contents to an emitter
-    virtual void serialise(structured::Emitter& e) const = 0;
 
     /**
      * Parse from a string representation
@@ -146,10 +146,10 @@ protected:
 
 public:
     Values();
-    Values(const Values& vb);
+    Values(const Values& vb) = delete;
     Values(Values&& vb);
     ~Values();
-    Values& operator=(const Values& vb);
+    Values& operator=(const Values& vb) = delete;
     Values& operator=(Values&& vb);
 
     bool empty() const { return values.empty(); }

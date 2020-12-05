@@ -620,25 +620,6 @@ Values::Values(Values&& vb)
 {
 }
 
-Values::Values(const Values& vb)
-    : Values()
-{
-    for (const auto& v: vb.values)
-        values.emplace_back(v->clone().release());
-}
-
-Values& Values::operator=(const Values& vb)
-{
-    // Handle the case a=a
-    if (this == &vb) return *this;
-
-    clear();
-    for (const auto& v: vb.values)
-        values.emplace_back(v->clone().release());
-
-    return *this;
-}
-
 Values& Values::operator=(Values&& vb)
 {
     // Handle the case a=a
