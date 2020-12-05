@@ -111,78 +111,59 @@ static const int ENC_NUM_UNUSED = 2;	// Unused.  Leave to 0.
 static const int ENC_NUM_EXTENDED = 3;	// Extension flag.  Type is given in the next 4 bits.
 
 
-class Encoded : public Value
+Value::Value(const uint8_t* data, unsigned size)
+{
+    uint8_t* tdata = new uint8_t[size];
+    memcpy(tdata, data, size);
+    this->data = tdata;
+}
+
+Value::~Value()
+{
+    delete[] data;
+}
+
+std::string Value::name() const
+{
+    unsigned size = static_cast<unsigned>(data[0]);
+    return std::string(reinterpret_cast<const char*>(data) + 1, size);
+}
+
+void Value::encode(core::BinaryEncoder& enc) const
+{
+    enc.add_raw(data, encoded_size());
+}
+
+bool Value::operator==(const Value& v) const
+{
+    if (type_id() != v.type_id()) return false;
+    if (data[0] != v.data[0]) return false;
+    if (memcmp(data + 1, v.data + 1, data[0]) != 0) return false;
+    return value_equals(v);
+}
+
+int Value::compare(const Value& v) const
+{
+    // key: compare common string prefix
+    if (int res = memcmp(data + 1, v.data + 1, std::min(data[0], v.data[0]))) return res;
+    // key: if the prefix is the same, compare lengths
+    if (int res = data[0] - v.data[0]) return res;
+
+    if (int res = type_id() - v.type_id()) return res;
+    return value_compare(v);
+}
+
+int Value::compare_values(const Value& v) const
+{
+    if (int res = type_id() - v.type_id()) return res;
+    return value_compare(v);
+}
+
+
+class EncodedInt : public Value
 {
 protected:
-    const uint8_t* data = nullptr;
-
-public:
-    Encoded(const uint8_t* data, unsigned size)
-    {
-        uint8_t* tdata = new uint8_t[size];
-        memcpy(tdata, data, size);
-        this->data = tdata;
-    }
-    Encoded(const Encoded&) = delete;
-    Encoded(Encoded&&) = delete;
-    ~Encoded()
-    {
-        delete[] data;
-    }
-    Encoded& operator=(const Encoded&) = delete;
-    Encoded& operator=(Encoded&&) = delete;
-
-    virtual unsigned type_id() const = 0;
-
-    std::string name() const override
-    {
-        unsigned size = static_cast<unsigned>(data[0]);
-        return std::string(reinterpret_cast<const char*>(data) + 1, size);
-    }
-
-    bool operator==(const Value& v) const override
-    {
-        // TODO: skip this dynamic_cast once we become the base class
-        const Encoded* e = dynamic_cast<const Encoded*>(&v);
-        if (!e) return false;
-
-        if (type_id() != e->type_id()) return false;
-        if (data[0] != e->data[0]) return false;
-        return memcmp(data + 1, e->data + 1, data[0]) == 0;
-    }
-
-    int compare(const Value& v) const override
-    {
-        // TODO: skip this dynamic_cast once we become the base class
-        const Encoded* e = dynamic_cast<const Encoded*>(&v);
-        if (!e) return sortKey() - v.sortKey();
-
-        // Compare common string prefix
-        if (int res = memcmp(data + 1, e->data + 1, std::min(data[0], e->data[0]))) return res;
-
-        // If the prefix is the same, compare lengths
-        return data[0] - e->data[0];
-    }
-
-#if 0
-    void encode(core::BinaryEncoder& enc) const override
-    {
-        // Key length and key
-        enc.add_raw(data, data[0] + 1);
-    }
-#endif
-};
-
-
-class EncodedInt : public Encoded
-{
-public:
-    using Encoded::Encoded;
-
-    unsigned type_id() const override { return 1; }
-    int sortKey() const override { return 1; }
-
-    unsigned encoded_size() const
+    unsigned encoded_size() const override
     {
         // Size of the key size and key
         unsigned size = data[0] + 1;
@@ -204,6 +185,23 @@ public:
 
         return size;
     }
+
+    bool value_equals(const Value& v) const override
+    {
+        const EncodedInt* e = reinterpret_cast<const EncodedInt*>(&v);
+        return value() == e->value();
+    }
+
+    int value_compare(const Value& v) const override
+    {
+        const EncodedInt* e = reinterpret_cast<const EncodedInt*>(&v);
+        return value() - e->value();
+    }
+
+public:
+    using Value::Value;
+
+    unsigned type_id() const override { return 1; }
 
     EncodedInt* clone() const
     {
@@ -237,37 +235,6 @@ public:
         return 0;
     }
 
-    bool operator==(const Value& v) const override
-    {
-        // TODO: get rid of dynamic_cast
-        if (!Encoded::operator==(v)) return false;
-        const EncodedInt* e = dynamic_cast<const EncodedInt*>(&v);
-        if (!e) return false;
-        return value() == e->value();
-    }
-
-    int compare(const Value& v) const override
-    {
-        // TODO: get rid of dynamic_cast
-        if (int res = Encoded::compare(v)) return res;
-        const EncodedInt* e = dynamic_cast<const EncodedInt*>(&v);
-        if (!e) return sortKey() - v.sortKey();
-        return value() - e->value();
-    }
-
-    bool value_equals(const Value& v) const override
-    {
-        // TODO: get rid of dynamic_cast
-        const EncodedInt* e = dynamic_cast<const EncodedInt*>(&v);
-        if (!e) return false;
-        return value() == e->value();
-    }
-
-    void encode(core::BinaryEncoder& enc) const override
-    {
-        enc.add_raw(data, encoded_size());
-    }
-
     void serialise(structured::Emitter& e) const override
     {
         e.add(name());
@@ -281,15 +248,28 @@ public:
 };
 
 
-class EncodedString : public Encoded
+class EncodedString : public Value
 {
-public:
-    using Encoded::Encoded;
-
-    unsigned encoded_size() const
+protected:
+    unsigned encoded_size() const override
     {
         return data[0] + 2 + (data[data[0] + 1] & 0x3f);
     }
+
+    bool value_equals(const Value& v) const override
+    {
+        const EncodedString* e = reinterpret_cast<const EncodedString*>(&v);
+        return value() == e->value();
+    }
+
+    int value_compare(const Value& v) const override
+    {
+        const EncodedString* e = reinterpret_cast<const EncodedString*>(&v);
+        return value().compare(e->value());
+    }
+
+public:
+    using Value::Value;
 
     EncodedString* clone() const
     {
@@ -297,7 +277,6 @@ public:
     }
 
     unsigned type_id() const override { return 2; }
-    int sortKey() const override { return 2; }
 
     // TODO: get rid of std::string. Use string_view or a local version if we don't have C++17
     std::string value() const
@@ -306,37 +285,6 @@ public:
         unsigned pos = data[0] + 1;
         unsigned size = data[pos] & 0x3f;
         return std::string(reinterpret_cast<const char*>(data) + pos + 1, size);
-    }
-
-    bool operator==(const Value& v) const override
-    {
-        // TODO: get rid of dynamic_cast
-        if (!Encoded::operator==(v)) return false;
-        const EncodedString* e = dynamic_cast<const EncodedString*>(&v);
-        if (!e) return false;
-        return value() == e->value();
-    }
-
-    int compare(const Value& v) const override
-    {
-        // TODO: get rid of dynamic_cast
-        if (int res = Encoded::compare(v)) return res;
-        const EncodedString* e = dynamic_cast<const EncodedString*>(&v);
-        if (!e) return sortKey() - v.sortKey();
-        return value().compare(e->value());
-    }
-
-    bool value_equals(const Value& v) const override
-    {
-        // TODO: get rid of dynamic_cast
-        const EncodedString* e = dynamic_cast<const EncodedString*>(&v);
-        if (!e) return false;
-        return value() == e->value();
-    }
-
-    void encode(core::BinaryEncoder& enc) const override
-    {
-        enc.add_raw(data, encoded_size());
     }
 
     void serialise(structured::Emitter& e) const override
@@ -618,7 +566,7 @@ bool ValueBag::contains(const ValueBag& vb) const
             // This value is wanted but we don't have it
             return false;
 
-        if (!(*a)->value_equals(**b))
+        if ((*a)->compare_values(**b) != 0)
             // Same key, check if the value is the same
             return false;
 

@@ -23,26 +23,54 @@ namespace values {
  */
 class Value
 {
-public:
-    virtual ~Value() {}
+protected:
+    const uint8_t* data = nullptr;
 
-    virtual std::string name() const = 0;
+    /// Size of the data buffer
+    virtual unsigned encoded_size() const = 0;
 
-    virtual bool operator==(const Value& v) const = 0;
-    virtual bool operator!=(const Value& v) const { return !operator==(v); }
-    virtual int compare(const Value& v) const = 0;
+    /**
+     * Implementation identifier, used for sorting and downcasting
+     */
+    virtual unsigned type_id() const = 0;
+
+    /**
+     * Check if two values are the same.
+     *
+     * When this function is called, it can be assumed that
+     * type_id() == v.type_id()
+     */
     virtual bool value_equals(const Value& v) const = 0;
 
-	// Provide a unique sorting key to allow sorting of values of different
-	// types.
-	virtual int sortKey() const = 0;
+    /**
+     * Compare two items, returning <0 ==0 or >0 depending on results.
+     *
+     * When this function is called, it can be assumed that
+     * type_id() == v.type_id()
+     */
+    virtual int value_compare(const Value& v) const = 0;
 
-	virtual Value* clone() const = 0;
+public:
+    Value(const uint8_t* data, unsigned size);
+    Value(const Value&) = delete;
+    Value(Value&&) = delete;
+    virtual ~Value();
+    Value& operator=(const Value&) = delete;
+    Value& operator=(Value&&) = delete;
+
+    std::string name() const;
+
+    bool operator==(const Value& v) const;
+    bool operator!=(const Value& v) const { return !operator==(v); }
+    int compare(const Value& v) const;
+    int compare_values(const Value& v) const;
+
+    virtual Value* clone() const = 0;
 
     /**
      * Encode into a compact binary representation
      */
-    virtual void encode(core::BinaryEncoder& enc) const = 0;
+    void encode(core::BinaryEncoder& enc) const;
 
     /**
      * Decode from compact binary representation.
