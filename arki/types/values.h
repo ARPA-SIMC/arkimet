@@ -64,7 +64,7 @@ protected:
     values::string_view name() const;
 
 public:
-    Value(const uint8_t* data, unsigned size);
+    Value(const uint8_t* data);
     Value(const Value&) = delete;
     Value(Value&&) = delete;
     virtual ~Value();
@@ -85,15 +85,22 @@ public:
 
     /**
      * Decode from compact binary representation.
-     *
-     * @retval used The number of bytes decoded.
      */
     static Value* decode(core::BinaryDecoder& dec);
 
-	/**
-	 * Encode into a string representation
-	 */
-	virtual std::string toString() const = 0;
+    /**
+     * Decode from compact binary representation, reusing the data from the
+     * buffer in dec.
+     *
+     * The buffer must remain valid during the whole lifetime of the ValueBag
+     * object.
+     */
+    static Value* decode_reusing_buffer(core::BinaryDecoder& dec);
+
+    /**
+     * Encode into a string representation
+     */
+    virtual std::string toString() const = 0;
 
     /// Send contents to an emitter
     virtual void serialise(structured::Emitter& e) const = 0;
@@ -170,6 +177,15 @@ public:
      * Decode from compact binary representation
      */
     static ValueBag decode(core::BinaryDecoder& dec);
+
+    /**
+     * Decode from compact binary representation, reusing the data from the
+     * buffer in dec.
+     *
+     * The buffer must remain valid during the whole lifetime of the ValueBag
+     * object.
+     */
+    static ValueBag decode_reusing_buffer(core::BinaryDecoder& dec);
 
 	/**
 	 * Encode into a string representation

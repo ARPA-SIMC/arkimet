@@ -49,7 +49,7 @@ proddef::Style Proddef::style(const uint8_t* data, unsigned size)
 ValueBag Proddef::get_GRIB(const uint8_t* data, unsigned size)
 {
     core::BinaryDecoder dec(data + 1, size - 1);
-    return ValueBag::decode(dec);
+    return ValueBag::decode_reusing_buffer(dec);
 }
 
 int Proddef::compare(const Type& o) const

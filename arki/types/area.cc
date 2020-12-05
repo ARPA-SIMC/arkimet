@@ -59,12 +59,12 @@ area::Style Area::style(const uint8_t* data, unsigned size)
 ValueBag Area::get_GRIB(const uint8_t* data, unsigned size)
 {
     core::BinaryDecoder dec(data + 1, size - 1);
-    return ValueBag::decode(dec);
+    return ValueBag::decode_reusing_buffer(dec);
 }
 ValueBag Area::get_ODIMH5(const uint8_t* data, unsigned size)
 {
     core::BinaryDecoder dec(data + 1, size - 1);
-    return ValueBag::decode(dec);
+    return ValueBag::decode_reusing_buffer(dec);
 }
 unsigned Area::get_VM2(const uint8_t* data, unsigned size)
 {
@@ -365,7 +365,7 @@ ValueBag VM2::derived_values() const
     if (size > 5u)
     {
         core::BinaryDecoder dec(data + 5, size - 5);
-        return ValueBag::decode(dec);
+        return ValueBag::decode_reusing_buffer(dec);
     } else {
         return utils::vm2::get_station(get_VM2());
     }

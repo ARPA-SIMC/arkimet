@@ -88,7 +88,7 @@ void Product::get_BUFR(const uint8_t* data, unsigned size, unsigned& type, unsig
     type         = dec.pop_uint(1, "GRIB1 type");
     subtype      = dec.pop_uint(1, "GRIB1 subtype");
     localsubtype = dec.pop_uint(1, "GRIB1 localsubtype");
-    values = ValueBag::decode(dec);
+    values = ValueBag::decode_reusing_buffer(dec);
 }
 
 void Product::get_ODIMH5(const uint8_t* data, unsigned size, std::string& obj, std::string& prod)
@@ -730,7 +730,7 @@ ValueBag VM2::derived_values() const
     if (size > 5u)
     {
         core::BinaryDecoder dec(data + 5, size - 5);
-        return ValueBag::decode(dec);
+        return ValueBag::decode_reusing_buffer(dec);
     } else {
         unsigned variable_id;
         get_VM2(variable_id);

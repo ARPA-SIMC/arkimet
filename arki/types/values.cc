@@ -159,17 +159,12 @@ static const int ENC_NUM_UNUSED = 2;	// Unused.  Leave to 0.
 static const int ENC_NUM_EXTENDED = 3;	// Extension flag.  Type is given in the next 4 bits.
 
 
-Value::Value(const uint8_t* data, unsigned size)
+Value::Value(const uint8_t* data)
+    : data(data)
 {
-    uint8_t* tdata = new uint8_t[size];
-    memcpy(tdata, data, size);
-    this->data = tdata;
 }
 
-Value::~Value()
-{
-    delete[] data;
-}
+Value::~Value() {}
 
 values::string_view Value::name() const
 {
@@ -208,7 +203,63 @@ int Value::compare_values(const Value& v) const
 }
 
 
-class EncodedInt : public Value
+/*
+ * Copy allocator
+ */
+
+struct CopyAllocator
+{
+    static const uint8_t* create(const uint8_t* data, unsigned size)
+    {
+        uint8_t* tdata = new uint8_t[size];
+        memcpy(tdata, data, size);
+        return tdata;
+    }
+
+    static void remove(const uint8_t* data)
+    {
+        delete[] data;
+    }
+};
+
+struct ReuseAllocator
+{
+    static const uint8_t* create(const uint8_t* data, unsigned size)
+    {
+        return data;
+    }
+
+    static void remove(const uint8_t* data)
+    {
+    }
+};
+
+
+/*
+ * ValueBase
+ */
+
+template<typename Alloc>
+struct ValueBase : public Value
+{
+    ValueBase(const uint8_t* data, unsigned size)
+        : Value(Alloc::create(data, size))
+    {
+    }
+
+    ~ValueBase()
+    {
+        Alloc::remove(data);
+    }
+};
+
+
+/*
+ * EncodedInt
+ */
+
+template<typename Alloc>
+class EncodedInt : public ValueBase<Alloc>
 {
 protected:
     bool value_equals(const Value& v) const override
@@ -224,7 +275,7 @@ protected:
     }
 
 public:
-    using Value::Value;
+    using ValueBase<Alloc>::ValueBase;
 
     unsigned type_id() const override { return 1; }
 
@@ -232,7 +283,7 @@ public:
 
     void serialise(structured::Emitter& e) const override
     {
-        auto n = name();
+        auto n = this->name();
         e.add(std::string(n.data(), n.size()));
         e.add_int(value());
     }
@@ -244,25 +295,26 @@ public:
 };
 
 
-class EncodedSInt6 : public EncodedInt
+template<typename Alloc>
+class EncodedSInt6 : public EncodedInt<Alloc>
 {
     unsigned encoded_size() const override
     {
         // Size of the key size and key, and one byte of type and number
-        return data[0] + 2;
+        return this->data[0] + 2;
     }
 
 public:
-    using EncodedInt::EncodedInt;
+    using EncodedInt<Alloc>::EncodedInt;
 
     EncodedSInt6* clone() const
     {
-        return new EncodedSInt6(data, encoded_size());
+        return new EncodedSInt6(this->data, encoded_size());
     }
 
     int value() const override
     {
-        uint8_t lead = data[data[0] + 1];
+        uint8_t lead = this->data[this->data[0] + 1];
         if (lead & 0x20)
             return -((~(lead-1)) & 0x3f);
         else
@@ -271,15 +323,16 @@ public:
 };
 
 
-class EncodedNumber : public EncodedInt
+template<typename Alloc>
+class EncodedNumber : public EncodedInt<Alloc>
 {
 protected:
     unsigned encoded_size() const override
     {
         // Size of the key size and key
-        unsigned size = data[0] + 1;
+        unsigned size = this->data[0] + 1;
 
-        uint8_t lead = data[size++];
+        uint8_t lead = this->data[size++];
         switch ((lead >> 4) & 0x3)
         {
             case ENC_NUM_INTEGER:
@@ -292,24 +345,24 @@ protected:
     }
 
 public:
-    using EncodedInt::EncodedInt;
+    using EncodedInt<Alloc>::EncodedInt;
 
     EncodedNumber* clone() const
     {
-        return new EncodedNumber(data, encoded_size());
+        return new EncodedNumber(this->data, encoded_size());
     }
 
     int value() const override
     {
         // Skip key
-        unsigned pos = data[0] + 1;
-        uint8_t lead = data[pos];
+        unsigned pos = this->data[0] + 1;
+        uint8_t lead = this->data[pos];
         switch ((lead >> 4) & 0x3)
         {
             case ENC_NUM_INTEGER: {
                 // Sign in the next bit.  Number of bytes in the next 3 bits.
                 unsigned nbytes = (lead & 0x7) + 1;
-                unsigned val = core::BinaryDecoder::decode_uint(data + pos + 1, nbytes);
+                unsigned val = core::BinaryDecoder::decode_uint(this->data + pos + 1, nbytes);
                 return (lead & 0x8) ? -val : val;
             }
         }
@@ -318,12 +371,13 @@ public:
 };
 
 
-class EncodedString : public Value
+template<typename Alloc>
+class EncodedString : public ValueBase<Alloc>
 {
 protected:
     unsigned encoded_size() const override
     {
-        return data[0] + 2 + (data[data[0] + 1] & 0x3f);
+        return this->data[0] + 2 + (this->data[this->data[0] + 1] & 0x3f);
     }
 
     bool value_equals(const Value& v) const override
@@ -339,11 +393,11 @@ protected:
     }
 
 public:
-    using Value::Value;
+    using ValueBase<Alloc>::ValueBase;
 
     EncodedString* clone() const
     {
-        return new EncodedString(data, encoded_size());
+        return new EncodedString(this->data, encoded_size());
     }
 
     unsigned type_id() const override { return 2; }
@@ -352,14 +406,14 @@ public:
     std::string value() const
     {
         // Skip key
-        unsigned pos = data[0] + 1;
-        unsigned size = data[pos] & 0x3f;
-        return std::string(reinterpret_cast<const char*>(data) + pos + 1, size);
+        unsigned pos = this->data[0] + 1;
+        unsigned size = this->data[pos] & 0x3f;
+        return std::string(reinterpret_cast<const char*>(this->data) + pos + 1, size);
     }
 
     void serialise(structured::Emitter& e) const override
     {
-        auto n = name();
+        auto n = this->name();
         e.add(std::string(n.data(), n.size()));
         e.add_string(value());
     }
@@ -380,7 +434,8 @@ public:
     }
 };
 
-Value* Value::decode(core::BinaryDecoder& dec)
+template<typename Alloc>
+static Value* _decode(core::BinaryDecoder& dec)
 {
     // Mark the location of the beginning of the memory buffer
     const uint8_t* begin = dec.buf;
@@ -395,7 +450,7 @@ Value* Value::decode(core::BinaryDecoder& dec)
     switch ((lead >> 6) & 0x3)
     {
         case ENC_SINT6:
-            return new EncodedSInt6(begin, dec.buf - begin);
+            return new EncodedSInt6<Alloc>(begin, dec.buf - begin);
         case ENC_NUMBER: {
             switch ((lead >> 4) & 0x3)
             {
@@ -404,7 +459,7 @@ Value* Value::decode(core::BinaryDecoder& dec)
                     // Sign in the next bit.  Number of bytes in the next 3 bits.
                     unsigned nbytes = (lead & 0x7) + 1;
                     dec.skip(nbytes, "integer number value");
-                    return new EncodedNumber(begin, dec.buf - begin);
+                    return new EncodedNumber<Alloc>(begin, dec.buf - begin);
                 }
                 case ENC_NUM_FLOAT:
                     throw std::runtime_error("cannot decode value: the number value to decode is a floating point number, but decoding floating point numbers is not currently implemented");
@@ -418,12 +473,22 @@ Value* Value::decode(core::BinaryDecoder& dec)
         }
         case ENC_NAME:
             dec.skip(lead & 0x3f, "string value");
-            return new EncodedString(begin, dec.buf - begin);
+            return new EncodedString<Alloc>(begin, dec.buf - begin);
         case ENC_EXTENDED:
             throw std::runtime_error("cannot decode value: the encoded value has an extended type, but no extended type is currently implemented");
         default:
             throw std::runtime_error("cannot decode value: control flow should never reach here (" __FILE__ ":" + std::to_string(__LINE__) + "), but the compiler cannot easily know it.  This is here to silence a compiler warning.");
     }
+}
+
+Value* Value::decode(core::BinaryDecoder& dec)
+{
+    return _decode<CopyAllocator>(dec);
+}
+
+Value* Value::decode_reusing_buffer(core::BinaryDecoder& dec)
+{
+    return _decode<ReuseAllocator>(dec);
 }
 
 Value* Value::parse(const std::string& name, const std::string& str)
@@ -495,7 +560,7 @@ Value* Value::create_integer(const std::string& name, int val)
             encoded |= (val & 0x3f);
         }
         enc.add_raw(&encoded, 1u);
-        return new values::EncodedSInt6(buf.data(), buf.size());
+        return new values::EncodedSInt6<CopyAllocator>(buf.data(), buf.size());
     }
     else
     {
@@ -531,7 +596,7 @@ Value* Value::create_integer(const std::string& name, int val)
         enc.add_raw(&type, 1u);
         enc.add_unsigned(encoded, nbytes);
 
-        return new values::EncodedNumber(buf.data(), buf.size());
+        return new values::EncodedNumber<CopyAllocator>(buf.data(), buf.size());
     }
 }
 
@@ -554,7 +619,7 @@ Value* Value::create_string(const std::string& name, const std::string& val)
     // Value
     enc.add_raw(val);
 
-    return new values::EncodedString(buf.data(), buf.size());
+    return new values::EncodedString<CopyAllocator>(buf.data(), buf.size());
 }
 
 }
@@ -733,14 +798,19 @@ void ValueBag::serialise(structured::Emitter& e) const
     e.end_mapping();
 }
 
-/**
- * Decode from compact binary representation
- */
 ValueBag ValueBag::decode(core::BinaryDecoder& dec)
 {
     ValueBag res;
     while (dec)
         res.set(values::Value::decode(dec));
+    return res;
+}
+
+ValueBag ValueBag::decode_reusing_buffer(core::BinaryDecoder& dec)
+{
+    ValueBag res;
+    while (dec)
+        res.set(values::Value::decode_reusing_buffer(dec));
     return res;
 }
 
@@ -826,10 +896,11 @@ void ValueBag::lua_push(lua_State* L) const
     {
         auto name = i->name();
         lua_pushlstring(L, name.data(), name.size());
-        if (const values::EncodedInt* vs = dynamic_cast<const values::EncodedInt*>(i))
+        // TODO: reorganise the hierarchy to have int/string accessors not yet templatized?
+        if (auto vs = dynamic_cast<const values::EncodedInt<values::ReuseAllocator>*>(i))
         {
             lua_pushnumber(L, vs->value());
-        } else if (const values::EncodedString* vs = dynamic_cast<const values::EncodedString*>(i)) {
+        } else if (auto vs = dynamic_cast<const values::EncodedString<values::ReuseAllocator>*>(i)) {
             std::string val = vs->toString();
             lua_pushlstring(L, val.data(), val.size());
         } else {
