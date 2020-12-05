@@ -31,20 +31,19 @@ int decode_int(core::BinaryDecoder& dec, uint8_t lead);
  * Values are sorted by name. Values with the same name are replaced, meaning
  * that names are kept unique.
  */
-template<typename VALUE>
 class Values
 {
 protected:
-    std::vector<VALUE*> values;
+    std::vector<Value*> values;
 
     /**
      * Sets a value.
      *
      * It takes ownership of the Value pointer.
      */
-    void set(std::unique_ptr<VALUE> val);
+    void set(std::unique_ptr<Value> val);
 
-    size_t size() const { return values.size(); }
+    size_t size() const;
     void clear();
 
 public:
@@ -64,7 +63,7 @@ public:
 
 struct ValueBagBuilder
 {
-    values::Values<values::Value> values;
+    values::Values values;
 
     void add(std::unique_ptr<Value> value);
     void add(const std::string& key, const std::string& val);
@@ -165,9 +164,9 @@ private:
     values::Value*& operator[](const std::string& str);
 };
 
-struct ValueBagMatcher : public values::Values<values::Value>
+struct ValueBagMatcher : public values::Values
 {
-    using values::Values<values::Value>::Values;
+    using values::Values::Values;
 
     bool is_subset(const ValueBag& vb) const;
 

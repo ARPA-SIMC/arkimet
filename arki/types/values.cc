@@ -536,7 +536,7 @@ public:
     static std::unique_ptr<Value> create_integer(const std::string& name, int val);
     static std::unique_ptr<Value> create_string(const std::string& name, const std::string& val);
 
-    friend class Values<values::Value>;
+    friend class Values;
     friend class types::ValueBag;
     friend class types::ValueBagMatcher;
 };
@@ -704,111 +704,22 @@ std::unique_ptr<Value> EncodedValue::decode(core::BinaryDecoder& dec)
 }
 
 
-#if 0
-std::unique_ptr<Value> Value::create_integer(const std::string& name, int val)
-{
-    std::vector<uint8_t> buf;
-    core::BinaryEncoder enc(buf);
-
-    // Key length
-    enc.add_unsigned(name.size(), 1);
-    // Key
-    enc.add_raw(name);
-
-    if (val >= -32 && val < 31)
-    {
-        // If it's a small one, encode in the remaining 6 bits
-        uint8_t encoded = { ENC_SINT6 << 6 };
-        if (val < 0)
-        {
-            encoded |= ((~(-val) + 1) & 0x3f);
-        } else {
-            encoded |= (val & 0x3f);
-        }
-        enc.add_raw(&encoded, 1u);
-        return std::unique_ptr<Value>(new values::EncodedSInt6<CopyAllocator>(buf.data(), buf.size()));
-    }
-    else
-    {
-        // Else, encode as an integer Number
-
-        // Type
-        uint8_t type = (ENC_NUMBER << 6) | (ENC_NUM_INTEGER << 4);
-        // Value to encode
-        unsigned int encoded;
-        if (val < 0)
-        {
-            // Sign bit
-            type |= 0x8;
-            encoded = -val;
-        }
-        else
-            encoded = val;
-        // Number of bytes
-        unsigned nbytes;
-        // TODO: add bits for 64 bits here if it's ever needed
-        if (encoded & 0xff000000)
-            nbytes = 4;
-        else if (encoded & 0x00ff0000)
-            nbytes = 3;
-        else if (encoded & 0x0000ff00)
-            nbytes = 2;
-        else if (encoded & 0x000000ff)
-            nbytes = 1;
-        else
-            throw std::runtime_error("cannot encode integer number: value " + std::to_string(val) + " is too large to be encoded");
-
-        type |= (nbytes-1);
-        enc.add_raw(&type, 1u);
-        enc.add_unsigned(encoded, nbytes);
-
-        return std::unique_ptr<Value>(new values::EncodedNumber<CopyAllocator>(buf.data(), buf.size()));
-    }
-}
-
-std::unique_ptr<Value> Value::create_string(const std::string& name, const std::string& val)
-{
-    if (val.size() >= 64)
-        throw std::runtime_error("cannot use string as a value: string '" + val + "' cannot be longer than 63 characters, but the string is " + std::to_string(val.size()) + " characters long");
-
-    std::vector<uint8_t> buf;
-    core::BinaryEncoder enc(buf);
-
-    // Key length
-    enc.add_unsigned(name.size(), 1);
-    // Key
-    enc.add_raw(name);
-    // Type and value length
-    uint8_t type = ENC_NAME << 6;
-    type |= val.size() & 0x3f;
-    enc.add_byte(type);
-    // Value
-    enc.add_raw(val);
-
-    return std::unique_ptr<Value>(new values::EncodedString<CopyAllocator>(buf.data(), buf.size()));
-}
-#endif
-
-
 /*
  * Values
  */
 
-template<typename VALUE>
-Values<VALUE>::~Values()
+Values::~Values()
 {
     for (auto& i: values)
         delete i;
 }
 
-template<typename VALUE>
-Values<VALUE>::Values(Values&& vb)
+Values::Values(Values&& vb)
     : values(std::move(vb.values))
 {
 }
 
-template<typename VALUE>
-Values<VALUE>& Values<VALUE>::operator=(Values&& vb)
+Values& Values::operator=(Values&& vb)
 {
     // Handle the case a=a
     if (this == &vb) return *this;
@@ -818,16 +729,16 @@ Values<VALUE>& Values<VALUE>::operator=(Values&& vb)
     return *this;
 }
 
-template<typename VALUE>
-void Values<VALUE>::clear()
+size_t Values::size() const { return values.size(); }
+
+void Values::clear()
 {
     for (auto* i: values)
         delete i;
     values.clear();
 }
 
-template<typename VALUE>
-void Values<VALUE>::set(std::unique_ptr<VALUE> val)
+void Values::set(std::unique_ptr<Value> val)
 {
     for (auto i = values.begin(); i != values.end(); ++i)
     {
@@ -1100,41 +1011,24 @@ ValueBag ValueBag::parse(const std::string& str)
 
 ValueBag ValueBag::parse(const structured::Reader& reader)
 {
-    values::Values<values::Value> res;
+    values::ValueBagBuilder builder;
     reader.items("values", [&](const std::string& key, const structured::Reader& val) {
         switch (val.type())
         {
             case structured::NodeType::NONE:
                 break;
             case structured::NodeType::INT:
-            {
-                std::unique_ptr<values::Value> v(new values::BuildValueInt(key, val.as_int("int value")));
-                res.set(std::move(v));
+                builder.add(key, val.as_int("int value"));
                 break;
-            }
             case structured::NodeType::STRING:
-            {
-                std::unique_ptr<values::Value> v(new values::BuildValueString(key, val.as_string("string value")));
-                res.set(std::move(v));
+                builder.add(key, val.as_string("string value"));
                 break;
-            }
             default:
                 throw std::runtime_error("cannot decode value " + key + ": value is neither integer nor string");
         }
     });
 
-    // Encode into a buffer
-    std::vector<uint8_t> buf;
-    core::BinaryEncoder enc(buf);
-    for (const auto& v: res.values)
-        v->encode(enc);
-
-    // FIXME: it would be great to detatch the vector's buffer, but we cannot.
-    // We need another copy instead.
-    std::unique_ptr<uint8_t[]> priv(new uint8_t[buf.size()]);
-    memcpy(priv.get(), buf.data(), buf.size());
-
-    return ValueBag(priv.release(), buf.size(), true);
+    return builder.build();
 }
 
 #ifdef HAVE_LUA
@@ -1316,10 +1210,6 @@ ValueBagMatcher ValueBagMatcher::parse(const std::string& str)
     }
 
     return res;
-}
-
-namespace values {
-template class Values<values::Value>;
 }
 
 }
