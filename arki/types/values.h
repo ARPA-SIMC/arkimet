@@ -79,8 +79,6 @@ public:
     int compare(const Value& v) const;
     int compare_values(const Value& v) const;
 
-    virtual std::unique_ptr<Value> clone() const = 0;
-
     /**
      * Encode into a compact binary representation
      */
@@ -172,8 +170,6 @@ public:
 	bool operator==(const ValueBag& vb) const;
 	bool operator!=(const ValueBag& vb) const { return !operator==(vb); }
 	int compare(const ValueBag& vb) const;
-
-	void update(const ValueBag& vb);
 
     /**
      * Gets a value.

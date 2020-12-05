@@ -287,11 +287,6 @@ class EncodedSInt6 : public EncodedInt<Alloc>
 public:
     using EncodedInt<Alloc>::EncodedInt;
 
-    std::unique_ptr<Value> clone() const
-    {
-        return std::unique_ptr<Value>(new EncodedSInt6(this->data, encoded_size()));
-    }
-
     int value() const override
     {
         uint8_t lead = this->data[this->data[0] + 1];
@@ -326,11 +321,6 @@ protected:
 
 public:
     using EncodedInt<Alloc>::EncodedInt;
-
-    std::unique_ptr<Value> clone() const
-    {
-        return std::unique_ptr<Value>(new EncodedNumber(this->data, encoded_size()));
-    }
 
     int value() const override
     {
@@ -374,11 +364,6 @@ protected:
 
 public:
     using ValueBase<Alloc>::ValueBase;
-
-    std::unique_ptr<Value> clone() const
-    {
-        return std::unique_ptr<Value>(new EncodedString(this->data, encoded_size()));
-    }
 
     unsigned type_id() const override { return 2; }
 
@@ -725,12 +710,6 @@ const values::Value* ValueBag::get(const std::string& key) const
         if (i->name() == key)
             return i;
     return nullptr;
-}
-
-void ValueBag::update(const ValueBag& vb)
-{
-    for (const auto& v: vb.values)
-        values::Values::set(v->clone());
 }
 
 void ValueBag::encode(core::BinaryEncoder& enc) const
