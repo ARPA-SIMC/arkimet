@@ -158,7 +158,7 @@ add_method("valuebag", [] {
     wassert(actual(v1) == v2);
 
     // Test clear
-    v2.clear();
+    v2 = ValueBag();
     wassert(actual(vbsize(v1)) == 4u);
     wassert(actual(vbsize(v2)) == 0u);
 
@@ -174,7 +174,7 @@ add_method("valuebag", [] {
     wassert(actual(vbsize(v1)) == 4u);
     wassert(actual(vbsize(v2)) == 4u);
 
-    v2.clear();
+    v2 = ValueBag();
     wassert(actual(vbsize(v1)) == 4u);
     wassert(actual(vbsize(v2)) == 0u);
 

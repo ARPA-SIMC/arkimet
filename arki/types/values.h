@@ -43,6 +43,7 @@ protected:
     void set(std::unique_ptr<values::Value> val);
 
     size_t size() const { return values.size(); }
+    void clear();
 
 public:
     Values();
@@ -53,7 +54,6 @@ public:
     Values& operator=(Values&& vb);
 
     bool empty() const { return values.empty(); }
-    void clear();
 
     friend class arki::types::ValueBagMatcher;
 };
