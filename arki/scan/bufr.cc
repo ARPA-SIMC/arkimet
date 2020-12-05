@@ -193,8 +193,9 @@ public:
         msg = msgs[0];
 
         // Set the product from the msg type
-        types::ValueBag newvals;
-        newvals.set("t", format_message_type(msg->get_type()));
+        types::values::ValueBagBuilder vbuilder;
+        vbuilder.add("t", format_message_type(msg->get_type()));
+        types::ValueBag newvals = vbuilder.build();
         product = Product::createBUFR(bulletin->data_category, bulletin->data_subcategory, bulletin->data_subcategory_local, newvals);
 
         // Set reference time from date and time if available

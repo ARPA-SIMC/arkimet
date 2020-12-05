@@ -196,6 +196,16 @@ add_method("regression1", [] {
     wassert_false(v2.is_subset(v1));
 });
 
+#if 0
+add_method("iteration", [] {
+    ValueBag v1 = ValueBag::parse("blo=10, lat=5480000, lon=895000, sta=\"22\"");
+    std::string iterated;
+    for (const auto& i: v1)
+        iterated += ":" + i.to_string();
+    wassert(actual(iterated) == ":10:5480000:895000:\"22\"");
+});
+#endif
+
 }
 
 }
