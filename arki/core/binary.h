@@ -107,6 +107,7 @@ struct BinaryEncoder
     void add_raw(const uint8_t* buf, size_t size) { dest.insert(dest.end(), buf, buf + size); }
     void add_raw(const std::string& str) { dest.insert(dest.end(), str.begin(), str.end()); }
     void add_raw(const std::vector<uint8_t>& o) { dest.insert(dest.end(), o.begin(), o.end()); }
+    void add_byte(uint8_t val) { dest.emplace_back(val); }
 };
 
 struct BinaryDecoder
@@ -136,6 +137,14 @@ struct BinaryDecoder
     /// Skip the first `bytes` bytes in the buffer
     inline void skip(size_t bytes)
     {
+        buf += bytes;
+        size -= bytes;
+    }
+
+    template<typename STR>
+    inline void skip(size_t bytes, STR what)
+    {
+        ensure_size(bytes, what);
         buf += bytes;
         size -= bytes;
     }

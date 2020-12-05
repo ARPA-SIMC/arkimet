@@ -6,9 +6,11 @@
 #include "arki/structured/emitter.h"
 #include "arki/structured/memory.h"
 #include <memory>
+#include <cstring>
 #include <cstdlib>
 #include <cctype>
 #include <cstdio>
+#include <algorithm>
 
 #ifdef HAVE_LUA
 extern "C" {
@@ -109,210 +111,261 @@ static const int ENC_NUM_UNUSED = 2;	// Unused.  Leave to 0.
 static const int ENC_NUM_EXTENDED = 3;	// Extension flag.  Type is given in the next 4 bits.
 
 
-/**
- * Implementation of Value methods common to all types
- */
-template<typename TYPE>
-class Common : public Value
+class Encoded : public Value
 {
 protected:
-    std::string m_name;
-    TYPE m_val;
+    const uint8_t* data = nullptr;
 
 public:
-    Common(const std::string& name, const TYPE& val) : m_name(name), m_val(val) {}
+    Encoded(const uint8_t* data, unsigned size)
+    {
+        uint8_t* tdata = new uint8_t[size];
+        memcpy(tdata, data, size);
+        this->data = tdata;
+    }
+    Encoded(const Encoded&) = delete;
+    Encoded(Encoded&&) = delete;
+    ~Encoded()
+    {
+        delete[] data;
+    }
+    Encoded& operator=(const Encoded&) = delete;
+    Encoded& operator=(Encoded&&) = delete;
 
-    std::string name() const override { return m_name; }
+    virtual unsigned type_id() const = 0;
+
+    std::string name() const override
+    {
+        unsigned size = static_cast<unsigned>(data[0]);
+        return std::string(reinterpret_cast<const char*>(data) + 1, size);
+    }
 
     bool operator==(const Value& v) const override
     {
-        if (name() != v.name()) return false;
-        const Common<TYPE>* vi = dynamic_cast<const Common<TYPE>*>(&v);
-        if (!vi) return false;
-        return m_val == vi->m_val;
+        // TODO: skip this dynamic_cast once we become the base class
+        const Encoded* e = dynamic_cast<const Encoded*>(&v);
+        if (!e) return false;
+
+        if (type_id() != e->type_id()) return false;
+        if (data[0] != e->data[0]) return false;
+        return memcmp(data + 1, e->data + 1, data[0]) == 0;
     }
 
     int compare(const Value& v) const override
     {
-        if (name() < v.name()) return -1;
-        if (name() > v.name()) return 1;
+        // TODO: skip this dynamic_cast once we become the base class
+        const Encoded* e = dynamic_cast<const Encoded*>(&v);
+        if (!e) return sortKey() - v.sortKey();
+
+        // Compare common string prefix
+        if (int res = memcmp(data + 1, e->data + 1, std::min(data[0], e->data[0]))) return res;
+
+        // If the prefix is the same, compare lengths
+        return data[0] - e->data[0];
+    }
+
+#if 0
+    void encode(core::BinaryEncoder& enc) const override
+    {
+        // Key length and key
+        enc.add_raw(data, data[0] + 1);
+    }
+#endif
+};
+
+
+class EncodedInt : public Encoded
+{
+public:
+    using Encoded::Encoded;
+
+    unsigned type_id() const override { return 1; }
+    int sortKey() const override { return 1; }
+
+    unsigned encoded_size() const
+    {
+        // Size of the key size and key
+        unsigned size = data[0] + 1;
+
+        uint8_t lead = data[size++];
+        switch ((lead >> 6) & 0x3)
+        {
+            case ENC_SINT6: break;
+            case ENC_NUMBER:
+                switch ((lead >> 4) & 0x3)
+                {
+                    case ENC_NUM_INTEGER:
+                        // Sign in the next bit.  Number of bytes in the next 3 bits.
+                        size += (lead & 0x7) + 1;
+                        break;
+                }
+                break;
+        }
+
+        return size;
+    }
+
+    EncodedInt* clone() const
+    {
+        return new EncodedInt(data, encoded_size());
+    }
+
+    int value() const
+    {
+        // Skip key
+        unsigned pos = data[0] + 1;
+        uint8_t lead = data[pos];
+        switch ((lead >> 6) & 0x3)
+        {
+            case ENC_SINT6:
+                if (lead & 0x20)
+                    return -((~(lead-1)) & 0x3f);
+                else
+                    return lead & 0x3f;
+            case ENC_NUMBER:
+                switch ((lead >> 4) & 0x3)
+                {
+                    case ENC_NUM_INTEGER: {
+                        // Sign in the next bit.  Number of bytes in the next 3 bits.
+                        unsigned nbytes = (lead & 0x7) + 1;
+                        unsigned val = core::BinaryDecoder::decode_uint(data + pos + 1, nbytes);
+                        return (lead & 0x8) ? -val : val;
+                    }
+                }
+                break;
+        }
         return 0;
     }
 
-    void encode(core::BinaryEncoder& enc) const override
+    bool operator==(const Value& v) const override
     {
-        // Key length
-        enc.add_unsigned(m_name.size(), 1);
-        // Key
-        enc.add_raw(m_name);
+        // TODO: get rid of dynamic_cast
+        if (!Encoded::operator==(v)) return false;
+        const EncodedInt* e = dynamic_cast<const EncodedInt*>(&v);
+        if (!e) return false;
+        return value() == e->value();
     }
-};
-
-struct Integer : public Common<int>
-{
-    Integer(const std::string& name, const int& val) : Common<int>(name, val) {}
 
     int compare(const Value& v) const override
     {
-        if (int res = Common<int>::compare(v)) return res;
-        if (const Integer* v1 = dynamic_cast<const Integer*>(&v))
-            return m_val - v1->m_val;
-        else
-            return sortKey() - v.sortKey();
+        // TODO: get rid of dynamic_cast
+        if (int res = Encoded::compare(v)) return res;
+        const EncodedInt* e = dynamic_cast<const EncodedInt*>(&v);
+        if (!e) return sortKey() - v.sortKey();
+        return value() - e->value();
     }
 
     bool value_equals(const Value& v) const override
     {
-        if (const Integer* v1 = dynamic_cast<const Integer*>(&v))
-            return m_val == v1->m_val;
-        else
-            return false;
-    }
-
-    int sortKey() const override { return 1; }
-
-    int toInt() const { return m_val; }
-
-    std::string toString() const override
-    {
-        return std::to_string(m_val);
+        // TODO: get rid of dynamic_cast
+        const EncodedInt* e = dynamic_cast<const EncodedInt*>(&v);
+        if (!e) return false;
+        return value() == e->value();
     }
 
     void encode(core::BinaryEncoder& enc) const override
     {
-        Common<int>::encode(enc);
-        if (m_val >= -32 && m_val < 31)
-        {
-            // If it's a small one, encode in the remaining 6 bits
-            uint8_t encoded = { ENC_SINT6 << 6 };
-            if (m_val < 0)
-            {
-                encoded |= ((~(-m_val) + 1) & 0x3f);
-            } else {
-                encoded |= (m_val & 0x3f);
-            }
-            enc.add_raw(&encoded, 1u);
-        }
-        else 
-        {
-            // Else, encode as an integer Number
-
-            // Type
-            uint8_t type = (ENC_NUMBER << 6) | (ENC_NUM_INTEGER << 4);
-            // Value to encode
-            unsigned int val;
-			if (m_val < 0)
-			{
-				// Sign bit
-				type |= 0x8;
-				val = -m_val;
-			}
-			else
-				val = m_val;
-			// Number of bytes
-			unsigned nbytes;
-			// TODO: add bits for 64 bits here if it's ever needed
-			if (val & 0xff000000)
-				nbytes = 4;
-			else if (val & 0x00ff0000)
-				nbytes = 3;
-			else if (val & 0x0000ff00)
-				nbytes = 2;
-			else if (val & 0x000000ff)
-				nbytes = 1;
-            else
-                throw std::runtime_error("cannot encode integer number: value " + std::to_string(val) + " is too large to be encoded");
-
-            type |= (nbytes-1);
-            enc.add_raw(&type, 1u);
-            enc.add_unsigned(val, nbytes);
-        }
+        enc.add_raw(data, encoded_size());
     }
-
-    static Integer* parse(const std::string& name, const std::string& str);
 
     void serialise(structured::Emitter& e) const override
     {
-        e.add(m_name);
-        e.add_int(m_val);
+        e.add(name());
+        e.add_int(value());
     }
 
-    Value* clone() const override { return new Integer(m_name, m_val); }
+    std::string toString() const override
+    {
+        return std::to_string(value());
+    }
 };
 
-Integer* Integer::parse(const std::string& name, const std::string& str)
+
+class EncodedString : public Encoded
 {
-    return new Integer(name, atoi(str.c_str()));
-}
+public:
+    using Encoded::Encoded;
 
+    unsigned encoded_size() const
+    {
+        return data[0] + 2 + (data[data[0] + 1] & 0x3f);
+    }
 
-struct String : public Common<std::string>
-{
-    String(const std::string& name, const std::string& val) : Common<std::string>(name, val) {}
+    EncodedString* clone() const
+    {
+        return new EncodedString(data, encoded_size());
+    }
 
+    unsigned type_id() const override { return 2; }
     int sortKey() const override { return 2; }
 
+    // TODO: get rid of std::string. Use string_view or a local version if we don't have C++17
+    std::string value() const
+    {
+        // Skip key
+        unsigned pos = data[0] + 1;
+        unsigned size = data[pos] & 0x3f;
+        return std::string(reinterpret_cast<const char*>(data) + pos + 1, size);
+    }
+
+    bool operator==(const Value& v) const override
+    {
+        // TODO: get rid of dynamic_cast
+        if (!Encoded::operator==(v)) return false;
+        const EncodedString* e = dynamic_cast<const EncodedString*>(&v);
+        if (!e) return false;
+        return value() == e->value();
+    }
+
     int compare(const Value& v) const override
     {
-        if (int res = Common<std::string>::compare(v)) return res;
-        if (const String* v1 = dynamic_cast<const String*>(&v))
-        {
-			if (m_val < v1->m_val) return -1;
-			if (m_val > v1->m_val) return 1;
-			return 0;
-		}
-		else
-			return sortKey() - v.sortKey();
+        // TODO: get rid of dynamic_cast
+        if (int res = Encoded::compare(v)) return res;
+        const EncodedString* e = dynamic_cast<const EncodedString*>(&v);
+        if (!e) return sortKey() - v.sortKey();
+        return value().compare(e->value());
     }
 
     bool value_equals(const Value& v) const override
     {
-        if (const String* v1 = dynamic_cast<const String*>(&v))
-            return m_val == v1->m_val;
-        else
-            return false;
+        // TODO: get rid of dynamic_cast
+        const EncodedString* e = dynamic_cast<const EncodedString*>(&v);
+        if (!e) return false;
+        return value() == e->value();
     }
 
     void encode(core::BinaryEncoder& enc) const override
     {
-        Common<std::string>::encode(enc);
-        if (m_val.size() < 64)
-        {
-            uint8_t type = ENC_NAME << 6;
-            type |= m_val.size() & 0x3f;
-            enc.add_raw(&type, 1u);
-            enc.add_raw(m_val);
-        }
-        else
-            // TODO: if needed, here we implement another string encoding type
-            throw_consistency_error("encoding short string", "string '"+m_val+"' is too long: the maximum length is 63 characters, but the string is " + std::to_string(m_val.size()) + " characters long");
+        enc.add_raw(data, encoded_size());
+    }
+
+    void serialise(structured::Emitter& e) const override
+    {
+        e.add(name());
+        e.add_string(value());
     }
 
     std::string toString() const override
     {
-		int idummy;
+        auto val = value();
+        int idummy;
 
-		if (parsesAsNumber(m_val, idummy) || needsQuoting(m_val))
-		{
-			// If it is surrounded by double quotes or it parses as a number, we need to escape it
-			return "\"" + str::encode_cstring(m_val) + "\"";
-		} else {
-			// Else, we can use the value as it is
-			return m_val;
-		}
-	}
-
-    void serialise(structured::Emitter& e) const override
-    {
-        e.add(m_name);
-        e.add_string(m_val);
+        if (parsesAsNumber(val, idummy) || needsQuoting(val))
+        {
+            // If it is surrounded by double quotes or it parses as a number, we need to escape it
+            return "\"" + str::encode_cstring(val) + "\"";
+        } else {
+            // Else, we can use the value as it is
+            return val;
+        }
     }
-
-    Value* clone() const override { return new String(m_name, m_val); }
 };
 
 Value* Value::decode(core::BinaryDecoder& dec)
 {
+    // Mark the location of the beginning of the memory buffer
+    const uint8_t* begin = dec.buf;
+
     // Key length
     unsigned name_len = dec.pop_uint(1, "valuebag key length");
 
@@ -323,18 +376,16 @@ Value* Value::decode(core::BinaryDecoder& dec)
     switch ((lead >> 6) & 0x3)
     {
         case ENC_SINT6:
-            if (lead & 0x20)
-                return new Integer(name, -((~(lead-1)) & 0x3f));
-            else
-                return new Integer(name, lead & 0x3f);
+            return new EncodedInt(begin, dec.buf - begin);
         case ENC_NUMBER: {
             switch ((lead >> 4) & 0x3)
             {
-                case ENC_NUM_INTEGER: {
+                case ENC_NUM_INTEGER:
+                {
                     // Sign in the next bit.  Number of bytes in the next 3 bits.
                     unsigned nbytes = (lead & 0x7) + 1;
-                    unsigned val = dec.pop_uint(nbytes, "integer number value");
-                    return new Integer(name, (lead & 0x8) ? -val : val);
+                    dec.skip(nbytes, "integer number value");
+                    return new EncodedInt(begin, dec.buf - begin);
                 }
                 case ENC_NUM_FLOAT:
                     throw std::runtime_error("cannot decode value: the number value to decode is a floating point number, but decoding floating point numbers is not currently implemented");
@@ -346,10 +397,9 @@ Value* Value::decode(core::BinaryDecoder& dec)
                     throw std::runtime_error("cannot decode value: control flow should never reach here (" __FILE__ ":" + std::to_string(__LINE__) + "), but the compiler cannot easily know it.  This is here to silence a compiler warning.");
             }
         }
-        case ENC_NAME: {
-            unsigned size = lead & 0x3f;
-            return new String(name, dec.pop_string(size, "valuebag string value"));
-        }
+        case ENC_NAME:
+            dec.skip(lead & 0x3f, "string value");
+            return new EncodedString(begin, dec.buf - begin);
         case ENC_EXTENDED:
             throw std::runtime_error("cannot decode value: the encoded value has an extended type, but no extended type is currently implemented");
         default:
@@ -371,7 +421,7 @@ Value* Value::parse(const std::string& name, const std::string& str, size_t& len
     if (begin == str.size())
     {
         lenParsed = begin;
-        return new String(name, std::string());
+        return create_string(name, std::string());
     }
 
 	// Handle the quoted string
@@ -385,7 +435,7 @@ Value* Value::parse(const std::string& name, const std::string& str, size_t& len
         std::string res = str::decode_cstring(str.substr(begin), parsed);
 
         lenParsed = skipSpaces(str, begin + parsed);
-        return new String(name, res);
+        return values::Value::create_string(name, res);
     }
 
 	// No quoted string, so we can terminate the token at the next space, ',' or ';'
@@ -399,14 +449,93 @@ Value* Value::parse(const std::string& name, const std::string& str, size_t& len
     // spaces, return the number
     int val;
     if (parsesAsNumber(res, val))
-        return new Integer(name, val);
+        return values::Value::create_integer(name, val);
 
     // Else return the string
-    return new String(name, res);
+    return values::Value::create_string(name, res);
 }
 
-Value* Value::create_integer(const std::string& name, int val) { return new Integer(name, val); }
-Value* Value::create_string(const std::string& name, const std::string& val) { return new String(name, val); }
+Value* Value::create_integer(const std::string& name, int val)
+{
+    std::vector<uint8_t> buf;
+    core::BinaryEncoder enc(buf);
+
+    // Key length
+    enc.add_unsigned(name.size(), 1);
+    // Key
+    enc.add_raw(name);
+
+    if (val >= -32 && val < 31)
+    {
+        // If it's a small one, encode in the remaining 6 bits
+        uint8_t encoded = { ENC_SINT6 << 6 };
+        if (val < 0)
+        {
+            encoded |= ((~(-val) + 1) & 0x3f);
+        } else {
+            encoded |= (val & 0x3f);
+        }
+        enc.add_raw(&encoded, 1u);
+    }
+    else
+    {
+        // Else, encode as an integer Number
+
+        // Type
+        uint8_t type = (ENC_NUMBER << 6) | (ENC_NUM_INTEGER << 4);
+        // Value to encode
+        unsigned int encoded;
+        if (val < 0)
+        {
+            // Sign bit
+            type |= 0x8;
+            encoded = -val;
+        }
+        else
+            encoded = val;
+        // Number of bytes
+        unsigned nbytes;
+        // TODO: add bits for 64 bits here if it's ever needed
+        if (encoded & 0xff000000)
+            nbytes = 4;
+        else if (encoded & 0x00ff0000)
+            nbytes = 3;
+        else if (encoded & 0x0000ff00)
+            nbytes = 2;
+        else if (encoded & 0x000000ff)
+            nbytes = 1;
+        else
+            throw std::runtime_error("cannot encode integer number: value " + std::to_string(val) + " is too large to be encoded");
+
+        type |= (nbytes-1);
+        enc.add_raw(&type, 1u);
+        enc.add_unsigned(encoded, nbytes);
+    }
+
+    return new values::EncodedInt(buf.data(), buf.size());
+}
+
+Value* Value::create_string(const std::string& name, const std::string& val)
+{
+    if (val.size() >= 64)
+        throw std::runtime_error("cannot use string as a value: string '" + val + "' cannot be longer than 63 characters, but the string is " + std::to_string(val.size()) + " characters long");
+
+    std::vector<uint8_t> buf;
+    core::BinaryEncoder enc(buf);
+
+    // Key length
+    enc.add_unsigned(name.size(), 1);
+    // Key
+    enc.add_raw(name);
+    // Type and value length
+    uint8_t type = ENC_NAME << 6;
+    type |= val.size() & 0x3f;
+    enc.add_byte(type);
+    // Value
+    enc.add_raw(val);
+
+    return new values::EncodedString(buf.data(), buf.size());
+}
 
 }
 
@@ -675,10 +804,10 @@ void ValueBag::lua_push(lua_State* L) const
     {
         const std::string& name = i->name();
         lua_pushlstring(L, name.data(), name.size());
-        if (const values::Integer* vs = dynamic_cast<const values::Integer*>(i))
+        if (const values::EncodedInt* vs = dynamic_cast<const values::EncodedInt*>(i))
         {
-            lua_pushnumber(L, vs->toInt());
-        } else if (const values::String* vs = dynamic_cast<const values::String*>(i)) {
+            lua_pushnumber(L, vs->value());
+        } else if (const values::EncodedString* vs = dynamic_cast<const values::EncodedString*>(i)) {
             std::string val = vs->toString();
             lua_pushlstring(L, val.data(), val.size());
         } else {

@@ -71,35 +71,35 @@ add_method("encoding", [] {
         std::unique_ptr<Value> v;
         vector<uint8_t> enc;
         core::BinaryEncoder e(enc);
-        var.encode(e);
+        wassert(var.encode(e));
         wassert(actual(enc.size()) == encsize);
         core::BinaryDecoder dec(enc);
-        v.reset(Value::decode(dec));
+        wassert(v.reset(Value::decode(dec)));
         size_t decsize = dec.buf - enc.data();
         wassert(actual(decsize) == (encsize));
         wassert_true(*v == var);
 
-        string enc1 = var.toString();
-        v.reset(Value::parse(var.name(), enc1));
+        std::string enc1 = wcallchecked(var.toString());
+        wassert(v.reset(Value::parse(var.name(), enc1)));
         wassert_true(*v == var);
     };
 
-    test(*zero, 1u);
-    test(*one, 1u);
-    test(*minusOne, 1u);
-    test(*u6bit, 1u);
-    test(*s6bit, 1u);
-    test(*onemillion, 4u);
-    test(*bignegative, 4u);
-    test(*empty, 1u);
-    test(*onechar, 2u);
-    test(*numstr, 3u);
-    test(*longname, 56u);
-    test(*escaped, 9u);
-    test(*fourtythree, 2u);
-    test(*minusfourtythree, 2u);
-    test(*tenthousand, 3u);
-    test(*minustenthousand, 3u);
+    wassert(test(*zero, 1u));
+    wassert(test(*one, 1u));
+    wassert(test(*minusOne, 1u));
+    wassert(test(*u6bit, 1u));
+    wassert(test(*s6bit, 1u));
+    wassert(test(*onemillion, 4u));
+    wassert(test(*bignegative, 4u));
+    wassert(test(*empty, 1u));
+    wassert(test(*onechar, 2u));
+    wassert(test(*numstr, 3u));
+    wassert(test(*longname, 56u));
+    wassert(test(*escaped, 9u));
+    wassert(test(*fourtythree, 2u));
+    wassert(test(*minusfourtythree, 2u));
+    wassert(test(*tenthousand, 3u));
+    wassert(test(*minustenthousand, 3u));
 });
 
 // Check ValueBag
