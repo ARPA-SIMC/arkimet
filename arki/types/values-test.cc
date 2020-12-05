@@ -67,7 +67,7 @@ add_method("encoding", [] {
     std::unique_ptr<Value> minustenthousand(Value::create_integer("name", -10000));
 
     auto test = [](const Value& var, unsigned encsize) {
-        encsize += 1 + var.name().size();
+        encsize += 1 + 4; // 4 for the name, 1 for its length
         std::unique_ptr<Value> v;
         vector<uint8_t> enc;
         core::BinaryEncoder e(enc);
@@ -80,7 +80,7 @@ add_method("encoding", [] {
         wassert_true(*v == var);
 
         std::string enc1 = wcallchecked(var.toString());
-        wassert(v.reset(Value::parse(var.name(), enc1)));
+        wassert(v.reset(Value::parse("name", enc1)));
         wassert_true(*v == var);
     };
 

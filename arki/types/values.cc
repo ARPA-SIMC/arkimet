@@ -89,7 +89,55 @@ static inline size_t skipSpaces(const std::string& str, size_t cur)
 
 namespace arki {
 namespace types {
+
 namespace values {
+
+#ifndef __cpp_lib_string_view
+
+// Implement the subset of string_view that we need here, until we can use the
+// real one (it needs C++17, which is currently not available on Centos 7)
+struct string_view
+{
+    typedef std::string::size_type size_type;
+
+    const char* m_data;
+    size_type m_size;
+
+    constexpr string_view(const char* s, size_type count) noexcept
+        : m_data(s), m_size(count)
+    {
+    }
+
+    const char* data() const { return m_data; }
+    size_type size() const { return m_size; }
+
+    template<typename S>
+    bool operator==(const S& o) const
+    {
+        if (m_size != o.size()) return false;
+        return memcmp(m_data, o.data(), o.size()) == 0;
+    }
+
+    bool operator!=(const string_view& o) const
+    {
+        if (m_size != o.m_size) return true;
+        return memcmp(m_data, o.m_data, m_size) != 0;
+    }
+
+    int compare(const string_view& o) const
+    {
+        if (int res = memcmp(m_data, o.m_data, std::min(m_size, o.m_size))) return res;
+        return m_size - o.m_size;
+    }
+
+    bool operator<(const string_view& o) const { return compare(o) < 0; }
+    bool operator<=(const string_view& o) const { return compare(o) <= 0; }
+    bool operator>(const string_view& o) const { return compare(o) > 0; }
+    bool operator>=(const string_view& o) const { return compare(o) >= 0; }
+};
+
+#endif
+
 
 // Main encoding type constants (fit 2 bits)
 
@@ -123,10 +171,10 @@ Value::~Value()
     delete[] data;
 }
 
-std::string Value::name() const
+values::string_view Value::name() const
 {
     unsigned size = static_cast<unsigned>(data[0]);
-    return std::string(reinterpret_cast<const char*>(data) + 1, size);
+    return values::string_view(reinterpret_cast<const char*>(data) + 1, size);
 }
 
 void Value::encode(core::BinaryEncoder& enc) const
@@ -184,7 +232,8 @@ public:
 
     void serialise(structured::Emitter& e) const override
     {
-        e.add(name());
+        auto n = name();
+        e.add(std::string(n.data(), n.size()));
         e.add_int(value());
     }
 
@@ -310,7 +359,8 @@ public:
 
     void serialise(structured::Emitter& e) const override
     {
-        e.add(name());
+        auto n = name();
+        e.add(std::string(n.data(), n.size()));
         e.add_string(value());
     }
 
@@ -666,7 +716,9 @@ std::string ValueBag::toString() const
             first = false;
         else
             res += ", ";
-        res += i->name();
+        auto name = i->name();
+        res.append(name.data(), name.size());
+        // TODO: when we can have real string_view: res += i->name();
         res += '=';
         res += i->toString();
     }
@@ -772,7 +824,7 @@ void ValueBag::lua_push(lua_State* L) const
     lua_newtable(L);
     for (const auto& i: values)
     {
-        const std::string& name = i->name();
+        auto name = i->name();
         lua_pushlstring(L, name.data(), name.size());
         if (const values::EncodedInt* vs = dynamic_cast<const values::EncodedInt*>(i))
         {

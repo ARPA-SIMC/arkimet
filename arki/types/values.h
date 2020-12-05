@@ -4,6 +4,9 @@
 #include <arki/core/fwd.h>
 #include <arki/structured/fwd.h>
 #include <string>
+#ifdef __cpp_lib_string_view
+#include <string_view>
+#endif
 #include <vector>
 #include <iosfwd>
 
@@ -11,8 +14,16 @@ struct lua_State;
 
 namespace arki {
 namespace types {
+class ValueBag;
 
 namespace values {
+
+#ifdef __cpp_lib_string_view
+typedef std::string_view string_view;
+#else
+class string_view;
+#endif
+
 /**
  * Base class for generic scalar values.
  *
@@ -50,6 +61,8 @@ protected:
      */
     virtual int value_compare(const Value& v) const = 0;
 
+    values::string_view name() const;
+
 public:
     Value(const uint8_t* data, unsigned size);
     Value(const Value&) = delete;
@@ -57,8 +70,6 @@ public:
     virtual ~Value();
     Value& operator=(const Value&) = delete;
     Value& operator=(Value&&) = delete;
-
-    std::string name() const;
 
     bool operator==(const Value& v) const;
     bool operator!=(const Value& v) const { return !operator==(v); }
@@ -99,6 +110,8 @@ public:
 
     static Value* create_integer(const std::string& name, int val);
     static Value* create_string(const std::string& name, const std::string& val);
+
+    friend class types::ValueBag;
 };
 }
 
