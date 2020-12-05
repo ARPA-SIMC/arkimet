@@ -121,13 +121,8 @@ add_method("encoding", [] {
 
 // Check ValueBag
 add_method("valuebag", [] {
-    ValueBag v1;
+    ValueBag v1 = ValueBag::parse("test1=1, test2=1000000, test3=-20, test4=\"1\"");
     ValueBag v2;
-
-    v1.set("test1", 1);
-    v1.set("test2", 1000000);
-    v1.set("test3", -20);
-    v1.set("test4", "1");
 
 #if 0
     // Test accessors
@@ -148,12 +143,7 @@ add_method("valuebag", [] {
     // Test copy and comparison
     wassert_true(v1 != v2);
 
-    v2.clear();
-    v2.set("test1", 1);
-    v2.set("test2", 1000000);
-    v2.set("test3", -20);
-    v2.set("test4", "1");
-
+    v2 = ValueBag::parse("test1=1, test2=1000000, test3=-20, test4=\"1\"");
     wassert(actual(v1.size()) == 4u);
     wassert(actual(v2.size()) == 4u);
 
@@ -193,14 +183,8 @@ add_method("valuebag", [] {
 // Check a case where ValueBag seemed to fail (but it actually didn't, the
 // problem was elsewhere)
 add_method("regression1", [] {
-    ValueBag v1;
+    ValueBag v1 = ValueBag::parse("blo=10, lat=5480000, lon=895000, sta=22");
     auto v2 = ValueBagMatcher::parse("sta=88");
-
-    v1.set("blo", 10);
-    v1.set("lat", 5480000);
-    v1.set("lon", 895000);
-    v1.set("sta", 22);
-
     wassert_false(v2.is_subset(v1));
 });
 

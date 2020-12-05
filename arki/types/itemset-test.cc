@@ -39,16 +39,8 @@ struct Fixture : public arki::utils::tests::Fixture
     Fixture()
     {
         using namespace arki::types::values;
-        testValues.set("foo", 5);
-        testValues.set("bar", 5000);
-        testValues.set("baz", -200);
-        testValues.set("moo", 0x5ffffff);
-        testValues.set("antani", -1);
-        testValues.set("blinda", 0);
-        testValues.set("supercazzola", -1234567);
-        testValues.set("pippo", "pippo");
-        testValues.set("pluto", "12");
-        testValues.set("cippo", "");
+        // 100663295 == 0x5ffffff
+        testValues = ValueBag::parse("foo=5, bar=5000, baz=-200, moo=100663295, antani=-1, blinda=0, supercazzola=-1234567, pippo=pippo, pluto=\"12\", cippo=\"\"");
     }
 
     void fill(ItemSet& md)

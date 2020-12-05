@@ -64,6 +64,9 @@ struct ValueBag : public values::Values
 protected:
     using values::Values::set;
 
+    /// Set an integer value
+    void set(const std::string& key, int val);
+
 public:
     using values::Values::Values;
 
@@ -71,10 +74,7 @@ public:
 	bool operator!=(const ValueBag& vb) const { return !operator==(vb); }
 	int compare(const ValueBag& vb) const;
 
-    /// Set an integer value
-    void set(const std::string& key, int val);
-
-    /// Set a string value
+    /// Set a string value (currently needed by bufr scanner)
     void set(const std::string& key, const std::string& val);
 
     /**

@@ -24,14 +24,8 @@ add_method("grib", [] {
     Metadata md;
     arki::tests::fill(md);
 
-    ValueBag testArea2;
-    testArea2.set("foo", 15);
-    testArea2.set("bar", 5000);
-    testArea2.set("baz", -1200);
-    testArea2.set("moo", 0x1ffffff);
-    testArea2.set("antani", 0);
-    testArea2.set("blinda", -1);
-    testArea2.set("supercazzola", -7654321);
+    // 0x1ffffff = 33554431
+    ValueBag testArea2 = ValueBag::parse("foo=15, bar=15000, baz=-1200, moo=33554431, antani=0, blinda=-1, supercazzola=-7654321");
 
 	Matcher m;
 
@@ -150,14 +144,9 @@ add_method("bbox_coveredby", [] {
 // Try matching Area with ODIMH5
 add_method("odimh5", [] {
     using namespace arki::types::values;
-    ValueBag testArea2;
-    testArea2.set("foo", 15);
-    testArea2.set("bar", 15000);
-    testArea2.set("baz", -1200);
-    testArea2.set("moo", 0x1ffffff);
-    testArea2.set("antani", 0);
-    testArea2.set("blinda", -1);
-    testArea2.set("supercazzola", -7654321);
+
+    // 0x1ffffff = 33554431
+    ValueBag testArea2 = ValueBag::parse("foo=15, bar=15000, baz=-1200, moo=33554431, antani=0, blinda=-1, supercazzola=-7654321");
 
 	//Matcher m;
 

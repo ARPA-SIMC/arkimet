@@ -60,6 +60,7 @@ static inline std::ostream& operator<<(std::ostream& o, const Code& c) { return 
  */
 struct Type
 {
+public:
     virtual ~Type() {}
 
     /**
@@ -75,7 +76,11 @@ struct Type
     /// Make a copy of this type
     std::unique_ptr<Type> cloneType() const { return std::unique_ptr<Type>(clone()); }
 
-    /// Comparison (<0 if <, 0 if =, >0 if >)
+    /**
+     * Comparison (<0 if <, 0 if =, >0 if >).
+     *
+     * This is currently only needed by Summary.
+     */
     virtual int compare(const Type& o) const;
     bool operator<(const Type& o) const { return compare(o) < 0; }
     bool operator<=(const Type& o) const { return compare(o) <= 0; }

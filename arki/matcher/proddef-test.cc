@@ -24,14 +24,8 @@ add_method("grib", [] {
     Metadata md;
     arki::tests::fill(md);
 
-    ValueBag testProddef2;
-    testProddef2.set("foo", 15);
-    testProddef2.set("bar", 15000);
-    testProddef2.set("baz", -1200);
-    testProddef2.set("moo", 0x1ffffff);
-    testProddef2.set("antani", 0);
-    testProddef2.set("blinda", -1);
-    testProddef2.set("supercazzola", -7654321);
+    // 0x1ffffff = 33554431
+    ValueBag testProddef2 = ValueBag::parse("foo=15, bar=15000, baz=-1200, moo=33554431, antani=0, blinda=-1, supercazzola=-7654321");
 
 	ensure_matches("proddef:GRIB:foo=5", md);
 	ensure_matches("proddef:GRIB:bar=5000", md);

@@ -41,17 +41,8 @@ void fill(Metadata& md)
 {
     using namespace arki::types;
 
-    ValueBag testValues;
-    testValues.set("foo", 5);
-    testValues.set("bar", 5000);
-    testValues.set("baz", -200);
-    testValues.set("moo", 0x5ffffff);
-    testValues.set("antani", -1);
-    testValues.set("blinda", 0);
-    testValues.set("supercazzola", -1234567);
-    testValues.set("pippo", "pippo");
-    testValues.set("pluto", "12");
-    testValues.set("cippo", "");
+    // 100663295 == 0x5ffffff
+    ValueBag testValues = ValueBag::parse("foo=5, bar=5000, baz=-200, moo=100663295, antani=-1, blinda=0, supercazzola=-1234567, pippo=pippo, pluto=\"12\", cippo=\"\"");
 
     md.test_set(Reftime::createPosition(core::Time(2006, 5, 4, 3, 2, 1)));
     md.test_set(Origin::createGRIB1(1, 2, 3));
