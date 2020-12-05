@@ -2,6 +2,7 @@
 #include "arki/matcher.h"
 #include "arki/metadata.h"
 #include "arki/types/proddef.h"
+#include "arki/types/values.h"
 
 using namespace std;
 using namespace arki::tests;
@@ -20,7 +21,6 @@ void Tests::register_tests() {
 
 // Try matching Proddef
 add_method("grib", [] {
-    using namespace arki::types::values;
     Metadata md;
     arki::tests::fill(md);
 

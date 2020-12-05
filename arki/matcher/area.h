@@ -3,7 +3,7 @@
 
 #include <arki/matcher.h>
 #include <arki/matcher/utils.h>
-#include <arki/types/area.h>
+#include <arki/types/values.h>
 #include <arki/utils/geosfwd.h>
 
 namespace arki {

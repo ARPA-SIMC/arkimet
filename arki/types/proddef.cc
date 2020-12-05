@@ -1,6 +1,7 @@
 #include "arki/exceptions.h"
 #include "arki/types/proddef.h"
 #include "arki/types/utils.h"
+#include "arki/types/values.h"
 #include "arki/core/binary.h"
 #include "arki/structured/emitter.h"
 #include "arki/structured/memory.h"
@@ -51,6 +52,9 @@ ValueBag Proddef::get_GRIB(const uint8_t* data, unsigned size)
     core::BinaryDecoder dec(data + 1, size - 1);
     return ValueBag::decode_reusing_buffer(dec);
 }
+
+proddef::Style Proddef::style() const { return style(data, size); }
+ValueBag Proddef::get_GRIB() const { return get_GRIB(data, size); }
 
 int Proddef::compare(const Type& o) const
 {

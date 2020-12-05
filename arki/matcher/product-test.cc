@@ -3,6 +3,7 @@
 #include "arki/matcher/parser.h"
 #include "arki/metadata.h"
 #include "arki/types/product.h"
+#include "arki/types/values.h"
 
 using namespace std;
 using namespace arki::tests;

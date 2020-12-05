@@ -1,6 +1,7 @@
 #include "config.h"
 
 #include "product.h"
+#include "arki/types/product.h"
 #include <limits>
 #include <algorithm>
 

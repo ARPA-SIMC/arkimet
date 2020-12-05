@@ -2,6 +2,7 @@
 #include "area.h"
 #include "arki/utils/geos.h"
 #include "arki/utils/regexp.h"
+#include "arki/types/area.h"
 #include <strings.h>
 #include <algorithm>
 

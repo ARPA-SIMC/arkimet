@@ -76,6 +76,7 @@ struct Quantity;
 struct Task;
 
 class ItemSet;
+class ValueBag;
 
 }
 

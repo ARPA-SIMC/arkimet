@@ -3,7 +3,7 @@
 
 #include <arki/matcher.h>
 #include <arki/matcher/utils.h>
-#include <arki/types/product.h>
+#include <arki/types/values.h>
 
 namespace arki {
 namespace matcher {

@@ -72,6 +72,11 @@ unsigned Area::get_VM2(const uint8_t* data, unsigned size)
     return dec.pop_uint(4, "VM station id");
 }
 
+area::Style Area::style() const { return style(data, size); }
+ValueBag Area::get_GRIB() const { return get_GRIB(data, size); }
+ValueBag Area::get_ODIMH5() const { return get_ODIMH5(data, size); }
+unsigned Area::get_VM2() const { return get_VM2(data, size); }
+
 int Area::compare(const Type& o) const
 {
     int res = Encoded::compare(o);

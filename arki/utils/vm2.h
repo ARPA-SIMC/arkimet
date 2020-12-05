@@ -2,7 +2,6 @@
 #define ARKI_UTILS_VM2_H
 
 #include <arki/types/values.h>
-#include <arki/types/value.h>
 
 namespace meteo {
 namespace vm2 {

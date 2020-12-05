@@ -11,7 +11,7 @@
 #include "arki/types/reftime.h"
 #include "arki/types/area.h"
 #include "arki/types/proddef.h"
-#include "arki/types/assigneddataset.h"
+#include "arki/types/values.h"
 #include "arki/utils/sys.h"
 #include <iostream>
 
@@ -40,7 +40,6 @@ std::string tempfile_to_string(std::function<void(arki::utils::sys::NamedFileDes
 void fill(Metadata& md)
 {
     using namespace arki::types;
-    using namespace arki::types::values;
 
     ValueBag testValues;
     testValues.set("foo", 5);

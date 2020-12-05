@@ -1,6 +1,7 @@
 #include "tests.h"
 #include "product.h"
 #include "arki/core/binary.h"
+#include "arki/types/values.h"
 
 namespace {
 using namespace arki;

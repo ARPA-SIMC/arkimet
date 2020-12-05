@@ -3,6 +3,7 @@
 #include "arki/matcher/parser.h"
 #include "arki/metadata.h"
 #include "arki/types/area.h"
+#include "arki/types/values.h"
 
 using namespace std;
 using namespace arki::tests;
@@ -20,7 +21,6 @@ class Tests : public TestCase
 void Tests::register_tests() {
 
 add_method("grib", [] {
-    using namespace arki::types::values;
     Metadata md;
     arki::tests::fill(md);
 

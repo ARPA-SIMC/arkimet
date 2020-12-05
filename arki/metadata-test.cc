@@ -14,6 +14,7 @@
 #include "types/assigneddataset.h"
 #include "types/source/blob.h"
 #include "types/note.h"
+#include "types/values.h"
 #include "structured/keys.h"
 #include "structured/json.h"
 #include "structured/memory.h"

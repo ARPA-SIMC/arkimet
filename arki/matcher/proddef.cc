@@ -1,5 +1,6 @@
 #include "config.h"
 #include "proddef.h"
+#include "arki/types/proddef.h"
 
 using namespace std;
 using namespace arki::types;

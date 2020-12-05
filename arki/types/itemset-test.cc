@@ -7,7 +7,7 @@
 #include "arki/types/reftime.h"
 #include "arki/types/area.h"
 #include "arki/types/proddef.h"
-#include "arki/types/assigneddataset.h"
+#include "arki/types/values.h"
 
 namespace std {
 static inline std::ostream& operator<<(std::ostream& o, const arki::types::ItemSet& m)

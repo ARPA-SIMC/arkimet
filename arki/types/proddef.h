@@ -2,7 +2,6 @@
 #define ARKI_TYPES_PRODDEF_H
 
 #include <arki/types/encoded.h>
-#include <arki/types/values.h>
 
 namespace arki {
 namespace types {
@@ -50,8 +49,8 @@ struct Proddef : public Encoded
     static proddef::Style style(const uint8_t* data, unsigned size);
     static ValueBag get_GRIB(const uint8_t* data, unsigned size);
 
-    proddef::Style style() const { return style(data, size); }
-    ValueBag get_GRIB() const { return get_GRIB(data, size); }
+    proddef::Style style() const;
+    ValueBag get_GRIB() const;
 
     /// Convert a string into a style
     static Style parseStyle(const std::string& str);

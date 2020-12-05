@@ -21,26 +21,6 @@ extern "C" {
 
 using namespace arki::utils;
 
-#if 0
-static void dump(const char* name, const std::string& str)
-{
-	fprintf(stderr, "%s ", name);
-	for (string::const_iterator i = str.begin(); i != str.end(); ++i)
-	{
-		fprintf(stderr, "%02x ", (int)(unsigned char)*i);
-	}
-	fprintf(stderr, "\n");
-}
-static void dump(const char* name, const unsigned char* str, int len)
-{
-	fprintf(stderr, "%s ", name);
-	for (int i = 0; i < len; ++i)
-	{
-		fprintf(stderr, "%02x ", str[i]);
-	}
-	fprintf(stderr, "\n");
-}
-#endif
 
 static bool parsesAsNumber(const std::string& str, int& parsed)
 {

@@ -13,6 +13,7 @@
 #include "arki/types/reftime.h"
 #include "arki/types/run.h"
 #include "arki/types/timerange.h"
+#include "arki/types/values.h"
 #include "arki/scan/validator.h"
 #include "arki/scan/mock.h"
 #include "arki/utils/sys.h"
