@@ -384,6 +384,10 @@ test_arkimet = executable('test-arkimet', test_arkimet_sources,
     ],
     dependencies: [
         sqlite3_dep,
+        eccodes_dep,
+        dballe_dep,
+        meteo_vm2_dep,
+        libcurl_dep,
     ]
 )
 
