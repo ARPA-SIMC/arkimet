@@ -217,8 +217,9 @@ void Index::set_value(std::unique_ptr<types::Type> item)
         }
     }
 
-    // FIXME: Another Centos7 workaround, to help its gcc find the right method signature
-    items.emplace(end, reinterpret_cast<types::Type*>(item.release()));
+    // FIXME: Another Centos7 workaround: it could be emplace, but emplace
+    // doesn't match the signature when using a const_iterator.
+    items.insert(end, item.release());
 }
 
 void Index::unset_value(types::Code code)
