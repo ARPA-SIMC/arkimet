@@ -220,7 +220,7 @@ void Index::set_value(std::unique_ptr<types::Type> item)
 
 void Index::unset_value(types::Code code)
 {
-    const_iterator i = items.begin();
+    auto i = items.begin();
     for ( ; i != items.end(); ++i)
     {
         auto c = (*i)->type_code();
