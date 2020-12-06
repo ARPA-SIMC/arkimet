@@ -22,12 +22,6 @@ using namespace arki::utils;
 
 namespace {
 
-inline std::string dsname(const Metadata& md)
-{
-    if (!md.has_source_blob()) return "(md source is not a blob source)";
-    return str::basename(md.sourceBlob().basedir);
-}
-
 struct Fixture : public DatasetTest {
     using DatasetTest::DatasetTest;
 

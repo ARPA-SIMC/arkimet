@@ -18,8 +18,9 @@ template<> struct traits<Task>
 /**
  * A Task annotation
  */
-struct Task : public Encoded
+class Task : public Encoded
 {
+public:
     using Encoded::Encoded;
 
     types::Code type_code() const override { return traits<Task>::type_code; }

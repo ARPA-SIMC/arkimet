@@ -28,8 +28,9 @@ enum class NodeType : int
 std::ostream& operator<<(std::ostream& o, NodeType type);
 
 
-struct Reader
+class Reader
 {
+public:
     virtual ~Reader() {}
 
     virtual NodeType type() const = 0;

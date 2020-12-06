@@ -14,7 +14,7 @@ struct DataUnreadable : public Data
     DataUnreadable(size_t size) : m_size(size) {}
 
     size_t size() const override { return m_size; }
-    std::vector<uint8_t> read() const
+    std::vector<uint8_t> read() const override
     {
         throw std::runtime_error("DataUnreadable::read() called");
     }
@@ -48,7 +48,7 @@ struct DataBuffer : public Data
     DataBuffer(std::vector<uint8_t>&& buffer) : buffer(std::move(buffer)) {}
 
     size_t size() const override { return buffer.size(); }
-    std::vector<uint8_t> read() const
+    std::vector<uint8_t> read() const override
     {
         return buffer;
     }

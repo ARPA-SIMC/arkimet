@@ -6,8 +6,9 @@ namespace arki {
 namespace utils {
 
 #ifdef HAVE_LIBZIP
-struct ZipFile
+class ZipFile
 {
+public:
     zip_file_t* file = nullptr;
 
     ZipFile(ZipBase& zip, const std::string& name)

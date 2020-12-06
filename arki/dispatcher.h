@@ -91,10 +91,10 @@ public:
     RealDispatcher(std::shared_ptr<dataset::Session> session);
     ~RealDispatcher();
 
-	/**
-	 * Flush all dataset data do disk
-	 */
-	void flush();
+    /**
+     * Flush all dataset data do disk
+     */
+    void flush() override;
 };
 
 /**
@@ -119,7 +119,7 @@ public:
     /**
      * Flush all dataset data do disk
      */
-    void flush();
+    void flush() override;
 };
 
 }

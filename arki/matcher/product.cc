@@ -175,7 +175,7 @@ std::string MatchProductBUFR::toString() const
     return res.str();
 }
 
-static const double DOUBLENAN = std::numeric_limits<double>::quiet_NaN();
+// static const double DOUBLENAN = std::numeric_limits<double>::quiet_NaN();
 
 MatchProductODIMH5::MatchProductODIMH5(const std::string& pattern)
 {

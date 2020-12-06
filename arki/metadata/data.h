@@ -13,8 +13,9 @@ namespace metadata {
 /**
  * Interface for representing data associated with a Metadata
  */
-struct Data
+class Data
 {
+public:
     Data() {}
     virtual ~Data() {}
 
@@ -69,7 +70,7 @@ struct Data
 };
 
 
-struct DataManager;
+class DataManager;
 
 /**
  * Track all data elements that get cached in metadata during the lifetime of

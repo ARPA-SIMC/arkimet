@@ -1,6 +1,5 @@
 #include "transaction.h"
 
-using namespace std;
 using namespace arki;
 
 namespace arki {

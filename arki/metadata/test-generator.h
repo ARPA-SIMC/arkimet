@@ -28,8 +28,6 @@
 #include <vector>
 
 namespace arki {
-struct Metadata;
-
 namespace metadata {
 
 namespace test {

@@ -36,13 +36,12 @@ if geos_config.found()
 endif
 conf_data.set('HAVE_GEOS', geos_dep.found())
 
-lua_dep = dependency('lua5.2', required: false)
-if not lua_dep.found()
-    lua_dep = dependency('lua5.1', required: false)
-endif
-if not lua_dep.found()
-    lua_dep = dependency('lua', required: false)
-endif
+foreach name : ['lua', 'lua5.1', 'lua5.2', 'lua5.3']
+    lua_dep = dependency(name, required: false)
+    if lua_dep.found()
+        break
+    endif
+endforeach
 conf_data.set('HAVE_LUA', lua_dep.found())
 
 lzo_dep = dependency('lzo2')

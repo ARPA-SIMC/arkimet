@@ -14,8 +14,9 @@ namespace arki {
 namespace scan {
 
 
-struct Scanner
+class Scanner
 {
+public:
     virtual ~Scanner();
 
     /// Return a name identifying this type of scanner

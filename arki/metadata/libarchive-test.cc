@@ -12,7 +12,7 @@ class Tests : public TestCase
 {
     using TestCase::TestCase;
     void register_tests() override;
-    void setup() {
+    void setup() override {
         TestCase::setup();
         skip_unless_libarchive();
     }

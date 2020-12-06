@@ -51,7 +51,7 @@ struct OstreamState : public core::curl::Request
     {
     }
 
-    void perform()
+    void perform() override
     {
         if (progress) progress->start();
         Request::perform();
@@ -80,7 +80,7 @@ struct AbstractOutputState : public core::curl::Request
     {
     }
 
-    void perform()
+    void perform() override
     {
         if (progress) progress->start();
         Request::perform();

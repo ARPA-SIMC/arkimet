@@ -25,7 +25,7 @@ enum class Style: unsigned char {
 
 }
 
-struct BBox;
+class BBox;
 
 template<>
 struct traits<BBox>
@@ -43,8 +43,9 @@ struct traits<BBox>
  * It can contain information like centre, process, subcentre, subprocess and
  * other similar data.
  */
-struct BBox : public types::Encoded
+class BBox : public types::Encoded
 {
+public:
     using Encoded::Encoded;
 
     typedef bbox::Style Style;
@@ -67,8 +68,8 @@ struct BBox : public types::Encoded
     static std::string formatStyle(Style s);
 
     /// CODEC functions
-    std::ostream& writeToOstream(std::ostream& o) const;
-    void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const;
+    std::ostream& writeToOstream(std::ostream& o) const override;
+    void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
     static std::unique_ptr<BBox> decode(core::BinaryDecoder& dec, bool reuse_buffer);
     static std::unique_ptr<BBox> decodeString(const std::string& val);
     static std::unique_ptr<BBox> decode_structure(const structured::Keys& keys, const structured::Reader& val);

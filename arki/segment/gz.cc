@@ -98,7 +98,7 @@ struct CheckBackend : public AppendCheckBackend
         validator->validate_buf(all_data.data() + source.offset, source.size);
     }
 
-    size_t offset_end() const { return all_data.size(); }
+    size_t offset_end() const override { return all_data.size(); }
 
     State check()
     {

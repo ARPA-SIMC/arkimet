@@ -6,7 +6,7 @@
 #include <memory>
 
 namespace arki {
-struct Summary;
+class Summary;
 }
 
 extern "C" {

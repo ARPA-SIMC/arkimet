@@ -113,7 +113,7 @@ public:
     static void test_acquire(std::shared_ptr<Session> session, const core::cfg::Section& cfg, WriterBatch& batch);
 };
 
-struct Checker : public Base<dataset::Checker>
+class Checker : public Base<dataset::Checker>
 {
     std::shared_ptr<dataset::Checker> m_archive;
 

@@ -11,8 +11,9 @@ namespace arki {
 namespace matcher {
 namespace reftime {
 
-struct DTMatch
+class DTMatch
 {
+public:
     virtual ~DTMatch() {}
     virtual bool match(const core::Time& tt) const = 0;
     virtual bool match(const core::Interval& interval) const = 0;

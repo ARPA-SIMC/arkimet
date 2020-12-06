@@ -4,15 +4,16 @@
 #include <arki/defs.h>
 
 namespace arki {
-struct Segment;
+class Segment;
 
 namespace segment {
-struct Reader;
-struct Writer;
+class Reader;
+class Writer;
 struct WriterConfig;
-struct Checker;
-struct CheckerSegment;
-struct Manager;
+class Checker;
+class CheckerSegment;
+struct RepackConfig;
+class Manager;
 }
 }
 #endif

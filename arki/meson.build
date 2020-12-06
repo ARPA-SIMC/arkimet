@@ -362,19 +362,19 @@ test_arkimet_sources = [
 ]
 
 if eccodes_dep.found()
-    libarkimet_sources += ['scan/grib-test.cc']
+    test_arkimet_sources += ['scan/grib-test.cc']
 endif
 
 if dballe_dep.found()
-    libarkimet_sources += ['scan/bufr-test.cc']
+    test_arkimet_sources += ['scan/bufr-test.cc']
 endif
 
 if meteo_vm2_dep.found()
-    libarkimet_sources += ['utils/vm2-test.cc', 'scan/vm2-test.cc']
+    test_arkimet_sources += ['utils/vm2-test.cc', 'scan/vm2-test.cc']
 endif
 
 if libcurl_dep.found()
-    libarkimet_sources += ['dataset/http-test.cc']
+    test_arkimet_sources += ['dataset/http-test.cc']
 endif
 
 test_arkimet = executable('test-arkimet', test_arkimet_sources,
@@ -384,6 +384,10 @@ test_arkimet = executable('test-arkimet', test_arkimet_sources,
     ],
     dependencies: [
         sqlite3_dep,
+        eccodes_dep,
+        dballe_dep,
+        meteo_vm2_dep,
+        libcurl_dep,
     ]
 )
 

@@ -138,8 +138,9 @@ struct FixtureZip : public Fixture
 
 
 template<typename TestFixture>
-struct CheckTest : public arki::tests::FixtureTestCase<TestFixture>
+class CheckTest : public arki::tests::FixtureTestCase<TestFixture>
 {
+public:
     using arki::tests::FixtureTestCase<TestFixture>::FixtureTestCase;
     typedef TestFixture Fixture;
 
@@ -169,8 +170,9 @@ struct CheckTest : public arki::tests::FixtureTestCase<TestFixture>
 };
 
 template<typename TestFixture>
-struct FixTest : public arki::tests::FixtureTestCase<TestFixture>
+class FixTest : public arki::tests::FixtureTestCase<TestFixture>
 {
+public:
     using arki::tests::FixtureTestCase<TestFixture>::FixtureTestCase;
     typedef TestFixture Fixture;
 
@@ -199,8 +201,9 @@ struct FixTest : public arki::tests::FixtureTestCase<TestFixture>
 };
 
 template<typename TestFixture>
-struct RepackTest : public arki::tests::FixtureTestCase<TestFixture>
+class RepackTest : public arki::tests::FixtureTestCase<TestFixture>
 {
+public:
     using arki::tests::FixtureTestCase<TestFixture>::FixtureTestCase;
     typedef TestFixture Fixture;
 

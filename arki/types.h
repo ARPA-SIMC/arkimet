@@ -58,7 +58,7 @@ static inline std::ostream& operator<<(std::ostream& o, const Code& c) { return 
 /**
  * Base class for implementing arkimet metadata types
  */
-struct Type
+class Type
 {
 public:
     virtual ~Type() {}

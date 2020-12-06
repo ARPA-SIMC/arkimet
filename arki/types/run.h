@@ -31,8 +31,9 @@ struct traits<Run>
  * It can contain information like centre, process, subcentre, subprocess and
  * other similar data.
  */
-struct Run : public Encoded
+class Run : public Encoded
 {
+public:
     using Encoded::Encoded;
 
     ~Run();

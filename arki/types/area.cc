@@ -29,6 +29,11 @@ const char* traits<Area>::type_tag = TAG;
 const types::Code traits<Area>::type_code = CODE;
 const size_t traits<Area>::type_sersize_bytes = SERSIZELEN;
 
+Area::~Area()
+{
+    delete cached_bbox;
+}
+
 Area::Style Area::parseStyle(const std::string& str)
 {
     if (str == "GRIB") return Style::GRIB;

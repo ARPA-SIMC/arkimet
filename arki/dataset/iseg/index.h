@@ -10,7 +10,6 @@
 #include <arki/dataset/iseg.h>
 #include <arki/dataset/index/attr.h>
 #include <arki/dataset/index/aggregate.h>
-//#include <arki/dataset/index/summarycache.h>
 #include <string>
 #include <set>
 #include <map>
@@ -18,20 +17,10 @@
 struct sqlite3;
 
 namespace arki {
-class Metadata;
-class Matcher;
-class ConfigFile;
-
 namespace dataset {
-struct Lock;
-struct AppendLock;
-struct CheckLock;
-struct DataQuery;
-
-namespace index {
-struct Uniques;
-struct Others;
-}
+class Lock;
+class AppendLock;
+class CheckLock;
 
 namespace iseg {
 

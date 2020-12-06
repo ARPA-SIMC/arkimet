@@ -65,8 +65,9 @@ struct ParserBase
 };
 
 
-struct SectionParser : public ParserBase
+class SectionParser : public ParserBase
 {
+public:
     using ParserBase::ParserBase;
 
     /**

@@ -37,11 +37,6 @@ Tests<segment::dir::Segment, ODIMData> test3("arki_segment_dir_odim");
 Tests<segment::dir::Segment, VM2Data>  test4("arki_segment_dir_vm2");
 Tests<segment::dir::Segment, NCData>  test5("arki_segment_dir_nc");
 
-inline size_t datasize(const Metadata& md)
-{
-    return md.data_size();
-}
-
 /**
  * Create a writer
  * return the data::Writer so that we manage the writer lifetime, but also

@@ -58,8 +58,9 @@ namespace arki {
 namespace metadata {
 namespace postproc {
 
-struct Child : public utils::IODispatcher
+class Child : public utils::IODispatcher
 {
+public:
     /// Subcommand with the child to run
     subprocess::Popen cmd;
 

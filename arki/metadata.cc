@@ -196,12 +196,15 @@ void Index::set_value(std::unique_ptr<types::Type> item)
     assert(code != TYPE_SOURCE);
     assert(code != TYPE_NOTE);
 
-    auto end = values_end();
+    // FIXME post Centos7: this should be 'auto', but gcc on Centos7 cannot
+    // tell that const_iterator is the same as std::vector<types::Type*>::const_iterator
+    std::vector<types::Type*>::const_iterator end = values_end();
 
     // TODO: in theory, this could be rewritten with rbegin/rend to optimize
     // for the insertion of sorted data. In practice, after trying, it caused a
     // decrease in performance, so abandoning that for now
-    for (auto i = items.begin(); i != end; ++i)
+    auto i = items.begin();
+    for ( ; i != end; ++i)
     {
         auto icode = (*i)->type_code();
         if (icode == code)
@@ -215,13 +218,16 @@ void Index::set_value(std::unique_ptr<types::Type> item)
         }
     }
 
-    items.emplace(end, item.release());
+    // FIXME: Centos7 workaround: despite STL documentation, gcc in Centos7
+    // requires an interator on insert/emplace instead of a const_iterator
+    // So we don't limit 'i' to the for scope and directly use 'end' here, but
+    // we reuse 'i'
+    items.emplace(i, item.release());
 }
 
 void Index::unset_value(types::Code code)
 {
-    const_iterator i = items.begin();
-    for ( ; i != items.end(); ++i)
+    for (auto i = items.begin(); i != items.end(); ++i)
     {
         auto c = (*i)->type_code();
         if (c == TYPE_NOTE || c == TYPE_SOURCE)
@@ -229,6 +235,7 @@ void Index::unset_value(types::Code code)
 
         if (c == code)
         {
+            delete *i;
             items.erase(i);
             break;
         }
@@ -256,7 +263,7 @@ Metadata::Metadata(const uint8_t* encoded, unsigned size)
 
 Metadata::~Metadata()
 {
-    delete m_encoded;
+    delete[] m_encoded;
 }
 
 std::shared_ptr<Metadata> Metadata::clone() const

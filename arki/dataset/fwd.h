@@ -6,19 +6,56 @@
 namespace arki {
 namespace dataset {
 
-struct Session;
+class Session;
 struct DataQuery;
 struct ByteQuery;
-struct Dataset;
-struct Reader;
-struct Writer;
+class Dataset;
+class Reader;
+class Writer;
 struct WriterBatchElement;
-struct WriterBatch;
-struct Checker;
-struct Reporter;
-struct QueryProgress;
+class WriterBatch;
+class Checker;
+class Reporter;
+class QueryProgress;
 struct SessionTime;
 struct SessionTimeOverride;
+
+namespace local {
+class Dataset;
+class Reader;
+class Writer;
+class Checker;
+}
+
+namespace archive {
+class Reader;
+class Checker;
+}
+
+namespace segmented {
+class Reader;
+class Writer;
+class Checker;
+}
+
+namespace ondisk2 {
+class Dataset;
+class Reader;
+class Writer;
+class Checker;
+}
+
+namespace simple {
+class Reader;
+class Writer;
+class Checker;
+}
+
+namespace iseg {
+class Reader;
+class Writer;
+class Checker;
+}
 
 }
 }

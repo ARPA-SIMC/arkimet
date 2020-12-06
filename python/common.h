@@ -10,8 +10,6 @@
 #include <arki/core/fwd.h>
 
 namespace arki {
-struct Matcher;
-
 namespace python {
 
 /// Given a generic exception, set the Python error indicator appropriately.

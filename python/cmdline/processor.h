@@ -21,8 +21,9 @@ class Reader;
 namespace python {
 namespace cmdline {
 
-struct DatasetProcessor
+class DatasetProcessor
 {
+public:
     virtual ~DatasetProcessor() {}
 
     virtual void process(dataset::Reader& ds, const std::string& name) = 0;

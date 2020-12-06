@@ -182,8 +182,8 @@ struct TimeGE : public TimeMatch
         if (time_to_seconds(interval.end) >= ref) return true;
         return false;
     }
-    string sql(const std::string& column) const { return "TIME(" + column + ")>=" + tosqlTime(ref); }
-    string toString() const { return ">="+formatTime(ref); }
+    string sql(const std::string& column) const override { return "TIME(" + column + ")>=" + tosqlTime(ref); }
+    string toString() const override { return ">="+formatTime(ref); }
     bool intersect_interval(core::Interval& interval) const override { return true; }
 };
 

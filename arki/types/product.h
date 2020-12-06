@@ -106,7 +106,7 @@ namespace product {
 
 inline std::ostream& operator<<(std::ostream& o, Style s) { return o << Product::formatStyle(s); }
 
-struct GRIB1 : public Product
+class GRIB1 : public Product
 {
 public:
     using Product::Product;
@@ -119,7 +119,7 @@ public:
     std::string exactQuery() const override;
 };
 
-struct GRIB2 : public Product
+class GRIB2 : public Product
 {
 public:
     using Product::Product;
@@ -132,7 +132,7 @@ public:
     std::string exactQuery() const override;
 };
 
-struct BUFR : public Product
+class BUFR : public Product
 {
 public:
     using Product::Product;
@@ -145,7 +145,7 @@ public:
     std::string exactQuery() const override;
 };
 
-struct ODIMH5 : public Product
+class ODIMH5 : public Product
 {
 public:
     using Product::Product;
@@ -158,7 +158,7 @@ public:
     std::string exactQuery() const override;
 };
 
-struct VM2 : public Product
+class VM2 : public Product
 {
 public:
     using Product::Product;

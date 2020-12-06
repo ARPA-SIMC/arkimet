@@ -86,6 +86,7 @@ void ItemSet::unset(Code code)
     for (auto i = m_vals.begin(); i != m_vals.end(); ++i)
         if (i->first == code)
         {
+            delete i->second;
             m_vals.erase(i);
             return;
         }

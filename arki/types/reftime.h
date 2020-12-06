@@ -33,8 +33,9 @@ template<> struct traits<reftime::Period> : public traits<Reftime> {};
  *
  * It can contain information like reftimetype and reftime value.
  */
-struct Reftime : public Encoded
+class Reftime : public Encoded
 {
+public:
     using Encoded::Encoded;
 
     typedef reftime::Style Style;

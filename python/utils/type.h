@@ -35,7 +35,7 @@ struct GetSetters
     typedef std::array<PyGetSetDef, sizeof...(GETSETTERS) + 1> Data;
     Data m_data;
     GetSetters()
-        : m_data({GETSETTERS::def()..., {nullptr, nullptr, nullptr, nullptr, nullptr}})
+        : m_data({GETSETTERS::def()..., PyGetSetDef()})
     {
     }
 

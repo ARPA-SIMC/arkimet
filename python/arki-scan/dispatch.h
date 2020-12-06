@@ -19,10 +19,10 @@ class DatasetProcessor;
 
 namespace arki_scan {
 
-
 /// Dispatch metadata
-struct MetadataDispatch
+class MetadataDispatch
 {
+public:
     std::shared_ptr<arki::dataset::Session> session;
     core::cfg::Sections cfg;
     Dispatcher* dispatcher = nullptr;

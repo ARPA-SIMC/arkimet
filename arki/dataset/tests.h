@@ -4,6 +4,7 @@
 #include <arki/metadata/tests.h>
 #include <arki/core/cfg.h>
 #include <arki/types/fwd.h>
+#include <arki/dataset/fwd.h>
 #include <arki/metadata.h>
 #include <arki/metadata/collection.h>
 #include <arki/matcher.h>
@@ -14,52 +15,6 @@
 #include <string>
 
 namespace arki {
-struct Metadata;
-struct Dispatcher;
-
-namespace dataset {
-struct Reader;
-struct Writer;
-struct Checker;
-
-namespace local {
-struct Dataset;
-struct Reader;
-struct Writer;
-struct Checker;
-}
-
-namespace archive {
-struct Reader;
-struct Checker;
-}
-
-namespace segmented {
-struct Reader;
-struct Writer;
-struct Checker;
-}
-
-namespace ondisk2 {
-struct Dataset;
-struct Reader;
-struct Writer;
-struct Checker;
-}
-
-namespace simple {
-struct Reader;
-struct Writer;
-struct Checker;
-}
-
-namespace iseg {
-struct Reader;
-struct Writer;
-struct Checker;
-}
-}
-
 namespace tests {
 
 // Return the number of days passed from the given date until today
@@ -347,8 +302,9 @@ struct ReporterExpected
 
 
 template<typename DatasetWriter>
-struct ActualWriter : public arki::utils::tests::Actual<DatasetWriter*>
+class ActualWriter : public arki::utils::tests::Actual<DatasetWriter*>
 {
+public:
     ActualWriter(DatasetWriter* s) : Actual<DatasetWriter*>(s) {}
     void import(Metadata& md);
     void import(metadata::Collection& mds, dataset::ReplaceStrategy strategy=dataset::REPLACE_DEFAULT);
@@ -368,8 +324,9 @@ inline arki::tests::ActualWriter<dataset::Writer> actual(arki::dataset::iseg::Wr
 
 
 template<typename DatasetChecker>
-struct ActualChecker : public arki::utils::tests::Actual<DatasetChecker*>
+class ActualChecker : public arki::utils::tests::Actual<DatasetChecker*>
 {
+public:
     ActualChecker(DatasetChecker* s) : Actual<DatasetChecker*>(s) {}
 
     void repack(const ReporterExpected& expected, bool write=false);

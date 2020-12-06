@@ -9,20 +9,6 @@
 #include "arki/types/proddef.h"
 #include "arki/types/values.h"
 
-namespace std {
-static inline std::ostream& operator<<(std::ostream& o, const arki::types::ItemSet& m)
-{
-    o << "(";
-    for (arki::types::ItemSet::const_iterator i = m.begin(); i != m.end(); ++i)
-        if (i == m.begin())
-            o << i->second;
-        else
-            o << ", " << i->second;
-    o << ")";
-    return o;
-}
-}
-
 using namespace std;
 using namespace arki::tests;
 using namespace arki;

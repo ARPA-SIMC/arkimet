@@ -14,10 +14,7 @@ struct Importer;
 }
 
 namespace arki {
-class ValueBag;
-
 namespace scan {
-struct Validator;
 class MockEngine;
 
 namespace bufr {

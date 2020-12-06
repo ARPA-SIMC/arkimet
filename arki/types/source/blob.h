@@ -9,8 +9,9 @@ namespace arki {
 namespace types {
 namespace source {
 
-struct Blob : public Source
+class Blob : public Source
 {
+public:
     /**
      * Base directory used to resolve relative filenames.
      *

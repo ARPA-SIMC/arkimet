@@ -224,7 +224,7 @@ void ActualType::compares(const types::Type& higher) const
 {
     if (!_actual) throw TestFailed("actual item to compare is undefined");
 
-    auto higher2 = higher.clone();
+    std::unique_ptr<types::Type> higher2(higher.clone());
 
     wassert(actual(*_actual == *_actual).istrue());
     wassert(actual(higher == higher).istrue());

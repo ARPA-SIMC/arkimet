@@ -14,25 +14,28 @@ namespace structured {
 
 namespace memory {
 
-struct List;
-struct Mapping;
+class List;
+class Mapping;
 
-struct Node : public Reader
+class Node : public Reader
 {
+public:
     virtual ~Node();
     virtual const char* tag() const = 0;
     virtual void add_val(const Node*);
 };
 
-struct Null : public Node
+class Null : public Node
 {
+public:
     const char* tag() const override { return "null"; }
     NodeType type() const override { return NodeType::NONE; }
     std::string repr() const override { return "null"; }
 };
 
-struct Bool : public Node
+class Bool : public Node
 {
+public:
     bool val;
     Bool(bool val) { this->val = val; }
     const char* tag() const override { return "bool"; }
@@ -41,8 +44,9 @@ struct Bool : public Node
     bool as_bool(const char* desc) const override { return val; }
 };
 
-struct Int : public Node
+class Int : public Node
 {
+public:
     long long int val;
     Int(long long int val) { this->val = val; }
     const char* tag() const override { return "int"; }
@@ -51,8 +55,9 @@ struct Int : public Node
     long long int as_int(const char* desc) const override { return val; }
 };
 
-struct Double : public Node
+class Double : public Node
 {
+public:
     double val;
     Double(double val) { this->val = val; }
     const char* tag() const override { return "double"; }
@@ -61,8 +66,9 @@ struct Double : public Node
     double as_double(const char* desc) const override { return val; }
 };
 
-struct String : public Node
+class String : public Node
 {
+public:
     std::string val;
     String(const std::string& val) { this->val = val; }
     const char* tag() const override { return "string"; }
@@ -71,8 +77,9 @@ struct String : public Node
     std::string as_string(const char* desc) const override { return val; }
 };
 
-struct List : public Node
+class List : public Node
 {
+public:
     std::vector<const memory::Node*> val;
 
     ~List();
@@ -92,12 +99,13 @@ struct List : public Node
     long long int as_int(unsigned idx, const char* desc) const override { return val[idx]->as_int(desc); }
     double as_double(unsigned idx, const char* desc) const override { return val[idx]->as_double(desc); }
     std::string as_string(unsigned idx, const char* desc) const override { return val[idx]->as_string(desc); }
-    std::unique_ptr<types::Type> as_type(unsigned idx, const char* desc, const structured::Keys& keys) const;
+    std::unique_ptr<types::Type> as_type(unsigned idx, const char* desc, const structured::Keys& keys) const override;
     void sub(unsigned idx, const char* desc, std::function<void(const Reader&)> func) const override { func(*val[idx]); }
 };
 
-struct Mapping : public Node
+class Mapping : public Node
 {
+public:
     std::map<std::string, const memory::Node*> val;
     Null default_val;
     bool has_cur_key;
@@ -126,7 +134,7 @@ struct Mapping : public Node
     double as_double(const std::string& key, const char* desc) const override { return (*this)[key].as_double(desc); }
     std::string as_string(const std::string& key, const char* desc) const override { return (*this)[key].as_string(desc); }
     core::Time as_time(const std::string& key, const char* desc) const override;
-    std::unique_ptr<types::Type> as_type(const std::string& key, const char* desc, const structured::Keys& keys) const;
+    std::unique_ptr<types::Type> as_type(const std::string& key, const char* desc, const structured::Keys& keys) const override;
     void sub(const std::string& key, const char* desc, std::function<void(const Reader&)> dest) const override { dest((*this)[key]); }
     void items(const char* desc, std::function<void(const std::string&, const Reader&)> dest) const override
     {
@@ -170,5 +178,4 @@ public:
 }
 }
 
-// vim:set ts=4 sw=4:
 #endif

@@ -7,35 +7,19 @@
 #include <vector>
 #include <memory>
 #include <functional>
+#include "arki/core/fwd.h"
 #include "arki/matcher.h"
 
 namespace arki {
 
 namespace utils {
-struct Regexp;
-}
-
-namespace core {
-class Time;
-}
-
-namespace types {
-class Reftime;
-namespace reftime {
-class Period;
-}
-}
-
-class Matcher;
-namespace matcher {
-class OR;
+class Regexp;
 }
 
 namespace dataset {
-
 namespace step {
 
-struct Files;
+class Files;
 
 /**
  * Parameters used to match segments
@@ -71,8 +55,7 @@ public:
     virtual void list(std::function<void(std::unique_ptr<Files>)> dest) const = 0;
 
     /**
-     * Return the Reftime periods of the first and last segment under this
-     * directory.
+     * Return the intervals of the first and last segment under this directory.
      */
     virtual void extremes(core::Interval& first, core::Interval& last) const = 0;
 };
@@ -112,8 +95,9 @@ public:
 /**
  * Generator for filenames the dataset in which to store a metadata
  */
-struct Step
+class Step
 {
+public:
     virtual ~Step() {}
     virtual std::string operator()(const core::Time& time) const = 0;
 

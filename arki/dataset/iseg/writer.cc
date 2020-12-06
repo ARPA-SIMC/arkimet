@@ -27,8 +27,9 @@ namespace arki {
 namespace dataset {
 namespace iseg {
 
-struct AppendSegment
+class AppendSegment
 {
+public:
     std::shared_ptr<iseg::Dataset> dataset;
     std::shared_ptr<dataset::AppendLock> append_lock;
     std::shared_ptr<segment::Writer> segment;

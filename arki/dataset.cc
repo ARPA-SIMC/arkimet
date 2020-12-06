@@ -36,7 +36,7 @@ std::string Dataset::name() const
         return m_name;
 }
 
-void Dataset::set_parent(std::shared_ptr<Dataset> parent)
+void Dataset::set_parent(const Dataset* parent)
 {
     m_parent = parent;
 }

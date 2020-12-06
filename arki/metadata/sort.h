@@ -28,8 +28,9 @@ namespace sort {
  * If an interval is specified, data is grouped in the given time intervals,
  * then every group is sorted independently from the others.
  */
-struct Compare
+class Compare
 {
+public:
 	/// Allowed types of sort intervals
 	enum Interval {
 		NONE,

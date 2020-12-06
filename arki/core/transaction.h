@@ -27,8 +27,9 @@ public:
  *
  * Copy and assignment have unique_ptr-like semantics
  */
-struct Pending
+class Pending
 {
+public:
     Transaction* trans = nullptr;
 
     Pending() {}

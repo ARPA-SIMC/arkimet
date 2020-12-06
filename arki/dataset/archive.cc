@@ -176,15 +176,16 @@ struct ArchivesRoot
                 ds = std::make_shared<offline::Dataset>(parent->session, pathname);
         } else
             ds = std::make_shared<simple::Dataset>(parent->session, make_config(pathname));
-        ds->set_parent(parent);
+        ds->set_parent(parent.get());
         return ds->create_reader();
     }
 
     virtual std::shared_ptr<Archive> instantiate(const std::string& name) = 0;
 };
 
-struct ArchivesReaderRoot: public ArchivesRoot<dataset::Reader>
+class ArchivesReaderRoot: public ArchivesRoot<dataset::Reader>
 {
+public:
     using ArchivesRoot::ArchivesRoot;
 
     std::shared_ptr<dataset::Reader> instantiate(const std::string& name) override
@@ -193,8 +194,9 @@ struct ArchivesReaderRoot: public ArchivesRoot<dataset::Reader>
     }
 };
 
-struct ArchivesCheckerRoot: public ArchivesRoot<dataset::Checker>
+class ArchivesCheckerRoot: public ArchivesRoot<dataset::Checker>
 {
+public:
     using ArchivesRoot::ArchivesRoot;
 
     void rescan()
@@ -227,7 +229,7 @@ struct ArchivesCheckerRoot: public ArchivesRoot<dataset::Checker>
             return std::shared_ptr<dataset::Checker>();
 
         auto ds = std::make_shared<simple::Dataset>(parent->session, make_config(pathname));
-        ds->set_parent(parent);
+        ds->set_parent(parent.get());
         return ds->create_checker();
     }
 };

@@ -12,11 +12,11 @@ class Metadata;
 class Matcher;
 
 namespace summary {
-struct Stats;
+class Stats;
 struct Visitor;
 struct StatsVisitor;
 struct ItemVisitor;
-struct Table;
+class Table;
 
 size_t decode(core::BinaryDecoder& dec, unsigned version, const std::string& filename, Table& target);
 

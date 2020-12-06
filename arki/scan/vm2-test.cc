@@ -28,12 +28,11 @@ void Tests::register_tests() {
 
 // Scan a well-known vm2 sample
 add_method("scan", []() {
-    Metadata md;
     scan::Vm2 scanner;
     metadata::Collection mds;
     scanner.test_scan_file("inbound/test.vm2", mds.inserter_func());
     wassert(actual(mds.size()) == 4u);
-    md = mds[0];
+    Metadata& md = mds[0];
 
     // Check the source info
     wassert(actual(md.source().cloneType()).is_source_blob("vm2", sys::abspath("."), "inbound/test.vm2", 0, 34));
@@ -54,12 +53,11 @@ add_method("scan", []() {
 
 // Scan a well-known vm2 sample (with seconds)
 add_method("scan_seconds", []() {
-    Metadata md;
     scan::Vm2 scanner;
     metadata::Collection mds;
     scanner.test_scan_file("inbound/test.vm2", mds.inserter_func());
     wassert(actual(mds.size()) == 4u);
-    md = mds[1];
+    Metadata& md = mds[1];
 
     // Check the source info
     wassert(actual(md.source().cloneType()).is_source_blob("vm2", sys::abspath("."), "inbound/test.vm2", 35, 35));

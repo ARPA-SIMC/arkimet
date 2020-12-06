@@ -185,7 +185,7 @@ class Formatter;
  *  - sequence of Type::encodeBinary for all NOTE types, in order of insertion
  *  - Type::encodeBinary of the SOURCE metadata
  */
-struct Metadata
+class Metadata
 {
 protected:
     /// Buffer pointing to the encoded version of this metadata, to reuse for items

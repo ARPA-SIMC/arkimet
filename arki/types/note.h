@@ -7,8 +7,6 @@
 namespace arki {
 namespace types {
 
-struct Note;
-
 template<>
 struct traits<Note>
 {

@@ -8,9 +8,6 @@
 #include <memory>
 
 namespace arki {
-class Matcher;
-class Summary;
-
 namespace dataset {
 namespace simple {
 struct Dataset;

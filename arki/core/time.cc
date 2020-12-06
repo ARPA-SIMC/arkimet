@@ -101,9 +101,10 @@ bool TimeBase::operator!=(const TimeBase& o) const
         || ho != o.ho || mi != o.mi || se != o.se;
 }
 
-bool TimeBase::operator!=(const TimeBase& o) const;
 
-
+/*
+ * Time
+ */
 
 Time Time::create_iso8601(const std::string& str)
 {

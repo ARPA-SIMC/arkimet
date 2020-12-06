@@ -15,11 +15,12 @@
 namespace arki {
 namespace utils {
 
-struct ZipFile;
+class ZipFile;
 
 #ifdef HAVE_LIBZIP
-struct zip_error : public std::runtime_error
+class zip_error : public std::runtime_error
 {
+public:
     zip_error(int code, const std::string& msg);
     zip_error(zip_t* zip, const std::string& msg);
     zip_error(zip_file_t* file, const std::string& msg);

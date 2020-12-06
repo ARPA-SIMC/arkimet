@@ -165,7 +165,7 @@ void Stream::setEndOfPeriod(const core::Time& time)
         default:
         {
             stringstream ss;
-            ss << "cannot set end of period: interval type has invalid value: " + (int)sorter.interval();
+            ss << "cannot set end of period: interval type has invalid value: " << (int)sorter.interval();
             throw std::runtime_error(ss.str());
         }
     }

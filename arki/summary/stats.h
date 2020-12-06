@@ -14,8 +14,10 @@
 
 namespace arki {
 namespace summary {
-struct Stats
+
+class Stats
 {
+public:
     size_t count;
     uint64_t size;
     core::Time begin;
