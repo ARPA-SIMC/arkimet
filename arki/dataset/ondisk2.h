@@ -17,7 +17,7 @@ public:
     std::string unique;
 
     Dataset(const Dataset&) = default;
-    Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg);
+    Dataset(std::weak_ptr<Session> session, const core::cfg::Section& cfg);
 
     std::shared_ptr<dataset::Reader> create_reader() override;
     std::shared_ptr<dataset::Writer> create_writer() override;

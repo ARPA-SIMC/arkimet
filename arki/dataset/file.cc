@@ -25,7 +25,7 @@ namespace arki {
 namespace dataset {
 namespace file {
 
-Dataset::Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
+Dataset::Dataset(std::weak_ptr<Session> session, const core::cfg::Section& cfg)
     : dataset::Dataset(session, cfg),
       pathname(cfg.value("path")),
       format(cfg.value("format"))

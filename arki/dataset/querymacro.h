@@ -25,7 +25,7 @@ public:
     std::string macro_args;
     std::string query;
 
-    QueryMacro(std::shared_ptr<Session> session, const std::string& name, const std::string& query);
+    QueryMacro(std::weak_ptr<Session> session, const std::string& name, const std::string& query);
 
     std::shared_ptr<Reader> create_reader() override;
 };

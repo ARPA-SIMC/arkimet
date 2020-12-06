@@ -151,7 +151,7 @@ std::unique_ptr<AppendSegment> Writer::file(const segment::WriterConfig& writer_
     auto lock = dataset().append_lock_dataset();
     core::Time time = md.get<types::reftime::Position>()->get_Position();
     std::string relpath = dataset().step()(time) + "." + md.source().format;
-    auto writer = dataset().session->segment_writer(writer_config, format, dataset().path, relpath);
+    auto writer = dataset().session.lock()->segment_writer(writer_config, format, dataset().path, relpath);
     return std::unique_ptr<AppendSegment>(new AppendSegment(m_dataset, lock, writer));
 }
 
@@ -159,7 +159,7 @@ std::unique_ptr<AppendSegment> Writer::file(const segment::WriterConfig& writer_
 {
     sys::makedirs(str::dirname(str::joinpath(dataset().path, relpath)));
     auto lock = dataset().append_lock_dataset();
-    auto segment = dataset().session->segment_writer(writer_config, scan::Scanner::format_from_filename(relpath), dataset().path, relpath);
+    auto segment = dataset().session.lock()->segment_writer(writer_config, scan::Scanner::format_from_filename(relpath), dataset().path, relpath);
     return std::unique_ptr<AppendSegment>(new AppendSegment(m_dataset, lock, segment));
 }
 

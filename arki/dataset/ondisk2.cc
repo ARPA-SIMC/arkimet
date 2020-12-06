@@ -12,7 +12,7 @@ namespace arki {
 namespace dataset {
 namespace ondisk2 {
 
-Dataset::Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
+Dataset::Dataset(std::weak_ptr<Session> session, const core::cfg::Section& cfg)
     : dataset::indexed::Dataset(session, cfg),
       summary_cache_pathname(str::joinpath(path, ".summaries")),
       indexfile(cfg.value("indexfile")),

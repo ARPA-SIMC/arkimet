@@ -61,7 +61,7 @@ public:
     CheckerSegment(Checker& checker, const std::string& relpath, std::shared_ptr<dataset::CheckLock> lock)
         : segmented::CheckerSegment(lock), checker(checker)
     {
-        segment = checker.dataset().session->segment_checker(scan::Scanner::format_from_filename(relpath), dataset().path, relpath);
+        segment = checker.dataset().session.lock()->segment_checker(scan::Scanner::format_from_filename(relpath), dataset().path, relpath);
     }
 
     std::string path_relative() const override { return segment->segment().relpath; }

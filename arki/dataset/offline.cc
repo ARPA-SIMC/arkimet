@@ -9,7 +9,7 @@ namespace arki {
 namespace dataset {
 namespace offline {
 
-Dataset::Dataset(std::shared_ptr<Session> session, const std::string& pathname)
+Dataset::Dataset(std::weak_ptr<Session> session, const std::string& pathname)
     : dataset::Dataset(session), summary_pathname(pathname + ".summary")
 {
 }

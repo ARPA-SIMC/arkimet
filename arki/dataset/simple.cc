@@ -14,7 +14,7 @@ namespace arki {
 namespace dataset {
 namespace simple {
 
-Dataset::Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
+Dataset::Dataset(std::weak_ptr<Session> session, const core::cfg::Section& cfg)
     : dataset::indexed::Dataset(session, cfg),
       index_type(cfg.value("index_type"))
 {

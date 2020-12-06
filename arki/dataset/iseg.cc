@@ -17,7 +17,7 @@ namespace arki {
 namespace dataset {
 namespace iseg {
 
-Dataset::Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
+Dataset::Dataset(std::weak_ptr<Session> session, const core::cfg::Section& cfg)
     : segmented::Dataset(session, cfg),
       format(cfg.value("format")),
       index(index::parseMetadataBitmask(cfg.value("index"))),
@@ -48,7 +48,7 @@ std::shared_ptr<dataset::Checker> Dataset::create_checker()
 
 std::shared_ptr<segment::Reader> Dataset::segment_reader(const std::string& relpath, std::shared_ptr<core::Lock> lock)
 {
-    return session->segment_reader(format, path, relpath, lock);
+    return session.lock()->segment_reader(format, path, relpath, lock);
 }
 
 }

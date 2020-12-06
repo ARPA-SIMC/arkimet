@@ -69,15 +69,21 @@ protected:
     std::string m_name;
 
 public:
-    /// Work session
-    std::shared_ptr<Session> session;
+    /**
+     * Work session.
+     *
+     * This needs to be a weak_ptr to avoid the dataset owning the session,
+     * which would create a circular reference for those datasets that are
+     * owned by the session for reuse.
+     */
+    std::weak_ptr<Session> session;
 
     /// Raw configuration key-value pairs
     std::shared_ptr<core::cfg::Section> config;
 
-    Dataset(std::shared_ptr<Session> session);
-    Dataset(std::shared_ptr<Session> session, const std::string& name);
-    Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg);
+    Dataset(std::weak_ptr<Session> session);
+    Dataset(std::weak_ptr<Session> session, const std::string& name);
+    Dataset(std::weak_ptr<Session> session, const core::cfg::Section& cfg);
     virtual ~Dataset() {}
 
     /// Return the dataset name

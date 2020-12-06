@@ -58,7 +58,7 @@ bool Reader::impl_query_data(const dataset::DataQuery& q, metadata_dest_func des
 
     bool res = list_segments(q.matcher, [&](const std::string& relpath) {
         RIndex idx(m_dataset, relpath, dataset().read_lock_segment(relpath));
-        return idx.query_data(q, *dataset().session, dest);
+        return idx.query_data(q, *dataset().session.lock(), dest);
     });
     return track.done(res);
 }

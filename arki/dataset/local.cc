@@ -22,7 +22,7 @@ namespace arki {
 namespace dataset {
 namespace local {
 
-Dataset::Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
+Dataset::Dataset(std::weak_ptr<Session> session, const core::cfg::Section& cfg)
     : dataset::Dataset(session, cfg), path(sys::abspath(cfg.value("path")))
 {
     string tmp = cfg.value("archive age");
@@ -64,7 +64,7 @@ std::shared_ptr<archive::Dataset> Dataset::archive()
 {
     if (!m_archive)
     {
-        m_archive = std::shared_ptr<archive::Dataset>(new archive::Dataset(session, path));
+        m_archive = std::shared_ptr<archive::Dataset>(new archive::Dataset(session.lock(), path));
         m_archive->set_parent(this);
     }
     return m_archive;

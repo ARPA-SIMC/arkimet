@@ -52,7 +52,7 @@ public:
     bool eatmydata = false;
 
 
-    Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg);
+    Dataset(std::weak_ptr<Session> session, const core::cfg::Section& cfg);
     ~Dataset();
 
     virtual bool relpath_timespan(const std::string& path, core::Interval& interval) const;

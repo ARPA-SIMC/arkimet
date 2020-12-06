@@ -234,7 +234,7 @@ public:
     }
 };
 
-Dataset::Dataset(std::shared_ptr<Session> session, const std::string& root)
+Dataset::Dataset(std::weak_ptr<Session> session, const std::string& root)
     : dataset::Dataset(session, "archives"), root(root)
 {
 }

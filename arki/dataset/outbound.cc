@@ -20,7 +20,7 @@ namespace arki {
 namespace dataset {
 namespace outbound {
 
-Dataset::Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
+Dataset::Dataset(std::weak_ptr<Session> session, const core::cfg::Section& cfg)
     : segmented::Dataset(session, cfg)
 {
 }
@@ -47,7 +47,7 @@ void Writer::storeBlob(const segment::WriterConfig& writer_config, Metadata& md,
     // Write using segment::Writer
     core::Time time = md.get<types::reftime::Position>()->get_Position();
     std::string relpath = dataset().step()(time) + "." + md.source().format;
-    auto w = dataset().session->segment_writer(writer_config, md.source().format, dataset().path, relpath);
+    auto w = dataset().session.lock()->segment_writer(writer_config, md.source().format, dataset().path, relpath);
     w->append(md);
 }
 

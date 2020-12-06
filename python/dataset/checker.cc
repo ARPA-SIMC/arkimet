@@ -86,7 +86,7 @@ struct repack : public MethKwargs<repack, arkipy_DatasetChecker>
     static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
     {
         try {
-            auto cfg = get_checker_config(self->ptr->dataset().session, args, kw);
+            auto cfg = get_checker_config(self->ptr->dataset().session.lock(), args, kw);
 
             {
                 ReleaseGIL gil;
@@ -108,7 +108,7 @@ struct check : public MethKwargs<check, arkipy_DatasetChecker>
     static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
     {
         try {
-            auto cfg = get_checker_config(self->ptr->dataset().session, args, kw);
+            auto cfg = get_checker_config(self->ptr->dataset().session.lock(), args, kw);
 
             {
                 ReleaseGIL gil;
@@ -130,7 +130,7 @@ struct segment_state : public MethKwargs<segment_state, arkipy_DatasetChecker>
     static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
     {
         try {
-            auto cfg = get_checker_config(self->ptr->dataset().session, args, kw);
+            auto cfg = get_checker_config(self->ptr->dataset().session.lock(), args, kw);
 
             arki::dataset::segmented::Checker* checker = dynamic_cast<arki::dataset::segmented::Checker*>(self->ptr.get());
             if (!checker)
