@@ -210,7 +210,7 @@ struct WriterConfig
     bool eatmydata = false;
 };
 
-class Writer : public core::Transaction, std::enable_shared_from_this<Writer>
+class Writer : public core::Transaction, public std::enable_shared_from_this<Writer>
 {
 public:
     struct PendingMetadata
