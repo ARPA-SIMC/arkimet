@@ -65,7 +65,7 @@ std::shared_ptr<archive::Dataset> Dataset::archive()
     if (!m_archive)
     {
         m_archive = std::shared_ptr<archive::Dataset>(new archive::Dataset(session, path));
-        m_archive->set_parent(shared_from_this());
+        m_archive->set_parent(this);
     }
     return m_archive;
 }

@@ -176,7 +176,7 @@ struct ArchivesRoot
                 ds = std::make_shared<offline::Dataset>(parent->session, pathname);
         } else
             ds = std::make_shared<simple::Dataset>(parent->session, make_config(pathname));
-        ds->set_parent(parent);
+        ds->set_parent(parent.get());
         return ds->create_reader();
     }
 
@@ -229,7 +229,7 @@ public:
             return std::shared_ptr<dataset::Checker>();
 
         auto ds = std::make_shared<simple::Dataset>(parent->session, make_config(pathname));
-        ds->set_parent(parent);
+        ds->set_parent(parent.get());
         return ds->create_checker();
     }
 };

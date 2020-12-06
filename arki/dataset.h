@@ -63,7 +63,7 @@ namespace dataset {
 class Dataset : public std::enable_shared_from_this<Dataset>
 {
 protected:
-    std::shared_ptr<Dataset> m_parent;
+    const Dataset* m_parent = nullptr;
 
     /// Dataset name
     std::string m_name;
@@ -94,7 +94,7 @@ public:
      * contents to a separate dataset. Hierarchy is tracked so that at least a
      * full dataset name can be computed in error messages.
      */
-    void set_parent(std::shared_ptr<Dataset> parent);
+    void set_parent(const Dataset* parent);
 };
 
 
