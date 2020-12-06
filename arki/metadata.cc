@@ -227,8 +227,7 @@ void Index::set_value(std::unique_ptr<types::Type> item)
 
 void Index::unset_value(types::Code code)
 {
-    auto i = items.begin();
-    for ( ; i != items.end(); ++i)
+    for (auto i = items.begin(); i != items.end(); ++i)
     {
         auto c = (*i)->type_code();
         if (c == TYPE_NOTE || c == TYPE_SOURCE)
@@ -236,6 +235,7 @@ void Index::unset_value(types::Code code)
 
         if (c == code)
         {
+            delete *i;
             items.erase(i);
             break;
         }
