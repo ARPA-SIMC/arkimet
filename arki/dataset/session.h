@@ -16,15 +16,7 @@ class Session: public std::enable_shared_from_this<Session>
 protected:
     /// Map segment absolute paths to possibly reusable reader instances
     std::unordered_map<std::string, std::weak_ptr<segment::Reader>> reader_pool;
-    /**
-     * Pool of known, reusable datasets.
-     *
-     * Since Session owns these datasets, the dataset cannot own a shared_ptr
-     * to the session without creating a circular reference.
-     *
-     * One needs to ensure that the session that generated a dataset remains
-     * valid during the dataset's lifetime.
-     */
+    /// Pool of known, reusable datasets
     std::unordered_map<std::string, std::shared_ptr<dataset::Dataset>> dataset_pool;
     matcher::Parser matcher_parser;
 

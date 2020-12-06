@@ -77,7 +77,7 @@ struct query_data : public MethKwargs<query_data, arkipy_DatasetReader>
             return nullptr;
 
         try {
-            arki::dataset::DataQuery query(matcher_from_python(self->ptr->dataset().session.lock(), arg_matcher));
+            arki::dataset::DataQuery query(matcher_from_python(self->ptr->dataset().session, arg_matcher));
             if (arg_with_data != Py_None)
                 query.with_data = from_python<bool>(arg_with_data);
             string sort;
@@ -143,7 +143,7 @@ struct query_summary : public MethKwargs<query_summary, arkipy_DatasetReader>
             return nullptr;
 
         try {
-            auto matcher = matcher_from_python(self->ptr->dataset().session.lock(), arg_matcher);
+            auto matcher = matcher_from_python(self->ptr->dataset().session, arg_matcher);
 
             Summary* summary = nullptr;
             if (arg_summary != Py_None)
@@ -210,7 +210,7 @@ struct query_bytes : public MethKwargs<query_bytes, arkipy_DatasetReader>
             return nullptr;
 
         try {
-            arki::Matcher matcher = matcher_from_python(self->ptr->dataset().session.lock(), arg_matcher);
+            arki::Matcher matcher = matcher_from_python(self->ptr->dataset().session, arg_matcher);
             bool with_data = false;
             if (arg_with_data != Py_None)
             {

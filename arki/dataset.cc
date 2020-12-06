@@ -19,11 +19,11 @@ using namespace arki::utils;
 namespace arki {
 namespace dataset {
 
-Dataset::Dataset(std::weak_ptr<Session> session) : session(session) {}
+Dataset::Dataset(std::shared_ptr<Session> session) : session(session) {}
 
-Dataset::Dataset(std::weak_ptr<Session> session, const std::string& name) : m_name(name), session(session) {}
+Dataset::Dataset(std::shared_ptr<Session> session, const std::string& name) : m_name(name), session(session) {}
 
-Dataset::Dataset(std::weak_ptr<Session> session, const core::cfg::Section& cfg)
+Dataset::Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
     : m_name(cfg.value("name")), session(session), config(std::make_shared<core::cfg::Section>(cfg))
 {
 }
@@ -122,15 +122,13 @@ void Reader::impl_abstract_query_bytes(const dataset::ByteQuery& q, AbstractOutp
 
 bool Reader::query_data(const std::string& q, metadata_dest_func dest)
 {
-    auto session = dataset().session.lock();
-    dataset::DataQuery dq(session->matcher(q));
+    dataset::DataQuery dq(dataset().session->matcher(q));
     return impl_query_data(dq, dest);
 }
 
 void Reader::query_summary(const std::string& matcher, Summary& summary)
 {
-    auto session = dataset().session.lock();
-    impl_query_summary(session->matcher(matcher), summary);
+    impl_query_summary(dataset().session->matcher(matcher), summary);
 }
 
 

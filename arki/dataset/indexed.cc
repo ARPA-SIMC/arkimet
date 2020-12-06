@@ -163,7 +163,7 @@ void Checker::test_make_overlap(const std::string& relpath, unsigned overlap_siz
 {
     metadata::Collection mds;
     m_idx->query_segment(relpath, mds.inserter_func());
-    dataset().session.lock()->segment_checker(scan::Scanner::format_from_filename(relpath), dataset().path, relpath)->test_make_overlap(mds, overlap_size, data_idx);
+    dataset().session->segment_checker(scan::Scanner::format_from_filename(relpath), dataset().path, relpath)->test_make_overlap(mds, overlap_size, data_idx);
     m_idx->test_make_overlap(relpath, overlap_size, data_idx);
 }
 
@@ -171,7 +171,7 @@ void Checker::test_make_hole(const std::string& relpath, unsigned hole_size, uns
 {
     metadata::Collection mds;
     m_idx->query_segment(relpath, mds.inserter_func());
-    dataset().session.lock()->segment_checker(scan::Scanner::format_from_filename(relpath), dataset().path, relpath)->test_make_hole(mds, hole_size, data_idx);
+    dataset().session->segment_checker(scan::Scanner::format_from_filename(relpath), dataset().path, relpath)->test_make_hole(mds, hole_size, data_idx);
     m_idx->test_make_hole(relpath, hole_size, data_idx);
 }
 
@@ -179,14 +179,14 @@ void Checker::test_corrupt_data(const std::string& relpath, unsigned data_idx)
 {
     metadata::Collection mds;
     m_idx->query_segment(relpath, mds.inserter_func());
-    dataset().session.lock()->segment_checker(scan::Scanner::format_from_filename(relpath), dataset().path, relpath)->test_corrupt(mds, data_idx);
+    dataset().session->segment_checker(scan::Scanner::format_from_filename(relpath), dataset().path, relpath)->test_corrupt(mds, data_idx);
 }
 
 void Checker::test_truncate_data(const std::string& relpath, unsigned data_idx)
 {
     metadata::Collection mds;
     m_idx->query_segment(relpath, mds.inserter_func());
-    dataset().session.lock()->segment_checker(scan::Scanner::format_from_filename(relpath), dataset().path, relpath)->test_truncate(mds, data_idx);
+    dataset().session->segment_checker(scan::Scanner::format_from_filename(relpath), dataset().path, relpath)->test_truncate(mds, data_idx);
 }
 
 void Checker::test_swap_data(const std::string& relpath, unsigned d1_idx, unsigned d2_idx)
@@ -200,7 +200,7 @@ void Checker::test_swap_data(const std::string& relpath, unsigned d1_idx, unsign
 
 void Checker::test_rename(const std::string& relpath, const std::string& new_relpath)
 {
-    auto segment = dataset().session.lock()->segment_checker(scan::Scanner::format_from_filename(relpath), dataset().path, relpath);
+    auto segment = dataset().session->segment_checker(scan::Scanner::format_from_filename(relpath), dataset().path, relpath);
     m_idx->test_rename(relpath, new_relpath);
     segment->move(dataset().path, new_relpath, str::joinpath(dataset().path, new_relpath));
 }
