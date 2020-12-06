@@ -25,6 +25,7 @@
 #include "arki/matcher/aliases.h"
 #include "arki/runtime.h"
 #include "arki/dataset/session.h"
+#include "arki/dataset/pool.h"
 #include "arki/dataset/merged.h"
 #include "arki/dataset/http.h"
 #include "arki/dataset/querymacro.h"
@@ -112,11 +113,12 @@ Arguments:
                 return nullptr;
 
             auto session = std::make_shared<arki::dataset::Session>();
+            auto pool = std::make_shared<arki::dataset::Pool>(session);
             auto cfg = sections_from_python(arg_datasets);
             for (const auto si: *cfg)
-                session->add_dataset(*si.second);
+                pool->add_dataset(*si.second);
 
-            auto ds = session->querymacro(name, query);
+            auto ds = pool->querymacro(name, query);
             auto reader = ds->create_reader();
 
             return (PyObject*)dataset_reader_create(reader);
@@ -145,11 +147,12 @@ struct make_merged_dataset : public MethKwargs<make_merged_dataset, PyObject>
                 return nullptr;
 
             auto session = std::make_shared<arki::dataset::Session>();
+            auto pool = std::make_shared<arki::dataset::Pool>(session);
             auto cfg = sections_from_python(arg_cfg);
             for (auto si: *cfg)
-                session->add_dataset(*si.second);
+                pool->add_dataset(*si.second);
 
-            auto ds(std::make_shared<arki::dataset::merged::Dataset>(session));
+            auto ds = pool->merged();
             return (PyObject*)dataset_reader_create(ds->create_reader());
         } ARKI_CATCH_RETURN_PYO
     }

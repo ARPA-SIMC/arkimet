@@ -31,7 +31,7 @@ using namespace arki::tests;
 
 // Create a dataset index gived its configuration
 template<typename INDEX>
-inline unique_ptr<WIndex> createIndex(std::weak_ptr<dataset::Session> session, std::shared_ptr<core::Lock> lock, const std::string& text_cfg)
+inline unique_ptr<WIndex> createIndex(std::shared_ptr<dataset::Session> session, std::shared_ptr<core::Lock> lock, const std::string& text_cfg)
 {
     auto cfg = core::cfg::Section::parse(text_cfg);
     auto dataset = std::make_shared<dataset::ondisk2::Dataset>(session, *cfg);

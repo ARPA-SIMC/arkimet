@@ -7,6 +7,7 @@ namespace arki {
 namespace dataset {
 
 class Session;
+class Pool;
 struct DataQuery;
 struct ByteQuery;
 class Dataset;

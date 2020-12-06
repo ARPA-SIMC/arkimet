@@ -44,7 +44,7 @@ PyObject* instantiate_qmacro_pydataset(const std::string& source, std::shared_pt
     pyo_unique_ptr cls(throw_ifnull(PyObject_GetAttrString(module, "Querymacro")));
 
     // Create a python proxy for the dataset session
-    pyo_unique_ptr session((PyObject*)dataset_session_create(dataset->session));
+    pyo_unique_ptr session((PyObject*)dataset_session_create(dataset->session, dataset->pool));
 
     // Instantiate obj = Querymacro(macro_cfg, datasets_cfg, args, query)
     pyo_unique_ptr obj(throw_ifnull(PyObject_CallFunction(cls, "Os#s#",

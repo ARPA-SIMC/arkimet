@@ -3,6 +3,7 @@
 #include "arki/dataset/query.h"
 #include "arki/dataset/session.h"
 #include "arki/dataset/progress.h"
+#include "arki/dataset/pool.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
 #include "arki/matcher.h"
@@ -18,6 +19,7 @@ namespace {
 struct Fixture : public arki::utils::tests::Fixture
 {
     std::shared_ptr<dataset::Session> session;
+    std::shared_ptr<dataset::Pool> pool;
     std::shared_ptr<dataset::merged::Dataset> ds;
     std::shared_ptr<core::cfg::Sections> config;
 
@@ -52,6 +54,7 @@ struct Fixture : public arki::utils::tests::Fixture
     void test_setup()
     {
         session = std::make_shared<dataset::Session>();
+        pool = std::make_shared<dataset::Pool>(session);
         // Cleanup the test datasets
         system("rm -rf test200/*");
         system("rm -rf test80/*");
@@ -62,11 +65,11 @@ struct Fixture : public arki::utils::tests::Fixture
         wassert(import("test200", mdc[0]));
         wassert(import("test80", mdc[1]));
         wassert(import("error", mdc[2]));
-        session->add_dataset(*config->section("test200"));
-        session->add_dataset(*config->section("test80"));
-        session->add_dataset(*config->section("error"));
+        pool->add_dataset(*config->section("test200"));
+        pool->add_dataset(*config->section("test80"));
+        pool->add_dataset(*config->section("error"));
 
-        ds = std::make_shared<dataset::merged::Dataset>(session);
+        ds = std::make_shared<dataset::merged::Dataset>(pool);
     }
 
     void import(const std::string& dsname, Metadata& md)
