@@ -31,9 +31,8 @@ using namespace arki::tests;
 
 // Create a dataset index gived its configuration
 template<typename INDEX>
-inline unique_ptr<WIndex> createIndex(std::shared_ptr<core::Lock> lock, const std::string& text_cfg)
+inline unique_ptr<WIndex> createIndex(std::weak_ptr<dataset::Session> session, std::shared_ptr<core::Lock> lock, const std::string& text_cfg)
 {
-    auto session = std::make_shared<dataset::Session>();
     auto cfg = core::cfg::Section::parse(text_cfg);
     auto dataset = std::make_shared<dataset::ondisk2::Dataset>(session, *cfg);
     auto res = unique_ptr<INDEX>(new INDEX(dataset));
@@ -155,7 +154,8 @@ add_method("index", [] {
     auto md1 = make_md1();
 
     auto lock = make_shared<core::lock::Null>();
-    unique_ptr<WIndex> test = createIndex<WIndex>(lock,
+    auto session = std::make_shared<dataset::Session>();
+    unique_ptr<WIndex> test = createIndex<WIndex>(session, lock,
         "type = ondisk2\n"
         "path = .\n"
         "step = daily\n"
@@ -200,8 +200,9 @@ add_method("remove", [] {
     auto md = make_md();
     auto md1 = make_md1();
 
+    auto session = std::make_shared<dataset::Session>();
     auto lock = make_shared<core::lock::Null>();
-    unique_ptr<WIndex> test = createIndex<WIndex>(lock,
+    unique_ptr<WIndex> test = createIndex<WIndex>(session, lock,
         "type = ondisk2\n"
         "path = .\n"
         "step = daily\n"
@@ -280,9 +281,10 @@ add_method("concurrent", [] {
     unlink("file1");
 
     // Create the index and index two metadata
+    auto session = std::make_shared<dataset::Session>();
     {
         auto lock = make_shared<core::lock::Null>();
-        unique_ptr<WIndex> test1 = createIndex<WIndex>(lock, cfg);
+        unique_ptr<WIndex> test1 = createIndex<WIndex>(session, lock, cfg);
         test1->open();
 
         Pending p = test1->begin_transaction();
@@ -309,7 +311,7 @@ add_method("concurrent", [] {
     md3.add_note("this is a test");
     {
         auto lock = make_shared<core::lock::Null>();
-        unique_ptr<WIndex> test1 = createIndex<WIndex>(lock, cfg);
+        unique_ptr<WIndex> test1 = createIndex<WIndex>(session, lock, cfg);
         test1->open();
         Pending p = test1->begin_transaction();
         test1->index(md3, "inbound/test.bufr", 0);
@@ -328,8 +330,9 @@ add_method("query_file", [] {
     // Remove index if it exists
     unlink("file1");
 
+    auto session = std::make_shared<dataset::Session>();
     auto lock = make_shared<core::lock::Null>();
-    unique_ptr<WIndex> test = createIndex<WIndex>(lock,
+    unique_ptr<WIndex> test = createIndex<WIndex>(session, lock,
         "type = ondisk2\n"
         "path = .\n"
         "step = daily\n"
@@ -379,8 +382,9 @@ add_method("reproduce_old_issue1", [] {
     // Remove index if it exists
     unlink("file1");
 
+    auto session = std::make_shared<dataset::Session>();
     auto lock = make_shared<core::lock::Null>();
-    unique_ptr<WIndex> test = createIndex<WIndex>(lock,
+    unique_ptr<WIndex> test = createIndex<WIndex>(session, lock,
         "type = ondisk2\n"
         "path = \n"
         "step = daily\n"
@@ -443,8 +447,9 @@ add_method("largefile", [] {
     // Remove index if it exists
     unlink("file1");
 
+    auto session = std::make_shared<dataset::Session>();
     auto lock = make_shared<core::lock::Null>();
-    unique_ptr<WIndex> test = createIndex<WIndex>(lock,
+    unique_ptr<WIndex> test = createIndex<WIndex>(session, lock,
         "type = ondisk2\n"
         "path = .\n"
         "step = daily\n"
@@ -493,8 +498,9 @@ add_method("smallfiles", [] {
         iotrace::Collector collector;
 
         // An index without large files
+        auto session = std::make_shared<dataset::Session>();
         auto lock = make_shared<core::lock::Null>();
-        unique_ptr<WIndex> test = createIndex<WIndex>(lock,
+        unique_ptr<WIndex> test = createIndex<WIndex>(session, lock,
                 "type = ondisk2\n"
                 "path = .\n"
                 "step = daily\n"
@@ -538,8 +544,9 @@ add_method("smallfiles", [] {
         iotrace::Collector collector;
 
         // An index without large files
+        auto session = std::make_shared<dataset::Session>();
         auto lock = make_shared<core::lock::Null>();
-        unique_ptr<WIndex> test = createIndex<WIndex>(lock,
+        unique_ptr<WIndex> test = createIndex<WIndex>(session, lock,
                 "type = ondisk2\n"
                 "path = .\n"
                 "step = daily\n"
