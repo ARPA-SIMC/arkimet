@@ -66,7 +66,7 @@ public:
     CheckerSegment(Checker& checker, const std::string& relpath, std::shared_ptr<dataset::CheckLock> lock)
         : segmented::CheckerSegment(lock), checker(checker)
     {
-        segment = checker.dataset().session.lock()->segment_checker(checker.dataset().format, checker.dataset().path, relpath);
+        segment = checker.dataset().session->segment_checker(checker.dataset().format, checker.dataset().path, relpath);
     }
     ~CheckerSegment()
     {
@@ -626,7 +626,7 @@ void Checker::test_make_overlap(const std::string& relpath, unsigned overlap_siz
     CIndex idx(m_dataset, relpath, lock);
     metadata::Collection mds;
     idx.query_segment(mds.inserter_func());
-    dataset().session.lock()->segment_checker(dataset().format, dataset().path, relpath)->test_make_overlap(mds, overlap_size, data_idx);
+    dataset().session->segment_checker(dataset().format, dataset().path, relpath)->test_make_overlap(mds, overlap_size, data_idx);
     idx.test_make_overlap(overlap_size, data_idx);
 }
 
@@ -637,7 +637,7 @@ void Checker::test_make_hole(const std::string& relpath, unsigned hole_size, uns
     CIndex idx(m_dataset, relpath, lock);
     metadata::Collection mds;
     idx.query_segment(mds.inserter_func());
-    dataset().session.lock()->segment_checker(dataset().format, dataset().path, relpath)->test_make_hole(mds, hole_size, data_idx);
+    dataset().session->segment_checker(dataset().format, dataset().path, relpath)->test_make_hole(mds, hole_size, data_idx);
     idx.test_make_hole(hole_size, data_idx);
 }
 
@@ -648,7 +648,7 @@ void Checker::test_corrupt_data(const std::string& relpath, unsigned data_idx)
     CIndex idx(m_dataset, relpath, lock);
     metadata::Collection mds;
     idx.query_segment(mds.inserter_func());
-    dataset().session.lock()->segment_checker(dataset().format, dataset().path, relpath)->test_corrupt(mds, data_idx);
+    dataset().session->segment_checker(dataset().format, dataset().path, relpath)->test_corrupt(mds, data_idx);
 }
 
 void Checker::test_truncate_data(const std::string& relpath, unsigned data_idx)
@@ -658,7 +658,7 @@ void Checker::test_truncate_data(const std::string& relpath, unsigned data_idx)
     CIndex idx(m_dataset, relpath, lock);
     metadata::Collection mds;
     idx.query_segment(mds.inserter_func());
-    dataset().session.lock()->segment_checker(dataset().format, dataset().path, relpath)->test_truncate(mds, data_idx);
+    dataset().session->segment_checker(dataset().format, dataset().path, relpath)->test_truncate(mds, data_idx);
 }
 
 void Checker::test_swap_data(const std::string& relpath, unsigned d1_idx, unsigned d2_idx)
@@ -681,7 +681,7 @@ void Checker::test_rename(const std::string& relpath, const std::string& new_rel
     string abspath = str::joinpath(dataset().path, relpath);
     string new_abspath = str::joinpath(dataset().path, new_relpath);
 
-    auto segment = dataset().session.lock()->segment_checker(dataset().format, dataset().path, relpath);
+    auto segment = dataset().session->segment_checker(dataset().format, dataset().path, relpath);
     segment->move(dataset().path, new_relpath, new_abspath);
 
     sys::rename(abspath + ".index", new_abspath + ".index");

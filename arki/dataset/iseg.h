@@ -19,7 +19,7 @@ struct Dataset : public segmented::Dataset
     bool trace_sql;
 
     Dataset(const Dataset&) = default;
-    Dataset(std::weak_ptr<Session> session, const core::cfg::Section& cfg);
+    Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg);
 
     std::shared_ptr<dataset::Reader> create_reader() override;
     std::shared_ptr<dataset::Writer> create_writer() override;

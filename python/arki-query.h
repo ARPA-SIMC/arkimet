@@ -20,7 +20,7 @@ extern "C" {
 typedef struct {
     PyObject_HEAD
     arki::python::cmdline::DatasetProcessor* processor = nullptr;
-    std::shared_ptr<arki::dataset::Session> session;
+    std::shared_ptr<arki::dataset::Pool> pool;
 } arkipy_ArkiQuery;
 
 extern PyTypeObject* arkipy_ArkiQuery_Type;

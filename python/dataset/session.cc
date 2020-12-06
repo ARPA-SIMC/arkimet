@@ -1,7 +1,7 @@
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
-#include "python/dataset/session.h"
 #include "python/dataset.h"
+#include "python/dataset/session.h"
 #include "python/dataset/dataset.h"
 #include "python/dataset/reader.h"
 #include "python/dataset/writer.h"
@@ -10,6 +10,7 @@
 #include "python/matcher.h"
 #include "arki/dataset.h"
 #include "arki/dataset/session.h"
+#include "arki/dataset/pool.h"
 
 using namespace std;
 using namespace arki;
@@ -34,7 +35,7 @@ struct get_alias_database : public MethNoargs<get_alias_database, arkipy_Dataset
     static PyObject* run(Impl* self)
     {
         try {
-            return to_python(self->ptr->get_alias_database());
+            return to_python(self->session->get_alias_database());
         } ARKI_CATCH_RETURN_PYO
     }
 };
@@ -51,7 +52,7 @@ struct datasets : public MethNoargs<datasets, arkipy_DatasetSession>
         try {
             pyo_unique_ptr res(throw_ifnull(PyList_New(0)));
             PyObject* list = res.get();
-            self->ptr->foreach_dataset([&](std::shared_ptr<arki::dataset::Dataset> dataset) {
+            self->pool->foreach_dataset([&](std::shared_ptr<arki::dataset::Dataset> dataset) {
                 pyo_unique_ptr ds((PyObject*)dataset_dataset_create(dataset));
                 if (PyList_Append(list, ds))
                     throw PythonException();
@@ -72,7 +73,7 @@ struct has_datasets : public MethNoargs<has_datasets, arkipy_DatasetSession>
     static PyObject* run(Impl* self)
     {
         try {
-            if (self->ptr->has_datasets())
+            if (self->pool->has_datasets())
                 Py_RETURN_TRUE;
             else
                 Py_RETURN_FALSE;
@@ -90,7 +91,7 @@ struct dataset_pool_size : public MethNoargs<dataset_pool_size, arkipy_DatasetSe
     static PyObject* run(Impl* self)
     {
         try {
-            return to_python(self->ptr->dataset_pool_size());
+            return to_python(self->pool->size());
         } ARKI_CATCH_RETURN_PYO
     }
 };
@@ -111,7 +112,7 @@ struct has_dataset : public MethKwargs<has_dataset, arkipy_DatasetSession>
             return nullptr;
 
         try {
-            if (self->ptr->has_dataset(query))
+            if (self->pool->has_dataset(query))
                 Py_RETURN_TRUE;
             else
                 Py_RETURN_FALSE;
@@ -135,7 +136,7 @@ struct matcher : public MethKwargs<matcher, arkipy_DatasetSession>
             return nullptr;
 
         try {
-            return matcher_to_python(self->ptr->matcher(query));
+            return matcher_to_python(self->session->matcher(query));
         } ARKI_CATCH_RETURN_PYO
     }
 };
@@ -156,7 +157,7 @@ struct expand_query : public MethKwargs<expand_query, arkipy_DatasetSession>
             return nullptr;
 
         try {
-            Matcher m = self->ptr->matcher(query);
+            Matcher m = self->session->matcher(query);
             return to_python(m.toStringExpanded());
         } ARKI_CATCH_RETURN_PYO
     }
@@ -177,7 +178,7 @@ struct load_aliases : public MethKwargs<load_aliases, arkipy_DatasetSession>
             return nullptr;
 
         try {
-            self->ptr->load_aliases(*sections_from_python(arg_aliases));
+            self->session->load_aliases(*sections_from_python(arg_aliases));
             Py_RETURN_NONE;
         } ARKI_CATCH_RETURN_PYO
     }
@@ -205,7 +206,7 @@ aliases differently, it raises an exception.
             return nullptr;
 
         try {
-            self->ptr->add_dataset(*section_from_python(arg_cfg));
+            self->pool->add_dataset(*section_from_python(arg_cfg));
             Py_RETURN_NONE;
         } ARKI_CATCH_RETURN_PYO
     }
@@ -234,9 +235,9 @@ struct dataset_accessor_factory : public MethKwargs<Base, Impl>
                     PyErr_SetString(PyExc_ValueError, "only one of cfg or name must be passed");
                     throw PythonException();
                 }
-                ds = self->ptr->dataset(*section_from_python(arg_cfg));
+                ds = self->session->dataset(*section_from_python(arg_cfg));
             } else if (arg_name) {
-                ds = self->ptr->dataset(arg_name);
+                ds = self->pool->dataset(arg_name);
             } else {
                 // Error
                 PyErr_SetString(PyExc_ValueError, "one of cfg or name must be passed");
@@ -317,7 +318,7 @@ struct querymacro : public MethKwargs<querymacro, arkipy_DatasetSession>
             return nullptr;
 
         try {
-            return (PyObject*)dataset_dataset_create(self->ptr->querymacro(name, macro));
+            return (PyObject*)dataset_dataset_create(self->pool->querymacro(name, macro));
         } ARKI_CATCH_RETURN_PYO
     }
 };
@@ -332,7 +333,7 @@ struct merged : public MethNoargs<merged, arkipy_DatasetSession>
     static PyObject* run(Impl* self)
     {
         try {
-            return (PyObject*)dataset_dataset_create(self->ptr->merged());
+            return (PyObject*)dataset_dataset_create(self->pool->merged());
         } ARKI_CATCH_RETURN_PYO
     }
 };
@@ -384,7 +385,8 @@ Examples::
 
     static void _dealloc(Impl* self)
     {
-        self->ptr.~shared_ptr<arki::dataset::Session>();
+        self->pool.~shared_ptr<arki::dataset::Pool>();
+        self->session.~shared_ptr<arki::dataset::Session>();
         Py_TYPE(self)->tp_free((PyObject*)self);
     }
 
@@ -408,9 +410,10 @@ Examples::
 
         try {
             if (force_dir_segments)
-                new (&(self->ptr)) shared_ptr<arki::dataset::Session>(std::make_shared<arki::dataset::DirSegmentsSession>(load_aliases));
+                new (&(self->session)) shared_ptr<arki::dataset::Session>(std::make_shared<arki::dataset::DirSegmentsSession>(load_aliases));
             else
-                new (&(self->ptr)) shared_ptr<arki::dataset::Session>(std::make_shared<arki::dataset::Session>(load_aliases));
+                new (&(self->session)) shared_ptr<arki::dataset::Session>(std::make_shared<arki::dataset::Session>(load_aliases));
+            new (&(self->pool)) shared_ptr<arki::dataset::Pool>(std::make_shared<arki::dataset::Pool>(self->session));
             return 0;
         } ARKI_CATCH_RETURN_INT;
     }
@@ -424,11 +427,12 @@ DatasetSessionDef* session_def = nullptr;
 namespace arki {
 namespace python {
 
-arkipy_DatasetSession* dataset_session_create(std::shared_ptr<arki::dataset::Session> ptr)
+arkipy_DatasetSession* dataset_session_create(std::shared_ptr<arki::dataset::Session> session, std::shared_ptr<arki::dataset::Pool> pool)
 {
     arkipy_DatasetSession* result = PyObject_New(arkipy_DatasetSession, arkipy_DatasetSession_Type);
     if (!result) return nullptr;
-    new (&(result->ptr)) std::shared_ptr<arki::dataset::Session>(ptr);
+    new (&(result->session)) std::shared_ptr<arki::dataset::Session>(session);
+    new (&(result->pool)) std::shared_ptr<arki::dataset::Pool>(pool);
     return result;
 }
 
@@ -436,7 +440,18 @@ std::shared_ptr<arki::dataset::Session> session_from_python(PyObject* o)
 {
     try {
         if (arkipy_DatasetSession_Check(o)) {
-            return ((arkipy_DatasetSession*)o)->ptr;
+            return ((arkipy_DatasetSession*)o)->session;
+        }
+        PyErr_SetString(PyExc_TypeError, "value must be an instance of arkimet.dataset.Session");
+        throw PythonException();
+    } ARKI_CATCH_RETHROW_PYTHON
+}
+
+std::shared_ptr<arki::dataset::Pool> pool_from_python(PyObject* o)
+{
+    try {
+        if (arkipy_DatasetSession_Check(o)) {
+            return ((arkipy_DatasetSession*)o)->pool;
         }
         PyErr_SetString(PyExc_TypeError, "value must be an instance of arkimet.dataset.Session");
         throw PythonException();

@@ -44,7 +44,7 @@ PyObject* instantiate_qmacro_pydataset(const std::string& source, std::shared_pt
     pyo_unique_ptr cls(throw_ifnull(PyObject_GetAttrString(module, "Querymacro")));
 
     // Create a python proxy for the dataset session
-    pyo_unique_ptr session((PyObject*)dataset_session_create(dataset->session.lock()));
+    pyo_unique_ptr session((PyObject*)dataset_session_create(dataset->session, dataset->pool));
 
     // Instantiate obj = Querymacro(macro_cfg, datasets_cfg, args, query)
     pyo_unique_ptr obj(throw_ifnull(PyObject_CallFunction(cls, "Os#s#",
@@ -65,7 +65,7 @@ void init()
     arki::dataset::qmacro::register_parser("py", [](const std::string& source, std::shared_ptr<arki::dataset::QueryMacro> datasets) {
         AcquireGIL gil;
         pyo_unique_ptr o(instantiate_qmacro_pydataset(source, datasets));
-        return python::dataset::create_reader(datasets->session.lock(), o);
+        return python::dataset::create_reader(datasets->session, o);
     });
 }
 

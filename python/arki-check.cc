@@ -31,7 +31,7 @@ PyTypeObject* arkipy_ArkiCheck_Type = nullptr;
 
 namespace {
 
-void foreach_checker(std::shared_ptr<arki::dataset::Session> session, std::function<void(std::shared_ptr<arki::dataset::Checker>)> dest);
+void foreach_checker(std::shared_ptr<arki::dataset::Pool> pool, std::function<void(std::shared_ptr<arki::dataset::Checker>)> dest);
 
 struct SkipDataset : public std::exception
 {
@@ -67,7 +67,7 @@ struct remove : public MethKwargs<remove, arkipy_ArkiCheck>
 
             {
                 ReleaseGIL rg;
-                arki::dataset::WriterPool pool(self->session);
+                arki::dataset::DispatchPool pool(self->pool);
                 // Read all metadata from the file specified in --remove
                 arki::metadata::Collection todolist;
                 todolist.read_from_file(metadata_file);
@@ -85,7 +85,7 @@ struct remove : public MethKwargs<remove, arkipy_ArkiCheck>
                         throw std::runtime_error(ss.str());
                     }
 
-                    auto ds = self->session->locate_metadata(*md);
+                    auto ds = self->pool->locate_metadata(*md);
                     if (!ds)
                     {
                         std::stringstream ss;
@@ -136,7 +136,7 @@ struct checker_base : public MethKwargs<Base, Impl>
         try {
             ReleaseGIL rg;
             {
-                foreach_checker(self->session, [&](std::shared_ptr<arki::dataset::Checker> checker) {
+                foreach_checker(self->pool, [&](std::shared_ptr<arki::dataset::Checker> checker) {
                     Base::process(self, *checker);
                 });
             }
@@ -233,9 +233,9 @@ struct check : public checker_base<check, arkipy_ArkiCheck>
     }
 };
 
-void foreach_checker(std::shared_ptr<arki::dataset::Session> session, std::function<void(std::shared_ptr<arki::dataset::Checker>)> dest)
+void foreach_checker(std::shared_ptr<arki::dataset::Pool> pool, std::function<void(std::shared_ptr<arki::dataset::Checker>)> dest)
 {
-    session->foreach_dataset([&](std::shared_ptr<arki::dataset::Dataset> ds) {
+    pool->foreach_dataset([&](std::shared_ptr<arki::dataset::Dataset> ds) {
         std::shared_ptr<arki::dataset::Checker> checker;
         try {
             checker = ds->create_checker();
@@ -262,7 +262,7 @@ struct compress : public checker_base<compress, arkipy_ArkiCheck>
         try {
             ReleaseGIL rg;
             {
-                foreach_checker(self->session, [&](std::shared_ptr<arki::dataset::Checker> checker) {
+                foreach_checker(self->pool, [&](std::shared_ptr<arki::dataset::Checker> checker) {
                     checker->compress(self->checker_config, group_size);
                 });
             }
@@ -288,7 +288,7 @@ struct unarchive : public checker_base<unarchive, arkipy_ArkiCheck>
             std::string pathname(arg_pathname, arg_pathname_len);
             ReleaseGIL rg;
             {
-                foreach_checker(self->session, [&](std::shared_ptr<arki::dataset::Checker> checker) {
+                foreach_checker(self->pool, [&](std::shared_ptr<arki::dataset::Checker> checker) {
                     if (auto c = std::dynamic_pointer_cast<arki::dataset::segmented::Checker>(checker))
                         c->segment(pathname)->unarchive();
                 });
@@ -312,7 +312,7 @@ arki-check implementation
     static void _dealloc(Impl* self)
     {
         self->checker_config.~CheckerConfig();
-        self->session.~shared_ptr<arki::dataset::Session>();
+        self->pool.~shared_ptr<arki::dataset::Pool>();
         Py_TYPE(self)->tp_free(self);
     }
 
@@ -352,10 +352,10 @@ arki-check implementation
             reporter = std::make_shared<dataset::TextIOReporter>(py_stdout);
 
             new (&(self->checker_config)) arki::dataset::CheckerConfig(reporter, arg_readonly);
-            new (&(self->session)) std::shared_ptr<arki::dataset::Session>(session->ptr);
+            new (&(self->pool)) std::shared_ptr<arki::dataset::Pool>(session->pool);
 
             if (arg_filter)
-                self->checker_config.segment_filter = self->session->matcher(std::string(arg_filter, arg_filter_len));
+                self->checker_config.segment_filter = self->pool->session()->matcher(std::string(arg_filter, arg_filter_len));
             self->checker_config.accurate = arg_accurate;
             self->checker_config.online = arg_online;
             self->checker_config.offline = arg_offline;

@@ -273,7 +273,7 @@ std::unique_ptr<AppendSegment> Writer::segment(const segment::WriterConfig& writ
     auto lock = dataset().append_lock_dataset();
     core::Time time = md.get<types::reftime::Position>()->get_Position();
     std::string relpath = dataset().step()(time) + "." + md.source().format;
-    auto writer = dataset().session.lock()->segment_writer(writer_config, format, dataset().path, relpath);
+    auto writer = dataset().session->segment_writer(writer_config, format, dataset().path, relpath);
     return std::unique_ptr<AppendSegment>(new AppendSegment(m_dataset, lock, writer));
 }
 
@@ -281,7 +281,7 @@ std::unique_ptr<AppendSegment> Writer::segment(const segment::WriterConfig& writ
 {
     sys::makedirs(str::dirname(str::joinpath(dataset().path, relpath)));
     auto lock = dataset().append_lock_dataset();
-    auto segment = dataset().session.lock()->segment_writer(writer_config, scan::Scanner::format_from_filename(relpath), dataset().path, relpath);
+    auto segment = dataset().session->segment_writer(writer_config, scan::Scanner::format_from_filename(relpath), dataset().path, relpath);
     return std::unique_ptr<AppendSegment>(new AppendSegment(m_dataset, lock, segment));
 }
 
@@ -303,7 +303,7 @@ WriterAcquireResult Writer::acquire(Metadata& md, const AcquireConfig& cfg)
     {
         case REPLACE_NEVER: return w->acquire_replace_never(md);
         case REPLACE_ALWAYS: return w->acquire_replace_always(md);
-        case REPLACE_HIGHER_USN: return w->acquire_replace_higher_usn(md, *dataset().session.lock());
+        case REPLACE_HIGHER_USN: return w->acquire_replace_higher_usn(md, *dataset().session);
         default:
         {
             stringstream ss;
@@ -337,7 +337,7 @@ void Writer::acquire_batch(WriterBatch& batch, const AcquireConfig& cfg)
                 seg->acquire_batch_replace_always(s.second);
                 break;
             case REPLACE_HIGHER_USN:
-                seg->acquire_batch_replace_higher_usn(s.second, *dataset().session.lock());
+                seg->acquire_batch_replace_higher_usn(s.second, *dataset().session);
                 break;
             default: throw std::runtime_error("programming error: unsupported replace value " + std::to_string(replace));
         }

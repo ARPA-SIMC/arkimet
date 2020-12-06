@@ -39,7 +39,7 @@ public:
 
     const core::lock::Policy* lock_policy;
 
-    Dataset(std::weak_ptr<Session> session, const core::cfg::Section& cfg);
+    Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg);
 
     /**
      * Check if the data to be acquired is older than acquire or delete age.

@@ -12,7 +12,7 @@ extern "C" {
 typedef struct {
     PyObject_HEAD
     arki::dataset::CheckerConfig checker_config;
-    std::shared_ptr<arki::dataset::Session> session;
+    std::shared_ptr<arki::dataset::Pool> pool;
 } arkipy_ArkiCheck;
 
 extern PyTypeObject* arkipy_ArkiCheck_Type;
