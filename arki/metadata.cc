@@ -425,16 +425,16 @@ void Metadata::encode_notes(core::BinaryEncoder& enc) const
         (*i)->encodeBinary(enc);
 }
 
-void Metadata::set_notes_encoded(const std::vector<uint8_t>& notes)
+void Metadata::set_notes_encoded(const uint8_t* data, unsigned size)
 {
-    // TODO: this could be optimizez by replacing existing notes instead of
+    // TODO: this could be optimized by replacing existing notes instead of
     // removing and readding.
     // It is only called by iseg and ondisk2 indices while recomposing the
     // metadata from index bits. That whole process could be refactored, and
     // made to efficiently compose a metadata in the right order. That would
     // make this method unnecessary.
     clear_notes();
-    core::BinaryDecoder dec(notes);
+    core::BinaryDecoder dec(data, size);
     while (dec)
     {
         TypeCode el_type;

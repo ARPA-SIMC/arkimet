@@ -285,18 +285,6 @@ void Index::add_joins_and_constraints(const Matcher& m, std::string& query) cons
 void Index::build_md(Query& q, Metadata& md, std::shared_ptr<arki::segment::Reader> reader) const
 {
     // Rebuild the Metadata
-    if (reader)
-        md.set_source(Source::createBlob(
-                dataset->format, dataset->path, data_relpath,
-                q.fetch<uint64_t>(0), q.fetch<uint64_t>(1), reader));
-    else
-        md.set_source(Source::createBlobUnlocked(
-                dataset->format, dataset->path, data_relpath,
-                q.fetch<uint64_t>(0), q.fetch<uint64_t>(1)));
-    // md.notes = mdq.fetchItems<types::Note>(5);
-    const uint8_t* notes_p = (const uint8_t*)q.fetchBlob(2);
-    int notes_l = q.fetchBytes(2);
-    md.set_notes_encoded(vector<uint8_t>(notes_p, notes_p + notes_l));
     md.set(Reftime::createPosition(Time::create_sql(q.fetchString(3))));
     int j = 4;
     if (m_uniques)
@@ -320,6 +308,20 @@ void Index::build_md(Query& q, Metadata& md, std::shared_ptr<arki::segment::Read
         }
         ++j;
     }
+
+    // md.notes = mdq.fetchItems<types::Note>(5);
+    const uint8_t* notes_p = (const uint8_t*)q.fetchBlob(2);
+    int notes_l = q.fetchBytes(2);
+    md.set_notes_encoded(notes_p, notes_l);
+
+    if (reader)
+        md.set_source(Source::createBlob(
+                dataset->format, dataset->path, data_relpath,
+                q.fetch<uint64_t>(0), q.fetch<uint64_t>(1), reader));
+    else
+        md.set_source(Source::createBlobUnlocked(
+                dataset->format, dataset->path, data_relpath,
+                q.fetch<uint64_t>(0), q.fetch<uint64_t>(1)));
 }
 
 bool Index::query_data(const dataset::DataQuery& q, dataset::Session& session, metadata_dest_func dest)

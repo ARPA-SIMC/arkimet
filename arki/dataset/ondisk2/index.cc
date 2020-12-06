@@ -431,13 +431,7 @@ bool Contents::addJoinsAndConstraints(const Matcher& m, std::string& query) cons
 void Contents::build_md(Query& q, Metadata& md, std::shared_ptr<arki::segment::Reader> reader) const
 {
     // Rebuild the Metadata
-    md.set_source(Source::createBlob(
-            q.fetchString(1), dataset->path, q.fetchString(2),
-            q.fetch<uint64_t>(3), q.fetch<uint64_t>(4), reader));
     // md.notes = mdq.fetchItems<types::Note>(5);
-    const uint8_t* notes_p = (const uint8_t*)q.fetchBlob(5);
-    int notes_l = q.fetchBytes(5);
-    md.set_notes_encoded(vector<uint8_t>(notes_p, notes_p + notes_l));
     md.set(Reftime::createPosition(Time::create_sql(q.fetchString(6))));
     int j = 7;
     if (m_uniques)
@@ -461,6 +455,14 @@ void Contents::build_md(Query& q, Metadata& md, std::shared_ptr<arki::segment::R
         }
         ++j;
     }
+
+    const uint8_t* notes_p = (const uint8_t*)q.fetchBlob(5);
+    int notes_l = q.fetchBytes(5);
+    md.set_notes_encoded(notes_p, notes_l);
+
+    md.set_source(Source::createBlob(
+            q.fetchString(1), dataset->path, q.fetchString(2),
+            q.fetch<uint64_t>(3), q.fetch<uint64_t>(4), reader));
 }
 
 bool Contents::query_data(const dataset::DataQuery& q, metadata_dest_func dest)

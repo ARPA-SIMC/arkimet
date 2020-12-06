@@ -291,7 +291,7 @@ public:
     void clear_notes();
     std::pair<metadata::Index::const_iterator, metadata::Index::const_iterator> notes() const { return m_index.notes(); }
     void encode_notes(core::BinaryEncoder& enc) const;
-    void set_notes_encoded(const std::vector<uint8_t>& notes);
+    void set_notes_encoded(const uint8_t* data, unsigned size);
     void add_note(const std::string& note);
     const types::Note& get_last_note() const;
 
