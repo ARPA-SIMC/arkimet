@@ -2,7 +2,6 @@
 #define ARKI_DATASET_PROGRESS_H
 
 #include <arki/dataset/fwd.h>
-#include <string>
 
 namespace arki {
 namespace dataset {

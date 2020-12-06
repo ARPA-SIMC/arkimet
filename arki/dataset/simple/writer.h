@@ -9,12 +9,8 @@
 
 namespace arki {
 namespace dataset {
-namespace index {
-class Manifest;
-}
 
 namespace simple {
-class Reader;
 class AppendSegment;
 
 class Writer : public DatasetAccess<simple::Dataset, segmented::Writer>

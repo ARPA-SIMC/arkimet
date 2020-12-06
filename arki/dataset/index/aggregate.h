@@ -22,6 +22,7 @@
  *
  * Author: Enrico Zini <enrico@enricozini.com>
  */
+#include <arki/matcher/fwd.h>
 #include <arki/utils/sqlite.h>
 #include <arki/dataset/index/attr.h>
 

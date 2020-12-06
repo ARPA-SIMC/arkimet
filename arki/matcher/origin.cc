@@ -1,7 +1,6 @@
-#include "config.h"
-
-#include <arki/matcher/origin.h>
-#include <arki/matcher/utils.h>
+#include "arki/matcher/origin.h"
+#include "arki/matcher/utils.h"
+#include "arki/utils/string.h"
 
 using namespace std;
 using namespace arki::types;

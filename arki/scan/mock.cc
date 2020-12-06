@@ -1,10 +1,6 @@
 #include "mock.h"
 #include "arki/metadata.h"
-#include "arki/metadata/data.h"
-#include "arki/segment.h"
 #include "arki/core/binary.h"
-#include "arki/types/source.h"
-#include "arki/utils/sys.h"
 #include "arki/utils/sqlite.h"
 #include <openssl/evp.h>
 #include <cstdlib>

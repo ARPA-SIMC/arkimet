@@ -1,9 +1,10 @@
 #ifndef ARKI_SCAN_MOCK_H
 #define ARKI_SCAN_MOCK_H
 
-#include <arki/scan.h>
+#include <arki/metadata/fwd.h>
 #include <string>
 #include <vector>
+#include <memory>
 
 namespace arki {
 namespace utils {

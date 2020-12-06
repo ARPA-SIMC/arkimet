@@ -3,8 +3,9 @@
 
 /// Read metadata incrementally from a data stream
 
-#include <arki/metadata.h>
+#include <arki/defs.h>
 #include <string>
+#include <vector>
 
 namespace arki {
 namespace metadata {

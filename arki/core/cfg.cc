@@ -2,7 +2,6 @@
 #include "file.h"
 #include "arki/utils/string.h"
 #include "arki/utils/regexp.h"
-#include <cctype>
 #include <sstream>
 #include <cstdio>
 

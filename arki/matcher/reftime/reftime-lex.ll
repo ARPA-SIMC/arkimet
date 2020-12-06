@@ -1,10 +1,8 @@
 %{
-#include "config.h"
 #include "arki/matcher/reftime/parser.h"
 #include "arki/core/fuzzytime.h"
 #include "arki/matcher/reftime/lexer.h"
 #include "reftime-parse.hh"
-#include <ctype.h>
 
 using namespace arki::matcher::reftime::lexer;
 

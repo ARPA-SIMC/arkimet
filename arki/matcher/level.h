@@ -1,9 +1,7 @@
 #ifndef ARKI_MATCHER_LEVEL
 #define ARKI_MATCHER_LEVEL
 
-#include <arki/matcher.h>
 #include <arki/matcher/utils.h>
-#include <arki/types/level.h>
 
 namespace arki {
 namespace matcher {

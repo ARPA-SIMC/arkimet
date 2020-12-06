@@ -2,12 +2,10 @@
 #define ARKI_DISPATCHER_H
 
 #include <arki/dataset/pool.h>
-#include <arki/core/cfg.h>
 #include <arki/metadata/fwd.h>
 #include <arki/matcher.h>
 #include <string>
 #include <vector>
-#include <map>
 
 namespace arki {
 

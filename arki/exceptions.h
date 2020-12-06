@@ -2,7 +2,6 @@
 #define ARKI_EXCEPTIONS_H
 
 #include <string>
-#include <stdexcept>
 
 namespace arki {
 

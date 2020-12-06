@@ -1,12 +1,13 @@
 #ifndef ARKI_DATASET_INDEX_ATTR_H
 #define ARKI_DATASET_INDEX_ATTR_H
 
+#include <arki/types/fwd.h>
 #include <arki/utils/sqlite.h>
-#include <arki/dataset/index/base.h>
 #include <string>
 #include <vector>
 #include <map>
 #include <memory>
+#include <set>
 
 namespace arki {
 namespace matcher {

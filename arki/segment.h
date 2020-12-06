@@ -11,7 +11,6 @@
 #include <arki/segment/fwd.h>
 #include <arki/core/transaction.h>
 #include <string>
-#include <iosfwd>
 #include <memory>
 #include <vector>
 

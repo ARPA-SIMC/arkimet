@@ -3,7 +3,6 @@
 #include "ondisk2/writer.h"
 #include "ondisk2/checker.h"
 #include "arki/utils/string.h"
-#include "step.h"
 
 using namespace std;
 using namespace arki::utils;

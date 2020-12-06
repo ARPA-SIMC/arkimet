@@ -1,10 +1,8 @@
-#include "arki/libconfig.h"
 #include "arki/utils/sqlite.h"
 #include "arki/core/binary.h"
 #include "arki/types.h"
 #include "arki/nag.h"
 #include <sstream>
-#include <unistd.h>
 
 using namespace std;
 

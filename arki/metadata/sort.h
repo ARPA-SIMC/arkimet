@@ -3,12 +3,9 @@
 
 /// Sorting routines for metadata
 
-#include <arki/metadata.h>
 #include <arki/metadata/collection.h>
-#include <arki/types/reftime.h>
-
+#include <arki/types/fwd.h>
 #include <string>
-#include <vector>
 #include <memory>
 
 namespace arki {

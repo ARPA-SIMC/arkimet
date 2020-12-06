@@ -1,12 +1,10 @@
 #include "sort.h"
-#include "arki/metadata.h"
 #include "arki/types/reftime.h"
 #include "arki/metadata.h"
 #include "arki/exceptions.h"
 #include "arki/utils/string.h"
 #include "arki/utils/regexp.h"
 #include <vector>
-#include <algorithm>
 #include <cctype>
 #include <cstring>
 

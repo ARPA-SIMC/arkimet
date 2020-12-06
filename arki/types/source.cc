@@ -3,11 +3,9 @@
 #include "source/inline.h"
 #include "source/url.h"
 #include "arki/core/binary.h"
-#include "arki/segment.h"
 #include "arki/exceptions.h"
 #include "arki/types/utils.h"
 #include "arki/structured/emitter.h"
-#include "arki/structured/memory.h"
 #include "arki/structured/keys.h"
 #include "arki/structured/reader.h"
 #include <sstream>

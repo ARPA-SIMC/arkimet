@@ -1,4 +1,3 @@
-#include "config.h"
 #include "reader.h"
 #include "index.h"
 #include "arki/utils/sys.h"

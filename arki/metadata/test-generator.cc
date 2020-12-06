@@ -3,7 +3,6 @@
 #include "arki/metadata/data.h"
 #include "arki/types/reftime.h"
 #include "arki/types/run.h"
-#include <cstring>
 
 using namespace std;
 using namespace arki::types;

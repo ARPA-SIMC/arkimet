@@ -1,11 +1,8 @@
 #include "time.h"
 #include "binary.h"
-#include "arki/exceptions.h"
-#include <ostream>
-#include <cmath>
-#include <cstring>
-#include <ctime>
 #include <cstdio>
+#include <stdexcept>
+#include <algorithm>
 
 using namespace std;
 

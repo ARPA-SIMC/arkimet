@@ -3,8 +3,8 @@
 
 /// Process a stream of metadata in batches
 
-#include <arki/types/timerange.h>
-#include <arki/types/reftime.h>
+#include <arki/core/time.h>
+#include <arki/types/fwd.h>
 
 namespace arki {
 namespace metadata {

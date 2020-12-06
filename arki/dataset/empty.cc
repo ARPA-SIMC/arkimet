@@ -1,9 +1,7 @@
 #include "empty.h"
-#include "arki/metadata/collection.h"
 #include "arki/utils/accounting.h"
 #include "arki/core/time.h"
 #include "session.h"
-#include <ostream>
 
 using namespace std;
 

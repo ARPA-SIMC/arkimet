@@ -8,7 +8,6 @@
 #include "arki/dataset/merged.h"
 #include "arki/types/source/blob.h"
 #include "arki/utils/sys.h"
-#include "arki/utils/string.h"
 #include "arki/metadata.h"
 #include "arki/nag.h"
 

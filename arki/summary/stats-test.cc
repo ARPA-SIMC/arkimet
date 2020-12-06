@@ -1,6 +1,7 @@
 #include "arki/types/tests.h"
 #include "arki/metadata.h"
 #include "arki/metadata/data.h"
+#include "arki/types/reftime.h"
 #include "stats.h"
 
 namespace {

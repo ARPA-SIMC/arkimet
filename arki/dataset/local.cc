@@ -4,15 +4,10 @@
 #include "archive.h"
 #include "arki/dataset/time.h"
 #include "arki/types/reftime.h"
-#include "arki/exceptions.h"
 #include "arki/metadata.h"
-#include "arki/utils/files.h"
-#include "arki/metadata/collection.h"
-#include "arki/nag.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
 #include <fcntl.h>
-#include <sys/stat.h>
 
 using namespace std;
 using namespace arki::core;

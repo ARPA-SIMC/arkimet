@@ -1,7 +1,6 @@
 #ifndef ARKI_MATCHER_AREA
 #define ARKI_MATCHER_AREA
 
-#include <arki/matcher.h>
 #include <arki/matcher/utils.h>
 #include <arki/types/values.h>
 #include <arki/utils/geosfwd.h>

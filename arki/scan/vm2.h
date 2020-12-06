@@ -6,14 +6,6 @@
 #include <arki/scan.h>
 #include <string>
 #include <vector>
-#include <unistd.h>
-
-namespace meteo {
-namespace vm2 {
-class Parser;
-class Value;
-}
-}
 
 namespace arki {
 namespace scan {

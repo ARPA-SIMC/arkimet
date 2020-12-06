@@ -3,11 +3,11 @@
 #include "arki/dataset/query.h"
 #include "arki/dataset/progress.h"
 #include "arki/exceptions.h"
-#include "arki/metadata.h"
 #include "arki/metadata/sort.h"
 #include "arki/matcher.h"
 #include "arki/summary.h"
 #include "arki/utils/string.h"
+#include "arki/core/time.h"
 #include <cstring>
 #include <thread>
 #include <mutex>

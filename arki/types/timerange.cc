@@ -4,12 +4,10 @@
 #include "arki/utils/iostream.h"
 #include "arki/core/binary.h"
 #include "arki/structured/emitter.h"
-#include "arki/structured/memory.h"
+#include "arki/structured/reader.h"
 #include "arki/structured/keys.h"
-#include "arki/libconfig.h"
 #include <sstream>
 #include <iomanip>
-#include <cmath>
 #include <cstring>
 
 #define CODE TYPE_TIMERANGE

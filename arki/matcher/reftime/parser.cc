@@ -1,6 +1,9 @@
 #include "parser.h"
+#include "arki/core/time.h"
+#include "arki/core/fuzzytime.h"
 #include <sstream>
 #include <set>
+#include <memory>
 
 using namespace std;
 using arki::core::Time;

@@ -1,21 +1,18 @@
-#include "arki/libconfig.h"
 #include "arki/dataset/file.h"
 #include "arki/dataset/query.h"
 #include "arki/dataset/progress.h"
-#include "arki/types/source/blob.h"
+#include "arki/metadata.h"
 #include "arki/segment.h"
 #include "arki/core/file.h"
+#include "arki/core/time.h"
+#include "arki/types/source/blob.h"
 #include "arki/metadata/sort.h"
 #include "arki/matcher.h"
-#include "arki/summary.h"
 #include "arki/scan.h"
 #include "arki/utils/files.h"
-#include "arki/utils/string.h"
 #include "arki/utils/sys.h"
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <fcntl.h>
-#include <unistd.h>
+#include <sstream>
 
 using namespace std;
 using namespace arki::core;

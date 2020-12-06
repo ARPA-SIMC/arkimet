@@ -1,14 +1,10 @@
 #include "xargs.h"
-#include "arki/exceptions.h"
 #include "arki/metadata.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/string.h"
 #include "arki/utils/subprocess.h"
 #include <cstring>
 #include <unistd.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
 
 using namespace std;
 using namespace arki;

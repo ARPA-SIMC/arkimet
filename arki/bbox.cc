@@ -1,9 +1,5 @@
-#include "config.h"
 #include "arki/bbox.h"
-#include "arki/exceptions.h"
 #include "arki/utils/geos.h"
-#include "arki/utils/string.h"
-#include "arki/runtime.h"
 #include <memory>
 #include <map>
 

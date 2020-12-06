@@ -7,14 +7,8 @@
 #include <arki/libconfig.h>
 #include <vector>
 #include <string>
-#include <cstdint>
 
 namespace arki {
-
-namespace types {
-class Type;
-}
-
 namespace tests {
 
 /// Prepackaged set of tests for generic arki types

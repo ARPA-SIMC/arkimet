@@ -1,5 +1,3 @@
-#include "arki/libconfig.h"
-#include "core/file.h"
 #include "core/binary.h"
 #include "types.h"
 #include "types/utils.h"
@@ -7,12 +5,8 @@
 #include "utils/string.h"
 #include "structured/emitter.h"
 #include "structured/keys.h"
-#include "structured/memory.h"
 #include "structured/reader.h"
 #include "formatter.h"
-#include <cstring>
-#include <unistd.h>
-#include <algorithm>
 
 using namespace std;
 using namespace arki::utils;

@@ -1,7 +1,6 @@
 #ifndef ARKI_MATCHER_PRODUCT
 #define ARKI_MATCHER_PRODUCT
 
-#include <arki/matcher.h>
 #include <arki/matcher/utils.h>
 #include <arki/types/values.h>
 

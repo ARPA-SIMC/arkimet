@@ -3,7 +3,6 @@
 
 #include <arki/segment.h>
 #include <arki/segment/base.h>
-#include <arki/segment/common.h>
 #include <arki/core/file.h>
 #include <arki/metadata/fwd.h>
 #include <string>

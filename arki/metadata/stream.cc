@@ -1,9 +1,9 @@
 #include "stream.h"
 #include "data.h"
-#include "arki/types/source/inline.h"
 #include "arki/core/binary.h"
 #include "arki/exceptions.h"
-#include "arki/utils/string.h"
+#include "arki/metadata.h"
+#include "arki/types/source.h"
 #include <cstring>
 
 using namespace std;

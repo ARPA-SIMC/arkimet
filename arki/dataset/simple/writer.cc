@@ -5,7 +5,6 @@
 #include "arki/dataset/session.h"
 #include "arki/types/source/blob.h"
 #include "arki/types/reftime.h"
-#include "arki/nag.h"
 #include "arki/scan.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/string.h"
@@ -14,8 +13,6 @@
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
 #include "arki/summary.h"
-#include <ctime>
-#include <cstdio>
 
 using namespace std;
 using namespace arki;

@@ -6,10 +6,9 @@
 #include <arki/core/fwd.h>
 #include <arki/types/fwd.h>
 #include <arki/structured/fwd.h>
-#include <string>
-#include <vector>
 #include <memory>
-#include <stdexcept>
+#include <vector>
+#include <string>
 
 namespace arki {
 

@@ -1,5 +1,6 @@
 #include "fuzzytime.h"
 #include <cstring>
+#include <cstdio>
 
 namespace arki {
 namespace core {

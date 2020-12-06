@@ -1,18 +1,13 @@
 #include "manifest.h"
-#include "arki/libconfig.h"
 #include "arki/exceptions.h"
 #include "arki/core/file.h"
-#include "arki/dataset.h"
-#include "arki/dataset/maintenance.h"
 #include "arki/dataset/query.h"
-#include "arki/dataset/session.h"
 #include "arki/dataset/simple.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
 #include "arki/metadata/sort.h"
 #include "arki/types/source/blob.h"
 #include "arki/summary.h"
-#include "arki/types/reftime.h"
 #include "arki/matcher.h"
 #include "arki/utils/sqlite.h"
 #include "arki/utils/files.h"
@@ -20,7 +15,6 @@
 #include "arki/iotrace.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/string.h"
-#include "arki/scan.h"
 #include <algorithm>
 #include <unistd.h>
 #include <fcntl.h>
@@ -32,7 +26,6 @@ using namespace arki::core;
 using namespace arki::types;
 using namespace arki::utils;
 using namespace arki::utils::sqlite;
-using namespace arki::dataset::maintenance;
 
 namespace arki {
 namespace dataset {

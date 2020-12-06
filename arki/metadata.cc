@@ -1,7 +1,6 @@
 #include "metadata.h"
 #include "metadata/data.h"
 #include "core/file.h"
-#include "core/binary.h"
 #include "exceptions.h"
 #include "types/bundle.h"
 #include "types/value.h"
@@ -11,20 +10,16 @@
 #include "formatter.h"
 #include "utils/compress.h"
 #include "structured/emitter.h"
-#include "structured/memory.h"
+#include "structured/reader.h"
 #include "structured/keys.h"
 #include "iotrace.h"
 #include "scan.h"
 #include "utils/string.h"
 #include "utils/yaml.h"
-#include <unistd.h>
-#include <cstdlib>
 #include <cstring>
-#include <cerrno>
 #include <cassert>
 #include <stdexcept>
 #include <fcntl.h>
-#include <sys/uio.h>
 
 using namespace std;
 using namespace arki::types;

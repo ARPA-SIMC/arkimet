@@ -1,5 +1,4 @@
 #include "missing.h"
-#include "arki/exceptions.h"
 #include "arki/types/source/blob.h"
 #include <sstream>
 

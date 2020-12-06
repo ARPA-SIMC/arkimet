@@ -2,9 +2,7 @@
 #define ARKI_MATCHER_QUANTITY
 
 /// Radar quantity matcher
-#include <arki/matcher.h>
 #include <arki/matcher/utils.h>
-#include <arki/types/quantity.h>
 #include <set>
 #include <string>
 

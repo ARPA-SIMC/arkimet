@@ -4,6 +4,7 @@
 #include "arki/matcher.h"
 #include "arki/matcher/parser.h"
 #include "arki/types.h"
+#include "arki/dataset/index/base.h"
 #include "attr.h"
 
 namespace {

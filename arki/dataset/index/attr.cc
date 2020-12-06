@@ -1,10 +1,9 @@
 #include "arki/dataset/index/attr.h"
-#include "arki/matcher.h"
+#include "arki/dataset/index/base.h"
 #include "arki/matcher/utils.h"
 #include "arki/core/binary.h"
 #include "arki/types.h"
 #include "arki/metadata.h"
-#include <sstream>
 
 using namespace std;
 using namespace arki;

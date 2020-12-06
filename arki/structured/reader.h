@@ -5,8 +5,6 @@
 #include <arki/types/fwd.h>
 #include <arki/structured/fwd.h>
 #include <string>
-#include <vector>
-#include <map>
 #include <memory>
 #include <functional>
 #include <iosfwd>

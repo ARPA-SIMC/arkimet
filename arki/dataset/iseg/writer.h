@@ -11,8 +11,6 @@
 namespace arki {
 namespace dataset {
 namespace iseg {
-class Reader;
-class AIndex;
 class AppendSegment;
 
 class Writer : public DatasetAccess<iseg::Dataset, segmented::Writer>

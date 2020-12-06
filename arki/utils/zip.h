@@ -2,20 +2,17 @@
 #define ARKI_UTILS_ZIP_H
 
 #include <arki/core/fwd.h>
-#include <arki/segment.h>
+#include <arki/segment/fwd.h>
 #include <arki/libconfig.h>
 #include <string>
 #include <vector>
 #include <stdexcept>
-#include <set>
 #ifdef HAVE_LIBZIP
 #include <zip.h>
 #endif
 
 namespace arki {
 namespace utils {
-
-class ZipFile;
 
 #ifdef HAVE_LIBZIP
 class zip_error : public std::runtime_error

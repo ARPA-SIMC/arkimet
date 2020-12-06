@@ -5,6 +5,7 @@
 #include <vector>
 #include <string>
 #include <cstdint>
+#include <cstddef>
 
 namespace arki {
 namespace core {

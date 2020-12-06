@@ -1,12 +1,11 @@
 #include "blob.h"
 #include "arki/segment.h"
 #include "arki/core/binary.h"
-#include "arki/core/file.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
 #include "arki/structured/emitter.h"
-#include "arki/structured/memory.h"
 #include "arki/structured/keys.h"
+#include "arki/structured/reader.h"
 #include "arki/exceptions.h"
 
 using namespace std;

@@ -6,7 +6,6 @@
 #include "arki/types/reftime.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
-#include <cerrno>
 #include <fcntl.h>
 
 using namespace std;

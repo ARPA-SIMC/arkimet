@@ -1,7 +1,9 @@
 #ifndef ARKI_TYPES_BUNDLE_H
 #define ARKI_TYPES_BUNDLE_H
 
-#include <arki/types.h>
+#include <arki/core/fwd.h>
+#include <string>
+#include <vector>
 
 namespace arki {
 namespace types {

@@ -19,8 +19,6 @@
 #include "arki/utils/sys.h"
 #include "arki/utils/files.h"
 #include <algorithm>
-#include <system_error>
-#include <sstream>
 
 using namespace std;
 using namespace arki::utils;

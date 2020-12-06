@@ -2,7 +2,6 @@
 #include "aliases.h"
 #include "utils.h"
 #include "arki/core/cfg.h"
-#include "arki/utils/string.h"
 #include "arki/utils/sys.h"
 #include <cstdlib>
 

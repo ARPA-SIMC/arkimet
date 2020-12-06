@@ -1,13 +1,9 @@
-#include "arki/utils/tests.h"
 #include "arki/utils/testrunner.h"
 #include "arki/utils/term.h"
 #include "arki/core/file.h"
-#include "arki/structured/json.h"
 #include "arki/runtime.h"
 #include <signal.h>
-#include <cstring>
 #include <cstdlib>
-#include <iostream>
 #include <arki/nag.h>
 
 using namespace std;

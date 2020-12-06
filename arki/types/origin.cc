@@ -4,7 +4,7 @@
 #include "arki/core/binary.h"
 #include "arki/utils/string.h"
 #include "arki/structured/emitter.h"
-#include "arki/structured/memory.h"
+#include "arki/structured/reader.h"
 #include "arki/structured/keys.h"
 #include <iomanip>
 #include <sstream>

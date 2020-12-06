@@ -1,7 +1,7 @@
 #ifndef ARKI_METADATA_DATA_H
 #define ARKI_METADATA_DATA_H
 
-#include <arki/core/file.h>
+#include <arki/core/fwd.h>
 #include <arki/structured/fwd.h>
 #include <vector>
 #include <list>

@@ -4,7 +4,6 @@
 #include "arki/dataset/progress.h"
 #include "arki/dataset/query.h"
 #include "arki/utils/sys.h"
-#include "arki/utils/string.h"
 #include "arki/summary.h"
 #include <algorithm>
 

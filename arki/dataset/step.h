@@ -11,11 +11,6 @@
 #include "arki/matcher.h"
 
 namespace arki {
-
-namespace utils {
-class Regexp;
-}
-
 namespace dataset {
 namespace step {
 

@@ -3,14 +3,12 @@
 #include "empty.h"
 #include "session.h"
 #include "arki/metadata.h"
-#include "arki/metadata/collection.h"
 #include "arki/types/reftime.h"
 #include "arki/types/source.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/accounting.h"
 #include "arki/nag.h"
-#include <sys/stat.h>
 
 using namespace std;
 using namespace arki::types;

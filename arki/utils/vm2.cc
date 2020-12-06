@@ -1,6 +1,5 @@
 #include <arki/utils/vm2.h>
 #include <meteo-vm2/source.h>
-#include <arki/types/value.h>
 
 namespace arki {
 namespace utils {

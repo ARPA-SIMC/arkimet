@@ -1,4 +1,3 @@
-#include "config.h"
 #include "arki/utils/accounting.h"
 
 namespace arki {

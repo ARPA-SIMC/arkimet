@@ -10,8 +10,6 @@ class Matcher;
 
 namespace dataset {
 namespace iseg {
-class WIndex;
-class CheckerSegment;
 
 class Checker : public DatasetAccess<iseg::Dataset, segmented::Checker>
 {

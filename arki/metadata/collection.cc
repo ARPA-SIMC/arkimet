@@ -1,6 +1,7 @@
 #include "collection.h"
 #include "arki/exceptions.h"
 #include "arki/core/file.h"
+#include "arki/metadata.h"
 #include "arki/types/source/blob.h"
 #include "arki/types/reftime.h"
 #include "arki/utils/compress.h"
@@ -11,13 +12,10 @@
 #include "arki/utils/sys.h"
 #include "arki/summary.h"
 #include "arki/metadata/sort.h"
-#include "arki/metadata/postprocess.h"
 #include "arki/dataset.h"
 #include <algorithm>
 #include <memory>
 #include <fcntl.h>
-#include <arpa/inet.h>
-#include <utime.h>
 
 using namespace std;
 using namespace arki::core;

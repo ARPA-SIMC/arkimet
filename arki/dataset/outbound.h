@@ -5,12 +5,10 @@
 
 #include <arki/dataset/segmented.h>
 #include <arki/dataset/impl.h>
+#include <arki/metadata/fwd.h>
 #include <string>
 
 namespace arki {
-class Metadata;
-class Matcher;
-
 namespace dataset {
 namespace outbound {
 

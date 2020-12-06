@@ -1,4 +1,3 @@
-#include "config.h"
 #include "utils.h"
 #include "aliases.h"
 #include "reftime.h"
@@ -6,6 +5,7 @@
 #include "arki/core/binary.h"
 #include "arki/types/itemset.h"
 #include "arki/metadata.h"
+#include "arki/types.h"
 #include "arki/utils/string.h"
 #include "arki/utils/regexp.h"
 #include <cassert>

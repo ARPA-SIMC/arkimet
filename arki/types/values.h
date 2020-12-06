@@ -93,8 +93,15 @@ public:
 
     struct const_iterator
     {
+        typedef values::Value value_type;
+        typedef ptrdiff_t difference_type;
+        typedef value_type *pointer;
+        typedef value_type &reference;
+        typedef std::forward_iterator_tag iterator_category;
+
         core::BinaryDecoder dec;
         const values::Value* value = nullptr;
+
         const_iterator(const core::BinaryDecoder& dec);
         const_iterator(const const_iterator& o) = delete;
         const_iterator(const_iterator&& o);

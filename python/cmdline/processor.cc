@@ -1,4 +1,5 @@
 #include "processor.h"
+#include "arki/metadata.h"
 #include "arki/metadata/libarchive.h"
 #include "arki/libconfig.h"
 #include "arki/types/source.h"

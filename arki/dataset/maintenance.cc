@@ -1,21 +1,9 @@
-#include "config.h"
 #include "arki/dataset/maintenance.h"
 #include "arki/dataset/segmented.h"
-#include "arki/dataset/archive.h"
-#include "arki/metadata/collection.h"
-#include "arki/metadata/sort.h"
-#include "arki/dataset/step.h"
 #include "arki/dataset/reporter.h"
-#include "arki/utils/files.h"
 #include "arki/utils/string.h"
-#include "arki/utils/sys.h"
 #include "arki/nag.h"
-#include <algorithm>
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <fcntl.h>
-#include <unistd.h>
-#include <ctime>
 #include <cstdio>
 
 // Be compatible with systems without O_NOATIME

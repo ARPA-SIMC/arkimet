@@ -1,8 +1,7 @@
-#include "config.h"
-#include "base.h"
 #include "aggregate.h"
 #include "arki/matcher.h"
 #include "arki/utils/string.h"
+#include "arki/dataset/index/base.h"
 
 using namespace std;
 using namespace arki::utils;

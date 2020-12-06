@@ -23,12 +23,14 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include <arki/matcher.h>
-#include <arki/utils/string.h>
+#include <arki/core/fwd.h>
+#include <arki/types/fwd.h>
+#include <arki/matcher/fwd.h>
 #include <vector>
 #include <string>
+#include <sstream>
 #include <map>
-#include <cstdint>
+#include <set>
 
 namespace arki {
 namespace matcher {

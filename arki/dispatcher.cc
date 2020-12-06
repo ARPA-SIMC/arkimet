@@ -3,13 +3,11 @@
 #include "metadata/validator.h"
 #include "matcher.h"
 #include "dataset.h"
-#include "dataset/local.h"
 #include "dataset/session.h"
 #include "types/reftime.h"
 #include "types/source.h"
 #include "types/note.h"
 #include "utils/string.h"
-#include "utils/sys.h"
 #include "nag.h"
 
 using namespace std;

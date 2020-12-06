@@ -4,11 +4,9 @@
 #include "arki/types/values.h"
 #include "arki/core/binary.h"
 #include "arki/structured/emitter.h"
-#include "arki/structured/memory.h"
+#include "arki/structured/reader.h"
 #include "arki/structured/keys.h"
-#include "arki/libconfig.h"
 #include <sstream>
-#include <cmath>
 
 #define CODE TYPE_PRODDEF
 #define TAG "proddef"

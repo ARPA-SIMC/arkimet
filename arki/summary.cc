@@ -3,27 +3,21 @@
 #include "summary/codec.h"
 #include "summary/stats.h"
 #include "core/file.h"
-#include "core/binary.h"
 #include "exceptions.h"
-#include "metadata.h"
 #include "matcher.h"
 #include "formatter.h"
 #include "core/time.h"
 #include "types/bundle.h"
-#include "types/utils.h"
 #include "types/area.h"
 #include "utils/geos.h"
 #include "utils/compress.h"
 #include "structured/emitter.h"
-#include "structured/memory.h"
+#include "structured/reader.h"
 #include "structured/keys.h"
 #include "iotrace.h"
 #include "utils/string.h"
 #include "utils/sys.h"
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <fcntl.h>
-#include <unistd.h>
 
 using namespace std;
 using namespace arki::core;

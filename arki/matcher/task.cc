@@ -1,6 +1,5 @@
-#include "config.h"
-
 #include "task.h"
+#include "arki/types/task.h"
 #include "arki/utils/string.h"
 
 using namespace std;

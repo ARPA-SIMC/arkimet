@@ -2,6 +2,7 @@
 #include "arki/matcher.h"
 #include "arki/matcher/parser.h"
 #include "arki/matcher/reftime.h"
+#include "arki/types/reftime.h"
 #include "arki/metadata.h"
 
 using namespace std;

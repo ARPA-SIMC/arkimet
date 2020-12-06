@@ -7,8 +7,6 @@
 #include <arki/core/transaction.h>
 #include <string>
 #include <sys/types.h>
-#include <sys/stat.h>
-#include <memory>
 #include <set>
 #include <vector>
 

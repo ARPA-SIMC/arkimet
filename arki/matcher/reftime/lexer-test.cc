@@ -4,8 +4,6 @@
 using namespace std;
 using namespace arki::tests;
 using namespace arki;
-using namespace arki::types;
-using namespace arki::matcher::reftime;
 
 namespace {
 

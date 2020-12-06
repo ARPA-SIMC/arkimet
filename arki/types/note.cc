@@ -3,11 +3,9 @@
 #include "arki/exceptions.h"
 #include "arki/core/binary.h"
 #include "arki/structured/emitter.h"
-#include "arki/structured/memory.h"
+#include "arki/structured/reader.h"
 #include "arki/structured/keys.h"
-#include "config.h"
 #include <sstream>
-#include <cmath>
 
 #define CODE TYPE_NOTE
 #define TAG "note"

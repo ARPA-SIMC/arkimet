@@ -9,17 +9,12 @@
 #include "arki/scan.h"
 #include "arki/utils/compress.h"
 #include "arki/utils/files.h"
-#include "arki/utils/string.h"
 #include "arki/utils/sys.h"
-#include "arki/utils/tar.h"
-#include "arki/nag.h"
-#include "arki/utils/accounting.h"
 #include "arki/iotrace.h"
 #include <fcntl.h>
 #include <vector>
 #include <algorithm>
 #include <sys/uio.h>
-#include <system_error>
 
 using namespace std;
 using namespace arki::core;

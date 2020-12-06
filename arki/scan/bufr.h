@@ -4,10 +4,8 @@
 #include <arki/scan.h>
 #include <arki/metadata/fwd.h>
 #include <string>
-#include <map>
 
 namespace dballe {
-struct File;
 struct BinaryMessage;
 struct Message;
 struct Importer;

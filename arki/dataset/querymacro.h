@@ -3,9 +3,7 @@
 
 /// Macros implementing special query strategies
 
-#include <arki/core/cfg.h>
 #include <arki/dataset.h>
-#include <arki/dataset/pool.h>
 #include <string>
 #include <functional>
 

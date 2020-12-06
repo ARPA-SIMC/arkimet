@@ -7,7 +7,6 @@
 #include "arki/types/source/blob.h"
 #include "arki/scan/validator.h"
 #include "arki/utils/files.h"
-#include "arki/utils/string.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/tar.h"
 #include "arki/nag.h"
@@ -15,12 +14,10 @@
 #include "arki/iotrace.h"
 #include <fcntl.h>
 #include <vector>
-#include <algorithm>
 #include <sys/uio.h>
-#include <sys/sendfile.h>
 #include <system_error>
 #include <cstring>
-
+#include <sstream>
 
 using namespace std;
 using namespace arki::core;

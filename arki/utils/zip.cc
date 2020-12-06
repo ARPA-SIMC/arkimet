@@ -1,5 +1,6 @@
 #include "zip.h"
 #include "arki/utils/sys.h"
+#include "arki/segment.h"
 #include <cctype>
 
 namespace arki {

@@ -10,21 +10,16 @@
 #include "arki/utils/sys.h"
 #include "arki/scan.h"
 #include "arki/scan/validator.h"
-#include "arki/utils/string.h"
 #include "arki/utils/accounting.h"
 #include "arki/iotrace.h"
 #include "arki/nag.h"
 #include <cerrno>
 #include <cstring>
 #include <cstdint>
-#include <set>
-#include <sys/types.h>
 #include <sys/stat.h>
-#include <fcntl.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/uio.h>
-#include <sys/sendfile.h>
 #include <algorithm>
 
 using namespace std;

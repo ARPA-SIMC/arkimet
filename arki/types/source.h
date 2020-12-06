@@ -3,11 +3,8 @@
 
 /// Represent where the data for a metadata can be found
 
-#include <arki/libconfig.h>
 #include <arki/types.h>
 #include <arki/segment/fwd.h>
-#include <stddef.h>
-#include <stdint.h>
 
 namespace arki {
 namespace types {

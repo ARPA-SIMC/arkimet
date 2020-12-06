@@ -1,6 +1,6 @@
-#include "config.h"
 #include "timerange.h"
 #include "arki/exceptions.h"
+#include "arki/utils/string.h"
 
 using namespace std;
 using namespace arki::types;

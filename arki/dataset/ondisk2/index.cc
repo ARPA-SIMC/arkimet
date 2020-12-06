@@ -1,31 +1,21 @@
-#include "config.h"
 #include "index.h"
-#include "arki/dataset/maintenance.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
-#include "arki/matcher.h"
-#include "arki/matcher/reftime.h"
-#include "arki/dataset.h"
-#include "arki/dataset/query.h"
-#include "arki/dataset/session.h"
+#include "arki/matcher/utils.h"
 #include "arki/types/reftime.h"
+#include "arki/dataset/query.h"
+#include "arki/dataset/index/base.h"
 #include "arki/types/source.h"
 #include "arki/types/source/blob.h"
 #include "arki/types/value.h"
 #include "arki/core/binary.h"
 #include "arki/summary.h"
 #include "arki/summary/stats.h"
-#include "arki/utils/files.h"
-#include "arki/metadata/sort.h"
-#include "arki/scan.h"
 #include "arki/nag.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
 
 #include <sstream>
-#include <ctime>
-#include <cassert>
-#include <cerrno>
 #include <cstdlib>
 
 using namespace std;

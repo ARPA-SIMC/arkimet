@@ -8,15 +8,11 @@
 
 #include <arki/dataset.h>
 #include <arki/dataset/impl.h>
+#include <arki/metadata/fwd.h>
 #include <string>
 
 namespace arki {
-class Metadata;
 class Matcher;
-
-namespace core {
-class Time;
-}
 
 namespace dataset {
 namespace testlarge {

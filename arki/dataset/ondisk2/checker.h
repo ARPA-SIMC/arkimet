@@ -12,7 +12,6 @@
 namespace arki {
 namespace dataset {
 namespace ondisk2 {
-class CheckerSegment;
 
 namespace writer {
 class RealRepacker;

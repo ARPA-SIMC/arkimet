@@ -1,28 +1,22 @@
 #include "arki/dataset/ondisk2/checker.h"
-#include "arki/exceptions.h"
 #include "arki/core/binary.h"
-#include "arki/dataset/maintenance.h"
-#include "arki/dataset/archive.h"
 #include "arki/dataset/session.h"
 #include "arki/dataset/reporter.h"
 #include "arki/dataset/step.h"
 #include "arki/dataset/lock.h"
 #include "arki/dataset/archive.h"
 #include "arki/types/source/blob.h"
-#include "arki/types/reftime.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
 #include "arki/matcher.h"
 #include "arki/utils/files.h"
 #include "arki/summary.h"
 #include "arki/scan.h"
-#include "arki/nag.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
 #include <system_error>
 #include <unistd.h>
 #include <cerrno>
-#include <cassert>
 
 using namespace std;
 using namespace arki::utils;

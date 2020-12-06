@@ -12,7 +12,6 @@
 #include <arki/dataset/index/aggregate.h>
 #include <string>
 #include <set>
-#include <map>
 
 struct sqlite3;
 

@@ -1,8 +1,7 @@
 #ifndef ARKI_MATCHER_REFTIME_PARSER_H
 #define ARKI_MATCHER_REFTIME_PARSER_H
 
-#include <arki/types.h>
-#include <arki/core/fuzzytime.h>
+#include <arki/core/fwd.h>
 #include <string>
 #include <ctime>
 #include <vector>

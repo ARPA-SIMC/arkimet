@@ -1,21 +1,15 @@
 #include "arki/dataset/iseg/writer.h"
 #include "arki/dataset/iseg/index.h"
 #include "arki/dataset/step.h"
-#include "arki/dataset/time.h"
 #include "arki/dataset/lock.h"
 #include "arki/dataset/session.h"
 #include "arki/types/source/blob.h"
-#include "arki/summary.h"
 #include "arki/types/reftime.h"
-#include "arki/utils/files.h"
 #include "arki/utils/accounting.h"
 #include "arki/scan.h"
-#include "arki/nag.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/string.h"
 #include "arki/metadata.h"
-#include <system_error>
-#include <algorithm>
 
 using namespace std;
 using namespace arki;

@@ -1,13 +1,10 @@
 #include "arki/dataset/ondisk2/writer.h"
-#include "arki/exceptions.h"
-#include "arki/dataset/archive.h"
 #include "arki/dataset/session.h"
 #include "arki/dataset/step.h"
 #include "arki/dataset/lock.h"
 #include "arki/types/source/blob.h"
 #include "arki/types/reftime.h"
 #include "arki/metadata.h"
-#include "arki/metadata/collection.h"
 #include "arki/scan.h"
 #include "arki/utils/files.h"
 #include "arki/utils/accounting.h"
@@ -15,7 +12,6 @@
 #include "arki/utils/sys.h"
 #include "arki/nag.h"
 #include "index.h"
-#include <system_error>
 
 using namespace std;
 using namespace arki::utils;

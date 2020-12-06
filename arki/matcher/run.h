@@ -1,7 +1,6 @@
 #ifndef ARKI_MATCHER_RUN
 #define ARKI_MATCHER_RUN
 
-#include <arki/matcher.h>
 #include <arki/matcher/utils.h>
 #include <arki/types/run.h>
 

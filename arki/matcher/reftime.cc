@@ -1,7 +1,7 @@
 #include "reftime.h"
 #include "reftime/parser.h"
 #include "arki/core/time.h"
-#include <cctype>
+#include "arki/types/reftime.h"
 
 using namespace std;
 using namespace arki::types;

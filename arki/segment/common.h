@@ -6,7 +6,6 @@
 #include <arki/metadata/fwd.h>
 #include <arki/scan/fwd.h>
 #include <string>
-#include <vector>
 #include <functional>
 
 namespace arki {

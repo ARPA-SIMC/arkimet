@@ -3,7 +3,7 @@
 
 /// summary/table - Arkimet summary implementation in tabular form
 
-#include <arki/types.h>
+#include <arki/types/fwd.h>
 #include <arki/core/fwd.h>
 #include <arki/structured/fwd.h>
 #include <arki/metadata/fwd.h>

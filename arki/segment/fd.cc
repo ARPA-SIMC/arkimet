@@ -1,4 +1,5 @@
 #include "fd.h"
+#include "common.h"
 #include "arki/exceptions.h"
 #include "arki/metadata.h"
 #include "arki/metadata/data.h"
@@ -7,21 +8,17 @@
 #include "arki/scan/validator.h"
 #include "arki/scan.h"
 #include "arki/utils/files.h"
-#include "arki/utils/string.h"
 #include "arki/utils/sys.h"
 #include "arki/nag.h"
 #include "arki/utils/accounting.h"
 #include "arki/iotrace.h"
-#include <algorithm>
 #include <system_error>
-#include <sys/types.h>
 #include <sys/stat.h>
-#include <sys/mman.h>
+#include <sys/uio.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <cstring>
-#include <sys/uio.h>
-#include <sys/sendfile.h>
+#include <sstream>
 
 using namespace std;
 using namespace arki::core;

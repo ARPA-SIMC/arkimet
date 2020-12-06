@@ -2,21 +2,15 @@
 #include "utils.h"
 #include "arki/exceptions.h"
 #include "arki/core/binary.h"
-#include "arki/utils/string.h"
 #include "arki/structured/emitter.h"
-#include "arki/structured/memory.h"
+#include "arki/structured/reader.h"
 #include "arki/structured/keys.h"
-#include "config.h"
 #include <sstream>
-#include <cmath>
 #include <cstring>
 
 #define CODE TYPE_REFTIME
 #define TAG "reftime"
 #define SERSIZELEN 1
-
-using namespace arki::utils;
-using arki::core::Time;
 
 namespace arki {
 namespace types {
@@ -78,14 +72,14 @@ reftime::Style Reftime::style(const uint8_t* data, unsigned size)
 core::Time Reftime::get_Position(const uint8_t* data, unsigned size)
 {
     core::BinaryDecoder dec(data + 1, size - 1);
-    return Time::decode(dec);
+    return core::Time::decode(dec);
 }
 
 void Reftime::get_Period(const uint8_t* data, unsigned size, core::Time& begin, core::Time& end)
 {
     core::BinaryDecoder dec(data + 1, size - 1);
-    begin = Time::decode(dec);
-    end = Time::decode(dec);
+    begin = core::Time::decode(dec);
+    end = core::Time::decode(dec);
 }
 
 std::unique_ptr<Reftime> Reftime::decode(core::BinaryDecoder& dec, bool reuse_buffer)
@@ -110,7 +104,7 @@ std::unique_ptr<Reftime> Reftime::decode(core::BinaryDecoder& dec, bool reuse_bu
 
 std::unique_ptr<Reftime> Reftime::decodeString(const std::string& val)
 {
-    return createPosition(Time::decodeString(val));
+    return createPosition(core::Time::decodeString(val));
 }
 
 std::unique_ptr<Reftime> Reftime::decode_structure(const structured::Keys& keys, const structured::Reader& val)
@@ -126,7 +120,7 @@ std::unique_ptr<Reftime> Reftime::decode_structure(const structured::Keys& keys,
     }
 }
 
-std::unique_ptr<Reftime> Reftime::createPosition(const Time& position)
+std::unique_ptr<Reftime> Reftime::createPosition(const core::Time& position)
 {
     uint8_t* buf = new uint8_t[6];
     buf[0] = (uint8_t)reftime::Style::POSITION;

@@ -1,12 +1,12 @@
 #ifndef ARKI_MATCHER_REFTIME_LEXER_H
 #define ARKI_MATCHER_REFTIME_LEXER_H
 
-#include <arki/types.h>
 #include <arki/core/fuzzytime.h>
 #include <string>
 #include <ctime>
 #include <cstring>
 #include <vector>
+#include <memory>
 
 namespace arki {
 namespace matcher {

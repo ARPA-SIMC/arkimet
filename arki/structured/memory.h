@@ -14,9 +14,6 @@ namespace structured {
 
 namespace memory {
 
-class List;
-class Mapping;
-
 class Node : public Reader
 {
 public:

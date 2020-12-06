@@ -1,11 +1,8 @@
 #include "arki/dataset/index/base.h"
-#include "arki/metadata.h"
-#include "arki/matcher.h"
 #include "arki/utils/string.h"
 #include "arki/utils/regexp.h"
 #include "arki/types.h"
 #include <sstream>
-#include <ctime>
 
 using namespace std;
 using namespace arki;

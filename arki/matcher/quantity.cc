@@ -1,8 +1,6 @@
-#include "config.h"
-
 #include "quantity.h"
+#include "arki/types/quantity.h"
 #include "arki/types/utils.h"
-
 #include <set>
 #include <string>
 

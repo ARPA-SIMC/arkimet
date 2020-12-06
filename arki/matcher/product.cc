@@ -2,7 +2,7 @@
 
 #include "product.h"
 #include "arki/types/product.h"
-#include <limits>
+#include "arki/utils/string.h"
 #include <algorithm>
 
 #ifdef HAVE_VM2

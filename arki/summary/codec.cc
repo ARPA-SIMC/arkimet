@@ -1,12 +1,11 @@
 #include "codec.h"
 #include "table.h"
 #include "stats.h"
-#include <arki/summary.h>
-#include <arki/metadata.h>
-#include <arki/core/binary.h>
-#include <arki/utils/compress.h>
-#include <arki/utils/sys.h>
-#include <arki/types/utils.h>
+#include "arki/summary.h"
+#include "arki/core/binary.h"
+#include "arki/utils/compress.h"
+#include "arki/types.h"
+#include <sstream>
 
 // #define DEBUG_THIS
 #ifdef DEBUG_THIS

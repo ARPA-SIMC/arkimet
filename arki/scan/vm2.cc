@@ -2,10 +2,9 @@
 #include "arki/exceptions.h"
 #include "arki/segment.h"
 #include "arki/core/time.h"
-#include "arki/types/source/blob.h"
+#include "arki/types/source.h"
 #include "arki/metadata.h"
 #include "arki/metadata/data.h"
-#include "arki/utils/files.h"
 #include "arki/nag.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
@@ -15,18 +14,14 @@
 #include "arki/types/reftime.h"
 #include "arki/types/product.h"
 #include "arki/types/value.h"
-#include "arki/utils/vm2.h"
 #include <cstring>
-#include <sstream>
 #include <iomanip>
 #include <unistd.h>
 #include <meteo-vm2/parser.h>
 #include <ext/stdio_filebuf.h>
 
-using namespace std;
 using namespace arki::types;
 using namespace arki::utils;
-using arki::core::Time;
 
 namespace arki {
 namespace scan {
@@ -152,7 +147,7 @@ public:
     void to_metadata(Metadata& md)
     {
         md.add_note(md_note);
-        md.set(Reftime::createPosition(Time(value.year, value.month, value.mday, value.hour, value.min, value.sec)));
+        md.set(Reftime::createPosition(core::Time(value.year, value.month, value.mday, value.hour, value.min, value.sec)));
         md.set<area::VM2>(value.station_id);
         md.set(Product::createVM2(value.variable_id));
         store_value(md);
@@ -186,7 +181,7 @@ std::shared_ptr<Metadata> Vm2::scan_data(const std::vector<uint8_t>& data)
     if (!input.next())
         throw std::runtime_error("input line did not look like a VM2 line");
     input.to_metadata(*md);
-    md->set_source_inline("vm2", metadata::DataManager::get().to_data("vm2", vector<uint8_t>(input.line.begin(), input.line.end())));
+    md->set_source_inline("vm2", metadata::DataManager::get().to_data("vm2", std::vector<uint8_t>(input.line.begin(), input.line.end())));
     return md;
 }
 
@@ -206,6 +201,7 @@ std::shared_ptr<Metadata> Vm2::scan_singleton(const std::string& abspath)
 
 bool Vm2::scan_pipe(core::NamedFileDescriptor& in, metadata_dest_func dest)
 {
+    using namespace std;
     // see https://stackoverflow.com/questions/2746168/how-to-construct-a-c-fstream-from-a-posix-file-descriptor#5253726
     __gnu_cxx::stdio_filebuf<char> filebuf(in, std::ios::in);
     istream is(&filebuf);
@@ -226,7 +222,7 @@ bool Vm2::scan_segment(std::shared_ptr<segment::Reader> reader, metadata_dest_fu
     vm2::Input input(reader->segment().abspath);
     while (true)
     {
-        unique_ptr<Metadata> md(new Metadata);
+        std::unique_ptr<Metadata> md(new Metadata);
         if (!input.next_with_offset()) break;
         input.to_metadata(*md);
         md->set_source(Source::createBlob(reader, input.offset, input.line.size()));
@@ -238,6 +234,7 @@ bool Vm2::scan_segment(std::shared_ptr<segment::Reader> reader, metadata_dest_fu
 
 std::vector<uint8_t> Vm2::reconstruct(const Metadata& md, const std::string& value)
 {
+    using namespace std;
     std::stringstream res;
 
     const reftime::Position* rt = md.get<reftime::Position>();

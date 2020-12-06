@@ -1,4 +1,5 @@
 #include "arki/types/tests.h"
+#include "arki/metadata.h"
 #include "sort.h"
 #include "arki/metadata/collection.h"
 #include "arki/types/reftime.h"

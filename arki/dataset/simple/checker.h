@@ -6,7 +6,6 @@
 #include <arki/dataset/simple.h>
 #include <arki/dataset/impl.h>
 #include <string>
-#include <iosfwd>
 
 namespace arki {
 namespace dataset {
@@ -15,7 +14,6 @@ class Manifest;
 }
 
 namespace simple {
-class CheckerSegment;
 
 class Checker : public DatasetAccess<simple::Dataset, indexed::Checker>
 {

@@ -4,11 +4,9 @@
 #include "arki/core/binary.h"
 #include "arki/utils/string.h"
 #include "arki/structured/emitter.h"
-#include "arki/structured/memory.h"
+#include "arki/structured/reader.h"
 #include "arki/structured/keys.h"
-#include "arki/libconfig.h"
 #include <sstream>
-#include <cmath>
 
 #define CODE TYPE_QUANTITY
 #define TAG "quantity"

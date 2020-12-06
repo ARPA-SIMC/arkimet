@@ -1,6 +1,7 @@
 #include "data.h"
 #include "arki/structured/emitter.h"
 #include "arki/exceptions.h"
+#include "arki/core/file.h"
 #include <sys/uio.h>
 
 

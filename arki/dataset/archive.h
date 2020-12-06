@@ -11,8 +11,6 @@
 #include <arki/matcher/fwd.h>
 #include <arki/dataset/fwd.h>
 #include <string>
-#include <map>
-#include <iosfwd>
 
 namespace arki {
 class Summary;
@@ -22,14 +20,6 @@ namespace dataset {
 namespace segmented {
 class Checker;
 class CheckerSegment;
-}
-
-namespace index {
-class Manifest;
-}
-
-namespace simple {
-class Reader;
 }
 
 namespace archive {

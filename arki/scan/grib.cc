@@ -3,16 +3,12 @@
 #include "arki/metadata.h"
 #include "arki/metadata/data.h"
 #include "arki/types/source.h"
-#include "arki/exceptions.h"
-#include "arki/runtime.h"
 #include "arki/utils/string.h"
-#include "arki/utils/sys.h"
 #include "arki/utils/files.h"
 #include "arki/utils/sys.h"
 #include "arki/scan/validator.h"
 #include "arki/scan/mock.h"
 #include "arki/segment.h"
-#include <system_error>
 #include <cstring>
 #include <unistd.h>
 

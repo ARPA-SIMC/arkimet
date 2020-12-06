@@ -1,19 +1,13 @@
 #include "config.h"
 #include "arki/utils/compress.h"
-#include "arki/utils/string.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/gzip.h"
-#include "arki/metadata.h"
 #include "arki/utils/accounting.h"
-#include "arki/libconfig.h"
 #include <algorithm>
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <fcntl.h>
 #include <utime.h>
-#include <arpa/inet.h>
-#include <errno.h>
 #include <zlib.h>
+#include <sstream>
 
 #ifdef HAVE_LZO
 #include "lzo/lzoconf.h"

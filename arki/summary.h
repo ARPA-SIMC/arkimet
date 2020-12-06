@@ -6,14 +6,11 @@
 #include <arki/metadata/fwd.h>
 #include <arki/structured/fwd.h>
 #include <arki/matcher/fwd.h>
-#include <arki/types/itemset.h>
 #include <arki/utils/geosfwd.h>
 #include <vector>
-#include <map>
 #include <set>
 #include <string>
 #include <memory>
-#include <iosfwd>
 
 namespace arki {
 namespace summary {

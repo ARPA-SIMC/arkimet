@@ -11,18 +11,14 @@
 #include "arki/types/origin.h"
 #include "arki/types/product.h"
 #include "arki/types/reftime.h"
-#include "arki/types/run.h"
 #include "arki/types/timerange.h"
 #include "arki/types/values.h"
 #include "arki/scan/validator.h"
 #include "arki/scan/mock.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/files.h"
-#include "arki/libconfig.h"
 #include <sstream>
 #include <cstring>
-#include <stdint.h>
-#include <arpa/inet.h>
 
 using namespace std;
 using namespace wreport;
