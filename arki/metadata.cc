@@ -196,7 +196,9 @@ void Index::set_value(std::unique_ptr<types::Type> item)
     assert(code != TYPE_SOURCE);
     assert(code != TYPE_NOTE);
 
-    auto end = values_end();
+    // FIXME post Centos7: this should be 'auto', but gcc on Centos7 cannot
+    // tell that const_iterator is the same as std::vector<types::Type*>::const_iterator
+    std::vector<types::Type*>::const_iterator end = values_end();
 
     // TODO: in theory, this could be rewritten with rbegin/rend to optimize
     // for the insertion of sorted data. In practice, after trying, it caused a
