@@ -41,6 +41,8 @@ protected:
 public:
     using Encoded::Encoded;
 
+    ~Area();
+
     typedef area::Style Style;
 
     types::Code type_code() const override { return traits<Area>::type_code; }
