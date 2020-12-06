@@ -31,6 +31,8 @@ PyTypeObject* arkipy_ArkiCheck_Type = nullptr;
 
 namespace {
 
+void foreach_checker(std::shared_ptr<arki::dataset::Session> session, std::function<void(std::shared_ptr<arki::dataset::Checker>)> dest);
+
 struct SkipDataset : public std::exception
 {
     std::string msg;

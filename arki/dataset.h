@@ -101,7 +101,7 @@ public:
 /**
  * Base class for all dataset Readers, Writers and Checkers.
  */
-struct Base
+class Base
 {
 public:
     Base() {}
@@ -251,8 +251,9 @@ struct WriterBatchElement
     WriterBatchElement& operator=(WriterBatchElement&& o) = default;
 };
 
-struct WriterBatch : public std::vector<std::shared_ptr<WriterBatchElement>>
+class WriterBatch : public std::vector<std::shared_ptr<WriterBatchElement>>
 {
+public:
     /**
      * Set all elements in the batch to ACQ_ERROR
      */
@@ -368,8 +369,9 @@ struct CheckerConfig
     CheckerConfig& operator=(CheckerConfig&&) = default;
 };
 
-struct Checker : public dataset::Base
+class Checker : public dataset::Base
 {
+public:
     using Base::Base;
 
     /**

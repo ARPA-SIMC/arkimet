@@ -3,16 +3,16 @@
 
 namespace arki {
 namespace structured {
-struct Emitter;
-struct Reader;
+class Emitter;
+class Reader;
 struct Keys;
 extern const Keys keys_json;
 extern const Keys keys_python;
 
 namespace memory {
-struct Node;
-struct List;
-struct Mapping;
+class Node;
+class List;
+class Mapping;
 }
 
 }

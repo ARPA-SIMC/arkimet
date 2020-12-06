@@ -7,11 +7,12 @@
 namespace arki {
 namespace dataset {
 namespace local {
-struct Dataset;
+class Dataset;
 }
 
-struct Lock : public core::Lock
+class Lock : public core::Lock
 {
+public:
     arki::core::File lockfile;
     const core::lock::Policy* lock_policy;
     arki::core::FLock ds_lock;
@@ -20,22 +21,25 @@ struct Lock : public core::Lock
 };
 
 
-struct ReadLock : public Lock
+class ReadLock : public Lock
 {
+public:
     ReadLock(const std::string& pathname, const core::lock::Policy* lock_policy);
     ~ReadLock();
 };
 
 
-struct AppendLock : public Lock
+class AppendLock : public Lock
 {
+public:
     AppendLock(const std::string& pathname, const core::lock::Policy* lock_policy);
     ~AppendLock();
 };
 
 
-struct CheckLock : public Lock
+class CheckLock : public Lock
 {
+public:
     std::weak_ptr<core::Lock> current_write_lock;
 
     CheckLock(const std::string& pathname, const core::lock::Policy* lock_policy);
@@ -49,33 +53,39 @@ struct CheckLock : public Lock
 };
 
 
-struct DatasetReadLock : public ReadLock
+class DatasetReadLock : public ReadLock
 {
+public:
     DatasetReadLock(const local::Dataset& dataset);
 };
 
-struct DatasetAppendLock : public AppendLock
+class DatasetAppendLock : public AppendLock
 {
+public:
     DatasetAppendLock(const local::Dataset& dataset);
 };
 
-struct DatasetCheckLock : public CheckLock
+class DatasetCheckLock : public CheckLock
 {
+public:
     DatasetCheckLock(const local::Dataset& dataset);
 };
 
-struct SegmentReadLock : public ReadLock
+class SegmentReadLock : public ReadLock
 {
+public:
     SegmentReadLock(const local::Dataset& dataset, const std::string& relpath);
 };
 
-struct SegmentAppendLock : public AppendLock
+class SegmentAppendLock : public AppendLock
 {
+public:
     SegmentAppendLock(const local::Dataset& dataset, const std::string& relpath);
 };
 
-struct SegmentCheckLock : public CheckLock
+class SegmentCheckLock : public CheckLock
 {
+public:
     SegmentCheckLock(const local::Dataset& dataset, const std::string& relpath);
 };
 

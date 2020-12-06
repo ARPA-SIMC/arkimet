@@ -161,8 +161,9 @@ public:
 
 namespace segment {
 
-struct Reader : public std::enable_shared_from_this<Reader>
+class Reader : public std::enable_shared_from_this<Reader>
 {
+public:
     std::shared_ptr<core::Lock> lock;
 
     Reader(std::shared_ptr<core::Lock> lock);
@@ -209,8 +210,9 @@ struct WriterConfig
     bool eatmydata = false;
 };
 
-struct Writer : public core::Transaction, std::enable_shared_from_this<Writer>
+class Writer : public core::Transaction, std::enable_shared_from_this<Writer>
 {
+public:
     struct PendingMetadata
     {
         const WriterConfig& config;

@@ -11,7 +11,7 @@
 #include <string>
 
 namespace arki {
-struct Summary;
+class Summary;
 
 namespace metadata {
 

@@ -67,7 +67,7 @@ struct traits<timerange::Timedef>
  * It can contain information such as accumulation time, or validity of
  * forecast.
  */
-struct Timerange : public types::Encoded
+class Timerange : public types::Encoded
 {
 public:
     using Encoded::Encoded;
@@ -166,7 +166,7 @@ namespace timerange {
 inline std::ostream& operator<<(std::ostream& o, Style s) { return o << Timerange::formatStyle(s); }
 
 
-struct GRIB1 : public Timerange
+class GRIB1 : public Timerange
 {
 protected:
     std::ostream& writeNumbers(std::ostream& o) const;

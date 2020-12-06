@@ -18,8 +18,9 @@ template<> struct traits<Quantity>
 /**
  * Quantity informations
  */
-struct Quantity : public Encoded
+class Quantity : public Encoded
 {
+public:
     using Encoded::Encoded;
 
     types::Code type_code() const override { return traits<Quantity>::type_code; }

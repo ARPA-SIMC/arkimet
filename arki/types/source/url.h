@@ -7,8 +7,9 @@ namespace arki {
 namespace types {
 namespace source {
 
-struct URL : public Source
+class URL : public Source
 {
+public:
     std::string url;
 
     Style style() const override;

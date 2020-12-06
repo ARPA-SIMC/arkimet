@@ -39,8 +39,9 @@ class ArchivesCheckerRoot;
 
 bool is_archive(const std::string& dir);
 
-struct Dataset : public dataset::Dataset
+class Dataset : public dataset::Dataset
 {
+public:
     std::string root;
 
     Dataset(std::shared_ptr<Session> session, const std::string& root);

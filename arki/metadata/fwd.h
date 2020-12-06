@@ -9,7 +9,7 @@ class BBox;
 namespace metadata {
 class Data;
 class Collection;
-class ReadContext;
+struct ReadContext;
 
 class Validator;
 class ValidatorRepository;

@@ -17,8 +17,8 @@
 
 namespace arki {
 namespace summary {
-struct Table;
-struct Stats;
+class Table;
+class Stats;
 }
 
 namespace summary {

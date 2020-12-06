@@ -11,8 +11,9 @@ namespace scan {
 /**
  * Validate data
  */
-struct Validator
+class Validator
 {
+public:
     virtual ~Validator() {}
 
     /// Return the format checked by this validator

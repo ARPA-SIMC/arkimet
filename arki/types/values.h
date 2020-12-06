@@ -61,10 +61,12 @@ public:
     friend class arki::types::values::ValueBagBuilder;
 };
 
-struct ValueBagBuilder
+class ValueBagBuilder
 {
+protected:
     values::Values values;
 
+public:
     void add(std::unique_ptr<Value> value);
     void add(const std::string& key, const std::string& val);
     void add(const std::string& key, int val);
@@ -75,7 +77,7 @@ struct ValueBagBuilder
 }
 
 
-struct ValueBag
+class ValueBag
 {
 protected:
     const uint8_t* data = nullptr;
@@ -164,8 +166,9 @@ private:
     values::Value*& operator[](const std::string& str);
 };
 
-struct ValueBagMatcher : public values::Values
+class ValueBagMatcher : public values::Values
 {
+public:
     using values::Values::Values;
 
     bool is_subset(const ValueBag& vb) const;

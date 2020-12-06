@@ -69,8 +69,9 @@ static VM2Validator vm_validator;
 
 const Validator& validator() { return vm_validator; }
 
-struct Input
+class Input
 {
+public:
     std::string md_note;
     std::istream* in = nullptr;
     meteo::vm2::Parser* parser = nullptr;

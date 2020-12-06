@@ -11,11 +11,11 @@ namespace arki {
 namespace python {
 
 namespace cmdline {
-struct DatasetProcessor;
+class DatasetProcessor;
 }
 
 namespace arki_scan {
-struct MetadataDispatch;
+class MetadataDispatch;
 }
 
 }

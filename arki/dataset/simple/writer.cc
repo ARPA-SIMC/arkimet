@@ -28,8 +28,9 @@ namespace dataset {
 namespace simple {
 
 /// Accumulate metadata and summaries while writing
-struct AppendSegment
+class AppendSegment
 {
+public:
     std::shared_ptr<simple::Dataset> dataset;
     std::shared_ptr<dataset::AppendLock> lock;
     std::shared_ptr<segment::Writer> segment;

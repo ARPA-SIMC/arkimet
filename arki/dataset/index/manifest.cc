@@ -339,14 +339,14 @@ public:
         flush();
     }
 
-    void openRO()
+    void openRO() override
     {
         if (!reread())
             throw std::runtime_error("cannot open archive index: MANIFEST does not exist in " + m_path);
         rw = false;
     }
 
-    void openRW()
+    void openRW() override
     {
         if (!reread())
             dirty = true;
@@ -413,17 +413,17 @@ public:
         return res;
     }
 
-    size_t vacuum()
+    size_t vacuum() override
     {
         return 0;
     }
 
-    core::Pending test_writelock()
+    core::Pending test_writelock() override
     {
         return core::Pending();
     }
 
-    void acquire(const std::string& relpath, time_t mtime, const Summary& sum)
+    void acquire(const std::string& relpath, time_t mtime, const Summary& sum) override
     {
         reread();
 
@@ -504,7 +504,7 @@ public:
             return 0;
     }
 
-    void flush()
+    void flush() override
     {
         if (dirty)
         {
@@ -602,14 +602,14 @@ public:
     {
     }
 
-    void flush()
+    void flush() override
     {
         // Not needed for index data consistency, but we need it to ensure file
         // timestamps are consistent at this point.
         m_db.checkpoint();
     }
 
-    void openRO()
+    void openRO() override
     {
         string pathname(str::joinpath(m_path, "index.sqlite"));
         if (m_db.isOpen())
@@ -624,7 +624,7 @@ public:
         initQueries();
     }
 
-    void openRW()
+    void openRW() override
     {
         string pathname(str::joinpath(m_path, "index.sqlite"));
         if (m_db.isOpen())
@@ -717,7 +717,7 @@ public:
         return res;
     }
 
-    size_t vacuum()
+    size_t vacuum() override
     {
         // Vacuum the database
         try {
@@ -729,12 +729,12 @@ public:
         return 0;
     }
 
-    core::Pending test_writelock()
+    core::Pending test_writelock() override
     {
         return core::Pending(new SqliteTransaction(m_db, "EXCLUSIVE"));
     }
 
-    void acquire(const std::string& relpath, time_t mtime, const Summary& sum)
+    void acquire(const std::string& relpath, time_t mtime, const Summary& sum) override
     {
         // Add to index
         core::Interval rt = sum.get_reference_time();
@@ -751,7 +751,7 @@ public:
         m_insert.step();
     }
 
-    virtual void remove(const std::string& relpath)
+    virtual void remove(const std::string& relpath) override
     {
         Query q("del_file", m_db);
         q.compile("DELETE FROM files WHERE file=?");

@@ -5,7 +5,7 @@
 
 namespace meteo {
 namespace vm2 {
-struct Source;
+class Source;
 }
 }
 

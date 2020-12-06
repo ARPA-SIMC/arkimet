@@ -14,7 +14,7 @@ class Tests : public SegmentTests<Segment, Data>
     using SegmentTests<Segment, Data>::SegmentTests;
     void register_tests() override;
 
-    void setup()
+    void setup() override
     {
         SegmentTests<Segment, Data>::setup();
         skip_unless_libzip();

@@ -5,8 +5,6 @@
 #include <arki/matcher.h>
 
 namespace arki {
-struct Metadata;
-
 namespace tests {
 
 class ActualMatcher : public arki::utils::tests::Actual<Matcher>

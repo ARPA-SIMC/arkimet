@@ -13,6 +13,9 @@ using namespace arki::matcher::reftime::lexer;
 // This is needed for centos7:
 #pragma GCC diagnostic ignored "-Wtype-limits"
 
+// Silence a clang 7.0 warning with flex 2.6.4 generated code
+#pragma clang diagnostic ignored "-Wunneeded-internal-declaration"
+
 %}
 
 %option case-insensitive

@@ -183,8 +183,9 @@ struct ArchivesRoot
     virtual std::shared_ptr<Archive> instantiate(const std::string& name) = 0;
 };
 
-struct ArchivesReaderRoot: public ArchivesRoot<dataset::Reader>
+class ArchivesReaderRoot: public ArchivesRoot<dataset::Reader>
 {
+public:
     using ArchivesRoot::ArchivesRoot;
 
     std::shared_ptr<dataset::Reader> instantiate(const std::string& name) override
@@ -193,8 +194,9 @@ struct ArchivesReaderRoot: public ArchivesRoot<dataset::Reader>
     }
 };
 
-struct ArchivesCheckerRoot: public ArchivesRoot<dataset::Checker>
+class ArchivesCheckerRoot: public ArchivesRoot<dataset::Checker>
 {
+public:
     using ArchivesRoot::ArchivesRoot;
 
     void rescan()

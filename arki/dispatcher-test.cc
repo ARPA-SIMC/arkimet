@@ -19,12 +19,6 @@ using namespace arki;
 using namespace arki::tests;
 using namespace arki::utils;
 
-inline std::string dsname(const Metadata& md)
-{
-    if (!md.has_source_blob()) return "(md source is not a blob source)";
-    return str::basename(md.sourceBlob().basedir);
-}
-
 static const char* config1 = R"(
 [test200]
 type = ondisk2

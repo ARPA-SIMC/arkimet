@@ -33,7 +33,7 @@
 namespace arki {
 namespace matcher {
 
-struct Implementation;
+class Implementation;
 
 
 /**

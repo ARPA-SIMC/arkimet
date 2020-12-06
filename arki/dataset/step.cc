@@ -254,7 +254,7 @@ struct BaseDirs : public Dirs
                 if (!query.matcher(rt)) continue;
             }
 
-            dest(move(make_files(f->d_name, value)));
+            dest(make_files(f->d_name, value));
         }
     }
 

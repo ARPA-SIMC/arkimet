@@ -6,7 +6,7 @@ class Matcher;
 
 namespace matcher {
 class Parser;
-class MatcherType;
+struct MatcherType;
 class OR;
 class AND;
 class Aliases;

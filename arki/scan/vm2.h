@@ -16,15 +16,10 @@ class Value;
 }
 
 namespace arki {
-class Metadata;
-
 namespace scan {
-struct Validator;
 
 namespace vm2 {
 const Validator& validator();
-
-struct Input;
 }
 
 class Vm2 : public Scanner

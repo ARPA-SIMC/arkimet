@@ -13,8 +13,6 @@ struct z_stream_s;
 typedef struct z_stream_s z_stream;
 
 namespace arki {
-struct Metadata;
-
 namespace utils {
 
 /**

@@ -10,13 +10,9 @@
 #include <memory>
 
 namespace arki {
-class Metadata;
-class Matcher;
-class Summary;
-
 namespace dataset {
 namespace ondisk2 {
-struct CheckerSegment;
+class CheckerSegment;
 
 namespace writer {
 class RealRepacker;
