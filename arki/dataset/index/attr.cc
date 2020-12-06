@@ -165,7 +165,7 @@ std::vector<int> AttrSubIndex::query(const matcher::OR& m) const
 
 	std::vector<int> ids;
 
-    // Decode every blob in the database and run the matcher on it
+    // Run the matcher on every blob in the database
     m_select_all->reset();
     while (m_select_all->step())
     {
