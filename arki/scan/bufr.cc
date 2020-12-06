@@ -214,7 +214,7 @@ BufrScanner::BufrScanner()
 
 BufrScanner::~BufrScanner()
 {
-    if (importer) delete importer;
+    delete importer;
 }
 
 void BufrScanner::do_scan(BinaryMessage& rmsg, std::shared_ptr<Metadata> md)
@@ -286,7 +286,7 @@ bool BufrScanner::scan_segment(std::shared_ptr<segment::Reader> reader, metadata
 std::shared_ptr<Metadata> BufrScanner::scan_singleton(const std::string& abspath)
 {
     auto md = std::make_shared<Metadata>();
-    auto file = dballe::File::create(dballe::Encoding::BUFR, abspath.c_str(), "r").release();
+    auto file = dballe::File::create(dballe::Encoding::BUFR, abspath.c_str(), "r");
     BinaryMessage rmsg = file->read();
     if (!rmsg) throw std::runtime_error(abspath + " contains no BUFR data");
     do_scan(rmsg, md);
@@ -298,7 +298,7 @@ std::shared_ptr<Metadata> BufrScanner::scan_singleton(const std::string& abspath
 bool BufrScanner::scan_pipe(core::NamedFileDescriptor& infd, metadata_dest_func dest)
 {
     files::RAIIFILE in(infd, "rb");
-    auto file = dballe::File::create(dballe::Encoding::BUFR, in, false, infd.name()).release();
+    auto file = dballe::File::create(dballe::Encoding::BUFR, in, false, infd.name());
     while (true)
     {
         auto md = std::make_shared<Metadata>();
