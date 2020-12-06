@@ -256,7 +256,7 @@ Metadata::Metadata(const uint8_t* encoded, unsigned size)
 
 Metadata::~Metadata()
 {
-    delete m_encoded;
+    delete[] m_encoded;
 }
 
 std::shared_ptr<Metadata> Metadata::clone() const
