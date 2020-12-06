@@ -203,7 +203,8 @@ void Index::set_value(std::unique_ptr<types::Type> item)
     // TODO: in theory, this could be rewritten with rbegin/rend to optimize
     // for the insertion of sorted data. In practice, after trying, it caused a
     // decrease in performance, so abandoning that for now
-    for (auto i = items.begin(); i != end; ++i)
+    auto i = items.begin();
+    for ( ; i != end; ++i)
     {
         auto icode = (*i)->type_code();
         if (icode == code)
@@ -217,9 +218,11 @@ void Index::set_value(std::unique_ptr<types::Type> item)
         }
     }
 
-    // FIXME: Another Centos7 workaround: it could be emplace, but emplace
-    // doesn't match the signature when using a const_iterator.
-    items.insert(end, item.release());
+    // FIXME: Centos7 workaround: despite STL documentation, gcc in Centos7
+    // requires an interator on insert/emplace instead of a const_iterator
+    // So we don't limit 'i' to the for scope and directly use 'end' here, but
+    // we reuse 'i'
+    items.emplace(i, item.release());
 }
 
 void Index::unset_value(types::Code code)
