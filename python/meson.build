@@ -44,6 +44,7 @@ endif
 
 py_arkimet = python3.extension_module('_arkimet',
     py_arkimet_sources,
+    cpp_pch: '../arki/pch/arkimet_pch.h',
     include_directories: toplevel_inc,
     dependencies: python3.dependency(),
     link_with: libarkimet,

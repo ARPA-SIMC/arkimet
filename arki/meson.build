@@ -179,6 +179,7 @@ libarkimet = both_libraries('arkimet',
         libarkimet_sources,
         install: true,
         include_directories: toplevel_inc,
+        cpp_pch: 'pch/arkimet_pch.h',
         dependencies: [
                 thread_dep,
                 geos_dep,
@@ -382,6 +383,7 @@ test_arkimet = executable('test-arkimet', test_arkimet_sources,
     link_with: [
         libarkimet,
     ],
+    cpp_pch: 'pch/arkimet_pch.h',
     dependencies: [
         sqlite3_dep,
         eccodes_dep,
