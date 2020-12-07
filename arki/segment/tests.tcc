@@ -6,6 +6,7 @@
 #include "arki/utils/sys.h"
 #include "arki/utils/string.h"
 #include "arki/types/source/blob.h"
+#include "arki/metadata/data.h"
 #include <cstring>
 
 namespace arki {
@@ -26,7 +27,13 @@ void SegmentFixture<Segment, Data>::test_setup()
 template<class Segment, class Data>
 std::shared_ptr<segment::Checker> SegmentFixture<Segment, Data>::create()
 {
-    return Segment::create(td.format, root, relpath, abspath, seg_mds, repack_config);
+    return create(seg_mds);
+}
+
+template<class Segment, class Data>
+std::shared_ptr<segment::Checker> SegmentFixture<Segment, Data>::create(metadata::Collection mds)
+{
+    return Segment::create(td.format, root, relpath, abspath, mds, repack_config);
 }
 
 template<class Segment, class Data>
@@ -184,6 +191,40 @@ this->add_method("is_empty", [](Fixture& f) {
     wassert(actual(checker->is_empty()).isfalse());
     checker->test_truncate(f.seg_mds[0].sourceBlob().offset);
     wassert(actual(checker->is_empty()).istrue());
+});
+
+this->add_method("issue244", [](Fixture& f) {
+    auto md = std::make_shared<Metadata>();
+    md->test_set("reftime", "2020-12-01 00:00:00");
+    // 65536 is bigger than TransferBuffer's size in utils/sys.cc
+    std::vector<uint8_t> buf(65536);
+    auto data = arki::metadata::DataManager::get().to_data(f.td.format, std::move(buf));
+
+    md->set_source_inline(f.td.format, data);
+
+    metadata::Collection mds;
+    mds.push_back(md);
+    auto checker = f.create(mds);
+    auto reader = checker->segment().reader(std::make_shared<arki::core::lock::Null>());
+
+    // Writing normally uses sendfile
+    {
+        sys::File out("stream.out", O_WRONLY | O_CREAT | O_TRUNC);
+        size_t size = wcallchecked(reader->stream(md->sourceBlob(), out));
+        size_t pad_size = f.td.format == "vm2" ? 1 : 0;
+        wassert(actual(size) == md->sourceBlob().size + pad_size);
+        out.close();
+    }
+
+    // Opening for append makes sendfile fail and falls back on normal
+    // read/write
+    {
+        sys::File out("stream.out", O_WRONLY | O_APPEND);
+        size_t size = wcallchecked(reader->stream(md->sourceBlob(), out));
+        size_t pad_size = f.td.format == "vm2" ? 1 : 0;
+        wassert(actual(size) == md->sourceBlob().size + pad_size);
+        out.close();
+    }
 });
 
 }
