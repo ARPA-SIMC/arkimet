@@ -124,6 +124,7 @@ python3.install_sources(
 
 runtest = find_program('../arki/runtest')
 
+# TODO: from meson 0.55.0, we can add env: 'NOSE=' + nose.full_path()
 test('python', runtest, args: ['NOSE'],
      env: [
          'PYTHON=' + python3_path,

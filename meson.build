@@ -83,11 +83,6 @@ python3 = pymod.find_installation('python3', required: false)
 # then
 #     AX_PYTHON_MODULE(werkzeug, yes)
 #     AX_PYTHON_MODULE(setproctitle, yes)
-#     AC_CHECK_PROGS(NOSE, [nose2-3 nosetests-3.6 nosetests-3.5 nosetests-3.4 nosetests-3.3 nosetests-$PYTHON_VERSION])
-#     if test x$NOSE = x
-#     then
-#         AC_MSG_ERROR([Python nose not found])
-#     fi
 #     AX_PYTHON_MODULE(jinja2, yes)
 #     AX_PYTHON_MODULE(wreport, yes)
 #     AX_PYTHON_MODULE_VERSION(dballe, 8.3)
@@ -100,7 +95,7 @@ if python3.found()
     # FIXME: python3.path() is only available from meson 0.50: this is a workaround
     python3_path = python3.get_variable('BINDIR') / python3.get_variable('PYTHON') + python3.language_version()
 
-    nose = find_program('nose2-3', 'nosetests-3.6', 'nosetests-3.5', 'nosetests-3.4', 'nosetests-3.3', 'nosetests-' + python3.language_version())
+    nose = find_program('nose2-3', 'nose2-' + python3.language_version())
 
     sphinx = find_program('sphinx-build', 'sphinx-build-3', 'sphinx-build-' + python3.language_version(), required: false)
     asciidoc = find_program('asciidoc', required: false)

@@ -395,4 +395,5 @@ test_arkimet = executable('test-arkimet', test_arkimet_sources,
 
 runtest = find_program('runtest')
 
+# TODO: from meson 0.55.0, we can add env: 'NOSE=' + nose.full_path()
 test('arki', runtest, args: [test_arkimet], timeout: 600)
