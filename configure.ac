@@ -362,7 +362,7 @@ AM_CONDITIONAL([DO_PYTHON], [test "$enable_python" != "no"])
 
 if test x$enable_docs = xyes
 then
-    AC_CHECK_PROGS(SPHINX_BUILD, [sphinx-build sphinx-build-3 sphinx-build-3.6], [no])
+    AC_CHECK_PROGS(SPHINX_BUILD, [sphinx-build sphinx-build-3 sphinx-build-$PYTHON_VERSION], [no])
     if test $SPHINX_BUILD = no
     then
         enable_docs=no
