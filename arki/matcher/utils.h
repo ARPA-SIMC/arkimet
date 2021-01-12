@@ -113,6 +113,8 @@ public:
 
     OR* clone() const override;
 
+    std::shared_ptr<OR> merge(const OR& o) const;
+
     std::string name() const override;
     bool matchItem(const types::Type& t) const override;
     bool match_buffer(types::Code code, const uint8_t* data, unsigned size) const override;
@@ -154,6 +156,8 @@ public:
     bool empty() const { return components.empty(); }
 
     std::string name() const override;
+
+    void merge(const AND& o);
 
     bool matchItem(const types::Type& t) const override;
     bool match_buffer(types::Code code, const uint8_t* data, unsigned size) const override;

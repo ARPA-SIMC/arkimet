@@ -93,6 +93,19 @@ public:
      */
     std::string toStringExpanded() const;
 
+    /**
+     * Return a matcher that would select all that this matcher selects, and
+     * all that the other selects. The result set of the merged matcher will be
+     * a superset of the two original ones, and might include extra data that
+     * would not be matched by either matcher individually.
+     *
+     * This function attempts to generate the most restrictive matcher that
+     * matches data from both starting matchers, and due to the matcher syntax
+     * this might end up being significantly broader than running the two
+     * original queries in sequence.
+     */
+    Matcher merge(const Matcher& m) const;
+
     /// Return a matcher matching a time interval (from begin included, to end excluded)
     static Matcher for_interval(const core::Interval& interval);
 

@@ -83,6 +83,17 @@ OR* OR::clone() const
     return res.release();
 }
 
+std::shared_ptr<OR> OR::merge(const OR& o) const
+{
+    auto res = std::make_shared<OR>("");
+    for (const auto& c: components)
+        res->components.emplace_back(c);
+    for (const auto& c: o.components)
+        res->components.emplace_back(c);
+    res->unparsed = res->toStringValueOnlyExpanded();
+    return res;
+}
+
 std::string OR::name() const
 {
     if (components.empty()) return string();
@@ -229,6 +240,29 @@ AND* AND::clone() const
 std::string AND::name() const
 {
     return "matcher";
+}
+
+void AND::merge(const AND& o)
+{
+    auto i1 = components.begin();
+    auto i2 = o.components.begin();
+    while (i1 != components.end() || i2 != o.components.end())
+    {
+        if (i2 == o.components.end() || (i1 != components.end() && i1->first < i2->first)) {
+            // The other doesn't match this typecode: remove it on this side
+            auto o = i1;
+            ++i1;
+            components.erase(o);
+        } else if (i1 == components.end() || (i2 != o.components.end() && i1->first > i2->first)) {
+            // Skip this typecode: we match everything already
+            ++i2;
+        } else {
+            // Merge ORs
+            i1->second = i1->second->merge(*i2->second);
+            ++i1;
+            ++i2;
+        }
+    }
 }
 
 bool AND::matchItem(const types::Type& t) const

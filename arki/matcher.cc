@@ -131,6 +131,17 @@ bool Matcher::intersect_interval(core::Interval& interval) const
     return true;
 }
 
+Matcher Matcher::merge(const Matcher& m) const
+{
+    if (m_impl && m.m_impl)
+    {
+        shared_ptr<matcher::AND> result(m_impl->clone());
+        result->merge(*m.m_impl);
+        return Matcher(result);
+    } else
+        return Matcher();
+}
+
 Matcher Matcher::for_interval(const core::Interval& interval)
 {
     return matcher::AND::for_interval(interval);
