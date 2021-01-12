@@ -8,6 +8,7 @@
 #include "arki/types.h"
 #include "arki/utils/string.h"
 #include "arki/utils/regexp.h"
+#include <unordered_set>
 #include <cassert>
 
 using namespace std;
@@ -88,10 +89,24 @@ OR* OR::clone() const
 std::shared_ptr<OR> OR::merge(const OR& o) const
 {
     auto res = std::make_shared<OR>("");
+    std::unordered_set<std::string> seen;
+
     for (const auto& c: components)
+    {
+        std::string s = c->toString();
+        if (seen.find(s) != seen.end())
+            continue;
+        seen.emplace(s);
         res->components.emplace_back(c);
+    }
     for (const auto& c: o.components)
+    {
+        std::string s = c->toString();
+        if (seen.find(s) != seen.end())
+            continue;
+        seen.emplace(s);
         res->components.emplace_back(c);
+    }
     res->unparsed = res->toStringValueOnlyExpanded();
     return res;
 }

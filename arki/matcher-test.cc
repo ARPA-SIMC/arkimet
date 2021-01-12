@@ -90,6 +90,7 @@ add_method("merge", [](Fixture& f) {
     wassert(actual(merge("", "origin:GRIB1")) == "");
     wassert(actual(merge("product:GRIB1", "origin:GRIB1")) == "");
     wassert(actual(merge("origin:GRIB1", "origin:BUFR")) == "origin:GRIB1 or BUFR");
+    wassert(actual(merge("origin:GRIB1", "origin:GRIB1")) == "origin:GRIB1");
 });
 
 }
