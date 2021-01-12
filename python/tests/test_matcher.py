@@ -18,6 +18,13 @@ class TestMatcher(unittest.TestCase):
         with self.assertRaises(ValueError):
             arki.Matcher("invalid")
 
+    def test_merge(self):
+        with arki.dataset.Session() as s:
+            m1 = s.matcher("product:GRIB1")
+            m2 = s.matcher("product:GRIB2; origin:GRIB1")
+            m3 = m1.merge(m2)
+            self.assertEqual(str(m3), "product:GRIB1 or GRIB2")
+
     def test_docs(self):
         """
         Run the doc/matcher/*.txt as doctests
