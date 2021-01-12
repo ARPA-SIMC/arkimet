@@ -79,7 +79,9 @@ OR* OR::clone() const
 {
     std::unique_ptr<OR> res(new OR(unparsed));
     for (const auto& c: components)
-        res->components.emplace_back(c->clone());
+        // Matcher components are considered immutable, so there's no need to
+        // clone them here and we can reuse them
+        res->components.emplace_back(c);
     return res.release();
 }
 
