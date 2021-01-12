@@ -20,9 +20,19 @@ namespace matcher {
 
 std::string MatchArea::name() const { return "area"; }
 
+MatchAreaGRIB::MatchAreaGRIB(const types::ValueBagMatcher& expr)
+    : expr(expr)
+{
+}
+
 MatchAreaGRIB::MatchAreaGRIB(const std::string& pattern)
 {
     expr = ValueBagMatcher::parse(pattern);
+}
+
+MatchAreaGRIB* MatchAreaGRIB::clone() const
+{
+    return new MatchAreaGRIB(expr);
 }
 
 bool MatchAreaGRIB::matchItem(const Type& o) const
@@ -47,9 +57,20 @@ std::string MatchAreaGRIB::toString() const
     return "GRIB:" + expr.to_string();
 }
 
+
+MatchAreaODIMH5::MatchAreaODIMH5(const types::ValueBagMatcher& expr)
+    : expr(expr)
+{
+}
+
 MatchAreaODIMH5::MatchAreaODIMH5(const std::string& pattern)
 {
     expr = ValueBagMatcher::parse(pattern);
+}
+
+MatchAreaODIMH5* MatchAreaODIMH5::clone() const
+{
+    return new MatchAreaODIMH5(expr);
 }
 
 bool MatchAreaODIMH5::matchItem(const Type& o) const
@@ -74,6 +95,11 @@ std::string MatchAreaODIMH5::toString() const
     return "ODIMH5:" + expr.to_string();
 }
 
+MatchAreaVM2::MatchAreaVM2(const MatchAreaVM2& o)
+    : station_id(o.station_id), expr(o.expr), idlist(o.idlist)
+{
+}
+
 MatchAreaVM2::MatchAreaVM2(const std::string& pattern)
 {
     OptionalCommaList args(pattern, true);
@@ -83,6 +109,11 @@ MatchAreaVM2::MatchAreaVM2(const std::string& pattern)
     if (!expr.empty())
         idlist = utils::vm2::find_stations(expr);
 #endif
+}
+
+MatchAreaVM2* MatchAreaVM2::clone() const
+{
+    return new MatchAreaVM2(*this);
 }
 
 bool MatchAreaVM2::matchItem(const Type& o) const
@@ -154,8 +185,19 @@ Implementation* MatchArea::parse(const std::string& pattern)
 
 #ifdef HAVE_GEOS
 
+MatchAreaBBox::MatchAreaBBox(const MatchAreaBBox& o)
+    :
+#if GEOS_VERSION_MAJOR >= 3 && GEOS_VERSION_MINOR >= 8
+        geom(o.geom->clone().release()),
+#else
+        geom(o.geom->clone()),
+#endif
+        verb(o.verb), geom_str(o.geom_str)
+{
+}
+
 MatchAreaBBox::MatchAreaBBox(const std::string& verb, const std::string& geom)
-    : geom(0), verb(verb)
+    : geom(0), verb(verb), geom_str(geom)
 {
     auto gf = arki::utils::geos::GeometryFactory::getDefaultInstance();
     arki::utils::geos::WKTReader reader(gf);
@@ -164,12 +206,11 @@ MatchAreaBBox::MatchAreaBBox(const std::string& verb, const std::string& geom)
 #else
     this->geom = reader.read(geom);
 #endif
-    geom_str = geom;
 }
 
 MatchAreaBBox::~MatchAreaBBox()
 {
-	if (geom) delete geom;
+    if (geom) delete geom;
 }
 
 Implementation* MatchAreaBBox::parse(const std::string& pattern)
@@ -224,12 +265,16 @@ std::string MatchAreaBBox::toString() const
 
 MatchAreaBBoxEquals::MatchAreaBBoxEquals(const std::string& geom) : MatchAreaBBox("equals", geom) {}
 
+MatchAreaBBoxEquals* MatchAreaBBoxEquals::clone() const { return new MatchAreaBBoxEquals(*this); }
+
 bool MatchAreaBBoxEquals::matchGeom(const arki::utils::geos::Geometry* val) const
 {
 	return val->equals(geom);
 }
 
 MatchAreaBBoxIntersects::MatchAreaBBoxIntersects(const std::string& geom) : MatchAreaBBox("intersects", geom) {}
+
+MatchAreaBBoxIntersects* MatchAreaBBoxIntersects::clone() const { return new MatchAreaBBoxIntersects(*this); }
 
 bool MatchAreaBBoxIntersects::matchGeom(const arki::utils::geos::Geometry* val) const
 {
@@ -239,12 +284,16 @@ bool MatchAreaBBoxIntersects::matchGeom(const arki::utils::geos::Geometry* val) 
 #if GEOS_VERSION_MAJOR >= 3
 MatchAreaBBoxCovers::MatchAreaBBoxCovers(const std::string& geom) : MatchAreaBBox("covers", geom) {}
 
+MatchAreaBBoxCovers* MatchAreaBBoxCovers::clone() const { return new MatchAreaBBoxCovers(*this); }
+
 bool MatchAreaBBoxCovers::matchGeom(const arki::utils::geos::Geometry* val) const
 {
 	return val->covers(geom);
 }
 
 MatchAreaBBoxCoveredBy::MatchAreaBBoxCoveredBy(const std::string& geom) : MatchAreaBBox("coveredby", geom) {}
+
+MatchAreaBBoxCoveredBy* MatchAreaBBoxCoveredBy::clone() const { return new MatchAreaBBoxCoveredBy(*this); }
 
 bool MatchAreaBBoxCoveredBy::matchGeom(const arki::utils::geos::Geometry* val) const
 {

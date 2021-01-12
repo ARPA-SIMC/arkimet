@@ -14,9 +14,19 @@ namespace matcher {
 
 std::string MatchQuantity::name() const { return "quantity"; }
 
+MatchQuantity::MatchQuantity(const MatchQuantity& o)
+    : Implementation(o), values(o.values)
+{
+}
+
 MatchQuantity::MatchQuantity(const std::string& pattern)
 {
 	arki::types::split(pattern, values);
+}
+
+MatchQuantity* MatchQuantity::clone() const
+{
+    return new MatchQuantity(*this);
 }
 
 bool MatchQuantity::matchItem(const Type& o) const

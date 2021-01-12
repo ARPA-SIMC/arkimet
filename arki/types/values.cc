@@ -276,6 +276,9 @@ public:
     Value& operator=(const Value&) = delete;
     Value& operator=(Value&&) = delete;
 
+    /// Return a copy of this value
+    virtual Value* clone() const = 0;
+
     /// Key name
     virtual values::string_view name() const = 0;
 
@@ -381,6 +384,8 @@ protected:
 public:
     BuildValueInt(const std::string& name, int value) : BuildValue(name), m_value(value) {}
 
+    BuildValueInt* clone() const override { return new BuildValueInt(m_name, m_value); }
+
     unsigned type_id() const override { return 1; }
     int as_int() const override { return m_value; }
 
@@ -409,6 +414,8 @@ protected:
 
 public:
     BuildValueString(const std::string& name, const std::string& value) : BuildValue(name), m_value(value) {}
+
+    BuildValueString* clone() const override { return new BuildValueString(m_name, m_value); }
 
     unsigned type_id() const override { return 2; }
     std::string as_string() const override { return m_value; }
@@ -508,6 +515,11 @@ public:
     EncodedValue(const uint8_t* data)
         : data(data)
     {
+    }
+
+    EncodedValue* clone() const override
+    {
+        throw std::runtime_error("cloning EncodedValue is not yet implemented");
     }
 
     /**
@@ -714,6 +726,13 @@ Values::~Values()
         delete i;
 }
 
+Values::Values(const Values& vb)
+{
+    values.reserve(vb.values.size());
+    for (const auto& v: vb.values)
+        values.emplace_back(v->clone());
+}
+
 Values::Values(Values&& vb)
     : values(std::move(vb.values))
 {
@@ -806,6 +825,12 @@ ValueBag ValueBagBuilder::build() const
 ValueBag::ValueBag(const uint8_t* data, unsigned size, bool owned)
     : data(data), size(size), owned(owned)
 {
+}
+
+ValueBag::ValueBag(const ValueBag& o)
+    : data(new uint8_t[o.size]), size(o.size), owned(true)
+{
+    memcpy(const_cast<uint8_t*>(data), o.data, size);
 }
 
 ValueBag::ValueBag(ValueBag&& o)

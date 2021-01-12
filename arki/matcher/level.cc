@@ -15,12 +15,22 @@ namespace matcher {
 
 std::string MatchLevel::name() const { return "level"; }
 
+MatchLevelGRIB1::MatchLevelGRIB1(int type, int l1, int l2)
+    : type(type), l1(l1), l2(l2)
+{
+}
+
 MatchLevelGRIB1::MatchLevelGRIB1(const std::string& pattern)
 {
 	OptionalCommaList args(pattern);
 	type = args.getInt(0, -1);
 	l1 = args.getInt(1, -1);
 	l2 = args.getInt(2, -1);
+}
+
+MatchLevelGRIB1* MatchLevelGRIB1::clone() const
+{
+    return new MatchLevelGRIB1(type, l1, l2);
 }
 
 bool MatchLevelGRIB1::match_data(unsigned vtype, unsigned vl1, unsigned vl2) const
@@ -76,12 +86,22 @@ std::string MatchLevelGRIB1::toString() const
 }
 
 
+MatchLevelGRIB2S::MatchLevelGRIB2S(const Optional<uint8_t>& type, const Optional<uint8_t>& scale, const Optional<uint32_t>& value)
+    : type(type), scale(scale), value(value)
+{
+}
+
 MatchLevelGRIB2S::MatchLevelGRIB2S(const std::string& pattern)
 {
     OptionalCommaList args(pattern);
-    type = args.getUnsignedWithMissing(0, Level::GRIB2_MISSING_TYPE, has_type);
-    scale = args.getUnsignedWithMissing(1, Level::GRIB2_MISSING_SCALE, has_scale);
-    value = args.getUnsignedWithMissing(2, Level::GRIB2_MISSING_VALUE, has_value);
+    type = args.getUnsignedWithMissing(0, Level::GRIB2_MISSING_TYPE);
+    scale = args.getUnsignedWithMissing(1, Level::GRIB2_MISSING_SCALE);
+    value = args.getUnsignedWithMissing(2, Level::GRIB2_MISSING_VALUE);
+}
+
+MatchLevelGRIB2S* MatchLevelGRIB2S::clone() const
+{
+    return new MatchLevelGRIB2S(type, scale, value);
 }
 
 bool MatchLevelGRIB2S::matchItem(const Type& o) const
@@ -91,9 +111,9 @@ bool MatchLevelGRIB2S::matchItem(const Type& o) const
     if (v->style() != level::Style::GRIB2S) return false;
     unsigned ty, sc, va;
     v->get_GRIB2S(ty, sc, va);
-    if (has_type && type != ty) return false;
-    if (has_scale && scale != sc) return false;
-    if (has_value && value != va) return false;
+    if (!type.matches(ty)) return false;
+    if (!scale.matches(sc)) return false;
+    if (!value.matches(va)) return false;
     return true;
 }
 
@@ -104,9 +124,9 @@ bool MatchLevelGRIB2S::match_buffer(types::Code code, const uint8_t* data, unsig
     if (Level::style(data, size) != level::Style::GRIB2S) return false;
     unsigned ty, sc, va;
     Level::get_GRIB2S(data, size, ty, sc, va);
-    if (has_type && type != ty) return false;
-    if (has_scale && scale != sc) return false;
-    if (has_value && value != va) return false;
+    if (!type.matches(ty)) return false;
+    if (!scale.matches(sc)) return false;
+    if (!value.matches(va)) return false;
     return true;
 }
 
@@ -114,22 +134,36 @@ std::string MatchLevelGRIB2S::toString() const
 {
     CommaJoiner res;
     res.add("GRIB2S");
-    if (has_type) res.add((unsigned)type, (unsigned)Level::GRIB2_MISSING_TYPE); else res.addUndef();
-    if (has_scale) res.add((unsigned)scale, (unsigned)Level::GRIB2_MISSING_SCALE); else res.addUndef();
-    if (has_value) res.add(value, Level::GRIB2_MISSING_VALUE); else res.addUndef();
+    res.add(type, Level::GRIB2_MISSING_TYPE);
+    res.add(scale, Level::GRIB2_MISSING_SCALE);
+    res.add(value, Level::GRIB2_MISSING_VALUE);
     return res.join();
 }
 
+MatchLevelGRIB2D::MatchLevelGRIB2D(
+            const Optional<uint8_t>& type1, const Optional<uint8_t>& scale1, const Optional<uint32_t>& value1,
+            const Optional<uint8_t>& type2, const Optional<uint8_t>& scale2, const Optional<uint32_t>& value2)
+    : type1(type1), scale1(scale1), value1(value1),
+      type2(type2), scale2(scale2), value2(value2)
+{
+}
 
 MatchLevelGRIB2D::MatchLevelGRIB2D(const std::string& pattern)
 {
     OptionalCommaList args(pattern);
-    type1 = args.getUnsignedWithMissing(0, Level::GRIB2_MISSING_TYPE, has_type1);
-    scale1 = args.getUnsignedWithMissing(1, Level::GRIB2_MISSING_SCALE, has_scale1);
-    value1 = args.getUnsignedWithMissing(2, Level::GRIB2_MISSING_VALUE, has_value1);
-    type2 = args.getUnsignedWithMissing(3, Level::GRIB2_MISSING_TYPE, has_type2);
-    scale2 = args.getUnsignedWithMissing(4, Level::GRIB2_MISSING_SCALE, has_scale2);
-    value2 = args.getUnsignedWithMissing(5, Level::GRIB2_MISSING_VALUE, has_value2);
+    type1 = args.getUnsignedWithMissing(0, Level::GRIB2_MISSING_TYPE);
+    scale1 = args.getUnsignedWithMissing(1, Level::GRIB2_MISSING_SCALE);
+    value1 = args.getUnsignedWithMissing(2, Level::GRIB2_MISSING_VALUE);
+    type2 = args.getUnsignedWithMissing(3, Level::GRIB2_MISSING_TYPE);
+    scale2 = args.getUnsignedWithMissing(4, Level::GRIB2_MISSING_SCALE);
+    value2 = args.getUnsignedWithMissing(5, Level::GRIB2_MISSING_VALUE);
+}
+
+MatchLevelGRIB2D* MatchLevelGRIB2D::clone() const
+{
+    return new MatchLevelGRIB2D(
+        type1, scale1, value1,
+        type2, scale2, value2);
 }
 
 bool MatchLevelGRIB2D::matchItem(const Type& o) const
@@ -139,12 +173,12 @@ bool MatchLevelGRIB2D::matchItem(const Type& o) const
     if (v->style() != level::Style::GRIB2D) return false;
     unsigned ty1, sc1, va1, ty2, sc2, va2;
     v->get_GRIB2D(ty1, sc1, va1, ty2, sc2, va2);
-    if (has_type1 && type1 != ty1) return false;
-    if (has_scale1 && scale1 != sc1) return false;
-    if (has_value1 && value1 != va1) return false;
-    if (has_type2 && type2 != ty2) return false;
-    if (has_scale2 && scale2 != sc2) return false;
-    if (has_value2 && value2 != va2) return false;
+    if (!type1.matches(ty1)) return false;
+    if (!scale1.matches(sc1)) return false;
+    if (!value1.matches(va1)) return false;
+    if (!type2.matches(ty2)) return false;
+    if (!scale2.matches(sc2)) return false;
+    if (!value2.matches(va2)) return false;
     return true;
 }
 
@@ -155,12 +189,12 @@ bool MatchLevelGRIB2D::match_buffer(types::Code code, const uint8_t* data, unsig
     if (Level::style(data, size) != level::Style::GRIB2D) return false;
     unsigned ty1, sc1, va1, ty2, sc2, va2;
     Level::get_GRIB2D(data, size, ty1, sc1, va1, ty2, sc2, va2);
-    if (has_type1 && type1 != ty1) return false;
-    if (has_scale1 && scale1 != sc1) return false;
-    if (has_value1 && value1 != va1) return false;
-    if (has_type2 && type2 != ty2) return false;
-    if (has_scale2 && scale2 != sc2) return false;
-    if (has_value2 && value2 != va2) return false;
+    if (!type1.matches(ty1)) return false;
+    if (!scale1.matches(sc1)) return false;
+    if (!value1.matches(va1)) return false;
+    if (!type2.matches(ty2)) return false;
+    if (!scale2.matches(sc2)) return false;
+    if (!value2.matches(va2)) return false;
     return true;
 }
 
@@ -168,12 +202,12 @@ std::string MatchLevelGRIB2D::toString() const
 {
     CommaJoiner res;
     res.add("GRIB2D");
-    if (has_type1) res.add((unsigned)type1, (unsigned)Level::GRIB2_MISSING_TYPE); else res.addUndef();
-    if (has_scale1) res.add((unsigned)scale1, (unsigned)Level::GRIB2_MISSING_SCALE); else res.addUndef();
-    if (has_value1) res.add(value1, Level::GRIB2_MISSING_VALUE); else res.addUndef();
-    if (has_type2) res.add((unsigned)type2, (unsigned)Level::GRIB2_MISSING_TYPE); else res.addUndef();
-    if (has_scale2) res.add((unsigned)scale2, (unsigned)Level::GRIB2_MISSING_SCALE); else res.addUndef();
-    if (has_value2) res.add(value2, Level::GRIB2_MISSING_VALUE); else res.addUndef();
+    res.add(type1, Level::GRIB2_MISSING_TYPE);
+    res.add(scale1, Level::GRIB2_MISSING_SCALE);
+    res.add(value1, Level::GRIB2_MISSING_VALUE);
+    res.add(type2, Level::GRIB2_MISSING_TYPE);
+    res.add(scale2, Level::GRIB2_MISSING_SCALE);
+    res.add(value2, Level::GRIB2_MISSING_VALUE);
     return res.join();
 }
 
@@ -220,6 +254,10 @@ static double parsedouble(const std::string& val)
 	return result;
 }
 
+MatchLevelODIMH5::MatchLevelODIMH5(const std::vector<double>& vals, double vals_offset, double range_min, double range_max)
+    : vals(vals), vals_offset(vals_offset), range_min(range_min), range_max(range_max)
+{
+}
 
 MatchLevelODIMH5::MatchLevelODIMH5(const std::string& pattern)
 {
@@ -260,6 +298,11 @@ MatchLevelODIMH5::MatchLevelODIMH5(const std::string& pattern)
 			}
 		}
 	}
+}
+
+MatchLevelODIMH5* MatchLevelODIMH5::clone() const
+{
+    return new MatchLevelODIMH5(vals, vals_offset, range_min, range_max);
 }
 
 bool MatchLevelODIMH5::match_data(double vmin, double vmax) const

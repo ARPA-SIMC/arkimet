@@ -14,6 +14,7 @@ class DTMatch
 {
 public:
     virtual ~DTMatch() {}
+    virtual DTMatch* clone() const = 0;
     virtual bool match(const core::Time& tt) const = 0;
     virtual bool match(const core::Interval& interval) const = 0;
     virtual std::string sql(const std::string& column) const = 0;

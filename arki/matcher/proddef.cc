@@ -11,9 +11,19 @@ namespace matcher {
 
 std::string MatchProddef::name() const { return "proddef"; }
 
+MatchProddefGRIB::MatchProddefGRIB(const types::ValueBagMatcher& expr)
+    : expr(expr)
+{
+}
+
 MatchProddefGRIB::MatchProddefGRIB(const std::string& pattern)
 {
     expr = ValueBagMatcher::parse(pattern);
+}
+
+MatchProddefGRIB* MatchProddefGRIB::clone() const
+{
+    return new MatchProddefGRIB(expr);
 }
 
 bool MatchProddefGRIB::matchItem(const Type& o) const

@@ -12,6 +12,11 @@ namespace matcher {
 
 std::string MatchRun::name() const { return "run"; }
 
+MatchRunMinute::MatchRunMinute(int minute)
+    : minute(minute)
+{
+}
+
 MatchRunMinute::MatchRunMinute(const std::string& pattern)
 {
 	if (pattern.empty())
@@ -26,6 +31,11 @@ MatchRunMinute::MatchRunMinute(const std::string& pattern)
 		minute = 
 			strtoul(pattern.substr(0, pos).c_str(), 0, 10) * 60 +
 			strtoul(pattern.substr(pos + 1).c_str(), 0, 10);
+}
+
+MatchRunMinute* MatchRunMinute::clone() const
+{
+    return new MatchRunMinute(minute);
 }
 
 bool MatchRunMinute::matchItem(const Type& o) const

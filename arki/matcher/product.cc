@@ -18,12 +18,22 @@ namespace matcher {
 
 std::string MatchProduct::name() const { return "product"; }
 
+MatchProductGRIB1::MatchProductGRIB1(int origin, int table, int product)
+    : origin(origin), table(table), product(product)
+{
+}
+
 MatchProductGRIB1::MatchProductGRIB1(const std::string& pattern)
 {
 	OptionalCommaList args(pattern);
 	origin = args.getInt(0, -1);
 	table = args.getInt(1, -1);
 	product = args.getInt(2, -1);
+}
+
+MatchProductGRIB1* MatchProductGRIB1::clone() const
+{
+    return new MatchProductGRIB1(origin, table, product);
 }
 
 bool MatchProductGRIB1::matchItem(const Type& o) const
@@ -62,6 +72,13 @@ std::string MatchProductGRIB1::toString() const
 	return res.join();
 }
 
+MatchProductGRIB2::MatchProductGRIB2(int centre, int discipline, int category, int number, int table_version, int local_table_version)
+    : centre(centre), discipline(discipline), category(category),
+      number(number), table_version(table_version),
+      local_table_version(local_table_version)
+{
+}
+
 MatchProductGRIB2::MatchProductGRIB2(const std::string& pattern)
 {
 	OptionalCommaList args(pattern);
@@ -71,6 +88,11 @@ MatchProductGRIB2::MatchProductGRIB2(const std::string& pattern)
 	number = args.getInt(3, -1);
     table_version = args.getInt(4, -1);
     local_table_version = args.getInt(5, -1);
+}
+
+MatchProductGRIB2* MatchProductGRIB2::clone() const
+{
+    return new MatchProductGRIB2(centre, discipline, category, number, table_version, local_table_version);
 }
 
 bool MatchProductGRIB2::matchItem(const Type& o) const
@@ -118,6 +140,11 @@ std::string MatchProductGRIB2::toString() const
 	return res.join();
 }
 
+MatchProductBUFR::MatchProductBUFR(int type, int subtype, int localsubtype, const types::ValueBagMatcher& values)
+    : type(type), subtype(subtype), localsubtype(localsubtype), values(values)
+{
+}
+
 MatchProductBUFR::MatchProductBUFR(const std::string& pattern)
 {
 	OptionalCommaList args(pattern, true);
@@ -125,6 +152,11 @@ MatchProductBUFR::MatchProductBUFR(const std::string& pattern)
 	subtype = args.getInt(1, -1);
 	localsubtype = args.getInt(2, -1);
     values = ValueBagMatcher::parse(args.tail);
+}
+
+MatchProductBUFR* MatchProductBUFR::clone() const
+{
+    return new MatchProductBUFR(type, subtype, localsubtype, values);
 }
 
 bool MatchProductBUFR::matchItem(const Type& o) const
@@ -177,6 +209,11 @@ std::string MatchProductBUFR::toString() const
 
 // static const double DOUBLENAN = std::numeric_limits<double>::quiet_NaN();
 
+MatchProductODIMH5::MatchProductODIMH5(const std::string& obj, const std::string& prod)
+    : obj(obj), prod(prod)
+{
+}
+
 MatchProductODIMH5::MatchProductODIMH5(const std::string& pattern)
 {
 	OptionalCommaList args(pattern, true);
@@ -184,6 +221,11 @@ MatchProductODIMH5::MatchProductODIMH5(const std::string& pattern)
 	prod		= args.getString(1, "");
 	/*REMOVED:prodpar1	= args.getDouble(2, DOUBLENAN); */
 	/*REMOVED:prodpar2	= args.getDouble(3, DOUBLENAN); */
+}
+
+MatchProductODIMH5* MatchProductODIMH5::clone() const
+{
+    return new MatchProductODIMH5(obj, prod);
 }
 
 bool MatchProductODIMH5::matchItem(const Type& o) const
@@ -221,6 +263,11 @@ std::string MatchProductODIMH5::toString() const
 	return res.join();
 }
 
+MatchProductVM2::MatchProductVM2(int variable_id, const types::ValueBagMatcher& expr, const std::vector<int>& idlist)
+    : variable_id(variable_id), expr(expr), idlist(idlist)
+{
+}
+
 MatchProductVM2::MatchProductVM2(const std::string& pattern)
 {
     OptionalCommaList args(pattern, true);
@@ -231,6 +278,12 @@ MatchProductVM2::MatchProductVM2(const std::string& pattern)
         idlist = utils::vm2::find_variables(expr);
 #endif
 }
+
+MatchProductVM2* MatchProductVM2::clone() const
+{
+    return new MatchProductVM2(variable_id, expr, idlist);
+}
+
 bool MatchProductVM2::matchItem(const Type& o) const
 {
     const types::Product* v = dynamic_cast<const types::Product*>(&o);

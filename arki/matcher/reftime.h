@@ -47,6 +47,8 @@ struct MatchReftime : public matcher::Implementation
     MatchReftime(const std::string& pattern);
     ~MatchReftime();
 
+    MatchReftime* clone() const override;
+
     //MatchType type() const { return MATCH_REFTIME; }
     std::string name() const override;
 

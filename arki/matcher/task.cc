@@ -11,13 +11,23 @@ namespace matcher {
 
 /*============================================================================*/
 
-std::string MatchTask::name() const { return "task"; }
+MatchTask::MatchTask(const MatchTask& o)
+    : Implementation(o), task(o.task)
+{
+}
 
 MatchTask::MatchTask(const std::string& pattern)
 {
     OptionalCommaList args(pattern);
     task = str::upper(args.getString(0, ""));
 }
+
+MatchTask* MatchTask::clone() const
+{
+    return new MatchTask(*this);
+}
+
+std::string MatchTask::name() const { return "task"; }
 
 bool MatchTask::matchItem(const Type& o) const
 {

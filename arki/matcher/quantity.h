@@ -14,11 +14,14 @@ namespace matcher {
  */
 struct MatchQuantity : public Implementation
 {
-    std::string name() const override;
-
     std::set<std::string> values;
 
+    MatchQuantity(const MatchQuantity& o);
     MatchQuantity(const std::string& pattern);
+
+    MatchQuantity* clone() const override;
+    std::string name() const override;
+
     bool matchItem(const types::Type& o) const override;
     std::string toString() const override;
 

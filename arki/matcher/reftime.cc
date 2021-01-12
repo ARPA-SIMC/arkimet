@@ -32,6 +32,14 @@ MatchReftime::~MatchReftime()
         delete i;
 }
 
+MatchReftime* MatchReftime::clone() const
+{
+    std::unique_ptr<MatchReftime> res(new MatchReftime);
+    for (const auto* d: tests)
+        res->tests.push_back(d->clone());
+    return res.release();
+}
+
 std::string MatchReftime::name() const { return "reftime"; }
 
 bool MatchReftime::matchItem(const Type& o) const

@@ -181,15 +181,15 @@ add_method("timedef_parse", [] {
         const matcher::MatchTimerangeTimedef* m = dynamic_cast<const matcher::MatchTimerangeTimedef*>(matcher.get());
         wassert_true(m);
 
-        wassert_true(m->has_step);
-        wassert(actual(m->step) == 72 * 3600);
+        wassert_true(m->step.present);
+        wassert(actual(m->step.value) == 72 * 3600);
         wassert_true(m->step_is_seconds);
 
-        wassert_true(m->has_proc_type);
-        wassert(actual(m->proc_type) == 1);
+        wassert_true(m->proc_type.present);
+        wassert(actual(m->proc_type.value) == 1);
 
-        wassert_true(m->has_proc_duration);
-        wassert(actual(m->proc_duration) == 6 * 3600);
+        wassert_true(m->proc_duration.present);
+        wassert(actual(m->proc_duration.value) == 6 * 3600);
         wassert_true(m->proc_duration_is_seconds);
     }
 
@@ -198,12 +198,12 @@ add_method("timedef_parse", [] {
         const matcher::MatchTimerangeTimedef* m = dynamic_cast<const matcher::MatchTimerangeTimedef*>(matcher.get());
         wassert_true(m);
 
-        wassert_true(m->has_step);
-        wassert(actual(m->step) == 72 * 3600);
+        wassert_true(m->step.present);
+        wassert(actual(m->step.value) == 72 * 3600);
         wassert_true(m->step_is_seconds);
 
-        wassert_false(m->has_proc_type);
-        wassert_false(m->has_proc_duration);
+        wassert_false(m->proc_type.present);
+        wassert_false(m->proc_duration.present);
     }
 
     {
@@ -211,10 +211,10 @@ add_method("timedef_parse", [] {
         const matcher::MatchTimerangeTimedef* m = dynamic_cast<const matcher::MatchTimerangeTimedef*>(matcher.get());
         wassert_true(m);
 
-        wassert_false(m->has_step);
+        wassert_false(m->step.present);
 
-        wassert_true(m->has_proc_type);
-        wassert(actual(m->proc_type) == -1);
+        wassert_true(m->proc_type.present);
+        wassert(actual(m->proc_type.value) == -1);
     }
 });
 

@@ -16,6 +16,7 @@ namespace matcher {
  */
 struct MatchTimerange : public Implementation
 {
+    MatchTimerange* clone() const override = 0;
     std::string name() const override;
 
     static Implementation* parse(const std::string& pattern);
@@ -25,10 +26,13 @@ struct MatchTimerange : public Implementation
 struct MatchTimerangeGRIB1 : public MatchTimerange
 {
     types::timerange::GRIB1Unit unit;
-    bool has_ptype, has_p1, has_p2;
-    int ptype, p1, p2;
+    Optional<int> ptype;
+    Optional<int> p1;
+    Optional<int> p2;
 
+    MatchTimerangeGRIB1(types::timerange::GRIB1Unit unit, const Optional<int>& ptype, const Optional<int>& p1, const Optional<int>& p2);
     MatchTimerangeGRIB1(const std::string& pattern);
+    MatchTimerangeGRIB1* clone() const override;
     bool match_data(int mtype, int munit, int mp1, int mp2, bool use_p1, bool use_p2) const;
     bool matchItem(const types::Type& o) const override;
     bool match_buffer(types::Code code, const uint8_t* data, unsigned size) const override;
@@ -42,7 +46,9 @@ struct MatchTimerangeGRIB2 : public MatchTimerange
 	int p1;
 	int p2;
 
+    MatchTimerangeGRIB2(int type, int unit, int p1, int p2);
     MatchTimerangeGRIB2(const std::string& pattern);
+    MatchTimerangeGRIB2* clone() const override;
     bool matchItem(const types::Type& o) const override;
     bool match_buffer(types::Code code, const uint8_t* data, unsigned size) const override;
     std::string toString() const override;
@@ -50,11 +56,12 @@ struct MatchTimerangeGRIB2 : public MatchTimerange
 
 struct MatchTimerangeBUFR : public MatchTimerange
 {
-	bool has_forecast;
-	bool is_seconds;
-	unsigned int value;
+    Optional<unsigned> forecast;
+    bool is_seconds;
 
+    MatchTimerangeBUFR(const Optional<unsigned>& forecast, bool is_seconds);
     MatchTimerangeBUFR(const std::string& pattern);
+    MatchTimerangeBUFR* clone() const override;
     bool matchItem(const types::Type& o) const override;
     bool match_buffer(types::Code code, const uint8_t* data, unsigned size) const override;
     std::string toString() const override;
@@ -72,18 +79,17 @@ struct MatchTimerangeBUFR : public MatchTimerange
  */
 struct MatchTimerangeTimedef : public MatchTimerange
 {
-    bool has_step;
-    int step;
-    bool step_is_seconds;
+    Optional<int> step;
+    bool step_is_seconds = true;
 
-    bool has_proc_type;
-    int proc_type;
+    Optional<int> proc_type;
 
-    bool has_proc_duration;
-    int proc_duration;
-    bool proc_duration_is_seconds;
+    Optional<int> proc_duration;
+    bool proc_duration_is_seconds = true;
 
+    MatchTimerangeTimedef(const Optional<int>& step, bool step_is_seconds, const Optional<int>& proc_type, const Optional<int>& proc_duration, bool proc_duration_is_seconds);
     MatchTimerangeTimedef(const std::string& pattern);
+    MatchTimerangeTimedef* clone() const override;
     bool matchItem(const types::Type& o) const override;
     std::string toString() const override;
 };

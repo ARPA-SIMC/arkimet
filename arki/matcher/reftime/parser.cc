@@ -69,6 +69,8 @@ struct DateInterval : public DTMatch
     {
     }
 
+    DTMatch* clone() const override { return new DateInterval(interval); }
+
     bool match(const core::Time& tt) const override
     {
         return interval.contains(tt);
@@ -132,6 +134,7 @@ struct TimeMatch : public DTMatch
 struct TimeLE : public TimeMatch
 {
     using TimeMatch::TimeMatch;
+    TimeLE* clone() const override { return new TimeLE(ref); }
     bool match(const core::Time& tt) const override { return time_to_seconds(tt) <= ref; }
     bool match(const core::Interval& interval) const override
     {
@@ -147,6 +150,7 @@ struct TimeLE : public TimeMatch
 struct TimeLT : public TimeMatch
 {
     using TimeMatch::TimeMatch;
+    TimeLT* clone() const override { return new TimeLT(ref); }
     bool match(const core::Time& tt) const override { return time_to_seconds(tt) < ref; }
     bool match(const core::Interval& interval) const override
     {
@@ -162,6 +166,7 @@ struct TimeLT : public TimeMatch
 struct TimeGT : public TimeMatch
 {
     using TimeMatch::TimeMatch;
+    TimeGT* clone() const override { return new TimeGT(ref); }
     bool match(const core::Time& tt) const override { return time_to_seconds(tt) > ref; }
     bool match(const core::Interval& interval) const override
     {
@@ -177,6 +182,7 @@ struct TimeGT : public TimeMatch
 struct TimeGE : public TimeMatch
 {
     using TimeMatch::TimeMatch;
+    TimeGE* clone() const override { return new TimeGE(ref); }
     bool match(const core::Time& tt) const override { return time_to_seconds(tt) >= ref; }
     bool match(const core::Interval& interval) const override
     {
@@ -195,6 +201,7 @@ struct TimeEQ : public DTMatch
     int geref;
     int leref;
     TimeEQ(int geref, int leref) : geref(geref), leref(leref) {}
+    TimeEQ* clone() const override { return new TimeEQ(geref, leref); }
     bool match(const core::Time& tt) const override
     {
         int t = time_to_seconds(tt);
@@ -244,6 +251,7 @@ struct TimeExact : public DTMatch
     {
         //fprintf(stderr, "CREATED %zd times lead %d\n", times.size(), lead);
     }
+    TimeExact* clone() const override { return new TimeExact(times); }
     bool match(const core::Time& tt) const override
     {
         int t = time_to_seconds(tt);

@@ -11,12 +11,22 @@ namespace matcher {
 
 std::string MatchOrigin::name() const { return "origin"; }
 
+MatchOriginGRIB1::MatchOriginGRIB1(int centre, int subcentre, int process)
+    : centre(centre), subcentre(subcentre), process(process)
+{
+}
+
 MatchOriginGRIB1::MatchOriginGRIB1(const std::string& pattern)
 {
 	OptionalCommaList args(pattern);
 	centre = args.getInt(0, -1);
 	subcentre = args.getInt(1, -1);
 	process = args.getInt(2, -1);
+}
+
+MatchOriginGRIB1* MatchOriginGRIB1::clone() const
+{
+    return new MatchOriginGRIB1(centre, subcentre, process);
 }
 
 bool MatchOriginGRIB1::matchItem(const Type& o) const
@@ -55,6 +65,11 @@ std::string MatchOriginGRIB1::toString() const
 	return res.join();
 }
 
+MatchOriginGRIB2::MatchOriginGRIB2(int centre, int subcentre, int processtype, int bgprocessid, int processid)
+    : centre(centre), subcentre(subcentre), processtype(processtype), bgprocessid(bgprocessid), processid(processid)
+{
+}
+
 MatchOriginGRIB2::MatchOriginGRIB2(const std::string& pattern)
 {
 	OptionalCommaList args(pattern);
@@ -63,6 +78,11 @@ MatchOriginGRIB2::MatchOriginGRIB2(const std::string& pattern)
 	processtype = args.getInt(2, -1);
 	bgprocessid = args.getInt(3, -1);
 	processid = args.getInt(4, -1);
+}
+
+MatchOriginGRIB2* MatchOriginGRIB2::clone() const
+{
+    return new MatchOriginGRIB2(centre, subcentre, processtype, bgprocessid, processid);
 }
 
 bool MatchOriginGRIB2::matchItem(const Type& o) const
@@ -108,11 +128,21 @@ std::string MatchOriginGRIB2::toString() const
 	return res.join();
 }
 
+MatchOriginBUFR::MatchOriginBUFR(int centre, int subcentre)
+    : centre(centre), subcentre(subcentre)
+{
+}
+
 MatchOriginBUFR::MatchOriginBUFR(const std::string& pattern)
 {
 	OptionalCommaList args(pattern);
 	centre = args.getInt(0, -1);
 	subcentre = args.getInt(1, -1);
+}
+
+MatchOriginBUFR* MatchOriginBUFR::clone() const
+{
+    return new MatchOriginBUFR(centre, subcentre);
 }
 
 bool MatchOriginBUFR::matchItem(const Type& o) const
@@ -149,12 +179,23 @@ std::string MatchOriginBUFR::toString() const
 	return res.join();
 }
 
+
+MatchOriginODIMH5::MatchOriginODIMH5(const std::string& WMO, const std::string& RAD, const std::string& PLC)
+    : WMO(WMO), RAD(RAD), PLC(PLC)
+{
+}
+
 MatchOriginODIMH5::MatchOriginODIMH5(const std::string& pattern)
 {
 	OptionalCommaList args(pattern);
 	WMO = args.getString(0, "");
 	RAD = args.getString(1, "");
 	PLC = args.getString(2, "");
+}
+
+MatchOriginODIMH5* MatchOriginODIMH5::clone() const
+{
+    return new MatchOriginODIMH5(WMO, RAD, PLC);
 }
 
 bool MatchOriginODIMH5::matchItem(const Type& o) const

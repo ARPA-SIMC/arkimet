@@ -75,6 +75,14 @@ bool Implementation::match_buffer(types::Code code, const uint8_t* data, unsigne
 
 OR::~OR() {}
 
+OR* OR::clone() const
+{
+    std::unique_ptr<OR> res(new OR(unparsed));
+    for (const auto& c: components)
+        res->components.emplace_back(c->clone());
+    return res.release();
+}
+
 std::string OR::name() const
 {
     if (components.empty()) return string();
@@ -209,6 +217,14 @@ std::unique_ptr<OR> OR::wrap(std::unique_ptr<Implementation> impl)
 
 
 AND::~AND() {}
+
+AND* AND::clone() const
+{
+    std::unique_ptr<AND> res(new AND);
+    for (const auto& c: components)
+        res->components.emplace(std::make_pair(c.first, std::shared_ptr<OR>(c.second->clone())));
+    return res.release();
+}
 
 std::string AND::name() const
 {
@@ -377,12 +393,12 @@ std::unique_ptr<AND> AND::for_interval(const core::Interval& interval)
 
 OptionalCommaList::OptionalCommaList(const std::string& pattern, bool has_tail)
 {
-	string p;
+    std::string p;
 	if (has_tail)
 	{
 		size_t pos = pattern.find(":");
-		if (pos == string::npos)
-			p = pattern;
+        if (pos == std::string::npos)
+            p = pattern;
         else
         {
             p = str::strip(pattern.substr(0, pos));
@@ -435,6 +451,17 @@ uint32_t OptionalCommaList::getUnsignedWithMissing(size_t pos, uint32_t missing,
             return strtoul((*this)[pos].c_str(), 0, 10);
     }
     return missing;
+}
+
+Optional<uint32_t> OptionalCommaList::getUnsignedWithMissing(size_t pos, uint32_t missing) const
+{
+    if (!has(pos))
+        return Optional<uint32_t>();
+
+    if ((*this)[pos] == "-")
+        return missing;
+    else
+        return strtoul((*this)[pos].c_str(), 0, 10);
 }
 
 double OptionalCommaList::getDouble(size_t pos, double def) const

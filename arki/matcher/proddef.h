@@ -12,6 +12,7 @@ namespace matcher {
  */
 struct MatchProddef : public Implementation
 {
+    MatchProddef* clone() const override = 0;
     std::string name() const override;
 
     static Implementation* parse(const std::string& pattern);
@@ -22,7 +23,9 @@ struct MatchProddefGRIB : public MatchProddef
 {
     types::ValueBagMatcher expr;
 
+    MatchProddefGRIB(const types::ValueBagMatcher& expr);
     MatchProddefGRIB(const std::string& pattern);
+    MatchProddefGRIB* clone() const override;
     bool matchItem(const types::Type& o) const override;
     bool match_buffer(types::Code code, const uint8_t* data, unsigned size) const override;
     std::string toString() const override;

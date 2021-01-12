@@ -48,7 +48,7 @@ protected:
 
 public:
     Values() = default;
-    Values(const Values& vb) = delete;
+    Values(const Values& vb);
     Values(Values&& vb);
     ~Values();
     Values& operator=(const Values& vb) = delete;
@@ -87,6 +87,7 @@ protected:
 public:
     ValueBag() = default;
     ValueBag(const uint8_t* data, unsigned size, bool owned);
+    ValueBag(const ValueBag& o);
     ValueBag(ValueBag&& o);
     ~ValueBag();
     ValueBag& operator=(ValueBag&& vb);
