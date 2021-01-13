@@ -3,7 +3,7 @@
 
 Summary: Archive for weather information
 Name: arkimet
-Version: 1.29
+Version: 1.30
 Release: 1
 License: GPL
 Group: Applications/Meteo
@@ -249,6 +249,19 @@ if [ "$1" = "1" ]; then
 fi
 
 %changelog
+* Wed Jan 13 2021 Daniele Branchini <dbranchini@arpae.it> - 1.30-1
+- Added initial NetCDF support (#40)
+- Metadata refactoring to address memory issues (#242, #245)
+- Implemented `eatmydata: yes` in dataset conf (#233)
+- Documented supported dataset configuration options (#143)
+- VM2 data: implemented a normalisation function, fixed smallfile issue (#237)
+- Fixed segfault in python test suite (#254)
+- Implemented `arki.Matcher.merge(matcher)` (#255)
+- Implemented `arki.Matcher.update(matcher)`
+- Refactored ValueBag/Values with a simple structure (#248)
+- Break circular dependency by decoupling Session and Pool (#250)
+- Fixed segfault when query data is appended to a file from a iseq dataset (#244)
+
 * Fri Aug 14 2020 Emanuele Di Giacomo <edigiacomo@arpae.it> - 1.29-1
 - Fixed error reading offline archives (#232)
 - Allow to create an arkimet session with `force_dir_segments=True` to always

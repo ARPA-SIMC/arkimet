@@ -1,8 +1,16 @@
 # New in version 1.30
 
+* Added initial NetCDF support (#40)
+* Metadata refactoring to address memory issues (#242, #245)
+* Implemented `eatmydata: yes` in dataset conf (#233)
+* Documented supported dataset configuration options (#143)
+* VM2 data: implemented a normalisation function, fixed smallfile issue (#237)
 * Fixed segfault in python test suite (#254)
 * Implemented `arki.Matcher.merge(matcher)` (#255)
 * Implemented `arki.Matcher.update(matcher)`
+* Refactored ValueBag/Values with a simple structure (#248)
+* Break circular dependency by decoupling Session and Pool (#250)
+* Fixed segfault when query data is appended to a file from a iseq dataset (#244)
 
 # New in version 1.29
 
