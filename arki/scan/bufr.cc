@@ -172,9 +172,7 @@ public:
 
         // Try to parse as a dba_msg
         try {
-            // Ignore domain errors, it's ok if we lose some oddball data
-            wreport::options::LocalOverride<bool> o(wreport::options::var_silent_domain_errors, true);
-
+            // We already set the importer to ignore domain errors
             msgs = importer.from_bulletin(*bulletin);
         } catch (std::exception& e) {
             // If we cannot import it as a Msgs, we are done
@@ -204,6 +202,7 @@ public:
 BufrScanner::BufrScanner()
 {
     auto opts = ImporterOptions::create();
+    opts->domain_errors = ImporterOptions::DomainErrors::UNSET;
     opts->simplified = true;
     importer = Importer::create(dballe::Encoding::BUFR, *opts).release();
 }
