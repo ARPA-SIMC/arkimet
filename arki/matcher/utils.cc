@@ -282,6 +282,30 @@ void AND::merge(const AND& o)
     }
 }
 
+void AND::update(const AND& o)
+{
+    auto i1 = components.begin();
+    auto i2 = o.components.begin();
+    while (i1 != components.end() || i2 != o.components.end())
+    {
+        if (i2 == o.components.end() || (i1 != components.end() && i1->first < i2->first)) {
+            // The other doesn't match this typecode: keep it unchanged
+            ++i1;
+        } else if (i1 == components.end() || (i2 != o.components.end() && i1->first > i2->first)) {
+            // The other matches a typecode we don't have: acquire it
+            auto res = components.emplace(*i2);
+            i1 = res.first;
+            ++i1;
+            ++i2;
+        } else {
+            // Both match the same typecode: keep the second
+            i1->second = i2->second;
+            ++i1;
+            ++i2;
+        }
+    }
+}
+
 bool AND::matchItem(const types::Type& t) const
 {
     if (empty()) return true;

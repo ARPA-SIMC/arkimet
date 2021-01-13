@@ -106,6 +106,15 @@ public:
      */
     Matcher merge(const Matcher& m) const;
 
+    /**
+     * Return a matcher with all the expressions of this matcher, plus the
+     * expressions of the other one.
+     *
+     * When both matchers have an expression for the same metadata type, only
+     * those of the other matcher are used.
+     */
+    Matcher update(const Matcher& m) const;
+
     /// Return a matcher matching a time interval (from begin included, to end excluded)
     static Matcher for_interval(const core::Interval& interval);
 

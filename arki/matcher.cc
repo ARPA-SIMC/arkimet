@@ -142,6 +142,23 @@ Matcher Matcher::merge(const Matcher& m) const
         return Matcher();
 }
 
+Matcher Matcher::update(const Matcher& m) const
+{
+    if (m_impl && m.m_impl)
+    {
+        shared_ptr<matcher::AND> result(m_impl->clone());
+        result->update(*m.m_impl);
+        return Matcher(result);
+    } else if (m_impl) {
+        shared_ptr<matcher::AND> result(m_impl->clone());
+        return Matcher(result);
+    } else if (m.m_impl) {
+        shared_ptr<matcher::AND> result(m.m_impl->clone());
+        return Matcher(result);
+    } else
+        return Matcher();
+}
+
 Matcher Matcher::for_interval(const core::Interval& interval)
 {
     return matcher::AND::for_interval(interval);

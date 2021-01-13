@@ -2,6 +2,7 @@
 
 * Fixed segfault in python test suite (#254)
 * Implemented `arki.Matcher.merge(matcher)` (#255)
+* Implemented `arki.Matcher.update(matcher)`
 
 # New in version 1.29
 

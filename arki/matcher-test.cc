@@ -93,6 +93,22 @@ add_method("merge", [](Fixture& f) {
     wassert(actual(merge("origin:GRIB1", "origin:GRIB1")) == "origin:GRIB1");
 });
 
+add_method("update", [](Fixture& f) {
+    matcher::Parser parser;
+
+    auto merge = [&](const std::string& first, const std::string& second) {
+        auto m1 = parser.parse(first);
+        auto m2 = parser.parse(second);
+        auto m3 = m1.update(m2);
+        return m3.toString();
+    };
+
+    wassert(actual(merge("", "origin:GRIB1")) == "origin:GRIB1");
+    wassert(actual(merge("product:GRIB1", "origin:GRIB1")) == "origin:GRIB1; product:GRIB1");
+    wassert(actual(merge("origin:GRIB1", "origin:BUFR")) == "origin:BUFR");
+    wassert(actual(merge("origin:GRIB1", "origin:GRIB1")) == "origin:GRIB1");
+});
+
 }
 
 }

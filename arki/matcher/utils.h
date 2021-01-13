@@ -158,6 +158,7 @@ public:
     std::string name() const override;
 
     void merge(const AND& o);
+    void update(const AND& o);
 
     bool matchItem(const types::Type& t) const override;
     bool match_buffer(types::Code code, const uint8_t* data, unsigned size) const override;
