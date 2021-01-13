@@ -218,9 +218,12 @@ void BufrScanner::do_scan(BinaryMessage& rmsg, std::shared_ptr<Metadata> md)
     Harvest harvest(*importer);
     harvest.harvest_from_dballe(rmsg, *md);
 
-    md->set(move(harvest.reftime));
-    md->set(move(harvest.origin));
-    md->set(move(harvest.product));
+    if (harvest.reftime)
+        md->set(move(harvest.reftime));
+    if (harvest.origin)
+        md->set(move(harvest.origin));
+    if (harvest.product)
+        md->set(move(harvest.product));
 
     if (harvest.msg)
     {
