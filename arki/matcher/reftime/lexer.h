@@ -7,6 +7,7 @@
 #include <cstring>
 #include <vector>
 #include <memory>
+#include <stdexcept>
 
 namespace arki {
 namespace matcher {
