@@ -1,3 +1,8 @@
+# New in version 1.30
+
+* Fixed segfault in python test suite (#254)
+* Implemented `arki.Matcher.merge(matcher)` (#255)
+
 # New in version 1.29
 
 * Fixed error reading offline archives (#232)
