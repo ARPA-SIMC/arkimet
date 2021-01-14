@@ -381,6 +381,31 @@ add_method("inline_bufr", [](Fixture& f) { wassert(test_inline<BUFRData>()); });
 add_method("inline_vm2", [](Fixture& f) { wassert(test_inline<VM2Data>()); });
 add_method("inline_odimh5", [](Fixture& f) { wassert(test_inline<ODIMData>()); });
 
+add_method("issue256", [](Fixture& f) {
+    std::shared_ptr<Metadata> md;
+    Metadata::read_file("inbound/issue256.arkimet", [&](std::shared_ptr<Metadata> m) {
+        wassert_false(md);
+        md = m;
+        return true;
+    });
+
+    wassert_true(md);
+
+    wassert(actual(md->get(TYPE_TIMERANGE)->to_string()) == "GRIB1(000, 228h)");
+
+    // Source: URL(grib,http://arkiope.metarpa:8090/dataset/ifs_ita010)
+    // Origin: GRIB1(098, 000, 151)
+    // Product: GRIB1(098, 128, 228)
+    // Level: GRIB1(001)
+    // Timerange: GRIB1(000, 228h)
+    // Reftime: 2021-01-10T12:00:00Z
+    // Area: GRIB(Ni=181, Nj=161, latfirst=50000000, latlast=34000000, lonfirst=2000000, lonlast=20000000, type=0)
+    // Proddef: GRIB(ld=1, mt=9, nn=0, tod=1)
+    // Run: MINUTE(12:00)
+    // Note: [2021-01-10T19:05:15Z]Scanned from JND01101200012000001.grib:3051848+58390
+});
+
+
 }
 
 }
