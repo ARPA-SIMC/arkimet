@@ -228,8 +228,8 @@ void Timerange::get_GRIB1(const uint8_t* data, unsigned size, unsigned& type, un
     core::BinaryDecoder dec(data + 1, size - 1);
     type = dec.pop_uint(1, "GRIB1 type");
     unit = dec.pop_uint(1, "GRIB1 unit");
-    p1   = dec.pop_sint(1, "GRIB1 p1");
-    p2   = dec.pop_sint(1, "GRIB1 p2");
+    p1   = dec.pop_uint(1, "GRIB1 p1");
+    p2   = dec.pop_uint(1, "GRIB1 p2");
 }
 
 void Timerange::get_GRIB1_normalised(const uint8_t* data, unsigned size, int& otype, timerange::GRIB1Unit& ounit, int& op1, int& op2, bool& use_op1, bool& use_op2)
