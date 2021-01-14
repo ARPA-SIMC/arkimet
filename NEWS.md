@@ -1,6 +1,7 @@
 # New in version 1.31
 
 * Fixed a serious issue in encoding/decoding GRIB1 timeranges (#256)
+* Added `eatmydata` dataset config option documentation (#233)
 
 # New in version 1.30
 

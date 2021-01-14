@@ -3,7 +3,7 @@
 
 Summary: Archive for weather information
 Name: arkimet
-Version: 1.30
+Version: 1.31
 Release: 1
 License: GPL
 Group: Applications/Meteo
@@ -249,6 +249,10 @@ if [ "$1" = "1" ]; then
 fi
 
 %changelog
+* Thu Jan 14 2021 Daniele Branchini <dbranchini@arpae.it> - 1.31-1
+- Fixed a serious issue in encoding/decoding GRIB1 timeranges (#256)
+- Added `eatmydata` dataset config option documentation (#233)
+
 * Wed Jan 13 2021 Daniele Branchini <dbranchini@arpae.it> - 1.30-1
 - Added initial NetCDF support (#40)
 - Metadata refactoring to address memory issues (#242, #245)
