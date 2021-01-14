@@ -47,3 +47,7 @@ These are all the supported options:
   maintenance.
 * ``restrict``: comma-separated list of names that have access to the dataset.
   This allows filtering with the ``--restrict`` option on command line.
+* ``eatmydata``: disable `fsync`/`fdatasync` operations while writing data to
+  dataset, and disable sqlite' journaling and other data integrity features.
+  This makes acquiring data very fast, but an interrupted import or a
+  concurrent import may cause data corruption.
