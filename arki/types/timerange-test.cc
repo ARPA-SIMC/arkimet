@@ -437,6 +437,19 @@ add_method("timedef_validity_time_to_emission_time", [] {
     wassert(actual(p1->get_Position()).is(2009, 2, 13, 6));
 });
 
+add_method("issue256", [] {
+    std::unique_ptr<Timerange> tr(Timerange::createGRIB1(0, 1, 228, 0));
+
+    unsigned t, u, p1, p2;
+    tr->get_GRIB1(t, u, p1, p2);
+    wassert(actual(t) == 0u);
+    wassert(actual(u) == 1u);
+    wassert(actual(p1) == 228u);
+    wassert(actual(p2) == 0u);
+
+    wassert(actual(tr->to_string()) == "GRIB1(000, 228h)");
+});
+
 }
 
 }
