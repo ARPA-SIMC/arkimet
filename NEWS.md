@@ -1,3 +1,7 @@
+# New in version 1.31
+
+* Fixed a serious issue in encoding/decoding GRIB1 timeranges (#256)
+
 # New in version 1.30
 
 * Added initial NetCDF support (#40)
