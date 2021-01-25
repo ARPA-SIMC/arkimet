@@ -1,12 +1,10 @@
 
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html>
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
-    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta charset="utf-8" />
     <title>Index &#8212; arkimet 1.16 documentation</title>
     <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
@@ -67,7 +65,11 @@
 </li>
       <li><a href="python/arkimet.dataset.html#arkimet.dataset.Writer.acquire">acquire() (arkimet.dataset.Writer method)</a>
 </li>
+      <li><a href="python/arkimet.dataset.html#arkimet.dataset.Writer.acquire_batch">acquire_batch() (arkimet.dataset.Writer method)</a>
+</li>
       <li><a href="python/arkimet.html#arkimet.Summary.add">add() (arkimet.Summary method)</a>
+</li>
+      <li><a href="python/arkimet.dataset.html#arkimet.dataset.Session.add_dataset">add_dataset() (arkimet.dataset.Session method)</a>
 </li>
       <li><a href="python/arkimet.html#module-arkimet">arkimet (module)</a>
 </li>
@@ -89,10 +91,10 @@
 </li>
       <li><a href="python/arkimet.dataset.html#module-arkimet.dataset.http">arkimet.dataset.http (module)</a>
 </li>
-      <li><a href="python/arkimet.formatter.html#module-arkimet.formatter">arkimet.formatter (module)</a>
-</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="python/arkimet.formatter.html#module-arkimet.formatter">arkimet.formatter (module)</a>
+</li>
       <li><a href="python/arkimet.formatter.html#module-arkimet.formatter.area">arkimet.formatter.area (module)</a>
 </li>
       <li><a href="python/arkimet.formatter.html#module-arkimet.formatter.eccodes">arkimet.formatter.eccodes (module)</a>
@@ -167,6 +169,8 @@
 </li>
       <li><a href="python/arkimet.dataset.html#arkimet.dataset.Checker">Checker (class in arkimet.dataset)</a>
 </li>
+      <li><a href="python/arkimet.dataset.html#arkimet.dataset.Dataset.checker">checker() (arkimet.dataset.Dataset method)</a>
+</li>
       <li><a href="python/arkimet.html#arkimet.BBox.compute">compute() (arkimet.BBox method)</a>
 
       <ul>
@@ -177,8 +181,16 @@
       </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="python/arkimet.dataset.html#arkimet.dataset.Dataset.config">config (arkimet.dataset.Dataset attribute)</a>
+</li>
       <li><a href="python/arkimet.html#arkimet.config">config() (in module arkimet)</a>
 </li>
+      <li><a href="python/arkimet.cfg.html#arkimet.cfg.Section.copy">copy() (arkimet.cfg.Section method)</a>
+
+      <ul>
+        <li><a href="python/arkimet.cfg.html#arkimet.cfg.Sections.copy">(arkimet.cfg.Sections method)</a>
+</li>
+      </ul></li>
       <li><a href="python/arkimet.html#arkimet.Summary.count">count (arkimet.Summary attribute)</a>
 </li>
   </ul></td>
@@ -191,8 +203,22 @@
 </li>
       <li><a href="python/arkimet.html#arkimet.Metadata.data_size">data_size (arkimet.Metadata attribute)</a>
 </li>
+      <li><a href="python/arkimet.dataset.html#arkimet.dataset.Dataset">Dataset (class in arkimet.dataset)</a>
+</li>
+      <li><a href="python/arkimet.dataset.html#arkimet.dataset.Session.dataset">dataset() (arkimet.dataset.Session method)</a>
+</li>
+      <li><a href="python/arkimet.dataset.html#arkimet.dataset.Session.dataset_checker">dataset_checker() (arkimet.dataset.Session method)</a>
+</li>
+      <li><a href="python/arkimet.dataset.html#arkimet.dataset.Session.dataset_pool_size">dataset_pool_size() (arkimet.dataset.Session method)</a>
+</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="python/arkimet.dataset.html#arkimet.dataset.Session.dataset_reader">dataset_reader() (arkimet.dataset.Session method)</a>
+</li>
+      <li><a href="python/arkimet.dataset.html#arkimet.dataset.Session.dataset_writer">dataset_writer() (arkimet.dataset.Session method)</a>
+</li>
+      <li><a href="python/arkimet.dataset.html#arkimet.dataset.Session.datasets">datasets() (arkimet.dataset.Session method)</a>
+</li>
       <li><a href="python/arkimet.html#arkimet.debug_tty">debug_tty() (in module arkimet)</a>
 </li>
       <li><a href="python/arkimet.html#arkimet.Metadata.del_notes">del_notes() (arkimet.Metadata method)</a>
@@ -207,8 +233,12 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="python/arkimet.scan.html#arkimet.scan.grib.Grib.edition">edition (arkimet.scan.grib.Grib attribute)</a>
 </li>
-      <li><a href="python/arkimet.html#arkimet.expand_query">expand_query() (in module arkimet)</a>
+      <li><a href="python/arkimet.dataset.html#arkimet.dataset.Session.expand_query">expand_query() (arkimet.dataset.Session method)</a>
+
+      <ul>
+        <li><a href="python/arkimet.html#arkimet.expand_query">(in module arkimet)</a>
 </li>
+      </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="python/arkimet.dataset.html#arkimet.dataset.http.expand_remote_query">expand_remote_query() (in module arkimet.dataset.http)</a>
@@ -271,18 +301,20 @@
         <li><a href="python/arkimet.cfg.html#arkimet.cfg.Sections.get">(arkimet.cfg.Sections method)</a>
 </li>
       </ul></li>
-      <li><a href="python/arkimet.html#arkimet.get_alias_database">get_alias_database() (in module arkimet)</a>
+      <li><a href="python/arkimet.dataset.html#arkimet.dataset.Session.get_alias_database">get_alias_database() (arkimet.dataset.Session method)</a>
 
       <ul>
+        <li><a href="python/arkimet.html#arkimet.get_alias_database">(in module arkimet)</a>
+</li>
         <li><a href="python/arkimet.dataset.html#arkimet.dataset.http.get_alias_database">(in module arkimet.dataset.http)</a>
 </li>
       </ul></li>
       <li><a href="python/arkimet.html#arkimet.Summary.get_convex_hull">get_convex_hull() (arkimet.Summary method)</a>
 </li>
-      <li><a href="python/arkimet.formatter.html#arkimet.formatter.eccodes.get_eccodes_def_dir">get_eccodes_def_dir() (in module arkimet.formatter.eccodes)</a>
-</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="python/arkimet.formatter.html#arkimet.formatter.eccodes.get_eccodes_def_dir">get_eccodes_def_dir() (in module arkimet.formatter.eccodes)</a>
+</li>
       <li><a href="python/arkimet.formatter.html#arkimet.formatter.eccodes.GribTable.get_grib2_table_prefix">get_grib2_table_prefix() (arkimet.formatter.eccodes.GribTable class method)</a>
 </li>
       <li><a href="python/arkimet.scan.html#arkimet.scan.grib.Grib.get_long">get_long() (arkimet.scan.grib.Grib method)</a>
@@ -303,8 +335,12 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="python/arkimet.formatter.html#arkimet.formatter.eccodes.GribTable.has">has() (arkimet.formatter.eccodes.GribTable method)</a>
 </li>
+      <li><a href="python/arkimet.dataset.html#arkimet.dataset.Session.has_dataset">has_dataset() (arkimet.dataset.Session method)</a>
+</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="python/arkimet.dataset.html#arkimet.dataset.Session.has_datasets">has_datasets() (arkimet.dataset.Session method)</a>
+</li>
       <li><a href="python/arkimet.html#arkimet.Metadata.has_source">has_source() (arkimet.Metadata method)</a>
 </li>
   </ul></td>
@@ -349,6 +385,8 @@
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="python/arkimet.dataset.html#arkimet.dataset.Session.load_aliases">load_aliases() (arkimet.dataset.Session method)</a>
+</li>
       <li><a href="python/arkimet.dataset.html#arkimet.dataset.http.load_cfg_sections">load_cfg_sections() (in module arkimet.dataset.http)</a>
 </li>
   </ul></td>
@@ -365,15 +403,21 @@
 </li>
       <li><a href="python/arkimet.html#arkimet.make_qmacro_dataset">make_qmacro_dataset() (in module arkimet)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="python/arkimet.scan.html#arkimet.scan.timedef.make_same_units">make_same_units() (in module arkimet.scan.timedef)</a>
 </li>
       <li><a href="python/arkimet.html#arkimet.Metadata.make_url">make_url() (arkimet.Metadata method)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="python/arkimet.html#arkimet.Matcher.match">match() (arkimet.Matcher method)</a>
 </li>
       <li><a href="python/arkimet.html#arkimet.Matcher">Matcher (class in arkimet)</a>
+</li>
+      <li><a href="python/arkimet.dataset.html#arkimet.dataset.Session.matcher">matcher() (arkimet.dataset.Session method)</a>
+</li>
+      <li><a href="python/arkimet.html#arkimet.Matcher.merge">merge() (arkimet.Matcher method)</a>
+</li>
+      <li><a href="python/arkimet.dataset.html#arkimet.dataset.Session.merged">merged() (arkimet.dataset.Session method)</a>
 </li>
       <li><a href="python/arkimet.html#arkimet.Metadata">Metadata (class in arkimet)</a>
 </li>
@@ -382,6 +426,10 @@
 
 <h2 id="N">N</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="python/arkimet.dataset.html#arkimet.dataset.Dataset.name">name (arkimet.dataset.Dataset attribute)</a>
+</li>
+  </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="python/arkimet.bbox.html#arkimet.bbox.common.norm_lon">norm_lon() (in module arkimet.bbox.common)</a>
 
@@ -417,11 +465,13 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="python/arkimet.dataset.html#arkimet.dataset.Reader.query_bytes">query_bytes() (arkimet.dataset.Reader method)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="python/arkimet.dataset.html#arkimet.dataset.Reader.query_data">query_data() (arkimet.dataset.Reader method)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="python/arkimet.dataset.html#arkimet.dataset.Reader.query_summary">query_summary() (arkimet.dataset.Reader method)</a>
+</li>
+      <li><a href="python/arkimet.dataset.html#arkimet.dataset.Session.querymacro">querymacro() (arkimet.dataset.Session method)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -435,18 +485,34 @@
 </li>
       <li><a href="python/arkimet.scan.html#arkimet.scan.bufr.read_area_mobile">read_area_mobile() (in module arkimet.scan.bufr)</a>
 </li>
+      <li><a href="python/arkimet.html#arkimet.Summary.read_binary">read_binary() (arkimet.Summary method)</a>
+</li>
       <li><a href="python/arkimet.html#arkimet.Metadata.read_bundle">read_bundle() (arkimet.Metadata method)</a>
 </li>
       <li><a href="python/arkimet.dataset.html#arkimet.dataset.read_config">read_config() (in module arkimet.dataset)</a>
 </li>
       <li><a href="python/arkimet.dataset.html#arkimet.dataset.read_configs">read_configs() (in module arkimet.dataset)</a>
 </li>
+      <li><a href="python/arkimet.html#arkimet.Metadata.read_json">read_json() (arkimet.Metadata method)</a>
+
+      <ul>
+        <li><a href="python/arkimet.html#arkimet.Summary.read_json">(arkimet.Summary method)</a>
+</li>
+      </ul></li>
       <li><a href="python/arkimet.scan.html#arkimet.scan.bufr.read_proddef">read_proddef() (in module arkimet.scan.bufr)</a>
 </li>
-      <li><a href="python/arkimet.dataset.html#arkimet.dataset.Reader">Reader (class in arkimet.dataset)</a>
+      <li><a href="python/arkimet.html#arkimet.Metadata.read_yaml">read_yaml() (arkimet.Metadata method)</a>
+
+      <ul>
+        <li><a href="python/arkimet.html#arkimet.Summary.read_yaml">(arkimet.Summary method)</a>
 </li>
+      </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="python/arkimet.dataset.html#arkimet.dataset.Reader">Reader (class in arkimet.dataset)</a>
+</li>
+      <li><a href="python/arkimet.dataset.html#arkimet.dataset.Dataset.reader">reader() (arkimet.dataset.Dataset method)</a>
+</li>
       <li><a href="python/arkimet.bbox.html#arkimet.bbox.BBox.register">register() (arkimet.bbox.BBox class method)</a>
 
       <ul>
@@ -499,6 +565,8 @@
 </li>
       <li><a href="python/arkimet.dataset.html#arkimet.dataset.Checker.segment_state">segment_state() (arkimet.dataset.Checker method)</a>
 </li>
+      <li><a href="python/arkimet.dataset.html#arkimet.dataset.Session">Session (class in arkimet.dataset)</a>
+</li>
       <li><a href="python/arkimet.dataset.html#arkimet.dataset.SessionTimeOverride">SessionTimeOverride (class in arkimet.dataset)</a>
 </li>
       <li><a href="python/arkimet.formatter.html#arkimet.formatter.eccodes.GribTable.set">set() (arkimet.formatter.eccodes.GribTable method)</a>
@@ -531,6 +599,8 @@
 <h2 id="U">U</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="python/arkimet.html#arkimet.Matcher.update">update() (arkimet.Matcher method)</a>
+</li>
       <li><a href="python/arkimet.bbox.html#arkimet.bbox.common.utm2ll">utm2ll() (in module arkimet.bbox.common)</a>
 
       <ul>
@@ -554,11 +624,11 @@
       <li><a href="python/arkimet.cfg.html#arkimet.cfg.Section.write">write() (arkimet.cfg.Section method)</a>
 
       <ul>
+        <li><a href="python/arkimet.cfg.html#arkimet.cfg.Sections.write">(arkimet.cfg.Sections method)</a>
+</li>
         <li><a href="python/arkimet.html#arkimet.Metadata.write">(arkimet.Metadata method)</a>
 </li>
         <li><a href="python/arkimet.html#arkimet.Summary.write">(arkimet.Summary method)</a>
-</li>
-        <li><a href="python/arkimet.cfg.html#arkimet.cfg.Sections.write">(arkimet.cfg.Sections method)</a>
 </li>
       </ul></li>
   </ul></td>
@@ -568,6 +638,8 @@
       <li><a href="python/arkimet.html#arkimet.Summary.write_short">write_short() (arkimet.Summary method)</a>
 </li>
       <li><a href="python/arkimet.dataset.html#arkimet.dataset.Writer">Writer (class in arkimet.dataset)</a>
+</li>
+      <li><a href="python/arkimet.dataset.html#arkimet.dataset.Dataset.writer">writer() (arkimet.dataset.Dataset method)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -596,6 +668,8 @@
 <li class="toctree-l1"><a class="reference internal" href="datasets.html">Datasets</a></li>
 <li class="toctree-l1"><a class="reference internal" href="segments.html">Data segments</a></li>
 <li class="toctree-l1"><a class="reference internal" href="http-api.html">arki-server HTTP API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="python-howtos/index.html">Arkimet Python HOWTOs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="python-howtos/index.html#indices-and-tables">Indices and tables</a></li>
 <li class="toctree-l1"><a class="reference internal" href="python/index.html">Arkimet Python API</a></li>
 <li class="toctree-l1"><a class="reference internal" href="python/index.html#indices-and-tables">Indices and tables</a></li>
 </ul>
@@ -608,13 +682,11 @@
 </ul>
 </div>
 <div id="searchbox" style="display: none" role="search">
-  <h3>Quick search</h3>
+  <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="search.html" method="get">
-      <input type="text" name="q" />
+      <input type="text" name="q" aria-labelledby="searchlabel" />
       <input type="submit" value="Go" />
-      <input type="hidden" name="check_keywords" value="yes" />
-      <input type="hidden" name="area" value="default" />
     </form>
     </div>
 </div>
@@ -635,7 +707,7 @@
       &copy;2019, Enrico Zini.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.8.4</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.2.2</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
     </div>

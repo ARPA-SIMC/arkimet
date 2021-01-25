@@ -1,6 +1,13 @@
 arkimet.formatter package
 =========================
 
+Module contents
+---------------
+
+.. automodule:: arkimet.formatter
+    :members:
+    :undoc-members:
+
 Submodules
 ----------
 
@@ -57,13 +64,5 @@ arkimet.formatter.timerange module
 ----------------------------------
 
 .. automodule:: arkimet.formatter.timerange
-    :members:
-    :undoc-members:
-
-
-Module contents
----------------
-
-.. automodule:: arkimet.formatter
     :members:
     :undoc-members:

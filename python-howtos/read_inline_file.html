@@ -1,0 +1,167 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>Read the output of arki-query --inline &#8212; arkimet 1.16 documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Formatting the contents of metadata" href="format_metadata.html" />
+    <link rel="prev" title="Arkimet Python HOWTOs" href="index.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="read-the-output-of-arki-query-inline">
+<span id="python-how-read-inline-file"></span><h1>Read the output of <code class="docutils literal notranslate"><span class="pre">arki-query</span> <span class="pre">--inline</span></code><a class="headerlink" href="#read-the-output-of-arki-query-inline" title="Permalink to this headline">¶</a></h1>
+<p>The output of <code class="docutils literal notranslate"><span class="pre">arki-query</span> <span class="pre">--inline</span></code> is the same as is given as standard input
+to arkimet processors, so this recipe can be used both to work on exported
+data, and to implement arikmet processors.</p>
+<p>The examples that follow use a placeholder <code class="docutils literal notranslate"><span class="pre">process_metadata</span></code> function to act
+on the parsed metadata. Here’s an example of such a function:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">counter</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="k">def</span> <span class="nf">process_metadata</span><span class="p">(</span><span class="n">md</span><span class="p">:</span> <span class="n">arkimet</span><span class="o">.</span><span class="n">Metadata</span><span class="p">):</span>
+    <span class="n">counter</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;Received metadata #</span><span class="si">{counter}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="section" id="reading-as-a-dataset">
+<h2>Reading as a dataset<a class="headerlink" href="#reading-as-a-dataset" title="Permalink to this headline">¶</a></h2>
+<p>Note: this only works if the data is saved on a real file.</p>
+<p>This creates an <code class="docutils literal notranslate"><span class="pre">arkimet.Dataset</span></code> object that accesses the file:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ds</span> <span class="o">=</span> <span class="n">arki</span><span class="o">.</span><span class="n">dataset</span><span class="o">.</span><span class="n">Reader</span><span class="p">({</span>
+    <span class="s2">&quot;format&quot;</span><span class="p">:</span> <span class="s2">&quot;arkimet&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;input&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;path&quot;</span><span class="p">:</span> <span class="n">filename</span><span class="p">,</span>
+    <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;file&quot;</span><span class="p">,</span>
+<span class="p">})</span>
+</pre></div>
+</div>
+<p>You can then iterate over it:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">md</span> <span class="ow">in</span> <span class="n">ds</span><span class="o">.</span><span class="n">query_data</span><span class="p">(</span><span class="o">...</span><span class="p">):</span>
+    <span class="n">process_medatata</span><span class="p">(</span><span class="n">md</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Or let arkimet do the iteration by passing a callback:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ds</span><span class="o">.</span><span class="n">query_data</span><span class="p">(</span><span class="n">on_metadata</span><span class="o">=</span><span class="n">process_metadata</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Arkimet’s python bindings do not support streaming iteration over results: in
+the first case, <code class="docutils literal notranslate"><span class="pre">ds.query_data</span></code> will return a list of metadata after scanning
+the whole file, while in the second case the callback is called on metadata as
+the file is being read.</p>
+</div>
+<div class="section" id="reading-from-standard-input">
+<h2>Reading from standard input<a class="headerlink" href="#reading-from-standard-input" title="Permalink to this headline">¶</a></h2>
+<p>Standard input does not allow seeking, which would be required to access it as
+a dataset. <code class="docutils literal notranslate"><span class="pre">arkimet.Metadata.read_bundle</span></code> can be used to read it
+sequentially:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">arkimet</span><span class="o">.</span><span class="n">Metadata</span><span class="o">.</span><span class="n">read_bundle</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">stdin</span><span class="o">.</span><span class="n">buffer</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="n">process_metadata</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">arkimet</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../matcher.html">Match expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../datasets.html">Datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../segments.html">Data segments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../http-api.html">arki-server HTTP API</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Arkimet Python HOWTOs</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Read the output of <code class="docutils literal notranslate"><span class="pre">arki-query</span> <span class="pre">--inline</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="format_metadata.html">Formatting the contents of metadata</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="index.html#indices-and-tables">Indices and tables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../python/index.html">Arkimet Python API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../python/index.html#indices-and-tables">Indices and tables</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="index.html">Arkimet Python HOWTOs</a><ul>
+      <li>Previous: <a href="index.html" title="previous chapter">Arkimet Python HOWTOs</a></li>
+      <li>Next: <a href="format_metadata.html" title="next chapter">Formatting the contents of metadata</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2019, Enrico Zini.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.2.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="../_sources/python-howtos/read_inline_file.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

@@ -1,11 +1,9 @@
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html>
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
-    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta charset="utf-8" />
     <title>Matching reference times &#8212; arkimet 1.16 documentation</title>
     <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
@@ -54,24 +52,24 @@ means “anything from 04:00:30 June 5, 2007, but only at precisely 04:00:30 and
 combinations. For example: <code class="docutils literal notranslate"><span class="pre">12h</span></code>, <code class="docutils literal notranslate"><span class="pre">30m</span></code>, <code class="docutils literal notranslate"><span class="pre">12h30m15s</span></code>.</p>
 <p>Dates and times can also be specified relative to the curren time:</p>
 <ul class="simple">
-<li><code class="docutils literal notranslate"><span class="pre">now</span></code>: current date and time</li>
-<li><code class="docutils literal notranslate"><span class="pre">today</span></code>: current date</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">now</span></code>: current date and time</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">today</span></code>: current date</p></li>
 </ul>
 <p>There are also aliases for commonly used bits:</p>
 <ul class="simple">
-<li><code class="docutils literal notranslate"><span class="pre">reftime:=yesterday</span></code> is equivalent to <code class="docutils literal notranslate"><span class="pre">reftime:=today</span> <span class="pre">-</span> <span class="pre">1</span> <span class="pre">day</span></code></li>
-<li><code class="docutils literal notranslate"><span class="pre">reftime:=tomorrow</span></code>  is equivalent to <code class="docutils literal notranslate"><span class="pre">reftime:=today</span> <span class="pre">+</span> <span class="pre">1</span> <span class="pre">day</span></code></li>
-<li><code class="docutils literal notranslate"><span class="pre">reftime:=midday</span></code>    is equivalent to <code class="docutils literal notranslate"><span class="pre">reftime:=12:00:00</span></code></li>
-<li><code class="docutils literal notranslate"><span class="pre">reftime:=noon</span></code>      is equivalent to <code class="docutils literal notranslate"><span class="pre">reftime:=12:00:00</span></code></li>
-<li><code class="docutils literal notranslate"><span class="pre">reftime:=midnight</span></code>  is equivalent to <code class="docutils literal notranslate"><span class="pre">reftime:=00:00:00</span></code></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">reftime:=yesterday</span></code> is equivalent to <code class="docutils literal notranslate"><span class="pre">reftime:=today</span> <span class="pre">-</span> <span class="pre">1</span> <span class="pre">day</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">reftime:=tomorrow</span></code>  is equivalent to <code class="docutils literal notranslate"><span class="pre">reftime:=today</span> <span class="pre">+</span> <span class="pre">1</span> <span class="pre">day</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">reftime:=midday</span></code>    is equivalent to <code class="docutils literal notranslate"><span class="pre">reftime:=12:00:00</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">reftime:=noon</span></code>      is equivalent to <code class="docutils literal notranslate"><span class="pre">reftime:=12:00:00</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">reftime:=midnight</span></code>  is equivalent to <code class="docutils literal notranslate"><span class="pre">reftime:=00:00:00</span></code></p></li>
 </ul>
 <p>Dates can be altered using <code class="docutils literal notranslate"><span class="pre">+</span></code>, <code class="docutils literal notranslate"><span class="pre">-</span></code>, <code class="docutils literal notranslate"><span class="pre">ago</span></code>, <code class="docutils literal notranslate"><span class="pre">before</span></code>, <code class="docutils literal notranslate"><span class="pre">after</span></code>.</p>
 <p>For example:</p>
 <ul class="simple">
-<li><code class="docutils literal notranslate"><span class="pre">reftime:=2</span> <span class="pre">days</span> <span class="pre">before</span> <span class="pre">yesterday</span></code> is equivalent to <code class="docutils literal notranslate"><span class="pre">reftime:=today</span> <span class="pre">-</span> <span class="pre">3</span> <span class="pre">days</span></code></li>
-<li><code class="docutils literal notranslate"><span class="pre">reftime:=1</span> <span class="pre">hour</span> <span class="pre">and</span> <span class="pre">30</span> <span class="pre">minutes</span> <span class="pre">after</span> <span class="pre">tomorrow</span> <span class="pre">midnight</span></code> is equivalent to <code class="docutils literal notranslate"><span class="pre">reftime:=tomorrow</span> <span class="pre">01:30:00</span></code></li>
-<li><code class="docutils literal notranslate"><span class="pre">reftime:=1</span> <span class="pre">hour</span> <span class="pre">after</span> <span class="pre">today</span> <span class="pre">midday</span></code> is equivalent to <code class="docutils literal notranslate"><span class="pre">reftime:=today</span> <span class="pre">13:00:00</span></code></li>
-<li><code class="docutils literal notranslate"><span class="pre">reftime:=processione</span> <span class="pre">san</span> <span class="pre">luca</span> <span class="pre">2010</span></code> is equivalent to <code class="docutils literal notranslate"><span class="pre">reftime:=34</span> <span class="pre">days</span> <span class="pre">after</span> <span class="pre">easter</span> <span class="pre">2010</span></code></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">reftime:=2</span> <span class="pre">days</span> <span class="pre">before</span> <span class="pre">yesterday</span></code> is equivalent to <code class="docutils literal notranslate"><span class="pre">reftime:=today</span> <span class="pre">-</span> <span class="pre">3</span> <span class="pre">days</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">reftime:=1</span> <span class="pre">hour</span> <span class="pre">and</span> <span class="pre">30</span> <span class="pre">minutes</span> <span class="pre">after</span> <span class="pre">tomorrow</span> <span class="pre">midnight</span></code> is equivalent to <code class="docutils literal notranslate"><span class="pre">reftime:=tomorrow</span> <span class="pre">01:30:00</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">reftime:=1</span> <span class="pre">hour</span> <span class="pre">after</span> <span class="pre">today</span> <span class="pre">midday</span></code> is equivalent to <code class="docutils literal notranslate"><span class="pre">reftime:=today</span> <span class="pre">13:00:00</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">reftime:=processione</span> <span class="pre">san</span> <span class="pre">luca</span> <span class="pre">2010</span></code> is equivalent to <code class="docutils literal notranslate"><span class="pre">reftime:=34</span> <span class="pre">days</span> <span class="pre">after</span> <span class="pre">easter</span> <span class="pre">2010</span></code></p></li>
 </ul>
 <p>You can use <code class="docutils literal notranslate"><span class="pre">arki-dump</span> <span class="pre">--query</span> <span class="pre">'reftime:...'</span></code> to check how a query gets parsed.</p>
 <div class="section" id="examples">
@@ -79,91 +77,91 @@ combinations. For example: <code class="docutils literal notranslate"><span clas
 <p>Given reftime <code class="docutils literal notranslate"><span class="pre">2010-09-08</span> <span class="pre">07:06:05</span></code>:</p>
 <p>Year intervals:</p>
 <ul class="simple">
-<li><code class="docutils literal notranslate"><span class="pre">reftime:&gt;=2010</span></code> matches</li>
-<li><code class="docutils literal notranslate"><span class="pre">reftime:&lt;=2010</span></code> matches</li>
-<li><code class="docutils literal notranslate"><span class="pre">reftime:==2010</span></code> matches</li>
-<li><code class="docutils literal notranslate"><span class="pre">reftime:&gt;2009</span></code> matches</li>
-<li><code class="docutils literal notranslate"><span class="pre">reftime:&lt;2011</span></code> matches</li>
-<li><code class="docutils literal notranslate"><span class="pre">reftime:&lt;2010</span></code> does not match</li>
-<li><code class="docutils literal notranslate"><span class="pre">reftime:&gt;2009,&lt;2011</span></code> matches</li>
-<li><code class="docutils literal notranslate"><span class="pre">reftime:&gt;2009,&lt;2010</span></code> does not match</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">reftime:&gt;=2010</span></code> matches</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">reftime:&lt;=2010</span></code> matches</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">reftime:==2010</span></code> matches</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">reftime:&gt;2009</span></code> matches</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">reftime:&lt;2011</span></code> matches</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">reftime:&lt;2010</span></code> does not match</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">reftime:&gt;2009,&lt;2011</span></code> matches</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">reftime:&gt;2009,&lt;2010</span></code> does not match</p></li>
 </ul>
 <p>Month intervals:</p>
 <ul class="simple">
-<li><code class="docutils literal notranslate"><span class="pre">reftime:&gt;=2010-09</span></code> matches</li>
-<li><code class="docutils literal notranslate"><span class="pre">reftime:&lt;=2010-09</span></code> matches</li>
-<li><code class="docutils literal notranslate"><span class="pre">reftime:==2010-09</span></code> matches</li>
-<li><code class="docutils literal notranslate"><span class="pre">reftime:&gt;2010-08</span></code> matches</li>
-<li><code class="docutils literal notranslate"><span class="pre">reftime:&lt;2010-10</span></code> matches</li>
-<li><code class="docutils literal notranslate"><span class="pre">reftime:&lt;2010-09</span></code> does not match</li>
-<li><code class="docutils literal notranslate"><span class="pre">reftime:&gt;2010-08,&lt;2010-10</span></code> matches</li>
-<li><code class="docutils literal notranslate"><span class="pre">reftime:&gt;2010-08,&lt;2010-09</span></code> does not match</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">reftime:&gt;=2010-09</span></code> matches</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">reftime:&lt;=2010-09</span></code> matches</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">reftime:==2010-09</span></code> matches</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">reftime:&gt;2010-08</span></code> matches</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">reftime:&lt;2010-10</span></code> matches</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">reftime:&lt;2010-09</span></code> does not match</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">reftime:&gt;2010-08,&lt;2010-10</span></code> matches</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">reftime:&gt;2010-08,&lt;2010-09</span></code> does not match</p></li>
 </ul>
 <p>Day intervals:</p>
 <ul class="simple">
-<li><code class="docutils literal notranslate"><span class="pre">reftime:&gt;=2010-09-08</span></code> matches</li>
-<li><code class="docutils literal notranslate"><span class="pre">reftime:&lt;=2010-09-08</span></code> matches</li>
-<li><code class="docutils literal notranslate"><span class="pre">reftime:==2010-09-08</span></code> matches</li>
-<li><code class="docutils literal notranslate"><span class="pre">reftime:&gt;2010-09-07</span></code> matches</li>
-<li><code class="docutils literal notranslate"><span class="pre">reftime:&lt;2010-09-09</span></code> matches</li>
-<li><code class="docutils literal notranslate"><span class="pre">reftime:&lt;2010-09-08</span></code> does not match</li>
-<li><code class="docutils literal notranslate"><span class="pre">reftime:&gt;2010-09-07,&lt;2010-09-09</span></code> matches</li>
-<li><code class="docutils literal notranslate"><span class="pre">reftime:&gt;2010-09-07,&lt;2010-09-08</span></code> does not match</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">reftime:&gt;=2010-09-08</span></code> matches</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">reftime:&lt;=2010-09-08</span></code> matches</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">reftime:==2010-09-08</span></code> matches</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">reftime:&gt;2010-09-07</span></code> matches</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">reftime:&lt;2010-09-09</span></code> matches</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">reftime:&lt;2010-09-08</span></code> does not match</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">reftime:&gt;2010-09-07,&lt;2010-09-09</span></code> matches</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">reftime:&gt;2010-09-07,&lt;2010-09-08</span></code> does not match</p></li>
 </ul>
 <p>Hour intervals:</p>
 <ul class="simple">
-<li><code class="docutils literal notranslate"><span class="pre">reftime:&gt;=2010-09-08</span> <span class="pre">07</span></code> matches</li>
-<li><code class="docutils literal notranslate"><span class="pre">reftime:&lt;=2010-09-08</span> <span class="pre">07</span></code> matches</li>
-<li><code class="docutils literal notranslate"><span class="pre">reftime:==2010-09-08</span> <span class="pre">07</span></code> matches</li>
-<li><code class="docutils literal notranslate"><span class="pre">reftime:&gt;2010-09-08</span> <span class="pre">06</span></code> matches</li>
-<li><code class="docutils literal notranslate"><span class="pre">reftime:&lt;2010-09-08</span> <span class="pre">08</span></code> matches</li>
-<li><code class="docutils literal notranslate"><span class="pre">reftime:&lt;2010-09-08</span> <span class="pre">07</span></code> does not match</li>
-<li><code class="docutils literal notranslate"><span class="pre">reftime:&gt;2010-09-08</span> <span class="pre">06,&lt;2010-09-08</span> <span class="pre">08</span></code> matches</li>
-<li><code class="docutils literal notranslate"><span class="pre">reftime:&gt;2010-09-08</span> <span class="pre">06,&lt;2010-09-08</span> <span class="pre">07</span></code> does not match</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">reftime:&gt;=2010-09-08</span> <span class="pre">07</span></code> matches</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">reftime:&lt;=2010-09-08</span> <span class="pre">07</span></code> matches</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">reftime:==2010-09-08</span> <span class="pre">07</span></code> matches</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">reftime:&gt;2010-09-08</span> <span class="pre">06</span></code> matches</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">reftime:&lt;2010-09-08</span> <span class="pre">08</span></code> matches</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">reftime:&lt;2010-09-08</span> <span class="pre">07</span></code> does not match</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">reftime:&gt;2010-09-08</span> <span class="pre">06,&lt;2010-09-08</span> <span class="pre">08</span></code> matches</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">reftime:&gt;2010-09-08</span> <span class="pre">06,&lt;2010-09-08</span> <span class="pre">07</span></code> does not match</p></li>
 </ul>
 <p>Minute intervals:</p>
 <ul class="simple">
-<li><code class="docutils literal notranslate"><span class="pre">reftime:&gt;=2010-09-08</span> <span class="pre">07:06</span></code> matches</li>
-<li><code class="docutils literal notranslate"><span class="pre">reftime:&lt;=2010-09-08</span> <span class="pre">07:06</span></code> matches</li>
-<li><code class="docutils literal notranslate"><span class="pre">reftime:==2010-09-08</span> <span class="pre">07:06</span></code> matches</li>
-<li><code class="docutils literal notranslate"><span class="pre">reftime:&gt;2010-09-08</span> <span class="pre">07:05</span></code> matches</li>
-<li><code class="docutils literal notranslate"><span class="pre">reftime:&lt;2010-09-08</span> <span class="pre">07:07</span></code> matches</li>
-<li><code class="docutils literal notranslate"><span class="pre">reftime:&lt;2010-09-08</span> <span class="pre">07:06</span></code> does not match</li>
-<li><code class="docutils literal notranslate"><span class="pre">reftime:&gt;2010-09-08</span> <span class="pre">07:05,&lt;2010-09-08</span> <span class="pre">07:07</span></code> matches</li>
-<li><code class="docutils literal notranslate"><span class="pre">reftime:&gt;2010-09-08</span> <span class="pre">07:05,&lt;2010-09-08</span> <span class="pre">07:06</span></code> does not match</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">reftime:&gt;=2010-09-08</span> <span class="pre">07:06</span></code> matches</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">reftime:&lt;=2010-09-08</span> <span class="pre">07:06</span></code> matches</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">reftime:==2010-09-08</span> <span class="pre">07:06</span></code> matches</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">reftime:&gt;2010-09-08</span> <span class="pre">07:05</span></code> matches</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">reftime:&lt;2010-09-08</span> <span class="pre">07:07</span></code> matches</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">reftime:&lt;2010-09-08</span> <span class="pre">07:06</span></code> does not match</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">reftime:&gt;2010-09-08</span> <span class="pre">07:05,&lt;2010-09-08</span> <span class="pre">07:07</span></code> matches</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">reftime:&gt;2010-09-08</span> <span class="pre">07:05,&lt;2010-09-08</span> <span class="pre">07:06</span></code> does not match</p></li>
 </ul>
 <p>Precise timestamps:</p>
 <ul class="simple">
-<li><code class="docutils literal notranslate"><span class="pre">reftime:&gt;=2010-09-08</span> <span class="pre">07:06:05</span></code> matches</li>
-<li><code class="docutils literal notranslate"><span class="pre">reftime:&lt;=2010-09-08</span> <span class="pre">07:06:05</span></code> matches</li>
-<li><code class="docutils literal notranslate"><span class="pre">reftime:==2010-09-08</span> <span class="pre">07:06:05</span></code> matches</li>
-<li><code class="docutils literal notranslate"><span class="pre">reftime:&gt;2010-09-08</span> <span class="pre">07:06:04</span></code> matches</li>
-<li><code class="docutils literal notranslate"><span class="pre">reftime:&lt;2010-09-08</span> <span class="pre">07:06:06</span></code> matches</li>
-<li><code class="docutils literal notranslate"><span class="pre">reftime:&lt;2010-09-08</span> <span class="pre">07:06:05</span></code> does not match</li>
-<li><code class="docutils literal notranslate"><span class="pre">reftime:&gt;2010-09-08</span> <span class="pre">07:06:04,&lt;2010-09-08</span> <span class="pre">07:06:06</span></code> matches</li>
-<li><code class="docutils literal notranslate"><span class="pre">reftime:&gt;2010-09-08</span> <span class="pre">07:05:04,&lt;2010-09-08</span> <span class="pre">07:06:05</span></code> does not match</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">reftime:&gt;=2010-09-08</span> <span class="pre">07:06:05</span></code> matches</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">reftime:&lt;=2010-09-08</span> <span class="pre">07:06:05</span></code> matches</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">reftime:==2010-09-08</span> <span class="pre">07:06:05</span></code> matches</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">reftime:&gt;2010-09-08</span> <span class="pre">07:06:04</span></code> matches</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">reftime:&lt;2010-09-08</span> <span class="pre">07:06:06</span></code> matches</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">reftime:&lt;2010-09-08</span> <span class="pre">07:06:05</span></code> does not match</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">reftime:&gt;2010-09-08</span> <span class="pre">07:06:04,&lt;2010-09-08</span> <span class="pre">07:06:06</span></code> matches</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">reftime:&gt;2010-09-08</span> <span class="pre">07:05:04,&lt;2010-09-08</span> <span class="pre">07:06:05</span></code> does not match</p></li>
 </ul>
 <p>Hour expressions:</p>
 <ul class="simple">
-<li><code class="docutils literal notranslate"><span class="pre">reftime:=07</span></code> matches</li>
-<li><code class="docutils literal notranslate"><span class="pre">reftime:&gt;06</span></code> matches</li>
-<li><code class="docutils literal notranslate"><span class="pre">reftime:&lt;08</span></code> matches</li>
-<li><code class="docutils literal notranslate"><span class="pre">reftime:&gt;07</span></code> does not match: same as <code class="docutils literal notranslate"><span class="pre">&gt;=08</span></code></li>
-<li><code class="docutils literal notranslate"><span class="pre">reftime:=07:06</span></code> matches</li>
-<li><code class="docutils literal notranslate"><span class="pre">reftime:&gt;07:05</span></code> matches</li>
-<li><code class="docutils literal notranslate"><span class="pre">reftime:&lt;08:00</span></code> matches</li>
-<li><code class="docutils literal notranslate"><span class="pre">reftime:&gt;07:06</span></code> does not match: same as <code class="docutils literal notranslate"><span class="pre">&gt;=07:07</span></code></li>
-<li><code class="docutils literal notranslate"><span class="pre">reftime:=07:06:05</span></code> matches</li>
-<li><code class="docutils literal notranslate"><span class="pre">reftime:&gt;07:06:04</span></code> matches</li>
-<li><code class="docutils literal notranslate"><span class="pre">reftime:&lt;07:06:06</span></code> matches</li>
-<li><code class="docutils literal notranslate"><span class="pre">reftime:&gt;07:06:05</span></code> does not match</li>
-<li><code class="docutils literal notranslate"><span class="pre">reftime:&lt;07:06:05</span></code> does not match</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">reftime:=07</span></code> matches</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">reftime:&gt;06</span></code> matches</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">reftime:&lt;08</span></code> matches</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">reftime:&gt;07</span></code> does not match: same as <code class="docutils literal notranslate"><span class="pre">&gt;=08</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">reftime:=07:06</span></code> matches</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">reftime:&gt;07:05</span></code> matches</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">reftime:&lt;08:00</span></code> matches</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">reftime:&gt;07:06</span></code> does not match: same as <code class="docutils literal notranslate"><span class="pre">&gt;=07:07</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">reftime:=07:06:05</span></code> matches</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">reftime:&gt;07:06:04</span></code> matches</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">reftime:&lt;07:06:06</span></code> matches</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">reftime:&gt;07:06:05</span></code> does not match</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">reftime:&lt;07:06:05</span></code> does not match</p></li>
 </ul>
 <p>Time steps:</p>
 <ul class="simple">
-<li><code class="docutils literal notranslate"><span class="pre">reftime:&gt;=2010-09-08</span> <span class="pre">%5s</span></code> matches</li>
-<li><code class="docutils literal notranslate"><span class="pre">reftime:%5s</span></code> matches</li>
-<li><code class="docutils literal notranslate"><span class="pre">reftime:%2s</span></code> does not match</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">reftime:&gt;=2010-09-08</span> <span class="pre">%5s</span></code> matches</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">reftime:%5s</span></code> matches</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">reftime:%2s</span></code> does not match</p></li>
 </ul>
 <div class="toctree-wrapper compound">
 </div>
@@ -196,6 +194,8 @@ combinations. For example: <code class="docutils literal notranslate"><span clas
 <li class="toctree-l1"><a class="reference internal" href="../datasets.html">Datasets</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../segments.html">Data segments</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../http-api.html">arki-server HTTP API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../python-howtos/index.html">Arkimet Python HOWTOs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../python-howtos/index.html#indices-and-tables">Indices and tables</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../python/index.html">Arkimet Python API</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../python/index.html#indices-and-tables">Indices and tables</a></li>
 </ul>
@@ -212,13 +212,11 @@ combinations. For example: <code class="docutils literal notranslate"><span clas
 </ul>
 </div>
 <div id="searchbox" style="display: none" role="search">
-  <h3>Quick search</h3>
+  <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="../search.html" method="get">
-      <input type="text" name="q" />
+      <input type="text" name="q" aria-labelledby="searchlabel" />
       <input type="submit" value="Go" />
-      <input type="hidden" name="check_keywords" value="yes" />
-      <input type="hidden" name="area" value="default" />
     </form>
     </div>
 </div>
@@ -239,7 +237,7 @@ combinations. For example: <code class="docutils literal notranslate"><span clas
       &copy;2019, Enrico Zini.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.8.4</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.2.2</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |

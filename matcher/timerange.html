@@ -1,11 +1,9 @@
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html>
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
-    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta charset="utf-8" />
     <title>Matching time ranges &#8212; arkimet 1.16 documentation</title>
     <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
@@ -39,12 +37,12 @@
 <p>Some time range matchers use time unit suffixes. Here is a table with their
 meaning:</p>
 <ul class="simple">
-<li><code class="docutils literal notranslate"><span class="pre">s</span></code>:  seconds</li>
-<li><code class="docutils literal notranslate"><span class="pre">m</span></code>:  minutes</li>
-<li><code class="docutils literal notranslate"><span class="pre">h</span></code>:  hours</li>
-<li><code class="docutils literal notranslate"><span class="pre">d</span></code>:  days</li>
-<li><code class="docutils literal notranslate"><span class="pre">mo</span></code>: months</li>
-<li><code class="docutils literal notranslate"><span class="pre">y</span></code>:  years</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">s</span></code>:  seconds</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">m</span></code>:  minutes</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">h</span></code>:  hours</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">d</span></code>:  days</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">mo</span></code>: months</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">y</span></code>:  years</p></li>
 </ul>
 <p>When unit suffixes are used, all time values are normalised to either
 seconds or months, according to what is appropriate. This means it is
@@ -62,20 +60,20 @@ are 0.</p>
 <h3>Examples<a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h3>
 <p>Given timerange <code class="docutils literal notranslate"><span class="pre">GRIB1(0,</span> <span class="pre">6h)</span></code> (6-hours forecast)</p>
 <ul class="simple">
-<li><code class="docutils literal notranslate"><span class="pre">timerange:GRIB1,0</span></code> matches</li>
-<li><code class="docutils literal notranslate"><span class="pre">timerange:GRIB1,0,6h</span></code> matches</li>
-<li><code class="docutils literal notranslate"><span class="pre">timerange:GRIB1,0,360m</span></code> matches</li>
-<li><code class="docutils literal notranslate"><span class="pre">timerange:GRIB1,0,21600s</span></code> matches</li>
-<li><code class="docutils literal notranslate"><span class="pre">timerange:GRIB1,1</span></code> does not match</li>
-<li><code class="docutils literal notranslate"><span class="pre">timerange:GRIB1,0,6m</span></code> does not match</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">timerange:GRIB1,0</span></code> matches</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">timerange:GRIB1,0,6h</span></code> matches</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">timerange:GRIB1,0,360m</span></code> matches</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">timerange:GRIB1,0,21600s</span></code> matches</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">timerange:GRIB1,1</span></code> does not match</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">timerange:GRIB1,0,6m</span></code> does not match</p></li>
 </ul>
 <p>Given timerange <code class="docutils literal notranslate"><span class="pre">GRIB1(2,</span> <span class="pre">6h,</span> <span class="pre">12h)</span></code> (valid between reftime+6h and reftime+12h):</p>
 <ul class="simple">
-<li><code class="docutils literal notranslate"><span class="pre">timerange:GRIB1,2</span></code> matches</li>
-<li><code class="docutils literal notranslate"><span class="pre">timerange:GRIB1,2,6h,12h</span></code> matches</li>
-<li><code class="docutils literal notranslate"><span class="pre">timerange:GRIB1,2,6h</span></code> matches (partial match also works)</li>
-<li><code class="docutils literal notranslate"><span class="pre">timerange:GRIB1,1</span></code> does not match</li>
-<li><code class="docutils literal notranslate"><span class="pre">timerange:GRIB1,2,6m,12m</span></code> does not match</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">timerange:GRIB1,2</span></code> matches</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">timerange:GRIB1,2,6h,12h</span></code> matches</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">timerange:GRIB1,2,6h</span></code> matches (partial match also works)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">timerange:GRIB1,1</span></code> does not match</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">timerange:GRIB1,2,6m,12m</span></code> does not match</p></li>
 </ul>
 </div>
 </div>
@@ -88,13 +86,13 @@ are 0.</p>
 <h3>Examples<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h3>
 <p>Given timerange <code class="docutils literal notranslate"><span class="pre">GRIB2(0,</span> <span class="pre">1,</span> <span class="pre">6h,</span> <span class="pre">0h)</span></code> (6-hours forecast):</p>
 <ul class="simple">
-<li><code class="docutils literal notranslate"><span class="pre">timerange:GRIB2,0</span></code> matches</li>
-<li><code class="docutils literal notranslate"><span class="pre">timerange:GRIB2,0,1,6</span></code> matches</li>
-<li><code class="docutils literal notranslate"><span class="pre">timerange:GRIB2,0,1,6,0</span></code> matches</li>
-<li><code class="docutils literal notranslate"><span class="pre">timerange:GRIB2,1</span></code> does not match</li>
-<li><code class="docutils literal notranslate"><span class="pre">timerange:GRIB2,0,1,5</span></code> does not match</li>
-<li><code class="docutils literal notranslate"><span class="pre">timerange:GRIB2,0,2,6</span></code> does not match</li>
-<li><code class="docutils literal notranslate"><span class="pre">timerange:GRIB2,0,0,360</span></code> does not match</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">timerange:GRIB2,0</span></code> matches</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">timerange:GRIB2,0,1,6</span></code> matches</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">timerange:GRIB2,0,1,6,0</span></code> matches</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">timerange:GRIB2,1</span></code> does not match</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">timerange:GRIB2,0,1,5</span></code> does not match</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">timerange:GRIB2,0,2,6</span></code> does not match</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">timerange:GRIB2,0,0,360</span></code> does not match</p></li>
 </ul>
 </div>
 </div>
@@ -102,10 +100,10 @@ are 0.</p>
 <h2>Timedef<a class="headerlink" href="#timedef" title="Permalink to this headline">¶</a></h2>
 <p>Syntax: <code class="docutils literal notranslate"><span class="pre">timerange:Timedef,fcstep,proctype,proclen</span></code></p>
 <ul class="simple">
-<li><code class="docutils literal notranslate"><span class="pre">fcstep</span></code> is the forecast step</li>
-<li><code class="docutils literal notranslate"><span class="pre">proctype</span></code> is the type of statistical processing (use <code class="docutils literal notranslate"><span class="pre">-</span></code> for data with no
-statistical processing)</li>
-<li><code class="docutils literal notranslate"><span class="pre">proclen</span></code> is the time duration the interval for statistical processing</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">fcstep</span></code> is the forecast step</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">proctype</span></code> is the type of statistical processing (use <code class="docutils literal notranslate"><span class="pre">-</span></code> for data with no
+statistical processing)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">proclen</span></code> is the time duration the interval for statistical processing</p></li>
 </ul>
 <p>Any of <code class="docutils literal notranslate"><span class="pre">fcstep</span></code>, <code class="docutils literal notranslate"><span class="pre">proctype</span></code>, <code class="docutils literal notranslate"><span class="pre">proclen</span></code> can be omitted; if omitted, any value
 will match.</p>
@@ -113,14 +111,14 @@ will match.</p>
 <h3>Examples<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h3>
 <p>Given timerange <code class="docutils literal notranslate"><span class="pre">Timedef(6h)</span></code> (6-hours forecast):</p>
 <ul class="simple">
-<li><code class="docutils literal notranslate"><span class="pre">timerange:Timedef,6h</span></code> matches</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">timerange:Timedef,6h</span></code> matches</p></li>
 </ul>
 <p>Given timerange <code class="docutils literal notranslate"><span class="pre">Timedef(6h,</span> <span class="pre">0,</span> <span class="pre">3h)</span></code> (6-hours forecast, average over 3 hours):</p>
 <ul class="simple">
-<li><code class="docutils literal notranslate"><span class="pre">timerange:Timedef,6h,0,3h</span></code> matches: 6hours forecast, average over 3 hours</li>
-<li><code class="docutils literal notranslate"><span class="pre">timerange:Timedef,,0,3h</span></code> matches: all averages over 3 hours</li>
-<li><code class="docutils literal notranslate"><span class="pre">timerange:Timedef,3h</span></code> does not match</li>
-<li><code class="docutils literal notranslate"><span class="pre">timerange:Timedef,,1,3h</span></code> does not match</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">timerange:Timedef,6h,0,3h</span></code> matches: 6hours forecast, average over 3 hours</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">timerange:Timedef,,0,3h</span></code> matches: all averages over 3 hours</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">timerange:Timedef,3h</span></code> does not match</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">timerange:Timedef,,1,3h</span></code> does not match</p></li>
 </ul>
 </div>
 </div>
@@ -133,12 +131,12 @@ will match.</p>
 <h3>Examples<a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h3>
 <p>Given timerange <code class="docutils literal notranslate"><span class="pre">BUFR(6h)</span></code> (6-hours forecast):</p>
 <ul class="simple">
-<li><code class="docutils literal notranslate"><span class="pre">timerange:BUFR</span></code> matches</li>
-<li><code class="docutils literal notranslate"><span class="pre">timerange:BUFR,6h</span></code> matches</li>
-<li><code class="docutils literal notranslate"><span class="pre">timerange:BUFR,360m</span></code> matches</li>
-<li><code class="docutils literal notranslate"><span class="pre">timerange:BUFR,21600s</span></code> matches</li>
-<li><code class="docutils literal notranslate"><span class="pre">timerange:BUFR,0</span></code> does not match</li>
-<li><code class="docutils literal notranslate"><span class="pre">timerange:BUFR,6m</span></code> does not match</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">timerange:BUFR</span></code> matches</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">timerange:BUFR,6h</span></code> matches</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">timerange:BUFR,360m</span></code> matches</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">timerange:BUFR,21600s</span></code> matches</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">timerange:BUFR,0</span></code> does not match</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">timerange:BUFR,6m</span></code> does not match</p></li>
 </ul>
 <div class="toctree-wrapper compound">
 </div>
@@ -172,6 +170,8 @@ will match.</p>
 <li class="toctree-l1"><a class="reference internal" href="../datasets.html">Datasets</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../segments.html">Data segments</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../http-api.html">arki-server HTTP API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../python-howtos/index.html">Arkimet Python HOWTOs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../python-howtos/index.html#indices-and-tables">Indices and tables</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../python/index.html">Arkimet Python API</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../python/index.html#indices-and-tables">Indices and tables</a></li>
 </ul>
@@ -188,13 +188,11 @@ will match.</p>
 </ul>
 </div>
 <div id="searchbox" style="display: none" role="search">
-  <h3>Quick search</h3>
+  <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="../search.html" method="get">
-      <input type="text" name="q" />
+      <input type="text" name="q" aria-labelledby="searchlabel" />
       <input type="submit" value="Go" />
-      <input type="hidden" name="check_keywords" value="yes" />
-      <input type="hidden" name="area" value="default" />
     </form>
     </div>
 </div>
@@ -215,7 +213,7 @@ will match.</p>
       &copy;2019, Enrico Zini.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.8.4</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.2.2</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |

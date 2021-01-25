@@ -1,11 +1,9 @@
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html>
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
-    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta charset="utf-8" />
     <title>Matching areas &#8212; arkimet 1.16 documentation</title>
     <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
@@ -47,15 +45,15 @@ gets set by the GRIB scanning configuration.</p>
 <h3>Examples<a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h3>
 <p>Given area <code class="docutils literal notranslate"><span class="pre">GRIB(lat=45000,</span> <span class="pre">lon=12000)</span></code>:</p>
 <ul class="simple">
-<li><code class="docutils literal notranslate"><span class="pre">area:GRIB:lat=45000</span></code> matches</li>
-<li><code class="docutils literal notranslate"><span class="pre">area:GRIB:lat=45000,lon=12000</span></code> matches</li>
-<li><code class="docutils literal notranslate"><span class="pre">area:GRIB:lat=45,lon=12</span></code> does not match</li>
-<li><code class="docutils literal notranslate"><span class="pre">area:GRIB:answer=42</span></code> does not match</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">area:GRIB:lat=45000</span></code> matches</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">area:GRIB:lat=45000,lon=12000</span></code> matches</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">area:GRIB:lat=45,lon=12</span></code> does not match</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">area:GRIB:answer=42</span></code> does not match</p></li>
 </ul>
 <p>Given area <code class="docutils literal notranslate"><span class="pre">GRIB(blo=10,</span> <span class="pre">lat=5480000,</span> <span class="pre">lon=895000,</span> <span class="pre">sta=22)</span></code></p>
 <ul class="simple">
-<li><code class="docutils literal notranslate"><span class="pre">area:GRIB:sta=22</span></code> matches</li>
-<li><code class="docutils literal notranslate"><span class="pre">area:GRIB:sta=88</span></code> does not match</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">area:GRIB:sta=22</span></code> matches</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">area:GRIB:sta=88</span></code> does not match</p></li>
 </ul>
 </div>
 </div>
@@ -73,8 +71,8 @@ so particular attention must be paid by user.</p>
 <h3>Examples<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h3>
 <p>Given area <code class="docutils literal notranslate"><span class="pre">ODIMH5(lat=45000000,</span> <span class="pre">lon=30000000,</span> <span class="pre">radius=1000)</span></code></p>
 <ul class="simple">
-<li><code class="docutils literal notranslate"><span class="pre">area:ODIMH5:lat=45000000,lon=30000000,radius=1000</span></code> matches</li>
-<li><code class="docutils literal notranslate"><span class="pre">area:GRIB:sta=88</span></code> does not match</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">area:ODIMH5:lat=45000000,lon=30000000,radius=1000</span></code> matches</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">area:GRIB:sta=88</span></code> does not match</p></li>
 </ul>
 </div>
 </div>
@@ -90,11 +88,11 @@ attribute table.</p>
 <p>Assume that area with id 1 has the attributes <code class="docutils literal notranslate"><span class="pre">{lon=1207738,lat=4460016,rep=&quot;locali&quot;}</span></code></p>
 <p>Given area <code class="docutils literal notranslate"><span class="pre">VM2(1)</span></code></p>
 <ul class="simple">
-<li><code class="docutils literal notranslate"><span class="pre">area:VM2,1</span></code> matches</li>
-<li><code class="docutils literal notranslate"><span class="pre">area:VM2:lon=1207738,lat=4460016,rep=locali</span></code> matches</li>
-<li><code class="docutils literal notranslate"><span class="pre">area:VM2:rep=locali</span></code> matches</li>
-<li><code class="docutils literal notranslate"><span class="pre">area:VM2,2</span></code> does not match</li>
-<li><code class="docutils literal notranslate"><span class="pre">area:VM2:answer=42</span></code> does not match</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">area:VM2,1</span></code> matches</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">area:VM2:lon=1207738,lat=4460016,rep=locali</span></code> matches</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">area:VM2:rep=locali</span></code> matches</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">area:VM2,2</span></code> does not match</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">area:VM2:answer=42</span></code> does not match</p></li>
 </ul>
 </div>
 </div>
@@ -105,10 +103,10 @@ attribute table.</p>
 represented by a WKT geometry.</p>
 <p>Available verbs:</p>
 <ul class="simple">
-<li><code class="docutils literal notranslate"><span class="pre">equals</span></code>: the bounding box to match must be the same as the sample value</li>
-<li><code class="docutils literal notranslate"><span class="pre">covers</span></code>: the bounding box to match must contain the sample value</li>
-<li><code class="docutils literal notranslate"><span class="pre">coveredby</span></code>: the bounding box to match must be contained inside the sample value</li>
-<li><code class="docutils literal notranslate"><span class="pre">intersects</span></code>: the bounding box to match must intersect the sample value</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">equals</span></code>: the bounding box to match must be the same as the sample value</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">covers</span></code>: the bounding box to match must contain the sample value</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">coveredby</span></code>: the bounding box to match must be contained inside the sample value</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">intersects</span></code>: the bounding box to match must intersect the sample value</p></li>
 </ul>
 <p>See: &lt;<a class="reference external" href="http://www.cs.montana.edu/courses/535/resources/Understanding%20spatial%20relations.htm">http://www.cs.montana.edu/courses/535/resources/Understanding%20spatial%20relations.htm</a>&gt;</p>
 <div class="section" id="id3">
@@ -116,59 +114,59 @@ represented by a WKT geometry.</p>
 <p>Given area <code class="docutils literal notranslate"><span class="pre">GRIB(Ni=441,</span> <span class="pre">Nj=181,</span> <span class="pre">latfirst=45000000,</span> <span class="pre">latlast=43000000,</span> <span class="pre">lonfirst=10000000,</span> <span class="pre">lonlast=12000000,</span> <span class="pre">type=0)</span></code></p>
 <p><code class="docutils literal notranslate"><span class="pre">equals</span></code>:</p>
 <ul class="simple">
-<li><code class="docutils literal notranslate"><span class="pre">area:</span> <span class="pre">bbox</span> <span class="pre">equals</span> <span class="pre">POLYGON((10</span> <span class="pre">43,</span> <span class="pre">12</span> <span class="pre">43,</span> <span class="pre">12</span> <span class="pre">45,</span> <span class="pre">10</span> <span class="pre">45,</span> <span class="pre">10</span> <span class="pre">43))</span></code> matches</li>
-<li><code class="docutils literal notranslate"><span class="pre">area:</span> <span class="pre">bbox</span> <span class="pre">equals</span> <span class="pre">POINT</span> <span class="pre">EMPTY</span></code> does not match</li>
-<li><code class="docutils literal notranslate"><span class="pre">area:</span> <span class="pre">bbox</span> <span class="pre">equals</span> <span class="pre">POINT(11</span> <span class="pre">44)</span></code> does not match</li>
-<li><code class="docutils literal notranslate"><span class="pre">area:</span> <span class="pre">bbox</span> <span class="pre">equals</span> <span class="pre">POLYGON((12</span> <span class="pre">43,</span> <span class="pre">10</span> <span class="pre">44,</span> <span class="pre">12</span> <span class="pre">45,</span> <span class="pre">12</span> <span class="pre">43))</span></code> does not match</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">area:</span> <span class="pre">bbox</span> <span class="pre">equals</span> <span class="pre">POLYGON((10</span> <span class="pre">43,</span> <span class="pre">12</span> <span class="pre">43,</span> <span class="pre">12</span> <span class="pre">45,</span> <span class="pre">10</span> <span class="pre">45,</span> <span class="pre">10</span> <span class="pre">43))</span></code> matches</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">area:</span> <span class="pre">bbox</span> <span class="pre">equals</span> <span class="pre">POINT</span> <span class="pre">EMPTY</span></code> does not match</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">area:</span> <span class="pre">bbox</span> <span class="pre">equals</span> <span class="pre">POINT(11</span> <span class="pre">44)</span></code> does not match</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">area:</span> <span class="pre">bbox</span> <span class="pre">equals</span> <span class="pre">POLYGON((12</span> <span class="pre">43,</span> <span class="pre">10</span> <span class="pre">44,</span> <span class="pre">12</span> <span class="pre">45,</span> <span class="pre">12</span> <span class="pre">43))</span></code> does not match</p></li>
 </ul>
 <p><code class="docutils literal notranslate"><span class="pre">covers</span></code>:</p>
 <ul class="simple">
-<li><code class="docutils literal notranslate"><span class="pre">area:</span> <span class="pre">bbox</span> <span class="pre">covers</span> <span class="pre">POINT(11</span> <span class="pre">44)</span></code> matches</li>
-<li><code class="docutils literal notranslate"><span class="pre">area:</span> <span class="pre">bbox</span> <span class="pre">covers</span> <span class="pre">POINT(12</span> <span class="pre">43)</span></code> matches</li>
-<li><code class="docutils literal notranslate"><span class="pre">area:</span> <span class="pre">bbox</span> <span class="pre">covers</span> <span class="pre">LINESTRING(10</span> <span class="pre">43,</span> <span class="pre">10</span> <span class="pre">45,</span> <span class="pre">12</span> <span class="pre">45,</span> <span class="pre">12</span> <span class="pre">43,</span> <span class="pre">10</span> <span class="pre">43)</span></code> matches</li>
-<li><code class="docutils literal notranslate"><span class="pre">area:</span> <span class="pre">bbox</span> <span class="pre">covers</span> <span class="pre">POLYGON((10</span> <span class="pre">43,</span> <span class="pre">10</span> <span class="pre">45,</span> <span class="pre">12</span> <span class="pre">45,</span> <span class="pre">12</span> <span class="pre">43,</span> <span class="pre">10</span> <span class="pre">43))</span></code> matches</li>
-<li><code class="docutils literal notranslate"><span class="pre">area:</span> <span class="pre">bbox</span> <span class="pre">covers</span> <span class="pre">POLYGON((10.5</span> <span class="pre">43.5,</span> <span class="pre">10.5</span> <span class="pre">44.5,</span> <span class="pre">11.5</span> <span class="pre">44.5,</span> <span class="pre">11.5</span> <span class="pre">43.5,</span> <span class="pre">10.5</span> <span class="pre">43.5))</span></code> matches</li>
-<li><code class="docutils literal notranslate"><span class="pre">area:</span> <span class="pre">bbox</span> <span class="pre">covers</span> <span class="pre">POLYGON((12</span> <span class="pre">43,</span> <span class="pre">10</span> <span class="pre">44,</span> <span class="pre">12</span> <span class="pre">45,</span> <span class="pre">12</span> <span class="pre">43))</span></code> matches</li>
-<li><code class="docutils literal notranslate"><span class="pre">area:</span> <span class="pre">bbox</span> <span class="pre">covers</span> <span class="pre">POINT(11</span> <span class="pre">40)</span></code> does not match</li>
-<li><code class="docutils literal notranslate"><span class="pre">area:</span> <span class="pre">bbox</span> <span class="pre">covers</span> <span class="pre">POINT(13</span> <span class="pre">44)</span></code> does not match</li>
-<li><code class="docutils literal notranslate"><span class="pre">area:</span> <span class="pre">bbox</span> <span class="pre">covers</span> <span class="pre">POINT(</span> <span class="pre">5</span> <span class="pre">40)</span></code> does not match</li>
-<li><code class="docutils literal notranslate"><span class="pre">area:</span> <span class="pre">bbox</span> <span class="pre">covers</span> <span class="pre">LINESTRING(10</span> <span class="pre">43,</span> <span class="pre">10</span> <span class="pre">45,</span> <span class="pre">13</span> <span class="pre">45,</span> <span class="pre">13</span> <span class="pre">43,</span> <span class="pre">10</span> <span class="pre">43)</span></code> does not match</li>
-<li><code class="docutils literal notranslate"><span class="pre">area:</span> <span class="pre">bbox</span> <span class="pre">covers</span> <span class="pre">POLYGON((10</span> <span class="pre">43,</span> <span class="pre">10</span> <span class="pre">45,</span> <span class="pre">13</span> <span class="pre">45,</span> <span class="pre">13</span> <span class="pre">43,</span> <span class="pre">10</span> <span class="pre">43))</span></code> does not match</li>
-<li><code class="docutils literal notranslate"><span class="pre">area:</span> <span class="pre">bbox</span> <span class="pre">covers</span> <span class="pre">POLYGON((12</span> <span class="pre">42,</span> <span class="pre">10</span> <span class="pre">44,</span> <span class="pre">12</span> <span class="pre">45,</span> <span class="pre">12</span> <span class="pre">42))</span></code> does not match</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">area:</span> <span class="pre">bbox</span> <span class="pre">covers</span> <span class="pre">POINT(11</span> <span class="pre">44)</span></code> matches</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">area:</span> <span class="pre">bbox</span> <span class="pre">covers</span> <span class="pre">POINT(12</span> <span class="pre">43)</span></code> matches</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">area:</span> <span class="pre">bbox</span> <span class="pre">covers</span> <span class="pre">LINESTRING(10</span> <span class="pre">43,</span> <span class="pre">10</span> <span class="pre">45,</span> <span class="pre">12</span> <span class="pre">45,</span> <span class="pre">12</span> <span class="pre">43,</span> <span class="pre">10</span> <span class="pre">43)</span></code> matches</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">area:</span> <span class="pre">bbox</span> <span class="pre">covers</span> <span class="pre">POLYGON((10</span> <span class="pre">43,</span> <span class="pre">10</span> <span class="pre">45,</span> <span class="pre">12</span> <span class="pre">45,</span> <span class="pre">12</span> <span class="pre">43,</span> <span class="pre">10</span> <span class="pre">43))</span></code> matches</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">area:</span> <span class="pre">bbox</span> <span class="pre">covers</span> <span class="pre">POLYGON((10.5</span> <span class="pre">43.5,</span> <span class="pre">10.5</span> <span class="pre">44.5,</span> <span class="pre">11.5</span> <span class="pre">44.5,</span> <span class="pre">11.5</span> <span class="pre">43.5,</span> <span class="pre">10.5</span> <span class="pre">43.5))</span></code> matches</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">area:</span> <span class="pre">bbox</span> <span class="pre">covers</span> <span class="pre">POLYGON((12</span> <span class="pre">43,</span> <span class="pre">10</span> <span class="pre">44,</span> <span class="pre">12</span> <span class="pre">45,</span> <span class="pre">12</span> <span class="pre">43))</span></code> matches</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">area:</span> <span class="pre">bbox</span> <span class="pre">covers</span> <span class="pre">POINT(11</span> <span class="pre">40)</span></code> does not match</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">area:</span> <span class="pre">bbox</span> <span class="pre">covers</span> <span class="pre">POINT(13</span> <span class="pre">44)</span></code> does not match</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">area:</span> <span class="pre">bbox</span> <span class="pre">covers</span> <span class="pre">POINT(</span> <span class="pre">5</span> <span class="pre">40)</span></code> does not match</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">area:</span> <span class="pre">bbox</span> <span class="pre">covers</span> <span class="pre">LINESTRING(10</span> <span class="pre">43,</span> <span class="pre">10</span> <span class="pre">45,</span> <span class="pre">13</span> <span class="pre">45,</span> <span class="pre">13</span> <span class="pre">43,</span> <span class="pre">10</span> <span class="pre">43)</span></code> does not match</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">area:</span> <span class="pre">bbox</span> <span class="pre">covers</span> <span class="pre">POLYGON((10</span> <span class="pre">43,</span> <span class="pre">10</span> <span class="pre">45,</span> <span class="pre">13</span> <span class="pre">45,</span> <span class="pre">13</span> <span class="pre">43,</span> <span class="pre">10</span> <span class="pre">43))</span></code> does not match</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">area:</span> <span class="pre">bbox</span> <span class="pre">covers</span> <span class="pre">POLYGON((12</span> <span class="pre">42,</span> <span class="pre">10</span> <span class="pre">44,</span> <span class="pre">12</span> <span class="pre">45,</span> <span class="pre">12</span> <span class="pre">42))</span></code> does not match</p></li>
 </ul>
 <p><code class="docutils literal notranslate"><span class="pre">intersects</span></code>:</p>
 <ul class="simple">
-<li><code class="docutils literal notranslate"><span class="pre">area:</span> <span class="pre">bbox</span> <span class="pre">intersects</span> <span class="pre">POINT(11</span> <span class="pre">44)</span></code> matches</li>
-<li><code class="docutils literal notranslate"><span class="pre">area:</span> <span class="pre">bbox</span> <span class="pre">intersects</span> <span class="pre">POINT(12</span> <span class="pre">43)</span></code> matches</li>
-<li><code class="docutils literal notranslate"><span class="pre">area:</span> <span class="pre">bbox</span> <span class="pre">intersects</span> <span class="pre">LINESTRING(10</span> <span class="pre">43,</span> <span class="pre">10</span> <span class="pre">45,</span> <span class="pre">12</span> <span class="pre">45,</span> <span class="pre">12</span> <span class="pre">43,</span> <span class="pre">10</span> <span class="pre">43)</span></code> matches</li>
-<li><code class="docutils literal notranslate"><span class="pre">area:</span> <span class="pre">bbox</span> <span class="pre">intersects</span> <span class="pre">POLYGON((10</span> <span class="pre">43,</span> <span class="pre">10</span> <span class="pre">45,</span> <span class="pre">12</span> <span class="pre">45,</span> <span class="pre">12</span> <span class="pre">43,</span> <span class="pre">10</span> <span class="pre">43))</span></code> matches</li>
-<li><code class="docutils literal notranslate"><span class="pre">area:</span> <span class="pre">bbox</span> <span class="pre">intersects</span> <span class="pre">POLYGON((10.5</span> <span class="pre">43.5,</span> <span class="pre">10.5</span> <span class="pre">44.5,</span> <span class="pre">11.5</span> <span class="pre">44.5,</span> <span class="pre">11.5</span> <span class="pre">43.5,</span> <span class="pre">10.5</span> <span class="pre">43.5))</span></code> matches</li>
-<li><code class="docutils literal notranslate"><span class="pre">area:</span> <span class="pre">bbox</span> <span class="pre">intersects</span> <span class="pre">POLYGON((12</span> <span class="pre">43,</span> <span class="pre">10</span> <span class="pre">44,</span> <span class="pre">12</span> <span class="pre">45,</span> <span class="pre">12</span> <span class="pre">43))</span></code> matches</li>
-<li><code class="docutils literal notranslate"><span class="pre">area:</span> <span class="pre">bbox</span> <span class="pre">intersects</span> <span class="pre">POLYGON((10</span> <span class="pre">43,</span> <span class="pre">10</span> <span class="pre">45,</span> <span class="pre">13</span> <span class="pre">45,</span> <span class="pre">13</span> <span class="pre">43,</span> <span class="pre">10</span> <span class="pre">43))</span></code> matches</li>
-<li><code class="docutils literal notranslate"><span class="pre">area:</span> <span class="pre">bbox</span> <span class="pre">intersects</span> <span class="pre">POLYGON((12</span> <span class="pre">42,</span> <span class="pre">10</span> <span class="pre">44,</span> <span class="pre">12</span> <span class="pre">45,</span> <span class="pre">12</span> <span class="pre">42))</span></code> matches</li>
-<li><code class="docutils literal notranslate"><span class="pre">area:</span> <span class="pre">bbox</span> <span class="pre">intersects</span> <span class="pre">POLYGON((9</span> <span class="pre">40,</span> <span class="pre">10</span> <span class="pre">43,</span> <span class="pre">10</span> <span class="pre">40,</span> <span class="pre">9</span> <span class="pre">40))</span></code> matches: Touches one vertex</li>
-<li><code class="docutils literal notranslate"><span class="pre">area:</span> <span class="pre">bbox</span> <span class="pre">intersects</span> <span class="pre">POINT(11</span> <span class="pre">40)</span></code> does not match – Outside</li>
-<li><code class="docutils literal notranslate"><span class="pre">area:</span> <span class="pre">bbox</span> <span class="pre">intersects</span> <span class="pre">POINT(13</span> <span class="pre">44)</span></code> does not match – Outside</li>
-<li><code class="docutils literal notranslate"><span class="pre">area:</span> <span class="pre">bbox</span> <span class="pre">intersects</span> <span class="pre">POINT(</span> <span class="pre">5</span> <span class="pre">40)</span></code> does not match – Outside</li>
-<li><code class="docutils literal notranslate"><span class="pre">area:</span> <span class="pre">bbox</span> <span class="pre">intersects</span> <span class="pre">LINESTRING(9</span> <span class="pre">40,</span> <span class="pre">10</span> <span class="pre">42,</span> <span class="pre">10</span> <span class="pre">40,</span> <span class="pre">9</span> <span class="pre">40)</span></code> does not match – Disjoint</li>
-<li><code class="docutils literal notranslate"><span class="pre">area:</span> <span class="pre">bbox</span> <span class="pre">intersects</span> <span class="pre">POLYGON((9</span> <span class="pre">40,</span> <span class="pre">10</span> <span class="pre">42,</span> <span class="pre">10</span> <span class="pre">40,</span> <span class="pre">9</span> <span class="pre">40))</span></code> does not match – Disjoint</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">area:</span> <span class="pre">bbox</span> <span class="pre">intersects</span> <span class="pre">POINT(11</span> <span class="pre">44)</span></code> matches</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">area:</span> <span class="pre">bbox</span> <span class="pre">intersects</span> <span class="pre">POINT(12</span> <span class="pre">43)</span></code> matches</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">area:</span> <span class="pre">bbox</span> <span class="pre">intersects</span> <span class="pre">LINESTRING(10</span> <span class="pre">43,</span> <span class="pre">10</span> <span class="pre">45,</span> <span class="pre">12</span> <span class="pre">45,</span> <span class="pre">12</span> <span class="pre">43,</span> <span class="pre">10</span> <span class="pre">43)</span></code> matches</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">area:</span> <span class="pre">bbox</span> <span class="pre">intersects</span> <span class="pre">POLYGON((10</span> <span class="pre">43,</span> <span class="pre">10</span> <span class="pre">45,</span> <span class="pre">12</span> <span class="pre">45,</span> <span class="pre">12</span> <span class="pre">43,</span> <span class="pre">10</span> <span class="pre">43))</span></code> matches</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">area:</span> <span class="pre">bbox</span> <span class="pre">intersects</span> <span class="pre">POLYGON((10.5</span> <span class="pre">43.5,</span> <span class="pre">10.5</span> <span class="pre">44.5,</span> <span class="pre">11.5</span> <span class="pre">44.5,</span> <span class="pre">11.5</span> <span class="pre">43.5,</span> <span class="pre">10.5</span> <span class="pre">43.5))</span></code> matches</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">area:</span> <span class="pre">bbox</span> <span class="pre">intersects</span> <span class="pre">POLYGON((12</span> <span class="pre">43,</span> <span class="pre">10</span> <span class="pre">44,</span> <span class="pre">12</span> <span class="pre">45,</span> <span class="pre">12</span> <span class="pre">43))</span></code> matches</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">area:</span> <span class="pre">bbox</span> <span class="pre">intersects</span> <span class="pre">POLYGON((10</span> <span class="pre">43,</span> <span class="pre">10</span> <span class="pre">45,</span> <span class="pre">13</span> <span class="pre">45,</span> <span class="pre">13</span> <span class="pre">43,</span> <span class="pre">10</span> <span class="pre">43))</span></code> matches</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">area:</span> <span class="pre">bbox</span> <span class="pre">intersects</span> <span class="pre">POLYGON((12</span> <span class="pre">42,</span> <span class="pre">10</span> <span class="pre">44,</span> <span class="pre">12</span> <span class="pre">45,</span> <span class="pre">12</span> <span class="pre">42))</span></code> matches</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">area:</span> <span class="pre">bbox</span> <span class="pre">intersects</span> <span class="pre">POLYGON((9</span> <span class="pre">40,</span> <span class="pre">10</span> <span class="pre">43,</span> <span class="pre">10</span> <span class="pre">40,</span> <span class="pre">9</span> <span class="pre">40))</span></code> matches: Touches one vertex</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">area:</span> <span class="pre">bbox</span> <span class="pre">intersects</span> <span class="pre">POINT(11</span> <span class="pre">40)</span></code> does not match – Outside</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">area:</span> <span class="pre">bbox</span> <span class="pre">intersects</span> <span class="pre">POINT(13</span> <span class="pre">44)</span></code> does not match – Outside</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">area:</span> <span class="pre">bbox</span> <span class="pre">intersects</span> <span class="pre">POINT(</span> <span class="pre">5</span> <span class="pre">40)</span></code> does not match – Outside</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">area:</span> <span class="pre">bbox</span> <span class="pre">intersects</span> <span class="pre">LINESTRING(9</span> <span class="pre">40,</span> <span class="pre">10</span> <span class="pre">42,</span> <span class="pre">10</span> <span class="pre">40,</span> <span class="pre">9</span> <span class="pre">40)</span></code> does not match – Disjoint</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">area:</span> <span class="pre">bbox</span> <span class="pre">intersects</span> <span class="pre">POLYGON((9</span> <span class="pre">40,</span> <span class="pre">10</span> <span class="pre">42,</span> <span class="pre">10</span> <span class="pre">40,</span> <span class="pre">9</span> <span class="pre">40))</span></code> does not match – Disjoint</p></li>
 </ul>
 <p><code class="docutils literal notranslate"><span class="pre">coveredby</span></code>:</p>
 <ul class="simple">
-<li><code class="docutils literal notranslate"><span class="pre">area:</span> <span class="pre">bbox</span> <span class="pre">coveredby</span> <span class="pre">POLYGON((10</span> <span class="pre">43,</span> <span class="pre">10</span> <span class="pre">45,</span> <span class="pre">12</span> <span class="pre">45,</span> <span class="pre">12</span> <span class="pre">43,</span> <span class="pre">10</span> <span class="pre">43))</span></code> matches: Same shape</li>
-<li><code class="docutils literal notranslate"><span class="pre">area:</span> <span class="pre">bbox</span> <span class="pre">coveredby</span> <span class="pre">POLYGON((10</span> <span class="pre">43,</span> <span class="pre">10</span> <span class="pre">45,</span> <span class="pre">13</span> <span class="pre">45,</span> <span class="pre">13</span> <span class="pre">43,</span> <span class="pre">10</span> <span class="pre">43))</span></code> matches: Trapezoid containing area</li>
-<li><code class="docutils literal notranslate"><span class="pre">area:</span> <span class="pre">bbox</span> <span class="pre">coveredby</span> <span class="pre">POINT(11</span> <span class="pre">44)</span></code> does not match: Intersection exists but area is 0</li>
-<li><code class="docutils literal notranslate"><span class="pre">area:</span> <span class="pre">bbox</span> <span class="pre">coveredby</span> <span class="pre">POINT(12</span> <span class="pre">43)</span></code> does not match: Intersection exists but area is 0</li>
-<li><code class="docutils literal notranslate"><span class="pre">area:</span> <span class="pre">bbox</span> <span class="pre">coveredby</span> <span class="pre">POINT(11</span> <span class="pre">40)</span></code> does not match: Outside</li>
-<li><code class="docutils literal notranslate"><span class="pre">area:</span> <span class="pre">bbox</span> <span class="pre">coveredby</span> <span class="pre">POINT(13</span> <span class="pre">44)</span></code> does not match: Outside</li>
-<li><code class="docutils literal notranslate"><span class="pre">area:</span> <span class="pre">bbox</span> <span class="pre">coveredby</span> <span class="pre">POINT(</span> <span class="pre">5</span> <span class="pre">40)</span></code> does not match: Outside</li>
-<li><code class="docutils literal notranslate"><span class="pre">area:</span> <span class="pre">bbox</span> <span class="pre">coveredby</span> <span class="pre">POLYGON((12</span> <span class="pre">42,</span> <span class="pre">10</span> <span class="pre">44,</span> <span class="pre">12</span> <span class="pre">45,</span> <span class="pre">12</span> <span class="pre">42))</span></code> does not match</li>
-<li><code class="docutils literal notranslate"><span class="pre">area:</span> <span class="pre">bbox</span> <span class="pre">coveredby</span> <span class="pre">POLYGON((12</span> <span class="pre">43,</span> <span class="pre">10</span> <span class="pre">44,</span> <span class="pre">12</span> <span class="pre">45,</span> <span class="pre">12</span> <span class="pre">43))</span></code> does not match: Triangle contained inside, touching borders (?)</li>
-<li><code class="docutils literal notranslate"><span class="pre">area:</span> <span class="pre">bbox</span> <span class="pre">coveredby</span> <span class="pre">POLYGON((10.5</span> <span class="pre">43.5,</span> <span class="pre">10.5</span> <span class="pre">44.5,</span> <span class="pre">11.5</span> <span class="pre">44.5,</span> <span class="pre">11.5</span> <span class="pre">43.5,</span> <span class="pre">10.5</span> <span class="pre">43.5))</span></code> does not match: Fully inside</li>
-<li><code class="docutils literal notranslate"><span class="pre">area:</span> <span class="pre">bbox</span> <span class="pre">coveredby</span> <span class="pre">LINESTRING(10</span> <span class="pre">43,</span> <span class="pre">10</span> <span class="pre">45,</span> <span class="pre">12</span> <span class="pre">45,</span> <span class="pre">12</span> <span class="pre">43,</span> <span class="pre">10</span> <span class="pre">43)</span></code> does not match:Same shape, but intersection area is 0</li>
-<li><code class="docutils literal notranslate"><span class="pre">area:</span> <span class="pre">bbox</span> <span class="pre">coveredby</span> <span class="pre">POLYGON((9</span> <span class="pre">40,</span> <span class="pre">10</span> <span class="pre">43,</span> <span class="pre">10</span> <span class="pre">40,</span> <span class="pre">9</span> <span class="pre">40))</span></code> does not match: Touches one vertex</li>
-<li><code class="docutils literal notranslate"><span class="pre">area:</span> <span class="pre">bbox</span> <span class="pre">coveredby</span> <span class="pre">LINESTRING(9</span> <span class="pre">40,</span> <span class="pre">10</span> <span class="pre">42,</span> <span class="pre">10</span> <span class="pre">40,</span> <span class="pre">9</span> <span class="pre">40)</span></code> does not match:Disjoint</li>
-<li><code class="docutils literal notranslate"><span class="pre">area:</span> <span class="pre">bbox</span> <span class="pre">coveredby</span> <span class="pre">POLYGON((9</span> <span class="pre">40,</span> <span class="pre">10</span> <span class="pre">42,</span> <span class="pre">10</span> <span class="pre">40,</span> <span class="pre">9</span> <span class="pre">40))</span></code> does not match: Disjoint</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">area:</span> <span class="pre">bbox</span> <span class="pre">coveredby</span> <span class="pre">POLYGON((10</span> <span class="pre">43,</span> <span class="pre">10</span> <span class="pre">45,</span> <span class="pre">12</span> <span class="pre">45,</span> <span class="pre">12</span> <span class="pre">43,</span> <span class="pre">10</span> <span class="pre">43))</span></code> matches: Same shape</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">area:</span> <span class="pre">bbox</span> <span class="pre">coveredby</span> <span class="pre">POLYGON((10</span> <span class="pre">43,</span> <span class="pre">10</span> <span class="pre">45,</span> <span class="pre">13</span> <span class="pre">45,</span> <span class="pre">13</span> <span class="pre">43,</span> <span class="pre">10</span> <span class="pre">43))</span></code> matches: Trapezoid containing area</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">area:</span> <span class="pre">bbox</span> <span class="pre">coveredby</span> <span class="pre">POINT(11</span> <span class="pre">44)</span></code> does not match: Intersection exists but area is 0</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">area:</span> <span class="pre">bbox</span> <span class="pre">coveredby</span> <span class="pre">POINT(12</span> <span class="pre">43)</span></code> does not match: Intersection exists but area is 0</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">area:</span> <span class="pre">bbox</span> <span class="pre">coveredby</span> <span class="pre">POINT(11</span> <span class="pre">40)</span></code> does not match: Outside</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">area:</span> <span class="pre">bbox</span> <span class="pre">coveredby</span> <span class="pre">POINT(13</span> <span class="pre">44)</span></code> does not match: Outside</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">area:</span> <span class="pre">bbox</span> <span class="pre">coveredby</span> <span class="pre">POINT(</span> <span class="pre">5</span> <span class="pre">40)</span></code> does not match: Outside</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">area:</span> <span class="pre">bbox</span> <span class="pre">coveredby</span> <span class="pre">POLYGON((12</span> <span class="pre">42,</span> <span class="pre">10</span> <span class="pre">44,</span> <span class="pre">12</span> <span class="pre">45,</span> <span class="pre">12</span> <span class="pre">42))</span></code> does not match</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">area:</span> <span class="pre">bbox</span> <span class="pre">coveredby</span> <span class="pre">POLYGON((12</span> <span class="pre">43,</span> <span class="pre">10</span> <span class="pre">44,</span> <span class="pre">12</span> <span class="pre">45,</span> <span class="pre">12</span> <span class="pre">43))</span></code> does not match: Triangle contained inside, touching borders (?)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">area:</span> <span class="pre">bbox</span> <span class="pre">coveredby</span> <span class="pre">POLYGON((10.5</span> <span class="pre">43.5,</span> <span class="pre">10.5</span> <span class="pre">44.5,</span> <span class="pre">11.5</span> <span class="pre">44.5,</span> <span class="pre">11.5</span> <span class="pre">43.5,</span> <span class="pre">10.5</span> <span class="pre">43.5))</span></code> does not match: Fully inside</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">area:</span> <span class="pre">bbox</span> <span class="pre">coveredby</span> <span class="pre">LINESTRING(10</span> <span class="pre">43,</span> <span class="pre">10</span> <span class="pre">45,</span> <span class="pre">12</span> <span class="pre">45,</span> <span class="pre">12</span> <span class="pre">43,</span> <span class="pre">10</span> <span class="pre">43)</span></code> does not match:Same shape, but intersection area is 0</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">area:</span> <span class="pre">bbox</span> <span class="pre">coveredby</span> <span class="pre">POLYGON((9</span> <span class="pre">40,</span> <span class="pre">10</span> <span class="pre">43,</span> <span class="pre">10</span> <span class="pre">40,</span> <span class="pre">9</span> <span class="pre">40))</span></code> does not match: Touches one vertex</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">area:</span> <span class="pre">bbox</span> <span class="pre">coveredby</span> <span class="pre">LINESTRING(9</span> <span class="pre">40,</span> <span class="pre">10</span> <span class="pre">42,</span> <span class="pre">10</span> <span class="pre">40,</span> <span class="pre">9</span> <span class="pre">40)</span></code> does not match:Disjoint</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">area:</span> <span class="pre">bbox</span> <span class="pre">coveredby</span> <span class="pre">POLYGON((9</span> <span class="pre">40,</span> <span class="pre">10</span> <span class="pre">42,</span> <span class="pre">10</span> <span class="pre">40,</span> <span class="pre">9</span> <span class="pre">40))</span></code> does not match: Disjoint</p></li>
 </ul>
 <div class="toctree-wrapper compound">
 </div>
@@ -202,6 +200,8 @@ represented by a WKT geometry.</p>
 <li class="toctree-l1"><a class="reference internal" href="../datasets.html">Datasets</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../segments.html">Data segments</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../http-api.html">arki-server HTTP API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../python-howtos/index.html">Arkimet Python HOWTOs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../python-howtos/index.html#indices-and-tables">Indices and tables</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../python/index.html">Arkimet Python API</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../python/index.html#indices-and-tables">Indices and tables</a></li>
 </ul>
@@ -218,13 +218,11 @@ represented by a WKT geometry.</p>
 </ul>
 </div>
 <div id="searchbox" style="display: none" role="search">
-  <h3>Quick search</h3>
+  <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="../search.html" method="get">
-      <input type="text" name="q" />
+      <input type="text" name="q" aria-labelledby="searchlabel" />
       <input type="submit" value="Go" />
-      <input type="hidden" name="check_keywords" value="yes" />
-      <input type="hidden" name="area" value="default" />
     </form>
     </div>
 </div>
@@ -245,7 +243,7 @@ represented by a WKT geometry.</p>
       &copy;2019, Enrico Zini.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.8.4</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.2.2</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |

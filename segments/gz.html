@@ -1,11 +1,9 @@
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html>
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
-    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta charset="utf-8" />
     <title>gz and gzidx segments &#8212; arkimet 1.16 documentation</title>
     <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
@@ -56,18 +54,18 @@ read. This configuration is highly dependeny on the specific datasets,
 considering:</p>
 <blockquote>
 <div><ul class="simple">
-<li>how big is a segment: for small segments, grouping makes little sense;</li>
-<li>how big are data items: if they are big, compressing them all together makes
-little sense, and you may want a zip segment (see <a class="reference internal" href="zip.html#segments-zip"><span class="std std-ref">zip segments</span></a>) instead;</li>
-<li>what kind of queries are made to the dataset: if queries need most of its
+<li><p>how big is a segment: for small segments, grouping makes little sense;</p></li>
+<li><p>how big are data items: if they are big, compressing them all together makes
+little sense, and you may want a zip segment (see <a class="reference internal" href="zip.html#segments-zip"><span class="std std-ref">zip segments</span></a>) instead;</p></li>
+<li><p>what kind of queries are made to the dataset: if queries need most of its
 contents, all needs to be decompressed anyway and grouping makes little
-sense;</li>
-<li>what kind of storage is used to store the segment: an SSD with no seek time
+sense;</p></li>
+<li><p>what kind of storage is used to store the segment: an SSD with no seek time
 would make grouping more convenient, while a sequential disk with high seek
 times might require more time in the seeks needed to read the index than it
 would take to sequentially read the whole segment. A remote storage which
 would require downloading all the segment from the network to access it
-would also make grouping optimization unnecessary.</li>
+would also make grouping optimization unnecessary.</p></li>
 </ul>
 </div></blockquote>
 <p>If you have very large segments made up of very small data items, which gets
@@ -107,6 +105,8 @@ time, then tweaking compression grouping could help.</p>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../http-api.html">arki-server HTTP API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../python-howtos/index.html">Arkimet Python HOWTOs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../python-howtos/index.html#indices-and-tables">Indices and tables</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../python/index.html">Arkimet Python API</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../python/index.html#indices-and-tables">Indices and tables</a></li>
 </ul>
@@ -123,13 +123,11 @@ time, then tweaking compression grouping could help.</p>
 </ul>
 </div>
 <div id="searchbox" style="display: none" role="search">
-  <h3>Quick search</h3>
+  <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="../search.html" method="get">
-      <input type="text" name="q" />
+      <input type="text" name="q" aria-labelledby="searchlabel" />
       <input type="submit" value="Go" />
-      <input type="hidden" name="check_keywords" value="yes" />
-      <input type="hidden" name="area" value="default" />
     </form>
     </div>
 </div>
@@ -150,7 +148,7 @@ time, then tweaking compression grouping could help.</p>
       &copy;2019, Enrico Zini.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.8.4</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.2.2</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |

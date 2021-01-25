@@ -1,11 +1,9 @@
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html>
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
-    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta charset="utf-8" />
     <title>Datasets &#8212; arkimet 1.16 documentation</title>
     <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
@@ -69,6 +67,40 @@ queried.</p>
 </li>
 </ul>
 </div>
+<div class="section" id="dataset-configuration">
+<h2>Dataset configuration<a class="headerlink" href="#dataset-configuration" title="Permalink to this headline">¶</a></h2>
+<p>Datasets are configured with simple <code class="docutils literal notranslate"><span class="pre">key</span> <span class="pre">=</span> <span class="pre">value</span></code> configuration options.</p>
+<p>These are all the supported options:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">type</span></code>: dataset type (one of <code class="docutils literal notranslate"><span class="pre">iseg</span></code>, <code class="docutils literal notranslate"><span class="pre">ondisk2</span></code>, <code class="docutils literal notranslate"><span class="pre">simple</span></code>, <code class="docutils literal notranslate"><span class="pre">error</span></code>,
+<code class="docutils literal notranslate"><span class="pre">duplicates</span></code>, <code class="docutils literal notranslate"><span class="pre">remote</span></code>, <code class="docutils literal notranslate"><span class="pre">outbound</span></code>, <code class="docutils literal notranslate"><span class="pre">discard</span></code>, <code class="docutils literal notranslate"><span class="pre">file</span></code>).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">path</span></code>: path to the dataset, or URL for <code class="docutils literal notranslate"><span class="pre">remote</span></code> datasets.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">format</span></code>: format of data in the dataset (one of <code class="docutils literal notranslate"><span class="pre">grib</span></code>, <code class="docutils literal notranslate"><span class="pre">bufr</span></code>, <code class="docutils literal notranslate"><span class="pre">odimh5</span></code>, <code class="docutils literal notranslate"><span class="pre">vm2</span></code>)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">step</span></code>: segmentation step for the dataset (one of <code class="docutils literal notranslate"><span class="pre">daily</span></code>, <code class="docutils literal notranslate"><span class="pre">weekly</span></code>,
+<code class="docutils literal notranslate"><span class="pre">biweekly</span></code>, <code class="docutils literal notranslate"><span class="pre">monthly</span></code>, and <code class="docutils literal notranslate"><span class="pre">yearly</span></code>).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">unique</span></code>: comma-separated list of names of metadata that, taken together,
+make it unique in the dataset</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">index</span></code>: comma-separated list of names of metadata to index for faster queries</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">replace</span></code>: when <code class="docutils literal notranslate"><span class="pre">yes</span></code>, importing duplicate data will replace the existing
+version. When <code class="docutils literal notranslate"><span class="pre">no</span></code>, importing duplicate data will be rejected. When
+<code class="docutils literal notranslate"><span class="pre">usn</span></code>, importing duplicate BUFR data will replace the existing version only
+if the BUFR Update Sequence Number is greater than the one currently in the
+dataset.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">smallfiles</span></code>: <code class="docutils literal notranslate"><span class="pre">yes</span></code> or <code class="docutils literal notranslate"><span class="pre">no</span></code>. When <code class="docutils literal notranslate"><span class="pre">yes</span></code>, the file contents are also
+saved in the index, to speed up extraction of data with tiny payloads like
+<code class="docutils literal notranslate"><span class="pre">vm2</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">archive</span> <span class="pre">age</span></code>: data older than this number of days will be moved to the
+dataset archive during maintenance.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">delete</span> <span class="pre">age</span></code>: data older than this number of days will be deleted during
+maintenance.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">restrict</span></code>: comma-separated list of names that have access to the dataset.
+This allows filtering with the <code class="docutils literal notranslate"><span class="pre">--restrict</span></code> option on command line.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">eatmydata</span></code>: disable <cite>fsync</cite>/<cite>fdatasync</cite> operations while writing data to
+dataset, and disable sqlite’ journaling and other data integrity features.
+This makes acquiring data very fast, but an interrupted import or a
+concurrent import may cause data corruption.</p></li>
+</ul>
+</div>
 </div>
 
 
@@ -96,10 +128,13 @@ queried.</p>
 <li class="toctree-l2"><a class="reference internal" href="datasets/simple.html"><code class="docutils literal notranslate"><span class="pre">simple</span></code> dataset format</a></li>
 <li class="toctree-l2"><a class="reference internal" href="datasets/ondisk2.html"><code class="docutils literal notranslate"><span class="pre">ondisk2</span></code> dataset format</a></li>
 <li class="toctree-l2"><a class="reference internal" href="datasets/archive.html">dataset archives</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#dataset-configuration">Dataset configuration</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="segments.html">Data segments</a></li>
 <li class="toctree-l1"><a class="reference internal" href="http-api.html">arki-server HTTP API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="python-howtos/index.html">Arkimet Python HOWTOs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="python-howtos/index.html#indices-and-tables">Indices and tables</a></li>
 <li class="toctree-l1"><a class="reference internal" href="python/index.html">Arkimet Python API</a></li>
 <li class="toctree-l1"><a class="reference internal" href="python/index.html#indices-and-tables">Indices and tables</a></li>
 </ul>
@@ -114,13 +149,11 @@ queried.</p>
 </ul>
 </div>
 <div id="searchbox" style="display: none" role="search">
-  <h3>Quick search</h3>
+  <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="search.html" method="get">
-      <input type="text" name="q" />
+      <input type="text" name="q" aria-labelledby="searchlabel" />
       <input type="submit" value="Go" />
-      <input type="hidden" name="check_keywords" value="yes" />
-      <input type="hidden" name="area" value="default" />
     </form>
     </div>
 </div>
@@ -141,7 +174,7 @@ queried.</p>
       &copy;2019, Enrico Zini.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.8.4</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.2.2</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |
