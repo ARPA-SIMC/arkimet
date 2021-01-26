@@ -56,16 +56,24 @@ sphinx_doc_sources = [
 
 # Generate documentation
 #
-# Because of issues like https://github.com/mesonbuild/meson/issues/2320
-# we cannot express the chain of what's going on here using meson.
-# As a workaround, we build a script that runs doxygen and sphinx, and run it
-# in a custom target.
+# In order to be able to set PYTHONPATH for sphinx, we cannot call it in a
+# custom_target directly, but through a wrapper script
+
+build_docs = configure_file(output: 'build-docs', input: 'build-docs.in', configuration: {
+    'sphinx_build': sphinx.path(),
+    'doc_src': meson.current_source_dir(),
+    'doc_build': meson.current_build_dir(),
+    'top_builddir': meson.build_root(),
+    'pythonpath_src': meson.source_root() / 'python',
+    'pythonpath_build': meson.build_root() / 'python',
+})
 
 built_docs = custom_target('built_docs',
     input: [sphinx_doc_sources],
     output: ['html'],
     depends: [libarkimet, py_arkimet],
-    command: [sphinx, '-b', 'html', meson.current_source_dir(), '@OUTPUT@'],
+    # command: [sphinx, '-b', 'html', meson.current_source_dir(), '@OUTPUT@'],
+    command: [build_docs],
     build_by_default: false,
     install_dir: doc_dir,
     install: true,
