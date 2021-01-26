@@ -196,7 +196,7 @@ area: italy
 
 The author of arkimet is Enrico Zini <enrico@enricozini.com>
 
-Arkimet is Copyright (C) 2005-2020 ARPAE-SIMC <urpsim@arpae.it>
+Arkimet is Copyright (C) 2005-2021 ARPAE-SIMC <urpsim@arpae.it>
 
 Arkimet is Free Software, licensed under the terms of the GNU General Public License version
 2.

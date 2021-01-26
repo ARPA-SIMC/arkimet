@@ -1,3 +1,7 @@
+# New in version 1.33
+* Fixed arki-bufr-prepare `--usn` (#260)
+* Improved doc (#261, #235)
+
 # New in version 1.32
 
 * Added missing nc.py install (#257)

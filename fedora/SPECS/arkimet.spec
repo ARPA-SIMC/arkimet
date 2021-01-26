@@ -3,7 +3,7 @@
 
 Summary: Archive for weather information
 Name: arkimet
-Version: 1.32
+Version: 1.33
 Release: 1
 License: GPL
 Group: Applications/Meteo
@@ -249,6 +249,10 @@ if [ "$1" = "1" ]; then
 fi
 
 %changelog
+* Tue Jan 26 2021 Daniele Branchini <dbranchini@arpae.it> - 1.33-1
+- Fixed arki-bufr-prepare `--usn` (#260)
+- Improved doc (#261, #235)
+
 * Fri Jan 15 2021 Daniele Branchini <dbranchini@arpae.it> - 1.32-1
 - Added missing nc.py install (#257)
 
