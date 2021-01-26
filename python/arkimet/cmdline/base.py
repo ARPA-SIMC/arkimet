@@ -238,7 +238,7 @@ class AppWithProcessor(App):
 
         self.parser_out.add_argument("--inline", action="store_true",
                                      help="output the binary metadata together with the data (pipe through "
-                                          " arki-dump to estract the data afterwards)")
+                                          " arki-dump to extract the data afterwards)")
         self.parser_out.add_argument("--data", action="store_true",
                                      help="output only the data")
         self.parser_out.add_argument("--postproc", "-p", metavar="command",
