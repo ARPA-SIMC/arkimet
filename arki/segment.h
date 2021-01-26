@@ -11,7 +11,6 @@
 #include <arki/segment/fwd.h>
 #include <arki/core/transaction.h>
 #include <string>
-#include <iosfwd>
 #include <memory>
 #include <vector>
 
@@ -161,8 +160,9 @@ public:
 
 namespace segment {
 
-struct Reader : public std::enable_shared_from_this<Reader>
+class Reader : public std::enable_shared_from_this<Reader>
 {
+public:
     std::shared_ptr<core::Lock> lock;
 
     Reader(std::shared_ptr<core::Lock> lock);
@@ -209,8 +209,9 @@ struct WriterConfig
     bool eatmydata = false;
 };
 
-struct Writer : public core::Transaction, std::enable_shared_from_this<Writer>
+class Writer : public core::Transaction, public std::enable_shared_from_this<Writer>
 {
+public:
     struct PendingMetadata
     {
         const WriterConfig& config;
@@ -232,6 +233,7 @@ struct Writer : public core::Transaction, std::enable_shared_from_this<Writer>
 
     Writer() = default;
     Writer(const WriterConfig& config) : config(config) {}
+    virtual ~Writer() {}
 
     virtual const Segment& segment() const = 0;
 
@@ -280,6 +282,8 @@ protected:
     virtual void move_data(const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath) = 0;
 
 public:
+    virtual ~Checker() {}
+
     virtual const Segment& segment() const = 0;
     virtual segment::State check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick=true) = 0;
     virtual size_t remove() = 0;

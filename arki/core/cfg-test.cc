@@ -31,7 +31,7 @@ add_method("parse_section", [] {
     auto conf = cfg::Section::parse(test, "(memory)");
 
     size_t count = 0;
-    for (const auto& v: *conf)
+    for (auto i = conf->begin(); i != conf->end(); ++i)
         ++count;
     wassert(actual(count) == 4u);
 
@@ -61,7 +61,7 @@ add_method("parse_sections", [] {
     auto conf = cfg::Sections::parse(test, "(memory)");
 
     size_t count = 0;
-    for (const auto& v: *conf)
+    for (auto i = conf->begin(); i != conf->end(); ++i)
         ++count;
     wassert(actual(count) == 2u);
 

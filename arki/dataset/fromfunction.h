@@ -6,9 +6,6 @@
 #include <string>
 
 namespace arki {
-class Metadata;
-class Matcher;
-
 namespace dataset {
 namespace fromfunction {
 

@@ -2,6 +2,7 @@
 #include "arki/metadata.h"
 #include "arki/metadata/data.h"
 #include "arki/metadata/libarchive.h"
+#include "arki/segment.h"
 #include "arki/utils/sys.h"
 #include "zip.h"
 

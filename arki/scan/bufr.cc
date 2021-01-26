@@ -11,17 +11,14 @@
 #include "arki/types/origin.h"
 #include "arki/types/product.h"
 #include "arki/types/reftime.h"
-#include "arki/types/run.h"
 #include "arki/types/timerange.h"
+#include "arki/types/values.h"
 #include "arki/scan/validator.h"
 #include "arki/scan/mock.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/files.h"
-#include "arki/libconfig.h"
 #include <sstream>
 #include <cstring>
-#include <stdint.h>
-#include <arpa/inet.h>
 
 using namespace std;
 using namespace wreport;
@@ -87,9 +84,9 @@ protected:
 
 public:
     dballe::Importer& importer;
-    unique_ptr<reftime::Position> reftime;
-    unique_ptr<Origin> origin;
-    unique_ptr<product::BUFR> product;
+    std::unique_ptr<Reftime> reftime;
+    std::unique_ptr<Origin> origin;
+    std::unique_ptr<Product> product;
     std::shared_ptr<Message> msg;
 
     Harvest(dballe::Importer& importer) : importer(importer), msg(0) {}
@@ -103,9 +100,9 @@ public:
             return;
         }
         if (dt.is_missing()) return;
-        reftime->time = core::Time(
+        reftime = Reftime::createPosition(core::Time(
                 dt.year, dt.month, dt.day,
-                dt.hour, dt.minute, dt.second);
+                dt.hour, dt.minute, dt.second));
     }
 
     void harvest_from_dballe(const BinaryMessage& rmsg, Metadata& md)
@@ -125,7 +122,7 @@ public:
 
         // Set reference time
         // FIXME: WRONG! The header date should ALWAYS be ignored
-        reftime = reftime::Position::create(core::Time(
+        reftime = Reftime::createPosition(core::Time(
                 bulletin->rep_year, bulletin->rep_month, bulletin->rep_day,
                 bulletin->rep_hour, bulletin->rep_minute, bulletin->rep_second));
 
@@ -137,7 +134,6 @@ public:
             case 4:
                 // No process?
                 origin = Origin::createBUFR(bulletin->originating_centre, bulletin->originating_subcentre);
-                product = product::BUFR::create(bulletin->data_category, bulletin->data_subcategory, bulletin->data_subcategory_local);
                 break;
             default: {
                 std::stringstream ss;
@@ -176,9 +172,7 @@ public:
 
         // Try to parse as a dba_msg
         try {
-            // Ignore domain errors, it's ok if we lose some oddball data
-            wreport::options::LocalOverride<bool> o(wreport::options::var_silent_domain_errors, true);
-
+            // We already set the importer to ignore domain errors
             msgs = importer.from_bulletin(*bulletin);
         } catch (std::exception& e) {
             // If we cannot import it as a Msgs, we are done
@@ -193,9 +187,10 @@ public:
         msg = msgs[0];
 
         // Set the product from the msg type
-        types::ValueBag newvals;
-        newvals.set("t", types::values::Value::create_string(format_message_type(msg->get_type())));
-        product->addValues(newvals);
+        types::values::ValueBagBuilder vbuilder;
+        vbuilder.add("t", format_message_type(msg->get_type()));
+        types::ValueBag newvals = vbuilder.build();
+        product = Product::createBUFR(bulletin->data_category, bulletin->data_subcategory, bulletin->data_subcategory_local, newvals);
 
         // Set reference time from date and time if available
         refine_reftime(*msg);
@@ -207,13 +202,14 @@ public:
 BufrScanner::BufrScanner()
 {
     auto opts = ImporterOptions::create();
+    opts->domain_errors = ImporterOptions::DomainErrors::UNSET;
     opts->simplified = true;
     importer = Importer::create(dballe::Encoding::BUFR, *opts).release();
 }
 
 BufrScanner::~BufrScanner()
 {
-    if (importer) delete importer;
+    delete importer;
 }
 
 void BufrScanner::do_scan(BinaryMessage& rmsg, std::shared_ptr<Metadata> md)
@@ -221,9 +217,12 @@ void BufrScanner::do_scan(BinaryMessage& rmsg, std::shared_ptr<Metadata> md)
     Harvest harvest(*importer);
     harvest.harvest_from_dballe(rmsg, *md);
 
-    md->set(move(harvest.reftime));
-    md->set(move(harvest.origin));
-    md->set(move(harvest.product));
+    if (harvest.reftime)
+        md->set(move(harvest.reftime));
+    if (harvest.origin)
+        md->set(move(harvest.origin));
+    if (harvest.product)
+        md->set(move(harvest.product));
 
     if (harvest.msg)
     {
@@ -236,13 +235,15 @@ void BufrScanner::do_scan(BinaryMessage& rmsg, std::shared_ptr<Metadata> md)
     const reftime::Position* rt = md->get<types::reftime::Position>();
     if (rt)
     {
-        if (rt->time.ye <= 0)
+        auto time = rt->get_Position();
+        if (time.ye <= 0)
             md->unset(TYPE_REFTIME);
         else
         {
-            core::Time t = rt->time;
+            core::Time t = time;
             t.normalise();
-            if (t != rt->time) md->unset(TYPE_REFTIME);
+            if (t != time)
+                md->unset(TYPE_REFTIME);
         }
     }
 
@@ -283,7 +284,7 @@ bool BufrScanner::scan_segment(std::shared_ptr<segment::Reader> reader, metadata
 std::shared_ptr<Metadata> BufrScanner::scan_singleton(const std::string& abspath)
 {
     auto md = std::make_shared<Metadata>();
-    auto file = dballe::File::create(dballe::Encoding::BUFR, abspath.c_str(), "r").release();
+    auto file = dballe::File::create(dballe::Encoding::BUFR, abspath.c_str(), "r");
     BinaryMessage rmsg = file->read();
     if (!rmsg) throw std::runtime_error(abspath + " contains no BUFR data");
     do_scan(rmsg, md);
@@ -295,7 +296,7 @@ std::shared_ptr<Metadata> BufrScanner::scan_singleton(const std::string& abspath
 bool BufrScanner::scan_pipe(core::NamedFileDescriptor& infd, metadata_dest_func dest)
 {
     files::RAIIFILE in(infd, "rb");
-    auto file = dballe::File::create(dballe::Encoding::BUFR, in, false, infd.name()).release();
+    auto file = dballe::File::create(dballe::Encoding::BUFR, in, false, infd.name());
     while (true)
     {
         auto md = std::make_shared<Metadata>();
@@ -333,8 +334,7 @@ MockBufrScanner::~MockBufrScanner()
 void MockBufrScanner::scan_extra(dballe::BinaryMessage& rmsg, std::shared_ptr<dballe::Message> msg, std::shared_ptr<Metadata> md)
 {
     auto new_md = engine->lookup(reinterpret_cast<const uint8_t*>(rmsg.data.data()), rmsg.data.size());
-    for (const auto& i: *new_md)
-        md->set(*i.second);
+    md->merge(*new_md);
 }
 
 }

@@ -1,10 +1,6 @@
 #include "mock.h"
 #include "arki/metadata.h"
-#include "arki/metadata/data.h"
-#include "arki/segment.h"
 #include "arki/core/binary.h"
-#include "arki/types/source.h"
-#include "arki/utils/sys.h"
 #include "arki/utils/sqlite.h"
 #include <openssl/evp.h>
 #include <cstdlib>
@@ -134,8 +130,7 @@ std::shared_ptr<Metadata> MockEngine::by_checksum(const std::string& checksum)
         int len = by_sha256sum->fetchBytes(0);
         core::BinaryDecoder dec((const uint8_t*)buf, len);
 
-        md.reset(new Metadata);
-        md->read(dec, db_pathname, false);
+        md = Metadata::read_binary(dec, db_pathname, false);
         found = true;
     }
     if (!found)

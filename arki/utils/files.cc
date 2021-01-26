@@ -1,16 +1,11 @@
-#include "arki/libconfig.h"
 #include "files.h"
 #include "sys.h"
 #include "string.h"
-#include <deque>
-#include <algorithm>
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/sendfile.h>
 #include <system_error>
 #include <unistd.h>
-#include <cstdio>
-#include <cstdlib>
 #include <cstring>
 #include <cerrno>
 

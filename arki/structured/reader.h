@@ -5,8 +5,6 @@
 #include <arki/types/fwd.h>
 #include <arki/structured/fwd.h>
 #include <string>
-#include <vector>
-#include <map>
 #include <memory>
 #include <functional>
 #include <iosfwd>
@@ -28,8 +26,11 @@ enum class NodeType : int
 std::ostream& operator<<(std::ostream& o, NodeType type);
 
 
-struct Reader
+class Reader
 {
+public:
+    virtual ~Reader() {}
+
     virtual NodeType type() const = 0;
     virtual std::string repr() const = 0;
 

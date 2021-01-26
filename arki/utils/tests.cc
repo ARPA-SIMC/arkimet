@@ -208,11 +208,11 @@ void assert_not_re_matches(const std::string& actual, const std::string& expecte
 void assert_true(std::nullptr_t actual)
 {
     throw TestFailed("actual value nullptr is not true");
-};
+}
 
 void assert_false(std::nullptr_t actual)
 {
-};
+}
 
 
 static void _actual_must_be_set(const char* actual)

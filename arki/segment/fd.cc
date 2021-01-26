@@ -1,4 +1,5 @@
 #include "fd.h"
+#include "common.h"
 #include "arki/exceptions.h"
 #include "arki/metadata.h"
 #include "arki/metadata/data.h"
@@ -7,21 +8,17 @@
 #include "arki/scan/validator.h"
 #include "arki/scan.h"
 #include "arki/utils/files.h"
-#include "arki/utils/string.h"
 #include "arki/utils/sys.h"
 #include "arki/nag.h"
 #include "arki/utils/accounting.h"
 #include "arki/iotrace.h"
-#include <algorithm>
 #include <system_error>
-#include <sys/types.h>
 #include <sys/stat.h>
-#include <sys/mman.h>
+#include <sys/uio.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <cstring>
-#include <sys/uio.h>
-#include <sys/sendfile.h>
+#include <sstream>
 
 using namespace std;
 using namespace arki::core;
@@ -35,7 +32,7 @@ namespace fd {
 void File::fdtruncate_nothrow(off_t pos) noexcept
 {
     if (::ftruncate(*this, pos) == -1)
-        nag::warning("truncating %s to previous size %zd (rollback of append operation): %m", name().c_str(), pos);
+        nag::warning("truncating %s to previous size %zd (rollback of append operation): %s", name().c_str(), pos, strerror(errno));
 }
 
 namespace {
@@ -136,7 +133,7 @@ std::vector<uint8_t> Reader<Segment>::read(const types::source::Blob& src)
     buf.resize(src.size);
 
     if (posix_fadvise(fd, src.offset, src.size, POSIX_FADV_DONTNEED) != 0)
-        nag::debug("fadvise on %s failed: %m", fd.name().c_str());
+        nag::debug("fadvise on %s failed: %s", fd.name().c_str(), strerror(errno));
     ssize_t res = fd.pread(buf.data(), src.size, src.offset);
     if ((size_t)res != src.size)
     {

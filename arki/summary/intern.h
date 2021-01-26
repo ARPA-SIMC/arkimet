@@ -1,9 +1,7 @@
 #ifndef ARKI_SUMMARY_INTERN_H
 #define ARKI_SUMMARY_INTERN_H
 
-#include <arki/types.h>
 #include <arki/types/typeset.h>
-#include <set>
 
 namespace arki {
 namespace summary {

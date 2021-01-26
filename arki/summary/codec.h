@@ -3,20 +3,13 @@
 
 /// Summary I/O implementation
 
-#include <arki/types.h>
 #include <arki/summary.h>
 #include <vector>
 
 namespace arki {
-class Metadata;
-class Matcher;
-
 namespace summary {
-struct Stats;
-struct Visitor;
-struct StatsVisitor;
-struct ItemVisitor;
-struct Table;
+class Stats;
+class Table;
 
 size_t decode(core::BinaryDecoder& dec, unsigned version, const std::string& filename, Table& target);
 

@@ -3,6 +3,7 @@
 
 #include <arki/types.h>
 #include <arki/types/reftime.h>
+#include <arki/types/encoded.h>
 #include <stdint.h>
 
 namespace arki {
@@ -66,12 +67,58 @@ struct traits<timerange::Timedef>
  * It can contain information such as accumulation time, or validity of
  * forecast.
  */
-struct Timerange : public types::StyledType<Timerange>
+class Timerange : public types::Encoded
 {
-	/// Convert a string into a style
-	static Style parseStyle(const std::string& str);
-	/// Convert a style into its string representation
-	static std::string formatStyle(Style s);
+public:
+    using Encoded::Encoded;
+
+    typedef timerange::Style Style;
+
+    ~Timerange();
+
+    types::Code type_code() const override { return traits<Timerange>::type_code; }
+    size_t serialisationSizeLength() const override { return traits<Timerange>::type_sersize_bytes; }
+    std::string tag() const override { return traits<Timerange>::type_tag; }
+
+    Timerange* clone() const override = 0;
+
+    int compare(const Type& o) const override;
+
+    // Get the element style
+    static timerange::Style style(const uint8_t* data, unsigned size);
+    static void get_GRIB1(const uint8_t* data, unsigned size, unsigned& type, unsigned& unit, unsigned& p1, unsigned& p2);
+    static void get_GRIB1_normalised(const uint8_t* data, unsigned size, int& type, timerange::GRIB1Unit& unit, int& p1, int& p2, bool& use_op1, bool& use_op2);
+
+    static void get_GRIB2(const uint8_t* data, unsigned size, unsigned& type, unsigned& unit, signed long& p1, signed long& p2);
+    static void get_Timedef(const uint8_t* data, unsigned size, timerange::TimedefUnit& step_unit, unsigned& step_len, unsigned& stat_type, timerange::TimedefUnit& stat_unit, unsigned& stat_len);
+    static void get_BUFR(const uint8_t* data, unsigned size, unsigned& unit, unsigned& value);
+
+    timerange::Style style() const { return style(data, size); }
+    void get_GRIB1(unsigned& type, unsigned& unit, unsigned& p1, unsigned& p2) const
+    {
+        get_GRIB1(data, size, type, unit, p1, p2);
+    }
+    void get_GRIB1_normalised(int& type, timerange::GRIB1Unit& unit, int& p1, int& p2, bool& use_op1, bool& use_op2) const
+    {
+        get_GRIB1_normalised(data, size, type, unit, p1, p2, use_op1, use_op2);
+    }
+    void get_GRIB2(unsigned& type, unsigned& unit, signed long& p1, signed long& p2) const
+    {
+        get_GRIB2(data, size, type, unit, p1, p2);
+    }
+    void get_Timedef(timerange::TimedefUnit& step_unit, unsigned& step_len, unsigned& stat_type, timerange::TimedefUnit& stat_unit, unsigned& stat_len) const
+    {
+        get_Timedef(data, size, step_unit, step_len, stat_type, stat_unit, stat_len);
+    }
+    void get_BUFR(unsigned& unit, unsigned& value) const
+    {
+        get_BUFR(data, size, unit, value);
+    }
+
+    /// Convert a string into a style
+    static Style parseStyle(const std::string& str);
+    /// Convert a style into its string representation
+    static std::string formatStyle(Style s);
 
     /**
      * Compute the forecast step
@@ -98,18 +145,13 @@ struct Timerange : public types::StyledType<Timerange>
      */
     virtual bool get_proc_duration(int& duration, bool& is_seconds) const = 0;
 
-    /// Create a Timedef equivalent of this time range
-    virtual std::unique_ptr<timerange::Timedef> to_timedef() const;
-
     /// CODEC functions
-    static std::unique_ptr<Timerange> decode(core::BinaryDecoder& dec);
+    static std::unique_ptr<Timerange> decode(core::BinaryDecoder& dec, bool reuse_buffer);
     static std::unique_ptr<Timerange> decodeString(const std::string& val);
     static std::unique_ptr<Timerange> decode_structure(const structured::Keys& keys, const structured::Reader& val);
 
     // Register this type tree with the type system
     static void init();
-
-    Timerange* clone() const override = 0;
 
     static std::unique_ptr<Timerange> createGRIB1(unsigned char type, unsigned char unit, unsigned char p1, unsigned char p2);
     static std::unique_ptr<Timerange> createGRIB2(unsigned char type, unsigned char unit, signed long p1, signed long p2);
@@ -124,10 +166,11 @@ namespace timerange {
 inline std::ostream& operator<<(std::ostream& o, Style s) { return o << Timerange::formatStyle(s); }
 
 
-struct GRIB1 : public Timerange
+class GRIB1 : public Timerange
 {
 protected:
-	std::ostream& writeNumbers(std::ostream& o) const;
+    std::ostream& writeNumbers(std::ostream& o) const;
+
     /**
      * Get time unit conversion
      *
@@ -137,19 +180,18 @@ protected:
      * @returns
      *   true if multiplying by timemul gives seconds, false if it gives months
      */
-    bool get_timeunit_conversion(int& timemul) const;
-
-	unsigned char m_type, m_unit;
-	unsigned char m_p1, m_p2;
+    //bool get_timeunit_conversion(int& timemul) const;
 
 public:
-	unsigned type() const { return m_type; }
-	unsigned unit() const { return m_unit; }
-	unsigned p1() const { return m_p1; }
-	unsigned p2() const { return m_p2; }
+    using Timerange::Timerange;
 
-    Style style() const override;
-    void encodeWithoutEnvelope(core::BinaryEncoder& enc) const override;
+    GRIB1* clone() const override
+    {
+        return new GRIB1(data, size);
+    }
+
+    bool equals(const Type& o) const override;
+    int compare_local(const GRIB1& o) const;
     std::ostream& writeToOstream(std::ostream& o) const override;
     void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
     std::string exactQuery() const override;
@@ -158,31 +200,20 @@ public:
     int get_proc_type() const override;
     bool get_proc_duration(int& duration, bool& is_seconds) const override;
 
-    int compare_local(const Timerange& o) const override;
-    bool equals(const Type& o) const override;
-
-    void getNormalised(int& type, GRIB1Unit& unit, int& p1, int& p2, bool& use_op1, bool& use_op2) const;
-
-    GRIB1* clone() const override;
-    static std::unique_ptr<GRIB1> create(unsigned char type, unsigned char unit, unsigned char p1, unsigned char p2);
-    static std::unique_ptr<GRIB1> decode_structure(const structured::Keys& keys, const structured::Reader& val);
     static void arg_significance(unsigned type, bool& use_p1, bool& use_p2);
 };
 
 class GRIB2 : public Timerange
 {
-protected:
-	unsigned char m_type, m_unit;
-	signed long m_p1, m_p2;
-
 public:
-	unsigned type() const { return m_type; }
-	unsigned unit() const { return m_unit; }
-	signed p1() const { return m_p1; }
-	signed p2() const { return m_p2; }
+    using Timerange::Timerange;
 
-    Style style() const override;
-    void encodeWithoutEnvelope(core::BinaryEncoder& enc) const override;
+    GRIB2* clone() const override
+    {
+        return new GRIB2(data, size);
+    }
+
+    int compare_local(const GRIB2& o) const;
     std::ostream& writeToOstream(std::ostream& o) const override;
     void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
     std::string exactQuery() const override;
@@ -190,40 +221,20 @@ public:
     bool get_forecast_step(int& step, bool& is_seconds) const override;
     int get_proc_type() const override;
     bool get_proc_duration(int& duration, bool& is_seconds) const override;
-
-    int compare_local(const Timerange& o) const override;
-    bool equals(const Type& o) const override;
-
-    GRIB2* clone() const override;
-    static std::unique_ptr<GRIB2> create(unsigned char type, unsigned char unit, signed long p1, signed long p2);
-    static std::unique_ptr<GRIB2> decode_structure(const structured::Keys& keys, const structured::Reader& val);
 };
 
 class Timedef : public Timerange
 {
 public:
-protected:
-    /// Units for forecast step, or UNIT_MISSING if forecast step is missing
-    TimedefUnit m_step_unit;
-    uint32_t m_step_len;
+    using Timerange::Timerange;
 
-    /// Type of statistical processing, or 255 if missing
-    uint8_t m_stat_type;
+    Timedef* clone() const override
+    {
+        return new Timedef(data, size);
+    }
 
-    /// Units for length of statistical processing, or UNIT_MINUTE if length of
-    /// statistical processing is missing
-    TimedefUnit m_stat_unit;
-    uint32_t m_stat_len;
-
-public:
-    TimedefUnit step_unit() const { return m_step_unit; }
-    unsigned step_len() const { return m_step_len; }
-    uint8_t stat_type() const { return m_stat_type; }
-    TimedefUnit stat_unit() const { return m_stat_unit; }
-    unsigned stat_len() const { return m_stat_len; }
-
-    Style style() const override;
-    void encodeWithoutEnvelope(core::BinaryEncoder& enc) const override;
+    bool equals(const Type& o) const override;
+    int compare_local(const Timedef& o) const;
     std::ostream& writeToOstream(std::ostream& o) const override;
     void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
     std::string exactQuery() const override;
@@ -232,21 +243,14 @@ public:
     int get_proc_type() const override;
     bool get_proc_duration(int& duration, bool& is_seconds) const override;
 
-    int compare_local(const Timerange& o) const override;
-    bool equals(const Type& o) const override;
-
     /**
      * Given a reftime representing validity time, compute and return its
      * emission time, shifting it by what is represented by this timedef
      */
-    std::unique_ptr<reftime::Position> validity_time_to_emission_time(const reftime::Position& src) const;
+    // TODO: take a core::Time instead of a reftime::Position
+    std::unique_ptr<Reftime> validity_time_to_emission_time(const reftime::Position& src) const;
 
-    Timedef* clone() const override;
-    static std::unique_ptr<Timedef> create(uint32_t step_len, TimedefUnit step_unit=UNIT_SECOND);
-    static std::unique_ptr<Timedef> create(uint32_t step_len, TimedefUnit step_unit,
-                              uint8_t stat_type, uint32_t stat_len, TimedefUnit stat_unit=UNIT_SECOND);
-    static std::unique_ptr<Timedef> createFromYaml(const std::string& str);
-    static std::unique_ptr<Timedef> decode_structure(const structured::Keys& keys, const structured::Reader& val);
+    // static std::unique_ptr<Timedef> createFromYaml(const std::string& str);
 
     /**
      * Unit conversion for code table 4.4 GRIB2 indicator of unit of time range
@@ -275,20 +279,16 @@ public:
 
 class BUFR : public Timerange
 {
-protected:
-	unsigned char m_unit;
-	unsigned m_value;
-
 public:
-	unsigned unit() const { return m_unit; }
-	unsigned value() const { return m_value; }
+    using Timerange::Timerange;
 
-	bool is_seconds() const;
-	unsigned seconds() const;
-	unsigned months() const;
+    BUFR* clone() const override
+    {
+        return new BUFR(data, size);
+    }
 
-    Style style() const override;
-    void encodeWithoutEnvelope(core::BinaryEncoder& enc) const override;
+    bool equals(const Type& o) const override;
+    int compare_local(const BUFR& o) const;
     std::ostream& writeToOstream(std::ostream& o) const override;
     void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
     std::string exactQuery() const override;
@@ -297,12 +297,9 @@ public:
     int get_proc_type() const override;
     bool get_proc_duration(int& duration, bool& is_seconds) const override;
 
-    int compare_local(const Timerange& o) const override;
-    bool equals(const Type& o) const override;
-
-    BUFR* clone() const override;
-    static std::unique_ptr<BUFR> create(unsigned value = 0, unsigned char unit = 254);
-    static std::unique_ptr<BUFR> decode_structure(const structured::Keys& keys, const structured::Reader& val);
+    static bool is_seconds(unsigned unit);
+    static unsigned seconds(unsigned unit, unsigned value);
+    static unsigned months(unsigned unit, unsigned value);
 };
 
 }

@@ -10,15 +10,11 @@
 #include "arki/dataset/file.h"
 #include "arki/dataset/ondisk2.h"
 #include "arki/dataset/iseg.h"
-#include "arki/dataset/simple/reader.h"
+#include "arki/dataset/simple.h"
 #include "arki/dataset/outbound.h"
 #include "arki/dataset/empty.h"
 #include "arki/dataset/fromfunction.h"
 #include "arki/dataset/testlarge.h"
-#include "arki/dataset/querymacro.h"
-#include "arki/dataset/merged.h"
-#include "arki/metadata.h"
-#include "arki/types/source/blob.h"
 #include "arki/nag.h"
 #include "arki/libconfig.h"
 #include <memory>
@@ -70,13 +66,13 @@ std::shared_ptr<segment::Writer> Session::segment_writer(const segment::WriterCo
         res.reset(new segment::concat::Writer(config, format, root, relpath, abspath));
     } else if (format == "bufr") {
         res.reset(new segment::concat::Writer(config, format, root, relpath, abspath));
-    } else if (format == "odimh5" || format == "h5" || format == "odim") {
+    } else if (format == "odimh5" || format == "h5" || format == "odim" || format == "nc") {
         res.reset(new segment::dir::Writer(config, format, root, relpath, abspath));
     } else if (format == "vm2") {
         res.reset(new segment::lines::Writer(config, format, root, relpath, abspath));
     } else {
         throw std::runtime_error(
-                "cannot writer for " + format + " file " + relpath +
+                "cannot create writer for " + format + " file " + relpath +
                 ": format not supported");
     }
     return res;
@@ -94,7 +90,7 @@ std::shared_ptr<segment::Checker> Session::segment_checker(const std::string& fo
         res.reset(new segment::concat::Checker(format, root, relpath, abspath));
     } else if (format == "bufr") {
         res.reset(new segment::concat::Checker(format, root, relpath, abspath));
-    } else if (format == "odimh5" || format == "h5" || format == "odim") {
+    } else if (format == "odimh5" || format == "h5" || format == "odim" || format == "nc") {
         res.reset(new segment::dir::Checker(format, root, relpath, abspath));
     } else if (format == "vm2") {
         res.reset(new segment::lines::Checker(format, root, relpath, abspath));
@@ -106,52 +102,6 @@ std::shared_ptr<segment::Checker> Session::segment_checker(const std::string& fo
     return res;
 }
 
-void Session::add_dataset(const core::cfg::Section& cfg, bool load_aliases)
-{
-    auto ds = dataset(cfg);
-    auto old = dataset_pool.find(ds->name());
-    if (old != dataset_pool.end())
-    {
-        nag::warning(
-            "dataset \"%s\" in \"%s\" already loaded from \"%s\": keeping only the first one",
-            ds->name().c_str(), ds->config->value("path").c_str(),
-            old->second->config->value("path").c_str());
-        return;
-    }
-
-    // Handle merging remote aliases
-    if (load_aliases && ds->config->value("type") == "remote")
-    {
-        // Skip if we have already loaded aliases from this server
-        auto server = ds->config->value("server");
-        matcher_parser.load_remote_aliases(server);
-    }
-
-    dataset_pool.emplace(ds->name(), ds);
-}
-
-bool Session::has_dataset(const std::string& name) const
-{
-    return dataset_pool.find(name) != dataset_pool.end();
-}
-
-bool Session::has_datasets() const
-{
-    return !dataset_pool.empty();
-}
-
-size_t Session::dataset_pool_size() const
-{
-    return dataset_pool.size();
-}
-
-bool Session::foreach_dataset(std::function<bool(std::shared_ptr<dataset::Dataset>)> dest)
-{
-    for (auto& i: dataset_pool)
-        if (!dest(i.second))
-            return false;
-    return true;
-}
 
 std::shared_ptr<Dataset> Session::dataset(const core::cfg::Section& cfg)
 {
@@ -181,43 +131,6 @@ std::shared_ptr<Dataset> Session::dataset(const core::cfg::Section& cfg)
     throw std::runtime_error("cannot use configuration for \"" + cfg.value("name") + "\": unknown dataset type \""+type+"\"");
 }
 
-std::shared_ptr<Dataset> Session::dataset(const std::string& name)
-{
-    auto res = dataset_pool.find(name);
-    if (res == dataset_pool.end())
-        throw std::runtime_error("dataset " + name + " not found in session pool");
-    return res->second;
-}
-
-std::shared_ptr<Dataset> Session::querymacro(const std::string& macro_name, const std::string& macro_query)
-{
-    // If all the datasets are on the same server, we can run the macro remotely
-    std::string baseurl = get_common_remote_server();
-
-    // TODO: macro_arg seems to be ignored (and lost) here
-
-    if (baseurl.empty())
-    {
-        // Either all datasets are local, or they are on different servers: run the macro locally
-        arki::nag::verbose("Running query macro %s locally", macro_name.c_str());
-        return std::make_shared<arki::dataset::QueryMacro>(shared_from_this(), macro_name, macro_query);
-    } else {
-        // Create the remote query macro
-        arki::nag::verbose("Running query macro %s remotely on %s", macro_name.c_str(), baseurl.c_str());
-        arki::core::cfg::Section cfg;
-        cfg.set("name", macro_name);
-        cfg.set("type", "remote");
-        cfg.set("path", baseurl);
-        cfg.set("qmacro", macro_query);
-        return dataset(cfg);
-    }
-}
-
-std::shared_ptr<Dataset> Session::merged()
-{
-    return std::make_shared<merged::Dataset>(shared_from_this());
-}
-
 #if 0
 static std::string geturlprefix(const std::string& s)
 {
@@ -227,22 +140,6 @@ static std::string geturlprefix(const std::string& s)
     return s.substr(0, pos);
 }
 #endif
-
-std::string Session::get_common_remote_server() const
-{
-    std::string base;
-    for (const auto& si: dataset_pool)
-    {
-        std::string type = str::lower(si.second->config->value("type"));
-        if (type != "remote") return std::string();
-        std::string server = si.second->config->value("server");
-        if (base.empty())
-            base = server;
-        else if (base != server)
-            return std::string();
-    }
-    return base;
-}
 
 std::shared_ptr<core::cfg::Section> Session::read_config(const std::string& path)
 {
@@ -355,6 +252,11 @@ void Session::load_aliases(const core::cfg::Sections& aliases)
     matcher_parser.load_aliases(aliases);
 }
 
+void Session::load_remote_aliases(const std::string& url)
+{
+    matcher_parser.load_remote_aliases(url);
+}
+
 std::string Session::expand_remote_query(std::shared_ptr<const core::cfg::Sections> remotes, const std::string& query)
 {
     // Resolve the query on each server (including the local system, if
@@ -400,83 +302,6 @@ std::string Session::expand_remote_query(std::shared_ptr<const core::cfg::Sectio
     if (!first)
         return expanded;
     return query;
-}
-
-namespace {
-
-struct FSPos
-{
-    dev_t dev;
-    ino_t ino;
-
-    FSPos(const struct stat& st)
-        : dev(st.st_dev), ino(st.st_ino)
-    {
-    }
-
-    bool operator<(const FSPos& o) const
-    {
-        if (dev < o.dev) return true;
-        if (dev > o.dev) return false;
-        return ino < o.ino;
-    }
-
-    bool operator==(const FSPos& o) const
-    {
-        return dev == o.dev && ino == o.ino;
-    }
-};
-
-struct PathMatch
-{
-    std::set<FSPos> parents;
-
-    PathMatch(const std::string& pathname)
-    {
-        fill_parents(pathname);
-    }
-
-    void fill_parents(const std::string& pathname)
-    {
-        struct stat st;
-        sys::stat(pathname, st);
-        auto i = parents.insert(FSPos(st));
-        // If we already knew of that fs position, stop here: we reached the
-        // top or a loop
-        if (i.second == false) return;
-        // Otherwise, go up a level and scan again
-        fill_parents(str::normpath(str::joinpath(pathname, "..")));
-    }
-
-    bool is_under(const std::string& pathname)
-    {
-        struct stat st;
-        sys::stat(pathname, st);
-        return parents.find(FSPos(st)) != parents.end();
-    }
-};
-
-}
-
-std::shared_ptr<dataset::Dataset> Session::locate_metadata(Metadata& md)
-{
-    const auto& source = md.sourceBlob();
-    std::string pathname = source.absolutePathname();
-
-    PathMatch pmatch(pathname);
-
-    for (const auto& dsi: dataset_pool)
-    {
-        auto lcfg = std::dynamic_pointer_cast<dataset::local::Dataset>(dsi.second);
-        if (!lcfg) continue;
-        if (pmatch.is_under(lcfg->path))
-        {
-            md.set_source(source.makeRelativeTo(lcfg->path));
-            return dsi.second;
-        }
-    }
-
-    return std::shared_ptr<dataset::local::Dataset>();
 }
 
 std::shared_ptr<segment::Reader> DirSegmentsSession::segment_reader(const std::string& format, const std::string& root, const std::string& relpath, std::shared_ptr<core::Lock> lock)

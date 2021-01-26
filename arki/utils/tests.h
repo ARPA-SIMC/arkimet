@@ -166,7 +166,7 @@ void assert_true(const A& actual)
     std::stringstream ss;
     ss << "actual value " << actual << " is not true";
     throw TestFailed(ss.str());
-};
+}
 
 void assert_true(std::nullptr_t actual);
 
@@ -178,7 +178,7 @@ void assert_false(const A& actual)
     std::stringstream ss;
     ss << "actual value " << actual << " is not false";
     throw TestFailed(ss.str());
-};
+}
 
 void assert_false(std::nullptr_t actual);
 
@@ -195,7 +195,7 @@ static inline void _format_list(std::ostream& o, const LIST& list) {
         o << v;
     }
     o << "]";
-};
+}
 
 template<typename T>
 void assert_equal(const std::vector<T>& actual, const std::vector<T>& expected)

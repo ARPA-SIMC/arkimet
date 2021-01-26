@@ -3,10 +3,8 @@
 #include "arki/core/binary.h"
 #include "arki/utils/string.h"
 #include "arki/structured/emitter.h"
-#include "arki/structured/memory.h"
+#include "arki/structured/reader.h"
 #include "arki/structured/keys.h"
-#include "arki/libconfig.h"
-#include <iomanip>
 #include <sstream>
 
 #define CODE TYPE_VALUE
@@ -32,7 +30,7 @@ bool Value::equals(const Type& o) const
 
 int Value::compare(const Type& o) const
 {
-    int res = CoreType<Value>::compare(o);
+    int res = Type::compare(o);
     if (res != 0) return res;
 
     // We should be the same kind, so upcast
@@ -65,7 +63,7 @@ void Value::serialise_local(structured::Emitter& e, const structured::Keys& keys
     e.add(keys.value_value, buffer);
 }
 
-unique_ptr<Value> Value::decode(core::BinaryDecoder& dec)
+unique_ptr<Value> Value::decode(core::BinaryDecoder& dec, bool reuse_buffer)
 {
     return Value::create(dec.pop_string(dec.size, "'value' metadata type"));
 }
@@ -103,4 +101,3 @@ void Value::init()
 
 }
 }
-#include <arki/types/core.tcc>

@@ -1,34 +1,17 @@
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
 #include "python/dataset/checker.h"
-#include "python/dataset.h"
 #include "python/common.h"
-#include "python/metadata.h"
-#include "python/summary.h"
 #include "python/cfg.h"
-#include "python/files.h"
 #include "python/matcher.h"
 #include "python/utils/values.h"
 #include "python/utils/methods.h"
 #include "python/utils/type.h"
 #include "python/utils/dict.h"
-#include "python/dataset/reader.h"
-#include "python/dataset/writer.h"
 #include "python/dataset/reporter.h"
-#include "python/dataset/progress.h"
-#include "arki/core/file.h"
-#include "arki/core/cfg.h"
-#include "arki/metadata/sort.h"
 #include "arki/dataset.h"
-#include "arki/dataset/query.h"
-#include "arki/dataset/http.h"
-#include "arki/dataset/time.h"
 #include "arki/dataset/segmented.h"
 #include "arki/dataset/session.h"
-#include "arki/dataset/progress.h"
-#include "arki/nag.h"
-#include <ctime>
-#include <vector>
 
 using namespace std;
 using namespace arki;
@@ -199,7 +182,7 @@ Examples::
             else
                 cfg = section_from_python(py_cfg);
 
-            if (PyErr_WarnEx(PyExc_DeprecationWarning, "Use arki.dataset.Session().dataset_checker(cfg) instead of arki.dataset.Checker(cfg)", 1))
+            if (PyErr_WarnEx(PyExc_DeprecationWarning, "Use arki.dataset.Session().dataset_checker(cfg=cfg) instead of arki.dataset.Checker(cfg)", 1))
                 return -1;
 
             auto session = std::make_shared<arki::dataset::Session>();

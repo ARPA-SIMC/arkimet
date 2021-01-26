@@ -4,11 +4,11 @@
 #include <arki/summary.h>
 #include <arki/summary/stats.h>
 #include <arki/types/typeset.h>
+#include <arki/structured/fwd.h>
 #include <map>
 
 namespace arki {
-struct Formatter;
-struct Emitter;
+class Formatter;
 
 namespace summary {
 

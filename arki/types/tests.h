@@ -7,14 +7,8 @@
 #include <arki/libconfig.h>
 #include <vector>
 #include <string>
-#include <cstdint>
 
 namespace arki {
-
-namespace types {
-class Type;
-}
-
 namespace tests {
 
 /// Prepackaged set of tests for generic arki types
@@ -91,9 +85,6 @@ public:
 
     /// Check all components of a reftime::Position item
     void is_reftime_position(const core::Time&);
-
-    /// Check all components of a reftime::Position item
-    void is_reftime_period(const core::Time&, const core::Time&);
 };
 
 inline arki::tests::ActualType actual_type(const arki::types::Type& actual) { return arki::tests::ActualType(&actual); }
@@ -101,6 +92,7 @@ inline arki::tests::ActualType actual_type(const arki::types::Type* actual) { re
 inline arki::tests::ActualType actual(const arki::types::Type& actual) { return arki::tests::ActualType(&actual); }
 template<typename T>
 inline arki::tests::ActualType actual(const std::unique_ptr<T>& actual) { return arki::tests::ActualType(actual.get()); }
+inline arki::tests::Actual<const types::ValueBag&> actual(const types::ValueBag& actual) { return arki::tests::Actual<const types::ValueBag&>(actual); }
 
 template<typename TYPE>
 struct TypeTestCase : public TestCase
@@ -121,6 +113,7 @@ struct TypeTestCase : public TestCase
                 t.alternates.push_back(exact[i]);
             t.lower = lower;
             t.higher = higher;
+            t.exact_query = exact_match;
             wassert(t.check());
         });
     }

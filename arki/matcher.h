@@ -60,8 +60,14 @@ public:
     /// Match a full ItemSet
     bool operator()(const types::ItemSet& md) const;
 
+    /// Match a Metadata
+    bool operator()(const Metadata& md) const;
+
     /// Match a time interval
     bool operator()(const core::Interval& interval) const;
+
+    /// Match metadata item in a binary encoded buffer
+    bool operator()(types::Code code, const uint8_t* data, unsigned size) const;
 
     std::shared_ptr<matcher::OR> get(types::Code code) const;
 
@@ -86,6 +92,28 @@ public:
      * aliases expanded
      */
     std::string toStringExpanded() const;
+
+    /**
+     * Return a matcher that would select all that this matcher selects, and
+     * all that the other selects. The result set of the merged matcher will be
+     * a superset of the two original ones, and might include extra data that
+     * would not be matched by either matcher individually.
+     *
+     * This function attempts to generate the most restrictive matcher that
+     * matches data from both starting matchers, and due to the matcher syntax
+     * this might end up being significantly broader than running the two
+     * original queries in sequence.
+     */
+    Matcher merge(const Matcher& m) const;
+
+    /**
+     * Return a matcher with all the expressions of this matcher, plus the
+     * expressions of the other one.
+     *
+     * When both matchers have an expression for the same metadata type, only
+     * those of the other matcher are used.
+     */
+    Matcher update(const Matcher& m) const;
 
     /// Return a matcher matching a time interval (from begin included, to end excluded)
     static Matcher for_interval(const core::Interval& interval);

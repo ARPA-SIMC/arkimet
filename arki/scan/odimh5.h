@@ -6,10 +6,7 @@
 #include <vector>
 
 namespace arki {
-class Metadata;
-
 namespace scan {
-struct Validator;
 class MockEngine;
 
 namespace odimh5 {
@@ -48,7 +45,7 @@ public:
 };
 
 
-void register_odimh5_lua();
+void register_odimh5_scanner();
 
 }
 }

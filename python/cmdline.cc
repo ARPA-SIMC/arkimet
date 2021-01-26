@@ -5,6 +5,7 @@
 #include "arki/core/file.h"
 #include "arki/scan.h"
 #include "arki/dataset/session.h"
+#include "arki/dataset/pool.h"
 #include "arki/dataset/fromfunction.h"
 #include "arki/nag.h"
 #include "utils/core.h"
@@ -22,7 +23,7 @@ using namespace arki::utils;
 namespace arki {
 namespace python {
 
-std::unique_ptr<cmdline::DatasetProcessor> build_processor(std::shared_ptr<arki::dataset::Session> session, PyObject* args, PyObject* kw)
+std::unique_ptr<cmdline::DatasetProcessor> build_processor(std::shared_ptr<arki::dataset::Pool> pool, PyObject* args, PyObject* kw)
 {
     static const char* kwlist[] = {
         "query", "outfile",
@@ -51,7 +52,7 @@ std::unique_ptr<cmdline::DatasetProcessor> build_processor(std::shared_ptr<arki:
                 &sort, &sort_len, &progress))
         throw PythonException();
 
-    arki::Matcher query = matcher_from_python(session, py_query);
+    arki::Matcher query = matcher_from_python(pool->session(), py_query);
 
     cmdline::ProcessorMaker pmaker;
     // Initialize the processor maker
@@ -120,11 +121,11 @@ bool foreach_file(std::shared_ptr<arki::dataset::Session> session, BinaryInputFi
     return success;
 }
 
-bool foreach_sections(std::shared_ptr<arki::dataset::Session> session, std::function<void(arki::dataset::Reader&)> dest)
+bool foreach_sections(std::shared_ptr<arki::dataset::Pool> pool, std::function<void(arki::dataset::Reader&)> dest)
 {
     bool all_successful = true;
     // Query all the datasets in sequence
-    session->foreach_dataset([&](std::shared_ptr<arki::dataset::Dataset> dataset) {
+    pool->foreach_dataset([&](std::shared_ptr<arki::dataset::Dataset> dataset) {
         auto reader = dataset->create_reader();
         bool success = true;
         try {

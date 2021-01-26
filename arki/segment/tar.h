@@ -9,13 +9,12 @@
 #include <string>
 
 namespace arki {
-struct Reader;
-
 namespace segment {
 namespace tar {
 
-struct Segment : public arki::Segment
+class Segment : public arki::Segment
 {
+public:
     using arki::Segment::Segment;
 
     const char* type() const override;
@@ -29,8 +28,9 @@ struct Segment : public arki::Segment
 };
 
 
-struct Reader : public segment::BaseReader<Segment>
+class Reader : public segment::BaseReader<Segment>
 {
+public:
     core::File fd;
 
     Reader(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock);

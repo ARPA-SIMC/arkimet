@@ -10,13 +10,9 @@
 #include "arki/utils/subprocess.h"
 #include "arki/utils/regexp.h"
 #include "arki/runtime.h"
-#include <sys/select.h>
-#include <sys/time.h>
-#include <sys/types.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <signal.h>
-#include <unistd.h>
 #include <cerrno>
 #include <set>
 
@@ -58,8 +54,9 @@ namespace arki {
 namespace metadata {
 namespace postproc {
 
-struct Child : public utils::IODispatcher
+class Child : public utils::IODispatcher
 {
+public:
     /// Subcommand with the child to run
     subprocess::Popen cmd;
 

@@ -6,12 +6,13 @@
 #include <arki/dataset/fwd.h>
 
 namespace arki {
-struct Summary;
+class Summary;
 
 namespace dataset {
 
-struct Index
+class Index
 {
+public:
     std::weak_ptr<core::Lock> lock;
 
     virtual ~Index();

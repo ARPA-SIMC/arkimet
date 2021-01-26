@@ -8,21 +8,21 @@
 #include <string>
 
 namespace arki {
-struct Reader;
-
 namespace segment {
 namespace gz {
 
-struct Segment : public arki::Segment
+class Segment : public arki::Segment
 {
+public:
     using arki::Segment::Segment;
     time_t timestamp() const override;
     static bool can_store(const std::string& format);
 };
 
 template<typename Segment>
-struct Reader : public segment::BaseReader<Segment>
+class Reader : public segment::BaseReader<Segment>
 {
+public:
     core::File fd;
     utils::compress::SeekIndexReader reader;
 
@@ -66,8 +66,9 @@ public:
 
 namespace gzconcat {
 
-struct Segment : public gz::Segment
+class Segment : public gz::Segment
 {
+public:
     using gz::Segment::Segment;
     const char* type() const override;
     bool single_file() const override;
@@ -79,13 +80,15 @@ struct Segment : public gz::Segment
     static const unsigned padding = 0;
 };
 
-struct Reader : public gz::Reader<Segment>
+class Reader : public gz::Reader<Segment>
 {
+public:
     using gz::Reader<Segment>::Reader;
 };
 
-struct Checker : public gz::Checker<Segment>
+class Checker : public gz::Checker<Segment>
 {
+public:
     using gz::Checker<Segment>::Checker;
 };
 

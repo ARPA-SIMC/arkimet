@@ -1,8 +1,9 @@
 Source: arkimet
+Section: misc
 Priority: optional
 Maintainer: Enrico Zini <enrico@debian.org>
-Build-Depends: debhelper (>= 9), dh-python, dh-autoreconf, dh-buildinfo,
-  doxygen, pkg-config,
+Build-Depends: debhelper (>= 12), dh-python,
+  pkg-config,
   liblua5.1-0-dev,
   liblzo2-dev, zlib1g-dev,
   libsqlite3-dev (>= 3.6),
@@ -16,7 +17,6 @@ Build-Depends: debhelper (>= 9), dh-python, dh-autoreconf, dh-buildinfo,
   libzip-dev,
   libssl-dev,
   libxapian-dev,
-  gawk,
   curl,
   python3-all-dev, python3-nose2, python3-werkzeug,
   python3-setproctitle, python3-h5py

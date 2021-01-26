@@ -1,21 +1,15 @@
 #include "arki/dataset/iseg/writer.h"
 #include "arki/dataset/iseg/index.h"
 #include "arki/dataset/step.h"
-#include "arki/dataset/time.h"
 #include "arki/dataset/lock.h"
 #include "arki/dataset/session.h"
 #include "arki/types/source/blob.h"
-#include "arki/summary.h"
 #include "arki/types/reftime.h"
-#include "arki/utils/files.h"
 #include "arki/utils/accounting.h"
 #include "arki/scan.h"
-#include "arki/nag.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/string.h"
 #include "arki/metadata.h"
-#include <system_error>
-#include <algorithm>
 
 using namespace std;
 using namespace arki;
@@ -27,8 +21,9 @@ namespace arki {
 namespace dataset {
 namespace iseg {
 
-struct AppendSegment
+class AppendSegment
 {
+public:
     std::shared_ptr<iseg::Dataset> dataset;
     std::shared_ptr<dataset::AppendLock> append_lock;
     std::shared_ptr<segment::Writer> segment;
@@ -273,7 +268,7 @@ std::string Writer::type() const { return "iseg"; }
 
 std::unique_ptr<AppendSegment> Writer::file(const segment::WriterConfig& writer_config, const Metadata& md)
 {
-    const core::Time& time = md.get<types::reftime::Position>()->time;
+    core::Time time = md.get<types::reftime::Position>()->get_Position();
     string relpath = dataset().step()(time) + "." + dataset().format;
     return file(writer_config, relpath);
 }
@@ -380,7 +375,6 @@ void Writer::remove(Metadata& md)
 
     // reset source and dataset in the metadata
     md.unset_source();
-    md.unset(TYPE_ASSIGNEDDATASET);
 
     scache.invalidate(md);
 }

@@ -2,6 +2,7 @@
 #define ARKI_CORE_FUZZYTIME_H
 
 #include <arki/core/time.h>
+#include <string>
 
 namespace arki {
 namespace core {

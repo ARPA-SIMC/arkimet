@@ -9,17 +9,12 @@
 #include "arki/scan.h"
 #include "arki/utils/compress.h"
 #include "arki/utils/files.h"
-#include "arki/utils/string.h"
 #include "arki/utils/sys.h"
-#include "arki/utils/tar.h"
-#include "arki/nag.h"
-#include "arki/utils/accounting.h"
 #include "arki/iotrace.h"
 #include <fcntl.h>
 #include <vector>
 #include <algorithm>
 #include <sys/uio.h>
-#include <system_error>
 
 using namespace std;
 using namespace arki::core;
@@ -98,7 +93,7 @@ struct CheckBackend : public AppendCheckBackend
         validator->validate_buf(all_data.data() + source.offset, source.size);
     }
 
-    size_t offset_end() const { return all_data.size(); }
+    size_t offset_end() const override { return all_data.size(); }
 
     State check()
     {

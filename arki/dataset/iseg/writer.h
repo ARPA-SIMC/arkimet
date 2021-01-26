@@ -11,8 +11,6 @@
 namespace arki {
 namespace dataset {
 namespace iseg {
-class Reader;
-class AIndex;
 class AppendSegment;
 
 class Writer : public DatasetAccess<iseg::Dataset, segmented::Writer>
@@ -34,7 +32,7 @@ public:
 
     WriterAcquireResult acquire(Metadata& md, const AcquireConfig& cfg=AcquireConfig()) override;
     void acquire_batch(WriterBatch& batch, const AcquireConfig& cfg=AcquireConfig()) override;
-    void remove(Metadata& md);
+    void remove(Metadata& md) override;
 
     static void test_acquire(std::shared_ptr<Session> session, const core::cfg::Section& cfg, WriterBatch& batch);
 };

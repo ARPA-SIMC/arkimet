@@ -10,8 +10,6 @@
 #include <arki/core/fwd.h>
 
 namespace arki {
-struct Matcher;
-
 namespace python {
 
 /// Given a generic exception, set the Python error indicator appropriately.
@@ -19,30 +17,30 @@ void set_std_exception(const std::exception& e);
 
 
 #define ARKI_CATCH_RETURN_PYO \
-      catch (PythonException&) { \
+      catch (arki::python::PythonException&) { \
         return nullptr; \
     } catch (std::invalid_argument& e) { \
         PyErr_SetString(PyExc_ValueError, e.what()); return nullptr; \
     } catch (std::exception& se) { \
-        set_std_exception(se); return nullptr; \
+        arki::python::set_std_exception(se); return nullptr; \
     }
 
 #define ARKI_CATCH_RETURN_INT \
-      catch (PythonException&) { \
+      catch (arki::python::PythonException&) { \
         return -1; \
     } catch (std::invalid_argument& e) { \
         PyErr_SetString(PyExc_ValueError, e.what()); return -1; \
     } catch (std::exception& se) { \
-        set_std_exception(se); return -1; \
+        arki::python::set_std_exception(se); return -1; \
     }
 
 #define ARKI_CATCH_RETHROW_PYTHON \
-      catch (PythonException&) { \
+      catch (arki::python::PythonException&) { \
         throw; \
     } catch (std::invalid_argument& e) { \
-        PyErr_SetString(PyExc_ValueError, e.what()); throw PythonException(); \
+        PyErr_SetString(PyExc_ValueError, e.what()); throw arki::python::PythonException(); \
     } catch (std::exception& se) { \
-        set_std_exception(se); throw PythonException(); \
+        arki::python::set_std_exception(se); throw arki::python::PythonException(); \
     }
 
 

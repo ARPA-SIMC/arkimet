@@ -9,12 +9,8 @@
 
 namespace arki {
 namespace dataset {
-namespace index {
-class Manifest;
-}
 
 namespace simple {
-class Reader;
 class AppendSegment;
 
 class Writer : public DatasetAccess<simple::Dataset, segmented::Writer>
@@ -34,7 +30,7 @@ public:
 
     WriterAcquireResult acquire(Metadata& md, const AcquireConfig& cfg=AcquireConfig()) override;
     void acquire_batch(WriterBatch& batch, const AcquireConfig& cfg=AcquireConfig()) override;
-    void remove(Metadata& md);
+    void remove(Metadata& md) override;
 
     static void test_acquire(std::shared_ptr<Session> session, const core::cfg::Section& cfg, WriterBatch& batch);
 };

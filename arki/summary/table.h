@@ -3,7 +3,7 @@
 
 /// summary/table - Arkimet summary implementation in tabular form
 
-#include <arki/types.h>
+#include <arki/types/fwd.h>
 #include <arki/core/fwd.h>
 #include <arki/structured/fwd.h>
 #include <arki/metadata/fwd.h>
@@ -21,8 +21,9 @@ struct Visitor;
 struct StatsVisitor;
 struct ItemVisitor;
 
-struct Row
+class Row
 {
+public:
     /// Number of item types that contribute to a summary context (same as Table::msoSize)
     static const unsigned mso_size = 10;
     std::array<const types::Type*, mso_size> items;

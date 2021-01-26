@@ -24,11 +24,11 @@ struct Fixture : public DatasetTest {
         metadata::TestCollection mdc("inbound/test.grib1");
         for (const auto& const_md: mdc)
         {
-            Metadata md = *const_md;
+            std::shared_ptr<Metadata> md(const_md->clone());
             for (unsigned i = 7; i <= 9; ++i)
             {
-                md.set(Reftime::createPosition(core::Time(2009, 8, i, 0, 0, 0)));
-                wassert(actual(*writer).import(md));
+                md->test_set(Reftime::createPosition(core::Time(2009, 8, i, 0, 0, 0)));
+                wassert(actual(*writer).import(*md));
             }
         }
     }

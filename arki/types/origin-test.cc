@@ -24,12 +24,13 @@ add_generic_test(
 
 add_method("grib1_details", [] {
     using namespace arki::types;
-    unique_ptr<Origin> o = Origin::createGRIB1(1, 2, 3);
+    std::unique_ptr<Origin> o = Origin::createGRIB1(1, 2, 3);
     wassert(actual(o->style()) == Origin::Style::GRIB1);
-    const origin::GRIB1* v = dynamic_cast<origin::GRIB1*>(o.get());
-    wassert(actual(v->centre()) == 1u);
-    wassert(actual(v->subcentre()) == 2u);
-    wassert(actual(v->process()) == 3u);
+    unsigned c, s, p;
+    o->get_GRIB1(c, s, p);
+    wassert(actual(c) == 1u);
+    wassert(actual(s) == 2u);
+    wassert(actual(p) == 3u);
 });
 
 // Check GRIB2
@@ -44,12 +45,13 @@ add_method("grib2_details", [] {
     using namespace arki::types;
     unique_ptr<Origin> o = Origin::createGRIB2(1, 2, 3, 4, 5);
     wassert(actual(o->style()) == Origin::Style::GRIB2);
-    const origin::GRIB2* v = dynamic_cast<origin::GRIB2*>(o.get());
-    wassert(actual(v->centre()) == 1u);
-    wassert(actual(v->subcentre()) == 2u);
-    wassert(actual(v->processtype()) == 3u);
-    wassert(actual(v->bgprocessid()) == 4u);
-    wassert(actual(v->processid()) == 5u);
+    unsigned ce, su, pt, bg, pi;
+    o->get_GRIB2(ce, su, pt, bg, pi);
+    wassert(actual(ce) == 1u);
+    wassert(actual(su) == 2u);
+    wassert(actual(pt) == 3u);
+    wassert(actual(bg) == 4u);
+    wassert(actual(pi) == 5u);
 });
 
 // Check BUFR
@@ -64,9 +66,10 @@ add_method("bufr_details", [] {
     using namespace arki::types;
     unique_ptr<Origin> o = Origin::createBUFR(1, 2);
     wassert(actual(o->style()) == Origin::Style::BUFR);
-    const origin::BUFR* v = dynamic_cast<origin::BUFR*>(o.get());
-    wassert(actual(v->centre()) == 1u);
-    wassert(actual(v->subcentre()) == 2u);
+    unsigned c, s;
+    o->get_BUFR(c, s);
+    wassert(actual(c) == 1u);
+    wassert(actual(s) == 2u);
 });
 
 // Check ODIMH5
@@ -87,19 +90,20 @@ add_generic_test(
 
 add_method("odim_details", [] {
     using namespace arki::types;
-    unique_ptr<Origin> o = Origin::createODIMH5("1", "2", "3");
+    std::unique_ptr<Origin> o = Origin::createODIMH5("1", "2", "3");
     wassert(actual(o->style()) == Origin::Style::ODIMH5);
-    const origin::ODIMH5* v = dynamic_cast<origin::ODIMH5*>(o.get());
-    wassert(actual(v->getWMO()) == "1");
-    wassert(actual(v->getRAD()) == "2");
-    wassert(actual(v->getPLC()) == "3");
+    std::string WMO, RAD, PLC;
+    o->get_ODIMH5(WMO, RAD, PLC);
+    wassert(actual(WMO) == "1");
+    wassert(actual(RAD) == "2");
+    wassert(actual(PLC) == "3");
 
     o = Origin::createODIMH5("", "2", "3");
     wassert(actual(o->style()) == Origin::Style::ODIMH5);
-    v = dynamic_cast<origin::ODIMH5*>(o.get());
-    wassert(actual(v->getWMO()) == "");
-    wassert(actual(v->getRAD()) == "2");
-    wassert(actual(v->getPLC()) == "3");
+    o->get_ODIMH5(WMO, RAD, PLC);
+    wassert(actual(WMO) == "");
+    wassert(actual(RAD) == "2");
+    wassert(actual(PLC) == "3");
 });
 
 }

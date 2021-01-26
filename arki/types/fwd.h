@@ -6,27 +6,27 @@
 namespace arki {
 namespace types {
 
-struct Type;
+class Type;
 typedef TypeCode Code;
 template<typename T>
-class traits;
+struct traits;
 
-struct Source;
+class Source;
 namespace source {
-struct Blob;
-struct Inline;
-struct Url;
+class Blob;
+class Inline;
+class Url;
 }
 
-struct Note;
+class Note;
 
-struct Reftime;
+class Reftime;
 namespace reftime {
-struct Position;
-struct Period;
+class Position;
+class Period;
 }
 
-struct Origin;
+class Origin;
 namespace origin {
 class GRIB1;
 class GRIB2;
@@ -34,7 +34,7 @@ class BUFR;
 class ODIMH5;
 }
 
-struct Product;
+class Product;
 namespace product {
 class GRIB1;
 class GRIB2;
@@ -43,7 +43,7 @@ class ODIMH5;
 class VM2;
 }
 
-struct Level;
+class Level;
 namespace level {
 class GRIB1;
 class GRIB2;
@@ -52,12 +52,12 @@ class GRIB2D;
 class ODIMH5;
 }
 
-struct Run;
+class Run;
 namespace run {
 class Minute;
 }
 
-struct Timerange;
+class Timerange;
 namespace timerange {
 class Timedef;
 class GRIB1;
@@ -65,21 +65,22 @@ class GRIB2;
 class BUFR;
 }
 
-struct Area;
+class Area;
 namespace area {
 class GRIB;
 class ODIMH5;
 class VM2;
 }
 
-struct Quantity;
-struct Task;
+class Quantity;
+class Task;
 
 class ItemSet;
+class ValueBag;
 
 }
 
-struct Formatter;
+class Formatter;
 
 }
 #endif

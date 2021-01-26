@@ -4,8 +4,6 @@
 #include <arki/dataset/ondisk2.h>
 #include <arki/dataset/impl.h>
 #include <string>
-#include <map>
-#include <vector>
 
 namespace arki {
 namespace dataset {

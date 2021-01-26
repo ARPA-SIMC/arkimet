@@ -1,10 +1,9 @@
 #include "arki/dataset/index/attr.h"
-#include "arki/matcher.h"
+#include "arki/dataset/index/base.h"
 #include "arki/matcher/utils.h"
 #include "arki/core/binary.h"
 #include "arki/types.h"
 #include "arki/metadata.h"
-#include <sstream>
 
 using namespace std;
 using namespace arki;
@@ -54,7 +53,7 @@ unique_ptr<Type> AttrSubIndex::q_select_one(int id) const
         const void* buf = m_select_one->fetchBlob(0);
         int len = m_select_one->fetchBytes(0);
         core::BinaryDecoder dec((const uint8_t*)buf, len);
-        res = types::decodeInner(code, dec);
+        res = types::Type::decodeInner(code, dec);
     }
     return res;
 }
@@ -165,15 +164,13 @@ std::vector<int> AttrSubIndex::query(const matcher::OR& m) const
 
 	std::vector<int> ids;
 
-    // Decode every blob in the database and run the matcher on it
+    // Run the matcher on every blob in the database
     m_select_all->reset();
     while (m_select_all->step())
     {
-        const void* buf = m_select_all->fetchBlob(1);
+        const uint8_t* buf = reinterpret_cast<const uint8_t*>(m_select_all->fetchBlob(1));
         int len = m_select_all->fetchBytes(1);
-        core::BinaryDecoder dec((const uint8_t*)buf, len);
-        unique_ptr<Type> t = types::decodeInner(code, dec);
-        if (m.matchItem(*t))
+        if (m.match_buffer(code, buf, len))
             ids.push_back(m_select_all->fetch<int>(0));
     }
     return ids;
@@ -250,4 +247,3 @@ std::vector<int> Attrs::obtainIDs(const Metadata& md) const
 }
 }
 }
-// vim:set ts=4 sw=4:

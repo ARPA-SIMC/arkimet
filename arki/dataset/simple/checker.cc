@@ -1,14 +1,14 @@
 #include "arki/dataset/simple/checker.h"
 #include "arki/dataset/index/manifest.h"
-#include "arki/dataset/maintenance.h"
 #include "arki/dataset/reporter.h"
 #include "arki/dataset/step.h"
 #include "arki/dataset/lock.h"
 #include "arki/dataset/session.h"
 #include "arki/dataset/archive.h"
+#include "arki/types.h"
 #include "arki/types/source/blob.h"
 #include "arki/summary.h"
-#include "arki/types/reftime.h"
+#include "arki/metadata.h"
 #include "arki/matcher.h"
 #include "arki/metadata/collection.h"
 #include "arki/metadata/sort.h"
@@ -17,7 +17,6 @@
 #include "arki/utils/files.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/string.h"
-#include <ctime>
 #include <cstdio>
 
 using namespace std;
@@ -147,35 +146,28 @@ public:
         contents.sort(cmp); // Sort by reftime and by offset
 
         // Compute the span of reftimes inside the segment
-        unique_ptr<Time> md_begin;
-        unique_ptr<Time> md_until;
+        core::Interval segment_interval;
         if (contents.empty())
         {
             reporter.segment_info(checker.name(), segment->segment().relpath, "index knows of this segment but contains no data for it");
-            md_begin.reset(new Time(0, 0, 0));
-            md_until.reset(new Time(0, 0, 0));
             state = segment::SEGMENT_UNALIGNED;
         } else {
-            if (!contents.expand_date_range(md_begin, md_until))
+            if (!contents.expand_date_range(segment_interval))
             {
                 reporter.segment_info(checker.name(), segment->segment().relpath, "index data for this segment has no reference time information");
                 state = segment::SEGMENT_CORRUPTED;
-                md_begin.reset(new Time(0, 0, 0));
-                md_until.reset(new Time(0, 0, 0));
             } else {
                 // Ensure that the reftime span fits inside the segment step
-                Time seg_begin;
-                Time seg_until;
-                if (checker.dataset().step().path_timespan(segment->segment().relpath, seg_begin, seg_until))
+                core::Interval interval;
+                if (checker.dataset().step().path_timespan(segment->segment().relpath, interval))
                 {
-                    if (*md_begin < seg_begin || *md_until > seg_until)
+                    if (segment_interval.begin < interval.begin || segment_interval.end > interval.end)
                     {
                         reporter.segment_info(checker.name(), segment->segment().relpath, "segment contents do not fit inside the step of this dataset");
                         state = segment::SEGMENT_CORRUPTED;
                     }
                     // Expand segment timespan to the full possible segment timespan
-                    *md_begin = seg_begin;
-                    *md_until = seg_until;
+                    segment_interval = interval;
                 } else {
                     reporter.segment_info(checker.name(), segment->segment().relpath, "segment name does not fit the step of this dataset");
                     state = segment::SEGMENT_CORRUPTED;
@@ -186,7 +178,7 @@ public:
         if (state.is_ok())
             state = segment->check([&](const std::string& msg) { reporter.segment_info(checker.name(), segment->segment().relpath, msg); }, contents, quick);
 
-        auto res = segmented::SegmentState(state, *md_begin, *md_until);
+        auto res = segmented::SegmentState(state, segment_interval);
         res.check_age(segment->segment().relpath, checker.dataset(), reporter);
         return res;
     }
@@ -531,14 +523,15 @@ void Checker::test_invalidate_in_index(const std::string& relpath)
     sys::touch(str::joinpath(dataset().path, relpath + ".metadata"), 1496167200);
 }
 
-void Checker::test_change_metadata(const std::string& relpath, Metadata& md, unsigned data_idx)
+std::shared_ptr<Metadata> Checker::test_change_metadata(const std::string& relpath, std::shared_ptr<Metadata> md, unsigned data_idx)
 {
     string md_pathname = str::joinpath(dataset().path, relpath) + ".metadata";
     metadata::Collection mds;
     mds.read_from_file(md_pathname);
-    md.set_source(std::unique_ptr<arki::types::Source>(mds[data_idx].source().clone()));
-    mds[data_idx] = md;
+    md->set_source(std::unique_ptr<arki::types::Source>(mds[data_idx].source().clone()));
+    mds.replace(data_idx, md);
     mds.writeAtomically(md_pathname);
+    return md;
 }
 
 }

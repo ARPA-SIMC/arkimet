@@ -8,6 +8,7 @@ nobase_dist_conf_DATA = \
 	scan/bufr_pollution.py \
 	scan/grib1.py \
 	scan/grib2.py \
+	scan/nc.py \
 	scan/odimh5.py \
 	qmacro/noop.py \
 	qmacro/noopcopy.py \

@@ -1,5 +1,6 @@
-#include "config.h"
 #include "proddef.h"
+#include "arki/types/proddef.h"
+#include "arki/utils/string.h"
 
 using namespace std;
 using namespace arki::types;
@@ -10,21 +11,39 @@ namespace matcher {
 
 std::string MatchProddef::name() const { return "proddef"; }
 
+MatchProddefGRIB::MatchProddefGRIB(const types::ValueBagMatcher& expr)
+    : expr(expr)
+{
+}
+
 MatchProddefGRIB::MatchProddefGRIB(const std::string& pattern)
 {
-	expr = ValueBag::parse(pattern);
+    expr = ValueBagMatcher::parse(pattern);
+}
+
+MatchProddefGRIB* MatchProddefGRIB::clone() const
+{
+    return new MatchProddefGRIB(expr);
 }
 
 bool MatchProddefGRIB::matchItem(const Type& o) const
 {
     const types::proddef::GRIB* v = dynamic_cast<const types::proddef::GRIB*>(&o);
     if (!v) return false;
-    return v->values().contains(expr);
+    return expr.is_subset(v->get_GRIB());
+}
+
+bool MatchProddefGRIB::match_buffer(types::Code code, const uint8_t* data, unsigned size) const
+{
+    if (code != TYPE_PRODDEF) return false;
+    if (size < 1) return false;
+    if (types::Proddef::style(data, size) != proddef::Style::GRIB) return false;
+    return expr.is_subset(Proddef::get_GRIB(data, size));
 }
 
 std::string MatchProddefGRIB::toString() const
 {
-	return "GRIB:" + expr.toString();
+    return "GRIB:" + expr.to_string();
 }
 
 Implementation* MatchProddef::parse(const std::string& pattern)

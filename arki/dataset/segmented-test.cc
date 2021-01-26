@@ -139,9 +139,9 @@ add_method("gzidx", [](Fixture& f) {
     metadata::TestCollection mds("inbound/fixture.grib1");
     for (auto& md: mds)
     {
-        Time t = md->get<types::reftime::Position>()->time;
+        Time t = md->get<types::reftime::Position>()->get_Position();
         t.se = 30;
-        md->set(types::reftime::Position(t));
+        md->test_set(types::Reftime::createPosition(t));
     }
     wassert(f.import(mds));
 
@@ -483,11 +483,11 @@ add_method("query_lots", [](Fixture& f) {
                                     month, day, hour, station, varid, value);
                             md->set_source_inline("vm2", metadata::DataManager::get().to_data("vm2", vector<uint8_t>(buf, buf+len)));
                             md->add_note("Generated from memory");
-                            md->set(Reftime::createPosition(Time(2013, month, day, hour, 0, 0)));
-                            md->set(Area::createVM2(station));
-                            md->set(Product::createVM2(varid));
+                            md->test_set(Reftime::createPosition(Time(2013, month, day, hour, 0, 0)));
+                            md->test_set<area::VM2>(station);
+                            md->test_set(Product::createVM2(varid));
                             snprintf(buf, 40, "%d,,,000000000", value);
-                            md->set(types::Value::create(buf));
+                            md->test_set(types::Value::create(buf));
                             mds.acquire(std::move(md));
                         }
 
@@ -502,6 +502,7 @@ add_method("query_lots", [](Fixture& f) {
         uint64_t last_value;
         unsigned seen;
         CheckSortOrder() : last_value(0), seen(0) {}
+        virtual ~CheckSortOrder() {}
         virtual uint64_t make_key(const Metadata& md) const = 0;
         bool eat(std::shared_ptr<Metadata> md)
         {
@@ -518,7 +519,8 @@ add_method("query_lots", [](Fixture& f) {
         virtual uint64_t make_key(const Metadata& md) const
         {
             const reftime::Position* rt = md.get<types::reftime::Position>();
-            return rt->time.mo * 10000 + rt->time.da * 100 + rt->time.ho;
+            auto time = rt->get_Position();
+            return time.mo * 10000 + time.da * 100 + time.ho;
         }
     };
 
@@ -527,10 +529,14 @@ add_method("query_lots", [](Fixture& f) {
         virtual uint64_t make_key(const Metadata& md) const
         {
             const reftime::Position* rt = md.get<types::reftime::Position>();
+            auto time = rt->get_Position();
             const area::VM2* area = dynamic_cast<const area::VM2*>(md.get(TYPE_AREA));
-            const product::VM2* prod = dynamic_cast<const product::VM2*>(md.get(TYPE_PRODUCT));
-            uint64_t dt = rt->time.mo * 10000 + rt->time.da * 100 + rt->time.ho;
-            return dt * 100 + area->station_id() * 10 + prod->variable_id();
+            const Product* prod = md.get<Product>();
+            uint64_t dt = time.mo * 10000 + time.da * 100 + time.ho;
+            unsigned vi;
+            prod->get_VM2(vi);
+            auto sid = area->get_VM2();
+            return dt * 100 + sid * 10 + vi;
         }
     };
 

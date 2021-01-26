@@ -6,7 +6,6 @@
 #include "arki/types/reftime.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
-#include <cerrno>
 #include <fcntl.h>
 
 using namespace std;
@@ -108,7 +107,10 @@ void SummaryCache::invalidate(int year, int month)
 void SummaryCache::invalidate(const Metadata& md)
 {
     if (const reftime::Position* rt = md.get<reftime::Position>())
-        invalidate(rt->time.ye, rt->time.mo);
+    {
+        auto t = rt->get_Position();
+        invalidate(t.ye, t.mo);
+    }
 }
 
 void SummaryCache::invalidate(const Time& tmin, const Time& tmax)

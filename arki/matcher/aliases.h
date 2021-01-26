@@ -30,8 +30,9 @@ public:
 /**
  * Store aliases to be used by the matcher
  */
-struct AliasDatabase
+class AliasDatabase
 {
+public:
     std::map<std::string, matcher::Aliases> aliasDatabase;
 
     AliasDatabase();

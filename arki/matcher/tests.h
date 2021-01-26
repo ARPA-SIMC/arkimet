@@ -5,8 +5,6 @@
 #include <arki/matcher.h>
 
 namespace arki {
-struct Metadata;
-
 namespace tests {
 
 class ActualMatcher : public arki::utils::tests::Actual<Matcher>
@@ -22,9 +20,11 @@ public:
 
     /// Ensure that the matcher matches this metadata
     void matches(const Metadata& md) const;
+    void matches(std::shared_ptr<Metadata> md) const { matches(*md); }
 
     /// Ensure that the matcher does not match this metadata
     void not_matches(const Metadata& md) const;
+    void not_matches(std::shared_ptr<Metadata> md) const { not_matches(*md); }
 
     /// Ensure that the matcher matches this metadata item
     void matches(const std::string& item) const;

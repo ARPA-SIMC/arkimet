@@ -5,7 +5,6 @@
 #include "arki/dataset/session.h"
 #include "arki/types/source/blob.h"
 #include "arki/types/reftime.h"
-#include "arki/nag.h"
 #include "arki/scan.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/string.h"
@@ -14,8 +13,6 @@
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
 #include "arki/summary.h"
-#include <ctime>
-#include <cstdio>
 
 using namespace std;
 using namespace arki;
@@ -28,8 +25,9 @@ namespace dataset {
 namespace simple {
 
 /// Accumulate metadata and summaries while writing
-struct AppendSegment
+class AppendSegment
 {
+public:
     std::shared_ptr<simple::Dataset> dataset;
     std::shared_ptr<dataset::AppendLock> lock;
     std::shared_ptr<segment::Writer> segment;
@@ -62,7 +60,7 @@ struct AppendSegment
         using namespace arki::types;
 
         // Replace the pathname with its basename
-        unique_ptr<Metadata> copy(md.clone());
+        auto copy(md.clone());
         if (!dataset->smallfiles)
             copy->unset(TYPE_VALUE);
         copy->set_source(Source::createBlobUnlocked(source.format, dir.name(), basename, source.offset, source.size));
@@ -148,7 +146,7 @@ std::string Writer::type() const { return "simple"; }
 std::unique_ptr<AppendSegment> Writer::file(const segment::WriterConfig& writer_config, const Metadata& md, const std::string& format)
 {
     auto lock = dataset().append_lock_dataset();
-    const core::Time& time = md.get<types::reftime::Position>()->time;
+    core::Time time = md.get<types::reftime::Position>()->get_Position();
     std::string relpath = dataset().step()(time) + "." + md.source().format;
     auto writer = dataset().session->segment_writer(writer_config, format, dataset().path, relpath);
     return std::unique_ptr<AppendSegment>(new AppendSegment(m_dataset, lock, writer));

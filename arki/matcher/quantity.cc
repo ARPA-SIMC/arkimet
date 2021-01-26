@@ -1,8 +1,6 @@
-#include "config.h"
-
 #include "quantity.h"
+#include "arki/types/quantity.h"
 #include "arki/types/utils.h"
-
 #include <set>
 #include <string>
 
@@ -16,9 +14,19 @@ namespace matcher {
 
 std::string MatchQuantity::name() const { return "quantity"; }
 
+MatchQuantity::MatchQuantity(const MatchQuantity& o)
+    : Implementation(o), values(o.values)
+{
+}
+
 MatchQuantity::MatchQuantity(const std::string& pattern)
 {
 	arki::types::split(pattern, values);
+}
+
+MatchQuantity* MatchQuantity::clone() const
+{
+    return new MatchQuantity(*this);
 }
 
 bool MatchQuantity::matchItem(const Type& o) const
@@ -26,19 +34,17 @@ bool MatchQuantity::matchItem(const Type& o) const
 	const types::Quantity* v = dynamic_cast<const types::Quantity*>(&o);
 	if (!v) return false;
 
-	//se il matche specifica dei valori
-	if (values.size())
-	{
+    // If the matcher has values to match
+    if (values.size())
+    {
+        auto vvalues = v->get();
         //allora tutti i valori indicati devono essere presenti nell'oggetto
-        for (std::set<std::string>::const_iterator i = values.begin();
-                i != values.end(); ++i)
-        {
-            if (v->values.find(*i) == v->values.end())
+        for (const auto& i: values)
+            if (vvalues.find(i) == vvalues.end())
                 return false;
-        }
-	}
+    }
 
-	return true;
+    return true;
 }
 
 std::string MatchQuantity::toString() const

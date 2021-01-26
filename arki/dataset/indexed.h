@@ -9,8 +9,9 @@ class Index;
 
 namespace indexed {
 
-struct Dataset : public segmented::Dataset
+class Dataset : public segmented::Dataset
 {
+public:
     using segmented::Dataset::Dataset;
 };
 

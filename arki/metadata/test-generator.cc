@@ -3,7 +3,6 @@
 #include "arki/metadata/data.h"
 #include "arki/types/reftime.h"
 #include "arki/types/run.h"
-#include <cstring>
 
 using namespace std;
 using namespace arki::types;
@@ -116,12 +115,13 @@ bool Generator::_generate(const Samples::const_iterator& i, Metadata& md, metada
 {
     if (i == samples.end())
     {
-        unique_ptr<Metadata> m(new Metadata(md));
+        auto m = md.clone();
 
         // Set run from Reftime
         const types::Reftime* rt = md.get<types::Reftime>();
         const types::reftime::Position* p = dynamic_cast<const types::reftime::Position*>(rt);
-        m->set(types::run::Minute::create(p->time.ho, p->time.mi));
+        auto t = p->get_Position();
+        m->set(types::Run::createMinute(t.ho, t.mi));
 
         // Set source and inline data
         m->set_source_inline(format, metadata::DataManager::get().to_data(format, vector<uint8_t>(5432)));
@@ -131,7 +131,7 @@ bool Generator::_generate(const Samples::const_iterator& i, Metadata& md, metada
 
     for (vector<Type*>::const_iterator j = i->second.begin(); j != i->second.end(); ++j)
     {
-        md.set(**j);
+        md.test_set(**j);
         Samples::const_iterator next = i;
         ++next;
         if (!_generate(next, md, cons)) return false;

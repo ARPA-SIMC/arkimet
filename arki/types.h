@@ -6,9 +6,9 @@
 #include <arki/core/fwd.h>
 #include <arki/types/fwd.h>
 #include <arki/structured/fwd.h>
-#include <string>
-#include <vector>
 #include <memory>
+#include <vector>
+#include <string>
 #include <stdexcept>
 
 namespace arki {
@@ -58,8 +58,9 @@ static inline std::ostream& operator<<(std::ostream& o, const Code& c) { return 
 /**
  * Base class for implementing arkimet metadata types
  */
-struct Type
+class Type
 {
+public:
     virtual ~Type() {}
 
     /**
@@ -75,7 +76,11 @@ struct Type
     /// Make a copy of this type
     std::unique_ptr<Type> cloneType() const { return std::unique_ptr<Type>(clone()); }
 
-    /// Comparison (<0 if <, 0 if =, >0 if >)
+    /**
+     * Comparison (<0 if <, 0 if =, >0 if >).
+     *
+     * This is currently only needed by Summary.
+     */
     virtual int compare(const Type& o) const;
     bool operator<(const Type& o) const { return compare(o) < 0; }
     bool operator<=(const Type& o) const { return compare(o) <= 0; }
@@ -168,6 +173,14 @@ struct Type
     {
         return nullable_compare(a.get(), b.get());
     }
+
+    /**
+     * Decode an item encoded in binary representation with envelope, from a
+     * decoder
+     */
+    static std::unique_ptr<Type> decode(core::BinaryDecoder& dec);
+    static std::unique_ptr<Type> decodeInner(types::Code, core::BinaryDecoder& dec);
+    static std::unique_ptr<Type> decode_inner(types::Code, core::BinaryDecoder& dec, bool reuse_buffer);
 };
 
 /// Write as a string to an output stream
@@ -177,13 +190,6 @@ inline std::ostream& operator<<(std::ostream& o, const Type& t)
 }
 
 
-/**
- * Decode an item encoded in binary representation with envelope, from a
- * decoder
- */
-std::unique_ptr<Type> decode(core::BinaryDecoder& dec);
-
-std::unique_ptr<Type> decodeInner(types::Code, core::BinaryDecoder& dec);
 std::unique_ptr<Type> decodeString(types::Code, const std::string& val);
 std::unique_ptr<Type> decode_structure(const structured::Keys& keys, const structured::Reader& reader);
 std::unique_ptr<Type> decode_structure(const structured::Keys& keys, types::Code code, const structured::Reader& reader);

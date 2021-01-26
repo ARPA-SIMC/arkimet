@@ -18,7 +18,7 @@ class BufrPrepare(App):
         self.parser.add_argument("--fail", metavar="file",
                                  help="do not ignore BUFR data that could not be decoded,"
                                       " but write it to the given file")
-        self.parser.add_argument("--usn", metavar="number",
+        self.parser.add_argument("--usn", metavar="number", type=lambda x: int(x) if x is not None else None,
                                  help="overwrite the update sequence number of every BUFR message with this value")
         self.parser.add_argument("files", nargs="*", action="store",
                                  help="BUFR files to process")

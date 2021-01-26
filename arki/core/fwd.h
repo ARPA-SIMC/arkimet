@@ -5,8 +5,8 @@ namespace arki {
 
 namespace utils {
 namespace sys {
-struct NamedFileDescriptor;
-struct File;
+class NamedFileDescriptor;
+class File;
 }
 }
 
@@ -22,8 +22,8 @@ struct AbstractInputFile;
 struct AbstractOutputFile;
 
 struct BufferedReader;
-struct LineReader;
-struct Lock;
+class LineReader;
+class Lock;
 
 namespace lock {
 struct Policy;
@@ -31,20 +31,20 @@ extern const Policy* policy_null;
 extern const Policy* policy_ofd;
 }
 
-struct Time;
+class Time;
 struct Interval;
-struct FuzzyTime;
+class FuzzyTime;
 
 namespace cfg {
-struct Section;
-struct Sections;
+class Section;
+class Sections;
 }
 
 struct BinaryEncoder;
 struct BinaryDecoder;
 
-struct Transaction;
-struct Pending;
+class Transaction;
+class Pending;
 
 }
 }

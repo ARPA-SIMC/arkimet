@@ -3,8 +3,8 @@
 
 /// summary/stats - Implementation of a summary stats payload
 
-#include <arki/types.h>
-#include <arki/types/reftime.h>
+#include <arki/core/time.h>
+#include <arki/structured/fwd.h>
 #include <arki/metadata/fwd.h>
 #include <map>
 #include <string>
@@ -14,8 +14,10 @@
 
 namespace arki {
 namespace summary {
-struct Stats
+
+class Stats
 {
+public:
     size_t count;
     uint64_t size;
     core::Time begin;

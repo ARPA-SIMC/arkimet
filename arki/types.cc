@@ -1,5 +1,3 @@
-#include "arki/libconfig.h"
-#include "core/file.h"
 #include "core/binary.h"
 #include "types.h"
 #include "types/utils.h"
@@ -7,12 +5,8 @@
 #include "utils/string.h"
 #include "structured/emitter.h"
 #include "structured/keys.h"
-#include "structured/memory.h"
 #include "structured/reader.h"
 #include "formatter.h"
-#include <cstring>
-#include <unistd.h>
-#include <algorithm>
 
 using namespace std;
 using namespace arki::utils;
@@ -147,16 +141,21 @@ std::string Type::exactQuery() const
     return ss.str();
 }
 
-unique_ptr<Type> decode(core::BinaryDecoder& dec)
+unique_ptr<Type> Type::decode(core::BinaryDecoder& dec)
 {
     types::Code code;
     core::BinaryDecoder inner = dec.pop_type_envelope(code);
     return decodeInner(code, inner);
 }
 
-unique_ptr<Type> decodeInner(types::Code code, core::BinaryDecoder& dec)
+unique_ptr<Type> Type::decodeInner(types::Code code, core::BinaryDecoder& dec)
 {
-    return std::unique_ptr<Type>(types::MetadataType::get(code)->decode_func(dec));
+    return std::unique_ptr<Type>(types::MetadataType::get(code)->decode_func(dec, false));
+}
+
+unique_ptr<Type> Type::decode_inner(types::Code code, core::BinaryDecoder& dec, bool reuse_buffer)
+{
+    return std::unique_ptr<Type>(types::MetadataType::get(code)->decode_func(dec, reuse_buffer));
 }
 
 unique_ptr<Type> decodeString(types::Code code, const std::string& val)

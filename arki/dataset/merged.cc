@@ -1,13 +1,13 @@
 #include "arki/dataset/merged.h"
-#include "arki/dataset/session.h"
+#include "arki/dataset/pool.h"
 #include "arki/dataset/query.h"
 #include "arki/dataset/progress.h"
 #include "arki/exceptions.h"
-#include "arki/metadata.h"
 #include "arki/metadata/sort.h"
 #include "arki/matcher.h"
 #include "arki/summary.h"
 #include "arki/utils/string.h"
+#include "arki/core/time.h"
 #include <cstring>
 #include <thread>
 #include <mutex>
@@ -182,10 +182,10 @@ public:
 };
 
 
-Dataset::Dataset(std::shared_ptr<Session> session)
-    : dataset::Dataset(session, "merged")
+Dataset::Dataset(std::shared_ptr<dataset::Pool> pool)
+    : dataset::Dataset(pool->session(), "merged")
 {
-    session->foreach_dataset([&](std::shared_ptr<arki::dataset::Dataset> ds) {
+    pool->foreach_dataset([&](std::shared_ptr<arki::dataset::Dataset> ds) {
         datasets.emplace_back(ds->create_reader());
         return true;
     });

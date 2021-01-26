@@ -2,9 +2,12 @@
 #define ARKI_CORE_TIME_H
 
 #include <arki/core/fwd.h>
+#include <cstdint>
+#include <ctime>
 #include <vector>
 #include <string>
 #include <functional>
+#include <iosfwd>
 
 namespace arki {
 namespace core {
@@ -188,6 +191,9 @@ public:
 
     /// CODEC functions
     void encodeWithoutEnvelope(BinaryEncoder& enc) const;
+    /// Encode in binary format in a preallocated buffer, which must be at least
+    /// 5 bytes long
+    void encode_binary(uint8_t* buf) const;
     static Time decode(BinaryDecoder& dec);
     static Time decodeString(const std::string& val);
 

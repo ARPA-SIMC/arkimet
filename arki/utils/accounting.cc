@@ -1,8 +1,4 @@
-#include "config.h"
-
-#include <arki/utils/accounting.h>
-
-using namespace std;
+#include "arki/utils/accounting.h"
 
 namespace arki {
 namespace utils {

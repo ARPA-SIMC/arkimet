@@ -1,13 +1,10 @@
-#include "arki/libconfig.h"
 #include "process.h"
 #include "arki/exceptions.h"
 #include <poll.h>
-#include <sys/time.h>
-#include <sys/types.h>
-#include <fcntl.h>
 #include <unistd.h>
 #include <signal.h>
 #include <cerrno>
+#include <stdexcept>
 
 #if __xlC__
 typedef void (*sighandler_t)(int);

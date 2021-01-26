@@ -232,7 +232,6 @@ public:
 	{
 		return sqlite3_column_bytes(m_stm, column);
 	}
-    std::unique_ptr<types::Type> fetchType(int column);
 
     /// Run the query, ignoring all results
     void execute();

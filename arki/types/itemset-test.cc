@@ -7,21 +7,7 @@
 #include "arki/types/reftime.h"
 #include "arki/types/area.h"
 #include "arki/types/proddef.h"
-#include "arki/types/assigneddataset.h"
-
-namespace std {
-static inline std::ostream& operator<<(std::ostream& o, const arki::types::ItemSet& m)
-{
-    o << "(";
-    for (arki::types::ItemSet::const_iterator i = m.begin(); i != m.end(); ++i)
-        if (i == m.begin())
-            o << i->second;
-        else
-            o << ", " << i->second;
-    o << ")";
-    return o;
-}
-}
+#include "arki/types/values.h"
 
 using namespace std;
 using namespace arki::tests;
@@ -39,29 +25,19 @@ struct Fixture : public arki::utils::tests::Fixture
     Fixture()
     {
         using namespace arki::types::values;
-        testValues.set("foo", Value::create_integer(5));
-        testValues.set("bar", Value::create_integer(5000));
-        testValues.set("baz", Value::create_integer(-200));
-        testValues.set("moo", Value::create_integer(0x5ffffff));
-        testValues.set("antani", Value::create_integer(-1));
-        testValues.set("blinda", Value::create_integer(0));
-        testValues.set("supercazzola", Value::create_integer(-1234567));
-        testValues.set("pippo", Value::create_string("pippo"));
-        testValues.set("pluto", Value::create_string("12"));
-        testValues.set("cippo", Value::create_string(""));
+        // 100663295 == 0x5ffffff
+        testValues = ValueBag::parse("foo=5, bar=5000, baz=-200, moo=100663295, antani=-1, blinda=0, supercazzola=-1234567, pippo=pippo, pluto=\"12\", cippo=\"\"");
     }
 
     void fill(ItemSet& md)
     {
-        md.set(origin::GRIB1::create(1, 2, 3));
-        md.set(product::GRIB1::create(1, 2, 3));
-        md.set(level::GRIB1::create(114, 12, 34));
-        md.set(timerange::GRIB1::create(1, 1, 2, 3));
+        md.set(Origin::createGRIB1(1, 2, 3));
+        md.set(Product::createGRIB1(1, 2, 3));
+        md.set(Level::createGRIB1(114, 12, 34));
+        md.set(Timerange::createGRIB1(1, 1, 2, 3));
         md.set(area::GRIB::create(testValues));
-        md.set(proddef::GRIB::create(testValues));
-        md.set(AssignedDataset::create("dsname", "dsid"));
-        // Test POSITION reference times
-        md.set(reftime::Position::create(Time(2006, 5, 4, 3, 2, 1)));
+        md.set(Proddef::createGRIB(testValues));
+        md.set(Reftime::createPosition(Time(2006, 5, 4, 3, 2, 1)));
     }
 };
 

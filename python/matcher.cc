@@ -60,6 +60,52 @@ struct match : public MethKwargs<match, arkipy_Matcher>
     }
 };
 
+struct merge : public MethKwargs<merge, arkipy_Matcher>
+{
+    constexpr static const char* name = "merge";
+    constexpr static const char* signature = "matcher: arki.Matcher";
+    constexpr static const char* returns = "arki.Matcher";
+    constexpr static const char* summary = "return a matcher that selects at least the data from this and the other matcher";
+    constexpr static const char* doc = nullptr;
+
+    static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
+    {
+        static const char* kwlist[] = { "matcher", nullptr };
+        PyObject* py_matcher = nullptr;
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "O!",
+                    const_cast<char**>(kwlist), arkipy_Matcher_Type, &py_matcher))
+            return nullptr;
+
+        try {
+            auto res = self->matcher.merge(((arkipy_Matcher*)py_matcher)->matcher);
+            return matcher_to_python(res);
+        } ARKI_CATCH_RETURN_PYO
+    }
+};
+
+struct update : public MethKwargs<update, arkipy_Matcher>
+{
+    constexpr static const char* name = "update";
+    constexpr static const char* signature = "matcher: arki.Matcher";
+    constexpr static const char* returns = "arki.Matcher";
+    constexpr static const char* summary = "return this matcher plus all the rules of the other matcher. When they both have a rule for the same metadata, only the rule of the second matcher is kept";
+    constexpr static const char* doc = nullptr;
+
+    static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
+    {
+        static const char* kwlist[] = { "matcher", nullptr };
+        PyObject* py_matcher = nullptr;
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "O!",
+                    const_cast<char**>(kwlist), arkipy_Matcher_Type, &py_matcher))
+            return nullptr;
+
+        try {
+            auto res = self->matcher.update(((arkipy_Matcher*)py_matcher)->matcher);
+            return matcher_to_python(res);
+        } ARKI_CATCH_RETURN_PYO
+    }
+};
+
 struct MatcherDef : public Type<MatcherDef, arkipy_Matcher>
 {
     constexpr static const char* name = "Matcher";
@@ -68,7 +114,7 @@ struct MatcherDef : public Type<MatcherDef, arkipy_Matcher>
 Precompiled matcher for arkimet metadata
 )";
     GetSetters<expanded> getsetters;
-    Methods<match> methods;
+    Methods<match, merge, update> methods;
 
     static void _dealloc(Impl* self)
     {

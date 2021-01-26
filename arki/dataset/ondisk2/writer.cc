@@ -1,13 +1,10 @@
 #include "arki/dataset/ondisk2/writer.h"
-#include "arki/exceptions.h"
-#include "arki/dataset/archive.h"
 #include "arki/dataset/session.h"
 #include "arki/dataset/step.h"
 #include "arki/dataset/lock.h"
 #include "arki/types/source/blob.h"
 #include "arki/types/reftime.h"
 #include "arki/metadata.h"
-#include "arki/metadata/collection.h"
 #include "arki/scan.h"
 #include "arki/utils/files.h"
 #include "arki/utils/accounting.h"
@@ -15,7 +12,6 @@
 #include "arki/utils/sys.h"
 #include "arki/nag.h"
 #include "index.h"
-#include <system_error>
 
 using namespace std;
 using namespace arki::utils;
@@ -271,7 +267,7 @@ std::string Writer::type() const { return "ondisk2"; }
 std::unique_ptr<AppendSegment> Writer::segment(const segment::WriterConfig& writer_config, const Metadata& md, const std::string& format)
 {
     auto lock = dataset().append_lock_dataset();
-    const core::Time& time = md.get<types::reftime::Position>()->time;
+    core::Time time = md.get<types::reftime::Position>()->get_Position();
     std::string relpath = dataset().step()(time) + "." + md.source().format;
     auto writer = dataset().session->segment_writer(writer_config, format, dataset().path, relpath);
     return std::unique_ptr<AppendSegment>(new AppendSegment(m_dataset, lock, writer));
@@ -372,7 +368,6 @@ void Writer::remove(Metadata& md)
 
     // reset source and dataset in the metadata
     md.unset_source();
-    md.unset(TYPE_ASSIGNEDDATASET);
 }
 
 void Writer::test_acquire(std::shared_ptr<Session> session, const core::cfg::Section& cfg, WriterBatch& batch)

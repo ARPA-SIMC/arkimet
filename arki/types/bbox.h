@@ -8,7 +8,7 @@
  */
 
 
-#include <arki/types/styled.h>
+#include <arki/types/encoded.h>
 
 namespace arki {
 namespace types {
@@ -25,7 +25,7 @@ enum class Style: unsigned char {
 
 }
 
-struct BBox;
+class BBox;
 
 template<>
 struct traits<BBox>
@@ -43,15 +43,34 @@ struct traits<BBox>
  * It can contain information like centre, process, subcentre, subprocess and
  * other similar data.
  */
-struct BBox : public types::StyledType<BBox>
+class BBox : public types::Encoded
 {
-	/// Convert a string into a style
-	static Style parseStyle(const std::string& str);
-	/// Convert a style into its string representation
-	static std::string formatStyle(Style s);
+public:
+    using Encoded::Encoded;
+
+    typedef bbox::Style Style;
+
+    types::Code type_code() const override { return traits<BBox>::type_code; }
+    size_t serialisationSizeLength() const override { return traits<BBox>::type_sersize_bytes; }
+    std::string tag() const override { return traits<BBox>::type_tag; }
+
+    BBox* clone() const override { return new BBox(data, size); }
+
+    bool equals(const Type& o) const override;
+    int compare(const Type& o) const override;
+
+    // Get the element style
+    bbox::Style style() const;
+
+    /// Convert a string into a style
+    static Style parseStyle(const std::string& str);
+    /// Convert a style into its string representation
+    static std::string formatStyle(Style s);
 
     /// CODEC functions
-    static std::unique_ptr<BBox> decode(core::BinaryDecoder& dec);
+    std::ostream& writeToOstream(std::ostream& o) const override;
+    void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
+    static std::unique_ptr<BBox> decode(core::BinaryDecoder& dec, bool reuse_buffer);
     static std::unique_ptr<BBox> decodeString(const std::string& val);
     static std::unique_ptr<BBox> decode_structure(const structured::Keys& keys, const structured::Reader& val);
 
@@ -61,25 +80,6 @@ struct BBox : public types::StyledType<BBox>
     static std::unique_ptr<BBox> createInvalid();
 };
 
-namespace bbox {
-
-struct INVALID : public BBox
-{
-    Style style() const override;
-    void encodeWithoutEnvelope(core::BinaryEncoder& enc) const override;
-    std::ostream& writeToOstream(std::ostream& o) const override;
-
-    int compare_local(const BBox& o) const override;
-    bool equals(const Type& o) const override;
-
-    INVALID* clone() const override;
-    static std::unique_ptr<INVALID> create();
-};
-
-}
-
 }
 }
-
-// vim:set ts=4 sw=4:
 #endif

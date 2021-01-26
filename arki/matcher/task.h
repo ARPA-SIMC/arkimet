@@ -2,9 +2,7 @@
 #define ARKI_MATCHER_TASK
 
 /// Radar task matcher
-#include <arki/matcher.h>
 #include <arki/matcher/utils.h>
-#include <arki/types/task.h>
 
 namespace arki {
 namespace matcher {
@@ -14,11 +12,13 @@ namespace matcher {
  */
 struct MatchTask : public Implementation
 {
-    std::string name() const override;
-
     std::string task;
 
+    MatchTask(const MatchTask& o);
     MatchTask(const std::string& pattern);
+    MatchTask* clone() const override;
+    std::string name() const override;
+
     bool matchItem(const types::Type& o) const override;
     std::string toString() const override;
 

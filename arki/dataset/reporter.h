@@ -11,8 +11,9 @@ namespace dataset {
  * Interface for notifying the progress and results of check and repack
  * activities for dataset Checkers
  */
-struct Reporter
+class Reporter
 {
+public:
     virtual ~Reporter();
 
     virtual void operation_progress(const std::string& ds, const std::string& operation, const std::string& message) = 0;
@@ -28,10 +29,12 @@ struct Reporter
     virtual void segment_tar(const std::string& ds, const std::string& relpath, const std::string& message) = 0;
     virtual void segment_compress(const std::string& ds, const std::string& relpath, const std::string& message) = 0;
     virtual void segment_issue51(const std::string& ds, const std::string& relpath, const std::string& message) = 0;
+    virtual void segment_manual_intervention(const std::string& ds, const std::string& relpath, const std::string& message) = 0;
 };
 
-struct NullReporter : public Reporter
+class NullReporter : public Reporter
 {
+public:
     void operation_progress(const std::string& ds, const std::string& operation, const std::string& message) override {}
     void operation_manual_intervention(const std::string& ds, const std::string& operation, const std::string& message) override {}
     void operation_aborted(const std::string& ds, const std::string& operation, const std::string& message) override {}
@@ -45,10 +48,12 @@ struct NullReporter : public Reporter
     void segment_tar(const std::string& ds, const std::string& relpath, const std::string& message) override {}
     void segment_compress(const std::string& ds, const std::string& relpath, const std::string& message) override {}
     void segment_issue51(const std::string& ds, const std::string& relpath, const std::string& message) override {}
+    void segment_manual_intervention(const std::string& ds, const std::string& relpath, const std::string& message) override {}
 };
 
-struct OstreamReporter : public Reporter
+class OstreamReporter : public Reporter
 {
+public:
     std::ostream& out;
 
     OstreamReporter(std::ostream& out);
@@ -66,6 +71,7 @@ struct OstreamReporter : public Reporter
     void segment_tar(const std::string& ds, const std::string& relpath, const std::string& message) override;
     void segment_compress(const std::string& ds, const std::string& relpath, const std::string& message) override;
     void segment_issue51(const std::string& ds, const std::string& relpath, const std::string& message) override;
+    void segment_manual_intervention(const std::string& ds, const std::string& relpath, const std::string& message) override;
 };
 
 }

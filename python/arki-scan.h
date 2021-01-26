@@ -11,11 +11,11 @@ namespace arki {
 namespace python {
 
 namespace cmdline {
-struct DatasetProcessor;
+class DatasetProcessor;
 }
 
 namespace arki_scan {
-struct MetadataDispatch;
+class MetadataDispatch;
 }
 
 }
@@ -27,7 +27,7 @@ typedef struct {
     PyObject_HEAD
     arki::python::cmdline::DatasetProcessor* processor = nullptr;
     arki::python::arki_scan::MetadataDispatch* dispatcher = nullptr;
-    std::shared_ptr<arki::dataset::Session> session;
+    std::shared_ptr<arki::dataset::Pool> pool;
 } arkipy_ArkiScan;
 
 extern PyTypeObject* arkipy_ArkiScan_Type;

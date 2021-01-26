@@ -1,11 +1,14 @@
-#include "config.h"
 #include "utils.h"
 #include "aliases.h"
 #include "reftime.h"
 #include "reftime/parser.h"
+#include "arki/core/binary.h"
 #include "arki/types/itemset.h"
+#include "arki/metadata.h"
+#include "arki/types.h"
 #include "arki/utils/string.h"
 #include "arki/utils/regexp.h"
+#include <unordered_set>
 #include <cassert>
 
 using namespace std;
@@ -62,7 +65,51 @@ void MatcherType::register_matcher(const std::string& name, types::Code code, ma
 }
 
 
+bool Implementation::match_buffer(types::Code code, const uint8_t* data, unsigned size) const
+{
+    core::BinaryDecoder dec(data, size);
+    // TODO: avoid a copy of the buffer if possible
+    auto t = types::Type::decodeInner(code, dec);
+    return matchItem(*t);
+}
+
+
 OR::~OR() {}
+
+OR* OR::clone() const
+{
+    std::unique_ptr<OR> res(new OR(unparsed));
+    for (const auto& c: components)
+        // Matcher components are considered immutable, so there's no need to
+        // clone them here and we can reuse them
+        res->components.emplace_back(c);
+    return res.release();
+}
+
+std::shared_ptr<OR> OR::merge(const OR& o) const
+{
+    auto res = std::make_shared<OR>("");
+    std::unordered_set<std::string> seen;
+
+    for (const auto& c: components)
+    {
+        std::string s = c->toString();
+        if (seen.find(s) != seen.end())
+            continue;
+        seen.emplace(s);
+        res->components.emplace_back(c);
+    }
+    for (const auto& c: o.components)
+    {
+        std::string s = c->toString();
+        if (seen.find(s) != seen.end())
+            continue;
+        seen.emplace(s);
+        res->components.emplace_back(c);
+    }
+    res->unparsed = res->toStringValueOnlyExpanded();
+    return res;
+}
 
 std::string OR::name() const
 {
@@ -80,6 +127,15 @@ bool OR::matchItem(const types::Type& t) const
     return false;
 }
 
+bool OR::match_buffer(types::Code code, const uint8_t* data, unsigned size) const
+{
+    if (components.empty()) return true;
+
+    for (auto i: components)
+        if (i->match_buffer(code, data, size))
+            return true;
+    return false;
+}
 
 bool OR::match_interval(const core::Interval& t) const
 {
@@ -190,9 +246,64 @@ std::unique_ptr<OR> OR::wrap(std::unique_ptr<Implementation> impl)
 
 AND::~AND() {}
 
+AND* AND::clone() const
+{
+    std::unique_ptr<AND> res(new AND);
+    for (const auto& c: components)
+        res->components.emplace(std::make_pair(c.first, std::shared_ptr<OR>(c.second->clone())));
+    return res.release();
+}
+
 std::string AND::name() const
 {
     return "matcher";
+}
+
+void AND::merge(const AND& o)
+{
+    auto i1 = components.begin();
+    auto i2 = o.components.begin();
+    while (i1 != components.end() || i2 != o.components.end())
+    {
+        if (i2 == o.components.end() || (i1 != components.end() && i1->first < i2->first)) {
+            // The other doesn't match this typecode: remove it on this side
+            auto o = i1;
+            ++i1;
+            components.erase(o);
+        } else if (i1 == components.end() || (i2 != o.components.end() && i1->first > i2->first)) {
+            // Skip this typecode: we match everything already
+            ++i2;
+        } else {
+            // Merge ORs
+            i1->second = i1->second->merge(*i2->second);
+            ++i1;
+            ++i2;
+        }
+    }
+}
+
+void AND::update(const AND& o)
+{
+    auto i1 = components.begin();
+    auto i2 = o.components.begin();
+    while (i1 != components.end() || i2 != o.components.end())
+    {
+        if (i2 == o.components.end() || (i1 != components.end() && i1->first < i2->first)) {
+            // The other doesn't match this typecode: keep it unchanged
+            ++i1;
+        } else if (i1 == components.end() || (i2 != o.components.end() && i1->first > i2->first)) {
+            // The other matches a typecode we don't have: acquire it
+            auto res = components.emplace(*i2);
+            i1 = res.first;
+            ++i1;
+            ++i2;
+        } else {
+            // Both match the same typecode: keep the second
+            i1->second = i2->second;
+            ++i1;
+            ++i2;
+        }
+    }
 }
 
 bool AND::matchItem(const types::Type& t) const
@@ -205,6 +316,17 @@ bool AND::matchItem(const types::Type& t) const
     return i->second->matchItem(t);
 }
 
+bool AND::match_buffer(types::Code code, const uint8_t* data, unsigned size) const
+{
+    if (empty()) return true;
+
+    auto i = components.find(code);
+    if (i == components.end()) return true;
+
+    return i->second->match_buffer(code, data, size);
+}
+
+
 template<typename COLL>
 static bool mdmatch(const Implementation& matcher, const COLL& c)
 {
@@ -215,6 +337,20 @@ static bool mdmatch(const Implementation& matcher, const COLL& c)
 }
 
 bool AND::matchItemSet(const types::ItemSet& md) const
+{
+    if (empty()) return true;
+
+    for (const auto& i: components)
+    {
+        if (!i.second) return false;
+        const types::Type* item = md.get(i.first);
+        if (!item) return false;
+        if (!i.second->matchItem(*item)) return false;
+    }
+    return true;
+}
+
+bool AND::matchMetadata(const Metadata& md) const
 {
     if (empty()) return true;
 
@@ -332,12 +468,12 @@ std::unique_ptr<AND> AND::for_interval(const core::Interval& interval)
 
 OptionalCommaList::OptionalCommaList(const std::string& pattern, bool has_tail)
 {
-	string p;
+    std::string p;
 	if (has_tail)
 	{
 		size_t pos = pattern.find(":");
-		if (pos == string::npos)
-			p = pattern;
+        if (pos == std::string::npos)
+            p = pattern;
         else
         {
             p = str::strip(pattern.substr(0, pos));
@@ -390,6 +526,17 @@ uint32_t OptionalCommaList::getUnsignedWithMissing(size_t pos, uint32_t missing,
             return strtoul((*this)[pos].c_str(), 0, 10);
     }
     return missing;
+}
+
+Optional<uint32_t> OptionalCommaList::getUnsignedWithMissing(size_t pos, uint32_t missing) const
+{
+    if (!has(pos))
+        return Optional<uint32_t>();
+
+    if ((*this)[pos] == "-")
+        return missing;
+    else
+        return strtoul((*this)[pos].c_str(), 0, 10);
 }
 
 double OptionalCommaList::getDouble(size_t pos, double def) const

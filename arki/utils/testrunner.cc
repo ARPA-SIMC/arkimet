@@ -235,7 +235,7 @@ std::vector<TestCaseResult> TestRegistry::run_tests(TestController& controller)
     {
         e->register_tests_once();
         // TODO: filter on e.name
-        res.emplace_back(std::move(e->run_tests(controller)));
+        res.emplace_back(e->run_tests(controller));
     }
     return res;
 }

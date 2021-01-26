@@ -35,11 +35,7 @@ Tests<segment::dir::Segment, GRIBData> test1("arki_segment_dir_grib");
 Tests<segment::dir::Segment, BUFRData> test2("arki_segment_dir_bufr");
 Tests<segment::dir::Segment, ODIMData> test3("arki_segment_dir_odim");
 Tests<segment::dir::Segment, VM2Data>  test4("arki_segment_dir_vm2");
-
-inline size_t datasize(const Metadata& md)
-{
-    return md.data_size();
-}
+Tests<segment::dir::Segment, NCData>  test5("arki_segment_dir_nc");
 
 /**
  * Create a writer
@@ -58,7 +54,6 @@ void TestInternals::register_tests() {
 
 // Scan a well-known sample
 add_method("scanner", [] {
-    Metadata md;
     segment::dir::Scanner scanner("odimh5", "inbound/fixture.odimh5");
     scanner.list_files();
     wassert(actual(scanner.on_disk.size()) == 3u);
@@ -69,10 +64,9 @@ add_method("scanner", [] {
     metadata::Collection mds;
     scanner.scan(reader, mds.inserter_func());
     wassert(actual(mds.size()) == 3u);
-    md = mds[0];
 
     // Check the source info
-    wassert(actual(md.source().cloneType()).is_source_blob("odimh5", sys::abspath("."), "inbound/fixture.odimh5", 0, 49057));
+    wassert(actual(mds[0].source().cloneType()).is_source_blob("odimh5", sys::abspath("."), "inbound/fixture.odimh5", 0, 49057));
 });
 
 }
@@ -90,10 +84,7 @@ this->add_method("create_last_sequence", [](Fixture& f) {
 });
 
 this->add_method("append_last_sequence", [](Fixture& f) {
-    if (sys::isdir(relpath))
-        sys::rmtree_ifexists(relpath);
-    else
-        sys::unlink_ifexists(relpath);
+    delete_if_exists(relpath);
     wassert(actual_file(relpath).not_exists());
 
     // Append 3 items

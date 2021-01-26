@@ -1,8 +1,7 @@
 #include "formatter.h"
 #include "types.h"
-#include "arki/utils/string.h"
+#include <sstream>
 
-using namespace std;
 using namespace arki::types;
 
 namespace arki {
@@ -12,18 +11,18 @@ static std::function<std::unique_ptr<Formatter>()> factory;
 
 Formatter::Formatter() {}
 Formatter::~Formatter() {}
-string Formatter::format(const Type& v) const
+std::string Formatter::format(const Type& v) const
 {
-    stringstream ss;
+    std::stringstream ss;
     ss << v;
     return ss.str();
 }
 
-unique_ptr<Formatter> Formatter::create()
+std::unique_ptr<Formatter> Formatter::create()
 {
     if (factory)
         return factory();
-    return unique_ptr<Formatter>(new Formatter);
+    return std::unique_ptr<Formatter>(new Formatter);
 }
 
 void Formatter::set_factory(std::function<std::unique_ptr<Formatter>()> new_factory)

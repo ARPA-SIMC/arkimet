@@ -6,19 +6,16 @@
 #include <arki/metadata/fwd.h>
 #include <arki/structured/fwd.h>
 #include <arki/matcher/fwd.h>
-#include <arki/types/itemset.h>
 #include <arki/utils/geosfwd.h>
 #include <vector>
-#include <map>
 #include <set>
 #include <string>
 #include <memory>
-#include <iosfwd>
 
 namespace arki {
 namespace summary {
-struct Table;
-struct Stats;
+class Table;
+class Stats;
 }
 
 namespace summary {
@@ -269,25 +266,6 @@ public:
 	 * metadata bundle.
 	 */
 	std::unique_ptr<arki::utils::geos::Geometry> getConvexHull() const;
-
-    /**
-     * Return all the unique combination of metadata items that are found
-     * by the matcher in this summary.
-     *
-     * Only metadata items for which there is an expression in matcher are
-     * present in the output.
-     */
-    std::vector<types::ItemSet> resolveMatcher(const Matcher& matcher) const;
-
-    /**
-     * Return all the unique combination of metadata items that are found
-     * by the matcher in this summary.
-     *
-     * Metadata are added to res, sorted and avoiding duplicated.
-     *
-     * Return the number of matching items found (0 if nothing matched)
-     */
-    size_t resolveMatcher(const Matcher& matcher, std::vector<types::ItemSet>& res) const;
 
     friend class matcher::AND;
 };

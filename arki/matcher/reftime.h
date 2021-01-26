@@ -23,9 +23,7 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include <arki/matcher.h>
 #include <arki/matcher/utils.h>
-#include <arki/types/reftime.h>
 #include <vector>
 
 namespace arki {
@@ -49,10 +47,13 @@ struct MatchReftime : public matcher::Implementation
     MatchReftime(const std::string& pattern);
     ~MatchReftime();
 
+    MatchReftime* clone() const override;
+
     //MatchType type() const { return MATCH_REFTIME; }
     std::string name() const override;
 
     bool matchItem(const types::Type& o) const override;
+    bool match_buffer(types::Code code, const uint8_t* data, unsigned size) const override;
     bool match_interval(const core::Interval& o) const;
     std::string toString() const override;
     std::string sql(const std::string& column) const;
@@ -78,5 +79,4 @@ struct MatchReftime : public matcher::Implementation
 }
 }
 
-// vim:set ts=4 sw=4:
 #endif

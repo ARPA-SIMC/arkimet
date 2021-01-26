@@ -8,13 +8,14 @@
 #include <arki/dataset/impl.h>
 
 namespace arki {
-struct Summary;
+class Summary;
 
 namespace dataset {
 namespace memory {
 
-struct Dataset : public dataset::Dataset, public metadata::Collection
+class Dataset : public dataset::Dataset, public metadata::Collection
 {
+public:
     Dataset(std::shared_ptr<Session> session);
 
     std::shared_ptr<dataset::Reader> create_reader() override;
@@ -23,7 +24,7 @@ struct Dataset : public dataset::Dataset, public metadata::Collection
 /**
  * Consumer that collects all metadata into a vector
  */
-struct Reader : public DatasetAccess<Dataset, dataset::Reader>
+class Reader : public DatasetAccess<Dataset, dataset::Reader>
 {
 protected:
     bool impl_query_data(const dataset::DataQuery& q, metadata_dest_func dest) override;

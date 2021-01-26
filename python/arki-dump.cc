@@ -36,7 +36,6 @@ namespace {
 template<typename Input>
 void addToSummary(Input& in, arki::Summary& s)
 {
-    arki::Metadata md;
     arki::Summary summary;
 
     arki::types::Bundle bundle;
@@ -46,10 +45,10 @@ void addToSummary(Input& in, arki::Summary& s)
         {
             if (!bundle.read_data(in)) break;
             arki::core::BinaryDecoder dec(bundle.data);
-            md.read_inner(dec, bundle.version, in.name());
-            if (md.source().style() == arki::types::Source::Style::INLINE)
-                md.read_inline_data(in);
-            s.add(md);
+            auto md = arki::Metadata::read_binary_inner(dec, bundle.version, in.name());
+            if (md->source().style() == arki::types::Source::Style::INLINE)
+                md->read_inline_data(in);
+            s.add(*md);
         }
         else if (bundle.signature == "SU")
         {
@@ -134,7 +133,6 @@ struct reverse_data : public MethKwargs<reverse_data, arkipy_ArkiDump>
 
             ReleaseGIL rg;
 
-            arki::Metadata md;
             std::unique_ptr<arki::core::LineReader> reader;
             std::string input_name;
             if (input.fd)
@@ -148,11 +146,11 @@ struct reverse_data : public MethKwargs<reverse_data, arkipy_ArkiDump>
                 reader = arki::core::LineReader::from_abstract(*input.abstract);
             }
             if (output.fd)
-                while (md.readYaml(*reader, input_name))
-                    md.write(*output.fd);
+                while (auto md = arki::Metadata::read_yaml(*reader, input_name))
+                    md->write(*output.fd);
             else
-                while (md.readYaml(*reader, input_name))
-                    md.write(*output.abstract);
+                while (auto md = arki::Metadata::read_yaml(*reader, input_name))
+                    md->write(*output.abstract);
 
             return throw_ifnull(PyLong_FromLong(0));
         } ARKI_CATCH_RETURN_PYO
@@ -261,7 +259,6 @@ struct dump_yaml : public MethKwargs<dump_yaml, arkipy_ArkiDump>
                 };
             }
 
-            arki::Metadata md;
             arki::Summary summary;
 
             arki::types::Bundle bundle;
@@ -302,10 +299,10 @@ struct dump_yaml : public MethKwargs<dump_yaml, arkipy_ArkiDump>
                 {
                     if (!read_data()) break;
                     arki::core::BinaryDecoder dec(bundle.data);
-                    md.read_inner(dec, bundle.version, input_name);
-                    if (md.source().style() == arki::types::Source::Style::INLINE)
-                        read_inline_data(md);
-                    print_md(md);
+                    auto md = arki::Metadata::read_binary_inner(dec, bundle.version, input_name);
+                    if (md->source().style() == arki::types::Source::Style::INLINE)
+                        read_inline_data(*md);
+                    print_md(*md);
                 }
                 else if (bundle.signature == "SU")
                 {

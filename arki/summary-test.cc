@@ -36,8 +36,8 @@ using arki::core::Time;
 struct Fixture : public arki::utils::tests::Fixture
 {
     Summary s;
-    Metadata md1;
-    Metadata md2;
+    std::shared_ptr<Metadata> md1;
+    std::shared_ptr<Metadata> md2;
     matcher::Parser parser;
 
     Fixture()
@@ -46,23 +46,23 @@ struct Fixture : public arki::utils::tests::Fixture
 
     void test_setup()
     {
-        md1.clear();
-        md1.set(Origin::createGRIB1(1, 2, 3));
-        md1.set(Product::createGRIB1(1, 2, 3));
-        md1.set(Timerange::createGRIB1(1, timerange::SECOND, 0, 0));
-        md1.set(Reftime::createPosition(Time(2007, 1, 2, 3, 4, 5)));
-        md1.set_source(Source::createInline("grib1", 10));
+        md1 = std::make_shared<Metadata>();
+        md1->test_set(Origin::createGRIB1(1, 2, 3));
+        md1->test_set(Product::createGRIB1(1, 2, 3));
+        md1->test_set(Timerange::createGRIB1(1, timerange::SECOND, 0, 0));
+        md1->test_set(Reftime::createPosition(Time(2007, 1, 2, 3, 4, 5)));
+        md1->set_source(Source::createInline("grib1", 10));
 
-        md2.clear();
-        md2.set(Origin::createGRIB1(3, 4, 5));
-        md2.set(Product::createGRIB1(2, 3, 4));
-        md2.set(Timerange::createGRIB1(1, timerange::SECOND, 0, 0));
-        md2.set(Reftime::createPosition(Time(2006, 5, 4, 3, 2, 1)));
-        md2.set_source(Source::createInline("grib1", 20));
+        md2 = std::make_shared<Metadata>();
+        md2->test_set(Origin::createGRIB1(3, 4, 5));
+        md2->test_set(Product::createGRIB1(2, 3, 4));
+        md2->test_set(Timerange::createGRIB1(1, timerange::SECOND, 0, 0));
+        md2->test_set(Reftime::createPosition(Time(2006, 5, 4, 3, 2, 1)));
+        md2->set_source(Source::createInline("grib1", 20));
 
         s.clear();
-        s.add(md1);
-        s.add(md2);
+        s.add(*md1);
+        s.add(*md2);
     }
 };
 
@@ -105,11 +105,11 @@ add_method("match", [](Fixture& f) {
 // Test matching runs
 add_method("match_run", [](Fixture& f) {
     Summary s;
-    f.md1.set(run::Minute::create(0, 0));
-    f.md2.set(run::Minute::create(12, 0));
+    f.md1->test_set(Run::createMinute(0, 0));
+    f.md2->test_set(Run::createMinute(12, 0));
     s.clear();
-    s.add(f.md1);
-    s.add(f.md2);
+    s.add(*f.md1);
+    s.add(*f.md2);
 
     Summary s1;
     wassert(actual(s.match(f.parser.parse("run:MINUTE,0"))).istrue());
@@ -202,15 +202,15 @@ add_method("regression0", [](Fixture& f) {
     Metadata tmd2;
     Summary ts;
 
-    tmd1.set(Origin::createGRIB1(1, 2, 3));
-    tmd1.set(Product::createGRIB1(1, 2, 3));
-    tmd1.set(Reftime::createPosition(Time(2007, 1, 2, 3, 4, 5)));
+    tmd1.test_set(Origin::createGRIB1(1, 2, 3));
+    tmd1.test_set(Product::createGRIB1(1, 2, 3));
+    tmd1.test_set(Reftime::createPosition(Time(2007, 1, 2, 3, 4, 5)));
     tmd1.set_source(Source::createInline("grib1", 10));
 
-    tmd2.set(Origin::createGRIB1(1, 2, 3));
-    tmd2.set(Product::createGRIB1(1, 2, 3));
-    tmd2.set(Reftime::createPosition(Time(2007, 1, 2, 3, 4, 5)));
-    tmd2.set(Run::createMinute(12, 0));
+    tmd2.test_set(Origin::createGRIB1(1, 2, 3));
+    tmd2.test_set(Product::createGRIB1(1, 2, 3));
+    tmd2.test_set(Reftime::createPosition(Time(2007, 1, 2, 3, 4, 5)));
+    tmd2.test_set(Run::createMinute(12, 0));
     tmd2.set_source(Source::createInline("grib1", 15));
 
     ts.add(tmd1);
@@ -250,10 +250,10 @@ add_method("summarise_grib", [](Fixture& f) {
 // Test adding a metadata plus stats
 add_method("add_with_stats", [](Fixture& f) {
     Metadata md3;
-    md3.set(Origin::createGRIB1(5, 6, 7));
-    md3.set(Product::createGRIB1(4, 5, 6));
-    md3.set(Timerange::createGRIB1(1, timerange::SECOND, 0, 0));
-    md3.set(Reftime::createPosition(Time(2006, 5, 4, 3, 2, 1)));
+    md3.test_set(Origin::createGRIB1(5, 6, 7));
+    md3.test_set(Product::createGRIB1(4, 5, 6));
+    md3.test_set(Timerange::createGRIB1(1, timerange::SECOND, 0, 0));
+    md3.test_set(Reftime::createPosition(Time(2006, 5, 4, 3, 2, 1)));
 
     summary::Stats st;
     st.count = 5;
@@ -268,21 +268,10 @@ add_method("add_with_stats", [](Fixture& f) {
     wassert(actual(f.s.size()) == 123486u);
 });
 
-// Test resolveMatcher
-add_method("resolvematcher", [](Fixture& f) {
-    std::vector<ItemSet> res = f.s.resolveMatcher(f.parser.parse("origin:GRIB1,1,2,3; product:GRIB1,1,2,3 or GRIB1,2,3,4"));
-    wassert(actual(res.size()) == 1u);
-
-    ItemSet& is = res[0];
-    wassert(actual(is.size()) == 2u);
-    wassert(actual(Origin::createGRIB1(1, 2, 3)) == is.get(TYPE_ORIGIN));
-    wassert(actual(Product::createGRIB1(1, 2, 3)) == is.get(TYPE_PRODUCT));
-});
-
 // Test loading an old summary
 add_method("binary_old", [](Fixture& f) {
     Summary s;
-    s.read_file("inbound/old.summary");
+    wassert(s.read_file("inbound/old.summary"));
     wassert_true(s.count() > 0);
     // Compare with a summary with different msoSerLen
     {
@@ -319,7 +308,7 @@ add_method("binary_old", [](Fixture& f) {
 
 // Test a case where adding a metadata twice duplicated some nodes
 add_method("regression1", [](Fixture& f) {
-    f.s.add(f.md2);
+    f.s.add(*f.md2);
     struct Counter : public summary::Visitor
     {
         size_t count;

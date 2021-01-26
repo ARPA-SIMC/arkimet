@@ -1,16 +1,10 @@
 #include "arki/types/tests.h"
+#include "arki/metadata.h"
 #include "sort.h"
 #include "arki/metadata/collection.h"
 #include "arki/types/reftime.h"
 #include "arki/types/run.h"
 #include "arki/utils/string.h"
-
-namespace std{
-static ostream& operator<<(ostream& out, const vector<int>& v)
-{
-    return out << arki::utils::str::join(", ", v.begin(), v.end());
-}
-}
 
 namespace {
 using namespace std;
@@ -28,20 +22,21 @@ class Tests : public TestCase
 
 void produce(int hour, int minute, int run, sort::Stream& c)
 {
-    unique_ptr<Metadata> md(new Metadata);
-    md->set(Reftime::createPosition(Time(2008, 7, 6, hour, minute, 0)));
-    md->set(Run::createMinute(run));
+    std::unique_ptr<Metadata> md(new Metadata);
+    md->test_set(Reftime::createPosition(Time(2008, 7, 6, hour, minute, 0)));
+    md->test_set(Run::createMinute(run));
     c.add(move(md));
 }
 
 vector<int> mdvals(const Metadata& md)
 {
     const reftime::Position* rt = dynamic_cast<const reftime::Position*>(md.get<Reftime>());
+    auto time = rt->get_Position();
     const run::Minute* run = dynamic_cast<const run::Minute*>(md.get<Run>());
     vector<int> res;
-    res.push_back(rt->time.ho);
-    res.push_back(rt->time.mi);
-    res.push_back(run->minute()/60);
+    res.push_back(time.ho);
+    res.push_back(time.mi);
+    res.push_back(run->get_Minute()/60);
     return res;
 }
 

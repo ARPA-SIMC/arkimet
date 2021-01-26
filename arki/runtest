@@ -1,21 +1,29 @@
 #!/bin/sh -e
 
-TOP_SRCDIR=`pwd`/`dirname $0`/..
-PYTHON=${PYTHON:-python3}
+TOP_SRCDIR=$(readlink -f $(dirname $0)/..)
+PYTHON=${PYTHON:-$(which python3)}
 
 if [ "$1" = "NOSE" ]
 then
-    NOSE="${NOSE:-nose}"
-    CMD="$NOSE --verbose -s `pwd`"
-    DEBUG_CMD="$PYTHON `which $NOSE` -s `pwd`"
+    NOSE="${NOSE:-nose2-3}"
+    for n in "$NOSE" nose2-3 nose2-3.9 nose2-3.8 nose2-3.7 nose2-3.6
+    do
+        if which "$n" > /dev/null
+        then
+            NOSE="$n"
+            break
+        fi
+    done
+    CMD="$NOSE --verbose -s `pwd` -s ${TOP_SRCDIR}/python"
+    DEBUG_CMD="$PYTHON `which $NOSE` -s `pwd` -s ${TOP_SRCDIR}/python"
 else
-    CMD=`pwd`/"$1"
+    CMD=$(readlink -f "$1")
     DEBUG_CMD="$CMD"
 fi
 
 ## Run under eatmydata if available
 
-libeatmydata="/usr/lib/libeatmydata/libeatmydata.so"
+libeatmydata="/usr/lib/x86_64-linux-gnu/libeatmydata.so"
 if [ -e $libeatmydata ]
 then
     if [ -n "$LD_PRELOAD" ]; then
@@ -46,7 +54,7 @@ export ARKI_BBOX=$TOP_SRCDIR/conf/bbox/
 export ARKI_QMACRO=$TOP_SRCDIR/conf/qmacro/
 export ARKI_ALIASES=$TOP_SRCDIR/test/conf/match-alias.conf
 export ARKI_POSTPROC=$TESTDIR/postproc
-export PYTHONPATH=$TOP_SRCDIR/python/
+export PYTHONPATH=$TOP_SRCDIR/python/:$ORIGDIR:$ORIGDIR/python:$ORIGDIR/.libs:$ORIGDIR/python/.libs
 export METEO_VM2_SOURCE="$TOP_SRCDIR/conf/vm2/source.lua"
 export TOP_SRCDIR
 ulimit -v 1048576 || true

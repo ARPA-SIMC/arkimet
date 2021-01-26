@@ -1,12 +1,9 @@
 #include "arki/iotrace.h"
-#include "arki/libconfig.h"
 #include "arki/exceptions.h"
 #include "arki/core/file.h"
 #include "arki/runtime.h"
 #include <vector>
-#include <set>
 #include <ostream>
-#include <cstdint>
 
 using namespace std;
 

@@ -2,7 +2,6 @@
 #define ARKI_UTILS_PROCESS_H
 
 #include <string>
-#include <map>
 #include <vector>
 #include <sstream>
 #include <arki/utils/subprocess.h>

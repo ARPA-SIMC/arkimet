@@ -19,9 +19,6 @@
  *
  * Author: Enrico Zini <enrico@enricozini.com>
  */
-
-#include "config.h"
-
 #include <arki/types-init.h>
 #include <arki/types/origin.h>
 #include <arki/matcher/origin.h>

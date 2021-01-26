@@ -28,12 +28,11 @@ void Tests::register_tests() {
 
 // Scan a well-known vm2 sample
 add_method("scan", []() {
-    Metadata md;
     scan::Vm2 scanner;
     metadata::Collection mds;
     scanner.test_scan_file("inbound/test.vm2", mds.inserter_func());
     wassert(actual(mds.size()) == 4u);
-    md = mds[0];
+    Metadata& md = mds[0];
 
     // Check the source info
     wassert(actual(md.source().cloneType()).is_source_blob("vm2", sys::abspath("."), "inbound/test.vm2", 0, 34));
@@ -54,12 +53,11 @@ add_method("scan", []() {
 
 // Scan a well-known vm2 sample (with seconds)
 add_method("scan_seconds", []() {
-    Metadata md;
     scan::Vm2 scanner;
     metadata::Collection mds;
     scanner.test_scan_file("inbound/test.vm2", mds.inserter_func());
     wassert(actual(mds.size()) == 4u);
-    md = mds[1];
+    Metadata& md = mds[1];
 
     // Check the source info
     wassert(actual(md.source().cloneType()).is_source_blob("vm2", sys::abspath("."), "inbound/test.vm2", 35, 35));
@@ -142,6 +140,20 @@ add_method("corrupted", []() {
     wassert(actual(mdc[2].source().cloneType()).is_source_blob("vm2", sys::abspath("."), "inbound/test-corrupted.vm2", 105, 32));
 
     system("rm inbound/test-corrupted.vm2");
+});
+
+add_method("issue237", [] {
+    metadata::TestCollection mdc("inbound/issue237.vm2", true);
+    wassert(actual(mdc.size()) == 1u);
+    wassert(actual(mdc[0].source().cloneType()).is_source_blob("vm2", sys::abspath("."), "inbound/issue237.vm2", 0, 36));
+
+    auto data = mdc[0].get_data().read();
+    wassert(actual(data.size()) == 36u);
+    wassert(actual(std::string((const char*)data.data(), data.size())) == "20201031230000,12865,158,9.409990,,,");
+
+    auto value = mdc[0].get<types::Value>();
+    auto buf = scan::Vm2::reconstruct(mdc[0], value->buffer);
+    wassert(actual(string((const char*)buf.data(), buf.size())) == "202010312300,12865,158,9.409990,,,");
 });
 
 }

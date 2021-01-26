@@ -11,6 +11,7 @@
 using namespace std;
 using namespace arki;
 using namespace arki::tests;
+using namespace arki::utils;
 using arki::core::Time;
 
 namespace arki {
@@ -170,6 +171,14 @@ void skip_unless_filesystem_has_ofd_locks(const std::string& path)
 {
     if (!utils::files::filesystem_has_ofd_locks(path))
         throw TestSkipped("OFD locks not supported");
+}
+
+void delete_if_exists(const std::string& name)
+{
+    if (sys::isdir(name))
+        sys::rmtree(name);
+    else if (sys::exists(name))
+        sys::unlink(name);
 }
 
 }

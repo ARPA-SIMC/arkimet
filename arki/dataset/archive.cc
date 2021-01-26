@@ -1,20 +1,10 @@
 #include "archive.h"
-#include "reporter.h"
 #include "index/manifest.h"
-#include "simple/reader.h"
-#include "simple/writer.h"
-#include "simple/checker.h"
+#include "simple.h"
 #include "offline.h"
-#include "maintenance.h"
-#include "empty.h"
-#include "arki/libconfig.h"
 #include "arki/matcher.h"
 #include "arki/metadata/collection.h"
-#include "arki/nag.h"
 #include "arki/summary.h"
-#include "arki/types/reftime.h"
-#include "arki/types/source/blob.h"
-#include "arki/utils/files.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
 #include <ctime>
@@ -176,15 +166,16 @@ struct ArchivesRoot
                 ds = std::make_shared<offline::Dataset>(parent->session, pathname);
         } else
             ds = std::make_shared<simple::Dataset>(parent->session, make_config(pathname));
-        ds->set_parent(parent);
+        ds->set_parent(parent.get());
         return ds->create_reader();
     }
 
     virtual std::shared_ptr<Archive> instantiate(const std::string& name) = 0;
 };
 
-struct ArchivesReaderRoot: public ArchivesRoot<dataset::Reader>
+class ArchivesReaderRoot: public ArchivesRoot<dataset::Reader>
 {
+public:
     using ArchivesRoot::ArchivesRoot;
 
     std::shared_ptr<dataset::Reader> instantiate(const std::string& name) override
@@ -193,8 +184,9 @@ struct ArchivesReaderRoot: public ArchivesRoot<dataset::Reader>
     }
 };
 
-struct ArchivesCheckerRoot: public ArchivesRoot<dataset::Checker>
+class ArchivesCheckerRoot: public ArchivesRoot<dataset::Checker>
 {
+public:
     using ArchivesRoot::ArchivesRoot;
 
     void rescan()
@@ -227,7 +219,7 @@ struct ArchivesCheckerRoot: public ArchivesRoot<dataset::Checker>
             return std::shared_ptr<dataset::Checker>();
 
         auto ds = std::make_shared<simple::Dataset>(parent->session, make_config(pathname));
-        ds->set_parent(parent);
+        ds->set_parent(parent.get());
         return ds->create_checker();
     }
 };

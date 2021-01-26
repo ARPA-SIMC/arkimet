@@ -1,19 +1,14 @@
 #include "arki/dataset/iseg/checker.h"
 #include "arki/dataset/iseg/index.h"
-#include "arki/dataset/maintenance.h"
 #include "arki/dataset/session.h"
 #include "arki/dataset/step.h"
 #include "arki/dataset/reporter.h"
-#include "arki/dataset/time.h"
 #include "arki/dataset/lock.h"
 #include "arki/dataset/archive.h"
 #include "arki/types/source/blob.h"
-#include "arki/summary.h"
-#include "arki/types/reftime.h"
+#include "arki/metadata.h"
 #include "arki/matcher.h"
 #include "arki/metadata/collection.h"
-#include "arki/utils/files.h"
-#include "arki/metadata/sort.h"
 #include "arki/nag.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/string.h"
@@ -128,35 +123,28 @@ public:
         segment::State state = segment::SEGMENT_OK;
 
         // Compute the span of reftimes inside the segment
-        unique_ptr<core::Time> md_begin;
-        unique_ptr<core::Time> md_until;
+        core::Interval segment_interval;
         if (mds.empty())
         {
             reporter.segment_info(checker.name(), segment->segment().relpath, "index knows of this segment but contains no data for it");
-            md_begin.reset(new core::Time(0, 0, 0));
-            md_until.reset(new core::Time(0, 0, 0));
             state = segment::SEGMENT_DELETED;
         } else {
-            if (!mds.expand_date_range(md_begin, md_until))
+            if (!mds.expand_date_range(segment_interval))
             {
                 reporter.segment_info(checker.name(), segment->segment().relpath, "index data for this segment has no reference time information");
                 state = segment::SEGMENT_CORRUPTED;
-                md_begin.reset(new core::Time(0, 0, 0));
-                md_until.reset(new core::Time(0, 0, 0));
             } else {
                 // Ensure that the reftime span fits inside the segment step
-                core::Time seg_begin;
-                core::Time seg_until;
-                if (checker.dataset().step().path_timespan(segment->segment().relpath, seg_begin, seg_until))
+                core::Interval interval;
+                if (checker.dataset().step().path_timespan(segment->segment().relpath, interval))
                 {
-                    if (*md_begin < seg_begin || *md_until > seg_until)
+                    if (segment_interval.begin < interval.begin || segment_interval.end > interval.end)
                     {
                         reporter.segment_info(checker.name(), segment->segment().relpath, "segment contents do not fit inside the step of this dataset");
                         state = segment::SEGMENT_CORRUPTED;
                     }
                     // Expand segment timespan to the full possible segment timespan
-                    *md_begin = seg_begin;
-                    *md_until = seg_until;
+                    segment_interval = interval;
                 } else {
                     reporter.segment_info(checker.name(), segment->segment().relpath, "segment name does not fit the step of this dataset");
                     state = segment::SEGMENT_CORRUPTED;
@@ -167,7 +155,7 @@ public:
         if (state.is_ok())
             state = segment->check([&](const std::string& msg) { reporter.segment_info(checker.name(), segment->segment().relpath, msg); }, mds, quick);
 
-        auto res = segmented::SegmentState(state, *md_begin, *md_until);
+        auto res = segmented::SegmentState(state, segment_interval);
         res.check_age(segment->segment().relpath, checker.dataset(), reporter);
         return res;
     }
@@ -675,7 +663,7 @@ void Checker::test_swap_data(const std::string& relpath, unsigned d1_idx, unsign
     {
         CIndex idx(m_dataset, relpath, lock);
         idx.scan(mds.inserter_func(), "offset");
-        std::swap(mds[d1_idx], mds[d2_idx]);
+        mds.swap(d1_idx, d2_idx);
     }
     segment_prelocked(relpath, lock)->reorder(mds);
 }
@@ -695,16 +683,16 @@ void Checker::test_rename(const std::string& relpath, const std::string& new_rel
 
 }
 
-void Checker::test_change_metadata(const std::string& relpath, Metadata& md, unsigned data_idx)
+std::shared_ptr<Metadata> Checker::test_change_metadata(const std::string& relpath, std::shared_ptr<Metadata> md, unsigned data_idx)
 {
     auto lock = dataset().check_lock_segment(relpath);
     auto wrlock = lock->write_lock();
     CIndex idx(m_dataset, relpath, lock);
     metadata::Collection mds;
     idx.query_segment(mds.inserter_func());
-    md.set_source(std::unique_ptr<arki::types::Source>(mds[data_idx].source().clone()));
-    md.sourceBlob().unlock();
-    mds[data_idx] = md;
+    md->set_source(std::unique_ptr<arki::types::Source>(mds[data_idx].source().clone()));
+    md->sourceBlob().unlock();
+    mds.replace(data_idx, md);
 
     // Reindex mds
     idx.reset();
@@ -715,7 +703,7 @@ void Checker::test_change_metadata(const std::string& relpath, Metadata& md, uns
             throw std::runtime_error("duplicate detected in test_change_metadata");
     }
 
-    md = mds[data_idx];
+    return mds.get(data_idx);
 }
 
 void Checker::test_delete_from_index(const std::string& relpath)

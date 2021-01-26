@@ -3,14 +3,12 @@
 #include "empty.h"
 #include "session.h"
 #include "arki/metadata.h"
-#include "arki/metadata/collection.h"
 #include "arki/types/reftime.h"
 #include "arki/types/source.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/accounting.h"
 #include "arki/nag.h"
-#include <sys/stat.h>
 
 using namespace std;
 using namespace arki::types;
@@ -45,7 +43,7 @@ std::string Writer::type() const { return "outbound"; }
 void Writer::storeBlob(const segment::WriterConfig& writer_config, Metadata& md, const std::string& reldest)
 {
     // Write using segment::Writer
-    const core::Time& time = md.get<types::reftime::Position>()->time;
+    core::Time time = md.get<types::reftime::Position>()->get_Position();
     std::string relpath = dataset().step()(time) + "." + md.source().format;
     auto w = dataset().session->segment_writer(writer_config, md.source().format, dataset().path, relpath);
     w->append(md);
@@ -57,7 +55,7 @@ WriterAcquireResult Writer::acquire(Metadata& md, const AcquireConfig& cfg)
     auto age_check = dataset().check_acquire_age(md);
     if (age_check.first) return age_check.second;
 
-    const core::Time& time = md.get<types::reftime::Position>()->time;
+    core::Time time = md.get<types::reftime::Position>()->get_Position();
     string reldest = dataset().step()(time);
     string dest = dataset().path + "/" + reldest;
 
@@ -113,7 +111,7 @@ void Writer::test_acquire(std::shared_ptr<Session> session, const core::cfg::Sec
             continue;
         }
 
-        const core::Time& time = e->md.get<types::reftime::Position>()->time;
+        core::Time time = e->md.get<types::reftime::Position>()->get_Position();
         auto tf = Step::create(cfg.value("step"));
         string dest = cfg.value("path") + "/" + (*tf)(time) + "." + e->md.source().format;
         nag::verbose("Assigning to dataset %s in file %s", cfg.value("name").c_str(), dest.c_str());

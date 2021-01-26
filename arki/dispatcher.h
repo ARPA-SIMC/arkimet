@@ -2,19 +2,17 @@
 #define ARKI_DISPATCHER_H
 
 #include <arki/dataset/pool.h>
-#include <arki/core/cfg.h>
 #include <arki/metadata/fwd.h>
 #include <arki/matcher.h>
 #include <string>
 #include <vector>
-#include <map>
 
 namespace arki {
 
 class Dispatcher
 {
 protected:
-    std::shared_ptr<dataset::Session> session;
+    std::shared_ptr<dataset::Pool> pool;
 
     // Dispatching information
     std::vector< std::pair<std::string, Matcher> > datasets;
@@ -30,7 +28,7 @@ protected:
     virtual void raw_dispatch_dataset(const std::string& name, dataset::WriterBatch& batch, bool drop_cached_data_on_commit) = 0;
 
 public:
-    Dispatcher(std::shared_ptr<dataset::Session> session);
+    Dispatcher(std::shared_ptr<dataset::Pool> pool);
     virtual ~Dispatcher();
 
     /**
@@ -83,18 +81,18 @@ public:
 class RealDispatcher : public Dispatcher
 {
 protected:
-    dataset::WriterPool pool;
+    dataset::DispatchPool pool;
 
     void raw_dispatch_dataset(const std::string& name, dataset::WriterBatch& batch, bool drop_cached_data_on_commit) override;
 
 public:
-    RealDispatcher(std::shared_ptr<dataset::Session> session);
+    RealDispatcher(std::shared_ptr<dataset::Pool> pool);
     ~RealDispatcher();
 
-	/**
-	 * Flush all dataset data do disk
-	 */
-	void flush();
+    /**
+     * Flush all dataset data do disk
+     */
+    void flush() override;
 };
 
 /**
@@ -111,7 +109,7 @@ protected:
     void raw_dispatch_dataset(const std::string& name, dataset::WriterBatch& batch, bool drop_cached_data_on_commit) override;
 
 public:
-    TestDispatcher(std::shared_ptr<dataset::Session> session);
+    TestDispatcher(std::shared_ptr<dataset::Pool> pool);
     ~TestDispatcher();
 
     void dispatch(dataset::WriterBatch& batch, bool drop_cached_data_on_commit) override;
@@ -119,7 +117,7 @@ public:
     /**
      * Flush all dataset data do disk
      */
-    void flush();
+    void flush() override;
 };
 
 }

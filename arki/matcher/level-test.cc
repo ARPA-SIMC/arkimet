@@ -41,7 +41,7 @@ add_method("grib1", [] {
 add_method("grib2s", [] {
     Metadata md;
     arki::tests::fill(md);
-    md.set(level::GRIB2S::create(110, 12, 13));
+    md.test_set(Level::createGRIB2S(110, 12, 13));
 
 	ensure_matches("level:GRIB2S", md);
 	ensure_matches("level:GRIB2S,,,", md);
@@ -58,7 +58,7 @@ add_method("grib2s", [] {
 	//m = Matcher::parse("level:BUFR,11,12,13");
 	//ensure(not m(md));
 
-    md.set(level::GRIB2S::create(level::GRIB2S::MISSING_TYPE, level::GRIB2S::MISSING_SCALE, level::GRIB2S::MISSING_VALUE));
+    md.test_set(Level::createGRIB2S(Level::GRIB2_MISSING_TYPE, Level::GRIB2_MISSING_SCALE, Level::GRIB2_MISSING_VALUE));
 
     ensure_matches("level:GRIB2S", md);
     ensure_matches("level:GRIB2S,,,", md);
@@ -81,7 +81,7 @@ add_method("grib2s", [] {
 add_method("grib2d", [] {
     Metadata md;
     arki::tests::fill(md);
-    md.set(level::GRIB2D::create(110, 12, 13, 114, 15, 16));
+    md.test_set(Level::createGRIB2D(110, 12, 13, 114, 15, 16));
 
 	ensure_matches("level:GRIB2D", md);
 	ensure_matches("level:GRIB2D,,,", md);
@@ -103,8 +103,8 @@ add_method("grib2d", [] {
 	ensure_not_matches("level:GRIB2D,,,,115", md);
 	//m = Matcher::parse("level:BUFR,11,12,13");
 	//ensure(not m(md));
-    md.set(level::GRIB2D::create(level::GRIB2S::MISSING_TYPE, level::GRIB2S::MISSING_SCALE, level::GRIB2S::MISSING_VALUE,
-                                 level::GRIB2S::MISSING_TYPE, level::GRIB2S::MISSING_SCALE, level::GRIB2S::MISSING_VALUE));
+    md.test_set(Level::createGRIB2D(Level::GRIB2_MISSING_TYPE, Level::GRIB2_MISSING_SCALE, Level::GRIB2_MISSING_VALUE,
+                                 Level::GRIB2_MISSING_TYPE, Level::GRIB2_MISSING_SCALE, Level::GRIB2_MISSING_VALUE));
 
     ensure_matches("level:GRIB2D", md);
     ensure_matches("level:GRIB2D,,,", md);
@@ -133,7 +133,7 @@ add_method("grib2d", [] {
 add_method("odimh5", [] {
     Metadata md;
     arki::tests::fill(md);
-    md.set(level::ODIMH5::create(10.123, 20.123));
+    md.test_set(Level::createODIMH5(10.123, 20.123));
 
 	ensure_matches("level:ODIMH5", md);
 	ensure_matches("level:ODIMH5,", md);

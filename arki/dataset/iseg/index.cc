@@ -1,39 +1,31 @@
 #include "index.h"
-#include "arki/dataset/maintenance.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
-#include "arki/metadata/sort.h"
 #include "arki/matcher.h"
-#include "arki/matcher/reftime.h"
-#include "arki/dataset.h"
+#include "arki/matcher/utils.h"
 #include "arki/dataset/lock.h"
 #include "arki/dataset/session.h"
 #include "arki/dataset/query.h"
+#include "arki/dataset/index/base.h"
 #include "arki/types/reftime.h"
 #include "arki/types/source.h"
 #include "arki/types/source/blob.h"
 #include "arki/types/value.h"
+#include "arki/core/binary.h"
 #include "arki/summary.h"
 #include "arki/summary/stats.h"
 #include "arki/nag.h"
-#include "arki/utils/files.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
 
 #include <sstream>
-#include <ctime>
-#include <cassert>
-#include <cerrno>
 #include <cstdlib>
 
-using namespace std;
 using namespace arki;
 using namespace arki::types;
 using namespace arki::utils;
 using namespace arki::utils::sqlite;
 using namespace arki::dataset::index;
-using arki::core::Time;
-using arki::core::Interval;
 
 namespace arki {
 namespace dataset {
@@ -97,7 +89,7 @@ std::set<types::Code> Index::available_other_tables() const
     q.compile("SELECT name FROM sqlite_master WHERE type='table'");
     while (q.step())
     {
-        string name = q.fetchString(0);
+        std::string name = q.fetchString(0);
         if (!str::startswith(name, "sub_"))
             continue;
         types::Code code = types::checkCodeName(name.substr(4));
@@ -163,7 +155,7 @@ void Index::setup_pragmas()
 
 void Index::scan(metadata_dest_func dest, const std::string& order_by) const
 {
-    string query = "SELECT m.offset, m.size, m.notes, m.reftime";
+    std::string query = "SELECT m.offset, m.size, m.notes, m.reftime";
     if (m_uniques) query += ", m.uniq";
     if (m_others) query += ", m.other";
     if (dataset->smallfiles) query += ", m.data";
@@ -178,7 +170,7 @@ void Index::scan(metadata_dest_func dest, const std::string& order_by) const
     while (mdq.step())
     {
         // Rebuild the Metadata
-        unique_ptr<Metadata> md(new Metadata);
+        std::unique_ptr<Metadata> md(new Metadata);
         build_md(mdq, *md, reader);
         dest(move(md));
     }
@@ -215,12 +207,12 @@ static void db_time_extremes(utils::sqlite::SQLiteDB& db, core::Interval& interv
 
 void Index::add_joins_and_constraints(const Matcher& m, std::string& query) const
 {
-    vector<string> constraints;
+    std::vector<std::string> constraints;
 
     // Add database constraints
     if (not m.empty())
     {
-        Interval interval;
+        core::Interval interval;
         if (!m.intersect_interval(interval))
             // The matcher matches an impossible datetime span: convert it
             // into an impossible clause that evaluates quickly
@@ -244,8 +236,8 @@ void Index::add_joins_and_constraints(const Matcher& m, std::string& query) cons
                 // Intersect the time bounds of the query with the time
                 // bounds of the database
                 interval.intersect(db_interval);
-                long long int qrange = Time::duration(interval);
-                long long int dbrange = Time::duration(db_interval);
+                long long int qrange = core::Time::duration(interval);
+                long long int dbrange = core::Time::duration(db_interval);
                 // If the query chooses less than 20%
                 // if the time span, force the use of
                 // the reftime index
@@ -264,14 +256,14 @@ void Index::add_joins_and_constraints(const Matcher& m, std::string& query) cons
         // Join with the aggregate tables and add constraints on aggregate tables
         if (m_uniques)
         {
-            string s = m_uniques->make_subquery(m);
+            std::string s = m_uniques->make_subquery(m);
             if (!s.empty())
                 constraints.push_back("uniq IN ("+s+")");
         }
 
         if (m_others)
         {
-            string s = m_others->make_subquery(m);
+            std::string s = m_others->make_subquery(m);
             if (!s.empty())
                 constraints.push_back("other IN ("+s+")");
         }
@@ -284,19 +276,7 @@ void Index::add_joins_and_constraints(const Matcher& m, std::string& query) cons
 void Index::build_md(Query& q, Metadata& md, std::shared_ptr<arki::segment::Reader> reader) const
 {
     // Rebuild the Metadata
-    if (reader)
-        md.set_source(Source::createBlob(
-                dataset->format, dataset->path, data_relpath,
-                q.fetch<uint64_t>(0), q.fetch<uint64_t>(1), reader));
-    else
-        md.set_source(Source::createBlobUnlocked(
-                dataset->format, dataset->path, data_relpath,
-                q.fetch<uint64_t>(0), q.fetch<uint64_t>(1)));
-    // md.notes = mdq.fetchItems<types::Note>(5);
-    const uint8_t* notes_p = (const uint8_t*)q.fetchBlob(2);
-    int notes_l = q.fetchBytes(2);
-    md.set_notes_encoded(vector<uint8_t>(notes_p, notes_p + notes_l));
-    md.set(Reftime::createPosition(Time::create_sql(q.fetchString(3))));
+    md.set(Reftime::createPosition(core::Time::create_sql(q.fetchString(3))));
     int j = 4;
     if (m_uniques)
     {
@@ -314,16 +294,30 @@ void Index::build_md(Query& q, Metadata& md, std::shared_ptr<arki::segment::Read
     {
         if (!q.isNULL(j))
         {
-            string data = q.fetchString(j);
+            std::string data = q.fetchString(j);
             md.set(types::Value::create(data));
         }
         ++j;
     }
+
+    // md.notes = mdq.fetchItems<types::Note>(5);
+    const uint8_t* notes_p = (const uint8_t*)q.fetchBlob(2);
+    int notes_l = q.fetchBytes(2);
+    md.set_notes_encoded(notes_p, notes_l);
+
+    if (reader)
+        md.set_source(Source::createBlob(
+                dataset->format, dataset->path, data_relpath,
+                q.fetch<uint64_t>(0), q.fetch<uint64_t>(1), reader));
+    else
+        md.set_source(Source::createBlobUnlocked(
+                dataset->format, dataset->path, data_relpath,
+                q.fetch<uint64_t>(0), q.fetch<uint64_t>(1)));
 }
 
 bool Index::query_data(const dataset::DataQuery& q, dataset::Session& session, metadata_dest_func dest)
 {
-    string query = "SELECT m.offset, m.size, m.notes, m.reftime";
+    std::string query = "SELECT m.offset, m.size, m.notes, m.reftime";
 
     if (m_uniques) query += ", m.uniq";
     if (m_others) query += ", m.other";
@@ -361,7 +355,7 @@ bool Index::query_data(const dataset::DataQuery& q, dataset::Session& session, m
         while (mdq.step())
         {
             // Rebuild the Metadata
-            unique_ptr<Metadata> md(new Metadata);
+            std::unique_ptr<Metadata> md(new Metadata);
             build_md(mdq, *md, reader);
             // Buffer the results in memory, to release the database lock as soon as possible
             mdbuf.acquire(move(md));
@@ -383,7 +377,7 @@ bool Index::query_data(const dataset::DataQuery& q, dataset::Session& session, m
 
 bool Index::query_summary_from_db(const Matcher& m, Summary& summary) const
 {
-    string query = "SELECT COUNT(1), SUM(size), MIN(reftime), MAX(reftime)";
+    std::string query = "SELECT COUNT(1), SUM(size), MIN(reftime), MAX(reftime)";
 
     if (m_uniques) query += ", uniq";
     if (m_others) query += ", other";
@@ -416,8 +410,8 @@ bool Index::query_summary_from_db(const Matcher& m, Summary& summary) const
         summary::Stats st;
         st.count = sq.fetch<size_t>(0);
         st.size = sq.fetch<unsigned long long>(1);
-        st.begin = Time::create_sql(sq.fetchString(2));
-        st.end = Time::create_sql(sq.fetchString(3));
+        st.begin = core::Time::create_sql(sq.fetchString(2));
+        st.end = core::Time::create_sql(sq.fetchString(3));
 
         // Fill in the metadata fields
         Metadata md;
@@ -448,9 +442,9 @@ RIndex::RIndex(std::shared_ptr<iseg::Dataset> dataset, const std::string& data_r
 {
     if (!sys::access(index_pathname, F_OK))
     {
-        stringstream ss;
+        std::stringstream ss;
         ss << "dataset index " << index_pathname << " does not exist";
-        throw runtime_error(ss.str());
+        throw std::runtime_error(ss.str());
     }
 
     m_db.open(index_pathname);
@@ -491,7 +485,7 @@ void WIndex::init_db()
     if (m_others) m_others->initDB(dataset->index);
 
     // Create the main table
-    string query = "CREATE TABLE IF NOT EXISTS md ("
+    std::string query = "CREATE TABLE IF NOT EXISTS md ("
         " offset INTEGER PRIMARY KEY,"
         " size INTEGER NOT NULL,"
         " notes BLOB,"
@@ -515,8 +509,8 @@ void WIndex::init_db()
 void WIndex::compile_insert()
 {
     // Precompile insert query
-    string un_ot;
-    string placeholders;
+    std::string un_ot;
+    std::string placeholders;
     if (m_uniques)
     {
         un_ot += ", uniq";
@@ -534,7 +528,7 @@ void WIndex::compile_insert()
     }
 
     // Precompile get_current
-    string cur_query = "SELECT offset, size FROM md WHERE reftime=?";
+    std::string cur_query = "SELECT offset, size FROM md WHERE reftime=?";
     if (m_uniques) cur_query += " AND uniq=?";
     m_get_current.compile(cur_query);
 
@@ -557,13 +551,14 @@ struct Inserter
     int timebuf_len;
     int id_uniques = -1;
     int id_others = -1;
+    std::vector<uint8_t> buf;
 
     Inserter(WIndex& idx, const Metadata& md)
         : idx(idx), md(md)
     {
         if (const reftime::Position* reftime = md.get<reftime::Position>())
         {
-            const auto& t = reftime->time;
+            auto t = reftime->get_Position();
             timebuf_len = snprintf(timebuf, 25, "%04d-%02d-%02d %02d:%02d:%02d", t.ye, t.mo, t.da, t.ho, t.mi, t.se);
         } else {
             timebuf[0] = 0;
@@ -590,7 +585,10 @@ struct Inserter
 
         q.bind(++qidx, ofs);
         q.bind(++qidx, md.data_size());
-        q.bind(++qidx, md.notes_encoded());
+        buf.clear();
+        core::BinaryEncoder enc(buf);
+        md.encode_notes(enc);
+        q.bind(++qidx, buf);
 
         if (timebuf_len)
             q.bind(++qidx, timebuf, timebuf_len);

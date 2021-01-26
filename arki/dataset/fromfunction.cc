@@ -1,8 +1,7 @@
 #include "fromfunction.h"
-#include "arki/metadata.h"
 #include "arki/dataset/query.h"
 #include "arki/dataset/progress.h"
-#include <ostream>
+#include "arki/core/time.h"
 
 using namespace std;
 

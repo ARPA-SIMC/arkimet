@@ -1,8 +1,7 @@
-#include "config.h"
-#include "base.h"
 #include "aggregate.h"
 #include "arki/matcher.h"
 #include "arki/utils/string.h"
+#include "arki/dataset/index/base.h"
 
 using namespace std;
 using namespace arki::utils;
@@ -96,6 +95,7 @@ int Aggregate::get(const Metadata& md) const
 
 void Aggregate::read(int id, Metadata& md) const
 {
+    // Resolve the aggregate ID to a list of attribute IDs
     std::map< int, std::vector<int> >::iterator i = m_cache.find(id);
     if (i == m_cache.end())
     {
@@ -111,6 +111,7 @@ void Aggregate::read(int id, Metadata& md) const
 		i = ins.first;
 	}
 
+    // Load metadata items for the attribute IDs found
     size_t idx = 0;
     for (Attrs::const_iterator j = m_attrs.begin();
             j != m_attrs.end(); ++j, ++idx)

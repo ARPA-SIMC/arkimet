@@ -5,12 +5,9 @@
 #include "arki/dataset/outbound.h"
 #include "arki/dataset/empty.h"
 #include "arki/metadata.h"
-#include "arki/metadata/sort.h"
 #include "arki/metadata/postprocess.h"
 #include "arki/utils/string.h"
-#include "arki/utils/sys.h"
 #include "arki/summary.h"
-#include "arki/nag.h"
 
 using namespace std;
 using namespace arki::core;
@@ -36,7 +33,7 @@ std::string Dataset::name() const
         return m_name;
 }
 
-void Dataset::set_parent(std::shared_ptr<Dataset> parent)
+void Dataset::set_parent(const Dataset* parent)
 {
     m_parent = parent;
 }

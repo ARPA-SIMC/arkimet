@@ -1,11 +1,8 @@
 #include "time.h"
 #include "binary.h"
-#include "arki/exceptions.h"
-#include <ostream>
-#include <cmath>
-#include <cstring>
-#include <ctime>
 #include <cstdio>
+#include <stdexcept>
+#include <algorithm>
 
 using namespace std;
 
@@ -101,9 +98,10 @@ bool TimeBase::operator!=(const TimeBase& o) const
         || ho != o.ho || mi != o.mi || se != o.se;
 }
 
-bool TimeBase::operator!=(const TimeBase& o) const;
 
-
+/*
+ * Time
+ */
 
 Time Time::create_iso8601(const std::string& str)
 {
@@ -380,10 +378,23 @@ void Time::encodeWithoutEnvelope(core::BinaryEncoder& enc) const
                | ((da & 0x1f)   << 9)
                | ((ho & 0x1f)   << 4)
                | ((mi >> 2) & 0xf);
-    uint32_t b = ((mi & 0x3) << 6)
+    uint8_t b = ((mi & 0x3) << 6)
                | (se & 0x3f);
     enc.add_unsigned(a, 4);
     enc.add_unsigned(b, 1);
+}
+
+void Time::encode_binary(uint8_t* buf) const
+{
+    uint32_t a = ((ye & 0x3fff) << 18)
+               | ((mo & 0xf)    << 14)
+               | ((da & 0x1f)   << 9)
+               | ((ho & 0x1f)   << 4)
+               | ((mi >> 2) & 0xf);
+    uint8_t b = ((mi & 0x3) << 6)
+               | (se & 0x3f);
+    core::BinaryEncoder::set_unsigned(buf, a, 4);
+    core::BinaryEncoder::set_unsigned(buf + 4, b, 1);
 }
 
 int Time::days_in_month(int year, int month)

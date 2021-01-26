@@ -10,13 +10,8 @@
 #include <memory>
 
 namespace arki {
-class Metadata;
-class Matcher;
-class Summary;
-
 namespace dataset {
 namespace ondisk2 {
-struct CheckerSegment;
 
 namespace writer {
 class RealRepacker;
@@ -44,7 +39,7 @@ public:
     void check(CheckerConfig& opts) override;
 
     size_t vacuum(dataset::Reporter& reporter) override;
-    void test_change_metadata(const std::string& relpath, Metadata& md, unsigned data_idx) override;
+    std::shared_ptr<Metadata> test_change_metadata(const std::string& relpath, std::shared_ptr<Metadata> md, unsigned data_idx) override;
     void test_delete_from_index(const std::string& relpath) override;
     void test_invalidate_in_index(const std::string& relpath) override;
 

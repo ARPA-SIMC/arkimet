@@ -3,6 +3,7 @@
 #include "arki/metadata.h"
 #include "arki/types/source.h"
 #include "arki/types/reftime.h"
+#include "arki/types/timerange.h"
 #include <cstring>
 
 using namespace std;
@@ -71,7 +72,7 @@ void Clusterer::add_to_batch(std::shared_ptr<Metadata> md)
         md_to_interval(*md, cur_interval);
     const Reftime* rt = md->get<types::Reftime>();
     if (!rt) return;
-    rt->expand_date_range(timespan_begin, timespan_end);
+    rt->expand_date_range(timespan);
     if (split_timerange and not last_timerange)
         last_timerange = md->get<types::Timerange>()->clone();
 }
@@ -83,8 +84,7 @@ void Clusterer::flush_batch()
     count = 0;
     size = 0;
     cur_interval[0] = -1;
-    timespan_begin.reset(0);
-    timespan_end.reset(0);
+    timespan = core::Interval();
     if (split_timerange)
     {
         delete last_timerange;
@@ -118,7 +118,7 @@ void Clusterer::md_to_interval(const Metadata& md, int* interval) const
 {
     const Reftime* rt = md.get<Reftime>();
     if (!rt) throw runtime_error("cannot compute time interval: metadata has no reference time");
-    Time t(rt->period_end());
+    Time t = rt->get_Position();
     interval[0] = max_interval > 0 ? t.ye : -1;
     interval[1] = max_interval > 1 ? t.mo : -1;
     interval[2] = max_interval > 2 ? t.da : -1;

@@ -1,14 +1,10 @@
 #include "xargs.h"
-#include "arki/exceptions.h"
 #include "arki/metadata.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/string.h"
 #include "arki/utils/subprocess.h"
 #include <cstring>
 #include <unistd.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
 
 using namespace std;
 using namespace arki;
@@ -107,13 +103,19 @@ int Xargs::run_child()
     snprintf(buf, 32, "%zd", count);
     child.setenv("ARKI_XARGS_COUNT", buf);
 
-    if (timespan_begin.get())
+    if (timespan.begin.ye != 0)
     {
-        child.setenv("ARKI_XARGS_TIME_START", timespan_begin->to_iso8601(' '));
-        if (timespan_end.get())
-            child.setenv("ARKI_XARGS_TIME_END", timespan_end->to_iso8601(' '));
+        child.setenv("ARKI_XARGS_TIME_START", timespan.begin.to_iso8601(' '));
+        if (timespan.end.ye != 0)
+        {
+            // Bring it from end exluded to end included
+            core::Time end = timespan.end;
+            end.se -= 1;
+            end.normalise();
+            child.setenv("ARKI_XARGS_TIME_END", end.to_iso8601(' '));
+        }
         else
-            child.setenv("ARKI_XARGS_TIME_END", timespan_begin->to_iso8601(' '));
+            child.setenv("ARKI_XARGS_TIME_END", timespan.begin.to_iso8601(' '));
     }
 
     child.fork();

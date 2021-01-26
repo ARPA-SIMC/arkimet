@@ -1,9 +1,8 @@
 #ifndef ARKI_MATCHER_PRODUCT
 #define ARKI_MATCHER_PRODUCT
 
-#include <arki/matcher.h>
 #include <arki/matcher/utils.h>
-#include <arki/types/product.h>
+#include <arki/types/values.h>
 
 namespace arki {
 namespace matcher {
@@ -13,6 +12,7 @@ namespace matcher {
  */
 struct MatchProduct : public Implementation
 {
+    MatchProduct* clone() const override = 0;
     std::string name() const override;
 
     static Implementation* parse(const std::string& pattern);
@@ -26,8 +26,11 @@ struct MatchProductGRIB1 : public MatchProduct
 	int table;
 	int product;
 
+    MatchProductGRIB1(int origin, int table, int product);
     MatchProductGRIB1(const std::string& pattern);
+    MatchProductGRIB1* clone() const override;
     bool matchItem(const types::Type& o) const override;
+    bool match_buffer(types::Code code, const uint8_t* data, unsigned size) const override;
     std::string toString() const override;
 };
 
@@ -41,8 +44,11 @@ struct MatchProductGRIB2 : public MatchProduct
     int table_version;
     int local_table_version;
 
+    MatchProductGRIB2(int centre, int discipline, int categori, int number, int table_version, int local_table_version);
     MatchProductGRIB2(const std::string& pattern);
+    MatchProductGRIB2* clone() const override;
     bool matchItem(const types::Type& o) const override;
+    bool match_buffer(types::Code code, const uint8_t* data, unsigned size) const override;
     std::string toString() const override;
 };
 
@@ -52,10 +58,13 @@ struct MatchProductBUFR : public MatchProduct
     int type;
     int subtype;
     int localsubtype;
-    types::ValueBag values;
+    types::ValueBagMatcher values;
 
+    MatchProductBUFR(int type, int subtype, int localsubtype, const types::ValueBagMatcher& values);
     MatchProductBUFR(const std::string& pattern);
+    MatchProductBUFR* clone() const override;
     bool matchItem(const types::Type& o) const override;
+    bool match_buffer(types::Code code, const uint8_t* data, unsigned size) const override;
     std::string toString() const override;
 };
 
@@ -66,8 +75,11 @@ struct MatchProductODIMH5 : public MatchProduct
 	/*REMOVED:double		prodpar1;	// NAN when should be ignored in the match */
 	/*REMOVED:double		prodpar2;	// NAN when should be ignored in the match */
 
+    MatchProductODIMH5(const std::string& obj, const std::string& prod);
     MatchProductODIMH5(const std::string& pattern);
+    MatchProductODIMH5* clone() const override;
     bool matchItem(const types::Type& o) const override;
+    bool match_buffer(types::Code code, const uint8_t* data, unsigned size) const override;
     std::string toString() const override;
 };
 
@@ -75,11 +87,14 @@ struct MatchProductVM2 : public MatchProduct
 {
     // This is -1 when should be ignored
     int variable_id;
-    types::ValueBag expr;
+    types::ValueBagMatcher expr;
     std::vector<int> idlist;
 
+    MatchProductVM2(int variable_id, const types::ValueBagMatcher& expr, const std::vector<int>& idlist);
     MatchProductVM2(const std::string& pattern);
+    MatchProductVM2* clone() const override;
     bool matchItem(const types::Type& o) const override;
+    bool match_buffer(types::Code code, const uint8_t* data, unsigned size) const override;
     std::string toString() const override;
 };
 

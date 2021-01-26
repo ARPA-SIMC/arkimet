@@ -5,6 +5,7 @@
 #include <vector>
 #include <string>
 #include <cstdint>
+#include <cstddef>
 
 namespace arki {
 namespace core {
@@ -43,6 +44,17 @@ struct BinaryEncoder
             dest.push_back((val >> ((bytes - i - 1) * 8)) & 0xff);
     }
 
+    /// Encode an unsigned integer in the given amount of bytes, big endian
+    template<typename T>
+    static void set_unsigned(uint8_t* buf, T val, unsigned bytes)
+    {
+        // Only work with unsigned
+        static_assert(std::is_unsigned<T>(), "source integer must be unsigned");
+
+        for (unsigned i = 0; i < bytes; ++i)
+            buf[i] = (val >> ((bytes - i - 1) * 8)) & 0xff;
+    }
+
     /// Encode a signed integer in the given amount of bytes, big endian
     void add_signed(int val, unsigned int bytes)
     {
@@ -55,6 +67,20 @@ struct BinaryEncoder
         } else
             uns = val;
         add_unsigned(uns, bytes);
+    }
+
+    /// Encode a signed integer in the given amount of bytes, big endian
+    static void set_signed(uint8_t* buf, int val, unsigned int bytes)
+    {
+        uint32_t uns;
+        if (val < 0)
+        {
+            // If it's negative, we encode the 2-complement of the positive value
+            uns = -val;
+            uns = ~uns + 1;
+        } else
+            uns = val;
+        set_unsigned(buf, uns, bytes);
     }
 
     /// Encode a IEEE754 float
@@ -71,10 +97,18 @@ struct BinaryEncoder
             dest.push_back(((const uint8_t*)&val)[i]);
     }
 
+    /// Encode a IEEE754 double
+    static void set_double(uint8_t* buf, double val)
+    {
+        for (unsigned int i = 0; i < sizeof(double); ++i)
+            buf[i] = ((const uint8_t*)&val)[i];
+    }
+
     void add_string(const char* str) { while (*str) dest.push_back(*str++); }
     void add_raw(const uint8_t* buf, size_t size) { dest.insert(dest.end(), buf, buf + size); }
     void add_raw(const std::string& str) { dest.insert(dest.end(), str.begin(), str.end()); }
     void add_raw(const std::vector<uint8_t>& o) { dest.insert(dest.end(), o.begin(), o.end()); }
+    void add_byte(uint8_t val) { dest.emplace_back(val); }
 };
 
 struct BinaryDecoder
@@ -101,14 +135,28 @@ struct BinaryDecoder
             throw_insufficient_size(what, wanted);
     }
 
+    /// Skip the first `bytes` bytes in the buffer
+    inline void skip(size_t bytes)
+    {
+        buf += bytes;
+        size -= bytes;
+    }
+
+    template<typename STR>
+    inline void skip(size_t bytes, STR what)
+    {
+        ensure_size(bytes, what);
+        buf += bytes;
+        size -= bytes;
+    }
+
     /// Return the first byte in the buffer
     template<typename STR>
     uint8_t pop_byte(STR what)
     {
         ensure_size(1, what);
         uint8_t res = buf[0];
-        ++buf;
-        --size;
+        skip(1);
         return res;
     }
 
@@ -122,8 +170,7 @@ struct BinaryDecoder
         T val;
         size_t res = decode_varint(buf, size, val);
         if (res == 0) throw_parse_error(what, "invalid varint data");
-        buf += res;
-        size -= res;
+        skip(res);
         return val;
     }
 
@@ -136,8 +183,7 @@ struct BinaryDecoder
     {
         ensure_size(bytes, what);
         uint32_t val = decode_uint(buf, bytes);
-        buf += bytes;
-        size -= bytes;
+        skip(bytes);
         return val;
     }
 
@@ -150,8 +196,7 @@ struct BinaryDecoder
     {
         ensure_size(bytes, what);
         int val = decode_sint(buf, bytes);
-        buf += bytes;
-        size -= bytes;
+        skip(bytes);
         return val;
     }
 
@@ -160,8 +205,7 @@ struct BinaryDecoder
     {
         ensure_size(bytes, what);
         uint64_t val = decode_ulint(buf, bytes);
-        buf += bytes;
-        size -= bytes;
+        skip(bytes);
         return val;
     }
 
@@ -176,8 +220,7 @@ struct BinaryDecoder
     {
         ensure_size(sizeof(float), what);
         float val = decode_float(buf);
-        buf += sizeof(float);
-        size -= sizeof(float);
+        skip(sizeof(float));
         return val;
     }
 
@@ -192,8 +235,7 @@ struct BinaryDecoder
     {
         ensure_size(sizeof(double), what);
         double val = decode_double(buf);
-        buf += sizeof(double);
-        size -= sizeof(double);
+        skip(sizeof(double));
         return val;
     }
 
@@ -204,8 +246,7 @@ struct BinaryDecoder
     {
         ensure_size(bytes, what);
         std::string res((const char*)buf, bytes);
-        buf += bytes;
-        size -= bytes;
+        skip(bytes);
         return res;
     }
 
@@ -217,8 +258,15 @@ struct BinaryDecoder
     {
         ensure_size(bytes, what);
         BinaryDecoder res(buf, bytes);
-        buf += bytes;
-        size -= bytes;
+        skip(bytes);
+        return res;
+    }
+
+    std::vector<uint8_t> pop_data_copy(size_t bytes, const char* what)
+    {
+        ensure_size(bytes, what);
+        std::vector<uint8_t> res(buf, buf + bytes);
+        skip(bytes);
         return res;
     }
 

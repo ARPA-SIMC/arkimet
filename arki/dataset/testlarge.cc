@@ -7,7 +7,6 @@
 #include "arki/metadata.h"
 #include "arki/metadata/data.h"
 #include "arki/summary.h"
-#include "config.h"
 
 using namespace std;
 

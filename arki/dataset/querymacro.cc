@@ -1,6 +1,5 @@
 #include "querymacro.h"
-#include "arki/metadata.h"
-#include "arki/summary.h"
+#include "arki/dataset/pool.h"
 #include "arki/runtime.h"
 #include "arki/utils/string.h"
 
@@ -10,8 +9,8 @@ using namespace arki::utils;
 namespace arki {
 namespace dataset {
 
-QueryMacro::QueryMacro(std::shared_ptr<Session> session, const std::string& name, const std::string& query)
-    : dataset::Dataset(session), query(query)
+QueryMacro::QueryMacro(std::shared_ptr<Pool> pool, const std::string& name, const std::string& query)
+    : dataset::Dataset(pool->session()), pool(pool), query(query)
 {
     size_t pos = name.find(" ");
     if (pos == string::npos)

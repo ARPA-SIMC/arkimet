@@ -16,7 +16,7 @@ struct Dataset : public dataset::Dataset
 {
     std::vector<std::shared_ptr<dataset::Reader>> datasets;
 
-    Dataset(std::shared_ptr<Session> session);
+    Dataset(std::shared_ptr<dataset::Pool> datasets);
 
     std::shared_ptr<dataset::Reader> create_reader() override;
 };

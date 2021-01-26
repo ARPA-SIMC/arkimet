@@ -1,6 +1,7 @@
 #include "exceptions.h"
 #include <system_error>
 #include <cerrno>
+#include <stdexcept>
 
 namespace arki {
 

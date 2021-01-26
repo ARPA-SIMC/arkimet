@@ -74,6 +74,15 @@ add_method("format_from_filename", [] {
     wassert(actual(scan::Scanner::format_from_filename("test.odim.tar")) == "odimh5");
     wassert(actual(scan::Scanner::format_from_filename("test.odimh5.tar")) == "odimh5");
 
+    wassert(actual(scan::Scanner::format_from_filename("test.nc")) == "nc");
+    wassert(actual(scan::Scanner::format_from_filename("test.netcdf")) == "nc");
+    wassert(actual(scan::Scanner::format_from_filename("test.nc.gz")) == "nc");
+    wassert(actual(scan::Scanner::format_from_filename("test.netcdf.gz")) == "nc");
+    wassert(actual(scan::Scanner::format_from_filename("test.nc.zip")) == "nc");
+    wassert(actual(scan::Scanner::format_from_filename("test.netcdf.zip")) == "nc");
+    wassert(actual(scan::Scanner::format_from_filename("test.nc.tar")) == "nc");
+    wassert(actual(scan::Scanner::format_from_filename("test.netcdf.tar")) == "nc");
+
     wassert_throws(std::runtime_error, scan::Scanner::format_from_filename("test"));
     wassert_throws(std::runtime_error, scan::Scanner::format_from_filename("test.zip"));
     wassert_throws(std::runtime_error, scan::Scanner::format_from_filename("test.tar"));

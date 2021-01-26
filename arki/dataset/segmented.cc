@@ -19,8 +19,6 @@
 #include "arki/utils/sys.h"
 #include "arki/utils/files.h"
 #include <algorithm>
-#include <system_error>
-#include <sstream>
 
 using namespace std;
 using namespace arki::utils;
@@ -40,14 +38,14 @@ void SegmentState::check_age(const std::string& relpath, const Dataset& dataset,
     if (dataset.delete_age != -1)
         delete_threshold = st.age_threshold(dataset.delete_age);
 
-    if (delete_threshold.ye != 0 && delete_threshold >= until)
+    if (delete_threshold.ye != 0 && delete_threshold >= interval.end)
     {
         reporter.segment_info(dataset.name(), relpath, "segment old enough to be deleted");
         state = state + segment::SEGMENT_DELETE_AGE;
         return;
     }
 
-    if (archive_threshold.ye != 0 && archive_threshold >= until)
+    if (archive_threshold.ye != 0 && archive_threshold >= interval.end)
     {
         reporter.segment_info(dataset.name(), relpath, "segment old enough to be archived");
         state = state + segment::SEGMENT_ARCHIVE_AGE;
@@ -76,7 +74,6 @@ Dataset::Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg
     else
         throw std::runtime_error("Replace strategy '" + repl + "' is not recognised in the configuration of dataset " + name());
 
-    std::string shard = cfg.value("shard");
     m_step = Step::create(step_name);
 
     std::string gz_group_size = cfg.value("gz group size");
@@ -91,9 +88,9 @@ Dataset::~Dataset()
 {
 }
 
-bool Dataset::relpath_timespan(const std::string& path, core::Time& start_time, core::Time& end_time) const
+bool Dataset::relpath_timespan(const std::string& path, core::Interval& interval) const
 {
-    return step().path_timespan(path, start_time, end_time);
+    return step().path_timespan(path, interval);
 }
 
 std::shared_ptr<segment::Reader> Dataset::segment_reader(const std::string& relpath, std::shared_ptr<core::Lock> lock)
@@ -150,7 +147,7 @@ std::map<std::string, WriterBatch> Writer::batch_by_segment(WriterBatch& batch)
             continue;
         }
 
-        const core::Time& time = e->md.get<types::reftime::Position>()->time;
+        core::Time time = e->md.get<types::reftime::Position>()->get_Position();
         string relpath = dataset().step()(time) + "." + format;
         by_segment[relpath].push_back(e);
     }
@@ -204,8 +201,8 @@ void CheckerSegment::archive()
     string format = segment->segment().relpath.substr(pos + 1);
 
     // Get the time range for this relpath
-    core::Time start_time, end_time;
-    if (!dataset().relpath_timespan(segment->segment().relpath, start_time, end_time))
+    core::Interval interval;
+    if (!dataset().relpath_timespan(segment->segment().relpath, interval))
         throw std::runtime_error("cannot archive segment " + segment->segment().abspath + " because its name does not match the dataset step");
 
     // Get the contents of this segment
@@ -214,7 +211,7 @@ void CheckerSegment::archive()
 
     // Move the segment to the archive and deindex it
     string new_root = str::joinpath(dataset().path, ".archive", "last");
-    string new_relpath = dataset().step()(start_time) + "." + format;
+    string new_relpath = dataset().step()(interval.begin) + "." + format;
     string new_abspath = str::joinpath(new_root, new_relpath);
     release(new_root, new_relpath, new_abspath);
 
@@ -351,7 +348,7 @@ void Checker::state(CheckerConfig& opts)
     segments(opts, [&](CheckerSegment& segment) {
         auto state = segment.scan(*opts.reporter, !opts.accurate);
         opts.reporter->segment_tar(name(), segment.path_relative(),
-                state.state.to_string() + " " + state.begin.to_iso8601(' ') + " to " + state.until.to_iso8601(' '));
+                state.state.to_string() + " " + state.interval.begin.to_iso8601(' ') + " to " + state.interval.end.to_iso8601(' '));
     });
 
     local::Checker::state(opts);

@@ -90,7 +90,7 @@ add_method("splitter", [] {
     wassert(actual(*i) == "dadada");
     wassert(actual(i->size()) == 6u);
     ++i;
-    wassert(i == splitter.end());
+    wassert_true(i == splitter.end());
 });
 
 add_method("splitter_empty", [] {
@@ -108,7 +108,7 @@ add_method("splitter_empty", [] {
     wassert(actual(*i) == "o");
     wassert(actual(i->size()) == 1u);
     ++i;
-    wassert(i == splitter.end());
+    wassert_true(i == splitter.end());
 });
 
 }

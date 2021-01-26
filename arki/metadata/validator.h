@@ -10,8 +10,9 @@
 namespace arki {
 namespace metadata {
 
-struct Validator
+class Validator
 {
+public:
     std::string name;
     std::string desc;
 
@@ -30,21 +31,24 @@ struct Validator
 
 namespace validators
 {
-    struct FailAlways : public Validator
+    class FailAlways : public Validator
     {
+    public:
         FailAlways();
         virtual bool operator()(const Metadata& v, std::vector<std::string>& errors) const;
     };
 
-    struct DailyImport : public Validator
+    class DailyImport : public Validator
     {
+    public:
         DailyImport();
         virtual bool operator()(const Metadata& v, std::vector<std::string>& errors) const;
     };
 }
 
-struct ValidatorRepository : public std::map<std::string, Validator*>
+class ValidatorRepository : public std::map<std::string, Validator*>
 {
+public:
     ~ValidatorRepository();
 
     /**
@@ -56,8 +60,6 @@ struct ValidatorRepository : public std::map<std::string, Validator*>
     static const ValidatorRepository& get();
 };
 
-
 }
 }
-
 #endif

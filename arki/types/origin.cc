@@ -4,7 +4,7 @@
 #include "arki/core/binary.h"
 #include "arki/utils/string.h"
 #include "arki/structured/emitter.h"
-#include "arki/structured/memory.h"
+#include "arki/structured/reader.h"
 #include "arki/structured/keys.h"
 #include <iomanip>
 #include <sstream>
@@ -25,26 +25,134 @@ const char* traits<Origin>::type_tag = TAG;
 const types::Code traits<Origin>::type_code = CODE;
 const size_t traits<Origin>::type_sersize_bytes = SERSIZELEN;
 
-// Deprecated
-int Origin::getMaxIntCount() { return 5; }
-
-Origin::Style Origin::parseStyle(const std::string& str)
+int Origin::compare(const Type& o) const
 {
-    if (str == "GRIB1") return Style::GRIB1;
-    if (str == "GRIB2") return Style::GRIB2;
-    if (str == "BUFR") return Style::BUFR;
-    if (str == "ODIMH5") return Style::ODIMH5;
+    int res = Encoded::compare(o);
+    if (res != 0) return res;
+
+    // We should be the same kind, so upcast
+    const Origin* v = dynamic_cast<const Origin*>(&o);
+    if (!v)
+    {
+        std::stringstream ss;
+        ss << "cannot compare metadata types: second element claims to be `Origin`, but it is `" << typeid(&o).name() << "' instead";
+        throw std::runtime_error(ss.str());
+    }
+
+    auto sty = style();
+
+    // Compare style
+    if (int res = (int)sty - (int)v->style()) return res;
+
+    // Styles are the same, compare the rest
+    switch (sty)
+    {
+        case origin::Style::GRIB1:
+        {
+            // TODO: can probably do lexicographical compare of raw data here?
+            unsigned c, s, p, vc, vs, vp;
+            get_GRIB1(c, s, p);
+            v->get_GRIB1(vc, vs, vp);
+            if (int res = c - vc) return res;
+            if (int res = s - vs) return res;
+            return p - vp;
+        }
+        case origin::Style::GRIB2:
+        {
+            // TODO: can probably do lexicographical compare of raw data here?
+            unsigned ce, su, pt, bg, pi, vce, vsu, vpt, vbg, vpi;
+            get_GRIB2(ce, su, pt, bg, pi);
+            v->get_GRIB2(vce, vsu, vpt, vbg, vpi);
+            if (int res = ce - vce) return res;
+            if (int res = su - vsu) return res;
+            if (int res = pt - vpt) return res;
+            if (int res = bg - vbg) return res;
+            return pi - vpi;
+        }
+        case origin::Style::BUFR:
+        {
+            // TODO: can probably do lexicographical compare of raw data here?
+            unsigned c, s, vc, vs;
+            get_BUFR(c, s);
+            v->get_BUFR(vc, vs);
+            if (int res = c - vc) return res;
+            return s - vs;
+        }
+        case origin::Style::ODIMH5:
+        {
+            std::string WMO, RAD, PLC, vWMO, vRAD, vPLC;
+            get_ODIMH5(WMO, RAD, PLC);
+            v->get_ODIMH5(vWMO, vRAD, vPLC);
+            if (int res = WMO.compare(vWMO)) return res;
+            if (int res = RAD.compare(vRAD)) return res;
+            return PLC.compare(vPLC);
+        }
+        default:
+            throw_consistency_error("parsing Origin", "unknown Origin style " + formatStyle(sty));
+    }
+}
+
+origin::Style Origin::style(const uint8_t* data, unsigned size)
+{
+    return (origin::Style)data[0];
+}
+
+void Origin::get_GRIB1(const uint8_t* data, unsigned size, unsigned& centre, unsigned& subcentre, unsigned& process)
+{
+    core::BinaryDecoder dec(data + 1, size - 1);
+    centre = dec.pop_uint(1, "GRIB1 origin centre");
+    subcentre = dec.pop_uint(1, "GRIB1 origin subcentre");
+    process = dec.pop_uint(1, "GRIB1 origin process");
+}
+
+void Origin::get_GRIB2(const uint8_t* data, unsigned size, unsigned& centre, unsigned& subcentre, unsigned& processtype, unsigned& bgprocessid, unsigned& processid)
+{
+    core::BinaryDecoder dec(data + 1, size - 1);
+    centre = dec.pop_uint(2, "GRIB2 origin centre");
+    subcentre = dec.pop_uint(2, "GRIB2 origin subcentre");
+    processtype = dec.pop_uint(1, "GRIB2 origin process type");
+    bgprocessid = dec.pop_uint(1, "GRIB2 origin background process ID");
+    processid = dec.pop_uint(1, "GRIB2 origin process ID");
+}
+
+void Origin::get_BUFR(const uint8_t* data, unsigned size, unsigned& centre, unsigned& subcentre)
+{
+    core::BinaryDecoder dec(data + 1, size - 1);
+    centre = dec.pop_uint(1, "BUFR origin centre");
+    subcentre = dec.pop_uint(1, "BUFR origin subcentre");
+}
+
+void Origin::get_ODIMH5(const uint8_t* data, unsigned size, std::string& WMO, std::string& RAD, std::string& PLC)
+{
+    core::BinaryDecoder dec(data + 1, size - 1);
+
+    uint16_t wmosize = dec.pop_varint<uint16_t>("ODIMH5 wmo length");
+    WMO = dec.pop_string(wmosize, "ODIMH5 wmo");
+
+    uint16_t radsize = dec.pop_varint<uint16_t>("ODIMH5 rad length");
+    RAD = dec.pop_string(radsize, "ODIMH5 rad");
+
+    uint16_t plcsize = dec.pop_varint<uint16_t>("ODIMH5 plc length");
+    PLC = dec.pop_string(plcsize, "ODIMH5 plc");
+}
+
+origin::Style Origin::parseStyle(const std::string& str)
+{
+    if (str == "GRIB1") return origin::Style::GRIB1;
+    if (str == "GRIB2") return origin::Style::GRIB2;
+    if (str == "BUFR") return origin::Style::BUFR;
+    if (str == "ODIMH5") return origin::Style::ODIMH5;
     throw_consistency_error("parsing Origin style", "cannot parse Origin style '"+str+"': only GRIB1, GRIB2 and BUFR are supported");
 }
 
-std::string Origin::formatStyle(Origin::Style s)
+std::string Origin::formatStyle(origin::Style s)
 {
     switch (s)
     {
-        case Style::GRIB1: return "GRIB1";
-        case Style::GRIB2: return "GRIB2";
-        case Style::BUFR: return "BUFR";
-        case Style::ODIMH5:     return "ODIMH5";
+        case origin::Style::GRIB1: return "GRIB1";
+        case origin::Style::GRIB2: return "GRIB2";
+        case origin::Style::BUFR: return "BUFR";
+        case origin::Style::ODIMH5:     return "ODIMH5";
         default:
             std::stringstream str;
             str << "(unknown " << (int)s << ")";
@@ -52,70 +160,141 @@ std::string Origin::formatStyle(Origin::Style s)
     }
 }
 
-unique_ptr<Origin> Origin::decode(core::BinaryDecoder& dec)
+std::ostream& Origin::writeToOstream(std::ostream& o) const
 {
-    Style s = (Style)dec.pop_uint(1, "origin style");
-    switch (s)
+    auto sty = style();
+    switch (sty)
     {
-        case Style::GRIB1:
+        case origin::Style::GRIB1:
         {
-            uint8_t ce = dec.pop_uint(1, "GRIB1 origin centre");
-            uint8_t sc = dec.pop_uint(1, "GRIB1 origin subcentre");
-            uint8_t pr = dec.pop_uint(1, "GRIB1 origin process");
-            return upcast<Origin>(origin::GRIB1::create(ce, sc, pr));
+            unsigned c, s, p;
+            get_GRIB1(c, s, p);
+            return o << formatStyle(sty) << "("
+                     << setfill('0')
+                     << setw(3) << (int)c << ", "
+                     << setw(3) << (int)s << ", "
+                     << setw(3) << (int)p
+                     << setfill(' ')
+                     << ")";
         }
-        case Style::GRIB2:
+        case origin::Style::GRIB2:
         {
-            unsigned short ce = dec.pop_uint(2, "GRIB2 origin centre");
-            unsigned short sc = dec.pop_uint(2, "GRIB2 origin subcentre");
-            unsigned char pt = dec.pop_uint(1, "GRIB2 origin process type");
-            unsigned char bgid = dec.pop_uint(1, "GRIB2 origin background process ID");
-            unsigned char prid = dec.pop_uint(1, "GRIB2 origin process ID");
-            return upcast<Origin>(origin::GRIB2::create(ce, sc, pt, bgid, prid));
+            unsigned ce, su, pt, bg, pi;
+            get_GRIB2(ce, su, pt, bg, pi);
+            return o << formatStyle(sty) << "("
+                     << setfill('0')
+                     << setw(5) << (int)ce << ", "
+                     << setw(5) << (int)su << ", "
+                     << setw(3) << (int)pt << ", "
+                     << setw(3) << (int)bg << ", "
+                     << setw(3) << (int)pi
+                     << setfill(' ')
+                     << ")";
         }
-        case Style::BUFR:
+        case origin::Style::BUFR:
         {
-            uint8_t ce = dec.pop_uint(1, "BUFR origin centre");
-            uint8_t sc = dec.pop_uint(1, "BUFR origin subcentre");
-            return upcast<Origin>(origin::BUFR::create(ce, sc));
+            unsigned c, s;
+            get_BUFR(c, s);
+            return o << formatStyle(sty) << "("
+                     << setfill('0')
+                     << setw(3) << (int)c << ", "
+                     << setw(3) << (int)s
+                     << setfill(' ')
+                     << ")";
         }
-        case Style::ODIMH5:
+        case origin::Style::ODIMH5:
         {
-            uint16_t wmosize = dec.pop_varint<uint16_t>("ODIMH5 wmo length");
-            std::string wmo = dec.pop_string(wmosize, "ODIMH5 wmo");
-
-            uint16_t radsize = dec.pop_varint<uint16_t>("ODIMH5 rad length");
-            std::string rad = dec.pop_string(radsize, "ODIMH5 rad");
-
-            uint16_t plcsize = dec.pop_varint<uint16_t>("ODIMH5 plc length");
-            std::string plc = dec.pop_string(plcsize, "ODIMH5 plc");
-
-            return upcast<Origin>(origin::ODIMH5::create(wmo, rad, plc));
+            std::string WMO, RAD, PLC;
+            get_ODIMH5(WMO, RAD, PLC);
+            return o << formatStyle(sty) << "("
+                     << WMO << ", "
+                     << RAD << ", "
+                     << PLC << ")";
         }
-		default:
-			throw_consistency_error("parsing Origin", "style is " + formatStyle(s) + " but we can only decode GRIB1, GRIB2 and BUFR");
-	}
+        default:
+            throw_consistency_error("parsing Origin", "unknown Origin style " + formatStyle(sty));
+    }
 }
 
-unique_ptr<Origin> Origin::decodeString(const std::string& val)
+void Origin::serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f) const
 {
-	string inner;
-	Origin::Style style = outerParse<Origin>(val, inner);
-	switch (style)
-	{
-        case Style::GRIB1: {
+    auto sty = style();
+    e.add(keys.type_style, formatStyle(sty));
+    switch (sty)
+    {
+        case origin::Style::GRIB1:
+        {
+            unsigned c, s, p;
+            get_GRIB1(c, s, p);
+            e.add(keys.origin_centre, c);
+            e.add(keys.origin_subcentre, s);
+            e.add(keys.origin_process, p);
+            break;
+        }
+        case origin::Style::GRIB2:
+        {
+            unsigned ce, su, pt, bg, pi;
+            get_GRIB2(ce, su, pt, bg, pi);
+            e.add(keys.origin_centre, ce);
+            e.add(keys.origin_subcentre, su);
+            e.add(keys.origin_process_type, pt);
+            e.add(keys.origin_background_process_id, bg);
+            e.add(keys.origin_process_id, pi);
+            break;
+        }
+        case origin::Style::BUFR:
+        {
+            unsigned c, s;
+            get_BUFR(c, s);
+            e.add(keys.origin_centre, c);
+            e.add(keys.origin_subcentre, s);
+            break;
+        }
+        case origin::Style::ODIMH5:
+        {
+            std::string WMO, RAD, PLC;
+            get_ODIMH5(WMO, RAD, PLC);
+            e.add(keys.origin_wmo, WMO);
+            e.add(keys.origin_rad, RAD);
+            e.add(keys.origin_plc, PLC);
+            break;
+        }
+        default:
+            throw_consistency_error("parsing Origin", "unknown Origin style " + formatStyle(sty));
+    }
+}
+
+std::unique_ptr<Origin> Origin::decode(core::BinaryDecoder& dec, bool reuse_buffer)
+{
+    dec.ensure_size(1, "Origin style");
+    std::unique_ptr<Origin> res;
+    if (reuse_buffer)
+        res.reset(new Origin(dec.buf, dec.size, false));
+    else
+        res.reset(new Origin(dec.buf, dec.size));
+    dec.skip(dec.size);
+    return res;
+}
+
+std::unique_ptr<Origin> Origin::decodeString(const std::string& val)
+{
+    std::string inner;
+    origin::Style sty = outerParse<Origin>(val, inner);
+    switch (sty)
+    {
+        case origin::Style::GRIB1: {
             NumberList<3> nums(inner, "Origin");
-            return upcast<Origin>(origin::GRIB1::create(nums.vals[0], nums.vals[1], nums.vals[2]));
+            return createGRIB1(nums.vals[0], nums.vals[1], nums.vals[2]);
         }
-        case Style::GRIB2: {
+        case origin::Style::GRIB2: {
             NumberList<5> nums(inner, "Origin");
-            return upcast<Origin>(origin::GRIB2::create(nums.vals[0], nums.vals[1], nums.vals[2], nums.vals[3], nums.vals[4]));
+            return createGRIB2(nums.vals[0], nums.vals[1], nums.vals[2], nums.vals[3], nums.vals[4]);
         }
-        case Style::BUFR: {
+        case origin::Style::BUFR: {
             NumberList<2> nums(inner, "Origin");
-            return upcast<Origin>(origin::BUFR::create(nums.vals[0], nums.vals[1]));
+            return createBUFR(nums.vals[0], nums.vals[1]);
         }
-        case Style::ODIMH5: {
+        case origin::Style::ODIMH5: {
             std::vector<std::string> values;
             str::Split split(inner, ",");
             for (str::Split::const_iterator i = split.begin(); i != split.end(); ++i)
@@ -128,430 +307,130 @@ unique_ptr<Origin> Origin::decodeString(const std::string& val)
             values[1] = str::strip(values[1]);
             values[2] = str::strip(values[2]);
 
-            return upcast<Origin>(origin::ODIMH5::create(values[0], values[1], values[2]));
+            return createODIMH5(values[0], values[1], values[2]);
         }
-		default:
-			throw_consistency_error("parsing Origin", "unknown Origin style " + formatStyle(style));
-	}
+        default:
+            throw_consistency_error("parsing Origin", "unknown Origin style " + formatStyle(sty));
+    }
 }
 
 std::unique_ptr<Origin> Origin::decode_structure(const structured::Keys& keys, const structured::Reader& val)
 {
-    switch (style_from_structure(keys, val))
+    origin::Style sty = parseStyle(val.as_string(keys.type_style, "type style"));
+    switch (sty)
     {
-        case Style::GRIB1: return upcast<Origin>(origin::GRIB1::decode_structure(keys, val));
-        case Style::GRIB2: return upcast<Origin>(origin::GRIB2::decode_structure(keys, val));
-        case Style::BUFR: return upcast<Origin>(origin::BUFR::decode_structure(keys, val));
-        case Style::ODIMH5: return upcast<Origin>(origin::ODIMH5::decode_structure(keys, val));
+        case origin::Style::GRIB1:
+            return createGRIB1(
+                    val.as_int(keys.origin_centre, "origin centre"),
+                    val.as_int(keys.origin_subcentre, "origin subcentre"),
+                    val.as_int(keys.origin_process, "origin process"));
+        case origin::Style::GRIB2:
+            return createGRIB2(
+                    val.as_int(keys.origin_centre, "origin centre"),
+                    val.as_int(keys.origin_subcentre, "origin subcentre"),
+                    val.as_int(keys.origin_process_type, "origin process type"),
+                    val.as_int(keys.origin_background_process_id, "origin bg process id"),
+                    val.as_int(keys.origin_process_id, "origin process id"));
+        case origin::Style::BUFR:
+            return createBUFR(
+                    val.as_int(keys.origin_centre, "origin centre"),
+                    val.as_int(keys.origin_subcentre, "origin subcentre"));
+        case origin::Style::ODIMH5:
+            return createODIMH5(
+                    val.as_string(keys.origin_wmo, "origin wmo"),
+                    val.as_string(keys.origin_rad, "origin rad"),
+                    val.as_string(keys.origin_plc, "origin plc"));
         default: throw std::runtime_error("Unknown Origin style");
     }
 }
 
-unique_ptr<Origin> Origin::createGRIB1(unsigned char centre, unsigned char subcentre, unsigned char process)
+std::string Origin::exactQuery() const
 {
-    return upcast<Origin>(origin::GRIB1::create(centre, subcentre, process));
-}
-unique_ptr<Origin> Origin::createGRIB2(unsigned short centre, unsigned short subcentre,
-                                             unsigned char processtype, unsigned char bgprocessid, unsigned char processid)
-{
-    return upcast<Origin>(origin::GRIB2::create(centre, subcentre, processtype, bgprocessid, processid));
-}
-unique_ptr<Origin> Origin::createBUFR(unsigned char centre, unsigned char subcentre)
-{
-    return upcast<Origin>(origin::BUFR::create(centre, subcentre));
-}
-unique_ptr<Origin> Origin::createODIMH5(const std::string& wmo, const std::string& rad, const std::string& plc)
-{
-    return upcast<Origin>(origin::ODIMH5::create(wmo, rad, plc));
-}
-
-namespace origin {
-
-GRIB1::~GRIB1() { /* cache_grib1.uncache(this); */ }
-
-Origin::Style GRIB1::style() const { return Style::GRIB1; }
-
-void GRIB1::encodeWithoutEnvelope(core::BinaryEncoder& enc) const
-{
-    Origin::encodeWithoutEnvelope(enc);
-    enc.add_unsigned(m_centre, 1);
-    enc.add_unsigned(m_subcentre, 1);
-    enc.add_unsigned(m_process, 1);
-}
-std::ostream& GRIB1::writeToOstream(std::ostream& o) const
-{
-    return o << formatStyle(style()) << "("
-		 << setfill('0')
-	         << setw(3) << (int)m_centre << ", "
-		 << setw(3) << (int)m_subcentre << ", "
-		 << setw(3) << (int)m_process
-		 << setfill(' ')
-		 << ")";
-}
-void GRIB1::serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f) const
-{
-    Origin::serialise_local(e, keys, f);
-    e.add(keys.origin_centre, m_centre);
-    e.add(keys.origin_subcentre, m_subcentre);
-    e.add(keys.origin_process, m_process);
+    switch (style())
+    {
+        case origin::Style::GRIB1:
+        {
+            char buf[64];
+            unsigned c, s, p;
+            get_GRIB1(c, s, p);
+            snprintf(buf, 64, "GRIB1,%d,%d,%d", (int)c, (int)s, (int)p);
+            return buf;
+        }
+        case origin::Style::GRIB2:
+        {
+            unsigned ce, su, pt, bg, pi;
+            get_GRIB2(ce, su, pt, bg, pi);
+            char buf[64];
+            snprintf(buf, 64, "GRIB2,%d,%d,%d,%d,%d", (int)ce, (int)su, (int)pt, (int)bg, (int)pi);
+            return buf;
+        }
+        case origin::Style::BUFR:
+        {
+            unsigned c, s;
+            get_BUFR(c, s);
+            char buf[32];
+            snprintf(buf, 32, "BUFR,%d,%d", (int)c, (int)s);
+            return buf;
+        }
+        case origin::Style::ODIMH5:
+        {
+            std::string WMO, RAD, PLC;
+            get_ODIMH5(WMO, RAD, PLC);
+            std::stringstream res;
+            res << "ODIMH5," << WMO << "," << RAD << "," << PLC;
+            return res.str();
+        }
+        default:
+            throw_consistency_error("parsing Origin", "unknown Origin style " + formatStyle(style()));
+    }
 }
 
-std::unique_ptr<GRIB1> GRIB1::decode_structure(const structured::Keys& keys, const structured::Reader& val)
+std::unique_ptr<Origin> Origin::createGRIB1(unsigned char centre, unsigned char subcentre, unsigned char process)
 {
-    return GRIB1::create(
-            val.as_int(keys.origin_centre, "origin centre"),
-            val.as_int(keys.origin_subcentre, "origin subcentre"),
-            val.as_int(keys.origin_process, "origin process"));
-}
-std::string GRIB1::exactQuery() const
-{
-    char buf[64];
-    snprintf(buf, 64, "GRIB1,%d,%d,%d", (int)m_centre, (int)m_subcentre, (int)m_process);
-    return buf;
+    uint8_t* buf = new uint8_t[4];
+    buf[0] = (uint8_t)origin::Style::GRIB1;
+    buf[1] = centre;
+    buf[2] = subcentre;
+    buf[3] = process;
+    return std::unique_ptr<Origin>(new Origin(buf, 4, true));
 }
 
-int GRIB1::compare_local(const Origin& o) const
+std::unique_ptr<Origin> Origin::createGRIB2(unsigned short centre, unsigned short subcentre,
+                                            unsigned char processtype, unsigned char bgprocessid, unsigned char processid)
 {
-    if (int res = Origin::compare_local(o)) return res;
-	// We should be the same kind, so upcast
-	const GRIB1* v = dynamic_cast<const GRIB1*>(&o);
-	if (!v)
-		throw_consistency_error(
-			"comparing metadata types",
-			string("second element claims to be a GRIB1 Origin, but is a ") + typeid(&o).name() + " instead");
-
-	if (int res = m_centre - v->m_centre) return res;
-	if (int res = m_subcentre - v->m_subcentre) return res;
-	return m_process - v->m_process;
+    uint8_t* buf = new uint8_t[8];
+    buf[0] = (uint8_t)origin::Style::GRIB2;
+    core::BinaryEncoder::set_unsigned(buf + 1, centre, 2);
+    core::BinaryEncoder::set_unsigned(buf + 3, subcentre, 2);
+    buf[5] = processtype;
+    buf[6] = bgprocessid;
+    buf[7] = processid;
+    return std::unique_ptr<Origin>(new Origin(buf, 8, true));
 }
 
-bool GRIB1::equals(const Type& o) const
+std::unique_ptr<Origin> Origin::createBUFR(unsigned char centre, unsigned char subcentre)
 {
-	const GRIB1* v = dynamic_cast<const GRIB1*>(&o);
-	if (!v) return false;
-	return m_centre == v->m_centre && m_subcentre == v->m_subcentre && m_process == v->m_process;
+    uint8_t* buf = new uint8_t[3];
+    buf[0] = (uint8_t)origin::Style::BUFR;
+    buf[1] = centre;
+    buf[2] = subcentre;
+    return std::unique_ptr<Origin>(new Origin(buf, 3, true));
 }
 
-GRIB1* GRIB1::clone() const
+std::unique_ptr<Origin> Origin::createODIMH5(const std::string& wmo, const std::string& rad, const std::string& plc)
 {
-    GRIB1* res = new GRIB1;
-    res->m_centre = m_centre;
-    res->m_subcentre = m_subcentre;
-    res->m_process = m_process;
-    return res;
-}
-
-unique_ptr<GRIB1> GRIB1::create(unsigned char centre, unsigned char subcentre, unsigned char process)
-{
-    GRIB1* res = new GRIB1;
-    res->m_centre = centre;
-    res->m_subcentre = subcentre;
-    res->m_process = process;
-    return unique_ptr<GRIB1>(res);
-}
-
-std::vector<int> GRIB1::toIntVector() const
-{
-	vector<int> res;
-	res.push_back(m_centre);
-	res.push_back(m_subcentre);
-	res.push_back(m_process);
-	return res;
-}
-
-GRIB2::~GRIB2() { /* cache_grib2.uncache(this); */ }
-
-Origin::Style GRIB2::style() const { return Style::GRIB2; }
-
-void GRIB2::encodeWithoutEnvelope(core::BinaryEncoder& enc) const
-{
-    Origin::encodeWithoutEnvelope(enc);
-    enc.add_unsigned(m_centre, 2);
-    enc.add_unsigned(m_subcentre, 2);
-    enc.add_unsigned(m_processtype, 1);
-    enc.add_unsigned(m_bgprocessid, 1);
-    enc.add_unsigned(m_processid, 1);
-}
-std::ostream& GRIB2::writeToOstream(std::ostream& o) const
-{
-    return o << formatStyle(style()) << "("
-		 << setfill('0')
-		 << setw(5) << (int)m_centre << ", "
-		 << setw(5) << (int)m_subcentre << ", "
-		 << setw(3) << (int)m_processtype << ", "
-		 << setw(3) << (int)m_bgprocessid << ", "
-		 << setw(3) << (int)m_processid
-		 << setfill(' ')
-		 << ")";
-}
-void GRIB2::serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f) const
-{
-    Origin::serialise_local(e, keys, f);
-    e.add(keys.origin_centre, m_centre);
-    e.add(keys.origin_subcentre, m_subcentre);
-    e.add(keys.origin_process_type, m_processtype);
-    e.add(keys.origin_background_process_id, m_bgprocessid);
-    e.add(keys.origin_process_id, m_processid);
-}
-
-std::unique_ptr<GRIB2> GRIB2::decode_structure(const structured::Keys& keys, const structured::Reader& val)
-{
-    return GRIB2::create(
-            val.as_int(keys.origin_centre, "origin centre"),
-            val.as_int(keys.origin_subcentre, "origin subcentre"),
-            val.as_int(keys.origin_process_type, "origin process type"),
-            val.as_int(keys.origin_background_process_id, "origin bg process id"),
-            val.as_int(keys.origin_process_id, "origin process id"));
-}
-std::string GRIB2::exactQuery() const
-{
-    char buf[64];
-    snprintf(buf, 64, "GRIB2,%d,%d,%d,%d,%d", (int)m_centre, (int)m_subcentre, (int)m_processtype, (int)m_bgprocessid, (int)m_processid);
-    return buf;
-}
-
-int GRIB2::compare_local(const Origin& o) const
-{
-    if (int res = Origin::compare_local(o)) return res;
-	// We should be the same kind, so upcast
-	const GRIB2* v = dynamic_cast<const GRIB2*>(&o);
-	if (!v)
-		throw_consistency_error(
-			"comparing metadata types",
-			string("second element claims to be a GRIB2 Origin, but is a ") + typeid(&o).name() + " instead");
-
-	if (int res = m_centre - v->m_centre) return res;
-	if (int res = m_subcentre - v->m_subcentre) return res;
-	if (int res = m_processtype - v->m_processtype) return res;
-	if (int res = m_bgprocessid - v->m_bgprocessid) return res;
-	return m_processid - v->m_processid;
-}
-bool GRIB2::equals(const Type& o) const
-{
-	const GRIB2* v = dynamic_cast<const GRIB2*>(&o);
-	if (!v) return false;
-	return m_centre == v->m_centre && m_subcentre == v->m_subcentre 
-		&& m_processtype == v->m_processtype && m_bgprocessid == v->m_bgprocessid
-		&& m_processid == v->m_processid;
-}
-
-GRIB2* GRIB2::clone() const
-{
-    GRIB2* res = new GRIB2;
-    res->m_centre = m_centre;
-    res->m_subcentre = m_subcentre;
-    res->m_processtype = m_processtype;
-    res->m_bgprocessid = m_bgprocessid;
-    res->m_processid = m_processid;
-    return res;
-}
-
-unique_ptr<GRIB2> GRIB2::create(
-			  unsigned short centre, unsigned short subcentre,
-			  unsigned char processtype, unsigned char bgprocessid, unsigned char processid)
-{
-    GRIB2* res = new GRIB2;
-    res->m_centre = centre;
-    res->m_subcentre = subcentre;
-    res->m_processtype = processtype;
-    res->m_bgprocessid = bgprocessid;
-    res->m_processid = processid;
-    return unique_ptr<GRIB2>(res);
-}
-
-std::vector<int> GRIB2::toIntVector() const
-{
-	vector<int> res;
-	res.push_back(m_centre);
-	res.push_back(m_subcentre);
-	res.push_back(m_processtype);
-	res.push_back(m_bgprocessid);
-	res.push_back(m_processid);
-	return res;
-}
-
-BUFR::~BUFR() { /* cache_bufr.uncache(this); */ }
-
-Origin::Style BUFR::style() const { return Style::BUFR; }
-
-void BUFR::encodeWithoutEnvelope(core::BinaryEncoder& enc) const
-{
-    Origin::encodeWithoutEnvelope(enc);
-    enc.add_unsigned(m_centre, 1);
-    enc.add_unsigned(m_subcentre, 1);
-}
-std::ostream& BUFR::writeToOstream(std::ostream& o) const
-{
-    return o << formatStyle(style()) << "("
-		 << setfill('0')
-	         << setw(3) << (int)m_centre << ", "
-		 << setw(3) << (int)m_subcentre
-		 << setfill(' ')
-		 << ")";
-}
-void BUFR::serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f) const
-{
-    Origin::serialise_local(e, keys, f);
-    e.add(keys.origin_centre, m_centre);
-    e.add(keys.origin_subcentre, m_subcentre);
-}
-
-std::unique_ptr<BUFR> BUFR::decode_structure(const structured::Keys& keys, const structured::Reader& val)
-{
-    return BUFR::create(
-            val.as_int(keys.origin_centre, "origin centre"),
-            val.as_int(keys.origin_subcentre, "origin subcentre"));
-}
-std::string BUFR::exactQuery() const
-{
-    char buf[32];
-    snprintf(buf, 32, "BUFR,%d,%d", (int)m_centre, (int)m_subcentre);
-    return buf;
-}
-
-int BUFR::compare_local(const Origin& o) const
-{
-    if (int res = Origin::compare_local(o)) return res;
-	// We should be the same kind, so upcast
-	// TODO: if upcast fails, we might still be ok as we support comparison
-	// between origins of different style: we do need a two-phase upcast
-	const BUFR* v = dynamic_cast<const BUFR*>(&o);
-	if (!v)
-		throw_consistency_error(
-			"comparing metadata types",
-			string("second element claims to be a BUFR Origin, but is a ") + typeid(&o).name() + " instead");
-
-	if (int res = m_centre - v->m_centre) return res;
-	return m_subcentre - v->m_subcentre;
-}
-bool BUFR::equals(const Type& o) const
-{
-	const BUFR* v = dynamic_cast<const BUFR*>(&o);
-	if (!v) return false;
-	return m_centre == v->m_centre && m_subcentre == v->m_subcentre;
-}
-
-BUFR* BUFR::clone() const
-{
-    BUFR* res = new BUFR;
-    res->m_centre = m_centre;
-    res->m_subcentre = m_subcentre;
-    return res;
-}
-
-unique_ptr<BUFR> BUFR::create(unsigned char centre, unsigned char subcentre)
-{
-    BUFR* res = new BUFR;
-    res->m_centre = centre;
-    res->m_subcentre = subcentre;
-    return unique_ptr<BUFR>(res);
-}
-
-std::vector<int> BUFR::toIntVector() const
-{
-	vector<int> res;
-	res.push_back(m_centre);
-	res.push_back(m_subcentre);
-	return res;
-}
-
-ODIMH5::~ODIMH5() { /* cache_grib1.uncache(this); */ }
-
-Origin::Style ODIMH5::style() const { return Style::ODIMH5; }
-
-void ODIMH5::encodeWithoutEnvelope(core::BinaryEncoder& enc) const
-{
-    Origin::encodeWithoutEnvelope(enc);
-    enc.add_varint(m_WMO.size());
-    enc.add_raw(m_WMO);
-    enc.add_varint(m_RAD.size());
-    enc.add_raw(m_RAD);
-    enc.add_varint(m_PLC.size());
-    enc.add_raw(m_PLC);
-}
-std::ostream& ODIMH5::writeToOstream(std::ostream& o) const
-{
-    return o << formatStyle(style()) << "("
-	         << m_WMO << ", "
-		 << m_RAD << ", "
-		 << m_PLC << ")";
-}
-void ODIMH5::serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f) const
-{
-    Origin::serialise_local(e, keys, f);
-    e.add(keys.origin_wmo, m_WMO);
-    e.add(keys.origin_rad, m_RAD);
-    e.add(keys.origin_plc, m_PLC);
-}
-
-std::unique_ptr<ODIMH5> ODIMH5::decode_structure(const structured::Keys& keys, const structured::Reader& val)
-{
-    return ODIMH5::create(
-            val.as_string(keys.origin_wmo, "origin wmo"),
-            val.as_string(keys.origin_rad, "origin rad"),
-            val.as_string(keys.origin_plc, "origin plc"));
-}
-std::string ODIMH5::exactQuery() const
-{
-    stringstream res;
-    res << "ODIMH5," << m_WMO << "," << m_RAD << "," << m_PLC;
-    return res.str();
-}
-
-int ODIMH5::compare_local(const Origin& o) const
-{
-    if (int res = Origin::compare_local(o)) return res;
-	// We should be the same kind, so upcast
-	const ODIMH5* v = dynamic_cast<const ODIMH5*>(&o);
-	if (!v)
-		throw_consistency_error(
-			"comparing metadata types",
-			string("second element claims to be a GRIB1 Origin, but is a ") + typeid(&o).name() + " instead");
-
-	if (int res = m_WMO.compare(v->m_WMO)) return res;
-	if (int res = m_RAD.compare(v->m_RAD)) return res;
-	return m_PLC.compare(v->m_PLC);
-}
-
-bool ODIMH5::equals(const Type& o) const
-{
-	const ODIMH5* v = dynamic_cast<const ODIMH5*>(&o);
-	if (!v) return false;
-	return m_WMO == v->m_WMO && m_RAD == v->m_RAD && m_PLC == v->m_PLC;
-}
-
-ODIMH5* ODIMH5::clone() const
-{
-    ODIMH5* res = new ODIMH5;
-    res->m_WMO = m_WMO;
-    res->m_RAD = m_RAD;
-    res->m_PLC = m_PLC;
-    return res;
-}
-
-unique_ptr<ODIMH5> ODIMH5::create(const std::string& wmo, const std::string& rad, const std::string& plc)
-{
-    ODIMH5* res = new ODIMH5;
-    res->m_WMO = wmo;
-    res->m_RAD = rad;
-    res->m_PLC = plc;
-    return unique_ptr<ODIMH5>(res);
-}
-
-std::vector<int> ODIMH5::toIntVector() const
-{
-	vector<int> res;
-
-/* XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX */
-/* XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX */
-/* XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX */
-
-	//res.push_back(m_centre);
-	//res.push_back(m_subcentre);
-	//res.push_back(m_process);
-	return res;
-}
-
+    // TODO: optimize encoding by precomputing buffer size and not using a vector?
+    // to do that, we first need a function that estimates the size of the varints
+    std::vector<uint8_t> buf;
+    core::BinaryEncoder enc(buf);
+    enc.add_unsigned((unsigned)origin::Style::ODIMH5, 1);
+    enc.add_varint(wmo.size());
+    enc.add_raw(wmo);
+    enc.add_varint(rad.size());
+    enc.add_raw(rad);
+    enc.add_varint(plc.size());
+    enc.add_raw(plc);
+    return std::unique_ptr<Origin>(new Origin(buf));
 }
 
 void Origin::init()
@@ -561,5 +440,3 @@ void Origin::init()
 
 }
 }
-
-#include <arki/types/styled.tcc>

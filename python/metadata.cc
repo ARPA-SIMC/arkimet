@@ -8,6 +8,7 @@
 #include "arki/metadata/data.h"
 #include "arki/core/file.h"
 #include "arki/types/source.h"
+#include "arki/types/note.h"
 #include "arki/structured/keys.h"
 #include "arki/structured/json.h"
 #include "arki/structured/memory.h"
@@ -295,17 +296,17 @@ struct get_notes : public MethNoargs<get_notes, arkipy_Metadata>
     static PyObject* run(Impl* self)
     {
         try {
-            std::vector<types::Note> notes = self->md->notes();
-            pyo_unique_ptr res(throw_ifnull(PyList_New(notes.size())));
-            for (unsigned idx = 0; idx < notes.size(); ++idx)
+            auto notes = self->md->notes();
+            pyo_unique_ptr res(throw_ifnull(PyList_New(notes.second - notes.first)));
+            for (auto n = notes.first; n != notes.second; ++n)
             {
                 arki::python::PythonEmitter e;
-                notes[idx].serialise(e, arki::structured::keys_python);
+                reinterpret_cast<const arki::types::Note*>(*n)->serialise(e, arki::structured::keys_python);
                 // Note This macro “steals” a reference to item, and, unlike
                 // PyList_SetItem(), does not discard a reference to any item
                 // that is being replaced; any reference in list at position i
                 // will be leaked.
-                PyList_SET_ITEM(res.get(), idx, e.release());
+                PyList_SET_ITEM(res.get(), n - notes.first, e.release());
             }
             return res.release();
         } ARKI_CATCH_RETURN_PYO
@@ -322,7 +323,7 @@ struct del_notes : public MethNoargs<del_notes, arkipy_Metadata>
     static PyObject* run(Impl* self)
     {
         try {
-            self->md->set_notes(std::vector<types::Note>());
+            self->md->clear_notes();
             Py_RETURN_NONE;
         } ARKI_CATCH_RETURN_PYO
     }
@@ -492,8 +493,9 @@ struct read_yaml : public ClassMethKwargs<read_yaml>
 {
     constexpr static const char* name = "read_yaml";
     constexpr static const char* signature = "src: Union[str, StringIO, bytes, ByteIO]";
-    constexpr static const char* returns = "arkimet.Metadata";
+    constexpr static const char* returns = "Optional[arkimet.Metadata]";
     constexpr static const char* summary = "Read a Metadata from a YAML file";
+    constexpr static const char* doc = "Return None in case of end of file";
 
     static PyObject* run(PyTypeObject* cls, PyObject* args, PyObject* kw)
     {
@@ -503,7 +505,7 @@ struct read_yaml : public ClassMethKwargs<read_yaml>
             return nullptr;
 
         try {
-            std::unique_ptr<Metadata> res(new Metadata);
+            std::shared_ptr<Metadata> res;
             if (PyBytes_Check(py_src))
             {
                 char* buffer;
@@ -512,13 +514,13 @@ struct read_yaml : public ClassMethKwargs<read_yaml>
                     throw PythonException();
                 ReleaseGIL gil;
                 auto reader = arki::core::LineReader::from_chars(buffer, length);
-                res->readYaml(*reader, "bytes buffer");
+                res = Metadata::read_yaml(*reader, "bytes buffer");
             } else if (PyUnicode_Check(py_src)) {
                 Py_ssize_t length;
                 const char* buffer = throw_ifnull(PyUnicode_AsUTF8AndSize(py_src, &length));
                 ReleaseGIL gil;
                 auto reader = arki::core::LineReader::from_chars(buffer, length);
-                res->readYaml(*reader, "str buffer");
+                res = Metadata::read_yaml(*reader, "str buffer");
             } else if (PyObject_HasAttrString(py_src, "encoding")) {
                 TextInputFile input(py_src);
                 ReleaseGIL gil;
@@ -536,7 +538,7 @@ struct read_yaml : public ClassMethKwargs<read_yaml>
                     reader = arki::core::LineReader::from_abstract(*input.abstract);
                 }
 
-                res->readYaml(*reader, input_name);
+                res = Metadata::read_yaml(*reader, input_name);
             } else {
                 BinaryInputFile input(py_src);
                 ReleaseGIL gil;
@@ -553,9 +555,13 @@ struct read_yaml : public ClassMethKwargs<read_yaml>
                     input_name = input.abstract->name();
                     reader = arki::core::LineReader::from_abstract(*input.abstract);
                 }
-                res->readYaml(*reader, input_name);
+                res = Metadata::read_yaml(*reader, input_name);
             }
-            return (PyObject*)metadata_create(std::move(res));
+
+            if (res)
+                return (PyObject*)metadata_create(std::move(res));
+            else
+                Py_RETURN_NONE;
         } ARKI_CATCH_RETURN_PYO
     }
 };
@@ -617,8 +623,7 @@ struct read_json : public ClassMethKwargs<read_json>
             }
 
             ReleaseGIL gil;
-            std::unique_ptr<Metadata> res(new Metadata);
-            res->read(arki::structured::keys_json, parsed.root());
+            auto res = Metadata::read_structure(arki::structured::keys_json, parsed.root());
 
             gil.lock();
             return (PyObject*)metadata_create(std::move(res));
@@ -691,7 +696,18 @@ For example::
         try {
             if (!arkipy_Metadata_Check(other))
                 return Py_NotImplemented;
-            Py_RETURN_RICHCOMPARE(*(self->md), *(((Impl*)other)->md), op);
+            const arki::Metadata& a = *self->md;
+            const arki::Metadata& b = *((Impl*)other)->md;
+            switch (op)
+            {
+                case Py_EQ: if (a == b) Py_RETURN_TRUE; Py_RETURN_FALSE;
+                case Py_NE: if (a != b) Py_RETURN_TRUE; Py_RETURN_FALSE;
+                case Py_LT: Py_RETURN_NOTIMPLEMENTED;
+                case Py_GT: Py_RETURN_NOTIMPLEMENTED;
+                case Py_LE: Py_RETURN_NOTIMPLEMENTED;
+                case Py_GE: Py_RETURN_NOTIMPLEMENTED;
+                default: Py_RETURN_NOTIMPLEMENTED;
+            }
         } ARKI_CATCH_RETURN_PYO
     }
 
@@ -742,11 +758,21 @@ For example::
                 {
                     std::string strval = from_python<std::string>(py_val);
                     std::unique_ptr<types::Type> val = types::decodeString(code, strval);
-                    self->md->set(std::move(val));
+                    if (code == TYPE_SOURCE)
+                    {
+                        std::unique_ptr<types::Source> s(reinterpret_cast<types::Source*>(val.release()));
+                        self->md->set_source(std::move(s));
+                    } else
+                        self->md->set(std::move(val));
                 } else {
                     PythonReader reader(py_val);
                     std::unique_ptr<types::Type> val = types::decode_structure(arki::structured::keys_python, code, reader);
-                    self->md->set(std::move(val));
+                    if (code == TYPE_SOURCE)
+                    {
+                        std::unique_ptr<types::Source> s(reinterpret_cast<types::Source*>(val.release()));
+                        self->md->set_source(std::move(s));
+                    } else
+                        self->md->set(std::move(val));
                 }
             }
             return 0;
@@ -856,7 +882,7 @@ callback for producing one metadata element
             return nullptr;
 
         try {
-            std::unique_ptr<Metadata> md(new Metadata(*((arkipy_Metadata*)py_md)->md));
+            std::shared_ptr<Metadata> md(((arkipy_Metadata*)py_md)->md->clone());
             bool res = self->func(std::move(md));
             if (res)
                 Py_RETURN_TRUE;

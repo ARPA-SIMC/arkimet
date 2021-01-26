@@ -23,17 +23,19 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include <arki/matcher.h>
-#include <arki/utils/string.h>
+#include <arki/core/fwd.h>
+#include <arki/types/fwd.h>
+#include <arki/matcher/fwd.h>
 #include <vector>
 #include <string>
+#include <sstream>
 #include <map>
-#include <cstdint>
+#include <set>
 
 namespace arki {
 namespace matcher {
 
-struct Implementation;
+class Implementation;
 
 
 /**
@@ -68,17 +70,23 @@ class Implementation
 {
 public:
     Implementation() {}
-    Implementation(const Implementation&) = delete;
-    Implementation(const Implementation&&) = delete;
+    Implementation(const Implementation&) = default;
+    Implementation(Implementation&&) = delete;
     Implementation& operator=(const Implementation&) = delete;
     Implementation& operator=(const Implementation&&) = delete;
     virtual ~Implementation() {}
+
+    /// Return a newly allocated copy of this Implementation
+    virtual Implementation* clone() const = 0;
 
     /// Matcher name: the name part in "name:expr"
     virtual std::string name() const = 0;
 
     /// Match a metadata item
     virtual bool matchItem(const types::Type& t) const = 0;
+
+    /// Match a metadata item
+    virtual bool match_buffer(types::Code code, const uint8_t* data, unsigned size) const;
 
     /// Format back into a string that can be parsed again
     virtual std::string toString() const = 0;
@@ -103,8 +111,13 @@ public:
     OR(const std::string& unparsed) : unparsed(unparsed) {}
     virtual ~OR();
 
+    OR* clone() const override;
+
+    std::shared_ptr<OR> merge(const OR& o) const;
+
     std::string name() const override;
     bool matchItem(const types::Type& t) const override;
+    bool match_buffer(types::Code code, const uint8_t* data, unsigned size) const override;
     bool match_interval(const core::Interval& interval) const;
 
     // Serialise as "type:original definition"
@@ -138,12 +151,19 @@ public:
     AND() {}
     virtual ~AND();
 
+    AND* clone() const override;
+
     bool empty() const { return components.empty(); }
 
     std::string name() const override;
 
+    void merge(const AND& o);
+    void update(const AND& o);
+
     bool matchItem(const types::Type& t) const override;
+    bool match_buffer(types::Code code, const uint8_t* data, unsigned size) const override;
     bool matchItemSet(const types::ItemSet& s) const;
+    bool matchMetadata(const Metadata& s) const;
     bool match_interval(const core::Interval& interval) const;
 
     std::shared_ptr<OR> get(types::Code code) const;
@@ -160,6 +180,62 @@ public:
 };
 
 
+template<typename T>
+struct Optional
+{
+    bool present = false;
+    T value;
+
+    Optional() = default;
+    Optional(const T& value) : present(true), value(value) {}
+    Optional(const Optional&) = default;
+    Optional(Optional&&) = default;
+    Optional& operator=(const Optional&) = default;
+    Optional& operator=(Optional&&) = default;
+    template<typename T1>
+    Optional& operator=(const Optional<T1>& o)
+    {
+        if (this == reinterpret_cast<const Optional*>(&o))
+            return *this;
+        present = o.present;
+        value = o.value;
+        return *this;
+    }
+
+    void set(const T& value)
+    {
+        present = true;
+        this->value = value;
+    }
+
+    void unset()
+    {
+        present = false;
+    }
+
+    /**
+     * Return True if value is not present. If it is present, return true if
+     * it is the same as the passed value
+     */
+    bool matches(const T& value) const
+    {
+        if (!present)
+            return true;
+
+        return this->value == value;
+    }
+};
+
+template<typename T>
+std::ostream& operator<<(std::ostream& o, const Optional<T>& v)
+{
+    if (v.present)
+        return o << v.value;
+    else
+        return o << "(undefined)";
+}
+
+
 struct OptionalCommaList : public std::vector<std::string>
 {
 	std::string tail;
@@ -170,6 +246,7 @@ struct OptionalCommaList : public std::vector<std::string>
     int getInt(size_t pos, int def) const;
     unsigned getUnsigned(size_t pos, unsigned def) const;
     uint32_t getUnsignedWithMissing(size_t pos, uint32_t missing, bool& has_val) const;
+    Optional<uint32_t> getUnsignedWithMissing(size_t pos, uint32_t missing) const;
     double getDouble(size_t pos, double def) const;
     const std::string& 	getString	(size_t pos, const std::string& def) const;
 
@@ -243,9 +320,30 @@ struct OptionalCommaList : public std::vector<std::string>
 
 struct CommaJoiner : std::vector<std::string>
 {
-	size_t last;
+    size_t last;
 
-	CommaJoiner() : last(0) {}
+    CommaJoiner() : last(0) {}
+
+    template<typename T>
+    void add(const Optional<T>& val)
+    {
+        if (!val.present)
+            addUndef();
+        else
+            push_back(std::to_string(val.value));
+        last = size();
+    }
+
+    void add(const uint8_t val)
+    {
+        push_back(std::to_string((unsigned)val));
+        last = size();
+    }
+    void add(const char* val)
+    {
+        push_back(val);
+        last = size();
+    }
 
     template<typename T>
     void add(const T& val)
@@ -257,16 +355,28 @@ struct CommaJoiner : std::vector<std::string>
     }
 
     template<typename T>
+    void add(const Optional<T>& val, const T& missing)
+    {
+        if (!val.present)
+            addUndef();
+        else if (val.value == missing)
+            add_missing();
+        else
+            add(val.value);
+    }
+
+    template<typename T>
     void add(const T& val, const T& missing)
     {
         if (val == missing)
-            push_back("-");
+            add_missing();
         else
-        {
-            std::stringstream ss;
-            ss << val;
-            push_back(ss.str());
-        }
+            add(val);
+    }
+
+    void add_missing()
+    {
+        push_back("-");
         last = size();
     }
 
@@ -290,5 +400,4 @@ struct CommaJoiner : std::vector<std::string>
 }
 }
 
-// vim:set ts=4 sw=4:
 #endif

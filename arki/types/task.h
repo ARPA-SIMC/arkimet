@@ -1,7 +1,7 @@
 #ifndef ARKI_TYPES_TASK_H
 #define ARKI_TYPES_TASK_H
 
-#include <arki/types/core.h>
+#include <arki/types/encoded.h>
 
 namespace arki {
 namespace types {
@@ -18,18 +18,21 @@ template<> struct traits<Task>
 /**
  * A Task annotation
  */
-struct Task : public CoreType<Task>
+class Task : public Encoded
 {
-	std::string task;
+public:
+    using Encoded::Encoded;
 
-	Task(const std::string& value) : task(value) {}
+    types::Code type_code() const override { return traits<Task>::type_code; }
+    size_t serialisationSizeLength() const override { return traits<Task>::type_sersize_bytes; }
+    std::string tag() const override { return traits<Task>::type_tag; }
+
+    std::string get() const;
 
     int compare(const Type& o) const override;
-    bool equals(const Type& o) const override;
 
     /// CODEC functions
-    void encodeWithoutEnvelope(core::BinaryEncoder& enc) const override;
-    static std::unique_ptr<Task> decode(core::BinaryDecoder& dec);
+    static std::unique_ptr<Task> decode(core::BinaryDecoder& dec, bool reuse_buffer);
     static std::unique_ptr<Task> decodeString(const std::string& val);
     std::ostream& writeToOstream(std::ostream& o) const override;
     void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;

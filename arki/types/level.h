@@ -1,7 +1,7 @@
 #ifndef ARKI_TYPES_LEVEL_H
 #define ARKI_TYPES_LEVEL_H
 
-#include <arki/types/styled.h>
+#include <arki/types/encoded.h>
 #include <stdint.h>
 
 namespace arki {
@@ -33,15 +33,54 @@ struct traits<Level>
  *
  * It can contain information like leveltype and level value.
  */
-struct Level : public types::StyledType<Level>
+class Level : public types::Encoded
 {
-	/// Convert a string into a style
-	static Style parseStyle(const std::string& str);
-	/// Convert a style into its string representation
-	static std::string formatStyle(Style s);
+public:
+    static const uint8_t GRIB2_MISSING_TYPE;
+    static const uint8_t GRIB2_MISSING_SCALE;
+    static const uint32_t GRIB2_MISSING_VALUE;
+    static unsigned GRIB1_type_vals(unsigned char type);
+
+    using Encoded::Encoded;
+
+    typedef level::Style Style;
+
+    types::Code type_code() const override { return traits<Level>::type_code; }
+    size_t serialisationSizeLength() const override { return traits<Level>::type_sersize_bytes; }
+    std::string tag() const override { return traits<Level>::type_tag; }
+
+    Level* clone() const override;
+
+    int compare(const Type& o) const override;
+
+    // Get the element style
+    static level::Style style(const uint8_t* data, unsigned size);
+    static void get_GRIB1(const uint8_t* data, unsigned size, unsigned& type, unsigned& l1, unsigned& l2);
+    static void get_GRIB2S(const uint8_t* data, unsigned size, unsigned& type, unsigned& scale, unsigned& value);
+    static void get_GRIB2D(const uint8_t* data, unsigned size, unsigned& type1, unsigned& scale1, unsigned& value1, unsigned& type2, unsigned& scale2, unsigned& value2);
+    static void get_ODIMH5(const uint8_t* data, unsigned size, double& min, double& max);
+
+    level::Style style() const { return style(data, size); }
+    void get_GRIB1(unsigned& type, unsigned& l1, unsigned& l2) const { get_GRIB1(data, size, type, l1, l2); }
+    void get_GRIB2S(unsigned& type, unsigned& scale, unsigned& value) const { get_GRIB2S(data, size, type, scale, value); }
+    void get_GRIB2D(unsigned& type1, unsigned& scale1, unsigned& value1, unsigned& type2, unsigned& scale2, unsigned& value2) const
+    {
+        get_GRIB2D(data, size, type1, scale1, value1, type2, scale2, value2);
+    }
+    void get_ODIMH5(double& min, double& max) const { get_ODIMH5(data, size, min, max); }
+
+    /// Convert a string into a style
+    static Style parseStyle(const std::string& str);
+    /// Convert a style into its string representation
+    static std::string formatStyle(Style s);
 
     /// CODEC functions
-    static std::unique_ptr<Level> decode(core::BinaryDecoder& dec);
+    std::ostream& writeToOstream(std::ostream& o) const override;
+    void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
+
+    std::string exactQuery() const override;
+
+    static std::unique_ptr<Level> decode(core::BinaryDecoder& dec, bool reuse_buffer);
     static std::unique_ptr<Level> decodeString(const std::string& val);
     static std::unique_ptr<Level> decode_structure(const structured::Keys& keys, const structured::Reader& val);
 
@@ -50,7 +89,7 @@ struct Level : public types::StyledType<Level>
 
     static std::unique_ptr<Level> createGRIB1(unsigned char type);
     static std::unique_ptr<Level> createGRIB1(unsigned char type, unsigned short l1);
-    static std::unique_ptr<Level> createGRIB1(unsigned char type, unsigned char l1, unsigned char l2);
+    static std::unique_ptr<Level> createGRIB1(unsigned char type, unsigned short l1, unsigned char l2);
     static std::unique_ptr<Level> createGRIB2S(uint8_t type, uint8_t scale, uint32_t val);
     static std::unique_ptr<Level> createGRIB2D(uint8_t type1, uint8_t scale1, uint32_t val1,
                                              uint8_t type2, uint8_t scale2, uint32_t val2);
@@ -59,150 +98,9 @@ struct Level : public types::StyledType<Level>
 };
 
 namespace level {
-
 inline std::ostream& operator<<(std::ostream& o, Style s) { return o << Level::formatStyle(s); }
-
-class GRIB1 : public Level
-{
-protected:
-	unsigned char m_type;
-	unsigned short m_l1;
-	unsigned char m_l2;
-
-public:
-	unsigned type() const { return m_type; }
-	unsigned l1() const { return m_l1; }
-	unsigned l2() const { return m_l2; }
-
-    Style style() const override;
-    void encodeWithoutEnvelope(core::BinaryEncoder& enc) const override;
-    std::ostream& writeToOstream(std::ostream& o) const override;
-    void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
-    std::string exactQuery() const override;
-
-    /**
-     * Get information on how l1 and l2 should be treated:
-     *
-     * \l 0 means 'l1 and l2 should be ignored'
-     * \l 1 means 'level, only l1 is to be considered'
-     * \l 2 means 'layer from l1 to l2'
-     */
-    int valType() const;
-
-    int compare_local(const Level& o) const override;
-    bool equals(const Type& o) const override;
-
-    GRIB1* clone() const override;
-    static std::unique_ptr<GRIB1> create(unsigned char type);
-    static std::unique_ptr<GRIB1> create(unsigned char type, unsigned short l1);
-    static std::unique_ptr<GRIB1> create(unsigned char type, unsigned char l1, unsigned char l2);
-    static std::unique_ptr<GRIB1> decode_structure(const structured::Keys& keys, const structured::Reader& val);
-
-    static int getValType(unsigned char type);
-};
-
-struct GRIB2 : public Level
-{
-	/**
-	 * Get information on how l1 and l2 should be treated:
-	 *
-	 * \l 0 means 'l1 and l2 should be ignored'
-	 * \l 1 means 'level, only l1 is to be considered'
-	 * \l 2 means 'layer from l1 to l2'
-	 */
-	//int valType() const;
-};
-
-class GRIB2S : public GRIB2
-{
-protected:
-	uint8_t m_type;
-	uint8_t m_scale;
-	uint32_t m_value;
-
-public:
-    static const uint8_t MISSING_TYPE;
-    static const uint8_t MISSING_SCALE;
-    static const uint32_t MISSING_VALUE;
-
-    uint8_t type() const { return m_type; }
-    uint8_t scale() const { return m_scale; }
-    uint32_t value() const { return m_value; }
-
-    Style style() const override;
-    void encodeWithoutEnvelope(core::BinaryEncoder& enc) const override;
-    std::ostream& writeToOstream(std::ostream& o) const override;
-    void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
-    std::string exactQuery() const override;
-
-    int compare_local(const Level& o) const override;
-    bool equals(const Type& o) const override;
-
-    GRIB2S* clone() const override;
-    static std::unique_ptr<GRIB2S> create(uint8_t type, uint8_t scale, uint32_t val);
-    static std::unique_ptr<GRIB2S> decode_structure(const structured::Keys& keys, const structured::Reader& val);
-};
-
-class GRIB2D : public GRIB2
-{
-protected:
-	uint8_t m_type1;
-	uint8_t  m_scale1;
-	uint32_t m_value1;
-	uint8_t m_type2;
-	uint8_t  m_scale2;
-	uint32_t m_value2;
-
-public:
-	uint8_t type1() const { return m_type1; }
-	uint8_t scale1() const { return m_scale1; }
-	uint32_t value1() const { return m_value1; }
-	uint8_t type2() const { return m_type2; }
-	uint8_t scale2() const { return m_scale2; }
-	uint32_t value2() const { return m_value2; }
-
-    Style style() const override;
-    void encodeWithoutEnvelope(core::BinaryEncoder& enc) const override;
-    std::ostream& writeToOstream(std::ostream& o) const override;
-    void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
-    std::string exactQuery() const override;
-
-    int compare_local(const Level& o) const override;
-    bool equals(const Type& o) const override;
-
-    GRIB2D* clone() const override;
-    static std::unique_ptr<GRIB2D> create(uint8_t type1, uint8_t scale1, uint32_t val1,
-                               uint8_t type2, uint8_t scale2, uint32_t val2);
-
-    static std::unique_ptr<GRIB2D> decode_structure(const structured::Keys& keys, const structured::Reader& val);
-};
-
-class ODIMH5 : public Level
-{
-protected:
-	double m_max;
-	double m_min;
-
-public:
-	double max() const { return m_max; }
-	double min() const { return m_min; }
-
-    Style style() const override;
-    void encodeWithoutEnvelope(core::BinaryEncoder& enc) const override;
-    std::ostream& writeToOstream(std::ostream& o) const override;
-    void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
-    std::string exactQuery() const override;
-
-    int compare_local(const Level& o) const override;
-    bool equals(const Type& o) const override;
-
-    ODIMH5* clone() const override;
-    static std::unique_ptr<ODIMH5> create(double value);
-    static std::unique_ptr<ODIMH5> create(double min, double max);
-    static std::unique_ptr<ODIMH5> decode_structure(const structured::Keys& keys, const structured::Reader& val);
-};
-
 }
+
 }
 }
 #endif

@@ -39,8 +39,8 @@ add_method("basic", [] {
     unique_ptr<Type> product(Product::createGRIB1(200, 1, 2));
 
     wassert(actual(u.get(md)) == -1);
-    md.set(*origin);
-    md.set(*product);
+    md.test_set(*origin);
+    md.test_set(*product);
 
     // ID is -1 if it is not in the database
     wassert(actual(u.get(md)) == -1);

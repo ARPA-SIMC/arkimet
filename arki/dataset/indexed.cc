@@ -3,20 +3,17 @@
 #include "maintenance.h"
 #include "reporter.h"
 #include "session.h"
-#include "arki/dataset/time.h"
 #include "arki/dataset/lock.h"
 #include "arki/dataset/query.h"
 #include "arki/dataset/progress.h"
 #include "arki/metadata.h"
 #include "arki/types/source/blob.h"
-#include "arki/core/time.h"
 #include "arki/metadata/collection.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/string.h"
 #include "arki/utils/files.h"
 #include "arki/scan.h"
 #include "arki/nag.h"
-#include <algorithm>
 #include <cstring>
 
 using namespace std;
@@ -193,7 +190,7 @@ void Checker::test_swap_data(const std::string& relpath, unsigned d1_idx, unsign
 {
     metadata::Collection mds;
     m_idx->query_segment(relpath, mds.inserter_func());
-    std::swap(mds[d1_idx], mds[d2_idx]);
+    mds.swap(d1_idx, d2_idx);
 
     segment(relpath)->reorder(mds);
 }

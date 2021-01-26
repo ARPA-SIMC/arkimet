@@ -1,30 +1,21 @@
-#include "config.h"
 #include "index.h"
-#include "arki/dataset/maintenance.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
-#include "arki/matcher.h"
-#include "arki/matcher/reftime.h"
-#include "arki/dataset.h"
-#include "arki/dataset/query.h"
-#include "arki/dataset/session.h"
+#include "arki/matcher/utils.h"
 #include "arki/types/reftime.h"
+#include "arki/dataset/query.h"
+#include "arki/dataset/index/base.h"
 #include "arki/types/source.h"
 #include "arki/types/source/blob.h"
 #include "arki/types/value.h"
+#include "arki/core/binary.h"
 #include "arki/summary.h"
 #include "arki/summary/stats.h"
-#include "arki/utils/files.h"
-#include "arki/metadata/sort.h"
-#include "arki/scan.h"
 #include "arki/nag.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
 
 #include <sstream>
-#include <ctime>
-#include <cassert>
-#include <cerrno>
 #include <cstdlib>
 
 using namespace std;
@@ -182,7 +173,7 @@ std::unique_ptr<types::source::Blob> Contents::get_current(const Metadata& md) c
     std::unique_ptr<types::source::Blob> res;
 
     int idx = 0;
-    string sqltime = rt->time.to_sql();
+    std::string sqltime = rt->get_Position().to_sql();
     m_get_current.bind(++idx, sqltime);
 
     int id_unique = -1;
@@ -430,13 +421,7 @@ bool Contents::addJoinsAndConstraints(const Matcher& m, std::string& query) cons
 void Contents::build_md(Query& q, Metadata& md, std::shared_ptr<arki::segment::Reader> reader) const
 {
     // Rebuild the Metadata
-    md.set_source(Source::createBlob(
-            q.fetchString(1), dataset->path, q.fetchString(2),
-            q.fetch<uint64_t>(3), q.fetch<uint64_t>(4), reader));
     // md.notes = mdq.fetchItems<types::Note>(5);
-    const uint8_t* notes_p = (const uint8_t*)q.fetchBlob(5);
-    int notes_l = q.fetchBytes(5);
-    md.set_notes_encoded(vector<uint8_t>(notes_p, notes_p + notes_l));
     md.set(Reftime::createPosition(Time::create_sql(q.fetchString(6))));
     int j = 7;
     if (m_uniques)
@@ -460,6 +445,14 @@ void Contents::build_md(Query& q, Metadata& md, std::shared_ptr<arki::segment::R
         }
         ++j;
     }
+
+    const uint8_t* notes_p = (const uint8_t*)q.fetchBlob(5);
+    int notes_l = q.fetchBytes(5);
+    md.set_notes_encoded(notes_p, notes_l);
+
+    md.set_source(Source::createBlob(
+            q.fetchString(1), dataset->path, q.fetchString(2),
+            q.fetch<uint64_t>(3), q.fetch<uint64_t>(4), reader));
 }
 
 bool Contents::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
@@ -969,13 +962,14 @@ struct Inserter
     int timebuf_len;
     int id_uniques = -1;
     int id_others = -1;
+    std::vector<uint8_t> buf;
 
     Inserter(WIndex& idx, const Metadata& md)
         : idx(idx), md(md)
     {
         if (const reftime::Position* reftime = md.get<reftime::Position>())
         {
-            const auto& t = reftime->time;
+            auto t = reftime->get_Position();
             timebuf_len = snprintf(timebuf, 25, "%04d-%02d-%02d %02d:%02d:%02d", t.ye, t.mo, t.da, t.ho, t.mi, t.se);
         } else {
             timebuf[0] = 0;
@@ -1004,7 +998,10 @@ struct Inserter
         q.bind(++qidx, file);
         q.bind(++qidx, ofs);
         q.bind(++qidx, md.data_size());
-        q.bind(++qidx, md.notes_encoded());
+        buf.clear();
+        core::BinaryEncoder enc(buf);
+        md.encode_notes(enc);
+        q.bind(++qidx, buf);
 
         if (timebuf_len)
             q.bind(++qidx, timebuf, timebuf_len);

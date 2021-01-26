@@ -11,13 +11,13 @@ TypeSet::TypeSet() {}
 TypeSet::TypeSet(const TypeSet& o)
 {
     for (const_iterator i = o.begin(); i != o.end(); ++i)
-        vals.insert(*i ? (*i)->clone() : 0);
+        vals.insert(*i ? (*i)->clone() : nullptr);
 }
 
 TypeSet::~TypeSet()
 {
-    for (container::iterator i = vals.begin(); i != vals.end(); ++i)
-        delete *i;
+    for (auto& i: vals)
+        delete i;
 }
 
 const Type* TypeSet::insert(const Type& val)
@@ -41,7 +41,11 @@ const Type* TypeSet::find(const Type& val) const
 
 bool TypeSet::erase(const Type& val)
 {
-    return vals.erase(&val) > 0;
+    const_iterator i = vals.find(&val);
+    if (i == vals.end()) return false;
+    delete *i;
+    vals.erase(i);
+    return true;
 }
 
 bool TypeSet::operator==(const TypeSet& o) const

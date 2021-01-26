@@ -3,7 +3,6 @@
 
 #include <arki/segment.h>
 #include <arki/segment/base.h>
-#include <arki/segment/common.h>
 #include <arki/core/file.h>
 #include <arki/metadata/fwd.h>
 #include <string>
@@ -16,8 +15,9 @@ namespace fd {
 /**
  * Customize in subclasses to add format-specific I/O
  */
-struct File : public core::File
+class File : public core::File
 {
+public:
     using core::File::File;
 
     void fdtruncate_nothrow(off_t pos) noexcept;
@@ -26,8 +26,9 @@ struct File : public core::File
 };
 
 
-struct Segment : public arki::Segment
+class Segment : public arki::Segment
 {
+public:
     using arki::Segment::Segment;
 
     time_t timestamp() const override;
@@ -37,8 +38,9 @@ struct Segment : public arki::Segment
 
 /// Base class for unix fd based read/write functions
 template<typename Segment>
-struct Reader : public segment::BaseReader<Segment>
+class Reader : public segment::BaseReader<Segment>
 {
+public:
     core::File fd;
 
     Reader(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock);
@@ -49,8 +51,9 @@ struct Reader : public segment::BaseReader<Segment>
 };
 
 template<typename Segment, typename File>
-struct Writer : public segment::BaseWriter<Segment>
+class Writer : public segment::BaseWriter<Segment>
 {
+public:
     File fd;
     struct timespec initial_mtime;
     off_t initial_size;
@@ -97,23 +100,26 @@ public:
 
 namespace concat {
 
-struct File : public fd::File
+class File : public fd::File
 {
+public:
     using fd::File::File;
     size_t write_data(const metadata::Data& buf) override;
     void test_add_padding(size_t size) override;
 };
 
-struct HoleFile : public fd::File
+class HoleFile : public fd::File
 {
+public:
     using fd::File::File;
     size_t write_data(const metadata::Data& buf) override;
     void test_add_padding(size_t size) override;
 };
 
 
-struct Segment : public fd::Segment
+class Segment : public fd::Segment
 {
+public:
     using fd::Segment::Segment;
 
     const char* type() const override;
@@ -130,8 +136,9 @@ struct Segment : public fd::Segment
 };
 
 
-struct HoleSegment : public Segment
+class HoleSegment : public Segment
 {
+public:
     using Segment::Segment;
 
     const char* type() const override;
@@ -143,23 +150,27 @@ struct HoleSegment : public Segment
 };
 
 
-struct Reader : public fd::Reader<Segment>
+class Reader : public fd::Reader<Segment>
 {
+public:
     using fd::Reader<Segment>::Reader;
 };
 
-struct Writer : public fd::Writer<Segment, File>
+class Writer : public fd::Writer<Segment, File>
 {
+public:
     using fd::Writer<Segment, File>::Writer;
 };
 
-struct Checker : public fd::Checker<Segment, File>
+class Checker : public fd::Checker<Segment, File>
 {
+public:
     using fd::Checker<Segment, File>::Checker;
 };
 
-struct HoleWriter : public fd::Writer<HoleSegment, HoleFile>
+class HoleWriter : public fd::Writer<HoleSegment, HoleFile>
 {
+public:
     using fd::Writer<HoleSegment, HoleFile>::Writer;
 };
 
@@ -174,15 +185,17 @@ public:
 
 namespace lines {
 
-struct File : public concat::File
+class File : public concat::File
 {
+public:
     using concat::File::File;
 
     void test_add_padding(size_t size) override;
 };
 
-struct Segment : public fd::Segment
+class Segment : public fd::Segment
 {
+public:
     using fd::Segment::Segment;
 
     const char* type() const override;
@@ -198,18 +211,21 @@ struct Segment : public fd::Segment
     static const unsigned padding = 1;
 };
 
-struct Reader : public fd::Reader<Segment>
+class Reader : public fd::Reader<Segment>
 {
+public:
     using fd::Reader<Segment>::Reader;
 };
 
-struct Writer : public fd::Writer<Segment, File>
+class Writer : public fd::Writer<Segment, File>
 {
+public:
     using fd::Writer<Segment, File>::Writer;
 };
 
-struct Checker : public fd::Checker<Segment, File>
+class Checker : public fd::Checker<Segment, File>
 {
+public:
     using fd::Checker<Segment, File>::Checker;
 };
 

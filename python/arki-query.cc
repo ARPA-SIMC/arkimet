@@ -1,22 +1,13 @@
-#include "arki/core/cfg.h"
-#include "arki/core/file.h"
-#include "arki/matcher.h"
 #include "arki/dataset.h"
-#include "arki/dataset/session.h"
-#include "arki/dataset/http.h"
+#include "arki/dataset/pool.h"
 #include "arki/dataset/merged.h"
-#include "arki/dataset/querymacro.h"
 #include "arki/nag.h"
 #include "arki-query.h"
 #include "utils/core.h"
 #include "utils/methods.h"
-#include "utils/type.h"
-#include "utils/values.h"
-#include "cfg.h"
 #include "common.h"
 #include "cmdline.h"
 #include "cmdline/processor.h"
-#include "dataset.h"
 #include "dataset/session.h"
 #include "sysexits.h"
 
@@ -43,7 +34,7 @@ struct set_processor : public MethKwargs<set_processor, arkipy_ArkiQuery>
     static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
     {
         try {
-            auto processor = build_processor(self->session, args, kw);
+            auto processor = build_processor(self->pool, args, kw);
             self->processor = processor.release();
             Py_RETURN_NONE;
         } ARKI_CATCH_RETURN_PYO
@@ -79,7 +70,7 @@ struct query_file : public MethKwargs<query_file, arkipy_ArkiQuery>
                 BinaryInputFile in(file);
                 ReleaseGIL rg;
                 all_successful = foreach_file(
-                        self->session, in, std::string(format, format_len), dest);
+                        self->pool->session(), in, std::string(format, format_len), dest);
                 self->processor->end();
             }
 
@@ -111,7 +102,7 @@ struct query_merged : public MethKwargs<query_merged, arkipy_ArkiQuery>
             {
                 ReleaseGIL rg;
 
-                auto dataset = std::make_shared<arki::dataset::merged::Dataset>(self->session);
+                auto dataset = std::make_shared<arki::dataset::merged::Dataset>(self->pool);
                 auto reader = dataset->create_reader();
 
                 try {
@@ -161,7 +152,7 @@ struct query_qmacro : public MethKwargs<query_qmacro, arkipy_ArkiQuery>
                 std::string macro_name(arg_macro_name, arg_macro_name_len);
                 std::string macro_query(arg_macro_query, arg_macro_query_len);
 
-                auto dataset = self->session->querymacro(macro_name, macro_query);
+                auto dataset = self->pool->querymacro(macro_name, macro_query);
                 auto reader = dataset->create_reader();
 
                 try {
@@ -206,7 +197,7 @@ struct query_sections : public MethKwargs<query_sections, arkipy_ArkiQuery>
             bool all_successful = true;
             {
                 ReleaseGIL rg;
-                all_successful = foreach_sections(self->session, dest);
+                all_successful = foreach_sections(self->pool, dest);
                 self->processor->end();
             }
 
@@ -231,7 +222,7 @@ arki-query implementation
 
     static void _dealloc(Impl* self)
     {
-        self->session.~shared_ptr<arki::dataset::Session>();
+        self->pool.~shared_ptr<arki::dataset::Pool>();
         delete self->processor;
         Py_TYPE(self)->tp_free(self);
     }
@@ -256,7 +247,7 @@ arki-query implementation
             return -1;
 
         try {
-            new (&(self->session)) std::shared_ptr<arki::dataset::Session>(session->ptr);
+            new (&(self->pool)) std::shared_ptr<arki::dataset::Pool>(session->pool);
             self->processor = nullptr;
         } ARKI_CATCH_RETURN_INT
 

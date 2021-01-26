@@ -4,15 +4,10 @@
 #include "archive.h"
 #include "arki/dataset/time.h"
 #include "arki/types/reftime.h"
-#include "arki/exceptions.h"
 #include "arki/metadata.h"
-#include "arki/utils/files.h"
-#include "arki/metadata/collection.h"
-#include "arki/nag.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
 #include <fcntl.h>
-#include <sys/stat.h>
 
 using namespace std;
 using namespace arki::core;
@@ -43,14 +38,15 @@ std::pair<bool, WriterAcquireResult> Dataset::check_acquire_age(Metadata& md) co
 {
     const auto& st = SessionTime::get();
     const types::reftime::Position* rt = md.get<types::reftime::Position>();
+    auto time = rt->get_Position();
 
-    if (delete_age != -1 && rt->time < st.age_threshold(delete_age))
+    if (delete_age != -1 && time < st.age_threshold(delete_age))
     {
         md.add_note("Safely discarded: data is older than delete age");
         return make_pair(true, ACQ_OK);
     }
 
-    if (archive_age != -1 && rt->time < st.age_threshold(archive_age))
+    if (archive_age != -1 && time < st.age_threshold(archive_age))
     {
         md.add_note("Import refused: data is older than archive age");
         return make_pair(true, ACQ_ERROR);
@@ -64,7 +60,7 @@ std::shared_ptr<archive::Dataset> Dataset::archive()
     if (!m_archive)
     {
         m_archive = std::shared_ptr<archive::Dataset>(new archive::Dataset(session, path));
-        m_archive->set_parent(shared_from_this());
+        m_archive->set_parent(this);
     }
     return m_archive;
 }

@@ -2,7 +2,6 @@
 #include "file.h"
 #include "arki/utils/string.h"
 #include "arki/utils/regexp.h"
-#include <cctype>
 #include <sstream>
 #include <cstdio>
 
@@ -65,8 +64,9 @@ struct ParserBase
 };
 
 
-struct SectionParser : public ParserBase
+class SectionParser : public ParserBase
 {
+public:
     using ParserBase::ParserBase;
 
     /**

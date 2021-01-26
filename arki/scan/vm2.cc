@@ -2,10 +2,9 @@
 #include "arki/exceptions.h"
 #include "arki/segment.h"
 #include "arki/core/time.h"
-#include "arki/types/source/blob.h"
+#include "arki/types/source.h"
 #include "arki/metadata.h"
 #include "arki/metadata/data.h"
-#include "arki/utils/files.h"
 #include "arki/nag.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
@@ -15,18 +14,14 @@
 #include "arki/types/reftime.h"
 #include "arki/types/product.h"
 #include "arki/types/value.h"
-#include "arki/utils/vm2.h"
 #include <cstring>
-#include <sstream>
 #include <iomanip>
 #include <unistd.h>
 #include <meteo-vm2/parser.h>
 #include <ext/stdio_filebuf.h>
 
-using namespace std;
 using namespace arki::types;
 using namespace arki::utils;
-using arki::core::Time;
 
 namespace arki {
 namespace scan {
@@ -69,8 +64,9 @@ static VM2Validator vm_validator;
 
 const Validator& validator() { return vm_validator; }
 
-struct Input
+class Input
 {
+public:
     std::string md_note;
     std::istream* in = nullptr;
     meteo::vm2::Parser* parser = nullptr;
@@ -151,8 +147,8 @@ struct Input
     void to_metadata(Metadata& md)
     {
         md.add_note(md_note);
-        md.set(Reftime::createPosition(Time(value.year, value.month, value.mday, value.hour, value.min, value.sec)));
-        md.set(Area::createVM2(value.station_id));
+        md.set(Reftime::createPosition(core::Time(value.year, value.month, value.mday, value.hour, value.min, value.sec)));
+        md.set<area::VM2>(value.station_id);
         md.set(Product::createVM2(value.variable_id));
         store_value(md);
     }
@@ -185,7 +181,7 @@ std::shared_ptr<Metadata> Vm2::scan_data(const std::vector<uint8_t>& data)
     if (!input.next())
         throw std::runtime_error("input line did not look like a VM2 line");
     input.to_metadata(*md);
-    md->set_source_inline("vm2", metadata::DataManager::get().to_data("vm2", vector<uint8_t>(input.line.begin(), input.line.end())));
+    md->set_source_inline("vm2", metadata::DataManager::get().to_data("vm2", std::vector<uint8_t>(input.line.begin(), input.line.end())));
     return md;
 }
 
@@ -196,6 +192,7 @@ std::shared_ptr<Metadata> Vm2::scan_singleton(const std::string& abspath)
     if (!input.next())
         throw std::runtime_error(abspath + " contains no VM2 data");
     input.to_metadata(*md);
+    md->set_cached_data(metadata::DataManager::get().to_data("vm2", std::vector<uint8_t>(input.line.begin(), input.line.end())));
 
     if (input.next())
         throw std::runtime_error(abspath + " contains more than one VM2 data");
@@ -204,6 +201,7 @@ std::shared_ptr<Metadata> Vm2::scan_singleton(const std::string& abspath)
 
 bool Vm2::scan_pipe(core::NamedFileDescriptor& in, metadata_dest_func dest)
 {
+    using namespace std;
     // see https://stackoverflow.com/questions/2746168/how-to-construct-a-c-fstream-from-a-posix-file-descriptor#5253726
     __gnu_cxx::stdio_filebuf<char> filebuf(in, std::ios::in);
     istream is(&filebuf);
@@ -224,38 +222,58 @@ bool Vm2::scan_segment(std::shared_ptr<segment::Reader> reader, metadata_dest_fu
     vm2::Input input(reader->segment().abspath);
     while (true)
     {
-        unique_ptr<Metadata> md(new Metadata);
+        std::unique_ptr<Metadata> md(new Metadata);
         if (!input.next_with_offset()) break;
         input.to_metadata(*md);
         md->set_source(Source::createBlob(reader, input.offset, input.line.size()));
+        md->set_cached_data(metadata::DataManager::get().to_data("vm2", std::vector<uint8_t>(input.line.begin(), input.line.end())));
         if (!dest(move(md))) return false;
     }
     return true;
 }
 
-vector<uint8_t> Vm2::reconstruct(const Metadata& md, const std::string& value)
+std::vector<uint8_t> Vm2::reconstruct(const Metadata& md, const std::string& value)
 {
-    stringstream res;
+    using namespace std;
+    std::stringstream res;
 
     const reftime::Position* rt = md.get<reftime::Position>();
+    auto time = rt->get_Position();
     const area::VM2* area = dynamic_cast<const area::VM2*>(md.get<Area>());
-    const product::VM2* product = dynamic_cast<const product::VM2*>(md.get<Product>());
+    const Product* product = md.get<Product>();
+    unsigned vi;
+    product->get_VM2(vi);
 
-    res << setfill('0') << setw(4) << rt->time.ye
-        << setfill('0') << setw(2) << rt->time.mo
-        << setfill('0') << setw(2) << rt->time.da
-        << setfill('0') << setw(2) << rt->time.ho
-        << setfill('0') << setw(2) << rt->time.mi;
+    res << setfill('0') << setw(4) << time.ye
+        << setfill('0') << setw(2) << time.mo
+        << setfill('0') << setw(2) << time.da
+        << setfill('0') << setw(2) << time.ho
+        << setfill('0') << setw(2) << time.mi;
 
-    if (rt->time.se != 0)
-        res << setfill('0') << setw(2) << rt->time.se;
+    if (time.se != 0)
+        res << setfill('0') << setw(2) << time.se;
 
-    res << "," << area->station_id()
-        << "," << product->variable_id()
+    auto sid = area->get_VM2();
+    res << "," << sid
+        << "," << vi
         << "," << value;
 
     string reconstructed = res.str();
     return vector<uint8_t>(reconstructed.begin(), reconstructed.end());
+}
+
+void Vm2::normalize_before_dispatch(Metadata& md)
+{
+    if (const Value* value = md.get<types::Value>())
+    {
+        auto orig = md.get_data().read();
+        auto normalized = reconstruct(md, value->buffer);
+        if (orig != normalized)
+        {
+            md.set_cached_data(metadata::DataManager::get().to_data("vm2", std::move(normalized)));
+            md.makeInline();
+        }
+    }
 }
 
 }

@@ -139,24 +139,17 @@ add_method("maintenance_nonindexed", [](Fixture& f) {
 add_method("reader_empty_last", [](Fixture& f) {
     // Create a secondary archive
     {
+        metadata::TestCollection mdc("inbound/test-sorted.grib1");
         core::cfg::Section cfg;
         cfg.set("name", "foo");
         cfg.set("path", sys::abspath("testds/.archive/foo"));
         cfg.set("type", "simple");
         cfg.set("step", "daily");
         auto writer = f.session->dataset(cfg)->create_writer();
+        wassert(actual(writer->acquire(mdc[0])) == dataset::ACQ_OK);
+        wassert(actual(writer->acquire(mdc[1])) == dataset::ACQ_OK);
+        wassert(actual(writer->acquire(mdc[2])) == dataset::ACQ_OK);
         writer->flush();
-    }
-
-    // Import a file in the secondary archive
-    {
-        system("cp inbound/test-sorted.grib1 testds/.archive/foo/");
-
-        archive::Checker checker(f.config);
-        wassert(checker.index_segment("foo/test-sorted.grib1", metadata::Collection(f.orig)));
-
-        wassert(actual(checker).check_clean(true, true));
-        wassert(actual(checker).repack_clean(true));
     }
 
     // Query has all data

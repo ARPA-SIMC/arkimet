@@ -10,6 +10,7 @@
 #include "arki/dataset/impl.h"
 #include "arki/dataset/query.h"
 #include "arki/dataset/progress.h"
+#include "arki/core/time.h"
 
 namespace arki {
 namespace python {

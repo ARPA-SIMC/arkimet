@@ -155,15 +155,20 @@ add_method("grib1_details", [] {
     unique_ptr<Timerange> o = Timerange::createGRIB1(2, 254, 2, 3);
     wassert(actual(o->style()) == Timerange::Style::GRIB1);
     const timerange::GRIB1* v = dynamic_cast<timerange::GRIB1*>(o.get());
-    wassert(actual(v->type()) == 2u);
-    wassert(actual(v->unit()) == 254u);
-    wassert(actual(v->p1()) == 2u);
-    wassert(actual(v->p2()) == 3u);
+    {
+        unsigned type, unit, p1, p2;
+        v->get_GRIB1(type, unit, p1, p2);
+
+        wassert(actual(type) == 2u);
+        wassert(actual(unit) == 254u);
+        wassert(actual(p1) == 2u);
+        wassert(actual(p2) == 3u);
+    }
 
     timerange::GRIB1Unit u;
     int t, p1, p2;
     bool use_p1, use_p2;
-    v->getNormalised(t, u, p1, p2, use_p1, use_p2);
+    v->get_GRIB1_normalised(t, u, p1, p2, use_p1, use_p2);
     wassert(actual(t) == 2);
     wassert(actual(u) == timerange::SECOND);
     wassert(actual(p1) == 2);
@@ -172,12 +177,16 @@ add_method("grib1_details", [] {
     o = Timerange::createGRIB1(2, 1, 2, 3);
     wassert(actual(o->style()) == Timerange::Style::GRIB1);
     v = dynamic_cast<timerange::GRIB1*>(o.get());
-    wassert(actual(v->type()) == 2u);
-    wassert(actual(v->unit()) == 1u);
-    wassert(actual(v->p1()) == 2u);
-    wassert(actual(v->p2()) == 3u);
+    {
+        unsigned type, unit, p1, p2;
+        v->get_GRIB1(type, unit, p1, p2);
+        wassert(actual(type) == 2u);
+        wassert(actual(unit) == 1u);
+        wassert(actual(p1) == 2u);
+        wassert(actual(p2) == 3u);
+    }
 
-    v->getNormalised(t, u, p1, p2, use_p1, use_p2);
+    v->get_GRIB1_normalised(t, u, p1, p2, use_p1, use_p2);
     wassert(actual(t) == 2);
     wassert(actual(u) == timerange::SECOND);
     wassert(actual(p1) == 2 * 3600);
@@ -186,12 +195,16 @@ add_method("grib1_details", [] {
     o = Timerange::createGRIB1(2, 4, 2, 3);
     wassert(actual(o->style()) == Timerange::Style::GRIB1);
     v = dynamic_cast<timerange::GRIB1*>(o.get());
-    wassert(actual(v->type()) == 2u);
-    wassert(actual(v->unit()) == 4u);
-    wassert(actual(v->p1()) == 2u);
-    wassert(actual(v->p2()) == 3u);
+    {
+        unsigned type, unit, p1, p2;
+        v->get_GRIB1(type, unit, p1, p2);
+        wassert(actual(type) == 2u);
+        wassert(actual(unit) == 4u);
+        wassert(actual(p1) == 2u);
+        wassert(actual(p2) == 3u);
+    }
 
-    v->getNormalised(t, u, p1, p2, use_p1, use_p2);
+    v->get_GRIB1_normalised(t, u, p1, p2, use_p1, use_p2);
     wassert(actual(t) == 2);
     wassert(actual(u) == timerange::MONTH);
     wassert(actual(p1) == 2 * 12);
@@ -200,12 +213,16 @@ add_method("grib1_details", [] {
     o = Timerange::createGRIB1(250, 1, 124, 127);
     wassert(actual(o->style()) == Timerange::Style::GRIB1);
     v = dynamic_cast<timerange::GRIB1*>(o.get());
-    wassert(actual(v->type()) == 250u);
-    wassert(actual(v->unit()) == 1u);
-    wassert(actual(v->p1()) == 124u);
-    wassert(actual(v->p2()) == 127u);
+    {
+        unsigned type, unit, p1, p2;
+        v->get_GRIB1(type, unit, p1, p2);
+        wassert(actual(type) == 250u);
+        wassert(actual(unit) == 1u);
+        wassert(actual(p1) == 124u);
+        wassert(actual(p2) == 127u);
+    }
 
-    v->getNormalised(t, u, p1, p2, use_p1, use_p2);
+    v->get_GRIB1_normalised(t, u, p1, p2, use_p1, use_p2);
     wassert(actual(t) == 250);
     wassert(actual(u) == timerange::SECOND);
     wassert(actual(p1) == 124 * 3600);
@@ -216,56 +233,65 @@ add_method("grib2_details", [] {
     unique_ptr<Timerange> o = Timerange::createGRIB2(2, 254, 2, 3);
     wassert(actual(o->style()) == Timerange::Style::GRIB2);
     const timerange::GRIB2* v = dynamic_cast<timerange::GRIB2*>(o.get());
-    wassert(actual(v->type()) == 2u);
-    wassert(actual(v->unit()) == 254u);
-    wassert(actual(v->p1()) == 2);
-    wassert(actual(v->p2()) == 3);
+    unsigned type, unit;
+    signed long p1, p2;
+    v->get_GRIB2(type, unit, p1, p2);
+    wassert(actual(type) == 2u);
+    wassert(actual(unit) == 254u);
+    wassert(actual(p1) == 2);
+    wassert(actual(p2) == 3);
 
     o = Timerange::createGRIB2(2, 1, 2, 3);
     wassert(actual(o->style()) == Timerange::Style::GRIB2);
     v = dynamic_cast<timerange::GRIB2*>(o.get());
-    wassert(actual(v->type()) == 2u);
-    wassert(actual(v->unit()) == 1u);
-    wassert(actual(v->p1()) == 2);
-    wassert(actual(v->p2()) == 3);
+    v->get_GRIB2(type, unit, p1, p2);
+    wassert(actual(type) == 2u);
+    wassert(actual(unit) == 1u);
+    wassert(actual(p1) == 2);
+    wassert(actual(p2) == 3);
 
     o = Timerange::createGRIB2(2, 1, 2, 3);
     wassert(actual(o->style()) == Timerange::Style::GRIB2);
     v = dynamic_cast<timerange::GRIB2*>(o.get());
-    wassert(actual(v->type()) == 2u);
-    wassert(actual(v->unit()) == 1u);
-    wassert(actual(v->p1()) == 2);
-    wassert(actual(v->p2()) == 3);
+    v->get_GRIB2(type, unit, p1, p2);
+    wassert(actual(type) == 2u);
+    wassert(actual(unit) == 1u);
+    wassert(actual(p1) == 2);
+    wassert(actual(p2) == 3);
 
     o = Timerange::createGRIB2(2, 1, -2, -3);
     wassert(actual(o->style()) == Timerange::Style::GRIB2);
     v = dynamic_cast<timerange::GRIB2*>(o.get());
-    wassert(actual(v->type()) == 2u);
-    wassert(actual(v->unit()) == 1u);
-    wassert(actual((int)v->p1()) == -2);
-    wassert(actual((int)v->p2()) == -3);
+    v->get_GRIB2(type, unit, p1, p2);
+    wassert(actual(type) == 2u);
+    wassert(actual(unit) == 1u);
+    wassert(actual(p1) == -2);
+    wassert(actual(p2) == -3);
 
     o = Timerange::createGRIB2(250, 1, -2, -3);
     wassert(actual(o->style()) == Timerange::Style::GRIB2);
     v = dynamic_cast<timerange::GRIB2*>(o.get());
-    wassert(actual(v->type()) == 250u);
-    wassert(actual(v->unit()) == 1u);
-    wassert(actual((int)v->p1()) == -2);
-    wassert(actual((int)v->p2()) == -3);
+    v->get_GRIB2(type, unit, p1, p2);
+    wassert(actual(type) == 250u);
+    wassert(actual(unit) == 1u);
+    wassert(actual(p1) == -2);
+    wassert(actual(p2) == -3);
 
     // Check GRIB2 with some values that used to fail
     unique_ptr<Timerange> o1 = Timerange::createGRIB2(11, 1, 3, 3);
     unique_ptr<Timerange> o2 = Timerange::createGRIB2(11, 1, 3, 6);
     const timerange::GRIB2* v1 = dynamic_cast<timerange::GRIB2*>(o1.get());
     const timerange::GRIB2* v2 = dynamic_cast<timerange::GRIB2*>(o2.get());
-    wassert(actual(v1->type()) == 11u);
-    wassert(actual(v1->unit()) == 1u);
-    wassert(actual(v1->p1()) == 3);
-    wassert(actual(v1->p2()) == 3);
-    wassert(actual(v2->type()) == 11u);
-    wassert(actual(v2->unit()) == 1u);
-    wassert(actual(v2->p1()) == 3);
-    wassert(actual(v2->p2()) == 6);
+    v1->get_GRIB2(type, unit, p1, p2);
+    wassert(actual(type) == 11u);
+    wassert(actual(unit) == 1u);
+    wassert(actual(p1) == 3);
+    wassert(actual(p2) == 3);
+    v2->get_GRIB2(type, unit, p1, p2);
+    wassert(actual(type) == 11u);
+    wassert(actual(unit) == 1u);
+    wassert(actual(p1) == 3);
+    wassert(actual(p2) == 6);
 
     wassert(actual(o1) != o2);
 
@@ -275,84 +301,95 @@ add_method("grib2_details", [] {
 });
 
 add_method("timedef_details", [] {
-    unique_ptr<timerange::Timedef> v = timerange::Timedef::createFromYaml("6h,2,60m");
+    auto v = Timerange::decodeString("Timedef(6h,2,60m)");
+    timerange::TimedefUnit step_unit, stat_unit;
+    unsigned step_len, stat_type, stat_len;
+    v->get_Timedef(step_unit, step_len, stat_type, stat_unit, stat_len);
     wassert(actual(v->style()) == Timerange::Style::TIMEDEF);
-    wassert(actual(v->step_unit()) == timerange::UNIT_HOUR);
-    wassert(actual(v->step_len()) == 6u);
-    wassert(actual(v->stat_type()) == 2);
-    wassert(actual(v->stat_unit()) == timerange::UNIT_MINUTE);
-    wassert(actual(v->stat_len()) == 60u);
+    wassert(actual(step_unit) == timerange::UNIT_HOUR);
+    wassert(actual(step_len) == 6u);
+    wassert(actual(stat_type) == 2u);
+    wassert(actual(stat_unit) == timerange::UNIT_MINUTE);
+    wassert(actual(stat_len) == 60u);
 
-    wassert(actual(v) == timerange::Timedef::create(6, timerange::UNIT_HOUR, 2, 60, timerange::UNIT_MINUTE));
+    wassert(actual(v) == Timerange::createTimedef(6, timerange::UNIT_HOUR, 2, 60, timerange::UNIT_MINUTE));
 
-    v = timerange::Timedef::createFromYaml("1y,2,3mo");
+    v = Timerange::decodeString("Timedef(1y,2,3mo)");
+    v->get_Timedef(step_unit, step_len, stat_type, stat_unit, stat_len);
     wassert(actual(v->style()) == Timerange::Style::TIMEDEF);
-    wassert(actual(v->step_unit()) == timerange::UNIT_YEAR);
-    wassert(actual(v->step_len()) == 1u);
-    wassert(actual(v->stat_type()) == 2);
-    wassert(actual(v->stat_unit()) == timerange::UNIT_MONTH);
-    wassert(actual(v->stat_len()) == 3u);
+    wassert(actual(step_unit) == timerange::UNIT_YEAR);
+    wassert(actual(step_len) == 1u);
+    wassert(actual(stat_type) == 2u);
+    wassert(actual(stat_unit) == timerange::UNIT_MONTH);
+    wassert(actual(stat_len) == 3u);
 
-    wassert(actual(v) == timerange::Timedef::create(1, timerange::UNIT_YEAR, 2, 3, timerange::UNIT_MONTH));
-    wassert(actual(v) == timerange::Timedef::createFromYaml("12mo, 2, 3mo"));
+    wassert(actual(v) == Timerange::createTimedef(1, timerange::UNIT_YEAR, 2, 3, timerange::UNIT_MONTH));
+    wassert(actual(v) == Timerange::decodeString("Timedef(12mo, 2, 3mo)"));
 
-    v = timerange::Timedef::createFromYaml("1d");
+    v = Timerange::decodeString("Timedef(1d)");
+    v->get_Timedef(step_unit, step_len, stat_type, stat_unit, stat_len);
     wassert(actual(v->style()) == Timerange::Style::TIMEDEF);
-    wassert(actual(v->step_unit()) == timerange::UNIT_DAY);
-    wassert(actual(v->step_len()) == 1u);
-    wassert(actual(v->stat_type()) == 255);
-    wassert(actual(v->stat_unit()) == timerange::UNIT_MISSING);
-    wassert(actual(v->stat_len()) == 0u);
+    wassert(actual(step_unit) == timerange::UNIT_DAY);
+    wassert(actual(step_len) == 1u);
+    wassert(actual(stat_type) == 255u);
+    wassert(actual(stat_unit) == timerange::UNIT_MISSING);
+    wassert(actual(stat_len) == 0u);
 
-    wassert(actual(v) == timerange::Timedef::create(1, timerange::UNIT_DAY));
+    wassert(actual(v) == Timerange::createTimedef(1, timerange::UNIT_DAY));
 
-    v = timerange::Timedef::createFromYaml("2ce");
+    v = Timerange::decodeString("Timedef(2ce)");
+    v->get_Timedef(step_unit, step_len, stat_type, stat_unit, stat_len);
     wassert(actual(v->style()) == Timerange::Style::TIMEDEF);
-    wassert(actual(v->step_unit()) == timerange::UNIT_CENTURY);
-    wassert(actual(v->step_len()) == 2u);
-    wassert(actual(v->stat_type()) == 255);
-    wassert(actual(v->stat_unit()) == timerange::UNIT_MISSING);
-    wassert(actual(v->stat_len()) == 0u);
+    wassert(actual(step_unit) == timerange::UNIT_CENTURY);
+    wassert(actual(step_len) == 2u);
+    wassert(actual(stat_type) == 255u);
+    wassert(actual(stat_unit) == timerange::UNIT_MISSING);
+    wassert(actual(stat_len) == 0u);
 
-    wassert(actual(v) == timerange::Timedef::create(2, timerange::UNIT_CENTURY));
+    wassert(actual(v) == Timerange::createTimedef(2, timerange::UNIT_CENTURY));
 
-    v = timerange::Timedef::createFromYaml("6h,2");
+    v = Timerange::decodeString("Timedef(6h,2)");
+    v->get_Timedef(step_unit, step_len, stat_type, stat_unit, stat_len);
     wassert(actual(v->style()) == Timerange::Style::TIMEDEF);
-    wassert(actual(v->step_unit()) == timerange::UNIT_HOUR);
-    wassert(actual(v->step_len()) == 6u);
-    wassert(actual(v->stat_type()) == 2);
-    wassert(actual(v->stat_unit()) == timerange::UNIT_MISSING);
-    wassert(actual(v->stat_len()) == 0u);
+    wassert(actual(step_unit) == timerange::UNIT_HOUR);
+    wassert(actual(step_len) == 6u);
+    wassert(actual(stat_type) == 2u);
+    wassert(actual(stat_unit) == timerange::UNIT_MISSING);
+    wassert(actual(stat_len) == 0u);
 
-    wassert(actual(v) == timerange::Timedef::create(6, timerange::UNIT_HOUR, 2, 0, timerange::UNIT_MISSING));
+    wassert(actual(v) == Timerange::createTimedef(6, timerange::UNIT_HOUR, 2, 0, timerange::UNIT_MISSING));
 
-    v = timerange::Timedef::createFromYaml("6no,2");
+    v = Timerange::decodeString("Timedef(6no,2)");
+    v->get_Timedef(step_unit, step_len, stat_type, stat_unit, stat_len);
     wassert(actual(v->style()) == Timerange::Style::TIMEDEF);
-    wassert(actual(v->step_unit()) == timerange::UNIT_NORMAL);
-    wassert(actual(v->step_len()) == 6u);
-    wassert(actual(v->stat_type()) == 2);
-    wassert(actual(v->stat_unit()) == timerange::UNIT_MISSING);
-    wassert(actual(v->stat_len()) == 0u);
+    wassert(actual(step_unit) == timerange::UNIT_NORMAL);
+    wassert(actual(step_len) == 6u);
+    wassert(actual(stat_type) == 2u);
+    wassert(actual(stat_unit) == timerange::UNIT_MISSING);
+    wassert(actual(stat_len) == 0u);
 
-    wassert(actual(v) == timerange::Timedef::create(6, timerange::UNIT_NORMAL, 2, 0, timerange::UNIT_MISSING));
+    wassert(actual(v) == Timerange::createTimedef(6, timerange::UNIT_NORMAL, 2, 0, timerange::UNIT_MISSING));
 
-    v = timerange::Timedef::createFromYaml("1y,2,3d");
+    v = Timerange::decodeString("Timedef(1y,2,3d)");
+    v->get_Timedef(step_unit, step_len, stat_type, stat_unit, stat_len);
     wassert(actual(v->style()) == Timerange::Style::TIMEDEF);
-    wassert(actual(v->step_unit()) == timerange::UNIT_YEAR);
-    wassert(actual(v->step_len()) == 1u);
-    wassert(actual(v->stat_type()) == 2);
-    wassert(actual(v->stat_unit()) == timerange::UNIT_DAY);
-    wassert(actual(v->stat_len()) == 3u);
+    wassert(actual(step_unit) == timerange::UNIT_YEAR);
+    wassert(actual(step_len) == 1u);
+    wassert(actual(stat_type) == 2u);
+    wassert(actual(stat_unit) == timerange::UNIT_DAY);
+    wassert(actual(stat_len) == 3u);
 
-    wassert(actual(v) == timerange::Timedef::create(1, timerange::UNIT_YEAR, 2, 3, timerange::UNIT_DAY));
+    wassert(actual(v) == Timerange::createTimedef(1, timerange::UNIT_YEAR, 2, 3, timerange::UNIT_DAY));
 });
 
 add_method("timedef_details", [] {
     unique_ptr<Timerange> o = Timerange::createBUFR(6, 1);
     const timerange::BUFR* v = dynamic_cast<timerange::BUFR*>(o.get());
+    unsigned unit, value;
+    v->get_BUFR(unit, value);
     wassert(actual(v->style()) == Timerange::Style::BUFR);
-    wassert(actual(v->unit()) == 1u);
-    wassert(actual(v->value()) == 6u);
+    wassert(actual(unit) == 1u);
+    wassert(actual(value) == 6u);
 });
 
 // Test computing timedef information
@@ -393,12 +430,24 @@ add_method("timedef_info", [] {
 
 // Test Timedef's validity_time_to_emission_time
 add_method("timedef_validity_time_to_emission_time", [] {
-    using namespace timerange;
     using namespace reftime;
-    unique_ptr<Timedef> v = Timedef::createFromYaml("6h");
-    unique_ptr<Position> p = downcast<Position>(Reftime::decodeString("2009-02-13 12:00:00"));
-    unique_ptr<Position> p1 = v->validity_time_to_emission_time(*p);
-    wassert(actual(p1->time).is(2009, 2, 13, 6));
+    auto v = Timerange::decodeString("Timedef(6h)");
+    auto p = downcast<Position>(Reftime::decodeString("2009-02-13 12:00:00"));
+    auto p1 = dynamic_cast<const timerange::Timedef*>(v.get())->validity_time_to_emission_time(*p);
+    wassert(actual(p1->get_Position()).is(2009, 2, 13, 6));
+});
+
+add_method("issue256", [] {
+    std::unique_ptr<Timerange> tr(Timerange::createGRIB1(0, 1, 228, 0));
+
+    unsigned t, u, p1, p2;
+    tr->get_GRIB1(t, u, p1, p2);
+    wassert(actual(t) == 0u);
+    wassert(actual(u) == 1u);
+    wassert(actual(p1) == 228u);
+    wassert(actual(p2) == 0u);
+
+    wassert(actual(tr->to_string()) == "GRIB1(000, 228h)");
 });
 
 }

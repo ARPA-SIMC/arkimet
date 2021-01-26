@@ -4,7 +4,6 @@
 #include <arki/core/fwd.h>
 #include <arki/metadata/fwd.h>
 #include <string>
-#include <map>
 #include <sstream>
 #include <functional>
 #include <memory>

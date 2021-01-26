@@ -25,7 +25,7 @@ add_method("typeset", []() {
     wassert(actual(v.begin() == v.end()).istrue());
 
     // Add a null and a valid entry
-    unique_ptr<Type> type(decodeString(TYPE_REFTIME, "2015-01-05T12:00:00Z"));
+    auto type = decodeString(TYPE_REFTIME, "2015-01-05T12:00:00Z");
     const Type* sample = type.get();
     wassert(actual(v.insert(move(type)) == sample).istrue());
     wassert(actual(type.get()).isfalse());

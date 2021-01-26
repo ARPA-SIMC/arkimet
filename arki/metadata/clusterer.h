@@ -3,8 +3,8 @@
 
 /// Process a stream of metadata in batches
 
-#include <arki/types/timerange.h>
-#include <arki/types/reftime.h>
+#include <arki/core/time.h>
+#include <arki/types/fwd.h>
 
 namespace arki {
 namespace metadata {
@@ -23,8 +23,7 @@ protected:
     /// Timerange of all the items in the current batch, if split_timerange is true
     types::Timerange* last_timerange;
     /// Actual time span of the current batch
-    std::unique_ptr<core::Time> timespan_begin;
-    std::unique_ptr<core::Time> timespan_end;
+    core::Interval timespan;
 
     /**
      * Fill an int[6] with the datetime information in md, padding with -1 all
@@ -92,7 +91,7 @@ public:
 
     // Cannot flush here, since flush is virtual and we won't give subclassers
     // a chance to do their own flushing. Flushes must be explicit.
-    ~Clusterer();
+    virtual ~Clusterer();
 
     bool eat(std::shared_ptr<Metadata> md);
 

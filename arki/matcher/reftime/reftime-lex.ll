@@ -1,10 +1,8 @@
 %{
-#include "config.h"
-#include "parser.h"
+#include "arki/matcher/reftime/parser.h"
 #include "arki/core/fuzzytime.h"
 #include "arki/matcher/reftime/lexer.h"
 #include "reftime-parse.hh"
-#include <ctype.h>
 
 using namespace arki::matcher::reftime::lexer;
 
@@ -12,6 +10,11 @@ using namespace arki::matcher::reftime::lexer;
 
 // This is needed for centos7:
 #pragma GCC diagnostic ignored "-Wtype-limits"
+
+#ifdef __clang__
+// Silence a clang 7.0 warning with flex 2.6.4 generated code
+#pragma clang diagnostic ignored "-Wunneeded-internal-declaration"
+#endif
 
 %}
 
@@ -21,10 +24,8 @@ using namespace arki::matcher::reftime::lexer;
 %option bison-bridge
 %option reentrant
 %option prefix="arki_reftime"
-%option outfile="reftime-lex.cc"
 %option fast
 %option noyywrap nounput
-%option header-file="reftime-lex.h"
 
 space     [ \t]+
 unit      (h|hour|hours|m|min|minute|minutes|s|sec|second|seconds|w|week|weeks|d|da|day|days|month|months|y|year|years)

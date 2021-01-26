@@ -146,6 +146,15 @@ public:
                     relpath.data(), relpath.size(),
                     message.data(), message.size()));
     }
+    void segment_manual_intervention(const std::string& ds, const std::string& relpath, const std::string& message) override
+    {
+        AcquireGIL gil;
+        throw_ifnull(PyObject_CallMethod(
+                    o, "segment_manual_intervention", "s#s#s#",
+                    ds.data(), ds.size(),
+                    relpath.data(), relpath.size(),
+                    message.data(), message.size()));
+    }
 };
 
 
@@ -248,6 +257,12 @@ public:
         write(out.str());
     }
     void segment_issue51(const std::string& ds, const std::string& relpath, const std::string& message) override
+    {
+        std::stringstream out;
+        out << ds << ":" << relpath << ": " << message << std::endl;
+        write(out.str());
+    }
+    void segment_manual_intervention(const std::string& ds, const std::string& relpath, const std::string& message) override
     {
         std::stringstream out;
         out << ds << ":" << relpath << ": " << message << std::endl;

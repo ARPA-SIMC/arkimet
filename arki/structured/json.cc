@@ -1,9 +1,9 @@
 #include "json.h"
-#include "arki/utils/string.h"
 #include "arki/exceptions.h"
 #include "arki/core/file.h"
 #include <cctype>
 #include <cmath>
+#include <sstream>
 
 using namespace std;
 

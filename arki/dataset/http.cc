@@ -1,11 +1,8 @@
-#include "config.h"
 #include "arki/dataset/http.h"
-#include "arki/dataset/session.h"
 #include "arki/dataset/progress.h"
 #include "arki/dataset/query.h"
-#include "arki/dataset/querymacro.h"
 #include "arki/core/file.h"
-#include "arki/metadata.h"
+#include "arki/core/time.h"
 #include "arki/metadata/stream.h"
 #include "arki/metadata/sort.h"
 #include "arki/matcher.h"
@@ -13,7 +10,6 @@
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
 #include "arki/core/binary.h"
-#include "arki/nag.h"
 #include <cstdlib>
 #include <sstream>
 
@@ -51,7 +47,7 @@ struct OstreamState : public core::curl::Request
     {
     }
 
-    void perform()
+    void perform() override
     {
         if (progress) progress->start();
         Request::perform();
@@ -80,7 +76,7 @@ struct AbstractOutputState : public core::curl::Request
     {
     }
 
-    void perform()
+    void perform() override
     {
         if (progress) progress->start();
         Request::perform();

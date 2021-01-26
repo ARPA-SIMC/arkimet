@@ -1,7 +1,7 @@
 #include "file.h"
-#include <algorithm>
-#include <deque>
 #include <cstring>
+#include <cstdio>
+#include <limits>
 #include <sstream>
 
 namespace arki {

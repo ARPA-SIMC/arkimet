@@ -9,7 +9,6 @@
 #include "arki/structured/reader.h"
 #include "arki/summary.h"
 #include "arki/utils/yaml.h"
-#include <system_error>
 #include <algorithm>
 
 using namespace std;

@@ -7,7 +7,7 @@
 #include <memory>
 
 namespace arki {
-struct Metadata;
+class Metadata;
 
 /**
  * Function signature for metadata consumers

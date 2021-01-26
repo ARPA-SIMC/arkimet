@@ -10,7 +10,20 @@
 
 extern "C" {
 
-typedef arki::python::SharedPtrWrapper<arki::dataset::Session> arkipy_DatasetSession;
+typedef struct {
+    PyObject_HEAD
+    std::shared_ptr<arki::dataset::Session> session;
+    std::shared_ptr<arki::dataset::Pool> pool;
+
+    PyObject* python__exit__()
+    {
+        try {
+            pool.reset();
+            session.reset();
+            Py_RETURN_NONE;
+        } ARKI_CATCH_RETURN_PYO
+    }
+} arkipy_DatasetSession;
 extern PyTypeObject* arkipy_DatasetSession_Type;
 
 #define arkipy_DatasetSession_Check(ob) \
@@ -22,12 +35,17 @@ extern PyTypeObject* arkipy_DatasetSession_Type;
 namespace arki {
 namespace python {
 
-arkipy_DatasetSession* dataset_session_create(std::shared_ptr<arki::dataset::Session> ptr);
+arkipy_DatasetSession* dataset_session_create(std::shared_ptr<arki::dataset::Session> session, std::shared_ptr<arki::dataset::Pool> pool);
 
 /**
  * Return a arki::dataset::Session from a Python object that contains it
  */
 std::shared_ptr<arki::dataset::Session> session_from_python(PyObject* o);
+
+/**
+ * Return a arki::dataset::Pool from a Python object that contains it
+ */
+std::shared_ptr<arki::dataset::Pool> pool_from_python(PyObject* o);
 
 void register_dataset_session(PyObject* module);
 

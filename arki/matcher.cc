@@ -1,9 +1,6 @@
 #include "matcher.h"
-#include "matcher/aliases.h"
 #include "matcher/utils.h"
 #include "core/time.h"
-#include "utils/string.h"
-#include "utils/sys.h"
 #include <memory>
 
 using namespace std;
@@ -44,9 +41,23 @@ bool Matcher::operator()(const types::ItemSet& md) const
     return true;
 }
 
+bool Matcher::operator()(const Metadata& md) const
+{
+    if (m_impl.get()) return m_impl->matchMetadata(md);
+    // An empty matcher always matches
+    return true;
+}
+
 bool Matcher::operator()(const core::Interval& interval) const
 {
     if (m_impl.get()) return m_impl->match_interval(interval);
+    // An empty matcher always matches
+    return true;
+}
+
+bool Matcher::operator()(types::Code code, const uint8_t* data, unsigned size) const
+{
+    if (m_impl.get()) return m_impl->match_buffer(code, data, size);
     // An empty matcher always matches
     return true;
 }
@@ -118,6 +129,34 @@ bool Matcher::intersect_interval(core::Interval& interval) const
         return false;
 
     return true;
+}
+
+Matcher Matcher::merge(const Matcher& m) const
+{
+    if (m_impl && m.m_impl)
+    {
+        shared_ptr<matcher::AND> result(m_impl->clone());
+        result->merge(*m.m_impl);
+        return Matcher(result);
+    } else
+        return Matcher();
+}
+
+Matcher Matcher::update(const Matcher& m) const
+{
+    if (m_impl && m.m_impl)
+    {
+        shared_ptr<matcher::AND> result(m_impl->clone());
+        result->update(*m.m_impl);
+        return Matcher(result);
+    } else if (m_impl) {
+        shared_ptr<matcher::AND> result(m_impl->clone());
+        return Matcher(result);
+    } else if (m.m_impl) {
+        shared_ptr<matcher::AND> result(m.m_impl->clone());
+        return Matcher(result);
+    } else
+        return Matcher();
 }
 
 Matcher Matcher::for_interval(const core::Interval& interval)

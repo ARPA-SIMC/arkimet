@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 
-AC_INIT(arkimet, 1.29, [enrico@enricozini.org])
+AC_INIT(arkimet, 1.32, [enrico@enricozini.org])
 AC_CONFIG_SRCDIR([configure.ac])
 AM_INIT_AUTOMAKE([foreign subdir-objects nostdinc])
 AC_CONFIG_HEADER(config.h)
@@ -345,7 +345,7 @@ then
     AC_DEFINE(HAVE_PYTHON, 1, [Have Python bindings])
     AX_PYTHON_MODULE(werkzeug, yes)
     AX_PYTHON_MODULE(setproctitle, yes)
-    AC_CHECK_PROGS(NOSE, [nose2-3 nosetests-3.6 nosetests-3.5 nosetests-3.4 nosetests-3.3 nosetests-$PYTHON_VERSION])
+    AC_CHECK_PROGS(NOSE, [nose2-$PYTHON_VERSION nose2-3])
     if test x$NOSE = x
     then
         AC_MSG_ERROR([Python nose not found])
@@ -355,13 +355,14 @@ then
     AX_PYTHON_MODULE_VERSION(dballe, 8.3)
     AX_PYTHON_MODULE(h5py)
     AX_PYTHON_MODULE(shapely)
+    AX_PYTHON_MODULE(netcdf4)
 fi
 fi
 AM_CONDITIONAL([DO_PYTHON], [test "$enable_python" != "no"])
 
 if test x$enable_docs = xyes
 then
-    AC_CHECK_PROGS(SPHINX_BUILD, [sphinx-build sphinx-build-3 sphinx-build-3.6], [no])
+    AC_CHECK_PROGS(SPHINX_BUILD, [sphinx-build sphinx-build-3 sphinx-build-$PYTHON_VERSION], [no])
     if test $SPHINX_BUILD = no
     then
         enable_docs=no

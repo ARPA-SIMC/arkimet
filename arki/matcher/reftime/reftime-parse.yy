@@ -1,7 +1,7 @@
 %{
 #include "config.h"
-#include "parser.h"
-#include "lexer.h"
+#include "arki/matcher/reftime/parser.h"
+#include "arki/matcher/reftime/lexer.h"
 #include "arki/core/fuzzytime.h"
 #include <string>
 #include <stdexcept>
@@ -168,7 +168,7 @@ static void mergetime(arki::core::FuzzyTime& dt, const int* time)
     int tspec[3];
     struct arki::matcher::reftime::lexer::LexInterval lexInterval;
     int interval[6];
-    struct DTMatch* dtmatch;
+    class DTMatch* dtmatch;
     char error;
 }
 

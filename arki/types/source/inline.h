@@ -7,8 +7,9 @@ namespace arki {
 namespace types {
 namespace source {
 
-struct Inline : public Source
+class Inline : public Source
 {
+public:
     uint64_t size;
 
     Style style() const override;

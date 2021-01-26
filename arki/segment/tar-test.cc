@@ -25,6 +25,7 @@ Tests<segment::tar::Segment, GRIBData> test1("arki_segment_tar_grib");
 Tests<segment::tar::Segment, BUFRData> test2("arki_segment_tar_bufr");
 Tests<segment::tar::Segment, ODIMData> test3("arki_segment_tar_odim");
 Tests<segment::tar::Segment, VM2Data>  test4("arki_segment_tar_vm2");
+Tests<segment::tar::Segment, NCData>  test5("arki_segment_tar_nc");
 
 struct Subprocess
 {
@@ -49,7 +50,7 @@ struct Subprocess
             executable = args[0];
 
         // Set argv vector
-        char* argv[args.size() + 1];
+        std::unique_ptr<char*[]> argv(new char*[args.size() + 1]);
         for (unsigned i = 0; i < args.size(); ++i)
             argv[i] = const_cast<char*>(args[i].c_str());
         argv[args.size()] = nullptr;
@@ -75,7 +76,7 @@ struct Subprocess
                 if (chdir(cwd.c_str()) == -1)
                     throw_system_error("chdir failed");
 
-            execvpe(executable.c_str(), argv, environ);
+            execvpe(executable.c_str(), argv.get(), environ);
             throw_system_error("execve failed");
         } else {
             // Parent

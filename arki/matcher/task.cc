@@ -1,6 +1,5 @@
-#include "config.h"
-
 #include "task.h"
+#include "arki/types/task.h"
 #include "arki/utils/string.h"
 
 using namespace std;
@@ -12,7 +11,10 @@ namespace matcher {
 
 /*============================================================================*/
 
-std::string MatchTask::name() const { return "task"; }
+MatchTask::MatchTask(const MatchTask& o)
+    : Implementation(o), task(o.task)
+{
+}
 
 MatchTask::MatchTask(const std::string& pattern)
 {
@@ -20,13 +22,20 @@ MatchTask::MatchTask(const std::string& pattern)
     task = str::upper(args.getString(0, ""));
 }
 
+MatchTask* MatchTask::clone() const
+{
+    return new MatchTask(*this);
+}
+
+std::string MatchTask::name() const { return "task"; }
+
 bool MatchTask::matchItem(const Type& o) const
 {
     const types::Task* v = dynamic_cast<const types::Task*>(&o);
     if (!v) return false;
     if (task.size())
     {
-        std::string utask = str::upper(v->task);
+        std::string utask = str::upper(v->get());
         if (utask.find(task) == std::string::npos)
             return false;
     }

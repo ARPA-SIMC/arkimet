@@ -3,12 +3,9 @@
 
 /// Sorting routines for metadata
 
-#include <arki/metadata.h>
 #include <arki/metadata/collection.h>
-#include <arki/types/reftime.h>
-
+#include <arki/types/fwd.h>
 #include <string>
-#include <vector>
 #include <memory>
 
 namespace arki {
@@ -28,8 +25,9 @@ namespace sort {
  * If an interval is specified, data is grouped in the given time intervals,
  * then every group is sorted independently from the others.
  */
-struct Compare
+class Compare
 {
+public:
 	/// Allowed types of sort intervals
 	enum Interval {
 		NONE,
@@ -87,7 +85,7 @@ protected:
     std::unique_ptr<core::Time> endofperiod;
     metadata::Collection buffer;
 
-    void setEndOfPeriod(const types::Reftime& rt);
+    void setEndOfPeriod(const core::Time& time);
 
 public:
     Stream(const Compare& sorter, metadata_dest_func next_dest)

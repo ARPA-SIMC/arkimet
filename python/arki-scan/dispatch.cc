@@ -8,6 +8,7 @@
 #include "arki/metadata/validator.h"
 #include "arki/types/source/blob.h"
 #include "arki/dataset/query.h"
+#include "arki/scan.h"
 #include "python/dataset.h"
 
 using namespace std;
@@ -17,10 +18,10 @@ namespace arki {
 namespace python {
 namespace arki_scan {
 
-MetadataDispatch::MetadataDispatch(std::shared_ptr<arki::dataset::Session> session, cmdline::DatasetProcessor& next)
-    : session(session),
-      partial_batch(std::make_shared<arki::dataset::memory::Dataset>(session)),
-      results(std::make_shared<arki::dataset::memory::Dataset>(session)), next(next)
+MetadataDispatch::MetadataDispatch(std::shared_ptr<arki::dataset::Pool> pool, cmdline::DatasetProcessor& next)
+    : pool(pool),
+      partial_batch(std::make_shared<arki::dataset::memory::Dataset>(pool->session())),
+      results(std::make_shared<arki::dataset::memory::Dataset>(pool->session())), next(next)
 {
 }
 
@@ -50,6 +51,9 @@ DispatchResults MetadataDispatch::process(dataset::Reader& ds, const std::string
     // Read
     try {
         ds.query_data(Matcher(), [&](std::shared_ptr<Metadata> md) {
+            auto scanner = scan::Scanner::get_scanner(md->source().format);
+            scanner->normalize_before_dispatch(*md);
+            // TODO: preprocess here, leave untouched or return inline
             partial_batch_data_size += md->data_size();
             partial_batch->acquire(move(md));
             if (flush_threshold && partial_batch_data_size > flush_threshold)

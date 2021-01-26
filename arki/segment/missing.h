@@ -4,7 +4,6 @@
 #include <arki/segment.h>
 #include <arki/segment/base.h>
 #include <arki/core/fwd.h>
-#include <string>
 #include <vector>
 
 namespace arki {

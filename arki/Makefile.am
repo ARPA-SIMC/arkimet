@@ -120,6 +120,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		scan/validator.h \
 		scan/mock.h \
 		scan/odimh5.h \
+		scan/netcdf.h \
 		segment.h \
 		segment/fwd.h \
 		segment/base.h \
@@ -149,10 +150,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		types/bbox.h \
 		types.h \
 		types-init.h \
-		types/core.h \
-		types/core.tcc \
-		types/styled.h \
-		types/styled.tcc \
+		types/encoded.h \
 		types/level.h \
 		types/note.h \
 		types/origin.h \
@@ -255,6 +253,7 @@ libarkimet_la_SOURCES += \
 		types.cc \
 		types/bundle.cc \
 		types/utils.cc \
+		types/encoded.cc \
 		types/values.cc \
 		types/source.cc \
 		types/source/blob.cc \
@@ -327,7 +326,8 @@ libarkimet_la_SOURCES += \
 		scan.cc \
 		scan/validator.cc \
 		scan/mock.cc \
-		scan/odimh5.cc
+		scan/odimh5.cc \
+		scan/netcdf.cc
 
 libarkimet_test_la_SOURCES += \
 		tests/daemon.cc \
@@ -360,6 +360,7 @@ tests_arki_test_SOURCES += \
 		types-test.cc \
 		types/bundle-test.cc \
 		types/utils-test.cc \
+		types/encoded-test.cc \
 		types/values-test.cc \
 		types/source-test.cc \
 		types/reftime-test.cc \
@@ -419,6 +420,7 @@ tests_arki_test_SOURCES += \
 		scan/validator-test.cc \
 		scan/mock-test.cc \
 		scan/odimh5-test.cc \
+		scan/netcdf-test.cc \
 		segment-test.cc \
 		segment/common-test.cc \
 		segment/missing-test.cc \

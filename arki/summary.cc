@@ -3,27 +3,21 @@
 #include "summary/codec.h"
 #include "summary/stats.h"
 #include "core/file.h"
-#include "core/binary.h"
 #include "exceptions.h"
-#include "metadata.h"
 #include "matcher.h"
 #include "formatter.h"
 #include "core/time.h"
 #include "types/bundle.h"
-#include "types/utils.h"
 #include "types/area.h"
 #include "utils/geos.h"
 #include "utils/compress.h"
 #include "structured/emitter.h"
-#include "structured/memory.h"
+#include "structured/reader.h"
 #include "structured/keys.h"
 #include "iotrace.h"
 #include "utils/string.h"
 #include "utils/sys.h"
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <fcntl.h>
-#include <unistd.h>
 
 using namespace std;
 using namespace arki::core;
@@ -145,63 +139,6 @@ void Summary::expand_date_range(core::Interval& interval) const
         return;
 
     interval.extend(Interval(root->stats.begin, root->stats.end));
-}
-
-namespace {
-struct ResolveVisitor : public summary::Visitor
-{
-    std::vector<types::ItemSet>& result;
-    std::vector<types::Code> codes;
-    size_t added;
-
-    ResolveVisitor(std::vector<types::ItemSet>& result, const Matcher& m) : result(result), added(0)
-    {
-        m.foreach_type([&](types::Code code, const matcher::OR&) {
-            codes.push_back(code);
-        });
-    }
-    virtual ~ResolveVisitor() {}
-    virtual bool operator()(const std::vector<const Type*>& md, const summary::Stats& stats)
-    {
-        types::ItemSet is;
-        for (std::vector<types::Code>::const_iterator i = codes.begin();
-                i != codes.end(); ++i)
-        {
-            int pos = posForCode(*i);
-            if (!md[pos]) return true;
-            is.set(*md[pos]);
-        }
-        ++added;
-        // Insertion sort, as we expect to have lots of duplicates
-        std::vector<types::ItemSet>::iterator i = std::lower_bound(result.begin(), result.end(), is);
-        if (i == result.end())
-            result.push_back(is);
-        else if (*i != is)
-            result.insert(i, is);
-
-        return true;
-    }
-};
-}
-
-std::vector<types::ItemSet> Summary::resolveMatcher(const Matcher& matcher) const
-{
-    if (matcher.empty()) return std::vector<types::ItemSet>();
-
-    std::vector<types::ItemSet> result;
-    ResolveVisitor visitor(result, matcher);
-    visitFiltered(matcher, visitor);
-
-    return result;
-}
-
-size_t Summary::resolveMatcher(const Matcher& matcher, std::vector<types::ItemSet>& res) const
-{
-    if (matcher.empty()) return 0;
-
-    ResolveVisitor visitor(res, matcher);
-    visitFiltered(matcher, visitor);
-    return visitor.added;
 }
 
 std::unique_ptr<arki::utils::geos::Geometry> Summary::getConvexHull() const
@@ -380,10 +317,9 @@ struct YamlPrinter : public Visitor
 
         // Write the stats
         out << "SummaryStats:" << endl;
-        auto reftime = Reftime::create(stats.begin, stats.end);
         out << indent << "Count: " << stats.count << endl;
         out << indent << "Size: " << stats.size << endl;
-        out << indent << "Reftime: " << *reftime << endl;
+        out << indent << "Reftime: " << stats.begin << " to " << stats.end << endl;
         return true;
     }
 };

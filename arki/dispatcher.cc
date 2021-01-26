@@ -3,12 +3,11 @@
 #include "metadata/validator.h"
 #include "matcher.h"
 #include "dataset.h"
-#include "dataset/local.h"
 #include "dataset/session.h"
 #include "types/reftime.h"
 #include "types/source.h"
+#include "types/note.h"
 #include "utils/string.h"
-#include "utils/sys.h"
 #include "nag.h"
 
 using namespace std;
@@ -18,24 +17,24 @@ using arki::core::Time;
 
 namespace arki {
 
-Dispatcher::Dispatcher(std::shared_ptr<dataset::Session> session)
-    : session(session), m_can_continue(true), m_outbound_failures(0)
+Dispatcher::Dispatcher(std::shared_ptr<dataset::Pool> pool)
+    : pool(pool), m_can_continue(true), m_outbound_failures(0)
 {
     // Validate the configuration, and split normal datasets from outbound
     // datasets
-    session->foreach_dataset([&](std::shared_ptr<dataset::Dataset> ds) {
+    pool->foreach_dataset([&](std::shared_ptr<dataset::Dataset> ds) {
         if (ds->name() == "error" or ds->name() == "duplicates")
             return true;
         else if (ds->config->value("type") == "outbound")
         {
             if (ds->config->value("filter").empty())
                 throw std::runtime_error("configuration of dataset '" + ds->name() + "' does not have a 'filter' directive");
-            outbounds.push_back(make_pair(ds->name(), session->matcher(ds->config->value("filter"))));
+            outbounds.push_back(make_pair(ds->name(), pool->session()->matcher(ds->config->value("filter"))));
         }
         else {
             if (ds->config->value("filter").empty())
                 throw std::runtime_error("configuration of dataset '" + ds->name() + "' does not have a 'filter' directive");
-            datasets.push_back(make_pair(ds->name(), session->matcher(ds->config->value("filter"))));
+            datasets.push_back(make_pair(ds->name(), pool->session()->matcher(ds->config->value("filter"))));
         }
         return true;
     });
@@ -170,8 +169,8 @@ void Dispatcher::dispatch(dataset::WriterBatch& batch, bool drop_cached_data_on_
 }
 
 
-RealDispatcher::RealDispatcher(std::shared_ptr<dataset::Session> session)
-    : Dispatcher(session), pool(session)
+RealDispatcher::RealDispatcher(std::shared_ptr<dataset::Pool> pool)
+    : Dispatcher(pool), pool(pool)
 {
 }
 
@@ -191,10 +190,10 @@ void RealDispatcher::flush() { pool.flush(); }
 
 
 
-TestDispatcher::TestDispatcher(std::shared_ptr<dataset::Session> session)
-    : Dispatcher(session)
+TestDispatcher::TestDispatcher(std::shared_ptr<dataset::Pool> pool)
+    : Dispatcher(pool)
 {
-    if (!session->has_dataset("error"))
+    if (!pool->has_dataset("error"))
         throw std::runtime_error("no [error] dataset found");
 }
 TestDispatcher::~TestDispatcher() {}
@@ -203,12 +202,16 @@ void TestDispatcher::raw_dispatch_dataset(const std::string& name, dataset::Writ
 {
     if (batch.empty()) return;
     // TODO: forward drop_cached_data_on_commit
-    dataset::Writer::test_acquire(session, *session->dataset(name)->config, batch);
+    dataset::Writer::test_acquire(pool->session(), *pool->dataset(name)->config, batch);
 }
 
 void TestDispatcher::dispatch(dataset::WriterBatch& batch, bool drop_cached_data_on_commit)
 {
     Dispatcher::dispatch(batch, drop_cached_data_on_commit);
+
+    if (!nag::is_verbose())
+        return;
+
     for (const auto& e: batch)
     {
         if (e->dataset_name.empty())
@@ -216,8 +219,15 @@ void TestDispatcher::dispatch(dataset::WriterBatch& batch, bool drop_cached_data
         else
             nag::verbose("Message %s: imported into %s", e->md.source().to_string().c_str(), e->dataset_name.c_str());
         nag::verbose("  Notes:");
-        for (const auto& note: e->md.notes())
-            nag::verbose("    %s", note.content.c_str());
+        // TODO: find a more elegant way of iterating notes that doesn't lose in efficiency
+        auto notes = e->md.notes();
+        for (auto n = notes.first; n != notes.second; ++n)
+        {
+            core::Time time;
+            std::string content;
+            reinterpret_cast<const types::Note*>(*n)->get(time, content);
+            nag::verbose("    %s", content.c_str());
+        }
     }
 }
 

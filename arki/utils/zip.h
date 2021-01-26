@@ -2,12 +2,11 @@
 #define ARKI_UTILS_ZIP_H
 
 #include <arki/core/fwd.h>
-#include <arki/segment.h>
+#include <arki/segment/fwd.h>
 #include <arki/libconfig.h>
 #include <string>
 #include <vector>
 #include <stdexcept>
-#include <set>
 #ifdef HAVE_LIBZIP
 #include <zip.h>
 #endif
@@ -15,11 +14,10 @@
 namespace arki {
 namespace utils {
 
-struct ZipFile;
-
 #ifdef HAVE_LIBZIP
-struct zip_error : public std::runtime_error
+class zip_error : public std::runtime_error
 {
+public:
     zip_error(int code, const std::string& msg);
     zip_error(zip_t* zip, const std::string& msg);
     zip_error(zip_file_t* file, const std::string& msg);

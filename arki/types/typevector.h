@@ -24,7 +24,7 @@
  */
 
 
-#include <arki/types.h>
+#include <arki/types/fwd.h>
 #include <vector>
 
 namespace arki {

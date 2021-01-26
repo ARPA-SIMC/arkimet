@@ -1,7 +1,7 @@
 #ifndef ARKI_METADATA_DATA_H
 #define ARKI_METADATA_DATA_H
 
-#include <arki/core/file.h>
+#include <arki/core/fwd.h>
 #include <arki/structured/fwd.h>
 #include <vector>
 #include <list>
@@ -13,8 +13,9 @@ namespace metadata {
 /**
  * Interface for representing data associated with a Metadata
  */
-struct Data
+class Data
 {
+public:
     Data() {}
     virtual ~Data() {}
 
@@ -69,7 +70,7 @@ struct Data
 };
 
 
-struct DataManager;
+class DataManager;
 
 /**
  * Track all data elements that get cached in metadata during the lifetime of
@@ -93,6 +94,8 @@ public:
     TrackedData& operator=(TrackedData&&) = delete;
 
     unsigned count_used() const;
+
+    void track(std::shared_ptr<Data> data);
 };
 
 

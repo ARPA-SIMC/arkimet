@@ -3,7 +3,7 @@
 
 Summary: Archive for weather information
 Name: arkimet
-Version: 1.29
+Version: 1.32
 Release: 1
 License: GPL
 Group: Applications/Meteo
@@ -14,7 +14,8 @@ Source2: https://github.com/arpa-simc/%{name}/raw/v%{version}-%{release}/fedora/
 Source3: https://github.com/arpa-simc/%{name}/raw/v%{version}-%{release}/fedora/SOURCES/%{name}-logrotate.conf
 
 # On fedora, we don't need systemd to build. But we do on centos.
-%{?el7:BuildRequires: systemd}
+# https://fedoraproject.org/wiki/Packaging:Systemd#Filesystem_locations
+BuildRequires: systemd
 
 # Python 3 package names
 %if 0%{?rhel} == 7
@@ -63,11 +64,12 @@ BuildRequires: %{python3_vers}
 BuildRequires: %{python3_vers}-devel
 BuildRequires: %{python3_vers}-werkzeug
 BuildRequires: %{python3_vers}-setproctitle
-BuildRequires: %{python3_vers}-nose
+BuildRequires: %{python3_vers}-nose2
 BuildRequires: %{python3_vers}-jinja2
 BuildRequires: %{python3_vers}-requests
 BuildRequires: %{python3_vers}-wreport3
 BuildRequires: %{python3_vers}-dballe >= 8.3
+BuildRequires: %{python3_vers}-netcdf4
 %if ! 0%{?el7}
 BuildRequires: %{python3_vers}-h5py
 %else
@@ -92,6 +94,7 @@ Requires: %{python3_vers}
 Requires: %{python3_vers}-werkzeug
 Requires: %{python3_vers}-setproctitle
 Requires: %{python3_vers}-dballe >= 8.3
+Requires: %{python3_vers}-netcdf4
 Requires: libdballe6 >= 8.3
 Requires: systemd
 %if ! 0%{?el7}
@@ -246,6 +249,26 @@ if [ "$1" = "1" ]; then
 fi
 
 %changelog
+* Fri Jan 15 2021 Daniele Branchini <dbranchini@arpae.it> - 1.32-1
+- Added missing nc.py install (#257)
+
+* Thu Jan 14 2021 Daniele Branchini <dbranchini@arpae.it> - 1.31-1
+- Fixed a serious issue in encoding/decoding GRIB1 timeranges (#256)
+- Added `eatmydata` dataset config option documentation (#233)
+
+* Wed Jan 13 2021 Daniele Branchini <dbranchini@arpae.it> - 1.30-1
+- Added initial NetCDF support (#40)
+- Metadata refactoring to address memory issues (#242, #245)
+- Implemented `eatmydata: yes` in dataset conf (#233)
+- Documented supported dataset configuration options (#143)
+- VM2 data: implemented a normalisation function, fixed smallfile issue (#237)
+- Fixed segfault in python test suite (#254)
+- Implemented `arki.Matcher.merge(matcher)` (#255)
+- Implemented `arki.Matcher.update(matcher)`
+- Refactored ValueBag/Values with a simple structure (#248)
+- Break circular dependency by decoupling Session and Pool (#250)
+- Fixed segfault when query data is appended to a file from a iseq dataset (#244)
+
 * Fri Aug 14 2020 Emanuele Di Giacomo <edigiacomo@arpae.it> - 1.29-1
 - Fixed error reading offline archives (#232)
 - Allow to create an arkimet session with `force_dir_segments=True` to always

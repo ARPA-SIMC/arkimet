@@ -2,8 +2,7 @@
 #define ARKI_TYPES_AREA_H
 
 #include <memory>
-#include <arki/types/styled.h>
-#include <arki/types/values.h>
+#include <arki/types/encoded.h>
 #include <arki/utils/geosfwd.h>
 
 namespace arki {
@@ -34,19 +33,44 @@ struct traits<Area>
  *
  * It can contain information like areatype and area value.
  */
-struct Area : public types::StyledType<Area>
+class Area : public types::Encoded
 {
+protected:
     mutable arki::utils::geos::Geometry* cached_bbox = nullptr;
 
-	Area();
+public:
+    using Encoded::Encoded;
 
-	/// Convert a string into a style
-	static Style parseStyle(const std::string& str);
-	/// Convert a style into its string representation
-	static std::string formatStyle(Style s);
+    ~Area();
+
+    typedef area::Style Style;
+
+    types::Code type_code() const override { return traits<Area>::type_code; }
+    size_t serialisationSizeLength() const override { return traits<Area>::type_sersize_bytes; }
+    std::string tag() const override { return traits<Area>::type_tag; }
+
+    Area* clone() const override = 0;
+
+    int compare(const Type& o) const override;
+
+    // Get the element style
+    static area::Style style(const uint8_t* data, unsigned size);
+    static ValueBag get_GRIB(const uint8_t* data, unsigned size);
+    static ValueBag get_ODIMH5(const uint8_t* data, unsigned size);
+    static unsigned get_VM2(const uint8_t* data, unsigned size);
+
+    area::Style style() const;
+    ValueBag get_GRIB() const;
+    ValueBag get_ODIMH5() const;
+    unsigned get_VM2() const;
+
+    /// Convert a string into a style
+    static Style parseStyle(const std::string& str);
+    /// Convert a style into its string representation
+    static std::string formatStyle(Style s);
 
     /// CODEC functions
-    static std::unique_ptr<Area> decode(core::BinaryDecoder& dec);
+    static std::unique_ptr<Area> decode(core::BinaryDecoder& dec, bool reuse_buffer);
     static std::unique_ptr<Area> decodeString(const std::string& val);
     static std::unique_ptr<Area> decode_structure(const structured::Keys& keys, const structured::Reader& val);
 
@@ -55,10 +79,6 @@ struct Area : public types::StyledType<Area>
 
     // Register this type tree with the type system
     static void init();
-
-    static std::unique_ptr<Area> createGRIB(const ValueBag& values);
-    static std::unique_ptr<Area> createODIMH5(const ValueBag& values);
-    static std::unique_ptr<Area> createVM2(unsigned station_id);
 };
 
 namespace area {
@@ -68,77 +88,55 @@ inline std::ostream& operator<<(std::ostream& o, Style s) { return o << Area::fo
 
 class GRIB : public Area
 {
-protected:
-	ValueBag m_values;
-
 public:
-	virtual ~GRIB();
+    using Area::Area;
+    ~GRIB();
 
-	const ValueBag& values() const { return m_values; }
-
-    Style style() const override;
-    void encodeWithoutEnvelope(core::BinaryEncoder& enc) const override;
     std::ostream& writeToOstream(std::ostream& o) const override;
     void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
     std::string exactQuery() const override;
 
-    int compare_local(const Area& o) const override;
-    bool equals(const Type& o) const override;
+    int compare_local(const GRIB& o) const;
+    GRIB* clone() const override { return new GRIB(data, size); }
 
-    GRIB* clone() const override;
-    static std::unique_ptr<GRIB> create(const ValueBag& values);
-    static std::unique_ptr<GRIB> decode_structure(const structured::Keys& keys, const structured::Reader& val);
+    static std::unique_ptr<Area> create(const ValueBag& values);
 };
 
 class ODIMH5 : public Area
 {
-protected:
-	ValueBag m_values;
-
 public:
-	virtual ~ODIMH5();
+    using Area::Area;
+    ~ODIMH5();
 
-	const ValueBag& values() const { return m_values; }
-
-    Style style() const override;
-    void encodeWithoutEnvelope(core::BinaryEncoder& enc) const override;
     std::ostream& writeToOstream(std::ostream& o) const override;
     void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
     std::string exactQuery() const override;
 
-    int compare_local(const Area& o) const override;
-    bool equals(const Type& o) const override;
+    int compare_local(const ODIMH5& o) const;
+    ODIMH5* clone() const override { return new ODIMH5(data, size); }
 
-    ODIMH5* clone() const override;
-    static std::unique_ptr<ODIMH5> create(const ValueBag& values);
-    static std::unique_ptr<ODIMH5> decode_structure(const structured::Keys& keys, const structured::Reader& val);
+    static std::unique_ptr<Area> create(const ValueBag& values);
 };
 
 class VM2 : public Area
 {
-protected:
-    unsigned m_station_id;
-    mutable std::unique_ptr<ValueBag> m_derived_values;
-
 public:
-    virtual ~VM2();
+    using Area::Area;
+    ~VM2();
 
-    unsigned station_id() const { return m_station_id; }
-    const ValueBag& derived_values() const;
-
-    Style style() const override;
+    bool equals(const Type& o) const override;
     void encodeWithoutEnvelope(core::BinaryEncoder& enc) const override;
     void encode_for_indexing(core::BinaryEncoder& enc) const override;
     std::ostream& writeToOstream(std::ostream& o) const override;
     void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
     std::string exactQuery() const override;
 
-    int compare_local(const Area& o) const override;
-    bool equals(const Type& o) const override;
+    int compare_local(const VM2& o) const;
+    VM2* clone() const override { return new VM2(data, size); }
 
-    VM2* clone() const override;
-    static std::unique_ptr<VM2> create(unsigned station_id);
-    static std::unique_ptr<VM2> decode_structure(const structured::Keys& keys, const structured::Reader& val);
+    ValueBag derived_values() const;
+
+    static std::unique_ptr<Area> create(unsigned station_id);
 };
 
 

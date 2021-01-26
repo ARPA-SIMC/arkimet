@@ -10,21 +10,16 @@
 #include "arki/utils/sys.h"
 #include "arki/scan.h"
 #include "arki/scan/validator.h"
-#include "arki/utils/string.h"
 #include "arki/utils/accounting.h"
 #include "arki/iotrace.h"
 #include "arki/nag.h"
 #include <cerrno>
 #include <cstring>
 #include <cstdint>
-#include <set>
-#include <sys/types.h>
 #include <sys/stat.h>
-#include <fcntl.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/uio.h>
-#include <sys/sendfile.h>
 #include <algorithm>
 
 using namespace std;
@@ -245,7 +240,7 @@ std::shared_ptr<segment::Checker> Segment::create(const std::string& format, con
 }
 bool Segment::can_store(const std::string& format)
 {
-    return format == "grib" || format == "bufr" || format == "odimh5" || format == "vm2";
+    return format == "grib" || format == "bufr" || format == "odimh5" || format == "vm2" || format == "nc";
 }
 
 
@@ -279,7 +274,7 @@ sys::File Reader::open_src(const types::source::Blob& src)
     sys::File file_fd(fd, str::joinpath(dirfd.name(), dataname));
 
     if (posix_fadvise(file_fd, 0, src.size, POSIX_FADV_DONTNEED) != 0)
-        nag::debug("fadvise on %s failed: %m", file_fd.name().c_str());
+        nag::debug("fadvise on %s failed: %s", file_fd.name().c_str(), strerror(errno));
 
     return file_fd;
 }

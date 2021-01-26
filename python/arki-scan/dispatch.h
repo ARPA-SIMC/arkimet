@@ -19,11 +19,11 @@ class DatasetProcessor;
 
 namespace arki_scan {
 
-
 /// Dispatch metadata
-struct MetadataDispatch
+class MetadataDispatch
 {
-    std::shared_ptr<arki::dataset::Session> session;
+public:
+    std::shared_ptr<arki::dataset::Pool> pool;
     core::cfg::Sections cfg;
     Dispatcher* dispatcher = nullptr;
     std::shared_ptr<dataset::memory::Dataset> partial_batch;
@@ -45,7 +45,7 @@ struct MetadataDispatch
     std::unique_ptr<core::File> copyko;
 
 
-    MetadataDispatch(std::shared_ptr<arki::dataset::Session> session, cmdline::DatasetProcessor& next);
+    MetadataDispatch(std::shared_ptr<arki::dataset::Pool> pool, cmdline::DatasetProcessor& next);
     ~MetadataDispatch();
 
     /**

@@ -11,8 +11,6 @@
 #include <arki/matcher/fwd.h>
 #include <arki/dataset/fwd.h>
 #include <string>
-#include <map>
-#include <iosfwd>
 
 namespace arki {
 class Summary;
@@ -24,14 +22,6 @@ class Checker;
 class CheckerSegment;
 }
 
-namespace index {
-class Manifest;
-}
-
-namespace simple {
-class Reader;
-}
-
 namespace archive {
 
 class ArchivesReaderRoot;
@@ -39,8 +29,9 @@ class ArchivesCheckerRoot;
 
 bool is_archive(const std::string& dir);
 
-struct Dataset : public dataset::Dataset
+class Dataset : public dataset::Dataset
 {
+public:
     std::string root;
 
     Dataset(std::shared_ptr<Session> session, const std::string& root);

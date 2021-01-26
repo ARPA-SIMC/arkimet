@@ -1,7 +1,7 @@
 #include "reftime.h"
 #include "reftime/parser.h"
 #include "arki/core/time.h"
-#include <cctype>
+#include "arki/types/reftime.h"
 
 using namespace std;
 using namespace arki::types;
@@ -32,24 +32,38 @@ MatchReftime::~MatchReftime()
         delete i;
 }
 
+MatchReftime* MatchReftime::clone() const
+{
+    std::unique_ptr<MatchReftime> res(new MatchReftime);
+    for (const auto* d: tests)
+        res->tests.push_back(d->clone());
+    return res.release();
+}
+
 std::string MatchReftime::name() const { return "reftime"; }
 
 bool MatchReftime::matchItem(const Type& o) const
 {
     if (const types::reftime::Position* po = dynamic_cast<const types::reftime::Position*>(&o))
     {
+        core::Time t = po->get_Position();
         for (const auto& i: tests)
-            if (!i->match(po->time))
+            if (!i->match(t))
                 return false;
         return true;
     }
-    else if (const types::reftime::Period* pe = dynamic_cast<const types::reftime::Period*>(&o))
-    {
-        for (const auto& i: tests)
-            if (!i->match(core::Interval(pe->begin, pe->end)))
-                return false;
-        return true;
-    }
+    return false;
+}
+
+bool MatchReftime::match_buffer(types::Code code, const uint8_t* data, unsigned size) const
+{
+    if (code != TYPE_REFTIME) return false;
+    if (size < 1) return false;
+    if (types::Reftime::style(data, size) != types::reftime::Style::POSITION) return false;
+    core::Time t = Reftime::get_Position(data, size);
+    for (const auto& i: tests)
+        if (!i->match(t))
+            return false;
     return true;
 }
 

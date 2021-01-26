@@ -6,25 +6,12 @@
 #include <arki/scan.h>
 #include <string>
 #include <vector>
-#include <unistd.h>
-
-namespace meteo {
-namespace vm2 {
-class Parser;
-class Value;
-}
-}
 
 namespace arki {
-class Metadata;
-
 namespace scan {
-struct Validator;
 
 namespace vm2 {
 const Validator& validator();
-
-struct Input;
 }
 
 class Vm2 : public Scanner
@@ -38,6 +25,7 @@ public:
     bool scan_pipe(core::NamedFileDescriptor& in, metadata_dest_func dest) override;
     bool scan_segment(std::shared_ptr<segment::Reader> reader, metadata_dest_func dest) override;
     std::shared_ptr<Metadata> scan_singleton(const std::string& abspath) override;
+    void normalize_before_dispatch(Metadata& md) override;
 
     /// Reconstruct a VM2 based on metadata and a string value
     static std::vector<uint8_t> reconstruct(const Metadata& md, const std::string& value);

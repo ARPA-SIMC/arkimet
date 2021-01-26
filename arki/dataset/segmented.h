@@ -55,7 +55,7 @@ public:
     Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg);
     ~Dataset();
 
-    virtual bool relpath_timespan(const std::string& path, core::Time& start_time, core::Time& end_time) const;
+    virtual bool relpath_timespan(const std::string& path, core::Interval& interval) const;
 
     const Step& step() const { return *m_step; }
 
@@ -101,15 +101,13 @@ struct SegmentState
 {
     // Segment state
     arki::segment::State state;
-    // Minimum reference time of data that can fit in the segment
-    core::Time begin;
-    // Maximum reference time of data that can fit in the segment
-    core::Time until;
+    // Time interval that can fit in the segment
+    core::Interval interval;
 
     SegmentState(arki::segment::State state)
-        : state(state), begin(0, 0, 0), until(0, 0, 0) {}
-    SegmentState(arki::segment::State state, const core::Time& begin, const core::Time& until)
-        : state(state), begin(begin), until(until) {}
+        : state(state) {}
+    SegmentState(arki::segment::State state, const core::Interval& interval)
+        : state(state), interval(interval) {}
     SegmentState(const SegmentState&) = default;
     SegmentState(SegmentState&&) = default;
 
@@ -339,7 +337,7 @@ public:
      *
      * This is used to simulate anomalies in the dataset during tests.
      */
-    virtual void test_change_metadata(const std::string& relpath, Metadata& md, unsigned data_idx=0) = 0;
+    virtual std::shared_ptr<Metadata> test_change_metadata(const std::string& relpath, std::shared_ptr<Metadata> md, unsigned data_idx=0) = 0;
 
     /**
      * Remove all index data for the given segment, leaving the index valid. It

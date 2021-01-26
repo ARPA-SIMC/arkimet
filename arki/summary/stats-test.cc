@@ -1,6 +1,7 @@
 #include "arki/types/tests.h"
 #include "arki/metadata.h"
 #include "arki/metadata/data.h"
+#include "arki/types/reftime.h"
 #include "stats.h"
 
 namespace {
@@ -22,7 +23,7 @@ void Tests::register_tests() {
 // Basic stats tests
 add_method("basic", [] {
     Metadata md;
-    md.set(Reftime::createPosition(Time(2009, 8, 7, 6, 5, 4)));
+    md.test_set(Reftime::createPosition(Time(2009, 8, 7, 6, 5, 4)));
     md.set_source_inline("grib", metadata::DataManager::get().to_data("grib", vector<uint8_t>()));
 
     unique_ptr<Stats> st(new Stats);

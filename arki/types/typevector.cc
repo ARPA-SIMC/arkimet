@@ -1,4 +1,5 @@
 #include "typevector.h"
+#include "arki/types.h"
 #include <algorithm>
 
 using namespace std;

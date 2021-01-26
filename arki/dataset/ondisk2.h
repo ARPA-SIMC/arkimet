@@ -7,8 +7,9 @@ namespace arki {
 namespace dataset {
 namespace ondisk2 {
 
-struct Dataset : public dataset::indexed::Dataset
+class Dataset : public dataset::indexed::Dataset
 {
+public:
     std::string summary_cache_pathname;
     std::string indexfile;
     std::string index_pathname;

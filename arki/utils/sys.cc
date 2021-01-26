@@ -15,6 +15,7 @@
 #include <sys/sendfile.h>
 #include <utime.h>
 #include <alloca.h>
+#include <algorithm>
 
 namespace {
 
@@ -443,22 +444,30 @@ namespace {
 
 struct TransferBuffer
 {
+    constexpr static size_t size = 40960;
     char* buf = nullptr;
 
+    TransferBuffer() = default;
+    TransferBuffer(const TransferBuffer&) = delete;
+    TransferBuffer(TransferBuffer&&) = delete;
     ~TransferBuffer()
     {
         delete[] buf;
     }
+    TransferBuffer& operator=(const TransferBuffer&) = delete;
+    TransferBuffer& operator=(TransferBuffer&&) = delete;
 
     void allocate()
     {
         if (buf)
             return;
-        buf = new char[40960];
+        buf = new char[size];
     }
 
     operator char*() { return buf; }
 };
+
+size_t constexpr TransferBuffer::size;
 
 }
 
@@ -489,7 +498,7 @@ void FileDescriptor::sendfile(FileDescriptor& out_fd, off_t offset, size_t count
                 count -= res;
             }
         } else {
-            size_t res = pread(buffer, count, offset);
+            size_t res = pread(buffer, std::min(count, buffer.size), offset);
             out_fd.write_all_or_retry(buffer, res);
             offset += res;
             count -= res;

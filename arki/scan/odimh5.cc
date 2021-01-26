@@ -1,29 +1,16 @@
 #include "odimh5.h"
-#include "arki/libconfig.h"
 #include "arki/metadata.h"
 #include "arki/metadata/data.h"
 #include "arki/segment.h"
 #include "arki/types/source.h"
-#include "arki/types/origin.h"
-#include "arki/types/reftime.h"
-#include "arki/types/task.h"
-#include "arki/types/quantity.h"
-#include "arki/types/product.h"
-#include "arki/types/level.h"
-#include "arki/types/area.h"
-#include "arki/types/timerange.h"
-#include "arki/runtime.h"
 #include "arki/utils/string.h"
-#include "arki/utils/files.h"
 #include "arki/utils/sys.h"
 #include "arki/scan/validator.h"
 #include "arki/scan/mock.h"
 #include <cstring>
 #include <unistd.h>
-#include <fcntl.h>
 #include <vector>
 #include <stdexcept>
-#include <set>
 #include <string>
 #include <sstream>
 #include <memory>
@@ -170,10 +157,10 @@ std::shared_ptr<Metadata> MockOdimScanner::scan_h5_data(const std::vector<uint8_
 }
 
 
-void register_odimh5_lua()
+void register_odimh5_scanner()
 {
     Scanner::register_factory("odimh5", [] {
-        return std::unique_ptr<Scanner>(new scan::MockOdimScanner);
+        return std::make_shared<scan::MockOdimScanner>();
     });
 }
 
