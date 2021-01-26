@@ -23,6 +23,12 @@ step.
 It can optimize queries that use metadata selected with the ``index``
 configuration keyword.
 
+Because the ``iseg`` dataset can only have one index per step, and one segment
+per index, it cannot store data encoded in multiple formats (like GRIB and BUFR
+together), as that would require multiple segments for the same step. For this
+reason, the ``format`` keyword is mandatory in a ``type=iseg`` dataset
+configuration (see :ref:`dataset_config`).
+
 
 Dataset layout
 --------------

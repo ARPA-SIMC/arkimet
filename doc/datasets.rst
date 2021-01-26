@@ -17,6 +17,8 @@ queried.
    datasets/archive
 
 
+.. _dataset_config:
+
 Dataset configuration
 ---------------------
 
