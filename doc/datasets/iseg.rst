@@ -30,6 +30,20 @@ reason, the ``format`` keyword is mandatory in a ``type=iseg`` dataset
 configuration (see :ref:`dataset_config`).
 
 
+Example configuration
+---------------------
+
+::
+
+  [name]
+  type = iseg
+  format = grib
+  step = daily
+  filter = origin: GRIB1,200
+  unique = origin, reftime, area
+  index = origin, reftime
+
+
 Dataset layout
 --------------
 

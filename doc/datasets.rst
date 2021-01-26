@@ -15,6 +15,10 @@ queried.
    datasets/simple
    datasets/ondisk2
    datasets/archive
+   datasets/error
+   datasets/duplicates
+   datasets/remote
+   datasets/outbound
 
 
 .. _dataset_config:

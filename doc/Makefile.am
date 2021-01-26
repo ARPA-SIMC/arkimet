@@ -4,7 +4,6 @@ noinst_DATA =
 doc_DATA =
 
 dist_doc_DATA = \
-		DATASET \
 		arkiguide.it.txt \
 		adding-formats.txt \
 		mhooks-arki-dump \
@@ -41,6 +40,11 @@ sphinx_packaged_sources = \
 	datasets/iseg.rst \
 	datasets/ondisk2.rst \
 	datasets/simple.rst \
+	datasets/discard.rst \
+	datasets/duplicates.rst \
+	datasets/error.rst \
+	datasets/outbound.rst \
+	datasets/remote.rst \
 	http-api.rst \
 	index.rst \
 	matcher.rst \
