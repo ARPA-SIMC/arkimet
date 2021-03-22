@@ -432,7 +432,7 @@ Arkimet configuration, as multiple sections of key/value options
         py_unique_ptr<PyTupleObject> res((PyTupleObject*)PyTuple_New(self->ptr->size()));
         unsigned pos = 0;
         for (const auto& si: *(self->ptr))
-            PyTuple_SET_ITEM(res, pos++, to_python(si.first));
+            PyTuple_SET_ITEM(res.get(), pos++, to_python(si.first));
         return PyObject_GetIter((PyObject*)res.get());
     }
 
@@ -546,7 +546,7 @@ Arkimet configuration, as a section of key/value options
         py_unique_ptr<PyTupleObject> res((PyTupleObject*)PyTuple_New(self->ptr->size()));
         unsigned pos = 0;
         for (const auto& si: *self->ptr)
-            PyTuple_SET_ITEM(res, pos++, to_python(si.first));
+            PyTuple_SET_ITEM(res.get(), pos++, to_python(si.first));
         return PyObject_GetIter((PyObject*)res.get());
     }
 
