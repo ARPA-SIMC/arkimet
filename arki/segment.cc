@@ -369,7 +369,7 @@ size_t Reader::stream(const types::source::Blob& src, core::StreamOutput& out)
 {
     vector<uint8_t> buf = read(src);
     if (src.format == "vm2")
-        return out.send_vm2_line(buf);
+        return out.send_line(buf.data(), buf.size());
     else
         return out.send_buffer(buf.data(), buf.size());
 }

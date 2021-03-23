@@ -20,17 +20,12 @@ class Tests : public TestCase
 
 Tests test("arki_core_stream");
 
-static std::vector<uint8_t> mkbuf(const std::string& data)
-{
-    return std::vector<uint8_t>(data.begin(), data.end());
-}
-
 void Tests::register_tests() {
 
 add_method("concrete", [] {
     sys::Tempfile tf;
     auto writer = StreamOutput::create(tf);
-    writer->send_vm2_line(mkbuf("testline"));
+    writer->send_line("testline", 8);
     writer->send_buffer("testbuf", 7);
     sys::Tempfile tf1;
     tf1.write_all_or_throw(std::string("testfile"));
@@ -54,7 +49,7 @@ add_method("abstract", [] {
     std::vector<uint8_t> buffer;
     BufferOutputFile out(buffer, "memory buffer");
     auto writer = StreamOutput::create(out);
-    writer->send_vm2_line(mkbuf("testline"));
+    writer->send_line("testline", 8);
     writer->send_buffer("testbuf", 7);
     sys::Tempfile tf1;
     tf1.write_all_or_throw(std::string("testfile"));

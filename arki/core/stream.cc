@@ -25,16 +25,16 @@ public:
     {
     }
 
-    size_t send_vm2_line(const std::vector<uint8_t>& line) override
+    size_t send_line(const void* data, size_t size) override
     {
         struct iovec todo[2] = {
-            { (void*)line.data(), line.size() },
+            { (void*)data, size },
             { (void*)"\n", 1 },
         };
         ssize_t res = ::writev(out, todo, 2);
-        if (res < 0 || (unsigned)res != line.size() + 1)
-            throw std::system_error(errno, std::system_category(), "cannot write " + std::to_string(line.size() + 1) + " bytes to " + out.name());
-        return line.size() + 1;
+        if (res < 0 || (unsigned)res != size + 1)
+            throw std::system_error(errno, std::system_category(), "cannot write " + std::to_string(size + 1) + " bytes to " + out.name());
+        return size + 1;
     }
 
     size_t send_file_segment(arki::core::NamedFileDescriptor& fd, off_t offset, size_t size) override
@@ -111,11 +111,11 @@ public:
     {
     }
 
-    size_t send_vm2_line(const std::vector<uint8_t>& line) override
+    size_t send_line(const void* data, size_t size) override
     {
-        out.write(line.data(), line.size());
+        out.write(data, size);
         out.write("\n", 1);
-        return line.size() + 1;
+        return size + 1;
     }
 
     size_t send_file_segment(arki::core::NamedFileDescriptor& fd, off_t offset, size_t size) override

@@ -112,7 +112,7 @@ struct DataLineBuffer : public DataBuffer
     }
     size_t write(core::StreamOutput& out) const override
     {
-        return out.send_vm2_line(buffer);
+        return out.send_line(buffer.data(), buffer.size());
     }
 };
 
