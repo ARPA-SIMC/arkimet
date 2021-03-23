@@ -51,7 +51,7 @@ void Reader::impl_query_summary(const Matcher& matcher, Summary& summary)
 
 void Reader::query_bytes(const dataset::ByteQuery& q, core::NamedFileDescriptor& out)
 {
-    auto so = core::StreamOutput::create(out);
+    auto so = core::StreamOutput::create(out, 60000);
     impl_stream_query_bytes(q, *so);
 }
 
