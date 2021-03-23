@@ -494,7 +494,6 @@ void FileDescriptor::sendfile(FileDescriptor& out_fd, off_t offset, size_t count
                     throw_error(msg.str().c_str());
                 }
             } else {
-                offset += res;
                 count -= res;
             }
         } else {
