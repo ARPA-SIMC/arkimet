@@ -9,6 +9,19 @@
 namespace arki {
 namespace core {
 
+class StreamTimedOut : public std::runtime_error
+{
+public:
+    using std::runtime_error::runtime_error;
+};
+
+
+class StreamClosed : public std::runtime_error
+{
+public:
+    using std::runtime_error::runtime_error;
+};
+
 
 class StreamOutput
 {
@@ -57,7 +70,7 @@ public:
      * Create a StreamOutput to stream to a file.
      *
      * Stream operations can block on writes for at most the given number of
-     * milliseconds. If timed out, an exception is raised (TODO: which one?)
+     * milliseconds. If timed out, StreamTimedOut is raised
      */
     static std::unique_ptr<StreamOutput> create(NamedFileDescriptor& out, unsigned timeout_ms);
 

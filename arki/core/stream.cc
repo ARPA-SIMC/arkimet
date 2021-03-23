@@ -2,9 +2,12 @@
 #include "file.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/accounting.h"
+#include "arki/libconfig.h"
 #include <system_error>
 #include <cerrno>
 #include <sys/uio.h>
+#include <sys/sendfile.h>
+#include <poll.h>
 
 using namespace arki::utils;
 
@@ -72,10 +75,10 @@ public:
 
     size_t send_from_pipe(int fd) override
     {
-#if defined(__linux__)
-#ifdef HAVE_SPLICE
+        ssize_t res;
+#if defined(__linux__) && defined(HAVE_SPLICE)
         // Try splice
-        ssize_t res = splice(subproc.get_stdout(), NULL, *m_nextfd, NULL, 4096*2, SPLICE_F_MORE);
+        res = splice(fd, NULL, out, NULL, 4096 * 8, SPLICE_F_MORE);
         if (res >= 0)
             return res;
 
@@ -84,12 +87,11 @@ public:
 
         // Splice is not supported: pass it on to the traditional method
 #endif
-#endif
         // Fall back to read/write
 
         // Read data from child
         char buf[4096 * 8];
-        ssize_t res = read(fd, buf, 4096 * 8);
+        res = read(fd, buf, 4096 * 8);
         if (res < 0)
             throw std::system_error(errno, std::system_category(), "cannot read data to stream from a pipe");
         if (res == 0)
@@ -101,48 +103,152 @@ public:
 };
 
 
+namespace {
+
+struct TransferBuffer
+{
+    constexpr static size_t size = 40960;
+    char* buf = nullptr;
+
+    TransferBuffer() = default;
+    TransferBuffer(const TransferBuffer&) = delete;
+    TransferBuffer(TransferBuffer&&) = delete;
+    ~TransferBuffer()
+    {
+        delete[] buf;
+    }
+    TransferBuffer& operator=(const TransferBuffer&) = delete;
+    TransferBuffer& operator=(TransferBuffer&&) = delete;
+
+    void allocate()
+    {
+        if (buf)
+            return;
+        buf = new char[size];
+    }
+
+    operator char*() { return buf; }
+};
+
+size_t constexpr TransferBuffer::size;
+
+}
+
+
 class ConcreteTimeoutStreamOutput: public StreamOutput
 {
     sys::NamedFileDescriptor& out;
+    unsigned timeout_ms;
+    int orig_fl = -1;
+    pollfd pollinfo;
+
+    void wait_readable()
+    {
+        pollinfo.revents = 0;
+        int res = ::poll(&pollinfo, 1, timeout_ms);
+        if (res < 0)
+            throw std::system_error(errno, std::system_category(), "poll failed on " + out.name());
+        if (res == 0)
+            throw StreamTimedOut("write on " + out.name() + " timed out");
+        if (pollinfo.revents & POLLERR)
+            throw StreamClosed("peer on " + out.name() + " has closed the connection");
+        if (pollinfo.revents & POLLOUT)
+            return;
+        throw std::runtime_error("unsupported revents values when polling " + out.name());
+    }
 
 public:
     ConcreteTimeoutStreamOutput(sys::NamedFileDescriptor& out, unsigned timeout_ms)
-        : out(out)
+        : out(out), timeout_ms(timeout_ms)
     {
-        // TODO: set nonblocking
+        orig_fl = fcntl(out, F_GETFL);
+        if (orig_fl < 0)
+            throw std::system_error(errno, std::system_category(), "cannot get file descriptor flags for " + out.name());
+        if (fcntl(out, F_SETFL, orig_fl | O_NONBLOCK) < 0)
+            throw std::system_error(errno, std::system_category(), "cannot set nonblocking file descriptor flags for " + out.name());
+
+        pollinfo.fd = out;
+        pollinfo.events = POLLOUT | POLLERR;
     }
     ~ConcreteTimeoutStreamOutput()
     {
-        // TODO: if still open, reset as it was before
+        // If out is still open, reset as it was before
+        if (out != -1)
+            fcntl(out, F_SETFL, orig_fl);
     }
 
     size_t send_line(const void* data, size_t size) override
     {
-        // TODO: select loop with timeout
         struct iovec todo[2] = {
             { (void*)data, size },
             { (void*)"\n", 1 },
         };
-        ssize_t res = ::writev(out, todo, 2);
-        if (res < 0 || (unsigned)res != size + 1)
-            throw std::system_error(errno, std::system_category(), "cannot write " + std::to_string(size + 1) + " bytes to " + out.name());
-        return size + 1;
+        size_t pos = 0;
+        while (pos < size + 1)
+        {
+            wait_readable();
+
+            if (pos < size)
+            {
+                ssize_t res = ::writev(out, todo, 2);
+                if (res < 0)
+                    throw std::system_error(errno, std::system_category(), "cannot write " + std::to_string(size + 1) + " bytes to " + out.name());
+                pos += res;
+                if (pos < size + 1)
+                {
+                    todo[0].iov_base = (uint8_t*)data + pos;
+                    todo[0].iov_len = size - pos;
+                }
+            } else {
+                pos += out.write("\n", 1);
+            }
+        }
+        return pos;
     }
 
     size_t send_file_segment(arki::core::NamedFileDescriptor& fd, off_t offset, size_t size) override
     {
-        // TODO: select loop with timeout
-        fd.sendfile(out, offset, size);
-        acct::plain_data_read_count.incr();
-        // iotrace::trace_file(dirfd, offset, size, "streamed data");
+        TransferBuffer buffer;
+        bool has_sendfile = true;
+        while (size > 0)
+        {
+            wait_readable();
+            if (has_sendfile)
+            {
+                ssize_t res = ::sendfile(out, fd, &offset, size);
+                if (res < 0)
+                {
+                    if (errno == EINVAL || errno == ENOSYS)
+                    {
+                        has_sendfile = false;
+                        buffer.allocate();
+                    }
+                    else
+                        throw std::system_error(errno, std::system_category(), "cannot sendfile() " + std::to_string(size) + " bytes to " + out.name());
+                } else {
+                    size -= res;
+                }
+            } else {
+                size_t res = out.pread(buffer, std::min(size, buffer.size), offset);
+                out.write_all_or_retry(buffer, res);
+                offset += res;
+                size -= res;
+            }
+            acct::plain_data_read_count.incr();
+            // iotrace::trace_file(dirfd, offset, size, "streamed data");
+        }
         return size;
     }
 
     size_t send_buffer(const void* data, size_t size) override
     {
-        // TODO: select loop with timeout
-        // TODO: retry instead of throw
-        out.write_all_or_throw(data, size);
+        size_t pos = 0;
+        while (pos < size)
+        {
+            wait_readable();
+
+            pos += out.write((const uint8_t*)data + pos, size - pos);
+        }
         return size;
 
 #if 0
@@ -166,32 +272,44 @@ public:
 
     size_t send_from_pipe(int fd) override
     {
-        // TODO: select loop with timeout
-#if defined(__linux__)
-#ifdef HAVE_SPLICE
-        // Try splice
-        ssize_t res = splice(subproc.get_stdout(), NULL, *m_nextfd, NULL, 4096*2, SPLICE_F_MORE);
-        if (res >= 0)
-            return res;
+        TransferBuffer buffer;
+        bool has_splice = true;
+        size_t sent = 0;
+        while (true)
+        {
+            if (has_splice)
+            {
+#if defined(__linux__) && defined(HAVE_SPLICE)
+                wait_readable();
+                // Try splice
+                ssize_t res = splice(fd, NULL, out, NULL, 4096 * 8, SPLICE_F_MORE);
+                if (res < 0)
+                {
+                    if (errno == EINVAL)
+                    {
+                        has_splice = false;
+                        buffer.allocate();
+                        continue;
+                    } else
+                        throw std::system_error(errno, std::system_category(), "cannot splice data to stream from a pipe");
+                }
+                if (res == 0)
+                    return sent;
+                sent += res;
 
-        if (errno != EINVAL)
-            throw std::system_error(errno, std::system_category(), "cannot splice data to stream from a pipe");
-
-        // Splice is not supported: pass it on to the traditional method
+#else
+                // Splice is not supported: pass it on to the traditional method
+                has_splice = false;
+                buffer.allocate();
 #endif
-#endif
-        // Fall back to read/write
-
-        // Read data from child
-        char buf[4096 * 8];
-        ssize_t res = read(fd, buf, 4096 * 8);
-        if (res < 0)
-            throw std::system_error(errno, std::system_category(), "cannot read data to stream from a pipe");
-        if (res == 0)
-            return 0;
-
-        // Pass it on
-        return send_buffer(buf, res);
+            } else {
+                // Fall back to read/write
+                size_t res = out.read(buffer, buffer.size);
+                if (res == 0)
+                    return sent;
+                sent += send_buffer(buffer, res);
+            }
+        }
     }
 };
 

@@ -32,6 +32,13 @@ public:
         // Writing more than pipe_sz will now block unless we read
 
         outfd.reset(new sys::NamedFileDescriptor(fds[1], "blocking test pipe"));
+
+        // Make the read end nonblocking
+        int fl = fcntl(fds[0], F_GETFL);
+        if (fl < 0)
+            throw std::system_error(errno, std::system_category(), "cannot get file descriptor flags for read end of BlockingSink pipe");
+        if (fcntl(fds[0], F_SETFL, fl | O_NONBLOCK) < 0)
+            throw std::system_error(errno, std::system_category(), "cannot set nonblocking file descriptor flags for BlockingSink pipe");
     }
 
     ~BlockingSink()
@@ -47,8 +54,16 @@ public:
     void empty_buffer()
     {
         char buf[4096];
-        while (outfd->read(buf, 4096))
-            ;
+        while (true)
+        {
+            ssize_t res = ::read(fds[0], buf, 4096);
+            if (res == -1)
+            {
+                if (errno == EAGAIN)
+                    break;
+                throw std::system_error(errno, std::system_category(), "cannot read from read end of BlockingSink pipe");
+            }
+        }
     }
 };
 
@@ -78,7 +93,7 @@ add_method("concrete", [] {
     tf.lseek(0);
 
     char buf[256];
-    wassert(actual(tf.read(buf, 256)) == 22u);
+    wassert(actual(tf.read(buf, 256)) == 30u);
     buf[22] = 0;
     wassert(actual(buf) == "testline\ntestbufestfiltestfile");
 });
@@ -97,7 +112,7 @@ add_method("concrete_timeout", [] {
     tf.lseek(0);
 
     char buf[256];
-    wassert(actual(tf.read(buf, 256)) == 22u);
+    wassert(actual(tf.read(buf, 256)) == 30u);
     buf[22] = 0;
     wassert(actual(buf) == "testline\ntestbufestfiltestfile");
 });
@@ -111,17 +126,17 @@ add_method("concrete_timeout1", [] {
     // This won't block
     writer->send_buffer(filler.data(), filler.size());
     // This times out
-    wassert_throws(std::runtime_error, writer->send_buffer(" ", 1));
+    wassert_throws(core::StreamTimedOut, writer->send_buffer(" ", 1));
 
     sink.empty_buffer();
-    wassert_throws(std::runtime_error, writer->send_line(filler.data(), filler.size()));
+    wassert_throws(core::StreamTimedOut, writer->send_line(filler.data(), filler.size()));
 
     sink.empty_buffer();
     writer->send_buffer(filler.data(), filler.size());
     {
         sys::Tempfile tf1;
         tf1.write_all_or_throw(std::string("testfile"));
-        wassert_throws(std::runtime_error, writer->send_file_segment(tf1, 1, 6));
+        wassert_throws(core::StreamTimedOut, writer->send_file_segment(tf1, 1, 6));
     }
 
     sink.empty_buffer();
@@ -129,7 +144,7 @@ add_method("concrete_timeout1", [] {
     {
         sys::Tempfile tf1;
         tf1.write_all_or_throw(std::string("testfile"));
-        wassert_throws(std::runtime_error, writer->send_from_pipe(tf1));
+        wassert_throws(core::StreamTimedOut, writer->send_from_pipe(tf1));
     }
 });
 
