@@ -304,7 +304,9 @@ public:
 #endif
             } else {
                 // Fall back to read/write
-                size_t res = out.read(buffer, buffer.size);
+                ssize_t res = ::read(fd, buffer, buffer.size);
+                if (res < 0)
+                    throw std::system_error(errno, std::system_category(), "cannot read data from pipe input");
                 if (res == 0)
                     return sent;
                 sent += send_buffer(buffer, res);

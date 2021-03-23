@@ -94,7 +94,7 @@ add_method("concrete", [] {
 
     char buf[256];
     wassert(actual(tf.read(buf, 256)) == 30u);
-    buf[22] = 0;
+    buf[30] = 0;
     wassert(actual(buf) == "testline\ntestbufestfiltestfile");
 });
 
@@ -113,7 +113,7 @@ add_method("concrete_timeout", [] {
 
     char buf[256];
     wassert(actual(tf.read(buf, 256)) == 30u);
-    buf[22] = 0;
+    buf[30] = 0;
     wassert(actual(buf) == "testline\ntestbufestfiltestfile");
 });
 
