@@ -191,8 +191,7 @@ public:
     virtual bool scan_data(metadata_dest_func dest) = 0;
 
     virtual std::vector<uint8_t> read(const types::source::Blob& src) = 0;
-    virtual size_t stream(const types::source::Blob& src, core::NamedFileDescriptor& out) = 0;
-    virtual size_t stream(const types::source::Blob& src, core::AbstractOutputFile& out);
+    virtual size_t stream(const types::source::Blob& src, core::StreamOutput& out);
 };
 
 struct WriterConfig

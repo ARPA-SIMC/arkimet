@@ -13,6 +13,7 @@ class Xargs : public Clusterer
 {
 protected:
     core::File tempfile;
+    std::unique_ptr<core::StreamOutput> stream_to_tempfile;
     std::string tempfile_template;
 
     void start_batch(const std::string& new_format) override;
@@ -44,7 +45,11 @@ public:
     int filename_argument;
 
     Xargs();
+    Xargs(const Xargs&) = delete;
+    Xargs(Xargs&&) = delete;
     ~Xargs();
+    Xargs& operator=(const Xargs&) = delete;
+    Xargs& operator=(Xargs&&) = delete;
 
     void set_max_bytes(size_t val);
     void set_interval(const std::string& val);

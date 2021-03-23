@@ -260,16 +260,9 @@ bool Reader::impl_query_data(const dataset::DataQuery& q, metadata_dest_func des
     });
 }
 
-void Reader::impl_fd_query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out)
+void Reader::impl_stream_query_bytes(const dataset::ByteQuery& q, core::StreamOutput& out)
 {
-    archives->iter([&](dataset::Reader& r) {
-        r.query_bytes(q, out);
-        return true;
-    });
-}
-
-void Reader::impl_abstract_query_bytes(const dataset::ByteQuery& q, AbstractOutputFile& out)
-{
+    // TODO: data_start_hook here will trigger multiple times!
     archives->iter([&](dataset::Reader& r) {
         r.query_bytes(q, out);
         return true;

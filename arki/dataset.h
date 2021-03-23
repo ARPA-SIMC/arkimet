@@ -155,15 +155,7 @@ protected:
      *
      * The default implementation in Reader is based on queryData.
      */
-    virtual void impl_fd_query_bytes(const dataset::ByteQuery& q, core::NamedFileDescriptor& out);
-
-    /**
-     * Query the dataset obtaining a byte stream, that gets written to a file
-     * descriptor.
-     *
-     * The default implementation in Reader is based on queryData.
-     */
-    virtual void impl_abstract_query_bytes(const dataset::ByteQuery& q, core::AbstractOutputFile& out);
+    virtual void impl_stream_query_bytes(const dataset::ByteQuery& q, core::StreamOutput& out);
 
 public:
     using Base::Base;
@@ -210,10 +202,7 @@ public:
      *
      * The default implementation in Reader is based on queryData.
      */
-    void query_bytes(const dataset::ByteQuery& q, core::NamedFileDescriptor& out)
-    {
-        return impl_fd_query_bytes(q, out);
-    }
+    void query_bytes(const dataset::ByteQuery& q, core::NamedFileDescriptor& out);
 
     /**
      * Query the dataset obtaining a byte stream, that gets written to a file
@@ -221,9 +210,17 @@ public:
      *
      * The default implementation in Reader is based on queryData.
      */
-    void query_bytes(const dataset::ByteQuery& q, core::AbstractOutputFile& out)
+    void query_bytes(const dataset::ByteQuery& q, core::AbstractOutputFile& out);
+
+    /**
+     * Query the dataset obtaining a byte stream, that gets streamed to a
+     * StreamOutput.
+     *
+     * The default implementation in Reader is based on queryData.
+     */
+    void query_bytes(const dataset::ByteQuery& q, core::StreamOutput& out)
     {
-        return impl_abstract_query_bytes(q, out);
+        return impl_stream_query_bytes(q, out);
     }
 
     /**

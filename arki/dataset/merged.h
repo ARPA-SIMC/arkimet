@@ -29,8 +29,7 @@ class Reader : public DatasetAccess<Dataset, dataset::Reader>
 protected:
     bool impl_query_data(const dataset::DataQuery& q, metadata_dest_func dest) override;
     void impl_query_summary(const Matcher& matcher, Summary& summary) override;
-    void impl_fd_query_bytes(const dataset::ByteQuery& q, core::NamedFileDescriptor& out) override;
-    void impl_abstract_query_bytes(const dataset::ByteQuery& q, core::AbstractOutputFile& out) override;
+    void impl_stream_query_bytes(const dataset::ByteQuery& q, core::StreamOutput& out) override;
 
 public:
     using DatasetAccess::DatasetAccess;

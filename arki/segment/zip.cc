@@ -273,25 +273,10 @@ std::vector<uint8_t> Reader::read(const types::source::Blob& src)
     return buf;
 }
 
-size_t Reader::stream(const types::source::Blob& src, core::NamedFileDescriptor& out)
-{
-    vector<uint8_t> buf = read(src);
-    if (src.format == "vm2")
-    {
-        struct iovec todo[2] = {
-            { (void*)buf.data(), buf.size() },
-            { (void*)"\n", 1 },
-        };
-        ssize_t res = ::writev(out, todo, 2);
-        if (res < 0 || (unsigned)res != buf.size() + 1)
-            throw_system_error("cannot write " + to_string(buf.size() + 1) + " bytes to " + out.name());
-        return buf.size() + 1;
-    } else {
-        out.write_all_or_throw(buf);
-        return buf.size();
-    }
-}
 
+/*
+ * Checker
+ */
 
 Checker::Checker(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath)
     : BaseChecker<Segment>(format, root, relpath, abspath), zipabspath(abspath + ".zip")

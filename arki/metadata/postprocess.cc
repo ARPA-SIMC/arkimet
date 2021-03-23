@@ -2,6 +2,7 @@
 #include "postprocess.h"
 #include "arki/exceptions.h"
 #include "arki/core/file.h"
+#include "arki/core/stream.h"
 #include "arki/core/cfg.h"
 #include "arki/metadata.h"
 #include "arki/metadata/data.h"
@@ -61,17 +62,12 @@ public:
     subprocess::Popen cmd;
 
     /// Non-null if we should notify the hook as soon as some data arrives from the processor
-    std::function<void(NamedFileDescriptor&)> data_start_hook;
+    std::function<void(core::StreamOutput&)> data_start_hook;
 
     /**
-     * Pipe used to send data from the subprocess to the output stream. It can
-     * be -1 if the output stream does not provide a file descriptor to write
-     * to
+     * StreamOutput used to send data from the subprocess to the output stream.
      */
-    NamedFileDescriptor* m_nextfd = nullptr;
-
-    /// Alternative to m_nextfd when we are not writing to a file descriptor
-    AbstractOutputFile* m_outfile = nullptr;
+    core::StreamOutput* m_stream = nullptr;
 
     /// Stream where child stderr is sent
     std::ostream* m_err = 0;
@@ -85,89 +81,32 @@ public:
 
     void read_stdout() override
     {
-        if (m_nextfd)
-            read_stdout_fd();
-        else
-            read_stdout_aof();
-    }
-
-    void read_stdout_aof()
-    {
-        // Read data from child
-        char buf[4096*2];
-        ssize_t res = read(subproc.get_stdout(), buf, 4096*2);
-        if (res < 0)
-            throw_system_error("reading from child postprocessor");
-        if (res == 0)
-        {
-            subproc.close_stdout();
-            return;
-        }
-
-        // Pass it on
-        Sigignore ignpipe(SIGPIPE);
-        m_outfile->write(buf, res);
-    }
-
-    void read_stdout_fd()
-    {
-#if defined(__linux__)
-#ifdef HAVE_SPLICE
-        // After we've seen some data, we can leave it up to splice
         if (!data_start_hook)
         {
-            if (m_nextfd)
-            {
-                // Try splice
-                ssize_t res = splice(subproc.get_stdout(), NULL, *m_nextfd, NULL, 4096*2, SPLICE_F_MORE);
-                if (res >= 0)
-                {
-                    if (res == 0)
-                        subproc.close_stdout();
-                    return;
-                }
-                if (errno != EINVAL)
-                    throw_system_error("cannot splice data from child postprocessor to destination");
-                // Else pass it on to the traditional method
-            }
-        }
-#endif
-#endif
-        // Else read and write
-
-        // Read data from child
-        char buf[4096*2];
-        ssize_t res = read(subproc.get_stdout(), buf, 4096*2);
-        if (res < 0)
-            throw_system_error("reading from child postprocessor");
-        if (res == 0)
-        {
-            subproc.close_stdout();
+            // Stream directly out of a pipe
+            size_t res = m_stream->send_from_pipe(subproc.get_stdout());
+            if (res == 0)
+                subproc.close_stdout();
             return;
-        }
-        if (data_start_hook)
-        {
+        } else {
+            // Read a small chunk of data from child, to trigger data_start_hook
+            char buf[4096];
+            ssize_t res = read(subproc.get_stdout(), buf, 4096);
+            if (res < 0)
+                throw_system_error("reading from child postprocessor");
+            if (res == 0)
+            {
+                subproc.close_stdout();
+                return;
+            }
+
             // Fire hook
-            data_start_hook(*m_nextfd);
+            data_start_hook(*m_stream);
             // Only once
             data_start_hook = nullptr;
-        }
 
-        // Pass it on
-        Sigignore ignpipe(SIGPIPE);
-        size_t pos = 0;
-        while (m_nextfd && pos < (size_t)res)
-        {
-            ssize_t wres = write(*m_nextfd, buf+pos, res-pos);
-            if (wres < 0)
-            {
-                if (errno == EPIPE)
-                {
-                    m_nextfd = nullptr;
-                } else
-                    throw_system_error("writing to destination file descriptor");
-            }
-            pos += wres;
+            // Pass it on
+            m_stream->send_buffer(buf, res);
         }
     }
 
@@ -223,14 +162,9 @@ Postprocess::~Postprocess()
     }
 }
 
-void Postprocess::set_output(NamedFileDescriptor& outfd)
+void Postprocess::set_output(core::StreamOutput& out)
 {
-    m_child->m_nextfd = &outfd;
-}
-
-void Postprocess::set_output(core::AbstractOutputFile& outfd)
-{
-    m_child->m_outfile = &outfd;
+    m_child->m_stream = &out;
 }
 
 void Postprocess::set_error(std::ostream& err)
@@ -238,7 +172,7 @@ void Postprocess::set_error(std::ostream& err)
     m_child->m_err = &err;
 }
 
-void Postprocess::set_data_start_hook(std::function<void(NamedFileDescriptor&)> hook)
+void Postprocess::set_data_start_hook(std::function<void(core::StreamOutput&)> hook)
 {
     m_child->data_start_hook = hook;
 }

@@ -1,5 +1,6 @@
 #include "xargs.h"
 #include "arki/metadata.h"
+#include "arki/core/stream.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/string.h"
 #include "arki/utils/subprocess.h"
@@ -41,12 +42,13 @@ void Xargs::start_batch(const std::string& new_format)
     unique_ptr<char[]> tf(new char[tempfile_template.size() + 1]);
     memcpy(tf.get(), tempfile_template.c_str(), tempfile_template.size() + 1);
     tempfile = File::mkstemp(tf.get());
+    stream_to_tempfile = core::StreamOutput::create(tempfile);
 }
 
 void Xargs::add_to_batch(std::shared_ptr<Metadata> md)
 {
     metadata::Clusterer::add_to_batch(md);
-    md->stream_data(tempfile);
+    md->stream_data(*stream_to_tempfile);
 }
 
 void Xargs::flush_batch()
@@ -64,6 +66,7 @@ void Xargs::flush_batch()
         throw;
     }
 
+    stream_to_tempfile.reset();
     tempfile.close();
     sys::unlink_ifexists(tempfile.name());
     metadata::Clusterer::flush_batch();

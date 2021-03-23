@@ -44,10 +44,7 @@ public:
     void start();
 
     /// Set the output file descriptor where we send data coming from the postprocessor
-    void set_output(core::NamedFileDescriptor& outfd);
-
-    /// Set the output file descriptor where we send data coming from the postprocessor
-    void set_output(core::AbstractOutputFile& outfd);
+    void set_output(core::StreamOutput& out);
 
     /// Set the output stream where we send the postprocessor stderr
     void set_error(std::ostream& err);
@@ -56,7 +53,7 @@ public:
      * Set hook to be called when the child process has produced its first
      * data, just before the data is sent to the next consumer
      */
-    void set_data_start_hook(std::function<void(core::NamedFileDescriptor&)> hook);
+    void set_data_start_hook(std::function<void(core::StreamOutput&)> hook);
 
     // Process one metadata
     bool process(std::shared_ptr<Metadata> md);

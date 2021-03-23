@@ -3,6 +3,7 @@
 #include "arki/dataset/query.h"
 #include "arki/core/file.h"
 #include "arki/core/time.h"
+#include "arki/core/stream.h"
 #include "arki/metadata/stream.h"
 #include "arki/metadata/sort.h"
 #include "arki/matcher.h"
@@ -36,13 +37,13 @@ std::shared_ptr<dataset::Reader> Dataset::create_reader()
 
 std::string Reader::type() const { return "http"; }
 
-struct OstreamState : public core::curl::Request
+struct StreamState : public core::curl::Request
 {
-    NamedFileDescriptor& out;
-    std::function<void(NamedFileDescriptor&)> data_start_hook;
+    core::StreamOutput& out;
+    std::function<void(core::StreamOutput&)> data_start_hook;
     std::shared_ptr<dataset::QueryProgress> progress;
 
-    OstreamState(core::curl::CurlEasy& curl, NamedFileDescriptor& out, std::function<void(NamedFileDescriptor&)> data_start_hook=0)
+    StreamState(core::curl::CurlEasy& curl, core::StreamOutput& out, std::function<void(core::StreamOutput&)> data_start_hook=0)
         : Request(curl), out(out), data_start_hook(data_start_hook)
     {
     }
@@ -60,7 +61,7 @@ struct OstreamState : public core::curl::Request
             data_start_hook(out);
             data_start_hook = nullptr;
         }
-        size_t res = out.write((const char*)ptr, size * nmemb);
+        size_t res = out.send_buffer(ptr, size * nmemb);
         if (progress) progress->update(0, size * nmemb);
         return res;
     }
@@ -156,52 +157,11 @@ void Reader::impl_query_summary(const Matcher& matcher, Summary& summary)
     summary.read(dec, request.url);
 }
 
-void Reader::impl_fd_query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out)
+void Reader::impl_stream_query_bytes(const dataset::ByteQuery& q, core::StreamOutput& out)
 {
     m_curl.reset();
 
-    OstreamState request(m_curl, out, q.data_start_hook);
-    request.set_url(str::joinpath(dataset().baseurl, "query"));
-    request.set_method("POST");
-    request.progress = q.progress;
-    set_post_query(request, q);
-
-    const char* toupload = getenv("ARKI_POSTPROC_FILES");
-    if (toupload != NULL)
-    {
-        unsigned count = 0;
-        // Split by ':'
-        str::Split splitter(toupload, ":");
-        for (str::Split::const_iterator i = splitter.begin(); i != splitter.end(); ++i)
-            request.post_data.add_file("postprocfile" + std::to_string(++count), *i);
-    }
-    switch (q.type)
-    {
-        case dataset::ByteQuery::BQ_DATA:
-            request.post_data.add_string("style", "data");
-            break;
-        case dataset::ByteQuery::BQ_POSTPROCESS:
-            request.post_data.add_string("style", "postprocess");
-            request.post_data.add_string("command", q.param);
-            break;
-        default: {
-            std::stringstream ss;
-            ss << "cannot query dataset: unsupported query type: " << (int)q.type;
-            throw std::runtime_error(ss.str());
-        }
-    }
-    request.perform();
-    if (q.progress) q.progress->done();
-}
-
-void Reader::impl_abstract_query_bytes(const dataset::ByteQuery& q, AbstractOutputFile& out)
-{
-    if (q.data_start_hook)
-        throw std::runtime_error("Cannot use data_start_hook on abstract output files");
-
-    m_curl.reset();
-
-    AbstractOutputState request(m_curl, out);
+    StreamState request(m_curl, out, q.data_start_hook);
     request.set_url(str::joinpath(dataset().baseurl, "query"));
     request.set_method("POST");
     request.progress = q.progress;
@@ -294,68 +254,6 @@ std::string Reader::expandMatcher(const std::string& matcher, const std::string&
     return str::strip(request.buf);
 }
 
-
-HTTPInbound::HTTPInbound(const std::string& baseurl)
-    : m_baseurl(baseurl)
-{
-}
-
-HTTPInbound::~HTTPInbound()
-{
-}
-
-void HTTPInbound::list(std::vector<std::string>& files)
-{
-    m_curl.reset();
-
-    core::curl::BufState<std::string> request(m_curl);
-    request.set_url(str::joinpath(m_baseurl, "inbound/list"));
-    request.perform();
-
-    // Parse the results
-    str::Split splitter(request.buf, "\n");
-    for (str::Split::const_iterator i = splitter.begin(); i != splitter.end(); ++i)
-        files.push_back(*i);
-}
-
-void HTTPInbound::scan(const std::string& fname, const std::string& format, metadata_dest_func dest)
-{
-    m_curl.reset();
-
-    MDStreamState request(m_curl, dest, m_baseurl);
-    request.set_url(str::joinpath(m_baseurl, "inbound/scan"));
-    request.set_method("POST");
-    request.post_data.add_string("file", fname);
-    if (!format.empty())
-        request.post_data.add_string("format", format);
-    request.perform();
-}
-
-void HTTPInbound::testdispatch(const std::string& fname, const std::string& format, NamedFileDescriptor& out)
-{
-    m_curl.reset();
-
-    OstreamState request(m_curl, out);
-    request.set_url(str::joinpath(m_baseurl, "inbound/testdispatch"));
-    request.set_method("POST");
-    request.post_data.add_string("file", fname);
-    if (!format.empty())
-        request.post_data.add_string("format", format);
-    request.perform();
-}
-
-void HTTPInbound::dispatch(const std::string& fname, const std::string& format, metadata_dest_func consumer)
-{
-    m_curl.reset();
-
-    MDStreamState request(m_curl, consumer, m_baseurl);
-    request.set_url(str::joinpath(m_baseurl, "inbound/dispatch"));
-    request.set_method("POST");
-    request.post_data.add_string("file", fname);
-    if (!format.empty())
-        request.post_data.add_string("format", format);
-    request.perform();
-}
 
 }
 }

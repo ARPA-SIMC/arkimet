@@ -20,6 +20,7 @@ struct Stdout;
 struct Stderr;
 struct AbstractInputFile;
 struct AbstractOutputFile;
+struct StreamOutput;
 
 struct BufferedReader;
 class LineReader;

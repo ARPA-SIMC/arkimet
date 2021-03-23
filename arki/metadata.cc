@@ -894,48 +894,7 @@ const metadata::Data& Metadata::get_data()
     }
 }
 
-size_t Metadata::stream_data(NamedFileDescriptor& out)
-{
-    // This code is a copy of get_data, except that if the data is not
-    // previously cached and gets streamed, it won't be stored in m_data, to
-    // prevent turning a stream operation into a memory-filling operation
-
-    // First thing, try and return it from cache
-    if (m_data) return m_data->write(out);
-
-    const Source* s = m_index.get_source();
-
-    // If we don't have it in cache and we don't have a source, we cannot know
-    // how to load it or what to reconstruct: give up
-    if (!s) throw_consistency_error("cannot stream data: data source is not defined");
-
-    // If we don't have it in cache, try reconstructing it from the Value metadata
-    if (const Value* value = get<types::Value>())
-        m_data = metadata::DataManager::get().to_data(s->format, scan::Scanner::reconstruct(s->format, *this, value->buffer));
-    if (m_data) return m_data->write(out);
-
-    // Load it according to source
-    switch (s->style())
-    {
-        case Source::Style::INLINE:
-            throw runtime_error("cannot stream data: data is not found on INLINE metadata");
-        case Source::Style::URL:
-            throw runtime_error("cannot stream data: data is not accessible for URL metadata");
-        case Source::Style::BLOB:
-        {
-            // Do not directly use m_data so that if dataReader.read throws an
-            // exception, m_data remains empty.
-            const source::Blob* blob = reinterpret_cast<const source::Blob*>(s);
-            if (!blob->reader)
-                throw runtime_error("cannot stream data: BLOB source has no reader associated");
-            return blob->stream_data(out);
-        }
-        default:
-            throw_consistency_error("cannot stream data: unsupported source style");
-    }
-}
-
-size_t Metadata::stream_data(AbstractOutputFile& out)
+size_t Metadata::stream_data(core::StreamOutput& out)
 {
     // This code is a copy of get_data, except that if the data is not
     // previously cached and gets streamed, it won't be stored in m_data, to

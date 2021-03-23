@@ -5,6 +5,7 @@
 #include "arki/core/file.h"
 #include "arki/core/cfg.h"
 #include "arki/core/binary.h"
+#include "arki/core/stream.h"
 #include "arki/utils/sys.h"
 #include "arki/metadata.h"
 #include "postprocess.h"
@@ -89,7 +90,8 @@ add_method("null_validate", [] {
 
     Postprocess p("null");
     Stderr out;
-    p.set_output(out);
+    auto stream = core::StreamOutput::create(out);
+    p.set_output(*stream);
     p.validate(*config);
     p.start();
 
@@ -102,7 +104,8 @@ add_method("null_validate", [] {
 add_method("null", [] {
     Postprocess p("null");
     Stderr out;
-    p.set_output(out);
+    auto stream = core::StreamOutput::create(out);
+    p.set_output(*stream);
     p.start();
 
     produceGRIB(p);
@@ -112,8 +115,9 @@ add_method("null", [] {
 
 add_method("countbytes", [] {
     sys::File out(sys::File::mkstemp("test"));
+    auto stream = core::StreamOutput::create(out);
     Postprocess p("countbytes");
-    p.set_output(out);
+    p.set_output(*stream);
     p.start();
 
     produceGRIB(p);
@@ -141,8 +145,9 @@ add_method("cat", [] {
 
     // Get the postprocessed data
     sys::File out(sys::File::mkstemp("test"));
+    auto stream = core::StreamOutput::create(out);
     Postprocess p("cat");
-    p.set_output(out);
+    p.set_output(*stream);
     p.start();
     reader->scan([&](std::shared_ptr<Metadata> md) { return p.process(md); });
     p.flush();
@@ -155,8 +160,9 @@ add_method("cat", [] {
 // Try to shift a sizeable chunk of data to the postprocessor
 add_method("countbytes_large", [] {
     sys::File out(sys::File::mkstemp("test"));
+    auto stream = core::StreamOutput::create(out);
     Postprocess p("countbytes");
-    p.set_output(out);
+    p.set_output(*stream);
     p.start();
 
     for (unsigned i = 0; i < 128; ++i)
@@ -173,7 +179,8 @@ add_method("zeroes_arg", [] {
     Postprocess p("zeroes 4096");
 
     sys::File fd(fname, O_WRONLY | O_CREAT | O_NOCTTY, 0666);
-    p.set_output(fd);
+    auto stream = core::StreamOutput::create(fd);
+    p.set_output(*stream);
     p.start();
 
     produceGRIB(p);
@@ -190,7 +197,8 @@ add_method("zeroes_arg_large", [] {
     Postprocess p("zeroes 4096");
 
     sys::File fd(fname, O_WRONLY | O_CREAT | O_NOCTTY, 0666);
-    p.set_output(fd);
+    auto stream = core::StreamOutput::create(fd);
+    p.set_output(*stream);
     p.start();
 
     for (unsigned i = 0; i < 128; ++i)
@@ -210,7 +218,8 @@ add_method("issue209", [] {
     TIMEOUT(2);
 
     sys::File fd("/dev/null", O_WRONLY);
-    p.set_output(fd);
+    auto stream = core::StreamOutput::create(fd);
+    p.set_output(*stream);
     p.start();
 
     Metadata::read_file("inbound/issue209.arkimet", [&](std::shared_ptr<Metadata> md) {
@@ -232,7 +241,8 @@ add_method("partialread", [] {
     TIMEOUT(2);
 
     sys::File fd("/dev/null", O_WRONLY);
-    p.set_output(fd);
+    auto stream = core::StreamOutput::create(fd);
+    p.set_output(*stream);
     p.start();
 
     try {

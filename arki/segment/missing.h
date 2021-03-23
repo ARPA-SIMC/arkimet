@@ -28,8 +28,7 @@ struct Reader : public segment::BaseReader<Segment>
 
     bool scan_data(metadata_dest_func dest) override;
     std::vector<uint8_t> read(const types::source::Blob& src) override;
-    size_t stream(const types::source::Blob& src, core::NamedFileDescriptor& out) override;
-    size_t stream(const types::source::Blob& src, core::AbstractOutputFile& out) override;
+    size_t stream(const types::source::Blob& src, core::StreamOutput& out) override;
 };
 
 }

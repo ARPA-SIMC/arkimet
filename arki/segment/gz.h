@@ -31,7 +31,6 @@ public:
     bool scan_data(metadata_dest_func dest) override;
     void reposition(off_t ofs);
     std::vector<uint8_t> read(const types::source::Blob& src) override;
-    size_t stream(const types::source::Blob& src, core::NamedFileDescriptor& out) override;
 };
 
 template<typename Segment>

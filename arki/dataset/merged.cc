@@ -330,29 +330,7 @@ public:
 
 }
 
-void Reader::impl_fd_query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out)
-{
-    // Here we must serialize, as we do not know how to merge raw data streams
-    //
-    // We cannot just wrap query_data because some subdatasets could be
-    // remote, and that would mean doing postprocessing on the client side,
-    // potentially transferring terabytes of data just to produce a number
-
-    // TODO: data_start_hook may be called more than once here
-    // TODO: we might be able to do something smarter, like if we're merging
-    // many datasets from the same server we can run it all there; if we're
-    // merging all local datasets, wrap queryData; and so on.
-    dataset::ByteQuery localq(q);
-    auto wrapped_progress = std::make_shared<QueryBytesProgress>(q.progress);
-    localq.progress = wrapped_progress;
-
-    for (auto i: dataset().datasets)
-        i->query_bytes(localq, out);
-
-    wrapped_progress->actual_done();
-}
-
-void Reader::impl_abstract_query_bytes(const dataset::ByteQuery& q, AbstractOutputFile& out)
+void Reader::impl_stream_query_bytes(const dataset::ByteQuery& q, core::StreamOutput& out)
 {
     // Here we must serialize, as we do not know how to merge raw data streams
     //

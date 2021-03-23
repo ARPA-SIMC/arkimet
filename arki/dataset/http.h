@@ -45,8 +45,7 @@ protected:
 
     bool impl_query_data(const dataset::DataQuery& q, metadata_dest_func) override;
     void impl_query_summary(const Matcher& matcher, Summary& summary) override;
-    void impl_fd_query_bytes(const dataset::ByteQuery& q, core::NamedFileDescriptor& out) override;
-    void impl_abstract_query_bytes(const dataset::ByteQuery& q, core::AbstractOutputFile& out) override;
+    void impl_stream_query_bytes(const dataset::ByteQuery& q, core::StreamOutput& out) override;
 
 public:
     using DatasetAccess::DatasetAccess;
@@ -62,28 +61,6 @@ public:
      * Expand the given matcher expression using the aliases on this server
      */
     static std::string expandMatcher(const std::string& matcher, const std::string& server);
-};
-
-class HTTPInbound
-{
-    std::string m_baseurl;
-    mutable core::curl::CurlEasy m_curl;
-
-public:
-    HTTPInbound(const std::string& baseurl);
-    ~HTTPInbound();
-
-    /// Scan a previously uploaded file
-    void list(std::vector<std::string>& files);
-
-    /// Scan a previously uploaded file
-    void scan(const std::string& fname, const std::string& format, metadata_dest_func dest);
-
-    /// Run a testdispatch on a previously uploaded file
-    void testdispatch(const std::string& fname, const std::string& format, core::NamedFileDescriptor& out);
-
-    /// Run a dispatch on a previously uploaded file
-    void dispatch(const std::string& fname, const std::string& format, metadata_dest_func consumer);
 };
 
 }

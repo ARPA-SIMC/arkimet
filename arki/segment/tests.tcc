@@ -3,6 +3,7 @@
 
 #include "arki/segment/tests.h"
 #include "arki/core/file.h"
+#include "arki/core/stream.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/string.h"
 #include "arki/types/source/blob.h"
@@ -77,10 +78,12 @@ this->add_method("read", [](Fixture& f) {
         std::vector<uint8_t> buf = wcallchecked(reader->read(md->sourceBlob()));
         wassert(actual(buf.size()) == md->sourceBlob().size);
 
-        sys::File out("stream.out", O_WRONLY | O_CREAT | O_TRUNC);
-        size_t size = wcallchecked(reader->stream(md->sourceBlob(), out));
-        wassert(actual(size) == md->sourceBlob().size + pad_size);
-        out.close();
+        {
+            sys::File out("stream.out", O_WRONLY | O_CREAT | O_TRUNC);
+            auto stream = core::StreamOutput::create(out);
+            size_t size = wcallchecked(reader->stream(md->sourceBlob(), *stream));
+            wassert(actual(size) == md->sourceBlob().size + pad_size);
+        }
 
         std::string str0(buf.begin(), buf.end());
         if (f.td.format == "vm2") str0 += "\n";
@@ -210,20 +213,20 @@ this->add_method("issue244", [](Fixture& f) {
     // Writing normally uses sendfile
     {
         sys::File out("stream.out", O_WRONLY | O_CREAT | O_TRUNC);
-        size_t size = wcallchecked(reader->stream(md->sourceBlob(), out));
+        auto stream = core::StreamOutput::create(out);
+        size_t size = wcallchecked(reader->stream(md->sourceBlob(), *stream));
         size_t pad_size = f.td.format == "vm2" ? 1 : 0;
         wassert(actual(size) == md->sourceBlob().size + pad_size);
-        out.close();
     }
 
     // Opening for append makes sendfile fail and falls back on normal
     // read/write
     {
         sys::File out("stream.out", O_WRONLY | O_APPEND);
-        size_t size = wcallchecked(reader->stream(md->sourceBlob(), out));
+        auto stream = core::StreamOutput::create(out);
+        size_t size = wcallchecked(reader->stream(md->sourceBlob(), *stream));
         size_t pad_size = f.td.format == "vm2" ? 1 : 0;
         wassert(actual(size) == md->sourceBlob().size + pad_size);
-        out.close();
     }
 });
 

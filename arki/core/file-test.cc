@@ -16,7 +16,7 @@ class Tests : public TestCase
     void register_tests() override;
 };
 
-Tests test("arki_file");
+Tests test("arki_core_file");
 
 void Tests::register_tests() {
 

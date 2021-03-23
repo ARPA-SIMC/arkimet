@@ -427,18 +427,11 @@ public:
     const metadata::Data& get_data();
 
     /**
-     * Stream the data referred by this metadata to the given file descriptor.
+     * Stream the data referred by this metadata to the given output.
      *
      * Return the number of bytes written
      */
-    size_t stream_data(core::NamedFileDescriptor& out);
-
-    /**
-     * Stream the data referred by this metadata to the given file descriptor.
-     *
-     * Return the number of bytes written
-     */
-    size_t stream_data(core::AbstractOutputFile& out);
+    size_t stream_data(core::StreamOutput& out);
 
     /// Return True if get_data can be called without causing I/O
     bool has_cached_data() const;

@@ -48,6 +48,14 @@ public:
     virtual size_t write(core::AbstractOutputFile& fd) const = 0;
 
     /**
+     * Stream the data to a StreamOutput
+     *
+     * It returns the number of bytes successfully written. In case of any
+     * error or partial write, an exception is raised.
+     */
+    virtual size_t write(core::StreamOutput& out) const = 0;
+
+    /**
      * Write the data to a NamedFileDescriptor, without leading or trailing
      * elements, to be contained in some kind of envelope like inline Metadata.
      *
