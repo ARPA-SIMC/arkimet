@@ -2,6 +2,8 @@
 #include "arki/utils/sys.h"
 #include "stream.h"
 #include "file.h"
+#include <sys/ioctl.h>
+
 
 using namespace std;
 using namespace arki;
@@ -16,6 +18,7 @@ class BlockingSink
     int fds[2];
     int pipe_sz;
     std::unique_ptr<sys::NamedFileDescriptor> outfd;
+    std::vector<uint8_t> filler;
 
 public:
     BlockingSink()
@@ -39,6 +42,9 @@ public:
             throw std::system_error(errno, std::system_category(), "cannot get file descriptor flags for read end of BlockingSink pipe");
         if (fcntl(fds[0], F_SETFL, fl | O_NONBLOCK) < 0)
             throw std::system_error(errno, std::system_category(), "cannot set nonblocking file descriptor flags for BlockingSink pipe");
+
+        // Allocate the filler buffer
+        filler.resize(pipe_sz);
     }
 
     ~BlockingSink()
@@ -50,13 +56,36 @@ public:
     sys::NamedFileDescriptor& fd() { return *outfd; }
     size_t pipe_size() const { return pipe_sz; }
 
+    size_t data_in_pipe()
+    {
+        int size;
+        if (ioctl(fds[1], FIONREAD, &size) < 0)
+            throw std::system_error(errno, std::system_category(), "cannot read the amount of data in pipe");
+        return size;
+    }
+
+    /**
+     * If size is positive, send size bytes to the pipe.
+     *
+     * If size is negative, send pipe_size - size bytes to the pipe.
+     */
+    void fill(int size)
+    {
+        if (size > 0)
+            fd().write_all_or_retry(filler.data(), size);
+        else
+            fd().write_all_or_retry(filler.data(), pipe_size() + size);
+    }
+
     /// Flush the pipe buffer until it's completely empty
     void empty_buffer()
     {
+        // fprintf(stderr, "empty_buffer in pipe: %zd\n", data_in_pipe());
         char buf[4096];
         while (true)
         {
             ssize_t res = ::read(fds[0], buf, 4096);
+            // fprintf(stderr, "             read: %d\n", (int)res);
             if (res == -1)
             {
                 if (errno == EAGAIN)
@@ -65,6 +94,36 @@ public:
             }
         }
     }
+};
+
+
+struct WriteTest
+{
+    core::StreamOutput& writer;
+    BlockingSink& sink;
+    std::vector<size_t> cb_log;
+    size_t total_written = 0;
+
+    WriteTest(core::StreamOutput& writer, BlockingSink& sink, int prefill)
+        : writer(writer), sink(sink)
+    {
+        if (prefill)
+            sink.fill(prefill);
+
+        writer.set_progress_callback([&](size_t written) {
+            // fprintf(stderr, "write_test written: %zd\n", written);
+            sink.empty_buffer();
+            total_written += written;
+            cb_log.push_back(written);
+        });
+    }
+
+    ~WriteTest()
+    {
+        sink.empty_buffer();
+        writer.set_progress_callback(nullptr);
+    }
+
 };
 
 
@@ -145,6 +204,178 @@ add_method("concrete_timeout1", [] {
         sys::Tempfile tf1;
         tf1.write_all_or_throw(std::string("testfile"));
         wassert_throws(core::StreamTimedOut, writer->send_from_pipe(tf1));
+    }
+});
+
+add_method("concrete_timeout_send_buffer", [] {
+    BlockingSink sink;
+    auto writer = StreamOutput::create(sink.fd(), 100);
+
+    {
+        WriteTest t(*writer, sink, -3);
+        wassert(actual(writer->send_buffer("foobar", 6)) == 6u);
+        wassert(actual(t.total_written) == 6u);
+        //wassert(actual(cb_log) == std::vector<size_t>{3, 3});
+    }
+
+    {
+        WriteTest t(*writer, sink, -6);
+        wassert(actual(writer->send_buffer("foobar", 6)) == 6u);
+        wassert(actual(t.total_written) == 6u);
+        //wassert(actual(cb_log) == std::vector<size_t>{3, 3, 6});
+    }
+
+    {
+        std::vector<uint8_t> buf(sink.pipe_size() * 2);
+        WriteTest t(*writer, sink, 0);
+        wassert(actual(writer->send_buffer(buf.data(), sink.pipe_size() + 6)) == sink.pipe_size() + 6);
+        wassert(actual(t.total_written) == sink.pipe_size() + 6);
+        //wassert(actual(t.cb_log) == std::vector<size_t>{sink.pipe_size(), 6});
+    }
+
+    {
+        std::vector<uint8_t> buf(sink.pipe_size() * 2);
+        WriteTest t(*writer, sink, 1);
+        wassert(actual(writer->send_buffer(buf.data(), sink.pipe_size() + 6)) == sink.pipe_size() + 6);
+        wassert(actual(t.total_written) == sink.pipe_size() + 6);
+        //wassert(actual(t.cb_log) == std::vector<size_t>{sink.pipe_size() - 1, 7});
+    }
+});
+
+add_method("concrete_timeout_send_line", [] {
+    BlockingSink sink;
+    auto writer = StreamOutput::create(sink.fd(), 1000);
+
+    {
+        WriteTest t(*writer, sink, -3);
+        wassert(actual(writer->send_line("foobar", 6)) == 7u);
+        wassert(actual(t.total_written) == 7u);
+        wassert(actual(t.cb_log) == std::vector<size_t>{0, 7});
+    }
+
+    {
+        WriteTest t(*writer, sink, -6);
+        wassert(actual(writer->send_line("foobar", 6)) == 7u);
+        wassert(actual(t.total_written) == 7u);
+        //wassert(actual(cb_log) == std::vector<size_t>{0, 7, 0, 7});
+    }
+
+    {
+        WriteTest t(*writer, sink, -7);
+        wassert(actual(writer->send_line("foobar", 6)) == 7u);
+        wassert(actual(t.total_written) == 7u);
+        //wassert(actual(cb_log) == std::vector<size_t>{0, 7, 0, 7, 7});
+    }
+
+    {
+        WriteTest t(*writer, sink, 0);
+        std::vector<uint8_t> buf(sink.pipe_size() * 2);
+        wassert(actual(writer->send_line(buf.data(), sink.pipe_size() + 6)) == sink.pipe_size() + 7);
+        wassert(actual(t.total_written) == sink.pipe_size() + 7);
+        //wassert(actual(cb_log) == std::vector<size_t>{0, 7, 0, 7, 7});
+    }
+
+    {
+        WriteTest t(*writer, sink, 1);
+        std::vector<uint8_t> buf(sink.pipe_size() * 2);
+        wassert(actual(writer->send_line(buf.data(), sink.pipe_size() + 6)) == sink.pipe_size() + 7);
+        wassert(actual(t.total_written) == sink.pipe_size() + 7);
+        //wassert(actual(cb_log) == std::vector<size_t>{0, 7, 0, 7, 7});
+    }
+});
+
+add_method("concrete_timeout_send_file_segment", [] {
+    BlockingSink sink;
+    auto writer = StreamOutput::create(sink.fd(), 1000);
+
+    sys::Tempfile tf1;
+    tf1.write_all_or_throw(std::string("foobarbaz"));
+    tf1.lseek(sink.pipe_size());
+    tf1.write_all_or_throw(std::string("zabraboof"));
+
+    {
+        WriteTest t(*writer, sink, -3);
+        wassert(actual(writer->send_file_segment(tf1, 0, 6)) == 6u);
+        wassert(actual(t.total_written) == 6u);
+        // wassert(actual(cb_log) == std::vector<size_t>{3, 3});
+    }
+
+    {
+        WriteTest t(*writer, sink, -6);
+        wassert(actual(writer->send_file_segment(tf1, 0, 6)) == 6u);
+        wassert(actual(t.total_written) == 6u);
+        wassert(actual(t.cb_log) == std::vector<size_t>{6});
+    }
+
+    {
+        WriteTest t(*writer, sink, -7);
+        wassert(actual(writer->send_file_segment(tf1, 0, 6)) == 6u);
+        wassert(actual(t.total_written) == 6u);
+        // wassert(actual(cb_log) == std::vector<size_t>{0, 7, 0, 7, 7});
+    }
+
+    {
+        WriteTest t(*writer, sink, 0);
+        wassert(actual(writer->send_file_segment(tf1, 0, sink.pipe_size() + 9)) == sink.pipe_size() + 9);
+        wassert(actual(t.total_written) == sink.pipe_size() + 9);
+        // wassert(actual(t.cb_log) == std::vector<size_t>{sink.pipe_size(), 9});
+    }
+
+    {
+        WriteTest t(*writer, sink, 1);
+        wassert(actual(writer->send_file_segment(tf1, 0, sink.pipe_size() + 9)) == sink.pipe_size() + 9);
+        wassert(actual(t.total_written) == sink.pipe_size() + 9);
+        // wassert(actual(t.cb_log) == std::vector<size_t>{sink.pipe_size(), 9});
+    }
+});
+
+add_method("concrete_timeout_send_from_pipe", [] {
+    BlockingSink sink;
+    auto writer = StreamOutput::create(sink.fd(), 1000);
+
+    sys::Tempfile tf1;
+    tf1.write_all_or_throw(std::string("foobarbaz"));
+    tf1.lseek(sink.pipe_size());
+    tf1.write_all_or_throw(std::string("zabraboof"));
+
+    {
+        WriteTest t(*writer, sink, -3);
+        tf1.lseek(sink.pipe_size());
+        wassert(actual(writer->send_from_pipe(tf1)) == 9u);
+        wassert(actual(t.total_written) == 9u);
+        // wassert(actual(cb_log) == std::vector<size_t>{3, 3});
+    }
+
+    {
+        WriteTest t(*writer, sink, -9);
+        tf1.lseek(sink.pipe_size());
+        wassert(actual(writer->send_from_pipe(tf1)) == 9u);
+        wassert(actual(t.total_written) == 9u);
+        // wassert(actual(t.cb_log) == std::vector<size_t>{9});
+    }
+
+    {
+        WriteTest t(*writer, sink, -10);
+        tf1.lseek(sink.pipe_size());
+        wassert(actual(writer->send_from_pipe(tf1)) == 9u);
+        wassert(actual(t.total_written) == 9u);
+        // wassert(actual(t.cb_log) == std::vector<size_t>{9});
+    }
+
+    {
+        WriteTest t(*writer, sink, 0);
+        tf1.lseek(0);
+        wassert(actual(writer->send_from_pipe(tf1)) == sink.pipe_size() + 9);
+        wassert(actual(t.total_written) == sink.pipe_size() + 9);
+        // wassert(actual(t.cb_log) == std::vector<size_t>{sink.pipe_size(), 9});
+    }
+
+    {
+        WriteTest t(*writer, sink, 1);
+        tf1.lseek(0);
+        wassert(actual(writer->send_from_pipe(tf1)) == sink.pipe_size() + 9);
+        wassert(actual(t.total_written) == sink.pipe_size() + 9);
+        // wassert(actual(t.cb_log) == std::vector<size_t>{sink.pipe_size(), 9});
     }
 });
 

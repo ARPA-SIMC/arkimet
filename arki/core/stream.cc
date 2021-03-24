@@ -18,7 +18,21 @@ StreamOutput::~StreamOutput()
 {
 }
 
-class ConcreteStreamOutput: public StreamOutput
+
+class BaseStreamOutput : public StreamOutput
+{
+protected:
+    std::function<void(size_t)> progress_callback;
+
+public:
+    void set_progress_callback(std::function<void(size_t)> f) override
+    {
+        progress_callback = f;
+    }
+};
+
+
+class ConcreteStreamOutput: public BaseStreamOutput
 {
     sys::NamedFileDescriptor& out;
 
@@ -37,6 +51,8 @@ public:
         ssize_t res = ::writev(out, todo, 2);
         if (res < 0 || (unsigned)res != size + 1)
             throw std::system_error(errno, std::system_category(), "cannot write " + std::to_string(size + 1) + " bytes to " + out.name());
+        if (progress_callback)
+            progress_callback(res);
         return size + 1;
     }
 
@@ -45,6 +61,8 @@ public:
         fd.sendfile(out, offset, size);
         acct::plain_data_read_count.incr();
         // iotrace::trace_file(dirfd, offset, size, "streamed data");
+        if (progress_callback)
+            progress_callback(size);
         return size;
     }
 
@@ -52,6 +70,8 @@ public:
     {
         // TODO: retry instead of throw
         out.write_all_or_throw(data, size);
+        if (progress_callback)
+            progress_callback(size);
         return size;
 
 #if 0
@@ -80,7 +100,11 @@ public:
         // Try splice
         res = splice(fd, NULL, out, NULL, 4096 * 8, SPLICE_F_MORE);
         if (res >= 0)
+        {
+            if (progress_callback)
+                progress_callback(res);
             return res;
+        }
 
         if (errno != EINVAL)
             throw std::system_error(errno, std::system_category(), "cannot splice data to stream from a pipe");
@@ -135,7 +159,7 @@ size_t constexpr TransferBuffer::size;
 }
 
 
-class ConcreteTimeoutStreamOutput: public StreamOutput
+class ConcreteTimeoutStreamOutput: public BaseStreamOutput
 {
     sys::NamedFileDescriptor& out;
     unsigned timeout_ms;
@@ -168,7 +192,7 @@ public:
             throw std::system_error(errno, std::system_category(), "cannot set nonblocking file descriptor flags for " + out.name());
 
         pollinfo.fd = out;
-        pollinfo.events = POLLOUT | POLLERR;
+        pollinfo.events = POLLOUT;
     }
     ~ConcreteTimeoutStreamOutput()
     {
@@ -184,24 +208,41 @@ public:
             { (void*)"\n", 1 },
         };
         size_t pos = 0;
-        while (pos < size + 1)
+        while (true)
         {
-            wait_readable();
-
             if (pos < size)
             {
                 ssize_t res = ::writev(out, todo, 2);
                 if (res < 0)
-                    throw std::system_error(errno, std::system_category(), "cannot write " + std::to_string(size + 1) + " bytes to " + out.name());
+                {
+                    if (errno == EAGAIN || errno == EWOULDBLOCK)
+                        res = 0;
+                    else
+                        throw std::system_error(errno, std::system_category(), "cannot write " + std::to_string(size + 1) + " bytes to " + out.name());
+                }
                 pos += res;
                 if (pos < size + 1)
                 {
                     todo[0].iov_base = (uint8_t*)data + pos;
                     todo[0].iov_len = size - pos;
                 }
-            } else {
-                pos += out.write("\n", 1);
-            }
+                if (progress_callback)
+                    progress_callback(res);
+            } else if (pos == size) {
+                ssize_t res = ::write(out, "\n", 1);
+                if (res < 0)
+                {
+                    if (errno == EAGAIN || errno == EWOULDBLOCK)
+                        res = 0;
+                    else
+                        throw std::system_error(errno, std::system_category(), "cannot write 1 byte to " + out.name());
+                }
+                pos += res;
+                if (progress_callback)
+                    progress_callback(res);
+            } else
+                break;
+            wait_readable();
         }
         return pos;
     }
@@ -210,12 +251,12 @@ public:
     {
         TransferBuffer buffer;
         bool has_sendfile = true;
-        while (size > 0)
+        size_t written = 0;
+        while (true)
         {
-            wait_readable();
             if (has_sendfile)
             {
-                ssize_t res = ::sendfile(out, fd, &offset, size);
+                ssize_t res = ::sendfile(out, fd, &offset, size - written);
                 if (res < 0)
                 {
                     if (errno == EINVAL || errno == ENOSYS)
@@ -223,31 +264,60 @@ public:
                         has_sendfile = false;
                         buffer.allocate();
                     }
+                    else if (errno == EAGAIN || errno == EWOULDBLOCK)
+                    {
+                        res = 0;
+                        if (progress_callback)
+                            progress_callback(res);
+                    }
                     else
                         throw std::system_error(errno, std::system_category(), "cannot sendfile() " + std::to_string(size) + " bytes to " + out.name());
                 } else {
-                    size -= res;
+                    if (progress_callback)
+                        progress_callback(res);
+                    written += res;
                 }
             } else {
-                size_t res = out.pread(buffer, std::min(size, buffer.size), offset);
-                out.write_all_or_retry(buffer, res);
+                size_t res = out.pread(buffer, std::min(size - written, buffer.size), offset);
+                send_buffer(buffer, res);
                 offset += res;
-                size -= res;
+                written += res;
+                if (progress_callback)
+                    progress_callback(res);
             }
+
             acct::plain_data_read_count.incr();
+
+            if (written >= size)
+                break;
+            wait_readable();
             // iotrace::trace_file(dirfd, offset, size, "streamed data");
         }
-        return size;
+        return written;
     }
 
     size_t send_buffer(const void* data, size_t size) override
     {
         size_t pos = 0;
-        while (pos < size)
+        while (true)
         {
-            wait_readable();
+            ssize_t res = ::write(out, (const uint8_t*)data + pos, size - pos);
+            if (res < 0)
+            {
+                if (errno == EAGAIN || errno == EWOULDBLOCK)
+                    res = 0;
+                else
+                    throw std::system_error(errno, std::system_category(), "cannot write " + std::to_string(size - pos) + " bytes to " + out.name());
+            }
 
-            pos += out.write((const uint8_t*)data + pos, size - pos);
+            pos += res;
+            if (progress_callback)
+                progress_callback(res);
+
+            if (pos >= size)
+                break;
+
+            wait_readable();
         }
         return size;
 
@@ -280,22 +350,25 @@ public:
             if (has_splice)
             {
 #if defined(__linux__) && defined(HAVE_SPLICE)
-                wait_readable();
                 // Try splice
                 ssize_t res = splice(fd, NULL, out, NULL, 4096 * 8, SPLICE_F_MORE);
-                if (res < 0)
+                if (res == 0)
+                    return sent;
+                else if (res < 0)
                 {
                     if (errno == EINVAL)
                     {
                         has_splice = false;
                         buffer.allocate();
                         continue;
+                    } else if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                        res = 0;
                     } else
                         throw std::system_error(errno, std::system_category(), "cannot splice data to stream from a pipe");
                 }
-                if (res == 0)
-                    return sent;
                 sent += res;
+                if (progress_callback)
+                    progress_callback(res);
 
 #else
                 // Splice is not supported: pass it on to the traditional method
@@ -305,18 +378,31 @@ public:
             } else {
                 // Fall back to read/write
                 ssize_t res = ::read(fd, buffer, buffer.size);
-                if (res < 0)
-                    throw std::system_error(errno, std::system_category(), "cannot read data from pipe input");
                 if (res == 0)
                     return sent;
-                sent += send_buffer(buffer, res);
+                if (res < 0)
+                {
+                    if (errno == EAGAIN || errno == EWOULDBLOCK)
+                        res = 0;
+                    else
+                        throw std::system_error(errno, std::system_category(), "cannot read data from pipe input");
+                }
+                if (res > 0)
+                    sent += send_buffer(buffer, res);
+                else
+                {
+                    if (progress_callback)
+                        progress_callback(res);
+                }
             }
+
+            wait_readable();
         }
     }
 };
 
 
-class AbstractStreamOutput: public StreamOutput
+class AbstractStreamOutput: public BaseStreamOutput
 {
     AbstractOutputFile& out;
 
@@ -330,6 +416,8 @@ public:
     {
         out.write(data, size);
         out.write("\n", 1);
+        if (progress_callback)
+            progress_callback(size + 1);
         return size + 1;
     }
 
@@ -346,6 +434,8 @@ public:
                 throw std::runtime_error(out.name() + ": read only " + std::to_string(pos) + "/" + std::to_string(size) + " bytes");
             out.write(buf, done);
             pos += done;
+            if (progress_callback)
+                progress_callback(done);
         }
 
         return size;
@@ -354,6 +444,8 @@ public:
     size_t send_buffer(const void* data, size_t size) override
     {
         out.write(data, size);
+        if (progress_callback)
+            progress_callback(size);
         return size;
     }
 
@@ -367,6 +459,8 @@ public:
         if (res == 0)
             return 0;
         out.write(buf, res);
+        if (progress_callback)
+            progress_callback(res);
         return res;
     }
 };

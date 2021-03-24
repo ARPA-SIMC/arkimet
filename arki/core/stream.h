@@ -4,6 +4,7 @@
 #include <arki/core/fwd.h>
 #include <memory>
 #include <cstdint>
+#include <functional>
 #include <sys/types.h>
 
 namespace arki {
@@ -27,6 +28,12 @@ class StreamOutput
 {
 public:
     virtual ~StreamOutput();
+
+    /**
+     * After each successful write operation, call the callback with the number
+     * of bytes that have just been written
+     */
+    virtual void set_progress_callback(std::function<void(size_t)> f) = 0;
 
     /**
      * Stream a line of text, adding a newline.
