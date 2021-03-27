@@ -3,7 +3,7 @@
 #include "arki/dispatcher.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
-#include "arki/core/stream.h"
+#include "arki/stream.h"
 #include "arki/nag.h"
 #include "arki/metadata.h"
 #include "arki/metadata/validator.h"
@@ -42,7 +42,7 @@ DispatchResults MetadataDispatch::process(dataset::Reader& ds, const std::string
     if (!dir_copyok.empty())
     {
         copyok.reset(new core::File(str::joinpath(dir_copyok, str::basename(name))));
-        copyok_stream = core::StreamOutput::create(*copyok);
+        copyok_stream = StreamOutput::create(*copyok);
     }
     else
     {
@@ -53,7 +53,7 @@ DispatchResults MetadataDispatch::process(dataset::Reader& ds, const std::string
     if (!dir_copyko.empty())
     {
         copyko.reset(new core::File(str::joinpath(dir_copyko, str::basename(name))));
-        copyko_stream = core::StreamOutput::create(*copyko);
+        copyko_stream = StreamOutput::create(*copyko);
     }
     else
     {

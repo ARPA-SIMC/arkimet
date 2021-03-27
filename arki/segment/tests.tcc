@@ -3,7 +3,7 @@
 
 #include "arki/segment/tests.h"
 #include "arki/core/file.h"
-#include "arki/core/stream.h"
+#include "arki/stream.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/string.h"
 #include "arki/types/source/blob.h"
@@ -80,7 +80,7 @@ this->add_method("read", [](Fixture& f) {
 
         {
             sys::File out("stream.out", O_WRONLY | O_CREAT | O_TRUNC);
-            auto stream = core::StreamOutput::create(out);
+            auto stream = StreamOutput::create(out);
             size_t size = wcallchecked(reader->stream(md->sourceBlob(), *stream));
             wassert(actual(size) == md->sourceBlob().size + pad_size);
         }
@@ -213,7 +213,7 @@ this->add_method("issue244", [](Fixture& f) {
     // Writing normally uses sendfile
     {
         sys::File out("stream.out", O_WRONLY | O_CREAT | O_TRUNC);
-        auto stream = core::StreamOutput::create(out);
+        auto stream = StreamOutput::create(out);
         size_t size = wcallchecked(reader->stream(md->sourceBlob(), *stream));
         size_t pad_size = f.td.format == "vm2" ? 1 : 0;
         wassert(actual(size) == md->sourceBlob().size + pad_size);
@@ -223,7 +223,7 @@ this->add_method("issue244", [](Fixture& f) {
     // read/write
     {
         sys::File out("stream.out", O_WRONLY | O_APPEND);
-        auto stream = core::StreamOutput::create(out);
+        auto stream = StreamOutput::create(out);
         size_t size = wcallchecked(reader->stream(md->sourceBlob(), *stream));
         size_t pad_size = f.td.format == "vm2" ? 1 : 0;
         wassert(actual(size) == md->sourceBlob().size + pad_size);

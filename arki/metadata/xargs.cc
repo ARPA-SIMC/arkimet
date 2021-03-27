@@ -1,6 +1,6 @@
 #include "xargs.h"
 #include "arki/metadata.h"
-#include "arki/core/stream.h"
+#include "arki/stream.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/string.h"
 #include "arki/utils/subprocess.h"
@@ -42,7 +42,7 @@ void Xargs::start_batch(const std::string& new_format)
     unique_ptr<char[]> tf(new char[tempfile_template.size() + 1]);
     memcpy(tf.get(), tempfile_template.c_str(), tempfile_template.size() + 1);
     tempfile = File::mkstemp(tf.get());
-    stream_to_tempfile = core::StreamOutput::create(tempfile);
+    stream_to_tempfile = StreamOutput::create(tempfile);
 }
 
 void Xargs::add_to_batch(std::shared_ptr<Metadata> md)

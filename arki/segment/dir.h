@@ -51,7 +51,7 @@ public:
     bool scan_data(metadata_dest_func dest) override;
     utils::sys::File open_src(const types::source::Blob& src);
     std::vector<uint8_t> read(const types::source::Blob& src) override;
-    size_t stream(const types::source::Blob& src, core::StreamOutput& out) override;
+    size_t stream(const types::source::Blob& src, StreamOutput& out) override;
 };
 
 

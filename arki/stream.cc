@@ -1,5 +1,5 @@
 #include "stream.h"
-#include "file.h"
+#include "arki/core/file.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/accounting.h"
 #include "arki/libconfig.h"
@@ -12,22 +12,26 @@
 using namespace arki::utils;
 
 namespace arki {
-namespace core {
-
 StreamOutput::~StreamOutput()
 {
 }
 
+namespace stream {
 
 class BaseStreamOutput : public StreamOutput
 {
 protected:
     std::function<void(size_t)> progress_callback;
+    std::function<void(StreamOutput&)> data_start_callback;
 
 public:
     void set_progress_callback(std::function<void(size_t)> f) override
     {
         progress_callback = f;
+    }
+
+    void set_data_start_callback(std::function<void(StreamOutput&)> f) override
+    {
     }
 };
 
@@ -404,10 +408,10 @@ public:
 
 class AbstractStreamOutput: public BaseStreamOutput
 {
-    AbstractOutputFile& out;
+    core::AbstractOutputFile& out;
 
 public:
-    AbstractStreamOutput(AbstractOutputFile& out)
+    AbstractStreamOutput(core::AbstractOutputFile& out)
         : out(out)
     {
     }
@@ -465,20 +469,21 @@ public:
     }
 };
 
-std::unique_ptr<StreamOutput> StreamOutput::create(NamedFileDescriptor& out)
-{
-    return std::unique_ptr<StreamOutput>(new ConcreteStreamOutput(out));
 }
 
-std::unique_ptr<StreamOutput> StreamOutput::create(NamedFileDescriptor& out, unsigned timeout_ms)
+std::unique_ptr<StreamOutput> StreamOutput::create(core::NamedFileDescriptor& out)
 {
-    return std::unique_ptr<StreamOutput>(new ConcreteTimeoutStreamOutput(out, timeout_ms));
+    return std::unique_ptr<StreamOutput>(new stream::ConcreteStreamOutput(out));
 }
 
-std::unique_ptr<StreamOutput> StreamOutput::create(AbstractOutputFile& out)
+std::unique_ptr<StreamOutput> StreamOutput::create(core::NamedFileDescriptor& out, unsigned timeout_ms)
 {
-    return std::unique_ptr<StreamOutput>(new AbstractStreamOutput(out));
+    return std::unique_ptr<StreamOutput>(new stream::ConcreteTimeoutStreamOutput(out, timeout_ms));
 }
 
+std::unique_ptr<StreamOutput> StreamOutput::create(core::AbstractOutputFile& out)
+{
+    return std::unique_ptr<StreamOutput>(new stream::AbstractStreamOutput(out));
 }
+
 }

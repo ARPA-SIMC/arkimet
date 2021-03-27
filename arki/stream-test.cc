@@ -1,7 +1,7 @@
 #include "arki/tests/tests.h"
-#include "arki/utils/sys.h"
 #include "stream.h"
-#include "file.h"
+#include "arki/utils/sys.h"
+#include "arki/core/file.h"
 #include <sys/ioctl.h>
 
 
@@ -99,12 +99,12 @@ public:
 
 struct WriteTest
 {
-    core::StreamOutput& writer;
+    StreamOutput& writer;
     BlockingSink& sink;
     std::vector<size_t> cb_log;
     size_t total_written = 0;
 
-    WriteTest(core::StreamOutput& writer, BlockingSink& sink, int prefill)
+    WriteTest(StreamOutput& writer, BlockingSink& sink, int prefill)
         : writer(writer), sink(sink)
     {
         if (prefill)
@@ -134,7 +134,7 @@ class Tests : public TestCase
     void register_tests() override;
 };
 
-Tests test("arki_core_stream");
+Tests test("arki_stream");
 
 void Tests::register_tests() {
 
@@ -185,17 +185,17 @@ add_method("concrete_timeout1", [] {
     // This won't block
     writer->send_buffer(filler.data(), filler.size());
     // This times out
-    wassert_throws(core::StreamTimedOut, writer->send_buffer(" ", 1));
+    wassert_throws(StreamTimedOut, writer->send_buffer(" ", 1));
 
     sink.empty_buffer();
-    wassert_throws(core::StreamTimedOut, writer->send_line(filler.data(), filler.size()));
+    wassert_throws(StreamTimedOut, writer->send_line(filler.data(), filler.size()));
 
     sink.empty_buffer();
     writer->send_buffer(filler.data(), filler.size());
     {
         sys::Tempfile tf1;
         tf1.write_all_or_throw(std::string("testfile"));
-        wassert_throws(core::StreamTimedOut, writer->send_file_segment(tf1, 1, 6));
+        wassert_throws(StreamTimedOut, writer->send_file_segment(tf1, 1, 6));
     }
 
     sink.empty_buffer();
@@ -203,7 +203,7 @@ add_method("concrete_timeout1", [] {
     {
         sys::Tempfile tf1;
         tf1.write_all_or_throw(std::string("testfile"));
-        wassert_throws(core::StreamTimedOut, writer->send_from_pipe(tf1));
+        wassert_throws(StreamTimedOut, writer->send_from_pipe(tf1));
     }
 });
 

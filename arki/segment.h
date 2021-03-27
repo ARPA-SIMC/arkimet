@@ -8,6 +8,7 @@
 #include <arki/types/fwd.h>
 #include <arki/scan/fwd.h>
 #include <arki/metadata/fwd.h>
+#include <arki/stream/fwd.h>
 #include <arki/segment/fwd.h>
 #include <arki/core/transaction.h>
 #include <string>
@@ -191,7 +192,7 @@ public:
     virtual bool scan_data(metadata_dest_func dest) = 0;
 
     virtual std::vector<uint8_t> read(const types::source::Blob& src) = 0;
-    virtual size_t stream(const types::source::Blob& src, core::StreamOutput& out);
+    virtual size_t stream(const types::source::Blob& src, StreamOutput& out);
 };
 
 struct WriterConfig

@@ -6,7 +6,7 @@
 #include "segment/zip.h"
 #include "segment/gz.h"
 #include "arki/exceptions.h"
-#include "arki/core/stream.h"
+#include "arki/stream.h"
 #include "arki/metadata/collection.h"
 #include "arki/metadata.h"
 #include "arki/types/source/blob.h"
@@ -365,7 +365,7 @@ bool Reader::scan(metadata_dest_func dest)
     return scan_data(dest);
 }
 
-size_t Reader::stream(const types::source::Blob& src, core::StreamOutput& out)
+size_t Reader::stream(const types::source::Blob& src, StreamOutput& out)
 {
     vector<uint8_t> buf = read(src);
     if (src.format == "vm2")

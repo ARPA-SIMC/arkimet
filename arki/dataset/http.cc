@@ -3,7 +3,7 @@
 #include "arki/dataset/query.h"
 #include "arki/core/file.h"
 #include "arki/core/time.h"
-#include "arki/core/stream.h"
+#include "arki/stream.h"
 #include "arki/metadata/stream.h"
 #include "arki/metadata/sort.h"
 #include "arki/matcher.h"
@@ -39,11 +39,11 @@ std::string Reader::type() const { return "http"; }
 
 struct StreamState : public core::curl::Request
 {
-    core::StreamOutput& out;
-    std::function<void(core::StreamOutput&)> data_start_hook;
+    StreamOutput& out;
+    std::function<void(StreamOutput&)> data_start_hook;
     std::shared_ptr<dataset::QueryProgress> progress;
 
-    StreamState(core::curl::CurlEasy& curl, core::StreamOutput& out, std::function<void(core::StreamOutput&)> data_start_hook=0)
+    StreamState(core::curl::CurlEasy& curl, StreamOutput& out, std::function<void(StreamOutput&)> data_start_hook=0)
         : Request(curl), out(out), data_start_hook(data_start_hook)
     {
     }
@@ -157,7 +157,7 @@ void Reader::impl_query_summary(const Matcher& matcher, Summary& summary)
     summary.read(dec, request.url);
 }
 
-void Reader::impl_stream_query_bytes(const dataset::ByteQuery& q, core::StreamOutput& out)
+void Reader::impl_stream_query_bytes(const dataset::ByteQuery& q, StreamOutput& out)
 {
     m_curl.reset();
 

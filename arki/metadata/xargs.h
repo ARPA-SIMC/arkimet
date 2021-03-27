@@ -5,6 +5,7 @@
 
 #include <arki/metadata/clusterer.h>
 #include <arki/core/file.h>
+#include <arki/stream/fwd.h>
 
 namespace arki {
 namespace metadata {
@@ -13,7 +14,7 @@ class Xargs : public Clusterer
 {
 protected:
     core::File tempfile;
-    std::unique_ptr<core::StreamOutput> stream_to_tempfile;
+    std::unique_ptr<StreamOutput> stream_to_tempfile;
     std::string tempfile_template;
 
     void start_batch(const std::string& new_format) override;

@@ -6,6 +6,7 @@
 #include <arki/core/fwd.h>
 #include <arki/core/cfg.h>
 #include <arki/core/transaction.h>
+#include <arki/stream/fwd.h>
 #include <arki/metadata/fwd.h>
 #include <arki/dataset/fwd.h>
 #include <string>
@@ -155,7 +156,7 @@ protected:
      *
      * The default implementation in Reader is based on queryData.
      */
-    virtual void impl_stream_query_bytes(const dataset::ByteQuery& q, core::StreamOutput& out);
+    virtual void impl_stream_query_bytes(const dataset::ByteQuery& q, StreamOutput& out);
 
 public:
     using Base::Base;
@@ -218,7 +219,7 @@ public:
      *
      * The default implementation in Reader is based on queryData.
      */
-    void query_bytes(const dataset::ByteQuery& q, core::StreamOutput& out)
+    void query_bytes(const dataset::ByteQuery& q, StreamOutput& out)
     {
         return impl_stream_query_bytes(q, out);
     }

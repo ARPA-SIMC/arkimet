@@ -243,7 +243,7 @@ struct query_bytes : public MethKwargs<query_bytes, arkipy_DatasetReader>
                 data_start_hook_args = pyo_unique_ptr(Py_BuildValue("()"));
                 if (!data_start_hook_args) return nullptr;
 
-                query.data_start_hook = [&](core::StreamOutput&) {
+                query.data_start_hook = [&](StreamOutput&) {
                     // call arg_data_start_hook
                     AcquireGIL gil;
                     pyo_unique_ptr res(PyObject_CallObject(arg_data_start_hook, data_start_hook_args));

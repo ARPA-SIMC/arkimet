@@ -4,6 +4,7 @@
 /// metadata - Handle arkimet metadata
 
 #include <arki/core/fwd.h>
+#include <arki/stream/fwd.h>
 #include <arki/metadata/fwd.h>
 #include <arki/types/fwd.h>
 #include <arki/structured/fwd.h>
@@ -431,7 +432,7 @@ public:
      *
      * Return the number of bytes written
      */
-    size_t stream_data(core::StreamOutput& out);
+    size_t stream_data(StreamOutput& out);
 
     /// Return True if get_data can be called without causing I/O
     bool has_cached_data() const;

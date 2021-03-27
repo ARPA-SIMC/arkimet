@@ -6,8 +6,8 @@
 #include "arki/structured/memory.h"
 #include "arki/structured/keys.h"
 #include "arki/core/file.h"
-#include "arki/core/stream.h"
 #include "arki/core/binary.h"
+#include "arki/stream.h"
 #include "arki/utils/sys.h"
 
 namespace {
@@ -122,7 +122,7 @@ add_method("blob_stream", [] {
     sys::unlink_ifexists("test.grib");
     {
         File out("test.grib", O_WRONLY | O_CREAT | O_TRUNC);
-        auto stream = core::StreamOutput::create(out);
+        auto stream = StreamOutput::create(out);
         wassert(actual(o->stream_data(*stream)) == 34960u);
     }
 

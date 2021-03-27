@@ -3,7 +3,7 @@
 #include "metadata/collection.h"
 #include "core/file.h"
 #include "core/binary.h"
-#include "core/stream.h"
+#include "stream.h"
 #include "metadata/tests.h"
 #include "types/origin.h"
 #include "types/product.h"
@@ -265,7 +265,7 @@ add_method("stream_grib", [](Fixture& f) {
     wassert(actual(grib.size()) == 3u);
     {
         File fd("tmpfile", O_WRONLY | O_CREAT | O_TRUNC);
-        auto stream = core::StreamOutput::create(fd);
+        auto stream = StreamOutput::create(fd);
         wassert(actual(grib[0].stream_data(*stream)) == grib[0].sourceBlob().size);
     }
     wassert(actual(sys::size("tmpfile")) == grib[0].sourceBlob().size);
@@ -276,7 +276,7 @@ add_method("stream_bufr", [](Fixture& f) {
     metadata::TestCollection bufr("inbound/test.bufr");
     {
         File fd("tmpfile", O_WRONLY | O_CREAT | O_TRUNC);
-        auto stream = core::StreamOutput::create(fd);
+        auto stream = StreamOutput::create(fd);
         wassert(actual(bufr[0].stream_data(*stream)) == bufr[0].sourceBlob().size);
     }
     wassert(actual(sys::size("tmpfile")) == bufr[0].sourceBlob().size);
@@ -287,7 +287,7 @@ add_method("stream_vm2", [](Fixture& f) {
     metadata::TestCollection vm2("inbound/test.vm2");
     {
         File fd("tmpfile", O_WRONLY | O_CREAT | O_TRUNC);
-        auto stream = core::StreamOutput::create(fd);
+        auto stream = StreamOutput::create(fd);
         wassert(actual(vm2[0].stream_data(*stream)) == vm2[0].sourceBlob().size + 1);
     }
     wassert(actual(sys::size("tmpfile")) == vm2[0].sourceBlob().size + 1);
@@ -297,7 +297,7 @@ add_method("stream_odim", [](Fixture& f) {
     metadata::TestCollection odim("inbound/odimh5/XSEC_v21.h5");
     {
         File fd("tmpfile", O_WRONLY | O_CREAT | O_TRUNC);
-        auto stream = core::StreamOutput::create(fd);
+        auto stream = StreamOutput::create(fd);
         wassert(actual(odim[0].stream_data(*stream)) == odim[0].sourceBlob().size);
         }
     wassert(actual(sys::size("tmpfile")) == odim[0].sourceBlob().size);

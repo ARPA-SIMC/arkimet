@@ -7,7 +7,7 @@
 #include "arki/metadata.h"
 #include "arki/metadata/postprocess.h"
 #include "arki/utils/string.h"
-#include "arki/core/stream.h"
+#include "arki/stream.h"
 #include "arki/summary.h"
 
 using namespace std;
@@ -51,17 +51,17 @@ void Reader::impl_query_summary(const Matcher& matcher, Summary& summary)
 
 void Reader::query_bytes(const dataset::ByteQuery& q, core::NamedFileDescriptor& out)
 {
-    auto so = core::StreamOutput::create(out, 60000);
+    auto so = StreamOutput::create(out, 60000);
     impl_stream_query_bytes(q, *so);
 }
 
 void Reader::query_bytes(const dataset::ByteQuery& q, core::AbstractOutputFile& out)
 {
-    auto so = core::StreamOutput::create(out);
+    auto so = StreamOutput::create(out);
     impl_stream_query_bytes(q, *so);
 }
 
-void Reader::impl_stream_query_bytes(const dataset::ByteQuery& q, core::StreamOutput& out)
+void Reader::impl_stream_query_bytes(const dataset::ByteQuery& q, StreamOutput& out)
 {
     switch (q.type)
     {

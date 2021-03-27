@@ -1,8 +1,8 @@
 #include "config.h"
 #include "postprocess.h"
 #include "arki/exceptions.h"
+#include "arki/stream.h"
 #include "arki/core/file.h"
-#include "arki/core/stream.h"
 #include "arki/core/cfg.h"
 #include "arki/metadata.h"
 #include "arki/metadata/data.h"
@@ -62,12 +62,12 @@ public:
     subprocess::Popen cmd;
 
     /// Non-null if we should notify the hook as soon as some data arrives from the processor
-    std::function<void(core::StreamOutput&)> data_start_hook;
+    std::function<void(StreamOutput&)> data_start_hook;
 
     /**
      * StreamOutput used to send data from the subprocess to the output stream.
      */
-    core::StreamOutput* m_stream = nullptr;
+    StreamOutput* m_stream = nullptr;
 
     /// Stream where child stderr is sent
     std::ostream* m_err = 0;
@@ -162,7 +162,7 @@ Postprocess::~Postprocess()
     }
 }
 
-void Postprocess::set_output(core::StreamOutput& out)
+void Postprocess::set_output(StreamOutput& out)
 {
     m_child->m_stream = &out;
 }
@@ -172,7 +172,7 @@ void Postprocess::set_error(std::ostream& err)
     m_child->m_err = &err;
 }
 
-void Postprocess::set_data_start_hook(std::function<void(core::StreamOutput&)> hook)
+void Postprocess::set_data_start_hook(std::function<void(StreamOutput&)> hook)
 {
     m_child->data_start_hook = hook;
 }

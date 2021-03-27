@@ -8,7 +8,6 @@
 #include <sys/types.h>
 
 namespace arki {
-namespace core {
 
 class StreamTimedOut : public std::runtime_error
 {
@@ -34,6 +33,11 @@ public:
      * of bytes that have just been written
      */
     virtual void set_progress_callback(std::function<void(size_t)> f) = 0;
+
+    /**
+     * Set a callback to be called once before the first byte is streamed out
+     */
+    virtual void set_data_start_callback(std::function<void(StreamOutput&)>) = 0;
 
     /**
      * Stream a line of text, adding a newline.
@@ -71,7 +75,7 @@ public:
      * Stream operations can block on writes for as long as needed (possibly
      * indefinitely).
      */
-    static std::unique_ptr<StreamOutput> create(NamedFileDescriptor& out);
+    static std::unique_ptr<StreamOutput> create(core::NamedFileDescriptor& out);
 
     /**
      * Create a StreamOutput to stream to a file.
@@ -79,15 +83,14 @@ public:
      * Stream operations can block on writes for at most the given number of
      * milliseconds. If timed out, StreamTimedOut is raised
      */
-    static std::unique_ptr<StreamOutput> create(NamedFileDescriptor& out, unsigned timeout_ms);
+    static std::unique_ptr<StreamOutput> create(core::NamedFileDescriptor& out, unsigned timeout_ms);
 
     /**
      * Create a Streamoutput to stream to an abstract output file
      */
-    static std::unique_ptr<StreamOutput> create(AbstractOutputFile& out);
+    static std::unique_ptr<StreamOutput> create(core::AbstractOutputFile& out);
 };
 
 
-}
 }
 #endif

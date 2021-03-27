@@ -3,6 +3,7 @@
 
 #include <arki/types/source.h>
 #include <arki/core/fwd.h>
+#include <arki/stream/fwd.h>
 #include <arki/segment/fwd.h>
 
 namespace arki {
@@ -111,7 +112,7 @@ public:
      *
      * Returns the number of bytes written to out.
      */
-    size_t stream_data(core::StreamOutput& out) const;
+    size_t stream_data(StreamOutput& out) const;
 
     static std::unique_ptr<Blob> create(std::shared_ptr<segment::Reader> reader, uint64_t offset, uint64_t size);
     static std::unique_ptr<Blob> create(const std::string& format, const std::string& basedir, const std::string& filename, uint64_t offset, uint64_t size, std::shared_ptr<segment::Reader> reader);

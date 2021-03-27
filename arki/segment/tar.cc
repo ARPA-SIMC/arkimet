@@ -1,7 +1,7 @@
 #include "tar.h"
 #include "common.h"
 #include "arki/exceptions.h"
-#include "arki/core/stream.h"
+#include "arki/stream.h"
 #include "arki/metadata.h"
 #include "arki/metadata/data.h"
 #include "arki/metadata/collection.h"
@@ -168,7 +168,7 @@ std::vector<uint8_t> Reader::read(const types::source::Blob& src)
     return buf;
 }
 
-size_t Reader::stream(const types::source::Blob& src, core::StreamOutput& out)
+size_t Reader::stream(const types::source::Blob& src, StreamOutput& out)
 {
     if (src.format == "vm2")
         return arki::segment::Reader::stream(src, out);

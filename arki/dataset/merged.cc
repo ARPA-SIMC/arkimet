@@ -330,7 +330,7 @@ public:
 
 }
 
-void Reader::impl_stream_query_bytes(const dataset::ByteQuery& q, core::StreamOutput& out)
+void Reader::impl_stream_query_bytes(const dataset::ByteQuery& q, StreamOutput& out)
 {
     // Here we must serialize, as we do not know how to merge raw data streams
     //
