@@ -23,6 +23,8 @@ nobase_dist_arkiinclude_HEADERS = \
 		core/transaction.h \
 		core/curl.h \
 		stream.h \
+		stream/base.h \
+		stream/concrete.h \
 		defs.h \
 		exceptions.h \
 		bbox.h \
@@ -231,6 +233,8 @@ libarkimet_la_SOURCES += \
 		core/transaction.cc \
 		core/curl.cc \
 		stream.cc \
+		stream/base.cc \
+		stream/concrete.cc \
 		exceptions.cc \
 		nag.cc \
 		utils/accounting.cc \
@@ -349,6 +353,8 @@ tests_arki_test_SOURCES += \
 		core/transaction-test.cc \
 		core/curl-test.cc \
 		stream-test.cc \
+		stream/base-test.cc \
+		stream/concrete-test.cc \
 		utils/accounting-test.cc \
 		utils/gzip-test.cc \
 		utils/yaml-test.cc \

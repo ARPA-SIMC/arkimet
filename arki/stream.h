@@ -1,5 +1,5 @@
-#ifndef ARKI_CORE_STREAM_H
-#define ARKI_CORE_STREAM_H
+#ifndef ARKI_STREAM_H
+#define ARKI_STREAM_H
 
 #include <arki/core/fwd.h>
 #include <memory>
