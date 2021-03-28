@@ -160,35 +160,53 @@ size_t ConcreteStreamOutput::send_from_pipe(int fd)
         sent += send_buffer(buffer, res);
     }
 
-    ssize_t res;
-#if defined(__linux__) && defined(HAVE_SPLICE)
-    // Try splice
-    res = splice(fd, NULL, out, NULL, 4096 * 8, SPLICE_F_MORE);
-    if (res >= 0)
+    bool has_splice = true;
+    while (true)
     {
-        if (progress_callback)
-            progress_callback(res);
-        sent += res;
-        return sent;
+        if (has_splice)
+        {
+#ifdef HAVE_SPLICE
+            // Try splice
+            ssize_t res = splice(fd, NULL, out, NULL, TransferBuffer::size * 16, SPLICE_F_MORE);
+            if (res > 0)
+            {
+                if (progress_callback)
+                    progress_callback(res);
+                sent += res;
+            } else if (res == 0) {
+                break;
+            } else if (res < 0) {
+                if (errno == EINVAL)
+                {
+                    // Splice is not supported: pass it on to the traditional method
+                    has_splice = false;
+                    buffer.allocate();
+                    continue;
+                } else
+                    throw std::system_error(errno, std::system_category(), "cannot splice data to stream from a pipe");
+            }
+
+#else
+            // Splice is not supported: pass it on to the traditional method
+            has_splice = false;
+            buffer.allocate();
+#endif
+        } else {
+            // Fall back to read/write
+
+            // Read data from child
+            buffer.allocate();
+            ssize_t res = read(fd, buffer, buffer.size);
+            if (res < 0)
+                throw std::system_error(errno, std::system_category(), "cannot read data to stream from a pipe");
+            if (res == 0)
+                break;
+
+            // Pass it on
+            sent += send_buffer(buffer, res);
+        }
     }
 
-    if (errno != EINVAL)
-        throw std::system_error(errno, std::system_category(), "cannot splice data to stream from a pipe");
-
-    // Splice is not supported: pass it on to the traditional method
-#endif
-    // Fall back to read/write
-
-    // Read data from child
-    buffer.allocate();
-    res = read(fd, buffer, buffer.size);
-    if (res < 0)
-        throw std::system_error(errno, std::system_category(), "cannot read data to stream from a pipe");
-    if (res == 0)
-        return sent;
-
-    // Pass it on
-    sent += send_buffer(buffer, res);
     return sent;
 }
 

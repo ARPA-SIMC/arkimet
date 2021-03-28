@@ -1,5 +1,7 @@
 #include "tests.h"
+#include "base.h"
 #include "arki/utils/sys.h"
+#include <numeric>
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/ioctl.h>
@@ -174,6 +176,7 @@ add_method("send_file_segment", [&] {
 add_method("send_from_pipe", [&] {
     auto f = make_fixture();
 
+    // Neither the source not the target is a pipe, so this won't trigger sendfile
     sys::Tempfile tf1;
     tf1.write_all_or_throw(std::string("testfile"));
     tf1.lseek(1);
@@ -265,6 +268,7 @@ add_method("data_start_send_from_pipe", [&] {
         return out.send_file_segment(t, 1, 3);
     });
 
+    // Neither the source not the target is a pipe, so this won't trigger sendfile
     sys::Tempfile tf1;
     tf1.write_all_or_throw(std::string("testfile"));
     tf1.lseek(1);
@@ -288,6 +292,54 @@ add_method("data_start_send_from_pipe", [&] {
     wassert(actual(f->send_from_pipe(tf1)) == 0u);
     wassert(actual(f->cb_log) == std::vector<size_t>());
     wassert_false(fired);
+});
+
+add_method("large_send_line", [&] {
+    auto f = make_fixture();
+    std::vector<uint8_t> buf(stream::TransferBuffer::size * 3);
+
+    wassert(actual(f->send_line(buf.data(), buf.size())) == buf.size() + 1);
+    wassert(actual(f->cb_log) == std::vector<size_t>{buf.size() + 1});
+
+    wassert(actual(f->streamed_contents().size()) == buf.size() + 1);
+});
+
+add_method("large_send_buffer", [&] {
+    auto f = make_fixture();
+    std::vector<uint8_t> buf(stream::TransferBuffer::size * 3);
+
+    wassert(actual(f->send_buffer(buf.data(), buf.size())) == buf.size());
+    wassert(actual(f->cb_log) == std::vector<size_t>{buf.size()});
+
+    wassert(actual(f->streamed_contents().size()) == buf.size());
+});
+
+add_method("large_send_file_segment", [&] {
+    auto f = make_fixture();
+    std::vector<uint8_t> buf(stream::TransferBuffer::size * 3);
+
+    sys::Tempfile tf1;
+    tf1.write_all_or_retry(buf);
+
+    wassert(actual(f->send_file_segment(tf1, 0, buf.size())) == buf.size());
+    wassert(actual(std::accumulate(f->cb_log.begin(), f->cb_log.end(), 0u)) == buf.size());
+
+    wassert(actual(f->streamed_contents().size()) == buf.size());
+});
+
+add_method("large_send_from_pipe", [&] {
+    auto f = make_fixture();
+    std::vector<uint8_t> buf(stream::TransferBuffer::size * 3);
+
+    // Neither the source not the target is a pipe, so this won't trigger sendfile
+    sys::Tempfile tf1;
+    tf1.write_all_or_retry(buf);
+    tf1.lseek(0);
+
+    wassert(actual(f->send_from_pipe(tf1)) == buf.size());
+    wassert(actual(std::accumulate(f->cb_log.begin(), f->cb_log.end(), 0u)) == buf.size());
+
+    wassert(actual(f->streamed_contents().size()) == buf.size());
 });
 
 }

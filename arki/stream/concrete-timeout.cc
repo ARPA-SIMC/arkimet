@@ -247,7 +247,7 @@ size_t ConcreteTimeoutStreamOutput::send_from_pipe(int fd)
     {
         if (has_splice)
         {
-#if defined(__linux__) && defined(HAVE_SPLICE)
+#ifdef HAVE_SPLICE
             // Try splice
             ssize_t res = splice(fd, NULL, out, NULL, 4096 * 8, SPLICE_F_MORE);
             if (res == 0)
