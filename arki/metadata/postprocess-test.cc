@@ -183,8 +183,8 @@ add_method("zeroes_arg", [] {
     p.set_output(*stream);
     p.start();
 
-    produceGRIB(p);
-    p.flush();
+    wassert(produceGRIB(p));
+    wassert(p.flush());
 
     wassert(actual(sys::size(fname)) == 4096*1024u);
 
@@ -202,8 +202,8 @@ add_method("zeroes_arg_large", [] {
     p.start();
 
     for (unsigned i = 0; i < 128; ++i)
-        produceGRIB(p);
-    p.flush();
+        wassert(produceGRIB(p));
+    wassert(p.flush());
 
     wassert(actual(sys::size(fname)) == 4096*1024u);
 
@@ -226,11 +226,11 @@ add_method("issue209", [] {
         md->set_source_inline("bufr",
                 data_manager.to_data("bufr",
                     std::vector<uint8_t>(md->sourceBlob().size)));
-        p.process(md);
+        wassert(p.process(md));
         return true;
     });
 
-    p.flush();
+    wassert(p.flush());
 });
 
 add_method("partialread", [] {
