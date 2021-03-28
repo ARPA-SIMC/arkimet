@@ -15,7 +15,7 @@ class ConcreteTimeoutStreamOutput: public BaseStreamOutput
     int orig_fl = -1;
     pollfd pollinfo;
 
-    void wait_readable();
+    void wait_writable();
 
 public:
     ConcreteTimeoutStreamOutput(core::NamedFileDescriptor& out, unsigned timeout_ms);

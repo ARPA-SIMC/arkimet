@@ -9,7 +9,7 @@
 namespace arki {
 namespace stream {
 
-void ConcreteTimeoutStreamOutput::wait_readable()
+void ConcreteTimeoutStreamOutput::wait_writable()
 {
     pollinfo.revents = 0;
     int res = ::poll(&pollinfo, 1, timeout_ms);
@@ -72,7 +72,7 @@ size_t ConcreteTimeoutStreamOutput::send_buffer(const void* data, size_t size)
         if (pos >= size)
             break;
 
-        wait_readable();
+        wait_writable();
     }
     return sent;
 
@@ -144,7 +144,7 @@ size_t ConcreteTimeoutStreamOutput::send_line(const void* data, size_t size)
                 progress_callback(res);
         } else
             break;
-        wait_readable();
+        wait_writable();
     }
     return sent;
 }
@@ -215,7 +215,7 @@ size_t ConcreteTimeoutStreamOutput::send_file_segment(arki::core::NamedFileDescr
 
         if (written >= size)
             break;
-        wait_readable();
+        wait_writable();
         // iotrace::trace_file(dirfd, offset, size, "streamed data");
     }
     return sent;
@@ -294,7 +294,7 @@ size_t ConcreteTimeoutStreamOutput::send_from_pipe(int fd)
             }
         }
 
-        wait_readable();
+        wait_writable();
     }
 }
 
