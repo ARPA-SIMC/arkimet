@@ -77,6 +77,8 @@ ConcreteTimeoutStreamOutput::~ConcreteTimeoutStreamOutput()
 
 size_t ConcreteTimeoutStreamOutput::send_line(const void* data, size_t size)
 {
+    if (data_start_callback) fire_data_start_callback();
+
     struct iovec todo[2] = {
         { (void*)data, size },
         { (void*)"\n", 1 },
@@ -123,6 +125,8 @@ size_t ConcreteTimeoutStreamOutput::send_line(const void* data, size_t size)
 
 size_t ConcreteTimeoutStreamOutput::send_file_segment(arki::core::NamedFileDescriptor& fd, off_t offset, size_t size)
 {
+    if (data_start_callback) fire_data_start_callback();
+
     TransferBuffer buffer;
     bool has_sendfile = true;
     size_t written = 0;
@@ -172,6 +176,8 @@ size_t ConcreteTimeoutStreamOutput::send_file_segment(arki::core::NamedFileDescr
 
 size_t ConcreteTimeoutStreamOutput::send_buffer(const void* data, size_t size)
 {
+    if (data_start_callback) fire_data_start_callback();
+
     size_t pos = 0;
     while (true)
     {
@@ -216,6 +222,8 @@ size_t ConcreteTimeoutStreamOutput::send_buffer(const void* data, size_t size)
 
 size_t ConcreteTimeoutStreamOutput::send_from_pipe(int fd)
 {
+    if (data_start_callback) fire_data_start_callback();
+
     TransferBuffer buffer;
     bool has_splice = true;
     size_t sent = 0;

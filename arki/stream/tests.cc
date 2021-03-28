@@ -96,8 +96,7 @@ WriteTest::~WriteTest()
 }
 
 
-void StreamTests::register_tests()
-{
+void StreamTests::register_tests() {
 using namespace arki::tests;
 
 add_method("send_line", [&] {
@@ -142,6 +141,65 @@ add_method("send_from_pipe", [&] {
 
     wassert(actual(f->streamed_contents()) == "estfile");
 });
+
+add_method("data_start_send_line", [&] {
+    auto f = make_fixture();
+    f->output->set_data_start_callback([](StreamOutput& out) { out.send_buffer("start", 5); });
+
+    f->output->send_line("testline", 8);
+    f->output->send_line("testline1", 9);
+
+    wassert(actual(f->streamed_contents()) == "starttestline\ntestline1\n");
+});
+
+add_method("data_start_send_buffer", [&] {
+    auto f = make_fixture();
+    f->output->set_data_start_callback([](StreamOutput& out) { out.send_line("start", 5); });
+
+    f->output->send_buffer("testbuf", 7);
+    f->output->send_buffer("testbuf", 4);
+
+    wassert(actual(f->streamed_contents()) == "start\ntestbuftest");
+});
+
+add_method("data_start_send_file_segment", [&] {
+    auto f = make_fixture();
+    f->output->set_data_start_callback([](StreamOutput& out) {
+        sys::Tempfile t;
+        t.write_all_or_throw("start", 5);
+        t.lseek(0);
+        out.send_from_pipe(t);
+    });
+
+    sys::Tempfile tf1;
+    tf1.write_all_or_throw(std::string("testfile"));
+
+    f->output->send_file_segment(tf1, 1, 6);
+    f->output->send_file_segment(tf1, 5, 1);
+    f->output->send_file_segment(tf1, 0, 4);
+
+    wassert(actual(f->streamed_contents()) == "startestfilitest");
+});
+
+add_method("data_start_send_from_pipe", [&] {
+    auto f = make_fixture();
+    f->output->set_data_start_callback([](StreamOutput& out) {
+        sys::Tempfile t;
+        t.write_all_or_throw("start", 5);
+        out.send_file_segment(t, 1, 3);
+    });
+
+    sys::Tempfile tf1;
+    tf1.write_all_or_throw(std::string("testfile"));
+    tf1.lseek(1);
+    f->output->send_from_pipe(tf1);
+
+    tf1.lseek(2);
+    f->output->send_from_pipe(tf1);
+
+    wassert(actual(f->streamed_contents()) == "tarestfilestfile");
+});
+
 }
 
 }

@@ -11,6 +11,8 @@ AbstractOutputStreamOutput::AbstractOutputStreamOutput(core::AbstractOutputFile&
 
 size_t AbstractOutputStreamOutput::send_line(const void* data, size_t size)
 {
+    if (data_start_callback) fire_data_start_callback();
+
     out.write(data, size);
     out.write("\n", 1);
     if (progress_callback)
@@ -20,6 +22,8 @@ size_t AbstractOutputStreamOutput::send_line(const void* data, size_t size)
 
 size_t AbstractOutputStreamOutput::send_file_segment(arki::core::NamedFileDescriptor& fd, off_t offset, size_t size)
 {
+    if (data_start_callback) fire_data_start_callback();
+
     constexpr size_t buf_size = 4096 * 16;
     char buf[buf_size];
     size_t pos = 0;
@@ -40,6 +44,8 @@ size_t AbstractOutputStreamOutput::send_file_segment(arki::core::NamedFileDescri
 
 size_t AbstractOutputStreamOutput::send_buffer(const void* data, size_t size)
 {
+    if (data_start_callback) fire_data_start_callback();
+
     out.write(data, size);
     if (progress_callback)
         progress_callback(size);
@@ -48,6 +54,8 @@ size_t AbstractOutputStreamOutput::send_buffer(const void* data, size_t size)
 
 size_t AbstractOutputStreamOutput::send_from_pipe(int fd)
 {
+    if (data_start_callback) fire_data_start_callback();
+
     // Read a small chunk of data from child, to trigger data_start_hook
     char buf[4096 * 8];
     ssize_t res = read(fd, buf, 4096 * 8);

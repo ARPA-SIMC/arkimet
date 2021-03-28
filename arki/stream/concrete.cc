@@ -10,6 +10,8 @@ namespace stream {
 
 size_t ConcreteStreamOutput::send_line(const void* data, size_t size)
 {
+    if (data_start_callback) fire_data_start_callback();
+
     struct iovec todo[2] = {
         { (void*)data, size },
         { (void*)"\n", 1 },
@@ -24,6 +26,8 @@ size_t ConcreteStreamOutput::send_line(const void* data, size_t size)
 
 size_t ConcreteStreamOutput::send_file_segment(arki::core::NamedFileDescriptor& fd, off_t offset, size_t size)
 {
+    if (data_start_callback) fire_data_start_callback();
+
     fd.sendfile(out, offset, size);
     arki::utils::acct::plain_data_read_count.incr();
     // iotrace::trace_file(dirfd, offset, size, "streamed data");
@@ -34,6 +38,8 @@ size_t ConcreteStreamOutput::send_file_segment(arki::core::NamedFileDescriptor& 
 
 size_t ConcreteStreamOutput::send_buffer(const void* data, size_t size)
 {
+    if (data_start_callback) fire_data_start_callback();
+
     // TODO: retry instead of throw
     out.write_all_or_throw(data, size);
     if (progress_callback)
@@ -61,6 +67,8 @@ size_t ConcreteStreamOutput::send_buffer(const void* data, size_t size)
 
 size_t ConcreteStreamOutput::send_from_pipe(int fd)
 {
+    if (data_start_callback) fire_data_start_callback();
+
     ssize_t res;
 #if defined(__linux__) && defined(HAVE_SPLICE)
     // Try splice
