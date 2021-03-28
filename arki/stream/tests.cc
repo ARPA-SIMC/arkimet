@@ -1,6 +1,7 @@
 #include "tests.h"
 #include "base.h"
 #include "arki/utils/sys.h"
+#include "arki/utils/subprocess.h"
 #include <numeric>
 #include <unistd.h>
 #include <fcntl.h>
@@ -132,6 +133,39 @@ WriteTest::~WriteTest()
 }
 
 
+namespace {
+
+class PipeSource : public subprocess::Child
+{
+protected:
+    std::string data;
+
+    int main() noexcept override
+    {
+        sys::FileDescriptor out(1);
+
+        for (size_t pos = 0; pos < data.size(); )
+            pos += out.write(data.data() + pos, data.size() - pos);
+        return 0;
+    }
+
+public:
+    PipeSource(const std::string& data)
+        : data(data)
+    {
+        set_stdout(subprocess::Redirect::PIPE);
+        fork();
+    }
+    ~PipeSource()
+    {
+        terminate();
+        wait();
+    }
+};
+
+}
+
+
 void StreamTests::register_tests() {
 using namespace arki::tests;
 
@@ -173,10 +207,10 @@ add_method("send_file_segment", [&] {
     wassert(actual(f->streamed_contents()) == "estfilitest");
 });
 
-add_method("send_from_pipe", [&] {
+add_method("send_from_pipe_read", [&] {
     auto f = make_fixture();
 
-    // Neither the source not the target is a pipe, so this won't trigger sendfile
+    // Neither the source not the target is a pipe, so this won't trigger splice
     sys::Tempfile tf1;
     tf1.write_all_or_throw(std::string("testfile"));
     tf1.lseek(1);
@@ -185,6 +219,17 @@ add_method("send_from_pipe", [&] {
     wassert(actual(f->cb_log) == std::vector<size_t>{7});
 
     wassert(actual(f->streamed_contents()) == "estfile");
+});
+
+add_method("send_from_pipe_splice", [&] {
+    auto f = make_fixture();
+
+    // Source is a pipe and it should trigger splice
+    PipeSource child("testfile");
+    wassert(actual(f->send_from_pipe(child.get_stdout())) == 8u);
+    wassert(actual(f->cb_log) == std::vector<size_t>{8});
+
+    wassert(actual(f->streamed_contents()) == "testfile");
 });
 
 add_method("data_start_send_line", [&] {
@@ -260,7 +305,7 @@ add_method("data_start_send_file_segment", [&] {
     wassert_false(fired);
 });
 
-add_method("data_start_send_from_pipe", [&] {
+add_method("data_start_send_from_pipe_read", [&] {
     auto f = make_fixture();
     f->set_data_start_callback([](StreamOutput& out) {
         sys::Tempfile t;
@@ -268,7 +313,7 @@ add_method("data_start_send_from_pipe", [&] {
         return out.send_file_segment(t, 1, 3);
     });
 
-    // Neither the source not the target is a pipe, so this won't trigger sendfile
+    // Neither the source not the target is a pipe, so this won't trigger splice
     sys::Tempfile tf1;
     tf1.write_all_or_throw(std::string("testfile"));
     tf1.lseek(1);
@@ -290,6 +335,36 @@ add_method("data_start_send_from_pipe", [&] {
     f->set_data_start_callback([&](StreamOutput& out) { fired=true; return 0u; });
     tf1.lseek(0, SEEK_END);
     wassert(actual(f->send_from_pipe(tf1)) == 0u);
+    wassert(actual(f->cb_log) == std::vector<size_t>());
+    wassert_false(fired);
+});
+
+add_method("data_start_send_from_pipe_splice", [&] {
+    auto f = make_fixture();
+    f->set_data_start_callback([](StreamOutput& out) {
+        sys::Tempfile t;
+        t.write_all_or_throw("start", 5);
+        return out.send_file_segment(t, 1, 3);
+    });
+
+    // Source is a pipe and it should trigger splice
+    PipeSource child("testfile");
+    wassert(actual(f->send_from_pipe(child.get_stdout())) == 8u + 3u);
+    wassert(actual(f->cb_log) == std::vector<size_t>{3, 8});
+    wassert(actual(f->send_from_pipe(child.get_stdout())) == 0u);
+    wassert(actual(f->cb_log) == std::vector<size_t>());
+
+    // Pipe from an empty pipe
+    PipeSource child1("");
+    wassert(actual(f->send_from_pipe(child1.get_stdout())) == 0u);
+    wassert(actual(f->cb_log) == std::vector<size_t>());
+
+    wassert(actual(f->streamed_contents()) == "tartestfile");
+
+    bool fired = false;
+    f->set_data_start_callback([&](StreamOutput& out) { fired=true; return 0u; });
+    PipeSource child2("");
+    wassert(actual(f->send_from_pipe(child2.get_stdout())) == 0u);
     wassert(actual(f->cb_log) == std::vector<size_t>());
     wassert_false(fired);
 });
@@ -327,11 +402,11 @@ add_method("large_send_file_segment", [&] {
     wassert(actual(f->streamed_contents().size()) == buf.size());
 });
 
-add_method("large_send_from_pipe", [&] {
+add_method("large_send_from_pipe_read", [&] {
     auto f = make_fixture();
     std::vector<uint8_t> buf(stream::TransferBuffer::size * 3);
 
-    // Neither the source not the target is a pipe, so this won't trigger sendfile
+    // Neither the source not the target is a pipe, so this won't trigger splice
     sys::Tempfile tf1;
     tf1.write_all_or_retry(buf);
     tf1.lseek(0);
@@ -340,6 +415,34 @@ add_method("large_send_from_pipe", [&] {
     wassert(actual(std::accumulate(f->cb_log.begin(), f->cb_log.end(), 0u)) == buf.size());
 
     wassert(actual(f->streamed_contents().size()) == buf.size());
+});
+
+add_method("large_send_from_pipe_splice", [&] {
+    auto f = make_fixture();
+    size_t size = stream::TransferBuffer::size * 3;
+
+    // Source is a pipe and it should trigger splice
+    PipeSource child(std::string(size, 0));
+    wassert(actual(f->send_from_pipe(child.get_stdout())) == size);
+    wassert(actual(std::accumulate(f->cb_log.begin(), f->cb_log.end(), 0u)) == size);
+
+    wassert(actual(f->streamed_contents().size()) == size);
+});
+
+add_method("data_start_large_send_from_pipe_splice", [&] {
+    auto f = make_fixture();
+    f->set_data_start_callback([](StreamOutput& out) {
+        return out.send_line("foo", 3);
+    });
+
+    size_t size = stream::TransferBuffer::size * 3;
+
+    // Source is a pipe and it should trigger splice
+    PipeSource child(std::string(size, ' '));
+    wassert(actual(f->send_from_pipe(child.get_stdout())) == size + 4);
+    wassert(actual(std::accumulate(f->cb_log.begin(), f->cb_log.end(), 0u)) == size + 4);
+
+    wassert(actual(f->streamed_contents()).startswith("foo\n        "));
 });
 
 }
