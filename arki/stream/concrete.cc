@@ -1,6 +1,7 @@
 #include "concrete.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/accounting.h"
+#include "arki/libconfig.h"
 #include <system_error>
 #include <sys/uio.h>
 

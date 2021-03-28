@@ -25,6 +25,8 @@ nobase_dist_arkiinclude_HEADERS = \
 		stream.h \
 		stream/base.h \
 		stream/concrete.h \
+		stream/concrete-timeout.h \
+		stream/abstractoutput.h \
 		defs.h \
 		exceptions.h \
 		bbox.h \
@@ -235,6 +237,8 @@ libarkimet_la_SOURCES += \
 		stream.cc \
 		stream/base.cc \
 		stream/concrete.cc \
+		stream/concrete-timeout.cc \
+		stream/abstractoutput.cc \
 		exceptions.cc \
 		nag.cc \
 		utils/accounting.cc \
@@ -355,6 +359,8 @@ tests_arki_test_SOURCES += \
 		stream-test.cc \
 		stream/base-test.cc \
 		stream/concrete-test.cc \
+		stream/concrete-timeout-test.cc \
+		stream/abstractoutput-test.cc \
 		utils/accounting-test.cc \
 		utils/gzip-test.cc \
 		utils/yaml-test.cc \
