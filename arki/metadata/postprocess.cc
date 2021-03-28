@@ -61,9 +61,6 @@ public:
     /// Subcommand with the child to run
     subprocess::Popen cmd;
 
-    /// Non-null if we should notify the hook as soon as some data arrives from the processor
-    std::function<void(StreamOutput&)> data_start_hook;
-
     /**
      * StreamOutput used to send data from the subprocess to the output stream.
      */
@@ -81,33 +78,11 @@ public:
 
     void read_stdout() override
     {
-        if (!data_start_hook)
-        {
-            // Stream directly out of a pipe
-            size_t res = m_stream->send_from_pipe(subproc.get_stdout());
-            if (res == 0)
-                subproc.close_stdout();
-            return;
-        } else {
-            // Read a small chunk of data from child, to trigger data_start_hook
-            char buf[4096];
-            ssize_t res = read(subproc.get_stdout(), buf, 4096);
-            if (res < 0)
-                throw_system_error("reading from child postprocessor");
-            if (res == 0)
-            {
-                subproc.close_stdout();
-                return;
-            }
-
-            // Fire hook
-            data_start_hook(*m_stream);
-            // Only once
-            data_start_hook = nullptr;
-
-            // Pass it on
-            m_stream->send_buffer(buf, res);
-        }
+        // Stream directly out of a pipe
+        size_t res = m_stream->send_from_pipe(subproc.get_stdout());
+        if (res == 0)
+            subproc.close_stdout();
+        return;
     }
 
     void read_stderr() override
@@ -170,11 +145,6 @@ void Postprocess::set_output(StreamOutput& out)
 void Postprocess::set_error(std::ostream& err)
 {
     m_child->m_err = &err;
-}
-
-void Postprocess::set_data_start_hook(std::function<void(StreamOutput&)> hook)
-{
-    m_child->data_start_hook = hook;
 }
 
 void Postprocess::validate(const core::cfg::Section& cfg)

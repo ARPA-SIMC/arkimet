@@ -50,12 +50,6 @@ public:
     /// Set the output stream where we send the postprocessor stderr
     void set_error(std::ostream& err);
 
-    /**
-     * Set hook to be called when the child process has produced its first
-     * data, just before the data is sent to the next consumer
-     */
-    void set_data_start_hook(std::function<void(StreamOutput&)> hook);
-
     // Process one metadata
     bool process(std::shared_ptr<Metadata> md);
 
