@@ -19,7 +19,7 @@ struct CommonTestsFixture : public stream::StreamTestsFixture
     CommonTestsFixture()
         : out(buffer, "memory buffer")
     {
-        output = StreamOutput::create(out);
+        set_output(StreamOutput::create(out));
     }
 
     std::string streamed_contents() override

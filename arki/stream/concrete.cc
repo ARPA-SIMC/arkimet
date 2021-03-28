@@ -15,7 +15,8 @@ size_t ConcreteStreamOutput::send_buffer(const void* data, size_t size)
     if (size == 0)
         return sent;
 
-    if (data_start_callback) sent += fire_data_start_callback();
+    if (data_start_callback)
+        sent += fire_data_start_callback();
 
     size_t pos = 0;
     while (pos < size)
@@ -116,6 +117,8 @@ size_t ConcreteStreamOutput::send_file_segment(arki::core::NamedFileDescriptor& 
             } else if (res == 0)
                 break;
             else {
+                if (progress_callback)
+                    progress_callback(res);
                 size -= res;
                 sent += res;
             }
@@ -132,8 +135,6 @@ size_t ConcreteStreamOutput::send_file_segment(arki::core::NamedFileDescriptor& 
 
     arki::utils::acct::plain_data_read_count.incr();
     // iotrace::trace_file(dirfd, offset, size, "streamed data");
-    if (progress_callback)
-        progress_callback(size);
     return sent;
 }
 

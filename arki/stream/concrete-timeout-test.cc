@@ -16,7 +16,7 @@ struct CommonTestsFixture : public stream::StreamTestsFixture
 
     CommonTestsFixture()
     {
-        output = StreamOutput::create(tf, 1000);
+        set_output(StreamOutput::create(tf, 1000));
     }
 
     std::string streamed_contents() override

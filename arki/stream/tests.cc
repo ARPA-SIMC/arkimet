@@ -75,6 +75,40 @@ void BlockingSink::empty_buffer()
 }
 
 
+void StreamTestsFixture::set_output(std::unique_ptr<StreamOutput>&& output)
+{
+    this->output = std::move(output);
+
+    this->output->set_progress_callback([&](size_t written) {
+        cb_log.push_back(written);
+    });
+}
+
+size_t StreamTestsFixture::send_line(const void* data, size_t size)
+{
+    cb_log.clear();
+    return output->send_line(data, size);
+}
+
+size_t StreamTestsFixture::send_file_segment(arki::core::NamedFileDescriptor& fd, off_t offset, size_t size)
+{
+    cb_log.clear();
+    return output->send_file_segment(fd, offset, size);
+}
+
+size_t StreamTestsFixture::send_buffer(const void* data, size_t size)
+{
+    cb_log.clear();
+    return output->send_buffer(data, size);
+}
+
+size_t StreamTestsFixture::send_from_pipe(int fd)
+{
+    cb_log.clear();
+    return output->send_from_pipe(fd);
+}
+
+
 WriteTest::WriteTest(StreamOutput& writer, BlockingSink& sink, int prefill)
     : writer(writer), sink(sink)
 {
@@ -102,8 +136,10 @@ using namespace arki::tests;
 add_method("send_line", [&] {
     auto f = make_fixture();
 
-    wassert(actual(f->output->send_line("testline", 8)) == 9u);
-    wassert(actual(f->output->send_line("testline1", 9)) == 10u);
+    wassert(actual(f->send_line("testline", 8)) == 9u);
+    wassert(actual(f->cb_log) == std::vector<size_t>{9u});
+    wassert(actual(f->send_line("testline1", 9)) == 10u);
+    wassert(actual(f->cb_log) == std::vector<size_t>{10u});
 
     wassert(actual(f->streamed_contents()) == "testline\ntestline1\n");
 });
@@ -111,8 +147,10 @@ add_method("send_line", [&] {
 add_method("send_buffer", [&] {
     auto f = make_fixture();
 
-    wassert(actual(f->output->send_buffer("testbuf", 7)) == 7u);
-    wassert(actual(f->output->send_buffer("testbuf", 4)) == 4u);
+    wassert(actual(f->send_buffer("testbuf", 7)) == 7u);
+    wassert(actual(f->cb_log) == std::vector<size_t>{7u});
+    wassert(actual(f->send_buffer("testbuf", 4)) == 4u);
+    wassert(actual(f->cb_log) == std::vector<size_t>{4u});
 
     wassert(actual(f->streamed_contents()) == "testbuftest");
 });
@@ -123,9 +161,12 @@ add_method("send_file_segment", [&] {
     sys::Tempfile tf1;
     tf1.write_all_or_throw(std::string("testfile"));
 
-    wassert(actual(f->output->send_file_segment(tf1, 1, 6)) == 6u);
-    wassert(actual(f->output->send_file_segment(tf1, 5, 1)) == 1u);
-    wassert(actual(f->output->send_file_segment(tf1, 0, 4)) == 4u);
+    wassert(actual(f->send_file_segment(tf1, 1, 6)) == 6u);
+    wassert(actual(f->cb_log) == std::vector<size_t>{6});
+    wassert(actual(f->send_file_segment(tf1, 5, 1)) == 1u);
+    wassert(actual(f->cb_log) == std::vector<size_t>{1});
+    wassert(actual(f->send_file_segment(tf1, 0, 4)) == 4u);
+    wassert(actual(f->cb_log) == std::vector<size_t>{4});
 
     wassert(actual(f->streamed_contents()) == "estfilitest");
 });
@@ -137,44 +178,51 @@ add_method("send_from_pipe", [&] {
     tf1.write_all_or_throw(std::string("testfile"));
     tf1.lseek(1);
 
-    wassert(actual(f->output->send_from_pipe(tf1)) == 7u);
+    wassert(actual(f->send_from_pipe(tf1)) == 7u);
+    wassert(actual(f->cb_log) == std::vector<size_t>{7});
 
     wassert(actual(f->streamed_contents()) == "estfile");
 });
 
 add_method("data_start_send_line", [&] {
     auto f = make_fixture();
-    f->output->set_data_start_callback([](StreamOutput& out) { return out.send_buffer("start", 5); });
+    f->set_data_start_callback([](StreamOutput& out) { return out.send_buffer("start", 5); });
 
-    wassert(actual(f->output->send_line("testline", 8)) == 9u + 5u);
-    wassert(actual(f->output->send_line("testline1", 9)) == 10u);
+    wassert(actual(f->send_line("testline", 8)) == 9u + 5u);
+    wassert(actual(f->cb_log) == std::vector<size_t>{5, 9});
+    wassert(actual(f->send_line("testline1", 9)) == 10u);
+    wassert(actual(f->cb_log) == std::vector<size_t>{10});
 
     wassert(actual(f->streamed_contents()) == "starttestline\ntestline1\n");
 
     bool fired = false;
-    f->output->set_data_start_callback([&](StreamOutput& out) { fired=true; return 0u; });
-    wassert(actual(f->output->send_line("testline", 0)) == 0u);
+    f->set_data_start_callback([&](StreamOutput& out) { fired=true; return 0u; });
+    wassert(actual(f->send_line("testline", 0)) == 0u);
+    wassert(actual(f->cb_log) == std::vector<size_t>());
     wassert_false(fired);
 });
 
 add_method("data_start_send_buffer", [&] {
     auto f = make_fixture();
-    f->output->set_data_start_callback([](StreamOutput& out) { return out.send_line("start", 5); });
+    f->set_data_start_callback([](StreamOutput& out) { return out.send_line("start", 5); });
 
-    wassert(actual(f->output->send_buffer("testbuf", 7)) == 7u + 6u);
-    wassert(actual(f->output->send_buffer("testbuf", 4)) == 4u);
+    wassert(actual(f->send_buffer("testbuf", 7)) == 7u + 6u);
+    wassert(actual(f->cb_log) == std::vector<size_t>{6, 7});
+    wassert(actual(f->send_buffer("testbuf", 4)) == 4u);
+    wassert(actual(f->cb_log) == std::vector<size_t>{4});
 
     wassert(actual(f->streamed_contents()) == "start\ntestbuftest");
 
     bool fired = false;
-    f->output->set_data_start_callback([&](StreamOutput& out) { fired=true; return 0u; });
-    wassert(actual(f->output->send_buffer("testline", 0)) == 0u);
+    f->set_data_start_callback([&](StreamOutput& out) { fired=true; return 0u; });
+    wassert(actual(f->send_buffer("testline", 0)) == 0u);
+    wassert(actual(f->cb_log) == std::vector<size_t>());
     wassert_false(fired);
 });
 
 add_method("data_start_send_file_segment", [&] {
     auto f = make_fixture();
-    f->output->set_data_start_callback([](StreamOutput& out) {
+    f->set_data_start_callback([](StreamOutput& out) {
         sys::Tempfile t;
         t.write_all_or_throw("start", 5);
         t.lseek(0);
@@ -184,28 +232,34 @@ add_method("data_start_send_file_segment", [&] {
     sys::Tempfile tf1;
     tf1.write_all_or_throw(std::string("testfile"));
 
-    wassert(actual(f->output->send_file_segment(tf1, 1, 6)) == 6u + 5u);
-    wassert(actual(f->output->send_file_segment(tf1, 5, 1)) == 1u);
-    wassert(actual(f->output->send_file_segment(tf1, 0, 4)) == 4u);
+    wassert(actual(f->send_file_segment(tf1, 1, 6)) == 6u + 5u);
+    wassert(actual(f->cb_log) == std::vector<size_t>{5, 6});
+    wassert(actual(f->send_file_segment(tf1, 5, 1)) == 1u);
+    wassert(actual(f->cb_log) == std::vector<size_t>{1});
+    wassert(actual(f->send_file_segment(tf1, 0, 4)) == 4u);
+    wassert(actual(f->cb_log) == std::vector<size_t>{4});
     // Send past the end of file
-    wassert(actual(f->output->send_file_segment(tf1, 6, 4)) == 2u);
+    wassert(actual(f->send_file_segment(tf1, 6, 4)) == 2u);
+    wassert(actual(f->cb_log) == std::vector<size_t>{2});
 
     wassert(actual(f->streamed_contents()) == "startestfilitestle");
 
     bool fired = false;
-    f->output->set_data_start_callback([&](StreamOutput& out) { fired=true; return 0u; });
-    wassert(actual(f->output->send_file_segment(tf1, 3, 0)) == 0u);
+    f->set_data_start_callback([&](StreamOutput& out) { fired=true; return 0u; });
+    wassert(actual(f->send_file_segment(tf1, 3, 0)) == 0u);
+    wassert(actual(f->cb_log) == std::vector<size_t>());
     wassert_false(fired);
 
     fired = false;
-    f->output->set_data_start_callback([&](StreamOutput& out) { fired=true; return 0u; });
-    wassert(actual(f->output->send_file_segment(tf1, 8, 1)) == 0u);
+    f->set_data_start_callback([&](StreamOutput& out) { fired=true; return 0u; });
+    wassert(actual(f->send_file_segment(tf1, 8, 1)) == 0u);
+    wassert(actual(f->cb_log) == std::vector<size_t>());
     wassert_false(fired);
 });
 
 add_method("data_start_send_from_pipe", [&] {
     auto f = make_fixture();
-    f->output->set_data_start_callback([](StreamOutput& out) {
+    f->set_data_start_callback([](StreamOutput& out) {
         sys::Tempfile t;
         t.write_all_or_throw("start", 5);
         return out.send_file_segment(t, 1, 3);
@@ -214,21 +268,25 @@ add_method("data_start_send_from_pipe", [&] {
     sys::Tempfile tf1;
     tf1.write_all_or_throw(std::string("testfile"));
     tf1.lseek(1);
-    wassert(actual(f->output->send_from_pipe(tf1)) == 7u + 3u);
+    wassert(actual(f->send_from_pipe(tf1)) == 7u + 3u);
+    wassert(actual(f->cb_log) == std::vector<size_t>{3, 7});
 
     tf1.lseek(2);
-    wassert(actual(f->output->send_from_pipe(tf1)) == 6u);
+    wassert(actual(f->send_from_pipe(tf1)) == 6u);
+    wassert(actual(f->cb_log) == std::vector<size_t>{6});
 
     // Pipe from end of file
     tf1.lseek(0, SEEK_END);
-    wassert(actual(f->output->send_from_pipe(tf1)) == 0u);
+    wassert(actual(f->send_from_pipe(tf1)) == 0u);
+    wassert(actual(f->cb_log) == std::vector<size_t>());
 
     wassert(actual(f->streamed_contents()) == "tarestfilestfile");
 
     bool fired = false;
-    f->output->set_data_start_callback([&](StreamOutput& out) { fired=true; return 0u; });
+    f->set_data_start_callback([&](StreamOutput& out) { fired=true; return 0u; });
     tf1.lseek(0, SEEK_END);
-    wassert(actual(f->output->send_from_pipe(tf1)) == 0u);
+    wassert(actual(f->send_from_pipe(tf1)) == 0u);
+    wassert(actual(f->cb_log) == std::vector<size_t>());
     wassert_false(fired);
 });
 

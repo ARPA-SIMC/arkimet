@@ -50,11 +50,23 @@ struct WriteTest
 
 struct StreamTestsFixture
 {
+protected:
     std::unique_ptr<StreamOutput> output;
+
+public:
+    std::vector<size_t> cb_log;
 
     virtual ~StreamTestsFixture() {}
 
+    void set_output(std::unique_ptr<StreamOutput>&& output);
+
     virtual std::string streamed_contents() = 0;
+
+    void set_data_start_callback(std::function<size_t(StreamOutput&)> f) { output->set_data_start_callback(f); }
+    size_t send_line(const void* data, size_t size);
+    size_t send_file_segment(arki::core::NamedFileDescriptor& fd, off_t offset, size_t size);
+    size_t send_buffer(const void* data, size_t size);
+    size_t send_from_pipe(int fd);
 };
 
 
