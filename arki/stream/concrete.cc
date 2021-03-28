@@ -167,7 +167,7 @@ size_t ConcreteStreamOutput::send_from_pipe(int fd)
         {
 #ifdef HAVE_SPLICE
             // Try splice
-            ssize_t res = splice(fd, NULL, out, NULL, TransferBuffer::size * 16, SPLICE_F_MORE);
+            ssize_t res = splice(fd, NULL, out, NULL, TransferBuffer::size * 128, SPLICE_F_MORE);
             if (res > 0)
             {
                 if (progress_callback)
