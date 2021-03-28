@@ -228,6 +228,7 @@ test_arkimet_sources = [
     'stream/concrete-test.cc',
     'stream/concrete-timeout-test.cc',
     'stream/abstractoutput-test.cc',
+    'stream/tests.cc',
     'utils/accounting-test.cc',
     'utils/gzip-test.cc',
     'utils/yaml-test.cc',

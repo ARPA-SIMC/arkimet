@@ -27,6 +27,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		stream/concrete.h \
 		stream/concrete-timeout.h \
 		stream/abstractoutput.h \
+		stream/tests.h \
 		defs.h \
 		exceptions.h \
 		bbox.h \
@@ -361,6 +362,7 @@ tests_arki_test_SOURCES += \
 		stream/concrete-test.cc \
 		stream/concrete-timeout-test.cc \
 		stream/abstractoutput-test.cc \
+		stream/tests.cc \
 		utils/accounting-test.cc \
 		utils/gzip-test.cc \
 		utils/yaml-test.cc \

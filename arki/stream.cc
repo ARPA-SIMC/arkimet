@@ -6,12 +6,9 @@
 using namespace arki::utils;
 
 namespace arki {
+
 StreamOutput::~StreamOutput()
 {
-}
-
-namespace stream {
-
 }
 
 std::unique_ptr<StreamOutput> StreamOutput::create(core::NamedFileDescriptor& out)
