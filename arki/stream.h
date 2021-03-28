@@ -37,7 +37,7 @@ public:
     /**
      * Set a callback to be called once before the first byte is streamed out
      */
-    virtual void set_data_start_callback(std::function<void(StreamOutput&)>) = 0;
+    virtual void set_data_start_callback(std::function<size_t(StreamOutput&)>) = 0;
 
     /**
      * Stream a line of text, adding a newline.

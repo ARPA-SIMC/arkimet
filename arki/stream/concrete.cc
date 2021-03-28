@@ -4,47 +4,34 @@
 #include "arki/libconfig.h"
 #include <system_error>
 #include <sys/uio.h>
+#include <sys/sendfile.h>
 
 namespace arki {
 namespace stream {
 
-size_t ConcreteStreamOutput::send_line(const void* data, size_t size)
-{
-    if (data_start_callback) fire_data_start_callback();
-
-    struct iovec todo[2] = {
-        { (void*)data, size },
-        { (void*)"\n", 1 },
-    };
-    ssize_t res = ::writev(out, todo, 2);
-    if (res < 0 || (unsigned)res != size + 1)
-        throw std::system_error(errno, std::system_category(), "cannot write " + std::to_string(size + 1) + " bytes to " + out.name());
-    if (progress_callback)
-        progress_callback(res);
-    return size + 1;
-}
-
-size_t ConcreteStreamOutput::send_file_segment(arki::core::NamedFileDescriptor& fd, off_t offset, size_t size)
-{
-    if (data_start_callback) fire_data_start_callback();
-
-    fd.sendfile(out, offset, size);
-    arki::utils::acct::plain_data_read_count.incr();
-    // iotrace::trace_file(dirfd, offset, size, "streamed data");
-    if (progress_callback)
-        progress_callback(size);
-    return size;
-}
-
 size_t ConcreteStreamOutput::send_buffer(const void* data, size_t size)
 {
-    if (data_start_callback) fire_data_start_callback();
+    size_t sent = 0;
+    if (size == 0)
+        return sent;
 
-    // TODO: retry instead of throw
-    out.write_all_or_throw(data, size);
-    if (progress_callback)
-        progress_callback(size);
-    return size;
+    if (data_start_callback) sent += fire_data_start_callback();
+
+    size_t pos = 0;
+    while (pos < size)
+    {
+        ssize_t res = ::write(out, (const uint8_t*)data + pos, size - pos);
+        if (res < 0)
+            throw std::system_error(errno, std::system_category(), "cannot write " + std::to_string(size - pos) + " bytes to stream");
+        if (res == 0)
+            break;
+        if (progress_callback)
+            progress_callback(res);
+        pos += res;
+        sent += res;
+    }
+
+    return sent;
 
 #if 0
     Sigignore ignpipe(SIGPIPE);
@@ -65,9 +52,112 @@ size_t ConcreteStreamOutput::send_buffer(const void* data, size_t size)
 #endif
 }
 
+size_t ConcreteStreamOutput::send_line(const void* data, size_t size)
+{
+    size_t sent = 0;
+    if (size == 0)
+        return sent;
+
+    if (data_start_callback) sent += fire_data_start_callback();
+
+    struct iovec todo[2] = {
+        { (void*)data, size },
+        { (void*)"\n", 1 },
+    };
+    ssize_t res = ::writev(out, todo, 2);
+    if (res < 0 || (unsigned)res != size + 1)
+        throw std::system_error(errno, std::system_category(), "cannot write " + std::to_string(size + 1) + " bytes to " + out.name());
+    if (progress_callback)
+        progress_callback(res);
+    sent += size + 1;
+    return sent;
+}
+
+size_t ConcreteStreamOutput::send_file_segment(arki::core::NamedFileDescriptor& fd, off_t offset, size_t size)
+{
+    size_t sent = 0;
+    if (size == 0)
+        return sent;
+
+    TransferBuffer buffer;
+    if (data_start_callback)
+    {
+        // If we have data_start_callback, we need to do a regular read/write
+        // cycle before attempting the handover to sendfile, to see if there
+        // actually are data to read and thus output to generate.
+        buffer.allocate();
+        size_t res = fd.pread(buffer, std::min(size, buffer.size), offset);
+        if (res == 0)
+            return sent;
+
+        // If we get some output, then we *do* call data_start_callback, stream
+        // it out, and proceed with the sendfile handover attempt
+        sent += send_buffer(buffer, res);
+
+        offset += res;
+        size -= res;
+    }
+
+    bool has_sendfile = true;
+    while (size > 0)
+    {
+        if (has_sendfile)
+        {
+            ssize_t res = ::sendfile(out, fd, &offset, size);
+            if (res < 0)
+            {
+                if (errno == EINVAL || errno == ENOSYS)
+                {
+                    has_sendfile = false;
+                    buffer.allocate();
+                }
+                else
+                    throw std::system_error(errno, std::system_category(), "cannot sendfile " + std::to_string(size + 1) + " bytes from " + fd.name() + " to " + out.name());
+            } else if (res == 0)
+                break;
+            else {
+                size -= res;
+                sent += res;
+            }
+        } else {
+            size_t res = fd.pread(buffer, std::min(size, buffer.size), offset);
+            if (res == 0)
+                break;
+            res = send_buffer(buffer, res);
+            sent += res;
+            offset += res;
+            size -= res;
+        }
+    }
+
+    arki::utils::acct::plain_data_read_count.incr();
+    // iotrace::trace_file(dirfd, offset, size, "streamed data");
+    if (progress_callback)
+        progress_callback(size);
+    return sent;
+}
+
 size_t ConcreteStreamOutput::send_from_pipe(int fd)
 {
-    if (data_start_callback) fire_data_start_callback();
+    size_t sent = 0;
+
+    TransferBuffer buffer;
+    if (data_start_callback)
+    {
+        // If we have data_start_callback, we need to do a regular read/write
+        // cycle before attempting the handover to splice, to see if there
+        // actually are data to read and thus output to generate.
+        buffer.allocate();
+        ssize_t res = ::read(fd, buffer, buffer.size);
+        if (res < 0)
+            throw std::system_error(errno, std::system_category(), "cannot read data to stream from a pipe");
+        if (res == 0)
+            return sent;
+
+        // If we get some output, then we *do* call data_start_callback, stream
+        // it out, and proceed with the splice handover attempt
+        sent += send_buffer(buffer, res);
+    }
 
     ssize_t res;
 #if defined(__linux__) && defined(HAVE_SPLICE)
@@ -77,7 +167,8 @@ size_t ConcreteStreamOutput::send_from_pipe(int fd)
     {
         if (progress_callback)
             progress_callback(res);
-        return res;
+        sent += res;
+        return sent;
     }
 
     if (errno != EINVAL)
@@ -88,15 +179,16 @@ size_t ConcreteStreamOutput::send_from_pipe(int fd)
     // Fall back to read/write
 
     // Read data from child
-    char buf[4096 * 8];
-    res = read(fd, buf, 4096 * 8);
+    buffer.allocate();
+    res = read(fd, buffer, buffer.size);
     if (res < 0)
         throw std::system_error(errno, std::system_category(), "cannot read data to stream from a pipe");
     if (res == 0)
-        return 0;
+        return sent;
 
     // Pass it on
-    return send_buffer(buf, res);
+    sent += send_buffer(buffer, res);
+    return sent;
 }
 
 }
