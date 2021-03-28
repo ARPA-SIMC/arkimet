@@ -66,13 +66,7 @@ void Reader::impl_stream_query_bytes(const dataset::ByteQuery& q, StreamOutput& 
     switch (q.type)
     {
         case dataset::ByteQuery::BQ_DATA: {
-            bool first = true;
             query_data(q, [&](std::shared_ptr<Metadata> md) {
-                if (first)
-                {
-                    if (q.data_start_hook) q.data_start_hook(out);
-                    first = false;
-                }
                 md->stream_data(out);
                 return true;
             });
@@ -82,7 +76,6 @@ void Reader::impl_stream_query_bytes(const dataset::ByteQuery& q, StreamOutput& 
             metadata::Postprocess postproc(q.param);
             postproc.set_output(out);
             postproc.validate(*dataset().config);
-            postproc.set_data_start_hook(q.data_start_hook);
             postproc.start();
             query_data(q, [&](std::shared_ptr<Metadata> md) { return postproc.process(move(md)); });
             postproc.flush();

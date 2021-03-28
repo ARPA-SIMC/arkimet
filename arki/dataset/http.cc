@@ -40,11 +40,10 @@ std::string Reader::type() const { return "http"; }
 struct StreamState : public core::curl::Request
 {
     StreamOutput& out;
-    std::function<void(StreamOutput&)> data_start_hook;
     std::shared_ptr<dataset::QueryProgress> progress;
 
-    StreamState(core::curl::CurlEasy& curl, StreamOutput& out, std::function<void(StreamOutput&)> data_start_hook=0)
-        : Request(curl), out(out), data_start_hook(data_start_hook)
+    StreamState(core::curl::CurlEasy& curl, StreamOutput& out)
+        : Request(curl), out(out)
     {
     }
 
@@ -56,11 +55,6 @@ struct StreamState : public core::curl::Request
 
     size_t process_body_chunk(void *ptr, size_t size, size_t nmemb, void *stream) override
     {
-        if (data_start_hook && size > 0)
-        {
-            data_start_hook(out);
-            data_start_hook = nullptr;
-        }
         size_t res = out.send_buffer(ptr, size * nmemb);
         if (progress) progress->update(0, size * nmemb);
         return res;
@@ -161,7 +155,7 @@ void Reader::impl_stream_query_bytes(const dataset::ByteQuery& q, StreamOutput& 
 {
     m_curl.reset();
 
-    StreamState request(m_curl, out, q.data_start_hook);
+    StreamState request(m_curl, out);
     request.set_url(str::joinpath(dataset().baseurl, "query"));
     request.set_method("POST");
     request.progress = q.progress;

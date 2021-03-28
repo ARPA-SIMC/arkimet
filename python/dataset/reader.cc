@@ -12,6 +12,7 @@
 #include "python/utils/type.h"
 #include "arki/core/file.h"
 #include "arki/core/time.h"
+#include "arki/stream.h"
 #include "arki/metadata/sort.h"
 #include "arki/dataset.h"
 #include "arki/dataset/query.h"
@@ -238,16 +239,19 @@ struct query_bytes : public MethKwargs<query_bytes, arkipy_DatasetReader>
                 query.progress = std::make_shared<python::dataset::PythonProgress>(arg_progress);
 
             pyo_unique_ptr data_start_hook_args;
+            std::function<size_t(StreamOutput&)> data_start_callback;
             if (arg_data_start_hook != Py_None)
             {
                 data_start_hook_args = pyo_unique_ptr(Py_BuildValue("()"));
                 if (!data_start_hook_args) return nullptr;
 
-                query.data_start_hook = [&](StreamOutput&) {
+                data_start_callback = [&](StreamOutput&) {
                     // call arg_data_start_hook
                     AcquireGIL gil;
                     pyo_unique_ptr res(PyObject_CallObject(arg_data_start_hook, data_start_hook_args));
                     if (!res) throw PythonException();
+                    // TODO: if the function returned a number, return that
+                    return 0;
                 };
             }
 
@@ -255,12 +259,17 @@ struct query_bytes : public MethKwargs<query_bytes, arkipy_DatasetReader>
             {
                 BinaryOutputFile out(arg_file);
 
+                std::unique_ptr<StreamOutput> stream;
+                if (out.fd)
+                    stream = StreamOutput::create(*out.fd);
+                else
+                    stream = StreamOutput::create(*out.abstract);
+                if (data_start_callback)
+                    stream->set_data_start_callback(data_start_callback);
+
                 {
                     ReleaseGIL gil;
-                    if (out.fd)
-                        self->ptr->query_bytes(query, *out.fd);
-                    else
-                        self->ptr->query_bytes(query, *out.abstract);
+                    self->ptr->query_bytes(query, *stream);
                 }
                 Py_RETURN_NONE;
             } else {
