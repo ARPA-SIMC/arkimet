@@ -168,7 +168,7 @@ SendResult ConcreteTimeoutStreamOutput::send_file_segment(arki::core::NamedFileD
         size_t res = fd.pread(buffer, std::min(size, buffer.size), offset);
         if (res == 0)
         {
-            result.flags |= SEND_PIPE_EOF_SOURCE;
+            result.flags |= SendResult::SEND_PIPE_EOF_SOURCE;
             return result;
         }
 
@@ -203,7 +203,7 @@ SendResult ConcreteTimeoutStreamOutput::send_file_segment(arki::core::NamedFileD
                 else
                     throw std::system_error(errno, std::system_category(), "cannot sendfile() " + std::to_string(size) + " bytes to " + out.name());
             } else if (res == 0) {
-                result.flags |= SEND_PIPE_EOF_SOURCE;
+                result.flags |= SendResult::SEND_PIPE_EOF_SOURCE;
                 break;
             } else {
                 if (progress_callback)
@@ -244,7 +244,7 @@ SendResult ConcreteTimeoutStreamOutput::send_from_pipe(int fd)
             throw std::system_error(errno, std::system_category(), "cannot read data to stream from a pipe");
         if (res == 0)
         {
-            result.flags |= SEND_PIPE_EOF_SOURCE;
+            result.flags |= SendResult::SEND_PIPE_EOF_SOURCE;
             return result;
         }
 
@@ -263,7 +263,7 @@ SendResult ConcreteTimeoutStreamOutput::send_from_pipe(int fd)
             ssize_t res = splice(fd, NULL, out, NULL, TransferBuffer::size * 128, SPLICE_F_MORE);
             if (res == 0)
             {
-                result.flags |= SEND_PIPE_EOF_SOURCE;
+                result.flags |= SendResult::SEND_PIPE_EOF_SOURCE;
                 return result;
             }
             else if (res < 0)
@@ -292,7 +292,7 @@ SendResult ConcreteTimeoutStreamOutput::send_from_pipe(int fd)
             ssize_t res = ::read(fd, buffer, buffer.size);
             if (res == 0)
             {
-                result.flags |= SEND_PIPE_EOF_SOURCE;
+                result.flags |= SendResult::SEND_PIPE_EOF_SOURCE;
                 return result;
             }
             if (res < 0)

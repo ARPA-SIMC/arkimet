@@ -34,9 +34,6 @@ std::ostream& operator<<(std::ostream& out, const SendResult& r);
 class StreamOutput
 {
 public:
-    static constexpr uint32_t SEND_PIPE_EOF_SOURCE = 1;
-    static constexpr uint32_t SEND_PIPE_EOF_DEST   = 2;
-
     virtual ~StreamOutput();
 
     /**

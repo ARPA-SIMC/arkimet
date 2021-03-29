@@ -8,10 +8,6 @@ using namespace arki::utils;
 
 namespace arki {
 
-constexpr uint32_t StreamOutput::SEND_PIPE_EOF_SOURCE;
-constexpr uint32_t StreamOutput::SEND_PIPE_EOF_DEST;
-
-
 StreamOutput::~StreamOutput()
 {
 }
@@ -34,9 +30,26 @@ std::unique_ptr<StreamOutput> StreamOutput::create(core::AbstractOutputFile& out
 
 namespace stream {
 
+constexpr uint32_t SendResult::SEND_PIPE_EOF_SOURCE;
+constexpr uint32_t SendResult::SEND_PIPE_EOF_DEST;
+
 std::ostream& operator<<(std::ostream& out, const SendResult& r)
 {
-    return out << "[" << r.sent << ", " << r.flags << "]";
+    if (r.flags == 0)
+        return out << "[" << r.sent << "]";
+    else
+    {
+        out << "[" << r.sent << ", ";
+        if (r.flags & SendResult::SEND_PIPE_EOF_SOURCE)
+            out << "S";
+        else
+            out << "-";
+        if (r.flags & SendResult::SEND_PIPE_EOF_DEST)
+            out << "D";
+        else
+            out << "-";
+        return out << "]";
+    }
 }
 
 }

@@ -26,7 +26,7 @@ SendResult ConcreteStreamOutput::send_buffer(const void* data, size_t size)
             throw std::system_error(errno, std::system_category(), "cannot write " + std::to_string(size - pos) + " bytes to stream");
         if (res == 0)
         {
-            result.flags |= SEND_PIPE_EOF_SOURCE;
+            result.flags |= SendResult::SEND_PIPE_EOF_SOURCE;
             break;
         }
         if (progress_callback)
@@ -94,7 +94,7 @@ SendResult ConcreteStreamOutput::send_file_segment(arki::core::NamedFileDescript
         size_t res = fd.pread(buffer, std::min(size, buffer.size), offset);
         if (res == 0)
         {
-            result.flags |= SEND_PIPE_EOF_SOURCE;
+            result.flags |= SendResult::SEND_PIPE_EOF_SOURCE;
             return result;
         }
 
@@ -122,7 +122,7 @@ SendResult ConcreteStreamOutput::send_file_segment(arki::core::NamedFileDescript
                 else
                     throw std::system_error(errno, std::system_category(), "cannot sendfile " + std::to_string(size + 1) + " bytes from " + fd.name() + " to " + out.name());
             } else if (res == 0) {
-                result.flags |= SEND_PIPE_EOF_SOURCE;
+                result.flags |= SendResult::SEND_PIPE_EOF_SOURCE;
                 break;
             } else {
                 if (progress_callback)
@@ -134,7 +134,7 @@ SendResult ConcreteStreamOutput::send_file_segment(arki::core::NamedFileDescript
             size_t res = fd.pread(buffer, std::min(size, buffer.size), offset);
             if (res == 0)
             {
-                result.flags |= SEND_PIPE_EOF_SOURCE;
+                result.flags |= SendResult::SEND_PIPE_EOF_SOURCE;
                 break;
             }
             result += send_buffer(buffer, res);
@@ -164,7 +164,7 @@ SendResult ConcreteStreamOutput::send_from_pipe(int fd)
             throw std::system_error(errno, std::system_category(), "cannot read data to stream from a pipe");
         if (res == 0)
         {
-            result.flags |= SEND_PIPE_EOF_SOURCE;
+            result.flags |= SendResult::SEND_PIPE_EOF_SOURCE;
             return result;
         }
 
@@ -187,7 +187,7 @@ SendResult ConcreteStreamOutput::send_from_pipe(int fd)
                     progress_callback(res);
                 result.sent += res;
             } else if (res == 0) {
-                result.flags |= SEND_PIPE_EOF_SOURCE;
+                result.flags |= SendResult::SEND_PIPE_EOF_SOURCE;
                 break;
             } else if (res < 0) {
                 if (errno == EINVAL)
@@ -215,7 +215,7 @@ SendResult ConcreteStreamOutput::send_from_pipe(int fd)
                 throw std::system_error(errno, std::system_category(), "cannot read data to stream from a pipe");
             if (res == 0)
             {
-                result.flags |= SEND_PIPE_EOF_SOURCE;
+                result.flags |= SendResult::SEND_PIPE_EOF_SOURCE;
                 break;
             }
 

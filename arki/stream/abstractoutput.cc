@@ -60,7 +60,7 @@ SendResult AbstractOutputStreamOutput::send_file_segment(arki::core::NamedFileDe
         size_t res = fd.pread(buffer, std::min(buffer.size, size - pos), offset + pos);
         if (res == 0)
         {
-            result.flags |= SEND_PIPE_EOF_SOURCE;
+            result.flags |= SendResult::SEND_PIPE_EOF_SOURCE;
             break;
         }
         result += send_buffer(buffer, res);
@@ -83,7 +83,7 @@ SendResult AbstractOutputStreamOutput::send_from_pipe(int fd)
             throw std::system_error(errno, std::system_category(), "cannot read from pipe");
         if (res == 0)
         {
-            result.flags |= SEND_PIPE_EOF_SOURCE;
+            result.flags |= SendResult::SEND_PIPE_EOF_SOURCE;
             break;
         }
 
