@@ -150,7 +150,7 @@ std::vector<uint8_t> Reader<Segment>::read(const types::source::Blob& src)
 }
 
 template<typename Segment>
-size_t Reader<Segment>::stream(const types::source::Blob& src, StreamOutput& out)
+stream::SendResult Reader<Segment>::stream(const types::source::Blob& src, StreamOutput& out)
 {
     if (src.format == "vm2")
         return arki::segment::Reader::stream(src, out);

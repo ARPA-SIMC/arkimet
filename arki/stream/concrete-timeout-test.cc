@@ -58,17 +58,17 @@ add_method("concrete_timeout1", [] {
     // This won't block
     writer->send_buffer(filler.data(), filler.size());
     // This times out
-    wassert_throws(StreamTimedOut, writer->send_buffer(" ", 1));
+    wassert_throws(stream::TimedOut, writer->send_buffer(" ", 1));
 
     sink.empty_buffer();
-    wassert_throws(StreamTimedOut, writer->send_line(filler.data(), filler.size()));
+    wassert_throws(stream::TimedOut, writer->send_line(filler.data(), filler.size()));
 
     sink.empty_buffer();
     writer->send_buffer(filler.data(), filler.size());
     {
         sys::Tempfile tf1;
         tf1.write_all_or_throw(std::string("testfile"));
-        wassert_throws(StreamTimedOut, writer->send_file_segment(tf1, 1, 6));
+        wassert_throws(stream::TimedOut, writer->send_file_segment(tf1, 1, 6));
     }
 
     sink.empty_buffer();
@@ -76,7 +76,7 @@ add_method("concrete_timeout1", [] {
     {
         sys::Tempfile tf1;
         tf1.write_all_or_throw(std::string("testfile"));
-        wassert_throws(StreamTimedOut, writer->send_from_pipe(tf1));
+        wassert_throws(stream::TimedOut, writer->send_from_pipe(tf1));
     }
 });
 

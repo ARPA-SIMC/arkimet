@@ -16,9 +16,10 @@ void ConcreteTimeoutStreamOutput::wait_writable()
     if (res < 0)
         throw std::system_error(errno, std::system_category(), "poll failed on " + out.name());
     if (res == 0)
-        throw StreamTimedOut("write on " + out.name() + " timed out");
+        throw TimedOut("write on " + out.name() + " timed out");
+    // TODO: update sendresults instead
     if (pollinfo.revents & POLLERR)
-        throw StreamClosed("peer on " + out.name() + " has closed the connection");
+        throw Closed("peer on " + out.name() + " has closed the connection");
     if (pollinfo.revents & POLLOUT)
         return;
     throw std::runtime_error("unsupported revents values when polling " + out.name());
@@ -44,13 +45,14 @@ ConcreteTimeoutStreamOutput::~ConcreteTimeoutStreamOutput()
         fcntl(out, F_SETFL, orig_fl);
 }
 
-size_t ConcreteTimeoutStreamOutput::send_buffer(const void* data, size_t size)
+SendResult ConcreteTimeoutStreamOutput::send_buffer(const void* data, size_t size)
 {
-    size_t sent = 0;
+    SendResult result;
     if (size == 0)
-        return sent;
+        return result;
 
-    if (data_start_callback) sent += fire_data_start_callback();
+    if (data_start_callback)
+        result += fire_data_start_callback();
 
     size_t pos = 0;
     while (true)
@@ -65,7 +67,7 @@ size_t ConcreteTimeoutStreamOutput::send_buffer(const void* data, size_t size)
         }
 
         pos += res;
-        sent += res;
+        result.sent += res;
         if (progress_callback)
             progress_callback(res);
 
@@ -74,7 +76,7 @@ size_t ConcreteTimeoutStreamOutput::send_buffer(const void* data, size_t size)
 
         wait_writable();
     }
-    return sent;
+    return result;
 
 #if 0
     Sigignore ignpipe(SIGPIPE);
@@ -95,13 +97,14 @@ size_t ConcreteTimeoutStreamOutput::send_buffer(const void* data, size_t size)
 #endif
 }
 
-size_t ConcreteTimeoutStreamOutput::send_line(const void* data, size_t size)
+SendResult ConcreteTimeoutStreamOutput::send_line(const void* data, size_t size)
 {
-    size_t sent = 0;
+    SendResult result;
     if (size == 0)
-        return sent;
+        return result;
 
-    if (data_start_callback) sent += fire_data_start_callback();
+    if (data_start_callback)
+        result += fire_data_start_callback();
 
     struct iovec todo[2] = {
         { (void*)data, size },
@@ -121,7 +124,7 @@ size_t ConcreteTimeoutStreamOutput::send_line(const void* data, size_t size)
                     throw std::system_error(errno, std::system_category(), "cannot write " + std::to_string(size + 1) + " bytes to " + out.name());
             }
             pos += res;
-            sent += res;
+            result.sent += res;
             if (pos < size + 1)
             {
                 todo[0].iov_base = (uint8_t*)data + pos;
@@ -139,21 +142,21 @@ size_t ConcreteTimeoutStreamOutput::send_line(const void* data, size_t size)
                     throw std::system_error(errno, std::system_category(), "cannot write 1 byte to " + out.name());
             }
             pos += res;
-            sent += res;
+            result.sent += res;
             if (progress_callback)
                 progress_callback(res);
         } else
             break;
         wait_writable();
     }
-    return sent;
+    return result;
 }
 
-size_t ConcreteTimeoutStreamOutput::send_file_segment(arki::core::NamedFileDescriptor& fd, off_t offset, size_t size)
+SendResult ConcreteTimeoutStreamOutput::send_file_segment(arki::core::NamedFileDescriptor& fd, off_t offset, size_t size)
 {
-    size_t sent = 0;
+    SendResult result;
     if (size == 0)
-        return sent;
+        return result;
 
     TransferBuffer buffer;
     if (data_start_callback)
@@ -164,11 +167,14 @@ size_t ConcreteTimeoutStreamOutput::send_file_segment(arki::core::NamedFileDescr
         buffer.allocate();
         size_t res = fd.pread(buffer, std::min(size, buffer.size), offset);
         if (res == 0)
-            return sent;
+        {
+            result.flags |= SEND_PIPE_EOF_SOURCE;
+            return result;
+        }
 
         // If we get some output, then we *do* call data_start_callback, stream
         // it out, and proceed with the sendfile handover attempt
-        sent += send_buffer(buffer, res);
+        result += send_buffer(buffer, res);
 
         offset += res;
         size -= res;
@@ -197,16 +203,17 @@ size_t ConcreteTimeoutStreamOutput::send_file_segment(arki::core::NamedFileDescr
                 else
                     throw std::system_error(errno, std::system_category(), "cannot sendfile() " + std::to_string(size) + " bytes to " + out.name());
             } else if (res == 0) {
+                result.flags |= SEND_PIPE_EOF_SOURCE;
                 break;
             } else {
                 if (progress_callback)
                     progress_callback(res);
                 written += res;
-                sent += res;
+                result.sent += res;
             }
         } else {
             size_t res = out.pread(buffer, std::min(size - written, buffer.size), offset);
-            sent += send_buffer(buffer, res);
+            result += send_buffer(buffer, res);
             offset += res;
             written += res;
         }
@@ -218,12 +225,13 @@ size_t ConcreteTimeoutStreamOutput::send_file_segment(arki::core::NamedFileDescr
         wait_writable();
         // iotrace::trace_file(dirfd, offset, size, "streamed data");
     }
-    return sent;
+    return result;
 }
 
-size_t ConcreteTimeoutStreamOutput::send_from_pipe(int fd)
+SendResult ConcreteTimeoutStreamOutput::send_from_pipe(int fd)
 {
-    size_t sent = 0;
+    SendResult result;
+
     TransferBuffer buffer;
     if (data_start_callback)
     {
@@ -235,11 +243,14 @@ size_t ConcreteTimeoutStreamOutput::send_from_pipe(int fd)
         if (res < 0)
             throw std::system_error(errno, std::system_category(), "cannot read data to stream from a pipe");
         if (res == 0)
-            return sent;
+        {
+            result.flags |= SEND_PIPE_EOF_SOURCE;
+            return result;
+        }
 
         // If we get some output, then we *do* call data_start_callback, stream
         // it out, and proceed with the splice handover attempt
-        sent += send_buffer(buffer, res);
+        result += send_buffer(buffer, res);
     }
 
     bool has_splice = true;
@@ -251,7 +262,10 @@ size_t ConcreteTimeoutStreamOutput::send_from_pipe(int fd)
             // Try splice
             ssize_t res = splice(fd, NULL, out, NULL, TransferBuffer::size * 128, SPLICE_F_MORE);
             if (res == 0)
-                return sent;
+            {
+                result.flags |= SEND_PIPE_EOF_SOURCE;
+                return result;
+            }
             else if (res < 0)
             {
                 if (errno == EINVAL)
@@ -264,7 +278,7 @@ size_t ConcreteTimeoutStreamOutput::send_from_pipe(int fd)
                 } else
                     throw std::system_error(errno, std::system_category(), "cannot splice data to stream from a pipe");
             }
-            sent += res;
+            result.sent += res;
             if (progress_callback)
                 progress_callback(res);
 
@@ -277,7 +291,10 @@ size_t ConcreteTimeoutStreamOutput::send_from_pipe(int fd)
             // Fall back to read/write
             ssize_t res = ::read(fd, buffer, buffer.size);
             if (res == 0)
-                return sent;
+            {
+                result.flags |= SEND_PIPE_EOF_SOURCE;
+                return result;
+            }
             if (res < 0)
             {
                 if (errno == EAGAIN || errno == EWOULDBLOCK)
@@ -286,7 +303,7 @@ size_t ConcreteTimeoutStreamOutput::send_from_pipe(int fd)
                     throw std::system_error(errno, std::system_category(), "cannot read data from pipe input");
             }
             if (res > 0)
-                sent += send_buffer(buffer, res);
+                result += send_buffer(buffer, res);
             else
             {
                 if (progress_callback)

@@ -2,30 +2,41 @@
 #define ARKI_STREAM_H
 
 #include <arki/core/fwd.h>
+#include <arki/stream/fwd.h>
 #include <memory>
 #include <cstdint>
 #include <functional>
+#include <iosfwd>
 #include <sys/types.h>
 
 namespace arki {
 
-class StreamTimedOut : public std::runtime_error
+namespace stream {
+
+class TimedOut : public std::runtime_error
 {
 public:
     using std::runtime_error::runtime_error;
 };
 
 
-class StreamClosed : public std::runtime_error
+class Closed : public std::runtime_error
 {
 public:
     using std::runtime_error::runtime_error;
 };
+
+std::ostream& operator<<(std::ostream& out, const SendResult& r);
+
+}
 
 
 class StreamOutput
 {
 public:
+    static constexpr uint32_t SEND_PIPE_EOF_SOURCE = 1;
+    static constexpr uint32_t SEND_PIPE_EOF_DEST   = 2;
+
     virtual ~StreamOutput();
 
     /**
@@ -37,7 +48,7 @@ public:
     /**
      * Set a callback to be called once before the first byte is streamed out
      */
-    virtual void set_data_start_callback(std::function<size_t(StreamOutput&)>) = 0;
+    virtual void set_data_start_callback(std::function<stream::SendResult(StreamOutput&)>) = 0;
 
     /**
      * Stream a line of text, adding a newline.
@@ -45,29 +56,35 @@ public:
      * Returns the number of bytes written, which is always size + the size of
      * the newline (currently 1).
      */
-    virtual size_t send_line(const void* data, size_t size) = 0;
+    virtual stream::SendResult send_line(const void* data, size_t size) = 0;
 
     /**
      * Stream a portion of an open file.
      *
      * Returns the number of bytes written, which is always size.
      */
-    virtual size_t send_file_segment(arki::core::NamedFileDescriptor& fd, off_t offset, size_t size) = 0;
+    virtual stream::SendResult send_file_segment(arki::core::NamedFileDescriptor& fd, off_t offset, size_t size) = 0;
 
     /**
      * Stream the contents of a memory buffer.
      *
      * Returns the number of bytes written, which is always size.
      */
-    virtual size_t send_buffer(const void* data, size_t size) = 0;
+    virtual stream::SendResult send_buffer(const void* data, size_t size) = 0;
 
     /**
      * Stream an arbitrary chunk of data from a pipe.
      *
      * Returns the number of bytes written, which depends on how much data was
      * read by a single read operation, or spliced by a single splice operation.
+     *
+     * This will read until the end of the pipe unless:
+     *
+     *  * the output closes its endpoint
+     *  * the input reaches end of file
+     *  * the input is in non-blocking mode, and a read returns EAGAIN
      */
-    virtual size_t send_from_pipe(int fd) = 0;
+    virtual stream::SendResult send_from_pipe(int fd) = 0;
 
     /**
      * Create a StreamOutput to stream to a file.

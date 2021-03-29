@@ -2,10 +2,15 @@
 #include "arki/stream/concrete.h"
 #include "arki/stream/concrete-timeout.h"
 #include "arki/stream/abstractoutput.h"
+#include <ostream>
 
 using namespace arki::utils;
 
 namespace arki {
+
+constexpr uint32_t StreamOutput::SEND_PIPE_EOF_SOURCE;
+constexpr uint32_t StreamOutput::SEND_PIPE_EOF_DEST;
+
 
 StreamOutput::~StreamOutput()
 {
@@ -24,6 +29,16 @@ std::unique_ptr<StreamOutput> StreamOutput::create(core::NamedFileDescriptor& ou
 std::unique_ptr<StreamOutput> StreamOutput::create(core::AbstractOutputFile& out)
 {
     return std::unique_ptr<StreamOutput>(new stream::AbstractOutputStreamOutput(out));
+}
+
+
+namespace stream {
+
+std::ostream& operator<<(std::ostream& out, const SendResult& r)
+{
+    return out << "[" << r.sent << ", " << r.flags << "]";
+}
+
 }
 
 }

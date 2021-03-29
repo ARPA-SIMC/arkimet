@@ -79,8 +79,9 @@ public:
     void read_stdout() override
     {
         // Stream directly out of a pipe
-        size_t res = m_stream->send_from_pipe(subproc.get_stdout());
-        if (res == 0)
+        stream::SendResult res = m_stream->send_from_pipe(subproc.get_stdout());
+        // TODO: handle res_flags
+        if (res.sent == 0)
             subproc.close_stdout();
         return;
     }

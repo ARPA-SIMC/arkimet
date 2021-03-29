@@ -432,7 +432,7 @@ public:
      *
      * Return the number of bytes written
      */
-    size_t stream_data(StreamOutput& out);
+    stream::SendResult stream_data(StreamOutput& out);
 
     /// Return True if get_data can be called without causing I/O
     bool has_cached_data() const;

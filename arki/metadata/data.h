@@ -54,7 +54,7 @@ public:
      * It returns the number of bytes successfully written. In case of any
      * error or partial write, an exception is raised.
      */
-    virtual size_t write(StreamOutput& out) const = 0;
+    virtual stream::SendResult write(StreamOutput& out) const = 0;
 
     /**
      * Write the data to a NamedFileDescriptor, without leading or trailing

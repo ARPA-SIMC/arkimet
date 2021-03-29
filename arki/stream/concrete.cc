@@ -9,14 +9,14 @@
 namespace arki {
 namespace stream {
 
-size_t ConcreteStreamOutput::send_buffer(const void* data, size_t size)
+SendResult ConcreteStreamOutput::send_buffer(const void* data, size_t size)
 {
-    size_t sent = 0;
+    SendResult result;
     if (size == 0)
-        return sent;
+        return result;
 
     if (data_start_callback)
-        sent += fire_data_start_callback();
+        result += fire_data_start_callback();
 
     size_t pos = 0;
     while (pos < size)
@@ -25,14 +25,17 @@ size_t ConcreteStreamOutput::send_buffer(const void* data, size_t size)
         if (res < 0)
             throw std::system_error(errno, std::system_category(), "cannot write " + std::to_string(size - pos) + " bytes to stream");
         if (res == 0)
+        {
+            result.flags |= SEND_PIPE_EOF_SOURCE;
             break;
+        }
         if (progress_callback)
             progress_callback(res);
         pos += res;
-        sent += res;
+        result.sent += res;
     }
 
-    return sent;
+    return result;
 
 #if 0
     Sigignore ignpipe(SIGPIPE);
@@ -53,13 +56,14 @@ size_t ConcreteStreamOutput::send_buffer(const void* data, size_t size)
 #endif
 }
 
-size_t ConcreteStreamOutput::send_line(const void* data, size_t size)
+SendResult ConcreteStreamOutput::send_line(const void* data, size_t size)
 {
-    size_t sent = 0;
+    SendResult result;
     if (size == 0)
-        return sent;
+        return result;
 
-    if (data_start_callback) sent += fire_data_start_callback();
+    if (data_start_callback)
+        result += fire_data_start_callback();
 
     struct iovec todo[2] = {
         { (void*)data, size },
@@ -70,15 +74,15 @@ size_t ConcreteStreamOutput::send_line(const void* data, size_t size)
         throw std::system_error(errno, std::system_category(), "cannot write " + std::to_string(size + 1) + " bytes to " + out.name());
     if (progress_callback)
         progress_callback(res);
-    sent += size + 1;
-    return sent;
+    result.sent += size + 1;
+    return result;
 }
 
-size_t ConcreteStreamOutput::send_file_segment(arki::core::NamedFileDescriptor& fd, off_t offset, size_t size)
+SendResult ConcreteStreamOutput::send_file_segment(arki::core::NamedFileDescriptor& fd, off_t offset, size_t size)
 {
-    size_t sent = 0;
+    SendResult result;
     if (size == 0)
-        return sent;
+        return result;
 
     TransferBuffer buffer;
     if (data_start_callback)
@@ -89,11 +93,14 @@ size_t ConcreteStreamOutput::send_file_segment(arki::core::NamedFileDescriptor& 
         buffer.allocate();
         size_t res = fd.pread(buffer, std::min(size, buffer.size), offset);
         if (res == 0)
-            return sent;
+        {
+            result.flags |= SEND_PIPE_EOF_SOURCE;
+            return result;
+        }
 
         // If we get some output, then we *do* call data_start_callback, stream
         // it out, and proceed with the sendfile handover attempt
-        sent += send_buffer(buffer, res);
+        result += send_buffer(buffer, res);
 
         offset += res;
         size -= res;
@@ -114,20 +121,23 @@ size_t ConcreteStreamOutput::send_file_segment(arki::core::NamedFileDescriptor& 
                 }
                 else
                     throw std::system_error(errno, std::system_category(), "cannot sendfile " + std::to_string(size + 1) + " bytes from " + fd.name() + " to " + out.name());
-            } else if (res == 0)
+            } else if (res == 0) {
+                result.flags |= SEND_PIPE_EOF_SOURCE;
                 break;
-            else {
+            } else {
                 if (progress_callback)
                     progress_callback(res);
                 size -= res;
-                sent += res;
+                result.sent += res;
             }
         } else {
             size_t res = fd.pread(buffer, std::min(size, buffer.size), offset);
             if (res == 0)
+            {
+                result.flags |= SEND_PIPE_EOF_SOURCE;
                 break;
-            res = send_buffer(buffer, res);
-            sent += res;
+            }
+            result += send_buffer(buffer, res);
             offset += res;
             size -= res;
         }
@@ -135,12 +145,12 @@ size_t ConcreteStreamOutput::send_file_segment(arki::core::NamedFileDescriptor& 
 
     arki::utils::acct::plain_data_read_count.incr();
     // iotrace::trace_file(dirfd, offset, size, "streamed data");
-    return sent;
+    return result;
 }
 
-size_t ConcreteStreamOutput::send_from_pipe(int fd)
+SendResult ConcreteStreamOutput::send_from_pipe(int fd)
 {
-    size_t sent = 0;
+    SendResult result;
 
     TransferBuffer buffer;
     if (data_start_callback)
@@ -153,11 +163,14 @@ size_t ConcreteStreamOutput::send_from_pipe(int fd)
         if (res < 0)
             throw std::system_error(errno, std::system_category(), "cannot read data to stream from a pipe");
         if (res == 0)
-            return sent;
+        {
+            result.flags |= SEND_PIPE_EOF_SOURCE;
+            return result;
+        }
 
         // If we get some output, then we *do* call data_start_callback, stream
         // it out, and proceed with the splice handover attempt
-        sent += send_buffer(buffer, res);
+        result += send_buffer(buffer, res);
     }
 
     bool has_splice = true;
@@ -172,8 +185,9 @@ size_t ConcreteStreamOutput::send_from_pipe(int fd)
             {
                 if (progress_callback)
                     progress_callback(res);
-                sent += res;
+                result.sent += res;
             } else if (res == 0) {
+                result.flags |= SEND_PIPE_EOF_SOURCE;
                 break;
             } else if (res < 0) {
                 if (errno == EINVAL)
@@ -200,16 +214,18 @@ size_t ConcreteStreamOutput::send_from_pipe(int fd)
             if (res < 0)
                 throw std::system_error(errno, std::system_category(), "cannot read data to stream from a pipe");
             if (res == 0)
+            {
+                result.flags |= SEND_PIPE_EOF_SOURCE;
                 break;
+            }
 
             // Pass it on
-            sent += send_buffer(buffer, res);
+            result += send_buffer(buffer, res);
         }
     }
 
-    return sent;
+    return result;
 }
 
 }
 }
-

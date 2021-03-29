@@ -302,7 +302,7 @@ std::vector<uint8_t> Reader::read(const types::source::Blob& src)
     return buf;
 }
 
-size_t Reader::stream(const types::source::Blob& src, StreamOutput& out)
+stream::SendResult Reader::stream(const types::source::Blob& src, StreamOutput& out)
 {
     if (src.format == "vm2")
         return arki::segment::Reader::stream(src, out);

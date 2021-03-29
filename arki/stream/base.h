@@ -10,7 +10,7 @@ class BaseStreamOutput : public StreamOutput
 {
 protected:
     std::function<void(size_t)> progress_callback;
-    std::function<size_t(StreamOutput&)> data_start_callback;
+    std::function<stream::SendResult(StreamOutput&)> data_start_callback;
 
     /**
      * Fire data_start_callback then set it to nullptr
@@ -18,7 +18,7 @@ protected:
      * It disarms the callback before firing it, to prevent firing it
      * recursively if it calls other send_ operations on the stream.
      */
-    size_t fire_data_start_callback()
+    stream::SendResult fire_data_start_callback()
     {
         auto cb = data_start_callback;
         data_start_callback = nullptr;
@@ -31,7 +31,7 @@ public:
         progress_callback = f;
     }
 
-    void set_data_start_callback(std::function<size_t(StreamOutput&)> f) override
+    void set_data_start_callback(std::function<stream::SendResult(StreamOutput&)> f) override
     {
         data_start_callback = f;
     }

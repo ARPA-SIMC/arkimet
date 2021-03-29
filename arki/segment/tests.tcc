@@ -81,7 +81,7 @@ this->add_method("read", [](Fixture& f) {
         {
             sys::File out("stream.out", O_WRONLY | O_CREAT | O_TRUNC);
             auto stream = StreamOutput::create(out);
-            size_t size = wcallchecked(reader->stream(md->sourceBlob(), *stream));
+            size_t size = wcallchecked(reader->stream(md->sourceBlob(), *stream).sent);
             wassert(actual(size) == md->sourceBlob().size + pad_size);
         }
 
@@ -214,7 +214,7 @@ this->add_method("issue244", [](Fixture& f) {
     {
         sys::File out("stream.out", O_WRONLY | O_CREAT | O_TRUNC);
         auto stream = StreamOutput::create(out);
-        size_t size = wcallchecked(reader->stream(md->sourceBlob(), *stream));
+        size_t size = wcallchecked(reader->stream(md->sourceBlob(), *stream).sent);
         size_t pad_size = f.td.format == "vm2" ? 1 : 0;
         wassert(actual(size) == md->sourceBlob().size + pad_size);
     }
@@ -224,7 +224,7 @@ this->add_method("issue244", [](Fixture& f) {
     {
         sys::File out("stream.out", O_WRONLY | O_APPEND);
         auto stream = StreamOutput::create(out);
-        size_t size = wcallchecked(reader->stream(md->sourceBlob(), *stream));
+        size_t size = wcallchecked(reader->stream(md->sourceBlob(), *stream).sent);
         size_t pad_size = f.td.format == "vm2" ? 1 : 0;
         wassert(actual(size) == md->sourceBlob().size + pad_size);
     }

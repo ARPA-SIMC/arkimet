@@ -894,7 +894,7 @@ const metadata::Data& Metadata::get_data()
     }
 }
 
-size_t Metadata::stream_data(StreamOutput& out)
+stream::SendResult Metadata::stream_data(StreamOutput& out)
 {
     // This code is a copy of get_data, except that if the data is not
     // previously cached and gets streamed, it won't be stored in m_data, to

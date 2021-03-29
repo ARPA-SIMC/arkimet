@@ -365,7 +365,7 @@ bool Reader::scan(metadata_dest_func dest)
     return scan_data(dest);
 }
 
-size_t Reader::stream(const types::source::Blob& src, StreamOutput& out)
+stream::SendResult Reader::stream(const types::source::Blob& src, StreamOutput& out)
 {
     vector<uint8_t> buf = read(src);
     if (src.format == "vm2")

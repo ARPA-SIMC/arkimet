@@ -28,7 +28,7 @@ struct DataUnreadable : public Data
     {
         throw std::runtime_error("DataUnreadable::write() called");
     }
-    size_t write(StreamOutput& out) const override
+    stream::SendResult write(StreamOutput& out) const override
     {
         throw std::runtime_error("DataUnreadable::write() called");
     }
@@ -68,7 +68,7 @@ struct DataBuffer : public Data
         fd.write(buffer.data(), buffer.size());
         return buffer.size();
     }
-    size_t write(StreamOutput& out) const override
+    stream::SendResult write(StreamOutput& out) const override
     {
         return out.send_buffer(buffer.data(), buffer.size());
     }
@@ -110,7 +110,7 @@ struct DataLineBuffer : public DataBuffer
         fd.write("\n", 1);
         return buffer.size() + 1;
     }
-    size_t write(StreamOutput& out) const override
+    stream::SendResult write(StreamOutput& out) const override
     {
         return out.send_line(buffer.data(), buffer.size());
     }
