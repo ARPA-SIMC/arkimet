@@ -197,24 +197,6 @@ public:
         return impl_query_summary(matcher, summary);
     }
 
-#if 0
-    /**
-     * Query the dataset obtaining a byte stream, that gets written to a file
-     * descriptor.
-     *
-     * The default implementation in Reader is based on queryData.
-     */
-    void query_bytes(const dataset::ByteQuery& q, core::NamedFileDescriptor& out);
-
-    /**
-     * Query the dataset obtaining a byte stream, that gets written to a file
-     * descriptor.
-     *
-     * The default implementation in Reader is based on queryData.
-     */
-    void query_bytes(const dataset::ByteQuery& q, core::AbstractOutputFile& out);
-#endif
-
     /**
      * Query the dataset obtaining a byte stream, that gets streamed to a
      * StreamOutput.

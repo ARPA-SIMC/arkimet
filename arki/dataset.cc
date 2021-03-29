@@ -49,20 +49,6 @@ void Reader::impl_query_summary(const Matcher& matcher, Summary& summary)
     query_data(DataQuery(matcher), [&](std::shared_ptr<Metadata> md) { summary.add(*md); return true; });
 }
 
-#if 0
-void Reader::query_bytes(const dataset::ByteQuery& q, core::NamedFileDescriptor& out)
-{
-    auto so = StreamOutput::create(out, 60000);
-    impl_stream_query_bytes(q, *so);
-}
-
-void Reader::query_bytes(const dataset::ByteQuery& q, core::AbstractOutputFile& out)
-{
-    auto so = StreamOutput::create(out);
-    impl_stream_query_bytes(q, *so);
-}
-#endif
-
 void Reader::impl_stream_query_bytes(const dataset::ByteQuery& q, StreamOutput& out)
 {
     switch (q.type)

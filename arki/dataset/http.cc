@@ -61,30 +61,6 @@ struct StreamState : public core::curl::Request
     }
 };
 
-struct AbstractOutputState : public core::curl::Request
-{
-    AbstractOutputFile& out;
-    std::shared_ptr<dataset::QueryProgress> progress;
-
-    AbstractOutputState(core::curl::CurlEasy& curl, AbstractOutputFile& out)
-        : Request(curl), out(out)
-    {
-    }
-
-    void perform() override
-    {
-        if (progress) progress->start();
-        Request::perform();
-    }
-
-    size_t process_body_chunk(void *ptr, size_t size, size_t nmemb, void *stream) override
-    {
-        out.write((const char*)ptr, size * nmemb);
-        if (progress) progress->update(0, size * nmemb);
-        return size * nmemb;
-    }
-};
-
 struct MDStreamState : public core::curl::Request
 {
     metadata::Stream mdc;
