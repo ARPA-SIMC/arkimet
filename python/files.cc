@@ -1,5 +1,6 @@
 #include "files.h"
 #include "utils/values.h"
+#include "arki/stream.h"
 #include "common.h"
 #include <string>
 
@@ -272,6 +273,66 @@ BinaryOutputFile::BinaryOutputFile(PyObject* o)
 
     // Fall back on calling o.write()
     abstract = new PyAbstractBinaryOutputFile(o);
+}
+
+
+std::unique_ptr<StreamOutput> textio_stream_output(PyObject* o)
+{
+    // If it is already an int handle, use it
+    if (PyLong_Check(o))
+        return StreamOutput::create(std::make_shared<core::NamedFileDescriptor>(int_from_python(o), get_fd_name(o)));
+
+    // If it is a string, take it as a file name
+    if (PyUnicode_Check(o))
+        return StreamOutput::create(std::make_shared<core::File>(
+                    from_python<std::string>(o),
+                    O_WRONLY | O_CREAT | O_TRUNC, 0666));
+
+    // Try calling fileno
+    pyo_unique_ptr fileno(PyObject_CallMethod(o, "fileno", nullptr));
+    if (fileno)
+    {
+        // It would be nice to give up and fallback to AbstractInputFile if
+        // there are bytes in the read buffer of o, but there seems to be no
+        // way to know
+        return StreamOutput::create(std::make_shared<core::NamedFileDescriptor>(int_from_python(fileno), get_fd_name(o)));
+    }
+
+    PyErr_Clear();
+
+    // Fall back on calling o.write()
+    // TODO: implement a Python StreamOutput, to get rid of the intermediate indirection layer
+    return StreamOutput::create(std::make_shared<PyAbstractTextOutputFile>(o));
+}
+
+
+std::unique_ptr<StreamOutput> binaryio_stream_output(PyObject* o)
+{
+    // If it is already an int handle, use it
+    if (PyLong_Check(o))
+        return StreamOutput::create(std::make_shared<core::NamedFileDescriptor>(int_from_python(o), get_fd_name(o)));
+
+    // If it is a string, take it as a file name
+    if (PyUnicode_Check(o))
+        return StreamOutput::create(std::make_shared<core::File>(
+                    from_python<std::string>(o),
+                    O_WRONLY | O_CREAT | O_TRUNC, 0666));
+
+    // Try calling fileno
+    pyo_unique_ptr fileno(PyObject_CallMethod(o, "fileno", nullptr));
+    if (fileno)
+    {
+        // It would be nice to give up and fallback to AbstractInputFile if
+        // there are bytes in the read buffer of o, but there seems to be no
+        // way to know
+        return StreamOutput::create(std::make_shared<core::NamedFileDescriptor>(int_from_python(fileno), get_fd_name(o)));
+    }
+
+    PyErr_Clear();
+
+    // Fall back on calling o.write()
+    // TODO: implement a Python StreamOutput, to get rid of the intermediate indirection layer
+    return StreamOutput::create(std::make_shared<PyAbstractBinaryOutputFile>(o));
 }
 
 }

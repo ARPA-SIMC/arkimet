@@ -10,6 +10,7 @@
 #include "arki/segment.h"
 #include "arki/scan.h"
 #include "arki/utils/sys.h"
+#include "arki/stream.h"
 #include "arki/summary.h"
 #include "arki/metadata/sort.h"
 #include "arki/dataset.h"
@@ -103,6 +104,26 @@ static void compressAndWrite(const std::vector<uint8_t>& buf, AbstractOutputFile
         out.write(buf.data(), buf.size());
 }
 
+static stream::SendResult compressAndWrite(const std::vector<uint8_t>& buf, StreamOutput& out)
+{
+    auto obuf = compress::lzo(buf.data(), buf.size());
+    if (obuf.size() + 8 < buf.size())
+    {
+        // Write a metadata group
+        vector<uint8_t> tmp;
+        core::BinaryEncoder enc(tmp);
+        enc.add_string("MG");
+        enc.add_unsigned(0u, 2);	// Version 0: LZO compressed
+        enc.add_unsigned(obuf.size() + 4, 4); // Compressed len
+        enc.add_unsigned(buf.size(), 4); // Uncompressed len
+        auto res = out.send_buffer(tmp.data(), tmp.size());
+        res += out.send_buffer((const char*)obuf.data(), obuf.size());
+        return res;
+    } else
+        // Write the plain metadata
+        return out.send_buffer(buf.data(), buf.size());
+}
+
 Collection::Collection(dataset::Dataset& ds, const dataset::DataQuery& q)
 {
     add(ds, q);
@@ -194,7 +215,7 @@ void Collection::write_to(NamedFileDescriptor& out) const
 {
     static const size_t blocksize = 256;
 
-    vector<uint8_t> buf;
+    std::vector<uint8_t> buf;
     core::BinaryEncoder enc(buf);
     for (size_t i = 0; i < vals.size(); ++i)
     {
@@ -213,7 +234,7 @@ void Collection::write_to(AbstractOutputFile& out) const
 {
     static const size_t blocksize = 256;
 
-    vector<uint8_t> buf;
+    std::vector<uint8_t> buf;
     core::BinaryEncoder enc(buf);
     for (size_t i = 0; i < vals.size(); ++i)
     {
@@ -226,6 +247,27 @@ void Collection::write_to(AbstractOutputFile& out) const
     }
     if (!buf.empty())
         compressAndWrite(buf, out);
+}
+
+stream::SendResult Collection::write_to(StreamOutput& out) const
+{
+    static const size_t blocksize = 256;
+
+    stream::SendResult res;
+    std::vector<uint8_t> buf;
+    core::BinaryEncoder enc(buf);
+    for (size_t i = 0; i < vals.size(); ++i)
+    {
+        if (i > 0 && (i % blocksize) == 0)
+        {
+            res += compressAndWrite(buf, out);
+            buf.clear();
+        }
+        vals[i]->encodeBinary(enc);
+    }
+    if (!buf.empty())
+        res += compressAndWrite(buf, out);
+    return res;
 }
 
 void Collection::read_from_file(const metadata::ReadContext& rc)

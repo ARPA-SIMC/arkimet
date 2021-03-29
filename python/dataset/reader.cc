@@ -257,13 +257,7 @@ struct query_bytes : public MethKwargs<query_bytes, arkipy_DatasetReader>
 
             if (arg_file && arg_file != Py_None)
             {
-                BinaryOutputFile out(arg_file);
-
-                std::unique_ptr<StreamOutput> stream;
-                if (out.fd)
-                    stream = StreamOutput::create(out.detach_fd());
-                else
-                    stream = StreamOutput::create(out.detach_abstract());
+                std::unique_ptr<arki::StreamOutput> stream = binaryio_stream_output(arg_file);
 
                 if (data_start_callback)
                     stream->set_data_start_callback(data_start_callback);

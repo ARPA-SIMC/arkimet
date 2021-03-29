@@ -3,6 +3,7 @@
 #include "arki/core/file.h"
 #include "arki/core/binary.h"
 #include "arki/metadata.h"
+#include "arki/stream.h"
 #include "arki/summary.h"
 #include "arki/types.h"
 #include "arki/types/source.h"
@@ -129,7 +130,7 @@ struct reverse_data : public MethKwargs<reverse_data, arkipy_ArkiDump>
 
         try {
             BinaryInputFile input(py_input);
-            BinaryOutputFile output(py_output);
+            std::unique_ptr<arki::StreamOutput> output = binaryio_stream_output(py_output);
 
             ReleaseGIL rg;
 
@@ -145,12 +146,8 @@ struct reverse_data : public MethKwargs<reverse_data, arkipy_ArkiDump>
                 input_name = input.abstract->name();
                 reader = arki::core::LineReader::from_abstract(*input.abstract);
             }
-            if (output.fd)
-                while (auto md = arki::Metadata::read_yaml(*reader, input_name))
-                    md->write(*output.fd);
-            else
-                while (auto md = arki::Metadata::read_yaml(*reader, input_name))
-                    md->write(*output.abstract);
+            while (auto md = arki::Metadata::read_yaml(*reader, input_name))
+                md->write(*output);
 
             return throw_ifnull(PyLong_FromLong(0));
         } ARKI_CATCH_RETURN_PYO
@@ -175,7 +172,7 @@ struct reverse_summary : public MethKwargs<reverse_summary, arkipy_ArkiDump>
 
         try {
             BinaryInputFile input(py_input);
-            BinaryOutputFile output(py_output);
+            std::unique_ptr<arki::StreamOutput> output = binaryio_stream_output(py_output);
 
             ReleaseGIL rg;
 
@@ -192,12 +189,8 @@ struct reverse_summary : public MethKwargs<reverse_summary, arkipy_ArkiDump>
                 input_name = input.abstract->name();
                 reader = arki::core::LineReader::from_abstract(*input.abstract);
             }
-            if (output.fd)
-                while (summary.readYaml(*reader, input_name))
-                    summary.write(*output.fd);
-            else
-                while (summary.readYaml(*reader, input_name))
-                    summary.write(*output.abstract);
+            while (summary.readYaml(*reader, input_name))
+                summary.write(*output);
 
             return throw_ifnull(PyLong_FromLong(0));
         } ARKI_CATCH_RETURN_PYO
@@ -223,7 +216,7 @@ struct dump_yaml : public MethKwargs<dump_yaml, arkipy_ArkiDump>
 
         try {
             BinaryInputFile input(py_input);
-            BinaryOutputFile output(py_output);
+            std::unique_ptr<arki::StreamOutput> output = binaryio_stream_output(py_output);
 
             ReleaseGIL rg;
 
@@ -234,30 +227,16 @@ struct dump_yaml : public MethKwargs<dump_yaml, arkipy_ArkiDump>
             std::function<void(const arki::Metadata&)> print_md;
             std::function<void(const arki::Summary&)> print_summary;
 
-            if (output.fd)
-            {
-                print_md = [&output, formatter](const arki::Metadata& md) {
-                    std::string res = md.to_yaml(formatter.get());
-                    res += "\n";
-                    output.fd->write_all_or_throw(res.data(), res.size());
-                };
-                print_summary = [&output, formatter](const arki::Summary& md) {
-                    std::string res = md.to_yaml(formatter.get());
-                    res += "\n";
-                    output.fd->write_all_or_throw(res.data(), res.size());
-                };
-            } else {
-                print_md = [&output, formatter](const arki::Metadata& md) {
-                    std::string res = md.to_yaml(formatter.get());
-                    res += "\n";
-                    output.abstract->write(res.data(), res.size());
-                };
-                print_summary = [&output, formatter](const arki::Summary& md) {
-                    std::string res = md.to_yaml(formatter.get());
-                    res += "\n";
-                    output.abstract->write(res.data(), res.size());
-                };
-            }
+            print_md = [&output, formatter](const arki::Metadata& md) {
+                std::string res = md.to_yaml(formatter.get());
+                res += "\n";
+                output->send_buffer(res.data(), res.size());
+            };
+            print_summary = [&output, formatter](const arki::Summary& md) {
+                std::string res = md.to_yaml(formatter.get());
+                res += "\n";
+                output->send_buffer(res.data(), res.size());
+            };
 
             arki::Summary summary;
 

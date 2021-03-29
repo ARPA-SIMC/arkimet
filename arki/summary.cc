@@ -275,17 +275,6 @@ void Summary::write(NamedFileDescriptor& out) const
     out.write(encoded.data(), encoded.size());
 }
 
-void Summary::write(AbstractOutputFile& out) const
-{
-    // Prepare the encoded data
-    std::vector<uint8_t> encoded = encode(true);
-
-    iotrace::trace_file(out, 0, encoded.size(), "write summary");
-
-    // Write out
-    out.write(encoded.data(), encoded.size());
-}
-
 stream::SendResult Summary::write(StreamOutput& out) const
 {
     // Prepare the encoded data
@@ -365,12 +354,6 @@ void Summary::write_yaml(core::NamedFileDescriptor& out, const Formatter* format
 {
     std::string yaml = to_yaml(formatter);
     out.write_all_or_retry(yaml.data(), yaml.size());
-}
-
-void Summary::write_yaml(core::AbstractOutputFile& out, const Formatter* formatter) const
-{
-    std::string yaml = to_yaml(formatter);
-    out.write(yaml.data(), yaml.size());
 }
 
 void Summary::serialise(structured::Emitter& e, const structured::Keys& keys, const Formatter* f) const

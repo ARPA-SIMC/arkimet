@@ -157,11 +157,6 @@ public:
     /**
      * Write the summary to the given output file.
      */
-    void write(core::AbstractOutputFile& out) const;
-
-    /**
-     * Write the summary to the given output file.
-     */
     stream::SendResult write(StreamOutput& out) const;
 
 	/**
@@ -181,11 +176,6 @@ public:
      * Write the summary as YAML text to the given output stream.
      */
     void write_yaml(core::NamedFileDescriptor& out, const Formatter* f=nullptr) const;
-
-    /**
-     * Write the summary as YAML text to the given output stream.
-     */
-    void write_yaml(core::AbstractOutputFile& out, const Formatter* f=nullptr) const;
 
     /// Serialise using an emitter
     void serialise(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const;

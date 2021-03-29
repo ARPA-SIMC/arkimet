@@ -3,6 +3,7 @@
 
 #include "utils/core.h"
 #include <arki/core/file.h>
+#include <arki/stream/fwd.h>
 
 namespace arki {
 namespace python {
@@ -66,6 +67,17 @@ struct BinaryOutputFile : public FileBase<core::AbstractOutputFile>
 {
     BinaryOutputFile(PyObject* o);
 };
+
+
+/**
+ * Wrap a python TextIO into a StreamOutput
+ */
+std::unique_ptr<StreamOutput> textio_stream_output(PyObject* o);
+
+/**
+ * Wrap a python BinaryIO into a StreamOutput
+ */
+std::unique_ptr<StreamOutput> binaryio_stream_output(PyObject* o);
 
 }
 }
