@@ -78,6 +78,11 @@ void BlockingSink::empty_buffer()
 }
 
 
+std::string StreamTestsFixture::streamed_contents()
+{
+    throw std::runtime_error("streamed_contents is not available in this type of fixture");
+}
+
 void StreamTestsFixture::set_output(std::unique_ptr<StreamOutput>&& output)
 {
     this->output = std::move(output);
@@ -445,6 +450,71 @@ add_method("data_start_large_send_from_pipe_splice", [&] {
     wassert(actual(std::accumulate(f->cb_log.begin(), f->cb_log.end(), 0u)) == size + 4);
 
     wassert(actual(f->streamed_contents()).startswith("foo\n        "));
+});
+
+}
+
+namespace {
+
+struct ClosedPipe
+{
+    int pipefds[2];
+    sys::NamedFileDescriptor fd;
+
+    ClosedPipe()
+        : fd(-1, "write end of pipe")
+    {
+        if (pipe(pipefds) < 0)
+            throw std::system_error(errno, std::system_category(), "cannot create new pipe");
+        // Close read end of the pipe
+        close(pipefds[0]);
+
+        fd = sys::NamedFileDescriptor(pipefds[1], "write end of pipe");
+    }
+};
+
+}
+
+void ConcreteStreamTests::register_tests() {
+using namespace arki::tests;
+StreamTests::register_tests();
+
+add_method("closed_pipe_send_buffer", [&] {
+    ClosedPipe cp;
+    auto f = make_concrete_fixture(cp.fd);
+    wassert(actual(f->send_buffer("A", 1)) == stream::SendResult(0, stream::SendResult::SEND_PIPE_EOF_DEST));
+});
+
+add_method("closed_pipe_send_line", [&] {
+    ClosedPipe cp;
+    auto f = make_concrete_fixture(cp.fd);
+    wassert(actual(f->send_line("A", 1)) == stream::SendResult(0, stream::SendResult::SEND_PIPE_EOF_DEST));
+});
+
+add_method("closed_pipe_send_file_segment", [&] {
+    ClosedPipe cp;
+    auto f = make_concrete_fixture(cp.fd);
+
+    sys::Tempfile tf;
+    tf.write_all_or_retry("test", 4);
+    wassert(actual(f->send_file_segment(tf, 1, 1)) == stream::SendResult(0, stream::SendResult::SEND_PIPE_EOF_DEST));
+});
+
+add_method("closed_pipe_send_pipe_read", [&] {
+    ClosedPipe cp;
+    auto f = make_concrete_fixture(cp.fd);
+
+    sys::Tempfile tf;
+    tf.write_all_or_retry("test", 4);
+    tf.lseek(0);
+    wassert(actual(f->send_from_pipe(tf)) == stream::SendResult(0, stream::SendResult::SEND_PIPE_EOF_DEST));
+});
+
+add_method("closed_pipe_send_pipe_splice", [&] {
+    ClosedPipe cp;
+    auto f = make_concrete_fixture(cp.fd);
+    PipeSource child("test");
+    wassert(actual(f->send_from_pipe(child.get_stdout())) == stream::SendResult(0, stream::SendResult::SEND_PIPE_EOF_DEST));
 });
 
 }

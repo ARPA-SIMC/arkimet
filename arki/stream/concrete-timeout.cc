@@ -1,6 +1,7 @@
 #include "concrete-timeout.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/accounting.h"
+#include "arki/utils/process.h"
 #include "arki/libconfig.h"
 #include <system_error>
 #include <sys/uio.h>
@@ -9,7 +10,7 @@
 namespace arki {
 namespace stream {
 
-void ConcreteTimeoutStreamOutput::wait_writable()
+uint32_t ConcreteTimeoutStreamOutput::wait_writable()
 {
     pollinfo.revents = 0;
     int res = ::poll(&pollinfo, 1, timeout_ms);
@@ -17,11 +18,10 @@ void ConcreteTimeoutStreamOutput::wait_writable()
         throw std::system_error(errno, std::system_category(), "poll failed on " + out.name());
     if (res == 0)
         throw TimedOut("write on " + out.name() + " timed out");
-    // TODO: update sendresults instead
     if (pollinfo.revents & POLLERR)
-        throw Closed("peer on " + out.name() + " has closed the connection");
+        return SendResult::SEND_PIPE_EOF_DEST;
     if (pollinfo.revents & POLLOUT)
-        return;
+        return 0;
     throw std::runtime_error("unsupported revents values when polling " + out.name());
 }
 
@@ -54,6 +54,7 @@ SendResult ConcreteTimeoutStreamOutput::send_buffer(const void* data, size_t siz
     if (data_start_callback)
         result += fire_data_start_callback();
 
+    utils::Sigignore ignpipe(SIGPIPE);
     size_t pos = 0;
     while (true)
     {
@@ -62,7 +63,10 @@ SendResult ConcreteTimeoutStreamOutput::send_buffer(const void* data, size_t siz
         {
             if (errno == EAGAIN || errno == EWOULDBLOCK)
                 res = 0;
-            else
+            else if (errno == EPIPE) {
+                result.flags |= SendResult::SEND_PIPE_EOF_DEST;
+                break;
+            } else
                 throw std::system_error(errno, std::system_category(), "cannot write " + std::to_string(size - pos) + " bytes to " + out.name());
         }
 
@@ -74,7 +78,12 @@ SendResult ConcreteTimeoutStreamOutput::send_buffer(const void* data, size_t siz
         if (pos >= size)
             break;
 
-        wait_writable();
+        uint32_t wres = wait_writable();
+        if (wres)
+        {
+            result.flags |= wres;
+            break;
+        }
     }
     return result;
 
@@ -106,6 +115,7 @@ SendResult ConcreteTimeoutStreamOutput::send_line(const void* data, size_t size)
     if (data_start_callback)
         result += fire_data_start_callback();
 
+    utils::Sigignore ignpipe(SIGPIPE);
     struct iovec todo[2] = {
         { (void*)data, size },
         { (void*)"\n", 1 },
@@ -120,7 +130,10 @@ SendResult ConcreteTimeoutStreamOutput::send_line(const void* data, size_t size)
             {
                 if (errno == EAGAIN || errno == EWOULDBLOCK)
                     res = 0;
-                else
+                else if (errno == EPIPE) {
+                    result.flags |= SendResult::SEND_PIPE_EOF_DEST;
+                    break;
+                } else
                     throw std::system_error(errno, std::system_category(), "cannot write " + std::to_string(size + 1) + " bytes to " + out.name());
             }
             pos += res;
@@ -138,7 +151,10 @@ SendResult ConcreteTimeoutStreamOutput::send_line(const void* data, size_t size)
             {
                 if (errno == EAGAIN || errno == EWOULDBLOCK)
                     res = 0;
-                else
+                else if (errno == EPIPE) {
+                    result.flags |= SendResult::SEND_PIPE_EOF_DEST;
+                    break;
+                } else
                     throw std::system_error(errno, std::system_category(), "cannot write 1 byte to " + out.name());
             }
             pos += res;
@@ -147,7 +163,13 @@ SendResult ConcreteTimeoutStreamOutput::send_line(const void* data, size_t size)
                 progress_callback(res);
         } else
             break;
-        wait_writable();
+
+        uint32_t wres = wait_writable();
+        if (wres)
+        {
+            result.flags |= wres;
+            break;
+        }
     }
     return result;
 }
@@ -186,6 +208,7 @@ SendResult ConcreteTimeoutStreamOutput::send_file_segment(arki::core::NamedFileD
     {
         if (has_sendfile)
         {
+            utils::Sigignore ignpipe(SIGPIPE);
             ssize_t res = ::sendfile(out, fd, &offset, size - written);
             if (res < 0)
             {
@@ -193,8 +216,10 @@ SendResult ConcreteTimeoutStreamOutput::send_file_segment(arki::core::NamedFileD
                 {
                     has_sendfile = false;
                     buffer.allocate();
-                }
-                else if (errno == EAGAIN || errno == EWOULDBLOCK)
+                } else if (errno == EPIPE) {
+                    result.flags |= SendResult::SEND_PIPE_EOF_DEST;
+                    break;
+                } else if (errno == EAGAIN || errno == EWOULDBLOCK)
                 {
                     res = 0;
                     if (progress_callback)
@@ -222,8 +247,15 @@ SendResult ConcreteTimeoutStreamOutput::send_file_segment(arki::core::NamedFileD
 
         if (written >= size)
             break;
-        wait_writable();
+
         // iotrace::trace_file(dirfd, offset, size, "streamed data");
+
+        uint32_t wres = wait_writable();
+        if (wres)
+        {
+            result.flags |= wres;
+            break;
+        }
     }
 
     return result;
@@ -260,12 +292,13 @@ SendResult ConcreteTimeoutStreamOutput::send_from_pipe(int fd)
         if (has_splice)
         {
 #ifdef HAVE_SPLICE
+            utils::Sigignore ignpipe(SIGPIPE);
             // Try splice
             ssize_t res = splice(fd, NULL, out, NULL, TransferBuffer::size * 128, SPLICE_F_MORE);
             if (res == 0)
             {
                 result.flags |= SendResult::SEND_PIPE_EOF_SOURCE;
-                return result;
+                break;
             }
             else if (res < 0)
             {
@@ -276,6 +309,9 @@ SendResult ConcreteTimeoutStreamOutput::send_from_pipe(int fd)
                     continue;
                 } else if (errno == EAGAIN || errno == EWOULDBLOCK) {
                     res = 0;
+                } else if (errno == EPIPE) {
+                    result.flags |= SendResult::SEND_PIPE_EOF_DEST;
+                    break;
                 } else
                     throw std::system_error(errno, std::system_category(), "cannot splice data to stream from a pipe");
             }
@@ -294,7 +330,7 @@ SendResult ConcreteTimeoutStreamOutput::send_from_pipe(int fd)
             if (res == 0)
             {
                 result.flags |= SendResult::SEND_PIPE_EOF_SOURCE;
-                return result;
+                break;
             }
             if (res < 0)
             {
@@ -312,8 +348,15 @@ SendResult ConcreteTimeoutStreamOutput::send_from_pipe(int fd)
             }
         }
 
-        wait_writable();
+        uint32_t wres = wait_writable();
+        if (wres)
+        {
+            result.flags |= wres;
+            break;
+        }
     }
+
+    return result;
 }
 
 }

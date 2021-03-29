@@ -19,13 +19,6 @@ public:
     using std::runtime_error::runtime_error;
 };
 
-
-class Closed : public std::runtime_error
-{
-public:
-    using std::runtime_error::runtime_error;
-};
-
 std::ostream& operator<<(std::ostream& out, const SendResult& r);
 
 }

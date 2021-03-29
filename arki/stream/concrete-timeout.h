@@ -15,7 +15,15 @@ class ConcreteTimeoutStreamOutput: public BaseStreamOutput
     int orig_fl = -1;
     pollfd pollinfo;
 
-    void wait_writable();
+    /**
+     * Returns:
+     *  0 if the pipe can accept new data
+     *  an OR combination of SendResult flags if a known condition happened
+     *  that should interrupt the writing
+     *
+     * May throw TimedOut, or a std::runtime_error in case of errors
+     */
+    uint32_t wait_writable();
 
 public:
     ConcreteTimeoutStreamOutput(core::NamedFileDescriptor& out, unsigned timeout_ms);

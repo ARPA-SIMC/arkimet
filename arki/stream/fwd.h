@@ -9,8 +9,7 @@ struct StreamOutput;
 
 namespace stream {
 
-struct TimedOut;
-struct Closed;
+class TimedOut;
 
 struct SendResult
 {

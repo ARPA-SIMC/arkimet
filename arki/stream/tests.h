@@ -60,7 +60,7 @@ public:
 
     void set_output(std::unique_ptr<StreamOutput>&& output);
 
-    virtual std::string streamed_contents() = 0;
+    virtual std::string streamed_contents();
 
     void set_data_start_callback(std::function<stream::SendResult(StreamOutput&)> f) { output->set_data_start_callback(f); }
     stream::SendResult send_line(const void* data, size_t size);
@@ -77,6 +77,16 @@ struct StreamTests : public tests::TestCase
     void register_tests() override;
 
     virtual std::unique_ptr<StreamTestsFixture> make_fixture() = 0;
+};
+
+
+struct ConcreteStreamTests : public StreamTests
+{
+    using StreamTests::StreamTests;
+
+    void register_tests() override;
+
+    virtual std::unique_ptr<StreamTestsFixture> make_concrete_fixture(core::NamedFileDescriptor& out) = 0;
 };
 
 }
