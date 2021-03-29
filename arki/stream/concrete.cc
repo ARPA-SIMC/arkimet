@@ -166,7 +166,13 @@ SendResult ConcreteStreamOutput::send_from_pipe(int fd)
         buffer.allocate();
         ssize_t res = ::read(fd, buffer, buffer.size);
         if (res < 0)
-            throw std::system_error(errno, std::system_category(), "cannot read data to stream from a pipe");
+        {
+            if (errno == EAGAIN) {
+                result.flags |= SendResult::SEND_PIPE_EAGAIN_SOURCE;
+                return result;
+            } else
+                throw std::system_error(errno, std::system_category(), "cannot read data to stream from a pipe");
+        }
         if (res == 0)
         {
             result.flags |= SendResult::SEND_PIPE_EOF_SOURCE;
@@ -205,6 +211,9 @@ SendResult ConcreteStreamOutput::send_from_pipe(int fd)
                 } else if (errno == EPIPE) {
                     result.flags |= SendResult::SEND_PIPE_EOF_DEST;
                     break;
+                } else if (errno == EAGAIN) {
+                    result.flags |= SendResult::SEND_PIPE_EAGAIN_SOURCE;
+                    break;
                 } else
                     throw std::system_error(errno, std::system_category(), "cannot splice data to stream from a pipe");
             }
@@ -221,7 +230,13 @@ SendResult ConcreteStreamOutput::send_from_pipe(int fd)
             buffer.allocate();
             ssize_t res = read(fd, buffer, buffer.size);
             if (res < 0)
-                throw std::system_error(errno, std::system_category(), "cannot read data to stream from a pipe");
+            {
+                if (errno == EAGAIN) {
+                    result.flags |= SendResult::SEND_PIPE_EAGAIN_SOURCE;
+                    break;
+                } else
+                    throw std::system_error(errno, std::system_category(), "cannot read data to stream from a pipe");
+            }
             if (res == 0)
             {
                 result.flags |= SendResult::SEND_PIPE_EOF_SOURCE;

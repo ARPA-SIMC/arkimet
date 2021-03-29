@@ -80,7 +80,13 @@ SendResult AbstractOutputStreamOutput::send_from_pipe(int fd)
     {
         ssize_t res = read(fd, buffer, buffer.size);
         if (res < 0)
-            throw std::system_error(errno, std::system_category(), "cannot read from pipe");
+        {
+            if (errno == EAGAIN) {
+                result.flags |= SendResult::SEND_PIPE_EAGAIN_SOURCE;
+                break;
+            } else
+                throw std::system_error(errno, std::system_category(), "cannot read from pipe");
+        }
         if (res == 0)
         {
             result.flags |= SendResult::SEND_PIPE_EOF_SOURCE;

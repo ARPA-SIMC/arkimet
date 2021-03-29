@@ -271,6 +271,40 @@ add_method("send_from_pipe_splice_nonblocking", [&] {
     wassert(actual(f->streamed_contents()) == std::string(8 + 123456 + 123, 0));
 });
 
+add_method("data_start_send_from_pipe_splice_nonblocking", [&] {
+    auto f = make_fixture();
+    f->set_data_start_callback([](StreamOutput& out) { return out.send_buffer("start", 5); });
+
+    // Source is a pipe and it should trigger splice
+    NonblockingPipeSource child;
+    child.request_data(8);
+    child.wait_for_data();
+    wassert(actual(f->send_from_pipe(child.get_stdout())) == stream::SendResult(8u + 5u, stream::SendResult::SEND_PIPE_EAGAIN_SOURCE));
+    child.request_data(123456);
+    child.wait_for_data();
+
+    size_t sent = 0;
+    while (sent < 123456u)
+    {
+        auto res = f->send_from_pipe(child.get_stdout());
+        wassert(actual(res.flags) == stream::SendResult::SEND_PIPE_EAGAIN_SOURCE);
+        sent += res.sent;
+    }
+
+    child.request_data(123);
+    child.request_data(0);
+    child.wait();
+
+    auto res = f->send_from_pipe(child.get_stdout());
+    wassert(actual(res.sent) == 123u);
+    wassert_true((res.flags & stream::SendResult::SEND_PIPE_EAGAIN_SOURCE) || (res.flags & stream::SendResult::SEND_PIPE_EOF_SOURCE));
+
+    if (res.flags & stream::SendResult::SEND_PIPE_EAGAIN_SOURCE)
+        wassert(actual(f->send_from_pipe(child.get_stdout())) == stream::SendResult(0u, stream::SendResult::SEND_PIPE_EOF_SOURCE));
+
+    wassert(actual(f->streamed_contents().size()) == 8u + 5u + 123456u + 123u);
+});
+
 add_method("data_start_send_line", [&] {
     auto f = make_fixture();
     f->set_data_start_callback([](StreamOutput& out) { return out.send_buffer("start", 5); });

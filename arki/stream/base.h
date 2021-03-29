@@ -25,6 +25,19 @@ protected:
         return cb(*this);
     }
 
+    /**
+     * Returns:
+     *  0 if the source has data available
+     *  an OR combination of SendResult flags if a known condition happened
+     *  that should interrupt the writing
+     */
+    uint32_t wait_readable(int read_fd);
+
+    /**
+     * Check if a file descriptor is in nonblocking mode
+     */
+    bool is_nonblocking(int fd);
+
 public:
     void set_progress_callback(std::function<void(size_t)> f) override
     {

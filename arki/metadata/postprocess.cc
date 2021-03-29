@@ -55,8 +55,9 @@ public:
     {
         // Stream directly out of a pipe
         stream::SendResult res = m_stream->send_from_pipe(subproc.get_stdout());
-        // TODO: handle res_flags
-        if (res.sent == 0)
+        if (res.flags & stream::SendResult::SEND_PIPE_EOF_SOURCE)
+            subproc.close_stdout();
+        else if (res.flags & stream::SendResult::SEND_PIPE_EOF_DEST)
             subproc.close_stdout();
         return;
     }
