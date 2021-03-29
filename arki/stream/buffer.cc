@@ -1,17 +1,15 @@
-#include "abstractoutput.h"
+#include "buffer.h"
 #include "arki/core/file.h"
 
 namespace arki {
 namespace stream {
 
-AbstractOutputStreamOutput::AbstractOutputStreamOutput(std::shared_ptr<core::AbstractOutputFile> out)
+BufferStreamOutput::BufferStreamOutput(std::vector<uint8_t>& out)
     : out(out)
 {
 }
 
-std::string AbstractOutputStreamOutput::name() const { return out->name(); }
-
-SendResult AbstractOutputStreamOutput::send_buffer(const void* data, size_t size)
+SendResult BufferStreamOutput::send_buffer(const void* data, size_t size)
 {
     SendResult result;
     if (size == 0)
@@ -20,7 +18,7 @@ SendResult AbstractOutputStreamOutput::send_buffer(const void* data, size_t size
     if (data_start_callback)
         result += fire_data_start_callback();
 
-    out->write(data, size);
+    out.insert(out.end(), (const uint8_t*)data, (const uint8_t*)data + size);
     if (progress_callback)
         progress_callback(size);
     result.sent += size;
@@ -28,7 +26,7 @@ SendResult AbstractOutputStreamOutput::send_buffer(const void* data, size_t size
     return result;
 }
 
-SendResult AbstractOutputStreamOutput::send_line(const void* data, size_t size)
+SendResult BufferStreamOutput::send_line(const void* data, size_t size)
 {
     SendResult result;
 
@@ -38,8 +36,8 @@ SendResult AbstractOutputStreamOutput::send_line(const void* data, size_t size)
     if (data_start_callback)
         result += fire_data_start_callback();
 
-    out->write(data, size);
-    out->write("\n", 1);
+    out.insert(out.end(), (const uint8_t*)data, (const uint8_t*)data + size);
+    out.emplace_back('\n');
     if (progress_callback)
         progress_callback(size + 1);
 
@@ -47,7 +45,7 @@ SendResult AbstractOutputStreamOutput::send_line(const void* data, size_t size)
     return result;
 }
 
-SendResult AbstractOutputStreamOutput::send_file_segment(arki::core::NamedFileDescriptor& fd, off_t offset, size_t size)
+SendResult BufferStreamOutput::send_file_segment(arki::core::NamedFileDescriptor& fd, off_t offset, size_t size)
 {
     SendResult result;
     if (size == 0)
@@ -72,7 +70,7 @@ SendResult AbstractOutputStreamOutput::send_file_segment(arki::core::NamedFileDe
     return result;
 }
 
-SendResult AbstractOutputStreamOutput::send_from_pipe(int fd)
+SendResult BufferStreamOutput::send_from_pipe(int fd)
 {
     SendResult result;
 

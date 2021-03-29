@@ -261,9 +261,10 @@ struct query_bytes : public MethKwargs<query_bytes, arkipy_DatasetReader>
 
                 std::unique_ptr<StreamOutput> stream;
                 if (out.fd)
-                    stream = StreamOutput::create(*out.fd);
+                    stream = StreamOutput::create(out.detach_fd());
                 else
-                    stream = StreamOutput::create(*out.abstract);
+                    stream = StreamOutput::create(out.detach_abstract());
+
                 if (data_start_callback)
                     stream->set_data_start_callback(data_start_callback);
 
@@ -274,10 +275,10 @@ struct query_bytes : public MethKwargs<query_bytes, arkipy_DatasetReader>
                 Py_RETURN_NONE;
             } else {
                 std::vector<uint8_t> buffer;
-                BufferOutputFile out(buffer, "memory buffer");
+                auto out = StreamOutput::create(buffer);
                 {
                     ReleaseGIL gil;
-                    self->ptr->query_bytes(query, out);
+                    self->ptr->query_bytes(query, *out);
                 }
                 return to_python(buffer);
             }

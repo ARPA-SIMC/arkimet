@@ -9,6 +9,7 @@
 
 #include <arki/libconfig.h>
 #include <arki/core/fwd.h>
+#include <arki/stream/fwd.h>
 #include <vector>
 #include <string>
 #include <cstddef>
@@ -90,6 +91,9 @@ void trace_file(core::AbstractInputFile& fd, off_t offset, size_t size, const ch
 
 /// Specialised implementation AbstractOutputFile
 void trace_file(core::AbstractOutputFile& fd, off_t offset, size_t size, const char* desc);
+
+/// Specialised implementation StreamOutput
+void trace_file(StreamOutput& fd, off_t offset, size_t size, const char* desc);
 
 void add_listener(Listener& l);
 void remove_listener(Listener& l);

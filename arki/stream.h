@@ -29,6 +29,9 @@ class StreamOutput
 public:
     virtual ~StreamOutput();
 
+    /// Return a name describing this stream output
+    virtual std::string name() const = 0;
+
     /**
      * After each successful write operation, call the callback with the number
      * of bytes that have just been written
@@ -82,7 +85,7 @@ public:
      * Stream operations can block on writes for as long as needed (possibly
      * indefinitely).
      */
-    static std::unique_ptr<StreamOutput> create(core::NamedFileDescriptor& out);
+    static std::unique_ptr<StreamOutput> create(std::shared_ptr<core::NamedFileDescriptor> out);
 
     /**
      * Create a StreamOutput to stream to a file.
@@ -90,12 +93,22 @@ public:
      * Stream operations can block on writes for at most the given number of
      * milliseconds. If timed out, StreamTimedOut is raised
      */
-    static std::unique_ptr<StreamOutput> create(core::NamedFileDescriptor& out, unsigned timeout_ms);
+    static std::unique_ptr<StreamOutput> create(std::shared_ptr<core::NamedFileDescriptor> out, unsigned timeout_ms);
 
     /**
      * Create a Streamoutput to stream to an abstract output file
      */
-    static std::unique_ptr<StreamOutput> create(core::AbstractOutputFile& out);
+    static std::unique_ptr<StreamOutput> create(std::shared_ptr<core::AbstractOutputFile> out);
+
+    /**
+     * Create a Streamoutput to stream to a memory buffer
+     */
+    static std::unique_ptr<StreamOutput> create(std::vector<uint8_t>& out);
+
+    /**
+     * Create a Streamoutput that discards its input
+     */
+    static std::unique_ptr<StreamOutput> create_discard();
 };
 
 

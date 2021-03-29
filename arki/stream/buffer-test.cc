@@ -17,7 +17,7 @@ struct CommonTestsFixture : public stream::StreamTestsFixture
 
     CommonTestsFixture()
     {
-        set_output(StreamOutput::create(std::make_shared<BufferOutputFile>(buffer, "memory buffer")));
+        set_output(StreamOutput::create(buffer));
     }
 
     std::string streamed_contents() override
@@ -39,7 +39,7 @@ class Tests : public stream::StreamTests
     }
 };
 
-Tests test("arki_stream_abstractoutput");
+Tests test("arki_stream_buffer");
 
 void Tests::register_tests() {
 StreamTests::register_tests();

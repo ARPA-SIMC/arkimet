@@ -50,6 +50,20 @@ public:
     }
 };
 
+class BaseConcreteStreamOutput : public BaseStreamOutput
+{
+protected:
+    std::shared_ptr<core::NamedFileDescriptor> out;
+
+public:
+    BaseConcreteStreamOutput(std::shared_ptr<core::NamedFileDescriptor> out)
+        : out(out)
+    {
+    }
+
+    std::string name() const override;
+};
+
 struct TransferBuffer
 {
     constexpr static size_t size = 4096 * 8;

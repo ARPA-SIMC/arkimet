@@ -8,9 +8,8 @@
 namespace arki {
 namespace stream {
 
-class ConcreteTimeoutStreamOutput: public BaseStreamOutput
+class ConcreteTimeoutStreamOutput: public BaseConcreteStreamOutput
 {
-    core::NamedFileDescriptor& out;
     unsigned timeout_ms;
     int orig_fl = -1;
     pollfd pollinfo;
@@ -26,7 +25,7 @@ class ConcreteTimeoutStreamOutput: public BaseStreamOutput
     uint32_t wait_writable();
 
 public:
-    ConcreteTimeoutStreamOutput(core::NamedFileDescriptor& out, unsigned timeout_ms);
+    ConcreteTimeoutStreamOutput(std::shared_ptr<core::NamedFileDescriptor> out, unsigned timeout_ms);
     ~ConcreteTimeoutStreamOutput();
 
     SendResult send_line(const void* data, size_t size) override;

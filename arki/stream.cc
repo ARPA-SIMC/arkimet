@@ -2,6 +2,8 @@
 #include "arki/stream/concrete.h"
 #include "arki/stream/concrete-timeout.h"
 #include "arki/stream/abstractoutput.h"
+#include "arki/stream/buffer.h"
+#include "arki/stream/discard.h"
 #include <ostream>
 
 using namespace arki::utils;
@@ -12,21 +14,30 @@ StreamOutput::~StreamOutput()
 {
 }
 
-std::unique_ptr<StreamOutput> StreamOutput::create(core::NamedFileDescriptor& out)
+std::unique_ptr<StreamOutput> StreamOutput::create(std::shared_ptr<core::NamedFileDescriptor> out)
 {
     return std::unique_ptr<StreamOutput>(new stream::ConcreteStreamOutput(out));
 }
 
-std::unique_ptr<StreamOutput> StreamOutput::create(core::NamedFileDescriptor& out, unsigned timeout_ms)
+std::unique_ptr<StreamOutput> StreamOutput::create(std::shared_ptr<core::NamedFileDescriptor> out, unsigned timeout_ms)
 {
     return std::unique_ptr<StreamOutput>(new stream::ConcreteTimeoutStreamOutput(out, timeout_ms));
 }
 
-std::unique_ptr<StreamOutput> StreamOutput::create(core::AbstractOutputFile& out)
+std::unique_ptr<StreamOutput> StreamOutput::create(std::shared_ptr<core::AbstractOutputFile> out)
 {
     return std::unique_ptr<StreamOutput>(new stream::AbstractOutputStreamOutput(out));
 }
 
+std::unique_ptr<StreamOutput> StreamOutput::create(std::vector<uint8_t>& out)
+{
+    return std::unique_ptr<StreamOutput>(new stream::BufferStreamOutput(out));
+}
+
+std::unique_ptr<StreamOutput> StreamOutput::create_discard()
+{
+    return std::unique_ptr<StreamOutput>(new stream::DiscardStreamOutput());
+}
 
 namespace stream {
 

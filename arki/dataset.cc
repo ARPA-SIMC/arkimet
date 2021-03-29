@@ -49,6 +49,7 @@ void Reader::impl_query_summary(const Matcher& matcher, Summary& summary)
     query_data(DataQuery(matcher), [&](std::shared_ptr<Metadata> md) { summary.add(*md); return true; });
 }
 
+#if 0
 void Reader::query_bytes(const dataset::ByteQuery& q, core::NamedFileDescriptor& out)
 {
     auto so = StreamOutput::create(out, 60000);
@@ -60,6 +61,7 @@ void Reader::query_bytes(const dataset::ByteQuery& q, core::AbstractOutputFile& 
     auto so = StreamOutput::create(out);
     impl_stream_query_bytes(q, *so);
 }
+#endif
 
 void Reader::impl_stream_query_bytes(const dataset::ByteQuery& q, StreamOutput& out)
 {
@@ -67,8 +69,8 @@ void Reader::impl_stream_query_bytes(const dataset::ByteQuery& q, StreamOutput& 
     {
         case dataset::ByteQuery::BQ_DATA: {
             query_data(q, [&](std::shared_ptr<Metadata> md) {
-                md->stream_data(out);
-                return true;
+                auto res = md->stream_data(out);
+                return !(res.flags & stream::SendResult::SEND_PIPE_EOF_DEST);
             });
             break;
         }

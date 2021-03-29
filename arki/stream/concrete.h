@@ -7,15 +7,10 @@
 namespace arki {
 namespace stream {
 
-class ConcreteStreamOutput: public BaseStreamOutput
+class ConcreteStreamOutput: public BaseConcreteStreamOutput
 {
-    core::NamedFileDescriptor& out;
-
 public:
-    ConcreteStreamOutput(core::NamedFileDescriptor& out)
-        : out(out)
-    {
-    }
+    using BaseConcreteStreamOutput::BaseConcreteStreamOutput;
 
     SendResult send_line(const void* data, size_t size) override;
     SendResult send_file_segment(arki::core::NamedFileDescriptor& fd, off_t offset, size_t size) override;

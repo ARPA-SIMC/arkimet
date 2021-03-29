@@ -1,6 +1,7 @@
 #include "metadata.h"
 #include "metadata/data.h"
 #include "core/file.h"
+#include "stream.h"
 #include "exceptions.h"
 #include "types/bundle.h"
 #include "types/value.h"
@@ -648,7 +649,7 @@ std::shared_ptr<Metadata> Metadata::read_yaml(LineReader& in, const std::string&
 void Metadata::write(NamedFileDescriptor& out) const
 {
     // Prepare the encoded data
-    vector<uint8_t> encoded = encodeBinary();
+    std::vector<uint8_t> encoded = encodeBinary();
 
     // Write out
     out.write_all_or_retry(encoded.data(), encoded.size());
@@ -672,10 +673,34 @@ void Metadata::write(NamedFileDescriptor& out) const
 void Metadata::write(AbstractOutputFile& out) const
 {
     // Prepare the encoded data
-    vector<uint8_t> encoded = encodeBinary();
+    std::vector<uint8_t> encoded = encodeBinary();
 
     // Write out
     out.write(encoded.data(), encoded.size());
+
+    // If the source is inline, then the data follows the metadata
+    const Source* s = m_index.get_source();
+    if (s->style() != Source::Style::INLINE)
+        return;
+
+    // Having checked the style, we can reinterpret_cast
+    const source::Inline* si = reinterpret_cast<const source::Inline*>(s);
+    if (si->size != m_data->size())
+    {
+        stringstream ss;
+        ss << "cannot write metadata to file " << out.name() << ": metadata size " << si->size << " does not match the data size " << m_data->size();
+        throw runtime_error(ss.str());
+    }
+    m_data->write_inline(out);
+}
+
+void Metadata::write(StreamOutput& out) const
+{
+    // Prepare the encoded data
+    std::vector<uint8_t> encoded = encodeBinary();
+
+    // Write out
+    out.send_buffer(encoded.data(), encoded.size());
 
     // If the source is inline, then the data follows the metadata
     const Source* s = m_index.get_source();
@@ -731,18 +756,6 @@ std::string Metadata::to_yaml(const Formatter* formatter) const
     }
 
     return buf.str();
-}
-
-void Metadata::write_yaml(core::NamedFileDescriptor& out, const Formatter* formatter) const
-{
-    std::string yaml = to_yaml(formatter);
-    out.write_all_or_retry(yaml.data(), yaml.size());
-}
-
-void Metadata::write_yaml(core::AbstractOutputFile& out, const Formatter* formatter) const
-{
-    std::string yaml = to_yaml(formatter);
-    out.write(yaml.data(), yaml.size());
 }
 
 void Metadata::serialise(structured::Emitter& e, const structured::Keys& keys, const Formatter* f) const

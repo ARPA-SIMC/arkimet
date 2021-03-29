@@ -264,8 +264,7 @@ add_method("stream_grib", [](Fixture& f) {
     metadata::TestCollection grib("inbound/fixture.grib1");
     wassert(actual(grib.size()) == 3u);
     {
-        File fd("tmpfile", O_WRONLY | O_CREAT | O_TRUNC);
-        auto stream = StreamOutput::create(fd);
+        auto stream = StreamOutput::create(std::make_shared<File>("tmpfile", O_WRONLY | O_CREAT | O_TRUNC));
         wassert(actual(grib[0].stream_data(*stream)) == grib[0].sourceBlob().size);
     }
     wassert(actual(sys::size("tmpfile")) == grib[0].sourceBlob().size);
@@ -275,8 +274,7 @@ add_method("stream_bufr", [](Fixture& f) {
     skip_unless_bufr();
     metadata::TestCollection bufr("inbound/test.bufr");
     {
-        File fd("tmpfile", O_WRONLY | O_CREAT | O_TRUNC);
-        auto stream = StreamOutput::create(fd);
+        auto stream = StreamOutput::create(std::make_shared<File>("tmpfile", O_WRONLY | O_CREAT | O_TRUNC));
         wassert(actual(bufr[0].stream_data(*stream)) == bufr[0].sourceBlob().size);
     }
     wassert(actual(sys::size("tmpfile")) == bufr[0].sourceBlob().size);
@@ -286,8 +284,7 @@ add_method("stream_vm2", [](Fixture& f) {
     skip_unless_vm2();
     metadata::TestCollection vm2("inbound/test.vm2");
     {
-        File fd("tmpfile", O_WRONLY | O_CREAT | O_TRUNC);
-        auto stream = StreamOutput::create(fd);
+        auto stream = StreamOutput::create(std::make_shared<File>("tmpfile", O_WRONLY | O_CREAT | O_TRUNC));
         wassert(actual(vm2[0].stream_data(*stream)) == vm2[0].sourceBlob().size + 1);
     }
     wassert(actual(sys::size("tmpfile")) == vm2[0].sourceBlob().size + 1);
@@ -296,10 +293,9 @@ add_method("stream_vm2", [](Fixture& f) {
 add_method("stream_odim", [](Fixture& f) {
     metadata::TestCollection odim("inbound/odimh5/XSEC_v21.h5");
     {
-        File fd("tmpfile", O_WRONLY | O_CREAT | O_TRUNC);
-        auto stream = StreamOutput::create(fd);
+        auto stream = StreamOutput::create(std::make_shared<File>("tmpfile", O_WRONLY | O_CREAT | O_TRUNC));
         wassert(actual(odim[0].stream_data(*stream)) == odim[0].sourceBlob().size);
-        }
+    }
     wassert(actual(sys::size("tmpfile")) == odim[0].sourceBlob().size);
 });
 

@@ -2,6 +2,7 @@
 #include "summary/table.h"
 #include "summary/codec.h"
 #include "summary/stats.h"
+#include "stream.h"
 #include "core/file.h"
 #include "exceptions.h"
 #include "matcher.h"
@@ -266,7 +267,7 @@ std::vector<uint8_t> Summary::encode(bool compressed) const
 void Summary::write(NamedFileDescriptor& out) const
 {
     // Prepare the encoded data
-    vector<uint8_t> encoded = encode(true);
+    std::vector<uint8_t> encoded = encode(true);
 
     iotrace::trace_file(out, 0, encoded.size(), "write summary");
 
@@ -277,12 +278,23 @@ void Summary::write(NamedFileDescriptor& out) const
 void Summary::write(AbstractOutputFile& out) const
 {
     // Prepare the encoded data
-    vector<uint8_t> encoded = encode(true);
+    std::vector<uint8_t> encoded = encode(true);
 
     iotrace::trace_file(out, 0, encoded.size(), "write summary");
 
     // Write out
     out.write(encoded.data(), encoded.size());
+}
+
+stream::SendResult Summary::write(StreamOutput& out) const
+{
+    // Prepare the encoded data
+    std::vector<uint8_t> encoded = encode(true);
+
+    iotrace::trace_file(out, 0, encoded.size(), "write summary");
+
+    // Write out
+    return out.send_buffer(encoded.data(), encoded.size());
 }
 
 void Summary::writeAtomically(const std::string& fname)

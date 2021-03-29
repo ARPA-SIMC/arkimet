@@ -41,8 +41,8 @@ DispatchResults MetadataDispatch::process(dataset::Reader& ds, const std::string
 
     if (!dir_copyok.empty())
     {
-        copyok.reset(new core::File(str::joinpath(dir_copyok, str::basename(name))));
-        copyok_stream = StreamOutput::create(*copyok);
+        copyok = std::make_shared<core::File>(str::joinpath(dir_copyok, str::basename(name)));
+        copyok_stream = StreamOutput::create(copyok);
     }
     else
     {
@@ -52,8 +52,8 @@ DispatchResults MetadataDispatch::process(dataset::Reader& ds, const std::string
 
     if (!dir_copyko.empty())
     {
-        copyko.reset(new core::File(str::joinpath(dir_copyko, str::basename(name))));
-        copyko_stream = StreamOutput::create(*copyko);
+        copyko = std::make_shared<core::File>(str::joinpath(dir_copyko, str::basename(name)));
+        copyko_stream = StreamOutput::create(copyko);
     }
     else
     {

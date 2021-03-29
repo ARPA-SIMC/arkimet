@@ -54,7 +54,7 @@ public:
     bool process(std::shared_ptr<Metadata> md);
 
     // End of processing: flush all pending data
-    void flush();
+    stream::SendResult flush();
 };
 
 }

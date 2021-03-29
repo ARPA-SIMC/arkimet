@@ -13,7 +13,7 @@ namespace metadata {
 class Xargs : public Clusterer
 {
 protected:
-    core::File tempfile;
+    std::shared_ptr<core::File> tempfile;
     std::unique_ptr<StreamOutput> stream_to_tempfile;
     std::string tempfile_template;
 

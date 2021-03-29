@@ -1,17 +1,14 @@
-#include "abstractoutput.h"
-#include "arki/core/file.h"
+#include "discard.h"
+#include "arki/utils/sys.h"
 
 namespace arki {
 namespace stream {
 
-AbstractOutputStreamOutput::AbstractOutputStreamOutput(std::shared_ptr<core::AbstractOutputFile> out)
-    : out(out)
+DiscardStreamOutput::DiscardStreamOutput()
 {
 }
 
-std::string AbstractOutputStreamOutput::name() const { return out->name(); }
-
-SendResult AbstractOutputStreamOutput::send_buffer(const void* data, size_t size)
+SendResult DiscardStreamOutput::send_buffer(const void* data, size_t size)
 {
     SendResult result;
     if (size == 0)
@@ -20,7 +17,6 @@ SendResult AbstractOutputStreamOutput::send_buffer(const void* data, size_t size
     if (data_start_callback)
         result += fire_data_start_callback();
 
-    out->write(data, size);
     if (progress_callback)
         progress_callback(size);
     result.sent += size;
@@ -28,7 +24,7 @@ SendResult AbstractOutputStreamOutput::send_buffer(const void* data, size_t size
     return result;
 }
 
-SendResult AbstractOutputStreamOutput::send_line(const void* data, size_t size)
+SendResult DiscardStreamOutput::send_line(const void* data, size_t size)
 {
     SendResult result;
 
@@ -38,8 +34,6 @@ SendResult AbstractOutputStreamOutput::send_line(const void* data, size_t size)
     if (data_start_callback)
         result += fire_data_start_callback();
 
-    out->write(data, size);
-    out->write("\n", 1);
     if (progress_callback)
         progress_callback(size + 1);
 
@@ -47,7 +41,7 @@ SendResult AbstractOutputStreamOutput::send_line(const void* data, size_t size)
     return result;
 }
 
-SendResult AbstractOutputStreamOutput::send_file_segment(arki::core::NamedFileDescriptor& fd, off_t offset, size_t size)
+SendResult DiscardStreamOutput::send_file_segment(arki::core::NamedFileDescriptor& fd, off_t offset, size_t size)
 {
     SendResult result;
     if (size == 0)
@@ -72,7 +66,7 @@ SendResult AbstractOutputStreamOutput::send_file_segment(arki::core::NamedFileDe
     return result;
 }
 
-SendResult AbstractOutputStreamOutput::send_from_pipe(int fd)
+SendResult DiscardStreamOutput::send_from_pipe(int fd)
 {
     SendResult result;
 

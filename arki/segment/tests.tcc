@@ -79,8 +79,7 @@ this->add_method("read", [](Fixture& f) {
         wassert(actual(buf.size()) == md->sourceBlob().size);
 
         {
-            sys::File out("stream.out", O_WRONLY | O_CREAT | O_TRUNC);
-            auto stream = StreamOutput::create(out);
+            auto stream = StreamOutput::create(std::make_shared<sys::File>("stream.out", O_WRONLY | O_CREAT | O_TRUNC));
             size_t size = wcallchecked(reader->stream(md->sourceBlob(), *stream).sent);
             wassert(actual(size) == md->sourceBlob().size + pad_size);
         }
@@ -212,8 +211,7 @@ this->add_method("issue244", [](Fixture& f) {
 
     // Writing normally uses sendfile
     {
-        sys::File out("stream.out", O_WRONLY | O_CREAT | O_TRUNC);
-        auto stream = StreamOutput::create(out);
+        auto stream = StreamOutput::create(std::make_shared<sys::File>("stream.out", O_WRONLY | O_CREAT | O_TRUNC));
         size_t size = wcallchecked(reader->stream(md->sourceBlob(), *stream).sent);
         size_t pad_size = f.td.format == "vm2" ? 1 : 0;
         wassert(actual(size) == md->sourceBlob().size + pad_size);
@@ -222,8 +220,7 @@ this->add_method("issue244", [](Fixture& f) {
     // Opening for append makes sendfile fail and falls back on normal
     // read/write
     {
-        sys::File out("stream.out", O_WRONLY | O_APPEND);
-        auto stream = StreamOutput::create(out);
+        auto stream = StreamOutput::create(std::make_shared<sys::File>("stream.out", O_WRONLY | O_APPEND));
         size_t size = wcallchecked(reader->stream(md->sourceBlob(), *stream).sent);
         size_t pad_size = f.td.format == "vm2" ? 1 : 0;
         wassert(actual(size) == md->sourceBlob().size + pad_size);

@@ -121,8 +121,7 @@ add_method("blob_stream", [] {
     unique_ptr<source::Blob> o = source::Blob::create("test", "inbound", "test.grib1", 7218, 34960, reader);
     sys::unlink_ifexists("test.grib");
     {
-        File out("test.grib", O_WRONLY | O_CREAT | O_TRUNC);
-        auto stream = StreamOutput::create(out);
+        auto stream = StreamOutput::create(std::make_shared<File>("test.grib", O_WRONLY | O_CREAT | O_TRUNC));
         wassert(actual(o->stream_data(*stream)) == 34960u);
     }
 

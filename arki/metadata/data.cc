@@ -40,6 +40,10 @@ struct DataUnreadable : public Data
     {
         throw std::runtime_error("DataUnreadable::write_inline() called");
     }
+    stream::SendResult write_inline(StreamOutput& out) const override
+    {
+        throw std::runtime_error("DataUnreadable::write_inline() called");
+    }
     void emit(structured::Emitter& e) const override
     {
         throw std::runtime_error("DataUnreadable::emit() called");
@@ -81,6 +85,10 @@ struct DataBuffer : public Data
     {
         fd.write(buffer.data(), buffer.size());
         return buffer.size();
+    }
+    stream::SendResult write_inline(StreamOutput& out) const override
+    {
+        return out.send_buffer(buffer.data(), buffer.size());
     }
     void emit(structured::Emitter& e) const override
     {

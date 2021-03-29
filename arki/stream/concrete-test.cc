@@ -12,9 +12,10 @@ namespace {
 
 struct CommonTestFixture : public stream::StreamTestsFixture
 {
-    sys::Tempfile tf;
+    std::shared_ptr<sys::Tempfile> tf;
 
     CommonTestFixture()
+        : tf(std::make_shared<sys::Tempfile>())
     {
         set_output(StreamOutput::create(tf));
     }
@@ -22,10 +23,10 @@ struct CommonTestFixture : public stream::StreamTestsFixture
     std::string streamed_contents() override
     {
         std::string res;
-        tf.lseek(0);
+        tf->lseek(0);
 
         char buf[4096];
-        while (size_t sz = tf.read(buf, 4096))
+        while (size_t sz = tf->read(buf, 4096))
             res.append(buf, sz);
 
         return res;
@@ -34,9 +35,9 @@ struct CommonTestFixture : public stream::StreamTestsFixture
 
 struct ConcreteTestFixture : public stream::StreamTestsFixture
 {
-    core::NamedFileDescriptor& out;
+    std::shared_ptr<core::NamedFileDescriptor> out;
 
-    ConcreteTestFixture(core::NamedFileDescriptor& out)
+    ConcreteTestFixture(std::shared_ptr<core::NamedFileDescriptor> out)
         : out(out)
     {
         set_output(StreamOutput::create(out));
@@ -54,7 +55,7 @@ class Tests : public stream::ConcreteStreamTests
         return std::unique_ptr<stream::StreamTestsFixture>(new CommonTestFixture);
     }
 
-    std::unique_ptr<stream::StreamTestsFixture> make_concrete_fixture(core::NamedFileDescriptor& out) override
+    std::unique_ptr<stream::StreamTestsFixture> make_concrete_fixture(std::shared_ptr<core::NamedFileDescriptor> out) override
     {
         return std::unique_ptr<stream::StreamTestsFixture>(new ConcreteTestFixture(out));
     }

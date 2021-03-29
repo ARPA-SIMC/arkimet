@@ -43,7 +43,7 @@ struct ConcreteStreamTests : public StreamTests
 
     void register_tests() override;
 
-    virtual std::unique_ptr<StreamTestsFixture> make_concrete_fixture(core::NamedFileDescriptor& out) = 0;
+    virtual std::unique_ptr<StreamTestsFixture> make_concrete_fixture(std::shared_ptr<core::NamedFileDescriptor> out) = 0;
 };
 
 }

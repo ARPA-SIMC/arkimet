@@ -13,6 +13,7 @@
 #include "arki/utils/accounting.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
+#include "arki/stream.h"
 #include "arki/exceptions.h"
 #include "arki/segment/dir.h"
 #include <sys/fcntl.h>
@@ -130,10 +131,10 @@ add_method("import_largefile", [](Fixture& f) {
     wassert(actual(mdc.size()) == 720u);
 
     // Query it, streaming its data to /dev/null
-    sys::File out("/dev/null", O_WRONLY);
+    auto out = StreamOutput::create_discard();
     dataset::ByteQuery bq;
     bq.setData(Matcher());
-    wassert(reader->query_bytes(bq, out));
+    wassert(reader->query_bytes(bq, *out));
 });
 
 add_method("import_batch_replace_usn", [](Fixture& f) {

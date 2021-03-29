@@ -44,6 +44,10 @@ public:
     /// Stream where child stderr is sent
     std::ostream* m_err = 0;
 
+    /// Accumulated stream result
+    stream::SendResult stream_result;
+
+
     Child() : utils::IODispatcher(cmd)
     {
         cmd.set_stdin(subprocess::Redirect::PIPE);
@@ -55,10 +59,14 @@ public:
     {
         // Stream directly out of a pipe
         stream::SendResult res = m_stream->send_from_pipe(subproc.get_stdout());
+        stream_result.sent += res.sent;
         if (res.flags & stream::SendResult::SEND_PIPE_EOF_SOURCE)
             subproc.close_stdout();
         else if (res.flags & stream::SendResult::SEND_PIPE_EOF_DEST)
+        {
             subproc.close_stdout();
+            stream_result.flags |= stream::SendResult::SEND_PIPE_EOF_DEST;
+        }
         return;
     }
 
@@ -193,11 +201,12 @@ bool Postprocess::process(std::shared_ptr<Metadata> md)
     return true;
 }
 
-void Postprocess::flush()
+stream::SendResult Postprocess::flush()
 {
     m_child->flush();
 
     m_child->subproc.wait();
+    auto stream_result = m_child->stream_result;
     int res = m_child->subproc.raw_returncode();
     delete m_child;
     m_child = 0;
@@ -208,6 +217,8 @@ void Postprocess::flush()
             msg += "; stderr: " + str::strip(m_errors.str());
         throw std::runtime_error(msg);
     }
+
+    return stream_result;
 }
 
 }

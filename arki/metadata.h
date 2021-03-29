@@ -387,32 +387,21 @@ public:
 
     /**
      * Write the metadata to the given output stream.
-     *
-     * The filename string is used to generate nicer parse error messages when
-     * throwing exceptions, and can be anything.
      */
     void write(core::NamedFileDescriptor& out) const;
 
     /**
      * Write the metadata to the given output stream.
-     *
-     * The filename string is used to generate nicer parse error messages when
-     * throwing exceptions, and can be anything.
      */
     void write(core::AbstractOutputFile& out) const;
 
+    /**
+     * Write the metadata to the stream output.
+     */
+    void write(StreamOutput& out) const;
+
     /// Format the metadata as a yaml string
     std::string to_yaml(const Formatter* formatter=nullptr) const;
-
-    /**
-     * Write the metadata as YAML text to the given output stream.
-     */
-    void write_yaml(core::NamedFileDescriptor& out, const Formatter* formatter=nullptr) const;
-
-    /**
-     * Write the metadata as YAML text to the given output stream.
-     */
-    void write_yaml(core::AbstractOutputFile& out, const Formatter* formatter=nullptr) const;
 
     /// Serialise using an emitter
     void serialise(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const;

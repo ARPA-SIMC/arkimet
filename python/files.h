@@ -23,6 +23,20 @@ struct FileBase
         delete abstract;
         delete fd;
     }
+
+    std::shared_ptr<AbstractFile> detach_abstract()
+    {
+        std::shared_ptr<core::AbstractOutputFile> res(abstract);
+        abstract = nullptr;
+        return res;
+    }
+
+    std::shared_ptr<core::NamedFileDescriptor> detach_fd()
+    {
+        std::shared_ptr<core::NamedFileDescriptor> res(fd);
+        fd = nullptr;
+        return res;
+    }
 };
 
 

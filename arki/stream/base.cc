@@ -1,4 +1,5 @@
 #include "base.h"
+#include "arki/utils/sys.h"
 #include <poll.h>
 #include <system_error>
 #include <unistd.h>
@@ -41,6 +42,9 @@ bool BaseStreamOutput::is_nonblocking(int fd)
         throw std::system_error(errno, std::system_category(), "cannot get file descriptor flags for input");
     return src_fl & O_NONBLOCK;
 }
+
+
+std::string BaseConcreteStreamOutput::name() const { return out->name(); }
 
 }
 }

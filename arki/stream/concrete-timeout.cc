@@ -15,34 +15,34 @@ uint32_t ConcreteTimeoutStreamOutput::wait_writable()
     pollinfo.revents = 0;
     int res = ::poll(&pollinfo, 1, timeout_ms);
     if (res < 0)
-        throw std::system_error(errno, std::system_category(), "poll failed on " + out.name());
+        throw std::system_error(errno, std::system_category(), "poll failed on " + out->name());
     if (res == 0)
-        throw TimedOut("write on " + out.name() + " timed out");
+        throw TimedOut("write on " + out->name() + " timed out");
     if (pollinfo.revents & POLLERR)
         return SendResult::SEND_PIPE_EOF_DEST;
     if (pollinfo.revents & POLLOUT)
         return 0;
-    throw std::runtime_error("unsupported revents values when polling " + out.name());
+    throw std::runtime_error("unsupported revents values when polling " + out->name());
 }
 
-ConcreteTimeoutStreamOutput::ConcreteTimeoutStreamOutput(core::NamedFileDescriptor& out, unsigned timeout_ms)
-    : out(out), timeout_ms(timeout_ms)
+ConcreteTimeoutStreamOutput::ConcreteTimeoutStreamOutput(std::shared_ptr<core::NamedFileDescriptor> out, unsigned timeout_ms)
+    : BaseConcreteStreamOutput(out), timeout_ms(timeout_ms)
 {
-    orig_fl = fcntl(out, F_GETFL);
+    orig_fl = fcntl(*out, F_GETFL);
     if (orig_fl < 0)
-        throw std::system_error(errno, std::system_category(), "cannot get file descriptor flags for " + out.name());
-    if (fcntl(out, F_SETFL, orig_fl | O_NONBLOCK) < 0)
-        throw std::system_error(errno, std::system_category(), "cannot set nonblocking file descriptor flags for " + out.name());
+        throw std::system_error(errno, std::system_category(), "cannot get file descriptor flags for " + out->name());
+    if (fcntl(*out, F_SETFL, orig_fl | O_NONBLOCK) < 0)
+        throw std::system_error(errno, std::system_category(), "cannot set nonblocking file descriptor flags for " + out->name());
 
-    pollinfo.fd = out;
+    pollinfo.fd = *out;
     pollinfo.events = POLLOUT;
 }
 
 ConcreteTimeoutStreamOutput::~ConcreteTimeoutStreamOutput()
 {
     // If out is still open, reset as it was before
-    if (out != -1)
-        fcntl(out, F_SETFL, orig_fl);
+    if (*out != -1)
+        fcntl(*out, F_SETFL, orig_fl);
 }
 
 SendResult ConcreteTimeoutStreamOutput::send_buffer(const void* data, size_t size)
@@ -58,7 +58,7 @@ SendResult ConcreteTimeoutStreamOutput::send_buffer(const void* data, size_t siz
     size_t pos = 0;
     while (true)
     {
-        ssize_t res = ::write(out, (const uint8_t*)data + pos, size - pos);
+        ssize_t res = ::write(*out, (const uint8_t*)data + pos, size - pos);
         if (res < 0)
         {
             if (errno == EAGAIN || errno == EWOULDBLOCK)
@@ -67,7 +67,7 @@ SendResult ConcreteTimeoutStreamOutput::send_buffer(const void* data, size_t siz
                 result.flags |= SendResult::SEND_PIPE_EOF_DEST;
                 break;
             } else
-                throw std::system_error(errno, std::system_category(), "cannot write " + std::to_string(size - pos) + " bytes to " + out.name());
+                throw std::system_error(errno, std::system_category(), "cannot write " + std::to_string(size - pos) + " bytes to " + out->name());
         }
 
         pos += res;
@@ -125,7 +125,7 @@ SendResult ConcreteTimeoutStreamOutput::send_line(const void* data, size_t size)
     {
         if (pos < size)
         {
-            ssize_t res = ::writev(out, todo, 2);
+            ssize_t res = ::writev(*out, todo, 2);
             if (res < 0)
             {
                 if (errno == EAGAIN || errno == EWOULDBLOCK)
@@ -134,7 +134,7 @@ SendResult ConcreteTimeoutStreamOutput::send_line(const void* data, size_t size)
                     result.flags |= SendResult::SEND_PIPE_EOF_DEST;
                     break;
                 } else
-                    throw std::system_error(errno, std::system_category(), "cannot write " + std::to_string(size + 1) + " bytes to " + out.name());
+                    throw std::system_error(errno, std::system_category(), "cannot write " + std::to_string(size + 1) + " bytes to " + out->name());
             }
             pos += res;
             result.sent += res;
@@ -146,7 +146,7 @@ SendResult ConcreteTimeoutStreamOutput::send_line(const void* data, size_t size)
             if (progress_callback)
                 progress_callback(res);
         } else if (pos == size) {
-            ssize_t res = ::write(out, "\n", 1);
+            ssize_t res = ::write(*out, "\n", 1);
             if (res < 0)
             {
                 if (errno == EAGAIN || errno == EWOULDBLOCK)
@@ -155,7 +155,7 @@ SendResult ConcreteTimeoutStreamOutput::send_line(const void* data, size_t size)
                     result.flags |= SendResult::SEND_PIPE_EOF_DEST;
                     break;
                 } else
-                    throw std::system_error(errno, std::system_category(), "cannot write 1 byte to " + out.name());
+                    throw std::system_error(errno, std::system_category(), "cannot write 1 byte to " + out->name());
             }
             pos += res;
             result.sent += res;
@@ -209,7 +209,7 @@ SendResult ConcreteTimeoutStreamOutput::send_file_segment(arki::core::NamedFileD
         if (has_sendfile)
         {
             utils::Sigignore ignpipe(SIGPIPE);
-            ssize_t res = ::sendfile(out, fd, &offset, size - written);
+            ssize_t res = ::sendfile(*out, fd, &offset, size - written);
             if (res < 0)
             {
                 if (errno == EINVAL || errno == ENOSYS)
@@ -226,7 +226,7 @@ SendResult ConcreteTimeoutStreamOutput::send_file_segment(arki::core::NamedFileD
                         progress_callback(res);
                 }
                 else
-                    throw std::system_error(errno, std::system_category(), "cannot sendfile() " + std::to_string(size) + " bytes to " + out.name());
+                    throw std::system_error(errno, std::system_category(), "cannot sendfile() " + std::to_string(size) + " bytes to " + out->name());
             } else if (res == 0) {
                 result.flags |= SendResult::SEND_PIPE_EOF_SOURCE;
                 break;
@@ -237,7 +237,7 @@ SendResult ConcreteTimeoutStreamOutput::send_file_segment(arki::core::NamedFileD
                 result.sent += res;
             }
         } else {
-            size_t res = out.pread(buffer, std::min(size - written, buffer.size), offset);
+            size_t res = out->pread(buffer, std::min(size - written, buffer.size), offset);
             result += send_buffer(buffer, res);
             offset += res;
             written += res;
@@ -296,7 +296,7 @@ SendResult ConcreteTimeoutStreamOutput::send_from_pipe(int fd)
 #ifdef HAVE_SPLICE
             utils::Sigignore ignpipe(SIGPIPE);
             // Try splice
-            ssize_t res = splice(fd, NULL, out, NULL, TransferBuffer::size * 128, SPLICE_F_MORE);
+            ssize_t res = splice(fd, NULL, *out, NULL, TransferBuffer::size * 128, SPLICE_F_MORE);
             if (res == 0)
             {
                 result.flags |= SendResult::SEND_PIPE_EOF_SOURCE;

@@ -15,7 +15,7 @@ class BlockingSink
 {
     int fds[2];
     int pipe_sz;
-    std::unique_ptr<core::NamedFileDescriptor> outfd;
+    std::shared_ptr<core::NamedFileDescriptor> outfd;
     std::vector<uint8_t> filler;
 
 public:
@@ -32,7 +32,7 @@ public:
             throw std::system_error(errno, std::system_category(), "cannot shrink pipe size");
         // Writing more than pipe_sz will now block unless we read
 
-        outfd.reset(new sys::NamedFileDescriptor(fds[1], "blocking test pipe"));
+        outfd = std::make_shared<sys::NamedFileDescriptor>(fds[1], "blocking test pipe");
 
         // Make the read end nonblocking
         int fl = fcntl(fds[0], F_GETFL);
@@ -47,10 +47,10 @@ public:
     ~BlockingSink()
     {
         close(fds[0]);
-        close(fds[1]);
+        outfd->close();
     }
 
-    core::NamedFileDescriptor& fd() { return *outfd; }
+    std::shared_ptr<core::NamedFileDescriptor> fd() { return outfd; }
     size_t pipe_size() const { return pipe_sz; }
 
     /**
@@ -72,9 +72,9 @@ public:
     void fill(int size)
     {
         if (size > 0)
-            fd().write_all_or_retry(filler.data(), size);
+            fd()->write_all_or_retry(filler.data(), size);
         else
-            fd().write_all_or_retry(filler.data(), pipe_size() + size);
+            fd()->write_all_or_retry(filler.data(), pipe_size() + size);
     }
 
     /// Flush the pipe buffer until it's completely empty
@@ -127,9 +127,10 @@ struct WriteTest
 
 struct CommonTestFixture : public stream::StreamTestsFixture
 {
-    sys::Tempfile tf;
+    std::shared_ptr<sys::Tempfile> tf;
 
     CommonTestFixture()
+        : tf(std::make_shared<sys::Tempfile>())
     {
         set_output(StreamOutput::create(tf, 1000));
     }
@@ -137,10 +138,10 @@ struct CommonTestFixture : public stream::StreamTestsFixture
     std::string streamed_contents() override
     {
         std::string res;
-        tf.lseek(0);
+        tf->lseek(0);
 
         char buf[4096];
-        while (size_t sz = tf.read(buf, 4096))
+        while (size_t sz = tf->read(buf, 4096))
             res.append(buf, sz);
 
         return res;
@@ -149,9 +150,9 @@ struct CommonTestFixture : public stream::StreamTestsFixture
 
 struct ConcreteTestFixture : public stream::StreamTestsFixture
 {
-    core::NamedFileDescriptor& out;
+    std::shared_ptr<core::NamedFileDescriptor> out;
 
-    ConcreteTestFixture(core::NamedFileDescriptor& out)
+    ConcreteTestFixture(std::shared_ptr<core::NamedFileDescriptor> out)
         : out(out)
     {
         set_output(StreamOutput::create(out, 1000));
@@ -170,7 +171,7 @@ class Tests : public stream::ConcreteStreamTests
         return std::unique_ptr<stream::StreamTestsFixture>(new CommonTestFixture);
     }
 
-    std::unique_ptr<stream::StreamTestsFixture> make_concrete_fixture(core::NamedFileDescriptor& out) override
+    std::unique_ptr<stream::StreamTestsFixture> make_concrete_fixture(std::shared_ptr<core::NamedFileDescriptor> out) override
     {
         return std::unique_ptr<stream::StreamTestsFixture>(new ConcreteTestFixture(out));
     }

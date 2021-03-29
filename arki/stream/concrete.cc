@@ -23,7 +23,7 @@ SendResult ConcreteStreamOutput::send_buffer(const void* data, size_t size)
     size_t pos = 0;
     while (pos < size)
     {
-        ssize_t res = ::write(out, (const uint8_t*)data + pos, size - pos);
+        ssize_t res = ::write(*out, (const uint8_t*)data + pos, size - pos);
         if (res < 0)
         {
             if (errno == EPIPE)
@@ -31,7 +31,7 @@ SendResult ConcreteStreamOutput::send_buffer(const void* data, size_t size)
                 result.flags |= SendResult::SEND_PIPE_EOF_DEST;
                 break;
             } else
-                throw std::system_error(errno, std::system_category(), "cannot write " + std::to_string(size - pos) + " bytes to " + out.name());
+                throw std::system_error(errno, std::system_category(), "cannot write " + std::to_string(size - pos) + " bytes to " + out->name());
         }
         if (res == 0)
         {
@@ -61,17 +61,17 @@ SendResult ConcreteStreamOutput::send_line(const void* data, size_t size)
         { (void*)data, size },
         { (void*)"\n", 1 },
     };
-    ssize_t res = ::writev(out, todo, 2);
+    ssize_t res = ::writev(*out, todo, 2);
     if (res < 0)
     {
         if (errno == EPIPE)
         {
             result.flags |= SendResult::SEND_PIPE_EOF_DEST;
         } else
-            throw std::system_error(errno, std::system_category(), "cannot write " + std::to_string(size + 1) + " bytes to " + out.name());
+            throw std::system_error(errno, std::system_category(), "cannot write " + std::to_string(size + 1) + " bytes to " + out->name());
     } else {
         if ((unsigned)res != size + 1)
-            throw std::system_error(errno, std::system_category(), "cannot write " + std::to_string(size + 1) + " bytes to " + out.name());
+            throw std::system_error(errno, std::system_category(), "cannot write " + std::to_string(size + 1) + " bytes to " + out->name());
         if (progress_callback)
             progress_callback(res);
         result.sent += res;
@@ -113,7 +113,7 @@ SendResult ConcreteStreamOutput::send_file_segment(arki::core::NamedFileDescript
         if (has_sendfile)
         {
             utils::Sigignore ignpipe(SIGPIPE);
-            ssize_t res = ::sendfile(out, fd, &offset, size);
+            ssize_t res = ::sendfile(*out, fd, &offset, size);
             if (res < 0)
             {
                 if (errno == EINVAL || errno == ENOSYS)
@@ -125,7 +125,7 @@ SendResult ConcreteStreamOutput::send_file_segment(arki::core::NamedFileDescript
                     break;
                 }
                 else
-                    throw std::system_error(errno, std::system_category(), "cannot sendfile " + std::to_string(size + 1) + " bytes from " + fd.name() + " to " + out.name());
+                    throw std::system_error(errno, std::system_category(), "cannot sendfile " + std::to_string(size + 1) + " bytes from " + fd.name() + " to " + out->name());
             } else if (res == 0) {
                 result.flags |= SendResult::SEND_PIPE_EOF_SOURCE;
                 break;
@@ -192,7 +192,7 @@ SendResult ConcreteStreamOutput::send_from_pipe(int fd)
 #ifdef HAVE_SPLICE
             utils::Sigignore ignpipe(SIGPIPE);
             // Try splice
-            ssize_t res = splice(fd, NULL, out, NULL, TransferBuffer::size * 128, SPLICE_F_MORE);
+            ssize_t res = splice(fd, NULL, *out, NULL, TransferBuffer::size * 128, SPLICE_F_MORE);
             if (res > 0)
             {
                 if (progress_callback)

@@ -18,7 +18,7 @@ namespace arki {
 namespace metadata {
 
 Xargs::Xargs()
-    : metadata::Clusterer(), tempfile(""), filename_argument(-1)
+    : metadata::Clusterer(), filename_argument(-1)
 {
     const char* tmpdir = getenv("TMPDIR");
 
@@ -41,7 +41,7 @@ void Xargs::start_batch(const std::string& new_format)
     // Make a mutable copy of tempfile_template
     unique_ptr<char[]> tf(new char[tempfile_template.size() + 1]);
     memcpy(tf.get(), tempfile_template.c_str(), tempfile_template.size() + 1);
-    tempfile = File::mkstemp(tf.get());
+    tempfile = std::make_shared<core::File>(File::mkstemp(tf.get()));
     stream_to_tempfile = StreamOutput::create(tempfile);
 }
 
@@ -53,7 +53,7 @@ void Xargs::add_to_batch(std::shared_ptr<Metadata> md)
 
 void Xargs::flush_batch()
 {
-    if (!tempfile.is_open()) return;
+    if (!tempfile || !tempfile->is_open()) return;
     int res;
 
     try {
@@ -61,14 +61,15 @@ void Xargs::flush_batch()
         res = run_child();
     } catch (...) {
         // Ignore close exceptions here, so we rethrow what really happened
-        ::close(tempfile);
-        ::unlink(tempfile.name().c_str());
+        ::close(*tempfile);
+        ::unlink(tempfile->name().c_str());
         throw;
     }
 
     stream_to_tempfile.reset();
-    tempfile.close();
-    sys::unlink_ifexists(tempfile.name());
+    tempfile->close();
+    sys::unlink_ifexists(tempfile->name());
+    tempfile.reset();
     metadata::Clusterer::flush_batch();
 
     if (res != 0)
@@ -87,10 +88,10 @@ int Xargs::run_child()
     child.set_stdin(subprocess::Redirect::DEVNULL);
     child.args = command;
     if (filename_argument == -1)
-        child.args.push_back(tempfile.name());
+        child.args.push_back(tempfile->name());
     else {
         if ((unsigned)filename_argument < child.args.size())
-            child.args[filename_argument] = tempfile.name();
+            child.args[filename_argument] = tempfile->name();
     }
 
     // Import all the environment except ARKI_XARGS_* variables
@@ -100,7 +101,7 @@ int Xargs::run_child()
         if (str::startswith(envstr, "ARKI_XARGS_")) continue;
         child.env.push_back(envstr);
     }
-    child.setenv("ARKI_XARGS_FILENAME", tempfile.name());
+    child.setenv("ARKI_XARGS_FILENAME", tempfile->name());
     child.setenv("ARKI_XARGS_FORMAT", str::upper(format));
     char buf[32];
     snprintf(buf, 32, "%zd", count);

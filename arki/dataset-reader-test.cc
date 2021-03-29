@@ -4,6 +4,7 @@
 #include "arki/dataset/session.h"
 #include "arki/dataset/progress.h"
 #include "arki/core/file.h"
+#include "arki/stream.h"
 #include "arki/metadata/data.h"
 #include "arki/metadata/collection.h"
 #include "arki/matcher/parser.h"
@@ -165,9 +166,10 @@ this->add_method("querybytes", [](Fixture& f) {
         // Query into a file
         dataset::ByteQuery bq;
         bq.setData(matcher);
-        sys::File out("testdata", O_WRONLY | O_CREAT | O_TRUNC);
-        ds->query_bytes(bq, out);
-        out.close();
+        auto out = std::make_shared<sys::File>("testdata", O_WRONLY | O_CREAT | O_TRUNC);
+        auto strm = StreamOutput::create(out);
+        ds->query_bytes(bq, *strm);
+        out->close();
 
         // Rescan the file
         metadata::TestCollection tmp;
@@ -188,16 +190,18 @@ this->add_method("query_data", [](Fixture& f) {
     auto reader(f.config().create_reader());
     Matcher matcher = parser.parse(f.matchers[1]);
 
-    sys::File out(sys::File::mkstemp("test"));
+    std::vector<uint8_t> buf;
+    auto out = StreamOutput::create(buf);
     dataset::ByteQuery bq;
     bq.setData(matcher);
-    reader->query_bytes(bq, out);
-    out.close();
+    reader->query_bytes(bq, *out);
 
-    string queried = sys::read_file(out.name());
     std::vector<uint8_t> data = f.td.mds[1].get_data().read();
-    string strdata(data.begin(), data.end());
-    wassert(actual(queried.substr(0, 8)) == strdata.substr(0, 8));
+    // Add a newline in case of VM2, because get_data() gives us the minimal
+    // VM2 without newline
+    if (f.td.format == "vm2")
+        data.emplace_back('\n');
+    wassert(actual(buf) == data);
 });
 
 this->add_method("query_inline", [](Fixture& f) {
@@ -233,9 +237,10 @@ this->add_method("querybytes_integrity", [](Fixture& f) {
     // Query everything
     dataset::ByteQuery bq;
     bq.setData(Matcher());
-    sys::File out("tempdata", O_WRONLY | O_CREAT | O_TRUNC);
-    ds->query_bytes(bq, out);
-    out.close();
+    auto out = std::make_shared<sys::File>("tempdata", O_WRONLY | O_CREAT | O_TRUNC);
+    auto strm = StreamOutput::create(out);
+    ds->query_bytes(bq, *strm);
+    out->close();
 
     // Check that what we got matches the total size of what we imported
     size_t total_size = 0;
@@ -243,7 +248,7 @@ this->add_method("querybytes_integrity", [](Fixture& f) {
         total_size += f.td.mds[i].sourceBlob().size;
     // We use >= and not == because some data sources add extra information
     // to data, like line endings for VM2
-    wassert(actual(sys::size(out.name())) >= total_size);
+    wassert(actual(sys::size(out->name())) >= total_size);
 
     // Check that they can be scanned again
     // Read chunks from tempdata and scan them individually, to allow scanning
@@ -288,8 +293,8 @@ this->add_method("postprocess", [](Fixture& f) {
 
     dataset::ByteQuery bq;
     bq.setPostprocess(matcher, "testcountbytes");
-    Stderr outfd;
-    ds->query_bytes(bq, outfd);
+    auto strm = StreamOutput::create(std::make_shared<Stderr>());
+    ds->query_bytes(bq, *strm);
 
     // Verify that the data that was output was exactly as long as the
     // encoded metadata and its data
@@ -310,8 +315,8 @@ this->add_method("locked", [](Fixture& f) {
     auto rds(f.config().create_reader());
     dataset::ByteQuery bq;
     bq.setData(Matcher());
-    sys::File out("/dev/null", O_WRONLY);
-    rds->query_bytes(bq, out);
+    auto out = StreamOutput::create_discard();
+    rds->query_bytes(bq, *out);
 });
 
 this->add_method("interrupted_read", [](Fixture& f) {
@@ -435,8 +440,8 @@ this->add_method("progress", [](Fixture& f) {
     progress = make_shared<TestProgress>();
     dataset::ByteQuery bq;
     bq.progress = progress;
-    sys::File out("/dev/null", O_WRONLY);
-    reader->query_bytes(bq, out);
+    auto out = StreamOutput::create_discard();
+    reader->query_bytes(bq, *out);
     wassert(actual(progress->count) == 3u);
     wassert(actual(progress->bytes) > 90u);
     wassert(actual(progress->start_called) == 1u);
@@ -461,7 +466,7 @@ this->add_method("progress", [](Fixture& f) {
 
     progress1 = make_shared<TestProgressThrowing>();
     bq.progress = progress1;
-    e = wassert_throws(std::runtime_error, reader->query_bytes(bq, out));
+    e = wassert_throws(std::runtime_error, reader->query_bytes(bq, *out));
     wassert(actual(e.what()) = "Expected error");
 });
 

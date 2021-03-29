@@ -527,17 +527,16 @@ namespace {
 struct ClosedPipe
 {
     int pipefds[2];
-    sys::NamedFileDescriptor fd;
+    std::shared_ptr<sys::NamedFileDescriptor> fd;
 
     ClosedPipe()
-        : fd(-1, "write end of pipe")
     {
         if (pipe(pipefds) < 0)
             throw std::system_error(errno, std::system_category(), "cannot create new pipe");
         // Close read end of the pipe
         close(pipefds[0]);
 
-        fd = sys::NamedFileDescriptor(pipefds[1], "write end of pipe");
+        fd = std::make_shared<sys::NamedFileDescriptor>(pipefds[1], "write end of pipe");
     }
 };
 

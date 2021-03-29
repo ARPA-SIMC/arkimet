@@ -39,11 +39,11 @@ public:
     std::string dir_copyko;
 
     /// File to which we send data that was successfully imported
-    std::unique_ptr<core::File> copyok;
+    std::shared_ptr<core::File> copyok;
     std::unique_ptr<StreamOutput> copyok_stream;
 
     /// File to which we send data that was not successfully imported
-    std::unique_ptr<core::File> copyko;
+    std::shared_ptr<core::File> copyko;
     std::unique_ptr<StreamOutput> copyko_stream;
 
 
