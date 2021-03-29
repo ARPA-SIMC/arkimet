@@ -214,7 +214,7 @@ add_method("concrete_timeout_send_from_pipe", [] {
     {
         stream::WriteTest t(*writer, sink, -3);
         tf1.lseek(sink.pipe_size());
-        wassert(actual(writer->send_from_pipe(tf1)) == 9u);
+        wassert(actual(writer->send_from_pipe(tf1)) == stream::SendResult(9u, stream::SendResult::SEND_PIPE_EOF_SOURCE));
         wassert(actual(t.total_written) == 9u);
         // wassert(actual(cb_log) == std::vector<size_t>{3, 3});
     }
@@ -222,7 +222,7 @@ add_method("concrete_timeout_send_from_pipe", [] {
     {
         stream::WriteTest t(*writer, sink, -9);
         tf1.lseek(sink.pipe_size());
-        wassert(actual(writer->send_from_pipe(tf1)) == 9u);
+        wassert(actual(writer->send_from_pipe(tf1)) == stream::SendResult(9u, stream::SendResult::SEND_PIPE_EOF_SOURCE));
         wassert(actual(t.total_written) == 9u);
         // wassert(actual(t.cb_log) == std::vector<size_t>{9});
     }
@@ -230,7 +230,7 @@ add_method("concrete_timeout_send_from_pipe", [] {
     {
         stream::WriteTest t(*writer, sink, -10);
         tf1.lseek(sink.pipe_size());
-        wassert(actual(writer->send_from_pipe(tf1)) == 9u);
+        wassert(actual(writer->send_from_pipe(tf1)) == stream::SendResult(9u, stream::SendResult::SEND_PIPE_EOF_SOURCE));
         wassert(actual(t.total_written) == 9u);
         // wassert(actual(t.cb_log) == std::vector<size_t>{9});
     }
@@ -238,7 +238,7 @@ add_method("concrete_timeout_send_from_pipe", [] {
     {
         stream::WriteTest t(*writer, sink, 0);
         tf1.lseek(0);
-        wassert(actual(writer->send_from_pipe(tf1)) == sink.pipe_size() + 9);
+        wassert(actual(writer->send_from_pipe(tf1)) == stream::SendResult(sink.pipe_size() + 9, stream::SendResult::SEND_PIPE_EOF_SOURCE));
         wassert(actual(t.total_written) == sink.pipe_size() + 9);
         // wassert(actual(t.cb_log) == std::vector<size_t>{sink.pipe_size(), 9});
     }
@@ -246,7 +246,7 @@ add_method("concrete_timeout_send_from_pipe", [] {
     {
         stream::WriteTest t(*writer, sink, 1);
         tf1.lseek(0);
-        wassert(actual(writer->send_from_pipe(tf1)) == sink.pipe_size() + 9);
+        wassert(actual(writer->send_from_pipe(tf1)) == stream::SendResult(sink.pipe_size() + 9, stream::SendResult::SEND_PIPE_EOF_SOURCE));
         wassert(actual(t.total_written) == sink.pipe_size() + 9);
         // wassert(actual(t.cb_log) == std::vector<size_t>{sink.pipe_size(), 9});
     }

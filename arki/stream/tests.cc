@@ -215,7 +215,7 @@ add_method("send_from_pipe_read", [&] {
     tf1.write_all_or_throw(std::string("testfile"));
     tf1.lseek(1);
 
-    wassert(actual(f->send_from_pipe(tf1)) == stream::SendResult(7u, 0u));
+    wassert(actual(f->send_from_pipe(tf1)) == stream::SendResult(7u, stream::SendResult::SEND_PIPE_EOF_SOURCE));
     wassert(actual(f->cb_log) == std::vector<size_t>{7});
 
     wassert(actual(f->streamed_contents()) == "estfile");
@@ -226,7 +226,7 @@ add_method("send_from_pipe_splice", [&] {
 
     // Source is a pipe and it should trigger splice
     PipeSource child("testfile");
-    wassert(actual(f->send_from_pipe(child.get_stdout())) == stream::SendResult(8u, 0u));
+    wassert(actual(f->send_from_pipe(child.get_stdout())) == stream::SendResult(8u, stream::SendResult::SEND_PIPE_EOF_SOURCE));
     wassert(actual(f->cb_log) == std::vector<size_t>{8});
 
     wassert(actual(f->streamed_contents()) == "testfile");
@@ -274,7 +274,9 @@ add_method("data_start_send_file_segment", [&] {
         sys::Tempfile t;
         t.write_all_or_throw("start", 5);
         t.lseek(0);
-        return out.send_from_pipe(t);
+        auto res = out.send_from_pipe(t);
+        res.flags = res.flags & ~stream::SendResult::SEND_PIPE_EOF_SOURCE;
+        return res;
     });
 
     sys::Tempfile tf1;
@@ -287,7 +289,7 @@ add_method("data_start_send_file_segment", [&] {
     wassert(actual(f->send_file_segment(tf1, 0, 4)) == stream::SendResult(4u, 0u));
     wassert(actual(f->cb_log) == std::vector<size_t>{4});
     // Send past the end of file
-    wassert(actual(f->send_file_segment(tf1, 6, 4)) == stream::SendResult(2u, 0u));
+    wassert(actual(f->send_file_segment(tf1, 6, 4)) == stream::SendResult(2u, stream::SendResult::SEND_PIPE_EOF_SOURCE));
     wassert(actual(f->cb_log) == std::vector<size_t>{2});
 
     wassert(actual(f->streamed_contents()) == "startestfilitestle");
@@ -300,7 +302,7 @@ add_method("data_start_send_file_segment", [&] {
 
     fired = false;
     f->set_data_start_callback([&](StreamOutput& out) { fired=true; return 0u; });
-    wassert(actual(f->send_file_segment(tf1, 8, 1)) == stream::SendResult(0u, 0u));
+    wassert(actual(f->send_file_segment(tf1, 8, 1)) == stream::SendResult(0u, stream::SendResult::SEND_PIPE_EOF_SOURCE));
     wassert(actual(f->cb_log) == std::vector<size_t>());
     wassert_false(fired);
 });
@@ -317,16 +319,16 @@ add_method("data_start_send_from_pipe_read", [&] {
     sys::Tempfile tf1;
     tf1.write_all_or_throw(std::string("testfile"));
     tf1.lseek(1);
-    wassert(actual(f->send_from_pipe(tf1)) == stream::SendResult(7u + 3u, 0u));
+    wassert(actual(f->send_from_pipe(tf1)) == stream::SendResult(7u + 3u, stream::SendResult::SEND_PIPE_EOF_SOURCE));
     wassert(actual(f->cb_log) == std::vector<size_t>{3, 7});
 
     tf1.lseek(2);
-    wassert(actual(f->send_from_pipe(tf1)) == stream::SendResult(6u, 0u));
+    wassert(actual(f->send_from_pipe(tf1)) == stream::SendResult(6u, stream::SendResult::SEND_PIPE_EOF_SOURCE));
     wassert(actual(f->cb_log) == std::vector<size_t>{6});
 
     // Pipe from end of file
     tf1.lseek(0, SEEK_END);
-    wassert(actual(f->send_from_pipe(tf1)) == stream::SendResult(0u, 0u));
+    wassert(actual(f->send_from_pipe(tf1)) == stream::SendResult(0u, stream::SendResult::SEND_PIPE_EOF_SOURCE));
     wassert(actual(f->cb_log) == std::vector<size_t>());
 
     wassert(actual(f->streamed_contents()) == "tarestfilestfile");
@@ -334,7 +336,7 @@ add_method("data_start_send_from_pipe_read", [&] {
     bool fired = false;
     f->set_data_start_callback([&](StreamOutput& out) { fired=true; return 0; });
     tf1.lseek(0, SEEK_END);
-    wassert(actual(f->send_from_pipe(tf1)) == stream::SendResult(0u, 0u));
+    wassert(actual(f->send_from_pipe(tf1)) == stream::SendResult(0u, stream::SendResult::SEND_PIPE_EOF_SOURCE));
     wassert(actual(f->cb_log) == std::vector<size_t>());
     wassert_false(fired);
 });
@@ -349,14 +351,14 @@ add_method("data_start_send_from_pipe_splice", [&] {
 
     // Source is a pipe and it should trigger splice
     PipeSource child("testfile");
-    wassert(actual(f->send_from_pipe(child.get_stdout())) == stream::SendResult(8u + 3u, 0u));
+    wassert(actual(f->send_from_pipe(child.get_stdout())) == stream::SendResult(8u + 3u, stream::SendResult::SEND_PIPE_EOF_SOURCE));
     wassert(actual(f->cb_log) == std::vector<size_t>{3, 8});
-    wassert(actual(f->send_from_pipe(child.get_stdout())) == stream::SendResult(0u, 0u));
+    wassert(actual(f->send_from_pipe(child.get_stdout())) == stream::SendResult(0u, stream::SendResult::SEND_PIPE_EOF_SOURCE));
     wassert(actual(f->cb_log) == std::vector<size_t>());
 
     // Pipe from an empty pipe
     PipeSource child1("");
-    wassert(actual(f->send_from_pipe(child1.get_stdout())) == stream::SendResult(0u, 0u));
+    wassert(actual(f->send_from_pipe(child1.get_stdout())) == stream::SendResult(0u, stream::SendResult::SEND_PIPE_EOF_SOURCE));
     wassert(actual(f->cb_log) == std::vector<size_t>());
 
     wassert(actual(f->streamed_contents()) == "tartestfile");
@@ -364,7 +366,7 @@ add_method("data_start_send_from_pipe_splice", [&] {
     bool fired = false;
     f->set_data_start_callback([&](StreamOutput& out) { fired=true; return 0; });
     PipeSource child2("");
-    wassert(actual(f->send_from_pipe(child2.get_stdout())) == stream::SendResult(0u, 0u));
+    wassert(actual(f->send_from_pipe(child2.get_stdout())) == stream::SendResult(0u, stream::SendResult::SEND_PIPE_EOF_SOURCE));
     wassert(actual(f->cb_log) == std::vector<size_t>());
     wassert_false(fired);
 });
@@ -411,7 +413,7 @@ add_method("large_send_from_pipe_read", [&] {
     tf1.write_all_or_retry(buf);
     tf1.lseek(0);
 
-    wassert(actual(f->send_from_pipe(tf1)) == stream::SendResult(buf.size(), 0u));
+    wassert(actual(f->send_from_pipe(tf1)) == stream::SendResult(buf.size(), stream::SendResult::SEND_PIPE_EOF_SOURCE));
     wassert(actual(std::accumulate(f->cb_log.begin(), f->cb_log.end(), 0u)) == buf.size());
 
     wassert(actual(f->streamed_contents().size()) == buf.size());
@@ -423,7 +425,7 @@ add_method("large_send_from_pipe_splice", [&] {
 
     // Source is a pipe and it should trigger splice
     PipeSource child(std::string(size, 0));
-    wassert(actual(f->send_from_pipe(child.get_stdout())) == stream::SendResult(size, 0u));
+    wassert(actual(f->send_from_pipe(child.get_stdout())) == stream::SendResult(size, stream::SendResult::SEND_PIPE_EOF_SOURCE));
     wassert(actual(std::accumulate(f->cb_log.begin(), f->cb_log.end(), 0u)) == size);
 
     wassert(actual(f->streamed_contents().size()) == size);
@@ -439,7 +441,7 @@ add_method("data_start_large_send_from_pipe_splice", [&] {
 
     // Source is a pipe and it should trigger splice
     PipeSource child(std::string(size, ' '));
-    wassert(actual(f->send_from_pipe(child.get_stdout())) == stream::SendResult(size + 4, 0u));
+    wassert(actual(f->send_from_pipe(child.get_stdout())) == stream::SendResult(size + 4, stream::SendResult::SEND_PIPE_EOF_SOURCE));
     wassert(actual(std::accumulate(f->cb_log.begin(), f->cb_log.end(), 0u)) == size + 4);
 
     wassert(actual(f->streamed_contents()).startswith("foo\n        "));

@@ -182,7 +182,7 @@ SendResult ConcreteTimeoutStreamOutput::send_file_segment(arki::core::NamedFileD
 
     bool has_sendfile = true;
     size_t written = 0;
-    while (true)
+    while (size > 0)
     {
         if (has_sendfile)
         {
@@ -225,6 +225,7 @@ SendResult ConcreteTimeoutStreamOutput::send_file_segment(arki::core::NamedFileD
         wait_writable();
         // iotrace::trace_file(dirfd, offset, size, "streamed data");
     }
+
     return result;
 }
 
