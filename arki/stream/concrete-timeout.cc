@@ -12,17 +12,52 @@ namespace stream {
 
 uint32_t ConcreteTimeoutStreamOutput::wait_writable()
 {
-    pollinfo.revents = 0;
-    int res = ::poll(&pollinfo, 1, timeout_ms);
+    pollinfo[0].revents = 0;
+    int res = ::poll(pollinfo, 1, timeout_ms);
     if (res < 0)
         throw std::system_error(errno, std::system_category(), "poll failed on " + out.name());
     if (res == 0)
         throw TimedOut("write on " + out.name() + " timed out");
-    if (pollinfo.revents & POLLERR)
+    if (pollinfo[0].revents & POLLERR)
         return SendResult::SEND_PIPE_EOF_DEST;
-    if (pollinfo.revents & POLLOUT)
+    if (pollinfo[0].revents & POLLOUT)
         return 0;
     throw std::runtime_error("unsupported revents values when polling " + out.name());
+}
+
+uint32_t ConcreteTimeoutStreamOutput::wait_readable_writable(int read_fd)
+{
+    pollinfo[0].revents = 0;
+    pollinfo[1].fd = read_fd;
+    pollinfo[1].revents = 0;
+
+    // Wait for available input data
+    int res = ::poll(&pollinfo[1], 1, 0);
+    if (res < 0)
+        throw std::system_error(errno, std::system_category(), "poll failed on input pipe");
+    if (res == 0)
+        return SendResult::SEND_PIPE_EAGAIN_SOURCE;
+    if (pollinfo[1].revents & POLLRDHUP)
+        return SendResult::SEND_PIPE_EOF_SOURCE;
+    if (pollinfo[1].revents & POLLERR)
+        return SendResult::SEND_PIPE_EOF_SOURCE;
+    if (pollinfo[1].revents & POLLHUP)
+        return SendResult::SEND_PIPE_EOF_SOURCE;
+    if (! (pollinfo[1].revents & POLLIN))
+        throw std::runtime_error("unsupported revents values when polling input pipe");
+
+    // Wait for output pipe to be writable
+    res = ::poll(pollinfo, 1, timeout_ms);
+    if (res < 0)
+        throw std::system_error(errno, std::system_category(), "poll failed on " + out.name());
+    if (res == 0)
+        throw TimedOut("write on " + out.name() + " timed out");
+    if (pollinfo[0].revents & POLLERR)
+        return SendResult::SEND_PIPE_EOF_DEST;
+    if (!(pollinfo[0].revents & POLLOUT))
+        throw std::runtime_error("unsupported revents values when polling " + out.name());
+
+    return 0;
 }
 
 ConcreteTimeoutStreamOutput::ConcreteTimeoutStreamOutput(core::NamedFileDescriptor& out, unsigned timeout_ms)
@@ -34,8 +69,9 @@ ConcreteTimeoutStreamOutput::ConcreteTimeoutStreamOutput(core::NamedFileDescript
     if (fcntl(out, F_SETFL, orig_fl | O_NONBLOCK) < 0)
         throw std::system_error(errno, std::system_category(), "cannot set nonblocking file descriptor flags for " + out.name());
 
-    pollinfo.fd = out;
-    pollinfo.events = POLLOUT;
+    pollinfo[0].fd = out;
+    pollinfo[0].events = POLLOUT;
+    pollinfo[1].events = POLLIN | POLLRDHUP;
 }
 
 ConcreteTimeoutStreamOutput::~ConcreteTimeoutStreamOutput()
@@ -263,6 +299,11 @@ SendResult ConcreteTimeoutStreamOutput::send_file_segment(arki::core::NamedFileD
 
 SendResult ConcreteTimeoutStreamOutput::send_from_pipe(int fd)
 {
+    int src_fl = fcntl(fd, F_GETFL);
+    if (src_fl < 0)
+        throw std::system_error(errno, std::system_category(), "cannot get file descriptor flags for input");
+    bool src_nonblock = src_fl & O_NONBLOCK;
+
     SendResult result;
 
     TransferBuffer buffer;
@@ -309,15 +350,21 @@ SendResult ConcreteTimeoutStreamOutput::send_from_pipe(int fd)
                     continue;
                 } else if (errno == EAGAIN || errno == EWOULDBLOCK) {
                     res = 0;
+                    // In theory we don't need to call this. In practice, it
+                    // helps unit tests to be able to hook here to empty the
+                    // output pipe
+                    if (progress_callback)
+                        progress_callback(res);
                 } else if (errno == EPIPE) {
                     result.flags |= SendResult::SEND_PIPE_EOF_DEST;
                     break;
                 } else
                     throw std::system_error(errno, std::system_category(), "cannot splice data to stream from a pipe");
+            } else if (res > 0) {
+                result.sent += res;
+                if (progress_callback)
+                    progress_callback(res);
             }
-            result.sent += res;
-            if (progress_callback)
-                progress_callback(res);
 
 #else
             // Splice is not supported: pass it on to the traditional method
@@ -348,7 +395,11 @@ SendResult ConcreteTimeoutStreamOutput::send_from_pipe(int fd)
             }
         }
 
-        uint32_t wres = wait_writable();
+        uint32_t wres;
+        if (src_nonblock)
+            wres = wait_readable_writable(fd);
+        else
+            wres = wait_writable();
         if (wres)
         {
             result.flags |= wres;

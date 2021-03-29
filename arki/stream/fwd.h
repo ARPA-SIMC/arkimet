@@ -13,8 +13,9 @@ class TimedOut;
 
 struct SendResult
 {
-    static constexpr uint32_t SEND_PIPE_EOF_SOURCE = 1;
-    static constexpr uint32_t SEND_PIPE_EOF_DEST   = 2;
+    static constexpr uint32_t SEND_PIPE_EOF_SOURCE      = 0x01;
+    static constexpr uint32_t SEND_PIPE_EOF_DEST        = 0x02;
+    static constexpr uint32_t SEND_PIPE_EAGAIN_SOURCE   = 0x04;
 
     size_t sent = 0;
     uint32_t flags = 0;

@@ -6,77 +6,12 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/ioctl.h>
+#include <poll.h>
 
 using namespace arki::utils;
 
 namespace arki {
 namespace stream {
-
-BlockingSink::BlockingSink()
-{
-    // Create a pipe with a known buffer
-    // fds[1] will be the writing end
-    if (pipe(fds) < 0)
-        throw std::system_error(errno, std::system_category(), "cannot create a pipe");
-
-    // Shrink the output buffer as much as possible, and get its shrunk size
-    pipe_sz = fcntl(fds[1], F_SETPIPE_SZ, 0);
-    if (pipe_sz < 0)
-        throw std::system_error(errno, std::system_category(), "cannot shrink pipe size");
-    // Writing more than pipe_sz will now block unless we read
-
-    outfd.reset(new sys::NamedFileDescriptor(fds[1], "blocking test pipe"));
-
-    // Make the read end nonblocking
-    int fl = fcntl(fds[0], F_GETFL);
-    if (fl < 0)
-        throw std::system_error(errno, std::system_category(), "cannot get file descriptor flags for read end of BlockingSink pipe");
-    if (fcntl(fds[0], F_SETFL, fl | O_NONBLOCK) < 0)
-        throw std::system_error(errno, std::system_category(), "cannot set nonblocking file descriptor flags for BlockingSink pipe");
-
-    // Allocate the filler buffer
-    filler.resize(pipe_sz);
-}
-
-BlockingSink::~BlockingSink()
-{
-    close(fds[0]);
-    close(fds[1]);
-}
-
-size_t BlockingSink::data_in_pipe()
-{
-    int size;
-    if (ioctl(fds[1], FIONREAD, &size) < 0)
-        throw std::system_error(errno, std::system_category(), "cannot read the amount of data in pipe");
-    return size;
-}
-
-void BlockingSink::fill(int size)
-{
-    if (size > 0)
-        fd().write_all_or_retry(filler.data(), size);
-    else
-        fd().write_all_or_retry(filler.data(), pipe_size() + size);
-}
-
-void BlockingSink::empty_buffer()
-{
-    // fprintf(stderr, "empty_buffer in pipe: %zd\n", data_in_pipe());
-    char buf[4096];
-    while (true)
-    {
-        ssize_t res = ::read(fds[0], buf, 4096);
-        // fprintf(stderr, "             read: %d\n", (int)res);
-        if (res == -1)
-        {
-            if (errno == EAGAIN)
-                break;
-            throw std::system_error(errno, std::system_category(), "cannot read from read end of BlockingSink pipe");
-        }
-    }
-}
-
 
 std::string StreamTestsFixture::streamed_contents()
 {
@@ -117,26 +52,6 @@ stream::SendResult StreamTestsFixture::send_from_pipe(int fd)
 }
 
 
-WriteTest::WriteTest(StreamOutput& writer, BlockingSink& sink, int prefill)
-    : writer(writer), sink(sink)
-{
-    if (prefill)
-        sink.fill(prefill);
-
-    writer.set_progress_callback([&](size_t written) {
-        // fprintf(stderr, "write_test written: %zd\n", written);
-        sink.empty_buffer();
-        total_written += written;
-        cb_log.push_back(written);
-    });
-}
-
-WriteTest::~WriteTest()
-{
-    sink.empty_buffer();
-    writer.set_progress_callback(nullptr);
-}
-
 
 namespace {
 
@@ -163,8 +78,94 @@ public:
     }
     ~PipeSource()
     {
-        terminate();
-        wait();
+        if (!terminated())
+        {
+            terminate();
+            wait();
+        }
+    }
+};
+
+class NonblockingPipeSource : public subprocess::Child
+{
+protected:
+    std::string data;
+
+    int main() noexcept override
+    {
+        sys::NamedFileDescriptor in(0, "stdin");
+        sys::NamedFileDescriptor out(1, "stdout");
+
+        while (true)
+        {
+            uint32_t size;
+            in.read_all_or_throw(&size, sizeof(uint32_t));
+
+            if (size == 0)
+                break;
+
+            std::vector<uint8_t> buf(size, 0);
+            out.write_all_or_retry(buf);
+        }
+
+        out.close();
+        return 0;
+    }
+
+public:
+    NonblockingPipeSource()
+    {
+        set_stdin(subprocess::Redirect::PIPE);
+        set_stdout(subprocess::Redirect::PIPE);
+        fork();
+
+        // Make the read end nonblocking
+        int fl = fcntl(get_stdout(), F_GETFL);
+        if (fl < 0)
+            throw std::system_error(errno, std::system_category(), "cannot get file descriptor flags for read end of NonblockingPipeSource stdout pipe");
+        if (fcntl(get_stdout(), F_SETFL, fl | O_NONBLOCK) < 0)
+            throw std::system_error(errno, std::system_category(), "cannot set nonblocking file descriptor flags for NonblockingPipeSource stdout pipe");
+    }
+    ~NonblockingPipeSource()
+    {
+        if (!terminated())
+        {
+            terminate();
+            wait();
+        }
+    }
+
+    /**
+     * Request the child process to send size bytes of data.
+     *
+     * Set 0 to size to ask the child process to close its side of the pipe and
+     * exit.
+     */
+    void request_data(uint32_t size)
+    {
+        sys::NamedFileDescriptor cmdfd(get_stdin(), "NonblockingPipeSource command pipe");
+        cmdfd.write_all_or_retry(&size, sizeof(uint32_t));
+    }
+
+    void wait_for_data()
+    {
+        pollfd pollinfo;
+        pollinfo.events = POLLIN;
+        pollinfo.fd = get_stdout();
+        pollinfo.revents = 0;
+
+        // Wait for available input data
+        int res = ::poll(&pollinfo, 1, 1000);
+        if (res < 0)
+            throw std::system_error(errno, std::system_category(), "poll failed on input pipe");
+        if (res == 0)
+            throw std::runtime_error("poll timed out on NonblockingPipeSource");
+        if (pollinfo.revents & POLLERR)
+            throw std::runtime_error("POLLERR on NonblockingPipeSource");
+        if (pollinfo.revents & POLLHUP)
+            throw std::runtime_error("POLLHUP on NonblockingPipeSource");
+        if (! (pollinfo.revents & POLLIN))
+            throw std::runtime_error("unsupported revents values on NonblockingPipeSource");
     }
 };
 
@@ -235,6 +236,39 @@ add_method("send_from_pipe_splice", [&] {
     wassert(actual(f->cb_log) == std::vector<size_t>{8});
 
     wassert(actual(f->streamed_contents()) == "testfile");
+});
+
+add_method("send_from_pipe_splice_nonblocking", [&] {
+    auto f = make_fixture();
+
+    // Source is a pipe and it should trigger splice
+    NonblockingPipeSource child;
+    child.request_data(8);
+    child.wait_for_data();
+    wassert(actual(f->send_from_pipe(child.get_stdout())) == stream::SendResult(8u, stream::SendResult::SEND_PIPE_EAGAIN_SOURCE));
+    child.request_data(123456);
+    child.wait_for_data();
+
+    size_t sent = 0;
+    while (sent < 123456u)
+    {
+        auto res = f->send_from_pipe(child.get_stdout());
+        wassert(actual(res.flags) == stream::SendResult::SEND_PIPE_EAGAIN_SOURCE);
+        sent += res.sent;
+    }
+
+    child.request_data(123);
+    child.request_data(0);
+    child.wait();
+
+    auto res = f->send_from_pipe(child.get_stdout());
+    wassert(actual(res.sent) == 123u);
+    wassert_true((res.flags & stream::SendResult::SEND_PIPE_EAGAIN_SOURCE) || (res.flags & stream::SendResult::SEND_PIPE_EOF_SOURCE));
+
+    if (res.flags & stream::SendResult::SEND_PIPE_EAGAIN_SOURCE)
+        wassert(actual(f->send_from_pipe(child.get_stdout())) == stream::SendResult(0u, stream::SendResult::SEND_PIPE_EOF_SOURCE));
+
+    wassert(actual(f->streamed_contents()) == std::string(8 + 123456 + 123, 0));
 });
 
 add_method("data_start_send_line", [&] {

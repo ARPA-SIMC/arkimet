@@ -32,6 +32,7 @@ namespace stream {
 
 constexpr uint32_t SendResult::SEND_PIPE_EOF_SOURCE;
 constexpr uint32_t SendResult::SEND_PIPE_EOF_DEST;
+constexpr uint32_t SendResult::SEND_PIPE_EAGAIN_SOURCE;
 
 std::ostream& operator<<(std::ostream& out, const SendResult& r)
 {
@@ -46,6 +47,10 @@ std::ostream& operator<<(std::ostream& out, const SendResult& r)
             out << "-";
         if (r.flags & SendResult::SEND_PIPE_EOF_DEST)
             out << "D";
+        else
+            out << "-";
+        if (r.flags & SendResult::SEND_PIPE_EAGAIN_SOURCE)
+            out << "s";
         else
             out << "-";
         return out << "]";
