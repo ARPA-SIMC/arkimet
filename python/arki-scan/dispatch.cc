@@ -42,6 +42,7 @@ DispatchResults MetadataDispatch::process(dataset::Reader& ds, const std::string
     if (!dir_copyok.empty())
     {
         copyok = std::make_shared<core::File>(str::joinpath(dir_copyok, str::basename(name)));
+        // We are writing to a file, not a pipe, so we do not need a timeout
         copyok_stream = StreamOutput::create(copyok);
     }
     else
@@ -53,6 +54,7 @@ DispatchResults MetadataDispatch::process(dataset::Reader& ds, const std::string
     if (!dir_copyko.empty())
     {
         copyko = std::make_shared<core::File>(str::joinpath(dir_copyko, str::basename(name)));
+        // We are writing to a file, not a pipe, so we do not need a timeout
         copyko_stream = StreamOutput::create(copyko);
     }
     else

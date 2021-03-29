@@ -42,6 +42,7 @@ void Xargs::start_batch(const std::string& new_format)
     unique_ptr<char[]> tf(new char[tempfile_template.size() + 1]);
     memcpy(tf.get(), tempfile_template.c_str(), tempfile_template.size() + 1);
     tempfile = std::make_shared<core::File>(File::mkstemp(tf.get()));
+    // We are writing to a file, not a pipe, so we do not need a timeout
     stream_to_tempfile = StreamOutput::create(tempfile);
 }
 
