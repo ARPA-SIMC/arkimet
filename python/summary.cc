@@ -174,7 +174,7 @@ struct write_short : public MethKwargs<write_short, arkipy_Summary>
             return nullptr;
 
         try {
-            BinaryOutputFile out(arg_file);
+            std::unique_ptr<arki::StreamOutput> out = binaryio_stream_output(arg_file);
 
             std::unique_ptr<arki::Formatter> formatter;
             if (annotate)
@@ -187,18 +187,12 @@ struct write_short : public MethKwargs<write_short, arkipy_Summary>
             {
                 std::stringstream buf;
                 shrt.write_yaml(buf, formatter.get());
-                if (out.fd)
-                    out.fd->write_all_or_retry(buf.str().data(), buf.str().size());
-                else
-                    out.abstract->write(buf.str().data(), buf.str().size());
+                out->send_buffer(buf.str().data(), buf.str().size());
             } else if (strcmp(format, "json") == 0) {
                 std::stringstream buf;
                 arki::structured::JSON output(buf);
                 shrt.serialise(output, arki::structured::keys_python, formatter.get());
-                if (out.fd)
-                    out.fd->write_all_or_retry(buf.str().data(), buf.str().size());
-                else
-                    out.abstract->write(buf.str().data(), buf.str().size());
+                out->send_buffer(buf.str().data(), buf.str().size());
             } else {
                 PyErr_Format(PyExc_ValueError, "Unsupported metadata serialization format: %s", format);
                 return nullptr;
