@@ -34,14 +34,18 @@ namespace {
 
 struct Creator : public AppendCreator
 {
-    std::string format;
-    File out;
+protected:
+    std::shared_ptr<File> out;
     std::shared_ptr<metadata::ArchiveOutput> zipout;
+
+public:
+    std::string format;
     size_t idx = 0;
     char fname[100];
 
     Creator(const std::string& root, const std::string& relpath, metadata::Collection& mds, const std::string& dest_abspath)
-        : AppendCreator(root, relpath, mds), out(dest_abspath, O_WRONLY | O_CREAT | O_TRUNC),
+        : AppendCreator(root, relpath, mds),
+          out(std::make_shared<File>(dest_abspath, O_WRONLY | O_CREAT | O_TRUNC, 0666)),
           zipout(metadata::ArchiveOutput::create("zip", out))
     {
         zipout->set_subdir(std::string());
@@ -66,11 +70,10 @@ struct Creator : public AppendCreator
 
     void create()
     {
-        out.open(O_WRONLY | O_CREAT | O_TRUNC, 0666);
         AppendCreator::create();
         zipout->flush(false);
-        out.fdatasync();
-        out.close();
+        out->fdatasync();
+        out->close();
     }
 };
 
@@ -353,7 +356,6 @@ core::Pending Checker::repack(const std::string& rootdir, metadata::Collection& 
     core::Pending p(new files::RenameTransaction(tmpabspath, zipabspath));
 
     Creator creator(rootdir, segment().relpath, mds, tmpabspath);
-    creator.out = sys::File(tmpabspath);
     creator.validator = &scan::Validator::by_filename(segment().abspath);
 
     creator.create();

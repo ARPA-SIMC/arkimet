@@ -1,5 +1,7 @@
 #include "arki/core/tests.h"
 #include "arki/metadata/archive.h"
+#include "arki/metadata/collection.h"
+#include "arki/stream.h"
 #include "arki/utils/sys.h"
 
 namespace {
@@ -8,27 +10,48 @@ using namespace arki;
 using namespace arki::utils;
 using namespace arki::tests;
 
-class Tests : public TestCase
+class BaseTests : public TestCase
 {
     using TestCase::TestCase;
-    void register_tests() override;
     void setup() override {
         TestCase::setup();
         skip_unless_libarchive();
     }
-} test("arki_metadata_archive");
 
-void Tests::register_tests() {
+    virtual std::unique_ptr<metadata::ArchiveOutput> create_archive(const std::string& format, const std::string& fname) = 0;
 
-add_method("tar", [] {
+    void register_tests() override;
+};
+
+class TestFile : public BaseTests
+{
+    using BaseTests::BaseTests;
+
+    std::unique_ptr<metadata::ArchiveOutput> create_archive(const std::string& format, const std::string& fname) override
+    {
+        return metadata::ArchiveOutput::create(format, std::make_shared<sys::File>(fname, O_WRONLY | O_CREAT | O_TRUNC));
+    }
+} test_file("arki_metadata_archive_file");
+
+class TestStremOutput : public BaseTests
+{
+    using BaseTests::BaseTests;
+
+    std::unique_ptr<metadata::ArchiveOutput> create_archive(const std::string& format, const std::string& fname) override
+    {
+        return metadata::ArchiveOutput::create(format, StreamOutput::create(std::make_shared<sys::File>(fname, O_WRONLY | O_CREAT | O_TRUNC)));
+    }
+} test_streamoutput("arki_metadata_archive_streamoutput");
+
+void BaseTests::register_tests() {
+
+add_method("tar", [&] {
     metadata::TestCollection mds("inbound/test.grib1");
-    sys::File out("test.tar", O_WRONLY | O_CREAT | O_TRUNC);
-    auto arc_out = metadata::ArchiveOutput::create("tar", out);
+    auto arc_out = create_archive("tar", "test.tar");
     wassert(arc_out->append(mds[0]));
     wassert(arc_out->append(mds[1]));
     wassert(arc_out->append(mds[2]));
     wassert(arc_out->flush(true));
-    out.close();
 
     wassert(actual(system("tar tf test.tar > test.out")) == 0);
     wassert(actual(sys::read_file("test.out")) == 
@@ -39,15 +62,13 @@ add_method("tar", [] {
     );
 });
 
-add_method("targz", [] {
+add_method("targz", [&] {
     metadata::TestCollection mds("inbound/test.grib1");
-    sys::File out("test.tar.gz", O_WRONLY | O_CREAT | O_TRUNC);
-    auto arc_out = metadata::ArchiveOutput::create("tar.gz", out);
+    auto arc_out = create_archive("tar.gz", "test.tar.gz");
     wassert(arc_out->append(mds[0]));
     wassert(arc_out->append(mds[1]));
     wassert(arc_out->append(mds[2]));
     wassert(arc_out->flush(true));
-    out.close();
 
     wassert(actual(system("tar ztf test.tar.gz > test.out")) == 0);
     wassert(actual(sys::read_file("test.out")) == 
@@ -58,15 +79,13 @@ add_method("targz", [] {
     );
 });
 
-add_method("tarxz", [] {
+add_method("tarxz", [&] {
     metadata::TestCollection mds("inbound/test.grib1");
-    sys::File out("test.tar.xz", O_WRONLY | O_CREAT | O_TRUNC);
-    auto arc_out = metadata::ArchiveOutput::create("tar.xz", out);
+    auto arc_out = create_archive("tar.xz", "test.tar.xz");
     wassert(arc_out->append(mds[0]));
     wassert(arc_out->append(mds[1]));
     wassert(arc_out->append(mds[2]));
     wassert(arc_out->flush(true));
-    out.close();
 
     wassert(actual(system("tar Jtf test.tar.xz > test.out")) == 0);
     wassert(actual(sys::read_file("test.out")) == 
@@ -77,15 +96,13 @@ add_method("tarxz", [] {
     );
 });
 
-add_method("zip", [] {
+add_method("zip", [&] {
     metadata::TestCollection mds("inbound/test.grib1");
-    sys::File out("test.zip", O_WRONLY | O_CREAT | O_TRUNC);
-    auto arc_out = metadata::ArchiveOutput::create("zip", out);
+    auto arc_out = create_archive("zip", "test.zip");
     wassert(arc_out->append(mds[0]));
     wassert(arc_out->append(mds[1]));
     wassert(arc_out->append(mds[2]));
     wassert(arc_out->flush(true));
-    out.close();
 
     wassert(actual(system("unzip -l test.zip > test.out")) == 0);
     wassert(actual(sys::read_file("test.out")).matches(

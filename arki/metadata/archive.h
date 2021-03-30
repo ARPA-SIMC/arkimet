@@ -2,8 +2,10 @@
 #define ARKI_METADATA_LIBARCHIVE_H
 
 #include <arki/core/fwd.h>
-#include <arki/metadata/collection.h>
+#include <arki/stream/fwd.h>
+#include <arki/metadata/fwd.h>
 #include <string>
+#include <memory>
 
 namespace arki {
 namespace metadata {
@@ -33,7 +35,15 @@ public:
      * format is a string corresponding to the output formats supported by
      * libarchive.
      */
-    static std::unique_ptr<ArchiveOutput> create(const std::string& format, core::NamedFileDescriptor& out);
+    static std::unique_ptr<ArchiveOutput> create(const std::string& format, std::shared_ptr<core::NamedFileDescriptor> out);
+
+    /**
+     * Create an archive output for the given format and StreamOutput.
+     *
+     * format is a string corresponding to the output formats supported by
+     * libarchive.
+     */
+    static std::unique_ptr<ArchiveOutput> create(const std::string& format, std::shared_ptr<StreamOutput> out);
 };
 
 }

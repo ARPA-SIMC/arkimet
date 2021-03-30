@@ -87,7 +87,7 @@ struct LibarchiveProcessor : public DatasetProcessor
     LibarchiveProcessor(
             Matcher matcher, std::shared_ptr<sys::NamedFileDescriptor> out,
             const std::string& format, std::shared_ptr<arki::dataset::QueryProgress> progress)
-        : query(matcher, true), arc_out(arki::metadata::ArchiveOutput::create(format, *out))
+        : query(matcher, true), arc_out(arki::metadata::ArchiveOutput::create(format, out))
     {
         query.progress = progress;
     }

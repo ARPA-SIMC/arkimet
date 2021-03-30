@@ -1,18 +1,20 @@
 #include "arki/metadata/archive.h"
 #include "arki/metadata.h"
 #include "arki/metadata/data.h"
+#include <arki/metadata/collection.h>
 #include "arki/core/binary.h"
+#include "arki/stream.h"
 #include "arki/exceptions.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/string.h"
 #include "arki/types/source.h"
 #include "arki/types/reftime.h"
 #include "arki/libconfig.h"
+#include <cstring>
 #ifdef HAVE_LIBARCHIVE
 #include <archive.h>
 #include <archive_entry.h>
 #endif
-#include <cstring>
 
 using namespace arki::utils;
 
@@ -20,6 +22,15 @@ namespace arki {
 namespace metadata {
 
 #ifdef HAVE_LIBARCHIVE
+
+struct archive_runtime_error: public std::runtime_error
+{
+    archive_runtime_error(struct ::archive* a, const std::string& msg)
+        : std::runtime_error(msg + ": " + archive_error_string(a))
+    {
+    }
+};
+
 /**
  * Output metadata and data using one of the archive formats supported by libarchive
  */
@@ -36,27 +47,22 @@ protected:
 
 public:
     std::string format;
-    core::NamedFileDescriptor& out;
     std::string subdir;
 
-    LibarchiveOutput(const std::string& format, core::NamedFileDescriptor& out);
-    ~LibarchiveOutput();
+    LibarchiveOutput(const std::string& format);
+    ~LibarchiveOutput()
+    {
+        archive_entry_free(entry);
+        archive_write_free(a);
+    }
 
     void set_subdir(const std::string& subdir) override { this->subdir = subdir; }
     size_t append(const Metadata& md) override;
     void flush(bool with_metadata) override;
 };
 
-struct archive_runtime_error: public std::runtime_error
-{
-    archive_runtime_error(struct ::archive* a, const std::string& msg)
-        : std::runtime_error(msg + ": " + archive_error_string(a))
-    {
-    }
-};
-
-LibarchiveOutput::LibarchiveOutput(const std::string& format, core::NamedFileDescriptor& out)
-    : format(format), out(out), subdir("data")
+LibarchiveOutput::LibarchiveOutput(const std::string& format)
+    : format(format), subdir("data")
 {
     a = archive_write_new();
     if (a == nullptr)
@@ -89,15 +95,6 @@ LibarchiveOutput::LibarchiveOutput(const std::string& format, core::NamedFileDes
         if (archive_write_set_format_zip(a) != ARCHIVE_OK)
             throw archive_runtime_error(a, "cannot set zip archive format");
     }
-
-    if (archive_write_open_fd(a, out) != ARCHIVE_OK)
-        throw archive_runtime_error(a, "archive_write_open_fd failed");
-}
-
-LibarchiveOutput::~LibarchiveOutput()
-{
-    archive_entry_free(entry);
-    archive_write_free(a);
 }
 
 void LibarchiveOutput::write_buffer(const std::vector<uint8_t>& buf)
@@ -188,18 +185,90 @@ void LibarchiveOutput::flush(bool with_metadata)
         throw archive_runtime_error(a, "cannot close archive");
 }
 
-#endif
 
+class LibarchiveFileOutput : public LibarchiveOutput
+{
+    std::shared_ptr<core::NamedFileDescriptor> out;
+
+public:
+    LibarchiveFileOutput(const std::string& format, std::shared_ptr<core::NamedFileDescriptor> out)
+        : LibarchiveOutput(format), out(out)
+    {
+        if (archive_write_open_fd(a, *out) != ARCHIVE_OK)
+            throw archive_runtime_error(a, "archive_write_open_fd failed");
+    }
+};
+
+
+namespace {
+
+int archive_streamoutput_open_callback(struct archive* a, void *client_data)
+{
+    return ARCHIVE_OK;
+}
+
+int archive_streamoutput_close_callback(struct archive *a, void *client_data)
+{
+    return ARCHIVE_OK;
+}
+
+la_ssize_t archive_streamoutput_write_callback(struct archive *a, void *client_data, const void *buffer, size_t length)
+{
+    StreamOutput* out = reinterpret_cast<StreamOutput*>(client_data);
+    try {
+        auto res = out->send_buffer(buffer, length);
+        return res.sent;
+    } catch (std::system_error& e) {
+        archive_set_error(a, e.code().value(), "%s", e.what());
+        return -1;
+    } catch (stream::TimedOut& e) {
+        archive_set_error(a, ETIMEDOUT, "%s", e.what());
+        return -1;
+    } catch (std::exception& e) {
+        archive_set_error(a, EIO, "%s", e.what());
+        return -1;
+    }
+}
+
+}
+
+class LibarchiveStreamOutput : public LibarchiveOutput
+{
+    std::shared_ptr<StreamOutput> out;
+
+public:
+    LibarchiveStreamOutput(const std::string& format, std::shared_ptr<StreamOutput> out)
+        : LibarchiveOutput(format), out(out)
+    {
+        if (archive_write_open(a, out.get(), archive_streamoutput_open_callback, archive_streamoutput_write_callback, archive_streamoutput_close_callback) != ARCHIVE_OK)
+            throw archive_runtime_error(a, "archive_write_open_fd failed");
+        // The default for the last block is, surprisingly, not 1, meaning that
+        // unless we explicitly set it, libarchive will add padding at the end
+        // of the data, which will corrupt things like xz compressed streams
+        if (archive_write_set_bytes_in_last_block(a, 1) != ARCHIVE_OK)
+            throw archive_runtime_error(a, "archive_write_set_bytes_in_last_block failed");
+    }
+};
+#endif
 
 
 ArchiveOutput::~ArchiveOutput()
 {
 }
 
-std::unique_ptr<ArchiveOutput> ArchiveOutput::create(const std::string& format, core::NamedFileDescriptor& out)
+std::unique_ptr<ArchiveOutput> ArchiveOutput::create(const std::string& format, std::shared_ptr<core::NamedFileDescriptor> out)
 {
 #ifdef HAVE_LIBARCHIVE
-    return std::unique_ptr<ArchiveOutput>(new LibarchiveOutput(format, out));
+    return std::unique_ptr<LibarchiveOutput>(new LibarchiveFileOutput(format, out));
+#else
+    throw std::runtime_error("libarchive not supported in this build");
+#endif
+}
+
+std::unique_ptr<ArchiveOutput> ArchiveOutput::create(const std::string& format, std::shared_ptr<StreamOutput> out)
+{
+#ifdef HAVE_LIBARCHIVE
+    return std::unique_ptr<LibarchiveOutput>(new LibarchiveStreamOutput(format, out));
 #else
     throw std::runtime_error("libarchive not supported in this build");
 #endif
