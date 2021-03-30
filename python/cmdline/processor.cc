@@ -1,6 +1,6 @@
 #include "processor.h"
 #include "arki/metadata.h"
-#include "arki/metadata/libarchive.h"
+#include "arki/metadata/archive.h"
 #include "arki/libconfig.h"
 #include "arki/types/source.h"
 #include "arki/formatter.h"
@@ -82,12 +82,12 @@ struct DataProcessor : public DatasetProcessor
 struct LibarchiveProcessor : public DatasetProcessor
 {
     arki::dataset::DataQuery query;
-    arki::metadata::LibarchiveOutput arc_out;
+    std::shared_ptr<arki::metadata::ArchiveOutput> arc_out;
 
     LibarchiveProcessor(
             Matcher matcher, std::shared_ptr<sys::NamedFileDescriptor> out,
             const std::string& format, std::shared_ptr<arki::dataset::QueryProgress> progress)
-        : query(matcher, true), arc_out(format, *out)
+        : query(matcher, true), arc_out(arki::metadata::ArchiveOutput::create(format, *out))
     {
         query.progress = progress;
     }
@@ -97,12 +97,12 @@ struct LibarchiveProcessor : public DatasetProcessor
     void process(arki::dataset::Reader& reader, const std::string& name) override
     {
         arki::nag::verbose("Processing %s...", reader.name().c_str());
-        reader.query_data(query, [&](std::shared_ptr<Metadata> md) { arc_out.append(*md); return true; });
+        reader.query_data(query, [&](std::shared_ptr<Metadata> md) { arc_out->append(*md); return true; });
     }
 
     void end() override
     {
-        arc_out.flush();
+        arc_out->flush(true);
     }
 };
 

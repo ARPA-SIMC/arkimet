@@ -4,7 +4,7 @@
 #include "arki/metadata.h"
 #include "arki/metadata/data.h"
 #include "arki/metadata/collection.h"
-#include "arki/metadata/libarchive.h"
+#include "arki/metadata/archive.h"
 #include "arki/types/source/blob.h"
 #include "arki/scan/validator.h"
 #include "arki/utils/files.h"
@@ -36,15 +36,15 @@ struct Creator : public AppendCreator
 {
     std::string format;
     File out;
-    metadata::LibarchiveOutput zipout;
+    std::shared_ptr<metadata::ArchiveOutput> zipout;
     size_t idx = 0;
     char fname[100];
 
     Creator(const std::string& root, const std::string& relpath, metadata::Collection& mds, const std::string& dest_abspath)
-        : AppendCreator(root, relpath, mds), out(dest_abspath, O_WRONLY | O_CREAT | O_TRUNC), zipout("zip", out)
+        : AppendCreator(root, relpath, mds), out(dest_abspath, O_WRONLY | O_CREAT | O_TRUNC),
+          zipout(metadata::ArchiveOutput::create("zip", out))
     {
-        zipout.with_metadata = false;
-        zipout.subdir.clear();
+        zipout->set_subdir(std::string());
         if (!mds.empty())
             format = mds[0].source().format;
     }
@@ -59,7 +59,7 @@ struct Creator : public AppendCreator
     Span append_md(Metadata& md)
     {
         Span res;
-        res.offset = zipout.append(md);
+        res.offset = zipout->append(md);
         res.size = md.get_data().size();
         return res;
     }
@@ -68,7 +68,7 @@ struct Creator : public AppendCreator
     {
         out.open(O_WRONLY | O_CREAT | O_TRUNC, 0666);
         AppendCreator::create();
-        zipout.flush();
+        zipout->flush(false);
         out.fdatasync();
         out.close();
     }

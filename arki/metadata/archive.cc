@@ -1,4 +1,4 @@
-#include "libarchive.h"
+#include "arki/metadata/archive.h"
 #include "arki/metadata.h"
 #include "arki/metadata/data.h"
 #include "arki/core/binary.h"
@@ -7,6 +7,7 @@
 #include "arki/utils/string.h"
 #include "arki/types/source.h"
 #include "arki/types/reftime.h"
+#include "arki/libconfig.h"
 #ifdef HAVE_LIBARCHIVE
 #include <archive.h>
 #include <archive_entry.h>
@@ -19,6 +20,33 @@ namespace arki {
 namespace metadata {
 
 #ifdef HAVE_LIBARCHIVE
+/**
+ * Output metadata and data using one of the archive formats supported by libarchive
+ */
+class LibarchiveOutput : public ArchiveOutput
+{
+protected:
+    struct ::archive* a = nullptr;
+    struct ::archive_entry* entry = nullptr;
+    Collection mds;
+    char filename_buf[255];
+
+    void write_buffer(const std::vector<uint8_t>& buf);
+    void append_metadata();
+
+public:
+    std::string format;
+    core::NamedFileDescriptor& out;
+    std::string subdir;
+
+    LibarchiveOutput(const std::string& format, core::NamedFileDescriptor& out);
+    ~LibarchiveOutput();
+
+    void set_subdir(const std::string& subdir) override { this->subdir = subdir; }
+    size_t append(const Metadata& md) override;
+    void flush(bool with_metadata) override;
+};
+
 struct archive_runtime_error: public std::runtime_error
 {
     archive_runtime_error(struct ::archive* a, const std::string& msg)
@@ -26,12 +54,10 @@ struct archive_runtime_error: public std::runtime_error
     {
     }
 };
-#endif
 
 LibarchiveOutput::LibarchiveOutput(const std::string& format, core::NamedFileDescriptor& out)
     : format(format), out(out), subdir("data")
 {
-#ifdef HAVE_LIBARCHIVE
     a = archive_write_new();
     if (a == nullptr)
         throw_system_error("archive_write_new failed");
@@ -66,20 +92,16 @@ LibarchiveOutput::LibarchiveOutput(const std::string& format, core::NamedFileDes
 
     if (archive_write_open_fd(a, out) != ARCHIVE_OK)
         throw archive_runtime_error(a, "archive_write_open_fd failed");
-#endif
 }
 
-#ifdef HAVE_LIBARCHIVE
 LibarchiveOutput::~LibarchiveOutput()
 {
     archive_entry_free(entry);
     archive_write_free(a);
 }
-#endif
 
 void LibarchiveOutput::write_buffer(const std::vector<uint8_t>& buf)
 {
-#ifdef HAVE_LIBARCHIVE
     size_t ofs = 0;
     while (ofs < buf.size())
     {
@@ -102,14 +124,10 @@ void LibarchiveOutput::write_buffer(const std::vector<uint8_t>& buf)
             break;
         ofs += written;
     }
-#endif
 }
 
 size_t LibarchiveOutput::append(const Metadata& md)
 {
-#ifndef HAVE_LIBARCHIVE
-    throw std::runtime_error("libarchive not supported in this build");
-#else
     size_t ofs = mds.size() + 1;
     if (subdir.empty())
         snprintf(filename_buf, 255, "%06zd.%s", ofs, md.source().format.c_str());
@@ -135,12 +153,10 @@ size_t LibarchiveOutput::append(const Metadata& md)
     stored_md->drop_cached_data();
     mds.acquire(std::move(stored_md));
     return ofs;
-#endif
 }
 
 void LibarchiveOutput::append_metadata()
 {
-#ifdef HAVE_LIBARCHIVE
     std::vector<uint8_t> buf;
     core::BinaryEncoder enc(buf);
     for (const auto& md: mds)
@@ -161,17 +177,31 @@ void LibarchiveOutput::append_metadata()
         throw archive_runtime_error(a, "cannot write entry header");
 
     write_buffer(buf);
-#endif
 }
 
-void LibarchiveOutput::flush()
+void LibarchiveOutput::flush(bool with_metadata)
 {
-#ifdef HAVE_LIBARCHIVE
     if (with_metadata)
         append_metadata();
 
     if (archive_write_close(a) != ARCHIVE_OK)
         throw archive_runtime_error(a, "cannot close archive");
+}
+
+#endif
+
+
+
+ArchiveOutput::~ArchiveOutput()
+{
+}
+
+std::unique_ptr<ArchiveOutput> ArchiveOutput::create(const std::string& format, core::NamedFileDescriptor& out)
+{
+#ifdef HAVE_LIBARCHIVE
+    return std::unique_ptr<ArchiveOutput>(new LibarchiveOutput(format, out));
+#else
+    throw std::runtime_error("libarchive not supported in this build");
 #endif
 }
 

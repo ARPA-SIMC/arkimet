@@ -1,5 +1,5 @@
 #include "arki/core/tests.h"
-#include "libarchive.h"
+#include "arki/metadata/archive.h"
 #include "arki/utils/sys.h"
 
 namespace {
@@ -16,18 +16,18 @@ class Tests : public TestCase
         TestCase::setup();
         skip_unless_libarchive();
     }
-} test("arki_metadata_libarchive");
+} test("arki_metadata_archive");
 
 void Tests::register_tests() {
 
 add_method("tar", [] {
     metadata::TestCollection mds("inbound/test.grib1");
     sys::File out("test.tar", O_WRONLY | O_CREAT | O_TRUNC);
-    metadata::LibarchiveOutput arc_out("tar", out);
-    wassert(arc_out.append(mds[0]));
-    wassert(arc_out.append(mds[1]));
-    wassert(arc_out.append(mds[2]));
-    wassert(arc_out.flush());
+    auto arc_out = metadata::ArchiveOutput::create("tar", out);
+    wassert(arc_out->append(mds[0]));
+    wassert(arc_out->append(mds[1]));
+    wassert(arc_out->append(mds[2]));
+    wassert(arc_out->flush(true));
     out.close();
 
     wassert(actual(system("tar tf test.tar > test.out")) == 0);
@@ -42,11 +42,11 @@ add_method("tar", [] {
 add_method("targz", [] {
     metadata::TestCollection mds("inbound/test.grib1");
     sys::File out("test.tar.gz", O_WRONLY | O_CREAT | O_TRUNC);
-    metadata::LibarchiveOutput arc_out("tar.gz", out);
-    wassert(arc_out.append(mds[0]));
-    wassert(arc_out.append(mds[1]));
-    wassert(arc_out.append(mds[2]));
-    wassert(arc_out.flush());
+    auto arc_out = metadata::ArchiveOutput::create("tar.gz", out);
+    wassert(arc_out->append(mds[0]));
+    wassert(arc_out->append(mds[1]));
+    wassert(arc_out->append(mds[2]));
+    wassert(arc_out->flush(true));
     out.close();
 
     wassert(actual(system("tar ztf test.tar.gz > test.out")) == 0);
@@ -61,11 +61,11 @@ add_method("targz", [] {
 add_method("tarxz", [] {
     metadata::TestCollection mds("inbound/test.grib1");
     sys::File out("test.tar.xz", O_WRONLY | O_CREAT | O_TRUNC);
-    metadata::LibarchiveOutput arc_out("tar.xz", out);
-    wassert(arc_out.append(mds[0]));
-    wassert(arc_out.append(mds[1]));
-    wassert(arc_out.append(mds[2]));
-    wassert(arc_out.flush());
+    auto arc_out = metadata::ArchiveOutput::create("tar.xz", out);
+    wassert(arc_out->append(mds[0]));
+    wassert(arc_out->append(mds[1]));
+    wassert(arc_out->append(mds[2]));
+    wassert(arc_out->flush(true));
     out.close();
 
     wassert(actual(system("tar Jtf test.tar.xz > test.out")) == 0);
@@ -80,11 +80,11 @@ add_method("tarxz", [] {
 add_method("zip", [] {
     metadata::TestCollection mds("inbound/test.grib1");
     sys::File out("test.zip", O_WRONLY | O_CREAT | O_TRUNC);
-    metadata::LibarchiveOutput arc_out("zip", out);
-    wassert(arc_out.append(mds[0]));
-    wassert(arc_out.append(mds[1]));
-    wassert(arc_out.append(mds[2]));
-    wassert(arc_out.flush());
+    auto arc_out = metadata::ArchiveOutput::create("zip", out);
+    wassert(arc_out->append(mds[0]));
+    wassert(arc_out->append(mds[1]));
+    wassert(arc_out->append(mds[2]));
+    wassert(arc_out->flush(true));
     out.close();
 
     wassert(actual(system("unzip -l test.zip > test.out")) == 0);
