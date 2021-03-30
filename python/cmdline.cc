@@ -69,19 +69,12 @@ std::unique_ptr<cmdline::DatasetProcessor> build_processor(std::shared_ptr<arki:
     if (sort) pmaker.sort = std::string(sort, sort_len);
     pmaker.progress = std::make_shared<dataset::PythonProgress>(progress);
 
-    BinaryOutputFile outfile(py_outfile);
-    if (!outfile.fd)
+    std::unique_ptr<arki::StreamOutput> out = binaryio_stream_output(py_outfile);
+    if (archive && archive != Py_None)
     {
-        if (archive && archive != Py_None)
-            throw std::runtime_error("--archive only works when the output goes to a unix file");
-        return pmaker.make(query, StreamOutput::create(outfile.detach_abstract()));
+        return cmdline::ProcessorMaker::make_libarchive(query, std::move(out), string_from_python(archive), pmaker.progress);
     } else {
-        if (archive && archive != Py_None)
-        {
-            return cmdline::ProcessorMaker::make_libarchive(query, outfile.detach_fd(), string_from_python(archive), pmaker.progress);
-        } else {
-            return pmaker.make(query, StreamOutput::create(outfile.detach_fd(), 60000));
-        }
+        return pmaker.make(query, std::move(out));
     }
 }
 

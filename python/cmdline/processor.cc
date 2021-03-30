@@ -85,7 +85,7 @@ struct LibarchiveProcessor : public DatasetProcessor
     std::shared_ptr<arki::metadata::ArchiveOutput> arc_out;
 
     LibarchiveProcessor(
-            Matcher matcher, std::shared_ptr<sys::NamedFileDescriptor> out,
+            Matcher matcher, std::shared_ptr<StreamOutput> out,
             const std::string& format, std::shared_ptr<arki::dataset::QueryProgress> progress)
         : query(matcher, true), arc_out(arki::metadata::ArchiveOutput::create(format, out))
     {
@@ -309,7 +309,7 @@ std::unique_ptr<DatasetProcessor> ProcessorMaker::make(Matcher matcher, std::sha
         return make_metadata(matcher, out);
 }
 
-std::unique_ptr<DatasetProcessor> ProcessorMaker::make_libarchive(Matcher matcher, std::shared_ptr<core::NamedFileDescriptor> out, std::string archive, std::shared_ptr<arki::dataset::QueryProgress> progress)
+std::unique_ptr<DatasetProcessor> ProcessorMaker::make_libarchive(Matcher matcher, std::shared_ptr<StreamOutput> out, std::string archive, std::shared_ptr<arki::dataset::QueryProgress> progress)
 {
     return std::unique_ptr<DatasetProcessor>(new LibarchiveProcessor(matcher, out, archive, progress));
 }
