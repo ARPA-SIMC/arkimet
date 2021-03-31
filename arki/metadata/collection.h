@@ -109,9 +109,6 @@ public:
     void write_to(core::NamedFileDescriptor& out) const;
 
     /// Write all metadata to the given output file
-    void write_to(core::AbstractOutputFile& out) const;
-
-    /// Write all metadata to the given output file
     stream::SendResult write_to(StreamOutput& out) const;
 
     /// Read metadata from \a pathname and append them to this collection

@@ -55,13 +55,6 @@ struct BinaryInputFile : public FileBase<core::AbstractInputFile>
 };
 
 
-/// Turn a python object into an open input file
-struct TextOutputFile : public FileBase<core::AbstractOutputFile>
-{
-    TextOutputFile(PyObject* o);
-};
-
-
 /**
  * Wrap a python TextIO into a StreamOutput
  */

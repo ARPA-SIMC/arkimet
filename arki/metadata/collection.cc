@@ -85,25 +85,6 @@ static void compressAndWrite(const std::vector<uint8_t>& buf, NamedFileDescripto
         out.write(buf.data(), buf.size());
 }
 
-static void compressAndWrite(const std::vector<uint8_t>& buf, AbstractOutputFile& out)
-{
-    auto obuf = compress::lzo(buf.data(), buf.size());
-    if (obuf.size() + 8 < buf.size())
-    {
-        // Write a metadata group
-        vector<uint8_t> tmp;
-        core::BinaryEncoder enc(tmp);
-        enc.add_string("MG");
-        enc.add_unsigned(0u, 2);	// Version 0: LZO compressed
-        enc.add_unsigned(obuf.size() + 4, 4); // Compressed len
-        enc.add_unsigned(buf.size(), 4); // Uncompressed len
-        out.write(tmp.data(), tmp.size());
-        out.write((const char*)obuf.data(), obuf.size());
-    } else
-        // Write the plain metadata
-        out.write(buf.data(), buf.size());
-}
-
 static stream::SendResult compressAndWrite(const std::vector<uint8_t>& buf, StreamOutput& out)
 {
     auto obuf = compress::lzo(buf.data(), buf.size());
@@ -212,25 +193,6 @@ void Collection::acquire(std::shared_ptr<Metadata> md, bool with_data)
 }
 
 void Collection::write_to(NamedFileDescriptor& out) const
-{
-    static const size_t blocksize = 256;
-
-    std::vector<uint8_t> buf;
-    core::BinaryEncoder enc(buf);
-    for (size_t i = 0; i < vals.size(); ++i)
-    {
-        if (i > 0 && (i % blocksize) == 0)
-        {
-            compressAndWrite(buf, out);
-            buf.clear();
-        }
-        vals[i]->encodeBinary(enc);
-    }
-    if (!buf.empty())
-        compressAndWrite(buf, out);
-}
-
-void Collection::write_to(AbstractOutputFile& out) const
 {
     static const size_t blocksize = 256;
 

@@ -670,30 +670,6 @@ void Metadata::write(NamedFileDescriptor& out) const
     m_data->write_inline(out);
 }
 
-void Metadata::write(AbstractOutputFile& out) const
-{
-    // Prepare the encoded data
-    std::vector<uint8_t> encoded = encodeBinary();
-
-    // Write out
-    out.write(encoded.data(), encoded.size());
-
-    // If the source is inline, then the data follows the metadata
-    const Source* s = m_index.get_source();
-    if (s->style() != Source::Style::INLINE)
-        return;
-
-    // Having checked the style, we can reinterpret_cast
-    const source::Inline* si = reinterpret_cast<const source::Inline*>(s);
-    if (si->size != m_data->size())
-    {
-        stringstream ss;
-        ss << "cannot write metadata to file " << out.name() << ": metadata size " << si->size << " does not match the data size " << m_data->size();
-        throw runtime_error(ss.str());
-    }
-    m_data->write_inline(out);
-}
-
 void Metadata::write(StreamOutput& out) const
 {
     // Prepare the encoded data

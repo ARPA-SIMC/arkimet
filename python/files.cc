@@ -326,41 +326,6 @@ BinaryInputFile::BinaryInputFile(PyObject* o)
 }
 
 
-TextOutputFile::TextOutputFile(PyObject* o)
-{
-    // If it is already an int handle, use it
-    if (PyLong_Check(o))
-    {
-        fd = new core::NamedFileDescriptor(int_from_python(o), get_fd_name(o));
-        return;
-    }
-
-    // If it is a string, take it as a file name
-    if (PyUnicode_Check(o))
-    {
-        std::string pathname = from_python<std::string>(o);
-        fd = new core::File(pathname, O_WRONLY | O_CREAT | O_TRUNC, 0666);
-        return;
-    }
-
-    // Try calling fileno
-    pyo_unique_ptr fileno(PyObject_CallMethod(o, "fileno", nullptr));
-    if (fileno)
-    {
-        // It would be nice to give up and fallback to AbstractInputFile if
-        // there are bytes in the read buffer of o, but there seems to be no
-        // way to know
-        fd = new core::NamedFileDescriptor(int_from_python(fileno), get_fd_name(o));
-        return;
-    }
-
-    PyErr_Clear();
-
-    // Fall back on calling o.write()
-    abstract = new PyAbstractTextOutputFile(o);
-}
-
-
 std::unique_ptr<StreamOutput> textio_stream_output(PyObject* o)
 {
     // If it is already an int handle, use it

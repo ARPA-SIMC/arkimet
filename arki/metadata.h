@@ -391,11 +391,6 @@ public:
     void write(core::NamedFileDescriptor& out) const;
 
     /**
-     * Write the metadata to the given output stream.
-     */
-    void write(core::AbstractOutputFile& out) const;
-
-    /**
      * Write the metadata to the stream output.
      */
     void write(StreamOutput& out) const;
