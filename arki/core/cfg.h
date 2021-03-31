@@ -6,6 +6,7 @@
 #include <map>
 #include <string>
 #include <memory>
+#include <iosfwd>
 
 namespace arki {
 namespace core {
@@ -36,8 +37,6 @@ class Sections;
  */
 class Section : protected std::map<std::string, std::string>
 {
-protected:
-
 public:
     using std::map<std::string, std::string>::map;
     using std::map<std::string, std::string>::clear;
@@ -74,11 +73,11 @@ public:
     /// Set a value converting an integer value to a string
     void set(const std::string& key, int value);
 
-    /// Write this configuration to the given output stream
-    void write(core::NamedFileDescriptor& out) const;
+    /// Serialize to a string
+    std::string to_string() const;
 
-    /// Write this configuration to the given output stream
-    void write(core::AbstractOutputFile& out) const;
+    /// Write to then given output stream
+    void write(std::ostream& out) const;
 
     /// Dump the configuration to the given file
     void dump(FILE* out) const;
@@ -99,8 +98,6 @@ public:
  */
 class Sections : protected std::map<std::string, std::shared_ptr<Section>>
 {
-protected:
-
 public:
     using std::map<std::string, std::shared_ptr<Section>>::map;
     using std::map<std::string, std::shared_ptr<Section>>::clear;
@@ -137,11 +134,11 @@ public:
     /// Retrieve a section from this config file, creating it if it is missing.
     std::shared_ptr<Section> obtain(const std::string& key);
 
-    /// Write this configuration to the given output stream
-    void write(core::NamedFileDescriptor& out) const;
+    /// Serialize to a string
+    std::string to_string() const;
 
-    /// Write this configuration to the given output stream
-    void write(core::AbstractOutputFile& out) const;
+    /// Write to then given output stream
+    void write(std::ostream& out) const;
 
     /// Dump the configuration to the given file
     void dump(FILE* out) const;

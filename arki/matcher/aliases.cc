@@ -1,6 +1,7 @@
 #include "aliases.h"
 #include "utils.h"
 #include "arki/core/cfg.h"
+#include "arki/core/file.h"
 #include "arki/utils/string.h"
 #include "arki/core/curl.h"
 #include <vector>
@@ -149,14 +150,14 @@ std::shared_ptr<core::cfg::Sections> AliasDatabase::serialise()
 
 void AliasDatabase::debug_dump(core::NamedFileDescriptor& out)
 {
-    auto cfg = serialise();
-    cfg->write(out);
+    auto cfg = serialise()->to_string();
+    out.write_all_or_retry(cfg.data(), cfg.size());
 }
 
 void AliasDatabase::debug_dump(core::AbstractOutputFile& out)
 {
-    auto cfg = serialise();
-    cfg->write(out);
+    auto cfg = serialise()->to_string();
+    out.write(cfg.data(), cfg.size());
 }
 
 

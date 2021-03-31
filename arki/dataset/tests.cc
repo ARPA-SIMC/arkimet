@@ -156,7 +156,8 @@ Dataset& DatasetTest::config()
     {
         sys::mkdir_ifmissing(ds_root);
         sys::File out(str::joinpath(ds_root, "config"), O_WRONLY | O_CREAT | O_TRUNC, 0666);
-        cfg->write(out);
+        auto s = cfg->to_string();
+        out.write_all_or_retry(s.data(), s.size());
         m_dataset = session()->dataset(*cfg);
     }
     return *m_dataset;
@@ -341,7 +342,8 @@ void DatasetTest::clean()
     if (sys::exists(ds_root)) sys::rmtree(ds_root);
     sys::mkdir_ifmissing(ds_root);
     sys::File out(str::joinpath(ds_root, "config"), O_WRONLY | O_CREAT | O_TRUNC, 0666);
-    cfg->write(out);
+    auto s = cfg->to_string();
+    out.write_all_or_retry(s.data(), s.size());
     import_results.clear();
 }
 

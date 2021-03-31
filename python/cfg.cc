@@ -5,6 +5,7 @@
 #include "utils/values.h"
 #include "arki/utils/files.h"
 #include "arki/core/file.h"
+#include "arki/stream.h"
 #include "common.h"
 #include "files.h"
 
@@ -327,11 +328,9 @@ struct write_sections : public MethKwargs<write_sections, arkipy_cfgSections>
             return nullptr;
 
         try {
-            TextOutputFile out(arg_file);
-            if (out.fd)
-                self->ptr->write(*out.fd);
-            else
-                self->ptr->write(*out.abstract);
+            auto out = textio_stream_output(arg_file);
+            auto s = self->ptr->to_string();
+            out->send_buffer(s.data(), s.size());
             Py_RETURN_NONE;
         } ARKI_CATCH_RETURN_PYO
     }
@@ -353,11 +352,9 @@ struct write_section : public MethKwargs<write_section, arkipy_cfgSection>
             return nullptr;
 
         try {
-            TextOutputFile out(arg_file);
-            if (out.fd)
-                self->ptr->write(*out.fd);
-            else
-                self->ptr->write(*out.abstract);
+            auto out = textio_stream_output(arg_file);
+            auto s = self->ptr->to_string();
+            out->send_buffer(s.data(), s.size());
             Py_RETURN_NONE;
         } ARKI_CATCH_RETURN_PYO
     }
