@@ -470,31 +470,6 @@ this->add_method("progress", [](Fixture& f) {
     wassert(actual(e.what()) = "Expected error");
 });
 
-#if 0
-// TODO: with_data is currently ignored by all datasets except http
-this->add_method("read_data_missing_segment", [](Fixture& f) {
-    // Delete a segment, leaving it in the index
-    f.segments().remove(f.import_results[0].sourceBlob().filename);
-
-    unsigned count_ok = 0;
-    unsigned count_err = 0;
-    auto reader = f.dataset_config()->create_reader();
-    reader->query_data(dataset::DataQuery(Matcher(), true), [&](unique_ptr<Metadata> md) {
-        try {
-            md->getData();
-            ++count_ok;
-        } catch (std::runtime_error& e) {
-            wassert(actual(e.what()).contains("the segment has disappeared"));
-            ++count_err;
-        }
-        return true;
-    });
-
-    wassert(actual(count_ok) == 3u);
-    wassert(actual(count_err) == 0u);
-});
-#endif
-
 }
 
 }

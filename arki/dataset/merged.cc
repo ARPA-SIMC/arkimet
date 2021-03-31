@@ -338,7 +338,6 @@ void Reader::impl_stream_query_bytes(const dataset::ByteQuery& q, StreamOutput& 
     // remote, and that would mean doing postprocessing on the client side,
     // potentially transferring terabytes of data just to produce a number
 
-    // TODO: data_start_hook may be called more than once here
     // TODO: we might be able to do something smarter, like if we're merging
     // many datasets from the same server we can run it all there; if we're
     // merging all local datasets, wrap queryData; and so on.
