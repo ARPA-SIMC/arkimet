@@ -96,11 +96,6 @@ public:
     static std::unique_ptr<StreamOutput> create(std::shared_ptr<core::NamedFileDescriptor> out, unsigned timeout_ms);
 
     /**
-     * Create a Streamoutput to stream to an abstract output file
-     */
-    static std::unique_ptr<StreamOutput> create(std::shared_ptr<core::AbstractOutputFile> out);
-
-    /**
      * Create a Streamoutput to stream to a memory buffer
      */
     static std::unique_ptr<StreamOutput> create(std::vector<uint8_t>& out);

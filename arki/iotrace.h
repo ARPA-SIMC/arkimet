@@ -89,9 +89,6 @@ void trace_file(core::NamedFileDescriptor& fd, off_t offset, size_t size, const 
 /// Specialised implementation AbstractInputFile
 void trace_file(core::AbstractInputFile& fd, off_t offset, size_t size, const char* desc);
 
-/// Specialised implementation AbstractOutputFile
-void trace_file(core::AbstractOutputFile& fd, off_t offset, size_t size, const char* desc);
-
 /// Specialised implementation StreamOutput
 void trace_file(StreamOutput& fd, off_t offset, size_t size, const char* desc);
 

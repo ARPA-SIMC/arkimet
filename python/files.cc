@@ -239,17 +239,6 @@ struct PyAbstractBinaryInputFile : public PyFile<arki::core::AbstractInputFile>
     }
 };
 
-struct PyAbstractTextOutputFile : public PyFile<arki::core::AbstractOutputFile>
-{
-    using PyFile::PyFile;
-
-    void write(const void* data, size_t size) override
-    {
-        AcquireGIL gil;
-        pyo_unique_ptr res(throw_ifnull(PyObject_CallMethod(o, "write", "s#", (const char*)data, (Py_ssize_t)size)));
-    }
-};
-
 }
 
 

@@ -2,6 +2,7 @@
 #include "utils.h"
 #include "arki/core/cfg.h"
 #include "arki/core/file.h"
+#include "arki/stream.h"
 #include "arki/utils/string.h"
 #include "arki/core/curl.h"
 #include <vector>
@@ -154,10 +155,10 @@ void AliasDatabase::debug_dump(core::NamedFileDescriptor& out)
     out.write_all_or_retry(cfg.data(), cfg.size());
 }
 
-void AliasDatabase::debug_dump(core::AbstractOutputFile& out)
+stream::SendResult AliasDatabase::debug_dump(StreamOutput& out)
 {
     auto cfg = serialise()->to_string();
-    out.write(cfg.data(), cfg.size());
+    return out.send_buffer(cfg.data(), cfg.size());
 }
 
 

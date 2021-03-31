@@ -59,39 +59,6 @@ struct AbstractInputFile
 
 
 /**
- * Abstract output file implementation to use for output operation on things
- * that are not file descriptors
- */
-struct AbstractOutputFile
-{
-    virtual ~AbstractOutputFile();
-
-    virtual std::string name() const = 0;
-
-    /// Write \a size bytes of data
-    virtual void write(const void* data, size_t size) = 0;
-};
-
-
-/**
- * AbstractOutputFile that writes characters to a memory buffer
- */
-class BufferOutputFile: public AbstractOutputFile
-{
-protected:
-    std::vector<uint8_t>& buffer;
-    std::string m_name;
-
-public:
-    BufferOutputFile(std::vector<uint8_t>& buffer, const std::string& name);
-
-    std::string name() const override;
-
-    void write(const void* data, size_t size) override;
-};
-
-
-/**
  * Generic abstract input interface, with buffering
  */
 struct BufferedReader

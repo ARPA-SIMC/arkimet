@@ -105,19 +105,6 @@ void trace_file(core::AbstractInputFile& fd, off_t offset, size_t size, const ch
     }
 }
 
-void trace_file(core::AbstractOutputFile& fd, off_t offset, size_t size, const char* desc)
-{
-    if (listeners)
-    {
-        Event ev;
-        ev.filename = fd.name();
-        ev.offset = offset;
-        ev.size = size;
-        ev.desc = desc;
-        listeners->process(ev);
-    }
-}
-
 void trace_file(StreamOutput& out, off_t offset, size_t size, const char* desc)
 {
     if (listeners)

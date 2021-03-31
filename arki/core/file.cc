@@ -12,19 +12,6 @@ Stdout::Stdout() : NamedFileDescriptor(1, "(stdout)") {}
 Stderr::Stderr() : NamedFileDescriptor(2, "(stderr)") {}
 
 AbstractInputFile::~AbstractInputFile() {}
-AbstractOutputFile::~AbstractOutputFile() {}
-
-BufferOutputFile::BufferOutputFile(std::vector<uint8_t>& buffer, const std::string& name)
-    : buffer(buffer), m_name(name)
-{
-}
-
-std::string BufferOutputFile::name() const { return m_name; }
-void BufferOutputFile::write(const void* data, size_t size)
-{
-    buffer.insert(buffer.end(), static_cast<const uint8_t*>(data), static_cast<const uint8_t*>(data) + size);
-}
-
 
 /*
  * BufferedReader

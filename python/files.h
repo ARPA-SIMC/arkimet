@@ -27,7 +27,7 @@ struct FileBase
 
     std::shared_ptr<AbstractFile> detach_abstract()
     {
-        std::shared_ptr<core::AbstractOutputFile> res(abstract);
+        std::shared_ptr<AbstractFile> res(abstract);
         abstract = nullptr;
         return res;
     }

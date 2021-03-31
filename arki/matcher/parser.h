@@ -3,6 +3,7 @@
 
 /// Metadata match expressions
 #include <arki/matcher.h>
+#include <arki/stream/fwd.h>
 #include <unordered_set>
 
 namespace arki {
@@ -59,7 +60,7 @@ public:
      *
      * (used for debugging purposes)
      */
-    void debug_dump_aliases(core::AbstractOutputFile& out) const;
+    stream::SendResult debug_dump_aliases(StreamOutput& out) const;
 };
 
 }

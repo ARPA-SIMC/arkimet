@@ -19,7 +19,6 @@ struct Stdin;
 struct Stdout;
 struct Stderr;
 struct AbstractInputFile;
-struct AbstractOutputFile;
 
 struct BufferedReader;
 class LineReader;
