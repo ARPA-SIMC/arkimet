@@ -44,6 +44,13 @@ public:
     virtual void set_data_start_callback(std::function<stream::SendResult(StreamOutput&)>) = 0;
 
     /**
+     * Stream the contents of a memory buffer.
+     *
+     * Returns the number of bytes written, which is always size.
+     */
+    virtual stream::SendResult send_buffer(const void* data, size_t size) = 0;
+
+    /**
      * Stream a line of text, adding a newline.
      *
      * Returns the number of bytes written, which is always size + the size of
@@ -57,13 +64,6 @@ public:
      * Returns the number of bytes written, which is always size.
      */
     virtual stream::SendResult send_file_segment(arki::core::NamedFileDescriptor& fd, off_t offset, size_t size) = 0;
-
-    /**
-     * Stream the contents of a memory buffer.
-     *
-     * Returns the number of bytes written, which is always size.
-     */
-    virtual stream::SendResult send_buffer(const void* data, size_t size) = 0;
 
     /**
      * Stream an arbitrary chunk of data from a pipe.

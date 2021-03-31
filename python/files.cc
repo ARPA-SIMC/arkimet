@@ -1,6 +1,6 @@
 #include "files.h"
 #include "utils/values.h"
-#include "arki/stream.h"
+#include "arki/stream/base.h"
 #include "common.h"
 #include <string>
 
@@ -27,6 +27,137 @@ static std::string get_fd_name(PyObject* o)
 
     throw PythonException();
 }
+
+class PythonStreamOutput : public arki::stream::BaseStreamOutput
+{
+protected:
+    PyObject* o;
+
+public:
+    PythonStreamOutput(PyObject* o)
+        : o(o)
+    {
+        Py_INCREF(o);
+    }
+    PythonStreamOutput(const PythonStreamOutput&) = delete;
+    PythonStreamOutput(PythonStreamOutput&&) = delete;
+    PythonStreamOutput& operator=(const PythonStreamOutput&) = delete;
+    PythonStreamOutput& operator=(PythonStreamOutput&&) = delete;
+    ~PythonStreamOutput()
+    {
+        Py_DECREF(o);
+    }
+
+    std::string name() const override
+    {
+        AcquireGIL gil;
+        return get_fd_name(o);
+    }
+};
+
+
+class PythonTextStreamOutput : public PythonStreamOutput
+{
+public:
+    using PythonStreamOutput::PythonStreamOutput;
+
+    arki::stream::SendResult send_buffer(const void* data, size_t size) override
+    {
+        using namespace arki::stream;
+        SendResult result;
+        if (size == 0)
+            return result;
+
+        if (data_start_callback)
+            result += fire_data_start_callback();
+
+        {
+            AcquireGIL gil;
+            pyo_unique_ptr res(throw_ifnull(PyObject_CallMethod(o, "write", "s#", (const char*)data, (Py_ssize_t)size)));
+        }
+
+        if (progress_callback)
+            progress_callback(size);
+        result.sent += size;
+
+        return result;
+    }
+
+    arki::stream::SendResult send_line(const void* data, size_t size) override
+    {
+        using namespace arki::stream;
+        SendResult result;
+
+        if (size == 0)
+            return result;
+
+        if (data_start_callback)
+            result += fire_data_start_callback();
+
+        {
+            AcquireGIL gil;
+            pyo_unique_ptr res(throw_ifnull(PyObject_CallMethod(o, "write", "s#", (const char*)data, (Py_ssize_t)size)));
+            res = throw_ifnull(PyObject_CallMethod(o, "write", "C", (int)'\n'));
+        }
+        if (progress_callback)
+            progress_callback(size + 1);
+
+        result.sent += size + 1;
+        return result;
+    }
+};
+
+
+class PythonBinaryStreamOutput : public PythonStreamOutput
+{
+public:
+    using PythonStreamOutput::PythonStreamOutput;
+
+    arki::stream::SendResult send_buffer(const void* data, size_t size) override
+    {
+        using namespace arki::stream;
+        SendResult result;
+        if (size == 0)
+            return result;
+
+        if (data_start_callback)
+            result += fire_data_start_callback();
+
+        {
+            AcquireGIL gil;
+            pyo_unique_ptr res(throw_ifnull(PyObject_CallMethod(o, "write", "y#", (const char*)data, (Py_ssize_t)size)));
+        }
+
+        if (progress_callback)
+            progress_callback(size);
+        result.sent += size;
+
+        return result;
+    }
+
+    arki::stream::SendResult send_line(const void* data, size_t size) override
+    {
+        using namespace arki::stream;
+        SendResult result;
+
+        if (size == 0)
+            return result;
+
+        if (data_start_callback)
+            result += fire_data_start_callback();
+
+        {
+            AcquireGIL gil;
+            pyo_unique_ptr res(throw_ifnull(PyObject_CallMethod(o, "write", "y#", (const char*)data, (Py_ssize_t)size)));
+            res = throw_ifnull(PyObject_CallMethod(o, "write", "c", (int)'\n'));
+        }
+        if (progress_callback)
+            progress_callback(size + 1);
+
+        result.sent += size + 1;
+        return result;
+    }
+};
 
 
 template<typename Base>
@@ -301,8 +432,7 @@ std::unique_ptr<StreamOutput> textio_stream_output(PyObject* o)
     PyErr_Clear();
 
     // Fall back on calling o.write()
-    // TODO: implement a Python StreamOutput, to get rid of the intermediate indirection layer
-    return StreamOutput::create(std::make_shared<PyAbstractTextOutputFile>(o));
+    return std::unique_ptr<StreamOutput>(new PythonTextStreamOutput(o));
 }
 
 
@@ -331,8 +461,7 @@ std::unique_ptr<StreamOutput> binaryio_stream_output(PyObject* o)
     PyErr_Clear();
 
     // Fall back on calling o.write()
-    // TODO: implement a Python StreamOutput, to get rid of the intermediate indirection layer
-    return StreamOutput::create(std::make_shared<PyAbstractBinaryOutputFile>(o));
+    return std::unique_ptr<StreamOutput>(new PythonBinaryStreamOutput(o));
 }
 
 }
