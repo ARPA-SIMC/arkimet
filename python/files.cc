@@ -322,7 +322,8 @@ std::unique_ptr<StreamOutput> textio_stream_output(PyObject* o)
 
     // If it is already an int handle, use it
     if (PyLong_Check(o))
-        return StreamOutput::create(std::make_shared<core::NamedFileDescriptor>(int_from_python(o), get_fd_name(o)), cfg.io_timeout_ms);
+        return StreamOutput::create(
+                std::make_shared<core::NamedFileDescriptor>(int_from_python(o), get_fd_name(o)), cfg.io_timeout_ms);
 
     // If it is a string, take it as a file name
     if (PyUnicode_Check(o))
@@ -355,7 +356,8 @@ std::unique_ptr<StreamOutput> binaryio_stream_output(PyObject* o)
 
     // If it is already an int handle, use it
     if (PyLong_Check(o))
-        return StreamOutput::create(std::make_shared<core::NamedFileDescriptor>(int_from_python(o), get_fd_name(o)), cfg.io_timeout_ms);
+        return StreamOutput::create(
+                std::make_shared<core::NamedFileDescriptor>(int_from_python(o), get_fd_name(o)), cfg.io_timeout_ms);
 
     // If it is a string, take it as a file name
     if (PyUnicode_Check(o))
