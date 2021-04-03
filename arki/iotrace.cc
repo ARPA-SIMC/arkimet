@@ -1,6 +1,7 @@
 #include "arki/iotrace.h"
 #include "arki/exceptions.h"
 #include "arki/core/file.h"
+#include "arki/stream.h"
 #include "arki/runtime.h"
 #include <vector>
 #include <ostream>
@@ -104,12 +105,12 @@ void trace_file(core::AbstractInputFile& fd, off_t offset, size_t size, const ch
     }
 }
 
-void trace_file(core::AbstractOutputFile& fd, off_t offset, size_t size, const char* desc)
+void trace_file(StreamOutput& out, off_t offset, size_t size, const char* desc)
 {
     if (listeners)
     {
         Event ev;
-        ev.filename = fd.name();
+        ev.filename = out.name();
         ev.offset = offset;
         ev.size = size;
         ev.desc = desc;

@@ -3,6 +3,7 @@
 #include "arki/dispatcher.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
+#include "arki/stream.h"
 #include "arki/nag.h"
 #include "arki/metadata.h"
 #include "arki/metadata/validator.h"
@@ -39,14 +40,28 @@ DispatchResults MetadataDispatch::process(dataset::Reader& ds, const std::string
     results->clear();
 
     if (!dir_copyok.empty())
-        copyok.reset(new core::File(str::joinpath(dir_copyok, str::basename(name))));
+    {
+        copyok = std::make_shared<core::File>(str::joinpath(dir_copyok, str::basename(name)));
+        // We are writing to a file, not a pipe, so we do not need a timeout
+        copyok_stream = StreamOutput::create(copyok);
+    }
     else
+    {
         copyok.reset();
+        copyok_stream.reset();
+    }
 
     if (!dir_copyko.empty())
-        copyko.reset(new core::File(str::joinpath(dir_copyko, str::basename(name))));
+    {
+        copyko = std::make_shared<core::File>(str::joinpath(dir_copyko, str::basename(name)));
+        // We are writing to a file, not a pipe, so we do not need a timeout
+        copyko_stream = StreamOutput::create(copyko);
+    }
     else
+    {
         copyko.reset();
+        copyko_stream.reset();
+    }
 
     // Read
     try {
@@ -132,7 +147,7 @@ void MetadataDispatch::do_copyok(Metadata& md)
     if (!copyok->is_open())
         copyok->open(O_WRONLY | O_APPEND | O_CREAT);
 
-    md.stream_data(*copyok);
+    md.stream_data(*copyok_stream);
 }
 
 void MetadataDispatch::do_copyko(Metadata& md)
@@ -143,7 +158,7 @@ void MetadataDispatch::do_copyko(Metadata& md)
     if (!copyko->is_open())
         copyko->open(O_WRONLY | O_APPEND | O_CREAT);
 
-    md.stream_data(*copyko);
+    md.stream_data(*copyko_stream);
 }
 
 void MetadataDispatch::flush()

@@ -234,13 +234,13 @@ struct config : public MethNoargs<config, PyObject>
             set_dict(result, "format", describe_dirlist(cfg.dir_formatter, "Formatter scripts", "ARKI_FORMATTER"));
             set_dict(result, "bbox", describe_dirlist(cfg.dir_bbox, "Bounding box scripts", "ARKI_BBOX"));
             set_dict(result, "postproc", describe_dirlist(cfg.dir_postproc, "Postprocessors", "ARKI_POSTPROC"));
-            set_dict(result, "report", describe_dirlist(cfg.dir_report, "Report scripts", "ARKI_REPORT"));
             set_dict(result, "qmacro", describe_dirlist(cfg.dir_qmacro, "Query macro scripts", "ARKI_QMACRO"));
             set_dict(result, "scan", describe_dirlist(cfg.dir_scan, "Scan scripts", "ARKI_SCAN"));
             set_dict(result, "scan_odimh5", describe_dirlist(cfg.dir_scan_odimh5, "ODIMH5 scan scripts", "ARKI_SCAN_ODIMH5"));
             set_dict(result, "bufr", describe_dirlist(cfg.dir_scan_bufr, "BUFR scan scripts", "ARKI_SCAN_BUFR"));
             set_dict(result, "iotrace", describe_string(cfg.file_iotrace_output, "I/O profiling log file", "ARKI_IOTRACE"));
-            set_dict(result, "vm2_config", describe_string(cfg.file_vm2_config, "VM2 configuration file", "ARKI_VM2_FILE"));
+            set_dict(result, "io_timeout_ms", describe_string(std::to_string(cfg.io_timeout_ms),
+                     "I/O timeout in milliseconds (set using decimal seconds, 0: no timeout)", "ARKI_IO_TIMEOUT"));
             return result.release();
         } ARKI_CATCH_RETURN_PYO
     }

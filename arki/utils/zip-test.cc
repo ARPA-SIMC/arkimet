@@ -1,7 +1,8 @@
 #include "arki/core/tests.h"
 #include "arki/metadata.h"
 #include "arki/metadata/data.h"
-#include "arki/metadata/libarchive.h"
+#include "arki/metadata/archive.h"
+#include "arki/metadata/collection.h"
 #include "arki/segment.h"
 #include "arki/utils/sys.h"
 #include "zip.h"
@@ -25,13 +26,12 @@ add_method("read", [] {
 
     metadata::TestCollection mds("inbound/fixture.grib1");
     {
-        sys::File outfd("test.zip", O_WRONLY | O_TRUNC | O_CREAT);
-        metadata::LibarchiveOutput writer("zip", outfd);
-        wassert(writer.subdir.clear());
-        wassert(writer.append(mds[0]));
-        wassert(writer.append(mds[1]));
-        wassert(writer.append(mds[2]));
-        wassert(writer.flush());
+        auto writer = metadata::ArchiveOutput::create("zip", std::make_shared<sys::File>("test.zip", O_WRONLY | O_TRUNC | O_CREAT));
+        wassert(writer->set_subdir(std::string()));
+        wassert(writer->append(mds[0]));
+        wassert(writer->append(mds[1]));
+        wassert(writer->append(mds[2]));
+        wassert(writer->flush(true));
     }
 
     sys::File infd("test.zip", O_RDONLY);

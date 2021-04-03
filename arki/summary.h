@@ -6,6 +6,7 @@
 #include <arki/metadata/fwd.h>
 #include <arki/structured/fwd.h>
 #include <arki/matcher/fwd.h>
+#include <arki/stream/fwd.h>
 #include <arki/utils/geosfwd.h>
 #include <vector>
 #include <set>
@@ -150,19 +151,13 @@ public:
 
     /**
      * Write the summary to the given output file.
-     *
-     * The filename string is used to generate nicer parse error messages when
-     * throwing exceptions, and can be anything.
      */
     void write(core::NamedFileDescriptor& out) const;
 
     /**
      * Write the summary to the given output file.
-     *
-     * The filename string is used to generate nicer parse error messages when
-     * throwing exceptions, and can be anything.
      */
-    void write(core::AbstractOutputFile& out) const;
+    stream::SendResult write(StreamOutput& out) const;
 
 	/**
 	 * Write the summary to the given file name.
@@ -181,11 +176,6 @@ public:
      * Write the summary as YAML text to the given output stream.
      */
     void write_yaml(core::NamedFileDescriptor& out, const Formatter* f=nullptr) const;
-
-    /**
-     * Write the summary as YAML text to the given output stream.
-     */
-    void write_yaml(core::AbstractOutputFile& out, const Formatter* f=nullptr) const;
 
     /// Serialise using an emitter
     void serialise(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const;

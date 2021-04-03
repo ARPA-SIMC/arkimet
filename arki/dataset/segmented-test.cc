@@ -5,6 +5,7 @@
 #include "maintenance.h"
 #include "arki/exceptions.h"
 #include "arki/core/file.h"
+#include "arki/stream.h"
 #include "arki/dataset/time.h"
 #include "arki/dataset/query.h"
 #include "arki/types/source/blob.h"
@@ -396,24 +397,32 @@ add_method("query_archived", [](Fixture& f) {
     wassert(actual(mdc.size()) == 1u);
 
     // Query bytes
-    sys::File out(sys::File::mkstemp("test"));
-    dataset::ByteQuery bq;
-    bq.setData(Matcher());
-    reader->query_bytes(bq, out);
-    string res = sys::read_file(out.name());
-    wassert(actual(res.size()) == 44412u);
+    {
+        std::vector<uint8_t> buf;
+        auto out(StreamOutput::create(buf));
+        dataset::ByteQuery bq;
+        bq.setData(Matcher());
+        reader->query_bytes(bq, *out);
+        wassert(actual(buf.size()) == 44412u);
+    }
 
-    out.lseek(0); out.ftruncate(0);
-    bq.matcher = parser.parse("origin:GRIB1,200");
-    reader->query_bytes(bq, out);
-    res = sys::read_file(out.name());
-    wassert(actual(res.size()) == 7218u);
+    {
+        std::vector<uint8_t> buf;
+        auto out(StreamOutput::create(buf));
+        dataset::ByteQuery bq;
+        bq.setData(parser.parse("origin:GRIB1,200"));
+        reader->query_bytes(bq, *out);
+        wassert(actual(buf.size()) == 7218u);
+    }
 
-    out.lseek(0); out.ftruncate(0);
-    bq.matcher = parser.parse("reftime:=2007-07-08");
-    reader->query_bytes(bq, out);
-    res = sys::read_file(out.name());
-    wassert(actual(res.size()) == 7218u);
+    {
+        std::vector<uint8_t> buf;
+        auto out(StreamOutput::create(buf));
+        dataset::ByteQuery bq;
+        bq.setData(parser.parse("reftime:=2007-07-08"));
+        reader->query_bytes(bq, *out);
+        wassert(actual(buf.size()) == 7218u);
+    }
 
     /* TODO
         case BQ_POSTPROCESS:
@@ -453,12 +462,12 @@ add_method("empty_dirs", [](Fixture& f) {
     reader->query_summary("", s);
     wassert(actual(s.count()) == 0u);
 
-    sys::File out(sys::File::mkstemp("test"));
+    std::vector<uint8_t> buf;
+    auto out(StreamOutput::create(buf));
     dataset::ByteQuery bq;
     bq.setData(parser.parse(""));
-    reader->query_bytes(bq, out);
-    out.close();
-    wassert(actual(sys::size(out.name())) == 0u);
+    reader->query_bytes(bq, *out);
+    wassert(actual(buf.size()) == 0u);
 });
 add_method("query_lots", [](Fixture& f) {
     // Test querying with lots of data, to trigger on disk metadata buffering

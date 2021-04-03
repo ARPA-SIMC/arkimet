@@ -7,6 +7,7 @@
 #include "arki/dataset/session.h"
 #include "arki/dataset/pool.h"
 #include "arki/dataset/fromfunction.h"
+#include "arki/stream.h"
 #include "arki/nag.h"
 #include "utils/core.h"
 #include "utils/methods.h"
@@ -66,23 +67,14 @@ std::unique_ptr<cmdline::DatasetProcessor> build_processor(std::shared_ptr<arki:
     if (postproc) pmaker.postprocess = std::string(postproc, postproc_len);
     if (summary_restrict) pmaker.summary_restrict = std::string(summary_restrict, summary_restrict_len);
     if (sort) pmaker.sort = std::string(sort, sort_len);
-    if (archive && archive != Py_None)
-        pmaker.archive = string_from_python(archive);
     pmaker.progress = std::make_shared<dataset::PythonProgress>(progress);
 
-    BinaryOutputFile outfile(py_outfile);
-
-    if (!outfile.fd)
+    std::unique_ptr<arki::StreamOutput> out = binaryio_stream_output(py_outfile);
+    if (archive && archive != Py_None)
     {
-        std::shared_ptr<core::AbstractOutputFile> out(outfile.abstract);
-        outfile.abstract = nullptr;
-        auto processor = pmaker.make(query, std::move(out));
-        return processor;
+        return cmdline::ProcessorMaker::make_libarchive(query, std::move(out), string_from_python(archive), pmaker.progress);
     } else {
-        std::shared_ptr<sys::NamedFileDescriptor> fd(outfile.fd);
-        outfile.fd = nullptr;
-        auto processor = pmaker.make(query, std::move(fd));
-        return processor;
+        return pmaker.make(query, std::move(out));
     }
 }
 

@@ -22,6 +22,13 @@ nobase_dist_arkiinclude_HEADERS = \
 		core/binary.h \
 		core/transaction.h \
 		core/curl.h \
+		stream.h \
+		stream/base.h \
+		stream/concrete.h \
+		stream/concrete-timeout.h \
+		stream/discard.h \
+		stream/buffer.h \
+		stream/tests.h \
 		defs.h \
 		exceptions.h \
 		bbox.h \
@@ -105,7 +112,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		metadata/collection.h \
 		metadata/clusterer.h \
 		metadata/xargs.h \
-		metadata/libarchive.h \
+		metadata/archive.h \
 		metadata/fwd.h \
 		metadata/postprocess.h \
 		metadata/sort.h \
@@ -229,6 +236,12 @@ libarkimet_la_SOURCES += \
 		core/binary.cc \
 		core/transaction.cc \
 		core/curl.cc \
+		stream.cc \
+		stream/base.cc \
+		stream/concrete.cc \
+		stream/concrete-timeout.cc \
+		stream/discard.cc \
+		stream/buffer.cc \
 		exceptions.cc \
 		nag.cc \
 		utils/accounting.cc \
@@ -303,7 +316,7 @@ libarkimet_la_SOURCES += \
 		metadata/collection.cc \
 		metadata/stream.cc \
 		metadata/clusterer.cc \
-		metadata/libarchive.cc \
+		metadata/archive.cc \
 		metadata/validator.cc \
 		metadata/postprocess.cc \
 		metadata/test-generator.cc \
@@ -346,6 +359,13 @@ tests_arki_test_SOURCES += \
 		core/binary-test.cc \
 		core/transaction-test.cc \
 		core/curl-test.cc \
+		stream-test.cc \
+		stream/base-test.cc \
+		stream/concrete-test.cc \
+		stream/concrete-timeout-test.cc \
+		stream/discard-test.cc \
+		stream/buffer-test.cc \
+		stream/tests.cc \
 		utils/accounting-test.cc \
 		utils/gzip-test.cc \
 		utils/yaml-test.cc \
@@ -392,7 +412,7 @@ tests_arki_test_SOURCES += \
 		metadata/collection-test.cc \
 		metadata/clusterer-test.cc \
 		metadata/stream-test.cc \
-		metadata/libarchive-test.cc \
+		metadata/archive-test.cc \
 		metadata/validator-test.cc \
 		metadata/test-generator-test.cc \
 		summary-test.cc \

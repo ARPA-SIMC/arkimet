@@ -6,6 +6,7 @@
 #include <arki/core/fwd.h>
 #include <arki/core/cfg.h>
 #include <arki/core/transaction.h>
+#include <arki/stream/fwd.h>
 #include <arki/metadata/fwd.h>
 #include <arki/dataset/fwd.h>
 #include <string>
@@ -155,15 +156,7 @@ protected:
      *
      * The default implementation in Reader is based on queryData.
      */
-    virtual void impl_fd_query_bytes(const dataset::ByteQuery& q, core::NamedFileDescriptor& out);
-
-    /**
-     * Query the dataset obtaining a byte stream, that gets written to a file
-     * descriptor.
-     *
-     * The default implementation in Reader is based on queryData.
-     */
-    virtual void impl_abstract_query_bytes(const dataset::ByteQuery& q, core::AbstractOutputFile& out);
+    virtual void impl_stream_query_bytes(const dataset::ByteQuery& q, StreamOutput& out);
 
 public:
     using Base::Base;
@@ -205,25 +198,14 @@ public:
     }
 
     /**
-     * Query the dataset obtaining a byte stream, that gets written to a file
-     * descriptor.
+     * Query the dataset obtaining a byte stream, that gets streamed to a
+     * StreamOutput.
      *
      * The default implementation in Reader is based on queryData.
      */
-    void query_bytes(const dataset::ByteQuery& q, core::NamedFileDescriptor& out)
+    void query_bytes(const dataset::ByteQuery& q, StreamOutput& out)
     {
-        return impl_fd_query_bytes(q, out);
-    }
-
-    /**
-     * Query the dataset obtaining a byte stream, that gets written to a file
-     * descriptor.
-     *
-     * The default implementation in Reader is based on queryData.
-     */
-    void query_bytes(const dataset::ByteQuery& q, core::AbstractOutputFile& out)
-    {
-        return impl_abstract_query_bytes(q, out);
+        return impl_stream_query_bytes(q, out);
     }
 
     /**

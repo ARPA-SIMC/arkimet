@@ -5,6 +5,7 @@
 
 #include <arki/metadata/clusterer.h>
 #include <arki/core/file.h>
+#include <arki/stream/fwd.h>
 
 namespace arki {
 namespace metadata {
@@ -12,7 +13,8 @@ namespace metadata {
 class Xargs : public Clusterer
 {
 protected:
-    core::File tempfile;
+    std::shared_ptr<core::File> tempfile;
+    std::unique_ptr<StreamOutput> stream_to_tempfile;
     std::string tempfile_template;
 
     void start_batch(const std::string& new_format) override;
@@ -44,7 +46,11 @@ public:
     int filename_argument;
 
     Xargs();
+    Xargs(const Xargs&) = delete;
+    Xargs(Xargs&&) = delete;
     ~Xargs();
+    Xargs& operator=(const Xargs&) = delete;
+    Xargs& operator=(Xargs&&) = delete;
 
     void set_max_bytes(size_t val);
     void set_interval(const std::string& val);

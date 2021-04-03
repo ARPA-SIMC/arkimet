@@ -41,15 +41,7 @@ std::vector<uint8_t> Reader::read(const types::source::Blob& src)
     throw std::runtime_error(ss.str());
 }
 
-size_t Reader::stream(const types::source::Blob& src, core::NamedFileDescriptor& out)
-{
-    stringstream ss;
-    ss << "cannot stream " << src.size << " bytes of " << src.format << " data from " << m_segment.abspath << ":"
-       << src.offset << ": the segment has disappeared";
-    throw std::runtime_error(ss.str());
-}
-
-size_t Reader::stream(const types::source::Blob& src, core::AbstractOutputFile& out)
+stream::SendResult Reader::stream(const types::source::Blob& src, StreamOutput& out)
 {
     stringstream ss;
     ss << "cannot stream " << src.size << " bytes of " << src.format << " data from " << m_segment.abspath << ":"

@@ -46,6 +46,7 @@ sphinx_packaged_sources = \
 	datasets/outbound.rst \
 	datasets/remote.rst \
 	http-api.rst \
+	config.rst \
 	index.rst \
 	matcher.rst \
 	matcher/aliases.rst \

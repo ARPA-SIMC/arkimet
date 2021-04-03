@@ -2,6 +2,7 @@
 #define ARKI_METADATA_DATA_H
 
 #include <arki/core/fwd.h>
+#include <arki/stream/fwd.h>
 #include <arki/structured/fwd.h>
 #include <vector>
 #include <list>
@@ -40,12 +41,12 @@ public:
     virtual size_t write(core::NamedFileDescriptor& fd) const = 0;
 
     /**
-     * Write the data to a NamedFileDescriptor
+     * Stream the data to a StreamOutput
      *
      * It returns the number of bytes successfully written. In case of any
      * error or partial write, an exception is raised.
      */
-    virtual size_t write(core::AbstractOutputFile& fd) const = 0;
+    virtual stream::SendResult write(StreamOutput& out) const = 0;
 
     /**
      * Write the data to a NamedFileDescriptor, without leading or trailing
@@ -63,7 +64,7 @@ public:
      * It returns the number of bytes successfully written. In case of any
      * error or partial write, an exception is raised.
      */
-    virtual size_t write_inline(core::AbstractOutputFile& fd) const = 0;
+    virtual stream::SendResult write_inline(StreamOutput& out) const = 0;
 
     /// Send data to an emitter
     virtual void emit(structured::Emitter& e) const = 0;

@@ -1,6 +1,7 @@
 #include "fd.h"
 #include "common.h"
 #include "arki/exceptions.h"
+#include "arki/stream.h"
 #include "arki/metadata.h"
 #include "arki/metadata/data.h"
 #include "arki/metadata/collection.h"
@@ -149,26 +150,13 @@ std::vector<uint8_t> Reader<Segment>::read(const types::source::Blob& src)
 }
 
 template<typename Segment>
-size_t Reader<Segment>::stream(const types::source::Blob& src, core::NamedFileDescriptor& out)
+stream::SendResult Reader<Segment>::stream(const types::source::Blob& src, StreamOutput& out)
 {
     if (src.format == "vm2")
-    {
-        vector<uint8_t> buf = read(src);
+        return arki::segment::Reader::stream(src, out);
 
-        struct iovec todo[2] = {
-            { (void*)buf.data(), buf.size() },
-            { (void*)"\n", 1 },
-        };
-        ssize_t res = ::writev(out, todo, 2);
-        if (res < 0 || (unsigned)res != buf.size() + 1)
-            throw_system_error("cannot write " + to_string(buf.size() + 1) + " bytes to " + out.name());
-        return buf.size() + 1;
-    } else {
-        fd.sendfile(out, src.offset, src.size);
-        acct::plain_data_read_count.incr();
-        iotrace::trace_file(fd, src.offset, src.size, "streamed data");
-        return src.size;
-    }
+    iotrace::trace_file(fd, src.offset, src.size, "streamed data");
+    return out.send_file_segment(fd, src.offset, src.size);
 }
 
 

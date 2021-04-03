@@ -4,7 +4,7 @@
 #include "arki/metadata.h"
 #include "arki/metadata/data.h"
 #include "arki/metadata/collection.h"
-#include "arki/metadata/libarchive.h"
+#include "arki/metadata/archive.h"
 #include "arki/types/source/blob.h"
 #include "arki/scan/validator.h"
 #include "arki/utils/files.h"
@@ -34,17 +34,21 @@ namespace {
 
 struct Creator : public AppendCreator
 {
+protected:
+    std::shared_ptr<File> out;
+    std::shared_ptr<metadata::ArchiveOutput> zipout;
+
+public:
     std::string format;
-    File out;
-    metadata::LibarchiveOutput zipout;
     size_t idx = 0;
     char fname[100];
 
     Creator(const std::string& root, const std::string& relpath, metadata::Collection& mds, const std::string& dest_abspath)
-        : AppendCreator(root, relpath, mds), out(dest_abspath, O_WRONLY | O_CREAT | O_TRUNC), zipout("zip", out)
+        : AppendCreator(root, relpath, mds),
+          out(std::make_shared<File>(dest_abspath, O_WRONLY | O_CREAT | O_TRUNC, 0666)),
+          zipout(metadata::ArchiveOutput::create("zip", out))
     {
-        zipout.with_metadata = false;
-        zipout.subdir.clear();
+        zipout->set_subdir(std::string());
         if (!mds.empty())
             format = mds[0].source().format;
     }
@@ -59,18 +63,17 @@ struct Creator : public AppendCreator
     Span append_md(Metadata& md)
     {
         Span res;
-        res.offset = zipout.append(md);
+        res.offset = zipout->append(md);
         res.size = md.get_data().size();
         return res;
     }
 
     void create()
     {
-        out.open(O_WRONLY | O_CREAT | O_TRUNC, 0666);
         AppendCreator::create();
-        zipout.flush();
-        out.fdatasync();
-        out.close();
+        zipout->flush(false);
+        out->fdatasync();
+        out->close();
     }
 };
 
@@ -273,25 +276,10 @@ std::vector<uint8_t> Reader::read(const types::source::Blob& src)
     return buf;
 }
 
-size_t Reader::stream(const types::source::Blob& src, core::NamedFileDescriptor& out)
-{
-    vector<uint8_t> buf = read(src);
-    if (src.format == "vm2")
-    {
-        struct iovec todo[2] = {
-            { (void*)buf.data(), buf.size() },
-            { (void*)"\n", 1 },
-        };
-        ssize_t res = ::writev(out, todo, 2);
-        if (res < 0 || (unsigned)res != buf.size() + 1)
-            throw_system_error("cannot write " + to_string(buf.size() + 1) + " bytes to " + out.name());
-        return buf.size() + 1;
-    } else {
-        out.write_all_or_throw(buf);
-        return buf.size();
-    }
-}
 
+/*
+ * Checker
+ */
 
 Checker::Checker(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath)
     : BaseChecker<Segment>(format, root, relpath, abspath), zipabspath(abspath + ".zip")
@@ -368,7 +356,6 @@ core::Pending Checker::repack(const std::string& rootdir, metadata::Collection& 
     core::Pending p(new files::RenameTransaction(tmpabspath, zipabspath));
 
     Creator creator(rootdir, segment().relpath, mds, tmpabspath);
-    creator.out = sys::File(tmpabspath);
     creator.validator = &scan::Validator::by_filename(segment().abspath);
 
     creator.create();

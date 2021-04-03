@@ -7,6 +7,7 @@
 #include <arki/core/fwd.h>
 #include <arki/dataset/fwd.h>
 #include <arki/metadata/fwd.h>
+#include <arki/stream/fwd.h>
 #include <vector>
 #include <string>
 
@@ -108,7 +109,7 @@ public:
     void write_to(core::NamedFileDescriptor& out) const;
 
     /// Write all metadata to the given output file
-    void write_to(core::AbstractOutputFile& out) const;
+    stream::SendResult write_to(StreamOutput& out) const;
 
     /// Read metadata from \a pathname and append them to this collection
     void read_from_file(const metadata::ReadContext& rc);

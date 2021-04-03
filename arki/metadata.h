@@ -4,6 +4,7 @@
 /// metadata - Handle arkimet metadata
 
 #include <arki/core/fwd.h>
+#include <arki/stream/fwd.h>
 #include <arki/metadata/fwd.h>
 #include <arki/types/fwd.h>
 #include <arki/structured/fwd.h>
@@ -386,32 +387,16 @@ public:
 
     /**
      * Write the metadata to the given output stream.
-     *
-     * The filename string is used to generate nicer parse error messages when
-     * throwing exceptions, and can be anything.
      */
     void write(core::NamedFileDescriptor& out) const;
 
     /**
-     * Write the metadata to the given output stream.
-     *
-     * The filename string is used to generate nicer parse error messages when
-     * throwing exceptions, and can be anything.
+     * Write the metadata to the stream output.
      */
-    void write(core::AbstractOutputFile& out) const;
+    void write(StreamOutput& out) const;
 
     /// Format the metadata as a yaml string
     std::string to_yaml(const Formatter* formatter=nullptr) const;
-
-    /**
-     * Write the metadata as YAML text to the given output stream.
-     */
-    void write_yaml(core::NamedFileDescriptor& out, const Formatter* formatter=nullptr) const;
-
-    /**
-     * Write the metadata as YAML text to the given output stream.
-     */
-    void write_yaml(core::AbstractOutputFile& out, const Formatter* formatter=nullptr) const;
 
     /// Serialise using an emitter
     void serialise(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const;
@@ -427,18 +412,11 @@ public:
     const metadata::Data& get_data();
 
     /**
-     * Stream the data referred by this metadata to the given file descriptor.
+     * Stream the data referred by this metadata to the given output.
      *
      * Return the number of bytes written
      */
-    size_t stream_data(core::NamedFileDescriptor& out);
-
-    /**
-     * Stream the data referred by this metadata to the given file descriptor.
-     *
-     * Return the number of bytes written
-     */
-    size_t stream_data(core::AbstractOutputFile& out);
+    stream::SendResult stream_data(StreamOutput& out);
 
     /// Return True if get_data can be called without causing I/O
     bool has_cached_data() const;

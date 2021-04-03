@@ -2,6 +2,7 @@
 #define ARKI_DATASET_QUERY_H
 
 #include <arki/dataset/fwd.h>
+#include <arki/stream/fwd.h>
 #include <arki/matcher.h>
 #include <string>
 
@@ -45,7 +46,6 @@ struct ByteQuery : public DataQuery
 
     std::string param;
     Type type = BQ_DATA;
-    std::function<void(core::NamedFileDescriptor&)> data_start_hook = nullptr;
 
     ByteQuery();
 

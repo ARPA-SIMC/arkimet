@@ -59,9 +59,6 @@ struct Config
     /// Directories where postprocessor executables are found
     Dirlist dir_postproc;
 
-    /// Directories where report scripts are found
-    Dirlist dir_report;
-
     /// Directories where query macro scripts are found
     Dirlist dir_qmacro;
 
@@ -77,9 +74,8 @@ struct Config
     /// I/O profiling log file
     std::string file_iotrace_output;
 
-    /// VM2 config file
-    std::string file_vm2_config;
-
+    /// I/O timeout in milliseconds (0: no timeout)
+    unsigned io_timeout_ms = 0;
 
     Config();
 

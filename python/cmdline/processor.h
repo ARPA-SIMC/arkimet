@@ -6,6 +6,7 @@
 #include <arki/core/fwd.h>
 #include <arki/dataset/fwd.h>
 #include <arki/utils/sys.h>
+#include <arki/stream/fwd.h>
 #include <string>
 #include <memory>
 #include <vector>
@@ -43,22 +44,19 @@ struct ProcessorMaker
     // of a remote query
     bool server_side = false;
     std::string postprocess;
-    std::string archive;
     std::string summary_restrict;
     std::string sort;
     std::shared_ptr<arki::dataset::QueryProgress> progress;
 
     /// Create the processor maker for this configuration
-    std::unique_ptr<DatasetProcessor> make(Matcher matcher, std::shared_ptr<core::NamedFileDescriptor> out);
-    std::unique_ptr<DatasetProcessor> make(Matcher matcher, std::shared_ptr<core::AbstractOutputFile> out);
+    std::unique_ptr<DatasetProcessor> make(Matcher matcher, std::shared_ptr<StreamOutput> out);
+
+    static std::unique_ptr<DatasetProcessor> make_libarchive(Matcher matcher, std::shared_ptr<StreamOutput> out, std::string archive, std::shared_ptr<arki::dataset::QueryProgress> progress);
 
 protected:
-    template<typename Output>
-    std::unique_ptr<DatasetProcessor> make_binary(Matcher matcher, std::shared_ptr<Output> out);
-    template<typename Output>
-    std::unique_ptr<DatasetProcessor> make_summary(Matcher matcher, std::shared_ptr<Output> out);
-    template<typename Output>
-    std::unique_ptr<DatasetProcessor> make_metadata(Matcher matcher, std::shared_ptr<Output> out);
+    std::unique_ptr<DatasetProcessor> make_binary(Matcher matcher, std::shared_ptr<StreamOutput> out);
+    std::unique_ptr<DatasetProcessor> make_summary(Matcher matcher, std::shared_ptr<StreamOutput> out);
+    std::unique_ptr<DatasetProcessor> make_metadata(Matcher matcher, std::shared_ptr<StreamOutput> out);
 
 };
 

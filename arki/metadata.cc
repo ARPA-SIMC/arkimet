@@ -1,6 +1,7 @@
 #include "metadata.h"
 #include "metadata/data.h"
 #include "core/file.h"
+#include "stream.h"
 #include "exceptions.h"
 #include "types/bundle.h"
 #include "types/value.h"
@@ -648,7 +649,7 @@ std::shared_ptr<Metadata> Metadata::read_yaml(LineReader& in, const std::string&
 void Metadata::write(NamedFileDescriptor& out) const
 {
     // Prepare the encoded data
-    vector<uint8_t> encoded = encodeBinary();
+    std::vector<uint8_t> encoded = encodeBinary();
 
     // Write out
     out.write_all_or_retry(encoded.data(), encoded.size());
@@ -669,13 +670,13 @@ void Metadata::write(NamedFileDescriptor& out) const
     m_data->write_inline(out);
 }
 
-void Metadata::write(AbstractOutputFile& out) const
+void Metadata::write(StreamOutput& out) const
 {
     // Prepare the encoded data
-    vector<uint8_t> encoded = encodeBinary();
+    std::vector<uint8_t> encoded = encodeBinary();
 
     // Write out
-    out.write(encoded.data(), encoded.size());
+    out.send_buffer(encoded.data(), encoded.size());
 
     // If the source is inline, then the data follows the metadata
     const Source* s = m_index.get_source();
@@ -731,18 +732,6 @@ std::string Metadata::to_yaml(const Formatter* formatter) const
     }
 
     return buf.str();
-}
-
-void Metadata::write_yaml(core::NamedFileDescriptor& out, const Formatter* formatter) const
-{
-    std::string yaml = to_yaml(formatter);
-    out.write_all_or_retry(yaml.data(), yaml.size());
-}
-
-void Metadata::write_yaml(core::AbstractOutputFile& out, const Formatter* formatter) const
-{
-    std::string yaml = to_yaml(formatter);
-    out.write(yaml.data(), yaml.size());
 }
 
 void Metadata::serialise(structured::Emitter& e, const structured::Keys& keys, const Formatter* f) const
@@ -894,48 +883,7 @@ const metadata::Data& Metadata::get_data()
     }
 }
 
-size_t Metadata::stream_data(NamedFileDescriptor& out)
-{
-    // This code is a copy of get_data, except that if the data is not
-    // previously cached and gets streamed, it won't be stored in m_data, to
-    // prevent turning a stream operation into a memory-filling operation
-
-    // First thing, try and return it from cache
-    if (m_data) return m_data->write(out);
-
-    const Source* s = m_index.get_source();
-
-    // If we don't have it in cache and we don't have a source, we cannot know
-    // how to load it or what to reconstruct: give up
-    if (!s) throw_consistency_error("cannot stream data: data source is not defined");
-
-    // If we don't have it in cache, try reconstructing it from the Value metadata
-    if (const Value* value = get<types::Value>())
-        m_data = metadata::DataManager::get().to_data(s->format, scan::Scanner::reconstruct(s->format, *this, value->buffer));
-    if (m_data) return m_data->write(out);
-
-    // Load it according to source
-    switch (s->style())
-    {
-        case Source::Style::INLINE:
-            throw runtime_error("cannot stream data: data is not found on INLINE metadata");
-        case Source::Style::URL:
-            throw runtime_error("cannot stream data: data is not accessible for URL metadata");
-        case Source::Style::BLOB:
-        {
-            // Do not directly use m_data so that if dataReader.read throws an
-            // exception, m_data remains empty.
-            const source::Blob* blob = reinterpret_cast<const source::Blob*>(s);
-            if (!blob->reader)
-                throw runtime_error("cannot stream data: BLOB source has no reader associated");
-            return blob->stream_data(out);
-        }
-        default:
-            throw_consistency_error("cannot stream data: unsupported source style");
-    }
-}
-
-size_t Metadata::stream_data(AbstractOutputFile& out)
+stream::SendResult Metadata::stream_data(StreamOutput& out)
 {
     // This code is a copy of get_data, except that if the data is not
     // previously cached and gets streamed, it won't be stored in m_data, to

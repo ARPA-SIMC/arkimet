@@ -19,6 +19,7 @@ queried.
    datasets/duplicates
    datasets/remote
    datasets/outbound
+   datasets/discard
 
 
 .. _dataset_config:

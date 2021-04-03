@@ -14,6 +14,12 @@ conf_data.set_quoted('POSTPROC_DIR', get_option('libdir') / 'arkimet')
 toplevel_inc = include_directories('.')
 
 # Dependencies
+
+compiler = meson.get_compiler('cpp')
+if compiler.has_function('splice', prefix : '#include <fcntl.h>')
+    conf_data.set('HAVE_SPLICE', true)
+endif
+
 flex = find_program('flex')
 bison = find_program('bison')
 help2man = find_program('help2man')

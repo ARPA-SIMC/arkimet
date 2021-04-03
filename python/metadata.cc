@@ -3,6 +3,7 @@
 #include "metadata.h"
 #include "common.h"
 #include "structured.h"
+#include "arki/stream.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
 #include "arki/metadata/data.h"
@@ -112,23 +113,17 @@ struct write : public MethKwargs<write, arkipy_Metadata>
             return nullptr;
 
         try {
-            BinaryOutputFile out(arg_file);
+            std::unique_ptr<arki::StreamOutput> out = binaryio_stream_output(arg_file);
 
             if (!format || strcmp(format, "binary") == 0)
             {
-                if (out.fd)
-                    self->md->write(*out.fd);
-                else
-                    self->md->write(*out.abstract);
+                self->md->write(*out);
             } else if (strcmp(format, "yaml") == 0) {
                 std::unique_ptr<arki::Formatter> formatter;
                 if (annotate)
                     formatter = arki::Formatter::create();
                 std::string yaml = self->md->to_yaml(formatter.get());
-                if (out.fd)
-                    out.fd->write_all_or_retry(yaml);
-                else
-                    out.abstract->write(yaml.data(), yaml.size());
+                out->send_buffer(yaml.data(), yaml.size());
             } else if (strcmp(format, "json") == 0) {
                 std::unique_ptr<arki::Formatter> formatter;
                 if (annotate)
@@ -136,10 +131,7 @@ struct write : public MethKwargs<write, arkipy_Metadata>
                 std::stringstream buf;
                 arki::structured::JSON output(buf);
                 self->md->serialise(output, arki::structured::keys_json, formatter.get());
-                if (out.fd)
-                    out.fd->write_all_or_retry(buf.str());
-                else
-                    out.abstract->write(buf.str().data(), buf.str().size());
+                out->send_buffer(buf.str().data(), buf.str().size());
             } else {
                 PyErr_Format(PyExc_ValueError, "Unsupported metadata serializati format: %s", format);
                 return nullptr;
@@ -472,15 +464,12 @@ struct write_bundle : public ClassMethKwargs<write_bundle>
             return nullptr;
 
         try {
-            BinaryOutputFile out(py_file);
+            std::unique_ptr<arki::StreamOutput> out = binaryio_stream_output(py_file);
 
             metadata::Collection mdc = metadata_collection_from_python(py_mds);
             {
                 ReleaseGIL rg;
-                if (out.fd)
-                    mdc.write_to(*out.fd);
-                else
-                    mdc.write_to(*out.abstract);
+                mdc.write_to(*out);
             }
 
             Py_RETURN_NONE;

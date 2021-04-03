@@ -7,6 +7,7 @@
 #include "arki/metadata.h"
 #include "arki/metadata/postprocess.h"
 #include "arki/utils/string.h"
+#include "arki/stream.h"
 #include "arki/summary.h"
 
 using namespace std;
@@ -48,20 +49,14 @@ void Reader::impl_query_summary(const Matcher& matcher, Summary& summary)
     query_data(DataQuery(matcher), [&](std::shared_ptr<Metadata> md) { summary.add(*md); return true; });
 }
 
-void Reader::impl_fd_query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out)
+void Reader::impl_stream_query_bytes(const dataset::ByteQuery& q, StreamOutput& out)
 {
     switch (q.type)
     {
         case dataset::ByteQuery::BQ_DATA: {
-            bool first = true;
             query_data(q, [&](std::shared_ptr<Metadata> md) {
-                if (first)
-                {
-                    if (q.data_start_hook) q.data_start_hook(out);
-                    first = false;
-                }
-                md->stream_data(out);
-                return true;
+                auto res = md->stream_data(out);
+                return !(res.flags & stream::SendResult::SEND_PIPE_EOF_DEST);
             });
             break;
         }
@@ -69,40 +64,6 @@ void Reader::impl_fd_query_bytes(const dataset::ByteQuery& q, NamedFileDescripto
             metadata::Postprocess postproc(q.param);
             postproc.set_output(out);
             postproc.validate(*dataset().config);
-            postproc.set_data_start_hook(q.data_start_hook);
-            postproc.start();
-            query_data(q, [&](std::shared_ptr<Metadata> md) { return postproc.process(md); });
-            postproc.flush();
-            break;
-        }
-        default:
-        {
-            stringstream s;
-            s << "cannot query dataset: unsupported query type: " << (int)q.type;
-            throw std::runtime_error(s.str());
-        }
-    }
-}
-
-void Reader::impl_abstract_query_bytes(const dataset::ByteQuery& q, AbstractOutputFile& out)
-{
-    if (q.data_start_hook)
-        throw std::runtime_error("Cannot use data_start_hook on abstract output files");
-
-    switch (q.type)
-    {
-        case dataset::ByteQuery::BQ_DATA: {
-            query_data(q, [&](std::shared_ptr<Metadata> md) {
-                md->stream_data(out);
-                return true;
-            });
-            break;
-        }
-        case dataset::ByteQuery::BQ_POSTPROCESS: {
-            metadata::Postprocess postproc(q.param);
-            postproc.set_output(out);
-            postproc.validate(*dataset().config);
-            postproc.set_data_start_hook(q.data_start_hook);
             postproc.start();
             query_data(q, [&](std::shared_ptr<Metadata> md) { return postproc.process(move(md)); });
             postproc.flush();

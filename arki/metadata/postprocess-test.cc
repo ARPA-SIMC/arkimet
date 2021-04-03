@@ -5,6 +5,7 @@
 #include "arki/core/file.h"
 #include "arki/core/cfg.h"
 #include "arki/core/binary.h"
+#include "arki/stream.h"
 #include "arki/utils/sys.h"
 #include "arki/metadata.h"
 #include "postprocess.h"
@@ -88,39 +89,39 @@ add_method("null_validate", [] {
     auto config = core::cfg::Section::parse(conf, "(memory)");
 
     Postprocess p("null");
-    Stderr out;
-    p.set_output(out);
+    auto stream = StreamOutput::create(std::make_shared<Stderr>());
+    p.set_output(*stream);
     p.validate(*config);
     p.start();
 
     produceGRIB(p);
 
-    p.flush();
+    wassert(actual(p.flush()) == stream::SendResult(0));
 });
 
 // Check that it works without validation, too
 add_method("null", [] {
     Postprocess p("null");
-    Stderr out;
-    p.set_output(out);
+    auto stream = StreamOutput::create(std::make_shared<Stderr>());
+    p.set_output(*stream);
     p.start();
 
     produceGRIB(p);
 
-    p.flush();
+    wassert(actual(p.flush()) == stream::SendResult(0));
 });
 
 add_method("countbytes", [] {
-    sys::File out(sys::File::mkstemp("test"));
+    auto out = std::make_shared<sys::Tempfile>();
+    auto stream = StreamOutput::create(out);
     Postprocess p("countbytes");
-    p.set_output(out);
+    p.set_output(*stream);
     p.start();
 
     produceGRIB(p);
-    p.flush();
-    out.close();
+    wassert(actual(p.flush()) == stream::SendResult(6));
 
-    wassert(actual(sys::read_file(out.name())) == "44937\n");
+    wassert(actual(sys::read_file(out->name())) == "44937\n");
 });
 
 add_method("cat", [] {
@@ -140,31 +141,31 @@ add_method("cat", [] {
     }
 
     // Get the postprocessed data
-    sys::File out(sys::File::mkstemp("test"));
+    auto out = std::make_shared<sys::Tempfile>();
+    auto stream = StreamOutput::create(out);
     Postprocess p("cat");
-    p.set_output(out);
+    p.set_output(*stream);
     p.start();
     reader->scan([&](std::shared_ptr<Metadata> md) { return p.process(md); });
-    p.flush();
-    out.close();
+    wassert(actual(p.flush()) == stream::SendResult(44937));
 
-    string postprocessed = sys::read_file(out.name());
+    std::string postprocessed = sys::read_file(out->name());
     wassert(actual(vector<uint8_t>(postprocessed.begin(), postprocessed.end()) == plain));
 });
 
 // Try to shift a sizeable chunk of data to the postprocessor
 add_method("countbytes_large", [] {
-    sys::File out(sys::File::mkstemp("test"));
+    auto out = std::make_shared<sys::Tempfile>();
+    auto stream = StreamOutput::create(out);
     Postprocess p("countbytes");
-    p.set_output(out);
+    p.set_output(*stream);
     p.start();
 
     for (unsigned i = 0; i < 128; ++i)
         produceGRIB(p);
-    p.flush();
-    out.close();
+    wassert(actual(p.flush()) == stream::SendResult(8));
 
-    wassert(actual(sys::read_file(out.name())) == "5751936\n");
+    wassert(actual(sys::read_file(out->name())) == "5751936\n");
 });
 
 add_method("zeroes_arg", [] {
@@ -172,12 +173,13 @@ add_method("zeroes_arg", [] {
     stringstream str;
     Postprocess p("zeroes 4096");
 
-    sys::File fd(fname, O_WRONLY | O_CREAT | O_NOCTTY, 0666);
-    p.set_output(fd);
+    auto fd = std::make_shared<sys::File>(fname, O_WRONLY | O_CREAT | O_NOCTTY, 0666);
+    auto stream = StreamOutput::create(fd);
+    p.set_output(*stream);
     p.start();
 
-    produceGRIB(p);
-    p.flush();
+    wassert(produceGRIB(p));
+    wassert(actual(p.flush()) == stream::SendResult(4096*1024u));
 
     wassert(actual(sys::size(fname)) == 4096*1024u);
 
@@ -189,13 +191,14 @@ add_method("zeroes_arg_large", [] {
     stringstream str;
     Postprocess p("zeroes 4096");
 
-    sys::File fd(fname, O_WRONLY | O_CREAT | O_NOCTTY, 0666);
-    p.set_output(fd);
+    auto fd = std::make_shared<sys::File>(fname, O_WRONLY | O_CREAT | O_NOCTTY, 0666);
+    auto stream = StreamOutput::create(fd);
+    p.set_output(*stream);
     p.start();
 
     for (unsigned i = 0; i < 128; ++i)
-        produceGRIB(p);
-    p.flush();
+        wassert(produceGRIB(p));
+    wassert(actual(p.flush()) == stream::SendResult(4096*1024u));
 
     wassert(actual(sys::size(fname)) == 4096*1024u);
 
@@ -209,19 +212,20 @@ add_method("issue209", [] {
 
     TIMEOUT(2);
 
-    sys::File fd("/dev/null", O_WRONLY);
-    p.set_output(fd);
+    auto fd = std::make_shared<sys::File>("/dev/null", O_WRONLY);
+    auto stream = StreamOutput::create(fd);
+    p.set_output(*stream);
     p.start();
 
     Metadata::read_file("inbound/issue209.arkimet", [&](std::shared_ptr<Metadata> md) {
         md->set_source_inline("bufr",
                 data_manager.to_data("bufr",
                     std::vector<uint8_t>(md->sourceBlob().size)));
-        p.process(md);
+        wassert(p.process(md));
         return true;
     });
 
-    p.flush();
+    wassert(actual(p.flush()) == stream::SendResult(24482266));
 });
 
 add_method("partialread", [] {
@@ -231,9 +235,11 @@ add_method("partialread", [] {
 
     TIMEOUT(2);
 
-    sys::File fd("/dev/null", O_WRONLY);
-    p.set_output(fd);
+    auto fd = std::make_shared<sys::File>("/dev/null", O_WRONLY);
+    auto stream = StreamOutput::create(fd);
+    p.set_output(*stream);
     p.start();
+    stream::SendResult stream_result;
 
     try {
         Metadata::read_file("inbound/issue209.arkimet", [&](std::shared_ptr<Metadata> md) {
@@ -243,11 +249,12 @@ add_method("partialread", [] {
             p.process(md);
             return true;
         });
-
-        p.flush();
+        stream_result = p.flush();
     } catch (std::runtime_error& e) {
         wassert(actual(e.what()) == "cannot run postprocessing filter: postprocess command \"partialread\" exited with code 1; stderr: test: simulating stopping read with an error");
     }
+
+    wassert(actual(stream_result) == stream::SendResult(0));
 });
 
 }

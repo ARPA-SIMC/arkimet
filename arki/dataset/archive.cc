@@ -260,15 +260,7 @@ bool Reader::impl_query_data(const dataset::DataQuery& q, metadata_dest_func des
     });
 }
 
-void Reader::impl_fd_query_bytes(const dataset::ByteQuery& q, NamedFileDescriptor& out)
-{
-    archives->iter([&](dataset::Reader& r) {
-        r.query_bytes(q, out);
-        return true;
-    });
-}
-
-void Reader::impl_abstract_query_bytes(const dataset::ByteQuery& q, AbstractOutputFile& out)
+void Reader::impl_stream_query_bytes(const dataset::ByteQuery& q, StreamOutput& out)
 {
     archives->iter([&](dataset::Reader& r) {
         r.query_bytes(q, out);

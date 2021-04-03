@@ -4,6 +4,7 @@
 #include "arki/dataset/session.h"
 #include "arki/dataset/progress.h"
 #include "arki/dataset/pool.h"
+#include "arki/stream.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
 #include "arki/matcher.h"
@@ -138,8 +139,8 @@ add_method("progess", [](Fixture& f) {
     progress = make_shared<TestProgress>();
     dataset::ByteQuery bq;
     bq.progress = progress;
-    sys::File out("/dev/null", O_WRONLY);
-    reader->query_bytes(bq, out);
+    auto out = StreamOutput::create_discard();
+    reader->query_bytes(bq, *out);
     wassert(actual(progress->count) == 3u);
     wassert(actual(progress->bytes) == 44412u);
     wassert(actual(progress->start_called) == 1u);
@@ -164,7 +165,7 @@ add_method("progess", [](Fixture& f) {
 
     progress1 = make_shared<TestProgressThrowing>();
     bq.progress = progress1;
-    e = wassert_throws(std::runtime_error, reader->query_bytes(bq, out));
+    e = wassert_throws(std::runtime_error, reader->query_bytes(bq, *out));
     wassert(actual(e.what()) = "Expected error");
 });
 

@@ -1,9 +1,10 @@
 #include "processor.h"
 #include "arki/metadata.h"
-#include "arki/metadata/libarchive.h"
+#include "arki/metadata/archive.h"
 #include "arki/libconfig.h"
 #include "arki/types/source.h"
 #include "arki/formatter.h"
+#include "arki/stream.h"
 #include "arki/dataset.h"
 #include "arki/dataset/query.h"
 #include "arki/dataset/index/base.h"
@@ -22,20 +23,6 @@
 using namespace std;
 using namespace arki::core;
 using namespace arki::utils;
-
-namespace {
-
-void do_output(sys::NamedFileDescriptor& out, const std::string& str)
-{
-    out.write_all_or_throw(str);
-}
-
-void do_output(arki::core::AbstractOutputFile& out, const std::string& str)
-{
-    out.write(str.data(), str.size());
-}
-
-}
 
 namespace arki {
 namespace python {
@@ -95,12 +82,12 @@ struct DataProcessor : public DatasetProcessor
 struct LibarchiveProcessor : public DatasetProcessor
 {
     arki::dataset::DataQuery query;
-    arki::metadata::LibarchiveOutput arc_out;
+    std::shared_ptr<arki::metadata::ArchiveOutput> arc_out;
 
     LibarchiveProcessor(
-            Matcher matcher, std::shared_ptr<sys::NamedFileDescriptor> out,
+            Matcher matcher, std::shared_ptr<StreamOutput> out,
             const std::string& format, std::shared_ptr<arki::dataset::QueryProgress> progress)
-        : query(matcher, true), arc_out(format, *out)
+        : query(matcher, true), arc_out(arki::metadata::ArchiveOutput::create(format, out))
     {
         query.progress = progress;
     }
@@ -110,26 +97,25 @@ struct LibarchiveProcessor : public DatasetProcessor
     void process(arki::dataset::Reader& reader, const std::string& name) override
     {
         arki::nag::verbose("Processing %s...", reader.name().c_str());
-        reader.query_data(query, [&](std::shared_ptr<Metadata> md) { arc_out.append(*md); return true; });
+        reader.query_data(query, [&](std::shared_ptr<Metadata> md) { arc_out->append(*md); return true; });
     }
 
     void end() override
     {
-        arc_out.flush();
+        arc_out->flush(true);
     }
 };
 
 
-template<typename Output>
 struct SummaryProcessor : public DatasetProcessor
 {
-    std::shared_ptr<Output> output;
+    std::shared_ptr<StreamOutput> output;
     Matcher matcher;
     summary_print_func printer;
     string summary_restrict;
     Summary summary;
 
-    SummaryProcessor(Matcher& q, summary_print_func printer, const std::string& summary_restrict, std::shared_ptr<Output> out)
+    SummaryProcessor(Matcher& q, summary_print_func printer, const std::string& summary_restrict, std::shared_ptr<StreamOutput> out)
         : output(out), matcher(q), printer(printer), summary_restrict(summary_restrict)
     {
     }
@@ -159,17 +145,16 @@ struct SummaryProcessor : public DatasetProcessor
     }
 };
 
-template<typename Output>
 struct SummaryShortProcessor : public DatasetProcessor
 {
-    std::shared_ptr<Output> output;
+    std::shared_ptr<StreamOutput> output;
     Matcher matcher;
     summary_print_func printer;
     Summary summary;
     bool annotate;
     bool json;
 
-    SummaryShortProcessor(Matcher& q, bool annotate, bool json, summary_print_func printer, std::shared_ptr<Output> out)
+    SummaryShortProcessor(Matcher& q, bool annotate, bool json, summary_print_func printer, std::shared_ptr<StreamOutput> out)
         : output(out), matcher(q),
           printer(printer),
           annotate(annotate),
@@ -203,18 +188,17 @@ struct SummaryShortProcessor : public DatasetProcessor
         else
             c.write_yaml(ss, formatter.get());
 
-        do_output(*this->output, ss.str());
+        this->output->send_buffer(ss.str().data(), ss.str().size());
     }
 };
 
 
-template<typename Output>
 struct BinaryProcessor : public DatasetProcessor
 {
-    std::shared_ptr<Output> output;
+    std::shared_ptr<StreamOutput> output;
     arki::dataset::ByteQuery query;
 
-    BinaryProcessor(const arki::dataset::ByteQuery& query, std::shared_ptr<Output> out)
+    BinaryProcessor(const arki::dataset::ByteQuery& query, std::shared_ptr<StreamOutput> out)
         : output(out), query(query)
     {
     }
@@ -228,8 +212,7 @@ struct BinaryProcessor : public DatasetProcessor
 };
 
 
-template<typename Output>
-std::unique_ptr<DatasetProcessor> ProcessorMaker::make_binary(Matcher matcher, std::shared_ptr<Output> out)
+std::unique_ptr<DatasetProcessor> ProcessorMaker::make_binary(Matcher matcher, std::shared_ptr<StreamOutput> out)
 {
     // Binary output from the dataset
     arki::dataset::ByteQuery query;
@@ -244,11 +227,10 @@ std::unique_ptr<DatasetProcessor> ProcessorMaker::make_binary(Matcher matcher, s
         query.sorter = metadata::sort::Compare::parse(sort);
     query.progress = progress;
 
-    return unique_ptr<DatasetProcessor>(new BinaryProcessor<Output>(query, out));
+    return unique_ptr<DatasetProcessor>(new BinaryProcessor(query, out));
 }
 
-template<typename Output>
-std::unique_ptr<DatasetProcessor> ProcessorMaker::make_summary(Matcher matcher, std::shared_ptr<Output> out)
+std::unique_ptr<DatasetProcessor> ProcessorMaker::make_summary(Matcher matcher, std::shared_ptr<StreamOutput> out)
 {
     // Summary output from the dataset
     summary_print_func printer;
@@ -265,24 +247,23 @@ std::unique_ptr<DatasetProcessor> ProcessorMaker::make_summary(Matcher matcher, 
                 structured::JSON json(ss);
                 s.serialise(json, structured::keys_json, formatter.get());
                 string res = ss.str();
-                do_output(*out, ss.str());
+                out->send_buffer(ss.str().data(), ss.str().size());
             };
         else
             printer = [out, formatter](const Summary& s) {
                 std::string buf = s.to_yaml(formatter.get());
                 buf += "\n";
-                do_output(*out, buf);
+                out->send_buffer(buf.data(), buf.size());
             };
     }
 
     if (summary)
-        return std::unique_ptr<DatasetProcessor>(new SummaryProcessor<Output>(matcher, printer, summary_restrict, out));
+        return std::unique_ptr<DatasetProcessor>(new SummaryProcessor(matcher, printer, summary_restrict, out));
     else
-        return std::unique_ptr<DatasetProcessor>(new SummaryShortProcessor<Output>(matcher, annotate, json, printer, out));
+        return std::unique_ptr<DatasetProcessor>(new SummaryShortProcessor(matcher, annotate, json, printer, out));
 }
 
-template<typename Output>
-std::unique_ptr<DatasetProcessor> ProcessorMaker::make_metadata(Matcher matcher, std::shared_ptr<Output> out)
+std::unique_ptr<DatasetProcessor> ProcessorMaker::make_metadata(Matcher matcher, std::shared_ptr<StreamOutput> out)
 {
     // Metadata output from the dataset
     metadata_print_func printer;
@@ -298,12 +279,13 @@ std::unique_ptr<DatasetProcessor> ProcessorMaker::make_metadata(Matcher matcher,
             stringstream ss;
             arki::structured::JSON json(ss);
             md.serialise(json, structured::keys_json, formatter.get());
-            do_output(*out, ss.str());
+            out->send_buffer(ss.str().data(), ss.str().size());
         };
     else
         printer = [out, formatter](const arki::Metadata& md) {
-            do_output(*out, md.to_yaml(formatter.get()));
-            do_output(*out, std::string("\n"));
+            std::string yaml = md.to_yaml(formatter.get());
+            yaml.push_back('\n');
+            out->send_buffer(yaml.data(), yaml.size());
         };
 
     arki::dataset::DataQuery query(matcher, data_inline);
@@ -314,7 +296,7 @@ std::unique_ptr<DatasetProcessor> ProcessorMaker::make_metadata(Matcher matcher,
     return std::unique_ptr<DatasetProcessor>(new DataProcessor(query, printer, server_side, data_inline));
 }
 
-std::unique_ptr<DatasetProcessor> ProcessorMaker::make(Matcher matcher, std::shared_ptr<sys::NamedFileDescriptor> out)
+std::unique_ptr<DatasetProcessor> ProcessorMaker::make(Matcher matcher, std::shared_ptr<StreamOutput> out)
 {
     if (!progress)
         progress = std::make_shared<python::dataset::PythonProgress>();
@@ -323,35 +305,14 @@ std::unique_ptr<DatasetProcessor> ProcessorMaker::make(Matcher matcher, std::sha
         return make_binary(matcher, out);
     else if (summary || summary_short)
         return make_summary(matcher, out);
-    else if (!archive.empty())
-        // Metadata output from the dataset
-        return std::unique_ptr<DatasetProcessor>(new LibarchiveProcessor(matcher, out, archive, progress));
     else
         return make_metadata(matcher, out);
 }
 
-std::unique_ptr<DatasetProcessor> ProcessorMaker::make(Matcher matcher, std::shared_ptr<core::AbstractOutputFile> out)
+std::unique_ptr<DatasetProcessor> ProcessorMaker::make_libarchive(Matcher matcher, std::shared_ptr<StreamOutput> out, std::string archive, std::shared_ptr<arki::dataset::QueryProgress> progress)
 {
-    if (!progress)
-        progress = std::make_shared<python::dataset::PythonProgress>();
-
-    if (data_only || !postprocess.empty())
-        return make_binary(matcher, out);
-    else if (summary || summary_short)
-        return make_summary(matcher, out);
-    else if (!archive.empty())
-        throw std::runtime_error("--archive only works when the output goes to a unix file");
-    else
-        return make_metadata(matcher, out);
+    return std::unique_ptr<DatasetProcessor>(new LibarchiveProcessor(matcher, out, archive, progress));
 }
-
-
-template std::unique_ptr<DatasetProcessor> ProcessorMaker::make_metadata(Matcher query, std::shared_ptr<sys::NamedFileDescriptor> out);
-template std::unique_ptr<DatasetProcessor> ProcessorMaker::make_metadata(Matcher query, std::shared_ptr<core::AbstractOutputFile> out);
-template std::unique_ptr<DatasetProcessor> ProcessorMaker::make_binary(Matcher query, std::shared_ptr<sys::NamedFileDescriptor> out);
-template std::unique_ptr<DatasetProcessor> ProcessorMaker::make_binary(Matcher query, std::shared_ptr<core::AbstractOutputFile> out);
-template std::unique_ptr<DatasetProcessor> ProcessorMaker::make_summary(Matcher query, std::shared_ptr<sys::NamedFileDescriptor> out);
-template std::unique_ptr<DatasetProcessor> ProcessorMaker::make_summary(Matcher query, std::shared_ptr<core::AbstractOutputFile> out);
 
 }
 }

@@ -7,6 +7,7 @@
 #include "arki/structured/keys.h"
 #include "arki/core/file.h"
 #include "arki/core/binary.h"
+#include "arki/stream.h"
 #include "arki/utils/sys.h"
 
 namespace {
@@ -119,9 +120,10 @@ add_method("blob_stream", [] {
     auto reader = Segment::detect_reader("grib", "inbound", "test.grib1", "inbound/test.grib1", std::make_shared<core::lock::Null>());
     unique_ptr<source::Blob> o = source::Blob::create("test", "inbound", "test.grib1", 7218, 34960, reader);
     sys::unlink_ifexists("test.grib");
-    File out("test.grib", O_WRONLY | O_CREAT | O_TRUNC);
-    wassert(actual(o->stream_data(out)) == 34960u);
-    out.close();
+    {
+        auto stream = StreamOutput::create(std::make_shared<File>("test.grib", O_WRONLY | O_CREAT | O_TRUNC));
+        wassert(actual(o->stream_data(*stream)) == 34960u);
+    }
 
     std::string data = sys::read_file("test.grib");
     wassert(actual(data.size()) == 34960u);

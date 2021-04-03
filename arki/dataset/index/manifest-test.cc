@@ -151,9 +151,9 @@ add_method("add_remove", [] {
 
 // Test modifying index during scanning/listing of segments
 add_method("modify_while_scanning", [] {
+    // TODO: move to index-test once acquire is part of the index interface
     clean();
 
-#warning TODO: move to index-test once acquire is part of the index interface
     // Index data about a sample file
     time_t mtime = sys::timestamp("inbound/test-sorted.grib1");
 

@@ -6,6 +6,7 @@
 #include <memory>
 #include <arki/core/fwd.h>
 #include <arki/matcher/fwd.h>
+#include <arki/stream/fwd.h>
 
 namespace arki {
 namespace matcher {
@@ -68,7 +69,7 @@ public:
      *
      * (used for debugging purposes)
      */
-    void debug_dump(core::AbstractOutputFile& out);
+    stream::SendResult debug_dump(StreamOutput& out);
 };
 
 

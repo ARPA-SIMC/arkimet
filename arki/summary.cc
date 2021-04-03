@@ -2,6 +2,7 @@
 #include "summary/table.h"
 #include "summary/codec.h"
 #include "summary/stats.h"
+#include "stream.h"
 #include "core/file.h"
 #include "exceptions.h"
 #include "matcher.h"
@@ -266,7 +267,7 @@ std::vector<uint8_t> Summary::encode(bool compressed) const
 void Summary::write(NamedFileDescriptor& out) const
 {
     // Prepare the encoded data
-    vector<uint8_t> encoded = encode(true);
+    std::vector<uint8_t> encoded = encode(true);
 
     iotrace::trace_file(out, 0, encoded.size(), "write summary");
 
@@ -274,15 +275,15 @@ void Summary::write(NamedFileDescriptor& out) const
     out.write(encoded.data(), encoded.size());
 }
 
-void Summary::write(AbstractOutputFile& out) const
+stream::SendResult Summary::write(StreamOutput& out) const
 {
     // Prepare the encoded data
-    vector<uint8_t> encoded = encode(true);
+    std::vector<uint8_t> encoded = encode(true);
 
     iotrace::trace_file(out, 0, encoded.size(), "write summary");
 
     // Write out
-    out.write(encoded.data(), encoded.size());
+    return out.send_buffer(encoded.data(), encoded.size());
 }
 
 void Summary::writeAtomically(const std::string& fname)
@@ -353,12 +354,6 @@ void Summary::write_yaml(core::NamedFileDescriptor& out, const Formatter* format
 {
     std::string yaml = to_yaml(formatter);
     out.write_all_or_retry(yaml.data(), yaml.size());
-}
-
-void Summary::write_yaml(core::AbstractOutputFile& out, const Formatter* formatter) const
-{
-    std::string yaml = to_yaml(formatter);
-    out.write(yaml.data(), yaml.size());
 }
 
 void Summary::serialise(structured::Emitter& e, const structured::Keys& keys, const Formatter* f) const

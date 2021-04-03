@@ -101,9 +101,9 @@ void Parser::debug_dump_aliases(core::NamedFileDescriptor& out) const
     aliases->debug_dump(out);
 }
 
-void Parser::debug_dump_aliases(core::AbstractOutputFile& out) const
+stream::SendResult Parser::debug_dump_aliases(StreamOutput& out) const
 {
-    aliases->debug_dump(out);
+    return aliases->debug_dump(out);
 }
 
 }

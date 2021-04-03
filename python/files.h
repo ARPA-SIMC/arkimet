@@ -3,6 +3,7 @@
 
 #include "utils/core.h"
 #include <arki/core/file.h>
+#include <arki/stream/fwd.h>
 
 namespace arki {
 namespace python {
@@ -23,6 +24,20 @@ struct FileBase
         delete abstract;
         delete fd;
     }
+
+    std::shared_ptr<AbstractFile> detach_abstract()
+    {
+        std::shared_ptr<AbstractFile> res(abstract);
+        abstract = nullptr;
+        return res;
+    }
+
+    std::shared_ptr<core::NamedFileDescriptor> detach_fd()
+    {
+        std::shared_ptr<core::NamedFileDescriptor> res(fd);
+        fd = nullptr;
+        return res;
+    }
 };
 
 
@@ -40,18 +55,15 @@ struct BinaryInputFile : public FileBase<core::AbstractInputFile>
 };
 
 
-/// Turn a python object into an open input file
-struct TextOutputFile : public FileBase<core::AbstractOutputFile>
-{
-    TextOutputFile(PyObject* o);
-};
+/**
+ * Wrap a python TextIO into a StreamOutput
+ */
+std::unique_ptr<StreamOutput> textio_stream_output(PyObject* o);
 
-
-/// Turn a python object into an open input file
-struct BinaryOutputFile : public FileBase<core::AbstractOutputFile>
-{
-    BinaryOutputFile(PyObject* o);
-};
+/**
+ * Wrap a python BinaryIO into a StreamOutput
+ */
+std::unique_ptr<StreamOutput> binaryio_stream_output(PyObject* o);
 
 }
 }
