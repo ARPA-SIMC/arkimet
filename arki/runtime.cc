@@ -30,7 +30,6 @@ Config::Config()
         dir_postproc.push_back(envdir);
     dir_postproc.push_back(POSTPROC_DIR);
 
-    dir_report.init_config_and_env("report", "ARKI_REPORT");
     dir_qmacro.init_config_and_env("qmacro", "ARKI_QMACRO");
     if (const char* envdir = getenv("ARKI_SCAN"))
         dir_scan.push_back(envdir);
@@ -46,9 +45,6 @@ Config::Config()
 
     if (const char* envfile = getenv("ARKI_IOTRACE"))
         file_iotrace_output = envfile;
-
-    if (const char* envfile = getenv("ARKI_VM2_FILE"))
-        file_vm2_config = envfile;
 
     if (const char* env = getenv("ARKI_IO_TIMEOUT"))
         io_timeout_ms = round(strtod(env, nullptr) * 1000.0);

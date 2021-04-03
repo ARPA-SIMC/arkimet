@@ -21,6 +21,7 @@ sphinx_doc_sources = [
     'datasets/error.rst',
     'datasets/outbound.rst',
     'datasets/remote.rst',
+	'config.rst',
 	'http-api.rst',
 	'index.rst',
 	'matcher.rst',
