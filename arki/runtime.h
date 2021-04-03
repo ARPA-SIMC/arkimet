@@ -80,6 +80,8 @@ struct Config
     /// VM2 config file
     std::string file_vm2_config;
 
+    /// I/O timeout in milliseconds (0: no timeout)
+    unsigned io_timeout_ms = 0;
 
     Config();
 

@@ -20,7 +20,10 @@ std::unique_ptr<StreamOutput> StreamOutput::create(std::shared_ptr<core::NamedFi
 
 std::unique_ptr<StreamOutput> StreamOutput::create(std::shared_ptr<core::NamedFileDescriptor> out, unsigned timeout_ms)
 {
-    return std::unique_ptr<StreamOutput>(new stream::ConcreteTimeoutStreamOutput(out, timeout_ms));
+    if (timeout_ms)
+        return std::unique_ptr<StreamOutput>(new stream::ConcreteTimeoutStreamOutput(out, timeout_ms));
+    else
+        return std::unique_ptr<StreamOutput>(new stream::ConcreteStreamOutput(out));
 }
 
 std::unique_ptr<StreamOutput> StreamOutput::create(std::vector<uint8_t>& out)

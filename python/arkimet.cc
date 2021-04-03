@@ -241,6 +241,8 @@ struct config : public MethNoargs<config, PyObject>
             set_dict(result, "bufr", describe_dirlist(cfg.dir_scan_bufr, "BUFR scan scripts", "ARKI_SCAN_BUFR"));
             set_dict(result, "iotrace", describe_string(cfg.file_iotrace_output, "I/O profiling log file", "ARKI_IOTRACE"));
             set_dict(result, "vm2_config", describe_string(cfg.file_vm2_config, "VM2 configuration file", "ARKI_VM2_FILE"));
+            set_dict(result, "io_timeout_ms", describe_string(std::to_string(cfg.io_timeout_ms),
+                     "I/O timeout in milliseconds (set using decimal seconds, 0: no timeout)", "ARKI_IO_TIMEOUT"));
             return result.release();
         } ARKI_CATCH_RETURN_PYO
     }

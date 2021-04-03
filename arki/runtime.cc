@@ -7,6 +7,7 @@
 #include "arki/scan.h"
 #include "arki/dataset/querymacro.h"
 #include <algorithm>
+#include <cmath>
 
 using namespace std;
 using namespace arki::utils;
@@ -48,6 +49,9 @@ Config::Config()
 
     if (const char* envfile = getenv("ARKI_VM2_FILE"))
         file_vm2_config = envfile;
+
+    if (const char* env = getenv("ARKI_IO_TIMEOUT"))
+        io_timeout_ms = round(strtod(env, nullptr) * 1000.0);
 }
 
 Config& Config::get()

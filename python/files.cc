@@ -1,6 +1,7 @@
 #include "files.h"
 #include "utils/values.h"
 #include "arki/stream/base.h"
+#include "arki/runtime.h"
 #include "common.h"
 #include <string>
 
@@ -317,15 +318,18 @@ BinaryInputFile::BinaryInputFile(PyObject* o)
 
 std::unique_ptr<StreamOutput> textio_stream_output(PyObject* o)
 {
+    const auto& cfg = arki::Config::get();
+
     // If it is already an int handle, use it
     if (PyLong_Check(o))
-        return StreamOutput::create(std::make_shared<core::NamedFileDescriptor>(int_from_python(o), get_fd_name(o)), 60000);
+        return StreamOutput::create(std::make_shared<core::NamedFileDescriptor>(int_from_python(o), get_fd_name(o)), cfg.io_timeout_ms);
 
     // If it is a string, take it as a file name
     if (PyUnicode_Check(o))
         return StreamOutput::create(std::make_shared<core::File>(
                     from_python<std::string>(o),
-                    O_WRONLY | O_CREAT | O_TRUNC, 0666), 60000);
+                    O_WRONLY | O_CREAT | O_TRUNC, 0666),
+                    cfg.io_timeout_ms);
 
     // Try calling fileno
     pyo_unique_ptr fileno(PyObject_CallMethod(o, "fileno", nullptr));
@@ -334,7 +338,8 @@ std::unique_ptr<StreamOutput> textio_stream_output(PyObject* o)
         // It would be nice to give up and fallback to AbstractInputFile if
         // there are bytes in the read buffer of o, but there seems to be no
         // way to know
-        return StreamOutput::create(std::make_shared<core::NamedFileDescriptor>(int_from_python(fileno), get_fd_name(o)), 60000);
+        return StreamOutput::create(
+                std::make_shared<core::NamedFileDescriptor>(int_from_python(fileno), get_fd_name(o)), cfg.io_timeout_ms);
     }
 
     PyErr_Clear();
@@ -346,15 +351,18 @@ std::unique_ptr<StreamOutput> textio_stream_output(PyObject* o)
 
 std::unique_ptr<StreamOutput> binaryio_stream_output(PyObject* o)
 {
+    const auto& cfg = arki::Config::get();
+
     // If it is already an int handle, use it
     if (PyLong_Check(o))
-        return StreamOutput::create(std::make_shared<core::NamedFileDescriptor>(int_from_python(o), get_fd_name(o)), 60000);
+        return StreamOutput::create(std::make_shared<core::NamedFileDescriptor>(int_from_python(o), get_fd_name(o)), cfg.io_timeout_ms);
 
     // If it is a string, take it as a file name
     if (PyUnicode_Check(o))
         return StreamOutput::create(std::make_shared<core::File>(
                     from_python<std::string>(o),
-                    O_WRONLY | O_CREAT | O_TRUNC, 0666), 60000);
+                    O_WRONLY | O_CREAT | O_TRUNC, 0666),
+                    cfg.io_timeout_ms);
 
     // Try calling fileno
     pyo_unique_ptr fileno(PyObject_CallMethod(o, "fileno", nullptr));
@@ -363,7 +371,8 @@ std::unique_ptr<StreamOutput> binaryio_stream_output(PyObject* o)
         // It would be nice to give up and fallback to AbstractInputFile if
         // there are bytes in the read buffer of o, but there seems to be no
         // way to know
-        return StreamOutput::create(std::make_shared<core::NamedFileDescriptor>(int_from_python(fileno), get_fd_name(o)), 60000);
+        return StreamOutput::create(
+                std::make_shared<core::NamedFileDescriptor>(int_from_python(fileno), get_fd_name(o)), cfg.io_timeout_ms);
     }
 
     PyErr_Clear();
