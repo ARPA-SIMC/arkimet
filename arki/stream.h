@@ -6,6 +6,7 @@
 #include <memory>
 #include <cstdint>
 #include <functional>
+#include <vector>
 #include <iosfwd>
 #include <sys/types.h>
 
