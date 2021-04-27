@@ -140,7 +140,7 @@ sh autogen.sh
 %if 0%{?arpae_tests}
 echo 'Enabling ARPAE tests'
 source %{_sysconfdir}/profile.d/eccodes-simc.sh
-%configure --enable-arpae-tests %{?el7:--disable-docs}
+%configure --enable-arpae-tests %{?el7:--disable-docs --disable-splice}
 %else
 %configure %{?el7:--disable-docs}
 %endif
