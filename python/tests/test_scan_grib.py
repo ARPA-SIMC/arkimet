@@ -243,6 +243,22 @@ class TestScanGrib(unittest.TestCase):
         self.assertEqual(md["reftime"], "2018-01-25T21:00:00Z")
         self.assertEqual(md["run"], "MINUTE(21:00)")
 
+    def test_issue264(self):
+        mds = self.read("inbound/issue264.grib")
+        self.assertEqual(len(mds), 1)
+        md = mds[0]
+
+        self.assertGribSource(md, "inbound/issue264.grib", 0, 179)
+        self.assertEqual(md["origin"], "GRIB2(00098, 00000, 000, 255, 254)")
+        self.assertEqual(md["product"], "GRIB2(00098, 003, 000, 000, 004, 000)")
+        self.assertEqual(md["level"], "GRIB2S(  -,   -,          -)")
+        self.assertNotIn("timerange", md)
+        self.assertEqual(md["area"], "GRIB(tn=90)")
+        # issue201: set pl and pt
+        self.assertEqual(md["proddef"], "GRIB(tod=0)")
+        self.assertEqual(md["reftime"], "2021-03-05T23:00:00Z")
+        self.assertEqual(md["run"], "MINUTE(23:00)")
+
     def test_ninfa(self):
         """
         Check scanning of some Timedef cases

@@ -18,13 +18,19 @@ def scan_grib2(grib, md):
     }
 
     # Origin
+    process_id = grib.get_long("generatingProcessIdentifier")
+    if process_id is None:
+        process_id = grib.get_long("observationGeneratingProcessIdentifier")
+    background_process_id = grib.get_long("backgroundGeneratingProcessIdentifier")
+    if background_process_id is None:
+        background_process_id = 0xff
     md["origin"] = {
         "style": "GRIB2",
         "centre": grib.get_long("centre"),
         "subcentre": grib.get_long("subCentre"),
         "process_type": grib.get_long("typeOfGeneratingProcess"),
-        "background_process_id": grib.get_long("backgroundGeneratingProcessIdentifier"),
-        "process_id": grib.get_long("generatingProcessIdentifier"),
+        "background_process_id": background_process_id,
+        "process_id": process_id,
     }
 
     # Product
