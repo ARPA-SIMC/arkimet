@@ -68,6 +68,13 @@ AC_ARG_ENABLE([arpae-tests],
         [--enable-arpae-tests],
         [Enable Arpae tests])])
 
+AC_ARG_ENABLE([splice],
+    [AS_HELP_STRING(
+        [--enable-splice],
+        [build with splice() support if available])],
+    [],
+    [enable_splice="yes"])
+
 if test x$enable_gcov = xyes
 then
 	AM_DISABLE_SHARED
@@ -110,7 +117,10 @@ AM_CONDITIONAL([FILE_OFFSET_BITS_64], [test x"$FILE_OFFSET_BITS_64" = x"yes"])
 
 dnl Check what libc features are available on this system
 gl_CHECK_TYPE_STRUCT_DIRENT_D_TYPE
-ez_FUNC_SPLICE
+
+if test $enable_splice = yes; then
+    ez_FUNC_SPLICE
+fi
 
 dnl Call in pkg-config explicitly, so we can safely put the first
 dnl PKG_CHECK_EXISTS inside an if
