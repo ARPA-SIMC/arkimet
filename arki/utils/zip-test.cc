@@ -26,7 +26,7 @@ add_method("read", [] {
 
     metadata::TestCollection mds("inbound/fixture.grib1");
     {
-        auto writer = metadata::ArchiveOutput::create("zip", std::make_shared<sys::File>("test.zip", O_WRONLY | O_TRUNC | O_CREAT));
+        auto writer = metadata::ArchiveOutput::create_file("zip", std::make_shared<sys::File>("test.zip", O_WRONLY | O_TRUNC | O_CREAT));
         wassert(writer->set_subdir(std::string()));
         wassert(writer->append(mds[0]));
         wassert(writer->append(mds[1]));

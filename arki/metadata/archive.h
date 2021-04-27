@@ -35,7 +35,7 @@ public:
      * format is a string corresponding to the output formats supported by
      * libarchive.
      */
-    static std::unique_ptr<ArchiveOutput> create(const std::string& format, std::shared_ptr<core::NamedFileDescriptor> out);
+    static std::unique_ptr<ArchiveOutput> create_file(const std::string& format, std::shared_ptr<core::NamedFileDescriptor> out);
 
     /**
      * Create an archive output for the given format and StreamOutput.
@@ -43,7 +43,7 @@ public:
      * format is a string corresponding to the output formats supported by
      * libarchive.
      */
-    static std::unique_ptr<ArchiveOutput> create(const std::string& format, std::shared_ptr<StreamOutput> out);
+    static std::unique_ptr<ArchiveOutput> create_stream(const std::string& format, std::shared_ptr<StreamOutput> out);
 };
 
 }

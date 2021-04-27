@@ -29,7 +29,7 @@ class TestFile : public BaseTests
 
     std::unique_ptr<metadata::ArchiveOutput> create_archive(const std::string& format, const std::string& fname) override
     {
-        return metadata::ArchiveOutput::create(format, std::make_shared<sys::File>(fname, O_WRONLY | O_CREAT | O_TRUNC));
+        return metadata::ArchiveOutput::create_file(format, std::make_shared<sys::File>(fname, O_WRONLY | O_CREAT | O_TRUNC));
     }
 } test_file("arki_metadata_archive_file");
 
@@ -39,7 +39,7 @@ class TestStremOutput : public BaseTests
 
     std::unique_ptr<metadata::ArchiveOutput> create_archive(const std::string& format, const std::string& fname) override
     {
-        return metadata::ArchiveOutput::create(format, StreamOutput::create(std::make_shared<sys::File>(fname, O_WRONLY | O_CREAT | O_TRUNC)));
+        return metadata::ArchiveOutput::create_stream(format, StreamOutput::create(std::make_shared<sys::File>(fname, O_WRONLY | O_CREAT | O_TRUNC)));
     }
 } test_streamoutput("arki_metadata_archive_streamoutput");
 

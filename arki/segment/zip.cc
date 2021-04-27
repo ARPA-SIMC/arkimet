@@ -46,7 +46,7 @@ public:
     Creator(const std::string& root, const std::string& relpath, metadata::Collection& mds, const std::string& dest_abspath)
         : AppendCreator(root, relpath, mds),
           out(std::make_shared<File>(dest_abspath, O_WRONLY | O_CREAT | O_TRUNC, 0666)),
-          zipout(metadata::ArchiveOutput::create("zip", out))
+          zipout(metadata::ArchiveOutput::create_file("zip", out))
     {
         zipout->set_subdir(std::string());
         if (!mds.empty())

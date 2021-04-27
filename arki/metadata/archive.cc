@@ -256,7 +256,7 @@ ArchiveOutput::~ArchiveOutput()
 {
 }
 
-std::unique_ptr<ArchiveOutput> ArchiveOutput::create(const std::string& format, std::shared_ptr<core::NamedFileDescriptor> out)
+std::unique_ptr<ArchiveOutput> ArchiveOutput::create_file(const std::string& format, std::shared_ptr<core::NamedFileDescriptor> out)
 {
 #ifdef HAVE_LIBARCHIVE
     return std::unique_ptr<LibarchiveOutput>(new LibarchiveFileOutput(format, out));
@@ -265,7 +265,7 @@ std::unique_ptr<ArchiveOutput> ArchiveOutput::create(const std::string& format, 
 #endif
 }
 
-std::unique_ptr<ArchiveOutput> ArchiveOutput::create(const std::string& format, std::shared_ptr<StreamOutput> out)
+std::unique_ptr<ArchiveOutput> ArchiveOutput::create_stream(const std::string& format, std::shared_ptr<StreamOutput> out)
 {
 #ifdef HAVE_LIBARCHIVE
     return std::unique_ptr<LibarchiveOutput>(new LibarchiveStreamOutput(format, out));
