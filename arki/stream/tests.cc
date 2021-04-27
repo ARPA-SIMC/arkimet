@@ -3,6 +3,7 @@
 #include "arki/utils/sys.h"
 #include "arki/utils/subprocess.h"
 #include <numeric>
+#include <system_error>
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/ioctl.h>

@@ -1,6 +1,7 @@
 #include "tests.h"
 #include "base.h"
 #include "arki/utils/sys.h"
+#include <system_error>
 #include <sys/ioctl.h>
 
 using namespace std;
