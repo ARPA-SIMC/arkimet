@@ -210,6 +210,7 @@ add_method("concrete_timeout1", [] {
     {
         sys::Tempfile tf1;
         tf1.write_all_or_throw(std::string("testfile"));
+        tf1.lseek(0);
         wassert_throws(stream::TimedOut, writer->send_from_pipe(tf1));
     }
 });
