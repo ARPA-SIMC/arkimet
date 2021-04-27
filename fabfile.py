@@ -16,14 +16,17 @@ def cmd(*args):
     return " ".join(shlex_quote(a) for a in args)
 
 
-def configure():
-    res = run(cmd("rpm", "--eval", "%configure --enable-arpae-tests"))
+def configure(*args):
+    conf_cmd = "%configure --enable-arpae-tests"
+    if args:
+        conf_cmd += " " + " ".join(args)
+    res = run(cmd("rpm", "--eval", conf_cmd))
     put(BytesIO(b"\n".join(res.stdout.splitlines())), "rpm-config")
     run(cmd("chmod", "0755", "rpm-config"))
     run(cmd("./rpm-config"))
 
 
-def push(host):
+def push(host, *conf_args):
     repo = git.Repo()
     remote = repo.remote(host)
     push_url = remote.config_reader.get("url")
@@ -36,11 +39,11 @@ def push(host):
         run(cmd("git", "checkout", "-B", "test_" + host, repo.head.commit.hexsha))
         run(cmd("git", "clean", "-fx"))
         run(cmd("autoreconf", "-if"))
-        configure()
+        configure(*conf_args)
 
 
-def run_test(host):
-    push(host)
+def run_test(host, *conf_args):
+    push(host, *conf_args)
 
     repo = git.Repo()
     remote = repo.remote(host)
@@ -93,7 +96,7 @@ def push_trentadue():
 
 @hosts("sette")
 def test_sette():
-    run_test("sette")
+    run_test("sette", "--disable-docs", "--disable-splice")
 
 
 @hosts("otto")
