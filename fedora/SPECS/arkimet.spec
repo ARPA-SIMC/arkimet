@@ -26,26 +26,13 @@ BuildRequires: python3-rpm-macros >= 3-23
 %define python3_vers python3
 %endif
 
-%if 0%{?fedora} <= 24
-# grib_api is used only on older fedoras
-%define grib_sw grib_api
-%else
-%define grib_sw eccodes
-BuildRequires: eccodes-simc
-%endif
-
-%if 0%{?rhel} >= 7
-# expliciting eccodes for centos 7 and 8
-%define grib_sw eccodes
-BuildRequires: eccodes-simc
-%endif
-
 BuildRequires: gcc-c++
 BuildRequires: libtool
 BuildRequires: doxygen
 BuildRequires: libdballe-devel >= 8.3
 BuildRequires: lua-devel >= 5.1
-BuildRequires: %{grib_sw}-devel
+BuildRequires: eccodes-devel
+BuildRequires: eccodes-simc
 BuildRequires: sqlite-devel >= 3.6
 BuildRequires: curl
 BuildRequires: curl-devel
@@ -75,7 +62,6 @@ BuildRequires: %{python3_vers}-h5py
 BuildRequires: %{python3_vers}-sphinx
 %else
 BuildRequires: h5py
-BuildRequires: %{python3_vers}-sphinx-theme-alabaster
 %endif
 BuildRequires: libzip-devel
 BuildRequires: libarchive-devel
@@ -83,7 +69,7 @@ BuildRequires: bzip2-devel
 BuildRequires: %{python3_vers}-shapely
 
 Requires: meteo-vm2 >= 0.12
-Requires: %{grib_sw}
+Requires: eccodes
 Requires: %{python3_vers}
 Requires: %{python3_vers}-werkzeug
 Requires: %{python3_vers}-setproctitle
@@ -126,7 +112,7 @@ currently offline.
 Summary:  Arkimet developement library
 Group:    Applications/Meteo
 Requires: libdballe-devel >= 8
-Requires: %{grib_sw}-devel
+Requires: eccodes-devel
 Requires: libwreport-devel
 Requires: %{python3_vers}-devel
 Requires: meteo-vm2-devel
@@ -153,14 +139,13 @@ sh autogen.sh
 
 %if 0%{?arpae_tests}
 echo 'Enabling ARPAE tests'
-%if "%{grib_sw}" == "eccodes"
 source %{_sysconfdir}/profile.d/eccodes-simc.sh
-%endif
-%configure --enable-arpae-tests
+%configure --enable-arpae-tests %{?el7:--disable-docs}
 %else
-%configure
+%configure %{?el7:--disable-docs}
 %endif
 make
+
 
 %install
 [ "%{buildroot}" != / ] && rm -rf %{buildroot}
@@ -174,9 +159,7 @@ install -D -m 0644 -p %{SOURCE3} %{buildroot}%{_sysconfdir}/logrotate.d/%{name}
 
 %if 0%{?arpae_tests}
 echo 'Enabling ARPAE tests'
-%if "%{grib_sw}" == "eccodes"
 source %{_sysconfdir}/profile.d/eccodes-simc.sh
-%endif
 %endif
 
 
