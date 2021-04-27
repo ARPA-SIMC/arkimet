@@ -331,6 +331,8 @@ SendResult ConcreteTimeoutStreamOutput::send_from_pipe(int fd)
             // Splice is not supported: pass it on to the traditional method
             has_splice = false;
             buffer.allocate();
+            // Skip waiting for available I/O and just retry the while
+            continue;
 #endif
         } else {
             // Fall back to read/write
@@ -351,6 +353,9 @@ SendResult ConcreteTimeoutStreamOutput::send_from_pipe(int fd)
                 result += send_buffer(buffer, res);
             else
             {
+                // Call progress callback here because we're not calling
+                // send_buffer. Send_buffer will take care of calling
+                // progress_callback if needed.
                 if (progress_callback)
                     progress_callback(res);
             }
