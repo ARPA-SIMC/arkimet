@@ -244,7 +244,10 @@ SendResult ConcreteStreamOutput::send_from_pipe(int fd)
             }
 
             // Pass it on
-            result += send_buffer(buffer, res);
+            auto rsend = send_buffer(buffer, res);
+            result += rsend;
+            if (rsend.flags & SendResult::SEND_PIPE_EOF_DEST)
+                break;
         }
     }
 
