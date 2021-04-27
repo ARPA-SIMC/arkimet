@@ -7,6 +7,7 @@
 #include <cstdint>
 #include <functional>
 #include <vector>
+#include <stdexcept>
 #include <iosfwd>
 #include <sys/types.h>
 
