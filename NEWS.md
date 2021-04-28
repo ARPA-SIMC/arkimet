@@ -1,3 +1,7 @@
+# New in version 1.34
+* Fixed satellite grib2 import (#264)
+* Implemented server-side timeout for arki-queries (#252)
+
 # New in version 1.33
 * Fixed arki-bufr-prepare `--usn` (#260)
 * Improved doc (#261, #235)

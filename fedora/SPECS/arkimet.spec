@@ -3,7 +3,7 @@
 
 Summary: Archive for weather information
 Name: arkimet
-Version: 1.33
+Version: 1.34
 Release: 1
 License: GPL
 Group: Applications/Meteo
@@ -227,6 +227,11 @@ if [ "$1" = "1" ]; then
 fi
 
 %changelog
+* Wed Apr 28 2021 Daniele Branchini <dbranchini@arpae.it> - 1.34-1
+- Fixed satellite grib2 import (#264)
+- Implemented server-side timeout for arki-queries (#252)
+- Removed grib_api package support
+
 * Tue Jan 26 2021 Daniele Branchini <dbranchini@arpae.it> - 1.33-1
 - Fixed arki-bufr-prepare `--usn` (#260)
 - Improved doc (#261, #235)
