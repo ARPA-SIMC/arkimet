@@ -208,6 +208,12 @@ SendResult ConcreteTimeoutStreamOutput::send_file_segment(arki::core::NamedFileD
     {
         if (has_sendfile)
         {
+// Set to 1 to simulate a system without sendfile
+#if 0
+            has_sendfile = false;
+            buffer.allocate();
+            continue;
+#else
             utils::Sigignore ignpipe(SIGPIPE);
             ssize_t res = ::sendfile(*out, fd, &offset, size - written);
             if (res < 0)
@@ -216,6 +222,7 @@ SendResult ConcreteTimeoutStreamOutput::send_file_segment(arki::core::NamedFileD
                 {
                     has_sendfile = false;
                     buffer.allocate();
+                    continue;
                 } else if (errno == EPIPE) {
                     result.flags |= SendResult::SEND_PIPE_EOF_DEST;
                     break;
@@ -236,8 +243,14 @@ SendResult ConcreteTimeoutStreamOutput::send_file_segment(arki::core::NamedFileD
                 written += res;
                 result.sent += res;
             }
+#endif
         } else {
-            size_t res = out->pread(buffer, std::min(size - written, buffer.size), offset);
+            size_t res = fd.pread(buffer, std::min(size - written, buffer.size), offset);
+            if (res == 0)
+            {
+                result.flags |= SendResult::SEND_PIPE_EOF_SOURCE;
+                break;
+            }
             result += send_buffer(buffer, res);
             offset += res;
             written += res;

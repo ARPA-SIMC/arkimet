@@ -112,6 +112,12 @@ SendResult ConcreteStreamOutput::send_file_segment(arki::core::NamedFileDescript
     {
         if (has_sendfile)
         {
+// Set to 1 to simulate a system without sendfile
+#if 0
+            has_sendfile = false;
+            buffer.allocate();
+            continue;
+#else
             utils::Sigignore ignpipe(SIGPIPE);
             ssize_t res = ::sendfile(*out, fd, &offset, size);
             if (res < 0)
@@ -120,6 +126,7 @@ SendResult ConcreteStreamOutput::send_file_segment(arki::core::NamedFileDescript
                 {
                     has_sendfile = false;
                     buffer.allocate();
+                    continue;
                 } else if (errno == EPIPE) {
                     result.flags |= SendResult::SEND_PIPE_EOF_DEST;
                     break;
@@ -135,6 +142,7 @@ SendResult ConcreteStreamOutput::send_file_segment(arki::core::NamedFileDescript
                 size -= res;
                 result.sent += res;
             }
+#endif
         } else {
             size_t res = fd.pread(buffer, std::min(size, buffer.size), offset);
             if (res == 0)
