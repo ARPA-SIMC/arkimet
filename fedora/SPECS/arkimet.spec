@@ -26,6 +26,7 @@ BuildRequires: python3-rpm-macros >= 3-23
 %define python3_vers python3
 %endif
 
+BuildRequires: autoconf
 BuildRequires: gcc-c++
 BuildRequires: libtool
 BuildRequires: doxygen
