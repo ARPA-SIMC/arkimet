@@ -149,6 +149,7 @@ struct reverse_data : public MethKwargs<reverse_data, arkipy_ArkiDump>
             while (auto md = arki::Metadata::read_yaml(*reader, input_name))
                 md->write(*output);
 
+            rg.lock();
             return throw_ifnull(PyLong_FromLong(0));
         } ARKI_CATCH_RETURN_PYO
     }
@@ -192,6 +193,7 @@ struct reverse_summary : public MethKwargs<reverse_summary, arkipy_ArkiDump>
             while (summary.readYaml(*reader, input_name))
                 summary.write(*output);
 
+            rg.lock();
             return throw_ifnull(PyLong_FromLong(0));
         } ARKI_CATCH_RETURN_PYO
     }
