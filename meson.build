@@ -59,7 +59,7 @@ if not eccodes_dep.found()
 endif
 conf_data.set('HAVE_GRIBAPI', eccodes_dep.found())
 
-dballe_dep = dependency('libdballe', required: false, version: '>= 8.3')
+dballe_dep = dependency('libdballe', required: false, version: '>= 8.14')
 conf_data.set('HAVE_DBALLE', dballe_dep.found())
 
 meteo_vm2_dep = dependency('meteo-vm2', required: false, version: '>= 1.0')
