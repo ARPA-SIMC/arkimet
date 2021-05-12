@@ -300,6 +300,7 @@ struct dump_yaml : public MethKwargs<dump_yaml, arkipy_ArkiDump>
                     throw std::runtime_error(input_name + ": metadata entry does not start with 'MD', '!D', 'SU', or 'MG'");
             }
 
+            rg.lock();
             return throw_ifnull(PyLong_FromLong(0));
         } ARKI_CATCH_RETURN_PYO
     }
