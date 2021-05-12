@@ -58,8 +58,8 @@ struct run_ : public MethKwargs<run_, arkipy_ArkiXargs>
 
             if (!py_inputs || py_inputs != Py_None)
             {
-                ReleaseGIL rg;
                 auto inputs = stringlist_from_python(py_inputs);
+                ReleaseGIL rg;
                 // Process the files
                 for (const auto& i: inputs)
                 {
