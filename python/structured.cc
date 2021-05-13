@@ -269,6 +269,12 @@ std::string PythonReader::as_string(const std::string& key, const char* desc) co
     return from_python<std::string>(el);
 }
 
+static int get_attr_int(PyObject* o, const char* name)
+{
+    pyo_unique_ptr res(throw_ifnull(PyObject_GetAttrString(o, name)));
+    return from_python<int>(res);
+}
+
 core::Time PythonReader::as_time(const std::string& key, const char* desc) const
 {
     pyo_unique_ptr el(throw_ifnull(PyMapping_GetItemString(o, key.c_str())));
@@ -281,7 +287,8 @@ core::Time PythonReader::as_time(const std::string& key, const char* desc) const
         int mi = PyDateTime_DATE_GET_MINUTE(el.get());
         int se = PyDateTime_DATE_GET_SECOND(el.get());
         return core::Time(ye, mo, da, ho, mi, se);
-    } else if (PySequence_Check(el))
+    }
+    else if (PySequence_Check(el))
     {
         Py_ssize_t size = PySequence_Size(el);
         if (size == -1)
@@ -305,8 +312,22 @@ core::Time PythonReader::as_time(const std::string& key, const char* desc) const
         int second = from_python<int>(py_second);
         return core::Time(year, month, day, hour, minute, second);
     }
-    PyErr_SetString(PyExc_NotImplementedError, "Cannot parse a non-sequence, non-datetime as a time");
-    throw PythonException();
+    else
+    {
+        // Fall back to duck typing, to catch creative cases such as
+        // cftime.datetime instances. See https://unidata.github.io/cftime/api.html
+        return core::Time(
+            get_attr_int(el, "year"),
+            get_attr_int(el, "month"),
+            get_attr_int(el, "day"),
+            get_attr_int(el, "hour"),
+            get_attr_int(el, "minute"),
+            get_attr_int(el, "second")
+        );
+    }
+
+    // PyErr_SetString(PyExc_NotImplementedError, "Cannot parse a non-sequence, non-datetime as a time");
+    // throw PythonException();
 }
 
 void PythonReader::items(const char* desc, std::function<void(const std::string&, const Reader&)> dest) const
