@@ -1,3 +1,7 @@
+# New in version 1.35
+* Added support for libnetcdf.so.15
+* Minor fixes in dependency checking and tests (#266, #267)
+
 # New in version 1.34
 * Fixed satellite grib2 import (#264)
 * Implemented server-side timeout for arki-queries (#252)

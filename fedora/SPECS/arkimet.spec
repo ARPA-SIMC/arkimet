@@ -3,7 +3,7 @@
 
 Summary: Archive for weather information
 Name: arkimet
-Version: 1.34
+Version: 1.35
 Release: 1
 License: GPL
 Group: Applications/Meteo
@@ -30,7 +30,7 @@ BuildRequires: autoconf
 BuildRequires: gcc-c++
 BuildRequires: libtool
 BuildRequires: doxygen
-BuildRequires: libdballe-devel >= 8.3
+BuildRequires: pkgconfig(libdballe) >= 9.0
 BuildRequires: lua-devel >= 5.1
 BuildRequires: eccodes-devel
 BuildRequires: eccodes-simc
@@ -56,7 +56,7 @@ BuildRequires: %{python3_vers}-nose2
 BuildRequires: %{python3_vers}-jinja2
 BuildRequires: %{python3_vers}-requests
 BuildRequires: %{python3_vers}-wreport3
-BuildRequires: %{python3_vers}-dballe >= 8.3
+BuildRequires: %{python3_vers}-dballe >= 9.0
 BuildRequires: %{python3_vers}-netcdf4
 %if ! 0%{?el7}
 BuildRequires: %{python3_vers}-h5py
@@ -74,10 +74,10 @@ Requires: eccodes
 Requires: %{python3_vers}
 Requires: %{python3_vers}-werkzeug
 Requires: %{python3_vers}-setproctitle
-Requires: %{python3_vers}-dballe >= 8.3
+Requires: %{python3_vers}-dballe >= 9.0
 Requires: %{python3_vers}-netcdf4
 Requires: %{python3_vers}-shapely
-Requires: libdballe6 >= 8.3
+Requires: libdballe9
 Requires: systemd
 %if ! 0%{?el7}
 Requires: %{python3_vers}-h5py
@@ -112,7 +112,7 @@ currently offline.
 %package  -n arkimet-devel
 Summary:  Arkimet developement library
 Group:    Applications/Meteo
-Requires: libdballe-devel >= 8
+Requires: libdballe-devel >= 9.0
 Requires: eccodes-devel
 Requires: libwreport-devel
 Requires: %{python3_vers}-devel
@@ -228,6 +228,10 @@ if [ "$1" = "1" ]; then
 fi
 
 %changelog
+* Mon May 17 2021 Daniele Branchini <dbranchini@arpae.it> - 1.35-1
+- Added support for libnetcdf.so.15
+- Minor fixes in dependency checking and tests (#266, #267)
+
 * Wed Apr 28 2021 Daniele Branchini <dbranchini@arpae.it> - 1.34-1
 - Fixed satellite grib2 import (#264)
 - Implemented server-side timeout for arki-queries (#252)
