@@ -1,0 +1,177 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>Arkimet runtime configuration &#8212; arkimet 1.16 documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Arkimet Python HOWTOs" href="python-howtos/index.html" />
+    <link rel="prev" title="arki-server HTTP API" href="http-api.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="arkimet-runtime-configuration">
+<h1>Arkimet runtime configuration<a class="headerlink" href="#arkimet-runtime-configuration" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="environment-variables">
+<h2>Environment variables<a class="headerlink" href="#environment-variables" title="Permalink to this headline">¶</a></h2>
+<p>There are a number of environment variables that can be used to control arkimet.</p>
+<p>You can use <code class="docutils literal notranslate"><span class="pre">arki-dump</span> <span class="pre">--info</span></code> to list the current configuration in
+machine-parsable JSON format.</p>
+<div class="section" id="arki-formatter">
+<h3><code class="docutils literal notranslate"><span class="pre">ARKI_FORMATTER</span></code><a class="headerlink" href="#arki-formatter" title="Permalink to this headline">¶</a></h3>
+<p>Default: <code class="docutils literal notranslate"><span class="pre">/etc/arkimet/format</span></code></p>
+<p>Directory which contains Python scripts that can be used to customize how values
+are formatted when using <code class="docutils literal notranslate"><span class="pre">--format</span></code> kind of options.</p>
+<p>The value provided will be searched <em>before</em>, not <em>instead</em>, the default value.</p>
+</div>
+<div class="section" id="arki-bbox">
+<h3><code class="docutils literal notranslate"><span class="pre">ARKI_BBOX</span></code><a class="headerlink" href="#arki-bbox" title="Permalink to this headline">¶</a></h3>
+<p>Default: <code class="docutils literal notranslate"><span class="pre">/etc/arkimet/bbox</span></code></p>
+<p>Directory which contains Python scripts that can be used to customize how
+bounding boxes are computed from <code class="docutils literal notranslate"><span class="pre">Area</span></code> metadata.</p>
+<p>The value provided will be searched <em>before</em>, not <em>instead</em>, the default value.</p>
+</div>
+<div class="section" id="arki-postproc">
+<h3><code class="docutils literal notranslate"><span class="pre">ARKI_POSTPROC</span></code><a class="headerlink" href="#arki-postproc" title="Permalink to this headline">¶</a></h3>
+<p>Default: <code class="docutils literal notranslate"><span class="pre">/usr/lib/arkimet</span></code></p>
+<p>Directory which contains executable programs that can be used as
+postprocessors.</p>
+<p>The value provided will be searched <em>before</em>, not <em>instead</em>, the default value.</p>
+</div>
+<div class="section" id="arki-qmacro">
+<h3><code class="docutils literal notranslate"><span class="pre">ARKI_QMACRO</span></code><a class="headerlink" href="#arki-qmacro" title="Permalink to this headline">¶</a></h3>
+<p>Default: <code class="docutils literal notranslate"><span class="pre">/etc/arkimet/qmacro</span></code></p>
+<p>Directory which contains Python scripts that implement the available querymacro
+options.</p>
+<p>The value provided will be searched <em>before</em>, not <em>instead</em>, the default value.</p>
+</div>
+<div class="section" id="arki-scan">
+<h3><code class="docutils literal notranslate"><span class="pre">ARKI_SCAN</span></code><a class="headerlink" href="#arki-scan" title="Permalink to this headline">¶</a></h3>
+<p>Default: <code class="docutils literal notranslate"><span class="pre">/etc/arkimet/scan</span></code></p>
+<p>Directory which contains Python scripts that compute metadata from raw input
+data.</p>
+<p>The value provided will be searched <em>before</em>, not <em>instead</em>, the default value.</p>
+<p><code class="docutils literal notranslate"><span class="pre">ARKI_SCAN_GRIB1</span></code>, <code class="docutils literal notranslate"><span class="pre">ARKI_SCAN_GRIB2</span></code>, <code class="docutils literal notranslate"><span class="pre">ARKI_SCAN_BUFR</span></code>,
+<code class="docutils literal notranslate"><span class="pre">ARKI_SCAN_ODIMH5</span></code> are also supported for compatibility with the past, but
+should be considered deprecated.</p>
+</div>
+<div class="section" id="arki-iotrace">
+<h3><code class="docutils literal notranslate"><span class="pre">ARKI_IOTRACE</span></code><a class="headerlink" href="#arki-iotrace" title="Permalink to this headline">¶</a></h3>
+<p>Default: unset.</p>
+<p>When set, it is a pathname to a file where arkimet will write a log of I/O
+operations, used for performance debugging.</p>
+</div>
+<div class="section" id="arki-io-timeout">
+<h3><code class="docutils literal notranslate"><span class="pre">ARKI_IO_TIMEOUT</span></code><a class="headerlink" href="#arki-io-timeout" title="Permalink to this headline">¶</a></h3>
+<p>Default: 0 (no timeout)</p>
+<p>Timeout (in seconds) used for write operations while programs like
+<code class="docutils literal notranslate"><span class="pre">arki-query</span></code> or <code class="docutils literal notranslate"><span class="pre">arki-server</span></code> are sending out data.</p>
+<div class="toctree-wrapper compound">
+</div>
+</div>
+</div>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">arkimet</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="matcher.html">Match expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="datasets.html">Datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="segments.html">Data segments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="http-api.html">arki-server HTTP API</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Arkimet runtime configuration</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#environment-variables">Environment variables</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="python-howtos/index.html">Arkimet Python HOWTOs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="python-howtos/index.html#indices-and-tables">Indices and tables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="python/index.html">Arkimet Python API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="python/index.html#indices-and-tables">Indices and tables</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="http-api.html" title="previous chapter">arki-server HTTP API</a></li>
+      <li>Next: <a href="python-howtos/index.html" title="next chapter">Arkimet Python HOWTOs</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2019, Enrico Zini.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.2.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/config.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

@@ -41,12 +41,14 @@ queried.</p>
 <p class="caption"><span class="caption-text">Contents:</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="datasets/iseg.html"><code class="docutils literal notranslate"><span class="pre">iseg</span></code> dataset format</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="datasets/iseg.html#example-configuration">Example configuration</a></li>
 <li class="toctree-l2"><a class="reference internal" href="datasets/iseg.html#dataset-layout">Dataset layout</a></li>
 <li class="toctree-l2"><a class="reference internal" href="datasets/iseg.html#check-and-repack-on-concat-segments">Check and repack on <code class="docutils literal notranslate"><span class="pre">concat</span></code> segments</a></li>
 <li class="toctree-l2"><a class="reference internal" href="datasets/iseg.html#check-and-repack-on-dir-segments">Check and repack on <code class="docutils literal notranslate"><span class="pre">dir</span></code> segments</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="datasets/simple.html"><code class="docutils literal notranslate"><span class="pre">simple</span></code> dataset format</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="datasets/simple.html#example-configuration">Example configuration</a></li>
 <li class="toctree-l2"><a class="reference internal" href="datasets/simple.html#dataset-layout">Dataset layout</a></li>
 <li class="toctree-l2"><a class="reference internal" href="datasets/simple.html#general-check-and-repack-notes">General check and repack notes</a></li>
 <li class="toctree-l2"><a class="reference internal" href="datasets/simple.html#check-and-repack-on-concat-segments">Check and repack on concat segments</a></li>
@@ -54,6 +56,7 @@ queried.</p>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="datasets/ondisk2.html"><code class="docutils literal notranslate"><span class="pre">ondisk2</span></code> dataset format</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="datasets/ondisk2.html#example-configuration">Example configuration</a></li>
 <li class="toctree-l2"><a class="reference internal" href="datasets/ondisk2.html#dataset-layout">Dataset layout</a></li>
 <li class="toctree-l2"><a class="reference internal" href="datasets/ondisk2.html#general-check-and-repack-notes">General check and repack notes</a></li>
 <li class="toctree-l2"><a class="reference internal" href="datasets/ondisk2.html#check-and-repack-on-concat-segments">Check and repack on concat segments</a></li>
@@ -65,40 +68,60 @@ queried.</p>
 <li class="toctree-l2"><a class="reference internal" href="datasets/archive.html#offline-archives">Offline archives</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="datasets/error.html"><code class="docutils literal notranslate"><span class="pre">error</span></code> dataset</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="datasets/error.html#example-configuration">Example configuration</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="datasets/duplicates.html"><code class="docutils literal notranslate"><span class="pre">duplicates</span></code> dataset</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="datasets/duplicates.html#example-configuration">Example configuration</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="datasets/remote.html"><code class="docutils literal notranslate"><span class="pre">remote</span></code> dataset</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="datasets/remote.html#example-configuration">Example configuration</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="datasets/outbound.html"><code class="docutils literal notranslate"><span class="pre">outbound</span></code> dataset</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="datasets/outbound.html#example-configuration">Example configuration</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="datasets/discard.html"><code class="docutils literal notranslate"><span class="pre">discard</span></code> dataset</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="datasets/discard.html#example-configuration">Example configuration</a></li>
+</ul>
+</li>
 </ul>
 </div>
 <div class="section" id="dataset-configuration">
-<h2>Dataset configuration<a class="headerlink" href="#dataset-configuration" title="Permalink to this headline">¶</a></h2>
+<span id="dataset-config"></span><h2>Dataset configuration<a class="headerlink" href="#dataset-configuration" title="Permalink to this headline">¶</a></h2>
 <p>Datasets are configured with simple <code class="docutils literal notranslate"><span class="pre">key</span> <span class="pre">=</span> <span class="pre">value</span></code> configuration options.</p>
 <p>These are all the supported options:</p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">type</span></code>: dataset type (one of <code class="docutils literal notranslate"><span class="pre">iseg</span></code>, <code class="docutils literal notranslate"><span class="pre">ondisk2</span></code>, <code class="docutils literal notranslate"><span class="pre">simple</span></code>, <code class="docutils literal notranslate"><span class="pre">error</span></code>,
-<code class="docutils literal notranslate"><span class="pre">duplicates</span></code>, <code class="docutils literal notranslate"><span class="pre">remote</span></code>, <code class="docutils literal notranslate"><span class="pre">outbound</span></code>, <code class="docutils literal notranslate"><span class="pre">discard</span></code>, <code class="docutils literal notranslate"><span class="pre">file</span></code>).</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">path</span></code>: path to the dataset, or URL for <code class="docutils literal notranslate"><span class="pre">remote</span></code> datasets.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">archive</span> <span class="pre">age</span></code>: data older than this number of days will be moved to the
+dataset archive during maintenance.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">delete</span> <span class="pre">age</span></code>: data older than this number of days will be deleted during
+maintenance.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">eatmydata</span></code>: disable <cite>fsync</cite>/<cite>fdatasync</cite> operations while writing data to
+dataset, and disable sqlite’ journaling and other data integrity features.
+This makes acquiring data very fast, but an interrupted import or a
+concurrent import may cause data corruption.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">format</span></code>: format of data in the dataset (one of <code class="docutils literal notranslate"><span class="pre">grib</span></code>, <code class="docutils literal notranslate"><span class="pre">bufr</span></code>, <code class="docutils literal notranslate"><span class="pre">odimh5</span></code>, <code class="docutils literal notranslate"><span class="pre">vm2</span></code>)</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">step</span></code>: segmentation step for the dataset (one of <code class="docutils literal notranslate"><span class="pre">daily</span></code>, <code class="docutils literal notranslate"><span class="pre">weekly</span></code>,
-<code class="docutils literal notranslate"><span class="pre">biweekly</span></code>, <code class="docutils literal notranslate"><span class="pre">monthly</span></code>, and <code class="docutils literal notranslate"><span class="pre">yearly</span></code>).</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">unique</span></code>: comma-separated list of names of metadata that, taken together,
-make it unique in the dataset</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">index</span></code>: comma-separated list of names of metadata to index for faster queries</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">path</span></code>: path to the dataset, or URL for <code class="docutils literal notranslate"><span class="pre">remote</span></code> datasets.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">replace</span></code>: when <code class="docutils literal notranslate"><span class="pre">yes</span></code>, importing duplicate data will replace the existing
 version. When <code class="docutils literal notranslate"><span class="pre">no</span></code>, importing duplicate data will be rejected. When
 <code class="docutils literal notranslate"><span class="pre">usn</span></code>, importing duplicate BUFR data will replace the existing version only
 if the BUFR Update Sequence Number is greater than the one currently in the
 dataset.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">restrict</span></code>: comma-separated list of names that have access to the dataset.
+This allows filtering with the <code class="docutils literal notranslate"><span class="pre">--restrict</span></code> option on command line.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">smallfiles</span></code>: <code class="docutils literal notranslate"><span class="pre">yes</span></code> or <code class="docutils literal notranslate"><span class="pre">no</span></code>. When <code class="docutils literal notranslate"><span class="pre">yes</span></code>, the file contents are also
 saved in the index, to speed up extraction of data with tiny payloads like
 <code class="docutils literal notranslate"><span class="pre">vm2</span></code>.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">archive</span> <span class="pre">age</span></code>: data older than this number of days will be moved to the
-dataset archive during maintenance.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">delete</span> <span class="pre">age</span></code>: data older than this number of days will be deleted during
-maintenance.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">restrict</span></code>: comma-separated list of names that have access to the dataset.
-This allows filtering with the <code class="docutils literal notranslate"><span class="pre">--restrict</span></code> option on command line.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">eatmydata</span></code>: disable <cite>fsync</cite>/<cite>fdatasync</cite> operations while writing data to
-dataset, and disable sqlite’ journaling and other data integrity features.
-This makes acquiring data very fast, but an interrupted import or a
-concurrent import may cause data corruption.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">step</span></code>: segmentation step for the dataset (one of <code class="docutils literal notranslate"><span class="pre">daily</span></code>, <code class="docutils literal notranslate"><span class="pre">weekly</span></code>,
+<code class="docutils literal notranslate"><span class="pre">biweekly</span></code>, <code class="docutils literal notranslate"><span class="pre">monthly</span></code>, and <code class="docutils literal notranslate"><span class="pre">yearly</span></code>).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">type</span></code>: dataset type (one of <code class="docutils literal notranslate"><span class="pre">iseg</span></code>, <code class="docutils literal notranslate"><span class="pre">ondisk2</span></code>, <code class="docutils literal notranslate"><span class="pre">simple</span></code>, <code class="docutils literal notranslate"><span class="pre">error</span></code>,
+<code class="docutils literal notranslate"><span class="pre">duplicates</span></code>, <code class="docutils literal notranslate"><span class="pre">remote</span></code>, <code class="docutils literal notranslate"><span class="pre">outbound</span></code>, <code class="docutils literal notranslate"><span class="pre">discard</span></code>, <code class="docutils literal notranslate"><span class="pre">file</span></code>).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">unique</span></code>: comma-separated list of names of metadata that, taken together,
+make it unique in the dataset</p></li>
 </ul>
 </div>
 </div>
@@ -128,11 +151,17 @@ concurrent import may cause data corruption.</p></li>
 <li class="toctree-l2"><a class="reference internal" href="datasets/simple.html"><code class="docutils literal notranslate"><span class="pre">simple</span></code> dataset format</a></li>
 <li class="toctree-l2"><a class="reference internal" href="datasets/ondisk2.html"><code class="docutils literal notranslate"><span class="pre">ondisk2</span></code> dataset format</a></li>
 <li class="toctree-l2"><a class="reference internal" href="datasets/archive.html">dataset archives</a></li>
+<li class="toctree-l2"><a class="reference internal" href="datasets/error.html"><code class="docutils literal notranslate"><span class="pre">error</span></code> dataset</a></li>
+<li class="toctree-l2"><a class="reference internal" href="datasets/duplicates.html"><code class="docutils literal notranslate"><span class="pre">duplicates</span></code> dataset</a></li>
+<li class="toctree-l2"><a class="reference internal" href="datasets/remote.html"><code class="docutils literal notranslate"><span class="pre">remote</span></code> dataset</a></li>
+<li class="toctree-l2"><a class="reference internal" href="datasets/outbound.html"><code class="docutils literal notranslate"><span class="pre">outbound</span></code> dataset</a></li>
+<li class="toctree-l2"><a class="reference internal" href="datasets/discard.html"><code class="docutils literal notranslate"><span class="pre">discard</span></code> dataset</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#dataset-configuration">Dataset configuration</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="segments.html">Data segments</a></li>
 <li class="toctree-l1"><a class="reference internal" href="http-api.html">arki-server HTTP API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="config.html">Arkimet runtime configuration</a></li>
 <li class="toctree-l1"><a class="reference internal" href="python-howtos/index.html">Arkimet Python HOWTOs</a></li>
 <li class="toctree-l1"><a class="reference internal" href="python-howtos/index.html#indices-and-tables">Indices and tables</a></li>
 <li class="toctree-l1"><a class="reference internal" href="python/index.html">Arkimet Python API</a></li>

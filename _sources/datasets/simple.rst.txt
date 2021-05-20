@@ -12,7 +12,20 @@ The only query optimization it supports is when querying by a restricted
 date-time range.
 
 Because of the lack of a detailed index, ``simple`` dataset cannot efficiently
-detect duplicate data on import, therefore that feature is not implemented.
+detect duplicate data on import, therefore that feature is not implemented. For
+the same reason, ``index`` and ``unique`` are not supported in the
+configuration.
+
+
+Example configuration
+---------------------
+
+::
+
+  [name]
+  type = simple
+  step = daily
+  filter = origin: GRIB1,200
 
 
 Dataset layout

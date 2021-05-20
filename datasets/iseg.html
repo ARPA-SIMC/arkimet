@@ -49,6 +49,23 @@ ignore all segments that do not fit in the naming scheme defined by the dataset
 step.</p>
 <p>It can optimize queries that use metadata selected with the <code class="docutils literal notranslate"><span class="pre">index</span></code>
 configuration keyword.</p>
+<p>Because the <code class="docutils literal notranslate"><span class="pre">iseg</span></code> dataset can only have one index per step, and one segment
+per index, it cannot store data encoded in multiple formats (like GRIB and BUFR
+together), as that would require multiple segments for the same step. For this
+reason, the <code class="docutils literal notranslate"><span class="pre">format</span></code> keyword is mandatory in a <code class="docutils literal notranslate"><span class="pre">type=iseg</span></code> dataset
+configuration (see <a class="reference internal" href="../datasets.html#dataset-config"><span class="std std-ref">Dataset configuration</span></a>).</p>
+<div class="section" id="example-configuration">
+<h2>Example configuration<a class="headerlink" href="#example-configuration" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+<span class="nb">type</span> <span class="o">=</span> <span class="n">iseg</span>
+<span class="nb">format</span> <span class="o">=</span> <span class="n">grib</span>
+<span class="n">step</span> <span class="o">=</span> <span class="n">daily</span>
+<span class="nb">filter</span> <span class="o">=</span> <span class="n">origin</span><span class="p">:</span> <span class="n">GRIB1</span><span class="p">,</span><span class="mi">200</span>
+<span class="n">unique</span> <span class="o">=</span> <span class="n">origin</span><span class="p">,</span> <span class="n">reftime</span><span class="p">,</span> <span class="n">area</span>
+<span class="n">index</span> <span class="o">=</span> <span class="n">origin</span><span class="p">,</span> <span class="n">reftime</span>
+</pre></div>
+</div>
+</div>
 <div class="section" id="dataset-layout">
 <h2>Dataset layout<a class="headerlink" href="#dataset-layout" title="Permalink to this headline">¶</a></h2>
 <p>The <code class="docutils literal notranslate"><span class="pre">.index</span></code> files contain the metadata for all data in the segment.</p>
@@ -234,11 +251,17 @@ should be reindexed instead</p></li>
 <li class="toctree-l2"><a class="reference internal" href="simple.html"><code class="docutils literal notranslate"><span class="pre">simple</span></code> dataset format</a></li>
 <li class="toctree-l2"><a class="reference internal" href="ondisk2.html"><code class="docutils literal notranslate"><span class="pre">ondisk2</span></code> dataset format</a></li>
 <li class="toctree-l2"><a class="reference internal" href="archive.html">dataset archives</a></li>
+<li class="toctree-l2"><a class="reference internal" href="error.html"><code class="docutils literal notranslate"><span class="pre">error</span></code> dataset</a></li>
+<li class="toctree-l2"><a class="reference internal" href="duplicates.html"><code class="docutils literal notranslate"><span class="pre">duplicates</span></code> dataset</a></li>
+<li class="toctree-l2"><a class="reference internal" href="remote.html"><code class="docutils literal notranslate"><span class="pre">remote</span></code> dataset</a></li>
+<li class="toctree-l2"><a class="reference internal" href="outbound.html"><code class="docutils literal notranslate"><span class="pre">outbound</span></code> dataset</a></li>
+<li class="toctree-l2"><a class="reference internal" href="discard.html"><code class="docutils literal notranslate"><span class="pre">discard</span></code> dataset</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../datasets.html#dataset-configuration">Dataset configuration</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../segments.html">Data segments</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../http-api.html">arki-server HTTP API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../config.html">Arkimet runtime configuration</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../python-howtos/index.html">Arkimet Python HOWTOs</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../python-howtos/index.html#indices-and-tables">Indices and tables</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../python/index.html">Arkimet Python API</a></li>

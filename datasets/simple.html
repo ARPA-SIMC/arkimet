@@ -40,7 +40,18 @@ and simple structure.</p>
 <p>The only query optimization it supports is when querying by a restricted
 date-time range.</p>
 <p>Because of the lack of a detailed index, <code class="docutils literal notranslate"><span class="pre">simple</span></code> dataset cannot efficiently
-detect duplicate data on import, therefore that feature is not implemented.</p>
+detect duplicate data on import, therefore that feature is not implemented. For
+the same reason, <code class="docutils literal notranslate"><span class="pre">index</span></code> and <code class="docutils literal notranslate"><span class="pre">unique</span></code> are not supported in the
+configuration.</p>
+<div class="section" id="example-configuration">
+<h2>Example configuration<a class="headerlink" href="#example-configuration" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+<span class="nb">type</span> <span class="o">=</span> <span class="n">simple</span>
+<span class="n">step</span> <span class="o">=</span> <span class="n">daily</span>
+<span class="nb">filter</span> <span class="o">=</span> <span class="n">origin</span><span class="p">:</span> <span class="n">GRIB1</span><span class="p">,</span><span class="mi">200</span>
+</pre></div>
+</div>
+</div>
 <div class="section" id="dataset-layout">
 <h2>Dataset layout<a class="headerlink" href="#dataset-layout" title="Permalink to this headline">¶</a></h2>
 <p>At the root of the dataset there is a <code class="docutils literal notranslate"><span class="pre">MANIFEST</span></code> file that lists the segments
@@ -248,11 +259,17 @@ should be reindexed instead</p></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#"><code class="docutils literal notranslate"><span class="pre">simple</span></code> dataset format</a></li>
 <li class="toctree-l2"><a class="reference internal" href="ondisk2.html"><code class="docutils literal notranslate"><span class="pre">ondisk2</span></code> dataset format</a></li>
 <li class="toctree-l2"><a class="reference internal" href="archive.html">dataset archives</a></li>
+<li class="toctree-l2"><a class="reference internal" href="error.html"><code class="docutils literal notranslate"><span class="pre">error</span></code> dataset</a></li>
+<li class="toctree-l2"><a class="reference internal" href="duplicates.html"><code class="docutils literal notranslate"><span class="pre">duplicates</span></code> dataset</a></li>
+<li class="toctree-l2"><a class="reference internal" href="remote.html"><code class="docutils literal notranslate"><span class="pre">remote</span></code> dataset</a></li>
+<li class="toctree-l2"><a class="reference internal" href="outbound.html"><code class="docutils literal notranslate"><span class="pre">outbound</span></code> dataset</a></li>
+<li class="toctree-l2"><a class="reference internal" href="discard.html"><code class="docutils literal notranslate"><span class="pre">discard</span></code> dataset</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../datasets.html#dataset-configuration">Dataset configuration</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../segments.html">Data segments</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../http-api.html">arki-server HTTP API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../config.html">Arkimet runtime configuration</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../python-howtos/index.html">Arkimet Python HOWTOs</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../python-howtos/index.html#indices-and-tables">Indices and tables</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../python/index.html">Arkimet Python API</a></li>

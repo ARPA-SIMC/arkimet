@@ -17,6 +17,23 @@ metadata selected with the ``unique`` configuration keyword.
 It can optimize queries that use metadata selected with the ``index``
 configuration keyword.
 
+It can currently contain data in a mix of formats, but relying on this is
+deprecated, and support for multi-format datasets may disappear in future
+versions of arkimet.
+
+
+Example configuration
+---------------------
+
+::
+
+  [name]
+  type = ondisk2
+  step = daily
+  filter = origin: GRIB1,200
+  unique = origin, reftime, area
+  index = origin, reftime
+
 
 Dataset layout
 --------------
