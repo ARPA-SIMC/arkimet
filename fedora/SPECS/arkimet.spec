@@ -134,6 +134,13 @@ Requires: bzip2-devel
 sh autogen.sh
 
 %build
+
+# CentOS 7 known limitations
+# - disabled syscall splice()
+# - disabled nosetests that were hanging (see #217)
+# - disabled netcdf v5 support (see #243)
+# - disabled doc building for issues with sphinx
+
 # enabling arpae tests on almost all builds
 %{?fedora:%define arpae_tests 1}
 %{?rhel:%define arpae_tests 1}
@@ -143,7 +150,7 @@ echo 'Enabling ARPAE tests'
 source %{_sysconfdir}/profile.d/eccodes-simc.sh
 %configure --enable-arpae-tests %{?el7:--disable-docs --disable-splice}
 %else
-%configure %{?el7:--disable-docs}
+%configure %{?el7:--disable-docs --disable-splice}
 %endif
 make
 
