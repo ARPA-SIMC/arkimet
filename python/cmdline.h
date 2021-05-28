@@ -20,7 +20,16 @@ class DatasetProcessor;
  */
 std::unique_ptr<cmdline::DatasetProcessor> build_processor(std::shared_ptr<arki::dataset::Pool> pool, PyObject* args, PyObject* kw);
 
+/**
+ * Return true if all files were processed without exceptions. Returns false if
+ * an exception was raised while processing some input
+ */
 bool foreach_file(std::shared_ptr<arki::dataset::Session> session, BinaryInputFile& file, const std::string& format, std::function<void(dataset::Reader&)> dest);
+
+/**
+ * Return true if all sections were processed without exceptions. Returns false if
+ * an exception was raised while processing some input
+ */
 bool foreach_sections(std::shared_ptr<arki::dataset::Pool> pool, std::function<void(dataset::Reader&)> dest);
 
 }

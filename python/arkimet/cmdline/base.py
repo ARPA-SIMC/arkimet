@@ -72,7 +72,7 @@ class App:
         try:
             cmd = cls()
             cmd.parse_args(args)
-            cmd.run()
+            return cmd.run()
         except Exit as e:
             if not e.args:
                 return

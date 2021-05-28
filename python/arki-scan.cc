@@ -17,6 +17,7 @@
 #include "cmdline/processor.h"
 #include "dataset.h"
 #include "dataset/session.h"
+#include <sysexits.h>
 
 using namespace arki::python;
 using namespace arki::utils;
@@ -255,6 +256,37 @@ struct scan_sections : public MethKwargs<scan_sections, arkipy_ArkiScan>
     }
 };
 
+static int compute_result(bool all_processed, bool ignore_duplicates, const std::vector<arki_scan::DispatchResults>& results)
+{
+    bool have_issues = !all_processed;
+    for (const auto& res: results)
+    {
+        if (res.not_imported)
+            return EX_CANTCREAT;
+        if (res.in_error_dataset)
+        {
+            have_issues = true;
+            continue;
+        }
+        if (res.duplicates && !ignore_duplicates)
+        {
+            have_issues = true;
+            continue;
+        }
+        if (!res.successful)
+        {
+            have_issues = true;
+            continue;
+        }
+    }
+
+    if (have_issues)
+        return EX_DATAERR;
+    else
+        return EX_OK;
+}
+
+
 struct dispatch_file : public MethKwargs<dispatch_file, arkipy_ArkiScan>
 {
     constexpr static const char* name = "dispatch_file";
@@ -277,29 +309,24 @@ struct dispatch_file : public MethKwargs<dispatch_file, arkipy_ArkiScan>
             return nullptr;
 
         try {
-            bool all_successful;
+            std::vector<arki_scan::DispatchResults> results;
+            bool all_processed = false;
             {
                 BinaryInputFile in(file);
                 ReleaseGIL rg;
 
-                bool dispatch_ok = true;
-                bool res = foreach_file(self->pool->session(), in, std::string(format, format_len), [&](arki::dataset::Reader& reader) {
+                all_processed = foreach_file(self->pool->session(), in, std::string(format, format_len), [&](arki::dataset::Reader& reader) {
                     auto stats = self->dispatcher->process(reader, reader.name());
 
                     if (status)
                         arki::nag::warning("%s: %s", stats.name.c_str(), stats.summary().c_str());
 
-                    dispatch_ok = stats.success(ignore_duplicates) && dispatch_ok;
+                    results.emplace_back(stats);
                 });
-
-                all_successful = res && dispatch_ok;
-
                 self->processor->end();
             }
-            if (all_successful)
-                Py_RETURN_TRUE;
-            else
-                Py_RETURN_FALSE;
+
+            return throw_ifnull(PyLong_FromLong(compute_result(all_processed, ignore_duplicates, results)));
         } ARKI_CATCH_RETURN_PYO
     }
 };
@@ -331,13 +358,15 @@ struct dispatch_sections : public MethKwargs<dispatch_sections, arkipy_ArkiScan>
             return nullptr;
 
         try {
-            bool all_successful = true;
+            std::vector<arki_scan::DispatchResults> results;
+            bool all_processed = false;
+            bool had_exceptions = false;
 
             {
                 ReleaseGIL rg;
 
                 // Query all the datasets in sequence
-                self->pool->foreach_dataset([&](std::shared_ptr<arki::dataset::Dataset> ds) {
+                all_processed = self->pool->foreach_dataset([&](std::shared_ptr<arki::dataset::Dataset> ds) {
                     FileSource source(ds);
                     if (movework) source.movework = std::string(movework, movework_len);
                     if (moveok) source.moveok = std::string(moveok, moveok_len);
@@ -351,23 +380,25 @@ struct dispatch_sections : public MethKwargs<dispatch_sections, arkipy_ArkiScan>
                         if (status)
                             arki::nag::warning("%s: %s", stats.name.c_str(), stats.summary().c_str());
                         success = stats.success(ignore_duplicates);
+                        results.emplace_back(stats);
                     } catch (PythonException&) {
                         throw;
                     } catch (std::exception& e) {
                         arki::nag::warning("%s failed: %s", source.reader->name().c_str(), e.what());
                         success = false;
+                        had_exceptions = true;
                     }
                     source.close(success);
-                    if (!success) all_successful = false;
                     return true;
                 });
 
                 self->processor->end();
             }
-            if (all_successful)
-                Py_RETURN_TRUE;
-            else
-                Py_RETURN_FALSE;
+
+            if (had_exceptions)
+                return throw_ifnull(PyLong_FromLong(EX_CANTCREAT));
+
+            return throw_ifnull(PyLong_FromLong(compute_result(all_processed, ignore_duplicates, results)));
         } ARKI_CATCH_RETURN_PYO
     }
 };

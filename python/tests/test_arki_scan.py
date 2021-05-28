@@ -51,8 +51,10 @@ class TestArkiScan(CmdlineTestMixin, unittest.TestCase):
         kw.setdefault("format", "grib")
         kw.setdefault("filter", "origin:GRIB1")
         env = Env(**kw)
-        yield env
-        env.cleanup()
+        try:
+            yield env
+        finally:
+            env.cleanup()
 
     def read(self, fname):
         with open(fname, "rb") as fd:
@@ -277,6 +279,33 @@ class TestArkiScan(CmdlineTestMixin, unittest.TestCase):
             self.assertEqual(mds[0].to_python("source")["file"], os.path.abspath("testenv/testds/2007/07-08.grib"))
             self.assertEqual(mds[1].to_python("source")["file"], os.path.abspath("testenv/testds/2007/07-07.grib"))
             self.assertEqual(mds[2].to_python("source")["file"], os.path.abspath("testenv/error/2007/10-09.grib"))
+
+            self.assertFalse(os.path.exists("testenv/test.grib1"))
+            self.assertFalse(os.path.exists("testenv/copyok/test.grib1"))
+            self.assertTrue(os.path.exists("testenv/copyko/test.grib1"))
+            self.assertEqual(os.path.getsize("testenv/copyko/test.grib1"), 44412)
+
+    def test_dispatch_writefail(self):
+        with self.datasets(filter="origin:GRIB1,200 or GRIB1,80"):
+            shutil.rmtree("testenv/error")
+            with open("testenv/error", "wt") as fd:
+                fd.write("this is not a directory")
+            shutil.copyfile("inbound/test.grib1", "testenv/test.grib1")
+            with self.assertLogs():
+                out = self.call_output_success(
+                        "--moveok=testenv/copyok",
+                        "--moveko=testenv/copyko",
+                        "--dispatch=testenv/config",
+                        "testenv/test.grib1",
+                        binary=True,
+                        returncode=posix.EX_CANTCREAT,
+                    )
+            mds = parse_metadata(out)
+            self.assertEqual(len(mds), 3)
+
+            self.assertEqual(mds[0].to_python("source")["file"], os.path.abspath("testenv/testds/2007/07-08.grib"))
+            self.assertEqual(mds[1].to_python("source")["file"], os.path.abspath("testenv/testds/2007/07-07.grib"))
+            self.assertEqual(mds[2].to_python("source")["file"], os.path.abspath("testenv/test.grib1"))
 
             self.assertFalse(os.path.exists("testenv/test.grib1"))
             self.assertFalse(os.path.exists("testenv/copyok/test.grib1"))
