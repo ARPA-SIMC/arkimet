@@ -65,7 +65,7 @@ std::shared_ptr<core::cfg::Section> read_config(const std::string& fname)
     if (sys::exists(fname))
     {
         section->set("path", sys::abspath(fname));
-        section->set("format", scan::Scanner::format_from_filename(fname, "arkimet"));
+        section->set("format", scan::Scanner::format_from_filename(fname));
         section->set("name", fname);
     } else {
         size_t fpos = fname.find(':');
