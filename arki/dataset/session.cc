@@ -179,6 +179,8 @@ std::shared_ptr<core::cfg::Section> Session::read_config(const std::string& path
 
     if (S_ISDIR(st->st_mode))
         return dataset::local::Reader::read_config(fname);
+    else if (str::basename(fname) == "config")
+        return dataset::local::Reader::read_config(str::dirname(fname));
     else
         return dataset::file::read_config(fname);
 }
