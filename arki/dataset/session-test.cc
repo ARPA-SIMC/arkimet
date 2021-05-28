@@ -38,8 +38,18 @@ add_method("read_config", [] {
     wassert(actual(cfg->value("name")) == "inbound/test.grib1");
 
     write_test_config();
+    std::string expected_path = sys::abspath("testds");
+
     cfg = dataset::Session::read_config("testds");
     wassert(actual(cfg->value("name")) == "testds");
+    wassert(actual(cfg->value("path")) == expected_path);
+
+    cfg = dataset::Session::read_config("testds/config");
+    wassert(actual(cfg->value("name")) == "testds");
+    wassert(actual(cfg->value("path")) == expected_path);
+
+    sys::write_file("testds/file.unknown", "test");
+    wassert_throws(std::runtime_error, dataset::Session::read_config("testds/file.unknown"));
 });
 
 add_method("read_configs", [] {
