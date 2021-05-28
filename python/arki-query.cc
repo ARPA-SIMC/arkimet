@@ -9,7 +9,7 @@
 #include "cmdline.h"
 #include "cmdline/processor.h"
 #include "dataset/session.h"
-#include "sysexits.h"
+#include <sysexits.h>
 
 using namespace arki::python;
 using namespace arki::utils;

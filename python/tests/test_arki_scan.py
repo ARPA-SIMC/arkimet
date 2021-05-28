@@ -291,14 +291,15 @@ class TestArkiScan(CmdlineTestMixin, unittest.TestCase):
             with open("testenv/error", "wt") as fd:
                 fd.write("this is not a directory")
             shutil.copyfile("inbound/test.grib1", "testenv/test.grib1")
-            out = self.call_output_success(
-                    "--moveok=testenv/copyok",
-                    "--moveko=testenv/copyko",
-                    "--dispatch=testenv/config",
-                    "testenv/test.grib1",
-                    binary=True,
-                    returncode=posix.EX_CANTCREAT,
-                )
+            with self.assertLogs():
+                out = self.call_output_success(
+                        "--moveok=testenv/copyok",
+                        "--moveko=testenv/copyko",
+                        "--dispatch=testenv/config",
+                        "testenv/test.grib1",
+                        binary=True,
+                        returncode=posix.EX_CANTCREAT,
+                    )
             mds = parse_metadata(out)
             self.assertEqual(len(mds), 3)
 

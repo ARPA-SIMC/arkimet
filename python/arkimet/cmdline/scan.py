@@ -150,12 +150,12 @@ class Scan(AppConfigMixin, AppWithProcessor):
                 arki_scan.set_dispatcher(**kw)
 
                 if self.args.stdin:
-                    all_successful = arki_scan.dispatch_file(
+                    return arki_scan.dispatch_file(
                             sys.stdin, self.args.stdin,
                             ignore_duplicates=self.args.ignore_duplicates,
                             status=self.args.status)
                 else:
-                    all_successful = arki_scan.dispatch_sections(
+                    return arki_scan.dispatch_sections(
                             moveok=self.args.moveok, moveko=self.args.moveko,
                             movework=self.args.movework,
                             ignore_duplicates=self.args.ignore_duplicates,
@@ -166,5 +166,5 @@ class Scan(AppConfigMixin, AppWithProcessor):
                 else:
                     all_successful = arki_scan.scan_sections()
 
-            if not all_successful:
-                raise Exit(posix.EX_DATAERR)
+                if not all_successful:
+                    raise Exit(posix.EX_DATAERR)
