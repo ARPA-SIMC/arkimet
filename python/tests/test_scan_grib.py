@@ -255,7 +255,7 @@ class TestScanGrib(unittest.TestCase):
         self.assertNotIn("timerange", md)
         self.assertEqual(md["area"], "GRIB(tn=90)")
         # issue201: set pl and pt
-        self.assertEqual(md["proddef"], "GRIB(tod=0)")
+        self.assertEqual(md["proddef"], "GRIB(ch=WV073, sat=MSG4, tod=0)")
         self.assertEqual(md["reftime"], "2021-03-05T23:00:00Z")
         self.assertEqual(md["run"], "MINUTE(23:00)")
 
@@ -395,3 +395,58 @@ class TestScanGrib(unittest.TestCase):
         mds = self.read("inbound/cosmo/fcproc_3.grib2")
         self.assertEqual(mds[0]["timerange"], "Timedef(48h, 1, 24h)")
         self.assertEqual(mds[0]["proddef"], "GRIB(tod=1)")
+
+    def test_meteosat(self):
+        """
+        Check scanning meteosat GRIB images
+        """
+        # See issue #268
+        # More test data can be found at https://github.com/ARPA-SIMC/qc_sample_data/blob/master/satellite/grib/
+
+        mds = self.read("inbound/meteosat/MSG4_IR_016.grib")
+        self.assertEqual(len(mds), 1)
+        md = mds[0]
+        self.assertEqual(md["origin"], "GRIB2(00098, 00000, 000, 255, 254)")
+        self.assertEqual(md["product"], "GRIB2(00098, 003, 000, 000, 004, 000)")
+        self.assertEqual(md["level"], "GRIB2S(  -,   -,          -)")
+        self.assertNotIn("timerange", md)
+        self.assertEqual(md["area"], "GRIB(tn=90)")
+        self.assertEqual(md["proddef"], "GRIB(ch=IR016, sat=MSG4, tod=0)")
+        self.assertEqual(md["reftime"], "2020-02-23T11:00:00Z")
+        self.assertEqual(md["run"], "MINUTE(11:00)")
+
+        mds = self.read("inbound/meteosat/MSG4_IR_039.grib")
+        self.assertEqual(len(mds), 1)
+        md = mds[0]
+        self.assertEqual(md["origin"], "GRIB2(00098, 00000, 000, 255, 254)")
+        self.assertEqual(md["product"], "GRIB2(00098, 003, 000, 000, 004, 000)")
+        self.assertEqual(md["level"], "GRIB2S(  -,   -,          -)")
+        self.assertNotIn("timerange", md)
+        self.assertEqual(md["area"], "GRIB(tn=90)")
+        self.assertEqual(md["proddef"], "GRIB(ch=IR039, sat=MSG4, tod=0)")
+        self.assertEqual(md["reftime"], "2020-02-23T11:00:00Z")
+        self.assertEqual(md["run"], "MINUTE(11:00)")
+
+        mds = self.read("inbound/meteosat/MSG4_VIS006.grib")
+        self.assertEqual(len(mds), 1)
+        md = mds[0]
+        self.assertEqual(md["origin"], "GRIB2(00098, 00000, 000, 255, 254)")
+        self.assertEqual(md["product"], "GRIB2(00098, 003, 000, 000, 004, 000)")
+        self.assertEqual(md["level"], "GRIB2S(  -,   -,          -)")
+        self.assertNotIn("timerange", md)
+        self.assertEqual(md["area"], "GRIB(tn=90)")
+        self.assertEqual(md["proddef"], "GRIB(ch=VIS006, sat=MSG4, tod=0)")
+        self.assertEqual(md["reftime"], "2020-02-23T11:00:00Z")
+        self.assertEqual(md["run"], "MINUTE(11:00)")
+
+        mds = self.read("inbound/meteosat/MSG4_WV_062.grib")
+        self.assertEqual(len(mds), 1)
+        md = mds[0]
+        self.assertEqual(md["origin"], "GRIB2(00098, 00000, 000, 255, 254)")
+        self.assertEqual(md["product"], "GRIB2(00098, 003, 000, 000, 004, 000)")
+        self.assertEqual(md["level"], "GRIB2S(  -,   -,          -)")
+        self.assertNotIn("timerange", md)
+        self.assertEqual(md["area"], "GRIB(tn=90)")
+        self.assertEqual(md["proddef"], "GRIB(ch=WV062, sat=MSG4, tod=0)")
+        self.assertEqual(md["reftime"], "2020-02-23T11:00:00Z")
+        self.assertEqual(md["run"], "MINUTE(11:00)")
