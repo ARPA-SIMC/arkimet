@@ -3,6 +3,29 @@ from arkimet.scan import timedef
 import datetime
 
 
+METEOSAT_NAMES = {
+    55: "MSG1",
+    56: "MSG2",
+    57: "MSG3",
+    70: "MSG4",
+}
+
+METEOSAT_CHAN_NAMES = {
+    6:   "VIS006",
+    8:   "VIS008",
+    16:  "IR016",
+    39:  "IR039",
+    62:  "WV062",
+    73:  "WV073",
+    87:  "IR087",
+    97:  "IR907",
+    108: "IR108",
+    120: "IR120",
+    134: "IR134",
+    7:   "HRV",
+}
+
+
 def scan_grib2(grib, md):
     # Reference time
     md["reftime"] = {
@@ -189,6 +212,20 @@ def scan_grib2(grib, md):
             grib["scaleFactorOfUpperLimit"],
             grib["scaledValueOfUpperLimit"],
         )
+
+    if grib["satelliteSeries"] == 333:
+        # Meteosat satellites
+        sat_name = METEOSAT_NAMES.get(grib["satelliteNumber"])
+        if sat_name is not None:
+            proddef["sat"] = sat_name
+
+        if grib["instrumentType"] == 207:
+            # Data from the SEVIRI instrument
+            ch_name = METEOSAT_CHAN_NAMES.get(
+                int(round(10 * 1.0 / (grib["scaledValueOfCentralWaveNumber"] * 0.000001)))
+            )
+            if ch_name is not None:
+                proddef["ch"] = ch_name
 
     md["proddef"] = {
         "style": "GRIB",
