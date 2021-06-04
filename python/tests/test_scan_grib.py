@@ -255,7 +255,7 @@ class TestScanGrib(unittest.TestCase):
         self.assertNotIn("timerange", md)
         self.assertEqual(md["area"], "GRIB(tn=90)")
         # issue201: set pl and pt
-        self.assertEqual(md["proddef"], "GRIB(tod=0)")
+        self.assertEqual(md["proddef"], "GRIB(ch=WV073, sat=MSG4, tod=0)")
         self.assertEqual(md["reftime"], "2021-03-05T23:00:00Z")
         self.assertEqual(md["run"], "MINUTE(23:00)")
 
