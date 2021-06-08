@@ -1,5 +1,5 @@
 #include "tests.h"
-#include "base.h"
+#include "concrete-timeout.h"
 #include "arki/utils/sys.h"
 #include <system_error>
 #include <sys/ioctl.h>
@@ -156,7 +156,9 @@ struct ConcreteTestFixture : public stream::StreamTestsFixture
     ConcreteTestFixture(std::shared_ptr<core::NamedFileDescriptor> out)
         : out(out)
     {
-        set_output(StreamOutput::create(out, 1000));
+        set_output(
+                std::unique_ptr<arki::StreamOutput>(
+                    new stream::ConcreteTimeoutStreamOutputBase<stream::ConcreteTestingBackend>(out, 1000)));
     }
 };
 

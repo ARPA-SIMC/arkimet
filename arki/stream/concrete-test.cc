@@ -1,5 +1,5 @@
 #include "tests.h"
-#include "base.h"
+#include "concrete.h"
 #include "arki/utils/sys.h"
 
 using namespace std;
@@ -40,7 +40,9 @@ struct ConcreteTestFixture : public stream::StreamTestsFixture
     ConcreteTestFixture(std::shared_ptr<core::NamedFileDescriptor> out)
         : out(out)
     {
-        set_output(StreamOutput::create(out));
+        set_output(
+                std::unique_ptr<arki::StreamOutput>(
+                    new stream::ConcreteStreamOutputBase<stream::ConcreteTestingBackend>(out)));
     }
 };
 
