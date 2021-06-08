@@ -28,6 +28,17 @@ std::function<ssize_t(int fd_in, loff_t *off_in, int fd_out,
 std::function<int(struct pollfd *fds, nfds_t nfds, int timeout)> ConcreteTestingBackend::poll = ::poll;
 std::function<ssize_t(int fd, void *buf, size_t count, off_t offset)> ConcreteTestingBackend::pread = ::pread;
 
+void ConcreteTestingBackend::reset()
+{
+    ConcreteTestingBackend::read = ::read;
+    ConcreteTestingBackend::write = ::write;
+    ConcreteTestingBackend::writev = ::writev;
+    ConcreteTestingBackend::sendfile = ::sendfile;
+    ConcreteTestingBackend::splice = ::splice;
+    ConcreteTestingBackend::poll = ::poll;
+    ConcreteTestingBackend::pread = ::pread;
+}
+
 
 size_t constexpr TransferBuffer::size;
 

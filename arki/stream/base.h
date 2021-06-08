@@ -125,6 +125,8 @@ struct ConcreteTestingBackend
                                  loff_t *off_out, size_t len, unsigned int flags)> splice;
     static std::function<int(struct pollfd *fds, nfds_t nfds, int timeout)> poll;
     static std::function<ssize_t(int fd, void *buf, size_t count, off_t offset)> pread;
+
+    static void reset();
 };
 
 }
