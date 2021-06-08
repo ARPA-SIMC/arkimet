@@ -97,6 +97,9 @@ struct TransferBuffer
     operator char*() { return buf; }
 };
 
+/**
+ * Linux versions of syscalls to use for concrete implementations.
+ */
 struct ConcreteLinuxBackend
 {
     static ssize_t (*write)(int fd, const void *buf, size_t count);
@@ -107,6 +110,9 @@ struct ConcreteLinuxBackend
     static int (*poll)(struct pollfd *fds, nfds_t nfds, int timeout);
 };
 
+/**
+ * Mockable versions of syscalls to use for testing concrete implementations.
+ */
 struct ConcreteTestingBackend
 {
     static std::function<ssize_t(int fd, const void *buf, size_t count)> write;
