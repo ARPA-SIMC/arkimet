@@ -193,8 +193,10 @@ SendResult ConcreteTimeoutStreamOutputBase<Backend>::send_file_segment(arki::cor
         // cycle before attempting the handover to sendfile, to see if there
         // actually are data to read and thus output to generate.
         buffer.allocate();
-        size_t res = fd.pread(buffer, std::min(size, buffer.size), offset);
-        if (res == 0)
+        ssize_t res = Backend::pread(fd, buffer, std::min(size, buffer.size), offset);
+        if (res == -1)
+            fd.throw_error("cannot pread");
+        else if (res == 0)
         {
             result.flags |= SendResult::SEND_PIPE_EOF_SOURCE;
             return result;
@@ -251,8 +253,10 @@ SendResult ConcreteTimeoutStreamOutputBase<Backend>::send_file_segment(arki::cor
             }
 #endif
         } else {
-            size_t res = fd.pread(buffer, std::min(size - written, buffer.size), offset);
-            if (res == 0)
+            ssize_t res = Backend::pread(fd, buffer, std::min(size - written, buffer.size), offset);
+            if (res == -1)
+                fd.throw_error("cannot pread");
+            else if (res == 0)
             {
                 result.flags |= SendResult::SEND_PIPE_EOF_SOURCE;
                 break;
@@ -294,7 +298,7 @@ SendResult ConcreteTimeoutStreamOutputBase<Backend>::send_from_pipe(int fd)
         // cycle before attempting the handover to splice, to see if there
         // actually are data to read and thus output to generate.
         buffer.allocate();
-        ssize_t res = ::read(fd, buffer, buffer.size);
+        ssize_t res = Backend::read(fd, buffer, buffer.size);
         if (res < 0)
             throw std::system_error(errno, std::system_category(), "cannot read data to stream from a pipe");
         if (res == 0)
@@ -356,7 +360,7 @@ SendResult ConcreteTimeoutStreamOutputBase<Backend>::send_from_pipe(int fd)
 #endif
         } else {
             // Fall back to read/write
-            ssize_t res = ::read(fd, buffer, buffer.size);
+            ssize_t res = Backend::read(fd, buffer, buffer.size);
             if (res == 0)
             {
                 result.flags |= SendResult::SEND_PIPE_EOF_SOURCE;

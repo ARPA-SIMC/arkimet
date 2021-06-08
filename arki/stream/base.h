@@ -102,12 +102,14 @@ struct TransferBuffer
  */
 struct ConcreteLinuxBackend
 {
+    static ssize_t (*read)(int fd, void *buf, size_t count);
     static ssize_t (*write)(int fd, const void *buf, size_t count);
     static ssize_t (*writev)(int fd, const struct iovec *iov, int iovcnt);
     static ssize_t (*sendfile)(int out_fd, int in_fd, off_t *offset, size_t count);
     static ssize_t (*splice)(int fd_in, loff_t *off_in, int fd_out,
                              loff_t *off_out, size_t len, unsigned int flags);
     static int (*poll)(struct pollfd *fds, nfds_t nfds, int timeout);
+    static ssize_t (*pread)(int fd, void *buf, size_t count, off_t offset);
 };
 
 /**
@@ -115,12 +117,14 @@ struct ConcreteLinuxBackend
  */
 struct ConcreteTestingBackend
 {
+    static std::function<ssize_t(int fd, void *buf, size_t count)> read;
     static std::function<ssize_t(int fd, const void *buf, size_t count)> write;
     static std::function<ssize_t(int fd, const struct iovec *iov, int iovcnt)> writev;
     static std::function<ssize_t(int out_fd, int in_fd, off_t *offset, size_t count)> sendfile;
     static std::function<ssize_t(int fd_in, loff_t *off_in, int fd_out,
                                  loff_t *off_out, size_t len, unsigned int flags)> splice;
     static std::function<int(struct pollfd *fds, nfds_t nfds, int timeout)> poll;
+    static std::function<ssize_t(int fd, void *buf, size_t count, off_t offset)> pread;
 };
 
 }

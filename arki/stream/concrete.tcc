@@ -94,8 +94,10 @@ SendResult ConcreteStreamOutputBase<Backend>::send_file_segment(arki::core::Name
         // cycle before attempting the handover to sendfile, to see if there
         // actually are data to read and thus output to generate.
         buffer.allocate();
-        size_t res = fd.pread(buffer, std::min(size, buffer.size), offset);
-        if (res == 0)
+        ssize_t res = Backend::pread(fd, buffer, std::min(size, buffer.size), offset);
+        if (res == -1)
+            fd.throw_error("cannot pread");
+        else if (res == 0)
         {
             result.flags |= SendResult::SEND_PIPE_EOF_SOURCE;
             return result;
@@ -146,8 +148,10 @@ SendResult ConcreteStreamOutputBase<Backend>::send_file_segment(arki::core::Name
             }
 #endif
         } else {
-            size_t res = fd.pread(buffer, std::min(size, buffer.size), offset);
-            if (res == 0)
+            ssize_t res = Backend::pread(fd, buffer, std::min(size, buffer.size), offset);
+            if (res == -1)
+                fd.throw_error("cannot pread");
+            else if (res == 0)
             {
                 result.flags |= SendResult::SEND_PIPE_EOF_SOURCE;
                 break;
@@ -175,7 +179,7 @@ SendResult ConcreteStreamOutputBase<Backend>::send_from_pipe(int fd)
         // cycle before attempting the handover to splice, to see if there
         // actually are data to read and thus output to generate.
         buffer.allocate();
-        ssize_t res = ::read(fd, buffer, buffer.size);
+        ssize_t res = Backend::read(fd, buffer, buffer.size);
         if (res < 0)
         {
             if (errno == EAGAIN) {
