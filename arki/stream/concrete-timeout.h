@@ -8,7 +8,8 @@
 namespace arki {
 namespace stream {
 
-class ConcreteTimeoutStreamOutput: public BaseConcreteStreamOutput
+template<typename Backend>
+class ConcreteTimeoutStreamOutputBase: public BaseConcreteStreamOutput
 {
     unsigned timeout_ms;
     int orig_fl = -1;
@@ -25,13 +26,18 @@ class ConcreteTimeoutStreamOutput: public BaseConcreteStreamOutput
     uint32_t wait_writable();
 
 public:
-    ConcreteTimeoutStreamOutput(std::shared_ptr<core::NamedFileDescriptor> out, unsigned timeout_ms);
-    ~ConcreteTimeoutStreamOutput();
+    ConcreteTimeoutStreamOutputBase(std::shared_ptr<core::NamedFileDescriptor> out, unsigned timeout_ms);
+    ~ConcreteTimeoutStreamOutputBase();
 
     SendResult send_line(const void* data, size_t size) override;
     SendResult send_file_segment(arki::core::NamedFileDescriptor& fd, off_t offset, size_t size) override;
     SendResult send_buffer(const void* data, size_t size) override;
     SendResult send_from_pipe(int fd) override;
+};
+
+class ConcreteTimeoutStreamOutput: public ConcreteTimeoutStreamOutputBase<ConcreteLinuxBackend>
+{
+    using ConcreteTimeoutStreamOutputBase::ConcreteTimeoutStreamOutputBase;
 };
 
 }

@@ -7,7 +7,8 @@
 namespace arki {
 namespace stream {
 
-class ConcreteStreamOutput: public BaseConcreteStreamOutput
+template<typename Backend>
+class ConcreteStreamOutputBase: public BaseConcreteStreamOutput
 {
 public:
     using BaseConcreteStreamOutput::BaseConcreteStreamOutput;
@@ -16,6 +17,12 @@ public:
     SendResult send_file_segment(arki::core::NamedFileDescriptor& fd, off_t offset, size_t size) override;
     SendResult send_buffer(const void* data, size_t size) override;
     SendResult send_from_pipe(int fd) override;
+};
+
+class ConcreteStreamOutput: public ConcreteStreamOutputBase<ConcreteLinuxBackend>
+{
+public:
+    using ConcreteStreamOutputBase::ConcreteStreamOutputBase;
 };
 
 }

@@ -4,9 +4,24 @@
 #include <system_error>
 #include <unistd.h>
 #include <fcntl.h>
+#include <sys/uio.h>
+#include <sys/sendfile.h>
 
 namespace arki {
 namespace stream {
+
+ssize_t (*ConcreteLinuxBackend::write)(int fd, const void *buf, size_t count) = ::write;
+ssize_t (*ConcreteLinuxBackend::writev)(int fd, const struct iovec *iov, int iovcnt) = ::writev;
+ssize_t (*ConcreteLinuxBackend::sendfile)(int out_fd, int in_fd, off_t *offset, size_t count) = ::sendfile;
+ssize_t (*ConcreteLinuxBackend::splice)(int fd_in, loff_t *off_in, int fd_out,
+                                                    loff_t *off_out, size_t len, unsigned int flags) = ::splice;
+
+std::function<ssize_t(int fd, const void *buf, size_t count)> ConcreteTestingBackend::write = ::write;
+std::function<ssize_t(int fd, const struct iovec *iov, int iovcnt)> ConcreteTestingBackend::writev = ::writev;
+std::function<ssize_t(int out_fd, int in_fd, off_t *offset, size_t count)> ConcreteTestingBackend::sendfile = ::sendfile;
+std::function<ssize_t(int fd_in, loff_t *off_in, int fd_out,
+                      loff_t *off_out, size_t len, unsigned int flags)> ConcreteTestingBackend::splice = ::splice;
+
 
 size_t constexpr TransferBuffer::size;
 
