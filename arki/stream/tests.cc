@@ -4,6 +4,8 @@
 #include "arki/utils/subprocess.h"
 #include <numeric>
 #include <system_error>
+#include <cstring>
+#include <cerrno>
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/ioctl.h>
@@ -52,6 +54,40 @@ stream::SendResult StreamTestsFixture::send_from_pipe(int fd)
     return output->send_from_pipe(fd);
 }
 
+MockConcreteSyscalls::MockConcreteSyscalls()
+    : orig_read(ConcreteTestingBackend::read),
+      orig_write(ConcreteTestingBackend::write),
+      orig_writev(ConcreteTestingBackend::writev),
+      orig_sendfile(ConcreteTestingBackend::sendfile),
+      orig_splice(ConcreteTestingBackend::splice),
+      orig_poll(ConcreteTestingBackend::poll),
+      orig_pread(ConcreteTestingBackend::pread)
+{
+}
+
+MockConcreteSyscalls::~MockConcreteSyscalls()
+{
+    ConcreteTestingBackend::read = orig_read;
+    ConcreteTestingBackend::write = orig_write;
+    ConcreteTestingBackend::writev = orig_writev;
+    ConcreteTestingBackend::sendfile = orig_sendfile;
+    ConcreteTestingBackend::splice = orig_splice;
+    ConcreteTestingBackend::poll = orig_poll;
+    ConcreteTestingBackend::pread = orig_pread;
+}
+
+DisableSendfileSplice::DisableSendfileSplice()
+{
+    ConcreteTestingBackend::sendfile = [](int out_fd, int in_fd, off_t *offset, size_t count) -> ssize_t {
+        errno = EINVAL;
+        return -1;
+    };
+    ConcreteTestingBackend::splice = [](int fd_in, loff_t *off_in, int fd_out,
+                                        loff_t *off_out, size_t len, unsigned int flags) -> ssize_t {
+        errno = EINVAL;
+        return -1;
+    };
+}
 
 
 namespace {
@@ -584,6 +620,51 @@ add_method("closed_pipe_send_pipe_splice", [&] {
     PipeSource child("test");
     wassert(actual(f->send_from_pipe(child.get_stdout())) == stream::SendResult(0, stream::SendResult::SEND_PIPE_EOF_DEST));
 });
+
+add_method("read_eof", [&] {
+    struct ReadEof : DisableSendfileSplice
+    {
+        size_t read_pos = 0;
+        size_t available;
+
+        ReadEof(size_t lead_size=0)
+            : available(lead_size)
+        {
+            ConcreteTestingBackend::read = [this](int fd, void *buf, size_t count) -> ssize_t {
+                if (read_pos < available) {
+                    count = std::min(count, available - read_pos);
+                    memset(buf, 0, count);
+                    read_pos += count;
+                    return count;
+                } else {
+                    return 0;
+                }
+            };
+            ConcreteTestingBackend::pread = [this](int fd, void *buf, size_t count, off_t offset) -> ssize_t {
+                if ((size_t)offset < available) {
+                    count = std::min(count, available - offset);
+                    memset(buf, 0, count);
+                    return count;
+                } else {
+                    return 0;
+                }
+            };
+        }
+    };
+
+    {
+        ReadEof reof(10);
+        auto f = make_concrete_fixture(std::make_shared<sys::File>("/dev/null", O_WRONLY));
+        sys::NamedFileDescriptor input(0, "mock input");
+        wassert(actual(f->send_file_segment(input, 5, 15)) == stream::SendResult(5, stream::SendResult::SEND_PIPE_EOF_SOURCE));
+    }
+});
+
+
+// stream::SendResult send_line(const void* data, size_t size);
+// stream::SendResult send_buffer(const void* data, size_t size);
+// stream::SendResult send_file_segment(arki::core::NamedFileDescriptor& fd, off_t offset, size_t size);
+// stream::SendResult send_from_pipe(int fd);
 
 }
 
