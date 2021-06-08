@@ -3,6 +3,7 @@
 
 #include <arki/stream.h>
 #include <sys/uio.h>
+#include <poll.h>
 
 namespace arki {
 namespace stream {
@@ -103,6 +104,7 @@ struct ConcreteLinuxBackend
     static ssize_t (*sendfile)(int out_fd, int in_fd, off_t *offset, size_t count);
     static ssize_t (*splice)(int fd_in, loff_t *off_in, int fd_out,
                              loff_t *off_out, size_t len, unsigned int flags);
+    static int (*poll)(struct pollfd *fds, nfds_t nfds, int timeout);
 };
 
 struct ConcreteTestingBackend
@@ -112,6 +114,7 @@ struct ConcreteTestingBackend
     static std::function<ssize_t(int out_fd, int in_fd, off_t *offset, size_t count)> sendfile;
     static std::function<ssize_t(int fd_in, loff_t *off_in, int fd_out,
                                  loff_t *off_out, size_t len, unsigned int flags)> splice;
+    static std::function<int(struct pollfd *fds, nfds_t nfds, int timeout)> poll;
 };
 
 }

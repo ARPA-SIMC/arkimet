@@ -15,12 +15,14 @@ ssize_t (*ConcreteLinuxBackend::writev)(int fd, const struct iovec *iov, int iov
 ssize_t (*ConcreteLinuxBackend::sendfile)(int out_fd, int in_fd, off_t *offset, size_t count) = ::sendfile;
 ssize_t (*ConcreteLinuxBackend::splice)(int fd_in, loff_t *off_in, int fd_out,
                                                     loff_t *off_out, size_t len, unsigned int flags) = ::splice;
+int (*ConcreteLinuxBackend::poll)(struct pollfd *fds, nfds_t nfds, int timeout) = ::poll;
 
 std::function<ssize_t(int fd, const void *buf, size_t count)> ConcreteTestingBackend::write = ::write;
 std::function<ssize_t(int fd, const struct iovec *iov, int iovcnt)> ConcreteTestingBackend::writev = ::writev;
 std::function<ssize_t(int out_fd, int in_fd, off_t *offset, size_t count)> ConcreteTestingBackend::sendfile = ::sendfile;
 std::function<ssize_t(int fd_in, loff_t *off_in, int fd_out,
                       loff_t *off_out, size_t len, unsigned int flags)> ConcreteTestingBackend::splice = ::splice;
+std::function<int(struct pollfd *fds, nfds_t nfds, int timeout)> ConcreteTestingBackend::poll = ::poll;
 
 
 size_t constexpr TransferBuffer::size;

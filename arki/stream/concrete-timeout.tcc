@@ -14,7 +14,7 @@ template<typename Backend>
 uint32_t ConcreteTimeoutStreamOutputBase<Backend>::wait_writable()
 {
     pollinfo.revents = 0;
-    int res = ::poll(&pollinfo, 1, timeout_ms);
+    int res = Backend::poll(&pollinfo, 1, timeout_ms);
     if (res < 0)
         throw std::system_error(errno, std::system_category(), "poll failed on " + out->name());
     if (res == 0)
@@ -62,7 +62,7 @@ SendResult ConcreteTimeoutStreamOutputBase<Backend>::send_buffer(const void* dat
     size_t pos = 0;
     while (true)
     {
-        ssize_t res = ::write(*out, (const uint8_t*)data + pos, size - pos);
+        ssize_t res = Backend::write(*out, (const uint8_t*)data + pos, size - pos);
         if (res < 0)
         {
             if (errno == EAGAIN || errno == EWOULDBLOCK)
@@ -130,7 +130,7 @@ SendResult ConcreteTimeoutStreamOutputBase<Backend>::send_line(const void* data,
     {
         if (pos < size)
         {
-            ssize_t res = ::writev(*out, todo, 2);
+            ssize_t res = Backend::writev(*out, todo, 2);
             if (res < 0)
             {
                 if (errno == EAGAIN || errno == EWOULDBLOCK)
@@ -151,7 +151,7 @@ SendResult ConcreteTimeoutStreamOutputBase<Backend>::send_line(const void* data,
             if (progress_callback)
                 progress_callback(res);
         } else if (pos == size) {
-            ssize_t res = ::write(*out, "\n", 1);
+            ssize_t res = Backend::write(*out, "\n", 1);
             if (res < 0)
             {
                 if (errno == EAGAIN || errno == EWOULDBLOCK)
@@ -221,7 +221,7 @@ SendResult ConcreteTimeoutStreamOutputBase<Backend>::send_file_segment(arki::cor
             continue;
 #else
             utils::Sigignore ignpipe(SIGPIPE);
-            ssize_t res = ::sendfile(*out, fd, &offset, size - written);
+            ssize_t res = Backend::sendfile(*out, fd, &offset, size - written);
             if (res < 0)
             {
                 if (errno == EINVAL || errno == ENOSYS)
