@@ -65,5 +65,13 @@ struct MockConcreteSyscalls
     ~MockConcreteSyscalls();
 };
 
+/**
+ * Mock sendfile and splice as if they weren't available on this system
+ */
+struct DisableSendfileSplice : public MockConcreteSyscalls
+{
+    DisableSendfileSplice();
+};
+
 }
 }

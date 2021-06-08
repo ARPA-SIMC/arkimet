@@ -46,6 +46,14 @@ struct ConcreteTestFixture : public stream::StreamTestsFixture
     }
 };
 
+class ConcreteFallbackTestFixture : public ConcreteTestFixture
+{
+    using ConcreteTestFixture::ConcreteTestFixture;
+
+    stream::DisableSendfileSplice no_sendfile_and_splice;
+};
+
+template<typename Fixture>
 class Tests : public stream::ConcreteStreamTests
 {
     using ConcreteStreamTests::ConcreteStreamTests;
@@ -59,13 +67,15 @@ class Tests : public stream::ConcreteStreamTests
 
     std::unique_ptr<stream::StreamTestsFixture> make_concrete_fixture(std::shared_ptr<core::NamedFileDescriptor> out) override
     {
-        return std::unique_ptr<stream::StreamTestsFixture>(new ConcreteTestFixture(out));
+        return std::unique_ptr<stream::StreamTestsFixture>(new Fixture(out));
     }
 };
 
-Tests test("arki_stream_concrete");
+Tests<ConcreteTestFixture> test1("arki_stream_concrete");
+Tests<ConcreteFallbackTestFixture> test2("arki_stream_concrete_fallback");
 
-void Tests::register_tests() {
+template<typename Fixture>
+void Tests<Fixture>::register_tests() {
 ConcreteStreamTests::register_tests();
 
 add_method("empty", [] {

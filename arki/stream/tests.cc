@@ -76,6 +76,20 @@ MockConcreteSyscalls::~MockConcreteSyscalls()
     ConcreteTestingBackend::pread = orig_pread;
 }
 
+DisableSendfileSplice::DisableSendfileSplice()
+{
+    ConcreteTestingBackend::sendfile = [](int out_fd, int in_fd, off_t *offset, size_t count) -> ssize_t {
+        errno = EINVAL;
+        return -1;
+    };
+    ConcreteTestingBackend::splice = [](int fd_in, loff_t *off_in, int fd_out,
+                                        loff_t *off_out, size_t len, unsigned int flags) -> ssize_t {
+        errno = EINVAL;
+        return -1;
+    };
+}
+
+
 namespace {
 
 class PipeSource : public subprocess::Child
@@ -608,7 +622,7 @@ add_method("closed_pipe_send_pipe_splice", [&] {
 });
 
 add_method("read_eof", [&] {
-    struct ReadEof : MockConcreteSyscalls
+    struct ReadEof : DisableSendfileSplice
     {
         size_t read_pos = 0;
         size_t available;
@@ -635,19 +649,6 @@ add_method("read_eof", [&] {
                     return 0;
                 }
             };
-            ConcreteTestingBackend::sendfile = [](int out_fd, int in_fd, off_t *offset, size_t count) -> ssize_t {
-                errno = EINVAL;
-                return -1;
-            };
-            ConcreteTestingBackend::splice = [](int fd_in, loff_t *off_in, int fd_out,
-                                                loff_t *off_out, size_t len, unsigned int flags) -> ssize_t {
-                errno = EINVAL;
-                return -1;
-            };
-            // ConcreteTestingBackend::poll = [](struct pollfd *fds, nfds_t nfds, int timeout) {
-            //     errno = EFAULT;
-            //     return -1;
-            // };
         }
     };
 
