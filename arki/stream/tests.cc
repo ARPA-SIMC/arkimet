@@ -1,5 +1,6 @@
 #include "tests.h"
 #include "base.h"
+#include "concrete.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/subprocess.h"
 #include <numeric>
