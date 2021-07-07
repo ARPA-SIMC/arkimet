@@ -63,31 +63,56 @@ SendResult ConcreteStreamOutputBase<Backend>::send_buffer(const void* data, size
 
     utils::Sigignore ignpipe(SIGPIPE);
     size_t pos = 0;
-    while (pos < size)
+    while (true)
     {
         ssize_t res = Backend::write(*out, (const uint8_t*)data + pos, size - pos);
         if (res < 0)
         {
-            if (errno == EPIPE)
-            {
+            if (errno == EAGAIN || errno == EWOULDBLOCK)
+                res = 0;
+            else if (errno == EPIPE) {
                 result.flags |= SendResult::SEND_PIPE_EOF_DEST;
                 break;
             } else
                 throw std::system_error(errno, std::system_category(), "cannot write " + std::to_string(size - pos) + " bytes to " + out->name());
         }
-        if (res == 0)
-        {
-            result.flags |= SendResult::SEND_PIPE_EOF_SOURCE;
-            break;
-        }
-        if (progress_callback)
-            progress_callback(res);
+
         pos += res;
         result.sent += res;
-    }
+        if (progress_callback)
+            progress_callback(res);
 
+        if (pos >= size)
+            break;
+
+        uint32_t wres = wait_writable();
+        if (wres)
+        {
+            result.flags |= wres;
+            break;
+        }
+    }
     return result;
+
+#if 0
+    Sigignore ignpipe(SIGPIPE);
+    size_t pos = 0;
+    while (m_nextfd && pos < (size_t)res)
+    {
+        ssize_t wres = write(*m_nextfd, buf+pos, res-pos);
+        if (wres < 0)
+        {
+            if (errno == EPIPE)
+            {
+                m_nextfd = nullptr;
+            } else
+                throw_system_error("writing to destination file descriptor");
+        }
+        pos += wres;
+    }
+#endif
 }
+
 
 template<typename Backend>
 SendResult ConcreteStreamOutputBase<Backend>::send_line(const void* data, size_t size)
@@ -104,23 +129,60 @@ SendResult ConcreteStreamOutputBase<Backend>::send_line(const void* data, size_t
         { (void*)data, size },
         { (void*)"\n", 1 },
     };
-    ssize_t res = Backend::writev(*out, todo, 2);
-    if (res < 0)
+    size_t pos = 0;
+    while (true)
     {
-        if (errno == EPIPE)
+        if (pos < size)
         {
-            result.flags |= SendResult::SEND_PIPE_EOF_DEST;
+            ssize_t res = Backend::writev(*out, todo, 2);
+            if (res < 0)
+            {
+                if (errno == EAGAIN || errno == EWOULDBLOCK)
+                    res = 0;
+                else if (errno == EPIPE) {
+                    result.flags |= SendResult::SEND_PIPE_EOF_DEST;
+                    break;
+                } else
+                    throw std::system_error(errno, std::system_category(), "cannot write " + std::to_string(size + 1) + " bytes to " + out->name());
+            }
+            pos += res;
+            result.sent += res;
+            if (pos < size + 1)
+            {
+                todo[0].iov_base = (uint8_t*)data + pos;
+                todo[0].iov_len = size - pos;
+            }
+            if (progress_callback)
+                progress_callback(res);
+        } else if (pos == size) {
+            ssize_t res = Backend::write(*out, "\n", 1);
+            if (res < 0)
+            {
+                if (errno == EAGAIN || errno == EWOULDBLOCK)
+                    res = 0;
+                else if (errno == EPIPE) {
+                    result.flags |= SendResult::SEND_PIPE_EOF_DEST;
+                    break;
+                } else
+                    throw std::system_error(errno, std::system_category(), "cannot write 1 byte to " + out->name());
+            }
+            pos += res;
+            result.sent += res;
+            if (progress_callback)
+                progress_callback(res);
         } else
-            throw std::system_error(errno, std::system_category(), "cannot write " + std::to_string(size + 1) + " bytes to " + out->name());
-    } else {
-        if ((unsigned)res != size + 1)
-            throw std::system_error(errno, std::system_category(), "cannot write " + std::to_string(size + 1) + " bytes to " + out->name());
-        if (progress_callback)
-            progress_callback(res);
-        result.sent += res;
+            break;
+
+        uint32_t wres = wait_writable();
+        if (wres)
+        {
+            result.flags |= wres;
+            break;
+        }
     }
     return result;
 }
+
 
 template<typename Backend>
 SendResult ConcreteStreamOutputBase<Backend>::send_file_segment(arki::core::NamedFileDescriptor& fd, off_t offset, size_t size)
@@ -137,6 +199,7 @@ SendResult ConcreteStreamOutputBase<Backend>::send_file_segment(arki::core::Name
         // actually are data to read and thus output to generate.
         buffer.allocate();
         ssize_t res = Backend::pread(fd, buffer, std::min(size, buffer.size), offset);
+        // FIXME: this can EAGAIN
         if (res == -1)
             fd.throw_error("cannot pread");
         else if (res == 0)
@@ -154,18 +217,13 @@ SendResult ConcreteStreamOutputBase<Backend>::send_file_segment(arki::core::Name
     }
 
     bool has_sendfile = true;
+    size_t written = 0;
     while (size > 0)
     {
         if (has_sendfile)
         {
-// Set to 1 to simulate a system without sendfile
-#if 0
-            has_sendfile = false;
-            buffer.allocate();
-            continue;
-#else
             utils::Sigignore ignpipe(SIGPIPE);
-            ssize_t res = Backend::sendfile(*out, fd, &offset, size);
+            ssize_t res = Backend::sendfile(*out, fd, &offset, size - written);
             if (res < 0)
             {
                 if (errno == EINVAL || errno == ENOSYS)
@@ -176,21 +234,25 @@ SendResult ConcreteStreamOutputBase<Backend>::send_file_segment(arki::core::Name
                 } else if (errno == EPIPE) {
                     result.flags |= SendResult::SEND_PIPE_EOF_DEST;
                     break;
+                } else if (errno == EAGAIN || errno == EWOULDBLOCK)
+                {
+                    res = 0;
+                    if (progress_callback)
+                        progress_callback(res);
                 }
                 else
-                    throw std::system_error(errno, std::system_category(), "cannot sendfile " + std::to_string(size + 1) + " bytes from " + fd.name() + " to " + out->name());
+                    throw std::system_error(errno, std::system_category(), "cannot sendfile() " + std::to_string(size) + " bytes to " + out->name());
             } else if (res == 0) {
                 result.flags |= SendResult::SEND_PIPE_EOF_SOURCE;
                 break;
             } else {
                 if (progress_callback)
                     progress_callback(res);
-                size -= res;
+                written += res;
                 result.sent += res;
             }
-#endif
         } else {
-            ssize_t res = Backend::pread(fd, buffer, std::min(size, buffer.size), offset);
+            ssize_t res = Backend::pread(fd, buffer, std::min(size - written, buffer.size), offset);
             if (res == -1)
                 fd.throw_error("cannot pread");
             else if (res == 0)
@@ -200,19 +262,32 @@ SendResult ConcreteStreamOutputBase<Backend>::send_file_segment(arki::core::Name
             }
             result += send_buffer(buffer, res);
             offset += res;
-            size -= res;
+            written += res;
+        }
+
+        utils::acct::plain_data_read_count.incr();
+
+        if (written >= size)
+            break;
+
+        // iotrace::trace_file(dirfd, offset, size, "streamed data");
+
+        uint32_t wres = wait_writable();
+        if (wres)
+        {
+            result.flags |= wres;
+            break;
         }
     }
 
-    arki::utils::acct::plain_data_read_count.incr();
-    // iotrace::trace_file(dirfd, offset, size, "streamed data");
     return result;
 }
+
 
 template<typename Backend>
 SendResult ConcreteStreamOutputBase<Backend>::send_from_pipe(int fd)
 {
-    // bool src_nonblock = is_nonblocking(fd);
+    bool src_nonblock = is_nonblocking(fd);
     SendResult result;
 
     TransferBuffer buffer;
@@ -252,27 +327,32 @@ SendResult ConcreteStreamOutputBase<Backend>::send_from_pipe(int fd)
 #ifdef HAVE_SPLICE
             utils::Sigignore ignpipe(SIGPIPE);
             // Try splice
-            ssize_t res = Backend::splice(fd, NULL, *out, NULL, TransferBuffer::size * 128, SPLICE_F_MORE);
+            ssize_t res = splice(fd, NULL, *out, NULL, TransferBuffer::size * 128, SPLICE_F_MORE);
             if (res > 0)
             {
+                result.sent += res;
                 if (progress_callback)
                     progress_callback(res);
-                result.sent += res;
             } else if (res == 0) {
                 result.flags |= SendResult::SEND_PIPE_EOF_SOURCE;
                 break;
-            } else if (res < 0) {
+            }
+            else if (res < 0)
+            {
                 if (errno == EINVAL)
                 {
-                    // Splice is not supported: pass it on to the traditional method
                     has_splice = false;
                     buffer.allocate();
                     continue;
+                } else if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                    res = 0;
+                    // In theory we don't need to call this. In practice, it
+                    // helps unit tests to be able to hook here to empty the
+                    // output pipe
+                    if (progress_callback)
+                        progress_callback(res);
                 } else if (errno == EPIPE) {
                     result.flags |= SendResult::SEND_PIPE_EOF_DEST;
-                    break;
-                } else if (errno == EAGAIN) {
-                    result.flags |= SendResult::SEND_PIPE_EAGAIN_SOURCE;
                     break;
                 } else
                     throw std::system_error(errno, std::system_category(), "cannot splice data to stream from a pipe");
@@ -282,32 +362,46 @@ SendResult ConcreteStreamOutputBase<Backend>::send_from_pipe(int fd)
             // Splice is not supported: pass it on to the traditional method
             has_splice = false;
             buffer.allocate();
+            // Skip waiting for available I/O and just retry the while
+            continue;
 #endif
         } else {
             // Fall back to read/write
-
-            // Read data from child
             buffer.allocate();
-            ssize_t res = read(fd, buffer, buffer.size);
-            if (res < 0)
-            {
-                if (errno == EAGAIN) {
-                    result.flags |= SendResult::SEND_PIPE_EAGAIN_SOURCE;
-                    break;
-                } else
-                    throw std::system_error(errno, std::system_category(), "cannot read data to stream from a pipe");
-            }
+            ssize_t res = Backend::read(fd, buffer, buffer.size);
             if (res == 0)
             {
                 result.flags |= SendResult::SEND_PIPE_EOF_SOURCE;
                 break;
             }
+            if (res < 0)
+            {
+                if (errno == EAGAIN || errno == EWOULDBLOCK)
+                    res = 0;
+                else
+                    throw std::system_error(errno, std::system_category(), "cannot read data from pipe input");
+            }
+            if (res > 0)
+                result += send_buffer(buffer, res);
+            else
+            {
+                // Call progress callback here because we're not calling
+                // send_buffer. Send_buffer will take care of calling
+                // progress_callback if needed.
+                if (progress_callback)
+                    progress_callback(res);
+            }
+        }
 
-            // Pass it on
-            auto rsend = send_buffer(buffer, res);
-            result += rsend;
-            if (rsend.flags & SendResult::SEND_PIPE_EOF_DEST)
-                break;
+        uint32_t wres = 0;
+        if (src_nonblock)
+            wres = wait_readable(fd);
+        if (!wres)
+            wres = wait_writable();
+        if (wres)
+        {
+            result.flags |= wres;
+            break;
         }
     }
 
