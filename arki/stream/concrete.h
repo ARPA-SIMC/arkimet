@@ -11,7 +11,8 @@ template<typename Backend>
 class ConcreteStreamOutputBase: public BaseConcreteStreamOutput
 {
 public:
-    using BaseConcreteStreamOutput::BaseConcreteStreamOutput;
+    ConcreteStreamOutputBase(std::shared_ptr<core::NamedFileDescriptor> out);
+    ~ConcreteStreamOutputBase();
 
     SendResult send_line(const void* data, size_t size) override;
     SendResult send_file_segment(arki::core::NamedFileDescriptor& fd, off_t offset, size_t size) override;

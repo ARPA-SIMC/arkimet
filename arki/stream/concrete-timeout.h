@@ -11,10 +11,6 @@ namespace stream {
 template<typename Backend>
 class ConcreteTimeoutStreamOutputBase: public BaseConcreteStreamOutput
 {
-    unsigned timeout_ms;
-    int orig_fl = -1;
-    pollfd pollinfo;
-
     /**
      * Returns:
      *  0 if the pipe can accept new data

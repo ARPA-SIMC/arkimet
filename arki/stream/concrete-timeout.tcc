@@ -28,8 +28,9 @@ uint32_t ConcreteTimeoutStreamOutputBase<Backend>::wait_writable()
 
 template<typename Backend>
 ConcreteTimeoutStreamOutputBase<Backend>::ConcreteTimeoutStreamOutputBase(std::shared_ptr<core::NamedFileDescriptor> out, unsigned timeout_ms)
-    : BaseConcreteStreamOutput(out), timeout_ms(timeout_ms)
+    : BaseConcreteStreamOutput(out)
 {
+    this->timeout_ms = timeout_ms;
     orig_fl = fcntl(*out, F_GETFL);
     if (orig_fl < 0)
         throw std::system_error(errno, std::system_category(), "cannot get file descriptor flags for " + out->name());
@@ -299,6 +300,7 @@ SendResult ConcreteTimeoutStreamOutputBase<Backend>::send_from_pipe(int fd)
         // actually are data to read and thus output to generate.
         buffer.allocate();
         ssize_t res = Backend::read(fd, buffer, buffer.size);
+        // FIXME: this can EAGAIN and it's not managed
         if (res < 0)
             throw std::system_error(errno, std::system_category(), "cannot read data to stream from a pipe");
         if (res == 0)

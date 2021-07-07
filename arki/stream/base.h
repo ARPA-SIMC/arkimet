@@ -62,6 +62,10 @@ class BaseConcreteStreamOutput : public BaseStreamOutput
 {
 protected:
     std::shared_ptr<core::NamedFileDescriptor> out;
+    unsigned timeout_ms = -1;
+    int orig_fl = -1;
+    pollfd pollinfo;
+
 
 public:
     BaseConcreteStreamOutput(std::shared_ptr<core::NamedFileDescriptor> out)

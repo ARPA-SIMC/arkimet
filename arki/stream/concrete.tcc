@@ -9,6 +9,29 @@
 namespace arki {
 namespace stream {
 
+
+template<typename Backend>
+ConcreteStreamOutputBase<Backend>::ConcreteStreamOutputBase(std::shared_ptr<core::NamedFileDescriptor> out)
+    : BaseConcreteStreamOutput(out)
+{
+    orig_fl = fcntl(*out, F_GETFL);
+    if (orig_fl < 0)
+        throw std::system_error(errno, std::system_category(), "cannot get file descriptor flags for " + out->name());
+    if (fcntl(*out, F_SETFL, orig_fl & ~O_NONBLOCK) < 0)
+        throw std::system_error(errno, std::system_category(), "cannot unset nonblocking file descriptor flags for " + out->name());
+
+    pollinfo.fd = *out;
+    pollinfo.events = POLLOUT;
+}
+
+template<typename Backend>
+ConcreteStreamOutputBase<Backend>::~ConcreteStreamOutputBase()
+{
+    // If out is still open, reset as it was before
+    if (*out != -1)
+        fcntl(*out, F_SETFL, orig_fl);
+}
+
 template<typename Backend>
 SendResult ConcreteStreamOutputBase<Backend>::send_buffer(const void* data, size_t size)
 {
@@ -170,6 +193,7 @@ SendResult ConcreteStreamOutputBase<Backend>::send_file_segment(arki::core::Name
 template<typename Backend>
 SendResult ConcreteStreamOutputBase<Backend>::send_from_pipe(int fd)
 {
+    bool src_nonblock = is_nonblocking(fd);
     SendResult result;
 
     TransferBuffer buffer;
@@ -180,6 +204,8 @@ SendResult ConcreteStreamOutputBase<Backend>::send_from_pipe(int fd)
         // actually are data to read and thus output to generate.
         buffer.allocate();
         ssize_t res = Backend::read(fd, buffer, buffer.size);
+        // FIXME: this can EAGAIN and it's not managed with a retry
+        // there isn't much sense in exiting with SEND_PIPE_EAGAIN_SOURCE
         if (res < 0)
         {
             if (errno == EAGAIN) {
