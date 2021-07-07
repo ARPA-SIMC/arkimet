@@ -28,7 +28,7 @@ uint32_t ConcreteTimeoutStreamOutputBase<Backend>::wait_writable()
 
 template<typename Backend>
 ConcreteTimeoutStreamOutputBase<Backend>::ConcreteTimeoutStreamOutputBase(std::shared_ptr<core::NamedFileDescriptor> out, unsigned timeout_ms)
-    : BaseConcreteStreamOutput(out)
+    : ConcreteStreamOutput(out)
 {
     this->timeout_ms = timeout_ms;
     orig_fl = fcntl(*out, F_GETFL);

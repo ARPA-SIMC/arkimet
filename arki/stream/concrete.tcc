@@ -9,10 +9,12 @@
 namespace arki {
 namespace stream {
 
+template<typename Backend>
+std::string ConcreteStreamOutputBase<Backend>::name() const { return out->name(); }
 
 template<typename Backend>
 ConcreteStreamOutputBase<Backend>::ConcreteStreamOutputBase(std::shared_ptr<core::NamedFileDescriptor> out)
-    : BaseConcreteStreamOutput(out)
+    : out(out)
 {
     orig_fl = fcntl(*out, F_GETFL);
     if (orig_fl < 0)
@@ -193,7 +195,7 @@ SendResult ConcreteStreamOutputBase<Backend>::send_file_segment(arki::core::Name
 template<typename Backend>
 SendResult ConcreteStreamOutputBase<Backend>::send_from_pipe(int fd)
 {
-    bool src_nonblock = is_nonblocking(fd);
+    // bool src_nonblock = is_nonblocking(fd);
     SendResult result;
 
     TransferBuffer buffer;
