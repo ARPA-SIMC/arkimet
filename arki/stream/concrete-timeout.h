@@ -9,21 +9,10 @@ namespace arki {
 namespace stream {
 
 template<typename Backend>
-class ConcreteTimeoutStreamOutputBase: public ConcreteStreamOutput
+class ConcreteTimeoutStreamOutputBase: public ConcreteStreamOutputBase<Backend>
 {
-    /**
-     * Returns:
-     *  0 if the pipe can accept new data
-     *  an OR combination of SendResult flags if a known condition happened
-     *  that should interrupt the writing
-     *
-     * May throw TimedOut, or a std::runtime_error in case of errors
-     */
-    uint32_t wait_writable();
-
 public:
-    ConcreteTimeoutStreamOutputBase(std::shared_ptr<core::NamedFileDescriptor> out, unsigned timeout_ms);
-    ~ConcreteTimeoutStreamOutputBase();
+    using ConcreteStreamOutputBase<Backend>::ConcreteStreamOutputBase;
 
     SendResult send_line(const void* data, size_t size) override;
     SendResult send_file_segment(arki::core::NamedFileDescriptor& fd, off_t offset, size_t size) override;

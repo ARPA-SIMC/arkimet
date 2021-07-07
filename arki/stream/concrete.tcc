@@ -13,14 +13,31 @@ template<typename Backend>
 std::string ConcreteStreamOutputBase<Backend>::name() const { return out->name(); }
 
 template<typename Backend>
-ConcreteStreamOutputBase<Backend>::ConcreteStreamOutputBase(std::shared_ptr<core::NamedFileDescriptor> out)
-    : out(out)
+uint32_t ConcreteStreamOutputBase<Backend>::wait_writable()
 {
+    pollinfo.revents = 0;
+    int res = Backend::poll(&pollinfo, 1, timeout_ms);
+    if (res < 0)
+        throw std::system_error(errno, std::system_category(), "poll failed on " + out->name());
+    if (res == 0)
+        throw TimedOut("write on " + out->name() + " timed out");
+    if (pollinfo.revents & POLLERR)
+        return SendResult::SEND_PIPE_EOF_DEST;
+    if (pollinfo.revents & POLLOUT)
+        return 0;
+    throw std::runtime_error("unsupported revents values when polling " + out->name());
+}
+
+template<typename Backend>
+ConcreteStreamOutputBase<Backend>::ConcreteStreamOutputBase(std::shared_ptr<core::NamedFileDescriptor> out, int timeout_ms)
+    : out(out), timeout_ms(timeout_ms)
+{
+    this->timeout_ms = timeout_ms;
     orig_fl = fcntl(*out, F_GETFL);
     if (orig_fl < 0)
         throw std::system_error(errno, std::system_category(), "cannot get file descriptor flags for " + out->name());
-    if (fcntl(*out, F_SETFL, orig_fl & ~O_NONBLOCK) < 0)
-        throw std::system_error(errno, std::system_category(), "cannot unset nonblocking file descriptor flags for " + out->name());
+    if (fcntl(*out, F_SETFL, orig_fl | O_NONBLOCK) < 0)
+        throw std::system_error(errno, std::system_category(), "cannot set nonblocking file descriptor flags for " + out->name());
 
     pollinfo.fd = *out;
     pollinfo.events = POLLOUT;

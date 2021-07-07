@@ -12,13 +12,23 @@ class ConcreteStreamOutputBase: public BaseStreamOutput
 {
 protected:
     std::shared_ptr<core::NamedFileDescriptor> out;
-    unsigned timeout_ms = -1;
+    int timeout_ms = -1;
     int orig_fl = -1;
     pollfd pollinfo;
 
+    /**
+     * Returns:
+     *  0 if the pipe can accept new data
+     *  an OR combination of SendResult flags if a known condition happened
+     *  that should interrupt the writing
+     *
+     * May throw TimedOut, or a std::runtime_error in case of errors
+     */
+    uint32_t wait_writable();
+
 
 public:
-    ConcreteStreamOutputBase(std::shared_ptr<core::NamedFileDescriptor> out);
+    ConcreteStreamOutputBase(std::shared_ptr<core::NamedFileDescriptor> out, int timeout_ms=-1);
     ~ConcreteStreamOutputBase();
 
     std::string name() const override;
