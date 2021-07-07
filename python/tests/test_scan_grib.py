@@ -255,7 +255,7 @@ class TestScanGrib(unittest.TestCase):
         self.assertNotIn("timerange", md)
         self.assertEqual(md["area"], "GRIB(tn=90)")
         # issue201: set pl and pt
-        self.assertEqual(md["proddef"], "GRIB(ch=WV073, sat=MSG4, tod=0)")
+        self.assertEqual(md["proddef"], "GRIB(ch=WV_073, sat=MSG4, tod=0)")
         self.assertEqual(md["reftime"], "2021-03-05T23:00:00Z")
         self.assertEqual(md["run"], "MINUTE(23:00)")
 
@@ -411,7 +411,7 @@ class TestScanGrib(unittest.TestCase):
         self.assertEqual(md["level"], "GRIB2S(  -,   -,          -)")
         self.assertNotIn("timerange", md)
         self.assertEqual(md["area"], "GRIB(tn=90)")
-        self.assertEqual(md["proddef"], "GRIB(ch=IR016, sat=MSG4, tod=0)")
+        self.assertEqual(md["proddef"], "GRIB(ch=IR_016, sat=MSG4, tod=0)")
         self.assertEqual(md["reftime"], "2020-02-23T11:00:00Z")
         self.assertEqual(md["run"], "MINUTE(11:00)")
 
@@ -423,7 +423,7 @@ class TestScanGrib(unittest.TestCase):
         self.assertEqual(md["level"], "GRIB2S(  -,   -,          -)")
         self.assertNotIn("timerange", md)
         self.assertEqual(md["area"], "GRIB(tn=90)")
-        self.assertEqual(md["proddef"], "GRIB(ch=IR039, sat=MSG4, tod=0)")
+        self.assertEqual(md["proddef"], "GRIB(ch=IR_039, sat=MSG4, tod=0)")
         self.assertEqual(md["reftime"], "2020-02-23T11:00:00Z")
         self.assertEqual(md["run"], "MINUTE(11:00)")
 
@@ -447,6 +447,6 @@ class TestScanGrib(unittest.TestCase):
         self.assertEqual(md["level"], "GRIB2S(  -,   -,          -)")
         self.assertNotIn("timerange", md)
         self.assertEqual(md["area"], "GRIB(tn=90)")
-        self.assertEqual(md["proddef"], "GRIB(ch=WV062, sat=MSG4, tod=0)")
+        self.assertEqual(md["proddef"], "GRIB(ch=WV_062, sat=MSG4, tod=0)")
         self.assertEqual(md["reftime"], "2020-02-23T11:00:00Z")
         self.assertEqual(md["run"], "MINUTE(11:00)")
