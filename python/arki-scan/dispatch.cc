@@ -39,29 +39,17 @@ DispatchResults MetadataDispatch::process(dataset::Reader& ds, const std::string
 
     results->clear();
 
+    copyok_stream.reset();
     if (!dir_copyok.empty())
-    {
         copyok = std::make_shared<core::File>(str::joinpath(dir_copyok, str::basename(name)));
-        // We are writing to a file, not a pipe, so we do not need a timeout
-        copyok_stream = StreamOutput::create(copyok);
-    }
     else
-    {
         copyok.reset();
-        copyok_stream.reset();
-    }
 
+    copyko_stream.reset();
     if (!dir_copyko.empty())
-    {
         copyko = std::make_shared<core::File>(str::joinpath(dir_copyko, str::basename(name)));
-        // We are writing to a file, not a pipe, so we do not need a timeout
-        copyko_stream = StreamOutput::create(copyko);
-    }
     else
-    {
         copyko.reset();
-        copyko_stream.reset();
-    }
 
     // Read
     try {
@@ -145,7 +133,11 @@ void MetadataDispatch::do_copyok(Metadata& md)
         return;
 
     if (!copyok->is_open())
+    {
         copyok->open(O_WRONLY | O_APPEND | O_CREAT);
+        // We are writing to a file, not a pipe, so we do not need a timeout
+        copyok_stream = StreamOutput::create(copyok);
+    }
 
     md.stream_data(*copyok_stream);
 }
@@ -156,7 +148,11 @@ void MetadataDispatch::do_copyko(Metadata& md)
         return;
 
     if (!copyko->is_open())
+    {
         copyko->open(O_WRONLY | O_APPEND | O_CREAT);
+        // We are writing to a file, not a pipe, so we do not need a timeout
+        copyko_stream = StreamOutput::create(copyko);
+    }
 
     md.stream_data(*copyko_stream);
 }
