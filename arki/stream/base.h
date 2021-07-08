@@ -51,6 +51,16 @@ public:
         data_start_callback = f;
     }
 
+    void set_filter_command(const std::string& command) override
+    {
+        throw std::runtime_error("set_filter_command not implemented yet");
+    }
+
+    void unset_filter_command() override
+    {
+        throw std::runtime_error("unset_filter_command not implemented yet");
+    }
+
     // Generic implementation based on send_buffer
     SendResult send_file_segment(arki::core::NamedFileDescriptor& fd, off_t offset, size_t size) override;
 
