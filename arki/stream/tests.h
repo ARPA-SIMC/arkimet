@@ -16,6 +16,8 @@ public:
 
     virtual ~StreamTestsFixture() {}
 
+    StreamOutput& stream() { return *output; }
+
     void set_output(std::unique_ptr<StreamOutput>&& output);
 
     virtual std::string streamed_contents();

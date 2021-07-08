@@ -15,6 +15,7 @@ namespace arki {
 
 namespace stream {
 
+/// Exception thrown when a stream output times out
 class TimedOut : public std::runtime_error
 {
 public:
@@ -114,6 +115,31 @@ public:
     static std::unique_ptr<StreamOutput> create_discard();
 };
 
+
+namespace stream {
+
+/**
+ * RAII wrappper for set_filter_command/unset_filter_command
+ */
+class WithFilter
+{
+protected:
+    StreamOutput& stream;
+
+public:
+    WithFilter(StreamOutput& stream, const std::string& command)
+        : stream(stream)
+    {
+        stream.set_filter_command(command);
+    }
+
+    ~WithFilter()
+    {
+        stream.unset_filter_command();
+    }
+};
+
+}
 
 }
 #endif
