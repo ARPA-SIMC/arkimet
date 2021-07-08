@@ -61,8 +61,7 @@ void Reader::impl_stream_query_bytes(const dataset::ByteQuery& q, StreamOutput& 
             break;
         }
         case dataset::ByteQuery::BQ_POSTPROCESS: {
-            metadata::Postprocess postproc(q.postprocessor);
-            postproc.set_output(out);
+            metadata::Postprocess postproc(q.postprocessor, out);
             postproc.validate(*dataset().config);
             postproc.start();
             query_data(q, [&](std::shared_ptr<Metadata> md) { return postproc.process(move(md)); });

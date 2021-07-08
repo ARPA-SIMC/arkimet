@@ -88,9 +88,8 @@ add_method("null_validate", [] {
         "path = testall\n";
     auto config = core::cfg::Section::parse(conf, "(memory)");
 
-    Postprocess p("null");
     auto stream = StreamOutput::create(std::make_shared<Stderr>());
-    p.set_output(*stream);
+    Postprocess p("null", *stream);
     p.validate(*config);
     p.start();
 
@@ -101,9 +100,8 @@ add_method("null_validate", [] {
 
 // Check that it works without validation, too
 add_method("null", [] {
-    Postprocess p("null");
     auto stream = StreamOutput::create(std::make_shared<Stderr>());
-    p.set_output(*stream);
+    Postprocess p("null", *stream);
     p.start();
 
     produceGRIB(p);
@@ -114,8 +112,7 @@ add_method("null", [] {
 add_method("countbytes", [] {
     auto out = std::make_shared<sys::Tempfile>();
     auto stream = StreamOutput::create(out);
-    Postprocess p("countbytes");
-    p.set_output(*stream);
+    Postprocess p("countbytes", *stream);
     p.start();
 
     produceGRIB(p);
@@ -143,8 +140,7 @@ add_method("cat", [] {
     // Get the postprocessed data
     auto out = std::make_shared<sys::Tempfile>();
     auto stream = StreamOutput::create(out);
-    Postprocess p("cat");
-    p.set_output(*stream);
+    Postprocess p("cat", *stream);
     p.start();
     reader->scan([&](std::shared_ptr<Metadata> md) { return p.process(md); });
     wassert(actual(p.flush()) == stream::SendResult(44937));
@@ -157,8 +153,7 @@ add_method("cat", [] {
 add_method("countbytes_large", [] {
     auto out = std::make_shared<sys::Tempfile>();
     auto stream = StreamOutput::create(out);
-    Postprocess p("countbytes");
-    p.set_output(*stream);
+    Postprocess p("countbytes", *stream);
     p.start();
 
     for (unsigned i = 0; i < 128; ++i)
@@ -171,11 +166,10 @@ add_method("countbytes_large", [] {
 add_method("zeroes_arg", [] {
     const char* fname = "postprocess_output";
     stringstream str;
-    Postprocess p("zeroes 4096");
 
     auto fd = std::make_shared<sys::File>(fname, O_WRONLY | O_CREAT | O_NOCTTY, 0666);
     auto stream = StreamOutput::create(fd);
-    p.set_output(*stream);
+    Postprocess p("zeroes 4096", *stream);
     p.start();
 
     wassert(produceGRIB(p));
@@ -189,11 +183,9 @@ add_method("zeroes_arg", [] {
 add_method("zeroes_arg_large", [] {
     const char* fname = "postprocess_output";
     stringstream str;
-    Postprocess p("zeroes 4096");
-
     auto fd = std::make_shared<sys::File>(fname, O_WRONLY | O_CREAT | O_NOCTTY, 0666);
     auto stream = StreamOutput::create(fd);
-    p.set_output(*stream);
+    Postprocess p("zeroes 4096", *stream);
     p.start();
 
     for (unsigned i = 0; i < 128; ++i)
@@ -208,13 +200,11 @@ add_method("zeroes_arg_large", [] {
 add_method("issue209", [] {
     metadata::DataManager& data_manager = metadata::DataManager::get();
 
-    Postprocess p("cat");
-
     TIMEOUT(2);
 
     auto fd = std::make_shared<sys::File>("/dev/null", O_WRONLY);
     auto stream = StreamOutput::create(fd);
-    p.set_output(*stream);
+    Postprocess p("cat", *stream);
     p.start();
 
     Metadata::read_file("inbound/issue209.arkimet", [&](std::shared_ptr<Metadata> md) {
@@ -231,13 +221,11 @@ add_method("issue209", [] {
 add_method("partialread", [] {
     metadata::DataManager& data_manager = metadata::DataManager::get();
 
-    Postprocess p("partialread");
-
     TIMEOUT(2);
 
     auto fd = std::make_shared<sys::File>("/dev/null", O_WRONLY);
     auto stream = StreamOutput::create(fd);
-    p.set_output(*stream);
+    Postprocess p("partialread", *stream);
     p.start();
     stream::SendResult stream_result;
 

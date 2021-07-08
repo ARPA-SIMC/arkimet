@@ -28,16 +28,15 @@ using namespace arki::core;
 namespace arki {
 namespace metadata {
 
-Postprocess::Postprocess(const std::string& command)
+Postprocess::Postprocess(const std::string& command, StreamOutput& out)
     : m_command(command)
 {
-    m_child = new stream::FilterProcess();
-    m_child->m_err = &m_errors;
+    m_child = new stream::FilterProcess(command);
 
-    // Parse command into its components
-    Splitter sp("[[:space:]]+", REG_EXTENDED);
-    for (Splitter::const_iterator j = sp.begin(m_command); j != sp.end(); ++j)
-        m_child->cmd.args.push_back(*j);
+    // Expand args[0] to the full pathname and check that the program exists
+    m_child->cmd.args[0] = Config::get().dir_postproc.find_file(m_child->cmd.args[0], true);
+
+    m_child->m_stream = &out;
 }
 
 Postprocess::~Postprocess()
@@ -50,16 +49,6 @@ Postprocess::~Postprocess()
         m_child->terminate();
         delete m_child;
     }
-}
-
-void Postprocess::set_output(StreamOutput& out)
-{
-    m_child->m_stream = &out;
-}
-
-void Postprocess::set_error(std::ostream& err)
-{
-    m_child->m_err = &err;
 }
 
 void Postprocess::validate(const core::cfg::Section& cfg)
@@ -92,22 +81,7 @@ void Postprocess::validate(const core::cfg::Section& cfg)
 
 void Postprocess::start()
 {
-    // Expand args[0] to the full pathname and check that the program exists
-    m_child->cmd.args[0] = Config::get().dir_postproc.find_file(m_child->cmd.args[0], true);
-
-    // Spawn the command
-    m_child->subproc.fork();
-
-    // set the stdin/stdout/stderr fds to nonblocking
-    sys::FileDescriptor child_stdin(m_child->cmd.get_stdin());
-    if (child_stdin != -1)
-        child_stdin.setfl(child_stdin.getfl() | O_NONBLOCK);
-    sys::FileDescriptor child_stdout(m_child->cmd.get_stdout());
-    if (child_stdout != -1)
-        child_stdout.setfl(child_stdout.getfl() | O_NONBLOCK);
-    sys::FileDescriptor child_stderr(m_child->cmd.get_stderr());
-    if (child_stderr != -1)
-        child_stderr.setfl(child_stderr.getfl() | O_NONBLOCK);
+    m_child->start();
 }
 
 bool Postprocess::process(std::shared_ptr<Metadata> md)
@@ -138,15 +112,17 @@ stream::SendResult Postprocess::flush()
     m_child->subproc.wait();
     auto stream_result = m_child->stream_result;
     int res = m_child->subproc.raw_returncode();
-    delete m_child;
-    m_child = 0;
     if (res)
     {
         string msg = "cannot run postprocessing filter: postprocess command \"" + m_command + "\" " + subprocess::Child::format_raw_returncode(res);
-        if (!m_errors.str().empty())
-            msg += "; stderr: " + str::strip(m_errors.str());
+        if (!m_child->errors.str().empty())
+            msg += "; stderr: " + str::strip(m_child->errors.str());
+        delete m_child;
+        m_child = 0;
         throw std::runtime_error(msg);
     }
+    delete m_child;
+    m_child = 0;
 
     return stream_result;
 }

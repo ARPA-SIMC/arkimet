@@ -22,13 +22,13 @@ public:
     /// Accumulated stream result
     stream::SendResult stream_result;
 
+    /// Captured stderr from the child (unless sent elsewhere)
+    std::stringstream errors;
 
-    FilterProcess() : utils::IODispatcher(cmd)
-    {
-        cmd.set_stdin(utils::subprocess::Redirect::PIPE);
-        cmd.set_stdout(utils::subprocess::Redirect::PIPE);
-        cmd.set_stderr(utils::subprocess::Redirect::PIPE);
-    }
+
+    FilterProcess(const std::string& command);
+
+    void start();
 
     void read_stdout() override
     {

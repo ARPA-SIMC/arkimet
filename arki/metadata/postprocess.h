@@ -24,18 +24,19 @@ protected:
     stream::FilterProcess* m_child = nullptr;
     /// Command line run in the subprocess
     std::string m_command;
-    /// Captured stderr from the child (unless sent elsewhere)
-    std::stringstream m_errors;
 
 public:
     /**
      * Create a postprocessor running the command \a command, and sending the
      * output to the file descriptor \a outfd.
      *
-     * The configuration \a cfg is used to validate if command is allowed or
-     * not.
+     * The current runtime configuration is used to validate if command is
+     * allowed or not.
+     *
+     * \a out is the output stream where we send data coming from the
+     * postprocessor
      */
-    Postprocess(const std::string& command);
+    Postprocess(const std::string& command, StreamOutput& out);
     virtual ~Postprocess();
 
     /**
@@ -45,12 +46,6 @@ public:
 
     /// Fork the child process setting up the various pipes
     void start();
-
-    /// Set the output file descriptor where we send data coming from the postprocessor
-    void set_output(StreamOutput& out);
-
-    /// Set the output stream where we send the postprocessor stderr
-    void set_error(std::ostream& err);
 
     // Process one metadata
     bool process(std::shared_ptr<Metadata> md);
