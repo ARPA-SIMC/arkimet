@@ -231,7 +231,7 @@ add_method("send_line_filtered", [&] {
     wassert(actual(f->cb_log) == std::vector<size_t>{9u});
 
     {
-        WithFilter(f->stream(), {"wc", "-l"});
+        WithFilter filtered(f->stream(), {"wc", "-l"});
         wassert(actual(f->send_line("testline1", 9)) == stream::SendResult(10));
         wassert(actual(f->cb_log) == std::vector<size_t>{10u});
     }
@@ -257,7 +257,7 @@ add_method("send_buffer_filtered", [&] {
     wassert(actual(f->cb_log) == std::vector<size_t>{7u});
 
     {
-        WithFilter(f->stream(), {"wc", "-c"});
+        WithFilter filtered(f->stream(), {"wc", "-c"});
         wassert(actual(f->send_buffer("testbuf", 4)) == stream::SendResult(4u, 0u));
         wassert(actual(f->cb_log) == std::vector<size_t>{4u});
     }
@@ -290,7 +290,7 @@ add_method("send_file_segment_filtered", [&] {
     wassert(actual(f->send_file_segment(tf1, 1, 6)) == stream::SendResult(6u, 0u));
     wassert(actual(f->cb_log) == std::vector<size_t>{6});
     {
-        WithFilter(f->stream(), {"wc", "-c"});
+        WithFilter filtered(f->stream(), {"wc", "-c"});
         wassert(actual(f->send_file_segment(tf1, 5, 1)) == stream::SendResult(1u, 0u));
         wassert(actual(f->cb_log) == std::vector<size_t>{1});
         wassert(actual(f->send_file_segment(tf1, 0, 4)) == stream::SendResult(4u, 0u));

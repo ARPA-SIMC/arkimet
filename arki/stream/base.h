@@ -43,6 +43,15 @@ protected:
      */
     bool is_nonblocking(int fd);
 
+    /**
+     * Low-level function to write the given buffer to the output.
+     *
+     * This does not do filtering and does not trigger data start callbacks: it
+     * just writes the data out to the final destination
+     */
+    virtual stream::SendResult _write_output_buffer(const void* data, size_t size) = 0;
+
+
 public:
     BaseStreamOutput();
     virtual ~BaseStreamOutput();
@@ -57,17 +66,16 @@ public:
         data_start_callback = f;
     }
 
-    void set_filter_command(const std::vector<std::string>& command) override
-    {
-        throw std::runtime_error("set_filter_command not implemented yet");
-    }
-
+    void set_filter_command(const std::vector<std::string>& command) override;
     void unset_filter_command() override;
 
-    // Generic implementation based on send_buffer
+    // Generic implementation based on _write_output_buffer
+    SendResult send_buffer(const void* data, size_t size) override;
+
+    // Generic implementation based on _write_output_buffer
     SendResult send_file_segment(arki::core::NamedFileDescriptor& fd, off_t offset, size_t size) override;
 
-    // Generic implementation based on send_buffer
+    // Generic implementation based on _write_output_buffer
     SendResult send_from_pipe(int fd) override;
 };
 

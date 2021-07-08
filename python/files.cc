@@ -59,30 +59,18 @@ public:
 
 class PythonTextStreamOutput : public PythonStreamOutput
 {
-public:
-    using PythonStreamOutput::PythonStreamOutput;
-
-    arki::stream::SendResult send_buffer(const void* data, size_t size) override
+protected:
+    arki::stream::SendResult _write_output_buffer(const void* data, size_t size) override
     {
-        using namespace arki::stream;
-        SendResult result;
-        if (size == 0)
-            return result;
-
-        if (data_start_callback)
-            result += fire_data_start_callback();
-
         {
             AcquireGIL gil;
             pyo_unique_ptr res(throw_ifnull(PyObject_CallMethod(o, "write", "s#", (const char*)data, (Py_ssize_t)size)));
         }
-
-        if (progress_callback)
-            progress_callback(size);
-        result.sent += size;
-
-        return result;
+        return size;
     }
+
+public:
+    using PythonStreamOutput::PythonStreamOutput;
 
     arki::stream::SendResult send_line(const void* data, size_t size) override
     {
@@ -111,30 +99,18 @@ public:
 
 class PythonBinaryStreamOutput : public PythonStreamOutput
 {
-public:
-    using PythonStreamOutput::PythonStreamOutput;
-
-    arki::stream::SendResult send_buffer(const void* data, size_t size) override
+protected:
+    arki::stream::SendResult _write_output_buffer(const void* data, size_t size) override
     {
-        using namespace arki::stream;
-        SendResult result;
-        if (size == 0)
-            return result;
-
-        if (data_start_callback)
-            result += fire_data_start_callback();
-
         {
             AcquireGIL gil;
             pyo_unique_ptr res(throw_ifnull(PyObject_CallMethod(o, "write", "y#", (const char*)data, (Py_ssize_t)size)));
         }
-
-        if (progress_callback)
-            progress_callback(size);
-        result.sent += size;
-
-        return result;
+        return size;
     }
+
+public:
+    using PythonStreamOutput::PythonStreamOutput;
 
     arki::stream::SendResult send_line(const void* data, size_t size) override
     {

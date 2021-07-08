@@ -47,6 +47,16 @@ bool BaseStreamOutput::is_nonblocking(int fd)
     return src_fl & O_NONBLOCK;
 }
 
+void BaseStreamOutput::set_filter_command(const std::vector<std::string>& command)
+{
+    if (filter_process)
+        throw std::runtime_error("A filter command was already started on this stream");
+
+    filter_process.reset(new stream::FilterProcess(command));
+    filter_process->m_stream = this;
+    filter_process->start();
+}
+
 void BaseStreamOutput::unset_filter_command()
 {
     if (!filter_process)
@@ -55,6 +65,27 @@ void BaseStreamOutput::unset_filter_command()
     std::unique_ptr<FilterProcess> proc = std::move(filter_process);
 
     proc->stop();
+}
+
+SendResult BaseStreamOutput::send_buffer(const void* data, size_t size)
+{
+    SendResult result;
+    if (size == 0)
+        return result;
+
+    if (data_start_callback)
+        result += fire_data_start_callback();
+
+    if (filter_process)
+    {
+        filter_process->send(data, size);
+        result.sent += size;
+    } else {
+        result +=_write_output_buffer(data, size);
+    }
+    if (progress_callback)
+        progress_callback(size);
+    return result;
 }
 
 SendResult BaseStreamOutput::send_file_segment(arki::core::NamedFileDescriptor& fd, off_t offset, size_t size)
@@ -105,7 +136,7 @@ SendResult BaseStreamOutput::send_from_pipe(int fd)
             break;
         }
 
-        result += send_buffer(buffer, res);
+        result += _write_output_buffer(buffer, res);
     }
 
     return result;

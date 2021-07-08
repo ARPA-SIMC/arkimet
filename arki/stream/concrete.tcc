@@ -52,15 +52,9 @@ ConcreteStreamOutputBase<Backend>::~ConcreteStreamOutputBase()
 }
 
 template<typename Backend>
-SendResult ConcreteStreamOutputBase<Backend>::send_buffer(const void* data, size_t size)
+stream::SendResult ConcreteStreamOutputBase<Backend>::_write_output_buffer(const void* data, size_t size)
 {
     SendResult result;
-    if (size == 0)
-        return result;
-
-    if (data_start_callback)
-        result += fire_data_start_callback();
-
     utils::Sigignore ignpipe(SIGPIPE);
     size_t pos = 0;
     while (true)
@@ -79,8 +73,6 @@ SendResult ConcreteStreamOutputBase<Backend>::send_buffer(const void* data, size
 
         pos += res;
         result.sent += res;
-        if (progress_callback)
-            progress_callback(res);
 
         if (pos >= size)
             break;
@@ -112,7 +104,6 @@ SendResult ConcreteStreamOutputBase<Backend>::send_buffer(const void* data, size
     }
 #endif
 }
-
 
 template<typename Backend>
 SendResult ConcreteStreamOutputBase<Backend>::send_line(const void* data, size_t size)
@@ -382,7 +373,7 @@ SendResult ConcreteStreamOutputBase<Backend>::send_from_pipe(int fd)
                     throw std::system_error(errno, std::system_category(), "cannot read data from pipe input");
             }
             if (res > 0)
-                result += send_buffer(buffer, res);
+                result += _write_output_buffer(buffer, res);
             else
             {
                 // Call progress callback here because we're not calling
