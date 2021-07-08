@@ -24,6 +24,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		core/curl.h \
 		stream.h \
 		stream/base.h \
+		stream/filter.h \
 		stream/concrete.h \
 		stream/concrete.tcc \
 		stream/concrete-timeout.h \
@@ -240,6 +241,7 @@ libarkimet_la_SOURCES += \
 		core/curl.cc \
 		stream.cc \
 		stream/base.cc \
+		stream/filter.cc \
 		stream/concrete.cc \
 		stream/concrete-timeout.cc \
 		stream/discard.cc \
@@ -363,6 +365,7 @@ tests_arki_test_SOURCES += \
 		core/curl-test.cc \
 		stream-test.cc \
 		stream/base-test.cc \
+		stream/filter-test.cc \
 		stream/concrete-test.cc \
 		stream/concrete-timeout-test.cc \
 		stream/discard-test.cc \

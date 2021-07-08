@@ -10,16 +10,18 @@
 #include <memory>
 
 namespace arki {
-namespace metadata {
-namespace postproc {
-class Child;
+
+namespace stream {
+class FilterProcess;
 }
+
+namespace metadata {
 
 class Postprocess
 {
 protected:
     /// Subprocess that filters our data
-    postproc::Child* m_child = nullptr;
+    stream::FilterProcess* m_child = nullptr;
     /// Command line run in the subprocess
     std::string m_command;
     /// Captured stderr from the child (unless sent elsewhere)
