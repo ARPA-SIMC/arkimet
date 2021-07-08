@@ -44,7 +44,7 @@ struct ByteQuery : public DataQuery
         BQ_POSTPROCESS = 1,
     };
 
-    std::string param;
+    std::string postprocessor;
     Type type = BQ_DATA;
 
     ByteQuery();

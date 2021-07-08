@@ -153,7 +153,7 @@ void Reader::impl_stream_query_bytes(const dataset::ByteQuery& q, StreamOutput& 
             break;
         case dataset::ByteQuery::BQ_POSTPROCESS:
             request.post_data.add_string("style", "postprocess");
-            request.post_data.add_string("command", q.param);
+            request.post_data.add_string("command", q.postprocessor);
             break;
         default: {
             std::stringstream ss;
