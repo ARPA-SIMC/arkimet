@@ -35,5 +35,20 @@ void FilterProcess::start() {
         child_stderr.setfl(child_stderr.getfl() | O_NONBLOCK);
 }
 
+void FilterProcess::stop()
+{
+    flush();
+
+    subproc.wait();
+    int res = subproc.raw_returncode();
+    if (res)
+    {
+        std::string msg = "cannot run postprocessing filter: postprocess command \"" + str::join(" ", cmd.args) + "\" " + subprocess::Child::format_raw_returncode(res);
+        if (!errors.str().empty())
+            msg += "; stderr: " + str::strip(errors.str());
+        throw std::runtime_error(msg);
+    }
+}
+
 }
 }

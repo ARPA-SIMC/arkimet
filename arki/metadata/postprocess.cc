@@ -112,24 +112,10 @@ bool Postprocess::process(std::shared_ptr<Metadata> md)
 
 stream::SendResult Postprocess::flush()
 {
-    m_child->flush();
-
-    m_child->subproc.wait();
-    auto stream_result = m_child->stream_result;
-    int res = m_child->subproc.raw_returncode();
-    if (res)
-    {
-        string msg = "cannot run postprocessing filter: postprocess command \"" + m_command + "\" " + subprocess::Child::format_raw_returncode(res);
-        if (!m_child->errors.str().empty())
-            msg += "; stderr: " + str::strip(m_child->errors.str());
-        delete m_child;
-        m_child = 0;
-        throw std::runtime_error(msg);
-    }
-    delete m_child;
+    std::unique_ptr<stream::FilterProcess> child(m_child);
     m_child = 0;
-
-    return stream_result;
+    child->stop();
+    return child->stream_result;
 }
 
 }

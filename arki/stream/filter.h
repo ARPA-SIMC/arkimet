@@ -29,6 +29,7 @@ public:
     FilterProcess(const std::vector<std::string>& args);
 
     void start();
+    void stop();
 
     void read_stdout() override
     {

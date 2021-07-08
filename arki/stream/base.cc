@@ -1,4 +1,5 @@
 #include "base.h"
+#include "filter.h"
 #include "arki/utils/sys.h"
 #include <poll.h>
 #include <system_error>
@@ -9,6 +10,9 @@ namespace arki {
 namespace stream {
 
 size_t constexpr TransferBuffer::size;
+
+BaseStreamOutput::BaseStreamOutput() {}
+BaseStreamOutput::~BaseStreamOutput() {}
 
 uint32_t BaseStreamOutput::wait_readable(int read_fd)
 {
@@ -41,6 +45,16 @@ bool BaseStreamOutput::is_nonblocking(int fd)
     if (src_fl < 0)
         throw std::system_error(errno, std::system_category(), "cannot get file descriptor flags for input");
     return src_fl & O_NONBLOCK;
+}
+
+void BaseStreamOutput::unset_filter_command()
+{
+    if (!filter_process)
+        return;
+
+    std::unique_ptr<FilterProcess> proc = std::move(filter_process);
+
+    proc->stop();
 }
 
 SendResult BaseStreamOutput::send_file_segment(arki::core::NamedFileDescriptor& fd, off_t offset, size_t size)

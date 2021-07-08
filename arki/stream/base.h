@@ -8,11 +8,14 @@
 namespace arki {
 namespace stream {
 
+struct FilterProcess;
+
 class BaseStreamOutput : public StreamOutput
 {
 protected:
     std::function<void(size_t)> progress_callback;
     std::function<stream::SendResult(StreamOutput&)> data_start_callback;
+    std::unique_ptr<FilterProcess> filter_process;
 
     /**
      * Fire data_start_callback then set it to nullptr
@@ -41,6 +44,9 @@ protected:
     bool is_nonblocking(int fd);
 
 public:
+    BaseStreamOutput();
+    virtual ~BaseStreamOutput();
+
     void set_progress_callback(std::function<void(size_t)> f) override
     {
         progress_callback = f;
@@ -56,10 +62,7 @@ public:
         throw std::runtime_error("set_filter_command not implemented yet");
     }
 
-    void unset_filter_command() override
-    {
-        throw std::runtime_error("unset_filter_command not implemented yet");
-    }
+    void unset_filter_command() override;
 
     // Generic implementation based on send_buffer
     SendResult send_file_segment(arki::core::NamedFileDescriptor& fd, off_t offset, size_t size) override;

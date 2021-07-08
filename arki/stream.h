@@ -53,7 +53,7 @@ public:
     virtual void set_filter_command(const std::vector<std::string>& command) = 0;
 
     /**
-     * Stop sending data through a child command
+     * Stop sending data through a child command, and shut it down.
      */
     virtual void unset_filter_command() = 0;
 

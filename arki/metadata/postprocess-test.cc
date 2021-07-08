@@ -88,25 +88,27 @@ add_method("null_validate", [] {
         "path = testall\n";
     auto config = core::cfg::Section::parse(conf, "(memory)");
 
-    auto stream = StreamOutput::create(std::make_shared<Stderr>());
+    std::vector<uint8_t> out;
+    auto stream = StreamOutput::create(out);
     Postprocess p("null", *stream);
     p.validate(*config);
     p.start();
-
     produceGRIB(p);
+    p.flush();
 
-    wassert(actual(p.flush()) == stream::SendResult(0));
+    wassert_true(out.empty());
 });
 
 // Check that it works without validation, too
 add_method("null", [] {
-    auto stream = StreamOutput::create(std::make_shared<Stderr>());
+    std::vector<uint8_t> out;
+    auto stream = StreamOutput::create(out);
     Postprocess p("null", *stream);
     p.start();
-
     produceGRIB(p);
+    p.flush();
 
-    wassert(actual(p.flush()) == stream::SendResult(0));
+    wassert_true(out.empty());
 });
 
 add_method("countbytes", [] {
@@ -114,9 +116,8 @@ add_method("countbytes", [] {
     auto stream = StreamOutput::create(out);
     Postprocess p("countbytes", *stream);
     p.start();
-
     produceGRIB(p);
-    wassert(actual(p.flush()) == stream::SendResult(6));
+    p.flush();
 
     wassert(actual(sys::read_file(out->name())) == "44937\n");
 });
@@ -143,7 +144,7 @@ add_method("cat", [] {
     Postprocess p("cat", *stream);
     p.start();
     reader->scan([&](std::shared_ptr<Metadata> md) { return p.process(md); });
-    wassert(actual(p.flush()) == stream::SendResult(44937));
+    p.flush();
 
     std::string postprocessed = sys::read_file(out->name());
     wassert(actual(vector<uint8_t>(postprocessed.begin(), postprocessed.end()) == plain));
@@ -155,10 +156,9 @@ add_method("countbytes_large", [] {
     auto stream = StreamOutput::create(out);
     Postprocess p("countbytes", *stream);
     p.start();
-
     for (unsigned i = 0; i < 128; ++i)
         produceGRIB(p);
-    wassert(actual(p.flush()) == stream::SendResult(8));
+    p.flush();
 
     wassert(actual(sys::read_file(out->name())) == "5751936\n");
 });
@@ -171,9 +171,8 @@ add_method("zeroes_arg", [] {
     auto stream = StreamOutput::create(fd);
     Postprocess p("zeroes 4096", *stream);
     p.start();
-
     wassert(produceGRIB(p));
-    wassert(actual(p.flush()) == stream::SendResult(4096*1024u));
+    p.flush();
 
     wassert(actual(sys::size(fname)) == 4096*1024u);
 
@@ -187,10 +186,9 @@ add_method("zeroes_arg_large", [] {
     auto stream = StreamOutput::create(fd);
     Postprocess p("zeroes 4096", *stream);
     p.start();
-
     for (unsigned i = 0; i < 128; ++i)
         wassert(produceGRIB(p));
-    wassert(actual(p.flush()) == stream::SendResult(4096*1024u));
+    p.flush();
 
     wassert(actual(sys::size(fname)) == 4096*1024u);
 
@@ -234,12 +232,12 @@ add_method("partialread", [] {
             md->set_source_inline("bufr",
                     data_manager.to_data("bufr",
                         std::vector<uint8_t>(md->sourceBlob().size)));
-            p.process(md);
+            wassert(p.process(md));
             return true;
         });
         stream_result = p.flush();
     } catch (std::runtime_error& e) {
-        wassert(actual(e.what()) == "cannot run postprocessing filter: postprocess command \"partialread\" exited with code 1; stderr: test: simulating stopping read with an error");
+        wassert(actual(e.what()).matches(R"(cannot run postprocessing filter: postprocess command \".+partialread\" exited with code 1; stderr: test: simulating stopping read with an error)"));
     }
 
     wassert(actual(stream_result) == stream::SendResult(0));
