@@ -26,7 +26,7 @@ public:
     std::stringstream errors;
 
 
-    FilterProcess(const std::string& command);
+    FilterProcess(const std::vector<std::string>& args);
 
     void start();
 

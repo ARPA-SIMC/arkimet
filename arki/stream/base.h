@@ -51,7 +51,7 @@ public:
         data_start_callback = f;
     }
 
-    void set_filter_command(const std::string& command) override
+    void set_filter_command(const std::vector<std::string>& command) override
     {
         throw std::runtime_error("set_filter_command not implemented yet");
     }

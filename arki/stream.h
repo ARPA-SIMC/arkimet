@@ -50,7 +50,7 @@ public:
      * Pipe all input data through the given child command before sending it to
      * the stream output.
      */
-    virtual void set_filter_command(const std::string& command) = 0;
+    virtual void set_filter_command(const std::vector<std::string>& command) = 0;
 
     /**
      * Stop sending data through a child command
@@ -127,7 +127,7 @@ protected:
     StreamOutput& stream;
 
 public:
-    WithFilter(StreamOutput& stream, const std::string& command)
+    WithFilter(StreamOutput& stream, const std::vector<std::string>& command)
         : stream(stream)
     {
         stream.set_filter_command(command);

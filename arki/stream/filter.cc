@@ -8,16 +8,12 @@ using namespace arki::utils;
 namespace arki {
 namespace stream {
 
-FilterProcess::FilterProcess(const std::string& command) : utils::IODispatcher(cmd)
+FilterProcess::FilterProcess(const std::vector<std::string>& args) : utils::IODispatcher(cmd)
 {
+    cmd.args = args;
     cmd.set_stdin(utils::subprocess::Redirect::PIPE);
     cmd.set_stdout(utils::subprocess::Redirect::PIPE);
     cmd.set_stderr(utils::subprocess::Redirect::PIPE);
-
-    // Parse command into its components
-    Splitter sp("[[:space:]]+", REG_EXTENDED);
-    for (Splitter::const_iterator j = sp.begin(command); j != sp.end(); ++j)
-        cmd.args.push_back(*j);
 
     m_err = &errors;
 }

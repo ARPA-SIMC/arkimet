@@ -31,11 +31,16 @@ namespace metadata {
 Postprocess::Postprocess(const std::string& command, StreamOutput& out)
     : m_command(command)
 {
-    m_child = new stream::FilterProcess(command);
+    // Parse command into its components
+    std::vector<std::string> args;
+    Splitter sp("[[:space:]]+", REG_EXTENDED);
+    for (Splitter::const_iterator j = sp.begin(command); j != sp.end(); ++j)
+        args.push_back(*j);
 
     // Expand args[0] to the full pathname and check that the program exists
-    m_child->cmd.args[0] = Config::get().dir_postproc.find_file(m_child->cmd.args[0], true);
+    args[0] = Config::get().dir_postproc.find_file(args[0], true);
 
+    m_child = new stream::FilterProcess(args);
     m_child->m_stream = &out;
 }
 
