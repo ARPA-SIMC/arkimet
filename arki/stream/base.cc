@@ -47,6 +47,13 @@ bool BaseStreamOutput::is_nonblocking(int fd)
     return src_fl & O_NONBLOCK;
 }
 
+stream::SendResult BaseStreamOutput::_write_output_line(const void* data, size_t size)
+{
+    stream::SendResult res = _write_output_buffer(data, size);
+    res += _write_output_buffer("\n", 1);
+    return res;
+}
+
 void BaseStreamOutput::set_filter_command(const std::vector<std::string>& command)
 {
     if (filter_process)
@@ -85,6 +92,28 @@ SendResult BaseStreamOutput::send_buffer(const void* data, size_t size)
     }
     if (progress_callback)
         progress_callback(size);
+    return result;
+}
+
+SendResult BaseStreamOutput::send_line(const void* data, size_t size)
+{
+    SendResult result;
+    if (size == 0)
+        return result;
+
+    if (data_start_callback)
+        result += fire_data_start_callback();
+
+    if (filter_process)
+    {
+        filter_process->send(data, size);
+        filter_process->send("\n");
+        result.sent += size + 1;
+    } else {
+        result += _write_output_line(data, size);
+    }
+    if (progress_callback)
+        progress_callback(size + 1);
     return result;
 }
 
@@ -136,7 +165,12 @@ SendResult BaseStreamOutput::send_from_pipe(int fd)
             break;
         }
 
+        if (data_start_callback)
+            result += fire_data_start_callback();
+
         result += _write_output_buffer(buffer, res);
+        if (progress_callback)
+            progress_callback(res);
     }
 
     return result;

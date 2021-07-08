@@ -153,12 +153,12 @@ struct ConcreteTestFixture : public stream::StreamTestsFixture
 {
     std::shared_ptr<core::NamedFileDescriptor> out;
 
-    ConcreteTestFixture(std::shared_ptr<core::NamedFileDescriptor> out)
+    ConcreteTestFixture(std::shared_ptr<core::NamedFileDescriptor> out, int timeout_ms=1000)
         : out(out)
     {
         set_output(
                 std::unique_ptr<arki::StreamOutput>(
-                    new stream::ConcreteTimeoutStreamOutputBase<stream::ConcreteTestingBackend>(out, 1000)));
+                    new stream::ConcreteTimeoutStreamOutputBase<stream::ConcreteTestingBackend>(out, timeout_ms)));
     }
 };
 
@@ -170,137 +170,204 @@ class ConcreteFallbackTestFixture : public ConcreteTestFixture
 };
 
 template<typename Fixture>
-class Tests : public stream::ConcreteStreamTests
+struct Tests : public stream::ConcreteStreamTests
 {
     using ConcreteStreamTests::ConcreteStreamTests;
-
-    void register_tests() override;
 
     std::unique_ptr<stream::StreamTestsFixture> make_fixture() override
     {
         return std::unique_ptr<stream::StreamTestsFixture>(new CommonTestFixture);
     }
 
-    std::unique_ptr<stream::StreamTestsFixture> make_concrete_fixture(std::shared_ptr<core::NamedFileDescriptor> out) override
+    std::unique_ptr<stream::StreamTestsFixture> make_concrete_fixture(std::shared_ptr<core::NamedFileDescriptor> out, int timeout_ms=1000) override
     {
-        return std::unique_ptr<stream::StreamTestsFixture>(new Fixture(out));
+        return std::unique_ptr<stream::StreamTestsFixture>(new Fixture(out, timeout_ms));
     }
 };
 
-Tests<ConcreteTestFixture> test1("arki_stream_concrete_timeout");
-Tests<ConcreteFallbackTestFixture> test2("arki_stream_concrete_timeout_fallback");
+class NormalTests : public Tests<ConcreteTestFixture>
+{
+    using Tests<ConcreteTestFixture>::Tests;
 
-template<typename Fixture>
-void Tests<Fixture>::register_tests() {
+    void register_tests() override;
+};
+
+class FallbackTests : public Tests<ConcreteTestFixture>
+{
+    using Tests<ConcreteTestFixture>::Tests;
+};
+
+NormalTests test1("arki_stream_concrete_timeout");
+FallbackTests test2("arki_stream_concrete_timeout_fallback");
+
+void NormalTests::register_tests() {
 ConcreteStreamTests::register_tests();
 
-add_method("concrete_timeout1", [] {
-    BlockingSink sink;
-    std::vector<uint8_t> filler(sink.pipe_size());
+add_method("timeout_buffer", [this] {
+    auto outfile = std::make_shared<sys::File>("/dev/null", O_WRONLY);
+    auto writer = make_concrete_fixture(outfile, 1);
 
-    auto writer = StreamOutput::create(sink.fd(), 1);
-
-    // This won't block
-    writer->send_buffer(filler.data(), filler.size());
-    // This times out
-    wassert_throws(stream::TimedOut, writer->send_buffer(" ", 1));
-
-    sink.empty_buffer();
-    wassert_throws(stream::TimedOut, writer->send_line(filler.data(), filler.size()));
-
-    sink.empty_buffer();
-    writer->send_buffer(filler.data(), filler.size());
+    // No timeout
     {
-        sys::Tempfile tf1;
-        tf1.write_all_or_throw(std::string("testfile"));
-        wassert_throws(stream::TimedOut, writer->send_file_segment(tf1, 1, 6));
-    }
-
-    sink.empty_buffer();
-    writer->send_buffer(filler.data(), filler.size());
-    {
-        sys::Tempfile tf1;
-        tf1.write_all_or_throw(std::string("testfile"));
-        tf1.lseek(0);
-        wassert_throws(stream::TimedOut, writer->send_from_pipe(tf1));
-    }
-});
-
-add_method("concrete_timeout_send_buffer", [] {
-    BlockingSink sink;
-    auto writer = StreamOutput::create(sink.fd(), 100);
-
-    {
-        WriteTest t(*writer, sink, -3);
-        wassert(actual(writer->send_buffer("foobar", 6)) == 6u);
-        wassert(actual(t.total_written) == 6u);
-        //wassert(actual(cb_log) == std::vector<size_t>{3, 3});
+        stream::ExpectedSyscalls expected({
+            new stream::ExpectedWrite(*outfile, "1234", 4),
+        });
+        wassert(actual(writer->send_buffer("1234", 4)) == stream::SendResult(4u, 0u));
     }
 
     {
-        WriteTest t(*writer, sink, -6);
-        wassert(actual(writer->send_buffer("foobar", 6)) == 6u);
-        wassert(actual(t.total_written) == 6u);
-        //wassert(actual(cb_log) == std::vector<size_t>{3, 3, 6});
+        stream::ExpectedSyscalls expected({
+            new stream::ExpectedWrite(*outfile, "1234", 2),
+            new stream::ExpectedPoll(*outfile, POLLOUT, 1, POLLERR, 1),
+        });
+        wassert(actual(writer->send_buffer("1234", 4)) == stream::SendResult(2u, stream::SendResult::SEND_PIPE_EOF_DEST));
     }
 
     {
-        std::vector<uint8_t> buf(sink.pipe_size() * 2);
-        WriteTest t(*writer, sink, 0);
-        wassert(actual(writer->send_buffer(buf.data(), sink.pipe_size() + 6)) == sink.pipe_size() + 6);
-        wassert(actual(t.total_written) == sink.pipe_size() + 6);
-        //wassert(actual(t.cb_log) == std::vector<size_t>{sink.pipe_size(), 6});
+        stream::ExpectedSyscalls expected({
+            new stream::ExpectedWrite(*outfile, "1234", -1, EAGAIN),
+            new stream::ExpectedPoll(*outfile, POLLOUT, 1, POLLOUT, 1),
+            new stream::ExpectedWrite(*outfile, "1234", 4),
+        });
+        wassert(actual(writer->send_buffer("1234", 4)) == stream::SendResult(4u, 0u));
     }
 
     {
-        std::vector<uint8_t> buf(sink.pipe_size() * 2);
-        WriteTest t(*writer, sink, 1);
-        wassert(actual(writer->send_buffer(buf.data(), sink.pipe_size() + 6)) == sink.pipe_size() + 6);
-        wassert(actual(t.total_written) == sink.pipe_size() + 6);
-        //wassert(actual(t.cb_log) == std::vector<size_t>{sink.pipe_size() - 1, 7});
+        stream::ExpectedSyscalls expected({
+            new stream::ExpectedWrite(*outfile, "1234", 2),
+            new stream::ExpectedPoll(*outfile, POLLOUT, 1, POLLOUT, 1),
+            new stream::ExpectedWrite(*outfile, "34", -1, EAGAIN),
+            new stream::ExpectedPoll(*outfile, POLLOUT, 1, POLLOUT, 1),
+            new stream::ExpectedWrite(*outfile, "34", 2),
+        });
+        wassert(actual(writer->send_buffer("1234", 4)) == stream::SendResult(4u, 0u));
+    }
+
+    // Timeout
+    {
+        stream::ExpectedSyscalls expected({
+            new stream::ExpectedWrite(*outfile, "1234", 2),
+            new stream::ExpectedPoll(*outfile, POLLOUT, 1, 0, 0),
+        });
+        wassert_throws(stream::TimedOut, writer->send_buffer("1234", 4));
     }
 });
 
-add_method("concrete_timeout_send_line", [] {
-    BlockingSink sink;
-    auto writer = StreamOutput::create(sink.fd(), 1000);
+add_method("timeout_line", [this] {
+    auto outfile = std::make_shared<sys::File>("/dev/null", O_WRONLY);
+    auto writer = make_concrete_fixture(outfile, 1);
 
+    // No timeout
     {
-        WriteTest t(*writer, sink, -3);
-        wassert(actual(writer->send_line("foobar", 6)) == 7u);
-        wassert(actual(t.total_written) == 7u);
-        wassert(actual(t.cb_log) == std::vector<size_t>{0, 7});
+        stream::ExpectedSyscalls expected({
+            new stream::ExpectedWritev(*outfile, {"1234", "\n"}, 5),
+        });
+        wassert(actual(writer->send_line("1234", 4)) == stream::SendResult(5u, 0u));
     }
 
     {
-        WriteTest t(*writer, sink, -6);
-        wassert(actual(writer->send_line("foobar", 6)) == 7u);
-        wassert(actual(t.total_written) == 7u);
-        //wassert(actual(cb_log) == std::vector<size_t>{0, 7, 0, 7});
+        stream::ExpectedSyscalls expected({
+            new stream::ExpectedWritev(*outfile, {"1234", "\n"}, 3),
+            new stream::ExpectedPoll(*outfile, POLLOUT, 1, POLLERR, 1),
+        });
+        wassert(actual(writer->send_line("1234", 4)) == stream::SendResult(3u, stream::SendResult::SEND_PIPE_EOF_DEST));
     }
 
     {
-        WriteTest t(*writer, sink, -7);
-        wassert(actual(writer->send_line("foobar", 6)) == 7u);
-        wassert(actual(t.total_written) == 7u);
-        //wassert(actual(cb_log) == std::vector<size_t>{0, 7, 0, 7, 7});
+        stream::ExpectedSyscalls expected({
+            new stream::ExpectedWritev(*outfile, {"1234", "\n"}, -1, EAGAIN),
+            new stream::ExpectedPoll(*outfile, POLLOUT, 1, POLLOUT, 1),
+            new stream::ExpectedWritev(*outfile, {"1234", "\n"}, 5),
+        });
+        wassert(actual(writer->send_line("1234", 4)) == stream::SendResult(5u, 0u));
     }
 
     {
-        WriteTest t(*writer, sink, 0);
-        std::vector<uint8_t> buf(sink.pipe_size() * 2);
-        wassert(actual(writer->send_line(buf.data(), sink.pipe_size() + 6)) == sink.pipe_size() + 7);
-        wassert(actual(t.total_written) == sink.pipe_size() + 7);
-        //wassert(actual(cb_log) == std::vector<size_t>{0, 7, 0, 7, 7});
+        stream::ExpectedSyscalls expected({
+            new stream::ExpectedWritev(*outfile, {"1234", "\n"}, 2),
+            new stream::ExpectedPoll(*outfile, POLLOUT, 1, POLLOUT, 1),
+            new stream::ExpectedWritev(*outfile, {"34", "\n"}, 3),
+        });
+        wassert(actual(writer->send_line("1234", 4)) == stream::SendResult(5u, 0u));
     }
 
     {
-        WriteTest t(*writer, sink, 1);
-        std::vector<uint8_t> buf(sink.pipe_size() * 2);
-        wassert(actual(writer->send_line(buf.data(), sink.pipe_size() + 6)) == sink.pipe_size() + 7);
-        wassert(actual(t.total_written) == sink.pipe_size() + 7);
-        //wassert(actual(cb_log) == std::vector<size_t>{0, 7, 0, 7, 7});
+        stream::ExpectedSyscalls expected({
+            new stream::ExpectedWritev(*outfile, {"1234", "\n"}, 3),
+            new stream::ExpectedPoll(*outfile, POLLOUT, 1, POLLOUT, 1),
+            new stream::ExpectedWritev(*outfile, {"4", "\n"}, 2),
+        });
+        wassert(actual(writer->send_line("1234", 4)) == stream::SendResult(5u, 0u));
     }
+
+    {
+        stream::ExpectedSyscalls expected({
+            new stream::ExpectedWritev(*outfile, {"1234", "\n"}, 4),
+            new stream::ExpectedPoll(*outfile, POLLOUT, 1, POLLOUT, 1),
+            new stream::ExpectedWrite(*outfile, "\n", 1),
+        });
+        wassert(actual(writer->send_line("1234", 4)) == stream::SendResult(5u, 0u));
+    }
+
+    {
+        stream::ExpectedSyscalls expected({
+            new stream::ExpectedWritev(*outfile, {"1234", "\n"}, 4),
+            new stream::ExpectedPoll(*outfile, POLLOUT, 1, POLLOUT, 1),
+            new stream::ExpectedWrite(*outfile, "\n", -1, EAGAIN),
+            new stream::ExpectedPoll(*outfile, POLLOUT, 1, POLLOUT, 1),
+            new stream::ExpectedWrite(*outfile, "\n", 1),
+        });
+        wassert(actual(writer->send_line("1234", 4)) == stream::SendResult(5u, 0u));
+    }
+
+    // Timeout
+    {
+        stream::ExpectedSyscalls expected({
+            new stream::ExpectedWritev(*outfile, {"1234", "\n"}, 2),
+            new stream::ExpectedPoll(*outfile, POLLOUT, 1, 0, 0),
+        });
+        wassert_throws(stream::TimedOut, writer->send_line("1234", 4));
+    }
+
+    {
+        stream::ExpectedSyscalls expected({
+            new stream::ExpectedWritev(*outfile, {"1234", "\n"}, 4),
+            new stream::ExpectedPoll(*outfile, POLLOUT, 1, 0, 0),
+        });
+        wassert_throws(stream::TimedOut, writer->send_line("1234", 4));
+    }
+});
+
+add_method("timeout_file", [this] {
+    auto outfile = std::make_shared<sys::File>("/dev/null", O_WRONLY);
+    auto writer = make_concrete_fixture(outfile, 1);
+    sys::Tempfile tf;
+    tf.write_all_or_throw(std::string("testfile"));
+
+    // No timeout
+    {
+        stream::ExpectedSyscalls expected({
+            new stream::ExpectedSendfile(*outfile, tf, 1, 4, 3, 2),
+            new stream::ExpectedPoll(*outfile, POLLOUT, 1, POLLOUT, 1),
+            new stream::ExpectedSendfile(*outfile, tf, 3, 2, 5, 2),
+        });
+        wassert(actual(writer->send_file_segment(tf, 1, 4)) == stream::SendResult(4u, 0u));
+    }
+
+    // Timeout
+    {
+        stream::ExpectedSyscalls expected({
+            new stream::ExpectedSendfile(*outfile, tf, 1, 4, 3, 2),
+            new stream::ExpectedPoll(*outfile, POLLOUT, 1, 0, 0),
+        });
+        wassert_throws(stream::TimedOut, writer->send_file_segment(tf, 1, 4));
+    }
+//    {
+//        sys::Tempfile tf1;
+//        tf1.write_all_or_throw(std::string("testfile"));
+//        tf1.lseek(0);
+//        wassert_throws(stream::TimedOut, writer->send_from_pipe(tf1));
+//    }
 });
 
 add_method("concrete_timeout_send_file_segment", [] {

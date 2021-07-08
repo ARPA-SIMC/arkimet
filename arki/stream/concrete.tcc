@@ -1,4 +1,5 @@
 #include "concrete.h"
+#include "filter.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/accounting.h"
 #include "arki/utils/process.h"
@@ -106,15 +107,9 @@ stream::SendResult ConcreteStreamOutputBase<Backend>::_write_output_buffer(const
 }
 
 template<typename Backend>
-SendResult ConcreteStreamOutputBase<Backend>::send_line(const void* data, size_t size)
+stream::SendResult ConcreteStreamOutputBase<Backend>::_write_output_line(const void* data, size_t size)
 {
     SendResult result;
-    if (size == 0)
-        return result;
-
-    if (data_start_callback)
-        result += fire_data_start_callback();
-
     utils::Sigignore ignpipe(SIGPIPE);
     struct iovec todo[2] = {
         { (void*)data, size },
@@ -138,13 +133,13 @@ SendResult ConcreteStreamOutputBase<Backend>::send_line(const void* data, size_t
             }
             pos += res;
             result.sent += res;
-            if (pos < size + 1)
+            if (pos < size)
             {
                 todo[0].iov_base = (uint8_t*)data + pos;
                 todo[0].iov_len = size - pos;
-            }
-            if (progress_callback)
-                progress_callback(res);
+            } else if (pos == size) {
+            } else
+                break;
         } else if (pos == size) {
             ssize_t res = Backend::write(*out, "\n", 1);
             if (res < 0)
@@ -156,11 +151,12 @@ SendResult ConcreteStreamOutputBase<Backend>::send_line(const void* data, size_t
                     break;
                 } else
                     throw std::system_error(errno, std::system_category(), "cannot write 1 byte to " + out->name());
+            } else if (res == 0) {
+            } else {
+                pos += res;
+                result.sent += res;
+                break;
             }
-            pos += res;
-            result.sent += res;
-            if (progress_callback)
-                progress_callback(res);
         } else
             break;
 
@@ -207,6 +203,13 @@ SendResult ConcreteStreamOutputBase<Backend>::send_file_segment(arki::core::Name
         size -= res;
     }
 
+    // TODO: redo with a proper event loop
+    int outfd;
+    if (filter_process)
+        outfd = filter_process->cmd.get_stdin();
+    else
+        outfd = *out;
+
     bool has_sendfile = true;
     size_t written = 0;
     while (size > 0)
@@ -214,7 +217,7 @@ SendResult ConcreteStreamOutputBase<Backend>::send_file_segment(arki::core::Name
         if (has_sendfile)
         {
             utils::Sigignore ignpipe(SIGPIPE);
-            ssize_t res = Backend::sendfile(*out, fd, &offset, size - written);
+            ssize_t res = Backend::sendfile(outfd, fd, &offset, size - written);
             if (res < 0)
             {
                 if (errno == EINVAL || errno == ENOSYS)
@@ -307,7 +310,11 @@ SendResult ConcreteStreamOutputBase<Backend>::send_from_pipe(int fd)
 
         // If we get some output, then we *do* call data_start_callback, stream
         // it out, and proceed with the splice handover attempt
-        result += send_buffer(buffer, res);
+        if (data_start_callback)
+            result += fire_data_start_callback();
+        result += _write_output_buffer(buffer, res);
+        if (progress_callback)
+            progress_callback(res);
     }
 
     bool has_splice = true;
@@ -373,9 +380,13 @@ SendResult ConcreteStreamOutputBase<Backend>::send_from_pipe(int fd)
                     throw std::system_error(errno, std::system_category(), "cannot read data from pipe input");
             }
             if (res > 0)
-                result += _write_output_buffer(buffer, res);
-            else
             {
+                if (data_start_callback)
+                    result += fire_data_start_callback();
+                result += _write_output_buffer(buffer, res);
+                if (progress_callback)
+                    progress_callback(res);
+            } else {
                 // Call progress callback here because we're not calling
                 // send_buffer. Send_buffer will take care of calling
                 // progress_callback if needed.

@@ -37,12 +37,12 @@ struct ConcreteTestFixture : public stream::StreamTestsFixture
 {
     std::shared_ptr<core::NamedFileDescriptor> out;
 
-    ConcreteTestFixture(std::shared_ptr<core::NamedFileDescriptor> out)
+    ConcreteTestFixture(std::shared_ptr<core::NamedFileDescriptor> out, int timeout_ms=-1)
         : out(out)
     {
         set_output(
                 std::unique_ptr<arki::StreamOutput>(
-                    new stream::ConcreteStreamOutputBase<stream::ConcreteTestingBackend>(out)));
+                    new stream::ConcreteStreamOutputBase<stream::ConcreteTestingBackend>(out, timeout_ms)));
     }
 };
 
@@ -65,9 +65,9 @@ class Tests : public stream::ConcreteStreamTests
         return std::unique_ptr<stream::StreamTestsFixture>(new CommonTestFixture);
     }
 
-    std::unique_ptr<stream::StreamTestsFixture> make_concrete_fixture(std::shared_ptr<core::NamedFileDescriptor> out) override
+    std::unique_ptr<stream::StreamTestsFixture> make_concrete_fixture(std::shared_ptr<core::NamedFileDescriptor> out, int timeout_ms=-1) override
     {
-        return std::unique_ptr<stream::StreamTestsFixture>(new Fixture(out));
+        return std::unique_ptr<stream::StreamTestsFixture>(new Fixture(out, timeout_ms));
     }
 };
 

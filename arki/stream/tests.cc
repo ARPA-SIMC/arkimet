@@ -90,6 +90,74 @@ DisableSendfileSplice::DisableSendfileSplice()
     };
 }
 
+ExpectedSyscalls::ExpectedSyscalls(std::vector<ExpectedSyscallMatch*> expected) : expected(expected)
+{
+    ConcreteTestingBackend::read = [this](int fd, void *buf, size_t count) { return on_read(fd, buf, count); };
+    ConcreteTestingBackend::write = [this](int fd, const void *buf, size_t count) { return on_write(fd, buf, count); };
+    ConcreteTestingBackend::writev = [this](int fd, const struct iovec *iov, int iovcnt) { return on_writev(fd, iov, iovcnt); };
+    ConcreteTestingBackend::sendfile = [this](int out_fd, int in_fd, off_t *offset, size_t count) { return on_sendfile(out_fd, in_fd, offset, count); };
+    ConcreteTestingBackend::splice = [this](int fd_in, loff_t *off_in, int fd_out, 
+                      loff_t *off_out, size_t len, unsigned int flags) { return on_splice(fd_in, off_in, fd_out, off_out, len, flags); };
+    ConcreteTestingBackend::poll = [this](struct pollfd *fds, nfds_t nfds, int timeout) { return on_poll(fds, nfds, timeout); };
+    ConcreteTestingBackend::pread = [this](int fd, void *buf, size_t count, off_t offset) { return on_pread(fd, buf, count, offset); };
+}
+
+ExpectedSyscalls::~ExpectedSyscalls()
+{
+    for (auto& el: expected)
+        delete el;
+}
+
+std::unique_ptr<ExpectedSyscallMatch> ExpectedSyscalls::pop(const char* name)
+{
+    if (expected.empty())
+    {
+        std::string msg = "unexpected syscall ";
+        msg += name;
+        msg += " received: the expected list is empty";
+        wfail_test(msg);
+    }
+    std::unique_ptr<ExpectedSyscallMatch> res(expected[0]);
+    expected.erase(expected.begin());
+    return res;
+}
+
+ssize_t ExpectedSyscalls::on_read(int fd, void *buf, size_t count)
+{
+    return pop("read")->on_read(fd, buf, count);
+}
+
+ssize_t ExpectedSyscalls::on_write(int fd, const void *buf, size_t count)
+{
+    return pop("write")->on_write(fd, buf, count);
+}
+
+ssize_t ExpectedSyscalls::on_writev(int fd, const struct iovec *iov, int iovcnt)
+{
+    return pop("writev")->on_writev(fd, iov, iovcnt);
+}
+
+ssize_t ExpectedSyscalls::on_sendfile(int out_fd, int in_fd, off_t *offset, size_t count)
+{
+    return pop("sendfile")->on_sendfile(out_fd, in_fd, offset, count);
+}
+
+ssize_t ExpectedSyscalls::on_splice(int fd_in, loff_t *off_in, int fd_out,
+                  loff_t *off_out, size_t len, unsigned int flags)
+{
+    return pop("splice")->on_splice(fd_in, off_in, fd_out, off_out, len, flags);
+}
+
+int ExpectedSyscalls::on_poll(struct pollfd *fds, nfds_t nfds, int timeout)
+{
+    return pop("poll")->on_poll(fds, nfds, timeout);
+}
+
+ssize_t ExpectedSyscalls::on_pread(int fd, void *buf, size_t count, off_t offset)
+{
+    return pop("pread")->on_pread(fd, buf, count, offset);
+}
+
 
 namespace {
 
