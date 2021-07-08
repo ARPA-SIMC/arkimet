@@ -84,23 +84,40 @@ public:
     /**
      * Create a StreamOutput to stream to a file.
      *
-     * Stream operations can block on writes for as long as needed (possibly
-     * indefinitely).
+     * If timeout_ms is 0 or not specified, stream operations can block on
+     * writes for as long as needed (possibly indefinitely).
+     *
+     * Otherwise, stream operations can block on writes for at most the given
+     * number of milliseconds. If timed out, StreamTimedOut is raised
      */
-    static std::unique_ptr<StreamOutput> create(std::shared_ptr<core::NamedFileDescriptor> out);
+    static std::unique_ptr<StreamOutput> create(std::shared_ptr<core::NamedFileDescriptor> out, unsigned timeout_ms=0);
 
     /**
      * Create a StreamOutput to stream to a file.
      *
-     * Stream operations can block on writes for at most the given number of
-     * milliseconds. If timed out, StreamTimedOut is raised
+     * The data streamed will be filtered through the given child command, sent
+     * to its stdin and read from its stdout.
+     *
+     * If timeout_ms is 0 or not specified, stream operations can block on
+     * writes for as long as needed (possibly indefinitely).
+     *
+     * Otherwise, stream operations can block on writes for at most the given
+     * number of milliseconds. If timed out, StreamTimedOut is raised
      */
-    static std::unique_ptr<StreamOutput> create(std::shared_ptr<core::NamedFileDescriptor> out, unsigned timeout_ms);
+    static std::unique_ptr<StreamOutput> create_filtered(std::shared_ptr<core::NamedFileDescriptor> out, const std::string& command, unsigned timeout_ms=0);
 
     /**
      * Create a Streamoutput to stream to a memory buffer
      */
     static std::unique_ptr<StreamOutput> create(std::vector<uint8_t>& out);
+
+    /**
+     * Create a Streamoutput to stream to a memory buffer
+     *
+     * The data streamed will be filtered through the given child command, sent
+     * to its stdin and read from its stdout.
+     */
+    static std::unique_ptr<StreamOutput> create_filtered(std::vector<uint8_t>& out, const std::string& command);
 
     /**
      * Create a Streamoutput that discards its input

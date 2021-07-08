@@ -13,11 +13,6 @@ StreamOutput::~StreamOutput()
 {
 }
 
-std::unique_ptr<StreamOutput> StreamOutput::create(std::shared_ptr<core::NamedFileDescriptor> out)
-{
-    return std::unique_ptr<StreamOutput>(new stream::ConcreteStreamOutput(out));
-}
-
 std::unique_ptr<StreamOutput> StreamOutput::create(std::shared_ptr<core::NamedFileDescriptor> out, unsigned timeout_ms)
 {
     if (timeout_ms)
@@ -26,9 +21,19 @@ std::unique_ptr<StreamOutput> StreamOutput::create(std::shared_ptr<core::NamedFi
         return std::unique_ptr<StreamOutput>(new stream::ConcreteStreamOutput(out));
 }
 
+std::unique_ptr<StreamOutput> StreamOutput::create_filtered(std::shared_ptr<core::NamedFileDescriptor> out, const std::string& command, unsigned timeout_ms)
+{
+    throw std::runtime_error("create_filtered for concrete files not yet implemented");
+}
+
 std::unique_ptr<StreamOutput> StreamOutput::create(std::vector<uint8_t>& out)
 {
     return std::unique_ptr<StreamOutput>(new stream::BufferStreamOutput(out));
+}
+
+std::unique_ptr<StreamOutput> StreamOutput::create_filtered(std::vector<uint8_t>& out, const std::string& command)
+{
+    throw std::runtime_error("create_filtered for memory buffers not yet implemented");
 }
 
 std::unique_ptr<StreamOutput> StreamOutput::create_discard()
