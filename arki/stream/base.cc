@@ -80,14 +80,16 @@ SendResult BaseStreamOutput::send_buffer(const void* data, size_t size)
     if (size == 0)
         return result;
 
-    if (data_start_callback)
-        result += fire_data_start_callback();
-
     if (filter_process)
     {
+        // Leave data_start_callback to send_from_pipe, so we trigger it only
+        // if/when data is generated
         filter_process->send(data, size);
         result.sent += size;
     } else {
+        if (data_start_callback)
+            result += fire_data_start_callback();
+
         result +=_write_output_buffer(data, size);
     }
     if (progress_callback)
@@ -101,15 +103,17 @@ SendResult BaseStreamOutput::send_line(const void* data, size_t size)
     if (size == 0)
         return result;
 
-    if (data_start_callback)
-        result += fire_data_start_callback();
-
     if (filter_process)
     {
+        // Leave data_start_callback to send_from_pipe, so we trigger it only
+        // if/when data is generated
         filter_process->send(data, size);
         filter_process->send("\n");
         result.sent += size + 1;
     } else {
+        if (data_start_callback)
+            result += fire_data_start_callback();
+
         result += _write_output_line(data, size);
     }
     if (progress_callback)

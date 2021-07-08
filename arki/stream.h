@@ -135,6 +135,11 @@ public:
 
     ~WithFilter()
     {
+        done();
+    }
+
+    void done()
+    {
         stream.unset_filter_command();
     }
 };

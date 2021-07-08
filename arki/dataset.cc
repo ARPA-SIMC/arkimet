@@ -6,6 +6,7 @@
 #include "arki/dataset/empty.h"
 #include "arki/metadata.h"
 #include "arki/metadata/postprocess.h"
+#include "arki/metadata/data.h"
 #include "arki/utils/string.h"
 #include "arki/stream.h"
 #include "arki/summary.h"
@@ -61,11 +62,12 @@ void Reader::impl_stream_query_bytes(const dataset::ByteQuery& q, StreamOutput& 
             break;
         }
         case dataset::ByteQuery::BQ_POSTPROCESS: {
-            metadata::Postprocess postproc(q.postprocessor, out);
-            postproc.validate(*dataset().config);
-            postproc.start();
-            query_data(q, [&](std::shared_ptr<Metadata> md) { return postproc.process(move(md)); });
-            postproc.flush();
+            std::vector<std::string> args = metadata::Postprocess::validate_command(q.postprocessor, *dataset().config);
+            stream::WithFilter filtered(out, args);
+            query_data(q, [&](std::shared_ptr<Metadata> md) {
+                return metadata::Postprocess::send(md, out);
+            });
+            filtered.done();
             break;
         }
         default:

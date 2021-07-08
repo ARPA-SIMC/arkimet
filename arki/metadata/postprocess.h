@@ -19,39 +19,14 @@ namespace metadata {
 
 class Postprocess
 {
-protected:
-    /// Subprocess that filters our data
-    stream::FilterProcess* m_child = nullptr;
-    /// Command line run in the subprocess
-    std::string m_command;
-
 public:
     /**
-     * Create a postprocessor running the command \a command, and sending the
-     * output to the file descriptor \a outfd.
-     *
-     * The current runtime configuration is used to validate if command is
-     * allowed or not.
-     *
-     * \a out is the output stream where we send data coming from the
-     * postprocessor
+     * Split the command into the argv components, resolve argv0 to a full
+     * path, check that it is allowed to run
      */
-    Postprocess(const std::string& command, StreamOutput& out);
-    virtual ~Postprocess();
+    static std::vector<std::string> validate_command(const std::string& command, const core::cfg::Section& cfg);
 
-    /**
-     * Validate this postprocessor against the given configuration
-     */
-    void validate(const core::cfg::Section& cfg);
-
-    /// Fork the child process setting up the various pipes
-    void start();
-
-    // Process one metadata
-    bool process(std::shared_ptr<Metadata> md);
-
-    // End of processing: flush all pending data
-    stream::SendResult flush();
+    static bool send(std::shared_ptr<Metadata> md, StreamOutput& out);
 };
 
 }
