@@ -17,7 +17,6 @@ libarkimet_sources = [
     'stream/filter.cc',
     'stream/base.cc',
     'stream/concrete.cc',
-    'stream/concrete-timeout.cc',
     'stream/discard.cc',
     'stream/buffer.cc',
     'exceptions.cc',

@@ -1,6 +1,5 @@
 #include "stream.h"
 #include "arki/stream/concrete.h"
-#include "arki/stream/concrete-timeout.h"
 #include "arki/stream/buffer.h"
 #include "arki/stream/discard.h"
 #include <ostream>
@@ -15,8 +14,8 @@ StreamOutput::~StreamOutput()
 
 std::unique_ptr<StreamOutput> StreamOutput::create(std::shared_ptr<core::NamedFileDescriptor> out, unsigned timeout_ms)
 {
-    if (timeout_ms)
-        return std::unique_ptr<StreamOutput>(new stream::ConcreteTimeoutStreamOutput(out, timeout_ms));
+    if (timeout_ms > 0)
+        return std::unique_ptr<StreamOutput>(new stream::ConcreteStreamOutput(out, timeout_ms));
     else
         return std::unique_ptr<StreamOutput>(new stream::ConcreteStreamOutput(out));
 }
