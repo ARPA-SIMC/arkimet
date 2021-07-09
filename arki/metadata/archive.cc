@@ -216,8 +216,8 @@ la_ssize_t archive_streamoutput_write_callback(struct archive *a, void *client_d
 {
     StreamOutput* out = reinterpret_cast<StreamOutput*>(client_data);
     try {
-        auto res = out->send_buffer(buffer, length);
-        return res.sent;
+        out->send_buffer(buffer, length);
+        return length;
     } catch (std::system_error& e) {
         archive_set_error(a, e.code().value(), "%s", e.what());
         return -1;

@@ -10,6 +10,49 @@
 namespace arki {
 namespace stream {
 
+#if 0
+template<typename Backend>
+struct BufferSender
+{
+    core::NamedFileDescriptor& out;
+    const void* data;
+    size_t size;
+    int timeout_ms;
+    pollfd pollinfo;
+
+    BufferSender(core::NamedFileDescriptor& out, const void* data, size_t size, int timeout_ms)
+        : out(out), data(data), size(size), timeout_ms(timeout_ms)
+    {
+        pollinfo.fd = out;
+        pollinfo.events = POLLOUT;
+    }
+
+    void shove()
+    {
+        while (true)
+        {
+            ssize_t res = Backend::write(out, data, size);
+            if (res < 0)
+            {
+                if (errno == EAGAIN || errno == EWOULDBLOCK)
+                    break;
+                else if (errno == EPIPE) {
+                    result.flags |= SendResult::SEND_PIPE_EOF_DEST;
+                    break;
+                } else
+                    throw std::system_error(errno, std::system_category(), "cannot write " + std::to_string(size) + " bytes to " + out.name());
+            } else {
+                data += res;
+                size -= res;
+            }
+
+            if (size == 0)
+                break;
+        }
+    }
+};
+#endif
+
 template<typename Backend>
 std::string ConcreteStreamOutputBase<Backend>::name() const { return out->name(); }
 
@@ -73,7 +116,6 @@ stream::SendResult ConcreteStreamOutputBase<Backend>::_write_output_buffer(const
         }
 
         pos += res;
-        result.sent += res;
 
         if (pos >= size)
             break;
@@ -132,7 +174,6 @@ stream::SendResult ConcreteStreamOutputBase<Backend>::_write_output_line(const v
                     throw std::system_error(errno, std::system_category(), "cannot write " + std::to_string(size + 1) + " bytes to " + out->name());
             }
             pos += res;
-            result.sent += res;
             if (pos < size)
             {
                 todo[0].iov_base = (uint8_t*)data + pos;
@@ -154,7 +195,6 @@ stream::SendResult ConcreteStreamOutputBase<Backend>::_write_output_line(const v
             } else if (res == 0) {
             } else {
                 pos += res;
-                result.sent += res;
                 break;
             }
         } else
@@ -243,7 +283,6 @@ SendResult ConcreteStreamOutputBase<Backend>::send_file_segment(arki::core::Name
                 if (progress_callback)
                     progress_callback(res);
                 written += res;
-                result.sent += res;
             }
         } else {
             ssize_t res = Backend::pread(fd, buffer, std::min(size - written, buffer.size), offset);
@@ -279,9 +318,10 @@ SendResult ConcreteStreamOutputBase<Backend>::send_file_segment(arki::core::Name
 
 
 template<typename Backend>
-SendResult ConcreteStreamOutputBase<Backend>::send_from_pipe(int fd)
+std::pair<size_t, SendResult> ConcreteStreamOutputBase<Backend>::send_from_pipe(int fd)
 {
     bool src_nonblock = is_nonblocking(fd);
+    size_t sent = 0;
     SendResult result;
 
     TransferBuffer buffer;
@@ -298,14 +338,14 @@ SendResult ConcreteStreamOutputBase<Backend>::send_from_pipe(int fd)
         {
             if (errno == EAGAIN) {
                 result.flags |= SendResult::SEND_PIPE_EAGAIN_SOURCE;
-                return result;
+                return std::make_pair(sent, result);
             } else
                 throw std::system_error(errno, std::system_category(), "cannot read data to stream from a pipe");
         }
         if (res == 0)
         {
             result.flags |= SendResult::SEND_PIPE_EOF_SOURCE;
-            return result;
+            return std::make_pair(sent, result);
         }
 
         // If we get some output, then we *do* call data_start_callback, stream
@@ -313,6 +353,7 @@ SendResult ConcreteStreamOutputBase<Backend>::send_from_pipe(int fd)
         if (data_start_callback)
             result += fire_data_start_callback();
         result += _write_output_buffer(buffer, res);
+        sent += res;
         if (progress_callback)
             progress_callback(res);
     }
@@ -328,7 +369,7 @@ SendResult ConcreteStreamOutputBase<Backend>::send_from_pipe(int fd)
             ssize_t res = splice(fd, NULL, *out, NULL, TransferBuffer::size * 128, SPLICE_F_MORE);
             if (res > 0)
             {
-                result.sent += res;
+                sent += res;
                 if (progress_callback)
                     progress_callback(res);
             } else if (res == 0) {
@@ -407,7 +448,7 @@ SendResult ConcreteStreamOutputBase<Backend>::send_from_pipe(int fd)
         }
     }
 
-    return result;
+    return std::make_pair(sent, result);
 }
 
 }

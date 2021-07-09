@@ -20,7 +20,8 @@ public:
     std::ostream* m_err = 0;
 
     /// Accumulated stream result
-    stream::SendResult stream_result;
+    size_t size_stdin = 0;
+    size_t size_stdout = 0;
 
     /// Captured stderr from the child (unless sent elsewhere)
     std::stringstream errors;
@@ -34,14 +35,16 @@ public:
     void read_stdout() override
     {
         // Stream directly out of a pipe
-        stream::SendResult res = m_stream->send_from_pipe(subproc.get_stdout());
-        stream_result.sent += res.sent;
+        size_t sent;
+        stream::SendResult res;
+        std::tie(sent, res) = m_stream->send_from_pipe(subproc.get_stdout());
+        size_stdout += sent;
         if (res.flags & stream::SendResult::SEND_PIPE_EOF_SOURCE)
             subproc.close_stdout();
         else if (res.flags & stream::SendResult::SEND_PIPE_EOF_DEST)
         {
             subproc.close_stdout();
-            stream_result.flags |= stream::SendResult::SEND_PIPE_EOF_DEST;
+            // TODO stream_result.flags |= stream::SendResult::SEND_PIPE_EOF_DEST;
         }
         return;
     }

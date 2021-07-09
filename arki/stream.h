@@ -50,12 +50,12 @@ public:
      * Pipe all input data through the given child command before sending it to
      * the stream output.
      */
-    virtual void set_filter_command(const std::vector<std::string>& command) = 0;
+    virtual void start_filter(const std::vector<std::string>& command) = 0;
 
     /**
      * Stop sending data through a child command, and shut it down.
      */
-    virtual void unset_filter_command() = 0;
+    virtual std::pair<size_t, size_t> stop_filter() = 0;
 
     /**
      * Stream the contents of a memory buffer.
@@ -91,7 +91,7 @@ public:
      *  * the input reaches end of file
      *  * the input is in non-blocking mode, and a read returns EAGAIN
      */
-    virtual stream::SendResult send_from_pipe(int fd) = 0;
+    virtual std::pair<size_t, stream::SendResult> send_from_pipe(int fd) = 0;
 
     /**
      * Create a StreamOutput to stream to a file.
@@ -130,7 +130,7 @@ public:
     WithFilter(StreamOutput& stream, const std::vector<std::string>& command)
         : stream(stream)
     {
-        stream.set_filter_command(command);
+        stream.start_filter(command);
     }
 
     ~WithFilter()
@@ -138,9 +138,9 @@ public:
         done();
     }
 
-    void done()
+    std::pair<size_t, size_t> done()
     {
-        stream.unset_filter_command();
+        return stream.stop_filter();
     }
 };
 

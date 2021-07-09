@@ -122,7 +122,7 @@ add_method("blob_stream", [] {
     sys::unlink_ifexists("test.grib");
     {
         auto stream = StreamOutput::create(std::make_shared<File>("test.grib", O_WRONLY | O_CREAT | O_TRUNC));
-        wassert(actual(o->stream_data(*stream)) == 34960u);
+        wassert(actual(o->stream_data(*stream)) == stream::SendResult());
     }
 
     std::string data = sys::read_file("test.grib");

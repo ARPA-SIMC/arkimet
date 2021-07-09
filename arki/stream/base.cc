@@ -54,7 +54,7 @@ stream::SendResult BaseStreamOutput::_write_output_line(const void* data, size_t
     return res;
 }
 
-void BaseStreamOutput::set_filter_command(const std::vector<std::string>& command)
+void BaseStreamOutput::start_filter(const std::vector<std::string>& command)
 {
     if (filter_process)
         throw std::runtime_error("A filter command was already started on this stream");
@@ -64,14 +64,16 @@ void BaseStreamOutput::set_filter_command(const std::vector<std::string>& comman
     filter_process->start();
 }
 
-void BaseStreamOutput::unset_filter_command()
+std::pair<size_t, size_t> BaseStreamOutput::stop_filter()
 {
     if (!filter_process)
-        return;
+        return std::make_pair(0u, 0u);
 
     std::unique_ptr<FilterProcess> proc = std::move(filter_process);
 
     proc->stop();
+
+    return std::make_pair(proc->size_stdin, proc->size_stdout);
 }
 
 SendResult BaseStreamOutput::send_buffer(const void* data, size_t size)
@@ -85,7 +87,7 @@ SendResult BaseStreamOutput::send_buffer(const void* data, size_t size)
         // Leave data_start_callback to send_from_pipe, so we trigger it only
         // if/when data is generated
         filter_process->send(data, size);
-        result.sent += size;
+        filter_process->size_stdin += size;
     } else {
         if (data_start_callback)
             result += fire_data_start_callback();
@@ -109,7 +111,7 @@ SendResult BaseStreamOutput::send_line(const void* data, size_t size)
         // if/when data is generated
         filter_process->send(data, size);
         filter_process->send("\n");
-        result.sent += size + 1;
+        filter_process->size_stdin += size + 1;
     } else {
         if (data_start_callback)
             result += fire_data_start_callback();
@@ -146,8 +148,9 @@ SendResult BaseStreamOutput::send_file_segment(arki::core::NamedFileDescriptor& 
     return result;
 }
 
-SendResult BaseStreamOutput::send_from_pipe(int fd)
+std::pair<size_t, SendResult> BaseStreamOutput::send_from_pipe(int fd)
 {
+    size_t sent = 0;
     SendResult result;
 
     TransferBuffer buffer;
@@ -173,11 +176,12 @@ SendResult BaseStreamOutput::send_from_pipe(int fd)
             result += fire_data_start_callback();
 
         result += _write_output_buffer(buffer, res);
+        sent += res;
         if (progress_callback)
             progress_callback(res);
     }
 
-    return result;
+    return std::make_pair(sent, result);
 }
 
 

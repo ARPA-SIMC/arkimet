@@ -76,8 +76,8 @@ public:
         data_start_callback = f;
     }
 
-    void set_filter_command(const std::vector<std::string>& command) override;
-    void unset_filter_command() override;
+    void start_filter(const std::vector<std::string>& command) override;
+    std::pair<size_t, size_t> stop_filter() override;
 
     // Generic implementation based on _write_output_buffer
     SendResult send_buffer(const void* data, size_t size) override;
@@ -89,7 +89,7 @@ public:
     SendResult send_file_segment(arki::core::NamedFileDescriptor& fd, off_t offset, size_t size) override;
 
     // Generic implementation based on _write_output_buffer
-    SendResult send_from_pipe(int fd) override;
+    std::pair<size_t, SendResult> send_from_pipe(int fd) override;
 };
 
 struct TransferBuffer

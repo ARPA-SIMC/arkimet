@@ -39,10 +39,10 @@ constexpr uint32_t SendResult::SEND_PIPE_EAGAIN_SOURCE;
 std::ostream& operator<<(std::ostream& out, const SendResult& r)
 {
     if (r.flags == 0)
-        return out << "[" << r.sent << "]";
+        return out << "[---]";
     else
     {
-        out << "[" << r.sent << ", ";
+        out << "[";
         if (r.flags & SendResult::SEND_PIPE_EOF_SOURCE)
             out << "S";
         else

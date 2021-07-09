@@ -55,9 +55,9 @@ struct StreamState : public core::curl::Request
 
     size_t process_body_chunk(void *ptr, size_t size, size_t nmemb, void *stream) override
     {
-        size_t res = out.send_buffer(ptr, size * nmemb).sent;
+        out.send_buffer(ptr, size * nmemb);
         if (progress) progress->update(0, size * nmemb);
-        return res;
+        return size * nmemb;
     }
 };
 
