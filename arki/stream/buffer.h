@@ -8,7 +8,7 @@
 namespace arki {
 namespace stream {
 
-class BufferStreamOutput: public BaseStreamOutput
+class BufferStreamOutput: public AbstractStreamOutput
 {
     std::vector<uint8_t>& out;
 

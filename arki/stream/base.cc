@@ -47,13 +47,6 @@ bool BaseStreamOutput::is_nonblocking(int fd)
     return src_fl & O_NONBLOCK;
 }
 
-stream::SendResult BaseStreamOutput::_write_output_line(const void* data, size_t size)
-{
-    stream::SendResult res = _write_output_buffer(data, size);
-    res += _write_output_buffer("\n", 1);
-    return res;
-}
-
 void BaseStreamOutput::start_filter(const std::vector<std::string>& command)
 {
     if (filter_process)
@@ -76,7 +69,14 @@ std::pair<size_t, size_t> BaseStreamOutput::stop_filter()
     return std::make_pair(proc->size_stdin, proc->size_stdout);
 }
 
-SendResult BaseStreamOutput::send_buffer(const void* data, size_t size)
+stream::SendResult AbstractStreamOutput::_write_output_line(const void* data, size_t size)
+{
+    stream::SendResult res = _write_output_buffer(data, size);
+    res += _write_output_buffer("\n", 1);
+    return res;
+}
+
+SendResult AbstractStreamOutput::send_buffer(const void* data, size_t size)
 {
     SendResult result;
     if (size == 0)
@@ -99,7 +99,7 @@ SendResult BaseStreamOutput::send_buffer(const void* data, size_t size)
     return result;
 }
 
-SendResult BaseStreamOutput::send_line(const void* data, size_t size)
+SendResult AbstractStreamOutput::send_line(const void* data, size_t size)
 {
     SendResult result;
     if (size == 0)
@@ -123,7 +123,7 @@ SendResult BaseStreamOutput::send_line(const void* data, size_t size)
     return result;
 }
 
-SendResult BaseStreamOutput::send_file_segment(arki::core::NamedFileDescriptor& fd, off_t offset, size_t size)
+SendResult AbstractStreamOutput::send_file_segment(arki::core::NamedFileDescriptor& fd, off_t offset, size_t size)
 {
     SendResult result;
     if (size == 0)
@@ -148,7 +148,7 @@ SendResult BaseStreamOutput::send_file_segment(arki::core::NamedFileDescriptor& 
     return result;
 }
 
-std::pair<size_t, SendResult> BaseStreamOutput::send_from_pipe(int fd)
+std::pair<size_t, SendResult> AbstractStreamOutput::send_from_pipe(int fd)
 {
     size_t sent = 0;
     SendResult result;

@@ -212,6 +212,56 @@ stream::SendResult ConcreteStreamOutputBase<Backend>::_write_output_line(const v
 
 
 template<typename Backend>
+SendResult ConcreteStreamOutputBase<Backend>::send_buffer(const void* data, size_t size)
+{
+    SendResult result;
+    if (size == 0)
+        return result;
+
+    if (filter_process)
+    {
+        // Leave data_start_callback to send_from_pipe, so we trigger it only
+        // if/when data is generated
+        filter_process->send(data, size);
+        filter_process->size_stdin += size;
+    } else {
+        if (data_start_callback)
+            result += fire_data_start_callback();
+
+        result +=_write_output_buffer(data, size);
+    }
+    if (progress_callback)
+        progress_callback(size);
+    return result;
+}
+
+template<typename Backend>
+SendResult ConcreteStreamOutputBase<Backend>::send_line(const void* data, size_t size)
+{
+    SendResult result;
+    if (size == 0)
+        return result;
+
+    if (filter_process)
+    {
+        // Leave data_start_callback to send_from_pipe, so we trigger it only
+        // if/when data is generated
+        filter_process->send(data, size);
+        filter_process->send("\n");
+        filter_process->size_stdin += size + 1;
+    } else {
+        if (data_start_callback)
+            result += fire_data_start_callback();
+
+        result += _write_output_line(data, size);
+    }
+    if (progress_callback)
+        progress_callback(size + 1);
+    return result;
+}
+
+
+template<typename Backend>
 SendResult ConcreteStreamOutputBase<Backend>::send_file_segment(arki::core::NamedFileDescriptor& fd, off_t offset, size_t size)
 {
     SendResult result;

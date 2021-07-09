@@ -8,7 +8,7 @@
 namespace arki {
 namespace stream {
 
-class DiscardStreamOutput: public BaseStreamOutput
+class DiscardStreamOutput: public AbstractStreamOutput
 {
     stream::SendResult _write_output_buffer(const void* data, size_t size) override;
     stream::SendResult _write_output_line(const void* data, size_t size) override;

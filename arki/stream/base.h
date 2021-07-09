@@ -43,6 +43,28 @@ protected:
      */
     bool is_nonblocking(int fd);
 
+public:
+    BaseStreamOutput();
+    virtual ~BaseStreamOutput();
+
+    void set_progress_callback(std::function<void(size_t)> f) override
+    {
+        progress_callback = f;
+    }
+
+    void set_data_start_callback(std::function<stream::SendResult(StreamOutput&)> f) override
+    {
+        data_start_callback = f;
+    }
+
+    void start_filter(const std::vector<std::string>& command) override;
+    std::pair<size_t, size_t> stop_filter() override;
+};
+
+
+class AbstractStreamOutput : public BaseStreamOutput
+{
+protected:
     /**
      * Low-level function to write the given buffer to the output.
      *
@@ -63,21 +85,7 @@ protected:
     virtual stream::SendResult _write_output_line(const void* data, size_t size);
 
 public:
-    BaseStreamOutput();
-    virtual ~BaseStreamOutput();
-
-    void set_progress_callback(std::function<void(size_t)> f) override
-    {
-        progress_callback = f;
-    }
-
-    void set_data_start_callback(std::function<stream::SendResult(StreamOutput&)> f) override
-    {
-        data_start_callback = f;
-    }
-
-    void start_filter(const std::vector<std::string>& command) override;
-    std::pair<size_t, size_t> stop_filter() override;
+    using BaseStreamOutput::BaseStreamOutput;
 
     // Generic implementation based on _write_output_buffer
     SendResult send_buffer(const void* data, size_t size) override;
@@ -91,6 +99,7 @@ public:
     // Generic implementation based on _write_output_buffer
     std::pair<size_t, SendResult> send_from_pipe(int fd) override;
 };
+
 
 struct TransferBuffer
 {

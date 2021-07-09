@@ -29,7 +29,7 @@ static std::string get_fd_name(PyObject* o)
     throw PythonException();
 }
 
-class PythonStreamOutput : public arki::stream::BaseStreamOutput
+class PythonStreamOutput : public arki::stream::AbstractStreamOutput
 {
 protected:
     PyObject* o;
