@@ -12,8 +12,6 @@ protected:
     std::unique_ptr<StreamOutput> output;
 
 public:
-    std::vector<size_t> cb_log;
-
     virtual ~StreamTestsFixture() {}
 
     StreamOutput& stream() { return *output; }

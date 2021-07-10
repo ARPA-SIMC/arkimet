@@ -10,48 +10,453 @@
 namespace arki {
 namespace stream {
 
-#if 0
-template<typename Backend>
-struct BufferSender
+enum class TransferResult
 {
-    core::NamedFileDescriptor& out;
+    DONE = 0,
+    EOF_SOURCE = 1,
+    EOF_DEST = 2,
+    WOULDBLOCK = 3,
+};
+
+template<typename Backend>
+struct Sender
+{
+    ConcreteStreamOutputBase<Backend>& stream;
+    stream::SendResult result;
+
+    Sender(ConcreteStreamOutputBase<Backend>& stream)
+        : stream(stream)
+    {
+    }
+};
+
+template<typename Backend>
+struct BufferToOutput
+{
     const void* data;
     size_t size;
-    int timeout_ms;
-    pollfd pollinfo;
+    pollfd& dest;
+    std::string out_name;
+    std::function<void(size_t)> progress_callback;
 
-    BufferSender(core::NamedFileDescriptor& out, const void* data, size_t size, int timeout_ms)
-        : out(out), data(data), size(size), timeout_ms(timeout_ms)
+    BufferToOutput(const void* data, size_t size, pollfd& dest, const std::string& out_name)
+        : data(data), size(size), dest(dest), out_name(out_name)
     {
-        pollinfo.fd = out;
-        pollinfo.events = POLLOUT;
     }
 
-    void shove()
+    TransferResult transfer_available()
     {
         while (true)
         {
-            ssize_t res = Backend::write(out, data, size);
+            ssize_t res = Backend::write(dest.fd, data, size);
+            fprintf(stderr, "  BufferToOutput write %.*s %d → %d\n", (int)size, (const char*)data, (int)size, (int)res);
             if (res < 0)
             {
                 if (errno == EAGAIN || errno == EWOULDBLOCK)
-                    break;
+                    return TransferResult::WOULDBLOCK;
                 else if (errno == EPIPE) {
-                    result.flags |= SendResult::SEND_PIPE_EOF_DEST;
-                    break;
+                    return TransferResult::EOF_DEST;
                 } else
-                    throw std::system_error(errno, std::system_category(), "cannot write " + std::to_string(size) + " bytes to " + out.name());
+                    throw std::system_error(errno, std::system_category(), "cannot write " + std::to_string(size) + " bytes to " + out_name);
             } else {
-                data += res;
+                data = (const uint8_t*)data + res;
                 size -= res;
+
+                if (progress_callback)
+                    progress_callback(res);
             }
 
             if (size == 0)
-                break;
+                return TransferResult::DONE;
         }
     }
 };
+
+
+template<typename Backend>
+struct BufferSender: public Sender<Backend>
+{
+    BufferToOutput<Backend> to_output;
+    pollfd pollinfo;
+
+    BufferSender(ConcreteStreamOutputBase<Backend>& stream, const void* data, size_t size)
+        : Sender<Backend>(stream), to_output(data, size, pollinfo, stream.out->name())
+    {
+        pollinfo.fd = *stream.out;
+        pollinfo.events = POLLOUT;
+        to_output.progress_callback = stream.progress_callback;
+    }
+
+    /**
+     * Called when poll signals that we can write to the destination
+     */
+    TransferResult transfer_available()
+    {
+        if (this->stream.data_start_callback)
+        {
+            this->result += this->stream.fire_data_start_callback();
+            return TransferResult::WOULDBLOCK;
+        }
+        return to_output.transfer_available();
+    }
+
+    stream::SendResult loop()
+    {
+        while (true)
+        {
+            pollinfo.revents = 0;
+            int res = Backend::poll(&pollinfo, 1, this->stream.timeout_ms);
+            if (res < 0)
+                throw std::system_error(errno, std::system_category(), "poll failed on " + this->stream.out->name());
+            if (res == 0)
+                throw TimedOut("write on " + this->stream.out->name() + " timed out");
+            if (pollinfo.revents & POLLERR)
+                return SendResult::SEND_PIPE_EOF_DEST;
+            if (pollinfo.revents & POLLOUT)
+            {
+                switch (transfer_available())
+                {
+                    case TransferResult::DONE:
+                        return this->result;
+                    case TransferResult::EOF_SOURCE:
+                        this->result.flags |= SendResult::SEND_PIPE_EOF_SOURCE;
+                        return this->result;
+                    case TransferResult::EOF_DEST:
+                        this->result.flags |= SendResult::SEND_PIPE_EOF_DEST;
+                        return this->result;
+                    case TransferResult::WOULDBLOCK:
+                        break;
+                }
+            }
+            else
+                throw std::runtime_error("unsupported revents values when polling " + this->stream.out->name());
+        }
+    }
+};
+
+template<typename Backend>
+struct BufferSenderFiltered
+{
+    ConcreteStreamOutputBase<Backend>& stream;
+    stream::SendResult result;
+    BufferToOutput<Backend> to_filter;
+    pollfd pollinfo[3];
+
+    BufferSenderFiltered(ConcreteStreamOutputBase<Backend>& stream, const void* data, size_t size)
+        : stream(stream), to_filter(data, size, pollinfo[0], "filter stdin")
+    {
+        pollinfo[0].fd = stream.filter_process->cmd.get_stdin();
+        pollinfo[0].events = POLLOUT;
+        pollinfo[1].fd = stream.filter_process->cmd.get_stdout();
+        pollinfo[1].events = POLLIN;
+        pollinfo[2].fd = *stream.out;
+        pollinfo[2].events = POLLOUT;
+    }
+
+    /**
+     * Called when poll signals that we can write to the destination
+     */
+    TransferResult feed_filter_stdin()
+    {
+        auto pre = to_filter.size;
+        auto res = to_filter.transfer_available();
+        stream.filter_process->size_stdin += pre - to_filter.size;
+        return res;
+    }
+};
+
+template<typename Backend>
+struct BufferSenderFilteredSplice : public BufferSenderFiltered<Backend>
+{
+    using BufferSenderFiltered<Backend>::BufferSenderFiltered;
+
+    TransferResult transfer_available_output_splice()
+    {
+        if (this->stream.data_start_callback)
+        {
+            this->result += this->stream.fire_data_start_callback();
+            return TransferResult::WOULDBLOCK;
+        }
+
+#ifndef HAVE_SPLICE
+        throw std::runtime_error("BufferSenderFilteredSplice strategy chosen when splice() is not available");
+#else
+        while (true)
+        {
+            utils::Sigignore ignpipe(SIGPIPE);
+            // Try splice
+            ssize_t res = Backend::splice(this->pollinfo[1].fd, NULL, this->pollinfo[2].fd, NULL, TransferBuffer::size * 128, SPLICE_F_MORE | SPLICE_F_NONBLOCK);
+            fprintf(stderr, "  splice stdout → %d\n", (int)res);
+            if (res > 0)
+            {
+                if (this->stream.progress_callback)
+                    this->stream.progress_callback(res);
+                this->stream.filter_process->size_stdout += res;
+            } else if (res == 0) {
+                return TransferResult::EOF_SOURCE;
+            }
+            else if (res < 0)
+            {
+                if (errno == EINVAL)
+                {
+                    // has_splice = false;
+                    // continue;
+                    throw std::system_error(errno, std::system_category(), "splice became unavailable during streaming");
+                } else if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                    return TransferResult::WOULDBLOCK;
+                } else if (errno == EPIPE) {
+                    return TransferResult::EOF_DEST;
+                } else
+                    throw std::system_error(errno, std::system_category(), "cannot splice data to stream from a pipe");
+            }
+        }
 #endif
+    }
+
+    stream::SendResult loop()
+    {
+        // TODO:
+        // suppose se use a /dev/null filter. Destination fd is always ready,
+        // filter stdout never has data. We end up busy-looping, because with
+        // destination fd ready, pipe has always something to report
+        while (true)
+        {
+            // filter stdin     | filter stdout       | destination fd
+            this->pollinfo[0].revents = this->pollinfo[1].revents = this->pollinfo[2].revents = 0;
+            int res = Backend::poll(this->pollinfo, 3, this->stream.timeout_ms);
+            if (res < 0)
+                throw std::system_error(errno, std::system_category(), "poll failed on " + this->stream.out->name());
+            if (res == 0)
+                throw TimedOut("write on " + this->stream.out->name() + " timed out");
+
+            fprintf(stderr, "POLL: %d:%d %d:%d %d:%d\n",
+                    this->pollinfo[0].fd, this->pollinfo[0].revents,
+                    this->pollinfo[1].fd, this->pollinfo[1].revents,
+                    this->pollinfo[2].fd, this->pollinfo[2].revents);
+
+            if (this->pollinfo[0].revents & POLLERR)
+            {
+                // TODO: child process closed stdin but we were still writing on it
+                this->result.flags |= SendResult::SEND_PIPE_EOF_DEST; // This is not the right return code
+                this->pollinfo[0].fd = -this->pollinfo[0].fd;
+            }
+
+            if (this->pollinfo[1].revents & POLLERR)
+            {
+                // TODO: child process closed stdout but we were still writing on stdin
+                this->result.flags |= SendResult::SEND_PIPE_EOF_DEST; // This is not the right return code
+                this->pollinfo[1].fd = -this->pollinfo[1].fd;
+            }
+
+            if (this->pollinfo[2].revents & POLLERR)
+            {
+                // Destination closed its endpoint, stop here
+                // TODO: stop writing to filter stdin and drain filter stdout?
+                this->result.flags |= SendResult::SEND_PIPE_EOF_DEST;
+                return this->result;
+            }
+
+            if (this->pollinfo[0].revents & POLLOUT)
+            {
+                switch (this->feed_filter_stdin())
+                {
+                    case TransferResult::DONE:
+                        // We have written everything, stop polling
+                        return this->result;
+                    case TransferResult::EOF_SOURCE:
+                        throw std::runtime_error("unexpected result from feed_filter_stdin");
+                    case TransferResult::EOF_DEST:
+                        // Filter closed stdin
+                        throw std::runtime_error("filter process closed its input pipe while we still have data to process");
+                    case TransferResult::WOULDBLOCK:
+                        break;
+                }
+            }
+
+            if (this->pollinfo[1].revents & POLLIN && this->pollinfo[2].revents & POLLOUT)
+            {
+                switch (this->transfer_available_output_splice())
+                {
+                    case TransferResult::DONE:
+                        throw std::runtime_error("unexpected result from feed_filter_stdin");
+                    case TransferResult::EOF_SOURCE:
+                        // Filter closed stdout
+                        this->result.flags |= SendResult::SEND_PIPE_EOF_SOURCE; // This is not the right return code
+                        return this->result;
+                    case TransferResult::EOF_DEST:
+                        // Destination closed its pipe
+                        this->result.flags |= SendResult::SEND_PIPE_EOF_DEST;
+                        return this->result;
+                    case TransferResult::WOULDBLOCK:
+                        break;
+                }
+            }
+        }
+        return this->result;
+    }
+};
+
+template<typename Backend>
+struct BufferSenderFilteredReadWrite : public BufferSenderFiltered<Backend>
+{
+    const void* write_data = nullptr;
+    size_t write_size = 0;
+    TransferBuffer buffer;
+
+    BufferSenderFilteredReadWrite(ConcreteStreamOutputBase<Backend>& stream, const void* data, size_t size)
+        : BufferSenderFiltered<Backend>(stream, data, size)
+    {
+    }
+
+    TransferResult transfer_available_output_read()
+    {
+        // Fall back to read/write
+        buffer.allocate();
+        write_data = buffer.buf;
+        write_size = 0;
+        ssize_t res = Backend::read(this->pollinfo[1].fd, buffer, buffer.size);
+        fprintf(stderr, "  read stdout → %d %.*s\n", (int)res, (int)res, (const char*)buffer);
+        if (res == 0)
+            return TransferResult::EOF_SOURCE;
+        else if (res < 0)
+        {
+            if (errno == EAGAIN || errno == EWOULDBLOCK)
+                return TransferResult::WOULDBLOCK;
+            else
+                throw std::system_error(errno, std::system_category(), "cannot read data from pipe input");
+        }
+        else
+        {
+            write_size = res;
+            return TransferResult::WOULDBLOCK;
+        }
+    }
+
+    TransferResult transfer_available_output_write()
+    {
+        while (true)
+        {
+            ssize_t res = Backend::write(*this->stream.out, write_data, write_size);
+            fprintf(stderr, "  write output %.*s → %d\n", (int)write_size, (const char*)write_data, (int)res);
+            if (res < 0)
+            {
+                if (errno == EAGAIN || errno == EWOULDBLOCK)
+                    return TransferResult::WOULDBLOCK;
+                else if (errno == EPIPE) {
+                    return TransferResult::EOF_DEST;
+                } else
+                    throw std::system_error(errno, std::system_category(), "cannot write " + std::to_string(write_size) + " bytes to " + this->stream.out->name());
+            } else {
+                write_data = (const uint8_t*)write_data + res;
+                write_size -= res;
+
+                if (this->stream.progress_callback)
+                    this->stream.progress_callback(res);
+            }
+
+            if (write_size == 0)
+                return TransferResult::DONE;
+        }
+    }
+
+    stream::SendResult loop()
+    {
+        // TODO:
+        // suppose se use a /dev/null filter. Destination fd is always ready,
+        // filter stdout never has data. We end up busy-looping, because with
+        // destination fd ready, pipe has always something to report
+        while (true)
+        {
+            // filter stdin     | filter stdout       | destination fd
+            this->pollinfo[0].revents = this->pollinfo[1].revents = this->pollinfo[2].revents = 0;
+            int res = Backend::poll(this->pollinfo, 3, this->stream.timeout_ms);
+            if (res < 0)
+                throw std::system_error(errno, std::system_category(), "poll failed on " + this->stream.out->name());
+            if (res == 0)
+                throw TimedOut("write on " + this->stream.out->name() + " timed out");
+
+            fprintf(stderr, "POLL: %d:%d %d:%d %d:%d\n",
+                    this->pollinfo[0].fd, this->pollinfo[0].revents,
+                    this->pollinfo[1].fd, this->pollinfo[1].revents,
+                    this->pollinfo[2].fd, this->pollinfo[2].revents);
+
+            if (this->pollinfo[0].revents & POLLERR)
+            {
+                // TODO: child process closed stdin but we were still writing on it
+                this->result.flags |= SendResult::SEND_PIPE_EOF_DEST; // This is not the right return code
+                this->pollinfo[0].fd = -this->pollinfo[0].fd;
+            }
+
+            if (this->pollinfo[1].revents & POLLERR)
+            {
+                // TODO: child process closed stdout but we were still writing on stdin
+                this->result.flags |= SendResult::SEND_PIPE_EOF_DEST; // This is not the right return code
+                this->pollinfo[1].fd = -this->pollinfo[1].fd;
+            }
+
+            if (this->pollinfo[2].revents & POLLERR)
+            {
+                // Destination closed its endpoint, stop here
+                // TODO: stop writing to filter stdin and drain filter stdout?
+                this->result.flags |= SendResult::SEND_PIPE_EOF_DEST;
+                return this->result;
+            }
+
+            if (this->pollinfo[0].revents & POLLOUT)
+            {
+                switch (this->feed_filter_stdin())
+                {
+                    case TransferResult::DONE:
+                        // We have written everything, stop polling
+                        return this->result;
+                    case TransferResult::EOF_SOURCE:
+                        throw std::runtime_error("unexpected result from feed_filter_stdin");
+                    case TransferResult::EOF_DEST:
+                        // Filter closed stdin
+                        throw std::runtime_error("filter process closed its input pipe while we still have data to process");
+                    case TransferResult::WOULDBLOCK:
+                        break;
+                }
+            }
+
+            if (write_size == 0 && this->pollinfo[1].revents & POLLIN)
+            {
+                switch (transfer_available_output_read())
+                {
+                    case TransferResult::DONE:
+                        throw std::runtime_error("unexpected result from feed_filter_stdin");
+                    case TransferResult::EOF_SOURCE:
+                        // Filter closed stdout
+                        this->result.flags |= SendResult::SEND_PIPE_EOF_SOURCE; // This is not the right return code
+                        return this->result;
+                    case TransferResult::EOF_DEST:
+                        throw std::runtime_error("unexpected result from feed_filter_stdin");
+                    case TransferResult::WOULDBLOCK:
+                        break;
+                }
+            }
+
+            if (write_size > 0 && this->pollinfo[2].revents & POLLOUT)
+            {
+                switch (transfer_available_output_write())
+                {
+                    case TransferResult::DONE:
+                        break;
+                    case TransferResult::EOF_SOURCE:
+                        throw std::runtime_error("unexpected result from feed_filter_stdin");
+                    case TransferResult::EOF_DEST:
+                        // Destination closed its pipe
+                        this->result.flags |= SendResult::SEND_PIPE_EOF_DEST;
+                        return this->result;
+                    case TransferResult::WOULDBLOCK:
+                        break;
+                }
+            }
+        }
+        return this->result;
+    }
+};
+
 
 template<typename Backend>
 std::string ConcreteStreamOutputBase<Backend>::name() const { return out->name(); }
@@ -212,6 +617,19 @@ stream::SendResult ConcreteStreamOutputBase<Backend>::_write_output_line(const v
 
 
 template<typename Backend>
+void ConcreteStreamOutputBase<Backend>::start_filter(const std::vector<std::string>& command)
+{
+    BaseStreamOutput::start_filter(command);
+
+    // Check if we can splice between the filter stdout and our output
+#ifndef HAVE_SPLICE
+    has_splice = false;
+#else
+    has_splice = Backend::splice(filter_process->cmd.get_stdout(), NULL, *out, NULL, 0, SPLICE_F_MORE | SPLICE_F_NONBLOCK) == 0;
+#endif
+}
+
+template<typename Backend>
 SendResult ConcreteStreamOutputBase<Backend>::send_buffer(const void* data, size_t size)
 {
     SendResult result;
@@ -220,25 +638,25 @@ SendResult ConcreteStreamOutputBase<Backend>::send_buffer(const void* data, size
 
     if (filter_process)
     {
-        // Leave data_start_callback to send_from_pipe, so we trigger it only
-        // if/when data is generated
-        filter_process->send(data, size);
-        filter_process->size_stdin += size;
+        if (has_splice)
+        {
+            BufferSenderFilteredSplice<Backend> sender(*this, data, size);
+            return sender.loop();
+        } else {
+            BufferSenderFilteredReadWrite<Backend> sender(*this, data, size);
+            return sender.loop();
+        }
     } else {
-        if (data_start_callback)
-            result += fire_data_start_callback();
-
-        result +=_write_output_buffer(data, size);
+        BufferSender<Backend> sender(*this, data, size);
+        return sender.loop();
     }
-    if (progress_callback)
-        progress_callback(size);
-    return result;
 }
 
 template<typename Backend>
 SendResult ConcreteStreamOutputBase<Backend>::send_line(const void* data, size_t size)
 {
     SendResult result;
+    // TODO: error: an empty buffer should send a newline
     if (size == 0)
         return result;
 

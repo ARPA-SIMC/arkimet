@@ -10,9 +10,8 @@ namespace stream {
 
 struct FilterProcess;
 
-class BaseStreamOutput : public StreamOutput
+struct BaseStreamOutput : public StreamOutput
 {
-protected:
     std::function<void(size_t)> progress_callback;
     std::function<stream::SendResult(StreamOutput&)> data_start_callback;
     std::unique_ptr<FilterProcess> filter_process;
@@ -43,7 +42,6 @@ protected:
      */
     bool is_nonblocking(int fd);
 
-public:
     BaseStreamOutput();
     virtual ~BaseStreamOutput();
 
