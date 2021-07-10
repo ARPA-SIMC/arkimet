@@ -46,37 +46,96 @@ struct BufferToOutput
 
     TransferResult transfer_available()
     {
-        while (true)
+        ssize_t res = Backend::write(dest.fd, data, size);
+        fprintf(stderr, "  BufferToOutput write %.*s %d → %d\n", (int)size, (const char*)data, (int)size, (int)res);
+        if (res < 0)
         {
-            ssize_t res = Backend::write(dest.fd, data, size);
-            fprintf(stderr, "  BufferToOutput write %.*s %d → %d\n", (int)size, (const char*)data, (int)size, (int)res);
-            if (res < 0)
-            {
-                if (errno == EAGAIN || errno == EWOULDBLOCK)
-                    return TransferResult::WOULDBLOCK;
-                else if (errno == EPIPE) {
-                    return TransferResult::EOF_DEST;
-                } else
-                    throw std::system_error(errno, std::system_category(), "cannot write " + std::to_string(size) + " bytes to " + out_name);
-            } else {
-                data = (const uint8_t*)data + res;
-                size -= res;
+            if (errno == EAGAIN || errno == EWOULDBLOCK)
+                return TransferResult::WOULDBLOCK;
+            else if (errno == EPIPE) {
+                return TransferResult::EOF_DEST;
+            } else
+                throw std::system_error(errno, std::system_category(), "cannot write " + std::to_string(size) + " bytes to " + out_name);
+        } else {
+            data = (const uint8_t*)data + res;
+            size -= res;
 
-                if (progress_callback)
-                    progress_callback(res);
-            }
+            if (progress_callback)
+                progress_callback(res);
 
             if (size == 0)
                 return TransferResult::DONE;
+            else
+                return TransferResult::WOULDBLOCK;
         }
     }
 };
 
-
 template<typename Backend>
+struct LineToOutput
+{
+    pollfd& dest;
+    const void* data;
+    size_t size;
+    size_t pos = 0;
+    std::string out_name;
+    std::function<void(size_t)> progress_callback;
+
+    LineToOutput(const void* data, size_t size, pollfd& dest, const std::string& out_name)
+        : dest(dest), data(data), size(size), out_name(out_name)
+    {
+    }
+
+    TransferResult transfer_available()
+    {
+        if (pos < size)
+        {
+            struct iovec todo[2] = {{(void*)data, size}, {(void*)"\n", 1}};
+            ssize_t res = Backend::writev(dest.fd, todo, 2);
+            if (res < 0)
+            {
+                if (errno == EAGAIN || errno == EWOULDBLOCK)
+                    return TransferResult::WOULDBLOCK;
+                else if (errno == EPIPE)
+                    return TransferResult::EOF_DEST;
+                else
+                    throw std::system_error(errno, std::system_category(), "cannot write " + std::to_string(size + 1) + " bytes to " + out_name);
+            }
+            if (progress_callback)
+                progress_callback(res);
+            pos += res;
+            if (pos == size + 1)
+                return TransferResult::DONE;
+            else
+                return TransferResult::WOULDBLOCK;
+        } else if (pos == size) {
+            ssize_t res = Backend::write(dest.fd, "\n", 1);
+            if (res < 0)
+            {
+                if (errno == EAGAIN || errno == EWOULDBLOCK)
+                    return TransferResult::WOULDBLOCK;
+                else if (errno == EPIPE)
+                    return TransferResult::EOF_DEST;
+                else
+                    throw std::system_error(errno, std::system_category(), "cannot write 1 byte to " + out_name);
+            } else if (res == 0) {
+                return TransferResult::WOULDBLOCK;
+            } else {
+                if (progress_callback)
+                    progress_callback(res);
+                pos += res;
+                return TransferResult::DONE;
+            }
+        } else
+            return TransferResult::DONE;
+    }
+};
+
+
+template<typename Backend, typename ToOutput>
 struct BufferSender: public Sender<Backend>
 {
-    BufferToOutput<Backend> to_output;
+    ToOutput to_output;
     pollfd pollinfo;
 
     BufferSender(ConcreteStreamOutputBase<Backend>& stream, const void* data, size_t size)
@@ -493,24 +552,6 @@ stream::SendResult ConcreteStreamOutputBase<Backend>::_write_output_buffer(const
         }
     }
     return result;
-
-#if 0
-    Sigignore ignpipe(SIGPIPE);
-    size_t pos = 0;
-    while (m_nextfd && pos < (size_t)res)
-    {
-        ssize_t wres = write(*m_nextfd, buf+pos, res-pos);
-        if (wres < 0)
-        {
-            if (errno == EPIPE)
-            {
-                m_nextfd = nullptr;
-            } else
-                throw_system_error("writing to destination file descriptor");
-        }
-        pos += wres;
-    }
-#endif
 }
 
 template<typename Backend>
@@ -607,7 +648,7 @@ SendResult ConcreteStreamOutputBase<Backend>::send_buffer(const void* data, size
             return sender.loop();
         }
     } else {
-        BufferSender<Backend> sender(*this, data, size);
+        BufferSender<Backend, BufferToOutput<Backend>> sender(*this, data, size);
         return sender.loop();
     }
 }
@@ -628,13 +669,9 @@ SendResult ConcreteStreamOutputBase<Backend>::send_line(const void* data, size_t
         filter_process->send("\n");
         filter_process->size_stdin += size + 1;
     } else {
-        if (data_start_callback)
-            result += fire_data_start_callback();
-
-        result += _write_output_line(data, size);
+        BufferSender<Backend, LineToOutput<Backend>> sender(*this, data, size);
+        return sender.loop();
     }
-    if (progress_callback)
-        progress_callback(size + 1);
     return result;
 }
 
