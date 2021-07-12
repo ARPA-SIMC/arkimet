@@ -15,13 +15,14 @@ namespace arki {
 namespace stream {
 
 template<typename Backend, template<typename> class ToOutput>
-struct BufferSender: public Sender<Backend>
+struct SenderDirect: public Sender<Backend>
 {
     ToOutput<Backend> to_output;
     pollfd pollinfo;
 
-    BufferSender(ConcreteStreamOutputBase<Backend>& stream, const void* data, size_t size)
-        : Sender<Backend>(stream), to_output(data, size, pollinfo, stream.out->name())
+    template<typename... Args>
+    SenderDirect(ConcreteStreamOutputBase<Backend>& stream, Args&&... args)
+        : Sender<Backend>(stream), to_output(stream.out->name(), pollinfo, std::forward<Args>(args)...)
     {
         pollinfo.fd = *stream.out;
         pollinfo.events = POLLOUT;
@@ -32,17 +33,17 @@ struct BufferSender: public Sender<Backend>
     {
         while (true)
         {
-            pollinfo.revents = 0;
-            int res = Backend::poll(&pollinfo, 1, this->stream.timeout_ms);
+            this->pollinfo.revents = 0;
+            int res = Backend::poll(&this->pollinfo, 1, this->stream.timeout_ms);
             if (res < 0)
                 throw std::system_error(errno, std::system_category(), "poll failed on " + this->stream.out->name());
             if (res == 0)
                 throw TimedOut("write on " + this->stream.out->name() + " timed out");
-            if (pollinfo.revents & POLLERR)
+            if (this->pollinfo.revents & POLLERR)
                 return SendResult::SEND_PIPE_EOF_DEST;
-            if (pollinfo.revents & POLLOUT)
+            if (this->pollinfo.revents & POLLOUT)
             {
-                switch (to_output.transfer_available())
+                switch (this->to_output.transfer_available())
                 {
                     case TransferResult::DONE:
                         return this->result;
@@ -62,6 +63,19 @@ struct BufferSender: public Sender<Backend>
     }
 };
 
+
+template<typename Backend, template<typename> class ToOutput>
+struct BufferSender: public SenderDirect<Backend, ToOutput>
+{
+    using SenderDirect<Backend, ToOutput>::SenderDirect;
+};
+
+template<typename Backend, template<typename> class ToOutput>
+struct FileSender: public SenderDirect<Backend, ToOutput>
+{
+    using SenderDirect<Backend, ToOutput>::SenderDirect;
+};
+
 template<typename Backend, template<typename> class ToFilter>
 struct BufferSenderFiltered : public Sender<Backend>
 {
@@ -71,7 +85,7 @@ struct BufferSenderFiltered : public Sender<Backend>
     bool destination_available = false;
 
     BufferSenderFiltered(ConcreteStreamOutputBase<Backend>& stream, const void* data, size_t size)
-        : Sender<Backend>(stream), to_filter(data, size, pollinfo[0], "filter stdin")
+        : Sender<Backend>(stream), to_filter("filter stdin", pollinfo[0], data, size)
     {
         pollinfo[0].fd = stream.filter_process->cmd.get_stdin();
         pollinfo[0].events = POLLOUT;
@@ -263,7 +277,7 @@ struct BufferSenderFilteredReadWrite : public BufferSenderFiltered<Backend, ToFi
     BufferToPipe<Backend> to_output;
 
     BufferSenderFilteredReadWrite(ConcreteStreamOutputBase<Backend>& stream, const void* data, size_t size)
-        : BufferSenderFiltered<Backend, ToFilter>(stream, data, size), to_output(nullptr, 0, this->pollinfo[2], stream.out->name())
+        : BufferSenderFiltered<Backend, ToFilter>(stream, data, size), to_output(stream.out->name(), this->pollinfo[2], nullptr, 0)
     {
         buffer.allocate();
     }
@@ -339,54 +353,6 @@ struct BufferSenderFilteredReadWrite : public BufferSenderFiltered<Backend, ToFi
             }
         }
         return false;
-    }
-};
-
-template<typename Backend, template<typename> class ToOutput>
-struct FileSender: public Sender<Backend>
-{
-    ToOutput<Backend> to_output;
-    pollfd pollinfo;
-
-    FileSender(ConcreteStreamOutputBase<Backend>& stream, core::NamedFileDescriptor& src_fd, off_t offset, size_t size)
-        : Sender<Backend>(stream), to_output(stream.out->name(), pollinfo, src_fd, offset, size)
-    {
-        pollinfo.fd = *stream.out;
-        pollinfo.events = POLLOUT;
-        to_output.sender_for_data_start_callback = this;
-    }
-
-    stream::SendResult loop()
-    {
-        while (true)
-        {
-            pollinfo.revents = 0;
-            int res = Backend::poll(&pollinfo, 1, this->stream.timeout_ms);
-            if (res < 0)
-                throw std::system_error(errno, std::system_category(), "poll failed on " + this->stream.out->name());
-            if (res == 0)
-                throw TimedOut("write on " + this->stream.out->name() + " timed out");
-            if (pollinfo.revents & POLLERR)
-                return SendResult::SEND_PIPE_EOF_DEST;
-            if (pollinfo.revents & POLLOUT)
-            {
-                switch (to_output.transfer_available())
-                {
-                    case TransferResult::DONE:
-                        return this->result;
-                    case TransferResult::EOF_SOURCE:
-                        this->result.flags |= SendResult::SEND_PIPE_EOF_SOURCE;
-                        return this->result;
-                    case TransferResult::EOF_DEST:
-                        this->result.flags |= SendResult::SEND_PIPE_EOF_DEST;
-                        return this->result;
-                    case TransferResult::WOULDBLOCK:
-                        break;
-                }
-            }
-            else
-                throw std::runtime_error("unsupported revents values when polling " + this->stream.out->name());
-        }
     }
 };
 
@@ -591,7 +557,7 @@ struct FileSenderFilteredReadWrite : public FileSenderFiltered<Backend, ToFilter
     BufferToPipe<Backend> to_output;
 
     FileSenderFilteredReadWrite(ConcreteStreamOutputBase<Backend>& stream, core::NamedFileDescriptor& src_fd, off_t offset, size_t size)
-        : FileSenderFiltered<Backend, ToFilter>(stream, src_fd, offset, size), to_output(nullptr, 0, this->pollinfo[2], stream.out->name())
+        : FileSenderFiltered<Backend, ToFilter>(stream, src_fd, offset, size), to_output(stream.out->name(), this->pollinfo[2], nullptr, 0)
     {
         buffer.allocate();
     }

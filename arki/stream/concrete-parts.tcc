@@ -109,7 +109,7 @@ struct MemoryToPipe : public ToPipe<Backend>
     size_t pos = 0;
 
 
-    MemoryToPipe(const void* data, size_t size, pollfd& dest, const std::string& out_name)
+    MemoryToPipe(const std::string& out_name, pollfd& dest, const void* data, size_t size)
         : ToPipe<Backend>(out_name, dest), data(data), size(size)
     {
     }
