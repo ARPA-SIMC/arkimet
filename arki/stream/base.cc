@@ -19,31 +19,6 @@ size_t constexpr TransferBuffer::size;
 BaseStreamOutput::BaseStreamOutput() {}
 BaseStreamOutput::~BaseStreamOutput() {}
 
-uint32_t BaseStreamOutput::wait_readable(int read_fd)
-{
-    pollfd pollinfo;
-    pollinfo.fd = read_fd;
-    pollinfo.events = POLLIN | POLLRDHUP;
-    pollinfo.revents = 0;
-
-    // Wait for available input data
-    int res = ::poll(&pollinfo, 1, 0);
-    if (res < 0)
-        throw std::system_error(errno, std::system_category(), "poll failed on input pipe");
-    if (res == 0)
-        return SendResult::SEND_PIPE_EAGAIN_SOURCE;
-    if (pollinfo.revents & POLLRDHUP)
-        return SendResult::SEND_PIPE_EOF_SOURCE;
-    if (pollinfo.revents & POLLERR)
-        return SendResult::SEND_PIPE_EOF_SOURCE;
-    if (pollinfo.revents & POLLHUP)
-        return SendResult::SEND_PIPE_EOF_SOURCE;
-    if (! (pollinfo.revents & POLLIN))
-        throw std::runtime_error("unsupported revents values when polling input pipe");
-
-    return 0;
-}
-
 bool BaseStreamOutput::is_nonblocking(int fd)
 {
     int src_fl = fcntl(fd, F_GETFL);

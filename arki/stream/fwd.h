@@ -23,12 +23,6 @@ struct SendResult
      */
     static constexpr uint32_t SEND_PIPE_EOF_DEST        = 0x02;
 
-    /**
-     * Sending from pipe stopped because the source file descriptor is set to
-     * nonblocking mode, and there is currently no data available to read
-     */
-    static constexpr uint32_t SEND_PIPE_EAGAIN_SOURCE   = 0x04;
-
     uint32_t flags = 0;
 
     SendResult() = default;
