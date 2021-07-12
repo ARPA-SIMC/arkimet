@@ -107,7 +107,11 @@ struct TransferBuffer
 
     TransferBuffer() = default;
     TransferBuffer(const TransferBuffer&) = delete;
-    TransferBuffer(TransferBuffer&&) = delete;
+    TransferBuffer(TransferBuffer&& o)
+        : buf(o.buf)
+    {
+        o.buf = nullptr;
+    }
     ~TransferBuffer()
     {
         delete[] buf;

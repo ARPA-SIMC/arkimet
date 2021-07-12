@@ -9,20 +9,20 @@
 namespace arki {
 namespace stream {
 
-template<typename Backend, template<typename> class ToOutput>
+template<typename Backend, typename ToOutput>
 struct SenderDirect: public Sender
 {
-    ToOutput<Backend> to_output;
+    ToOutput to_output;
     core::NamedFileDescriptor& out_fd;
     pollfd pollinfo;
 
-    template<typename... Args>
-    SenderDirect(ConcreteStreamOutputBase<Backend>& stream, Args&&... args)
-        : Sender(stream), to_output(stream.out->name(), pollinfo, std::forward<Args>(args)...), out_fd(*stream.out)
+    SenderDirect(ConcreteStreamOutputBase<Backend>& stream, ToOutput&& to_output)
+        : Sender(stream), to_output(std::move(to_output)), out_fd(*stream.out)
     {
         pollinfo.fd = *stream.out;
         pollinfo.events = POLLOUT;
-        to_output.sender_for_data_start_callback = this;
+        this->to_output.sender_for_data_start_callback = this;
+        this->to_output.set_output(*stream.out, pollinfo);
     }
 
     stream::SendResult loop()
@@ -59,17 +59,16 @@ struct SenderDirect: public Sender
     }
 };
 
-template<typename Backend, template<typename> class ToFilter>
+template<typename Backend, typename ToFilter>
 struct SenderFiltered : public Sender
 {
-    ToFilter<Backend> to_filter;
+    ToFilter to_filter;
     pollfd pollinfo[3];
     bool filter_stdout_available = false;
     bool destination_available = false;
 
-    template<typename... Args>
-    SenderFiltered(ConcreteStreamOutputBase<Backend>& stream, Args&&... args)
-        : Sender(stream), to_filter("filter stdin", pollinfo[0], std::forward<Args>(args)...)
+    SenderFiltered(ConcreteStreamOutputBase<Backend>& stream, ToFilter&& to_filter)
+        : Sender(stream), to_filter(std::move(to_filter)) // "filter stdin", pollinfo[0], std::forward<Args>(args)...)
     {
         pollinfo[0].fd = stream.filter_process->cmd.get_stdin();
         pollinfo[0].events = POLLOUT;
@@ -77,6 +76,7 @@ struct SenderFiltered : public Sender
         pollinfo[1].events = POLLIN;
         pollinfo[2].fd = *stream.out;
         pollinfo[2].events = POLLOUT;
+        this->to_filter.set_output(core::NamedFileDescriptor(pollinfo[0].fd, "filter stdin"), pollinfo[0]);
     }
     virtual ~SenderFiltered() {}
 
@@ -179,7 +179,7 @@ struct SenderFiltered : public Sender
     }
 };
 
-template<typename Backend, template<typename> class ToFilter>
+template<typename Backend, typename ToFilter>
 struct SenderFilteredSplice : public SenderFiltered<Backend, ToFilter>
 {
     using SenderFiltered<Backend, ToFilter>::SenderFiltered;
@@ -252,7 +252,7 @@ struct SenderFilteredSplice : public SenderFiltered<Backend, ToFilter>
     }
 };
 
-template<typename Backend, template<typename> class ToFilter>
+template<typename Backend, typename ToFilter>
 struct SenderFilteredReadWrite : public SenderFiltered<Backend, ToFilter>
 {
 //    using SenderFiltered<Backend, ToFilter>::SenderFiltered;
@@ -263,9 +263,10 @@ struct SenderFilteredReadWrite : public SenderFiltered<Backend, ToFilter>
     template<typename... Args>
     SenderFilteredReadWrite(ConcreteStreamOutputBase<Backend>& stream, Args&&... args)
         : SenderFiltered<Backend, ToFilter>(stream, std::forward<Args>(args)...),
-          to_output(stream.out->name(), this->pollinfo[2], nullptr, 0)
+          to_output(nullptr, 0)
     {
         buffer.allocate();
+        to_output.set_output(*stream.out, this->pollinfo[2]);
     }
 
     TransferResult transfer_available_output_read()

@@ -48,12 +48,17 @@ struct ToPipe
 {
     Sender* sender_for_data_start_callback = nullptr;
     std::string out_name;
-    pollfd& dest;
+    pollfd* dest;
     std::function<void(size_t)> progress_callback;
 
-    ToPipe(const std::string& out_name, pollfd& dest)
-        : out_name(out_name), dest(dest)
+    ToPipe() = default;
+    ToPipe(const ToPipe&) = default;
+    ToPipe(ToPipe&&) = default;
+
+    void set_output(core::NamedFileDescriptor out, pollfd& dest)
     {
+        this->out_name = out.name();
+        this->dest = &dest;
     }
 
     /**
@@ -84,11 +89,13 @@ struct MemoryToPipe : public ToPipe<Backend>
     size_t size;
     size_t pos = 0;
 
-
-    MemoryToPipe(const std::string& out_name, pollfd& dest, const void* data, size_t size)
-        : ToPipe<Backend>(out_name, dest), data(data), size(size)
+    MemoryToPipe(const void* data, size_t size)
+        : ToPipe<Backend>(), data(data), size(size)
     {
     }
+    MemoryToPipe(const MemoryToPipe&) = default;
+    MemoryToPipe(MemoryToPipe&&) = default;
+
 
     void reset(const void* data, size_t size)
     {
@@ -118,7 +125,7 @@ struct BufferToPipe : public MemoryToPipe<Backend>
         if (this->check_data_start_callback())
             return TransferResult::WOULDBLOCK;
 
-        ssize_t res = Backend::write(this->dest.fd, (const uint8_t*)this->data + this->pos, this->size - this->pos);
+        ssize_t res = Backend::write(this->dest->fd, (const uint8_t*)this->data + this->pos, this->size - this->pos);
         fprintf(stderr, "  BufferToOutput write %.*s %d → %d\n", (int)(this->size - this->pos), (const char*)this->data + this->pos, (int)(this->size - this->pos), (int)res);
         if (res < 0)
         {
@@ -155,7 +162,7 @@ struct LineToPipe : public MemoryToPipe<Backend>
         if (this->pos < this->size)
         {
             struct iovec todo[2] = {{(void*)this->data, this->size}, {(void*)"\n", 1}};
-            ssize_t res = Backend::writev(this->dest.fd, todo, 2);
+            ssize_t res = Backend::writev(this->dest->fd, todo, 2);
             if (res < 0)
             {
                 if (errno == EAGAIN || errno == EWOULDBLOCK)
@@ -173,7 +180,7 @@ struct LineToPipe : public MemoryToPipe<Backend>
             else
                 return TransferResult::WOULDBLOCK;
         } else if (this->pos == this->size) {
-            ssize_t res = Backend::write(this->dest.fd, "\n", 1);
+            ssize_t res = Backend::write(this->dest->fd, "\n", 1);
             if (res < 0)
             {
                 if (errno == EAGAIN || errno == EWOULDBLOCK)
@@ -203,10 +210,12 @@ struct FileToPipeSendfile : public ToPipe<Backend>
     size_t size;
     size_t pos = 0;
 
-    FileToPipeSendfile(const std::string& out_name, pollfd& dest, core::NamedFileDescriptor& src_fd, off_t offset, size_t size)
-        : ToPipe<Backend>(out_name, dest), src_fd(src_fd), offset(offset), size(size)
+    FileToPipeSendfile(core::NamedFileDescriptor& src_fd, off_t offset, size_t size)
+        : ToPipe<Backend>(), src_fd(src_fd), offset(offset), size(size)
     {
     }
+    FileToPipeSendfile(const FileToPipeSendfile&) = delete;
+    FileToPipeSendfile(FileToPipeSendfile&&) = default;
 
     /**
      * Called when poll signals that we can write to the destination
@@ -216,7 +225,7 @@ struct FileToPipeSendfile : public ToPipe<Backend>
         if (this->check_data_start_callback())
             return TransferResult::WOULDBLOCK;
 
-        ssize_t res = Backend::sendfile(this->dest.fd, src_fd, &offset, size - pos);
+        ssize_t res = Backend::sendfile(this->dest->fd, src_fd, &offset, size - pos);
         if (res < 0)
         {
             if (errno == EINVAL || errno == ENOSYS)
@@ -254,11 +263,13 @@ struct FileToPipeReadWrite : public ToPipe<Backend>
     size_t write_pos = 0;
     TransferBuffer buffer;
 
-    FileToPipeReadWrite(const std::string& out_name, pollfd& dest, core::NamedFileDescriptor& src_fd, off_t offset, size_t size)
-        : ToPipe<Backend>(out_name, dest), src_fd(src_fd), offset(offset), size(size)
+    FileToPipeReadWrite(core::NamedFileDescriptor& src_fd, off_t offset, size_t size)
+        : ToPipe<Backend>(), src_fd(src_fd), offset(offset), size(size)
     {
         buffer.allocate();
     }
+    FileToPipeReadWrite(const FileToPipeReadWrite&) = delete;
+    FileToPipeReadWrite(FileToPipeReadWrite&&) = default;
 
     /**
      * Called when poll signals that we can write to the destination
@@ -280,7 +291,7 @@ struct FileToPipeReadWrite : public ToPipe<Backend>
             offset += res;
         }
 
-        ssize_t res = Backend::write(this->dest.fd, buffer + write_pos, write_size - write_pos);
+        ssize_t res = Backend::write(this->dest->fd, buffer + write_pos, write_size - write_pos);
         // fprintf(stderr, "  BufferToOutput write %.*s %d → %d\n", (int)(this->size - this->pos), (const char*)this->data + this->pos, (int)(this->size - this->pos), (int)res);
         if (res < 0)
         {

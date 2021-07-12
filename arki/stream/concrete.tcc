@@ -104,15 +104,15 @@ SendResult ConcreteStreamOutputBase<Backend>::_send_from_pipe(Args&&... args)
     if (has_splice)
     {
         try {
-            SenderFilteredSplice<Backend, ToPipe> sender(*this, std::forward<Args>(args)...);
+            SenderFilteredSplice<Backend, ToPipe<Backend>> sender(*this, ToPipe<Backend>(std::forward<Args>(args)...));
             return sender.loop();
         } catch (SpliceNotAvailable&) {
             has_splice = false;
-            SenderFilteredReadWrite<Backend, ToPipe> sender(*this, std::forward<Args>(args)...);
+            SenderFilteredReadWrite<Backend, ToPipe<Backend>> sender(*this, ToPipe<Backend>(std::forward<Args>(args)...));
             return sender.loop();
         }
     } else {
-        SenderFilteredReadWrite<Backend, ToPipe> sender(*this, std::forward<Args>(args)...);
+        SenderFilteredReadWrite<Backend, ToPipe<Backend>> sender(*this, ToPipe<Backend>(std::forward<Args>(args)...));
         return sender.loop();
     }
 }
@@ -128,7 +128,7 @@ SendResult ConcreteStreamOutputBase<Backend>::send_buffer(const void* data, size
     {
         return _send_from_pipe<BufferToPipe>(data, size);
     } else {
-        SenderDirect<Backend, BufferToPipe> sender(*this, data, size);
+        SenderDirect<Backend, BufferToPipe<Backend>> sender(*this, BufferToPipe<Backend>(data, size));
         return sender.loop();
     }
 }
@@ -145,7 +145,7 @@ SendResult ConcreteStreamOutputBase<Backend>::send_line(const void* data, size_t
     {
         return _send_from_pipe<LineToPipe>(data, size);
     } else {
-        SenderDirect<Backend, LineToPipe> sender(*this, data, size);
+        SenderDirect<Backend, LineToPipe<Backend>> sender(*this, LineToPipe<Backend>(data, size));
         return sender.loop();
     }
     return result;
@@ -168,10 +168,10 @@ SendResult ConcreteStreamOutputBase<Backend>::send_file_segment(arki::core::Name
         }
     } else {
         try {
-            SenderDirect<Backend, FileToPipeSendfile> sender(*this, fd, offset, size);
+            SenderDirect<Backend, FileToPipeSendfile<Backend>> sender(*this, FileToPipeSendfile<Backend>(fd, offset, size));
             return sender.loop();
         } catch (SendfileNotAvailable&) {
-            SenderDirect<Backend, FileToPipeReadWrite> sender(*this, fd, offset, size);
+            SenderDirect<Backend, FileToPipeReadWrite<Backend>> sender(*this, FileToPipeReadWrite<Backend>(fd, offset, size));
             return sender.loop();
         }
     }
