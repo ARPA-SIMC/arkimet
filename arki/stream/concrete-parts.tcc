@@ -69,13 +69,32 @@ struct DataStartCallback
 template<typename Backend>
 struct ToPipe
 {
-    Sender<Backend>& sender;
+    Sender<Backend>* sender_for_data_start_callback = nullptr;
     std::string out_name;
     pollfd& dest;
 
-    ToPipe(Sender<Backend>& sender, const std::string& out_name, pollfd& dest)
-        : sender(sender), out_name(out_name), dest(dest)
+    ToPipe(const std::string& out_name, pollfd& dest)
+        : out_name(out_name), dest(dest)
     {
+    }
+
+    /**
+     * Check if we should trigger data_start_callback on the first write, and
+     * if so, trigger it.
+     *
+     * Returns true if triggered, false otherwise.
+     */
+    bool check_data_start_callback()
+    {
+        if (auto sender = sender_for_data_start_callback)
+        {
+            if (sender->stream.data_start_callback)
+            {
+                sender->result += sender->stream.fire_data_start_callback();
+                return true;
+            }
+        }
+        return false;
     }
 };
 
@@ -89,8 +108,8 @@ struct MemoryToPipe : public ToPipe<Backend>
     std::function<void(size_t)> progress_callback;
 
 
-    MemoryToPipe(Sender<Backend>& sender, const void* data, size_t size, pollfd& dest, const std::string& out_name)
-        : ToPipe<Backend>(sender, out_name, dest), data(data), size(size)
+    MemoryToPipe(const void* data, size_t size, pollfd& dest, const std::string& out_name)
+        : ToPipe<Backend>(out_name, dest), data(data), size(size)
     {
     }
 
@@ -100,6 +119,13 @@ struct MemoryToPipe : public ToPipe<Backend>
         this->size = size;
         pos = 0;
     }
+
+#if 0
+    // Called after each poll() call returns
+    bool on_poll()
+    {
+    }
+#endif
 };
 
 template<typename Backend>
@@ -112,10 +138,8 @@ struct BufferToPipe : public MemoryToPipe<Backend>
      */
     TransferResult transfer_available()
     {
-#if 0
-        if (before_write.on_write())
+        if (this->check_data_start_callback())
             return TransferResult::WOULDBLOCK;
-#endif
 
         ssize_t res = Backend::write(this->dest.fd, (const uint8_t*)this->data + this->pos, this->size - this->pos);
         fprintf(stderr, "  BufferToOutput write %.*s %d → %d\n", (int)(this->size - this->pos), (const char*)this->data + this->pos, (int)(this->size - this->pos), (int)res);
@@ -139,15 +163,7 @@ struct BufferToPipe : public MemoryToPipe<Backend>
                 return TransferResult::WOULDBLOCK;
         }
     }
-
-#if 0
-    // Called after each poll() call returns
-    bool on_poll()
-    {
-    }
-#endif
 };
-
 
 template<typename Backend>
 struct LineToPipe : public MemoryToPipe<Backend>
@@ -156,10 +172,8 @@ struct LineToPipe : public MemoryToPipe<Backend>
 
     TransferResult transfer_available()
     {
-#if 0
-        if (before_write.on_write())
+        if (this->check_data_start_callback())
             return TransferResult::WOULDBLOCK;
-#endif
 
         if (this->pos < this->size)
         {

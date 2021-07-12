@@ -21,23 +21,11 @@ struct BufferSender: public Sender<Backend>
     pollfd pollinfo;
 
     BufferSender(ConcreteStreamOutputBase<Backend>& stream, const void* data, size_t size)
-        : Sender<Backend>(stream), to_output(*this, data, size, pollinfo, stream.out->name())
+        : Sender<Backend>(stream), to_output(data, size, pollinfo, stream.out->name())
     {
         pollinfo.fd = *stream.out;
         pollinfo.events = POLLOUT;
-    }
-
-    /**
-     * Called when poll signals that we can write to the destination
-     */
-    TransferResult transfer_available()
-    {
-        if (this->stream.data_start_callback)
-        {
-            this->result += this->stream.fire_data_start_callback();
-            return TransferResult::WOULDBLOCK;
-        }
-        return to_output.transfer_available();
+        to_output.sender_for_data_start_callback = this;
     }
 
     stream::SendResult loop()
@@ -54,7 +42,7 @@ struct BufferSender: public Sender<Backend>
                 return SendResult::SEND_PIPE_EOF_DEST;
             if (pollinfo.revents & POLLOUT)
             {
-                switch (transfer_available())
+                switch (to_output.transfer_available())
                 {
                     case TransferResult::DONE:
                         return this->result;
@@ -83,7 +71,7 @@ struct BufferSenderFiltered : public Sender<Backend>
     bool destination_available = false;
 
     BufferSenderFiltered(ConcreteStreamOutputBase<Backend>& stream, const void* data, size_t size)
-        : Sender<Backend>(stream), to_filter(*this, data, size, pollinfo[0], "filter stdin")
+        : Sender<Backend>(stream), to_filter(data, size, pollinfo[0], "filter stdin")
     {
         pollinfo[0].fd = stream.filter_process->cmd.get_stdin();
         pollinfo[0].events = POLLOUT;
@@ -275,7 +263,7 @@ struct BufferSenderFilteredReadWrite : public BufferSenderFiltered<Backend, ToFi
     BufferToPipe<Backend> to_output;
 
     BufferSenderFilteredReadWrite(ConcreteStreamOutputBase<Backend>& stream, const void* data, size_t size)
-        : BufferSenderFiltered<Backend, ToFilter>(stream, data, size), to_output(*this, nullptr, 0, this->pollinfo[2], stream.out->name())
+        : BufferSenderFiltered<Backend, ToFilter>(stream, data, size), to_output(nullptr, 0, this->pollinfo[2], stream.out->name())
     {
         buffer.allocate();
     }
