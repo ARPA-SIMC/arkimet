@@ -58,6 +58,7 @@ struct BaseStreamOutput : public StreamOutput
 
     void start_filter(const std::vector<std::string>& command) override;
     std::pair<size_t, size_t> stop_filter() override;
+    void abort_filter() override;
 
     virtual void flush_filter_output() = 0;
 };

@@ -31,6 +31,7 @@ struct SenderDirect: public Sender
         {
             this->pollinfo.revents = 0;
             int res = Backend::poll(&this->pollinfo, 1, this->stream.timeout_ms);
+            fprintf(stderr, "SenderDirect.POLL: %d %d:%d\n", res, this->pollinfo.fd, this->pollinfo.revents);
             if (res < 0)
                 throw std::system_error(errno, std::system_category(), "poll failed on " + out_fd.name());
             if (res == 0)
@@ -106,16 +107,20 @@ struct FilteredBase : public Sender
 
     bool on_poll()
     {
+        auto& cmd = stream.filter_process->cmd;
+
+        bool done = to_output.on_poll(this->result);
+
         if (this->pollinfo_stdout.revents & (POLLERR | POLLHUP))
         {
             // Filter stdout closed its endpoint
-            stream.filter_process->cmd.close_stdin();
+            cmd.close_stdout();
             pollinfo_stdout.fd = -1;
         }
 
         if (this->pollinfo_stderr.revents & (POLLERR | POLLHUP))
         {
-            stream.filter_process->cmd.close_stderr();
+            cmd.close_stderr();
             pollinfo_stderr.fd = -1;
         }
 
@@ -124,7 +129,7 @@ struct FilteredBase : public Sender
             this->transfer_available_stderr();
         }
 
-        return to_output.on_poll(this->result);
+        return done || (cmd.get_stdout() == -1 && cmd.get_stderr() == -1);
     }
 };
 
@@ -186,14 +191,15 @@ struct SenderFiltered : public FilteredBase<Backend, ToOutput>
                     this->pollinfo[2].fd, this->pollinfo[2].revents,
                     this->pollinfo[3].fd, this->pollinfo[3].revents);
 
-            if (this->pollinfo[0].revents & POLLERR)
+            if (this->pollinfo[0].revents & (POLLERR | POLLHUP))
             {
                 // TODO: child process closed stdin but we were still writing on it
                 this->result.flags |= SendResult::SEND_PIPE_EOF_DEST; // This is not the right return code
-                this->pollinfo[0].fd = -this->pollinfo[0].fd;
+                this->stream.filter_process->cmd.close_stdin();
+                this->pollinfo[0].fd = -1;
             }
 
-            if (this->pollinfo[3].revents & POLLERR)
+            if (this->pollinfo[3].revents & (POLLERR | POLLHUP))
             {
                 // Destination closed its endpoint, stop here
                 // TODO: stop writing to filter stdin and drain filter stdout?
@@ -236,7 +242,7 @@ struct FlushFilter : public FilteredBase<Backend, ToOutput>
         pollinfo[2].fd = -1;
         pollinfo[2].events = 0;
         this->to_output.sender_for_data_start_callback = this;
-        this->to_output.set_output(pollinfo[1], pollinfo[2]);
+        this->to_output.set_output(pollinfo[0], pollinfo[2]);
     }
 
     stream::SendResult loop()
@@ -267,15 +273,16 @@ struct FlushFilter : public FilteredBase<Backend, ToOutput>
                     this->pollinfo[1].fd, this->pollinfo[1].revents,
                     this->pollinfo[2].fd, this->pollinfo[2].revents);
 
-            if (this->pollinfo[2].revents & POLLERR)
+            bool done = this->on_poll();
+
+            if (this->pollinfo[2].revents & (POLLERR | POLLHUP))
             {
                 // Destination closed its endpoint, stop here
-                // TODO: stop writing to filter stdin and drain filter stdout?
                 this->result.flags |= SendResult::SEND_PIPE_EOF_DEST;
                 return this->result;
             }
 
-            if (this->on_poll())
+            if (done)
                 return this->result;
         }
     }

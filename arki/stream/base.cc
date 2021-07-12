@@ -78,6 +78,15 @@ std::pair<size_t, size_t> BaseStreamOutput::stop_filter()
     return std::make_pair(proc->size_stdin, proc->size_stdout);
 }
 
+void BaseStreamOutput::abort_filter()
+{
+    if (!filter_process)
+        return;
+
+    std::unique_ptr<FilterProcess> proc = std::move(filter_process);
+    proc->stop();
+}
+
 template<template<typename> class ToPipe, typename... Args>
 SendResult AbstractStreamOutput::_send_from_pipe(Args&&... args)
 {

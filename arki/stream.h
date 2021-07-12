@@ -58,6 +58,11 @@ public:
     virtual std::pair<size_t, size_t> stop_filter() = 0;
 
     /**
+     * Just stop the filter process
+     */
+    virtual void abort_filter() = 0;
+
+    /**
      * Stream the contents of a memory buffer.
      *
      * Returns the number of bytes written, which is always size.
@@ -111,6 +116,7 @@ class WithFilter
 {
 protected:
     StreamOutput& stream;
+    bool _done = false;
 
 public:
     WithFilter(StreamOutput& stream, const std::vector<std::string>& command)
@@ -121,12 +127,15 @@ public:
 
     ~WithFilter()
     {
-        done();
+        if (!_done)
+            stream.abort_filter();
     }
 
     std::pair<size_t, size_t> done()
     {
-        return stream.stop_filter();
+        auto res = stream.stop_filter();
+        _done = true;
+        return res;
     }
 };
 

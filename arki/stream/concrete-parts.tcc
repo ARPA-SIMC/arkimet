@@ -422,32 +422,27 @@ struct FromFilterSplice : public FromFilterConcrete<Backend>
 #ifndef HAVE_SPLICE
         throw SpliceNotAvailable();
 #else
-        while (true)
+        // Try splice
+        ssize_t res = Backend::splice(this->stream.filter_process->cmd.get_stdout(), NULL, this->out_fd, NULL, TransferBuffer::size * 128, SPLICE_F_MORE | SPLICE_F_NONBLOCK);
+        fprintf(stderr, "  splice stdout → %d\n", (int)res);
+        if (res > 0)
         {
-            utils::Sigignore ignpipe(SIGPIPE);
-            // Try splice
-            ssize_t res = Backend::splice(this->stream.filter_process->cmd.get_stdout(), NULL, this->out_fd, NULL, TransferBuffer::size * 128, SPLICE_F_MORE | SPLICE_F_NONBLOCK);
-            fprintf(stderr, "  splice stdout → %d\n", (int)res);
-            if (res > 0)
+            if (this->stream.progress_callback)
+                this->stream.progress_callback(res);
+            this->stream.filter_process->size_stdout += res;
+            return TransferResult::WOULDBLOCK;
+        } else if (res == 0) {
+            return TransferResult::EOF_SOURCE;
+        } else {
+            if (errno == EINVAL)
             {
-                if (this->stream.progress_callback)
-                    this->stream.progress_callback(res);
-                this->stream.filter_process->size_stdout += res;
-            } else if (res == 0) {
-                return TransferResult::EOF_SOURCE;
-            }
-            else if (res < 0)
-            {
-                if (errno == EINVAL)
-                {
-                    throw SpliceNotAvailable();
-                } else if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                    return TransferResult::WOULDBLOCK;
-                } else if (errno == EPIPE) {
-                    return TransferResult::EOF_DEST;
-                } else
-                    throw std::system_error(errno, std::system_category(), "cannot splice data to stream from a pipe");
-            }
+                throw SpliceNotAvailable();
+            } else if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                return TransferResult::WOULDBLOCK;
+            } else if (errno == EPIPE) {
+                return TransferResult::EOF_DEST;
+            } else
+                throw std::system_error(errno, std::system_category(), "cannot splice data to stream from a pipe");
         }
 #endif
     }
@@ -507,7 +502,7 @@ struct FromFilterReadWrite : public FromFilterConcrete<Backend>
     {
         to_output.reset(buffer.buf, 0);
         ssize_t res = Backend::read(this->stream.filter_process->cmd.get_stdout(), buffer, buffer.size);
-        fprintf(stderr, "  read stdout → %d %.*s\n", (int)res, (int)res, (const char*)buffer);
+        fprintf(stderr, "  read stdout → %d %.*s\n", (int)res, std::max((int)res, 0), (const char*)buffer);
         if (res == 0)
             return TransferResult::EOF_SOURCE;
         else if (res < 0)
@@ -515,11 +510,12 @@ struct FromFilterReadWrite : public FromFilterConcrete<Backend>
             if (errno == EAGAIN || errno == EWOULDBLOCK)
                 return TransferResult::WOULDBLOCK;
             else
-                throw std::system_error(errno, std::system_category(), "cannot read data from pipe input");
+                throw std::system_error(errno, std::system_category(), "cannot read data from filter stdout");
         }
         else
         {
             to_output.reset(buffer.buf, res);
+            this->stream.filter_process->size_stdout += res;
             this->check_data_start_callback();
             return TransferResult::WOULDBLOCK;
         }
@@ -536,7 +532,7 @@ struct FromFilterReadWrite : public FromFilterConcrete<Backend>
 
     bool on_poll(SendResult& result)
     {
-        fprintf(stderr, "  FromFilterReadWrite.on_poll\n");
+        fprintf(stderr, "  FromFilterReadWrite.on_poll %zd\n", to_output.size);
         this->set_available_flags();
 
         // TODO: this could append to the output buffer to chunk together small writes
@@ -596,8 +592,8 @@ struct FromFilterAbstract : public FromFilter<Backend>
 
     TransferResult transfer_available_output()
     {
-        ssize_t res = Backend::read(this->pfd_filter->fd, buffer, buffer.size);
-        fprintf(stderr, "  read stdout → %d %.*s\n", (int)res, (int)res, (const char*)buffer);
+        ssize_t res = Backend::read(this->stream.filter_process->cmd.get_stdout(), buffer, buffer.size);
+        fprintf(stderr, "  read stdout %d → %d %.*s\n", this->stream.filter_process->cmd.get_stdout(), (int)res, std::max((int)res, 0), (const char*)buffer);
         if (res == 0)
             return TransferResult::EOF_SOURCE;
         else if (res < 0)
@@ -605,19 +601,21 @@ struct FromFilterAbstract : public FromFilter<Backend>
             if (errno == EAGAIN || errno == EWOULDBLOCK)
                 return TransferResult::WOULDBLOCK;
             else
-                throw std::system_error(errno, std::system_category(), "cannot read data from pipe input");
+                throw std::system_error(errno, std::system_category(), "cannot read data from filter stdout");
         }
         else
         {
             AbstractStreamOutput* stream = reinterpret_cast<AbstractStreamOutput*>(&(this->stream));
             this->check_data_start_callback();
             stream->_write_output_buffer(buffer.buf, res);
+            this->stream.filter_process->size_stdout += res;
             return TransferResult::WOULDBLOCK;
         }
     }
 
     bool on_poll(SendResult& result)
     {
+        fprintf(stderr, "  FromFilterAbstract.on_poll\n");
         this->set_available_flags();
 
         // TODO: this could append to the output buffer to chunk together small writes
