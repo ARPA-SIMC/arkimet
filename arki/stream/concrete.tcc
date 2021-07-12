@@ -104,15 +104,15 @@ SendResult ConcreteStreamOutputBase<Backend>::_send_from_pipe(Args&&... args)
     if (has_splice)
     {
         try {
-            SenderFilteredSplice<Backend, ToPipe<Backend>> sender(*this, ToPipe<Backend>(std::forward<Args>(args)...));
+            SenderFiltered<Backend, ToPipe<Backend>, FromFilterSplice<Backend>> sender(*this, ToPipe<Backend>(std::forward<Args>(args)...), FromFilterSplice<Backend>(*this));
             return sender.loop();
         } catch (SpliceNotAvailable&) {
             has_splice = false;
-            SenderFilteredReadWrite<Backend, ToPipe<Backend>> sender(*this, ToPipe<Backend>(std::forward<Args>(args)...));
+            SenderFiltered<Backend, ToPipe<Backend>, FromFilterReadWrite<Backend>> sender(*this, ToPipe<Backend>(std::forward<Args>(args)...), FromFilterReadWrite<Backend>(*this));
             return sender.loop();
         }
     } else {
-        SenderFilteredReadWrite<Backend, ToPipe<Backend>> sender(*this, ToPipe<Backend>(std::forward<Args>(args)...));
+        SenderFiltered<Backend, ToPipe<Backend>, FromFilterReadWrite<Backend>> sender(*this, ToPipe<Backend>(std::forward<Args>(args)...), FromFilterReadWrite<Backend>(*this));
         return sender.loop();
     }
 }

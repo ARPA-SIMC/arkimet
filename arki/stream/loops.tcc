@@ -59,16 +59,15 @@ struct SenderDirect: public Sender
     }
 };
 
-template<typename Backend, typename ToFilter>
+template<typename Backend, typename ToFilter, typename ToOutput>
 struct SenderFiltered : public Sender
 {
     ToFilter to_filter;
+    ToOutput to_output;
     pollfd pollinfo[3];
-    bool filter_stdout_available = false;
-    bool destination_available = false;
 
-    SenderFiltered(ConcreteStreamOutputBase<Backend>& stream, ToFilter&& to_filter)
-        : Sender(stream), to_filter(std::move(to_filter)) // "filter stdin", pollinfo[0], std::forward<Args>(args)...)
+    SenderFiltered(ConcreteStreamOutputBase<Backend>& stream, ToFilter&& to_filter, ToOutput&& to_output)
+        : Sender(stream), to_filter(std::move(to_filter)), to_output(std::move(to_output)) // "filter stdin", pollinfo[0], std::forward<Args>(args)...)
     {
         pollinfo[0].fd = stream.filter_process->cmd.get_stdin();
         pollinfo[0].events = POLLOUT;
@@ -77,8 +76,9 @@ struct SenderFiltered : public Sender
         pollinfo[2].fd = *stream.out;
         pollinfo[2].events = POLLOUT;
         this->to_filter.set_output(core::NamedFileDescriptor(pollinfo[0].fd, "filter stdin"), pollinfo[0]);
+        this->to_output.sender_for_data_start_callback = this;
+        this->to_output.set_output(*stream.out, pollinfo[1], pollinfo[2]);
     }
-    virtual ~SenderFiltered() {}
 
     /**
      * Called when poll signals that we can write to the destination
@@ -90,8 +90,6 @@ struct SenderFiltered : public Sender
         this->stream.filter_process->size_stdin += to_filter.pos - pre;
         return res;
     }
-
-    virtual bool on_poll() = 0;
 
     stream::SendResult loop()
     {
@@ -106,14 +104,7 @@ struct SenderFiltered : public Sender
             //
             // In other words, we skip monitoring availability until we drain
             // the buffers
-            if (filter_stdout_available)
-                pollinfo[1].fd = -1;
-            else
-                pollinfo[1].fd = this->stream.filter_process->cmd.get_stdout();
-            if (destination_available)
-                pollinfo[2].fd = -1;
-            else
-                pollinfo[2].fd = *reinterpret_cast<ConcreteStreamOutputBase<Backend>*>(&(this->stream))->out;
+            to_output.setup_poll();
 
             // filter stdin     | filter stdout       | destination fd
             this->pollinfo[0].revents = this->pollinfo[1].revents = this->pollinfo[2].revents = 0;
@@ -167,177 +158,9 @@ struct SenderFiltered : public Sender
                 }
             }
 
-            if (this->pollinfo[1].revents & POLLIN)
-                filter_stdout_available = true;
-
-            if (this->pollinfo[2].revents & POLLOUT)
-                destination_available = true;
-
-            if (on_poll())
+            if (to_output.on_poll(this->result))
                 return this->result;
         }
-    }
-};
-
-template<typename Backend, typename ToFilter>
-struct SenderFilteredSplice : public SenderFiltered<Backend, ToFilter>
-{
-    using SenderFiltered<Backend, ToFilter>::SenderFiltered;
-
-    TransferResult transfer_available_output_splice()
-    {
-        if (this->stream.data_start_callback)
-        {
-            this->result += this->stream.fire_data_start_callback();
-            return TransferResult::WOULDBLOCK;
-        }
-
-#ifndef HAVE_SPLICE
-        throw std::runtime_error("BufferSenderFilteredSplice strategy chosen when splice() is not available");
-#else
-        while (true)
-        {
-            utils::Sigignore ignpipe(SIGPIPE);
-            // Try splice
-            ssize_t res = Backend::splice(this->pollinfo[1].fd, NULL, this->pollinfo[2].fd, NULL, TransferBuffer::size * 128, SPLICE_F_MORE | SPLICE_F_NONBLOCK);
-            fprintf(stderr, "  splice stdout → %d\n", (int)res);
-            if (res > 0)
-            {
-                if (this->stream.progress_callback)
-                    this->stream.progress_callback(res);
-                this->stream.filter_process->size_stdout += res;
-            } else if (res == 0) {
-                return TransferResult::EOF_SOURCE;
-            }
-            else if (res < 0)
-            {
-                if (errno == EINVAL)
-                {
-                    throw SpliceNotAvailable();
-                } else if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                    return TransferResult::WOULDBLOCK;
-                } else if (errno == EPIPE) {
-                    return TransferResult::EOF_DEST;
-                } else
-                    throw std::system_error(errno, std::system_category(), "cannot splice data to stream from a pipe");
-            }
-        }
-#endif
-    }
-
-    bool on_poll() override
-    {
-        if (this->filter_stdout_available and this->destination_available)
-        {
-            this->filter_stdout_available = false;
-            this->destination_available = false;
-
-            switch (this->transfer_available_output_splice())
-            {
-                case TransferResult::DONE:
-                    throw std::runtime_error("unexpected result from feed_filter_stdin");
-                case TransferResult::EOF_SOURCE:
-                    // Filter closed stdout
-                    this->result.flags |= SendResult::SEND_PIPE_EOF_SOURCE; // This is not the right return code
-                    return true;
-                case TransferResult::EOF_DEST:
-                    // Destination closed its pipe
-                    this->result.flags |= SendResult::SEND_PIPE_EOF_DEST;
-                    return true;
-                case TransferResult::WOULDBLOCK:
-                    break;
-            }
-        }
-        return false;
-    }
-};
-
-template<typename Backend, typename ToFilter>
-struct SenderFilteredReadWrite : public SenderFiltered<Backend, ToFilter>
-{
-//    using SenderFiltered<Backend, ToFilter>::SenderFiltered;
-
-    TransferBuffer buffer;
-    BufferToPipe<Backend> to_output;
-
-    template<typename... Args>
-    SenderFilteredReadWrite(ConcreteStreamOutputBase<Backend>& stream, Args&&... args)
-        : SenderFiltered<Backend, ToFilter>(stream, std::forward<Args>(args)...),
-          to_output(nullptr, 0)
-    {
-        buffer.allocate();
-        to_output.set_output(*stream.out, this->pollinfo[2]);
-    }
-
-    TransferResult transfer_available_output_read()
-    {
-        to_output.reset(buffer.buf, 0);
-        ssize_t res = Backend::read(this->pollinfo[1].fd, buffer, buffer.size);
-        fprintf(stderr, "  read stdout → %d %.*s\n", (int)res, (int)res, (const char*)buffer);
-        if (res == 0)
-            return TransferResult::EOF_SOURCE;
-        else if (res < 0)
-        {
-            if (errno == EAGAIN || errno == EWOULDBLOCK)
-                return TransferResult::WOULDBLOCK;
-            else
-                throw std::system_error(errno, std::system_category(), "cannot read data from pipe input");
-        }
-        else
-        {
-            to_output.reset(buffer.buf, res);
-            return TransferResult::WOULDBLOCK;
-        }
-    }
-
-    TransferResult transfer_available_output_write()
-    {
-        auto pre = to_output.pos;
-        auto res = to_output.transfer_available();
-        if (this->stream.progress_callback)
-            this->stream.progress_callback(pre - to_output.pos);
-        return res;
-    }
-
-    bool on_poll() override
-    {
-        // TODO: this could append to the output buffer to chunk together small writes
-        if (to_output.size == 0 && this->filter_stdout_available)
-        {
-            this->filter_stdout_available = false;
-            switch (transfer_available_output_read())
-            {
-                case TransferResult::DONE:
-                    throw std::runtime_error("unexpected result from feed_filter_stdin");
-                case TransferResult::EOF_SOURCE:
-                    // Filter closed stdout
-                    this->result.flags |= SendResult::SEND_PIPE_EOF_SOURCE; // This is not the right return code
-                    return true;
-                case TransferResult::EOF_DEST:
-                    throw std::runtime_error("unexpected result from feed_filter_stdin");
-                case TransferResult::WOULDBLOCK:
-                    break;
-            }
-        }
-
-        if (to_output.size > 0 && this->destination_available)
-        {
-            this->destination_available = false;
-            switch (transfer_available_output_write())
-            {
-                case TransferResult::DONE:
-                    break;
-                case TransferResult::EOF_SOURCE:
-                    throw std::runtime_error("unexpected result from feed_filter_stdin");
-                case TransferResult::EOF_DEST:
-                    // Destination closed its pipe
-                    this->result.flags |= SendResult::SEND_PIPE_EOF_DEST;
-                    return true;
-                case TransferResult::WOULDBLOCK:
-                    break;
-            }
-        }
-        return false;
     }
 };
 
