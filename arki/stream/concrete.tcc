@@ -1,3 +1,6 @@
+#ifndef ARKI_STREAM_CONCRETE_TCC
+#define ARKI_STREAM_CONCRETE_TCC
+
 #include "concrete.h"
 #include "filter.h"
 #include "arki/utils/sys.h"
@@ -6,17 +9,10 @@
 #include "arki/libconfig.h"
 #include <system_error>
 #include <sys/sendfile.h>
+#include "concrete-parts.tcc"
 
 namespace arki {
 namespace stream {
-
-enum class TransferResult
-{
-    DONE = 0,
-    EOF_SOURCE = 1,
-    EOF_DEST = 2,
-    WOULDBLOCK = 3,
-};
 
 template<typename Backend>
 struct Sender
@@ -30,126 +26,10 @@ struct Sender
     }
 };
 
-template<typename Backend>
-struct BufferToOutput
-{
-    const void* data;
-    size_t size;
-    size_t pos = 0;
-    pollfd& dest;
-    std::string out_name;
-    std::function<void(size_t)> progress_callback;
-
-    BufferToOutput(const void* data, size_t size, pollfd& dest, const std::string& out_name)
-        : data(data), size(size), dest(dest), out_name(out_name)
-    {
-    }
-
-    void reset(const void* data, size_t size)
-    {
-        this->data = data;
-        this->size = size;
-        pos = 0;
-    }
-
-    TransferResult transfer_available()
-    {
-        ssize_t res = Backend::write(dest.fd, (const uint8_t*)data + pos, size - pos);
-        fprintf(stderr, "  BufferToOutput write %.*s %d → %d\n", (int)(size - pos), (const char*)data + pos, (int)(size - pos), (int)res);
-        if (res < 0)
-        {
-            if (errno == EAGAIN || errno == EWOULDBLOCK)
-                return TransferResult::WOULDBLOCK;
-            else if (errno == EPIPE) {
-                return TransferResult::EOF_DEST;
-            } else
-                throw std::system_error(errno, std::system_category(), "cannot write " + std::to_string(size - pos) + " bytes to " + out_name);
-        } else {
-            pos += res;
-
-            if (progress_callback)
-                progress_callback(res);
-
-            if (pos == (size_t)res)
-                return TransferResult::DONE;
-            else
-                return TransferResult::WOULDBLOCK;
-        }
-    }
-};
-
-template<typename Backend>
-struct LineToOutput
-{
-    pollfd& dest;
-    const void* data;
-    size_t size;
-    size_t pos = 0;
-    std::string out_name;
-    std::function<void(size_t)> progress_callback;
-
-    LineToOutput(const void* data, size_t size, pollfd& dest, const std::string& out_name)
-        : dest(dest), data(data), size(size), out_name(out_name)
-    {
-    }
-
-    void reset(const void* data, size_t size)
-    {
-        this->data = data;
-        this->size = size;
-        pos = 0;
-    }
-
-    TransferResult transfer_available()
-    {
-        if (pos < size)
-        {
-            struct iovec todo[2] = {{(void*)data, size}, {(void*)"\n", 1}};
-            ssize_t res = Backend::writev(dest.fd, todo, 2);
-            if (res < 0)
-            {
-                if (errno == EAGAIN || errno == EWOULDBLOCK)
-                    return TransferResult::WOULDBLOCK;
-                else if (errno == EPIPE)
-                    return TransferResult::EOF_DEST;
-                else
-                    throw std::system_error(errno, std::system_category(), "cannot write " + std::to_string(size + 1) + " bytes to " + out_name);
-            }
-            if (progress_callback)
-                progress_callback(res);
-            pos += res;
-            if (pos == size + 1)
-                return TransferResult::DONE;
-            else
-                return TransferResult::WOULDBLOCK;
-        } else if (pos == size) {
-            ssize_t res = Backend::write(dest.fd, "\n", 1);
-            if (res < 0)
-            {
-                if (errno == EAGAIN || errno == EWOULDBLOCK)
-                    return TransferResult::WOULDBLOCK;
-                else if (errno == EPIPE)
-                    return TransferResult::EOF_DEST;
-                else
-                    throw std::system_error(errno, std::system_category(), "cannot write 1 byte to " + out_name);
-            } else if (res == 0) {
-                return TransferResult::WOULDBLOCK;
-            } else {
-                if (progress_callback)
-                    progress_callback(res);
-                pos += res;
-                return TransferResult::DONE;
-            }
-        } else
-            return TransferResult::DONE;
-    }
-};
-
-
-template<typename Backend, typename ToOutput>
+template<typename Backend, template<typename> class ToOutput>
 struct BufferSender: public Sender<Backend>
 {
-    ToOutput to_output;
+    ToOutput<Backend> to_output;
     pollfd pollinfo;
 
     BufferSender(ConcreteStreamOutputBase<Backend>& stream, const void* data, size_t size)
@@ -157,7 +37,6 @@ struct BufferSender: public Sender<Backend>
     {
         pollinfo.fd = *stream.out;
         pollinfo.events = POLLOUT;
-        to_output.progress_callback = stream.progress_callback;
     }
 
     /**
@@ -207,12 +86,12 @@ struct BufferSender: public Sender<Backend>
     }
 };
 
-template<typename Backend, typename ToFilter>
+template<typename Backend, template<typename> class ToFilter>
 struct BufferSenderFiltered
 {
     ConcreteStreamOutputBase<Backend>& stream;
     stream::SendResult result;
-    ToFilter to_filter;
+    ToFilter<Backend> to_filter;
     pollfd pollinfo[3];
     bool filter_stdout_available = false;
     bool destination_available = false;
@@ -328,7 +207,7 @@ struct BufferSenderFiltered
     }
 };
 
-template<typename Backend, typename ToFilter>
+template<typename Backend, template<typename> class ToFilter>
 struct BufferSenderFilteredSplice : public BufferSenderFiltered<Backend, ToFilter>
 {
     using BufferSenderFiltered<Backend, ToFilter>::BufferSenderFiltered;
@@ -403,7 +282,7 @@ struct BufferSenderFilteredSplice : public BufferSenderFiltered<Backend, ToFilte
     }
 };
 
-template<typename Backend, typename ToFilter>
+template<typename Backend, template<typename> class ToFilter>
 struct BufferSenderFilteredReadWrite : public BufferSenderFiltered<Backend, ToFilter>
 {
     TransferBuffer buffer;
@@ -591,14 +470,14 @@ SendResult ConcreteStreamOutputBase<Backend>::send_buffer(const void* data, size
     {
         if (has_splice)
         {
-            BufferSenderFilteredSplice<Backend, BufferToOutput<Backend>> sender(*this, data, size);
+            BufferSenderFilteredSplice<Backend, BufferToOutput> sender(*this, data, size);
             return sender.loop();
         } else {
-            BufferSenderFilteredReadWrite<Backend, BufferToOutput<Backend>> sender(*this, data, size);
+            BufferSenderFilteredReadWrite<Backend, BufferToOutput> sender(*this, data, size);
             return sender.loop();
         }
     } else {
-        BufferSender<Backend, BufferToOutput<Backend>> sender(*this, data, size);
+        BufferSender<Backend, BufferToOutput> sender(*this, data, size);
         return sender.loop();
     }
 }
@@ -615,14 +494,14 @@ SendResult ConcreteStreamOutputBase<Backend>::send_line(const void* data, size_t
     {
         if (has_splice)
         {
-            BufferSenderFilteredSplice<Backend, LineToOutput<Backend>> sender(*this, data, size);
+            BufferSenderFilteredSplice<Backend, LineToOutput> sender(*this, data, size);
             return sender.loop();
         } else {
-            BufferSenderFilteredReadWrite<Backend, LineToOutput<Backend>> sender(*this, data, size);
+            BufferSenderFilteredReadWrite<Backend, LineToOutput> sender(*this, data, size);
             return sender.loop();
         }
     } else {
-        BufferSender<Backend, LineToOutput<Backend>> sender(*this, data, size);
+        BufferSender<Backend, LineToOutput> sender(*this, data, size);
         return sender.loop();
     }
     return result;
@@ -872,3 +751,4 @@ std::pair<size_t, SendResult> ConcreteStreamOutputBase<Backend>::send_from_pipe(
 }
 }
 
+#endif
