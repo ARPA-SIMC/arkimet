@@ -66,18 +66,18 @@ struct SenderFiltered : public Sender
     ToOutput to_output;
     pollfd pollinfo[3];
 
-    SenderFiltered(ConcreteStreamOutputBase<Backend>& stream, ToFilter&& to_filter, ToOutput&& to_output)
+    SenderFiltered(BaseStreamOutput& stream, ToFilter&& to_filter, ToOutput&& to_output)
         : Sender(stream), to_filter(std::move(to_filter)), to_output(std::move(to_output)) // "filter stdin", pollinfo[0], std::forward<Args>(args)...)
     {
         pollinfo[0].fd = stream.filter_process->cmd.get_stdin();
         pollinfo[0].events = POLLOUT;
         pollinfo[1].fd = stream.filter_process->cmd.get_stdout();
         pollinfo[1].events = POLLIN;
-        pollinfo[2].fd = *stream.out;
-        pollinfo[2].events = POLLOUT;
+        pollinfo[2].fd = -1;
+        pollinfo[2].events = 0;
         this->to_filter.set_output(core::NamedFileDescriptor(pollinfo[0].fd, "filter stdin"), pollinfo[0]);
         this->to_output.sender_for_data_start_callback = this;
-        this->to_output.set_output(*stream.out, pollinfo[1], pollinfo[2]);
+        this->to_output.set_output(pollinfo[1], pollinfo[2]);
     }
 
     /**

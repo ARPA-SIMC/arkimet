@@ -3,6 +3,7 @@
 
 #include "arki/stream/fwd.h"
 #include "arki/utils/sys.h"
+#include "filter.h"
 #include "loops.h"
 #include "concrete.h"
 #include <poll.h>
@@ -332,11 +333,13 @@ struct FromFilter
     FromFilter(const FromFilter&) = default;
     FromFilter(FromFilter&&) = default;
 
-    void set_output(core::NamedFileDescriptor out, pollfd& pfd_filter, pollfd& pfd_out)
+    void set_output(pollfd& pfd_filter, pollfd& pfd_out)
     {
-        this->out_name = out.name();
+        this->out_name = stream.out->name();
         this->pfd_filter = &pfd_filter;
         this->pfd_out = &pfd_out;
+        this->pfd_out->fd = *stream.out;
+        this->pfd_out->events = POLLOUT;
     }
 
     void setup_poll()
@@ -465,10 +468,10 @@ struct FromFilterReadWrite : public FromFilter<Backend>
     FromFilterReadWrite(const FromFilterReadWrite&) = default;
     FromFilterReadWrite(FromFilterReadWrite&&) = default;
 
-    void set_output(core::NamedFileDescriptor out, pollfd& pfd_filter, pollfd& pfd_out)
+    void set_output(pollfd& pfd_filter, pollfd& pfd_out)
     {
-        FromFilter<Backend>::set_output(out, pfd_filter, pfd_out);
-        to_output.set_output(out, pfd_out);
+        FromFilter<Backend>::set_output(pfd_filter, pfd_out);
+        to_output.set_output(*this->stream.out, pfd_out);
     }
 
     TransferResult transfer_available_output_read()
@@ -544,6 +547,109 @@ struct FromFilterReadWrite : public FromFilter<Backend>
         return false;
     }
 };
+
+
+template<typename Backend>
+struct FromFilterAbstract
+{
+    AbstractStreamOutput& stream;
+    Sender* sender_for_data_start_callback = nullptr;
+    std::string out_name;
+    pollfd* pfd_filter;
+    std::function<void(size_t)> progress_callback;
+    bool filter_stdout_available = false;
+    TransferBuffer buffer;
+
+    FromFilterAbstract(AbstractStreamOutput& stream) : stream(stream) { buffer.allocate(); }
+    FromFilterAbstract(const FromFilterAbstract&) = default;
+    FromFilterAbstract(FromFilterAbstract&&) = default;
+
+    void set_output(pollfd& pfd_filter, pollfd& pfd_out)
+    {
+        this->out_name = "output";
+        this->pfd_filter = &pfd_filter;
+    }
+
+    void setup_poll()
+    {
+        if (filter_stdout_available)
+            pfd_filter->fd = -1;
+        else
+            pfd_filter->fd = stream.filter_process->cmd.get_stdout();
+    }
+
+    void set_available_flags()
+    {
+        if (pfd_filter->revents & POLLIN)
+            filter_stdout_available = true;
+    }
+
+    /**
+     * Check if we should trigger data_start_callback on the first write, and
+     * if so, trigger it.
+     *
+     * Returns true if triggered, false otherwise.
+     */
+    bool check_data_start_callback()
+    {
+        if (auto sender = sender_for_data_start_callback)
+        {
+            if (sender->stream.data_start_callback)
+            {
+                sender->result += sender->stream.fire_data_start_callback();
+                return true;
+            }
+        }
+        return false;
+    }
+
+    TransferResult transfer_available_output()
+    {
+        ssize_t res = Backend::read(this->pfd_filter->fd, buffer, buffer.size);
+        fprintf(stderr, "  read stdout → %d %.*s\n", (int)res, (int)res, (const char*)buffer);
+        if (res == 0)
+            return TransferResult::EOF_SOURCE;
+        else if (res < 0)
+        {
+            if (errno == EAGAIN || errno == EWOULDBLOCK)
+                return TransferResult::WOULDBLOCK;
+            else
+                throw std::system_error(errno, std::system_category(), "cannot read data from pipe input");
+        }
+        else
+        {
+            this->check_data_start_callback();
+            this->stream._write_output_buffer(buffer.buf, res);
+            return TransferResult::WOULDBLOCK;
+        }
+    }
+
+    bool on_poll(SendResult& result)
+    {
+        this->set_available_flags();
+
+        // TODO: this could append to the output buffer to chunk together small writes
+        if (this->filter_stdout_available)
+        {
+            this->filter_stdout_available = false;
+            switch (transfer_available_output())
+            {
+                case TransferResult::DONE:
+                    throw std::runtime_error("unexpected result from feed_filter_stdin");
+                case TransferResult::EOF_SOURCE:
+                    // TODO: Filter closed stdout, stop polling it
+                    return true;
+                case TransferResult::EOF_DEST:
+                    throw std::runtime_error("unexpected result from feed_filter_stdin");
+                case TransferResult::WOULDBLOCK:
+                    break;
+            }
+        }
+
+        return false;
+    }
+};
+
 
 }
 }
