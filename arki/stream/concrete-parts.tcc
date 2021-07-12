@@ -3,6 +3,7 @@
 
 #include "arki/stream/fwd.h"
 #include "arki/utils/sys.h"
+#include "loops.h"
 #include "concrete.h"
 #include <poll.h>
 #include <string>
@@ -11,41 +12,6 @@
 
 namespace arki {
 namespace stream {
-
-enum class TransferResult
-{
-    DONE = 0,
-    EOF_SOURCE = 1,
-    EOF_DEST = 2,
-    WOULDBLOCK = 3,
-};
-
-class SendfileNotAvailable : std::exception
-{
-    using std::exception::exception;
-};
-
-class SpliceNotAvailable : std::exception
-{
-    using std::exception::exception;
-};
-
-
-/**
- * Base class for event loops that implement the streaming operation
- */
-template<typename Backend>
-struct Sender
-{
-    ConcreteStreamOutputBase<Backend>& stream;
-    stream::SendResult result;
-
-    Sender(ConcreteStreamOutputBase<Backend>& stream)
-        : stream(stream)
-    {
-    }
-};
-
 
 template<class Sender>
 struct NullWriteCallback
@@ -80,7 +46,7 @@ struct DataStartCallback
 template<typename Backend>
 struct ToPipe
 {
-    Sender<Backend>* sender_for_data_start_callback = nullptr;
+    Sender* sender_for_data_start_callback = nullptr;
     std::string out_name;
     pollfd& dest;
     std::function<void(size_t)> progress_callback;

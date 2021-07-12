@@ -11,7 +11,6 @@ template<typename Backend>
 struct ConcreteStreamOutputBase: public BaseStreamOutput
 {
     std::shared_ptr<core::NamedFileDescriptor> out;
-    int timeout_ms = -1;
     int orig_fl = -1;
     pollfd pollinfo;
     bool has_splice = false;

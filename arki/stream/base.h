@@ -12,6 +12,7 @@ struct FilterProcess;
 
 struct BaseStreamOutput : public StreamOutput
 {
+    int timeout_ms = -1;
     std::function<void(size_t)> progress_callback;
     std::function<stream::SendResult(StreamOutput&)> data_start_callback;
     std::unique_ptr<FilterProcess> filter_process;

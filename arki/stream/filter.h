@@ -1,3 +1,6 @@
+#ifndef ARKI_STREAM_FILTER_H
+#define ARKI_STREAM_FILTER_H
+
 #include "arki/stream.h"
 #include "arki/utils/process.h"
 #include "arki/utils/subprocess.h"
@@ -77,3 +80,5 @@ public:
 
 }
 }
+
+#endif
