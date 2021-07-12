@@ -320,26 +320,22 @@ struct FileToPipeReadWrite : public ToPipe<Backend>
 template<typename Backend>
 struct FromFilter
 {
-    ConcreteStreamOutputBase<Backend>& stream;
+    BaseStreamOutput& stream;
     Sender* sender_for_data_start_callback = nullptr;
-    std::string out_name;
     pollfd* pfd_filter;
-    pollfd* pfd_out;
     std::function<void(size_t)> progress_callback;
+    std::string out_name;
     bool filter_stdout_available = false;
-    bool destination_available = false;
 
-    FromFilter(ConcreteStreamOutputBase<Backend>& stream) : stream(stream) {}
+    FromFilter(BaseStreamOutput& stream) : stream(stream) {}
     FromFilter(const FromFilter&) = default;
     FromFilter(FromFilter&&) = default;
 
-    void set_output(pollfd& pfd_filter, pollfd& pfd_out)
+    void set_output(pollfd& pfd_filter)
     {
-        this->out_name = stream.out->name();
         this->pfd_filter = &pfd_filter;
-        this->pfd_out = &pfd_out;
-        this->pfd_out->fd = *stream.out;
-        this->pfd_out->events = POLLOUT;
+        this->pfd_filter->fd = stream.filter_process->cmd.get_stdout();
+        this->pfd_filter->events = POLLIN;
     }
 
     void setup_poll()
@@ -348,19 +344,12 @@ struct FromFilter
             pfd_filter->fd = -1;
         else
             pfd_filter->fd = stream.filter_process->cmd.get_stdout();
-        if (destination_available)
-            pfd_out->fd = -1;
-        else
-            pfd_out->fd = *stream.out;
     }
 
     void set_available_flags()
     {
         if (pfd_filter->revents & POLLIN)
             filter_stdout_available = true;
-
-        if (pfd_filter->revents & POLLOUT)
-            destination_available = true;
     }
 
     /**
@@ -384,9 +373,46 @@ struct FromFilter
 };
 
 template<typename Backend>
-struct FromFilterSplice : public FromFilter<Backend>
+struct FromFilterConcrete : public FromFilter<Backend>
 {
-    using FromFilter<Backend>::FromFilter;
+    core::NamedFileDescriptor& out_fd;
+    pollfd* pfd_out;
+    bool destination_available = false;
+    FromFilterConcrete(ConcreteStreamOutputBase<Backend>& stream) : FromFilter<Backend>(stream), out_fd(*stream.out) {}
+    FromFilterConcrete(const FromFilterConcrete&) = default;
+    FromFilterConcrete(FromFilterConcrete&&) = default;
+
+    void set_output(pollfd& pfd_filter, pollfd& pfd_out)
+    {
+        FromFilter<Backend>::set_output(pfd_filter);
+        this->out_name = out_fd.name();
+        this->pfd_out = &pfd_out;
+        this->pfd_out->fd = out_fd;
+        this->pfd_out->events = POLLOUT;
+    }
+
+    void setup_poll()
+    {
+        FromFilter<Backend>::setup_poll();
+        if (destination_available)
+            pfd_out->fd = -1;
+        else
+            pfd_out->fd = out_fd;
+    }
+
+    void set_available_flags()
+    {
+        FromFilter<Backend>::set_available_flags();
+
+        if (this->pfd_out->revents & POLLOUT)
+            destination_available = true;
+    }
+};
+
+template<typename Backend>
+struct FromFilterSplice : public FromFilterConcrete<Backend>
+{
+    using FromFilterConcrete<Backend>::FromFilterConcrete;
 
     TransferResult transfer_available_output()
     {
@@ -400,7 +426,7 @@ struct FromFilterSplice : public FromFilter<Backend>
         {
             utils::Sigignore ignpipe(SIGPIPE);
             // Try splice
-            ssize_t res = Backend::splice(this->pfd_filter->fd, NULL, this->pfd_out->fd, NULL, TransferBuffer::size * 128, SPLICE_F_MORE | SPLICE_F_NONBLOCK);
+            ssize_t res = Backend::splice(this->stream.filter_process->cmd.get_stdout(), NULL, this->out_fd, NULL, TransferBuffer::size * 128, SPLICE_F_MORE | SPLICE_F_NONBLOCK);
             fprintf(stderr, "  splice stdout → %d\n", (int)res);
             if (res > 0)
             {
@@ -429,6 +455,7 @@ struct FromFilterSplice : public FromFilter<Backend>
     bool on_poll(SendResult& result)
     {
         this->set_available_flags();
+        fprintf(stderr, "  FromFilterSplice.on_poll %d %d\n", this->filter_stdout_available, this->destination_available);
 
         if (this->filter_stdout_available and this->destination_available)
         {
@@ -455,13 +482,13 @@ struct FromFilterSplice : public FromFilter<Backend>
 };
 
 template<typename Backend>
-struct FromFilterReadWrite : public FromFilter<Backend>
+struct FromFilterReadWrite : public FromFilterConcrete<Backend>
 {
     TransferBuffer buffer;
     BufferToPipe<Backend> to_output;
 
     FromFilterReadWrite(ConcreteStreamOutputBase<Backend>& stream)
-        : FromFilter<Backend>(stream), to_output(nullptr, 0)
+        : FromFilterConcrete<Backend>(stream), to_output(nullptr, 0)
     {
         buffer.allocate();
     }
@@ -470,14 +497,16 @@ struct FromFilterReadWrite : public FromFilter<Backend>
 
     void set_output(pollfd& pfd_filter, pollfd& pfd_out)
     {
-        FromFilter<Backend>::set_output(pfd_filter, pfd_out);
-        to_output.set_output(*this->stream.out, pfd_out);
+        FromFilterConcrete<Backend>::set_output(pfd_filter, pfd_out);
+
+        ConcreteStreamOutputBase<Backend>* stream = reinterpret_cast<ConcreteStreamOutputBase<Backend>*>(&(this->stream));
+        to_output.set_output(*stream->out, pfd_out);
     }
 
     TransferResult transfer_available_output_read()
     {
         to_output.reset(buffer.buf, 0);
-        ssize_t res = Backend::read(this->pfd_filter->fd, buffer, buffer.size);
+        ssize_t res = Backend::read(this->stream.filter_process->cmd.get_stdout(), buffer, buffer.size);
         fprintf(stderr, "  read stdout → %d %.*s\n", (int)res, (int)res, (const char*)buffer);
         if (res == 0)
             return TransferResult::EOF_SOURCE;
@@ -507,6 +536,7 @@ struct FromFilterReadWrite : public FromFilter<Backend>
 
     bool on_poll(SendResult& result)
     {
+        fprintf(stderr, "  FromFilterReadWrite.on_poll\n");
         this->set_available_flags();
 
         // TODO: this could append to the output buffer to chunk together small writes
@@ -550,57 +580,18 @@ struct FromFilterReadWrite : public FromFilter<Backend>
 
 
 template<typename Backend>
-struct FromFilterAbstract
+struct FromFilterAbstract : public FromFilter<Backend>
 {
-    AbstractStreamOutput& stream;
-    Sender* sender_for_data_start_callback = nullptr;
-    std::string out_name;
-    pollfd* pfd_filter;
-    std::function<void(size_t)> progress_callback;
-    bool filter_stdout_available = false;
     TransferBuffer buffer;
 
-    FromFilterAbstract(AbstractStreamOutput& stream) : stream(stream) { buffer.allocate(); }
+    FromFilterAbstract(AbstractStreamOutput& stream) : FromFilter<Backend>(stream) { buffer.allocate(); }
     FromFilterAbstract(const FromFilterAbstract&) = default;
     FromFilterAbstract(FromFilterAbstract&&) = default;
 
     void set_output(pollfd& pfd_filter, pollfd& pfd_out)
     {
+        FromFilter<Backend>::set_output(pfd_filter);
         this->out_name = "output";
-        this->pfd_filter = &pfd_filter;
-    }
-
-    void setup_poll()
-    {
-        if (filter_stdout_available)
-            pfd_filter->fd = -1;
-        else
-            pfd_filter->fd = stream.filter_process->cmd.get_stdout();
-    }
-
-    void set_available_flags()
-    {
-        if (pfd_filter->revents & POLLIN)
-            filter_stdout_available = true;
-    }
-
-    /**
-     * Check if we should trigger data_start_callback on the first write, and
-     * if so, trigger it.
-     *
-     * Returns true if triggered, false otherwise.
-     */
-    bool check_data_start_callback()
-    {
-        if (auto sender = sender_for_data_start_callback)
-        {
-            if (sender->stream.data_start_callback)
-            {
-                sender->result += sender->stream.fire_data_start_callback();
-                return true;
-            }
-        }
-        return false;
     }
 
     TransferResult transfer_available_output()
@@ -618,8 +609,9 @@ struct FromFilterAbstract
         }
         else
         {
+            AbstractStreamOutput* stream = reinterpret_cast<AbstractStreamOutput*>(&(this->stream));
             this->check_data_start_callback();
-            this->stream._write_output_buffer(buffer.buf, res);
+            stream->_write_output_buffer(buffer.buf, res);
             return TransferResult::WOULDBLOCK;
         }
     }

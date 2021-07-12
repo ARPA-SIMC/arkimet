@@ -67,13 +67,12 @@ std::pair<size_t, size_t> BaseStreamOutput::stop_filter()
     if (!filter_process)
         return std::make_pair(0u, 0u);
 
-    std::unique_ptr<FilterProcess> proc = std::move(filter_process);
-
-    if (proc->cmd.get_stdin() != -1)
-        proc->cmd.close_stdin();
+    if (filter_process->cmd.get_stdin() != -1)
+        filter_process->cmd.close_stdin();
 
     flush_filter_output();
 
+    std::unique_ptr<FilterProcess> proc = std::move(filter_process);
     proc->stop();
 
     return std::make_pair(proc->size_stdin, proc->size_stdout);
@@ -88,7 +87,8 @@ SendResult AbstractStreamOutput::_send_from_pipe(Args&&... args)
 
 void AbstractStreamOutput::flush_filter_output()
 {
-    throw std::runtime_error("AbstractStreamOutput::flush_filter_output not yet implemented");
+    FlushFilter<ConcreteLinuxBackend, FromFilterAbstract<ConcreteLinuxBackend>> sender(*this, FromFilterAbstract<ConcreteLinuxBackend>(*this));
+    sender.loop();
 }
 
 stream::SendResult AbstractStreamOutput::_write_output_line(const void* data, size_t size)

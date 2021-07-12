@@ -120,7 +120,20 @@ SendResult ConcreteStreamOutputBase<Backend>::_send_from_pipe(Args&&... args)
 template<typename Backend>
 void ConcreteStreamOutputBase<Backend>::flush_filter_output()
 {
-    throw std::runtime_error("ConcreteStreamOutputBase::flush_filter_output not yet implemented");
+    if (has_splice)
+    {
+        try {
+            FlushFilter<Backend, FromFilterSplice<Backend>> sender(*this, FromFilterSplice<Backend>(*this));
+            sender.loop();
+        } catch (SpliceNotAvailable&) {
+            has_splice = false;
+            FlushFilter<Backend, FromFilterReadWrite<Backend>> sender(*this, FromFilterReadWrite<Backend>(*this));
+            sender.loop();
+        }
+    } else {
+        FlushFilter<Backend, FromFilterReadWrite<Backend>> sender(*this, FromFilterReadWrite<Backend>(*this));
+        sender.loop();
+    }
 }
 
 
