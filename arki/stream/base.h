@@ -58,6 +58,8 @@ struct BaseStreamOutput : public StreamOutput
 
     void start_filter(const std::vector<std::string>& command) override;
     std::pair<size_t, size_t> stop_filter() override;
+
+    virtual void flush_filter_output() = 0;
 };
 
 
@@ -84,6 +86,8 @@ struct AbstractStreamOutput : public BaseStreamOutput
 
     template<template<typename> class ToPipe, typename... Args>
     SendResult _send_from_pipe(Args&&... args);
+
+    void flush_filter_output() override;
 
     using BaseStreamOutput::BaseStreamOutput;
 

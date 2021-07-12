@@ -19,11 +19,6 @@ static std::ostream& operator<<(std::ostream& out, const std::pair<size_t, size_
     return out << '[' << p.first << "→" << p.second << ']';
 }
 
-static std::ostream& operator<<(std::ostream& out, const std::pair<size_t, arki::stream::SendResult>& p)
-{
-    return out << '[' << p.first << " " << p.second << ']';
-}
-
 namespace arki {
 namespace stream {
 

@@ -72,7 +72,7 @@ std::pair<size_t, size_t> BaseStreamOutput::stop_filter()
     if (proc->cmd.get_stdin() != -1)
         proc->cmd.close_stdin();
 
-    // TODO: pipe out remaining output
+    flush_filter_output();
 
     proc->stop();
 
@@ -84,6 +84,11 @@ SendResult AbstractStreamOutput::_send_from_pipe(Args&&... args)
 {
     SenderFiltered<ConcreteLinuxBackend, ToPipe<ConcreteLinuxBackend>, FromFilterAbstract<ConcreteLinuxBackend>> sender(*this, ToPipe<ConcreteLinuxBackend>(std::forward<Args>(args)...), FromFilterAbstract<ConcreteLinuxBackend>(*this));
     return sender.loop();
+}
+
+void AbstractStreamOutput::flush_filter_output()
+{
+    throw std::runtime_error("AbstractStreamOutput::flush_filter_output not yet implemented");
 }
 
 stream::SendResult AbstractStreamOutput::_write_output_line(const void* data, size_t size)

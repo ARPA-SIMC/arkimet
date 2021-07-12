@@ -118,6 +118,13 @@ SendResult ConcreteStreamOutputBase<Backend>::_send_from_pipe(Args&&... args)
 }
 
 template<typename Backend>
+void ConcreteStreamOutputBase<Backend>::flush_filter_output()
+{
+    throw std::runtime_error("ConcreteStreamOutputBase::flush_filter_output not yet implemented");
+}
+
+
+template<typename Backend>
 SendResult ConcreteStreamOutputBase<Backend>::send_buffer(const void* data, size_t size)
 {
     SendResult result;
