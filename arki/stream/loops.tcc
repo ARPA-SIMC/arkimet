@@ -64,20 +64,24 @@ struct SenderFiltered : public Sender
 {
     ToFilter to_filter;
     ToOutput to_output;
-    pollfd pollinfo[3];
+    pollfd pollinfo[4];
+    TransferBuffer stderr_buffer;
 
     SenderFiltered(BaseStreamOutput& stream, ToFilter&& to_filter, ToOutput&& to_output)
         : Sender(stream), to_filter(std::move(to_filter)), to_output(std::move(to_output)) // "filter stdin", pollinfo[0], std::forward<Args>(args)...)
     {
         pollinfo[0].fd = stream.filter_process->cmd.get_stdin();
         pollinfo[0].events = POLLOUT;
-        pollinfo[1].fd = stream.filter_process->cmd.get_stdout();
+        pollinfo[1].fd = stream.filter_process->cmd.get_stderr();
         pollinfo[1].events = POLLIN;
-        pollinfo[2].fd = -1;
-        pollinfo[2].events = 0;
+        pollinfo[2].fd = stream.filter_process->cmd.get_stdout();
+        pollinfo[2].events = POLLIN;
+        pollinfo[3].fd = -1;
+        pollinfo[3].events = 0;
         this->to_filter.set_output(core::NamedFileDescriptor(pollinfo[0].fd, "filter stdin"), pollinfo[0]);
         this->to_output.sender_for_data_start_callback = this;
-        this->to_output.set_output(pollinfo[1], pollinfo[2]);
+        this->to_output.set_output(pollinfo[2], pollinfo[3]);
+        stderr_buffer.allocate();
     }
 
     /**
@@ -89,6 +93,33 @@ struct SenderFiltered : public Sender
         auto res = to_filter.transfer_available();
         this->stream.filter_process->size_stdin += to_filter.pos - pre;
         return res;
+    }
+
+    void transfer_available_stderr()
+    {
+        ssize_t res = Backend::read(pollinfo[1].fd, stderr_buffer, stderr_buffer.size);
+        fprintf(stderr, "  read stderr → %d %.*s\n", (int)res, (int)res, (const char*)stderr_buffer);
+        if (res == 0)
+        {
+            close(pollinfo[1].fd);
+            pollinfo[1].fd = -1;
+        }
+        else if (res < 0)
+        {
+            if (errno == EAGAIN || errno == EWOULDBLOCK)
+                return;
+            else
+                throw std::system_error(errno, std::system_category(), "cannot read data from pipe stderr");
+        }
+        else
+        {
+            if (stream.filter_process->m_err)
+            {
+                stream.filter_process->m_err->write(stderr_buffer, res);
+                if (stream.filter_process->m_err->bad())
+                    throw std::system_error(errno, std::system_category(), "cannot store filter stderr in memory buffer");
+            }
+        }
     }
 
     stream::SendResult loop()
@@ -107,17 +138,18 @@ struct SenderFiltered : public Sender
             to_output.setup_poll();
 
             // filter stdin     | filter stdout       | destination fd
-            this->pollinfo[0].revents = this->pollinfo[1].revents = this->pollinfo[2].revents = 0;
-            int res = Backend::poll(this->pollinfo, 3, this->stream.timeout_ms);
+            this->pollinfo[0].revents = this->pollinfo[1].revents = this->pollinfo[2].revents = this->pollinfo[3].revents = 0;
+            int res = Backend::poll(this->pollinfo, 4, this->stream.timeout_ms);
             if (res < 0)
                 throw std::system_error(errno, std::system_category(), "poll failed");
             if (res == 0)
                 throw TimedOut("streaming operations timed out");
 
-            fprintf(stderr, "POLL: %d:%d %d:%d %d:%d\n",
+            fprintf(stderr, "POLL: %d:%d %d:%d %d:%d %d:%d\n",
                     this->pollinfo[0].fd, this->pollinfo[0].revents,
                     this->pollinfo[1].fd, this->pollinfo[1].revents,
-                    this->pollinfo[2].fd, this->pollinfo[2].revents);
+                    this->pollinfo[2].fd, this->pollinfo[2].revents,
+                    this->pollinfo[3].fd, this->pollinfo[3].revents);
 
             if (this->pollinfo[0].revents & POLLERR)
             {
@@ -128,12 +160,19 @@ struct SenderFiltered : public Sender
 
             if (this->pollinfo[1].revents & POLLERR)
             {
-                // TODO: child process closed stdout but we were still writing on stdin
-                this->result.flags |= SendResult::SEND_PIPE_EOF_DEST; // This is not the right return code
-                this->pollinfo[1].fd = -this->pollinfo[1].fd;
+                // TODO: child process closed stderr
+                this->pollinfo[1].fd = -1;
             }
 
             if (this->pollinfo[2].revents & POLLERR)
+            {
+                // Destination closed its endpoint, stop here
+                // TODO: stop writing to filter stdin and drain filter stdout?
+                this->result.flags |= SendResult::SEND_PIPE_EOF_DEST;
+                return this->result;
+            }
+
+            if (this->pollinfo[3].revents & POLLERR)
             {
                 // Destination closed its endpoint, stop here
                 // TODO: stop writing to filter stdin and drain filter stdout?
@@ -156,6 +195,11 @@ struct SenderFiltered : public Sender
                     case TransferResult::WOULDBLOCK:
                         break;
                 }
+            }
+
+            if (this->pollinfo[1].revents & POLLOUT)
+            {
+                this->transfer_available_stderr();
             }
 
             if (to_output.on_poll(this->result))

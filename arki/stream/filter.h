@@ -35,41 +35,6 @@ public:
     void start();
     void stop();
 
-#if 0
-    void read_stdout() override
-    {
-        // Stream directly out of a pipe
-        size_t sent;
-        stream::SendResult res;
-        std::tie(sent, res) = m_stream->send_from_pipe(subproc.get_stdout());
-        size_stdout += sent;
-        if (res.flags & stream::SendResult::SEND_PIPE_EOF_SOURCE)
-            subproc.close_stdout();
-        else if (res.flags & stream::SendResult::SEND_PIPE_EOF_DEST)
-        {
-            subproc.close_stdout();
-            // TODO stream_result.flags |= stream::SendResult::SEND_PIPE_EOF_DEST;
-        }
-        return;
-    }
-
-    void read_stderr() override
-    {
-        if (m_err)
-        {
-            if (!fd_to_stream(subproc.get_stderr(), *m_err))
-            {
-                subproc.close_stderr();
-            }
-        } else {
-            if (!discard_fd(subproc.get_stderr()))
-            {
-                subproc.close_stderr();
-            }
-        }
-    }
-#endif
-
     void terminate()
     {
         if (cmd.started())
