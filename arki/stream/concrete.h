@@ -40,7 +40,6 @@ struct ConcreteStreamOutputBase: public BaseStreamOutput
     SendResult send_buffer(const void* data, size_t size) override;
     SendResult send_line(const void* data, size_t size) override;
     SendResult send_file_segment(arki::core::NamedFileDescriptor& fd, off_t offset, size_t size) override;
-    std::pair<size_t, SendResult> send_from_pipe(int fd) override;
 };
 
 class ConcreteStreamOutput: public ConcreteStreamOutputBase<ConcreteLinuxBackend>

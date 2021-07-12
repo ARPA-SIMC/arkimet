@@ -8,12 +8,12 @@ using namespace arki::utils;
 namespace arki {
 namespace stream {
 
-FilterProcess::FilterProcess(const std::vector<std::string>& args) : utils::IODispatcher(cmd)
+FilterProcess::FilterProcess(const std::vector<std::string>& args) // : utils::IODispatcher(cmd)
 {
     cmd.args = args;
     cmd.set_stdin(utils::subprocess::Redirect::PIPE);
     cmd.set_stdout(utils::subprocess::Redirect::PIPE);
-    cmd.set_stderr(utils::subprocess::Redirect::PIPE);
+    // cmd.set_stderr(utils::subprocess::Redirect::PIPE);
 
     m_err = &errors;
 }
@@ -21,7 +21,7 @@ FilterProcess::FilterProcess(const std::vector<std::string>& args) : utils::IODi
 
 void FilterProcess::start() {
     // Spawn the command
-    subproc.fork();
+    cmd.fork();
 
     // set the stdin/stdout/stderr fds to nonblocking
     sys::FileDescriptor child_stdin(cmd.get_stdin());
@@ -37,10 +37,8 @@ void FilterProcess::start() {
 
 void FilterProcess::stop()
 {
-    flush();
-
-    subproc.wait();
-    int res = subproc.raw_returncode();
+    cmd.wait();
+    int res = cmd.raw_returncode();
     if (res)
     {
         std::string msg = "cannot run postprocessing filter: postprocess command \"" + str::join(" ", cmd.args) + "\" " + subprocess::Child::format_raw_returncode(res);

@@ -80,20 +80,6 @@ public:
     virtual stream::SendResult send_file_segment(arki::core::NamedFileDescriptor& fd, off_t offset, size_t size) = 0;
 
     /**
-     * Stream an arbitrary chunk of data from a pipe.
-     *
-     * Returns the number of bytes written, which depends on how much data was
-     * read by a single read operation, or spliced by a single splice operation.
-     *
-     * This will read until the end of the pipe unless:
-     *
-     *  * the output closes its endpoint
-     *  * the input reaches end of file
-     *  * the input is in non-blocking mode, and a read returns EAGAIN
-     */
-    virtual std::pair<size_t, stream::SendResult> send_from_pipe(int fd) = 0;
-
-    /**
      * Create a StreamOutput to stream to a file.
      *
      * If timeout_ms is 0 or not specified, stream operations can block on

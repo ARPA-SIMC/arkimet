@@ -8,7 +8,7 @@
 namespace arki {
 namespace stream {
 
-class FilterProcess : public utils::IODispatcher
+class FilterProcess
 {
 public:
     /// Subcommand with the child to run
@@ -35,6 +35,7 @@ public:
     void start();
     void stop();
 
+#if 0
     void read_stdout() override
     {
         // Stream directly out of a pipe
@@ -67,6 +68,7 @@ public:
             }
         }
     }
+#endif
 
     void terminate()
     {

@@ -10,11 +10,6 @@ using namespace arki::core;
 using namespace arki::utils;
 using namespace arki::tests;
 
-static std::ostream& operator<<(std::ostream& out, const std::pair<size_t, arki::stream::SendResult>& p)
-{
-    return out << '[' << p.first << " " << p.second << ']';
-}
-
 namespace {
 
 class BlockingSink
@@ -419,57 +414,6 @@ add_method("concrete_timeout_send_file_segment", [] {
         // wassert(actual(t.cb_log) == std::vector<size_t>{sink.pipe_size(), 9});
     }
 });
-
-add_method("concrete_timeout_send_from_pipe", [] {
-    BlockingSink sink;
-    auto writer = StreamOutput::create(sink.fd(), 1000);
-
-    sys::Tempfile tf1;
-    tf1.write_all_or_throw(std::string("foobarbaz"));
-    tf1.lseek(sink.pipe_size());
-    tf1.write_all_or_throw(std::string("zabraboof"));
-
-    {
-        WriteTest t(*writer, sink, -3);
-        tf1.lseek(sink.pipe_size());
-        wassert(actual(writer->send_from_pipe(tf1)) == std::make_pair(9lu, stream::SendResult(stream::SendResult::SEND_PIPE_EOF_SOURCE)));
-        wassert(actual(t.total_written) == 9u);
-        // wassert(actual(cb_log) == std::vector<size_t>{3, 3});
-    }
-
-    {
-        WriteTest t(*writer, sink, -9);
-        tf1.lseek(sink.pipe_size());
-        wassert(actual(writer->send_from_pipe(tf1)) == std::make_pair(9lu, stream::SendResult(stream::SendResult::SEND_PIPE_EOF_SOURCE)));
-        wassert(actual(t.total_written) == 9u);
-        // wassert(actual(t.cb_log) == std::vector<size_t>{9});
-    }
-
-    {
-        WriteTest t(*writer, sink, -10);
-        tf1.lseek(sink.pipe_size());
-        wassert(actual(writer->send_from_pipe(tf1)) == std::make_pair(9lu, stream::SendResult(stream::SendResult::SEND_PIPE_EOF_SOURCE)));
-        wassert(actual(t.total_written) == 9u);
-        // wassert(actual(t.cb_log) == std::vector<size_t>{9});
-    }
-
-    {
-        WriteTest t(*writer, sink, 0);
-        tf1.lseek(0);
-        wassert(actual(writer->send_from_pipe(tf1)) == std::make_pair(9lu, stream::SendResult(stream::SendResult::SEND_PIPE_EOF_SOURCE)));
-        wassert(actual(t.total_written) == sink.pipe_size() + 9);
-        // wassert(actual(t.cb_log) == std::vector<size_t>{sink.pipe_size(), 9});
-    }
-
-    {
-        WriteTest t(*writer, sink, 1);
-        tf1.lseek(0);
-        wassert(actual(writer->send_from_pipe(tf1)) == std::make_pair(9lu, stream::SendResult(stream::SendResult::SEND_PIPE_EOF_SOURCE)));
-        wassert(actual(t.total_written) == sink.pipe_size() + 9);
-        // wassert(actual(t.cb_log) == std::vector<size_t>{sink.pipe_size(), 9});
-    }
-});
-
 
 }
 

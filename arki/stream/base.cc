@@ -69,6 +69,11 @@ std::pair<size_t, size_t> BaseStreamOutput::stop_filter()
 
     std::unique_ptr<FilterProcess> proc = std::move(filter_process);
 
+    if (proc->cmd.get_stdin() != -1)
+        proc->cmd.close_stdin();
+
+    // TODO: pipe out remaining output
+
     proc->stop();
 
     return std::make_pair(proc->size_stdin, proc->size_stdout);
@@ -158,43 +163,6 @@ SendResult AbstractStreamOutput::send_file_segment(arki::core::NamedFileDescript
 
     return result;
 }
-
-std::pair<size_t, SendResult> AbstractStreamOutput::send_from_pipe(int fd)
-{
-    size_t sent = 0;
-    SendResult result;
-
-    TransferBuffer buffer;
-    buffer.allocate();
-    while (true)
-    {
-        ssize_t res = read(fd, buffer, buffer.size);
-        if (res < 0)
-        {
-            if (errno == EAGAIN) {
-                result.flags |= SendResult::SEND_PIPE_EAGAIN_SOURCE;
-                break;
-            } else
-                throw std::system_error(errno, std::system_category(), "cannot read from pipe");
-        }
-        if (res == 0)
-        {
-            result.flags |= SendResult::SEND_PIPE_EOF_SOURCE;
-            break;
-        }
-
-        if (data_start_callback)
-            result += fire_data_start_callback();
-
-        result += _write_output_buffer(buffer, res);
-        sent += res;
-        if (progress_callback)
-            progress_callback(res);
-    }
-
-    return std::make_pair(sent, result);
-}
-
 
 ssize_t (*ConcreteLinuxBackend::read)(int fd, void *buf, size_t count) = ::read;
 ssize_t (*ConcreteLinuxBackend::write)(int fd, const void *buf, size_t count) = ::write;

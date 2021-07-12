@@ -95,9 +95,6 @@ struct AbstractStreamOutput : public BaseStreamOutput
 
     // Generic implementation based on _write_output_buffer
     SendResult send_file_segment(arki::core::NamedFileDescriptor& fd, off_t offset, size_t size) override;
-
-    // Generic implementation based on _write_output_buffer
-    std::pair<size_t, SendResult> send_from_pipe(int fd) override;
 };
 
 

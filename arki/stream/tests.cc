@@ -52,11 +52,6 @@ stream::SendResult StreamTestsFixture::send_buffer(const void* data, size_t size
     return output->send_buffer(data, size);
 }
 
-std::pair<size_t, stream::SendResult> StreamTestsFixture::send_from_pipe(int fd)
-{
-    return output->send_from_pipe(fd);
-}
-
 MockConcreteSyscalls::MockConcreteSyscalls()
     : orig_read(ConcreteTestingBackend::read),
       orig_write(ConcreteTestingBackend::write),
@@ -359,96 +354,6 @@ add_method("send_file_segment_filtered", [&] {
     wassert(actual(f->streamed_contents()) == "estfil5\n");
 });
 
-add_method("send_from_pipe_read", [&] {
-    auto f = make_fixture();
-
-    // Neither the source not the target is a pipe, so this won't trigger splice
-    sys::Tempfile tf1;
-    tf1.write_all_or_throw(std::string("testfile"));
-    tf1.lseek(1);
-
-    wassert(actual(f->send_from_pipe(tf1)) == std::make_pair(7lu, stream::SendResult(stream::SendResult::SEND_PIPE_EOF_SOURCE)));
-
-    wassert(actual(f->streamed_contents()) == "estfile");
-});
-
-add_method("send_from_pipe_splice", [&] {
-    auto f = make_fixture();
-
-    // Source is a pipe and it should trigger splice
-    PipeSource child("testfile");
-    wassert(actual(f->send_from_pipe(child.get_stdout())) == std::make_pair(8lu, stream::SendResult(stream::SendResult::SEND_PIPE_EOF_SOURCE)));
-
-    wassert(actual(f->streamed_contents()) == "testfile");
-});
-
-add_method("send_from_pipe_splice_nonblocking", [&] {
-    auto f = make_fixture();
-
-    // Source is a pipe and it should trigger splice
-    NonblockingPipeSource child;
-    child.request_data(8);
-    child.wait_for_data();
-    wassert(actual(f->send_from_pipe(child.get_stdout())) == std::make_pair(8lu, stream::SendResult(stream::SendResult::SEND_PIPE_EAGAIN_SOURCE)));
-    child.request_data(123456);
-    child.wait_for_data();
-
-    size_t sent = 0;
-    while (sent < 123456u)
-    {
-        auto res = f->send_from_pipe(child.get_stdout());
-        wassert(actual(res.second.flags) == stream::SendResult::SEND_PIPE_EAGAIN_SOURCE);
-        sent += res.first;
-    }
-
-    child.request_data(123);
-    child.request_data(0);
-    child.wait();
-
-    auto res = f->send_from_pipe(child.get_stdout());
-    wassert(actual(res.first) == 123u);
-    wassert_true((res.second.flags & stream::SendResult::SEND_PIPE_EAGAIN_SOURCE) || (res.second.flags & stream::SendResult::SEND_PIPE_EOF_SOURCE));
-
-    if (res.second.flags & stream::SendResult::SEND_PIPE_EAGAIN_SOURCE)
-        wassert(actual(f->send_from_pipe(child.get_stdout())) == std::make_pair(0lu, stream::SendResult(stream::SendResult::SEND_PIPE_EOF_SOURCE)));
-
-    wassert(actual(f->streamed_contents()) == std::string(8 + 123456 + 123, 0));
-});
-
-add_method("data_start_send_from_pipe_splice_nonblocking", [&] {
-    auto f = make_fixture();
-    f->set_data_start_callback([](StreamOutput& out) { return out.send_buffer("start", 5); });
-
-    // Source is a pipe and it should trigger splice
-    NonblockingPipeSource child;
-    child.request_data(8);
-    child.wait_for_data();
-    wassert(actual(f->send_from_pipe(child.get_stdout())) == std::make_pair(8lu, stream::SendResult(stream::SendResult::SEND_PIPE_EAGAIN_SOURCE)));
-    child.request_data(123456);
-    child.wait_for_data();
-
-    size_t sent = 0;
-    while (sent < 123456u)
-    {
-        auto res = f->send_from_pipe(child.get_stdout());
-        wassert(actual(res.second.flags) == stream::SendResult::SEND_PIPE_EAGAIN_SOURCE);
-        sent += res.first;
-    }
-
-    child.request_data(123);
-    child.request_data(0);
-    child.wait();
-
-    auto res = f->send_from_pipe(child.get_stdout());
-    wassert(actual(res.first) == 123u);
-    wassert_true((res.second.flags & stream::SendResult::SEND_PIPE_EAGAIN_SOURCE) || (res.second.flags & stream::SendResult::SEND_PIPE_EOF_SOURCE));
-
-    if (res.second.flags & stream::SendResult::SEND_PIPE_EAGAIN_SOURCE)
-        wassert(actual(f->send_from_pipe(child.get_stdout())) == std::make_pair(0lu, stream::SendResult(stream::SendResult::SEND_PIPE_EOF_SOURCE)));
-
-    wassert(actual(f->streamed_contents().size()) == 8u + 5u + 123456u + 123u);
-});
-
 add_method("data_start_send_line", [&] {
     auto f = make_fixture();
     f->set_data_start_callback([](StreamOutput& out) { return out.send_buffer("start", 5); });
@@ -484,10 +389,9 @@ add_method("data_start_send_file_segment", [&] {
     f->set_data_start_callback([](StreamOutput& out) {
         sys::Tempfile t;
         t.write_all_or_throw("start", 5);
-        t.lseek(0);
-        auto res = out.send_from_pipe(t);
-        res.second.flags = res.second.flags & ~stream::SendResult::SEND_PIPE_EOF_SOURCE;
-        return res.second;
+        auto res = out.send_file_segment(t, 0, 5);
+        res.flags = res.flags & ~stream::SendResult::SEND_PIPE_EOF_SOURCE;
+        return res;
     });
 
     sys::Tempfile tf1;
@@ -504,62 +408,6 @@ add_method("data_start_send_file_segment", [&] {
     bool fired = false;
     f->set_data_start_callback([&](StreamOutput& out) { fired=true; return stream::SendResult(); });
     wassert(actual(f->send_file_segment(tf1, 3, 0)) == stream::SendResult());
-    wassert_false(fired);
-});
-
-add_method("data_start_send_from_pipe_read", [&] {
-    auto f = make_fixture();
-    f->set_data_start_callback([](StreamOutput& out) {
-        sys::Tempfile t;
-        t.write_all_or_throw("start", 5);
-        return out.send_file_segment(t, 1, 3);
-    });
-
-    // Neither the source not the target is a pipe, so this won't trigger splice
-    sys::Tempfile tf1;
-    tf1.write_all_or_throw(std::string("testfile"));
-    tf1.lseek(1);
-    wassert(actual(f->send_from_pipe(tf1)) == std::make_pair(7lu, stream::SendResult(stream::SendResult::SEND_PIPE_EOF_SOURCE)));
-
-    tf1.lseek(2);
-    wassert(actual(f->send_from_pipe(tf1)) == std::make_pair(6lu, stream::SendResult(stream::SendResult::SEND_PIPE_EOF_SOURCE)));
-
-    // Pipe from end of file
-    tf1.lseek(0, SEEK_END);
-    wassert(actual(f->send_from_pipe(tf1)) == std::make_pair(0lu, stream::SendResult(stream::SendResult::SEND_PIPE_EOF_SOURCE)));
-
-    wassert(actual(f->streamed_contents()) == "tarestfilestfile");
-
-    bool fired = false;
-    f->set_data_start_callback([&](StreamOutput& out) { fired=true; return stream::SendResult(); });
-    tf1.lseek(0, SEEK_END);
-    wassert(actual(f->send_from_pipe(tf1)) == std::make_pair(0lu, stream::SendResult(stream::SendResult::SEND_PIPE_EOF_SOURCE)));
-    wassert_false(fired);
-});
-
-add_method("data_start_send_from_pipe_splice", [&] {
-    auto f = make_fixture();
-    f->set_data_start_callback([](StreamOutput& out) {
-        sys::Tempfile t;
-        t.write_all_or_throw("start", 5);
-        return out.send_file_segment(t, 1, 3);
-    });
-
-    // Source is a pipe and it should trigger splice
-    PipeSource child("testfile");
-    wassert(actual(f->send_from_pipe(child.get_stdout())) == std::make_pair(8lu, stream::SendResult(stream::SendResult::SEND_PIPE_EOF_SOURCE)));
-    wassert(actual(f->send_from_pipe(child.get_stdout())) == std::make_pair(0lu, stream::SendResult(stream::SendResult::SEND_PIPE_EOF_SOURCE)));
-
-    // Pipe from an empty pipe
-    PipeSource child1("");
-    wassert(actual(f->send_from_pipe(child1.get_stdout())) == std::make_pair(0lu, stream::SendResult(stream::SendResult::SEND_PIPE_EOF_SOURCE)));
-
-    wassert(actual(f->streamed_contents()) == "tartestfile");
-
-    bool fired = false;
-    f->set_data_start_callback([&](StreamOutput& out) { fired=true; return stream::SendResult(); });
-    PipeSource child2("");
-    wassert(actual(f->send_from_pipe(child2.get_stdout())) == std::make_pair(0lu, stream::SendResult(stream::SendResult::SEND_PIPE_EOF_SOURCE)));
     wassert_false(fired);
 });
 
@@ -591,46 +439,6 @@ add_method("large_send_file_segment", [&] {
     wassert(actual(f->send_file_segment(tf1, 0, buf.size())) == stream::SendResult());
 
     wassert(actual(f->streamed_contents().size()) == buf.size());
-});
-
-add_method("large_send_from_pipe_read", [&] {
-    auto f = make_fixture();
-    std::vector<uint8_t> buf(stream::TransferBuffer::size * 3);
-
-    // Neither the source not the target is a pipe, so this won't trigger splice
-    sys::Tempfile tf1;
-    tf1.write_all_or_retry(buf);
-    tf1.lseek(0);
-
-    wassert(actual(f->send_from_pipe(tf1)) == std::make_pair(buf.size(), stream::SendResult(stream::SendResult::SEND_PIPE_EOF_SOURCE)));
-
-    wassert(actual(f->streamed_contents().size()) == buf.size());
-});
-
-add_method("large_send_from_pipe_splice", [&] {
-    auto f = make_fixture();
-    size_t size = stream::TransferBuffer::size * 3;
-
-    // Source is a pipe and it should trigger splice
-    PipeSource child(std::string(size, 0));
-    wassert(actual(f->send_from_pipe(child.get_stdout())) == std::make_pair(size, stream::SendResult(stream::SendResult::SEND_PIPE_EOF_SOURCE)));
-
-    wassert(actual(f->streamed_contents().size()) == size);
-});
-
-add_method("data_start_large_send_from_pipe_splice", [&] {
-    auto f = make_fixture();
-    f->set_data_start_callback([](StreamOutput& out) {
-        return out.send_line("foo", 3);
-    });
-
-    size_t size = stream::TransferBuffer::size * 3;
-
-    // Source is a pipe and it should trigger splice
-    PipeSource child(std::string(size, ' '));
-    wassert(actual(f->send_from_pipe(child.get_stdout())) == std::make_pair(size, stream::SendResult(stream::SendResult::SEND_PIPE_EOF_SOURCE)));
-
-    wassert(actual(f->streamed_contents()).startswith("foo\n        "));
 });
 
 }
@@ -678,23 +486,6 @@ add_method("closed_pipe_send_file_segment", [&] {
     sys::Tempfile tf;
     tf.write_all_or_retry("test", 4);
     wassert(actual(f->send_file_segment(tf, 1, 1)) == stream::SendResult(stream::SendResult::SEND_PIPE_EOF_DEST));
-});
-
-add_method("closed_pipe_send_pipe_read", [&] {
-    ClosedPipe cp;
-    auto f = make_concrete_fixture(cp.fd);
-
-    sys::Tempfile tf;
-    tf.write_all_or_retry("test", 4);
-    tf.lseek(0);
-    wassert(actual(f->send_from_pipe(tf)) == std::make_pair(0lu, stream::SendResult(stream::SendResult::SEND_PIPE_EOF_DEST)));
-});
-
-add_method("closed_pipe_send_pipe_splice", [&] {
-    ClosedPipe cp;
-    auto f = make_concrete_fixture(cp.fd);
-    PipeSource child("test");
-    wassert(actual(f->send_from_pipe(child.get_stdout())) == std::make_pair(0lu, stream::SendResult(stream::SendResult::SEND_PIPE_EOF_DEST)));
 });
 
 add_method("read_eof", [&] {
