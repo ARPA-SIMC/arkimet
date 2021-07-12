@@ -20,47 +20,77 @@ enum class TransferResult
 };
 
 
-#if 0
+/**
+ * Base class for event loops that implement the streaming operation
+ */
 template<typename Backend>
+struct Sender
+{
+    ConcreteStreamOutputBase<Backend>& stream;
+    stream::SendResult result;
+
+    Sender(ConcreteStreamOutputBase<Backend>& stream)
+        : stream(stream)
+    {
+    }
+};
+
+
+template<class Sender>
 struct NullWriteCallback
 {
-    NullWriteCallback(ConcreteStreamOutputBase<Backend>& stream) {}
+    NullWriteCallback(Sender& sender) {}
     bool on_write() { return false; }
 };
 
 
-template<typename Backend>
+template<class Sender>
 struct DataStartCallback
 {
-    ConcreteStreamOutputBase<Backend>& stream;
+    Sender& sender;
 
-    DataStartCallback(ConcreteStreamOutputBase<Backend>& stream) : stream(stream) {}
+    DataStartCallback(Sender& sender) : sender(sender) {}
 
     bool on_write()
     {
-        if (this->stream.data_start_callback)
+        if (sender.stream.data_start_callback)
         {
-            this->result += this->stream.fire_data_start_callback();
+            sender.result += sender.stream.fire_data_start_callback();
             return true;
         }
         return false;
     }
 };
-#endif
+
+
+/**
+ * Base class for functions that write data to pipes
+ */
+template<typename Backend>
+struct ToPipe
+{
+    Sender<Backend>& sender;
+    std::string out_name;
+    pollfd& dest;
+
+    ToPipe(Sender<Backend>& sender, const std::string& out_name, pollfd& dest)
+        : sender(sender), out_name(out_name), dest(dest)
+    {
+    }
+};
 
 
 template<typename Backend>
-struct BufferToOutput
+struct MemoryToPipe : public ToPipe<Backend>
 {
     const void* data;
     size_t size;
     size_t pos = 0;
-    pollfd& dest;
-    std::string out_name;
     std::function<void(size_t)> progress_callback;
 
-    BufferToOutput(const void* data, size_t size, pollfd& dest, const std::string& out_name)
-        : data(data), size(size), dest(dest), out_name(out_name)
+
+    MemoryToPipe(Sender<Backend>& sender, const void* data, size_t size, pollfd& dest, const std::string& out_name)
+        : ToPipe<Backend>(sender, out_name, dest), data(data), size(size)
     {
     }
 
@@ -70,14 +100,25 @@ struct BufferToOutput
         this->size = size;
         pos = 0;
     }
+};
+
+template<typename Backend>
+struct BufferToPipe : public MemoryToPipe<Backend>
+{
+    using MemoryToPipe<Backend>::MemoryToPipe;
 
     /**
      * Called when poll signals that we can write to the destination
      */
     TransferResult transfer_available()
     {
-        ssize_t res = Backend::write(dest.fd, (const uint8_t*)data + pos, size - pos);
-        fprintf(stderr, "  BufferToOutput write %.*s %d → %d\n", (int)(size - pos), (const char*)data + pos, (int)(size - pos), (int)res);
+#if 0
+        if (before_write.on_write())
+            return TransferResult::WOULDBLOCK;
+#endif
+
+        ssize_t res = Backend::write(this->dest.fd, (const uint8_t*)this->data + this->pos, this->size - this->pos);
+        fprintf(stderr, "  BufferToOutput write %.*s %d → %d\n", (int)(this->size - this->pos), (const char*)this->data + this->pos, (int)(this->size - this->pos), (int)res);
         if (res < 0)
         {
             if (errno == EAGAIN || errno == EWOULDBLOCK)
@@ -85,14 +126,14 @@ struct BufferToOutput
             else if (errno == EPIPE) {
                 return TransferResult::EOF_DEST;
             } else
-                throw std::system_error(errno, std::system_category(), "cannot write " + std::to_string(size - pos) + " bytes to " + out_name);
+                throw std::system_error(errno, std::system_category(), "cannot write " + std::to_string(this->size - this->pos) + " bytes to " + this->out_name);
         } else {
-            pos += res;
+            this->pos += res;
 
-            if (progress_callback)
-                progress_callback(res);
+            if (this->progress_callback)
+                this->progress_callback(res);
 
-            if (pos == (size_t)res)
+            if (this->pos == (size_t)res)
                 return TransferResult::DONE;
             else
                 return TransferResult::WOULDBLOCK;
@@ -107,13 +148,19 @@ struct BufferToOutput
 #endif
 };
 
+
 template<typename Backend>
-struct LineToOutput : public BufferToOutput<Backend>
+struct LineToPipe : public MemoryToPipe<Backend>
 {
-    using BufferToOutput<Backend>::BufferToOutput;
+    using MemoryToPipe<Backend>::MemoryToPipe;
 
     TransferResult transfer_available()
     {
+#if 0
+        if (before_write.on_write())
+            return TransferResult::WOULDBLOCK;
+#endif
+
         if (this->pos < this->size)
         {
             struct iovec todo[2] = {{(void*)this->data, this->size}, {(void*)"\n", 1}};

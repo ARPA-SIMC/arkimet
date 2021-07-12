@@ -14,18 +14,6 @@
 namespace arki {
 namespace stream {
 
-template<typename Backend>
-struct Sender
-{
-    ConcreteStreamOutputBase<Backend>& stream;
-    stream::SendResult result;
-
-    Sender(ConcreteStreamOutputBase<Backend>& stream)
-        : stream(stream)
-    {
-    }
-};
-
 template<typename Backend, template<typename> class ToOutput>
 struct BufferSender: public Sender<Backend>
 {
@@ -33,7 +21,7 @@ struct BufferSender: public Sender<Backend>
     pollfd pollinfo;
 
     BufferSender(ConcreteStreamOutputBase<Backend>& stream, const void* data, size_t size)
-        : Sender<Backend>(stream), to_output(data, size, pollinfo, stream.out->name())
+        : Sender<Backend>(stream), to_output(*this, data, size, pollinfo, stream.out->name())
     {
         pollinfo.fd = *stream.out;
         pollinfo.events = POLLOUT;
@@ -87,17 +75,15 @@ struct BufferSender: public Sender<Backend>
 };
 
 template<typename Backend, template<typename> class ToFilter>
-struct BufferSenderFiltered
+struct BufferSenderFiltered : public Sender<Backend>
 {
-    ConcreteStreamOutputBase<Backend>& stream;
-    stream::SendResult result;
     ToFilter<Backend> to_filter;
     pollfd pollinfo[3];
     bool filter_stdout_available = false;
     bool destination_available = false;
 
     BufferSenderFiltered(ConcreteStreamOutputBase<Backend>& stream, const void* data, size_t size)
-        : stream(stream), to_filter(data, size, pollinfo[0], "filter stdin")
+        : Sender<Backend>(stream), to_filter(*this, data, size, pollinfo[0], "filter stdin")
     {
         pollinfo[0].fd = stream.filter_process->cmd.get_stdin();
         pollinfo[0].events = POLLOUT;
@@ -115,7 +101,7 @@ struct BufferSenderFiltered
     {
         auto pre = to_filter.pos;
         auto res = to_filter.transfer_available();
-        stream.filter_process->size_stdin += to_filter.pos - pre;
+        this->stream.filter_process->size_stdin += to_filter.pos - pre;
         return res;
     }
 
@@ -137,11 +123,11 @@ struct BufferSenderFiltered
             if (filter_stdout_available)
                 pollinfo[1].fd = -1;
             else
-                pollinfo[1].fd = stream.filter_process->cmd.get_stdout();
+                pollinfo[1].fd = this->stream.filter_process->cmd.get_stdout();
             if (destination_available)
                 pollinfo[2].fd = -1;
             else
-                pollinfo[2].fd = *stream.out;
+                pollinfo[2].fd = *this->stream.out;
 
             // filter stdin     | filter stdout       | destination fd
             this->pollinfo[0].revents = this->pollinfo[1].revents = this->pollinfo[2].revents = 0;
@@ -286,10 +272,10 @@ template<typename Backend, template<typename> class ToFilter>
 struct BufferSenderFilteredReadWrite : public BufferSenderFiltered<Backend, ToFilter>
 {
     TransferBuffer buffer;
-    BufferToOutput<Backend> to_output;
+    BufferToPipe<Backend> to_output;
 
     BufferSenderFilteredReadWrite(ConcreteStreamOutputBase<Backend>& stream, const void* data, size_t size)
-        : BufferSenderFiltered<Backend, ToFilter>(stream, data, size), to_output(nullptr, 0, this->pollinfo[2], stream.out->name())
+        : BufferSenderFiltered<Backend, ToFilter>(stream, data, size), to_output(*this, nullptr, 0, this->pollinfo[2], stream.out->name())
     {
         buffer.allocate();
     }
@@ -470,14 +456,14 @@ SendResult ConcreteStreamOutputBase<Backend>::send_buffer(const void* data, size
     {
         if (has_splice)
         {
-            BufferSenderFilteredSplice<Backend, BufferToOutput> sender(*this, data, size);
+            BufferSenderFilteredSplice<Backend, BufferToPipe> sender(*this, data, size);
             return sender.loop();
         } else {
-            BufferSenderFilteredReadWrite<Backend, BufferToOutput> sender(*this, data, size);
+            BufferSenderFilteredReadWrite<Backend, BufferToPipe> sender(*this, data, size);
             return sender.loop();
         }
     } else {
-        BufferSender<Backend, BufferToOutput> sender(*this, data, size);
+        BufferSender<Backend, BufferToPipe> sender(*this, data, size);
         return sender.loop();
     }
 }
@@ -494,14 +480,14 @@ SendResult ConcreteStreamOutputBase<Backend>::send_line(const void* data, size_t
     {
         if (has_splice)
         {
-            BufferSenderFilteredSplice<Backend, LineToOutput> sender(*this, data, size);
+            BufferSenderFilteredSplice<Backend, LineToPipe> sender(*this, data, size);
             return sender.loop();
         } else {
-            BufferSenderFilteredReadWrite<Backend, LineToOutput> sender(*this, data, size);
+            BufferSenderFilteredReadWrite<Backend, LineToPipe> sender(*this, data, size);
             return sender.loop();
         }
     } else {
-        BufferSender<Backend, LineToOutput> sender(*this, data, size);
+        BufferSender<Backend, LineToPipe> sender(*this, data, size);
         return sender.loop();
     }
     return result;
