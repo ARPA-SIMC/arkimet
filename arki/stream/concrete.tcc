@@ -504,9 +504,13 @@ SendResult ConcreteStreamOutputBase<Backend>::send_file_segment(arki::core::Name
         }
         // TODO: fallback to FileToPipeReadWrite
     } else {
-        SenderDirect<Backend, FileToPipeSendfile> sender(*this, fd, offset, size);
-        return sender.loop();
-        // TODO: fallback to FileToPipeReadWrite
+        try {
+            SenderDirect<Backend, FileToPipeSendfile> sender(*this, fd, offset, size);
+            return sender.loop();
+        } catch (SendfileNotAvailable&) {
+            SenderDirect<Backend, FileToPipeReadWrite> sender(*this, fd, offset, size);
+            return sender.loop();
+        }
     }
 }
 

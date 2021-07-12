@@ -20,6 +20,11 @@ enum class TransferResult
     WOULDBLOCK = 3,
 };
 
+class SendfileNotAvailable : std::exception
+{
+    using std::exception::exception;
+};
+
 
 /**
  * Base class for event loops that implement the streaming operation
@@ -244,17 +249,15 @@ struct FileToPipeSendfile : public ToPipe<Backend>
         if (res < 0)
         {
             if (errno == EINVAL || errno == ENOSYS)
-            {
-                // TODO: signal that we don't have sendfile. Throw?
-                throw std::runtime_error("sendfile not available");
-            } else if (errno == EPIPE) {
+                throw SendfileNotAvailable();
+            else if (errno == EPIPE)
                 return TransferResult::EOF_DEST;
-            } else if (errno == EAGAIN || errno == EWOULDBLOCK)
+            else if (errno == EAGAIN || errno == EWOULDBLOCK)
                 return TransferResult::WOULDBLOCK;
             else
                 throw std::system_error(errno, std::system_category(), "cannot sendfile() " + std::to_string(size) + " bytes to " + this->out_name);
         } else if (res == 0)
-            return TransferResult::EOF_SOURCE;
+            throw std::runtime_error("cannot sendfile() " + std::to_string(offset) + "+" + std::to_string(size) + " to " + this->out_name + ": the span does not seem to match the file");
         else {
             if (this->progress_callback)
                 this->progress_callback(res);

@@ -497,18 +497,13 @@ add_method("data_start_send_file_segment", [&] {
     wassert(actual(f->send_file_segment(tf1, 5, 1)) == stream::SendResult());
     wassert(actual(f->send_file_segment(tf1, 0, 4)) == stream::SendResult());
     // Send past the end of file
-    wassert(actual(f->send_file_segment(tf1, 6, 4)) == stream::SendResult(stream::SendResult::SEND_PIPE_EOF_SOURCE));
+    wassert_throws(std::runtime_error, actual(f->send_file_segment(tf1, 6, 4)));
 
     wassert(actual(f->streamed_contents()) == "startestfilitestle");
 
     bool fired = false;
     f->set_data_start_callback([&](StreamOutput& out) { fired=true; return stream::SendResult(); });
     wassert(actual(f->send_file_segment(tf1, 3, 0)) == stream::SendResult());
-    wassert_false(fired);
-
-    fired = false;
-    f->set_data_start_callback([&](StreamOutput& out) { fired=true; return stream::SendResult(); });
-    wassert(actual(f->send_file_segment(tf1, 8, 1)) == stream::SendResult(stream::SendResult::SEND_PIPE_EOF_SOURCE));
     wassert_false(fired);
 });
 
