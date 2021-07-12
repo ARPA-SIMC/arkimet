@@ -25,6 +25,11 @@ class SendfileNotAvailable : std::exception
     using std::exception::exception;
 };
 
+class SpliceNotAvailable : std::exception
+{
+    using std::exception::exception;
+};
+
 
 /**
  * Base class for event loops that implement the streaming operation

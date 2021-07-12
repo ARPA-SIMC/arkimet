@@ -217,9 +217,7 @@ struct SenderFilteredSplice : public SenderFiltered<Backend, ToFilter>
             {
                 if (errno == EINVAL)
                 {
-                    // has_splice = false;
-                    // continue;
-                    throw std::system_error(errno, std::system_category(), "splice became unavailable during streaming");
+                    throw SpliceNotAvailable();
                 } else if (errno == EAGAIN || errno == EWOULDBLOCK) {
                     return TransferResult::WOULDBLOCK;
                 } else if (errno == EPIPE) {
@@ -427,13 +425,26 @@ template<typename Backend>
 void ConcreteStreamOutputBase<Backend>::start_filter(const std::vector<std::string>& command)
 {
     BaseStreamOutput::start_filter(command);
+    has_splice = true;
+}
 
-    // Check if we can splice between the filter stdout and our output
-#ifndef HAVE_SPLICE
-    has_splice = false;
-#else
-    has_splice = Backend::splice(filter_process->cmd.get_stdout(), NULL, *out, NULL, 0, SPLICE_F_MORE | SPLICE_F_NONBLOCK) == 0;
-#endif
+template<typename Backend> template<template<typename> class ToPipe, typename... Args>
+SendResult ConcreteStreamOutputBase<Backend>::_send_from_pipe(Args&&... args)
+{
+    if (has_splice)
+    {
+        try {
+            SenderFilteredSplice<Backend, ToPipe> sender(*this, std::forward<Args>(args)...);
+            return sender.loop();
+        } catch (SpliceNotAvailable&) {
+            has_splice = false;
+            SenderFilteredReadWrite<Backend, ToPipe> sender(*this, std::forward<Args>(args)...);
+            return sender.loop();
+        }
+    } else {
+        SenderFilteredReadWrite<Backend, ToPipe> sender(*this, std::forward<Args>(args)...);
+        return sender.loop();
+    }
 }
 
 template<typename Backend>
@@ -445,14 +456,7 @@ SendResult ConcreteStreamOutputBase<Backend>::send_buffer(const void* data, size
 
     if (filter_process)
     {
-        if (has_splice)
-        {
-            SenderFilteredSplice<Backend, BufferToPipe> sender(*this, data, size);
-            return sender.loop();
-        } else {
-            SenderFilteredReadWrite<Backend, BufferToPipe> sender(*this, data, size);
-            return sender.loop();
-        }
+        return _send_from_pipe<BufferToPipe>(data, size);
     } else {
         SenderDirect<Backend, BufferToPipe> sender(*this, data, size);
         return sender.loop();
@@ -469,14 +473,7 @@ SendResult ConcreteStreamOutputBase<Backend>::send_line(const void* data, size_t
 
     if (filter_process)
     {
-        if (has_splice)
-        {
-            SenderFilteredSplice<Backend, LineToPipe> sender(*this, data, size);
-            return sender.loop();
-        } else {
-            SenderFilteredReadWrite<Backend, LineToPipe> sender(*this, data, size);
-            return sender.loop();
-        }
+        return _send_from_pipe<LineToPipe>(data, size);
     } else {
         SenderDirect<Backend, LineToPipe> sender(*this, data, size);
         return sender.loop();
@@ -494,15 +491,11 @@ SendResult ConcreteStreamOutputBase<Backend>::send_file_segment(arki::core::Name
 
     if (filter_process)
     {
-        if (has_splice)
-        {
-            SenderFilteredSplice<Backend, FileToPipeSendfile> sender(*this, fd, offset, size);
-            return sender.loop();
-        } else {
-            SenderFilteredReadWrite<Backend, FileToPipeSendfile> sender(*this, fd, offset, size);
-            return sender.loop();
+        try {
+            return _send_from_pipe<FileToPipeSendfile>(fd, offset, size);
+        } catch (SendfileNotAvailable&) {
+            return _send_from_pipe<FileToPipeReadWrite>(fd, offset, size);
         }
-        // TODO: fallback to FileToPipeReadWrite
     } else {
         try {
             SenderDirect<Backend, FileToPipeSendfile> sender(*this, fd, offset, size);

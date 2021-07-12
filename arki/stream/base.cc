@@ -84,10 +84,21 @@ SendResult AbstractStreamOutput::send_buffer(const void* data, size_t size)
 
     if (filter_process)
     {
+#if 1
         // Leave data_start_callback to send_from_pipe, so we trigger it only
         // if/when data is generated
         filter_process->send(data, size);
         filter_process->size_stdin += size;
+#else
+        if (has_splice)
+        {
+            SenderFilteredSplice<Backend, BufferToPipe> sender(*this, data, size);
+            return sender.loop();
+        } else {
+            SenderFilteredReadWrite<Backend, BufferToPipe> sender(*this, data, size);
+            return sender.loop();
+        }
+#endif
     } else {
         if (data_start_callback)
             result += fire_data_start_callback();

@@ -34,6 +34,10 @@ struct ConcreteStreamOutputBase: public BaseStreamOutput
     std::string name() const override;
 
     void start_filter(const std::vector<std::string>& command) override;
+
+    template<template<typename> class ToPipe, typename... Args>
+    SendResult _send_from_pipe(Args&&... args);
+
     SendResult send_buffer(const void* data, size_t size) override;
     SendResult send_line(const void* data, size_t size) override;
     SendResult send_file_segment(arki::core::NamedFileDescriptor& fd, off_t offset, size_t size) override;
