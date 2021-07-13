@@ -36,7 +36,7 @@ struct SenderDirect: public Sender
                 throw std::system_error(errno, std::system_category(), "poll failed on " + out_fd.name());
             if (res == 0)
                 throw TimedOut("write on " + out_fd.name() + " timed out");
-            if (this->pollinfo.revents & POLLERR)
+            if (this->pollinfo.revents & (POLLERR | POLLHUP))
                 return SendResult::SEND_PIPE_EOF_DEST;
             if (this->pollinfo.revents & POLLOUT)
             {

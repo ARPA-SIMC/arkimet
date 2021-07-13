@@ -210,6 +210,7 @@ add_method("timeout_buffer", [this] {
     // No timeout
     {
         stream::ExpectedSyscalls expected({
+            new stream::ExpectedPoll(*outfile, POLLOUT, 1, POLLOUT, 1),
             new stream::ExpectedWrite(*outfile, "1234", 4),
         });
         wassert(actual(writer->send_buffer("1234", 4)) == stream::SendResult());
@@ -217,6 +218,7 @@ add_method("timeout_buffer", [this] {
 
     {
         stream::ExpectedSyscalls expected({
+            new stream::ExpectedPoll(*outfile, POLLOUT, 1, POLLOUT, 1),
             new stream::ExpectedWrite(*outfile, "1234", 2),
             new stream::ExpectedPoll(*outfile, POLLOUT, 1, POLLERR, 1),
         });
@@ -225,6 +227,16 @@ add_method("timeout_buffer", [this] {
 
     {
         stream::ExpectedSyscalls expected({
+            new stream::ExpectedPoll(*outfile, POLLOUT, 1, POLLOUT, 1),
+            new stream::ExpectedWrite(*outfile, "1234", 2),
+            new stream::ExpectedPoll(*outfile, POLLOUT, 1, POLLHUP, 1),
+        });
+        wassert(actual(writer->send_buffer("1234", 4)) == stream::SendResult(stream::SendResult::SEND_PIPE_EOF_DEST));
+    }
+
+    {
+        stream::ExpectedSyscalls expected({
+            new stream::ExpectedPoll(*outfile, POLLOUT, 1, POLLOUT, 1),
             new stream::ExpectedWrite(*outfile, "1234", -1, EAGAIN),
             new stream::ExpectedPoll(*outfile, POLLOUT, 1, POLLOUT, 1),
             new stream::ExpectedWrite(*outfile, "1234", 4),
@@ -234,6 +246,7 @@ add_method("timeout_buffer", [this] {
 
     {
         stream::ExpectedSyscalls expected({
+            new stream::ExpectedPoll(*outfile, POLLOUT, 1, POLLOUT, 1),
             new stream::ExpectedWrite(*outfile, "1234", 2),
             new stream::ExpectedPoll(*outfile, POLLOUT, 1, POLLOUT, 1),
             new stream::ExpectedWrite(*outfile, "34", -1, EAGAIN),
@@ -246,6 +259,7 @@ add_method("timeout_buffer", [this] {
     // Timeout
     {
         stream::ExpectedSyscalls expected({
+            new stream::ExpectedPoll(*outfile, POLLOUT, 1, POLLOUT, 1),
             new stream::ExpectedWrite(*outfile, "1234", 2),
             new stream::ExpectedPoll(*outfile, POLLOUT, 1, 0, 0),
         });

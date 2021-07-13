@@ -127,7 +127,7 @@ struct BufferToPipe : public MemoryToPipe<Backend>
             return TransferResult::WOULDBLOCK;
 
         ssize_t res = Backend::write(this->dest->fd, (const uint8_t*)this->data + this->pos, this->size - this->pos);
-        fprintf(stderr, "  BufferToOutput write %.*s %d → %d\n", (int)(this->size - this->pos), (const char*)this->data + this->pos, (int)(this->size - this->pos), (int)res);
+        fprintf(stderr, "  BufferToPipe write pos:%zd %.*s %d → %d\n", this->pos, (int)(this->size - this->pos), (const char*)this->data + this->pos, (int)(this->size - this->pos), (int)res);
         if (res < 0)
         {
             if (errno == EAGAIN || errno == EWOULDBLOCK)
@@ -142,7 +142,7 @@ struct BufferToPipe : public MemoryToPipe<Backend>
             if (this->progress_callback)
                 this->progress_callback(res);
 
-            if (this->pos == (size_t)res)
+            if (this->pos == this->size)
                 return TransferResult::DONE;
             else
                 return TransferResult::WOULDBLOCK;
