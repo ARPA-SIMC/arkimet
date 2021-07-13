@@ -57,7 +57,7 @@ public:
     /**
      * Stop sending data through a child command, and shut it down.
      */
-    virtual std::pair<size_t, size_t> stop_filter() = 0;
+    virtual std::unique_ptr<stream::FilterProcess> stop_filter() = 0;
 
     /**
      * Just stop the filter process

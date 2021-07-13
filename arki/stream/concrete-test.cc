@@ -9,11 +9,6 @@ using namespace arki::core;
 using namespace arki::utils;
 using namespace arki::tests;
 
-static std::ostream& operator<<(std::ostream& out, const std::pair<size_t, size_t>& p)
-{
-    return out << '[' << p.first << "→" << p.second << ']';
-}
-
 namespace {
 
 /**
@@ -288,9 +283,11 @@ add_method("syscalls_buffer_filtered", [this] {
             new stream::ExpectedRead(filter->cmd.get_stderr(), "FAIL", 32768, 4),
             new stream::ExpectedPoll(filter->cmd.get_stderr(), POLLIN, Fixture::get_timeout_ms(), POLLHUP, 1),
         });
-        wassert(actual(writer->stream().stop_filter()) == std::make_pair(4lu, 4lu));
-        // TODO: we have no way of checking stderr at this point with the current API
-        // TODO: make stop_filter return the unique_ptr<Filter> for inspection
+        auto flt = wcallchecked(writer->stream().stop_filter());
+        wassert(actual(flt->size_stdin) == 4u);
+        wassert(actual(flt->size_stdout) == 4u);
+        wassert(actual(flt->errors.str()) == "FAIL");
+        wassert(actual(flt->cmd.raw_returncode()) == 0);
         wassert(expected.check_not_called());
     }
 });

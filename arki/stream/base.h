@@ -49,7 +49,7 @@ struct BaseStreamOutput : public StreamOutput
     }
 
     stream::FilterProcess* start_filter(const std::vector<std::string>& command) override;
-    std::pair<size_t, size_t> stop_filter() override;
+    std::unique_ptr<stream::FilterProcess> stop_filter() override;
     void abort_filter() override;
 
     virtual void flush_filter_output() = 0;

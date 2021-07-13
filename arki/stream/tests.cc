@@ -1,6 +1,7 @@
 #include "tests.h"
 #include "base.h"
 #include "concrete.h"
+#include "filter.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/subprocess.h"
 #include <numeric>
@@ -13,11 +14,6 @@
 #include <poll.h>
 
 using namespace arki::utils;
-
-static std::ostream& operator<<(std::ostream& out, const std::pair<size_t, size_t>& p)
-{
-    return out << '[' << p.first << "→" << p.second << ']';
-}
 
 namespace arki {
 namespace stream {
@@ -299,10 +295,33 @@ add_method("send_line_filtered", [&] {
     {
         f->stream().start_filter({"wc", "-l"});
         wassert(actual(f->send_line("testline1", 9)) == stream::SendResult());
-        wassert(actual(f->stream().stop_filter()) == std::make_pair(10lu, 2lu));
+        auto flt = f->stream().stop_filter();
+        wassert(actual(flt->size_stdin) == 10u);
+        wassert(actual(flt->size_stdout) == 2lu);
+        wassert(actual(flt->errors.str()) == "");
+        wassert(actual(flt->cmd.raw_returncode()) == 0);
     }
 
     wassert(actual(f->streamed_contents()) == "testline\n1\n");
+});
+
+add_method("send_line_filtered_stderr", [&] {
+    auto f = make_fixture();
+
+    wassert(actual(f->send_line("testline", 8)) == stream::SendResult());
+
+    {
+        f->stream().start_filter({"postproc/error"});
+        wassert(actual(f->send_line("testline1", 9)) == stream::SendResult());
+        auto flt = f->stream().stop_filter();
+        wassert(actual(flt->size_stdin) == 10u);
+        wassert(actual(flt->size_stdout) == 0lu);
+        wassert(actual(flt->errors.str()) == "FAIL\n");
+        wassert(actual(flt->cmd.returncode()) == 1);
+        wassert_throws(std::runtime_error, flt->check_for_errors());
+    }
+
+    wassert(actual(f->streamed_contents()) == "testline\n");
 });
 
 add_method("send_buffer", [&] {
@@ -322,7 +341,11 @@ add_method("send_buffer_filtered", [&] {
     {
         f->stream().start_filter({"wc", "-c"});
         wassert(actual(f->send_buffer("testbuf", 4)) == stream::SendResult());
-        wassert(actual(f->stream().stop_filter()) == std::make_pair(4lu, 2lu));
+        auto flt = f->stream().stop_filter();
+        wassert(actual(flt->size_stdin) == 4u);
+        wassert(actual(flt->size_stdout) == 2lu);
+        wassert(actual(flt->errors.str()) == "");
+        wassert(actual(flt->cmd.raw_returncode()) == 0);
     }
 
     wassert(actual(f->streamed_contents()) == "testbuf4\n");
@@ -352,7 +375,11 @@ add_method("send_file_segment_filtered", [&] {
         f->stream().start_filter({"wc", "-c"});
         wassert(actual(f->send_file_segment(tf1, 5, 1)) == stream::SendResult());
         wassert(actual(f->send_file_segment(tf1, 0, 4)) == stream::SendResult());
-        wassert(actual(f->stream().stop_filter()) == std::make_pair(5lu, 2lu));
+        auto flt = f->stream().stop_filter();
+        wassert(actual(flt->size_stdin) == 5u);
+        wassert(actual(flt->size_stdout) == 2lu);
+        wassert(actual(flt->errors.str()) == "");
+        wassert(actual(flt->cmd.raw_returncode()) == 0);
     }
 
     wassert(actual(f->streamed_contents()) == "estfil5\n");

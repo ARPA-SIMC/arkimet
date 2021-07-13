@@ -38,10 +38,10 @@ stream::FilterProcess* BaseStreamOutput::start_filter(const std::vector<std::str
     return filter_process.get();
 }
 
-std::pair<size_t, size_t> BaseStreamOutput::stop_filter()
+std::unique_ptr<FilterProcess> BaseStreamOutput::stop_filter()
 {
     if (!filter_process)
-        return std::make_pair(0u, 0u);
+        return std::move(filter_process);
 
     if (filter_process->cmd.get_stdin() != -1)
         filter_process->cmd.close_stdin();
@@ -51,7 +51,7 @@ std::pair<size_t, size_t> BaseStreamOutput::stop_filter()
     std::unique_ptr<FilterProcess> proc = std::move(filter_process);
     proc->stop();
 
-    return std::make_pair(proc->size_stdin, proc->size_stdout);
+    return proc;
 }
 
 void BaseStreamOutput::abort_filter()

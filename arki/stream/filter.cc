@@ -36,6 +36,10 @@ void FilterProcess::start() {
 void FilterProcess::stop()
 {
     cmd.wait();
+}
+
+void FilterProcess::check_for_errors()
+{
     int res = cmd.raw_returncode();
     if (res)
     {

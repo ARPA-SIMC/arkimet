@@ -6,6 +6,7 @@
 #include "arki/core/cfg.h"
 #include "arki/core/binary.h"
 #include "arki/stream.h"
+#include "arki/stream/filter.h"
 #include "arki/utils/sys.h"
 #include "arki/metadata.h"
 #include "postprocess.h"
@@ -43,7 +44,8 @@ bool process(const std::string source, const std::string& command, const core::c
         out.abort_filter();
         throw;
     }
-    out.stop_filter();
+    auto flt = out.stop_filter();
+    flt->check_for_errors();
     return true;
 }
 

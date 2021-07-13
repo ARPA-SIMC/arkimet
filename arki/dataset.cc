@@ -9,6 +9,7 @@
 #include "arki/metadata/data.h"
 #include "arki/utils/string.h"
 #include "arki/stream.h"
+#include "arki/stream/filter.h"
 #include "arki/summary.h"
 
 using namespace std;
@@ -72,7 +73,8 @@ void Reader::impl_stream_query_bytes(const dataset::ByteQuery& q, StreamOutput& 
                 out.abort_filter();
                 throw;
             }
-            out.stop_filter();
+            auto flt = out.stop_filter();
+            flt->check_for_errors();
             break;
         }
         default:

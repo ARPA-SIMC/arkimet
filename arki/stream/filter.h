@@ -40,6 +40,11 @@ public:
             cmd.wait();
         }
     }
+
+    /**
+     * Raise std::runtime_error if the filter exited with a nonzero exit status
+     */
+    void check_for_errors();
 };
 
 }
