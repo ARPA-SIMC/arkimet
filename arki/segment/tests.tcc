@@ -222,7 +222,7 @@ this->add_method("issue244", [](Fixture& f) {
     // Opening for append makes sendfile fail and falls back on normal
     // read/write
     {
-        auto stream = StreamOutput::create(std::make_shared<sys::File>("stream.out", O_WRONLY | O_APPEND));
+        auto stream = StreamOutput::create(std::make_shared<sys::File>("stream.out", O_WRONLY | O_TRUNC | O_APPEND));
         wassert(actual(reader->stream(md->sourceBlob(), *stream)) == stream::SendResult());
         size_t pad_size = f.td.format == "vm2" ? 1 : 0;
         size_t size = sys::size("stream.out");
