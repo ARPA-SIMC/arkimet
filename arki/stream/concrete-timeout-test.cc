@@ -387,6 +387,54 @@ add_method("timeout_file", [this] {
         wassert(actual(writer->send_file_segment(tf, 1, 4)) == stream::SendResult());
     }
 
+    {
+        stream::ExpectedSyscalls expected({
+            new stream::ExpectedPoll(*outfile, POLLOUT, 1, POLLOUT, 1),
+            new stream::ExpectedSendfile(*outfile, tf, 1, 4, 5, 4),
+        });
+        wassert(actual(writer->send_file_segment(tf, 1, 4)) == stream::SendResult());
+    }
+
+    {
+        stream::ExpectedSyscalls expected({
+            new stream::ExpectedPoll(*outfile, POLLOUT, 1, POLLOUT, 1),
+            new stream::ExpectedSendfile(*outfile, tf, 1, 4, 1, -1, EINVAL),
+            new stream::ExpectedPoll(*outfile, POLLOUT, 1, POLLOUT, 1),
+            new stream::ExpectedPread(tf, 1, 4, "estf", 4),
+            new stream::ExpectedWrite(*outfile, "estf", 4),
+        });
+        wassert(actual(writer->send_file_segment(tf, 1, 4)) == stream::SendResult());
+    }
+
+    {
+        stream::ExpectedSyscalls expected({
+            new stream::ExpectedPoll(*outfile, POLLOUT, 1, POLLOUT, 1),
+            new stream::ExpectedSendfile(*outfile, tf, 1, 4, 1, -1, EINVAL),
+            new stream::ExpectedPoll(*outfile, POLLOUT, 1, POLLOUT, 1),
+            new stream::ExpectedPread(tf, 1, 4, "estf", 4),
+            new stream::ExpectedWrite(*outfile, "estf", 2),
+            new stream::ExpectedPoll(*outfile, POLLOUT, 1, POLLOUT, 1),
+            new stream::ExpectedWrite(*outfile, "tf", 2),
+        });
+        wassert(actual(writer->send_file_segment(tf, 1, 4)) == stream::SendResult());
+    }
+
+    {
+        stream::ExpectedSyscalls expected({
+            new stream::ExpectedPoll(*outfile, POLLOUT, 1, POLLOUT, 1),
+            new stream::ExpectedSendfile(*outfile, tf, 1, 4, 1, -1, EINVAL),
+            new stream::ExpectedPoll(*outfile, POLLOUT, 1, POLLOUT, 1),
+            new stream::ExpectedPread(tf, 1, 4, "est", 3),
+            new stream::ExpectedWrite(*outfile, "est", 2),
+            new stream::ExpectedPoll(*outfile, POLLOUT, 1, POLLOUT, 1),
+            new stream::ExpectedWrite(*outfile, "t", 1),
+            new stream::ExpectedPoll(*outfile, POLLOUT, 1, POLLOUT, 1),
+            new stream::ExpectedPread(tf, 4, 1, "f", 1),
+            new stream::ExpectedWrite(*outfile, "f", 1),
+        });
+        wassert(actual(writer->send_file_segment(tf, 1, 4)) == stream::SendResult());
+    }
+
     // Timeout
     {
         stream::ExpectedSyscalls expected({
@@ -402,52 +450,6 @@ add_method("timeout_file", [this] {
 //        tf1.lseek(0);
 //        wassert_throws(stream::TimedOut, writer->send_from_pipe(tf1));
 //    }
-});
-
-add_method("concrete_timeout_send_file_segment", [] {
-    // TODO: redo with mock syscalls
-    BlockingSink sink;
-    auto writer = StreamOutput::create(sink.fd(), 1000);
-
-    sys::Tempfile tf1;
-    tf1.write_all_or_throw(std::string("foobarbaz"));
-    tf1.lseek(sink.pipe_size());
-    tf1.write_all_or_throw(std::string("zabraboof"));
-
-    {
-        WriteTest t(*writer, sink, -3);
-        wassert(actual(writer->send_file_segment(tf1, 0, 6)) == stream::SendResult());
-        wassert(actual(t.total_written) == 6u);
-        // wassert(actual(cb_log) == std::vector<size_t>{3, 3});
-    }
-
-    {
-        WriteTest t(*writer, sink, -6);
-        wassert(actual(writer->send_file_segment(tf1, 0, 6)) == stream::SendResult());
-        wassert(actual(t.total_written) == 6u);
-        wassert(actual(t.cb_log) == std::vector<size_t>{6});
-    }
-
-    {
-        WriteTest t(*writer, sink, -7);
-        wassert(actual(writer->send_file_segment(tf1, 0, 6)) == stream::SendResult());
-        wassert(actual(t.total_written) == 6u);
-        // wassert(actual(cb_log) == std::vector<size_t>{0, 7, 0, 7, 7});
-    }
-
-    {
-        WriteTest t(*writer, sink, 0);
-        wassert(actual(writer->send_file_segment(tf1, 0, sink.pipe_size() + 9)) == stream::SendResult());
-        wassert(actual(t.total_written) == sink.pipe_size() + 9);
-        // wassert(actual(t.cb_log) == std::vector<size_t>{sink.pipe_size(), 9});
-    }
-
-    {
-        WriteTest t(*writer, sink, 1);
-        wassert(actual(writer->send_file_segment(tf1, 0, sink.pipe_size() + 9)) == stream::SendResult());
-        wassert(actual(t.total_written) == sink.pipe_size() + 9);
-        // wassert(actual(t.cb_log) == std::vector<size_t>{sink.pipe_size(), 9});
-    }
 });
 
 }

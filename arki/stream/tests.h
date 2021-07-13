@@ -2,6 +2,7 @@
 #include "arki/stream.h"
 #include "arki/stream/base.h"
 #include "arki/core/fwd.h"
+#include <cstring>
 
 namespace arki {
 namespace stream {
@@ -76,16 +77,20 @@ struct DisableSendfileSplice : public MockConcreteSyscalls
 struct ExpectedSyscallMatch
 {
     std::string name;
+    size_t index = 0;
 
     ExpectedSyscallMatch(const std::string& name)
          : name(name) {}
     virtual ~ExpectedSyscallMatch() {}
 
+    std::string tag() const { return std::to_string(index) + ":" + name; }
+
     [[noreturn]] void fail_mismatch(const char* called)
     {
-        std::string msg = called;
-        msg += " unexpectedly called instead of ";
-        msg += name;
+        std::string msg = tag();
+        msg += " was expected but ";
+        msg += called;
+        msg += " was called instead";
         throw arki::utils::tests::TestFailed((msg));
     }
 
@@ -97,6 +102,59 @@ struct ExpectedSyscallMatch
                               loff_t *off_out, size_t len, unsigned int flags) { fail_mismatch("splice"); }
     virtual int on_poll(struct pollfd *fds, nfds_t nfds, int timeout) { fail_mismatch("poll"); }
     virtual ssize_t on_pread(int fd, void *buf, size_t count, off_t offset) { fail_mismatch("pread"); }
+};
+
+struct ExpectedRead : public ExpectedSyscallMatch
+{
+    int fd;
+    std::string result;
+    ssize_t res;
+    int errno_val;
+
+    ExpectedRead(int fd, const std::string& result, ssize_t res, int errno_val=0)
+        : ExpectedSyscallMatch("read"), fd(fd), result(result), res(res), errno_val(errno_val)
+    {
+    }
+
+    ssize_t on_read(int fd, void *buf, size_t count) override
+    {
+        ARKI_UTILS_TEST_INFO(info);
+        info << tag();
+        using arki::utils::tests::actual;
+        wassert(actual(fd) == this->fd);
+        wassert(actual(count) == result.size());
+        memcpy(buf, result.data(), result.size());
+        errno = errno_val;
+        return res;
+    }
+};
+
+struct ExpectedPread : public ExpectedSyscallMatch
+{
+    int fd;
+    off_t offset;
+    size_t count;
+    std::string result;
+    ssize_t res;
+    int errno_val;
+
+    ExpectedPread(int fd, off_t offset, size_t count, const std::string& result, ssize_t res, int errno_val=0)
+        : ExpectedSyscallMatch("pread"), fd(fd), offset(offset), count(count), result(result), res(res), errno_val(errno_val)
+    {
+    }
+
+    ssize_t on_pread(int fd, void *buf, size_t count, off_t offset) override
+    {
+        ARKI_UTILS_TEST_INFO(info);
+        info << tag();
+        using arki::utils::tests::actual;
+        wassert(actual(fd) == this->fd);
+        wassert(actual(offset) == this->offset);
+        wassert(actual(count) == this->count);
+        memcpy(buf, result.data(), result.size());
+        errno = errno_val;
+        return res;
+    }
 };
 
 struct ExpectedWrite : public ExpectedSyscallMatch
@@ -113,6 +171,8 @@ struct ExpectedWrite : public ExpectedSyscallMatch
 
     ssize_t on_write(int fd, const void *buf, size_t count) override
     {
+        ARKI_UTILS_TEST_INFO(info);
+        info << tag();
         using arki::utils::tests::actual;
         wassert(actual(fd) == this->fd);
         wassert(actual(std::string((const char*)buf, count)) == expected);
@@ -135,6 +195,8 @@ struct ExpectedWritev : public ExpectedSyscallMatch
 
     ssize_t on_writev(int fd, const struct iovec *iov, int iovcnt) override
     {
+        ARKI_UTILS_TEST_INFO(info);
+        info << tag();
         using arki::utils::tests::actual;
         wassert(actual(fd) == this->fd);
         wassert(actual((unsigned)iovcnt) == expected.size());
@@ -161,6 +223,8 @@ struct ExpectedPoll : public ExpectedSyscallMatch
 
     int on_poll(struct pollfd *fds, nfds_t nfds, int timeout) override
     {
+        ARKI_UTILS_TEST_INFO(info);
+        info << tag();
         using arki::utils::tests::actual;
 
         struct pollfd* current = nullptr;
@@ -201,6 +265,8 @@ struct ExpectedSendfile : public ExpectedSyscallMatch
 
     ssize_t on_sendfile(int out_fd, int in_fd, off_t *offset, size_t count) override
     {
+        ARKI_UTILS_TEST_INFO(info);
+        info << tag();
         using arki::utils::tests::actual;
         wassert(actual(out_fd) == this->out_fd);
         wassert(actual(in_fd) == this->in_fd);

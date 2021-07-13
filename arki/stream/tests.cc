@@ -92,6 +92,9 @@ ExpectedSyscalls::ExpectedSyscalls(std::vector<ExpectedSyscallMatch*> expected) 
                       loff_t *off_out, size_t len, unsigned int flags) { return on_splice(fd_in, off_in, fd_out, off_out, len, flags); };
     ConcreteTestingBackend::poll = [this](struct pollfd *fds, nfds_t nfds, int timeout) { return on_poll(fds, nfds, timeout); };
     ConcreteTestingBackend::pread = [this](int fd, void *buf, size_t count, off_t offset) { return on_pread(fd, buf, count, offset); };
+
+    for (size_t i = 0; i < expected.size(); ++i)
+        expected[i]->index = i + 1;
 }
 
 ExpectedSyscalls::~ExpectedSyscalls()
