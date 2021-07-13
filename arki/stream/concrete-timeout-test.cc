@@ -274,6 +274,7 @@ add_method("timeout_line", [this] {
     // No timeout
     {
         stream::ExpectedSyscalls expected({
+            new stream::ExpectedPoll(*outfile, POLLOUT, 1, POLLOUT, 1),
             new stream::ExpectedWritev(*outfile, {"1234", "\n"}, 5),
         });
         wassert(actual(writer->send_line("1234", 4)) == stream::SendResult());
@@ -281,6 +282,7 @@ add_method("timeout_line", [this] {
 
     {
         stream::ExpectedSyscalls expected({
+            new stream::ExpectedPoll(*outfile, POLLOUT, 1, POLLOUT, 1),
             new stream::ExpectedWritev(*outfile, {"1234", "\n"}, 3),
             new stream::ExpectedPoll(*outfile, POLLOUT, 1, POLLERR, 1),
         });
@@ -289,6 +291,16 @@ add_method("timeout_line", [this] {
 
     {
         stream::ExpectedSyscalls expected({
+            new stream::ExpectedPoll(*outfile, POLLOUT, 1, POLLOUT, 1),
+            new stream::ExpectedWritev(*outfile, {"1234", "\n"}, 3),
+            new stream::ExpectedPoll(*outfile, POLLOUT, 1, POLLHUP, 1),
+        });
+        wassert(actual(writer->send_line("1234", 4)) == stream::SendResult(stream::SendResult::SEND_PIPE_EOF_DEST));
+    }
+
+    {
+        stream::ExpectedSyscalls expected({
+            new stream::ExpectedPoll(*outfile, POLLOUT, 1, POLLOUT, 1),
             new stream::ExpectedWritev(*outfile, {"1234", "\n"}, -1, EAGAIN),
             new stream::ExpectedPoll(*outfile, POLLOUT, 1, POLLOUT, 1),
             new stream::ExpectedWritev(*outfile, {"1234", "\n"}, 5),
@@ -298,6 +310,7 @@ add_method("timeout_line", [this] {
 
     {
         stream::ExpectedSyscalls expected({
+            new stream::ExpectedPoll(*outfile, POLLOUT, 1, POLLOUT, 1),
             new stream::ExpectedWritev(*outfile, {"1234", "\n"}, 2),
             new stream::ExpectedPoll(*outfile, POLLOUT, 1, POLLOUT, 1),
             new stream::ExpectedWritev(*outfile, {"34", "\n"}, 3),
@@ -307,6 +320,7 @@ add_method("timeout_line", [this] {
 
     {
         stream::ExpectedSyscalls expected({
+            new stream::ExpectedPoll(*outfile, POLLOUT, 1, POLLOUT, 1),
             new stream::ExpectedWritev(*outfile, {"1234", "\n"}, 3),
             new stream::ExpectedPoll(*outfile, POLLOUT, 1, POLLOUT, 1),
             new stream::ExpectedWritev(*outfile, {"4", "\n"}, 2),
@@ -316,6 +330,7 @@ add_method("timeout_line", [this] {
 
     {
         stream::ExpectedSyscalls expected({
+            new stream::ExpectedPoll(*outfile, POLLOUT, 1, POLLOUT, 1),
             new stream::ExpectedWritev(*outfile, {"1234", "\n"}, 4),
             new stream::ExpectedPoll(*outfile, POLLOUT, 1, POLLOUT, 1),
             new stream::ExpectedWrite(*outfile, "\n", 1),
@@ -325,6 +340,7 @@ add_method("timeout_line", [this] {
 
     {
         stream::ExpectedSyscalls expected({
+            new stream::ExpectedPoll(*outfile, POLLOUT, 1, POLLOUT, 1),
             new stream::ExpectedWritev(*outfile, {"1234", "\n"}, 4),
             new stream::ExpectedPoll(*outfile, POLLOUT, 1, POLLOUT, 1),
             new stream::ExpectedWrite(*outfile, "\n", -1, EAGAIN),
@@ -337,6 +353,7 @@ add_method("timeout_line", [this] {
     // Timeout
     {
         stream::ExpectedSyscalls expected({
+            new stream::ExpectedPoll(*outfile, POLLOUT, 1, POLLOUT, 1),
             new stream::ExpectedWritev(*outfile, {"1234", "\n"}, 2),
             new stream::ExpectedPoll(*outfile, POLLOUT, 1, 0, 0),
         });
@@ -345,6 +362,7 @@ add_method("timeout_line", [this] {
 
     {
         stream::ExpectedSyscalls expected({
+            new stream::ExpectedPoll(*outfile, POLLOUT, 1, POLLOUT, 1),
             new stream::ExpectedWritev(*outfile, {"1234", "\n"}, 4),
             new stream::ExpectedPoll(*outfile, POLLOUT, 1, 0, 0),
         });
@@ -361,6 +379,7 @@ add_method("timeout_file", [this] {
     // No timeout
     {
         stream::ExpectedSyscalls expected({
+            new stream::ExpectedPoll(*outfile, POLLOUT, 1, POLLOUT, 1),
             new stream::ExpectedSendfile(*outfile, tf, 1, 4, 3, 2),
             new stream::ExpectedPoll(*outfile, POLLOUT, 1, POLLOUT, 1),
             new stream::ExpectedSendfile(*outfile, tf, 3, 2, 5, 2),
@@ -371,6 +390,7 @@ add_method("timeout_file", [this] {
     // Timeout
     {
         stream::ExpectedSyscalls expected({
+            new stream::ExpectedPoll(*outfile, POLLOUT, 1, POLLOUT, 1),
             new stream::ExpectedSendfile(*outfile, tf, 1, 4, 3, 2),
             new stream::ExpectedPoll(*outfile, POLLOUT, 1, 0, 0),
         });

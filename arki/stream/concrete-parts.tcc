@@ -162,7 +162,7 @@ struct LineToPipe : public MemoryToPipe<Backend>
 
         if (this->pos < this->size)
         {
-            struct iovec todo[2] = {{(void*)this->data, this->size}, {(void*)"\n", 1}};
+            struct iovec todo[2] = {{(uint8_t*)this->data + this->pos, this->size - this->pos}, {(void*)"\n", 1}};
             ssize_t res = Backend::writev(this->dest->fd, todo, 2);
             if (res < 0)
             {
