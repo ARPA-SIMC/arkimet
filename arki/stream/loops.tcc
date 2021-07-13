@@ -31,7 +31,7 @@ struct SenderDirect: public Sender
         {
             this->pollinfo.revents = 0;
             int res = Backend::poll(&this->pollinfo, 1, this->stream.timeout_ms);
-            fprintf(stderr, "SenderDirect.POLL: %d %d:%d\n", res, this->pollinfo.fd, this->pollinfo.revents);
+            // fprintf(stderr, "SenderDirect.POLL: %d %d:%d\n", res, this->pollinfo.fd, this->pollinfo.revents);
             if (res < 0)
                 throw std::system_error(errno, std::system_category(), "poll failed on " + out_fd.name());
             if (res == 0)
@@ -81,7 +81,7 @@ struct FilteredBase : public Sender
     void transfer_available_stderr()
     {
         ssize_t res = Backend::read(pollinfo_stderr.fd, stderr_buffer, stderr_buffer.size);
-        fprintf(stderr, "  read stderr → %d %.*s\n", (int)res, (int)res, (const char*)stderr_buffer);
+        // fprintf(stderr, "  read stderr → %d %.*s\n", (int)res, (int)res, (const char*)stderr_buffer);
         if (res == 0)
         {
             stream.filter_process->cmd.close_stderr();
@@ -185,11 +185,11 @@ struct SenderFiltered : public FilteredBase<Backend, ToOutput>
             if (res == 0)
                 throw TimedOut("streaming operations timed out");
 
-            fprintf(stderr, "POLL: %d:%d %d:%d %d:%d %d:%d\n",
-                    this->pollinfo[0].fd, this->pollinfo[0].revents,
-                    this->pollinfo[1].fd, this->pollinfo[1].revents,
-                    this->pollinfo[2].fd, this->pollinfo[2].revents,
-                    this->pollinfo[3].fd, this->pollinfo[3].revents);
+            // fprintf(stderr, "POLL: %d:%d %d:%d %d:%d %d:%d\n",
+            //         this->pollinfo[0].fd, this->pollinfo[0].revents,
+            //         this->pollinfo[1].fd, this->pollinfo[1].revents,
+            //         this->pollinfo[2].fd, this->pollinfo[2].revents,
+            //         this->pollinfo[3].fd, this->pollinfo[3].revents);
 
             if (this->pollinfo[0].revents & (POLLERR | POLLHUP))
             {
@@ -268,10 +268,10 @@ struct FlushFilter : public FilteredBase<Backend, ToOutput>
             if (res == 0)
                 throw TimedOut("streaming operations timed out");
 
-            fprintf(stderr, "FlushFilter POLL: %d:%x %d:%x %d:%x\n",
-                    this->pollinfo[0].fd, this->pollinfo[0].revents,
-                    this->pollinfo[1].fd, this->pollinfo[1].revents,
-                    this->pollinfo[2].fd, this->pollinfo[2].revents);
+            // fprintf(stderr, "FlushFilter POLL: %d:%x %d:%x %d:%x\n",
+            //         this->pollinfo[0].fd, this->pollinfo[0].revents,
+            //         this->pollinfo[1].fd, this->pollinfo[1].revents,
+            //         this->pollinfo[2].fd, this->pollinfo[2].revents);
 
             bool done = this->on_poll();
 

@@ -127,7 +127,7 @@ struct BufferToPipe : public MemoryToPipe<Backend>
             return TransferResult::WOULDBLOCK;
 
         ssize_t res = Backend::write(this->dest->fd, (const uint8_t*)this->data + this->pos, this->size - this->pos);
-        fprintf(stderr, "  BufferToPipe write pos:%zd %.*s %d → %d\n", this->pos, (int)(this->size - this->pos), (const char*)this->data + this->pos, (int)(this->size - this->pos), (int)res);
+        // fprintf(stderr, "  BufferToPipe write pos:%zd %.*s %d → %d\n", this->pos, (int)(this->size - this->pos), (const char*)this->data + this->pos, (int)(this->size - this->pos), (int)res);
         if (res < 0)
         {
             if (errno == EAGAIN || errno == EWOULDBLOCK)
@@ -424,7 +424,7 @@ struct FromFilterSplice : public FromFilterConcrete<Backend>
 #else
         // Try splice
         ssize_t res = Backend::splice(this->stream.filter_process->cmd.get_stdout(), NULL, this->out_fd, NULL, TransferBuffer::size * 128, SPLICE_F_MORE | SPLICE_F_NONBLOCK);
-        fprintf(stderr, "  splice stdout → %d\n", (int)res);
+        // fprintf(stderr, "  splice stdout → %d\n", (int)res);
         if (res > 0)
         {
             if (this->stream.progress_callback)
@@ -450,7 +450,7 @@ struct FromFilterSplice : public FromFilterConcrete<Backend>
     bool on_poll(SendResult& result)
     {
         this->set_available_flags();
-        fprintf(stderr, "  FromFilterSplice.on_poll %d %d\n", this->filter_stdout_available, this->destination_available);
+        // fprintf(stderr, "  FromFilterSplice.on_poll %d %d\n", this->filter_stdout_available, this->destination_available);
 
         if (this->filter_stdout_available and this->destination_available)
         {
@@ -502,7 +502,7 @@ struct FromFilterReadWrite : public FromFilterConcrete<Backend>
     {
         to_output.reset(buffer.buf, 0);
         ssize_t res = Backend::read(this->stream.filter_process->cmd.get_stdout(), buffer, buffer.size);
-        fprintf(stderr, "  read stdout → %d %.*s\n", (int)res, std::max((int)res, 0), (const char*)buffer);
+        // fprintf(stderr, "  read stdout → %d %.*s\n", (int)res, std::max((int)res, 0), (const char*)buffer);
         if (res == 0)
             return TransferResult::EOF_SOURCE;
         else if (res < 0)
@@ -532,7 +532,7 @@ struct FromFilterReadWrite : public FromFilterConcrete<Backend>
 
     bool on_poll(SendResult& result)
     {
-        fprintf(stderr, "  FromFilterReadWrite.on_poll %zd\n", to_output.size);
+        // fprintf(stderr, "  FromFilterReadWrite.on_poll %zd\n", to_output.size);
         this->set_available_flags();
 
         // TODO: this could append to the output buffer to chunk together small writes
@@ -593,7 +593,7 @@ struct FromFilterAbstract : public FromFilter<Backend>
     TransferResult transfer_available_output()
     {
         ssize_t res = Backend::read(this->stream.filter_process->cmd.get_stdout(), buffer, buffer.size);
-        fprintf(stderr, "  read stdout %d → %d %.*s\n", this->stream.filter_process->cmd.get_stdout(), (int)res, std::max((int)res, 0), (const char*)buffer);
+        // fprintf(stderr, "  read stdout %d → %d %.*s\n", this->stream.filter_process->cmd.get_stdout(), (int)res, std::max((int)res, 0), (const char*)buffer);
         if (res == 0)
             return TransferResult::EOF_SOURCE;
         else if (res < 0)
@@ -615,7 +615,7 @@ struct FromFilterAbstract : public FromFilter<Backend>
 
     bool on_poll(SendResult& result)
     {
-        fprintf(stderr, "  FromFilterAbstract.on_poll\n");
+        // fprintf(stderr, "  FromFilterAbstract.on_poll\n");
         this->set_available_flags();
 
         // TODO: this could append to the output buffer to chunk together small writes
