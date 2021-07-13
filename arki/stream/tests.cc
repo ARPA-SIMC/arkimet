@@ -291,9 +291,9 @@ add_method("send_line_filtered", [&] {
     wassert(actual(f->send_line("testline", 8)) == stream::SendResult());
 
     {
-        WithFilter filtered(f->stream(), {"wc", "-l"});
+        f->stream().start_filter({"wc", "-l"});
         wassert(actual(f->send_line("testline1", 9)) == stream::SendResult());
-        wassert(actual(filtered.done()) == std::make_pair(10lu, 2lu));
+        wassert(actual(f->stream().stop_filter()) == std::make_pair(10lu, 2lu));
     }
 
     wassert(actual(f->streamed_contents()) == "testline\n1\n");
@@ -314,9 +314,9 @@ add_method("send_buffer_filtered", [&] {
     wassert(actual(f->send_buffer("testbuf", 7)) == stream::SendResult());
 
     {
-        WithFilter filtered(f->stream(), {"wc", "-c"});
+        f->stream().start_filter({"wc", "-c"});
         wassert(actual(f->send_buffer("testbuf", 4)) == stream::SendResult());
-        wassert(actual(filtered.done()) == std::make_pair(4lu, 2lu));
+        wassert(actual(f->stream().stop_filter()) == std::make_pair(4lu, 2lu));
     }
 
     wassert(actual(f->streamed_contents()) == "testbuf4\n");
@@ -343,10 +343,10 @@ add_method("send_file_segment_filtered", [&] {
 
     wassert(actual(f->send_file_segment(tf1, 1, 6)) == stream::SendResult());
     {
-        WithFilter filtered(f->stream(), {"wc", "-c"});
+        f->stream().start_filter({"wc", "-c"});
         wassert(actual(f->send_file_segment(tf1, 5, 1)) == stream::SendResult());
         wassert(actual(f->send_file_segment(tf1, 0, 4)) == stream::SendResult());
-        wassert(actual(filtered.done()) == std::make_pair(5lu, 2lu));
+        wassert(actual(f->stream().stop_filter()) == std::make_pair(5lu, 2lu));
     }
 
     wassert(actual(f->streamed_contents()) == "estfil5\n");

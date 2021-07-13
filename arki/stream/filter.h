@@ -19,9 +19,6 @@ public:
      */
     StreamOutput* m_stream = nullptr;
 
-    /// Stream where child stderr is sent
-    std::ostream* m_err = 0;
-
     /// Accumulated stream result
     size_t size_stdin = 0;
     size_t size_stdout = 0;

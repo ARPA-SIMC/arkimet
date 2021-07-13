@@ -8,14 +8,12 @@ using namespace arki::utils;
 namespace arki {
 namespace stream {
 
-FilterProcess::FilterProcess(const std::vector<std::string>& args) // : utils::IODispatcher(cmd)
+FilterProcess::FilterProcess(const std::vector<std::string>& args)
 {
     cmd.args = args;
     cmd.set_stdin(utils::subprocess::Redirect::PIPE);
     cmd.set_stdout(utils::subprocess::Redirect::PIPE);
     cmd.set_stderr(utils::subprocess::Redirect::PIPE);
-
-    m_err = &errors;
 }
 
 

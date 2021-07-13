@@ -29,16 +29,21 @@ bool process(const std::string source, const std::string& command, const core::c
 {
     metadata::DataManager& data_manager = metadata::DataManager::get();
     std::vector<std::string> args = metadata::Postprocess::validate_command(command, cfg);
-    stream::WithFilter filtered(out, args);
-    for (unsigned i = 0; i < repeat; ++i)
-        if (!Metadata::read_file(source, [&](std::shared_ptr<Metadata> md) {
-                    md->set_source_inline("bufr",
-                            data_manager.to_data("bufr",
-                                std::vector<uint8_t>(md->sourceBlob().size)));
-                    return metadata::Postprocess::send(md, out);
-                }))
-            return false;
-    filtered.done();
+    out.start_filter(args);
+    try {
+        for (unsigned i = 0; i < repeat; ++i)
+            if (!Metadata::read_file(source, [&](std::shared_ptr<Metadata> md) {
+                        md->set_source_inline("bufr",
+                                data_manager.to_data("bufr",
+                                    std::vector<uint8_t>(md->sourceBlob().size)));
+                        return metadata::Postprocess::send(md, out);
+                    }))
+                return false;
+    } catch (...) {
+        out.abort_filter();
+        throw;
+    }
+    out.stop_filter();
     return true;
 }
 

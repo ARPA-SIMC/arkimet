@@ -106,40 +106,5 @@ public:
     static std::unique_ptr<StreamOutput> create_discard();
 };
 
-
-namespace stream {
-
-/**
- * RAII wrappper for set_filter_command/unset_filter_command
- */
-class WithFilter
-{
-protected:
-    StreamOutput& stream;
-    bool _done = false;
-
-public:
-    WithFilter(StreamOutput& stream, const std::vector<std::string>& command)
-        : stream(stream)
-    {
-        stream.start_filter(command);
-    }
-
-    ~WithFilter()
-    {
-        if (!_done)
-            stream.abort_filter();
-    }
-
-    std::pair<size_t, size_t> done()
-    {
-        auto res = stream.stop_filter();
-        _done = true;
-        return res;
-    }
-};
-
-}
-
 }
 #endif

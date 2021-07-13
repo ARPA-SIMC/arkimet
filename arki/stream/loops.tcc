@@ -96,12 +96,9 @@ struct FilteredBase : public Sender
         }
         else
         {
-            if (stream.filter_process->m_err)
-            {
-                stream.filter_process->m_err->write(stderr_buffer, res);
-                if (stream.filter_process->m_err->bad())
-                    throw std::system_error(errno, std::system_category(), "cannot store filter stderr in memory buffer");
-            }
+            stream.filter_process->errors.write(stderr_buffer, res);
+            if (stream.filter_process->errors.bad())
+                throw std::system_error(errno, std::system_category(), "cannot store filter stderr in memory buffer");
         }
     }
 
@@ -110,6 +107,11 @@ struct FilteredBase : public Sender
         auto& cmd = stream.filter_process->cmd;
 
         bool done = to_output.on_poll(this->result);
+
+        if (this->pollinfo_stderr.revents & POLLOUT)
+        {
+            this->transfer_available_stderr();
+        }
 
         if (this->pollinfo_stdout.revents & (POLLERR | POLLHUP))
         {
@@ -122,11 +124,6 @@ struct FilteredBase : public Sender
         {
             cmd.close_stderr();
             pollinfo_stderr.fd = -1;
-        }
-
-        if (this->pollinfo_stderr.revents & POLLOUT)
-        {
-            this->transfer_available_stderr();
         }
 
         return done || (cmd.get_stdout() == -1 && cmd.get_stderr() == -1);

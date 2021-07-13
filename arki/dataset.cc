@@ -63,11 +63,16 @@ void Reader::impl_stream_query_bytes(const dataset::ByteQuery& q, StreamOutput& 
         }
         case dataset::ByteQuery::BQ_POSTPROCESS: {
             std::vector<std::string> args = metadata::Postprocess::validate_command(q.postprocessor, *dataset().config);
-            stream::WithFilter filtered(out, args);
-            query_data(q, [&](std::shared_ptr<Metadata> md) {
-                return metadata::Postprocess::send(md, out);
-            });
-            filtered.done();
+            out.start_filter(args);
+            try {
+                query_data(q, [&](std::shared_ptr<Metadata> md) {
+                    return metadata::Postprocess::send(md, out);
+                });
+            } catch (...) {
+                out.abort_filter();
+                throw;
+            }
+            out.stop_filter();
             break;
         }
         default:
