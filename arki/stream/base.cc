@@ -27,7 +27,7 @@ bool BaseStreamOutput::is_nonblocking(int fd)
     return src_fl & O_NONBLOCK;
 }
 
-void BaseStreamOutput::start_filter(const std::vector<std::string>& command)
+stream::FilterProcess* BaseStreamOutput::start_filter(const std::vector<std::string>& command)
 {
     if (filter_process)
         throw std::runtime_error("A filter command was already started on this stream");
@@ -35,6 +35,7 @@ void BaseStreamOutput::start_filter(const std::vector<std::string>& command)
     filter_process.reset(new stream::FilterProcess(command));
     filter_process->m_stream = this;
     filter_process->start();
+    return filter_process.get();
 }
 
 std::pair<size_t, size_t> BaseStreamOutput::stop_filter()

@@ -15,6 +15,8 @@ namespace arki {
 
 namespace stream {
 
+class FilterProcess;
+
 /// Exception thrown when a stream output times out
 class TimedOut : public std::runtime_error
 {
@@ -50,7 +52,7 @@ public:
      * Pipe all input data through the given child command before sending it to
      * the stream output.
      */
-    virtual void start_filter(const std::vector<std::string>& command) = 0;
+    virtual stream::FilterProcess* start_filter(const std::vector<std::string>& command) = 0;
 
     /**
      * Stop sending data through a child command, and shut it down.

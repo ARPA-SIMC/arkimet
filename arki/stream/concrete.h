@@ -32,7 +32,7 @@ struct ConcreteStreamOutputBase: public BaseStreamOutput
 
     std::string name() const override;
 
-    void start_filter(const std::vector<std::string>& command) override;
+    stream::FilterProcess* start_filter(const std::vector<std::string>& command) override;
 
     template<template<typename> class ToPipe, typename... Args>
     SendResult _send_from_pipe(Args&&... args);

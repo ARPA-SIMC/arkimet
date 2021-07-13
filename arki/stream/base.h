@@ -48,7 +48,7 @@ struct BaseStreamOutput : public StreamOutput
         data_start_callback = f;
     }
 
-    void start_filter(const std::vector<std::string>& command) override;
+    stream::FilterProcess* start_filter(const std::vector<std::string>& command) override;
     std::pair<size_t, size_t> stop_filter() override;
     void abort_filter() override;
 

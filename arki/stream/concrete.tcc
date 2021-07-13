@@ -92,10 +92,11 @@ stream::SendResult ConcreteStreamOutputBase<Backend>::_write_output_buffer(const
 }
 
 template<typename Backend>
-void ConcreteStreamOutputBase<Backend>::start_filter(const std::vector<std::string>& command)
+stream::FilterProcess* ConcreteStreamOutputBase<Backend>::start_filter(const std::vector<std::string>& command)
 {
-    BaseStreamOutput::start_filter(command);
+    auto res = BaseStreamOutput::start_filter(command);
     has_splice = true;
+    return res;
 }
 
 template<typename Backend> template<template<typename> class ToPipe, typename... Args>

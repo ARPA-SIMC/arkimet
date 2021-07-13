@@ -38,15 +38,6 @@ struct StreamTests : public tests::TestCase
 };
 
 
-struct ConcreteStreamTests : public StreamTests
-{
-    using StreamTests::StreamTests;
-
-    void register_tests() override;
-
-    virtual std::unique_ptr<StreamTestsFixture> make_concrete_fixture(std::shared_ptr<core::NamedFileDescriptor> out, int timeout_ms=-1) = 0;
-};
-
 /**
  * RAII mocking of syscalls for concrete stream implementations
  */
@@ -108,11 +99,12 @@ struct ExpectedRead : public ExpectedSyscallMatch
 {
     int fd;
     std::string result;
+    size_t count;
     ssize_t res;
     int errno_val;
 
-    ExpectedRead(int fd, const std::string& result, ssize_t res, int errno_val=0)
-        : ExpectedSyscallMatch("read"), fd(fd), result(result), res(res), errno_val(errno_val)
+    ExpectedRead(int fd, const std::string& result, size_t count, ssize_t res, int errno_val=0)
+        : ExpectedSyscallMatch("read"), fd(fd), result(result), count(count), res(res), errno_val(errno_val)
     {
     }
 
@@ -122,7 +114,7 @@ struct ExpectedRead : public ExpectedSyscallMatch
         info << tag();
         using arki::utils::tests::actual;
         wassert(actual(fd) == this->fd);
-        wassert(actual(count) == result.size());
+        wassert(actual(count) == this->count);
         memcpy(buf, result.data(), result.size());
         errno = errno_val;
         return res;
@@ -279,6 +271,39 @@ struct ExpectedSendfile : public ExpectedSyscallMatch
     }
 };
 
+struct ExpectedSplice : public ExpectedSyscallMatch
+{
+    int fd_in;
+    int fd_out;
+    size_t len;
+    unsigned int flags;
+    ssize_t res;
+    int errno_val;
+
+    ExpectedSplice(int fd_in, int fd_out, size_t len, unsigned int flags, ssize_t res, int errno_val=0)
+        : ExpectedSyscallMatch("splice"), fd_in(fd_in), fd_out(fd_out),
+          len(len), flags(flags), res(res), errno_val(errno_val)
+    {
+    }
+
+    ssize_t on_splice(int fd_in, loff_t *off_in, int fd_out,
+                              loff_t *off_out, size_t len, unsigned int flags) override
+    {
+        ARKI_UTILS_TEST_INFO(info);
+        info << tag();
+        using arki::utils::tests::actual;
+        wassert(actual(fd_in) == this->fd_in);
+        wassert_false(off_in);
+        wassert(actual(fd_out) == this->fd_out);
+        wassert_false(off_out);
+        wassert(actual(len) == this->len);
+        wassert(actual(flags) == this->flags);
+
+        errno = errno_val;
+        return res;
+    }
+};
+
 struct ExpectedSyscalls : public stream::MockConcreteSyscalls
 {
     std::vector<ExpectedSyscallMatch*> expected;
@@ -296,6 +321,8 @@ struct ExpectedSyscalls : public stream::MockConcreteSyscalls
                       loff_t *off_out, size_t len, unsigned int flags);
     int on_poll(struct pollfd *fds, nfds_t nfds, int timeout);
     ssize_t on_pread(int fd, void *buf, size_t count, off_t offset);
+
+    void check_not_called();
 };
 
 

@@ -117,6 +117,12 @@ std::unique_ptr<ExpectedSyscallMatch> ExpectedSyscalls::pop(const char* name)
     return res;
 }
 
+void ExpectedSyscalls::check_not_called()
+{
+    if (!expected.empty())
+        wfail_test("function unexpectedly stopped before syscall " + expected.front()->tag());
+}
+
 ssize_t ExpectedSyscalls::on_read(int fd, void *buf, size_t count)
 {
     return pop("read")->on_read(fd, buf, count);
@@ -438,98 +444,6 @@ add_method("large_send_file_segment", [&] {
 
     wassert(actual(f->streamed_contents().size()) == buf.size());
 });
-
-}
-
-namespace {
-
-struct ClosedPipe
-{
-    int pipefds[2];
-    std::shared_ptr<sys::NamedFileDescriptor> fd;
-
-    ClosedPipe()
-    {
-        if (pipe(pipefds) < 0)
-            throw std::system_error(errno, std::system_category(), "cannot create new pipe");
-        // Close read end of the pipe
-        close(pipefds[0]);
-
-        fd = std::make_shared<sys::NamedFileDescriptor>(pipefds[1], "write end of pipe");
-    }
-};
-
-}
-
-void ConcreteStreamTests::register_tests() {
-using namespace arki::tests;
-StreamTests::register_tests();
-
-add_method("closed_pipe_send_buffer", [&] {
-    ClosedPipe cp;
-    auto f = make_concrete_fixture(cp.fd);
-    wassert(actual(f->send_buffer("A", 1)) == stream::SendResult(stream::SendResult::SEND_PIPE_EOF_DEST));
-});
-
-add_method("closed_pipe_send_line", [&] {
-    ClosedPipe cp;
-    auto f = make_concrete_fixture(cp.fd);
-    wassert(actual(f->send_line("A", 1)) == stream::SendResult(stream::SendResult::SEND_PIPE_EOF_DEST));
-});
-
-add_method("closed_pipe_send_file_segment", [&] {
-    ClosedPipe cp;
-    auto f = make_concrete_fixture(cp.fd);
-
-    sys::Tempfile tf;
-    tf.write_all_or_retry("test", 4);
-    wassert(actual(f->send_file_segment(tf, 1, 1)) == stream::SendResult(stream::SendResult::SEND_PIPE_EOF_DEST));
-});
-
-add_method("read_eof", [&] {
-    struct ReadEof : DisableSendfileSplice
-    {
-        size_t read_pos = 0;
-        size_t available;
-
-        ReadEof(size_t lead_size=0)
-            : available(lead_size)
-        {
-            ConcreteTestingBackend::read = [this](int fd, void *buf, size_t count) -> ssize_t {
-                if (read_pos < available) {
-                    count = std::min(count, available - read_pos);
-                    memset(buf, 0, count);
-                    read_pos += count;
-                    return count;
-                } else {
-                    return 0;
-                }
-            };
-            ConcreteTestingBackend::pread = [this](int fd, void *buf, size_t count, off_t offset) -> ssize_t {
-                if ((size_t)offset < available) {
-                    count = std::min(count, available - offset);
-                    memset(buf, 0, count);
-                    return count;
-                } else {
-                    return 0;
-                }
-            };
-        }
-    };
-
-    {
-        ReadEof reof(10);
-        auto f = make_concrete_fixture(std::make_shared<sys::File>("/dev/null", O_WRONLY));
-        sys::NamedFileDescriptor input(0, "mock input");
-        wassert(actual(f->send_file_segment(input, 5, 15)) == stream::SendResult(stream::SendResult::SEND_PIPE_EOF_SOURCE));
-    }
-});
-
-
-// stream::SendResult send_line(const void* data, size_t size);
-// stream::SendResult send_buffer(const void* data, size_t size);
-// stream::SendResult send_file_segment(arki::core::NamedFileDescriptor& fd, off_t offset, size_t size);
-// stream::SendResult send_from_pipe(int fd);
 
 }
 

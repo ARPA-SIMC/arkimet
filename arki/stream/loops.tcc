@@ -108,7 +108,7 @@ struct FilteredBase : public Sender
 
         bool done = to_output.on_poll(this->result);
 
-        if (this->pollinfo_stderr.revents & POLLOUT)
+        if (this->pollinfo_stderr.revents & POLLIN)
         {
             this->transfer_available_stderr();
         }
