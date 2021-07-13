@@ -366,7 +366,6 @@ tests_arki_test_SOURCES += \
 		stream/base-test.cc \
 		stream/filter-test.cc \
 		stream/concrete-test.cc \
-		stream/concrete-timeout-test.cc \
 		stream/discard-test.cc \
 		stream/buffer-test.cc \
 		stream/tests.cc \
