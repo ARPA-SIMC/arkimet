@@ -44,12 +44,14 @@ struct ConcreteStreamOutputBase: public BaseStreamOutput
     SendResult send_file_segment(arki::core::NamedFileDescriptor& fd, off_t offset, size_t size) override;
 };
 
-class ConcreteStreamOutput: public ConcreteStreamOutputBase<ConcreteLinuxBackend>
+class ConcreteStreamOutput: public ConcreteStreamOutputBase<LinuxBackend>
 {
 public:
     using ConcreteStreamOutputBase::ConcreteStreamOutputBase;
 };
 
+extern template class ConcreteStreamOutputBase<LinuxBackend>;
+extern template class ConcreteStreamOutputBase<TestingBackend>;
 
 }
 }

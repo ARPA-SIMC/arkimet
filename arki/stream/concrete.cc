@@ -3,8 +3,8 @@
 namespace arki {
 namespace stream {
 
-template class ConcreteStreamOutputBase<ConcreteLinuxBackend>;
-template class ConcreteStreamOutputBase<ConcreteTestingBackend>;
+template class ConcreteStreamOutputBase<LinuxBackend>;
+template class ConcreteStreamOutputBase<TestingBackend>;
 
 }
 }

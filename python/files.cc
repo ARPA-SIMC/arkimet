@@ -1,6 +1,6 @@
 #include "files.h"
 #include "utils/values.h"
-#include "arki/stream/base.h"
+#include "arki/stream/abstract.h"
 #include "arki/runtime.h"
 #include "common.h"
 #include <string>
@@ -29,7 +29,7 @@ static std::string get_fd_name(PyObject* o)
     throw PythonException();
 }
 
-class PythonStreamOutput : public arki::stream::AbstractStreamOutput
+class PythonStreamOutput : public arki::stream::AbstractStreamOutput<arki::stream::LinuxBackend>
 {
 protected:
     PyObject* o;

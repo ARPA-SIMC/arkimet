@@ -50,7 +50,7 @@ struct ConcreteTestFixture : public stream::StreamTestsFixture
     {
         set_output(
                 std::unique_ptr<arki::StreamOutput>(
-                    new stream::ConcreteStreamOutputBase<stream::ConcreteTestingBackend>(out, get_timeout_ms())));
+                    new stream::ConcreteStreamOutputBase<stream::TestingBackend>(out, get_timeout_ms())));
     }
 
     static int get_timeout_ms() { return -1; }
@@ -72,7 +72,7 @@ struct ConcreteTimeoutTestFixture : public stream::StreamTestsFixture
     {
         set_output(
                 std::unique_ptr<arki::StreamOutput>(
-                    new stream::ConcreteStreamOutputBase<stream::ConcreteTestingBackend>(out, get_timeout_ms())));
+                    new stream::ConcreteStreamOutputBase<stream::TestingBackend>(out, get_timeout_ms())));
     }
 
     static int get_timeout_ms() { return 1000; }
@@ -127,6 +127,7 @@ Tests<ConcreteTimeoutFallbackTestFixture> test4("arki_stream_concrete_timeout_fa
 
 template<typename Fixture>
 void Tests<Fixture>::register_tests() {
+stream::StreamTests::register_tests();
 
 add_method("closed_pipe_send_buffer", [&] {
     ClosedPipe cp;
@@ -158,7 +159,7 @@ add_method("read_eof", [&] {
         ReadEof(size_t lead_size=0)
             : available(lead_size)
         {
-            stream::ConcreteTestingBackend::read = [this](int fd, void *buf, size_t count) -> ssize_t {
+            stream::TestingBackend::read = [this](int fd, void *buf, size_t count) -> ssize_t {
                 if (read_pos < available) {
                     count = std::min(count, available - read_pos);
                     memset(buf, 0, count);
@@ -168,7 +169,7 @@ add_method("read_eof", [&] {
                     return 0;
                 }
             };
-            stream::ConcreteTestingBackend::pread = [this](int fd, void *buf, size_t count, off_t offset) -> ssize_t {
+            stream::TestingBackend::pread = [this](int fd, void *buf, size_t count, off_t offset) -> ssize_t {
                 if ((size_t)offset < available) {
                     count = std::min(count, available - offset);
                     memset(buf, 0, count);

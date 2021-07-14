@@ -56,45 +56,6 @@ struct BaseStreamOutput : public StreamOutput
 };
 
 
-struct AbstractStreamOutput : public BaseStreamOutput
-{
-    /**
-     * Low-level function to write the given buffer to the output.
-     *
-     * This does not do filtering and does not trigger data start callbacks: it
-     * just writes the data out to the final destination
-     */
-    virtual stream::SendResult _write_output_buffer(const void* data, size_t size) = 0;
-
-    /**
-     * Low-level function to write the given buffer, plus a newline, to the
-     * output.
-     *
-     * This does not do filtering and does not trigger data start callbacks: it
-     * just writes the data out to the final destination.
-     *
-     * By default it is implemented with calls to _write_output_buffer
-     */
-    virtual stream::SendResult _write_output_line(const void* data, size_t size);
-
-    template<template<typename> class ToPipe, typename... Args>
-    SendResult _send_from_pipe(Args&&... args);
-
-    void flush_filter_output() override;
-
-    using BaseStreamOutput::BaseStreamOutput;
-
-    // Generic implementation based on _write_output_buffer
-    SendResult send_buffer(const void* data, size_t size) override;
-
-    // Generic implementation based on _write_output_line
-    SendResult send_line(const void* data, size_t size) override;
-
-    // Generic implementation based on _write_output_buffer
-    SendResult send_file_segment(arki::core::NamedFileDescriptor& fd, off_t offset, size_t size) override;
-};
-
-
 struct TransferBuffer
 {
     constexpr static size_t size = 4096 * 8;
@@ -128,7 +89,7 @@ struct TransferBuffer
 /**
  * Linux versions of syscalls to use for concrete implementations.
  */
-struct ConcreteLinuxBackend
+struct LinuxBackend
 {
     static ssize_t (*read)(int fd, void *buf, size_t count);
     static ssize_t (*write)(int fd, const void *buf, size_t count);
@@ -144,7 +105,7 @@ struct ConcreteLinuxBackend
 /**
  * Mockable versions of syscalls to use for testing concrete implementations.
  */
-struct ConcreteTestingBackend
+struct TestingBackend
 {
     static std::function<ssize_t(int fd, void *buf, size_t count)> read;
     static std::function<ssize_t(int fd, const void *buf, size_t count)> write;

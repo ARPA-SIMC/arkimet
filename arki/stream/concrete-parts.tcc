@@ -5,6 +5,7 @@
 #include "arki/utils/sys.h"
 #include "filter.h"
 #include "loops.h"
+#include "abstract.h"
 #include "concrete.h"
 #include <poll.h>
 #include <string>
@@ -580,7 +581,7 @@ struct FromFilterAbstract : public FromFilter<Backend>
 {
     TransferBuffer buffer;
 
-    FromFilterAbstract(AbstractStreamOutput& stream) : FromFilter<Backend>(stream) { buffer.allocate(); }
+    FromFilterAbstract(AbstractStreamOutput<Backend>& stream) : FromFilter<Backend>(stream) { buffer.allocate(); }
     FromFilterAbstract(const FromFilterAbstract&) = default;
     FromFilterAbstract(FromFilterAbstract&&) = default;
 
@@ -605,7 +606,7 @@ struct FromFilterAbstract : public FromFilter<Backend>
         }
         else
         {
-            AbstractStreamOutput* stream = reinterpret_cast<AbstractStreamOutput*>(&(this->stream));
+            AbstractStreamOutput<Backend>* stream = reinterpret_cast<AbstractStreamOutput<Backend>*>(&(this->stream));
             this->check_data_start_callback();
             stream->_write_output_buffer(buffer.buf, res);
             this->stream.filter_process->size_stdout += res;

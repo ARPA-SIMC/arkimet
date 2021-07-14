@@ -26,6 +26,8 @@ nobase_dist_arkiinclude_HEADERS = \
 		stream/base.h \
 		stream/filter.h \
 		stream/loops.tcc \
+		stream/abstract.h \
+		stream/abstract.tcc \
 		stream/concrete.h \
 		stream/concrete.tcc \
 		stream/concrete-parts.tcc \
@@ -242,6 +244,7 @@ libarkimet_la_SOURCES += \
 		stream.cc \
 		stream/base.cc \
 		stream/filter.cc \
+		stream/abstract.cc \
 		stream/concrete.cc \
 		stream/discard.cc \
 		stream/buffer.cc \
@@ -365,6 +368,7 @@ tests_arki_test_SOURCES += \
 		stream-test.cc \
 		stream/base-test.cc \
 		stream/filter-test.cc \
+		stream/abstract-test.cc \
 		stream/concrete-test.cc \
 		stream/discard-test.cc \
 		stream/buffer-test.cc \

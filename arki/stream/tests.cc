@@ -44,34 +44,34 @@ stream::SendResult StreamTestsFixture::send_buffer(const void* data, size_t size
 }
 
 MockConcreteSyscalls::MockConcreteSyscalls()
-    : orig_read(ConcreteTestingBackend::read),
-      orig_write(ConcreteTestingBackend::write),
-      orig_writev(ConcreteTestingBackend::writev),
-      orig_sendfile(ConcreteTestingBackend::sendfile),
-      orig_splice(ConcreteTestingBackend::splice),
-      orig_poll(ConcreteTestingBackend::poll),
-      orig_pread(ConcreteTestingBackend::pread)
+    : orig_read(TestingBackend::read),
+      orig_write(TestingBackend::write),
+      orig_writev(TestingBackend::writev),
+      orig_sendfile(TestingBackend::sendfile),
+      orig_splice(TestingBackend::splice),
+      orig_poll(TestingBackend::poll),
+      orig_pread(TestingBackend::pread)
 {
 }
 
 MockConcreteSyscalls::~MockConcreteSyscalls()
 {
-    ConcreteTestingBackend::read = orig_read;
-    ConcreteTestingBackend::write = orig_write;
-    ConcreteTestingBackend::writev = orig_writev;
-    ConcreteTestingBackend::sendfile = orig_sendfile;
-    ConcreteTestingBackend::splice = orig_splice;
-    ConcreteTestingBackend::poll = orig_poll;
-    ConcreteTestingBackend::pread = orig_pread;
+    TestingBackend::read = orig_read;
+    TestingBackend::write = orig_write;
+    TestingBackend::writev = orig_writev;
+    TestingBackend::sendfile = orig_sendfile;
+    TestingBackend::splice = orig_splice;
+    TestingBackend::poll = orig_poll;
+    TestingBackend::pread = orig_pread;
 }
 
 DisableSendfileSplice::DisableSendfileSplice()
 {
-    ConcreteTestingBackend::sendfile = [](int out_fd, int in_fd, off_t *offset, size_t count) -> ssize_t {
+    TestingBackend::sendfile = [](int out_fd, int in_fd, off_t *offset, size_t count) -> ssize_t {
         errno = EINVAL;
         return -1;
     };
-    ConcreteTestingBackend::splice = [](int fd_in, loff_t *off_in, int fd_out,
+    TestingBackend::splice = [](int fd_in, loff_t *off_in, int fd_out,
                                         loff_t *off_out, size_t len, unsigned int flags) -> ssize_t {
         errno = EINVAL;
         return -1;
@@ -80,14 +80,14 @@ DisableSendfileSplice::DisableSendfileSplice()
 
 ExpectedSyscalls::ExpectedSyscalls(std::vector<ExpectedSyscallMatch*> expected) : expected(expected)
 {
-    ConcreteTestingBackend::read = [this](int fd, void *buf, size_t count) { return on_read(fd, buf, count); };
-    ConcreteTestingBackend::write = [this](int fd, const void *buf, size_t count) { return on_write(fd, buf, count); };
-    ConcreteTestingBackend::writev = [this](int fd, const struct iovec *iov, int iovcnt) { return on_writev(fd, iov, iovcnt); };
-    ConcreteTestingBackend::sendfile = [this](int out_fd, int in_fd, off_t *offset, size_t count) { return on_sendfile(out_fd, in_fd, offset, count); };
-    ConcreteTestingBackend::splice = [this](int fd_in, loff_t *off_in, int fd_out, 
-                      loff_t *off_out, size_t len, unsigned int flags) { return on_splice(fd_in, off_in, fd_out, off_out, len, flags); };
-    ConcreteTestingBackend::poll = [this](struct pollfd *fds, nfds_t nfds, int timeout) { return on_poll(fds, nfds, timeout); };
-    ConcreteTestingBackend::pread = [this](int fd, void *buf, size_t count, off_t offset) { return on_pread(fd, buf, count, offset); };
+    TestingBackend::read = [this](int fd, void *buf, size_t count) { return on_read(fd, buf, count); };
+    TestingBackend::write = [this](int fd, const void *buf, size_t count) { return on_write(fd, buf, count); };
+    TestingBackend::writev = [this](int fd, const struct iovec *iov, int iovcnt) { return on_writev(fd, iov, iovcnt); };
+    TestingBackend::sendfile = [this](int out_fd, int in_fd, off_t *offset, size_t count) { return on_sendfile(out_fd, in_fd, offset, count); };
+    TestingBackend::splice = [this](int fd_in, loff_t *off_in, int fd_out,
+              loff_t *off_out, size_t len, unsigned int flags) { return on_splice(fd_in, off_in, fd_out, off_out, len, flags); };
+    TestingBackend::poll = [this](struct pollfd *fds, nfds_t nfds, int timeout) { return on_poll(fds, nfds, timeout); };
+    TestingBackend::pread = [this](int fd, void *buf, size_t count, off_t offset) { return on_pread(fd, buf, count, offset); };
 
     for (size_t i = 0; i < expected.size(); ++i)
         expected[i]->index = i + 1;

@@ -1,14 +1,14 @@
 #ifndef ARKI_STREAM_BUFFER_H
 #define ARKI_STREAM_BUFFER_H
 
-#include <arki/stream/base.h>
+#include <arki/stream/abstract.h>
 #include <arki/core/fwd.h>
 #include <poll.h>
 
 namespace arki {
 namespace stream {
 
-class BufferStreamOutput: public AbstractStreamOutput
+class BufferStreamOutput: public AbstractStreamOutput<LinuxBackend>
 {
     std::vector<uint8_t>& out;
 
