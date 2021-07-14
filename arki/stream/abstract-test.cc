@@ -81,6 +81,38 @@ add_method("syscalls_buffer_filtered", [this] {
     wassert(actual(writer.streamed) == "1234");
 });
 
+add_method("syscalls_line_filtered", [this] {
+    TestStream writer;
+    auto filter = writer.start_filter({"cat"});
+
+    // No timeout
+    {
+        stream::ExpectedSyscalls expected({
+            new stream::ExpectedPoll(filter->cmd.get_stdin(), POLLOUT, -1, POLLOUT, 1),
+            new stream::ExpectedWritev(filter->cmd.get_stdin(), {"1234", "\n"}, 5),
+        });
+        wassert(actual(writer.send_line("1234", 4)) == stream::SendResult());
+        wassert(expected.check_not_called());
+    }
+
+    {
+        stream::ExpectedSyscalls expected({
+            new stream::ExpectedPoll(filter->cmd.get_stdout(), POLLIN, -1, POLLIN, 1),
+            new stream::ExpectedRead(filter->cmd.get_stdout(), "1234\n", 32768, 5),
+            new stream::ExpectedPoll(filter->cmd.get_stdout(), POLLIN, -1, POLLHUP, 1),
+            new stream::ExpectedPoll(filter->cmd.get_stderr(), POLLIN, -1, POLLIN, 1),
+            new stream::ExpectedRead(filter->cmd.get_stderr(), "FAIL", 32768, 4),
+            new stream::ExpectedPoll(filter->cmd.get_stderr(), POLLIN, -1, POLLHUP, 1),
+        });
+        auto flt = wcallchecked(writer.stop_filter());
+        wassert(actual(flt->size_stdin) == 5u);
+        wassert(actual(flt->size_stdout) == 5u);
+        wassert(actual(flt->errors.str()) == "FAIL");
+        wassert(actual(flt->cmd.raw_returncode()) == 0);
+        wassert(expected.check_not_called());
+    }
+});
+
 }
 
 }

@@ -293,58 +293,6 @@ add_method("syscalls_buffer_filtered", [this] {
     }
 });
 
-#if 0
-    {
-        stream::ExpectedSyscalls expected({
-            new stream::ExpectedPoll(*outfile, POLLOUT, 1, POLLOUT, 1),
-            new stream::ExpectedWrite(*outfile, "1234", 2),
-            new stream::ExpectedPoll(*outfile, POLLOUT, 1, POLLERR, 1),
-        });
-        wassert(actual(writer->send_buffer("1234", 4)) == stream::SendResult(stream::SendResult::SEND_PIPE_EOF_DEST));
-    }
-
-    {
-        stream::ExpectedSyscalls expected({
-            new stream::ExpectedPoll(*outfile, POLLOUT, 1, POLLOUT, 1),
-            new stream::ExpectedWrite(*outfile, "1234", 2),
-            new stream::ExpectedPoll(*outfile, POLLOUT, 1, POLLHUP, 1),
-        });
-        wassert(actual(writer->send_buffer("1234", 4)) == stream::SendResult(stream::SendResult::SEND_PIPE_EOF_DEST));
-    }
-
-    {
-        stream::ExpectedSyscalls expected({
-            new stream::ExpectedPoll(*outfile, POLLOUT, 1, POLLOUT, 1),
-            new stream::ExpectedWrite(*outfile, "1234", -1, EAGAIN),
-            new stream::ExpectedPoll(*outfile, POLLOUT, 1, POLLOUT, 1),
-            new stream::ExpectedWrite(*outfile, "1234", 4),
-        });
-        wassert(actual(writer->send_buffer("1234", 4)) == stream::SendResult());
-    }
-
-    {
-        stream::ExpectedSyscalls expected({
-            new stream::ExpectedPoll(*outfile, POLLOUT, 1, POLLOUT, 1),
-            new stream::ExpectedWrite(*outfile, "1234", 2),
-            new stream::ExpectedPoll(*outfile, POLLOUT, 1, POLLOUT, 1),
-            new stream::ExpectedWrite(*outfile, "34", -1, EAGAIN),
-            new stream::ExpectedPoll(*outfile, POLLOUT, 1, POLLOUT, 1),
-            new stream::ExpectedWrite(*outfile, "34", 2),
-        });
-        wassert(actual(writer->send_buffer("1234", 4)) == stream::SendResult());
-    }
-
-    // Timeout
-    {
-        stream::ExpectedSyscalls expected({
-            new stream::ExpectedPoll(*outfile, POLLOUT, 1, POLLOUT, 1),
-            new stream::ExpectedWrite(*outfile, "1234", 2),
-            new stream::ExpectedPoll(*outfile, POLLOUT, 1, 0, 0),
-        });
-        wassert_throws(stream::TimedOut, writer->send_buffer("1234", 4));
-    }
-#endif
-
 add_method("syscalls_line", [this] {
     auto outfile = std::make_shared<sys::File>("/dev/null", O_WRONLY);
     auto writer = make_concrete_fixture(outfile);
@@ -457,6 +405,41 @@ add_method("syscalls_line", [this] {
         wassert(expected.check_not_called());
     }
 });
+
+add_method("syscalls_line_filtered", [this] {
+    auto outfile = std::make_shared<sys::File>("/dev/null", O_WRONLY);
+    auto writer = make_concrete_fixture(outfile);
+    auto filter = writer->stream().start_filter({"cat"});
+
+    // No timeout
+    {
+        stream::ExpectedSyscalls expected({
+            new stream::ExpectedPoll(filter->cmd.get_stdin(), POLLOUT, Fixture::get_timeout_ms(), POLLOUT, 1),
+            new stream::ExpectedWritev(filter->cmd.get_stdin(), {"1234", "\n"}, 5),
+        });
+        wassert(actual(writer->send_line("1234", 4)) == stream::SendResult());
+        wassert(expected.check_not_called());
+    }
+
+    {
+        stream::ExpectedSyscalls expected({
+            new stream::ExpectedPoll(filter->cmd.get_stdout(), POLLIN, Fixture::get_timeout_ms(), POLLIN, 1),
+            new stream::ExpectedPoll(*outfile, POLLOUT, Fixture::get_timeout_ms(), POLLOUT, 1),
+            new stream::ExpectedSplice(filter->cmd.get_stdout(), *outfile, 4194304, SPLICE_F_MORE | SPLICE_F_NONBLOCK, 5),
+            new stream::ExpectedPoll(filter->cmd.get_stdout(), POLLIN, Fixture::get_timeout_ms(), POLLHUP, 1),
+            new stream::ExpectedPoll(filter->cmd.get_stderr(), POLLIN, Fixture::get_timeout_ms(), POLLIN, 1),
+            new stream::ExpectedRead(filter->cmd.get_stderr(), "FAIL", 32768, 4),
+            new stream::ExpectedPoll(filter->cmd.get_stderr(), POLLIN, Fixture::get_timeout_ms(), POLLHUP, 1),
+        });
+        auto flt = wcallchecked(writer->stream().stop_filter());
+        wassert(actual(flt->size_stdin) == 5u);
+        wassert(actual(flt->size_stdout) == 5u);
+        wassert(actual(flt->errors.str()) == "FAIL");
+        wassert(actual(flt->cmd.raw_returncode()) == 0);
+        wassert(expected.check_not_called());
+    }
+});
+
 
 add_method("syscalls_file", [this] {
     auto outfile = std::make_shared<sys::File>("/dev/null", O_WRONLY);
