@@ -325,6 +325,24 @@ add_method("send_line_filtered_stderr", [&] {
     wassert(actual(f->streamed_contents()) == "testline\n");
 });
 
+add_method("send_line_filtered_exit", [&] {
+    auto f = make_fixture();
+
+    wassert(actual(f->send_line("testline", 8)) == stream::SendResult());
+
+    {
+        f->stream().start_filter({"postproc/exit"});
+        wassert(actual(f->send_line("testline1", 9)) == stream::SendResult());
+        auto flt = f->stream().stop_filter();
+        wassert(actual(flt->size_stdin) == 10u);
+        wassert(actual(flt->size_stdout) == 0lu);
+        wassert(actual(flt->errors.str()) == "");
+        wassert(actual(flt->cmd.returncode()) == 0);
+    }
+
+    wassert(actual(f->streamed_contents()) == "testline\n");
+});
+
 add_method("send_buffer", [&] {
     auto f = make_fixture();
 
@@ -350,6 +368,43 @@ add_method("send_buffer_filtered", [&] {
     }
 
     wassert(actual(f->streamed_contents()) == "testbuf4\n");
+});
+
+add_method("send_buffer_filtered_stderr", [&] {
+    auto f = make_fixture();
+
+    wassert(actual(f->send_buffer("testbuf", 7)) == stream::SendResult());
+
+    {
+        f->stream().start_filter({"postproc/error"});
+        wassert(actual(f->send_buffer("testbuf", 4)) == stream::SendResult());
+        auto flt = f->stream().stop_filter();
+        wassert(actual(flt->size_stdin) == 4u);
+        wassert(actual(flt->size_stdout) == 0lu);
+        wassert(actual(flt->errors.str()) == "FAIL\n");
+        wassert(actual(flt->cmd.returncode()) == 1);
+        wassert_throws(std::runtime_error, flt->check_for_errors());
+    }
+
+    wassert(actual(f->streamed_contents()) == "testbuf");
+});
+
+add_method("send_buffer_filtered_exit", [&] {
+    auto f = make_fixture();
+
+    wassert(actual(f->send_buffer("testbuf", 7)) == stream::SendResult());
+
+    {
+        f->stream().start_filter({"postproc/exit"});
+        wassert(actual(f->send_buffer("testbuf", 4)) == stream::SendResult());
+        auto flt = f->stream().stop_filter();
+        wassert(actual(flt->size_stdin) == 4u);
+        wassert(actual(flt->size_stdout) == 0lu);
+        wassert(actual(flt->errors.str()) == "");
+        wassert(actual(flt->cmd.returncode()) == 0);
+    }
+
+    wassert(actual(f->streamed_contents()) == "testbuf");
 });
 
 add_method("send_file_segment", [&] {
@@ -384,6 +439,51 @@ add_method("send_file_segment_filtered", [&] {
     }
 
     wassert(actual(f->streamed_contents()) == "estfil5\n");
+});
+
+add_method("send_file_segment_filtered_stderr", [&] {
+    auto f = make_fixture();
+
+    sys::Tempfile tf1;
+    tf1.write_all_or_throw(std::string("testfile"));
+
+    wassert(actual(f->send_file_segment(tf1, 1, 6)) == stream::SendResult());
+
+    {
+        f->stream().start_filter({"postproc/error"});
+        wassert(actual(f->send_file_segment(tf1, 5, 1)) == stream::SendResult());
+        wassert(actual(f->send_file_segment(tf1, 0, 4)) == stream::SendResult());
+        auto flt = f->stream().stop_filter();
+        wassert(actual(flt->size_stdin) == 5u);
+        wassert(actual(flt->size_stdout) == 0lu);
+        wassert(actual(flt->errors.str()) == "FAIL\n");
+        wassert(actual(flt->cmd.returncode()) == 1);
+        wassert_throws(std::runtime_error, flt->check_for_errors());
+    }
+
+    wassert(actual(f->streamed_contents()) == "estfil");
+});
+
+add_method("send_file_segment_filtered_exit", [&] {
+    auto f = make_fixture();
+
+    sys::Tempfile tf1;
+    tf1.write_all_or_throw(std::string("testfile"));
+
+    wassert(actual(f->send_file_segment(tf1, 1, 6)) == stream::SendResult());
+
+    {
+        f->stream().start_filter({"postproc/exit"});
+        wassert(actual(f->send_file_segment(tf1, 5, 1)) == stream::SendResult());
+        wassert(actual(f->send_file_segment(tf1, 0, 4)) == stream::SendResult());
+        auto flt = f->stream().stop_filter();
+        wassert(actual(flt->size_stdin) == 5u);
+        wassert(actual(flt->size_stdout) == 0lu);
+        wassert(actual(flt->errors.str()) == "");
+        wassert(actual(flt->cmd.returncode()) == 0);
+    }
+
+    wassert(actual(f->streamed_contents()) == "estfil");
 });
 
 add_method("data_start_send_line", [&] {
