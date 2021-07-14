@@ -34,7 +34,7 @@ struct SenderDirect: public Sender
         {
             this->pollinfo.revents = 0;
             int res = Backend::poll(&this->pollinfo, 1, this->stream.timeout_ms);
-            // fprintf(stderr, "SenderDirect.POLL: %d %d:%d\n", res, this->pollinfo.fd, this->pollinfo.revents);
+            trace_streaming("SenderDirect.POLL: %d %d:%d\n", res, this->pollinfo.fd, this->pollinfo.revents);
             if (res < 0)
                 throw std::system_error(errno, std::system_category(), "poll failed on " + out_fd.name());
             if (res == 0)
@@ -150,7 +150,7 @@ struct FilterLoop : public Sender
             if (res == 0)
                 throw TimedOut("streaming operations timed out");
 
-            fprintf(stderr, "POLL: fi:%d:%x→%x fo:%d:%x→%x fe:%d:%x→%x de:%d:%x→%x\n",
+            trace_streaming("POLL: fi:%d:%x→%x fo:%d:%x→%x fe:%d:%x→%x de:%d:%x→%x\n",
                     pollinfo[0].fd, (int)pollinfo[0].events, (int)pollinfo[0].revents,
                     pollinfo[1].fd, (int)pollinfo[1].events, (int)pollinfo[1].revents,
                     pollinfo[2].fd, (int)pollinfo[2].events, (int)pollinfo[2].revents,

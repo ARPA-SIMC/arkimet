@@ -8,6 +8,13 @@
 namespace arki {
 namespace stream {
 
+#undef TRACE_STREAMING
+#ifdef TRACE_STREAMING
+#define trace_streaming(...) fprintf(stderr, __VA_ARGS__)
+#else
+#define trace_streaming(...) do {} while(0)
+#endif
+
 struct FilterProcess;
 
 struct BaseStreamOutput : public StreamOutput
