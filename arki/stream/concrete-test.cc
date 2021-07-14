@@ -440,7 +440,6 @@ add_method("syscalls_line_filtered", [this] {
     }
 });
 
-
 add_method("syscalls_file", [this] {
     auto outfile = std::make_shared<sys::File>("/dev/null", O_WRONLY);
     auto writer = make_concrete_fixture(outfile);
@@ -527,6 +526,42 @@ add_method("syscalls_file", [this] {
 //        tf1.lseek(0);
 //        wassert_throws(stream::TimedOut, writer->send_from_pipe(tf1));
 //    }
+});
+
+add_method("syscalls_file_filtered", [this] {
+    auto outfile = std::make_shared<sys::File>("/dev/null", O_WRONLY);
+    auto writer = make_concrete_fixture(outfile);
+    auto filter = writer->stream().start_filter({"cat"});
+    sys::Tempfile tf;
+    tf.write_all_or_throw(std::string("testfile"));
+
+    // No timeout
+    {
+        stream::ExpectedSyscalls expected({
+            new stream::ExpectedPoll(filter->cmd.get_stdin(), POLLOUT, Fixture::get_timeout_ms(), POLLOUT, 1),
+            new stream::ExpectedSendfile(filter->cmd.get_stdin(), tf, 1, 4, 5, 4),
+        });
+        wassert(actual(writer->send_file_segment(tf, 1, 4)) == stream::SendResult());
+        wassert(expected.check_not_called());
+    }
+
+    {
+        stream::ExpectedSyscalls expected({
+            new stream::ExpectedPoll(filter->cmd.get_stdout(), POLLIN, Fixture::get_timeout_ms(), POLLIN, 1),
+            new stream::ExpectedPoll(*outfile, POLLOUT, Fixture::get_timeout_ms(), POLLOUT, 1),
+            new stream::ExpectedSplice(filter->cmd.get_stdout(), *outfile, 4194304, SPLICE_F_MORE | SPLICE_F_NONBLOCK, 4),
+            new stream::ExpectedPoll(filter->cmd.get_stdout(), POLLIN, Fixture::get_timeout_ms(), POLLHUP, 1),
+            new stream::ExpectedPoll(filter->cmd.get_stderr(), POLLIN, Fixture::get_timeout_ms(), POLLIN, 1),
+            new stream::ExpectedRead(filter->cmd.get_stderr(), "FAIL", 32768, 4),
+            new stream::ExpectedPoll(filter->cmd.get_stderr(), POLLIN, Fixture::get_timeout_ms(), POLLHUP, 1),
+        });
+        auto flt = wcallchecked(writer->stream().stop_filter());
+        wassert(actual(flt->size_stdin) == 4u);
+        wassert(actual(flt->size_stdout) == 4u);
+        wassert(actual(flt->errors.str()) == "FAIL");
+        wassert(actual(flt->cmd.raw_returncode()) == 0);
+        wassert(expected.check_not_called());
+    }
 });
 
 }
