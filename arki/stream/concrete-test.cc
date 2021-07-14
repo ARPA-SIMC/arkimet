@@ -285,6 +285,44 @@ add_method("syscalls_buffer_filtered", [this] {
             new stream::ExpectedPoll(filter->cmd.get_stderr(), POLLIN, Fixture::get_timeout_ms(), POLLHUP, 1),
         });
         auto flt = wcallchecked(writer->stream().stop_filter());
+        wassert(expected.check_not_called());
+        wassert(actual(flt->size_stdin) == 4u);
+        wassert(actual(flt->size_stdout) == 4u);
+        wassert(actual(flt->errors.str()) == "FAIL");
+        wassert(actual(flt->cmd.raw_returncode()) == 0);
+    }
+});
+
+add_method("syscalls_buffer_filtered_readwrite", [this] {
+    auto outfile = std::make_shared<sys::File>("/dev/null", O_WRONLY);
+    auto writer = make_concrete_fixture(outfile);
+    auto filter = writer->stream().start_filter({"cat"});
+
+    // No timeout
+    {
+        stream::ExpectedSyscalls expected({
+            new stream::ExpectedPoll(filter->cmd.get_stdin(), POLLOUT, Fixture::get_timeout_ms(), POLLOUT, 1),
+            new stream::ExpectedWrite(filter->cmd.get_stdin(), "1234", 4),
+        });
+        wassert(actual(writer->send_buffer("1234", 4)) == stream::SendResult());
+        wassert(expected.check_not_called());
+    }
+
+    {
+        stream::ExpectedSyscalls expected({
+            new stream::ExpectedPoll(filter->cmd.get_stdout(), POLLIN, Fixture::get_timeout_ms(), POLLIN, 1),
+            new stream::ExpectedPoll(*outfile, POLLOUT, Fixture::get_timeout_ms(), POLLOUT, 1),
+            new stream::ExpectedSplice(filter->cmd.get_stdout(), *outfile, 4194304, SPLICE_F_MORE | SPLICE_F_NONBLOCK, -1, EINVAL),
+            new stream::ExpectedPoll(filter->cmd.get_stdout(), POLLIN, Fixture::get_timeout_ms(), POLLIN, 1),
+            new stream::ExpectedRead(filter->cmd.get_stdout(), "1234", 32768, 4),
+            new stream::ExpectedPoll(filter->cmd.get_stdout(), POLLIN, Fixture::get_timeout_ms(), POLLHUP, 1),
+            new stream::ExpectedPoll(filter->cmd.get_stderr(), POLLIN, Fixture::get_timeout_ms(), POLLIN, 1),
+            new stream::ExpectedRead(filter->cmd.get_stderr(), "FAIL", 32768, 4),
+            new stream::ExpectedPoll(filter->cmd.get_stderr(), POLLIN, Fixture::get_timeout_ms(), POLLHUP, 1),
+            new stream::ExpectedPoll(*outfile, POLLOUT, Fixture::get_timeout_ms(), POLLOUT, 1),
+            new stream::ExpectedWrite(*outfile, "1234", 4, 4),
+        });
+        auto flt = wcallchecked(writer->stream().stop_filter());
         wassert(actual(flt->size_stdin) == 4u);
         wassert(actual(flt->size_stdout) == 4u);
         wassert(actual(flt->errors.str()) == "FAIL");

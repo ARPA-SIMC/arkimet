@@ -110,6 +110,7 @@ std::unique_ptr<ExpectedSyscallMatch> ExpectedSyscalls::pop(const char* name)
     }
     std::unique_ptr<ExpectedSyscallMatch> res(expected[0]);
     expected.erase(expected.begin());
+    fprintf(stderr, "ExpectedSyscalls::pop %s\n", res->tag().c_str());
     return res;
 }
 

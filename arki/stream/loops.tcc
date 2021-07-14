@@ -9,6 +9,9 @@
 namespace arki {
 namespace stream {
 
+/**
+ * Event loop for sending data to an output file descriptor, without filters
+ */
 template<typename Backend, typename ToOutput>
 struct SenderDirect: public Sender
 {
@@ -60,103 +63,67 @@ struct SenderDirect: public Sender
     }
 };
 
-template<typename Backend, typename ToOutput>
-struct FilteredBase : public Sender
+/**
+ * Base for event loops that manage a filter
+ */
+template<typename Backend, typename FromFilter>
+struct FilterLoop : public Sender
 {
-    ToOutput to_output;
-    TransferBuffer stderr_buffer;
-    pollfd& pollinfo_stdout;
-    pollfd& pollinfo_stderr;
-
-    FilteredBase(BaseStreamOutput& stream, ToOutput&& to_output, pollfd& pollinfo_stdout, pollfd& pollinfo_stderr)
-        : Sender(stream), to_output(std::move(to_output)), pollinfo_stdout(pollinfo_stdout), pollinfo_stderr(pollinfo_stderr)
-    {
-        pollinfo_stdout.fd = stream.filter_process->cmd.get_stdout();
-        pollinfo_stdout.events = POLLIN;
-        pollinfo_stderr.fd = stream.filter_process->cmd.get_stderr();
-        pollinfo_stderr.events = POLLIN;
-        stderr_buffer.allocate();
-    }
-
-    void transfer_available_stderr()
-    {
-        ssize_t res = Backend::read(pollinfo_stderr.fd, stderr_buffer, stderr_buffer.size);
-        // fprintf(stderr, "  read stderr → %d %.*s\n", (int)res, (int)res, (const char*)stderr_buffer);
-        if (res == 0)
-        {
-            stream.filter_process->cmd.close_stderr();
-            pollinfo_stderr.fd = -1;
-        }
-        else if (res < 0)
-        {
-            if (errno == EAGAIN || errno == EWOULDBLOCK)
-                return;
-            else
-                throw std::system_error(errno, std::system_category(), "cannot read data from pipe stderr");
-        }
-        else
-        {
-            stream.filter_process->errors.write(stderr_buffer, res);
-            if (stream.filter_process->errors.bad())
-                throw std::system_error(errno, std::system_category(), "cannot store filter stderr in memory buffer");
-        }
-    }
-
-    bool on_poll()
-    {
-        auto& cmd = stream.filter_process->cmd;
-
-        bool done = to_output.on_poll(this->result);
-
-        if (this->pollinfo_stderr.revents & POLLIN)
-        {
-            this->transfer_available_stderr();
-        }
-
-        if (this->pollinfo_stdout.revents & (POLLERR | POLLHUP))
-        {
-            // Filter stdout closed its endpoint
-            cmd.close_stdout();
-            pollinfo_stdout.fd = -1;
-        }
-
-        if (this->pollinfo_stderr.revents & (POLLERR | POLLHUP))
-        {
-            cmd.close_stderr();
-            pollinfo_stderr.fd = -1;
-        }
-
-        return done || (cmd.get_stdout() == -1 && cmd.get_stderr() == -1);
-    }
-};
-
-template<typename Backend, typename ToFilter, typename ToOutput>
-struct SenderFiltered : public FilteredBase<Backend, ToOutput>
-{
-    ToFilter to_filter;
+    std::vector<PollElement*> poll_elements;
+    /// pollfd structure described by the POLLINFO_* indices
     pollfd pollinfo[4];
 
-    SenderFiltered(BaseStreamOutput& stream, ToFilter&& to_filter, ToOutput&& to_output)
-        : FilteredBase<Backend, ToOutput>(stream, std::move(to_output), pollinfo[1], pollinfo[2]), to_filter(std::move(to_filter))
+    FilterLoop(BaseStreamOutput& stream, FromFilter&& from_filter)
+        : Sender(stream)
     {
-        pollinfo[0].fd = stream.filter_process->cmd.get_stdin();
-        pollinfo[0].events = POLLOUT;
-        pollinfo[3].fd = -1;
-        pollinfo[3].events = 0;
-        this->to_filter.set_output(core::NamedFileDescriptor(pollinfo[0].fd, "filter stdin"), pollinfo[0]);
-        this->to_output.sender_for_data_start_callback = this;
-        this->to_output.set_output(pollinfo[1], pollinfo[3]);
+        for (unsigned i = 0; i < 4; ++i)
+        {
+            pollinfo[i].fd = -1;
+            pollinfo[i].events = 0;
+        }
+
+        add_poll_element(new CollectFilterStderr<Backend>(stream));
+        FromFilter* el = new FromFilter(std::move(from_filter));
+        el->sender_for_data_start_callback = this;
+        add_poll_element(el);
+    }
+
+    virtual ~FilterLoop()
+    {
+        for (auto& el: poll_elements)
+            delete el;
+    }
+
+    void add_poll_element(PollElement* el)
+    {
+        el->set_output(pollinfo);
+        poll_elements.emplace_back(el);
     }
 
     /**
-     * Called when poll signals that we can write to the destination
+     * Setup pollinfo before calling poll().
+     *
+     * Return true if there is still something to poll, false if all is done.
      */
-    TransferResult feed_filter_stdin()
+    bool setup_poll()
     {
-        auto pre = to_filter.pos;
-        auto res = to_filter.transfer_available();
-        this->stream.filter_process->size_stdin += to_filter.pos - pre;
-        return res;
+        bool needs_poll = false;
+        for (auto& el : poll_elements)
+            needs_poll = el->setup_poll() or needs_poll;
+        return needs_poll;
+    }
+
+    /**
+     * Perform actions based on poll results.
+     *
+     * Returns true if the poll loop should stop, false otherwise.
+     */
+    bool on_poll()
+    {
+        bool done = false;
+        for (auto& el : poll_elements)
+            done = el->on_poll(this->result) or done;
+        return done;
     }
 
     stream::SendResult loop()
@@ -172,117 +139,49 @@ struct SenderFiltered : public FilteredBase<Backend, ToOutput>
             //
             // In other words, we skip monitoring availability until we drain
             // the buffers
-            this->to_output.setup_poll();
+            if (!setup_poll())
+                return this->result;
 
-            // filter stdin           | filter stdout             | filter stderr             | destination fd
-            this->pollinfo[0].revents = this->pollinfo[1].revents = this->pollinfo[2].revents = this->pollinfo[3].revents = 0;
+            for (unsigned i = 0; i < 4; ++i)
+                this->pollinfo[i].revents = 0;
             int res = Backend::poll(this->pollinfo, 4, this->stream.timeout_ms);
             if (res < 0)
                 throw std::system_error(errno, std::system_category(), "poll failed");
             if (res == 0)
                 throw TimedOut("streaming operations timed out");
 
-            // fprintf(stderr, "POLL: %d:%d %d:%d %d:%d %d:%d\n",
-            //         this->pollinfo[0].fd, this->pollinfo[0].revents,
-            //         this->pollinfo[1].fd, this->pollinfo[1].revents,
-            //         this->pollinfo[2].fd, this->pollinfo[2].revents,
-            //         this->pollinfo[3].fd, this->pollinfo[3].revents);
+            fprintf(stderr, "POLL: fi:%d:%x→%x fo:%d:%x→%x fe:%d:%x→%x de:%d:%x→%x\n",
+                    pollinfo[0].fd, (int)pollinfo[0].events, (int)pollinfo[0].revents,
+                    pollinfo[1].fd, (int)pollinfo[1].events, (int)pollinfo[1].revents,
+                    pollinfo[2].fd, (int)pollinfo[2].events, (int)pollinfo[2].revents,
+                    pollinfo[3].fd, (int)pollinfo[3].events, (int)pollinfo[3].revents);
 
-            if (this->pollinfo[0].revents & (POLLERR | POLLHUP))
-            {
-                // TODO: child process closed stdin but we were still writing on it
-                this->result.flags |= SendResult::SEND_PIPE_EOF_DEST; // This is not the right return code
-                this->stream.filter_process->cmd.close_stdin();
-                this->pollinfo[0].fd = -1;
-            }
-
-            if (this->pollinfo[3].revents & (POLLERR | POLLHUP))
-            {
-                // Destination closed its endpoint, stop here
-                // TODO: stop writing to filter stdin and drain filter stdout?
-                this->result.flags |= SendResult::SEND_PIPE_EOF_DEST;
-                return this->result;
-            }
-
-            if (this->pollinfo[0].revents & POLLOUT)
-            {
-                switch (this->feed_filter_stdin())
-                {
-                    case TransferResult::DONE:
-                        // We have written everything, stop polling
-                        return this->result;
-                    case TransferResult::EOF_SOURCE:
-                        throw std::runtime_error("unexpected result from feed_filter_stdin");
-                    case TransferResult::EOF_DEST:
-                        // Filter closed stdin
-                        throw std::runtime_error("filter process closed its input pipe while we still have data to process");
-                    case TransferResult::WOULDBLOCK:
-                        break;
-                }
-            }
-
-            if (this->on_poll())
+            if (on_poll())
                 return this->result;
         }
     }
 };
 
-template<typename Backend, typename ToOutput>
-struct FlushFilter : public FilteredBase<Backend, ToOutput>
+/**
+ * Send data to an output, through a filter
+ */
+template<typename Backend, typename Source, typename FromFilter>
+struct SenderFiltered : public FilterLoop<Backend, FromFilter>
 {
-    pollfd pollinfo[3];
-
-    FlushFilter(BaseStreamOutput& stream, ToOutput&& to_output)
-        : FilteredBase<Backend, ToOutput>(stream, std::move(to_output), pollinfo[0], pollinfo[1])
+    SenderFiltered(BaseStreamOutput& stream, Source&& source, FromFilter&& from_filter)
+        : FilterLoop<Backend, FromFilter>(stream, std::move(from_filter))
     {
-        // Destination
-        pollinfo[2].fd = -1;
-        pollinfo[2].events = 0;
-        this->to_output.sender_for_data_start_callback = this;
-        this->to_output.set_output(pollinfo[0], pollinfo[2]);
+        this->add_poll_element(new ToFilter<Backend, Source>(stream, std::move(source)));
     }
+};
 
-    stream::SendResult loop()
-    {
-        while (true)
-        {
-            // Suppose se use a /dev/null filter. Destination fd is always ready,
-            // filter stdout never has data. We end up busy-looping, because with
-            // destination fd ready, pipe has always something to report.
-            //
-            // We use flags to turn level-triggered events into edge-triggered
-            // events for the filter output and destination pipelines
-            //
-            // In other words, we skip monitoring availability until we drain
-            // the buffers
-            this->to_output.setup_poll();
-
-            // filter stdout          | filter stderr             | destination
-            this->pollinfo[0].revents = this->pollinfo[1].revents = this->pollinfo[2].revents = 0;
-            int res = Backend::poll(this->pollinfo, 3, this->stream.timeout_ms);
-            if (res < 0)
-                throw std::system_error(errno, std::system_category(), "poll failed");
-            if (res == 0)
-                throw TimedOut("streaming operations timed out");
-
-            // fprintf(stderr, "FlushFilter POLL: %d:%x %d:%x %d:%x\n",
-            //         this->pollinfo[0].fd, this->pollinfo[0].revents,
-            //         this->pollinfo[1].fd, this->pollinfo[1].revents,
-            //         this->pollinfo[2].fd, this->pollinfo[2].revents);
-
-            bool done = this->on_poll();
-
-            if (this->pollinfo[2].revents & (POLLERR | POLLHUP))
-            {
-                // Destination closed its endpoint, stop here
-                this->result.flags |= SendResult::SEND_PIPE_EOF_DEST;
-                return this->result;
-            }
-
-            if (done)
-                return this->result;
-        }
-    }
+/**
+ * Flush data from a filter after we are done sending to it
+ */
+template<typename Backend, typename FromFilter>
+struct FlushFilter : public FilterLoop<Backend, FromFilter>
+{
+    using FilterLoop<Backend, FromFilter>::FilterLoop;
 };
 
 }

@@ -40,6 +40,12 @@ struct Sender
     }
 };
 
+
+static const unsigned POLLINFO_FILTER_STDIN = 0;
+static const unsigned POLLINFO_FILTER_STDOUT = 1;
+static const unsigned POLLINFO_FILTER_STDERR = 2;
+static const unsigned POLLINFO_DESTINATION = 3;
+
 }
 }
 

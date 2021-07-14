@@ -85,6 +85,18 @@ struct TransferBuffer
     operator char*() { return buf; }
 };
 
+/**
+ * Base class for logic that responds to poll events
+ */
+struct PollElement
+{
+    virtual ~PollElement();
+
+    virtual void set_output(pollfd* pollinfo) = 0;
+    virtual bool setup_poll() = 0;
+    virtual bool on_poll(SendResult& result) = 0;
+};
+
 
 /**
  * Linux versions of syscalls to use for concrete implementations.

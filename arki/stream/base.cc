@@ -60,6 +60,12 @@ void BaseStreamOutput::abort_filter()
     proc->stop();
 }
 
+
+PollElement::~PollElement()
+{
+}
+
+
 ssize_t (*LinuxBackend::read)(int fd, void *buf, size_t count) = ::read;
 ssize_t (*LinuxBackend::write)(int fd, const void *buf, size_t count) = ::write;
 ssize_t (*LinuxBackend::writev)(int fd, const struct iovec *iov, int iovcnt) = ::writev;
