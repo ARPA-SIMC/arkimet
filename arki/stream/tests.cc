@@ -486,63 +486,6 @@ add_method("send_file_segment_filtered_exit", [&] {
     wassert(actual(f->streamed_contents()) == "estfil");
 });
 
-add_method("data_start_send_line", [&] {
-    auto f = make_fixture();
-    f->set_data_start_callback([](StreamOutput& out) { return out.send_buffer("start", 5); });
-
-    wassert(actual(f->send_line("testline", 8)) == stream::SendResult());
-    wassert(actual(f->send_line("testline1", 9)) == stream::SendResult());
-
-    wassert(actual(f->streamed_contents()) == "starttestline\ntestline1\n");
-
-    bool fired = false;
-    f->set_data_start_callback([&](StreamOutput& out) { fired=true; return SendResult(); });
-    wassert(actual(f->send_line("testline", 0)) == stream::SendResult());
-    wassert_false(fired);
-});
-
-add_method("data_start_send_buffer", [&] {
-    auto f = make_fixture();
-    f->set_data_start_callback([](StreamOutput& out) { return out.send_line("start", 5); });
-
-    wassert(actual(f->send_buffer("testbuf", 7)) == stream::SendResult());
-    wassert(actual(f->send_buffer("testbuf", 4)) == stream::SendResult());
-
-    wassert(actual(f->streamed_contents()) == "start\ntestbuftest");
-
-    bool fired = false;
-    f->set_data_start_callback([&](StreamOutput& out) { fired=true; return stream::SendResult(); });
-    wassert(actual(f->send_buffer("testline", 0)) == stream::SendResult());
-    wassert_false(fired);
-});
-
-add_method("data_start_send_file_segment", [&] {
-    auto f = make_fixture();
-    f->set_data_start_callback([](StreamOutput& out) {
-        sys::Tempfile t;
-        t.write_all_or_throw("start", 5);
-        auto res = out.send_file_segment(t, 0, 5);
-        res.flags = res.flags & ~stream::SendResult::SEND_PIPE_EOF_SOURCE;
-        return res;
-    });
-
-    sys::Tempfile tf1;
-    tf1.write_all_or_throw(std::string("testfile"));
-
-    wassert(actual(f->send_file_segment(tf1, 1, 6)) == stream::SendResult());
-    wassert(actual(f->send_file_segment(tf1, 5, 1)) == stream::SendResult());
-    wassert(actual(f->send_file_segment(tf1, 0, 4)) == stream::SendResult());
-    // Send past the end of file
-    wassert_throws(std::runtime_error, actual(f->send_file_segment(tf1, 6, 4)));
-
-    wassert(actual(f->streamed_contents()) == "startestfilitestle");
-
-    bool fired = false;
-    f->set_data_start_callback([&](StreamOutput& out) { fired=true; return stream::SendResult(); });
-    wassert(actual(f->send_file_segment(tf1, 3, 0)) == stream::SendResult());
-    wassert_false(fired);
-});
-
 add_method("large_send_line", [&] {
     auto f = make_fixture();
     std::vector<uint8_t> buf(stream::TransferBuffer::size * 3);

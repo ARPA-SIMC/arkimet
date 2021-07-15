@@ -43,9 +43,6 @@ SendResult AbstractStreamOutput<Backend>::send_buffer(const void* data, size_t s
     {
         return _send_from_pipe<BufferToPipe>(data, size);
     } else {
-        if (data_start_callback)
-            result += fire_data_start_callback();
-
         result +=_write_output_buffer(data, size);
     }
     if (progress_callback)
@@ -64,9 +61,6 @@ SendResult AbstractStreamOutput<Backend>::send_line(const void* data, size_t siz
     {
         return _send_from_pipe<LineToPipe>(data, size);
     } else {
-        if (data_start_callback)
-            result += fire_data_start_callback();
-
         result += _write_output_line(data, size);
     }
     if (progress_callback)

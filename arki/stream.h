@@ -44,11 +44,6 @@ public:
     virtual void set_progress_callback(std::function<void(size_t)> f) = 0;
 
     /**
-     * Set a callback to be called once before the first byte is streamed out
-     */
-    virtual void set_data_start_callback(std::function<stream::SendResult(StreamOutput&)>) = 0;
-
-    /**
      * Pipe all input data through the given child command before sending it to
      * the stream output.
      */

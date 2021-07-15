@@ -21,21 +21,7 @@ struct BaseStreamOutput : public StreamOutput
 {
     int timeout_ms = -1;
     std::function<void(size_t)> progress_callback;
-    std::function<stream::SendResult(StreamOutput&)> data_start_callback;
     std::unique_ptr<FilterProcess> filter_process;
-
-    /**
-     * Fire data_start_callback then set it to nullptr
-     *
-     * It disarms the callback before firing it, to prevent firing it
-     * recursively if it calls other send_ operations on the stream.
-     */
-    stream::SendResult fire_data_start_callback()
-    {
-        auto cb = data_start_callback;
-        data_start_callback = nullptr;
-        return cb(*this);
-    }
 
     /**
      * Check if a file descriptor is in nonblocking mode
@@ -48,11 +34,6 @@ struct BaseStreamOutput : public StreamOutput
     void set_progress_callback(std::function<void(size_t)> f) override
     {
         progress_callback = f;
-    }
-
-    void set_data_start_callback(std::function<stream::SendResult(StreamOutput&)> f) override
-    {
-        data_start_callback = f;
     }
 
     stream::FilterProcess* start_filter(const std::vector<std::string>& command) override;

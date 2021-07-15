@@ -62,25 +62,6 @@ struct ToPipe
         this->out_name = out.name();
         this->dest = &dest;
     }
-
-    /**
-     * Check if we should trigger data_start_callback on the first write, and
-     * if so, trigger it.
-     *
-     * Returns true if triggered, false otherwise.
-     */
-    bool check_data_start_callback()
-    {
-        if (auto sender = sender_for_data_start_callback)
-        {
-            if (sender->stream.data_start_callback)
-            {
-                sender->result += sender->stream.fire_data_start_callback();
-                return true;
-            }
-        }
-        return false;
-    }
 };
 
 
@@ -118,9 +99,6 @@ struct BufferToPipe : public MemoryToPipe<Backend>
      */
     TransferResult transfer_available()
     {
-        if (this->check_data_start_callback())
-            return TransferResult::WOULDBLOCK;
-
         ssize_t res = Backend::write(this->dest->fd, (const uint8_t*)this->data + this->pos, this->size - this->pos);
         trace_streaming("  BufferToPipe write pos:%zd %.*s %d → %d\n", this->pos, (int)(this->size - this->pos), (const char*)this->data + this->pos, (int)(this->size - this->pos), (int)res);
         if (res < 0)
@@ -152,9 +130,6 @@ struct LineToPipe : public MemoryToPipe<Backend>
 
     TransferResult transfer_available()
     {
-        if (this->check_data_start_callback())
-            return TransferResult::WOULDBLOCK;
-
         if (this->pos < this->size)
         {
             struct iovec todo[2] = {{(uint8_t*)this->data + this->pos, this->size - this->pos}, {(void*)"\n", 1}};
@@ -218,9 +193,6 @@ struct FileToPipeSendfile : public ToPipe<Backend>
      */
     TransferResult transfer_available()
     {
-        if (this->check_data_start_callback())
-            return TransferResult::WOULDBLOCK;
-
 #ifdef TRACE_STREAMING
         auto orig_offset = offset;
 #endif
@@ -277,9 +249,6 @@ struct FileToPipeReadWrite : public ToPipe<Backend>
      */
     TransferResult transfer_available()
     {
-        if (this->check_data_start_callback())
-            return TransferResult::WOULDBLOCK;
-
         if (write_pos >= write_size)
         {
             ssize_t res = Backend::pread(src_fd, buffer, std::min(size - pos, buffer.size), offset);
@@ -500,25 +469,6 @@ struct FromFilter : public PollElement
 
         return false;
     }
-
-    /**
-     * Check if we should trigger data_start_callback on the first write, and
-     * if so, trigger it.
-     *
-     * Returns true if triggered, false otherwise.
-     */
-    bool check_data_start_callback()
-    {
-        if (auto sender = sender_for_data_start_callback)
-        {
-            if (sender->stream.data_start_callback)
-            {
-                sender->result += sender->stream.fire_data_start_callback();
-                return true;
-            }
-        }
-        return false;
-    }
 };
 
 template<typename Backend>
@@ -578,9 +528,6 @@ struct FromFilterSplice : public FromFilterConcrete<Backend>
 
     TransferResult transfer_available_output()
     {
-        if (this->check_data_start_callback())
-            return TransferResult::WOULDBLOCK;
-
 #ifndef HAVE_SPLICE
         throw SpliceNotAvailable();
 #else
@@ -695,7 +642,6 @@ struct FromFilterReadWrite : public FromFilterConcrete<Backend>
         {
             to_output.reset(buffer.buf, res);
             this->stream.filter_process->size_stdout += res;
-            this->check_data_start_callback();
             return TransferResult::WOULDBLOCK;
         }
     }
@@ -805,7 +751,6 @@ struct FromFilterAbstract : public FromFilter<Backend>
         else
         {
             AbstractStreamOutput<Backend>* stream = reinterpret_cast<AbstractStreamOutput<Backend>*>(&(this->stream));
-            this->check_data_start_callback();
             stream->_write_output_buffer(buffer.buf, res);
             this->stream.filter_process->size_stdout += res;
             return TransferResult::WOULDBLOCK;
