@@ -93,8 +93,21 @@ struct FilterLoop
         poll_elements.emplace_back(el);
     }
 
-    stream::SendResult loop()
+    template<typename Source>
+    stream::SendResult loop(Source&& source)
     {
+        return _loop(ToFilter<Backend, Source>(stream, std::move(source)));
+    }
+
+    stream::SendResult flush()
+    {
+        return _loop(Flusher<Backend>(stream));
+    }
+
+    template<typename ToFilter>
+    stream::SendResult _loop(ToFilter part_to_filter)
+    {
+        part_to_filter.set_output(pollinfo);
         while (true)
         {
             // Suppose se use a /dev/null filter. Destination fd is always ready,
@@ -111,6 +124,7 @@ struct FilterLoop
             bool needs_poll = false;
             needs_poll = part_connect_stderr.setup_poll() or needs_poll;
             needs_poll = part_from_filter.setup_poll() or needs_poll;
+            needs_poll = part_to_filter.setup_poll() or needs_poll;
             for (auto& el : poll_elements)
                 needs_poll = el->setup_poll() or needs_poll;
             if (!needs_poll)
@@ -138,6 +152,7 @@ struct FilterLoop
             bool done = false;
             done = part_connect_stderr.on_poll(this->result) or done;
             done = part_from_filter.on_poll(this->result) or done;
+            done = part_to_filter.on_poll(this->result) or done;
             for (auto& el : poll_elements)
                 done = el->on_poll(this->result) or done;
             if (done)
@@ -146,34 +161,6 @@ struct FilterLoop
                 return this->result;
             }
         }
-    }
-};
-
-/**
- * Send data to an output, through a filter
- */
-template<typename Backend, typename Source, typename FromFilter>
-struct SenderFiltered : public FilterLoop<Backend, FromFilter>
-{
-    template<typename StreamOutputClass>
-    SenderFiltered(StreamOutputClass& stream, Source&& source)
-        : FilterLoop<Backend, FromFilter>(stream)
-    {
-        this->add_poll_element(new ToFilter<Backend, Source>(stream, std::move(source)));
-    }
-};
-
-/**
- * Flush data from a filter after we are done sending to it
- */
-template<typename Backend, typename FromFilter>
-struct FlushFilter : public FilterLoop<Backend, FromFilter>
-{
-    template<typename StreamOutputClass>
-    FlushFilter(StreamOutputClass& stream)
-        : FilterLoop<Backend, FromFilter>(stream)
-    {
-        this->add_poll_element(new Flusher<Backend>(stream));
     }
 };
 

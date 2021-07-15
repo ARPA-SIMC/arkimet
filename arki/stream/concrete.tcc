@@ -105,16 +105,16 @@ SendResult ConcreteStreamOutputBase<Backend>::_send_from_pipe(Args&&... args)
     if (has_splice)
     {
         try {
-            SenderFiltered<Backend, ToPipe<Backend>, FromFilterSplice<Backend>> sender(*this, ToPipe<Backend>(std::forward<Args>(args)...));
-            return sender.loop();
+            FilterLoop<Backend, FromFilterSplice<Backend>> sender(*this);
+            return sender.loop(ToPipe<Backend>(std::forward<Args>(args)...));
         } catch (SpliceNotAvailable&) {
             has_splice = false;
-            SenderFiltered<Backend, ToPipe<Backend>, FromFilterReadWrite<Backend>> sender(*this, ToPipe<Backend>(std::forward<Args>(args)...));
-            return sender.loop();
+            FilterLoop<Backend, FromFilterReadWrite<Backend>> sender(*this);
+            return sender.loop(ToPipe<Backend>(std::forward<Args>(args)...));
         }
     } else {
-        SenderFiltered<Backend, ToPipe<Backend>, FromFilterReadWrite<Backend>> sender(*this, ToPipe<Backend>(std::forward<Args>(args)...));
-        return sender.loop();
+        FilterLoop<Backend, FromFilterReadWrite<Backend>> sender(*this);
+        return sender.loop(ToPipe<Backend>(std::forward<Args>(args)...));
     }
 }
 
@@ -124,16 +124,16 @@ void ConcreteStreamOutputBase<Backend>::flush_filter_output()
     if (has_splice)
     {
         try {
-            FlushFilter<Backend, FromFilterSplice<Backend>> sender(*this);
-            sender.loop();
+            FilterLoop<Backend, FromFilterSplice<Backend>> sender(*this);
+            sender.flush();
         } catch (SpliceNotAvailable&) {
             has_splice = false;
-            FlushFilter<Backend, FromFilterReadWrite<Backend>> sender(*this);
-            sender.loop();
+            FilterLoop<Backend, FromFilterReadWrite<Backend>> sender(*this);
+            sender.flush();
         }
     } else {
-        FlushFilter<Backend, FromFilterReadWrite<Backend>> sender(*this);
-        sender.loop();
+        FilterLoop<Backend, FromFilterReadWrite<Backend>> sender(*this);
+        sender.flush();
     }
 }
 
