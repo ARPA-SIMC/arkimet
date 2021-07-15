@@ -61,12 +61,13 @@ struct FilterLoop
 {
     BaseStreamOutput& stream;
     stream::SendResult result;
+    CollectFilterStderr<Backend> part_connect_stderr;
     std::vector<PollElement*> poll_elements;
     /// pollfd structure described by the POLLINFO_* indices
     pollfd pollinfo[4];
 
     FilterLoop(BaseStreamOutput& stream, FromFilter&& from_filter)
-        : stream(stream)
+        : stream(stream), part_connect_stderr(stream)
     {
         for (unsigned i = 0; i < 4; ++i)
         {
@@ -74,7 +75,7 @@ struct FilterLoop
             pollinfo[i].events = 0;
         }
 
-        add_poll_element(new CollectFilterStderr<Backend>(stream));
+        part_connect_stderr.set_output(pollinfo);
         FromFilter* el = new FromFilter(std::move(from_filter));
         add_poll_element(el);
     }
@@ -99,6 +100,7 @@ struct FilterLoop
     bool setup_poll()
     {
         bool needs_poll = false;
+        needs_poll = part_connect_stderr.setup_poll() or needs_poll;
         for (auto& el : poll_elements)
             needs_poll = el->setup_poll() or needs_poll;
         return needs_poll;
@@ -112,6 +114,7 @@ struct FilterLoop
     bool on_poll()
     {
         bool done = false;
+        done = part_connect_stderr.on_poll(this->result) or done;
         for (auto& el : poll_elements)
             done = el->on_poll(this->result) or done;
         return done;

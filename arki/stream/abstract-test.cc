@@ -67,7 +67,7 @@ add_method("syscalls_buffer_filtered", [this] {
             new stream::ExpectedRead(filter->cmd.get_stdout(), "1234", 32768, 4),
             new stream::ExpectedPoll(filter->cmd.get_stdout(), POLLIN, -1, POLLHUP, 1),
             new stream::ExpectedPoll(filter->cmd.get_stderr(), POLLIN, -1, POLLIN, 1),
-            new stream::ExpectedRead(filter->cmd.get_stderr(), "FAIL", 32768, 4),
+            new stream::ExpectedRead(filter->cmd.get_stderr(), "FAIL", 256, 4),
             new stream::ExpectedPoll(filter->cmd.get_stderr(), POLLIN, -1, POLLHUP, 1),
         });
         auto flt = wcallchecked(writer.stop_filter());
@@ -101,7 +101,7 @@ add_method("syscalls_line_filtered", [this] {
             new stream::ExpectedRead(filter->cmd.get_stdout(), "1234\n", 32768, 5),
             new stream::ExpectedPoll(filter->cmd.get_stdout(), POLLIN, -1, POLLHUP, 1),
             new stream::ExpectedPoll(filter->cmd.get_stderr(), POLLIN, -1, POLLIN, 1),
-            new stream::ExpectedRead(filter->cmd.get_stderr(), "FAIL", 32768, 4),
+            new stream::ExpectedRead(filter->cmd.get_stderr(), "FAIL", 256, 4),
             new stream::ExpectedPoll(filter->cmd.get_stderr(), POLLIN, -1, POLLHUP, 1),
         });
         auto flt = wcallchecked(writer.stop_filter());
@@ -135,7 +135,7 @@ add_method("syscalls_file_filtered", [this] {
             new stream::ExpectedRead(filter->cmd.get_stdout(), "estf", 32768, 4),
             new stream::ExpectedPoll(filter->cmd.get_stdout(), POLLIN, -1, POLLHUP, 1),
             new stream::ExpectedPoll(filter->cmd.get_stderr(), POLLIN, -1, POLLIN, 1),
-            new stream::ExpectedRead(filter->cmd.get_stderr(), "FAIL", 32768, 4),
+            new stream::ExpectedRead(filter->cmd.get_stderr(), "FAIL", 256, 4),
             new stream::ExpectedPoll(filter->cmd.get_stderr(), POLLIN, -1, POLLHUP, 1),
         });
         auto flt = wcallchecked(writer.stop_filter());

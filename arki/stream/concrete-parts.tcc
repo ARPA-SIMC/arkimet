@@ -25,7 +25,7 @@ struct CollectFilterStderr : public PollElement
 {
     FilterProcess& filter_process;
     pollfd* pfd_filter_stderr;
-    std::array<uint8_t, 512> buffer;
+    std::array<uint8_t, 256> buffer;
 
     CollectFilterStderr(BaseStreamOutput& stream) : filter_process(*stream.filter_process) {}
 
@@ -38,7 +38,7 @@ struct CollectFilterStderr : public PollElement
 
     void transfer_available_stderr()
     {
-        ssize_t res = Backend::read(filter_process.cmd.get_stderr(), buffer.data(), buffer.size);
+        ssize_t res = Backend::read(filter_process.cmd.get_stderr(), buffer.data(), buffer.size());
         trace_streaming("  read stderr → %d %.*s\n", (int)res, (int)res, (const char*)stderr_buffer);
         if (res == 0)
         {
