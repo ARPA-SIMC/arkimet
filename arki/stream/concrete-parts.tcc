@@ -23,26 +23,26 @@ namespace stream {
 template<typename Backend>
 struct CollectFilterStderr : public PollElement
 {
-    BaseStreamOutput& stream;
+    FilterProcess& filter_process;
     pollfd* pfd_filter_stderr;
-    TransferBuffer stderr_buffer;
+    std::array<uint8_t, 512> buffer;
 
-    CollectFilterStderr(BaseStreamOutput& stream) : stream(stream) { stderr_buffer.allocate(); }
+    CollectFilterStderr(BaseStreamOutput& stream) : filter_process(*stream.filter_process) {}
 
     void set_output(pollfd* pollinfo) override
     {
         pfd_filter_stderr = &pollinfo[POLLINFO_FILTER_STDERR];
-        pfd_filter_stderr->fd = stream.filter_process->cmd.get_stderr();
+        pfd_filter_stderr->fd = filter_process.cmd.get_stderr();
         pfd_filter_stderr->events = POLLIN;
     }
 
     void transfer_available_stderr()
     {
-        ssize_t res = Backend::read(stream.filter_process->cmd.get_stderr(), stderr_buffer, stderr_buffer.size);
+        ssize_t res = Backend::read(filter_process.cmd.get_stderr(), buffer.data(), buffer.size);
         trace_streaming("  read stderr → %d %.*s\n", (int)res, (int)res, (const char*)stderr_buffer);
         if (res == 0)
         {
-            stream.filter_process->cmd.close_stderr();
+            filter_process.cmd.close_stderr();
             pfd_filter_stderr->fd = -1;
         }
         else if (res < 0)
@@ -54,15 +54,15 @@ struct CollectFilterStderr : public PollElement
         }
         else
         {
-            stream.filter_process->errors.write(stderr_buffer, res);
-            if (stream.filter_process->errors.bad())
+            filter_process.errors.write((const char*)buffer.data(), res);
+            if (filter_process.errors.bad())
                 throw std::system_error(errno, std::system_category(), "cannot store filter stderr in memory buffer");
         }
     }
 
     bool setup_poll() override
     {
-        return stream.filter_process->cmd.get_stderr() != -1;
+        return filter_process.cmd.get_stderr() != -1;
     }
 
     bool on_poll(SendResult& result) override
@@ -73,7 +73,7 @@ struct CollectFilterStderr : public PollElement
         if (pfd_filter_stderr->revents & (POLLERR | POLLHUP))
         {
             // Filter stderr closed its endpoint
-            stream.filter_process->cmd.close_stderr();
+            filter_process.cmd.close_stderr();
             pfd_filter_stderr->fd = -1;
         }
 
