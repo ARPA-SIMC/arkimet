@@ -149,8 +149,9 @@ SendResult ConcreteStreamOutputBase<Backend>::send_buffer(const void* data, size
     {
         return _send_from_pipe<BufferToPipe>(data, size);
     } else {
-        SenderDirect<Backend, BufferToPipe<Backend>> sender(*this, BufferToPipe<Backend>(data, size));
-        return sender.loop();
+        BufferToPipe<Backend> to_pipe(data, size);
+        SenderDirect<Backend> sender(*this);
+        return sender.loop(to_pipe);
     }
 }
 
@@ -166,8 +167,9 @@ SendResult ConcreteStreamOutputBase<Backend>::send_line(const void* data, size_t
     {
         return _send_from_pipe<LineToPipe>(data, size);
     } else {
-        SenderDirect<Backend, LineToPipe<Backend>> sender(*this, LineToPipe<Backend>(data, size));
-        return sender.loop();
+        LineToPipe<Backend> to_pipe(data, size);
+        SenderDirect<Backend> sender(*this);
+        return sender.loop(to_pipe);
     }
     return result;
 }
@@ -189,11 +191,13 @@ SendResult ConcreteStreamOutputBase<Backend>::send_file_segment(arki::core::Name
         }
     } else {
         try {
-            SenderDirect<Backend, FileToPipeSendfile<Backend>> sender(*this, FileToPipeSendfile<Backend>(fd, offset, size));
-            return sender.loop();
+            FileToPipeSendfile<Backend> to_pipe(fd, offset, size);
+            SenderDirect<Backend> sender(*this);
+            return sender.loop(to_pipe);
         } catch (SendfileNotAvailable&) {
-            SenderDirect<Backend, FileToPipeReadWrite<Backend>> sender(*this, FileToPipeReadWrite<Backend>(fd, offset, size));
-            return sender.loop();
+            FileToPipeReadWrite<Backend> to_pipe(fd, offset, size);
+            SenderDirect<Backend> sender(*this);
+            return sender.loop(to_pipe);
         }
     }
 }

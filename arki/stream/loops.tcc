@@ -9,57 +9,41 @@
 namespace arki {
 namespace stream {
 
-/**
- * Event loop for sending data to an output file descriptor, without filters
- */
-template<typename Backend, typename ToOutput>
-struct SenderDirect: public Sender
+template<typename Backend> template<typename ToOutput>
+stream::SendResult SenderDirect<Backend>::loop(ToOutput& to_output)
 {
-    ToOutput to_output;
-    core::NamedFileDescriptor& out_fd;
-    pollfd pollinfo;
-
-    SenderDirect(ConcreteStreamOutputBase<Backend>& stream, ToOutput&& to_output)
-        : Sender(stream), to_output(std::move(to_output)), out_fd(*stream.out)
+    stream::SendResult result;
+    while (true)
     {
-        pollinfo.fd = *stream.out;
-        pollinfo.events = POLLOUT;
-    }
-
-    stream::SendResult loop()
-    {
-        while (true)
+        pollinfo.revents = 0;
+        int res = Backend::poll(&pollinfo, 1, stream.timeout_ms);
+        trace_streaming("SenderDirect.POLL: %d %d:%d\n", res, pollinfo.fd, pollinfo.revents);
+        if (res < 0)
+            throw std::system_error(errno, std::system_category(), "poll failed on " + stream.out->name());
+        if (res == 0)
+            throw TimedOut("write on " + stream.out->name() + " timed out");
+        if (pollinfo.revents & (POLLERR | POLLHUP))
+            return SendResult::SEND_PIPE_EOF_DEST;
+        if (pollinfo.revents & POLLOUT)
         {
-            this->pollinfo.revents = 0;
-            int res = Backend::poll(&this->pollinfo, 1, this->stream.timeout_ms);
-            trace_streaming("SenderDirect.POLL: %d %d:%d\n", res, this->pollinfo.fd, this->pollinfo.revents);
-            if (res < 0)
-                throw std::system_error(errno, std::system_category(), "poll failed on " + out_fd.name());
-            if (res == 0)
-                throw TimedOut("write on " + out_fd.name() + " timed out");
-            if (this->pollinfo.revents & (POLLERR | POLLHUP))
-                return SendResult::SEND_PIPE_EOF_DEST;
-            if (this->pollinfo.revents & POLLOUT)
+            switch (to_output.transfer_available(*stream.out))
             {
-                switch (this->to_output.transfer_available(out_fd))
-                {
-                    case TransferResult::DONE:
-                        return this->result;
-                    case TransferResult::EOF_SOURCE:
-                        this->result.flags |= SendResult::SEND_PIPE_EOF_SOURCE;
-                        return this->result;
-                    case TransferResult::EOF_DEST:
-                        this->result.flags |= SendResult::SEND_PIPE_EOF_DEST;
-                        return this->result;
-                    case TransferResult::WOULDBLOCK:
-                        break;
-                }
+                case TransferResult::DONE:
+                    return result;
+                case TransferResult::EOF_SOURCE:
+                    result.flags |= SendResult::SEND_PIPE_EOF_SOURCE;
+                    return result;
+                case TransferResult::EOF_DEST:
+                    result.flags |= SendResult::SEND_PIPE_EOF_DEST;
+                    return result;
+                case TransferResult::WOULDBLOCK:
+                    break;
             }
-            else
-                throw std::runtime_error("unsupported revents values when polling " + out_fd.name());
         }
+        else
+            throw std::runtime_error("unsupported revents values when polling " + stream.out->name());
     }
-};
+}
 
 /**
  * Base for event loops that manage a filter
