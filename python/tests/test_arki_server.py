@@ -266,7 +266,6 @@ class TestArkiServer(unittest.TestCase):
         summary = ds.query_summary()
         self.assertEqual(summary.count, 1)
 
-    #
     # This is not testable anymore: the subprocess filter now is run after the
     # server has already sent headers.
     #

@@ -24,8 +24,6 @@ struct SenderDirect: public Sender
     {
         pollinfo.fd = *stream.out;
         pollinfo.events = POLLOUT;
-        this->to_output.sender_for_data_start_callback = this;
-        this->to_output.set_output(*stream.out, pollinfo);
     }
 
     stream::SendResult loop()
@@ -43,7 +41,7 @@ struct SenderDirect: public Sender
                 return SendResult::SEND_PIPE_EOF_DEST;
             if (this->pollinfo.revents & POLLOUT)
             {
-                switch (this->to_output.transfer_available())
+                switch (this->to_output.transfer_available(out_fd))
                 {
                     case TransferResult::DONE:
                         return this->result;
@@ -84,7 +82,6 @@ struct FilterLoop : public Sender
 
         add_poll_element(new CollectFilterStderr<Backend>(stream));
         FromFilter* el = new FromFilter(std::move(from_filter));
-        el->sender_for_data_start_callback = this;
         add_poll_element(el);
     }
 

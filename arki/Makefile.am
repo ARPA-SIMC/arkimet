@@ -26,6 +26,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		stream/base.h \
 		stream/filter.h \
 		stream/loops.tcc \
+		stream/loops-send.tcc \
 		stream/abstract.h \
 		stream/abstract.tcc \
 		stream/concrete.h \
