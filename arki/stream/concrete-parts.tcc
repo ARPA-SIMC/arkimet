@@ -489,6 +489,7 @@ struct FromFilter : public PollElement
         else
             pfd_filter_stdout->events = POLLIN;
 
+        trace_streaming("  FromFilter.setup_poll: filter_stdout: %d:%x\n", stream.filter_process->cmd.get_stdout(), (int)pfd_filter_stdout->events);
         return stream.filter_process->cmd.get_stdout() != -1;
     }
 
@@ -620,6 +621,7 @@ struct FromFilterSplice : public FromFilterConcrete<Backend>
 
         if (this->filter_stdout_available and this->destination_available)
         {
+            trace_streaming("  FromFilterSplice.on_poll: source and destination available: transfer data\n");
             this->filter_stdout_available = false;
             this->destination_available = false;
 
@@ -643,6 +645,7 @@ struct FromFilterSplice : public FromFilterConcrete<Backend>
 
         if (this->pfd_filter_stdout->revents & (POLLERR | POLLHUP))
         {
+            trace_streaming("  FromFilterSplice.on_poll: filter stdout closed\n");
             // Filter stdout closed its endpoint
             this->stream.filter_process->cmd.close_stdout();
             this->pfd_filter_stdout->fd = -1;

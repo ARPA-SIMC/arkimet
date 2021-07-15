@@ -140,7 +140,10 @@ struct FilterLoop : public Sender
             // In other words, we skip monitoring availability until we drain
             // the buffers
             if (!setup_poll())
+            {
+                trace_streaming("POLL: stopping after setup_poll returned false\n");
                 return this->result;
+            }
 
             for (unsigned i = 0; i < 4; ++i)
                 this->pollinfo[i].revents = 0;
@@ -157,7 +160,10 @@ struct FilterLoop : public Sender
                     pollinfo[3].fd, (int)pollinfo[3].events, (int)pollinfo[3].revents);
 
             if (on_poll())
+            {
+                trace_streaming("POLL: stopping after on_poll returned true\n");
                 return this->result;
+            }
         }
     }
 };
