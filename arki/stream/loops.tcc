@@ -62,12 +62,14 @@ struct FilterLoop
     BaseStreamOutput& stream;
     stream::SendResult result;
     CollectFilterStderr<Backend> part_connect_stderr;
+    FromFilter part_from_filter;
     std::vector<PollElement*> poll_elements;
     /// pollfd structure described by the POLLINFO_* indices
     pollfd pollinfo[4];
 
-    FilterLoop(BaseStreamOutput& stream, FromFilter&& from_filter)
-        : stream(stream), part_connect_stderr(stream)
+    template<typename StreamOutputClass>
+    FilterLoop(StreamOutputClass& stream)
+        : stream(stream), part_connect_stderr(stream), part_from_filter(stream)
     {
         for (unsigned i = 0; i < 4; ++i)
         {
@@ -76,8 +78,7 @@ struct FilterLoop
         }
 
         part_connect_stderr.set_output(pollinfo);
-        FromFilter* el = new FromFilter(std::move(from_filter));
-        add_poll_element(el);
+        part_from_filter.set_output(pollinfo);
     }
 
     virtual ~FilterLoop()
@@ -101,6 +102,7 @@ struct FilterLoop
     {
         bool needs_poll = false;
         needs_poll = part_connect_stderr.setup_poll() or needs_poll;
+        needs_poll = part_from_filter.setup_poll() or needs_poll;
         for (auto& el : poll_elements)
             needs_poll = el->setup_poll() or needs_poll;
         return needs_poll;
@@ -115,6 +117,7 @@ struct FilterLoop
     {
         bool done = false;
         done = part_connect_stderr.on_poll(this->result) or done;
+        done = part_from_filter.on_poll(this->result) or done;
         for (auto& el : poll_elements)
             done = el->on_poll(this->result) or done;
         return done;
@@ -168,8 +171,9 @@ struct FilterLoop
 template<typename Backend, typename Source, typename FromFilter>
 struct SenderFiltered : public FilterLoop<Backend, FromFilter>
 {
-    SenderFiltered(BaseStreamOutput& stream, Source&& source, FromFilter&& from_filter)
-        : FilterLoop<Backend, FromFilter>(stream, std::move(from_filter))
+    template<typename StreamOutputClass>
+    SenderFiltered(StreamOutputClass& stream, Source&& source)
+        : FilterLoop<Backend, FromFilter>(stream)
     {
         this->add_poll_element(new ToFilter<Backend, Source>(stream, std::move(source)));
     }
@@ -181,8 +185,9 @@ struct SenderFiltered : public FilterLoop<Backend, FromFilter>
 template<typename Backend, typename FromFilter>
 struct FlushFilter : public FilterLoop<Backend, FromFilter>
 {
-    FlushFilter(BaseStreamOutput& stream, FromFilter&& from_filter)
-        : FilterLoop<Backend, FromFilter>(stream, std::move(from_filter))
+    template<typename StreamOutputClass>
+    FlushFilter(StreamOutputClass& stream)
+        : FilterLoop<Backend, FromFilter>(stream)
     {
         this->add_poll_element(new Flusher<Backend>(stream));
     }

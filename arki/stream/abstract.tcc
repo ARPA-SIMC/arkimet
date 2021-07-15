@@ -13,14 +13,14 @@ namespace stream {
 template<typename Backend> template<template<typename> class ToPipe, typename... Args>
 SendResult AbstractStreamOutput<Backend>::_send_from_pipe(Args&&... args)
 {
-    SenderFiltered<Backend, ToPipe<Backend>, FromFilterAbstract<Backend>> sender(*this, ToPipe<Backend>(std::forward<Args>(args)...), FromFilterAbstract<Backend>(*this));
+    SenderFiltered<Backend, ToPipe<Backend>, FromFilterAbstract<Backend>> sender(*this, ToPipe<Backend>(std::forward<Args>(args)...));
     return sender.loop();
 }
 
 template<typename Backend>
 void AbstractStreamOutput<Backend>::flush_filter_output()
 {
-    FlushFilter<Backend, FromFilterAbstract<Backend>> sender(*this, FromFilterAbstract<Backend>(*this));
+    FlushFilter<Backend, FromFilterAbstract<Backend>> sender(*this);
     sender.loop();
 }
 

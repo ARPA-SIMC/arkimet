@@ -105,15 +105,15 @@ SendResult ConcreteStreamOutputBase<Backend>::_send_from_pipe(Args&&... args)
     if (has_splice)
     {
         try {
-            SenderFiltered<Backend, ToPipe<Backend>, FromFilterSplice<Backend>> sender(*this, ToPipe<Backend>(std::forward<Args>(args)...), FromFilterSplice<Backend>(*this));
+            SenderFiltered<Backend, ToPipe<Backend>, FromFilterSplice<Backend>> sender(*this, ToPipe<Backend>(std::forward<Args>(args)...));
             return sender.loop();
         } catch (SpliceNotAvailable&) {
             has_splice = false;
-            SenderFiltered<Backend, ToPipe<Backend>, FromFilterReadWrite<Backend>> sender(*this, ToPipe<Backend>(std::forward<Args>(args)...), FromFilterReadWrite<Backend>(*this));
+            SenderFiltered<Backend, ToPipe<Backend>, FromFilterReadWrite<Backend>> sender(*this, ToPipe<Backend>(std::forward<Args>(args)...));
             return sender.loop();
         }
     } else {
-        SenderFiltered<Backend, ToPipe<Backend>, FromFilterReadWrite<Backend>> sender(*this, ToPipe<Backend>(std::forward<Args>(args)...), FromFilterReadWrite<Backend>(*this));
+        SenderFiltered<Backend, ToPipe<Backend>, FromFilterReadWrite<Backend>> sender(*this, ToPipe<Backend>(std::forward<Args>(args)...));
         return sender.loop();
     }
 }
@@ -124,15 +124,15 @@ void ConcreteStreamOutputBase<Backend>::flush_filter_output()
     if (has_splice)
     {
         try {
-            FlushFilter<Backend, FromFilterSplice<Backend>> sender(*this, FromFilterSplice<Backend>(*this));
+            FlushFilter<Backend, FromFilterSplice<Backend>> sender(*this);
             sender.loop();
         } catch (SpliceNotAvailable&) {
             has_splice = false;
-            FlushFilter<Backend, FromFilterReadWrite<Backend>> sender(*this, FromFilterReadWrite<Backend>(*this));
+            FlushFilter<Backend, FromFilterReadWrite<Backend>> sender(*this);
             sender.loop();
         }
     } else {
-        FlushFilter<Backend, FromFilterReadWrite<Backend>> sender(*this, FromFilterReadWrite<Backend>(*this));
+        FlushFilter<Backend, FromFilterReadWrite<Backend>> sender(*this);
         sender.loop();
     }
 }
