@@ -178,7 +178,11 @@ struct SenderFiltered : public FilterLoop<Backend, FromFilter>
 template<typename Backend, typename FromFilter>
 struct FlushFilter : public FilterLoop<Backend, FromFilter>
 {
-    using FilterLoop<Backend, FromFilter>::FilterLoop;
+    FlushFilter(BaseStreamOutput& stream, FromFilter&& from_filter)
+        : FilterLoop<Backend, FromFilter>(stream, std::move(from_filter))
+    {
+        this->add_poll_element(new Flusher<Backend>(stream));
+    }
 };
 
 }

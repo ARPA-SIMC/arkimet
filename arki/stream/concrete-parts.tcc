@@ -83,6 +83,41 @@ struct CollectFilterStderr : public PollElement
 
 
 /**
+ * Replacement for ToFilter when doing a flush
+ *
+ * Stops polling the filter stdin and doesn't send anything to it
+ */
+template<typename Backend>
+struct Flusher : public PollElement
+{
+    BaseStreamOutput& stream;
+    pollfd* pfd_filter_stdin;
+
+    Flusher(BaseStreamOutput& stream)
+        : stream(stream)
+    {
+    }
+
+    void set_output(pollfd* pollinfo) override
+    {
+        pfd_filter_stdin = &pollinfo[POLLINFO_FILTER_STDIN];
+        pfd_filter_stdin->fd = -1;
+        pfd_filter_stdin->events = 0;
+    }
+
+    bool setup_poll() override
+    {
+        return false;
+    }
+
+    bool on_poll(SendResult& result) override
+    {
+        return false;
+    }
+};
+
+
+/**
  * Send data to the filter's input.
  *
  * This is a wrapper to ToPipe subclass which adds management for the filter
