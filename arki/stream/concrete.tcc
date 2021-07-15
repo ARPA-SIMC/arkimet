@@ -35,7 +35,7 @@ uint32_t ConcreteStreamOutputBase<Backend>::wait_writable()
 
 template<typename Backend>
 ConcreteStreamOutputBase<Backend>::ConcreteStreamOutputBase(std::shared_ptr<core::NamedFileDescriptor> out, int timeout_ms)
-    : out(out)
+    : out(out), unfiltered_loop(*this)
 {
     this->timeout_ms = timeout_ms;
     orig_fl = fcntl(*out, F_GETFL);
@@ -150,8 +150,7 @@ SendResult ConcreteStreamOutputBase<Backend>::send_buffer(const void* data, size
         return _send_from_pipe<BufferToPipe>(data, size);
     } else {
         BufferToPipe<Backend> to_pipe(data, size);
-        SenderDirect<Backend> sender(*this);
-        return sender.loop(to_pipe);
+        return unfiltered_loop.loop(to_pipe);
     }
 }
 
@@ -168,8 +167,7 @@ SendResult ConcreteStreamOutputBase<Backend>::send_line(const void* data, size_t
         return _send_from_pipe<LineToPipe>(data, size);
     } else {
         LineToPipe<Backend> to_pipe(data, size);
-        SenderDirect<Backend> sender(*this);
-        return sender.loop(to_pipe);
+        return unfiltered_loop.loop(to_pipe);
     }
     return result;
 }
@@ -192,12 +190,10 @@ SendResult ConcreteStreamOutputBase<Backend>::send_file_segment(arki::core::Name
     } else {
         try {
             FileToPipeSendfile<Backend> to_pipe(fd, offset, size);
-            SenderDirect<Backend> sender(*this);
-            return sender.loop(to_pipe);
+            return unfiltered_loop.loop(to_pipe);
         } catch (SendfileNotAvailable&) {
             FileToPipeReadWrite<Backend> to_pipe(fd, offset, size);
-            SenderDirect<Backend> sender(*this);
-            return sender.loop(to_pipe);
+            return unfiltered_loop.loop(to_pipe);
         }
     }
 }

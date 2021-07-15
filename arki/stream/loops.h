@@ -54,17 +54,12 @@ static const unsigned POLLINFO_DESTINATION = 3;
  * descriptor, without filters
  */
 template<typename Backend>
-struct SenderDirect
+struct UnfilteredLoop
 {
     ConcreteStreamOutputBase<Backend>& stream;
     pollfd pollinfo;
 
-    SenderDirect(ConcreteStreamOutputBase<Backend>& stream)
-        : stream(stream)
-    {
-        pollinfo.fd = *stream.out;
-        pollinfo.events = POLLOUT;
-    }
+    UnfilteredLoop(ConcreteStreamOutputBase<Backend>& stream);
 
     template<typename ToOutput>
     stream::SendResult loop(ToOutput& to_output);

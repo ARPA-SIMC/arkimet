@@ -9,8 +9,16 @@
 namespace arki {
 namespace stream {
 
+template<typename Backend>
+UnfilteredLoop<Backend>::UnfilteredLoop(ConcreteStreamOutputBase<Backend>& stream)
+    : stream(stream)
+{
+    pollinfo.fd = *stream.out;
+    pollinfo.events = POLLOUT;
+}
+
 template<typename Backend> template<typename ToOutput>
-stream::SendResult SenderDirect<Backend>::loop(ToOutput& to_output)
+stream::SendResult UnfilteredLoop<Backend>::loop(ToOutput& to_output)
 {
     stream::SendResult result;
     while (true)

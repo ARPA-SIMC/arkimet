@@ -2,6 +2,7 @@
 #define ARKI_STREAM_CONCRETE_H
 
 #include <arki/stream/base.h>
+#include <arki/stream/loops.h>
 #include <arki/core/fwd.h>
 
 namespace arki {
@@ -14,6 +15,7 @@ struct ConcreteStreamOutputBase: public BaseStreamOutput
     int orig_fl = -1;
     pollfd pollinfo;
     bool has_splice = false;
+    UnfilteredLoop<Backend> unfiltered_loop;
 
     /**
      * Returns:
