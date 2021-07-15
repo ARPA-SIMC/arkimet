@@ -29,21 +29,6 @@ class SpliceNotAvailable : std::exception
     using std::exception::exception;
 };
 
-/**
- * Base class for event loops that implement the streaming operation
- */
-struct Sender
-{
-    BaseStreamOutput& stream;
-    stream::SendResult result;
-
-    Sender(BaseStreamOutput& stream)
-        : stream(stream)
-    {
-    }
-};
-
-
 static const unsigned POLLINFO_FILTER_STDIN = 0;
 static const unsigned POLLINFO_FILTER_STDOUT = 1;
 static const unsigned POLLINFO_FILTER_STDERR = 2;

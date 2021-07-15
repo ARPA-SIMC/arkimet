@@ -57,14 +57,16 @@ stream::SendResult UnfilteredLoop<Backend>::loop(ToOutput to_output)
  * Base for event loops that manage a filter
  */
 template<typename Backend, typename FromFilter>
-struct FilterLoop : public Sender
+struct FilterLoop
 {
+    BaseStreamOutput& stream;
+    stream::SendResult result;
     std::vector<PollElement*> poll_elements;
     /// pollfd structure described by the POLLINFO_* indices
     pollfd pollinfo[4];
 
     FilterLoop(BaseStreamOutput& stream, FromFilter&& from_filter)
-        : Sender(stream)
+        : stream(stream)
     {
         for (unsigned i = 0; i < 4; ++i)
         {
