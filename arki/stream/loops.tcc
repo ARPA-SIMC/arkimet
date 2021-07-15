@@ -93,36 +93,6 @@ struct FilterLoop
         poll_elements.emplace_back(el);
     }
 
-    /**
-     * Setup pollinfo before calling poll().
-     *
-     * Return true if there is still something to poll, false if all is done.
-     */
-    bool setup_poll()
-    {
-        bool needs_poll = false;
-        needs_poll = part_connect_stderr.setup_poll() or needs_poll;
-        needs_poll = part_from_filter.setup_poll() or needs_poll;
-        for (auto& el : poll_elements)
-            needs_poll = el->setup_poll() or needs_poll;
-        return needs_poll;
-    }
-
-    /**
-     * Perform actions based on poll results.
-     *
-     * Returns true if the poll loop should stop, false otherwise.
-     */
-    bool on_poll()
-    {
-        bool done = false;
-        done = part_connect_stderr.on_poll(this->result) or done;
-        done = part_from_filter.on_poll(this->result) or done;
-        for (auto& el : poll_elements)
-            done = el->on_poll(this->result) or done;
-        return done;
-    }
-
     stream::SendResult loop()
     {
         while (true)
@@ -136,7 +106,14 @@ struct FilterLoop
             //
             // In other words, we skip monitoring availability until we drain
             // the buffers
-            if (!setup_poll())
+
+            // Setup the pollinfo structure
+            bool needs_poll = false;
+            needs_poll = part_connect_stderr.setup_poll() or needs_poll;
+            needs_poll = part_from_filter.setup_poll() or needs_poll;
+            for (auto& el : poll_elements)
+                needs_poll = el->setup_poll() or needs_poll;
+            if (!needs_poll)
             {
                 trace_streaming("POLL: stopping after setup_poll returned false\n");
                 return this->result;
@@ -156,7 +133,14 @@ struct FilterLoop
                     pollinfo[2].fd, (int)pollinfo[2].events, (int)pollinfo[2].revents,
                     pollinfo[3].fd, (int)pollinfo[3].events, (int)pollinfo[3].revents);
 
-            if (on_poll())
+
+            /// Perform actions based on poll results
+            bool done = false;
+            done = part_connect_stderr.on_poll(this->result) or done;
+            done = part_from_filter.on_poll(this->result) or done;
+            for (auto& el : poll_elements)
+                done = el->on_poll(this->result) or done;
+            if (done)
             {
                 trace_streaming("POLL: stopping after on_poll returned true\n");
                 return this->result;
