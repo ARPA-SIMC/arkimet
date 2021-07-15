@@ -149,8 +149,7 @@ SendResult ConcreteStreamOutputBase<Backend>::send_buffer(const void* data, size
     {
         return _send_from_pipe<BufferToPipe>(data, size);
     } else {
-        BufferToPipe<Backend> to_pipe(data, size);
-        return unfiltered_loop.loop(to_pipe);
+        return unfiltered_loop.loop(BufferToPipe<Backend>(data, size));
     }
 }
 
@@ -189,11 +188,9 @@ SendResult ConcreteStreamOutputBase<Backend>::send_file_segment(arki::core::Name
         }
     } else {
         try {
-            FileToPipeSendfile<Backend> to_pipe(fd, offset, size);
-            return unfiltered_loop.loop(to_pipe);
+            return unfiltered_loop.loop(FileToPipeSendfile<Backend>(fd, offset, size));
         } catch (SendfileNotAvailable&) {
-            FileToPipeReadWrite<Backend> to_pipe(fd, offset, size);
-            return unfiltered_loop.loop(to_pipe);
+            return unfiltered_loop.loop(FileToPipeReadWrite<Backend>(fd, offset, size));
         }
     }
 }

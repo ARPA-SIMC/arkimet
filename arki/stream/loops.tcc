@@ -18,7 +18,7 @@ UnfilteredLoop<Backend>::UnfilteredLoop(ConcreteStreamOutputBase<Backend>& strea
 }
 
 template<typename Backend> template<typename ToOutput>
-stream::SendResult UnfilteredLoop<Backend>::loop(ToOutput& to_output)
+stream::SendResult UnfilteredLoop<Backend>::loop(ToOutput to_output)
 {
     stream::SendResult result;
     while (true)

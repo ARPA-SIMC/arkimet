@@ -62,7 +62,7 @@ struct UnfilteredLoop
     UnfilteredLoop(ConcreteStreamOutputBase<Backend>& stream);
 
     template<typename ToOutput>
-    stream::SendResult loop(ToOutput& to_output);
+    stream::SendResult loop(ToOutput to_output);
 };
 
 }
