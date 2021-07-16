@@ -2,6 +2,7 @@
 #include "concrete.h"
 #include "filter.h"
 #include "arki/utils/sys.h"
+#include <system_error>
 
 using namespace std;
 using namespace arki;
