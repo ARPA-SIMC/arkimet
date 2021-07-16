@@ -47,7 +47,7 @@ stream::SendResult UnfilteredLoop<Backend>::loop(ToOutput to_output)
     {
         pollinfo.revents = 0;
         int res = Backend::poll(&pollinfo, 1, stream.timeout_ms);
-        trace_streaming("SenderDirect.POLL: %d %d:%d\n", res, pollinfo.fd, pollinfo.revents);
+        trace_streaming("UnfilteredLoop.POLL: %d %d:%d\n", res, pollinfo.fd, pollinfo.revents);
         if (res < 0)
             throw std::system_error(errno, std::system_category(), "poll failed on " + stream.out->name());
         if (res == 0)
@@ -161,7 +161,7 @@ struct FilterLoop : public Sender
             needs_poll = part_to_filter.setup_poll() or needs_poll;
             if (!needs_poll)
             {
-                trace_streaming("POLL: stopping after setup_poll returned false\n");
+                trace_streaming("UnfilteredLoop.POLL: stopping after setup_poll returned false\n");
                 return this->result;
             }
 
@@ -173,7 +173,7 @@ struct FilterLoop : public Sender
             if (res == 0)
                 throw TimedOut("streaming operations timed out");
 
-            trace_streaming("POLL: fi:%d:%x→%x fo:%d:%x→%x fe:%d:%x→%x de:%d:%x→%x\n",
+            trace_streaming("UnfilteredLoop.POLL: fi:%d:%x→%x fo:%d:%x→%x fe:%d:%x→%x de:%d:%x→%x\n",
                     pollinfo[0].fd, (int)pollinfo[0].events, (int)pollinfo[0].revents,
                     pollinfo[1].fd, (int)pollinfo[1].events, (int)pollinfo[1].revents,
                     pollinfo[2].fd, (int)pollinfo[2].events, (int)pollinfo[2].revents,
@@ -187,7 +187,7 @@ struct FilterLoop : public Sender
             done = part_to_filter.on_poll(this->result) or done;
             if (done)
             {
-                trace_streaming("POLL: stopping after on_poll returned true\n");
+                trace_streaming("UnfilteredLoop.POLL: stopping after on_poll returned true\n");
                 return this->result;
             }
         }

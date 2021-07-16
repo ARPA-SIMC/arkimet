@@ -39,7 +39,7 @@ struct CollectFilterStderr
     void transfer_available_stderr()
     {
         ssize_t res = Backend::read(filter_process.cmd.get_stderr(), buffer.data(), buffer.size());
-        trace_streaming("  read stderr → %d %.*s\n", (int)res, (int)res, (const char*)stderr_buffer);
+        trace_streaming("  read stderr → %d %.*s\n", (int)res, (int)res, (const char*)buffer.data());
         if (res == 0)
         {
             filter_process.cmd.close_stderr();
@@ -220,7 +220,7 @@ struct FromFilter
         else
             pfd_filter_stdout->events = POLLIN;
 
-        trace_streaming("  FromFilter.setup_poll: filter_stdout: %d:%x\n", stream.filter_process->cmd.get_stdout(), (int)pfd_filter_stdout->events);
+        trace_streaming("FromFilter.setup_poll: filter_stdout: %d:%x\n", stream.filter_process->cmd.get_stdout(), (int)pfd_filter_stdout->events);
         return stream.filter_process->cmd.get_stdout() != -1;
     }
 
@@ -290,6 +290,7 @@ struct FromFilterSplice : public FromFilterConcrete<Backend>
     TransferResult transfer_available_output()
     {
 #ifndef HAVE_SPLICE
+        trace_streaming("  splice is not available\n");
         throw SpliceNotAvailable();
 #else
         // Try splice
@@ -380,7 +381,7 @@ struct FromFilterReadWrite : public FromFilterConcrete<Backend>
     TransferResult transfer_available_output_read()
     {
         ssize_t res = Backend::read(this->stream.filter_process->cmd.get_stdout(), buffer.data(), buffer.size());
-        trace_streaming("  read stdout → %d %.*s\n", (int)res, std::max((int)res, 0), (const char*)buffer);
+        trace_streaming("  FromFilterReadWrite.read stdout → %d %.*s\n", (int)res, std::max((int)res, 0), (const char*)buffer.data());
         if (res == 0)
             return TransferResult::EOF_SOURCE;
         else if (res < 0)
@@ -491,7 +492,7 @@ struct FromFilterAbstract : public FromFilter<Backend>
     TransferResult transfer_available_output()
     {
         ssize_t res = Backend::read(this->stream.filter_process->cmd.get_stdout(), buffer.data(), buffer.size());
-        trace_streaming("  read stdout %d → %d %.*s\n", this->stream.filter_process->cmd.get_stdout(), (int)res, std::max((int)res, 0), (const char*)buffer);
+        trace_streaming("  read stdout %d → %d %.*s\n", this->stream.filter_process->cmd.get_stdout(), (int)res, std::max((int)res, 0), (const char*)buffer.data());
         if (res == 0)
             return TransferResult::EOF_SOURCE;
         else if (res < 0)

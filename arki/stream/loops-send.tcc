@@ -162,7 +162,7 @@ struct FileToPipeSendfile : public ToPipe<Backend>
 #endif
         ssize_t res = Backend::sendfile(out, src_fd, &offset, size - pos);
         trace_streaming("  FileToPipeSendfile sendfile fd: %d→%d offset: %d→%d size: %d → %d\n",
-                 (int)src_fd, this->dest->fd, (int)orig_offset, (int)offset, (int)(size - pos), (int)res);
+                 (int)src_fd, (int)out, (int)orig_offset, (int)offset, (int)(size - pos), (int)res);
         if (res < 0)
         {
             if (errno == EINVAL || errno == ENOSYS)
@@ -225,7 +225,7 @@ struct FileToPipeReadWrite : public ToPipe<Backend>
         }
 
         ssize_t res = Backend::write(out, buffer.data() + write_pos, write_size - write_pos);
-        trace_streaming("  BufferToOutput write %.*s %d → %d\n", (int)(write_size - write_pos), (const char*)buffer + write_pos, (int)(write_size - write_pos), (int)res);
+        trace_streaming("  BufferToOutput write %.*s %d → %d\n", (int)(write_size - write_pos), (const char*)buffer.data() + write_pos, (int)(write_size - write_pos), (int)res);
         if (res < 0)
         {
             if (errno == EAGAIN || errno == EWOULDBLOCK)
