@@ -5,6 +5,7 @@
 #include <arki/stream/fwd.h>
 #include <arki/metadata/fwd.h>
 #include <string>
+#include <vector>
 #include <sstream>
 #include <functional>
 #include <memory>
