@@ -39,9 +39,11 @@ struct CollectFilterStderr
     void transfer_available_stderr()
     {
         ssize_t res = Backend::read(filter_process.cmd.get_stderr(), buffer.data(), buffer.size());
-        trace_streaming("  read stderr → %d %.*s\n", (int)res, (int)res, (const char*)buffer.data());
+        trace_streaming("  CollectFilterStderr: Read(%d, \"%.*s\", %zd, %d) [errno %d]\n",
+                (int)filter_process.cmd.get_stderr(), std::max((int)res, 0), (const char*)buffer.data(), buffer.size(), (int)res, errno);
         if (res == 0)
         {
+            trace_streaming("  CollectFilterStderr.transfer_available_stderr: EOF on filter stderr: closing it\n");
             filter_process.cmd.close_stderr();
             pfd_filter_stderr->fd = -1;
         }
@@ -69,10 +71,10 @@ struct CollectFilterStderr
     {
         if (pfd_filter_stderr->revents & POLLIN)
             transfer_available_stderr();
-
-        if (pfd_filter_stderr->revents & (POLLERR | POLLHUP))
+        else if (pfd_filter_stderr->revents & (POLLERR | POLLHUP))
         {
             // Filter stderr closed its endpoint
+            trace_streaming("  CollectFilterStderr.on_poll: EOF on filter stderr: closing it\n");
             filter_process.cmd.close_stderr();
             pfd_filter_stderr->fd = -1;
         }
@@ -176,11 +178,9 @@ struct ToFilter
                 case TransferResult::WOULDBLOCK:
                     break;
             }
-        }
-
-        if (pfd_filter_stdin->revents & (POLLERR | POLLHUP))
-        {
+        } else if (pfd_filter_stdin->revents & (POLLERR | POLLHUP)) {
             // result.flags |= SendResult::SEND_PIPE_EOF_DEST; // TODO: signal this somehow?
+            trace_streaming("  ToFilter.on_poll: POLLERR|POLLHUP on filter stdin: closing it\n");
             stream.filter_process->cmd.close_stdin();
             pfd_filter_stdin->fd = -1;
         }
@@ -220,7 +220,7 @@ struct FromFilter
         else
             pfd_filter_stdout->events = POLLIN;
 
-        trace_streaming("FromFilter.setup_poll: filter_stdout: %d:%x\n", stream.filter_process->cmd.get_stdout(), (int)pfd_filter_stdout->events);
+        trace_streaming("  FromFilter.setup_poll: filter_stdout: %d:%x\n", stream.filter_process->cmd.get_stdout(), (int)pfd_filter_stdout->events);
         return stream.filter_process->cmd.get_stdout() != -1;
     }
 
@@ -270,8 +270,7 @@ struct FromFilterConcrete : public FromFilter<Backend>
 
         if (this->pfd_destination->revents & POLLOUT)
             destination_available = true;
-
-        if (this->pfd_destination->revents & (POLLERR | POLLHUP))
+        else if (this->pfd_destination->revents & (POLLERR | POLLHUP))
         {
             // Destination closed its endpoint, stop here
             result.flags |= SendResult::SEND_PIPE_EOF_DEST;
@@ -350,10 +349,7 @@ struct FromFilterSplice : public FromFilterConcrete<Backend>
                 case TransferResult::WOULDBLOCK:
                     break;
             }
-        }
-
-        if (this->pfd_filter_stdout->revents & (POLLERR | POLLHUP))
-        {
+        } else if (this->pfd_filter_stdout->revents & (POLLERR | POLLHUP)) {
             trace_streaming("  FromFilterSplice.on_poll: filter stdout closed\n");
             // Filter stdout closed its endpoint
             this->stream.filter_process->cmd.close_stdout();
@@ -381,7 +377,8 @@ struct FromFilterReadWrite : public FromFilterConcrete<Backend>
     TransferResult transfer_available_output_read()
     {
         ssize_t res = Backend::read(this->stream.filter_process->cmd.get_stdout(), buffer.data(), buffer.size());
-        trace_streaming("  FromFilterReadWrite.read stdout → %d %.*s\n", (int)res, std::max((int)res, 0), (const char*)buffer.data());
+        trace_streaming("  FromFilterReadWrite: Read(%d, \"%.*s\", %zd, %d) [errno %d]\n",
+                (int)this->stream.filter_process->cmd.get_stdout(), std::max((int)res, 0), (const char*)buffer.data(), buffer.size(), (int)res, errno);
         if (res == 0)
             return TransferResult::EOF_SOURCE;
         else if (res < 0)
@@ -411,7 +408,8 @@ struct FromFilterReadWrite : public FromFilterConcrete<Backend>
     bool setup_poll()
     {
         bool res = FromFilter<Backend>::setup_poll();
-        res = res or (to_output.size > 0 && to_output.size < to_output.pos);
+        trace_streaming("  FromFilterReadWrite.setup_poll: parent: %d, %zd/%zd\n", res, to_output.pos, to_output.size);
+        res = res or (to_output.size > 0 && to_output.pos < to_output.size);
         return res;
     }
 
@@ -422,6 +420,8 @@ struct FromFilterReadWrite : public FromFilterConcrete<Backend>
         trace_streaming("  FromFilterReadWrite.on_poll stdout_available:%d destination_available:%d to_output:%zd/%zd\n",
                 this->filter_stdout_available, this->destination_available, to_output.pos, to_output.size);
 
+        bool moved_data = false;
+
         if ((to_output.size == 0 || to_output.pos >= to_output.size) && this->filter_stdout_available)
         {
             this->filter_stdout_available = false;
@@ -430,6 +430,7 @@ struct FromFilterReadWrite : public FromFilterConcrete<Backend>
                 case TransferResult::DONE:
                     throw std::runtime_error("unexpected result from feed_filter_stdin");
                 case TransferResult::EOF_SOURCE:
+                    trace_streaming("  FromFilterReadWrite.on_poll: EOF on filter_stdout: closing it\n");
                     this->stream.filter_process->cmd.close_stdout();
                     break;
                 case TransferResult::EOF_DEST:
@@ -437,9 +438,10 @@ struct FromFilterReadWrite : public FromFilterConcrete<Backend>
                 case TransferResult::WOULDBLOCK:
                     break;
             }
+            moved_data = true;
         }
 
-        if (to_output.size > 0 && this->destination_available)
+        if (to_output.size > 0 && to_output.pos < to_output.size && this->destination_available)
         {
             this->destination_available = false;
             switch (transfer_available_output_write())
@@ -459,11 +461,12 @@ struct FromFilterReadWrite : public FromFilterConcrete<Backend>
                 case TransferResult::WOULDBLOCK:
                     break;
             }
+            moved_data = true;
         }
 
-        if (this->pfd_filter_stdout->revents & (POLLERR | POLLHUP))
-        {
+        if (!moved_data && this->pfd_filter_stdout->revents & (POLLERR | POLLHUP)) {
             // Filter stdout closed its endpoint
+            trace_streaming("  FromFilterReadWrite.on_poll: POLLERR|POLLUP on filter_stdout: closing it\n");
             this->stream.filter_process->cmd.close_stdout();
             this->pfd_filter_stdout->fd = -1;
         }
@@ -492,7 +495,8 @@ struct FromFilterAbstract : public FromFilter<Backend>
     TransferResult transfer_available_output()
     {
         ssize_t res = Backend::read(this->stream.filter_process->cmd.get_stdout(), buffer.data(), buffer.size());
-        trace_streaming("  read stdout %d → %d %.*s\n", this->stream.filter_process->cmd.get_stdout(), (int)res, std::max((int)res, 0), (const char*)buffer.data());
+        trace_streaming("  FromFilterAbstract: Read(%d, \"%.*s\", %zd, %d) [errno %d]\n",
+                (int)this->stream.filter_process->cmd.get_stdout(), std::max((int)res, 0), (const char*)buffer.data(), buffer.size(), (int)res, errno);
         if (res == 0)
             return TransferResult::EOF_SOURCE;
         else if (res < 0)

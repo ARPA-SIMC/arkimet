@@ -64,7 +64,8 @@ struct BufferToPipe : public MemoryToPipe<Backend>
     TransferResult transfer_available(core::NamedFileDescriptor& out)
     {
         ssize_t res = Backend::write(out, (const uint8_t*)this->data + this->pos, this->size - this->pos);
-        trace_streaming("  BufferToPipe write pos:%zd %.*s %d → %d\n", this->pos, (int)(this->size - this->pos), (const char*)this->data + this->pos, (int)(this->size - this->pos), (int)res);
+        trace_streaming("  BufferToPipe[pos:%zd]: Write(%d, \"%.*s\", %d, %d) [errno %d]\n",
+                this->pos, (int)out, (int)(this->size - this->pos), (const char*)this->data + this->pos, (int)(this->size - this->pos), (int)res, errno);
         if (res < 0)
         {
             if (errno == EAGAIN || errno == EWOULDBLOCK)

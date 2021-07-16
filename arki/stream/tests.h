@@ -221,6 +221,8 @@ struct ExpectedPoll : public ExpectedSyscallMatch
         struct pollfd* current = nullptr;
         for (unsigned i = 0; i < nfds; ++i)
         {
+            if (fds[i].fd == -1)
+                continue;
             fds[i].revents = 0;
             if (fds[i].fd == fd)
                 current = &fds[i];
