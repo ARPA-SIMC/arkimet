@@ -70,8 +70,7 @@ struct CollectFilterStderr
     {
         if (pfd_filter_stderr->revents & POLLIN)
             transfer_available_stderr();
-
-        if (pfd_filter_stderr->revents & (POLLERR | POLLHUP))
+        else if (pfd_filter_stderr->revents & (POLLERR | POLLHUP))
         {
             // Filter stderr closed its endpoint
             filter_process.cmd.close_stderr();
@@ -177,10 +176,7 @@ struct ToFilter
                 case TransferResult::WOULDBLOCK:
                     break;
             }
-        }
-
-        if (pfd_filter_stdin->revents & (POLLERR | POLLHUP))
-        {
+        } else if (pfd_filter_stdin->revents & (POLLERR | POLLHUP)) {
             // result.flags |= SendResult::SEND_PIPE_EOF_DEST; // TODO: signal this somehow?
             stream.filter_process->cmd.close_stdin();
             pfd_filter_stdin->fd = -1;
@@ -271,8 +267,7 @@ struct FromFilterConcrete : public FromFilter<Backend>
 
         if (this->pfd_destination->revents & POLLOUT)
             destination_available = true;
-
-        if (this->pfd_destination->revents & (POLLERR | POLLHUP))
+        else if (this->pfd_destination->revents & (POLLERR | POLLHUP))
         {
             // Destination closed its endpoint, stop here
             result.flags |= SendResult::SEND_PIPE_EOF_DEST;
@@ -351,10 +346,7 @@ struct FromFilterSplice : public FromFilterConcrete<Backend>
                 case TransferResult::WOULDBLOCK:
                     break;
             }
-        }
-
-        if (this->pfd_filter_stdout->revents & (POLLERR | POLLHUP))
-        {
+        } else if (this->pfd_filter_stdout->revents & (POLLERR | POLLHUP)) {
             trace_streaming("  FromFilterSplice.on_poll: filter stdout closed\n");
             // Filter stdout closed its endpoint
             this->stream.filter_process->cmd.close_stdout();
@@ -413,7 +405,8 @@ struct FromFilterReadWrite : public FromFilterConcrete<Backend>
     bool setup_poll()
     {
         bool res = FromFilter<Backend>::setup_poll();
-        res = res or (to_output.size > 0 && to_output.size < to_output.pos);
+        trace_streaming("  FromFilterReadWrite.setup_poll: parent: %d, %zd/%zd\n", res, to_output.pos, to_output.size);
+        res = res or (to_output.size > 0 && to_output.pos < to_output.size);
         return res;
     }
 
@@ -424,47 +417,47 @@ struct FromFilterReadWrite : public FromFilterConcrete<Backend>
         trace_streaming("  FromFilterReadWrite.on_poll stdout_available:%d destination_available:%d to_output:%zd/%zd\n",
                 this->filter_stdout_available, this->destination_available, to_output.pos, to_output.size);
 
-        if ((to_output.size == 0 || to_output.pos >= to_output.size) && this->filter_stdout_available)
+        if (this->filter_stdout_available || this->destination_available)
         {
-            this->filter_stdout_available = false;
-            switch (transfer_available_output_read())
+            if ((to_output.size == 0 || to_output.pos >= to_output.size) && this->filter_stdout_available)
             {
-                case TransferResult::DONE:
-                    throw std::runtime_error("unexpected result from feed_filter_stdin");
-                case TransferResult::EOF_SOURCE:
-                    this->stream.filter_process->cmd.close_stdout();
-                    break;
-                case TransferResult::EOF_DEST:
-                    throw std::runtime_error("unexpected result from feed_filter_stdin");
-                case TransferResult::WOULDBLOCK:
-                    break;
+                this->filter_stdout_available = false;
+                switch (transfer_available_output_read())
+                {
+                    case TransferResult::DONE:
+                        throw std::runtime_error("unexpected result from feed_filter_stdin");
+                    case TransferResult::EOF_SOURCE:
+                        this->stream.filter_process->cmd.close_stdout();
+                        break;
+                    case TransferResult::EOF_DEST:
+                        throw std::runtime_error("unexpected result from feed_filter_stdin");
+                    case TransferResult::WOULDBLOCK:
+                        break;
+                }
             }
-        }
 
-        if (to_output.size > 0 && this->destination_available)
-        {
-            this->destination_available = false;
-            switch (transfer_available_output_write())
+            if (to_output.size > 0 && this->destination_available)
             {
-                case TransferResult::DONE:
-                    if (this->stream.filter_process->cmd.get_stdout() == -1)
-                        // We are done if filter_stdout is closed
+                this->destination_available = false;
+                switch (transfer_available_output_write())
+                {
+                    case TransferResult::DONE:
+                        if (this->stream.filter_process->cmd.get_stdout() == -1)
+                            // We are done if filter_stdout is closed
+                            done = true;
+                        break;
+                    case TransferResult::EOF_SOURCE:
+                        throw std::runtime_error("unexpected result from feed_filter_stdin");
+                    case TransferResult::EOF_DEST:
+                        // Destination closed its pipe
+                        result.flags |= SendResult::SEND_PIPE_EOF_DEST;
                         done = true;
-                    break;
-                case TransferResult::EOF_SOURCE:
-                    throw std::runtime_error("unexpected result from feed_filter_stdin");
-                case TransferResult::EOF_DEST:
-                    // Destination closed its pipe
-                    result.flags |= SendResult::SEND_PIPE_EOF_DEST;
-                    done = true;
-                    break;
-                case TransferResult::WOULDBLOCK:
-                    break;
+                        break;
+                    case TransferResult::WOULDBLOCK:
+                        break;
+                }
             }
-        }
-
-        if (this->pfd_filter_stdout->revents & (POLLERR | POLLHUP))
-        {
+        } else if (this->pfd_filter_stdout->revents & (POLLERR | POLLHUP)) {
             // Filter stdout closed its endpoint
             this->stream.filter_process->cmd.close_stdout();
             this->pfd_filter_stdout->fd = -1;

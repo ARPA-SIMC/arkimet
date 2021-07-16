@@ -161,7 +161,7 @@ struct FilterLoop : public Sender
             needs_poll = part_to_filter.setup_poll() or needs_poll;
             if (!needs_poll)
             {
-                trace_streaming("UnfilteredLoop.POLL: stopping after setup_poll returned false\n");
+                trace_streaming("FilteredLoop.POLL: stopping after setup_poll returned false\n");
                 return this->result;
             }
 
@@ -187,7 +187,7 @@ struct FilterLoop : public Sender
             done = part_to_filter.on_poll(this->result) or done;
             if (done)
             {
-                trace_streaming("UnfilteredLoop.POLL: stopping after on_poll returned true\n");
+                trace_streaming("FilteredLoop.POLL: stopping after on_poll returned true\n");
                 return this->result;
             }
         }
