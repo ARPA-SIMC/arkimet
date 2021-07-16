@@ -21,7 +21,7 @@ namespace stream {
  * `errors` buffer on the FilterProcess object
  */
 template<typename Backend>
-struct CollectFilterStderr : public PollElement
+struct CollectFilterStderr
 {
     FilterProcess& filter_process;
     pollfd* pfd_filter_stderr;
@@ -29,7 +29,7 @@ struct CollectFilterStderr : public PollElement
 
     CollectFilterStderr(BaseStreamOutput& stream) : filter_process(*stream.filter_process) {}
 
-    void set_output(pollfd* pollinfo) override
+    void set_output(pollfd* pollinfo)
     {
         pfd_filter_stderr = &pollinfo[POLLINFO_FILTER_STDERR];
         pfd_filter_stderr->fd = filter_process.cmd.get_stderr();
@@ -60,12 +60,12 @@ struct CollectFilterStderr : public PollElement
         }
     }
 
-    bool setup_poll() override
+    bool setup_poll()
     {
         return filter_process.cmd.get_stderr() != -1;
     }
 
-    bool on_poll(SendResult& result) override
+    bool on_poll(SendResult& result)
     {
         if (pfd_filter_stderr->revents & POLLIN)
             transfer_available_stderr();
@@ -88,7 +88,7 @@ struct CollectFilterStderr : public PollElement
  * Stops polling the filter stdin and doesn't send anything to it
  */
 template<typename Backend>
-struct Flusher : public PollElement
+struct Flusher
 {
     BaseStreamOutput& stream;
     pollfd* pfd_filter_stdin;
@@ -98,19 +98,19 @@ struct Flusher : public PollElement
     {
     }
 
-    void set_output(pollfd* pollinfo) override
+    void set_output(pollfd* pollinfo)
     {
         pfd_filter_stdin = &pollinfo[POLLINFO_FILTER_STDIN];
         pfd_filter_stdin->fd = -1;
         pfd_filter_stdin->events = 0;
     }
 
-    bool setup_poll() override
+    bool setup_poll()
     {
         return false;
     }
 
-    bool on_poll(SendResult& result) override
+    bool on_poll(SendResult& result)
     {
         return false;
     }
@@ -124,7 +124,7 @@ struct Flusher : public PollElement
  * stdin's file descriptor
  */
 template<typename Backend, typename ToPipe>
-struct ToFilter : public PollElement
+struct ToFilter
 {
     BaseStreamOutput& stream;
     core::NamedFileDescriptor filter_stdin;
@@ -136,7 +136,7 @@ struct ToFilter : public PollElement
     {
     }
 
-    void set_output(pollfd* pollinfo) override
+    void set_output(pollfd* pollinfo)
     {
         pfd_filter_stdin = &pollinfo[POLLINFO_FILTER_STDIN];
         pfd_filter_stdin->fd = stream.filter_process->cmd.get_stdin();
@@ -154,12 +154,12 @@ struct ToFilter : public PollElement
         return res;
     }
 
-    bool setup_poll() override
+    bool setup_poll()
     {
         return stream.filter_process->cmd.get_stdin() != -1;
     }
 
-    bool on_poll(SendResult& result) override
+    bool on_poll(SendResult& result)
     {
         if (pfd_filter_stdin->revents & POLLOUT)
         {
@@ -195,7 +195,7 @@ struct ToFilter : public PollElement
  * destination
  */
 template<typename Backend>
-struct FromFilter : public PollElement
+struct FromFilter
 {
     BaseStreamOutput& stream;
     pollfd* pfd_filter_stdout;
@@ -207,14 +207,14 @@ struct FromFilter : public PollElement
     FromFilter(const FromFilter&) = default;
     FromFilter(FromFilter&&) = default;
 
-    void set_output(pollfd* pollinfo) override
+    void set_output(pollfd* pollinfo)
     {
         pfd_filter_stdout = &pollinfo[POLLINFO_FILTER_STDOUT];
         pfd_filter_stdout->fd = stream.filter_process->cmd.get_stdout();
         pfd_filter_stdout->events = POLLIN;
     }
 
-    bool setup_poll() override
+    bool setup_poll()
     {
         if (filter_stdout_available)
             pfd_filter_stdout->events = 0;
@@ -225,7 +225,7 @@ struct FromFilter : public PollElement
         return stream.filter_process->cmd.get_stdout() != -1;
     }
 
-    bool on_poll(SendResult& result) override
+    bool on_poll(SendResult& result)
     {
         if (pfd_filter_stdout->revents & POLLIN)
             filter_stdout_available = true;
@@ -244,7 +244,7 @@ struct FromFilterConcrete : public FromFilter<Backend>
     FromFilterConcrete(const FromFilterConcrete&) = default;
     FromFilterConcrete(FromFilterConcrete&&) = default;
 
-    void set_output(pollfd* pollinfo) override
+    void set_output(pollfd* pollinfo)
     {
         FromFilter<Backend>::set_output(pollinfo);
         this->out_name = out_fd.name();
@@ -253,7 +253,7 @@ struct FromFilterConcrete : public FromFilter<Backend>
         this->pfd_destination->events = POLLOUT;
     }
 
-    bool setup_poll() override
+    bool setup_poll()
     {
         bool res = FromFilter<Backend>::setup_poll();
 
@@ -265,7 +265,7 @@ struct FromFilterConcrete : public FromFilter<Backend>
         return res;
     }
 
-    bool on_poll(SendResult& result) override
+    bool on_poll(SendResult& result)
     {
         bool done = FromFilter<Backend>::on_poll(result);
 
@@ -319,7 +319,7 @@ struct FromFilterSplice : public FromFilterConcrete<Backend>
 #endif
     }
 
-    bool on_poll(SendResult& result) override
+    bool on_poll(SendResult& result)
     {
         bool done = FromFilterConcrete<Backend>::on_poll(result);
 
@@ -411,14 +411,14 @@ struct FromFilterReadWrite : public FromFilterConcrete<Backend>
         return res;
     }
 
-    bool setup_poll() override
+    bool setup_poll()
     {
         bool res = FromFilter<Backend>::setup_poll();
         res = res or (to_output.size > 0);
         return res;
     }
 
-    bool on_poll(SendResult& result) override
+    bool on_poll(SendResult& result)
     {
         bool done = FromFilterConcrete<Backend>::on_poll(result);
 
@@ -485,7 +485,7 @@ struct FromFilterAbstract : public FromFilter<Backend>
     FromFilterAbstract(const FromFilterAbstract&) = default;
     FromFilterAbstract(FromFilterAbstract&&) = default;
 
-    void set_output(pollfd* pollinfo) override
+    void set_output(pollfd* pollinfo)
     {
         FromFilter<Backend>::set_output(pollinfo);
         this->out_name = "output";
@@ -513,7 +513,7 @@ struct FromFilterAbstract : public FromFilter<Backend>
         }
     }
 
-    bool on_poll(SendResult& result) override
+    bool on_poll(SendResult& result)
     {
         bool done = FromFilter<Backend>::on_poll(result);
 

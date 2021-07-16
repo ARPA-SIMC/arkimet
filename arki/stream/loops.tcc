@@ -85,7 +85,6 @@ struct FilterLoop : public Sender
     stream::SendResult result;
     CollectFilterStderr<Backend> part_connect_stderr;
     FromFilter part_from_filter;
-    std::vector<PollElement*> poll_elements;
     /// pollfd structure described by the POLLINFO_* indices
     pollfd pollinfo[4];
 
@@ -105,14 +104,6 @@ struct FilterLoop : public Sender
 
     virtual ~FilterLoop()
     {
-        for (auto& el: poll_elements)
-            delete el;
-    }
-
-    void add_poll_element(PollElement* el)
-    {
-        el->set_output(pollinfo);
-        poll_elements.emplace_back(el);
     }
 
     template<typename Source>
@@ -168,8 +159,6 @@ struct FilterLoop : public Sender
             needs_poll = part_connect_stderr.setup_poll() or needs_poll;
             needs_poll = part_from_filter.setup_poll() or needs_poll;
             needs_poll = part_to_filter.setup_poll() or needs_poll;
-            for (auto& el : poll_elements)
-                needs_poll = el->setup_poll() or needs_poll;
             if (!needs_poll)
             {
                 trace_streaming("POLL: stopping after setup_poll returned false\n");
@@ -196,8 +185,6 @@ struct FilterLoop : public Sender
             done = part_connect_stderr.on_poll(this->result) or done;
             done = part_from_filter.on_poll(this->result) or done;
             done = part_to_filter.on_poll(this->result) or done;
-            for (auto& el : poll_elements)
-                done = el->on_poll(this->result) or done;
             if (done)
             {
                 trace_streaming("POLL: stopping after on_poll returned true\n");

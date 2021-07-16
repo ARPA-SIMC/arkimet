@@ -46,7 +46,7 @@ struct BaseStreamOutput : public StreamOutput
 
 struct Sender
 {
-    virtual ~Sender() {}
+    virtual ~Sender();
 
     virtual stream::SendResult send_buffer(const void* data, size_t size) = 0;
     virtual stream::SendResult send_line(const void* data, size_t size) = 0;
@@ -82,18 +82,6 @@ struct TransferBuffer
     }
 
     operator char*() { return buf; }
-};
-
-/**
- * Base class for logic that responds to poll events
- */
-struct PollElement
-{
-    virtual ~PollElement();
-
-    virtual void set_output(pollfd* pollinfo) = 0;
-    virtual bool setup_poll() = 0;
-    virtual bool on_poll(SendResult& result) = 0;
 };
 
 
