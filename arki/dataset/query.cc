@@ -27,7 +27,7 @@ void ByteQuery::setPostprocess(const Matcher& m, const std::string& procname)
     with_data = true;
     type = BQ_POSTPROCESS;
     matcher = m;
-    param = procname;
+    postprocessor = procname;
 }
 
 }

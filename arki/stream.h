@@ -15,6 +15,9 @@ namespace arki {
 
 namespace stream {
 
+class FilterProcess;
+
+/// Exception thrown when a stream output times out
 class TimedOut : public std::runtime_error
 {
 public:
@@ -41,9 +44,20 @@ public:
     virtual void set_progress_callback(std::function<void(size_t)> f) = 0;
 
     /**
-     * Set a callback to be called once before the first byte is streamed out
+     * Pipe all input data through the given child command before sending it to
+     * the stream output.
      */
-    virtual void set_data_start_callback(std::function<stream::SendResult(StreamOutput&)>) = 0;
+    virtual stream::FilterProcess* start_filter(const std::vector<std::string>& command) = 0;
+
+    /**
+     * Stop sending data through a child command, and shut it down.
+     */
+    virtual std::unique_ptr<stream::FilterProcess> stop_filter() = 0;
+
+    /**
+     * Just stop the filter process
+     */
+    virtual void abort_filter() = 0;
 
     /**
      * Stream the contents of a memory buffer.
@@ -68,34 +82,15 @@ public:
     virtual stream::SendResult send_file_segment(arki::core::NamedFileDescriptor& fd, off_t offset, size_t size) = 0;
 
     /**
-     * Stream an arbitrary chunk of data from a pipe.
-     *
-     * Returns the number of bytes written, which depends on how much data was
-     * read by a single read operation, or spliced by a single splice operation.
-     *
-     * This will read until the end of the pipe unless:
-     *
-     *  * the output closes its endpoint
-     *  * the input reaches end of file
-     *  * the input is in non-blocking mode, and a read returns EAGAIN
-     */
-    virtual stream::SendResult send_from_pipe(int fd) = 0;
-
-    /**
      * Create a StreamOutput to stream to a file.
      *
-     * Stream operations can block on writes for as long as needed (possibly
-     * indefinitely).
-     */
-    static std::unique_ptr<StreamOutput> create(std::shared_ptr<core::NamedFileDescriptor> out);
-
-    /**
-     * Create a StreamOutput to stream to a file.
+     * If timeout_ms is 0 or not specified, stream operations can block on
+     * writes for as long as needed (possibly indefinitely).
      *
-     * Stream operations can block on writes for at most the given number of
-     * milliseconds. If timed out, StreamTimedOut is raised
+     * Otherwise, stream operations can block on writes for at most the given
+     * number of milliseconds. If timed out, StreamTimedOut is raised
      */
-    static std::unique_ptr<StreamOutput> create(std::shared_ptr<core::NamedFileDescriptor> out, unsigned timeout_ms);
+    static std::unique_ptr<StreamOutput> create(std::shared_ptr<core::NamedFileDescriptor> out, unsigned timeout_ms=0);
 
     /**
      * Create a Streamoutput to stream to a memory buffer
@@ -107,7 +102,6 @@ public:
      */
     static std::unique_ptr<StreamOutput> create_discard();
 };
-
 
 }
 #endif

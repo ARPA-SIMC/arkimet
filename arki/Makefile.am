@@ -24,10 +24,14 @@ nobase_dist_arkiinclude_HEADERS = \
 		core/curl.h \
 		stream.h \
 		stream/base.h \
+		stream/filter.h \
+		stream/loops.tcc \
+		stream/loops-send.tcc \
+		stream/abstract.h \
+		stream/abstract.tcc \
 		stream/concrete.h \
 		stream/concrete.tcc \
-		stream/concrete-timeout.h \
-		stream/concrete-timeout.tcc \
+		stream/concrete-parts.tcc \
 		stream/discard.h \
 		stream/buffer.h \
 		stream/tests.h \
@@ -187,7 +191,6 @@ nobase_dist_arkiinclude_HEADERS = \
 		utils/files.h \
 		utils/geos.h \
 		utils/geosfwd.h \
-		utils/process.h \
 		utils/regexp.h \
 		utils/sqlite.h \
 		utils/string.h \
@@ -240,8 +243,9 @@ libarkimet_la_SOURCES += \
 		core/curl.cc \
 		stream.cc \
 		stream/base.cc \
+		stream/filter.cc \
+		stream/abstract.cc \
 		stream/concrete.cc \
-		stream/concrete-timeout.cc \
 		stream/discard.cc \
 		stream/buffer.cc \
 		exceptions.cc \
@@ -250,7 +254,6 @@ libarkimet_la_SOURCES += \
 		utils/geos.cc \
 		utils/gzip.cc \
 		utils/files.cc \
-		utils/process.cc \
 		utils/regexp.cc \
 		utils/string.cc \
 		utils/sys.cc \
@@ -363,8 +366,9 @@ tests_arki_test_SOURCES += \
 		core/curl-test.cc \
 		stream-test.cc \
 		stream/base-test.cc \
+		stream/filter-test.cc \
+		stream/abstract-test.cc \
 		stream/concrete-test.cc \
-		stream/concrete-timeout-test.cc \
 		stream/discard-test.cc \
 		stream/buffer-test.cc \
 		stream/tests.cc \
@@ -374,7 +378,6 @@ tests_arki_test_SOURCES += \
 		utils/tar-test.cc \
 		utils/zip-test.cc \
 		utils/files-test.cc \
-		utils/process-test.cc \
 		utils/regexp-test.cc \
 		utils/geos-test.cc \
 		structured/memory-test.cc \

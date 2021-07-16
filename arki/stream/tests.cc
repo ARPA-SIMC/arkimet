@@ -1,6 +1,7 @@
 #include "tests.h"
 #include "base.h"
 #include "concrete.h"
+#include "filter.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/subprocess.h"
 #include <numeric>
@@ -25,69 +26,134 @@ std::string StreamTestsFixture::streamed_contents()
 void StreamTestsFixture::set_output(std::unique_ptr<StreamOutput>&& output)
 {
     this->output = std::move(output);
-
-    this->output->set_progress_callback([&](size_t written) {
-        cb_log.push_back(written);
-    });
 }
 
 stream::SendResult StreamTestsFixture::send_line(const void* data, size_t size)
 {
-    cb_log.clear();
     return output->send_line(data, size);
 }
 
 stream::SendResult StreamTestsFixture::send_file_segment(arki::core::NamedFileDescriptor& fd, off_t offset, size_t size)
 {
-    cb_log.clear();
     return output->send_file_segment(fd, offset, size);
 }
 
 stream::SendResult StreamTestsFixture::send_buffer(const void* data, size_t size)
 {
-    cb_log.clear();
     return output->send_buffer(data, size);
 }
 
-stream::SendResult StreamTestsFixture::send_from_pipe(int fd)
-{
-    cb_log.clear();
-    return output->send_from_pipe(fd);
-}
-
 MockConcreteSyscalls::MockConcreteSyscalls()
-    : orig_read(ConcreteTestingBackend::read),
-      orig_write(ConcreteTestingBackend::write),
-      orig_writev(ConcreteTestingBackend::writev),
-      orig_sendfile(ConcreteTestingBackend::sendfile),
-      orig_splice(ConcreteTestingBackend::splice),
-      orig_poll(ConcreteTestingBackend::poll),
-      orig_pread(ConcreteTestingBackend::pread)
+    : orig_read(TestingBackend::read),
+      orig_write(TestingBackend::write),
+      orig_writev(TestingBackend::writev),
+      orig_sendfile(TestingBackend::sendfile),
+      orig_splice(TestingBackend::splice),
+      orig_poll(TestingBackend::poll),
+      orig_pread(TestingBackend::pread)
 {
 }
 
 MockConcreteSyscalls::~MockConcreteSyscalls()
 {
-    ConcreteTestingBackend::read = orig_read;
-    ConcreteTestingBackend::write = orig_write;
-    ConcreteTestingBackend::writev = orig_writev;
-    ConcreteTestingBackend::sendfile = orig_sendfile;
-    ConcreteTestingBackend::splice = orig_splice;
-    ConcreteTestingBackend::poll = orig_poll;
-    ConcreteTestingBackend::pread = orig_pread;
+    TestingBackend::read = orig_read;
+    TestingBackend::write = orig_write;
+    TestingBackend::writev = orig_writev;
+    TestingBackend::sendfile = orig_sendfile;
+    TestingBackend::splice = orig_splice;
+    TestingBackend::poll = orig_poll;
+    TestingBackend::pread = orig_pread;
 }
 
 DisableSendfileSplice::DisableSendfileSplice()
 {
-    ConcreteTestingBackend::sendfile = [](int out_fd, int in_fd, off_t *offset, size_t count) -> ssize_t {
+    TestingBackend::sendfile = [](int out_fd, int in_fd, off_t *offset, size_t count) -> ssize_t {
         errno = EINVAL;
         return -1;
     };
-    ConcreteTestingBackend::splice = [](int fd_in, loff_t *off_in, int fd_out,
+    TestingBackend::splice = [](int fd_in, loff_t *off_in, int fd_out,
                                         loff_t *off_out, size_t len, unsigned int flags) -> ssize_t {
         errno = EINVAL;
         return -1;
     };
+}
+
+ExpectedSyscalls::ExpectedSyscalls(std::vector<ExpectedSyscallMatch*> expected) : expected(expected)
+{
+    TestingBackend::read = [this](int fd, void *buf, size_t count) { return on_read(fd, buf, count); };
+    TestingBackend::write = [this](int fd, const void *buf, size_t count) { return on_write(fd, buf, count); };
+    TestingBackend::writev = [this](int fd, const struct iovec *iov, int iovcnt) { return on_writev(fd, iov, iovcnt); };
+    TestingBackend::sendfile = [this](int out_fd, int in_fd, off_t *offset, size_t count) { return on_sendfile(out_fd, in_fd, offset, count); };
+    TestingBackend::splice = [this](int fd_in, loff_t *off_in, int fd_out,
+              loff_t *off_out, size_t len, unsigned int flags) { return on_splice(fd_in, off_in, fd_out, off_out, len, flags); };
+    TestingBackend::poll = [this](struct pollfd *fds, nfds_t nfds, int timeout) { return on_poll(fds, nfds, timeout); };
+    TestingBackend::pread = [this](int fd, void *buf, size_t count, off_t offset) { return on_pread(fd, buf, count, offset); };
+
+    for (size_t i = 0; i < expected.size(); ++i)
+        expected[i]->index = i + 1;
+}
+
+ExpectedSyscalls::~ExpectedSyscalls()
+{
+    for (auto& el: expected)
+        delete el;
+}
+
+std::unique_ptr<ExpectedSyscallMatch> ExpectedSyscalls::pop(const char* name)
+{
+    if (expected.empty())
+    {
+        std::string msg = "unexpected syscall ";
+        msg += name;
+        msg += " received: the expected list is empty";
+        wfail_test(msg);
+    }
+    std::unique_ptr<ExpectedSyscallMatch> res(expected[0]);
+    expected.erase(expected.begin());
+    // fprintf(stderr, "ExpectedSyscalls::pop %s\n", res->tag().c_str());
+    return res;
+}
+
+void ExpectedSyscalls::check_not_called()
+{
+    if (!expected.empty())
+        wfail_test("function unexpectedly stopped before syscall " + expected.front()->tag());
+}
+
+ssize_t ExpectedSyscalls::on_read(int fd, void *buf, size_t count)
+{
+    return pop("read")->on_read(fd, buf, count);
+}
+
+ssize_t ExpectedSyscalls::on_write(int fd, const void *buf, size_t count)
+{
+    return pop("write")->on_write(fd, buf, count);
+}
+
+ssize_t ExpectedSyscalls::on_writev(int fd, const struct iovec *iov, int iovcnt)
+{
+    return pop("writev")->on_writev(fd, iov, iovcnt);
+}
+
+ssize_t ExpectedSyscalls::on_sendfile(int out_fd, int in_fd, off_t *offset, size_t count)
+{
+    return pop("sendfile")->on_sendfile(out_fd, in_fd, offset, count);
+}
+
+ssize_t ExpectedSyscalls::on_splice(int fd_in, loff_t *off_in, int fd_out,
+                  loff_t *off_out, size_t len, unsigned int flags)
+{
+    return pop("splice")->on_splice(fd_in, off_in, fd_out, off_out, len, flags);
+}
+
+int ExpectedSyscalls::on_poll(struct pollfd *fds, nfds_t nfds, int timeout)
+{
+    return pop("poll")->on_poll(fds, nfds, timeout);
+}
+
+ssize_t ExpectedSyscalls::on_pread(int fd, void *buf, size_t count, off_t offset)
+{
+    return pop("pread")->on_pread(fd, buf, count, offset);
 }
 
 
@@ -216,23 +282,137 @@ using namespace arki::tests;
 add_method("send_line", [&] {
     auto f = make_fixture();
 
-    wassert(actual(f->send_line("testline", 8)) == stream::SendResult(9));
-    wassert(actual(f->cb_log) == std::vector<size_t>{9u});
-    wassert(actual(f->send_line("testline1", 9)) == stream::SendResult(10));
-    wassert(actual(f->cb_log) == std::vector<size_t>{10u});
+    wassert(actual(f->send_line("testline", 8)) == stream::SendResult());
+    wassert(actual(f->send_line("testline1", 9)) == stream::SendResult());
 
     wassert(actual(f->streamed_contents()) == "testline\ntestline1\n");
+});
+
+add_method("send_empty_line", [&] {
+    auto f = make_fixture();
+
+    wassert(actual(f->send_line("", 0)) == stream::SendResult());
+
+    wassert(actual(f->streamed_contents()) == "\n");
+});
+
+add_method("send_line_filtered", [&] {
+    auto f = make_fixture();
+
+    wassert(actual(f->send_line("testline", 8)) == stream::SendResult());
+
+    {
+        f->stream().start_filter({"wc", "-l"});
+        wassert(actual(f->send_line("testline1", 9)) == stream::SendResult());
+        auto flt = f->stream().stop_filter();
+        wassert(actual(flt->size_stdin) == 10u);
+        wassert(actual(flt->size_stdout) == 2lu);
+        wassert(actual(flt->errors.str()) == "");
+        wassert(actual(flt->cmd.raw_returncode()) == 0);
+    }
+
+    wassert(actual(f->streamed_contents()) == "testline\n1\n");
+});
+
+add_method("send_line_filtered_stderr", [&] {
+    auto f = make_fixture();
+
+    wassert(actual(f->send_line("testline", 8)) == stream::SendResult());
+
+    {
+        f->stream().start_filter({"postproc/error"});
+        wassert(actual(f->send_line("testline1", 9)) == stream::SendResult());
+        auto flt = f->stream().stop_filter();
+        wassert(actual(flt->size_stdin) == 10u);
+        wassert(actual(flt->size_stdout) == 0lu);
+        wassert(actual(flt->errors.str()) == "FAIL\n");
+        wassert(actual(flt->cmd.returncode()) == 1);
+        wassert_throws(std::runtime_error, flt->check_for_errors());
+    }
+
+    wassert(actual(f->streamed_contents()) == "testline\n");
+});
+
+add_method("send_line_filtered_exit", [&] {
+    auto f = make_fixture();
+
+    wassert(actual(f->send_line("testline", 8)) == stream::SendResult());
+
+    {
+        f->stream().start_filter({"postproc/exit"});
+        wassert(actual(f->send_line("testline1", 9)) == stream::SendResult());
+        auto flt = f->stream().stop_filter();
+        wassert(actual(flt->size_stdin) == 10u);
+        wassert(actual(flt->size_stdout) == 0lu);
+        wassert(actual(flt->errors.str()) == "");
+        wassert(actual(flt->cmd.returncode()) == 0);
+    }
+
+    wassert(actual(f->streamed_contents()) == "testline\n");
 });
 
 add_method("send_buffer", [&] {
     auto f = make_fixture();
 
-    wassert(actual(f->send_buffer("testbuf", 7)) == stream::SendResult(7u, 0u));
-    wassert(actual(f->cb_log) == std::vector<size_t>{7u});
-    wassert(actual(f->send_buffer("testbuf", 4)) == stream::SendResult(4u, 0u));
-    wassert(actual(f->cb_log) == std::vector<size_t>{4u});
+    wassert(actual(f->send_buffer("testbuf", 7)) == stream::SendResult());
+    wassert(actual(f->send_buffer("testbuf", 4)) == stream::SendResult());
 
     wassert(actual(f->streamed_contents()) == "testbuftest");
+});
+
+add_method("send_buffer_filtered", [&] {
+    auto f = make_fixture();
+
+    wassert(actual(f->send_buffer("testbuf", 7)) == stream::SendResult());
+
+    {
+        f->stream().start_filter({"wc", "-c"});
+        wassert(actual(f->send_buffer("testbuf", 4)) == stream::SendResult());
+        auto flt = f->stream().stop_filter();
+        wassert(actual(flt->size_stdin) == 4u);
+        wassert(actual(flt->size_stdout) == 2lu);
+        wassert(actual(flt->errors.str()) == "");
+        wassert(actual(flt->cmd.raw_returncode()) == 0);
+    }
+
+    wassert(actual(f->streamed_contents()) == "testbuf4\n");
+});
+
+add_method("send_buffer_filtered_stderr", [&] {
+    auto f = make_fixture();
+
+    wassert(actual(f->send_buffer("testbuf", 7)) == stream::SendResult());
+
+    {
+        f->stream().start_filter({"postproc/error"});
+        wassert(actual(f->send_buffer("testbuf", 4)) == stream::SendResult());
+        auto flt = f->stream().stop_filter();
+        wassert(actual(flt->size_stdin) == 4u);
+        wassert(actual(flt->size_stdout) == 0lu);
+        wassert(actual(flt->errors.str()) == "FAIL\n");
+        wassert(actual(flt->cmd.returncode()) == 1);
+        wassert_throws(std::runtime_error, flt->check_for_errors());
+    }
+
+    wassert(actual(f->streamed_contents()) == "testbuf");
+});
+
+add_method("send_buffer_filtered_exit", [&] {
+    auto f = make_fixture();
+
+    wassert(actual(f->send_buffer("testbuf", 7)) == stream::SendResult());
+
+    {
+        f->stream().start_filter({"postproc/exit"});
+        wassert(actual(f->send_buffer("testbuf", 4)) == stream::SendResult());
+        auto flt = f->stream().stop_filter();
+        wassert(actual(flt->size_stdin) == 4u);
+        wassert(actual(flt->size_stdout) == 0lu);
+        wassert(actual(flt->errors.str()) == "");
+        wassert(actual(flt->cmd.returncode()) == 0);
+    }
+
+    wassert(actual(f->streamed_contents()) == "testbuf");
 });
 
 add_method("send_file_segment", [&] {
@@ -241,431 +421,108 @@ add_method("send_file_segment", [&] {
     sys::Tempfile tf1;
     tf1.write_all_or_throw(std::string("testfile"));
 
-    wassert(actual(f->send_file_segment(tf1, 1, 6)) == stream::SendResult(6u, 0u));
-    wassert(actual(f->cb_log) == std::vector<size_t>{6});
-    wassert(actual(f->send_file_segment(tf1, 5, 1)) == stream::SendResult(1u, 0u));
-    wassert(actual(f->cb_log) == std::vector<size_t>{1});
-    wassert(actual(f->send_file_segment(tf1, 0, 4)) == stream::SendResult(4u, 0u));
-    wassert(actual(f->cb_log) == std::vector<size_t>{4});
+    wassert(actual(f->send_file_segment(tf1, 1, 6)) == stream::SendResult());
+    wassert(actual(f->send_file_segment(tf1, 5, 1)) == stream::SendResult());
+    wassert(actual(f->send_file_segment(tf1, 0, 4)) == stream::SendResult());
 
     wassert(actual(f->streamed_contents()) == "estfilitest");
 });
 
-add_method("send_from_pipe_read", [&] {
+add_method("send_file_segment_filtered", [&] {
     auto f = make_fixture();
 
-    // Neither the source not the target is a pipe, so this won't trigger splice
     sys::Tempfile tf1;
     tf1.write_all_or_throw(std::string("testfile"));
-    tf1.lseek(1);
 
-    wassert(actual(f->send_from_pipe(tf1)) == stream::SendResult(7u, stream::SendResult::SEND_PIPE_EOF_SOURCE));
-    wassert(actual(f->cb_log) == std::vector<size_t>{7});
-
-    wassert(actual(f->streamed_contents()) == "estfile");
-});
-
-add_method("send_from_pipe_splice", [&] {
-    auto f = make_fixture();
-
-    // Source is a pipe and it should trigger splice
-    PipeSource child("testfile");
-    wassert(actual(f->send_from_pipe(child.get_stdout())) == stream::SendResult(8u, stream::SendResult::SEND_PIPE_EOF_SOURCE));
-    wassert(actual(f->cb_log) == std::vector<size_t>{8});
-
-    wassert(actual(f->streamed_contents()) == "testfile");
-});
-
-add_method("send_from_pipe_splice_nonblocking", [&] {
-    auto f = make_fixture();
-
-    // Source is a pipe and it should trigger splice
-    NonblockingPipeSource child;
-    child.request_data(8);
-    child.wait_for_data();
-    wassert(actual(f->send_from_pipe(child.get_stdout())) == stream::SendResult(8u, stream::SendResult::SEND_PIPE_EAGAIN_SOURCE));
-    child.request_data(123456);
-    child.wait_for_data();
-
-    size_t sent = 0;
-    while (sent < 123456u)
+    wassert(actual(f->send_file_segment(tf1, 1, 6)) == stream::SendResult());
     {
-        auto res = f->send_from_pipe(child.get_stdout());
-        wassert(actual(res.flags) == stream::SendResult::SEND_PIPE_EAGAIN_SOURCE);
-        sent += res.sent;
+        f->stream().start_filter({"wc", "-c"});
+        wassert(actual(f->send_file_segment(tf1, 5, 1)) == stream::SendResult());
+        wassert(actual(f->send_file_segment(tf1, 0, 4)) == stream::SendResult());
+        auto flt = f->stream().stop_filter();
+        wassert(actual(flt->size_stdin) == 5u);
+        wassert(actual(flt->size_stdout) == 2lu);
+        wassert(actual(flt->errors.str()) == "");
+        wassert(actual(flt->cmd.raw_returncode()) == 0);
     }
 
-    child.request_data(123);
-    child.request_data(0);
-    child.wait();
-
-    auto res = f->send_from_pipe(child.get_stdout());
-    wassert(actual(res.sent) == 123u);
-    wassert_true((res.flags & stream::SendResult::SEND_PIPE_EAGAIN_SOURCE) || (res.flags & stream::SendResult::SEND_PIPE_EOF_SOURCE));
-
-    if (res.flags & stream::SendResult::SEND_PIPE_EAGAIN_SOURCE)
-        wassert(actual(f->send_from_pipe(child.get_stdout())) == stream::SendResult(0u, stream::SendResult::SEND_PIPE_EOF_SOURCE));
-
-    wassert(actual(f->streamed_contents()) == std::string(8 + 123456 + 123, 0));
+    wassert(actual(f->streamed_contents()) == "estfil5\n");
 });
 
-add_method("data_start_send_from_pipe_splice_nonblocking", [&] {
+add_method("send_file_segment_filtered_stderr", [&] {
     auto f = make_fixture();
-    f->set_data_start_callback([](StreamOutput& out) { return out.send_buffer("start", 5); });
 
-    // Source is a pipe and it should trigger splice
-    NonblockingPipeSource child;
-    child.request_data(8);
-    child.wait_for_data();
-    wassert(actual(f->send_from_pipe(child.get_stdout())) == stream::SendResult(8u + 5u, stream::SendResult::SEND_PIPE_EAGAIN_SOURCE));
-    child.request_data(123456);
-    child.wait_for_data();
+    sys::Tempfile tf1;
+    tf1.write_all_or_throw(std::string("testfile"));
 
-    size_t sent = 0;
-    while (sent < 123456u)
+    wassert(actual(f->send_file_segment(tf1, 1, 6)) == stream::SendResult());
+
     {
-        auto res = f->send_from_pipe(child.get_stdout());
-        wassert(actual(res.flags) == stream::SendResult::SEND_PIPE_EAGAIN_SOURCE);
-        sent += res.sent;
+        f->stream().start_filter({"postproc/error"});
+        wassert(actual(f->send_file_segment(tf1, 5, 1)) == stream::SendResult());
+        wassert(actual(f->send_file_segment(tf1, 0, 4)) == stream::SendResult());
+        auto flt = f->stream().stop_filter();
+        wassert(actual(flt->size_stdin) == 5u);
+        wassert(actual(flt->size_stdout) == 0lu);
+        wassert(actual(flt->errors.str()) == "FAIL\n");
+        wassert(actual(flt->cmd.returncode()) == 1);
+        wassert_throws(std::runtime_error, flt->check_for_errors());
     }
 
-    child.request_data(123);
-    child.request_data(0);
-    child.wait();
-
-    auto res = f->send_from_pipe(child.get_stdout());
-    wassert(actual(res.sent) == 123u);
-    wassert_true((res.flags & stream::SendResult::SEND_PIPE_EAGAIN_SOURCE) || (res.flags & stream::SendResult::SEND_PIPE_EOF_SOURCE));
-
-    if (res.flags & stream::SendResult::SEND_PIPE_EAGAIN_SOURCE)
-        wassert(actual(f->send_from_pipe(child.get_stdout())) == stream::SendResult(0u, stream::SendResult::SEND_PIPE_EOF_SOURCE));
-
-    wassert(actual(f->streamed_contents().size()) == 8u + 5u + 123456u + 123u);
+    wassert(actual(f->streamed_contents()) == "estfil");
 });
 
-add_method("data_start_send_line", [&] {
+add_method("send_file_segment_filtered_exit", [&] {
     auto f = make_fixture();
-    f->set_data_start_callback([](StreamOutput& out) { return out.send_buffer("start", 5); });
-
-    wassert(actual(f->send_line("testline", 8)) == stream::SendResult(9u + 5u, 0u));
-    wassert(actual(f->cb_log) == std::vector<size_t>{5, 9});
-    wassert(actual(f->send_line("testline1", 9)) == stream::SendResult(10u, 0u));
-    wassert(actual(f->cb_log) == std::vector<size_t>{10});
-
-    wassert(actual(f->streamed_contents()) == "starttestline\ntestline1\n");
-
-    bool fired = false;
-    f->set_data_start_callback([&](StreamOutput& out) { fired=true; return SendResult(); });
-    wassert(actual(f->send_line("testline", 0)) == stream::SendResult(0u, 0u));
-    wassert(actual(f->cb_log) == std::vector<size_t>());
-    wassert_false(fired);
-});
-
-add_method("data_start_send_buffer", [&] {
-    auto f = make_fixture();
-    f->set_data_start_callback([](StreamOutput& out) { return out.send_line("start", 5); });
-
-    wassert(actual(f->send_buffer("testbuf", 7)) == stream::SendResult(7u + 6u, 0u));
-    wassert(actual(f->cb_log) == std::vector<size_t>{6, 7});
-    wassert(actual(f->send_buffer("testbuf", 4)) == stream::SendResult(4u, 0u));
-    wassert(actual(f->cb_log) == std::vector<size_t>{4});
-
-    wassert(actual(f->streamed_contents()) == "start\ntestbuftest");
-
-    bool fired = false;
-    f->set_data_start_callback([&](StreamOutput& out) { fired=true; return 0; });
-    wassert(actual(f->send_buffer("testline", 0)) == stream::SendResult(0u, 0u));
-    wassert(actual(f->cb_log) == std::vector<size_t>());
-    wassert_false(fired);
-});
-
-add_method("data_start_send_file_segment", [&] {
-    auto f = make_fixture();
-    f->set_data_start_callback([](StreamOutput& out) {
-        sys::Tempfile t;
-        t.write_all_or_throw("start", 5);
-        t.lseek(0);
-        auto res = out.send_from_pipe(t);
-        res.flags = res.flags & ~stream::SendResult::SEND_PIPE_EOF_SOURCE;
-        return res;
-    });
 
     sys::Tempfile tf1;
     tf1.write_all_or_throw(std::string("testfile"));
 
-    wassert(actual(f->send_file_segment(tf1, 1, 6)) == stream::SendResult(6u + 5u, 0u));
-    wassert(actual(f->cb_log) == std::vector<size_t>{5, 6});
-    wassert(actual(f->send_file_segment(tf1, 5, 1)) == stream::SendResult(1u, 0u));
-    wassert(actual(f->cb_log) == std::vector<size_t>{1});
-    wassert(actual(f->send_file_segment(tf1, 0, 4)) == stream::SendResult(4u, 0u));
-    wassert(actual(f->cb_log) == std::vector<size_t>{4});
-    // Send past the end of file
-    wassert(actual(f->send_file_segment(tf1, 6, 4)) == stream::SendResult(2u, stream::SendResult::SEND_PIPE_EOF_SOURCE));
-    wassert(actual(f->cb_log) == std::vector<size_t>{2});
+    wassert(actual(f->send_file_segment(tf1, 1, 6)) == stream::SendResult());
 
-    wassert(actual(f->streamed_contents()) == "startestfilitestle");
+    {
+        f->stream().start_filter({"postproc/exit"});
+        wassert(actual(f->send_file_segment(tf1, 5, 1)) == stream::SendResult());
+        wassert(actual(f->send_file_segment(tf1, 0, 4)) == stream::SendResult());
+        auto flt = f->stream().stop_filter();
+        wassert(actual(flt->size_stdin) == 5u);
+        wassert(actual(flt->size_stdout) == 0lu);
+        wassert(actual(flt->errors.str()) == "");
+        wassert(actual(flt->cmd.returncode()) == 0);
+    }
 
-    bool fired = false;
-    f->set_data_start_callback([&](StreamOutput& out) { fired=true; return 0; });
-    wassert(actual(f->send_file_segment(tf1, 3, 0)) == stream::SendResult(0u, 0u));
-    wassert(actual(f->cb_log) == std::vector<size_t>());
-    wassert_false(fired);
-
-    fired = false;
-    f->set_data_start_callback([&](StreamOutput& out) { fired=true; return 0u; });
-    wassert(actual(f->send_file_segment(tf1, 8, 1)) == stream::SendResult(0u, stream::SendResult::SEND_PIPE_EOF_SOURCE));
-    wassert(actual(f->cb_log) == std::vector<size_t>());
-    wassert_false(fired);
-});
-
-add_method("data_start_send_from_pipe_read", [&] {
-    auto f = make_fixture();
-    f->set_data_start_callback([](StreamOutput& out) {
-        sys::Tempfile t;
-        t.write_all_or_throw("start", 5);
-        return out.send_file_segment(t, 1, 3);
-    });
-
-    // Neither the source not the target is a pipe, so this won't trigger splice
-    sys::Tempfile tf1;
-    tf1.write_all_or_throw(std::string("testfile"));
-    tf1.lseek(1);
-    wassert(actual(f->send_from_pipe(tf1)) == stream::SendResult(7u + 3u, stream::SendResult::SEND_PIPE_EOF_SOURCE));
-    wassert(actual(f->cb_log) == std::vector<size_t>{3, 7});
-
-    tf1.lseek(2);
-    wassert(actual(f->send_from_pipe(tf1)) == stream::SendResult(6u, stream::SendResult::SEND_PIPE_EOF_SOURCE));
-    wassert(actual(f->cb_log) == std::vector<size_t>{6});
-
-    // Pipe from end of file
-    tf1.lseek(0, SEEK_END);
-    wassert(actual(f->send_from_pipe(tf1)) == stream::SendResult(0u, stream::SendResult::SEND_PIPE_EOF_SOURCE));
-    wassert(actual(f->cb_log) == std::vector<size_t>());
-
-    wassert(actual(f->streamed_contents()) == "tarestfilestfile");
-
-    bool fired = false;
-    f->set_data_start_callback([&](StreamOutput& out) { fired=true; return 0; });
-    tf1.lseek(0, SEEK_END);
-    wassert(actual(f->send_from_pipe(tf1)) == stream::SendResult(0u, stream::SendResult::SEND_PIPE_EOF_SOURCE));
-    wassert(actual(f->cb_log) == std::vector<size_t>());
-    wassert_false(fired);
-});
-
-add_method("data_start_send_from_pipe_splice", [&] {
-    auto f = make_fixture();
-    f->set_data_start_callback([](StreamOutput& out) {
-        sys::Tempfile t;
-        t.write_all_or_throw("start", 5);
-        return out.send_file_segment(t, 1, 3);
-    });
-
-    // Source is a pipe and it should trigger splice
-    PipeSource child("testfile");
-    wassert(actual(f->send_from_pipe(child.get_stdout())) == stream::SendResult(8u + 3u, stream::SendResult::SEND_PIPE_EOF_SOURCE));
-    wassert(actual(f->cb_log) == std::vector<size_t>{3, 8});
-    wassert(actual(f->send_from_pipe(child.get_stdout())) == stream::SendResult(0u, stream::SendResult::SEND_PIPE_EOF_SOURCE));
-    wassert(actual(f->cb_log) == std::vector<size_t>());
-
-    // Pipe from an empty pipe
-    PipeSource child1("");
-    wassert(actual(f->send_from_pipe(child1.get_stdout())) == stream::SendResult(0u, stream::SendResult::SEND_PIPE_EOF_SOURCE));
-    wassert(actual(f->cb_log) == std::vector<size_t>());
-
-    wassert(actual(f->streamed_contents()) == "tartestfile");
-
-    bool fired = false;
-    f->set_data_start_callback([&](StreamOutput& out) { fired=true; return 0; });
-    PipeSource child2("");
-    wassert(actual(f->send_from_pipe(child2.get_stdout())) == stream::SendResult(0u, stream::SendResult::SEND_PIPE_EOF_SOURCE));
-    wassert(actual(f->cb_log) == std::vector<size_t>());
-    wassert_false(fired);
+    wassert(actual(f->streamed_contents()) == "estfil");
 });
 
 add_method("large_send_line", [&] {
     auto f = make_fixture();
-    std::vector<uint8_t> buf(stream::TransferBuffer::size * 3);
+    std::vector<uint8_t> buf(4096 * 32);
 
-    wassert(actual(f->send_line(buf.data(), buf.size())) == stream::SendResult(buf.size() + 1, 0u));
-    wassert(actual(f->cb_log) == std::vector<size_t>{buf.size() + 1});
+    wassert(actual(f->send_line(buf.data(), buf.size())) == stream::SendResult());
 
     wassert(actual(f->streamed_contents().size()) == buf.size() + 1);
 });
 
 add_method("large_send_buffer", [&] {
     auto f = make_fixture();
-    std::vector<uint8_t> buf(stream::TransferBuffer::size * 3);
+    std::vector<uint8_t> buf(4096 * 32);
 
-    wassert(actual(f->send_buffer(buf.data(), buf.size())) == stream::SendResult(buf.size(), 0u));
-    wassert(actual(f->cb_log) == std::vector<size_t>{buf.size()});
+    wassert(actual(f->send_buffer(buf.data(), buf.size())) == stream::SendResult());
 
     wassert(actual(f->streamed_contents().size()) == buf.size());
 });
 
 add_method("large_send_file_segment", [&] {
     auto f = make_fixture();
-    std::vector<uint8_t> buf(stream::TransferBuffer::size * 3);
+    std::vector<uint8_t> buf(4096 * 32);
 
     sys::Tempfile tf1;
     tf1.write_all_or_retry(buf);
 
-    wassert(actual(f->send_file_segment(tf1, 0, buf.size())) == stream::SendResult(buf.size(), 0u));
-    wassert(actual(std::accumulate(f->cb_log.begin(), f->cb_log.end(), 0u)) == buf.size());
+    wassert(actual(f->send_file_segment(tf1, 0, buf.size())) == stream::SendResult());
 
     wassert(actual(f->streamed_contents().size()) == buf.size());
 });
-
-add_method("large_send_from_pipe_read", [&] {
-    auto f = make_fixture();
-    std::vector<uint8_t> buf(stream::TransferBuffer::size * 3);
-
-    // Neither the source not the target is a pipe, so this won't trigger splice
-    sys::Tempfile tf1;
-    tf1.write_all_or_retry(buf);
-    tf1.lseek(0);
-
-    wassert(actual(f->send_from_pipe(tf1)) == stream::SendResult(buf.size(), stream::SendResult::SEND_PIPE_EOF_SOURCE));
-    wassert(actual(std::accumulate(f->cb_log.begin(), f->cb_log.end(), 0u)) == buf.size());
-
-    wassert(actual(f->streamed_contents().size()) == buf.size());
-});
-
-add_method("large_send_from_pipe_splice", [&] {
-    auto f = make_fixture();
-    size_t size = stream::TransferBuffer::size * 3;
-
-    // Source is a pipe and it should trigger splice
-    PipeSource child(std::string(size, 0));
-    wassert(actual(f->send_from_pipe(child.get_stdout())) == stream::SendResult(size, stream::SendResult::SEND_PIPE_EOF_SOURCE));
-    wassert(actual(std::accumulate(f->cb_log.begin(), f->cb_log.end(), 0u)) == size);
-
-    wassert(actual(f->streamed_contents().size()) == size);
-});
-
-add_method("data_start_large_send_from_pipe_splice", [&] {
-    auto f = make_fixture();
-    f->set_data_start_callback([](StreamOutput& out) {
-        return out.send_line("foo", 3);
-    });
-
-    size_t size = stream::TransferBuffer::size * 3;
-
-    // Source is a pipe and it should trigger splice
-    PipeSource child(std::string(size, ' '));
-    wassert(actual(f->send_from_pipe(child.get_stdout())) == stream::SendResult(size + 4, stream::SendResult::SEND_PIPE_EOF_SOURCE));
-    wassert(actual(std::accumulate(f->cb_log.begin(), f->cb_log.end(), 0u)) == size + 4);
-
-    wassert(actual(f->streamed_contents()).startswith("foo\n        "));
-});
-
-}
-
-namespace {
-
-struct ClosedPipe
-{
-    int pipefds[2];
-    std::shared_ptr<sys::NamedFileDescriptor> fd;
-
-    ClosedPipe()
-    {
-        if (pipe(pipefds) < 0)
-            throw std::system_error(errno, std::system_category(), "cannot create new pipe");
-        // Close read end of the pipe
-        close(pipefds[0]);
-
-        fd = std::make_shared<sys::NamedFileDescriptor>(pipefds[1], "write end of pipe");
-    }
-};
-
-}
-
-void ConcreteStreamTests::register_tests() {
-using namespace arki::tests;
-StreamTests::register_tests();
-
-add_method("closed_pipe_send_buffer", [&] {
-    ClosedPipe cp;
-    auto f = make_concrete_fixture(cp.fd);
-    wassert(actual(f->send_buffer("A", 1)) == stream::SendResult(0, stream::SendResult::SEND_PIPE_EOF_DEST));
-});
-
-add_method("closed_pipe_send_line", [&] {
-    ClosedPipe cp;
-    auto f = make_concrete_fixture(cp.fd);
-    wassert(actual(f->send_line("A", 1)) == stream::SendResult(0, stream::SendResult::SEND_PIPE_EOF_DEST));
-});
-
-add_method("closed_pipe_send_file_segment", [&] {
-    ClosedPipe cp;
-    auto f = make_concrete_fixture(cp.fd);
-
-    sys::Tempfile tf;
-    tf.write_all_or_retry("test", 4);
-    wassert(actual(f->send_file_segment(tf, 1, 1)) == stream::SendResult(0, stream::SendResult::SEND_PIPE_EOF_DEST));
-});
-
-add_method("closed_pipe_send_pipe_read", [&] {
-    ClosedPipe cp;
-    auto f = make_concrete_fixture(cp.fd);
-
-    sys::Tempfile tf;
-    tf.write_all_or_retry("test", 4);
-    tf.lseek(0);
-    wassert(actual(f->send_from_pipe(tf)) == stream::SendResult(0, stream::SendResult::SEND_PIPE_EOF_DEST));
-});
-
-add_method("closed_pipe_send_pipe_splice", [&] {
-    ClosedPipe cp;
-    auto f = make_concrete_fixture(cp.fd);
-    PipeSource child("test");
-    wassert(actual(f->send_from_pipe(child.get_stdout())) == stream::SendResult(0, stream::SendResult::SEND_PIPE_EOF_DEST));
-});
-
-add_method("read_eof", [&] {
-    struct ReadEof : DisableSendfileSplice
-    {
-        size_t read_pos = 0;
-        size_t available;
-
-        ReadEof(size_t lead_size=0)
-            : available(lead_size)
-        {
-            ConcreteTestingBackend::read = [this](int fd, void *buf, size_t count) -> ssize_t {
-                if (read_pos < available) {
-                    count = std::min(count, available - read_pos);
-                    memset(buf, 0, count);
-                    read_pos += count;
-                    return count;
-                } else {
-                    return 0;
-                }
-            };
-            ConcreteTestingBackend::pread = [this](int fd, void *buf, size_t count, off_t offset) -> ssize_t {
-                if ((size_t)offset < available) {
-                    count = std::min(count, available - offset);
-                    memset(buf, 0, count);
-                    return count;
-                } else {
-                    return 0;
-                }
-            };
-        }
-    };
-
-    {
-        ReadEof reof(10);
-        auto f = make_concrete_fixture(std::make_shared<sys::File>("/dev/null", O_WRONLY));
-        sys::NamedFileDescriptor input(0, "mock input");
-        wassert(actual(f->send_file_segment(input, 5, 15)) == stream::SendResult(5, stream::SendResult::SEND_PIPE_EOF_SOURCE));
-    }
-});
-
-
-// stream::SendResult send_line(const void* data, size_t size);
-// stream::SendResult send_buffer(const void* data, size_t size);
-// stream::SendResult send_file_segment(arki::core::NamedFileDescriptor& fd, off_t offset, size_t size);
-// stream::SendResult send_from_pipe(int fd);
 
 }
 

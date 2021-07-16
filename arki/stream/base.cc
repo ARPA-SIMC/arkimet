@@ -1,39 +1,18 @@
 #include "base.h"
+#include "filter.h"
 #include "arki/utils/sys.h"
 #include <poll.h>
 #include <system_error>
+#include <sys/uio.h>
+#include <sys/sendfile.h>
 #include <unistd.h>
 #include <fcntl.h>
 
 namespace arki {
 namespace stream {
 
-size_t constexpr TransferBuffer::size;
-
-uint32_t BaseStreamOutput::wait_readable(int read_fd)
-{
-    pollfd pollinfo;
-    pollinfo.fd = read_fd;
-    pollinfo.events = POLLIN | POLLRDHUP;
-    pollinfo.revents = 0;
-
-    // Wait for available input data
-    int res = ::poll(&pollinfo, 1, 0);
-    if (res < 0)
-        throw std::system_error(errno, std::system_category(), "poll failed on input pipe");
-    if (res == 0)
-        return SendResult::SEND_PIPE_EAGAIN_SOURCE;
-    if (pollinfo.revents & POLLRDHUP)
-        return SendResult::SEND_PIPE_EOF_SOURCE;
-    if (pollinfo.revents & POLLERR)
-        return SendResult::SEND_PIPE_EOF_SOURCE;
-    if (pollinfo.revents & POLLHUP)
-        return SendResult::SEND_PIPE_EOF_SOURCE;
-    if (! (pollinfo.revents & POLLIN))
-        throw std::runtime_error("unsupported revents values when polling input pipe");
-
-    return 0;
-}
+BaseStreamOutput::BaseStreamOutput() {}
+BaseStreamOutput::~BaseStreamOutput() {}
 
 bool BaseStreamOutput::is_nonblocking(int fd)
 {
@@ -43,60 +22,74 @@ bool BaseStreamOutput::is_nonblocking(int fd)
     return src_fl & O_NONBLOCK;
 }
 
-SendResult BaseStreamOutput::send_file_segment(arki::core::NamedFileDescriptor& fd, off_t offset, size_t size)
+stream::FilterProcess* BaseStreamOutput::start_filter(const std::vector<std::string>& command)
 {
-    SendResult result;
-    if (size == 0)
-        return result;
+    if (filter_process)
+        throw std::runtime_error("A filter command was already started on this stream");
 
-    TransferBuffer buffer;
-    buffer.allocate();
-
-    size_t pos = 0;
-    while (pos < size)
-    {
-        size_t res = fd.pread(buffer, std::min(buffer.size, size - pos), offset + pos);
-        if (res == 0)
-        {
-            result.flags |= SendResult::SEND_PIPE_EOF_SOURCE;
-            break;
-        }
-        result += send_buffer(buffer, res);
-        pos += res;
-    }
-
-    return result;
+    filter_process.reset(new stream::FilterProcess(command));
+    filter_process->m_stream = this;
+    filter_process->start();
+    return filter_process.get();
 }
 
-SendResult BaseStreamOutput::send_from_pipe(int fd)
+std::unique_ptr<FilterProcess> BaseStreamOutput::stop_filter()
 {
-    SendResult result;
+    if (!filter_process)
+        return std::move(filter_process);
 
-    TransferBuffer buffer;
-    buffer.allocate();
-    while (true)
-    {
-        ssize_t res = read(fd, buffer, buffer.size);
-        if (res < 0)
-        {
-            if (errno == EAGAIN) {
-                result.flags |= SendResult::SEND_PIPE_EAGAIN_SOURCE;
-                break;
-            } else
-                throw std::system_error(errno, std::system_category(), "cannot read from pipe");
-        }
-        if (res == 0)
-        {
-            result.flags |= SendResult::SEND_PIPE_EOF_SOURCE;
-            break;
-        }
+    if (filter_process->cmd.get_stdin() != -1)
+        filter_process->cmd.close_stdin();
 
-        result += send_buffer(buffer, res);
-    }
+    flush_filter_output();
 
-    return result;
+    std::unique_ptr<FilterProcess> proc = std::move(filter_process);
+    proc->stop();
+
+    filter_sender.reset();
+
+    return proc;
 }
 
+void BaseStreamOutput::abort_filter()
+{
+    if (!filter_process)
+        return;
+
+    std::unique_ptr<FilterProcess> proc = std::move(filter_process);
+    proc->stop();
+}
+
+Sender::~Sender() {}
+
+ssize_t (*LinuxBackend::read)(int fd, void *buf, size_t count) = ::read;
+ssize_t (*LinuxBackend::write)(int fd, const void *buf, size_t count) = ::write;
+ssize_t (*LinuxBackend::writev)(int fd, const struct iovec *iov, int iovcnt) = ::writev;
+ssize_t (*LinuxBackend::sendfile)(int out_fd, int in_fd, off_t *offset, size_t count) = ::sendfile;
+ssize_t (*LinuxBackend::splice)(int fd_in, loff_t *off_in, int fd_out,
+                                                    loff_t *off_out, size_t len, unsigned int flags) = ::splice;
+int (*LinuxBackend::poll)(struct pollfd *fds, nfds_t nfds, int timeout) = ::poll;
+ssize_t (*LinuxBackend::pread)(int fd, void *buf, size_t count, off_t offset) = ::pread;
+
+std::function<ssize_t(int fd, void *buf, size_t count)> TestingBackend::read = ::read;
+std::function<ssize_t(int fd, const void *buf, size_t count)> TestingBackend::write = ::write;
+std::function<ssize_t(int fd, const struct iovec *iov, int iovcnt)> TestingBackend::writev = ::writev;
+std::function<ssize_t(int out_fd, int in_fd, off_t *offset, size_t count)> TestingBackend::sendfile = ::sendfile;
+std::function<ssize_t(int fd_in, loff_t *off_in, int fd_out,
+                      loff_t *off_out, size_t len, unsigned int flags)> TestingBackend::splice = ::splice;
+std::function<int(struct pollfd *fds, nfds_t nfds, int timeout)> TestingBackend::poll = ::poll;
+std::function<ssize_t(int fd, void *buf, size_t count, off_t offset)> TestingBackend::pread = ::pread;
+
+void TestingBackend::reset()
+{
+    TestingBackend::read = ::read;
+    TestingBackend::write = ::write;
+    TestingBackend::writev = ::writev;
+    TestingBackend::sendfile = ::sendfile;
+    TestingBackend::splice = ::splice;
+    TestingBackend::poll = ::poll;
+    TestingBackend::pread = ::pread;
+}
 
 }
 }

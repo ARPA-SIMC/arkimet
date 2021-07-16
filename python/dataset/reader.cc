@@ -238,29 +238,22 @@ struct query_bytes : public MethKwargs<query_bytes, arkipy_DatasetReader>
             else
                 query.progress = std::make_shared<python::dataset::PythonProgress>(arg_progress);
 
+            // Call data_start_hook now that we have validated all arguments
+            // and we are ready to perform the query
             pyo_unique_ptr data_start_hook_args;
-            std::function<size_t(StreamOutput&)> data_start_callback;
+            std::function<arki::stream::SendResult(StreamOutput&)> data_start_callback;
             if (arg_data_start_hook != Py_None)
             {
                 data_start_hook_args = pyo_unique_ptr(Py_BuildValue("()"));
                 if (!data_start_hook_args) return nullptr;
 
-                data_start_callback = [&](StreamOutput&) {
-                    // call arg_data_start_hook
-                    AcquireGIL gil;
-                    pyo_unique_ptr res(PyObject_CallObject(arg_data_start_hook, data_start_hook_args));
-                    if (!res) throw PythonException();
-                    // TODO: if the function returned a number, return that
-                    return 0;
-                };
+                pyo_unique_ptr res(PyObject_CallObject(arg_data_start_hook, data_start_hook_args));
+                if (!res) throw PythonException();
             }
 
             if (arg_file && arg_file != Py_None)
             {
                 std::unique_ptr<arki::StreamOutput> stream = binaryio_stream_output(arg_file);
-
-                if (data_start_callback)
-                    stream->set_data_start_callback(data_start_callback);
 
                 {
                     ReleaseGIL gil;

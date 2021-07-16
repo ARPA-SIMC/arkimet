@@ -266,17 +266,24 @@ class TestArkiServer(unittest.TestCase):
         summary = ds.query_summary()
         self.assertEqual(summary.count, 1)
 
-    def test_postproc_error(self):
-        """
-        Test a postprocessor that outputs data and then exits with error
-        """
-        config = arki.dataset.http.load_cfg_sections(self.server_url)
-        ds = arki.dataset.Reader(config["test200"])
+    # This is not testable anymore: the subprocess filter now is run after the
+    # server has already sent headers.
+    #
+    # The test can stay here in case future refactorings make a later trigger
+    # of data_start_hook possible again, but the real solution to this is
+    # https://github.com/ARPA-SIMC/arkimet/issues/71
+    #
+    # def test_postproc_error(self):
+    #     """
+    #     Test a postprocessor that outputs data and then exits with error
+    #     """
+    #     config = arki.dataset.http.load_cfg_sections(self.server_url)
+    #     ds = arki.dataset.Reader(config["test200"])
 
-        # Querying it should get an error
-        with self.assertRaises(RuntimeError) as e:
-            ds.query_bytes(postprocess="error")
-        self.assertIn("FAIL", str(e.exception))
+    #     # Querying it should get an error
+    #     with self.assertRaises(RuntimeError) as e:
+    #         ds.query_bytes(postprocess="error")
+    #     self.assertIn("FAIL", str(e.exception))
 
     def test_postproc_outthenerr(self):
         """

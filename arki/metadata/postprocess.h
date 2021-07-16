@@ -10,51 +10,23 @@
 #include <memory>
 
 namespace arki {
-namespace metadata {
-namespace postproc {
-class Child;
+
+namespace stream {
+class FilterProcess;
 }
+
+namespace metadata {
 
 class Postprocess
 {
-protected:
-    /// Subprocess that filters our data
-    postproc::Child* m_child = nullptr;
-    /// Command line run in the subprocess
-    std::string m_command;
-    /// Captured stderr from the child (unless sent elsewhere)
-    std::stringstream m_errors;
-
 public:
     /**
-     * Create a postprocessor running the command \a command, and sending the
-     * output to the file descriptor \a outfd.
-     *
-     * The configuration \a cfg is used to validate if command is allowed or
-     * not.
+     * Split the command into the argv components, resolve argv0 to a full
+     * path, check that it is allowed to run
      */
-    Postprocess(const std::string& command);
-    virtual ~Postprocess();
+    static std::vector<std::string> validate_command(const std::string& command, const core::cfg::Section& cfg);
 
-    /**
-     * Validate this postprocessor against the given configuration
-     */
-    void validate(const core::cfg::Section& cfg);
-
-    /// Fork the child process setting up the various pipes
-    void start();
-
-    /// Set the output file descriptor where we send data coming from the postprocessor
-    void set_output(StreamOutput& out);
-
-    /// Set the output stream where we send the postprocessor stderr
-    void set_error(std::ostream& err);
-
-    // Process one metadata
-    bool process(std::shared_ptr<Metadata> md);
-
-    // End of processing: flush all pending data
-    stream::SendResult flush();
+    static bool send(std::shared_ptr<Metadata> md, StreamOutput& out);
 };
 
 }

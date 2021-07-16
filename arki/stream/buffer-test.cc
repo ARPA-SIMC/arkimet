@@ -1,5 +1,6 @@
 #include "tests.h"
 #include "base.h"
+#include "filter.h"
 #include "arki/core/file.h"
 #include <vector>
 
@@ -43,9 +44,6 @@ Tests test("arki_stream_buffer");
 
 void Tests::register_tests() {
 StreamTests::register_tests();
-
-add_method("empty", [] {
-});
 
 }
 

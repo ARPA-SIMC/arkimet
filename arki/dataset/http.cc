@@ -55,9 +55,9 @@ struct StreamState : public core::curl::Request
 
     size_t process_body_chunk(void *ptr, size_t size, size_t nmemb, void *stream) override
     {
-        size_t res = out.send_buffer(ptr, size * nmemb).sent;
+        out.send_buffer(ptr, size * nmemb);
         if (progress) progress->update(0, size * nmemb);
-        return res;
+        return size * nmemb;
     }
 };
 
@@ -153,7 +153,7 @@ void Reader::impl_stream_query_bytes(const dataset::ByteQuery& q, StreamOutput& 
             break;
         case dataset::ByteQuery::BQ_POSTPROCESS:
             request.post_data.add_string("style", "postprocess");
-            request.post_data.add_string("command", q.param);
+            request.post_data.add_string("command", q.postprocessor);
             break;
         default: {
             std::stringstream ss;
