@@ -160,6 +160,12 @@ void skip_unless_geos()
     throw TestSkipped("GEOS support not available");
 #endif
 }
+void skip_unless_splice()
+{
+#ifndef HAVE_SPLICE
+    throw TestSkipped("splice() syscall is not available");
+#endif
+}
 
 void skip_unless_filesystem_has_holes(const std::string& path)
 {

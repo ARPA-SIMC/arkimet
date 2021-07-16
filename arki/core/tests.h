@@ -60,6 +60,7 @@ void skip_unless_vm2();
 void skip_unless_geos();
 void skip_unless_filesystem_has_holes(const std::string& path);
 void skip_unless_filesystem_has_ofd_locks(const std::string& path);
+void skip_unless_splice();
 
 void delete_if_exists(const std::string& name);
 

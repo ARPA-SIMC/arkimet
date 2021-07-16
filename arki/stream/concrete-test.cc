@@ -1,4 +1,5 @@
 #include "tests.h"
+#include "arki/core/tests.h"
 #include "concrete.h"
 #include "filter.h"
 #include "arki/utils/sys.h"
@@ -261,6 +262,7 @@ add_method("syscalls_buffer", [this] {
 });
 
 add_method("syscalls_buffer_filtered", [this] {
+    arki::tests::skip_unless_splice();
     auto outfile = std::make_shared<sys::File>("/dev/null", O_WRONLY);
     auto writer = make_concrete_fixture(outfile);
     auto filter = writer->stream().start_filter({"cat"});
@@ -295,6 +297,7 @@ add_method("syscalls_buffer_filtered", [this] {
 });
 
 add_method("syscalls_buffer_filtered_readwrite", [this] {
+    arki::tests::skip_unless_splice();
     auto outfile = std::make_shared<sys::File>("/dev/null", O_WRONLY);
     auto writer = make_concrete_fixture(outfile);
     auto filter = writer->stream().start_filter({"cat"});
@@ -333,6 +336,7 @@ add_method("syscalls_buffer_filtered_readwrite", [this] {
 });
 
 add_method("syscalls_buffer_filtered_regression1", [this] {
+    arki::tests::skip_unless_splice();
     auto outfile = std::make_shared<sys::File>("/dev/null", O_WRONLY);
     auto writer = make_concrete_fixture(outfile);
     auto filter = writer->stream().start_filter({"cat"});
@@ -478,6 +482,7 @@ add_method("syscalls_line", [this] {
 });
 
 add_method("syscalls_line_filtered", [this] {
+    arki::tests::skip_unless_splice();
     auto outfile = std::make_shared<sys::File>("/dev/null", O_WRONLY);
     auto writer = make_concrete_fixture(outfile);
     auto filter = writer->stream().start_filter({"cat"});
@@ -512,6 +517,7 @@ add_method("syscalls_line_filtered", [this] {
 });
 
 add_method("syscalls_line_filtered_readwrite", [this] {
+    arki::tests::skip_unless_splice();
     auto outfile = std::make_shared<sys::File>("/dev/null", O_WRONLY);
     auto writer = make_concrete_fixture(outfile);
     auto filter = writer->stream().start_filter({"cat"});
@@ -638,6 +644,7 @@ add_method("syscalls_file", [this] {
 });
 
 add_method("syscalls_file_filtered", [this] {
+    arki::tests::skip_unless_splice();
     auto outfile = std::make_shared<sys::File>("/dev/null", O_WRONLY);
     auto writer = make_concrete_fixture(outfile);
     auto filter = writer->stream().start_filter({"cat"});
@@ -674,6 +681,7 @@ add_method("syscalls_file_filtered", [this] {
 });
 
 add_method("syscalls_file_filtered_readwrite", [this] {
+    arki::tests::skip_unless_splice();
     auto outfile = std::make_shared<sys::File>("/dev/null", O_WRONLY);
     auto writer = make_concrete_fixture(outfile);
     auto filter = writer->stream().start_filter({"cat"});
