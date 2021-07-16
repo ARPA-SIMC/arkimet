@@ -79,7 +79,7 @@ stream::SendResult UnfilteredLoop<Backend>::loop(ToOutput to_output)
  * Base for event loops that manage a filter
  */
 template<typename Backend, typename FromFilter>
-struct FilterLoop
+struct FilterLoop : public Sender
 {
     BaseStreamOutput& stream;
     stream::SendResult result;
@@ -118,18 +118,39 @@ struct FilterLoop
     template<typename Source>
     stream::SendResult send(Source&& source)
     {
-        return _loop(ToFilter<Backend, Source>(stream, std::move(source)));
+        return loop(ToFilter<Backend, Source>(stream, std::move(source)));
+
     }
 
-    stream::SendResult flush()
+    stream::SendResult send_buffer(const void* data, size_t size) final
     {
-        return _loop(Flusher<Backend>(stream));
+        return send(BufferToPipe<Backend>(data, size));
+    }
+
+    stream::SendResult send_line(const void* data, size_t size) final
+    {
+        return send(LineToPipe<Backend>(data, size));
+    }
+
+    stream::SendResult send_file_segment(core::NamedFileDescriptor& src_fd, off_t offset, size_t size) final
+    {
+        try {
+            return send(FileToPipeSendfile<Backend>(src_fd, offset, size));
+        } catch (SendfileNotAvailable&) {
+            return send(FileToPipeReadWrite<Backend>(src_fd, offset, size));
+        }
+    }
+
+    stream::SendResult flush() final
+    {
+        return loop(Flusher<Backend>(stream));
     }
 
     template<typename ToFilter>
-    stream::SendResult _loop(ToFilter part_to_filter)
+    stream::SendResult loop(ToFilter part_to_filter)
     {
         part_to_filter.set_output(pollinfo);
+
         while (true)
         {
             // Suppose se use a /dev/null filter. Destination fd is always ready,
