@@ -94,7 +94,7 @@ struct FilterLoop
     }
 
     template<typename Source>
-    stream::SendResult loop(Source&& source)
+    stream::SendResult send(Source&& source)
     {
         return _loop(ToFilter<Backend, Source>(stream, std::move(source)));
     }

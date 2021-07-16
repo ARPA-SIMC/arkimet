@@ -106,15 +106,15 @@ SendResult ConcreteStreamOutputBase<Backend>::_send_from_pipe(Args&&... args)
     {
         try {
             FilterLoop<Backend, FromFilterSplice<Backend>> sender(*this);
-            return sender.loop(ToPipe<Backend>(std::forward<Args>(args)...));
+            return sender.send(ToPipe<Backend>(std::forward<Args>(args)...));
         } catch (SpliceNotAvailable&) {
             has_splice = false;
             FilterLoop<Backend, FromFilterReadWrite<Backend>> sender(*this);
-            return sender.loop(ToPipe<Backend>(std::forward<Args>(args)...));
+            return sender.send(ToPipe<Backend>(std::forward<Args>(args)...));
         }
     } else {
         FilterLoop<Backend, FromFilterReadWrite<Backend>> sender(*this);
-        return sender.loop(ToPipe<Backend>(std::forward<Args>(args)...));
+        return sender.send(ToPipe<Backend>(std::forward<Args>(args)...));
     }
 }
 

@@ -14,7 +14,7 @@ template<typename Backend> template<template<typename> class ToPipe, typename...
 SendResult AbstractStreamOutput<Backend>::_send_from_pipe(Args&&... args)
 {
     FilterLoop<Backend, FromFilterAbstract<Backend>> sender(*this);
-    return sender.loop(ToPipe<Backend>(std::forward<Args>(args)...));
+    return sender.send(ToPipe<Backend>(std::forward<Args>(args)...));
 }
 
 template<typename Backend>
