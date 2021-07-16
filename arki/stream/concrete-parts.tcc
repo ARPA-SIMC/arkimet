@@ -293,7 +293,7 @@ struct FromFilterSplice : public FromFilterConcrete<Backend>
         throw SpliceNotAvailable();
 #else
         // Try splice
-        ssize_t res = Backend::splice(this->stream.filter_process->cmd.get_stdout(), NULL, this->out_fd, NULL, TransferBuffer::size * 128, SPLICE_F_MORE | SPLICE_F_NONBLOCK);
+        ssize_t res = Backend::splice(this->stream.filter_process->cmd.get_stdout(), NULL, this->out_fd, NULL, 4096 * 32, SPLICE_F_MORE | SPLICE_F_NONBLOCK);
         trace_streaming("  splice stdout → %d\n", (int)res);
         if (res > 0)
         {
@@ -366,22 +366,20 @@ struct FromFilterSplice : public FromFilterConcrete<Backend>
 template<typename Backend>
 struct FromFilterReadWrite : public FromFilterConcrete<Backend>
 {
-    TransferBuffer buffer;
+    std::array<uint8_t, 4096 * 8> buffer;
     BufferToPipe<Backend> to_output;
     core::NamedFileDescriptor& destination;
 
     FromFilterReadWrite(ConcreteStreamOutputBase<Backend>& stream)
         : FromFilterConcrete<Backend>(stream), to_output(nullptr, 0), destination(*stream.out)
     {
-        buffer.allocate();
     }
     FromFilterReadWrite(const FromFilterReadWrite&) = default;
     FromFilterReadWrite(FromFilterReadWrite&&) = default;
 
     TransferResult transfer_available_output_read()
     {
-        to_output.reset(buffer.buf, 0);
-        ssize_t res = Backend::read(this->stream.filter_process->cmd.get_stdout(), buffer, buffer.size);
+        ssize_t res = Backend::read(this->stream.filter_process->cmd.get_stdout(), buffer.data(), buffer.size());
         trace_streaming("  read stdout → %d %.*s\n", (int)res, std::max((int)res, 0), (const char*)buffer);
         if (res == 0)
             return TransferResult::EOF_SOURCE;
@@ -394,7 +392,7 @@ struct FromFilterReadWrite : public FromFilterConcrete<Backend>
         }
         else
         {
-            to_output.reset(buffer.buf, res);
+            to_output.reset(buffer.data(), res);
             this->stream.filter_process->size_stdout += res;
             return TransferResult::WOULDBLOCK;
         }

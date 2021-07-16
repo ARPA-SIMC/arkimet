@@ -278,7 +278,7 @@ add_method("syscalls_buffer_filtered", [this] {
         stream::ExpectedSyscalls expected({
             new stream::ExpectedPoll(filter->cmd.get_stdout(), POLLIN, Fixture::get_timeout_ms(), POLLIN, 1),
             new stream::ExpectedPoll(*outfile, POLLOUT, Fixture::get_timeout_ms(), POLLOUT, 1),
-            new stream::ExpectedSplice(filter->cmd.get_stdout(), *outfile, 4194304, SPLICE_F_MORE | SPLICE_F_NONBLOCK, 4),
+            new stream::ExpectedSplice(filter->cmd.get_stdout(), *outfile, 131072, SPLICE_F_MORE | SPLICE_F_NONBLOCK, 4),
             new stream::ExpectedPoll(filter->cmd.get_stdout(), POLLIN, Fixture::get_timeout_ms(), POLLHUP, 1),
             new stream::ExpectedPoll(filter->cmd.get_stderr(), POLLIN, Fixture::get_timeout_ms(), POLLIN, 1),
             new stream::ExpectedRead(filter->cmd.get_stderr(), "FAIL", 256, 4),
@@ -312,7 +312,7 @@ add_method("syscalls_buffer_filtered_readwrite", [this] {
         stream::ExpectedSyscalls expected({
             new stream::ExpectedPoll(filter->cmd.get_stdout(), POLLIN, Fixture::get_timeout_ms(), POLLIN, 1),
             new stream::ExpectedPoll(*outfile, POLLOUT, Fixture::get_timeout_ms(), POLLOUT, 1),
-            new stream::ExpectedSplice(filter->cmd.get_stdout(), *outfile, 4194304, SPLICE_F_MORE | SPLICE_F_NONBLOCK, -1, EINVAL),
+            new stream::ExpectedSplice(filter->cmd.get_stdout(), *outfile, 131072, SPLICE_F_MORE | SPLICE_F_NONBLOCK, -1, EINVAL),
             new stream::ExpectedPoll(filter->cmd.get_stdout(), POLLIN, Fixture::get_timeout_ms(), POLLIN, 1),
             new stream::ExpectedRead(filter->cmd.get_stdout(), "1234", 32768, 4),
             new stream::ExpectedPoll(filter->cmd.get_stdout(), POLLIN, Fixture::get_timeout_ms(), POLLHUP, 1),
@@ -351,7 +351,7 @@ add_method("syscalls_buffer_filtered_regression1", [this] {
             new stream::ExpectedPoll(filter->cmd.get_stderr(), POLLIN, Fixture::get_timeout_ms(), POLLHUP, 1),
             new stream::ExpectedPoll(*outfile, POLLOUT, Fixture::get_timeout_ms(), POLLOUT, 1),
             new stream::ExpectedPoll(filter->cmd.get_stdout(), POLLIN, Fixture::get_timeout_ms(), POLLIN, 1),
-            new stream::ExpectedSplice(filter->cmd.get_stdout(), *outfile, 4194304, SPLICE_F_MORE | SPLICE_F_NONBLOCK, 4),
+            new stream::ExpectedSplice(filter->cmd.get_stdout(), *outfile, 131072, SPLICE_F_MORE | SPLICE_F_NONBLOCK, 4),
             new stream::ExpectedPoll(filter->cmd.get_stdout(), POLLIN, Fixture::get_timeout_ms(), POLLHUP, 1),
         });
         auto flt = wcallchecked(writer->stream().stop_filter());
@@ -495,7 +495,7 @@ add_method("syscalls_line_filtered", [this] {
         stream::ExpectedSyscalls expected({
             new stream::ExpectedPoll(filter->cmd.get_stdout(), POLLIN, Fixture::get_timeout_ms(), POLLIN, 1),
             new stream::ExpectedPoll(*outfile, POLLOUT, Fixture::get_timeout_ms(), POLLOUT, 1),
-            new stream::ExpectedSplice(filter->cmd.get_stdout(), *outfile, 4194304, SPLICE_F_MORE | SPLICE_F_NONBLOCK, 5),
+            new stream::ExpectedSplice(filter->cmd.get_stdout(), *outfile, 131072, SPLICE_F_MORE | SPLICE_F_NONBLOCK, 5),
             new stream::ExpectedPoll(filter->cmd.get_stdout(), POLLIN, Fixture::get_timeout_ms(), POLLHUP, 1),
             new stream::ExpectedPoll(filter->cmd.get_stderr(), POLLIN, Fixture::get_timeout_ms(), POLLIN, 1),
             new stream::ExpectedRead(filter->cmd.get_stderr(), "FAIL", 256, 4),
@@ -529,7 +529,7 @@ add_method("syscalls_line_filtered_readwrite", [this] {
         stream::ExpectedSyscalls expected({
             new stream::ExpectedPoll(filter->cmd.get_stdout(), POLLIN, Fixture::get_timeout_ms(), POLLIN, 1),
             new stream::ExpectedPoll(*outfile, POLLOUT, Fixture::get_timeout_ms(), POLLOUT, 1),
-            new stream::ExpectedSplice(filter->cmd.get_stdout(), *outfile, 4194304, SPLICE_F_MORE | SPLICE_F_NONBLOCK, -1, EINVAL),
+            new stream::ExpectedSplice(filter->cmd.get_stdout(), *outfile, 131072, SPLICE_F_MORE | SPLICE_F_NONBLOCK, -1, EINVAL),
             new stream::ExpectedPoll(filter->cmd.get_stdout(), POLLIN, Fixture::get_timeout_ms(), POLLIN, 1),
             new stream::ExpectedRead(filter->cmd.get_stdout(), "1234\n", 32768, 5),
             new stream::ExpectedPoll(filter->cmd.get_stdout(), POLLIN, Fixture::get_timeout_ms(), POLLHUP, 1),
@@ -657,7 +657,7 @@ add_method("syscalls_file_filtered", [this] {
         stream::ExpectedSyscalls expected({
             new stream::ExpectedPoll(filter->cmd.get_stdout(), POLLIN, Fixture::get_timeout_ms(), POLLIN, 1),
             new stream::ExpectedPoll(*outfile, POLLOUT, Fixture::get_timeout_ms(), POLLOUT, 1),
-            new stream::ExpectedSplice(filter->cmd.get_stdout(), *outfile, 4194304, SPLICE_F_MORE | SPLICE_F_NONBLOCK, 4),
+            new stream::ExpectedSplice(filter->cmd.get_stdout(), *outfile, 131072, SPLICE_F_MORE | SPLICE_F_NONBLOCK, 4),
             new stream::ExpectedPoll(filter->cmd.get_stdout(), POLLIN, Fixture::get_timeout_ms(), POLLHUP, 1),
             new stream::ExpectedPoll(filter->cmd.get_stderr(), POLLIN, Fixture::get_timeout_ms(), POLLIN, 1),
             new stream::ExpectedRead(filter->cmd.get_stderr(), "FAIL", 256, 4),
@@ -693,7 +693,7 @@ add_method("syscalls_file_filtered_readwrite", [this] {
         stream::ExpectedSyscalls expected({
             new stream::ExpectedPoll(filter->cmd.get_stdout(), POLLIN, Fixture::get_timeout_ms(), POLLIN, 1),
             new stream::ExpectedPoll(*outfile, POLLOUT, Fixture::get_timeout_ms(), POLLOUT, 1),
-            new stream::ExpectedSplice(filter->cmd.get_stdout(), *outfile, 4194304, SPLICE_F_MORE | SPLICE_F_NONBLOCK, -1, EINVAL),
+            new stream::ExpectedSplice(filter->cmd.get_stdout(), *outfile, 131072, SPLICE_F_MORE | SPLICE_F_NONBLOCK, -1, EINVAL),
             new stream::ExpectedPoll(filter->cmd.get_stdout(), POLLIN, Fixture::get_timeout_ms(), POLLIN, 1),
             new stream::ExpectedRead(filter->cmd.get_stdout(), "estf", 32768, 4),
             new stream::ExpectedPoll(filter->cmd.get_stdout(), POLLIN, Fixture::get_timeout_ms(), POLLHUP, 1),

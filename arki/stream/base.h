@@ -56,36 +56,6 @@ struct BaseStreamOutput : public StreamOutput
 };
 
 
-struct TransferBuffer
-{
-    constexpr static size_t size = 4096 * 8;
-    char* buf = nullptr;
-
-    TransferBuffer() = default;
-    TransferBuffer(const TransferBuffer&) = delete;
-    TransferBuffer(TransferBuffer&& o)
-        : buf(o.buf)
-    {
-        o.buf = nullptr;
-    }
-    ~TransferBuffer()
-    {
-        delete[] buf;
-    }
-    TransferBuffer& operator=(const TransferBuffer&) = delete;
-    TransferBuffer& operator=(TransferBuffer&&) = delete;
-
-    void allocate()
-    {
-        if (buf)
-            return;
-        buf = new char[size];
-    }
-
-    operator char*() { return buf; }
-};
-
-
 /**
  * Linux versions of syscalls to use for concrete implementations.
  */

@@ -11,8 +11,6 @@
 namespace arki {
 namespace stream {
 
-size_t constexpr TransferBuffer::size;
-
 BaseStreamOutput::BaseStreamOutput() {}
 BaseStreamOutput::~BaseStreamOutput() {}
 

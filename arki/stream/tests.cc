@@ -496,7 +496,7 @@ add_method("send_file_segment_filtered_exit", [&] {
 
 add_method("large_send_line", [&] {
     auto f = make_fixture();
-    std::vector<uint8_t> buf(stream::TransferBuffer::size * 3);
+    std::vector<uint8_t> buf(4096 * 32);
 
     wassert(actual(f->send_line(buf.data(), buf.size())) == stream::SendResult());
 
@@ -505,7 +505,7 @@ add_method("large_send_line", [&] {
 
 add_method("large_send_buffer", [&] {
     auto f = make_fixture();
-    std::vector<uint8_t> buf(stream::TransferBuffer::size * 3);
+    std::vector<uint8_t> buf(4096 * 32);
 
     wassert(actual(f->send_buffer(buf.data(), buf.size())) == stream::SendResult());
 
@@ -514,7 +514,7 @@ add_method("large_send_buffer", [&] {
 
 add_method("large_send_file_segment", [&] {
     auto f = make_fixture();
-    std::vector<uint8_t> buf(stream::TransferBuffer::size * 3);
+    std::vector<uint8_t> buf(4096 * 32);
 
     sys::Tempfile tf1;
     tf1.write_all_or_retry(buf);
