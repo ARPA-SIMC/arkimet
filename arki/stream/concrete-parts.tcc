@@ -43,6 +43,7 @@ struct CollectFilterStderr
                 (int)filter_process.cmd.get_stderr(), std::max((int)res, 0), (const char*)buffer.data(), buffer.size(), (int)res, errno);
         if (res == 0)
         {
+            trace_streaming("  CollectFilterStderr.transfer_available_stderr: EOF on filter stderr: closing it\n");
             filter_process.cmd.close_stderr();
             pfd_filter_stderr->fd = -1;
         }
@@ -73,6 +74,7 @@ struct CollectFilterStderr
         else if (pfd_filter_stderr->revents & (POLLERR | POLLHUP))
         {
             // Filter stderr closed its endpoint
+            trace_streaming("  CollectFilterStderr.on_poll: EOF on filter stderr: closing it\n");
             filter_process.cmd.close_stderr();
             pfd_filter_stderr->fd = -1;
         }
@@ -178,6 +180,7 @@ struct ToFilter
             }
         } else if (pfd_filter_stdin->revents & (POLLERR | POLLHUP)) {
             // result.flags |= SendResult::SEND_PIPE_EOF_DEST; // TODO: signal this somehow?
+            trace_streaming("  ToFilter.on_poll: POLLERR|POLLHUP on filter stdin: closing it\n");
             stream.filter_process->cmd.close_stdin();
             pfd_filter_stdin->fd = -1;
         }
@@ -217,7 +220,7 @@ struct FromFilter
         else
             pfd_filter_stdout->events = POLLIN;
 
-        trace_streaming("FromFilter.setup_poll: filter_stdout: %d:%x\n", stream.filter_process->cmd.get_stdout(), (int)pfd_filter_stdout->events);
+        trace_streaming("  FromFilter.setup_poll: filter_stdout: %d:%x\n", stream.filter_process->cmd.get_stdout(), (int)pfd_filter_stdout->events);
         return stream.filter_process->cmd.get_stdout() != -1;
     }
 
@@ -459,6 +462,7 @@ struct FromFilterReadWrite : public FromFilterConcrete<Backend>
             }
         } else if (this->pfd_filter_stdout->revents & (POLLERR | POLLHUP)) {
             // Filter stdout closed its endpoint
+            trace_streaming("  FromFilterReadWrite.on_poll: POLLERR|POLLUP on filter_stdout: closing it\n");
             this->stream.filter_process->cmd.close_stdout();
             this->pfd_filter_stdout->fd = -1;
         }

@@ -153,6 +153,7 @@ struct FilterLoop : public Sender
             //
             // In other words, we skip monitoring availability until we drain
             // the buffers
+            trace_streaming("FilteredLoop.POLL:\n");
 
             // Setup the pollinfo structure
             bool needs_poll = false;
@@ -161,7 +162,7 @@ struct FilterLoop : public Sender
             needs_poll = part_to_filter.setup_poll() or needs_poll;
             if (!needs_poll)
             {
-                trace_streaming("FilteredLoop.POLL: stopping after setup_poll returned false\n");
+                trace_streaming("  FilteredLoop.POLL: stopping after setup_poll returned false\n");
                 return this->result;
             }
 
@@ -173,7 +174,7 @@ struct FilterLoop : public Sender
             if (res == 0)
                 throw TimedOut("streaming operations timed out");
 
-            trace_streaming("UnfilteredLoop.POLL: fi:%d:%x→%x fo:%d:%x→%x fe:%d:%x→%x de:%d:%x→%x\n",
+            trace_streaming("  FilteredLoop.POLL: fi:%d:%x→%x fo:%d:%x→%x fe:%d:%x→%x de:%d:%x→%x\n",
                     pollinfo[0].fd, (int)pollinfo[0].events, (int)pollinfo[0].revents,
                     pollinfo[1].fd, (int)pollinfo[1].events, (int)pollinfo[1].revents,
                     pollinfo[2].fd, (int)pollinfo[2].events, (int)pollinfo[2].revents,
@@ -187,7 +188,7 @@ struct FilterLoop : public Sender
             done = part_to_filter.on_poll(this->result) or done;
             if (done)
             {
-                trace_streaming("FilteredLoop.POLL: stopping after on_poll returned true\n");
+                trace_streaming("  FilteredLoop.POLL: stopping after on_poll returned true\n");
                 return this->result;
             }
         }
