@@ -17,6 +17,28 @@ UnfilteredLoop<Backend>::UnfilteredLoop(ConcreteStreamOutputBase<Backend>& strea
     pollinfo.events = POLLOUT;
 }
 
+template<typename Backend>
+stream::SendResult UnfilteredLoop<Backend>::send_buffer(const void* data, size_t size)
+{
+    return loop(BufferToPipe<Backend>(data, size));
+}
+
+template<typename Backend>
+stream::SendResult UnfilteredLoop<Backend>::send_line(const void* data, size_t size)
+{
+    return loop(LineToPipe<Backend>(data, size));
+}
+
+template<typename Backend>
+stream::SendResult UnfilteredLoop<Backend>::send_file_segment(core::NamedFileDescriptor& src_fd, off_t offset, size_t size)
+{
+    try {
+        return loop(FileToPipeSendfile<Backend>(src_fd, offset, size));
+    } catch (SendfileNotAvailable&) {
+        return loop(FileToPipeReadWrite<Backend>(src_fd, offset, size));
+    }
+}
+
 template<typename Backend> template<typename ToOutput>
 stream::SendResult UnfilteredLoop<Backend>::loop(ToOutput to_output)
 {
