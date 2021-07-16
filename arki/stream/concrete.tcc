@@ -135,9 +135,8 @@ template<typename Backend>
 SendResult ConcreteStreamOutputBase<Backend>::send_line(const void* data, size_t size)
 {
     SendResult result;
-    // TODO: error: an empty buffer should send a newline
-    if (size == 0)
-        return result;
+    // Don't skip if size == 0, because sending an empty buffer needs to send
+    // an empty line
 
     if (filter_process)
     {

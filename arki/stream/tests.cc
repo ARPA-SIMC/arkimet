@@ -288,6 +288,14 @@ add_method("send_line", [&] {
     wassert(actual(f->streamed_contents()) == "testline\ntestline1\n");
 });
 
+add_method("send_empty_line", [&] {
+    auto f = make_fixture();
+
+    wassert(actual(f->send_line("", 0)) == stream::SendResult());
+
+    wassert(actual(f->streamed_contents()) == "\n");
+});
+
 add_method("send_line_filtered", [&] {
     auto f = make_fixture();
 
