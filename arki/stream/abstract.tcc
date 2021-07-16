@@ -79,16 +79,15 @@ SendResult AbstractStreamOutput<Backend>::send_file_segment(arki::core::NamedFil
     {
         return filter_sender->send_file_segment(fd, offset, size);
     } else {
-        TransferBuffer buffer;
-        buffer.allocate();
+        std::array<uint8_t, 4096 * 4> buffer;
 
         size_t pos = 0;
         while (pos < size)
         {
-            size_t res = fd.pread(buffer, std::min(buffer.size, size - pos), offset + pos);
+            size_t res = fd.pread(buffer.data(), std::min(buffer.size(), size - pos), offset + pos);
             if (res == 0)
                 throw std::runtime_error("cannot sendfile() " + std::to_string(offset) + "+" + std::to_string(size) + " to output: the span does not seem to match the file");
-            result += send_buffer(buffer, res);
+            result += send_buffer(buffer.data(), res);
             pos += res;
         }
     }

@@ -477,9 +477,10 @@ struct FromFilterReadWrite : public FromFilterConcrete<Backend>
 template<typename Backend>
 struct FromFilterAbstract : public FromFilter<Backend>
 {
-    TransferBuffer buffer;
+    using FromFilter<Backend>::FromFilter;
 
-    FromFilterAbstract(AbstractStreamOutput<Backend>& stream) : FromFilter<Backend>(stream) { buffer.allocate(); }
+    std::array<uint8_t, 4096 * 4> buffer;
+
     FromFilterAbstract(const FromFilterAbstract&) = default;
     FromFilterAbstract(FromFilterAbstract&&) = default;
 
@@ -491,7 +492,7 @@ struct FromFilterAbstract : public FromFilter<Backend>
 
     TransferResult transfer_available_output()
     {
-        ssize_t res = Backend::read(this->stream.filter_process->cmd.get_stdout(), buffer, buffer.size);
+        ssize_t res = Backend::read(this->stream.filter_process->cmd.get_stdout(), buffer.data(), buffer.size());
         trace_streaming("  read stdout %d → %d %.*s\n", this->stream.filter_process->cmd.get_stdout(), (int)res, std::max((int)res, 0), (const char*)buffer);
         if (res == 0)
             return TransferResult::EOF_SOURCE;
@@ -505,7 +506,7 @@ struct FromFilterAbstract : public FromFilter<Backend>
         else
         {
             AbstractStreamOutput<Backend>* stream = reinterpret_cast<AbstractStreamOutput<Backend>*>(&(this->stream));
-            stream->_write_output_buffer(buffer.buf, res);
+            stream->_write_output_buffer(buffer.data(), res);
             this->stream.filter_process->size_stdout += res;
             return TransferResult::WOULDBLOCK;
         }

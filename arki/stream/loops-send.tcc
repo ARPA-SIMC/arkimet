@@ -198,12 +198,11 @@ struct FileToPipeReadWrite : public ToPipe<Backend>
     size_t pos = 0;
     size_t write_size = 0;
     size_t write_pos = 0;
-    TransferBuffer buffer;
+    std::array<uint8_t, 4096 * 8> buffer;
 
     FileToPipeReadWrite(core::NamedFileDescriptor& src_fd, off_t offset, size_t size)
         : ToPipe<Backend>(), src_fd(src_fd), offset(offset), size(size)
     {
-        buffer.allocate();
     }
     FileToPipeReadWrite(const FileToPipeReadWrite&) = delete;
     FileToPipeReadWrite(FileToPipeReadWrite&&) = default;
@@ -215,7 +214,7 @@ struct FileToPipeReadWrite : public ToPipe<Backend>
     {
         if (write_pos >= write_size)
         {
-            ssize_t res = Backend::pread(src_fd, buffer, std::min(size - pos, buffer.size), offset);
+            ssize_t res = Backend::pread(src_fd, buffer.data(), std::min(size - pos, buffer.size()), offset);
             if (res == -1)
                 src_fd.throw_error("cannot pread");
             else if (res == 0)
@@ -225,7 +224,7 @@ struct FileToPipeReadWrite : public ToPipe<Backend>
             offset += res;
         }
 
-        ssize_t res = Backend::write(out, buffer + write_pos, write_size - write_pos);
+        ssize_t res = Backend::write(out, buffer.data() + write_pos, write_size - write_pos);
         trace_streaming("  BufferToOutput write %.*s %d → %d\n", (int)(write_size - write_pos), (const char*)buffer + write_pos, (int)(write_size - write_pos), (int)res);
         if (res < 0)
         {
