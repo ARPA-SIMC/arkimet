@@ -411,7 +411,7 @@ struct FromFilterReadWrite : public FromFilterConcrete<Backend>
     bool setup_poll()
     {
         bool res = FromFilter<Backend>::setup_poll();
-        res = res or (to_output.size > 0);
+        res = res or (to_output.size > 0 && to_output.size < to_output.pos);
         return res;
     }
 
@@ -419,7 +419,8 @@ struct FromFilterReadWrite : public FromFilterConcrete<Backend>
     {
         bool done = FromFilterConcrete<Backend>::on_poll(result);
 
-        trace_streaming("  FromFilterReadWrite.on_poll %zd\n", to_output.size);
+        trace_streaming("  FromFilterReadWrite.on_poll stdout_available:%d destination_available:%d to_output:%zd/%zd\n",
+                this->filter_stdout_available, this->destination_available, to_output.pos, to_output.size);
 
         if ((to_output.size == 0 || to_output.pos >= to_output.size) && this->filter_stdout_available)
         {
