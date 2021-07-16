@@ -5,7 +5,6 @@
 #include "filter.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/accounting.h"
-#include "arki/utils/process.h"
 #include "arki/libconfig.h"
 #include <system_error>
 #include <sys/sendfile.h>
@@ -54,41 +53,6 @@ ConcreteStreamOutputBase<Backend>::~ConcreteStreamOutputBase()
     // If out is still open, reset as it was before
     if (*out != -1)
         fcntl(*out, F_SETFL, orig_fl);
-}
-
-template<typename Backend>
-stream::SendResult ConcreteStreamOutputBase<Backend>::_write_output_buffer(const void* data, size_t size)
-{
-    SendResult result;
-    utils::Sigignore ignpipe(SIGPIPE);
-    size_t pos = 0;
-    while (true)
-    {
-        ssize_t res = Backend::write(*out, (const uint8_t*)data + pos, size - pos);
-        if (res < 0)
-        {
-            if (errno == EAGAIN || errno == EWOULDBLOCK)
-                res = 0;
-            else if (errno == EPIPE) {
-                result.flags |= SendResult::SEND_PIPE_EOF_DEST;
-                break;
-            } else
-                throw std::system_error(errno, std::system_category(), "cannot write " + std::to_string(size - pos) + " bytes to " + out->name());
-        }
-
-        pos += res;
-
-        if (pos >= size)
-            break;
-
-        uint32_t wres = wait_writable();
-        if (wres)
-        {
-            result.flags |= wres;
-            break;
-        }
-    }
-    return result;
 }
 
 template<typename Backend>

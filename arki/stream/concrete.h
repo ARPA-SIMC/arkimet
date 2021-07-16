@@ -26,8 +26,6 @@ struct ConcreteStreamOutputBase: public BaseStreamOutput
      */
     uint32_t wait_writable();
 
-    stream::SendResult _write_output_buffer(const void* data, size_t size);
-
     ConcreteStreamOutputBase(std::shared_ptr<core::NamedFileDescriptor> out, int timeout_ms=-1);
     ~ConcreteStreamOutputBase();
 

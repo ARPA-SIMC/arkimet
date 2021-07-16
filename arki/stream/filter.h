@@ -2,8 +2,8 @@
 #define ARKI_STREAM_FILTER_H
 
 #include "arki/stream.h"
-#include "arki/utils/process.h"
 #include "arki/utils/subprocess.h"
+#include <sstream>
 
 namespace arki {
 namespace stream {
