@@ -421,8 +421,7 @@ struct FromFilterReadWrite : public FromFilterConcrete<Backend>
 
         trace_streaming("  FromFilterReadWrite.on_poll %zd\n", to_output.size);
 
-        // TODO: this could append to the output buffer to chunk together small writes
-        if (to_output.size == 0 && this->filter_stdout_available)
+        if ((to_output.size == 0 || to_output.pos >= to_output.size) && this->filter_stdout_available)
         {
             this->filter_stdout_available = false;
             switch (transfer_available_output_read())
