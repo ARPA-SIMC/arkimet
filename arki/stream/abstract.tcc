@@ -10,11 +10,12 @@
 namespace arki {
 namespace stream {
 
-template<typename Backend> template<template<typename> class ToPipe, typename... Args>
-SendResult AbstractStreamOutput<Backend>::_send_from_pipe(Args&&... args)
+template<typename Backend>
+stream::FilterProcess* AbstractStreamOutput<Backend>::start_filter(const std::vector<std::string>& command)
 {
-    FilterLoop<Backend, FromFilterAbstract<Backend>> sender(*this);
-    return sender.send(ToPipe<Backend>(std::forward<Args>(args)...));
+    auto res = BaseStreamOutput::start_filter(command);
+    filter_sender.reset(new FilterLoop<Backend, FromFilterAbstract<Backend>>(*this));
+    return res;
 }
 
 template<typename Backend>
@@ -40,11 +41,10 @@ SendResult AbstractStreamOutput<Backend>::send_buffer(const void* data, size_t s
         return result;
 
     if (filter_process)
-    {
-        return _send_from_pipe<BufferToPipe>(data, size);
-    } else {
+        return filter_sender->send_buffer(data, size);
+    else
         result +=_write_output_buffer(data, size);
-    }
+
     if (progress_callback)
         progress_callback(size);
     return result;
@@ -59,7 +59,7 @@ SendResult AbstractStreamOutput<Backend>::send_line(const void* data, size_t siz
 
     if (filter_process)
     {
-        return _send_from_pipe<LineToPipe>(data, size);
+        return filter_sender->send_line(data, size);
     } else {
         result += _write_output_line(data, size);
     }
@@ -77,11 +77,7 @@ SendResult AbstractStreamOutput<Backend>::send_file_segment(arki::core::NamedFil
 
     if (filter_process)
     {
-        try {
-            return _send_from_pipe<FileToPipeSendfile>(fd, offset, size);
-        } catch (SendfileNotAvailable&) {
-            return _send_from_pipe<FileToPipeReadWrite>(fd, offset, size);
-        }
+        return filter_sender->send_file_segment(fd, offset, size);
     } else {
         TransferBuffer buffer;
         buffer.allocate();

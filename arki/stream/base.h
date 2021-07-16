@@ -17,11 +17,23 @@ namespace stream {
 
 struct FilterProcess;
 
+struct Sender
+{
+    virtual ~Sender();
+
+    virtual stream::SendResult send_buffer(const void* data, size_t size) = 0;
+    virtual stream::SendResult send_line(const void* data, size_t size) = 0;
+    virtual stream::SendResult send_file_segment(core::NamedFileDescriptor& src_fd, off_t offset, size_t size) = 0;
+    virtual stream::SendResult flush() = 0;
+};
+
+
 struct BaseStreamOutput : public StreamOutput
 {
     int timeout_ms = -1;
     std::function<void(size_t)> progress_callback;
     std::unique_ptr<FilterProcess> filter_process;
+    std::unique_ptr<Sender> filter_sender;
 
     /**
      * Check if a file descriptor is in nonblocking mode
@@ -41,17 +53,6 @@ struct BaseStreamOutput : public StreamOutput
     void abort_filter() override;
 
     virtual void flush_filter_output() = 0;
-};
-
-
-struct Sender
-{
-    virtual ~Sender();
-
-    virtual stream::SendResult send_buffer(const void* data, size_t size) = 0;
-    virtual stream::SendResult send_line(const void* data, size_t size) = 0;
-    virtual stream::SendResult send_file_segment(core::NamedFileDescriptor& src_fd, off_t offset, size_t size) = 0;
-    virtual stream::SendResult flush() = 0;
 };
 
 

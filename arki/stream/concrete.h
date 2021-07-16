@@ -14,7 +14,6 @@ struct ConcreteStreamOutputBase: public BaseStreamOutput
     std::shared_ptr<core::NamedFileDescriptor> out;
     int orig_fl = -1;
     pollfd pollinfo;
-    bool has_splice = false;
     UnfilteredLoop<Backend> unfiltered_loop;
 
     /**
@@ -35,9 +34,6 @@ struct ConcreteStreamOutputBase: public BaseStreamOutput
     std::string name() const override;
 
     stream::FilterProcess* start_filter(const std::vector<std::string>& command) override;
-
-    template<template<typename> class ToPipe, typename... Args>
-    SendResult _send_from_pipe(Args&&... args);
 
     void flush_filter_output() override;
 

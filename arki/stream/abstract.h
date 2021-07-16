@@ -29,9 +29,7 @@ struct AbstractStreamOutput : public BaseStreamOutput
      */
     virtual stream::SendResult _write_output_line(const void* data, size_t size);
 
-    template<template<typename> class ToPipe, typename... Args>
-    SendResult _send_from_pipe(Args&&... args);
-
+    stream::FilterProcess* start_filter(const std::vector<std::string>& command) override;
     void flush_filter_output() override;
 
     using BaseStreamOutput::BaseStreamOutput;

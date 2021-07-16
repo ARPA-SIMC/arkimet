@@ -95,45 +95,18 @@ template<typename Backend>
 stream::FilterProcess* ConcreteStreamOutputBase<Backend>::start_filter(const std::vector<std::string>& command)
 {
     auto res = BaseStreamOutput::start_filter(command);
-    has_splice = true;
+    filter_sender.reset(new FilterLoop<Backend, FromFilterSplice<Backend>>(*this));
     return res;
-}
-
-template<typename Backend> template<template<typename> class ToPipe, typename... Args>
-SendResult ConcreteStreamOutputBase<Backend>::_send_from_pipe(Args&&... args)
-{
-    if (has_splice)
-    {
-        try {
-            FilterLoop<Backend, FromFilterSplice<Backend>> sender(*this);
-            return sender.send(ToPipe<Backend>(std::forward<Args>(args)...));
-        } catch (SpliceNotAvailable&) {
-            has_splice = false;
-            FilterLoop<Backend, FromFilterReadWrite<Backend>> sender(*this);
-            return sender.send(ToPipe<Backend>(std::forward<Args>(args)...));
-        }
-    } else {
-        FilterLoop<Backend, FromFilterReadWrite<Backend>> sender(*this);
-        return sender.send(ToPipe<Backend>(std::forward<Args>(args)...));
-    }
 }
 
 template<typename Backend>
 void ConcreteStreamOutputBase<Backend>::flush_filter_output()
 {
-    if (has_splice)
-    {
-        try {
-            FilterLoop<Backend, FromFilterSplice<Backend>> sender(*this);
-            sender.flush();
-        } catch (SpliceNotAvailable&) {
-            has_splice = false;
-            FilterLoop<Backend, FromFilterReadWrite<Backend>> sender(*this);
-            sender.flush();
-        }
-    } else {
-        FilterLoop<Backend, FromFilterReadWrite<Backend>> sender(*this);
-        sender.flush();
+    try {
+        filter_sender->flush();
+    } catch (SpliceNotAvailable&) {
+        filter_sender.reset(new FilterLoop<Backend, FromFilterReadWrite<Backend>>(*this));
+        filter_sender->flush();
     }
 }
 
@@ -147,7 +120,12 @@ SendResult ConcreteStreamOutputBase<Backend>::send_buffer(const void* data, size
 
     if (filter_process)
     {
-        return _send_from_pipe<BufferToPipe>(data, size);
+        try {
+            return filter_sender->send_buffer(data, size);
+        } catch (SpliceNotAvailable&) {
+            filter_sender.reset(new FilterLoop<Backend, FromFilterReadWrite<Backend>>(*this));
+            return filter_sender->send_buffer(data, size);
+        }
     } else {
         return unfiltered_loop.send_buffer(data, size);
     }
@@ -163,7 +141,12 @@ SendResult ConcreteStreamOutputBase<Backend>::send_line(const void* data, size_t
 
     if (filter_process)
     {
-        return _send_from_pipe<LineToPipe>(data, size);
+        try {
+            return filter_sender->send_line(data, size);
+        } catch (SpliceNotAvailable&) {
+            filter_sender.reset(new FilterLoop<Backend, FromFilterReadWrite<Backend>>(*this));
+            return filter_sender->send_line(data, size);
+        }
     } else {
         return unfiltered_loop.send_line(data, size);
     }
@@ -181,9 +164,10 @@ SendResult ConcreteStreamOutputBase<Backend>::send_file_segment(arki::core::Name
     if (filter_process)
     {
         try {
-            return _send_from_pipe<FileToPipeSendfile>(fd, offset, size);
-        } catch (SendfileNotAvailable&) {
-            return _send_from_pipe<FileToPipeReadWrite>(fd, offset, size);
+            return filter_sender->send_file_segment(fd, offset, size);
+        } catch (SpliceNotAvailable&) {
+            filter_sender.reset(new FilterLoop<Backend, FromFilterReadWrite<Backend>>(*this));
+            return filter_sender->send_file_segment(fd, offset, size);
         }
     } else {
         return unfiltered_loop.send_file_segment(fd, offset, size);

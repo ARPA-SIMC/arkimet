@@ -48,6 +48,8 @@ std::unique_ptr<FilterProcess> BaseStreamOutput::stop_filter()
     std::unique_ptr<FilterProcess> proc = std::move(filter_process);
     proc->stop();
 
+    filter_sender.reset();
+
     return proc;
 }
 
