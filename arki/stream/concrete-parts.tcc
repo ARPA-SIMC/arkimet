@@ -180,8 +180,7 @@ struct ToFilter
 
         if (pfd_filter_stdin->revents & (POLLERR | POLLHUP))
         {
-            // TODO: child process closed stdin but we were still writing on it
-            result.flags |= SendResult::SEND_PIPE_EOF_DEST; // This is not the right return code
+            // result.flags |= SendResult::SEND_PIPE_EOF_DEST; // TODO: signal this somehow?
             stream.filter_process->cmd.close_stdin();
             pfd_filter_stdin->fd = -1;
         }
@@ -275,7 +274,6 @@ struct FromFilterConcrete : public FromFilter<Backend>
         if (this->pfd_destination->revents & (POLLERR | POLLHUP))
         {
             // Destination closed its endpoint, stop here
-            // TODO: stop writing to filter stdin and drain filter stdout?
             result.flags |= SendResult::SEND_PIPE_EOF_DEST;
             return true;
         }
@@ -528,7 +526,7 @@ struct FromFilterAbstract : public FromFilter<Backend>
                 case TransferResult::DONE:
                     throw std::runtime_error("unexpected result from feed_filter_stdin");
                 case TransferResult::EOF_SOURCE:
-                    // TODO: Filter closed stdout, stop polling it
+                    // Filter closed stdout, stop polling it
                     done = true;
                     break;
                 case TransferResult::EOF_DEST:
