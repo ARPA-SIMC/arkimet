@@ -56,7 +56,7 @@ template<typename Backend>
 stream::FilterProcess* ConcreteStreamOutputBase<Backend>::start_filter(const std::vector<std::string>& command)
 {
     auto res = BaseStreamOutput::start_filter(command);
-    filter_sender.reset(new FilterLoop<Backend, FromFilterSplice<Backend>>(*this));
+    filter_sender.reset(new FilterLoop<Backend, FromFilterConcretePrimary<Backend>>(*this));
     return res;
 }
 
@@ -66,7 +66,7 @@ void ConcreteStreamOutputBase<Backend>::flush_filter_output()
     try {
         filter_sender->flush();
     } catch (SpliceNotAvailable&) {
-        filter_sender.reset(new FilterLoop<Backend, FromFilterReadWrite<Backend>>(*this));
+        filter_sender.reset(new FilterLoop<Backend, FromFilterConcreteFallback<Backend>>(*this));
         filter_sender->flush();
     }
 }
@@ -84,7 +84,7 @@ SendResult ConcreteStreamOutputBase<Backend>::send_buffer(const void* data, size
         try {
             return filter_sender->send_buffer(data, size);
         } catch (SpliceNotAvailable&) {
-            filter_sender.reset(new FilterLoop<Backend, FromFilterReadWrite<Backend>>(*this));
+            filter_sender.reset(new FilterLoop<Backend, FromFilterConcreteFallback<Backend>>(*this));
             return filter_sender->send_buffer(data, size);
         }
     } else {
@@ -104,7 +104,7 @@ SendResult ConcreteStreamOutputBase<Backend>::send_line(const void* data, size_t
         try {
             return filter_sender->send_line(data, size);
         } catch (SpliceNotAvailable&) {
-            filter_sender.reset(new FilterLoop<Backend, FromFilterReadWrite<Backend>>(*this));
+            filter_sender.reset(new FilterLoop<Backend, FromFilterConcreteFallback<Backend>>(*this));
             return filter_sender->send_line(data, size);
         }
     } else {
@@ -126,7 +126,7 @@ SendResult ConcreteStreamOutputBase<Backend>::send_file_segment(arki::core::Name
         try {
             return filter_sender->send_file_segment(fd, offset, size);
         } catch (SpliceNotAvailable&) {
-            filter_sender.reset(new FilterLoop<Backend, FromFilterReadWrite<Backend>>(*this));
+            filter_sender.reset(new FilterLoop<Backend, FromFilterConcreteFallback<Backend>>(*this));
             return filter_sender->send_file_segment(fd, offset, size);
         }
     } else {

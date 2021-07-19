@@ -3,6 +3,7 @@
 
 #include "arki/stream/fwd.h"
 #include "arki/utils/sys.h"
+#include "arki/libconfig.h"
 #include "filter.h"
 #include "loops.h"
 #include "abstract.h"
@@ -473,6 +474,29 @@ struct FromFilterReadWrite : public FromFilterConcrete<Backend>
 
         return done;
     }
+};
+
+
+#ifdef HAVE_SPLICE
+template<typename Backend>
+struct FromFilterConcretePrimary : public FromFilterSplice<Backend>
+{
+    using FromFilterSplice<Backend>::FromFilterSplice;
+};
+#else
+template<typename Backend>
+struct FromFilterConcretePrimary : public FromFilterReadWrite<Backend>
+{
+    using FromFilterReadWrite<Backend>::FromFilterReadWrite;
+};
+
+#endif
+
+
+template<typename Backend>
+struct FromFilterConcreteFallback : public FromFilterReadWrite<Backend>
+{
+    using FromFilterReadWrite<Backend>::FromFilterReadWrite;
 };
 
 
