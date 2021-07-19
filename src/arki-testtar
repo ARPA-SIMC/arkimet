@@ -12,7 +12,24 @@ log = logging.getLogger()
 re_data = re.compile(r"(?:\.grib|\.grib1|\.grib2|\.vm2|\.odimh5|\.bufr|.repack)$")
 
 
-def do_archive(src, rootpath=None, skip_archives=False):
+def filter_year_limit(value: str, limit) -> bool:
+    """
+    Returns True if value is allowed by the given year limit
+    """
+    if not value.isdigit():
+        return True
+    if limit is None:
+        return True
+    vmin, vmax = limit
+    if vmin is not None and value < vmin:
+        return False
+    if vmax is not None and value > vmax:
+        return False
+    return True
+
+
+def do_archive(src, rootpath=None, skip_archives=False, year_limit=None):
+    dsname = src
     if rootpath is not None:
         src = os.path.join(rootpath, src)
 
@@ -23,6 +40,9 @@ def do_archive(src, rootpath=None, skip_archives=False):
 
             if rootpath is not None:
                 root = os.path.relpath(root, rootpath)
+
+            if year_limit != (None, None) and root == dsname:
+                dirnames[::] = [d for d in dirnames if filter_year_limit(d, year_limit)]
 
             for fname in fnames:
                 hfd = os.open(fname, os.O_RDONLY, dir_fd=rootfd)
@@ -80,6 +100,9 @@ def main():
     parser.add_argument("--debug", action="store_true", help="debugging output")
     parser.add_argument("-v", "--verbose", action="store_true", help="verbose output")
     parser.add_argument("--skip-archives", action="store_true", help="skip .archive contents")
+    parser.add_argument("--years", action="store",
+                        help="limit data outside .archive to the given years"
+                             " (can be yyyy, yyyy:, :yyyy, or yyyy:yyyy, extremes included)")
     args = parser.parse_args()
 
     log_format = "%(asctime)-15s %(levelname)s %(message)s"
@@ -93,7 +116,18 @@ def main():
     if args.extract:
         do_extract(args.src, args.root)
     else:
-        do_archive(args.src, args.root, skip_archives=args.skip_archives)
+        if args.years:
+            if args.years.startswith(":"):
+                year_limit = (None, args.years[1:])
+            elif args.years.endswith(":"):
+                year_limit = (args.years[:-1], None)
+            elif ":" in args.years:
+                year_limit = tuple(args.years.split('-', 1))
+            else:
+                year_limit = (args.years, args.years)
+        else:
+            year_limit = None
+        do_archive(args.src, args.root, skip_archives=args.skip_archives, year_limit=year_limit)
 
 
 if __name__ == "__main__":

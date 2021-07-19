@@ -26,3 +26,40 @@ foreach script: scripts
                   install_dir: get_option('mandir') / 'man1')
 endforeach
 
+if get_option('profiling') != 'none'
+    perf_deps = [
+        sqlite3_dep,
+        eccodes_dep,
+        dballe_dep,
+        meteo_vm2_dep,
+        libcurl_dep,
+    ]
+
+    if get_option('profiling') == 'gperftools'
+        perf_deps += gperftools_dep
+    endif
+
+    bench_arki_query = executable('bench-arki-query', 'bench-arki-query.cc',
+        include_directories: toplevel_inc,
+        link_with: [
+            libarkimet,
+        ],
+        dependencies: perf_deps,
+    )
+
+    bench_arki_query_data = executable('bench-arki-query-data', 'bench-arki-query-data.cc',
+        include_directories: toplevel_inc,
+        link_with: [
+            libarkimet,
+        ],
+        dependencies: perf_deps,
+    )
+
+    bench_arki_query_postproc = executable('bench-arki-query-postproc', 'bench-arki-query-postproc.cc',
+        include_directories: toplevel_inc,
+        link_with: [
+            libarkimet,
+        ],
+        dependencies: perf_deps,
+    )
+endif

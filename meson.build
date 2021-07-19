@@ -13,6 +13,16 @@ conf_data.set_quoted('POSTPROC_DIR', get_option('libdir') / 'arkimet')
 
 toplevel_inc = include_directories('.')
 
+# Enable profiling if requested
+if get_option('profiling') == 'gprof'
+    add_global_arguments('-pg', '-fprofile-arcs', '-fprofile-generate', language : 'cpp')
+    add_global_link_arguments('-pg', '-fprofile-arcs', '-fprofile-generate', language : 'cpp')
+endif
+if get_option('profiling') == 'gperftools'
+    add_global_arguments('-DUSE_GPERFTOOLS', language : 'cpp')
+    gperftools_dep = dependency('libprofiler')
+endif
+
 # Dependencies
 
 compiler = meson.get_compiler('cpp')
