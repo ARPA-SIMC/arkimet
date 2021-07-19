@@ -12,12 +12,15 @@ log = logging.getLogger()
 re_data = re.compile(r"(?:\.grib|\.grib1|\.grib2|\.vm2|\.odimh5|\.bufr|.repack)$")
 
 
-def do_archive(src, rootpath=None):
+def do_archive(src, rootpath=None, skip_archives=False):
     if rootpath is not None:
         src = os.path.join(rootpath, src)
 
     with tarfile.open(mode="w:gz", format=tarfile.PAX_FORMAT, fileobj=sys.stdout.buffer) as out:
         for root, dirnames, fnames, rootfd in os.fwalk(src):
+            if skip_archives and ".archive" in dirnames:
+                dirnames[::] = [d for d in dirnames if d != ".archive"]
+
             if rootpath is not None:
                 root = os.path.relpath(root, rootpath)
 
@@ -76,6 +79,7 @@ def main():
     parser.add_argument("-C", dest="root", action="store", help="root directory to use (default: current directory)")
     parser.add_argument("--debug", action="store_true", help="debugging output")
     parser.add_argument("-v", "--verbose", action="store_true", help="verbose output")
+    parser.add_argument("--skip-archives", action="store_true", help="skip .archive contents")
     args = parser.parse_args()
 
     log_format = "%(asctime)-15s %(levelname)s %(message)s"
@@ -89,7 +93,7 @@ def main():
     if args.extract:
         do_extract(args.src, args.root)
     else:
-        do_archive(args.src, args.root)
+        do_archive(args.src, args.root, skip_archives=args.skip_archives)
 
 
 if __name__ == "__main__":
