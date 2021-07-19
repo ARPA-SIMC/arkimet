@@ -2,7 +2,6 @@
 
 import re
 import os
-import stat
 import sys
 import tarfile
 import shutil
@@ -11,6 +10,7 @@ import argparse
 
 log = logging.getLogger()
 re_data = re.compile(r"(?:\.grib|\.grib1|\.grib2|\.vm2|\.odimh5|\.bufr|.repack)$")
+
 
 def do_archive(src, rootpath=None):
     if rootpath is not None:
@@ -37,11 +37,13 @@ def do_archive(src, rootpath=None):
 
                     out.addfile(info, fd)
 
+
 def do_extract(src, rootpath=None):
     with tarfile.open(src, mode="r:*") as tf:
         while True:
             info = tf.next()
-            if info is None: break
+            if info is None:
+                break
             dest = info.name
             if rootpath is not None:
                 dest = os.path.join(rootpath, dest)
@@ -56,14 +58,13 @@ def do_extract(src, rootpath=None):
             else:
                 log.info("a %s", dest)
                 srcfd = tf.extractfile(info)
-                if srcfd is None: continue
+                if srcfd is None:
+                    continue
                 with open(dest, "wb") as dstfd:
                     shutil.copyfileobj(srcfd, dstfd)
 
             os.chmod(dest, info.mode)
             os.utime(dest, times=(info.mtime, info.mtime))
-
-
 
 
 def main():
@@ -89,6 +90,7 @@ def main():
         do_extract(args.src, args.root)
     else:
         do_archive(args.src, args.root)
+
 
 if __name__ == "__main__":
     main()
