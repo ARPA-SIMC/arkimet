@@ -3,7 +3,7 @@
 
 Summary: Archive for weather information
 Name: arkimet
-Version: 1.35
+Version: 1.36
 Release: 1
 License: GPL
 Group: Applications/Meteo
@@ -235,6 +235,11 @@ if [ "$1" = "1" ]; then
 fi
 
 %changelog
+* Fri Aug 27 2021 Emanuele Di Giacomo <edigiacomo@arpae.it> - 1.36-1
+- Automatic parsing for config files and directories, disable fallback to
+  arkimet format (#265)
+- Fixed postprocessor hanging (#269)
+
 * Mon May 17 2021 Daniele Branchini <dbranchini@arpae.it> - 1.35-1
 - Added support for libnetcdf.so.15
 - Minor fixes in dependency checking and tests (#266, #267)
