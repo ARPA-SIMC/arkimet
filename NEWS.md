@@ -1,3 +1,9 @@
+# New in version 1.36
+* `arki-scan` exit status now discerns not imported condition (#129)
+* `arki-mergeconf` now supports explicited config files as a source (#265)
+* Differentiated satellite GRIB2 products (#268)
+* Fixed detecting end of read/write flush loop (#269)
+
 # New in version 1.35
 * Added support for libnetcdf.so.15
 * Minor fixes in dependency checking and tests (#266, #267)
