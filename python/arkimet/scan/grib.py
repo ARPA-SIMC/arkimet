@@ -31,7 +31,7 @@ class Scanner:
                 if scan(grib, md) is False:
                     break
             except Exception:
-                log.exception("scanner function failed")
+                log.warning("scanner function failed", exc_info=True)
 
     @classmethod
     def register(cls, edition: int, scanner: Callable[[Grib, arkimet.Metadata], None], priority=0):

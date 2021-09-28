@@ -1,3 +1,8 @@
+# New in version NEXT
+
+* Log Python scanner exceptions as warnings, since processing proceeds with a
+  base set of metadata (#273)
+
 # New in version 1.36
 * `arki-scan` exit status now discerns not imported condition (#129)
 * `arki-mergeconf` now supports explicited config files as a source (#265)

@@ -23,7 +23,7 @@ class Scanner:
                     if scan(f, md) is False:
                         break
                 except Exception:
-                    log.exception("scanner function failed")
+                    log.warning("scanner function failed", exc_info=True)
 
     @classmethod
     def register(cls, scanner: Callable[["netCDF4.Dataset", arkimet.Metadata], None], priority=0):

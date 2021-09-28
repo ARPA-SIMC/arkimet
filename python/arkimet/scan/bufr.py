@@ -30,7 +30,7 @@ class Scanner:
                 if scan(msg, md) is False:
                     break
             except Exception:
-                log.exception("scanner function failed")
+                log.warning("scanner function failed", exc_info=True)
 
     @classmethod
     def register(cls, type: str, scanner: Callable[[dballe.Message, arkimet.Metadata], None], priority=0):

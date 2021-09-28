@@ -29,7 +29,7 @@ class Scanner:
                         if scan(f, md) is False:
                             break
                     except Exception:
-                        log.exception("scanner function failed")
+                        log.warning("scanner function failed", exc_info=True)
         else:
             import json
             import inspect
