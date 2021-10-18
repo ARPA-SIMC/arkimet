@@ -136,7 +136,9 @@ std::shared_ptr<core::cfg::Section> Reader::read_config(const std::string& path)
     auto res = core::cfg::Section::parse(in);
     // Fill in missing bits
     res->set("name", name);
-    res->set("path", sys::abspath(path));
+
+    if (res->value("type") != "remote")
+        res->set("path", sys::abspath(path));
     return res;
 }
 
