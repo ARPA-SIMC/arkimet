@@ -1,4 +1,4 @@
-# New in version NEXT
+# New in version 1.37
 
 * Log Python scanner exceptions as warnings, since processing proceeds with a
   base set of metadata (#273)
