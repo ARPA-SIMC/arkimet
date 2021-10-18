@@ -70,6 +70,21 @@ add_method("read_configs", [] {
     wassert(actual(sec->value("name")) == "testds");
 });
 
+add_method("read_config_remotedir", [] {
+    // Reproduce #274
+    sys::rmtree_ifexists("testds");
+    sys::makedirs("testds");
+    sys::write_file("testds/config", R"(
+type = remote
+path = http://example.org
+step = daily
+)");
+
+    auto cfg = dataset::Session::read_config("testds");
+    wassert(actual(cfg->value("name")) == "testds");
+    wassert(actual(cfg->value("path")) == "http://example.org");
+});
+
 }
 
 }

@@ -2,6 +2,9 @@
 
 * Log Python scanner exceptions as warnings, since processing proceeds with a
   base set of metadata (#273)
+* When a config file is found inside a directory, as if it were a dataset, but
+  has type=remote, its `path` value does not get overridden with the full path
+  to the directory (#274)
 
 # New in version 1.36
 * `arki-scan` exit status now discerns not imported condition (#129)
