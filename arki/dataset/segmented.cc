@@ -2,7 +2,6 @@
 #include "session.h"
 #include "step.h"
 #include "time.h"
-#include "ondisk2/writer.h"
 #include "simple/writer.h"
 #include "iseg/writer.h"
 #include "maintenance.h"
@@ -164,10 +163,10 @@ void Writer::test_acquire(std::shared_ptr<Session> session, const core::cfg::Sec
     if (type.empty())
         type = "local";
 
-    if (type == "iseg")
+    if (type == "iseg" || type == "test")
         return dataset::iseg::Writer::test_acquire(session, cfg, batch);
-    if (type == "ondisk2" || type == "test")
-        return dataset::ondisk2::Writer::test_acquire(session, cfg, batch);
+    if (type == "ondisk2")
+        throw std::runtime_error("ondisk2 datasets are not supported anymore. Please convert the dataset to type=iseg");
     if (type == "simple" || type == "error" || type == "duplicates")
         return dataset::simple::Writer::test_acquire(session, cfg, batch);
 

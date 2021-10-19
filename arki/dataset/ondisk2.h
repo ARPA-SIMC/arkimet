@@ -7,15 +7,9 @@ namespace arki {
 namespace dataset {
 namespace ondisk2 {
 
-class Dataset : public dataset::indexed::Dataset
+class Dataset : public dataset::Dataset
 {
 public:
-    std::string summary_cache_pathname;
-    std::string indexfile;
-    std::string index_pathname;
-    std::string index;
-    std::string unique;
-
     Dataset(const Dataset&) = default;
     Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg);
 

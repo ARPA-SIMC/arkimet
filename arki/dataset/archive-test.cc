@@ -45,7 +45,8 @@ struct Fixture : public arki::utils::tests::Fixture
         cfg.clear();
         cfg.set("path", "testds");
         cfg.set("name", "testds");
-        cfg.set("type", "ondisk2");
+        cfg.set("type", "iseg");
+        cfg.set("format", "grib");
         cfg.set("step", "daily");
         cfg.set("unique", "origin, reftime");
         cfg.set("archive age", "7");

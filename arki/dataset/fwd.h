@@ -39,13 +39,6 @@ class Writer;
 class Checker;
 }
 
-namespace ondisk2 {
-class Dataset;
-class Reader;
-class Writer;
-class Checker;
-}
-
 namespace simple {
 class Reader;
 class Writer;

@@ -53,7 +53,8 @@ unique = reftime
 index = reftime,level,task,quantity
 replace = yes
 step = singlefile
-type = ondisk2
+type = iseg
+format = odimh5
 ----
 
 - `description`: descrizione del dataset.
@@ -66,7 +67,7 @@ type = ondisk2
   sovrascritti o meno.
 - `step`: step che indica il tipo di organizzazione dei file (`daily`,
   `weekly`, `singlefile`, ...).
-- `type`: tipo di dataset (generalmente, `ondisk2`).
+- `type`: tipo di dataset (generalmente, `iseg`).
 
 Per un elenco completo di tutti i campi disponibili nel `config` vedi la
 sezione <<config,Elenco variabili utilizzabili nel file config>>
@@ -154,7 +155,7 @@ EOF
 ----
 
 Il (`type`) di dataset può essere di vari tipi, ma per quelli locali
-generalmente si usa `type = ondisk2`. Lo `step` indica con quale
+generalmente si usa `type = iseg`. Lo `step` indica con quale
 granularità creare i segmenti di dati (giornaliero, settimanale, mensile,
 annuale). `filter` indica quale query devono rispettare i dati per poter
 essere salvati all'interno del dataset. `unique` indica una lista dei
@@ -192,7 +193,8 @@ $ mkdir $HOME/dataset/odimh5
 $ cat <<EOF > $HOME/dataset/odimh5/config
 description = Dati ODIM
 filter = origin:ODIMH5,,,
-type = ondisk2
+type = iseg
+format = odimh5
 step = daily
 unique = reftime
 index = reftime,level,task,quantity
@@ -209,7 +211,8 @@ filter = origin:GRIB1,80,,22; area:GRIB:Ni=386,latfirst=-10575000, lonfirst=-778
 index = reftime, timerange, level, product
 replace = yes
 step = daily
-type = ondisk2
+type = iseg
+format = grib
 unique = origin, reftime, timerange, level, product
 archive age = 20
 postprocess = singlepoint, subarea, seriet, cat
@@ -871,7 +874,7 @@ metadato::
 [[config]]
 == Elenco variabili utilizzabili nel file config ==
 
-- `type`: tipo di dataset (`iseg`, `ondisk2`, `simple`, `error`, `duplicates`,
+- `type`: tipo di dataset (`iseg`, `simple`, `error`, `duplicates`,
   `remote`, `outbound`, `discard`, `file`, `testlarge`)
 - `path`: path del dataset
 - `format`: formato del dataset (e.g. `grib`)

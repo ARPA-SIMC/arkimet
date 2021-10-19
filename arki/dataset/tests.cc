@@ -4,9 +4,6 @@
 #include "arki/metadata/collection.h"
 #include "arki/dataset/query.h"
 #include "arki/dataset/local.h"
-#include "arki/dataset/ondisk2/reader.h"
-#include "arki/dataset/ondisk2/writer.h"
-#include "arki/dataset/ondisk2/checker.h"
 #include "arki/dataset/simple/reader.h"
 #include "arki/dataset/simple/writer.h"
 #include "arki/dataset/simple/checker.h"
@@ -175,18 +172,12 @@ std::shared_ptr<dataset::local::Dataset> DatasetTest::local_config()
     return dynamic_pointer_cast<dataset::local::Dataset>(m_dataset);
 }
 
-std::shared_ptr<dataset::ondisk2::Dataset> DatasetTest::ondisk2_config()
-{
-    config();
-    return dynamic_pointer_cast<dataset::ondisk2::Dataset>(m_dataset);
-}
-
 std::string DatasetTest::idxfname(const core::cfg::Section* wcfg) const
 {
+    // TODO: is this still needed after ondisk2 dismissal?
     if (!wcfg) wcfg = cfg.get();
-    if (wcfg->value("type") == "ondisk2")
-        return "index.sqlite";
-    else if (wcfg->value("index_type") == "sqlite")
+
+    if (wcfg->value("index_type") == "sqlite")
         return "index.sqlite";
     else
         return dataset::index::Manifest::get_force_sqlite() ? "index.sqlite" : "MANIFEST";
@@ -271,27 +262,6 @@ std::shared_ptr<dataset::segmented::Checker> DatasetTest::makeSegmentedChecker()
 {
     auto r = dynamic_pointer_cast<dataset::segmented::Checker>(config().create_checker());
     if (!r) throw std::runtime_error("makeSegmentedChecker called while testing a non-segmented dataset");
-    return r;
-}
-
-std::shared_ptr<dataset::ondisk2::Reader> DatasetTest::makeOndisk2Reader()
-{
-    auto r = dynamic_pointer_cast<dataset::ondisk2::Reader>(config().create_reader());
-    if (!r) throw std::runtime_error("makeOndisk2Reader called while testing a non-ondisk2 dataset");
-    return r;
-}
-
-std::shared_ptr<dataset::ondisk2::Writer> DatasetTest::makeOndisk2Writer()
-{
-    auto r = dynamic_pointer_cast<dataset::ondisk2::Writer>(config().create_writer());
-    if (!r) throw std::runtime_error("makeOndisk2Writer called while testing a non-ondisk2 dataset");
-    return r;
-}
-
-std::shared_ptr<dataset::ondisk2::Checker> DatasetTest::makeOndisk2Checker()
-{
-    auto r = dynamic_pointer_cast<dataset::ondisk2::Checker>(config().create_checker());
-    if (!r) throw std::runtime_error("makeOndisk2Checker called while testing a non-ondisk2 dataset");
     return r;
 }
 

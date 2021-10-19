@@ -255,19 +255,15 @@ class Tests : public FixtureTestCase<FixtureWriter<Data>>
     void register_tests() override;
 };
 
-Tests<GRIBData> test_concurrent_grib_ondisk2("arki_dataset_concurrent_grib_ondisk2", "type=ondisk2\n");
 Tests<GRIBData> test_concurrent_grib_simple_plain("arki_dataset_concurrent_grib_simple_plain", "type=simple\nindex_type=plain\n");
 Tests<GRIBData> test_concurrent_grib_simple_sqlite("arki_dataset_concurrent_grib_simple_sqlite", "type=simple\nindex_type=sqlite");
 Tests<GRIBData> test_concurrent_grib_iseg("arki_dataset_concurrent_grib_iseg", "type=iseg\nformat=grib\n");
-Tests<BUFRData> test_concurrent_bufr_ondisk2("arki_dataset_concurrent_bufr_ondisk2", "type=ondisk2\n");
 Tests<BUFRData> test_concurrent_bufr_simple_plain("arki_dataset_concurrent_bufr_simple_plain", "type=simple\nindex_type=plain\n");
 Tests<BUFRData> test_concurrent_bufr_simple_sqlite("arki_dataset_concurrent_bufr_simple_sqlite", "type=simple\nindex_type=sqlite");
 Tests<BUFRData> test_concurrent_bufr_iseg("arki_dataset_concurrent_bufr_iseg", "type=iseg\nformat=bufr\n");
-Tests<VM2Data> test_concurrent_vm2_ondisk2("arki_dataset_concurrent_vm2_ondisk2", "type=ondisk2\n");
 Tests<VM2Data> test_concurrent_vm2_simple_plain("arki_dataset_concurrent_vm2_simple_plain", "type=simple\nindex_type=plain\n");
 Tests<VM2Data> test_concurrent_vm2_simple_sqlite("arki_dataset_concurrent_vm2_simple_sqlite", "type=simple\nindex_type=sqlite");
 Tests<VM2Data> test_concurrent_vm2_iseg("arki_dataset_concurrent_vm2_iseg", "type=iseg\nformat=vm2\n");
-Tests<ODIMData> test_concurrent_odim_ondisk2("arki_dataset_concurrent_odim_ondisk2", "type=ondisk2\n");
 Tests<ODIMData> test_concurrent_odim_simple_plain("arki_dataset_concurrent_odim_simple_plain", "type=simple\nindex_type=plain\n");
 Tests<ODIMData> test_concurrent_odim_simple_sqlite("arki_dataset_concurrent_odim_simple_sqlite", "type=simple\nindex_type=sqlite");
 Tests<ODIMData> test_concurrent_odim_iseg("arki_dataset_concurrent_odim_iseg", "type=iseg\nformat=odimh5\n");
@@ -443,7 +439,7 @@ this->add_method("write_check", [](Fixture& f) {
 
     CheckForever<Fixture> cf(f);
     cf.during([&]{
-        if (type == "ondisk2" || type == "simple") {
+        if (type == "simple") {
             auto writer = wcallchecked(f.config().create_writer());
             try {
                 writer->acquire(f.td.mds[2]);

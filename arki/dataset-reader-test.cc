@@ -60,23 +60,18 @@ class TestsReader : public FixtureTestCase<FixtureReader<Data>>
     void register_tests() override;
 };
 
-TestsReader<GRIBData> test_reader_grib_ondisk2("arki_dataset_reader_grib_ondisk2", "type=ondisk2\n");
 TestsReader<GRIBData> test_reader_grib_simple_plain("arki_dataset_reader_grib_simple_plain", "type=simple\nindex_type=plain\n");
 TestsReader<GRIBData> test_reader_grib_simple_sqlite("arki_dataset_reader_grib_simple_sqlite", "type=simple\nindex_type=sqlite");
 TestsReader<GRIBData> test_reader_grib_iseg("arki_dataset_reader_grib_iseg", "type=iseg\nformat=grib\n");
-TestsReader<BUFRData> test_reader_bufr_ondisk2("arki_dataset_reader_bufr_ondisk2", "type=ondisk2\n");
 TestsReader<BUFRData> test_reader_bufr_simple_plain("arki_dataset_reader_bufr_simple_plain", "type=simple\nindex_type=plain\n");
 TestsReader<BUFRData> test_reader_bufr_simple_sqlite("arki_dataset_reader_bufr_simple_sqlite", "type=simple\nindex_type=sqlite");
 TestsReader<BUFRData> test_reader_bufr_iseg("arki_dataset_reader_bufr_iseg", "type=iseg\nformat=bufr\n");
-TestsReader<VM2Data> test_reader_vm2_ondisk2("arki_dataset_reader_vm2_ondisk2", "type=ondisk2\n");
 TestsReader<VM2Data> test_reader_vm2_simple_plain("arki_dataset_reader_vm2_simple_plain", "type=simple\nindex_type=plain\n");
 TestsReader<VM2Data> test_reader_vm2_simple_sqlite("arki_dataset_reader_vm2_simple_sqlite", "type=simple\nindex_type=sqlite");
 TestsReader<VM2Data> test_reader_vm2_iseg("arki_dataset_reader_vm2_iseg", "type=iseg\nformat=vm2\n");
-TestsReader<ODIMData> test_reader_odim_ondisk2("arki_dataset_reader_odim_ondisk2", "type=ondisk2\n");
 TestsReader<ODIMData> test_reader_odim_simple_plain("arki_dataset_reader_odim_simple_plain", "type=simple\nindex_type=plain\n");
 TestsReader<ODIMData> test_reader_odim_simple_sqlite("arki_dataset_reader_odim_simple_sqlite", "type=simple\nindex_type=sqlite");
 TestsReader<ODIMData> test_reader_odim_iseg("arki_dataset_reader_odim_iseg", "type=iseg\nformat=odimh5\n");
-TestsReader<NCData> test_reader_nc_ondisk2("arki_dataset_reader_nc_ondisk2", "type=ondisk2\n");
 TestsReader<NCData> test_reader_nc_simple_plain("arki_dataset_reader_nc_simple_plain", "type=simple\nindex_type=plain\n");
 TestsReader<NCData> test_reader_nc_simple_sqlite("arki_dataset_reader_nc_simple_sqlite", "type=simple\nindex_type=sqlite");
 TestsReader<NCData> test_reader_nc_iseg("arki_dataset_reader_nc_iseg", "type=iseg\nformat=nc\n");

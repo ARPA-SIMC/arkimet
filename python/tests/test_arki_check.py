@@ -697,12 +697,6 @@ class ArkiCheckNonSimpleTestsMixin:
                 self.assertQueryResults(env, imported, [1, 0, 2])
 
 
-class TestArkiCheckOndisk2(ArkiCheckNonSimpleTestsMixin, ArkiCheckTestsBase, unittest.TestCase):
-    def dataset_config(self, **kw):
-        kw["type"] = "ondisk2"
-        return kw
-
-
 class TestArkiCheckIseg(ArkiCheckNonSimpleTestsMixin, ArkiCheckTestsBase, unittest.TestCase):
     def dataset_config(self, **kw):
         kw["type"] = "iseg"

@@ -425,7 +425,7 @@ void Metadata::set_notes_encoded(const uint8_t* data, unsigned size)
 {
     // TODO: this could be optimized by replacing existing notes instead of
     // removing and readding.
-    // It is only called by iseg and ondisk2 indices while recomposing the
+    // It is only called by iseg indices while recomposing the
     // metadata from index bits. That whole process could be refactored, and
     // made to efficiently compose a metadata in the right order. That would
     // make this method unnecessary.

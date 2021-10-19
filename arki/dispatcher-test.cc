@@ -19,9 +19,12 @@ using namespace arki;
 using namespace arki::tests;
 using namespace arki::utils;
 
-static const char* config1 = R"(
+static std::shared_ptr<core::cfg::Sections> setup1(const std::string& format)
+{
+    static const char* config1 = R"(
 [test200]
-type = ondisk2
+type = iseg
+format = grib
 step = daily
 filter = origin: GRIB1,200
 index = origin, reftime
@@ -29,7 +32,8 @@ name = test200
 path = test200
 
 [test80]
-type = ondisk2
+type = iseg
+format = grib
 step = daily
 filter = origin: GRIB1,80
 index = origin, reftime
@@ -43,12 +47,17 @@ name = error
 path = error
 )";
 
-static std::shared_ptr<core::cfg::Sections> setup1()
-{
     sys::rmtree_ifexists("test200");
     sys::rmtree_ifexists("test80");
     sys::rmtree_ifexists("testerror");
-    return core::cfg::Sections::parse(config1);
+    auto res = core::cfg::Sections::parse(config1);
+
+    auto test200 = res->section("test200");
+    test200->set("format", format);
+    auto test80 = res->section("test80");
+    test200->set("format", format);
+
+    return res;
 }
 
 class Tests : public TestCase
@@ -65,7 +74,7 @@ add_method("simple", [] {
 
     auto session = std::make_shared<dataset::Session>();
     auto pool = std::make_shared<dataset::Pool>(session);
-    auto cfg = setup1();
+    auto cfg = setup1("grib");
     for (const auto i: *cfg)
         pool->add_dataset(*i.second);
 
@@ -94,7 +103,7 @@ add_method("drop_cached_data", [] {
 
     auto session = std::make_shared<dataset::Session>();
     auto pool = std::make_shared<dataset::Pool>(session);
-    auto cfg = setup1();
+    auto cfg = setup1("grib");
     for (const auto& i: *cfg)
         pool->add_dataset(*i.second);
 
@@ -159,7 +168,7 @@ add_method("regression01", [] {
 add_method("validation", [] {
     auto session = std::make_shared<dataset::Session>();
     auto pool = std::make_shared<dataset::Pool>(session);
-    auto cfg = setup1();
+    auto cfg = setup1("grib");
     for (const auto& i: *cfg)
         pool->add_dataset(*i.second);
     RealDispatcher dispatcher(pool);
@@ -181,7 +190,7 @@ add_method("validation", [] {
 add_method("missing_reftime", [] {
     auto session = std::make_shared<dataset::Session>();
     auto pool = std::make_shared<dataset::Pool>(session);
-    auto cfg = setup1();
+    auto cfg = setup1("bufr");
     for (const auto& i: *cfg)
         pool->add_dataset(*i.second);
     metadata::TestCollection source("inbound/wrongdate.bufr", true);

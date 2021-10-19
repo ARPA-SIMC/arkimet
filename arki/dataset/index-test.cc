@@ -4,7 +4,6 @@
 #include "arki/matcher/parser.h"
 #include "index.h"
 #include "index/manifest.h"
-#include "ondisk2/index.h"
 #include "arki/summary.h"
 #include "arki/utils/sys.h"
 #include "arki/types/source/blob.h"
@@ -96,34 +95,8 @@ struct ManifestSqliteFixture : ManifestFixture
     }
 };
 
-struct ContentsFixture : public BaseFixture
-{
-    std::unique_ptr<dataset::Index> make_index()
-    {
-        const char* config = R"(
-path = testds
-type = ondisk2
-name = test
-step = daily
-)";
-        auto cfg = std::make_shared<dataset::ondisk2::Dataset>(session, *core::cfg::Section::parse(config));
-        {
-            WIndex idx(cfg);
-            idx.open();
-            idx.index(mdc[0], "2007/07-08.grib", 0);
-            idx.index(mdc[1], "2007/07-07.grib", 0);
-            idx.index(mdc[2], "2007/10-09.grib", 0);
-            idx.flush();
-        }
-        unique_ptr<RIndex> res(new RIndex(cfg));
-        res->open();
-        return std::unique_ptr<dataset::Index>(res.release());
-    }
-};
-
 Tests<ManifestPlainFixture>  test1("arki_dataset_index_tests_manifest_plain");
 Tests<ManifestSqliteFixture> test2("arki_dataset_index_tests_manifest_sqlite");
-Tests<ContentsFixture>       test3("arki_dataset_index_tests_contents");
 
 
 template<class FIXTURE>

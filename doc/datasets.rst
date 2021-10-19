@@ -54,7 +54,7 @@ These are all the supported options:
   ``vm2``.
 * ``step``: segmentation step for the dataset (one of ``daily``, ``weekly``,
   ``biweekly``, ``monthly``, and ``yearly``).
-* ``type``: dataset type (one of ``iseg``, ``ondisk2``, ``simple``, ``error``,
+* ``type``: dataset type (one of ``iseg``, ``simple``, ``error``,
   ``duplicates``, ``remote``, ``outbound``, ``discard``, ``file``).
 * ``unique``: comma-separated list of names of metadata that, taken together,
   make it unique in the dataset

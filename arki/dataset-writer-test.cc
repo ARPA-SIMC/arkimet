@@ -64,7 +64,6 @@ class Tests : public FixtureTestCase<DatasetTest>
     void register_tests() override;
 };
 
-Tests test_writer_ondisk2("arki_dataset_writer_ondisk2", "type=ondisk2\n");
 Tests test_writer_simple_plain("arki_dataset_writer_simple_plain", "type=simple\nindex_type=plain\n");
 Tests test_writer_simple_sqlite("arki_dataset_writer_simple_sqlite", "type=simple\nindex_type=sqlite");
 Tests test_writer_iseg("arki_dataset_writer_iseg", "type=iseg\nformat=grib");
@@ -77,23 +76,18 @@ class TestsWriter : public FixtureTestCase<FixtureWriter<Data>>
     void register_tests() override;
 };
 
-TestsWriter<GRIBData> test_writer_grib_ondisk2("arki_dataset_writer_grib_ondisk2", "type=ondisk2\nformat=grib\n");
 TestsWriter<GRIBData> test_writer_grib_simple_plain("arki_dataset_writer_grib_simple_plain", "type=simple\nindex_type=plain\nformat=grib\n");
 TestsWriter<GRIBData> test_writer_grib_simple_sqlite("arki_dataset_writer_grib_simple_sqlite", "type=simple\nindex_type=sqlite\nformat=grib\n");
 TestsWriter<GRIBData> test_writer_grib_iseg("arki_dataset_writer_grib_iseg", "type=iseg\nformat=grib\n");
-TestsWriter<BUFRData> test_writer_bufr_ondisk2("arki_dataset_writer_bufr_ondisk2", "type=ondisk2\nformat=bufr\n");
 TestsWriter<BUFRData> test_writer_bufr_simple_plain("arki_dataset_writer_bufr_simple_plain", "type=simple\nindex_type=plain\nformat=bufr\n");
 TestsWriter<BUFRData> test_writer_bufr_simple_sqlite("arki_dataset_writer_bufr_simple_sqlite", "type=simple\nindex_type=sqlite\nformat=bufr\n");
 TestsWriter<BUFRData> test_writer_bufr_iseg("arki_dataset_writer_bufr_iseg", "type=iseg\nformat=bufr\n");
-TestsWriter<VM2Data> test_writer_vm2_ondisk2("arki_dataset_writer_vm2_ondisk2", "type=ondisk2\nformat=vm2\n");
 TestsWriter<VM2Data> test_writer_vm2_simple_plain("arki_dataset_writer_vm2_simple_plain", "type=simple\nindex_type=plain\nformat=vm2\n");
 TestsWriter<VM2Data> test_writer_vm2_simple_sqlite("arki_dataset_writer_vm2_simple_sqlite", "type=simple\nindex_type=sqlite\nformat=vm2\n");
 TestsWriter<VM2Data> test_writer_vm2_iseg("arki_dataset_writer_vm2_iseg", "type=iseg\nformat=vm2\n");
-TestsWriter<ODIMData> test_writer_odim_ondisk2("arki_dataset_writer_odim_ondisk2", "type=ondisk2\nformat=odimh5\n");
 TestsWriter<ODIMData> test_writer_odim_simple_plain("arki_dataset_writer_odim_simple_plain", "type=simple\nindex_type=plain\nformat=odimh5\n");
 TestsWriter<ODIMData> test_writer_odim_simple_sqlite("arki_dataset_writer_odim_simple_sqlite", "type=simple\nindex_type=sqlite\nformat=odimh5\n");
 TestsWriter<ODIMData> test_writer_odim_iseg("arki_dataset_writer_odim_iseg", "type=iseg\nformat=odimh5\n");
-TestsWriter<NCData> test_writer_nc_ondisk2("arki_dataset_writer_nc_ondisk2", "type=ondisk2\nformat=nc\n");
 TestsWriter<NCData> test_writer_nc_simple_plain("arki_dataset_writer_nc_simple_plain", "type=simple\nindex_type=plain\nformat=nc\n");
 TestsWriter<NCData> test_writer_nc_simple_sqlite("arki_dataset_writer_nc_simple_sqlite", "type=simple\nindex_type=sqlite\nformat=nc\n");
 TestsWriter<NCData> test_writer_nc_iseg("arki_dataset_writer_nc_iseg", "type=iseg\nformat=nc\n");

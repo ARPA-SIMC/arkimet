@@ -14,7 +14,7 @@ struct Fixture : public DatasetTest {
 
     void test_setup()
     {
-        DatasetTest::test_setup("type=ondisk2\nstep=daily\nunique=origin,reftime\n");
+        DatasetTest::test_setup("type=iseg\nformat=grib\nstep=daily\nunique=origin,reftime\n");
         dispatch_cfg.emplace("testds", cfg);
     }
 

@@ -51,8 +51,8 @@ public:
  * archived from the live dataset, and other archives maintained manually by
  * moving files from "last" into them.
  *
- * ondisk2 dataset maintenance will therefore only write files older than
- * "archive age" to the "last" archive.
+ * Dataset maintenance will therefore only write files older than "archive age"
+ * to the "last" archive.
  *
  * When doing archive maintenance, all archives are checked. If a file is
  * manually moved from an archive to another, it will be properly deindexed and

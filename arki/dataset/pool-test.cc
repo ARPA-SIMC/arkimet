@@ -11,7 +11,8 @@ using namespace arki::tests;
 
 static const char* sample_config = R"(
 [test200]
-type = ondisk2
+type = iseg
+format = grib
 step = daily
 filter = origin: GRIB1,200
 index = origin, reftime
@@ -19,7 +20,8 @@ name = test200
 path = test200
 
 [test80]
-type = ondisk2
+type = iseg
+format = grib
 step = daily
 filter = origin: GRIB1,80
 index = origin, reftime
@@ -113,7 +115,8 @@ add_method("get_common_remote_server", [] {
         string conf =
             "[test200]\n"
             "name = test200\n"
-            "type = ondisk2\n"
+            "type = iseg\n"
+            "format = grib\n"
             "step = daily\n"
             "path = http://foo.bar/foo/dataset/test200\n"
             "server = http://foo.bar/foo/\n"

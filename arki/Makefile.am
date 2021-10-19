@@ -65,11 +65,6 @@ nobase_dist_arkiinclude_HEADERS = \
 		dataset/memory.h \
 		dataset/merged.h \
 		dataset/ondisk2.h \
-		dataset/ondisk2/index.h \
-		dataset/ondisk2/reader.h \
-		dataset/ondisk2/test-utils.h \
-		dataset/ondisk2/writer.h \
-		dataset/ondisk2/checker.h \
 		dataset/outbound.h \
 		dataset/offline.h \
 		dataset/simple.h \
@@ -538,10 +533,6 @@ libarkimet_la_SOURCES += \
 		dataset/iseg/writer.cc \
 		dataset/iseg/checker.cc \
 		dataset/ondisk2.cc \
-		dataset/ondisk2/index.cc \
-		dataset/ondisk2/reader.cc \
-		dataset/ondisk2/writer.cc \
-		dataset/ondisk2/checker.cc \
 		dataset/outbound.cc \
 		dataset/offline.cc \
 		dataset/empty.cc \
@@ -589,12 +580,6 @@ tests_arki_test_SOURCES += \
 		dataset/iseg/checker-test.cc \
 		dataset/iseg/maintenance-test.cc \
 		dataset/ondisk2-test.cc \
-		dataset/ondisk2/index-test.cc \
-		dataset/ondisk2/reader-test.cc \
-		dataset/ondisk2/writer-test.cc \
-		dataset/ondisk2/checker-test.cc \
-		dataset/ondisk2/test-utils.cc \
-		dataset/ondisk2/maintenance-test.cc \
 		dataset/outbound-test.cc \
 		dataset/offline-test.cc \
 		dataset/empty-test.cc \

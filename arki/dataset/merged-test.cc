@@ -29,7 +29,8 @@ struct Fixture : public arki::utils::tests::Fixture
         // In-memory dataset configuration
         string conf =
             "[test200]\n"
-            "type = ondisk2\n"
+            "type = iseg\n"
+            "format = grib\n"
             "step = daily\n"
             "filter = origin: GRIB1,200\n"
             "index = origin, reftime\n"
@@ -37,7 +38,8 @@ struct Fixture : public arki::utils::tests::Fixture
             "path = test200\n"
             "\n"
             "[test80]\n"
-            "type = ondisk2\n"
+            "type = iseg\n"
+            "format = grib\n"
             "step = daily\n"
             "filter = origin: GRIB1,80\n"
             "index = origin, reftime\n"

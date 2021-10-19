@@ -124,7 +124,6 @@ public:
     dataset::Dataset& config();
     std::shared_ptr<dataset::Dataset> dataset_config();
     std::shared_ptr<dataset::local::Dataset> local_config();
-    std::shared_ptr<dataset::ondisk2::Dataset> ondisk2_config();
 
     // Return the file name of the index of the current dataset
     std::string idxfname(const core::cfg::Section* wcfg = 0) const;
@@ -162,9 +161,6 @@ public:
     std::shared_ptr<dataset::segmented::Reader> makeSegmentedReader();
     std::shared_ptr<dataset::segmented::Writer> makeSegmentedWriter();
     std::shared_ptr<dataset::segmented::Checker> makeSegmentedChecker();
-    std::shared_ptr<dataset::ondisk2::Reader> makeOndisk2Reader();
-    std::shared_ptr<dataset::ondisk2::Writer> makeOndisk2Writer();
-    std::shared_ptr<dataset::ondisk2::Checker> makeOndisk2Checker();
     std::shared_ptr<dataset::simple::Reader> makeSimpleReader();
     std::shared_ptr<dataset::simple::Writer> makeSimpleWriter();
     std::shared_ptr<dataset::simple::Checker> makeSimpleChecker();
@@ -319,7 +315,6 @@ inline arki::tests::ActualWriter<dataset::Writer> actual(arki::dataset::Writer& 
 inline arki::tests::ActualWriter<dataset::Writer> actual(arki::dataset::segmented::Writer* actual) { return arki::tests::ActualWriter<dataset::Writer>(actual); }
 inline arki::tests::ActualWriter<dataset::Writer> actual(arki::dataset::segmented::Writer& actual) { return arki::tests::ActualWriter<dataset::Writer>(&actual); }
 inline arki::tests::ActualWriter<dataset::Writer> actual(arki::dataset::simple::Writer& actual) { return arki::tests::ActualWriter<dataset::Writer>((arki::dataset::segmented::Writer*)&actual); }
-inline arki::tests::ActualWriter<dataset::Writer> actual(arki::dataset::ondisk2::Writer& actual) { return arki::tests::ActualWriter<dataset::Writer>((arki::dataset::segmented::Writer*)&actual); }
 inline arki::tests::ActualWriter<dataset::Writer> actual(arki::dataset::iseg::Writer& actual) { return arki::tests::ActualWriter<dataset::Writer>((arki::dataset::segmented::Writer*)&actual); }
 
 
@@ -353,7 +348,6 @@ inline arki::tests::ActualChecker<dataset::Checker> actual(arki::dataset::Checke
 inline arki::tests::ActualChecker<dataset::Checker> actual(arki::dataset::segmented::Checker* actual) { return arki::tests::ActualChecker<dataset::Checker>(actual); }
 inline arki::tests::ActualChecker<dataset::Checker> actual(arki::dataset::segmented::Checker& actual) { return arki::tests::ActualChecker<dataset::Checker>(&actual); }
 inline arki::tests::ActualChecker<dataset::Checker> actual(arki::dataset::simple::Checker& actual) { return arki::tests::ActualChecker<dataset::Checker>((arki::dataset::segmented::Checker*)&actual); }
-inline arki::tests::ActualChecker<dataset::Checker> actual(arki::dataset::ondisk2::Checker& actual) { return arki::tests::ActualChecker<dataset::Checker>((arki::dataset::segmented::Checker*)&actual); }
 inline arki::tests::ActualChecker<dataset::Checker> actual(arki::dataset::iseg::Checker& actual) { return arki::tests::ActualChecker<dataset::Checker>((arki::dataset::segmented::Checker*)&actual); }
 inline arki::tests::ActualChecker<dataset::Checker> actual(arki::dataset::archive::Checker& actual) { return arki::tests::ActualChecker<dataset::Checker>((dataset::Checker*)&actual); }
 

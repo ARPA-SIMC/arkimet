@@ -56,7 +56,6 @@ class Tests : public FixtureTestCase<Fixture>
     void register_tests() override;
 };
 
-Tests test_ondisk2("arki_dataset_segmented_ondisk2", "type=ondisk2\n");
 Tests test_simple_plain("arki_dataset_segmented_simple_plain", "type=simple\nindex_type=plain\n");
 Tests test_simple_sqlite("arki_dataset_segmented_simple_sqlite", "type=simple\nindex_type=sqlite");
 Tests test_iseg("arki_dataset_segmented_iseg", "type=iseg\nformat=grib");
@@ -765,8 +764,6 @@ class Tests103 : public FixtureTestCase<Issue103Fixture>
     void register_tests() override;
 };
 
-Tests103 test103_ondisk2("arki_dataset_segmented_issue103_ondisk2", "type=ondisk2\n");
-Tests103 test103_ondisk2_dir("arki_dataset_segmented_issue103_ondisk2_dir", "type=ondisk2\n", DatasetTest::TEST_FORCE_DIR);
 Tests103 test103_simple_plain("arki_dataset_segmented_issue103_simple_plain", "type=simple\nindex_type=plain\n");
 Tests103 test103_simple_plain_dir("arki_dataset_segmented_issue103_simple_plain_dir", "type=simple\nindex_type=plain\n", DatasetTest::TEST_FORCE_DIR);
 Tests103 test103_simple_sqlite("arki_dataset_segmented_issue103_simple_sqlite", "type=simple\nindex_type=sqlite\n");
