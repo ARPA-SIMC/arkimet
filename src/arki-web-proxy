@@ -1,4 +1,21 @@
 #!/usr/bin/python3
+
+"""
+Script acting as a single configuration provider for a set of datasets
+distributed in various points of an institution,
+
+It can either serve the config files itself, or generate a version of what
+would be server on-disk, to be served as static content by a regular web
+server.
+
+For design discussions, see:
+
+ - https://github.com/ARPA-SIMC/arkimet/issues/114
+ - https://github.com/ARPA-SIMC/arkimet/issues/205
+
+See also doc/http-api.rst
+"""
+
 import argparse
 import arkimet as arki
 import logging
