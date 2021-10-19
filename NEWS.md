@@ -1,3 +1,7 @@
+# New in version 1.38 (release pending)
+
+* Dismissed `type=ondisk2` dataset support (#275)
+
 # New in version 1.37
 
 * Log Python scanner exceptions as warnings, since processing proceeds with a
