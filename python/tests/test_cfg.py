@@ -106,6 +106,10 @@ class TestCfgSection(unittest.TestCase):
 
         self.assertTrue("key1" in section)
 
+        del section["key1"]
+        self.assertFalse("key1" in section)
+        self.assertTrue("key2" in section)
+
     def test_parse(self):
         body = """
 key = val
