@@ -1,6 +1,7 @@
 # New in version 1.38 (release pending)
 
 * Dismissed `type=ondisk2` dataset support (#275)
+* Implemented alias management in arki-web-proxy (#272)
 
 # New in version 1.37
 
