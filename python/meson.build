@@ -76,8 +76,12 @@ python3.install_sources(
 
 python3.install_sources(
     'arkimet/dataset/__init__.py',
-    'arkimet/dataset/http.py',
     subdir: 'arkimet/dataset',
+)
+
+python3.install_sources(
+    'arkimet/dataset/http/__init__.py',
+    subdir: 'arkimet/dataset/http',
 )
 
 python3.install_sources(

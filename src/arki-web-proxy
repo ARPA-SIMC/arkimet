@@ -16,6 +16,7 @@ For design discussions, see:
 See also doc/http-api.rst
 """
 
+from typing import List
 import argparse
 import arkimet as arki
 import logging
@@ -32,7 +33,7 @@ class Fail(Exception):
     pass
 
 
-def parse_sections(configs):
+def parse_sections(configs: List[str]):
     sections = arki.cfg.Sections()
     for cfg in configs:
         if cfg.startswith("http://") or cfg.startswith("https://"):
