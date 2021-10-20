@@ -569,7 +569,7 @@ Arkimet configuration, as a section of key/value options
             std::string k = from_python<std::string>(key);
             if (!val)
             {
-                auto i = self->ptr->find(name);
+                auto i = self->ptr->find(k);
                 if (i == self->ptr->end())
                 {
                     PyErr_Format(PyExc_KeyError, "key not found: '%s'", k.c_str());

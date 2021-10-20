@@ -1,6 +1,25 @@
 #!/usr/bin/python3
+
+"""
+Script acting as a single configuration provider for a set of datasets
+distributed in various points of an institution,
+
+It can either serve the config files itself, or generate a version of what
+would be server on-disk, to be served as static content by a regular web
+server.
+
+For design discussions, see:
+
+ - https://github.com/ARPA-SIMC/arkimet/issues/114
+ - https://github.com/ARPA-SIMC/arkimet/issues/205
+
+See also doc/http-api.rst
+"""
+
+from typing import List
 import argparse
 import arkimet as arki
+from arkimet.dataset.http.aliases import AliasMerger
 import logging
 import sys
 import os
@@ -15,7 +34,7 @@ class Fail(Exception):
     pass
 
 
-def parse_sections(configs):
+def parse_sections(configs: List[str]):
     sections = arki.cfg.Sections()
     for cfg in configs:
         if cfg.startswith("http://") or cfg.startswith("https://"):
@@ -33,7 +52,13 @@ def parse_sections(configs):
 
 def do_dump(args):
     sections = parse_sections(args.config)
+
+    alias_merger = AliasMerger(log)
+    alias_merger.fetch_aliases(sections)
+
     os.makedirs(args.dest, exist_ok=True)
+    alias_merger.aliases.write(os.path.join(args.dest, "aliases"))
+
     with open(os.path.join(args.dest, "config"), "wt") as fd:
         sections.write(fd)
 
@@ -49,6 +74,9 @@ def do_dump(args):
 def do_serve(args):
     sections = parse_sections(args.config)
 
+    alias_merger = AliasMerger(log)
+    alias_merger.fetch_aliases(sections)
+
     class ConfigHandler(BaseHTTPRequestHandler):
         def do_GET(self):
             try:
@@ -61,9 +89,14 @@ def do_serve(args):
             path = urlparse(self.path).path
             if path == "/":
                 self.send_response(200)
-                self.send_header('Content-type', 'plain/text')
+                self.send_header('Content-type', 'text/plain')
                 self.end_headers()
                 sections.write(self.wfile)
+            elif path in ("/aliases", "/aliases/"):
+                self.send_response(200)
+                self.send_header('Content-type', 'text/plain')
+                self.end_headers()
+                alias_merger.aliases.write(self.wfile)
             elif path.startswith("/dataset/"):
                 name = os.path.split(path)[1]
                 if name in sections:
@@ -71,7 +104,7 @@ def do_serve(args):
                     s = arki.cfg.Sections()
                     s[name] = section
                     self.send_response(200)
-                    self.send_header('Content-type', 'plain/text')
+                    self.send_header('Content-type', 'text/plain')
                     self.end_headers()
                     s.write(self.wfile)
                 else:
