@@ -1,15 +1,15 @@
-# New in version 1.38 (release pending)
+# New in version 1.38
 
 * Dismissed `type=ondisk2` dataset support (#275)
 * Implemented alias management in arki-web-proxy (#272)
+* When a config file is found inside a directory, as if it were a dataset, but
+  has type=remote, its `path` value does not get overridden with the full path
+  to the directory (#274)
 
 # New in version 1.37
 
 * Log Python scanner exceptions as warnings, since processing proceeds with a
   base set of metadata (#273)
-* When a config file is found inside a directory, as if it were a dataset, but
-  has type=remote, its `path` value does not get overridden with the full path
-  to the directory (#274)
 
 # New in version 1.36
 * `arki-scan` exit status now discerns not imported condition (#129)

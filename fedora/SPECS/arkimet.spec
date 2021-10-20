@@ -3,7 +3,7 @@
 
 Summary: Archive for weather information
 Name: arkimet
-Version: 1.37
+Version: 1.38
 Release: 1
 License: GPL
 Group: Applications/Meteo
@@ -235,12 +235,16 @@ if [ "$1" = "1" ]; then
 fi
 
 %changelog
-* Mon Oct 18 2021 Daniele Branchini <dbranchini@arpae.it> - 1.37-1
-- Log Python scanner exceptions as warnings, since processing proceeds with a
-  base set of metadata (#273)
+* Wed Oct 20 2021 Daniele Branchini <dbranchini@arpae.it> - 1.38-1
+- Dismissed `type=ondisk2` dataset support (#275)
+- Implemented alias management in arki-web-proxy (#272)
 - When a config file is found inside a directory, as if it were a dataset, but
   has type=remote, its `path` value does not get overridden with the full path
   to the directory (#274)
+
+* Mon Oct 18 2021 Daniele Branchini <dbranchini@arpae.it> - 1.37-1
+- Log Python scanner exceptions as warnings, since processing proceeds with a
+  base set of metadata (#273)
 
 * Fri Aug 27 2021 Emanuele Di Giacomo <edigiacomo@arpae.it> - 1.36-1
 - Automatic parsing for config files and directories, disable fallback to
