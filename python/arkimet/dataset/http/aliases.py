@@ -7,8 +7,6 @@ class AliasMerger:
     """
     Fetch and merge alias databases from different servers
     """
-    # TODO: unittest
-
     def __init__(self, log: logging.Logger):
         self.log = log
         self.aliases = arki.cfg.Sections()
@@ -26,6 +24,8 @@ class AliasMerger:
                 continue
             by_server[server] = arki.dataset.http.get_alias_database(server)
 
+        self.merge_servers(by_server)
+
     def merge_servers(self, by_server: Dict[str, arki.cfg.Sections]):
         """
         Merge all downloaded alias databases into a single one
@@ -37,9 +37,9 @@ class AliasMerger:
 
         # Process all sections found in all server alias databases
         for secname in all_sections:
-            sections = Dict[str, arki.cfg.Section]
-            for server, sections in by_server.items():
-                section = sections.get(secname)
+            sections: Dict[str, arki.cfg.Section] = {}
+            for server, server_sections in by_server.items():
+                section = server_sections.get(secname)
                 if section is None:
                     # If a server doesn't have a section, warn and remove it
                     # from the merged database
@@ -86,10 +86,9 @@ class AliasMerger:
                     elif old != value:
                         conflict.add(name)
 
-                for name in merged.keys():
-                    if name not in aliases:
-                        skipped.add(name)
-                        del merged[name]
+                for name in [x for x in merged.keys() if x not in aliases]:
+                    skipped.add(name)
+                    del merged[name]
 
         for name in skipped - conflict:
             log_definitions(name)
