@@ -153,7 +153,8 @@ std::shared_ptr<core::cfg::Sections> Reader::read_configs(const std::string& pat
     auto sec = core::cfg::Section::parse(in);
     // Fill in missing bits
     sec->set("name", name);
-    sec->set("path", sys::abspath(path));
+    if (sec->value("type") != "remote")
+        sec->set("path", sys::abspath(path));
 
     // Return a Sections with only this section
     auto res = std::make_shared<core::cfg::Sections>();

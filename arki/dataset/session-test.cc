@@ -83,6 +83,11 @@ step = daily
     auto cfg = dataset::Session::read_config("testds");
     wassert(actual(cfg->value("name")) == "testds");
     wassert(actual(cfg->value("path")) == "http://example.org");
+
+    auto configs = dataset::Session::read_configs("testds");
+    cfg = configs->section("testds");
+    wassert(actual(cfg->value("name")) == "testds");
+    wassert(actual(cfg->value("path")) == "http://example.org");
 });
 
 }
