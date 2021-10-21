@@ -119,6 +119,10 @@ public:
     {
         thread.join();
     }
+    void stop_producing()
+    {
+        all_ok.store(false);
+    }
 };
 
 class MetadataReader : public ReaderThread
@@ -214,6 +218,9 @@ bool Reader::impl_query_data(const dataset::DataQuery& q, metadata_dest_func des
     if (datasets.size() == 1)
         return track.done(datasets[0]->query_data(q, dest));
 
+    dataset::DataQuery subquery = q;
+    subquery.progress = nullptr;
+
     bool canceled = false;
     // TODO: we need to join or detach the threads, otehrwise if we raise an exception before the join further down, we get
     // https://stackoverflow.com/questions/7381757/c-terminate-called-without-an-active-exception
@@ -221,21 +228,24 @@ bool Reader::impl_query_data(const dataset::DataQuery& q, metadata_dest_func des
     // Start all the readers
     std::vector<MetadataReader> readers(datasets.size());
     for (size_t i = 0; i < datasets.size(); ++i)
-        readers[i].start(datasets[i], q);
+        readers[i].start(datasets[i], subquery);
 
-    // Output items in time-sorted order or in the order asked by q
-    // Note: we assume that every dataset will give us data sorted as q
+    // Output items in time-sorted order or in the order asked by subquery
+    // Note: we assume that every dataset will give us data sorted as subquery
     // asks, so here we just merge sorted data
-    std::shared_ptr<metadata::sort::Compare> sorter = q.sorter;
+    std::shared_ptr<metadata::sort::Compare> sorter = subquery.sorter;
     if (!sorter)
         sorter = metadata::sort::Compare::parse("");
 
+    std::vector<std::string> errors;
     while (true)
     {
-        const Metadata* minmd = 0;
+        // Look in all dataset queues for the metadata with the smallest value
+        const Metadata* minmd = nullptr;
         int minmd_idx = 0;
         for (size_t i = 0; i < datasets.size(); ++i)
         {
+            // TODO: what if a dataset has not started producing yet?
             const Metadata* md = readers[i].mdbuf.get();
             if (!md) continue;
             if (!minmd || sorter->compare(*md, *minmd) < 0)
@@ -245,14 +255,27 @@ bool Reader::impl_query_data(const dataset::DataQuery& q, metadata_dest_func des
             }
         }
         // When there's nothing more to read, we exit
-        if (minmd == 0) break;
+        if (minmd == nullptr) break;
+        auto md = readers[minmd_idx].mdbuf.pop();
         if (!canceled)
-            if (!dest(readers[minmd_idx].mdbuf.pop()))
+        {
+            bool ok;
+            try {
+                ok = dest(md);
+            } catch (std::exception& e) {
+                ok = false;
+                errors.push_back(e.what());
+            }
+            if (!ok)
+            {
                 canceled = true;
+                for (auto& r: readers)
+                    r.stop_producing();
+            }
+        }
     }
 
     // Collect all the results
-    vector<string> errors;
     for (auto& reader: readers)
     {
         try {

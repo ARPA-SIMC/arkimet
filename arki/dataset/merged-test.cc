@@ -133,7 +133,7 @@ add_method("query", [](Fixture& f) {
     wassert(actual(mdc.size()) == 3u);
 });
 
-add_method("progess_query_data", [](Fixture& f) {
+add_method("progress_query_data", [](Fixture& f) {
     auto reader = f.ds->create_reader();
 
     auto progress = make_shared<TestProgress>();
@@ -150,7 +150,7 @@ add_method("progess_query_data", [](Fixture& f) {
     wassert(actual(progress->done_called) == 1u);
 });
 
-add_method("progess_query_bytes", [](Fixture& f) {
+add_method("progress_query_bytes", [](Fixture& f) {
     auto reader = f.ds->create_reader();
     auto progress = make_shared<TestProgress>();
     dataset::ByteQuery bq;
@@ -164,7 +164,7 @@ add_method("progess_query_bytes", [](Fixture& f) {
     wassert(actual(progress->done_called) == 1u);
 });
 
-add_method("progess_query_data_throws", [](Fixture& f) {
+add_method("progress_query_data_throws", [](Fixture& f) {
     auto reader = f.ds->create_reader();
     auto progress1 = make_shared<TestProgressThrowing>();
     
@@ -175,7 +175,7 @@ add_method("progess_query_data_throws", [](Fixture& f) {
     wassert(actual(e.what()) = "Expected error");
 });
 
-add_method("progess_query_bytes_throws", [](Fixture& f) {
+add_method("progress_query_bytes_throws", [](Fixture& f) {
     auto reader = f.ds->create_reader();
     auto out = StreamOutput::create_discard();
     auto progress1 = make_shared<TestProgressThrowing>();
