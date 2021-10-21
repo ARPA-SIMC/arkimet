@@ -89,6 +89,42 @@ class Tests : public FixtureTestCase<Fixture>
     void register_tests() override;
 } tests("arki_dataset_merged");
 
+
+struct TestProgress : public dataset::QueryProgress
+{
+    using dataset::QueryProgress::count;
+    using dataset::QueryProgress::bytes;
+    unsigned start_called = 0;
+    unsigned update_called = 0;
+    unsigned done_called = 0;
+
+    void start(size_t expected_count=0, size_t expected_bytes=0) override
+    {
+        QueryProgress::start(expected_count, expected_bytes);
+        ++start_called;
+    }
+    void update(size_t count, size_t bytes) override
+    {
+        QueryProgress::update(count, bytes);
+        ++update_called;
+    }
+    void done() override
+    {
+        QueryProgress::done();
+        ++done_called;
+    }
+};
+
+struct TestProgressThrowing : public TestProgress
+{
+    void update(size_t count, size_t bytes) override
+    {
+        TestProgress::update(count, bytes);
+        throw std::runtime_error("Expected error");
+    }
+};
+
+
 void Tests::register_tests() {
 
 // Test querying the datasets
@@ -97,33 +133,9 @@ add_method("query", [](Fixture& f) {
     wassert(actual(mdc.size()) == 3u);
 });
 
-add_method("progess", [](Fixture& f) {
+add_method("progess_query_data", [](Fixture& f) {
     auto reader = f.ds->create_reader();
 
-    struct TestProgress : public dataset::QueryProgress
-    {
-        using dataset::QueryProgress::count;
-        using dataset::QueryProgress::bytes;
-        unsigned start_called = 0;
-        unsigned update_called = 0;
-        unsigned done_called = 0;
-
-        void start(size_t expected_count=0, size_t expected_bytes=0) override
-        {
-            QueryProgress::start(expected_count, expected_bytes);
-            ++start_called;
-        }
-        void update(size_t count, size_t bytes) override
-        {
-            QueryProgress::update(count, bytes);
-            ++update_called;
-        }
-        void done() override
-        {
-            QueryProgress::done();
-            ++done_called;
-        }
-    };
     auto progress = make_shared<TestProgress>();
 
     dataset::DataQuery dq;
@@ -136,9 +148,11 @@ add_method("progess", [](Fixture& f) {
     wassert(actual(progress->start_called) == 1u);
     wassert(actual(progress->update_called) == 3u);
     wassert(actual(progress->done_called) == 1u);
+});
 
-
-    progress = make_shared<TestProgress>();
+add_method("progess_query_bytes", [](Fixture& f) {
+    auto reader = f.ds->create_reader();
+    auto progress = make_shared<TestProgress>();
     dataset::ByteQuery bq;
     bq.progress = progress;
     auto out = StreamOutput::create_discard();
@@ -148,26 +162,26 @@ add_method("progess", [](Fixture& f) {
     wassert(actual(progress->start_called) == 1u);
     wassert(actual(progress->update_called) == 3u);
     wassert(actual(progress->done_called) == 1u);
+});
 
-
-    struct TestProgressThrowing : public TestProgress
-    {
-        void update(size_t count, size_t bytes) override
-        {
-            TestProgress::update(count, bytes);
-            throw std::runtime_error("Expected error");
-        }
-    };
-
+add_method("progess_query_data_throws", [](Fixture& f) {
+    auto reader = f.ds->create_reader();
     auto progress1 = make_shared<TestProgressThrowing>();
+    
+    dataset::DataQuery dq;
     dq.progress = progress1;
-    count = 0;
+    size_t count = 0;
     auto e = wassert_throws(std::runtime_error, reader->query_data(dq, [&](std::shared_ptr<Metadata> md) { ++count; return true; }));
     wassert(actual(e.what()) = "Expected error");
+});
 
-    progress1 = make_shared<TestProgressThrowing>();
+add_method("progess_query_bytes_throws", [](Fixture& f) {
+    auto reader = f.ds->create_reader();
+    auto out = StreamOutput::create_discard();
+    auto progress1 = make_shared<TestProgressThrowing>();
+    dataset::ByteQuery bq;
     bq.progress = progress1;
-    e = wassert_throws(std::runtime_error, reader->query_bytes(bq, *out));
+    auto e = wassert_throws(std::runtime_error, reader->query_bytes(bq, *out));
     wassert(actual(e.what()) = "Expected error");
 });
 
