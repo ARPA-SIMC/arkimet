@@ -120,7 +120,7 @@ struct TestProgressThrowing : public TestProgress
     void update(size_t count, size_t bytes) override
     {
         TestProgress::update(count, bytes);
-        throw std::runtime_error("Expected error");
+        throw std::logic_error("Expected error");
     }
 };
 
@@ -171,7 +171,7 @@ add_method("progress_query_data_throws", [](Fixture& f) {
     dataset::DataQuery dq;
     dq.progress = progress1;
     size_t count = 0;
-    auto e = wassert_throws(std::runtime_error, reader->query_data(dq, [&](std::shared_ptr<Metadata> md) { ++count; return true; }));
+    auto e = wassert_throws(std::logic_error, reader->query_data(dq, [&](std::shared_ptr<Metadata> md) { ++count; return true; }));
     wassert(actual(e.what()) = "Expected error");
 });
 
@@ -181,7 +181,7 @@ add_method("progress_query_bytes_throws", [](Fixture& f) {
     auto progress1 = make_shared<TestProgressThrowing>();
     dataset::ByteQuery bq;
     bq.progress = progress1;
-    auto e = wassert_throws(std::runtime_error, reader->query_bytes(bq, *out));
+    auto e = wassert_throws(std::logic_error, reader->query_bytes(bq, *out));
     wassert(actual(e.what()) = "Expected error");
 });
 
