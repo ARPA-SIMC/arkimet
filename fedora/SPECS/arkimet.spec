@@ -4,7 +4,7 @@
 Summary: Archive for weather information
 Name: arkimet
 Version: 1.38
-Release: 1
+Release: 2
 License: GPL
 Group: Applications/Meteo
 URL: https://github.com/arpa-simc/%{name}
@@ -235,6 +235,9 @@ if [ "$1" = "1" ]; then
 fi
 
 %changelog
+* Fri Oct 22 2021 Daniele Branchini <dbranchini@arpae.it> - 1.38-2
+- Refactored merged dataset reading test (#276)
+
 * Wed Oct 20 2021 Daniele Branchini <dbranchini@arpae.it> - 1.38-1
 - Dismissed `type=ondisk2` dataset support (#275)
 - Implemented alias management in arki-web-proxy (#272)
