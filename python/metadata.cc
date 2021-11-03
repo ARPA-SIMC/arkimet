@@ -91,7 +91,7 @@ struct has_source : public MethNoargs<has_source, arkipy_Metadata>
 struct write : public MethKwargs<write, arkipy_Metadata>
 {
     constexpr static const char* name = "write";
-    constexpr static const char* signature = "file: Union[int, BytesIO], format: str='binary', annotate: bool = False";
+    constexpr static const char* signature = "file: Union[int, BytesIO], format: str='binary', annotate: bool = False, skip_data: bool = False";
     constexpr static const char* returns = "None";
     constexpr static const char* summary = "Write the metadata to a file";
     constexpr static const char* doc = R"(
@@ -100,16 +100,19 @@ struct write : public MethKwargs<write, arkipy_Metadata>
 :param format: "binary", "yaml", or "json". Default: "binary".
 :param annotate: if True, use a :class:`arkimet.Formatter` to add metadata
                  descriptions to the output
+:param skip_data: if True, do not write data after the metadata even if the
+                  source type is INLINE
 )";
 
     static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
     {
-        static const char* kwlist[] = { "file", "format", "annotate", nullptr };
+        static const char* kwlist[] = { "file", "format", "annotate", "skip_data", nullptr };
         PyObject* arg_file = Py_None;
         const char* format = nullptr;
         int annotate = 0;
+        int skip_data = 0;
 
-        if (!PyArg_ParseTupleAndKeywords(args, kw, "O|sp", (char**)kwlist, &arg_file, &format, &annotate))
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "O|spp", (char**)kwlist, &arg_file, &format, &annotate, &skip_data))
             return nullptr;
 
         try {
@@ -117,7 +120,7 @@ struct write : public MethKwargs<write, arkipy_Metadata>
 
             if (!format || strcmp(format, "binary") == 0)
             {
-                self->md->write(*out);
+                self->md->write(*out, skip_data);
             } else if (strcmp(format, "yaml") == 0) {
                 std::unique_ptr<arki::Formatter> formatter;
                 if (annotate)

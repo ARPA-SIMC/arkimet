@@ -646,13 +646,16 @@ std::shared_ptr<Metadata> Metadata::read_yaml(LineReader& in, const std::string&
     return res;
 }
 
-void Metadata::write(NamedFileDescriptor& out) const
+void Metadata::write(NamedFileDescriptor& out, bool skip_data) const
 {
     // Prepare the encoded data
     std::vector<uint8_t> encoded = encodeBinary();
 
     // Write out
     out.write_all_or_retry(encoded.data(), encoded.size());
+
+    if (skip_data)
+        return;
 
     // If the source is inline, then the data follows the metadata
     const Source* s = m_index.get_source();
@@ -670,13 +673,16 @@ void Metadata::write(NamedFileDescriptor& out) const
     m_data->write_inline(out);
 }
 
-void Metadata::write(StreamOutput& out) const
+void Metadata::write(StreamOutput& out, bool skip_data) const
 {
     // Prepare the encoded data
     std::vector<uint8_t> encoded = encodeBinary();
 
     // Write out
     out.send_buffer(encoded.data(), encoded.size());
+
+    if (skip_data)
+        return;
 
     // If the source is inline, then the data follows the metadata
     const Source* s = m_index.get_source();

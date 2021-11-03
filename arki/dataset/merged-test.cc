@@ -59,9 +59,9 @@ struct Fixture : public arki::utils::tests::Fixture
         session = std::make_shared<dataset::Session>();
         pool = std::make_shared<dataset::Pool>(session);
         // Cleanup the test datasets
-        system("rm -rf test200/*");
-        system("rm -rf test80/*");
-        system("rm -rf error/*");
+	sys::rmtree_ifexists("test200");
+	sys::rmtree_ifexists("test80");
+	sys::rmtree_ifexists("error");
 
         // Import data into the datasets
         metadata::TestCollection mdc("inbound/test.grib1");

@@ -388,12 +388,12 @@ public:
     /**
      * Write the metadata to the given output stream.
      */
-    void write(core::NamedFileDescriptor& out) const;
+    void write(core::NamedFileDescriptor& out, bool skip_data=false) const;
 
     /**
      * Write the metadata to the stream output.
      */
-    void write(StreamOutput& out) const;
+    void write(StreamOutput& out, bool skip_data=false) const;
 
     /// Format the metadata as a yaml string
     std::string to_yaml(const Formatter* formatter=nullptr) const;
