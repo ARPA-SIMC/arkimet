@@ -1,3 +1,8 @@
+# New in version 1.39 (unreleased)
+
+* In arki-check output, show the amount of data that would be freed by a repack
+  (#187)
+
 # New in version 1.38
 
 * Dismissed `type=ondisk2` dataset support (#275)
