@@ -50,6 +50,7 @@ struct AppendCheckBackend
     virtual size_t offset_end() const = 0;
     virtual size_t actual_start(off_t offset, size_t size) const;
     virtual size_t actual_end(off_t offset, size_t size) const;
+    virtual size_t compute_unindexed_space(const std::vector<Span> indexed_spans) const;
     virtual State check_source(const types::source::Blob& source);
     State check_contiguous();
     State validate_data();

@@ -76,6 +76,14 @@ size_t AppendCheckBackend::actual_end(off_t offset, size_t size) const
     return offset + size;
 }
 
+size_t AppendCheckBackend::compute_unindexed_space(const std::vector<Span> indexed_spans) const
+{
+    size_t res = offset_end();
+    for (const auto& i: indexed_spans)
+        res -= i.size;
+    return res;
+}
+
 #if 0
 void AppendCheckBackend::validate(Metadata& md, const types::source::Blob& source) const
 {
@@ -137,6 +145,15 @@ State AppendCheckBackend::check_contiguous()
         }
 
         end_of_known_data = actual_end(i.offset, i.size);
+    }
+
+    // Report estimates of repack savings (see #187)
+    size_t unindexed_size = compute_unindexed_space(spans);
+    if (unindexed_size > 0)
+    {
+        std::stringstream out;
+        out << "possibly deleted data found not tracked by indexed: " << unindexed_size << "b would be freed by a repack";
+        reporter(out.str());
     }
 
     // Check the match between end of data and end of file
