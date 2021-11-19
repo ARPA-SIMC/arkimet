@@ -135,18 +135,6 @@ void RepackTests<TestFixture>::register_tests()
 
 void MaintTests::register_tests()
 {
-    add_method("empty_dir_segment", [&](Fixture& f) {
-        // See #279
-        f.cfg->set("format", "odimh5");
-        sys::makedirs(str::joinpath(f.ds_root, "2021", "11-17.odimh5"));
-
-        {
-            auto checker(f.makeSegmentedChecker());
-            ReporterExpected e;
-            e.report.emplace_back("testds", "repack", "0 files ok");
-            wassert(actual(checker.get()).repack(e, true));
-        }
-    });
 }
 
 }
