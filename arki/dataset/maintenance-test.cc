@@ -368,7 +368,7 @@ void CheckTest<TestFixture>::register_tests()
         {
             auto checker(f.makeSegmentedChecker());
             ReporterExpected e;
-            e.report.emplace_back("testds", "repack", "0 files ok");
+            e.report.emplace_back("testds", "repack", "3 files ok");
             wassert(actual(checker.get()).repack(e, true));
         }
     });
