@@ -116,7 +116,7 @@ struct CheckBackend : public AppendCheckBackend
 
     size_t actual_end(off_t offset, size_t size) const override { return offset + 1; }
     size_t offset_end() const override { return scanner.max_sequence + 1; }
-    size_t compute_unindexed_space(const std::vector<Span> indexed_spans) const
+    size_t compute_unindexed_space(const std::vector<Span> indexed_spans) const override
     {
         // When this is called, all elements found in the index have already
         // been removed from scanner. We can just then add up what's left of

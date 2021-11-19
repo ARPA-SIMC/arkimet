@@ -100,6 +100,16 @@ struct CheckBackend : public AppendCheckBackend
     size_t actual_start(off_t offset, size_t size) const override { return offset - 1; }
     size_t actual_end(off_t offset, size_t size) const override { return offset; }
     size_t offset_end() const override { return max_sequence; }
+    size_t compute_unindexed_space(const std::vector<Span> indexed_spans) const override
+    {
+        // When this is called, all elements found in the index have already
+        // been removed from scanner. We can just then add up what's left of
+        // sizes in scanner
+        size_t res = 0;
+        for (const auto& i: on_disk)
+            res += i.second;
+        return res;
+    }
 
     State check_source(const types::source::Blob& source) override
     {
