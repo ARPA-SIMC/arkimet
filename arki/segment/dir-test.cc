@@ -212,12 +212,12 @@ this->add_method("empty_dir", [](Fixture& f) {
         wassert(actual(mdc1.size()) == 0u);
     }
 
-    // TODO: check
+    // Verify what are the results of check
     {
         auto checker = Segment::detect_checker(f.td.format, ".", relpath, sys::abspath(relpath));
         wassert(actual(checker->size()) == 0u);
-        wassert_true(checker->exists_on_disk());
-        wassert_true(checker->is_empty());
+        wassert_false(checker->exists_on_disk());
+        wassert_false(checker->is_empty());
     }
 });
 
