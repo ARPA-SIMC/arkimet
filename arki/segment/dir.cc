@@ -423,6 +423,13 @@ void HoleWriter::write_file(Metadata& md, NamedFileDescriptor& fd)
 template<typename Segment>
 bool BaseChecker<Segment>::exists_on_disk()
 {
+    /**
+     * To consider the segment an existing dir segment, it needs to be a
+     * directory that contains a .sequence file.
+     *
+     * Just an empty directory is considered not enough, to leave space for
+     * implementing different formats of directory-based segments
+     */
     if (!sys::isdir(this->segment().abspath)) return false;
     return sys::exists(str::joinpath(this->segment().abspath, ".sequence"));
 }
