@@ -511,6 +511,10 @@ void Checker::segments_untracked_filtered(const Matcher& matcher, std::function<
     dataset().step().list_segments(squery, [&](std::string&& relpath) {
         if (sys::stat(str::joinpath(dataset().path, relpath + ".index"))) return;
         CheckerSegment segment(*this, relpath);
+        // See #279: directory segments that are empty directories are found by
+        // a filesystem scan, but are not considered segments
+        if (!segment.segment->exists_on_disk())
+            return;
         dest(segment);
     });
 }

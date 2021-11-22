@@ -196,6 +196,31 @@ this->add_method("append", [](Fixture& f) {
     wassert(actual(mdc1[1]).is_similar(mdc[2]));
 });
 
+// Check behaviour of an empty directory (#279)
+this->add_method("empty_dir", [](Fixture& f) {
+    if (sys::isdir(relpath))
+        sys::rmtree_ifexists(relpath);
+    else
+        sys::unlink_ifexists(relpath);
+
+    sys::makedirs(relpath);
+
+    // It can be read as an empty segment
+    {
+        metadata::TestCollection mdc1;
+        wassert(mdc1.scan_from_file(relpath, false));
+        wassert(actual(mdc1.size()) == 0u);
+    }
+
+    // Verify what are the results of check
+    {
+        auto checker = Segment::detect_checker(f.td.format, ".", relpath, sys::abspath(relpath));
+        wassert(actual(checker->size()) == 0u);
+        wassert_false(checker->exists_on_disk());
+        wassert_false(checker->is_empty());
+    }
+});
+
 }
 
 }

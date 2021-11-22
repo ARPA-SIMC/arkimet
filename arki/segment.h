@@ -292,7 +292,12 @@ public:
     /// Check if the segment exists on disk
     virtual bool exists_on_disk() = 0;
 
-    /// Return true if the segment does not contain any data
+    /**
+     * Return true if the segment does not contain any data.
+     *
+     * Return false if the segment contains data, or if the segment does not
+     * exist or is not a valid segment.
+     */
     virtual bool is_empty() = 0;
 
     /**

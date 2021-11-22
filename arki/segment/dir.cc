@@ -116,7 +116,7 @@ struct CheckBackend : public AppendCheckBackend
 
     size_t actual_end(off_t offset, size_t size) const override { return offset + 1; }
     size_t offset_end() const override { return scanner.max_sequence + 1; }
-    size_t compute_unindexed_space(const std::vector<Span> indexed_spans) const
+    size_t compute_unindexed_space(const std::vector<Span> indexed_spans) const override
     {
         // When this is called, all elements found in the index have already
         // been removed from scanner. We can just then add up what's left of
@@ -423,6 +423,13 @@ void HoleWriter::write_file(Metadata& md, NamedFileDescriptor& fd)
 template<typename Segment>
 bool BaseChecker<Segment>::exists_on_disk()
 {
+    /**
+     * To consider the segment an existing dir segment, it needs to be a
+     * directory that contains a .sequence file.
+     *
+     * Just an empty directory is considered not enough, to leave space for
+     * implementing different formats of directory-based segments
+     */
     if (!sys::isdir(this->segment().abspath)) return false;
     return sys::exists(str::joinpath(this->segment().abspath, ".sequence"));
 }
@@ -432,14 +439,22 @@ bool BaseChecker<Segment>::is_empty()
 {
     if (!sys::isdir(this->segment().abspath)) return false;
     sys::Path dir(this->segment().abspath);
+
+    // If we just have an empty directory, do not consider it as a valid
+    // segment
+    bool has_sequence = false;
     for (sys::Path::iterator i = dir.begin(); i != dir.end(); ++i)
     {
         if (strcmp(i->d_name, ".") == 0) continue;
         if (strcmp(i->d_name, "..") == 0) continue;
-        if (strcmp(i->d_name, ".sequence") == 0) continue;
+        if (strcmp(i->d_name, ".sequence") == 0)
+        {
+            has_sequence = true;
+            continue;
+        }
         return false;
     }
-    return true;
+    return has_sequence;
 }
 
 template<typename Segment>

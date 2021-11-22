@@ -358,6 +358,21 @@ void CheckTest<TestFixture>::register_tests()
         wassert(f.query_results({0, 2}));
     });
 
+    this->add_method("empty_dir_segment", R"(
+	- a directory segment without a .sequence file is not considered a
+	  segment, only a spurious empty directory
+    )", [&](Fixture& f) {
+        // See #279
+        sys::makedirs(f.test_relpath);
+
+        {
+            auto checker(f.makeSegmentedChecker());
+            ReporterExpected e;
+            e.report.emplace_back("testds", "repack", "3 files ok");
+            wassert(actual(checker.get()).repack(e, true));
+        }
+    });
+
     if (can_delete_data() && TestFixture::segment_can_delete_data())
     {
         this->add_method("check_new", R"(
