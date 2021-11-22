@@ -496,10 +496,6 @@ void Checker::segments_tracked_filtered(const Matcher& matcher, std::function<vo
 {
     list_segments(matcher, [&](const std::string& relpath) {
         CheckerSegment segment(*this, relpath);
-        // See #279: directory segments that are empty directories are found by
-        // a filesystem scan, but are not considered segments
-        if (!segment.segment->exists_on_disk())
-            return;
         dest(segment);
     });
 }
