@@ -1,7 +1,8 @@
-# New in version 1.39 (unreleased)
+# New in version 1.39
 
 * In arki-check output, show the amount of data that would be freed by a repack
   (#187)
+* Fixed inconsistent handling of empty directories as dir segments (#279)
 
 # New in version 1.38
 
