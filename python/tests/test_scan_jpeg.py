@@ -68,7 +68,17 @@ class TestScanJPEG(unittest.TestCase):
         # GPS Img Direction               : 277.37
         # GPS Img Direction Ref           : Magnetic North
         # GPS Position                    : 45 deg 56' 59.00" N, 11 deg 1' 11.00" E
-        self.assertNotIn("area", md)
+        self.assertEqual(md.to_python("area"), {
+            'style': 'GRIB',
+            'type': 'area',
+            'value': {
+                "type": 0,
+                "latfirst": 459497,
+                "latlast": 459497,
+                "lonfirst": 110197,
+                "lonlast": 110197,
+            },
+        })
         # File Modification Date/Time     : 2021:10:24 13:11:43+02:00
         # File Access Date/Time           : 2021:11:24 11:30:52+01:00
         # File Inode Change Date/Time     : 2021:11:24 11:30:46+01:00
@@ -126,7 +136,7 @@ class TestScanJPEG(unittest.TestCase):
         # Resolution Unit                 : None
         # X Resolution                    : 1
         # Y Resolution                    : 1
-        # Profile CMM Type                : 
+        # Profile CMM Type                :
         # Profile Version                 : 2.1.0
         # Profile Class                   : Display Device Profile
         # Color Space Data                : RGB
@@ -135,12 +145,12 @@ class TestScanJPEG(unittest.TestCase):
         # Profile File Signature          : acsp
         # Primary Platform                : Unknown ()
         # CMM Flags                       : Not Embedded, Independent
-        # Device Manufacturer             : 
-        # Device Model                    : 
+        # Device Manufacturer             :
+        # Device Model                    :
         # Device Attributes               : Reflective, Glossy, Positive, Color
         # Rendering Intent                : Media-Relative Colorimetric
         # Connection Space Illuminant     : 0.9642 1 0.82491
-        # Profile Creator                 : 
+        # Profile Creator                 :
         # Profile ID                      : 0
         # Profile Description             : sRGB
         # Red Matrix Column               : 0.43607 0.22249 0.01392
@@ -167,4 +177,3 @@ class TestScanJPEG(unittest.TestCase):
         # Focal Length                    : 3.6 mm (35 mm equivalent: 27.0 mm)
         # Hyperfocal Distance             : 1.70 m
         # Light Value                     : 10.6
-
