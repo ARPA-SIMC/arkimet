@@ -1,0 +1,6 @@
+option (
+  'profiling',
+  type: 'combo',
+  choices: ['none', 'gperf', 'gperftools', 'valgrind'],
+  value: 'none',
+  description: 'Enable profiling')
