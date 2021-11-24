@@ -83,6 +83,15 @@ add_method("format_from_filename", [] {
     wassert(actual(scan::Scanner::format_from_filename("test.nc.tar")) == "nc");
     wassert(actual(scan::Scanner::format_from_filename("test.netcdf.tar")) == "nc");
 
+    wassert(actual(scan::Scanner::format_from_filename("test.jpg")) == "jpeg");
+    wassert(actual(scan::Scanner::format_from_filename("test.jpeg")) == "jpeg");
+    wassert(actual(scan::Scanner::format_from_filename("test.jpg.gz")) == "jpeg");
+    wassert(actual(scan::Scanner::format_from_filename("test.jpeg.gz")) == "jpeg");
+    wassert(actual(scan::Scanner::format_from_filename("test.jpg.zip")) == "jpeg");
+    wassert(actual(scan::Scanner::format_from_filename("test.jpeg.zip")) == "jpeg");
+    wassert(actual(scan::Scanner::format_from_filename("test.jpg.tar")) == "jpeg");
+    wassert(actual(scan::Scanner::format_from_filename("test.jpeg.tar")) == "jpeg");
+
     wassert_throws(std::runtime_error, scan::Scanner::format_from_filename("test"));
     wassert_throws(std::runtime_error, scan::Scanner::format_from_filename("test.zip"));
     wassert_throws(std::runtime_error, scan::Scanner::format_from_filename("test.tar"));

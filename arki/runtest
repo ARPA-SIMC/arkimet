@@ -63,9 +63,10 @@ ulimit -n 1024 || true
 
 mkdir inbound
 # Put data in test inbound area
-cp -a "$TOP_SRCDIR/test/data/"* inbound/
-cp -a "$TOP_SRCDIR/test/postproc" ./
-cp -a "$TOP_SRCDIR/test/misc" ./
+cp --reflink=auto -a "$TOP_SRCDIR/test/data/"* inbound/
+cp --reflink=auto -a "$TOP_SRCDIR/test/postproc" ./
+cp --reflink=auto -a "$TOP_SRCDIR/test/misc" ./
+gunzip inbound/jpeg/*.gz
 # Ensure that the directory can be removed at cleanup
 chmod u+w -R "$TESTDIR"
 # Create test dataset directories
