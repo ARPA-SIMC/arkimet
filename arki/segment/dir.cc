@@ -251,7 +251,7 @@ std::shared_ptr<segment::Checker> Segment::create(const std::string& format, con
 }
 bool Segment::can_store(const std::string& format)
 {
-    return format == "grib" || format == "bufr" || format == "odimh5" || format == "vm2" || format == "nc";
+    return format == "grib" || format == "bufr" || format == "odimh5" || format == "vm2" || format == "nc" || format == "jpeg";
 }
 
 
