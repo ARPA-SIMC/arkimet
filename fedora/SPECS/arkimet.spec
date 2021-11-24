@@ -3,8 +3,8 @@
 
 Summary: Archive for weather information
 Name: arkimet
-Version: 1.38
-Release: 2
+Version: 1.39
+Release: 1
 License: GPL
 Group: Applications/Meteo
 URL: https://github.com/arpa-simc/%{name}
@@ -235,6 +235,11 @@ if [ "$1" = "1" ]; then
 fi
 
 %changelog
+* Tue Nov 23 2021 Daniele Branchini <dbranchini@arpae.it> - 1.39-1
+- In arki-check output, show the amount of data that would be freed by a repack
+  (#187)
+- Fixed inconsistent handling of empty directories as dir segments (#279)
+
 * Fri Oct 22 2021 Daniele Branchini <dbranchini@arpae.it> - 1.38-2
 - Refactored merged dataset reading test (#276)
 
