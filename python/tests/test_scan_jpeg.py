@@ -177,3 +177,29 @@ class TestScanJPEG(unittest.TestCase):
         # Focal Length                    : 3.6 mm (35 mm equivalent: 27.0 mm)
         # Hyperfocal Distance             : 1.70 m
         # Light Value                     : 10.6
+
+    def test_test(self):
+        """
+        Scan a JPEG file with GPS coordinates
+        """
+        md = self.read("inbound/jpeg/test.jpg", 79127)
+        self.assertNotIn("origin", md)
+        self.assertNotIn("level", md)
+        self.assertNotIn("timerange", md)
+        self.assertNotIn("task", md)
+        self.assertNotIn("quantity", md)
+        self.assertNotIn("run", md)
+        # TODO: scan product
+        self.assertNotIn("product", md)
+        self.assertEqual(md.to_python("area"), {
+            'style': 'GRIB',
+            'type': 'area',
+            'value': {
+                "type": 0,
+                "latfirst": 445008,
+                "latlast": 445008,
+                "lonfirst": 113287,
+                "lonlast": 113287,
+            },
+        })
+        self.assertEqual(md["reftime"], "2021-11-09T12:45:29Z")
