@@ -82,29 +82,22 @@ void JPEGScanner::set_blob_source(Metadata& md, std::shared_ptr<segment::Reader>
 {
     struct stat st;
     sys::stat(reader->segment().abspath, st);
-    stringstream note;
+    std::stringstream note;
     note << "Scanned from " << str::basename(reader->segment().relpath);
     md.add_note(note.str());
     md.set_source(Source::createBlob(reader, 0, st.st_size));
 }
 
-std::shared_ptr<Metadata> JPEGScanner::scan_nc_data(const std::vector<uint8_t>& data)
-{
-    sys::Tempfile tmpfd;
-    tmpfd.write_all_or_throw(data.data(), data.size());
-    return scan_nc_file(tmpfd.name());
-}
-
 std::shared_ptr<Metadata> JPEGScanner::scan_data(const std::vector<uint8_t>& data)
 {
-    std::shared_ptr<Metadata> md = scan_nc_data(data);
-    md->set_source_inline("nc", metadata::DataManager::get().to_data("nc", std::vector<uint8_t>(data)));
+    std::shared_ptr<Metadata> md = scan_jpeg_data(data);
+    md->set_source_inline("jpeg", metadata::DataManager::get().to_data("jpeg", std::vector<uint8_t>(data)));
     return md;
 }
 
 std::shared_ptr<Metadata> JPEGScanner::scan_singleton(const std::string& abspath)
 {
-    return scan_nc_file(abspath);
+    return scan_jpeg_file(abspath);
 }
 
 bool JPEGScanner::scan_segment(std::shared_ptr<segment::Reader> reader, metadata_dest_func dest)
@@ -113,10 +106,10 @@ bool JPEGScanner::scan_segment(std::shared_ptr<segment::Reader> reader, metadata
     auto st = sys::stat(reader->segment().abspath);
     if (!st) return true;
     if (S_ISDIR(st->st_mode))
-        throw std::runtime_error("JPEGH5::scan_segment cannot be called on directory segments");
+        throw std::runtime_error("JPEGScanner::scan_segment cannot be called on directory segments");
     if (!st->st_size) return true;
 
-    auto md = scan_nc_file(reader->segment().abspath);
+    auto md = scan_jpeg_file(reader->segment().abspath);
     set_blob_source(*md, reader);
     return dest(md);
 }
@@ -155,13 +148,13 @@ MockJPEGScanner::~MockJPEGScanner()
     delete engine;
 }
 
-std::shared_ptr<Metadata> MockJPEGScanner::scan_nc_file(const std::string& pathname)
+std::shared_ptr<Metadata> MockJPEGScanner::scan_jpeg_file(const std::string& pathname)
 {
     auto buf = sys::read_file(pathname);
     return engine->lookup(reinterpret_cast<const uint8_t*>(buf.data()), buf.size());
 }
 
-std::shared_ptr<Metadata> MockJPEGScanner::scan_nc_data(const std::vector<uint8_t>& data)
+std::shared_ptr<Metadata> MockJPEGScanner::scan_jpeg_data(const std::vector<uint8_t>& data)
 {
     return engine->lookup(data.data(), data.size());
 }
@@ -169,7 +162,7 @@ std::shared_ptr<Metadata> MockJPEGScanner::scan_nc_data(const std::vector<uint8_
 
 void register_jpeg_scanner()
 {
-    Scanner::register_factory("nc", [] {
+    Scanner::register_factory("jpeg", [] {
         return std::make_shared<scan::MockJPEGScanner>();
     });
 }

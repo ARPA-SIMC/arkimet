@@ -15,6 +15,7 @@
 #include "arki/scan/bufr.h"
 #include "arki/scan/odimh5.h"
 #include "arki/scan/netcdf.h"
+#include "arki/scan/jpeg.h"
 #include "arki/nag.h"
 #include <grib_api.h>
 #ifdef HAVE_DBALLE
@@ -487,6 +488,87 @@ public:
     {
     }
     virtual ~PythonNetCDFScanner()
+    {
+    }
+};
+
+
+/*
+ * scan.jpeg module contents
+ */
+
+PyObject* jpegscanner_object = nullptr;
+
+void load_jpegscanner_object()
+{
+    load_scanners();
+
+    // Get arkimet.scan.nc.BufrScanner
+    pyo_unique_ptr module(throw_ifnull(PyImport_ImportModule("arkimet.scan.jpeg")));
+    pyo_unique_ptr cls(throw_ifnull(PyObject_GetAttrString(module, "Scanner")));
+    pyo_unique_ptr obj(throw_ifnull(PyObject_CallFunction(cls, nullptr)));
+
+    // Hold a reference to arki.python.BBox forever once loaded the first time
+    ncscanner_object = obj.release();
+}
+
+
+class PythonJPEGScanner : public arki::scan::JPEGScanner
+{
+protected:
+    std::shared_ptr<Metadata> scan_jpeg_file(const std::string& pathname) override
+    {
+        auto md = std::make_shared<Metadata>();
+
+        AcquireGIL gil;
+        if (!ncscanner_object)
+            load_jpegscanner_object();
+
+        pyo_unique_ptr pyfname(to_python(pathname));
+        pyo_unique_ptr pymd((PyObject*)metadata_create(md));
+        pyo_unique_ptr obj(throw_ifnull(PyObject_CallMethod(
+                        ncscanner_object, "scan_file", "OO", pyfname.get(), pymd.get())));
+
+        // If use_count is > 1, it means we are potentially and unexpectedly
+        // holding all the metadata (and potentially their data) in memory,
+        // while a supported and important use case is to stream out one
+        // metadata at a time
+        pymd.reset(nullptr);
+        if (md.use_count() != 1)
+            arki::nag::warning("metadata use count after scanning is %ld instead of 1", md.use_count());
+
+        return md;
+    }
+
+    std::shared_ptr<Metadata> scan_jpeg_data(const std::vector<uint8_t>& data) override
+    {
+        auto md = std::make_shared<Metadata>();
+
+        AcquireGIL gil;
+        if (!ncscanner_object)
+            load_jpegscanner_object();
+
+        pyo_unique_ptr pydata(to_python(data));
+        pyo_unique_ptr pymd((PyObject*)metadata_create(md));
+        pyo_unique_ptr obj(throw_ifnull(PyObject_CallMethod(
+                        ncscanner_object, "scan_data", "OO", pydata.get(), pymd.get())));
+
+        // If use_count is > 1, it means we are potentially and unexpectedly
+        // holding all the metadata (and potentially their data) in memory,
+        // while a supported and important use case is to stream out one
+        // metadata at a time
+        pymd.reset(nullptr);
+        if (md.use_count() != 1)
+            arki::nag::warning("metadata use count after scanning is %ld instead of 1", md.use_count());
+
+        return md;
+    }
+
+public:
+    PythonJPEGScanner()
+    {
+    }
+    virtual ~PythonJPEGScanner()
     {
     }
 };
