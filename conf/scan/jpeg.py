@@ -46,11 +46,8 @@ def scan_area(tags: Dict[str, Any], md: "arkimet.Metadata"):
 
     # TODO: figure the right area, this is a point as a collapsed rectangle!
     md["area"] = {"style": "GRIB", "value": {
-            "type": 0,
-            "latfirst": lat,
-            "latlast": lat,
-            "lonfirst": lon,
-            "lonlast": lon,
+            "lat": lat,
+            "lon": lon,
         },
     }
 

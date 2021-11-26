@@ -72,11 +72,8 @@ class TestScanJPEG(unittest.TestCase):
             'style': 'GRIB',
             'type': 'area',
             'value': {
-                "type": 0,
-                "latfirst": 459497,
-                "latlast": 459497,
-                "lonfirst": 110197,
-                "lonlast": 110197,
+                "lat": 459497,
+                "lon": 110197,
             },
         })
         # File Modification Date/Time     : 2021:10:24 13:11:43+02:00
@@ -195,11 +192,8 @@ class TestScanJPEG(unittest.TestCase):
             'style': 'GRIB',
             'type': 'area',
             'value': {
-                "type": 0,
-                "latfirst": 445008,
-                "latlast": 445008,
-                "lonfirst": 113287,
-                "lonlast": 113287,
+                "lat": 445008,
+                "lon": 113287,
             },
         })
         self.assertEqual(md["reftime"], "2021-11-09T12:45:29Z")
