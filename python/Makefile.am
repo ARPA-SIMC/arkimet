@@ -19,6 +19,7 @@ nobase_python_PYTHON = \
     arkimet/formatter/proddef.py \
     arkimet/dataset/__init__.py \
     arkimet/dataset/http/__init__.py \
+    arkimet/dataset/http/aliases.py \
     arkimet/bbox/__init__.py \
     arkimet/bbox/grib.py \
     arkimet/bbox/bbox.py \
