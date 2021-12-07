@@ -1,4 +1,4 @@
-from typing import Callable, Any
+from typing import Callable, Any, Dict
 import functools
 import io
 import logging
@@ -15,31 +15,51 @@ gpsinfo_tag = image_tags["GPSInfo"]
 
 
 class ScannedImage:
+    """
+    Wrapper for PIL.Image with shortcut methods to access known EXIF tags
+    """
+
     def __init__(self, im: Image):
         self.im = im
 
     @functools.cached_property
-    def exif(self):
+    def exif(self) -> Dict[int, Any]:
+        """
+        dict with raw EXIF information
+        """
         return self.im.getexif()
 
     @functools.cached_property
-    def gpsinfo(self):
+    def gpsinfo(self) -> Dict[int, Any]:
+        """
+        dict with raw EXIF GPSInfo information
+        """
         gpsinfo = self.exif.get(gpsinfo_tag)
         return {} if gpsinfo is None else gpsinfo
 
     def get_image(self, tag_name: str) -> Any:
+        """
+        Return the value of a tag by its name in PIL.ExifTags.TAGS
+        """
         tagid = image_tags.get(tag_name)
         if tagid is None:
-            raise KeyError(f"Exif tag {tag_name!r} is not available in PIL.ExifTags.TAG")
+            raise KeyError(f"Exif tag {tag_name!r} is not available in PIL.ExifTags.TAGS")
         return self.exif[tagid]
 
     def get_gps(self, tag_name: str) -> Any:
+        """
+        Return the value of a GPSInfo tag by its name in PIL.ExifTags.GPSTAGs
+        """
         tagid = gps_tags.get(tag_name)
         if tagid is None:
             raise KeyError(f"Exif tag {tag_name!r} is not available in PIL.ExifTags.GPSTAGS")
         return self.gpsinfo.get(tagid)
 
     def dump(self, file=None):
+        """
+        Dump all available keys, by name, to the given file descriptor
+        (default: sys.stderr)
+        """
         if file is None:
             file = sys.stderr
 
@@ -47,15 +67,15 @@ class ScannedImage:
 
         for tagid, val in self.exif.items():
             if tagid in ExifTags.TAGS:
-                lines.append(f"Image:{ExifTags.TAGS[tagid]}: {val!r}")
+                lines.append(f"image:{ExifTags.TAGS[tagid]}: {val!r}")
             else:
-                lines.append(f"Unknown:{tagid:x}: {val!r}")
+                lines.append(f"image:unknown {tagid:x}: {val!r}")
 
         for tagid, val in self.gpsinfo.items():
             if tagid in ExifTags.GPSTAGS:
-                lines.append(f"GPS:{ExifTags.GPSTAGS[tagid]}: {val!r}")
+                lines.append(f"gps:{ExifTags.GPSTAGS[tagid]}: {val!r}")
             else:
-                lines.append(f"UnknownGPS:{tagid:x}: {val!r}")
+                lines.append(f"gps:unknown {tagid:x}: {val!r}")
 
         lines.sort()
         for line in lines:
