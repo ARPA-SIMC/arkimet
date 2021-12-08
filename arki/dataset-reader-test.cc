@@ -75,6 +75,9 @@ TestsReader<ODIMData> test_reader_odim_iseg("arki_dataset_reader_odim_iseg", "ty
 TestsReader<NCData> test_reader_nc_simple_plain("arki_dataset_reader_nc_simple_plain", "type=simple\nindex_type=plain\n");
 TestsReader<NCData> test_reader_nc_simple_sqlite("arki_dataset_reader_nc_simple_sqlite", "type=simple\nindex_type=sqlite");
 TestsReader<NCData> test_reader_nc_iseg("arki_dataset_reader_nc_iseg", "type=iseg\nformat=nc\n");
+TestsReader<JPEGData> test_reader_jpeg_simple_plain("arki_dataset_reader_jpeg_simple_plain", "type=simple\nindex_type=plain\n");
+TestsReader<JPEGData> test_reader_jpeg_simple_sqlite("arki_dataset_reader_jpeg_simple_sqlite", "type=simple\nindex_type=sqlite");
+TestsReader<JPEGData> test_reader_jpeg_iseg("arki_dataset_reader_jpeg_iseg", "type=iseg\nformat=jpeg\n");
 
 template<class Data>
 void TestsReader<Data>::register_tests() {

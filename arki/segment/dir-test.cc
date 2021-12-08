@@ -36,6 +36,7 @@ Tests<segment::dir::Segment, BUFRData> test2("arki_segment_dir_bufr");
 Tests<segment::dir::Segment, ODIMData> test3("arki_segment_dir_odim");
 Tests<segment::dir::Segment, VM2Data>  test4("arki_segment_dir_vm2");
 Tests<segment::dir::Segment, NCData>  test5("arki_segment_dir_nc");
+Tests<segment::dir::Segment, JPEGData>  test6("arki_segment_dir_jpeg");
 
 /**
  * Create a writer

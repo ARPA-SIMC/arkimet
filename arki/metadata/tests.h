@@ -40,6 +40,11 @@ struct NCData : TestData
     NCData();
 };
 
+struct JPEGData : TestData
+{
+    JPEGData();
+};
+
 std::shared_ptr<Metadata> make_large_mock(const std::string& format, size_t size, unsigned month, unsigned day, unsigned hour=0);
 
 void fill(Metadata& md);

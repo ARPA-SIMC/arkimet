@@ -91,6 +91,9 @@ TestsWriter<ODIMData> test_writer_odim_iseg("arki_dataset_writer_odim_iseg", "ty
 TestsWriter<NCData> test_writer_nc_simple_plain("arki_dataset_writer_nc_simple_plain", "type=simple\nindex_type=plain\nformat=nc\n");
 TestsWriter<NCData> test_writer_nc_simple_sqlite("arki_dataset_writer_nc_simple_sqlite", "type=simple\nindex_type=sqlite\nformat=nc\n");
 TestsWriter<NCData> test_writer_nc_iseg("arki_dataset_writer_nc_iseg", "type=iseg\nformat=nc\n");
+TestsWriter<JPEGData> test_writer_jpeg_simple_plain("arki_dataset_writer_jpeg_simple_plain", "type=simple\nindex_type=plain\nformat=nc\n");
+TestsWriter<JPEGData> test_writer_jpeg_simple_sqlite("arki_dataset_writer_jpeg_simple_sqlite", "type=simple\nindex_type=sqlite\nformat=nc\n");
+TestsWriter<JPEGData> test_writer_jpeg_iseg("arki_dataset_writer_jpeg_iseg", "type=iseg\nformat=jpeg\n");
 
 void Tests::register_tests() {
 

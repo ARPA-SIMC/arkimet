@@ -71,6 +71,9 @@ TestsChecker<ODIMData> test_checker_odim_iseg("arki_dataset_checker_odim_iseg", 
 TestsChecker<NCData> test_checker_nc_simple_plain("arki_dataset_checker_nc_simple_plain", "type=simple\nindex_type=plain\n");
 TestsChecker<NCData> test_checker_nc_simple_sqlite("arki_dataset_checker_nc_simple_sqlite", "type=simple\nindex_type=sqlite");
 TestsChecker<NCData> test_checker_nc_iseg("arki_dataset_checker_nc_iseg", "type=iseg\nformat=nc\n");
+TestsChecker<JPEGData> test_checker_jpeg_simple_plain("arki_dataset_checker_jpeg_simple_plain", "type=simple\nindex_type=plain\n");
+TestsChecker<JPEGData> test_checker_jpeg_simple_sqlite("arki_dataset_checker_jpeg_simple_sqlite", "type=simple\nindex_type=sqlite");
+TestsChecker<JPEGData> test_checker_jpeg_iseg("arki_dataset_checker_jpeg_iseg", "type=iseg\nformat=jpeg\n");
 
 template<class Data>
 void TestsChecker<Data>::register_tests() {

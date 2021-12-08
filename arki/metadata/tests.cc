@@ -64,6 +64,14 @@ NCData::NCData()
     mds.scan_from_file("inbound/fixture.nc/02.nc", format, true);
 }
 
+JPEGData::JPEGData()
+    : TestData("jpeg")
+{
+    mds.scan_from_file("inbound/fixture.jpeg/00.jpg", format, true);
+    mds.scan_from_file("inbound/fixture.jpeg/01.jpg", format, true);
+    mds.scan_from_file("inbound/fixture.jpeg/02.jpg", format, true);
+}
+
 
 std::shared_ptr<Metadata> make_large_mock(const std::string& format, size_t size, unsigned month, unsigned day, unsigned hour)
 {
