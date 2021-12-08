@@ -686,7 +686,7 @@ void Metadata::write(StreamOutput& out, bool skip_data) const
 
     // If the source is inline, then the data follows the metadata
     const Source* s = m_index.get_source();
-    if (s->style() != Source::Style::INLINE)
+    if (!s || s->style() != Source::Style::INLINE)
         return;
 
     // Having checked the style, we can reinterpret_cast
