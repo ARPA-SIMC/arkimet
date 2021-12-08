@@ -67,6 +67,7 @@ cp --reflink=auto -a "$TOP_SRCDIR/test/data/"* inbound/
 cp --reflink=auto -a "$TOP_SRCDIR/test/postproc" ./
 cp --reflink=auto -a "$TOP_SRCDIR/test/misc" ./
 gunzip inbound/jpeg/*.gz
+gunzip inbound/fixture.jpeg/*.gz
 # Ensure that the directory can be removed at cleanup
 chmod u+w -R "$TESTDIR"
 # Create test dataset directories
