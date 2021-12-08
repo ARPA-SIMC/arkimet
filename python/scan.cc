@@ -509,7 +509,7 @@ void load_jpegscanner_object()
     pyo_unique_ptr obj(throw_ifnull(PyObject_CallFunction(cls, nullptr)));
 
     // Hold a reference to arki.python.BBox forever once loaded the first time
-    ncscanner_object = obj.release();
+    jpegscanner_object = obj.release();
 }
 
 
@@ -521,13 +521,13 @@ protected:
         auto md = std::make_shared<Metadata>();
 
         AcquireGIL gil;
-        if (!ncscanner_object)
+        if (!jpegscanner_object)
             load_jpegscanner_object();
 
         pyo_unique_ptr pyfname(to_python(pathname));
         pyo_unique_ptr pymd((PyObject*)metadata_create(md));
         pyo_unique_ptr obj(throw_ifnull(PyObject_CallMethod(
-                        ncscanner_object, "scan_file", "OO", pyfname.get(), pymd.get())));
+                        jpegscanner_object, "scan_file", "OO", pyfname.get(), pymd.get())));
 
         // If use_count is > 1, it means we are potentially and unexpectedly
         // holding all the metadata (and potentially their data) in memory,
@@ -545,13 +545,13 @@ protected:
         auto md = std::make_shared<Metadata>();
 
         AcquireGIL gil;
-        if (!ncscanner_object)
+        if (!jpegscanner_object)
             load_jpegscanner_object();
 
         pyo_unique_ptr pydata(to_python(data));
         pyo_unique_ptr pymd((PyObject*)metadata_create(md));
         pyo_unique_ptr obj(throw_ifnull(PyObject_CallMethod(
-                        ncscanner_object, "scan_data", "OO", pydata.get(), pymd.get())));
+                        jpegscanner_object, "scan_data", "OO", pydata.get(), pymd.get())));
 
         // If use_count is > 1, it means we are potentially and unexpectedly
         // holding all the metadata (and potentially their data) in memory,

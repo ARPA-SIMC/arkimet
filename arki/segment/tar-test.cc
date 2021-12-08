@@ -26,6 +26,7 @@ Tests<segment::tar::Segment, BUFRData> test2("arki_segment_tar_bufr");
 Tests<segment::tar::Segment, ODIMData> test3("arki_segment_tar_odim");
 Tests<segment::tar::Segment, VM2Data>  test4("arki_segment_tar_vm2");
 Tests<segment::tar::Segment, NCData>  test5("arki_segment_tar_nc");
+Tests<segment::tar::Segment, JPEGData>  test6("arki_segment_tar_jpeg");
 
 struct Subprocess
 {
