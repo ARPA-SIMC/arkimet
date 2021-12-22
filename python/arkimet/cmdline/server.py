@@ -128,7 +128,7 @@ class Handler(BaseHTTPRequestHandler):
                      self.requestline,
                      code, size, extra={"access_log": True})
 
-    def dispatch(self):
+    def dispatch(self, method: str):
         """
         Dispatch a request to the endpoint given by self.server.url_map
         """
@@ -143,7 +143,7 @@ class Handler(BaseHTTPRequestHandler):
             if meth is None:
                 raise NotFound("endpoint {} not found".format(endpoint))
             view = meth(request, self, **values)
-            view.run()
+            getattr(view, method)()
         except HTTPException as e:
             self.send_response(e.code, e.description)
             for k, v in e.get_headers():
@@ -152,10 +152,10 @@ class Handler(BaseHTTPRequestHandler):
             self.wfile.write(e.get_body(request.environ).encode("utf-8"))
 
     def do_GET(self):
-        self.dispatch()
+        self.dispatch(method="get")
 
     def do_POST(self):
-        self.dispatch()
+        self.dispatch(method="post")
 
 
 class JournaldFormatter(logging.Formatter):

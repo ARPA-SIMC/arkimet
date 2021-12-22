@@ -1,13 +1,15 @@
-import sys
-import os
-import io
-import tempfile
 import configparser
-import time
+import contextlib
 import html
-from urllib.parse import quote
-from contextlib import contextmanager
+import io
 import logging
+import os
+import sys
+import tempfile
+import time
+from typing import Optional
+from urllib.parse import quote
+
 from werkzeug.exceptions import NotFound
 
 
@@ -115,25 +117,48 @@ class ArkiView:
             self.handler.send_header("Arkimet-Exception", str(ex))
             self.handler.end_headers()
             self.handler.flush_headers()
+            self.headers_sent = True
             self.handler.wfile.write(str(ex).encode("utf-8"))
             self.handler.wfile.write(b"\n")
         else:
             logging.exception("Exception caught after headers have been sent")
 
+    def http_error(self, code: int, message: Optional[str] = None):
+        """
+        Send the given HTTP error
+        """
+        if not self.headers_sent:
+            self.handler.send_response(code, message=message)
+            self.handler.send_header("Content-Type", "text/plain")
+            self.handler.end_headers()
+            self.handler.flush_headers()
+            self.headers_sent = True
+            if message:
+                self.handler.wfile.write(message)
+            self.handler.wfile.write(b"\n")
+        else:
+            logging.error("Sending HTTP error %d after headers have been sent", code)
+
     def log_end(self):
         self.info["ts_end"] = time.time()
         logging.info("Query: %r", self.info, extra={"perf": self.info})
 
-    def run(self):
-        """
-        Generate a response
-        """
+    @contextlib.contextmanager
+    def response(self):
         try:
-            self.stream()
+            yield
             if not self.headers_sent:
                 self.send_headers()
         except Exception:
             self.handle_exception()
+        self.log_end()
+
+    def get(self):
+        self.http_error(405)
+        self.log_end()
+
+    def post(self):
+        self.http_error(405)
         self.log_end()
 
 
@@ -145,35 +170,35 @@ class HTMLWriter:
         kw["file"] = self.out
         print(*args, **kw)
 
-    @contextmanager
+    @contextlib.contextmanager
     def html(self):
         self.print("<html>")
         yield
         self.print("</html>")
 
-    @contextmanager
+    @contextlib.contextmanager
     def body(self):
         self.print("<body>")
         yield
         self.print("</body>")
 
-    @contextmanager
+    @contextlib.contextmanager
     def ul(self):
         self.print("<ul>")
         yield
         self.print("</ul>")
 
-    @contextmanager
+    @contextlib.contextmanager
     def li(self):
         self.print("<li>")
         yield
         self.print("</li>")
 
-    @contextmanager
+    @contextlib.contextmanager
     def tag(self, name, **kw):
         self.print("<{name}{attrs}>".format(
             name=name,
-            attrs=" ".join("{key}='{val}'".format(key, quote(val)) for key, val in kw.items()),
+            attrs=" ".join("{key}='{val}'".format(key=key, val=quote(val)) for key, val in kw.items()),
         ))
         yield
         self.print("</{name}>".format(name=name))
@@ -181,7 +206,7 @@ class HTMLWriter:
     def inline_tag(self, name, text="", **kw):
         self.print("<{name}{attrs}>{text}</{name}>".format(
             name=name,
-            attrs=" ".join("{key}='{val}'".format(key, quote(val)) for key, val in kw.items()),
+            attrs=" ".join("{key}='{val}'".format(key=key, val=quote(val)) for key, val in kw.items()),
             text=text,
         ))
 
@@ -202,88 +227,94 @@ class HTMLWriter:
 class ArkiIndex(ArkiView):
     content_type = "text/html"
 
-    def stream(self):
-        page = HTMLWriter()
-        with page.html():
-            page.head("Dataset index")
-            with page.body():
-                page.p("Available datasets:")
-                with page.ul():
-                    for name in self.handler.server.cfg.keys():
-                        with page.li():
-                            page.a("/dataset/" + name, name)
-            page.a("/query", "Perform a query")
-        self.send_headers()
-        self.handler.wfile.write(page.out.getvalue().encode("utf-8"))
+    def get(self):
+        with self.response():
+            page = HTMLWriter()
+            with page.html():
+                page.head("Dataset index")
+                with page.body():
+                    page.p("Available datasets:")
+                    with page.ul():
+                        for name in self.handler.server.cfg.keys():
+                            with page.li():
+                                page.a("/dataset/" + name, name)
+                page.a("/query", "Perform a query")
+            self.send_headers()
+            self.handler.wfile.write(page.out.getvalue().encode("utf-8"))
 
 
 class ArkiConfig(ArkiView):
     content_type = "text/plain"
     headers_filename = "config"
 
-    def stream(self):
-        # ./run-local arki-query "" http://localhost:8080
-        # curl http://localhost:8080/config
-        out = io.StringIO()
-        self.handler.server.remote_cfg.write(out)
-        self.send_headers()
-        self.handler.wfile.write(out.getvalue().encode("utf-8"))
+    def get(self):
+        with self.response():
+            # ./run-local arki-query "" http://localhost:8080
+            # curl http://localhost:8080/config
+            out = io.StringIO()
+            self.handler.server.remote_cfg.write(out)
+            self.send_headers()
+            self.handler.wfile.write(out.getvalue().encode("utf-8"))
 
 
 class ArkiQExpand(ArkiView):
     content_type = "text/plain"
 
-    def stream(self):
-        # ./run-local arki-query "" http://localhost:8080
-        query = self.request.values["query"].strip()
-        expanded = self.session.expand_query(query)
-        self.send_headers()
-        self.handler.wfile.write(expanded.encode("utf-8"))
+    def post(self):
+        with self.response():
+            # ./run-local arki-query "" http://localhost:8080
+            query = self.request.values["query"].strip()
+            expanded = self.session.expand_query(query)
+            self.send_headers()
+            self.handler.wfile.write(expanded.encode("utf-8"))
 
 
 class ArkiAliases(ArkiView):
     content_type = "text/plain"
 
-    def stream(self):
-        # ./run-local arki-query "" http://localhost:8080
-        self.send_headers()
-        out = self.session.get_alias_database()
-        with io.StringIO() as buf:
-            out.write(buf)
-            self.handler.wfile.write(buf.getvalue().encode())
+    def get(self):
+        with self.response():
+            # ./run-local arki-query "" http://localhost:8080
+            self.send_headers()
+            out = self.session.get_alias_database()
+            with io.StringIO() as buf:
+                out.write(buf)
+                self.handler.wfile.write(buf.getvalue().encode())
 
 
 class ArkiDatasetConfig(ArkiView):
     content_type = "text/plain"
 
-    def stream(self):
-        # ./run-local arki-query "" http://localhost:8080/dataset/<name>
-        # curl http://localhost:8080/dataset/<name>/config
-        if self.kwargs["name"] not in self.handler.server.remote_cfg:
-            raise NotFound("Dataset {} not found".format(self.kwargs["name"]))
-        self.headers_filename = self.kwargs["name"] + ".config"
-        cfg = configparser.ConfigParser()
-        cfg.add_section(self.kwargs["name"])
-        for k, v in self.handler.server.remote_cfg[self.kwargs["name"]].items():
-            cfg.set(self.kwargs["name"], k, v)
+    def get(self):
+        with self.response():
+            # ./run-local arki-query "" http://localhost:8080/dataset/<name>
+            # curl http://localhost:8080/dataset/<name>/config
+            if self.kwargs["name"] not in self.handler.server.remote_cfg:
+                raise NotFound("Dataset {} not found".format(self.kwargs["name"]))
+            self.headers_filename = self.kwargs["name"] + ".config"
+            cfg = configparser.ConfigParser()
+            cfg.add_section(self.kwargs["name"])
+            for k, v in self.handler.server.remote_cfg[self.kwargs["name"]].items():
+                cfg.set(self.kwargs["name"], k, v)
 
-        out = io.StringIO()
-        cfg.write(out)
+            out = io.StringIO()
+            cfg.write(out)
 
-        self.send_headers()
-        self.handler.wfile.write(out.getvalue().encode("utf-8"))
+            self.send_headers()
+            self.handler.wfile.write(out.getvalue().encode("utf-8"))
 
 
 class TempdirMixin:
     """
     Move to a temporary directory while running the ArkiView
     """
-    def run(self):
+    @contextlib.contextmanager
+    def response(self):
         origdir = os.getcwd()
         try:
             with tempfile.TemporaryDirectory(prefix="arki-server-") as tmpdir:
                 os.chdir(tmpdir)
-                self.stream()
+                yield
                 if not self.headers_sent:
                     self.send_headers()
         except Exception:
@@ -306,30 +337,33 @@ class ArkiDatasetQuery(TempdirMixin, ArkiView):
 class ArkiDatasetSummary(ArkiDatasetQuery):
     headers_ext = "summary"
 
-    def stream(self):
-        summary = self.get_dataset_reader().query_summary(self.get_query())
-        self.send_headers()
-        summary.write(self.handler.wfile, format=self.request.values.get("style", "binary").strip())
+    def post(self):
+        with self.response():
+            summary = self.get_dataset_reader().query_summary(self.get_query())
+            self.send_headers()
+            summary.write(self.handler.wfile, format=self.request.values.get("style", "binary").strip())
 
 
 class ArkiDatasetSummaryShort(ArkiDatasetQuery):
     headers_ext = "summary"
 
-    def stream(self):
-        summary = self.get_dataset_reader().query_summary(self.get_query())
-        self.send_headers()
-        summary.write_short(self.handler.wfile, format=self.request.values.get("style", "yaml").strip())
+    def post(self):
+        with self.response():
+            summary = self.get_dataset_reader().query_summary(self.get_query())
+            self.send_headers()
+            summary.write_short(self.handler.wfile, format=self.request.values.get("style", "yaml").strip())
 
 
 class DatasetQueryData(ArkiDatasetQuery):
     headers_ext = "data"
 
-    def stream(self):
-        self.get_dataset_reader().query_bytes(
-            file=self.handler.wfile,
-            matcher=self.get_query(),
-            sort=self.get_sort(),
-            data_start_hook=self.send_headers)
+    def post(self):
+        with self.response():
+            self.get_dataset_reader().query_bytes(
+                file=self.handler.wfile,
+                matcher=self.get_query(),
+                sort=self.get_sort(),
+                data_start_hook=self.send_headers)
 
 
 class DatasetQueryMetadata(ArkiDatasetQuery):
@@ -344,12 +378,13 @@ class DatasetQueryMetadata(ArkiDatasetQuery):
     def get_metadata_url(self):
         return self.handler.server.url + "/dataset/" + self.kwargs["name"]
 
-    def stream(self):
-        self.url = self.get_metadata_url()
-        self.get_dataset_reader().query_data(
-            on_metadata=self.on_metadata,
-            matcher=self.get_query(),
-            sort=self.get_sort())
+    def post(self):
+        with self.response():
+            self.url = self.get_metadata_url()
+            self.get_dataset_reader().query_data(
+                on_metadata=self.on_metadata,
+                matcher=self.get_query(),
+                sort=self.get_sort())
 
 
 class DatasetQueryMetadataInline(ArkiDatasetQuery):
@@ -361,40 +396,42 @@ class DatasetQueryMetadataInline(ArkiDatasetQuery):
         md.make_inline()
         md.write(self.handler.wfile)
 
-    def stream(self):
-        self.get_dataset_reader().query_data(
-            on_metadata=self.on_metadata,
-            matcher=self.get_query(),
-            with_data=True,
-            sort=self.get_sort())
+    def post(self):
+        with self.response():
+            self.get_dataset_reader().query_data(
+                on_metadata=self.on_metadata,
+                matcher=self.get_query(),
+                with_data=True,
+                sort=self.get_sort())
 
 
 class DatasetQueryPostprocess(ArkiDatasetQuery):
     headers_ext = "postprocessed"
 
-    def stream(self):
-        # Iterate submitted files and export information about them to the
-        # environment
-        names = []
-        for name, file in self.request.files.items():
-            basename = os.path.basename(file.filename)
-            file.save(basename)
-            names.append(basename)
+    def post(self):
+        with self.response():
+            # Iterate submitted files and export information about them to the
+            # environment
+            names = []
+            for name, file in self.request.files.items():
+                basename = os.path.basename(file.filename)
+                file.save(basename)
+                names.append(basename)
 
-        if names:
-            names.sort()
-            os.environ["ARKI_POSTPROC_FILES"] = ":".join(names)
+            if names:
+                names.sort()
+                os.environ["ARKI_POSTPROC_FILES"] = ":".join(names)
 
-        command = self.request.values.get("command", "")
-        self.info["postprocess"] = command
+            command = self.request.values.get("command", "")
+            self.info["postprocess"] = command
 
-        self.get_dataset_reader().query_bytes(
-            file=self.handler.wfile,
-            matcher=self.get_query(),
-            with_data=True,
-            sort=self.get_sort(),
-            data_start_hook=self.send_headers,
-            postprocess=command)
+            self.get_dataset_reader().query_bytes(
+                file=self.handler.wfile,
+                matcher=self.get_query(),
+                with_data=True,
+                sort=self.get_sort(),
+                data_start_hook=self.send_headers,
+                postprocess=command)
 
 
 def get_view_for_style(style):
@@ -456,50 +493,52 @@ def arki_query(request, handler, **kw):
 class ArkiSummary(QMacroMixin, ArkiView):
     headers_ext = "summary"
 
-    def stream(self):
-        summary = self.get_dataset_reader().query_summary(self.get_query())
-        self.send_headers()
-        summary.write(self.handler.wfile, format=self.request.values.get("style", "binary").strip())
+    def post(self):
+        with self.response():
+            summary = self.get_dataset_reader().query_summary(self.get_query())
+            self.send_headers()
+            summary.write(self.handler.wfile, format=self.request.values.get("style", "binary").strip())
 
 
 class ArkiDatasetIndex(ArkiView):
     content_type = "text/html"
 
-    def stream(self):
-        name = self.kwargs["name"]
-        cfg = self.get_dataset_config()
+    def get(self):
+        with self.response():
+            name = self.kwargs["name"]
+            cfg = self.get_dataset_config()
 
-#        // Query the summary
-#        Summary sum;
-#        ds.query_summary(Matcher(), sum);
+            # // Query the summary
+            # Summary sum;
+            # ds.query_summary(Matcher(), sum);
 
-        page = HTMLWriter()
-        with page.html():
-            page.head("Dataset " + name)
-            with page.body():
-                page.h1("Dataset " + name)
-                page.p("Configuration:")
-                with page.tag("pre"):
-                    for k, v in sorted(cfg.items()):
-                        print("{k} = {v}".format(k=html.escape(k), v=html.escape(v)), file=page.out)
-                with page.ul():
-                    with page.li():
-                        page.a("/dataset/" + name + "/summary", "Download summary")
-                    with page.li():
-                        page.a("/", "List of all datasets")
+            page = HTMLWriter()
+            with page.html():
+                page.head("Dataset " + name)
+                with page.body():
+                    page.h1("Dataset " + name)
+                    page.p("Configuration:")
+                    with page.tag("pre"):
+                        for k, v in sorted(cfg.items()):
+                            print("{k} = {v}".format(k=html.escape(k), v=html.escape(v)), file=page.out)
+                    with page.ul():
+                        with page.li():
+                            page.a("/dataset/" + name + "/summary", "Download summary")
+                        with page.li():
+                            page.a("/", "List of all datasets")
 
-                # res << "<p>Summary of dataset <b>" << dsname << "</b>:</p>" << endl;
-                # res << "<pre>" << endl;
-                # try {
-                #     Report rep("dsinfo");
-                #     rep.captureOutput(res);
-                #     rep(sum);
-                #     rep.report();
-                # } catch (std::exception& e) {
-                #     sum.writeYaml(res);
-                # }
-                # res << "</pre>" << endl;
-                # res << "</body>" << endl;
-                # res << "</html>" << endl;
-        self.send_headers()
-        self.handler.wfile.write(page.out.getvalue().encode("utf-8"))
+                    # res << "<p>Summary of dataset <b>" << dsname << "</b>:</p>" << endl;
+                    # res << "<pre>" << endl;
+                    # try {
+                    #     Report rep("dsinfo");
+                    #     rep.captureOutput(res);
+                    #     rep(sum);
+                    #     rep.report();
+                    # } catch (std::exception& e) {
+                    #     sum.writeYaml(res);
+                    # }
+                    # res << "</pre>" << endl;
+                    # res << "</body>" << endl;
+                    # res << "</html>" << endl;
+            self.send_headers()
+            self.handler.wfile.write(page.out.getvalue().encode("utf-8"))
