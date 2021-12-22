@@ -1,6 +1,8 @@
 # New in version 1.40 (unreleased)
 
 * Added initial support for JPEG files (#277)
+* Removed vestigial link to non-existing "Perform a query" form in arki-server (#144)
+* arki-server now gives HTTP error 405 "Method not allowed" when appropriate (#144)
 
 # New in version 1.39
 
