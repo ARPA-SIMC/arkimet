@@ -238,7 +238,7 @@ class ArkiIndex(ArkiView):
                         for name in self.handler.server.cfg.keys():
                             with page.li():
                                 page.a("/dataset/" + name, name)
-                page.a("/query", "Perform a query")
+                # page.a("/query", "Perform a query")
             self.send_headers()
             self.handler.wfile.write(page.out.getvalue().encode("utf-8"))
 
