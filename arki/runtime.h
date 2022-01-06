@@ -74,8 +74,8 @@ struct Config
     /// I/O profiling log file
     std::string file_iotrace_output;
 
-    /// I/O timeout in milliseconds (0: no timeout)
-    unsigned io_timeout_ms = 0;
+    /// I/O timeout in milliseconds (0: no timeout, default: 15 minutes)
+    unsigned io_timeout_ms = 15 * 1000;
 
     Config();
 
