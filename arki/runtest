@@ -55,6 +55,7 @@ export ARKI_QMACRO=$TOP_SRCDIR/conf/qmacro/
 export ARKI_ALIASES=$TOP_SRCDIR/test/conf/match-alias.conf
 export ARKI_POSTPROC=$TESTDIR/postproc
 export PYTHONPATH=$TOP_SRCDIR/python/:$ORIGDIR:$ORIGDIR/python:$ORIGDIR/.libs:$ORIGDIR/python/.libs
+# See https://docs.python.org/3/library/devmode.html
 export PYTHONDEVMODE=1
 export METEO_VM2_SOURCE="$TOP_SRCDIR/conf/vm2/source.lua"
 export TOP_SRCDIR
