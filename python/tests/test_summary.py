@@ -27,7 +27,7 @@ class TestSummary(unittest.TestCase):
         data = s.to_python()
         items = data["items"]
         count = sum(i["summarystats"]["c"] for i in items)
-        self.assertEquals(count, 3)
+        self.assertEqual(count, 3)
 
     def test_write_binary(self):
         self.maxDiff = None

@@ -87,12 +87,12 @@ class TestDatasetReader(unittest.TestCase):
 
         # No arguments
         ds.query_data(on_metadata=count_results)
-        self.assertEquals(count, 3)
+        self.assertEqual(count, 3)
 
         # Matcher
         count = 0
         ds.query_data(matcher="reftime:=2007-07-08", on_metadata=count_results)
-        self.assertEquals(count, 1)
+        self.assertEqual(count, 1)
 
         # Output
         with tempfile.TemporaryFile() as fd:
@@ -101,7 +101,7 @@ class TestDatasetReader(unittest.TestCase):
             ds.query_data(on_metadata=stream_results)
             fd.seek(0)
             queried = fd.read()
-        self.assertEquals(len(queried), 588)
+        self.assertEqual(len(queried), 588)
 
         def query_reftimes(matcher=None, sort=None):
             res = []
@@ -117,11 +117,11 @@ class TestDatasetReader(unittest.TestCase):
             return res
 
         res = query_reftimes()
-        self.assertEquals(res, [[7, 8], [7, 7], [10, 9]])
+        self.assertEqual(res, [[7, 8], [7, 7], [10, 9]])
         res = query_reftimes(sort="reftime")
-        self.assertEquals(res, [[7, 7], [7, 8], [10, 9]])
+        self.assertEqual(res, [[7, 7], [7, 8], [10, 9]])
         res = query_reftimes(sort="-reftime")
-        self.assertEquals(res, [[10, 9], [7, 8], [7, 7]])
+        self.assertEqual(res, [[10, 9], [7, 8], [7, 7]])
 
         # self.fail("no way yet to test with_data")
 
@@ -246,7 +246,7 @@ type = file
 
         # No arguments
         ds.query_data(on_metadata=count_results)
-        self.assertEquals(count, 1)
+        self.assertEqual(count, 1)
 
     def test_query_data_merged(self):
         ds = arki.make_merged_dataset(
@@ -267,7 +267,7 @@ type = file
 
         # No arguments
         ds.query_data(on_metadata=count_results)
-        self.assertEquals(count, 3)
+        self.assertEqual(count, 3)
 
     def test_query_data_memoryusage(self):
         ds = arki.dataset.Reader({
@@ -281,7 +281,7 @@ type = file
 
         # No arguments
         ds.query_data(on_metadata=count_results)
-        self.assertEquals(count, 24841)
+        self.assertEqual(count, 24841)
 
     def test_progress(self):
         ds = arki.dataset.Reader({
@@ -299,7 +299,7 @@ type = file
 
         progress = Progress()
         ds.query_data(on_metadata=count_results, progress=progress)
-        self.assertEquals(count, 3)
+        self.assertEqual(count, 3)
         self.assertEqual(progress.total_count, 3)
         self.assertGreaterEqual(progress.total_bytes, 90)
         self.assertEqual(progress.start_called, 1)
@@ -310,7 +310,7 @@ type = file
 
         progress = Progress()
         res = ds.query_bytes(progress=progress)
-        self.assertEquals(len(res), 44412)
+        self.assertEqual(len(res), 44412)
 
         self.assertEqual(progress.total_count, 3)
         self.assertGreaterEqual(progress.total_bytes, 90)
@@ -348,7 +348,7 @@ type = file
 
         # No arguments
         ds.query_data(on_metadata=count_results, progress=progress)
-        self.assertEquals(count, 1)
+        self.assertEqual(count, 1)
         self.assertEqual(progress.total_count, 1)
         self.assertEqual(progress.total_bytes, 7218)
         self.assertEqual(progress.start_called, 1)
@@ -357,7 +357,7 @@ type = file
 
         progress = Progress()
         res = ds.query_bytes(progress=progress)
-        self.assertEquals(len(res), 7218)
+        self.assertEqual(len(res), 7218)
         self.assertEqual(progress.total_count, 1)
         self.assertEqual(progress.total_bytes, 7218)
         self.assertEqual(progress.start_called, 1)
@@ -400,7 +400,7 @@ type = file
 
         # No arguments
         ds.query_data(on_metadata=count_results, progress=progress)
-        self.assertEquals(count, 6)
+        self.assertEqual(count, 6)
         self.assertEqual(progress.total_count, 6)
         self.assertEqual(progress.total_bytes, 45046)
         self.assertEqual(progress.start_called, 1)
@@ -411,7 +411,7 @@ type = file
 
         progress = Progress()
         res = ds.query_bytes(progress=progress)
-        self.assertEquals(len(res), 45046)
+        self.assertEqual(len(res), 45046)
         self.assertEqual(progress.total_count, 6)
         self.assertEqual(progress.total_bytes, 45046)
         self.assertEqual(progress.start_called, 1)

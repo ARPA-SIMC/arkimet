@@ -9,7 +9,8 @@ class TestImport(unittest.TestCase):
         self.assertTrue(inspect.isclass(arki.dataset.Reader))
 
     def test_matcher_alias_database(self):
-        db = arki.get_alias_database()
+        with arki.dataset.Session() as session:
+            db = session.get_alias_database()
         self.assertTrue("origin" in db)
 
     def test_config(self):

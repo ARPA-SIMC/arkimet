@@ -62,12 +62,12 @@ class TestMetadata(unittest.TestCase):
         self.assertEqual(len(mds), 3)
         data = mds[0].to_python()
         source = next(i for i in data["items"] if i["type"] == "source")
-        self.assertEquals(source["offset"], 0)
-        self.assertEquals(source["file"], "inbound/test.grib1")
+        self.assertEqual(source["offset"], 0)
+        self.assertEqual(source["file"], "inbound/test.grib1")
         data = mds[1].to_python()
         source = next(i for i in data["items"] if i["type"] == "source")
-        self.assertEquals(source["offset"], 7218)
-        self.assertEquals(source["file"], "inbound/test.grib1")
+        self.assertEqual(source["offset"], 7218)
+        self.assertEqual(source["file"], "inbound/test.grib1")
 
     def test_read_write_bundle(self):
         # with open("inbound/test.grib1.arkimet", "rb") as fd:

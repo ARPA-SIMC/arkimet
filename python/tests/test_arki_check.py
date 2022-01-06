@@ -69,9 +69,8 @@ class ArkiCheckTestsBase(CmdlineTestMixin):
     @contextmanager
     def datasets(self, **kw):
         kw.setdefault("format", "grib")
-        env = Env(**self.dataset_config(**kw))
-        yield env
-        env.cleanup()
+        with Env(**self.dataset_config(**kw)) as env:
+            yield env
 
     def assertCheckClean(self, env, files=None, items=None, **kw):
         """

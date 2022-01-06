@@ -13,27 +13,24 @@ class QmacroTestMixin:
     def datasets(self, **kw):
         kw.setdefault("format", "grib")
         kw.setdefault("unique", "origin,reftime")
-        env = Env(**kw)
+        with Env(**kw) as env:
+            dest = arki.dataset.Writer(env.ds_cfg)
 
-        dest = arki.dataset.Writer(env.ds_cfg)
+            source = arki.dataset.Reader({
+                "format": "grib",
+                "name": "test.grib1",
+                "path": "inbound/test.grib1",
+                "type": "file",
+            })
+            mds = source.query_data()
+            for md in mds:
+                for i in range(7, 10):
+                    md["reftime"] = "2009-08-{:02d}T00:00:00Z".format(i)
+                    dest.acquire(md)
 
-        source = arki.dataset.Reader({
-            "format": "grib",
-            "name": "test.grib1",
-            "path": "inbound/test.grib1",
-            "type": "file",
-        })
-        mds = source.query_data()
-        for md in mds:
-            for i in range(7, 10):
-                md["reftime"] = "2009-08-{:02d}T00:00:00Z".format(i)
-                dest.acquire(md)
+            dest.flush()
 
-        dest.flush()
-
-        yield env
-
-        env.cleanup()
+            yield env
 
 
 class TestNoop(QmacroTestMixin, unittest.TestCase):

@@ -50,11 +50,8 @@ class TestArkiScan(CmdlineTestMixin, unittest.TestCase):
     def datasets(self, **kw):
         kw.setdefault("format", "grib")
         kw.setdefault("filter", "origin:GRIB1")
-        env = Env(**kw)
-        try:
+        with Env(**kw) as env:
             yield env
-        finally:
-            env.cleanup()
 
     def read(self, fname):
         with open(fname, "rb") as fd:

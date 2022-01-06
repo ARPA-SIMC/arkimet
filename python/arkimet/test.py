@@ -1,5 +1,6 @@
 import arkimet as arki
 from contextlib import contextmanager
+import contextlib
 import multiprocessing
 import subprocess
 import shutil
@@ -42,15 +43,15 @@ def skip_unless_arpae_tests():
 
 @contextmanager
 def daemon(*cmd):
-    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, universal_newlines=True)
-    try:
-        init = proc.stdout.readline()
-        if not init.startswith("OK "):
-            raise RuntimeError("Process startup line was {} instead of OK".format(init))
-        yield "http://localhost:" + init[3:].strip()
-    finally:
-        proc.terminate()
-        proc.wait()
+    with subprocess.Popen(cmd, stdout=subprocess.PIPE, universal_newlines=True) as proc:
+        try:
+            init = proc.stdout.readline()
+            if not init.startswith("OK "):
+                raise RuntimeError("Process startup line was {} instead of OK".format(init))
+            yield "http://localhost:" + init[3:].strip()
+        finally:
+            proc.terminate()
+            proc.wait()
 
 
 class CatchOutput:
@@ -86,8 +87,9 @@ class CatchOutput:
                         self.stderr = tmp_stderr.read()
 
 
-class Env:
+class Env(contextlib.ExitStack):
     def __init__(self, skip_initial_check=False, **kw):
+        super().__init__()
         try:
             shutil.rmtree("testenv")
         except FileNotFoundError:
@@ -109,8 +111,16 @@ class Env:
         with open("testenv/testds/config", "wt") as fd:
             self.ds_cfg.write(fd)
 
+        self.session = self.enter_context(arki.dataset.Session())
+
         if not skip_initial_check:
             self.check(readonly=False)
+
+    def __exit__(self, type, value, traceback):
+        try:
+            return super().__exit__(type, value, traceback)
+        finally:
+            shutil.rmtree("testenv")
 
     def build_config(self):
         """
@@ -135,25 +145,20 @@ class Env:
             self.ds_cfg.write(fd)
 
     def import_file(self, pathname):
-        dest = arki.dataset.Writer(self.ds_cfg)
+        with self.session.dataset_writer(cfg=self.ds_cfg) as dest:
+            with self.session.dataset_reader(cfg={
+                        "format": self.ds_cfg["format"],
+                        "name": os.path.basename(pathname),
+                        "path": pathname,
+                        "type": "file",
+                    }) as source:
+                res = source.query_data()
+                for md in res:
+                    dest.acquire(md)
 
-        source = arki.dataset.Reader({
-            "format": self.ds_cfg["format"],
-            "name": os.path.basename(pathname),
-            "path": pathname,
-            "type": "file",
-        })
+            dest.flush()
 
-        res = source.query_data()
-        for md in res:
-            dest.acquire(md)
-
-        dest.flush()
-
-        return res
-
-    def cleanup(self):
-        shutil.rmtree("testenv")
+            return res
 
     def query(self, *args, **kw):
         res = []
@@ -167,15 +172,15 @@ class Env:
         return res
 
     def repack(self, **kw):
-        checker = arki.dataset.Checker(self.ds_cfg)
+        checker = self.session.dataset_checker(cfg=self.ds_cfg)
         checker.repack(**kw)
 
     def check(self, **kw):
-        checker = arki.dataset.Checker(self.ds_cfg)
+        checker = self.session.dataset_checker(cfg=self.ds_cfg)
         checker.check(**kw)
 
     def segment_state(self, **kw):
-        checker = arki.dataset.Checker(self.ds_cfg)
+        checker = self.session.dataset_checker(cfg=self.ds_cfg)
         return checker.segment_state(**kw)
 
     def inspect(self):

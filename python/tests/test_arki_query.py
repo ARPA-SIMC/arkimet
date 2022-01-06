@@ -18,10 +18,9 @@ class TestArkiQuery(CmdlineTestMixin, unittest.TestCase):
         kw.setdefault("step", "daily")
         kw.setdefault("type", "iseg")
 
-        env = Env(**kw)
-        env.import_file(srcfile)
-        yield env
-        env.cleanup()
+        with Env(**kw) as env:
+            env.import_file(srcfile)
+            yield env
 
     def test_postproc(self):
         with self.dataset("inbound/test.grib1"):
