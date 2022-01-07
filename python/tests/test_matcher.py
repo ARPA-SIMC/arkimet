@@ -3,34 +3,33 @@ import glob
 import re
 import os
 import arkimet as arki
+from arkimet.test import SessionMixin
 
 
-class TestMatcher(unittest.TestCase):
+class TestMatcher(SessionMixin, unittest.TestCase):
     def test_empty(self):
         matcher = arki.Matcher()
         self.assertEqual(str(matcher), "")
 
     def test_parse(self):
-        matcher = arki.Matcher("reftime:=today")
+        matcher = self.session.matcher("reftime:=today")
         self.assertEqual(str(matcher), "reftime:=today")
 
     def test_parseerror(self):
         with self.assertRaises(ValueError):
-            arki.Matcher("invalid")
+            self.session.matcher("invalid")
 
     def test_merge(self):
-        with arki.dataset.Session() as s:
-            m1 = s.matcher("product:GRIB1")
-            m2 = s.matcher("product:GRIB2; origin:GRIB1")
-            m3 = m1.merge(m2)
-            self.assertEqual(str(m3), "product:GRIB1 or GRIB2")
+        m1 = self.session.matcher("product:GRIB1")
+        m2 = self.session.matcher("product:GRIB2; origin:GRIB1")
+        m3 = m1.merge(m2)
+        self.assertEqual(str(m3), "product:GRIB1 or GRIB2")
 
     def test_update(self):
-        with arki.dataset.Session() as s:
-            m1 = s.matcher("product:GRIB1")
-            m2 = s.matcher("product:GRIB2; origin:GRIB1")
-            m3 = m1.update(m2)
-            self.assertEqual(str(m3), "origin:GRIB1; product:GRIB2")
+        m1 = self.session.matcher("product:GRIB1")
+        m2 = self.session.matcher("product:GRIB2; origin:GRIB1")
+        m3 = m1.update(m2)
+        self.assertEqual(str(m3), "origin:GRIB1; product:GRIB2")
 
     def test_docs(self):
         """
@@ -72,7 +71,7 @@ class TestMatcher(unittest.TestCase):
                             self.fail("{}:{}: `matches` line found before Given line".format(
                                 pathname, lineno))
 
-                        matcher = arki.Matcher(mo.group(1))
+                        matcher = self.session.matcher(mo.group(1))
                         self.assertTrue(matcher.match(md))
                         count_matches += 1
                         continue
@@ -83,7 +82,7 @@ class TestMatcher(unittest.TestCase):
                             self.fail("{}:{}: `does not match` line found before Given line".format(
                                 pathname, lineno))
 
-                        matcher = arki.Matcher(mo.group(1))
+                        matcher = self.session.matcher(mo.group(1))
                         self.assertFalse(matcher.match(md))
                         count_not_matches += 1
                         continue

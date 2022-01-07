@@ -1,20 +1,20 @@
 import unittest
 import os
-import arkimet as arki
+from arkimet.test import SessionMixin
 
 
-class TestScanBufr(unittest.TestCase):
+class TestScanBufr(SessionMixin, unittest.TestCase):
     def read(self, pathname, format="bufr"):
         """
         Read all the metadata from a file
         """
-        ds = arki.dataset.Reader({
-            "format": format,
-            "name": os.path.basename(pathname),
-            "path": pathname,
-            "type": "file",
-        })
-        return ds.query_data()
+        with self.session.dataset_reader(cfg={
+                        "format": format,
+                        "name": os.path.basename(pathname),
+                        "path": pathname,
+                        "type": "file",
+                    }) as ds:
+            return ds.query_data()
 
     def assertBufrSource(self, md, filename, offset, size):
         source = md.to_python("source")

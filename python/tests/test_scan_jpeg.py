@@ -9,13 +9,14 @@ class TestScanJPEG(unittest.TestCase):
         """
         Read all the metadata from a file
         """
-        ds = arki.dataset.Reader({
-            "format": format,
-            "name": os.path.basename(pathname),
-            "path": pathname,
-            "type": "file",
-        })
-        mds = ds.query_data()
+        with arki.dataset.Session() as session:
+            with session.dataset_reader(cfg={
+                            "format": format,
+                            "name": os.path.basename(pathname),
+                            "path": pathname,
+                            "type": "file",
+                        }) as ds:
+                mds = ds.query_data()
         self.assertEqual(len(mds), 1)
         md = mds[0]
 

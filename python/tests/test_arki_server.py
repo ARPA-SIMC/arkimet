@@ -42,8 +42,10 @@ class Env(arkimet.test.Env):
     def build_config(self):
         config = super().build_config()
 
-        ds = arki.dataset.Reader("inbound/fixture.grib1")
-        mds = ds.query_data()
+        with self.session.dataset_reader(
+                    cfg=arki.dataset.read_config("inbound/fixture.grib1")
+                ) as reader:
+            mds = reader.query_data()
 
         for idx, name in enumerate(("test200", "test80")):
             cfg = arki.cfg.Section({
@@ -60,12 +62,12 @@ class Env(arkimet.test.Env):
             with open(os.path.join("testenv", name, "config"), "wt") as fd:
                 cfg.write(fd)
 
-            checker = arki.dataset.Checker(cfg)
-            checker.check(readonly=False)
+            with self.session.dataset_checker(cfg=cfg) as checker:
+                checker.check(readonly=False)
 
-            writer = arki.dataset.Writer(cfg)
-            writer.acquire(mds[idx])
-            writer.flush()
+            with self.session.dataset_writer(cfg=cfg) as writer:
+                writer.acquire(mds[idx])
+                writer.flush()
 
         error_cfg = arki.cfg.Section({
             "name": "error",
@@ -85,9 +87,9 @@ class TestArkiServer(unittest.TestCase):
     def setUp(self):
         super().setUp()
         self.ctx = contextlib.ExitStack().__enter__()
-        self.env = Env(format="grib")
+        self.env = self.ctx.enter_context(Env(format="grib"))
         # TODO: randomly allocate a port
-        self.server = make_server("localhost", 0, self.env.config)
+        self.server = self.ctx.enter_context(make_server("localhost", 0, self.env.config))
         self.server_url = self.server.url
         self.server_process = self.ctx.enter_context(arkimet.test.ServerProcess(self.server))
 
@@ -114,58 +116,54 @@ class TestArkiServer(unittest.TestCase):
         Test querying the datasets, metadata only
         """
         config = arki.dataset.http.load_cfg_sections(self.server_url)
-        ds = arki.dataset.Reader(config["test200"])
+        with self.env.session.dataset_reader(cfg=config["test200"]) as ds:
+            mdc = ds.query_data("origin:GRIB1,200")
+            self.assertEqual(len(mdc), 1)
+            self.assertEqual(mdc[0].to_python("source"), {
+                'type': 'source', 'style': 'URL', 'format': 'grib',
+                'url': self.server_url + '/dataset/test200',
+            })
 
-        mdc = ds.query_data("origin:GRIB1,200")
-        self.assertEqual(len(mdc), 1)
-        self.assertEqual(mdc[0].to_python("source"), {
-            'type': 'source', 'style': 'URL', 'format': 'grib',
-            'url': self.server_url + '/dataset/test200',
-        })
+            mdc = ds.query_data("origin:GRIB1,80")
+            self.assertFalse(mdc)
 
-        mdc = ds.query_data("origin:GRIB1,80")
-        self.assertFalse(mdc)
-
-        mdc = ds.query_data("origin:GRIB1,98")
-        self.assertFalse(mdc)
+            mdc = ds.query_data("origin:GRIB1,98")
+            self.assertFalse(mdc)
 
     def test_inline(self):
         """
         Test querying the datasets, with inline data
         """
         config = arki.dataset.http.load_cfg_sections(self.server_url)
-        ds = arki.dataset.Reader(config["test200"])
+        with self.env.session.dataset_reader(cfg=config["test200"]) as ds:
+            mdc = ds.query_data("origin:GRIB1,200", True)
+            self.assertEqual(len(mdc), 1)
+            self.assertEqual(mdc[0].to_python("source"), {
+                'type': 'source', 'style': 'INLINE', 'format': 'grib',
+                'size': 7218
+            })
+            self.assertEqual(len(mdc[0].data), 7218)
 
-        mdc = ds.query_data("origin:GRIB1,200", True)
-        self.assertEqual(len(mdc), 1)
-        self.assertEqual(mdc[0].to_python("source"), {
-            'type': 'source', 'style': 'INLINE', 'format': 'grib',
-            'size': 7218
-        })
-        self.assertEqual(len(mdc[0].data), 7218)
-
-        mdc = ds.query_data("origin:GRIB1,80", True)
-        self.assertFalse(mdc)
+            mdc = ds.query_data("origin:GRIB1,80", True)
+            self.assertFalse(mdc)
 
     def test_summary(self):
         """
         Test querying the summary
         """
         config = arki.dataset.http.load_cfg_sections(self.server_url)
-        ds = arki.dataset.Reader(config["test200"])
-
-        summary = ds.query_summary("origin:GRIB1,200")
-        self.assertEqual(summary.count, 1)
+        with self.env.session.dataset_reader(cfg=config["test200"]) as ds:
+            summary = ds.query_summary("origin:GRIB1,200")
+            self.assertEqual(summary.count, 1)
 
     def test_postprocess(self):
         """
         Test querying with postprocessing
         """
         config = arki.dataset.http.load_cfg_sections(self.server_url)
-        ds = arki.dataset.Reader(config["test200"])
-
-        data = ds.query_bytes("origin:GRIB1,200", postprocess="say ciao")
-        self.assertEqual(data, b"ciao\n")
+        with self.env.session.dataset_reader(cfg=config["test200"]) as ds:
+            data = ds.query_bytes("origin:GRIB1,200", postprocess="say ciao")
+            self.assertEqual(data, b"ciao\n")
 
     def test_error(self):
         """
@@ -225,14 +223,14 @@ class TestArkiServer(unittest.TestCase):
             type="remote",
             path=self.server_url,
             qmacro="test200")
-        ds = arki.dataset.Reader(cfg)
-        mdc = ds.query_data()
-        self.assertEqual(len(mdc), 1)
-        # Check that the source record that comes out is ok
-        self.assertEqual(mdc[0].to_python("source"), {
-            'type': 'source', 'style': 'URL', 'format': 'grib',
-            'url': self.server_url + '/query',
-        })
+        with self.env.session.dataset_reader(cfg=cfg) as ds:
+            mdc = ds.query_data()
+            self.assertEqual(len(mdc), 1)
+            # Check that the source record that comes out is ok
+            self.assertEqual(mdc[0].to_python("source"), {
+                'type': 'source', 'style': 'URL', 'format': 'grib',
+                'url': self.server_url + '/query',
+            })
 
     def test_qmacro_expa(self):
         """
@@ -244,14 +242,14 @@ class TestArkiServer(unittest.TestCase):
             path=self.server_url,
             qmacro="ds:test200. d:@. t:1300. s:GRIB1/0/0h/0h. l:GRIB1/1. v:GRIB1/200/140/229.",
         )
-        ds = arki.dataset.Reader(cfg)
-        mdc = ds.query_data()
-        self.assertEqual(len(mdc), 1)
-        # Check that the source record that comes out is ok
-        self.assertEqual(mdc[0].to_python("source"), {
-            'type': 'source', 'style': 'URL', 'format': 'grib',
-            'url': self.server_url + '/query',
-        })
+        with self.env.session.dataset_reader(cfg=cfg) as ds:
+            mdc = ds.query_data()
+            self.assertEqual(len(mdc), 1)
+            # Check that the source record that comes out is ok
+            self.assertEqual(mdc[0].to_python("source"), {
+                'type': 'source', 'style': 'URL', 'format': 'grib',
+                'url': self.server_url + '/query',
+            })
 
     def test_qmacro_summary(self):
         """
@@ -262,9 +260,9 @@ class TestArkiServer(unittest.TestCase):
             type="remote",
             path=self.server_url,
             qmacro="test200")
-        ds = arki.dataset.Reader(cfg)
-        summary = ds.query_summary()
-        self.assertEqual(summary.count, 1)
+        with self.env.session.dataset_reader(cfg=cfg) as ds:
+            summary = ds.query_summary()
+            self.assertEqual(summary.count, 1)
 
     # This is not testable anymore: the subprocess filter now is run after the
     # server has already sent headers.
@@ -290,11 +288,10 @@ class TestArkiServer(unittest.TestCase):
         Test a postprocessor that outputs data and then exits with error
         """
         config = arki.dataset.http.load_cfg_sections(self.server_url)
-        ds = arki.dataset.Reader(config["test200"])
-
-        # Querying it should get the partial output and no error
-        data = ds.query_bytes(postprocess="outthenerr")
-        self.assertEqual(data, b"So far, so good\n")
+        with self.env.session.dataset_reader(cfg=config["test200"]) as ds:
+            # Querying it should get the partial output and no error
+            data = ds.query_bytes(postprocess="outthenerr")
+            self.assertEqual(data, b"So far, so good\n")
 
     def test_postproc_error1(self):
         """
@@ -302,8 +299,9 @@ class TestArkiServer(unittest.TestCase):
         after offset 0xc00)
         """
         # Get the normal data
-        ds = arki.dataset.Reader("testenv/test80")
-        mdc = ds.query_data(with_data=True)
+        with self.env.session.dataset_reader(cfg=arki.dataset.read_config("testenv/test80")) as ds:
+            mdc = ds.query_data(with_data=True)
+
         with io.BytesIO() as out:
             for md in mdc:
                 md.make_inline()
@@ -312,8 +310,8 @@ class TestArkiServer(unittest.TestCase):
 
         # Capture the data after going through the postprocessor
         config = arki.dataset.http.load_cfg_sections(self.server_url)
-        ds = arki.dataset.Reader(config["test80"])
-        postprocessed = ds.query_bytes("origin:GRIB1,80", postprocess="cat")
+        with self.env.session.dataset_reader(cfg=config["test80"]) as ds:
+            postprocessed = ds.query_bytes("origin:GRIB1,80", postprocess="cat")
 
         self.assertEqual(len(plain), len(postprocessed))
 
@@ -343,15 +341,15 @@ class TestArkiServer(unittest.TestCase):
         Test uploading postprocessor data
         """
         config = arki.dataset.http.load_cfg_sections(self.server_url)
-        ds = arki.dataset.Reader(config["test200"])
-        try:
-            # Files should be uploaded and notified to the postprocessor script
-            os.environ["ARKI_POSTPROC_FILES"] = "inbound/test.grib1:inbound/padded.grib1"
-            data = ds.query_bytes(postprocess="checkfiles")
+        with self.env.session.dataset_reader(cfg=config["test200"]) as ds:
+            try:
+                # Files should be uploaded and notified to the postprocessor script
+                os.environ["ARKI_POSTPROC_FILES"] = "inbound/test.grib1:inbound/padded.grib1"
+                data = ds.query_bytes(postprocess="checkfiles")
 
-            self.assertEqual(data, b"padded.grib1:test.grib1\n")
-        finally:
-            del os.environ["ARKI_POSTPROC_FILES"]
+                self.assertEqual(data, b"padded.grib1:test.grib1\n")
+            finally:
+                del os.environ["ARKI_POSTPROC_FILES"]
 
     def test_query_global_summary_style_binary(self):
         """
@@ -417,44 +415,42 @@ class TestArkiServer(unittest.TestCase):
         Test querying the datasets, with data, sorted
         """
         config = arki.dataset.http.load_cfg_sections(self.server_url)
-        ds = arki.dataset.Reader(config["test200"])
-
-        res = ds.query_bytes("origin:GRIB1,200", sort="day:timerange")
-        self.assertEqual(len(res), 7218)
-        self.assertTrue(res.startswith(b"GRIB"))
-        self.assertTrue(res.endswith(b"7777"))
+        with self.env.session.dataset_reader(cfg=config["test200"]) as reader:
+            res = reader.query_bytes("origin:GRIB1,200", sort="day:timerange")
+            self.assertEqual(len(res), 7218)
+            self.assertTrue(res.startswith(b"GRIB"))
+            self.assertTrue(res.endswith(b"7777"))
 
     def test_progress(self):
         """
         Test querying the datasets, metadata only
         """
         config = arki.dataset.http.load_cfg_sections(self.server_url)
-        ds = arki.dataset.Reader(config["test200"])
+        with self.env.session.dataset_reader(cfg=config["test200"]) as ds:
+            progress = Progress()
+            mdc = ds.query_data(progress=progress)
+            self.assertEqual(len(mdc), 1)
+            self.assertEqual(progress.total_count, 1)
+            # This is 0 because we do not request data, and we get URL sources that
+            # do not carry length information
+            self.assertEqual(progress.total_bytes, 0)
+            self.assertEqual(progress.start_called, 1)
+            self.assertGreaterEqual(progress.update_called, 1)
+            self.assertEqual(progress.done_called, 1)
 
-        progress = Progress()
-        mdc = ds.query_data(progress=progress)
-        self.assertEqual(len(mdc), 1)
-        self.assertEqual(progress.total_count, 1)
-        # This is 0 because we do not request data, and we get URL sources that
-        # do not carry length information
-        self.assertEqual(progress.total_bytes, 0)
-        self.assertEqual(progress.start_called, 1)
-        self.assertGreaterEqual(progress.update_called, 1)
-        self.assertEqual(progress.done_called, 1)
+            progress = Progress()
+            buf = ds.query_bytes(progress=progress)
+            self.assertEqual(len(buf), 7218)
+            self.assertEqual(progress.total_count, 0)
+            self.assertEqual(progress.total_bytes, 7218)
+            self.assertEqual(progress.start_called, 1)
+            self.assertGreaterEqual(progress.update_called, 1)
+            self.assertEqual(progress.done_called, 1)
 
-        progress = Progress()
-        buf = ds.query_bytes(progress=progress)
-        self.assertEqual(len(buf), 7218)
-        self.assertEqual(progress.total_count, 0)
-        self.assertEqual(progress.total_bytes, 7218)
-        self.assertEqual(progress.start_called, 1)
-        self.assertGreaterEqual(progress.update_called, 1)
-        self.assertEqual(progress.done_called, 1)
-
-        with self.assertRaises(ExpectedFailure):
-            ds.query_data(progress=ProgressFailUpdate())
-        with self.assertRaises(ExpectedFailure):
-            ds.query_bytes(progress=ProgressFailUpdate())
+            with self.assertRaises(ExpectedFailure):
+                ds.query_data(progress=ProgressFailUpdate())
+            with self.assertRaises(ExpectedFailure):
+                ds.query_bytes(progress=ProgressFailUpdate())
 
     def test_query_get(self):
         # See #144

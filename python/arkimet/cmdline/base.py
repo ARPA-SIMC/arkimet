@@ -2,7 +2,7 @@
 import arkimet as arki
 import argparse
 import logging
-from contextlib import contextmanager
+from contextlib import contextmanager, ExitStack
 import itertools
 import sys
 import re
@@ -24,10 +24,11 @@ class PosixArgumentParser(argparse.ArgumentParser):
         self.exit(posix.EX_USAGE, '%s: error: %s\n' % (self.prog, message))
 
 
-class App:
+class App(ExitStack):
     NAME = None
 
     def __init__(self):
+        super().__init__()
         self.parser = PosixArgumentParser(description=self.get_description())
         self.parser.add_argument("--verbose", "-v", action="store_true",
                                  help="verbose output")
@@ -67,12 +68,19 @@ class App:
 
         self.setup_logging()
 
+    def shutdown(self):
+        pass
+
+    def __exit__(self, *args):
+        self.shutdown()
+        return super().__exit__(*args)
+
     @classmethod
     def main(cls, args=None):
         try:
-            cmd = cls()
-            cmd.parse_args(args)
-            return cmd.run()
+            with cls() as cmd:
+                cmd.parse_args(args)
+                return cmd.run()
         except Exit as e:
             if not e.args:
                 return
@@ -176,7 +184,7 @@ class SystemDatasetSectionFilter:
 class AppConfigMixin:
     def __init__(self):
         super().__init__()
-        self.session = arki.dataset.Session()
+        self.session = self.enter_context(arki.dataset.Session())
 
     def parse_args(self, args=None):
         super().parse_args(args=args)

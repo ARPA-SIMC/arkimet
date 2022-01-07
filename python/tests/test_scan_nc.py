@@ -1,21 +1,21 @@
 import unittest
 import os
-import arkimet as arki
 import datetime
+from arkimet.test import SessionMixin
 
 
-class TestScanNetCDF(unittest.TestCase):
+class TestScanNetCDF(SessionMixin, unittest.TestCase):
     def read(self, pathname, size, format="nc"):
         """
         Read all the metadata from a file
         """
-        ds = arki.dataset.Reader({
-            "format": format,
-            "name": os.path.basename(pathname),
-            "path": pathname,
-            "type": "file",
-        })
-        mds = ds.query_data()
+        with self.session.dataset_reader(cfg={
+                        "format": format,
+                        "name": os.path.basename(pathname),
+                        "path": pathname,
+                        "type": "file",
+                    }) as ds:
+            mds = ds.query_data()
         self.assertEqual(len(mds), 1)
         md = mds[0]
 
@@ -81,7 +81,7 @@ class TestScanNetCDF(unittest.TestCase):
 
     # NetCDF 5 does not seem supported on Centos 7 (see https://github.com/ARPA-SIMC/arkimet/issues/243)
     # and we currently do not need to support it.
-    # 
+    #
     # def test_nc5(self):
     #     """
     #     Scan a NetCDF 5 file
@@ -107,14 +107,14 @@ class TestScanNetCDF(unittest.TestCase):
         """
         Check that the scanner silently discard an empty file
         """
-        ds = arki.dataset.Reader({
-            "format": "nc",
-            "name": "empty.nc",
-            "path": "inbound/netcdf/empty.nc",
-            "type": "file",
-        })
-        mds = ds.query_data()
-        self.assertEqual(len(mds), 0)
+        with self.session.dataset_reader(cfg={
+                        "format": "nc",
+                        "name": "empty.nc",
+                        "path": "inbound/netcdf/empty.nc",
+                        "type": "file",
+                    }) as ds:
+            mds = ds.query_data()
+            self.assertEqual(len(mds), 0)
 
     def test_default_fixture(self):
         """

@@ -5,7 +5,7 @@ import arkimet as arki
 import os
 import io
 import shutil
-from arkimet.test import daemon
+from arkimet.test import daemon, SessionMixin
 
 
 class Progress:
@@ -56,10 +56,7 @@ class TestReadConfig(unittest.TestCase):
             self.assertEqual(sections.keys(), ('error', 'test200', 'test80'))
 
 
-class TestDatasetReader(unittest.TestCase):
-    def setUp(self):
-        self.session = arki.dataset.Session()
-
+class TestDatasetReader(SessionMixin, unittest.TestCase):
     def test_create(self):
         with self.session.dataset_reader(cfg={
                     "format": "grib",
@@ -226,51 +223,50 @@ class TestDatasetReader(unittest.TestCase):
         self.assertEqual(queried, b"44937\n")
 
     def test_query_data_qmacro(self):
-        ds = arki.make_qmacro_dataset(
-            """
-[test200]
+        with arki.dataset.Session() as session:
+            session.add_dataset("""
 format = grib
 name = test200
 path = inbound/test.grib1
 type = file
-""",
-            "expa 2007-07-08",
-            "ds:test200. d:@. t:1300. s:GRIB1/0/0h/0h. l:GRIB1/1. v:GRIB1/200/140/229.\n",
-        )
+""")
+            with session.querymacro(
+                        "expa 2007-07-08",
+                        "ds:test200. d:@. t:1300. s:GRIB1/0/0h/0h. l:GRIB1/1. v:GRIB1/200/140/229.\n",
+                        ) as ds:
+                with ds.reader() as reader:
+                    count = 0
 
-        count = 0
+                    def count_results(md):
+                        nonlocal count
+                        count += 1
 
-        def count_results(md):
-            nonlocal count
-            count += 1
-
-        # No arguments
-        ds.query_data(on_metadata=count_results)
-        self.assertEqual(count, 1)
+                    # No arguments
+                    reader.query_data(on_metadata=count_results)
+                    self.assertEqual(count, 1)
 
     def test_query_data_merged(self):
-        ds = arki.make_merged_dataset(
-            """
-[test200]
+        with arki.dataset.Session() as session:
+            session.add_dataset("""
 format = grib
 name = test200
 path = inbound/test.grib1
 type = file
-""",
-        )
+""")
+            with session.merged() as ds:
+                with ds.reader() as reader:
+                    count = 0
 
-        count = 0
+                    def count_results(md):
+                        nonlocal count
+                        count += 1
 
-        def count_results(md):
-            nonlocal count
-            count += 1
-
-        # No arguments
-        ds.query_data(on_metadata=count_results)
-        self.assertEqual(count, 3)
+                    # No arguments
+                    reader.query_data(on_metadata=count_results)
+                    self.assertEqual(count, 3)
 
     def test_query_data_memoryusage(self):
-        ds = arki.dataset.Reader({
+        ds = self.session.dataset_reader(cfg={
             "type": "testlarge",
         })
         count = 0
@@ -284,7 +280,7 @@ type = file
         self.assertEqual(count, 24841)
 
     def test_progress(self):
-        ds = arki.dataset.Reader({
+        ds = self.session.dataset_reader(cfg={
             "format": "grib",
             "name": "test.grib1",
             "path": "inbound/test.grib1",
@@ -326,107 +322,106 @@ type = file
             ds.query_bytes(progress=ProgressFailUpdate())
 
     def test_progress_qmacro(self):
-        ds = arki.make_qmacro_dataset(
-            """
-[test200]
+        with arki.dataset.Session() as session:
+            session.add_dataset("""
 format = grib
 name = test200
 path = inbound/test.grib1
 type = file
-""",
-            "expa 2007-07-08",
-            "ds:test200. d:@. t:1300. s:GRIB1/0/0h/0h. l:GRIB1/1. v:GRIB1/200/140/229.\n",
-        )
+""")
+            with session.querymacro(
+                    "expa 2007-07-08",
+                    "ds:test200. d:@. t:1300. s:GRIB1/0/0h/0h. l:GRIB1/1. v:GRIB1/200/140/229.\n") as ds:
+                with ds.reader() as reader:
+                    count = 0
 
-        count = 0
+                    def count_results(md):
+                        nonlocal count
+                        count += 1
 
-        def count_results(md):
-            nonlocal count
-            count += 1
+                    progress = Progress()
 
-        progress = Progress()
+                    # No arguments
+                    reader.query_data(on_metadata=count_results, progress=progress)
+                    self.assertEqual(count, 1)
+                    self.assertEqual(progress.total_count, 1)
+                    self.assertEqual(progress.total_bytes, 7218)
+                    self.assertEqual(progress.start_called, 1)
+                    self.assertEqual(progress.update_called, 1)
+                    self.assertEqual(progress.done_called, 1)
 
-        # No arguments
-        ds.query_data(on_metadata=count_results, progress=progress)
-        self.assertEqual(count, 1)
-        self.assertEqual(progress.total_count, 1)
-        self.assertEqual(progress.total_bytes, 7218)
-        self.assertEqual(progress.start_called, 1)
-        self.assertEqual(progress.update_called, 1)
-        self.assertEqual(progress.done_called, 1)
+                    progress = Progress()
+                    res = reader.query_bytes(progress=progress)
+                    self.assertEqual(len(res), 7218)
+                    self.assertEqual(progress.total_count, 1)
+                    self.assertEqual(progress.total_bytes, 7218)
+                    self.assertEqual(progress.start_called, 1)
+                    self.assertEqual(progress.update_called, 1)
+                    self.assertEqual(progress.done_called, 1)
 
-        progress = Progress()
-        res = ds.query_bytes(progress=progress)
-        self.assertEqual(len(res), 7218)
-        self.assertEqual(progress.total_count, 1)
-        self.assertEqual(progress.total_bytes, 7218)
-        self.assertEqual(progress.start_called, 1)
-        self.assertEqual(progress.update_called, 1)
-        self.assertEqual(progress.done_called, 1)
-
-        with self.assertRaises(ExpectedFailure):
-            ds.query_data(progress=ProgressFailUpdate())
-        with self.assertRaises(ExpectedFailure):
-            ds.query_bytes(progress=ProgressFailUpdate())
+                    with self.assertRaises(ExpectedFailure):
+                        reader.query_data(progress=ProgressFailUpdate())
+                    with self.assertRaises(ExpectedFailure):
+                        reader.query_bytes(progress=ProgressFailUpdate())
 
     def test_progress_merged(self):
         # https://github.com/ARPA-SIMC/arkimet/issues/217
         if os.environ.get("ISSUE217"):
             raise unittest.SkipTest("Test skipped, see #217")
 
-        ds = arki.make_merged_dataset(
-            """
-[test1]
+        with arki.dataset.Session() as session:
+            session.add_dataset("""
 format = grib
-name = test.grib1
+name = test1
 path = inbound/test.grib1
 type = file
-
-[test2]
+""")
+            session.add_dataset("""
 format = bufr
-name = test.bufr
+name = test2
 path = inbound/test.bufr
 type = file
-""",
-        )
+""")
 
-        count = 0
+            with session.merged() as ds:
+                with ds.reader() as reader:
+                    count = 0
 
-        def count_results(md):
-            nonlocal count
-            count += 1
+                    def count_results(md):
+                        nonlocal count
+                        count += 1
 
-        progress = Progress()
+                    progress = Progress()
 
-        # No arguments
-        ds.query_data(on_metadata=count_results, progress=progress)
-        self.assertEqual(count, 6)
-        self.assertEqual(progress.total_count, 6)
-        self.assertEqual(progress.total_bytes, 45046)
-        self.assertEqual(progress.start_called, 1)
-        # Initial and final calls at least, but intermediate calls are
-        # throttled at no more than one each 200ms
-        self.assertGreaterEqual(progress.update_called, 2)
-        self.assertEqual(progress.done_called, 1)
+                    # No arguments
+                    reader.query_data(on_metadata=count_results, progress=progress)
+                    self.assertEqual(count, 6)
+                    self.assertEqual(progress.total_count, 6)
+                    self.assertEqual(progress.total_bytes, 45046)
+                    self.assertEqual(progress.start_called, 1)
+                    # Initial and final calls at least, but intermediate calls are
+                    # throttled at no more than one each 200ms
+                    self.assertGreaterEqual(progress.update_called, 2)
+                    self.assertEqual(progress.done_called, 1)
 
-        progress = Progress()
-        res = ds.query_bytes(progress=progress)
-        self.assertEqual(len(res), 45046)
-        self.assertEqual(progress.total_count, 6)
-        self.assertEqual(progress.total_bytes, 45046)
-        self.assertEqual(progress.start_called, 1)
-        # Initial and final calls at least, but intermediate calls are
-        # throttled at no more than one each 200ms
-        self.assertGreaterEqual(progress.update_called, 2)
-        self.assertEqual(progress.done_called, 1)
+                    progress = Progress()
+                    res = reader.query_bytes(progress=progress)
+                    self.assertEqual(len(res), 45046)
+                    self.assertEqual(progress.total_count, 6)
+                    self.assertEqual(progress.total_bytes, 45046)
+                    self.assertEqual(progress.start_called, 1)
+                    # Initial and final calls at least, but intermediate calls are
+                    # throttled at no more than one each 200ms
+                    self.assertGreaterEqual(progress.update_called, 2)
+                    self.assertEqual(progress.done_called, 1)
 
-        with self.assertRaises(ExpectedFailure):
-            ds.query_data(progress=ProgressFailUpdate())
-        with self.assertRaises(ExpectedFailure):
-            ds.query_bytes(progress=ProgressFailUpdate())
+                    with self.assertRaises(ExpectedFailure):
+                        reader.query_data(progress=ProgressFailUpdate())
+                    with self.assertRaises(ExpectedFailure):
+                        reader.query_bytes(progress=ProgressFailUpdate())
 
 
-class TestDatasetWriter(unittest.TestCase):
+class TestDatasetWriter(SessionMixin, unittest.TestCase):
     def test_import(self):
         try:
             shutil.rmtree("testds")
@@ -434,7 +429,7 @@ class TestDatasetWriter(unittest.TestCase):
             pass
         os.mkdir("testds")
 
-        dest = arki.dataset.Writer({
+        dest = self.session.dataset_writer(cfg={
             "format": "grib",
             "name": "testds",
             "path": "testds",
@@ -442,7 +437,7 @@ class TestDatasetWriter(unittest.TestCase):
             "step": "daily",
         })
 
-        source = arki.dataset.Reader({
+        source = self.session.dataset_reader(cfg={
             "format": "grib",
             "name": "test.grib1",
             "path": "inbound/test.grib1",
@@ -455,7 +450,7 @@ class TestDatasetWriter(unittest.TestCase):
         source.query_data(on_metadata=do_import)
         dest.flush()
 
-        dest = arki.dataset.Reader({
+        dest = self.session.dataset_reader(cfg={
             "format": "grib",
             "name": "testds",
             "path": "testds",
@@ -479,7 +474,7 @@ class TestDatasetWriter(unittest.TestCase):
             pass
         os.mkdir("testds")
 
-        dest = arki.dataset.Writer({
+        dest = self.session.dataset_writer(cfg={
             "format": "grib",
             "name": "testds",
             "path": "testds",
@@ -487,7 +482,7 @@ class TestDatasetWriter(unittest.TestCase):
             "step": "daily",
         })
 
-        source = arki.dataset.Reader({
+        source = self.session.dataset_reader(cfg={
             "format": "grib",
             "name": "test.grib1",
             "path": "inbound/test.grib1",
@@ -500,7 +495,7 @@ class TestDatasetWriter(unittest.TestCase):
 
         dest.flush()
 
-        dest = arki.dataset.Reader({
+        dest = self.session.dataset_reader(cfg={
             "format": "grib",
             "name": "testds",
             "path": "testds",

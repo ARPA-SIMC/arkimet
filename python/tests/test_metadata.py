@@ -11,13 +11,14 @@ class TestMetadata(unittest.TestCase):
         """
         Read all the metadata from a file
         """
-        ds = arki.dataset.Reader({
-            "format": format,
-            "name": os.path.basename(pathname),
-            "path": pathname,
-            "type": "file",
-        })
-        return ds.query_data()
+        with arki.dataset.Session() as session:
+            with session.dataset_reader(cfg={
+                            "format": format,
+                            "name": os.path.basename(pathname),
+                            "path": pathname,
+                            "type": "file",
+                        }) as ds:
+                return ds.query_data()
 
     def test_subscript(self):
         md = self.read("inbound/test.grib1")[0]

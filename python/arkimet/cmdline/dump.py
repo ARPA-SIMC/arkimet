@@ -60,15 +60,17 @@ class Dump(App):
         if self.args.query:
             if not self.args.input:
                 self.parser.error("--query needs a query on the command line")
-            matcher = arkimet.Matcher(self.args.input)
-            print(matcher.expanded)
+            with arkimet.dataset.Session() as session:
+                matcher = session.matcher(self.args.input)
+                print(matcher.expanded)
             raise Exit()
 
         if self.args.aliases:
             if self.args.input:
                 sections = arkimet.dataset.http.get_alias_database(self.args.input)
             else:
-                sections = arkimet.get_alias_database()
+                with arkimet.dataset.Session() as session:
+                    sections = session.get_alias_database()
 
             if self.args.output:
                 with open(self.args.output, "wt") as fd:

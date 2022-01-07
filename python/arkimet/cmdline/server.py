@@ -318,23 +318,26 @@ class Server(App):
 
         httpd = make_server(self.args.host, self.args.port, config, self.args.url)
 
-        if self.args.runtest:
-            exit_code = 0
-            args = self.args
+        try:
+            if self.args.runtest:
+                exit_code = 0
+                args = self.args
 
-            class TestThread(threading.Thread):
-                def run(self):
-                    try:
-                        subprocess.check_call(args.runtest, shell=True)
-                    except subprocess.CalledProcessError:
-                        nonlocal exit_code
-                        exit_code = 1
-                    httpd.shutdown()
+                class TestThread(threading.Thread):
+                    def run(self):
+                        try:
+                            subprocess.check_call(args.runtest, shell=True)
+                        except subprocess.CalledProcessError:
+                            nonlocal exit_code
+                            exit_code = 1
+                        httpd.shutdown()
 
-            test_thread = TestThread()
-            test_thread.start()
-            httpd.serve_forever()
-            test_thread.join()
-            sys.exit(exit_code)
-        else:
-            httpd.serve_forever()
+                test_thread = TestThread()
+                test_thread.start()
+                httpd.serve_forever()
+                test_thread.join()
+                sys.exit(exit_code)
+            else:
+                httpd.serve_forever()
+        finally:
+            httpd.server_close()

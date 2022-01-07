@@ -97,6 +97,8 @@ class Env(contextlib.ExitStack):
         os.mkdir("testenv")
         os.mkdir("testenv/testds")
 
+        self.session = self.enter_context(arki.dataset.Session())
+
         kw["name"] = "testds"
         kw["path"] = os.path.abspath("testenv/testds")
         kw.setdefault("step", "daily")
@@ -111,7 +113,8 @@ class Env(contextlib.ExitStack):
         with open("testenv/testds/config", "wt") as fd:
             self.ds_cfg.write(fd)
 
-        self.session = self.enter_context(arki.dataset.Session())
+        for name, section in self.config.items():
+            self.session.add_dataset(section)
 
         if not skip_initial_check:
             self.check(readonly=False)
@@ -167,9 +170,9 @@ class Env(contextlib.ExitStack):
             res.append(md)
 
         kw["on_metadata"] = on_metadata
-        source = arki.dataset.Reader(self.ds_cfg)
-        source.query_data(**kw)
-        return res
+        with self.session.dataset_reader(cfg=self.ds_cfg) as source:
+            source.query_data(**kw)
+            return res
 
     def repack(self, **kw):
         checker = self.session.dataset_checker(cfg=self.ds_cfg)
@@ -315,6 +318,17 @@ class ServerProcess(multiprocessing.Process):
     def __exit__(self, type, value, traceback):
         self.terminate()
         self.join()
+        self.close()
         # FIXME: this is never found, given that we're using a multiprocessing.Process
         if self.server_exception is not None:
             raise self.server_exception
+
+
+class SessionMixin:
+    def setUp(self):
+        super().setUp()
+        self.session = arki.dataset.Session()
+
+    def tearDown(self):
+        self.session.__exit__(None, None, None)
+        super().tearDown()

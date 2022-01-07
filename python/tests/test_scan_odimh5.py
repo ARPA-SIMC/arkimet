@@ -9,13 +9,14 @@ class TestScanODIMH5(unittest.TestCase):
         """
         Read all the metadata from a file
         """
-        ds = arki.dataset.Reader({
-            "format": format,
-            "name": os.path.basename(pathname),
-            "path": pathname,
-            "type": "file",
-        })
-        mds = ds.query_data()
+        with arki.dataset.Session() as session:
+            with session.dataset_reader(cfg={
+                            "format": format,
+                            "name": os.path.basename(pathname),
+                            "path": pathname,
+                            "type": "file",
+                        }) as ds:
+                mds = ds.query_data()
         self.assertEqual(len(mds), 1)
         md = mds[0]
 
@@ -285,11 +286,12 @@ class TestScanODIMH5(unittest.TestCase):
         """
         Check that the scanner silently discard an empty file
         """
-        ds = arki.dataset.Reader({
-            "format": "odimh5",
-            "name": "empty.h5",
-            "path": "inbound/odimh5/empty.h5",
-            "type": "file",
-        })
-        mds = ds.query_data()
-        self.assertEqual(len(mds), 0)
+        with arki.dataset.Session() as session:
+            with session.dataset_reader(cfg={
+                        "format": "odimh5",
+                        "name": "empty.h5",
+                        "path": "inbound/odimh5/empty.h5",
+                        "type": "file",
+                    }) as ds:
+                mds = ds.query_data()
+                self.assertEqual(len(mds), 0)

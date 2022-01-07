@@ -13,14 +13,15 @@ class TestSummary(unittest.TestCase):
         """
         Read all the metadata from a file
         """
-        ds = arki.dataset.Reader({
-            "format": format,
-            "name": os.path.basename(pathname),
-            "path": pathname,
-            "type": "file",
-        })
+        with arki.dataset.Session() as session:
+            ds = session.dataset_reader(cfg={
+                "format": format,
+                "name": os.path.basename(pathname),
+                "path": pathname,
+                "type": "file",
+            })
 
-        return ds.query_summary(matcher=matcher)
+            return ds.query_summary(matcher=matcher)
 
     def test_to_python(self):
         s = self.read("inbound/test.grib1")
@@ -171,11 +172,12 @@ class TestSummary(unittest.TestCase):
         p = summary.to_python()
         self.assertIn("items", p)
 
-        ds = arki.dataset.Reader({
-            "format": "arkimet",
-            "name": "issue230",
-            "path": "inbound/issue230.arkimet",
-            "type": "file",
-        })
-        summary = ds.query_summary()
+        with arki.dataset.Session() as session:
+            ds = session.dataset_reader(cfg={
+                "format": "arkimet",
+                "name": "issue230",
+                "path": "inbound/issue230.arkimet",
+                "type": "file",
+            })
+            summary = ds.query_summary()
         self.assertIn("items", summary.to_python())
