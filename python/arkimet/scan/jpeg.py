@@ -1,5 +1,5 @@
 from typing import Callable, Any, Dict
-import functools
+# import functools
 import io
 import logging
 import sys
@@ -22,20 +22,44 @@ class ScannedImage:
     def __init__(self, im: Image):
         self.im = im
 
-    @functools.cached_property
+    # TODO: from python 3.8 we can optimize with cached_property
+    # @functools.cached_property
+    # def exif(self) -> Dict[int, Any]:
+    #     """
+    #     dict with raw EXIF information
+    #     """
+    #     return self.im.getexif()
+
+    # @functools.cached_property
+    # def gpsinfo(self) -> Dict[int, Any]:
+    #     """
+    #     dict with raw EXIF GPSInfo information
+    #     """
+    #     gpsinfo = self.exif.get(gpsinfo_tag)
+    #     return {} if gpsinfo is None else gpsinfo
+
+    @property
     def exif(self) -> Dict[int, Any]:
         """
         dict with raw EXIF information
         """
-        return self.im.getexif()
+        res = getattr(self, "_exif", None)
+        if res is None:
+            res = self.im.getexif()
+            self._exif = res
+        return res
 
-    @functools.cached_property
+    @property
     def gpsinfo(self) -> Dict[int, Any]:
         """
         dict with raw EXIF GPSInfo information
         """
-        gpsinfo = self.exif.get(gpsinfo_tag)
-        return {} if gpsinfo is None else gpsinfo
+        res = getattr(self, "_gpsinfo", None)
+        if res is None:
+            gpsinfo = self.exif.get(gpsinfo_tag)
+            res = {} if gpsinfo is None else gpsinfo
+            self._gpsinfo = res
+        return res
 
     def get_image(self, tag_name: str) -> Any:
         """
