@@ -193,7 +193,7 @@ def scan(h5f, md):
 
         if product in ("CAPPI", "PCAPPI"):
             height = dataset1["what"].attrs["prodpar"]
-            md["level"] = {"style": "GRIB1", "level_type": 105, "l1": height}
+            md["level"] = {"style": "GRIB1", "level_type": 105, "l1": round(height)}
         elif product == "PPI":
             height = dataset1["what"].attrs["prodpar"]
             md["level"] = {"style": "ODIMH5", "min": height, "max": height}
@@ -214,7 +214,7 @@ def scan(h5f, md):
         elif product == "VIL":
             prodpar = dataset1["what"].attrs["prodpar"]
             bottom, top = (int(x) for x in prodpar.split(b","))
-            md["level"] = {"style": "GRIB1", "level_type": 106, "l1": top / 100, "l2": bottom / 100}
+            md["level"] = {"style": "GRIB1", "level_type": 106, "l1": round(top / 100), "l2": round(bottom / 100)}
         elif is_hvmi(h5f):
             md["product"] = {"style": "ODIMH5", "object": obj.decode(), "product": "HVMI"}
     elif obj == b"XSEC":
