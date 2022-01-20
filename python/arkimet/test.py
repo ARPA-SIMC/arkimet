@@ -318,7 +318,9 @@ class ServerProcess(multiprocessing.Process):
     def __exit__(self, type, value, traceback):
         self.terminate()
         self.join()
-        self.close()
+        if hasattr(self, 'close'):
+            # multiprocessing.Process.close() only exists from Python 3.7
+            self.close()
         # FIXME: this is never found, given that we're using a multiprocessing.Process
         if self.server_exception is not None:
             raise self.server_exception
