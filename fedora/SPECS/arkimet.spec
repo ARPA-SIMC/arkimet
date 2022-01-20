@@ -58,6 +58,7 @@ BuildRequires: %{python3_vers}-requests
 BuildRequires: %{python3_vers}-wreport3
 BuildRequires: %{python3_vers}-dballe >= 9.0
 BuildRequires: %{python3_vers}-netcdf4
+BuildRequires: %{python3_vers}-pillow
 %if ! 0%{?el7}
 BuildRequires: %{python3_vers}-h5py
 BuildRequires: %{python3_vers}-sphinx
@@ -76,6 +77,7 @@ Requires: %{python3_vers}-werkzeug
 Requires: %{python3_vers}-setproctitle
 Requires: %{python3_vers}-dballe >= 9.0
 Requires: %{python3_vers}-netcdf4
+Requires: %{python3_vers}-pillow
 Requires: %{python3_vers}-shapely
 Requires: libdballe9
 Requires: systemd
