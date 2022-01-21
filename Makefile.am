@@ -54,7 +54,6 @@ arki-check.1: src/arki-check doc/mhooks-arki-check
 
 EXTRA_DIST = \
 	     README.md \
-	     README.Cineca \
 	     NEWS.md \
 	     update-tags \
 	     autogen.sh \
