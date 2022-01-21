@@ -1,11 +1,9 @@
 [![Build Status](https://simc.arpae.it/moncic-ci/arkimet/centos7.png)](https://simc.arpae.it/moncic-ci/arkimet/)
 [![Build Status](https://simc.arpae.it/moncic-ci/arkimet/centos8.png)](https://simc.arpae.it/moncic-ci/arkimet/)
-[![Build Status](https://simc.arpae.it/moncic-ci/arkimet/fedora32.png)](https://simc.arpae.it/moncic-ci/arkimet/)
 [![Build Status](https://simc.arpae.it/moncic-ci/arkimet/fedora34.png)](https://simc.arpae.it/moncic-ci/arkimet/)
 [![Build Status](https://copr.fedorainfracloud.org/coprs/simc/stable/package/arkimet/status_image/last_build.png)](https://copr.fedorainfracloud.org/coprs/simc/stable/package/arkimet/)
 
 # Arkimet
-
 
 
 ## Introduction
@@ -195,7 +193,7 @@ area: italy
 
 The author of arkimet is Enrico Zini <enrico@enricozini.com>
 
-Arkimet is Copyright (C) 2005-2021 ARPAE-SIMC <urpsim@arpae.it>
+Arkimet is Copyright (C) 2005-2022 ARPAE-SIMC <urpsim@arpae.it>
 
 Arkimet is Free Software, licensed under the terms of the GNU General Public License version
 2.
