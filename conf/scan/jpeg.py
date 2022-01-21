@@ -7,6 +7,13 @@ if TYPE_CHECKING:
     import arkimet
 
 
+def from_decimal(val):
+    if isinstance(val, tuple):
+        return val[0] / val[1]
+    else:
+        return val
+
+
 def scan_reftime(sample: ScannedImage, md: "arkimet.Metadata"):
     dt = None
 
@@ -16,7 +23,7 @@ def scan_reftime(sample: ScannedImage, md: "arkimet.Metadata"):
         str_date = str(gps_date)
         dt = datetime.datetime(
                 int(str_date[:4], 10), int(str_date[5:7], 10), int(str_date[8:10], 10),
-                int(gps_time[0]), int(gps_time[1]), int(gps_time[2]))
+                int(from_decimal(gps_time[0])), int(from_decimal(gps_time[1])), int(from_decimal(gps_time[2])))
         md["reftime"] = {
             "style": "POSITION",
             "time": dt,
@@ -44,8 +51,8 @@ def scan_area(sample: ScannedImage, md: "arkimet.Metadata"):
     if gps_lat is None or gps_lon is None:
         return
 
-    lat = round((gps_lat[0] + gps_lat[1] / 60 + gps_lat[2] / 3600) * 10000)
-    lon = round((gps_lon[0] + gps_lon[1] / 60 + gps_lon[2] / 3600) * 10000)
+    lat = round((from_decimal(gps_lat[0]) + from_decimal(gps_lat[1]) / 60 + from_decimal(gps_lat[2]) / 3600) * 10000)
+    lon = round((from_decimal(gps_lon[0]) + from_decimal(gps_lon[1]) / 60 + from_decimal(gps_lon[2]) / 3600) * 10000)
 
     if gps_lat_ref == 'S':
         lat = -lat
