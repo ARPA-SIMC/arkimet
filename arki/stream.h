@@ -29,6 +29,13 @@ std::ostream& operator<<(std::ostream& out, const SendResult& r);
 }
 
 
+/**
+ * Abstract interface for streaming data.
+ *
+ * This is used for anything in Arkimet that needs to output byte or text
+ * streams, and is generic enough to support both high performance, low-level
+ * implementations, and wrapping other interfaces like Python files.
+ */
 class StreamOutput
 {
 public:

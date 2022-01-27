@@ -10,6 +10,7 @@ struct StreamOutput;
 namespace stream {
 
 class TimedOut;
+class Text;
 
 struct SendResult
 {
