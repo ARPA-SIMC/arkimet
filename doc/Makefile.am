@@ -60,6 +60,7 @@ sphinx_packaged_sources = \
 	matcher/run.rst \
 	matcher/task.rst \
 	matcher/timerange.rst \
+	metadata.rst \
 	python/index.rst \
 	python/arkimet.bbox.rst \
 	python/arkimet.cfg.rst \
