@@ -16,6 +16,7 @@ public:
     constexpr static const char* name = "Blob";
     constexpr static const char* doc = R"(
 The data is available in the local file system:
+
 * ``filename`` points to the file that has the data
 * ``offset`` is the position in the file where the data is stored
 * ``size`` is the size in bytes of the data

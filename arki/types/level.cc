@@ -871,10 +871,12 @@ void Level::init()
 void Level::write_documentation(stream::Text& out, unsigned heading_level)
 {
     out.rst_header("Level", heading_level);
+    out.print(Level::doc);
 
     out.rst_header("GRIB1", heading_level + 1);
     out.print(R"(
 Level represented with as in GRIB version 1:
+
 * Level type
 * l1 (when applicable, depending on type)
 * l2 (for layer types)
@@ -886,6 +888,7 @@ Level represented with as in GRIB version 1:
     out.rst_header("GRIB2S", heading_level + 1);
     out.print(R"(
 Level represented with as in GRIB version 2, surface levels:
+
 * Level type
 * Scale
 * Value
@@ -897,6 +900,7 @@ Level represented with as in GRIB version 2, surface levels:
     out.rst_header("GRIB2D", heading_level + 1);
     out.print(R"(
 Level represented with as in GRIB version 2, layer levels:
+
 * Type of first level
 * Scale of first level
 * Value of first level

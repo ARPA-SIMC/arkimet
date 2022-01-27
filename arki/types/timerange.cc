@@ -769,6 +769,7 @@ std::unique_ptr<Timerange> Timerange::createBUFR(unsigned value, unsigned char u
 void Timerange::write_documentation(stream::Text& out, unsigned heading_level)
 {
     out.rst_header("Timerange", heading_level);
+    out.print(Timerange::doc);
 
     out.rst_header(timerange::GRIB1::name, heading_level + 1);
     out.print(timerange::GRIB1::doc);

@@ -35,6 +35,10 @@ struct traits<Level>
  */
 class Level : public types::Encoded
 {
+    constexpr static const char* doc = R"(
+Defines the vertical level or layer of the data.
+)";
+
 public:
     static const uint8_t GRIB2_MISSING_TYPE;
     static const uint8_t GRIB2_MISSING_SCALE;

@@ -35,6 +35,11 @@ struct traits<Product>
  */
 class Product : public types::Encoded
 {
+    constexpr static const char* doc = R"(
+Defines what kind of variable is measured or forecast or otherwise represented
+in the data.
+)";
+
 public:
     using Encoded::Encoded;
 
@@ -114,6 +119,7 @@ public:
     constexpr static const char* name = "GRIB1";
     constexpr static const char* doc = R"(
 Product defined the same as product definition in GRIB version 1:
+
 * Origin
 * Table number
 * Product
@@ -137,6 +143,7 @@ public:
     constexpr static const char* name = "GRIB2";
     constexpr static const char* doc = R"(
 Product defined the same as in GRIB version 2:
+
 * Centre
 * Discipline
 * Category
@@ -163,6 +170,7 @@ public:
     constexpr static const char* name = "BUFR";
     constexpr static const char* doc = R"(
 Product defined the same as in BUFR:
+
 * Type
 * Subtype
 * Local subtype
@@ -190,6 +198,7 @@ public:
     constexpr static const char* name = "ODIMH5";
     constexpr static const char* doc = R"(
 Product defined as in ODIM:
+
 * Obj
 * Prod
 

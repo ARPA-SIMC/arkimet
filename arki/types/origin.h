@@ -36,6 +36,10 @@ struct traits<Origin>
  */
 class Origin : public types::Encoded
 {
+    constexpr static const char* doc = R"(
+Defines the centre or process that originated the data.
+)";
+
 public:
     using Encoded::Encoded;
 

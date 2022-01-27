@@ -411,6 +411,7 @@ std::unique_ptr<Product> Product::createVM2(unsigned variable_id)
 void Product::write_documentation(stream::Text& out, unsigned heading_level)
 {
     out.rst_header("Product", heading_level);
+    out.print(Product::doc);
 
     out.rst_header(product::GRIB1::name, heading_level + 1);
     out.print(product::GRIB1::doc);
