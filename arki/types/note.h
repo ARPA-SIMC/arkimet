@@ -20,6 +20,14 @@ struct traits<Note>
  */
 class Note : public Encoded
 {
+    constexpr static const char* doc = R"(
+A timestamped annotation about how arkimet processed this element.
+
+This can be used to track and audit the life of data in the archive.
+
+It can be used for consultation only, and cannot be used in searches.
+)";
+
 public:
     using Encoded::Encoded;
 
@@ -48,6 +56,8 @@ public:
     /// Create a note with the given time and content
     static std::unique_ptr<Note> create(const core::Time& time, const std::string& content);
     static std::unique_ptr<Note> decode_structure(const structured::Keys& keys, const structured::Reader& val);
+
+    static void write_documentation(stream::Text& out, unsigned heading_level);
 };
 
 }

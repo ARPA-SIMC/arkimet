@@ -74,6 +74,8 @@ public:
     static std::unique_ptr<BBox> decodeString(const std::string& val);
     static std::unique_ptr<BBox> decode_structure(const structured::Keys& keys, const structured::Reader& val);
 
+    static void write_documentation(stream::Text& out, unsigned heading_level) {}
+
     // Register this type tree with the type system
     static void init();
 

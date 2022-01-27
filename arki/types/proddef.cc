@@ -6,6 +6,7 @@
 #include "arki/structured/emitter.h"
 #include "arki/structured/reader.h"
 #include "arki/structured/keys.h"
+#include "arki/stream/text.h"
 #include <sstream>
 
 #define CODE TYPE_PRODDEF
@@ -142,6 +143,22 @@ unique_ptr<Proddef> Proddef::createGRIB(const ValueBag& values)
     enc.add_unsigned(static_cast<unsigned>(proddef::Style::GRIB), 1);
     values.encode(enc);
     return std::unique_ptr<Proddef>(new proddef::GRIB(buf));
+}
+
+void Proddef::write_documentation(stream::Text& out, unsigned heading_level)
+{
+    out.rst_header("Proddef", heading_level);
+
+    out.print(R"(
+Product definition, encoding extra information to represent variations on the
+defined product.
+
+This is used, for example, to encode the ensemble parameters and distinguish
+products that have been computed using different ensemble conditions.
+)");
+
+    out.rst_header(proddef::GRIB::name, heading_level + 1);
+    out.print(proddef::GRIB::doc);
 }
 
 namespace proddef {

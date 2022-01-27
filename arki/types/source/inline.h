@@ -10,6 +10,13 @@ namespace source {
 class Inline : public Source
 {
 public:
+    constexpr static const char* name = "Inline";
+    constexpr static const char* doc = R"(
+The data follows the metadata in the same data stream.
+
+This stores the size in bytes of the data to be read after the metadata in the
+stream.
+)";
     uint64_t size;
 
     Style style() const override;

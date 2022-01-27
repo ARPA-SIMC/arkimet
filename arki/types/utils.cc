@@ -19,22 +19,24 @@ MetadataType::MetadataType(
         const std::string& tag,
         item_decoder decode_func,
         string_decoder string_decode_func,
-        structure_decoder structure_decode_func)
+        structure_decoder structure_decode_func,
+        documenter document_func)
     : type_code(type_code),
       serialisationSizeLen(serialisationSizeLen),
       tag(tag),
       decode_func(decode_func),
       string_decode_func(string_decode_func),
-      structure_decode_func(structure_decode_func)
+      structure_decode_func(structure_decode_func),
+      document_func(document_func)
 {
 }
 
 MetadataType::~MetadataType()
 {
-	if (!decoders)
-		return;
-	
-	decoders[type_code] = 0;
+    if (!decoders)
+        return;
+
+    decoders[type_code] = 0;
 }
 
 void MetadataType::register_type(MetadataType* type)
@@ -82,6 +84,21 @@ void split(const std::string& str, std::vector<std::string>& result, const std::
         lastPos = str.find_first_not_of(delimiters, pos);   // Skip delimiters.  Note the "not_of"
         pos = str.find_first_of(delimiters, lastPos);       // Find next "non-delimiter"
     }
+}
+
+void MetadataType::document_types(stream::Text& out, unsigned heading_level)
+{
+    if (!decoders)
+        throw std::runtime_error("Metadata item types have not been registered");
+
+    for (unsigned i = 0; i < decoders_size; ++i)
+    {
+        if (!decoders[i])
+            continue;
+
+        decoders[i]->document_func(out, heading_level);
+    }
+
 }
 
 }

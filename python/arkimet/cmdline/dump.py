@@ -37,6 +37,8 @@ class Dump(App):
                            help="read a Yaml summary dump and write a binary summary")
         group.add_argument("--annotate", action="store_true",
                            help="annotate the human-readable Yaml output with field descriptions")
+        group.add_argument("--doc-metadata", action="store_true",
+                           help="Print documentation of metadata types")
 
     @contextmanager
     def input(self, mode):
@@ -107,6 +109,10 @@ class Dump(App):
             with self.input("rb") as fdin:
                 with self.output("wb") as fdout:
                     raise Exit(dump.reverse_summary(fdin, fdout))
+
+        if self.args.doc_metadata:
+            arkimet.Metadata.print_type_documentation(sys.stdout)
+            raise Exit()
 
         dump = arkimet.cmdline.ArkiDump()
         with self.input("rb") as fdin:

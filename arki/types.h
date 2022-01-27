@@ -6,6 +6,7 @@
 #include <arki/core/fwd.h>
 #include <arki/types/fwd.h>
 #include <arki/structured/fwd.h>
+#include <arki/stream/fwd.h>
 #include <memory>
 #include <vector>
 #include <string>
@@ -181,6 +182,12 @@ public:
     static std::unique_ptr<Type> decode(core::BinaryDecoder& dec);
     static std::unique_ptr<Type> decodeInner(types::Code, core::BinaryDecoder& dec);
     static std::unique_ptr<Type> decode_inner(types::Code, core::BinaryDecoder& dec, bool reuse_buffer);
+
+    /**
+     * Write reStructuredText documentation about all known metadata types to
+     * the given output stream
+     */
+    static void document(stream::Text& out);
 };
 
 /// Write as a string to an output stream

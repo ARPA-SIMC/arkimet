@@ -8,6 +8,7 @@
 #include "arki/structured/emitter.h"
 #include "arki/structured/keys.h"
 #include "arki/structured/reader.h"
+#include "arki/stream/text.h"
 #include <sstream>
 
 #define CODE TYPE_SOURCE
@@ -191,6 +192,21 @@ unique_ptr<Source> Source::createURL(const std::string& format, const std::strin
 void Source::init()
 {
     MetadataType::register_type<Source>();
+}
+
+void Source::write_documentation(stream::Text& out, unsigned heading_level)
+{
+    out.rst_header("Source", heading_level);
+    out.print(Source::doc);
+
+    out.rst_header(source::Blob::name, heading_level + 1);
+    out.print(source::Blob::doc);
+
+    out.rst_header(source::Inline::name, heading_level + 1);
+    out.print(source::Inline::doc);
+
+    out.rst_header(source::URL::name, heading_level + 1);
+    out.print(source::URL::doc);
 }
 
 }

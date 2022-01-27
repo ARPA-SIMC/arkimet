@@ -32,6 +32,7 @@ Arkimet is Free Software, licensed under the GNU General Public License version
    :maxdepth: 2
    :caption: Contents:
 
+   metadata
    matcher
    datasets
    segments

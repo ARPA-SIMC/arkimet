@@ -100,6 +100,8 @@ public:
     static std::unique_ptr<Product> createBUFR(unsigned char type, unsigned char subtype, unsigned char localsubtype, const ValueBag& name);
     static std::unique_ptr<Product> createODIMH5(const std::string& obj, const std::string& prod);
     static std::unique_ptr<Product> createVM2(unsigned variable_id);
+
+    static void write_documentation(stream::Text& out, unsigned heading_level);
 };
 
 namespace product {
@@ -109,6 +111,16 @@ inline std::ostream& operator<<(std::ostream& o, Style s) { return o << Product:
 class GRIB1 : public Product
 {
 public:
+    constexpr static const char* name = "GRIB1";
+    constexpr static const char* doc = R"(
+Product defined the same as product definition in GRIB version 1:
+* Origin
+* Table number
+* Product
+
+.. note::
+   TODO: add references to manual of codes
+)";
     using Product::Product;
 
     GRIB1* clone() const override { return new GRIB1(data, size); }
@@ -122,6 +134,19 @@ public:
 class GRIB2 : public Product
 {
 public:
+    constexpr static const char* name = "GRIB2";
+    constexpr static const char* doc = R"(
+Product defined the same as in GRIB version 2:
+* Centre
+* Discipline
+* Category
+* Number
+* Table version
+* Local table version
+
+.. note::
+   TODO: add references to manual of codes
+)";
     using Product::Product;
 
     GRIB2* clone() const override { return new GRIB2(data, size); }
@@ -135,6 +160,20 @@ public:
 class BUFR : public Product
 {
 public:
+    constexpr static const char* name = "BUFR";
+    constexpr static const char* doc = R"(
+Product defined the same as in BUFR:
+* Type
+* Subtype
+* Local subtype
+
+.. note::
+   TODO: add references to manual of codes
+
+Optionally one can add a number of arbitrary key-value pairs to represent
+information extracted from the BUFR contents that is significant for archival
+purposes.
+)";
     using Product::Product;
 
     BUFR* clone() const override { return new BUFR(data, size); }
@@ -148,6 +187,15 @@ public:
 class ODIMH5 : public Product
 {
 public:
+    constexpr static const char* name = "ODIMH5";
+    constexpr static const char* doc = R"(
+Product defined as in ODIM:
+* Obj
+* Prod
+
+.. note::
+   TODO: find meanings of ODIMh5 values
+)";
     using Product::Product;
 
     ODIMH5* clone() const override { return new ODIMH5(data, size); }
@@ -161,6 +209,10 @@ public:
 class VM2 : public Product
 {
 public:
+    constexpr static const char* name = "VM2";
+    constexpr static const char* doc = R"(
+Product defined as a VM2 variable ID
+)";
     using Product::Product;
 
     VM2* clone() const override { return new VM2(data, size); }

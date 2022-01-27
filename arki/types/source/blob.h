@@ -13,6 +13,23 @@ namespace source {
 class Blob : public Source
 {
 public:
+    constexpr static const char* name = "Blob";
+    constexpr static const char* doc = R"(
+The data is available in the local file system:
+* ``filename`` points to the file that has the data
+* ``offset`` is the position in the file where the data is stored
+* ``size`` is the size in bytes of the data
+
+``basedir`` is a hint that can be used to resolve relative ``filename`` values.
+It is not stored in the metadata, and when reading it defaults to the path
+where the metadata is found, so that data can be referenced relative to the
+metadata.
+
+It is possible that ``filename`` points to a directory segment or a ``.zip``
+file: in that case, the value of the offset is used to reference the data in
+the directory or zipfile based on the meaning given by the directory segment or
+zip file segment implementation.
+)";
     /**
      * Base directory used to resolve relative filenames.
      *

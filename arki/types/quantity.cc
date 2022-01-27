@@ -6,6 +6,7 @@
 #include "arki/structured/emitter.h"
 #include "arki/structured/reader.h"
 #include "arki/structured/keys.h"
+#include "arki/stream/text.h"
 #include <sstream>
 
 #define CODE TYPE_QUANTITY
@@ -133,6 +134,11 @@ std::unique_ptr<Quantity> Quantity::create(const std::set<std::string>& values)
     return std::unique_ptr<Quantity>(new Quantity(buf));
 }
 
+void Quantity::write_documentation(stream::Text& out, unsigned heading_level)
+{
+    out.rst_header("Quantity", heading_level);
+    out.print(Quantity::doc);
+}
 
 void Quantity::init()
 {

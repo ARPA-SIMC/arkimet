@@ -5,6 +5,7 @@
 #include "arki/structured/emitter.h"
 #include "arki/structured/reader.h"
 #include "arki/structured/keys.h"
+#include "arki/stream/text.h"
 #include <sstream>
 
 #define CODE TYPE_TASK
@@ -88,6 +89,18 @@ std::unique_ptr<Task> Task::create(const std::string& val)
     enc.add_varint(val.size());
     enc.add_raw(val);
     return std::unique_ptr<Task>(new Task(buf));
+}
+
+void Task::write_documentation(stream::Text& out, unsigned heading_level)
+{
+    out.rst_header("Task", heading_level);
+
+    out.print(R"(
+Representation of ODIM Task as a string value.
+
+.. note::
+   TODO: find meanings of ODIMh5 values
+)");
 }
 
 void Task::init()

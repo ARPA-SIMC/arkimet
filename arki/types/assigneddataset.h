@@ -54,6 +54,8 @@ public:
     std::ostream& writeToOstream(std::ostream& o) const override;
     void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
 
+    static void write_documentation(stream::Text& out, unsigned heading_level) {}
+
     // Register this type with the type system
     static void init();
 

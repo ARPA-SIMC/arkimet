@@ -33,6 +33,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		stream/concrete-parts.tcc \
 		stream/discard.h \
 		stream/buffer.h \
+		stream/text.h \
 		stream/tests.h \
 		defs.h \
 		exceptions.h \

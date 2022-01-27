@@ -28,15 +28,17 @@ struct traits<Area>
     typedef area::Style Style;
 };
 
-/**
- * The vertical area or layer of some data
- *
- * It can contain information like areatype and area value.
- */
 class Area : public types::Encoded
 {
 protected:
     mutable arki::utils::geos::Geometry* cached_bbox = nullptr;
+
+    constexpr static const char* doc = R"(
+Geographical area relative to a data element.
+
+When possible, Area values should be convertible to coordinate polygons,
+allowing matching using geospatial primitives (contains, intersects, ...).
+)";
 
 public:
     using Encoded::Encoded;
@@ -77,6 +79,8 @@ public:
     /// Return the geographical bounding box
     const arki::utils::geos::Geometry* bbox() const;
 
+    static void write_documentation(stream::Text& out, unsigned heading_level);
+
     // Register this type tree with the type system
     static void init();
 };
@@ -89,6 +93,12 @@ inline std::ostream& operator<<(std::ostream& o, Style s) { return o << Area::fo
 class GRIB : public Area
 {
 public:
+    constexpr static const char* name = "GRIB";
+    constexpr static const char* doc = R"(
+Collection of key-value pairs, interpreted in the context of GRIB grid
+definitions.
+)";
+
     using Area::Area;
     ~GRIB();
 
@@ -105,6 +115,12 @@ public:
 class ODIMH5 : public Area
 {
 public:
+    constexpr static const char* name = "ODIMH5";
+    constexpr static const char* doc = R"(
+Collection of key-value pairs, interpreted in the context of ODIM area
+information.
+)";
+
     using Area::Area;
     ~ODIMH5();
 
@@ -121,6 +137,10 @@ public:
 class VM2 : public Area
 {
 public:
+    constexpr static const char* name = "VM2";
+    constexpr static const char* doc = R"(
+Area information as an integer VM2 station identifier.
+)";
     using Area::Area;
     ~VM2();
 

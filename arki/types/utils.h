@@ -35,6 +35,7 @@ struct complete_traits : public arki::types::traits<T>
     static inline Type* decode(core::BinaryDecoder& dec, bool reuse_buffer) { return T::decode(dec, reuse_buffer).release(); }
     static inline Type* decodeString(const std::string& val) { return T::decodeString(val).release(); }
     static inline Type* decode_structure(const structured::Keys& keys, const structured::Reader& reader) { return T::decode_structure(keys, reader).release(); }
+    static inline void write_documentation(stream::Text& out, unsigned heading_level) { return T::write_documentation(out, heading_level); }
 };
 
 /**
@@ -48,6 +49,7 @@ struct MetadataType
     typedef Type* (*item_decoder)(core::BinaryDecoder& dec, bool reuse_buffer);
     typedef Type* (*string_decoder)(const std::string& val);
     typedef Type* (*structure_decoder)(const structured::Keys& keys, const structured::Reader& reader);
+    typedef void (*documenter)(stream::Text& out, unsigned heading_level);
 
     types::Code type_code;
     int serialisationSizeLen;
@@ -55,6 +57,7 @@ struct MetadataType
     item_decoder decode_func;
     string_decoder string_decode_func;
     structure_decoder structure_decode_func;
+    documenter document_func;
 
     MetadataType(
         types::Code type_code,
@@ -62,12 +65,13 @@ struct MetadataType
         const std::string& tag,
         item_decoder decode_func,
         string_decoder string_decode_func,
-        structure_decoder structure_decode_func
+        structure_decoder structure_decode_func,
+        documenter document_func
     );
     ~MetadataType();
 
-	// Get information about the given metadata
-	static const MetadataType* get(types::Code);
+    // Get information about the given metadata
+    static const MetadataType* get(types::Code);
 
     template<typename T>
     static void register_type()
@@ -81,12 +85,15 @@ struct MetadataType
             traits<T>::type_tag,
             complete_traits<T>::decode,
             complete_traits<T>::decodeString,
-            complete_traits<T>::decode_structure
+            complete_traits<T>::decode_structure,
+            complete_traits<T>::write_documentation
         );
         register_type(type);
     }
 
     static void register_type(MetadataType* type);
+
+    static void document_types(stream::Text& out, unsigned heading_level=2);
 };
 
 // Parse the outer style of a TYPE(val1, val2...) string

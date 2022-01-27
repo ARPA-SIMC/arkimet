@@ -65,6 +65,8 @@ struct Proddef : public Encoded
     // Register this type tree with the type system
     static void init();
 
+    static void write_documentation(stream::Text& out, unsigned heading_level);
+
     static std::unique_ptr<Proddef> createGRIB(const ValueBag& values);
 };
 
@@ -76,6 +78,11 @@ inline std::ostream& operator<<(std::ostream& o, Style s) { return o << Proddef:
 class GRIB : public Proddef
 {
 public:
+    constexpr static const char* name = "GRIB";
+    constexpr static const char* doc = R"(
+Collection of key-value pairs, interpreted in the context of GRIB conventions.
+)";
+
     using Proddef::Proddef;
     virtual ~GRIB();
 

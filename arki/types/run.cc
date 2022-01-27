@@ -6,6 +6,7 @@
 #include "arki/structured/emitter.h"
 #include "arki/structured/reader.h"
 #include "arki/structured/keys.h"
+#include "arki/stream/text.h"
 #include <iomanip>
 #include <sstream>
 
@@ -156,6 +157,15 @@ std::unique_ptr<Run> Run::createMinute(unsigned int hour, unsigned int minute)
     enc.add_unsigned(static_cast<unsigned>(run::Style::MINUTE), 1);
     enc.add_varint(hour * 60 + minute);
     return std::unique_ptr<Run>(new run::Minute(buf));
+}
+
+void Run::write_documentation(stream::Text& out, unsigned heading_level)
+{
+    out.rst_header("Run", heading_level);
+    out.print(Run::doc);
+
+    out.rst_header(run::Minute::name, heading_level + 1);
+    out.print(run::Minute::doc);
 }
 
 namespace run {

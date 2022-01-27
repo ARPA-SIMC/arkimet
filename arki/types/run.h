@@ -25,14 +25,23 @@ struct traits<Run>
     typedef run::Style Style;
 };
 
-/**
- * The run of some data.
- *
- * It can contain information like centre, process, subcentre, subprocess and
- * other similar data.
- */
 class Run : public Encoded
 {
+    constexpr static const char* doc = R"(
+Time of day when the model was run that generated this data.
+
+This is generally filled when needed from the data reference time.
+
+.. note::
+   TODO: [Enrico] I have a vague memory that this was introduced to distinguish
+   metadata that would otherwise be the same, and only change according to the
+   model run time.
+
+   I would like to document it with an example of when this is needed, but I
+   cannot find any at the moment. If no example can be found, it may be time to
+   check if this metadata item is still at all needed.
+)";
+
 public:
     using Encoded::Encoded;
 
@@ -67,6 +76,8 @@ public:
     // Register this type tree with the type system
     static void init();
     static std::unique_ptr<Run> createMinute(unsigned int hour, unsigned int minute=0);
+
+    static void write_documentation(stream::Text& out, unsigned heading_level);
 };
 
 namespace run {
@@ -74,6 +85,10 @@ namespace run {
 class Minute : public Run
 {
 public:
+    constexpr static const char* name = "Minute";
+    constexpr static const char* doc = R"(
+Model run time of day, in minutes from midnight
+)";
     using Run::Run;
 
     std::ostream& writeToOstream(std::ostream& o) const override;
