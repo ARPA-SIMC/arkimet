@@ -5,6 +5,7 @@
 #include "arki/structured/emitter.h"
 #include "arki/structured/reader.h"
 #include "arki/structured/keys.h"
+#include "arki/stream/text.h"
 #include <sstream>
 #include <cstring>
 
@@ -126,6 +127,12 @@ std::unique_ptr<Reftime> Reftime::createPosition(const core::Time& position)
     buf[0] = (uint8_t)reftime::Style::POSITION;
     position.encode_binary(buf + 1);
     return std::unique_ptr<Reftime>(new reftime::Position(buf, 6, true));
+}
+
+void Reftime::write_documentation(stream::Text& out, unsigned heading_level)
+{
+    out.rst_header("Reftime", heading_level);
+    out.print(Reftime::doc);
 }
 
 

@@ -15,11 +15,15 @@ template<> struct traits<Quantity>
     static const size_t type_sersize_bytes;
 };
 
-/**
- * Quantity informations
- */
 class Quantity : public Encoded
 {
+    constexpr static const char* doc = R"(
+Representation of ODIM quantity as a list of one or more string values.
+
+.. note::
+   TODO: find meanings of ODIMh5 values
+)";
+
 public:
     using Encoded::Encoded;
 
@@ -44,6 +48,8 @@ public:
     static std::unique_ptr<Quantity> create(const std::string& values);
     static std::unique_ptr<Quantity> create(const std::set<std::string>& values);
     static std::unique_ptr<Quantity> decode_structure(const structured::Keys& keys, const structured::Reader& val);
+
+    static void write_documentation(stream::Text& out, unsigned heading_level);
 
     // Register this type tree with the type system
     static void init();

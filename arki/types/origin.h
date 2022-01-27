@@ -94,6 +94,8 @@ public:
                                                unsigned char processtype, unsigned char bgprocessid, unsigned char processid);
     static std::unique_ptr<Origin> createBUFR(unsigned char centre, unsigned char subcentre);
     static std::unique_ptr<Origin> createODIMH5(const std::string& wmo, const std::string& rad, const std::string& plc);
+
+    static void write_documentation(stream::Text& out, unsigned heading_level);
 };
 
 namespace origin {

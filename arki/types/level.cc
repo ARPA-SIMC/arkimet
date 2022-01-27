@@ -6,6 +6,7 @@
 #include "arki/structured/emitter.h"
 #include "arki/structured/reader.h"
 #include "arki/structured/keys.h"
+#include "arki/stream/text.h"
 #include "arki/libconfig.h"
 #include <sstream>
 #include <iomanip>
@@ -865,6 +866,56 @@ std::unique_ptr<Level> Level::createODIMH5(double min, double max)
 void Level::init()
 {
     MetadataType::register_type<Level>();
+}
+
+void Level::write_documentation(stream::Text& out, unsigned heading_level)
+{
+    out.rst_header("Level", heading_level);
+
+    out.rst_header("GRIB1", heading_level + 1);
+    out.print(R"(
+Level represented with as in GRIB version 1:
+* Level type
+* l1 (when applicable, depending on type)
+* l2 (for layer types)
+
+.. note::
+   TODO: add references to manual of codes
+)");
+
+    out.rst_header("GRIB2S", heading_level + 1);
+    out.print(R"(
+Level represented with as in GRIB version 2, surface levels:
+* Level type
+* Scale
+* Value
+
+.. note::
+   TODO: add references to manual of codes
+)");
+
+    out.rst_header("GRIB2D", heading_level + 1);
+    out.print(R"(
+Level represented with as in GRIB version 2, layer levels:
+* Type of first level
+* Scale of first level
+* Value of first level
+* Type of second level
+* Scale of second level
+* Value of second level
+
+.. note::
+   TODO: add references to manual of codes
+)");
+
+    out.rst_header("ODIMH5", heading_level + 1);
+    out.print(R"(
+Level represented with as in ODIM, either as a single floating point value, or
+as two floating point minimum, maximum values.
+
+.. note::
+   TODO: find meanings of ODIM values
+)");
 }
 
 }

@@ -95,6 +95,8 @@ public:
                                              uint8_t type2, uint8_t scale2, uint32_t val2);
     static std::unique_ptr<Level> createODIMH5(double value);
     static std::unique_ptr<Level> createODIMH5(double min, double max);
+
+    static void write_documentation(stream::Text& out, unsigned heading_level);
 };
 
 namespace level {

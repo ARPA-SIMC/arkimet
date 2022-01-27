@@ -6,6 +6,7 @@
 #include "arki/structured/emitter.h"
 #include "arki/structured/reader.h"
 #include "arki/structured/keys.h"
+#include "arki/stream/text.h"
 #include <sstream>
 #include <iomanip>
 #include <cstring>
@@ -764,6 +765,24 @@ std::unique_ptr<Timerange> Timerange::createBUFR(unsigned value, unsigned char u
     enc.add_varint(value);
     return std::unique_ptr<Timerange>(new timerange::BUFR(buf));
 }
+
+void Timerange::write_documentation(stream::Text& out, unsigned heading_level)
+{
+    out.rst_header("Timerange", heading_level);
+
+    out.rst_header(timerange::GRIB1::name, heading_level + 1);
+    out.print(timerange::GRIB1::doc);
+
+    out.rst_header(timerange::GRIB2::name, heading_level + 1);
+    out.print(timerange::GRIB2::doc);
+
+    out.rst_header(timerange::BUFR::name, heading_level + 1);
+    out.print(timerange::BUFR::doc);
+
+    out.rst_header(timerange::Timedef::name, heading_level + 1);
+    out.print(timerange::Timedef::doc);
+}
+
 
 namespace timerange {
 

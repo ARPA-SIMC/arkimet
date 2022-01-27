@@ -30,11 +30,14 @@ struct traits<Source>
     typedef source::Style Style;
 };
 
-/**
- * The place where the data is stored
- */
 class Source : public Type
 {
+    constexpr static const char* doc = R"(
+Reference to where the data is stored.
+
+This is what allows to fetch the actual data given its metadata.
+)";
+
 public:
     std::string format;
 
@@ -74,6 +77,8 @@ public:
     static std::unique_ptr<Source> createBlobUnlocked(const std::string& format, const std::string& basedir, const std::string& filename, uint64_t offset, uint64_t size);
     static std::unique_ptr<Source> createInline(const std::string& format, uint64_t size);
     static std::unique_ptr<Source> createURL(const std::string& format, const std::string& url);
+
+    static void write_documentation(stream::Text& out, unsigned heading_level);
 };
 
 namespace source {

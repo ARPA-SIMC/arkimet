@@ -5,6 +5,7 @@
 #include "arki/structured/emitter.h"
 #include "arki/structured/reader.h"
 #include "arki/structured/keys.h"
+#include "arki/stream/text.h"
 #include <sstream>
 
 #define CODE TYPE_NOTE
@@ -118,6 +119,13 @@ std::unique_ptr<Note> Note::create(const Time& time, const std::string& content)
 void Note::init()
 {
     MetadataType::register_type<Note>();
+}
+
+void Note::write_documentation(stream::Text& out, unsigned heading_level)
+{
+    out.rst_header("Note", heading_level);
+
+    out.print(Note::doc);
 }
 
 }

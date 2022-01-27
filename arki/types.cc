@@ -183,6 +183,8 @@ std::string tag(types::Code code)
 void Type::document(stream::Text& out)
 {
     out.rst_header("Metadata types");
+
+    MetadataType::document_types(out, 2);
 }
 
 }

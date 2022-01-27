@@ -35,6 +35,18 @@ template<> struct traits<reftime::Period> : public traits<Reftime> {};
  */
 class Reftime : public Encoded
 {
+    constexpr static const char* doc = R"(
+Date and time for the reference time of one data element.
+
+This is the metadata used for organizing data along the time axis.
+
+What is the reference time is defined by the scanner code.
+
+The maximum time resolution is one second.
+
+Times are assumed to be in UTC, and time zones are not represented.
+)";
+
 public:
     using Encoded::Encoded;
 
@@ -77,6 +89,8 @@ public:
 
     /// If begin == end create a Position reftime, else create a Period reftime
     static std::unique_ptr<Reftime> createPosition(const core::Time& position);
+
+    static void write_documentation(stream::Text& out, unsigned heading_level);
 };
 
 namespace reftime {

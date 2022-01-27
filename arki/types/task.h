@@ -43,6 +43,8 @@ public:
     static std::unique_ptr<Task> create(const std::string& value);
     static std::unique_ptr<Task> decode_structure(const structured::Keys& keys, const structured::Reader& val);
 
+    static void write_documentation(stream::Text& out, unsigned heading_level);
+
     // Register this type tree with the type system
     static void init();
 };
@@ -50,22 +52,3 @@ public:
 }
 }
 #endif
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

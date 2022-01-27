@@ -8,6 +8,7 @@
 #include "arki/structured/reader.h"
 #include "arki/structured/keys.h"
 #include "arki/bbox.h"
+#include "arki/stream/text.h"
 #include "arki/libconfig.h"
 #include <sstream>
 
@@ -216,6 +217,20 @@ std::unique_ptr<Area> Area::decode_structure(const structured::Keys& keys, const
     }
 }
 
+void Area::write_documentation(stream::Text& out, unsigned heading_level)
+{
+    out.rst_header("Area", heading_level);
+    out.print(Area::doc);
+
+    out.rst_header(area::GRIB::name, heading_level + 1);
+    out.print(area::GRIB::doc);
+
+    out.rst_header(area::ODIMH5::name, heading_level + 1);
+    out.print(area::ODIMH5::doc);
+
+    out.rst_header(area::VM2::name, heading_level + 1);
+    out.print(area::VM2::doc);
+}
 
 namespace area {
 

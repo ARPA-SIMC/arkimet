@@ -5,6 +5,7 @@
 #include "arki/structured/emitter.h"
 #include "arki/structured/reader.h"
 #include "arki/structured/keys.h"
+#include "arki/stream/text.h"
 #include <sstream>
 
 #define CODE TYPE_VALUE
@@ -92,6 +93,12 @@ unique_ptr<Value> Value::create(const std::string& buf)
     Value* val = new Value;
     val->buffer = buf;
     return unique_ptr<Value>(val);
+}
+
+void Value::write_documentation(stream::Text& out, unsigned heading_level)
+{
+    out.rst_header("Value", heading_level);
+    out.print(Value::doc);
 }
 
 void Value::init()

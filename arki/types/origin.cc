@@ -6,6 +6,7 @@
 #include "arki/structured/emitter.h"
 #include "arki/structured/reader.h"
 #include "arki/structured/keys.h"
+#include "arki/stream/text.h"
 #include <iomanip>
 #include <sstream>
 #include <cstring>
@@ -436,6 +437,56 @@ std::unique_ptr<Origin> Origin::createODIMH5(const std::string& wmo, const std::
 void Origin::init()
 {
     MetadataType::register_type<Origin>();
+}
+
+void Origin::write_documentation(stream::Text& out, unsigned heading_level)
+{
+    out.rst_header("Origin", heading_level);
+
+    out.rst_header("GRIB1", heading_level + 1);
+    out.print(R"(
+Origin represented with as in GRIB version 1:
+* Centre
+* Subcentre
+* Process
+
+.. note::
+   TODO: add references to manual of codes
+)");
+
+    out.rst_header("GRIB2", heading_level + 1);
+    out.print(R"(
+Origin represented with as in GRIB version 2:
+* Centre
+* Subcentre
+* Process type
+* Background process identifier
+* Process identifier
+
+.. note::
+   TODO: add references to manual of codes
+)");
+
+    out.rst_header("BUFR", heading_level + 1);
+    out.print(R"(
+Origin represented with as in BUFR headers:
+* Centre
+* Subcentre
+
+.. note::
+   TODO: add references to manual of codes
+)");
+
+    out.rst_header("ODIMH5", heading_level + 1);
+    out.print(R"(
+Origin represented with as in ODIM:
+* WMO
+* RAD
+* PLC
+
+.. note::
+   TODO: find meanings of ODIMh5 values
+)");
 }
 
 }

@@ -17,15 +17,15 @@ struct traits<Value>
     static const size_t type_sersize_bytes;
 };
 
-/**
- * The value of very short data encoded as part of the metadata
- *
- * This is currently used to encode the non-metadata part of VM2 data so that
- * it can be extracted from metadata or dataset indices and completed using the
- * rest of metadata values, avoiding disk lookips
- */
 struct Value : public Type
 {
+    constexpr static const char* doc = R"(
+The value of very short data encoded as part of the metadata
+
+This is currently used to encode the non-metadata part of VM2 data so that
+it can be extracted from metadata or dataset indices and completed using the
+rest of metadata values, avoiding disk lookips
+)";
     std::string buffer;
 
     types::Code type_code() const override { return traits<Value>::type_code; }
@@ -45,6 +45,8 @@ struct Value : public Type
 
     Value* clone() const override;
     static std::unique_ptr<Value> create(const std::string& buf);
+
+    static void write_documentation(stream::Text& out, unsigned heading_level);
 
     // Register this type tree with the type system
     static void init();

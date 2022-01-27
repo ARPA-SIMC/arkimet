@@ -6,6 +6,7 @@
 #include "arki/structured/emitter.h"
 #include "arki/structured/reader.h"
 #include "arki/structured/keys.h"
+#include "arki/stream/text.h"
 #include "arki/libconfig.h"
 #include <sstream>
 #include <iomanip>
@@ -407,6 +408,25 @@ std::unique_ptr<Product> Product::createVM2(unsigned variable_id)
     return std::unique_ptr<Product>(new product::VM2(buf, 5, true));
 }
 
+void Product::write_documentation(stream::Text& out, unsigned heading_level)
+{
+    out.rst_header("Product", heading_level);
+
+    out.rst_header(product::GRIB1::name, heading_level + 1);
+    out.print(product::GRIB1::doc);
+
+    out.rst_header(product::GRIB2::name, heading_level + 1);
+    out.print(product::GRIB2::doc);
+
+    out.rst_header(product::BUFR::name, heading_level + 1);
+    out.print(product::BUFR::doc);
+
+    out.rst_header(product::ODIMH5::name, heading_level + 1);
+    out.print(product::ODIMH5::doc);
+
+    out.rst_header(product::VM2::name, heading_level + 1);
+    out.print(product::VM2::doc);
+}
 
 void Product::init()
 {
