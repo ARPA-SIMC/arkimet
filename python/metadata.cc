@@ -4,6 +4,7 @@
 #include "common.h"
 #include "structured.h"
 #include "arki/stream.h"
+#include "arki/stream/text.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
 #include "arki/metadata/data.h"
@@ -623,6 +624,29 @@ struct read_json : public ClassMethKwargs<read_json>
     }
 };
 
+struct print_type_documentation : public ClassMethKwargs<print_type_documentation>
+{
+    constexpr static const char* name = "print_type_documentation";
+    constexpr static const char* signature = "file: Union[TextIO]";
+    constexpr static const char* summary = "Print documentation about all available metadata types to the given file";
+
+    static PyObject* run(PyTypeObject* cls, PyObject* args, PyObject* kw)
+    {
+        static const char* kwlist[] = { "file", nullptr };
+        PyObject* py_file = nullptr;
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "O", const_cast<char**>(kwlist), &py_file))
+            return nullptr;
+
+        try {
+            std::unique_ptr<arki::StreamOutput> out = textio_stream_output(py_file);
+
+            stream::Text textout(*out);
+            arki::types::Type::document(textout);
+
+            Py_RETURN_NONE;
+        } ARKI_CATCH_RETURN_PYO
+    }
+};
 
 struct MetadataDef : public Type<MetadataDef, arkipy_Metadata>
 {
@@ -650,7 +674,8 @@ For example::
     GetSetters<data, data_size> getsetters;
     Methods<
         has_source, write, make_absolute, make_inline, make_url, to_string,
-        to_python, get_notes, del_notes, read_bundle, write_bundle, read_yaml, read_json> methods;
+        to_python, get_notes, del_notes, read_bundle, write_bundle, read_yaml, read_json,
+        print_type_documentation> methods;
 
     static void _dealloc(Impl* self)
     {

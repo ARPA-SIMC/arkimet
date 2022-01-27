@@ -16,7 +16,7 @@ struct Text
 
     void print(const std::string& str)
     {
-        if (result.flags | SendResult::SEND_PIPE_EOF_DEST)
+        if (result.flags & SendResult::SEND_PIPE_EOF_DEST)
             return;
 
         result += out.send_line(str.data(), str.size());

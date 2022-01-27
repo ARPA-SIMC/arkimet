@@ -7,6 +7,7 @@
 #include "structured/keys.h"
 #include "structured/reader.h"
 #include "formatter.h"
+#include "stream/text.h"
 
 using namespace std;
 using namespace arki::utils;
@@ -177,6 +178,11 @@ std::unique_ptr<Type> decode_structure(const structured::Keys& keys, types::Code
 std::string tag(types::Code code)
 {
     return types::MetadataType::get(code)->tag;
+}
+
+void Type::document(stream::Text& out)
+{
+    out.rst_header("Metadata types");
 }
 
 }
