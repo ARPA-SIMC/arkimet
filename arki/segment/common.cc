@@ -152,7 +152,7 @@ State AppendCheckBackend::check_contiguous()
     if (unindexed_size > 0)
     {
         std::stringstream out;
-        out << "possibly deleted data found not tracked by indexed: " << unindexed_size << "b would be freed by a repack";
+        out << "possibly deleted data found not tracked by index: " << unindexed_size << "b would be freed by a repack";
         reporter(out.str());
     }
 
