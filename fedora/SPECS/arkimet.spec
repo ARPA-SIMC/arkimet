@@ -3,7 +3,7 @@
 
 Summary: Archive for weather information
 Name: arkimet
-Version: 1.39
+Version: 1.40
 Release: 1
 License: GPL
 Group: Applications/Meteo
@@ -237,6 +237,15 @@ if [ "$1" = "1" ]; then
 fi
 
 %changelog
+* Tue Feb  8 2022 Daniele Branchini <dbranchini@arpae.it> - 1.40-1
+- Added documentation of metadata types (#280)
+- Fixed arki-web-proxy (#281)
+- Added initial support for JPEG files (#277)
+- Added default timeout of 15m for ARKI_IO_TIMEOUT (#270)
+- Removed vestigial link to non-existing "Perform a query" form in arki-server (#144)
+- arki-server now gives HTTP error 405 "Method not allowed" when appropriate (#144)
+- Improved rounding in ODIM scanning (#283)
+
 * Tue Nov 23 2021 Daniele Branchini <dbranchini@arpae.it> - 1.39-1
 - In arki-check output, show the amount of data that would be freed by a repack
   (#187)

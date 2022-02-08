@@ -1,8 +1,12 @@
-# New in version 1.40 (unreleased)
+# New in version 1.40
 
+* Added documentation of metadata types (#280)
+* Fixed arki-web-proxy (#281)
 * Added initial support for JPEG files (#277)
+* Added default timeout of 15m for ARKI_IO_TIMEOUT (#270)
 * Removed vestigial link to non-existing "Perform a query" form in arki-server (#144)
 * arki-server now gives HTTP error 405 "Method not allowed" when appropriate (#144)
+* Improved rounding in ODIM scanning (#283)
 
 # New in version 1.39
 
