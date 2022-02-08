@@ -1,17 +1,17 @@
 
 <!DOCTYPE html>
 
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html>
   <head>
     <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>arkimet.scan.timedef &#8212; arkimet 1.16 documentation</title>
-    <link rel="stylesheet" href="../../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
-    <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
-    <script type="text/javascript" src="../../../_static/jquery.js"></script>
-    <script type="text/javascript" src="../../../_static/underscore.js"></script>
-    <script type="text/javascript" src="../../../_static/doctools.js"></script>
-    <script type="text/javascript" src="../../../_static/language_data.js"></script>
+    <link rel="stylesheet" href="../../../_static/alabaster.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/doctools.js"></script>
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" />
    
@@ -31,7 +31,7 @@
           <div class="body" role="main">
             
   <h1>Source code for arkimet.scan.timedef</h1><div class="highlight"><pre>
-<span></span><span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Any</span>
+<span></span><span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Any</span>
 
 <span class="n">UNIT_MINUTE</span> <span class="o">=</span> <span class="mi">0</span>
 <span class="n">UNIT_HOUR</span> <span class="o">=</span> <span class="mi">1</span>
@@ -262,14 +262,14 @@
 
     <span class="c1"># Try enlarging the smallest</span>
     <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
-        <span class="nb">cmp</span> <span class="o">=</span> <span class="n">compare_units</span><span class="p">(</span><span class="n">unit1</span><span class="p">,</span> <span class="n">unit2</span><span class="p">)</span>
-        <span class="k">if</span> <span class="nb">cmp</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">cmp</span> <span class="o">=</span> <span class="n">compare_units</span><span class="p">(</span><span class="n">unit1</span><span class="p">,</span> <span class="n">unit2</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">cmp</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
             <span class="n">tval1</span><span class="p">,</span> <span class="n">tunit1</span> <span class="o">=</span> <span class="n">enlarge_unit</span><span class="p">(</span><span class="n">val1</span><span class="p">,</span> <span class="n">unit1</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">tunit1</span> <span class="o">==</span> <span class="n">unit1</span><span class="p">:</span>
                 <span class="k">break</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">val1</span><span class="p">,</span> <span class="n">unit1</span> <span class="o">=</span> <span class="n">tval1</span><span class="p">,</span> <span class="n">tunit1</span>
-        <span class="k">elif</span> <span class="nb">cmp</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">elif</span> <span class="n">cmp</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
             <span class="n">tr</span><span class="p">[</span><span class="s2">&quot;step_unit&quot;</span><span class="p">],</span> <span class="n">tr</span><span class="p">[</span><span class="s2">&quot;stat_unit&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">unit1</span><span class="p">,</span> <span class="n">unit2</span>
             <span class="n">tr</span><span class="p">[</span><span class="s2">&quot;step_len&quot;</span><span class="p">],</span> <span class="n">tr</span><span class="p">[</span><span class="s2">&quot;stat_len&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">val1</span><span class="p">,</span> <span class="n">val2</span>
             <span class="k">return</span>
@@ -282,14 +282,14 @@
 
     <span class="c1"># Still not matching, try restricting the largest</span>
     <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
-        <span class="nb">cmp</span> <span class="o">=</span> <span class="n">compare_units</span><span class="p">(</span><span class="n">unit1</span><span class="p">,</span> <span class="n">unit2</span><span class="p">)</span>
-        <span class="k">if</span> <span class="nb">cmp</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">cmp</span> <span class="o">=</span> <span class="n">compare_units</span><span class="p">(</span><span class="n">unit1</span><span class="p">,</span> <span class="n">unit2</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">cmp</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
             <span class="n">tval2</span><span class="p">,</span> <span class="n">tunit2</span> <span class="o">=</span> <span class="n">restrict_unit</span><span class="p">(</span><span class="n">val2</span><span class="p">,</span> <span class="n">unit2</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">tunit2</span> <span class="o">==</span> <span class="n">unit2</span><span class="p">:</span>
                 <span class="k">break</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">val2</span><span class="p">,</span> <span class="n">unit2</span> <span class="o">=</span> <span class="n">tval2</span><span class="p">,</span> <span class="n">tunit2</span>
-        <span class="k">elif</span> <span class="nb">cmp</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">elif</span> <span class="n">cmp</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
             <span class="n">tr</span><span class="p">[</span><span class="s2">&quot;step_unit&quot;</span><span class="p">],</span> <span class="n">tr</span><span class="p">[</span><span class="s2">&quot;stat_unit&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">unit1</span><span class="p">,</span> <span class="n">unit2</span>
             <span class="n">tr</span><span class="p">[</span><span class="s2">&quot;step_len&quot;</span><span class="p">],</span> <span class="n">tr</span><span class="p">[</span><span class="s2">&quot;stat_len&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">val1</span><span class="p">,</span> <span class="n">val2</span>
             <span class="k">return</span>
@@ -340,6 +340,7 @@
 <h3>Navigation</h3>
 <p class="caption"><span class="caption-text">Contents:</span></p>
 <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../metadata.html">Metadata types</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../matcher.html">Match expressions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../datasets.html">Datasets</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../segments.html">Data segments</a></li>
@@ -371,7 +372,7 @@
     </form>
     </div>
 </div>
-<script type="text/javascript">$('#searchbox').show(0);</script>
+<script>$('#searchbox').show(0);</script>
 
 
 
@@ -388,7 +389,7 @@
       &copy;2019, Enrico Zini.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.2.2</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.4.3</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
     </div>

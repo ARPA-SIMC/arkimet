@@ -1,17 +1,17 @@
 
 <!DOCTYPE html>
 
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html>
   <head>
     <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Datasets &#8212; arkimet 1.16 documentation</title>
-    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-    <script type="text/javascript" src="_static/jquery.js"></script>
-    <script type="text/javascript" src="_static/underscore.js"></script>
-    <script type="text/javascript" src="_static/doctools.js"></script>
-    <script type="text/javascript" src="_static/language_data.js"></script>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="iseg dataset format" href="datasets/iseg.html" />
@@ -55,12 +55,7 @@ queried.</p>
 <li class="toctree-l2"><a class="reference internal" href="datasets/simple.html#check-and-repack-on-dir-segments">Check and repack on dir segments</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="datasets/ondisk2.html"><code class="docutils literal notranslate"><span class="pre">ondisk2</span></code> dataset format</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="datasets/ondisk2.html#example-configuration">Example configuration</a></li>
-<li class="toctree-l2"><a class="reference internal" href="datasets/ondisk2.html#dataset-layout">Dataset layout</a></li>
-<li class="toctree-l2"><a class="reference internal" href="datasets/ondisk2.html#general-check-and-repack-notes">General check and repack notes</a></li>
-<li class="toctree-l2"><a class="reference internal" href="datasets/ondisk2.html#check-and-repack-on-concat-segments">Check and repack on concat segments</a></li>
-<li class="toctree-l2"><a class="reference internal" href="datasets/ondisk2.html#check-and-repack-on-dir-segments">Check and repack on dir segments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="datasets/ondisk2.html"><code class="docutils literal notranslate"><span class="pre">ondisk2</span></code> dataset format</a><ul class="simple">
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="datasets/archive.html">dataset archives</a><ul>
@@ -118,7 +113,7 @@ saved in the index, to speed up extraction of data with tiny payloads like
 <code class="docutils literal notranslate"><span class="pre">vm2</span></code>.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">step</span></code>: segmentation step for the dataset (one of <code class="docutils literal notranslate"><span class="pre">daily</span></code>, <code class="docutils literal notranslate"><span class="pre">weekly</span></code>,
 <code class="docutils literal notranslate"><span class="pre">biweekly</span></code>, <code class="docutils literal notranslate"><span class="pre">monthly</span></code>, and <code class="docutils literal notranslate"><span class="pre">yearly</span></code>).</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">type</span></code>: dataset type (one of <code class="docutils literal notranslate"><span class="pre">iseg</span></code>, <code class="docutils literal notranslate"><span class="pre">ondisk2</span></code>, <code class="docutils literal notranslate"><span class="pre">simple</span></code>, <code class="docutils literal notranslate"><span class="pre">error</span></code>,
+<li><p><code class="docutils literal notranslate"><span class="pre">type</span></code>: dataset type (one of <code class="docutils literal notranslate"><span class="pre">iseg</span></code>, <code class="docutils literal notranslate"><span class="pre">simple</span></code>, <code class="docutils literal notranslate"><span class="pre">error</span></code>,
 <code class="docutils literal notranslate"><span class="pre">duplicates</span></code>, <code class="docutils literal notranslate"><span class="pre">remote</span></code>, <code class="docutils literal notranslate"><span class="pre">outbound</span></code>, <code class="docutils literal notranslate"><span class="pre">discard</span></code>, <code class="docutils literal notranslate"><span class="pre">file</span></code>).</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">unique</span></code>: comma-separated list of names of metadata that, taken together,
 make it unique in the dataset</p></li>
@@ -145,6 +140,7 @@ make it unique in the dataset</p></li>
 <h3>Navigation</h3>
 <p class="caption"><span class="caption-text">Contents:</span></p>
 <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="metadata.html">Metadata types</a></li>
 <li class="toctree-l1"><a class="reference internal" href="matcher.html">Match expressions</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Datasets</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="datasets/iseg.html"><code class="docutils literal notranslate"><span class="pre">iseg</span></code> dataset format</a></li>
@@ -186,7 +182,7 @@ make it unique in the dataset</p></li>
     </form>
     </div>
 </div>
-<script type="text/javascript">$('#searchbox').show(0);</script>
+<script>$('#searchbox').show(0);</script>
 
 
 
@@ -203,7 +199,7 @@ make it unique in the dataset</p></li>
       &copy;2019, Enrico Zini.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.2.2</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.4.3</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |

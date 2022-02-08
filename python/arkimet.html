@@ -1,17 +1,17 @@
 
 <!DOCTYPE html>
 
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html>
   <head>
     <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>arkimet package &#8212; arkimet 1.16 documentation</title>
-    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
-    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
-    <script type="text/javascript" src="../_static/jquery.js"></script>
-    <script type="text/javascript" src="../_static/underscore.js"></script>
-    <script type="text/javascript" src="../_static/doctools.js"></script>
-    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="arkimet.cfg package" href="arkimet.cfg.html" />
@@ -49,61 +49,61 @@
 <div class="section" id="module-arkimet">
 <span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-arkimet" title="Permalink to this headline">¶</a></h2>
 <p>Python modules to work with Arkimet archives.</p>
-<dl class="class">
+<dl class="py class">
 <dt id="arkimet.BBox">
 <em class="property">class </em><code class="sig-prename descclassname">arkimet.</code><code class="sig-name descname">BBox</code><a class="headerlink" href="#arkimet.BBox" title="Permalink to this definition">¶</a></dt>
 <dd><p>BBox for arkimet metadata.</p>
-<dl class="method">
+<dl class="py method">
 <dt id="arkimet.BBox.compute">
-<code class="sig-name descname">compute</code><span class="sig-paren">(</span><em class="sig-param">type: Union[Dict[str, Any], str]</em><span class="sig-paren">)</span> &#x2192; str<a class="headerlink" href="#arkimet.BBox.compute" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">compute</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">type</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>Dict<span class="p">[</span>str<span class="p">, </span>Any<span class="p">]</span><span class="p">, </span>str<span class="p">]</span></span></em><span class="sig-paren">)</span> &#x2192; str<a class="headerlink" href="#arkimet.BBox.compute" title="Permalink to this definition">¶</a></dt>
 <dd><p>compute the bounding box for the given area</p>
 </dd></dl>
 
 </dd></dl>
 
-<dl class="class">
+<dl class="py class">
 <dt id="arkimet.Formatter">
 <em class="property">class </em><code class="sig-prename descclassname">arkimet.</code><code class="sig-name descname">Formatter</code><a class="headerlink" href="#arkimet.Formatter" title="Permalink to this definition">¶</a></dt>
 <dd><p>Formatter for arkimet metadata.</p>
-<dl class="method">
+<dl class="py method">
 <dt id="arkimet.Formatter.format">
-<code class="sig-name descname">format</code><span class="sig-paren">(</span><em class="sig-param">type: Dict[str, Any]</em><span class="sig-paren">)</span> &#x2192; str<a class="headerlink" href="#arkimet.Formatter.format" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">format</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">type</span><span class="p">:</span> <span class="n">Dict<span class="p">[</span>str<span class="p">, </span>Any<span class="p">]</span></span></em><span class="sig-paren">)</span> &#x2192; str<a class="headerlink" href="#arkimet.Formatter.format" title="Permalink to this definition">¶</a></dt>
 <dd><p>format the given type to a human understandable string</p>
 </dd></dl>
 
 </dd></dl>
 
-<dl class="class">
+<dl class="py class">
 <dt id="arkimet.Matcher">
 <em class="property">class </em><code class="sig-prename descclassname">arkimet.</code><code class="sig-name descname">Matcher</code><a class="headerlink" href="#arkimet.Matcher" title="Permalink to this definition">¶</a></dt>
 <dd><p>Precompiled matcher for arkimet metadata</p>
-<dl class="attribute">
+<dl class="py attribute">
 <dt id="arkimet.Matcher.expanded">
 <code class="sig-name descname">expanded</code><a class="headerlink" href="#arkimet.Matcher.expanded" title="Permalink to this definition">¶</a></dt>
 <dd><p>return the query with all aliases expanded</p>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="arkimet.Matcher.match">
-<code class="sig-name descname">match</code><span class="sig-paren">(</span><em class="sig-param">md: arki.Metadata</em><span class="sig-paren">)</span> &#x2192; bool<a class="headerlink" href="#arkimet.Matcher.match" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">match</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">md</span><span class="p">:</span> <span class="n">arki.Metadata</span></em><span class="sig-paren">)</span> &#x2192; bool<a class="headerlink" href="#arkimet.Matcher.match" title="Permalink to this definition">¶</a></dt>
 <dd><p>return the result of trying to match the given metadata</p>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="arkimet.Matcher.merge">
-<code class="sig-name descname">merge</code><span class="sig-paren">(</span><em class="sig-param">matcher: arki.Matcher</em><span class="sig-paren">)</span> &#x2192; arki.Matcher<a class="headerlink" href="#arkimet.Matcher.merge" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">merge</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">matcher</span><span class="p">:</span> <span class="n">arki.Matcher</span></em><span class="sig-paren">)</span> &#x2192; arki.Matcher<a class="headerlink" href="#arkimet.Matcher.merge" title="Permalink to this definition">¶</a></dt>
 <dd><p>return a matcher that selects at least the data from this and the other matcher</p>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="arkimet.Matcher.update">
-<code class="sig-name descname">update</code><span class="sig-paren">(</span><em class="sig-param">matcher: arki.Matcher</em><span class="sig-paren">)</span> &#x2192; arki.Matcher<a class="headerlink" href="#arkimet.Matcher.update" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">update</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">matcher</span><span class="p">:</span> <span class="n">arki.Matcher</span></em><span class="sig-paren">)</span> &#x2192; arki.Matcher<a class="headerlink" href="#arkimet.Matcher.update" title="Permalink to this definition">¶</a></dt>
 <dd><p>return this matcher plus all the rules of the other matcher. When they both have a rule for the same metadata, only the rule of the second matcher is kept</p>
 </dd></dl>
 
 </dd></dl>
 
-<dl class="class">
+<dl class="py class">
 <dt id="arkimet.Metadata">
 <em class="property">class </em><code class="sig-prename descclassname">arkimet.</code><code class="sig-name descname">Metadata</code><a class="headerlink" href="#arkimet.Metadata" title="Permalink to this definition">¶</a></dt>
 <dd><p>Metadata for one data item.</p>
@@ -120,51 +120,51 @@ can be populated with item assigment.</p>
     <span class="n">md</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;json&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
-<dl class="attribute">
+<dl class="py attribute">
 <dt id="arkimet.Metadata.data">
 <code class="sig-name descname">data</code><a class="headerlink" href="#arkimet.Metadata.data" title="Permalink to this definition">¶</a></dt>
 <dd><p>get the raw data described by this metadata</p>
 </dd></dl>
 
-<dl class="attribute">
+<dl class="py attribute">
 <dt id="arkimet.Metadata.data_size">
 <code class="sig-name descname">data_size</code><a class="headerlink" href="#arkimet.Metadata.data_size" title="Permalink to this definition">¶</a></dt>
 <dd><p>return the size of the data, if known, else returns 0</p>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="arkimet.Metadata.del_notes">
 <code class="sig-name descname">del_notes</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#arkimet.Metadata.del_notes" title="Permalink to this definition">¶</a></dt>
 <dd><p>remove all notes from this Metadata</p>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="arkimet.Metadata.get_notes">
-<code class="sig-name descname">get_notes</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; List[Dict[str, Any]]<a class="headerlink" href="#arkimet.Metadata.get_notes" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">get_notes</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; List<span class="p">[</span>Dict<span class="p">[</span>str<span class="p">, </span>Any<span class="p">]</span><span class="p">]</span><a class="headerlink" href="#arkimet.Metadata.get_notes" title="Permalink to this definition">¶</a></dt>
 <dd><p>get the notes for this metadata</p>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="arkimet.Metadata.has_source">
 <code class="sig-name descname">has_source</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; bool<a class="headerlink" href="#arkimet.Metadata.has_source" title="Permalink to this definition">¶</a></dt>
 <dd><p>check if a source has been set</p>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="arkimet.Metadata.make_absolute">
 <code class="sig-name descname">make_absolute</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#arkimet.Metadata.make_absolute" title="Permalink to this definition">¶</a></dt>
 <dd><p>Make path in source blob absolute</p>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="arkimet.Metadata.make_inline">
 <code class="sig-name descname">make_inline</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#arkimet.Metadata.make_inline" title="Permalink to this definition">¶</a></dt>
 <dd><p>Read the data and inline them in the metadata</p>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="arkimet.Metadata.make_url">
-<code class="sig-name descname">make_url</code><span class="sig-paren">(</span><em class="sig-param">baseurl: str</em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#arkimet.Metadata.make_url" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">make_url</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">baseurl</span><span class="p">:</span> <span class="n">str</span></em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#arkimet.Metadata.make_url" title="Permalink to this definition">¶</a></dt>
 <dd><p>Set the data source as URL</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -173,7 +173,13 @@ can be populated with item assigment.</p>
 </dl>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
+<dt id="arkimet.Metadata.print_type_documentation">
+<code class="sig-name descname">print_type_documentation</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">file</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>TextIO<span class="p">]</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#arkimet.Metadata.print_type_documentation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Print documentation about all available metadata types to the given file</p>
+</dd></dl>
+
+<dl class="py method">
 <dt id="arkimet.Metadata.read_bundle">
 <code class="sig-name descname">read_bundle</code><span class="sig-paren">(</span><em class="sig-param">src: Union[bytes, ByteIO], dest: Callable[[metadata]=None, Optional[bool]], basedir: str=None, pathname: str=None</em><span class="sig-paren">)</span> &#x2192; Union[bool, List[arkimet.Metadata]<a class="headerlink" href="#arkimet.Metadata.read_bundle" title="Permalink to this definition">¶</a></dt>
 <dd><p>Read all metadata from a given file or memory buffer</p>
@@ -190,34 +196,34 @@ arkimet.Metadata is returned instead</p></li>
 </dl>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="arkimet.Metadata.read_json">
-<code class="sig-name descname">read_json</code><span class="sig-paren">(</span><em class="sig-param">src: Union[str, StringIO, bytes, ByteIO]</em><span class="sig-paren">)</span> &#x2192; arkimet.Metadata<a class="headerlink" href="#arkimet.Metadata.read_json" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">read_json</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">src</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>str<span class="p">, </span>StringIO<span class="p">, </span>bytes<span class="p">, </span>ByteIO<span class="p">]</span></span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="#arkimet.Metadata" title="arkimet.Metadata">arkimet.Metadata</a><a class="headerlink" href="#arkimet.Metadata.read_json" title="Permalink to this definition">¶</a></dt>
 <dd><p>Read a Metadata from a JSON file</p>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="arkimet.Metadata.read_yaml">
-<code class="sig-name descname">read_yaml</code><span class="sig-paren">(</span><em class="sig-param">src: Union[str, StringIO, bytes, ByteIO]</em><span class="sig-paren">)</span> &#x2192; Optional[arkimet.Metadata]<a class="headerlink" href="#arkimet.Metadata.read_yaml" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">read_yaml</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">src</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>str<span class="p">, </span>StringIO<span class="p">, </span>bytes<span class="p">, </span>ByteIO<span class="p">]</span></span></em><span class="sig-paren">)</span> &#x2192; Optional<span class="p">[</span><a class="reference internal" href="#arkimet.Metadata" title="arkimet.Metadata">arkimet.Metadata</a><span class="p">]</span><a class="headerlink" href="#arkimet.Metadata.read_yaml" title="Permalink to this definition">¶</a></dt>
 <dd><p>Read a Metadata from a YAML file</p>
 <p>Return None in case of end of file</p>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="arkimet.Metadata.to_python">
-<code class="sig-name descname">to_python</code><span class="sig-paren">(</span><em class="sig-param">type: str=None</em><span class="sig-paren">)</span> &#x2192; dict<a class="headerlink" href="#arkimet.Metadata.to_python" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">to_python</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">type</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; dict<a class="headerlink" href="#arkimet.Metadata.to_python" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return the metadata contents in a python dict</p>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="arkimet.Metadata.to_string">
-<code class="sig-name descname">to_string</code><span class="sig-paren">(</span><em class="sig-param">type: str=None</em><span class="sig-paren">)</span> &#x2192; Optional[str]<a class="headerlink" href="#arkimet.Metadata.to_string" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">to_string</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">type</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; Optional<span class="p">[</span>str<span class="p">]</span><a class="headerlink" href="#arkimet.Metadata.to_string" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return the metadata contents as a string</p>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="arkimet.Metadata.write">
-<code class="sig-name descname">write</code><span class="sig-paren">(</span><em class="sig-param">file: Union[int, BytesIO], format: str='binary', annotate: bool = False</em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#arkimet.Metadata.write" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">write</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">file</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>int<span class="p">, </span>BytesIO<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">format</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'binary'</span></em>, <em class="sig-param"><span class="n">annotate</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">skip_data</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#arkimet.Metadata.write" title="Permalink to this definition">¶</a></dt>
 <dd><p>Write the metadata to a file</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -227,20 +233,22 @@ integer file or socket handle</p></li>
 <li><p><strong>format</strong> – “binary”, “yaml”, or “json”. Default: “binary”.</p></li>
 <li><p><strong>annotate</strong> – if True, use a <a class="reference internal" href="#arkimet.Formatter" title="arkimet.Formatter"><code class="xref py py-class docutils literal notranslate"><span class="pre">arkimet.Formatter</span></code></a> to add metadata
 descriptions to the output</p></li>
+<li><p><strong>skip_data</strong> – if True, do not write data after the metadata even if the
+source type is INLINE</p></li>
 </ul>
 </dd>
 </dl>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="arkimet.Metadata.write_bundle">
-<code class="sig-name descname">write_bundle</code><span class="sig-paren">(</span><em class="sig-param">mds: Iterable[arkimet.Metadata], file: BinaryIO</em><span class="sig-paren">)</span><a class="headerlink" href="#arkimet.Metadata.write_bundle" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">write_bundle</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">mds</span><span class="p">:</span> <span class="n">Iterable<span class="p">[</span><a class="reference internal" href="#arkimet.Metadata" title="arkimet.Metadata">arkimet.Metadata</a><span class="p">]</span></span></em>, <em class="sig-param"><span class="n">file</span><span class="p">:</span> <span class="n">BinaryIO</span></em><span class="sig-paren">)</span><a class="headerlink" href="#arkimet.Metadata.write_bundle" title="Permalink to this definition">¶</a></dt>
 <dd><p>Write all metadata to a given file</p>
 </dd></dl>
 
 </dd></dl>
 
-<dl class="class">
+<dl class="py class">
 <dt id="arkimet.Summary">
 <em class="property">class </em><code class="sig-prename descclassname">arkimet.</code><code class="sig-name descname">Summary</code><a class="headerlink" href="#arkimet.Summary" title="Permalink to this definition">¶</a></dt>
 <dd><p>Arkimet summary</p>
@@ -249,58 +257,58 @@ descriptions to the output</p></li>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">TODO</span><span class="p">:</span> <span class="n">add</span> <span class="n">examples</span>
 </pre></div>
 </div>
-<dl class="method">
+<dl class="py method">
 <dt id="arkimet.Summary.add">
-<code class="sig-name descname">add</code><span class="sig-paren">(</span><em class="sig-param">val: Union[arki.Metadata, arki.Summary]</em><span class="sig-paren">)</span><a class="headerlink" href="#arkimet.Summary.add" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">add</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">val</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>arki.Metadata<span class="p">, </span>arki.Summary<span class="p">]</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#arkimet.Summary.add" title="Permalink to this definition">¶</a></dt>
 <dd><p>merge a metadata or summary into this summary</p>
 </dd></dl>
 
-<dl class="attribute">
+<dl class="py attribute">
 <dt id="arkimet.Summary.count">
 <code class="sig-name descname">count</code><a class="headerlink" href="#arkimet.Summary.count" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return the number of metadata described by this summary</p>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="arkimet.Summary.get_convex_hull">
-<code class="sig-name descname">get_convex_hull</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; Optional[str]<a class="headerlink" href="#arkimet.Summary.get_convex_hull" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">get_convex_hull</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; Optional<span class="p">[</span>str<span class="p">]</span><a class="headerlink" href="#arkimet.Summary.get_convex_hull" title="Permalink to this definition">¶</a></dt>
 <dd><p>compute the convex hull for this summary and return it as a WKT string</p>
 <p>None is returned if the convex hull could not be computed.</p>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="arkimet.Summary.read_binary">
-<code class="sig-name descname">read_binary</code><span class="sig-paren">(</span><em class="sig-param">src: Union[bytes, ByteIO]</em><span class="sig-paren">)</span> &#x2192; arkimet.Summary<a class="headerlink" href="#arkimet.Summary.read_binary" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">read_binary</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">src</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>bytes<span class="p">, </span>ByteIO<span class="p">]</span></span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="#arkimet.Summary" title="arkimet.Summary">arkimet.Summary</a><a class="headerlink" href="#arkimet.Summary.read_binary" title="Permalink to this definition">¶</a></dt>
 <dd><p>Read a Summary from a binary file</p>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="arkimet.Summary.read_json">
-<code class="sig-name descname">read_json</code><span class="sig-paren">(</span><em class="sig-param">src: Union[str, StringIO, bytes, ByteIO]</em><span class="sig-paren">)</span> &#x2192; arkimet.Summary<a class="headerlink" href="#arkimet.Summary.read_json" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">read_json</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">src</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>str<span class="p">, </span>StringIO<span class="p">, </span>bytes<span class="p">, </span>ByteIO<span class="p">]</span></span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="#arkimet.Summary" title="arkimet.Summary">arkimet.Summary</a><a class="headerlink" href="#arkimet.Summary.read_json" title="Permalink to this definition">¶</a></dt>
 <dd><p>Read a Summary from a JSON file</p>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="arkimet.Summary.read_yaml">
-<code class="sig-name descname">read_yaml</code><span class="sig-paren">(</span><em class="sig-param">src: Union[str, StringIO, bytes, ByteIO]</em><span class="sig-paren">)</span> &#x2192; arkimet.Summary<a class="headerlink" href="#arkimet.Summary.read_yaml" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">read_yaml</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">src</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>str<span class="p">, </span>StringIO<span class="p">, </span>bytes<span class="p">, </span>ByteIO<span class="p">]</span></span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="#arkimet.Summary" title="arkimet.Summary">arkimet.Summary</a><a class="headerlink" href="#arkimet.Summary.read_yaml" title="Permalink to this definition">¶</a></dt>
 <dd><p>Read a Summary from a YAML file</p>
 </dd></dl>
 
-<dl class="attribute">
+<dl class="py attribute">
 <dt id="arkimet.Summary.size">
 <code class="sig-name descname">size</code><a class="headerlink" href="#arkimet.Summary.size" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return the total size of all the metadata described by this summary</p>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="arkimet.Summary.to_python">
-<code class="sig-name descname">to_python</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; Dict[str, Any]<a class="headerlink" href="#arkimet.Summary.to_python" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">to_python</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; Dict<span class="p">[</span>str<span class="p">, </span>Any<span class="p">]</span><a class="headerlink" href="#arkimet.Summary.to_python" title="Permalink to this definition">¶</a></dt>
 <dd><p>return the summary contents in a python dict</p>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="arkimet.Summary.write">
-<code class="sig-name descname">write</code><span class="sig-paren">(</span><em class="sig-param">file: Union[int, BinaryIO], format: str = 'binary', annotate: bool = False</em><span class="sig-paren">)</span> &#x2192; Optional[arki.cfg.Section]<a class="headerlink" href="#arkimet.Summary.write" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">write</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">file</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>int<span class="p">, </span>BinaryIO<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">format</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'binary'</span></em>, <em class="sig-param"><span class="n">annotate</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em><span class="sig-paren">)</span> &#x2192; Optional<span class="p">[</span>arki.cfg.Section<span class="p">]</span><a class="headerlink" href="#arkimet.Summary.write" title="Permalink to this definition">¶</a></dt>
 <dd><p>write the summary to a file</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -316,9 +324,9 @@ descriptions to the output</p></li>
 </dl>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="arkimet.Summary.write_short">
-<code class="sig-name descname">write_short</code><span class="sig-paren">(</span><em class="sig-param">file: Union[int, BinaryIO], format: str='binary', annotate: bool = False</em><span class="sig-paren">)</span> &#x2192; Optional[arki.cfg.Section]<a class="headerlink" href="#arkimet.Summary.write_short" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">write_short</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">file</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>int<span class="p">, </span>BinaryIO<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">format</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'binary'</span></em>, <em class="sig-param"><span class="n">annotate</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em><span class="sig-paren">)</span> &#x2192; Optional<span class="p">[</span>arki.cfg.Section<span class="p">]</span><a class="headerlink" href="#arkimet.Summary.write_short" title="Permalink to this definition">¶</a></dt>
 <dd><p>write the short summary to a file</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -336,45 +344,45 @@ descriptions to the output</p></li>
 
 </dd></dl>
 
-<dl class="function">
+<dl class="py function">
 <dt id="arkimet.config">
-<code class="sig-prename descclassname">arkimet.</code><code class="sig-name descname">config</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; Dict[str, Dict[str, str]]<a class="headerlink" href="#arkimet.config" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">arkimet.</code><code class="sig-name descname">config</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; Dict<span class="p">[</span>str<span class="p">, </span>Dict<span class="p">[</span>str<span class="p">, </span>str<span class="p">]</span><span class="p">]</span><a class="headerlink" href="#arkimet.config" title="Permalink to this definition">¶</a></dt>
 <dd><p>return the arkimet runtime configuration</p>
 </dd></dl>
 
-<dl class="function">
+<dl class="py function">
 <dt id="arkimet.debug_tty">
-<code class="sig-prename descclassname">arkimet.</code><code class="sig-name descname">debug_tty</code><span class="sig-paren">(</span><em class="sig-param">text: str</em><span class="sig-paren">)</span><a class="headerlink" href="#arkimet.debug_tty" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">arkimet.</code><code class="sig-name descname">debug_tty</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">text</span><span class="p">:</span> <span class="n">str</span></em><span class="sig-paren">)</span><a class="headerlink" href="#arkimet.debug_tty" title="Permalink to this definition">¶</a></dt>
 <dd><p>write a debug message to /dev/tty</p>
 </dd></dl>
 
-<dl class="function">
+<dl class="py function">
 <dt id="arkimet.expand_query">
-<code class="sig-prename descclassname">arkimet.</code><code class="sig-name descname">expand_query</code><span class="sig-paren">(</span><em class="sig-param">query: str</em><span class="sig-paren">)</span> &#x2192; str<a class="headerlink" href="#arkimet.expand_query" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">arkimet.</code><code class="sig-name descname">expand_query</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">query</span><span class="p">:</span> <span class="n">str</span></em><span class="sig-paren">)</span> &#x2192; str<a class="headerlink" href="#arkimet.expand_query" title="Permalink to this definition">¶</a></dt>
 <dd><p>expand aliases in an Arkimet query, returning the same query without use of aliases</p>
 </dd></dl>
 
-<dl class="function">
+<dl class="py function">
 <dt id="arkimet.get_alias_database">
-<code class="sig-prename descclassname">arkimet.</code><code class="sig-name descname">get_alias_database</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; arkimet.cfg.Sections<a class="headerlink" href="#arkimet.get_alias_database" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">arkimet.</code><code class="sig-name descname">get_alias_database</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="arkimet.cfg.html#arkimet.cfg.Sections" title="arkimet.cfg.Sections">arkimet.cfg.Sections</a><a class="headerlink" href="#arkimet.get_alias_database" title="Permalink to this definition">¶</a></dt>
 <dd><p>return a the current matcher alias database</p>
 </dd></dl>
 
-<dl class="function">
+<dl class="py function">
 <dt id="arkimet.get_version">
 <code class="sig-prename descclassname">arkimet.</code><code class="sig-name descname">get_version</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; str<a class="headerlink" href="#arkimet.get_version" title="Permalink to this definition">¶</a></dt>
 <dd><p>get a string with the current Arkimet version</p>
 </dd></dl>
 
-<dl class="function">
+<dl class="py function">
 <dt id="arkimet.make_merged_dataset">
-<code class="sig-prename descclassname">arkimet.</code><code class="sig-name descname">make_merged_dataset</code><span class="sig-paren">(</span><em class="sig-param">cfg: Union[str, arkimet.cfg.Sections]</em><span class="sig-paren">)</span> &#x2192; arkimet.DatasetReader<a class="headerlink" href="#arkimet.make_merged_dataset" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">arkimet.</code><code class="sig-name descname">make_merged_dataset</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">cfg</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>str<span class="p">, </span><a class="reference internal" href="arkimet.cfg.html#arkimet.cfg.Sections" title="arkimet.cfg.Sections">arkimet.cfg.Sections</a><span class="p">]</span></span></em><span class="sig-paren">)</span> &#x2192; arkimet.DatasetReader<a class="headerlink" href="#arkimet.make_merged_dataset" title="Permalink to this definition">¶</a></dt>
 <dd><p>create a merged dataset from all the datasets found in the given configuration</p>
 </dd></dl>
 
-<dl class="function">
+<dl class="py function">
 <dt id="arkimet.make_qmacro_dataset">
-<code class="sig-prename descclassname">arkimet.</code><code class="sig-name descname">make_qmacro_dataset</code><span class="sig-paren">(</span><em class="sig-param">datasets: Union[str, arkimet.cfg.Sections], name: str, query: str</em><span class="sig-paren">)</span> &#x2192; arkimet.DatasetReader<a class="headerlink" href="#arkimet.make_qmacro_dataset" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">arkimet.</code><code class="sig-name descname">make_qmacro_dataset</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">datasets</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>str<span class="p">, </span><a class="reference internal" href="arkimet.cfg.html#arkimet.cfg.Sections" title="arkimet.cfg.Sections">arkimet.cfg.Sections</a><span class="p">]</span></span></em>, <em class="sig-param"><span class="n">name</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">query</span><span class="p">:</span> <span class="n">str</span></em><span class="sig-paren">)</span> &#x2192; arkimet.DatasetReader<a class="headerlink" href="#arkimet.make_qmacro_dataset" title="Permalink to this definition">¶</a></dt>
 <dd><p>create a QueryMacro dataset that aggregates the contents of multiple datasets</p>
 <dl class="simple">
 <dt>Arguments:</dt><dd><p>cfg: base configuration of the resulting dataset
@@ -384,9 +392,9 @@ name: name of the query macro to use</p>
 </dl>
 </dd></dl>
 
-<dl class="function">
+<dl class="py function">
 <dt id="arkimet.set_verbosity">
-<code class="sig-prename descclassname">arkimet.</code><code class="sig-name descname">set_verbosity</code><span class="sig-paren">(</span><em class="sig-param">verbose: bool=False</em>, <em class="sig-param">debug: bool=False</em><span class="sig-paren">)</span><a class="headerlink" href="#arkimet.set_verbosity" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">arkimet.</code><code class="sig-name descname">set_verbosity</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">verbose</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">debug</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#arkimet.set_verbosity" title="Permalink to this definition">¶</a></dt>
 <dd><p>set the arkimet warning verbosity</p>
 </dd></dl>
 
@@ -412,6 +420,7 @@ name: name of the query macro to use</p>
 <h3>Navigation</h3>
 <p class="caption"><span class="caption-text">Contents:</span></p>
 <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../metadata.html">Metadata types</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../matcher.html">Match expressions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../datasets.html">Datasets</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../segments.html">Data segments</a></li>
@@ -451,7 +460,7 @@ name: name of the query macro to use</p>
     </form>
     </div>
 </div>
-<script type="text/javascript">$('#searchbox').show(0);</script>
+<script>$('#searchbox').show(0);</script>
 
 
 
@@ -468,7 +477,7 @@ name: name of the query macro to use</p>
       &copy;2019, Enrico Zini.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.2.2</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.4.3</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |

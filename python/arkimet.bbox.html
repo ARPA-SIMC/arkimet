@@ -1,17 +1,17 @@
 
 <!DOCTYPE html>
 
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html>
   <head>
     <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>arkimet.bbox package &#8212; arkimet 1.16 documentation</title>
-    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
-    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
-    <script type="text/javascript" src="../_static/jquery.js"></script>
-    <script type="text/javascript" src="../_static/underscore.js"></script>
-    <script type="text/javascript" src="../_static/doctools.js"></script>
-    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="prev" title="arkimet.formatter package" href="arkimet.formatter.html" />
@@ -38,23 +38,23 @@
 </div>
 <div class="section" id="module-arkimet.bbox.bbox">
 <span id="arkimet-bbox-bbox-module"></span><h2>arkimet.bbox.bbox module<a class="headerlink" href="#module-arkimet.bbox.bbox" title="Permalink to this headline">¶</a></h2>
-<dl class="class">
+<dl class="py class">
 <dt id="arkimet.bbox.bbox.BBox">
 <em class="property">class </em><code class="sig-prename descclassname">arkimet.bbox.bbox.</code><code class="sig-name descname">BBox</code><a class="reference internal" href="../_modules/arkimet/bbox/bbox.html#BBox"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.bbox.bbox.BBox" title="Permalink to this definition">¶</a></dt>
 <dd><p>Infrastructure for computing bounding boxes from arkimet areas</p>
-<dl class="attribute">
+<dl class="py attribute">
 <dt id="arkimet.bbox.bbox.BBox.by_style">
 <code class="sig-name descname">by_style</code><em class="property"> = {'GRIB': [&lt;function bbox_grib&gt;], 'ODIMH5': [&lt;function bbox_odimh5&gt;], 'VM2': [&lt;function bbox_vm2&gt;]}</em><a class="headerlink" href="#arkimet.bbox.bbox.BBox.by_style" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="arkimet.bbox.bbox.BBox.compute">
-<code class="sig-name descname">compute</code><span class="sig-paren">(</span><em class="sig-param">t: Dict[str, Any]</em><span class="sig-paren">)</span> &#x2192; List[Tuple[float, float]]<a class="reference internal" href="../_modules/arkimet/bbox/bbox.html#BBox.compute"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.bbox.bbox.BBox.compute" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">compute</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">t</span><span class="p">:</span> <span class="n">Dict<span class="p">[</span>str<span class="p">, </span>Any<span class="p">]</span></span></em><span class="sig-paren">)</span> &#x2192; List<span class="p">[</span>Tuple<span class="p">[</span>float<span class="p">, </span>float<span class="p">]</span><span class="p">]</span><a class="reference internal" href="../_modules/arkimet/bbox/bbox.html#BBox.compute"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.bbox.bbox.BBox.compute" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="arkimet.bbox.bbox.BBox.register">
-<em class="property">classmethod </em><code class="sig-name descname">register</code><span class="sig-paren">(</span><em class="sig-param">style: str, bbox: Callable[[Dict[str, Any]], Optional[List[Tuple[float, float]]]]</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/arkimet/bbox/bbox.html#BBox.register"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.bbox.bbox.BBox.register" title="Permalink to this definition">¶</a></dt>
+<em class="property">classmethod </em><code class="sig-name descname">register</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">style</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">bbox</span><span class="p">:</span> <span class="n">Callable<span class="p">[</span><span class="p">[</span>Dict<span class="p">[</span>str<span class="p">, </span>Any<span class="p">]</span><span class="p">]</span><span class="p">, </span>Optional<span class="p">[</span>List<span class="p">[</span>Tuple<span class="p">[</span>float<span class="p">, </span>float<span class="p">]</span><span class="p">]</span><span class="p">]</span><span class="p">]</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/arkimet/bbox/bbox.html#BBox.register"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.bbox.bbox.BBox.register" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
@@ -62,70 +62,70 @@
 </div>
 <div class="section" id="module-arkimet.bbox.common">
 <span id="arkimet-bbox-common-module"></span><h2>arkimet.bbox.common module<a class="headerlink" href="#module-arkimet.bbox.common" title="Permalink to this headline">¶</a></h2>
-<dl class="function">
+<dl class="py function">
 <dt id="arkimet.bbox.common.norm_lon">
-<code class="sig-prename descclassname">arkimet.bbox.common.</code><code class="sig-name descname">norm_lon</code><span class="sig-paren">(</span><em class="sig-param">lon</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/arkimet/bbox/common.html#norm_lon"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.bbox.common.norm_lon" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">arkimet.bbox.common.</code><code class="sig-name descname">norm_lon</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">lon</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/arkimet/bbox/common.html#norm_lon"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.bbox.common.norm_lon" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
-<dl class="function">
+<dl class="py function">
 <dt id="arkimet.bbox.common.utm2ll">
-<code class="sig-prename descclassname">arkimet.bbox.common.</code><code class="sig-name descname">utm2ll</code><span class="sig-paren">(</span><em class="sig-param">x</em>, <em class="sig-param">y</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/arkimet/bbox/common.html#utm2ll"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.bbox.common.utm2ll" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">arkimet.bbox.common.</code><code class="sig-name descname">utm2ll</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span></em>, <em class="sig-param"><span class="n">y</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/arkimet/bbox/common.html#utm2ll"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.bbox.common.utm2ll" title="Permalink to this definition">¶</a></dt>
 <dd><p>Convert UTM to Lat-Lon</p>
 </dd></dl>
 
-<dl class="function">
+<dl class="py function">
 <dt id="arkimet.bbox.common.utm2ll2">
-<code class="sig-prename descclassname">arkimet.bbox.common.</code><code class="sig-name descname">utm2ll2</code><span class="sig-paren">(</span><em class="sig-param">x</em>, <em class="sig-param">y</em>, <em class="sig-param">falseEasting</em>, <em class="sig-param">falseNorthing</em>, <em class="sig-param">zone</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/arkimet/bbox/common.html#utm2ll2"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.bbox.common.utm2ll2" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">arkimet.bbox.common.</code><code class="sig-name descname">utm2ll2</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span></em>, <em class="sig-param"><span class="n">y</span></em>, <em class="sig-param"><span class="n">falseEasting</span></em>, <em class="sig-param"><span class="n">falseNorthing</span></em>, <em class="sig-param"><span class="n">zone</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/arkimet/bbox/common.html#utm2ll2"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.bbox.common.utm2ll2" title="Permalink to this definition">¶</a></dt>
 <dd><p>Convert UTM to Lat-Lon (more complete version used for GRIB2)</p>
 </dd></dl>
 
 </div>
 <div class="section" id="module-arkimet.bbox.grib">
 <span id="arkimet-bbox-grib-module"></span><h2>arkimet.bbox.grib module<a class="headerlink" href="#module-arkimet.bbox.grib" title="Permalink to this headline">¶</a></h2>
-<dl class="function">
+<dl class="py function">
 <dt id="arkimet.bbox.grib.bbox_grib">
-<code class="sig-prename descclassname">arkimet.bbox.grib.</code><code class="sig-name descname">bbox_grib</code><span class="sig-paren">(</span><em class="sig-param">area</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/arkimet/bbox/grib.html#bbox_grib"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.bbox.grib.bbox_grib" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">arkimet.bbox.grib.</code><code class="sig-name descname">bbox_grib</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">area</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/arkimet/bbox/grib.html#bbox_grib"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.bbox.grib.bbox_grib" title="Permalink to this definition">¶</a></dt>
 <dd><p>Compute bounding boxes for GRIB areas</p>
 </dd></dl>
 
 </div>
 <div class="section" id="module-arkimet.bbox.odimh5">
 <span id="arkimet-bbox-odimh5-module"></span><h2>arkimet.bbox.odimh5 module<a class="headerlink" href="#module-arkimet.bbox.odimh5" title="Permalink to this headline">¶</a></h2>
-<dl class="function">
+<dl class="py function">
 <dt id="arkimet.bbox.odimh5.bbox_odimh5">
-<code class="sig-prename descclassname">arkimet.bbox.odimh5.</code><code class="sig-name descname">bbox_odimh5</code><span class="sig-paren">(</span><em class="sig-param">area</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/arkimet/bbox/odimh5.html#bbox_odimh5"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.bbox.odimh5.bbox_odimh5" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">arkimet.bbox.odimh5.</code><code class="sig-name descname">bbox_odimh5</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">area</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/arkimet/bbox/odimh5.html#bbox_odimh5"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.bbox.odimh5.bbox_odimh5" title="Permalink to this definition">¶</a></dt>
 <dd><p>Compute bounding boxes for ODIM areas</p>
 </dd></dl>
 
 </div>
 <div class="section" id="module-arkimet.bbox.vm2">
 <span id="arkimet-bbox-vm2-module"></span><h2>arkimet.bbox.vm2 module<a class="headerlink" href="#module-arkimet.bbox.vm2" title="Permalink to this headline">¶</a></h2>
-<dl class="function">
+<dl class="py function">
 <dt id="arkimet.bbox.vm2.bbox_vm2">
-<code class="sig-prename descclassname">arkimet.bbox.vm2.</code><code class="sig-name descname">bbox_vm2</code><span class="sig-paren">(</span><em class="sig-param">area</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/arkimet/bbox/vm2.html#bbox_vm2"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.bbox.vm2.bbox_vm2" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">arkimet.bbox.vm2.</code><code class="sig-name descname">bbox_vm2</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">area</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/arkimet/bbox/vm2.html#bbox_vm2"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.bbox.vm2.bbox_vm2" title="Permalink to this definition">¶</a></dt>
 <dd><p>Compute bounding boxes for VM2 areas</p>
 </dd></dl>
 
 </div>
 <div class="section" id="module-arkimet.bbox">
 <span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-arkimet.bbox" title="Permalink to this headline">¶</a></h2>
-<dl class="class">
+<dl class="py class">
 <dt id="arkimet.bbox.BBox">
 <em class="property">class </em><code class="sig-prename descclassname">arkimet.bbox.</code><code class="sig-name descname">BBox</code><a class="reference internal" href="../_modules/arkimet/bbox/bbox.html#BBox"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.bbox.BBox" title="Permalink to this definition">¶</a></dt>
 <dd><p>Infrastructure for computing bounding boxes from arkimet areas</p>
-<dl class="attribute">
+<dl class="py attribute">
 <dt id="arkimet.bbox.BBox.by_style">
 <code class="sig-name descname">by_style</code><em class="property"> = {'GRIB': [&lt;function bbox_grib&gt;], 'ODIMH5': [&lt;function bbox_odimh5&gt;], 'VM2': [&lt;function bbox_vm2&gt;]}</em><a class="headerlink" href="#arkimet.bbox.BBox.by_style" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="arkimet.bbox.BBox.compute">
-<code class="sig-name descname">compute</code><span class="sig-paren">(</span><em class="sig-param">t: Dict[str, Any]</em><span class="sig-paren">)</span> &#x2192; List[Tuple[float, float]]<a class="reference internal" href="../_modules/arkimet/bbox/bbox.html#BBox.compute"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.bbox.BBox.compute" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">compute</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">t</span><span class="p">:</span> <span class="n">Dict<span class="p">[</span>str<span class="p">, </span>Any<span class="p">]</span></span></em><span class="sig-paren">)</span> &#x2192; List<span class="p">[</span>Tuple<span class="p">[</span>float<span class="p">, </span>float<span class="p">]</span><span class="p">]</span><a class="reference internal" href="../_modules/arkimet/bbox/bbox.html#BBox.compute"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.bbox.BBox.compute" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="arkimet.bbox.BBox.register">
-<em class="property">classmethod </em><code class="sig-name descname">register</code><span class="sig-paren">(</span><em class="sig-param">style: str, bbox: Callable[[Dict[str, Any]], Optional[List[Tuple[float, float]]]]</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/arkimet/bbox/bbox.html#BBox.register"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.bbox.BBox.register" title="Permalink to this definition">¶</a></dt>
+<em class="property">classmethod </em><code class="sig-name descname">register</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">style</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">bbox</span><span class="p">:</span> <span class="n">Callable<span class="p">[</span><span class="p">[</span>Dict<span class="p">[</span>str<span class="p">, </span>Any<span class="p">]</span><span class="p">]</span><span class="p">, </span>Optional<span class="p">[</span>List<span class="p">[</span>Tuple<span class="p">[</span>float<span class="p">, </span>float<span class="p">]</span><span class="p">]</span><span class="p">]</span><span class="p">]</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/arkimet/bbox/bbox.html#BBox.register"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.bbox.BBox.register" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
@@ -152,6 +152,7 @@
 <h3>Navigation</h3>
 <p class="caption"><span class="caption-text">Contents:</span></p>
 <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../metadata.html">Metadata types</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../matcher.html">Match expressions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../datasets.html">Datasets</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../segments.html">Data segments</a></li>
@@ -192,7 +193,7 @@
     </form>
     </div>
 </div>
-<script type="text/javascript">$('#searchbox').show(0);</script>
+<script>$('#searchbox').show(0);</script>
 
 
 
@@ -209,7 +210,7 @@
       &copy;2019, Enrico Zini.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.2.2</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.4.3</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |

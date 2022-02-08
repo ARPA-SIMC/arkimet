@@ -1,17 +1,17 @@
 
 <!DOCTYPE html>
 
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html>
   <head>
     <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>arkimet.cfg package &#8212; arkimet 1.16 documentation</title>
-    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
-    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
-    <script type="text/javascript" src="../_static/jquery.js"></script>
-    <script type="text/javascript" src="../_static/underscore.js"></script>
-    <script type="text/javascript" src="../_static/doctools.js"></script>
-    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="arkimet.dataset package" href="arkimet.dataset.html" />
@@ -36,97 +36,97 @@
 <h1>arkimet.cfg package<a class="headerlink" href="#arkimet-cfg-package" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="module-arkimet.cfg">
 <span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-arkimet.cfg" title="Permalink to this headline">¶</a></h2>
-<dl class="class">
+<dl class="py class">
 <dt id="arkimet.cfg.Section">
 <em class="property">class </em><code class="sig-prename descclassname">arkimet.cfg.</code><code class="sig-name descname">Section</code><a class="headerlink" href="#arkimet.cfg.Section" title="Permalink to this definition">¶</a></dt>
 <dd><p>Arkimet configuration, as a section of key/value options</p>
-<dl class="method">
+<dl class="py method">
 <dt id="arkimet.cfg.Section.copy">
-<code class="sig-name descname">copy</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; arkimet.cfg.Section<a class="headerlink" href="#arkimet.cfg.Section.copy" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">copy</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="#arkimet.cfg.Section" title="arkimet.cfg.Section">arkimet.cfg.Section</a><a class="headerlink" href="#arkimet.cfg.Section.copy" title="Permalink to this definition">¶</a></dt>
 <dd><p>return a deep copy of this Section object</p>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="arkimet.cfg.Section.get">
-<code class="sig-name descname">get</code><span class="sig-paren">(</span><em class="sig-param">name: str</em>, <em class="sig-param">default: Optional[Any]=None</em><span class="sig-paren">)</span> &#x2192; Union[str, Any]<a class="headerlink" href="#arkimet.cfg.Section.get" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">get</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">default</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Any<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; Union<span class="p">[</span>str<span class="p">, </span>Any<span class="p">]</span><a class="headerlink" href="#arkimet.cfg.Section.get" title="Permalink to this definition">¶</a></dt>
 <dd><p>return the value for the given key, or the given default value if it does not exist</p>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="arkimet.cfg.Section.items">
-<code class="sig-name descname">items</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; Iterable[Tuple[str, str]]<a class="headerlink" href="#arkimet.cfg.Section.items" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">items</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; Iterable<span class="p">[</span>Tuple<span class="p">[</span>str<span class="p">, </span>str<span class="p">]</span><span class="p">]</span><a class="headerlink" href="#arkimet.cfg.Section.items" title="Permalink to this definition">¶</a></dt>
 <dd><p>Iterate over key/value pairs</p>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="arkimet.cfg.Section.keys">
-<code class="sig-name descname">keys</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; Iterable[str]<a class="headerlink" href="#arkimet.cfg.Section.keys" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">keys</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; Iterable<span class="p">[</span>str<span class="p">]</span><a class="headerlink" href="#arkimet.cfg.Section.keys" title="Permalink to this definition">¶</a></dt>
 <dd><p>Iterate over key names</p>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="arkimet.cfg.Section.parse">
 <code class="sig-name descname">parse</code><span class="sig-paren">(</span><em class="sig-param">Union[Str, TextIO]</em><span class="sig-paren">)</span> &#x2192; arki.cfg.Section<a class="headerlink" href="#arkimet.cfg.Section.parse" title="Permalink to this definition">¶</a></dt>
 <dd><p>parse the named file or open file, and return the resulting Section object</p>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="arkimet.cfg.Section.write">
-<code class="sig-name descname">write</code><span class="sig-paren">(</span><em class="sig-param">TextIO</em><span class="sig-paren">)</span><a class="headerlink" href="#arkimet.cfg.Section.write" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">write</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">TextIO</span></em><span class="sig-paren">)</span><a class="headerlink" href="#arkimet.cfg.Section.write" title="Permalink to this definition">¶</a></dt>
 <dd><p>write the configuration to any object with a write method</p>
 </dd></dl>
 
 </dd></dl>
 
-<dl class="class">
+<dl class="py class">
 <dt id="arkimet.cfg.Sections">
 <em class="property">class </em><code class="sig-prename descclassname">arkimet.cfg.</code><code class="sig-name descname">Sections</code><a class="headerlink" href="#arkimet.cfg.Sections" title="Permalink to this definition">¶</a></dt>
 <dd><p>Arkimet configuration, as multiple sections of key/value options</p>
-<dl class="method">
+<dl class="py method">
 <dt id="arkimet.cfg.Sections.copy">
-<code class="sig-name descname">copy</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; arkimet.cfg.Sections<a class="headerlink" href="#arkimet.cfg.Sections.copy" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">copy</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="#arkimet.cfg.Sections" title="arkimet.cfg.Sections">arkimet.cfg.Sections</a><a class="headerlink" href="#arkimet.cfg.Sections.copy" title="Permalink to this definition">¶</a></dt>
 <dd><p>return a deep copy of this Sections object</p>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="arkimet.cfg.Sections.get">
-<code class="sig-name descname">get</code><span class="sig-paren">(</span><em class="sig-param">name: str</em>, <em class="sig-param">default: Optional[Any]=None</em><span class="sig-paren">)</span> &#x2192; Union[arki.cfg.Section, Any]<a class="headerlink" href="#arkimet.cfg.Sections.get" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">get</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">default</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Any<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; Union<span class="p">[</span>arki.cfg.Section<span class="p">, </span>Any<span class="p">]</span><a class="headerlink" href="#arkimet.cfg.Sections.get" title="Permalink to this definition">¶</a></dt>
 <dd><p>return the named section, or the given default value if it does not exist</p>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="arkimet.cfg.Sections.items">
-<code class="sig-name descname">items</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; Iterable[Tuple[str, arki.cfg.Section]]<a class="headerlink" href="#arkimet.cfg.Sections.items" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">items</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; Iterable<span class="p">[</span>Tuple<span class="p">[</span>str<span class="p">, </span>arki.cfg.Section<span class="p">]</span><span class="p">]</span><a class="headerlink" href="#arkimet.cfg.Sections.items" title="Permalink to this definition">¶</a></dt>
 <dd><p>Iterate over section names and sections</p>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="arkimet.cfg.Sections.keys">
-<code class="sig-name descname">keys</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; Iterable[str]<a class="headerlink" href="#arkimet.cfg.Sections.keys" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">keys</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; Iterable<span class="p">[</span>str<span class="p">]</span><a class="headerlink" href="#arkimet.cfg.Sections.keys" title="Permalink to this definition">¶</a></dt>
 <dd><p>Iterate over section names</p>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="arkimet.cfg.Sections.obtain">
-<code class="sig-name descname">obtain</code><span class="sig-paren">(</span><em class="sig-param">Str</em><span class="sig-paren">)</span> &#x2192; arki.cfg.Section<a class="headerlink" href="#arkimet.cfg.Sections.obtain" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">obtain</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">Str</span></em><span class="sig-paren">)</span> &#x2192; arki.cfg.Section<a class="headerlink" href="#arkimet.cfg.Sections.obtain" title="Permalink to this definition">¶</a></dt>
 <dd><p>return the named section, creating it if it does not exist</p>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="arkimet.cfg.Sections.parse">
 <code class="sig-name descname">parse</code><span class="sig-paren">(</span><em class="sig-param">Union[Str, TextIO]</em><span class="sig-paren">)</span> &#x2192; arki.cfg.Sections<a class="headerlink" href="#arkimet.cfg.Sections.parse" title="Permalink to this definition">¶</a></dt>
 <dd><p>parse the named file or open file, and return the resulting Sections object</p>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="arkimet.cfg.Sections.section">
-<code class="sig-name descname">section</code><span class="sig-paren">(</span><em class="sig-param">Str</em><span class="sig-paren">)</span> &#x2192; Optional[arki.cfg.Section]<a class="headerlink" href="#arkimet.cfg.Sections.section" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">section</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">Str</span></em><span class="sig-paren">)</span> &#x2192; Optional<span class="p">[</span>arki.cfg.Section<span class="p">]</span><a class="headerlink" href="#arkimet.cfg.Sections.section" title="Permalink to this definition">¶</a></dt>
 <dd><p>return the named section, if it exists, or None if it does not</p>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="arkimet.cfg.Sections.write">
-<code class="sig-name descname">write</code><span class="sig-paren">(</span><em class="sig-param">TextIO</em><span class="sig-paren">)</span><a class="headerlink" href="#arkimet.cfg.Sections.write" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">write</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">TextIO</span></em><span class="sig-paren">)</span><a class="headerlink" href="#arkimet.cfg.Sections.write" title="Permalink to this definition">¶</a></dt>
 <dd><p>write the configuration to any object with a write method</p>
 </dd></dl>
 
@@ -154,6 +154,7 @@
 <h3>Navigation</h3>
 <p class="caption"><span class="caption-text">Contents:</span></p>
 <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../metadata.html">Metadata types</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../matcher.html">Match expressions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../datasets.html">Datasets</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../segments.html">Data segments</a></li>
@@ -195,7 +196,7 @@
     </form>
     </div>
 </div>
-<script type="text/javascript">$('#searchbox').show(0);</script>
+<script>$('#searchbox').show(0);</script>
 
 
 
@@ -212,7 +213,7 @@
       &copy;2019, Enrico Zini.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.2.2</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.4.3</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |

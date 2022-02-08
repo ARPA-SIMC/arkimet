@@ -1,17 +1,17 @@
 
 <!DOCTYPE html>
 
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html>
   <head>
     <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>arkimet.dataset package &#8212; arkimet 1.16 documentation</title>
-    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
-    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
-    <script type="text/javascript" src="../_static/jquery.js"></script>
-    <script type="text/javascript" src="../_static/underscore.js"></script>
-    <script type="text/javascript" src="../_static/doctools.js"></script>
-    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="arkimet.scan package" href="arkimet.scan.html" />
@@ -39,29 +39,127 @@
 </div>
 <div class="section" id="module-arkimet.dataset.http">
 <span id="arkimet-dataset-http-module"></span><h2>arkimet.dataset.http module<a class="headerlink" href="#module-arkimet.dataset.http" title="Permalink to this headline">¶</a></h2>
-<dl class="function">
-<dt id="arkimet.dataset.http.load_cfg_sections">
-<code class="sig-prename descclassname">arkimet.dataset.http.</code><code class="sig-name descname">load_cfg_sections</code><span class="sig-paren">(</span><em class="sig-param">url: str</em><span class="sig-paren">)</span> &#x2192; arki.cfg.Sections<a class="headerlink" href="#arkimet.dataset.http.load_cfg_sections" title="Permalink to this definition">¶</a></dt>
-<dd><p>Read the configuration of the datasets at the given URL</p>
+<dl class="py function">
+<dt id="arkimet.dataset.http.expand_remote_query">
+<code class="sig-prename descclassname">arkimet.dataset.http.</code><code class="sig-name descname">expand_remote_query</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">remotes</span><span class="p">:</span> <span class="n"><a class="reference internal" href="arkimet.cfg.html#arkimet.cfg.Sections" title="arkimet.cfg.Sections">arkimet.cfg.Sections</a></span></em>, <em class="sig-param"><span class="n">query</span><span class="p">:</span> <span class="n">str</span></em><span class="sig-paren">)</span> &#x2192; str<a class="headerlink" href="#arkimet.dataset.http.expand_remote_query" title="Permalink to this definition">¶</a></dt>
+<dd><p>Expand aliases on the query for all remote datasets given.</p>
+<p>An exception is raised if some remotes have conflicting aliases definition.</p>
 </dd></dl>
 
-<dl class="function">
+<dl class="py function">
 <dt id="arkimet.dataset.http.get_alias_database">
-<code class="sig-prename descclassname">arkimet.dataset.http.</code><code class="sig-name descname">get_alias_database</code><span class="sig-paren">(</span><em class="sig-param">url: str</em><span class="sig-paren">)</span> &#x2192; arki.cfg.Sections<a class="headerlink" href="#arkimet.dataset.http.get_alias_database" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">arkimet.dataset.http.</code><code class="sig-name descname">get_alias_database</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">url</span><span class="p">:</span> <span class="n">str</span></em><span class="sig-paren">)</span> &#x2192; arki.cfg.Sections<a class="headerlink" href="#arkimet.dataset.http.get_alias_database" title="Permalink to this definition">¶</a></dt>
 <dd><p>Read the alias database for the server at the given URL</p>
 </dd></dl>
 
-<dl class="function">
-<dt id="arkimet.dataset.http.expand_remote_query">
-<code class="sig-prename descclassname">arkimet.dataset.http.</code><code class="sig-name descname">expand_remote_query</code><span class="sig-paren">(</span><em class="sig-param">remotes: arkimet.cfg.Sections</em>, <em class="sig-param">query: str</em><span class="sig-paren">)</span> &#x2192; str<a class="headerlink" href="#arkimet.dataset.http.expand_remote_query" title="Permalink to this definition">¶</a></dt>
-<dd><p>Expand aliases on the query for all remote datasets given.</p>
-<p>An exception is raised if some remotes have conflicting aliases definition.</p>
+<dl class="py function">
+<dt id="arkimet.dataset.http.load_cfg_sections">
+<code class="sig-prename descclassname">arkimet.dataset.http.</code><code class="sig-name descname">load_cfg_sections</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">url</span><span class="p">:</span> <span class="n">str</span></em><span class="sig-paren">)</span> &#x2192; arki.cfg.Sections<a class="headerlink" href="#arkimet.dataset.http.load_cfg_sections" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read the configuration of the datasets at the given URL</p>
 </dd></dl>
 
 </div>
 <div class="section" id="module-arkimet.dataset">
 <span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-arkimet.dataset" title="Permalink to this headline">¶</a></h2>
-<dl class="class">
+<dl class="py class">
+<dt id="arkimet.dataset.Checker">
+<em class="property">class </em><code class="sig-prename descclassname">arkimet.dataset.</code><code class="sig-name descname">Checker</code><a class="headerlink" href="#arkimet.dataset.Checker" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check functions for an arkimet dataset.</p>
+<p>TODO: document</p>
+<p>Examples:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">TODO</span><span class="p">:</span> <span class="n">add</span> <span class="n">examples</span>
+</pre></div>
+</div>
+<dl class="py method">
+<dt id="arkimet.dataset.Checker.check">
+<code class="sig-name descname">check</code><span class="sig-paren">(</span><em class="sig-param">reporter: Any=None</em>, <em class="sig-param">segment_filter: Union[arkimet.Matcher</em>, <em class="sig-param">str]=</em>, <em class="sig-param">offline: bool=True</em>, <em class="sig-param">online: bool=True</em>, <em class="sig-param">readonly: bool=True</em>, <em class="sig-param">accurate: bool=False</em><span class="sig-paren">)</span><a class="headerlink" href="#arkimet.dataset.Checker.check" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perform checking/fixing on the dataset</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="arkimet.dataset.Checker.repack">
+<code class="sig-name descname">repack</code><span class="sig-paren">(</span><em class="sig-param">reporter: Any=None</em>, <em class="sig-param">segment_filter: Union[arkimet.Matcher</em>, <em class="sig-param">str]=</em>, <em class="sig-param">offline: bool=True</em>, <em class="sig-param">online: bool=True</em>, <em class="sig-param">readonly: bool=True</em>, <em class="sig-param">accurate: bool=False</em><span class="sig-paren">)</span><a class="headerlink" href="#arkimet.dataset.Checker.repack" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perform repacking on the dataset</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="arkimet.dataset.Checker.segment_state">
+<code class="sig-name descname">segment_state</code><span class="sig-paren">(</span><em class="sig-param">reporter: Any=None</em>, <em class="sig-param">segment_filter: Union[arkimet.Matcher</em>, <em class="sig-param">str]=</em>, <em class="sig-param">offline: bool=True</em>, <em class="sig-param">online: bool=True</em>, <em class="sig-param">readonly: bool=True</em>, <em class="sig-param">accurate: bool=False</em>, <em class="sig-param">time_override: int=None</em><span class="sig-paren">)</span> &#x2192; Dict<span class="p">[</span>str<span class="p">, </span>str<span class="p">]</span><a class="headerlink" href="#arkimet.dataset.Checker.segment_state" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the state of each segment in the archive</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="arkimet.dataset.Dataset">
+<em class="property">class </em><code class="sig-prename descclassname">arkimet.dataset.</code><code class="sig-name descname">Dataset</code><a class="headerlink" href="#arkimet.dataset.Dataset" title="Permalink to this definition">¶</a></dt>
+<dd><p>A dataset in arkimet. It provides information about the dataset configuration,
+and allows to create readers, writers, and checkers to work with the dataset.</p>
+<p>You can avoid the intermediate step of accessing Dataset objects, by calling
+directly <a class="reference internal" href="#arkimet.dataset.Session" title="arkimet.dataset.Session"><code class="xref py py-class docutils literal notranslate"><span class="pre">arkimet.dataset.Session</span></code></a> functions
+<a class="reference internal" href="#arkimet.dataset.Session.dataset_reader" title="arkimet.dataset.Session.dataset_reader"><code class="xref py py-meth docutils literal notranslate"><span class="pre">arkimet.dataset.Session.dataset_reader()</span></code></a>,
+<a class="reference internal" href="#arkimet.dataset.Session.dataset_writer" title="arkimet.dataset.Session.dataset_writer"><code class="xref py py-meth docutils literal notranslate"><span class="pre">arkimet.dataset.Session.dataset_writer()</span></code></a>, and
+<a class="reference internal" href="#arkimet.dataset.Session.dataset_checker" title="arkimet.dataset.Session.dataset_checker"><code class="xref py py-meth docutils literal notranslate"><span class="pre">arkimet.dataset.Session.dataset_checker()</span></code></a>.</p>
+<p>If in some cases it can be useful to instantiate a Dataset and pass it around,
+this class is available, matching the C++ API.</p>
+<p>Examples:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">session</span><span class="o">.</span><span class="n">dataset</span><span class="p">(</span><span class="s2">&quot;dsname&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">dataset</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">dataset</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+    <span class="k">with</span> <span class="n">dataset</span><span class="o">.</span><span class="n">reader</span><span class="p">()</span> <span class="k">as</span> <span class="n">reader</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">reader</span><span class="o">.</span><span class="n">query_data</span><span class="p">()</span>
+</pre></div>
+</div>
+<dl class="py method">
+<dt id="arkimet.dataset.Dataset.checker">
+<code class="sig-name descname">checker</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="#arkimet.dataset.Checker" title="arkimet.dataset.Checker">arkimet.dataset.Checker</a><a class="headerlink" href="#arkimet.dataset.Dataset.checker" title="Permalink to this definition">¶</a></dt>
+<dd><p>return a checker for this dataset</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="arkimet.dataset.Dataset.config">
+<code class="sig-name descname">config</code><a class="headerlink" href="#arkimet.dataset.Dataset.config" title="Permalink to this definition">¶</a></dt>
+<dd><p>dataset configuration as an <a class="reference internal" href="arkimet.cfg.html#arkimet.cfg.Section" title="arkimet.cfg.Section"><code class="xref py py-class docutils literal notranslate"><span class="pre">arkimet.cfg.Section</span></code></a> object</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="arkimet.dataset.Dataset.name">
+<code class="sig-name descname">name</code><a class="headerlink" href="#arkimet.dataset.Dataset.name" title="Permalink to this definition">¶</a></dt>
+<dd><p>dataset name</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="arkimet.dataset.Dataset.reader">
+<code class="sig-name descname">reader</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="#arkimet.dataset.Reader" title="arkimet.dataset.Reader">arkimet.dataset.Reader</a><a class="headerlink" href="#arkimet.dataset.Dataset.reader" title="Permalink to this definition">¶</a></dt>
+<dd><p>return a reader for this dataset</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="arkimet.dataset.Dataset.writer">
+<code class="sig-name descname">writer</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="#arkimet.dataset.Writer" title="arkimet.dataset.Writer">arkimet.dataset.Writer</a><a class="headerlink" href="#arkimet.dataset.Dataset.writer" title="Permalink to this definition">¶</a></dt>
+<dd><p>return a writer for this dataset</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py exception">
+<dt id="arkimet.dataset.ImportDuplicateError">
+<em class="property">exception </em><code class="sig-prename descclassname">arkimet.dataset.</code><code class="sig-name descname">ImportDuplicateError</code><a class="headerlink" href="#arkimet.dataset.ImportDuplicateError" title="Permalink to this definition">¶</a></dt>
+<dd><p>The item to import already exists on the dataset</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt id="arkimet.dataset.ImportError">
+<em class="property">exception </em><code class="sig-prename descclassname">arkimet.dataset.</code><code class="sig-name descname">ImportError</code><a class="headerlink" href="#arkimet.dataset.ImportError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Base class for dataset import errors</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt id="arkimet.dataset.ImportFailedError">
+<em class="property">exception </em><code class="sig-prename descclassname">arkimet.dataset.</code><code class="sig-name descname">ImportFailedError</code><a class="headerlink" href="#arkimet.dataset.ImportFailedError" title="Permalink to this definition">¶</a></dt>
+<dd><p>The import process failed on this metadata</p>
+</dd></dl>
+
+<dl class="py class">
 <dt id="arkimet.dataset.Reader">
 <em class="property">class </em><code class="sig-prename descclassname">arkimet.dataset.</code><code class="sig-name descname">Reader</code><a class="headerlink" href="#arkimet.dataset.Reader" title="Permalink to this definition">¶</a></dt>
 <dd><p>Read functions for an arkimet dataset.</p>
@@ -70,9 +168,9 @@
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">TODO</span><span class="p">:</span> <span class="n">add</span> <span class="n">examples</span>
 </pre></div>
 </div>
-<dl class="method">
+<dl class="py method">
 <dt id="arkimet.dataset.Reader.query_bytes">
-<code class="sig-name descname">query_bytes</code><span class="sig-paren">(</span><em class="sig-param">matcher: Union[arki.Matcher</em>, <em class="sig-param">str]=None</em>, <em class="sig-param">with_data: bool=False</em>, <em class="sig-param">sort: str=None</em>, <em class="sig-param">data_start_hook: Callable[[]</em>, <em class="sig-param">None]=None</em>, <em class="sig-param">postprocess: str=None</em>, <em class="sig-param">metadata_report: str=None</em>, <em class="sig-param">summary_report: str=None</em>, <em class="sig-param">file: Union[int</em>, <em class="sig-param">BinaryIO]=None</em>, <em class="sig-param">progres=None</em><span class="sig-paren">)</span> &#x2192; Union[None, bytes]<a class="headerlink" href="#arkimet.dataset.Reader.query_bytes" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">query_bytes</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">matcher</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>arki.Matcher<span class="p">, </span>str<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">with_data</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">sort</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">data_start_hook</span><span class="p">:</span> <span class="n">Callable<span class="p">[</span><span class="p">]</span><span class="p">, </span>None<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">postprocess</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">metadata_report</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">summary_report</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">file</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>int<span class="p">, </span>BinaryIO<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">progres</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; Union<span class="p">[</span>None<span class="p">, </span>bytes<span class="p">]</span><a class="headerlink" href="#arkimet.dataset.Reader.query_bytes" title="Permalink to this definition">¶</a></dt>
 <dd><p>query a dataset, piping results to a file</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -94,9 +192,9 @@ to call for progress updates.</p></li>
 </dl>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="arkimet.dataset.Reader.query_data">
-<code class="sig-name descname">query_data</code><span class="sig-paren">(</span><em class="sig-param">matcher: Union[arki.Matcher, str]=None, with_data: bool=False, sort: str=None, on_metadata: Callable[[metadata], Optional[bool]]=None</em><span class="sig-paren">)</span> &#x2192; Union[None, List[arki.Metadata]]<a class="headerlink" href="#arkimet.dataset.Reader.query_data" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">query_data</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">matcher</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>arki.Matcher<span class="p">, </span>str<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">with_data</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">sort</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">on_metadata</span><span class="p">:</span> <span class="n">Callable<span class="p">[</span><span class="p">[</span>metadata<span class="p">]</span><span class="p">, </span>Optional<span class="p">[</span>bool<span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; Union<span class="p">[</span>None<span class="p">, </span>List<span class="p">[</span>arki.Metadata<span class="p">]</span><span class="p">]</span><a class="headerlink" href="#arkimet.dataset.Reader.query_data" title="Permalink to this definition">¶</a></dt>
 <dd><p>query a dataset, processing the resulting metadata one by one</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -115,9 +213,9 @@ to call for progress updates.</p></li>
 </dl>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="arkimet.dataset.Reader.query_summary">
-<code class="sig-name descname">query_summary</code><span class="sig-paren">(</span><em class="sig-param">matcher: Union[arki.Matcher</em>, <em class="sig-param">str]=None</em>, <em class="sig-param">summary: arkimet.Summary=None</em>, <em class="sig-param">progress=None</em><span class="sig-paren">)</span> &#x2192; arkimet.Summary<a class="headerlink" href="#arkimet.dataset.Reader.query_summary" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">query_summary</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">matcher</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>arki.Matcher<span class="p">, </span>str<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">summary</span><span class="p">:</span> <span class="n"><a class="reference internal" href="arkimet.html#arkimet.Summary" title="arkimet.Summary">arkimet.Summary</a></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">progress</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="arkimet.html#arkimet.Summary" title="arkimet.Summary">arkimet.Summary</a><a class="headerlink" href="#arkimet.dataset.Reader.query_summary" title="Permalink to this definition">¶</a></dt>
 <dd><p>query a dataset, returning an arkimet.Summary with the results</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -132,116 +230,7 @@ it, instead of creating a new one.</p></li>
 
 </dd></dl>
 
-<dl class="class">
-<dt id="arkimet.dataset.Writer">
-<em class="property">class </em><code class="sig-prename descclassname">arkimet.dataset.</code><code class="sig-name descname">Writer</code><a class="headerlink" href="#arkimet.dataset.Writer" title="Permalink to this definition">¶</a></dt>
-<dd><p>Write functions for an arkimet dataset.</p>
-<p>TODO: document</p>
-<p>Examples:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">TODO</span><span class="p">:</span> <span class="n">add</span> <span class="n">examples</span>
-</pre></div>
-</div>
-<dl class="method">
-<dt id="arkimet.dataset.Writer.acquire">
-<code class="sig-name descname">acquire</code><span class="sig-paren">(</span><em class="sig-param">md: arki.Metadata</em>, <em class="sig-param">replace: str=None</em>, <em class="sig-param">drop_cached_data_on_commit: bool=False</em><span class="sig-paren">)</span><a class="headerlink" href="#arkimet.dataset.Writer.acquire" title="Permalink to this definition">¶</a></dt>
-<dd><p>Acquire the given metadata item (and related data) in this dataset</p>
-<p>After acquiring the data successfully, the data can be retrieved from
-the dataset.  Also, information such as the dataset name and the id of
-the data in the dataset are added to the Metadata object.</p>
-<p>If the import failed, a subclass of arki.dataset.ImportError is raised.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="arkimet.dataset.Writer.acquire_batch">
-<code class="sig-name descname">acquire_batch</code><span class="sig-paren">(</span><em class="sig-param">md: Iterable[arkimet.Metadata], replace: str=None, drop_cached_data_on_commit: bool=False</em><span class="sig-paren">)</span> &#x2192; Tuple[str]<a class="headerlink" href="#arkimet.dataset.Writer.acquire_batch" title="Permalink to this definition">¶</a></dt>
-<dd><p>Acquire the given metadata items (and related data) in this dataset</p>
-<p>After acquiring the data successfully, the data can be retrieved from
-the dataset.  Also, information such as the dataset name and the id of
-the data in the dataset are added to the Metadata objects.</p>
-<p>No exception is raised in case of import failures. The function returns a tuple
-with the same length and the input sequence of metadata, and a string
-representing the outcome: “ok”, “duplicate”, or “error”.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="arkimet.dataset.Writer.flush">
-<code class="sig-name descname">flush</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#arkimet.dataset.Writer.flush" title="Permalink to this definition">¶</a></dt>
-<dd><p>Flush pending changes to disk</p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="class">
-<dt id="arkimet.dataset.Checker">
-<em class="property">class </em><code class="sig-prename descclassname">arkimet.dataset.</code><code class="sig-name descname">Checker</code><a class="headerlink" href="#arkimet.dataset.Checker" title="Permalink to this definition">¶</a></dt>
-<dd><p>Check functions for an arkimet dataset.</p>
-<p>TODO: document</p>
-<p>Examples:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">TODO</span><span class="p">:</span> <span class="n">add</span> <span class="n">examples</span>
-</pre></div>
-</div>
-<dl class="method">
-<dt id="arkimet.dataset.Checker.check">
-<code class="sig-name descname">check</code><span class="sig-paren">(</span><em class="sig-param">reporter: Any=None</em>, <em class="sig-param">segment_filter: Union[arkimet.Matcher</em>, <em class="sig-param">str]=</em>, <em class="sig-param">offline: bool=True</em>, <em class="sig-param">online: bool=True</em>, <em class="sig-param">readonly: bool=True</em>, <em class="sig-param">accurate: bool=False</em><span class="sig-paren">)</span><a class="headerlink" href="#arkimet.dataset.Checker.check" title="Permalink to this definition">¶</a></dt>
-<dd><p>Perform checking/fixing on the dataset</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="arkimet.dataset.Checker.repack">
-<code class="sig-name descname">repack</code><span class="sig-paren">(</span><em class="sig-param">reporter: Any=None</em>, <em class="sig-param">segment_filter: Union[arkimet.Matcher</em>, <em class="sig-param">str]=</em>, <em class="sig-param">offline: bool=True</em>, <em class="sig-param">online: bool=True</em>, <em class="sig-param">readonly: bool=True</em>, <em class="sig-param">accurate: bool=False</em><span class="sig-paren">)</span><a class="headerlink" href="#arkimet.dataset.Checker.repack" title="Permalink to this definition">¶</a></dt>
-<dd><p>Perform repacking on the dataset</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="arkimet.dataset.Checker.segment_state">
-<code class="sig-name descname">segment_state</code><span class="sig-paren">(</span><em class="sig-param">reporter: Any=None</em>, <em class="sig-param">segment_filter: Union[arkimet.Matcher</em>, <em class="sig-param">str]=</em>, <em class="sig-param">offline: bool=True</em>, <em class="sig-param">online: bool=True</em>, <em class="sig-param">readonly: bool=True</em>, <em class="sig-param">accurate: bool=False</em>, <em class="sig-param">time_override: int=None</em><span class="sig-paren">)</span> &#x2192; Dict[str, str]<a class="headerlink" href="#arkimet.dataset.Checker.segment_state" title="Permalink to this definition">¶</a></dt>
-<dd><p>Compute the state of each segment in the archive</p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="class">
-<dt id="arkimet.dataset.SessionTimeOverride">
-<em class="property">class </em><code class="sig-prename descclassname">arkimet.dataset.</code><code class="sig-name descname">SessionTimeOverride</code><a class="headerlink" href="#arkimet.dataset.SessionTimeOverride" title="Permalink to this definition">¶</a></dt>
-<dd><p>Write functions for an arkimet dataset.</p>
-<p>TODO: document</p>
-<p>Examples:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">TODO</span><span class="p">:</span> <span class="n">add</span> <span class="n">examples</span>
-</pre></div>
-</div>
-</dd></dl>
-
-<dl class="function">
-<dt id="arkimet.dataset.read_config">
-<code class="sig-prename descclassname">arkimet.dataset.</code><code class="sig-name descname">read_config</code><span class="sig-paren">(</span><em class="sig-param">pathname: str</em><span class="sig-paren">)</span> &#x2192; arki.cfg.Section<a class="headerlink" href="#arkimet.dataset.read_config" title="Permalink to this definition">¶</a></dt>
-<dd><p>Read the configuration of a dataset at the given path or URL</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="arkimet.dataset.read_configs">
-<code class="sig-prename descclassname">arkimet.dataset.</code><code class="sig-name descname">read_configs</code><span class="sig-paren">(</span><em class="sig-param">pathname: str</em><span class="sig-paren">)</span> &#x2192; arki.cfg.Sections<a class="headerlink" href="#arkimet.dataset.read_configs" title="Permalink to this definition">¶</a></dt>
-<dd><p>Read the merged dataset configuration at the given path or URL</p>
-</dd></dl>
-
-<dl class="exception">
-<dt id="arkimet.dataset.ImportError">
-<em class="property">exception </em><code class="sig-prename descclassname">arkimet.dataset.</code><code class="sig-name descname">ImportError</code><a class="headerlink" href="#arkimet.dataset.ImportError" title="Permalink to this definition">¶</a></dt>
-<dd><p>Base class for dataset import errors</p>
-</dd></dl>
-
-<dl class="exception">
-<dt id="arkimet.dataset.ImportDuplicateError">
-<em class="property">exception </em><code class="sig-prename descclassname">arkimet.dataset.</code><code class="sig-name descname">ImportDuplicateError</code><a class="headerlink" href="#arkimet.dataset.ImportDuplicateError" title="Permalink to this definition">¶</a></dt>
-<dd><p>The item to import already exists on the dataset</p>
-</dd></dl>
-
-<dl class="exception">
-<dt id="arkimet.dataset.ImportFailedError">
-<em class="property">exception </em><code class="sig-prename descclassname">arkimet.dataset.</code><code class="sig-name descname">ImportFailedError</code><a class="headerlink" href="#arkimet.dataset.ImportFailedError" title="Permalink to this definition">¶</a></dt>
-<dd><p>The import process failed on this metadata</p>
-</dd></dl>
-
-<dl class="class">
+<dl class="py class">
 <dt id="arkimet.dataset.Session">
 <em class="property">class </em><code class="sig-prename descclassname">arkimet.dataset.</code><code class="sig-name descname">Session</code><a class="headerlink" href="#arkimet.dataset.Session" title="Permalink to this definition">¶</a></dt>
 <dd><p>Shared configuration, aliases, and working data used to work with arkimet datasets.</p>
@@ -271,9 +260,9 @@ given their configuration, without adding them to the pool.</p>
             <span class="n">result</span> <span class="o">=</span> <span class="n">reader</span><span class="o">.</span><span class="n">query_data</span><span class="p">(</span><span class="s2">&quot;level:ground&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
-<dl class="method">
+<dl class="py method">
 <dt id="arkimet.dataset.Session.add_dataset">
-<code class="sig-name descname">add_dataset</code><span class="sig-paren">(</span><em class="sig-param">cfg: Union[str, arkimet.cfg.Section, Dict[str, str]]</em><span class="sig-paren">)</span><a class="headerlink" href="#arkimet.dataset.Session.add_dataset" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">add_dataset</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">cfg</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>str<span class="p">, </span><a class="reference internal" href="arkimet.cfg.html#arkimet.cfg.Section" title="arkimet.cfg.Section">arkimet.cfg.Section</a><span class="p">, </span>Dict<span class="p">[</span>str<span class="p">, </span>str<span class="p">]</span><span class="p">]</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#arkimet.dataset.Session.add_dataset" title="Permalink to this definition">¶</a></dt>
 <dd><p>add a dataset to the Session pool</p>
 <p>If a dataset with the same name already exists in the pool, it raises an
 exception.</p>
@@ -282,141 +271,152 @@ added to the session alias database. If different servers define some
 aliases differently, it raises an exception.</p>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="arkimet.dataset.Session.dataset">
-<code class="sig-name descname">dataset</code><span class="sig-paren">(</span><em class="sig-param">cfg: Union[str</em>, <em class="sig-param">arkimet.cfg.Section</em>, <em class="sig-param">Dict[str</em>, <em class="sig-param">str]] = None</em>, <em class="sig-param">name: str = None</em><span class="sig-paren">)</span> &#x2192; arkimet.dataset.Dataset<a class="headerlink" href="#arkimet.dataset.Session.dataset" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">dataset</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">cfg</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>str<span class="p">, </span><a class="reference internal" href="arkimet.cfg.html#arkimet.cfg.Section" title="arkimet.cfg.Section">arkimet.cfg.Section</a><span class="p">, </span>Dict<span class="p">[</span>str<span class="p">, </span>str<span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">name</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="#arkimet.dataset.Dataset" title="arkimet.dataset.Dataset">arkimet.dataset.Dataset</a><a class="headerlink" href="#arkimet.dataset.Session.dataset" title="Permalink to this definition">¶</a></dt>
 <dd><p>return a Dataset give its configuration</p>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="arkimet.dataset.Session.dataset_checker">
-<code class="sig-name descname">dataset_checker</code><span class="sig-paren">(</span><em class="sig-param">cfg: Union[str</em>, <em class="sig-param">arkimet.cfg.Section</em>, <em class="sig-param">Dict[str</em>, <em class="sig-param">str]] = None</em>, <em class="sig-param">name: str = None</em><span class="sig-paren">)</span> &#x2192; arkimet.dataset.Checker<a class="headerlink" href="#arkimet.dataset.Session.dataset_checker" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">dataset_checker</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">cfg</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>str<span class="p">, </span><a class="reference internal" href="arkimet.cfg.html#arkimet.cfg.Section" title="arkimet.cfg.Section">arkimet.cfg.Section</a><span class="p">, </span>Dict<span class="p">[</span>str<span class="p">, </span>str<span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">name</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="#arkimet.dataset.Checker" title="arkimet.dataset.Checker">arkimet.dataset.Checker</a><a class="headerlink" href="#arkimet.dataset.Session.dataset_checker" title="Permalink to this definition">¶</a></dt>
 <dd><p>return a dataset checker give its configuration</p>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="arkimet.dataset.Session.dataset_pool_size">
 <code class="sig-name descname">dataset_pool_size</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; int<a class="headerlink" href="#arkimet.dataset.Session.dataset_pool_size" title="Permalink to this definition">¶</a></dt>
 <dd><p>return how many datasets are in the dataset pool</p>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="arkimet.dataset.Session.dataset_reader">
-<code class="sig-name descname">dataset_reader</code><span class="sig-paren">(</span><em class="sig-param">cfg: Union[str</em>, <em class="sig-param">arkimet.cfg.Section</em>, <em class="sig-param">Dict[str</em>, <em class="sig-param">str]] = None</em>, <em class="sig-param">name: str = None</em><span class="sig-paren">)</span> &#x2192; arkimet.dataset.Reader<a class="headerlink" href="#arkimet.dataset.Session.dataset_reader" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">dataset_reader</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">cfg</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>str<span class="p">, </span><a class="reference internal" href="arkimet.cfg.html#arkimet.cfg.Section" title="arkimet.cfg.Section">arkimet.cfg.Section</a><span class="p">, </span>Dict<span class="p">[</span>str<span class="p">, </span>str<span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">name</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="#arkimet.dataset.Reader" title="arkimet.dataset.Reader">arkimet.dataset.Reader</a><a class="headerlink" href="#arkimet.dataset.Session.dataset_reader" title="Permalink to this definition">¶</a></dt>
 <dd><p>return a dataset reader give its configuration</p>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="arkimet.dataset.Session.dataset_writer">
-<code class="sig-name descname">dataset_writer</code><span class="sig-paren">(</span><em class="sig-param">cfg: Union[str</em>, <em class="sig-param">arkimet.cfg.Section</em>, <em class="sig-param">Dict[str</em>, <em class="sig-param">str]] = None</em>, <em class="sig-param">name: str = None</em><span class="sig-paren">)</span> &#x2192; arkimet.dataset.Writer<a class="headerlink" href="#arkimet.dataset.Session.dataset_writer" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">dataset_writer</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">cfg</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>str<span class="p">, </span><a class="reference internal" href="arkimet.cfg.html#arkimet.cfg.Section" title="arkimet.cfg.Section">arkimet.cfg.Section</a><span class="p">, </span>Dict<span class="p">[</span>str<span class="p">, </span>str<span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">name</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="#arkimet.dataset.Writer" title="arkimet.dataset.Writer">arkimet.dataset.Writer</a><a class="headerlink" href="#arkimet.dataset.Session.dataset_writer" title="Permalink to this definition">¶</a></dt>
 <dd><p>return a dataset writer give its configuration</p>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="arkimet.dataset.Session.datasets">
-<code class="sig-name descname">datasets</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; List[arkimet.dataset.Dataset]<a class="headerlink" href="#arkimet.dataset.Session.datasets" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">datasets</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; List<span class="p">[</span><a class="reference internal" href="#arkimet.dataset.Dataset" title="arkimet.dataset.Dataset">arkimet.dataset.Dataset</a><span class="p">]</span><a class="headerlink" href="#arkimet.dataset.Session.datasets" title="Permalink to this definition">¶</a></dt>
 <dd><p>return a list of all datasets in the session pool</p>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="arkimet.dataset.Session.expand_query">
-<code class="sig-name descname">expand_query</code><span class="sig-paren">(</span><em class="sig-param">query: str</em><span class="sig-paren">)</span> &#x2192; str<a class="headerlink" href="#arkimet.dataset.Session.expand_query" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">expand_query</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">query</span><span class="p">:</span> <span class="n">str</span></em><span class="sig-paren">)</span> &#x2192; str<a class="headerlink" href="#arkimet.dataset.Session.expand_query" title="Permalink to this definition">¶</a></dt>
 <dd><p>expand aliases in an Arkimet query, returning the same query without use of aliases</p>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="arkimet.dataset.Session.get_alias_database">
-<code class="sig-name descname">get_alias_database</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; arkimet.cfg.Sections<a class="headerlink" href="#arkimet.dataset.Session.get_alias_database" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">get_alias_database</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="arkimet.cfg.html#arkimet.cfg.Sections" title="arkimet.cfg.Sections">arkimet.cfg.Sections</a><a class="headerlink" href="#arkimet.dataset.Session.get_alias_database" title="Permalink to this definition">¶</a></dt>
 <dd><p>return matcher alias database for this session</p>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="arkimet.dataset.Session.has_dataset">
-<code class="sig-name descname">has_dataset</code><span class="sig-paren">(</span><em class="sig-param">name: str</em><span class="sig-paren">)</span> &#x2192; bool<a class="headerlink" href="#arkimet.dataset.Session.has_dataset" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">has_dataset</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span><span class="p">:</span> <span class="n">str</span></em><span class="sig-paren">)</span> &#x2192; bool<a class="headerlink" href="#arkimet.dataset.Session.has_dataset" title="Permalink to this definition">¶</a></dt>
 <dd><p>check if the dataset pool has a dataset with the given name</p>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="arkimet.dataset.Session.has_datasets">
 <code class="sig-name descname">has_datasets</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; bool<a class="headerlink" href="#arkimet.dataset.Session.has_datasets" title="Permalink to this definition">¶</a></dt>
 <dd><p>return True if the session contains datasets in the dataset pool</p>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="arkimet.dataset.Session.load_aliases">
-<code class="sig-name descname">load_aliases</code><span class="sig-paren">(</span><em class="sig-param">aliases: Union[str, arkimet.cfg.Sections]</em><span class="sig-paren">)</span><a class="headerlink" href="#arkimet.dataset.Session.load_aliases" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">load_aliases</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">aliases</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>str<span class="p">, </span><a class="reference internal" href="arkimet.cfg.html#arkimet.cfg.Sections" title="arkimet.cfg.Sections">arkimet.cfg.Sections</a><span class="p">]</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#arkimet.dataset.Session.load_aliases" title="Permalink to this definition">¶</a></dt>
 <dd><p>add the given set of aliases to the alias database in this session</p>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="arkimet.dataset.Session.matcher">
-<code class="sig-name descname">matcher</code><span class="sig-paren">(</span><em class="sig-param">query: str</em><span class="sig-paren">)</span> &#x2192; arkimet.Matcher<a class="headerlink" href="#arkimet.dataset.Session.matcher" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">matcher</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">query</span><span class="p">:</span> <span class="n">str</span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="arkimet.html#arkimet.Matcher" title="arkimet.Matcher">arkimet.Matcher</a><a class="headerlink" href="#arkimet.dataset.Session.matcher" title="Permalink to this definition">¶</a></dt>
 <dd><p>parse an arkimet matcher expression, using the aliases in this session, and return the Matcher object for it</p>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="arkimet.dataset.Session.merged">
-<code class="sig-name descname">merged</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; arkimet.dataset.Dataset<a class="headerlink" href="#arkimet.dataset.Session.merged" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">merged</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="#arkimet.dataset.Dataset" title="arkimet.dataset.Dataset">arkimet.dataset.Dataset</a><a class="headerlink" href="#arkimet.dataset.Session.merged" title="Permalink to this definition">¶</a></dt>
 <dd><p>return a merged dataset querying all datasets in this session</p>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="arkimet.dataset.Session.querymacro">
-<code class="sig-name descname">querymacro</code><span class="sig-paren">(</span><em class="sig-param">name: str</em>, <em class="sig-param">macro: str</em><span class="sig-paren">)</span> &#x2192; arkimet.dataset.Dataset<a class="headerlink" href="#arkimet.dataset.Session.querymacro" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">querymacro</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">macro</span><span class="p">:</span> <span class="n">str</span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="#arkimet.dataset.Dataset" title="arkimet.dataset.Dataset">arkimet.dataset.Dataset</a><a class="headerlink" href="#arkimet.dataset.Session.querymacro" title="Permalink to this definition">¶</a></dt>
 <dd><p>create a QueryMacro dataset querying datasets from this session’s pool</p>
 </dd></dl>
 
 </dd></dl>
 
-<dl class="class">
-<dt id="arkimet.dataset.Dataset">
-<em class="property">class </em><code class="sig-prename descclassname">arkimet.dataset.</code><code class="sig-name descname">Dataset</code><a class="headerlink" href="#arkimet.dataset.Dataset" title="Permalink to this definition">¶</a></dt>
-<dd><p>A dataset in arkimet. It provides information about the dataset configuration,
-and allows to create readers, writers, and checkers to work with the dataset.</p>
-<p>You can avoid the intermediate step of accessing Dataset objects, by calling
-directly <a class="reference internal" href="#arkimet.dataset.Session" title="arkimet.dataset.Session"><code class="xref py py-class docutils literal notranslate"><span class="pre">arkimet.dataset.Session</span></code></a> functions
-<a class="reference internal" href="#arkimet.dataset.Session.dataset_reader" title="arkimet.dataset.Session.dataset_reader"><code class="xref py py-meth docutils literal notranslate"><span class="pre">arkimet.dataset.Session.dataset_reader()</span></code></a>,
-<a class="reference internal" href="#arkimet.dataset.Session.dataset_writer" title="arkimet.dataset.Session.dataset_writer"><code class="xref py py-meth docutils literal notranslate"><span class="pre">arkimet.dataset.Session.dataset_writer()</span></code></a>, and
-<a class="reference internal" href="#arkimet.dataset.Session.dataset_checker" title="arkimet.dataset.Session.dataset_checker"><code class="xref py py-meth docutils literal notranslate"><span class="pre">arkimet.dataset.Session.dataset_checker()</span></code></a>.</p>
-<p>If in some cases it can be useful to instantiate a Dataset and pass it around,
-this class is available, matching the C++ API.</p>
+<dl class="py class">
+<dt id="arkimet.dataset.SessionTimeOverride">
+<em class="property">class </em><code class="sig-prename descclassname">arkimet.dataset.</code><code class="sig-name descname">SessionTimeOverride</code><a class="headerlink" href="#arkimet.dataset.SessionTimeOverride" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write functions for an arkimet dataset.</p>
+<p>TODO: document</p>
 <p>Examples:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">session</span><span class="o">.</span><span class="n">dataset</span><span class="p">(</span><span class="s2">&quot;dsname&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">dataset</span><span class="p">:</span>
-    <span class="nb">print</span><span class="p">(</span><span class="n">dataset</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
-    <span class="k">with</span> <span class="n">dataset</span><span class="o">.</span><span class="n">reader</span><span class="p">()</span> <span class="k">as</span> <span class="n">reader</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">reader</span><span class="o">.</span><span class="n">query_data</span><span class="p">()</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">TODO</span><span class="p">:</span> <span class="n">add</span> <span class="n">examples</span>
 </pre></div>
 </div>
-<dl class="method">
-<dt id="arkimet.dataset.Dataset.checker">
-<code class="sig-name descname">checker</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; arkimet.dataset.Checker<a class="headerlink" href="#arkimet.dataset.Dataset.checker" title="Permalink to this definition">¶</a></dt>
-<dd><p>return a checker for this dataset</p>
 </dd></dl>
 
-<dl class="attribute">
-<dt id="arkimet.dataset.Dataset.config">
-<code class="sig-name descname">config</code><a class="headerlink" href="#arkimet.dataset.Dataset.config" title="Permalink to this definition">¶</a></dt>
-<dd><p>dataset configuration as an <a class="reference internal" href="arkimet.cfg.html#arkimet.cfg.Section" title="arkimet.cfg.Section"><code class="xref py py-class docutils literal notranslate"><span class="pre">arkimet.cfg.Section</span></code></a> object</p>
+<dl class="py class">
+<dt id="arkimet.dataset.Writer">
+<em class="property">class </em><code class="sig-prename descclassname">arkimet.dataset.</code><code class="sig-name descname">Writer</code><a class="headerlink" href="#arkimet.dataset.Writer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write functions for an arkimet dataset.</p>
+<p>TODO: document</p>
+<p>Examples:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">TODO</span><span class="p">:</span> <span class="n">add</span> <span class="n">examples</span>
+</pre></div>
+</div>
+<dl class="py method">
+<dt id="arkimet.dataset.Writer.acquire">
+<code class="sig-name descname">acquire</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">md</span><span class="p">:</span> <span class="n">arki.Metadata</span></em>, <em class="sig-param"><span class="n">replace</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">drop_cached_data_on_commit</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#arkimet.dataset.Writer.acquire" title="Permalink to this definition">¶</a></dt>
+<dd><p>Acquire the given metadata item (and related data) in this dataset</p>
+<p>After acquiring the data successfully, the data can be retrieved from
+the dataset.  Also, information such as the dataset name and the id of
+the data in the dataset are added to the Metadata object.</p>
+<p>If the import failed, a subclass of arki.dataset.ImportError is raised.</p>
 </dd></dl>
 
-<dl class="attribute">
-<dt id="arkimet.dataset.Dataset.name">
-<code class="sig-name descname">name</code><a class="headerlink" href="#arkimet.dataset.Dataset.name" title="Permalink to this definition">¶</a></dt>
-<dd><p>dataset name</p>
+<dl class="py method">
+<dt id="arkimet.dataset.Writer.acquire_batch">
+<code class="sig-name descname">acquire_batch</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">md</span><span class="p">:</span> <span class="n">Iterable<span class="p">[</span><a class="reference internal" href="arkimet.html#arkimet.Metadata" title="arkimet.Metadata">arkimet.Metadata</a><span class="p">]</span></span></em>, <em class="sig-param"><span class="n">replace</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">drop_cached_data_on_commit</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em><span class="sig-paren">)</span> &#x2192; Tuple<span class="p">[</span>str<span class="p">]</span><a class="headerlink" href="#arkimet.dataset.Writer.acquire_batch" title="Permalink to this definition">¶</a></dt>
+<dd><p>Acquire the given metadata items (and related data) in this dataset</p>
+<p>After acquiring the data successfully, the data can be retrieved from
+the dataset.  Also, information such as the dataset name and the id of
+the data in the dataset are added to the Metadata objects.</p>
+<p>No exception is raised in case of import failures. The function returns a tuple
+with the same length and the input sequence of metadata, and a string
+representing the outcome: “ok”, “duplicate”, or “error”.</p>
 </dd></dl>
 
-<dl class="method">
-<dt id="arkimet.dataset.Dataset.reader">
-<code class="sig-name descname">reader</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; arkimet.dataset.Reader<a class="headerlink" href="#arkimet.dataset.Dataset.reader" title="Permalink to this definition">¶</a></dt>
-<dd><p>return a reader for this dataset</p>
+<dl class="py method">
+<dt id="arkimet.dataset.Writer.flush">
+<code class="sig-name descname">flush</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#arkimet.dataset.Writer.flush" title="Permalink to this definition">¶</a></dt>
+<dd><p>Flush pending changes to disk</p>
 </dd></dl>
 
-<dl class="method">
-<dt id="arkimet.dataset.Dataset.writer">
-<code class="sig-name descname">writer</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; arkimet.dataset.Writer<a class="headerlink" href="#arkimet.dataset.Dataset.writer" title="Permalink to this definition">¶</a></dt>
-<dd><p>return a writer for this dataset</p>
 </dd></dl>
 
+<dl class="py function">
+<dt id="arkimet.dataset.read_config">
+<code class="sig-prename descclassname">arkimet.dataset.</code><code class="sig-name descname">read_config</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">pathname</span><span class="p">:</span> <span class="n">str</span></em><span class="sig-paren">)</span> &#x2192; arki.cfg.Section<a class="headerlink" href="#arkimet.dataset.read_config" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read the configuration of a dataset at the given path or URL</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="arkimet.dataset.read_configs">
+<code class="sig-prename descclassname">arkimet.dataset.</code><code class="sig-name descname">read_configs</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">pathname</span><span class="p">:</span> <span class="n">str</span></em><span class="sig-paren">)</span> &#x2192; arki.cfg.Sections<a class="headerlink" href="#arkimet.dataset.read_configs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read the merged dataset configuration at the given path or URL</p>
 </dd></dl>
 
 </div>
@@ -441,6 +441,7 @@ this class is available, matching the C++ API.</p>
 <h3>Navigation</h3>
 <p class="caption"><span class="caption-text">Contents:</span></p>
 <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../metadata.html">Metadata types</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../matcher.html">Match expressions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../datasets.html">Datasets</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../segments.html">Data segments</a></li>
@@ -482,7 +483,7 @@ this class is available, matching the C++ API.</p>
     </form>
     </div>
 </div>
-<script type="text/javascript">$('#searchbox').show(0);</script>
+<script>$('#searchbox').show(0);</script>
 
 
 
@@ -499,7 +500,7 @@ this class is available, matching the C++ API.</p>
       &copy;2019, Enrico Zini.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.2.2</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.4.3</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |

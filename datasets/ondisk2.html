@@ -1,17 +1,17 @@
 
 <!DOCTYPE html>
 
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html>
   <head>
     <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>ondisk2 dataset format &#8212; arkimet 1.16 documentation</title>
-    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
-    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
-    <script type="text/javascript" src="../_static/jquery.js"></script>
-    <script type="text/javascript" src="../_static/underscore.js"></script>
-    <script type="text/javascript" src="../_static/doctools.js"></script>
-    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="dataset archives" href="archive.html" />
@@ -34,228 +34,12 @@
             
   <div class="section" id="ondisk2-dataset-format">
 <span id="datasets-ondisk2"></span><h1><code class="docutils literal notranslate"><span class="pre">ondisk2</span></code> dataset format<a class="headerlink" href="#ondisk2-dataset-format" title="Permalink to this headline">¶</a></h1>
-<p><strong>note</strong>: this dataset is deprecated in favour of <code class="docutils literal notranslate"><span class="pre">iseg</span></code> datasets. If you
-have a reason to prefer it to <code class="docutils literal notranslate"><span class="pre">iseg</span></code>, please contribute it to the discussion
-at <a class="reference external" href="https://github.com/ARPA-SIMC/arkimet/issues/185">https://github.com/ARPA-SIMC/arkimet/issues/185</a>. Otherwise, please use
-<code class="docutils literal notranslate"><span class="pre">iseg</span></code> datasets instead.</p>
-<p>This dataset contains segments (see <a class="reference internal" href="../segments.html#segments"><span class="std std-ref">Data segments</span></a>) with a global index of
-each datum in the dataset.</p>
-<p>It can enforce detection of duplicates, enforcing uniqueness on the set of
-metadata selected with the <code class="docutils literal notranslate"><span class="pre">unique</span></code> configuration keyword.</p>
-<p>It can optimize queries that use metadata selected with the <code class="docutils literal notranslate"><span class="pre">index</span></code>
-configuration keyword.</p>
-<p>It can currently contain data in a mix of formats, but relying on this is
-deprecated, and support for multi-format datasets may disappear in future
-versions of arkimet.</p>
-<div class="section" id="example-configuration">
-<h2>Example configuration<a class="headerlink" href="#example-configuration" title="Permalink to this headline">¶</a></h2>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
-<span class="nb">type</span> <span class="o">=</span> <span class="n">ondisk2</span>
-<span class="n">step</span> <span class="o">=</span> <span class="n">daily</span>
-<span class="nb">filter</span> <span class="o">=</span> <span class="n">origin</span><span class="p">:</span> <span class="n">GRIB1</span><span class="p">,</span><span class="mi">200</span>
-<span class="n">unique</span> <span class="o">=</span> <span class="n">origin</span><span class="p">,</span> <span class="n">reftime</span><span class="p">,</span> <span class="n">area</span>
-<span class="n">index</span> <span class="o">=</span> <span class="n">origin</span><span class="p">,</span> <span class="n">reftime</span>
-</pre></div>
-</div>
-</div>
-<div class="section" id="dataset-layout">
-<h2>Dataset layout<a class="headerlink" href="#dataset-layout" title="Permalink to this headline">¶</a></h2>
-<p>At the root of the dataset there is an <code class="docutils literal notranslate"><span class="pre">index.sqlite</span></code> file that maps each datum
-to its segment, offset and metadata.</p>
-<p>The <code class="docutils literal notranslate"><span class="pre">.sqlite</span></code> file contains additional indices for the metadata listed in the
-<code class="docutils literal notranslate"><span class="pre">unique</span></code> configuration value, to do quick duplicate detection, and extra
-indices for the metadata listed in the <code class="docutils literal notranslate"><span class="pre">index</span></code> configuration value.</p>
-</div>
-<div class="section" id="general-check-and-repack-notes">
-<h2>General check and repack notes<a class="headerlink" href="#general-check-and-repack-notes" title="Permalink to this headline">¶</a></h2>
-<p>The index is not able to distinguish between segments that have been fully
-deleted, and segments that have never been indexed.</p>
-<p>To prevent a scenario where deletion of the index followed by a repack would
-consider all segments in the dataset as containing deleted data, and therefore
-delete them all from disk, when arkimet notices that <code class="docutils literal notranslate"><span class="pre">index.sqlite</span></code> is missing,
-it creates a <code class="docutils literal notranslate"><span class="pre">needs-check-do-not-pack</span></code> file at the root of the dataset.</p>
-<p>When <code class="docutils literal notranslate"><span class="pre">needs-check-do-not-pack</span></code> is present, data files not known by the index
-are marked for rescanning (<code class="docutils literal notranslate"><span class="pre">[unaligned]</span></code>) instead of for deletion (<code class="docutils literal notranslate"><span class="pre">[deleted]</span></code>).</p>
-<p>The <code class="docutils literal notranslate"><span class="pre">needs-check-do-not-pack</span></code> file is removed by a successful <code class="docutils literal notranslate"><span class="pre">check</span></code>
-operation. <code class="docutils literal notranslate"><span class="pre">repack</span></code> refuses to run if <code class="docutils literal notranslate"><span class="pre">needs-check-do-not-pack</span></code> is present.
-This is intended to ensure that no repack is run until the index is rebuilt
-with a full check and rescan of all the data in the dataset.</p>
-</div>
-<div class="section" id="check-and-repack-on-concat-segments">
-<h2>Check and repack on concat segments<a class="headerlink" href="#check-and-repack-on-concat-segments" title="Permalink to this headline">¶</a></h2>
-<div class="section" id="during-check">
-<h3>During check<a class="headerlink" href="#during-check" title="Permalink to this headline">¶</a></h3>
-<ul class="simple">
-<li><p>the segment must be a file</p></li>
-<li><p>the segment must exist [missing]</p></li>
-<li><p>an empty segment not known by the index must be considered deleted [deleted]</p></li>
-<li><p>data files not known by a valid index are considered data files whose
-entire content has been removed [deleted]</p></li>
-<li><p>segments that contain some data that has been removed are
-identified as to be repacked [dirty]</p></li>
-<li><p>segments that only contain data that has been removed are
-identified as fully deleted [deleted]</p></li>
-<li><p>all data known by the index for this segment must be present on disk [corrupted]</p></li>
-<li><p>no pair of (offset, size) data spans from the index can overlap [corrupted]</p></li>
-<li><p>data must start at the beginning of the segment [dirty]</p></li>
-<li><p>there must be no gaps between data in the segment [dirty]</p></li>
-<li><p>data must end at the end of the segment [dirty]</p></li>
-<li><p>find segments that can only contain data older than <cite>archive age</cite> days [archive_age]</p></li>
-<li><p>find segments that can only contain data older than <cite>delete age</cite> days [delete_age]</p></li>
-<li><p>the span of reference times in each segment must fit inside the interval
-implied by the segment file name (FIXME: should this be disabled for
-archives, to deal with datasets that had a change of step in their lifetime?) [corrupted]</p></li>
-<li><p>the segment name must represent an interval matching the dataset step
-(FIXME: should this be disabled for archives, to deal with datasets that had
-a change of step in their lifetime?) [corrupted]</p></li>
-<li><p>data on disk must match the order of data used by queries [dirty]</p></li>
-<li><p>segments not known by the index, but when the index is either
-missing, older than the file, or marked as needing checking, are marked
-for reindexing instead of deletion [unaligned]</p></li>
-<li><p>format-specific consistency checks on the content of each file must pass [corrupted]</p></li>
-<li><p>if the index has been deleted, accessing the dataset recreates it
-empty, and creates a <cite>needs-check-do-not-pack</cite> file in the root of
-the dataset.</p></li>
-<li><p>while <cite>needs-check-do-not-pack</cite> is present, files with gaps are
-marked for rescanning instead of repacking. This prevents a scenario
-in which, after the index has been deleted, and some data has been
-imported that got appended to an existing segment, that segment would
-be considered as needing repack instead of rescan. [unaligned]</p></li>
-</ul>
-</div>
-<div class="section" id="during-accurate-check">
-<h3>During <code class="docutils literal notranslate"><span class="pre">--accurate</span></code> check<a class="headerlink" href="#during-accurate-check" title="Permalink to this headline">¶</a></h3>
-</div>
-<div class="section" id="during-fix">
-<h3>During fix<a class="headerlink" href="#during-fix" title="Permalink to this headline">¶</a></h3>
-<ul class="simple">
-<li><p>[deleted] segments are left untouched</p></li>
-<li><p>[dirty] segments are not touched</p></li>
-<li><p>[unaligned] segments are imported in-place</p></li>
-<li><p>[missing] segments are removed from the index</p></li>
-<li><p>[corrupted] segments can only be fixed by manual intervention. They
-are reported and left untouched</p></li>
-<li><p>[archive age] segments are not touched</p></li>
-<li><p>[delete age] segments are not touched</p></li>
-</ul>
-</div>
-<div class="section" id="during-repack">
-<h3>During repack<a class="headerlink" href="#during-repack" title="Permalink to this headline">¶</a></h3>
-<ul class="simple">
-<li><p>[deleted] segments are removed from disk</p></li>
-<li><p>[dirty] segments are rewritten to be without holes and have data in the right order.
-In concat segments, this is done to guarantee linear disk access when
-data are queried in the default sorting order. In dir segments, this
-is done to avoid sequence numbers growing indefinitely for datasets
-with frequent appends and removes.</p></li>
-<li><p>[missing] segments are removed from the index</p></li>
-<li><p>[corrupted] segments are not touched</p></li>
-<li><p>[archive age] segments are repacked if needed, then moved to .archive/last</p></li>
-<li><p>[delete age] segments are deleted</p></li>
-<li><p>[delete age] [dirty] a segment that needs to be both repacked and
-deleted, gets deleted without repacking</p></li>
-<li><p>[archive age] [dirty] a segment that needs to be both repacked and
-archived, gets repacked before archiving</p></li>
-<li><p>[unaligned] when <cite>needs-check-do-not-pack</cite> is present in the dataset
-root directory, running a repack fails asking to run a check first,
-to prevent deleting data that should be reindexed instead</p></li>
-</ul>
-</div>
-</div>
-<div class="section" id="check-and-repack-on-dir-segments">
-<h2>Check and repack on dir segments<a class="headerlink" href="#check-and-repack-on-dir-segments" title="Permalink to this headline">¶</a></h2>
-<div class="section" id="id1">
-<h3>During check<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h3>
-<ul class="simple">
-<li><p>the segment must be a directory [unaligned]</p></li>
-<li><p>the size of each data file must match the data size exactly [corrupted]</p></li>
-<li><p>the modification time of a directory segment can vary unpredictably,
-so it is ignored. The modification time of the sequence file is used
-instead.</p></li>
-<li><p>if arkimet is interrupted during rollback of an append operation on a
-dir dataset, there are files whose name has a higher sequence number
-than the sequence file. This will break further appends, and needs to
-be detected and fixed. [unaligned]</p></li>
-<li><p>the segment must exist [missing]</p></li>
-<li><p>an empty segment not known by the index must be considered deleted [deleted]</p></li>
-<li><p>data files not known by a valid index are considered data files whose
-entire content has been removed [deleted]</p></li>
-<li><p>segments that contain some data that has been removed are
-identified as to be repacked [dirty]</p></li>
-<li><p>segments that only contain data that has been removed are
-identified as fully deleted [deleted]</p></li>
-<li><p>all data known by the index for this segment must be present on disk [corrupted]</p></li>
-<li><p>no pair of (offset, size) data spans from the index can overlap [corrupted]</p></li>
-<li><p>data must start at the beginning of the segment [dirty]</p></li>
-<li><p>there must be no gaps between data in the segment [dirty]</p></li>
-<li><p>data must end at the end of the segment [dirty]</p></li>
-<li><p>find segments that can only contain data older than <cite>archive age</cite> days [archive_age]</p></li>
-<li><p>find segments that can only contain data older than <cite>delete age</cite> days [delete_age]</p></li>
-<li><p>the span of reference times in each segment must fit inside the interval
-implied by the segment file name (FIXME: should this be disabled for
-archives, to deal with datasets that had a change of step in their lifetime?) [corrupted]</p></li>
-<li><p>the segment name must represent an interval matching the dataset step
-(FIXME: should this be disabled for archives, to deal with datasets that had
-a change of step in their lifetime?) [corrupted]</p></li>
-<li><p>data on disk must match the order of data used by queries [dirty]</p></li>
-<li><p>segments not known by the index, but when the index is either
-missing, older than the file, or marked as needing checking, are marked
-for reindexing instead of deletion [unaligned]</p></li>
-<li><p>format-specific consistency checks on the content of each file must pass [corrupted]</p></li>
-<li><p>if the index has been deleted, accessing the dataset recreates it
-empty, and creates a <cite>needs-check-do-not-pack</cite> file in the root of
-the dataset.</p></li>
-<li><p>while <cite>needs-check-do-not-pack</cite> is present, files with gaps are
-marked for rescanning instead of repacking. This prevents a scenario
-in which, after the index has been deleted, and some data has been
-imported that got appended to an existing segment, that segment would
-be considered as needing repack instead of rescan. [unaligned]</p></li>
-</ul>
-</div>
-<div class="section" id="id2">
-<h3>During <code class="docutils literal notranslate"><span class="pre">--accurate</span></code> check<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h3>
-</div>
-<div class="section" id="id3">
-<h3>During fix<a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h3>
-<ul class="simple">
-<li><p>[unaligned] fix low sequence file value by setting it to the highest
-sequence number found.</p></li>
-<li><p>[unaligned] fix low sequence file value by setting it to the highest
-sequence number found, with one file truncated / partly written.</p></li>
-<li><p>[deleted] segments are left untouched</p></li>
-<li><p>[dirty] segments are not touched</p></li>
-<li><p>[unaligned] segments are imported in-place</p></li>
-<li><p>[missing] segments are removed from the index</p></li>
-<li><p>[corrupted] segments can only be fixed by manual intervention. They
-are reported and left untouched</p></li>
-<li><p>[archive age] segments are not touched</p></li>
-<li><p>[delete age] segments are not touched</p></li>
-</ul>
-</div>
-<div class="section" id="id4">
-<h3>During repack<a class="headerlink" href="#id4" title="Permalink to this headline">¶</a></h3>
-<ul class="simple">
-<li><p>[deleted] segments are removed from disk</p></li>
-<li><p>[dirty] segments are rewritten to be without holes and have data in the right order.
-In concat segments, this is done to guarantee linear disk access when
-data are queried in the default sorting order. In dir segments, this
-is done to avoid sequence numbers growing indefinitely for datasets
-with frequent appends and removes.</p></li>
-<li><p>[missing] segments are removed from the index</p></li>
-<li><p>[corrupted] segments are not touched</p></li>
-<li><p>[archive age] segments are repacked if needed, then moved to .archive/last</p></li>
-<li><p>[delete age] segments are deleted</p></li>
-<li><p>[delete age] [dirty] a segment that needs to be both repacked and
-deleted, gets deleted without repacking</p></li>
-<li><p>[archive age] [dirty] a segment that needs to be both repacked and
-archived, gets repacked before archiving</p></li>
-<li><p>[unaligned] when <cite>needs-check-do-not-pack</cite> is present in the dataset
-root directory, running a repack fails asking to run a check first,
-to prevent deleting data that should be reindexed instead</p></li>
-</ul>
+<p>This dataset format has been discontinued in favour of <code class="docutils literal notranslate"><span class="pre">type=iseg</span></code>.</p>
+<p>We are not aware of any production datasets still existing in <code class="docutils literal notranslate"><span class="pre">ondisk2</span></code>
+format. If any is found, they can be converted by changing their type in their
+configuration, removing the index, and running arki-check -f to cause segments
+to be reindexed.</p>
 <div class="toctree-wrapper compound">
-</div>
-</div>
 </div>
 </div>
 
@@ -278,6 +62,7 @@ to prevent deleting data that should be reindexed instead</p></li>
 <h3>Navigation</h3>
 <p class="caption"><span class="caption-text">Contents:</span></p>
 <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../metadata.html">Metadata types</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../matcher.html">Match expressions</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="../datasets.html">Datasets</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="iseg.html"><code class="docutils literal notranslate"><span class="pre">iseg</span></code> dataset format</a></li>
@@ -321,7 +106,7 @@ to prevent deleting data that should be reindexed instead</p></li>
     </form>
     </div>
 </div>
-<script type="text/javascript">$('#searchbox').show(0);</script>
+<script>$('#searchbox').show(0);</script>
 
 
 
@@ -338,7 +123,7 @@ to prevent deleting data that should be reindexed instead</p></li>
       &copy;2019, Enrico Zini.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.2.2</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.4.3</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |

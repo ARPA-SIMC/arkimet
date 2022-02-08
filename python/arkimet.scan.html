@@ -1,17 +1,17 @@
 
 <!DOCTYPE html>
 
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html>
   <head>
     <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>arkimet.scan package &#8212; arkimet 1.16 documentation</title>
-    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
-    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
-    <script type="text/javascript" src="../_static/jquery.js"></script>
-    <script type="text/javascript" src="../_static/underscore.js"></script>
-    <script type="text/javascript" src="../_static/doctools.js"></script>
-    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="arkimet.formatter package" href="arkimet.formatter.html" />
@@ -39,101 +39,101 @@
 </div>
 <div class="section" id="module-arkimet.scan.bufr">
 <span id="arkimet-scan-bufr-module"></span><h2>arkimet.scan.bufr module<a class="headerlink" href="#module-arkimet.scan.bufr" title="Permalink to this headline">¶</a></h2>
-<dl class="class">
+<dl class="py class">
 <dt id="arkimet.scan.bufr.Scanner">
 <em class="property">class </em><code class="sig-prename descclassname">arkimet.scan.bufr.</code><code class="sig-name descname">Scanner</code><a class="reference internal" href="../_modules/arkimet/scan/bufr.html#Scanner"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.scan.bufr.Scanner" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="attribute">
+<dd><dl class="py attribute">
 <dt id="arkimet.scan.bufr.Scanner.by_type">
 <code class="sig-name descname">by_type</code><em class="property"> = {}</em><a class="headerlink" href="#arkimet.scan.bufr.Scanner.by_type" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="arkimet.scan.bufr.Scanner.register">
-<em class="property">classmethod </em><code class="sig-name descname">register</code><span class="sig-paren">(</span><em class="sig-param">type: str, scanner: Callable[[dballe.Message, arkimet.Metadata], None], priority=0</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/arkimet/scan/bufr.html#Scanner.register"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.scan.bufr.Scanner.register" title="Permalink to this definition">¶</a></dt>
+<em class="property">classmethod </em><code class="sig-name descname">register</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">type</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">scanner</span><span class="p">:</span> <span class="n">Callable<span class="p">[</span><span class="p">[</span>dballe.Message<span class="p">, </span><a class="reference internal" href="arkimet.html#arkimet.Metadata" title="arkimet.Metadata">arkimet.Metadata</a><span class="p">]</span><span class="p">, </span>None<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">priority</span><span class="o">=</span><span class="default_value">0</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/arkimet/scan/bufr.html#Scanner.register"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.scan.bufr.Scanner.register" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="arkimet.scan.bufr.Scanner.scan">
-<code class="sig-name descname">scan</code><span class="sig-paren">(</span><em class="sig-param">msg: dballe.Message</em>, <em class="sig-param">md: arkimet.Metadata</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/arkimet/scan/bufr.html#Scanner.scan"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.scan.bufr.Scanner.scan" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">scan</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">msg</span><span class="p">:</span> <span class="n">dballe.Message</span></em>, <em class="sig-param"><span class="n">md</span><span class="p">:</span> <span class="n"><a class="reference internal" href="arkimet.html#arkimet.Metadata" title="arkimet.Metadata">arkimet.Metadata</a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/arkimet/scan/bufr.html#Scanner.scan"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.scan.bufr.Scanner.scan" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
 
-<dl class="function">
+<dl class="py function">
 <dt id="arkimet.scan.bufr.read_area_fixed">
-<code class="sig-prename descclassname">arkimet.scan.bufr.</code><code class="sig-name descname">read_area_fixed</code><span class="sig-paren">(</span><em class="sig-param">msg</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/arkimet/scan/bufr.html#read_area_fixed"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.scan.bufr.read_area_fixed" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">arkimet.scan.bufr.</code><code class="sig-name descname">read_area_fixed</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">msg</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/arkimet/scan/bufr.html#read_area_fixed"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.scan.bufr.read_area_fixed" title="Permalink to this definition">¶</a></dt>
 <dd><p>Read the area from a BUFR containing a fixed station</p>
 </dd></dl>
 
-<dl class="function">
+<dl class="py function">
 <dt id="arkimet.scan.bufr.read_area_mobile">
-<code class="sig-prename descclassname">arkimet.scan.bufr.</code><code class="sig-name descname">read_area_mobile</code><span class="sig-paren">(</span><em class="sig-param">msg</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/arkimet/scan/bufr.html#read_area_mobile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.scan.bufr.read_area_mobile" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">arkimet.scan.bufr.</code><code class="sig-name descname">read_area_mobile</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">msg</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/arkimet/scan/bufr.html#read_area_mobile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.scan.bufr.read_area_mobile" title="Permalink to this definition">¶</a></dt>
 <dd><p>Read the area from a BUFR containing a mobile station</p>
 </dd></dl>
 
-<dl class="function">
+<dl class="py function">
 <dt id="arkimet.scan.bufr.read_proddef">
-<code class="sig-prename descclassname">arkimet.scan.bufr.</code><code class="sig-name descname">read_proddef</code><span class="sig-paren">(</span><em class="sig-param">msg</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/arkimet/scan/bufr.html#read_proddef"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.scan.bufr.read_proddef" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">arkimet.scan.bufr.</code><code class="sig-name descname">read_proddef</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">msg</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/arkimet/scan/bufr.html#read_proddef"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.scan.bufr.read_proddef" title="Permalink to this definition">¶</a></dt>
 <dd><p>Read a default proddef value for a message</p>
 </dd></dl>
 
 </div>
 <div class="section" id="module-arkimet.scan.common">
 <span id="arkimet-scan-common-module"></span><h2>arkimet.scan.common module<a class="headerlink" href="#module-arkimet.scan.common" title="Permalink to this headline">¶</a></h2>
-<dl class="function">
+<dl class="py function">
 <dt id="arkimet.scan.common.norm_lon">
-<code class="sig-prename descclassname">arkimet.scan.common.</code><code class="sig-name descname">norm_lon</code><span class="sig-paren">(</span><em class="sig-param">lon</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/arkimet/scan/common.html#norm_lon"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.scan.common.norm_lon" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">arkimet.scan.common.</code><code class="sig-name descname">norm_lon</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">lon</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/arkimet/scan/common.html#norm_lon"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.scan.common.norm_lon" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
-<dl class="function">
+<dl class="py function">
 <dt id="arkimet.scan.common.utm2ll">
-<code class="sig-prename descclassname">arkimet.scan.common.</code><code class="sig-name descname">utm2ll</code><span class="sig-paren">(</span><em class="sig-param">x</em>, <em class="sig-param">y</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/arkimet/scan/common.html#utm2ll"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.scan.common.utm2ll" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">arkimet.scan.common.</code><code class="sig-name descname">utm2ll</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span></em>, <em class="sig-param"><span class="n">y</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/arkimet/scan/common.html#utm2ll"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.scan.common.utm2ll" title="Permalink to this definition">¶</a></dt>
 <dd><p>Convert UTM to Lat-Lon</p>
 </dd></dl>
 
-<dl class="function">
+<dl class="py function">
 <dt id="arkimet.scan.common.utm2ll2">
-<code class="sig-prename descclassname">arkimet.scan.common.</code><code class="sig-name descname">utm2ll2</code><span class="sig-paren">(</span><em class="sig-param">x</em>, <em class="sig-param">y</em>, <em class="sig-param">falseEasting</em>, <em class="sig-param">falseNorthing</em>, <em class="sig-param">zone</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/arkimet/scan/common.html#utm2ll2"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.scan.common.utm2ll2" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">arkimet.scan.common.</code><code class="sig-name descname">utm2ll2</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span></em>, <em class="sig-param"><span class="n">y</span></em>, <em class="sig-param"><span class="n">falseEasting</span></em>, <em class="sig-param"><span class="n">falseNorthing</span></em>, <em class="sig-param"><span class="n">zone</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/arkimet/scan/common.html#utm2ll2"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.scan.common.utm2ll2" title="Permalink to this definition">¶</a></dt>
 <dd><p>Convert UTM to Lat-Lon (more complete version used for GRIB2)</p>
 </dd></dl>
 
 </div>
 <div class="section" id="module-arkimet.scan.grib">
 <span id="arkimet-scan-grib-module"></span><h2>arkimet.scan.grib module<a class="headerlink" href="#module-arkimet.scan.grib" title="Permalink to this headline">¶</a></h2>
-<dl class="class">
+<dl class="py class">
 <dt id="arkimet.scan.grib.Grib">
 <em class="property">class </em><code class="sig-prename descclassname">arkimet.scan.grib.</code><code class="sig-name descname">Grib</code><a class="headerlink" href="#arkimet.scan.grib.Grib" title="Permalink to this definition">¶</a></dt>
 <dd><p>Access grib message contents</p>
-<dl class="attribute">
+<dl class="py attribute">
 <dt id="arkimet.scan.grib.Grib.edition">
 <code class="sig-name descname">edition</code><a class="headerlink" href="#arkimet.scan.grib.Grib.edition" title="Permalink to this definition">¶</a></dt>
 <dd><p>return the GRIB edition</p>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="arkimet.scan.grib.Grib.get_long">
-<code class="sig-name descname">get_long</code><span class="sig-paren">(</span><em class="sig-param">str</em><span class="sig-paren">)</span> &#x2192; int<a class="headerlink" href="#arkimet.scan.grib.Grib.get_long" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">get_long</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">str</span></em><span class="sig-paren">)</span> &#x2192; int<a class="headerlink" href="#arkimet.scan.grib.Grib.get_long" title="Permalink to this definition">¶</a></dt>
 <dd><p>return the long value of a grib key</p>
 </dd></dl>
 
 </dd></dl>
 
-<dl class="class">
+<dl class="py class">
 <dt id="arkimet.scan.grib.Scanner">
 <em class="property">class </em><code class="sig-prename descclassname">arkimet.scan.grib.</code><code class="sig-name descname">Scanner</code><a class="reference internal" href="../_modules/arkimet/scan/grib.html#Scanner"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.scan.grib.Scanner" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="attribute">
+<dd><dl class="py attribute">
 <dt id="arkimet.scan.grib.Scanner.by_edition">
 <code class="sig-name descname">by_edition</code><em class="property"> = {}</em><a class="headerlink" href="#arkimet.scan.grib.Scanner.by_edition" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="arkimet.scan.grib.Scanner.register">
-<em class="property">classmethod </em><code class="sig-name descname">register</code><span class="sig-paren">(</span><em class="sig-param">edition: int, scanner: Callable[[arkimet.scan.grib.Grib, arkimet.Metadata], None], priority=0</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/arkimet/scan/grib.html#Scanner.register"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.scan.grib.Scanner.register" title="Permalink to this definition">¶</a></dt>
+<em class="property">classmethod </em><code class="sig-name descname">register</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">edition</span><span class="p">:</span> <span class="n">int</span></em>, <em class="sig-param"><span class="n">scanner</span><span class="p">:</span> <span class="n">Callable<span class="p">[</span><span class="p">[</span><a class="reference internal" href="#arkimet.scan.grib.Grib" title="arkimet.scan.grib.Grib">arkimet.scan.grib.Grib</a><span class="p">, </span><a class="reference internal" href="arkimet.html#arkimet.Metadata" title="arkimet.Metadata">arkimet.Metadata</a><span class="p">]</span><span class="p">, </span>None<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">priority</span><span class="o">=</span><span class="default_value">0</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/arkimet/scan/grib.html#Scanner.register"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.scan.grib.Scanner.register" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="arkimet.scan.grib.Scanner.scan">
-<code class="sig-name descname">scan</code><span class="sig-paren">(</span><em class="sig-param">grib: arkimet.scan.grib.Grib</em>, <em class="sig-param">md: arkimet.Metadata</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/arkimet/scan/grib.html#Scanner.scan"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.scan.grib.Scanner.scan" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">scan</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">grib</span><span class="p">:</span> <span class="n"><a class="reference internal" href="#arkimet.scan.grib.Grib" title="arkimet.scan.grib.Grib">arkimet.scan.grib.Grib</a></span></em>, <em class="sig-param"><span class="n">md</span><span class="p">:</span> <span class="n"><a class="reference internal" href="arkimet.html#arkimet.Metadata" title="arkimet.Metadata">arkimet.Metadata</a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/arkimet/scan/grib.html#Scanner.scan"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.scan.grib.Scanner.scan" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
@@ -141,20 +141,20 @@
 </div>
 <div class="section" id="module-arkimet.scan.odimh5">
 <span id="arkimet-scan-odimh5-module"></span><h2>arkimet.scan.odimh5 module<a class="headerlink" href="#module-arkimet.scan.odimh5" title="Permalink to this headline">¶</a></h2>
-<dl class="class">
+<dl class="py class">
 <dt id="arkimet.scan.odimh5.Scanner">
 <em class="property">class </em><code class="sig-prename descclassname">arkimet.scan.odimh5.</code><code class="sig-name descname">Scanner</code><a class="reference internal" href="../_modules/arkimet/scan/odimh5.html#Scanner"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.scan.odimh5.Scanner" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="method">
+<dd><dl class="py method">
 <dt id="arkimet.scan.odimh5.Scanner.register">
-<em class="property">classmethod </em><code class="sig-name descname">register</code><span class="sig-paren">(</span><em class="sig-param">scanner: Callable[[h5py.File, arkimet.Metadata], None], priority=0</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/arkimet/scan/odimh5.html#Scanner.register"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.scan.odimh5.Scanner.register" title="Permalink to this definition">¶</a></dt>
+<em class="property">classmethod </em><code class="sig-name descname">register</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">scanner</span><span class="p">:</span> <span class="n">Callable<span class="p">[</span><span class="p">[</span>h5py._hl.files.File<span class="p">, </span><a class="reference internal" href="arkimet.html#arkimet.Metadata" title="arkimet.Metadata">arkimet.Metadata</a><span class="p">]</span><span class="p">, </span>None<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">priority</span><span class="o">=</span><span class="default_value">0</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/arkimet/scan/odimh5.html#Scanner.register"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.scan.odimh5.Scanner.register" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="arkimet.scan.odimh5.Scanner.scan">
-<code class="sig-name descname">scan</code><span class="sig-paren">(</span><em class="sig-param">pathname: str</em>, <em class="sig-param">md: arkimet.Metadata</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/arkimet/scan/odimh5.html#Scanner.scan"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.scan.odimh5.Scanner.scan" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">scan</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">pathname</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">md</span><span class="p">:</span> <span class="n"><a class="reference internal" href="arkimet.html#arkimet.Metadata" title="arkimet.Metadata">arkimet.Metadata</a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/arkimet/scan/odimh5.html#Scanner.scan"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.scan.odimh5.Scanner.scan" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
-<dl class="attribute">
+<dl class="py attribute">
 <dt id="arkimet.scan.odimh5.Scanner.scanners">
 <code class="sig-name descname">scanners</code><em class="property"> = []</em><a class="headerlink" href="#arkimet.scan.odimh5.Scanner.scanners" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
@@ -164,9 +164,9 @@
 </div>
 <div class="section" id="module-arkimet.scan.timedef">
 <span id="arkimet-scan-timedef-module"></span><h2>arkimet.scan.timedef module<a class="headerlink" href="#module-arkimet.scan.timedef" title="Permalink to this headline">¶</a></h2>
-<dl class="function">
+<dl class="py function">
 <dt id="arkimet.scan.timedef.make_same_units">
-<code class="sig-prename descclassname">arkimet.scan.timedef.</code><code class="sig-name descname">make_same_units</code><span class="sig-paren">(</span><em class="sig-param">tr: Dict[str, Any]</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/arkimet/scan/timedef.html#make_same_units"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.scan.timedef.make_same_units" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">arkimet.scan.timedef.</code><code class="sig-name descname">make_same_units</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">tr</span><span class="p">:</span> <span class="n">Dict<span class="p">[</span>str<span class="p">, </span>Any<span class="p">]</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/arkimet/scan/timedef.html#make_same_units"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.scan.timedef.make_same_units" title="Permalink to this definition">¶</a></dt>
 <dd><p>Make sure val1:unit1 and val2:unit2 are expressed using the same units.</p>
 </dd></dl>
 
@@ -198,6 +198,7 @@
 <h3>Navigation</h3>
 <p class="caption"><span class="caption-text">Contents:</span></p>
 <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../metadata.html">Metadata types</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../matcher.html">Match expressions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../datasets.html">Datasets</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../segments.html">Data segments</a></li>
@@ -239,7 +240,7 @@
     </form>
     </div>
 </div>
-<script type="text/javascript">$('#searchbox').show(0);</script>
+<script>$('#searchbox').show(0);</script>
 
 
 
@@ -256,7 +257,7 @@
       &copy;2019, Enrico Zini.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.2.2</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.4.3</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |
