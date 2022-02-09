@@ -9,6 +9,7 @@
 #include "arki/types/source/blob.h"
 #include "arki/utils/sys.h"
 #include "arki/metadata.h"
+#include "arki/metadata/collection.h"
 #include "arki/nag.h"
 
 using namespace std;
@@ -239,6 +240,56 @@ std::shared_ptr<dataset::Writer> DispatchPool::get_duplicates()
         return get_error();
 }
 
+void DispatchPool::remove(const metadata::Collection& todolist, bool simulate)
+{
+    // Group metadata by dataset
+    std::unordered_map<std::string, metadata::Collection> by_dataset;
+    unsigned idx = 1;
+    for (const auto& md: todolist)
+    {
+        if (!md->has_source_blob())
+        {
+            std::stringstream ss;
+            ss << "cannot remove data #" << idx << ": metadata does not come from an on-disk dataset";
+            throw std::runtime_error(ss.str());
+        }
+
+        auto ds = pool->locate_metadata(*md);
+        if (!ds)
+        {
+            std::stringstream ss;
+            ss << "cannot remove data #" << idx << " is does not come from any known dataset";
+            throw std::runtime_error(ss.str());
+        }
+
+        by_dataset[ds->name()].push_back(md);
+        ++idx;
+    }
+
+    if (simulate)
+    {
+        for (const auto& i: by_dataset)
+            arki::nag::warning("%s: %zd data would be deleted", i.first.c_str(), i.second.size());
+        return;
+    }
+
+    // Perform removals
+    for (const auto& i: by_dataset)
+    {
+        auto ds = get(i.first);
+        bool removed = false;
+        try {
+            ds->remove(i.second);
+            removed = true;
+        } catch (std::exception& e) {
+            arki::nag::warning("Cannot remove %zd messages from dataset %s: %s",
+                    i.second.size(), i.first.c_str(), e.what());
+        }
+
+        if (removed)
+            arki::nag::verbose("%s: %zd data marked as deleted", i.first.c_str(), i.second.size());
+    }
+}
 
 void DispatchPool::flush()
 {

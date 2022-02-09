@@ -48,7 +48,7 @@ public:
     WriterAcquireResult acquire(Metadata& md, const AcquireConfig& cfg=AcquireConfig()) override;
     void acquire_batch(WriterBatch& batch, const AcquireConfig& cfg=AcquireConfig()) override;
 
-    void remove(Metadata& id) override;
+    void remove(const metadata::Collection& mds) override;
 
     static void test_acquire(std::shared_ptr<Session> session, const core::cfg::Section& cfg, WriterBatch& batch);
 };

@@ -586,7 +586,7 @@ class ArkiCheckNonSimpleTestsMixin:
             self.assertEqual(len(log), 1)
             self.assertEqual(log[0].name, "arkimet")
             self.assertEqual(log[0].levelname, "INFO")
-            self.assertEqual(log[0].getMessage(), "testds: 1 data deleted")
+            self.assertEqual(log[0].getMessage(), "testds: 1 data marked as deleted")
             self.assertEqual(out, "")
 
             self.assertQueryResults(env, imported, [1, 2])

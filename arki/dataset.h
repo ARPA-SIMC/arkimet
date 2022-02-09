@@ -301,9 +301,10 @@ public:
     virtual void acquire_batch(WriterBatch& batch, const AcquireConfig& cfg=AcquireConfig()) = 0;
 
     /**
-     * Remove the given metadata from the database.
+     * Mark the data corresponding to the given metadata as removed from the
+     * database.
      */
-    virtual void remove(Metadata& md) = 0;
+    virtual void remove(const metadata::Collection& mds) = 0;
 
     /**
      * Flush pending changes to disk

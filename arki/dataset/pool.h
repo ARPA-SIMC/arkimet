@@ -126,6 +126,11 @@ public:
     std::shared_ptr<dataset::Writer> get_duplicates();
 
     /**
+     * Mark the given data as deleted
+     */
+    void remove(const arki::metadata::Collection& todolist, bool simulate);
+
+    /**
      * Flush all dataset data to disk
      */
     void flush();

@@ -68,54 +68,11 @@ struct remove : public MethKwargs<remove, arkipy_ArkiCheck>
             {
                 ReleaseGIL rg;
                 arki::dataset::DispatchPool pool(self->pool);
+
                 // Read all metadata from the file specified in --remove
                 arki::metadata::Collection todolist;
                 todolist.read_from_file(metadata_file);
-                // Datasets where each metadata comes from
-                std::vector<std::string> dsnames;
-                // Verify that all metadata items can be mapped to a dataset
-                std::map<std::string, unsigned> counts;
-                unsigned idx = 1;
-                for (const auto& md: todolist)
-                {
-                    if (!md->has_source_blob())
-                    {
-                        std::stringstream ss;
-                        ss << "cannot remove data #" << idx << ": metadata does not come from an on-disk dataset";
-                        throw std::runtime_error(ss.str());
-                    }
-
-                    auto ds = self->pool->locate_metadata(*md);
-                    if (!ds)
-                    {
-                        std::stringstream ss;
-                        ss << "cannot remove data #" << idx << " is does not come from any known dataset";
-                        throw std::runtime_error(ss.str());
-                    }
-
-                    dsnames.push_back(ds->name());
-                    ++counts[ds->name()];
-                    ++idx;
-                }
-                if (not self->checker_config.readonly)
-                {
-                    // Perform removals
-                    idx = 1;
-                    for (unsigned i = 0; i < todolist.size(); ++i)
-                    {
-                        auto ds = pool.get(dsnames[i]);
-                        try {
-                            ds->remove(todolist[i]);
-                        } catch (std::exception& e) {
-                            arki::nag::warning("Cannot remove message #%u: %s", idx, e.what());
-                        }
-                    }
-                    for (const auto& i: counts)
-                        arki::nag::verbose("%s: %u data deleted", i.first.c_str(), i.second);
-                } else {
-                    for (const auto& i: counts)
-                        arki::nag::warning("%s: %u data would be deleted", i.first.c_str(), i.second);
-                }
+                pool.remove(todolist, self->checker_config.readonly);
             }
             Py_RETURN_NONE;
         } ARKI_CATCH_RETURN_PYO

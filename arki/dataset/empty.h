@@ -56,7 +56,7 @@ public:
     WriterAcquireResult acquire(Metadata& md, const AcquireConfig& cfg=AcquireConfig()) override;
     void acquire_batch(WriterBatch& batch, const AcquireConfig& cfg=AcquireConfig()) override;
 
-    void remove(Metadata&) override
+    void remove(const metadata::Collection&) override
     {
         // Of course, after this method is called, the metadata cannot be found
         // in the dataset

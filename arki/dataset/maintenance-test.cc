@@ -156,16 +156,20 @@ void Fixture::make_hugefile()
 void Fixture::delete_one_in_segment()
 {
     metadata::Collection mds(*config().create_reader(), Matcher());
+    metadata::Collection to_delete;
+    to_delete.push_back(mds.get(0));
     auto writer = config().create_writer();
-    writer->remove(mds[0]);
+    writer->remove(to_delete);
 }
 
 void Fixture::delete_all_in_segment()
 {
     metadata::Collection mds(*config().create_reader(), Matcher());
+    metadata::Collection to_delete;
+    to_delete.push_back(mds.get(0));
+    to_delete.push_back(mds.get(1));
     auto writer = config().create_writer();
-    writer->remove(mds[0]);
-    writer->remove(mds[1]);
+    writer->remove(to_delete);
 }
 
 void Fixture::reset_seqfile()

@@ -90,7 +90,7 @@ void Writer::acquire_batch(WriterBatch& batch, const AcquireConfig& cfg)
     }
 }
 
-void Writer::remove(Metadata&)
+void Writer::remove(const metadata::Collection&)
 {
     throw std::runtime_error("cannot remove data from outbound dataset: dataset does not support removing items");
 }

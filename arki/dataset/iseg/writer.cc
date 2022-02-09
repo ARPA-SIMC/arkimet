@@ -10,6 +10,7 @@
 #include "arki/utils/sys.h"
 #include "arki/utils/string.h"
 #include "arki/metadata.h"
+#include "arki/metadata/collection.h"
 
 using namespace std;
 using namespace arki;
@@ -349,34 +350,34 @@ void Writer::acquire_batch(WriterBatch& batch, const AcquireConfig& cfg)
     }
 }
 
-void Writer::remove(Metadata& md)
+void Writer::remove(const metadata::Collection& mds)
 {
-    segment::WriterConfig writer_config;
-    writer_config.drop_cached_data_on_commit = false;
-    writer_config.eatmydata = dataset().eatmydata;
+    for (const auto& md: mds)
+    {
+        segment::WriterConfig writer_config;
+        writer_config.drop_cached_data_on_commit = false;
+        writer_config.eatmydata = dataset().eatmydata;
 
-    auto segment = file(writer_config, md);
+        auto segment = file(writer_config, *md);
 
-    const types::source::Blob* source = md.has_source_blob();
-    if (!source)
-        throw std::runtime_error("cannot remove metadata from dataset, because it has no Blob source");
+        const types::source::Blob* source = md->has_source_blob();
+        if (!source)
+            throw std::runtime_error("cannot remove metadata from dataset, because it has no Blob source");
 
-    if (source->basedir != dataset().path)
-        throw std::runtime_error("cannot remove metadata from dataset: its basedir is " + source->basedir + " but this dataset is at " + dataset().path);
+        if (source->basedir != dataset().path)
+            throw std::runtime_error("cannot remove metadata from dataset: its basedir is " + source->basedir + " but this dataset is at " + dataset().path);
 
-    // TODO: refuse if md is in the archive
+        // TODO: refuse if md is in the archive
 
-    // Delete from DB, and get file name
-    Pending p_del = segment->idx.begin_transaction();
-    segment->idx.remove(source->offset);
+        // Delete from DB, and get file name
+        Pending p_del = segment->idx.begin_transaction();
+        segment->idx.remove(source->offset);
 
-    // Commit delete from DB
-    p_del.commit();
+        // Commit delete from DB
+        p_del.commit();
 
-    // reset source and dataset in the metadata
-    md.unset_source();
-
-    scache.invalidate(md);
+        scache.invalidate(*md);
+    }
 }
 
 void Writer::test_acquire(std::shared_ptr<Session> session, const core::cfg::Section& cfg, WriterBatch& batch)
