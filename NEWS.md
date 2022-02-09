@@ -1,3 +1,7 @@
+# New in version 1.41 (unreleased)
+
+* Faster deletion of data from iseg datasets (#286)
+
 # New in version 1.40
 
 * Added documentation of metadata types (#280)
