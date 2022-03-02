@@ -583,10 +583,13 @@ class ArkiCheckNonSimpleTestsMixin:
 
             with LogCapture() as log:
                 out = self.call_output_success("testenv/testds", "--remove=testenv/remove.md", "--verbose", "--fix")
-            self.assertEqual(len(log), 1)
             self.assertEqual(log[0].name, "arkimet")
             self.assertEqual(log[0].levelname, "INFO")
-            self.assertEqual(log[0].getMessage(), "testds: 1 data marked as deleted")
+            self.assertEqual(log[0].getMessage(), "testds: 2007/07-08.grib: 1 data marked as deleted")
+            self.assertEqual(log[1].name, "arkimet")
+            self.assertEqual(log[1].levelname, "INFO")
+            self.assertEqual(log[1].getMessage(), "testds: 1 data marked as deleted")
+            self.assertEqual(log[2:], [])
             self.assertEqual(out, "")
 
             self.assertQueryResults(env, imported, [1, 2])
