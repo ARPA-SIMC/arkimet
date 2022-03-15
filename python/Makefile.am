@@ -148,6 +148,6 @@ EXTRA_DIST = \
 #    $(arkimet_python_tests)
 
 check-local: _arkimet.so
-	PYTHON="$(PYTHON)" NOSE="@NOSE@" $(TESTS_ENVIRONMENT) NOSE
+	PYTHON="$(PYTHON)" NOSE="@NOSE@" $(TESTS_ENVIRONMENT) PYTHON
 
 #CLEANFILES = python-arkimet.rst python-arkimet.html
