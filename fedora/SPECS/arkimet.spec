@@ -52,7 +52,6 @@ BuildRequires: %{python3_vers}
 BuildRequires: %{python3_vers}-devel
 BuildRequires: %{python3_vers}-werkzeug
 BuildRequires: %{python3_vers}-setproctitle
-BuildRequires: %{python3_vers}-nose2
 BuildRequires: %{python3_vers}-jinja2
 BuildRequires: %{python3_vers}-requests
 BuildRequires: %{python3_vers}-wreport3
