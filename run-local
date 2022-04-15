@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 TOP_SRCDIR=$(cd "$(dirname "$0")" && pwd)
 export ARKI_SCAN=$TOP_SRCDIR/conf/scan/
