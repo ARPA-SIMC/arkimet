@@ -462,7 +462,7 @@ class TestArkiServer(unittest.TestCase):
             with self.assertRaises(ExpectedFailure):
                 ds.query_bytes(progress=ProgressFailUpdate())
 
-    def test_query_get(self):
-        # See #144
-        res = requests.get(self.server_url + "/query")
-        self.assertEqual(res.status_code, 405)
+    # def test_query_get(self):
+    #     # See #144
+    #     res = requests.get(self.server_url + "/query")
+    #     self.assertEqual(res.status_code, 405)
