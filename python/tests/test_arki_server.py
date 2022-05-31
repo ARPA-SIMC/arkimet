@@ -165,6 +165,16 @@ class TestArkiServer(unittest.TestCase):
             data = ds.query_bytes("origin:GRIB1,200", postprocess="say ciao")
             self.assertEqual(data, b"ciao\n")
 
+    def test_issue289(self):
+        """
+        Test that queries also work over GET (#289)
+        """
+        res = requests.get(self.server_url + "/query", data={
+            "query": "origin:GRIB1,200",
+        })
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.content[:2], b"MD")
+
     def test_error(self):
         """
         Test the server giving an error
