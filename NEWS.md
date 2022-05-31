@@ -1,3 +1,7 @@
+# New in version 1.43
+
+* Only allow GET in /query if style=postprocess (#289)
+
 # New in version 1.42
 
 * Restored HTTP GET for /query (#289)
