@@ -488,7 +488,11 @@ def arki_query(request, handler, **kw):
     class QMacroView(QMacroMixin, View):
         # This needs to be accessible also over get. See #289
         def get(self):
-            self.post()
+            if self.request.values.get("style") != "postprocess":
+                self.http_error(405)
+                self.log_end()
+            else:
+                self.post()
     return QMacroView(request, handler, **kw)
 
 

@@ -172,8 +172,15 @@ class TestArkiServer(unittest.TestCase):
         res = requests.get(self.server_url + "/query", data={
             "query": "origin:GRIB1,200",
         })
+        self.assertEqual(res.status_code, 405)
+
+        res = requests.get(self.server_url + "/query", data={
+            "query": "origin:GRIB1,200",
+            "style": "postprocess",
+            "command": "say ciao",
+        })
         self.assertEqual(res.status_code, 200)
-        self.assertEqual(res.content[:2], b"MD")
+        self.assertEqual(res.content, b"ciao\n" * 4)
 
     def test_error(self):
         """
