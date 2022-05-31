@@ -408,6 +408,10 @@ class DatasetQueryMetadataInline(ArkiDatasetQuery):
 class DatasetQueryPostprocess(ArkiDatasetQuery):
     headers_ext = "postprocessed"
 
+    # This needs to be accessible also over get. See #289
+    def get(self):
+        self.post()
+
     def post(self):
         with self.response():
             # Iterate submitted files and export information about them to the
@@ -486,13 +490,7 @@ def arki_query(request, handler, **kw):
     View = get_view_for_style(style)
 
     class QMacroView(QMacroMixin, View):
-        # This needs to be accessible also over get. See #289
-        def get(self):
-            if self.request.values.get("style") != "postprocess":
-                self.http_error(405)
-                self.log_end()
-            else:
-                self.post()
+        pass
     return QMacroView(request, handler, **kw)
 
 

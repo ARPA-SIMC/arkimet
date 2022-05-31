@@ -87,10 +87,6 @@ Style control how the query results are returned, and can be one of:
  * ``rep_metadata``: return the output of the metadata report named by ``command``
  * ``rep_summary``: return the output of the summary report named by ``command``
 
-**Deprecated**: this endpoint is also available as ``GET`` only if
-``style=postprocess`` for compatibility with an old client. Please only use
-``POST`` instead of ``GET``.
-
 
 ``/summary``
 ^^^^^^^^^^^^
@@ -134,6 +130,10 @@ Style control how the query results are returned, and can be one of:
    will be made useable by the postprocessor
  * ``rep_metadata``: return the output of the metadata report named by ``command``
  * ``rep_summary``: return the output of the summary report named by ``command``
+
+**Deprecated**: this endpoint is also available as ``GET`` only if
+``style=postprocess`` for compatibility with an old client. Please only use
+``POST`` instead of ``GET``.
 
 ``POST /dataset/<name>/summary``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

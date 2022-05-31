@@ -169,18 +169,18 @@ class TestArkiServer(unittest.TestCase):
         """
         Test that queries also work over GET (#289)
         """
-        res = requests.get(self.server_url + "/query", data={
+        res = requests.get(self.server_url + "/dataset/test200/query", data={
             "query": "origin:GRIB1,200",
         })
         self.assertEqual(res.status_code, 405)
 
-        res = requests.get(self.server_url + "/query", data={
+        res = requests.get(self.server_url + "/dataset/test200/query", data={
             "query": "origin:GRIB1,200",
             "style": "postprocess",
             "command": "say ciao",
         })
         self.assertEqual(res.status_code, 200)
-        self.assertEqual(res.content, b"ciao\n" * 4)
+        self.assertEqual(res.content, b"ciao\n")
 
     def test_error(self):
         """
