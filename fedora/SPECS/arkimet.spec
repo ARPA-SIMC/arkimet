@@ -4,7 +4,7 @@
 Summary: Archive for weather information
 Name: arkimet
 Version: 1.42
-Release: 1
+Release: 2
 License: GPL
 Group: Applications/Meteo
 URL: https://github.com/arpa-simc/%{name}
@@ -236,7 +236,10 @@ if [ "$1" = "1" ]; then
 fi
 
 %changelog
-* May May 31 2022 Emanuele Di Giacomo <edigiacomo@arpae.it> - 1.42-1
+* May 31 2022 Emanuele Di Giacomo <edigiacomo@arpae.it> - 1.42-2
+- Fixed changelog
+
+* May 31 2022 Emanuele Di Giacomo <edigiacomo@arpae.it> - 1.42-1
 - Restored HTTP GET for /query (#289)
 
 * Tue Mar 15 2022 Emanuele Di Giacomo <edigiacomo@arpae.it> - 1.41-1
