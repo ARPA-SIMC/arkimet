@@ -1,4 +1,8 @@
-# New in version 1.41 (unreleased)
+# New in version 1.42
+
+* Restored HTTP GET for /query (#289)
+
+# New in version 1.41
 
 * Faster deletion of data from iseg datasets (#286)
 

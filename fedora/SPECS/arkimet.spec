@@ -3,7 +3,7 @@
 
 Summary: Archive for weather information
 Name: arkimet
-Version: 1.41
+Version: 1.42
 Release: 1
 License: GPL
 Group: Applications/Meteo
@@ -236,6 +236,9 @@ if [ "$1" = "1" ]; then
 fi
 
 %changelog
+* May May 31 2022 Emanuele Di Giacomo <edigiacomo@arpae.it> - 1.42-1
+- Restored HTTP GET for /query (#289)
+
 * Tue Mar 15 2022 Emanuele Di Giacomo <edigiacomo@arpae.it> - 1.41-1
 - Faster deletion of data from iseg datasets (#286)
 
