@@ -43,7 +43,7 @@ void TestMethodResult::print_failure_details(FILE* out) const
 unsigned long long TestCaseResult::elapsed_ns() const
 {
     unsigned long long res = 0;
-    for (const auto tmr: methods)
+    for (const auto& tmr: methods)
         res += tmr.elapsed_ns;
     return res;
 }
