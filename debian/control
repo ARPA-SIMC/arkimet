@@ -2,7 +2,7 @@ Source: arkimet
 Section: misc
 Priority: optional
 Maintainer: Enrico Zini <enrico@debian.org>
-Build-Depends: debhelper (>= 13), dh-python,
+Build-Depends: debhelper (>= 13), dh-python, help2man,
   pkg-config, meson, python3-sphinx,
   flex, bison,
   liblua5.1-0-dev,
