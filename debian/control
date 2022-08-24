@@ -4,6 +4,7 @@ Priority: optional
 Maintainer: Enrico Zini <enrico@debian.org>
 Build-Depends: debhelper (>= 13), dh-python,
   pkg-config, meson, python3-sphinx,
+  flex, bison,
   liblua5.1-0-dev,
   liblzo2-dev, zlib1g-dev,
   libsqlite3-dev (>= 3.6),
