@@ -2,8 +2,8 @@ Source: arkimet
 Section: misc
 Priority: optional
 Maintainer: Enrico Zini <enrico@debian.org>
-Build-Depends: debhelper (>= 12), dh-python,
-  pkg-config,
+Build-Depends: debhelper (>= 13), dh-python,
+  pkg-config, meson,
   liblua5.1-0-dev,
   liblzo2-dev, zlib1g-dev,
   libsqlite3-dev (>= 3.6),
@@ -20,9 +20,10 @@ Build-Depends: debhelper (>= 12), dh-python,
   curl,
   python3-all-dev, python3-werkzeug,
   python3-setproctitle, python3-h5py
-Standards-Version: 3.7.2.0
-XS-Python-Version: >= 2.5
-XS-Vcs-Svn: https://svn.smr.arpa.emr.it/arkimet
+Standards-Version: 4.5.1
+Homepage: https://github.com/ARPA-SIMC/arkimet
+Vcs-Git: https://github.com/ARPA-SIMC/arkimet.git
+Vcs-Browser: https://github.com/ARPA-SIMC/arkimet
 
 Package: arkimet
 Section: misc
@@ -31,10 +32,3 @@ Depends: ${shlibs:Depends}, ${misc:Depends}
 Recommends: python3-werkzeug, python3-setproctitle
 Description: Archive for weather information
  Description to be written.
-
-Package: arkimet-dbg
-Section: debug
-Architecture: any
-Depends: arkimet, ${shlibs:Depends}, ${misc:Depends} 
-Description: arkimet debugging symbols
- debugging symbols for the arkimet package
