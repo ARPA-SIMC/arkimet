@@ -19,7 +19,7 @@ Build-Depends: debhelper (>= 13), dh-python, help2man,
   libssl-dev,
   libxapian-dev,
   curl,
-  python3-all-dev, python3-werkzeug,
+  python3-all-dev, python3-wreport, python3-dballe, python3-werkzeug,
   python3-setproctitle, python3-h5py
 Standards-Version: 4.5.1
 Homepage: https://github.com/ARPA-SIMC/arkimet
