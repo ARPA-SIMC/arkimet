@@ -366,8 +366,14 @@ struct Path : public ManagedNamedFileDescriptor
     /**
      * Iterator for directory entries
      */
-    struct iterator : public std::iterator<std::input_iterator_tag, struct dirent>
+    struct iterator
     {
+        using iterator_category = std::input_iterator_tag;
+        using value_type = struct dirent;
+        using difference_type = int;
+        using pointer = struct dirent*;
+        using reference = struct dirent&;
+
         Path* path = nullptr;
         DIR* dir = nullptr;
         struct dirent* cur_entry = nullptr;

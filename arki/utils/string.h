@@ -169,7 +169,7 @@ struct Split
     Split(const std::string& str, const std::string& sep, bool skip_empty=false)
         : str(str), sep(sep), skip_empty(skip_empty) {}
 
-    class const_iterator : public std::iterator<std::input_iterator_tag, std::string>
+    class const_iterator
     {
     protected:
         const Split* split = nullptr;
@@ -182,6 +182,12 @@ struct Split
         void skip_separators();
 
     public:
+        using iterator_category = std::input_iterator_tag;
+        using value_type = std::string;
+        using difference_type = int;
+        using pointer = std::string*;
+        using reference = std::string&;
+
         /// Begin iterator
         const_iterator(const Split& split);
         /// End iterator
