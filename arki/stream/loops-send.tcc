@@ -8,6 +8,7 @@
 #include "abstract.h"
 #include "concrete.h"
 #include <poll.h>
+#include <array>
 #include <string>
 #include <functional>
 #include <system_error>
