@@ -10,8 +10,8 @@ RELEASE_PACKAGE=arkimet
 
 override_dh_auto_install:
 	dh_auto_install
-	install -d -m 0755 -o root -g root debian/tmp/etc/default/
-	install -m 0644 -o root -g root debian/arki-server-defaults debian/tmp/etc/default/arki-server
+	install -d -m 0755 -o root -g root debian/arkimet/etc/default/
+	install -m 0644 -o root -g root debian/arki-server-defaults debian/arkimet/etc/default/arki-server
 
 vercheck:
 	debian/vercheck > /dev/null
