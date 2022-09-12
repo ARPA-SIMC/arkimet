@@ -169,12 +169,12 @@ class TestArkiServer(unittest.TestCase):
         """
         Test that queries also work over GET (#289)
         """
-        res = requests.get(self.server_url + "/dataset/test200/query", data={
+        res = requests.get(self.server_url + "/dataset/test200/query", params={
             "query": "origin:GRIB1,200",
         })
         self.assertEqual(res.status_code, 405)
 
-        res = requests.get(self.server_url + "/dataset/test200/query", data={
+        res = requests.get(self.server_url + "/dataset/test200/query", params={
             "query": "origin:GRIB1,200",
             "style": "postprocess",
             "command": "say ciao",
