@@ -234,9 +234,10 @@ None is returned if the convex hull could not be computed.
         try {
             // Compute bounding box, and store the WKT in bounding
             auto bbox = self->summary->getConvexHull();
-            if (bbox.get())
+            if (bbox)
             {
-                pyo_unique_ptr res = arki::python::to_python(bbox->toString());
+                arki::utils::geos::WKTWriter writer;
+                pyo_unique_ptr res = arki::python::to_python(writer.write(bbox));
                 return res.release();
             }
             Py_RETURN_NONE;

@@ -139,6 +139,12 @@ void warning(const char* fmt, ...)
     va_end(ap);
 }
 
+void warning(const char* fmt, va_list ap)
+{
+    if (!handler) return;
+    handler->warning(fmt, ap);
+}
+
 void verbose(const char* fmt, ...)
 {
     if (!_verbose || !handler) return;
@@ -154,6 +160,12 @@ void verbose(const char* fmt, ...)
     va_end(ap);
 }
 
+void verbose(const char* fmt, va_list ap)
+{
+    if (!handler) return;
+    handler->verbose(fmt, ap);
+}
+
 void debug(const char* fmt, ...)
 {
     if (!_debug || !handler) return;
@@ -167,6 +179,12 @@ void debug(const char* fmt, ...)
         throw;
     }
     va_end(ap);
+}
+
+void debug(const char* fmt, va_list ap)
+{
+    if (!handler) return;
+    handler->debug(fmt, ap);
 }
 
 void debug_tty(const char* fmt, ...)

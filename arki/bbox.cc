@@ -11,16 +11,16 @@ namespace {
 
 struct NullBBox : public BBox
 {
-    std::unique_ptr<arki::utils::geos::Geometry> compute(const types::Area& v) const override
+    arki::utils::geos::Geometry compute(const types::Area& v) const override
     {
-        return unique_ptr<arki::utils::geos::Geometry>();
+        return arki::utils::geos::Geometry();
     }
 };
 
 struct MockBBox : public BBox
 {
     mutable std::map<std::string, std::string> db;
-    mutable geos::io::WKTReader* reader = nullptr;
+    mutable utils::geos::WKTReader reader;
 
     MockBBox()
     {
@@ -28,12 +28,10 @@ struct MockBBox : public BBox
 
     ~MockBBox()
     {
-        delete reader;
     }
 
     void init() const
     {
-        reader = new geos::io::WKTReader;
         // Fill db
         db["GRIB(Ni=441, Nj=181, latfirst=45000000, latlast=43000000, lonfirst=10000000, lonlast=12000000, type=0)"] =
             "POLYGON ((10 45, 10 43, 12 43, 12 45, 10 45))",
@@ -45,7 +43,7 @@ struct MockBBox : public BBox
             "POLYGON ((11.9960521084854 45.35574923752996, 12.52266823017452 44.82910625443706, 12.52266823017452 44.08429374556294, 11.9960521084854 43.55765076247004, 11.2511478915146 43.55765076247004, 10.72453176982548 44.08429374556294, 10.72453176982548 44.82910625443706, 11.2511478915146 45.35574923752996, 11.9960521084854 45.35574923752996))";
     }
 
-    std::unique_ptr<arki::utils::geos::Geometry> compute(const types::Area& v) const override
+    arki::utils::geos::Geometry compute(const types::Area& v) const override
     {
         // Lazily load area values used in tests
         if (db.empty())
@@ -56,11 +54,11 @@ struct MockBBox : public BBox
         if (val == db.end())
         {
             fprintf(stderr, "MOCK MISSING %s\n", key.c_str());
-            return std::unique_ptr<arki::utils::geos::Geometry>();
+            return arki::utils::geos::Geometry();
         }
         else
         {
-            return std::unique_ptr<arki::utils::geos::Geometry>(reader->read(val->second));
+            return reader.read(val->second);
         }
     }
 };

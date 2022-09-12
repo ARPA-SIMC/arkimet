@@ -53,25 +53,8 @@ namespace summary {
 #ifdef HAVE_GEOS
 struct StatsHull : public ItemVisitor
 {
-    const arki::utils::geos::GeometryFactory* gf;
-    vector<arki::utils::geos::Geometry*>* geoms;
+    arki::utils::geos::GeometryVector geoms;
     std::set<std::vector<uint8_t>> seen;
-
-    StatsHull()
-        : gf(arki::utils::geos::GeometryFactory::getDefaultInstance()),
-          geoms(new vector<arki::utils::geos::Geometry*>)
-    {
-    }
-
-    virtual ~StatsHull()
-    {
-        if (geoms)
-        {
-            for (auto i: *geoms)
-                delete i;
-            delete geoms;
-        }
-    }
 
     bool operator()(const Type& type) override
     {
@@ -82,25 +65,20 @@ struct StatsHull : public ItemVisitor
         pair<set<vector<uint8_t>>::iterator, bool> i = seen.insert(encoded);
         if (i.second)
         {
-            const arki::utils::geos::Geometry* g = a.bbox();
+            const arki::utils::geos::Geometry& g = a.bbox();
             if (!g) return true;
-#if GEOS_VERSION_MAJOR >= 3 && GEOS_VERSION_MINOR >= 8
-            geoms->push_back(g->clone().release());
-#else
-            geoms->push_back(g->clone());
-#endif
+            geoms.emplace_back(g.clone());
         }
         return true;
     }
 
-    unique_ptr<arki::utils::geos::Geometry> makeBBox()
+    arki::utils::geos::Geometry makeBBox()
     {
-        if (geoms->empty())
-            return unique_ptr<arki::utils::geos::Geometry>();
+        if (geoms.empty())
+            return arki::utils::geos::Geometry();
 
-        auto gc(gf->createGeometryCollection(geoms));
-        geoms = 0;
-        return unique_ptr<arki::utils::geos::Geometry>(gc->convexHull());
+        auto collection = arki::utils::geos::Geometry::create_collection(std::move(geoms));
+        return collection.convex_hull();
     }
 };
 #endif
@@ -142,14 +120,14 @@ void Summary::expand_date_range(core::Interval& interval) const
     interval.extend(Interval(root->stats.begin, root->stats.end));
 }
 
-std::unique_ptr<arki::utils::geos::Geometry> Summary::getConvexHull() const
+arki::utils::geos::Geometry Summary::getConvexHull() const
 {
 #ifdef HAVE_GEOS
     summary::StatsHull merger;
     root->visitItem(summary::Visitor::posForCode(TYPE_AREA), merger);
     return merger.makeBBox();
 #else
-    return std::unique_ptr<arki::utils::geos::Geometry>();
+    return arki::utils::geos::Geometry();
 #endif
 }
 

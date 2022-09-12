@@ -31,7 +31,6 @@ const size_t traits<Area>::type_sersize_bytes = SERSIZELEN;
 
 Area::~Area()
 {
-    delete cached_bbox;
 }
 
 Area::Style Area::parseStyle(const std::string& str)
@@ -121,7 +120,7 @@ int Area::compare(const Type& o) const
     }
 }
 
-const arki::utils::geos::Geometry* Area::bbox() const
+const arki::utils::geos::Geometry& Area::bbox() const
 {
 static thread_local std::unique_ptr<BBox> bbox;
 
@@ -130,9 +129,9 @@ static thread_local std::unique_ptr<BBox> bbox;
     {
         if (!bbox)
             bbox = BBox::create();
-        std::unique_ptr<arki::utils::geos::Geometry> res = bbox->compute(*this);
-        if (res.get())
-            cached_bbox = res.release();
+        arki::utils::geos::Geometry res = bbox->compute(*this);
+        if (res)
+            cached_bbox = std::move(res);
     }
 #endif
     return cached_bbox;

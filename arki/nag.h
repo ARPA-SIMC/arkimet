@@ -87,12 +87,15 @@ bool is_debug();
 
 /// Output a message, except during tests (a newline is automatically appended)
 void warning(const char* fmt, ...) __attribute__ ((format(printf, 1, 2)));
+void warning(const char* fmt, va_list ap);
 
 /// Output a message, if verbose messages are allowed (a newline is automatically appended)
 void verbose(const char* fmt, ...) __attribute__ ((format(printf, 1, 2)));
+void verbose(const char* fmt, va_list ap);
 
 /// Output a message, if debug messages are allowed (a newline is automatically appended)
 void debug(const char* fmt, ...) __attribute__ ((format(printf, 1, 2)));
+void debug(const char* fmt, va_list ap);
 
 /// Output a message to /dev/tty (used for debugging when the output is redirected)
 void debug_tty(const char* fmt, ...) __attribute__ ((format(printf, 1, 2)));

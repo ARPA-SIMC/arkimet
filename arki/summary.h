@@ -251,11 +251,11 @@ public:
      */
     void expand_date_range(core::Interval& interval) const;
 
-	/**
-	 * Get the convex hull of the union of all bounding boxes covered by the
-	 * metadata bundle.
-	 */
-	std::unique_ptr<arki::utils::geos::Geometry> getConvexHull() const;
+    /**
+     * Get the convex hull of the union of all bounding boxes covered by the
+     * metadata bundle.
+     */
+    arki::utils::geos::Geometry getConvexHull() const;
 
     friend class matcher::AND;
 };

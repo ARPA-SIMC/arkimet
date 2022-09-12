@@ -104,9 +104,11 @@ struct bbox : public MethKwargs<bbox, arkipy_ArkiDump>
 
             // Print it out
             std::string bbox;
-            if (hull.get())
-                return to_python(hull->toString());
-            else
+            if (hull)
+            {
+                arki::utils::geos::WKTWriter writer;
+                return to_python(writer.write(hull));
+            } else
                 Py_RETURN_NONE;
         } ARKI_CATCH_RETURN_PYO
     }
