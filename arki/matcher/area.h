@@ -3,7 +3,7 @@
 
 #include <arki/matcher/utils.h>
 #include <arki/types/values.h>
-#include <arki/utils/geosfwd.h>
+#include <arki/utils/geos.h>
 
 namespace arki {
 namespace matcher {
@@ -65,7 +65,7 @@ struct MatchAreaVM2 : public MatchArea
  */
 struct MatchAreaBBox : public MatchArea
 {
-    arki::utils::geos::Geometry* geom;
+    arki::utils::geos::Geometry geom;
     std::string verb;
     std::string geom_str;
 
@@ -76,7 +76,7 @@ struct MatchAreaBBox : public MatchArea
     MatchAreaBBox* clone() const override = 0;
     bool matchItem(const types::Type& o) const override;
     std::string toString() const override;
-    virtual bool matchGeom(const arki::utils::geos::Geometry* val) const = 0;
+    virtual bool matchGeom(const arki::utils::geos::Geometry& val) const = 0;
 
     static Implementation* parse(const std::string& pattern);
 };
@@ -86,7 +86,7 @@ struct MatchAreaBBoxEquals : public MatchAreaBBox
     using MatchAreaBBox::MatchAreaBBox;
     MatchAreaBBoxEquals(const std::string& geom);
     MatchAreaBBoxEquals* clone() const override;
-    virtual bool matchGeom(const arki::utils::geos::Geometry* val) const override;
+    virtual bool matchGeom(const arki::utils::geos::Geometry& val) const override;
 };
 
 struct MatchAreaBBoxIntersects : public MatchAreaBBox
@@ -94,7 +94,7 @@ struct MatchAreaBBoxIntersects : public MatchAreaBBox
     using MatchAreaBBox::MatchAreaBBox;
     MatchAreaBBoxIntersects(const std::string& geom);
     MatchAreaBBoxIntersects* clone() const override;
-    virtual bool matchGeom(const arki::utils::geos::Geometry* val) const override;
+    virtual bool matchGeom(const arki::utils::geos::Geometry& val) const override;
 };
 
 #if GEOS_VERSION_MAJOR >= 3
@@ -103,7 +103,7 @@ struct MatchAreaBBoxCovers : public MatchAreaBBox
     using MatchAreaBBox::MatchAreaBBox;
     MatchAreaBBoxCovers(const std::string& geom);
     MatchAreaBBoxCovers* clone() const override;
-    virtual bool matchGeom(const arki::utils::geos::Geometry* val) const override;
+    virtual bool matchGeom(const arki::utils::geos::Geometry& val) const override;
 };
 
 struct MatchAreaBBoxCoveredBy : public MatchAreaBBox
@@ -111,7 +111,7 @@ struct MatchAreaBBoxCoveredBy : public MatchAreaBBox
     using MatchAreaBBox::MatchAreaBBox;
     MatchAreaBBoxCoveredBy(const std::string& geom);
     MatchAreaBBoxCoveredBy* clone() const override;
-    virtual bool matchGeom(const arki::utils::geos::Geometry* val) const override;
+    virtual bool matchGeom(const arki::utils::geos::Geometry& val) const override;
 };
 #endif
 

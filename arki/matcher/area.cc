@@ -186,31 +186,19 @@ Implementation* MatchArea::parse(const std::string& pattern)
 #ifdef HAVE_GEOS
 
 MatchAreaBBox::MatchAreaBBox(const MatchAreaBBox& o)
-    :
-#if GEOS_VERSION_MAJOR >= 3 && GEOS_VERSION_MINOR >= 8
-        geom(o.geom->clone().release()),
-#else
-        geom(o.geom->clone()),
-#endif
-        verb(o.verb), geom_str(o.geom_str)
+    : geom(o.geom.clone()), verb(o.verb), geom_str(o.geom_str)
 {
 }
 
 MatchAreaBBox::MatchAreaBBox(const std::string& verb, const std::string& geom)
     : geom(0), verb(verb), geom_str(geom)
 {
-    auto gf = arki::utils::geos::GeometryFactory::getDefaultInstance();
-    arki::utils::geos::WKTReader reader(gf);
-#if GEOS_VERSION_MAJOR >= 3 && GEOS_VERSION_MINOR >= 8
-    this->geom = reader.read(geom).release();
-#else
+    arki::utils::geos::WKTReader reader;
     this->geom = reader.read(geom);
-#endif
 }
 
 MatchAreaBBox::~MatchAreaBBox()
 {
-    if (geom) delete geom;
 }
 
 Implementation* MatchAreaBBox::parse(const std::string& pattern)
@@ -244,21 +232,20 @@ Implementation* MatchAreaBBox::parse(const std::string& pattern)
 
 bool MatchAreaBBox::matchItem(const Type& o) const
 {
-	if (geom == 0) return false;
+    if (geom == 0) return false;
 
     const types::Area* v = dynamic_cast<const types::Area*>(&o);
     if (!v) return false;
-    const arki::utils::geos::Geometry* bbox = v->bbox();
-    if (bbox == 0) return false;
-
-	return matchGeom(bbox);
+    if (const arki::utils::geos::Geometry& bbox = v->bbox())
+        return matchGeom(bbox);
+    return false;
 }
 
 std::string MatchAreaBBox::toString() const
 {
-	stringstream out;
-	out << "bbox " << verb << " " << geom_str;
-	return out.str();
+    stringstream out;
+    out << "bbox " << verb << " " << geom_str;
+    return out.str();
 }
 
 
@@ -267,18 +254,18 @@ MatchAreaBBoxEquals::MatchAreaBBoxEquals(const std::string& geom) : MatchAreaBBo
 
 MatchAreaBBoxEquals* MatchAreaBBoxEquals::clone() const { return new MatchAreaBBoxEquals(*this); }
 
-bool MatchAreaBBoxEquals::matchGeom(const arki::utils::geos::Geometry* val) const
+bool MatchAreaBBoxEquals::matchGeom(const arki::utils::geos::Geometry& val) const
 {
-	return val->equals(geom);
+    return val.equals(geom);
 }
 
 MatchAreaBBoxIntersects::MatchAreaBBoxIntersects(const std::string& geom) : MatchAreaBBox("intersects", geom) {}
 
 MatchAreaBBoxIntersects* MatchAreaBBoxIntersects::clone() const { return new MatchAreaBBoxIntersects(*this); }
 
-bool MatchAreaBBoxIntersects::matchGeom(const arki::utils::geos::Geometry* val) const
+bool MatchAreaBBoxIntersects::matchGeom(const arki::utils::geos::Geometry& val) const
 {
-	return val->intersects(geom);
+    return val.intersects(geom);
 }
 
 #if GEOS_VERSION_MAJOR >= 3
@@ -286,18 +273,18 @@ MatchAreaBBoxCovers::MatchAreaBBoxCovers(const std::string& geom) : MatchAreaBBo
 
 MatchAreaBBoxCovers* MatchAreaBBoxCovers::clone() const { return new MatchAreaBBoxCovers(*this); }
 
-bool MatchAreaBBoxCovers::matchGeom(const arki::utils::geos::Geometry* val) const
+bool MatchAreaBBoxCovers::matchGeom(const arki::utils::geos::Geometry& val) const
 {
-	return val->covers(geom);
+    return val.covers(geom);
 }
 
 MatchAreaBBoxCoveredBy::MatchAreaBBoxCoveredBy(const std::string& geom) : MatchAreaBBox("coveredby", geom) {}
 
 MatchAreaBBoxCoveredBy* MatchAreaBBoxCoveredBy::clone() const { return new MatchAreaBBoxCoveredBy(*this); }
 
-bool MatchAreaBBoxCoveredBy::matchGeom(const arki::utils::geos::Geometry* val) const
+bool MatchAreaBBoxCoveredBy::matchGeom(const arki::utils::geos::Geometry& val) const
 {
-	return val->coveredBy(geom);
+    return val.covered_by(geom);
 }
 #endif
 

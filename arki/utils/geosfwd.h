@@ -69,27 +69,26 @@ namespace arki {
 namespace utils {
 namespace geos {
 
+class GeometryVector;
+class Geometry;
+class WKTReader;
+
 #ifdef HAVE_GEOS
 
 #if GEOS_VERSION_MAJOR < 3
-using ::geos::Geometry;
 using ::geos::GeometryFactory;
 using ::geos::Coordinate;
 using ::geos::CoordinateArraySequence;
 using ::geos::LinearRing;
-using ::geos::WKTReader;
 #else
-using ::geos::geom::Geometry;
 using ::geos::geom::GeometryFactory;
 using ::geos::geom::Coordinate;
 using ::geos::geom::CoordinateArraySequence;
 using ::geos::geom::LinearRing;
-using ::geos::io::WKTReader;
 #endif
 
 #else
 
-struct Geometry {};
 struct GeometryFactory {};
 struct Coordinate {};
 

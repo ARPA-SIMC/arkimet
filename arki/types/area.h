@@ -3,7 +3,7 @@
 
 #include <memory>
 #include <arki/types/encoded.h>
-#include <arki/utils/geosfwd.h>
+#include <arki/utils/geos.h>
 
 namespace arki {
 namespace types {
@@ -31,7 +31,7 @@ struct traits<Area>
 class Area : public types::Encoded
 {
 protected:
-    mutable arki::utils::geos::Geometry* cached_bbox = nullptr;
+    mutable arki::utils::geos::Geometry cached_bbox;
 
     constexpr static const char* doc = R"(
 Geographical area relative to a data element.
@@ -77,7 +77,7 @@ public:
     static std::unique_ptr<Area> decode_structure(const structured::Keys& keys, const structured::Reader& val);
 
     /// Return the geographical bounding box
-    const arki::utils::geos::Geometry* bbox() const;
+    const arki::utils::geos::Geometry& bbox() const;
 
     static void write_documentation(stream::Text& out, unsigned heading_level);
 
