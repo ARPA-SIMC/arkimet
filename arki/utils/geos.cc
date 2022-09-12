@@ -234,7 +234,7 @@ WKTReader::WKTReader()
 
 Geometry WKTReader::read(const char* str)
 {
-    Geometry res(GEOSWKTReader_read(ptr, str));
+    Geometry res(GEOSWKTReader_read_r(context, ptr, str));
     if (!res)
         throw GEOSError();
     return res;
@@ -242,7 +242,7 @@ Geometry WKTReader::read(const char* str)
 
 Geometry WKTReader::read(const std::string& str)
 {
-    Geometry res(GEOSWKTReader_read(ptr, str.c_str()));
+    Geometry res(GEOSWKTReader_read_r(context, ptr, str.c_str()));
     if (!res)
         throw GEOSError();
     return res;
