@@ -78,7 +78,10 @@ class Handler(BaseHTTPRequestHandler):
         """
         # Derived from werkzeug's WSGIRequestHandler
         from werkzeug.urls import url_parse, url_unquote
-        from werkzeug._compat import wsgi_encoding_dance
+        try:
+            from werkzeug._compat import wsgi_encoding_dance as _wsgi_encoding_dance
+        except ModuleNotFoundError:
+            from werkzeug._internal import _wsgi_encoding_dance
 
         request_url = url_parse(self.path)
 
@@ -96,8 +99,8 @@ class Handler(BaseHTTPRequestHandler):
             'SERVER_SOFTWARE':      self.server_version,
             'REQUEST_METHOD':       self.command,
             'SCRIPT_NAME':          '',
-            'PATH_INFO':            wsgi_encoding_dance(path_info),
-            'QUERY_STRING':         wsgi_encoding_dance(request_url.query),
+            'PATH_INFO':            _wsgi_encoding_dance(path_info),
+            'QUERY_STRING':         _wsgi_encoding_dance(request_url.query),
             'CONTENT_TYPE':         self.headers.get('Content-Type', ''),
             'CONTENT_LENGTH':       self.headers.get('Content-Length', ''),
             'REMOTE_ADDR':          self.client_address[0],
