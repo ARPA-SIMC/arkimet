@@ -1,6 +1,6 @@
 [![Build Status](https://simc.arpae.it/moncic-ci/arkimet/centos7.png)](https://simc.arpae.it/moncic-ci/arkimet/)
 [![Build Status](https://simc.arpae.it/moncic-ci/arkimet/centos8.png)](https://simc.arpae.it/moncic-ci/arkimet/)
-[![Build Status](https://simc.arpae.it/moncic-ci/arkimet/fedora34.png)](https://simc.arpae.it/moncic-ci/arkimet/)
+[![Build Status](https://simc.arpae.it/moncic-ci/arkimet/fedora36.png)](https://simc.arpae.it/moncic-ci/arkimet/)
 [![Build Status](https://copr.fedorainfracloud.org/coprs/simc/stable/package/arkimet/status_image/last_build.png)](https://copr.fedorainfracloud.org/coprs/simc/stable/package/arkimet/)
 
 # Arkimet
