@@ -48,16 +48,27 @@ const char* GEOSError::what() const noexcept
 }
 
 
+#if GEOS_VERSION_MAJOR > 3 || (GEOS_VERSION_MAJOR == 3 && GEOS_VERSION_MINOR >= 7)
 Context::Context()
     : ctx(GEOS_init_r())
 {
     GEOSContext_setNoticeHandler_r(ctx, geos_notice_handler);
     GEOSContext_setErrorHandler_r(ctx, geos_error_handler);
 }
+#else
+Context::Context()
+    : ctx(initGEOS_r(geos_notice_handler, geos_error_handler))
+{
+}
+#endif
 
 Context::~Context()
 {
+#if GEOS_VERSION_MAJOR > 3 || (GEOS_VERSION_MAJOR == 3 && GEOS_VERSION_MINOR >= 7)
     GEOS_finish_r(ctx);
+#else
+    finishGEOS_r(ctx);
+#endif
 }
 
 
