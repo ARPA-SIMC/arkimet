@@ -60,7 +60,10 @@ foreach name : ['lua', 'lua5.1', 'lua5.2', 'lua5.3']
 endforeach
 conf_data.set('HAVE_LUA', lua_dep.found())
 
-lzo_dep = dependency('lzo2')
+lzo_dep = dependency('lzo2', required: false)
+if not lzo_dep.found()
+    lzo_dep = compiler.find_library('lzo2')
+endif
 conf_data.set('HAVE_LZO', lzo_dep.found())
 
 eccodes_dep = dependency('eccodes', required: false)
