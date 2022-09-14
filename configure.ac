@@ -287,7 +287,7 @@ then
         have_geos=no
     else
         GEOS_CFLAGS=`geos-config --cflags`
-        GEOS_LIBS=`geos-config --cclibs`
+        GEOS_LIBS=`geos-config --clibs`
         AC_SUBST(GEOS_CFLAGS)
         AC_SUBST(GEOS_LIBS)
     fi
