@@ -169,6 +169,7 @@ struct WKTReader {};
 struct WKTWriter {};
 
 extern template class Wrapper<GEOSGeometry*, GEOSGeom_destroy_r>;
+extern template class Wrapper<GEOSCoordSequence*, GEOSCoordSeq_destroy_r>;
 extern template class Wrapper<GEOSWKTReader*, GEOSWKTReader_destroy_r>;
 extern template class Wrapper<GEOSWKTWriter*, GEOSWKTWriter_destroy_r>;
 

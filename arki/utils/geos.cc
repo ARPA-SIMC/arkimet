@@ -288,6 +288,7 @@ std::string WKTWriter::write(const Geometry& g)
 
 
 template class Wrapper<GEOSGeometry*, GEOSGeom_destroy_r>;
+template class Wrapper<GEOSCoordSequence*, GEOSCoordSeq_destroy_r>;
 template class Wrapper<GEOSWKTReader*, GEOSWKTReader_destroy_r>;
 template class Wrapper<GEOSWKTWriter*, GEOSWKTWriter_destroy_r>;
 
