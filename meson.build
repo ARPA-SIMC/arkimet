@@ -41,12 +41,12 @@ geos_config = find_program('geos-config', required: false)
 if geos_config.found()
     geos_includes = run_command(geos_config, '--includes').stdout().split()
     geos_cflags = run_command(geos_config, '--cflags').stdout().split()
-    geos_cclibs = run_command(geos_config, '--clibs').stdout().split()
+    geos_clibs = run_command(geos_config, '--clibs').stdout().split()
     geos_version = run_command(geos_config, '--version').stdout().strip()
     geos_dep = declare_dependency(
         include_directories: geos_includes,
         compile_args: geos_cflags,
-        link_args: geos_cclibs,
+        link_args: geos_clibs,
         version: geos_version,
     )
 endif
