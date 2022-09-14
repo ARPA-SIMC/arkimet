@@ -86,8 +86,8 @@ Requires: %{python3_vers}-h5py
 Requires: h5py
 %endif
 
-%{!?python3_sitelib: %define python3_sitelib %(%{__python3} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")}
-%{!?python3_sitearch: %define python3_sitearch %(%{__python3} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
+%{!?python3_sitelib: %define python3_sitelib %(%{__python3} -c "import sysconfig; print(sysconfig.get_path('purelib'))")}
+%{!?python3_sitearch: %define python3_sitearch %(%{__python3} -c "import sysconfig; print(sysconfig.get_path('platlib'))")}
 
 %description
 Arkimet is a set of tools to organize, archive and distribute 
