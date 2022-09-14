@@ -48,7 +48,7 @@ const char* GEOSError::what() const noexcept
 }
 
 
-#if GEOS_VERSION_MAJOR > 3 || (GEOS_VERSION_MAJOR == 3 && GEOS_VERSION_MINOR >= 7)
+#if GEOS_VERSION_MAJOR > 3 || (GEOS_VERSION_MAJOR == 3 && GEOS_VERSION_MINOR >= 5)
 Context::Context()
     : ctx(GEOS_init_r())
 {
@@ -64,7 +64,7 @@ Context::Context()
 
 Context::~Context()
 {
-#if GEOS_VERSION_MAJOR > 3 || (GEOS_VERSION_MAJOR == 3 && GEOS_VERSION_MINOR >= 7)
+#if GEOS_VERSION_MAJOR > 3 || (GEOS_VERSION_MAJOR == 3 && GEOS_VERSION_MINOR >= 5)
     GEOS_finish_r(ctx);
 #else
     finishGEOS_r(ctx);
