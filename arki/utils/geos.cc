@@ -124,9 +124,18 @@ CoordinateSequence::CoordinateSequence(unsigned size, unsigned dims)
 
 void CoordinateSequence::setxy(unsigned idx, double x, double y)
 {
+#if GEOS_VERSION_MAJOR > 3 || (GEOS_VERSION_MAJOR == 3 && GEOS_VERSION_MINOR >= 8)
     int res = GEOSCoordSeq_setXY_r(context, ptr, idx, x, y);
     if (!res)
         throw GEOSError();
+#else
+    int res = GEOSCoordSeq_setX_r(context, ptr, idx, x);
+    if (!res)
+        throw GEOSError();
+    res = GEOSCoordSeq_setY_r(context, ptr, idx, y);
+    if (!res)
+        throw GEOSError();
+#endif
 }
 
 
