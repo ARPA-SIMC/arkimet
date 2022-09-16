@@ -56,7 +56,11 @@ class ScannedImage:
         """
         res = getattr(self, "_gpsinfo", None)
         if res is None:
-            gpsinfo = self.exif.get(gpsinfo_tag)
+            # Introduced in https://pillow.readthedocs.io/en/stable/releasenotes/8.2.0.html
+            gpsinfo = self.exif.get_ifd(gpsinfo_tag)
+            if gpsinfo is None:
+                # Fallback with pillow pre-8.2
+                gpsinfo = self.exif.get(gpsinfo_tag)
             res = {} if gpsinfo is None else gpsinfo
             self._gpsinfo = res
         return res
