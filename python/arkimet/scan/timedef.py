@@ -179,37 +179,37 @@ def enlarge_unit(val: int, unit: int) -> bool:
     """
     if unit == UNIT_MINUTE:
         if (val % 60) == 0:
-            return val / 60, UNIT_HOUR
+            return val // 60, UNIT_HOUR
     elif unit == UNIT_HOUR:
         if (val % 24) == 0:
-            return val / 24, UNIT_DAY
+            return val // 24, UNIT_DAY
     elif unit == UNIT_DAY:
         return val, unit
     elif unit == UNIT_MONTH:
         if (val % 12) == 0:
-            return val / 12, UNIT_YEAR
+            return val // 12, UNIT_YEAR
     elif unit == UNIT_YEAR:
         if (val % 10) == 0:
-            return val / 10, UNIT_DECADE
+            return val // 10, UNIT_DECADE
     elif unit == UNIT_DECADE:
         if (val % 100) == 0:
-            return val / 100, UNIT_CENTURY
+            return val // 100, UNIT_CENTURY
     elif unit == UNIT_NORMAL:
         return val, unit
     elif unit == UNIT_CENTURY:
         return val, unit
     elif unit == UNIT_3HOURS:
         if (val % 2) == 0:
-            return val / 2, UNIT_6HOURS
+            return val // 2, UNIT_6HOURS
     elif unit == UNIT_6HOURS:
         if (val % 2) == 0:
-            return val / 2, UNIT_12HOURS
+            return val // 2, UNIT_12HOURS
     elif unit == UNIT_12HOURS:
         if (val % 2) == 0:
-            return val / 2, UNIT_DAY
+            return val // 2, UNIT_DAY
     elif unit == UNIT_SECOND:
         if (val % 60) == 0:
-            return val / 60, UNIT_MINUTE
+            return val // 60, UNIT_MINUTE
     elif unit == UNIT_MISSING:
         return val, unit
     else:
