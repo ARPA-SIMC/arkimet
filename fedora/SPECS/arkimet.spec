@@ -206,6 +206,9 @@ make check
 %doc README.md
 %doc %{_docdir}/arkimet/*
 
+%exclude %{python3_sitearch}/*.la
+%exclude %{_libdir}/libarkimet*.la
+
 %files -n arkimet-devel
 %defattr(-,root,root,-)
 %{_libdir}/libarkimet*.a
