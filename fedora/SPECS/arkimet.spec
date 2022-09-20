@@ -201,7 +201,6 @@ make check
 %{python3_sitelib}/arkimet/*
 %dir %{python3_sitearch}
 %{python3_sitearch}/*.a
-%{python3_sitearch}/*.la
 %{python3_sitearch}/*.so*
 %doc %{_mandir}/man1/*
 %doc README.md
@@ -210,7 +209,6 @@ make check
 %files -n arkimet-devel
 %defattr(-,root,root,-)
 %{_libdir}/libarkimet*.a
-%{_libdir}/libarkimet*.la
 %{_libdir}/libarkimet.so
 %dir %{_includedir}/arki
 %{_includedir}/arki/*
