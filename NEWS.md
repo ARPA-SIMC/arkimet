@@ -1,3 +1,13 @@
+# New in version 1.45
+
+* Ported to GEOS C API (#291) (#294)
+* Compatibility with newer werkzeug (#293)
+* Compatibility with gcc-c++ 12 (#292)
+
+# New in version 1.44
+
+* Only allow GET in dataset-specific /query if style=postprocess (#289)
+
 # New in version 1.43
 
 * Only allow GET in /query if style=postprocess (#289)

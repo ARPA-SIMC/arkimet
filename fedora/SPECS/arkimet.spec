@@ -3,7 +3,7 @@
 
 Summary: Archive for weather information
 Name: arkimet
-Version: 1.44
+Version: 1.45
 Release: 1
 License: GPL
 Group: Applications/Meteo
@@ -237,6 +237,11 @@ if [ "$1" = "1" ]; then
 fi
 
 %changelog
+* Tue Sep 20 2022 Daniele Branchini <dbranchini@arpae.it> - 1.45-1
+- Ported to GEOS C API (#291) (#294)
+- Compatibility with newer werkzeug (#293)
+- Compatibility with gcc-c++ 12 (#292)
+
 * Tue May 31 2022 Emanuele Di Giacomo <edigiacomo@arpae.it> - 1.44-1
 - Only allow GET in dataset-specific /query if style=postprocess (#289)
 
