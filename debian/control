@@ -30,7 +30,7 @@ Vcs-Browser: https://github.com/ARPA-SIMC/arkimet
 Package: arkimet
 Section: misc
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}
+Depends: python3-arkimet, ${shlibs:Depends}, ${misc:Depends}
 Recommends: python3-werkzeug, python3-setproctitle
 Description: Archive for weather information
  Description to be written.
@@ -38,7 +38,7 @@ Description: Archive for weather information
 Package: python3-arkimet
 Section: python
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, ${python3:Depends}
+Depends: python3-wreport, python3-dballe, ${shlibs:Depends}, ${misc:Depends}, ${python3:Depends}
 Description: Archive for weather information (Python3 API)
  Description to be written.
  .
