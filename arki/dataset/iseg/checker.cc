@@ -288,6 +288,9 @@ public:
 
     void remove_data(const std::vector<uint64_t>& offsets)
     {
+        if (!segment->exists_on_disk())
+            return;
+
         // Delete from DB, and get file name
         Pending p_del = idx().begin_transaction();
 
@@ -646,6 +649,10 @@ void Checker::remove(const metadata::Collection& mds)
 
         Time time = md->get<types::reftime::Position>()->get_Position();
         std::string relpath = dataset().step()(time) + "." + dataset().format;
+
+        if (!Segment::is_segment(str::joinpath(dataset().path, relpath)))
+            continue;
+
         by_segment[relpath].push_back(source->offset);
         months.insert(std::make_pair(time.ye, time.mo));
     }
