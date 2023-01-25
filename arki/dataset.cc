@@ -137,6 +137,11 @@ CheckerConfig::CheckerConfig(std::shared_ptr<dataset::Reporter> reporter, bool r
 }
 
 
+void Checker::remove(const metadata::Collection& mds)
+{
+    throw std::runtime_error(dataset().name() + ": dataset does not support removing items");
+}
+
 void Checker::check_issue51(CheckerConfig& opts)
 {
     throw std::runtime_error(dataset().name() + ": check_issue51 not implemented for this dataset");

@@ -301,12 +301,6 @@ public:
     virtual void acquire_batch(WriterBatch& batch, const AcquireConfig& cfg=AcquireConfig()) = 0;
 
     /**
-     * Mark the data corresponding to the given metadata as removed from the
-     * database.
-     */
-    virtual void remove(const metadata::Collection& mds) = 0;
-
-    /**
      * Flush pending changes to disk
      */
     virtual void flush();
@@ -367,6 +361,12 @@ public:
 
     /// Check the dataset for errors
     virtual void check(CheckerConfig& opts) = 0;
+
+    /**
+     * Mark the data corresponding to the given metadata as removed from the
+     * database.
+     */
+    virtual void remove(const metadata::Collection& mds);
 
     /// Remove data from the dataset that is older than `delete age`
     virtual void remove_old(CheckerConfig& opts) = 0;

@@ -56,12 +56,6 @@ public:
     WriterAcquireResult acquire(Metadata& md, const AcquireConfig& cfg=AcquireConfig()) override;
     void acquire_batch(WriterBatch& batch, const AcquireConfig& cfg=AcquireConfig()) override;
 
-    void remove(const metadata::Collection&) override
-    {
-        // Of course, after this method is called, the metadata cannot be found
-        // in the dataset
-    }
-
     static void test_acquire(std::shared_ptr<Session> session, const core::cfg::Section& cfg, WriterBatch& batch);
 };
 
@@ -76,6 +70,7 @@ public:
 
     std::string type() const override { return "empty"; }
 
+    void remove(const metadata::Collection& mds) override {}
     void remove_old(CheckerConfig& opts) override {}
     void remove_all(CheckerConfig& opts) override {}
     void tar(CheckerConfig&) override {}

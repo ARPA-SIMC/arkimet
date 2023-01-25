@@ -126,14 +126,36 @@ public:
     std::shared_ptr<dataset::Writer> get_duplicates();
 
     /**
-     * Mark the given data as deleted
-     */
-    void remove(const arki::metadata::Collection& todolist, bool simulate);
-
-    /**
      * Flush all dataset data to disk
      */
     void flush();
+};
+
+
+class CheckPool
+{
+protected:
+    std::shared_ptr<Pool> pool;
+
+    // Dataset cache
+    std::map<std::string, std::shared_ptr<dataset::Checker>> cache;
+
+public:
+    CheckPool(std::shared_ptr<Pool> pool);
+    ~CheckPool();
+
+    /**
+     * Get a dataset, either from the cache or instantiating it.
+     *
+     * If \a name does not correspond to any dataset in the configuration,
+     * returns 0
+     */
+    std::shared_ptr<dataset::Checker> get(const std::string& name);
+
+    /**
+     * Mark the given data as deleted
+     */
+    void remove(const arki::metadata::Collection& todolist, bool simulate);
 };
 
 }

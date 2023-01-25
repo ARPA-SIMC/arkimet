@@ -240,7 +240,41 @@ std::shared_ptr<dataset::Writer> DispatchPool::get_duplicates()
         return get_error();
 }
 
-void DispatchPool::remove(const metadata::Collection& todolist, bool simulate)
+void DispatchPool::flush()
+{
+    for (auto& i: cache)
+        i.second->flush();
+}
+
+
+/*
+ * CheckPool
+ */
+
+CheckPool::CheckPool(std::shared_ptr<Pool> pool)
+    : pool(pool)
+{
+}
+
+CheckPool::~CheckPool()
+{
+}
+
+std::shared_ptr<dataset::Checker> CheckPool::get(const std::string& name)
+{
+    auto ci = cache.find(name);
+    if (ci == cache.end())
+    {
+        auto ds = pool->dataset(name);
+        auto checker(ds->create_checker());
+        cache.insert(make_pair(name, checker));
+        return checker;
+    } else {
+        return ci->second;
+    }
+}
+
+void CheckPool::remove(const metadata::Collection& todolist, bool simulate)
 {
     // Group metadata by dataset
     std::unordered_map<std::string, metadata::Collection> by_dataset;
@@ -289,12 +323,6 @@ void DispatchPool::remove(const metadata::Collection& todolist, bool simulate)
         if (removed)
             arki::nag::verbose("%s: %zd data marked as deleted", i.first.c_str(), i.second.size());
     }
-}
-
-void DispatchPool::flush()
-{
-    for (auto& i: cache)
-        i.second->flush();
 }
 
 }

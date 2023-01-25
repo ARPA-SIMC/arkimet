@@ -1,5 +1,6 @@
 #include "tests.h"
 #include "iseg/writer.h"
+#include "iseg/checker.h"
 #include "arki/scan.h"
 #include "arki/types/source/blob.h"
 #include "arki/dataset/query.h"
@@ -142,11 +143,10 @@ add_method("delete_missing", [](Fixture& f) {
 
     // Try deleting
     {
-        auto writer = f.makeIsegWriter();
+        auto checker = f.makeIsegChecker();
         metadata::Collection to_remove;
         to_remove.push_back(mdc[0].clone());
-        writer->remove(to_remove);
-        writer->flush();
+        checker->remove(to_remove);
     }
 
     // Ensure that this did not accidentally create a segment
