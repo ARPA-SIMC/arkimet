@@ -115,7 +115,7 @@ Arguments:
             auto session = std::make_shared<arki::dataset::Session>();
             auto pool = std::make_shared<arki::dataset::Pool>(session);
             auto cfg = sections_from_python(arg_datasets);
-            for (const auto si: *cfg)
+            for (const auto& si: *cfg)
                 pool->add_dataset(*si.second);
 
             auto ds = pool->querymacro(name, query);

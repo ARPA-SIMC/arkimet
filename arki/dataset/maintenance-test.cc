@@ -158,8 +158,8 @@ void Fixture::delete_one_in_segment()
     metadata::Collection mds(*config().create_reader(), Matcher());
     metadata::Collection to_delete;
     to_delete.push_back(mds.get(0));
-    auto writer = config().create_writer();
-    writer->remove(to_delete);
+    auto checker = config().create_checker();
+    checker->remove(to_delete);
 }
 
 void Fixture::delete_all_in_segment()
@@ -168,8 +168,8 @@ void Fixture::delete_all_in_segment()
     metadata::Collection to_delete;
     to_delete.push_back(mds.get(0));
     to_delete.push_back(mds.get(1));
-    auto writer = config().create_writer();
-    writer->remove(to_delete);
+    auto checker = config().create_checker();
+    checker->remove(to_delete);
 }
 
 void Fixture::reset_seqfile()

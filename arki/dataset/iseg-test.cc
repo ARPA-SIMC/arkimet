@@ -1,9 +1,11 @@
 #include "tests.h"
 #include "iseg/writer.h"
+#include "iseg/checker.h"
 #include "arki/scan.h"
 #include "arki/types/source/blob.h"
 #include "arki/dataset/query.h"
 #include "arki/matcher/parser.h"
+#include "arki/utils/sys.h"
 
 namespace {
 using namespace std;
@@ -124,6 +126,34 @@ add_method("acquire_replace_usn", [](Fixture& f) {
         wassert(actual(scan::Scanner::update_sequence_number(mdc_read[0], usn)).istrue());
         wassert(actual(usn) == 2);
     }
+});
+
+add_method("delete_missing", [](Fixture& f) {
+    metadata::TestCollection mdc("inbound/test.grib1");
+
+    // Import once
+    {
+        auto writer = f.makeIsegWriter();
+        wassert(actual(writer->acquire(mdc[0])) == dataset::ACQ_OK);
+        writer->flush();
+    }
+
+    // Remove imported segments
+    sys::rmtree("testds/2007");
+
+    // Try deleting
+    {
+        auto checker = f.makeIsegChecker();
+        metadata::Collection to_remove;
+        to_remove.push_back(mdc[0].clone());
+        checker->remove(to_remove);
+    }
+
+    // Ensure that this did not accidentally create a segment
+    wassert(actual_file("testds/2007/07-08.grib").not_exists());
+    wassert(actual_file("testds/2007/07-08.grib.lock").not_exists());
+    wassert(actual_file("testds/2007/07-08.grib.index").not_exists());
+    wassert(actual_file("testds/2007").not_exists());
 });
 
 }

@@ -67,7 +67,7 @@ struct remove : public MethKwargs<remove, arkipy_ArkiCheck>
 
             {
                 ReleaseGIL rg;
-                arki::dataset::DispatchPool pool(self->pool);
+                arki::dataset::CheckPool pool(self->pool);
 
                 // Read all metadata from the file specified in --remove
                 arki::metadata::Collection todolist;
