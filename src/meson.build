@@ -1,7 +1,8 @@
 scripts = [
     ['arki-query', 'Query the datasets in the given config file for data matching the given expression, and output the matching metadata.'],
     ['arki-scan', 'Read messages from files and datasets then outputs it or imports it into arkimet datasets.'],
-    ['arki-check', 'Perform maintenance on arkimet datasets.'],
+    ['arki-check', 'Check/fix/repack arkimet datasets.'],
+    ['arki-maint', 'Perform maintenance operations on arkimet datasets.'],
     ['arki-mergeconf', 'Build a single Arkimet configuration file merging configurations from multiple sources.'],
     ['arki-dump', 'Read data from the given input file (or stdin), and dump the in human readable format on stdout.'],
     ['arki-xargs', 'For every item of data read from standard input, save it on a temporary file and run "command [initial-arguments] filename" on it.'],

@@ -32,6 +32,7 @@ class ArkimetCommand(cmdline.Command):
             print(arkimet.get_version())
             raise Exit()
         super().__init__(parser, args)
+        self.stack = ExitStack()
 
     def setup_logging(self):
         arki.set_verbosity(verbose=self.args.verbose, debug=self.args.debug)
@@ -51,19 +52,6 @@ class ArkimetCommand(cmdline.Command):
                             help="print the program version and exit")
         return parser
 
-
-class App(ArkimetCommand):
-    NAME = None
-
-    def __init__(self, parser: argparse.ArgumentParser, args: argparse.Namespace):
-        super().__init__(parser, args)
-        self.stack = ExitStack()
-
-    def check_mutually_exclusive_options(self, *names):
-        for first, second in itertools.combinations(names, 2):
-            if getattr(self.args, first) and getattr(self.args, second):
-                self.parser.error("--{} conflicts with --{}".format(first, second))
-
     def run(self):
         pass
 
@@ -77,6 +65,15 @@ class App(ArkimetCommand):
     def __exit__(self, *args):
         self.shutdown()
         return self.stack.__exit__(*args)
+
+
+class App(ArkimetCommand):
+    NAME = None
+
+    def check_mutually_exclusive_options(self, *names):
+        for first, second in itertools.combinations(names, 2):
+            if getattr(self.args, first) and getattr(self.args, second):
+                self.parser.error("--{} conflicts with --{}".format(first, second))
 
     @classmethod
     def main(cls, args=None):

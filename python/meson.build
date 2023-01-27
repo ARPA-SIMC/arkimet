@@ -113,16 +113,18 @@ python3.install_sources(
 )
 
 python3.install_sources(
+    'arkimet/cmdline/__init__.py',
+    'arkimet/cmdline/cmdline.py',
+    'arkimet/cmdline/base.py',
     'arkimet/cmdline/dump.py',
     'arkimet/cmdline/query.py',
-    'arkimet/cmdline/__init__.py',
     'arkimet/cmdline/server.py',
     'arkimet/cmdline/xargs.py',
     'arkimet/cmdline/mergeconf.py',
-    'arkimet/cmdline/base.py',
     'arkimet/cmdline/bufr_prepare.py',
     'arkimet/cmdline/scan.py',
     'arkimet/cmdline/check.py',
+    'arkimet/cmdline/maint.py',
     subdir: 'arkimet/cmdline',
 )
 
