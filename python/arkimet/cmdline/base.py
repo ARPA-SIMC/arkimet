@@ -7,49 +7,35 @@ import itertools
 import sys
 import re
 import os
-import posix
+
+from . import cmdline
+
+Fail = cmdline.Fail
 
 
-class Fail(Exception):
-    pass
-
-
-class Exit(Exception):
+class Exit(BaseException):
     pass
 
 
 class PosixArgumentParser(argparse.ArgumentParser):
     def error(self, message):
         self.print_help(sys.stderr)
-        self.exit(posix.EX_USAGE, '%s: error: %s\n' % (self.prog, message))
+        self.exit(os.EX_USAGE, '%s: error: %s\n' % (self.prog, message))
 
 
-class App(ExitStack):
-    NAME = None
+class ArkimetCommand(cmdline.Command):
+    argumentparser_class = PosixArgumentParser
 
-    def __init__(self):
-        super().__init__()
-        self.parser = PosixArgumentParser(description=self.get_description())
-        self.parser.add_argument("--verbose", "-v", action="store_true",
-                                 help="verbose output")
-        self.parser.add_argument("--debug", action="store_true",
-                                 help="debug output")
-        self.parser.add_argument("--version", action="store_true",
-                                 help="print the program version and exit")
-        self.args = None
-
-    def get_description(self):
-        return self.__doc__
-
-    def parse_args(self, args=None):
-        self.args = self.parser.parse_args(args=args)
-
-    def check_mutually_exclusive_options(self, *names):
-        for first, second in itertools.combinations(names, 2):
-            if getattr(self.args, first) and getattr(self.args, second):
-                self.parser.error("--{} conflicts with --{}".format(first, second))
+    def __init__(self, parser: argparse.ArgumentParser, args: argparse.Namespace):
+        if args.version:
+            import arkimet
+            print(arkimet.get_version())
+            raise Exit()
+        super().__init__(parser, args)
 
     def setup_logging(self):
+        arki.set_verbosity(verbose=self.args.verbose, debug=self.args.debug)
+
         log_format = "%(levelname)s %(message)s"
         level = logging.WARN
         if self.args.debug:
@@ -58,28 +44,47 @@ class App(ExitStack):
             level = logging.INFO
         logging.basicConfig(level=level, stream=sys.stderr, format=log_format)
 
+    @classmethod
+    def make_parser(cls) -> argparse.ArgumentParser:
+        parser = super().make_parser()
+        parser.add_argument("--version", action="store_true",
+                            help="print the program version and exit")
+        return parser
+
+
+class App(ArkimetCommand):
+    NAME = None
+
+    def __init__(self, parser: argparse.ArgumentParser, args: argparse.Namespace):
+        super().__init__(parser, args)
+        self.stack = ExitStack()
+
+    def check_mutually_exclusive_options(self, *names):
+        for first, second in itertools.combinations(names, 2):
+            if getattr(self.args, first) and getattr(self.args, second):
+                self.parser.error("--{} conflicts with --{}".format(first, second))
+
     def run(self):
-        arki.set_verbosity(verbose=self.args.verbose, debug=self.args.debug)
-
-        if self.args.version:
-            import arkimet
-            print(arkimet.get_version())
-            raise Exit()
-
-        self.setup_logging()
+        pass
 
     def shutdown(self):
         pass
 
+    def __enter__(self):
+        self.stack.__enter__()
+        return self
+
     def __exit__(self, *args):
         self.shutdown()
-        return super().__exit__(*args)
+        return self.stack.__exit__(*args)
 
     @classmethod
     def main(cls, args=None):
+        parser = cls.make_parser()
+        args = parser.parse_args(args=args)
+
         try:
-            with cls() as cmd:
-                cmd.parse_args(args)
+            with cls(parser, args) as cmd:
                 return cmd.run()
         except Exit as e:
             if not e.args:
@@ -182,12 +187,10 @@ class SystemDatasetSectionFilter:
 
 
 class AppConfigMixin:
-    def __init__(self):
-        super().__init__()
-        self.session = self.enter_context(arki.dataset.Session())
+    def __init__(self, parser: argparse.ArgumentParser, args: argparse.Namespace):
+        super().__init__(parser, args)
+        self.session = self.stack.enter_context(arki.dataset.Session())
 
-    def parse_args(self, args=None):
-        super().parse_args(args=args)
         self.config_filters = []
         self.config_filter_discarded = 0
 
@@ -212,59 +215,55 @@ class AppConfigMixin:
 
 
 class AppWithProcessor(App):
-    def __init__(self):
-        super().__init__()
+    @classmethod
+    def make_parser(cls) -> argparse.ArgumentParser:
+        parser = super().make_parser()
+
         # Output options
-        self.parser_out = self.parser.add_argument_group("out", "output options")
-        self.parser_out.add_argument("--yaml", "--dump", action="store_true",
-                                     help="dump the metadata as human-readable Yaml records")
-        self.parser_out.add_argument("--json", action="store_true",
-                                     help="dump the metadata in JSON format")
-        self.parser_out.add_argument("--annotate", action="store_true",
-                                     help="annotate the human-readable Yaml output with field descriptions")
+        parser_out = parser.add_argument_group("out", "output options")
+        parser_out.add_argument("--yaml", "--dump", action="store_true",
+                                help="dump the metadata as human-readable Yaml records")
+        parser_out.add_argument("--json", action="store_true",
+                                help="dump the metadata in JSON format")
+        parser_out.add_argument("--annotate", action="store_true",
+                                help="annotate the human-readable Yaml output with field descriptions")
 
-        self.parser_out.add_argument("--summary", action="store_true",
-                                     help="output only the summary of the data")
-        self.parser_out.add_argument("--summary-short", action="store_true",
-                                     help="output a list of all metadata values that exist in the summary of the data")
-        self.parser_out.add_argument("--summary-restrict", metavar="types",
-                                     help="summarise using only the given metadata types (comma-separated list)")
-        self.parser_out.add_argument("--archive", metavar="format", nargs="?", const="tar",
-                                     help="output an archive with the given format"
-                                          " (default: tar, supported: tar, tar.gz, tar.xz, zip)")
+        parser_out.add_argument("--summary", action="store_true",
+                                help="output only the summary of the data")
+        parser_out.add_argument("--summary-short", action="store_true",
+                                help="output a list of all metadata values that exist in the summary of the data")
+        parser_out.add_argument("--summary-restrict", metavar="types",
+                                help="summarise using only the given metadata types (comma-separated list)")
+        parser_out.add_argument("--archive", metavar="format", nargs="?", const="tar",
+                                help="output an archive with the given format"
+                                     " (default: tar, supported: tar, tar.gz, tar.xz, zip)")
 
-        self.parser_out.add_argument("--output", "-o", metavar="file",
-                                     help="write the output to the given file instead of standard output")
-        self.parser_out.add_argument("--sort", metavar="period:order",
-                                     help="sort order.  Period can be year, month, day, hour or minute."
-                                          " Order can be a list of one or more metadata"
-                                          " names (as seen in --yaml field names), with a '-'"
-                                          " prefix to indicate reverse order.  For example,"
-                                          " 'day:origin, -timerange, reftime' orders one day at a time"
-                                          " by origin first, then by reverse timerange, then by reftime."
-                                          " Default: do not sort")
+        parser_out.add_argument("--output", "-o", metavar="file",
+                                help="write the output to the given file instead of standard output")
+        parser_out.add_argument("--sort", metavar="period:order",
+                                help="sort order.  Period can be year, month, day, hour or minute."
+                                     " Order can be a list of one or more metadata"
+                                     " names (as seen in --yaml field names), with a '-'"
+                                     " prefix to indicate reverse order.  For example,"
+                                     " 'day:origin, -timerange, reftime' orders one day at a time"
+                                     " by origin first, then by reverse timerange, then by reftime."
+                                     " Default: do not sort")
 
-        self.parser_out.add_argument("--inline", action="store_true",
-                                     help="output the binary metadata together with the data (pipe through "
-                                          " arki-dump to extract the data afterwards)")
-        self.parser_out.add_argument("--data", action="store_true",
-                                     help="output only the data")
-        self.parser_out.add_argument("--postproc", "-p", metavar="command",
-                                     help="output only the data, postprocessed with the given filter")
-        self.parser_out.add_argument("--postproc-data", metavar="file", action="append",
-                                     help="when querying a remote server with postprocessing, upload a file"
-                                          " to be used by the postprocessor (can be given more than once)")
+        parser_out.add_argument("--inline", action="store_true",
+                                help="output the binary metadata together with the data (pipe through "
+                                     " arki-dump to extract the data afterwards)")
+        parser_out.add_argument("--data", action="store_true",
+                                help="output only the data")
+        parser_out.add_argument("--postproc", "-p", metavar="command",
+                                help="output only the data, postprocessed with the given filter")
+        parser_out.add_argument("--postproc-data", metavar="file", action="append",
+                                help="when querying a remote server with postprocessing, upload a file"
+                                     " to be used by the postprocessor (can be given more than once)")
 
-    @contextmanager
-    def outfile(self):
-        if not self.args.output or self.args.output == "-":
-            yield sys.stdout
-        else:
-            with open(self.args.output, "wb") as fd:
-                yield fd
+        return parser
 
-    def run(self):
-        super().run()
+    def __init__(self, parser: argparse.ArgumentParser, args: argparse.Namespace):
+        super().__init__(parser, args)
 
         self.check_mutually_exclusive_options(
                 "inline", "summary", "summary_short", "data",
@@ -292,3 +291,11 @@ class AppWithProcessor(App):
             os.environ["ARKI_POSTPROC_FILES"] = ":".join(self.args.postproc_data)
         else:
             os.environ.pop("ARKI_POSTPROC_FILES", None)
+
+    @contextmanager
+    def outfile(self):
+        if not self.args.output or self.args.output == "-":
+            yield sys.stdout
+        else:
+            with open(self.args.output, "wb") as fd:
+                yield fd

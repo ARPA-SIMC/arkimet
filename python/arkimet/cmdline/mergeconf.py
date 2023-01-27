@@ -1,8 +1,10 @@
 # python 3.7+ from __future__ import annotations
+import argparse
+import logging
+import sys
+
 import arkimet as arki
 from arkimet.cmdline.base import App, AppConfigMixin, Fail
-import sys
-import logging
 
 
 class Mergeconf(AppConfigMixin, App):
@@ -12,22 +14,24 @@ class Mergeconf(AppConfigMixin, App):
     """
     log = logging.getLogger("arki-mergeconf")
 
-    def __init__(self):
-        super().__init__()
-        self.parser.add_argument("-o", "--output", metavar="file",
-                                 help="write the output to the given file instead of standard output")
-        self.parser.add_argument("--extra", action="store_true",
-                                 help="extract extra information from the datasets (such as bounding box)"
-                                      " and include it in the configuration")
-        self.parser.add_argument("--ignore-system-datasets", action="store_true",
-                                 help="ignore error and duplicates datasets")
-        self.parser.add_argument("--restrict", metavar="names", action="store",
-                                 help="restrict operations to only those datasets that allow one of the given"
-                                      " (comma separated) names")
-        self.parser.add_argument("-C", "--config", metavar="file", action="append",
-                                 help="merge configuration from the given file (can be given more than once)")
-        self.parser.add_argument("sources", nargs="*", action="store",
-                                 help="datasets, configuration files or remote urls")
+    @classmethod
+    def make_parser(cls) -> argparse.ArgumentParser:
+        parser = super().make_parser()
+        parser.add_argument("-o", "--output", metavar="file",
+                            help="write the output to the given file instead of standard output")
+        parser.add_argument("--extra", action="store_true",
+                            help="extract extra information from the datasets (such as bounding box)"
+                                 " and include it in the configuration")
+        parser.add_argument("--ignore-system-datasets", action="store_true",
+                            help="ignore error and duplicates datasets")
+        parser.add_argument("--restrict", metavar="names", action="store",
+                            help="restrict operations to only those datasets that allow one of the given"
+                                 " (comma separated) names")
+        parser.add_argument("-C", "--config", metavar="file", action="append",
+                            help="merge configuration from the given file (can be given more than once)")
+        parser.add_argument("sources", nargs="*", action="store",
+                            help="datasets, configuration files or remote urls")
+        return parser
 
     def run(self):
         super().run()
