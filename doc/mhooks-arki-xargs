@@ -31,7 +31,7 @@ Here are some example invocations of \fBarki-xargs\fP:
 .P
 .nf
   # Run process-grib-file on every grib contained in file.grib
-  arki-scan file.grib | arki-xargs process-grib-file
+  arki-scan --inline file.grib | arki-xargs process-grib-file
   # Example process-grib-file
     #!/bin/sh
     # Just copy the input data to standard output
