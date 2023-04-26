@@ -84,6 +84,7 @@ struct FilterLoop : public Sender
     BaseStreamOutput& stream;
     stream::SendResult result;
     CollectFilterStderr<Backend> part_connect_stderr;
+    /// Move data from the filer stdout to the stream destination
     FromFilter part_from_filter;
     /// pollfd structure described by the POLLINFO_* indices
     pollfd pollinfo[4];

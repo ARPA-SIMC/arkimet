@@ -52,6 +52,12 @@ struct BaseStreamOutput : public StreamOutput
     std::unique_ptr<stream::FilterProcess> stop_filter() override;
     void abort_filter() override;
 
+    /**
+     * Copy output from the filter stdout to the destination, without sending
+     * data to the filter stdin.
+     *
+     * This assumes that the filter's stdin has already been closed
+     */
     virtual void flush_filter_output() = 0;
 };
 
