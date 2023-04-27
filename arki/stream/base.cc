@@ -27,7 +27,7 @@ stream::FilterProcess* BaseStreamOutput::start_filter(const std::vector<std::str
     if (filter_process)
         throw std::runtime_error("A filter command was already started on this stream");
 
-    filter_process.reset(new stream::FilterProcess(command));
+    filter_process.reset(new stream::FilterProcess(command, timeout_ms));
     filter_process->m_stream = this;
     filter_process->start();
     return filter_process.get();

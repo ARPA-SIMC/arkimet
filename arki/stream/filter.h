@@ -19,6 +19,13 @@ public:
      */
     StreamOutput* m_stream = nullptr;
 
+    /**
+     * Timeout to use for blocking functions.
+     *
+     * -1 means infinite, 0 means do not wait
+     */
+    int timeout_ms;
+
     /// Accumulated stream result
     size_t size_stdin = 0;
     size_t size_stdout = 0;
@@ -27,19 +34,11 @@ public:
     std::stringstream errors;
 
 
-    FilterProcess(const std::vector<std::string>& args);
+    FilterProcess(const std::vector<std::string>& args, int timeout_ms = -1);
 
     void start();
     void stop();
-
-    void terminate()
-    {
-        if (cmd.started())
-        {
-            cmd.terminate();
-            cmd.wait();
-        }
-    }
+    void terminate();
 
     /**
      * Raise std::runtime_error if the filter exited with a nonzero exit status
