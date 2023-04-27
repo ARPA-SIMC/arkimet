@@ -137,6 +137,16 @@ public:
     /// Wait for the child process to terminate and return its return code
     int wait();
 
+    /**
+     * Wait for the child process to terminate.
+     *
+     * Time out after the given number of milliseconds, and return false if the
+     * timeout elapsed, true if the child exited before the timeout.
+     *
+     * The child return code can be read with the returncode() function
+     */
+    bool wait(int msecs);
+
     /// Send the given signal to the process
     void send_signal(int sig);
 

@@ -378,6 +378,84 @@ int Child::wait()
     return returncode();
 }
 
+namespace {
+
+struct enable_sigchld
+{
+    sighandler_t prev_handler;
+
+    enable_sigchld()
+        : prev_handler(signal(SIGCHLD, empty_handler))
+    {
+        if (prev_handler == SIG_ERR)
+            throw std::system_error(
+                    errno, std::system_category(),
+                    "failed set signal handler for SIGCHLD");
+    }
+
+    ~enable_sigchld()
+    {
+        signal(SIGCHLD, prev_handler);
+    }
+
+    static void empty_handler(int)
+    {
+    }
+};
+
+}
+
+bool Child::wait(int msecs)
+{
+    if (m_pid == 0)
+        throw std::runtime_error("wait called before Child process was started");
+
+    if (m_terminated)
+        return returncode();
+
+    // this is the old complex logic needed to support old kernels without
+    // pidfd_open
+
+    struct timespec timeout = { msecs / 1000, (msecs % 1000) * 1000000 };
+
+    while (true)
+    {
+        pid_t res = waitpid(m_pid, &m_returncode, WNOHANG);
+        if (res < 0)
+            throw std::system_error(
+                    errno, std::system_category(),
+                    "failed to waitpid(" + std::to_string(m_pid) + ")");
+        if (res > 0)
+        {
+            m_terminated = true;
+            return true;
+        }
+
+        if (timeout.tv_sec == 0 and timeout.tv_nsec == 0)
+            // Timeout expired and child has not quit yet
+            return false;
+
+        // res == 0: child is still running. Wait for completion
+
+        struct timespec remaining;
+
+        enable_sigchld es;
+        int sres = nanosleep(&timeout, &remaining);
+        if (sres == 0) {
+            //Timeout expired
+            timeout = {0, 0};
+            continue;
+        } else if (errno == EINTR) {
+            // Signal received (possibly SIGCHLD?)
+            timeout = remaining;
+            continue;
+        } else
+            throw std::system_error(
+                errno, std::system_category(),
+                "failed to nanosleep waiting for child process to quit");
+    }
+}
+
 void Child::send_signal(int sig)
 {
     if (::kill(m_pid, sig) == -1)
