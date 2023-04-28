@@ -1,1 +1,3 @@
-version: 1
+version: 2
+exclude_images:
+ - name: centos:7
