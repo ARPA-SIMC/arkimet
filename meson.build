@@ -10,6 +10,9 @@ conf_data.set_quoted('PACKAGE_VERSION', meson.project_version())
 conf_data.set('ARKI_IOTRACE', true)
 conf_data.set_quoted('CONF_DIR', conf_dir)
 conf_data.set_quoted('POSTPROC_DIR', get_option('libdir') / 'arkimet')
+if get_option('arpae-tests') == 'gprof'
+  conf_data.set('ARPAE_TESTS', true)
+endif
 
 toplevel_inc = include_directories('.')
 
