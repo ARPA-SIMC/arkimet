@@ -84,6 +84,7 @@ struct BinaryEncoder
     }
 
     /// Encode a IEEE754 float
+    // TODO: big endian needs byte swapping
     void add_float(float val)
     {
         for (unsigned int i = 0; i < sizeof(float); ++i)
@@ -91,6 +92,7 @@ struct BinaryEncoder
     }
 
     /// Encode a IEEE754 double
+    // TODO: big endian needs byte swapping
     void add_double(double val)
     {
         for (unsigned int i = 0; i < sizeof(double); ++i)
@@ -98,6 +100,7 @@ struct BinaryEncoder
     }
 
     /// Encode a IEEE754 double
+    // TODO: big endian needs byte swapping
     static void set_double(uint8_t* buf, double val)
     {
         for (unsigned int i = 0; i < sizeof(double); ++i)

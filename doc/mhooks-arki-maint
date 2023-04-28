@@ -1,0 +1,13 @@
+[DESCRIPTION]
+\fBarki-maint\fP performs maintenance operations on datasets.
+
+Each maintenance operation has its own subcommand, allowing to work on datasets
+and segments as needed.
+
+[EXAMPLES]
+Here are some example invocations of \fBarki-maint\fP:
+.P
+.nf
+  # Unarchive segments from 2022
+  arki-maint unarchive dataset/.archive/last/2022-*.grib
+.fi

@@ -1,16 +1,20 @@
 # python 3.7+ from __future__ import annotations
-import re
-import logging
+import argparse
 import datetime
-import subprocess
-import threading
-import sys
+import logging
+import re
 import socket
+import subprocess
+import sys
+import threading
+from http.server import BaseHTTPRequestHandler, HTTPServer
+from socketserver import ForkingMixIn
+
+from werkzeug.exceptions import HTTPException, NotFound
+
 import arkimet as arki
 from arkimet.server import views
-from werkzeug.exceptions import HTTPException, NotFound
-from socketserver import ForkingMixIn
-from http.server import HTTPServer, BaseHTTPRequestHandler
+
 try:
     from setproctitle import setproctitle
 except ModuleNotFoundError:
@@ -79,7 +83,8 @@ class Handler(BaseHTTPRequestHandler):
         # Derived from werkzeug's WSGIRequestHandler
         from werkzeug.urls import url_parse, url_unquote
         try:
-            from werkzeug._compat import wsgi_encoding_dance as _wsgi_encoding_dance
+            from werkzeug._compat import \
+                wsgi_encoding_dance as _wsgi_encoding_dance
         except ModuleNotFoundError:
             from werkzeug._internal import _wsgi_encoding_dance
 
@@ -221,27 +226,28 @@ class Server(App):
     """
     Start the arkimet server, serving the datasets found in the configuration file
     """
+    @classmethod
+    def make_parser(cls) -> argparse.ArgumentParser:
+        parser = super().make_parser()
+        parser.add_argument("configfile", help="dataset configuration file")
+        parser.add_argument("--host", "--hostname", metavar="host", default="",
+                            help="interface to listen to. Default: all interfaces")
+        parser.add_argument("--port", "-p", metavar="port", type=int, default=8080,
+                            help="port to listen not. Default: 8080")
+        parser.add_argument("--url", metavar="url", help="url to use to reach the server")
 
-    def __init__(self):
-        super().__init__()
-        self.parser.add_argument("configfile", help="dataset configuration file")
-        self.parser.add_argument("--host", "--hostname", metavar="host", default="",
-                                 help="interface to listen to. Default: all interfaces")
-        self.parser.add_argument("--port", "-p", metavar="port", type=int, default=8080,
-                                 help="port to listen not. Default: 8080")
-        self.parser.add_argument("--url", metavar="url", help="url to use to reach the server")
+        parser.add_argument("--accesslog", metavar="file", help="file where to log normal access information")
+        parser.add_argument("--perflog", metavar="file",
+                            help="file where to log query information and performance statistics")
+        parser.add_argument("--errorlog", metavar="file", help="file where to log errors")
+        parser.add_argument("--syslog", action="store_true", help="log to system log")
+        parser.add_argument("--quiet", action="store_true", help="do not log to standard output")
+        parser.add_argument("--journald", action="store_true",
+                            help="log to standard error in a way compatible with journald")
 
-        self.parser.add_argument("--accesslog", metavar="file", help="file where to log normal access information")
-        self.parser.add_argument("--perflog", metavar="file",
-                                 help="file where to log query information and performance statistics")
-        self.parser.add_argument("--errorlog", metavar="file", help="file where to log errors")
-        self.parser.add_argument("--syslog", action="store_true", help="log to system log")
-        self.parser.add_argument("--quiet", action="store_true", help="do not log to standard output")
-        self.parser.add_argument("--journald", action="store_true",
-                                 help="log to standard error in a way compatible with journald")
-
-        self.parser.add_argument("--runtest", metavar="cmd",
-                                 help="start the server, run the given test command and return its exit status")
+        parser.add_argument("--runtest", metavar="cmd",
+                            help="start the server, run the given test command and return its exit status")
+        return parser
 
     def setup_logging(self):
         root_logger = logging.getLogger()
