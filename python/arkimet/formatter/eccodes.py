@@ -65,6 +65,8 @@ class GribTable:
                         self._desc[idx] = mo.group("desc").strip()
             except FileNotFoundError:
                 pass
+            else:
+                break
 
     def set(self, code: int, abbr: str, desc: str):
         """
