@@ -1,3 +1,11 @@
+# New in version 1.46
+
+* Do not accidentally create missing segments when trying to remove data from them (#296)
+* Implemented a timeout waiting for the filter child process to exit (#301)
+* Removed CentOS 7 support
+* Implemented arki-maint unarchive (#297)
+* Stop at the first grib table file found (partially fixed #300)
+
 # New in version 1.45
 
 * Ported to GEOS C API (#291) (#294)

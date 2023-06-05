@@ -3,7 +3,7 @@
 
 Summary: Archive for weather information
 Name: arkimet
-Version: 1.45
+Version: 1.46
 Release: 1
 License: GPL
 Group: Applications/Meteo
@@ -237,6 +237,13 @@ if [ "$1" = "1" ]; then
 fi
 
 %changelog
+* Mon Jun  5 2023 Emanuele Di Giacomo <edigiacomo@arpae.it> - 1.46-1
+- Do not accidentally create missing segments when trying to remove data from them (#296)
+- Implemented a timeout waiting for the filter child process to exit (#301)
+- Removed CentOS 7 support
+- Implemented arki-maint unarchive (#297)
+- Stop at the first grib table file found (partially fixed #300)
+
 * Tue Sep 20 2022 Daniele Branchini <dbranchini@arpae.it> - 1.45-1
 - Ported to GEOS C API (#291) (#294)
 - Compatibility with newer werkzeug (#293)
