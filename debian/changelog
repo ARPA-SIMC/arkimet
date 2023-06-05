@@ -1,3 +1,13 @@
+arkimet (1.46-1) unstable; urgency=medium
+
+  * Do not accidentally create missing segments when trying to remove data from them (#296)
+  * Implemented a timeout waiting for the filter child process to exit (#301)
+  * Removed CentOS 7 support
+  * Implemented arki-maint unarchive (#297)
+  * Stop at the first grib table file found (partially fixed #300)
+
+ -- Emanuele Di Giacomo <edigiacomo@arpae.it>  Mon, 05 Jun 2023 11:51:05 +0200
+
 arkimet (1.45-1) unstable; urgency=medium
 
   * Reflecting the upstream version
