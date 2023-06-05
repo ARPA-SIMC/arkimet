@@ -8,6 +8,7 @@
 #include <vector>
 #include <memory>
 #include <iosfwd>
+#include <cstdint>
 
 struct lua_State;
 

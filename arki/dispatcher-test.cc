@@ -75,7 +75,7 @@ add_method("simple", [] {
     auto session = std::make_shared<dataset::Session>();
     auto pool = std::make_shared<dataset::Pool>(session);
     auto cfg = setup1("grib");
-    for (const auto i: *cfg)
+    for (const auto& i: *cfg)
         pool->add_dataset(*i.second);
 
     plain_data_read_count.reset();

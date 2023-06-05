@@ -228,6 +228,11 @@ void CheckerSegment::unarchive()
     index(move(mdc));
 }
 
+void CheckerSegment::remove_data(const std::vector<uint64_t>& offsets)
+{
+    throw std::runtime_error(dataset().name() + ": dataset segment does not support removing items");
+}
+
 
 Checker::~Checker()
 {

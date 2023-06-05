@@ -1,9 +1,11 @@
 # python 3.7+ from __future__ import annotations
+import argparse
+import logging
+import posix
+import sys
+
 import arkimet
 from arkimet.cmdline.base import AppConfigMixin, AppWithProcessor, Exit
-import sys
-import posix
-import logging
 
 
 class Scan(AppConfigMixin, AppWithProcessor):
@@ -13,66 +15,70 @@ class Scan(AppConfigMixin, AppWithProcessor):
     """
     log = logging.getLogger("arki-scan")
 
-    def __init__(self):
-        super().__init__()
-        self.parser.add_argument("source", nargs="*",
-                                 help="input files or datasets")
+    @classmethod
+    def make_parser(cls) -> argparse.ArgumentParser:
+        parser = super().make_parser()
+
+        parser.add_argument("source", nargs="*",
+                            help="input files or datasets")
 
         # Inputs
-        self.parser_in = self.parser.add_argument_group("in", "input options")
-        self.parser_in.add_argument("--stdin", metavar="format",
-                                    help="read input from standard input in the given format")
+        parser_in = parser.add_argument_group("in", "input options")
+        parser_in.add_argument("--stdin", metavar="format",
+                               help="read input from standard input in the given format")
 
         # arki-scan
-        self.parser_in.add_argument("--files", metavar="file",
-                                    help="read the list of files to scan from the given file"
-                                         " instead of the command line")
+        parser_in.add_argument("--files", metavar="file",
+                               help="read the list of files to scan from the given file"
+                                    " instead of the command line")
 
-        self.parser_dis = self.parser.add_argument_group(
-                "dispatch", "Options controlling dispatching data to datasets")
+        parser_dis = parser.add_argument_group(
+           "dispatch", "Options controlling dispatching data to datasets")
 
-        self.parser_dis.add_argument("--moveok", metavar="directory",
-                                     help="move input files imported successfully to the given directory "
-                                          "(destination directory must be on the same filesystem of source file)")
-        self.parser_dis.add_argument("--moveko", metavar="directory",
-                                     help="move input files with problems to the given directory "
-                                          "(destination directory must be on the same filesystem of source file)")
-        self.parser_dis.add_argument("--movework", metavar="directory",
-                                     help="move input files here before opening them. This is useful to "
-                                          "catch the cases where arki-scan crashes without having a "
-                                          "chance to handle errors "
-                                          "(destination directory must be on the same filesystem of source file)")
+        parser_dis.add_argument("--moveok", metavar="directory",
+                                help="move input files imported successfully to the given directory "
+                                     "(destination directory must be on the same filesystem of source file)")
+        parser_dis.add_argument("--moveko", metavar="directory",
+                                help="move input files with problems to the given directory "
+                                     "(destination directory must be on the same filesystem of source file)")
+        parser_dis.add_argument("--movework", metavar="directory",
+                                help="move input files here before opening them. This is useful to "
+                                     "catch the cases where arki-scan crashes without having a "
+                                     "chance to handle errors "
+                                     "(destination directory must be on the same filesystem of source file)")
 
-        self.parser_dis.add_argument("--copyok", metavar="directory",
-                                     help="copy the data from input files that was imported successfully"
-                                          " to the given directory")
-        self.parser_dis.add_argument("--copyko", metavar="directory",
-                                     help="copy the data from input files that had problems"
-                                          " to the given directory")
+        parser_dis.add_argument("--copyok", metavar="directory",
+                                help="copy the data from input files that was imported successfully"
+                                     " to the given directory")
+        parser_dis.add_argument("--copyko", metavar="directory",
+                                help="copy the data from input files that had problems"
+                                     " to the given directory")
 
-        self.parser_dis.add_argument("--ignore-duplicates", action="store_true",
-                                     help="do not consider the run unsuccessful in case of duplicates")
-        self.parser_dis.add_argument("--validate", metavar="checks",
-                                     help="run the given checks on the input data before dispatching"
-                                          " (comma-separated list; use 'list' to get a list)")
-        self.parser_dis.add_argument("--dispatch", metavar="conffile", action="append",
-                                     help="dispatch the data to the datasets described in the "
-                                          "given configuration file (or a dataset path can also "
-                                          "be given), then output the metadata of the data that "
-                                          "has been dispatched (can be specified multiple times)")
-        self.parser_dis.add_argument("--testdispatch", metavar="conffile", action="append",
-                                     help="simulate dispatching the files right after scanning,"
-                                          " using the given configuration file or dataset directory"
-                                          " (can be specified multiple times)")
+        parser_dis.add_argument("--ignore-duplicates", action="store_true",
+                                help="do not consider the run unsuccessful in case of duplicates")
+        parser_dis.add_argument("--validate", metavar="checks",
+                                help="run the given checks on the input data before dispatching"
+                                     " (comma-separated list; use 'list' to get a list)")
+        parser_dis.add_argument("--dispatch", metavar="conffile", action="append",
+                                help="dispatch the data to the datasets described in the "
+                                     "given configuration file (or a dataset path can also "
+                                     "be given), then output the metadata of the data that "
+                                     "has been dispatched (can be specified multiple times)")
+        parser_dis.add_argument("--testdispatch", metavar="conffile", action="append",
+                                help="simulate dispatching the files right after scanning,"
+                                     " using the given configuration file or dataset directory"
+                                     " (can be specified multiple times)")
 
-        self.parser_dis.add_argument("--status", action="store_true",
-                                     help="print to standard error a line per every file with a summary"
-                                          " of how it was handled")
+        parser_dis.add_argument("--status", action="store_true",
+                                help="print to standard error a line per every file with a summary"
+                                     " of how it was handled")
 
-        self.parser_dis.add_argument("--flush-threshold", metavar="size",
-                                     help="import a batch as soon as the data read so far exceeds"
-                                          " this amount of megabytes (default: 128Mi; use 0 to load all"
-                                          " in RAM no matter what)")
+        parser_dis.add_argument("--flush-threshold", metavar="size",
+                                help="import a batch as soon as the data read so far exceeds"
+                                     " this amount of megabytes (default: 128Mi; use 0 to load all"
+                                     " in RAM no matter what)")
+
+        return parser
 
     def build_config(self):
         self.sources = []

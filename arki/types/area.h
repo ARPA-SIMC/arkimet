@@ -2,6 +2,7 @@
 #define ARKI_TYPES_AREA_H
 
 #include <memory>
+#include <cstdint>
 #include <arki/types/encoded.h>
 #include <arki/utils/geos.h>
 

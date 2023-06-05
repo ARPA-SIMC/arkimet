@@ -4,6 +4,7 @@
 #include <arki/stream/abstract.h>
 #include <arki/core/fwd.h>
 #include <poll.h>
+#include <cstdint>
 
 namespace arki {
 namespace stream {

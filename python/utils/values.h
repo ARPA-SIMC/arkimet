@@ -6,6 +6,7 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
+#include <cstdint>
 #include "core.h"
 
 namespace arki {

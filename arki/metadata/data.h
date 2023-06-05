@@ -7,6 +7,7 @@
 #include <vector>
 #include <list>
 #include <memory>
+#include <cstdint>
 
 namespace arki {
 namespace metadata {

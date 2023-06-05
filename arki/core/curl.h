@@ -4,6 +4,7 @@
 #include <curl/curl.h>
 #include <stdexcept>
 #include <sstream>
+#include <cstdint>
 
 namespace arki {
 namespace core {
@@ -48,17 +49,17 @@ struct CurlEasy
 class CurlForm
 {
 protected:
-    curl_httppost* post = nullptr;
-    curl_httppost* last = nullptr;
+    curl_mime* post = nullptr;
 
 public:
+    CurlForm(CurlEasy& curl);
     ~CurlForm();
 
     void clear();
     void add_string(const std::string& key, const std::string& val);
     void add_file(const std::string& key, const std::string& pathname);
 
-    curl_httppost* get() { return post; }
+    curl_mime* get() { return post; }
 };
 
 

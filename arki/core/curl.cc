@@ -49,37 +49,39 @@ void CurlEasy::reset()
     // CURLOPT_PROGRESSFUNCTION / CURLOPT_PROGRESSDATA ?
 }
 
+CurlForm::CurlForm(CurlEasy& curl)
+{
+    post = curl_mime_init(curl);
+}
 
 CurlForm::~CurlForm()
 {
-    if (post) curl_formfree(post);
+    clear();
 }
 
 void CurlForm::clear()
 {
-    if (post) curl_formfree(post);
-    post = last = nullptr;
+    if (post) curl_mime_free(post);
+    post = nullptr;
 }
 
 void CurlForm::add_string(const std::string& key, const std::string& val)
 {
-    curl_formadd(&post, &last,
-            CURLFORM_COPYNAME, key.c_str(),
-            CURLFORM_COPYCONTENTS, val.c_str(),
-            CURLFORM_END);
+    curl_mimepart *part = curl_mime_addpart(post);
+    curl_mime_data(part, val.data(), val.size());
+    curl_mime_name(part, key.c_str());
 }
 
 void CurlForm::add_file(const std::string& key, const std::string& pathname)
 {
-    curl_formadd(&post, &last,
-            CURLFORM_COPYNAME, key.c_str(),
-            CURLFORM_FILE, pathname.c_str(),
-            CURLFORM_END);
+    curl_mimepart *part = curl_mime_addpart(post);
+    curl_mime_filedata(part, pathname.c_str());
+    curl_mime_name(part, key.c_str());
 }
 
 
 Request::Request(CurlEasy& curl)
-    : curl(curl), method("GET")
+    : curl(curl), method("GET"), post_data(curl)
 {
 }
 
@@ -106,7 +108,7 @@ void Request::perform()
         if (method == "POST")
         {
             checked("selecting POST method", curl_easy_setopt(curl, CURLOPT_POST, 1));
-            checked("setting POST data", curl_easy_setopt(curl, CURLOPT_HTTPPOST, post_data.get()));
+            checked("setting POST data", curl_easy_setopt(curl, CURLOPT_MIMEPOST, post_data.get()));
         }
         else if (method == "GET")
             checked("selecting GET method", curl_easy_setopt(curl, CURLOPT_HTTPGET, 1));

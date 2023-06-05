@@ -39,7 +39,7 @@ std::string Segment::basename(const std::string& pathname)
     return pathname;
 }
 
-bool Segment::is_segment(std::string& abspath)
+bool Segment::is_segment(const std::string& abspath)
 {
     std::unique_ptr<struct stat> st = sys::stat(abspath);
     if (!st.get())

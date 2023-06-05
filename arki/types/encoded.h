@@ -1,6 +1,7 @@
 #ifndef ARKI_TYPES_ENCODED_H
 #define ARKI_TYPES_ENCODED_H
 
+#include <cstdint>
 #include <arki/types.h>
 #include <arki/core/fwd.h>
 

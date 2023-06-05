@@ -14,6 +14,7 @@
 #include <exception>
 #include <functional>
 #include <vector>
+#include <cstdint>
 
 namespace arki {
 namespace utils {

@@ -1,6 +1,9 @@
+# python 3.7+ from __future__ import annotations
+import argparse
+import logging
+
 import arkimet
 from arkimet.cmdline.base import App, Exit
-import logging
 
 log = logging.getLogger("arki-bufr-prepare")
 
@@ -11,17 +14,19 @@ class BufrPrepare(App):
     """
     NAME = "arki-bufr-prepare"
 
-    def __init__(self):
-        super().__init__()
-        self.parser.add_argument("-o", "--output", metavar="file",
-                                 help="write the output to the given file instead of standard output")
-        self.parser.add_argument("--fail", metavar="file",
-                                 help="do not ignore BUFR data that could not be decoded,"
-                                      " but write it to the given file")
-        self.parser.add_argument("--usn", metavar="number", type=lambda x: int(x) if x is not None else None,
-                                 help="overwrite the update sequence number of every BUFR message with this value")
-        self.parser.add_argument("files", nargs="*", action="store",
-                                 help="BUFR files to process")
+    @classmethod
+    def make_parser(cls) -> argparse.ArgumentParser:
+        parser = super().make_parser()
+        parser.add_argument("-o", "--output", metavar="file",
+                            help="write the output to the given file instead of standard output")
+        parser.add_argument("--fail", metavar="file",
+                            help="do not ignore BUFR data that could not be decoded,"
+                                 " but write it to the given file")
+        parser.add_argument("--usn", metavar="number", type=lambda x: int(x) if x is not None else None,
+                            help="overwrite the update sequence number of every BUFR message with this value")
+        parser.add_argument("files", nargs="*", action="store",
+                            help="BUFR files to process")
+        return parser
 
     def run(self):
         super().run()

@@ -152,6 +152,14 @@ public:
     virtual SegmentState scan(dataset::Reporter& reporter, bool quick=true) = 0;
 
     /**
+     * Remove entries from this segment, indicated by their stating offsets.
+     *
+     * Return the total size of data deleted. The space may not be freed right
+     * away, and may need to be reclaimed by a repack operation
+     */
+    virtual void remove_data(const std::vector<uint64_t>& offsets);
+
+    /**
      * Optimise the contents of a data file
      *
      * In the resulting file, there are no holes for deleted data and all

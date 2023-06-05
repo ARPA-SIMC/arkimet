@@ -2,6 +2,7 @@
 #define ARKI_TYPES_PRODUCT_H
 
 #include <arki/types/encoded.h>
+#include <cstdint>
 #include <memory>
 
 namespace arki {

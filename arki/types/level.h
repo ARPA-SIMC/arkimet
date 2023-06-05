@@ -2,7 +2,7 @@
 #define ARKI_TYPES_LEVEL_H
 
 #include <arki/types/encoded.h>
-#include <stdint.h>
+#include <cstdint>
 
 namespace arki {
 namespace types {

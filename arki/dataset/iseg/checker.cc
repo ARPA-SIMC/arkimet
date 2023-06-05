@@ -5,6 +5,8 @@
 #include "arki/dataset/reporter.h"
 #include "arki/dataset/lock.h"
 #include "arki/dataset/archive.h"
+#include "arki/dataset/index/summarycache.h"
+#include "arki/types/reftime.h"
 #include "arki/types/source/blob.h"
 #include "arki/metadata.h"
 #include "arki/matcher.h"
@@ -282,6 +284,21 @@ public:
             return old_size - new_size;
         else
             return 0;
+    }
+
+    void remove_data(const std::vector<uint64_t>& offsets)
+    {
+        if (!segment->exists_on_disk())
+            return;
+
+        // Delete from DB, and get file name
+        Pending p_del = idx().begin_transaction();
+
+        for (const auto& offset: offsets)
+            idx().remove(offset);
+
+        // Commit delete from DB
+        p_del.commit();
     }
 
     size_t repack(unsigned test_flags=0) override
@@ -611,6 +628,49 @@ void Checker::check_issue51(CheckerConfig& opts)
     }
 
     return segmented::Checker::check_issue51(opts);
+}
+
+void Checker::remove(const metadata::Collection& mds)
+{
+    // Group mds by segment
+    std::unordered_map<std::string, std::vector<uint64_t>> by_segment;
+    // Take note of months to invalidate in summary cache
+    std::set<std::pair<int, int>> months;
+
+    // Build a todo-list of entries to delete for each segment
+    for (const auto& md: mds)
+    {
+        const types::source::Blob* source = md->has_source_blob();
+        if (!source)
+            throw std::runtime_error("cannot remove metadata from dataset, because it has no Blob source");
+
+        if (source->basedir != dataset().path)
+            throw std::runtime_error("cannot remove metadata from dataset: its basedir is " + source->basedir + " but this dataset is at " + dataset().path);
+
+        Time time = md->get<types::reftime::Position>()->get_Position();
+        std::string relpath = dataset().step()(time) + "." + dataset().format;
+
+        if (!Segment::is_segment(str::joinpath(dataset().path, relpath)))
+            continue;
+
+        by_segment[relpath].push_back(source->offset);
+        months.insert(std::make_pair(time.ye, time.mo));
+    }
+
+    for (const auto& i: by_segment)
+    {
+        segment::WriterConfig writer_config;
+        writer_config.drop_cached_data_on_commit = false;
+        writer_config.eatmydata = dataset().eatmydata;
+
+        auto seg = segment(i.first);
+        seg->remove_data(i.second);
+        arki::nag::verbose("%s: %s: %zd data marked as deleted", name().c_str(), i.first.c_str(), i.second.size());
+    }
+
+    index::SummaryCache scache(dataset().summary_cache_pathname);
+    for (const auto& i: months)
+        scache.invalidate(i.first, i.second);
 }
 
 size_t Checker::vacuum(dataset::Reporter& reporter)

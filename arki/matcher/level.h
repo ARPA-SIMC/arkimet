@@ -2,6 +2,7 @@
 #define ARKI_MATCHER_LEVEL
 
 #include <arki/matcher/utils.h>
+#include <cstdint>
 
 namespace arki {
 namespace matcher {

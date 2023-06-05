@@ -4,3 +4,9 @@ option (
   choices: ['none', 'gperf', 'gperftools', 'valgrind'],
   value: 'none',
   description: 'Enable profiling')
+
+option (
+  'arpae-tests',
+  type: 'boolean',
+  value: false,
+  description: 'Enable ARPAE-specific tests')

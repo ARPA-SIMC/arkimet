@@ -1,8 +1,11 @@
 # python 3.7+ from __future__ import annotations
+import argparse
+import logging
+import sys
+
 import arkimet
 from arkimet.cmdline.base import AppConfigMixin, AppWithProcessor, Exit
-import sys
-import logging
+
 try:
     import progressbar
 except ModuleNotFoundError:
@@ -46,37 +49,40 @@ class Query(AppConfigMixin, AppWithProcessor):
     """
     log = logging.getLogger("arki-query")
 
-    def __init__(self):
-        super().__init__()
+    @classmethod
+    def make_parser(cls) -> argparse.ArgumentParser:
+        parser = super().make_parser()
 
         # Inputs
-        self.parser.add_argument("--stdin", metavar="format",
-                                 help="read input from standard input in the given format")
-        self.parser.add_argument("query", nargs="?",
-                                 help="arkimet query to run")
-        self.parser.add_argument("source", nargs="*",
-                                 help="input files or datasets")
+        parser.add_argument("--stdin", metavar="format",
+                            help="read input from standard input in the given format")
+        parser.add_argument("query", nargs="?",
+                            help="arkimet query to run")
+        parser.add_argument("source", nargs="*",
+                            help="input files or datasets")
 
         # arki-query
-        self.parser.add_argument("--config", "-C", metavar="file", action="append",
-                                 help="read configuration about input sources from the given file"
-                                      " (can be given more than once)")
-        self.parser.add_argument("--restrict", metavar="names",
-                                 help="restrict operations to only those datasets that allow one"
-                                      " of the given (comma separated) names")
+        parser.add_argument("--config", "-C", metavar="file", action="append",
+                            help="read configuration about input sources from the given file"
+                                 " (can be given more than once)")
+        parser.add_argument("--restrict", metavar="names",
+                            help="restrict operations to only those datasets that allow one"
+                                 " of the given (comma separated) names")
 
-        self.parser.add_argument("--merged", action="store_true",
-                                 help="if multiple datasets are given, merge their data and output it in"
-                                      " reference time order.  Note: sorting does not work when using"
-                                      " --postprocess or --data")
+        parser.add_argument("--merged", action="store_true",
+                            help="if multiple datasets are given, merge their data and output it in"
+                                 " reference time order.  Note: sorting does not work when using"
+                                 " --postprocess or --data")
 
-        self.parser.add_argument("--file", "-f", metavar="file",
-                                 help="read the query expression from the given file")
+        parser.add_argument("--file", "-f", metavar="file",
+                            help="read the query expression from the given file")
 
-        self.parser.add_argument("--qmacro", metavar="name",
-                                 help="run the given query macro instead of a plain query")
-        self.parser.add_argument("--progress", action="store_true",
-                                 help="show a progress bar on stderr")
+        parser.add_argument("--qmacro", metavar="name",
+                            help="run the given query macro instead of a plain query")
+        parser.add_argument("--progress", action="store_true",
+                            help="show a progress bar on stderr")
+
+        return parser
 
     def build_config(self):
         self.query = None

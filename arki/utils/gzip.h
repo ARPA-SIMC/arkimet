@@ -6,6 +6,7 @@
 #include <string>
 #include <zlib.h>
 #include <vector>
+#include <cstdint>
 
 namespace arki {
 namespace utils {

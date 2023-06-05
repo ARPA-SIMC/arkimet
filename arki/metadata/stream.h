@@ -6,6 +6,7 @@
 #include <arki/defs.h>
 #include <string>
 #include <vector>
+#include <cstdint>
 
 namespace arki {
 namespace metadata {

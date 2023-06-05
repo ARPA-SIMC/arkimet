@@ -8,7 +8,8 @@ using namespace arki::utils;
 namespace arki {
 namespace stream {
 
-FilterProcess::FilterProcess(const std::vector<std::string>& args)
+FilterProcess::FilterProcess(const std::vector<std::string>& args, int timeout_ms)
+    : timeout_ms(timeout_ms)
 {
     cmd.args = args;
     cmd.set_stdin(utils::subprocess::Redirect::PIPE);
@@ -17,7 +18,8 @@ FilterProcess::FilterProcess(const std::vector<std::string>& args)
 }
 
 
-void FilterProcess::start() {
+void FilterProcess::start()
+{
     // Spawn the command
     cmd.fork();
 
@@ -35,7 +37,31 @@ void FilterProcess::start() {
 
 void FilterProcess::stop()
 {
-    cmd.wait();
+    if (timeout_ms == -1)
+    {
+        cmd.wait();
+        return;
+    } else if (!cmd.wait(timeout_ms))
+        terminate();
+}
+
+void FilterProcess::terminate()
+{
+    if (!cmd.started())
+        return;
+
+    cmd.terminate();
+
+    if (timeout_ms == -1)
+    {
+        cmd.wait();
+        return;
+    } else if (!cmd.wait(timeout_ms)) {
+        cmd.kill();
+
+        if (!cmd.wait(timeout_ms))
+            throw std::runtime_error("failed to terminate the child process");
+    }
 }
 
 void FilterProcess::check_for_errors()

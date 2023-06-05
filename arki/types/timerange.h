@@ -4,7 +4,7 @@
 #include <arki/types.h>
 #include <arki/types/reftime.h>
 #include <arki/types/encoded.h>
-#include <stdint.h>
+#include <cstdint>
 
 namespace arki {
 namespace types {

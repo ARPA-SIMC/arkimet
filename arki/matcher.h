@@ -9,6 +9,7 @@
 #include <string>
 #include <set>
 #include <memory>
+#include <cstdint>
 
 namespace arki {
 

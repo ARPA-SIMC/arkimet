@@ -1,6 +1,7 @@
 #ifndef ARKI_TYPES_REFTIME_H
 #define ARKI_TYPES_REFTIME_H
 
+#include <cstdint>
 #include <arki/types/encoded.h>
 #include <arki/core/time.h>
 

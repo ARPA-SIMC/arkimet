@@ -1,6 +1,7 @@
 #ifndef ARKI_TYPES_RUN_H
 #define ARKI_TYPES_RUN_H
 
+#include <cstdint>
 #include <arki/types/encoded.h>
 
 namespace arki {

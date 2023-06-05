@@ -355,54 +355,6 @@ void Writer::acquire_batch(WriterBatch& batch, const AcquireConfig& cfg)
     }
 }
 
-void Writer::remove(const metadata::Collection& mds)
-{
-    // Group mds by segment
-    std::unordered_map<std::string, std::vector<uint64_t>> by_segment;
-    // Take note of months to invalidate in summary cache
-    std::set<std::pair<int, int>> months;
-
-    for (const auto& md: mds)
-    {
-        const types::source::Blob* source = md->has_source_blob();
-        if (!source)
-            throw std::runtime_error("cannot remove metadata from dataset, because it has no Blob source");
-
-        if (source->basedir != dataset().path)
-            throw std::runtime_error("cannot remove metadata from dataset: its basedir is " + source->basedir + " but this dataset is at " + dataset().path);
-
-        by_segment[get_relpath(*md)].push_back(source->offset);
-
-        core::Time time = md->get<types::reftime::Position>()->get_Position();
-        months.insert(std::make_pair(time.ye, time.mo));
-    }
-
-    for (const auto& i: by_segment)
-    {
-        segment::WriterConfig writer_config;
-        writer_config.drop_cached_data_on_commit = false;
-        writer_config.eatmydata = dataset().eatmydata;
-
-        auto segment = file(writer_config, i.first);
-
-        // TODO: refuse if md is in the archive
-
-        // Delete from DB, and get file name
-        Pending p_del = segment->idx.begin_transaction();
-
-        for (const auto& offset: i.second)
-            segment->idx.remove(offset);
-
-        // Commit delete from DB
-        p_del.commit();
-
-        arki::nag::verbose("%s: %s: %zd data marked as deleted", name().c_str(), i.first.c_str(), i.second.size());
-    }
-
-    for (const auto& i: months)
-        scache.invalidate(i.first, i.second);
-}
-
 void Writer::test_acquire(std::shared_ptr<Session> session, const core::cfg::Section& cfg, WriterBatch& batch)
 {
     std::shared_ptr<const iseg::Dataset> dataset(new iseg::Dataset(session, cfg));

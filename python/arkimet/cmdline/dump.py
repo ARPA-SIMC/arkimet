@@ -1,8 +1,11 @@
+# python 3.7+ from __future__ import annotations
+import argparse
+import logging
+import sys
+from contextlib import contextmanager
+
 import arkimet
 from arkimet.cmdline.base import App, Exit
-from contextlib import contextmanager
-import sys
-import logging
 
 log = logging.getLogger("arki-dump")
 
@@ -12,14 +15,15 @@ class Dump(App):
     Read data from the given input file (or stdin), and dump the in human readable format on stdout
     """
 
-    def __init__(self):
-        super().__init__()
-        self.parser.add_argument("-o", "--output", metavar="file",
-                                 help="write the output to the given file instead of standard output")
-        self.parser.add_argument("input", action="store", nargs="?",
-                                 help="file to read (or stdin if omitted)")
+    @classmethod
+    def make_parser(cls) -> argparse.ArgumentParser:
+        parser = super().make_parser()
+        parser.add_argument("-o", "--output", metavar="file",
+                            help="write the output to the given file instead of standard output")
+        parser.add_argument("input", action="store", nargs="?",
+                            help="file to read (or stdin if omitted)")
 
-        group = self.parser.add_mutually_exclusive_group()
+        group = parser.add_mutually_exclusive_group()
         group.add_argument("--query", action="store_true",
                            help="print a query (specified on the command line) with the aliases expanded")
         group.add_argument("--config", action="store_true",
@@ -39,6 +43,8 @@ class Dump(App):
                            help="annotate the human-readable Yaml output with field descriptions")
         group.add_argument("--doc-metadata", action="store_true",
                            help="Print documentation of metadata types")
+
+        return parser
 
     @contextmanager
     def input(self, mode):
