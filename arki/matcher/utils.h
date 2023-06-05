@@ -31,6 +31,7 @@
 #include <sstream>
 #include <map>
 #include <set>
+#include <cstdint>
 
 namespace arki {
 namespace matcher {

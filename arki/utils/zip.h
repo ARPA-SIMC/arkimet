@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 #include <stdexcept>
+#include <cstdint>
 #ifdef HAVE_LIBZIP
 #include <zip.h>
 #endif

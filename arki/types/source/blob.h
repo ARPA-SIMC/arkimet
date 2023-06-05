@@ -1,6 +1,7 @@
 #ifndef ARKI_TYPES_SOURCE_BLOB_H
 #define ARKI_TYPES_SOURCE_BLOB_H
 
+#include <cstdint>
 #include <arki/types/source.h>
 #include <arki/core/fwd.h>
 #include <arki/stream/fwd.h>

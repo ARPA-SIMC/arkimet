@@ -4,6 +4,7 @@
 #include <arki/scan.h>
 #include <string>
 #include <vector>
+#include <cstdint>
 
 namespace arki {
 namespace scan {

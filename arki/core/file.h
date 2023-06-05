@@ -8,6 +8,7 @@
 #include <array>
 #include <memory>
 #include <cstddef>
+#include <cstdint>
 
 namespace arki {
 namespace core {

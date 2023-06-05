@@ -1,6 +1,7 @@
 #ifndef ARKI_TYPES_ORIGIN_H
 #define ARKI_TYPES_ORIGIN_H
 
+#include <cstdint>
 #include <arki/types/encoded.h>
 
 namespace arki {

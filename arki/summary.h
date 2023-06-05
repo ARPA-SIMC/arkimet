@@ -12,6 +12,7 @@
 #include <set>
 #include <string>
 #include <memory>
+#include <cstdint>
 
 namespace arki {
 namespace summary {

@@ -4,6 +4,7 @@
 #include <arki/core/fwd.h>
 #include <string>
 #include <vector>
+#include <cstdint>
 
 namespace arki {
 namespace types {

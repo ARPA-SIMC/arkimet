@@ -4,6 +4,7 @@
 #include <curl/curl.h>
 #include <stdexcept>
 #include <sstream>
+#include <cstdint>
 
 namespace arki {
 namespace core {

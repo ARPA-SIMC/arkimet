@@ -4,6 +4,7 @@
 #include <arki/utils/sys.h>
 #include <string>
 #include <vector>
+#include <cstdint>
 
 namespace arki {
 namespace utils {

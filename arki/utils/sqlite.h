@@ -10,6 +10,7 @@
 #include <sstream>
 #include <vector>
 #include <limits>
+#include <cstdint>
 
 // Enable compatibility with old sqlite.
 // TODO: use #if macros to test sqlite version instead

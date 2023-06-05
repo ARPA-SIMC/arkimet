@@ -7,6 +7,7 @@
 #include <sys/types.h>
 #include <string>
 #include <vector>
+#include <cstdint>
 
 // zlib forward declaration
 struct z_stream_s;
