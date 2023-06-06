@@ -1,3 +1,9 @@
+arkimet (1.47-1) unstable; urgency=medium
+
+  * Fix installation scripts (Meson and autotools) #304
+
+ -- Emanuele Di Giacomo <edigiacomo@arpae.it>  Tue, 06 Jun 2023 15:27:57 +0200
+
 arkimet (1.46-1) unstable; urgency=medium
 
   * Do not accidentally create missing segments when trying to remove data from them (#296)
