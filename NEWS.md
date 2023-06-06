@@ -1,3 +1,7 @@
+# New in version 1.47
+
+* Fix installation scripts (Meson and autotools) #304
+
 # New in version 1.46
 
 * Do not accidentally create missing segments when trying to remove data from them (#296)
