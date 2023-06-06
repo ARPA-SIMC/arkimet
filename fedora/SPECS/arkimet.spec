@@ -3,7 +3,7 @@
 
 Summary: Archive for weather information
 Name: arkimet
-Version: 1.46
+Version: 1.47
 Release: 1
 License: GPL
 Group: Applications/Meteo
@@ -237,6 +237,9 @@ if [ "$1" = "1" ]; then
 fi
 
 %changelog
+* Tue Jun  6 2023 Emanuele Di Giacomo <edigiacomo@arpae.it> - 1.47-1
+- Fix installation scripts (Meson and autotools) #304
+
 * Mon Jun  5 2023 Emanuele Di Giacomo <edigiacomo@arpae.it> - 1.46-1
 - Do not accidentally create missing segments when trying to remove data from them (#296)
 - Implemented a timeout waiting for the filter child process to exit (#301)

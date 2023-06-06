@@ -39,12 +39,14 @@ nobase_python_PYTHON = \
     arkimet/cmdline/dump.py \
     arkimet/cmdline/query.py \
     arkimet/cmdline/__init__.py \
+    arkimet/cmdline/cmdline.py \
     arkimet/cmdline/server.py \
     arkimet/cmdline/xargs.py \
     arkimet/cmdline/mergeconf.py \
     arkimet/cmdline/base.py \
     arkimet/cmdline/bufr_prepare.py \
     arkimet/cmdline/scan.py \
+    arkimet/cmdline/maint.py \
     arkimet/cmdline/check.py
 
 pyexec_LTLIBRARIES = _arkimet.la
