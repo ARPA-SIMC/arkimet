@@ -2,6 +2,7 @@
 #include "simple/reader.h"
 #include "simple/writer.h"
 #include "simple/checker.h"
+#include "arki/dataset/lock.h"
 
 using namespace std;
 using namespace arki::utils;
@@ -31,7 +32,21 @@ std::shared_ptr<dataset::Checker> Dataset::create_checker()
     return std::make_shared<simple::Checker>(static_pointer_cast<Dataset>(shared_from_this()));
 }
 
-}
-}
+std::shared_ptr<dataset::ReadLock> Dataset::read_lock_dataset() const
+{
+    return std::make_shared<DatasetReadLock>(*this);
 }
 
+std::shared_ptr<dataset::AppendLock> Dataset::append_lock_dataset() const
+{
+    return std::make_shared<DatasetAppendLock>(*this);
+}
+
+std::shared_ptr<dataset::CheckLock> Dataset::check_lock_dataset() const
+{
+    return std::make_shared<DatasetCheckLock>(*this);
+}
+
+}
+}
+}
