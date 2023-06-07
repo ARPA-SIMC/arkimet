@@ -1,10 +1,12 @@
 #ifndef ARKI_DATASET_SIMPLE_H
 #define ARKI_DATASET_SIMPLE_H
 
-#include <arki/dataset/indexed.h>
+#include <arki/dataset/segmented.h>
 
 namespace arki {
 namespace dataset {
+class Index;
+
 namespace simple {
 
 struct Dataset : public dataset::segmented::Dataset

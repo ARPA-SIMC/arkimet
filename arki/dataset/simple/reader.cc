@@ -1,4 +1,5 @@
 #include "reader.h"
+#include "arki/dataset/index.h"
 #include "arki/dataset/lock.h"
 #include "arki/dataset/query.h"
 #include "arki/dataset/progress.h"
