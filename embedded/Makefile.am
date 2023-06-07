@@ -2,10 +2,6 @@
 
 SUBDIRS =
 
-if SQLITE_EMBEDDED
-SUBDIRS += sqlite
-endif
-
 if LZO_EMBEDDED
 SUBDIRS += minilzo
 endif

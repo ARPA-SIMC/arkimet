@@ -123,17 +123,8 @@ PKG_PROG_PKG_CONFIG
 dnl Compulsory libraries
 AX_LIB_SQLITE3([3.14])
 if test x"$success" = x"no"; then
-	AC_MSG_WARN([Cannot find an appropriate version of SQLite, using the embedded version])
-
-	SQLITE3_CFLAGS="-I`pwd`/embedded/sqlite/"
-        AC_SUBST(SQLITE3_CFLAGS)
-	SQLITE3_LDFLAGS="`pwd`/embedded/sqlite/libsqlite3.la"
-        AC_SUBST(SQLITE3_LDFLAGS)
-	SQLITE3_VERSION="embedded"
-        AC_SUBST(SQLITE3_VERSION)
-        AC_DEFINE(HAVE_SQLITE3, [], [SQLite 3 is available])
+	AC_MSG_ERROR([Cannot find an appropriate version of SQLite])
 fi
-AM_CONDITIONAL([SQLITE_EMBEDDED], [test x"$SQLITE3_VERSION" = x"embedded"])
 
 dnl Optional readline
 VL_LIB_READLINE
@@ -441,7 +432,6 @@ AC_CONFIG_FILES([
 Makefile
 conf/Makefile
 embedded/Makefile
-embedded/sqlite/Makefile
 embedded/minilzo/Makefile
 arki/Makefile
 src/Makefile
