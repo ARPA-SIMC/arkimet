@@ -9,13 +9,8 @@
 #include <zlib.h>
 #include <sstream>
 
-#ifdef HAVE_LZO
-#include "lzo/lzoconf.h"
-#include "lzo/lzo1x.h"
-#elif HAVE_MINILZO
-#include "minilzo.h"
-#define HAVE_LZO
-#endif
+#include <lzo/lzoconf.h>
+#include <lzo/lzo1x.h>
 
 using namespace std;
 using namespace arki::utils;
@@ -38,7 +33,6 @@ static void require_lzo_init()
 
 std::vector<uint8_t> lzo(const void* in, size_t in_size)
 {
-#ifdef HAVE_LZO
     require_lzo_init();
 
     // LZO work memory
@@ -68,14 +62,10 @@ std::vector<uint8_t> lzo(const void* in, size_t in_size)
     out.resize(out_len);
 
     return out;
-#else
-    return std::vector<uint8_t>((const uint8_t*)in, (const uint8_t*)in + in_size);
-#endif
 }
 
 std::vector<uint8_t> unlzo(const void* in, size_t in_size, size_t out_size)
 {
-#ifdef HAVE_LZO
     require_lzo_init();
 
     std::vector<uint8_t> out(out_size);
@@ -89,9 +79,6 @@ std::vector<uint8_t> unlzo(const void* in, size_t in_size, size_t out_size)
     }
 
     return out;
-#else
-    throw std::runtime_error("cannot decompress data with LZO: LZO support was not available at compile time");
-#endif
 }
 
 ZlibCompressor::ZlibCompressor() : strm(0)

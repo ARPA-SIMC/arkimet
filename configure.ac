@@ -296,18 +296,11 @@ then
 	LZO_VERSION=`sed -nre 's/#define LZO_VERSION_STRING[[:blank:]]+"(.+)"/\1/p' /usr/include/lzo/lzoconf.h`
 	AC_DEFINE([HAVE_LZO], 1, [lzo functions are available])
 else
-	AC_MSG_WARN([Cannot find an appropriate version of LZO, using the embedded version])
-	LZO_CFLAGS="-I`pwd`/embedded/minilzo/"
-	LZO_LIBS="-L`pwd`/embedded/minilzo/ -lminilzo"
-	LZO_VERSION="embedded"
-	AC_DEFINE([HAVE_MINILZO], 1, [minilzo functions are available])
-	have_lzo=yes
+	AC_MSG_ERROR([Cannot find an appropriate version of LZO])
 fi
 AC_SUBST(LZO_CFLAGS)
 AC_SUBST(LZO_LIBS)
 AC_SUBST(LZO_VERSION)
-AM_CONDITIONAL([LZO], [test x"$have_lzo" = x"yes"])
-AM_CONDITIONAL([LZO_EMBEDDED], [test x"$LZO_VERSION" = x"embedded"])
 
 dnl Check for vm2 support
 if test $enable_vm2 = yes
@@ -431,8 +424,6 @@ AM_CONDITIONAL([DEVEL_DO_DATASETS], [true])
 AC_CONFIG_FILES([
 Makefile
 conf/Makefile
-embedded/Makefile
-embedded/minilzo/Makefile
 arki/Makefile
 src/Makefile
 python/Makefile
