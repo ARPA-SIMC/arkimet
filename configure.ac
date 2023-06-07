@@ -1,18 +1,15 @@
 dnl Process this file with autoconf to produce a configure script.
 
-AC_INIT(arkimet, 1.47, [enrico@enricozini.org])
+AC_INIT([arkimet],[1.47],[enrico@enricozini.org])
 AC_CONFIG_SRCDIR([configure.ac])
 AM_INIT_AUTOMAKE([foreign subdir-objects nostdinc])
-AC_CONFIG_HEADER(config.h)
-AC_CONFIG_HEADER(arki/libconfig.h)
+AC_CONFIG_HEADERS([config.h])
+AC_CONFIG_HEADERS([arki/libconfig.h])
 AC_CONFIG_MACRO_DIR([m4])
 
 dnl Use libtool
-dnl AM_ENABLE_STATIC
-dnl AM_DISABLE_SHARED
 LT_INIT
 LT_LANG([C++])
-AC_PROG_LIBTOOL
 
 AC_ARG_ENABLE([docs],
     [AS_HELP_STRING(
@@ -77,7 +74,7 @@ AC_ARG_ENABLE([splice],
 
 if test x$enable_gcov = xyes
 then
-	AM_DISABLE_SHARED
+	AC_DISABLE_SHARED([])
 fi
 
 dnl To use subdirs
@@ -85,7 +82,7 @@ AC_PROG_MAKE_SET
 
 AC_LANG([C++])
 
-AC_ISC_POSIX
+AC_SEARCH_LIBS([strerror],[cposix])
 AC_PROG_CC
 AC_PROG_CXX
 
@@ -94,9 +91,6 @@ AX_CXX_COMPILE_STDCXX_11(noext)
 
 AM_PROG_LEX
 AC_PROG_YACC
-
-AM_PROG_CC_STDC
-AC_HEADER_STDC
 
 dnl Needed by subdir-objects
 AM_PROG_CC_C_O
