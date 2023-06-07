@@ -1,7 +1,7 @@
 #ifndef ARKI_DATASET_ONDISK2_H
 #define ARKI_DATASET_ONDISK2_H
 
-#include <arki/dataset/indexed.h>
+#include <arki/dataset.h>
 
 namespace arki {
 namespace dataset {

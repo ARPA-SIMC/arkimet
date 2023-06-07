@@ -71,21 +71,6 @@ bool Dataset::hasArchive() const
     return sys::exists(arcdir);
 }
 
-std::shared_ptr<dataset::ReadLock> Dataset::read_lock_dataset() const
-{
-    return std::make_shared<DatasetReadLock>(*this);
-}
-
-std::shared_ptr<dataset::AppendLock> Dataset::append_lock_dataset() const
-{
-    return std::make_shared<DatasetAppendLock>(*this);
-}
-
-std::shared_ptr<dataset::CheckLock> Dataset::check_lock_dataset() const
-{
-    return std::make_shared<DatasetCheckLock>(*this);
-}
-
 std::shared_ptr<dataset::ReadLock> Dataset::read_lock_segment(const std::string& relpath) const
 {
     return std::make_shared<SegmentReadLock>(*this, relpath);

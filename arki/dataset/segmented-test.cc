@@ -1,7 +1,6 @@
 #include "tests.h"
 #include "arki/segment/tests.h"
 #include "segmented.h"
-#include "indexed.h"
 #include "maintenance.h"
 #include "arki/exceptions.h"
 #include "arki/core/file.h"

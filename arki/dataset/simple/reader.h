@@ -14,10 +14,14 @@ class Manifest;
 }
 namespace simple {
 
-class Reader : public DatasetAccess<simple::Dataset, indexed::Reader>
+class Reader : public DatasetAccess<simple::Dataset, segmented::Reader>
 {
 protected:
+    Index* m_idx = nullptr;
     index::Manifest* m_mft = nullptr;
+
+    bool impl_query_data(const dataset::DataQuery& q, metadata_dest_func dest) override;
+    void impl_query_summary(const Matcher& matcher, Summary& summary) override;
 
 public:
     Reader(std::shared_ptr<simple::Dataset> dataset);
@@ -28,6 +32,13 @@ public:
     core::Interval get_stored_time_interval() override;
 
     static bool is_dataset(const std::string& dir);
+
+    /**
+     * Return true if this dataset has a working index.
+     *
+     * This method is mostly used for tests.
+     */
+    bool hasWorkingIndex() const { return m_idx != 0; }
 };
 
 }
