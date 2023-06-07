@@ -9,52 +9,6 @@ class Index;
 
 namespace indexed {
 
-/// segmented::Reader that can make use of an index
-class Reader : public segmented::Reader
-{
-protected:
-    Index* m_idx = nullptr;
-
-    bool impl_query_data(const dataset::DataQuery& q, metadata_dest_func dest) override;
-    void impl_query_summary(const Matcher& matcher, Summary& summary) override;
-
-public:
-    using segmented::Reader::Reader;
-    ~Reader();
-
-    const segmented::Dataset& dataset() const override = 0;
-    segmented::Dataset& dataset() override = 0;
-
-    /**
-     * Return true if this dataset has a working index.
-     *
-     * This method is mostly used for tests.
-     */
-    bool hasWorkingIndex() const { return m_idx != 0; }
-};
-
-class Checker : public segmented::Checker
-{
-protected:
-    Index* m_idx = nullptr;
-
-public:
-    using segmented::Checker::Checker;
-    ~Checker();
-
-    const segmented::Dataset& dataset() const override = 0;
-    segmented::Dataset& dataset() override = 0;
-
-    void check_issue51(CheckerConfig& opts) override;
-
-    void test_make_overlap(const std::string& relpath, unsigned overlap_size, unsigned data_idx=1) override;
-    void test_make_hole(const std::string& relpath, unsigned hole_size, unsigned data_idx=0) override;
-    void test_corrupt_data(const std::string& relpath, unsigned data_idx=0) override;
-    void test_truncate_data(const std::string& relpath, unsigned data_idx=0) override;
-    void test_swap_data(const std::string& relpath, unsigned d1_idx, unsigned d2_idx) override;
-    void test_rename(const std::string& relpath, const std::string& new_relpath) override;
-};
-
 }
 }
 }
