@@ -1,3 +1,9 @@
+# New in version UNRELEASED
+
+* Removed embedded version of sqlite (#194)
+* Removed embedded version of liblzo (#195)
+* Fixed mentions of `.archive` in documentation (#288)
+
 # New in version 1.47
 
 * Fix installation scripts (Meson and autotools) #304
