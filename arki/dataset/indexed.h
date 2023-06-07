@@ -9,13 +9,6 @@ class Index;
 
 namespace indexed {
 
-class Dataset : public segmented::Dataset
-{
-public:
-    using segmented::Dataset::Dataset;
-};
-
-
 /// segmented::Reader that can make use of an index
 class Reader : public segmented::Reader
 {
@@ -29,8 +22,8 @@ public:
     using segmented::Reader::Reader;
     ~Reader();
 
-    const Dataset& dataset() const override = 0;
-    Dataset& dataset() override = 0;
+    const segmented::Dataset& dataset() const override = 0;
+    segmented::Dataset& dataset() override = 0;
 
     /**
      * Return true if this dataset has a working index.
@@ -49,8 +42,8 @@ public:
     using segmented::Checker::Checker;
     ~Checker();
 
-    const Dataset& dataset() const override = 0;
-    Dataset& dataset() override = 0;
+    const segmented::Dataset& dataset() const override = 0;
+    segmented::Dataset& dataset() override = 0;
 
     void check_issue51(CheckerConfig& opts) override;
 

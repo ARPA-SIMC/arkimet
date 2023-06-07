@@ -11,7 +11,7 @@ namespace dataset {
 namespace simple {
 
 Dataset::Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
-    : dataset::indexed::Dataset(session, cfg),
+    : dataset::segmented::Dataset(session, cfg),
       index_type(cfg.value("index_type"))
 {
 }

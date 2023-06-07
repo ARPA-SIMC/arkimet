@@ -7,7 +7,7 @@ namespace arki {
 namespace dataset {
 namespace simple {
 
-struct Dataset : public dataset::indexed::Dataset
+struct Dataset : public dataset::segmented::Dataset
 {
     std::string index_type;
 
