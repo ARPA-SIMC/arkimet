@@ -152,7 +152,7 @@ State AppendCheckBackend::check_contiguous()
     if (unindexed_size > 0)
     {
         std::stringstream out;
-        out << "possibly deleted data found not tracked by index: " << unindexed_size << "b would be freed by a repack";
+        out << "deleted/duplicated/replaced data found: " << unindexed_size << "b would be freed by a repack";
         reporter(out.str());
     }
 
@@ -168,7 +168,7 @@ State AppendCheckBackend::check_contiguous()
 
     if (!dirty && end > end_of_known_data)
     {
-        reporter("segment contains possibly deleted data at the end");
+        reporter("segment contains deleted data at the end");
         dirty = true;
     }
 
