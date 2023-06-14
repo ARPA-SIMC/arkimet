@@ -38,7 +38,16 @@ Description: Archive for weather information
 Package: python3-arkimet
 Section: python
 Architecture: any
-Depends: python3-wreport, python3-dballe, ${shlibs:Depends}, ${misc:Depends}, ${python3:Depends}
+Depends:
+    python3-wreport,
+    python3-dballe,
+    python3-werkzeug,
+    python3-setproctitle,
+    python3-h5py,
+    python3-pil,
+    python3-netcdf4,
+    ${shlibs:Depends},
+    ${misc:Depends}
 Description: Archive for weather information (Python3 API)
  Description to be written.
  .
