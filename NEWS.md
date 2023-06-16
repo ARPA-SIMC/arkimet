@@ -3,6 +3,8 @@
 * Removed embedded version of sqlite (#194)
 * Removed embedded version of liblzo (#195)
 * Fixed mentions of `.archive` in documentation (#288)
+* Add missing files (related to JPEG scanning) in installation scripts (Meson and autools)
+* JPEG scanner doesn't raise an exception if datetime tag is missing
 
 # New in version 1.47
 
