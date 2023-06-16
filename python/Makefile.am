@@ -34,6 +34,7 @@ nobase_python_PYTHON = \
     arkimet/scan/vm2.py \
     arkimet/scan/odimh5.py \
     arkimet/scan/nc.py \
+    arkimet/scan/jpeg.py \
     arkimet/server/views.py \
     arkimet/server/__init__.py \
     arkimet/cmdline/dump.py \

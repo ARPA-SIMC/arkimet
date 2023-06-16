@@ -10,6 +10,7 @@ install_data(
 	'scan/grib2.py',
 	'scan/nc.py',
 	'scan/odimh5.py',
+	'scan/jpeg.py',
     install_dir: conf_dir / 'scan')
 install_data(
 	'qmacro/noop.py',
