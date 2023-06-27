@@ -5,6 +5,7 @@
 * Fixed mentions of `.archive` in documentation (#288)
 * Add missing files (related to JPEG scanning) in installation scripts (Meson and autools)
 * JPEG scanner doesn't raise an exception if datetime tag is missing
+* Do not install vm2/source.lua (#310)
 
 # New in version 1.47
 
