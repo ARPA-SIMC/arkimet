@@ -191,7 +191,6 @@ make check
 %{_sysconfdir}/arkimet/format/*
 %{_sysconfdir}/arkimet/qmacro/*
 %{_sysconfdir}/arkimet/scan/*
-%{_sysconfdir}/arkimet/vm2/*
 %{_bindir}/*
 %{_libdir}/libarkimet.so.*
 %{_unitdir}/%{name}.service

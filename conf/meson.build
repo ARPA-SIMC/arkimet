@@ -17,6 +17,5 @@ install_data(
 	'qmacro/noopcopy.py',
 	'qmacro/expa.py',
     install_dir: conf_dir / 'qmacro')
-install_data('vm2/source.lua', install_dir: conf_dir / 'vm2')
 
 install_data('match-alias.simc.conf', install_dir: doc_dir)
