@@ -26,9 +26,8 @@ BuildRequires: python3-rpm-macros >= 3-23
 %define python3_vers python3
 %endif
 
-BuildRequires: autoconf
+BuildRequires: meson
 BuildRequires: gcc-c++
-BuildRequires: libtool
 BuildRequires: doxygen
 BuildRequires: pkgconfig(libdballe) >= 9.0
 BuildRequires: lua-devel >= 5.1
@@ -86,6 +85,8 @@ Requires: %{python3_vers}-h5py
 Requires: h5py
 %endif
 
+Conflicts: arkimet-devel
+
 %{!?python3_sitelib: %define python3_sitelib %(%{__python3} -c "import sysconfig; print(sysconfig.get_path('purelib'))")}
 %{!?python3_sitearch: %define python3_sitearch %(%{__python3} -c "import sysconfig; print(sysconfig.get_path('platlib'))")}
 
@@ -110,29 +111,8 @@ A summary of offline data is kept online, so that arkimet is able
 to report that more data for a query would be available but is 
 currently offline.
 
-%package  -n arkimet-devel
-Summary:  Arkimet developement library
-Group:    Applications/Meteo
-Requires: libdballe-devel >= 9.0
-Requires: eccodes-devel
-Requires: libwreport-devel
-Requires: %{python3_vers}-devel
-Requires: meteo-vm2-devel
-Requires: sqlite-devel
-Requires: curl-devel
-Requires: lzo-devel
-Requires: libarchive-devel
-Requires: libzip-devel
-Requires: geos-devel
-Requires: readline-devel
-Requires: bzip2-devel
-
-%description -n arkimet-devel
- Arkimet developement library
-
 %prep
 %setup -q -n %{srcarchivename}
-sh autogen.sh
 
 %build
 
@@ -149,17 +129,15 @@ sh autogen.sh
 %if 0%{?arpae_tests}
 echo 'Enabling ARPAE tests'
 source %{_sysconfdir}/profile.d/eccodes-simc.sh
-%configure --enable-arpae-tests %{?el7:--disable-docs --disable-splice}
+%meson -D arpae-tests=true
 %else
-%configure %{?el7:--disable-docs --disable-splice}
+%meson
 %endif
-make
+%meson_build
 
 
 %install
-[ "%{buildroot}" != / ] && rm -rf %{buildroot}
-%makeinstall
-
+%meson_install
 install -D -m0644 %{SOURCE1} %{buildroot}%{_unitdir}/%{name}.service
 install -bD -m0644 %{SOURCE2} %{buildroot}%{_sysconfdir}/sysconfig/%{name}
 install -D -m 0644 -p %{SOURCE3} %{buildroot}%{_sysconfdir}/logrotate.d/%{name}
@@ -174,9 +152,9 @@ source %{_sysconfdir}/profile.d/eccodes-simc.sh
 
 %if 0%{?el7}
 # See https://github.com/ARPA-SIMC/arkimet/issues/217
-make check ISSUE217=1
+%meson_test ISSUE217=1
 %else
-make check
+%meson_test
 %endif
 
 
@@ -193,28 +171,18 @@ make check
 %{_sysconfdir}/arkimet/scan/*
 %{_sysconfdir}/arkimet/vm2/*
 %{_bindir}/*
-%{_libdir}/libarkimet.so.*
+%{_libdir}/libarkimet.so
 %{_unitdir}/%{name}.service
 %config(noreplace) %{_sysconfdir}/sysconfig/arkimet
 %config(noreplace) %{_sysconfdir}/logrotate.d/arkimet
 %dir %{python3_sitelib}/arkimet
 %{python3_sitelib}/arkimet/*
 %dir %{python3_sitearch}
-%{python3_sitearch}/*.a
 %{python3_sitearch}/*.so*
 %doc %{_mandir}/man1/*
 %doc README.md
 %doc %{_docdir}/arkimet/*
-
-%exclude %{python3_sitearch}/*.la
-%exclude %{_libdir}/libarkimet*.la
-
-%files -n arkimet-devel
-%defattr(-,root,root,-)
-%{_libdir}/libarkimet*.a
-%{_libdir}/libarkimet.so
-%dir %{_includedir}/arki
-%{_includedir}/arki/*
+%exclude %{_libdir}/libarkimet.a
 
 %pre
 if [ "$1" = "1" ]; then
