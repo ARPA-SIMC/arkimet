@@ -149,12 +149,11 @@ echo 'Enabling ARPAE tests'
 source %{_sysconfdir}/profile.d/eccodes-simc.sh
 %endif
 
-export MESON_TESTTHREADS=1
 %if 0%{?el7}
 # See https://github.com/ARPA-SIMC/arkimet/issues/217
-%meson_test ISSUE217=1
+%meson_test ISSUE217=1 --num-processes=1
 %else
-%meson_test
+%meson_test --num-processes=1
 %endif
 
 
