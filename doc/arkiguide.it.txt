@@ -1,6 +1,6 @@
 = ArkiGuida =
 Emanuele Di Giacomo <edigiacomo@arpae.it>
-v0.9, 2017-06-14
+v0.10, 2023-10-05
 :lang: it
 
 == Introduzione ==
@@ -836,6 +836,23 @@ $ arki-scan --yaml arkimet:/tmp/delete.md
 
 ====
 
+=== Importazione dati su periodi archiviati di dataset ===
+
+Se la configurazione del dataset contiene un `archive age`, è stato effettuato un repack
+dei dati vecchi e si rende necessario reimportare dati precedenti all'archive age, i passi
+sono i seguenti:
+
+====
+
+1) togliere l'`archive age` dalla conf
+2) `arki-query --summary-short --dump '' $file_da_recuperare`
+per capire il giorno di riferimento, ad es.: 2023-06-20T08:05:00Z to 2023-06-20T08:05:00Z
+3) `arki-check --unarchive 2023/06-20.odimh5 /arkivio/arkimet/dataset/odimGAT_arc/`
+per togliere dall'archivio il segmento
+4) importazione via `arki-scan`
+5) ripristino `archive` age dalla conf
+6) arki-check vari (`-r` per il repack/archivio, `--zip` per compattare in caso di odimh5)
+
 === Query macro ===
 
 *TODO*
@@ -983,4 +1000,4 @@ include::matcher/timerange.txt[]
 ----
 
 == Copyright ==
-Copyright (C) 2013-2017 ARPAE-SIMC <simc-urp@arpae.it>
+Copyright (C) 2013-2023 ARPAE-SIMC <simc-urp@arpae.it>
