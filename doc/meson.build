@@ -24,6 +24,7 @@ sphinx_doc_sources = [
     'config.rst',
     'http-api.rst',
     'index.rst',
+    'match-alias.rst',
     'matcher.rst',
     'matcher/aliases.rst',
     'matcher/area.rst',

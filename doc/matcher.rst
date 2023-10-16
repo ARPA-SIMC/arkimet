@@ -1,3 +1,5 @@
+.. _match_expressions:
+
 Match expressions
 =================
 
