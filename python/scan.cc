@@ -667,6 +667,43 @@ struct get_scanner : public ClassMethKwargs<get_scanner>
     }
 };
 
+struct scan_data : public MethKwargs<scan_data, arkipy_scan_Scanner>
+{
+    constexpr static const char* name = "scan_data";
+    constexpr static const char* signature = "data: bytes";
+    constexpr static const char* returns = "arkimet.Metadata";
+    constexpr static const char* summary = "Scan a memory buffer";
+    constexpr static const char* doc = R"(
+Returns a Metadata with inline source.
+)";
+    static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
+    {
+        static const char* kwlist[] = { "data", nullptr };
+        PyObject* arg_data = nullptr;
+
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "O", (char**)kwlist, &arg_data))
+            return nullptr;
+
+        try {
+            char* buffer;
+            Py_ssize_t length;
+            if (PyBytes_Check(arg_data))
+            {
+                if (PyBytes_AsStringAndSize(arg_data, &buffer, &length) == -1)
+                    throw PythonException();
+            } else {
+                PyErr_Format(PyExc_TypeError, "data has type %R instead of bytes", arg_data);
+                return nullptr;
+            }
+
+            // FIXME: memory copy, seems unavoidable at the moment
+            std::vector<uint8_t> data(buffer, buffer+length);
+            auto md = self->scanner->scan_data(data);
+            return (PyObject*)metadata_create(md);
+        } ARKI_CATCH_RETURN_PYO
+    }
+};
+
 struct ScannerDef : public Type<ScannerDef, arkipy_scan_Scanner>
 {
     constexpr static const char* name = "Scanner";
@@ -674,9 +711,8 @@ struct ScannerDef : public Type<ScannerDef, arkipy_scan_Scanner>
     constexpr static const char* doc = R"(
 Scanner for binary data.
 )";
-    GetSetters<//data, data_size
-    > getsetters;
-    Methods<get_scanner> methods;
+    GetSetters<> getsetters;
+    Methods<get_scanner, scan_data> methods;
 
     static void _dealloc(Impl* self)
     {

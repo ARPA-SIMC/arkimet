@@ -42,6 +42,20 @@ class TestScanGrib(unittest.TestCase):
         scanner = arki.scan.Scanner.get_scanner("GRIB")
         self.assertEqual(str(scanner), "scanner:grib")
 
+        with open("inbound/test.grib1", "rb") as fd:
+            md = scanner.scan_data(fd.read())
+
+        self.assertEqual(md["origin"], "GRIB1(200, 000, 101)")
+        self.assertEqual(md["product"], "GRIB1(200, 140, 229)")
+        self.assertEqual(md["level"], "GRIB1(001)")
+        self.assertEqual(md["timerange"], "GRIB1(000, 000h)")
+        self.assertEqual(
+                md["area"],
+                "GRIB(Ni=97, Nj=73, latfirst=40000000, latlast=46000000, lonfirst=12000000, lonlast=20000000, type=0)")
+        self.assertEqual(md["proddef"], "GRIB(tod=1)")
+        self.assertEqual(md["reftime"], "2007-07-08T13:00:00Z")
+        self.assertEqual(md["run"], "MINUTE(13:00)")
+
     def test_compact(self):
         """
         Scan a well-known grib file, with no padding between messages
