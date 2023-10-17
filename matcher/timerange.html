@@ -4,11 +4,12 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
     <title>Matching time ranges &#8212; arkimet 1.16 documentation</title>
-    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
-    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
-    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css" />
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
     <script src="../_static/underscore.js"></script>
     <script src="../_static/doctools.js"></script>
@@ -32,7 +33,7 @@
 
           <div class="body" role="main">
             
-  <div class="section" id="matching-time-ranges">
+  <section id="matching-time-ranges">
 <h1>Matching time ranges<a class="headerlink" href="#matching-time-ranges" title="Permalink to this headline">¶</a></h1>
 <p>Some time range matchers use time unit suffixes. Here is a table with their
 meaning:</p>
@@ -50,13 +51,13 @@ possible to use seconds to match a time range expressed in hours, or to use
 years to match a time range expressed in months, but it is not possible to
 use months to match a time range expressed in days, because months have a
 variable number of days.</p>
-<div class="section" id="grib1">
+<section id="grib1">
 <h2>GRIB1<a class="headerlink" href="#grib1" title="Permalink to this headline">¶</a></h2>
 <p>Syntax: <code class="docutils literal notranslate"><span class="pre">timerange:GRIB1,type,p1,p2</span></code></p>
 <p>Any of <code class="docutils literal notranslate"><span class="pre">type</span></code>, <code class="docutils literal notranslate"><span class="pre">p1</span></code>, or <code class="docutils literal notranslate"><span class="pre">p2</span></code> can be omitted; if omitted, any value will match.</p>
 <p><code class="docutils literal notranslate"><span class="pre">p1</span></code> and <code class="docutils literal notranslate"><span class="pre">p2</span></code> must have a time unit suffix (any of s,m,h,d,mo,y) unless they
 are 0.</p>
-<div class="section" id="examples">
+<section id="examples">
 <h3>Examples<a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h3>
 <p>Given timerange <code class="docutils literal notranslate"><span class="pre">GRIB1(0,</span> <span class="pre">6h)</span></code> (6-hours forecast)</p>
 <ul class="simple">
@@ -75,14 +76,14 @@ are 0.</p>
 <li><p><code class="docutils literal notranslate"><span class="pre">timerange:GRIB1,1</span></code> does not match</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">timerange:GRIB1,2,6m,12m</span></code> does not match</p></li>
 </ul>
-</div>
-</div>
-<div class="section" id="grib2">
+</section>
+</section>
+<section id="grib2">
 <h2>GRIB2<a class="headerlink" href="#grib2" title="Permalink to this headline">¶</a></h2>
 <p>Syntax: <code class="docutils literal notranslate"><span class="pre">timerange:GRIB2,type,unit,p1,p2</span></code></p>
 <p>Any of type, unit, p1 or p2 can be omitted; if omitted, any value will match.</p>
 <p>Unit is given explicitly and p1,p2 do not use suffixes.</p>
-<div class="section" id="id1">
+<section id="id1">
 <h3>Examples<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h3>
 <p>Given timerange <code class="docutils literal notranslate"><span class="pre">GRIB2(0,</span> <span class="pre">1,</span> <span class="pre">6h,</span> <span class="pre">0h)</span></code> (6-hours forecast):</p>
 <ul class="simple">
@@ -94,9 +95,9 @@ are 0.</p>
 <li><p><code class="docutils literal notranslate"><span class="pre">timerange:GRIB2,0,2,6</span></code> does not match</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">timerange:GRIB2,0,0,360</span></code> does not match</p></li>
 </ul>
-</div>
-</div>
-<div class="section" id="timedef">
+</section>
+</section>
+<section id="timedef">
 <h2>Timedef<a class="headerlink" href="#timedef" title="Permalink to this headline">¶</a></h2>
 <p>Syntax: <code class="docutils literal notranslate"><span class="pre">timerange:Timedef,fcstep,proctype,proclen</span></code></p>
 <ul class="simple">
@@ -107,7 +108,7 @@ statistical processing)</p></li>
 </ul>
 <p>Any of <code class="docutils literal notranslate"><span class="pre">fcstep</span></code>, <code class="docutils literal notranslate"><span class="pre">proctype</span></code>, <code class="docutils literal notranslate"><span class="pre">proclen</span></code> can be omitted; if omitted, any value
 will match.</p>
-<div class="section" id="id2">
+<section id="id2">
 <h3>Examples<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h3>
 <p>Given timerange <code class="docutils literal notranslate"><span class="pre">Timedef(6h)</span></code> (6-hours forecast):</p>
 <ul class="simple">
@@ -120,14 +121,14 @@ will match.</p>
 <li><p><code class="docutils literal notranslate"><span class="pre">timerange:Timedef,3h</span></code> does not match</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">timerange:Timedef,,1,3h</span></code> does not match</p></li>
 </ul>
-</div>
-</div>
-<div class="section" id="bufr">
+</section>
+</section>
+<section id="bufr">
 <h2>BUFR<a class="headerlink" href="#bufr" title="Permalink to this headline">¶</a></h2>
 <p>Syntax: <code class="docutils literal notranslate"><span class="pre">timerange:BUFR,val</span></code></p>
 <p><code class="docutils literal notranslate"><span class="pre">val</span></code> can be omitted; if omitted, any value will match.</p>
 <p><code class="docutils literal notranslate"><span class="pre">val</span></code> must have a time unit suffix (any of s,m,h,d,mo,y) unless it is 0.</p>
-<div class="section" id="id3">
+<section id="id3">
 <h3>Examples<a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h3>
 <p>Given timerange <code class="docutils literal notranslate"><span class="pre">BUFR(6h)</span></code> (6-hours forecast):</p>
 <ul class="simple">
@@ -140,9 +141,9 @@ will match.</p>
 </ul>
 <div class="toctree-wrapper compound">
 </div>
-</div>
-</div>
-</div>
+</section>
+</section>
+</section>
 
 
           </div>
@@ -161,7 +162,7 @@ will match.</p>
 
 
 <h3>Navigation</h3>
-<p class="caption"><span class="caption-text">Contents:</span></p>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../metadata.html">Metadata types</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="../matcher.html">Match expressions</a><ul class="current">
@@ -172,6 +173,7 @@ will match.</p>
 <li class="toctree-l1"><a class="reference internal" href="../segments.html">Data segments</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../http-api.html">arki-server HTTP API</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../config.html">Arkimet runtime configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../match-alias.html">Arkimet match-alias.conf database</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../python-howtos/index.html">Arkimet Python HOWTOs</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../python-howtos/index.html#indices-and-tables">Indices and tables</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../python/index.html">Arkimet Python API</a></li>
@@ -193,7 +195,7 @@ will match.</p>
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="../search.html" method="get">
-      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
       <input type="submit" value="Go" />
     </form>
     </div>
@@ -215,7 +217,7 @@ will match.</p>
       &copy;2019, Enrico Zini.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.4.3</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.4.0</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |

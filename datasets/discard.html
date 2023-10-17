@@ -4,11 +4,12 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
     <title>discard dataset &#8212; arkimet 1.16 documentation</title>
-    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
-    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
-    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css" />
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
     <script src="../_static/underscore.js"></script>
     <script src="../_static/doctools.js"></script>
@@ -32,22 +33,22 @@
 
           <div class="body" role="main">
             
-  <div class="section" id="discard-dataset">
+  <section id="discard-dataset">
 <span id="datasets-discard"></span><h1><code class="docutils literal notranslate"><span class="pre">discard</span></code> dataset<a class="headerlink" href="#discard-dataset" title="Permalink to this headline">¶</a></h1>
 <p>This dataset type just discards all data during dispatch.</p>
 <p>It is a special purpose dataset type that can be used for
 <a class="reference internal" href="duplicates.html#datasets-duplicates"><span class="std std-ref">duplicates dataset</span></a> or, specifying a <code class="docutils literal notranslate"><span class="pre">filter</span></code>, to throw away
 well-known data that one does not want to keep and to clutter the error
 dataset.</p>
-<div class="section" id="example-configuration">
+<section id="example-configuration">
 <h2>Example configuration<a class="headerlink" href="#example-configuration" title="Permalink to this headline">¶</a></h2>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
 <span class="nb">type</span> <span class="o">=</span> <span class="n">discard</span>
 <span class="nb">filter</span> <span class="o">=</span> <span class="n">origin</span><span class="p">:</span><span class="n">GRIB</span><span class="p">,</span><span class="mi">200</span>
 </pre></div>
 </div>
-</div>
-</div>
+</section>
+</section>
 
 
           </div>
@@ -66,7 +67,7 @@ dataset.</p>
 
 
 <h3>Navigation</h3>
-<p class="caption"><span class="caption-text">Contents:</span></p>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../metadata.html">Metadata types</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../matcher.html">Match expressions</a></li>
@@ -86,6 +87,7 @@ dataset.</p>
 <li class="toctree-l1"><a class="reference internal" href="../segments.html">Data segments</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../http-api.html">arki-server HTTP API</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../config.html">Arkimet runtime configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../match-alias.html">Arkimet match-alias.conf database</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../python-howtos/index.html">Arkimet Python HOWTOs</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../python-howtos/index.html#indices-and-tables">Indices and tables</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../python/index.html">Arkimet Python API</a></li>
@@ -107,7 +109,7 @@ dataset.</p>
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="../search.html" method="get">
-      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
       <input type="submit" value="Go" />
     </form>
     </div>
@@ -129,7 +131,7 @@ dataset.</p>
       &copy;2019, Enrico Zini.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.4.3</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.4.0</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |

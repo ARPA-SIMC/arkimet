@@ -4,11 +4,12 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
     <title>arkimet.formatter package &#8212; arkimet 1.16 documentation</title>
-    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
-    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
-    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css" />
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
     <script src="../_static/underscore.js"></script>
     <script src="../_static/doctools.js"></script>
@@ -32,31 +33,31 @@
 
           <div class="body" role="main">
             
-  <div class="section" id="arkimet-formatter-package">
+  <section id="arkimet-formatter-package">
 <h1>arkimet.formatter package<a class="headerlink" href="#arkimet-formatter-package" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="module-arkimet.formatter">
+<section id="module-arkimet.formatter">
 <span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-arkimet.formatter" title="Permalink to this headline">¶</a></h2>
 <dl class="py class">
-<dt id="arkimet.formatter.Formatter">
-<em class="property">class </em><code class="sig-prename descclassname">arkimet.formatter.</code><code class="sig-name descname">Formatter</code><a class="reference internal" href="../_modules/arkimet/formatter/formatter.html#Formatter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.formatter.Formatter" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="arkimet.formatter.Formatter">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">arkimet.formatter.</span></span><span class="sig-name descname"><span class="pre">Formatter</span></span><a class="reference internal" href="../_modules/arkimet/formatter/formatter.html#Formatter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#arkimet.formatter.Formatter" title="Permalink to this definition">¶</a></dt>
 <dd><p>Registry for metadata formatters implemented in Python.</p>
 <p>This is used to register formatter implementations, and access them while formatting.</p>
 <p>Use <a class="reference internal" href="arkimet.html#arkimet.Formatter" title="arkimet.Formatter"><code class="xref py py-class docutils literal notranslate"><span class="pre">arkimet.Formatter</span></code></a> to do the actual formatting: it will call
 either into this or in C++ implementations as needed.</p>
 <dl class="py method">
-<dt id="arkimet.formatter.Formatter.format">
-<code class="sig-name descname">format</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">t</span><span class="p">:</span> <span class="n">Dict<span class="p">[</span>str<span class="p">, </span>Any<span class="p">]</span></span></em><span class="sig-paren">)</span> &#x2192; str<a class="reference internal" href="../_modules/arkimet/formatter/formatter.html#Formatter.format"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.formatter.Formatter.format" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="arkimet.formatter.Formatter.format">
+<span class="sig-name descname"><span class="pre">format</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">t</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="../_modules/arkimet/formatter/formatter.html#Formatter.format"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#arkimet.formatter.Formatter.format" title="Permalink to this definition">¶</a></dt>
 <dd><p>Look up and call a formatter for the given metadata item.</p>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="arkimet.formatter.Formatter.formatters">
-<code class="sig-name descname">formatters</code><em class="property"> = {'area': [&lt;function format_area&gt;], 'level': [&lt;function format_level&gt;], 'origin': [&lt;function format_origin&gt;], 'proddef': [&lt;function format_proddef&gt;], 'product': [&lt;function format_product&gt;], 'timerange': [&lt;function format_timerange&gt;]}</em><a class="headerlink" href="#arkimet.formatter.Formatter.formatters" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="arkimet.formatter.Formatter.formatters">
+<span class="sig-name descname"><span class="pre">formatters</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'area':</span> <span class="pre">[&lt;function</span> <span class="pre">format_area&gt;],</span> <span class="pre">'level':</span> <span class="pre">[&lt;function</span> <span class="pre">format_level&gt;],</span> <span class="pre">'origin':</span> <span class="pre">[&lt;function</span> <span class="pre">format_origin&gt;],</span> <span class="pre">'proddef':</span> <span class="pre">[&lt;function</span> <span class="pre">format_proddef&gt;],</span> <span class="pre">'product':</span> <span class="pre">[&lt;function</span> <span class="pre">format_product&gt;],</span> <span class="pre">'timerange':</span> <span class="pre">[&lt;function</span> <span class="pre">format_timerange&gt;]}</span></em><a class="headerlink" href="#arkimet.formatter.Formatter.formatters" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
-<dt id="arkimet.formatter.Formatter.register">
-<em class="property">classmethod </em><code class="sig-name descname">register</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">type</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">formatter</span><span class="p">:</span> <span class="n">Callable<span class="p">[</span><span class="p">[</span>Dict<span class="p">[</span>str<span class="p">, </span>Any<span class="p">]</span><span class="p">]</span><span class="p">, </span>Optional<span class="p">[</span>str<span class="p">]</span><span class="p">]</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/arkimet/formatter/formatter.html#Formatter.register"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.formatter.Formatter.register" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="arkimet.formatter.Formatter.register">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">register</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">formatter</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/arkimet/formatter/formatter.html#Formatter.register"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#arkimet.formatter.Formatter.register" title="Permalink to this definition">¶</a></dt>
 <dd><p>Register a callable as a formatter for the given metadata type.</p>
 <p>A registered callable can return None to fall back on previously
 registered callables. This allows to add formatters for specific cases
@@ -65,23 +66,23 @@ only, without losing the default handling.</p>
 
 </dd></dl>
 
-</div>
-<div class="section" id="submodules">
+</section>
+<section id="submodules">
 <h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
-</div>
-<div class="section" id="module-arkimet.formatter.area">
+</section>
+<section id="module-arkimet.formatter.area">
 <span id="arkimet-formatter-area-module"></span><h2>arkimet.formatter.area module<a class="headerlink" href="#module-arkimet.formatter.area" title="Permalink to this headline">¶</a></h2>
 <dl class="py function">
-<dt id="arkimet.formatter.area.format_area">
-<code class="sig-prename descclassname">arkimet.formatter.area.</code><code class="sig-name descname">format_area</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">v</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/arkimet/formatter/area.html#format_area"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.formatter.area.format_area" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="arkimet.formatter.area.format_area">
+<span class="sig-prename descclassname"><span class="pre">arkimet.formatter.area.</span></span><span class="sig-name descname"><span class="pre">format_area</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">v</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/arkimet/formatter/area.html#format_area"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#arkimet.formatter.area.format_area" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
-</div>
-<div class="section" id="module-arkimet.formatter.eccodes">
+</section>
+<section id="module-arkimet.formatter.eccodes">
 <span id="arkimet-formatter-eccodes-module"></span><h2>arkimet.formatter.eccodes module<a class="headerlink" href="#module-arkimet.formatter.eccodes" title="Permalink to this headline">¶</a></h2>
 <dl class="py class">
-<dt id="arkimet.formatter.eccodes.GribTable">
-<em class="property">class </em><code class="sig-prename descclassname">arkimet.formatter.eccodes.</code><code class="sig-name descname">GribTable</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">edition</span><span class="p">:</span> <span class="n">int</span></em>, <em class="sig-param"><span class="n">table</span><span class="p">:</span> <span class="n">str</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/arkimet/formatter/eccodes.html#GribTable"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.formatter.eccodes.GribTable" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="arkimet.formatter.eccodes.GribTable">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">arkimet.formatter.eccodes.</span></span><span class="sig-name descname"><span class="pre">GribTable</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">edition</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">table</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/arkimet/formatter/eccodes.html#GribTable"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#arkimet.formatter.eccodes.GribTable" title="Permalink to this definition">¶</a></dt>
 <dd><p>Read a grib table.</p>
 <p>edition is the GRIB edition: 1 or 2</p>
 <p>table is the table name, for example “0.0”</p>
@@ -97,82 +98,82 @@ print(origins.desc(98))  – Prints ‘European Center for Medium-Range Weather 
 print(origins.abbr(999)) – Prints ‘999’
 print(origins.desc(999)) – Prints ‘999’</p>
 <dl class="py method">
-<dt id="arkimet.formatter.eccodes.GribTable.abbr">
-<code class="sig-name descname">abbr</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">val</span><span class="p">:</span> <span class="n">int</span></em><span class="sig-paren">)</span> &#x2192; str<a class="reference internal" href="../_modules/arkimet/formatter/eccodes.html#GribTable.abbr"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.formatter.eccodes.GribTable.abbr" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="arkimet.formatter.eccodes.GribTable.abbr">
+<span class="sig-name descname"><span class="pre">abbr</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">val</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="../_modules/arkimet/formatter/eccodes.html#GribTable.abbr"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#arkimet.formatter.eccodes.GribTable.abbr" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get an abbreviated description</p>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="arkimet.formatter.eccodes.GribTable.cache">
-<code class="sig-name descname">cache</code><em class="property"> = {(1, '0'): &lt;arkimet.formatter.eccodes.GribTable object&gt;}</em><a class="headerlink" href="#arkimet.formatter.eccodes.GribTable.cache" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="arkimet.formatter.eccodes.GribTable.cache">
+<span class="sig-name descname"><span class="pre">cache</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{(1,</span> <span class="pre">'0'):</span> <span class="pre">&lt;arkimet.formatter.eccodes.GribTable</span> <span class="pre">object&gt;}</span></em><a class="headerlink" href="#arkimet.formatter.eccodes.GribTable.cache" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
-<dt id="arkimet.formatter.eccodes.GribTable.desc">
-<code class="sig-name descname">desc</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">val</span><span class="p">:</span> <span class="n">int</span></em><span class="sig-paren">)</span> &#x2192; str<a class="reference internal" href="../_modules/arkimet/formatter/eccodes.html#GribTable.desc"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.formatter.eccodes.GribTable.desc" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="arkimet.formatter.eccodes.GribTable.desc">
+<span class="sig-name descname"><span class="pre">desc</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">val</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="../_modules/arkimet/formatter/eccodes.html#GribTable.desc"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#arkimet.formatter.eccodes.GribTable.desc" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get a long description</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="arkimet.formatter.eccodes.GribTable.get_grib2_table_prefix">
-<em class="property">classmethod </em><code class="sig-name descname">get_grib2_table_prefix</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">centre</span></em>, <em class="sig-param"><span class="n">table_version</span></em>, <em class="sig-param"><span class="n">local_table_version</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/arkimet/formatter/eccodes.html#GribTable.get_grib2_table_prefix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.formatter.eccodes.GribTable.get_grib2_table_prefix" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="arkimet.formatter.eccodes.GribTable.get_grib2_table_prefix">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_grib2_table_prefix</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">centre</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">table_version</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">local_table_version</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/arkimet/formatter/eccodes.html#GribTable.get_grib2_table_prefix"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#arkimet.formatter.eccodes.GribTable.get_grib2_table_prefix" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
-<dt id="arkimet.formatter.eccodes.GribTable.has">
-<code class="sig-name descname">has</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">val</span><span class="p">:</span> <span class="n">int</span></em><span class="sig-paren">)</span> &#x2192; bool<a class="reference internal" href="../_modules/arkimet/formatter/eccodes.html#GribTable.has"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.formatter.eccodes.GribTable.has" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="arkimet.formatter.eccodes.GribTable.has">
+<span class="sig-name descname"><span class="pre">has</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">val</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="../_modules/arkimet/formatter/eccodes.html#GribTable.has"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#arkimet.formatter.eccodes.GribTable.has" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
-<dt id="arkimet.formatter.eccodes.GribTable.load">
-<em class="property">classmethod </em><code class="sig-name descname">load</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">edition</span><span class="p">:</span> <span class="n">int</span></em>, <em class="sig-param"><span class="n">table</span><span class="p">:</span> <span class="n">str</span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="#arkimet.formatter.eccodes.GribTable" title="arkimet.formatter.eccodes.GribTable">arkimet.formatter.eccodes.GribTable</a><a class="reference internal" href="../_modules/arkimet/formatter/eccodes.html#GribTable.load"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.formatter.eccodes.GribTable.load" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="arkimet.formatter.eccodes.GribTable.load">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">edition</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">table</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#arkimet.formatter.eccodes.GribTable" title="arkimet.formatter.eccodes.GribTable"><span class="pre">arkimet.formatter.eccodes.GribTable</span></a></span></span><a class="reference internal" href="../_modules/arkimet/formatter/eccodes.html#GribTable.load"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#arkimet.formatter.eccodes.GribTable.load" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
-<dt id="arkimet.formatter.eccodes.GribTable.re_table_line">
-<code class="sig-name descname">re_table_line</code><em class="property"> = re.compile('^\\s*(?P&lt;idx&gt;\\d+)\\s+(?P&lt;abbr&gt;\\S+)\\s+(?P&lt;desc&gt;.+)$')</em><a class="headerlink" href="#arkimet.formatter.eccodes.GribTable.re_table_line" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="arkimet.formatter.eccodes.GribTable.re_table_line">
+<span class="sig-name descname"><span class="pre">re_table_line</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">re.compile('^\\s*(?P&lt;idx&gt;\\d+)\\s+(?P&lt;abbr&gt;\\S+)\\s+(?P&lt;desc&gt;.+)$')</span></em><a class="headerlink" href="#arkimet.formatter.eccodes.GribTable.re_table_line" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
-<dt id="arkimet.formatter.eccodes.GribTable.set">
-<code class="sig-name descname">set</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">code</span><span class="p">:</span> <span class="n">int</span></em>, <em class="sig-param"><span class="n">abbr</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">desc</span><span class="p">:</span> <span class="n">str</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/arkimet/formatter/eccodes.html#GribTable.set"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.formatter.eccodes.GribTable.set" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="arkimet.formatter.eccodes.GribTable.set">
+<span class="sig-name descname"><span class="pre">set</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">code</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">abbr</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">desc</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/arkimet/formatter/eccodes.html#GribTable.set"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#arkimet.formatter.eccodes.GribTable.set" title="Permalink to this definition">¶</a></dt>
 <dd><p>Add/replace a value in the table</p>
 </dd></dl>
 
 </dd></dl>
 
 <dl class="py function">
-<dt id="arkimet.formatter.eccodes.get_eccodes_def_dir">
-<code class="sig-prename descclassname">arkimet.formatter.eccodes.</code><code class="sig-name descname">get_eccodes_def_dir</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; str<a class="reference internal" href="../_modules/arkimet/formatter/eccodes.html#get_eccodes_def_dir"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.formatter.eccodes.get_eccodes_def_dir" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="arkimet.formatter.eccodes.get_eccodes_def_dir">
+<span class="sig-prename descclassname"><span class="pre">arkimet.formatter.eccodes.</span></span><span class="sig-name descname"><span class="pre">get_eccodes_def_dir</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="../_modules/arkimet/formatter/eccodes.html#get_eccodes_def_dir"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#arkimet.formatter.eccodes.get_eccodes_def_dir" title="Permalink to this definition">¶</a></dt>
 <dd><p>get the list of directories (separated by :) where grib_api/eccodes keep their definitions</p>
 </dd></dl>
 
-</div>
-<div class="section" id="module-arkimet.formatter.formatter">
+</section>
+<section id="module-arkimet.formatter.formatter">
 <span id="arkimet-formatter-formatter-module"></span><h2>arkimet.formatter.formatter module<a class="headerlink" href="#module-arkimet.formatter.formatter" title="Permalink to this headline">¶</a></h2>
 <p>This module implements a registry of Python formatters for various metadata
 types, along with default implementations.</p>
 <dl class="py class">
-<dt id="arkimet.formatter.formatter.Formatter">
-<em class="property">class </em><code class="sig-prename descclassname">arkimet.formatter.formatter.</code><code class="sig-name descname">Formatter</code><a class="reference internal" href="../_modules/arkimet/formatter/formatter.html#Formatter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.formatter.formatter.Formatter" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="arkimet.formatter.formatter.Formatter">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">arkimet.formatter.formatter.</span></span><span class="sig-name descname"><span class="pre">Formatter</span></span><a class="reference internal" href="../_modules/arkimet/formatter/formatter.html#Formatter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#arkimet.formatter.formatter.Formatter" title="Permalink to this definition">¶</a></dt>
 <dd><p>Registry for metadata formatters implemented in Python.</p>
 <p>This is used to register formatter implementations, and access them while formatting.</p>
 <p>Use <a class="reference internal" href="arkimet.html#arkimet.Formatter" title="arkimet.Formatter"><code class="xref py py-class docutils literal notranslate"><span class="pre">arkimet.Formatter</span></code></a> to do the actual formatting: it will call
 either into this or in C++ implementations as needed.</p>
 <dl class="py method">
-<dt id="arkimet.formatter.formatter.Formatter.format">
-<code class="sig-name descname">format</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">t</span><span class="p">:</span> <span class="n">Dict<span class="p">[</span>str<span class="p">, </span>Any<span class="p">]</span></span></em><span class="sig-paren">)</span> &#x2192; str<a class="reference internal" href="../_modules/arkimet/formatter/formatter.html#Formatter.format"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.formatter.formatter.Formatter.format" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="arkimet.formatter.formatter.Formatter.format">
+<span class="sig-name descname"><span class="pre">format</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">t</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="../_modules/arkimet/formatter/formatter.html#Formatter.format"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#arkimet.formatter.formatter.Formatter.format" title="Permalink to this definition">¶</a></dt>
 <dd><p>Look up and call a formatter for the given metadata item.</p>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="arkimet.formatter.formatter.Formatter.formatters">
-<code class="sig-name descname">formatters</code><em class="property"> = {'area': [&lt;function format_area&gt;], 'level': [&lt;function format_level&gt;], 'origin': [&lt;function format_origin&gt;], 'proddef': [&lt;function format_proddef&gt;], 'product': [&lt;function format_product&gt;], 'timerange': [&lt;function format_timerange&gt;]}</em><a class="headerlink" href="#arkimet.formatter.formatter.Formatter.formatters" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="arkimet.formatter.formatter.Formatter.formatters">
+<span class="sig-name descname"><span class="pre">formatters</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'area':</span> <span class="pre">[&lt;function</span> <span class="pre">format_area&gt;],</span> <span class="pre">'level':</span> <span class="pre">[&lt;function</span> <span class="pre">format_level&gt;],</span> <span class="pre">'origin':</span> <span class="pre">[&lt;function</span> <span class="pre">format_origin&gt;],</span> <span class="pre">'proddef':</span> <span class="pre">[&lt;function</span> <span class="pre">format_proddef&gt;],</span> <span class="pre">'product':</span> <span class="pre">[&lt;function</span> <span class="pre">format_product&gt;],</span> <span class="pre">'timerange':</span> <span class="pre">[&lt;function</span> <span class="pre">format_timerange&gt;]}</span></em><a class="headerlink" href="#arkimet.formatter.formatter.Formatter.formatters" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
-<dt id="arkimet.formatter.formatter.Formatter.register">
-<em class="property">classmethod </em><code class="sig-name descname">register</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">type</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">formatter</span><span class="p">:</span> <span class="n">Callable<span class="p">[</span><span class="p">[</span>Dict<span class="p">[</span>str<span class="p">, </span>Any<span class="p">]</span><span class="p">]</span><span class="p">, </span>Optional<span class="p">[</span>str<span class="p">]</span><span class="p">]</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/arkimet/formatter/formatter.html#Formatter.register"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.formatter.formatter.Formatter.register" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="arkimet.formatter.formatter.Formatter.register">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">register</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">formatter</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/arkimet/formatter/formatter.html#Formatter.register"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#arkimet.formatter.formatter.Formatter.register" title="Permalink to this definition">¶</a></dt>
 <dd><p>Register a callable as a formatter for the given metadata type.</p>
 <p>A registered callable can return None to fall back on previously
 registered callables. This allows to add formatters for specific cases
@@ -181,51 +182,51 @@ only, without losing the default handling.</p>
 
 </dd></dl>
 
-</div>
-<div class="section" id="module-arkimet.formatter.level">
+</section>
+<section id="module-arkimet.formatter.level">
 <span id="arkimet-formatter-level-module"></span><h2>arkimet.formatter.level module<a class="headerlink" href="#module-arkimet.formatter.level" title="Permalink to this headline">¶</a></h2>
 <dl class="py function">
-<dt id="arkimet.formatter.level.format_level">
-<code class="sig-prename descclassname">arkimet.formatter.level.</code><code class="sig-name descname">format_level</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">v</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/arkimet/formatter/level.html#format_level"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.formatter.level.format_level" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="arkimet.formatter.level.format_level">
+<span class="sig-prename descclassname"><span class="pre">arkimet.formatter.level.</span></span><span class="sig-name descname"><span class="pre">format_level</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">v</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/arkimet/formatter/level.html#format_level"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#arkimet.formatter.level.format_level" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
-</div>
-<div class="section" id="module-arkimet.formatter.origin">
+</section>
+<section id="module-arkimet.formatter.origin">
 <span id="arkimet-formatter-origin-module"></span><h2>arkimet.formatter.origin module<a class="headerlink" href="#module-arkimet.formatter.origin" title="Permalink to this headline">¶</a></h2>
 <dl class="py function">
-<dt id="arkimet.formatter.origin.format_origin">
-<code class="sig-prename descclassname">arkimet.formatter.origin.</code><code class="sig-name descname">format_origin</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">v</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/arkimet/formatter/origin.html#format_origin"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.formatter.origin.format_origin" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="arkimet.formatter.origin.format_origin">
+<span class="sig-prename descclassname"><span class="pre">arkimet.formatter.origin.</span></span><span class="sig-name descname"><span class="pre">format_origin</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">v</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/arkimet/formatter/origin.html#format_origin"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#arkimet.formatter.origin.format_origin" title="Permalink to this definition">¶</a></dt>
 <dd><p>Format an origin: return a string, or None to fall back to other
 formatters</p>
 </dd></dl>
 
-</div>
-<div class="section" id="module-arkimet.formatter.proddef">
+</section>
+<section id="module-arkimet.formatter.proddef">
 <span id="arkimet-formatter-proddef-module"></span><h2>arkimet.formatter.proddef module<a class="headerlink" href="#module-arkimet.formatter.proddef" title="Permalink to this headline">¶</a></h2>
 <dl class="py function">
-<dt id="arkimet.formatter.proddef.format_proddef">
-<code class="sig-prename descclassname">arkimet.formatter.proddef.</code><code class="sig-name descname">format_proddef</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">v</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/arkimet/formatter/proddef.html#format_proddef"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.formatter.proddef.format_proddef" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="arkimet.formatter.proddef.format_proddef">
+<span class="sig-prename descclassname"><span class="pre">arkimet.formatter.proddef.</span></span><span class="sig-name descname"><span class="pre">format_proddef</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">v</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/arkimet/formatter/proddef.html#format_proddef"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#arkimet.formatter.proddef.format_proddef" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
-</div>
-<div class="section" id="module-arkimet.formatter.product">
+</section>
+<section id="module-arkimet.formatter.product">
 <span id="arkimet-formatter-product-module"></span><h2>arkimet.formatter.product module<a class="headerlink" href="#module-arkimet.formatter.product" title="Permalink to this headline">¶</a></h2>
 <dl class="py function">
-<dt id="arkimet.formatter.product.format_product">
-<code class="sig-prename descclassname">arkimet.formatter.product.</code><code class="sig-name descname">format_product</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">v</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/arkimet/formatter/product.html#format_product"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.formatter.product.format_product" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="arkimet.formatter.product.format_product">
+<span class="sig-prename descclassname"><span class="pre">arkimet.formatter.product.</span></span><span class="sig-name descname"><span class="pre">format_product</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">v</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/arkimet/formatter/product.html#format_product"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#arkimet.formatter.product.format_product" title="Permalink to this definition">¶</a></dt>
 <dd><p>Format a product: return a string, or nil to fall back to other formatters</p>
 </dd></dl>
 
-</div>
-<div class="section" id="module-arkimet.formatter.timerange">
+</section>
+<section id="module-arkimet.formatter.timerange">
 <span id="arkimet-formatter-timerange-module"></span><h2>arkimet.formatter.timerange module<a class="headerlink" href="#module-arkimet.formatter.timerange" title="Permalink to this headline">¶</a></h2>
 <dl class="py function">
-<dt id="arkimet.formatter.timerange.format_timerange">
-<code class="sig-prename descclassname">arkimet.formatter.timerange.</code><code class="sig-name descname">format_timerange</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">v</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/arkimet/formatter/timerange.html#format_timerange"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#arkimet.formatter.timerange.format_timerange" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="arkimet.formatter.timerange.format_timerange">
+<span class="sig-prename descclassname"><span class="pre">arkimet.formatter.timerange.</span></span><span class="sig-name descname"><span class="pre">format_timerange</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">v</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/arkimet/formatter/timerange.html#format_timerange"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#arkimet.formatter.timerange.format_timerange" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
-</div>
-</div>
+</section>
+</section>
 
 
           </div>
@@ -244,7 +245,7 @@ formatters</p>
 
 
 <h3>Navigation</h3>
-<p class="caption"><span class="caption-text">Contents:</span></p>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../metadata.html">Metadata types</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../matcher.html">Match expressions</a></li>
@@ -252,6 +253,7 @@ formatters</p>
 <li class="toctree-l1"><a class="reference internal" href="../segments.html">Data segments</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../http-api.html">arki-server HTTP API</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../config.html">Arkimet runtime configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../match-alias.html">Arkimet match-alias.conf database</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../python-howtos/index.html">Arkimet Python HOWTOs</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../python-howtos/index.html#indices-and-tables">Indices and tables</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="index.html">Arkimet Python API</a><ul class="current">
@@ -283,7 +285,7 @@ formatters</p>
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="../search.html" method="get">
-      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
       <input type="submit" value="Go" />
     </form>
     </div>
@@ -305,7 +307,7 @@ formatters</p>
       &copy;2019, Enrico Zini.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.4.3</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.4.0</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |

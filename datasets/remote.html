@@ -4,11 +4,12 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
     <title>remote dataset &#8212; arkimet 1.16 documentation</title>
-    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
-    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
-    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css" />
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
     <script src="../_static/underscore.js"></script>
     <script src="../_static/doctools.js"></script>
@@ -32,22 +33,22 @@
 
           <div class="body" role="main">
             
-  <div class="section" id="remote-dataset">
+  <section id="remote-dataset">
 <span id="datasets-remote"></span><h1><code class="docutils literal notranslate"><span class="pre">remote</span></code> dataset<a class="headerlink" href="#remote-dataset" title="Permalink to this headline">¶</a></h1>
 <p>This configures a dataset which is stored remotely and accessed by querying a
 remote <cite>arki-server</cite>.</p>
 <p>This kind of dataset supports queries, but not dispatching or arki-check, which
 can only be performed locally.</p>
 <p>The <code class="docutils literal notranslate"><span class="pre">path</span></code> keyword will be a URL instead of a filesystem path</p>
-<div class="section" id="example-configuration">
+<section id="example-configuration">
 <h2>Example configuration<a class="headerlink" href="#example-configuration" title="Permalink to this headline">¶</a></h2>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="n">example</span><span class="p">]</span>
 <span class="nb">type</span> <span class="o">=</span> <span class="n">remote</span>
 <span class="n">path</span> <span class="o">=</span> <span class="n">http</span><span class="p">:</span><span class="o">//</span><span class="n">arkimet</span><span class="o">.</span><span class="n">local</span><span class="o">/</span><span class="n">dataset</span><span class="o">/</span><span class="n">example</span>
 </pre></div>
 </div>
-</div>
-</div>
+</section>
+</section>
 
 
           </div>
@@ -66,7 +67,7 @@ can only be performed locally.</p>
 
 
 <h3>Navigation</h3>
-<p class="caption"><span class="caption-text">Contents:</span></p>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../metadata.html">Metadata types</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../matcher.html">Match expressions</a></li>
@@ -86,6 +87,7 @@ can only be performed locally.</p>
 <li class="toctree-l1"><a class="reference internal" href="../segments.html">Data segments</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../http-api.html">arki-server HTTP API</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../config.html">Arkimet runtime configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../match-alias.html">Arkimet match-alias.conf database</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../python-howtos/index.html">Arkimet Python HOWTOs</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../python-howtos/index.html#indices-and-tables">Indices and tables</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../python/index.html">Arkimet Python API</a></li>
@@ -107,7 +109,7 @@ can only be performed locally.</p>
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="../search.html" method="get">
-      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
       <input type="submit" value="Go" />
     </form>
     </div>
@@ -129,7 +131,7 @@ can only be performed locally.</p>
       &copy;2019, Enrico Zini.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.4.3</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.4.0</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |

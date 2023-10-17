@@ -4,11 +4,12 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
     <title>arki-server HTTP API &#8212; arkimet 1.16 documentation</title>
-    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
-    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
     <script src="_static/jquery.js"></script>
     <script src="_static/underscore.js"></script>
     <script src="_static/doctools.js"></script>
@@ -32,9 +33,9 @@
 
           <div class="body" role="main">
             
-  <div class="section" id="arki-server-http-api">
+  <section id="arki-server-http-api">
 <h1>arki-server HTTP API<a class="headerlink" href="#arki-server-http-api" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="sorting">
+<section id="sorting">
 <h2>Sorting<a class="headerlink" href="#sorting" title="Permalink to this headline">¶</a></h2>
 <p>The argument to the <code class="docutils literal notranslate"><span class="pre">&amp;sort=…</span></code> query argument specifies how to sort data in the
 output.</p>
@@ -58,33 +59,44 @@ only storage space for one group at a time. It also means that data can be
 streamed as soon as the first group has been collected and sorted, instead of
 waiting for all the query results to have been produced and sorted before
 beginning downloading the results.</p>
-</div>
-<div class="section" id="arki-server-urls">
+</section>
+<section id="arki-server-urls">
 <h2><code class="docutils literal notranslate"><span class="pre">arki-server</span></code> urls<a class="headerlink" href="#arki-server-urls" title="Permalink to this headline">¶</a></h2>
-<div class="section" id="id1">
-<h3><code class="docutils literal notranslate"><span class="pre">/</span></code><a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h3>
+<section id="get">
+<h3><code class="docutils literal notranslate"><span class="pre">GET</span> <span class="pre">/</span></code><a class="headerlink" href="#get" title="Permalink to this headline">¶</a></h3>
 <p>Shows an index with a link to all datasets</p>
-</div>
-<div class="section" id="config">
-<h3><code class="docutils literal notranslate"><span class="pre">/config</span></code><a class="headerlink" href="#config" title="Permalink to this headline">¶</a></h3>
+</section>
+<section id="get-config">
+<h3><code class="docutils literal notranslate"><span class="pre">GET</span> <span class="pre">/config</span></code><a class="headerlink" href="#get-config" title="Permalink to this headline">¶</a></h3>
 <p>Returns an arkimet configuration file with information on all datasets known
 by this instance of <code class="docutils literal notranslate"><span class="pre">arki-server</span></code>.</p>
-</div>
-<div class="section" id="qexpand-query-query">
-<h3><code class="docutils literal notranslate"><span class="pre">/qexpand?query=&lt;query&gt;</span></code><a class="headerlink" href="#qexpand-query-query" title="Permalink to this headline">¶</a></h3>
+</section>
+<section id="post-qexpand">
+<h3><code class="docutils literal notranslate"><span class="pre">POST</span> <span class="pre">/qexpand</span></code><a class="headerlink" href="#post-qexpand" title="Permalink to this headline">¶</a></h3>
+<p>POST arguments:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">query=&lt;arkimet</span> <span class="pre">query&gt;</span></code></p></li>
+</ul>
 <p>Returns <code class="docutils literal notranslate"><span class="pre">query</span></code> with all aliases expanded with the alias database used by
 this instance of <code class="docutils literal notranslate"><span class="pre">arki-server</span></code>.</p>
 <p>This is used by <code class="docutils literal notranslate"><span class="pre">arki-query</span></code> to verify that a query containing aliases is
 interpreted consistently across different systems.</p>
-</div>
-<div class="section" id="aliases">
-<h3><code class="docutils literal notranslate"><span class="pre">/aliases</span></code><a class="headerlink" href="#aliases" title="Permalink to this headline">¶</a></h3>
+</section>
+<section id="get-aliases">
+<h3><code class="docutils literal notranslate"><span class="pre">GET</span> <span class="pre">/aliases</span></code><a class="headerlink" href="#get-aliases" title="Permalink to this headline">¶</a></h3>
 <p>Returns the alias database used by this instance of <code class="docutils literal notranslate"><span class="pre">arki-server</span></code>.</p>
-</div>
-<div class="section" id="query-query-query-qmacro-qmacro-style-style-sort-sort-command-command">
-<h3><code class="docutils literal notranslate"><span class="pre">/query?query=&lt;query&gt;&amp;qmacro=&lt;qmacro&gt;&amp;style=&lt;style&gt;[&amp;sort=&lt;sort&gt;][&amp;command=&lt;command&gt;]</span></code><a class="headerlink" href="#query-query-query-qmacro-qmacro-style-style-sort-sort-command-command" title="Permalink to this headline">¶</a></h3>
-<p>Query data in all datasets, aggregating it using the query macro named by
-<code class="docutils literal notranslate"><span class="pre">&lt;qmacro&gt;</span></code>.</p>
+</section>
+<section id="post-query">
+<h3><code class="docutils literal notranslate"><span class="pre">POST</span> <span class="pre">/query</span></code><a class="headerlink" href="#post-query" title="Permalink to this headline">¶</a></h3>
+<p>POST arguments:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">query=&lt;arkimet</span> <span class="pre">query&gt;</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">qmacro=&lt;same</span> <span class="pre">as</span> <span class="pre">arki-query</span> <span class="pre">--qmacro&gt;</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">style=&lt;see</span> <span class="pre">below&gt;</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">sort=&lt;same</span> <span class="pre">as</span> <span class="pre">arki-query</span> <span class="pre">--sort&gt;</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">command=&lt;postprocessing</span> <span class="pre">command&gt;</span></code></p></li>
+</ul>
+<p>Query data in all datasets, like an API version of arki-query.</p>
 <p>Style control how the query results are returned, and can be one of:</p>
 <blockquote>
 <div><ul class="simple">
@@ -97,9 +109,14 @@ will be made useable by the postprocessor</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">rep_summary</span></code>: return the output of the summary report named by <code class="docutils literal notranslate"><span class="pre">command</span></code></p></li>
 </ul>
 </div></blockquote>
-</div>
-<div class="section" id="summary-query-query-style-style">
-<h3><code class="docutils literal notranslate"><span class="pre">/summary?query=&lt;query&gt;&amp;style=&lt;style&gt;</span></code><a class="headerlink" href="#summary-query-query-style-style" title="Permalink to this headline">¶</a></h3>
+</section>
+<section id="post-summary">
+<h3><code class="docutils literal notranslate"><span class="pre">POST</span> <span class="pre">/summary</span></code><a class="headerlink" href="#post-summary" title="Permalink to this headline">¶</a></h3>
+<p>POST arguments:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">query=&lt;arkimet</span> <span class="pre">query&gt;</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">style=&lt;see</span> <span class="pre">below&gt;</span></code></p></li>
+</ul>
 <p>Query the merged summary of all datasets.</p>
 <p>Style can be one of:</p>
 <blockquote>
@@ -109,14 +126,21 @@ will be made useable by the postprocessor</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">json</span></code>: return the summary in json format</p></li>
 </ul>
 </div></blockquote>
-</div>
-<div class="section" id="dataset-name">
-<h3><code class="docutils literal notranslate"><span class="pre">/dataset/&lt;name&gt;</span></code><a class="headerlink" href="#dataset-name" title="Permalink to this headline">¶</a></h3>
+</section>
+<section id="get-dataset-name">
+<h3><code class="docutils literal notranslate"><span class="pre">GET</span> <span class="pre">/dataset/&lt;name&gt;</span></code><a class="headerlink" href="#get-dataset-name" title="Permalink to this headline">¶</a></h3>
 <p>Shows a page describing the dataset</p>
-</div>
-<div class="section" id="dataset-name-query-query-query-style-style-sort-sort-command-command">
-<h3><code class="docutils literal notranslate"><span class="pre">/dataset/&lt;name&gt;/query?query=&lt;query&gt;&amp;style=&lt;style&gt;[&amp;sort=&lt;sort&gt;][&amp;command=&lt;command&gt;]</span></code><a class="headerlink" href="#dataset-name-query-query-query-style-style-sort-sort-command-command" title="Permalink to this headline">¶</a></h3>
-<p>Query data in the given dataset.</p>
+</section>
+<section id="post-dataset-name-query">
+<h3><code class="docutils literal notranslate"><span class="pre">POST</span> <span class="pre">/dataset/&lt;name&gt;/query</span></code><a class="headerlink" href="#post-dataset-name-query" title="Permalink to this headline">¶</a></h3>
+<p>POST arguments:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">query=&lt;arkimet</span> <span class="pre">query&gt;</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">style=&lt;see</span> <span class="pre">below&gt;</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">sort=&lt;same</span> <span class="pre">as</span> <span class="pre">arki-query</span> <span class="pre">--sort&gt;</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">command=&lt;postprocessing</span> <span class="pre">command&gt;</span></code></p></li>
+</ul>
+<p>Query data in the given dataset, like an API version of arki-query.</p>
 <p>Style control how the query results are returned, and can be one of:</p>
 <blockquote>
 <div><ul class="simple">
@@ -129,9 +153,17 @@ will be made useable by the postprocessor</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">rep_summary</span></code>: return the output of the summary report named by <code class="docutils literal notranslate"><span class="pre">command</span></code></p></li>
 </ul>
 </div></blockquote>
-</div>
-<div class="section" id="dataset-name-summary-query-query-style-style">
-<h3><code class="docutils literal notranslate"><span class="pre">/dataset/&lt;name&gt;/summary?query=&lt;query&gt;&amp;style=&lt;style&gt;</span></code><a class="headerlink" href="#dataset-name-summary-query-query-style-style" title="Permalink to this headline">¶</a></h3>
+<p><strong>Deprecated</strong>: this endpoint is also available as <code class="docutils literal notranslate"><span class="pre">GET</span></code> only if
+<code class="docutils literal notranslate"><span class="pre">style=postprocess</span></code> for compatibility with an old client. Please only use
+<code class="docutils literal notranslate"><span class="pre">POST</span></code> instead of <code class="docutils literal notranslate"><span class="pre">GET</span></code>.</p>
+</section>
+<section id="post-dataset-name-summary">
+<h3><code class="docutils literal notranslate"><span class="pre">POST</span> <span class="pre">/dataset/&lt;name&gt;/summary</span></code><a class="headerlink" href="#post-dataset-name-summary" title="Permalink to this headline">¶</a></h3>
+<p>POST arguments:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">query=&lt;arkimet</span> <span class="pre">query&gt;</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">style=&lt;see</span> <span class="pre">below&gt;</span></code></p></li>
+</ul>
 <p>Query the summary of the given dataset.</p>
 <p>Style can be one of:</p>
 <blockquote>
@@ -141,9 +173,14 @@ will be made useable by the postprocessor</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">json</span></code>: return the summary in json format</p></li>
 </ul>
 </div></blockquote>
-</div>
-<div class="section" id="dataset-name-summaryshort-query-query-style-style">
-<h3><code class="docutils literal notranslate"><span class="pre">/dataset/&lt;name&gt;/summaryshort?query=&lt;query&gt;&amp;style=&lt;style&gt;</span></code><a class="headerlink" href="#dataset-name-summaryshort-query-query-style-style" title="Permalink to this headline">¶</a></h3>
+</section>
+<section id="post-dataset-name-summaryshort">
+<h3><code class="docutils literal notranslate"><span class="pre">POST</span> <span class="pre">/dataset/&lt;name&gt;/summaryshort</span></code><a class="headerlink" href="#post-dataset-name-summaryshort" title="Permalink to this headline">¶</a></h3>
+<p>POST arguments:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">query=&lt;arkimet</span> <span class="pre">query&gt;</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">style=&lt;see</span> <span class="pre">below&gt;</span></code></p></li>
+</ul>
 <p>Query the summary of the given dataset, outputting only the list of all
 metadata values that exist in the query results.</p>
 <p>Style can be one of:</p>
@@ -154,16 +191,16 @@ metadata values that exist in the query results.</p>
 <li><p><code class="docutils literal notranslate"><span class="pre">json</span></code>: return the summary in json format</p></li>
 </ul>
 </div></blockquote>
-</div>
-<div class="section" id="dataset-name-config">
-<h3><cite>/dataset/&lt;name&gt;/config</cite><a class="headerlink" href="#dataset-name-config" title="Permalink to this headline">¶</a></h3>
+</section>
+<section id="get-dataset-name-config">
+<h3><code class="docutils literal notranslate"><span class="pre">GET</span> <span class="pre">/dataset/&lt;name&gt;/config</span></code><a class="headerlink" href="#get-dataset-name-config" title="Permalink to this headline">¶</a></h3>
 <p>Returns an arkimet configuration file with the configuration for this dataset
 in this instance of <code class="docutils literal notranslate"><span class="pre">arki-server</span></code>.</p>
 <div class="toctree-wrapper compound">
 </div>
-</div>
-</div>
-</div>
+</section>
+</section>
+</section>
 
 
           </div>
@@ -182,7 +219,7 @@ in this instance of <code class="docutils literal notranslate"><span class="pre"
 
 
 <h3>Navigation</h3>
-<p class="caption"><span class="caption-text">Contents:</span></p>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="metadata.html">Metadata types</a></li>
 <li class="toctree-l1"><a class="reference internal" href="matcher.html">Match expressions</a></li>
@@ -194,6 +231,7 @@ in this instance of <code class="docutils literal notranslate"><span class="pre"
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="config.html">Arkimet runtime configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="match-alias.html">Arkimet match-alias.conf database</a></li>
 <li class="toctree-l1"><a class="reference internal" href="python-howtos/index.html">Arkimet Python HOWTOs</a></li>
 <li class="toctree-l1"><a class="reference internal" href="python-howtos/index.html#indices-and-tables">Indices and tables</a></li>
 <li class="toctree-l1"><a class="reference internal" href="python/index.html">Arkimet Python API</a></li>
@@ -213,7 +251,7 @@ in this instance of <code class="docutils literal notranslate"><span class="pre"
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="search.html" method="get">
-      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
       <input type="submit" value="Go" />
     </form>
     </div>
@@ -235,7 +273,7 @@ in this instance of <code class="docutils literal notranslate"><span class="pre"
       &copy;2019, Enrico Zini.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.4.3</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.4.0</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |

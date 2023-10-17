@@ -35,19 +35,23 @@ beginning downloading the results.
 ``arki-server`` urls
 --------------------
 
-``/``
-^^^^^
+``GET /``
+^^^^^^^^^
 
 Shows an index with a link to all datasets
 
-``/config``
-^^^^^^^^^^^
+``GET /config``
+^^^^^^^^^^^^^^^
 
 Returns an arkimet configuration file with information on all datasets known
 by this instance of ``arki-server``.
 
-``/qexpand?query=<query>``
-^^^^^^^^^^^^^^^^^^^^^^^^^^
+``POST /qexpand``
+^^^^^^^^^^^^^^^^^
+
+POST arguments:
+
+* ``query=<arkimet query>``
 
 Returns ``query`` with all aliases expanded with the alias database used by
 this instance of ``arki-server``.
@@ -55,16 +59,23 @@ this instance of ``arki-server``.
 This is used by ``arki-query`` to verify that a query containing aliases is
 interpreted consistently across different systems.
 
-``/aliases``
-^^^^^^^^^^^^
+``GET /aliases``
+^^^^^^^^^^^^^^^^
 
 Returns the alias database used by this instance of ``arki-server``.
 
-``/query?query=<query>&qmacro=<qmacro>&style=<style>[&sort=<sort>][&command=<command>]``
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+``POST /query``
+^^^^^^^^^^^^^^^
 
-Query data in all datasets, aggregating it using the query macro named by
-``<qmacro>``.
+POST arguments:
+
+* ``query=<arkimet query>``
+* ``qmacro=<same as arki-query --qmacro>``
+* ``style=<see below>``
+* ``sort=<same as arki-query --sort>``
+* ``command=<postprocessing command>``
+
+Query data in all datasets, like an API version of arki-query.
 
 Style control how the query results are returned, and can be one of:
 
@@ -77,8 +88,13 @@ Style control how the query results are returned, and can be one of:
  * ``rep_summary``: return the output of the summary report named by ``command``
 
 
-``/summary?query=<query>&style=<style>``
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+``POST /summary``
+^^^^^^^^^^^^^^^^^
+
+POST arguments:
+
+* ``query=<arkimet query>``
+* ``style=<see below>``
 
 Query the merged summary of all datasets.
 
@@ -88,15 +104,22 @@ Style can be one of:
  * ``yaml``: return the summary in yaml format
  * ``json``: return the summary in json format
 
-``/dataset/<name>``
-^^^^^^^^^^^^^^^^^^^
+``GET /dataset/<name>``
+^^^^^^^^^^^^^^^^^^^^^^^
 
 Shows a page describing the dataset
 
-``/dataset/<name>/query?query=<query>&style=<style>[&sort=<sort>][&command=<command>]``
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+``POST /dataset/<name>/query``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Query data in the given dataset.
+POST arguments:
+
+* ``query=<arkimet query>``
+* ``style=<see below>``
+* ``sort=<same as arki-query --sort>``
+* ``command=<postprocessing command>``
+
+Query data in the given dataset, like an API version of arki-query.
 
 Style control how the query results are returned, and can be one of:
 
@@ -108,8 +131,17 @@ Style control how the query results are returned, and can be one of:
  * ``rep_metadata``: return the output of the metadata report named by ``command``
  * ``rep_summary``: return the output of the summary report named by ``command``
 
-``/dataset/<name>/summary?query=<query>&style=<style>``
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+**Deprecated**: this endpoint is also available as ``GET`` only if
+``style=postprocess`` for compatibility with an old client. Please only use
+``POST`` instead of ``GET``.
+
+``POST /dataset/<name>/summary``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+POST arguments:
+
+* ``query=<arkimet query>``
+* ``style=<see below>``
 
 Query the summary of the given dataset.
 
@@ -119,8 +151,13 @@ Style can be one of:
  * ``yaml``: return the summary in yaml format
  * ``json``: return the summary in json format
 
-``/dataset/<name>/summaryshort?query=<query>&style=<style>``
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+``POST /dataset/<name>/summaryshort``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+POST arguments:
+
+* ``query=<arkimet query>``
+* ``style=<see below>``
 
 Query the summary of the given dataset, outputting only the list of all
 metadata values that exist in the query results.
@@ -131,8 +168,8 @@ Style can be one of:
  * ``yaml``: return the summary in yaml format
  * ``json``: return the summary in json format
 
-`/dataset/<name>/config`
-^^^^^^^^^^^^^^^^^^^^^^^^
+``GET /dataset/<name>/config``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Returns an arkimet configuration file with the configuration for this dataset
 in this instance of ``arki-server``.

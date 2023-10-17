@@ -4,11 +4,12 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
     <title>iseg dataset format &#8212; arkimet 1.16 documentation</title>
-    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
-    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
-    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css" />
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
     <script src="../_static/underscore.js"></script>
     <script src="../_static/doctools.js"></script>
@@ -32,7 +33,7 @@
 
           <div class="body" role="main">
             
-  <div class="section" id="iseg-dataset-format">
+  <section id="iseg-dataset-format">
 <span id="datasets-iseg"></span><h1><code class="docutils literal notranslate"><span class="pre">iseg</span></code> dataset format<a class="headerlink" href="#iseg-dataset-format" title="Permalink to this headline">¶</a></h1>
 <p>This dataset contains segments (see <a class="reference internal" href="../segments.html#segments"><span class="std std-ref">Data segments</span></a>) with an index next to each
 segment, with a <code class="docutils literal notranslate"><span class="pre">.index</span></code> extension, containing a SQLite database.</p>
@@ -54,7 +55,7 @@ per index, it cannot store data encoded in multiple formats (like GRIB and BUFR
 together), as that would require multiple segments for the same step. For this
 reason, the <code class="docutils literal notranslate"><span class="pre">format</span></code> keyword is mandatory in a <code class="docutils literal notranslate"><span class="pre">type=iseg</span></code> dataset
 configuration (see <a class="reference internal" href="../datasets.html#dataset-config"><span class="std std-ref">Dataset configuration</span></a>).</p>
-<div class="section" id="example-configuration">
+<section id="example-configuration">
 <h2>Example configuration<a class="headerlink" href="#example-configuration" title="Permalink to this headline">¶</a></h2>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
 <span class="nb">type</span> <span class="o">=</span> <span class="n">iseg</span>
@@ -65,17 +66,17 @@ configuration (see <a class="reference internal" href="../datasets.html#dataset-
 <span class="n">index</span> <span class="o">=</span> <span class="n">origin</span><span class="p">,</span> <span class="n">reftime</span>
 </pre></div>
 </div>
-</div>
-<div class="section" id="dataset-layout">
+</section>
+<section id="dataset-layout">
 <h2>Dataset layout<a class="headerlink" href="#dataset-layout" title="Permalink to this headline">¶</a></h2>
 <p>The <code class="docutils literal notranslate"><span class="pre">.index</span></code> files contain the metadata for all data in the segment.</p>
 <p>The <code class="docutils literal notranslate"><span class="pre">.index</span></code> file contains additional indices for the metadata listed in the
 <code class="docutils literal notranslate"><span class="pre">unique</span></code> configuration value, to do quick duplicate detection, and extra
 indices for the metadata listed in the <code class="docutils literal notranslate"><span class="pre">index</span></code> configuration value.</p>
-</div>
-<div class="section" id="check-and-repack-on-concat-segments">
+</section>
+<section id="check-and-repack-on-concat-segments">
 <h2>Check and repack on <code class="docutils literal notranslate"><span class="pre">concat</span></code> segments<a class="headerlink" href="#check-and-repack-on-concat-segments" title="Permalink to this headline">¶</a></h2>
-<div class="section" id="during-check">
+<section id="during-check">
 <h3>During check<a class="headerlink" href="#during-check" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li><p>the segment must be a file</p></li>
@@ -103,11 +104,11 @@ missing, older than the file, or marked as needing checking, are marked
 for reindexing instead of deletion [unaligned]</p></li>
 <li><p>format-specific consistency checks on the content of each file must pass [corrupted]</p></li>
 </ul>
-</div>
-<div class="section" id="during-accurate-check">
+</section>
+<section id="during-accurate-check">
 <h3>During <code class="docutils literal notranslate"><span class="pre">--accurate</span></code> check<a class="headerlink" href="#during-accurate-check" title="Permalink to this headline">¶</a></h3>
-</div>
-<div class="section" id="during-fix">
+</section>
+<section id="during-fix">
 <h3>During fix<a class="headerlink" href="#during-fix" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li><p>[deleted] segments are left untouched</p></li>
@@ -119,8 +120,8 @@ are reported and left untouched</p></li>
 <li><p>[archive age] segments are not touched</p></li>
 <li><p>[delete age] segments are not touched</p></li>
 </ul>
-</div>
-<div class="section" id="during-repack">
+</section>
+<section id="during-repack">
 <h3>During repack<a class="headerlink" href="#during-repack" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li><p>[deleted] segments are removed from disk</p></li>
@@ -140,11 +141,11 @@ archived, gets repacked before archiving</p></li>
 <li><p>[unaligned] segments are not touched, to prevent deleting data that
 should be reindexed instead</p></li>
 </ul>
-</div>
-</div>
-<div class="section" id="check-and-repack-on-dir-segments">
+</section>
+</section>
+<section id="check-and-repack-on-dir-segments">
 <h2>Check and repack on <code class="docutils literal notranslate"><span class="pre">dir</span></code> segments<a class="headerlink" href="#check-and-repack-on-dir-segments" title="Permalink to this headline">¶</a></h2>
-<div class="section" id="id1">
+<section id="id1">
 <h3>During check<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li><p>the segment must be a directory [unaligned]</p></li>
@@ -179,11 +180,11 @@ missing, older than the file, or marked as needing checking, are marked
 for reindexing instead of deletion [unaligned]</p></li>
 <li><p>format-specific consistency checks on the content of each file must pass [corrupted]</p></li>
 </ul>
-</div>
-<div class="section" id="id2">
+</section>
+<section id="id2">
 <h3>During <code class="docutils literal notranslate"><span class="pre">--accurate</span></code> check<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h3>
-</div>
-<div class="section" id="id3">
+</section>
+<section id="id3">
 <h3>During fix<a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li><p>[unaligned] fix low sequence file value by setting it to the highest
@@ -199,8 +200,8 @@ are reported and left untouched</p></li>
 <li><p>[archive age] segments are not touched</p></li>
 <li><p>[delete age] segments are not touched</p></li>
 </ul>
-</div>
-<div class="section" id="id4">
+</section>
+<section id="id4">
 <h3>During repack<a class="headerlink" href="#id4" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li><p>[deleted] segments are removed from disk</p></li>
@@ -222,9 +223,9 @@ should be reindexed instead</p></li>
 </ul>
 <div class="toctree-wrapper compound">
 </div>
-</div>
-</div>
-</div>
+</section>
+</section>
+</section>
 
 
           </div>
@@ -243,7 +244,7 @@ should be reindexed instead</p></li>
 
 
 <h3>Navigation</h3>
-<p class="caption"><span class="caption-text">Contents:</span></p>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../metadata.html">Metadata types</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../matcher.html">Match expressions</a></li>
@@ -263,6 +264,7 @@ should be reindexed instead</p></li>
 <li class="toctree-l1"><a class="reference internal" href="../segments.html">Data segments</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../http-api.html">arki-server HTTP API</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../config.html">Arkimet runtime configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../match-alias.html">Arkimet match-alias.conf database</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../python-howtos/index.html">Arkimet Python HOWTOs</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../python-howtos/index.html#indices-and-tables">Indices and tables</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../python/index.html">Arkimet Python API</a></li>
@@ -284,7 +286,7 @@ should be reindexed instead</p></li>
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="../search.html" method="get">
-      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
       <input type="submit" value="Go" />
     </form>
     </div>
@@ -306,7 +308,7 @@ should be reindexed instead</p></li>
       &copy;2019, Enrico Zini.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.4.3</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.4.0</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |
