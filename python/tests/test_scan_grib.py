@@ -38,6 +38,10 @@ class TestScanGrib(unittest.TestCase):
         self.assertEqual(data[:4], b"GRIB")
         self.assertEqual(data[-4:], b"7777")
 
+    def test_scanner(self):
+        scanner = arki.scan.Scanner.get_scanner("GRIB")
+        self.assertEqual(str(scanner), "scanner:grib")
+
     def test_compact(self):
         """
         Scan a well-known grib file, with no padding between messages
