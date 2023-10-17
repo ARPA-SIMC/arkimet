@@ -215,6 +215,8 @@ struct get_long : public MethKwargs<get_long, arkipy_scan_Grib>
             int res = grib_get_long(self->gh, key, &val);
             if (res == GRIB_NOT_FOUND)
                 Py_RETURN_NONE;
+            if (val == GRIB_MISSING_LONG)
+                Py_RETURN_NONE;
 
             check_grib_error(res, "cannot read long value from grib");
 
@@ -291,11 +293,15 @@ Access grib message contents
                 case GRIB_TYPE_LONG: {
                     long val;
                     check_grib_lookup_error(grib_get_long(self->gh, key.c_str(), &val), key.c_str(), "cannot read reading long value");
+                    if (val == GRIB_MISSING_LONG)
+                        Py_RETURN_NONE;
                     return to_python(val);
                 }
                 case GRIB_TYPE_DOUBLE: {
                     double val;
                     check_grib_lookup_error(grib_get_double(self->gh, key.c_str(), &val), key.c_str(), "cannot read double value");
+                    if (val == GRIB_MISSING_DOUBLE)
+                        Py_RETURN_NONE;
                     return to_python(val);
                 }
                 case GRIB_TYPE_STRING: {

@@ -6,11 +6,14 @@ import datetime
 
 
 class TestScanGrib(unittest.TestCase):
+    def setUp(self):
+        self.session = arki.dataset.Session()
+
     def read(self, pathname, format="grib"):
         """
         Read all the metadata from a file
         """
-        ds = arki.dataset.Reader({
+        ds = self.session.dataset_reader(cfg={
             "format": format,
             "name": os.path.basename(pathname),
             "path": pathname,
@@ -450,3 +453,37 @@ class TestScanGrib(unittest.TestCase):
         self.assertEqual(md["proddef"], "GRIB(ch=WV_062, sat=MSG4, tod=0)")
         self.assertEqual(md["reftime"], "2020-02-23T11:00:00Z")
         self.assertEqual(md["run"], "MINUTE(11:00)")
+
+    def test_issue317(self):
+        mds = self.read("inbound/issue317.grib")
+        self.assertEqual(len(mds), 2)
+        md = mds[0]
+
+        self.assertGribSource(md, "inbound/issue317.grib", 0, 248)
+        self.assertEqual(md["origin"], "GRIB2(00080, 00255, 004, 255, 015)")
+        self.assertEqual(md["product"], "GRIB2(00080, 000, 003, 006, 011, 001)")
+        self.assertEqual(md["level"], "GRIB2D(150, 000, 0000000066, 101, 002, 0000000000)")
+        self.assertEqual(md["timerange"], "Timedef(0s, 254, 0s)")
+        self.assertEqual(
+            md["area"],
+            "GRIB(Ni=576, Nj=701, latfirst=-8500000, latlast=5500000, latp=-47000000,"
+            " lonfirst=356200000, lonlast=7700000, lonp=10000000, rot=0, tn=1)")
+        # issue201: set pl and pt
+        self.assertEqual(md["proddef"], "GRIB(pf=18, tf=20, tod=5, ty=192)")
+        self.assertEqual(md["reftime"], "2023-09-17T21:00:00Z")
+        self.assertEqual(md["run"], "MINUTE(21:00)")
+
+        md = mds[1]
+        self.assertGribSource(md, "inbound/issue317.grib", 248, 224)
+        self.assertEqual(md["origin"], "GRIB2(00080, 00255, 004, 255, 015)")
+        self.assertEqual(md["product"], "GRIB2(00080, 001, 002, 000, 011, 001)")
+        self.assertEqual(md["level"], "GRIB2D(001,   -,          -,162, 000, 0000000000)")
+        self.assertEqual(md["timerange"], "Timedef(0s, 254, 0s)")
+        self.assertEqual(
+            md["area"],
+            "GRIB(Ni=576, Nj=701, latfirst=-8500000, latlast=5500000, latp=-47000000,"
+            " lonfirst=356200000, lonlast=7700000, lonp=10000000, rot=0, tn=1)")
+        # issue201: set pl and pt
+        self.assertEqual(md["proddef"], "GRIB(pf=18, tf=20, tod=5, ty=192)")
+        self.assertEqual(md["reftime"], "2023-09-17T21:00:00Z")
+        self.assertEqual(md["run"], "MINUTE(21:00)")
