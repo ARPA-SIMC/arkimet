@@ -15,8 +15,8 @@
     <script src="_static/doctools.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Arkimet Python HOWTOs" href="python-howtos/index.html" />
-    <link rel="prev" title="Arkimet runtime configuration" href="config.html" />
+    <link rel="next" title="Matching reference times" href="matcher/reftime.html" />
+    <link rel="prev" title="Match expressions" href="matcher.html" />
    
   <link rel="stylesheet" href="_static/custom.css" type="text/css" />
   
@@ -35,19 +35,37 @@
             
   <section id="arkimet-match-alias-conf-database">
 <h1>Arkimet match-alias.conf database<a class="headerlink" href="#arkimet-match-alias-conf-database" title="Permalink to this headline">¶</a></h1>
+<p>For every metadata type it is possible to define some aliases for the most
+commonly used search expressions.</p>
 <p><code class="docutils literal notranslate"><span class="pre">/etc/arkimet/match-alias.conf</span></code> is a configuration file that contains a
 database of shortcuts for match expressions (see <a class="reference internal" href="matcher.html#match-expressions"><span class="std std-ref">Match expressions</span></a>).</p>
+<p>When launching arkimet commands, the file given in the environment variable
+<code class="docutils literal notranslate"><span class="pre">ARKI_ALIASES</span></code> is tried. Else, <code class="docutils literal notranslate"><span class="pre">/etc/arkimet/match-alias.conf</span></code> is tried.
+Else, nothing is loaded.</p>
 <p>The file is in <code class="docutils literal notranslate"><span class="pre">.ini</span></code>-like format, with <code class="docutils literal notranslate"><span class="pre">[sections]</span></code> representing metadata
 types and their <code class="docutils literal notranslate"><span class="pre">key</span> <span class="pre">=</span> <span class="pre">value</span></code> entries representing shortcuts: when a <code class="docutils literal notranslate"><span class="pre">key</span></code>
 is found in a match expression, it is recursively replaced with its value.</p>
 <p>For example:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="n">product</span><span class="p">]</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="n">origin</span><span class="p">]</span>
+<span class="n">arpa</span> <span class="o">=</span> <span class="n">GRIB1</span><span class="p">,</span><span class="mi">200</span>
+
+<span class="p">[</span><span class="n">product</span><span class="p">]</span>
 <span class="c1"># Temperature</span>
 <span class="n">t</span> <span class="o">=</span> <span class="n">GRIB1</span><span class="p">,</span><span class="mi">200</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">11</span> <span class="ow">or</span> <span class="n">GRIB1</span><span class="p">,</span><span class="mi">98</span><span class="p">,</span><span class="mi">128</span><span class="p">,</span><span class="mi">130</span> <span class="ow">or</span> <span class="n">GRIB1</span><span class="p">,</span><span class="mi">98</span><span class="p">,</span><span class="mi">128</span><span class="p">,</span><span class="mi">167</span> <span class="ow">or</span> <span class="n">GRIB1</span><span class="p">,</span><span class="mi">200</span><span class="p">,</span><span class="mi">200</span><span class="p">,</span><span class="mi">11</span> <span class="ow">or</span> <span class="n">GRIB2</span><span class="p">,</span><span class="mi">200</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">200</span><span class="p">,</span><span class="mi">11</span>
+
+<span class="p">[</span><span class="n">level</span><span class="p">]</span>
+<span class="c1"># Surface</span>
+<span class="n">g00</span>    <span class="o">=</span> <span class="n">GRIB1</span><span class="p">,</span><span class="mi">1</span>
+
+<span class="c1"># Height from surface</span>
+<span class="n">g02</span>    <span class="o">=</span> <span class="n">GRIB1</span><span class="p">,</span><span class="mi">105</span><span class="p">,</span><span class="mi">2</span>
 </pre></div>
 </div>
 <p>This allows to construct a match expression such as <code class="docutils literal notranslate"><span class="pre">product:</span> <span class="pre">t</span> <span class="pre">or</span> <span class="pre">GRIB1,200,2,12</span></code>.</p>
 <p>Expansion happens recursively, so it is possible for an alias to reference another.</p>
+<p>The aliases configured in the client and in the arki-server should always match.
+If they don’t, an error about conflicting aliases is raised, regardless of an alias
+being used or not.</p>
 </section>
 
 
@@ -70,7 +88,10 @@ is found in a match expression, it is recursively replaced with its value.</p>
 <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="metadata.html">Metadata types</a></li>
-<li class="toctree-l1"><a class="reference internal" href="matcher.html">Match expressions</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="matcher.html">Match expressions</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="matcher.html#examples">Examples</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="datasets.html">Datasets</a></li>
 <li class="toctree-l1"><a class="reference internal" href="segments.html">Data segments</a></li>
 <li class="toctree-l1"><a class="reference internal" href="http-api.html">arki-server HTTP API</a></li>
@@ -86,8 +107,10 @@ is found in a match expression, it is recursively replaced with its value.</p>
 <h3>Related Topics</h3>
 <ul>
   <li><a href="index.html">Documentation overview</a><ul>
-      <li>Previous: <a href="config.html" title="previous chapter">Arkimet runtime configuration</a></li>
-      <li>Next: <a href="python-howtos/index.html" title="next chapter">Arkimet Python HOWTOs</a></li>
+  <li><a href="matcher.html">Match expressions</a><ul>
+      <li>Previous: <a href="matcher.html" title="previous chapter">Match expressions</a></li>
+      <li>Next: <a href="matcher/reftime.html" title="next chapter">Matching reference times</a></li>
+  </ul></li>
   </ul></li>
 </ul>
 </div>
