@@ -26,7 +26,6 @@ sphinx_doc_sources = [
     'index.rst',
     'match-alias.rst',
     'matcher.rst',
-    'matcher/aliases.rst',
     'matcher/area.rst',
     'matcher/level.rst',
     'matcher/origin.rst',

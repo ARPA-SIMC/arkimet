@@ -929,77 +929,7 @@ metadato::
 
 == Appendice: documentazione sui matcher ==
 
-=== aliases ===
-
-----
-include::matcher/aliases.txt[]
-----
-
-=== area ===
-
-----
-include::matcher/area.txt[]
-----
-
-=== expressions ===
-
-----
-include::matcher/expressions.txt[]
-----
-
-=== level ===
-
-----
-include::matcher/level.txt[]
-----
-
-=== origin ===
-
-----
-include::matcher/origin.txt[]
-----
-
-=== proddef ===
-
-----
-include::matcher/proddef.txt[]
-----
-
-=== product ===
-
-----
-include::matcher/product.txt[]
-----
-
-=== quantity ===
-
-----
-include::matcher/quantity.txt[]
-----
-
-=== reftime ===
-
-----
-include::matcher/reftime.txt[]
-----
-
-=== run ===
-
-----
-include::matcher/run.txt[]
-----
-
-=== task ===
-
-----
-include::matcher/task.txt[]
-----
-
-=== timerange ===
-
-----
-include::matcher/timerange.txt[]
-----
+See: https://arpa-simc.github.io/arkimet/matcher.html
 
 == Copyright ==
 Copyright (C) 2013-2023 ARPAE-SIMC <simc-urp@arpae.it>

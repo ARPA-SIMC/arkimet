@@ -48,8 +48,8 @@ sphinx_packaged_sources = \
 	http-api.rst \
 	config.rst \
 	index.rst \
+        match-alias.rst \
 	matcher.rst \
-	matcher/aliases.rst \
 	matcher/area.rst \
 	matcher/level.rst \
 	matcher/origin.rst \
