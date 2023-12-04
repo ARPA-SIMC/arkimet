@@ -7,6 +7,7 @@
 * JPEG scanner doesn't raise an exception if datetime tag is missing
 * Do not install vm2/source.lua (#310)
 * Documented `match-alias.conf` syntax (#318)
+* Improved dealing with missing values in GRIB2 metadata (#317)
 
 # New in version 1.47
 

@@ -38,6 +38,8 @@ extern "C" {
 PyTypeObject* arkipy_scan_Grib_Type = nullptr;
 PyTypeObject* arkipy_scan_BufrMessage_Type = nullptr;
 
+PyTypeObject* arkipy_scan_Scanner_Type = nullptr;
+
 }
 
 namespace {
@@ -215,6 +217,8 @@ struct get_long : public MethKwargs<get_long, arkipy_scan_Grib>
             int res = grib_get_long(self->gh, key, &val);
             if (res == GRIB_NOT_FOUND)
                 Py_RETURN_NONE;
+            if (val == GRIB_MISSING_LONG)
+                Py_RETURN_NONE;
 
             check_grib_error(res, "cannot read long value from grib");
 
@@ -291,11 +295,15 @@ Access grib message contents
                 case GRIB_TYPE_LONG: {
                     long val;
                     check_grib_lookup_error(grib_get_long(self->gh, key.c_str(), &val), key.c_str(), "cannot read reading long value");
+                    if (val == GRIB_MISSING_LONG)
+                        Py_RETURN_NONE;
                     return to_python(val);
                 }
                 case GRIB_TYPE_DOUBLE: {
                     double val;
                     check_grib_lookup_error(grib_get_double(self->gh, key.c_str(), &val), key.c_str(), "cannot read double value");
+                    if (val == GRIB_MISSING_DOUBLE)
+                        Py_RETURN_NONE;
                     return to_python(val);
                 }
                 case GRIB_TYPE_STRING: {
@@ -624,6 +632,8 @@ struct vm2_get_variable : public MethKwargs<vm2_get_variable, PyObject>
     }
 };
 
+
+
 Methods<> scan_methods;
 Methods<> scanners_methods;
 Methods<> grib_methods;
@@ -632,6 +642,111 @@ Methods<vm2_get_station, vm2_get_variable> vm2_methods;
 Methods<> odimh5_methods;
 Methods<> nc_methods;
 Methods<> jpeg_methods;
+
+
+struct get_scanner : public ClassMethKwargs<get_scanner>
+{
+    constexpr static const char* name = "get_scanner";
+    constexpr static const char* signature = "format: str";
+    constexpr static const char* returns = "arkimet.scan.Scanner";
+    constexpr static const char* summary = "Return a Scanner for the given data format";
+
+    static PyObject* run(PyTypeObject* cls, PyObject* args, PyObject* kw)
+    {
+        static const char* kwlist[] = { "format", nullptr };
+        const char* py_format = nullptr;
+        Py_ssize_t py_format_len;
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "z#",
+                    const_cast<char**>(kwlist), &py_format, &py_format_len))
+            return nullptr;
+
+        try {
+            auto scanner = arki::scan::Scanner::get_scanner(std::string(py_format, py_format_len));
+            return (PyObject*)arki::python::scan::scanner_create(scanner);
+        } ARKI_CATCH_RETURN_PYO
+    }
+};
+
+struct scan_data : public MethKwargs<scan_data, arkipy_scan_Scanner>
+{
+    constexpr static const char* name = "scan_data";
+    constexpr static const char* signature = "data: bytes";
+    constexpr static const char* returns = "arkimet.Metadata";
+    constexpr static const char* summary = "Scan a memory buffer";
+    constexpr static const char* doc = R"(
+Returns a Metadata with inline source.
+)";
+    static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
+    {
+        static const char* kwlist[] = { "data", nullptr };
+        PyObject* arg_data = nullptr;
+
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "O", (char**)kwlist, &arg_data))
+            return nullptr;
+
+        try {
+            char* buffer;
+            Py_ssize_t length;
+            if (PyBytes_Check(arg_data))
+            {
+                if (PyBytes_AsStringAndSize(arg_data, &buffer, &length) == -1)
+                    throw PythonException();
+            } else {
+                PyErr_Format(PyExc_TypeError, "data has type %R instead of bytes", arg_data);
+                return nullptr;
+            }
+
+            // FIXME: memory copy, seems unavoidable at the moment
+            std::vector<uint8_t> data(buffer, buffer+length);
+            auto md = self->scanner->scan_data(data);
+            return (PyObject*)metadata_create(md);
+        } ARKI_CATCH_RETURN_PYO
+    }
+};
+
+struct ScannerDef : public Type<ScannerDef, arkipy_scan_Scanner>
+{
+    constexpr static const char* name = "Scanner";
+    constexpr static const char* qual_name = "arkimet.scan.Scanner";
+    constexpr static const char* doc = R"(
+Scanner for binary data.
+)";
+    GetSetters<> getsetters;
+    Methods<get_scanner, scan_data> methods;
+
+    static void _dealloc(Impl* self)
+    {
+        self->scanner.~shared_ptr();
+        Py_TYPE(self)->tp_free(self);
+    }
+
+    static PyObject* _str(Impl* self)
+    {
+        std::string str = "scanner:" + self->scanner->name();
+        return PyUnicode_FromStringAndSize(str.data(), str.size());
+    }
+
+    static PyObject* _repr(Impl* self)
+    {
+        std::string str = "scanner:" + self->scanner->name();
+        return PyUnicode_FromStringAndSize(str.data(), str.size());
+    }
+
+    // static int _init(Impl* self, PyObject* args, PyObject* kw)
+    // {
+    //     static const char* kwlist[] = { nullptr };
+    //     if (!PyArg_ParseTupleAndKeywords(args, kw, "", const_cast<char**>(kwlist)))
+    //         return -1;
+
+    //     try {
+    //         new(&(self->scanner)) std::shared_ptr<arki::scan::Scanner>(make_shared<arki:scan::Scanner>());
+    //     } ARKI_CATCH_RETURN_INT
+
+    //     return 0;
+    // }
+};
+
+ScannerDef* scanner_def = nullptr;
 
 }
 
@@ -738,13 +853,25 @@ static PyModuleDef vm2_module = {
 namespace arki {
 namespace python {
 
+namespace scan {
+
+arkipy_scan_Scanner* scanner_create(std::shared_ptr<arki::scan::Scanner> scanner)
+{
+    arkipy_scan_Scanner* result = PyObject_New(arkipy_scan_Scanner, arkipy_scan_Scanner_Type);
+    if (!result) throw PythonException();
+    new (&(result->scanner)) std::shared_ptr<arki::scan::Scanner>(scanner);
+    return result;
+}
+
+}
+
+
 void register_scan(PyObject* m)
 {
 #ifdef HAVE_DBALLE
     wreport_api.import();
     dballe_api.import();
 #endif
-
     pyo_unique_ptr grib = throw_ifnull(PyModule_Create(&grib_module));
     grib_def = new GribDef;
     grib_def->define(arkipy_scan_Grib_Type, grib);
@@ -759,6 +886,9 @@ void register_scan(PyObject* m)
 
     module_arkimet = m;
     module_scanners = scanners;
+
+    scanner_def = new ScannerDef;
+    scanner_def->define(arkipy_scan_Scanner_Type, scan);
 
     if (PyModule_AddObject(scan, "grib", grib.release()) == -1)
         throw PythonException();
