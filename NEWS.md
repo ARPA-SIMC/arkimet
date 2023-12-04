@@ -1,4 +1,4 @@
-# New in version UNRELEASED
+# New in version 1.48
 
 * Removed embedded version of sqlite (#194)
 * Removed embedded version of liblzo (#195)

@@ -3,7 +3,7 @@
 
 Summary: Archive for weather information
 Name: arkimet
-Version: 1.47
+Version: 1.48
 Release: 1
 License: GPL
 Group: Applications/Meteo
@@ -203,6 +203,16 @@ if [ "$1" = "1" ]; then
 fi
 
 %changelog
+* Mon Dec  4 2023 Daniele Branchini <dbranchini@arpae.it> - 1.48-1
+- Removed embedded version of sqlite (#194)
+- Removed embedded version of liblzo (#195)
+- Fixed mentions of `.archive` in documentation (#288)
+- Add missing files (related to JPEG scanning) in installation scripts (Meson and autools)
+- JPEG scanner doesn't raise an exception if datetime tag is missing
+- Do not install vm2/source.lua (#310)
+- Documented `match-alias.conf` syntax (#318)
+- Improved dealing with missing values in GRIB2 metadata (#317)
+
 * Tue Jun  6 2023 Emanuele Di Giacomo <edigiacomo@arpae.it> - 1.47-1
 - Fix installation scripts (Meson and autotools) #304
 
