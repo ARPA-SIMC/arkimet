@@ -15,9 +15,10 @@ class Manifest;
 
 namespace simple {
 
-class Checker : public DatasetAccess<simple::Dataset, indexed::Checker>
+class Checker : public DatasetAccess<simple::Dataset, segmented::Checker>
 {
 protected:
+    Index* m_idx = nullptr;
     index::Manifest* m_mft;
     std::shared_ptr<dataset::CheckLock> lock;
 
@@ -43,6 +44,15 @@ public:
     void test_delete_from_index(const std::string& relpath) override;
     void test_invalidate_in_index(const std::string& relpath) override;
     std::shared_ptr<Metadata> test_change_metadata(const std::string& relpath, std::shared_ptr<Metadata> md, unsigned data_idx) override;
+
+    void check_issue51(CheckerConfig& opts) override;
+
+    void test_make_overlap(const std::string& relpath, unsigned overlap_size, unsigned data_idx=1) override;
+    void test_make_hole(const std::string& relpath, unsigned hole_size, unsigned data_idx=0) override;
+    void test_corrupt_data(const std::string& relpath, unsigned data_idx=0) override;
+    void test_truncate_data(const std::string& relpath, unsigned data_idx=0) override;
+    void test_swap_data(const std::string& relpath, unsigned d1_idx, unsigned d2_idx) override;
+    void test_rename(const std::string& relpath, const std::string& new_relpath) override;
 
     friend class CheckerSegment;
 };

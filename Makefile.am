@@ -2,7 +2,7 @@
 
 ACLOCAL_AMFLAGS = -I m4
 
-SUBDIRS = conf embedded arki
+SUBDIRS = conf arki
 if DO_PYTHON
 SUBDIRS += python
 endif

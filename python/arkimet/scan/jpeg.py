@@ -72,7 +72,7 @@ class ScannedImage:
         tagid = image_tags.get(tag_name)
         if tagid is None:
             raise KeyError(f"Exif tag {tag_name!r} is not available in PIL.ExifTags.TAGS")
-        return self.exif[tagid]
+        return self.exif.get(tagid)
 
     def get_gps(self, tag_name: str) -> Any:
         """

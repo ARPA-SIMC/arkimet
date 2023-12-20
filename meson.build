@@ -1,4 +1,4 @@
-project('arkimet', 'cpp', version: '1.47', license : 'GPL-2.0-or-later', default_options: ['warning_level=3', 'cpp_std=c++11'])
+project('arkimet', 'cpp', version: '1.48', license : 'GPL-2.0-or-later', default_options: ['warning_level=3', 'cpp_std=c++11'])
 
 add_global_arguments('-Wextra', '-Wno-unused-parameter', language : 'cpp')
 
@@ -65,9 +65,9 @@ conf_data.set('HAVE_LUA', lua_dep.found())
 
 lzo_dep = dependency('lzo2', required: false)
 if not lzo_dep.found()
-    lzo_dep = compiler.find_library('lzo2')
+  lzo_dep = compiler.find_library('lzo2', required: true)
 endif
-conf_data.set('HAVE_LZO', lzo_dep.found())
+conf_data.set('HAVE_LZO2', lzo_dep.found())
 
 eccodes_dep = dependency('eccodes', required: false)
 if not eccodes_dep.found()

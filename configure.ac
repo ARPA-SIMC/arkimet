@@ -1,18 +1,15 @@
 dnl Process this file with autoconf to produce a configure script.
 
-AC_INIT(arkimet, 1.47, [enrico@enricozini.org])
+AC_INIT([arkimet],[1.48],[enrico@enricozini.org])
 AC_CONFIG_SRCDIR([configure.ac])
 AM_INIT_AUTOMAKE([foreign subdir-objects nostdinc])
-AC_CONFIG_HEADER(config.h)
-AC_CONFIG_HEADER(arki/libconfig.h)
+AC_CONFIG_HEADERS([config.h])
+AC_CONFIG_HEADERS([arki/libconfig.h])
 AC_CONFIG_MACRO_DIR([m4])
 
 dnl Use libtool
-dnl AM_ENABLE_STATIC
-dnl AM_DISABLE_SHARED
 LT_INIT
 LT_LANG([C++])
-AC_PROG_LIBTOOL
 
 AC_ARG_ENABLE([docs],
     [AS_HELP_STRING(
@@ -77,7 +74,7 @@ AC_ARG_ENABLE([splice],
 
 if test x$enable_gcov = xyes
 then
-	AM_DISABLE_SHARED
+	AC_DISABLE_SHARED([])
 fi
 
 dnl To use subdirs
@@ -85,7 +82,7 @@ AC_PROG_MAKE_SET
 
 AC_LANG([C++])
 
-AC_ISC_POSIX
+AC_SEARCH_LIBS([strerror],[cposix])
 AC_PROG_CC
 AC_PROG_CXX
 
@@ -94,9 +91,6 @@ AX_CXX_COMPILE_STDCXX_11(noext)
 
 AM_PROG_LEX
 AC_PROG_YACC
-
-AM_PROG_CC_STDC
-AC_HEADER_STDC
 
 dnl Needed by subdir-objects
 AM_PROG_CC_C_O
@@ -129,17 +123,8 @@ PKG_PROG_PKG_CONFIG
 dnl Compulsory libraries
 AX_LIB_SQLITE3([3.14])
 if test x"$success" = x"no"; then
-	AC_MSG_WARN([Cannot find an appropriate version of SQLite, using the embedded version])
-
-	SQLITE3_CFLAGS="-I`pwd`/embedded/sqlite/"
-        AC_SUBST(SQLITE3_CFLAGS)
-	SQLITE3_LDFLAGS="`pwd`/embedded/sqlite/libsqlite3.la"
-        AC_SUBST(SQLITE3_LDFLAGS)
-	SQLITE3_VERSION="embedded"
-        AC_SUBST(SQLITE3_VERSION)
-        AC_DEFINE(HAVE_SQLITE3, [], [SQLite 3 is available])
+	AC_MSG_ERROR([Cannot find an appropriate version of SQLite])
 fi
-AM_CONDITIONAL([SQLITE_EMBEDDED], [test x"$SQLITE3_VERSION" = x"embedded"])
 
 dnl Optional readline
 VL_LIB_READLINE
@@ -311,18 +296,11 @@ then
 	LZO_VERSION=`sed -nre 's/#define LZO_VERSION_STRING[[:blank:]]+"(.+)"/\1/p' /usr/include/lzo/lzoconf.h`
 	AC_DEFINE([HAVE_LZO], 1, [lzo functions are available])
 else
-	AC_MSG_WARN([Cannot find an appropriate version of LZO, using the embedded version])
-	LZO_CFLAGS="-I`pwd`/embedded/minilzo/"
-	LZO_LIBS="-L`pwd`/embedded/minilzo/ -lminilzo"
-	LZO_VERSION="embedded"
-	AC_DEFINE([HAVE_MINILZO], 1, [minilzo functions are available])
-	have_lzo=yes
+	AC_MSG_ERROR([Cannot find an appropriate version of LZO])
 fi
 AC_SUBST(LZO_CFLAGS)
 AC_SUBST(LZO_LIBS)
 AC_SUBST(LZO_VERSION)
-AM_CONDITIONAL([LZO], [test x"$have_lzo" = x"yes"])
-AM_CONDITIONAL([LZO_EMBEDDED], [test x"$LZO_VERSION" = x"embedded"])
 
 dnl Check for vm2 support
 if test $enable_vm2 = yes
@@ -446,9 +424,6 @@ AM_CONDITIONAL([DEVEL_DO_DATASETS], [true])
 AC_CONFIG_FILES([
 Makefile
 conf/Makefile
-embedded/Makefile
-embedded/sqlite/Makefile
-embedded/minilzo/Makefile
 arki/Makefile
 src/Makefile
 python/Makefile

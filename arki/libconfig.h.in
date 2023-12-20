@@ -22,9 +22,6 @@
 /* libzip is available */
 #undef HAVE_LIBZIP
 
-/* SQLite 3 is available */
-#undef HAVE_SQLITE3
-
 /* the `splice' function is available */
 #undef HAVE_SPLICE
 

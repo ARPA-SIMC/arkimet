@@ -2,13 +2,12 @@
 
 SUBDIRS = .
 
-AM_CPPFLAGS = -I$(top_srcdir) -I$(top_builddir) $(SQLITE3_CFLAGS) -DCONF_DIR=\"$(confdir)\" -DPOSTPROC_DIR=\"$(postprocdir)\" $(ZLIB_CFLAGS) $(LIBARCHIVE_CFLAGS) $(LIBZIP_CFLAGS) $(LIBSSL_CFLAGS)
+AM_CPPFLAGS = -I$(top_srcdir) -I$(top_builddir) $(SQLITE3_CFLAGS) -DCONF_DIR=\"$(confdir)\" -DPOSTPROC_DIR=\"$(postprocdir)\" $(ZLIB_CFLAGS) $(LIBARCHIVE_CFLAGS) $(LIBZIP_CFLAGS) $(LIBSSL_CFLAGS) $(LZO_CFLAGS)
 if FILE_OFFSET_BITS_64
 AM_CPPFLAGS += -D_FILE_OFFSET_BITS=64
 endif
 AM_CXXFLAGS = $(EXTRA_CXXFLAGS) $(DEVEL_CXXFLAGS)
 AM_LDFLAGS = $(EXTRA_LDFLAGS)
-
 
 arkiincludedir = $(includedir)/arki
 
@@ -61,7 +60,6 @@ nobase_dist_arkiinclude_HEADERS = \
 		dataset/index/manifest.h \
 		dataset/local.h \
 		dataset/segmented.h \
-		dataset/indexed.h \
 		dataset/maintenance.h \
 		dataset/memory.h \
 		dataset/merged.h \
@@ -220,7 +218,7 @@ noinst_LTLIBRARIES = libarkimet-test.la
 # Build these incrementally
 libarkimet_la_CPPFLAGS = $(AM_CPPFLAGS) -Werror
 libarkimet_la_SOURCES =
-libarkimet_la_LDFLAGS = -version-info @LIBARKI_VERSION_INFO@ $(SQLITE3_LDFLAGS) $(ZLIB_LIBS) $(LIBARCHIVE_LIBS) $(LIBZIP_LIBS) $(LIBSSL_LIBS) $(DEVEL_LIBS) -lpthread
+libarkimet_la_LDFLAGS = -version-info @LIBARKI_VERSION_INFO@ $(SQLITE3_LDFLAGS) $(ZLIB_LIBS) $(LIBARCHIVE_LIBS) $(LIBZIP_LIBS) $(LIBSSL_LIBS) $(DEVEL_LIBS) $(LZO_LIBS) -lpthread
 libarkimet_test_la_SOURCES = tests/main.cpp
 tests_arki_test_SOURCES =
 tests_arki_test_LDADD =
@@ -460,11 +458,6 @@ libarkimet_la_SOURCES += iotrace.cc
 tests_arki_test_SOURCES += iotrace-test.cc
 endif
 
-if LZO
-AM_CPPFLAGS += $(LZO_CFLAGS)
-libarkimet_la_LDFLAGS += $(LZO_LIBS)
-endif
-
 if GEOS
 AM_CPPFLAGS += $(GEOS_CFLAGS)
 libarkimet_la_LDFLAGS += $(GEOS_LIBS)
@@ -524,7 +517,6 @@ libarkimet_la_SOURCES += \
 		dataset/step.cc \
 		dataset/local.cc \
 		dataset/segmented.cc \
-		dataset/indexed.cc \
 		dataset/file.cc \
 		dataset/archive.cc \
 		dataset/simple.cc \
@@ -569,7 +561,6 @@ tests_arki_test_SOURCES += \
 		dataset/step-test.cc \
 		dataset/local-test.cc \
 		dataset/segmented-test.cc \
-		dataset/indexed-test.cc \
 		dataset/file-test.cc \
 		dataset/archive-test.cc \
 		dataset/simple-test.cc \
@@ -623,7 +614,7 @@ check-local:
 		$(TESTS_ENVIRONMENT) $$test ; \
 	done
 
-tests_arki_test_LDADD += libarkimet.la libarkimet-test.la 
+tests_arki_test_LDADD += libarkimet.la libarkimet-test.la $(LZO_LIBS)
 if GEOS
 tests_arki_test_LDADD += $(GEOS_LIBS)
 endif
@@ -632,9 +623,6 @@ tests_arki_test_LDADD += $(VM2_LIBS)
 if LUA
 tests_arki_test_LDADD += $(LUA_LIBS)
 endif
-endif
-if LZO
-tests_arki_test_LDADD += $(LZO_LIBS)
 endif
 tests_arki_test_LDADD += $(SQLITE3_LDFLAGS) $(ZLIB_LIBS) $(LIBARCHIVE_LIBS) $(LIBZIP_LIBS) $(LIBSSL_LIBS) $(DEVEL_LIBS) -lpthread
 

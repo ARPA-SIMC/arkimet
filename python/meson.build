@@ -104,6 +104,7 @@ python3.install_sources(
     'arkimet/scan/vm2.py',
     'arkimet/scan/odimh5.py',
     'arkimet/scan/nc.py',
+    'arkimet/scan/jpeg.py',
     subdir: 'arkimet/scan',
 )
 
@@ -132,7 +133,7 @@ python3.install_sources(
 
 runtest = find_program('../arki/runtest')
 
-test('python', runtest, args: ['PYTHON'],
+test('python', runtest, args: ['PYTHON'], timeout: 600,
      env: [
          'PYTHON=' + python3_path,
          'PYTHONPATH=' + meson.current_source_dir() + ':' + meson.current_build_dir(),

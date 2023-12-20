@@ -43,10 +43,12 @@ These are all the supported options:
 * ``index``: comma-separated list of names of metadata to index for faster queries
 * ``path``: path to the dataset, or URL for ``remote`` datasets.
 * ``replace``: when ``yes``, importing duplicate data will replace the existing
-  version. When ``no``, importing duplicate data will be rejected. When
+  version . When ``no``, importing duplicate data will be rejected. When
   ``usn``, importing duplicate BUFR data will replace the existing version only
   if the BUFR Update Sequence Number is greater than the one currently in the
-  dataset.
+  dataset. A replace leaves the old data in the segment and appends the new
+  data at the end, updating the index to refer to the new data. As with deleted
+  data, disk space is only reclaimed when running ``arki-check --repack``
 * ``restrict``: comma-separated list of names that have access to the dataset.
   This allows filtering with the ``--restrict`` option on command line.
 * ``smallfiles``: ``yes`` or ``no``. When ``yes``, the file contents are also

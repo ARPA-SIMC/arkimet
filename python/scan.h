@@ -25,6 +25,19 @@ extern PyTypeObject* arkipy_scan_Grib_Type;
     (Py_TYPE(ob) == arkipy_scan_Grib_Type || \
      PyType_IsSubtype(Py_TYPE(ob), arkipy_scan_Grib_Type))
 
+
+typedef struct {
+    PyObject_HEAD
+    std::shared_ptr<arki::scan::Scanner> scanner;
+} arkipy_scan_Scanner;
+
+extern PyTypeObject* arkipy_scan_Scanner_Type;
+
+#define arkipy_scan_Scanner_Check(ob) \
+    (Py_TYPE(ob) == arkipy_scan_Scanner_Type || \
+     PyType_IsSubtype(Py_TYPE(ob), arkipy_scan_Scanner_Type))
+
+
 }
 
 namespace arki {
@@ -34,6 +47,7 @@ void register_scan(PyObject* m);
 
 namespace scan {
 void init();
+arkipy_scan_Scanner* scanner_create(std::shared_ptr<arki::scan::Scanner> scanner);
 }
 
 }

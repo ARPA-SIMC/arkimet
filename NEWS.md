@@ -1,3 +1,14 @@
+# New in version 1.48
+
+* Removed embedded version of sqlite (#194)
+* Removed embedded version of liblzo (#195)
+* Fixed mentions of `.archive` in documentation (#288)
+* Add missing files (related to JPEG scanning) in installation scripts (Meson and autools)
+* JPEG scanner doesn't raise an exception if datetime tag is missing
+* Do not install vm2/source.lua (#310)
+* Documented `match-alias.conf` syntax (#318)
+* Improved dealing with missing values in GRIB2 metadata (#317)
+
 # New in version 1.47
 
 * Fix installation scripts (Meson and autotools) #304

@@ -1,3 +1,5 @@
+.. _match_expressions:
+
 Match expressions
 =================
 
@@ -34,7 +36,7 @@ Given origin ``GRIB1(200, 0, 0)``, product ``GRIB1(98, 128, 167)``, level ``GRIB
    :maxdepth: 2
    :caption: Contents:
 
-   matcher/aliases
+   match-alias
    matcher/reftime
    matcher/origin
    matcher/area

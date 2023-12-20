@@ -417,9 +417,7 @@ static bool arkimet_initialized = false;
 #ifdef HAVE_LIBZIP
         add_feature(features, "libzip");
 #endif
-#ifdef HAVE_SQLITE3
         add_feature(features, "sqlite");
-#endif
 #ifdef HAVE_SPLICE
         add_feature(features, "splice");
 #endif
