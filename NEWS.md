@@ -1,4 +1,4 @@
-# New in version UNRELEASED
+# New in version 1.49
 
 * `arki-dump --info` now documents the alias file configuration (#323)
 
