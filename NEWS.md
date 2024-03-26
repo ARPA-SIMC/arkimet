@@ -1,3 +1,7 @@
+# New in version UNRELEASED
+
+* `arki-dump --info` now documents the alias file configuration (#323)
+
 # New in version 1.48
 
 * Removed embedded version of sqlite (#194)

@@ -3,6 +3,7 @@
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
 #include "arki/types-init.h"
+#include "arki/nag.h"
 #include "arki/iotrace.h"
 #include "arki/scan.h"
 #include "arki/dataset/querymacro.h"
@@ -45,6 +46,21 @@ Config::Config()
 
     if (const char* envfile = getenv("ARKI_IOTRACE"))
         file_iotrace_output = envfile;
+
+    if (const char* envfile = getenv("ARKI_ALIASES"))
+    {
+        // Try environment first...
+        file_aliases = envfile;
+        if (!sys::stat(file_aliases))
+            arki::nag::warning("%s: file specified in ARKI_ALIASES not found", file_aliases.c_str());
+    }
+#ifdef CONF_DIR
+    else
+    {
+        // ...and build-time config otherwise
+        file_aliases = std::string(CONF_DIR) + "/match-alias.conf";
+    }
+#endif
 
     if (const char* env = getenv("ARKI_IO_TIMEOUT"))
         io_timeout_ms = round(strtod(env, nullptr) * 1000.0);
