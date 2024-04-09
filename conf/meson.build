@@ -17,5 +17,7 @@ install_data(
 	'qmacro/noopcopy.py',
 	'qmacro/expa.py',
     install_dir: conf_dir / 'qmacro')
-
+install_data(
+  'format/format_product_cosmo.py',
+  install_dir: conf_dir / 'format')
 install_data('match-alias.simc.conf', install_dir: doc_dir)
