@@ -125,38 +125,64 @@ struct DTParser : public Parser
         // Year
         res->ye = num();
         // Month
-        if (!eat('-')) return res;
+        if (!eat('-')) goto done;
         res->mo = num();
         // Day
-        if (!eat('-')) return res;
+        if (!eat('-')) goto done;
         res->da = num();
         // Eat optional 'T' at the end of the date
         if (len && (*buf == 'T' || *buf == 't')) { ++buf; --len; }
         // Eat optional spaces
         eatSpaces();
         // Hour
-        if (!len) return res;
+        if (!len) goto done;
         res->ho = num();
         // Minute
-        if (!eat(':')) return res;
+        if (!eat(':')) goto done;
         res->mi = num();
         // Second
-        if (!eat(':')) return res;
+        if (!eat(':')) goto done;
         res->se = num();
 
+done:
+        try {
+            res->validate();
+        } catch (std::invalid_argument& e) {
+            error(e.what());
+        }
+
         return res;
+    }
+
+    void check_minmax(int value, int min, int max, const char* what)
+    {
+        if (value < min || value > max)
+            error(
+                std::string(what) + " must be between "
+                + std::to_string(min) + " and " + std::to_string(max));
     }
 
     void getTime(int* res)
     {
         // Hour
         res[0] = num();
+        check_minmax(res[0], 0, 24, "hour");
         // Minute
         if (!eat(':')) return;
         res[1] = num();
+        check_minmax(res[1], 0, 59, "minute");
         // Second
         if (!eat(':')) return;
         res[2] = num();
+        check_minmax(res[2], 0, 60, "second");
+
+        if (res[0] == 24)
+        {
+            if (res[1] != -1 && res[1] != 0)
+                error("on hour 24, minute must be zero");
+            if (res[2] != -1 && res[2] != 0)
+                error("on hour 24, second must be zero");
+        }
     }
 };
 

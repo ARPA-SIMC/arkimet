@@ -36,6 +36,10 @@ public:
 
     /// Set to easter day, with ho, mi, and se, set to -1
     void set_easter(int year);
+
+    /// Raise std::invalid_argument if the set portion of the date is not well
+    /// formed
+    void validate() const;
 };
 
 }
