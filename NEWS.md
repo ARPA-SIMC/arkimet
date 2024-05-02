@@ -1,3 +1,9 @@
+# New in version -unreleased-
+
+* Implemented date/time validation in matcher parser (#324)
+* Add a formatter for annotating cosmo model local variables (#300)
+* Updated grib2 default table version to 15
+
 # New in version 1.49
 
 * `arki-dump --info` now documents the alias file configuration (#323)
