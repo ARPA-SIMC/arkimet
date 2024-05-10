@@ -3,7 +3,7 @@
 
 Summary: Archive for weather information
 Name: arkimet
-Version: 1.49
+Version: 1.50
 Release: 1
 License: GPL
 Group: Applications/Meteo
@@ -203,6 +203,12 @@ if [ "$1" = "1" ]; then
 fi
 
 %changelog
+* Fri May 10 2024 Daniele Branchini <dbranchini@arpae.it> - 1.50-1
+- Implemented date/time validation in matcher parser (#324)
+- Add a formatter for annotating cosmo model local variables (#300)
+- Updated grib2 default table version to 15
+- Updated match-alias.simc.conf file with ICON grib2 products
+
 * Tue Mar 26 2024 Daniele Branchini <dbranchini@arpae.it> - 1.49-1
 - `arki-dump --info` now documents the alias file configuration (#323)
 
