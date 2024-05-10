@@ -41,13 +41,6 @@ Arkimet is already packaged in .rpm format.
 For CentOS and Fedora, rpm files are hosted in a copr repo:
 https://copr.fedorainfracloud.org/coprs/simc/stable/
 
-Docker images with arkimet preinstalled are also available:
-
-```
-docker run -it arpaesimc/fedora:31 /bin/bash
-docker run -it arpaesimc/centos:8 /bin/bash
-```
-
 If you want to build and install arkimet yourself, you'll need to install the
 automake/autoconf/libtool packages then you can proceed as in most other Unix 
 software:
