@@ -1,8 +1,9 @@
-# New in version -unreleased-
+# New in version 1.50
 
 * Implemented date/time validation in matcher parser (#324)
 * Add a formatter for annotating cosmo model local variables (#300)
 * Updated grib2 default table version to 15
+* Updated match-alias.simc.conf file with ICON grib2 products
 
 # New in version 1.49
 
