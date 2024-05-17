@@ -109,7 +109,7 @@ class GribTable:
 
     @classmethod
     def get_grib2_table_prefix(cls, centre, table_version, local_table_version):
-        default_table_version = 4
+        default_table_version = 15
 
         if table_version is None or table_version == 255:
             table_version = default_table_version

@@ -13,7 +13,8 @@ nobase_dist_conf_DATA = \
 	scan/odimh5.py \
 	qmacro/noop.py \
 	qmacro/noopcopy.py \
-	qmacro/expa.py
+	qmacro/expa.py \
+	format/format_product_cosmo.py
 
 dist_doc_DATA = match-alias.simc.conf
 

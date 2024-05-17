@@ -1,4 +1,4 @@
-project('arkimet', 'cpp', version: '1.48', license : 'GPL-2.0-or-later', default_options: ['warning_level=3', 'cpp_std=c++11'])
+project('arkimet', 'cpp', version: '1.50', license : 'GPL-2.0-or-later', default_options: ['warning_level=3', 'cpp_std=c++11'])
 
 add_global_arguments('-Wextra', '-Wno-unused-parameter', language : 'cpp')
 

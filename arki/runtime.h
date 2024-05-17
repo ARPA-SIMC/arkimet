@@ -71,6 +71,9 @@ struct Config
     /// Directories where odimh5 scan scripts are found
     Dirlist dir_scan_odimh5;
 
+    /// Alias file
+    std::string file_aliases;
+
     /// I/O profiling log file
     std::string file_iotrace_output;
 
