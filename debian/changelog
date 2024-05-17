@@ -1,3 +1,12 @@
+arkimet (1.50-1) unstable; urgency=medium
+
+  * Implemented date/time validation in matcher parser (#324)
+  * Add a formatter for annotating cosmo model local variables (#300)
+  * Updated grib2 default table version to 15
+  * Updated match-alias.simc.conf file with ICON grib2 products
+
+ -- Emanuele Di Giacomo <edigiacomo@arpae.it>  Fri, 17 May 2024 15:30:40 +0200
+
 arkimet (1.48-1) unstable; urgency=medium
 
   * Removed embedded version of sqlite (#194)
