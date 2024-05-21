@@ -62,6 +62,7 @@ def scan_grib1(grib, md):
     else:
         level["l1"] = grib.get_long("topLevel")
         level["l2"] = grib.get_long("bottomLevel")
+        if level["l2"] is None: level["l2"] = 255
     md["level"] = level
 
     # Create this array here so time range can add to it
