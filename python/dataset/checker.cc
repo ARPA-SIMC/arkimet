@@ -159,12 +159,18 @@ Examples::
 
     static PyObject* _str(Impl* self)
     {
-        return PyUnicode_FromFormat("dataset.Checker(%s, %s)", self->ptr->type().c_str(), self->ptr->name().c_str());
+        if (self->ptr.get())
+            return PyUnicode_FromFormat("dataset.Checker(%s, %s)", self->ptr->type().c_str(), self->ptr->name().c_str());
+        else
+            return to_python("dataset.Checker(<out of scope>)");
     }
 
     static PyObject* _repr(Impl* self)
     {
-        return PyUnicode_FromFormat("dataset.Checker(%s, %s)", self->ptr->type().c_str(), self->ptr->name().c_str());
+        if (self->ptr.get())
+            return PyUnicode_FromFormat("dataset.Checker(%s, %s)", self->ptr->type().c_str(), self->ptr->name().c_str());
+        else
+            return to_python("dataset.Checker(<out of scope>)");
     }
 
     static int _init(Impl* self, PyObject* args, PyObject* kw)
