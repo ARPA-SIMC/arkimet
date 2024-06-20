@@ -522,3 +522,22 @@ class TestScanGrib(unittest.TestCase):
         self.assertEqual(md["proddef"], "GRIB(pf=18, tf=20, tod=5, ty=192)")
         self.assertEqual(md["reftime"], "2023-09-17T21:00:00Z")
         self.assertEqual(md["run"], "MINUTE(21:00)")
+
+    def test_issue326(self):
+        mds = self.read("inbound/issue326.grib")
+        self.assertEqual(len(mds), 1)
+        md = mds[0]
+
+        self.assertGribSource(md, "inbound/issue326.grib", 0, 108)
+        self.assertEqual(md["origin"], "GRIB1(098, 000, 154)")
+        self.assertEqual(md["product"], "GRIB1(098, 128, 236)")
+        self.assertEqual(md["level"], "GRIB1(112, 100, 255)")
+        self.assertEqual(md["timerange"], "GRIB1(000, 000h)")
+        self.assertEqual(
+            md["area"],
+            "GRIB(Ni=253, Nj=173, latfirst=50200000, latlast=33000000," " lonfirst=-2300000, lonlast=22900000, type=0)",
+        )
+        # issue201: set pl and pt
+        self.assertEqual(md["proddef"], "GRIB(ld=1, mt=2, nn=0, tod=1)")
+        self.assertEqual(md["reftime"], "2024-04-29T06:00:00Z")
+        self.assertEqual(md["run"], "MINUTE(06:00)")
