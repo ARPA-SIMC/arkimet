@@ -13,25 +13,30 @@ class TestScanGrib(unittest.TestCase):
         """
         Read all the metadata from a file
         """
-        ds = self.session.dataset_reader(cfg={
-            "format": format,
-            "name": os.path.basename(pathname),
-            "path": pathname,
-            "type": "file",
-        })
+        ds = self.session.dataset_reader(
+            cfg={
+                "format": format,
+                "name": os.path.basename(pathname),
+                "path": pathname,
+                "type": "file",
+            }
+        )
         return ds.query_data()
 
     def assertGribSource(self, md, filename, offset, size):
         source = md.to_python("source")
-        self.assertEqual(source, {
-            "type": "source",
-            "style": "BLOB",
-            "format": "grib",
-            "basedir": os.getcwd(),
-            "file": filename,
-            "offset": offset,
-            "size": size,
-        })
+        self.assertEqual(
+            source,
+            {
+                "type": "source",
+                "style": "BLOB",
+                "format": "grib",
+                "basedir": os.getcwd(),
+                "file": filename,
+                "offset": offset,
+                "size": size,
+            },
+        )
 
         data = md.data
         self.assertEqual(len(data), size)
@@ -50,8 +55,9 @@ class TestScanGrib(unittest.TestCase):
         self.assertEqual(md["level"], "GRIB1(001)")
         self.assertEqual(md["timerange"], "GRIB1(000, 000h)")
         self.assertEqual(
-                md["area"],
-                "GRIB(Ni=97, Nj=73, latfirst=40000000, latlast=46000000, lonfirst=12000000, lonlast=20000000, type=0)")
+            md["area"],
+            "GRIB(Ni=97, Nj=73, latfirst=40000000, latlast=46000000, lonfirst=12000000, lonlast=20000000, type=0)",
+        )
         self.assertEqual(md["proddef"], "GRIB(tod=1)")
         self.assertEqual(md["reftime"], "2007-07-08T13:00:00Z")
         self.assertEqual(md["run"], "MINUTE(13:00)")
@@ -80,8 +86,9 @@ class TestScanGrib(unittest.TestCase):
         self.assertEqual(md["level"], "GRIB1(001)")
         self.assertEqual(md["timerange"], "GRIB1(000, 000h)")
         self.assertEqual(
-                md["area"],
-                "GRIB(Ni=97, Nj=73, latfirst=40000000, latlast=46000000, lonfirst=12000000, lonlast=20000000, type=0)")
+            md["area"],
+            "GRIB(Ni=97, Nj=73, latfirst=40000000, latlast=46000000, lonfirst=12000000, lonlast=20000000, type=0)",
+        )
         self.assertEqual(md["proddef"], "GRIB(tod=1)")
         self.assertEqual(md["reftime"], "2007-07-08T13:00:00Z")
         self.assertEqual(md["run"], "MINUTE(13:00)")
@@ -96,9 +103,9 @@ class TestScanGrib(unittest.TestCase):
         self.assertEqual(md["level"], "GRIB1(102)")
         self.assertEqual(md["timerange"], "GRIB1(001)")
         self.assertEqual(
-                md["area"],
-                "GRIB(Ni=205, Nj=85, latfirst=30000000, latlast=72000000,"
-                " lonfirst=-60000000, lonlast=42000000, type=0)")
+            md["area"],
+            "GRIB(Ni=205, Nj=85, latfirst=30000000, latlast=72000000," " lonfirst=-60000000, lonlast=42000000, type=0)",
+        )
         self.assertEqual(md["proddef"], "GRIB(tod=1)")
         self.assertEqual(md["reftime"], "2007-07-07T00:00:00Z")
         self.assertEqual(md["run"], "MINUTE(00:00)")
@@ -113,8 +120,9 @@ class TestScanGrib(unittest.TestCase):
         self.assertEqual(md["level"], "GRIB1(100, 01000)")
         self.assertEqual(md["timerange"], "GRIB1(000, 000h)")
         self.assertEqual(
-                md["area"],
-                "GRIB(Ni=43, Nj=25, latfirst=55500000, latlast=31500000, lonfirst=-11500000, lonlast=30500000, type=0)")
+            md["area"],
+            "GRIB(Ni=43, Nj=25, latfirst=55500000, latlast=31500000, lonfirst=-11500000, lonlast=30500000, type=0)",
+        )
         self.assertEqual(md["proddef"], "GRIB(tod=1)")
         self.assertEqual(md["reftime"], "2007-10-09T00:00:00Z")
         self.assertEqual(md["run"], "MINUTE(00:00)")
@@ -143,8 +151,9 @@ class TestScanGrib(unittest.TestCase):
         self.assertEqual(md["level"], "GRIB1(001)")
         self.assertEqual(md["timerange"], "GRIB1(000, 000h)")
         self.assertEqual(
-                md["area"],
-                "GRIB(Ni=97, Nj=73, latfirst=40000000, latlast=46000000, lonfirst=12000000, lonlast=20000000, type=0)")
+            md["area"],
+            "GRIB(Ni=97, Nj=73, latfirst=40000000, latlast=46000000, lonfirst=12000000, lonlast=20000000, type=0)",
+        )
         self.assertEqual(md["proddef"], "GRIB(tod=1)")
         self.assertEqual(md["reftime"], "2007-07-08T13:00:00Z")
         self.assertEqual(md["run"], "MINUTE(13:00)")
@@ -159,9 +168,9 @@ class TestScanGrib(unittest.TestCase):
         self.assertEqual(md["level"], "GRIB1(102)")
         self.assertEqual(md["timerange"], "GRIB1(001)")
         self.assertEqual(
-                md["area"],
-                "GRIB(Ni=205, Nj=85, latfirst=30000000, latlast=72000000,"
-                " lonfirst=-60000000, lonlast=42000000, type=0)")
+            md["area"],
+            "GRIB(Ni=205, Nj=85, latfirst=30000000, latlast=72000000," " lonfirst=-60000000, lonlast=42000000, type=0)",
+        )
         self.assertEqual(md["proddef"], "GRIB(tod=1)")
         self.assertEqual(md["reftime"], "2007-07-07T00:00:00Z")
         self.assertEqual(md["run"], "MINUTE(00:00)")
@@ -176,8 +185,9 @@ class TestScanGrib(unittest.TestCase):
         self.assertEqual(md["level"], "GRIB1(100, 01000)")
         self.assertEqual(md["timerange"], "GRIB1(000, 000h)")
         self.assertEqual(
-                md["area"],
-                "GRIB(Ni=43, Nj=25, latfirst=55500000, latlast=31500000, lonfirst=-11500000, lonlast=30500000, type=0)")
+            md["area"],
+            "GRIB(Ni=43, Nj=25, latfirst=55500000, latlast=31500000, lonfirst=-11500000, lonlast=30500000, type=0)",
+        )
         self.assertEqual(md["proddef"], "GRIB(tod=1)")
         self.assertEqual(md["reftime"], "2007-10-09T00:00:00Z")
         self.assertEqual(md["run"], "MINUTE(00:00)")
@@ -196,9 +206,10 @@ class TestScanGrib(unittest.TestCase):
         self.assertEqual(md["level"], "GRIB1(110, 001, 002)")
         self.assertEqual(md["timerange"], "Timedef(0s, 254, 0s)")
         self.assertEqual(
-                md["area"],
-                "GRIB(Ni=169, Nj=181, latfirst=-21125000, latlast=-9875000, latp=-32500000,"
-                " lonfirst=-2937000, lonlast=7563000, lonp=10000000, rot=0, type=10)")
+            md["area"],
+            "GRIB(Ni=169, Nj=181, latfirst=-21125000, latlast=-9875000, latp=-32500000,"
+            " lonfirst=-2937000, lonlast=7563000, lonp=10000000, rot=0, type=10)",
+        )
         self.assertEqual(md["proddef"], "GRIB(tod=0)")
         self.assertEqual(md["reftime"], "2009-09-02T00:00:00Z")
         self.assertEqual(md["run"], "MINUTE(00:00)")
@@ -217,9 +228,10 @@ class TestScanGrib(unittest.TestCase):
         self.assertEqual(md["level"], "GRIB1(001)")
         self.assertEqual(md["timerange"], "GRIB1(000, 000h)")
         self.assertEqual(
-                md["area"],
-                "GRIB(Ni=231, Nj=265, latfirst=-16125000, latlast=375000, latp=-40000000,"
-                " lonfirst=-5125000, lonlast=9250000, lonp=10000000, rot=0, type=10)")
+            md["area"],
+            "GRIB(Ni=231, Nj=265, latfirst=-16125000, latlast=375000, latp=-40000000,"
+            " lonfirst=-5125000, lonlast=9250000, lonp=10000000, rot=0, type=10)",
+        )
         self.assertEqual(md["proddef"], "GRIB(ld=1, mt=9, nn=0, tod=1)")
         self.assertEqual(md["reftime"], "2010-08-11T12:00:00Z")
         self.assertEqual(md["run"], "MINUTE(12:00)")
@@ -238,9 +250,10 @@ class TestScanGrib(unittest.TestCase):
         self.assertEqual(md["level"], "GRIB2S(001,   -,          -)")
         self.assertEqual(md["timerange"], "Timedef(0s, 254, 0s)")
         self.assertEqual(
-                md["area"],
-                "GRIB(Ni=511, Nj=415, latfirst=-16125000, latlast=9750000, latp=-40000000,"
-                " lonfirst=344250000, lonlast=16125000, lonp=10000000, rot=0, tn=1)")
+            md["area"],
+            "GRIB(Ni=511, Nj=415, latfirst=-16125000, latlast=9750000, latp=-40000000,"
+            " lonfirst=344250000, lonlast=16125000, lonp=10000000, rot=0, tn=1)",
+        )
         self.assertEqual(md["proddef"], "GRIB(mc=ti, mt=0, pf=16, tf=16, tod=4, ty=3)")
         self.assertEqual(md["reftime"], "2013-10-22T00:00:00Z")
         self.assertEqual(md["run"], "MINUTE(00:00)")
@@ -256,9 +269,10 @@ class TestScanGrib(unittest.TestCase):
         self.assertEqual(md["level"], "GRIB2S(001,   -,          -)")
         self.assertEqual(md["timerange"], "Timedef(27h, 4, 24h)")
         self.assertEqual(
-                md["area"],
-                "GRIB(Ni=576, Nj=701, latfirst=-8500000, latlast=5500000, latp=-47000000,"
-                " lonfirst=-3800000, lonlast=7700000, lonp=10000000, rot=0, tn=1)")
+            md["area"],
+            "GRIB(Ni=576, Nj=701, latfirst=-8500000, latlast=5500000, latp=-47000000,"
+            " lonfirst=-3800000, lonlast=7700000, lonp=10000000, rot=0, tn=1)",
+        )
         # issue201: set pl and pt
         self.assertEqual(md["proddef"], "GRIB(pl=-1,3,0,0, pt=3, tod=5)")
         self.assertEqual(md["reftime"], "2018-01-25T21:00:00Z")
@@ -308,9 +322,10 @@ class TestScanGrib(unittest.TestCase):
         self.assertEqual(mds[0]["level"], "GRIB2S(103, 000, 0000000010)")
         self.assertEqual(mds[0]["timerange"], "Timedef(0s, 254, 0s)")
         self.assertEqual(
-                mds[0]["area"],
-                "GRIB(Ni=90, Nj=52, fe=0, fn=0, latfirst=4852500, latlast=5107500, lonfirst=402500, lonlast=847500,"
-                " tn=32768, utm=1, zone=32)")
+            mds[0]["area"],
+            "GRIB(Ni=90, Nj=52, fe=0, fn=0, latfirst=4852500, latlast=5107500, lonfirst=402500, lonlast=847500,"
+            " tn=32768, utm=1, zone=32)",
+        )
         self.assertEqual(mds[0]["proddef"], "GRIB(tod=0)")
         self.assertEqual(mds[0]["reftime"], "2011-02-15T00:00:00Z")
         self.assertEqual(mds[0]["run"], "MINUTE(00:00)")
@@ -485,7 +500,8 @@ class TestScanGrib(unittest.TestCase):
         self.assertEqual(
             md["area"],
             "GRIB(Ni=576, Nj=701, latfirst=-8500000, latlast=5500000, latp=-47000000,"
-            " lonfirst=356200000, lonlast=7700000, lonp=10000000, rot=0, tn=1)")
+            " lonfirst=356200000, lonlast=7700000, lonp=10000000, rot=0, tn=1)",
+        )
         # issue201: set pl and pt
         self.assertEqual(md["proddef"], "GRIB(pf=18, tf=20, tod=5, ty=192)")
         self.assertEqual(md["reftime"], "2023-09-17T21:00:00Z")
@@ -500,7 +516,8 @@ class TestScanGrib(unittest.TestCase):
         self.assertEqual(
             md["area"],
             "GRIB(Ni=576, Nj=701, latfirst=-8500000, latlast=5500000, latp=-47000000,"
-            " lonfirst=356200000, lonlast=7700000, lonp=10000000, rot=0, tn=1)")
+            " lonfirst=356200000, lonlast=7700000, lonp=10000000, rot=0, tn=1)",
+        )
         # issue201: set pl and pt
         self.assertEqual(md["proddef"], "GRIB(pf=18, tf=20, tod=5, ty=192)")
         self.assertEqual(md["reftime"], "2023-09-17T21:00:00Z")
