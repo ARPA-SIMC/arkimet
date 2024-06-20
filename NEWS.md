@@ -1,3 +1,7 @@
+# New in version UNRELEASED
+
+* Fixed scanning GRIB1 files with missing level parts (#326)
+
 # New in version 1.50
 
 * Implemented date/time validation in matcher parser (#324)

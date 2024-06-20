@@ -5,19 +5,49 @@ import datetime
 cosmo_centres = {78, 80, 200}
 
 cosmo_nudging_table2 = {
-    11:  0,  15: 2,  16: 3,  17: 0,  33: 0,  34: 0,
-    57:  1,  61: 1,  78: 1,  79: 1,  90: 1, 111: 0,
-    112: 0, 113: 0, 114: 0, 121: 0, 122: 0, 124: 0,
-    125: 0, 126: 0, 127: 0, 152: 1, 153: 1
+    11: 0,
+    15: 2,
+    16: 3,
+    17: 0,
+    33: 0,
+    34: 0,
+    57: 1,
+    61: 1,
+    78: 1,
+    79: 1,
+    90: 1,
+    111: 0,
+    112: 0,
+    113: 0,
+    114: 0,
+    121: 0,
+    122: 0,
+    124: 0,
+    125: 0,
+    126: 0,
+    127: 0,
+    152: 1,
+    153: 1,
 }
 cosmo_nudging_table201 = {
-    5:   0,  20: 1,  22: 0,  23: 0,  24: 0,  25: 0,
-    26:  0,  27: 0,  42: 1, 102: 1, 113: 1, 132: 1,
-    135: 1, 187: 2, 218: 2, 219: 2
+    5: 0,
+    20: 1,
+    22: 0,
+    23: 0,
+    24: 0,
+    25: 0,
+    26: 0,
+    27: 0,
+    42: 1,
+    102: 1,
+    113: 1,
+    132: 1,
+    135: 1,
+    187: 2,
+    218: 2,
+    219: 2,
 }
-cosmo_nudging_table202 = {
-    231: 0, 232: 0, 233: 0
-}
+cosmo_nudging_table202 = {231: 0, 232: 0, 233: 0}
 
 
 def scan_grib1(grib, md):
@@ -25,8 +55,7 @@ def scan_grib1(grib, md):
     year = (grib["centuryOfReferenceTimeOfData"] - 1) * 100 + grib["yearOfCentury"]
     md["reftime"] = {
         "style": "POSITION",
-        "time": datetime.datetime(year, grib["month"], grib["day"],
-                                  grib["hour"], grib["minute"], grib["second"]),
+        "time": datetime.datetime(year, grib["month"], grib["day"], grib["hour"], grib["minute"], grib["second"]),
     }
 
     # Run
@@ -60,8 +89,8 @@ def scan_grib1(grib, md):
         level["l1"] = grib.get_long("level")
         level["l2"] = 0
     else:
-        level["l1"] = grib.get_long("topLevel")
-        level["l2"] = grib.get_long("bottomLevel")
+        level["l1"] = grib.get_long("topLevel", 255)
+        level["l2"] = grib.get_long("bottomLevel", 255)
     md["level"] = level
 
     # Create this array here so time range can add to it
