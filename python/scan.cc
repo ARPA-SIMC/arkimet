@@ -199,26 +199,31 @@ struct edition : public Getter<edition, arkipy_scan_Grib>
 struct get_long : public MethKwargs<get_long, arkipy_scan_Grib>
 {
     constexpr static const char* name = "get_long";
-    constexpr static const char* signature = "str";
+    constexpr static const char* signature = "str, int | None";
     constexpr static const char* returns = "int";
     constexpr static const char* summary = "return the long value of a grib key";
     constexpr static const char* doc = nullptr;
 
     static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
     {
-        static const char* kwlist[] = { "key", NULL };
+        static const char* kwlist[] = { "key", "default", NULL };
         const char* key = nullptr;
-        if (!PyArg_ParseTupleAndKeywords(args, kw, "s", (char**)kwlist, &key))
+        PyObject* arg_default = nullptr;
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "s|O", (char**)kwlist, &key, &arg_default))
             return nullptr;
 
         try {
             // Push the function result for lua
             long val;
             int res = grib_get_long(self->gh, key, &val);
-            if (res == GRIB_NOT_FOUND)
-                Py_RETURN_NONE;
-            if (val == GRIB_MISSING_LONG)
-                Py_RETURN_NONE;
+            if (res == GRIB_NOT_FOUND or val == GRIB_MISSING_LONG)
+                if (arg_default)
+                {
+                    Py_INCREF(arg_default);
+                    return arg_default;
+                }
+                else
+                    Py_RETURN_NONE;
 
             check_grib_error(res, "cannot read long value from grib");
 
