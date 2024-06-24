@@ -3,7 +3,7 @@
 
 Summary: Archive for weather information
 Name: arkimet
-Version: 1.50
+Version: 1.51
 Release: 1
 License: GPL
 Group: Applications/Meteo
@@ -203,6 +203,10 @@ if [ "$1" = "1" ]; then
 fi
 
 %changelog
+* Mon Jun 24 2024 Daniele Branchini <dbranchini@arpae.it> - 1.51-1
+- Fixed scanning GRIB1 files with missing level parts (#326)
+- Removed docker references, updated build instructions (#329)
+
 * Fri May 10 2024 Daniele Branchini <dbranchini@arpae.it> - 1.50-1
 - Implemented date/time validation in matcher parser (#324)
 - Add a formatter for annotating cosmo model local variables (#300)

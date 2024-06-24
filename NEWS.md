@@ -1,6 +1,7 @@
-# New in version UNRELEASED
+# New in version 1.51
 
 * Fixed scanning GRIB1 files with missing level parts (#326)
+* Removed docker references, updated build instructions (#329)
 
 # New in version 1.50
 
