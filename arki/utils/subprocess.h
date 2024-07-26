@@ -67,10 +67,10 @@ public:
      * Do not close these file descriptors in the child process
      * (implies close_fds = true)
      */
-    std::vector<int> pass_fds;
+    std::vector<int> pass_fds = std::vector<int>();
 
     /// Change to this directory in the child process
-    std::string cwd;
+    std::string cwd = std::string();
 
     /// If true, call setsid() in the child process
     bool start_new_session = false;

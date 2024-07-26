@@ -51,8 +51,8 @@ struct TestMethodResult
     unsigned long long elapsed_ns = 0;
 
 
-    TestMethodResult(const std::string& test_case, const std::string& test_method)
-        : test_case(test_case), test_method(test_method) {}
+    TestMethodResult(const std::string& test_case_, const std::string& test_method_)
+        : test_case(test_case_), test_method(test_method_) {}
 
     void set_failed(TestFailed& e);
 
@@ -108,7 +108,7 @@ struct TestCaseResult
     /// Set to true if this test case has been skipped
     bool skipped = false;
 
-    TestCaseResult(const std::string& test_case) : test_case(test_case) {}
+    explicit TestCaseResult(const std::string& test_case_) : test_case(test_case_) {}
 
     void set_setup_failed()
     {
@@ -165,24 +165,24 @@ struct TestController
      *
      * @returns true if the test case should be run, false if it should be skipped
      */
-    virtual bool test_case_begin(const TestCase& test_case, const TestCaseResult& test_case_result) { return true; }
+    virtual bool test_case_begin(const TestCase&, const TestCaseResult&) { return true; }
 
     /**
      * Called after running a test case.
      */
-    virtual void test_case_end(const TestCase& test_case, const TestCaseResult& test_case_result) {}
+    virtual void test_case_end(const TestCase&, const TestCaseResult&) {}
 
     /**
      * Called before running a test method.
      *
      * @returns true if the test method should be run, false if it should be skipped
      */
-    virtual bool test_method_begin(const TestMethod& test_method, const TestMethodResult& test_method_result) { return true; }
+    virtual bool test_method_begin(const TestMethod&, const TestMethodResult&) { return true; }
 
     /**
      * Called after running a test method.
      */
-    virtual void test_method_end(const TestMethod& test_method, const TestMethodResult& test_method_result) {}
+    virtual void test_method_end(const TestMethod&, const TestMethodResult&) {}
 };
 
 /**
@@ -192,10 +192,10 @@ struct TestController
 struct FilteringTestController : public TestController
 {
     /// Any method not matching this glob expression will not be run
-    std::string allowlist;
+    std::string allowlist = std::string();
 
     /// Any method matching this glob expression will not be run
-    std::string blocklist;
+    std::string blocklist = std::string();
 
     bool test_method_should_run(const std::string& fullname) const;
 };
@@ -248,7 +248,7 @@ struct VerboseTestController : public FilteringTestController
 struct TestRegistry
 {
     /// All known test cases
-    std::vector<TestCase*> entries;
+    std::vector<TestCase*> entries = std::vector<TestCase*>();
 
     /**
      * Register a new test case.

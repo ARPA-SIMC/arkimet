@@ -80,7 +80,7 @@ TestFailed::TestFailed(const std::exception& e)
  */
 
 TestSkipped::TestSkipped() {}
-TestSkipped::TestSkipped(const std::string& reason) : reason(reason) {}
+TestSkipped::TestSkipped(const std::string& reason_) : reason(reason_) {}
 
 
 #if 0
@@ -156,8 +156,8 @@ struct Regexp
     regex_t compiled;
     regmatch_t matches[2];
 
-    Regexp(const char* regex)
-        : regex(regex)
+    Regexp(const char* regex_)
+        : regex(regex_)
     {
         if (int err = regcomp(&compiled, this->regex.c_str(), REG_EXTENDED))
             raise_error(err);
@@ -205,12 +205,12 @@ void assert_not_re_matches(const std::string& actual, const std::string& expecte
     throw TestFailed(ss.str());
 }
 
-void assert_true(std::nullptr_t actual)
+void assert_true(std::nullptr_t)
 {
     throw TestFailed("actual value nullptr is not true");
 }
 
-void assert_false(std::nullptr_t actual)
+void assert_false(std::nullptr_t)
 {
 }
 
@@ -361,86 +361,108 @@ void ActualStdString::not_matches(const std::string& re) const
     assert_not_re_matches(_actual, re);
 }
 
-void ActualDouble::almost_equal(double expected, unsigned places) const
+void ActualPath::is(const std::filesystem::path& expected) const
 {
-    if (round((_actual - expected) * exp10(places)) == 0.0)
-        return;
-    std::stringstream ss;
-    ss << std::setprecision(places) << fixed << _actual << " is different than the expected " << expected;
-    throw TestFailed(ss.str());
-}
-
-void ActualDouble::not_almost_equal(double expected, unsigned places) const
-{
-    if (round(_actual - expected * exp10(places)) != 0.0)
-        return;
-    std::stringstream ss;
-    ss << std::setprecision(places) << fixed << _actual << " is the same as the expected " << expected;
-    throw TestFailed(ss.str());
-}
-
-void ActualFunction::throws(const std::string& what_match) const
-{
-    bool thrown = false;
-    try {
-        _actual();
-    } catch (std::exception& e) {
-        thrown = true;
-        wassert(actual(e.what()).matches(what_match));
+    std::filesystem::path anorm = _actual.lexically_normal();
+    std::filesystem::path enorm = expected.lexically_normal();
+    if (anorm != enorm)
+    {
+        std::stringstream ss;
+        ss << "path '" << _actual << "' is not the same as '" << expected << "' ("
+           << anorm << " != " << enorm << ")";
+        throw TestFailed(ss.str());
     }
-    if (!thrown)
-        throw TestFailed("code did not throw any exception");
 }
 
-void ActualFile::exists() const
+void ActualPath::startswith(const std::string& data) const
 {
-    if (sys::exists(_actual)) return;
-    throw TestFailed("file " + _actual + " does not exist and it should");
+    contents_startwith(data);
 }
 
-void ActualFile::not_exists() const
+void ActualPath::path_startswith(const std::filesystem::path& expected) const
 {
-    if (!sys::exists(_actual)) return;
-    throw TestFailed("file " + _actual + " exists and it should not");
+    auto ai = _actual.begin(), ae = expected.begin();
+    for (; ai != _actual.end() && ae != expected.end(); ai++, ae++)
+        if (*ai != *ae)
+            goto fail;
+    if (ae != expected.end())
+        goto fail;
+    return;
+
+fail:
+    std::stringstream ss;
+    ss << "path '" << _actual << "' does not start with '" << expected << "'";
+    throw TestFailed(ss.str());
 }
 
-void ActualFile::startswith(const std::string& data) const
+void ActualPath::path_endswith(const std::filesystem::path& expected) const
 {
-    sys::File in(_actual, O_RDONLY);
-    string buf(data.size(), 0);
-    in.read_all_or_throw((void*)buf.data(), buf.size());
-    *((char*)buf.data() + buf.size()) = 0;
-    if (buf != data)
-        throw TestFailed("file " + _actual + " starts with '" + str::encode_cstring(buf) + "' instead of '" + str::encode_cstring(data) + "'");
+    auto ai = _actual.end(), ae = expected.end();
+    while (ai != _actual.begin() && ae != expected.begin())
+    {
+        --ai; --ae;
+        if (*ai != *ae)
+            goto fail;
+    }
+    if (ae != expected.begin())
+        goto fail;
+    return;
+
+fail:
+    std::stringstream ss;
+    ss << "path '" << _actual << "' does not end with '" << expected << "'";
+    throw TestFailed(ss.str());
 }
 
-void ActualFile::empty() const
+void ActualPath::path_contains(const std::filesystem::path& expected) const
+{
+    assert_contains(_actual, expected);
+}
+
+void ActualPath::path_not_contains(const std::filesystem::path& expected) const
+{
+    assert_not_contains(_actual, expected);
+}
+
+void ActualPath::exists() const
+{
+    if (std::filesystem::exists(_actual)) return;
+    throw TestFailed("file " + _actual.string() + " does not exist and it should");
+}
+
+void ActualPath::not_exists() const
+{
+    if (!std::filesystem::exists(_actual)) return;
+    throw TestFailed("file " + _actual.string() + " exists and it should not");
+}
+
+void ActualPath::empty() const
 {
     size_t size = sys::size(_actual);
     if (size > 0)
-        throw TestFailed("file " + _actual + " is " + std::to_string(size) + "b instead of being empty");
+        throw TestFailed("file " + _actual.string() + " is " + std::to_string(size) + "b instead of being empty");
 }
 
-void ActualFile::not_empty() const
+void ActualPath::not_empty() const
 {
     size_t size = sys::size(_actual);
     if (size == 0)
-        throw TestFailed("file " + _actual + " is empty and it should not be");
+        throw TestFailed("file " + _actual.string() + " is empty and it should not be");
 }
 
-void ActualFile::contents_equal(const std::string& data) const
+void ActualPath::contents_equal(const std::string& data) const
 {
     std::string content = sys::read_file(_actual);
     if (content != data)
-        throw TestFailed("file " + _actual + " contains '" + str::encode_cstring(content) + "' instead of '" + str::encode_cstring(data) + "'");
+        throw TestFailed("file " + _actual.string() + " contains '" + str::encode_cstring(content) + "' instead of '" + str::encode_cstring(data) + "'");
 }
 
-void ActualFile::contents_equal(const std::vector<uint8_t>& data) const
+void ActualPath::contents_equal(const std::vector<uint8_t>& data) const
 {
     return contents_equal(std::string(data.begin(), data.end()));
 }
 
-void ActualFile::contents_equal(const std::initializer_list<std::string>& lines) const
+void ActualPath::contents_equal(const std::initializer_list<std::string>& lines) const
 {
     std::vector<std::string> actual_lines;
     std::string content = str::rstrip(sys::read_file(_actual));
@@ -449,7 +471,7 @@ void ActualFile::contents_equal(const std::initializer_list<std::string>& lines)
     std::copy(splitter.begin(), splitter.end(), back_inserter(actual_lines));
 
     if (actual_lines.size() != lines.size())
-        throw TestFailed("file " + _actual + " contains " + std::to_string(actual_lines.size()) + " lines ('" + str::encode_cstring(content) + "') instead of " + std::to_string(lines.size()) + " lines");
+        throw TestFailed("file " + _actual.string() + " contains " + std::to_string(actual_lines.size()) + " lines ('" + str::encode_cstring(content) + "') instead of " + std::to_string(lines.size()) + " lines");
 
     auto ai = actual_lines.begin();
     auto ei = lines.begin();
@@ -458,23 +480,33 @@ void ActualFile::contents_equal(const std::initializer_list<std::string>& lines)
         string actual_line = str::rstrip(*ai);
         string expected_line = str::rstrip(*ei);
         if (*ai != *ei)
-            throw TestFailed("file " + _actual + " actual contents differ from expected at line #" + std::to_string(i + 1) + " ('" + str::encode_cstring(actual_line) + "' instead of '" + str::encode_cstring(expected_line) + "')");
+            throw TestFailed("file " + _actual.string() + " actual contents differ from expected at line #" + std::to_string(i + 1) + " ('" + str::encode_cstring(actual_line) + "' instead of '" + str::encode_cstring(expected_line) + "')");
 
     }
 }
 
-void ActualFile::contents_match(const std::string& data_re) const
+void ActualPath::contents_startwith(const std::string& data) const
+{
+    sys::File in(_actual, O_RDONLY);
+    string buf(data.size(), 0);
+    in.read_all_or_throw(buf.data(), buf.size());
+    *(buf.data() + buf.size()) = 0;
+    if (buf != data)
+        throw TestFailed("file " + _actual.string() + " starts with '" + str::encode_cstring(buf) + "' instead of '" + str::encode_cstring(data) + "'");
+}
+
+void ActualPath::contents_match(const std::string& data_re) const
 {
     std::string content = sys::read_file(_actual);
     Regexp re(data_re.c_str());
     if (re.search(content.c_str())) return;
     std::stringstream ss;
-    ss << "file " + _actual << " contains " << str::encode_cstring(content)
+    ss << "file " + _actual.string() << " contains " << str::encode_cstring(content)
        << " which does not match " << data_re;
     throw TestFailed(ss.str());
 }
 
-void ActualFile::contents_match(const std::initializer_list<std::string>& lines_re) const
+void ActualPath::contents_match(const std::initializer_list<std::string>& lines_re) const
 {
     std::vector<std::string> actual_lines;
     std::string content = str::rstrip(sys::read_file(_actual));
@@ -503,20 +535,54 @@ void ActualFile::contents_match(const std::initializer_list<std::string>& lines_
         }
 
         std::stringstream ss;
-        ss << "file " << _actual << " actual contents differ from expected at line #" << lineno
+        ss << "file " << _actual .string()<< " actual contents differ from expected at line #" << lineno
            << " ('" << str::encode_cstring(actual_line)
            << "' does not match '" << str::encode_cstring(*ei) << "')";
         throw TestFailed(ss.str());
     }
 }
 
+void ActualDouble::almost_equal(double expected, unsigned places) const
+{
+    double epsilon = exp10(-static_cast<int>(places + 1));
+    if (fabs(_actual - expected) < epsilon)
+        return;
+    std::stringstream ss;
+    ss << std::setprecision(places) << fixed << _actual << " is different than the expected " << expected;
+    throw TestFailed(ss.str());
+}
+
+void ActualDouble::not_almost_equal(double expected, unsigned places) const
+{
+    double epsilon = exp10(-static_cast<int>(places + 1));
+    if (fabs(_actual - expected) > epsilon)
+        return;
+    std::stringstream ss;
+    ss << std::setprecision(places) << fixed << _actual << " is the same as the expected " << expected;
+    throw TestFailed(ss.str());
+}
+
+void ActualFunction::throws(const std::string& what_match) const
+{
+    bool thrown = false;
+    try {
+        _actual();
+    } catch (std::exception& e) {
+        thrown = true;
+        wassert(actual(e.what()).matches(what_match));
+    }
+    if (!thrown)
+        throw TestFailed("code did not throw any exception");
+}
+
+
 
 /*
  * TestCase
  */
 
-TestCase::TestCase(const std::string& name)
-    : name(name)
+TestCase::TestCase(const std::string& name_)
+    : name(name_)
 {
     TestRegistry::get().register_test_case(*this);
 }
