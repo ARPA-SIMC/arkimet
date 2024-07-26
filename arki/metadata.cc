@@ -33,12 +33,12 @@ namespace metadata {
 
 ReadContext::ReadContext() {}
 
-ReadContext::ReadContext(const std::string& pathname)
+ReadContext::ReadContext(const std::filesystem::path& pathname)
     : basedir(str::dirname(sys::abspath(pathname))), pathname(pathname)
 {
 }
 
-ReadContext::ReadContext(const std::string& pathname, const std::string& basedir)
+ReadContext::ReadContext(const std::filesystem::path& pathname, const std::filesystem::path& basedir)
     : basedir(sys::abspath(basedir)), pathname(pathname)
 {
 }
@@ -489,7 +489,7 @@ std::shared_ptr<Metadata> Metadata::read_binary(int in, const metadata::ReadCont
 
     // Ensure first 2 bytes are MD or !D
     if (bundle.signature != "MD")
-        throw_consistency_error("parsing file " + filename.pathname, "metadata entry does not start with 'MD'");
+        throw_consistency_error("parsing file "s + filename.pathname.native(), "metadata entry does not start with 'MD'");
 
     if (!bundle.read_data(f))
         return std::shared_ptr<Metadata>();
@@ -515,7 +515,7 @@ std::shared_ptr<Metadata> Metadata::read_binary(core::BinaryDecoder& dec, const 
 
     // Ensure first 2 bytes are MD or !D
     if (signature != "MD")
-        throw std::runtime_error("cannot parse " + filename.pathname + ": metadata entry does not start with 'MD'");
+        throw std::runtime_error("cannot parse "s + filename.pathname.native() + ": metadata entry does not start with 'MD'");
 
     auto res = read_binary_inner(inner, version, filename);
 
@@ -609,7 +609,7 @@ void Metadata::read_inline_data(core::AbstractInputFile& fd)
     m_data = metadata::DataManager::get().to_data(s.format, move(buf));
 }
 
-void Metadata::readInlineData(core::BinaryDecoder& dec, const std::string& filename)
+void Metadata::readInlineData(core::BinaryDecoder& dec, const std::filesystem::path& filename)
 {
     // If the source is inline, then the data follows the metadata
     const Source& s = source();
@@ -619,7 +619,7 @@ void Metadata::readInlineData(core::BinaryDecoder& dec, const std::string& filen
     m_data = metadata::DataManager::get().to_data(s.format, std::vector<uint8_t>(data.buf, data.buf + si->size));
 }
 
-std::shared_ptr<Metadata> Metadata::read_yaml(LineReader& in, const std::string& filename)
+std::shared_ptr<Metadata> Metadata::read_yaml(LineReader& in, const std::filesystem::path& filename)
 {
     if (in.eof())
         return std::shared_ptr<Metadata>();
@@ -1024,7 +1024,7 @@ bool Metadata::read_buffer(core::BinaryDecoder& dec, const metadata::ReadContext
 
         // Ensure first 2 bytes are MD or !D
         if (signature != "MD" && signature != "!D" && signature != "MG")
-            throw std::runtime_error("cannot parse file " + file.pathname + ": metadata entry does not start with 'MD', '!D' or 'MG'");
+            throw std::runtime_error("cannot parse file "s + file.pathname.native() + ": metadata entry does not start with 'MD', '!D' or 'MG'");
 
         if (signature == "MG")
         {
@@ -1045,7 +1045,7 @@ bool Metadata::read_buffer(core::BinaryDecoder& dec, const metadata::ReadContext
     return !canceled;
 }
 
-bool Metadata::read_file(const std::string& fname, metadata_dest_func dest)
+bool Metadata::read_file(const std::filesystem::path& fname, metadata_dest_func dest)
 {
     metadata::ReadContext context(fname);
     return read_file(context, dest);
@@ -1069,7 +1069,7 @@ bool Metadata::read_file(int in, const metadata::ReadContext& file, metadata_des
     {
         // Ensure first 2 bytes are MD or !D
         if (bundle.signature != "MD" && bundle.signature != "!D" && bundle.signature != "MG")
-            throw_consistency_error("parsing file " + file.pathname, "metadata entry does not start with 'MD', '!D' or 'MG'");
+            throw_consistency_error("parsing file "s + file.pathname.native(), "metadata entry does not start with 'MD', '!D' or 'MG'");
 
         if (!bundle.read_data(f)) break;
 
@@ -1097,7 +1097,7 @@ bool Metadata::read_file(int in, const metadata::ReadContext& file, metadata_des
 
 bool Metadata::read_file(NamedFileDescriptor& fd, metadata_dest_func mdc)
 {
-    return read_file(fd, fd.name(), mdc);
+    return read_file(fd, fd.path(), mdc);
 }
 
 bool Metadata::read_file(core::AbstractInputFile& fd, const metadata::ReadContext& file, metadata_dest_func dest)
@@ -1108,7 +1108,7 @@ bool Metadata::read_file(core::AbstractInputFile& fd, const metadata::ReadContex
     {
         // Ensure first 2 bytes are MD or !D
         if (bundle.signature != "MD" && bundle.signature != "!D" && bundle.signature != "MG")
-            throw_consistency_error("parsing file " + file.pathname, "metadata entry does not start with 'MD', '!D' or 'MG'");
+            throw_consistency_error("parsing file "s + file.pathname.native(), "metadata entry does not start with 'MD', '!D' or 'MG'");
 
         if (!bundle.read_data(fd)) break;
 

@@ -48,7 +48,8 @@ struct AbstractInputFile
 {
     virtual ~AbstractInputFile();
 
-    virtual std::string name() const = 0;
+    [[deprecated("Use path() instead")]] virtual std::string name() const = 0;
+    virtual std::filesystem::path path() const = 0;
 
     /**
      * Read up to \a size bytes into dest.

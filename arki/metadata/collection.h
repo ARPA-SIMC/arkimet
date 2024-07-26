@@ -96,15 +96,15 @@ public:
     /// Append md
     void acquire(std::shared_ptr<Metadata> md, bool with_data=false);
 
-	/**
-	 * Write all the metadata to a file, atomically, using AtomicWriter
-	 */
-	void writeAtomically(const std::string& fname) const;
+    /**
+     * Write all the metadata to a file, atomically, using AtomicWriter
+     */
+    void writeAtomically(const std::filesystem::path& fname) const;
 
-	/**
-	 * Append all metadata to the given file
-	 */
-	void appendTo(const std::string& fname) const;
+    /**
+     * Append all metadata to the given file
+     */
+    void appendTo(const std::filesystem::path& fname) const;
 
     /// Write all metadata to the given output file
     void write_to(core::NamedFileDescriptor& out) const;
@@ -116,7 +116,7 @@ public:
     void read_from_file(const metadata::ReadContext& rc);
 
     /// Read metadata from \a pathname and append them to this collection
-    void read_from_file(const std::string& pathname);
+    void read_from_file(const std::filesystem::path& pathname);
 
     /// Read metadata from a file descriptor and append them to this collection
     void read_from_file(core::NamedFileDescriptor& fd);
@@ -136,18 +136,18 @@ public:
      */
     void strip_source_paths();
 
-	/**
-	 * Ensure that all metadata point to data in the same file and that
-	 * they completely cover the file.
-	 *
-	 * @returns the data file name
-	 */
-	std::string ensureContiguousData(const std::string& source = std::string("metadata")) const;
+    /**
+     * Ensure that all metadata point to data in the same file and that
+     * they completely cover the file.
+     *
+     * @returns the data file name
+     */
+    std::filesystem::path ensureContiguousData(const std::string& source = std::string("metadata")) const;
 
-	/// Sort with the given order
-	void sort(const sort::Compare& cmp);
-	void sort(const std::string& cmp);
-	void sort(); // Sort by reftime
+    /// Sort with the given order
+    void sort(const sort::Compare& cmp);
+    void sort(const std::string& cmp);
+    void sort(); // Sort by reftime
 
     /**
      * Expand the given begin and end ranges to include the datetime extremes

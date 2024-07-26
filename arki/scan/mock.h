@@ -2,6 +2,7 @@
 #define ARKI_SCAN_MOCK_H
 
 #include <arki/metadata/fwd.h>
+#include <filesystem>
 #include <string>
 #include <vector>
 #include <memory>
@@ -20,7 +21,7 @@ namespace scan {
 class MockEngine
 {
 protected:
-    std::string db_pathname;
+    std::filesystem::path db_pathname;
     utils::sqlite::SQLiteDB* db = nullptr;
     utils::sqlite::Query* by_sha256sum = nullptr;
 

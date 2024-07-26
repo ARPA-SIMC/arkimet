@@ -9,7 +9,7 @@ namespace {
 
 using namespace arki::python;
 
-static std::string get_fd_name(PyObject* o)
+static std::filesystem::path get_fd_name(PyObject* o)
 {
     // First try reading o.name
     pyo_unique_ptr o_name(PyObject_GetAttrString(o, "name"));
@@ -17,7 +17,7 @@ static std::string get_fd_name(PyObject* o)
     {
         if (!PyUnicode_Check(o_name))
             o_name.reset(throw_ifnull(PyObject_Str(o_name)));
-        return from_python<std::string>(o_name);
+        return from_python<std::filesystem::path>(o_name);
     }
     PyErr_Clear();
 
@@ -50,6 +50,12 @@ public:
     }
 
     std::string name() const override
+    {
+        AcquireGIL gil;
+        return get_fd_name(o);
+    }
+
+    std::filesystem::path path() const override
     {
         AcquireGIL gil;
         return get_fd_name(o);
@@ -130,6 +136,12 @@ struct PyFile : public Base
     }
 
     std::string name() const override
+    {
+        AcquireGIL gil;
+        return get_fd_name(o);
+    }
+
+    std::filesystem::path path() const override
     {
         AcquireGIL gil;
         return get_fd_name(o);

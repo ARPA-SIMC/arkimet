@@ -16,6 +16,9 @@ template<typename Backend>
 std::string ConcreteStreamOutputBase<Backend>::name() const { return out->name(); }
 
 template<typename Backend>
+std::filesystem::path ConcreteStreamOutputBase<Backend>::path() const { return out->path(); }
+
+template<typename Backend>
 uint32_t ConcreteStreamOutputBase<Backend>::wait_writable()
 {
     pollinfo.revents = 0;

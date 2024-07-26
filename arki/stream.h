@@ -5,6 +5,7 @@
 #include <arki/stream/fwd.h>
 #include <memory>
 #include <cstdint>
+#include <filesystem>
 #include <functional>
 #include <vector>
 #include <stdexcept>
@@ -42,7 +43,10 @@ public:
     virtual ~StreamOutput();
 
     /// Return a name describing this stream output
-    virtual std::string name() const = 0;
+    [[deprecated("Use path() instead")]] virtual std::string name() const = 0;
+
+    /// Return a name describing this stream output
+    virtual std::filesystem::path path() const = 0;
 
     /**
      * After each successful write operation, call the callback with the number

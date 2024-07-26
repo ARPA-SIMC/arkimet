@@ -248,7 +248,7 @@ void Collection::read_from_file(const metadata::ReadContext& rc)
     Metadata::read_file(rc, inserter_func());
 }
 
-void Collection::read_from_file(const std::string& pathname)
+void Collection::read_from_file(const std::filesystem::path& pathname)
 {
     Metadata::read_file(pathname, inserter_func());
 }
@@ -258,21 +258,21 @@ void Collection::read_from_file(NamedFileDescriptor& fd)
     Metadata::read_file(fd, inserter_func());
 }
 
-void Collection::writeAtomically(const std::string& fname) const
+void Collection::writeAtomically(const std::filesystem::path& fname) const
 {
     AtomicWriter writer(fname);
     write_to(writer.out);
     writer.commit();
 }
 
-void Collection::appendTo(const std::string& fname) const
+void Collection::appendTo(const std::filesystem::path& fname) const
 {
     sys::File out(fname, O_APPEND | O_CREAT, 0666);
     write_to(out);
     out.close();
 }
 
-std::string Collection::ensureContiguousData(const std::string& source) const
+std::filesystem::path Collection::ensureContiguousData(const std::string& source) const
 {
     // Check that the metadata completely cover the data file
     if (empty()) return std::string();
