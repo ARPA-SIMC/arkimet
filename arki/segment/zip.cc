@@ -43,7 +43,7 @@ public:
     size_t idx = 0;
     char fname[100];
 
-    Creator(const std::string& root, const std::string& relpath, metadata::Collection& mds, const std::string& dest_abspath)
+    Creator(const std::filesystem::path& root, const std::filesystem::path& relpath, metadata::Collection& mds, const std::filesystem::path& dest_abspath)
         : AppendCreator(root, relpath, mds),
           out(std::make_shared<File>(dest_abspath, O_WRONLY | O_CREAT | O_TRUNC, 0666)),
           zipout(metadata::ArchiveOutput::create_file("zip", out))
@@ -86,7 +86,7 @@ struct CheckBackend : public AppendCheckBackend
     map<size_t, size_t> on_disk;
     size_t max_sequence = 0;
 
-    CheckBackend(const std::string& format, const std::string& abspath, const std::string& relpath, std::function<void(const std::string&)> reporter, const metadata::Collection& mds)
+    CheckBackend(const std::string& format, const std::filesystem::path& abspath, const std::filesystem::path& relpath, std::function<void(const std::string&)> reporter, const metadata::Collection& mds)
         : AppendCheckBackend(reporter, relpath, mds), format(format), reader(format, core::File(abspath, O_RDONLY))
     {
     }
@@ -225,7 +225,7 @@ struct CheckBackend : public AppendCheckBackend
 
 const char* Segment::type() const { return "zip"; }
 bool Segment::single_file() const { return true; }
-time_t Segment::timestamp() const { return sys::timestamp(abspath + ".zip"); }
+time_t Segment::timestamp() const { return sys::timestamp(sys::with_suffix(abspath, ".zip")); }
 std::shared_ptr<segment::Reader> Segment::reader(std::shared_ptr<core::Lock> lock) const
 {
     return make_shared<Reader>(format, root, relpath, abspath, lock);
@@ -238,21 +238,21 @@ bool Segment::can_store(const std::string& format)
 {
     return true;
 }
-std::shared_ptr<segment::Checker> Segment::make_checker(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath)
+std::shared_ptr<segment::Checker> Segment::make_checker(const std::string& format, const std::filesystem::path& rootdir, const std::filesystem::path& relpath, const std::filesystem::path& abspath)
 {
     return make_shared<Checker>(format, rootdir, relpath, abspath);
 }
-std::shared_ptr<segment::Checker> Segment::create(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds, const RepackConfig& cfg)
+std::shared_ptr<segment::Checker> Segment::create(const std::string& format, const std::filesystem::path& rootdir, const std::filesystem::path& relpath, const std::filesystem::path& abspath, metadata::Collection& mds, const RepackConfig& cfg)
 {
-    Creator creator(rootdir, relpath, mds, abspath + ".zip");
+    Creator creator(rootdir, relpath, mds, sys::with_suffix(abspath, ".zip"));
     creator.create();
     return make_shared<Checker>(format, rootdir, relpath, abspath);
 }
 
 
 
-Reader::Reader(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock)
-    : segment::BaseReader<Segment>(format, root, relpath, abspath, lock), zip(format, core::File(abspath + ".zip", O_RDONLY | O_CLOEXEC))
+Reader::Reader(const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath, const std::filesystem::path& abspath, std::shared_ptr<core::Lock> lock)
+    : segment::BaseReader<Segment>(format, root, relpath, abspath, lock), zip(format, core::File(sys::with_suffix(abspath, ".zip"), O_RDONLY | O_CLOEXEC))
 {
 }
 
@@ -291,8 +291,8 @@ std::vector<uint8_t> Reader::read(const types::source::Blob& src)
  * Checker
  */
 
-Checker::Checker(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath)
-    : BaseChecker<Segment>(format, root, relpath, abspath), zipabspath(abspath + ".zip")
+Checker::Checker(const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath, const std::filesystem::path& abspath)
+    : BaseChecker<Segment>(format, root, relpath, abspath), zipabspath(sys::with_suffix(abspath, ".zip"))
 {
 }
 
@@ -312,9 +312,9 @@ size_t Checker::size()
     return sys::size(zipabspath);
 }
 
-void Checker::move_data(const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath)
+void Checker::move_data(const std::filesystem::path& new_root, const std::filesystem::path& new_relpath, const std::filesystem::path& new_abspath)
 {
-    string new_zipabspath = new_abspath + ".zip";
+    auto new_zipabspath = sys::with_suffix(new_abspath, ".zip");
     if (rename(zipabspath.c_str(), new_zipabspath.c_str()) < 0)
     {
         stringstream ss;
@@ -359,9 +359,9 @@ size_t Checker::remove()
     return size;
 }
 
-core::Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, const RepackConfig& cfg)
+core::Pending Checker::repack(const std::filesystem::path& rootdir, metadata::Collection& mds, const RepackConfig& cfg)
 {
-    string tmpabspath = segment().abspath + ".repack";
+    auto tmpabspath = sys::with_suffix(segment().abspath, ".repack");
 
     core::Pending p(new files::RenameTransaction(tmpabspath, zipabspath));
 

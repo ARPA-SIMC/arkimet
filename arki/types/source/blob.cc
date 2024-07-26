@@ -140,11 +140,11 @@ std::unique_ptr<Blob> Blob::makeRelativeTo(const std::string& path) const
     return res;
 }
 
-std::string Blob::absolutePathname() const
+std::filesystem::path Blob::absolutePathname() const
 {
     if (!filename.empty() && filename[0] == '/')
         return filename;
-    return str::joinpath(basedir, filename);
+    return basedir / filename;
 }
 
 void Blob::lock(std::shared_ptr<segment::Reader> reader)

@@ -23,8 +23,8 @@ public:
     std::shared_ptr<segment::Reader> reader(std::shared_ptr<core::Lock> lock) const override;
     std::shared_ptr<segment::Checker> checker() const override;
     static bool can_store(const std::string& format);
-    static std::shared_ptr<Checker> make_checker(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath);
-    static std::shared_ptr<Checker> create(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds, const RepackConfig& cfg=RepackConfig());
+    static std::shared_ptr<Checker> make_checker(const std::string& format, const std::filesystem::path& rootdir, const std::filesystem::path& relpath, const std::filesystem::path& abspath);
+    static std::shared_ptr<Checker> create(const std::string& format, const std::filesystem::path& rootdir, const std::filesystem::path& relpath, const std::filesystem::path& abspath, metadata::Collection& mds, const RepackConfig& cfg=RepackConfig());
 };
 
 
@@ -33,7 +33,7 @@ class Reader : public segment::BaseReader<Segment>
 public:
     core::File fd;
 
-    Reader(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock);
+    Reader(const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath, const std::filesystem::path& abspath, std::shared_ptr<core::Lock> lock);
 
     bool scan_data(metadata_dest_func dest) override;
     std::vector<uint8_t> read(const types::source::Blob& src) override;
@@ -44,7 +44,7 @@ public:
 class Checker : public segment::BaseChecker<Segment>
 {
 protected:
-    std::string tarabspath;
+    std::filesystem::path tarabspath;
     void validate(Metadata& md, const scan::Validator& v);
 
     /**
@@ -56,14 +56,14 @@ protected:
      * from them is always zeroes.
      */
     core::Pending repack_impl(
-            const std::string& rootdir,
+            const std::filesystem::path& rootdir,
             metadata::Collection& mds,
             bool skip_validation=false,
             const RepackConfig& cfg=RepackConfig());
-    void move_data(const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath) override;
+    void move_data(const std::filesystem::path& new_root, const std::filesystem::path& new_relpath, const std::filesystem::path& new_abspath) override;
 
 public:
-    Checker(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath);
+    Checker(const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath, const std::filesystem::path& abspath);
 
     bool exists_on_disk() override;
     bool is_empty() override;
@@ -72,7 +72,7 @@ public:
     bool rescan_data(std::function<void(const std::string&)> reporter, std::shared_ptr<core::Lock> lock, metadata_dest_func dest) override;
     State check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick=true) override;
     size_t remove() override;
-    core::Pending repack(const std::string& rootdir, metadata::Collection& mds, const RepackConfig& cfg=RepackConfig()) override;
+    core::Pending repack(const std::filesystem::path& rootdir, metadata::Collection& mds, const RepackConfig& cfg=RepackConfig()) override;
 
     void test_truncate(size_t offset) override;
     void test_make_hole(metadata::Collection& mds, unsigned hole_size, unsigned data_idx) override;

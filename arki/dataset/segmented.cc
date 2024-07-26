@@ -194,15 +194,12 @@ void CheckerSegment::archive()
     auto wlock = lock->write_lock();
 
     // Get the format for this relpath
-    size_t pos = segment->segment().relpath.rfind(".");
-    if (pos == string::npos)
-        throw std::runtime_error("cannot archive segment " + segment->segment().abspath + " because it does not have a format extension");
-    string format = segment->segment().relpath.substr(pos + 1);
+    auto format = scan::Scanner::format_from_filename(segment->segment().relpath);
 
     // Get the time range for this relpath
     core::Interval interval;
     if (!dataset().relpath_timespan(segment->segment().relpath, interval))
-        throw std::runtime_error("cannot archive segment " + segment->segment().abspath + " because its name does not match the dataset step");
+        throw std::runtime_error("cannot archive segment "s + segment->segment().abspath.native() + " because its name does not match the dataset step");
 
     // Get the contents of this segment
     metadata::Collection mdc;

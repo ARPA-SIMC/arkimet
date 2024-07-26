@@ -187,7 +187,7 @@ bool YamlFile::scan(const dataset::DataQuery& q, metadata_dest_func dest)
 
 bool RawFile::scan(const dataset::DataQuery& q, metadata_dest_func dest)
 {
-    string basedir, relpath;
+    std::filesystem::path basedir, relpath;
     files::resolve_path(pathname, basedir, relpath);
     auto sorter = wrap_with_query(q, dest);
     auto reader = Segment::detect_reader(format, basedir, relpath, pathname, std::make_shared<core::lock::Null>());

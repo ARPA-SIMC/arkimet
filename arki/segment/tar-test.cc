@@ -104,7 +104,7 @@ this->add_method("filenames", [](Fixture& f) {
     sys::File tarout("tar.out", O_RDWR | O_CREAT | O_TRUNC);
     Subprocess proc;
     proc.stdout_fd = tarout;
-    proc.args = { "tar", "atf", checker->segment().abspath + ".tar" };
+    proc.args = { "tar", "atf", checker->segment().abspath.native() + ".tar" };
     proc.run();
     tarout.close();
     if (proc.wait() != 0)

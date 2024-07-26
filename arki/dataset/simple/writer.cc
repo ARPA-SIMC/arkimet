@@ -82,8 +82,8 @@ public:
             segment->commit();
             time_t ts = segment->segment().timestamp();
             mft->acquire(segment->segment().relpath, ts, sum);
-            mds.writeAtomically(segment->segment().abspath + ".metadata");
-            sum.writeAtomically(segment->segment().abspath + ".summary");
+            mds.writeAtomically(sys::with_suffix(segment->segment().abspath, ".metadata"));
+            sum.writeAtomically(sys::with_suffix(segment->segment().abspath, ".summary"));
             mft->flush();
             return ACQ_OK;
         } catch (std::exception& e) {
@@ -117,8 +117,8 @@ public:
         segment->commit();
         time_t ts = segment->segment().timestamp();
         mft->acquire(segment->segment().relpath, ts, sum);
-        mds.writeAtomically(segment->segment().abspath + ".metadata");
-        sum.writeAtomically(segment->segment().abspath + ".summary");
+        mds.writeAtomically(sys::with_suffix(segment->segment().abspath, ".metadata"));
+        sum.writeAtomically(sys::with_suffix(segment->segment().abspath, ".summary"));
         mft->flush();
     }
 };

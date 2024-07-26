@@ -67,9 +67,9 @@ void Scanner::register_factory(const std::string& name, std::function<std::share
     scanner_cache.clear();
 }
 
-bool Scanner::test_scan_file(const std::string& filename, metadata_dest_func dest)
+bool Scanner::test_scan_file(const std::filesystem::path& filename, metadata_dest_func dest)
 {
-    string basedir, relpath;
+    std::filesystem::path basedir, relpath;
     utils::files::resolve_path(filename, basedir, relpath);
     return scan_segment(Segment::detect_reader(format_from_filename(filename), basedir, relpath, filename, make_shared<core::lock::Null>()), dest);
 }
@@ -158,20 +158,18 @@ std::string Scanner::normalise_format(const std::string& format, const char* def
     throw std::runtime_error("unsupported format `" + format + "`");
 }
 
-std::string Scanner::format_from_filename(const std::string& fname, const char* default_format)
+std::string Scanner::format_from_filename(const std::filesystem::path& fname, const char* default_format)
 {
     // Extract the extension
-    size_t epos = fname.rfind('.');
-    if (epos != string::npos)
+    auto ext = fname.extension();
+    if (not ext.empty())
     {
-        string ext = fname.substr(epos + 1);
-        if (ext == "zip" || ext == "gz" || ext == "tar")
-        {
-            size_t epos1 = fname.rfind('.', epos - 1);
-            ext = fname.substr(epos1 + 1, epos - epos1 - 1);
-        }
-        return normalise_format(str::lower(ext), default_format);
+        if (ext == ".zip" || ext == ".gz" || ext == ".tar")
+            ext = fname.stem().extension();
     }
+
+    if (not ext.empty())
+        return normalise_format(str::lower(ext.native().substr(1)), default_format);
     else if (default_format)
         return default_format;
     else

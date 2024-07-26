@@ -40,9 +40,9 @@ public:
 
 struct NullHandler: public Handler
 {
-    void warning(const char* fmt, va_list ap) {}
-    void verbose(const char* fmt, va_list ap) {}
-    void debug(const char* fmt, va_list ap) {}
+    void warning(const char* fmt, va_list ap) override {}
+    void verbose(const char* fmt, va_list ap) override {}
+    void debug(const char* fmt, va_list ap) override {}
 };
 
 

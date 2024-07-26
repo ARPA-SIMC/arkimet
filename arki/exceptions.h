@@ -1,6 +1,7 @@
 #ifndef ARKI_EXCEPTIONS_H
 #define ARKI_EXCEPTIONS_H
 
+#include <filesystem>
 #include <string>
 
 namespace arki {
@@ -14,7 +15,7 @@ namespace arki {
  * Shortcut to throw std::system_error using the current value of errno and
  * mentioning the name of the file for which the operation failed.
  */
-[[noreturn]] void throw_file_error(const std::string& file, const std::string& what);
+[[noreturn]] void throw_file_error(const std::filesystem::path& file, const std::string& what);
 
 /**
  * Wrapper used to easily replace old wibble::exception::Consistency, to be

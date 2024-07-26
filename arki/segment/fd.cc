@@ -44,7 +44,7 @@ struct Creator : public AppendCreator
     File out;
     size_t written = 0;
 
-    Creator(const std::string& root, const std::string& relpath, metadata::Collection& mds, const std::string& tmpabspath)
+    Creator(const std::filesystem::path& root, const std::filesystem::path& relpath, metadata::Collection& mds, const std::filesystem::path& tmpabspath)
         : AppendCreator(root, relpath, mds), out(tmpabspath, O_WRONLY | O_CREAT | O_TRUNC, 0666)
     {
     }
@@ -73,7 +73,7 @@ struct CheckBackend : public AppendCheckBackend
     core::File data;
     struct stat st;
 
-    CheckBackend(const std::string& abspath, const std::string& relpath, std::function<void(const std::string&)> reporter, const metadata::Collection& mds)
+    CheckBackend(const std::filesystem::path& abspath, const std::filesystem::path& relpath, std::function<void(const std::string&)> reporter, const metadata::Collection& mds)
         : AppendCheckBackend(reporter, relpath, mds), data(abspath)
     {
     }
@@ -90,7 +90,7 @@ struct CheckBackend : public AppendCheckBackend
     {
         if (!data.open_ifexists(O_RDONLY))
         {
-            reporter(data.name() + " not found on disk");
+            reporter(data.path().native() + " not found on disk");
             return SEGMENT_DELETED;
         }
         data.fstat(st);
@@ -110,7 +110,7 @@ time_t Segment::timestamp() const
 
 
 template<typename Segment>
-Reader<Segment>::Reader(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock)
+Reader<Segment>::Reader(const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath, const std::filesystem::path& abspath, std::shared_ptr<core::Lock> lock)
     : BaseReader<Segment>(format, root, relpath, abspath, lock), fd(abspath, O_RDONLY
 #ifdef linux
                 | O_CLOEXEC
@@ -134,12 +134,12 @@ std::vector<uint8_t> Reader<Segment>::read(const types::source::Blob& src)
     buf.resize(src.size);
 
     if (posix_fadvise(fd, src.offset, src.size, POSIX_FADV_DONTNEED) != 0)
-        nag::debug("fadvise on %s failed: %s", fd.name().c_str(), strerror(errno));
+        nag::debug("fadvise on %s failed: %s", fd.path().c_str(), strerror(errno));
     ssize_t res = fd.pread(buf.data(), src.size, src.offset);
     if ((size_t)res != src.size)
     {
         stringstream msg;
-        msg << "cannot read " << src.size << " bytes of " << src.format << " data from " << fd.name() << ":"
+        msg << "cannot read " << src.size << " bytes of " << src.format << " data from " << fd.path() << ":"
             << src.offset << ": only " << res << "/" << src.size << " bytes have been read";
         throw std::runtime_error(msg.str());
     }
@@ -161,7 +161,7 @@ stream::SendResult Reader<Segment>::stream(const types::source::Blob& src, Strea
 
 
 template<typename Segment, typename File>
-Writer<Segment, File>::Writer(const WriterConfig& config, const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, int mode)
+Writer<Segment, File>::Writer(const WriterConfig& config, const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath, const std::filesystem::path& abspath, int mode)
     : BaseWriter<Segment>(config, format, root, relpath, abspath), fd(abspath, O_WRONLY | O_CREAT | mode, 0666)
 {
     struct stat st;
@@ -231,7 +231,7 @@ void Writer<Segment, File>::rollback_nothrow() noexcept
 
 
 template<typename Segment, typename File>
-Checker<Segment, File>::Checker(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath)
+Checker<Segment, File>::Checker(const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath, const std::filesystem::path& abspath)
     : BaseChecker<Segment>(format, root, relpath, abspath)
 {
 }
@@ -278,9 +278,9 @@ State Checker<Segment, File>::check(std::function<void(const std::string&)> repo
 }
 
 template<typename Segment, typename File>
-void Checker<Segment, File>::move_data(const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath)
+void Checker<Segment, File>::move_data(const std::filesystem::path& new_root, const std::filesystem::path& new_relpath, const std::filesystem::path& new_abspath)
 {
-    sys::rename(this->segment().abspath, new_abspath);
+    std::filesystem::rename(this->segment().abspath, new_abspath);
 }
 
 template<typename Segment, typename File>
@@ -292,9 +292,9 @@ size_t Checker<Segment, File>::remove()
 }
 
 template<typename Segment, typename File>
-core::Pending Checker<Segment, File>::repack(const std::string& rootdir, metadata::Collection& mds, const RepackConfig& cfg)
+core::Pending Checker<Segment, File>::repack(const std::filesystem::path& rootdir, metadata::Collection& mds, const RepackConfig& cfg)
 {
-    string tmpabspath = this->segment().abspath + ".repack";
+    auto tmpabspath = sys::with_suffix(this->segment().abspath, ".repack");
 
     core::Pending p(new files::RenameTransaction(tmpabspath, this->segment().abspath));
 
@@ -313,7 +313,7 @@ template<typename Segment, typename File>
 void Checker<Segment, File>::test_truncate(size_t offset)
 {
     const auto& segment = this->segment();
-    if (!sys::exists(segment.abspath))
+    if (!std::filesystem::exists(segment.abspath))
         sys::write_file(segment.abspath, "");
 
     utils::files::PreserveFileTimes pft(segment.abspath);
@@ -435,15 +435,15 @@ std::shared_ptr<segment::Checker> Segment::checker() const
 {
     return make_shared<Checker>(format, root, relpath, abspath);
 }
-std::shared_ptr<segment::Writer> Segment::make_writer(const WriterConfig& config, const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath)
+std::shared_ptr<segment::Writer> Segment::make_writer(const WriterConfig& config, const std::string& format, const std::filesystem::path& rootdir, const std::filesystem::path& relpath, const std::filesystem::path& abspath)
 {
     return make_shared<Writer>(config, format, rootdir, relpath, abspath);
 }
-std::shared_ptr<segment::Checker> Segment::make_checker(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath)
+std::shared_ptr<segment::Checker> Segment::make_checker(const std::string& format, const std::filesystem::path& rootdir, const std::filesystem::path& relpath, const std::filesystem::path& abspath)
 {
     return make_shared<Checker>(format, rootdir, relpath, abspath);
 }
-std::shared_ptr<segment::Checker> Segment::create(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds, const RepackConfig& cfg)
+std::shared_ptr<segment::Checker> Segment::create(const std::string& format, const std::filesystem::path& rootdir, const std::filesystem::path& relpath, const std::filesystem::path& abspath, metadata::Collection& mds, const RepackConfig& cfg)
 {
     fd::Creator<File> creator(rootdir, relpath, mds, abspath);
     creator.create();
@@ -465,18 +465,18 @@ std::shared_ptr<segment::Checker> HoleSegment::checker() const
 {
     return make_shared<HoleChecker>(format, root, relpath, abspath);
 }
-std::shared_ptr<segment::Writer> HoleSegment::make_writer(const WriterConfig& config, const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath)
+std::shared_ptr<segment::Writer> HoleSegment::make_writer(const WriterConfig& config, const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath, const std::filesystem::path& abspath)
 {
     return make_shared<HoleWriter>(config, format, root, relpath, abspath);
 }
-std::shared_ptr<segment::Checker> HoleSegment::make_checker(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath)
+std::shared_ptr<segment::Checker> HoleSegment::make_checker(const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath, const std::filesystem::path& abspath)
 {
     return make_shared<HoleChecker>(format, root, relpath, abspath);
 }
 
-core::Pending HoleChecker::repack(const std::string& rootdir, metadata::Collection& mds, const RepackConfig& cfg)
+core::Pending HoleChecker::repack(const std::filesystem::path& rootdir, metadata::Collection& mds, const RepackConfig& cfg)
 {
-    string tmpabspath = segment().abspath + ".repack";
+    filesystem::path tmpabspath = sys::with_suffix(segment().abspath, ".repack");
 
     core::Pending p(new files::RenameTransaction(tmpabspath, segment().abspath));
 
@@ -512,15 +512,15 @@ std::shared_ptr<segment::Checker> Segment::checker() const
 {
     return make_shared<Checker>(format, root, relpath, abspath);
 }
-std::shared_ptr<segment::Writer> Segment::make_writer(const WriterConfig& config, const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath)
+std::shared_ptr<segment::Writer> Segment::make_writer(const WriterConfig& config, const std::string& format, const std::filesystem::path& rootdir, const std::filesystem::path& relpath, const std::filesystem::path& abspath)
 {
     return make_shared<Writer>(config, format, rootdir, relpath, abspath);
 }
-std::shared_ptr<segment::Checker> Segment::make_checker(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath)
+std::shared_ptr<segment::Checker> Segment::make_checker(const std::string& format, const std::filesystem::path& rootdir, const std::filesystem::path& relpath, const std::filesystem::path& abspath)
 {
     return make_shared<Checker>(format, rootdir, relpath, abspath);
 }
-std::shared_ptr<segment::Checker> Segment::create(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds, const RepackConfig& cfg)
+std::shared_ptr<segment::Checker> Segment::create(const std::string& format, const std::filesystem::path& rootdir, const std::filesystem::path& relpath, const std::filesystem::path& abspath, metadata::Collection& mds, const RepackConfig& cfg)
 {
     fd::Creator<File> creator(rootdir, relpath, mds, abspath);
     creator.create();

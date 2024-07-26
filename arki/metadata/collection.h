@@ -9,6 +9,7 @@
 #include <arki/metadata/fwd.h>
 #include <arki/stream/fwd.h>
 #include <vector>
+#include <filesystem>
 #include <string>
 
 namespace arki {
@@ -172,15 +173,15 @@ struct TestCollection : public Collection
 
     /// Construct a collection filled with the data scanned from the given file
     /// using scan::any
-    TestCollection(const std::string& pathname, bool with_data=false);
+    TestCollection(const std::filesystem::path& pathname, bool with_data=false);
 
     /// Construct a collection filled with the data scanned from the given file
     /// using scan::any
-    void scan_from_file(const std::string& pathname, bool with_data);
+    void scan_from_file(const std::filesystem::path& pathname, bool with_data);
 
     /// Construct a collection filled with the data scanned from the given file
     /// using scan::any
-    void scan_from_file(const std::string& pathname, const std::string& format, bool with_data);
+    void scan_from_file(const std::filesystem::path& pathname, const std::string& format, bool with_data);
 };
 
 }

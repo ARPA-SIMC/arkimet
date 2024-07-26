@@ -60,14 +60,14 @@ add_method("scanner", [] {
     wassert(actual(scanner.on_disk.size()) == 3u);
     wassert(actual(scanner.max_sequence) == 2u);
 
-    auto reader = Segment::detect_reader("odimh5", sys::abspath("."), "inbound/fixture.odimh5", sys::abspath("inbound/fixture.odimh5"), make_shared<core::lock::Null>());
+    auto reader = Segment::detect_reader("odimh5", std::filesystem::current_path(), "inbound/fixture.odimh5", sys::abspath("inbound/fixture.odimh5"), make_shared<core::lock::Null>());
 
     metadata::Collection mds;
     scanner.scan(reader, mds.inserter_func());
     wassert(actual(mds.size()) == 3u);
 
     // Check the source info
-    wassert(actual(mds[0].source().cloneType()).is_source_blob("odimh5", sys::abspath("."), "inbound/fixture.odimh5", 0, 49057));
+    wassert(actual(mds[0].source().cloneType()).is_source_blob("odimh5", std::filesystem::current_path(), "inbound/fixture.odimh5", 0, 49057));
 });
 
 }

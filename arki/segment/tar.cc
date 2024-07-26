@@ -39,7 +39,7 @@ struct Creator : public AppendCreator
     size_t idx = 0;
     char fname[100];
 
-    Creator(const std::string& root, const std::string& relpath, metadata::Collection& mds, const std::string& dest_abspath)
+    Creator(const std::filesystem::path& root, const std::filesystem::path& relpath, metadata::Collection& mds, const std::filesystem::path& dest_abspath)
         : AppendCreator(root, relpath, mds), out(dest_abspath), tarout(out)
     {
         if (!mds.empty())
@@ -69,7 +69,7 @@ struct CheckBackend : public AppendCheckBackend
     core::File data;
     struct stat st;
 
-    CheckBackend(const std::string& tarabspath, const std::string& relpath, std::function<void(const std::string&)> reporter, const metadata::Collection& mds)
+    CheckBackend(const std::filesystem::path& tarabspath, const std::filesystem::path& relpath, std::function<void(const std::string&)> reporter, const metadata::Collection& mds)
         : AppendCheckBackend(reporter, relpath, mds), data(tarabspath)
     {
     }
@@ -107,7 +107,7 @@ struct CheckBackend : public AppendCheckBackend
 
 const char* Segment::type() const { return "tar"; }
 bool Segment::single_file() const { return true; }
-time_t Segment::timestamp() const { return sys::timestamp(abspath + ".tar"); }
+time_t Segment::timestamp() const { return sys::timestamp(sys::with_suffix(abspath, ".tar")); }
 std::shared_ptr<segment::Reader> Segment::reader(std::shared_ptr<core::Lock> lock) const
 {
     return make_shared<Reader>(format, root, relpath, abspath, lock);
@@ -120,21 +120,21 @@ bool Segment::can_store(const std::string& format)
 {
     return true;
 }
-std::shared_ptr<segment::Checker> Segment::make_checker(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath)
+std::shared_ptr<segment::Checker> Segment::make_checker(const std::string& format, const std::filesystem::path& rootdir, const std::filesystem::path& relpath, const std::filesystem::path& abspath)
 {
     return make_shared<Checker>(format, rootdir, relpath, abspath);
 }
-std::shared_ptr<segment::Checker> Segment::create(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds, const RepackConfig& cfg)
+std::shared_ptr<segment::Checker> Segment::create(const std::string& format, const std::filesystem::path& rootdir, const std::filesystem::path& relpath, const std::filesystem::path& abspath, metadata::Collection& mds, const RepackConfig& cfg)
 {
-    Creator creator(rootdir, relpath, mds, abspath + ".tar");
+    Creator creator(rootdir, relpath, mds, sys::with_suffix(abspath, ".tar"));
     creator.create();
     return make_shared<Checker>(format, rootdir, relpath, abspath);
 }
 
 
 
-Reader::Reader(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock)
-    : segment::BaseReader<Segment>(format, root, relpath, abspath, lock), fd(abspath + ".tar", O_RDONLY
+Reader::Reader(const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath, const std::filesystem::path& abspath, std::shared_ptr<core::Lock> lock)
+    : segment::BaseReader<Segment>(format, root, relpath, abspath, lock), fd(sys::with_suffix(abspath, ".tar"), O_RDONLY
 #ifdef linux
                 | O_CLOEXEC
 #endif
@@ -178,8 +178,8 @@ stream::SendResult Reader::stream(const types::source::Blob& src, StreamOutput& 
 }
 
 
-Checker::Checker(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath)
-    : segment::BaseChecker<Segment>(format, root, relpath, abspath), tarabspath(abspath + ".tar")
+Checker::Checker(const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath, const std::filesystem::path& abspath)
+    : segment::BaseChecker<Segment>(format, root, relpath, abspath), tarabspath(sys::with_suffix(abspath, ".tar"))
 {
 }
 
@@ -201,9 +201,9 @@ size_t Checker::size()
     return sys::size(tarabspath);
 }
 
-void Checker::move_data(const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath)
+void Checker::move_data(const std::filesystem::path& new_root, const std::filesystem::path& new_relpath, const std::filesystem::path& new_abspath)
 {
-    string new_tarabspath = new_abspath + ".tar";
+    auto new_tarabspath = sys::with_suffix(new_abspath, ".tar");
     if (rename(tarabspath.c_str(), new_tarabspath.c_str()) < 0)
     {
         stringstream ss;
@@ -248,9 +248,9 @@ size_t Checker::remove()
     return size;
 }
 
-core::Pending Checker::repack(const std::string& rootdir, metadata::Collection& mds, const RepackConfig& cfg)
+core::Pending Checker::repack(const std::filesystem::path& rootdir, metadata::Collection& mds, const RepackConfig& cfg)
 {
-    string tmpabspath = segment().abspath + ".repack";
+    auto tmpabspath = sys::with_suffix(segment().abspath, ".repack");
 
     core::Pending p(new files::RenameTransaction(tmpabspath, tarabspath));
 

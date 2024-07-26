@@ -247,7 +247,7 @@ struct FromFilterConcrete : public FromFilter<Backend>
     void set_output(pollfd* pollinfo)
     {
         FromFilter<Backend>::set_output(pollinfo);
-        this->out_name = out_fd.name();
+        this->out_name = out_fd.path().native();
         this->pfd_destination = &pollinfo[POLLINFO_DESTINATION];
         this->pfd_destination->fd = out_fd;
         this->pfd_destination->events = POLLOUT;

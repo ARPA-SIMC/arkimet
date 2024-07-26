@@ -3,6 +3,7 @@
 
 /// Represent where the data for a metadata can be found
 
+#include <filesystem>
 #include <arki/types.h>
 #include <arki/segment/fwd.h>
 
@@ -73,8 +74,8 @@ public:
     static void init();
 
     static std::unique_ptr<Source> createBlob(std::shared_ptr<segment::Reader> reader, uint64_t offset, uint64_t size);
-    static std::unique_ptr<Source> createBlob(const std::string& format, const std::string& basedir, const std::string& filename, uint64_t offset, uint64_t size, std::shared_ptr<segment::Reader> reader);
-    static std::unique_ptr<Source> createBlobUnlocked(const std::string& format, const std::string& basedir, const std::string& filename, uint64_t offset, uint64_t size);
+    static std::unique_ptr<Source> createBlob(const std::string& format, const std::filesystem::path& basedir, const std::string& filename, uint64_t offset, uint64_t size, std::shared_ptr<segment::Reader> reader);
+    static std::unique_ptr<Source> createBlobUnlocked(const std::string& format, const std::filesystem::path& basedir, const std::string& filename, uint64_t offset, uint64_t size);
     static std::unique_ptr<Source> createInline(const std::string& format, uint64_t size);
     static std::unique_ptr<Source> createURL(const std::string& format, const std::string& url);
 

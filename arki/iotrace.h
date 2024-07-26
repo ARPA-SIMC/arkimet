@@ -46,7 +46,7 @@ struct Collector : public Listener
     Collector();
     ~Collector();
 
-    virtual void operator()(const Event& e);
+    void operator()(const Event& e) override;
 
     void dump(std::ostream& out) const;
 };
@@ -55,9 +55,9 @@ struct Logger : public Listener
 {
     FILE* out;
 
-    Logger(FILE* out) : out(out) {}
+    explicit Logger(FILE* out) : out(out) {}
 
-    virtual void operator()(const Event& e);
+    void operator()(const Event& e) override;
 };
 
 /**

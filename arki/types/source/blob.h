@@ -2,6 +2,7 @@
 #define ARKI_TYPES_SOURCE_BLOB_H
 
 #include <cstdint>
+#include <filesystem>
 #include <arki/types/source.h>
 #include <arki/core/fwd.h>
 #include <arki/stream/fwd.h>
@@ -39,7 +40,7 @@ zip file segment implementation.
      * point to files relative to the metadata location, in order to save
      * space.
      */
-    std::string basedir;
+    std::filesystem::path basedir;
 
     /**
      * Data file name.
@@ -73,7 +74,7 @@ zip file segment implementation.
     Blob* clone() const override;
 
     /// Return the absolute pathname to the data file
-    std::string absolutePathname() const;
+    std::filesystem::path absolutePathname() const;
 
     /**
      * Return a new source identical to this one, but with all the

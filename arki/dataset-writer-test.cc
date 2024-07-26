@@ -182,7 +182,7 @@ add_method("issue237", [](Fixture& f) {
     f.cfg->set("step", "daily");
     f.cfg->set("smallfiles", "yes");
     metadata::TestCollection mdc("inbound/issue237.vm2", true);
-    wassert(actual_type(mdc[0].source()).is_source_blob("vm2", sys::abspath("."), "inbound/issue237.vm2", 0, 36));
+    wassert(actual_type(mdc[0].source()).is_source_blob("vm2", std::filesystem::current_path(), "inbound/issue237.vm2", 0, 36));
 
     // Acquire value
     {

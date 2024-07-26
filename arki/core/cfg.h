@@ -19,11 +19,11 @@ protected:
     int m_line;
     std::string m_error;
 
-    static std::string describe(const std::string& filename, int line, const std::string& error);
+    static std::string describe(const std::string& name, int line, const std::string& error);
 
 public:
-    ParseError(const std::string& filename, int line, const std::string& error)
-        : std::runtime_error(describe(filename, line, error)), m_name(filename), m_line(line), m_error(error) {}
+    ParseError(const std::string& name, int line, const std::string& error)
+        : std::runtime_error(describe(name, line, error)), m_name(name), m_line(line), m_error(error) {}
     ~ParseError() throw () {}
 };
 

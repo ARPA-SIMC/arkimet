@@ -5,6 +5,7 @@
 
 #include <arki/dataset.h>
 #include <arki/core/fwd.h>
+#include <filesystem>
 #include <string>
 
 namespace arki {
@@ -32,7 +33,7 @@ protected:
 
 public:
     /// Root path of the dataset
-    std::string path;
+    std::filesystem::path path;
 
     int archive_age = -1;
     int delete_age = -1;

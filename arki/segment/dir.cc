@@ -37,11 +37,11 @@ namespace {
 struct Creator : public AppendCreator
 {
     std::string format;
-    std::string dest_abspath;
+    std::filesystem::path dest_abspath;
     size_t current_pos = 0;
     bool hardlink = false;
 
-    Creator(const std::string& root, const std::string& relpath, metadata::Collection& mds, const std::string& dest_abspath)
+    Creator(const std::string& root, const std::filesystem::path& relpath, metadata::Collection& mds, const std::filesystem::path& dest_abspath)
         : AppendCreator(root, relpath, mds), dest_abspath(dest_abspath)
     {
         if (!mds.empty())
@@ -56,18 +56,18 @@ struct Creator : public AppendCreator
         {
             const source::Blob& source = md.sourceBlob();
             res.size = source.size;
-            std::string src = str::joinpath(source.absolutePathname(), SequenceFile::data_fname(source.offset, format));
-            std::string dst = str::joinpath(dest_abspath, SequenceFile::data_fname(current_pos, format));
+            std::filesystem::path src = source.absolutePathname() / SequenceFile::data_fname(source.offset, format);
+            std::filesystem::path dst = dest_abspath / SequenceFile::data_fname(current_pos, format);
 
             if (::link(src.c_str(), dst.c_str()) != 0)
-                throw_system_error("cannot link " + src + " as " + dst);
+                throw_system_error("cannot link "s + src.native() + " as " + dst.native());
         } else {
             const auto& data = md.get_data();
             res.size = data.size();
             if (validator)
                 validator->validate_data(data);
 
-            sys::File fd(str::joinpath(dest_abspath, SequenceFile::data_fname(current_pos, format)),
+            sys::File fd(dest_abspath / SequenceFile::data_fname(current_pos, format),
                         O_WRONLY | O_CLOEXEC | O_CREAT | O_EXCL, 0666);
             try {
                 data.write(fd);
@@ -75,7 +75,7 @@ struct Creator : public AppendCreator
                     fd.throw_error("cannot flush write");
                 fd.close();
             } catch (...) {
-                unlink(fd.name().c_str());
+                unlink(fd.path().c_str());
                 throw;
             }
         }
@@ -87,7 +87,7 @@ struct Creator : public AppendCreator
 
     void create()
     {
-        sys::makedirs(dest_abspath);
+        std::filesystem::create_directories(dest_abspath);
         AppendCreator::create();
         SequenceFile seqfile(dest_abspath);
         seqfile.open();
@@ -98,18 +98,18 @@ struct Creator : public AppendCreator
 struct CheckBackend : public AppendCheckBackend
 {
     const std::string& format;
-    const std::string& abspath;
+    const std::filesystem::path& abspath;
     std::unique_ptr<struct stat> st;
     Scanner scanner;
 
-    CheckBackend(const std::string& format, const std::string& abspath, const std::string& relpath, std::function<void(const std::string&)> reporter, const metadata::Collection& mds)
+    CheckBackend(const std::string& format, const std::filesystem::path& abspath, const std::filesystem::path& relpath, std::function<void(const std::string&)> reporter, const metadata::Collection& mds)
         : AppendCheckBackend(reporter, relpath, mds), format(format), abspath(abspath), scanner(format, abspath)
     {
     }
 
     void validate(Metadata& md, const types::source::Blob& source) override
     {
-        string fname = str::joinpath(abspath, SequenceFile::data_fname(source.offset, format));
+        filesystem::path fname = abspath / SequenceFile::data_fname(source.offset, format);
         core::File data(fname, O_RDONLY);
         validator->validate_file(data, 0, source.size);
     }
@@ -153,13 +153,13 @@ struct CheckBackend : public AppendCheckBackend
         st = sys::stat(abspath);
         if (st.get() == nullptr)
         {
-            reporter(abspath + " not found on disk");
+            reporter(abspath.native() + " not found on disk");
             return SEGMENT_DELETED;
         }
 
         if (!S_ISDIR(st->st_mode))
         {
-            reporter(abspath + " is not a directory");
+            reporter(abspath.native() + " is not a directory");
             return SEGMENT_CORRUPTED;
         }
 
@@ -197,7 +197,7 @@ struct CheckBackend : public AppendCheckBackend
             auto idx = di.first;
             if (accurate)
             {
-                string fname = SequenceFile::data_fname(idx, format);
+                filesystem::path fname = SequenceFile::data_fname(idx, format);
                 try {
                     scanner->scan_singleton(fname);
                 } catch (std::exception& e) {
@@ -229,7 +229,7 @@ const char* Segment::type() const { return "dir"; }
 bool Segment::single_file() const { return false; }
 time_t Segment::timestamp() const
 {
-    return sys::timestamp(str::joinpath(abspath, ".sequence"));
+    return sys::timestamp(abspath / ".sequence");
 }
 std::shared_ptr<segment::Reader> Segment::reader(std::shared_ptr<core::Lock> lock) const
 {
@@ -239,11 +239,11 @@ std::shared_ptr<segment::Checker> Segment::checker() const
 {
     return make_shared<Checker>(format, root, relpath, abspath);
 }
-std::shared_ptr<segment::Checker> Segment::make_checker(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath)
+std::shared_ptr<segment::Checker> Segment::make_checker(const std::string& format, const std::filesystem::path& rootdir, const std::filesystem::path& relpath, const std::filesystem::path& abspath)
 {
     return make_shared<Checker>(format, rootdir, relpath, abspath);
 }
-std::shared_ptr<segment::Checker> Segment::create(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds, const RepackConfig& cfg)
+std::shared_ptr<segment::Checker> Segment::create(const std::string& format, const std::filesystem::path& rootdir, const std::filesystem::path& relpath, const std::filesystem::path& abspath, metadata::Collection& mds, const RepackConfig& cfg)
 {
     Creator creator(rootdir, relpath, mds, abspath);
     creator.create();
@@ -259,7 +259,7 @@ const char* HoleSegment::type() const { return "hole_dir"; }
 
 
 
-Reader::Reader(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock)
+Reader::Reader(const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath, const std::filesystem::path& abspath, std::shared_ptr<core::Lock> lock)
     : BaseReader<Segment>(format, root, relpath, abspath, lock), dirfd(abspath, O_DIRECTORY)
 {
 }
@@ -274,18 +274,18 @@ bool Reader::scan_data(metadata_dest_func dest)
 sys::File Reader::open_src(const types::source::Blob& src)
 {
     char dataname[32];
-    snprintf(dataname, 32, "%06zd.%s", (size_t)src.offset, m_segment.format.c_str());
+    snprintf(dataname, 32, "%06zu.%s", (size_t)src.offset, m_segment.format.c_str());
     int fd = dirfd.openat_ifexists(dataname, O_RDONLY | O_CLOEXEC);
     if (fd == -1)
     {
         stringstream msg;
-        msg << dataname << " does not exist in directory segment " << dirfd.name();
+        msg << dataname << " does not exist in directory segment " << dirfd.path();
         throw std::runtime_error(msg.str());
     }
-    sys::File file_fd(fd, str::joinpath(dirfd.name(), dataname));
+    sys::File file_fd(fd, dirfd.path() / dataname);
 
     if (posix_fadvise(file_fd, 0, src.size, POSIX_FADV_DONTNEED) != 0)
-        nag::debug("fadvise on %s failed: %s", file_fd.name().c_str(), strerror(errno));
+        nag::debug("fadvise on %s failed: %s", file_fd.path().c_str(), strerror(errno));
 
     return file_fd;
 }
@@ -324,11 +324,11 @@ stream::SendResult Reader::stream(const types::source::Blob& src, StreamOutput& 
 
 
 template<typename Segment>
-BaseWriter<Segment>::BaseWriter(const WriterConfig& config, const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath)
+BaseWriter<Segment>::BaseWriter(const WriterConfig& config, const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath, const std::filesystem::path& abspath)
     : segment::BaseWriter<Segment>(config, format, root, relpath, abspath), seqfile(abspath)
 {
     // Ensure that the directory 'abspath' exists
-    sys::makedirs(abspath);
+    std::filesystem::create_directories(abspath);
     seqfile.open();
     // current_pos is the last sequence generated
     current_pos = seqfile.read_sequence();
@@ -353,15 +353,15 @@ const types::source::Blob& BaseWriter<Segment>::append(Metadata& md)
 {
     this->fired = false;
 
-    File fd(str::joinpath(this->segment().abspath, SequenceFile::data_fname(current_pos, this->segment().format)),
+    File fd(this->segment().abspath / SequenceFile::data_fname(current_pos, this->segment().format),
                 O_WRONLY | O_CLOEXEC | O_CREAT | O_EXCL, 0666);
     try {
         write_file(md, fd);
     } catch (...) {
-        unlink(fd.name().c_str());
+        unlink(fd.path().c_str());
         throw;
     }
-    written.push_back(fd.name());
+    written.push_back(fd.path());
     fd.close();
     pending.emplace_back(this->config, md, source::Blob::create_unlocked(md.source().format, this->segment().root, this->segment().relpath, current_pos, md.data_size()));
     ++current_pos;
@@ -430,14 +430,14 @@ bool BaseChecker<Segment>::exists_on_disk()
      * Just an empty directory is considered not enough, to leave space for
      * implementing different formats of directory-based segments
      */
-    if (!sys::isdir(this->segment().abspath)) return false;
-    return sys::exists(str::joinpath(this->segment().abspath, ".sequence"));
+    if (!std::filesystem::is_directory(this->segment().abspath)) return false;
+    return std::filesystem::exists(this->segment().abspath / ".sequence");
 }
 
 template<typename Segment>
 bool BaseChecker<Segment>::is_empty()
 {
-    if (!sys::isdir(this->segment().abspath)) return false;
+    if (!std::filesystem::is_directory(this->segment().abspath)) return false;
     sys::Path dir(this->segment().abspath);
 
     // If we just have an empty directory, do not consider it as a valid
@@ -474,9 +474,9 @@ size_t BaseChecker<Segment>::size()
 }
 
 template<typename Segment>
-void BaseChecker<Segment>::move_data(const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath)
+void BaseChecker<Segment>::move_data(const std::filesystem::path& new_root, const std::filesystem::path& new_relpath, const std::filesystem::path& new_abspath)
 {
-    sys::rename(this->segment().abspath.c_str(), new_abspath.c_str());
+    std::filesystem::rename(this->segment().abspath.c_str(), new_abspath.c_str());
 }
 
 template<typename Segment>
@@ -519,7 +519,7 @@ void BaseChecker<Segment>::validate(Metadata& md, const scan::Validator& v)
         if (blob->filename != this->segment().relpath)
             throw std::runtime_error("metadata to validate does not appear to be from this segment");
 
-        string fname = str::joinpath(this->segment().abspath, SequenceFile::data_fname(blob->offset, blob->format));
+        filesystem::path fname = this->segment().abspath / SequenceFile::data_fname(blob->offset, blob->format);
         sys::File fd(fname, O_RDONLY);
         v.validate_file(fd, 0, blob->size);
         return;
@@ -547,30 +547,30 @@ size_t BaseChecker<Segment>::remove()
 {
     size_t size = 0;
     foreach_datafile([&](const char* name) {
-        string pathname = str::joinpath(this->segment().abspath, name);
+            filesystem::path pathname = this->segment().abspath / name;
         size += sys::size(pathname);
         sys::unlink(pathname);
     });
-    sys::unlink_ifexists(str::joinpath(this->segment().abspath, ".sequence"));
-    sys::unlink_ifexists(str::joinpath(this->segment().abspath, ".write-lock"));
-    sys::unlink_ifexists(str::joinpath(this->segment().abspath, ".repack-lock"));
+    std::filesystem::remove(this->segment().abspath / ".sequence");
+    std::filesystem::remove(this->segment().abspath / ".write-lock");
+    std::filesystem::remove(this->segment().abspath / ".repack-lock");
     // Also remove the directory if it is empty
     rmdir(this->segment().abspath.c_str());
     return size;
 }
 
 template<typename Segment>
-core::Pending BaseChecker<Segment>::repack(const std::string& rootdir, metadata::Collection& mds, const RepackConfig& cfg)
+core::Pending BaseChecker<Segment>::repack(const std::filesystem::path& rootdir, metadata::Collection& mds, const RepackConfig& cfg)
 {
     struct Rename : public Transaction
     {
-        std::string tmpabspath;
-        std::string abspath;
-        std::string tmppos;
+        std::filesystem::path tmpabspath;
+        std::filesystem::path abspath;
+        std::filesystem::path tmppos;
         bool fired;
 
-        Rename(const std::string& tmpabspath, const std::string& abspath)
-            : tmpabspath(tmpabspath), abspath(abspath), tmppos(abspath + ".pre-repack"), fired(false)
+        Rename(const std::filesystem::path& tmpabspath, const std::filesystem::path& abspath)
+            : tmpabspath(tmpabspath), abspath(abspath), tmppos(sys::with_suffix(abspath, ".pre-repack")), fired(false)
         {
         }
 
@@ -587,12 +587,12 @@ core::Pending BaseChecker<Segment>::repack(const std::string& rootdir, metadata:
 
             // Move the old directory inside the temp dir, to free the old directory name
             if (rename(abspath.c_str(), tmppos.c_str()))
-                throw_system_error("cannot rename " + abspath + " to " + tmppos);
+                throw_system_error("cannot rename "s + abspath.native() + " to " + tmppos.native());
 
             // Rename the data file to its final name
             if (rename(tmpabspath.c_str(), abspath.c_str()) < 0)
-                throw_system_error("cannot rename " + tmpabspath + " to " + abspath
-                    + " (ATTENTION: please check if you need to rename " + tmppos + " to " + abspath
+                throw_system_error("cannot rename "s + tmpabspath.native() + " to " + abspath.native()
+                    + " (ATTENTION: please check if you need to rename " + tmppos.native() + " to " + abspath.native()
                     + " manually to restore it as it was before the repack)");
 
             // Remove the old data
@@ -634,8 +634,8 @@ core::Pending BaseChecker<Segment>::repack(const std::string& rootdir, metadata:
         }
     };
 
-    string tmprelpath = this->segment().relpath + ".repack";
-    string tmpabspath = this->segment().abspath + ".repack";
+    filesystem::path tmprelpath = sys::with_suffix(this->segment().relpath, ".repack");
+    filesystem::path tmpabspath = sys::with_suffix(this->segment().abspath, ".repack");
 
     core::Pending p(new Rename(tmpabspath, this->segment().abspath));
 
@@ -659,7 +659,7 @@ void BaseChecker<Segment>::test_truncate(size_t offset)
     // Truncate dir segment
     foreach_datafile([&](const char* name) {
         if (strtoul(name, 0, 10) >= offset)
-            sys::unlink(str::joinpath(this->segment().abspath, name));
+            sys::unlink(this->segment().abspath / name);
     });
 }
 
@@ -667,7 +667,7 @@ template<typename Segment>
 void BaseChecker<Segment>::test_make_hole(metadata::Collection& mds, unsigned hole_size, unsigned data_idx)
 {
     SequenceFile seqfile(this->segment().abspath);
-    utils::files::PreserveFileTimes pf(seqfile.name());
+    utils::files::PreserveFileTimes pf(seqfile.path());
     seqfile.open();
     size_t pos = seqfile.read_sequence();
     if (!seqfile.new_file)
@@ -676,7 +676,7 @@ void BaseChecker<Segment>::test_make_hole(metadata::Collection& mds, unsigned ho
     {
         for (unsigned i = 0; i < hole_size; ++i)
         {
-            File fd(str::joinpath(this->segment().abspath, SequenceFile::data_fname(pos, this->segment().format)),
+            File fd(this->segment().abspath / SequenceFile::data_fname(pos, this->segment().format),
                 O_WRONLY | O_CLOEXEC | O_CREAT | O_EXCL, 0666);
             fd.close();
             ++pos;
@@ -685,9 +685,9 @@ void BaseChecker<Segment>::test_make_hole(metadata::Collection& mds, unsigned ho
         for (int i = mds.size() - 1; i >= (int)data_idx; --i)
         {
             std::unique_ptr<source::Blob> source(mds[i].sourceBlob().clone());
-            sys::rename(
-                    str::joinpath(source->absolutePathname(), SequenceFile::data_fname(source->offset, source->format)),
-                    str::joinpath(source->absolutePathname(), SequenceFile::data_fname(source->offset + hole_size, source->format)));
+            std::filesystem::rename(
+                    source->absolutePathname() / SequenceFile::data_fname(source->offset, source->format),
+                    source->absolutePathname() / SequenceFile::data_fname(source->offset + hole_size, source->format));
             source->offset += hole_size;
             mds[i].set_source(std::move(source));
         }
@@ -702,9 +702,9 @@ void BaseChecker<Segment>::test_make_overlap(metadata::Collection& mds, unsigned
     for (unsigned i = data_idx; i < mds.size(); ++i)
     {
         unique_ptr<source::Blob> source(mds[i].sourceBlob().clone());
-        sys::rename(
-                str::joinpath(source->absolutePathname(), SequenceFile::data_fname(source->offset, source->format)),
-                str::joinpath(source->absolutePathname(), SequenceFile::data_fname(source->offset - overlap_size, source->format)));
+        std::filesystem::rename(
+                source->absolutePathname() / SequenceFile::data_fname(source->offset, source->format),
+                source->absolutePathname() / SequenceFile::data_fname(source->offset - overlap_size, source->format));
         source->offset -= overlap_size;
         mds[i].set_source(std::move(source));
     }
@@ -714,7 +714,7 @@ template<typename Segment>
 void BaseChecker<Segment>::test_corrupt(const metadata::Collection& mds, unsigned data_idx)
 {
     const auto& s = mds[data_idx].sourceBlob();
-    File fd(str::joinpath(s.absolutePathname(), SequenceFile::data_fname(s.offset, s.format)), O_WRONLY);
+    File fd(s.absolutePathname() / SequenceFile::data_fname(s.offset, s.format), O_WRONLY);
     fd.write_all_or_throw("\0", 1);
 }
 
@@ -731,7 +731,7 @@ template class BaseChecker<Segment>;
 template class BaseChecker<HoleSegment>;
 
 
-Scanner::Scanner(const std::string& format, const std::string& abspath)
+Scanner::Scanner(const std::string& format, const std::filesystem::path& abspath)
     : format(format), abspath(abspath)
 {
 }
@@ -757,7 +757,7 @@ bool Scanner::scan(std::shared_ptr<segment::Reader> reader, metadata_dest_func d
     auto scanner = scan::Scanner::get_scanner(format);
     for (const auto& fi : on_disk)
     {
-        auto md = scanner->scan_singleton(str::joinpath(abspath, fi.second.fname));
+        auto md = scanner->scan_singleton(abspath / fi.second.fname);
         md->set_source(Source::createBlob(reader, fi.first, fi.second.size));
         if (!dest(md))
             return false;
@@ -774,7 +774,7 @@ bool Scanner::scan(std::function<void(const std::string&)> reporter, std::shared
     {
         std::shared_ptr<Metadata> md;
         try {
-            md = scanner->scan_singleton(str::joinpath(abspath, fi.second.fname));
+            md = scanner->scan_singleton(abspath / fi.second.fname);
         } catch (std::exception& e) {
             stringstream out;
             out << "data file " << fi.second.fname << " fails to scan (" << e.what() << ")";

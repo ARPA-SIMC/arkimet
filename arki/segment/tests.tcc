@@ -18,11 +18,11 @@ void SegmentFixture<Segment, Data>::test_setup()
 {
     using namespace arki::utils;
     seg_mds = td.mds.clone();
-    root = sys::getcwd();
+    root = std::filesystem::current_path();
     sys::rmtree_ifexists("testseg");
-    sys::mkdir_ifmissing("testseg");
+    std::filesystem::create_directory("testseg");
     relpath = "testseg/test." + td.format;
-    abspath = sys::abspath(relpath);
+    abspath = std::filesystem::current_path() / relpath;
 }
 
 template<class Segment, class Data>
@@ -100,7 +100,7 @@ this->add_method("repack", [](Fixture& f) {
         md->sourceBlob().lock(reader);
     auto p = wcallchecked(checker->repack(f.root, f.seg_mds));
     wassert(p.commit());
-    auto rep = [](const std::string& msg) {
+    auto rep = [](const std::string& msg) noexcept {
         // fprintf(stderr, "POST REPACK %s\n", msg.c_str());
     };
     wassert(actual(checker->check(rep, f.seg_mds)) == segment::SEGMENT_OK);
@@ -111,7 +111,7 @@ this->add_method("check", [](Fixture& f) {
 
     segment::State state;
 
-    auto rep = [](const std::string& msg) {
+    auto rep = [](const std::string& msg) noexcept {
         // fprintf(stderr, "CHECK %s\n", msg.c_str());
     };
 

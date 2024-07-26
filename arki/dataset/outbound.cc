@@ -57,7 +57,7 @@ WriterAcquireResult Writer::acquire(Metadata& md, const AcquireConfig& cfg)
 
     core::Time time = md.get<types::reftime::Position>()->get_Position();
     string reldest = dataset().step()(time);
-    string dest = dataset().path + "/" + reldest;
+    auto dest = dataset().path / reldest;
 
     sys::makedirs(str::dirname(dest));
 

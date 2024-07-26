@@ -169,12 +169,12 @@ std::unique_ptr<Source> Source::createBlob(std::shared_ptr<segment::Reader> read
     return upcast<Source>(source::Blob::create(reader, offset, size));
 }
 
-unique_ptr<Source> Source::createBlob(const std::string& format, const std::string& basedir, const std::string& filename, uint64_t offset, uint64_t size, std::shared_ptr<segment::Reader> reader)
+unique_ptr<Source> Source::createBlob(const std::string& format, const std::filesystem::path& basedir, const std::string& filename, uint64_t offset, uint64_t size, std::shared_ptr<segment::Reader> reader)
 {
     return upcast<Source>(source::Blob::create(format, basedir, filename, offset, size, reader));
 }
 
-unique_ptr<Source> Source::createBlobUnlocked(const std::string& format, const std::string& basedir, const std::string& filename, uint64_t offset, uint64_t size)
+unique_ptr<Source> Source::createBlobUnlocked(const std::string& format, const std::filesystem::path& basedir, const std::string& filename, uint64_t offset, uint64_t size)
 {
     return upcast<Source>(source::Blob::create_unlocked(format, basedir, filename, offset, size));
 }

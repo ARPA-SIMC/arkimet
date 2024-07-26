@@ -64,6 +64,8 @@ struct BufferToPipe : public MemoryToPipe<Backend>
      */
     TransferResult transfer_available(core::NamedFileDescriptor& out)
     {
+        using namespace std::string_literals;
+
         ssize_t res = Backend::write(out, (const uint8_t*)this->data + this->pos, this->size - this->pos);
         trace_streaming("  BufferToPipe[pos:%zd]: Write(%d, \"%.*s\", %d, %d) [errno %d]\n",
                 this->pos, (int)out, (int)(this->size - this->pos), (const char*)this->data + this->pos, (int)(this->size - this->pos), (int)res, errno);
@@ -74,7 +76,7 @@ struct BufferToPipe : public MemoryToPipe<Backend>
             else if (errno == EPIPE) {
                 return TransferResult::EOF_DEST;
             } else
-                throw std::system_error(errno, std::system_category(), "cannot write " + std::to_string(this->size - this->pos) + " bytes to " + out.name());
+                throw std::system_error(errno, std::system_category(), "cannot write "s + std::to_string(this->size - this->pos) + " bytes to " + out.path().native());
         } else {
             this->pos += res;
 
@@ -96,6 +98,8 @@ struct LineToPipe : public MemoryToPipe<Backend>
 
     TransferResult transfer_available(core::NamedFileDescriptor& out)
     {
+        using namespace std::string_literals;
+
         if (this->pos < this->size)
         {
             struct iovec todo[2] = {{(uint8_t*)this->data + this->pos, this->size - this->pos}, {(void*)"\n", 1}};
@@ -107,7 +111,7 @@ struct LineToPipe : public MemoryToPipe<Backend>
                 else if (errno == EPIPE)
                     return TransferResult::EOF_DEST;
                 else
-                    throw std::system_error(errno, std::system_category(), "cannot write " + std::to_string(this->size + 1) + " bytes to " + out.name());
+                    throw std::system_error(errno, std::system_category(), "cannot write "s + std::to_string(this->size + 1) + " bytes to " + out.path().native());
             }
             if (this->progress_callback)
                 this->progress_callback(res);

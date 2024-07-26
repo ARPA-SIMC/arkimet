@@ -275,7 +275,7 @@ void ActualType::is_source_blob(
 {
     const source::Blob* item = get_specific_type<source::Blob>(_actual);
     wassert(actual(item->format) == format);
-    wassert(actual(item->basedir) == basedir);
+    wassert(actual_path(item->basedir).is(basedir));
     wassert(actual(item->filename) == fname);
     wassert(actual(item->offset) == ofs);
     wassert(actual(item->size) == size);

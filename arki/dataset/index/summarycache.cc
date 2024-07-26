@@ -37,12 +37,12 @@ void SummaryCache::openRO()
 {
     string parent = str::basename(m_scache_root);
     if (sys::access(parent, W_OK))
-        sys::mkdir_ifmissing(m_scache_root, 0777);
+        sys::mkdir_ifmissing(m_scache_root);
 }
 
 void SummaryCache::openRW()
 {
-    sys::mkdir_ifmissing(m_scache_root, 0777);
+    sys::mkdir_ifmissing(m_scache_root);
 }
 
 bool SummaryCache::read(Summary& s)

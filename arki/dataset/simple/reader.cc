@@ -35,7 +35,7 @@ void Reader::impl_query_summary(const Matcher& matcher, Summary& summary)
     m_idx->lock = lock;
     // FIXME: this is cargo culted from the old ondisk2 reader: what is the use case for this?
     if (!m_idx->query_summary(matcher, summary))
-        throw std::runtime_error("cannot query " + dataset().path + ": index could not be used");
+        throw std::runtime_error("cannot query "s + dataset().path.native() + ": index could not be used");
 }
 
 Reader::Reader(std::shared_ptr<simple::Dataset> dataset)

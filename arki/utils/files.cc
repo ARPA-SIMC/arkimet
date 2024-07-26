@@ -10,18 +10,19 @@
 #include <cerrno>
 
 using namespace std;
+using namespace std::string_literals;
 
 namespace arki {
 namespace utils {
 namespace files {
 
-bool filesystem_has_holes(const std::string& dir)
+bool filesystem_has_holes(const std::filesystem::path& dir)
 {
     static const unsigned test_size = 512 * 10;
 
     // Create a file with holes
     sys::File fd = sys::File::mkstemp(dir);
-    sys::unlink(fd.name());
+    sys::unlink(fd.path());
     fd.ftruncate(test_size);
 
     struct stat st;
@@ -33,25 +34,25 @@ bool filesystem_has_holes(const std::string& dir)
     off_t offset = 0;
     ssize_t res = sendfile(out, fd, &offset, test_size);
     if (res == -1)
-        throw_system_error("cannot sendfile(2) " + std::to_string(test_size) + " bytes");
+        throw_system_error("cannot sendfile(2) "s + std::to_string(test_size) + " bytes");
     if (offset != test_size)
-        throw_system_error("sendfile read only " + std::to_string(offset) + "/" + std::to_string(test_size));
+        throw_system_error("sendfile read only "s + std::to_string(offset) + "/" + std::to_string(test_size));
 
     fd.fstat(st);
     return st.st_blocks == 0;
 }
 
-bool filesystem_has_ofd_locks(const std::string& dir)
+bool filesystem_has_ofd_locks(const std::filesystem::path& dir)
 {
     sys::File fd1 = sys::File::mkstemp(dir);
-    sys::File fd2(fd1.name());
+    sys::File fd2(fd1.path());
     try {
         fd2.open(O_RDWR);
     } catch (...) {
-        sys::unlink(fd1.name());
+        sys::unlink(fd1.path());
         throw;
     }
-    sys::unlink(fd1.name());
+    sys::unlink(fd1.path());
 
     struct flock lock;
     memset(&lock, 0, sizeof(struct ::flock));
@@ -67,38 +68,38 @@ bool filesystem_has_ofd_locks(const std::string& dir)
     return res1 && !res2;
 }
 
-void createFlagfile(const std::string& pathname)
+void createFlagfile(const std::filesystem::path& pathname)
 {
     sys::File fd(pathname, O_WRONLY | O_CREAT | O_NOCTTY, 0666);
     fd.close();
 }
 
-void createDontpackFlagfile(const std::string& dir)
+void createDontpackFlagfile(const std::filesystem::path& dir)
 {
-    createFlagfile(str::joinpath(dir, FLAGFILE_DONTPACK));
+    createFlagfile(dir / FLAGFILE_DONTPACK);
 }
 
-void removeDontpackFlagfile(const std::string& dir)
+void removeDontpackFlagfile(const std::filesystem::path& dir)
 {
-    sys::unlink_ifexists(str::joinpath(dir, FLAGFILE_DONTPACK));
+    std::filesystem::remove(dir / FLAGFILE_DONTPACK);
 }
 
-bool hasDontpackFlagfile(const std::string& dir)
+bool hasDontpackFlagfile(const std::filesystem::path& dir)
 {
-    return sys::exists(str::joinpath(dir, FLAGFILE_DONTPACK));
+    return std::filesystem::exists(dir / FLAGFILE_DONTPACK);
 }
 
-void resolve_path(const std::string& pathname, std::string& basedir, std::string& relpath)
+void resolve_path(const std::filesystem::path& pathname, std::filesystem::path& basedir, std::filesystem::path& relpath)
 {
-    if (pathname[0] == '/')
+    if (pathname.is_absolute())
         basedir.clear();
     else
-        basedir = sys::getcwd();
-    relpath = str::normpath(pathname);
+        basedir = std::filesystem::current_path();
+    relpath = pathname.lexically_normal();
 }
 
 
-PathWalk::PathWalk(const std::string& root, Consumer consumer)
+PathWalk::PathWalk(const std::filesystem::path& root, Consumer consumer)
     : root(root), consumer(consumer)
 {
 }
@@ -112,7 +113,7 @@ void PathWalk::walk()
     walk("", dir);
 }
 
-void PathWalk::walk(const std::string& relpath, sys::Path& path)
+void PathWalk::walk(const std::filesystem::path& relpath, sys::Path& path)
 {
     for (auto i = path.begin(); i != path.end(); ++i)
     {
@@ -132,7 +133,7 @@ void PathWalk::walk(const std::string& relpath, sys::Path& path)
         if (S_ISDIR(st.st_mode))
         {
             // Recurse
-            string subpath = str::joinpath(relpath, i->d_name);
+            auto subpath = relpath / i->d_name;
             sys::Path subdir(path, i->d_name);
             walk(subpath, subdir);
         }
@@ -140,7 +141,7 @@ void PathWalk::walk(const std::string& relpath, sys::Path& path)
 }
 
 
-PreserveFileTimes::PreserveFileTimes(const std::string& fname)
+PreserveFileTimes::PreserveFileTimes(const std::filesystem::path& fname)
     : fname(fname)
 {
     struct stat st;
@@ -156,7 +157,7 @@ PreserveFileTimes::~PreserveFileTimes() noexcept(false)
 }
 
 
-RenameTransaction::RenameTransaction(const std::string& tmpabspath, const std::string& abspath)
+RenameTransaction::RenameTransaction(const std::filesystem::path& tmpabspath, const std::filesystem::path& abspath)
     : tmpabspath(tmpabspath), abspath(abspath)
 {
 }
@@ -169,7 +170,7 @@ RenameTransaction::~RenameTransaction()
 void RenameTransaction::commit()
 {
     if (fired) return;
-    sys::rename(tmpabspath, abspath);
+    std::filesystem::rename(tmpabspath, abspath);
     fired = true;
 }
 
@@ -204,7 +205,7 @@ void FinalizeTempfilesTransaction::rollback()
 {
     if (fired) return;
     for (const auto& f: tmpfiles)
-        sys::unlink_ifexists(f);
+        std::filesystem::remove(f);
     fired = true;
 }
 

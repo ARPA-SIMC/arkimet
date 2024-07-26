@@ -11,6 +11,7 @@
 #include <arki/stream/fwd.h>
 #include <arki/segment/fwd.h>
 #include <arki/core/transaction.h>
+#include <filesystem>
 #include <string>
 #include <memory>
 #include <vector>
@@ -106,11 +107,11 @@ class Segment
 {
 public:
     std::string format;
-    std::string root;
-    std::string relpath;
-    std::string abspath;
+    std::filesystem::path root;
+    std::filesystem::path relpath;
+    std::filesystem::path abspath;
 
-    Segment(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath);
+    Segment(const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath, const std::filesystem::path& abspath);
     virtual ~Segment();
 
     /**
@@ -144,19 +145,19 @@ public:
     /**
      * Return the segment path for this pathname, stripping .gz, .tar, and .zip extensions
      */
-    static std::string basename(const std::string& pathname);
+    static std::filesystem::path basename(const std::filesystem::path& pathname);
 
     /// Check if the given file or directory is a segment
-    static bool is_segment(const std::string& abspath);
+    static bool is_segment(const std::filesystem::path& abspath);
 
     /// Instantiate the right Reader implementation for a segment that already exists
-    static std::shared_ptr<segment::Reader> detect_reader(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock);
+    static std::shared_ptr<segment::Reader> detect_reader(const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath, const std::filesystem::path& abspath, std::shared_ptr<core::Lock> lock);
 
     /// Instantiate the right Writer implementation for a segment that already exists
-    static std::shared_ptr<segment::Writer> detect_writer(const segment::WriterConfig& config, const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, bool mock_data=false);
+    static std::shared_ptr<segment::Writer> detect_writer(const segment::WriterConfig& config, const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath, const std::filesystem::path& abspath, bool mock_data=false);
 
     /// Instantiate the right Checker implementation for a segment that already exists
-    static std::shared_ptr<segment::Checker> detect_checker(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, bool mock_data=false);
+    static std::shared_ptr<segment::Checker> detect_checker(const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath, const std::filesystem::path& abspath, bool mock_data=false);
 };
 
 
@@ -280,7 +281,7 @@ struct RepackConfig
 class Checker : public std::enable_shared_from_this<Checker>
 {
 protected:
-    virtual void move_data(const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath) = 0;
+    virtual void move_data(const std::filesystem::path& new_root, const std::filesystem::path& new_relpath, const std::filesystem::path& new_abspath) = 0;
 
 public:
     virtual ~Checker() {}
@@ -311,7 +312,7 @@ public:
      *
      * `rootdir` is the directory to use as root for the Blob sources in `mds`.
      */
-    virtual core::Pending repack(const std::string& rootdir, metadata::Collection& mds, const RepackConfig& cfg=RepackConfig()) = 0;
+    virtual core::Pending repack(const std::filesystem::path& rootdir, metadata::Collection& mds, const RepackConfig& cfg=RepackConfig()) = 0;
 
     /**
      * Replace this segment with a tar segment, updating the metadata in mds to
@@ -338,7 +339,7 @@ public:
      *
      * Returns a Checker pointing to the new location
      */
-    virtual std::shared_ptr<Checker> move(const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath) = 0;
+    virtual std::shared_ptr<Checker> move(const std::filesystem::path& new_root, const std::filesystem::path& new_relpath, const std::filesystem::path& new_abspath) = 0;
 
     /**
      * Truncate the segment at the given offset
