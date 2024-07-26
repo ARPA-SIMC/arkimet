@@ -35,6 +35,30 @@ const char* cstring_from_python(PyObject* o)
     throw PythonException();
 }
 
+PyObject* path_to_python(const std::filesystem::path& path)
+{
+    pyo_unique_ptr pathlib(throw_ifnull(PyImport_ImportModule("pathlib")));
+    pyo_unique_ptr Path(throw_ifnull(PyObject_GetAttrString(pathlib, "Path")));
+    pyo_unique_ptr arg(to_python(path.native()));
+    return throw_ifnull(PyObject_CallOneArg(Path, arg));
+}
+
+std::filesystem::path path_from_python(PyObject* o)
+{
+    if (PyUnicode_Check(o))
+        return std::filesystem::path(cstring_from_python(o));
+
+    if (!PyObject_HasAttrString(o, "as_posix"))
+    {
+        PyErr_SetString(PyExc_TypeError, "value must be an instance of str or pathlib.Path");
+        throw PythonException();
+    }
+
+    pyo_unique_ptr as_posix(throw_ifnull(PyObject_GetAttrString(o, "as_posix")));
+    pyo_unique_ptr stringval(throw_ifnull(PyObject_CallNoArgs(as_posix)));
+    return std::filesystem::path(cstring_from_python(stringval));
+}
+
 PyObject* bytes_to_python(const std::vector<uint8_t>& buffer)
 {
     return throw_ifnull(PyBytes_FromStringAndSize((const char*)buffer.data(), buffer.size()));
