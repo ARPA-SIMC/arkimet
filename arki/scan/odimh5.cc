@@ -92,7 +92,7 @@ std::shared_ptr<Metadata> OdimScanner::scan_data(const std::vector<uint8_t>& dat
     return md;
 }
 
-std::shared_ptr<Metadata> OdimScanner::scan_singleton(const std::string& abspath)
+std::shared_ptr<Metadata> OdimScanner::scan_singleton(const std::filesystem::path& abspath)
 {
     return scan_h5_file(abspath);
 }
@@ -145,7 +145,7 @@ MockOdimScanner::~MockOdimScanner()
     delete engine;
 }
 
-std::shared_ptr<Metadata> MockOdimScanner::scan_h5_file(const std::string& pathname)
+std::shared_ptr<Metadata> MockOdimScanner::scan_h5_file(const std::filesystem::path& pathname)
 {
     auto buf = sys::read_file(pathname);
     return engine->lookup(reinterpret_cast<const uint8_t*>(buf.data()), buf.size());

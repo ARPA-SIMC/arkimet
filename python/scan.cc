@@ -415,7 +415,7 @@ void load_odimh5scanner_object()
 class PythonOdimh5Scanner : public arki::scan::OdimScanner
 {
 protected:
-    std::shared_ptr<Metadata> scan_h5_file(const std::string& pathname) override
+    std::shared_ptr<Metadata> scan_h5_file(const std::filesystem::path& pathname) override
     {
         auto md = std::make_shared<Metadata>();
 
@@ -472,7 +472,7 @@ void load_ncscanner_object()
 class PythonNetCDFScanner : public arki::scan::NetCDFScanner
 {
 protected:
-    std::shared_ptr<Metadata> scan_nc_file(const std::string& pathname) override
+    std::shared_ptr<Metadata> scan_nc_file(const std::filesystem::path& pathname) override
     {
         auto md = std::make_shared<Metadata>();
 
@@ -529,7 +529,7 @@ void load_jpegscanner_object()
 class PythonJPEGScanner : public arki::scan::JPEGScanner
 {
 protected:
-    std::shared_ptr<Metadata> scan_jpeg_file(const std::string& pathname) override
+    std::shared_ptr<Metadata> scan_jpeg_file(const std::filesystem::path& pathname) override
     {
         auto md = std::make_shared<Metadata>();
 

@@ -21,7 +21,7 @@ void Validator::throw_check_error(const std::string& msg) const
     throw std::runtime_error(ss.str());
 }
 
-const Validator& Validator::by_filename(const std::string& filename)
+const Validator& Validator::by_filename(const std::filesystem::path& filename)
 {
     return by_format(Scanner::format_from_filename(filename));
 }

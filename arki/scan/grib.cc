@@ -152,13 +152,13 @@ bool GribScanner::scan_segment(std::shared_ptr<segment::Reader> reader, metadata
     return true;
 }
 
-std::shared_ptr<Metadata> GribScanner::scan_singleton(const std::string& abspath)
+std::shared_ptr<Metadata> GribScanner::scan_singleton(const std::filesystem::path& abspath)
 {
     std::shared_ptr<Metadata> md;
     files::RAIIFILE in(abspath, "rb");
     {
         GribHandle gh(context, in);
-        if (!gh) throw std::runtime_error(abspath + " contains no GRIB data");
+        if (!gh) throw std::runtime_error(abspath.native() + " contains no GRIB data");
         md = scan(gh);
         stringstream note;
         note << "Scanned from " << str::basename(abspath);
@@ -168,7 +168,7 @@ std::shared_ptr<Metadata> GribScanner::scan_singleton(const std::string& abspath
 
     {
         GribHandle gh(context, in);
-        if (gh) throw std::runtime_error(abspath + " contains more than one GRIB data");
+        if (gh) throw std::runtime_error(abspath.native() + " contains more than one GRIB data");
         gh.close();
     }
 

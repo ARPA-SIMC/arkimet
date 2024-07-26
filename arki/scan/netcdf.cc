@@ -117,7 +117,7 @@ std::shared_ptr<Metadata> NetCDFScanner::scan_data(const std::vector<uint8_t>& d
     return md;
 }
 
-std::shared_ptr<Metadata> NetCDFScanner::scan_singleton(const std::string& abspath)
+std::shared_ptr<Metadata> NetCDFScanner::scan_singleton(const std::filesystem::path& abspath)
 {
     return scan_nc_file(abspath);
 }
@@ -170,7 +170,7 @@ MockNetCDFScanner::~MockNetCDFScanner()
     delete engine;
 }
 
-std::shared_ptr<Metadata> MockNetCDFScanner::scan_nc_file(const std::string& pathname)
+std::shared_ptr<Metadata> MockNetCDFScanner::scan_nc_file(const std::filesystem::path& pathname)
 {
     auto buf = sys::read_file(pathname);
     return engine->lookup(reinterpret_cast<const uint8_t*>(buf.data()), buf.size());

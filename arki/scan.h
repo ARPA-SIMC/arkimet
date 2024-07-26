@@ -56,7 +56,7 @@ public:
      *
      * Scanned metadata will have no source set.
      */
-    virtual std::shared_ptr<Metadata> scan_singleton(const std::string& abspath) = 0;
+    virtual std::shared_ptr<Metadata> scan_singleton(const std::filesystem::path& abspath) = 0;
 
     /**
      * Normalize metadata and data before dispatch, if required.
