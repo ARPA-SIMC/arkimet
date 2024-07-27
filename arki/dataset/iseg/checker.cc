@@ -437,7 +437,7 @@ public:
             const source::Blob& blob = md.sourceBlob();
             try {
                 if (str::basename(blob.filename) != basename)
-                    throw std::runtime_error("cannot rescan " + segment->segment().relpath.native() + ": metadata points to the wrong file: " + blob.filename);
+                    throw std::runtime_error("cannot rescan " + segment->segment().relpath.native() + ": metadata points to the wrong file: " + blob.filename.native());
                 if (std::unique_ptr<types::source::Blob> old = idx().index(md, blob.offset))
                 {
                     stringstream ss;

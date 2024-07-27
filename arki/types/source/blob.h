@@ -49,7 +49,7 @@ zip file segment implementation.
      * resolved based on \a basedir, or on the current directory if \a basedir
      * is empty.
      */
-    std::string filename;
+    std::filesystem::path filename;
 
     uint64_t offset;
     uint64_t size;
@@ -97,7 +97,7 @@ zip file segment implementation.
      * Throws an exception if path is not a directory that contains the current
      * absolute source pathname.
      */
-    std::unique_ptr<Blob> makeRelativeTo(const std::string& path) const;
+    std::unique_ptr<Blob> makeRelativeTo(const std::filesystem::path& path) const;
 
     /**
      * Make sure this blob has a reader that keeps a read lock on the source file
@@ -135,8 +135,8 @@ zip file segment implementation.
     stream::SendResult stream_data(StreamOutput& out) const;
 
     static std::unique_ptr<Blob> create(std::shared_ptr<segment::Reader> reader, uint64_t offset, uint64_t size);
-    static std::unique_ptr<Blob> create(const std::string& format, const std::string& basedir, const std::string& filename, uint64_t offset, uint64_t size, std::shared_ptr<segment::Reader> reader);
-    static std::unique_ptr<Blob> create_unlocked(const std::string& format, const std::string& basedir, const std::string& filename, uint64_t offset, uint64_t size);
+    static std::unique_ptr<Blob> create(const std::string& format, const std::filesystem::path& basedir, const std::filesystem::path& filename, uint64_t offset, uint64_t size, std::shared_ptr<segment::Reader> reader);
+    static std::unique_ptr<Blob> create_unlocked(const std::string& format, const std::filesystem::path& basedir, const std::filesystem::path& filename, uint64_t offset, uint64_t size);
     static std::unique_ptr<Blob> decode_structure(const structured::Keys& keys, const structured::Reader& reader);
 };
 

@@ -268,8 +268,8 @@ static const T* get_specific_type(const types::Type* actual)
 
 void ActualType::is_source_blob(
     const std::string& format,
-    const std::string& basedir,
-    const std::string& fname,
+    const std::filesystem::path& basedir,
+    const std::filesystem::path& fname,
     uint64_t ofs,
     uint64_t size)
 {
@@ -281,19 +281,19 @@ void ActualType::is_source_blob(
     wassert(actual(item->size) == size);
     if (!basedir.empty())
     {
-        string expected;
-        if (fname[0] == '/')
+        std::filesystem::path expected;
+        if (fname.is_absolute())
             expected = fname;
         else
-            expected = sys::abspath(str::joinpath(basedir, fname));
+            expected = (basedir / fname).lexically_normal();
         wassert(actual(item->absolutePathname()) == expected);
     }
 }
 
 void ActualType::is_source_blob(
     const std::string& format,
-    const std::string& basedir,
-    const std::string& fname)
+    const std::filesystem::path& basedir,
+    const std::filesystem::path& fname)
 {
     const source::Blob* item = get_specific_type<source::Blob>(_actual);
     wassert(actual(item->format) == format);
@@ -301,11 +301,11 @@ void ActualType::is_source_blob(
     wassert(actual(item->filename) == fname);
     if (!basedir.empty())
     {
-        string expected;
-        if (fname[0] == '/')
+        filesystem::path expected;
+        if (fname.is_absolute())
             expected = fname;
         else
-            expected = sys::abspath(str::joinpath(basedir, fname));
+            expected = (basedir / fname).lexically_normal();
         wassert(actual(item->absolutePathname()) == expected);
     }
 }
