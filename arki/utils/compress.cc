@@ -130,7 +130,7 @@ void ZlibCompressor::restart()
         throw runtime_error("zlib deflate stream reset error");
 }
 
-void gunzip(int rdfd, const std::string& rdfname, int wrfd, const std::string& wrfname, size_t bufsize)
+void gunzip(int rdfd, const std::filesystem::path& rdfname, int wrfd, const std::filesystem::path& wrfname, size_t bufsize)
 {
     // (Re)open the compressed file
     int rdfd1 = dup(rdfd);
@@ -147,7 +147,7 @@ void gunzip(int rdfd, const std::string& rdfname, int wrfd, const std::string& w
     // Let the caller close file rdfd and wrfd
 }
 
-std::vector<uint8_t> gunzip(const std::string& abspath, size_t bufsize)
+std::vector<uint8_t> gunzip(const std::filesystem::path& abspath, size_t bufsize)
 {
     gzip::File gzfd(abspath, "rb");
     vector<uint8_t> buf(bufsize);
@@ -162,11 +162,11 @@ std::vector<uint8_t> gunzip(const std::string& abspath, size_t bufsize)
     return res;
 }
 
-TempUnzip::TempUnzip(const std::string& fname)
+TempUnzip::TempUnzip(const std::filesystem::path& fname)
     : fname(fname)
 {
     // zcat gzfname > fname
-    string gzfname = fname + ".gz";
+    auto gzfname = sys::with_suffix(fname, ".gz");
     sys::File rdfd(gzfname, O_RDONLY);
 
     sys::File wrfd(fname, O_WRONLY | O_CREAT | O_EXCL, 0666);
@@ -202,7 +202,7 @@ size_t SeekIndex::lookup(size_t unc) const
 	return i - ofs_unc.begin() - 1;
 }
 
-bool SeekIndex::read(const std::string& fname)
+bool SeekIndex::read(const std::filesystem::path& fname)
 {
     sys::File fd(fname);
     if (!fd.open_ifexists(O_RDONLY)) return false;
