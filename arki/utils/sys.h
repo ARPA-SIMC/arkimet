@@ -681,9 +681,9 @@ void mkFilePath(const std::string& file);
  *
  * @return true if the file was deleted, false if it did not exist
  */
-[[deprecated("use sys::filesystem::remove")]] bool unlink_ifexists(const char* file);
-[[deprecated("use sys::filesystem::remove")]] bool unlink_ifexists(const std::string& file);
-[[deprecated("use sys::filesystem::remove")]] bool unlink_ifexists(const std::filesystem::path& file);
+[[deprecated("use std::filesystem::remove")]] bool unlink_ifexists(const char* file);
+[[deprecated("use std::filesystem::remove")]] bool unlink_ifexists(const std::string& file);
+[[deprecated("use std::filesystem::remove")]] bool unlink_ifexists(const std::filesystem::path& file);
 
 /**
  * Move \a src to \a dst, without raising exception if \a src does not exist
