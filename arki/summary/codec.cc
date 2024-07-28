@@ -185,7 +185,7 @@ size_t decode3(core::BinaryDecoder& dec, Table& target)
     return decoder.count;
 }
 
-size_t decode(core::BinaryDecoder& dec, unsigned version, const std::string& filename, Table& target)
+size_t decode(core::BinaryDecoder& dec, unsigned version, const std::filesystem::path& filename, Table& target)
 {
     // Check version and ensure we can decode
     switch (version)
