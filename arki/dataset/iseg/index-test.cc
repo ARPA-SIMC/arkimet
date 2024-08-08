@@ -28,10 +28,10 @@ step=daily
 path=testds
     )"));
 
-    sys::unlink_ifexists("testindex");
-    if (sys::isdir("testds"))
+    std::filesystem::remove("testindex");
+    if (std::filesystem::is_directory("testds"))
         sys::rmtree("testds");
-    sys::mkdir_ifmissing("testds");
+    std::filesystem::create_directory("testds");
 
     // Create the database
     {

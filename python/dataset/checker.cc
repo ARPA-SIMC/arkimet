@@ -124,7 +124,7 @@ struct segment_state : public MethKwargs<segment_state, arkipy_DatasetChecker>
             {
                 ReleaseGIL gil;
                 checker->segments_recursive(cfg, [&](arki::dataset::segmented::Checker& checker, arki::dataset::segmented::CheckerSegment& segment) {
-                    std::string key = checker.name() + ":" + segment.path_relative();
+                    std::string key = checker.name() + ":" + segment.path_relative().native();
                     auto state = segment.scan(*cfg.reporter, !cfg.accurate);
                     AcquireGIL gil;
                     set_dict(res, key.c_str(), state.state.to_string());

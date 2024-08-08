@@ -22,7 +22,7 @@ void make_file(const std::string& name)
 void make_dir(const std::string& name)
 {
     delete_if_exists(name);
-    sys::mkdir_ifmissing(name);
+    std::filesystem::create_directory(name);
     sys::write_file(name + "/.sequence", "");
 }
 

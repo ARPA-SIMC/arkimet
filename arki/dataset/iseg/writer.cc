@@ -257,7 +257,7 @@ Writer::Writer(std::shared_ptr<iseg::Dataset> dataset)
     : DatasetAccess(dataset), scache(dataset->summary_cache_pathname)
 {
     // Create the directory if it does not exist
-    sys::makedirs(dataset->path);
+    std::filesystem::create_directories(dataset->path);
     scache.openRW();
 }
 
@@ -268,10 +268,10 @@ Writer::~Writer()
 
 std::string Writer::type() const { return "iseg"; }
 
-std::string Writer::get_relpath(const Metadata& md)
+std::filesystem::path Writer::get_relpath(const Metadata& md)
 {
     core::Time time = md.get<types::reftime::Position>()->get_Position();
-    return dataset().step()(time) + "." + dataset().format;
+    return sys::with_suffix(dataset().step()(time), "."s + dataset().format);
 }
 
 std::unique_ptr<AppendSegment> Writer::file(const segment::WriterConfig& writer_config, const Metadata& md)
@@ -279,9 +279,9 @@ std::unique_ptr<AppendSegment> Writer::file(const segment::WriterConfig& writer_
     return file(writer_config, get_relpath(md));
 }
 
-std::unique_ptr<AppendSegment> Writer::file(const segment::WriterConfig& writer_config, const std::string& relpath)
+std::unique_ptr<AppendSegment> Writer::file(const segment::WriterConfig& writer_config, const std::filesystem::path& relpath)
 {
-    sys::makedirs(str::dirname(str::joinpath(dataset().path, relpath)));
+    std::filesystem::create_directories((dataset().path / relpath).parent_path());
     std::shared_ptr<dataset::AppendLock> append_lock(dataset().append_lock_segment(relpath));
     auto segment = dataset().session->segment_writer(writer_config, dataset().format, dataset().path, relpath);
     return std::unique_ptr<AppendSegment>(new AppendSegment(m_dataset, append_lock, segment));

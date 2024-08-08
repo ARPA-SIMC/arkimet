@@ -39,8 +39,8 @@ public:
 
     AppendSegment(std::shared_ptr<simple::Dataset> dataset, std::shared_ptr<dataset::AppendLock> lock, std::shared_ptr<segment::Writer> segment)
         : dataset(dataset), lock(lock), segment(segment),
-          dir(str::dirname(segment->segment().abspath)),
-          basename(str::basename(segment->segment().abspath))
+          dir(segment->segment().abspath.parent_path()),
+          basename(segment->segment().abspath.filename())
     {
         struct stat st_data;
         if (!dir.fstatat_ifexists(basename.c_str(), st_data))
@@ -63,7 +63,7 @@ public:
         auto copy(md.clone());
         if (!dataset->smallfiles)
             copy->unset(TYPE_VALUE);
-        copy->set_source(Source::createBlobUnlocked(source.format, dir.name(), basename, source.offset, source.size));
+        copy->set_source(Source::createBlobUnlocked(source.format, dir.path(), basename, source.offset, source.size));
         sum.add(*copy);
         mds.acquire(move(copy));
         flushed = false;
@@ -128,7 +128,7 @@ Writer::Writer(std::shared_ptr<simple::Dataset> dataset)
     : DatasetAccess(dataset)
 {
     // Create the directory if it does not exist
-    sys::makedirs(dataset->path);
+    std::filesystem::create_directories(dataset->path);
 
     // If the index is missing, take note not to perform a repack until a
     // check is made
@@ -147,14 +147,14 @@ std::unique_ptr<AppendSegment> Writer::file(const segment::WriterConfig& writer_
 {
     auto lock = dataset().append_lock_dataset();
     core::Time time = md.get<types::reftime::Position>()->get_Position();
-    std::string relpath = dataset().step()(time) + "." + md.source().format;
+    auto relpath = sys::with_suffix(dataset().step()(time), "."s + md.source().format);
     auto writer = dataset().session->segment_writer(writer_config, format, dataset().path, relpath);
     return std::unique_ptr<AppendSegment>(new AppendSegment(m_dataset, lock, writer));
 }
 
-std::unique_ptr<AppendSegment> Writer::file(const segment::WriterConfig& writer_config, const std::string& relpath)
+std::unique_ptr<AppendSegment> Writer::file(const segment::WriterConfig& writer_config, const std::filesystem::path& relpath)
 {
-    sys::makedirs(str::dirname(str::joinpath(dataset().path, relpath)));
+    std::filesystem::create_directories((dataset().path / relpath).parent_path());
     auto lock = dataset().append_lock_dataset();
     auto segment = dataset().session->segment_writer(writer_config, scan::Scanner::format_from_filename(relpath), dataset().path, relpath);
     return std::unique_ptr<AppendSegment>(new AppendSegment(m_dataset, lock, segment));

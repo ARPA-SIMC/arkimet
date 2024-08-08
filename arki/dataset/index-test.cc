@@ -35,7 +35,7 @@ struct BaseFixture : public Fixture
         mdc.clear();
         mdc.scan_from_file("inbound/fixture.grib1", false);
         sys::rmtree_ifexists("testds");
-        sys::mkdir_ifmissing("testds");
+        std::filesystem::create_directory("testds");
     }
     //void test_teardown() { sys::rmtree_ifexists("testds"); }
 

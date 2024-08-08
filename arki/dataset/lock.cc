@@ -15,12 +15,12 @@ using namespace arki::utils;
 namespace arki {
 namespace dataset {
 
-Lock::Lock(const std::string& pathname, const core::lock::Policy* lock_policy)
+Lock::Lock(const std::filesystem::path& pathname, const core::lock::Policy* lock_policy)
     : lockfile(pathname, O_RDWR | O_CREAT, 0777), lock_policy(lock_policy)
 {
 }
 
-ReadLock::ReadLock(const std::string& pathname, const core::lock::Policy* lock_policy)
+ReadLock::ReadLock(const std::filesystem::path& pathname, const core::lock::Policy* lock_policy)
     : Lock(pathname, lock_policy)
 {
     trace("%s [%d] Requesting read lock\n", pathname.c_str(), (int)getpid());
@@ -42,7 +42,7 @@ ReadLock::~ReadLock()
 }
 
 
-AppendLock::AppendLock(const std::string& pathname, const core::lock::Policy* lock_policy)
+AppendLock::AppendLock(const std::filesystem::path& pathname, const core::lock::Policy* lock_policy)
     : Lock(pathname, lock_policy)
 {
     trace("%s [%d] Requesting append lock\n", pathname.c_str(), (int)getpid());
@@ -64,7 +64,7 @@ AppendLock::~AppendLock()
 }
 
 
-CheckLock::CheckLock(const std::string& pathname, const core::lock::Policy* lock_policy)
+CheckLock::CheckLock(const std::filesystem::path& pathname, const core::lock::Policy* lock_policy)
     : Lock(pathname, lock_policy)
 {
     trace("%s [%d] Requesting readonly check lock\n", pathname.c_str(), (int)getpid());
@@ -93,7 +93,7 @@ struct TemporaryWriteLock : public core::Lock
 {
     std::shared_ptr<CheckLock> parent;
 
-    TemporaryWriteLock(std::shared_ptr<CheckLock> parent)
+    explicit TemporaryWriteLock(std::shared_ptr<CheckLock> parent)
         : parent(parent)
     {
         trace("%s [%d] Requesting escalate to write check lock\n", parent->lockfile.name().c_str(), (int)getpid());
@@ -127,41 +127,41 @@ std::shared_ptr<core::Lock> CheckLock::write_lock()
 }
 
 namespace {
-const std::string& ensure_path(const std::string& pathname)
+const std::filesystem::path& ensure_path(const std::filesystem::path& pathname)
 {
-    sys::makedirs(str::dirname(pathname));
+    std::filesystem::create_directories(pathname.parent_path());
     return pathname;
 }
 }
 
 
 DatasetReadLock::DatasetReadLock(const local::Dataset& dataset)
-    : ReadLock(str::joinpath(dataset.path, "lock"), dataset.lock_policy)
+    : ReadLock(dataset.path / "lock", dataset.lock_policy)
 {
 }
 
-SegmentReadLock::SegmentReadLock(const local::Dataset& dataset, const std::string& relpath)
-    : ReadLock(str::joinpath(dataset.path, relpath + ".lock"), dataset.lock_policy)
+SegmentReadLock::SegmentReadLock(const local::Dataset& dataset, const std::filesystem::path& relpath)
+    : ReadLock(dataset.path / sys::with_suffix(relpath, ".lock"), dataset.lock_policy)
 {
 }
 
 DatasetAppendLock::DatasetAppendLock(const local::Dataset& dataset)
-    : AppendLock(str::joinpath(dataset.path, "lock"), dataset.lock_policy)
+    : AppendLock(dataset.path / "lock", dataset.lock_policy)
 {
 }
 
-SegmentAppendLock::SegmentAppendLock(const local::Dataset& dataset, const std::string& relpath)
-    : AppendLock(str::joinpath(dataset.path, relpath + ".lock"), dataset.lock_policy)
+SegmentAppendLock::SegmentAppendLock(const local::Dataset& dataset, const std::filesystem::path& relpath)
+    : AppendLock(dataset.path / sys::with_suffix(relpath, ".lock"), dataset.lock_policy)
 {
 }
 
 DatasetCheckLock::DatasetCheckLock(const local::Dataset& dataset)
-    : CheckLock(str::joinpath(dataset.path, "lock"), dataset.lock_policy)
+    : CheckLock(dataset.path / "lock", dataset.lock_policy)
 {
 }
 
-SegmentCheckLock::SegmentCheckLock(const local::Dataset& dataset, const std::string& relpath)
-    : CheckLock(ensure_path(str::joinpath(dataset.path, relpath + ".lock")), dataset.lock_policy)
+SegmentCheckLock::SegmentCheckLock(const local::Dataset& dataset, const std::filesystem::path& relpath)
+    : CheckLock(ensure_path(dataset.path / sys::with_suffix(relpath, ".lock")), dataset.lock_policy)
 {
 }
 

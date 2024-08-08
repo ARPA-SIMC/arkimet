@@ -39,24 +39,24 @@ Session::~Session()
 {
 }
 
-std::shared_ptr<segment::Reader> Session::segment_reader(const std::string& format, const std::string& root, const std::string& relpath, std::shared_ptr<core::Lock> lock)
+std::shared_ptr<segment::Reader> Session::segment_reader(const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath, std::shared_ptr<core::Lock> lock)
 {
-    std::string abspath = str::joinpath(root, relpath);
+    auto abspath = std::filesystem::weakly_canonical(root / relpath);
     auto res = reader_pool.find(abspath);
     if (res == reader_pool.end() || res->second.expired())
     {
-        auto seg = Segment::detect_reader(format, root, relpath, str::joinpath(root, relpath), lock);
+        auto seg = Segment::detect_reader(format, root, relpath, abspath, lock);
         reader_pool[abspath] = seg;
         return seg;
     }
     return res->second.lock();
 }
 
-std::shared_ptr<segment::Writer> Session::segment_writer(const segment::WriterConfig& config, const std::string& format, const std::string& root, const std::string& relpath)
+std::shared_ptr<segment::Writer> Session::segment_writer(const segment::WriterConfig& config, const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath)
 {
     // Ensure that the directory containing the segment exists
-    std::string abspath = str::joinpath(root, relpath);
-    sys::makedirs(str::dirname(abspath));
+    auto abspath = root / relpath;
+    std::filesystem::create_directories(abspath.parent_path());
 
     auto res(Segment::detect_writer(config, format, root, relpath, abspath, false));
     if (res) return res;
@@ -72,15 +72,15 @@ std::shared_ptr<segment::Writer> Session::segment_writer(const segment::WriterCo
         res.reset(new segment::lines::Writer(config, format, root, relpath, abspath));
     } else {
         throw std::runtime_error(
-                "cannot create writer for " + format + " file " + relpath +
+                "cannot create writer for " + format + " file " + relpath.native() +
                 ": format not supported");
     }
     return res;
 }
 
-std::shared_ptr<segment::Checker> Session::segment_checker(const std::string& format, const std::string& root, const std::string& relpath)
+std::shared_ptr<segment::Checker> Session::segment_checker(const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath)
 {
-    std::string abspath = str::joinpath(root, relpath);
+    std::string abspath = root / relpath;
 
     auto res(Segment::detect_checker(format, root, relpath, abspath, false));
     if (res) return res;
@@ -96,7 +96,7 @@ std::shared_ptr<segment::Checker> Session::segment_checker(const std::string& fo
         res.reset(new segment::lines::Checker(format, root, relpath, abspath));
     } else {
         throw std::runtime_error(
-                "getting writer for " + format + " file " + relpath +
+                "getting writer for " + format + " file " + relpath.native() +
                 ": format not supported");
     }
     return res;
@@ -141,7 +141,7 @@ static std::string geturlprefix(const std::string& s)
 }
 #endif
 
-std::shared_ptr<core::cfg::Section> Session::read_config(const std::string& path)
+std::shared_ptr<core::cfg::Section> Session::read_config(const std::filesystem::path& path)
 {
     if (path == "-")
     {
@@ -150,26 +150,20 @@ std::shared_ptr<core::cfg::Section> Session::read_config(const std::string& path
         return core::cfg::Section::parse(in);
     }
 
-    // Remove trailing slashes, if any
-    std::string fname = path;
-    while (!fname.empty() && fname[fname.size() - 1] == '/')
-        fname.resize(fname.size() - 1);
-
-    std::unique_ptr<struct stat> st = sys::stat(fname);
-
+    std::unique_ptr<struct stat> st = sys::stat(path);
     if (st.get() == 0)
     {
         // If it does not exist, it could be a URL or a format:filename URL-like
-        size_t pos = path.find(':');
+        size_t pos = path.native().find(':');
         if (pos == std::string::npos)
         {
             std::stringstream ss;
-            ss << "cannot read configuration from " << fname << " because it does not exist";
+            ss << "cannot read configuration from " << path << " because it does not exist";
             throw std::runtime_error(ss.str());
         }
 
-        std::string prefix = path.substr(0, pos);
 #ifdef HAVE_LIBCURL
+        std::string prefix = path.native().substr(0, pos);
         if (prefix == "http" or prefix == "https")
             return dataset::http::Reader::load_cfg_section(path);
         else
@@ -178,14 +172,14 @@ std::shared_ptr<core::cfg::Section> Session::read_config(const std::string& path
     }
 
     if (S_ISDIR(st->st_mode))
-        return dataset::local::Reader::read_config(fname);
-    else if (str::basename(fname) == "config")
-        return dataset::local::Reader::read_config(str::dirname(fname));
+        return dataset::local::Reader::read_config(path);
+    else if (path.filename() == "config")
+        return dataset::local::Reader::read_config(path.parent_path());
     else
-        return dataset::file::read_config(fname);
+        return dataset::file::read_config(path);
 }
 
-std::shared_ptr<core::cfg::Sections> Session::read_configs(const std::string& path)
+std::shared_ptr<core::cfg::Sections> Session::read_configs(const std::filesystem::path& path)
 {
     if (path == "-")
     {
@@ -194,26 +188,20 @@ std::shared_ptr<core::cfg::Sections> Session::read_configs(const std::string& pa
         return core::cfg::Sections::parse(in);
     }
 
-    // Remove trailing slashes, if any
-    std::string fname = path;
-    while (!fname.empty() && fname[fname.size() - 1] == '/')
-        fname.resize(fname.size() - 1);
-
-    std::unique_ptr<struct stat> st = sys::stat(fname);
-
+    std::unique_ptr<struct stat> st = sys::stat(path);
     if (st.get() == 0)
     {
         // If it does not exist, it could be a URL or a format:filename URL-like
-        size_t pos = path.find(':');
+        size_t pos = path.native().find(':');
         if (pos == std::string::npos)
         {
             std::stringstream ss;
-            ss << "cannot read configuration from " << fname << " because it does not exist";
+            ss << "cannot read configuration from " << path << " because it does not exist";
             throw std::runtime_error(ss.str());
         }
 
-        std::string prefix = path.substr(0, pos);
 #ifdef HAVE_LIBCURL
+        std::string prefix = path.native().substr(0, pos);
         if (prefix == "http" or prefix == "https")
             return dataset::http::Reader::load_cfg_sections(path);
         else
@@ -224,17 +212,17 @@ std::shared_ptr<core::cfg::Sections> Session::read_configs(const std::string& pa
     if (S_ISDIR(st->st_mode))
     {
         // A directory, read the dataset config
-        return dataset::local::Reader::read_configs(fname);
+        return dataset::local::Reader::read_configs(path);
     }
     else
     {
         // A file, check for known extensions
-        std::string format = scan::Scanner::format_from_filename(fname, "");
+        std::string format = scan::Scanner::format_from_filename(path, "");
         if (!format.empty())
-            return dataset::file::read_configs(fname);
+            return dataset::file::read_configs(path);
 
         // Read the contents as configuration
-        sys::File in(fname, O_RDONLY);
+        sys::File in(path, O_RDONLY);
         return core::cfg::Sections::parse(in);
     }
 }
@@ -306,24 +294,24 @@ std::string Session::expand_remote_query(std::shared_ptr<const core::cfg::Sectio
     return query;
 }
 
-std::shared_ptr<segment::Reader> DirSegmentsSession::segment_reader(const std::string& format, const std::string& root, const std::string& relpath, std::shared_ptr<core::Lock> lock)
+std::shared_ptr<segment::Reader> DirSegmentsSession::segment_reader(const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath, std::shared_ptr<core::Lock> lock)
 {
-    std::string abspath = str::joinpath(root, relpath);
+    auto abspath = std::filesystem::weakly_canonical(root / relpath);
     auto res = reader_pool.find(abspath);
     if (res == reader_pool.end() || res->second.expired())
     {
-        auto seg = Segment::detect_reader(format, root, relpath, str::joinpath(root, relpath), lock);
+        auto seg = Segment::detect_reader(format, root, relpath, root / relpath, lock);
         reader_pool[abspath] = seg;
         return seg;
     }
     return res->second.lock();
 }
 
-std::shared_ptr<segment::Writer> DirSegmentsSession::segment_writer(const segment::WriterConfig& config, const std::string& format, const std::string& root, const std::string& relpath)
+std::shared_ptr<segment::Writer> DirSegmentsSession::segment_writer(const segment::WriterConfig& config, const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath)
 {
     // Ensure that the directory containing the segment exists
-    std::string abspath = str::joinpath(root, relpath);
-    sys::makedirs(str::dirname(abspath));
+    auto abspath = root / relpath;
+    std::filesystem::create_directories(abspath.parent_path());
 
     auto res(Segment::detect_writer(config, format, root, relpath, abspath, false));
     if (res) return res;
@@ -332,9 +320,9 @@ std::shared_ptr<segment::Writer> DirSegmentsSession::segment_writer(const segmen
     return res;
 }
 
-std::shared_ptr<segment::Checker> DirSegmentsSession::segment_checker(const std::string& format, const std::string& root, const std::string& relpath)
+std::shared_ptr<segment::Checker> DirSegmentsSession::segment_checker(const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath)
 {
-    std::string abspath = str::joinpath(root, relpath);
+    auto abspath = root / relpath;
 
     auto res(Segment::detect_checker(format, root, relpath, abspath, false));
     if (res) return res;

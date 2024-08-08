@@ -39,18 +39,19 @@ Manifest::~Manifest() {}
 
 void Manifest::querySummaries(const Matcher& matcher, Summary& summary)
 {
-    vector<string> files = file_list(matcher);
+    std::vector<std::filesystem::path> files = file_list(matcher);
 
-    for (vector<string>::const_iterator i = files.begin(); i != files.end(); ++i)
+    for (const auto& file: files)
     {
-        string pathname = str::joinpath(m_path, *i);
+        auto pathname = m_path / file;
+        auto summary_path = sys::with_suffix(pathname, ".summary");
 
         // Silently skip files that have been deleted
-        if (!sys::access(pathname + ".summary", R_OK))
+        if (!sys::access(summary_path, R_OK))
             continue;
 
         Summary s;
-        s.read_file(pathname + ".summary");
+        s.read_file(summary_path);
         s.filter(matcher, summary);
     }
 }
@@ -59,7 +60,7 @@ bool Manifest::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 {
     if (lock.expired())
         throw std::runtime_error("cannot query_data while there is no lock held");
-    vector<string> files = file_list(q.matcher);
+    auto files = file_list(q.matcher);
 
     // TODO: does it make sense to check with the summary first?
 
@@ -73,20 +74,17 @@ bool Manifest::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 
     metadata::sort::Stream sorter(*compare, dest);
 
-    string absdir = sys::abspath(m_path);
-    string prepend_fname;
-
-    for (vector<string>::const_iterator i = files.begin(); i != files.end(); ++i)
+    for (const auto& file: files)
     {
-        prepend_fname = str::dirname(*i);
-        string abspath = str::joinpath(absdir, *i);
-        string fullpath = abspath + ".metadata";
-        if (!sys::exists(fullpath)) continue;
+        auto prepend_fname = file.parent_path();
+        auto abspath = m_path / file;
+        auto fullpath = sys::with_suffix(abspath, ".metadata");
+        if (!std::filesystem::exists(fullpath)) continue;
         std::shared_ptr<arki::segment::Reader> reader;
         if (q.with_data)
-            reader = dataset->segment_reader(*i, lock.lock());
+            reader = dataset->segment_reader(file, lock.lock());
         // This generates filenames relative to the metadata
-        // We need to use absdir as the dirname, and prepend dirname(*i) to the filenames
+        // We need to use m_path as the dirname, and prepend dirname(*i) to the filenames
         Metadata::read_file(fullpath, [&](std::shared_ptr<Metadata> md) {
             // Filter using the matcher in the query
             if (!q.matcher(*md)) return true;
@@ -95,9 +93,9 @@ bool Manifest::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
             if (const source::Blob* s = md->has_source_blob())
             {
                 if (q.with_data)
-                    md->set_source(Source::createBlob(s->format, absdir, str::joinpath(prepend_fname, s->filename), s->offset, s->size, reader));
+                    md->set_source(Source::createBlob(s->format, m_path, prepend_fname / s->filename, s->offset, s->size, reader));
                 else
-                    md->set_source(Source::createBlobUnlocked(s->format, absdir, str::joinpath(prepend_fname, s->filename), s->offset, s->size));
+                    md->set_source(Source::createBlobUnlocked(s->format, m_path, prepend_fname / s->filename, s->offset, s->size));
             }
             return sorter.add(md);
         });
@@ -117,7 +115,7 @@ bool Manifest::query_summary(const Matcher& matcher, Summary& summary)
     {
         // The matcher does not contain reftime, we can work with a
         // global summary
-        string cache_pathname = str::joinpath(m_path, "summary");
+        auto cache_pathname = m_path / "summary";
 
         if (sys::access(cache_pathname, R_OK))
         {
@@ -144,41 +142,40 @@ bool Manifest::query_summary(const Matcher& matcher, Summary& summary)
     return true;
 }
 
-void Manifest::query_segment(const std::string& relpath, metadata_dest_func dest) const
+void Manifest::query_segment(const std::filesystem::path& relpath, metadata_dest_func dest) const
 {
     if (lock.expired())
         throw std::runtime_error("cannot query_segment while there is no lock held");
-    string absdir = sys::abspath(m_path);
-    string prepend_fname = str::dirname(relpath);
-    string abspath = str::joinpath(m_path, relpath);
+    auto prepend_fname = relpath.parent_path();
+    auto abspath = m_path / relpath;
     auto reader = dataset->segment_reader(relpath, lock.lock());
-    Metadata::read_file(abspath + ".metadata", [&](std::shared_ptr<Metadata> md) {
+    Metadata::read_file(sys::with_suffix(abspath, ".metadata"), [&](std::shared_ptr<Metadata> md) {
         // Tweak Blob sources replacing the file name with relpath
         if (const source::Blob* s = md->has_source_blob())
-            md->set_source(Source::createBlob(s->format, absdir, str::joinpath(prepend_fname, s->filename), s->offset, s->size, reader));
+            md->set_source(Source::createBlob(s->format, m_path, prepend_fname / s->filename, s->offset, s->size, reader));
         return dest(move(md));
     });
 }
 
 void Manifest::invalidate_summary()
 {
-    sys::unlink_ifexists(str::joinpath(m_path, "summary"));
+    std::filesystem::remove(m_path / "summary");
 }
 
-void Manifest::invalidate_summary(const std::string& relpath)
+void Manifest::invalidate_summary(const std::filesystem::path& relpath)
 {
-    sys::unlink_ifexists(str::joinpath(m_path, relpath) + ".summary");
+    std::filesystem::remove(m_path / sys::with_suffix(relpath, ".summary"));
     invalidate_summary();
 }
 
-void Manifest::test_deindex(const std::string& relpath)
+void Manifest::test_deindex(const std::filesystem::path& relpath)
 {
     remove(relpath);
 }
 
-void Manifest::test_make_overlap(const std::string& relpath, unsigned overlap_size, unsigned data_idx)
+void Manifest::test_make_overlap(const std::filesystem::path& relpath, unsigned overlap_size, unsigned data_idx)
 {
-    string pathname = str::joinpath(m_path, relpath) + ".metadata";
+    auto pathname = m_path / sys::with_suffix(relpath, ".metadata");
     utils::files::PreserveFileTimes pf(pathname);
     sys::File fd(pathname, O_RDWR);
     metadata::Collection mds;
@@ -190,9 +187,9 @@ void Manifest::test_make_overlap(const std::string& relpath, unsigned overlap_si
     fd.ftruncate(fd.lseek(0, SEEK_CUR));
 }
 
-void Manifest::test_make_hole(const std::string& relpath, unsigned hole_size, unsigned data_idx)
+void Manifest::test_make_hole(const std::filesystem::path& relpath, unsigned hole_size, unsigned data_idx)
 {
-    string pathname = str::joinpath(m_path, relpath) + ".metadata";
+    auto pathname = m_path / sys::with_suffix(relpath, ".metadata");
     utils::files::PreserveFileTimes pf(pathname);
     sys::File fd(pathname, O_RDWR);
     metadata::Collection mds;
@@ -212,11 +209,11 @@ class PlainManifest : public Manifest
 {
     struct Info
     {
-        std::string file;
+        std::filesystem::path file;
         time_t mtime;
         core::Interval time;
 
-        Info(const std::string& file, time_t mtime, const Interval& time)
+        Info(const std::filesystem::path& file, time_t mtime, const Interval& time)
             : file(file), mtime(mtime), time(time)
         {
         }
@@ -243,7 +240,7 @@ class PlainManifest : public Manifest
             end.se -= 1;
             end.normalise();
             std::stringstream ss;
-            ss << file << ";" << mtime << ";" << time.begin.to_sql() << ";" << end.to_sql() << endl;
+            ss << file.native() << ";" << mtime << ";" << time.begin.to_sql() << ";" << end.to_sql() << endl;
             out.write_all_or_throw(ss.str());
         }
     };
@@ -259,7 +256,7 @@ class PlainManifest : public Manifest
      */
     bool reread()
     {
-        string pathname(str::joinpath(m_path, "MANIFEST"));
+        auto pathname = m_path / "MANIFEST";
         ino_t inode = sys::inode(pathname, 0);
 
         if (inode == last_inode) return inode != 0;
@@ -335,7 +332,7 @@ public:
     void openRO() override
     {
         if (!reread())
-            throw std::runtime_error("cannot open archive index: MANIFEST does not exist in " + m_path);
+            throw std::runtime_error("cannot open archive index: MANIFEST does not exist in " + m_path.native());
         rw = false;
     }
 
@@ -346,9 +343,9 @@ public:
         rw = true;
     }
 
-    std::vector<std::string> file_list(const Matcher& matcher) override
+    std::vector<std::filesystem::path> file_list(const Matcher& matcher) override
     {
-        std::vector<std::string> files;
+        std::vector<std::filesystem::path> files;
         reread();
 
         std::string query;
@@ -380,7 +377,7 @@ public:
         return files;
     }
 
-    bool segment_timespan(const std::string& relpath, Interval& interval) const override
+    bool segment_timespan(const std::filesystem::path& relpath, Interval& interval) const override
     {
         // Lookup the file (FIXME: reimplement binary search so we
         // don't need to create a temporary Info)
@@ -416,7 +413,7 @@ public:
         return core::Pending();
     }
 
-    void acquire(const std::string& relpath, time_t mtime, const Summary& sum) override
+    void acquire(const std::filesystem::path& relpath, time_t mtime, const Summary& sum) override
     {
         reread();
 
@@ -436,7 +433,7 @@ public:
         dirty = true;
     }
 
-    void remove(const std::string& relpath) override
+    void remove(const std::filesystem::path& relpath) override
     {
         reread();
         vector<Info>::iterator i;
@@ -448,14 +445,16 @@ public:
         dirty = true;
     }
 
-    void list_segments(std::function<void(const std::string&)> dest) override
+    void list_segments(std::function<void(const std::filesystem::path&)> dest) override
     {
         reread();
         for (const auto& i: this->info)
+        {
             dest(i.file);
+        }
     }
 
-    void list_segments_filtered(const Matcher& matcher, std::function<void(const std::string&)> dest) override
+    void list_segments_filtered(const Matcher& matcher, std::function<void(const std::filesystem::path&)> dest) override
     {
         if (matcher.empty())
             return list_segments(dest);
@@ -476,7 +475,7 @@ public:
                 dest(i.file);
     }
 
-    bool has_segment(const std::string& relpath) const override
+    bool has_segment(const std::filesystem::path& relpath) const override
     {
         // Lookup the file (FIXME: reimplement binary search so we
         // don't need to create a temporary Info)
@@ -485,7 +484,7 @@ public:
         return lb != info.end() && lb->file == relpath;
     }
 
-    time_t segment_mtime(const std::string& relpath) const override
+    time_t segment_mtime(const std::filesystem::path& relpath) const override
     {
         // Lookup the file (FIXME: reimplement binary search so we
         // don't need to create a temporary Info)
@@ -501,7 +500,7 @@ public:
     {
         if (dirty)
         {
-            string pathname(str::joinpath(m_path, "MANIFEST.tmp"));
+            auto pathname = m_path / "MANIFEST.tmp";
 
             File out(pathname, O_WRONLY | O_CREAT | O_TRUNC);
             for (vector<Info>::const_iterator i = info.begin();
@@ -511,21 +510,22 @@ public:
                 out.fdatasync();
             out.close();
 
-            if (::rename(pathname.c_str(), str::joinpath(m_path, "MANIFEST").c_str()) < 0)
-                throw_system_error("cannot rename " + pathname + " to " + str::joinpath(m_path, "MANIFEST"));
+            auto target = m_path / "MANIFEST";
+            if (::rename(pathname.c_str(), target.c_str()) < 0)
+                throw_system_error("cannot rename " + pathname.native() + " to " + target.native());
 
             invalidate_summary();
             dirty = false;
         }
 
-        if (rw && ! sys::exists(str::joinpath(m_path, "summary")))
+        if (rw && ! std::filesystem::exists(m_path / "summary"))
         {
             Summary s;
             query_summary(Matcher(), s);
         }
     }
 
-    void test_rename(const std::string& relpath, const std::string& new_relpath) override
+    void test_rename(const std::filesystem::path& relpath, const std::filesystem::path& new_relpath) override
     {
         for (auto& i: info)
             if (i.file == relpath)
@@ -536,10 +536,9 @@ public:
         std::sort(info.begin(), info.end());
     }
 
-    static bool exists(const std::string& dir)
+    static bool exists(const std::filesystem::path& dir)
     {
-        string pathname(str::joinpath(dir, "MANIFEST"));
-        return sys::access(pathname, F_OK);
+        return sys::access(dir / "MANIFEST", F_OK);
     }
 };
 
@@ -604,12 +603,12 @@ public:
 
     void openRO() override
     {
-        string pathname(str::joinpath(m_path, "index.sqlite"));
+        auto pathname = m_path / "index.sqlite";
         if (m_db.isOpen())
-            throw std::runtime_error("cannot open archive index: index " + pathname + " is already open");
+            throw std::runtime_error("cannot open archive index: index " + pathname.native() + " is already open");
 
         if (!sys::access(pathname, F_OK))
-            throw std::runtime_error("opening archive index: index " + pathname + " does not exist");
+            throw std::runtime_error("opening archive index: index " + pathname.native() + " does not exist");
 
         m_db.open(pathname);
         setup_pragmas();
@@ -619,7 +618,7 @@ public:
 
     void openRW() override
     {
-        string pathname(str::joinpath(m_path, "index.sqlite"));
+        auto pathname = m_path / "index.sqlite";
         if (m_db.isOpen())
         {
             stringstream ss;
@@ -638,9 +637,9 @@ public:
         initQueries();
     }
 
-    std::vector<std::string> file_list(const Matcher& matcher) override
+    std::vector<std::filesystem::path> file_list(const Matcher& matcher) override
     {
-        std::vector<std::string> files;
+        std::vector<std::filesystem::path> files;
         string query;
         Interval interval;
         if (!matcher.intersect_interval(interval))
@@ -673,11 +672,11 @@ public:
         return files;
     }
 
-    bool segment_timespan(const std::string& relpath, Interval& interval) const override
+    bool segment_timespan(const std::filesystem::path& relpath, Interval& interval) const override
     {
         Query q("sel_file_ts", m_db);
         q.compile("SELECT start_time, end_time FROM files WHERE file=?");
-        q.bind(1, relpath);
+        q.bind(1, relpath.native());
 
         bool found = false;
         while (q.step())
@@ -727,7 +726,7 @@ public:
         return core::Pending(new SqliteTransaction(m_db, "EXCLUSIVE"));
     }
 
-    void acquire(const std::string& relpath, time_t mtime, const Summary& sum) override
+    void acquire(const std::filesystem::path& relpath, time_t mtime, const Summary& sum) override
     {
         // Add to index
         core::Interval rt = sum.get_reference_time();
@@ -737,23 +736,23 @@ public:
         et = rt.end.to_sql();
 
         m_insert.reset();
-        m_insert.bind(1, relpath);
+        m_insert.bind(1, relpath.native());
         m_insert.bind(2, mtime);
         m_insert.bind(3, bt);
         m_insert.bind(4, et);
         m_insert.step();
     }
 
-    virtual void remove(const std::string& relpath) override
+    virtual void remove(const std::filesystem::path& relpath) override
     {
         Query q("del_file", m_db);
         q.compile("DELETE FROM files WHERE file=?");
-        q.bind(1, relpath);
+        q.bind(1, relpath.native());
         while (q.step())
             ;
     }
 
-    void list_segments(std::function<void(const std::string&)> dest) override
+    void list_segments(std::function<void(const std::filesystem::path&)> dest) override
     {
         Query q("sel_archive", m_db);
         q.compile("SELECT DISTINCT file FROM files ORDER BY start_time");
@@ -762,7 +761,7 @@ public:
             dest(q.fetchString(0));
     }
 
-    void list_segments_filtered(const Matcher& matcher, std::function<void(const std::string&)> dest) override
+    void list_segments_filtered(const Matcher& matcher, std::function<void(const std::filesystem::path&)> dest) override
     {
         if (matcher.empty())
             return list_segments(dest);
@@ -807,42 +806,41 @@ public:
         }
     }
 
-    bool has_segment(const std::string& relpath) const override
+    bool has_segment(const std::filesystem::path& relpath) const override
     {
         Query q("sel_has_segment", m_db);
         q.compile("SELECT 1 FROM files WHERE file=?");
-        q.bind(1, relpath);
+        q.bind(1, relpath.native());
         bool res = false;
         while (q.step())
             res = true;
         return res;
     }
 
-    time_t segment_mtime(const std::string& relpath) const override
+    time_t segment_mtime(const std::filesystem::path& relpath) const override
     {
         Query q("sel_mtime", m_db);
         q.compile("SELECT mtime FROM files WHERE file=?");
-        q.bind(1, relpath);
+        q.bind(1, relpath.native());
         time_t res = 0;
         while (q.step())
             res = q.fetch<time_t>(0);
         return res;
     }
 
-    void test_rename(const std::string& relpath, const std::string& new_relpath) override
+    void test_rename(const std::filesystem::path& relpath, const std::filesystem::path& new_relpath) override
     {
         Query q("test_rename", m_db);
         q.compile("UPDATE files SET file=? WHERE file=?");
-        q.bind(1, new_relpath);
-        q.bind(2, relpath);
+        q.bind(1, new_relpath.native());
+        q.bind(2, relpath.native());
         while (q.step())
             ;
     }
 
-    static bool exists(const std::string& dir)
+    static bool exists(const std::filesystem::path& dir)
     {
-        string pathname(str::joinpath(dir, "index.sqlite"));
-        return sys::access(pathname, F_OK);
+        return sys::access(dir / "index.sqlite", F_OK);
     }
 };
 
@@ -858,7 +856,7 @@ void Manifest::set_force_sqlite(bool val)
     manifest::mft_force_sqlite = val;
 }
 
-bool Manifest::exists(const std::string& dir)
+bool Manifest::exists(const std::filesystem::path& dir)
 {
     return manifest::PlainManifest::exists(dir) ||
         manifest::SqliteManifest::exists(dir);

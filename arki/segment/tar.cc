@@ -185,7 +185,7 @@ Checker::Checker(const std::string& format, const std::filesystem::path& root, c
 
 bool Checker::exists_on_disk()
 {
-    return sys::exists(tarabspath);
+    return std::filesystem::exists(tarabspath);
 }
 
 bool Checker::is_empty()

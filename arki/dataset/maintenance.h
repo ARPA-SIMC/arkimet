@@ -66,8 +66,8 @@ struct FailsafeRepacker : public Agent
 
     size_t m_count_deleted = 0;
 
-    void operator()(segmented::CheckerSegment& relpath, segment::State state);
-    void end();
+    void operator()(segmented::CheckerSegment& relpath, segment::State state) override;
+    void end() override;
 };
 
 /**
@@ -84,8 +84,8 @@ struct MockRepacker : public Agent
     size_t m_count_deindexed = 0;
     size_t m_count_rescanned = 0;
 
-    void operator()(segmented::CheckerSegment& relpath, segment::State state);
-    void end();
+    void operator()(segmented::CheckerSegment& relpath, segment::State state) override;
+    void end() override;
 };
 
 /**
@@ -100,8 +100,8 @@ struct MockFixer : public Agent
     size_t m_count_rescanned = 0;
     size_t m_count_deindexed = 0;
 
-    void operator()(segmented::CheckerSegment& relpath, segment::State state);
-    void end();
+    void operator()(segmented::CheckerSegment& relpath, segment::State state) override;
+    void end() override;
 };
 
 /**
@@ -121,8 +121,8 @@ struct RealRepacker : public Agent
     bool m_touched_archive = false;
     bool m_redo_summary = false;
 
-    void operator()(segmented::CheckerSegment& relpath, segment::State state);
-    void end();
+    void operator()(segmented::CheckerSegment& relpath, segment::State state) override;
+    void end() override;
 };
 
 /**
@@ -139,8 +139,8 @@ struct RealFixer : public Agent
     bool m_touched_archive = 0;
     bool m_redo_summary = 0;
 
-    void operator()(segmented::CheckerSegment& relpath, segment::State state);
-    void end();
+    void operator()(segmented::CheckerSegment& relpath, segment::State state) override;
+    void end() override;
 };
 
 }

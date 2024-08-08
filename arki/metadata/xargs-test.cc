@@ -26,7 +26,7 @@ void Tests::register_tests() {
 // Test what happens with children's stdin
 add_method("check_stdin", [] {
     metadata::TestCollection mdc("inbound/test.grib1");
-    sys::unlink_ifexists("tmp-xargs");
+    std::filesystem::remove("tmp-xargs");
     metadata::Xargs xargs;
     xargs.command.push_back("/bin/sh");
     xargs.command.push_back("-c");
@@ -46,7 +46,7 @@ add_method("check_stdin", [] {
 // Test that env vars are set
 add_method("check_env", [] {
     metadata::TestCollection mdc("inbound/test.grib1");
-    sys::unlink_ifexists("tmp-xargs");
+    std::filesystem::remove("tmp-xargs");
     metadata::Xargs xargs;
     xargs.command.push_back("/bin/sh");
     xargs.command.push_back("-c");
@@ -68,7 +68,7 @@ add_method("check_env", [] {
 
 add_method("interval", [] {
     metadata::TestCollection mdc("inbound/test.grib1");
-    sys::unlink_ifexists("tmp-xargs");
+    std::filesystem::remove("tmp-xargs");
     metadata::Xargs xargs;
     xargs.set_interval("day");
     xargs.command.push_back("/bin/sh");
@@ -87,7 +87,7 @@ add_method("interval", [] {
 
 add_method("issue124", [] {
     sys::rmtree_ifexists("xargs_tmpdir");
-    sys::mkdir_ifmissing("xargs_tmpdir");
+    std::filesystem::create_directory("xargs_tmpdir");
     arki::tests::OverrideEnvironment oe("TMPDIR", sys::abspath("xargs_tmpdir"));
 
     metadata::TestCollection mdc("inbound/test.grib1");
@@ -125,7 +125,7 @@ add_method("issue124", [] {
 // Check that xargs exit withour error when the command remove the tmp file
 add_method("check_tmpfile_exist", [] {
     metadata::TestCollection mdc("inbound/test.grib1");
-    sys::unlink_ifexists("tmp-xargs");
+    std::filesystem::remove("tmp-xargs");
     metadata::Xargs xargs;
     xargs.set_interval("day");
     xargs.command.push_back("/bin/sh");

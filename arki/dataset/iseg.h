@@ -15,7 +15,7 @@ struct Dataset : public segmented::Dataset
     std::string index_type;
     std::set<types::Code> index;
     std::set<types::Code> unique;
-    std::string summary_cache_pathname;
+    std::filesystem::path summary_cache_pathname;
     bool trace_sql;
 
     Dataset(const Dataset&) = default;
@@ -25,7 +25,7 @@ struct Dataset : public segmented::Dataset
     std::shared_ptr<dataset::Writer> create_writer() override;
     std::shared_ptr<dataset::Checker> create_checker() override;
 
-    std::shared_ptr<segment::Reader> segment_reader(const std::string& relpath, std::shared_ptr<core::Lock> lock) override;
+    std::shared_ptr<segment::Reader> segment_reader(const std::filesystem::path& relpath, std::shared_ptr<core::Lock> lock) override;
 };
 
 }

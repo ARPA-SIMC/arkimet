@@ -31,9 +31,9 @@ struct State : public std::map<std::string, dataset::segmented::SegmentState>
 {
     using std::map<std::string, dataset::segmented::SegmentState>::map;
 
-    bool has(const std::string& relpath) const;
+    bool has(const std::filesystem::path& relpath) const;
 
-    const dataset::segmented::SegmentState& get(const std::string& seg) const;
+    const dataset::segmented::SegmentState& get(const std::filesystem::path& seg) const;
 
     /// Count how many segments have this state
     unsigned count(segment::State state) const;
@@ -94,7 +94,7 @@ public:
     // Dataset name (always "testds")
     std::string ds_name;
     // Dataset root directory
-    std::string ds_root;
+    std::filesystem::path ds_root;
     std::vector<std::shared_ptr<Metadata>> import_results;
 
     /**
@@ -172,7 +172,7 @@ public:
     void clean();
 
     // Import a file
-    void import(const std::string& testfile="inbound/test.grib1");
+    void import(const std::filesystem::path& testfile="inbound/test.grib1");
 
     // Import a metadata collection
     void import(metadata::Collection& mds);
@@ -181,7 +181,7 @@ public:
     void import(Metadata& md, dataset::WriterAcquireResult expected_result=dataset::ACQ_OK);
 
     // Recreate the dataset importing data into it
-    void clean_and_import(const std::string& testfile="inbound/test.grib1");
+    void clean_and_import(const std::filesystem::path& testfile="inbound/test.grib1");
 
     metadata::Collection query(const dataset::DataQuery& q);
     metadata::Collection query(const std::string& q);
@@ -210,13 +210,13 @@ public:
      * extensions. ".metadata" and ".summary" are added in case of "simple"
      * datasets.
      */
-    void online_segment_exists(const std::string& relpath, const std::vector<std::string>& extensions);
+    void online_segment_exists(const std::filesystem::path& relpath, const std::vector<std::string>& extensions);
 
     /**
      * Check if the segment exists online on this dataset, with the given
      * extensions. ".metadata" and ".summary" are added automatically.
      */
-    void archived_segment_exists(const std::string& relpath, const std::vector<std::string>& extensions);
+    void archived_segment_exists(const std::filesystem::path& relpath, const std::vector<std::string>& extensions);
 
     /**
      * Raise TestSkipped if the current dataset has type 'simple'
@@ -258,7 +258,7 @@ struct ReporterExpected
         std::string name;
         std::string message;
 
-        SegmentMatch(const std::string& dsname, const std::string& relpath, const std::string& message=std::string());
+        SegmentMatch(const std::string& dsname, const std::filesystem::path& relpath, const std::string& message=std::string());
         std::string error_unmatched(const std::string& operation) const;
     };
 

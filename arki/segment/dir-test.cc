@@ -105,10 +105,10 @@ this->add_method("append_last_sequence", [](Fixture& f) {
 
 // Try to append some data
 this->add_method("append", [](Fixture& f) {
-    if (sys::isdir(relpath))
+    if (std::filesystem::is_directory(relpath))
         sys::rmtree_ifexists(relpath);
     else
-        sys::unlink_ifexists(relpath);
+        std::filesystem::remove(relpath);
     metadata::TestCollection mdc("inbound/test.grib1");
     wassert(actual_file(relpath).not_exists());
     {
@@ -158,7 +158,7 @@ this->add_method("append", [](Fixture& f) {
             w->rollback();
 
             // After rollback, the file has been deleted
-            wassert(actual(sys::exists(str::joinpath(w->segment().abspath, "000001.grib"))).isfalse());
+            wassert(actual(std::filesystem::exists(str::joinpath(w->segment().abspath, "000001.grib"))).isfalse());
             wassert(actual_type(md.source()) == *orig_source);
         }
 
@@ -199,12 +199,12 @@ this->add_method("append", [](Fixture& f) {
 
 // Check behaviour of an empty directory (#279)
 this->add_method("empty_dir", [](Fixture& f) {
-    if (sys::isdir(relpath))
+    if (std::filesystem::is_directory(relpath))
         sys::rmtree_ifexists(relpath);
     else
-        sys::unlink_ifexists(relpath);
+        std::filesystem::remove(relpath);
 
-    sys::makedirs(relpath);
+    std::filesystem::create_directories(relpath);
 
     // It can be read as an empty segment
     {

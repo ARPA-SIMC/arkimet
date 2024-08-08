@@ -65,7 +65,7 @@ public:
         segment = checker.dataset().session->segment_checker(scan::Scanner::format_from_filename(relpath), dataset().path, relpath);
     }
 
-    std::string path_relative() const override { return segment->segment().relpath; }
+    std::filesystem::path path_relative() const override { return segment->segment().relpath; }
     const simple::Dataset& dataset() const override { return checker.dataset(); }
     simple::Dataset& dataset() override { return checker.dataset(); }
     std::shared_ptr<dataset::archive::Checker> archives() override { return dynamic_pointer_cast<dataset::archive::Checker>(checker.archive()); }
@@ -412,7 +412,7 @@ public:
         checker.m_mft->flush();
     }
 
-    void release(const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath) override
+    void release(const std::filesystem::path& new_root, const std::filesystem::path& new_relpath, const std::filesystem::path& new_abspath) override
     {
         checker.m_mft->remove(segment->segment().relpath);
         segment = segment->move(new_root, new_relpath, new_abspath);
@@ -460,12 +460,12 @@ void Checker::check(CheckerConfig& opts)
     m_mft->flush();
 }
 
-std::unique_ptr<segmented::CheckerSegment> Checker::segment(const std::string& relpath)
+std::unique_ptr<segmented::CheckerSegment> Checker::segment(const std::filesystem::path& relpath)
 {
     return unique_ptr<segmented::CheckerSegment>(new CheckerSegment(*this, relpath, lock));
 }
 
-std::unique_ptr<segmented::CheckerSegment> Checker::segment_prelocked(const std::string& relpath, std::shared_ptr<dataset::CheckLock> lock)
+std::unique_ptr<segmented::CheckerSegment> Checker::segment_prelocked(const std::filesystem::path& relpath, std::shared_ptr<dataset::CheckLock> lock)
 {
     return unique_ptr<segmented::CheckerSegment>(new CheckerSegment(*this, relpath, lock));
 }
@@ -486,7 +486,7 @@ void Checker::segments_tracked_filtered(const Matcher& matcher, std::function<vo
 {
     // TODO: implement filtering
     std::vector<std::string> names;
-    m_idx->list_segments_filtered(matcher, [&](const std::string& relpath) { names.push_back(relpath); });
+    m_idx->list_segments_filtered(matcher, [&](const std::filesystem::path& relpath) { names.push_back(relpath); });
 
     for (const auto& relpath: names)
     {
@@ -497,7 +497,7 @@ void Checker::segments_tracked_filtered(const Matcher& matcher, std::function<vo
 
 void Checker::segments_untracked(std::function<void(segmented::CheckerSegment& relpath)> dest)
 {
-    scan_dir(dataset().path, [&](const std::string& relpath) {
+    scan_dir(dataset().path, [&](const std::filesystem::path& relpath) {
         if (m_idx->has_segment(relpath)) return;
         CheckerSegment segment(*this, relpath, lock);
         dest(segment);
@@ -510,7 +510,7 @@ void Checker::segments_untracked_filtered(const Matcher& matcher, std::function<
     auto m = matcher.get(TYPE_REFTIME);
     if (!m) return segments_untracked(dest);
 
-    scan_dir(dataset().path, [&](const std::string& relpath) {
+    scan_dir(dataset().path, [&](const std::filesystem::path& relpath) {
         if (m_idx->has_segment(relpath)) return;
         if (!dataset().step().pathMatches(relpath, *m)) return;
         CheckerSegment segment(*this, relpath, lock);
@@ -524,7 +524,7 @@ size_t Checker::vacuum(dataset::Reporter& reporter)
     return m_mft->vacuum();
 }
 
-void Checker::test_delete_from_index(const std::string& relpath)
+void Checker::test_delete_from_index(const std::filesystem::path& relpath)
 {
     m_idx->test_deindex(relpath);
     string pathname = dataset().path / relpath;
@@ -532,13 +532,13 @@ void Checker::test_delete_from_index(const std::string& relpath)
     std::filesystem::remove(pathname + ".summary");
 }
 
-void Checker::test_invalidate_in_index(const std::string& relpath)
+void Checker::test_invalidate_in_index(const std::filesystem::path& relpath)
 {
     m_idx->test_deindex(relpath);
     sys::touch(sys::with_suffix(dataset().path / relpath, ".metadata"), 1496167200);
 }
 
-std::shared_ptr<Metadata> Checker::test_change_metadata(const std::string& relpath, std::shared_ptr<Metadata> md, unsigned data_idx)
+std::shared_ptr<Metadata> Checker::test_change_metadata(const std::filesystem::path& relpath, std::shared_ptr<Metadata> md, unsigned data_idx)
 {
     auto md_pathname = sys::with_suffix(dataset().path / relpath, ".metadata");
     metadata::Collection mds;
@@ -562,7 +562,7 @@ void Checker::check_issue51(CheckerConfig& opts)
     std::map<string, metadata::Collection> broken_mds;
 
     // Iterate all segments
-    m_idx->list_segments([&](const std::string& relpath) {
+    m_idx->list_segments([&](const std::filesystem::path& relpath) {
         metadata::Collection mds;
         m_idx->query_segment(relpath, mds.inserter_func());
         if (mds.empty()) return;
@@ -646,7 +646,7 @@ void Checker::check_issue51(CheckerConfig& opts)
     return segmented::Checker::check_issue51(opts);
 }
 
-void Checker::test_make_overlap(const std::string& relpath, unsigned overlap_size, unsigned data_idx)
+void Checker::test_make_overlap(const std::filesystem::path& relpath, unsigned overlap_size, unsigned data_idx)
 {
     metadata::Collection mds;
     m_idx->query_segment(relpath, mds.inserter_func());
@@ -654,7 +654,7 @@ void Checker::test_make_overlap(const std::string& relpath, unsigned overlap_siz
     m_idx->test_make_overlap(relpath, overlap_size, data_idx);
 }
 
-void Checker::test_make_hole(const std::string& relpath, unsigned hole_size, unsigned data_idx)
+void Checker::test_make_hole(const std::filesystem::path& relpath, unsigned hole_size, unsigned data_idx)
 {
     metadata::Collection mds;
     m_idx->query_segment(relpath, mds.inserter_func());
@@ -662,21 +662,21 @@ void Checker::test_make_hole(const std::string& relpath, unsigned hole_size, uns
     m_idx->test_make_hole(relpath, hole_size, data_idx);
 }
 
-void Checker::test_corrupt_data(const std::string& relpath, unsigned data_idx)
+void Checker::test_corrupt_data(const std::filesystem::path& relpath, unsigned data_idx)
 {
     metadata::Collection mds;
     m_idx->query_segment(relpath, mds.inserter_func());
     dataset().session->segment_checker(scan::Scanner::format_from_filename(relpath), dataset().path, relpath)->test_corrupt(mds, data_idx);
 }
 
-void Checker::test_truncate_data(const std::string& relpath, unsigned data_idx)
+void Checker::test_truncate_data(const std::filesystem::path& relpath, unsigned data_idx)
 {
     metadata::Collection mds;
     m_idx->query_segment(relpath, mds.inserter_func());
     dataset().session->segment_checker(scan::Scanner::format_from_filename(relpath), dataset().path, relpath)->test_truncate(mds, data_idx);
 }
 
-void Checker::test_swap_data(const std::string& relpath, unsigned d1_idx, unsigned d2_idx)
+void Checker::test_swap_data(const std::filesystem::path& relpath, unsigned d1_idx, unsigned d2_idx)
 {
     metadata::Collection mds;
     m_idx->query_segment(relpath, mds.inserter_func());
@@ -685,7 +685,7 @@ void Checker::test_swap_data(const std::string& relpath, unsigned d1_idx, unsign
     segment(relpath)->reorder(mds);
 }
 
-void Checker::test_rename(const std::string& relpath, const std::string& new_relpath)
+void Checker::test_rename(const std::filesystem::path& relpath, const std::filesystem::path& new_relpath)
 {
     auto segment = dataset().session->segment_checker(scan::Scanner::format_from_filename(relpath), dataset().path, relpath);
     m_idx->test_rename(relpath, new_relpath);

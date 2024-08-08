@@ -31,7 +31,7 @@ public:
 
     core::Interval get_stored_time_interval() override;
 
-    static bool is_dataset(const std::string& dir);
+    static bool is_dataset(const std::filesystem::path& dir);
 
     /**
      * Return true if this dataset has a working index.

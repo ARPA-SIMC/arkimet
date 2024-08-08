@@ -42,7 +42,7 @@ Reader::Reader(std::shared_ptr<simple::Dataset> dataset)
     : DatasetAccess(dataset)
 {
     // Create the directory if it does not exist
-    sys::makedirs(dataset->path);
+    std::filesystem::create_directories(dataset->path);
 
     if (index::Manifest::exists(dataset->path))
     {
@@ -59,7 +59,7 @@ Reader::~Reader()
 
 std::string Reader::type() const { return "simple"; }
 
-bool Reader::is_dataset(const std::string& dir)
+bool Reader::is_dataset(const std::filesystem::path& dir)
 {
     return index::Manifest::exists(dir);
 }

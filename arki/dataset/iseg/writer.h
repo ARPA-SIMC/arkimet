@@ -19,13 +19,13 @@ protected:
     index::SummaryCache scache;
 
     /// Return the relative path of the segment for this metadata
-    std::string get_relpath(const Metadata& md);
+    std::filesystem::path get_relpath(const Metadata& md);
 
     /// Return an inserter for the given Metadata
     std::unique_ptr<AppendSegment> file(const segment::WriterConfig& writer_config, const Metadata& md);
 
     /// Return an inserter for the given relative pathname
-    std::unique_ptr<AppendSegment> file(const segment::WriterConfig& writer_config, const std::string& relpath);
+    std::unique_ptr<AppendSegment> file(const segment::WriterConfig& writer_config, const std::filesystem::path& relpath);
 
 public:
     Writer(std::shared_ptr<iseg::Dataset> config);

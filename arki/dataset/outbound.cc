@@ -31,7 +31,7 @@ Writer::Writer(std::shared_ptr<Dataset> dataset)
     : DatasetAccess(dataset)
 {
     // Create the directory if it does not exist
-    sys::makedirs(dataset->path);
+    std::filesystem::create_directories(dataset->path);
 }
 
 Writer::~Writer()
@@ -40,11 +40,11 @@ Writer::~Writer()
 
 std::string Writer::type() const { return "outbound"; }
 
-void Writer::storeBlob(const segment::WriterConfig& writer_config, Metadata& md, const std::string& reldest)
+void Writer::storeBlob(const segment::WriterConfig& writer_config, Metadata& md, const std::filesystem::path& reldest)
 {
     // Write using segment::Writer
     core::Time time = md.get<types::reftime::Position>()->get_Position();
-    std::string relpath = dataset().step()(time) + "." + md.source().format;
+    auto relpath = sys::with_suffix(dataset().step()(time), "."s + md.source().format);
     auto w = dataset().session->segment_writer(writer_config, md.source().format, dataset().path, relpath);
     w->append(md);
 }
@@ -59,7 +59,7 @@ WriterAcquireResult Writer::acquire(Metadata& md, const AcquireConfig& cfg)
     string reldest = dataset().step()(time);
     auto dest = dataset().path / reldest;
 
-    sys::makedirs(str::dirname(dest));
+    std::filesystem::create_directories(dest.parent_path());
 
     segment::WriterConfig writer_config;
     writer_config.drop_cached_data_on_commit = cfg.drop_cached_data_on_commit;
@@ -108,7 +108,7 @@ void Writer::test_acquire(std::shared_ptr<Session> session, const core::cfg::Sec
 
         core::Time time = e->md.get<types::reftime::Position>()->get_Position();
         auto tf = Step::create(cfg.value("step"));
-        string dest = cfg.value("path") + "/" + (*tf)(time) + "." + e->md.source().format;
+        auto dest = std::filesystem::path(cfg.value("path")) / sys::with_suffix((*tf)(time), "."s + e->md.source().format);
         nag::verbose("Assigning to dataset %s in file %s", cfg.value("name").c_str(), dest.c_str());
         e->result = ACQ_OK;
         e->dataset_name = config->name();

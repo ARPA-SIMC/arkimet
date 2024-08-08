@@ -69,7 +69,7 @@ void Xargs::flush_batch()
 
     stream_to_tempfile.reset();
     tempfile->close();
-    sys::unlink_ifexists(tempfile->name());
+    std::filesystem::remove(tempfile->name());
     tempfile.reset();
     metadata::Clusterer::flush_batch();
 

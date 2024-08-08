@@ -1,5 +1,6 @@
 #include "offline.h"
 #include "arki/core/time.h"
+#include "arki/utils/sys.h"
 
 using namespace std;
 using namespace arki::utils;
@@ -8,8 +9,8 @@ namespace arki {
 namespace dataset {
 namespace offline {
 
-Dataset::Dataset(std::shared_ptr<Session> session, const std::string& pathname)
-    : dataset::Dataset(session), summary_pathname(pathname + ".summary")
+Dataset::Dataset(std::shared_ptr<Session> session, const std::filesystem::path& pathname)
+    : dataset::Dataset(session), summary_pathname(sys::with_suffix(pathname, ".summary"))
 {
 }
 

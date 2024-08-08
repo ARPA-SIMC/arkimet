@@ -190,7 +190,7 @@ struct HungReporter : public dataset::NullReporter
 
     HungReporter(TestSubprocess& sp) : sp(sp) {}
 
-    void segment_info(const std::string& ds, const std::string& relpath, const std::string& message) override
+    void segment_info(const std::string& ds, const std::filesystem::path& relpath, const std::string& message) override
     {
         sp.notify_ready();
         while (true)

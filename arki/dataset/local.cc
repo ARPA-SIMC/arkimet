@@ -18,7 +18,7 @@ namespace dataset {
 namespace local {
 
 Dataset::Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
-    : dataset::Dataset(session, cfg), path(sys::abspath(cfg.value("path")))
+    : dataset::Dataset(session, cfg), path(std::filesystem::weakly_canonical(cfg.value("path")))
 {
     string tmp = cfg.value("archive age");
     if (!tmp.empty())
@@ -67,21 +67,20 @@ std::shared_ptr<archive::Dataset> Dataset::archive()
 
 bool Dataset::hasArchive() const
 {
-    string arcdir = str::joinpath(path, ".archive");
-    return sys::exists(arcdir);
+    return std::filesystem::exists(path / ".archive");
 }
 
-std::shared_ptr<dataset::ReadLock> Dataset::read_lock_segment(const std::string& relpath) const
+std::shared_ptr<dataset::ReadLock> Dataset::read_lock_segment(const std::filesystem::path& relpath) const
 {
     return std::make_shared<SegmentReadLock>(*this, relpath);
 }
 
-std::shared_ptr<dataset::AppendLock> Dataset::append_lock_segment(const std::string& relpath) const
+std::shared_ptr<dataset::AppendLock> Dataset::append_lock_segment(const std::filesystem::path& relpath) const
 {
     return std::make_shared<SegmentAppendLock>(*this, relpath);
 }
 
-std::shared_ptr<dataset::CheckLock> Dataset::check_lock_segment(const std::string& relpath) const
+std::shared_ptr<dataset::CheckLock> Dataset::check_lock_segment(const std::filesystem::path& relpath) const
 {
     return std::make_shared<SegmentCheckLock>(*this, relpath);
 }
@@ -110,11 +109,11 @@ void Reader::impl_query_summary(const Matcher& matcher, Summary& summary)
         archive()->query_summary(matcher, summary);
 }
 
-std::shared_ptr<core::cfg::Section> Reader::read_config(const std::string& path)
+std::shared_ptr<core::cfg::Section> Reader::read_config(const std::filesystem::path& path)
 {
     // Read the config file inside the directory
-    string name = str::basename(path);
-    string file = str::joinpath(path, "config");
+    auto name = path.filename();
+    auto file = path / "config";
 
     File in(file, O_RDONLY);
     // Parse the config file into a new section
@@ -123,15 +122,15 @@ std::shared_ptr<core::cfg::Section> Reader::read_config(const std::string& path)
     res->set("name", name);
 
     if (res->value("type") != "remote")
-        res->set("path", sys::abspath(path));
+        res->set("path", std::filesystem::weakly_canonical(path));
     return res;
 }
 
-std::shared_ptr<core::cfg::Sections> Reader::read_configs(const std::string& path)
+std::shared_ptr<core::cfg::Sections> Reader::read_configs(const std::filesystem::path& path)
 {
     // Read the config file inside the directory
-    string name = str::basename(path);
-    string file = str::joinpath(path, "config");
+    auto name = path.filename();
+    auto file = path / "config";
 
     File in(file, O_RDONLY);
     // Parse the config file into a new section
@@ -139,7 +138,7 @@ std::shared_ptr<core::cfg::Sections> Reader::read_configs(const std::string& pat
     // Fill in missing bits
     sec->set("name", name);
     if (sec->value("type") != "remote")
-        sec->set("path", sys::abspath(path));
+        sec->set("path", std::filesystem::weakly_canonical(path));
 
     // Return a Sections with only this section
     auto res = std::make_shared<core::cfg::Sections>();

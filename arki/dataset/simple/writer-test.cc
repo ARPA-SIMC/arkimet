@@ -62,7 +62,7 @@ add_method("segment_append", [] {
     string mdfname = "testfile.grib.metadata";
     string sumfname = "testfile.grib.summary";
 
-    sys::unlink_ifexists(fname);
+    std::filesystem::remove(fname);
     ino_t inomd;
     ino_t inosum;
 

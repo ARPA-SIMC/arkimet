@@ -19,7 +19,7 @@ class Tests : public TestCase
 void write_test_config()
 {
     sys::rmtree_ifexists("testds");
-    sys::makedirs("testds");
+    std::filesystem::create_directories("testds");
     sys::write_file("testds/config", R"(
 type = iseg
 step = daily
@@ -73,7 +73,7 @@ add_method("read_configs", [] {
 add_method("read_config_remotedir", [] {
     // Reproduce #274
     sys::rmtree_ifexists("testds");
-    sys::makedirs("testds");
+    std::filesystem::create_directories("testds");
     sys::write_file("testds/config", R"(
 type = remote
 path = http://example.org

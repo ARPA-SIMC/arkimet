@@ -194,8 +194,8 @@ void test_append_transaction_rollback(segment::Writer* dw, Metadata& md, int app
 
 void ActualSegment::exists()
 {
-    bool exists = sys::exists(_actual) || sys::exists(_actual + ".gz")
-               || sys::exists(_actual + ".tar") || sys::exists(_actual + ".zip");
+    bool exists = std::filesystem::exists(_actual) || std::filesystem::exists(_actual + ".gz")
+               || std::filesystem::exists(_actual + ".tar") || std::filesystem::exists(_actual + ".zip");
     if (!exists)
         throw TestFailed(_actual + " does not exist (tried also .gz, .tar, and .zip)");
 }
@@ -205,10 +205,10 @@ void ActualSegment::exists(const std::vector<std::string>& extensions)
     for (auto ext: { "", ".gz", ".tar", ".zip", ".gz.idx", ".metadata", ".summary" })
         if (std::find(extensions.begin(), extensions.end(), ext) == extensions.end())
         {
-            if (sys::exists(_actual + ext))
+            if (std::filesystem::exists(_actual + ext))
                 throw TestFailed(_actual + ext + " does exist but should not");
         } else {
-            if (!sys::exists(_actual + ext))
+            if (!std::filesystem::exists(_actual + ext))
                 throw TestFailed(_actual + ext + " does not exist but it should");
         }
 }
@@ -216,7 +216,7 @@ void ActualSegment::exists(const std::vector<std::string>& extensions)
 void ActualSegment::not_exists()
 {
     for (auto ext: { "", ".gz", ".tar", ".zip", ".gz.idx", ".metadata", ".summary" })
-        if (sys::exists(_actual))
+        if (std::filesystem::exists(_actual))
             throw TestFailed(_actual + ext + " does exist but should not");
 }
 

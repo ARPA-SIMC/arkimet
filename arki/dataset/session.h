@@ -6,6 +6,7 @@
 #include <arki/dataset/fwd.h>
 #include <arki/matcher/parser.h>
 #include <unordered_map>
+#include <filesystem>
 #include <string>
 
 namespace arki {
@@ -15,21 +16,21 @@ class Session: public std::enable_shared_from_this<Session>
 {
 protected:
     /// Map segment absolute paths to possibly reusable reader instances
-    std::unordered_map<std::string, std::weak_ptr<segment::Reader>> reader_pool;
+    std::unordered_map<std::filesystem::path, std::weak_ptr<segment::Reader>> reader_pool;
 
     matcher::Parser matcher_parser;
 
 public:
-    Session(bool load_aliases=true);
+    explicit Session(bool load_aliases=true);
     Session(const Session&) = delete;
     Session(Session&&) = delete;
     virtual ~Session();
     Session& operator=(const Session&) = delete;
     Session& operator=(Session&&) = delete;
 
-    virtual std::shared_ptr<segment::Reader> segment_reader(const std::string& format, const std::string& root, const std::string& relpath, std::shared_ptr<core::Lock> lock);
-    virtual std::shared_ptr<segment::Writer> segment_writer(const segment::WriterConfig& config, const std::string& format, const std::string& root, const std::string& relpath);
-    virtual std::shared_ptr<segment::Checker> segment_checker(const std::string& format, const std::string& root, const std::string& relpath);
+    virtual std::shared_ptr<segment::Reader> segment_reader(const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath, std::shared_ptr<core::Lock> lock);
+    virtual std::shared_ptr<segment::Writer> segment_writer(const segment::WriterConfig& config, const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath);
+    virtual std::shared_ptr<segment::Checker> segment_checker(const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath);
 
     /**
      * Instantiate a dataset give its configuration.
@@ -69,12 +70,12 @@ public:
     /**
      * Read the configuration of the dataset at the given path or URL
      */
-    static std::shared_ptr<core::cfg::Section> read_config(const std::string& path);
+    static std::shared_ptr<core::cfg::Section> read_config(const std::filesystem::path& path);
 
     /**
      * Read a multi-dataset configuration at the given path or URL
      */
-    static std::shared_ptr<core::cfg::Sections> read_configs(const std::string& path);
+    static std::shared_ptr<core::cfg::Sections> read_configs(const std::filesystem::path& path);
 };
 
 
@@ -83,9 +84,9 @@ class DirSegmentsSession : public Session
 public:
     using Session::Session;
 
-    std::shared_ptr<segment::Reader> segment_reader(const std::string& format, const std::string& root, const std::string& relpath, std::shared_ptr<core::Lock> lock) override;
-    std::shared_ptr<segment::Writer> segment_writer(const segment::WriterConfig& config, const std::string& format, const std::string& root, const std::string& relpath) override;
-    std::shared_ptr<segment::Checker> segment_checker(const std::string& format, const std::string& root, const std::string& relpath) override;
+    std::shared_ptr<segment::Reader> segment_reader(const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath, std::shared_ptr<core::Lock> lock) override;
+    std::shared_ptr<segment::Writer> segment_writer(const segment::WriterConfig& config, const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath) override;
+    std::shared_ptr<segment::Checker> segment_checker(const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath) override;
 
 };
 

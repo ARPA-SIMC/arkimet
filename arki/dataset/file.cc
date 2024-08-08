@@ -57,41 +57,41 @@ core::Interval Reader::get_stored_time_interval()
     throw std::runtime_error("file::Reader::get_stored_time_interval not yet implemented");
 }
 
-std::shared_ptr<core::cfg::Section> read_config(const std::string& fname)
+std::shared_ptr<core::cfg::Section> read_config(const std::filesystem::path& fname)
 {
     auto section = std::make_shared<core::cfg::Section>();
 
     section->set("type", "file");
-    if (sys::exists(fname))
+    if (std::filesystem::exists(fname))
     {
-        section->set("path", sys::abspath(fname));
+        section->set("path", std::filesystem::canonical(fname));
         section->set("format", scan::Scanner::format_from_filename(fname));
         section->set("name", fname);
     } else {
-        size_t fpos = fname.find(':');
+        size_t fpos = fname.native().find(':');
         if (fpos == string::npos)
         {
             stringstream ss;
             ss << "file " << fname << " does not exist";
             throw runtime_error(ss.str());
         }
-        section->set("format", scan::Scanner::normalise_format(fname.substr(0, fpos)));
+        section->set("format", scan::Scanner::normalise_format(fname.native().substr(0, fpos)));
 
-        string fname1 = fname.substr(fpos+1);
-        if (!sys::exists(fname1))
+        std::filesystem::path fname1 = fname.native().substr(fpos+1);
+        if (!std::filesystem::exists(fname1))
         {
             stringstream ss;
             ss << "file " << fname1 << " does not exist";
             throw runtime_error(ss.str());
         }
-        section->set("path", sys::abspath(fname1));
+        section->set("path", std::filesystem::canonical(fname1));
         section->set("name", fname1);
     }
 
     return section;
 }
 
-std::shared_ptr<core::cfg::Sections> read_configs(const std::string& fname)
+std::shared_ptr<core::cfg::Sections> read_configs(const std::filesystem::path& fname)
 {
     auto sec = read_config(fname);
     auto res = std::make_shared<core::cfg::Sections>();

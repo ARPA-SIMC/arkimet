@@ -58,7 +58,7 @@ add_method("scan_missing_summary", [](Fixture& f) {
     struct Setup {
         void operator() ()
         {
-            sys::unlink_ifexists("testds/2007/07-08.grib.summary");
+            std::filesystem::remove("testds/2007/07-08.grib.summary");
             wassert(actual_file("testds/2007/07-08.grib").exists());
             wassert(actual_file("testds/2007/07-08.grib.metadata").exists());
             wassert(actual_file("testds/2007/07-08.grib.summary").not_exists());
@@ -134,8 +134,8 @@ add_method("scan_compressed", [](Fixture& f) {
     };
 
     auto removemd = []{
-        sys::unlink_ifexists("testds/2007/07-08.grib.metadata");
-        sys::unlink_ifexists("testds/2007/07-08.grib.summary");
+        std::filesystem::remove("testds/2007/07-08.grib.metadata");
+        std::filesystem::remove("testds/2007/07-08.grib.summary");
         wassert(actual_file("testds/2007/07-08.grib.metadata").not_exists());
         wassert(actual_file("testds/2007/07-08.grib.summary").not_exists());
     };

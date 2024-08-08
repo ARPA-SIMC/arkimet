@@ -27,14 +27,14 @@ namespace archive {
 class ArchivesReaderRoot;
 class ArchivesCheckerRoot;
 
-bool is_archive(const std::string& dir);
+bool is_archive(const std::filesystem::path& dir);
 
 class Dataset : public dataset::Dataset
 {
 public:
-    std::string root;
+    std::filesystem::path root;
 
-    Dataset(std::shared_ptr<Session> session, const std::string& root);
+    Dataset(std::shared_ptr<Session> session, const std::filesystem::path& root);
 
     std::shared_ptr<dataset::Reader> create_reader() override;
     std::shared_ptr<dataset::Checker> create_checker() override;
@@ -96,8 +96,8 @@ public:
 
     std::string type() const override;
 
-    void index_segment(const std::string& relpath, metadata::Collection&& mds);
-    void release_segment(const std::string& relpath, const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath);
+    void index_segment(const std::filesystem::path& relpath, metadata::Collection&& mds);
+    void release_segment(const std::filesystem::path& relpath, const std::filesystem::path& new_root, const std::filesystem::path& new_relpath, const std::filesystem::path& new_abspath);
     void segments_recursive(CheckerConfig& opts, std::function<void(segmented::Checker&, segmented::CheckerSegment&)> dest);
 
     void remove_old(CheckerConfig& opts) override;

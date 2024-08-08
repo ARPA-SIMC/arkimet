@@ -21,7 +21,7 @@ void Tests::register_tests() {
 // Test dontpack flagfile creation
 add_method("dontpack", [] {
     sys::rmtree_ifexists("commontest");
-    sys::mkdir_ifmissing("commontest");
+    std::filesystem::create_directory("commontest");
 
     string name = "commontest";
     wassert(actual(hasDontpackFlagfile(name)).isfalse());
