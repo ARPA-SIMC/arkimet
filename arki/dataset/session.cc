@@ -148,6 +148,7 @@ std::shared_ptr<core::cfg::Section> Session::read_config(const std::filesystem::
         // Parse the config file from stdin
         Stdin in;
         return core::cfg::Section::parse(in);
+        // TODO: normalize path
     }
 
     std::unique_ptr<struct stat> st = sys::stat(path);

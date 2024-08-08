@@ -128,21 +128,9 @@ std::shared_ptr<core::cfg::Section> Reader::read_config(const std::filesystem::p
 
 std::shared_ptr<core::cfg::Sections> Reader::read_configs(const std::filesystem::path& path)
 {
-    // Read the config file inside the directory
-    auto name = path.filename();
-    auto file = path / "config";
-
-    File in(file, O_RDONLY);
-    // Parse the config file into a new section
-    auto sec = core::cfg::Section::parse(in);
-    // Fill in missing bits
-    sec->set("name", name);
-    if (sec->value("type") != "remote")
-        sec->set("path", std::filesystem::weakly_canonical(path));
-
-    // Return a Sections with only this section
+    auto sec = read_config(path);
     auto res = std::make_shared<core::cfg::Sections>();
-    res->emplace(name, sec);
+    res->emplace(sec->value("name"), sec);
     return res;
 }
 
