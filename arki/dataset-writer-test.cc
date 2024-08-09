@@ -147,7 +147,7 @@ add_method("import_batch_replace_usn", [](Fixture& f) {
     wassert(ds->acquire_batch(batch, dataset::REPLACE_HIGHER_USN));
     wassert(actual(batch[0]->result) == dataset::ACQ_OK);
     wassert(actual(batch[0]->dataset_name) == "testds");
-    wassert(actual_file(str::joinpath(f.ds_root, "2009/12-04.bufr")).exists());
+    wassert(actual_file(f.ds_root / "2009/12-04.bufr").exists());
     wassert(actual_type(mdc[0].source()).is_source_blob("bufr", f.ds_root, "2009/12-04.bufr"));
 
     // Acquire again: it works, since USNs the same as the existing ones do overwrite
@@ -200,7 +200,7 @@ add_method("issue237", [](Fixture& f) {
         wassert(actual(std::string((const char*)data.data(), data.size())) == "202010312300,12865,158,9.409990,,,");
     }
 
-    wassert(actual_file(str::joinpath(f.ds_root, "2020/10-31.vm2")).contents_equal("20201031230000,12865,158,9.409990,,,\n"));
+    wassert(actual_file(f.ds_root / "2020/10-31.vm2").contents_equal("20201031230000,12865,158,9.409990,,,\n"));
 
     auto state = f.scan_state();
     wassert(actual(state.size()) == 1u);
@@ -222,7 +222,7 @@ this->add_method("import", [](Fixture& f) {
     {
         std::shared_ptr<Metadata> md(f.td.mds[i].clone());
         wassert(actual(*ds).import(*md));
-        wassert(actual_file(str::joinpath(f.ds_root, f.destfile(f.td.mds[i]))).exists());
+        wassert(actual_file(f.ds_root / f.destfile(f.td.mds[i])).exists());
         wassert(actual_type(md->source()).is_source_blob(f.td.format, f.ds_root, f.destfile(f.td.mds[i])));
     }
 });
@@ -255,7 +255,7 @@ this->add_method("import_batch_replace_never", [](Fixture& f) {
     {
         wassert(actual(batch[i]->result) == dataset::ACQ_OK);
         wassert(actual(batch[i]->dataset_name) == "testds");
-        wassert(actual_file(str::joinpath(f.ds_root, f.destfile(f.td.mds[i]))).exists());
+        wassert(actual_file(f.ds_root / f.destfile(f.td.mds[i])).exists());
         wassert(actual_type(f.td.mds[i].source()).is_source_blob(f.td.format, f.ds_root, f.destfile(f.td.mds[i])));
     }
 
@@ -296,7 +296,7 @@ this->add_method("import_batch_replace_always", [](Fixture& f) {
     {
         wassert(actual(batch[i]->result) == dataset::ACQ_OK);
         wassert(actual(batch[i]->dataset_name) == "testds");
-        wassert(actual_file(str::joinpath(f.ds_root, f.destfile(f.td.mds[i]))).exists());
+        wassert(actual_file(f.ds_root / f.destfile(f.td.mds[i])).exists());
         wassert(actual_type(f.td.mds[i].source()).is_source_blob(f.td.format, f.ds_root, f.destfile(f.td.mds[i])));
     }
 

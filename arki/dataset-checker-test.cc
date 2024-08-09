@@ -223,7 +223,7 @@ this->add_method("check_issue51", [](Fixture& f) {
 
     // Check that the backup files exist
     for (const auto& relpath: destfiles)
-        wassert(actual_file(str::joinpath(f.local_config()->path, relpath) + ".issue51").exists());
+        wassert(actual_file(sys::with_suffix(f.local_config()->path / relpath, ".issue51")).exists());
 
     // Do a thorough check to see if everything is ok
     wassert(actual(checker.get()).check_clean(false, false));

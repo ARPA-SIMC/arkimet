@@ -30,7 +30,7 @@ std::filesystem::path SummaryCache::summary_pathname(int year, int month) const
 {
     char buf[32];
     snprintf(buf, 32, "%04d-%02d.summary", year, month);
-    return str::joinpath(m_scache_root, buf);
+    return m_scache_root / buf;
 }
 
 void SummaryCache::openRO()

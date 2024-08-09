@@ -9,8 +9,8 @@ using namespace arki::utils;
 namespace arki {
 namespace segment {
 
-SequenceFile::SequenceFile(const std::string& dirname)
-    : core::File(str::joinpath(dirname, ".sequence")), dirname(dirname)
+SequenceFile::SequenceFile(const std::filesystem::path& dirname)
+    : core::File(dirname / ".sequence"), dirname(dirname)
 {
 }
 
@@ -45,7 +45,7 @@ void SequenceFile::write_sequence(size_t val)
         throw_runtime_error("cannot write the whole sequence file");
 }
 
-std::string SequenceFile::data_fname(size_t pos, const std::string& format)
+std::filesystem::path SequenceFile::data_fname(size_t pos, const std::string& format)
 {
     char buf[32];
     snprintf(buf, 32, "%06zd.%s", pos, format.c_str());

@@ -51,7 +51,7 @@ bool hasDontpackFlagfile(const std::filesystem::path& dir);
  * @param pathname
  *   The path name to resolve. It can be absolute or relative.
  * @retval basedir
- *   The base directory to use with str::joinpath to make the file name absolute.
+ *   The base directory to use with path concatenation to make the file name absolute.
  *   It is set to the empty string if \a pathname is an absolute path
  * @retval relpath
  *   The normalised version of \a pathname

@@ -5,8 +5,8 @@
 #include "arki/core/binary.h"
 #include "arki/stream.h"
 #include "arki/exceptions.h"
-#include "arki/utils/sys.h"
 #include "arki/utils/string.h"
+#include "arki/utils/sys.h"
 #include "arki/types/source.h"
 #include "arki/types/reftime.h"
 #include "arki/libconfig.h"
@@ -47,7 +47,7 @@ protected:
 
 public:
     std::string format;
-    std::string subdir;
+    std::filesystem::path subdir;
 
     LibarchiveOutput(const std::string& format);
     ~LibarchiveOutput()
@@ -56,7 +56,7 @@ public:
         archive_write_free(a);
     }
 
-    void set_subdir(const std::string& subdir) override { this->subdir = subdir; }
+    void set_subdir(const std::filesystem::path& subdir) override { this->subdir = subdir; }
     size_t append(const Metadata& md) override;
     void flush(bool with_metadata) override;
 };
@@ -159,11 +159,11 @@ void LibarchiveOutput::append_metadata()
     for (const auto& md: mds)
         md->encodeBinary(enc);
 
-    std::string name;
+    std::filesystem::path name;
     if (subdir.empty())
         name = "metadata.md";
     else
-        name = str::joinpath(subdir, "metadata.md");
+        name = subdir / "metadata.md";
     archive_entry_clear(entry);
     archive_entry_set_pathname(entry, name.c_str());
     archive_entry_set_size(entry, buf.size());

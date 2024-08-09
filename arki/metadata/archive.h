@@ -5,6 +5,7 @@
 #include <arki/stream/fwd.h>
 #include <arki/metadata/fwd.h>
 #include <string>
+#include <filesystem>
 #include <memory>
 
 namespace arki {
@@ -19,7 +20,7 @@ public:
     virtual ~ArchiveOutput();
 
     /// Set the subdirectory prefix for archived files
-    virtual void set_subdir(const std::string& subdir) = 0;
+    virtual void set_subdir(const std::filesystem::path& subdir) = 0;
 
     /**
      * Append a metadata to the archive.

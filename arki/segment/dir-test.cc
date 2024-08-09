@@ -130,7 +130,7 @@ this->add_method("append", [](Fixture& f) {
             // Start the append transaction, the file is written
             const types::source::Blob& new_source = w->append(md);
             wassert(actual((size_t)new_source.offset) == 0u);
-            wassert(actual(sys::size(str::joinpath(w->segment().abspath, "000000.grib"))) == data_size);
+            wassert(actual(sys::size(w->segment().abspath / "000000.grib")) == data_size);
             wassert(actual_type(md.source()) == *orig_source);
 
             // Commit
@@ -152,14 +152,14 @@ this->add_method("append", [](Fixture& f) {
             // Start the append transaction, the file is written
             const types::source::Blob& new_source = w->append(md);
             wassert(actual((size_t)new_source.offset) == 1u);
-            wassert(actual(sys::size(str::joinpath(w->segment().abspath, "000001.grib"))) == data_size);
+            wassert(actual(sys::size(w->segment().abspath / "000001.grib")) == data_size);
             wassert(actual_type(md.source()) == *orig_source);
 
             // Rollback
             w->rollback();
 
             // After rollback, the file has been deleted
-            wassert(actual(std::filesystem::exists(str::joinpath(w->segment().abspath, "000001.grib"))).isfalse());
+            wassert(actual(std::filesystem::exists(w->segment().abspath / "000001.grib")).isfalse());
             wassert(actual_type(md.source()) == *orig_source);
         }
 
@@ -175,7 +175,7 @@ this->add_method("append", [](Fixture& f) {
             // Rolling back a transaction does leave a gap in the sequence
             const types::source::Blob& new_source = w->append(md);
             wassert(actual((size_t)new_source.offset) == 2u);
-            wassert(actual(sys::size(str::joinpath(w->segment().abspath, "000002.grib"))) == data_size);
+            wassert(actual(sys::size(w->segment().abspath / "000002.grib")) == data_size);
             wassert(actual_type(md.source()) == *orig_source);
 
             // Commit

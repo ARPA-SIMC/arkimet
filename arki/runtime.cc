@@ -14,19 +14,22 @@ using namespace std;
 using namespace arki::utils;
 using namespace arki::types;
 
+namespace {
+std::filesystem::path conf_dir(CONF_DIR);
+}
+
+
 namespace arki {
 
 Config::Config()
 {
-    std::filesystem::path confdir(CONF_DIR);
-
     if (const char* envdir = getenv("ARKI_FORMATTER"))
         dir_formatter.push_back(envdir);
-    dir_formatter.push_back(confdir / "format");
+    dir_formatter.push_back(conf_dir / "format");
 
     if (const char* envdir = getenv("ARKI_BBOX"))
         dir_bbox.push_back(envdir);
-    dir_bbox.push_back(confdir / "bbox");
+    dir_bbox.push_back(conf_dir / "bbox");
 
     // TODO: colon-separated $PATH-like semantics
     if (const char* envdir = getenv("ARKI_POSTPROC"))
@@ -40,9 +43,9 @@ Config::Config()
         dir_scan.push_back(envdir);
     if (const char* envdir = getenv("ARKI_SCAN_GRIB2"))
         dir_scan.push_back(envdir);
-    dir_scan.push_back(confdir / "scan");
-    dir_scan.push_back(confdir / "scan-grib1");
-    dir_scan.push_back(confdir / "scan-grib2");
+    dir_scan.push_back(conf_dir / "scan");
+    dir_scan.push_back(conf_dir / "scan-grib1");
+    dir_scan.push_back(conf_dir / "scan-grib2");
     dir_scan_bufr.init_config_and_env("scan-bufr", "ARKI_SCAN_BUFR");
     dir_scan_odimh5.init_config_and_env("scan-odimh5", "ARKI_SCAN_ODIMH5");
 
@@ -56,13 +59,11 @@ Config::Config()
         if (!sys::stat(file_aliases))
             arki::nag::warning("%s: file specified in ARKI_ALIASES not found", file_aliases.c_str());
     }
-#ifdef CONF_DIR
     else
     {
         // ...and build-time config otherwise
-        file_aliases = confdir / "match-alias.conf";
+        file_aliases = conf_dir / "match-alias.conf";
     }
-#endif
 
     if (const char* env = getenv("ARKI_IO_TIMEOUT"))
         io_timeout_ms = round(strtod(env, nullptr) * 1000.0);
@@ -81,7 +82,7 @@ void Config::Dirlist::init_config_and_env(const char* confdir, const char* envna
     // TODO: colon-separated $PATH-like semantics
     if (const char* envdir = getenv(envname))
         push_back(envdir);
-    push_back(str::joinpath(CONF_DIR, confdir));
+    push_back(conf_dir / confdir);
 }
 
 std::filesystem::path Config::Dirlist::find_file(const std::filesystem::path& fname, bool executable) const
@@ -103,7 +104,7 @@ std::filesystem::path Config::Dirlist::find_file_noerror(const std::filesystem::
     int mode = executable ? X_OK : F_OK;
     for (const_iterator i = begin(); i != end(); ++i)
     {
-        string res = str::joinpath(*i, fname);
+        auto res = *i / fname;
         if (sys::access(res, mode))
             return res;
     }

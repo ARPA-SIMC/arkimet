@@ -47,12 +47,12 @@ struct PathMatch
 {
     std::set<FSPos> parents;
 
-    PathMatch(const std::string& pathname)
+    PathMatch(const std::filesystem::path& pathname)
     {
         fill_parents(pathname);
     }
 
-    void fill_parents(const std::string& pathname)
+    void fill_parents(const std::filesystem::path& pathname)
     {
         struct stat st;
         sys::stat(pathname, st);
@@ -61,10 +61,10 @@ struct PathMatch
         // top or a loop
         if (i.second == false) return;
         // Otherwise, go up a level and scan again
-        fill_parents(str::normpath(str::joinpath(pathname, "..")));
+        fill_parents(pathname.parent_path());
     }
 
-    bool is_under(const std::string& pathname)
+    bool is_under(const std::filesystem::path& pathname)
     {
         struct stat st;
         sys::stat(pathname, st);

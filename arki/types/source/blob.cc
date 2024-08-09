@@ -30,7 +30,7 @@ void Blob::encodeWithoutEnvelope(core::BinaryEncoder& enc) const
 std::ostream& Blob::writeToOstream(std::ostream& o) const
 {
     return o << formatStyle(style()) << "("
-             << format << "," << str::joinpath(basedir, filename) << ":" << offset << "+" << size
+             << format << "," << (basedir / filename).native() << ":" << offset << "+" << size
              << ")";
 }
 
