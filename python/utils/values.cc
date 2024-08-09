@@ -145,5 +145,28 @@ PyObject* stringlist_to_python(const std::vector<std::string>& val)
     return res.release();
 }
 
+std::vector<std::filesystem::path> pathlist_from_python(PyObject* o)
+{
+    pyo_unique_ptr iter(throw_ifnull(PyObject_GetIter(o)));
+
+    std::vector<std::filesystem::path> res;
+    while (pyo_unique_ptr item = PyIter_Next(iter))
+        res.emplace_back(from_python<std::filesystem::path>(item));
+
+    if (PyErr_Occurred())
+        throw PythonException();
+
+    return res;
+}
+
+PyObject* pathlist_to_python(const std::vector<std::filesystem::path>& val)
+{
+    pyo_unique_ptr res(throw_ifnull(PyList_New(val.size())));
+    Py_ssize_t idx = 0;
+    for (const auto& path: val)
+        PyList_SET_ITEM(res.get(), idx++, to_python(path));
+    return res.release();
+}
+
 }
 }

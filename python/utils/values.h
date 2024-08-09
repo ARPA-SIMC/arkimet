@@ -98,6 +98,17 @@ template<> inline std::vector<std::string> from_python<std::vector<std::string>>
 PyObject* stringlist_to_python(const std::vector<std::string>& val);
 inline PyObject* to_python(const std::vector<std::string>& val) { return stringlist_to_python(val); }
 
+/// Read a path list from a Python object
+std::vector<std::filesystem::path> pathlist_from_python(PyObject* o);
+template<> inline std::vector<std::filesystem::path> from_python<std::vector<std::filesystem::path>>(PyObject* o)
+{
+    return pathlist_from_python(o);
+}
+
+/// Convert a path list to a Python object
+PyObject* pathlist_to_python(const std::vector<std::filesystem::path>& val);
+inline PyObject* to_python(const std::vector<std::filesystem::path>& val) { return pathlist_to_python(val); }
+
 
 }
 }
