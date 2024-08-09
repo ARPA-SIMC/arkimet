@@ -33,12 +33,14 @@ void Tests::register_tests() {
 add_method("read_config", [] {
     auto cfg = dataset::Session::read_config("inbound/test.grib1");
     wassert(actual(cfg->value("name")) == "inbound/test.grib1");
+    wassert(actual(cfg->value("path")) == std::filesystem::canonical("inbound/test.grib1"));
 
     cfg = dataset::Session::read_config("grib:inbound/test.grib1");
     wassert(actual(cfg->value("name")) == "inbound/test.grib1");
+    wassert(actual(cfg->value("path")) == std::filesystem::canonical("inbound/test.grib1"));
 
     write_test_config();
-    std::string expected_path = sys::abspath("testds");
+    std::string expected_path = std::filesystem::canonical("testds");
 
     cfg = dataset::Session::read_config("testds");
     wassert(actual(cfg->value("name")) == "testds");
@@ -57,17 +59,20 @@ add_method("read_configs", [] {
     auto sec = cfg->section("inbound/test.grib1");
     wassert_true(sec);
     wassert(actual(sec->value("name")) == "inbound/test.grib1");
+    wassert(actual(sec->value("path")) == std::filesystem::canonical("inbound/test.grib1"));
 
     cfg = dataset::Session::read_configs("grib:inbound/test.grib1");
     sec = cfg->section("inbound/test.grib1");
     wassert_true(sec);
     wassert(actual(sec->value("name")) == "inbound/test.grib1");
+    wassert(actual(sec->value("path")) == std::filesystem::canonical("inbound/test.grib1"));
 
     write_test_config();
     cfg = dataset::Session::read_configs("testds");
     sec = cfg->section("testds");
     wassert_true(sec);
     wassert(actual(sec->value("name")) == "testds");
+    wassert(actual(sec->value("path")) == std::filesystem::canonical("testds"));
 });
 
 add_method("read_config_remotedir", [] {
