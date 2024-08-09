@@ -14,7 +14,7 @@ namespace arki {
 namespace tests {
 
 SegmentTest::SegmentTest()
-    : format("grib"), root("."), relpath("testfile.grib"), abspath(sys::abspath(relpath)), mdc("inbound/test.grib1")
+    : format("grib"), root("."), relpath("testfile.grib"), abspath(std::filesystem::canonical(relpath)), mdc("inbound/test.grib1")
 {
 }
 

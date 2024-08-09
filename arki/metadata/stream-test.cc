@@ -108,13 +108,13 @@ add_method("stream", [] {
         end2 = out.lseek(0, SEEK_CUR);
     });
 
-	// Where we collect the decoded metadata
-	metadata::Collection results;
+    // Where we collect the decoded metadata
+    metadata::Collection results;
 
     // Stream for the decoding
     metadata::Stream mdstream(results.inserter_func(), "test stream");
 
-	size_t cur = 0;
+    size_t cur = 0;
 
     // Not a full metadata yet
     mdstream.readData(input.data() + cur, end1 - 20);
@@ -131,9 +131,9 @@ add_method("stream", [] {
     cur += 40;
     wassert(actual(results.size()) == 1u);
 
-	// All the rest
-	mdstream.readData(input.data() + cur, end2-cur);
-	cur = end2;
+    // All the rest
+    mdstream.readData(input.data() + cur, end2-cur);
+    cur = end2;
 
     // No bytes must be left to decode
     wassert(actual(mdstream.countBytesUnprocessed()) == 0u);
@@ -143,10 +143,10 @@ add_method("stream", [] {
     wassert_true(cmpmd(*md1, results[0]));
     wassert_true(cmpmd(*md2, results[1]));
 
-	results.clear();
+    results.clear();
 
-	// Try feeding all the data at the same time
-	mdstream.readData(input.data(), input.size());
+    // Try feeding all the data at the same time
+    mdstream.readData(input.data(), input.size());
 
     // No bytes must be left to decode
     wassert(actual(mdstream.countBytesUnprocessed()) == 0u);

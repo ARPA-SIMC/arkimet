@@ -143,7 +143,7 @@ add_method("reader_empty_last", [](Fixture& f) {
         metadata::TestCollection mdc("inbound/test-sorted.grib1");
         core::cfg::Section cfg;
         cfg.set("name", "foo");
-        cfg.set("path", sys::abspath("testds/.archive/foo"));
+        cfg.set("path", std::filesystem::weakly_canonical("testds/.archive/foo"));
         cfg.set("type", "simple");
         cfg.set("step", "daily");
         auto writer = f.session->dataset(cfg)->create_writer();

@@ -27,19 +27,36 @@ using namespace arki::types;
 using namespace arki::utils;
 using namespace arki::core;
 
-namespace arki {
+namespace {
 
+std::filesystem::path canonical_ifexists(const std::filesystem::path path)
+{
+    try {
+        return std::filesystem::canonical(path);
+    } catch (std::filesystem::filesystem_error&) {
+        return path;
+    }
+}
+
+}
+
+namespace arki {
 namespace metadata {
 
 ReadContext::ReadContext() {}
 
 ReadContext::ReadContext(const std::filesystem::path& pathname)
-    : basedir(str::dirname(sys::abspath(pathname))), pathname(pathname)
+    : basedir(), pathname(pathname)
 {
+    try {
+        basedir = std::filesystem::canonical(pathname).parent_path();
+    } catch (std::filesystem::filesystem_error&) {
+        basedir = std::filesystem::current_path();
+    }
 }
 
 ReadContext::ReadContext(const std::filesystem::path& pathname, const std::filesystem::path& basedir)
-    : basedir(sys::abspath(basedir)), pathname(pathname)
+    : basedir(canonical_ifexists(basedir)), pathname(pathname)
 {
 }
 

@@ -88,7 +88,7 @@ add_method("interval", [] {
 add_method("issue124", [] {
     sys::rmtree_ifexists("xargs_tmpdir");
     std::filesystem::create_directory("xargs_tmpdir");
-    arki::tests::OverrideEnvironment oe("TMPDIR", sys::abspath("xargs_tmpdir"));
+    arki::tests::OverrideEnvironment oe("TMPDIR", std::filesystem::canonical("xargs_tmpdir"));
 
     metadata::TestCollection mdc("inbound/test.grib1");
 

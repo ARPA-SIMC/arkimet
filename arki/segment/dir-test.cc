@@ -46,7 +46,7 @@ Tests<segment::dir::Segment, JPEGData>  test6("arki_segment_dir_jpeg");
 std::shared_ptr<segment::dir::Writer> make_w()
 {
     segment::WriterConfig writer_config;
-    string abspath = sys::abspath(relpath);
+    string abspath = std::filesystem::weakly_canonical(relpath);
     return std::shared_ptr<segment::dir::Writer>(new segment::dir::Writer(writer_config, "grib", sys::getcwd(), relpath, abspath));
 }
 
@@ -55,12 +55,13 @@ void TestInternals::register_tests() {
 
 // Scan a well-known sample
 add_method("scanner", [] {
-    segment::dir::Scanner scanner("odimh5", "inbound/fixture.odimh5");
+    std::filesystem::path path("inbound/fixture.odimh5");
+    segment::dir::Scanner scanner("odimh5", path);
     scanner.list_files();
     wassert(actual(scanner.on_disk.size()) == 3u);
     wassert(actual(scanner.max_sequence) == 2u);
 
-    auto reader = Segment::detect_reader("odimh5", std::filesystem::current_path(), "inbound/fixture.odimh5", sys::abspath("inbound/fixture.odimh5"), make_shared<core::lock::Null>());
+    auto reader = Segment::detect_reader("odimh5", std::filesystem::current_path(), path, std::filesystem::canonical(path), make_shared<core::lock::Null>());
 
     metadata::Collection mds;
     scanner.scan(reader, mds.inserter_func());
@@ -215,7 +216,7 @@ this->add_method("empty_dir", [](Fixture& f) {
 
     // Verify what are the results of check
     {
-        auto checker = Segment::detect_checker(f.td.format, ".", relpath, sys::abspath(relpath));
+        auto checker = Segment::detect_checker(f.td.format, ".", relpath, std::filesystem::canonical(relpath));
         wassert(actual(checker->size()) == 0u);
         wassert_false(checker->exists_on_disk());
         wassert_false(checker->is_empty());
