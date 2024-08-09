@@ -60,7 +60,7 @@ public:
     }
 #endif
 
-    Span append_md(Metadata& md)
+    Span append_md(Metadata& md) override
     {
         Span res;
         res.offset = zipout->append(md);

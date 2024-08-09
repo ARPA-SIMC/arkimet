@@ -48,7 +48,7 @@ void SequenceFile::write_sequence(size_t val)
 std::filesystem::path SequenceFile::data_fname(size_t pos, const std::string& format)
 {
     char buf[32];
-    snprintf(buf, 32, "%06zd.%s", pos, format.c_str());
+    snprintf(buf, 32, "%06zu.%s", pos, format.c_str());
     return buf;
 }
 

@@ -49,7 +49,7 @@ struct Creator : public AppendCreator
     size_t append(const metadata::Data& data) override
     {
         // Append it to the new file
-        snprintf(fname, 99, "%06zd.%s", idx, format.c_str());
+        snprintf(fname, 99, "%06zu.%s", idx, format.c_str());
         ++idx;
         return tarout.append(fname, data.read());
     }

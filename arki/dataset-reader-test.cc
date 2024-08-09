@@ -300,7 +300,7 @@ this->add_method("postprocess", [](Fixture& f) {
     auto copy(mdc[0].clone());
     copy->makeInline();
     char buf[32];
-    snprintf(buf, 32, "%zd\n", copy->encodeBinary().size() + copy->data_size());
+    snprintf(buf, 32, "%zu\n", copy->encodeBinary().size() + copy->data_size());
     wassert(actual(out) == buf);
 });
 

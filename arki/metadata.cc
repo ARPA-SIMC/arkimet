@@ -1010,7 +1010,7 @@ void Metadata::dump_internals(FILE* out) const
     if (m_encoded)
         fprintf(out, "  Has encoded buffer %ub long\n", m_encoded_size);
     if (m_data)
-        fprintf(out, "  Has cached data %zdb long\n", m_data->size());
+        fprintf(out, "  Has cached data %zub long\n", m_data->size());
     fprintf(out, "  Item index:\n");
     unsigned idx = 0;
     for (const auto& i: m_index)

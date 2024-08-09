@@ -4,6 +4,10 @@ project('arkimet', 'cpp', version: '1.51', license : 'GPL-2.0-or-later', default
 cpp = meson.get_compiler('cpp')
 
 warning_control = [
+  # Turn some warning classes to errors
+  '-Werror=format',
+  '-Werror=suggest-override',
+
   '-Wno-padded',
   '-Wno-abi-tag',
   '-Wswitch',

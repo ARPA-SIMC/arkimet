@@ -157,17 +157,17 @@ public:
     Memory();
     virtual ~Memory();
 
-    virtual void start_list();
-    virtual void end_list();
+    void start_list() override;
+    void end_list() override;
 
-    virtual void start_mapping();
-    virtual void end_mapping();
+    void start_mapping() override;
+    void end_mapping() override;
 
-    virtual void add_null();
-    virtual void add_bool(bool val);
-    virtual void add_int(long long int val);
-    virtual void add_double(double val);
-    virtual void add_string(const std::string& val);
+    void add_null() override;
+    void add_bool(bool val) override;
+    void add_int(long long int val) override;
+    void add_double(double val) override;
+    void add_string(const std::string& val) override;
 
     const memory::Node& root() const { return *m_root; }
 };

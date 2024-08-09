@@ -505,7 +505,7 @@ protected:
     /// Size of the data buffer
     virtual unsigned encoded_size() const = 0;
 
-    values::string_view name() const
+    values::string_view name() const override
     {
         unsigned size = static_cast<unsigned>(data[0]);
         return values::string_view(reinterpret_cast<const char*>(data) + 1, size);
@@ -525,7 +525,7 @@ public:
     /**
      * Encode into a compact binary representation
      */
-    void encode(core::BinaryEncoder& enc) const
+    void encode(core::BinaryEncoder& enc) const override
     {
         enc.add_raw(data, encoded_size());
     }

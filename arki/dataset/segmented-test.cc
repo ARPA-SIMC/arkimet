@@ -523,7 +523,7 @@ add_method("query_lots", [](Fixture& f) {
 
     struct CheckReftimeSortOrder : public CheckSortOrder
     {
-        virtual uint64_t make_key(const Metadata& md) const
+        uint64_t make_key(const Metadata& md) const override
         {
             const reftime::Position* rt = md.get<types::reftime::Position>();
             auto time = rt->get_Position();
@@ -533,7 +533,7 @@ add_method("query_lots", [](Fixture& f) {
 
     struct CheckAllSortOrder : public CheckSortOrder
     {
-        virtual uint64_t make_key(const Metadata& md) const
+        uint64_t make_key(const Metadata& md) const override
         {
             const reftime::Position* rt = md.get<types::reftime::Position>();
             auto time = rt->get_Position();

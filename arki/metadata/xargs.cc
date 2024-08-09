@@ -105,7 +105,7 @@ int Xargs::run_child()
     child.setenv("ARKI_XARGS_FILENAME", tempfile->name());
     child.setenv("ARKI_XARGS_FORMAT", str::upper(format));
     char buf[32];
-    snprintf(buf, 32, "%zd", count);
+    snprintf(buf, 32, "%zu", count);
     child.setenv("ARKI_XARGS_COUNT", buf);
 
     if (timespan.begin.ye != 0)

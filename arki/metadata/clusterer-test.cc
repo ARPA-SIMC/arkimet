@@ -14,7 +14,7 @@ struct ClusterCounter : public metadata::Clusterer
     ClusterCounter()
         : metadata::Clusterer(), clusters_processed(0) {}
 
-    virtual void flush_batch()
+    void flush_batch() override
     {
         ++clusters_processed;
         metadata::Clusterer::flush_batch();

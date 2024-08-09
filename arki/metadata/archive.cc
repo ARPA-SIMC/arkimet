@@ -127,9 +127,9 @@ size_t LibarchiveOutput::append(const Metadata& md)
 {
     size_t ofs = mds.size() + 1;
     if (subdir.empty())
-        snprintf(filename_buf, 255, "%06zd.%s", ofs, md.source().format.c_str());
+        snprintf(filename_buf, 255, "%06zu.%s", ofs, md.source().format.c_str());
     else
-        snprintf(filename_buf, 255, "%s/%06zd.%s", subdir.c_str(), ofs, md.source().format.c_str());
+        snprintf(filename_buf, 255, "%s/%06zu.%s", subdir.c_str(), ofs, md.source().format.c_str());
     auto stored_md = md.clone();
     const auto& stored_data = stored_md->get_data().read();
     std::unique_ptr<types::Source> stored_source = types::Source::createBlobUnlocked(md.source().format, "", filename_buf, 0, stored_data.size());
