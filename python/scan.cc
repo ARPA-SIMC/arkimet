@@ -68,10 +68,10 @@ void load_scanners()
     base += ".";
     base += PyModule_GetName(module_scanners);
 
-    std::vector<std::string> sources = arki::Config::get().dir_scan.list_files(".py");
+    std::vector<std::filesystem::path> sources = arki::Config::get().dir_scan.list_files(".py");
     for (const auto& source: sources)
     {
-        std::string basename = str::basename(source);
+        std::string basename = source.filename();
 
         // Check if the scanner module had already been imported
         std::string module_name = base + "." + basename.substr(0, basename.size() - 3);

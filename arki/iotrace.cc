@@ -45,7 +45,7 @@ void init()
     if (!Config::get().file_iotrace_output.empty())
     {
         FILE* out = fopen(Config::get().file_iotrace_output.c_str(), "at");
-        if (!out) throw_system_error("cannot open " + Config::get().file_iotrace_output + " for appending");
+        if (!out) throw_system_error("cannot open " + Config::get().file_iotrace_output.native() + " for appending");
         Logger* logger = new Logger(out);
         add_listener(*logger);
         // Lose references, effectively creating garbage; never mind, as we log

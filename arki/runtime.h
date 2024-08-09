@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include <filesystem>
 
 namespace arki {
 
@@ -15,21 +16,21 @@ struct Config
     /**
      * Regular string vector with extra convenience methods for file lookup
      */
-    struct Dirlist : public std::vector<std::string>
+    struct Dirlist : public std::vector<std::filesystem::path>
     {
         /**
          * Look for the file in all directories.
          *
          * @return the pathname if found, raises an exception if not found
          */
-        std::string find_file(const std::string& fname, bool executable=false) const;
+        std::filesystem::path find_file(const std::filesystem::path& fname, bool executable=false) const;
 
         /**
          * Look for the file in all directories.
          *
-         * @return the pathname if found, or the empty string if not found
+         * @return the pathname if found, or the empty path if not found
          */
-        std::string find_file_noerror(const std::string& fname, bool executable=false) const;
+        std::filesystem::path find_file_noerror(const std::filesystem::path& fname, bool executable=false) const;
 
         /**
          * List the files if the first directory found
@@ -41,7 +42,7 @@ struct Config
          * @param first_only
          *   If true, limit the list to the first directory found
          */
-        std::vector<std::string> list_files(const std::string& ext, bool first_only=true) const;
+        std::vector<std::filesystem::path> list_files(const std::string& ext, bool first_only=true) const;
 
         /**
          * Add the directory from the envirnment variable \a envname (if set)
@@ -72,10 +73,10 @@ struct Config
     Dirlist dir_scan_odimh5;
 
     /// Alias file
-    std::string file_aliases;
+    std::filesystem::path file_aliases;
 
     /// I/O profiling log file
-    std::string file_iotrace_output;
+    std::filesystem::path file_iotrace_output;
 
     /// I/O timeout in milliseconds (0: no timeout, default: 15 minutes)
     unsigned io_timeout_ms = 15 * 1000;

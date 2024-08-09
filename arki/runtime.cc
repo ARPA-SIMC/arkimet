@@ -18,13 +18,15 @@ namespace arki {
 
 Config::Config()
 {
+    std::filesystem::path confdir(CONF_DIR);
+
     if (const char* envdir = getenv("ARKI_FORMATTER"))
         dir_formatter.push_back(envdir);
-    dir_formatter.push_back(std::string(CONF_DIR) + "/format");
+    dir_formatter.push_back(confdir / "format");
 
     if (const char* envdir = getenv("ARKI_BBOX"))
         dir_bbox.push_back(envdir);
-    dir_bbox.push_back(std::string(CONF_DIR) + "/bbox");
+    dir_bbox.push_back(confdir / "bbox");
 
     // TODO: colon-separated $PATH-like semantics
     if (const char* envdir = getenv("ARKI_POSTPROC"))
@@ -38,9 +40,9 @@ Config::Config()
         dir_scan.push_back(envdir);
     if (const char* envdir = getenv("ARKI_SCAN_GRIB2"))
         dir_scan.push_back(envdir);
-    dir_scan.push_back(str::joinpath(CONF_DIR, "scan"));
-    dir_scan.push_back(str::joinpath(CONF_DIR, "scan-grib1"));
-    dir_scan.push_back(str::joinpath(CONF_DIR, "scan-grib2"));
+    dir_scan.push_back(confdir / "scan");
+    dir_scan.push_back(confdir / "scan-grib1");
+    dir_scan.push_back(confdir / "scan-grib2");
     dir_scan_bufr.init_config_and_env("scan-bufr", "ARKI_SCAN_BUFR");
     dir_scan_odimh5.init_config_and_env("scan-odimh5", "ARKI_SCAN_ODIMH5");
 
@@ -58,7 +60,7 @@ Config::Config()
     else
     {
         // ...and build-time config otherwise
-        file_aliases = std::string(CONF_DIR) + "/match-alias.conf";
+        file_aliases = confdir / "match-alias.conf";
     }
 #endif
 
@@ -82,9 +84,9 @@ void Config::Dirlist::init_config_and_env(const char* confdir, const char* envna
     push_back(str::joinpath(CONF_DIR, confdir));
 }
 
-std::string Config::Dirlist::find_file(const std::string& fname, bool executable) const
+std::filesystem::path Config::Dirlist::find_file(const std::filesystem::path& fname, bool executable) const
 {
-    string res = find_file_noerror(fname, executable);
+    auto res = find_file_noerror(fname, executable);
     if (res.empty())
     {
         stringstream s;
@@ -96,7 +98,7 @@ std::string Config::Dirlist::find_file(const std::string& fname, bool executable
         return res;
 }
 
-std::string Config::Dirlist::find_file_noerror(const std::string& fname, bool executable) const
+std::filesystem::path Config::Dirlist::find_file_noerror(const std::filesystem::path& fname, bool executable) const
 {
     int mode = executable ? X_OK : F_OK;
     for (const_iterator i = begin(); i != end(); ++i)
@@ -108,19 +110,19 @@ std::string Config::Dirlist::find_file_noerror(const std::string& fname, bool ex
     return std::string();
 }
 
-std::vector<std::string> Config::Dirlist::list_files(const std::string& ext, bool first_only) const
+std::vector<std::filesystem::path> Config::Dirlist::list_files(const std::string& ext, bool first_only) const
 {
-    vector<string> res;
+    std::vector<filesystem::path> res;
 
     for (const auto& path: *this)
     {
         if (!std::filesystem::is_directory(path))
             continue;
-        std::vector<std::string> files;
+        std::vector<std::filesystem::path> files;
         sys::Path dir(path);
         for (auto di = dir.begin(); di != dir.end(); ++di)
         {
-            string file = di->d_name;
+            std::string file = di->d_name;
             // Skip hidden files
             if (file[0] == '.') continue;
             // Skip files with different ending
@@ -135,7 +137,7 @@ std::vector<std::string> Config::Dirlist::list_files(const std::string& ext, boo
 
         // Append the sorted file list to the result
         for (const auto& fn: files)
-            res.push_back(str::joinpath(path, fn));
+            res.push_back(path / fn);
 
         // Stop here if we got results and only a dir is needed
         if (!res.empty() && first_only)

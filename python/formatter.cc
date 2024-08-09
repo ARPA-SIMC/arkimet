@@ -27,7 +27,7 @@ PyObject* formatter_object = nullptr;
 void load_formatter_object()
 {
     using namespace arki;
-    std::vector<std::string> sources = arki::Config::get().dir_formatter.list_files(".py");
+    auto sources = arki::Config::get().dir_formatter.list_files(".py");
     for (const auto& source: sources)
     {
         std::string basename = str::basename(source);
