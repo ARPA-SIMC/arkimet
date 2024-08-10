@@ -170,12 +170,7 @@ void encode_int(core::BinaryEncoder& enc, int value)
     {
         // If it's a small one, encode in the remaining 6 bits
         uint8_t lead = { ENC_SINT6 << 6 };
-        if (value < 0)
-        {
-            lead |= ((~(-value) + 1) & 0x3f);
-        } else {
-            lead |= (value & 0x3f);
-        }
+        lead |= (value & 0x3f);
         enc.add_byte(lead);
     }
     else

@@ -514,10 +514,10 @@ std::ostream& GRIB2::writeToOstream(std::ostream& o) const
       << setw(3) << di << ", "
       << setw(3) << ca << ", "
       << setw(3) << nu;
-    if (ta != 4 || ta != 255)
+    if (ta != 4 || lo != 255)
     {
         o << ", " << setw(3) << ta;
-        if (ta != 255)
+        if (lo != 255)
             o << ", " << setw(3) << lo;
     }
     o << setfill(' ')
