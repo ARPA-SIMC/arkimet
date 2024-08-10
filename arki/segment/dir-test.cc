@@ -47,7 +47,7 @@ std::shared_ptr<segment::dir::Writer> make_w()
 {
     segment::WriterConfig writer_config;
     string abspath = std::filesystem::weakly_canonical(relpath);
-    return std::shared_ptr<segment::dir::Writer>(new segment::dir::Writer(writer_config, "grib", sys::getcwd(), relpath, abspath));
+    return std::shared_ptr<segment::dir::Writer>(new segment::dir::Writer(writer_config, "grib", std::filesystem::current_path(), relpath, abspath));
 }
 
 
@@ -137,7 +137,7 @@ this->add_method("append", [](Fixture& f) {
             w->commit();
 
             // After commit, metadata is updated
-            wassert(actual_type(md.source()).is_source_blob("grib", sys::getcwd(), w->segment().relpath, 0, data_size));
+            wassert(actual_type(md.source()).is_source_blob("grib", std::filesystem::current_path(), w->segment().relpath, 0, data_size));
         }
 
 
@@ -182,7 +182,7 @@ this->add_method("append", [](Fixture& f) {
             w->commit();
 
             // After commit, metadata is updated
-            wassert(actual_type(md.source()).is_source_blob("grib", sys::getcwd(), w->segment().relpath, 2, data_size));
+            wassert(actual_type(md.source()).is_source_blob("grib", std::filesystem::current_path(), w->segment().relpath, 2, data_size));
         }
     }
 

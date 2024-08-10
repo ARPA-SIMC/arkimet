@@ -64,7 +64,7 @@ struct run_ : public MethKwargs<run_, arkipy_ArkiXargs>
                 for (const auto& i: inputs)
                 {
                     sys::File in(i, O_RDONLY);
-                    arki::metadata::ReadContext rc(sys::getcwd(), in.name());
+                    arki::metadata::ReadContext rc(std::filesystem::current_path(), in.name());
                     arki::Metadata::read_file(in, rc, [&](std::shared_ptr<arki::Metadata> md) { return consumer.eat(md); });
                 }
                 consumer.flush();
@@ -72,7 +72,7 @@ struct run_ : public MethKwargs<run_, arkipy_ArkiXargs>
                 ReleaseGIL rg;
                 // Process stdin
                 arki::core::Stdin in;
-                arki::metadata::ReadContext rc(sys::getcwd(), in.name());
+                arki::metadata::ReadContext rc(std::filesystem::current_path(), in.name());
                 arki::Metadata::read_file(in, rc, [&](std::shared_ptr<arki::Metadata> md) { return consumer.eat(md); });
                 consumer.flush();
             }
