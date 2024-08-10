@@ -673,7 +673,7 @@ void Checker::test_truncate_data(const std::filesystem::path& relpath, unsigned 
 {
     metadata::Collection mds;
     m_idx->query_segment(relpath, mds.inserter_func());
-    dataset().session->segment_checker(scan::Scanner::format_from_filename(relpath), dataset().path, relpath)->test_truncate(mds, data_idx);
+    dataset().session->segment_checker(scan::Scanner::format_from_filename(relpath), dataset().path, relpath)->test_truncate_by_data(mds, data_idx);
 }
 
 void Checker::test_swap_data(const std::filesystem::path& relpath, unsigned d1_idx, unsigned d2_idx)

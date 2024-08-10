@@ -9,6 +9,7 @@ warning_control = [
   '-Werror=suggest-override',
   '-Werror=deprecated-copy-dtor',
   '-Werror=missing-declarations',
+  '-Werror=overloaded-virtual',
 
   '-Wno-padded',
   '-Wno-abi-tag',

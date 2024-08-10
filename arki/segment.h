@@ -347,9 +347,10 @@ public:
     virtual void test_truncate(size_t offset) = 0;
 
     /**
-     * Truncate the data at position `data_idx`
+     * Truncate the data so that the data at position `data_idx` in `mds` and
+     * all following ones disappear
      */
-    virtual void test_truncate(const metadata::Collection& mds, unsigned data_idx);
+    virtual void test_truncate_by_data(const metadata::Collection& mds, unsigned data_idx);
 
     /**
      * Move all the data in the segment starting from the one in position

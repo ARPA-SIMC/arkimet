@@ -443,7 +443,7 @@ std::shared_ptr<segment::Checker> Checker::compress(metadata::Collection& mds, u
     return res;
 }
 
-void Checker::test_truncate(const metadata::Collection& mds, unsigned data_idx)
+void Checker::test_truncate_by_data(const metadata::Collection& mds, unsigned data_idx)
 {
     const auto& s = mds[data_idx].sourceBlob();
     test_truncate(s.offset);

@@ -99,26 +99,26 @@ public:
     structured::NodeType type() const override;
     std::string repr() const override;
 
-    bool as_bool(const char* desc) const override;
-    long long int as_int(const char* desc) const override;
-    double as_double(const char* desc) const override;
-    std::string as_string(const char* desc) const override;
+    bool scalar_as_bool(const char* desc) const override;
+    long long int scalar_as_int(const char* desc) const override;
+    double scalar_as_double(const char* desc) const override;
+    std::string scalar_as_string(const char* desc) const override;
 
     unsigned list_size(const char* desc) const override;
-    bool as_bool(unsigned idx, const char* desc) const override;
-    long long int as_int(unsigned idx, const char* desc) const override;
-    double as_double(unsigned idx, const char* desc) const override;
-    std::string as_string(unsigned idx, const char* desc) const override;
-    void sub(unsigned idx, const char* desc, std::function<void(const Reader&)>) const override;
+    bool list_as_bool(unsigned idx, const char* desc) const override;
+    long long int list_as_int(unsigned idx, const char* desc) const override;
+    double list_as_double(unsigned idx, const char* desc) const override;
+    std::string list_as_string(unsigned idx, const char* desc) const override;
+    void list_sub(unsigned idx, const char* desc, std::function<void(const Reader&)>) const override;
 
-    bool has_key(const std::string& key, structured::NodeType type) const override;
-    bool as_bool(const std::string& key, const char* desc) const override;
-    long long int as_int(const std::string& key, const char* desc) const override;
-    double as_double(const std::string& key, const char* desc) const override;
-    std::string as_string(const std::string& key, const char* desc) const override;
-    core::Time as_time(const std::string& key, const char* desc) const override;
-    void items(const char* desc, std::function<void(const std::string&, const Reader&)>) const override;
-    void sub(const std::string& key, const char* desc, std::function<void(const Reader&)>) const override;
+    bool dict_has_key(const std::string& key, structured::NodeType type) const override;
+    bool dict_as_bool(const std::string& key, const char* desc) const override;
+    long long int dict_as_int(const std::string& key, const char* desc) const override;
+    double dict_as_double(const std::string& key, const char* desc) const override;
+    std::string dict_as_string(const std::string& key, const char* desc) const override;
+    core::Time dict_as_time(const std::string& key, const char* desc) const override;
+    void dict_items(const char* desc, std::function<void(const std::string&, const Reader&)>) const override;
+    void dict_sub(const std::string& key, const char* desc, std::function<void(const Reader&)>) const override;
 };
 
 namespace structured{

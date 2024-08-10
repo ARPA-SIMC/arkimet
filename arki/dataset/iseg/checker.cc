@@ -718,7 +718,7 @@ void Checker::test_truncate_data(const std::filesystem::path& relpath, unsigned 
     CIndex idx(m_dataset, relpath, lock);
     metadata::Collection mds;
     idx.query_segment(mds.inserter_func());
-    dataset().session->segment_checker(dataset().format, dataset().path, relpath)->test_truncate(mds, data_idx);
+    dataset().session->segment_checker(dataset().format, dataset().path, relpath)->test_truncate_by_data(mds, data_idx);
 }
 
 void Checker::test_swap_data(const std::filesystem::path& relpath, unsigned d1_idx, unsigned d2_idx)
