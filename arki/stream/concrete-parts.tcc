@@ -50,7 +50,7 @@ struct CollectFilterStderr
         }
         else if (res < 0)
         {
-            if (errno == EAGAIN || errno == EWOULDBLOCK)
+            if (errno_wouldblock())
                 return;
             else
                 throw std::system_error(errno, std::system_category(), "cannot read data from pipe stderr");
@@ -308,7 +308,7 @@ struct FromFilterSplice : public FromFilterConcrete<Backend>
             if (errno == EINVAL)
             {
                 throw SpliceNotAvailable();
-            } else if (errno == EAGAIN || errno == EWOULDBLOCK) {
+            } else if (errno_wouldblock()) {
                 return TransferResult::WOULDBLOCK;
             } else if (errno == EPIPE) {
                 return TransferResult::EOF_DEST;
@@ -384,7 +384,7 @@ struct FromFilterReadWrite : public FromFilterConcrete<Backend>
             return TransferResult::EOF_SOURCE;
         else if (res < 0)
         {
-            if (errno == EAGAIN || errno == EWOULDBLOCK)
+            if (errno_wouldblock())
                 return TransferResult::WOULDBLOCK;
             else
                 throw std::system_error(errno, std::system_category(), "cannot read data from filter stdout");
@@ -525,7 +525,7 @@ struct FromFilterAbstract : public FromFilter<Backend>
             return TransferResult::EOF_SOURCE;
         else if (res < 0)
         {
-            if (errno == EAGAIN || errno == EWOULDBLOCK)
+            if (errno_wouldblock())
                 return TransferResult::WOULDBLOCK;
             else
                 throw std::system_error(errno, std::system_category(), "cannot read data from filter stdout");

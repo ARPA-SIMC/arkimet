@@ -72,7 +72,7 @@ struct BufferToPipe : public MemoryToPipe<Backend>
                 this->pos, (int)out, (int)(this->size - this->pos), (const char*)this->data + this->pos, (int)(this->size - this->pos), (int)res, errno);
         if (res < 0)
         {
-            if (errno == EAGAIN || errno == EWOULDBLOCK)
+            if (errno_wouldblock())
                 return TransferResult::WOULDBLOCK;
             else if (errno == EPIPE) {
                 return TransferResult::EOF_DEST;
@@ -107,7 +107,7 @@ struct LineToPipe : public MemoryToPipe<Backend>
             ssize_t res = Backend::writev(out, todo, 2);
             if (res < 0)
             {
-                if (errno == EAGAIN || errno == EWOULDBLOCK)
+                if (errno_wouldblock())
                     return TransferResult::WOULDBLOCK;
                 else if (errno == EPIPE)
                     return TransferResult::EOF_DEST;
@@ -125,7 +125,7 @@ struct LineToPipe : public MemoryToPipe<Backend>
             ssize_t res = Backend::write(out, "\n", 1);
             if (res < 0)
             {
-                if (errno == EAGAIN || errno == EWOULDBLOCK)
+                if (errno_wouldblock())
                     return TransferResult::WOULDBLOCK;
                 else if (errno == EPIPE)
                     return TransferResult::EOF_DEST;
@@ -176,7 +176,7 @@ struct FileToPipeSendfile : public ToPipe<Backend>
                 throw SendfileNotAvailable();
             else if (errno == EPIPE)
                 return TransferResult::EOF_DEST;
-            else if (errno == EAGAIN || errno == EWOULDBLOCK)
+            else if (errno_wouldblock())
                 return TransferResult::WOULDBLOCK;
             else
                 throw_system_error(errno, "cannot sendfile() ", size, " bytes to ", out.path());
@@ -235,7 +235,7 @@ struct FileToPipeReadWrite : public ToPipe<Backend>
         trace_streaming("  BufferToOutput write %.*s %d → %d\n", (int)(write_size - write_pos), (const char*)buffer.data() + write_pos, (int)(write_size - write_pos), (int)res);
         if (res < 0)
         {
-            if (errno == EAGAIN || errno == EWOULDBLOCK)
+            if (errno_wouldblock())
                 return TransferResult::WOULDBLOCK;
             else if (errno == EPIPE) {
                 return TransferResult::EOF_DEST;
