@@ -93,7 +93,7 @@ add_method("countbytes", [] {
     auto out = std::make_shared<sys::Tempfile>();
     auto stream = StreamOutput::create(out);
     process("inbound/test.grib1.arkimet", "countbytes", *stream);
-    wassert(actual(sys::read_file(out->name())) == "44937\n");
+    wassert(actual(sys::read_file(out->path())) == "44937\n");
 });
 
 add_method("cat", [] {
@@ -116,7 +116,7 @@ add_method("cat", [] {
     auto out = std::make_shared<sys::Tempfile>();
     auto stream = StreamOutput::create(out);
     process("inbound/test.grib1.arkimet", "cat", *stream);
-    std::string postprocessed = sys::read_file(out->name());
+    std::string postprocessed = sys::read_file(out->path());
     wassert(actual(vector<uint8_t>(postprocessed.begin(), postprocessed.end()) == plain));
 });
 
@@ -125,7 +125,7 @@ add_method("countbytes_large", [] {
     auto out = std::make_shared<sys::Tempfile>();
     auto stream = StreamOutput::create(out);
     process("inbound/test.grib1.arkimet", "countbytes", *stream, 128);
-    wassert(actual(sys::read_file(out->name())) == "5751936\n");
+    wassert(actual(out->path()).contents_equal("5751936\n"));
 });
 
 add_method("zeroes_arg", [] {

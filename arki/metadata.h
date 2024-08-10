@@ -296,6 +296,7 @@ public:
     void encode_notes(core::BinaryEncoder& enc) const;
     void set_notes_encoded(const uint8_t* data, unsigned size);
     void add_note(const std::string& note);
+    void add_note_scanned_from(const std::filesystem::path& source);
     const types::Note& get_last_note() const;
 
     /// Check if the items match, ignoring Source, Notes, and Value items

@@ -95,7 +95,7 @@ struct CheckBackend : public AppendCheckBackend
     {
         if (!data.open_ifexists(O_RDONLY))
         {
-            reporter(data.name() + " not found on disk");
+            reporter(data.path().native() + " not found on disk");
             return SEGMENT_DELETED;
         }
         data.fstat(st);
@@ -153,15 +153,12 @@ std::vector<uint8_t> Reader::read(const types::source::Blob& src)
     buf.resize(src.size);
 
     if (posix_fadvise(fd, src.offset, src.size, POSIX_FADV_DONTNEED) != 0)
-        nag::debug("fadvise on %s failed: %s", fd.name().c_str(), strerror(errno));
+        nag::debug("fadvise on %s failed: %s", fd.path().c_str(), strerror(errno));
     ssize_t res = fd.pread(buf.data(), src.size, src.offset);
     if ((size_t)res != src.size)
-    {
-        stringstream msg;
-        msg << "cannot read " << src.size << " bytes of " << src.format << " data from " << fd.name() << ":"
-            << src.offset << ": only " << res << "/" << src.size << " bytes have been read";
-        throw std::runtime_error(msg.str());
-    }
+        throw_runtime_error(
+            "cannot read ", src.size, " bytes of ", src.format, " data from ", fd.path(), ":",
+            src.offset, ": only ", res, "/", src.size, " bytes have been read");
     acct::plain_data_read_count.incr();
     iotrace::trace_file(fd, src.offset, src.size, "read data");
 

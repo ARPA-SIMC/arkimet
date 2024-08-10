@@ -114,7 +114,7 @@ std::unique_ptr<Blob> Blob::create_unlocked(const std::string& format, const std
 std::unique_ptr<Blob> Blob::fileOnly() const
 {
     std::filesystem::path pathname = absolutePathname();
-    std::unique_ptr<Blob> res = Blob::create_unlocked(format, str::dirname(pathname), str::basename(filename), offset, size);
+    std::unique_ptr<Blob> res = Blob::create_unlocked(format, pathname.parent_path(), pathname.filename(), offset, size);
     res->reader = reader;
     return res;
 }

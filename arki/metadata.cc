@@ -469,6 +469,13 @@ void Metadata::add_note(const std::string& note)
     m_index.append_note(Note::create(note));
 }
 
+void Metadata::add_note_scanned_from(const std::filesystem::path& source)
+{
+    stringstream note;
+    note << "Scanned from " << source.filename().native();
+    m_index.append_note(Note::create(note.str()));
+}
+
 const types::Note& Metadata::get_last_note() const
 {
     auto n = m_index.get_last_note();
@@ -682,11 +689,7 @@ void Metadata::write(NamedFileDescriptor& out, bool skip_data) const
     // Having checked the style, we can reinterpret_cast
     const source::Inline* si = reinterpret_cast<const source::Inline*>(s);
     if (si->size != m_data->size())
-    {
-        stringstream ss;
-        ss << "cannot write metadata to file " << out.name() << ": metadata size " << si->size << " does not match the data size " << m_data->size();
-        throw runtime_error(ss.str());
-    }
+        throw_runtime_error("cannot write metadata to file ", out.path(), ": metadata size ", si->size, " does not match the data size ", m_data->size());
     m_data->write_inline(out);
 }
 
@@ -709,11 +712,7 @@ void Metadata::write(StreamOutput& out, bool skip_data) const
     // Having checked the style, we can reinterpret_cast
     const source::Inline* si = reinterpret_cast<const source::Inline*>(s);
     if (si->size != m_data->size())
-    {
-        stringstream ss;
-        ss << "cannot write metadata to file " << out.name() << ": metadata size " << si->size << " does not match the data size " << m_data->size();
-        throw runtime_error(ss.str());
-    }
+        throw_runtime_error("cannot write metadata to file ", out.path(), ": metadata size ", si->size, " does not match the data size ", m_data->size());
     m_data->write_inline(out);
 }
 

@@ -75,8 +75,8 @@ public:
     std::string line;
     off_t offset = 0;
 
-    Input(const std::string& abspath)
-        : md_note("Scanned from " + str::basename(abspath)), close(true)
+    Input(const std::filesystem::path& abspath)
+        : md_note("Scanned from " + abspath.filename().native()), close(true)
     {
         in = new std::ifstream(abspath.c_str());
         if (!in->good())

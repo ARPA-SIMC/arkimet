@@ -296,7 +296,7 @@ std::shared_ptr<Metadata> BufrScanner::scan_singleton(const std::filesystem::pat
 bool BufrScanner::scan_pipe(core::NamedFileDescriptor& infd, metadata_dest_func dest)
 {
     files::RAIIFILE in(infd, "rb");
-    auto file = dballe::File::create(dballe::Encoding::BUFR, in, false, infd.name());
+    auto file = dballe::File::create(dballe::Encoding::BUFR, in, false, infd.path());
     while (true)
     {
         auto md = std::make_shared<Metadata>();

@@ -364,7 +364,7 @@ bool Reader::scan(metadata_dest_func dest)
     // If it exists and it looks new enough, use it
     if (st_md.get() && st_md->st_mtime >= segment().timestamp())
     {
-        std::filesystem::path root(str::dirname(segment().abspath));
+        std::filesystem::path root(segment().abspath.parent_path());
         return Metadata::read_file(metadata::ReadContext(md_abspath, root), [&](std::shared_ptr<Metadata> md) {
             md->sourceBlob().lock(shared_from_this());
             return dest(md);

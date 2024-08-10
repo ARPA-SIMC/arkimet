@@ -91,7 +91,7 @@ struct DataLineBuffer : public DataBuffer
         };
         ssize_t res = ::writev(fd, todo, 2);
         if (res < 0 || (unsigned)res != buffer.size() + 1)
-            throw_system_error("cannot write " + std::to_string(buffer.size() + 1) + " bytes to " + fd.name());
+            throw_system_error(errno, "cannot write ", (buffer.size() + 1), " bytes to ", fd.path());
         return buffer.size() + 1;
     }
     stream::SendResult write(StreamOutput& out) const override

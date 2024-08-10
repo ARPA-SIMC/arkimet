@@ -33,9 +33,9 @@ namespace {
 
 static std::string moveFile(const std::filesystem::path& source, const std::filesystem::path& targetdir)
 {
-    auto targetFile = targetdir / str::basename(source);
+    auto targetFile = targetdir / source.filename();
     if (::rename(source.c_str(), targetFile.c_str()) == -1)
-        arki::throw_system_error("cannot move " + source.native() + " to " + targetFile.native());
+        arki::throw_system_error(errno, "cannot move ", source, " to ", targetFile);
     return targetFile;
 }
 

@@ -11,6 +11,7 @@ warning_control = [
   '-Werror=missing-declarations',
   '-Werror=overloaded-virtual',
   '-Werror=cast-qual',
+  # '-Werror=deprecated-declarations',
 
   '-Wno-padded',
   '-Wno-abi-tag',

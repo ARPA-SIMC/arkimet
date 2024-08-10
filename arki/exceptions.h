@@ -3,6 +3,7 @@
 
 #include <filesystem>
 #include <string>
+#include <sstream>
 
 namespace arki {
 
@@ -28,6 +29,22 @@ namespace arki {
  * deprecated in the future in favour of using std::runtime_error directly.
  */
 [[noreturn]] void throw_consistency_error(const std::string& error);
+
+template<typename... Args>
+[[noreturn]] void throw_system_error(int errno_value, Args... args)
+{
+    std::stringstream buf;
+    (buf << ... << args);
+    throw std::system_error(errno_value, std::system_category(), buf.str());
+}
+
+template<typename... Args>
+[[noreturn]] void throw_runtime_error(Args... args)
+{
+    std::stringstream buf;
+    (buf << ... << args);
+    throw std::runtime_error(buf.str());
+}
 
 }
 

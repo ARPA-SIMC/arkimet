@@ -1,6 +1,7 @@
 #ifndef ARKI_STREAM_LOOPS_SEND_TCC
 #define ARKI_STREAM_LOOPS_SEND_TCC
 
+#include "arki/exceptions.h"
 #include "arki/stream/fwd.h"
 #include "arki/utils/sys.h"
 #include "filter.h"
@@ -111,7 +112,7 @@ struct LineToPipe : public MemoryToPipe<Backend>
                 else if (errno == EPIPE)
                     return TransferResult::EOF_DEST;
                 else
-                    throw std::system_error(errno, std::system_category(), "cannot write "s + std::to_string(this->size + 1) + " bytes to " + out.path().native());
+                    throw_system_error(errno, "cannot write ", (this->size + 1), " bytes to ", out.path());
             }
             if (this->progress_callback)
                 this->progress_callback(res);
@@ -129,7 +130,7 @@ struct LineToPipe : public MemoryToPipe<Backend>
                 else if (errno == EPIPE)
                     return TransferResult::EOF_DEST;
                 else
-                    throw std::system_error(errno, std::system_category(), "cannot write 1 byte to " + out.name());
+                    throw_system_error(errno, "cannot write 1 byte to ", out.path());
             } else if (res == 0) {
                 return TransferResult::WOULDBLOCK;
             } else {
@@ -178,9 +179,9 @@ struct FileToPipeSendfile : public ToPipe<Backend>
             else if (errno == EAGAIN || errno == EWOULDBLOCK)
                 return TransferResult::WOULDBLOCK;
             else
-                throw std::system_error(errno, std::system_category(), "cannot sendfile() " + std::to_string(size) + " bytes to " + out.name());
+                throw_system_error(errno, "cannot sendfile() ", size, " bytes to ", out.path());
         } else if (res == 0)
-            throw std::runtime_error("cannot sendfile() " + std::to_string(offset) + "+" + std::to_string(size) + " to " + out.name() + ": the span does not seem to match the file");
+            throw_runtime_error("cannot sendfile() ", offset, "+", size, " to ", out.path(), ": the span does not seem to match the file");
         else {
             if (this->progress_callback)
                 this->progress_callback(res);
@@ -239,7 +240,7 @@ struct FileToPipeReadWrite : public ToPipe<Backend>
             else if (errno == EPIPE) {
                 return TransferResult::EOF_DEST;
             } else
-                throw std::system_error(errno, std::system_category(), "cannot write " + std::to_string(this->size - this->pos) + " bytes to " + out.name());
+                throw_system_error(errno, "cannot write ", (this->size - this->pos), " bytes to ", out.path());
         } else {
             pos += res;
             write_pos += res;

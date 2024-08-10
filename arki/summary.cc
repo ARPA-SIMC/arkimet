@@ -169,7 +169,7 @@ bool Summary::read(core::AbstractInputFile& in)
         return false;
 
     core::BinaryDecoder dec(bundle.data);
-    read_inner(dec, bundle.version, in.name());
+    read_inner(dec, bundle.version, in.path());
 
     return true;
 }

@@ -82,9 +82,7 @@ void JPEGScanner::set_blob_source(Metadata& md, std::shared_ptr<segment::Reader>
 {
     struct stat st;
     sys::stat(reader->segment().abspath, st);
-    std::stringstream note;
-    note << "Scanned from " << str::basename(reader->segment().relpath);
-    md.add_note(note.str());
+    md.add_note_scanned_from(reader->segment().relpath);
     md.set_source(Source::createBlob(reader, 0, st.st_size));
 }
 

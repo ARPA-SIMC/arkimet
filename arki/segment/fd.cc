@@ -33,7 +33,7 @@ namespace fd {
 void File::fdtruncate_nothrow(off_t pos) noexcept
 {
     if (::ftruncate(*this, pos) == -1)
-        nag::warning("truncating %s to previous size %zd (rollback of append operation): %s", name().c_str(), pos, strerror(errno));
+        nag::warning("truncating %s to previous size %zd (rollback of append operation): %s", path().c_str(), pos, strerror(errno));
 }
 
 namespace {

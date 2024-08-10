@@ -246,7 +246,7 @@ this->add_method("querybytes_integrity", [](Fixture& f) {
         total_size += f.td.mds[i].sourceBlob().size;
     // We use >= and not == because some data sources add extra information
     // to data, like line endings for VM2
-    wassert(actual(sys::size(out->name())) >= total_size);
+    wassert(actual(sys::size(out->path())) >= total_size);
 
     // Check that they can be scanned again
     // Read chunks from tempdata and scan them individually, to allow scanning

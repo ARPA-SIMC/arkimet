@@ -53,7 +53,7 @@ void init()
     }
 }
 
-void trace_file(const std::string& name, off_t offset, size_t size, const char* desc)
+void trace_file(const std::filesystem::path& name, off_t offset, size_t size, const char* desc)
 {
     if (listeners)
     {
@@ -84,7 +84,7 @@ void trace_file(core::NamedFileDescriptor& fd, off_t offset, size_t size, const 
     if (listeners)
     {
         Event ev;
-        ev.filename = fd.name();
+        ev.filename = fd.path();
         ev.offset = offset;
         ev.size = size;
         ev.desc = desc;
@@ -97,7 +97,7 @@ void trace_file(core::AbstractInputFile& fd, off_t offset, size_t size, const ch
     if (listeners)
     {
         Event ev;
-        ev.filename = fd.name();
+        ev.filename = fd.path();
         ev.offset = offset;
         ev.size = size;
         ev.desc = desc;
@@ -110,7 +110,7 @@ void trace_file(StreamOutput& out, off_t offset, size_t size, const char* desc)
     if (listeners)
     {
         Event ev;
-        ev.filename = out.name();
+        ev.filename = out.path();
         ev.offset = offset;
         ev.size = size;
         ev.desc = desc;
@@ -155,7 +155,7 @@ void Collector::dump(std::ostream& out) const
 {
     for (vector<Event>::const_iterator i = events.begin();
             i != events.end(); ++i)
-        out << i->filename << ":" << i->offset << ":" << i->size << ": " << i->desc << endl;
+        out << i->filename.native() << ":" << i->offset << ":" << i->size << ": " << i->desc << endl;
 }
 
 void Logger::operator()(const Event& e)

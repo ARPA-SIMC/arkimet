@@ -109,7 +109,7 @@ void GribScanner::set_source_blob(grib_handle* gh, std::shared_ptr<segment::Read
     md.set_cached_data(metadata::DataManager::get().to_data(reader->segment().format, vector<uint8_t>(vbuf, vbuf + size)));
 
     stringstream note;
-    note << "Scanned from " << str::basename(reader->segment().relpath) << ":" << offset << "+" << size;
+    note << "Scanned from " << reader->segment().relpath.filename().native() << ":" << offset << "+" << size;
     md.add_note(note.str());
 }
 
@@ -160,9 +160,7 @@ std::shared_ptr<Metadata> GribScanner::scan_singleton(const std::filesystem::pat
         GribHandle gh(context, in);
         if (!gh) throw std::runtime_error(abspath.native() + " contains no GRIB data");
         md = scan(gh);
-        stringstream note;
-        note << "Scanned from " << str::basename(abspath);
-        md->add_note(note.str());
+        md->add_note_scanned_from(abspath);
         gh.close();
     }
 

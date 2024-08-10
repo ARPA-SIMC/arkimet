@@ -31,7 +31,7 @@ void load_bbox_object()
     auto sources = arki::Config::get().dir_bbox.list_files(".py");
     for (const auto& source: sources)
     {
-        std::string basename = str::basename(source);
+        std::string basename = source.filename();
 
         // Check if the bbox module had already been imported
         std::string module_name = "arkimet.bbox." + basename.substr(0, basename.size() - 3);

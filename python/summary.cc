@@ -328,12 +328,12 @@ struct read_yaml : public ClassMethKwargs<read_yaml>
                 std::string input_name;
                 if (input.fd)
                 {
-                    input_name = input.fd->name();
+                    input_name = input.fd->path();
                     reader = arki::core::LineReader::from_fd(*input.fd);
                 }
                 else
                 {
-                    input_name = input.abstract->name();
+                    input_name = input.abstract->path();
                     reader = arki::core::LineReader::from_abstract(*input.abstract);
                 }
 
@@ -346,12 +346,12 @@ struct read_yaml : public ClassMethKwargs<read_yaml>
                 std::string input_name;
                 if (input.fd)
                 {
-                    input_name = input.fd->name();
+                    input_name = input.fd->path();
                     reader = arki::core::LineReader::from_fd(*input.fd);
                 }
                 else
                 {
-                    input_name = input.abstract->name();
+                    input_name = input.abstract->path();
                     reader = arki::core::LineReader::from_abstract(*input.abstract);
                 }
                 res->readYaml(*reader, input_name);

@@ -413,13 +413,13 @@ struct read_bundle : public ClassMethKwargs<read_bundle>
                     if (in.fd)
                     {
                         arki::metadata::ReadContext ctx(
-                                in.fd->name(), std::string(py_basedir, py_basedir_len));
+                                in.fd->path(), std::string(py_basedir, py_basedir_len));
                         res = arki::Metadata::read_file(*in.fd, ctx, dest);
                     }
                     else
                     {
                         arki::metadata::ReadContext ctx(
-                                in.abstract->name(), std::string(py_basedir, py_basedir_len));
+                                in.abstract->path(), std::string(py_basedir, py_basedir_len));
                         res = arki::Metadata::read_file(*in.abstract, ctx, dest);
                     }
                 } else if (py_pathname) {
@@ -431,12 +431,12 @@ struct read_bundle : public ClassMethKwargs<read_bundle>
                 } else {
                     if (in.fd)
                     {
-                        arki::metadata::ReadContext ctx(in.fd->name());
+                        arki::metadata::ReadContext ctx(in.fd->path());
                         res = arki::Metadata::read_file(*in.fd, ctx, dest);
                     }
                     else
                     {
-                        arki::metadata::ReadContext ctx(in.abstract->name());
+                        arki::metadata::ReadContext ctx(in.abstract->path());
                         res = arki::Metadata::read_file(*in.abstract, ctx, dest);
                     }
                 }
@@ -519,15 +519,15 @@ struct read_yaml : public ClassMethKwargs<read_yaml>
                 ReleaseGIL gil;
 
                 std::unique_ptr<arki::core::LineReader> reader;
-                std::string input_name;
+                std::filesystem::path input_name;
                 if (input.fd)
                 {
-                    input_name = input.fd->name();
+                    input_name = input.fd->path();
                     reader = arki::core::LineReader::from_fd(*input.fd);
                 }
                 else
                 {
-                    input_name = input.abstract->name();
+                    input_name = input.abstract->path();
                     reader = arki::core::LineReader::from_abstract(*input.abstract);
                 }
 
@@ -540,12 +540,12 @@ struct read_yaml : public ClassMethKwargs<read_yaml>
                 std::string input_name;
                 if (input.fd)
                 {
-                    input_name = input.fd->name();
+                    input_name = input.fd->path();
                     reader = arki::core::LineReader::from_fd(*input.fd);
                 }
                 else
                 {
-                    input_name = input.abstract->name();
+                    input_name = input.abstract->path();
                     reader = arki::core::LineReader::from_abstract(*input.abstract);
                 }
                 res = Metadata::read_yaml(*reader, input_name);

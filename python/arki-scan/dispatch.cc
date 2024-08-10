@@ -41,13 +41,13 @@ DispatchResults MetadataDispatch::process(dataset::Reader& ds, const std::filesy
 
     copyok_stream.reset();
     if (!dir_copyok.empty())
-        copyok = std::make_shared<core::File>(dir_copyok / str::basename(name));
+        copyok = std::make_shared<core::File>(dir_copyok / name.filename());
     else
         copyok.reset();
 
     copyko_stream.reset();
     if (!dir_copyko.empty())
-        copyko = std::make_shared<core::File>(dir_copyko / str::basename(name));
+        copyko = std::make_shared<core::File>(dir_copyko / name.filename());
     else
         copyko.reset();
 

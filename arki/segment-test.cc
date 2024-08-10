@@ -13,17 +13,17 @@ using namespace arki::types;
 using namespace arki::utils;
 using namespace arki::tests;
 
-void make_file(const std::string& name)
+void make_file(const std::filesystem::path& name)
 {
     delete_if_exists(name);
     sys::write_file(name, "");
 }
 
-void make_dir(const std::string& name)
+void make_dir(const std::filesystem::path& name)
 {
     delete_if_exists(name);
     std::filesystem::create_directory(name);
-    sys::write_file(name + "/.sequence", "");
+    sys::write_file(name / ".sequence", "");
 }
 
 void make_samples()

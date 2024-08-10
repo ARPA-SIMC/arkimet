@@ -308,7 +308,7 @@ void Sections::dump(FILE* out) const
 std::shared_ptr<Sections> Sections::parse(core::NamedFileDescriptor& in)
 {
     auto reader = LineReader::from_fd(in);
-    return parse(*reader, in.name());
+    return parse(*reader, in.path());
 }
 
 std::shared_ptr<Sections> Sections::parse(const std::string& in, const std::string& pathname)

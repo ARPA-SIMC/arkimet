@@ -51,7 +51,8 @@ std::vector<std::string> Postprocess::validate_command(const std::string& comman
     if (args.empty())
         throw std::runtime_error("cannot initialize postprocessing filter: postprocess command is empty");
 
-    string scriptname = str::basename(args[0]);
+    std::filesystem::path argv0(args[0]);
+    auto scriptname = argv0.filename();
     if (has_cfg && allowed.find(scriptname) == allowed.end())
     {
         stringstream ss;
@@ -63,7 +64,7 @@ std::vector<std::string> Postprocess::validate_command(const std::string& comman
     }
 
     // Expand args[0] to the full pathname and check that the program exists
-    args[0] = Config::get().dir_postproc.find_file(args[0], true);
+    args[0] = Config::get().dir_postproc.find_file(argv0, true);
 
     return args;
 }

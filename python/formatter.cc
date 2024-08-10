@@ -30,7 +30,7 @@ void load_formatter_object()
     auto sources = arki::Config::get().dir_formatter.list_files(".py");
     for (const auto& source: sources)
     {
-        std::string basename = str::basename(source);
+        std::string basename = source.filename();
 
         // Check if the formatter module had already been imported
         std::string module_name = "arkimet.formatter." + basename.substr(0, basename.size() - 3);

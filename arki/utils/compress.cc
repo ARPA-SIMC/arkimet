@@ -246,7 +246,7 @@ std::vector<uint8_t> SeekIndexReader::read(size_t offset, size_t size)
 
         // Open the compressed chunk
         int fd1 = fd.dup();
-        utils::gzip::File gzfd(fd.name(), fd1, "rb");
+        utils::gzip::File gzfd(fd.path(), fd1, "rb");
         last_group_offset = idx.ofs_unc[block];
         acct::gzip_idx_reposition_count.incr();
 

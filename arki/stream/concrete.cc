@@ -13,7 +13,7 @@ namespace arki {
 namespace stream {
 
 template<typename Backend>
-std::string ConcreteStreamOutputBase<Backend>::name() const { return out->name(); }
+std::string ConcreteStreamOutputBase<Backend>::name() const { return out->path().native(); }
 
 template<typename Backend>
 std::filesystem::path ConcreteStreamOutputBase<Backend>::path() const { return out->path(); }

@@ -170,7 +170,7 @@ bool YamlFile::scan(const dataset::DataQuery& q, metadata_dest_func dest)
 
     while (true)
     {
-        auto md = Metadata::read_yaml(*reader, fd.name());
+        auto md = Metadata::read_yaml(*reader, fd.path());
         if (!md)
             break;
         if (!q.matcher(*md))
