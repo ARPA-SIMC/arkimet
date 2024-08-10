@@ -500,7 +500,7 @@ bool Metadata::operator==(const Metadata& m) const
 bool Metadata::items_equal(const Metadata& o) const
 {
     bool res = true;
-    diff_items(o, [&](types::Code code, const types::Type* first, const types::Type* second) { res = false; });
+    diff_items(o, [&](types::Code code, const types::Type* first, const types::Type* second) noexcept { res = false; });
     return res;
 }
 

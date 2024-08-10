@@ -11,6 +11,14 @@ warning_control = [
   '-Werror=missing-declarations',
   '-Werror=overloaded-virtual',
   '-Werror=cast-qual',
+  '-Werror=duplicated-branches',
+  '-Werror=logical-op',
+  '-Werror=catch-value',
+  '-Werror=conditionally-supported',
+  '-Werror=noexcept',
+  '-Werror=c++23-extensions',
+  '-Werror=dangling-else',
+  # '-Werror=suggest-attribute=format',
   # '-Werror=deprecated-declarations',
 
   '-Wno-padded',
@@ -74,7 +82,7 @@ endif
 
 compiler = meson.get_compiler('cpp')
 if compiler.has_function('splice', prefix : '#include <fcntl.h>')
-    conf_data.set('HAVE_SPLICE', true)
+    conf_data.set('ARKI_HAVE_SPLICE', true)
 endif
 
 flex = find_program('flex')

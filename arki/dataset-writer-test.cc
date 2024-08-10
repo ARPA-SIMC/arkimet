@@ -478,7 +478,7 @@ this->add_method("transaction_different_segment_fail_last", [=](Fixture& f) {
     wassert(test_different_segment_fail(f, 2, dataset::REPLACE_HIGHER_USN));
 });
 
-this->add_method("test_acquire", [](Fixture& f) {
+this->add_method("test_acquire", [](Fixture& f) noexcept {
     // TODO: add tests for test_acquire
 });
 

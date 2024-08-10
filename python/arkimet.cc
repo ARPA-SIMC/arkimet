@@ -308,7 +308,7 @@ struct PythonNagHandler : public nag::Handler
         Py_XDECREF(py_debug);
     }
 
-    void warning(const char* fmt, va_list ap) override
+    void warning(const char* fmt, va_list ap) override __attribute__((format(printf, 2, 0)))
     {
         std::string msg = format(fmt, ap);
         AcquireGIL gil;
@@ -316,7 +316,7 @@ struct PythonNagHandler : public nag::Handler
                     py_warning, "ss#", "%s", msg.data(), (Py_ssize_t)msg.size()));
     }
 
-    void verbose(const char* fmt, va_list ap) override
+    void verbose(const char* fmt, va_list ap) override __attribute__((format(printf, 2, 0)))
     {
         std::string msg = format(fmt, ap);
         AcquireGIL gil;
@@ -324,7 +324,7 @@ struct PythonNagHandler : public nag::Handler
                     py_info, "ss#", "%s", msg.data(), (Py_ssize_t)msg.size()));
     }
 
-    void debug(const char* fmt, va_list ap) override
+    void debug(const char* fmt, va_list ap) override __attribute__((format(printf, 2, 0)))
     {
         std::string msg = format(fmt, ap);
         AcquireGIL gil;
@@ -421,7 +421,7 @@ static bool arkimet_initialized = false;
         add_feature(features, "libzip");
 #endif
         add_feature(features, "sqlite");
-#ifdef HAVE_SPLICE
+#ifdef ARKI_HAVE_SPLICE
         add_feature(features, "splice");
 #endif
 #ifdef HAVE_IOTRACE

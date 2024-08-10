@@ -176,15 +176,15 @@ struct Type
         unsigned long tp_flags = Py_TPFLAGS_DEFAULT;
 
         PySequenceMethods* tp_as_sequence = nullptr;
-        if ((void*)Child::sq_length || (void*)Child::sq_concat || (void*)Child::sq_repeat ||
-            (void*)Child::sq_item || (void*)Child::sq_ass_item || (void*)Child::sq_contains ||
-            (void*)Child::sq_inplace_concat || (void*)Child::sq_inplace_repeat )
+        if (Child::sq_length || Child::sq_concat || Child::sq_repeat ||
+            Child::sq_item || Child::sq_ass_item || Child::sq_contains ||
+            Child::sq_inplace_concat || Child::sq_inplace_repeat )
         {
             tp_as_sequence = &_sequence_methods;
         }
 
         PyMappingMethods* tp_as_mapping = nullptr;
-        if ((void*)Child::mp_length || (void*)Child::mp_subscript || (void*)Child::mp_ass_subscript)
+        if (Child::mp_length || Child::mp_subscript || Child::mp_ass_subscript)
             tp_as_mapping = &_mapping_methods;
 
         py_unique_ptr<PyTypeObject> type = new PyTypeObject {

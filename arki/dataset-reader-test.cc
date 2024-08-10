@@ -363,7 +363,7 @@ this->add_method("read_missing_segment", [](Fixture& f) {
 this->add_method("issue116", [](Fixture& f) {
     unsigned count = 0;
     auto reader = f.dataset_config()->create_reader();
-    reader->query_data("reftime:==13:00", [&](std::shared_ptr<Metadata> md) { ++count; return true; });
+    reader->query_data("reftime:==13:00", [&](std::shared_ptr<Metadata> md) noexcept { ++count; return true; });
     wassert(actual(count) == 1u);
 });
 
@@ -390,7 +390,7 @@ this->add_method("issue213_manyds", [](Fixture& f) {
 this->add_method("issue215", [](Fixture& f) {
     unsigned count = 0;
     auto reader = f.dataset_config()->create_reader();
-    reader->query_data("reftime:;area:GRIB: or VM2:", [&](std::shared_ptr<Metadata> md) { ++count; return true; });
+    reader->query_data("reftime:;area:GRIB: or VM2:", [&](std::shared_ptr<Metadata> md) noexcept { ++count; return true; });
     wassert(actual(count) == 3u);
 });
 
@@ -426,7 +426,7 @@ this->add_method("progress", [](Fixture& f) {
     dataset::DataQuery dq;
     dq.progress = progress;
     size_t count = 0;
-    reader->query_data(dq, [&](std::shared_ptr<Metadata> md) { ++count; return true; });
+    reader->query_data(dq, [&](std::shared_ptr<Metadata> md) noexcept { ++count; return true; });
     wassert(actual(count) == 3u);
     wassert(actual(progress->count) == 3u);
     wassert(actual(progress->bytes) > 90u);
@@ -459,7 +459,7 @@ this->add_method("progress", [](Fixture& f) {
     auto progress1 = make_shared<TestProgressThrowing>();
     dq.progress = progress1;
     count = 0;
-    auto e = wassert_throws(std::runtime_error, reader->query_data(dq, [&](std::shared_ptr<Metadata> md) { ++count; return true; }));
+    auto e = wassert_throws(std::runtime_error, reader->query_data(dq, [&](std::shared_ptr<Metadata> md) noexcept { ++count; return true; }));
     wassert(actual(e.what()) = "Expected error");
 
     progress1 = make_shared<TestProgressThrowing>();

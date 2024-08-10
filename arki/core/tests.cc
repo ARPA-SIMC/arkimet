@@ -162,7 +162,7 @@ void skip_unless_geos()
 }
 void skip_unless_splice()
 {
-#ifndef HAVE_SPLICE
+#ifndef ARKI_HAVE_SPLICE
     throw TestSkipped("splice() syscall is not available");
 #endif
 }

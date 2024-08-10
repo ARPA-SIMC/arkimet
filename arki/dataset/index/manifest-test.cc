@@ -189,7 +189,7 @@ add_method("modify_while_scanning", [] {
         std::unique_ptr<Manifest> m = Manifest::create(mkds("testds/.archive/last"));
         m->openRW();
         size_t count = 0;
-        m->list_segments([&](const std::string&) { ++count; });
+        m->list_segments([&](const std::string&) noexcept { ++count; });
         wassert(actual(count) == 4u);
     }
 });

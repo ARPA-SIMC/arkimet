@@ -62,7 +62,7 @@ add_method("cast", [] {
 });
 
 // Check specific item assignments
-add_method("assign", [] {
+add_method("assign", []() noexcept {
 #if 0
 	Item<ImplA> a(new ImplA);
 	Item<ImplB> b(new ImplB);
@@ -77,7 +77,7 @@ add_method("assign", [] {
 });
 
 // Check copying around
-add_method("copy", [] {
+add_method("copy", []() noexcept {
 #if 0
 	Item<ImplA> a(new ImplA);
 	ensure_equals(a->val, 0);
@@ -113,7 +113,7 @@ add_method("copy", [] {
 });
 
 // Check UItem
-add_method("uitem", [] {
+add_method("uitem", []() noexcept {
 #if 0
 	UItem<ImplA> a;
 	UItem<ImplA> b;
@@ -128,7 +128,7 @@ add_method("uitem", [] {
 });
 
 // Check that assignment works
-add_method("assign1", [] {
+add_method("assign1", []() noexcept {
 #if 0
 	Item<TestImpl> a(new TestImpl);
 	Item<TestImpl> b(new TestImpl(1));

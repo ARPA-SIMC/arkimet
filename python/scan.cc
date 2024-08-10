@@ -217,6 +217,7 @@ struct get_long : public MethKwargs<get_long, arkipy_scan_Grib>
             long val;
             int res = grib_get_long(self->gh, key, &val);
             if (res == GRIB_NOT_FOUND or val == GRIB_MISSING_LONG)
+            {
                 if (arg_default)
                 {
                     Py_INCREF(arg_default);
@@ -224,6 +225,7 @@ struct get_long : public MethKwargs<get_long, arkipy_scan_Grib>
                 }
                 else
                     Py_RETURN_NONE;
+            }
 
             check_grib_error(res, "cannot read long value from grib");
 

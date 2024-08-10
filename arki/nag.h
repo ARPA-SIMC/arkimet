@@ -22,9 +22,9 @@ private:
 public:
     virtual ~Handler();
 
-    virtual void warning(const char* fmt, va_list ap) = 0;
-    virtual void verbose(const char* fmt, va_list ap) = 0;
-    virtual void debug(const char* fmt, va_list ap) = 0;
+    virtual void warning(const char* fmt, va_list ap) __attribute__((format(printf, 2, 0))) = 0;
+    virtual void verbose(const char* fmt, va_list ap) __attribute__((format(printf, 2, 0))) = 0;
+    virtual void debug(const char* fmt, va_list ap) __attribute__((format(printf, 2, 0))) = 0;
 
     /**
      * Install the handler as the current handler.
@@ -34,23 +34,23 @@ public:
     void install();
 
     /// Format vprintf-style arguments into a std::string
-    std::string format(const char* fmt, va_list ap);
+    std::string format(const char* fmt, va_list ap) __attribute__((format(printf, 2, 0)));
 };
 
 
 struct NullHandler: public Handler
 {
-    void warning(const char* fmt, va_list ap) override {}
-    void verbose(const char* fmt, va_list ap) override {}
-    void debug(const char* fmt, va_list ap) override {}
+    void warning(const char* fmt, va_list ap) override __attribute__((format(printf, 2, 0))) {}
+    void verbose(const char* fmt, va_list ap) override __attribute__((format(printf, 2, 0))) {}
+    void debug(const char* fmt, va_list ap) override __attribute__((format(printf, 2, 0))) {}
 };
 
 
 struct StderrHandler: public Handler
 {
-    void warning(const char* fmt, va_list ap) override;
-    void verbose(const char* fmt, va_list ap) override;
-    void debug(const char* fmt, va_list ap) override;
+    void warning(const char* fmt, va_list ap) override __attribute__((format(printf, 2, 0)));
+    void verbose(const char* fmt, va_list ap) override __attribute__((format(printf, 2, 0)));
+    void debug(const char* fmt, va_list ap) override __attribute__((format(printf, 2, 0)));
 };
 
 
@@ -64,11 +64,11 @@ struct CollectHandler : public Handler
     CollectHandler(bool verbose=true, bool debug=false);
     ~CollectHandler();
 
-    void warning(const char* fmt, va_list ap) override;
-    void verbose(const char* fmt, va_list ap) override;
-    void debug(const char* fmt, va_list ap) override;
+    void warning(const char* fmt, va_list ap) override __attribute__((format(printf, 2, 0)));
+    void verbose(const char* fmt, va_list ap) override __attribute__((format(printf, 2, 0)));
+    void debug(const char* fmt, va_list ap) override __attribute__((format(printf, 2, 0)));
 
-    void collect(const char* fmt, va_list ap);
+    void collect(const char* fmt, va_list ap) __attribute__((format(printf, 2, 0)));
     void clear();
 };
 
@@ -87,15 +87,15 @@ bool is_debug();
 
 /// Output a message, except during tests (a newline is automatically appended)
 void warning(const char* fmt, ...) __attribute__ ((format(printf, 1, 2)));
-void warning(const char* fmt, va_list ap);
+void warning(const char* fmt, va_list ap) __attribute__ ((format(printf, 1, 0)));
 
 /// Output a message, if verbose messages are allowed (a newline is automatically appended)
 void verbose(const char* fmt, ...) __attribute__ ((format(printf, 1, 2)));
-void verbose(const char* fmt, va_list ap);
+void verbose(const char* fmt, va_list ap) __attribute__ ((format(printf, 1, 0)));
 
 /// Output a message, if debug messages are allowed (a newline is automatically appended)
 void debug(const char* fmt, ...) __attribute__ ((format(printf, 1, 2)));
-void debug(const char* fmt, va_list ap);
+void debug(const char* fmt, va_list ap) __attribute__ ((format(printf, 1, 0)));
 
 /// Output a message to /dev/tty (used for debugging when the output is redirected)
 void debug_tty(const char* fmt, ...) __attribute__ ((format(printf, 1, 2)));

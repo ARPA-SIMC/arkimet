@@ -58,7 +58,7 @@ void SegmentCheckTest::run()
     auto segment(make_full_checker());
     segment::State state;
 
-    auto rep = [](const std::string& msg) {
+    auto rep = [](const std::string& msg) noexcept {
         // fprintf(stderr, "CHECK %s\n", msg.c_str());
     };
 

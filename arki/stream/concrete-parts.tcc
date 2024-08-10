@@ -289,7 +289,7 @@ struct FromFilterSplice : public FromFilterConcrete<Backend>
 
     TransferResult transfer_available_output()
     {
-#ifndef HAVE_SPLICE
+#ifndef ARKI_HAVE_SPLICE
         trace_streaming("  splice is not available\n");
         throw SpliceNotAvailable();
 #else
@@ -477,7 +477,7 @@ struct FromFilterReadWrite : public FromFilterConcrete<Backend>
 };
 
 
-#ifdef HAVE_SPLICE
+#ifdef ARKI_HAVE_SPLICE
 template<typename Backend>
 struct FromFilterConcretePrimary : public FromFilterSplice<Backend>
 {

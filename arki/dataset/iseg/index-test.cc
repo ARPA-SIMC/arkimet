@@ -18,7 +18,7 @@ class Tests : public TestCase
 
 void Tests::register_tests() {
 
-add_method("locks", [] {
+add_method("locks", []() noexcept {
     // We cannot rely on sqlite transactions to protect readers from a repack
 #if 0
     std::shared_ptr<const iseg::Config> cfg = iseg::Config::create(ConfigFile(R"(

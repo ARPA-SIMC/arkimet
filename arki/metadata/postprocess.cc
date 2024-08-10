@@ -17,7 +17,7 @@
 #include <set>
 
 
-#if __xlC__
+#ifdef __xlC__
 typedef void (*sighandler_t)(int);
 #endif
 

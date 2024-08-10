@@ -1,5 +1,9 @@
 toplevel_inc = include_directories('..')
 
+extra_warnings = cpp.get_supported_arguments([
+  '-Wno-redundant-decls',
+])
+
 py_arkimet_sources = [
     'utils/core.cc',
     'utils/methods.cc',
@@ -45,6 +49,7 @@ endif
 py_arkimet = python3.extension_module('_arkimet',
     py_arkimet_sources,
     cpp_pch: '../arki/pch/arkimet_pch.h',
+    cpp_args: extra_warnings,
     include_directories: toplevel_inc,
     dependencies: python3.dependency(),
     link_with: libarkimet,
