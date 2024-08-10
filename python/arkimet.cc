@@ -51,7 +51,7 @@ struct expand_query : public MethKwargs<expand_query, PyObject>
     {
         static const char* kwlist[] = { "query", nullptr };
         const char* query = nullptr;
-        if (!PyArg_ParseTupleAndKeywords(args, kw, "s", const_cast<char**>(kwlist), &query))
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "s", pass_kwlist(kwlist), &query))
             return nullptr;
 
         try {
@@ -105,7 +105,7 @@ Arguments:
         const char* name = nullptr;
         const char* query = "";
 
-        if (!PyArg_ParseTupleAndKeywords(args, kw, "Os|s", (char**)kwlist, &arg_datasets, &name, &query))
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "Os|s", pass_kwlist(kwlist), &arg_datasets, &name, &query))
             return nullptr;
 
         try {
@@ -139,7 +139,7 @@ struct make_merged_dataset : public MethKwargs<make_merged_dataset, PyObject>
         static const char* kwlist[] = { "cfg", NULL };
         PyObject* arg_cfg = Py_None;
 
-        if (!PyArg_ParseTupleAndKeywords(args, kw, "O", (char**)kwlist, &arg_cfg))
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "O", pass_kwlist(kwlist), &arg_cfg))
             return nullptr;
 
         try {
@@ -188,7 +188,7 @@ struct set_verbosity : public MethKwargs<set_verbosity, PyObject>
         int verbose = 0;
         int debug = 0;
 
-        if (!PyArg_ParseTupleAndKeywords(args, kw, "pp", const_cast<char**>(kwlist), &verbose, &debug))
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "pp", pass_kwlist(kwlist), &verbose, &debug))
             return nullptr;
 
         try {
@@ -260,7 +260,7 @@ struct debug_tty : public MethKwargs<debug_tty, PyObject>
         static const char* kwlist[] = { "text", nullptr };
         const char* text = nullptr;
         Py_ssize_t text_len;
-        if (!PyArg_ParseTupleAndKeywords(args, kw, "s#", const_cast<char**>(kwlist), &text, &text_len))
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "s#", pass_kwlist(kwlist), &text, &text_len))
             return nullptr;
 
         try {

@@ -10,6 +10,7 @@ warning_control = [
   '-Werror=deprecated-copy-dtor',
   '-Werror=missing-declarations',
   '-Werror=overloaded-virtual',
+  '-Werror=cast-qual',
 
   '-Wno-padded',
   '-Wno-abi-tag',

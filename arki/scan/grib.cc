@@ -124,7 +124,7 @@ void GribScanner::set_source_inline(grib_handle* gh, Metadata& md)
 
 std::shared_ptr<Metadata> GribScanner::scan_data(const std::vector<uint8_t>& data)
 {
-    GribHandle gh(grib_handle_new_from_message(context, (void*)data.data(), data.size()));
+    GribHandle gh(grib_handle_new_from_message(context, data.data(), data.size()));
     if (!gh) throw std::runtime_error("GRIB memory buffer failed to scan");
 
     std::shared_ptr<Metadata> md = scan(gh);

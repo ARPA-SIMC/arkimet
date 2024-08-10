@@ -113,7 +113,7 @@ struct write : public MethKwargs<write, arkipy_Metadata>
         int annotate = 0;
         int skip_data = 0;
 
-        if (!PyArg_ParseTupleAndKeywords(args, kw, "O|spp", (char**)kwlist, &arg_file, &format, &annotate, &skip_data))
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "O|spp", pass_kwlist(kwlist), &arg_file, &format, &annotate, &skip_data))
             return nullptr;
 
         try {
@@ -192,7 +192,7 @@ struct make_url : public MethKwargs<make_url, arkipy_Metadata>
         static const char* kwlist[] = { "baseurl", NULL };
         const char* url = nullptr;
 
-        if (!PyArg_ParseTupleAndKeywords(args, kw, "s", (char**)kwlist, &url))
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "s", pass_kwlist(kwlist), &url))
             return nullptr;
 
         try {
@@ -214,7 +214,7 @@ struct to_string : public MethKwargs<to_string, arkipy_Metadata>
         static const char* kwlist[] = { "type", NULL };
         const char* py_type = nullptr;
         Py_ssize_t py_type_len;
-        if (!PyArg_ParseTupleAndKeywords(args, kw, "|z#", (char**)kwlist, &py_type, &py_type_len))
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "|z#", pass_kwlist(kwlist), &py_type, &py_type_len))
             return nullptr;
 
         try {
@@ -254,7 +254,7 @@ struct to_python : public MethKwargs<to_python, arkipy_Metadata>
         static const char* kwlist[] = { "type", NULL };
         const char* py_type = nullptr;
         Py_ssize_t py_type_len;
-        if (!PyArg_ParseTupleAndKeywords(args, kw, "|z#", (char**)kwlist, &py_type, &py_type_len))
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "|z#", pass_kwlist(kwlist), &py_type, &py_type_len))
             return nullptr;
 
         try {
@@ -464,7 +464,7 @@ struct write_bundle : public ClassMethKwargs<write_bundle>
         static const char* kwlist[] = { "mds", "file", NULL };
         PyObject* py_mds = nullptr;
         PyObject* py_file = nullptr;
-        if (!PyArg_ParseTupleAndKeywords(args, kw, "OO", (char**)kwlist, &py_mds, &py_file))
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "OO", pass_kwlist(kwlist), &py_mds, &py_file))
             return nullptr;
 
         try {

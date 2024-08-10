@@ -86,8 +86,8 @@ struct DataLineBuffer : public DataBuffer
     size_t write(core::NamedFileDescriptor& fd) const override
     {
         struct iovec todo[2] = {
-            { (void*)buffer.data(), buffer.size() },
-            { (void*)"\n", 1 },
+            { const_cast<uint8_t*>(buffer.data()), buffer.size() },
+            { const_cast<char*>("\n"), 1 },
         };
         ssize_t res = ::writev(fd, todo, 2);
         if (res < 0 || (unsigned)res != buffer.size() + 1)

@@ -42,11 +42,11 @@ std::vector<uint8_t> lzo(const void* in, size_t in_size)
     std::vector<uint8_t> out(in_size + in_size / 16 + 64 + 3);
     lzo_uint out_len = out.size();
 
-	// Compress
-	int r = lzo1x_1_compress(
-			(lzo_bytep)in, in_size,
-			(lzo_bytep)out.data(), &out_len,
-			(lzo_bytep)wrkmem.data());
+    // Compress
+    int r = lzo1x_1_compress(
+            static_cast<const lzo_bytep>(in), in_size,
+            static_cast<lzo_bytep>(out.data()), &out_len,
+            static_cast<lzo_bytep>(wrkmem.data()));
     if (r != LZO_E_OK)
     {
         stringstream ss;
@@ -70,7 +70,7 @@ std::vector<uint8_t> unlzo(const void* in, size_t in_size, size_t out_size)
 
     std::vector<uint8_t> out(out_size);
     lzo_uint new_len = out_size;
-    int r = lzo1x_decompress_safe((lzo_bytep)in, in_size, (lzo_bytep)out.data(), &new_len, NULL);
+    int r = lzo1x_decompress_safe(static_cast<const lzo_bytep>(in), in_size, (lzo_bytep)out.data(), &new_len, NULL);
     if (r != LZO_E_OK || new_len != out_size)
     {
         stringstream ss;
@@ -105,7 +105,7 @@ ZlibCompressor::~ZlibCompressor()
 void ZlibCompressor::feed_data(const void* buf, size_t len)
 {
     strm->avail_in = len;
-    strm->next_in = (Bytef*)buf;
+    strm->next_in = const_cast<Bytef*>(static_cast<const Bytef*>(buf));
 }
 
 size_t ZlibCompressor::get(void* buf, size_t len, bool flush)
