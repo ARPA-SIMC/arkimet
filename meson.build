@@ -7,9 +7,15 @@ warning_control = [
   # Turn some warning classes to errors
   '-Werror=format',
   '-Werror=suggest-override',
+  '-Werror=deprecated-copy-dtor',
+  '-Werror=missing-declarations',
 
   '-Wno-padded',
   '-Wno-abi-tag',
+  '-Wno-unused-macros',
+  '-Wno-missing-include-dirs',
+  '-Wno-multiple-inheritance',
+  '-Wno-sign-promo',
   '-Wswitch',
   '-Wno-switch-enum',
   '-Wno-effc++',

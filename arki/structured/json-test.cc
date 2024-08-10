@@ -26,7 +26,7 @@ add_method("null", [] {
 
     Memory m;
     JSON::parse(str.str(), m);
-    wassert(actual(m.root().type()) = NodeType::NONE);
+    wassert(actual(m.root().type()) == NodeType::NONE);
 });
 
 // bool value

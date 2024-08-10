@@ -40,6 +40,8 @@ This is what allows to fetch the actual data given its metadata.
 )";
 
 public:
+    using Type::Type;
+
     std::string format;
 
     types::Code type_code() const override { return traits<Source>::type_code; }

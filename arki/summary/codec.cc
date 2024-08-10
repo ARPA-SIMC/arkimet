@@ -156,7 +156,7 @@ struct Format3Decoder : public DecoderBase
 
 }
 
-size_t decode1(core::BinaryDecoder& dec, Table& target)
+static size_t decode1(core::BinaryDecoder& dec, Table& target)
 {
     // Stripe size
     // either: child count + children
@@ -171,7 +171,7 @@ size_t decode1(core::BinaryDecoder& dec, Table& target)
     return decoder.count;
 }
 
-size_t decode3(core::BinaryDecoder& dec, Table& target)
+static size_t decode3(core::BinaryDecoder& dec, Table& target)
 {
     // Stripe size
     // stats size + stats

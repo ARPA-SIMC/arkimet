@@ -367,6 +367,8 @@ static PyModuleDef cmdline_module = {
 
 arki::nag::Handler* python_nag_handler = nullptr;
 
+PyMODINIT_FUNC PyInit__arkimet(void);
+
 PyMODINIT_FUNC PyInit__arkimet(void)
 {
     using namespace arki::python;

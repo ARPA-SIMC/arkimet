@@ -48,7 +48,7 @@ struct Item
 };
 
 /// Serializer for Item
-ostream& operator<<(ostream& out, const Item& i)
+static ostream& operator<<(ostream& out, const Item& i)
 {
     if (i.reverse) out << "-";
     out << str::lower(types::formatCode(i.code));

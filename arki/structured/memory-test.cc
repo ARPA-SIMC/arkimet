@@ -21,7 +21,7 @@ add_method("null", [] {
     m.add_null();
 
     wassert(actual(m.root().tag()) == "null");
-    wassert(actual(m.root().type()) = NodeType::NONE);
+    wassert(actual(m.root().type()) == NodeType::NONE);
 });
 
 // bool value
