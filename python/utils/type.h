@@ -236,6 +236,7 @@ struct Type
             0,                         // tp_del
             0,                         // tp_version_tag
             0,                         // tp_finalize
+            0,                         // tp_vectorcall
         };
 
         if (PyType_Ready(type) != 0)
