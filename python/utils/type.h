@@ -111,17 +111,17 @@ struct Type
 
     Type()
     {
-        _sequence_methods.sq_length = (lenfunc)Child::sq_length;
-        _sequence_methods.sq_concat = (binaryfunc)Child::sq_concat;
-        _sequence_methods.sq_repeat = (ssizeargfunc)Child::sq_repeat;
-        _sequence_methods.sq_item = (ssizeargfunc)Child::sq_item;
-        _sequence_methods.sq_ass_item = (ssizeobjargproc)Child::sq_ass_item;
-        _sequence_methods.sq_contains = (objobjproc)Child::sq_contains;
-        _sequence_methods.sq_inplace_concat = (binaryfunc)Child::sq_inplace_concat;
-        _sequence_methods.sq_inplace_repeat = (ssizeargfunc)Child::sq_inplace_repeat;
-        _mapping_methods.mp_length = (lenfunc)Child::mp_length;
-        _mapping_methods.mp_subscript = (binaryfunc)Child::mp_subscript;
-        _mapping_methods.mp_ass_subscript = (objobjargproc)Child::mp_ass_subscript;
+        _sequence_methods.sq_length = reinterpret_cast<lenfunc>(Child::sq_length);
+        _sequence_methods.sq_concat = reinterpret_cast<binaryfunc>(Child::sq_concat);
+        _sequence_methods.sq_repeat = reinterpret_cast<ssizeargfunc>(Child::sq_repeat);
+        _sequence_methods.sq_item = reinterpret_cast<ssizeargfunc>(Child::sq_item);
+        _sequence_methods.sq_ass_item = reinterpret_cast<ssizeobjargproc>(Child::sq_ass_item);
+        _sequence_methods.sq_contains = reinterpret_cast<objobjproc>(Child::sq_contains);
+        _sequence_methods.sq_inplace_concat = reinterpret_cast<binaryfunc>(Child::sq_inplace_concat);
+        _sequence_methods.sq_inplace_repeat = reinterpret_cast<ssizeargfunc>(Child::sq_inplace_repeat);
+        _mapping_methods.mp_length = reinterpret_cast<lenfunc>(Child::mp_length);
+        _mapping_methods.mp_subscript = reinterpret_cast<binaryfunc>(Child::mp_subscript);
+        _mapping_methods.mp_ass_subscript = reinterpret_cast<objobjargproc>(Child::mp_ass_subscript);
     }
 #endif
 
@@ -236,7 +236,9 @@ struct Type
             0,                         // tp_del
             0,                         // tp_version_tag
             0,                         // tp_finalize
+#if ! (PY_MAJOR_VERSION == 3 && PY_MINOR_VERSION < 8)
             0,                         // tp_vectorcall
+#endif
         };
 
         if (PyType_Ready(type) != 0)
