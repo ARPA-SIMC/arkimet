@@ -9,6 +9,7 @@ import sys
 import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from socketserver import ForkingMixIn
+from urllib.parse import unquote, urlsplit
 
 from werkzeug.exceptions import HTTPException, NotFound
 
@@ -83,18 +84,23 @@ class Handler(BaseHTTPRequestHandler):
         """
         Create an environment that can be used with werkzeug
         """
-        # Derived from werkzeug's WSGIRequestHandler
-        from werkzeug.urls import url_parse, url_unquote
-
         try:
             from werkzeug._compat import wsgi_encoding_dance as _wsgi_encoding_dance
         except ModuleNotFoundError:
             from werkzeug._internal import _wsgi_encoding_dance
 
-        request_url = url_parse(self.path)
-
+        request_url = urlsplit(self.path)
         url_scheme = "http"
-        path_info = url_unquote(request_url.path)
+
+        # If there was no scheme but the path started with two slashes,
+        # the first segment may have been incorrectly parsed as the
+        # netloc, prepend it to the path again.
+        if not request_url.scheme and request_url.netloc:
+            path_info = f"/{request_url.netloc}{request_url.path}"
+        else:
+            path_info = request_url.path
+
+        path_info = unquote(path_info)
 
         environ = {
             "wsgi.version": (1, 0),
