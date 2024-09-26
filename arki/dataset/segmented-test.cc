@@ -523,7 +523,7 @@ add_method("query_lots", [](Fixture& f) {
 
     struct CheckReftimeSortOrder : public CheckSortOrder
     {
-        virtual uint64_t make_key(const Metadata& md) const
+        uint64_t make_key(const Metadata& md) const override
         {
             const reftime::Position* rt = md.get<types::reftime::Position>();
             auto time = rt->get_Position();
@@ -533,7 +533,7 @@ add_method("query_lots", [](Fixture& f) {
 
     struct CheckAllSortOrder : public CheckSortOrder
     {
-        virtual uint64_t make_key(const Metadata& md) const
+        uint64_t make_key(const Metadata& md) const override
         {
             const reftime::Position* rt = md.get<types::reftime::Position>();
             auto time = rt->get_Position();
@@ -705,7 +705,7 @@ add_method("unarchive_segment_lastonly", [](Fixture& f) {
     }
 
     // Check that segments are where we expect them
-    sys::rename("testds/.archive/last/2007", "testds/.archive/testds-2007");
+    std::filesystem::rename("testds/.archive/last/2007", "testds/.archive/testds-2007");
     wassert(actual_file("testds/.archive/testds-2007/07-07.grib").exists());
     wassert(actual_file("testds/.archive/testds-2007/07-07.grib.metadata").exists());
     wassert(actual_file("testds/.archive/testds-2007/07-07.grib.summary").exists());

@@ -5,6 +5,7 @@
 
 #include <arki/dataset.h>
 #include <arki/core/fwd.h>
+#include <filesystem>
 #include <string>
 
 namespace arki {
@@ -32,7 +33,7 @@ protected:
 
 public:
     /// Root path of the dataset
-    std::string path;
+    std::filesystem::path path;
 
     int archive_age = -1;
     int delete_age = -1;
@@ -59,9 +60,9 @@ public:
     /**
      * Create/open a dataset-wide lockfile, returning the Lock instance
      */
-    std::shared_ptr<dataset::ReadLock> read_lock_segment(const std::string& relpath) const;
-    std::shared_ptr<dataset::AppendLock> append_lock_segment(const std::string& relpath) const;
-    std::shared_ptr<dataset::CheckLock> check_lock_segment(const std::string& relpath) const;
+    std::shared_ptr<dataset::ReadLock> read_lock_segment(const std::filesystem::path& relpath) const;
+    std::shared_ptr<dataset::AppendLock> append_lock_segment(const std::filesystem::path& relpath) const;
+    std::shared_ptr<dataset::CheckLock> check_lock_segment(const std::filesystem::path& relpath) const;
 };
 
 template<typename Parent>
@@ -96,9 +97,9 @@ public:
     std::shared_ptr<dataset::Reader> archive();
 
     /// Read the configuration for the given dataset. path must point to a directory
-    static std::shared_ptr<core::cfg::Section> read_config(const std::string& path);
+    static std::shared_ptr<core::cfg::Section> read_config(const std::filesystem::path& path);
 
-    static std::shared_ptr<core::cfg::Sections> read_configs(const std::string& path);
+    static std::shared_ptr<core::cfg::Sections> read_configs(const std::filesystem::path& path);
 };
 
 class Writer : public Base<dataset::Writer>

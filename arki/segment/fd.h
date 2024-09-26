@@ -43,7 +43,7 @@ class Reader : public segment::BaseReader<Segment>
 public:
     core::File fd;
 
-    Reader(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock);
+    Reader(const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath, const std::filesystem::path& abspath, std::shared_ptr<core::Lock> lock);
 
     bool scan_data(metadata_dest_func dest) override;
     std::vector<uint8_t> read(const types::source::Blob& src) override;
@@ -60,7 +60,7 @@ public:
     off_t current_pos;
     std::vector<segment::Writer::PendingMetadata> pending;
 
-    Writer(const WriterConfig& config, const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, int mode=0);
+    Writer(const WriterConfig& config, const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath, const std::filesystem::path& abspath, int mode=0);
     ~Writer();
 
     size_t next_offset() const override;
@@ -76,10 +76,10 @@ template<typename Segment, typename File>
 class Checker : public segment::BaseChecker<Segment>
 {
 protected:
-    void move_data(const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath) override;
+    void move_data(const std::filesystem::path& new_root, const std::filesystem::path& new_relpath, const std::filesystem::path& new_abspath) override;
 
 public:
-    Checker(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath);
+    Checker(const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath, const std::filesystem::path& abspath);
 
     bool exists_on_disk() override;
     bool is_empty() override;
@@ -87,7 +87,7 @@ public:
 
     bool rescan_data(std::function<void(const std::string&)> reporter, std::shared_ptr<core::Lock> lock, metadata_dest_func dest) override;
     State check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick=true) override;
-    core::Pending repack(const std::string& rootdir, metadata::Collection& mds, const RepackConfig& cfg=RepackConfig()) override;
+    core::Pending repack(const std::filesystem::path& rootdir, metadata::Collection& mds, const RepackConfig& cfg=RepackConfig()) override;
     size_t remove() override;
 
     void test_truncate(size_t offset) override;
@@ -127,9 +127,9 @@ public:
     std::shared_ptr<segment::Reader> reader(std::shared_ptr<core::Lock> lock) const override;
     std::shared_ptr<segment::Checker> checker() const override;
 
-    static std::shared_ptr<segment::Writer> make_writer(const WriterConfig& config, const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath);
-    static std::shared_ptr<segment::Checker> make_checker(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath);
-    static std::shared_ptr<segment::Checker> create(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds, const RepackConfig& cfg=RepackConfig());
+    static std::shared_ptr<segment::Writer> make_writer(const WriterConfig& config, const std::string& format, const std::filesystem::path& rootdir, const std::filesystem::path& relpath, const std::filesystem::path& abspath);
+    static std::shared_ptr<segment::Checker> make_checker(const std::string& format, const std::filesystem::path& rootdir, const std::filesystem::path& relpath, const std::filesystem::path& abspath);
+    static std::shared_ptr<segment::Checker> create(const std::string& format, const std::filesystem::path& rootdir, const std::filesystem::path& relpath, const std::filesystem::path& abspath, metadata::Collection& mds, const RepackConfig& cfg=RepackConfig());
     static bool can_store(const std::string& format);
 
     static const unsigned padding = 0;
@@ -145,8 +145,8 @@ public:
     bool single_file() const override;
     std::shared_ptr<segment::Reader> reader(std::shared_ptr<core::Lock> lock) const override;
     std::shared_ptr<segment::Checker> checker() const override;
-    static std::shared_ptr<segment::Writer> make_writer(const WriterConfig& config, const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath);
-    static std::shared_ptr<segment::Checker> make_checker(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath);
+    static std::shared_ptr<segment::Writer> make_writer(const WriterConfig& config, const std::string& format, const std::filesystem::path& rootdir, const std::filesystem::path& relpath, const std::filesystem::path& abspath);
+    static std::shared_ptr<segment::Checker> make_checker(const std::string& format, const std::filesystem::path& rootdir, const std::filesystem::path& relpath, const std::filesystem::path& abspath);
 };
 
 
@@ -178,7 +178,7 @@ class HoleChecker : public fd::Checker<HoleSegment, HoleFile>
 {
 public:
     using fd::Checker<HoleSegment, HoleFile>::Checker;
-    core::Pending repack(const std::string& rootdir, metadata::Collection& mds, const RepackConfig& cfg=RepackConfig()) override;
+    core::Pending repack(const std::filesystem::path& rootdir, metadata::Collection& mds, const RepackConfig& cfg=RepackConfig()) override;
 };
 
 }
@@ -203,9 +203,9 @@ public:
     std::shared_ptr<segment::Reader> reader(std::shared_ptr<core::Lock> lock) const override;
     std::shared_ptr<segment::Checker> checker() const override;
 
-    static std::shared_ptr<Writer> make_writer(const WriterConfig& config, const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath);
-    static std::shared_ptr<Checker> make_checker(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath);
-    static std::shared_ptr<Checker> create(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds, const RepackConfig& cfg=RepackConfig());
+    static std::shared_ptr<Writer> make_writer(const WriterConfig& config, const std::string& format, const std::filesystem::path& rootdir, const std::filesystem::path& relpath, const std::filesystem::path& abspath);
+    static std::shared_ptr<Checker> make_checker(const std::string& format, const std::filesystem::path& rootdir, const std::filesystem::path& relpath, const std::filesystem::path& abspath);
+    static std::shared_ptr<Checker> create(const std::string& format, const std::filesystem::path& rootdir, const std::filesystem::path& relpath, const std::filesystem::path& abspath, metadata::Collection& mds, const RepackConfig& cfg=RepackConfig());
     static bool can_store(const std::string& format);
 
     static const unsigned padding = 1;

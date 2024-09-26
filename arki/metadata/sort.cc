@@ -20,25 +20,25 @@ namespace sort {
 /// Comparison function for one metadata item
 struct Item
 {
-	types::Code code;
-	bool reverse;
+    types::Code code;
+    bool reverse;
 
-	Item(const std::string& expr)
-	{
-		if (expr.empty())
-			throw_consistency_error("parsing sort expression", "metadata name is the empty string");
-		size_t start = 0;
-		switch (expr[0])
-		{
-			case '+': reverse = false; start = 1; break;
-			case '-': reverse = true; start = 1; break;
-			default: reverse = false; start = 0; break;
-		}
-		while (start < expr.size() && isspace(expr[start]))
-			++start;
-		code = types::parseCodeName(expr.substr(start));
-	}
-	Item(types::Code code, bool reverse) : code(code), reverse(reverse) {}
+    Item(const std::string& expr)
+    {
+        if (expr.empty())
+            throw_consistency_error("parsing sort expression", "metadata name is the empty string");
+        size_t start = 0;
+        switch (expr[0])
+        {
+            case '+': reverse = false; start = 1; break;
+            case '-': reverse = true; start = 1; break;
+            default: reverse = false; start = 0; break;
+        }
+        while (start < expr.size() && isspace(expr[start]))
+            ++start;
+        code = types::parseCodeName(expr.substr(start));
+    }
+    Item(types::Code code, bool reverse) : code(code), reverse(reverse) {}
 
     int compare(const Metadata& a, const Metadata& b) const
     {
@@ -48,7 +48,7 @@ struct Item
 };
 
 /// Serializer for Item
-ostream& operator<<(ostream& out, const Item& i)
+static ostream& operator<<(ostream& out, const Item& i)
 {
     if (i.reverse) out << "-";
     out << str::lower(types::formatCode(i.code));
@@ -72,17 +72,17 @@ public:
     }
     virtual ~Items() {}
 
-	virtual int compare(const Metadata& a, const Metadata& b) const
-	{
-		for (const_iterator i = begin(); i != end(); ++i)
-		{
-			int cmp = i->compare(a, b);
-			if (cmp != 0) return cmp;
-		}
-		return 0;
-	}
+    int compare(const Metadata& a, const Metadata& b) const override
+    {
+        for (const_iterator i = begin(); i != end(); ++i)
+        {
+            int cmp = i->compare(a, b);
+            if (cmp != 0) return cmp;
+        }
+        return 0;
+    }
 
-    virtual std::string toString() const
+    std::string toString() const override
     {
         return str::join(",", begin(), end());
     }
@@ -90,37 +90,37 @@ public:
 
 struct IntervalCompare : public Items
 {
-	Interval m_interval;
+    Interval m_interval;
 
-	IntervalCompare(Interval interval, const std::string& expr)
-		: Items(expr), m_interval(interval) {}
+    IntervalCompare(Interval interval, const std::string& expr)
+        : Items(expr), m_interval(interval) {}
 
-	virtual Interval interval() const { return m_interval; }
+    Interval interval() const override { return m_interval; }
 
-	virtual int compare(const Metadata& a, const Metadata& b) const
-	{
-		return Items::compare(a, b);
-	}
+    int compare(const Metadata& a, const Metadata& b) const override
+    {
+        return Items::compare(a, b);
+    }
 
-	virtual std::string toString() const
-	{
-		switch (m_interval)
-		{
-			case NONE: return Items::toString();
-			case MINUTE: return "minute:"+Items::toString();
-			case HOUR: return "hour:"+Items::toString();
-			case DAY: return "day:"+Items::toString();
-			case MONTH: return "month:"+Items::toString();
-			case YEAR: return "year:"+Items::toString();
-			default:
+    std::string toString() const override
+    {
+        switch (m_interval)
+        {
+            case NONE: return Items::toString();
+            case MINUTE: return "minute:"+Items::toString();
+            case HOUR: return "hour:"+Items::toString();
+            case DAY: return "day:"+Items::toString();
+            case MONTH: return "month:"+Items::toString();
+            case YEAR: return "year:"+Items::toString();
+            default:
             {
                 stringstream ss;
                 ss << "cannot format sort expression: interval code " << (int)m_interval << " is not valid";
                 throw std::runtime_error(ss.str());
             }
-		}
-		return Items::toString();
-	}
+        }
+        return Items::toString();
+    }
 };
 
 static Compare::Interval parseInterval(const std::string& name)

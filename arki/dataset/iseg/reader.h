@@ -18,7 +18,7 @@ protected:
     index::SummaryCache scache;
 
     /// List all existing segments matched by the reftime part of matcher
-    bool list_segments(const Matcher& matcher, std::function<bool(const std::string& relpath)> dest);
+    bool list_segments(const Matcher& matcher, std::function<bool(const std::filesystem::path& relpath)> dest);
 
     /**
      * Compute the summary for the given month, and output it to \a
@@ -50,7 +50,7 @@ public:
 
     core::Interval get_stored_time_interval() override;
 
-    static bool is_dataset(const std::string& dir);
+    static bool is_dataset(const std::filesystem::path& dir);
 };
 
 }

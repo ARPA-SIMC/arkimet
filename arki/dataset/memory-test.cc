@@ -25,30 +25,30 @@ void Tests::register_tests() {
 // Test querying
 add_method("query", [] {
     auto session = make_shared<dataset::Session>();
-    auto reader = Segment::detect_reader("grib", sys::abspath("."), "inbound/test.grib1", "inbound/test.grib1", std::make_shared<core::lock::Null>());
+    auto reader = Segment::detect_reader("grib", std::filesystem::current_path(), "inbound/test.grib1", "inbound/test.grib1", std::make_shared<core::lock::Null>());
     auto ds = std::make_shared<dataset::memory::Dataset>(session);
     reader->scan(ds->inserter_func());
 
     metadata::Collection mdc(*ds, "origin:GRIB1,200");
     wassert(actual(mdc.size()) == 1u);
-    wassert(actual(mdc[0].source().cloneType()).is_source_blob("grib", sys::abspath("."), "inbound/test.grib1", 0, 7218));
+    wassert(actual(mdc[0].source().cloneType()).is_source_blob("grib", std::filesystem::current_path(), "inbound/test.grib1", 0, 7218));
 
     mdc.clear();
 
     mdc.add(*ds, "origin:GRIB1,80");
     wassert(actual(mdc.size()) == 1u);
-    wassert(actual(mdc[0].source().cloneType()).is_source_blob("grib", sys::abspath("."), "inbound/test.grib1", 7218, 34960u));
+    wassert(actual(mdc[0].source().cloneType()).is_source_blob("grib", std::filesystem::current_path(), "inbound/test.grib1", 7218, 34960u));
 
     mdc.clear();
     mdc.add(*ds, "origin:GRIB1,98");
     wassert(actual(mdc.size()) == 1u);
-    wassert(actual(mdc[0].source().cloneType()).is_source_blob("grib", sys::abspath("."), "inbound/test.grib1", 42178, 2234));
+    wassert(actual(mdc[0].source().cloneType()).is_source_blob("grib", std::filesystem::current_path(), "inbound/test.grib1", 42178, 2234));
 });
 
 // Test querying the summary
 add_method("query_summary", [] {
     auto session = make_shared<dataset::Session>();
-    auto reader = Segment::detect_reader("grib", sys::abspath("."), "inbound/test.grib1", "inbound/test.grib1", std::make_shared<core::lock::Null>());
+    auto reader = Segment::detect_reader("grib", std::filesystem::current_path(), "inbound/test.grib1", "inbound/test.grib1", std::make_shared<core::lock::Null>());
     auto ds = std::make_shared<dataset::memory::Dataset>(session);
     reader->scan(ds->inserter_func());
 
@@ -60,7 +60,7 @@ add_method("query_summary", [] {
 // Test querying the summary by reftime
 add_method("query_summary_reftime", [] {
     auto session = make_shared<dataset::Session>();
-    auto reader = Segment::detect_reader("grib", sys::abspath("."), "inbound/test.grib1", "inbound/test.grib1", std::make_shared<core::lock::Null>());
+    auto reader = Segment::detect_reader("grib", std::filesystem::current_path(), "inbound/test.grib1", "inbound/test.grib1", std::make_shared<core::lock::Null>());
     auto ds = std::make_shared<dataset::memory::Dataset>(session);
     reader->scan(ds->inserter_func());
 

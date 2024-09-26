@@ -18,7 +18,7 @@ Reader::Reader(std::shared_ptr<iseg::Dataset> dataset)
     : DatasetAccess(dataset), scache(dataset->summary_cache_pathname)
 {
     // Create the directory if it does not exist
-    sys::makedirs(dataset->path);
+    std::filesystem::create_directories(dataset->path);
     scache.openRW();
 }
 
@@ -28,16 +28,16 @@ Reader::~Reader()
 
 std::string Reader::type() const { return "iseg"; }
 
-bool Reader::is_dataset(const std::string& dir)
+bool Reader::is_dataset(const std::filesystem::path& dir)
 {
     return true;
 }
 
-bool Reader::list_segments(const Matcher& matcher, std::function<bool(const std::string& relpath)> dest)
+bool Reader::list_segments(const Matcher& matcher, std::function<bool(const std::filesystem::path& relpath)> dest)
 {
-    vector<string> seg_relpaths;
+    std::vector<filesystem::path> seg_relpaths;
     step::SegmentQuery squery(dataset().path, dataset().format, "\\.index$", matcher);
-    dataset().step().list_segments(squery, [&](std::string&& s) {
+    dataset().step().list_segments(squery, [&](std::filesystem::path&& s) {
         seg_relpaths.emplace_back(move(s));
     });
     std::sort(seg_relpaths.begin(), seg_relpaths.end());

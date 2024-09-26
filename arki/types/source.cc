@@ -91,7 +91,7 @@ unique_ptr<Source> Source::decode(core::BinaryDecoder& dec, bool reuse_buffer)
     return decodeRelative(dec, string());
 }
 
-unique_ptr<Source> Source::decodeRelative(core::BinaryDecoder& dec, const std::string& basedir)
+unique_ptr<Source> Source::decodeRelative(core::BinaryDecoder& dec, const std::filesystem::path& basedir)
 {
     Style s = (Style)dec.pop_uint(1, "source style");
     unsigned int format_len = dec.pop_uint(1, "source format length");
@@ -100,7 +100,7 @@ unique_ptr<Source> Source::decodeRelative(core::BinaryDecoder& dec, const std::s
     {
         case source::Style::BLOB: {
             unsigned fname_len = dec.pop_varint<unsigned>("blob source file name length");
-            string fname = dec.pop_string(fname_len, "blob source file name");
+            std::filesystem::path fname = dec.pop_string(fname_len, "blob source file name");
             uint64_t offset = dec.pop_varint<uint64_t>("blob source offset");
             uint64_t size = dec.pop_varint<uint64_t>("blob source size");
             return createBlobUnlocked(format, basedir, fname, offset, size);
@@ -136,13 +136,13 @@ unique_ptr<Source> Source::decodeString(const std::string& val)
             size_t end = inner.rfind(':');
             if (end == string::npos)
                 throw_consistency_error("parsing Source", "source \""+inner+"\" should contain a filename followed by a colon (':')");
-            string fname = inner.substr(0, end);
+            std::filesystem::path fname = inner.substr(0, end);
             pos = end + 1;
             end = inner.find('+', pos);
             if (end == string::npos)
                 throw_consistency_error("parsing Source", "source \""+inner+"\" should contain \"offset+len\" after the filename");
 
-            return createBlobUnlocked(format, string(), fname,
+            return createBlobUnlocked(format, std::filesystem::path(), fname,
                     strtoull(inner.substr(pos, end-pos).c_str(), 0, 10),
                     strtoull(inner.substr(end+1).c_str(), 0, 10));
         }
@@ -169,12 +169,12 @@ std::unique_ptr<Source> Source::createBlob(std::shared_ptr<segment::Reader> read
     return upcast<Source>(source::Blob::create(reader, offset, size));
 }
 
-unique_ptr<Source> Source::createBlob(const std::string& format, const std::string& basedir, const std::string& filename, uint64_t offset, uint64_t size, std::shared_ptr<segment::Reader> reader)
+unique_ptr<Source> Source::createBlob(const std::string& format, const std::filesystem::path& basedir, const std::filesystem::path& filename, uint64_t offset, uint64_t size, std::shared_ptr<segment::Reader> reader)
 {
     return upcast<Source>(source::Blob::create(format, basedir, filename, offset, size, reader));
 }
 
-unique_ptr<Source> Source::createBlobUnlocked(const std::string& format, const std::string& basedir, const std::string& filename, uint64_t offset, uint64_t size)
+unique_ptr<Source> Source::createBlobUnlocked(const std::string& format, const std::filesystem::path& basedir, const std::filesystem::path& filename, uint64_t offset, uint64_t size)
 {
     return upcast<Source>(source::Blob::create_unlocked(format, basedir, filename, offset, size));
 }

@@ -313,7 +313,7 @@ add_method("regression1", [](Fixture& f) {
     {
         size_t count;
         Counter() : count(0) {}
-        virtual bool operator()(const std::vector<const Type*>&, const summary::Stats&)
+        bool operator()(const std::vector<const Type*>&, const summary::Stats&) override
         {
             ++count;
             return true;

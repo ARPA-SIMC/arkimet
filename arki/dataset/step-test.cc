@@ -29,7 +29,7 @@ struct Fixture : public arki::utils::tests::Fixture
     }
 
     // Called before each test
-    void test_setup() { sys::mkdir_ifmissing("test_step"); }
+    void test_setup() { std::filesystem::create_directory("test_step"); }
 
     // Called after each test
     void test_teardown() { sys::rmtree("test_step"); }
@@ -58,7 +58,7 @@ add_method("single", [](Fixture& f) {
     wassert_true(step->pathMatches("all.test", mimpl(parser.parse("reftime:>2006"))));
     wassert_true(step->pathMatches("all.test", mimpl(parser.parse("reftime:<=2008"))));
 
-    sys::mkdir_ifmissing("test_step/");
+    std::filesystem::create_directory("test_step/");
     files::createFlagfile("test_step/all.grib");
     files::createFlagfile("test_step/all.bufr");
 
@@ -94,10 +94,10 @@ add_method("yearly", [](Fixture& f) {
     wassert_false(step->pathMatches("20/2007.test", mimpl(parser.parse("reftime:>2007"))));
     wassert_false(step->pathMatches("20/2007.test", mimpl(parser.parse("reftime:<2007"))));
 
-    sys::mkdir_ifmissing("test_step/19");
+    std::filesystem::create_directory("test_step/19");
     files::createFlagfile("test_step/19/1998.grib");
     files::createFlagfile("test_step/19/1998.bufr");
-    sys::mkdir_ifmissing("test_step/20");
+    std::filesystem::create_directory("test_step/20");
     files::createFlagfile("test_step/20/2001.grib");
     files::createFlagfile("test_step/20/2002.grib");
 
@@ -135,13 +135,13 @@ add_method("monthly", [](Fixture& f) {
 
     wassert(actual((*step)(f.time)) == "2007/06");
 
-    sys::mkdir_ifmissing("test_step/2007");
+    std::filesystem::create_directory("test_step/2007");
     files::createFlagfile("test_step/2007/01.grib");
     files::createFlagfile("test_step/2007/01.bufr");
-    sys::mkdir_ifmissing("test_step/2008");
+    std::filesystem::create_directory("test_step/2008");
     files::createFlagfile("test_step/2008/06.grib");
-    sys::mkdir_ifmissing("test_step/2008/07.grib");
-    sys::mkdir_ifmissing("test_step/2009");
+    std::filesystem::create_directory("test_step/2008/07.grib");
+    std::filesystem::create_directory("test_step/2009");
     files::createFlagfile("test_step/2009/11.grib");
     files::createFlagfile("test_step/2009/12.grib");
 
@@ -193,13 +193,13 @@ add_method("daily", [](Fixture& f) {
 
     wassert(actual((*step)(f.time)) == "2007/06-05");
 
-    sys::mkdir_ifmissing("test_step/2007");
+    std::filesystem::create_directory("test_step/2007");
     files::createFlagfile("test_step/2007/01-01.grib");
     files::createFlagfile("test_step/2007/01-01.bufr");
-    sys::mkdir_ifmissing("test_step/2008");
+    std::filesystem::create_directory("test_step/2008");
     files::createFlagfile("test_step/2008/06-01.grib");
-    sys::mkdir_ifmissing("test_step/2008/06-05.grib");
-    sys::mkdir_ifmissing("test_step/2009");
+    std::filesystem::create_directory("test_step/2008/06-05.grib");
+    std::filesystem::create_directory("test_step/2009");
     files::createFlagfile("test_step/2009/12-29.grib");
     files::createFlagfile("test_step/2009/12-30.grib");
 

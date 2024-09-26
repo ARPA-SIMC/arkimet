@@ -21,8 +21,8 @@ Source::Style Blob::style() const { return source::Style::BLOB; }
 void Blob::encodeWithoutEnvelope(core::BinaryEncoder& enc) const
 {
     Source::encodeWithoutEnvelope(enc);
-    enc.add_varint(filename.size());
-    enc.add_raw(filename);
+    enc.add_varint(filename.native().size());
+    enc.add_raw(filename.native());
     enc.add_varint(offset);
     enc.add_varint(size);
 }
@@ -30,7 +30,7 @@ void Blob::encodeWithoutEnvelope(core::BinaryEncoder& enc) const
 std::ostream& Blob::writeToOstream(std::ostream& o) const
 {
     return o << formatStyle(style()) << "("
-             << format << "," << str::joinpath(basedir, filename) << ":" << offset << "+" << size
+             << format << "," << (basedir / filename).native() << ":" << offset << "+" << size
              << ")";
 }
 
@@ -45,7 +45,7 @@ void Blob::serialise_local(structured::Emitter& e, const structured::Keys& keys,
 
 std::unique_ptr<Blob> Blob::decode_structure(const structured::Keys& keys, const structured::Reader& reader)
 {
-    std::string basedir;
+    std::filesystem::path basedir;
     if (reader.has_key(keys.source_basedir, structured::NodeType::STRING))
         basedir = reader.as_string(keys.source_basedir, "source base directory");
 
@@ -65,7 +65,7 @@ int Blob::compare_local(const Source& o) const
     if (!v)
         throw_consistency_error(
             "comparing metadata types",
-            string("second element claims to be a Blob Source, but is a ") + typeid(&o).name() + " instead");
+            "second element claims to be a Blob Source, but is a "s + typeid(&o).name() + " instead");
 
     if (filename < v->filename) return -1;
     if (filename > v->filename) return 1;
@@ -92,14 +92,14 @@ std::unique_ptr<Blob> Blob::create(std::shared_ptr<segment::Reader> reader, uint
     return res;
 }
 
-std::unique_ptr<Blob> Blob::create(const std::string& format, const std::string& basedir, const std::string& filename, uint64_t offset, uint64_t size, std::shared_ptr<segment::Reader> reader)
+std::unique_ptr<Blob> Blob::create(const std::string& format, const std::filesystem::path& basedir, const std::filesystem::path& filename, uint64_t offset, uint64_t size, std::shared_ptr<segment::Reader> reader)
 {
     auto res = create_unlocked(format, basedir, filename, offset, size);
     res->lock(reader);
     return res;
 }
 
-std::unique_ptr<Blob> Blob::create_unlocked(const std::string& format, const std::string& basedir, const std::string& filename, uint64_t offset, uint64_t size)
+std::unique_ptr<Blob> Blob::create_unlocked(const std::string& format, const std::filesystem::path& basedir, const std::filesystem::path& filename, uint64_t offset, uint64_t size)
 {
     unique_ptr<Blob> res(new Blob);
     res->format = format;
@@ -113,38 +113,36 @@ std::unique_ptr<Blob> Blob::create_unlocked(const std::string& format, const std
 
 std::unique_ptr<Blob> Blob::fileOnly() const
 {
-    string pathname = absolutePathname();
-    std::unique_ptr<Blob> res = Blob::create_unlocked(format, str::dirname(pathname), str::basename(filename), offset, size);
+    std::filesystem::path pathname = absolutePathname();
+    std::unique_ptr<Blob> res = Blob::create_unlocked(format, pathname.parent_path(), pathname.filename(), offset, size);
     res->reader = reader;
     return res;
 }
 
 std::unique_ptr<Blob> Blob::makeAbsolute() const
 {
-    string pathname = absolutePathname();
+    std::filesystem::path pathname = absolutePathname();
     std::unique_ptr<Blob> res = Blob::create_unlocked(format, "", pathname, offset, size);
     res->reader = reader;
     return res;
 }
 
-std::unique_ptr<Blob> Blob::makeRelativeTo(const std::string& path) const
+std::unique_ptr<Blob> Blob::makeRelativeTo(const std::filesystem::path& path) const
 {
-    string pathname = absolutePathname();
-    if (not str::startswith(pathname, path))
-        throw std::runtime_error(pathname + " is not contained inside " + path);
-    size_t cut = path.size();
-    while (pathname[cut] == '/')
-        ++cut;
-    std::unique_ptr<Blob> res = Blob::create_unlocked(format, path, pathname.substr(cut), offset, size);
+    auto pathname = absolutePathname();
+    auto relpath = pathname.lexically_relative(path);
+    if (!relpath.empty() && *relpath.begin() == "..")
+        throw std::runtime_error(pathname.native() + " is not contained inside " + path.native());
+    std::unique_ptr<Blob> res = Blob::create_unlocked(format, path, relpath, offset, size);
     res->reader = reader;
     return res;
 }
 
-std::string Blob::absolutePathname() const
+std::filesystem::path Blob::absolutePathname() const
 {
-    if (!filename.empty() && filename[0] == '/')
+    if (!filename.empty() && filename.is_absolute())
         return filename;
-    return str::joinpath(basedir, filename);
+    return basedir / filename;
 }
 
 void Blob::lock(std::shared_ptr<segment::Reader> reader)

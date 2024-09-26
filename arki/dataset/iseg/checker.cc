@@ -76,7 +76,7 @@ public:
             m_idx = new CIndex(checker.m_dataset, path_relative(), lock);
         return *m_idx;
     }
-    std::string path_relative() const override { return segment->segment().relpath; }
+    std::filesystem::path path_relative() const override { return segment->segment().relpath; }
     const iseg::Dataset& dataset() const override { return checker.dataset(); }
     iseg::Dataset& dataset() override { return checker.dataset(); }
     std::shared_ptr<dataset::archive::Checker> archives() override { return dynamic_pointer_cast<dataset::archive::Checker>(checker.archive()); }
@@ -91,7 +91,7 @@ public:
         if (!segment->exists_on_disk())
             return segmented::SegmentState(segment::SEGMENT_MISSING);
 
-        if (!sys::stat(str::joinpath(checker.dataset().path, segment->segment().relpath + ".index")))
+        if (!sys::stat(checker.dataset().path / sys::with_suffix(segment->segment().relpath, ".index")))
         {
             if (segment->is_empty())
             {
@@ -164,7 +164,7 @@ public:
 
     void tar() override
     {
-        if (sys::exists(segment->segment().abspath + ".tar"))
+        if (std::filesystem::exists(sys::with_suffix(segment->segment().abspath, ".tar")))
             return;
 
         auto write_lock = lock->write_lock();
@@ -188,8 +188,8 @@ public:
 
         // Remove the .metadata file if present, because we are shuffling the
         // data file and it will not be valid anymore
-        string mdpathname = segment->segment().abspath + ".metadata";
-        if (sys::exists(mdpathname))
+        auto mdpathname = sys::with_suffix(segment->segment().abspath, ".metadata");
+        if (std::filesystem::exists(mdpathname))
             if (unlink(mdpathname.c_str()) < 0)
             {
                 stringstream ss;
@@ -203,7 +203,7 @@ public:
 
     void zip() override
     {
-        if (sys::exists(segment->segment().abspath + ".zip"))
+        if (std::filesystem::exists(sys::with_suffix(segment->segment().abspath, ".zip")))
             return;
 
         auto write_lock = lock->write_lock();
@@ -227,8 +227,8 @@ public:
 
         // Remove the .metadata file if present, because we are shuffling the
         // data file and it will not be valid anymore
-        string mdpathname = segment->segment().abspath + ".metadata";
-        if (sys::exists(mdpathname))
+        auto mdpathname = sys::with_suffix(segment->segment().abspath, ".metadata");
+        if (std::filesystem::exists(mdpathname))
             if (unlink(mdpathname.c_str()) < 0)
             {
                 stringstream ss;
@@ -242,7 +242,8 @@ public:
 
     size_t compress(unsigned groupsize) override
     {
-        if (sys::exists(segment->segment().abspath + ".gz") || sys::exists(segment->segment().abspath + ".gz.idx"))
+        if (std::filesystem::exists(sys::with_suffix(segment->segment().abspath, ".gz")) ||
+                std::filesystem::exists(sys::with_suffix(segment->segment().abspath, ".gz.idx")))
             return 0;
 
         auto write_lock = lock->write_lock();
@@ -268,8 +269,8 @@ public:
 
         // Remove the .metadata file if present, because we are shuffling the
         // data file and it will not be valid anymore
-        string mdpathname = segment->segment().abspath + ".metadata";
-        if (sys::exists(mdpathname))
+        auto mdpathname = sys::with_suffix(segment->segment().abspath, ".metadata");
+        if (std::filesystem::exists(mdpathname))
             if (unlink(mdpathname.c_str()) < 0)
             {
                 stringstream ss;
@@ -286,7 +287,7 @@ public:
             return 0;
     }
 
-    void remove_data(const std::vector<uint64_t>& offsets)
+    void remove_data(const std::vector<uint64_t>& offsets) override
     {
         if (!segment->exists_on_disk())
             return;
@@ -349,8 +350,8 @@ public:
 
         // Remove the .metadata file if present, because we are shuffling the
         // data file and it will not be valid anymore
-        string mdpathname = segment->segment().abspath + ".metadata";
-        if (sys::exists(mdpathname))
+        auto mdpathname = sys::with_suffix(segment->segment().abspath, ".metadata");
+        if (std::filesystem::exists(mdpathname))
             if (unlink(mdpathname.c_str()) < 0)
             {
                 stringstream ss;
@@ -371,9 +372,9 @@ public:
 
     size_t remove(bool with_data) override
     {
-        string idx_abspath = str::joinpath(segment->segment().abspath + ".index");
+        auto idx_abspath = sys::with_suffix(segment->segment().abspath, ".index");
         size_t res = 0;
-        if (sys::exists(idx_abspath))
+        if (std::filesystem::exists(idx_abspath))
         {
             res = sys::size(idx_abspath);
             sys::unlink(idx_abspath);
@@ -393,8 +394,8 @@ public:
         p_idx.commit();
 
         // Remove .metadata and .summary files
-        sys::unlink_ifexists(segment->segment().abspath + ".metadata");
-        sys::unlink_ifexists(segment->segment().abspath + ".summary");
+        std::filesystem::remove(sys::with_suffix(segment->segment().abspath, ".metadata"));
+        std::filesystem::remove(sys::with_suffix(segment->segment().abspath, ".summary"));
     }
 
     void rescan(dataset::Reporter& reporter) override
@@ -429,14 +430,14 @@ public:
         }
 
         // Send the remaining metadata to the reindexer
-        std::string basename = str::basename(segment->segment().relpath);
+        auto basename = segment->segment().relpath.filename();
         for (const auto& i: finddupes)
         {
             const Metadata& md = *i.second;
             const source::Blob& blob = md.sourceBlob();
             try {
-                if (str::basename(blob.filename) != basename)
-                    throw std::runtime_error("cannot rescan " + segment->segment().relpath + ": metadata points to the wrong file: " + blob.filename);
+                if (blob.filename.filename() != basename)
+                    throw std::runtime_error("cannot rescan " + segment->segment().relpath.native() + ": metadata points to the wrong file: " + blob.filename.native());
                 if (std::unique_ptr<types::source::Blob> old = idx().index(md, blob.offset))
                 {
                     stringstream ss;
@@ -460,9 +461,9 @@ public:
         // TODO: remove relevant summary
     }
 
-    void release(const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath) override
+    void release(const std::filesystem::path& new_root, const std::filesystem::path& new_relpath, const std::filesystem::path& new_abspath) override
     {
-        sys::unlink_ifexists(str::joinpath(checker.dataset().path, segment->segment().relpath + ".index"));
+        std::filesystem::remove(checker.dataset().path / sys::with_suffix(segment->segment().relpath, ".index"));
         segment = segment->move(new_root, new_relpath, new_abspath);
     }
 };
@@ -472,21 +473,21 @@ Checker::Checker(std::shared_ptr<iseg::Dataset> dataset)
     : DatasetAccess(dataset)
 {
     // Create the directory if it does not exist
-    sys::makedirs(dataset->path);
+    std::filesystem::create_directories(dataset->path);
 }
 
 std::string Checker::type() const { return "iseg"; }
 
-void Checker::list_segments(std::function<void(const std::string& relpath)> dest)
+void Checker::list_segments(std::function<void(const std::filesystem::path& relpath)> dest)
 {
     list_segments(Matcher(), dest);
 }
 
-void Checker::list_segments(const Matcher& matcher, std::function<void(const std::string& relpath)> dest)
+void Checker::list_segments(const Matcher& matcher, std::function<void(const std::filesystem::path& relpath)> dest)
 {
-    vector<string> seg_relpaths;
+    std::vector<std::filesystem::path> seg_relpaths;
     step::SegmentQuery squery(dataset().path, dataset().format, "\\.index$", matcher);
-    dataset().step().list_segments(squery, [&](std::string&& s) {
+    dataset().step().list_segments(squery, [&](std::filesystem::path&& s) {
         seg_relpaths.emplace_back(move(s));
     });
     std::sort(seg_relpaths.begin(), seg_relpaths.end());
@@ -494,12 +495,12 @@ void Checker::list_segments(const Matcher& matcher, std::function<void(const std
         dest(relpath);
 }
 
-std::unique_ptr<segmented::CheckerSegment> Checker::segment(const std::string& relpath)
+std::unique_ptr<segmented::CheckerSegment> Checker::segment(const std::filesystem::path& relpath)
 {
     return unique_ptr<segmented::CheckerSegment>(new CheckerSegment(*this, relpath));
 }
 
-std::unique_ptr<segmented::CheckerSegment> Checker::segment_prelocked(const std::string& relpath, std::shared_ptr<dataset::CheckLock> lock)
+std::unique_ptr<segmented::CheckerSegment> Checker::segment_prelocked(const std::filesystem::path& relpath, std::shared_ptr<dataset::CheckLock> lock)
 {
     return unique_ptr<segmented::CheckerSegment>(new CheckerSegment(*this, relpath, lock));
 }
@@ -511,7 +512,7 @@ void Checker::segments_tracked(std::function<void(segmented::CheckerSegment& seg
 
 void Checker::segments_tracked_filtered(const Matcher& matcher, std::function<void(segmented::CheckerSegment& segment)> dest)
 {
-    list_segments(matcher, [&](const std::string& relpath) {
+    list_segments(matcher, [&](const std::filesystem::path& relpath) {
         CheckerSegment segment(*this, relpath);
         dest(segment);
     });
@@ -525,8 +526,8 @@ void Checker::segments_untracked(std::function<void(segmented::CheckerSegment& r
 void Checker::segments_untracked_filtered(const Matcher& matcher, std::function<void(segmented::CheckerSegment& segment)> dest)
 {
     step::SegmentQuery squery(dataset().path, dataset().format, matcher);
-    dataset().step().list_segments(squery, [&](std::string&& relpath) {
-        if (sys::stat(str::joinpath(dataset().path, relpath + ".index"))) return;
+    dataset().step().list_segments(squery, [&](std::filesystem::path&& relpath) {
+        if (sys::stat(dataset().path / sys::with_suffix(relpath, ".index"))) return;
         CheckerSegment segment(*this, relpath);
         // See #279: directory segments that are empty directories are found by
         // a filesystem scan, but are not considered segments
@@ -542,16 +543,16 @@ void Checker::check_issue51(CheckerConfig& opts)
     if (!opts.offline && dataset().offline) return;
 
     // Broken metadata for each segment
-    std::map<string, metadata::Collection> broken_mds;
+    std::map<std::filesystem::path, metadata::Collection> broken_mds;
 
     // Iterate all segments
-    list_segments([&](const std::string& relpath) {
+    list_segments([&](const std::filesystem::path& relpath) {
         auto lock = dataset().check_lock_segment(relpath);
         CIndex idx(m_dataset, relpath, lock);
         metadata::Collection mds;
         idx.scan(mds.inserter_func(), "reftime, offset");
         if (mds.empty()) return;
-        File datafile(str::joinpath(dataset().path, relpath), O_RDONLY);
+        File datafile(dataset().path / relpath, O_RDONLY);
         // Iterate all metadata in the segment
         unsigned count_otherformat = 0;
         unsigned count_ok = 0;
@@ -599,9 +600,9 @@ void Checker::check_issue51(CheckerConfig& opts)
         for (const auto& i: broken_mds)
         {
             // Make a backup copy with .issue51 extension, if it doesn't already exist
-            std::string abspath = str::joinpath(dataset().path, i.first);
-            std::string backup = abspath + ".issue51";
-            if (!sys::exists(backup))
+            auto abspath = dataset().path / i.first;
+            auto backup = sys::with_suffix(abspath, ".issue51");
+            if (!std::filesystem::exists(backup))
             {
                 File src(abspath, O_RDONLY);
                 File dst(backup, O_WRONLY | O_CREAT | O_EXCL, 0666);
@@ -645,12 +646,12 @@ void Checker::remove(const metadata::Collection& mds)
             throw std::runtime_error("cannot remove metadata from dataset, because it has no Blob source");
 
         if (source->basedir != dataset().path)
-            throw std::runtime_error("cannot remove metadata from dataset: its basedir is " + source->basedir + " but this dataset is at " + dataset().path);
+            throw std::runtime_error("cannot remove metadata from dataset: its basedir is " + source->basedir.native() + " but this dataset is at " + dataset().path.native());
 
         Time time = md->get<types::reftime::Position>()->get_Position();
-        std::string relpath = dataset().step()(time) + "." + dataset().format;
+        auto relpath = sys::with_suffix(dataset().step()(time), "."s + dataset().format);
 
-        if (!Segment::is_segment(str::joinpath(dataset().path, relpath)))
+        if (!Segment::is_segment(dataset().path / relpath))
             continue;
 
         by_segment[relpath].push_back(source->offset);
@@ -665,7 +666,7 @@ void Checker::remove(const metadata::Collection& mds)
 
         auto seg = segment(i.first);
         seg->remove_data(i.second);
-        arki::nag::verbose("%s: %s: %zd data marked as deleted", name().c_str(), i.first.c_str(), i.second.size());
+        arki::nag::verbose("%s: %s: %zu data marked as deleted", name().c_str(), i.first.c_str(), i.second.size());
     }
 
     index::SummaryCache scache(dataset().summary_cache_pathname);
@@ -678,7 +679,7 @@ size_t Checker::vacuum(dataset::Reporter& reporter)
     return 0;
 }
 
-void Checker::test_make_overlap(const std::string& relpath, unsigned overlap_size, unsigned data_idx)
+void Checker::test_make_overlap(const std::filesystem::path& relpath, unsigned overlap_size, unsigned data_idx)
 {
     auto lock = dataset().check_lock_segment(relpath);
     auto wrlock = lock->write_lock();
@@ -689,7 +690,7 @@ void Checker::test_make_overlap(const std::string& relpath, unsigned overlap_siz
     idx.test_make_overlap(overlap_size, data_idx);
 }
 
-void Checker::test_make_hole(const std::string& relpath, unsigned hole_size, unsigned data_idx)
+void Checker::test_make_hole(const std::filesystem::path& relpath, unsigned hole_size, unsigned data_idx)
 {
     auto lock = dataset().check_lock_segment(relpath);
     auto wrlock = lock->write_lock();
@@ -700,7 +701,7 @@ void Checker::test_make_hole(const std::string& relpath, unsigned hole_size, uns
     idx.test_make_hole(hole_size, data_idx);
 }
 
-void Checker::test_corrupt_data(const std::string& relpath, unsigned data_idx)
+void Checker::test_corrupt_data(const std::filesystem::path& relpath, unsigned data_idx)
 {
     auto lock = dataset().check_lock_segment(relpath);
     auto wrlock = lock->write_lock();
@@ -710,17 +711,17 @@ void Checker::test_corrupt_data(const std::string& relpath, unsigned data_idx)
     dataset().session->segment_checker(dataset().format, dataset().path, relpath)->test_corrupt(mds, data_idx);
 }
 
-void Checker::test_truncate_data(const std::string& relpath, unsigned data_idx)
+void Checker::test_truncate_data(const std::filesystem::path& relpath, unsigned data_idx)
 {
     auto lock = dataset().check_lock_segment(relpath);
     auto wrlock = lock->write_lock();
     CIndex idx(m_dataset, relpath, lock);
     metadata::Collection mds;
     idx.query_segment(mds.inserter_func());
-    dataset().session->segment_checker(dataset().format, dataset().path, relpath)->test_truncate(mds, data_idx);
+    dataset().session->segment_checker(dataset().format, dataset().path, relpath)->test_truncate_by_data(mds, data_idx);
 }
 
-void Checker::test_swap_data(const std::string& relpath, unsigned d1_idx, unsigned d2_idx)
+void Checker::test_swap_data(const std::filesystem::path& relpath, unsigned d1_idx, unsigned d2_idx)
 {
     auto lock = dataset().check_lock_segment(relpath);
     metadata::Collection mds;
@@ -732,22 +733,24 @@ void Checker::test_swap_data(const std::string& relpath, unsigned d1_idx, unsign
     segment_prelocked(relpath, lock)->reorder(mds);
 }
 
-void Checker::test_rename(const std::string& relpath, const std::string& new_relpath)
+void Checker::test_rename(const std::filesystem::path& relpath, const std::filesystem::path& new_relpath)
 {
     auto lock = dataset().check_lock_segment(relpath);
     auto wrlock = lock->write_lock();
 
-    string abspath = str::joinpath(dataset().path, relpath);
-    string new_abspath = str::joinpath(dataset().path, new_relpath);
+    auto abspath = dataset().path / relpath;
+    auto new_abspath = dataset().path / new_relpath;
 
     auto segment = dataset().session->segment_checker(dataset().format, dataset().path, relpath);
     segment->move(dataset().path, new_relpath, new_abspath);
 
-    sys::rename(abspath + ".index", new_abspath + ".index");
+    std::filesystem::rename(
+            sys::with_suffix(abspath, ".index"),
+            sys::with_suffix(new_abspath, ".index"));
 
 }
 
-std::shared_ptr<Metadata> Checker::test_change_metadata(const std::string& relpath, std::shared_ptr<Metadata> md, unsigned data_idx)
+std::shared_ptr<Metadata> Checker::test_change_metadata(const std::filesystem::path& relpath, std::shared_ptr<Metadata> md, unsigned data_idx)
 {
     auto lock = dataset().check_lock_segment(relpath);
     auto wrlock = lock->write_lock();
@@ -770,7 +773,7 @@ std::shared_ptr<Metadata> Checker::test_change_metadata(const std::string& relpa
     return mds.get(data_idx);
 }
 
-void Checker::test_delete_from_index(const std::string& relpath)
+void Checker::test_delete_from_index(const std::filesystem::path& relpath)
 {
     auto lock = dataset().check_lock_segment(relpath);
     auto wrlock = lock->write_lock();
@@ -778,9 +781,9 @@ void Checker::test_delete_from_index(const std::string& relpath)
     idx.reset();
 }
 
-void Checker::test_invalidate_in_index(const std::string& relpath)
+void Checker::test_invalidate_in_index(const std::filesystem::path& relpath)
 {
-    sys::unlink_ifexists(str::joinpath(dataset().path, relpath + ".index"));
+    std::filesystem::remove(dataset().path / sys::with_suffix(relpath, ".index"));
 }
 
 }

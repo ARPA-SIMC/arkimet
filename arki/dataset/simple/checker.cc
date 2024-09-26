@@ -65,7 +65,7 @@ public:
         segment = checker.dataset().session->segment_checker(scan::Scanner::format_from_filename(relpath), dataset().path, relpath);
     }
 
-    std::string path_relative() const override { return segment->segment().relpath; }
+    std::filesystem::path path_relative() const override { return segment->segment().relpath; }
     const simple::Dataset& dataset() const override { return checker.dataset(); }
     simple::Dataset& dataset() override { return checker.dataset(); }
     std::shared_ptr<dataset::archive::Checker> archives() override { return dynamic_pointer_cast<dataset::archive::Checker>(checker.archive()); }
@@ -98,10 +98,11 @@ public:
             }
         }
 
+        auto path_metadata = sys::with_suffix(segment->segment().abspath, ".metadata");
         // TODO: replace with a method of Segment
         time_t ts_data = segment->segment().timestamp();
-        time_t ts_md = sys::timestamp(segment->segment().abspath + ".metadata", 0);
-        time_t ts_sum = sys::timestamp(segment->segment().abspath + ".summary", 0);
+        time_t ts_md = sys::timestamp(path_metadata, 0);
+        time_t ts_sum = sys::timestamp(sys::with_suffix(segment->segment().abspath, ".summary"), 0);
         time_t ts_idx = checker.m_mft->segment_mtime(segment->segment().relpath);
 
         segment::State state = segment::SEGMENT_OK;
@@ -128,9 +129,9 @@ public:
 
         // TODO: turn this into a Segment::exists/Segment::scan
         metadata::Collection contents;
-        if (sys::exists(segment->segment().abspath + ".metadata"))
+        if (std::filesystem::exists(path_metadata))
         {
-            Metadata::read_file(metadata::ReadContext(segment->segment().abspath + ".metadata", checker.dataset().path), [&](std::shared_ptr<Metadata> md) {
+            Metadata::read_file(metadata::ReadContext(path_metadata, checker.dataset().path), [&](std::shared_ptr<Metadata> md) {
                 // Tweak Blob sources replacing the file name with segment->relpath
                 if (const source::Blob* s = md->has_source_blob())
                     md->set_source(Source::createBlobUnlocked(s->format, checker.dataset().path, segment->segment().relpath, s->offset, s->size));
@@ -202,6 +203,9 @@ public:
 
     size_t reorder(metadata::Collection& mds, unsigned test_flags) override
     {
+        auto path_metadata = sys::with_suffix(segment->segment().abspath, ".metadata");
+        auto path_summary = sys::with_suffix(segment->segment().abspath, ".summary");
+
         // Write out the data with the new order
         segment::RepackConfig repack_config;
         repack_config.gz_group_size = dataset().gz_group_size;
@@ -212,8 +216,8 @@ public:
         mds.strip_source_paths();
 
         // Remove existing cached metadata, since we scramble their order
-        sys::unlink_ifexists(segment->segment().abspath + ".metadata");
-        sys::unlink_ifexists(segment->segment().abspath + ".summary");
+        std::filesystem::remove(path_metadata);
+        std::filesystem::remove(path_summary);
 
         size_t size_pre = segment->size();
 
@@ -222,13 +226,13 @@ public:
         size_t size_post = segment->size();
 
         // Write out the new metadata
-        mds.writeAtomically(segment->segment().abspath + ".metadata");
+        mds.writeAtomically(path_metadata);
 
         // Regenerate the summary. It is unchanged, really, but its timestamp
         // has become obsolete by now
         Summary sum;
         mds.add_to_summary(sum);
-        sum.writeAtomically(segment->segment().abspath + ".summary");
+        sum.writeAtomically(path_summary);
 
 
         // Reindex with the new file information
@@ -241,37 +245,39 @@ public:
     size_t remove(bool with_data) override
     {
         checker.m_mft->remove(segment->segment().relpath);
-        sys::unlink_ifexists(segment->segment().abspath + ".metadata");
-        sys::unlink_ifexists(segment->segment().abspath + ".summary");
+        std::filesystem::remove(sys::with_suffix(segment->segment().abspath, ".metadata"));
+        std::filesystem::remove(sys::with_suffix(segment->segment().abspath, ".summary"));
         if (!with_data) return 0;
         return segment->remove();
     }
 
     void tar() override
     {
-        if (sys::exists(segment->segment().abspath + ".tar"))
+        if (std::filesystem::exists(sys::with_suffix(segment->segment().abspath, ".tar")))
             return;
 
+        auto path_metadata = sys::with_suffix(segment->segment().abspath, ".metadata");
+        auto path_summary = sys::with_suffix(segment->segment().abspath, ".summary");
         auto lock = checker.lock->write_lock();
 
         metadata::Collection mds;
         get_metadata(lock, mds);
 
         // Remove existing cached metadata, since we scramble their order
-        sys::unlink_ifexists(segment->segment().abspath + ".metadata");
-        sys::unlink_ifexists(segment->segment().abspath + ".summary");
+        std::filesystem::remove(path_metadata);
+        std::filesystem::remove(path_summary);
 
         // Create the .tar segment
         segment = segment->tar(mds);
 
         // Write out the new metadata
-        mds.writeAtomically(segment->segment().abspath + ".metadata");
+        mds.writeAtomically(path_metadata);
 
         // Regenerate the summary. It is unchanged, really, but its timestamp
         // has become obsolete by now
         Summary sum;
         mds.add_to_summary(sum);
-        sum.writeAtomically(segment->segment().abspath + ".summary");
+        sum.writeAtomically(path_summary);
 
         // Reindex with the new file information
         time_t mtime = segment->segment().timestamp();
@@ -280,29 +286,31 @@ public:
 
     void zip() override
     {
-        if (sys::exists(segment->segment().abspath + ".zip"))
+        if (std::filesystem::exists(sys::with_suffix(segment->segment().abspath, ".zip")))
             return;
 
+        auto path_metadata = sys::with_suffix(segment->segment().abspath, ".metadata");
+        auto path_summary = sys::with_suffix(segment->segment().abspath, ".summary");
         auto lock = checker.lock->write_lock();
 
         metadata::Collection mds;
         get_metadata(lock, mds);
 
         // Remove existing cached metadata, since we scramble their order
-        sys::unlink_ifexists(segment->segment().abspath + ".metadata");
-        sys::unlink_ifexists(segment->segment().abspath + ".summary");
+        std::filesystem::remove(path_metadata);
+        std::filesystem::remove(path_summary);
 
         // Create the .tar segment
         segment = segment->zip(mds);
 
         // Write out the new metadata
-        mds.writeAtomically(segment->segment().abspath + ".metadata");
+        mds.writeAtomically(path_metadata);
 
         // Regenerate the summary. It is unchanged, really, but its timestamp
         // has become obsolete by now
         Summary sum;
         mds.add_to_summary(sum);
-        sum.writeAtomically(segment->segment().abspath + ".summary");
+        sum.writeAtomically(path_summary);
 
         // Reindex with the new file information
         time_t mtime = segment->segment().timestamp();
@@ -311,17 +319,20 @@ public:
 
     size_t compress(unsigned groupsize) override
     {
-        if (sys::exists(segment->segment().abspath + ".gz") || sys::exists(segment->segment().abspath + ".gz.idx"))
+        if (std::filesystem::exists(sys::with_suffix(segment->segment().abspath, ".gz")) ||
+                std::filesystem::exists(sys::with_suffix(segment->segment().abspath, ".gz.idx")))
             return 0;
 
+        auto path_metadata = sys::with_suffix(segment->segment().abspath, ".metadata");
+        auto path_summary = sys::with_suffix(segment->segment().abspath, ".summary");
         auto lock = checker.lock->write_lock();
 
         metadata::Collection mds;
         get_metadata(lock, mds);
 
         // Remove existing cached metadata, since we scramble their order
-        sys::unlink_ifexists(segment->segment().abspath + ".metadata");
-        sys::unlink_ifexists(segment->segment().abspath + ".summary");
+        std::filesystem::remove(path_metadata);
+        std::filesystem::remove(path_summary);
 
         // Create the .tar segment
         size_t old_size = segment->size();
@@ -329,13 +340,13 @@ public:
         size_t new_size = segment->size();
 
         // Write out the new metadata
-        mds.writeAtomically(segment->segment().abspath + ".metadata");
+        mds.writeAtomically(path_metadata);
 
         // Regenerate the summary. It is unchanged, really, but its timestamp
         // has become obsolete by now
         Summary sum;
         mds.add_to_summary(sum);
-        sum.writeAtomically(segment->segment().abspath + ".summary");
+        sum.writeAtomically(path_summary);
 
         // Reindex with the new file information
         time_t mtime = segment->segment().timestamp();
@@ -357,11 +368,9 @@ public:
         Summary sum;
         mds.add_to_summary(sum);
 
-        // Regenerate .metadata
-        mds.writeAtomically(segment->segment().abspath + ".metadata");
-
-        // Regenerate .summary
-        sum.writeAtomically(segment->segment().abspath + ".summary");
+        // Regenerate .metadata and .summary
+        mds.writeAtomically(sys::with_suffix(segment->segment().abspath, ".metadata"));
+        sum.writeAtomically(sys::with_suffix(segment->segment().abspath, ".summary"));
 
         // Add to manifest
         checker.m_mft->acquire(segment->segment().relpath, mtime, sum);
@@ -370,12 +379,15 @@ public:
 
     void rescan(dataset::Reporter& reporter) override
     {
-        // Delete cached info to force a full rescan
-        sys::unlink_ifexists(segment->segment().abspath + ".metadata");
-        sys::unlink_ifexists(segment->segment().abspath + ".summary");
+        auto path_metadata = sys::with_suffix(segment->segment().abspath, ".metadata");
+        auto path_summary = sys::with_suffix(segment->segment().abspath, ".summary");
 
-        std::string dirname(str::dirname(segment->segment().abspath));
-        std::string basename(str::basename(segment->segment().abspath));
+        // Delete cached info to force a full rescan
+        std::filesystem::remove(path_metadata);
+        std::filesystem::remove(path_summary);
+
+        auto dirname = segment->segment().abspath.parent_path();
+        auto basename = segment->segment().abspath.filename();
 
         metadata::Collection mds;
         segment->rescan_data(
@@ -392,15 +404,15 @@ public:
             sum.add(*md);
 
         // Regenerate .metadata and .summary
-        mds.writeAtomically(segment->segment().abspath + ".metadata");
-        sum.writeAtomically(segment->segment().abspath + ".summary");
+        mds.writeAtomically(path_metadata);
+        sum.writeAtomically(path_summary);
 
         // Add to manifest
         checker.m_mft->acquire(segment->segment().relpath, segment->segment().timestamp(), sum);
         checker.m_mft->flush();
     }
 
-    void release(const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath) override
+    void release(const std::filesystem::path& new_root, const std::filesystem::path& new_relpath, const std::filesystem::path& new_abspath) override
     {
         checker.m_mft->remove(segment->segment().relpath);
         segment = segment->move(new_root, new_relpath, new_abspath);
@@ -412,7 +424,7 @@ Checker::Checker(std::shared_ptr<simple::Dataset> dataset)
     : DatasetAccess(dataset), m_mft(0)
 {
     // Create the directory if it does not exist
-    sys::makedirs(dataset->path);
+    std::filesystem::create_directories(dataset->path);
 
     lock = dataset->check_lock_dataset();
 
@@ -448,12 +460,12 @@ void Checker::check(CheckerConfig& opts)
     m_mft->flush();
 }
 
-std::unique_ptr<segmented::CheckerSegment> Checker::segment(const std::string& relpath)
+std::unique_ptr<segmented::CheckerSegment> Checker::segment(const std::filesystem::path& relpath)
 {
     return unique_ptr<segmented::CheckerSegment>(new CheckerSegment(*this, relpath, lock));
 }
 
-std::unique_ptr<segmented::CheckerSegment> Checker::segment_prelocked(const std::string& relpath, std::shared_ptr<dataset::CheckLock> lock)
+std::unique_ptr<segmented::CheckerSegment> Checker::segment_prelocked(const std::filesystem::path& relpath, std::shared_ptr<dataset::CheckLock> lock)
 {
     return unique_ptr<segmented::CheckerSegment>(new CheckerSegment(*this, relpath, lock));
 }
@@ -474,7 +486,7 @@ void Checker::segments_tracked_filtered(const Matcher& matcher, std::function<vo
 {
     // TODO: implement filtering
     std::vector<std::string> names;
-    m_idx->list_segments_filtered(matcher, [&](const std::string& relpath) { names.push_back(relpath); });
+    m_idx->list_segments_filtered(matcher, [&](const std::filesystem::path& relpath) { names.push_back(relpath); });
 
     for (const auto& relpath: names)
     {
@@ -485,7 +497,7 @@ void Checker::segments_tracked_filtered(const Matcher& matcher, std::function<vo
 
 void Checker::segments_untracked(std::function<void(segmented::CheckerSegment& relpath)> dest)
 {
-    scan_dir(dataset().path, [&](const std::string& relpath) {
+    scan_dir(dataset().path, [&](const std::filesystem::path& relpath) {
         if (m_idx->has_segment(relpath)) return;
         CheckerSegment segment(*this, relpath, lock);
         dest(segment);
@@ -498,7 +510,7 @@ void Checker::segments_untracked_filtered(const Matcher& matcher, std::function<
     auto m = matcher.get(TYPE_REFTIME);
     if (!m) return segments_untracked(dest);
 
-    scan_dir(dataset().path, [&](const std::string& relpath) {
+    scan_dir(dataset().path, [&](const std::filesystem::path& relpath) {
         if (m_idx->has_segment(relpath)) return;
         if (!dataset().step().pathMatches(relpath, *m)) return;
         CheckerSegment segment(*this, relpath, lock);
@@ -512,23 +524,23 @@ size_t Checker::vacuum(dataset::Reporter& reporter)
     return m_mft->vacuum();
 }
 
-void Checker::test_delete_from_index(const std::string& relpath)
+void Checker::test_delete_from_index(const std::filesystem::path& relpath)
 {
     m_idx->test_deindex(relpath);
-    string pathname = str::joinpath(dataset().path, relpath);
-    sys::unlink_ifexists(pathname + ".metadata");
-    sys::unlink_ifexists(pathname + ".summary");
+    string pathname = dataset().path / relpath;
+    std::filesystem::remove(pathname + ".metadata");
+    std::filesystem::remove(pathname + ".summary");
 }
 
-void Checker::test_invalidate_in_index(const std::string& relpath)
+void Checker::test_invalidate_in_index(const std::filesystem::path& relpath)
 {
     m_idx->test_deindex(relpath);
-    sys::touch(str::joinpath(dataset().path, relpath + ".metadata"), 1496167200);
+    sys::touch(sys::with_suffix(dataset().path / relpath, ".metadata"), 1496167200);
 }
 
-std::shared_ptr<Metadata> Checker::test_change_metadata(const std::string& relpath, std::shared_ptr<Metadata> md, unsigned data_idx)
+std::shared_ptr<Metadata> Checker::test_change_metadata(const std::filesystem::path& relpath, std::shared_ptr<Metadata> md, unsigned data_idx)
 {
-    string md_pathname = str::joinpath(dataset().path, relpath) + ".metadata";
+    auto md_pathname = sys::with_suffix(dataset().path / relpath, ".metadata");
     metadata::Collection mds;
     mds.read_from_file(md_pathname);
     md->set_source(std::unique_ptr<arki::types::Source>(mds[data_idx].source().clone()));
@@ -550,11 +562,11 @@ void Checker::check_issue51(CheckerConfig& opts)
     std::map<string, metadata::Collection> broken_mds;
 
     // Iterate all segments
-    m_idx->list_segments([&](const std::string& relpath) {
+    m_idx->list_segments([&](const std::filesystem::path& relpath) {
         metadata::Collection mds;
         m_idx->query_segment(relpath, mds.inserter_func());
         if (mds.empty()) return;
-        File datafile(str::joinpath(dataset().path, relpath), O_RDONLY);
+        File datafile(dataset().path / relpath, O_RDONLY);
         // Iterate all metadata in the segment
         unsigned count_otherformat = 0;
         unsigned count_ok = 0;
@@ -602,10 +614,10 @@ void Checker::check_issue51(CheckerConfig& opts)
         for (const auto& i: broken_mds)
         {
             // Make a backup copy with .issue51 extension, if it doesn't already exist
-            std::string abspath = str::joinpath(dataset().path, i.first);
+            auto abspath = dataset().path / i.first;
             utils::files::PreserveFileTimes pf(abspath);
-            std::string backup = abspath + ".issue51";
-            if (!sys::exists(backup))
+            auto backup = sys::with_suffix(abspath, ".issue51");
+            if (!std::filesystem::exists(backup))
             {
                 File src(abspath, O_RDONLY);
                 File dst(backup, O_WRONLY | O_CREAT | O_EXCL, 0666);
@@ -634,7 +646,7 @@ void Checker::check_issue51(CheckerConfig& opts)
     return segmented::Checker::check_issue51(opts);
 }
 
-void Checker::test_make_overlap(const std::string& relpath, unsigned overlap_size, unsigned data_idx)
+void Checker::test_make_overlap(const std::filesystem::path& relpath, unsigned overlap_size, unsigned data_idx)
 {
     metadata::Collection mds;
     m_idx->query_segment(relpath, mds.inserter_func());
@@ -642,7 +654,7 @@ void Checker::test_make_overlap(const std::string& relpath, unsigned overlap_siz
     m_idx->test_make_overlap(relpath, overlap_size, data_idx);
 }
 
-void Checker::test_make_hole(const std::string& relpath, unsigned hole_size, unsigned data_idx)
+void Checker::test_make_hole(const std::filesystem::path& relpath, unsigned hole_size, unsigned data_idx)
 {
     metadata::Collection mds;
     m_idx->query_segment(relpath, mds.inserter_func());
@@ -650,21 +662,21 @@ void Checker::test_make_hole(const std::string& relpath, unsigned hole_size, uns
     m_idx->test_make_hole(relpath, hole_size, data_idx);
 }
 
-void Checker::test_corrupt_data(const std::string& relpath, unsigned data_idx)
+void Checker::test_corrupt_data(const std::filesystem::path& relpath, unsigned data_idx)
 {
     metadata::Collection mds;
     m_idx->query_segment(relpath, mds.inserter_func());
     dataset().session->segment_checker(scan::Scanner::format_from_filename(relpath), dataset().path, relpath)->test_corrupt(mds, data_idx);
 }
 
-void Checker::test_truncate_data(const std::string& relpath, unsigned data_idx)
+void Checker::test_truncate_data(const std::filesystem::path& relpath, unsigned data_idx)
 {
     metadata::Collection mds;
     m_idx->query_segment(relpath, mds.inserter_func());
-    dataset().session->segment_checker(scan::Scanner::format_from_filename(relpath), dataset().path, relpath)->test_truncate(mds, data_idx);
+    dataset().session->segment_checker(scan::Scanner::format_from_filename(relpath), dataset().path, relpath)->test_truncate_by_data(mds, data_idx);
 }
 
-void Checker::test_swap_data(const std::string& relpath, unsigned d1_idx, unsigned d2_idx)
+void Checker::test_swap_data(const std::filesystem::path& relpath, unsigned d1_idx, unsigned d2_idx)
 {
     metadata::Collection mds;
     m_idx->query_segment(relpath, mds.inserter_func());
@@ -673,11 +685,11 @@ void Checker::test_swap_data(const std::string& relpath, unsigned d1_idx, unsign
     segment(relpath)->reorder(mds);
 }
 
-void Checker::test_rename(const std::string& relpath, const std::string& new_relpath)
+void Checker::test_rename(const std::filesystem::path& relpath, const std::filesystem::path& new_relpath)
 {
     auto segment = dataset().session->segment_checker(scan::Scanner::format_from_filename(relpath), dataset().path, relpath);
     m_idx->test_rename(relpath, new_relpath);
-    segment->move(dataset().path, new_relpath, str::joinpath(dataset().path, new_relpath));
+    segment->move(dataset().path, new_relpath, dataset().path / new_relpath);
 }
 
 }

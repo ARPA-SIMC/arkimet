@@ -13,14 +13,14 @@ namespace arki {
 namespace dataset {
 namespace file {
 
-std::shared_ptr<core::cfg::Section> read_config(const std::string& path);
-std::shared_ptr<core::cfg::Sections> read_configs(const std::string& path);
+std::shared_ptr<core::cfg::Section> read_config(const std::filesystem::path& path);
+std::shared_ptr<core::cfg::Sections> read_configs(const std::filesystem::path& path);
 
 /// Dataset on a single file
 class Dataset : public dataset::Dataset
 {
 public:
-    std::string pathname;
+    std::filesystem::path pathname;
     std::string format;
 
     Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg);

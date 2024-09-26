@@ -65,94 +65,94 @@ public:
                     operation.data(), operation.size(),
                     message.data(), message.size()));
     }
-    void segment_info(const std::string& ds, const std::string& relpath, const std::string& message) override
+    void segment_info(const std::string& ds, const std::filesystem::path& relpath, const std::string& message) override
     {
         AcquireGIL gil;
         throw_ifnull(PyObject_CallMethod(
                     o, "segment_info", "s#s#s#",
                     ds.data(), ds.size(),
-                    relpath.data(), relpath.size(),
+                    relpath.native().data(), relpath.native().size(),
                     message.data(), message.size()));
     }
-    void segment_repack(const std::string& ds, const std::string& relpath, const std::string& message) override
+    void segment_repack(const std::string& ds, const std::filesystem::path& relpath, const std::string& message) override
     {
         AcquireGIL gil;
         throw_ifnull(PyObject_CallMethod(
                     o, "segment_repack", "s#s#s#",
                     ds.data(), ds.size(),
-                    relpath.data(), relpath.size(),
+                    relpath.native().data(), relpath.native().size(),
                     message.data(), message.size()));
     }
-    void segment_archive(const std::string& ds, const std::string& relpath, const std::string& message) override
+    void segment_archive(const std::string& ds, const std::filesystem::path& relpath, const std::string& message) override
     {
         AcquireGIL gil;
         throw_ifnull(PyObject_CallMethod(
                     o, "segment_archive", "s#s#s#",
                     ds.data(), ds.size(),
-                    relpath.data(), relpath.size(),
+                    relpath.native().data(), relpath.native().size(),
                     message.data(), message.size()));
     }
-    void segment_delete(const std::string& ds, const std::string& relpath, const std::string& message) override
+    void segment_delete(const std::string& ds, const std::filesystem::path& relpath, const std::string& message) override
     {
         AcquireGIL gil;
         throw_ifnull(PyObject_CallMethod(
                     o, "segment_delete", "s#s#s#",
                     ds.data(), ds.size(),
-                    relpath.data(), relpath.size(),
+                    relpath.native().data(), relpath.native().size(),
                     message.data(), message.size()));
     }
-    void segment_deindex(const std::string& ds, const std::string& relpath, const std::string& message) override
+    void segment_deindex(const std::string& ds, const std::filesystem::path& relpath, const std::string& message) override
     {
         AcquireGIL gil;
         throw_ifnull(PyObject_CallMethod(
                     o, "segment_deindex", "s#s#s#",
                     ds.data(), ds.size(),
-                    relpath.data(), relpath.size(),
+                    relpath.native().data(), relpath.native().size(),
                     message.data(), message.size()));
     }
-    void segment_rescan(const std::string& ds, const std::string& relpath, const std::string& message) override
+    void segment_rescan(const std::string& ds, const std::filesystem::path& relpath, const std::string& message) override
     {
         AcquireGIL gil;
         throw_ifnull(PyObject_CallMethod(
                     o, "segment_rescan", "s#s#s#",
                     ds.data(), ds.size(),
-                    relpath.data(), relpath.size(),
+                    relpath.native().data(), relpath.native().size(),
                     message.data(), message.size()));
     }
-    void segment_tar(const std::string& ds, const std::string& relpath, const std::string& message) override
+    void segment_tar(const std::string& ds, const std::filesystem::path& relpath, const std::string& message) override
     {
         AcquireGIL gil;
         throw_ifnull(PyObject_CallMethod(
                     o, "segment_tar", "s#s#s#",
                     ds.data(), ds.size(),
-                    relpath.data(), relpath.size(),
+                    relpath.native().data(), relpath.native().size(),
                     message.data(), message.size()));
     }
-    void segment_compress(const std::string& ds, const std::string& relpath, const std::string& message) override
+    void segment_compress(const std::string& ds, const std::filesystem::path& relpath, const std::string& message) override
     {
         AcquireGIL gil;
         throw_ifnull(PyObject_CallMethod(
                     o, "segment_compress", "s#s#s#",
                     ds.data(), ds.size(),
-                    relpath.data(), relpath.size(),
+                    relpath.native().data(), relpath.native().size(),
                     message.data(), message.size()));
     }
-    void segment_issue51(const std::string& ds, const std::string& relpath, const std::string& message) override
+    void segment_issue51(const std::string& ds, const std::filesystem::path& relpath, const std::string& message) override
     {
         AcquireGIL gil;
         throw_ifnull(PyObject_CallMethod(
                     o, "segment_issue51", "s#s#s#",
                     ds.data(), ds.size(),
-                    relpath.data(), relpath.size(),
+                    relpath.native().data(), relpath.native().size(),
                     message.data(), message.size()));
     }
-    void segment_manual_intervention(const std::string& ds, const std::string& relpath, const std::string& message) override
+    void segment_manual_intervention(const std::string& ds, const std::filesystem::path& relpath, const std::string& message) override
     {
         AcquireGIL gil;
         throw_ifnull(PyObject_CallMethod(
                     o, "segment_manual_intervention", "s#s#s#",
                     ds.data(), ds.size(),
-                    relpath.data(), relpath.size(),
+                    relpath.native().data(), relpath.native().size(),
                     message.data(), message.size()));
     }
 };
@@ -208,64 +208,64 @@ public:
         out << ds << ": " << operation << " " << message << std::endl;
         write(out.str());
     }
-    void segment_info(const std::string& ds, const std::string& relpath, const std::string& message) override
+    void segment_info(const std::string& ds, const std::filesystem::path& relpath, const std::string& message) override
     {
         std::stringstream out;
-        out << ds << ":" << relpath << ": " << message << std::endl;
+        out << ds << ":" << relpath.native() << ": " << message << std::endl;
         write(out.str());
     }
-    void segment_repack(const std::string& ds, const std::string& relpath, const std::string& message) override
+    void segment_repack(const std::string& ds, const std::filesystem::path& relpath, const std::string& message) override
     {
         std::stringstream out;
-        out << ds << ":" << relpath << ": " << message << std::endl;
+        out << ds << ":" << relpath.native() << ": " << message << std::endl;
         write(out.str());
     }
-    void segment_archive(const std::string& ds, const std::string& relpath, const std::string& message) override
+    void segment_archive(const std::string& ds, const std::filesystem::path& relpath, const std::string& message) override
     {
         std::stringstream out;
-        out << ds << ":" << relpath << ": " << message << std::endl;
+        out << ds << ":" << relpath.native() << ": " << message << std::endl;
         write(out.str());
     }
-    void segment_delete(const std::string& ds, const std::string& relpath, const std::string& message) override
+    void segment_delete(const std::string& ds, const std::filesystem::path& relpath, const std::string& message) override
     {
         std::stringstream out;
-        out << ds << ":" << relpath << ": " << message << std::endl;
+        out << ds << ":" << relpath.native() << ": " << message << std::endl;
         write(out.str());
     }
-    void segment_deindex(const std::string& ds, const std::string& relpath, const std::string& message) override
+    void segment_deindex(const std::string& ds, const std::filesystem::path& relpath, const std::string& message) override
     {
         std::stringstream out;
-        out << ds << ":" << relpath << ": " << message << std::endl;
+        out << ds << ":" << relpath.native() << ": " << message << std::endl;
         write(out.str());
     }
-    void segment_rescan(const std::string& ds, const std::string& relpath, const std::string& message) override
+    void segment_rescan(const std::string& ds, const std::filesystem::path& relpath, const std::string& message) override
     {
         std::stringstream out;
-        out << ds << ":" << relpath << ": " << message << std::endl;
+        out << ds << ":" << relpath.native() << ": " << message << std::endl;
         write(out.str());
     }
-    void segment_tar(const std::string& ds, const std::string& relpath, const std::string& message) override
+    void segment_tar(const std::string& ds, const std::filesystem::path& relpath, const std::string& message) override
     {
         std::stringstream out;
-        out << ds << ":" << relpath << ": " << message << std::endl;
+        out << ds << ":" << relpath.native() << ": " << message << std::endl;
         write(out.str());
     }
-    void segment_compress(const std::string& ds, const std::string& relpath, const std::string& message) override
+    void segment_compress(const std::string& ds, const std::filesystem::path& relpath, const std::string& message) override
     {
         std::stringstream out;
-        out << ds << ":" << relpath << ": " << message << std::endl;
+        out << ds << ":" << relpath.native() << ": " << message << std::endl;
         write(out.str());
     }
-    void segment_issue51(const std::string& ds, const std::string& relpath, const std::string& message) override
+    void segment_issue51(const std::string& ds, const std::filesystem::path& relpath, const std::string& message) override
     {
         std::stringstream out;
-        out << ds << ":" << relpath << ": " << message << std::endl;
+        out << ds << ":" << relpath.native() << ": " << message << std::endl;
         write(out.str());
     }
-    void segment_manual_intervention(const std::string& ds, const std::string& relpath, const std::string& message) override
+    void segment_manual_intervention(const std::string& ds, const std::filesystem::path& relpath, const std::string& message) override
     {
         std::stringstream out;
-        out << ds << ":" << relpath << ": " << message << std::endl;
+        out << ds << ":" << relpath.native() << ": " << message << std::endl;
         write(out.str());
     }
 };

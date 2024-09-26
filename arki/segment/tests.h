@@ -16,9 +16,9 @@ struct SegmentFixture : public Fixture
     Data td;
     segment::RepackConfig repack_config;
     metadata::Collection seg_mds;
-    std::string root;
-    std::string relpath;
-    std::string abspath;
+    std::filesystem::path root;
+    std::filesystem::path relpath;
+    std::filesystem::path abspath;
 
     std::shared_ptr<segment::Checker> create();
     std::shared_ptr<segment::Checker> create(metadata::Collection mds);

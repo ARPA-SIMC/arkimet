@@ -62,20 +62,20 @@ SQLiteDB::~SQLiteDB() {
         sqlite3_close(m_db);
     }
 }
-void SQLiteDB::open(const std::string& pathname, int timeout_ms)
+void SQLiteDB::open(const std::filesystem::path& pathname, int timeout_ms)
 {
-	int rc;
-	rc = sqlite3_open(pathname.c_str(), &m_db);
-	if (rc != SQLITE_OK)
-	       	throw SQLiteError(m_db, "opening database");
+    int rc;
+    rc = sqlite3_open(pathname.c_str(), &m_db);
+    if (rc != SQLITE_OK)
+        throw SQLiteError(m_db, "opening database");
 
-	// Set the busy timeout to an hour (in milliseconds)
-	if (timeout_ms > 0)
-	{
-		rc = sqlite3_busy_timeout(m_db, timeout_ms);
-		if (rc != SQLITE_OK)
-			throw SQLiteError(m_db, "setting busy timeout");
-	}
+    // Set the busy timeout to an hour (in milliseconds)
+    if (timeout_ms > 0)
+    {
+        rc = sqlite3_busy_timeout(m_db, timeout_ms);
+        if (rc != SQLITE_OK)
+            throw SQLiteError(m_db, "setting busy timeout");
+    }
 }
 
 sqlite3_stmt* SQLiteDB::prepare(const std::string& query) const

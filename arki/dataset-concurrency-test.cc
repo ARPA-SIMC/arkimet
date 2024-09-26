@@ -190,7 +190,7 @@ struct HungReporter : public dataset::NullReporter
 
     HungReporter(TestSubprocess& sp) : sp(sp) {}
 
-    void segment_info(const std::string& ds, const std::string& relpath, const std::string& message) override
+    void segment_info(const std::string& ds, const std::filesystem::path& relpath, const std::string& message) override
     {
         sp.notify_ready();
         while (true)
@@ -341,7 +341,7 @@ this->add_method("read_write1", [](Fixture& f) {
 
     // Querying again returns all imported data
     count = 0;
-    reader->query_data(Matcher(), [&](std::shared_ptr<Metadata> md) { ++count; return true; });
+    reader->query_data(Matcher(), [&](std::shared_ptr<Metadata> md) noexcept { ++count; return true; });
     wassert(actual(count) == 3u);
 });
 
@@ -502,7 +502,7 @@ this->add_method("write_repack", [](Fixture& f) {
 
     auto reader = f.config().create_reader();
     unsigned count = 0;
-    reader->query_data(Matcher(), [&](std::shared_ptr<Metadata> md) { ++count; return true; });
+    reader->query_data(Matcher(), [&](std::shared_ptr<Metadata> md) noexcept { ++count; return true; });
     wassert(actual(count) == 61u);
 });
 

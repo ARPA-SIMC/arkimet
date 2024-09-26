@@ -13,7 +13,7 @@ using namespace std;
 namespace arki {
 namespace segment {
 
-AppendCreator::AppendCreator(const std::string& root, const std::string& relpath, metadata::Collection& mds)
+AppendCreator::AppendCreator(const std::filesystem::path& root, const std::filesystem::path& relpath, metadata::Collection& mds)
     : root(root), relpath(relpath), mds(mds)
 {
 }
@@ -57,7 +57,7 @@ void AppendCreator::create()
 }
 
 
-AppendCheckBackend::AppendCheckBackend(std::function<void(const std::string&)> reporter, const std::string& relpath, const metadata::Collection& mds)
+AppendCheckBackend::AppendCheckBackend(std::function<void(const std::string&)> reporter, const std::filesystem::path& relpath, const metadata::Collection& mds)
     : relpath(relpath), reporter(reporter), mds(mds)
 {
 }

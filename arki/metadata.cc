@@ -27,19 +27,36 @@ using namespace arki::types;
 using namespace arki::utils;
 using namespace arki::core;
 
-namespace arki {
+namespace {
 
+std::filesystem::path canonical_ifexists(const std::filesystem::path path)
+{
+    try {
+        return std::filesystem::canonical(path);
+    } catch (std::filesystem::filesystem_error&) {
+        return path;
+    }
+}
+
+}
+
+namespace arki {
 namespace metadata {
 
 ReadContext::ReadContext() {}
 
-ReadContext::ReadContext(const std::string& pathname)
-    : basedir(str::dirname(sys::abspath(pathname))), pathname(pathname)
+ReadContext::ReadContext(const std::filesystem::path& pathname)
+    : basedir(), pathname(pathname)
 {
+    try {
+        basedir = std::filesystem::canonical(pathname).parent_path();
+    } catch (std::filesystem::filesystem_error&) {
+        basedir = std::filesystem::current_path();
+    }
 }
 
-ReadContext::ReadContext(const std::string& pathname, const std::string& basedir)
-    : basedir(sys::abspath(basedir)), pathname(pathname)
+ReadContext::ReadContext(const std::filesystem::path& pathname, const std::filesystem::path& basedir)
+    : basedir(canonical_ifexists(basedir)), pathname(pathname)
 {
 }
 
@@ -452,6 +469,13 @@ void Metadata::add_note(const std::string& note)
     m_index.append_note(Note::create(note));
 }
 
+void Metadata::add_note_scanned_from(const std::filesystem::path& source)
+{
+    stringstream note;
+    note << "Scanned from " << source.filename().native();
+    m_index.append_note(Note::create(note.str()));
+}
+
 const types::Note& Metadata::get_last_note() const
 {
     auto n = m_index.get_last_note();
@@ -476,7 +500,7 @@ bool Metadata::operator==(const Metadata& m) const
 bool Metadata::items_equal(const Metadata& o) const
 {
     bool res = true;
-    diff_items(o, [&](types::Code code, const types::Type* first, const types::Type* second) { res = false; });
+    diff_items(o, [&](types::Code code, const types::Type* first, const types::Type* second) noexcept { res = false; });
     return res;
 }
 
@@ -489,7 +513,7 @@ std::shared_ptr<Metadata> Metadata::read_binary(int in, const metadata::ReadCont
 
     // Ensure first 2 bytes are MD or !D
     if (bundle.signature != "MD")
-        throw_consistency_error("parsing file " + filename.pathname, "metadata entry does not start with 'MD'");
+        throw_consistency_error("parsing file "s + filename.pathname.native(), "metadata entry does not start with 'MD'");
 
     if (!bundle.read_data(f))
         return std::shared_ptr<Metadata>();
@@ -515,7 +539,7 @@ std::shared_ptr<Metadata> Metadata::read_binary(core::BinaryDecoder& dec, const 
 
     // Ensure first 2 bytes are MD or !D
     if (signature != "MD")
-        throw std::runtime_error("cannot parse " + filename.pathname + ": metadata entry does not start with 'MD'");
+        throw std::runtime_error("cannot parse "s + filename.pathname.native() + ": metadata entry does not start with 'MD'");
 
     auto res = read_binary_inner(inner, version, filename);
 
@@ -609,7 +633,7 @@ void Metadata::read_inline_data(core::AbstractInputFile& fd)
     m_data = metadata::DataManager::get().to_data(s.format, move(buf));
 }
 
-void Metadata::readInlineData(core::BinaryDecoder& dec, const std::string& filename)
+void Metadata::readInlineData(core::BinaryDecoder& dec, const std::filesystem::path& filename)
 {
     // If the source is inline, then the data follows the metadata
     const Source& s = source();
@@ -619,7 +643,7 @@ void Metadata::readInlineData(core::BinaryDecoder& dec, const std::string& filen
     m_data = metadata::DataManager::get().to_data(s.format, std::vector<uint8_t>(data.buf, data.buf + si->size));
 }
 
-std::shared_ptr<Metadata> Metadata::read_yaml(LineReader& in, const std::string& filename)
+std::shared_ptr<Metadata> Metadata::read_yaml(LineReader& in, const std::filesystem::path& filename)
 {
     if (in.eof())
         return std::shared_ptr<Metadata>();
@@ -665,11 +689,7 @@ void Metadata::write(NamedFileDescriptor& out, bool skip_data) const
     // Having checked the style, we can reinterpret_cast
     const source::Inline* si = reinterpret_cast<const source::Inline*>(s);
     if (si->size != m_data->size())
-    {
-        stringstream ss;
-        ss << "cannot write metadata to file " << out.name() << ": metadata size " << si->size << " does not match the data size " << m_data->size();
-        throw runtime_error(ss.str());
-    }
+        throw_runtime_error("cannot write metadata to file ", out.path(), ": metadata size ", si->size, " does not match the data size ", m_data->size());
     m_data->write_inline(out);
 }
 
@@ -692,11 +712,7 @@ void Metadata::write(StreamOutput& out, bool skip_data) const
     // Having checked the style, we can reinterpret_cast
     const source::Inline* si = reinterpret_cast<const source::Inline*>(s);
     if (si->size != m_data->size())
-    {
-        stringstream ss;
-        ss << "cannot write metadata to file " << out.name() << ": metadata size " << si->size << " does not match the data size " << m_data->size();
-        throw runtime_error(ss.str());
-    }
+        throw_runtime_error("cannot write metadata to file ", out.path(), ": metadata size ", si->size, " does not match the data size ", m_data->size());
     m_data->write_inline(out);
 }
 
@@ -993,7 +1009,7 @@ void Metadata::dump_internals(FILE* out) const
     if (m_encoded)
         fprintf(out, "  Has encoded buffer %ub long\n", m_encoded_size);
     if (m_data)
-        fprintf(out, "  Has cached data %zdb long\n", m_data->size());
+        fprintf(out, "  Has cached data %zub long\n", m_data->size());
     fprintf(out, "  Item index:\n");
     unsigned idx = 0;
     for (const auto& i: m_index)
@@ -1024,7 +1040,7 @@ bool Metadata::read_buffer(core::BinaryDecoder& dec, const metadata::ReadContext
 
         // Ensure first 2 bytes are MD or !D
         if (signature != "MD" && signature != "!D" && signature != "MG")
-            throw std::runtime_error("cannot parse file " + file.pathname + ": metadata entry does not start with 'MD', '!D' or 'MG'");
+            throw std::runtime_error("cannot parse file "s + file.pathname.native() + ": metadata entry does not start with 'MD', '!D' or 'MG'");
 
         if (signature == "MG")
         {
@@ -1045,7 +1061,7 @@ bool Metadata::read_buffer(core::BinaryDecoder& dec, const metadata::ReadContext
     return !canceled;
 }
 
-bool Metadata::read_file(const std::string& fname, metadata_dest_func dest)
+bool Metadata::read_file(const std::filesystem::path& fname, metadata_dest_func dest)
 {
     metadata::ReadContext context(fname);
     return read_file(context, dest);
@@ -1069,7 +1085,7 @@ bool Metadata::read_file(int in, const metadata::ReadContext& file, metadata_des
     {
         // Ensure first 2 bytes are MD or !D
         if (bundle.signature != "MD" && bundle.signature != "!D" && bundle.signature != "MG")
-            throw_consistency_error("parsing file " + file.pathname, "metadata entry does not start with 'MD', '!D' or 'MG'");
+            throw_consistency_error("parsing file "s + file.pathname.native(), "metadata entry does not start with 'MD', '!D' or 'MG'");
 
         if (!bundle.read_data(f)) break;
 
@@ -1097,7 +1113,7 @@ bool Metadata::read_file(int in, const metadata::ReadContext& file, metadata_des
 
 bool Metadata::read_file(NamedFileDescriptor& fd, metadata_dest_func mdc)
 {
-    return read_file(fd, fd.name(), mdc);
+    return read_file(fd, fd.path(), mdc);
 }
 
 bool Metadata::read_file(core::AbstractInputFile& fd, const metadata::ReadContext& file, metadata_dest_func dest)
@@ -1108,7 +1124,7 @@ bool Metadata::read_file(core::AbstractInputFile& fd, const metadata::ReadContex
     {
         // Ensure first 2 bytes are MD or !D
         if (bundle.signature != "MD" && bundle.signature != "!D" && bundle.signature != "MG")
-            throw_consistency_error("parsing file " + file.pathname, "metadata entry does not start with 'MD', '!D' or 'MG'");
+            throw_consistency_error("parsing file "s + file.pathname.native(), "metadata entry does not start with 'MD', '!D' or 'MG'");
 
         if (!bundle.read_data(fd)) break;
 

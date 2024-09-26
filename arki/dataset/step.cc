@@ -23,23 +23,23 @@ SegmentQuery::SegmentQuery()
 {
 }
 
-SegmentQuery::SegmentQuery(const std::string& root, const std::string& format)
+SegmentQuery::SegmentQuery(const std::filesystem::path& root, const std::string& format)
     : root(root), format(format)
 {
 }
 
-SegmentQuery::SegmentQuery(const std::string& root, const std::string& format, const Matcher& matcher)
+SegmentQuery::SegmentQuery(const std::filesystem::path& root, const std::string& format, const Matcher& matcher)
     : root(root), format(format), matcher(matcher)
 {
 }
 
-SegmentQuery::SegmentQuery(const std::string& root, const std::string& format, const std::string& extension_re, const Matcher& matcher)
+SegmentQuery::SegmentQuery(const std::filesystem::path& root, const std::string& format, const std::string& extension_re, const Matcher& matcher)
     : root(root), format(format), extension_re(extension_re), matcher(matcher)
 {
 }
 
 
-Files::Files(const Dirs& dirs, const std::string& relpath, int value)
+Files::Files(const Dirs& dirs, const std::filesystem::path& relpath, int value)
     : dirs(dirs), relpath(relpath), value(value) {}
 
 
@@ -49,13 +49,13 @@ struct BaseFiles : public Files
 
     virtual std::unique_ptr<utils::Regexp> make_regexp() const = 0;
     virtual core::Interval to_period(const utils::Regexp& re) const = 0;
-    virtual std::string to_relpath(const Regexp& re) const = 0;
+    virtual std::filesystem::path to_relpath(const Regexp& re) const = 0;
     virtual std::string to_format(const utils::Regexp& re) const = 0;
 
-    void list(std::function<void(std::string&& relpath)> dest) const override
+    void list(std::function<void(std::filesystem::path&& relpath)> dest) const override
     {
         auto re = make_regexp();
-        sys::Path dir(str::joinpath(dirs.query.root, this->relpath));
+        sys::Path dir(dirs.query.root / this->relpath);
         for (sys::Path::iterator f = dir.begin(); f != dir.end(); ++f)
         {
             if (f->d_name[0] == '.') continue;
@@ -69,7 +69,7 @@ struct BaseFiles : public Files
                 if (!dirs.query.matcher(rt)) continue;
             }
 
-            dest(str::joinpath(relpath, to_relpath(*re)));
+            dest(relpath / to_relpath(*re));
         }
     }
 
@@ -79,7 +79,7 @@ struct BaseFiles : public Files
         core::Interval res;
 
         auto re = make_regexp();
-        sys::Path dir(str::joinpath(dirs.query.root, this->relpath));
+        sys::Path dir(dirs.query.root / this->relpath);
         for (sys::Path::iterator f = dir.begin(); f != dir.end(); ++f)
         {
             if (f->d_name[0] == '.') continue;
@@ -104,7 +104,7 @@ struct BaseFiles : public Files
         core::Interval res;
 
         auto re = make_regexp();
-        sys::Path dir(str::joinpath(dirs.query.root, this->relpath));
+        sys::Path dir(dirs.query.root / this->relpath);
         for (sys::Path::iterator f = dir.begin(); f != dir.end(); ++f)
         {
             if (f->d_name[0] == '.') continue;
@@ -128,12 +128,12 @@ struct SingleFiles : public Files
 {
     using Files::Files;
 
-    void list(std::function<void(std::string&& relpath)> dest) const override
+    void list(std::function<void(std::filesystem::path&& relpath)> dest) const override
     {
         string relpath = "all";
         relpath += ".";
         relpath += dirs.query.format;
-        if (!sys::exists(str::joinpath(dirs.query.root, relpath))) return;
+        if (!std::filesystem::exists(dirs.query.root / relpath)) return;
         dest(move(relpath));
     }
 
@@ -171,7 +171,7 @@ struct YearFiles : public BaseFiles
     }
 
     std::string to_format(const Regexp& re) const override { return re[3]; }
-    std::string to_relpath(const Regexp& re) const override { return re[1]; }
+    std::filesystem::path to_relpath(const Regexp& re) const override { return re[1]; }
 };
 
 struct MonthFiles : public BaseFiles
@@ -192,7 +192,7 @@ struct MonthFiles : public BaseFiles
     }
 
     std::string to_format(const Regexp& re) const override { return re[3]; }
-    std::string to_relpath(const Regexp& re) const override { return re[1]; }
+    std::filesystem::path to_relpath(const Regexp& re) const override { return re[1]; }
 };
 
 struct MonthDayFiles : public BaseFiles
@@ -217,7 +217,7 @@ struct MonthDayFiles : public BaseFiles
     }
 
     std::string to_format(const Regexp& re) const override { return re[4]; }
-    std::string to_relpath(const Regexp& re) const override { return re[1]; }
+    std::filesystem::path to_relpath(const Regexp& re) const override { return re[1]; }
 };
 
 
@@ -232,7 +232,7 @@ struct BaseDirs : public Dirs
 {
     virtual bool parse(const char* name, int& value) const = 0;
     virtual core::Interval to_period(int value) const = 0;
-    virtual std::unique_ptr<Files> make_files(const std::string& name, int value) const = 0;
+    virtual std::unique_ptr<Files> make_files(const std::filesystem::path& name, int value) const = 0;
 
     using Dirs::Dirs;
 
@@ -302,13 +302,13 @@ struct SingleDirs : public Dirs
 
     void list(std::function<void(std::unique_ptr<Files>)> dest) const override
     {
-        if (!sys::exists(str::joinpath(query.root, "all") + "." + query.format)) return;
+        if (!std::filesystem::exists(query.root / ("all."s + query.format))) return;
         dest(std::unique_ptr<Files>(new SingleFiles(*this, "", 0)));
     }
 
     void extremes(core::Interval& first, core::Interval& last) const override
     {
-        if (!sys::exists(str::joinpath(query.root, "all") + "." + query.format))
+        if (!std::filesystem::exists(query.root / ("all." + query.format)))
         {
             first = core::Interval();
             last = core::Interval();
@@ -345,7 +345,7 @@ struct CenturyDirs : public BaseDirs
             core::Time::create_lowerbound((value + 1) * 100));
     }
 
-    std::unique_ptr<Files> make_files(const std::string& name, int value) const override
+    std::unique_ptr<Files> make_files(const std::filesystem::path& name, int value) const override
     {
         return std::unique_ptr<Files>(new FILES(*this, name, value));
     }
@@ -372,7 +372,7 @@ struct YearDirs : public BaseDirs
             core::Time::create_lowerbound(value + 1));
     }
 
-    std::unique_ptr<Files> make_files(const std::string& name, int value) const override
+    std::unique_ptr<Files> make_files(const std::filesystem::path& name, int value) const override
     {
         return std::unique_ptr<Files>(new FILES(*this, name, value));
     }
@@ -383,25 +383,25 @@ struct YearDirs : public BaseDirs
 
 struct StepQuery
 {
-    const std::string& root;
+    const std::filesystem::path& root;
     const std::string& format;
 
-    StepQuery(const std::string& root, const std::string& format)
+    StepQuery(const std::filesystem::path& root, const std::string& format)
         : root(root), format(format) {}
     virtual ~StepQuery() {}
 
-    virtual void list_segments(const Matcher& m, std::function<void(std::string&&)> dest) const = 0;
+    virtual void list_segments(const Matcher& m, std::function<void(std::filesystem::path&&)> dest) const = 0;
     virtual void time_extremes(core::Interval& interval) const = 0;
 };
 
 
 struct PathQuery
 {
-    const std::string& root;
+    const std::filesystem::path& root;
     const std::string& format;
     const matcher::OR* m = nullptr;
 
-    PathQuery(const std::string& root, const std::string& format, const Matcher& m)
+    PathQuery(const std::filesystem::path& root, const std::string& format, const Matcher& m)
         : root(root), format(format)
     {
         if (!m.empty())
@@ -433,7 +433,7 @@ struct BaseStep : public Step
 {
     std::unique_ptr<step::Dirs> explore(const step::SegmentQuery& query) const override
     {
-        throw std::runtime_error("Step::explore not available for " + query.root);
+        throw std::runtime_error("Step::explore not available for " + query.root.native());
     }
 
     void time_extremes(const step::SegmentQuery& query, core::Interval& interval) const override
@@ -453,7 +453,7 @@ struct BaseStep : public Step
         }
     }
 
-    bool pathMatches(const std::string& path, const matcher::OR& m) const override
+    bool pathMatches(const std::filesystem::path& path, const matcher::OR& m) const override
     {
         core::Interval interval;
         if (!path_timespan(path, interval))
@@ -461,7 +461,7 @@ struct BaseStep : public Step
         return m.match_interval(interval);
     }
 
-    void list_segments(const step::SegmentQuery& query, std::function<void(std::string&&)> dest) const override
+    void list_segments(const step::SegmentQuery& query, std::function<void(std::filesystem::path&&)> dest) const override
     {
         auto dirs(explore(query));
         dirs->list([&](std::unique_ptr<step::Files> files) {
@@ -485,14 +485,14 @@ struct Single : public BaseStep
         return std::unique_ptr<step::Dirs>(new step::SingleDirs(query));
     }
 
-    bool path_timespan(const std::string& path, core::Interval& interval) const override
+    bool path_timespan(const std::filesystem::path& path, core::Interval& interval) const override
     {
         interval.begin.set_lowerbound(1000);
         interval.end.set_upperbound(100000);
         return true;
     }
 
-    std::string operator()(const core::Time& time) const override
+    std::filesystem::path operator()(const core::Time& time) const override
     {
         return "all";
     }
@@ -508,7 +508,7 @@ struct Yearly : public BaseStep
         return std::unique_ptr<step::Dirs>(new step::CenturyDirs<step::YearFiles>(query));
     }
 
-    bool path_timespan(const std::string& path, core::Interval& interval) const override
+    bool path_timespan(const std::filesystem::path& path, core::Interval& interval) const override
     {
         int dummy;
         int ye;
@@ -520,7 +520,7 @@ struct Yearly : public BaseStep
         return true;
     }
 
-    std::string operator()(const core::Time& time) const override
+    std::filesystem::path operator()(const core::Time& time) const override
     {
         const Time& tt = time;
         char buf[22];
@@ -538,7 +538,7 @@ struct Monthly : public BaseStep
         return std::unique_ptr<step::Dirs>(new step::YearDirs<step::MonthFiles>(query));
     }
 
-    bool path_timespan(const std::string& path, core::Interval& interval) const override
+    bool path_timespan(const std::filesystem::path& path, core::Interval& interval) const override
     {
         int ye, mo;
         if (sscanf(path.c_str(), "%04d/%02d", &ye, &mo) != 2)
@@ -551,7 +551,7 @@ struct Monthly : public BaseStep
         return true;
     }
 
-    std::string operator()(const core::Time& time) const override
+    std::filesystem::path operator()(const core::Time& time) const override
     {
         const Time& tt = time;
         char buf[10];
@@ -566,7 +566,7 @@ struct SubMonthly : public SubStep
 
     static const char* name() { return "monthly"; }
 
-    bool path_timespan(const std::string& path, core::Interval& interval) const override
+    bool path_timespan(const std::filesystem::path& path, core::Interval& interval) const override
     {
         int mo;
         if (sscanf(path.c_str(), "%02d", &mo) != 1)
@@ -579,7 +579,7 @@ struct SubMonthly : public SubStep
         return true;
     }
 
-    std::string operator()(const core::Time& time) const override
+    std::filesystem::path operator()(const core::Time& time) const override
     {
         const Time& tt = time;
         char buf[10];
@@ -592,7 +592,7 @@ struct Biweekly : public BaseStep
 {
     static const char* name() { return "biweekly"; }
 
-    bool path_timespan(const std::string& path, core::Interval& interval) const override
+    bool path_timespan(const std::filesystem::path& path, core::Interval& interval) const override
     {
         int ye, mo = -1, biweek = -1;
         if (sscanf(path.c_str(), "%04d/%02d-%d", &ye, &mo, &biweek) != 2)
@@ -615,7 +615,7 @@ struct Biweekly : public BaseStep
         return true;
     }
 
-    std::string operator()(const core::Time& time) const override
+    std::filesystem::path operator()(const core::Time& time) const override
     {
         const Time& tt = time;
         char buf[10];
@@ -631,7 +631,7 @@ struct Weekly : public BaseStep
 {
     static const char* name() { return "weekly"; }
 
-    bool path_timespan(const std::string& path, core::Interval& interval) const override
+    bool path_timespan(const std::filesystem::path& path, core::Interval& interval) const override
     {
         int ye, mo = -1, week = -1;
         if (sscanf(path.c_str(), "%04d/%02d-%d", &ye, &mo, &week) != 2)
@@ -649,7 +649,7 @@ struct Weekly : public BaseStep
         return true;
     }
 
-    std::string operator()(const core::Time& time) const override
+    std::filesystem::path operator()(const core::Time& time) const override
     {
         const Time& tt = time;
         char buf[10];
@@ -667,7 +667,7 @@ struct SubWeekly : public SubStep
 
     static const char* name() { return "weekly"; }
 
-    bool path_timespan(const std::string& path, core::Interval& interval) const override
+    bool path_timespan(const std::filesystem::path& path, core::Interval& interval) const override
     {
         int mo = -1, week = -1;
         if (sscanf(path.c_str(), "%02d-%d", &mo, &week) != 2)
@@ -684,7 +684,7 @@ struct SubWeekly : public SubStep
         return true;
     }
 
-    std::string operator()(const core::Time& time) const override
+    std::filesystem::path operator()(const core::Time& time) const override
     {
         const Time& tt = time;
         char buf[10];
@@ -705,7 +705,7 @@ struct Daily : public BaseStep
         return std::unique_ptr<step::Dirs>(new step::YearDirs<step::MonthDayFiles>(query));
     }
 
-    bool path_timespan(const std::string& path, core::Interval& interval) const override
+    bool path_timespan(const std::filesystem::path& path, core::Interval& interval) const override
     {
         int ye, mo, da;
         if (sscanf(path.c_str(), "%04d/%02d-%02d", &ye, &mo, &da) != 3)
@@ -717,7 +717,7 @@ struct Daily : public BaseStep
         return true;
     }
 
-    std::string operator()(const core::Time& time) const override
+    std::filesystem::path operator()(const core::Time& time) const override
     {
         const Time& tt = time;
         char buf[15];
@@ -732,7 +732,7 @@ struct SubDaily : public SubStep
 
     static const char* name() { return "daily"; }
 
-    bool path_timespan(const std::string& path, core::Interval& interval) const override
+    bool path_timespan(const std::filesystem::path& path, core::Interval& interval) const override
     {
         int mo, da;
         if (sscanf(path.c_str(), "%02d/%02d", &mo, &da) != 2)
@@ -744,7 +744,7 @@ struct SubDaily : public SubStep
         return true;
     }
 
-    std::string operator()(const core::Time& time) const override
+    std::filesystem::path operator()(const core::Time& time) const override
     {
         const Time& tt = time;
         char buf[15];
@@ -771,9 +771,9 @@ std::shared_ptr<Step> Step::create(const std::string& type)
         throw std::runtime_error("step '" + type + "' is not supported.  Valid values are daily, weekly, biweekly, monthly, and yearly.");
 }
 
-std::vector<std::string> Step::list()
+std::vector<std::filesystem::path> Step::list()
 {
-    vector<string> res {
+    std::vector<std::filesystem::path> res {
         Daily::name(),
         Weekly::name(),
         Biweekly::name(),

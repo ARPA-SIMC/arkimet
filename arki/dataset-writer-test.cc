@@ -29,9 +29,9 @@ namespace {
 struct ForceDirMockDataSession : public arki::dataset::Session
 {
 public:
-    std::shared_ptr<arki::segment::Writer> segment_writer(const segment::WriterConfig& writer_config, const std::string& format, const std::string& root, const std::string& relpath) override
+    std::shared_ptr<arki::segment::Writer> segment_writer(const segment::WriterConfig& writer_config, const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath) override
     {
-        std::string abspath = str::joinpath(root, relpath);
+        auto abspath = root / relpath;
         return std::shared_ptr<arki::segment::Writer>(new arki::segment::dir::HoleWriter(writer_config, format, root, relpath, abspath));
     }
 };
@@ -147,7 +147,7 @@ add_method("import_batch_replace_usn", [](Fixture& f) {
     wassert(ds->acquire_batch(batch, dataset::REPLACE_HIGHER_USN));
     wassert(actual(batch[0]->result) == dataset::ACQ_OK);
     wassert(actual(batch[0]->dataset_name) == "testds");
-    wassert(actual_file(str::joinpath(f.ds_root, "2009/12-04.bufr")).exists());
+    wassert(actual_file(f.ds_root / "2009/12-04.bufr").exists());
     wassert(actual_type(mdc[0].source()).is_source_blob("bufr", f.ds_root, "2009/12-04.bufr"));
 
     // Acquire again: it works, since USNs the same as the existing ones do overwrite
@@ -182,7 +182,7 @@ add_method("issue237", [](Fixture& f) {
     f.cfg->set("step", "daily");
     f.cfg->set("smallfiles", "yes");
     metadata::TestCollection mdc("inbound/issue237.vm2", true);
-    wassert(actual_type(mdc[0].source()).is_source_blob("vm2", sys::abspath("."), "inbound/issue237.vm2", 0, 36));
+    wassert(actual_type(mdc[0].source()).is_source_blob("vm2", std::filesystem::current_path(), "inbound/issue237.vm2", 0, 36));
 
     // Acquire value
     {
@@ -200,7 +200,7 @@ add_method("issue237", [](Fixture& f) {
         wassert(actual(std::string((const char*)data.data(), data.size())) == "202010312300,12865,158,9.409990,,,");
     }
 
-    wassert(actual_file(str::joinpath(f.ds_root, "2020/10-31.vm2")).contents_equal("20201031230000,12865,158,9.409990,,,\n"));
+    wassert(actual_file(f.ds_root / "2020/10-31.vm2").contents_equal("20201031230000,12865,158,9.409990,,,\n"));
 
     auto state = f.scan_state();
     wassert(actual(state.size()) == 1u);
@@ -222,7 +222,7 @@ this->add_method("import", [](Fixture& f) {
     {
         std::shared_ptr<Metadata> md(f.td.mds[i].clone());
         wassert(actual(*ds).import(*md));
-        wassert(actual_file(str::joinpath(f.ds_root, f.destfile(f.td.mds[i]))).exists());
+        wassert(actual_file(f.ds_root / f.destfile(f.td.mds[i])).exists());
         wassert(actual_type(md->source()).is_source_blob(f.td.format, f.ds_root, f.destfile(f.td.mds[i])));
     }
 });
@@ -255,7 +255,7 @@ this->add_method("import_batch_replace_never", [](Fixture& f) {
     {
         wassert(actual(batch[i]->result) == dataset::ACQ_OK);
         wassert(actual(batch[i]->dataset_name) == "testds");
-        wassert(actual_file(str::joinpath(f.ds_root, f.destfile(f.td.mds[i]))).exists());
+        wassert(actual_file(f.ds_root / f.destfile(f.td.mds[i])).exists());
         wassert(actual_type(f.td.mds[i].source()).is_source_blob(f.td.format, f.ds_root, f.destfile(f.td.mds[i])));
     }
 
@@ -296,7 +296,7 @@ this->add_method("import_batch_replace_always", [](Fixture& f) {
     {
         wassert(actual(batch[i]->result) == dataset::ACQ_OK);
         wassert(actual(batch[i]->dataset_name) == "testds");
-        wassert(actual_file(str::joinpath(f.ds_root, f.destfile(f.td.mds[i]))).exists());
+        wassert(actual_file(f.ds_root / f.destfile(f.td.mds[i])).exists());
         wassert(actual_type(f.td.mds[i].source()).is_source_blob(f.td.format, f.ds_root, f.destfile(f.td.mds[i])));
     }
 
@@ -478,7 +478,7 @@ this->add_method("transaction_different_segment_fail_last", [=](Fixture& f) {
     wassert(test_different_segment_fail(f, 2, dataset::REPLACE_HIGHER_USN));
 });
 
-this->add_method("test_acquire", [](Fixture& f) {
+this->add_method("test_acquire", [](Fixture& f) noexcept {
     // TODO: add tests for test_acquire
 });
 

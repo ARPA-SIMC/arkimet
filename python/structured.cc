@@ -149,12 +149,12 @@ std::string PythonReader::repr() const
     return std::string(res, size);
 }
 
-bool PythonReader::as_bool(const char* desc) const
+bool PythonReader::scalar_as_bool(const char* desc) const
 {
     return from_python<bool>(o);
 }
 
-long long int PythonReader::as_int(const char* desc) const
+long long int PythonReader::scalar_as_int(const char* desc) const
 {
     long long int res = PyLong_AsLongLong(o);
     if (res == -1 && PyErr_Occurred())
@@ -162,12 +162,12 @@ long long int PythonReader::as_int(const char* desc) const
     return res;
 }
 
-double PythonReader::as_double(const char* desc) const
+double PythonReader::scalar_as_double(const char* desc) const
 {
     return from_python<double>(o);
 }
 
-std::string PythonReader::as_string(const char* desc) const
+std::string PythonReader::scalar_as_string(const char* desc) const
 {
     return from_python<std::string>(o);
 }
@@ -180,13 +180,13 @@ unsigned PythonReader::list_size(const char* desc) const
     return res;
 }
 
-bool PythonReader::as_bool(unsigned idx, const char* desc) const
+bool PythonReader::list_as_bool(unsigned idx, const char* desc) const
 {
     pyo_unique_ptr res(throw_ifnull(PySequence_GetItem(o, idx)));
     return from_python<bool>(res);
 }
 
-long long int PythonReader::as_int(unsigned idx, const char* desc) const
+long long int PythonReader::list_as_int(unsigned idx, const char* desc) const
 {
     pyo_unique_ptr el(throw_ifnull(PySequence_GetItem(o, idx)));
     long long int res = PyLong_AsLongLong(el);
@@ -195,19 +195,19 @@ long long int PythonReader::as_int(unsigned idx, const char* desc) const
     return res;
 }
 
-double PythonReader::as_double(unsigned idx, const char* desc) const
+double PythonReader::list_as_double(unsigned idx, const char* desc) const
 {
     pyo_unique_ptr el(throw_ifnull(PySequence_GetItem(o, idx)));
     return from_python<double>(el);
 }
 
-std::string PythonReader::as_string(unsigned idx, const char* desc) const
+std::string PythonReader::list_as_string(unsigned idx, const char* desc) const
 {
     pyo_unique_ptr el(throw_ifnull(PySequence_GetItem(o, idx)));
     return from_python<std::string>(el);
 }
 
-void PythonReader::sub(unsigned idx, const char* desc, std::function<void(const Reader&)> dest) const
+void PythonReader::list_sub(unsigned idx, const char* desc, std::function<void(const Reader&)> dest) const
 {
     pyo_unique_ptr el(throw_ifnull(PySequence_GetItem(o, idx)));
     PythonReader reader(el);
@@ -215,7 +215,7 @@ void PythonReader::sub(unsigned idx, const char* desc, std::function<void(const 
 }
 
 
-bool PythonReader::has_key(const std::string& key, arki::structured::NodeType type) const
+bool PythonReader::dict_has_key(const std::string& key, arki::structured::NodeType type) const
 {
     pyo_unique_ptr el(PyMapping_GetItemString(o, key.c_str()));
     if (!el)
@@ -242,13 +242,13 @@ bool PythonReader::has_key(const std::string& key, arki::structured::NodeType ty
     }
 }
 
-bool PythonReader::as_bool(const std::string& key, const char* desc) const
+bool PythonReader::dict_as_bool(const std::string& key, const char* desc) const
 {
     pyo_unique_ptr el(throw_ifnull(PyMapping_GetItemString(o, key.c_str())));
     return from_python<bool>(el);
 }
 
-long long int PythonReader::as_int(const std::string& key, const char* desc) const
+long long int PythonReader::dict_as_int(const std::string& key, const char* desc) const
 {
     pyo_unique_ptr el(throw_ifnull(PyMapping_GetItemString(o, key.c_str())));
     long long int res = PyLong_AsLongLong(el);
@@ -257,13 +257,13 @@ long long int PythonReader::as_int(const std::string& key, const char* desc) con
     return res;
 }
 
-double PythonReader::as_double(const std::string& key, const char* desc) const
+double PythonReader::dict_as_double(const std::string& key, const char* desc) const
 {
     pyo_unique_ptr el(throw_ifnull(PyMapping_GetItemString(o, key.c_str())));
     return from_python<double>(el);
 }
 
-std::string PythonReader::as_string(const std::string& key, const char* desc) const
+std::string PythonReader::dict_as_string(const std::string& key, const char* desc) const
 {
     pyo_unique_ptr el(throw_ifnull(PyMapping_GetItemString(o, key.c_str())));
     return from_python<std::string>(el);
@@ -275,7 +275,7 @@ static int get_attr_int(PyObject* o, const char* name)
     return from_python<int>(res);
 }
 
-core::Time PythonReader::as_time(const std::string& key, const char* desc) const
+core::Time PythonReader::dict_as_time(const std::string& key, const char* desc) const
 {
     pyo_unique_ptr el(throw_ifnull(PyMapping_GetItemString(o, key.c_str())));
     if (PyDateTime_Check(el))
@@ -330,7 +330,7 @@ core::Time PythonReader::as_time(const std::string& key, const char* desc) const
     // throw PythonException();
 }
 
-void PythonReader::items(const char* desc, std::function<void(const std::string&, const Reader&)> dest) const
+void PythonReader::dict_items(const char* desc, std::function<void(const std::string&, const Reader&)> dest) const
 {
     PyObject *key, *value;
     Py_ssize_t pos = 0;
@@ -341,7 +341,7 @@ void PythonReader::items(const char* desc, std::function<void(const std::string&
     }
 }
 
-void PythonReader::sub(const std::string& key, const char* desc, std::function<void(const Reader&)> dest) const
+void PythonReader::dict_sub(const std::string& key, const char* desc, std::function<void(const Reader&)> dest) const
 {
     pyo_unique_ptr el(throw_ifnull(PyMapping_GetItemString(o, key.c_str())));
     PythonReader reader(el);

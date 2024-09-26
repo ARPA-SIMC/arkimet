@@ -12,6 +12,7 @@
 #include <string>
 #include <sstream>
 #include <exception>
+#include <filesystem>
 #include <functional>
 #include <vector>
 #include <cstdint>
@@ -73,13 +74,13 @@ struct TestStackFrame
     const char* call;
     std::string local_info;
 
-    TestStackFrame(const char* file, int line, const char* call)
-        : file(file), line(line), call(call)
+    TestStackFrame(const char* file_, int line_, const char* call_)
+        : file(file_), line(line_), call(call_)
     {
     }
 
-    TestStackFrame(const char* file, int line, const char* call, const LocationInfo& local_info)
-        : file(file), line(line), call(call), local_info(local_info.str())
+    TestStackFrame(const char* file_, int line_, const char* call_, const LocationInfo& local_info_)
+        : file(file_), line(line_), call(call_), local_info(local_info_.str())
     {
     }
 
@@ -108,7 +109,7 @@ struct TestFailed : public std::exception
     std::string message;
     TestStack stack;
 
-    TestFailed(const std::exception& e);
+    explicit TestFailed(const std::exception& e);
 
     template<typename ...Args>
     TestFailed(const std::exception& e, Args&&... args)
@@ -117,11 +118,11 @@ struct TestFailed : public std::exception
         add_stack_info(std::forward<Args>(args)...);
     }
 
-    TestFailed(const std::string& message) : message(message) {}
+    explicit TestFailed(const std::string& message_) : message(message_) {}
 
     template<typename ...Args>
-    TestFailed(const std::string& message, Args&&... args)
-        : TestFailed(message)
+    TestFailed(const std::string& message_, Args&&... args)
+        : TestFailed(message_)
     {
         add_stack_info(std::forward<Args>(args)...);
     }
@@ -140,7 +141,7 @@ struct TestSkipped : public std::exception
     std::string reason;
 
     TestSkipped();
-    TestSkipped(const std::string& reason);
+    explicit TestSkipped(const std::string& reason);
 };
 
 /**
@@ -169,7 +170,7 @@ void assert_true(const A& actual)
     throw TestFailed(ss.str());
 }
 
-void assert_true(std::nullptr_t actual);
+[[noreturn]] void assert_true(std::nullptr_t actual);
 
 /// Test function that ensures that the actual value is false
 template<typename A>
@@ -322,7 +323,11 @@ struct Actual
 {
     A _actual;
     Actual(const A& actual) : _actual(actual) {}
-    ~Actual() {}
+    Actual(const Actual&) = default;
+    Actual(Actual&&) = default;
+    ~Actual() = default;
+    Actual& operator=(const Actual&) = delete;
+    Actual& operator=(Actual&&) = delete;
 
     void istrue() const { assert_true(_actual); }
     void isfalse() const { assert_false(_actual); }
@@ -359,7 +364,7 @@ struct ActualCString
 
 struct ActualStdString : public Actual<std::string>
 {
-    ActualStdString(const std::string& s) : Actual<std::string>(s) {}
+    explicit ActualStdString(const std::string& s) : Actual<std::string>(s) {}
 
     using Actual<std::string>::operator==;
     void operator==(const std::vector<uint8_t>& expected) const;
@@ -371,6 +376,35 @@ struct ActualStdString : public Actual<std::string>
     void not_contains(const std::string& expected) const;
     void matches(const std::string& re) const;
     void not_matches(const std::string& re) const;
+};
+
+struct ActualPath : public Actual<std::filesystem::path>
+{
+    explicit ActualPath(const std::filesystem::path& p) : Actual<std::filesystem::path>(p) {}
+
+    using Actual<std::filesystem::path>::operator==;
+    using Actual<std::filesystem::path>::operator!=;
+
+    // Check if the normalized paths match
+    void is(const std::filesystem::path& expected) const;
+    [[deprecated("Use path_startswith")]] void startswith(const std::string& data) const;
+
+    void path_startswith(const std::filesystem::path& expected) const;
+    void path_endswith(const std::filesystem::path& expected) const;
+    void path_contains(const std::filesystem::path& expected) const;
+    void path_not_contains(const std::filesystem::path& expected) const;
+
+    void exists() const;
+    void not_exists() const;
+    void empty() const;
+    void not_empty() const;
+
+    void contents_startwith(const std::string& data) const;
+    void contents_equal(const std::string& data) const;
+    void contents_equal(const std::vector<uint8_t>& data) const;
+    void contents_equal(const std::initializer_list<std::string>& lines) const;
+    void contents_match(const std::string& data_re) const;
+    void contents_match(const std::initializer_list<std::string>& lines_re) const;
 };
 
 struct ActualDouble : public Actual<double>
@@ -387,6 +421,7 @@ inline ActualCString actual(const char* actual) { return ActualCString(actual); 
 inline ActualCString actual(char* actual) { return ActualCString(actual); }
 inline ActualStdString actual(const std::string& actual) { return ActualStdString(actual); }
 inline ActualStdString actual(const std::vector<uint8_t>& actual) { return ActualStdString(std::string(actual.begin(), actual.end())); }
+inline ActualPath actual(const std::filesystem::path& actual) { return ActualPath(actual); }
 inline ActualDouble actual(double actual) { return ActualDouble(actual); }
 
 struct ActualFunction : public Actual<std::function<void()>>
@@ -398,23 +433,10 @@ struct ActualFunction : public Actual<std::function<void()>>
 
 inline ActualFunction actual_function(std::function<void()> actual) { return ActualFunction(actual); }
 
-struct ActualFile : public Actual<std::string>
-{
-    using Actual::Actual;
-
-    void exists() const;
-    void not_exists() const;
-    void startswith(const std::string& data) const;
-    void empty() const;
-    void not_empty() const;
-    void contents_equal(const std::string& data) const;
-    void contents_equal(const std::vector<uint8_t>& data) const;
-    void contents_equal(const std::initializer_list<std::string>& lines) const;
-    void contents_match(const std::string& data_re) const;
-    void contents_match(const std::initializer_list<std::string>& lines_re) const;
-};
-
-inline ActualFile actual_file(const std::string& pathname) { return ActualFile(pathname); }
+inline ActualPath actual_path(const char* pathname) { return ActualPath(pathname); }
+inline ActualPath actual_path(const std::string& pathname) { return ActualPath(pathname); }
+inline ActualPath actual_file(const char* pathname) { return ActualPath(pathname); }
+inline ActualPath actual_file(const std::string& pathname) { return ActualPath(pathname); }
 
 /**
  * Run the given command, raising TestFailed with the appropriate backtrace
@@ -426,11 +448,11 @@ inline ActualFile actual_file(const std::string& pathname) { return ActualFile(p
 #define wassert(...) \
     do { try { \
         __VA_ARGS__ ; \
-    } catch (arki::utils::tests::TestFailed& e) { \
-        e.add_stack_info(__FILE__, __LINE__, #__VA_ARGS__, arki_utils_test_location_info); \
+    } catch (arki::utils::tests::TestFailed& e1) { \
+        e1.add_stack_info(__FILE__, __LINE__, #__VA_ARGS__, arki_utils_test_location_info); \
         throw; \
-    } catch (std::exception& e) { \
-        throw arki::utils::tests::TestFailed(e, __FILE__, __LINE__, #__VA_ARGS__, arki_utils_test_location_info); \
+    } catch (std::exception& e2) { \
+        throw arki::utils::tests::TestFailed(e2, __FILE__, __LINE__, #__VA_ARGS__, arki_utils_test_location_info); \
     } } while(0)
 
 /// Shortcut to check that a given expression returns true
@@ -448,13 +470,13 @@ inline ActualFile actual_file(const std::string& pathname) { return ActualFile(p
     [&]() { try { \
         __VA_ARGS__ ; \
         wfail_test(#__VA_ARGS__ " did not throw " #exc); \
-    } catch (TestFailed& e) { \
+    } catch (TestFailed& e1) { \
         throw; \
-    } catch (exc& e) { \
-        return e; \
-    } catch (std::exception& e) { \
+    } catch (exc& e2) { \
+        return e2; \
+    } catch (std::exception& e3) { \
         std::string msg(#__VA_ARGS__ " did not throw " #exc " but threw "); \
-        msg += typeid(e).name(); \
+        msg += typeid(e3).name(); \
         msg += " instead"; \
         wfail_test(msg); \
     } }()
@@ -507,11 +529,11 @@ struct TestMethod
      */
     std::function<void()> test_function;
 
-    TestMethod(const std::string& name)
-        : name(name) {}
+    TestMethod(const std::string& name_)
+        : name(name_), test_function() {}
 
-    TestMethod(const std::string& name, std::function<void()> test_function)
-        : name(name), test_function(test_function) {}
+    TestMethod(const std::string& name_, std::function<void()> test_function_)
+        : name(name_), test_function(test_function_) {}
 };
 
 
@@ -595,9 +617,9 @@ struct TestCase
      * Register a new test method, with the actual test function to be added
      * later
      */
-    TestMethod& add_method(const std::string& name)
+    TestMethod& add_method(const std::string& name_)
     {
-        methods.emplace_back(name);
+        methods.emplace_back(name_);
         return methods.back();
     }
 
@@ -605,9 +627,9 @@ struct TestCase
      * Register a new test method
      */
     template<typename ...Args>
-    TestMethod& add_method(const std::string& name, std::function<void()> test_function)
+    TestMethod& add_method(const std::string& name_, std::function<void()> test_function)
     {
-        methods.emplace_back(name, test_function);
+        methods.emplace_back(name_, test_function);
         return methods.back();
     }
 
@@ -615,9 +637,9 @@ struct TestCase
      * Register a new test method, including documentation
      */
     template<typename ...Args>
-    TestMethod& add_method(const std::string& name, const std::string& doc, std::function<void()> test_function)
+    TestMethod& add_method(const std::string& name_, const std::string& doc, std::function<void()> test_function)
     {
-        methods.emplace_back(name, test_function);
+        methods.emplace_back(name_, test_function);
         methods.back().doc = doc;
         return methods.back();
     }
@@ -662,11 +684,15 @@ public:
     std::function<Fixture*()> make_fixture;
 
     template<typename... Args>
-    FixtureTestCase(const std::string& name, Args... args)
-        : TestCase(name)
+    FixtureTestCase(const std::string& name_, Args... args)
+        : TestCase(name_)
     {
         make_fixture = std::bind(fixture_factory<FIXTURE, Args...>, args...);
     }
+    FixtureTestCase(const FixtureTestCase&) = delete;
+    FixtureTestCase(FixtureTestCase&&) = delete;
+    FixtureTestCase& operator=(const FixtureTestCase&) = delete;
+    FixtureTestCase& operator=(FixtureTestCase&) = delete;
 
     void setup() override
     {
@@ -677,7 +703,7 @@ public:
     void teardown() override
     {
         delete fixture;
-        fixture = 0;
+        fixture = nullptr;
         TestCase::teardown();
     }
 
@@ -698,9 +724,9 @@ public:
      * argument.
      */
     template<typename ...Args>
-    TestMethod& add_method(const std::string& name, std::function<void(FIXTURE&)> test_function)
+    TestMethod& add_method(const std::string& name_, std::function<void(FIXTURE&)> test_function)
     {
-        return TestCase::add_method(name, [=]() { test_function(*fixture); });
+        return TestCase::add_method(name_, [=]() { test_function(*fixture); });
     }
 
     /**
@@ -708,9 +734,9 @@ public:
      * argument, including documentation
      */
     template<typename ...Args>
-    TestMethod& add_method(const std::string& name, const std::string& doc, std::function<void(FIXTURE&)> test_function)
+    TestMethod& add_method(const std::string& name_, const std::string& doc, std::function<void(FIXTURE&)> test_function)
     {
-        return TestCase::add_method(name, doc, [=]() { test_function(*fixture); });
+        return TestCase::add_method(name_, doc, [=]() { test_function(*fixture); });
     }
 };
 

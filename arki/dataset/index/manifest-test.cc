@@ -29,9 +29,9 @@ class Tests : public TestCase
 
 void clean()
 {
-    if (sys::exists("testds"))
+    if (std::filesystem::exists("testds"))
         sys::rmtree("testds");
-    sys::makedirs("testds/.archive/last");
+    std::filesystem::create_directories("testds/.archive/last");
 }
 
 std::string idxfname()
@@ -63,12 +63,12 @@ add_method("exists", [] {
     // An empty MANIFEST file counts as an empty manifest
     system("touch testds/.archive/last/MANIFEST");
     wassert_true(Manifest::exists("testds/.archive/last"));
-    sys::unlink_ifexists("testds/.archive/last/MANIFEST");
+    std::filesystem::remove("testds/.archive/last/MANIFEST");
 
     // Same if there is a sqlite manifest
     system("touch testds/.archive/last/index.sqlite");
     wassert_true(Manifest::exists("testds/.archive/last"));
-    sys::unlink_ifexists("testds/.archive/last/index.sqlite");
+    std::filesystem::remove("testds/.archive/last/index.sqlite");
 });
 
 // Test accessing empty manifests
@@ -96,7 +96,7 @@ add_method("empty", [] {
     std::unique_ptr<Manifest> m = Manifest::create(mkds("testds/.archive/last"));
     m->openRO();
 
-    vector<string> files = m->file_list(Matcher());
+    auto files = m->file_list(Matcher());
     wassert_true(files.empty());
 });
 
@@ -112,7 +112,7 @@ add_method("create", [] {
     wassert(actual_file("testds/.archive/last/" + idxfname()).exists());
 
     size_t count = 0;
-    m->list_segments([&](const std::string&) { ++count; });
+    m->list_segments([&](const std::filesystem::path&) noexcept { ++count; });
     wassert(actual(count) == 0u);
 
     m->vacuum();
@@ -136,7 +136,7 @@ add_method("add_remove", [] {
     m->acquire("a.grib1", 1000010, s);
     m->acquire("foo/b.grib1", 1000011, s);
 
-    vector<string> files = m->file_list(Matcher());
+    auto files = m->file_list(Matcher());
     wassert(actual(files.size()) == 2u);
     wassert(actual(files[0]) == "a.grib1");
     wassert(actual(files[1]) == "foo/b.grib1");
@@ -189,7 +189,7 @@ add_method("modify_while_scanning", [] {
         std::unique_ptr<Manifest> m = Manifest::create(mkds("testds/.archive/last"));
         m->openRW();
         size_t count = 0;
-        m->list_segments([&](const std::string&) { ++count; });
+        m->list_segments([&](const std::string&) noexcept { ++count; });
         wassert(actual(count) == 4u);
     }
 });

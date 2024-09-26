@@ -22,7 +22,7 @@ namespace {
 inline std::string dsname(const Metadata& md)
 {
     if (!md.has_source_blob()) return "(md source is not a blob source)";
-    return str::basename(md.sourceBlob().basedir);
+    return md.sourceBlob().basedir.filename();
 }
 
 struct Fixture : public DatasetTest {
@@ -73,7 +73,7 @@ add_method("acquire", [](Fixture& f) {
     #endif
     wassert(actual(dsname(md)) == "testds");
 
-    wassert(actual_type(md.source()).is_source_blob("grib", sys::abspath("./testds"), "2007/07-08.grib", 0, 7218));
+    wassert(actual_type(md.source()).is_source_blob("grib", std::filesystem::canonical("./testds"), "2007/07-08.grib", 0, 7218));
 
     // Import again finds the duplicate
     wassert(actual(writer->acquire(md)) == ACQ_ERROR_DUPLICATE);

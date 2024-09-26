@@ -37,7 +37,7 @@ public:
     std::shared_ptr<Metadata> scan_data(const std::vector<uint8_t>& data) override;
     bool scan_pipe(core::NamedFileDescriptor& in, metadata_dest_func dest) override;
     bool scan_segment(std::shared_ptr<segment::Reader> reader, metadata_dest_func dest) override;
-    std::shared_ptr<Metadata> scan_singleton(const std::string& abspath) override;
+    std::shared_ptr<Metadata> scan_singleton(const std::filesystem::path& abspath) override;
 
     /// Return the update sequence number for a BUFR
     static int update_sequence_number(const std::string& buf);

@@ -30,6 +30,7 @@ struct ConcreteStreamOutputBase: public BaseStreamOutput
     ~ConcreteStreamOutputBase();
 
     std::string name() const override;
+    std::filesystem::path path() const override;
 
     stream::FilterProcess* start_filter(const std::vector<std::string>& command) override;
 

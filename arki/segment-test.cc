@@ -13,17 +13,17 @@ using namespace arki::types;
 using namespace arki::utils;
 using namespace arki::tests;
 
-void make_file(const std::string& name)
+void make_file(const std::filesystem::path& name)
 {
     delete_if_exists(name);
     sys::write_file(name, "");
 }
 
-void make_dir(const std::string& name)
+void make_dir(const std::filesystem::path& name)
 {
     delete_if_exists(name);
-    sys::mkdir_ifmissing(name);
-    sys::write_file(name + "/.sequence", "");
+    std::filesystem::create_directory(name);
+    sys::write_file(name / ".sequence", "");
 }
 
 void make_samples()
@@ -56,10 +56,10 @@ add_method("auto_instantiate_existing", [] {
 
     auto get_writer = [&](const char* format, const char* name) {
         segment::WriterConfig writer_config;
-        return Segment::detect_writer(writer_config, format, ".", name, sys::abspath(name));
+        return Segment::detect_writer(writer_config, format, ".", name, std::filesystem::weakly_canonical(name));
     };
     auto get_checker = [&](const char* format, const char* name) {
-        return Segment::detect_checker(format, ".", name, sys::abspath(name));
+        return Segment::detect_checker(format, ".", name, std::filesystem::weakly_canonical(name));
     };
 
     wassert(actual(get_writer("grib", "testfile.grib")->segment().type()) == "concat");

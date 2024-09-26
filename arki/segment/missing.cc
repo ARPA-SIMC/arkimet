@@ -3,6 +3,7 @@
 #include <sstream>
 
 using namespace std;
+using namespace std::string_literals;
 using namespace arki::core;
 using namespace arki::types;
 using namespace arki::utils;
@@ -16,7 +17,7 @@ const char* Segment::type() const { return "missing"; }
 bool Segment::single_file() const { return true; }
 time_t Segment::timestamp() const
 {
-    throw std::runtime_error("cannot get mtime of " + abspath + ": segment has disappeared");
+    throw std::runtime_error("cannot get mtime of "s + abspath.native() + ": segment has disappeared");
 }
 std::shared_ptr<segment::Reader> Segment::reader(std::shared_ptr<core::Lock> lock) const
 {
@@ -30,7 +31,7 @@ std::shared_ptr<segment::Checker> Segment::checker() const
 
 bool Reader::scan_data(metadata_dest_func dest)
 {
-    throw std::runtime_error("cannot scan " + m_segment.abspath + ": segment has disappeared");
+    throw std::runtime_error("cannot scan "s + m_segment.abspath.native() + ": segment has disappeared");
 }
 
 std::vector<uint8_t> Reader::read(const types::source::Blob& src)

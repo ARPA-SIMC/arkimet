@@ -1,3 +1,6 @@
+#ifndef ARKI_LIBCONFIG_H
+#define ARKI_LIBCONFIG_H
+
 /* dballe functions are available */
 #undef HAVE_DBALLE
 
@@ -23,7 +26,7 @@
 #undef HAVE_LIBZIP
 
 /* the `splice' function is available */
-#undef HAVE_SPLICE
+#undef ARKI_HAVE_SPLICE
 
 /* I/O profiling is enabled */
 #undef ARKI_IOTRACE
@@ -39,3 +42,5 @@
 
 /* enable ARPAE-specific unit tests */
 #undef ARPAE_TESTS
+
+#endif

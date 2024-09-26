@@ -33,7 +33,7 @@ add_method("read", []() {
     auto config = std::make_shared<dataset::offline::Dataset>(session, "test-offline");
     auto reader = std::make_shared<dataset::offline::Reader>(config);
     size_t count = 0;
-    reader->query_data(Matcher(), [&](std::shared_ptr<Metadata>) { ++count; return true; });
+    reader->query_data(Matcher(), [&](std::shared_ptr<Metadata>) noexcept { ++count; return true; });
     wassert(actual(count) == 0u);
 
     Summary sum1;

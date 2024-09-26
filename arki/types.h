@@ -63,6 +63,9 @@ static inline std::ostream& operator<<(std::ostream& o, const Code& c) { return 
 class Type
 {
 public:
+    Type() = default;
+    Type(const Type&) = default;
+    Type(Type&&) = default;
     virtual ~Type() {}
 
     /**

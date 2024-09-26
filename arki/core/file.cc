@@ -191,7 +191,7 @@ bool FLock::ofd_setlkw(NamedFileDescriptor& fd, bool retry_on_signal)
                 msg << "read ";
             else
                 msg << "write ";
-            msg << "lock is already held on " << fd.name() << " from ";
+            msg << "lock is already held on " << fd.path() << " from ";
             switch (l.l_whence)
             {
                 case SEEK_SET: msg << "set:"; break;

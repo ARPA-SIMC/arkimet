@@ -15,11 +15,12 @@
 #include "arki/scan.h"
 
 using namespace std;
+using namespace std::string_literals;
 using namespace arki::utils;
 
 namespace arki {
 
-Segment::Segment(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath)
+Segment::Segment(const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath, const std::filesystem::path& abspath)
     : format(format), root(root), relpath(relpath), abspath(abspath)
 {
 }
@@ -28,53 +29,56 @@ Segment::~Segment()
 {
 }
 
-std::string Segment::basename(const std::string& pathname)
+std::filesystem::path Segment::basename(const std::filesystem::path& pathname)
 {
-    if (str::endswith(pathname, ".gz"))
-        return pathname.substr(0, pathname.size() - 3);
-    if (str::endswith(pathname, ".tar"))
-        return pathname.substr(0, pathname.size() - 4);
-    if (str::endswith(pathname, ".zip"))
-        return pathname.substr(0, pathname.size() - 4);
+    const auto& native = pathname.native();
+    if (str::endswith(native, ".gz"))
+        return native.substr(0, native.size() - 3);
+    if (str::endswith(native, ".tar"))
+        return native.substr(0, native.size() - 4);
+    if (str::endswith(native, ".zip"))
+        return native.substr(0, native.size() - 4);
     return pathname;
 }
 
-bool Segment::is_segment(const std::string& abspath)
+bool Segment::is_segment(const std::filesystem::path& abspath)
 {
     std::unique_ptr<struct stat> st = sys::stat(abspath);
     if (!st.get())
         return false;
 
-    if (str::endswith(abspath, ".metadata"))
+    auto extension = abspath.extension();
+
+    if (extension == ".metadata")
         return false;
 
-    if (str::endswith(abspath, ".summary"))
+    if (extension == ".summary")
         return false;
 
-    if (str::endswith(abspath, ".gz.idx"))
+    if (extension == ".gz.idx")
         return false;
 
-    if (str::endswith(abspath, ".zip"))
+    if (extension == ".zip")
     {
         if (S_ISDIR(st->st_mode))
             return false;
-        string format = scan::Scanner::format_from_filename(abspath.substr(0, abspath.size() - 4), "");
+        string format = scan::Scanner::format_from_filename(abspath.stem(), "");
         return segment::zip::Segment::can_store(format);
     }
 
-    if (str::endswith(abspath, ".gz"))
+    if (extension == ".gz")
     {
         if (S_ISDIR(st->st_mode))
             return false;
-        string format = scan::Scanner::format_from_filename(abspath.substr(0, abspath.size() - 3), "");
+        string format = scan::Scanner::format_from_filename(abspath.stem(), "");
         return segment::gz::Segment::can_store(format);
     }
 
-    if (str::endswith(abspath, ".tar"))
+    if (extension == ".tar")
     {
         if (S_ISDIR(st->st_mode))
             return false;
-        string format = scan::Scanner::format_from_filename(abspath.substr(0, abspath.size() - 4), "");
+        string format = scan::Scanner::format_from_filename(abspath.stem(), "");
         return segment::tar::Segment::can_store(format);
     }
 
@@ -85,13 +89,13 @@ bool Segment::is_segment(const std::string& abspath)
     if (!S_ISDIR(st->st_mode))
         return segment::fd::Segment::can_store(format);
 
-    if (!sys::exists(str::joinpath(abspath, ".sequence")))
+    if (!std::filesystem::exists(abspath / ".sequence"))
         return false;
 
     return segment::dir::Segment::can_store(format);
 }
 
-std::shared_ptr<segment::Reader> Segment::detect_reader(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock)
+std::shared_ptr<segment::Reader> Segment::detect_reader(const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath, const std::filesystem::path& abspath, std::shared_ptr<core::Lock> lock)
 {
     std::shared_ptr<segment::Reader> res;
 
@@ -111,19 +115,19 @@ std::shared_ptr<segment::Reader> Segment::detect_reader(const std::string& forma
                 res.reset(new segment::concat::Reader(format, root, relpath, abspath, lock));
             } else {
                 throw_consistency_error(
-                        "getting segment for " + format + " file " + relpath,
+                        "getting segment for "s + format + " file " + relpath.native(),
                         "format not supported");
             }
         }
         return res;
     }
 
-    st = sys::stat(abspath + ".gz");
+    st = sys::stat(sys::with_suffix(abspath, ".gz"));
     if (st.get())
     {
         if (S_ISDIR(st->st_mode))
             throw std::runtime_error(
-                    "cannot get a reader for " + format + " directory " + relpath + ": cannot handle a directory with a .gz extension");
+                    "cannot get a reader for " + format + " directory " + relpath.native() + ": cannot handle a directory with a .gz extension");
         else
         {
             if (format == "grib" || format == "bufr")
@@ -135,21 +139,21 @@ std::shared_ptr<segment::Reader> Segment::detect_reader(const std::string& forma
                 res.reset(new segment::gzconcat::Reader(format, root, relpath, abspath, lock));
             } else {
                 throw_consistency_error(
-                        "getting segment for " + format + " file " + relpath,
+                        "getting segment for "s + format + " file " + relpath.native(),
                         "format not supported");
             }
         }
         return res;
     }
 
-    st = sys::stat(abspath + ".tar");
+    st = sys::stat(sys::with_suffix(abspath, ".tar"));
     if (st.get())
     {
         res.reset(new segment::tar::Reader(format, root, relpath, abspath, lock));
         return res;
     }
 
-    st = sys::stat(abspath + ".zip");
+    st = sys::stat(sys::with_suffix(abspath, ".zip"));
     if (st.get())
     {
         res.reset(new segment::zip::Reader(format, root, relpath, abspath, lock));
@@ -160,7 +164,7 @@ std::shared_ptr<segment::Reader> Segment::detect_reader(const std::string& forma
     return res;
 }
 
-std::shared_ptr<segment::Writer> Segment::detect_writer(const segment::WriterConfig& config, const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, bool mock_data)
+std::shared_ptr<segment::Writer> Segment::detect_writer(const segment::WriterConfig& config, const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath, const std::filesystem::path& abspath, bool mock_data)
 {
     std::shared_ptr<segment::Writer> res;
 
@@ -177,7 +181,7 @@ std::shared_ptr<segment::Writer> Segment::detect_writer(const segment::WriterCon
                     res.reset(new segment::dir::Writer(config, format, root, relpath, abspath));
             } else {
                 throw_consistency_error(
-                        "getting writer for " + format + " file " + relpath,
+                        "getting writer for "s + format + " file " + relpath.native(),
                         "format not supported");
             }
         } else {
@@ -200,42 +204,42 @@ std::shared_ptr<segment::Writer> Segment::detect_writer(const segment::WriterCon
                 throw_consistency_error("segment is a file, but jpeg data can only be stored into directory segments");
             } else {
                 throw_consistency_error(
-                        "getting segment for " + format + " file " + relpath,
+                        "getting segment for " + format + " file " + relpath.native(),
                         "format not supported");
             }
         }
         return res;
     }
 
-    st = sys::stat(abspath + ".gz");
+    st = sys::stat(sys::with_suffix(abspath, ".gz"));
     if (st.get())
     {
         if (S_ISDIR(st->st_mode))
             throw_consistency_error(
-                    "getting writer for " + format + " file " + relpath,
+                    "getting writer for "s + format + " file " + relpath.native(),
                     "cannot handle a directory with a .gz extension");
         else
             throw_consistency_error(
-                    "getting writer for " + format + " file " + relpath,
+                    "getting writer for "s + format + " file " + relpath.native(),
                     "cannot write to .gz segments");
     }
 
-    st = sys::stat(abspath + ".tar");
+    st = sys::stat(sys::with_suffix(abspath, ".tar"));
     if (st.get())
         throw_consistency_error(
-                "getting writer for " + format + " file " + relpath,
+                "getting writer for "s + format + " file " + relpath.native(),
                 "cannot write to .tar segments");
 
-    st = sys::stat(abspath + ".zip");
+    st = sys::stat(sys::with_suffix(abspath, ".zip"));
     if (st.get())
         throw_consistency_error(
-                "getting writer for " + format + " file " + relpath,
+                "getting writer for "s + format + " file " + relpath.native(),
                 "cannot write to .zip segments");
 
     return res;
 }
 
-std::shared_ptr<segment::Checker> Segment::detect_checker(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, bool mock_data)
+std::shared_ptr<segment::Checker> Segment::detect_checker(const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath, const std::filesystem::path& abspath, bool mock_data)
 {
     std::shared_ptr<segment::Checker> res;
 
@@ -252,7 +256,7 @@ std::shared_ptr<segment::Checker> Segment::detect_checker(const std::string& for
                     res.reset(new segment::dir::Checker(format, root, relpath, abspath));
             } else {
                 throw_consistency_error(
-                        "getting segment for " + format + " file " + relpath,
+                        "getting segment for " + format + " file " + relpath.native(),
                         "format not supported");
             }
         } else {
@@ -276,19 +280,19 @@ std::shared_ptr<segment::Checker> Segment::detect_checker(const std::string& for
                     res.reset(new segment::dir::Checker(format, root, relpath, abspath));
             } else {
                 throw_consistency_error(
-                        "getting segment for " + format + " file " + relpath,
+                        "getting segment for "s + format + " file " + relpath.native(),
                         "format not supported");
             }
         }
         return res;
     }
 
-    st = sys::stat(abspath + ".gz");
+    st = sys::stat(sys::with_suffix(abspath, ".gz"));
     if (st.get())
     {
         if (S_ISDIR(st->st_mode))
             throw_consistency_error(
-                    "getting checker for " + format + " file " + relpath,
+                    "getting checker for "s + format + " file " + relpath.native(),
                     "cannot handle a directory with a .gz extension");
 
         if (format == "grib" || format == "bufr")
@@ -298,40 +302,40 @@ std::shared_ptr<segment::Checker> Segment::detect_checker(const std::string& for
             res.reset(new segment::gzlines::Checker(format, root, relpath, abspath));
         } else if (format == "odimh5") {
             throw_consistency_error(
-                    "getting checker for " + format + " file " + relpath,
+                    "getting checker for "s + format + " file " + relpath.native(),
                     "cannot handle a gzipped odim file as a segment");
         } else if (format == "nc") {
             throw_consistency_error(
-                    "getting checker for " + format + " file " + relpath,
+                    "getting checker for "s + format + " file " + relpath.native(),
                     "cannot handle a gzipped netcdf file as a segment");
         } else if (format == "jpeg") {
             throw_consistency_error(
-                    "getting checker for " + format + " file " + relpath,
+                    "getting checker for "s + format + " file " + relpath.native(),
                     "cannot handle a gzipped jpeg file as a segment");
         } else {
             throw_consistency_error(
-                    "getting segment for " + format + " file " + relpath,
+                    "getting segment for "s + format + " file " + relpath.native(),
                     "format not supported");
         }
     }
 
-    st = sys::stat(abspath + ".tar");
+    st = sys::stat(sys::with_suffix(abspath, ".tar"));
     if (st.get())
     {
         if (S_ISDIR(st->st_mode))
             throw_consistency_error(
-                    "getting checker for " + format + " file " + relpath,
+                    "getting checker for "s + format + " file " + relpath.native(),
                     "cannot handle a directory with a .tar extension");
         res.reset(new segment::tar::Checker(format, root, relpath, abspath));
         return res;
     }
 
-    st = sys::stat(abspath + ".zip");
+    st = sys::stat(sys::with_suffix(abspath, ".zip"));
     if (st.get())
     {
         if (S_ISDIR(st->st_mode))
             throw_consistency_error(
-                    "getting checker for " + format + " file " + relpath,
+                    "getting checker for "s + format + " file " + relpath.native(),
                     "cannot handle a directory with a .zip extension");
         res.reset(new segment::zip::Checker(format, root, relpath, abspath));
         return res;
@@ -355,12 +359,12 @@ Reader::~Reader()
 bool Reader::scan(metadata_dest_func dest)
 {
     // stat the metadata file, if it exists
-    string md_abspath = segment().abspath + ".metadata";
+    auto md_abspath = sys::with_suffix(segment().abspath, ".metadata");
     unique_ptr<struct stat> st_md = sys::stat(md_abspath);
     // If it exists and it looks new enough, use it
     if (st_md.get() && st_md->st_mtime >= segment().timestamp())
     {
-        std::string root(str::dirname(segment().abspath));
+        std::filesystem::path root(segment().abspath.parent_path());
         return Metadata::read_file(metadata::ReadContext(md_abspath, root), [&](std::shared_ptr<Metadata> md) {
             md->sourceBlob().lock(shared_from_this());
             return dest(md);
@@ -439,7 +443,7 @@ std::shared_ptr<segment::Checker> Checker::compress(metadata::Collection& mds, u
     return res;
 }
 
-void Checker::test_truncate(const metadata::Collection& mds, unsigned data_idx)
+void Checker::test_truncate_by_data(const metadata::Collection& mds, unsigned data_idx)
 {
     const auto& s = mds[data_idx].sourceBlob();
     test_truncate(s.offset);

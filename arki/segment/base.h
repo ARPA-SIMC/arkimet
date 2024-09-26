@@ -19,7 +19,7 @@ protected:
     Segment m_segment;
 
 public:
-    BaseReader(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock)
+    BaseReader(const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath, const std::filesystem::path& abspath, std::shared_ptr<core::Lock> lock)
         : segment::Reader(lock), m_segment(format, root, relpath, abspath)
     {
     }
@@ -34,7 +34,7 @@ protected:
     Segment m_segment;
 
 public:
-    BaseWriter(const WriterConfig& config, const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath)
+    BaseWriter(const WriterConfig& config, const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath, const std::filesystem::path& abspath)
         : segment::Writer(config), m_segment(format, root, relpath, abspath)
     {
     }
@@ -49,7 +49,7 @@ protected:
     Segment m_segment;
 
 public:
-    BaseChecker(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath)
+    BaseChecker(const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath, const std::filesystem::path& abspath)
         : m_segment(format, root, relpath, abspath)
     {
     }
@@ -57,7 +57,7 @@ public:
     const Segment& segment() const override { return m_segment; }
     // std::shared_ptr<segment::Checker> checker_moved(const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath) const override;
 
-    std::shared_ptr<Checker> move(const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath) override;
+    std::shared_ptr<Checker> move(const std::filesystem::path& new_root, const std::filesystem::path& new_relpath, const std::filesystem::path& new_abspath) override;
 };
 
 }

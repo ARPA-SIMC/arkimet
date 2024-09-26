@@ -5,7 +5,7 @@
 #include <arki/dataset/fwd.h>
 #include <arki/dataset/memory.h>
 #include "results.h"
-#include <string>
+#include <filesystem>
 #include <vector>
 
 namespace arki {
@@ -33,10 +33,10 @@ public:
     cmdline::DatasetProcessor& next;
 
     /// Directory where we store copyok files
-    std::string dir_copyok;
+    std::filesystem::path dir_copyok;
 
     /// Directory where we store copyko files
-    std::string dir_copyko;
+    std::filesystem::path dir_copyko;
 
     /// File to which we send data that was successfully imported
     std::shared_ptr<core::File> copyok;
@@ -56,13 +56,13 @@ public:
      * @returns true if all went well, false if any problem happend.
      * It can still throw in case of big trouble.
      */
-    DispatchResults process(dataset::Reader& ds, const std::string& name);
+    DispatchResults process(dataset::Reader& ds, const std::filesystem::path& name);
 
     // Flush all imports done so far
     void flush();
 
 protected:
-    void process_partial_batch(const std::string& name, DispatchResults& stats);
+    void process_partial_batch(const std::filesystem::path& name, DispatchResults& stats);
     void do_copyok(Metadata& md);
     void do_copyko(Metadata& md);
 };

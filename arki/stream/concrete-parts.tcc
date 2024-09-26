@@ -50,7 +50,7 @@ struct CollectFilterStderr
         }
         else if (res < 0)
         {
-            if (errno == EAGAIN || errno == EWOULDBLOCK)
+            if (errno_wouldblock())
                 return;
             else
                 throw std::system_error(errno, std::system_category(), "cannot read data from pipe stderr");
@@ -247,7 +247,7 @@ struct FromFilterConcrete : public FromFilter<Backend>
     void set_output(pollfd* pollinfo)
     {
         FromFilter<Backend>::set_output(pollinfo);
-        this->out_name = out_fd.name();
+        this->out_name = out_fd.path().native();
         this->pfd_destination = &pollinfo[POLLINFO_DESTINATION];
         this->pfd_destination->fd = out_fd;
         this->pfd_destination->events = POLLOUT;
@@ -289,7 +289,7 @@ struct FromFilterSplice : public FromFilterConcrete<Backend>
 
     TransferResult transfer_available_output()
     {
-#ifndef HAVE_SPLICE
+#ifndef ARKI_HAVE_SPLICE
         trace_streaming("  splice is not available\n");
         throw SpliceNotAvailable();
 #else
@@ -308,7 +308,7 @@ struct FromFilterSplice : public FromFilterConcrete<Backend>
             if (errno == EINVAL)
             {
                 throw SpliceNotAvailable();
-            } else if (errno == EAGAIN || errno == EWOULDBLOCK) {
+            } else if (errno_wouldblock()) {
                 return TransferResult::WOULDBLOCK;
             } else if (errno == EPIPE) {
                 return TransferResult::EOF_DEST;
@@ -384,7 +384,7 @@ struct FromFilterReadWrite : public FromFilterConcrete<Backend>
             return TransferResult::EOF_SOURCE;
         else if (res < 0)
         {
-            if (errno == EAGAIN || errno == EWOULDBLOCK)
+            if (errno_wouldblock())
                 return TransferResult::WOULDBLOCK;
             else
                 throw std::system_error(errno, std::system_category(), "cannot read data from filter stdout");
@@ -477,7 +477,7 @@ struct FromFilterReadWrite : public FromFilterConcrete<Backend>
 };
 
 
-#ifdef HAVE_SPLICE
+#ifdef ARKI_HAVE_SPLICE
 template<typename Backend>
 struct FromFilterConcretePrimary : public FromFilterSplice<Backend>
 {
@@ -525,7 +525,7 @@ struct FromFilterAbstract : public FromFilter<Backend>
             return TransferResult::EOF_SOURCE;
         else if (res < 0)
         {
-            if (errno == EAGAIN || errno == EWOULDBLOCK)
+            if (errno_wouldblock())
                 return TransferResult::WOULDBLOCK;
             else
                 throw std::system_error(errno, std::system_category(), "cannot read data from filter stdout");

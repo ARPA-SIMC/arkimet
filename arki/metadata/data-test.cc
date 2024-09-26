@@ -16,7 +16,7 @@ class Tests : public TestCase
 void Tests::register_tests() {
 
 // Test sources
-add_method("todo", [] {
+add_method("todo", []() noexcept {
 });
 
 }

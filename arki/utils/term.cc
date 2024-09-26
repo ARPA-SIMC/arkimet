@@ -7,15 +7,6 @@ namespace arki {
 namespace utils {
 namespace term {
 
-
-#define ANSI_COLOR_RED     "\x1b[31m"
-#define ANSI_COLOR_GREEN   "\x1b[32m"
-#define ANSI_COLOR_YELLOW  "\x1b[33m"
-#define ANSI_COLOR_BLUE    "\x1b[34m"
-#define ANSI_COLOR_MAGENTA "\x1b[35m"
-#define ANSI_COLOR_CYAN    "\x1b[36m"
-#define ANSI_COLOR_RESET   "\x1b[0m"
-
 const unsigned Terminal::black   = 1;
 const unsigned Terminal::red     = 2;
 const unsigned Terminal::green   = 3;
@@ -27,8 +18,8 @@ const unsigned Terminal::white   = 8;
 const unsigned Terminal::bright  = 0x10;
 static const unsigned color_mask = 0xf;
 
-Terminal::Restore::Restore(Terminal& term)
-    : term(term)
+Terminal::Restore::Restore(Terminal& term_)
+    : term(term_)
 {
 }
 
@@ -39,13 +30,11 @@ Terminal::Restore::~Restore()
 }
 
 
-Terminal::Terminal(FILE* out)
-    : out(out)
+Terminal::Terminal(FILE* out_)
+    : out(out_), isatty(false)
 {
     int fd = fileno(out);
-    if (fd == -1)
-        isatty = false;
-    else
+    if (fd != -1)
     {
         int res = ::isatty(fd);
         if (res == 1)

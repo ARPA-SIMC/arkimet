@@ -13,12 +13,12 @@ namespace segment {
 
 struct AppendCreator
 {
-    const std::string& root;
-    const std::string& relpath;
+    std::filesystem::path root;
+    std::filesystem::path relpath;
     metadata::Collection& mds;
     const scan::Validator* validator = nullptr;
 
-    AppendCreator(const std::string& root, const std::string& relpath, metadata::Collection& mds);
+    AppendCreator(const std::filesystem::path& root, const std::filesystem::path& relpath, metadata::Collection& mds);
     virtual ~AppendCreator();
 
     /// Create a source for md as imported into this segment at the given Span
@@ -36,14 +36,14 @@ struct AppendCreator
 
 struct AppendCheckBackend
 {
-    const std::string& relpath;
+    std::filesystem::path relpath;
     std::function<void(const std::string&)> reporter;
     const metadata::Collection& mds;
     bool accurate = false;
     size_t end_of_known_data = 0;
     const scan::Validator* validator = nullptr;
 
-    AppendCheckBackend(std::function<void(const std::string&)> reporter, const std::string& relpath, const metadata::Collection& mds);
+    AppendCheckBackend(std::function<void(const std::string&)> reporter, const std::filesystem::path& relpath, const metadata::Collection& mds);
     virtual ~AppendCheckBackend();
 
     virtual void validate(Metadata& md, const types::source::Blob& source) = 0;

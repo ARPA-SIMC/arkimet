@@ -5,8 +5,8 @@
 #include "arki/core/binary.h"
 #include "arki/stream.h"
 #include "arki/exceptions.h"
-#include "arki/utils/sys.h"
 #include "arki/utils/string.h"
+#include "arki/utils/sys.h"
 #include "arki/types/source.h"
 #include "arki/types/reftime.h"
 #include "arki/libconfig.h"
@@ -47,7 +47,7 @@ protected:
 
 public:
     std::string format;
-    std::string subdir;
+    std::filesystem::path subdir;
 
     LibarchiveOutput(const std::string& format);
     ~LibarchiveOutput()
@@ -56,7 +56,7 @@ public:
         archive_write_free(a);
     }
 
-    void set_subdir(const std::string& subdir) override { this->subdir = subdir; }
+    void set_subdir(const std::filesystem::path& subdir) override { this->subdir = subdir; }
     size_t append(const Metadata& md) override;
     void flush(bool with_metadata) override;
 };
@@ -127,9 +127,9 @@ size_t LibarchiveOutput::append(const Metadata& md)
 {
     size_t ofs = mds.size() + 1;
     if (subdir.empty())
-        snprintf(filename_buf, 255, "%06zd.%s", ofs, md.source().format.c_str());
+        snprintf(filename_buf, 255, "%06zu.%s", ofs, md.source().format.c_str());
     else
-        snprintf(filename_buf, 255, "%s/%06zd.%s", subdir.c_str(), ofs, md.source().format.c_str());
+        snprintf(filename_buf, 255, "%s/%06zu.%s", subdir.c_str(), ofs, md.source().format.c_str());
     auto stored_md = md.clone();
     const auto& stored_data = stored_md->get_data().read();
     std::unique_ptr<types::Source> stored_source = types::Source::createBlobUnlocked(md.source().format, "", filename_buf, 0, stored_data.size());
@@ -159,11 +159,11 @@ void LibarchiveOutput::append_metadata()
     for (const auto& md: mds)
         md->encodeBinary(enc);
 
-    std::string name;
+    std::filesystem::path name;
     if (subdir.empty())
         name = "metadata.md";
     else
-        name = str::joinpath(subdir, "metadata.md");
+        name = subdir / "metadata.md";
     archive_entry_clear(entry);
     archive_entry_set_pathname(entry, name.c_str());
     archive_entry_set_size(entry, buf.size());

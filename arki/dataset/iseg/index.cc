@@ -50,11 +50,11 @@ struct IndexGlobalData
 };
 static IndexGlobalData igd;
 
-Index::Index(std::shared_ptr<iseg::Dataset> dataset, const std::string& data_relpath, std::shared_ptr<dataset::Lock> lock)
+Index::Index(std::shared_ptr<iseg::Dataset> dataset, const std::filesystem::path& data_relpath, std::shared_ptr<dataset::Lock> lock)
     : dataset(dataset),
       data_relpath(data_relpath),
-      data_pathname(str::joinpath(dataset->path, data_relpath)),
-      index_pathname(data_pathname + ".index"),
+      data_pathname(dataset->path / data_relpath),
+      index_pathname(sys::with_suffix(data_pathname, ".index")),
       lock(lock)
 {
     if (not dataset->unique.empty())
@@ -327,7 +327,7 @@ bool Index::query_data(const dataset::DataQuery& q, dataset::Session& session, m
 
     try {
         add_joins_and_constraints(q.matcher, query);
-    } catch (NotFound) {
+    } catch (NotFound&) {
         // If one of the subqueries did not find any match, we can directly
         // return true here, as we are not going to get any result
         return true;
@@ -386,7 +386,7 @@ bool Index::query_summary_from_db(const Matcher& m, Summary& summary) const
 
     try {
         add_joins_and_constraints(m, query);
-    } catch (NotFound) {
+    } catch (NotFound&) {
         // If one of the subqueries did not find any match, we can directly
         // return true here, as we are not going to get any result
         return true;
@@ -437,7 +437,7 @@ bool Index::query_summary_from_db(const Matcher& m, Summary& summary) const
 }
 
 
-RIndex::RIndex(std::shared_ptr<iseg::Dataset> dataset, const std::string& data_relpath, std::shared_ptr<dataset::ReadLock> lock)
+RIndex::RIndex(std::shared_ptr<iseg::Dataset> dataset, const std::filesystem::path& data_relpath, std::shared_ptr<dataset::ReadLock> lock)
     : Index(dataset, data_relpath, lock)
 {
     if (!sys::access(index_pathname, F_OK))
@@ -454,7 +454,7 @@ RIndex::RIndex(std::shared_ptr<iseg::Dataset> dataset, const std::string& data_r
 }
 
 
-WIndex::WIndex(std::shared_ptr<iseg::Dataset> dataset, const std::string& data_relpath, std::shared_ptr<dataset::Lock> lock)
+WIndex::WIndex(std::shared_ptr<iseg::Dataset> dataset, const std::filesystem::path& data_relpath, std::shared_ptr<dataset::Lock> lock)
     : Index(dataset, data_relpath, lock), m_get_current("get_current", m_db), m_insert(m_db), m_replace("replace", m_db)
 {
     bool need_create = !sys::access(index_pathname, F_OK);
@@ -735,7 +735,7 @@ AIndex::AIndex(std::shared_ptr<iseg::Dataset> config, std::shared_ptr<segment::W
 {
 }
 
-CIndex::CIndex(std::shared_ptr<iseg::Dataset> config, const std::string& data_relpath, std::shared_ptr<dataset::CheckLock> lock)
+CIndex::CIndex(std::shared_ptr<iseg::Dataset> config, const std::filesystem::path& data_relpath, std::shared_ptr<dataset::CheckLock> lock)
     : WIndex(config, data_relpath, lock)
 {
 }

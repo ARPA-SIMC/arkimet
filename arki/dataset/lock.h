@@ -17,14 +17,14 @@ public:
     const core::lock::Policy* lock_policy;
     arki::core::FLock ds_lock;
 
-    Lock(const std::string& pathname, const core::lock::Policy* lock_policy);
+    Lock(const std::filesystem::path& pathname, const core::lock::Policy* lock_policy);
 };
 
 
 class ReadLock : public Lock
 {
 public:
-    ReadLock(const std::string& pathname, const core::lock::Policy* lock_policy);
+    ReadLock(const std::filesystem::path& pathname, const core::lock::Policy* lock_policy);
     ~ReadLock();
 };
 
@@ -32,7 +32,7 @@ public:
 class AppendLock : public Lock
 {
 public:
-    AppendLock(const std::string& pathname, const core::lock::Policy* lock_policy);
+    AppendLock(const std::filesystem::path& pathname, const core::lock::Policy* lock_policy);
     ~AppendLock();
 };
 
@@ -42,7 +42,7 @@ class CheckLock : public Lock
 public:
     std::weak_ptr<core::Lock> current_write_lock;
 
-    CheckLock(const std::string& pathname, const core::lock::Policy* lock_policy);
+    CheckLock(const std::filesystem::path& pathname, const core::lock::Policy* lock_policy);
     ~CheckLock();
 
     /**
@@ -56,37 +56,37 @@ public:
 class DatasetReadLock : public ReadLock
 {
 public:
-    DatasetReadLock(const local::Dataset& dataset);
+    explicit DatasetReadLock(const local::Dataset& dataset);
 };
 
 class DatasetAppendLock : public AppendLock
 {
 public:
-    DatasetAppendLock(const local::Dataset& dataset);
+    explicit DatasetAppendLock(const local::Dataset& dataset);
 };
 
 class DatasetCheckLock : public CheckLock
 {
 public:
-    DatasetCheckLock(const local::Dataset& dataset);
+    explicit DatasetCheckLock(const local::Dataset& dataset);
 };
 
 class SegmentReadLock : public ReadLock
 {
 public:
-    SegmentReadLock(const local::Dataset& dataset, const std::string& relpath);
+    SegmentReadLock(const local::Dataset& dataset, const std::filesystem::path& relpath);
 };
 
 class SegmentAppendLock : public AppendLock
 {
 public:
-    SegmentAppendLock(const local::Dataset& dataset, const std::string& relpath);
+    SegmentAppendLock(const local::Dataset& dataset, const std::filesystem::path& relpath);
 };
 
 class SegmentCheckLock : public CheckLock
 {
 public:
-    SegmentCheckLock(const local::Dataset& dataset, const std::string& relpath);
+    SegmentCheckLock(const local::Dataset& dataset, const std::filesystem::path& relpath);
 };
 
 

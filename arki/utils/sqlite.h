@@ -6,6 +6,7 @@
 #include <arki/core/transaction.h>
 #include <arki/types/fwd.h>
 #include <sqlite3.h>
+#include <filesystem>
 #include <string>
 #include <sstream>
 #include <vector>
@@ -54,13 +55,13 @@ public:
 
     operator sqlite3*() const { return m_db; }
 
-	bool isOpen() const { return m_db != 0; }
-	/**
-	 * Open the database and set the given busy timeout
-	 *
-	 * Note: to open an in-memory database, use ":memory:" as the pathname
-	 */
-	void open(const std::string& pathname, int timeout_ms = 3600*1000);
+    bool isOpen() const { return m_db != 0; }
+    /**
+     * Open the database and set the given busy timeout
+     *
+     * Note: to open an in-memory database, use ":memory:" as the pathname
+     */
+    void open(const std::filesystem::path& pathname, int timeout_ms = 3600*1000);
 
 	//operator const sqlite3*() const { return m_db; }
 	//operator sqlite3*() { return m_db; }

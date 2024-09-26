@@ -3,6 +3,7 @@
 
 #include <arki/core/fwd.h>
 #include <arki/metadata/fwd.h>
+#include <filesystem>
 #include <string>
 
 namespace arki {
@@ -34,7 +35,7 @@ public:
 	 * @returns
 	 *   a pointer to a static object, which should not be deallocated.
 	 */
-	static const Validator& by_filename(const std::string& filename);
+	static const Validator& by_filename(const std::filesystem::path& filename);
 
     /**
      * Get the validator for a given foramt

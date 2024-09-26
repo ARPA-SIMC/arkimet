@@ -2,6 +2,7 @@
 #define ARKI_STREAM_LOOPS_TCC
 
 #include "loops.h"
+#include "arki/exceptions.h"
 #include "filter.h"
 #include "concrete.h"
 #include "concrete-parts.tcc"
@@ -49,9 +50,9 @@ stream::SendResult UnfilteredLoop<Backend>::loop(ToOutput to_output)
         int res = Backend::poll(&pollinfo, 1, stream.timeout_ms);
         trace_streaming("UnfilteredLoop.POLL: %d %d:%d\n", res, pollinfo.fd, pollinfo.revents);
         if (res < 0)
-            throw std::system_error(errno, std::system_category(), "poll failed on " + stream.out->name());
+            throw_system_error(errno, "poll failed on ", stream.out->path());
         if (res == 0)
-            throw TimedOut("write on " + stream.out->name() + " timed out");
+            throw TimedOut("write on " + stream.out->path().native() + " timed out");
         if (pollinfo.revents & (POLLERR | POLLHUP))
             return SendResult::SEND_PIPE_EOF_DEST;
         if (pollinfo.revents & POLLOUT)
@@ -71,7 +72,7 @@ stream::SendResult UnfilteredLoop<Backend>::loop(ToOutput to_output)
             }
         }
         else
-            throw std::runtime_error("unsupported revents values when polling " + stream.out->name());
+            throw_runtime_error("unsupported revents values when polling ", stream.out->path());
     }
 }
 

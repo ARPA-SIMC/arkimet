@@ -33,8 +33,12 @@ struct DataQuery
     std::shared_ptr<QueryProgress> progress;
 
     DataQuery();
+    DataQuery(const DataQuery&) = default;
+    DataQuery(DataQuery&&) = default;
     DataQuery(const Matcher& matcher, bool with_data=false);
     ~DataQuery();
+    DataQuery& operator=(const DataQuery&) = default;
+    DataQuery& operator=(DataQuery&&) = default;
 };
 
 struct ByteQuery : public DataQuery

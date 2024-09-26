@@ -97,9 +97,7 @@ void NetCDFScanner::set_blob_source(Metadata& md, std::shared_ptr<segment::Reade
 {
     struct stat st;
     sys::stat(reader->segment().abspath, st);
-    stringstream note;
-    note << "Scanned from " << str::basename(reader->segment().relpath);
-    md.add_note(note.str());
+    md.add_note_scanned_from(reader->segment().relpath);
     md.set_source(Source::createBlob(reader, 0, st.st_size));
 }
 
@@ -107,7 +105,7 @@ std::shared_ptr<Metadata> NetCDFScanner::scan_nc_data(const std::vector<uint8_t>
 {
     sys::Tempfile tmpfd;
     tmpfd.write_all_or_throw(data.data(), data.size());
-    return scan_nc_file(tmpfd.name());
+    return scan_nc_file(tmpfd.path());
 }
 
 std::shared_ptr<Metadata> NetCDFScanner::scan_data(const std::vector<uint8_t>& data)
@@ -117,7 +115,7 @@ std::shared_ptr<Metadata> NetCDFScanner::scan_data(const std::vector<uint8_t>& d
     return md;
 }
 
-std::shared_ptr<Metadata> NetCDFScanner::scan_singleton(const std::string& abspath)
+std::shared_ptr<Metadata> NetCDFScanner::scan_singleton(const std::filesystem::path& abspath)
 {
     return scan_nc_file(abspath);
 }
@@ -170,7 +168,7 @@ MockNetCDFScanner::~MockNetCDFScanner()
     delete engine;
 }
 
-std::shared_ptr<Metadata> MockNetCDFScanner::scan_nc_file(const std::string& pathname)
+std::shared_ptr<Metadata> MockNetCDFScanner::scan_nc_file(const std::filesystem::path& pathname)
 {
     auto buf = sys::read_file(pathname);
     return engine->lookup(reinterpret_cast<const uint8_t*>(buf.data()), buf.size());

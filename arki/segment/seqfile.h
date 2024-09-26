@@ -2,6 +2,7 @@
 #define ARKI_SEGMENT_SEQFILE_H
 
 #include <arki/core/file.h>
+#include <filesystem>
 #include <string>
 
 namespace arki {
@@ -9,12 +10,12 @@ namespace segment {
 
 struct SequenceFile : public core::File
 {
-    std::string dirname;
+    std::filesystem::path dirname;
     /// Set to true by read_sequence when the sequence has been reset to 0
     /// because the file is new
     bool new_file = false;
 
-    SequenceFile(const std::string& dirname);
+    SequenceFile(const std::filesystem::path& dirname);
     ~SequenceFile();
 
     /**
@@ -35,7 +36,7 @@ struct SequenceFile : public core::File
     /// Write the value to the sequence file
     void write_sequence(size_t val);
 
-    static std::string data_fname(size_t pos, const std::string& format);
+    static std::filesystem::path data_fname(size_t pos, const std::string& format);
 };
 
 }

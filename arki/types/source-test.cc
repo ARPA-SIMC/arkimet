@@ -119,7 +119,7 @@ add_method("blob_pathnames_encode", [] {
 add_method("blob_stream", [] {
     auto reader = Segment::detect_reader("grib", "inbound", "test.grib1", "inbound/test.grib1", std::make_shared<core::lock::Null>());
     unique_ptr<source::Blob> o = source::Blob::create("test", "inbound", "test.grib1", 7218, 34960, reader);
-    sys::unlink_ifexists("test.grib");
+    std::filesystem::remove("test.grib");
     {
         auto stream = StreamOutput::create(std::make_shared<File>("test.grib", O_WRONLY | O_CREAT | O_TRUNC));
         wassert(actual(o->stream_data(*stream)) == stream::SendResult());
@@ -130,7 +130,7 @@ add_method("blob_stream", [] {
     wassert(actual(data.substr(0, 4)) == "GRIB");
     wassert(actual(data.substr(data.size() - 4)) == "7777");
 
-    sys::unlink_ifexists("test.grib");
+    std::filesystem::remove("test.grib");
 });
 
 // Check URL

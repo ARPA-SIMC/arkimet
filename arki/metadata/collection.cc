@@ -23,6 +23,18 @@ using namespace arki::core;
 using namespace arki::utils;
 using namespace arki::types;
 
+namespace {
+
+std::filesystem::path path_tmp(const std::filesystem::path& path)
+{
+    auto res(path);
+    res += ".tmp";
+    return res;
+}
+
+}
+
+
 namespace arki {
 namespace metadata {
 
@@ -36,11 +48,11 @@ namespace metadata {
  */
 struct AtomicWriter
 {
-    std::string destfname;
+    std::filesystem::path destfname;
     sys::File out;
 
-    AtomicWriter(const std::string& fname)
-        : destfname(fname), out(fname + ".tmp", O_WRONLY | O_TRUNC | O_CREAT | O_EXCL, 0666)
+    AtomicWriter(const std::filesystem::path& fname)
+        : destfname(fname), out(path_tmp(fname), O_WRONLY | O_TRUNC | O_CREAT | O_EXCL, 0666)
     {
     }
 
@@ -53,15 +65,14 @@ struct AtomicWriter
     {
         if (!out) return;
         out.close();
-        if (::rename(out.name().c_str(), destfname.c_str()) < 0)
-            throw_system_error("cannot rename " + out.name() + " to " + destfname);
+        std::filesystem::rename(out.path(), destfname);
     }
 
     void rollback()
     {
         if (!out) return;
         out.close();
-        ::unlink(out.name().c_str());
+        ::unlink(out.path().c_str());
     }
 };
 
@@ -237,7 +248,7 @@ void Collection::read_from_file(const metadata::ReadContext& rc)
     Metadata::read_file(rc, inserter_func());
 }
 
-void Collection::read_from_file(const std::string& pathname)
+void Collection::read_from_file(const std::filesystem::path& pathname)
 {
     Metadata::read_file(pathname, inserter_func());
 }
@@ -247,40 +258,40 @@ void Collection::read_from_file(NamedFileDescriptor& fd)
     Metadata::read_file(fd, inserter_func());
 }
 
-void Collection::writeAtomically(const std::string& fname) const
+void Collection::writeAtomically(const std::filesystem::path& fname) const
 {
     AtomicWriter writer(fname);
     write_to(writer.out);
     writer.commit();
 }
 
-void Collection::appendTo(const std::string& fname) const
+void Collection::appendTo(const std::filesystem::path& fname) const
 {
     sys::File out(fname, O_APPEND | O_CREAT, 0666);
     write_to(out);
     out.close();
 }
 
-std::string Collection::ensureContiguousData(const std::string& source) const
+std::filesystem::path Collection::ensureContiguousData(const std::string& source) const
 {
     // Check that the metadata completely cover the data file
     if (empty()) return std::string();
 
-    string fname;
+    std::filesystem::path fname;
     off_t last_end = 0;
     for (auto i = vals.begin(); i != vals.end(); ++i)
     {
         const source::Blob& s = (*i)->sourceBlob();
         if (s.offset != (size_t)last_end)
-            throw std::runtime_error("cannot validate " + source +
+            throw std::runtime_error("cannot validate "s + source +
                     ": metadata element points to data that does not start at the end of the previous element");
         if (i == vals.begin())
         {
             fname = s.absolutePathname();
         } else {
             if (fname != s.absolutePathname())
-                throw std::runtime_error("cannot validate " + source +
-                        ": metadata element points at another data file (previous: " + fname + ", this: " + s.absolutePathname() + ")");
+                throw std::runtime_error("cannot validate "s + source +
+                        ": metadata element points at another data file (previous: " + fname.native() + ", this: " + s.absolutePathname().native() + ")");
         }
         last_end += s.size;
     }
@@ -288,7 +299,7 @@ std::string Collection::ensureContiguousData(const std::string& source) const
     if (st.get() == NULL)
         throw_file_error(fname, "cannot validate data described in " + source);
     if (st->st_size != last_end)
-        throw std::runtime_error("validating " + source + ": metadata do not cover the entire data file " + fname);
+        throw std::runtime_error("validating " + source + ": metadata do not cover the entire data file " + fname.native());
     return fname;
 }
 
@@ -367,25 +378,25 @@ void Collection::drop_cached_data()
     for (auto& md: *this) md->drop_cached_data();
 }
 
-TestCollection::TestCollection(const std::string& pathname, bool with_data)
+TestCollection::TestCollection(const std::filesystem::path& pathname, bool with_data)
 {
     scan_from_file(pathname, with_data);
 }
 
-void TestCollection::scan_from_file(const std::string& pathname, bool with_data)
+void TestCollection::scan_from_file(const std::filesystem::path& pathname, bool with_data)
 {
     string format = scan::Scanner::format_from_filename(pathname);
-    string basedir;
-    string relpath;
+    std::filesystem::path basedir;
+    std::filesystem::path relpath;
     utils::files::resolve_path(pathname, basedir, relpath);
     auto reader = Segment::detect_reader(format, basedir, relpath, pathname, std::make_shared<core::lock::Null>());
     reader->scan([&](std::shared_ptr<Metadata> md) { acquire(md, with_data); return true; });
 }
 
-void TestCollection::scan_from_file(const std::string& pathname, const std::string& format, bool with_data)
+void TestCollection::scan_from_file(const std::filesystem::path& pathname, const std::string& format, bool with_data)
 {
-    string basedir;
-    string relpath;
+    std::filesystem::path basedir;
+    std::filesystem::path relpath;
     utils::files::resolve_path(pathname, basedir, relpath);
     auto reader = Segment::detect_reader(format, basedir, relpath, pathname, std::make_shared<core::lock::Null>());
     reader->scan([&](std::shared_ptr<Metadata> md) { acquire(md, with_data); return true; });

@@ -55,11 +55,11 @@ public:
     Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg);
     ~Dataset();
 
-    virtual bool relpath_timespan(const std::string& path, core::Interval& interval) const;
+    virtual bool relpath_timespan(const std::filesystem::path& path, core::Interval& interval) const;
 
     const Step& step() const { return *m_step; }
 
-    virtual std::shared_ptr<segment::Reader> segment_reader(const std::string& relpath, std::shared_ptr<core::Lock> lock);
+    virtual std::shared_ptr<segment::Reader> segment_reader(const std::filesystem::path& relpath, std::shared_ptr<core::Lock> lock);
 };
 
 /**
@@ -104,7 +104,7 @@ struct SegmentState
     // Time interval that can fit in the segment
     core::Interval interval;
 
-    SegmentState(arki::segment::State state)
+    explicit SegmentState(arki::segment::State state)
         : state(state) {}
     SegmentState(arki::segment::State state, const core::Interval& interval)
         : state(state), interval(interval) {}
@@ -112,7 +112,7 @@ struct SegmentState
     SegmentState(SegmentState&&) = default;
 
     /// Check if this segment is old enough to be deleted or archived
-    void check_age(const std::string& relpath, const Dataset& cfg, dataset::Reporter& reporter);
+    void check_age(const std::filesystem::path& relpath, const Dataset& cfg, dataset::Reporter& reporter);
 };
 
 
@@ -144,7 +144,7 @@ public:
      */
     virtual size_t compress(unsigned groupsize) = 0;
 
-    virtual std::string path_relative() const = 0;
+    virtual std::filesystem::path path_relative() const = 0;
     virtual const segmented::Dataset& dataset() const = 0;
     virtual segmented::Dataset& dataset() = 0;
     virtual std::shared_ptr<dataset::archive::Checker> archives() = 0;
@@ -200,7 +200,7 @@ public:
      *
      * Destpath must be on the same filesystem as the segment.
      */
-    virtual void release(const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath) = 0;
+    virtual void release(const std::filesystem::path& new_root, const std::filesystem::path& new_relpath, const std::filesystem::path& new_abspath) = 0;
 
     /**
      * Move the file to archive
@@ -234,10 +234,10 @@ public:
     void repack(CheckerConfig& opts, unsigned test_flags=0) override;
 
     /// Instantiate a CheckerSegment
-    virtual std::unique_ptr<CheckerSegment> segment(const std::string& relpath) = 0;
+    virtual std::unique_ptr<CheckerSegment> segment(const std::filesystem::path& relpath) = 0;
 
     /// Instantiate a CheckerSegment using an existing lock
-    virtual std::unique_ptr<CheckerSegment> segment_prelocked(const std::string& relpath, std::shared_ptr<dataset::CheckLock> lock) = 0;
+    virtual std::unique_ptr<CheckerSegment> segment_prelocked(const std::filesystem::path& relpath, std::shared_ptr<dataset::CheckLock> lock) = 0;
 
     /**
      * List all segments known to this dataset
@@ -296,7 +296,7 @@ public:
      *
      * This is used to simulate anomalies in the dataset during tests.
      */
-    virtual void test_make_overlap(const std::string& relpath, unsigned overlap_size, unsigned data_idx=1) = 0;
+    virtual void test_make_overlap(const std::filesystem::path& relpath, unsigned overlap_size, unsigned data_idx=1) = 0;
 
     /**
      * All data in the segment starting from the one at position `data_idx` are
@@ -305,7 +305,7 @@ public:
      *
      * This is used to simulate anomalies in the dataset during tests.
      */
-    virtual void test_make_hole(const std::string& relpath, unsigned hole_size, unsigned data_idx=0) = 0;
+    virtual void test_make_hole(const std::filesystem::path& relpath, unsigned hole_size, unsigned data_idx=0) = 0;
 
     /**
      * Corrupt the data in the given segment at position `data_idx`, by
@@ -313,14 +313,14 @@ public:
      *
      * This is used to simulate anomalies in the dataset during tests.
      */
-    virtual void test_corrupt_data(const std::string& relpath, unsigned data_idx=0) = 0;
+    virtual void test_corrupt_data(const std::filesystem::path& relpath, unsigned data_idx=0) = 0;
 
     /**
      * Truncate the segment at position `data_idx`.
      *
      * This is used to simulate anomalies in the dataset during tests.
      */
-    virtual void test_truncate_data(const std::string& relpath, unsigned data_idx=0) = 0;
+    virtual void test_truncate_data(const std::filesystem::path& relpath, unsigned data_idx=0) = 0;
 
     /**
      * Swap the data in the segment at position `d1_idx` with the one at
@@ -328,14 +328,14 @@ public:
      *
      * This is used to simulate anomalies in the dataset during tests.
      */
-    virtual void test_swap_data(const std::string& relpath, unsigned d1_idx, unsigned d2_idx) = 0;
+    virtual void test_swap_data(const std::filesystem::path& relpath, unsigned d1_idx, unsigned d2_idx) = 0;
 
     /**
      * Rename the segment, leaving its contents unchanged.
      *
      * This is used to simulate anomalies in the dataset during tests.
      */
-    virtual void test_rename(const std::string& relpath, const std::string& new_relpath) = 0;
+    virtual void test_rename(const std::filesystem::path& relpath, const std::filesystem::path& new_relpath) = 0;
 
     /**
      * Replace the metadata for the data in the segment at position `data_idx`.
@@ -345,7 +345,7 @@ public:
      *
      * This is used to simulate anomalies in the dataset during tests.
      */
-    virtual std::shared_ptr<Metadata> test_change_metadata(const std::string& relpath, std::shared_ptr<Metadata> md, unsigned data_idx=0) = 0;
+    virtual std::shared_ptr<Metadata> test_change_metadata(const std::filesystem::path& relpath, std::shared_ptr<Metadata> md, unsigned data_idx=0) = 0;
 
     /**
      * Remove all index data for the given segment, leaving the index valid. It
@@ -353,7 +353,7 @@ public:
      *
      * This is used to simulate anomalies in the dataset during tests.
      */
-    virtual void test_delete_from_index(const std::string& relpath) = 0;
+    virtual void test_delete_from_index(const std::filesystem::path& relpath) = 0;
 
     /**
      * Remove all index data for the given segment, but make it look as if the
@@ -362,13 +362,13 @@ public:
      *
      * This is used to simulate anomalies in the dataset during tests.
      */
-    virtual void test_invalidate_in_index(const std::string& relpath) = 0;
+    virtual void test_invalidate_in_index(const std::filesystem::path& relpath) = 0;
 
     /**
      * Scan a dataset for data files, returning a set of pathnames relative to
      * root.
      */
-    static void scan_dir(const std::string& root, std::function<void(const std::string& relpath)> dest);
+    static void scan_dir(const std::filesystem::path& root, std::function<void(const std::filesystem::path& relpath)> dest);
 
 };
 

@@ -46,8 +46,8 @@ Tests<segment::dir::Segment, JPEGData>  test6("arki_segment_dir_jpeg");
 std::shared_ptr<segment::dir::Writer> make_w()
 {
     segment::WriterConfig writer_config;
-    string abspath = sys::abspath(relpath);
-    return std::shared_ptr<segment::dir::Writer>(new segment::dir::Writer(writer_config, "grib", sys::getcwd(), relpath, abspath));
+    string abspath = std::filesystem::weakly_canonical(relpath);
+    return std::shared_ptr<segment::dir::Writer>(new segment::dir::Writer(writer_config, "grib", std::filesystem::current_path(), relpath, abspath));
 }
 
 
@@ -55,19 +55,20 @@ void TestInternals::register_tests() {
 
 // Scan a well-known sample
 add_method("scanner", [] {
-    segment::dir::Scanner scanner("odimh5", "inbound/fixture.odimh5");
+    std::filesystem::path path("inbound/fixture.odimh5");
+    segment::dir::Scanner scanner("odimh5", path);
     scanner.list_files();
     wassert(actual(scanner.on_disk.size()) == 3u);
     wassert(actual(scanner.max_sequence) == 2u);
 
-    auto reader = Segment::detect_reader("odimh5", sys::abspath("."), "inbound/fixture.odimh5", sys::abspath("inbound/fixture.odimh5"), make_shared<core::lock::Null>());
+    auto reader = Segment::detect_reader("odimh5", std::filesystem::current_path(), path, std::filesystem::canonical(path), make_shared<core::lock::Null>());
 
     metadata::Collection mds;
     scanner.scan(reader, mds.inserter_func());
     wassert(actual(mds.size()) == 3u);
 
     // Check the source info
-    wassert(actual(mds[0].source().cloneType()).is_source_blob("odimh5", sys::abspath("."), "inbound/fixture.odimh5", 0, 49057));
+    wassert(actual(mds[0].source().cloneType()).is_source_blob("odimh5", std::filesystem::current_path(), "inbound/fixture.odimh5", 0, 49057));
 });
 
 }
@@ -105,10 +106,10 @@ this->add_method("append_last_sequence", [](Fixture& f) {
 
 // Try to append some data
 this->add_method("append", [](Fixture& f) {
-    if (sys::isdir(relpath))
+    if (std::filesystem::is_directory(relpath))
         sys::rmtree_ifexists(relpath);
     else
-        sys::unlink_ifexists(relpath);
+        std::filesystem::remove(relpath);
     metadata::TestCollection mdc("inbound/test.grib1");
     wassert(actual_file(relpath).not_exists());
     {
@@ -129,14 +130,14 @@ this->add_method("append", [](Fixture& f) {
             // Start the append transaction, the file is written
             const types::source::Blob& new_source = w->append(md);
             wassert(actual((size_t)new_source.offset) == 0u);
-            wassert(actual(sys::size(str::joinpath(w->segment().abspath, "000000.grib"))) == data_size);
+            wassert(actual(sys::size(w->segment().abspath / "000000.grib")) == data_size);
             wassert(actual_type(md.source()) == *orig_source);
 
             // Commit
             w->commit();
 
             // After commit, metadata is updated
-            wassert(actual_type(md.source()).is_source_blob("grib", sys::getcwd(), w->segment().relpath, 0, data_size));
+            wassert(actual_type(md.source()).is_source_blob("grib", std::filesystem::current_path(), w->segment().relpath, 0, data_size));
         }
 
 
@@ -151,14 +152,14 @@ this->add_method("append", [](Fixture& f) {
             // Start the append transaction, the file is written
             const types::source::Blob& new_source = w->append(md);
             wassert(actual((size_t)new_source.offset) == 1u);
-            wassert(actual(sys::size(str::joinpath(w->segment().abspath, "000001.grib"))) == data_size);
+            wassert(actual(sys::size(w->segment().abspath / "000001.grib")) == data_size);
             wassert(actual_type(md.source()) == *orig_source);
 
             // Rollback
             w->rollback();
 
             // After rollback, the file has been deleted
-            wassert(actual(sys::exists(str::joinpath(w->segment().abspath, "000001.grib"))).isfalse());
+            wassert(actual(std::filesystem::exists(w->segment().abspath / "000001.grib")).isfalse());
             wassert(actual_type(md.source()) == *orig_source);
         }
 
@@ -174,14 +175,14 @@ this->add_method("append", [](Fixture& f) {
             // Rolling back a transaction does leave a gap in the sequence
             const types::source::Blob& new_source = w->append(md);
             wassert(actual((size_t)new_source.offset) == 2u);
-            wassert(actual(sys::size(str::joinpath(w->segment().abspath, "000002.grib"))) == data_size);
+            wassert(actual(sys::size(w->segment().abspath / "000002.grib")) == data_size);
             wassert(actual_type(md.source()) == *orig_source);
 
             // Commit
             w->commit();
 
             // After commit, metadata is updated
-            wassert(actual_type(md.source()).is_source_blob("grib", sys::getcwd(), w->segment().relpath, 2, data_size));
+            wassert(actual_type(md.source()).is_source_blob("grib", std::filesystem::current_path(), w->segment().relpath, 2, data_size));
         }
     }
 
@@ -199,12 +200,12 @@ this->add_method("append", [](Fixture& f) {
 
 // Check behaviour of an empty directory (#279)
 this->add_method("empty_dir", [](Fixture& f) {
-    if (sys::isdir(relpath))
+    if (std::filesystem::is_directory(relpath))
         sys::rmtree_ifexists(relpath);
     else
-        sys::unlink_ifexists(relpath);
+        std::filesystem::remove(relpath);
 
-    sys::makedirs(relpath);
+    std::filesystem::create_directories(relpath);
 
     // It can be read as an empty segment
     {
@@ -215,7 +216,7 @@ this->add_method("empty_dir", [](Fixture& f) {
 
     // Verify what are the results of check
     {
-        auto checker = Segment::detect_checker(f.td.format, ".", relpath, sys::abspath(relpath));
+        auto checker = Segment::detect_checker(f.td.format, ".", relpath, std::filesystem::canonical(relpath));
         wassert(actual(checker->size()) == 0u);
         wassert_false(checker->exists_on_disk());
         wassert_false(checker->is_empty());

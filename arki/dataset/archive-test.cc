@@ -39,8 +39,8 @@ struct Fixture : public arki::utils::tests::Fixture
     {
         session = make_shared<dataset::Session>();
 
-        if (sys::exists("testds")) sys::rmtree("testds");
-        sys::makedirs("testds/.archive/last");
+        if (std::filesystem::exists("testds")) sys::rmtree("testds");
+        std::filesystem::create_directories("testds/.archive/last");
 
         cfg.clear();
         cfg.set("path", "testds");
@@ -98,7 +98,7 @@ add_method("acquire_last", [](Fixture& f) {
 
 // Test maintenance scan on non-indexed files
 add_method("maintenance_nonindexed", [](Fixture& f) {
-    sys::makedirs("testds/.archive/last");
+    std::filesystem::create_directories("testds/.archive/last");
     system("cp inbound/test-sorted.grib1 testds/.archive/last/");
 
     // Query now has empty results
@@ -143,7 +143,7 @@ add_method("reader_empty_last", [](Fixture& f) {
         metadata::TestCollection mdc("inbound/test-sorted.grib1");
         core::cfg::Section cfg;
         cfg.set("name", "foo");
-        cfg.set("path", sys::abspath("testds/.archive/foo"));
+        cfg.set("path", std::filesystem::weakly_canonical("testds/.archive/foo"));
         cfg.set("type", "simple");
         cfg.set("step", "daily");
         auto writer = f.session->dataset(cfg)->create_writer();
@@ -165,8 +165,8 @@ add_method("reader_empty_last", [](Fixture& f) {
 // still seen as archives (#91)
 add_method("enumerate_no_manifest", [](Fixture& f) {
     // Create a dataset without the manifest
-    sys::makedirs("testds/.archive/last");
-    sys::makedirs("testds/.archive/2007");
+    std::filesystem::create_directories("testds/.archive/last");
+    std::filesystem::create_directories("testds/.archive/2007");
     system("cp inbound/test-sorted.grib1 testds/.archive/2007/07.grib");
 
     // Run check

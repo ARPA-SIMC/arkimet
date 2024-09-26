@@ -109,7 +109,7 @@ void GribScanner::set_source_blob(grib_handle* gh, std::shared_ptr<segment::Read
     md.set_cached_data(metadata::DataManager::get().to_data(reader->segment().format, vector<uint8_t>(vbuf, vbuf + size)));
 
     stringstream note;
-    note << "Scanned from " << str::basename(reader->segment().relpath) << ":" << offset << "+" << size;
+    note << "Scanned from " << reader->segment().relpath.filename().native() << ":" << offset << "+" << size;
     md.add_note(note.str());
 }
 
@@ -124,7 +124,7 @@ void GribScanner::set_source_inline(grib_handle* gh, Metadata& md)
 
 std::shared_ptr<Metadata> GribScanner::scan_data(const std::vector<uint8_t>& data)
 {
-    GribHandle gh(grib_handle_new_from_message(context, (void*)data.data(), data.size()));
+    GribHandle gh(grib_handle_new_from_message(context, data.data(), data.size()));
     if (!gh) throw std::runtime_error("GRIB memory buffer failed to scan");
 
     std::shared_ptr<Metadata> md = scan(gh);
@@ -152,23 +152,21 @@ bool GribScanner::scan_segment(std::shared_ptr<segment::Reader> reader, metadata
     return true;
 }
 
-std::shared_ptr<Metadata> GribScanner::scan_singleton(const std::string& abspath)
+std::shared_ptr<Metadata> GribScanner::scan_singleton(const std::filesystem::path& abspath)
 {
     std::shared_ptr<Metadata> md;
     files::RAIIFILE in(abspath, "rb");
     {
         GribHandle gh(context, in);
-        if (!gh) throw std::runtime_error(abspath + " contains no GRIB data");
+        if (!gh) throw std::runtime_error(abspath.native() + " contains no GRIB data");
         md = scan(gh);
-        stringstream note;
-        note << "Scanned from " << str::basename(abspath);
-        md->add_note(note.str());
+        md->add_note_scanned_from(abspath);
         gh.close();
     }
 
     {
         GribHandle gh(context, in);
-        if (gh) throw std::runtime_error(abspath + " contains more than one GRIB data");
+        if (gh) throw std::runtime_error(abspath.native() + " contains more than one GRIB data");
         gh.close();
     }
 

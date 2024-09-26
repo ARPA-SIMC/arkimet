@@ -26,8 +26,8 @@ public:
     time_t timestamp() const override;
     std::shared_ptr<segment::Reader> reader(std::shared_ptr<core::Lock> lock) const override;
     std::shared_ptr<segment::Checker> checker() const override;
-    static std::shared_ptr<Checker> make_checker(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath);
-    static std::shared_ptr<Checker> create(const std::string& format, const std::string& rootdir, const std::string& relpath, const std::string& abspath, metadata::Collection& mds, const RepackConfig& cfg=RepackConfig());
+    static std::shared_ptr<Checker> make_checker(const std::string& format, const std::filesystem::path& rootdir, const std::filesystem::path& relpath, const std::filesystem::path& abspath);
+    static std::shared_ptr<Checker> create(const std::string& format, const std::filesystem::path& rootdir, const std::filesystem::path& relpath, const std::filesystem::path& abspath, metadata::Collection& mds, const RepackConfig& cfg=RepackConfig());
     static bool can_store(const std::string& format);
 };
 
@@ -46,7 +46,7 @@ class Reader : public segment::BaseReader<Segment>
 public:
     utils::sys::Path dirfd;
 
-    Reader(const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath, std::shared_ptr<core::Lock> lock);
+    Reader(const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath, const std::filesystem::path& abspath, std::shared_ptr<core::Lock> lock);
 
     bool scan_data(metadata_dest_func dest) override;
     utils::sys::File open_src(const types::source::Blob& src);
@@ -60,11 +60,11 @@ class BaseWriter : public segment::BaseWriter<Segment>
 {
 public:
     SequenceFile seqfile;
-    std::vector<std::string> written;
+    std::vector<std::filesystem::path> written;
     std::vector<segment::Writer::PendingMetadata> pending;
     size_t current_pos;
 
-    BaseWriter(const WriterConfig& config, const std::string& format, const std::string& root, const std::string& relpath, const std::string& abspath);
+    BaseWriter(const WriterConfig& config, const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath, const std::filesystem::path& abspath);
     ~BaseWriter();
 
     virtual void write_file(Metadata& md, core::NamedFileDescriptor& fd) = 0;
@@ -102,7 +102,7 @@ public:
     /// Call f for each nnnnnn.format file in the directory segment, passing the file name
     void foreach_datafile(std::function<void(const char*)> f);
     void validate(Metadata& md, const scan::Validator& v);
-    void move_data(const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath) override;
+    void move_data(const std::filesystem::path& new_root, const std::filesystem::path& new_relpath, const std::filesystem::path& new_abspath) override;
     bool exists_on_disk() override;
     bool is_empty() override;
     size_t size() override;
@@ -110,7 +110,7 @@ public:
     bool rescan_data(std::function<void(const std::string&)> reporter, std::shared_ptr<core::Lock> lock, metadata_dest_func dest) override;
     State check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick=true) override;
     size_t remove() override;
-    core::Pending repack(const std::string& rootdir, metadata::Collection& mds, const RepackConfig& cfg=RepackConfig()) override;
+    core::Pending repack(const std::filesystem::path& rootdir, metadata::Collection& mds, const RepackConfig& cfg=RepackConfig()) override;
 
     void test_truncate(size_t offset) override;
     void test_make_hole(metadata::Collection& mds, unsigned hole_size, unsigned data_idx) override;
@@ -142,10 +142,10 @@ public:
 class ScannerData
 {
 public:
-    std::string fname;
+    std::filesystem::path fname;
     size_t size;
 
-    ScannerData(const std::string& fname, size_t size)
+    ScannerData(const std::filesystem::path& fname, size_t size)
         : fname(fname), size(size)
     {
     }
@@ -159,7 +159,7 @@ public:
     std::string format;
 
     /// Pathname to the directory to scan
-    std::string abspath;
+    std::filesystem::path abspath;
 
     /// File size by offset
     std::map<size_t, ScannerData> on_disk;
@@ -167,7 +167,7 @@ public:
     /// Maximum sequence found on disk
     size_t max_sequence = 0;
 
-    Scanner(const std::string& format, const std::string& abspath);
+    Scanner(const std::string& format, const std::filesystem::path& abspath);
 
     /// Fill on_disk and max_sequence with the data found on disk
     void list_files();

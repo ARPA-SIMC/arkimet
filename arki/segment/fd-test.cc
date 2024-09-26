@@ -24,13 +24,13 @@ void Tests<Segment, Data>::register_tests() {
 SegmentTests<Segment, Data>::register_tests();
 
 this->add_method("append", [](Fixture& f) {
-    string relpath = "testfile." + f.td.format;
-    string abspath = sys::abspath(relpath);
+    std::filesystem::path relpath = "testfile." + f.td.format;
+    auto abspath = std::filesystem::canonical(relpath);
     delete_if_exists(relpath);
     wassert(actual_file(relpath).not_exists());
     {
         segment::WriterConfig writer_config;
-        auto w = Segment::make_writer(writer_config, f.td.format, sys::getcwd(), relpath, abspath);
+        auto w = Segment::make_writer(writer_config, f.td.format, std::filesystem::current_path(), relpath, abspath);
 
         // It should exist but be empty
         //wassert(actual(fname).fileexists());
@@ -59,19 +59,19 @@ this->add_method("append", [](Fixture& f) {
 
 // Test with large files
 this->add_method("large", [](Fixture& f) {
-    string relpath = "testfile." + f.td.format;
-    string abspath = sys::abspath(relpath);
+    std::filesystem::path relpath = "testfile." + f.td.format;
+    auto abspath = std::filesystem::canonical(relpath);
     delete_if_exists(relpath);
     {
         // Make a file that looks HUGE, so that appending will make its size
         // not fit in a 32bit off_t
-        Segment::make_checker(f.td.format, sys::getcwd(), relpath, abspath)->test_truncate(0x7FFFFFFF);
+        Segment::make_checker(f.td.format, std::filesystem::current_path(), relpath, abspath)->test_truncate(0x7FFFFFFF);
         wassert(actual(sys::size(relpath)) == 0x7FFFFFFFu);
     }
 
     {
         segment::WriterConfig writer_config;
-        auto dw = Segment::make_writer(writer_config, f.td.format, sys::getcwd(), relpath, abspath);
+        auto dw = Segment::make_writer(writer_config, f.td.format, std::filesystem::current_path(), relpath, abspath);
 
         // Try a successful transaction
         wassert(test_append_transaction_ok(dw.get(), f.td.mds[0], Segment::padding));

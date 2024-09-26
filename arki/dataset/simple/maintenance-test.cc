@@ -12,6 +12,7 @@ using namespace arki;
 using namespace arki::tests;
 using namespace arki::utils;
 using namespace arki::dataset;
+using namespace std::string_literals;
 
 namespace {
 
@@ -62,7 +63,7 @@ void CheckTests<Fixture>::register_tests()
     this->add_method("check_empty_metadata", R"(
     - `.metadata` file must not be empty [unaligned]
     )", [](Fixture& f) {
-        sys::File mdf("testds/" + f.test_relpath + ".metadata", O_RDWR);
+        sys::File mdf("testds" / sys::with_suffix(f.test_relpath, ".metadata"), O_RDWR);
         mdf.ftruncate(0);
         wassert(f.state_is(3, segment::SEGMENT_UNALIGNED));
     });
@@ -70,14 +71,14 @@ void CheckTests<Fixture>::register_tests()
     this->add_method("check_metadata_timestamp", R"(
     - `.metadata` file must not be older than the data [unaligned]
     )", [&](Fixture& f) {
-        sys::touch("testds/" + f.test_relpath + ".metadata", 1496167200);
+        sys::touch("testds" / sys::with_suffix(f.test_relpath, ".metadata"), 1496167200);
         wassert(f.state_is(3, segment::SEGMENT_UNALIGNED));
     });
 
     this->add_method("check_summary_timestamp", R"(
     - `.summary` file must not be older than the `.metadata` file [unaligned]
     )", [&](Fixture& f) {
-        sys::touch("testds/" + f.test_relpath + ".summary", 1496167200);
+        sys::touch("testds" / sys::with_suffix(f.test_relpath, ".summary"), 1496167200);
         wassert(f.state_is(3, segment::SEGMENT_UNALIGNED));
     });
 
@@ -85,12 +86,12 @@ void CheckTests<Fixture>::register_tests()
     - `MANIFEST` file must not be older than the `.metadata` file [unaligned]
     )", [&](Fixture& f) {
         time_t manifest_ts;
-        if (sys::exists("testds/MANIFEST"))
+        if (std::filesystem::exists("testds/MANIFEST"))
             manifest_ts = sys::timestamp("testds/MANIFEST");
         else
             manifest_ts = sys::timestamp("testds/index.sqlite");
 
-        sys::touch("testds/" + f.test_relpath + ".metadata", manifest_ts + 1);
+        sys::touch("testds" / sys::with_suffix(f.test_relpath, ".metadata"), manifest_ts + 1);
 
         wassert(f.state_is(3, segment::SEGMENT_UNALIGNED));
     });
@@ -103,8 +104,8 @@ void CheckTests<Fixture>::register_tests()
     )", [&](Fixture& f) {
         wassert(f.query_results({1, 3, 0, 2}));
 
-        sys::unlink_ifexists("testds/index.sqlite");
-        sys::unlink_ifexists("testds/MANIFEST");
+        std::filesystem::remove("testds/index.sqlite");
+        std::filesystem::remove("testds/MANIFEST");
 
         wassert(f.query_results({}));
 
@@ -115,9 +116,9 @@ void CheckTests<Fixture>::register_tests()
     )", [&](Fixture& f) {
         wassert(f.query_results({1, 3, 0, 2}));
 
-        sys::unlink_ifexists("testds/index.sqlite");
-        sys::unlink_ifexists("testds/MANIFEST");
-        sys::write_file("testds/2007/11-11." + f.format + ".tmp", f.format + " GARBAGE 7777");
+        std::filesystem::remove("testds/index.sqlite");
+        std::filesystem::remove("testds/MANIFEST");
+        sys::write_file(std::filesystem::path("testds/2007") / ("11-11."s + f.format + ".tmp"), f.format + " GARBAGE 7777");
 
         wassert(f.query_results({}));
 
@@ -128,11 +129,11 @@ void CheckTests<Fixture>::register_tests()
     - metadata in the `.metadata` file must contain reference time elements [corrupted]
     )", [&](Fixture& f) {
         metadata::Collection mds;
-        mds.read_from_file("testds/" + f.test_relpath + ".metadata");
+        mds.read_from_file("testds" / sys::with_suffix(f.test_relpath, ".metadata"));
         wassert(actual(mds.size()) == 2u);
         for (auto& md: mds)
             md->unset(TYPE_REFTIME);
-        mds.writeAtomically("testds/" + f.test_relpath + ".metadata");
+        mds.writeAtomically("testds/" / sys::with_suffix(f.test_relpath, ".metadata"));
 
         wassert(f.state_is(3, segment::SEGMENT_CORRUPTED));
     });

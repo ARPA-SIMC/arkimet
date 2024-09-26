@@ -9,6 +9,7 @@ import sys
 import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from socketserver import ForkingMixIn
+from urllib.parse import unquote, urlsplit
 
 from werkzeug.exceptions import HTTPException, NotFound
 
@@ -26,20 +27,23 @@ class ArkiServer(ForkingMixIn, HTTPServer):
     def __init__(self, *args, aliases=None, **kw):
         super().__init__(*args, **kw)
         from werkzeug.routing import Map, Rule
+
         self.url = "http://{s.server_name}:{s.server_port}".format(s=self)
-        self.url_map = Map([
-            Rule('/', endpoint='ArkiIndex'),
-            Rule('/config', endpoint='ArkiConfig'),
-            Rule('/qexpand', endpoint='ArkiQExpand'),
-            Rule('/aliases', endpoint='ArkiAliases'),
-            Rule('/query', endpoint='arki_query'),
-            Rule('/summary', endpoint='ArkiSummary'),
-            Rule('/dataset/<name>', endpoint='ArkiDatasetIndex'),
-            Rule('/dataset/<name>/query', endpoint='arki_dataset_query'),
-            Rule('/dataset/<name>/summary', endpoint='ArkiDatasetSummary'),
-            Rule('/dataset/<name>/summaryshort', endpoint='ArkiDatasetSummaryShort'),
-            Rule('/dataset/<name>/config', endpoint='ArkiDatasetConfig'),
-        ])
+        self.url_map = Map(
+            [
+                Rule("/", endpoint="ArkiIndex"),
+                Rule("/config", endpoint="ArkiConfig"),
+                Rule("/qexpand", endpoint="ArkiQExpand"),
+                Rule("/aliases", endpoint="ArkiAliases"),
+                Rule("/query", endpoint="arki_query"),
+                Rule("/summary", endpoint="ArkiSummary"),
+                Rule("/dataset/<name>", endpoint="ArkiDatasetIndex"),
+                Rule("/dataset/<name>/query", endpoint="arki_dataset_query"),
+                Rule("/dataset/<name>/summary", endpoint="ArkiDatasetSummary"),
+                Rule("/dataset/<name>/summaryshort", endpoint="ArkiDatasetSummaryShort"),
+                Rule("/dataset/<name>/config", endpoint="ArkiDatasetConfig"),
+            ]
+        )
         # Session to use to manage aliases and datasets
         if aliases is None:
             # Load default system aliases
@@ -80,67 +84,77 @@ class Handler(BaseHTTPRequestHandler):
         """
         Create an environment that can be used with werkzeug
         """
-        # Derived from werkzeug's WSGIRequestHandler
-        from werkzeug.urls import url_parse, url_unquote
         try:
-            from werkzeug._compat import \
-                wsgi_encoding_dance as _wsgi_encoding_dance
+            from werkzeug._compat import wsgi_encoding_dance as _wsgi_encoding_dance
         except ModuleNotFoundError:
             from werkzeug._internal import _wsgi_encoding_dance
 
-        request_url = url_parse(self.path)
-
+        request_url = urlsplit(self.path)
         url_scheme = "http"
-        path_info = url_unquote(request_url.path)
+
+        # If there was no scheme but the path started with two slashes,
+        # the first segment may have been incorrectly parsed as the
+        # netloc, prepend it to the path again.
+        if not request_url.scheme and request_url.netloc:
+            path_info = f"/{request_url.netloc}{request_url.path}"
+        else:
+            path_info = request_url.path
+
+        path_info = unquote(path_info)
 
         environ = {
-            'wsgi.version':         (1, 0),
-            'wsgi.url_scheme':      url_scheme,
-            'wsgi.input':           self.rfile,
-            'wsgi.errors':          sys.stderr,
-            'wsgi.multithread':     False,
-            'wsgi.multiprocess':    True,
-            'wsgi.run_once':        False,
-            'SERVER_SOFTWARE':      self.server_version,
-            'REQUEST_METHOD':       self.command,
-            'SCRIPT_NAME':          '',
-            'PATH_INFO':            _wsgi_encoding_dance(path_info),
-            'QUERY_STRING':         _wsgi_encoding_dance(request_url.query),
-            'CONTENT_TYPE':         self.headers.get('Content-Type', ''),
-            'CONTENT_LENGTH':       self.headers.get('Content-Length', ''),
-            'REMOTE_ADDR':          self.client_address[0],
-            'REMOTE_PORT':          self.client_address[1],
-            'SERVER_NAME':          self.server.server_address[0],
-            'SERVER_PORT':          str(self.server.server_address[1]),
-            'SERVER_PROTOCOL':      self.request_version
+            "wsgi.version": (1, 0),
+            "wsgi.url_scheme": url_scheme,
+            "wsgi.input": self.rfile,
+            "wsgi.errors": sys.stderr,
+            "wsgi.multithread": False,
+            "wsgi.multiprocess": True,
+            "wsgi.run_once": False,
+            "SERVER_SOFTWARE": self.server_version,
+            "REQUEST_METHOD": self.command,
+            "SCRIPT_NAME": "",
+            "PATH_INFO": _wsgi_encoding_dance(path_info),
+            "QUERY_STRING": _wsgi_encoding_dance(request_url.query),
+            "CONTENT_TYPE": self.headers.get("Content-Type", ""),
+            "CONTENT_LENGTH": self.headers.get("Content-Length", ""),
+            "REMOTE_ADDR": self.client_address[0],
+            "REMOTE_PORT": self.client_address[1],
+            "SERVER_NAME": self.server.server_address[0],
+            "SERVER_PORT": str(self.server.server_address[1]),
+            "SERVER_PROTOCOL": self.request_version,
         }
 
         for key, value in self.headers.items():
-            key = 'HTTP_' + key.upper().replace('-', '_')
-            if key not in ('HTTP_CONTENT_TYPE', 'HTTP_CONTENT_LENGTH'):
+            key = "HTTP_" + key.upper().replace("-", "_")
+            if key not in ("HTTP_CONTENT_TYPE", "HTTP_CONTENT_LENGTH"):
                 environ[key] = value
 
         if request_url.netloc:
-            environ['HTTP_HOST'] = request_url.netloc
+            environ["HTTP_HOST"] = request_url.netloc
 
         return environ
 
-    def log_request(self, code='-', size='-'):
+    def log_request(self, code="-", size="-"):
         """
         Wrap BaseHTTPRequestHandler's send_response to add logging of the
         request
         """
-        logging.info('%s - - [%s] "%s" %s %s',
-                     self.client_address[0],
-                     datetime.datetime.utcnow().strftime("%d/%b/%Y:%H:%M:%S +0000"),
-                     self.requestline,
-                     code, size, extra={"access_log": True})
+        logging.info(
+            '%s - - [%s] "%s" %s %s',
+            self.client_address[0],
+            datetime.datetime.utcnow().strftime("%d/%b/%Y:%H:%M:%S +0000"),
+            self.requestline,
+            code,
+            size,
+            extra={"access_log": True},
+        )
 
     def dispatch(self, method: str):
         """
         Dispatch a request to the endpoint given by self.server.url_map
         """
         from werkzeug.wrappers import Request
+
         request = Request(self.make_environ())
         if setproctitle is not None:
             setproctitle("arki-server {} for {}".format(request.base_url, request.remote_addr))
@@ -173,6 +187,7 @@ class JournaldFormatter(logging.Formatter):
 
     See http://0pointer.de/blog/projects/journal-submit.html
     """
+
     # http://elinux.org/Debugging_by_printing#Log_Levels
     # Name      String Meaning alias function
     # KERN_EMERG   "0" Emergency messages, system is about to crash or is unstable pr_emerg
@@ -205,6 +220,7 @@ class DefaultLogFilter:
     """
     Filter for the default log message destination (usually stdout)
     """
+
     def __init__(self, has_accesslog):
         self.has_accesslog = bool(has_accesslog)
 
@@ -226,27 +242,33 @@ class Server(App):
     """
     Start the arkimet server, serving the datasets found in the configuration file
     """
+
     @classmethod
     def make_parser(cls) -> argparse.ArgumentParser:
         parser = super().make_parser()
         parser.add_argument("configfile", help="dataset configuration file")
-        parser.add_argument("--host", "--hostname", metavar="host", default="",
-                            help="interface to listen to. Default: all interfaces")
-        parser.add_argument("--port", "-p", metavar="port", type=int, default=8080,
-                            help="port to listen not. Default: 8080")
+        parser.add_argument(
+            "--host", "--hostname", metavar="host", default="", help="interface to listen to. Default: all interfaces"
+        )
+        parser.add_argument(
+            "--port", "-p", metavar="port", type=int, default=8080, help="port to listen not. Default: 8080"
+        )
         parser.add_argument("--url", metavar="url", help="url to use to reach the server")
 
         parser.add_argument("--accesslog", metavar="file", help="file where to log normal access information")
-        parser.add_argument("--perflog", metavar="file",
-                            help="file where to log query information and performance statistics")
+        parser.add_argument(
+            "--perflog", metavar="file", help="file where to log query information and performance statistics"
+        )
         parser.add_argument("--errorlog", metavar="file", help="file where to log errors")
         parser.add_argument("--syslog", action="store_true", help="log to system log")
         parser.add_argument("--quiet", action="store_true", help="do not log to standard output")
-        parser.add_argument("--journald", action="store_true",
-                            help="log to standard error in a way compatible with journald")
+        parser.add_argument(
+            "--journald", action="store_true", help="log to standard error in a way compatible with journald"
+        )
 
-        parser.add_argument("--runtest", metavar="cmd",
-                            help="start the server, run the given test command and return its exit status")
+        parser.add_argument(
+            "--runtest", metavar="cmd", help="start the server, run the given test command and return its exit status"
+        )
         return parser
 
     def setup_logging(self):
@@ -274,6 +296,7 @@ class Server(App):
 
         if self.args.accesslog:
             from logging.handlers import WatchedFileHandler
+
             h = WatchedFileHandler(self.args.accesslog)
             h.setFormatter(logging.Formatter("%(message)s"))
             h.setLevel(logging.INFO)
@@ -289,11 +312,13 @@ class Server(App):
 
         if self.args.perflog:
             from logging.handlers import WatchedFileHandler
+
             h = WatchedFileHandler(self.args.perflog)
 
             class PerfFormatter(logging.Formatter):
                 def format(self, record):
                     import json
+
                     info = getattr(record, "perf", None)
                     return json.dumps(info, sort_keys=True)
 
@@ -309,6 +334,7 @@ class Server(App):
 
         if self.args.errorlog:
             from logging.handlers import WatchedFileHandler
+
             h = WatchedFileHandler(self.args.errorlog)
             h.setFormatter(logging.Formatter("%(asctime)-15s %(levelname)s %(message)s"))
             h.setLevel(logging.WARN)

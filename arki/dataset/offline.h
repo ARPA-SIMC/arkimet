@@ -15,9 +15,9 @@ struct Dataset : public dataset::Dataset
     /**
      * Pathname to the .summary file which describes the data that is offline
      */
-    std::string summary_pathname;
+    std::filesystem::path summary_pathname;
 
-    Dataset(std::shared_ptr<Session> session, const std::string& pathname);
+    Dataset(std::shared_ptr<Session> session, const std::filesystem::path& pathname);
 
     std::shared_ptr<dataset::Reader> create_reader() override;
 };

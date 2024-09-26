@@ -3,6 +3,7 @@
 
 /// zlib wrappers
 
+#include <filesystem>
 #include <string>
 #include <zlib.h>
 #include <vector>
@@ -16,7 +17,7 @@ class File
 {
 protected:
     gzFile fd = nullptr;
-    std::string pathname;
+    std::filesystem::path pathname;
 
     /// Throw an exception adding the error message from gzerror
     [[noreturn]] void throw_error(const char* desc);
@@ -26,13 +27,13 @@ protected:
 
 public:
     /// Instantiate a File but do not open it yet
-    File(const std::string& pathname);
+    File(const std::filesystem::path& pathname);
 
     /// Wrapper around gzdopen
-    File(const std::string& pathname, int fd, const char* mode);
+    File(const std::filesystem::path& pathname, int fd, const char* mode);
 
     /// Wrapper around gzopen
-    File(const std::string& pathname, const char* mode);
+    File(const std::filesystem::path& pathname, const char* mode);
 
     /// Calls gzclose if the file is still open, but it will ignore its result
     ~File();
@@ -65,7 +66,8 @@ public:
     z_off_t seek(z_off_t offset, int whence);
 
     /// Return the file pathname
-    const std::string& name() const { return pathname; }
+    [[deprecated("Use path() instead")]] const std::string& name() const { return pathname.native(); }
+    const std::filesystem::path& path() const { return pathname; }
 
     operator gzFile() const { return fd; }
 };

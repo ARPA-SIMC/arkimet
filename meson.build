@@ -1,6 +1,58 @@
-project('arkimet', 'cpp', version: '1.51', license : 'GPL-2.0-or-later', default_options: ['warning_level=3', 'cpp_std=c++11'])
+project('arkimet', 'cpp', version: '1.51', license : 'GPL-2.0-or-later', default_options: ['warning_level=everything', 'cpp_std=c++17'])
+# TODO: use warning_level=everything from meson 1.0
 
-add_global_arguments('-Wextra', '-Wno-unused-parameter', language : 'cpp')
+cpp = meson.get_compiler('cpp')
+
+warning_control = [
+  # Turn some warning classes to errors
+  '-Werror=format',
+  '-Werror=suggest-override',
+  '-Werror=deprecated-copy-dtor',
+  '-Werror=missing-declarations',
+  '-Werror=overloaded-virtual',
+  '-Werror=cast-qual',
+  '-Werror=duplicated-branches',
+  '-Werror=logical-op',
+  '-Werror=catch-value',
+  '-Werror=conditionally-supported',
+  '-Werror=noexcept',
+  '-Werror=c++23-extensions',
+  '-Werror=dangling-else',
+  # '-Werror=suggest-attribute=format',
+  # '-Werror=deprecated-declarations',
+
+  '-Wno-padded',
+  '-Wno-abi-tag',
+  '-Wno-unused-macros',
+  '-Wno-missing-include-dirs',
+  '-Wno-multiple-inheritance',
+  '-Wno-sign-promo',
+  '-Wswitch',
+  '-Wno-switch-enum',
+  '-Wno-effc++',
+
+  # TODO: remove the following ones over time
+  '-Wno-shadow',
+  '-Wno-zero-as-null-pointer-constant',
+  '-Wno-mismatched-tags',
+  '-Wno-unused-const-variable',
+  '-Wno-redundant-tags',
+  '-Wno-useless-cast',
+  '-Wno-switch-default',
+  '-Wno-old-style-cast',
+  '-Wno-unused-parameter',
+
+  # These ones can be activated from time to time
+  '-Wno-float-equal',
+  '-Wno-suggest-attribute=noreturn',
+  '-Wno-format-truncation',
+  '-Wno-arith-conversion',
+  '-Wno-conversion',
+]
+
+add_project_arguments(
+  cpp.get_supported_arguments(warning_control),
+  language : 'cpp')
 
 conf_dir = get_option('sysconfdir') / 'arkimet'
 doc_dir = get_option('datadir') / 'doc' / 'arkimet'
@@ -30,7 +82,7 @@ endif
 
 compiler = meson.get_compiler('cpp')
 if compiler.has_function('splice', prefix : '#include <fcntl.h>')
-    conf_data.set('HAVE_SPLICE', true)
+    conf_data.set('ARKI_HAVE_SPLICE', true)
 endif
 
 flex = find_program('flex')

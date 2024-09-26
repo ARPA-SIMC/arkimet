@@ -75,8 +75,8 @@ public:
     std::string line;
     off_t offset = 0;
 
-    Input(const std::string& abspath)
-        : md_note("Scanned from " + str::basename(abspath)), close(true)
+    Input(const std::filesystem::path& abspath)
+        : md_note("Scanned from " + abspath.filename().native()), close(true)
     {
         in = new std::ifstream(abspath.c_str());
         if (!in->good())
@@ -185,17 +185,17 @@ std::shared_ptr<Metadata> Vm2::scan_data(const std::vector<uint8_t>& data)
     return md;
 }
 
-std::shared_ptr<Metadata> Vm2::scan_singleton(const std::string& abspath)
+std::shared_ptr<Metadata> Vm2::scan_singleton(const std::filesystem::path& abspath)
 {
     auto md = std::make_shared<Metadata>();
     vm2::Input input(abspath);
     if (!input.next())
-        throw std::runtime_error(abspath + " contains no VM2 data");
+        throw std::runtime_error(abspath.native() + " contains no VM2 data");
     input.to_metadata(*md);
     md->set_cached_data(metadata::DataManager::get().to_data("vm2", std::vector<uint8_t>(input.line.begin(), input.line.end())));
 
     if (input.next())
-        throw std::runtime_error(abspath + " contains more than one VM2 data");
+        throw std::runtime_error(abspath.native() + " contains more than one VM2 data");
     return md;
 }
 

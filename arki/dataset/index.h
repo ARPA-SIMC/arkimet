@@ -4,6 +4,7 @@
 #include <arki/core/fwd.h>
 #include <arki/matcher/fwd.h>
 #include <arki/dataset/fwd.h>
+#include <filesystem>
 
 namespace arki {
 class Summary;
@@ -40,29 +41,29 @@ public:
      *
      * If the segment does not exist in the index, return false
      */
-    virtual bool segment_timespan(const std::string& relpath, core::Interval& interval) const = 0;
+    virtual bool segment_timespan(const std::filesystem::path& relpath, core::Interval& interval) const = 0;
 
     /**
      * List all segments known to the index.
      *
      * Segments are sorted alphabetically by relative paths.
      */
-    virtual void list_segments(std::function<void(const std::string&)> dest) = 0;
+    virtual void list_segments(std::function<void(const std::filesystem::path&)> dest) = 0;
 
     /**
      * List all segments known to the index, filtered by a matcher.
      *
      * Segments are sorted alphabetically by relative paths.
      */
-    virtual void list_segments_filtered(const Matcher& matcher, std::function<void(const std::string&)> dest) = 0;
+    virtual void list_segments_filtered(const Matcher& matcher, std::function<void(const std::filesystem::path&)> dest) = 0;
 
     /// Check if a segment is known to the index
-    virtual bool has_segment(const std::string& relpath) const = 0;
+    virtual bool has_segment(const std::filesystem::path& relpath) const = 0;
 
     /**
      * Get the metadata for a segment.
      */
-    virtual void query_segment(const std::string& relpath, metadata_dest_func) const = 0;
+    virtual void query_segment(const std::filesystem::path& relpath, metadata_dest_func) const = 0;
 
     /**
      * Rename a segment in the index.
@@ -71,7 +72,7 @@ public:
      *
      * The version on disk is not touched.
      */
-    virtual void test_rename(const std::string& relpath, const std::string& new_relpath) = 0;
+    virtual void test_rename(const std::filesystem::path& relpath, const std::filesystem::path& new_relpath) = 0;
 
     /**
      * Remove a segment from the index.
@@ -80,7 +81,7 @@ public:
      *
      * The version on disk is not touched.
      */
-    virtual void test_deindex(const std::string& relpath) = 0;
+    virtual void test_deindex(const std::filesystem::path& relpath) = 0;
 
     /**
      * Update the index so that the offset of all data in the segment starting
@@ -88,7 +89,7 @@ public:
      * `overlap_size`, so that the ones at `data_idx - 1` and at `data_idx`
      * overlap.
      */
-    virtual void test_make_overlap(const std::string& relpath, unsigned overlap_size, unsigned data_idx) = 0;
+    virtual void test_make_overlap(const std::filesystem::path& relpath, unsigned overlap_size, unsigned data_idx) = 0;
 
     /**
      * Update the index so that the offset of all data in the segment starting
@@ -96,7 +97,7 @@ public:
      * so that a hole is created between the ones at `data_idx - 1` and at
      * `data_idx`
      */
-    virtual void test_make_hole(const std::string& relpath, unsigned hole_size, unsigned data_idx) = 0;
+    virtual void test_make_hole(const std::filesystem::path& relpath, unsigned hole_size, unsigned data_idx) = 0;
 };
 
 }

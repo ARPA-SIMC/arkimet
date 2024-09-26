@@ -31,15 +31,15 @@ PyTypeObject* arkipy_ArkiScan_Type = nullptr;
 
 namespace {
 
-static std::string moveFile(const std::string& source, const std::string& targetdir)
+static std::string moveFile(const std::filesystem::path& source, const std::filesystem::path& targetdir)
 {
-    std::string targetFile = str::joinpath(targetdir, str::basename(source));
+    auto targetFile = targetdir / source.filename();
     if (::rename(source.c_str(), targetFile.c_str()) == -1)
-        arki::throw_system_error ("cannot move " + source + " to " + targetFile);
+        arki::throw_system_error(errno, "cannot move ", source, " to ", targetFile);
     return targetFile;
 }
 
-static std::string moveFile(const arki::dataset::Reader& ds, const std::string& targetdir)
+static std::string moveFile(const arki::dataset::Reader& ds, const std::filesystem::path& targetdir)
 {
     if (const arki::dataset::file::Reader* d = dynamic_cast<const arki::dataset::file::Reader*>(&ds))
         return moveFile(d->dataset().pathname, targetdir);

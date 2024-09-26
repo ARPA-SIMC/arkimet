@@ -4,7 +4,7 @@
 /// dataset/index/summarycache - Cache precomputed summaries
 
 #include <arki/core/time.h>
-#include <string>
+#include <filesystem>
 
 namespace arki {
 class Metadata;
@@ -20,13 +20,13 @@ class SummaryCache
 {
 protected:
     /// Absolute path to the summary cache directory
-    std::string m_scache_root;
+    std::filesystem::path m_scache_root;
 
     /// Return the pathname for the summary file for a given year and month
-    std::string summary_pathname(int year, int month) const;
+    std::filesystem::path summary_pathname(int year, int month) const;
 
 public:
-    SummaryCache(const std::string& root);
+    SummaryCache(const std::filesystem::path& root);
     ~SummaryCache();
 
     void openRO();

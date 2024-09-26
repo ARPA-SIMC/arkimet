@@ -8,7 +8,7 @@
 
 using namespace std;
 
-void signal_to_exception(int)
+[[noreturn]] static void signal_to_exception(int)
 {
     throw std::runtime_error("killing signal catched");
 }

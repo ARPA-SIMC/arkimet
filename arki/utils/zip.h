@@ -4,6 +4,7 @@
 #include <arki/core/fwd.h>
 #include <arki/segment/fwd.h>
 #include <arki/libconfig.h>
+#include <filesystem>
 #include <string>
 #include <vector>
 #include <stdexcept>
@@ -29,7 +30,7 @@ class ZipBase
 {
 public:
     std::string format;
-    std::string zipname;
+    std::filesystem::path zipname;
 
 protected:
 #ifdef HAVE_LIBZIP
@@ -42,7 +43,7 @@ protected:
 public:
     std::vector<segment::Span> list_data();
 
-    ZipBase(const std::string& format, const std::string& zipname);
+    ZipBase(const std::string& format, const std::filesystem::path& zipname);
     ~ZipBase();
 
     /**
@@ -51,7 +52,7 @@ public:
      */
     std::vector<uint8_t> get(const segment::Span& span);
 
-    static std::string data_fname(size_t pos, const std::string& format);
+    static std::filesystem::path data_fname(size_t pos, const std::string& format);
 
     friend class ZipFile;
 };
@@ -65,7 +66,7 @@ public:
 class ZipWriter : public ZipBase
 {
 public:
-    ZipWriter(const std::string& format, const std::string& pathname);
+    ZipWriter(const std::string& format, const std::filesystem::path& pathname);
 
     /**
      * Commit changes and close the .zip file

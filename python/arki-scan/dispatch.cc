@@ -32,7 +32,7 @@ MetadataDispatch::~MetadataDispatch()
         delete dispatcher;
 }
 
-DispatchResults MetadataDispatch::process(dataset::Reader& ds, const std::string& name)
+DispatchResults MetadataDispatch::process(dataset::Reader& ds, const std::filesystem::path& name)
 {
     DispatchResults stats;
     stats.name = name;
@@ -41,13 +41,13 @@ DispatchResults MetadataDispatch::process(dataset::Reader& ds, const std::string
 
     copyok_stream.reset();
     if (!dir_copyok.empty())
-        copyok = std::make_shared<core::File>(str::joinpath(dir_copyok, str::basename(name)));
+        copyok = std::make_shared<core::File>(dir_copyok / name.filename());
     else
         copyok.reset();
 
     copyko_stream.reset();
     if (!dir_copyko.empty())
-        copyko = std::make_shared<core::File>(str::joinpath(dir_copyko, str::basename(name)));
+        copyko = std::make_shared<core::File>(dir_copyko / name.filename());
     else
         copyko.reset();
 
@@ -81,7 +81,7 @@ DispatchResults MetadataDispatch::process(dataset::Reader& ds, const std::string
     return stats;
 }
 
-void MetadataDispatch::process_partial_batch(const std::string& name, DispatchResults& stats)
+void MetadataDispatch::process_partial_batch(const std::filesystem::path& name, DispatchResults& stats)
 {
     bool drop_cached_data_on_commit = !(copyok || copyko);
 

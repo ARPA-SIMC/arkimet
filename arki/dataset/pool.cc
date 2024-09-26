@@ -47,12 +47,12 @@ struct PathMatch
 {
     std::set<FSPos> parents;
 
-    PathMatch(const std::string& pathname)
+    PathMatch(const std::filesystem::path& pathname)
     {
         fill_parents(pathname);
     }
 
-    void fill_parents(const std::string& pathname)
+    void fill_parents(const std::filesystem::path& pathname)
     {
         struct stat st;
         sys::stat(pathname, st);
@@ -61,10 +61,10 @@ struct PathMatch
         // top or a loop
         if (i.second == false) return;
         // Otherwise, go up a level and scan again
-        fill_parents(str::normpath(str::joinpath(pathname, "..")));
+        fill_parents(pathname.parent_path());
     }
 
-    bool is_under(const std::string& pathname)
+    bool is_under(const std::filesystem::path& pathname)
     {
         struct stat st;
         sys::stat(pathname, st);
@@ -303,7 +303,7 @@ void CheckPool::remove(const metadata::Collection& todolist, bool simulate)
     if (simulate)
     {
         for (const auto& i: by_dataset)
-            arki::nag::warning("%s: %zd data would be deleted", i.first.c_str(), i.second.size());
+            arki::nag::warning("%s: %zu data would be deleted", i.first.c_str(), i.second.size());
         return;
     }
 
@@ -316,12 +316,12 @@ void CheckPool::remove(const metadata::Collection& todolist, bool simulate)
             ds->remove(i.second);
             removed = true;
         } catch (std::exception& e) {
-            arki::nag::warning("Cannot remove %zd messages from dataset %s: %s",
+            arki::nag::warning("Cannot remove %zu messages from dataset %s: %s",
                     i.second.size(), i.first.c_str(), e.what());
         }
 
         if (removed)
-            arki::nag::verbose("%s: %zd data marked as deleted", i.first.c_str(), i.second.size());
+            arki::nag::verbose("%s: %zu data marked as deleted", i.first.c_str(), i.second.size());
     }
 }
 

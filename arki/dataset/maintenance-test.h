@@ -16,10 +16,10 @@ enum SegmentType {
 struct Fixture : public arki::tests::DatasetTest
 {
     std::string format;
-    std::vector<std::string> import_files;
+    std::vector<std::filesystem::path> import_files;
     /// relpath of the segment with two data elements in it
-    std::string test_relpath;
-    std::string test_relpath_wrongstep;
+    std::filesystem::path test_relpath;
+    std::filesystem::path test_relpath_wrongstep;
     /// Size of the first datum in test_relepath
     unsigned test_datum_size;
 
@@ -33,7 +33,7 @@ struct Fixture : public arki::tests::DatasetTest
      *
      * It can differ from test_relpath in case the segment is archived or compressed
      */
-    std::string test_relpath_ondisk() const { return test_relpath; }
+    std::filesystem::path test_relpath_ondisk() const { return test_relpath; }
 
     /**
      * Compute the dataset state and assert that it contains `segment_count`
@@ -129,7 +129,7 @@ struct FixtureZip : public Fixture
 
     void test_setup();
 
-    std::string test_relpath_ondisk() const { return test_relpath + ".zip"; }
+    std::filesystem::path test_relpath_ondisk() const;
     void remove_segment();
 
     /// Corrupt the dataset so that two data appear to overlap

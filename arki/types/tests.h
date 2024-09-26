@@ -70,12 +70,12 @@ public:
 
     /// Check all components of a source::Blob item
     void is_source_blob(
-        const std::string& format, const std::string& basedir, const std::string& fname,
+        const std::string& format, const std::filesystem::path& basedir, const std::filesystem::path& fname,
         uint64_t ofs, uint64_t size);
 
     /// Check only the file name components of a source::Blob item
     void is_source_blob(
-        const std::string& format, const std::string& basedir, const std::string& fname);
+        const std::string& format, const std::filesystem::path& basedir, const std::filesystem::path& fname);
 
     /// Check all components of a source::URL item
     void is_source_url(const std::string& format, const std::string& url);

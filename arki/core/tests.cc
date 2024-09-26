@@ -162,7 +162,7 @@ void skip_unless_geos()
 }
 void skip_unless_splice()
 {
-#ifndef HAVE_SPLICE
+#ifndef ARKI_HAVE_SPLICE
     throw TestSkipped("splice() syscall is not available");
 #endif
 }
@@ -181,9 +181,9 @@ void skip_unless_filesystem_has_ofd_locks(const std::string& path)
 
 void delete_if_exists(const std::string& name)
 {
-    if (sys::isdir(name))
+    if (std::filesystem::is_directory(name))
         sys::rmtree(name);
-    else if (sys::exists(name))
+    else if (std::filesystem::exists(name))
         sys::unlink(name);
 }
 

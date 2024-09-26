@@ -63,13 +63,13 @@ void Xargs::flush_batch()
     } catch (...) {
         // Ignore close exceptions here, so we rethrow what really happened
         ::close(*tempfile);
-        ::unlink(tempfile->name().c_str());
+        ::unlink(tempfile->path().c_str());
         throw;
     }
 
     stream_to_tempfile.reset();
     tempfile->close();
-    sys::unlink_ifexists(tempfile->name());
+    std::filesystem::remove(tempfile->path());
     tempfile.reset();
     metadata::Clusterer::flush_batch();
 
@@ -89,10 +89,10 @@ int Xargs::run_child()
     child.set_stdin(subprocess::Redirect::DEVNULL);
     child.args = command;
     if (filename_argument == -1)
-        child.args.push_back(tempfile->name());
+        child.args.push_back(tempfile->path().native());
     else {
         if ((unsigned)filename_argument < child.args.size())
-            child.args[filename_argument] = tempfile->name();
+            child.args[filename_argument] = tempfile->path().native();
     }
 
     // Import all the environment except ARKI_XARGS_* variables
@@ -102,10 +102,10 @@ int Xargs::run_child()
         if (str::startswith(envstr, "ARKI_XARGS_")) continue;
         child.env.push_back(envstr);
     }
-    child.setenv("ARKI_XARGS_FILENAME", tempfile->name());
+    child.setenv("ARKI_XARGS_FILENAME", tempfile->path());
     child.setenv("ARKI_XARGS_FORMAT", str::upper(format));
     char buf[32];
-    snprintf(buf, 32, "%zd", count);
+    snprintf(buf, 32, "%zu", count);
     child.setenv("ARKI_XARGS_COUNT", buf);
 
     if (timespan.begin.ye != 0)

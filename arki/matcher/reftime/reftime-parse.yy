@@ -122,13 +122,13 @@ static void interval_add(arki::core::FuzzyTime& dst, const int* val, bool subtra
     pdate(" readded missing", dst);
 }
 
-void interval_sub(arki::core::FuzzyTime& dst, const int* val)
+static void interval_sub(arki::core::FuzzyTime& dst, const int* val)
 {
     interval_add(dst, val, true);
 }
 
 // Set dst to 'val' before 'now'
-arki::core::FuzzyTime* interval_ago(const int* val, time_t now)
+static arki::core::FuzzyTime* interval_ago(const int* val, time_t now)
 {
     struct tm v;
     gmtime_r(&now, &v);

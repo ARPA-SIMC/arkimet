@@ -23,7 +23,7 @@ namespace {
 inline std::string dsname(const Metadata& md)
 {
     if (!md.has_source_blob()) return "(md source is not a blob source)";
-    return str::basename(md.sourceBlob().basedir);
+    return md.sourceBlob().basedir.filename();
 }
 
 struct Fixture : public DatasetTest {
@@ -62,7 +62,7 @@ add_method("segment_append", [] {
     string mdfname = "testfile.grib.metadata";
     string sumfname = "testfile.grib.summary";
 
-    sys::unlink_ifexists(fname);
+    std::filesystem::remove(fname);
     ino_t inomd;
     ino_t inosum;
 
@@ -136,13 +136,13 @@ add_method("acquire", [](Fixture& f) {
     #endif
     wassert(actual(dsname(md)) == "testds");
 
-    wassert(actual_type(md.source()).is_source_blob("grib", sys::abspath("./testds"), "2007/07-08.grib", 0, 7218));
+    wassert(actual_type(md.source()).is_source_blob("grib", std::filesystem::canonical("./testds"), "2007/07-08.grib", 0, 7218));
 
     // Import again works fine
     wassert(actual(*writer).import(md));
     wassert(actual(dsname(md)) == "testds");
 
-    wassert(actual_type(md.source()).is_source_blob("grib", sys::abspath("./testds"), "2007/07-08.grib", 7218, 7218));
+    wassert(actual_type(md.source()).is_source_blob("grib", std::filesystem::canonical("./testds"), "2007/07-08.grib", 7218, 7218));
 
     // Flush the changes and check that everything is allright
     writer->flush();
@@ -175,7 +175,7 @@ add_method("append", [](Fixture& f) {
         auto writer = f.makeSimpleWriter();
         wassert(actual(*writer).import(mdc[1]));
         wassert(actual(dsname(mdc[1])) == "testds");
-        wassert(actual_type(mdc[1].source()).is_source_blob("grib", sys::abspath("testds"), "20/2007.grib", 34960, 7218));
+        wassert(actual_type(mdc[1].source()).is_source_blob("grib", std::filesystem::canonical("testds"), "20/2007.grib", 34960, 7218));
     }
 
     wassert(actual_file("testds/20/2007.grib").exists());

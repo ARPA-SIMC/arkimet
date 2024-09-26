@@ -141,7 +141,7 @@ add_method("progress_query_data", [](Fixture& f) {
     dataset::DataQuery dq;
     dq.progress = progress;
     size_t count = 0;
-    reader->query_data(dq, [&](std::shared_ptr<Metadata> md) { ++count; return true; });
+    reader->query_data(dq, [&](std::shared_ptr<Metadata> md) noexcept { ++count; return true; });
     wassert(actual(count) == 3u);
     wassert(actual(progress->count) == 3u);
     wassert(actual(progress->bytes) == 44412u);
@@ -171,7 +171,7 @@ add_method("progress_query_data_throws", [](Fixture& f) {
     dataset::DataQuery dq;
     dq.progress = progress1;
     size_t count = 0;
-    auto e = wassert_throws(std::logic_error, reader->query_data(dq, [&](std::shared_ptr<Metadata> md) { ++count; return true; }));
+    auto e = wassert_throws(std::logic_error, reader->query_data(dq, [&](std::shared_ptr<Metadata> md) noexcept { ++count; return true; }));
     wassert(actual(e.what()) = "Expected error");
 });
 

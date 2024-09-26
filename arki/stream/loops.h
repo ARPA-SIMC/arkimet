@@ -4,6 +4,7 @@
 #include <arki/stream/fwd.h>
 #include <arki/stream/base.h>
 #include <stdexcept>
+#include <cerrno>
 
 namespace arki {
 namespace stream {
@@ -33,6 +34,13 @@ static const unsigned POLLINFO_FILTER_STDIN = 0;
 static const unsigned POLLINFO_FILTER_STDOUT = 1;
 static const unsigned POLLINFO_FILTER_STDERR = 2;
 static const unsigned POLLINFO_DESTINATION = 3;
+
+static inline bool errno_wouldblock()
+{
+    if (errno == EAGAIN) return true;
+    if (errno == EWOULDBLOCK) return true;
+    return false;
+}
 
 /**
  * Event loop used by ConcreteStreamOutputs for sending data to an output file

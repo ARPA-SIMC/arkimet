@@ -2,6 +2,7 @@
 #define ARKI_UTILS_TAR_H
 
 #include <arki/utils/sys.h>
+#include <filesystem>
 #include <string>
 #include <vector>
 #include <cstdint>
@@ -14,8 +15,8 @@ struct TarHeader
     char data[512];
 
     TarHeader();
-    TarHeader(const std::string& name, mode_t mode=0644);
-    void set_name(const std::string& name);
+    TarHeader(const std::filesystem::path& name, mode_t mode=0644);
+    void set_name(const std::filesystem::path& name);
     void set_mode(mode_t mode);
     void set_uid(uid_t uid);
     void set_gid(gid_t gid);
@@ -56,12 +57,12 @@ public:
     /**
      * Append a file with the given name and data
      */
-    off_t append(const std::string& name, const std::string& data);
+    off_t append(const std::filesystem::path& name, const std::string& data);
 
     /**
      * Append a file with the given name and data
      */
-    off_t append(const std::string& name, const std::vector<uint8_t>& data);
+    off_t append(const std::filesystem::path& name, const std::vector<uint8_t>& data);
 
     void end();
 };

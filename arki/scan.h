@@ -6,6 +6,7 @@
 #include <arki/scan/fwd.h>
 #include <arki/types/fwd.h>
 #include <arki/metadata/fwd.h>
+#include <filesystem>
 #include <string>
 #include <memory>
 #include <vector>
@@ -36,7 +37,7 @@ public:
      * Use this only in unit tests, as it makes assumptions that might not be
      * valid in normal code
      */
-    bool test_scan_file(const std::string& filename, metadata_dest_func dest);
+    bool test_scan_file(const std::filesystem::path& filename, metadata_dest_func dest);
 
     /**
      * Scan data from a non-seekable pipe
@@ -55,7 +56,7 @@ public:
      *
      * Scanned metadata will have no source set.
      */
-    virtual std::shared_ptr<Metadata> scan_singleton(const std::string& abspath) = 0;
+    virtual std::shared_ptr<Metadata> scan_singleton(const std::filesystem::path& abspath) = 0;
 
     /**
      * Normalize metadata and data before dispatch, if required.
@@ -94,7 +95,7 @@ public:
      * If defaut_format is nullptr, it throws an exception if the file has no
      * extension, or an unknown extension
      */
-    static std::string format_from_filename(const std::string& fname, const char* default_format=nullptr);
+    static std::string format_from_filename(const std::filesystem::path& fname, const char* default_format=nullptr);
 
     /**
      * Return the update sequence number for this data

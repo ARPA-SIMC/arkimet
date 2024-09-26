@@ -41,7 +41,7 @@ struct SkipDataset : public std::exception
         : msg(msg) {}
     virtual ~SkipDataset() throw () {}
 
-    virtual const char* what() const throw() { return msg.c_str(); }
+    const char* what() const noexcept override { return msg.c_str(); }
 };
 
 

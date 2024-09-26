@@ -14,7 +14,7 @@ namespace arki {
 namespace tests {
 
 SegmentTest::SegmentTest()
-    : format("grib"), root("."), relpath("testfile.grib"), abspath(sys::abspath(relpath)), mdc("inbound/test.grib1")
+    : format("grib"), root("."), relpath("testfile.grib"), abspath(std::filesystem::canonical(relpath)), mdc("inbound/test.grib1")
 {
 }
 
@@ -58,7 +58,7 @@ void SegmentCheckTest::run()
     auto segment(make_full_checker());
     segment::State state;
 
-    auto rep = [](const std::string& msg) {
+    auto rep = [](const std::string& msg) noexcept {
         // fprintf(stderr, "CHECK %s\n", msg.c_str());
     };
 
@@ -157,7 +157,7 @@ void test_append_transaction_ok(segment::Writer* dw, Metadata& md, int append_am
     const types::source::Blob& new_source = dw->append(md);
     wassert(actual((size_t)new_source.offset) == orig_fsize);
     wassert(actual((size_t)new_source.size) == data_size);
-    wassert(actual(new_source.basedir) == sys::getcwd());
+    wassert(actual(new_source.basedir) == std::filesystem::current_path());
     wassert(actual(new_source.filename) == dw->segment().relpath);
     wassert(actual(sys::size(dw->segment().abspath)) == orig_fsize + data_size + append_amount_adjust);
     wassert(actual_type(md.source()) == *orig_source);
@@ -169,7 +169,7 @@ void test_append_transaction_ok(segment::Writer* dw, Metadata& md, int append_am
     wassert(actual(sys::size(dw->segment().abspath)) == orig_fsize + data_size + append_amount_adjust);
 
     // And metadata is updated
-    wassert(actual_type(md.source()).is_source_blob(md.source().format, sys::getcwd(), dw->segment().relpath, orig_fsize, data_size));
+    wassert(actual_type(md.source()).is_source_blob(md.source().format, std::filesystem::current_path(), dw->segment().relpath, orig_fsize, data_size));
 }
 
 void test_append_transaction_rollback(segment::Writer* dw, Metadata& md, int append_amount_adjust)
@@ -194,8 +194,8 @@ void test_append_transaction_rollback(segment::Writer* dw, Metadata& md, int app
 
 void ActualSegment::exists()
 {
-    bool exists = sys::exists(_actual) || sys::exists(_actual + ".gz")
-               || sys::exists(_actual + ".tar") || sys::exists(_actual + ".zip");
+    bool exists = std::filesystem::exists(_actual) || std::filesystem::exists(_actual + ".gz")
+               || std::filesystem::exists(_actual + ".tar") || std::filesystem::exists(_actual + ".zip");
     if (!exists)
         throw TestFailed(_actual + " does not exist (tried also .gz, .tar, and .zip)");
 }
@@ -205,10 +205,10 @@ void ActualSegment::exists(const std::vector<std::string>& extensions)
     for (auto ext: { "", ".gz", ".tar", ".zip", ".gz.idx", ".metadata", ".summary" })
         if (std::find(extensions.begin(), extensions.end(), ext) == extensions.end())
         {
-            if (sys::exists(_actual + ext))
+            if (std::filesystem::exists(_actual + ext))
                 throw TestFailed(_actual + ext + " does exist but should not");
         } else {
-            if (!sys::exists(_actual + ext))
+            if (!std::filesystem::exists(_actual + ext))
                 throw TestFailed(_actual + ext + " does not exist but it should");
         }
 }
@@ -216,7 +216,7 @@ void ActualSegment::exists(const std::vector<std::string>& extensions)
 void ActualSegment::not_exists()
 {
     for (auto ext: { "", ".gz", ".tar", ".zip", ".gz.idx", ".metadata", ".summary" })
-        if (sys::exists(_actual))
+        if (std::filesystem::exists(_actual))
             throw TestFailed(_actual + ext + " does exist but should not");
 }
 

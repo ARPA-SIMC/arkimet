@@ -49,13 +49,13 @@ protected:
     mutable utils::sqlite::SQLiteDB m_db;
 
     /// Relative pathname of the segment from the root of the dataset
-    std::string data_relpath;
+    std::filesystem::path data_relpath;
 
     /// Absolute pathname of the data file that we index
-    std::string data_pathname;
+    std::filesystem::path data_pathname;
 
     /// Absolute pathname of the index file
-    std::string index_pathname;
+    std::filesystem::path index_pathname;
 
     // Subtables
     index::Aggregate* m_uniques = nullptr;
@@ -98,7 +98,7 @@ protected:
      */
     void build_md(utils::sqlite::Query& q, Metadata& md, std::shared_ptr<arki::segment::Reader> reader) const;
 
-    Index(std::shared_ptr<iseg::Dataset> config, const std::string& data_relpath, std::shared_ptr<dataset::Lock> lock=nullptr);
+    Index(std::shared_ptr<iseg::Dataset> config, const std::filesystem::path& data_relpath, std::shared_ptr<dataset::Lock> lock=nullptr);
 
 public:
     ~Index();
@@ -150,7 +150,7 @@ public:
 class RIndex : public Index
 {
 public:
-    RIndex(std::shared_ptr<iseg::Dataset> dataset, const std::string& data_relpath, std::shared_ptr<dataset::ReadLock> lock=nullptr);
+    RIndex(std::shared_ptr<iseg::Dataset> dataset, const std::filesystem::path& data_relpath, std::shared_ptr<dataset::ReadLock> lock=nullptr);
 };
 
 class WIndex : public Index
@@ -165,7 +165,7 @@ protected:
 
     void compile_insert();
 
-    WIndex(std::shared_ptr<iseg::Dataset> dataset, const std::string& data_relpath, std::shared_ptr<dataset::Lock> lock=nullptr);
+    WIndex(std::shared_ptr<iseg::Dataset> dataset, const std::filesystem::path& data_relpath, std::shared_ptr<dataset::Lock> lock=nullptr);
 public:
 
     /**
@@ -223,7 +223,7 @@ public:
 class CIndex : public WIndex
 {
 public:
-    CIndex(std::shared_ptr<iseg::Dataset> config, const std::string& data_relpath, std::shared_ptr<dataset::CheckLock> lock);
+    CIndex(std::shared_ptr<iseg::Dataset> config, const std::filesystem::path& data_relpath, std::shared_ptr<dataset::CheckLock> lock);
 };
 
 }

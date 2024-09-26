@@ -26,7 +26,7 @@ namespace arki {
 namespace dataset {
 namespace segmented {
 
-void SegmentState::check_age(const std::string& relpath, const Dataset& dataset, dataset::Reporter& reporter)
+void SegmentState::check_age(const std::filesystem::path& relpath, const Dataset& dataset, dataset::Reporter& reporter)
 {
     core::Time archive_threshold(0, 0, 0);
     core::Time delete_threshold(0, 0, 0);
@@ -87,12 +87,12 @@ Dataset::~Dataset()
 {
 }
 
-bool Dataset::relpath_timespan(const std::string& path, core::Interval& interval) const
+bool Dataset::relpath_timespan(const std::filesystem::path& path, core::Interval& interval) const
 {
     return step().path_timespan(path, interval);
 }
 
-std::shared_ptr<segment::Reader> Dataset::segment_reader(const std::string& relpath, std::shared_ptr<core::Lock> lock)
+std::shared_ptr<segment::Reader> Dataset::segment_reader(const std::filesystem::path& relpath, std::shared_ptr<core::Lock> lock)
 {
     return session->segment_reader(scan::Scanner::format_from_filename(relpath), path, relpath, lock);
 }
@@ -147,7 +147,7 @@ std::map<std::string, WriterBatch> Writer::batch_by_segment(WriterBatch& batch)
         }
 
         core::Time time = e->md.get<types::reftime::Position>()->get_Position();
-        string relpath = dataset().step()(time) + "." + format;
+        auto relpath = sys::with_suffix(dataset().step()(time), "."s + format);
         by_segment[relpath].push_back(e);
     }
 
@@ -194,33 +194,30 @@ void CheckerSegment::archive()
     auto wlock = lock->write_lock();
 
     // Get the format for this relpath
-    size_t pos = segment->segment().relpath.rfind(".");
-    if (pos == string::npos)
-        throw std::runtime_error("cannot archive segment " + segment->segment().abspath + " because it does not have a format extension");
-    string format = segment->segment().relpath.substr(pos + 1);
+    auto format = scan::Scanner::format_from_filename(segment->segment().relpath);
 
     // Get the time range for this relpath
     core::Interval interval;
     if (!dataset().relpath_timespan(segment->segment().relpath, interval))
-        throw std::runtime_error("cannot archive segment " + segment->segment().abspath + " because its name does not match the dataset step");
+        throw std::runtime_error("cannot archive segment "s + segment->segment().abspath.native() + " because its name does not match the dataset step");
 
     // Get the contents of this segment
     metadata::Collection mdc;
     get_metadata(wlock, mdc);
 
     // Move the segment to the archive and deindex it
-    string new_root = str::joinpath(dataset().path, ".archive", "last");
-    string new_relpath = dataset().step()(interval.begin) + "." + format;
-    string new_abspath = str::joinpath(new_root, new_relpath);
+    auto new_root = dataset().path / ".archive" / "last";
+    auto new_relpath = sys::with_suffix(dataset().step()(interval.begin), "."s + format);
+    auto new_abspath = new_root / new_relpath;
     release(new_root, new_relpath, new_abspath);
 
     // Acquire in the achive
-    archives()->index_segment(str::joinpath("last", new_relpath), move(mdc));
+    archives()->index_segment("last" / new_relpath, move(mdc));
 }
 
 void CheckerSegment::unarchive()
 {
-    string arcrelpath = str::joinpath("last", segment->segment().relpath);
+    auto arcrelpath = "last" / segment->segment().relpath;
     archives()->release_segment(arcrelpath, segment->segment().root, segment->segment().relpath, segment->segment().abspath);
     auto reader = segment->segment().reader(lock);
     metadata::Collection mdc;
@@ -424,25 +421,20 @@ void Checker::check(CheckerConfig& opts)
     local::Checker::check(opts);
 }
 
-void Checker::scan_dir(const std::string& root, std::function<void(const std::string& relpath)> dest)
+void Checker::scan_dir(const std::filesystem::path& root, std::function<void(const std::filesystem::path& relpath)> dest)
 {
-    // Trim trailing '/'
-    string m_root = root;
-    while (m_root.size() > 1 and m_root[m_root.size()-1] == '/')
-        m_root.resize(m_root.size() - 1);
-
-    files::PathWalk walker(m_root);
-    walker.consumer = [&](const std::string& relpath, sys::Path::iterator& entry, struct stat& st) {
+    files::PathWalk walker(root);
+    walker.consumer = [&](const std::filesystem::path& relpath, sys::Path::iterator& entry, struct stat& st) {
         // Skip '.', '..' and hidden files
         if (entry->d_name[0] == '.')
             return false;
 
         string name = entry->d_name;
-        string abspath = str::joinpath(m_root, relpath, name);
+        auto abspath = root / relpath / name;
         if (Segment::is_segment(abspath))
         {
-            string basename = Segment::basename(name);
-            dest(str::joinpath(relpath, basename));
+            auto basename = Segment::basename(name);
+            dest(relpath / basename);
             return false;
         }
 

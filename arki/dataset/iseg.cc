@@ -19,7 +19,7 @@ Dataset::Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg
       format(cfg.value("format")),
       index(index::parseMetadataBitmask(cfg.value("index"))),
       unique(index::parseMetadataBitmask(cfg.value("unique"))),
-      summary_cache_pathname(str::joinpath(path, ".summaries")),
+      summary_cache_pathname(path / ".summaries"),
       trace_sql(cfg.value_bool("trace_sql"))
 {
     if (format.empty())
@@ -43,7 +43,7 @@ std::shared_ptr<dataset::Checker> Dataset::create_checker()
     return std::make_shared<iseg::Checker>(static_pointer_cast<Dataset>(shared_from_this()));
 }
 
-std::shared_ptr<segment::Reader> Dataset::segment_reader(const std::string& relpath, std::shared_ptr<core::Lock> lock)
+std::shared_ptr<segment::Reader> Dataset::segment_reader(const std::filesystem::path& relpath, std::shared_ptr<core::Lock> lock)
 {
     return session->segment_reader(format, path, relpath, lock);
 }

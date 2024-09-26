@@ -17,7 +17,7 @@ namespace arki {
 namespace dataset {
 namespace index {
 
-SummaryCache::SummaryCache(const std::string& root)
+SummaryCache::SummaryCache(const std::filesystem::path& root)
     : m_scache_root(root)
 {
 }
@@ -26,28 +26,28 @@ SummaryCache::~SummaryCache()
 {
 }
 
-std::string SummaryCache::summary_pathname(int year, int month) const
+std::filesystem::path SummaryCache::summary_pathname(int year, int month) const
 {
     char buf[32];
     snprintf(buf, 32, "%04d-%02d.summary", year, month);
-    return str::joinpath(m_scache_root, buf);
+    return m_scache_root / buf;
 }
 
 void SummaryCache::openRO()
 {
-    string parent = str::basename(m_scache_root);
+    auto parent = m_scache_root.parent_path();
     if (sys::access(parent, W_OK))
-        sys::mkdir_ifmissing(m_scache_root, 0777);
+        std::filesystem::create_directory(m_scache_root);
 }
 
 void SummaryCache::openRW()
 {
-    sys::mkdir_ifmissing(m_scache_root, 0777);
+    std::filesystem::create_directory(m_scache_root);
 }
 
 bool SummaryCache::read(Summary& s)
 {
-    string sum_file = str::joinpath(m_scache_root, "all.summary");
+    auto sum_file = m_scache_root / "all.summary";
     sys::File fd(sum_file);
     if (!fd.open_ifexists(O_RDONLY))
         return false;
@@ -57,7 +57,7 @@ bool SummaryCache::read(Summary& s)
 
 bool SummaryCache::read(Summary& s, int year, int month)
 {
-    string sum_file = summary_pathname(year, month);
+    auto sum_file = summary_pathname(year, month);
     sys::File fd(sum_file);
     if (!fd.open_ifexists(O_RDONLY))
         return false;
@@ -67,7 +67,7 @@ bool SummaryCache::read(Summary& s, int year, int month)
 
 bool SummaryCache::write(Summary& s)
 {
-    string sum_file = str::joinpath(m_scache_root, "all.summary");
+    auto sum_file = m_scache_root / "all.summary";
 
     // Write back to the cache directory, if allowed
     if (!sys::access(m_scache_root, W_OK))
@@ -79,7 +79,7 @@ bool SummaryCache::write(Summary& s)
 
 bool SummaryCache::write(Summary& s, int year, int month)
 {
-    string sum_file = summary_pathname(year, month);
+    auto sum_file = summary_pathname(year, month);
 
     // Write back to the cache directory, if allowed
     if (!sys::access(m_scache_root, W_OK))
@@ -95,13 +95,13 @@ void SummaryCache::invalidate()
     sys::Path dir(m_scache_root);
     for (sys::Path::iterator i = dir.begin(); i != dir.end(); ++i)
         if (str::endswith(i->d_name, ".summary"))
-            sys::unlink(str::joinpath(m_scache_root, i->d_name));
+            sys::unlink(m_scache_root / i->d_name);
 }
 
 void SummaryCache::invalidate(int year, int month)
 {
-    sys::unlink_ifexists(summary_pathname(year, month));
-    sys::unlink_ifexists(str::joinpath(m_scache_root, "all.summary"));
+    std::filesystem::remove(summary_pathname(year, month));
+    std::filesystem::remove(m_scache_root / "all.summary");
 }
 
 void SummaryCache::invalidate(const Metadata& md)
@@ -118,11 +118,11 @@ void SummaryCache::invalidate(const Time& tmin, const Time& tmax)
     bool deleted = false;
     for (Time t = tmin; t <= tmax; t = t.start_of_next_month())
     {
-        if (sys::unlink_ifexists(summary_pathname(t.ye, t.mo)))
+        if (std::filesystem::remove(summary_pathname(t.ye, t.mo)))
             deleted = true;
     }
     if (deleted)
-        sys::unlink_ifexists(str::joinpath(m_scache_root, "all.summary"));
+        std::filesystem::remove(m_scache_root / "all.summary");
 }
 
 
@@ -136,10 +136,10 @@ bool SummaryCache::check(const dataset::Base& ds, Reporter& reporter) const
     {
         if (!str::endswith(i->d_name, ".summary")) continue;
 
-        string pathname = str::joinpath(m_scache_root, i->d_name);
+        auto pathname = m_scache_root / i->d_name;
         if (!sys::access(pathname, W_OK))
         {
-            reporter.operation_manual_intervention(ds.name(), "check", pathname + " is not writable");
+            reporter.operation_manual_intervention(ds.name(), "check", pathname.native() + " is not writable");
             res = false;
         }
     }

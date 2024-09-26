@@ -11,7 +11,7 @@ namespace summary {
 class Stats;
 class Table;
 
-size_t decode(core::BinaryDecoder& dec, unsigned version, const std::string& filename, Table& target);
+size_t decode(core::BinaryDecoder& dec, unsigned version, const std::filesystem::path& filename, Table& target);
 
 struct EncodingVisitor : public Visitor
 {

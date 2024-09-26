@@ -68,10 +68,10 @@ void load_scanners()
     base += ".";
     base += PyModule_GetName(module_scanners);
 
-    std::vector<std::string> sources = arki::Config::get().dir_scan.list_files(".py");
+    std::vector<std::filesystem::path> sources = arki::Config::get().dir_scan.list_files(".py");
     for (const auto& source: sources)
     {
-        std::string basename = str::basename(source);
+        std::string basename = source.filename();
 
         // Check if the scanner module had already been imported
         std::string module_name = base + "." + basename.substr(0, basename.size() - 3);
@@ -209,7 +209,7 @@ struct get_long : public MethKwargs<get_long, arkipy_scan_Grib>
         static const char* kwlist[] = { "key", "default", NULL };
         const char* key = nullptr;
         PyObject* arg_default = nullptr;
-        if (!PyArg_ParseTupleAndKeywords(args, kw, "s|O", (char**)kwlist, &key, &arg_default))
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "s|O", pass_kwlist(kwlist), &key, &arg_default))
             return nullptr;
 
         try {
@@ -217,6 +217,7 @@ struct get_long : public MethKwargs<get_long, arkipy_scan_Grib>
             long val;
             int res = grib_get_long(self->gh, key, &val);
             if (res == GRIB_NOT_FOUND or val == GRIB_MISSING_LONG)
+            {
                 if (arg_default)
                 {
                     Py_INCREF(arg_default);
@@ -224,6 +225,7 @@ struct get_long : public MethKwargs<get_long, arkipy_scan_Grib>
                 }
                 else
                     Py_RETURN_NONE;
+            }
 
             check_grib_error(res, "cannot read long value from grib");
 
@@ -415,7 +417,7 @@ void load_odimh5scanner_object()
 class PythonOdimh5Scanner : public arki::scan::OdimScanner
 {
 protected:
-    std::shared_ptr<Metadata> scan_h5_file(const std::string& pathname) override
+    std::shared_ptr<Metadata> scan_h5_file(const std::filesystem::path& pathname) override
     {
         auto md = std::make_shared<Metadata>();
 
@@ -472,7 +474,7 @@ void load_ncscanner_object()
 class PythonNetCDFScanner : public arki::scan::NetCDFScanner
 {
 protected:
-    std::shared_ptr<Metadata> scan_nc_file(const std::string& pathname) override
+    std::shared_ptr<Metadata> scan_nc_file(const std::filesystem::path& pathname) override
     {
         auto md = std::make_shared<Metadata>();
 
@@ -529,7 +531,7 @@ void load_jpegscanner_object()
 class PythonJPEGScanner : public arki::scan::JPEGScanner
 {
 protected:
-    std::shared_ptr<Metadata> scan_jpeg_file(const std::string& pathname) override
+    std::shared_ptr<Metadata> scan_jpeg_file(const std::filesystem::path& pathname) override
     {
         auto md = std::make_shared<Metadata>();
 
@@ -602,7 +604,7 @@ struct vm2_get_station : public MethKwargs<vm2_get_station, PyObject>
     {
         static const char* kwlist[] = { "id", nullptr };
         int id;
-        if (!PyArg_ParseTupleAndKeywords(args, kw, "i", const_cast<char**>(kwlist), &id))
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "i", pass_kwlist(kwlist), &id))
             return nullptr;
 
         try {
@@ -625,7 +627,7 @@ struct vm2_get_variable : public MethKwargs<vm2_get_variable, PyObject>
     {
         static const char* kwlist[] = { "id", nullptr };
         int id;
-        if (!PyArg_ParseTupleAndKeywords(args, kw, "i", const_cast<char**>(kwlist), &id))
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "i", pass_kwlist(kwlist), &id))
             return nullptr;
 
         try {
@@ -661,8 +663,7 @@ struct get_scanner : public ClassMethKwargs<get_scanner>
         static const char* kwlist[] = { "format", nullptr };
         const char* py_format = nullptr;
         Py_ssize_t py_format_len;
-        if (!PyArg_ParseTupleAndKeywords(args, kw, "z#",
-                    const_cast<char**>(kwlist), &py_format, &py_format_len))
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "z#", pass_kwlist(kwlist), &py_format, &py_format_len))
             return nullptr;
 
         try {
@@ -686,7 +687,7 @@ Returns a Metadata with inline source.
         static const char* kwlist[] = { "data", nullptr };
         PyObject* arg_data = nullptr;
 
-        if (!PyArg_ParseTupleAndKeywords(args, kw, "O", (char**)kwlist, &arg_data))
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "O", pass_kwlist(kwlist), &arg_data))
             return nullptr;
 
         try {
