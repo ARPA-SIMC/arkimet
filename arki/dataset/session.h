@@ -16,7 +16,8 @@ class Session: public std::enable_shared_from_this<Session>
 {
 protected:
     /// Map segment absolute paths to possibly reusable reader instances
-    std::unordered_map<std::filesystem::path, std::weak_ptr<segment::Reader>> reader_pool;
+    // TODO: use std::filesystem::path on newer GCC
+    std::unordered_map<std::string, std::weak_ptr<segment::Reader>> reader_pool;
 
     matcher::Parser matcher_parser;
 

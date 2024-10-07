@@ -115,17 +115,17 @@ struct FilterLoop : public Sender
 
     }
 
-    stream::SendResult send_buffer(const void* data, size_t size) final
+    stream::SendResult send_buffer(const void* data, size_t size) override final
     {
         return send(BufferToPipe<Backend>(data, size));
     }
 
-    stream::SendResult send_line(const void* data, size_t size) final
+    stream::SendResult send_line(const void* data, size_t size) override final
     {
         return send(LineToPipe<Backend>(data, size));
     }
 
-    stream::SendResult send_file_segment(core::NamedFileDescriptor& src_fd, off_t offset, size_t size) final
+    stream::SendResult send_file_segment(core::NamedFileDescriptor& src_fd, off_t offset, size_t size) override final
     {
         try {
             return send(FileToPipeSendfile<Backend>(src_fd, offset, size));
@@ -134,7 +134,7 @@ struct FilterLoop : public Sender
         }
     }
 
-    stream::SendResult flush() final
+    stream::SendResult flush() override final
     {
         return loop(Flusher<Backend>(stream));
     }

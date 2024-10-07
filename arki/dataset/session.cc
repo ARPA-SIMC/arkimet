@@ -30,6 +30,7 @@ namespace arki {
 namespace dataset {
 
 Session::Session(bool load_aliases)
+    : reader_pool()
 {
     if (load_aliases)
         matcher_parser.load_system_aliases();
