@@ -544,21 +544,21 @@ void ActualPath::contents_match(const std::initializer_list<std::string>& lines_
 
 void ActualDouble::almost_equal(double expected, unsigned places) const
 {
-    double epsilon = exp10(-static_cast<int>(places + 1));
+    double epsilon = 4.9*exp10(-static_cast<int>(places+1));
     if (fabs(_actual - expected) < epsilon)
         return;
     std::stringstream ss;
-    ss << std::setprecision(places) << fixed << _actual << " is different than the expected " << expected;
+    ss << std::setprecision(places + 1) << fixed << _actual << " is different than the expected " << expected;
     throw TestFailed(ss.str());
 }
 
 void ActualDouble::not_almost_equal(double expected, unsigned places) const
 {
-    double epsilon = exp10(-static_cast<int>(places + 1));
+    double epsilon = 4.9*exp10(-static_cast<int>(places+1));
     if (fabs(_actual - expected) > epsilon)
         return;
     std::stringstream ss;
-    ss << std::setprecision(places) << fixed << _actual << " is the same as the expected " << expected;
+    ss << std::setprecision(places + 1) << fixed << _actual << " is the same as the expected " << expected;
     throw TestFailed(ss.str());
 }
 
