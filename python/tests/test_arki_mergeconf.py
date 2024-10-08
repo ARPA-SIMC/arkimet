@@ -141,16 +141,17 @@ type=discard
     def test_extra(self):
         src = os.path.abspath("inbound/test.grib1")
         out = self.call_output_success(src, "--extra")
+        dec = r"(?:\.0*)?"
         self.assertRegex(
             out,
-            f"[{src}]\n",
-            r"bounding = POLYGON \(\(-60(?:\.0*)? 30(?:\.0*), "
-            r"-60(?:\.0*) 72(?:\.0*), "
-            r"42(?:\.0* 72(?:\.0*), "
-            r"42(?:\.0*) 30(?:\.0*), "
-            r"-60(?:\.0*) 30(?:\.0*)\)\)\n"
-            "format = grib\n"
-            f"name = {src}\n"
-            f"path = {src}\n"
-            "type = file\n",
+            rf"[{src}]\n",
+            rf"bounding = POLYGON \(\(-60{dec} 30{dec}, "
+            rf"-60{dec} 72{dec}, "
+            rf"42{dec} 72{dec}, "
+            rf"42{dec} 30{dec}, "
+            rf"-60{dec} 30{dec}\)\)\n"
+            r"format = grib\n"
+            rf"name = {src}\n"
+            rf"path = {src}\n"
+            r"type = file\n",
         )
