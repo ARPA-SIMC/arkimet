@@ -86,7 +86,11 @@ void State::dump(FILE* out) const
 
 
 DatasetTest::DatasetTest(const std::string& cfg_instance, TestVariant variant)
-    : variant(variant), cfg(std::make_shared<core::cfg::Section>()), cfg_instance(cfg_instance), ds_name("testds"), ds_root(std::filesystem::weakly_canonical("testds"))
+    : variant(variant), cfg(std::make_shared<core::cfg::Section>()),
+      cfg_instance(cfg_instance), ds_name("testds"),
+      // `./` is needed because of the way weakly_canonical is defined: it
+      // needs a prefix that exists to ensure the resulting path is absolute
+      ds_root(std::filesystem::weakly_canonical("./testds"))
 {
     //if (default_datasettest_config)
         //cfg = *default_datasettest_config;
