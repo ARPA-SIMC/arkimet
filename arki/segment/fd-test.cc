@@ -25,7 +25,7 @@ SegmentTests<Segment, Data>::register_tests();
 
 this->add_method("append", [](Fixture& f) {
     std::filesystem::path relpath = "testfile." + f.td.format;
-    auto abspath = std::filesystem::canonical(relpath);
+    auto abspath = std::filesystem::weakly_canonical(std::filesystem::current_path() / relpath);
     delete_if_exists(relpath);
     wassert(actual_file(relpath).not_exists());
     {
