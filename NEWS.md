@@ -1,3 +1,9 @@
+# New in version 1.52
+
+* Updated code to use C++17 features and new wreport/dballe
+* Fixed build/test errors (#337, #339)
+* Removed support for CentOS7 in specfile
+
 # New in version 1.51
 
 * Fixed scanning GRIB1 files with missing level parts (#326)

@@ -3,7 +3,7 @@
 
 Summary: Archive for weather information
 Name: arkimet
-Version: 1.51
+Version: 1.52
 Release: 1
 License: GPL
 Group: Applications/Meteo
@@ -16,15 +16,6 @@ Source3: https://github.com/arpa-simc/%{name}/raw/v%{version}-%{release}/fedora/
 # On fedora, we don't need systemd to build. But we do on centos.
 # https://fedoraproject.org/wiki/Packaging:Systemd#Filesystem_locations
 BuildRequires: systemd
-
-# Python 3 package names
-%if 0%{?rhel} == 7
-%define python3_vers python36
-# to have python 3.6 interpreter
-BuildRequires: python3-rpm-macros >= 3-23
-%else
-%define python3_vers python3
-%endif
 
 BuildRequires: meson
 BuildRequires: gcc-c++
@@ -47,43 +38,35 @@ BuildRequires: libwreport-devel >= 3.0
 BuildRequires: flex
 BuildRequires: bison
 BuildRequires: meteo-vm2-devel >= 0.12
-BuildRequires: %{python3_vers}
-BuildRequires: %{python3_vers}-devel
-BuildRequires: %{python3_vers}-werkzeug
-BuildRequires: %{python3_vers}-setproctitle
-BuildRequires: %{python3_vers}-jinja2
-BuildRequires: %{python3_vers}-requests
-BuildRequires: %{python3_vers}-wreport3
-BuildRequires: %{python3_vers}-dballe >= 9.0
-BuildRequires: %{python3_vers}-netcdf4
-BuildRequires: %{python3_vers}-pillow
-%if ! 0%{?el7}
-BuildRequires: %{python3_vers}-h5py
-BuildRequires: %{python3_vers}-sphinx
-%else
-BuildRequires: h5py
-%endif
+BuildRequires: python3
+BuildRequires: python3-devel
+BuildRequires: python3-werkzeug
+BuildRequires: python3-setproctitle
+BuildRequires: python3-jinja2
+BuildRequires: python3-requests
+BuildRequires: python3-wreport3
+BuildRequires: python3-dballe >= 9.0
+BuildRequires: python3-netcdf4
+BuildRequires: python3-pillow
+BuildRequires: python3-h5py
+BuildRequires: python3-sphinx
 BuildRequires: libzip-devel
 BuildRequires: libarchive-devel
 BuildRequires: bzip2-devel
-BuildRequires: %{python3_vers}-shapely
+BuildRequires: python3-shapely
 
 Requires: meteo-vm2 >= 0.12
 Requires: eccodes
-Requires: %{python3_vers}
-Requires: %{python3_vers}-werkzeug
-Requires: %{python3_vers}-setproctitle
-Requires: %{python3_vers}-dballe >= 9.0
-Requires: %{python3_vers}-netcdf4
-Requires: %{python3_vers}-pillow
-Requires: %{python3_vers}-shapely
+Requires: python3
+Requires: python3-werkzeug
+Requires: python3-setproctitle
+Requires: python3-dballe >= 9.0
+Requires: python3-netcdf4
+Requires: python3-pillow
+Requires: python3-shapely
 Requires: libdballe9
 Requires: systemd
-%if ! 0%{?el7}
-Requires: %{python3_vers}-h5py
-%else
-Requires: h5py
-%endif
+Requires: python3-h5py
 
 Conflicts: arkimet-devel
 
@@ -116,12 +99,6 @@ currently offline.
 
 %build
 
-# CentOS 7 known limitations
-# - disabled syscall splice()
-# - disabled nosetests that were hanging (see #217)
-# - disabled netcdf v5 support (see #243)
-# - disabled doc building for issues with sphinx
-
 # enabling arpae tests on almost all builds
 %{?fedora:%define arpae_tests 1}
 %{?rhel:%define arpae_tests 1}
@@ -149,12 +126,7 @@ echo 'Enabling ARPAE tests'
 source %{_sysconfdir}/profile.d/eccodes-simc.sh
 %endif
 
-%if 0%{?el7}
-# See https://github.com/ARPA-SIMC/arkimet/issues/217
-%meson_test ISSUE217=1
-%else
 %meson_test
-%endif
 
 
 %clean
@@ -203,6 +175,11 @@ if [ "$1" = "1" ]; then
 fi
 
 %changelog
+* Thu Dec  5 2024 Daniele Branchini <dbranchini@arpae.it> - 1.52-1
+- Updated code to use C++17 features and new wreport/dballe
+- Fixed build/test errors (#337, #339)
+- Removed support for CentOS7 in specfile
+
 * Mon Jun 24 2024 Daniele Branchini <dbranchini@arpae.it> - 1.51-1
 - Fixed scanning GRIB1 files with missing level parts (#326)
 - Removed docker references, updated build instructions (#329)
