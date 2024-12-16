@@ -1,3 +1,7 @@
+# New in version 1.53
+
+* Prepend prefix to POSTPROC_DIR to make it absolute (#341)
+
 # New in version 1.52
 
 * Updated code to use C++17 features and new wreport/dballe

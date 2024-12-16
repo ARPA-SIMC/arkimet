@@ -3,7 +3,7 @@
 
 Summary: Archive for weather information
 Name: arkimet
-Version: 1.52
+Version: 1.53
 Release: 1
 License: GPL
 Group: Applications/Meteo
@@ -175,6 +175,9 @@ if [ "$1" = "1" ]; then
 fi
 
 %changelog
+* Mon Dec 16 2024 Daniele Branchini <dbranchini@arpae.it> - 1.53-1
+- Prepend prefix to POSTPROC_DIR to make it absolute (#341)
+
 * Thu Dec  5 2024 Daniele Branchini <dbranchini@arpae.it> - 1.52-1
 - Updated code to use C++17 features and new wreport/dballe
 - Fixed build/test errors (#337, #339)
