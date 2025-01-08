@@ -21,6 +21,7 @@ Dataset::Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg
           types::parse_code_names(cfg.value("index")),
           types::parse_code_names(cfg.value("unique")),
           cfg.value_bool("trace_sql"),
+          smallfiles,
           eatmydata,
       },
       summary_cache_pathname{path / ".summaries"}

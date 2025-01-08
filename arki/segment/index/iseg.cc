@@ -156,7 +156,7 @@ void Index::scan(metadata_dest_func dest, const std::string& order_by) const
     std::string query = "SELECT m.offset, m.size, m.notes, m.reftime";
     if (m_uniques) query += ", m.uniq";
     if (m_others) query += ", m.other";
-    if (dataset->smallfiles) query += ", m.data";
+    if (config.smallfiles) query += ", m.data";
     query += " FROM md AS m";
     query += " ORDER BY " + order_by;
 
@@ -288,7 +288,7 @@ void Index::build_md(Query& q, Metadata& md, std::shared_ptr<arki::segment::data
             m_others->read(q.fetch<int>(j), md);
         ++j;
     }
-    if (dataset->smallfiles)
+    if (config.smallfiles)
     {
         if (!q.isNULL(j))
         {
@@ -319,7 +319,7 @@ bool Index::query_data(const query::Data& q, dataset::Session& session, metadata
 
     if (m_uniques) query += ", m.uniq";
     if (m_others) query += ", m.other";
-    if (dataset->smallfiles) query += ", m.data";
+    if (config.smallfiles) query += ", m.data";
 
     query += " FROM md AS m";
 
@@ -490,7 +490,7 @@ void WIndex::init_db()
         " reftime TEXT NOT NULL";
     if (m_uniques) query += ", uniq INTEGER NOT NULL";
     if (m_others) query += ", other INTEGER NOT NULL";
-    if (dataset->smallfiles) query += ", data TEXT";
+    if (config.smallfiles) query += ", data TEXT";
     if (m_uniques)
         query += ", UNIQUE(reftime, uniq)";
     else
@@ -519,7 +519,7 @@ void WIndex::compile_insert()
         un_ot += ", other";
         placeholders += ", ?";
     }
-    if (dataset->smallfiles)
+    if (config.smallfiles)
     {
         un_ot += ", data";
         placeholders += ", ?";
@@ -595,7 +595,7 @@ struct Inserter
 
         if (id_uniques != -1) q.bind(++qidx, id_uniques);
         if (id_others != -1) q.bind(++qidx, id_others);
-        if (idx.dataset->smallfiles)
+        if (idx.config.smallfiles)
         {
             if (const types::Value* v = md.get<types::Value>())
             {

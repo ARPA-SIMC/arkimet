@@ -16,6 +16,12 @@ struct Config
     bool trace_sql;
 
     /**
+     * If true, try to store the content of small files in the index if
+     * possible, to avoid extra I/O when querying
+     */
+    bool smallfiles = false;
+
+    /**
      * Trade write reliability and write concurrency in favour of performance.
      *
      * Useful for writing fast temporary private datasets.
