@@ -15,8 +15,7 @@ namespace matcher {
 class OR;
 }
 
-namespace dataset {
-namespace index {
+namespace segment::index::iseg {
 
 /**
  * Associate in the base one ID per value of metadata item.
@@ -122,7 +121,5 @@ public:
 
 }
 }
-}
 
-// vim:set ts=4 sw=4:
 #endif

@@ -12,6 +12,9 @@ using namespace std;
 using namespace arki;
 using namespace arki::tests;
 using namespace arki::types;
+using arki::segment::index::iseg::AttrSubIndex;
+using arki::segment::index::iseg::Attrs;
+using arki::segment::index::iseg::NotFound;
 
 class Tests : public TestCase
 {
@@ -25,12 +28,12 @@ add_method("basic", [] {
     matcher::Parser parser;
     utils::sqlite::SQLiteDB db;
     db.open(":memory:");
-    dataset::index::AttrSubIndex(db, TYPE_ORIGIN).initDB();
+    AttrSubIndex(db, TYPE_ORIGIN).initDB();
 
     Metadata md;
     unique_ptr<Type> origin(Origin::createGRIB1(200, 0, 0));
 
-    dataset::index::AttrSubIndex attr(db, TYPE_ORIGIN);
+    AttrSubIndex attr(db, TYPE_ORIGIN);
 
     // ID is -1 if it is not in the database
     wassert(actual(attr.id(md)) == -1);
@@ -38,7 +41,7 @@ add_method("basic", [] {
     md.test_set(*origin);
 
     // id() is read-only so it throws NotFound when the item does not exist
-    wassert_throws(dataset::index::NotFound, attr.id(md));
+    wassert_throws(NotFound, attr.id(md));
 
     int id = attr.insert(md);
     wassert(actual(id) == 1);
@@ -66,37 +69,37 @@ add_method("cold_cache", [] {
     matcher::Parser parser;
     utils::sqlite::SQLiteDB db;
     db.open(":memory:");
-    dataset::index::AttrSubIndex(db, TYPE_ORIGIN).initDB();
+    AttrSubIndex(db, TYPE_ORIGIN).initDB();
 
     Metadata md;
     unique_ptr<Type> origin(Origin::createGRIB1(200, 0, 0));
 
     // ID is -1 if it is not in the database
-    wassert(actual(dataset::index::AttrSubIndex(db, TYPE_ORIGIN).id(md)) == -1);
+    wassert(actual(AttrSubIndex(db, TYPE_ORIGIN).id(md)) == -1);
 
     md.test_set(*origin);
 
     // id() is read-only so it throws NotFound when the item does not exist
-    wassert_throws(dataset::index::NotFound, dataset::index::AttrSubIndex(db, TYPE_ORIGIN).id(md));
+    wassert_throws(NotFound, AttrSubIndex(db, TYPE_ORIGIN).id(md));
 
-    int id = dataset::index::AttrSubIndex(db, TYPE_ORIGIN).insert(md);
+    int id = AttrSubIndex(db, TYPE_ORIGIN).insert(md);
     wassert(actual(id) == 1);
 
     // Insert again, we should have the same result
-    wassert(actual(dataset::index::AttrSubIndex(db, TYPE_ORIGIN).insert(md)) == 1);
+    wassert(actual(AttrSubIndex(db, TYPE_ORIGIN).insert(md)) == 1);
 
-    wassert(actual(dataset::index::AttrSubIndex(db, TYPE_ORIGIN).id(md)) == 1);
+    wassert(actual(AttrSubIndex(db, TYPE_ORIGIN).id(md)) == 1);
 
     // Retrieve from the database
     Metadata md1;
-    dataset::index::AttrSubIndex(db, TYPE_ORIGIN).read(1, md1);
+    AttrSubIndex(db, TYPE_ORIGIN).read(1, md1);
     wassert(actual_type(md1.get<types::Origin>()) == origin);
 
     // Query the database
     Matcher m = parser.parse("origin:GRIB1,200");
     auto matcher = m.get(TYPE_ORIGIN);
     wassert_true((bool)matcher);
-    vector<int> ids = dataset::index::AttrSubIndex(db, TYPE_ORIGIN).query(*matcher);
+    vector<int> ids = AttrSubIndex(db, TYPE_ORIGIN).query(*matcher);
     wassert(actual(ids.size()) == 1u);
     wassert(actual(ids[0]) == 1);
 });
@@ -104,13 +107,13 @@ add_method("cold_cache", [] {
 add_method("obtainids", [] {
     utils::sqlite::SQLiteDB db;
     db.open(":memory:");
-    dataset::index::AttrSubIndex(db, TYPE_ORIGIN).initDB();
+    AttrSubIndex(db, TYPE_ORIGIN).initDB();
 
-	set<types::Code> members;
-	members.insert(TYPE_ORIGIN);
-	members.insert(TYPE_PRODUCT);
-	members.insert(TYPE_LEVEL);
-	dataset::index::Attrs attrs(db, members);
+    set<types::Code> members;
+    members.insert(TYPE_ORIGIN);
+    members.insert(TYPE_PRODUCT);
+    members.insert(TYPE_LEVEL);
+    Attrs attrs(db, members);
 
     Metadata md;
     vector<int> ids = attrs.obtainIDs(md);

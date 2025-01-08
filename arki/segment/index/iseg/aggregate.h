@@ -30,9 +30,7 @@
 #include <set>
 #include <string>
 
-namespace arki {
-namespace dataset {
-namespace index {
+namespace arki::segment::index::iseg {
 
 class Aggregate
 {
@@ -108,8 +106,6 @@ public:
 	void initDB(const std::set<types::Code>& components_indexed);
 };
 
-}
-}
 }
 
 #endif

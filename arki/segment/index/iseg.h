@@ -58,8 +58,8 @@ protected:
     std::filesystem::path index_pathname;
 
     // Subtables
-    index::Aggregate* m_uniques = nullptr;
-    index::Aggregate* m_others = nullptr;
+    segment::index::iseg::Aggregate* m_uniques = nullptr;
+    segment::index::iseg::Aggregate* m_others = nullptr;
 
     /// Optionally held read lock
     std::shared_ptr<dataset::Lock> lock;
@@ -104,9 +104,9 @@ public:
     ~Index();
 
     bool has_uniques() const { return m_uniques != nullptr; }
-    index::Aggregate& uniques() { return *m_uniques; }
+    segment::index::iseg::Aggregate& uniques() { return *m_uniques; }
     bool has_others() const { return m_others != nullptr; }
-    index::Aggregate& others() { return *m_others; }
+    segment::index::iseg::Aggregate& others() { return *m_others; }
 
     utils::sqlite::SQLiteDB& db() { return m_db; }
 

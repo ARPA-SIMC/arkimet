@@ -10,9 +10,7 @@ using namespace arki;
 using namespace arki::types;
 using namespace arki::utils::sqlite;
 
-namespace arki {
-namespace dataset {
-namespace index {
+namespace arki::segment::index::iseg {
 
 int AttrSubIndex::q_select_id(const std::vector<uint8_t>& blob) const
 {
@@ -244,6 +242,4 @@ std::vector<int> Attrs::obtainIDs(const Metadata& md) const
 	return ids;
 }
 
-}
-}
 }

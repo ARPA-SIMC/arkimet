@@ -25,7 +25,7 @@ using namespace arki;
 using namespace arki::types;
 using namespace arki::utils;
 using namespace arki::utils::sqlite;
-using namespace arki::dataset::index;
+using namespace arki::segment::index::iseg;
 
 namespace arki {
 namespace dataset {

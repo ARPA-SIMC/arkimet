@@ -1,17 +1,10 @@
 #ifndef ARKI_DATASET_INDEX_BASE_H
 #define ARKI_DATASET_INDEX_BASE_H
 
-#include <arki/types/fwd.h>
 #include <string>
 #include <vector>
-#include <set>
 
-namespace arki {
-class Metadata;
-class Matcher;
-
-namespace dataset {
-namespace index {
+namespace arki::segment::index::iseg {
 
 // Exception we can throw if an element was not found
 struct NotFound {};
@@ -25,7 +18,5 @@ struct NotFound {};
  */
 std::string fmtin(const std::vector<int>& vals);
 
-}
-}
 }
 #endif

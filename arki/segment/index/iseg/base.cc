@@ -7,24 +7,21 @@ using namespace std;
 using namespace arki;
 using namespace arki::types;
 using namespace arki::utils;
-using namespace arki::dataset::index;
 
-namespace arki {
-namespace dataset {
-namespace index {
+namespace arki::segment::index::iseg {
 
 std::string fmtin(const std::vector<int>& vals)
 {
     if (vals.empty())
         throw NotFound();
 
-    stringstream res;
+    std::stringstream res;
     if (vals.size() == 1)
         res << "=" << *vals.begin();
     else
     {
         res << "IN(";
-        for (vector<int>::const_iterator i = vals.begin();
+        for (std::vector<int>::const_iterator i = vals.begin();
                 i != vals.end(); ++i)
             if (i == vals.begin())
                 res << *i;
@@ -35,6 +32,4 @@ std::string fmtin(const std::vector<int>& vals)
     return res.str();
 }
 
-}
-}
 }

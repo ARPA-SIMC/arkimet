@@ -9,7 +9,7 @@ class Tests : public TestCase
 {
     using TestCase::TestCase;
     void register_tests() override;
-} test("arki_dataset_index_base");
+} test("arki_segment_index_iseg_base");
 
 void Tests::register_tests() {
 

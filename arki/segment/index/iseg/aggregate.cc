@@ -6,9 +6,7 @@
 using namespace std;
 using namespace arki::utils;
 
-namespace arki {
-namespace dataset {
-namespace index {
+namespace arki::segment::index::iseg {
 
 void Aggregate::init_select() const
 {
@@ -69,13 +67,13 @@ int Aggregate::get(const Metadata& md) const
     int idx = 0;
     for (Attrs::const_iterator i = m_attrs.begin();
             i != m_attrs.end(); ++i)
-	{
-		int id = -1;
-		try {
-			id = (*i)->id(md);
-		} catch (index::NotFound) {
-			return -1;
-		}
+    {
+        int id = -1;
+        try {
+            id = (*i)->id(md);
+        } catch (NotFound) {
+            return -1;
+        }
 
 		// If this metadata item does not exist, then the aggregate
 		// also does not exists
@@ -139,7 +137,7 @@ int Aggregate::add_constraints(
         // We found something: generate a constraint for it
         constraints.push_back(
                 prefix + "." + (*i)->name + " " +
-                index::fmtin((*i)->query(*mi)));
+                fmtin((*i)->query(*mi)));
         ++found;
     }
     return found;
@@ -159,7 +157,7 @@ std::string Aggregate::make_subquery(const Matcher& m) const
         // We found something: generate a constraint for it
         constraints.push_back(
                 (*i)->name + " " +
-                index::fmtin((*i)->query(*mi)));
+                fmtin((*i)->query(*mi)));
     }
     if (constraints.empty())
         return std::string();
@@ -236,6 +234,4 @@ void Aggregate::initDB(const std::set<types::Code>& components_indexed)
 	}
 }
 
-}
-}
 }
