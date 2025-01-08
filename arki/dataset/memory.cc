@@ -1,6 +1,6 @@
 #include "memory.h"
 #include "arki/summary.h"
-#include "arki/dataset/query.h"
+#include "arki/query.h"
 #include "arki/core/time.h"
 
 using namespace std;
@@ -23,7 +23,7 @@ Reader::~Reader() {}
 
 std::string Reader::type() const { return "memory"; }
 
-bool Reader::impl_query_data(const dataset::DataQuery& q, metadata_dest_func dest)
+bool Reader::impl_query_data(const query::Data& q, metadata_dest_func dest)
 {
     if (q.sorter)
         m_dataset->sort(*q.sorter);

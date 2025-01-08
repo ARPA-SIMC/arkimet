@@ -1,7 +1,7 @@
 #include "arki/dataset/tests.h"
 #include "arki/dataset.h"
 #include "arki/dataset/time.h"
-#include "arki/dataset/query.h"
+#include "arki/query.h"
 #include "arki/dataset/session.h"
 #include "arki/metadata/data.h"
 #include "arki/metadata/collection.h"
@@ -129,7 +129,7 @@ add_method("import_largefile", [](Fixture& f) {
 
     // Query it, streaming its data to /dev/null
     auto out = StreamOutput::create_discard();
-    dataset::ByteQuery bq;
+    query::Bytes bq;
     bq.setData(Matcher());
     wassert(reader->query_bytes(bq, *out));
 });
@@ -456,7 +456,7 @@ auto test_different_segment_fail = [](Fixture& f, unsigned fail_idx, dataset::Re
     wassert(actual(state.get("testds:2018/02-01." + format).state) == (fail_idx == 1 ? segment::SEGMENT_DELETED : segment::SEGMENT_OK));
     wassert(actual(state.get("testds:2018/03-01." + format).state) == (fail_idx == 2 ? segment::SEGMENT_DELETED : segment::SEGMENT_OK));
 
-    metadata::Collection res = f.query(dataset::DataQuery());
+    metadata::Collection res = f.query(query::Data());
     wassert(actual(res.size()) == 2u);
 };
 

@@ -1,6 +1,6 @@
 #include "arki/dataset/file.h"
-#include "arki/dataset/query.h"
-#include "arki/dataset/progress.h"
+#include "arki/query.h"
+#include "arki/query/progress.h"
 #include "arki/metadata.h"
 #include "arki/segment/data.h"
 #include "arki/core/file.h"
@@ -45,9 +45,9 @@ std::shared_ptr<Dataset> Dataset::from_config(std::shared_ptr<Session> session, 
 }
 
 
-bool Reader::impl_query_data(const dataset::DataQuery& q, metadata_dest_func dest)
+bool Reader::impl_query_data(const query::Data& q, metadata_dest_func dest)
 {
-    dataset::TrackProgress track(q.progress);
+    query::TrackProgress track(q.progress);
     dest = track.wrap(dest);
     return track.done(dataset().scan(q, dest));
 }
@@ -110,7 +110,7 @@ FdFile::~FdFile()
 }
 
 
-static std::shared_ptr<metadata::sort::Stream> wrap_with_query(const dataset::DataQuery& q, metadata_dest_func& dest)
+static std::shared_ptr<metadata::sort::Stream> wrap_with_query(const query::Data& q, metadata_dest_func& dest)
 {
     // Wrap with a stream sorter if we need sorting
     shared_ptr<metadata::sort::Stream> sorter;
@@ -132,7 +132,7 @@ static std::shared_ptr<metadata::sort::Stream> wrap_with_query(const dataset::Da
 
 ArkimetFile::~ArkimetFile() {}
 
-bool ArkimetFile::scan(const dataset::DataQuery& q, metadata_dest_func dest)
+bool ArkimetFile::scan(const query::Data& q, metadata_dest_func dest)
 {
     auto sorter = wrap_with_query(q, dest);
     if (!q.with_data)
@@ -164,7 +164,7 @@ YamlFile::YamlFile(std::shared_ptr<Session> session, const core::cfg::Section& c
 
 YamlFile::~YamlFile() { delete reader; }
 
-bool YamlFile::scan(const dataset::DataQuery& q, metadata_dest_func dest)
+bool YamlFile::scan(const query::Data& q, metadata_dest_func dest)
 {
     auto sorter = wrap_with_query(q, dest);
 
@@ -185,7 +185,7 @@ bool YamlFile::scan(const dataset::DataQuery& q, metadata_dest_func dest)
 }
 
 
-bool RawFile::scan(const dataset::DataQuery& q, metadata_dest_func dest)
+bool RawFile::scan(const query::Data& q, metadata_dest_func dest)
 {
     std::filesystem::path basedir, relpath;
     files::resolve_path(pathname, basedir, relpath);

@@ -1,9 +1,9 @@
 #include "arki/dataset/tests.h"
 #include "arki/dataset/merged.h"
-#include "arki/dataset/query.h"
 #include "arki/dataset/session.h"
-#include "arki/dataset/progress.h"
 #include "arki/dataset/pool.h"
+#include "arki/query.h"
+#include "arki/query/progress.h"
 #include "arki/stream.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
@@ -90,27 +90,27 @@ class Tests : public FixtureTestCase<Fixture>
 } tests("arki_dataset_merged");
 
 
-struct TestProgress : public dataset::QueryProgress
+struct TestProgress : public query::Progress
 {
-    using dataset::QueryProgress::count;
-    using dataset::QueryProgress::bytes;
+    using query::Progress::count;
+    using query::Progress::bytes;
     unsigned start_called = 0;
     unsigned update_called = 0;
     unsigned done_called = 0;
 
     void start(size_t expected_count=0, size_t expected_bytes=0) override
     {
-        QueryProgress::start(expected_count, expected_bytes);
+        query::Progress::start(expected_count, expected_bytes);
         ++start_called;
     }
     void update(size_t count, size_t bytes) override
     {
-        QueryProgress::update(count, bytes);
+        query::Progress::update(count, bytes);
         ++update_called;
     }
     void done() override
     {
-        QueryProgress::done();
+        query::Progress::done();
         ++done_called;
     }
 };
@@ -138,7 +138,7 @@ add_method("progress_query_data", [](Fixture& f) {
 
     auto progress = make_shared<TestProgress>();
 
-    dataset::DataQuery dq;
+    query::Data dq;
     dq.progress = progress;
     size_t count = 0;
     reader->query_data(dq, [&](std::shared_ptr<Metadata> md) noexcept { ++count; return true; });
@@ -153,7 +153,7 @@ add_method("progress_query_data", [](Fixture& f) {
 add_method("progress_query_bytes", [](Fixture& f) {
     auto reader = f.ds->create_reader();
     auto progress = make_shared<TestProgress>();
-    dataset::ByteQuery bq;
+    query::Bytes bq;
     bq.progress = progress;
     auto out = StreamOutput::create_discard();
     reader->query_bytes(bq, *out);
@@ -168,7 +168,7 @@ add_method("progress_query_data_throws", [](Fixture& f) {
     auto reader = f.ds->create_reader();
     auto progress1 = make_shared<TestProgressThrowing>();
     
-    dataset::DataQuery dq;
+    query::Data dq;
     dq.progress = progress1;
     size_t count = 0;
     auto e = wassert_throws(std::logic_error, reader->query_data(dq, [&](std::shared_ptr<Metadata> md) noexcept { ++count; return true; }));
@@ -179,7 +179,7 @@ add_method("progress_query_bytes_throws", [](Fixture& f) {
     auto reader = f.ds->create_reader();
     auto out = StreamOutput::create_discard();
     auto progress1 = make_shared<TestProgressThrowing>();
-    dataset::ByteQuery bq;
+    query::Bytes bq;
     bq.progress = progress1;
     auto e = wassert_throws(std::logic_error, reader->query_bytes(bq, *out));
     wassert(actual(e.what()) = "Expected error");

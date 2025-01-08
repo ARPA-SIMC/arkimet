@@ -2,7 +2,7 @@
 #include "arki/segment/data/tests.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
-#include "arki/dataset/query.h"
+#include "arki/query.h"
 #include "arki/dataset/local.h"
 #include "arki/dataset/simple/reader.h"
 #include "arki/dataset/simple/writer.h"
@@ -360,7 +360,7 @@ void DatasetTest::clean_and_import(const std::filesystem::path& testfile)
     import(testfile);
 }
 
-metadata::Collection DatasetTest::query(const dataset::DataQuery& q)
+metadata::Collection DatasetTest::query(const query::Data& q)
 {
     return metadata::Collection(*config().create_reader(), q);
 }
@@ -433,10 +433,10 @@ void DatasetTest::repack()
 
 void DatasetTest::query_results(const std::vector<int>& expected)
 {
-    query_results(DataQuery(Matcher(), true), expected);
+    query_results(query::Data(Matcher(), true), expected);
 }
 
-void DatasetTest::query_results(const dataset::DataQuery& q, const std::vector<int>& expected)
+void DatasetTest::query_results(const query::Data& q, const std::vector<int>& expected)
 {
     vector<int> found;
 

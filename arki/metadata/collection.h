@@ -31,9 +31,9 @@ public:
     Collection(const Collection& o) = default;
     Collection(Collection&& o) = default;
     /// Construct a collection filled by the results of query_data
-    Collection(dataset::Dataset& ds, const dataset::DataQuery& q);
+    Collection(dataset::Dataset& ds, const query::Data& q);
     Collection(dataset::Dataset& ds, const std::string& q);
-    Collection(dataset::Reader& ds, const dataset::DataQuery& q);
+    Collection(dataset::Reader& ds, const query::Data& q);
     Collection(dataset::Reader& ds, const std::string& q);
     ~Collection();
 
@@ -82,13 +82,13 @@ public:
     metadata_dest_func inserter_func();
 
     /// Append results from a query_data
-    void add(dataset::Dataset& ds, const dataset::DataQuery& q);
+    void add(dataset::Dataset& ds, const query::Data& q);
 
     /// Append results from a query_data
     void add(dataset::Dataset& ds, const std::string& q);
 
     /// Append results from a query_data
-    void add(dataset::Reader& reader, const dataset::DataQuery& q);
+    void add(dataset::Reader& reader, const query::Data& q);
 
     /// Append results from a query_data
     void add(dataset::Reader& reader, const std::string& q);

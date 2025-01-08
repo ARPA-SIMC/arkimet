@@ -8,8 +8,8 @@
 #include "arki/metadata/sort.h"
 #include "arki/summary.h"
 #include "arki/dataset/impl.h"
-#include "arki/dataset/query.h"
-#include "arki/dataset/progress.h"
+#include "arki/query.h"
+#include "arki/query/progress.h"
 #include "arki/core/time.h"
 
 namespace arki {
@@ -60,9 +60,9 @@ struct PyDatasetReader : public arki::dataset::DatasetAccess<arki::dataset::Data
 
     std::string type() const override { return m_type; }
 
-    bool impl_query_data(const arki::dataset::DataQuery& q, arki::metadata_dest_func dest) override
+    bool impl_query_data(const arki::query::Data& q, arki::metadata_dest_func dest) override
     {
-        arki::dataset::TrackProgress track(q.progress);
+        arki::query::TrackProgress track(q.progress);
         dest = track.wrap(dest);
 
         AcquireGIL gil;

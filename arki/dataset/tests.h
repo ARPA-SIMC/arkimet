@@ -183,7 +183,7 @@ public:
     // Recreate the dataset importing data into it
     void clean_and_import(const std::filesystem::path& testfile="inbound/test.grib1");
 
-    metadata::Collection query(const dataset::DataQuery& q);
+    metadata::Collection query(const query::Data& q);
     metadata::Collection query(const std::string& q);
 
     void ensure_localds_clean(size_t filecount, size_t resultcount, bool quick=true);
@@ -203,7 +203,7 @@ public:
      * the metadata elements in import_results corresponding to the given
      * sequence of indices
      */
-    void query_results(const dataset::DataQuery& q, const std::vector<int>& expected);
+    void query_results(const query::Data& q, const std::vector<int>& expected);
 
     /**
      * Check if the segment exists online on this dataset, with the given

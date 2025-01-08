@@ -1,7 +1,7 @@
 #include "arki/runtime.h"
 #include "arki/dataset.h"
 #include "arki/dataset/session.h"
-#include "arki/dataset/query.h"
+#include "arki/query.h"
 #include "arki/stream.h"
 #include "arki/utils/sys.h"
 #ifdef USE_GPERFTOOLS
@@ -17,7 +17,7 @@ int main(int argc, const char* argv[])
     auto ds = session->dataset(*cfg);
     auto reader = ds->create_reader();
     size_t count = 0;
-    arki::dataset::ByteQuery query;
+    arki::query::Bytes query;
     query.setData(match);
     auto outfd = std::make_shared<arki::core::NamedFileDescriptor>(1, "stdout");
     auto output = arki::StreamOutput::create(outfd);

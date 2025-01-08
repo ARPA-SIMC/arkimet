@@ -253,14 +253,14 @@ Reader::~Reader()
 
 std::string Reader::type() const { return "archives"; }
 
-bool Reader::impl_query_data(const dataset::DataQuery& q, metadata_dest_func dest)
+bool Reader::impl_query_data(const query::Data& q, metadata_dest_func dest)
 {
     return archives->iter([&](dataset::Reader& r) {
         return r.query_data(q, dest);
     });
 }
 
-void Reader::impl_stream_query_bytes(const dataset::ByteQuery& q, StreamOutput& out)
+void Reader::impl_stream_query_bytes(const query::Bytes& q, StreamOutput& out)
 {
     archives->iter([&](dataset::Reader& r) {
         r.query_bytes(q, out);

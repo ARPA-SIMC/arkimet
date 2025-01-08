@@ -1,13 +1,13 @@
-#ifndef ARKI_DATASET_PROGRESS_H
-#define ARKI_DATASET_PROGRESS_H
+#ifndef ARKI_QUERY_PROGRESS_H
+#define ARKI_QUERY_PROGRESS_H
 
-#include <arki/dataset/fwd.h>
+#include <arki/defs.h>
 
 namespace arki {
-namespace dataset {
+namespace query {
 
 /// Interface for generating progress updates on queries
-class QueryProgress
+class Progress
 {
 protected:
     size_t expected_count = 0;
@@ -16,13 +16,13 @@ protected:
     size_t bytes = 0;
 
 public:
-    virtual ~QueryProgress();
+    virtual ~Progress();
 
     virtual void start(size_t expected_count=0, size_t expected_bytes=0);
     virtual void update(size_t count, size_t bytes);
     virtual void done();
 
-    /// Wrap a metadata_dest_func to provide updates to this QueryProgress
+    /// Wrap a metadata_dest_func to provide updates to this Progress
     metadata_dest_func wrap(metadata_dest_func);
 };
 
@@ -35,9 +35,9 @@ public:
  */
 struct TrackProgress
 {
-    std::shared_ptr<QueryProgress> progress;
+    std::shared_ptr<Progress> progress;
 
-    TrackProgress(std::shared_ptr<QueryProgress> progress, size_t expected_count=0, size_t expected_bytes=0)
+    TrackProgress(std::shared_ptr<Progress> progress, size_t expected_count=0, size_t expected_bytes=0)
         : progress(progress)
     {
         if (progress)

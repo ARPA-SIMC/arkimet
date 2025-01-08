@@ -6,7 +6,7 @@
 #include "arki/matcher/utils.h"
 #include "arki/dataset/lock.h"
 #include "arki/dataset/session.h"
-#include "arki/dataset/query.h"
+#include "arki/query.h"
 #include "arki/types/reftime.h"
 #include "arki/types/source.h"
 #include "arki/types/source/blob.h"
@@ -315,7 +315,7 @@ void Index::build_md(Query& q, Metadata& md, std::shared_ptr<arki::segment::data
                 q.fetch<uint64_t>(0), q.fetch<uint64_t>(1)));
 }
 
-bool Index::query_data(const dataset::DataQuery& q, dataset::Session& session, metadata_dest_func dest)
+bool Index::query_data(const query::Data& q, dataset::Session& session, metadata_dest_func dest)
 {
     std::string query = "SELECT m.offset, m.size, m.notes, m.reftime";
 

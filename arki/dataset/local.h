@@ -84,7 +84,7 @@ class Reader : public Base<dataset::Reader>
 
 protected:
     // Base implementations that queries the archives if they exist
-    bool impl_query_data(const dataset::DataQuery& q, metadata_dest_func dest) override;
+    bool impl_query_data(const query::Data& q, metadata_dest_func dest) override;
 
     // Base implementations that queries the archives if they exist
     void impl_query_summary(const Matcher& matcher, Summary& summary) override;

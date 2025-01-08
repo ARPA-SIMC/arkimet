@@ -1,6 +1,6 @@
 #include "arki/dataset/tests.h"
 #include "arki/dataset/maintenance-test.h"
-#include "arki/dataset/query.h"
+#include "arki/query.h"
 #include "arki/dataset/maintenance.h"
 #include "arki/dataset/segmented.h"
 #include "arki/dataset/reporter.h"

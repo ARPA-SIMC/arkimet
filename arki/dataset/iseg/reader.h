@@ -39,7 +39,7 @@ protected:
 
     void summary_from_indices(const Matcher& matcher, Summary& summary);
 
-    bool impl_query_data(const dataset::DataQuery& q, metadata_dest_func dest) override;
+    bool impl_query_data(const query::Data& q, metadata_dest_func dest) override;
     void impl_query_summary(const Matcher& matcher, Summary& summary) override;
 
 public:

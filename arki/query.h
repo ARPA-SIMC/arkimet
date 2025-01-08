@@ -1,15 +1,17 @@
-#ifndef ARKI_DATASET_QUERY_H
-#define ARKI_DATASET_QUERY_H
+#ifndef ARKI_QUERY_H
+#define ARKI_QUERY_H
 
-#include <arki/dataset/fwd.h>
 #include <arki/stream/fwd.h>
+#include <arki/query/fwd.h>
 #include <arki/matcher.h>
 #include <string>
 
 namespace arki {
-namespace dataset {
+namespace query {
 
-struct DataQuery
+class Progress;
+
+struct Data
 {
     /// Matcher used to select data
     Matcher matcher;
@@ -30,18 +32,18 @@ struct DataQuery
     std::shared_ptr<metadata::sort::Compare> sorter;
 
     /// Optional progress reporting
-    std::shared_ptr<QueryProgress> progress;
+    std::shared_ptr<query::Progress> progress;
 
-    DataQuery();
-    DataQuery(const DataQuery&) = default;
-    DataQuery(DataQuery&&) = default;
-    DataQuery(const Matcher& matcher, bool with_data=false);
-    ~DataQuery();
-    DataQuery& operator=(const DataQuery&) = default;
-    DataQuery& operator=(DataQuery&&) = default;
+    Data();
+    Data(const Data&) = default;
+    Data(Data&&) = default;
+    Data(const Matcher& matcher, bool with_data=false);
+    ~Data();
+    Data& operator=(const Data&) = default;
+    Data& operator=(Data&&) = default;
 };
 
-struct ByteQuery : public DataQuery
+struct Bytes : public Data
 {
     enum Type {
         BQ_DATA = 0,
@@ -51,7 +53,7 @@ struct ByteQuery : public DataQuery
     std::string postprocessor;
     Type type = BQ_DATA;
 
-    ByteQuery();
+    Bytes();
 
     void setData(const Matcher& m);
     void setPostprocess(const Matcher& m, const std::string& procname);

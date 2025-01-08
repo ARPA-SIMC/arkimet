@@ -116,7 +116,7 @@ static stream::SendResult compressAndWrite(const std::vector<uint8_t>& buf, Stre
         return out.send_buffer(buf.data(), buf.size());
 }
 
-Collection::Collection(dataset::Dataset& ds, const dataset::DataQuery& q)
+Collection::Collection(dataset::Dataset& ds, const query::Data& q)
 {
     add(ds, q);
 }
@@ -126,7 +126,7 @@ Collection::Collection(dataset::Dataset& ds, const std::string& q)
     add(ds, q);
 }
 
-Collection::Collection(dataset::Reader& ds, const dataset::DataQuery& q)
+Collection::Collection(dataset::Reader& ds, const query::Data& q)
 {
     add(ds, q);
 }
@@ -172,7 +172,7 @@ metadata_dest_func Collection::inserter_func()
     return [=](std::shared_ptr<Metadata> md) { acquire(md); return true; };
 }
 
-void Collection::add(dataset::Dataset& ds, const dataset::DataQuery& q)
+void Collection::add(dataset::Dataset& ds, const query::Data& q)
 {
     ds.create_reader()->query_data(q, inserter_func());
 }
@@ -182,7 +182,7 @@ void Collection::add(dataset::Dataset& ds, const std::string& q)
     ds.create_reader()->query_data(q, inserter_func());
 }
 
-void Collection::add(dataset::Reader& reader, const dataset::DataQuery& q)
+void Collection::add(dataset::Reader& reader, const query::Data& q)
 {
     reader.query_data(q, inserter_func());
 }

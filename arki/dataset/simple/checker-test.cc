@@ -1,6 +1,6 @@
 #include "arki/dataset/tests.h"
 #include "arki/core/file.h"
-#include "arki/dataset/query.h"
+#include "arki/query.h"
 #include "arki/dataset/simple/checker.h"
 #include "arki/dataset/simple/writer.h"
 #include "arki/dataset/simple/reader.h"

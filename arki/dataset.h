@@ -142,7 +142,7 @@ protected:
      * Returns true if dest always returned true, false if iteration stopped
      * because dest returned false.
      */
-    virtual bool impl_query_data(const dataset::DataQuery& q, metadata_dest_func dest) = 0;
+    virtual bool impl_query_data(const query::Data& q, metadata_dest_func dest) = 0;
 
     /**
      * Add to summary the summary of the data that would be extracted with the
@@ -156,7 +156,7 @@ protected:
      *
      * The default implementation in Reader is based on queryData.
      */
-    virtual void impl_stream_query_bytes(const dataset::ByteQuery& q, StreamOutput& out);
+    virtual void impl_stream_query_bytes(const query::Bytes& q, StreamOutput& out);
 
 public:
     using Base::Base;
@@ -177,7 +177,7 @@ public:
      * Returns true if dest always returned true, false if iteration stopped
      * because dest returned false.
      */
-    bool query_data(const dataset::DataQuery& q, metadata_dest_func dest)
+    bool query_data(const query::Data& q, metadata_dest_func dest)
     {
         return impl_query_data(q, dest);
     }
@@ -203,7 +203,7 @@ public:
      *
      * The default implementation in Reader is based on queryData.
      */
-    void query_bytes(const dataset::ByteQuery& q, StreamOutput& out)
+    void query_bytes(const query::Bytes& q, StreamOutput& out)
     {
         return impl_stream_query_bytes(q, out);
     }

@@ -29,7 +29,7 @@ struct Dataset : public dataset::Dataset
 struct Reader : public DatasetAccess<Dataset, dataset::Reader>
 {
 protected:
-    bool impl_query_data(const dataset::DataQuery& q, metadata_dest_func) override;
+    bool impl_query_data(const query::Data& q, metadata_dest_func) override;
     void impl_query_summary(const Matcher& matcher, Summary& summary) override;
 
 public:

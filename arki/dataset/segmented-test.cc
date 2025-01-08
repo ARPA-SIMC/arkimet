@@ -6,7 +6,7 @@
 #include "arki/core/file.h"
 #include "arki/stream.h"
 #include "arki/dataset/time.h"
-#include "arki/dataset/query.h"
+#include "arki/query.h"
 #include "arki/types/source/blob.h"
 #include "arki/types/reftime.h"
 #include "arki/metadata.h"
@@ -371,7 +371,7 @@ add_method("query_archived", [](Fixture& f) {
     wassert(actual(mdc.size()) == 3u);
 
     mdc.clear();
-    mdc.add(*reader, dataset::DataQuery(parser.parse("origin:GRIB1,200"), true));
+    mdc.add(*reader, query::Data(parser.parse("origin:GRIB1,200"), true));
     wassert(actual(mdc.size()) == 1u);
 
     // Check that the source record that comes out is ok
@@ -398,7 +398,7 @@ add_method("query_archived", [](Fixture& f) {
     {
         std::vector<uint8_t> buf;
         auto out(StreamOutput::create(buf));
-        dataset::ByteQuery bq;
+        query::Bytes bq;
         bq.setData(Matcher());
         reader->query_bytes(bq, *out);
         wassert(actual(buf.size()) == 44412u);
@@ -407,7 +407,7 @@ add_method("query_archived", [](Fixture& f) {
     {
         std::vector<uint8_t> buf;
         auto out(StreamOutput::create(buf));
-        dataset::ByteQuery bq;
+        query::Bytes bq;
         bq.setData(parser.parse("origin:GRIB1,200"));
         reader->query_bytes(bq, *out);
         wassert(actual(buf.size()) == 7218u);
@@ -416,7 +416,7 @@ add_method("query_archived", [](Fixture& f) {
     {
         std::vector<uint8_t> buf;
         auto out(StreamOutput::create(buf));
-        dataset::ByteQuery bq;
+        query::Bytes bq;
         bq.setData(parser.parse("reftime:=2007-07-08"));
         reader->query_bytes(bq, *out);
         wassert(actual(buf.size()) == 7218u);
@@ -462,7 +462,7 @@ add_method("empty_dirs", [](Fixture& f) {
 
     std::vector<uint8_t> buf;
     auto out(StreamOutput::create(buf));
-    dataset::ByteQuery bq;
+    query::Bytes bq;
     bq.setData(parser.parse(""));
     reader->query_bytes(bq, *out);
     wassert(actual(buf.size()) == 0u);
@@ -557,7 +557,7 @@ add_method("query_lots", [](Fixture& f) {
     {
         auto reader = f.config().create_reader();
         CheckAllSortOrder cso;
-        dataset::DataQuery dq(parser.parse(""));
+        query::Data dq(parser.parse(""));
         dq.sorter = metadata::sort::Compare::parse("reftime,area,product");
         reader->query_data(dq, [&](std::shared_ptr<Metadata> md) { return cso.eat(md); });
         wassert(actual(cso.seen) == 16128u);
@@ -814,7 +814,7 @@ add_method("issue103", [](Fixture& f) {
     wassert(actual(mdc[0].sourceBlob().reader).isfalse());
 
     // Query with data, without storing all the results on a collection
-    dataset::DataQuery dq(parser.parse(""), true);
+    query::Data dq(parser.parse(""), true);
     unsigned count = 0;
     wassert(reader->query_data(dq, [&](std::shared_ptr<Metadata> md) {
         wassert(actual(md->sourceBlob().reader).istrue());

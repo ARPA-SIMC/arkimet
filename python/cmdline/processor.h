@@ -46,12 +46,12 @@ struct ProcessorMaker
     std::string postprocess;
     std::string summary_restrict;
     std::string sort;
-    std::shared_ptr<arki::dataset::QueryProgress> progress;
+    std::shared_ptr<arki::query::Progress> progress;
 
     /// Create the processor maker for this configuration
     std::unique_ptr<DatasetProcessor> make(Matcher matcher, std::shared_ptr<StreamOutput> out);
 
-    static std::unique_ptr<DatasetProcessor> make_libarchive(Matcher matcher, std::shared_ptr<StreamOutput> out, std::string archive, std::shared_ptr<arki::dataset::QueryProgress> progress);
+    static std::unique_ptr<DatasetProcessor> make_libarchive(Matcher matcher, std::shared_ptr<StreamOutput> out, std::string archive, std::shared_ptr<arki::query::Progress> progress);
 
 protected:
     std::unique_ptr<DatasetProcessor> make_binary(Matcher matcher, std::shared_ptr<StreamOutput> out);

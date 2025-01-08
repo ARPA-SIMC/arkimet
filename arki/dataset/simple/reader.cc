@@ -1,9 +1,9 @@
 #include "reader.h"
 #include "arki/dataset/index.h"
 #include "arki/dataset/lock.h"
-#include "arki/dataset/query.h"
-#include "arki/dataset/progress.h"
 #include "arki/dataset/index/manifest.h"
+#include "arki/query.h"
+#include "arki/query/progress.h"
 #include "arki/utils/sys.h"
 
 using namespace std;
@@ -13,9 +13,9 @@ namespace arki {
 namespace dataset {
 namespace simple {
 
-bool Reader::impl_query_data(const dataset::DataQuery& q, metadata_dest_func dest)
+bool Reader::impl_query_data(const query::Data& q, metadata_dest_func dest)
 {
-    dataset::TrackProgress track(q.progress);
+    query::TrackProgress track(q.progress);
     dest = track.wrap(dest);
 
     auto lock = dataset().read_lock_dataset();

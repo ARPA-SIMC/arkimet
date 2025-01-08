@@ -97,7 +97,7 @@ std::shared_ptr<dataset::Reader> Reader::archive()
     return m_archive;
 }
 
-bool Reader::impl_query_data(const dataset::DataQuery& q, metadata_dest_func dest)
+bool Reader::impl_query_data(const query::Data& q, metadata_dest_func dest)
 {
     if (!dataset().hasArchive()) return true;
     return archive()->query_data(q, dest);

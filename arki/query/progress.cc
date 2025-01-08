@@ -1,32 +1,30 @@
 #include "progress.h"
 #include "arki/metadata.h"
 
-using namespace std;
-
 namespace arki {
-namespace dataset {
+namespace query {
 
-QueryProgress::~QueryProgress()
+Progress::~Progress()
 {
 }
 
-void QueryProgress::start(size_t expected_count, size_t expected_bytes)
+void Progress::start(size_t expected_count, size_t expected_bytes)
 {
     this->expected_count = expected_count;
     this->expected_bytes = expected_bytes;
 }
 
-void QueryProgress::update(size_t count, size_t bytes)
+void Progress::update(size_t count, size_t bytes)
 {
     this->count += count;
     this->bytes += bytes;
 }
 
-void QueryProgress::done()
+void Progress::done()
 {
 }
 
-metadata_dest_func QueryProgress::wrap(metadata_dest_func dest)
+metadata_dest_func Progress::wrap(metadata_dest_func dest)
 {
     return [dest, this](std::shared_ptr<Metadata> md) {
         bool res = dest(md);

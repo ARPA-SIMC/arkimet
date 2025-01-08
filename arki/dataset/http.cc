@@ -1,6 +1,6 @@
 #include "arki/dataset/http.h"
-#include "arki/dataset/progress.h"
-#include "arki/dataset/query.h"
+#include "arki/query.h"
+#include "arki/query/progress.h"
 #include "arki/core/file.h"
 #include "arki/core/time.h"
 #include "arki/stream.h"
@@ -40,7 +40,7 @@ std::string Reader::type() const { return "http"; }
 struct StreamState : public core::curl::Request
 {
     StreamOutput& out;
-    std::shared_ptr<dataset::QueryProgress> progress;
+    std::shared_ptr<query::Progress> progress;
 
     StreamState(core::curl::CurlEasy& curl, StreamOutput& out)
         : Request(curl), out(out)
@@ -88,16 +88,16 @@ void Reader::set_post_query(core::curl::Request& request, const std::string& que
     }
 }
 
-void Reader::set_post_query(core::curl::Request& request, const dataset::DataQuery& q)
+void Reader::set_post_query(core::curl::Request& request, const query::Data& q)
 {
     set_post_query(request, q.matcher.toStringExpanded());
     if (q.sorter)
         request.post_data.add_string("sort", q.sorter->toString());
 }
 
-bool Reader::impl_query_data(const dataset::DataQuery& q, metadata_dest_func dest)
+bool Reader::impl_query_data(const query::Data& q, metadata_dest_func dest)
 {
-    dataset::TrackProgress track(q.progress);
+    query::TrackProgress track(q.progress);
     dest = track.wrap(dest);
 
     m_curl.reset();
@@ -127,7 +127,7 @@ void Reader::impl_query_summary(const Matcher& matcher, Summary& summary)
     summary.read(dec, request.url);
 }
 
-void Reader::impl_stream_query_bytes(const dataset::ByteQuery& q, StreamOutput& out)
+void Reader::impl_stream_query_bytes(const query::Bytes& q, StreamOutput& out)
 {
     m_curl.reset();
 
@@ -148,10 +148,10 @@ void Reader::impl_stream_query_bytes(const dataset::ByteQuery& q, StreamOutput& 
     }
     switch (q.type)
     {
-        case dataset::ByteQuery::BQ_DATA:
+        case query::Bytes::BQ_DATA:
             request.post_data.add_string("style", "data");
             break;
-        case dataset::ByteQuery::BQ_POSTPROCESS:
+        case query::Bytes::BQ_POSTPROCESS:
             request.post_data.add_string("style", "postprocess");
             request.post_data.add_string("command", q.postprocessor);
             break;

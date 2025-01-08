@@ -68,9 +68,9 @@ protected:
 
     void summary_for_all(Summary& out);
 
-    bool impl_query_data(const dataset::DataQuery& q, metadata_dest_func) override;
+    bool impl_query_data(const query::Data& q, metadata_dest_func) override;
     void impl_query_summary(const Matcher& matcher, Summary& summary) override;
-    void impl_stream_query_bytes(const dataset::ByteQuery& q, StreamOutput& out) override;
+    void impl_stream_query_bytes(const query::Bytes& q, StreamOutput& out) override;
 
 public:
     Reader(std::shared_ptr<Dataset> dataset);

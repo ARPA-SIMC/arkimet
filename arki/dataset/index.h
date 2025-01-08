@@ -24,7 +24,7 @@ public:
      * @return true if the index could be used for the query, false if the
      * query does not use the index and a full scan should be used instead
      */
-    virtual bool query_data(const dataset::DataQuery& q, metadata_dest_func) = 0;
+    virtual bool query_data(const query::Data& q, metadata_dest_func) = 0;
 
     /**
      * Query this index, returning a summary

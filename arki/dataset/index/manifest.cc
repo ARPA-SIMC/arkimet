@@ -1,7 +1,7 @@
 #include "manifest.h"
 #include "arki/exceptions.h"
 #include "arki/core/file.h"
-#include "arki/dataset/query.h"
+#include "arki/query.h"
 #include "arki/dataset/simple.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
@@ -56,7 +56,7 @@ void Manifest::querySummaries(const Matcher& matcher, Summary& summary)
     }
 }
 
-bool Manifest::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
+bool Manifest::query_data(const query::Data& q, metadata_dest_func dest)
 {
     if (lock.expired())
         throw std::runtime_error("cannot query_data while there is no lock held");

@@ -1,7 +1,7 @@
 #include "arki/dataset/tests.h"
 #include "arki/dataset.h"
 #include "arki/dataset/time.h"
-#include "arki/dataset/query.h"
+#include "arki/query.h"
 #include "arki/dataset/reporter.h"
 #include "arki/metadata/data.h"
 #include "arki/metadata/collection.h"
@@ -404,7 +404,7 @@ this->add_method("read_repack", [](Fixture& f) {
     f.import_all(f.td.mds);
 
     auto reader = f.dataset_config()->create_reader();
-    reader->query_data(dataset::DataQuery(Matcher(), true), [&](std::shared_ptr<Metadata> md) {
+    reader->query_data(query::Data(Matcher(), true), [&](std::shared_ptr<Metadata> md) {
         {
             auto checker = f.dataset_config()->create_checker();
             auto e = wassert_throws(std::runtime_error, {
@@ -510,7 +510,7 @@ this->add_method("nolock_read", [](Fixture& f) {
     f.reset_test("locking=no");
     f.import_all(f.td.mds);
     core::lock::TestCount count;
-    wassert(f.query_results(dataset::DataQuery(Matcher(), true), {1, 0, 2}));
+    wassert(f.query_results(query::Data(Matcher(), true), {1, 0, 2}));
     count.measure();
     wassert(actual(count.ofd_setlk) == 0u);
     wassert(actual(count.ofd_setlkw) == 0u);

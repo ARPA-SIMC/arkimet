@@ -1,7 +1,6 @@
 #include "arki/tests/tests.h"
-#include "query.h"
+#include "progress.h"
 
-using namespace std;
 using namespace arki::utils;
 using namespace arki::tests;
 
@@ -12,7 +11,7 @@ class Tests : public TestCase
     using TestCase::TestCase;
 
     void register_tests() override;
-} test("arki_dataset_query");
+} test("arki_query_progress");
 
 void Tests::register_tests() {
 

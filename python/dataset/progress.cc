@@ -36,7 +36,7 @@ PythonProgress::~PythonProgress()
 
 void PythonProgress::start(size_t expected_count, size_t expected_bytes)
 {
-    arki::dataset::QueryProgress::start(expected_count, expected_bytes);
+    arki::query::Progress::start(expected_count, expected_bytes);
 
     if (meth_start)
     {
@@ -50,7 +50,7 @@ void PythonProgress::start(size_t expected_count, size_t expected_bytes)
 
 void PythonProgress::update(size_t count, size_t bytes)
 {
-    arki::dataset::QueryProgress::update(count, bytes);
+    arki::query::Progress::update(count, bytes);
 
     partial_count += count;
     partial_bytes += bytes;
@@ -84,7 +84,7 @@ void PythonProgress::update(size_t count, size_t bytes)
 
 void PythonProgress::done()
 {
-    arki::dataset::QueryProgress::done();
+    arki::query::Progress::done();
 
     AcquireGIL gil;
     if (meth_update and (partial_count or partial_bytes))

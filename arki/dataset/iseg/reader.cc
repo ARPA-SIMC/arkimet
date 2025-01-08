@@ -1,8 +1,8 @@
 #include "reader.h"
 #include "arki/segment/index/iseg.h"
 #include "arki/dataset/step.h"
-#include "arki/dataset/progress.h"
-#include "arki/dataset/query.h"
+#include "arki/query.h"
+#include "arki/query/progress.h"
 #include "arki/utils/sys.h"
 #include "arki/summary.h"
 #include <algorithm>
@@ -47,9 +47,9 @@ bool Reader::list_segments(const Matcher& matcher, std::function<bool(const std:
     return true;
 }
 
-bool Reader::impl_query_data(const dataset::DataQuery& q, metadata_dest_func dest)
+bool Reader::impl_query_data(const query::Data& q, metadata_dest_func dest)
 {
-    dataset::TrackProgress track(q.progress);
+    query::TrackProgress track(q.progress);
     dest = track.wrap(dest);
 
     if (!segmented::Reader::impl_query_data(q, dest))

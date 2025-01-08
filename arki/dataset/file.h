@@ -27,7 +27,7 @@ public:
 
     std::shared_ptr<dataset::Reader> create_reader() override;
 
-    virtual bool scan(const dataset::DataQuery& q, metadata_dest_func dest) = 0;
+    virtual bool scan(const query::Data& q, metadata_dest_func dest) = 0;
 
     static std::shared_ptr<Dataset> from_config(std::shared_ptr<Session> session, const core::cfg::Section& cfg);
 };
@@ -35,7 +35,7 @@ public:
 class Reader : public DatasetAccess<file::Dataset, dataset::Reader>
 {
 protected:
-    bool impl_query_data(const dataset::DataQuery& q, metadata_dest_func) override;
+    bool impl_query_data(const query::Data& q, metadata_dest_func) override;
 
 public:
     using DatasetAccess::DatasetAccess;
@@ -62,7 +62,7 @@ public:
 
     virtual ~ArkimetFile();
 
-    bool scan(const dataset::DataQuery& q, metadata_dest_func consumer) override;
+    bool scan(const query::Data& q, metadata_dest_func consumer) override;
 };
 
 class YamlFile : public FdFile
@@ -75,7 +75,7 @@ public:
     YamlFile(std::shared_ptr<Session> session, const core::cfg::Section& cfg);
     virtual ~YamlFile();
 
-    bool scan(const dataset::DataQuery& q, metadata_dest_func consumer) override;
+    bool scan(const query::Data& q, metadata_dest_func consumer) override;
 };
 
 class RawFile : public Dataset
@@ -83,7 +83,7 @@ class RawFile : public Dataset
 public:
     using Dataset::Dataset;
 
-    bool scan(const dataset::DataQuery& q, metadata_dest_func consumer) override;
+    bool scan(const query::Data& q, metadata_dest_func consumer) override;
 };
 
 }

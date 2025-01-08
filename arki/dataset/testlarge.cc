@@ -1,7 +1,7 @@
 #include "testlarge.h"
 #include "empty.h"
-#include "query.h"
-#include "progress.h"
+#include "arki/query.h"
+#include "arki/query/progress.h"
 #include "arki/core/time.h"
 #include "arki/types/reftime.h"
 #include "arki/metadata.h"
@@ -49,9 +49,9 @@ bool Reader::generate(const core::Interval& interval, std::function<bool(std::un
     return true;
 }
 
-bool Reader::impl_query_data(const dataset::DataQuery& q, metadata_dest_func dest)
+bool Reader::impl_query_data(const query::Data& q, metadata_dest_func dest)
 {
-    dataset::TrackProgress track(q.progress);
+    query::TrackProgress track(q.progress);
     dest = track.wrap(dest);
 
     core::Interval interval;

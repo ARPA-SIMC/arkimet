@@ -47,7 +47,7 @@ public:
 
     virtual core::Interval get_stored_time_interval() const = 0;
 
-    bool query_data(const dataset::DataQuery& q, metadata_dest_func) override;
+    bool query_data(const query::Data& q, metadata_dest_func) override;
     bool query_summary(const Matcher& matcher, Summary& summary) override;
     void query_segment(const std::filesystem::path& relpath, metadata_dest_func) const override;
     void list_segments(std::function<void(const std::filesystem::path&)> dest) override = 0;

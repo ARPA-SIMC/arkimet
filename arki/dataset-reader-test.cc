@@ -1,8 +1,8 @@
 #include "arki/dataset/tests.h"
 #include "arki/dataset.h"
-#include "arki/dataset/query.h"
 #include "arki/dataset/session.h"
-#include "arki/dataset/progress.h"
+#include "arki/query.h"
+#include "arki/query/progress.h"
 #include "arki/core/file.h"
 #include "arki/stream.h"
 #include "arki/metadata/data.h"
@@ -103,7 +103,7 @@ this->add_method("querydata", [](Fixture& f) {
         Matcher matcher = parser.parse(f.matchers[i]);
 
         // Check that what we imported can be queried
-        metadata::Collection mdc(*ds, dataset::DataQuery(matcher, true));
+        metadata::Collection mdc(*ds, query::Data(matcher, true));
         wassert(actual(mdc.size()) == 1u);
 
         // Check that the result matches what was imported
@@ -162,7 +162,7 @@ this->add_method("querybytes", [](Fixture& f) {
         Matcher matcher = parser.parse(f.matchers[i]);
 
         // Query into a file
-        dataset::ByteQuery bq;
+        query::Bytes bq;
         bq.setData(matcher);
         auto out = std::make_shared<sys::File>("testdata", O_WRONLY | O_CREAT | O_TRUNC);
         auto strm = StreamOutput::create(out);
@@ -190,7 +190,7 @@ this->add_method("query_data", [](Fixture& f) {
 
     std::vector<uint8_t> buf;
     auto out = StreamOutput::create(buf);
-    dataset::ByteQuery bq;
+    query::Bytes bq;
     bq.setData(matcher);
     reader->query_bytes(bq, *out);
 
@@ -210,7 +210,7 @@ this->add_method("query_inline", [](Fixture& f) {
 
     auto reader(f.config().create_reader());
 
-    metadata::Collection mdc(*reader, dataset::DataQuery(matcher, true));
+    metadata::Collection mdc(*reader, query::Data(matcher, true));
     wassert(actual(mdc.size()) == 1u);
 
     // Check that the source record that comes out is ok
@@ -233,7 +233,7 @@ this->add_method("querybytes_integrity", [](Fixture& f) {
     auto ds(f.config().create_reader());
 
     // Query everything
-    dataset::ByteQuery bq;
+    query::Bytes bq;
     bq.setData(Matcher());
     auto out = std::make_shared<sys::File>("tempdata", O_WRONLY | O_CREAT | O_TRUNC);
     auto strm = StreamOutput::create(out);
@@ -284,12 +284,12 @@ this->add_method("postprocess", [](Fixture& f) {
 
     // Do a simple export first, to get the exact metadata that would come
     // out
-    metadata::Collection mdc(*ds, dataset::DataQuery(matcher, true));
+    metadata::Collection mdc(*ds, query::Data(matcher, true));
     wassert(actual(mdc.size()) == 1u);
 
     // Then do a postprocessed query_bytes
 
-    dataset::ByteQuery bq;
+    query::Bytes bq;
     bq.setPostprocess(matcher, "testcountbytes");
     auto strm = StreamOutput::create(std::make_shared<Stderr>());
     ds->query_bytes(bq, *strm);
@@ -311,7 +311,7 @@ this->add_method("locked", [](Fixture& f) {
 
     // Try to read from it, it should still work with WAL
     auto rds(f.config().create_reader());
-    dataset::ByteQuery bq;
+    query::Bytes bq;
     bq.setData(Matcher());
     auto out = StreamOutput::create_discard();
     rds->query_bytes(bq, *out);
@@ -322,7 +322,7 @@ this->add_method("interrupted_read", [](Fixture& f) {
 
     unsigned count = 0;
     auto reader = f.dataset_config()->create_reader();
-    reader->query_data(dataset::DataQuery(Matcher(), true), [&](std::shared_ptr<Metadata> md) {
+    reader->query_data(query::Data(Matcher(), true), [&](std::shared_ptr<Metadata> md) {
         auto data = md->get_data().read();
         wassert(actual(data) == orig_data);
         ++count;
@@ -339,7 +339,7 @@ this->add_method("read_missing_segment", [](Fixture& f) {
     unsigned count_ok = 0;
     unsigned count_err = 0;
     auto reader = f.dataset_config()->create_reader();
-    reader->query_data(dataset::DataQuery(Matcher(), true), [&](std::shared_ptr<Metadata> md) {
+    reader->query_data(query::Data(Matcher(), true), [&](std::shared_ptr<Metadata> md) {
         try {
             md->get_data().read();
             ++count_ok;
@@ -369,7 +369,7 @@ this->add_method("issue116", [](Fixture& f) {
 
 this->add_method("issue213_manyquery", [](Fixture& f) {
     matcher::Parser parser;
-    dataset::DataQuery dq(parser.parse("reftime:==13:00"), true);
+    query::Data dq(parser.parse("reftime:==13:00"), true);
     auto reader = f.dataset_config()->create_reader();
     metadata::Collection coll;
     for (unsigned i = 0; i < 2000; ++i)
@@ -378,7 +378,7 @@ this->add_method("issue213_manyquery", [](Fixture& f) {
 
 this->add_method("issue213_manyds", [](Fixture& f) {
     matcher::Parser parser;
-    dataset::DataQuery dq(parser.parse("reftime:==13:00"), true);
+    query::Data dq(parser.parse("reftime:==13:00"), true);
     metadata::Collection coll;
     for (unsigned i = 0; i < 2000; ++i)
     {
@@ -397,33 +397,33 @@ this->add_method("issue215", [](Fixture& f) {
 this->add_method("progress", [](Fixture& f) {
     auto reader = f.dataset_config()->create_reader();
 
-    struct TestProgress : public dataset::QueryProgress
+    struct TestProgress : public query::Progress
     {
-        using dataset::QueryProgress::count;
-        using dataset::QueryProgress::bytes;
+        using query::Progress::count;
+        using query::Progress::bytes;
         unsigned start_called = 0;
         unsigned update_called = 0;
         unsigned done_called = 0;
 
         void start(size_t expected_count=0, size_t expected_bytes=0) override
         {
-            QueryProgress::start(expected_count, expected_bytes);
+            query::Progress::start(expected_count, expected_bytes);
             ++start_called;
         }
         void update(size_t count, size_t bytes) override
         {
-            QueryProgress::update(count, bytes);
+            query::Progress::update(count, bytes);
             ++update_called;
         }
         void done() override
         {
-            QueryProgress::done();
+            query::Progress::done();
             ++done_called;
         }
     };
     auto progress = make_shared<TestProgress>();
 
-    dataset::DataQuery dq;
+    query::Data dq;
     dq.progress = progress;
     size_t count = 0;
     reader->query_data(dq, [&](std::shared_ptr<Metadata> md) noexcept { ++count; return true; });
@@ -436,7 +436,7 @@ this->add_method("progress", [](Fixture& f) {
 
 
     progress = make_shared<TestProgress>();
-    dataset::ByteQuery bq;
+    query::Bytes bq;
     bq.progress = progress;
     auto out = StreamOutput::create_discard();
     reader->query_bytes(bq, *out);

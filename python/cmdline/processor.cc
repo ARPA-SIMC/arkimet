@@ -6,7 +6,7 @@
 #include "arki/formatter.h"
 #include "arki/stream.h"
 #include "arki/dataset.h"
-#include "arki/dataset/query.h"
+#include "arki/query.h"
 #include "arki/structured/json.h"
 #include "arki/structured/keys.h"
 #include "arki/summary.h"
@@ -33,12 +33,12 @@ typedef std::function<void(const Summary&)> summary_print_func;
 
 struct DataProcessor : public DatasetProcessor
 {
-    arki::dataset::DataQuery query;
+    arki::query::Data query;
     metadata_print_func printer;
     bool data_inline;
     bool server_side;
 
-    DataProcessor(const arki::dataset::DataQuery& query, metadata_print_func printer, bool server_side, bool data_inline=false)
+    DataProcessor(const arki::query::Data& query, metadata_print_func printer, bool server_side, bool data_inline=false)
         : query(query), printer(std::move(printer)),
           data_inline(data_inline), server_side(server_side)
     {
@@ -80,12 +80,12 @@ struct DataProcessor : public DatasetProcessor
 
 struct LibarchiveProcessor : public DatasetProcessor
 {
-    arki::dataset::DataQuery query;
+    arki::query::Data query;
     std::shared_ptr<arki::metadata::ArchiveOutput> arc_out;
 
     LibarchiveProcessor(
             Matcher matcher, std::shared_ptr<StreamOutput> out,
-            const std::string& format, std::shared_ptr<arki::dataset::QueryProgress> progress)
+            const std::string& format, std::shared_ptr<arki::query::Progress> progress)
         : query(matcher, true), arc_out(arki::metadata::ArchiveOutput::create_stream(format, out))
     {
         query.progress = progress;
@@ -195,9 +195,9 @@ struct SummaryShortProcessor : public DatasetProcessor
 struct BinaryProcessor : public DatasetProcessor
 {
     std::shared_ptr<StreamOutput> output;
-    arki::dataset::ByteQuery query;
+    arki::query::Bytes query;
 
-    BinaryProcessor(const arki::dataset::ByteQuery& query, std::shared_ptr<StreamOutput> out)
+    BinaryProcessor(const arki::query::Bytes& query, std::shared_ptr<StreamOutput> out)
         : output(out), query(query)
     {
     }
@@ -214,7 +214,7 @@ struct BinaryProcessor : public DatasetProcessor
 std::unique_ptr<DatasetProcessor> ProcessorMaker::make_binary(Matcher matcher, std::shared_ptr<StreamOutput> out)
 {
     // Binary output from the dataset
-    arki::dataset::ByteQuery query;
+    arki::query::Bytes query;
     if (!postprocess.empty())
     {
         query.setPostprocess(matcher, postprocess);
@@ -287,7 +287,7 @@ std::unique_ptr<DatasetProcessor> ProcessorMaker::make_metadata(Matcher matcher,
             out->send_buffer(yaml.data(), yaml.size());
         };
 
-    arki::dataset::DataQuery query(matcher, data_inline);
+    arki::query::Data query(matcher, data_inline);
     if (!sort.empty())
         query.sorter = metadata::sort::Compare::parse(sort);
     query.progress = progress;
@@ -308,7 +308,7 @@ std::unique_ptr<DatasetProcessor> ProcessorMaker::make(Matcher matcher, std::sha
         return make_metadata(matcher, out);
 }
 
-std::unique_ptr<DatasetProcessor> ProcessorMaker::make_libarchive(Matcher matcher, std::shared_ptr<StreamOutput> out, std::string archive, std::shared_ptr<arki::dataset::QueryProgress> progress)
+std::unique_ptr<DatasetProcessor> ProcessorMaker::make_libarchive(Matcher matcher, std::shared_ptr<StreamOutput> out, std::string archive, std::shared_ptr<arki::query::Progress> progress)
 {
     return std::unique_ptr<DatasetProcessor>(new LibarchiveProcessor(matcher, out, archive, progress));
 }
