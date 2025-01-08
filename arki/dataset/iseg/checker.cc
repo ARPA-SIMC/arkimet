@@ -24,6 +24,7 @@ using namespace arki;
 using namespace arki::core;
 using namespace arki::types;
 using namespace arki::utils;
+using arki::segment::index::iseg::CIndex;
 
 namespace arki {
 namespace dataset {
@@ -63,7 +64,7 @@ public:
     CheckerSegment(Checker& checker, const std::string& relpath, std::shared_ptr<dataset::CheckLock> lock)
         : segmented::CheckerSegment(lock), checker(checker)
     {
-        segment = checker.dataset().session->segment_checker(checker.dataset().format, checker.dataset().path, relpath);
+        segment = checker.dataset().session->segment_checker(checker.dataset().iseg.format, checker.dataset().path, relpath);
     }
     ~CheckerSegment()
     {
@@ -73,7 +74,7 @@ public:
     CIndex& idx()
     {
         if (!m_idx)
-            m_idx = new CIndex(checker.m_dataset, path_relative(), lock);
+            m_idx = new CIndex(checker.m_dataset->iseg, checker.m_dataset, path_relative(), lock);
         return *m_idx;
     }
     std::filesystem::path path_relative() const override { return segment->segment().relpath; }
@@ -486,7 +487,7 @@ void Checker::list_segments(std::function<void(const std::filesystem::path& relp
 void Checker::list_segments(const Matcher& matcher, std::function<void(const std::filesystem::path& relpath)> dest)
 {
     std::vector<std::filesystem::path> seg_relpaths;
-    step::SegmentQuery squery(dataset().path, dataset().format, "\\.index$", matcher);
+    step::SegmentQuery squery(dataset().path, dataset().iseg.format, "\\.index$", matcher);
     dataset().step().list_segments(squery, [&](std::filesystem::path&& s) {
         seg_relpaths.emplace_back(move(s));
     });
@@ -525,7 +526,7 @@ void Checker::segments_untracked(std::function<void(segmented::CheckerSegment& r
 
 void Checker::segments_untracked_filtered(const Matcher& matcher, std::function<void(segmented::CheckerSegment& segment)> dest)
 {
-    step::SegmentQuery squery(dataset().path, dataset().format, matcher);
+    step::SegmentQuery squery(dataset().path, dataset().iseg.format, matcher);
     dataset().step().list_segments(squery, [&](std::filesystem::path&& relpath) {
         if (sys::stat(dataset().path / sys::with_suffix(relpath, ".index"))) return;
         CheckerSegment segment(*this, relpath);
@@ -548,7 +549,7 @@ void Checker::check_issue51(CheckerConfig& opts)
     // Iterate all segments
     list_segments([&](const std::filesystem::path& relpath) {
         auto lock = dataset().check_lock_segment(relpath);
-        CIndex idx(m_dataset, relpath, lock);
+        CIndex idx(m_dataset->iseg, m_dataset, relpath, lock);
         metadata::Collection mds;
         idx.scan(mds.inserter_func(), "reftime, offset");
         if (mds.empty()) return;
@@ -649,7 +650,7 @@ void Checker::remove(const metadata::Collection& mds)
             throw std::runtime_error("cannot remove metadata from dataset: its basedir is " + source->basedir.native() + " but this dataset is at " + dataset().path.native());
 
         Time time = md->get<types::reftime::Position>()->get_Position();
-        auto relpath = sys::with_suffix(dataset().step()(time), "."s + dataset().format);
+        auto relpath = sys::with_suffix(dataset().step()(time), "."s + dataset().iseg.format);
 
         if (!segment::Segment::is_segment(dataset().path / relpath))
             continue;
@@ -683,10 +684,10 @@ void Checker::test_make_overlap(const std::filesystem::path& relpath, unsigned o
 {
     auto lock = dataset().check_lock_segment(relpath);
     auto wrlock = lock->write_lock();
-    CIndex idx(m_dataset, relpath, lock);
+    CIndex idx(m_dataset->iseg, m_dataset, relpath, lock);
     metadata::Collection mds;
     idx.query_segment(mds.inserter_func());
-    dataset().session->segment_checker(dataset().format, dataset().path, relpath)->test_make_overlap(mds, overlap_size, data_idx);
+    dataset().session->segment_checker(dataset().iseg.format, dataset().path, relpath)->test_make_overlap(mds, overlap_size, data_idx);
     idx.test_make_overlap(overlap_size, data_idx);
 }
 
@@ -694,10 +695,10 @@ void Checker::test_make_hole(const std::filesystem::path& relpath, unsigned hole
 {
     auto lock = dataset().check_lock_segment(relpath);
     auto wrlock = lock->write_lock();
-    CIndex idx(m_dataset, relpath, lock);
+    CIndex idx(m_dataset->iseg, m_dataset, relpath, lock);
     metadata::Collection mds;
     idx.query_segment(mds.inserter_func());
-    dataset().session->segment_checker(dataset().format, dataset().path, relpath)->test_make_hole(mds, hole_size, data_idx);
+    dataset().session->segment_checker(dataset().iseg.format, dataset().path, relpath)->test_make_hole(mds, hole_size, data_idx);
     idx.test_make_hole(hole_size, data_idx);
 }
 
@@ -705,20 +706,20 @@ void Checker::test_corrupt_data(const std::filesystem::path& relpath, unsigned d
 {
     auto lock = dataset().check_lock_segment(relpath);
     auto wrlock = lock->write_lock();
-    CIndex idx(m_dataset, relpath, lock);
+    CIndex idx(m_dataset->iseg, m_dataset, relpath, lock);
     metadata::Collection mds;
     idx.query_segment(mds.inserter_func());
-    dataset().session->segment_checker(dataset().format, dataset().path, relpath)->test_corrupt(mds, data_idx);
+    dataset().session->segment_checker(dataset().iseg.format, dataset().path, relpath)->test_corrupt(mds, data_idx);
 }
 
 void Checker::test_truncate_data(const std::filesystem::path& relpath, unsigned data_idx)
 {
     auto lock = dataset().check_lock_segment(relpath);
     auto wrlock = lock->write_lock();
-    CIndex idx(m_dataset, relpath, lock);
+    CIndex idx(m_dataset->iseg, m_dataset, relpath, lock);
     metadata::Collection mds;
     idx.query_segment(mds.inserter_func());
-    dataset().session->segment_checker(dataset().format, dataset().path, relpath)->test_truncate_by_data(mds, data_idx);
+    dataset().session->segment_checker(dataset().iseg.format, dataset().path, relpath)->test_truncate_by_data(mds, data_idx);
 }
 
 void Checker::test_swap_data(const std::filesystem::path& relpath, unsigned d1_idx, unsigned d2_idx)
@@ -726,7 +727,7 @@ void Checker::test_swap_data(const std::filesystem::path& relpath, unsigned d1_i
     auto lock = dataset().check_lock_segment(relpath);
     metadata::Collection mds;
     {
-        CIndex idx(m_dataset, relpath, lock);
+        CIndex idx(m_dataset->iseg, m_dataset, relpath, lock);
         idx.scan(mds.inserter_func(), "offset");
         mds.swap(d1_idx, d2_idx);
     }
@@ -741,7 +742,7 @@ void Checker::test_rename(const std::filesystem::path& relpath, const std::files
     auto abspath = dataset().path / relpath;
     auto new_abspath = dataset().path / new_relpath;
 
-    auto segment = dataset().session->segment_checker(dataset().format, dataset().path, relpath);
+    auto segment = dataset().session->segment_checker(dataset().iseg.format, dataset().path, relpath);
     segment->move(dataset().path, new_relpath, new_abspath);
 
     std::filesystem::rename(
@@ -754,7 +755,7 @@ std::shared_ptr<Metadata> Checker::test_change_metadata(const std::filesystem::p
 {
     auto lock = dataset().check_lock_segment(relpath);
     auto wrlock = lock->write_lock();
-    CIndex idx(m_dataset, relpath, lock);
+    CIndex idx(m_dataset->iseg, m_dataset, relpath, lock);
     metadata::Collection mds;
     idx.query_segment(mds.inserter_func());
     md->set_source(std::unique_ptr<arki::types::Source>(mds[data_idx].source().clone()));
@@ -777,7 +778,7 @@ void Checker::test_delete_from_index(const std::filesystem::path& relpath)
 {
     auto lock = dataset().check_lock_segment(relpath);
     auto wrlock = lock->write_lock();
-    CIndex idx(m_dataset, relpath, lock);
+    CIndex idx(m_dataset->iseg, m_dataset, relpath, lock);
     idx.reset();
 }
 

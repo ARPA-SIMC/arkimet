@@ -27,9 +27,7 @@ using namespace arki::utils;
 using namespace arki::utils::sqlite;
 using namespace arki::segment::index::iseg;
 
-namespace arki {
-namespace dataset {
-namespace iseg {
+namespace arki::segment::index::iseg {
 
 struct IndexGlobalData
 {
@@ -50,15 +48,15 @@ struct IndexGlobalData
 };
 static IndexGlobalData igd;
 
-Index::Index(std::shared_ptr<iseg::Dataset> dataset, const std::filesystem::path& data_relpath, std::shared_ptr<dataset::Lock> lock)
-    : dataset(dataset),
+Index::Index(const Config& config, std::shared_ptr<dataset::iseg::Dataset> dataset, const std::filesystem::path& data_relpath, std::shared_ptr<dataset::Lock> lock)
+    : config(config), dataset(dataset),
       data_relpath(data_relpath),
       data_pathname(dataset->path / data_relpath),
       index_pathname(sys::with_suffix(data_pathname, ".index")),
       lock(lock)
 {
-    if (not dataset->unique.empty())
-        m_uniques = new Aggregate(m_db, "mduniq", dataset->unique);
+    if (not config.unique.empty())
+        m_uniques = new Aggregate(m_db, "mduniq", config.unique);
 
     // Instantiate m_others after the database has been opened, so we can scan
     // the database to see if some attributes are not available
@@ -137,7 +135,7 @@ std::set<types::Code> Index::unique_codes() const
 
 void Index::setup_pragmas()
 {
-    if (dataset->eatmydata)
+    if (config.eatmydata)
     {
         m_db.exec("PRAGMA synchronous = OFF");
         m_db.exec("PRAGMA journal_mode = MEMORY");
@@ -307,11 +305,11 @@ void Index::build_md(Query& q, Metadata& md, std::shared_ptr<arki::segment::data
 
     if (reader)
         md.set_source(Source::createBlob(
-                dataset->format, dataset->path, data_relpath,
+                config.format, dataset->path, data_relpath,
                 q.fetch<uint64_t>(0), q.fetch<uint64_t>(1), reader));
     else
         md.set_source(Source::createBlobUnlocked(
-                dataset->format, dataset->path, data_relpath,
+                config.format, dataset->path, data_relpath,
                 q.fetch<uint64_t>(0), q.fetch<uint64_t>(1)));
 }
 
@@ -340,7 +338,7 @@ bool Index::query_data(const query::Data& q, dataset::Session& session, metadata
     metadata::Collection mdbuf;
     std::shared_ptr<arki::segment::data::Reader> reader;
     if (q.with_data)
-        reader = session.segment_reader(dataset->format, dataset->path, data_relpath, lock);
+        reader = session.segment_reader(config.format, dataset->path, data_relpath, lock);
 
     // Limited scope for mdq, so we finalize the query before starting to
     // emit results
@@ -437,8 +435,8 @@ bool Index::query_summary_from_db(const Matcher& m, Summary& summary) const
 }
 
 
-RIndex::RIndex(std::shared_ptr<iseg::Dataset> dataset, const std::filesystem::path& data_relpath, std::shared_ptr<dataset::ReadLock> lock)
-    : Index(dataset, data_relpath, lock)
+RIndex::RIndex(const Config& config, std::shared_ptr<dataset::iseg::Dataset> dataset, const std::filesystem::path& data_relpath, std::shared_ptr<dataset::ReadLock> lock)
+    : Index(config, dataset, data_relpath, lock)
 {
     if (!sys::access(index_pathname, F_OK))
     {
@@ -448,21 +446,21 @@ RIndex::RIndex(std::shared_ptr<iseg::Dataset> dataset, const std::filesystem::pa
     }
 
     m_db.open(index_pathname);
-    if (dataset->trace_sql) m_db.trace();
+    if (config.trace_sql) m_db.trace();
 
     init_others();
 }
 
 
-WIndex::WIndex(std::shared_ptr<iseg::Dataset> dataset, const std::filesystem::path& data_relpath, std::shared_ptr<dataset::Lock> lock)
-    : Index(dataset, data_relpath, lock), m_get_current("get_current", m_db), m_insert(m_db), m_replace("replace", m_db)
+WIndex::WIndex(const Config& config, std::shared_ptr<dataset::iseg::Dataset> dataset, const std::filesystem::path& data_relpath, std::shared_ptr<dataset::Lock> lock)
+    : Index(config, dataset, data_relpath, lock), m_get_current("get_current", m_db), m_insert(m_db), m_replace("replace", m_db)
 {
     bool need_create = !sys::access(index_pathname, F_OK);
 
     if (need_create)
     {
         m_db.open(index_pathname);
-        if (dataset->trace_sql) m_db.trace();
+        if (config.trace_sql) m_db.trace();
         setup_pragmas();
         if (!m_others)
         {
@@ -473,7 +471,7 @@ WIndex::WIndex(std::shared_ptr<iseg::Dataset> dataset, const std::filesystem::pa
         init_db();
     } else {
         m_db.open(index_pathname);
-        if (dataset->trace_sql) m_db.trace();
+        if (config.trace_sql) m_db.trace();
         setup_pragmas();
         init_others();
     }
@@ -481,8 +479,8 @@ WIndex::WIndex(std::shared_ptr<iseg::Dataset> dataset, const std::filesystem::pa
 
 void WIndex::init_db()
 {
-    if (m_uniques) m_uniques->initDB(dataset->index);
-    if (m_others) m_others->initDB(dataset->index);
+    if (m_uniques) m_uniques->initDB(config.index);
+    if (m_others) m_others->initDB(config.index);
 
     // Create the main table
     std::string query = "CREATE TABLE IF NOT EXISTS md ("
@@ -622,7 +620,7 @@ std::unique_ptr<types::source::Blob> WIndex::index(const Metadata& md, uint64_t 
     inserter.bind_get_current(m_get_current);
     while (m_get_current.step())
         res = types::source::Blob::create_unlocked(
-                dataset->format, dataset->path, data_relpath,
+                config.format, dataset->path, data_relpath,
                 m_get_current.fetch<uint64_t>(0),
                 m_get_current.fetch<uint64_t>(1));
     if (res) return res;
@@ -730,16 +728,14 @@ void WIndex::test_make_hole(unsigned hole_size, unsigned data_idx)
     });
 }
 
-AIndex::AIndex(std::shared_ptr<iseg::Dataset> config, std::shared_ptr<segment::data::Writer> segment, std::shared_ptr<dataset::AppendLock> lock)
-    : WIndex(config, segment->segment().relpath, lock)
+AIndex::AIndex(const Config& config, std::shared_ptr<dataset::iseg::Dataset> dataset, std::shared_ptr<segment::data::Writer> segment, std::shared_ptr<dataset::AppendLock> lock)
+    : WIndex(config, dataset, segment->segment().relpath, lock)
 {
 }
 
-CIndex::CIndex(std::shared_ptr<iseg::Dataset> config, const std::filesystem::path& data_relpath, std::shared_ptr<dataset::CheckLock> lock)
-    : WIndex(config, data_relpath, lock)
+CIndex::CIndex(const Config& config, std::shared_ptr<dataset::iseg::Dataset> dataset, const std::filesystem::path& data_relpath, std::shared_ptr<dataset::CheckLock> lock)
+    : WIndex(config, dataset, data_relpath, lock)
 {
 }
 
-}
-}
 }

@@ -7,6 +7,7 @@
 #include <arki/utils/sqlite.h>
 #include <arki/types/fwd.h>
 #include <arki/segment/fwd.h>
+#include <arki/segment/index/iseg/config.h>
 #include <arki/segment/index/iseg/attr.h>
 #include <arki/segment/index/iseg/aggregate.h>
 #include <arki/dataset/iseg.h>
@@ -20,8 +21,10 @@ namespace dataset {
 class Lock;
 class AppendLock;
 class CheckLock;
+}
 
-namespace iseg {
+namespace segment::index::iseg {
+
 
 /**
  * Dataset index.
@@ -43,7 +46,8 @@ namespace iseg {
 class Index
 {
 public:
-    std::shared_ptr<iseg::Dataset> dataset;
+    const Config& config;
+    std::shared_ptr<dataset::iseg::Dataset> dataset;
 
 protected:
     mutable utils::sqlite::SQLiteDB m_db;
@@ -98,7 +102,7 @@ protected:
      */
     void build_md(utils::sqlite::Query& q, Metadata& md, std::shared_ptr<arki::segment::data::Reader> reader) const;
 
-    Index(std::shared_ptr<iseg::Dataset> config, const std::filesystem::path& data_relpath, std::shared_ptr<dataset::Lock> lock=nullptr);
+    Index(const Config& config, std::shared_ptr<dataset::iseg::Dataset> dataset, const std::filesystem::path& data_relpath, std::shared_ptr<dataset::Lock> lock=nullptr);
 
 public:
     ~Index();
@@ -150,7 +154,7 @@ public:
 class RIndex : public Index
 {
 public:
-    RIndex(std::shared_ptr<iseg::Dataset> dataset, const std::filesystem::path& data_relpath, std::shared_ptr<dataset::ReadLock> lock=nullptr);
+    RIndex(const Config& config, std::shared_ptr<dataset::iseg::Dataset> dataset, const std::filesystem::path& data_relpath, std::shared_ptr<dataset::ReadLock> lock=nullptr);
 };
 
 class WIndex : public Index
@@ -165,7 +169,7 @@ protected:
 
     void compile_insert();
 
-    WIndex(std::shared_ptr<iseg::Dataset> dataset, const std::filesystem::path& data_relpath, std::shared_ptr<dataset::Lock> lock=nullptr);
+    WIndex(const Config& config, std::shared_ptr<dataset::iseg::Dataset> dataset, const std::filesystem::path& data_relpath, std::shared_ptr<dataset::Lock> lock=nullptr);
 public:
 
     /**
@@ -216,17 +220,16 @@ public:
 class AIndex : public WIndex
 {
 public:
-    AIndex(std::shared_ptr<iseg::Dataset> config, std::shared_ptr<segment::data::Writer> segment, std::shared_ptr<dataset::AppendLock> lock);
+    AIndex(const Config& config, std::shared_ptr<dataset::iseg::Dataset> dataset, std::shared_ptr<segment::data::Writer> segment, std::shared_ptr<dataset::AppendLock> lock);
 };
 
 
 class CIndex : public WIndex
 {
 public:
-    CIndex(std::shared_ptr<iseg::Dataset> config, const std::filesystem::path& data_relpath, std::shared_ptr<dataset::CheckLock> lock);
+    CIndex(const Config& config, std::shared_ptr<dataset::iseg::Dataset> dataset, const std::filesystem::path& data_relpath, std::shared_ptr<dataset::CheckLock> lock);
 };
 
-}
 }
 }
 #endif

@@ -16,16 +16,19 @@ namespace iseg {
 
 Dataset::Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
     : segmented::Dataset(session, cfg),
-      format(cfg.value("format")),
-      index(types::parse_code_names(cfg.value("index"))),
-      unique(types::parse_code_names(cfg.value("unique"))),
-      summary_cache_pathname(path / ".summaries"),
-      trace_sql(cfg.value_bool("trace_sql"))
+      iseg{
+          cfg.value("format"),
+          types::parse_code_names(cfg.value("index")),
+          types::parse_code_names(cfg.value("unique")),
+          cfg.value_bool("trace_sql"),
+          eatmydata,
+      },
+      summary_cache_pathname{path / ".summaries"}
 {
-    if (format.empty())
+    if (iseg.format.empty())
         throw std::runtime_error("Dataset " + name() + " misses format= configuration");
 
-    unique.erase(TYPE_REFTIME);
+    iseg.unique.erase(TYPE_REFTIME);
 }
 
 std::shared_ptr<dataset::Reader> Dataset::create_reader()
@@ -45,7 +48,7 @@ std::shared_ptr<dataset::Checker> Dataset::create_checker()
 
 std::shared_ptr<segment::data::Reader> Dataset::segment_reader(const std::filesystem::path& relpath, std::shared_ptr<core::Lock> lock)
 {
-    return session->segment_reader(format, path, relpath, lock);
+    return session->segment_reader(iseg.format, path, relpath, lock);
 }
 
 }

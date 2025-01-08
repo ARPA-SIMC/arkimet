@@ -18,6 +18,7 @@ using namespace arki;
 using namespace arki::core;
 using namespace arki::types;
 using namespace arki::utils;
+using arki::segment::index::iseg::AIndex;
 
 namespace arki {
 namespace dataset {
@@ -32,7 +33,7 @@ public:
     AIndex idx;
 
     AppendSegment(std::shared_ptr<iseg::Dataset> dataset, std::shared_ptr<dataset::AppendLock> append_lock, std::shared_ptr<segment::data::Writer> segment)
-        : dataset(dataset), append_lock(append_lock), segment(segment), idx(dataset, segment, append_lock)
+        : dataset(dataset), append_lock(append_lock), segment(segment), idx(dataset->iseg, dataset, segment, append_lock)
     {
     }
 
@@ -94,7 +95,7 @@ public:
                     return ACQ_ERROR_DUPLICATE;
 
                 // Read the update sequence number of the old BUFR
-                auto reader = dataset->session->segment_reader(dataset->format, dataset->path, old->filename, append_lock);
+                auto reader = dataset->session->segment_reader(dataset->iseg.format, dataset->path, old->filename, append_lock);
                 old->lock(reader);
                 int old_usn;
                 if (!scan::Scanner::update_sequence_number(*old, old_usn))
@@ -209,7 +210,7 @@ public:
                     }
 
                     // Read the update sequence number of the old BUFR
-                    auto reader = dataset->session->segment_reader(dataset->format, dataset->path, old->filename, append_lock);
+                    auto reader = dataset->session->segment_reader(dataset->iseg.format, dataset->path, old->filename, append_lock);
                     old->lock(reader);
                     int old_usn;
                     if (!scan::Scanner::update_sequence_number(*old, old_usn))
@@ -271,7 +272,7 @@ std::string Writer::type() const { return "iseg"; }
 std::filesystem::path Writer::get_relpath(const Metadata& md)
 {
     core::Time time = md.get<types::reftime::Position>()->get_Position();
-    return sys::with_suffix(dataset().step()(time), "."s + dataset().format);
+    return sys::with_suffix(dataset().step()(time), "."s + dataset().iseg.format);
 }
 
 std::unique_ptr<AppendSegment> Writer::file(const segment::data::WriterConfig& writer_config, const Metadata& md)
@@ -283,15 +284,15 @@ std::unique_ptr<AppendSegment> Writer::file(const segment::data::WriterConfig& w
 {
     std::filesystem::create_directories((dataset().path / relpath).parent_path());
     std::shared_ptr<dataset::AppendLock> append_lock(dataset().append_lock_segment(relpath));
-    auto segment = dataset().session->segment_writer(writer_config, dataset().format, dataset().path, relpath);
+    auto segment = dataset().session->segment_writer(writer_config, dataset().iseg.format, dataset().path, relpath);
     return std::unique_ptr<AppendSegment>(new AppendSegment(m_dataset, append_lock, segment));
 }
 
 WriterAcquireResult Writer::acquire(Metadata& md, const AcquireConfig& cfg)
 {
     acct::acquire_single_count.incr();
-    if (md.source().format != dataset().format)
-        throw std::runtime_error("cannot acquire into dataset " + name() + ": data is in format " + md.source().format + " but the dataset only accepts " + dataset().format);
+    if (md.source().format != dataset().iseg.format)
+        throw std::runtime_error("cannot acquire into dataset " + name() + ": data is in format " + md.source().format + " but the dataset only accepts " + dataset().iseg.format);
 
     auto age_check = dataset().check_acquire_age(md);
     if (age_check.first) return age_check.second;
@@ -323,9 +324,9 @@ void Writer::acquire_batch(WriterBatch& batch, const AcquireConfig& cfg)
     ReplaceStrategy replace = cfg.replace == REPLACE_DEFAULT ? dataset().default_replace_strategy : cfg.replace;
 
     if (batch.empty()) return;
-    if (batch[0]->md.source().format != dataset().format)
+    if (batch[0]->md.source().format != dataset().iseg.format)
     {
-        batch.set_all_error("cannot acquire into dataset " + name() + ": data is in format " + batch[0]->md.source().format + " but the dataset only accepts " + dataset().format);
+        batch.set_all_error("cannot acquire into dataset " + name() + ": data is in format " + batch[0]->md.source().format + " but the dataset only accepts " + dataset().iseg.format);
         return;
     }
 
