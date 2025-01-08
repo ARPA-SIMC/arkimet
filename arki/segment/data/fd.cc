@@ -26,8 +26,7 @@ using namespace arki::core;
 using namespace arki::types;
 using namespace arki::utils;
 
-namespace arki {
-namespace segment {
+namespace arki::segment::data {
 namespace fd {
 
 void File::fdtruncate_nothrow(off_t pos) noexcept
@@ -91,7 +90,7 @@ struct CheckBackend : public AppendCheckBackend
         if (!data.open_ifexists(O_RDONLY))
         {
             reporter(data.path().native() + " not found on disk");
-            return SEGMENT_DELETED;
+            return State(SEGMENT_DELETED);
         }
         data.fstat(st);
         return AppendCheckBackend::check();
@@ -124,7 +123,7 @@ bool Reader<Segment>::scan_data(metadata_dest_func dest)
 {
     const auto& segment = this->segment();
     auto scanner = scan::Scanner::get_scanner(segment.format);
-    return scanner->scan_segment(static_pointer_cast<segment::Reader>(this->shared_from_this()), dest);
+    return scanner->scan_segment(static_pointer_cast<data::Reader>(this->shared_from_this()), dest);
 }
 
 template<typename Segment>
@@ -153,7 +152,7 @@ template<typename Segment>
 stream::SendResult Reader<Segment>::stream(const types::source::Blob& src, StreamOutput& out)
 {
     if (src.format == "vm2")
-        return arki::segment::Reader::stream(src, out);
+        return data::Reader::stream(src, out);
 
     iotrace::trace_file(fd, src.offset, src.size, "streamed data");
     return out.send_file_segment(fd, src.offset, src.size);
@@ -427,23 +426,23 @@ void HoleFile::test_add_padding(size_t size)
 
 const char* Segment::type() const { return "concat"; }
 bool Segment::single_file() const { return true; }
-std::shared_ptr<segment::Reader> Segment::reader(std::shared_ptr<core::Lock> lock) const
+std::shared_ptr<data::Reader> Segment::reader(std::shared_ptr<core::Lock> lock) const
 {
     return make_shared<Reader>(format, root, relpath, abspath, lock);
 }
-std::shared_ptr<segment::Checker> Segment::checker() const
+std::shared_ptr<data::Checker> Segment::checker() const
 {
     return make_shared<Checker>(format, root, relpath, abspath);
 }
-std::shared_ptr<segment::Writer> Segment::make_writer(const WriterConfig& config, const std::string& format, const std::filesystem::path& rootdir, const std::filesystem::path& relpath, const std::filesystem::path& abspath)
+std::shared_ptr<data::Writer> Segment::make_writer(const WriterConfig& config, const std::string& format, const std::filesystem::path& rootdir, const std::filesystem::path& relpath, const std::filesystem::path& abspath)
 {
     return make_shared<Writer>(config, format, rootdir, relpath, abspath);
 }
-std::shared_ptr<segment::Checker> Segment::make_checker(const std::string& format, const std::filesystem::path& rootdir, const std::filesystem::path& relpath, const std::filesystem::path& abspath)
+std::shared_ptr<data::Checker> Segment::make_checker(const std::string& format, const std::filesystem::path& rootdir, const std::filesystem::path& relpath, const std::filesystem::path& abspath)
 {
     return make_shared<Checker>(format, rootdir, relpath, abspath);
 }
-std::shared_ptr<segment::Checker> Segment::create(const std::string& format, const std::filesystem::path& rootdir, const std::filesystem::path& relpath, const std::filesystem::path& abspath, metadata::Collection& mds, const RepackConfig& cfg)
+std::shared_ptr<data::Checker> Segment::create(const std::string& format, const std::filesystem::path& rootdir, const std::filesystem::path& relpath, const std::filesystem::path& abspath, metadata::Collection& mds, const RepackConfig& cfg)
 {
     fd::Creator<File> creator(rootdir, relpath, mds, abspath);
     creator.create();
@@ -457,19 +456,19 @@ bool Segment::can_store(const std::string& format)
 
 const char* HoleSegment::type() const { return "hole_concat"; }
 bool HoleSegment::single_file() const { return true; }
-std::shared_ptr<segment::Reader> HoleSegment::reader(std::shared_ptr<core::Lock> lock) const
+std::shared_ptr<data::Reader> HoleSegment::reader(std::shared_ptr<core::Lock> lock) const
 {
     return make_shared<Reader>(format, root, relpath, abspath, lock);
 }
-std::shared_ptr<segment::Checker> HoleSegment::checker() const
+std::shared_ptr<data::Checker> HoleSegment::checker() const
 {
     return make_shared<HoleChecker>(format, root, relpath, abspath);
 }
-std::shared_ptr<segment::Writer> HoleSegment::make_writer(const WriterConfig& config, const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath, const std::filesystem::path& abspath)
+std::shared_ptr<data::Writer> HoleSegment::make_writer(const WriterConfig& config, const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath, const std::filesystem::path& abspath)
 {
     return make_shared<HoleWriter>(config, format, root, relpath, abspath);
 }
-std::shared_ptr<segment::Checker> HoleSegment::make_checker(const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath, const std::filesystem::path& abspath)
+std::shared_ptr<data::Checker> HoleSegment::make_checker(const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath, const std::filesystem::path& abspath)
 {
     return make_shared<HoleChecker>(format, root, relpath, abspath);
 }
@@ -504,23 +503,23 @@ void File::test_add_padding(size_t size)
 
 const char* Segment::type() const { return "lines"; }
 bool Segment::single_file() const { return true; }
-std::shared_ptr<segment::Reader> Segment::reader(std::shared_ptr<core::Lock> lock) const
+std::shared_ptr<data::Reader> Segment::reader(std::shared_ptr<core::Lock> lock) const
 {
     return make_shared<Reader>(format, root, relpath, abspath, lock);
 }
-std::shared_ptr<segment::Checker> Segment::checker() const
+std::shared_ptr<data::Checker> Segment::checker() const
 {
     return make_shared<Checker>(format, root, relpath, abspath);
 }
-std::shared_ptr<segment::Writer> Segment::make_writer(const WriterConfig& config, const std::string& format, const std::filesystem::path& rootdir, const std::filesystem::path& relpath, const std::filesystem::path& abspath)
+std::shared_ptr<data::Writer> Segment::make_writer(const WriterConfig& config, const std::string& format, const std::filesystem::path& rootdir, const std::filesystem::path& relpath, const std::filesystem::path& abspath)
 {
     return make_shared<Writer>(config, format, rootdir, relpath, abspath);
 }
-std::shared_ptr<segment::Checker> Segment::make_checker(const std::string& format, const std::filesystem::path& rootdir, const std::filesystem::path& relpath, const std::filesystem::path& abspath)
+std::shared_ptr<data::Checker> Segment::make_checker(const std::string& format, const std::filesystem::path& rootdir, const std::filesystem::path& relpath, const std::filesystem::path& abspath)
 {
     return make_shared<Checker>(format, rootdir, relpath, abspath);
 }
-std::shared_ptr<segment::Checker> Segment::create(const std::string& format, const std::filesystem::path& rootdir, const std::filesystem::path& relpath, const std::filesystem::path& abspath, metadata::Collection& mds, const RepackConfig& cfg)
+std::shared_ptr<data::Checker> Segment::create(const std::string& format, const std::filesystem::path& rootdir, const std::filesystem::path& relpath, const std::filesystem::path& abspath, metadata::Collection& mds, const RepackConfig& cfg)
 {
     fd::Creator<File> creator(rootdir, relpath, mds, abspath);
     creator.create();
@@ -544,6 +543,5 @@ template class fd::Writer<lines::Segment, lines::File>;
 template class fd::Checker<lines::Segment, lines::File>;
 }
 
-}
 }
 #include "base.tcc"

@@ -29,7 +29,7 @@ public:
      *
      * Returns true if dest always returned true, else false.
      */
-    virtual bool scan_segment(std::shared_ptr<segment::Reader> reader, metadata_dest_func dest) = 0;
+    virtual bool scan_segment(std::shared_ptr<segment::data::Reader> reader, metadata_dest_func dest) = 0;
 
     /**
      * Open a pathname to scan.

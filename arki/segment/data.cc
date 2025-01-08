@@ -1,10 +1,10 @@
-#include "segment.h"
-#include "segment/missing.h"
-#include "segment/fd.h"
-#include "segment/dir.h"
-#include "segment/tar.h"
-#include "segment/zip.h"
-#include "segment/gz.h"
+#include "data.h"
+#include "data/missing.h"
+#include "data/fd.h"
+#include "data/dir.h"
+#include "data/tar.h"
+#include "data/zip.h"
+#include "data/gz.h"
 #include "arki/exceptions.h"
 #include "arki/stream.h"
 #include "arki/metadata/collection.h"
@@ -18,7 +18,7 @@ using namespace std;
 using namespace std::string_literals;
 using namespace arki::utils;
 
-namespace arki {
+namespace arki::segment {
 
 Segment::Segment(const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath, const std::filesystem::path& abspath)
     : format(format), root(root), relpath(relpath), abspath(abspath)
@@ -63,7 +63,7 @@ bool Segment::is_segment(const std::filesystem::path& abspath)
         if (S_ISDIR(st->st_mode))
             return false;
         string format = scan::Scanner::format_from_filename(abspath.stem(), "");
-        return segment::zip::Segment::can_store(format);
+        return segment::data::zip::Segment::can_store(format);
     }
 
     if (extension == ".gz")
@@ -71,7 +71,7 @@ bool Segment::is_segment(const std::filesystem::path& abspath)
         if (S_ISDIR(st->st_mode))
             return false;
         string format = scan::Scanner::format_from_filename(abspath.stem(), "");
-        return segment::gz::Segment::can_store(format);
+        return segment::data::gz::Segment::can_store(format);
     }
 
     if (extension == ".tar")
@@ -79,7 +79,7 @@ bool Segment::is_segment(const std::filesystem::path& abspath)
         if (S_ISDIR(st->st_mode))
             return false;
         string format = scan::Scanner::format_from_filename(abspath.stem(), "");
-        return segment::tar::Segment::can_store(format);
+        return segment::data::tar::Segment::can_store(format);
     }
 
     string format = scan::Scanner::format_from_filename(abspath, "");
@@ -87,32 +87,32 @@ bool Segment::is_segment(const std::filesystem::path& abspath)
         return false;
 
     if (!S_ISDIR(st->st_mode))
-        return segment::fd::Segment::can_store(format);
+        return segment::data::fd::Segment::can_store(format);
 
     if (!std::filesystem::exists(abspath / ".sequence"))
         return false;
 
-    return segment::dir::Segment::can_store(format);
+    return segment::data::dir::Segment::can_store(format);
 }
 
-std::shared_ptr<segment::Reader> Segment::detect_reader(const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath, const std::filesystem::path& abspath, std::shared_ptr<core::Lock> lock)
+std::shared_ptr<segment::data::Reader> Segment::detect_reader(const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath, const std::filesystem::path& abspath, std::shared_ptr<core::Lock> lock)
 {
-    std::shared_ptr<segment::Reader> res;
+    std::shared_ptr<segment::data::Reader> res;
 
     std::unique_ptr<struct stat> st = sys::stat(abspath);
     if (st.get())
     {
         if (S_ISDIR(st->st_mode))
         {
-            res.reset(new segment::dir::Reader(format, root, relpath, abspath, lock));
+            res.reset(new segment::data::dir::Reader(format, root, relpath, abspath, lock));
         } else {
             if (format == "grib" || format == "bufr")
             {
-                res.reset(new segment::concat::Reader(format, root, relpath, abspath, lock));
+                res.reset(new segment::data::concat::Reader(format, root, relpath, abspath, lock));
             } else if (format == "vm2") {
-                res.reset(new segment::lines::Reader(format, root, relpath, abspath, lock));
+                res.reset(new segment::data::lines::Reader(format, root, relpath, abspath, lock));
             } else if (format == "odimh5" || format == "nc" || format == "jpeg") {
-                res.reset(new segment::concat::Reader(format, root, relpath, abspath, lock));
+                res.reset(new segment::data::concat::Reader(format, root, relpath, abspath, lock));
             } else {
                 throw_consistency_error(
                         "getting segment for "s + format + " file " + relpath.native(),
@@ -132,11 +132,11 @@ std::shared_ptr<segment::Reader> Segment::detect_reader(const std::string& forma
         {
             if (format == "grib" || format == "bufr")
             {
-                res.reset(new segment::gzconcat::Reader(format, root, relpath, abspath, lock));
+                res.reset(new segment::data::gzconcat::Reader(format, root, relpath, abspath, lock));
             } else if (format == "vm2") {
-                res.reset(new segment::gzlines::Reader(format, root, relpath, abspath, lock));
+                res.reset(new segment::data::gzlines::Reader(format, root, relpath, abspath, lock));
             } else if (format == "odimh5" || format == "nc" || format == "jpeg") {
-                res.reset(new segment::gzconcat::Reader(format, root, relpath, abspath, lock));
+                res.reset(new segment::data::gzconcat::Reader(format, root, relpath, abspath, lock));
             } else {
                 throw_consistency_error(
                         "getting segment for "s + format + " file " + relpath.native(),
@@ -149,36 +149,36 @@ std::shared_ptr<segment::Reader> Segment::detect_reader(const std::string& forma
     st = sys::stat(sys::with_suffix(abspath, ".tar"));
     if (st.get())
     {
-        res.reset(new segment::tar::Reader(format, root, relpath, abspath, lock));
+        res.reset(new segment::data::tar::Reader(format, root, relpath, abspath, lock));
         return res;
     }
 
     st = sys::stat(sys::with_suffix(abspath, ".zip"));
     if (st.get())
     {
-        res.reset(new segment::zip::Reader(format, root, relpath, abspath, lock));
+        res.reset(new segment::data::zip::Reader(format, root, relpath, abspath, lock));
         return res;
     }
 
-    res.reset(new segment::missing::Reader(format, root, relpath, abspath, lock));
+    res.reset(new segment::data::missing::Reader(format, root, relpath, abspath, lock));
     return res;
 }
 
-std::shared_ptr<segment::Writer> Segment::detect_writer(const segment::WriterConfig& config, const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath, const std::filesystem::path& abspath, bool mock_data)
+std::shared_ptr<segment::data::Writer> Segment::detect_writer(const segment::data::WriterConfig& config, const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath, const std::filesystem::path& abspath, bool mock_data)
 {
-    std::shared_ptr<segment::Writer> res;
+    std::shared_ptr<segment::data::Writer> res;
 
     std::unique_ptr<struct stat> st = sys::stat(abspath);
     if (st.get())
     {
         if (S_ISDIR(st->st_mode))
         {
-            if (segment::dir::Segment::can_store(format))
+            if (segment::data::dir::Segment::can_store(format))
             {
                 if (mock_data)
-                    res.reset(new segment::dir::HoleWriter(config, format, root, relpath, abspath));
+                    res.reset(new segment::data::dir::HoleWriter(config, format, root, relpath, abspath));
                 else
-                    res.reset(new segment::dir::Writer(config, format, root, relpath, abspath));
+                    res.reset(new segment::data::dir::Writer(config, format, root, relpath, abspath));
             } else {
                 throw_consistency_error(
                         "getting writer for "s + format + " file " + relpath.native(),
@@ -188,14 +188,14 @@ std::shared_ptr<segment::Writer> Segment::detect_writer(const segment::WriterCon
             if (format == "grib" || format == "bufr")
             {
                 if (mock_data)
-                    res.reset(new segment::concat::HoleWriter(config, format, root, relpath, abspath));
+                    res.reset(new segment::data::concat::HoleWriter(config, format, root, relpath, abspath));
                 else
-                    res.reset(new segment::concat::Writer(config, format, root, relpath, abspath));
+                    res.reset(new segment::data::concat::Writer(config, format, root, relpath, abspath));
             } else if (format == "vm2") {
                 if (mock_data)
                     throw_consistency_error("mock_data single-file line-based segments are not implemented");
                 else
-                    res.reset(new segment::lines::Writer(config, format, root, relpath, abspath));
+                    res.reset(new segment::data::lines::Writer(config, format, root, relpath, abspath));
             } else if (format == "odimh5") {
                 throw_consistency_error("segment is a file, but odimh5 data can only be stored into directory segments");
             } else if (format == "nc") {
@@ -239,21 +239,21 @@ std::shared_ptr<segment::Writer> Segment::detect_writer(const segment::WriterCon
     return res;
 }
 
-std::shared_ptr<segment::Checker> Segment::detect_checker(const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath, const std::filesystem::path& abspath, bool mock_data)
+std::shared_ptr<segment::data::Checker> Segment::detect_checker(const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath, const std::filesystem::path& abspath, bool mock_data)
 {
-    std::shared_ptr<segment::Checker> res;
+    std::shared_ptr<segment::data::Checker> res;
 
     std::unique_ptr<struct stat> st = sys::stat(abspath);
     if (st.get())
     {
         if (S_ISDIR(st->st_mode))
         {
-            if (segment::dir::Segment::can_store(format))
+            if (segment::data::dir::Segment::can_store(format))
             {
                 if (mock_data)
-                    res.reset(new segment::dir::HoleChecker(format, root, relpath, abspath));
+                    res.reset(new segment::data::dir::HoleChecker(format, root, relpath, abspath));
                 else
-                    res.reset(new segment::dir::Checker(format, root, relpath, abspath));
+                    res.reset(new segment::data::dir::Checker(format, root, relpath, abspath));
             } else {
                 throw_consistency_error(
                         "getting segment for " + format + " file " + relpath.native(),
@@ -263,21 +263,21 @@ std::shared_ptr<segment::Checker> Segment::detect_checker(const std::string& for
             if (format == "grib" || format == "bufr")
             {
                 if (mock_data)
-                    res.reset(new segment::concat::HoleChecker(format, root, relpath, abspath));
+                    res.reset(new segment::data::concat::HoleChecker(format, root, relpath, abspath));
                 else
-                    res.reset(new segment::concat::Checker(format, root, relpath, abspath));
+                    res.reset(new segment::data::concat::Checker(format, root, relpath, abspath));
             } else if (format == "vm2") {
                 if (mock_data)
                     throw_consistency_error("mockdata single-file line-based segments not implemented");
                 else
-                    res.reset(new segment::lines::Checker(format, root, relpath, abspath));
+                    res.reset(new segment::data::lines::Checker(format, root, relpath, abspath));
             } else if (format == "odimh5" || format == "nc" || format == "jpeg") {
                 // If it's a file and we need a directory, still get a checker
                 // so it can deal with it
                 if (mock_data)
-                    res.reset(new segment::dir::HoleChecker(format, root, relpath, abspath));
+                    res.reset(new segment::data::dir::HoleChecker(format, root, relpath, abspath));
                 else
-                    res.reset(new segment::dir::Checker(format, root, relpath, abspath));
+                    res.reset(new segment::data::dir::Checker(format, root, relpath, abspath));
             } else {
                 throw_consistency_error(
                         "getting segment for "s + format + " file " + relpath.native(),
@@ -297,9 +297,9 @@ std::shared_ptr<segment::Checker> Segment::detect_checker(const std::string& for
 
         if (format == "grib" || format == "bufr")
         {
-            res.reset(new segment::gzconcat::Checker(format, root, relpath, abspath));
+            res.reset(new segment::data::gzconcat::Checker(format, root, relpath, abspath));
         } else if (format == "vm2") {
-            res.reset(new segment::gzlines::Checker(format, root, relpath, abspath));
+            res.reset(new segment::data::gzlines::Checker(format, root, relpath, abspath));
         } else if (format == "odimh5") {
             throw_consistency_error(
                     "getting checker for "s + format + " file " + relpath.native(),
@@ -326,7 +326,7 @@ std::shared_ptr<segment::Checker> Segment::detect_checker(const std::string& for
             throw_consistency_error(
                     "getting checker for "s + format + " file " + relpath.native(),
                     "cannot handle a directory with a .tar extension");
-        res.reset(new segment::tar::Checker(format, root, relpath, abspath));
+        res.reset(new segment::data::tar::Checker(format, root, relpath, abspath));
         return res;
     }
 
@@ -337,7 +337,7 @@ std::shared_ptr<segment::Checker> Segment::detect_checker(const std::string& for
             throw_consistency_error(
                     "getting checker for "s + format + " file " + relpath.native(),
                     "cannot handle a directory with a .zip extension");
-        res.reset(new segment::zip::Checker(format, root, relpath, abspath));
+        res.reset(new segment::data::zip::Checker(format, root, relpath, abspath));
         return res;
     }
 
@@ -345,7 +345,7 @@ std::shared_ptr<segment::Checker> Segment::detect_checker(const std::string& for
 }
 
 
-namespace segment {
+namespace data {
 
 Reader::Reader(std::shared_ptr<core::Lock> lock)
     : lock(lock)
@@ -418,27 +418,27 @@ RepackConfig::RepackConfig(unsigned gz_group_size, unsigned test_flags)
 }
 
 
-std::shared_ptr<segment::Checker> Checker::tar(metadata::Collection& mds)
+std::shared_ptr<segment::data::Checker> Checker::tar(metadata::Collection& mds)
 {
-    segment::tar::Segment::create(segment().format, segment().root, segment().relpath, segment().abspath, mds);
+    segment::data::tar::Segment::create(segment().format, segment().root, segment().relpath, segment().abspath, mds);
     remove();
-    return make_shared<segment::tar::Checker>(segment().format, segment().root, segment().relpath, segment().abspath);
+    return make_shared<segment::data::tar::Checker>(segment().format, segment().root, segment().relpath, segment().abspath);
 }
 
-std::shared_ptr<segment::Checker> Checker::zip(metadata::Collection& mds)
+std::shared_ptr<segment::data::Checker> Checker::zip(metadata::Collection& mds)
 {
-    segment::zip::Segment::create(segment().format, segment().root, segment().relpath, segment().abspath, mds);
+    segment::data::zip::Segment::create(segment().format, segment().root, segment().relpath, segment().abspath, mds);
     remove();
-    return make_shared<segment::zip::Checker>(segment().format, segment().root, segment().relpath, segment().abspath);
+    return make_shared<segment::data::zip::Checker>(segment().format, segment().root, segment().relpath, segment().abspath);
 }
 
-std::shared_ptr<segment::Checker> Checker::compress(metadata::Collection& mds, unsigned groupsize)
+std::shared_ptr<segment::data::Checker> Checker::compress(metadata::Collection& mds, unsigned groupsize)
 {
-    std::shared_ptr<segment::Checker> res;
+    std::shared_ptr<segment::data::Checker> res;
     if (segment().format == "vm2")
-        res = segment::gzlines::Segment::create(segment().format, segment().root, segment().relpath, segment().abspath, mds, RepackConfig(groupsize));
+        res = segment::data::gzlines::Segment::create(segment().format, segment().root, segment().relpath, segment().abspath, mds, RepackConfig(groupsize));
     else
-        res = segment::gzconcat::Segment::create(segment().format, segment().root, segment().relpath, segment().abspath, mds, RepackConfig(groupsize));
+        res = segment::data::gzconcat::Segment::create(segment().format, segment().root, segment().relpath, segment().abspath, mds, RepackConfig(groupsize));
     remove();
     return res;
 }
@@ -447,25 +447,6 @@ void Checker::test_truncate_by_data(const metadata::Collection& mds, unsigned da
 {
     const auto& s = mds[data_idx].sourceBlob();
     test_truncate(s.offset);
-}
-
-std::string State::to_string() const
-{
-    vector<const char*> res;
-    if (value == SEGMENT_OK)         res.push_back("OK");
-    if (value & SEGMENT_DIRTY)       res.push_back("DIRTY");
-    if (value & SEGMENT_UNALIGNED)   res.push_back("UNALIGNED");
-    if (value & SEGMENT_MISSING)     res.push_back("MISSING");
-    if (value & SEGMENT_DELETED)     res.push_back("DELETED");
-    if (value & SEGMENT_CORRUPTED)   res.push_back("CORRUPTED");
-    if (value & SEGMENT_ARCHIVE_AGE) res.push_back("ARCHIVE_AGE");
-    if (value & SEGMENT_DELETE_AGE)  res.push_back("DELETE_AGE");
-    return str::join(",", res.begin(), res.end());
-}
-
-std::ostream& operator<<(std::ostream& o, const State& s)
-{
-    return o << s.to_string();
 }
 
 }

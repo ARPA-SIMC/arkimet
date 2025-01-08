@@ -22,12 +22,12 @@ class Tests : public SegmentTests<Segment, Data>
     }
 };
 
-Tests<segment::zip::Segment, GRIBData> test1("arki_segment_zip_grib");
-Tests<segment::zip::Segment, BUFRData> test2("arki_segment_zip_bufr");
-Tests<segment::zip::Segment, ODIMData> test3("arki_segment_zip_odim");
-Tests<segment::zip::Segment, VM2Data>  test4("arki_segment_zip_vm2");
-Tests<segment::zip::Segment, NCData>  test5("arki_segment_zip_nc");
-Tests<segment::zip::Segment, JPEGData>  test6("arki_segment_zip_jpeg");
+Tests<segment::data::zip::Segment, GRIBData> test1("arki_segment_zip_grib");
+Tests<segment::data::zip::Segment, BUFRData> test2("arki_segment_zip_bufr");
+Tests<segment::data::zip::Segment, ODIMData> test3("arki_segment_zip_odim");
+Tests<segment::data::zip::Segment, VM2Data>  test4("arki_segment_zip_vm2");
+Tests<segment::data::zip::Segment, NCData>  test5("arki_segment_zip_nc");
+Tests<segment::data::zip::Segment, JPEGData>  test6("arki_segment_zip_jpeg");
 
 template<class Segment, class Data>
 void Tests<Segment, Data>::register_tests() {

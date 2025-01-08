@@ -4,7 +4,7 @@
 #include "arki/metadata.h"
 #include "arki/dataset/session.h"
 #include "arki/summary.h"
-#include "arki/segment.h"
+#include "arki/segment/data.h"
 #include "arki/utils/sys.h"
 #include "memory.h"
 
@@ -25,7 +25,7 @@ void Tests::register_tests() {
 // Test querying
 add_method("query", [] {
     auto session = make_shared<dataset::Session>();
-    auto reader = Segment::detect_reader("grib", std::filesystem::current_path(), "inbound/test.grib1", "inbound/test.grib1", std::make_shared<core::lock::Null>());
+    auto reader = segment::Segment::detect_reader("grib", std::filesystem::current_path(), "inbound/test.grib1", "inbound/test.grib1", std::make_shared<core::lock::Null>());
     auto ds = std::make_shared<dataset::memory::Dataset>(session);
     reader->scan(ds->inserter_func());
 
@@ -48,7 +48,7 @@ add_method("query", [] {
 // Test querying the summary
 add_method("query_summary", [] {
     auto session = make_shared<dataset::Session>();
-    auto reader = Segment::detect_reader("grib", std::filesystem::current_path(), "inbound/test.grib1", "inbound/test.grib1", std::make_shared<core::lock::Null>());
+    auto reader = segment::Segment::detect_reader("grib", std::filesystem::current_path(), "inbound/test.grib1", "inbound/test.grib1", std::make_shared<core::lock::Null>());
     auto ds = std::make_shared<dataset::memory::Dataset>(session);
     reader->scan(ds->inserter_func());
 
@@ -60,7 +60,7 @@ add_method("query_summary", [] {
 // Test querying the summary by reftime
 add_method("query_summary_reftime", [] {
     auto session = make_shared<dataset::Session>();
-    auto reader = Segment::detect_reader("grib", std::filesystem::current_path(), "inbound/test.grib1", "inbound/test.grib1", std::make_shared<core::lock::Null>());
+    auto reader = segment::Segment::detect_reader("grib", std::filesystem::current_path(), "inbound/test.grib1", "inbound/test.grib1", std::make_shared<core::lock::Null>());
     auto ds = std::make_shared<dataset::memory::Dataset>(session);
     reader->scan(ds->inserter_func());
 

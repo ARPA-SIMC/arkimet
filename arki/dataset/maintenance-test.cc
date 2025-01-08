@@ -7,7 +7,7 @@
 #include "arki/dataset/time.h"
 #include "arki/metadata/collection.h"
 #include "arki/types/source/blob.h"
-#include "arki/segment/seqfile.h"
+#include "arki/segment/data/seqfile.h"
 #include "arki/utils/files.h"
 #include "arki/utils/sys.h"
 #include "arki/exceptions.h"
@@ -78,14 +78,14 @@ void Fixture::state_is(unsigned segment_count, unsigned test_relpath_state)
 {
     auto state = scan_state();
     wassert(actual(state.size()) == segment_count);
-    wassert(actual(state.get("testds:" + test_relpath.native()).state) == test_relpath_state);
+    wassert(actual(state.get("testds:" + test_relpath.native()).state) == segment::State(test_relpath_state));
 }
 
 void Fixture::accurate_state_is(unsigned segment_count, unsigned test_relpath_state)
 {
     auto state = scan_state(false);
     wassert(actual(state.size()) == segment_count);
-    wassert(actual(state.get("testds:" + test_relpath.native()).state) == test_relpath_state);
+    wassert(actual(state.get("testds:" + test_relpath.native()).state) == segment::State(test_relpath_state));
 }
 
 void Fixture::test_setup()
@@ -517,7 +517,7 @@ void CheckTest<TestFixture>::register_tests()
 
             auto state = f.scan_state();
             wassert(actual(state.size()) == 3u);
-            wassert(actual(state.get("testds:" + f.test_relpath_wrongstep.native()).state) == segment::SEGMENT_CORRUPTED);
+            wassert(actual(state.get("testds:" + f.test_relpath_wrongstep.native()).state) == segment::State(segment::SEGMENT_CORRUPTED));
 
             // We are breaking the invariant that segments sorted by file name
             // are in the same sequence of segments sorted by time of file
@@ -997,7 +997,7 @@ void RepackTest<TestFixture>::register_tests()
         {
             auto state = f.scan_state();
             wassert(actual(state.get("testds:" + f.test_relpath.native()).state) == segment::State(segment::SEGMENT_DIRTY | segment::SEGMENT_DELETE_AGE));
-            wassert(actual(state.count(segment::SEGMENT_OK)) == 2u);
+            wassert(actual(state.count(segment::State(segment::SEGMENT_OK))) == 2u);
             wassert(actual(state.size()) == 3u);
         }
 
@@ -1027,7 +1027,7 @@ void RepackTest<TestFixture>::register_tests()
         {
             auto state = f.scan_state();
             wassert(actual(state.get("testds:" + f.test_relpath.native()).state) == segment::State(segment::SEGMENT_DIRTY | segment::SEGMENT_ARCHIVE_AGE));
-            wassert(actual(state.count(segment::SEGMENT_OK)) == 2u);
+            wassert(actual(state.count(segment::State(segment::SEGMENT_OK))) == 2u);
             wassert(actual(state.size()) == 3u);
         }
 

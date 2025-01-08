@@ -1,12 +1,12 @@
 #include "scan.h"
 #include "arki/libconfig.h"
-#include "arki/segment.h"
 #include "arki/metadata.h"
 #include "arki/metadata/data.h"
 #include "arki/core/file.h"
 #include "arki/types/source/blob.h"
 #include "arki/utils/string.h"
 #include "arki/utils/files.h"
+#include "arki/segment/data.h"
 #ifdef HAVE_GRIBAPI
 #include "arki/scan/grib.h"
 #endif
@@ -71,7 +71,7 @@ bool Scanner::test_scan_file(const std::filesystem::path& filename, metadata_des
 {
     std::filesystem::path basedir, relpath;
     utils::files::resolve_path(filename, basedir, relpath);
-    return scan_segment(Segment::detect_reader(format_from_filename(filename), basedir, relpath, filename, make_shared<core::lock::Null>()), dest);
+    return scan_segment(segment::Segment::detect_reader(format_from_filename(filename), basedir, relpath, filename, make_shared<core::lock::Null>()), dest);
 }
 
 void Scanner::normalize_before_dispatch(Metadata& md)

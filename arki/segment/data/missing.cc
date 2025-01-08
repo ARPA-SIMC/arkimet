@@ -8,9 +8,7 @@ using namespace arki::core;
 using namespace arki::types;
 using namespace arki::utils;
 
-namespace arki {
-namespace segment {
-namespace missing {
+namespace arki::segment::data::missing {
 
 
 const char* Segment::type() const { return "missing"; }
@@ -19,11 +17,11 @@ time_t Segment::timestamp() const
 {
     throw std::runtime_error("cannot get mtime of "s + abspath.native() + ": segment has disappeared");
 }
-std::shared_ptr<segment::Reader> Segment::reader(std::shared_ptr<core::Lock> lock) const
+std::shared_ptr<segment::data::Reader> Segment::reader(std::shared_ptr<core::Lock> lock) const
 {
     return make_shared<Reader>(format, root, relpath, abspath, lock);
 }
-std::shared_ptr<segment::Checker> Segment::checker() const
+std::shared_ptr<segment::data::Checker> Segment::checker() const
 {
     return Segment::detect_checker(format, root, relpath, abspath);
 }
@@ -50,6 +48,4 @@ stream::SendResult Reader::stream(const types::source::Blob& src, StreamOutput& 
     throw std::runtime_error(ss.str());
 }
 
-}
-}
 }

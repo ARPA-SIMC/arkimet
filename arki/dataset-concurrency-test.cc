@@ -410,7 +410,7 @@ this->add_method("read_repack", [](Fixture& f) {
             auto e = wassert_throws(std::runtime_error, {
                 dataset::CheckerConfig opts;
                 opts.readonly = false;
-                checker->repack(opts, segment::RepackConfig::TEST_MISCHIEF_MOVE_DATA);
+                checker->repack(opts, segment::data::RepackConfig::TEST_MISCHIEF_MOVE_DATA);
             });
             wassert(actual(e.what()).contains("a read lock is already held"));
         }

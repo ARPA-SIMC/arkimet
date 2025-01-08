@@ -80,7 +80,7 @@ bool Manifest::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
         auto abspath = m_path / file;
         auto fullpath = sys::with_suffix(abspath, ".metadata");
         if (!std::filesystem::exists(fullpath)) continue;
-        std::shared_ptr<arki::segment::Reader> reader;
+        std::shared_ptr<arki::segment::data::Reader> reader;
         if (q.with_data)
             reader = dataset->segment_reader(file, lock.lock());
         // This generates filenames relative to the metadata

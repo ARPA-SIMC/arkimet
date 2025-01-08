@@ -75,8 +75,8 @@ public:
     // Register this type with the type system
     static void init();
 
-    static std::unique_ptr<Source> createBlob(std::shared_ptr<segment::Reader> reader, uint64_t offset, uint64_t size);
-    static std::unique_ptr<Source> createBlob(const std::string& format, const std::filesystem::path& basedir, const std::filesystem::path& filename, uint64_t offset, uint64_t size, std::shared_ptr<segment::Reader> reader);
+    static std::unique_ptr<Source> createBlob(std::shared_ptr<segment::data::Reader> reader, uint64_t offset, uint64_t size);
+    static std::unique_ptr<Source> createBlob(const std::string& format, const std::filesystem::path& basedir, const std::filesystem::path& filename, uint64_t offset, uint64_t size, std::shared_ptr<segment::data::Reader> reader);
     static std::unique_ptr<Source> createBlobUnlocked(const std::string& format, const std::filesystem::path& basedir, const std::filesystem::path& filename, uint64_t offset, uint64_t size);
     static std::unique_ptr<Source> createInline(const std::string& format, uint64_t size);
     static std::unique_ptr<Source> createURL(const std::string& format, const std::string& url);

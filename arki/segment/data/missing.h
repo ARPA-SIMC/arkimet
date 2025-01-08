@@ -1,28 +1,26 @@
 #ifndef ARKI_SEGMENT_MISSING_H
 #define ARKI_SEGMENT_MISSING_H
 
-#include <arki/segment.h>
-#include <arki/segment/base.h>
+#include <arki/segment/data.h>
+#include <arki/segment/data/base.h>
 #include <arki/core/fwd.h>
 #include <vector>
 
-namespace arki {
-namespace segment {
-namespace missing {
+namespace arki::segment::data::missing {
 
-struct Segment : public arki::Segment
+struct Segment : public arki::segment::Segment
 {
-    using arki::Segment::Segment;
+    using arki::segment::Segment::Segment;
 
     const char* type() const override;
     bool single_file() const override;
     time_t timestamp() const override;
-    std::shared_ptr<segment::Reader> reader(std::shared_ptr<core::Lock> lock) const override;
-    std::shared_ptr<segment::Checker> checker() const override;
+    std::shared_ptr<data::Reader> reader(std::shared_ptr<core::Lock> lock) const override;
+    std::shared_ptr<data::Checker> checker() const override;
 };
 
 
-struct Reader : public segment::BaseReader<Segment>
+struct Reader : public data::BaseReader<Segment>
 {
     using BaseReader<Segment>::BaseReader;
 
@@ -31,8 +29,6 @@ struct Reader : public segment::BaseReader<Segment>
     stream::SendResult stream(const types::source::Blob& src, StreamOutput& out) override;
 };
 
-}
-}
 }
 
 #endif

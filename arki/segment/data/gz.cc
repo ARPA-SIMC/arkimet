@@ -21,8 +21,7 @@ using namespace arki::core;
 using namespace arki::types;
 using namespace arki::utils;
 
-namespace arki {
-namespace segment {
+namespace arki::segment::data {
 namespace gz {
 
 namespace {
@@ -99,7 +98,7 @@ struct CheckBackend : public AppendCheckBackend
     {
         std::unique_ptr<struct stat> st = sys::stat(gzabspath);
         if (st.get() == nullptr)
-            return SEGMENT_DELETED;
+            return State(SEGMENT_DELETED);
 
         // Decompress all the segment in memory
         all_data = compress::gunzip(gzabspath);
@@ -293,11 +292,11 @@ namespace gzconcat {
 
 const char* Segment::type() const { return "gzconcat"; }
 bool Segment::single_file() const { return true; }
-std::shared_ptr<segment::Reader> Segment::reader(std::shared_ptr<core::Lock> lock) const
+std::shared_ptr<data::Reader> Segment::reader(std::shared_ptr<core::Lock> lock) const
 {
     return make_shared<Reader>(format, root, relpath, abspath, lock);
 }
-std::shared_ptr<segment::Checker> Segment::checker() const
+std::shared_ptr<data::Checker> Segment::checker() const
 {
     return make_shared<Checker>(format, root, relpath, abspath);
 }
@@ -305,11 +304,11 @@ bool Segment::can_store(const std::string& format)
 {
     return format == "grib" || format == "bufr";
 }
-std::shared_ptr<segment::Checker> Segment::make_checker(const std::string& format, const std::filesystem::path& rootdir, const std::filesystem::path& relpath, const std::filesystem::path& abspath)
+std::shared_ptr<data::Checker> Segment::make_checker(const std::string& format, const std::filesystem::path& rootdir, const std::filesystem::path& relpath, const std::filesystem::path& abspath)
 {
     return make_shared<Checker>(format, rootdir, relpath, abspath);
 }
-std::shared_ptr<segment::Checker> Segment::create(const std::string& format, const std::filesystem::path& rootdir, const std::filesystem::path& relpath, const std::filesystem::path& abspath, metadata::Collection& mds, const RepackConfig& cfg)
+std::shared_ptr<data::Checker> Segment::create(const std::string& format, const std::filesystem::path& rootdir, const std::filesystem::path& relpath, const std::filesystem::path& abspath, metadata::Collection& mds, const RepackConfig& cfg)
 {
     if (cfg.gz_group_size == 0)
     {
@@ -329,11 +328,11 @@ namespace gzlines {
 
 const char* Segment::type() const { return "gzlines"; }
 bool Segment::single_file() const { return true; }
-std::shared_ptr<segment::Reader> Segment::reader(std::shared_ptr<core::Lock> lock) const
+std::shared_ptr<data::Reader> Segment::reader(std::shared_ptr<core::Lock> lock) const
 {
     return make_shared<Reader>(format, root, relpath, abspath, lock);
 }
-std::shared_ptr<segment::Checker> Segment::checker() const
+std::shared_ptr<data::Checker> Segment::checker() const
 {
     return make_shared<Checker>(format, root, relpath, abspath);
 }
@@ -341,11 +340,11 @@ bool Segment::can_store(const std::string& format)
 {
     return format == "vm2";
 }
-std::shared_ptr<segment::Checker> Segment::make_checker(const std::string& format, const std::filesystem::path& rootdir, const std::filesystem::path& relpath, const std::filesystem::path& abspath)
+std::shared_ptr<data::Checker> Segment::make_checker(const std::string& format, const std::filesystem::path& rootdir, const std::filesystem::path& relpath, const std::filesystem::path& abspath)
 {
     return make_shared<Checker>(format, rootdir, relpath, abspath);
 }
-std::shared_ptr<segment::Checker> Segment::create(const std::string& format, const std::filesystem::path& rootdir, const std::filesystem::path& relpath, const std::filesystem::path& abspath, metadata::Collection& mds, const RepackConfig& cfg)
+std::shared_ptr<data::Checker> Segment::create(const std::string& format, const std::filesystem::path& rootdir, const std::filesystem::path& relpath, const std::filesystem::path& abspath, metadata::Collection& mds, const RepackConfig& cfg)
 {
     if (cfg.gz_group_size == 0)
     {
@@ -370,6 +369,5 @@ template class Reader<gzconcat::Segment>;
 template class Checker<gzconcat::Segment>;
 }
 
-}
 }
 #include "base.tcc"

@@ -1,5 +1,5 @@
 #include "arki/tests/tests.h"
-#include "arki/segment.h"
+#include "arki/segment/data.h"
 #include "arki/metadata/data.h"
 #include "arki/types/source/blob.h"
 #include "arki/core/file.h"
@@ -97,7 +97,7 @@ add_method("countbytes", [] {
 });
 
 add_method("cat", [] {
-    auto reader = Segment::detect_reader("grib", ".", "inbound/test.grib1", "inbound/test.grib1", std::make_shared<core::lock::Null>());
+    auto reader = segment::Segment::detect_reader("grib", ".", "inbound/test.grib1", "inbound/test.grib1", std::make_shared<core::lock::Null>());
 
     // Get the normal data
     vector<uint8_t> plain;

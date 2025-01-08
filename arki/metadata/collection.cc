@@ -7,7 +7,7 @@
 #include "arki/utils/compress.h"
 #include "arki/utils/files.h"
 #include "arki/core/binary.h"
-#include "arki/segment.h"
+#include "arki/segment/data.h"
 #include "arki/scan.h"
 #include "arki/utils/sys.h"
 #include "arki/stream.h"
@@ -389,7 +389,7 @@ void TestCollection::scan_from_file(const std::filesystem::path& pathname, bool 
     std::filesystem::path basedir;
     std::filesystem::path relpath;
     utils::files::resolve_path(pathname, basedir, relpath);
-    auto reader = Segment::detect_reader(format, basedir, relpath, pathname, std::make_shared<core::lock::Null>());
+    auto reader = segment::Segment::detect_reader(format, basedir, relpath, pathname, std::make_shared<core::lock::Null>());
     reader->scan([&](std::shared_ptr<Metadata> md) { acquire(md, with_data); return true; });
 }
 
@@ -398,7 +398,7 @@ void TestCollection::scan_from_file(const std::filesystem::path& pathname, const
     std::filesystem::path basedir;
     std::filesystem::path relpath;
     utils::files::resolve_path(pathname, basedir, relpath);
-    auto reader = Segment::detect_reader(format, basedir, relpath, pathname, std::make_shared<core::lock::Null>());
+    auto reader = segment::Segment::detect_reader(format, basedir, relpath, pathname, std::make_shared<core::lock::Null>());
     reader->scan([&](std::shared_ptr<Metadata> md) { acquire(md, with_data); return true; });
 }
 

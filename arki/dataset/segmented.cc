@@ -40,14 +40,14 @@ void SegmentState::check_age(const std::filesystem::path& relpath, const Dataset
     if (delete_threshold.ye != 0 && delete_threshold >= interval.end)
     {
         reporter.segment_info(dataset.name(), relpath, "segment old enough to be deleted");
-        state = state + segment::SEGMENT_DELETE_AGE;
+        state = state + segment::State(segment::SEGMENT_DELETE_AGE);
         return;
     }
 
     if (archive_threshold.ye != 0 && archive_threshold >= interval.end)
     {
         reporter.segment_info(dataset.name(), relpath, "segment old enough to be archived");
-        state = state + segment::SEGMENT_ARCHIVE_AGE;
+        state = state + segment::State(segment::SEGMENT_ARCHIVE_AGE);
         return;
     }
 }
@@ -92,7 +92,7 @@ bool Dataset::relpath_timespan(const std::filesystem::path& path, core::Interval
     return step().path_timespan(path, interval);
 }
 
-std::shared_ptr<segment::Reader> Dataset::segment_reader(const std::filesystem::path& relpath, std::shared_ptr<core::Lock> lock)
+std::shared_ptr<segment::data::Reader> Dataset::segment_reader(const std::filesystem::path& relpath, std::shared_ptr<core::Lock> lock)
 {
     return session->segment_reader(scan::Scanner::format_from_filename(relpath), path, relpath, lock);
 }
@@ -431,9 +431,9 @@ void Checker::scan_dir(const std::filesystem::path& root, std::function<void(con
 
         string name = entry->d_name;
         auto abspath = root / relpath / name;
-        if (Segment::is_segment(abspath))
+        if (segment::Segment::is_segment(abspath))
         {
-            auto basename = Segment::basename(name);
+            auto basename = segment::Segment::basename(name);
             dest(relpath / basename);
             return false;
         }

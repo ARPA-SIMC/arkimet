@@ -1,5 +1,5 @@
 #include "tests.h"
-#include "arki/segment/tests.h"
+#include "arki/segment/data/tests.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
 #include "arki/dataset/query.h"
@@ -22,7 +22,7 @@
 #include "arki/types/source/blob.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
-#include "arki/segment/dir.h"
+#include "arki/segment/data/dir.h"
 #include "arki/nag.h"
 #include <algorithm>
 #include <cstring>
@@ -375,7 +375,7 @@ void DatasetTest::ensure_localds_clean(size_t filecount, size_t resultcount, boo
     nag::CollectHandler tc;
     tc.install();
     auto state = scan_state(quick);
-    wassert(actual(state.count(segment::SEGMENT_OK)) == filecount);
+    wassert(actual(state.count(segment::State(segment::SEGMENT_OK))) == filecount);
     wassert(actual(state.size()) == filecount);
 
     auto reader = makeSegmentedReader();
@@ -392,7 +392,7 @@ void DatasetTest::all_clean(size_t segment_count)
     auto state = scan_state();
     try {
         wassert(actual(state.size()) == segment_count);
-        wassert(actual(state.count(segment::SEGMENT_OK)) == segment_count);
+        wassert(actual(state.count(segment::State(segment::SEGMENT_OK))) == segment_count);
     } catch (...) {
         fprintf(stderr, "Dump of unexpected state:\n");
         state.dump(stderr);

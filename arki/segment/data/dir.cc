@@ -28,9 +28,7 @@ using namespace arki::types;
 using namespace arki::core;
 using namespace arki::utils;
 
-namespace arki {
-namespace segment {
-namespace dir {
+namespace arki::segment::data::dir {
 
 namespace {
 
@@ -100,7 +98,7 @@ struct CheckBackend : public AppendCheckBackend
     const std::string& format;
     const std::filesystem::path& abspath;
     std::unique_ptr<struct stat> st;
-    Scanner scanner;
+    dir::Scanner scanner;
 
     CheckBackend(const std::string& format, const std::filesystem::path& abspath, const std::filesystem::path& relpath, std::function<void(const std::string&)> reporter, const metadata::Collection& mds)
         : AppendCheckBackend(reporter, relpath, mds), format(format), abspath(abspath), scanner(format, abspath)
@@ -116,7 +114,7 @@ struct CheckBackend : public AppendCheckBackend
 
     size_t actual_end(off_t offset, size_t size) const override { return offset + 1; }
     size_t offset_end() const override { return scanner.max_sequence + 1; }
-    size_t compute_unindexed_space(const std::vector<Span> indexed_spans) const override
+    size_t compute_unindexed_space(const std::vector<Span>& indexed_spans) const override
     {
         // When this is called, all elements found in the index have already
         // been removed from scanner. We can just then add up what's left of
@@ -135,17 +133,17 @@ struct CheckBackend : public AppendCheckBackend
             stringstream ss;
             ss << "expected file " << source.offset << " not found in the file system";
             reporter(ss.str());
-            return SEGMENT_CORRUPTED;
+            return State(SEGMENT_CORRUPTED);
         }
         if (!(source.size == si->second.size || (format == "vm2" && (source.size + 1 == si->second.size))))
         {
             stringstream ss;
             ss << "expected file " << source.offset << " has size " << si->second.size << " instead of expected " << source.size;
             reporter(ss.str());
-            return SEGMENT_CORRUPTED;
+            return State(SEGMENT_CORRUPTED);
         }
         scanner.on_disk.erase(si);
-        return SEGMENT_OK;
+        return State(SEGMENT_OK);
     }
 
     State check()
@@ -154,13 +152,13 @@ struct CheckBackend : public AppendCheckBackend
         if (st.get() == nullptr)
         {
             reporter(abspath.native() + " not found on disk");
-            return SEGMENT_DELETED;
+            return State(SEGMENT_DELETED);
         }
 
         if (!S_ISDIR(st->st_mode))
         {
             reporter(abspath.native() + " is not a directory");
-            return SEGMENT_CORRUPTED;
+            return State(SEGMENT_CORRUPTED);
         }
 
         size_t cur_sequence = 0;
@@ -187,7 +185,7 @@ struct CheckBackend : public AppendCheckBackend
             stringstream out;
             out << "sequence file has value " << cur_sequence << " but found files until sequence " << scanner.max_sequence;
             reporter(out.str());
-            return SEGMENT_UNALIGNED;
+            return State(SEGMENT_UNALIGNED);
         }
 
         // Check files on disk that were not accounted for
@@ -218,7 +216,7 @@ struct CheckBackend : public AppendCheckBackend
             dirty = true;
         }
 
-        return dirty ? SEGMENT_DIRTY : SEGMENT_OK;
+        return State(dirty ? SEGMENT_DIRTY : SEGMENT_OK);
     }
 };
 
@@ -231,19 +229,19 @@ time_t Segment::timestamp() const
 {
     return sys::timestamp(abspath / ".sequence");
 }
-std::shared_ptr<segment::Reader> Segment::reader(std::shared_ptr<core::Lock> lock) const
+std::shared_ptr<data::Reader> Segment::reader(std::shared_ptr<core::Lock> lock) const
 {
     return make_shared<Reader>(format, root, relpath, abspath, lock);
 }
-std::shared_ptr<segment::Checker> Segment::checker() const
+std::shared_ptr<data::Checker> Segment::checker() const
 {
     return make_shared<Checker>(format, root, relpath, abspath);
 }
-std::shared_ptr<segment::Checker> Segment::make_checker(const std::string& format, const std::filesystem::path& rootdir, const std::filesystem::path& relpath, const std::filesystem::path& abspath)
+std::shared_ptr<data::Checker> Segment::make_checker(const std::string& format, const std::filesystem::path& rootdir, const std::filesystem::path& relpath, const std::filesystem::path& abspath)
 {
     return make_shared<Checker>(format, rootdir, relpath, abspath);
 }
-std::shared_ptr<segment::Checker> Segment::create(const std::string& format, const std::filesystem::path& rootdir, const std::filesystem::path& relpath, const std::filesystem::path& abspath, metadata::Collection& mds, const RepackConfig& cfg)
+std::shared_ptr<data::Checker> Segment::create(const std::string& format, const std::filesystem::path& rootdir, const std::filesystem::path& relpath, const std::filesystem::path& abspath, metadata::Collection& mds, const RepackConfig& cfg)
 {
     Creator creator(rootdir, relpath, mds, abspath);
     creator.create();
@@ -268,7 +266,7 @@ bool Reader::scan_data(metadata_dest_func dest)
 {
     Scanner scanner(segment().format, segment().abspath);
     scanner.list_files();
-    return scanner.scan(static_pointer_cast<segment::Reader>(this->shared_from_this()), dest);
+    return scanner.scan(static_pointer_cast<data::Reader>(this->shared_from_this()), dest);
 }
 
 sys::File Reader::open_src(const types::source::Blob& src)
@@ -315,7 +313,7 @@ std::vector<uint8_t> Reader::read(const types::source::Blob& src)
 stream::SendResult Reader::stream(const types::source::Blob& src, StreamOutput& out)
 {
     if (src.format == "vm2")
-        return arki::segment::Reader::stream(src, out);
+        return data::Reader::stream(src, out);
 
     sys::File file_fd = open_src(src);
     iotrace::trace_file(dirfd, src.offset, src.size, "streamed data");
@@ -325,7 +323,7 @@ stream::SendResult Reader::stream(const types::source::Blob& src, StreamOutput& 
 
 template<typename Segment>
 BaseWriter<Segment>::BaseWriter(const WriterConfig& config, const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath, const std::filesystem::path& abspath)
-    : segment::BaseWriter<Segment>(config, format, root, relpath, abspath), seqfile(abspath)
+    : data::BaseWriter<Segment>(config, format, root, relpath, abspath), seqfile(abspath)
 {
     // Ensure that the directory 'abspath' exists
     std::filesystem::create_directories(abspath);
@@ -501,7 +499,7 @@ bool BaseChecker<Segment>::rescan_data(std::function<void(const std::string&)> r
     }
 
     auto reader = this->segment().reader(lock);
-    return scanner.scan(reporter, static_pointer_cast<segment::Reader>(reader), dest);
+    return scanner.scan(reporter, static_pointer_cast<data::Reader>(reader), dest);
 }
 
 template<typename Segment>
@@ -751,7 +749,7 @@ void Scanner::list_files()
     }
 }
 
-bool Scanner::scan(std::shared_ptr<segment::Reader> reader, metadata_dest_func dest)
+bool Scanner::scan(std::shared_ptr<data::Reader> reader, metadata_dest_func dest)
 {
     // Scan them one by one
     auto scanner = scan::Scanner::get_scanner(format);
@@ -766,7 +764,7 @@ bool Scanner::scan(std::shared_ptr<segment::Reader> reader, metadata_dest_func d
     return true;
 }
 
-bool Scanner::scan(std::function<void(const std::string&)> reporter, std::shared_ptr<segment::Reader> reader, metadata_dest_func dest)
+bool Scanner::scan(std::function<void(const std::string&)> reporter, std::shared_ptr<data::Reader> reader, metadata_dest_func dest)
 {
     // Scan them one by one
     auto scanner = scan::Scanner::get_scanner(format);
@@ -789,7 +787,5 @@ bool Scanner::scan(std::function<void(const std::string&)> reporter, std::shared
     return true;
 }
 
-}
-}
 }
 #include "base.tcc"

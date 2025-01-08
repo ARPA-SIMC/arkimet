@@ -130,7 +130,7 @@ add_method("add_remove", [] {
     m->openRW();
 
     Summary s;
-    auto reader = Segment::detect_reader("grib", ".", "inbound/test.grib1", "inbound/test.grib1", std::make_shared<core::lock::Null>());
+    auto reader = segment::Segment::detect_reader("grib", ".", "inbound/test.grib1", "inbound/test.grib1", std::make_shared<core::lock::Null>());
     reader->scan([&](std::shared_ptr<Metadata> md) { s.add(*md); return true; });
 
     m->acquire("a.grib1", 1000010, s);

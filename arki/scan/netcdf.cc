@@ -1,7 +1,7 @@
 #include "netcdf.h"
 #include "arki/metadata.h"
 #include "arki/metadata/data.h"
-#include "arki/segment.h"
+#include "arki/segment/data.h"
 #include "arki/types/source.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
@@ -93,7 +93,7 @@ const Validator& validator() { return netcdf_validator; }
  * NetCDFScanner
  */
 
-void NetCDFScanner::set_blob_source(Metadata& md, std::shared_ptr<segment::Reader> reader)
+void NetCDFScanner::set_blob_source(Metadata& md, std::shared_ptr<segment::data::Reader> reader)
 {
     struct stat st;
     sys::stat(reader->segment().abspath, st);
@@ -120,7 +120,7 @@ std::shared_ptr<Metadata> NetCDFScanner::scan_singleton(const std::filesystem::p
     return scan_nc_file(abspath);
 }
 
-bool NetCDFScanner::scan_segment(std::shared_ptr<segment::Reader> reader, metadata_dest_func dest)
+bool NetCDFScanner::scan_segment(std::shared_ptr<segment::data::Reader> reader, metadata_dest_func dest)
 {
     // If the file is empty, skip it
     auto st = sys::stat(reader->segment().abspath);

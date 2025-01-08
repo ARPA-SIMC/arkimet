@@ -21,12 +21,12 @@ class Tests : public SegmentTests<Segment, Data>
     void register_tests() override;
 };
 
-Tests<segment::tar::Segment, GRIBData> test1("arki_segment_tar_grib");
-Tests<segment::tar::Segment, BUFRData> test2("arki_segment_tar_bufr");
-Tests<segment::tar::Segment, ODIMData> test3("arki_segment_tar_odim");
-Tests<segment::tar::Segment, VM2Data>  test4("arki_segment_tar_vm2");
-Tests<segment::tar::Segment, NCData>  test5("arki_segment_tar_nc");
-Tests<segment::tar::Segment, JPEGData>  test6("arki_segment_tar_jpeg");
+Tests<segment::data::tar::Segment, GRIBData> test1("arki_segment_tar_grib");
+Tests<segment::data::tar::Segment, BUFRData> test2("arki_segment_tar_bufr");
+Tests<segment::data::tar::Segment, ODIMData> test3("arki_segment_tar_odim");
+Tests<segment::data::tar::Segment, VM2Data>  test4("arki_segment_tar_vm2");
+Tests<segment::data::tar::Segment, NCData>  test5("arki_segment_tar_nc");
+Tests<segment::data::tar::Segment, JPEGData>  test6("arki_segment_tar_jpeg");
 
 struct Subprocess
 {
@@ -100,7 +100,7 @@ void Tests<Segment, Data>::register_tests() {
 SegmentTests<Segment, Data>::register_tests();
 
 this->add_method("filenames", [](Fixture& f) {
-    std::shared_ptr<segment::Checker> checker = f.create();
+    std::shared_ptr<segment::data::Checker> checker = f.create();
     sys::File tarout("tar.out", O_RDWR | O_CREAT | O_TRUNC);
     Subprocess proc;
     proc.stdout_fd = tarout;

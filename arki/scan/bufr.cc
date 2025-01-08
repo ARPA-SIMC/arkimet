@@ -6,7 +6,7 @@
 #include <wreport/options.h>
 #include "arki/metadata.h"
 #include "arki/metadata/data.h"
-#include "arki/segment.h"
+#include "arki/segment/data.h"
 #include "arki/types/source.h"
 #include "arki/types/origin.h"
 #include "arki/types/product.h"
@@ -265,7 +265,7 @@ std::shared_ptr<Metadata> BufrScanner::scan_data(const std::vector<uint8_t>& dat
     return md;
 }
 
-bool BufrScanner::scan_segment(std::shared_ptr<segment::Reader> reader, metadata_dest_func dest)
+bool BufrScanner::scan_segment(std::shared_ptr<segment::data::Reader> reader, metadata_dest_func dest)
 {
     auto file = dballe::File::create(dballe::Encoding::BUFR, reader->segment().abspath.c_str(), "r");
     while (true)

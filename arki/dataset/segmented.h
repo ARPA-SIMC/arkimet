@@ -2,7 +2,7 @@
 #define ARKI_DATASET_SEGMENTED_H
 
 #include <arki/dataset/local.h>
-#include <arki/segment.h>
+#include <arki/segment/data.h>
 #include <arki/core/time.h>
 
 namespace arki {
@@ -59,7 +59,7 @@ public:
 
     const Step& step() const { return *m_step; }
 
-    virtual std::shared_ptr<segment::Reader> segment_reader(const std::filesystem::path& relpath, std::shared_ptr<core::Lock> lock);
+    virtual std::shared_ptr<segment::data::Reader> segment_reader(const std::filesystem::path& relpath, std::shared_ptr<core::Lock> lock);
 };
 
 /**
@@ -120,7 +120,7 @@ class CheckerSegment
 {
 public:
     std::shared_ptr<dataset::CheckLock> lock;
-    std::shared_ptr<segment::Checker> segment;
+    std::shared_ptr<segment::data::Checker> segment;
 
     CheckerSegment(std::shared_ptr<dataset::CheckLock> lock);
     virtual ~CheckerSegment();

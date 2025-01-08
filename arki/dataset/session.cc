@@ -1,9 +1,9 @@
 #include "session.h"
 #include "arki/core/cfg.h"
 #include "arki/core/file.h"
-#include "arki/segment.h"
-#include "arki/segment/fd.h"
-#include "arki/segment/dir.h"
+#include "arki/segment/data.h"
+#include "arki/segment/data/fd.h"
+#include "arki/segment/data/dir.h"
 #include "arki/scan.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
@@ -40,37 +40,37 @@ Session::~Session()
 {
 }
 
-std::shared_ptr<segment::Reader> Session::segment_reader(const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath, std::shared_ptr<core::Lock> lock)
+std::shared_ptr<segment::data::Reader> Session::segment_reader(const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath, std::shared_ptr<core::Lock> lock)
 {
     auto abspath = std::filesystem::weakly_canonical(root / relpath);
     auto res = reader_pool.find(abspath);
     if (res == reader_pool.end() || res->second.expired())
     {
-        auto seg = Segment::detect_reader(format, root, relpath, abspath, lock);
+        auto seg = segment::Segment::detect_reader(format, root, relpath, abspath, lock);
         reader_pool[abspath] = seg;
         return seg;
     }
     return res->second.lock();
 }
 
-std::shared_ptr<segment::Writer> Session::segment_writer(const segment::WriterConfig& config, const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath)
+std::shared_ptr<segment::data::Writer> Session::segment_writer(const segment::data::WriterConfig& config, const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath)
 {
     // Ensure that the directory containing the segment exists
     auto abspath = root / relpath;
     std::filesystem::create_directories(abspath.parent_path());
 
-    auto res(Segment::detect_writer(config, format, root, relpath, abspath, false));
+    auto res(segment::Segment::detect_writer(config, format, root, relpath, abspath, false));
     if (res) return res;
 
     if (format == "grib" || format == "grib1" || format == "grib2")
     {
-        res.reset(new segment::concat::Writer(config, format, root, relpath, abspath));
+        res.reset(new segment::data::concat::Writer(config, format, root, relpath, abspath));
     } else if (format == "bufr") {
-        res.reset(new segment::concat::Writer(config, format, root, relpath, abspath));
+        res.reset(new segment::data::concat::Writer(config, format, root, relpath, abspath));
     } else if (format == "odimh5" || format == "h5" || format == "odim" || format == "nc" || format == "jpeg") {
-        res.reset(new segment::dir::Writer(config, format, root, relpath, abspath));
+        res.reset(new segment::data::dir::Writer(config, format, root, relpath, abspath));
     } else if (format == "vm2") {
-        res.reset(new segment::lines::Writer(config, format, root, relpath, abspath));
+        res.reset(new segment::data::lines::Writer(config, format, root, relpath, abspath));
     } else {
         throw std::runtime_error(
                 "cannot create writer for " + format + " file " + relpath.native() +
@@ -79,22 +79,22 @@ std::shared_ptr<segment::Writer> Session::segment_writer(const segment::WriterCo
     return res;
 }
 
-std::shared_ptr<segment::Checker> Session::segment_checker(const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath)
+std::shared_ptr<segment::data::Checker> Session::segment_checker(const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath)
 {
     std::string abspath = root / relpath;
 
-    auto res(Segment::detect_checker(format, root, relpath, abspath, false));
+    auto res(segment::Segment::detect_checker(format, root, relpath, abspath, false));
     if (res) return res;
 
     if (format == "grib" || format == "grib1" || format == "grib2")
     {
-        res.reset(new segment::concat::Checker(format, root, relpath, abspath));
+        res.reset(new segment::data::concat::Checker(format, root, relpath, abspath));
     } else if (format == "bufr") {
-        res.reset(new segment::concat::Checker(format, root, relpath, abspath));
+        res.reset(new segment::data::concat::Checker(format, root, relpath, abspath));
     } else if (format == "odimh5" || format == "h5" || format == "odim" || format == "nc" || format == "jpeg") {
-        res.reset(new segment::dir::Checker(format, root, relpath, abspath));
+        res.reset(new segment::data::dir::Checker(format, root, relpath, abspath));
     } else if (format == "vm2") {
-        res.reset(new segment::lines::Checker(format, root, relpath, abspath));
+        res.reset(new segment::data::lines::Checker(format, root, relpath, abspath));
     } else {
         throw std::runtime_error(
                 "getting writer for " + format + " file " + relpath.native() +
@@ -296,40 +296,40 @@ std::string Session::expand_remote_query(std::shared_ptr<const core::cfg::Sectio
     return query;
 }
 
-std::shared_ptr<segment::Reader> DirSegmentsSession::segment_reader(const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath, std::shared_ptr<core::Lock> lock)
+std::shared_ptr<segment::data::Reader> DirSegmentsSession::segment_reader(const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath, std::shared_ptr<core::Lock> lock)
 {
     auto abspath = std::filesystem::weakly_canonical(root / relpath);
     auto res = reader_pool.find(abspath);
     if (res == reader_pool.end() || res->second.expired())
     {
-        auto seg = Segment::detect_reader(format, root, relpath, root / relpath, lock);
+        auto seg = segment::Segment::detect_reader(format, root, relpath, root / relpath, lock);
         reader_pool[abspath] = seg;
         return seg;
     }
     return res->second.lock();
 }
 
-std::shared_ptr<segment::Writer> DirSegmentsSession::segment_writer(const segment::WriterConfig& config, const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath)
+std::shared_ptr<segment::data::Writer> DirSegmentsSession::segment_writer(const segment::data::WriterConfig& config, const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath)
 {
     // Ensure that the directory containing the segment exists
     auto abspath = root / relpath;
     std::filesystem::create_directories(abspath.parent_path());
 
-    auto res(Segment::detect_writer(config, format, root, relpath, abspath, false));
+    auto res(segment::Segment::detect_writer(config, format, root, relpath, abspath, false));
     if (res) return res;
 
-    res.reset(new segment::dir::Writer(config, format, root, relpath, abspath));
+    res.reset(new segment::data::dir::Writer(config, format, root, relpath, abspath));
     return res;
 }
 
-std::shared_ptr<segment::Checker> DirSegmentsSession::segment_checker(const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath)
+std::shared_ptr<segment::data::Checker> DirSegmentsSession::segment_checker(const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath)
 {
     auto abspath = root / relpath;
 
-    auto res(Segment::detect_checker(format, root, relpath, abspath, false));
+    auto res(segment::Segment::detect_checker(format, root, relpath, abspath, false));
     if (res) return res;
 
-    res.reset(new segment::dir::Checker(format, root, relpath, abspath));
+    res.reset(new segment::data::dir::Checker(format, root, relpath, abspath));
     return res;
 }
 

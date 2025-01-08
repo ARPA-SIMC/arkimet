@@ -30,14 +30,14 @@ class AppendSegment
 public:
     std::shared_ptr<simple::Dataset> dataset;
     std::shared_ptr<dataset::AppendLock> lock;
-    std::shared_ptr<segment::Writer> segment;
+    std::shared_ptr<segment::data::Writer> segment;
     utils::sys::Path dir;
     std::string basename;
     bool flushed = true;
     metadata::Collection mds;
     Summary sum;
 
-    AppendSegment(std::shared_ptr<simple::Dataset> dataset, std::shared_ptr<dataset::AppendLock> lock, std::shared_ptr<segment::Writer> segment)
+    AppendSegment(std::shared_ptr<simple::Dataset> dataset, std::shared_ptr<dataset::AppendLock> lock, std::shared_ptr<segment::data::Writer> segment)
         : dataset(dataset), lock(lock), segment(segment),
           dir(segment->segment().abspath.parent_path()),
           basename(segment->segment().abspath.filename())
@@ -143,7 +143,7 @@ Writer::~Writer()
 
 std::string Writer::type() const { return "simple"; }
 
-std::unique_ptr<AppendSegment> Writer::file(const segment::WriterConfig& writer_config, const Metadata& md, const std::string& format)
+std::unique_ptr<AppendSegment> Writer::file(const segment::data::WriterConfig& writer_config, const Metadata& md, const std::string& format)
 {
     auto lock = dataset().append_lock_dataset();
     core::Time time = md.get<types::reftime::Position>()->get_Position();
@@ -152,7 +152,7 @@ std::unique_ptr<AppendSegment> Writer::file(const segment::WriterConfig& writer_
     return std::unique_ptr<AppendSegment>(new AppendSegment(m_dataset, lock, writer));
 }
 
-std::unique_ptr<AppendSegment> Writer::file(const segment::WriterConfig& writer_config, const std::filesystem::path& relpath)
+std::unique_ptr<AppendSegment> Writer::file(const segment::data::WriterConfig& writer_config, const std::filesystem::path& relpath)
 {
     std::filesystem::create_directories((dataset().path / relpath).parent_path());
     auto lock = dataset().append_lock_dataset();
@@ -166,7 +166,7 @@ WriterAcquireResult Writer::acquire(Metadata& md, const AcquireConfig& cfg)
     auto age_check = dataset().check_acquire_age(md);
     if (age_check.first) return age_check.second;
 
-    segment::WriterConfig writer_config;
+    segment::data::WriterConfig writer_config;
     writer_config.drop_cached_data_on_commit = cfg.drop_cached_data_on_commit;
     writer_config.eatmydata = dataset().eatmydata;
 
@@ -178,7 +178,7 @@ void Writer::acquire_batch(WriterBatch& batch, const AcquireConfig& cfg)
 {
     acct::acquire_batch_count.incr();
 
-    segment::WriterConfig writer_config;
+    segment::data::WriterConfig writer_config;
     writer_config.drop_cached_data_on_commit = cfg.drop_cached_data_on_commit;
     writer_config.eatmydata = dataset().eatmydata;
 

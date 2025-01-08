@@ -28,10 +28,10 @@ class AppendSegment
 public:
     std::shared_ptr<iseg::Dataset> dataset;
     std::shared_ptr<dataset::AppendLock> append_lock;
-    std::shared_ptr<segment::Writer> segment;
+    std::shared_ptr<segment::data::Writer> segment;
     AIndex idx;
 
-    AppendSegment(std::shared_ptr<iseg::Dataset> dataset, std::shared_ptr<dataset::AppendLock> append_lock, std::shared_ptr<segment::Writer> segment)
+    AppendSegment(std::shared_ptr<iseg::Dataset> dataset, std::shared_ptr<dataset::AppendLock> append_lock, std::shared_ptr<segment::data::Writer> segment)
         : dataset(dataset), append_lock(append_lock), segment(segment), idx(dataset, segment, append_lock)
     {
     }
@@ -274,12 +274,12 @@ std::filesystem::path Writer::get_relpath(const Metadata& md)
     return sys::with_suffix(dataset().step()(time), "."s + dataset().format);
 }
 
-std::unique_ptr<AppendSegment> Writer::file(const segment::WriterConfig& writer_config, const Metadata& md)
+std::unique_ptr<AppendSegment> Writer::file(const segment::data::WriterConfig& writer_config, const Metadata& md)
 {
     return file(writer_config, get_relpath(md));
 }
 
-std::unique_ptr<AppendSegment> Writer::file(const segment::WriterConfig& writer_config, const std::filesystem::path& relpath)
+std::unique_ptr<AppendSegment> Writer::file(const segment::data::WriterConfig& writer_config, const std::filesystem::path& relpath)
 {
     std::filesystem::create_directories((dataset().path / relpath).parent_path());
     std::shared_ptr<dataset::AppendLock> append_lock(dataset().append_lock_segment(relpath));
@@ -298,7 +298,7 @@ WriterAcquireResult Writer::acquire(Metadata& md, const AcquireConfig& cfg)
 
     ReplaceStrategy replace = cfg.replace == REPLACE_DEFAULT ? dataset().default_replace_strategy : cfg.replace;
 
-    segment::WriterConfig writer_config;
+    segment::data::WriterConfig writer_config;
     writer_config.drop_cached_data_on_commit = cfg.drop_cached_data_on_commit;
     writer_config.eatmydata = dataset().eatmydata;
 
@@ -329,7 +329,7 @@ void Writer::acquire_batch(WriterBatch& batch, const AcquireConfig& cfg)
         return;
     }
 
-    segment::WriterConfig writer_config;
+    segment::data::WriterConfig writer_config;
     writer_config.drop_cached_data_on_commit = cfg.drop_cached_data_on_commit;
     writer_config.eatmydata = dataset().eatmydata;
 

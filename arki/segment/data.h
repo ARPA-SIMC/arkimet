@@ -1,5 +1,5 @@
-#ifndef ARKI_SEGMENT_H
-#define ARKI_SEGMENT_H
+#ifndef ARKI_SEGMENT_DATA_H
+#define ARKI_SEGMENT_DATA_H
 
 /// Dataset segment read/write functions
 
@@ -10,6 +10,7 @@
 #include <arki/metadata/fwd.h>
 #include <arki/stream/fwd.h>
 #include <arki/segment/fwd.h>
+#include <arki/segment/defs.h>
 #include <arki/core/transaction.h>
 #include <filesystem>
 #include <string>
@@ -17,81 +18,7 @@
 #include <vector>
 #include <cstdint>
 
-namespace arki {
-namespace segment {
-
-static const unsigned SEGMENT_OK          = 0;
-static const unsigned SEGMENT_DIRTY       = 1 << 0; /// Segment contains data deleted or out of order
-static const unsigned SEGMENT_UNALIGNED   = 1 << 1; /// Segment contents are inconsistent with the index
-static const unsigned SEGMENT_MISSING     = 1 << 2; /// Segment is known to the index, but does not exist on disk
-static const unsigned SEGMENT_DELETED     = 1 << 3; /// Segment contents have been entirely deleted
-static const unsigned SEGMENT_CORRUPTED   = 1 << 4; /// File is broken in a way that needs manual intervention
-static const unsigned SEGMENT_ARCHIVE_AGE = 1 << 5; /// File is old enough to be archived
-static const unsigned SEGMENT_DELETE_AGE  = 1 << 6; /// File is old enough to be deleted
-
-/**
- * State of a segment
- */
-struct State
-{
-    unsigned value;
-
-    State() : value(SEGMENT_OK) {}
-    State(unsigned value) : value(value) {}
-
-    bool is_ok() const { return value == SEGMENT_OK; }
-
-    bool has(unsigned state) const
-    {
-        return value & state;
-    }
-
-    State& operator+=(const State& fs)
-    {
-        value |= fs.value;
-        return *this;
-    }
-
-    State& operator-=(const State& fs)
-    {
-        value &= ~fs.value;
-        return *this;
-    }
-
-    State operator+(const State& fs) const
-    {
-        return State(value | fs.value);
-
-    }
-
-    State operator-(const State& fs) const
-    {
-        return State(value & ~fs.value);
-
-    }
-
-    bool operator==(const State& fs) const
-    {
-        return value == fs.value;
-    }
-
-    /// Return a text description of this file state
-    std::string to_string() const;
-};
-
-/// Print to ostream
-std::ostream& operator<<(std::ostream&, const State&);
-
-struct Span
-{
-    size_t offset;
-    size_t size;
-    Span() = default;
-    Span(size_t offset, size_t size) : offset(offset), size(size) {}
-    bool operator<(const Span& o) const { return std::tie(offset, size) < std::tie(o.offset, o.size); }
-};
-
-}
+namespace arki::segment {
 
 /**
  * Interface for managing a segment.
@@ -135,12 +62,12 @@ public:
     /**
      * Instantiate a reader for this segment
      */
-    virtual std::shared_ptr<segment::Reader> reader(std::shared_ptr<core::Lock> lock) const = 0;
+    virtual std::shared_ptr<segment::data::Reader> reader(std::shared_ptr<core::Lock> lock) const = 0;
 
     /**
      * Instantiate a checker for this segment
      */
-    virtual std::shared_ptr<segment::Checker> checker() const = 0;
+    virtual std::shared_ptr<segment::data::Checker> checker() const = 0;
 
     /**
      * Return the segment path for this pathname, stripping .gz, .tar, and .zip extensions
@@ -151,17 +78,17 @@ public:
     static bool is_segment(const std::filesystem::path& abspath);
 
     /// Instantiate the right Reader implementation for a segment that already exists
-    static std::shared_ptr<segment::Reader> detect_reader(const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath, const std::filesystem::path& abspath, std::shared_ptr<core::Lock> lock);
+    static std::shared_ptr<segment::data::Reader> detect_reader(const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath, const std::filesystem::path& abspath, std::shared_ptr<core::Lock> lock);
 
     /// Instantiate the right Writer implementation for a segment that already exists
-    static std::shared_ptr<segment::Writer> detect_writer(const segment::WriterConfig& config, const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath, const std::filesystem::path& abspath, bool mock_data=false);
+    static std::shared_ptr<segment::data::Writer> detect_writer(const segment::data::WriterConfig& config, const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath, const std::filesystem::path& abspath, bool mock_data=false);
 
     /// Instantiate the right Checker implementation for a segment that already exists
-    static std::shared_ptr<segment::Checker> detect_checker(const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath, const std::filesystem::path& abspath, bool mock_data=false);
+    static std::shared_ptr<segment::data::Checker> detect_checker(const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath, const std::filesystem::path& abspath, bool mock_data=false);
 };
 
 
-namespace segment {
+namespace data {
 
 class Reader : public std::enable_shared_from_this<Reader>
 {

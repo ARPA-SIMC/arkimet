@@ -2,7 +2,7 @@
 #include "arki/dataset/query.h"
 #include "arki/dataset/progress.h"
 #include "arki/metadata.h"
-#include "arki/segment.h"
+#include "arki/segment/data.h"
 #include "arki/core/file.h"
 #include "arki/core/time.h"
 #include "arki/types/source/blob.h"
@@ -144,7 +144,7 @@ bool ArkimetFile::scan(const dataset::DataQuery& q, metadata_dest_func dest)
                     if (md->has_source_blob())
                     {
                         const auto& blob = md->sourceBlob();
-                        auto reader = Segment::detect_reader(
+                        auto reader = segment::Segment::detect_reader(
                                 blob.format, blob.basedir, blob.filename, blob.absolutePathname(),
                                 std::make_shared<core::lock::Null>());
                         md->sourceBlob().lock(reader);
@@ -190,7 +190,7 @@ bool RawFile::scan(const dataset::DataQuery& q, metadata_dest_func dest)
     std::filesystem::path basedir, relpath;
     files::resolve_path(pathname, basedir, relpath);
     auto sorter = wrap_with_query(q, dest);
-    auto reader = Segment::detect_reader(format, basedir, relpath, pathname, std::make_shared<core::lock::Null>());
+    auto reader = segment::Segment::detect_reader(format, basedir, relpath, pathname, std::make_shared<core::lock::Null>());
     if (!reader->scan(dest))
         return false;
     if (sorter) return sorter->flush();

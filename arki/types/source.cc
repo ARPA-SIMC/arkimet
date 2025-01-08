@@ -164,12 +164,12 @@ std::unique_ptr<Source> Source::decode_structure(const structured::Keys& keys, c
     }
 }
 
-std::unique_ptr<Source> Source::createBlob(std::shared_ptr<segment::Reader> reader, uint64_t offset, uint64_t size)
+std::unique_ptr<Source> Source::createBlob(std::shared_ptr<segment::data::Reader> reader, uint64_t offset, uint64_t size)
 {
     return upcast<Source>(source::Blob::create(reader, offset, size));
 }
 
-unique_ptr<Source> Source::createBlob(const std::string& format, const std::filesystem::path& basedir, const std::filesystem::path& filename, uint64_t offset, uint64_t size, std::shared_ptr<segment::Reader> reader)
+unique_ptr<Source> Source::createBlob(const std::string& format, const std::filesystem::path& basedir, const std::filesystem::path& filename, uint64_t offset, uint64_t size, std::shared_ptr<segment::data::Reader> reader)
 {
     return upcast<Source>(source::Blob::create(format, basedir, filename, offset, size, reader));
 }

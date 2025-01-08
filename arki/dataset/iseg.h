@@ -25,7 +25,7 @@ struct Dataset : public segmented::Dataset
     std::shared_ptr<dataset::Writer> create_writer() override;
     std::shared_ptr<dataset::Checker> create_checker() override;
 
-    std::shared_ptr<segment::Reader> segment_reader(const std::filesystem::path& relpath, std::shared_ptr<core::Lock> lock) override;
+    std::shared_ptr<segment::data::Reader> segment_reader(const std::filesystem::path& relpath, std::shared_ptr<core::Lock> lock) override;
 };
 
 }

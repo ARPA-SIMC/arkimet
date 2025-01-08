@@ -15,9 +15,9 @@ class Tests : public SegmentTests<Segment, Data>
     void register_tests() override;
 };
 
-Tests<segment::concat::Segment, GRIBData> test1("arki_segment_concat_grib");
-Tests<segment::concat::Segment, BUFRData> test2("arki_segment_concat_bufr");
-Tests<segment::lines::Segment, VM2Data> test3("arki_segment_lines_vm2");
+Tests<segment::data::concat::Segment, GRIBData> test1("arki_segment_concat_grib");
+Tests<segment::data::concat::Segment, BUFRData> test2("arki_segment_concat_bufr");
+Tests<segment::data::lines::Segment, VM2Data> test3("arki_segment_lines_vm2");
 
 template<class Segment, class Data>
 void Tests<Segment, Data>::register_tests() {
@@ -29,7 +29,7 @@ this->add_method("append", [](Fixture& f) {
     delete_if_exists(relpath);
     wassert(actual_file(relpath).not_exists());
     {
-        segment::WriterConfig writer_config;
+        segment::data::WriterConfig writer_config;
         auto w = Segment::make_writer(writer_config, f.td.format, std::filesystem::current_path(), relpath, abspath);
 
         // It should exist but be empty
@@ -70,7 +70,7 @@ this->add_method("large", [](Fixture& f) {
     }
 
     {
-        segment::WriterConfig writer_config;
+        segment::data::WriterConfig writer_config;
         auto dw = Segment::make_writer(writer_config, f.td.format, std::filesystem::current_path(), relpath, abspath);
 
         // Try a successful transaction

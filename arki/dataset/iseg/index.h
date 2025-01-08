@@ -96,7 +96,7 @@ protected:
      * The rows should be:
      * m.offset, m.size, m.notes, m.reftime[, uniq][, other]
      */
-    void build_md(utils::sqlite::Query& q, Metadata& md, std::shared_ptr<arki::segment::Reader> reader) const;
+    void build_md(utils::sqlite::Query& q, Metadata& md, std::shared_ptr<arki::segment::data::Reader> reader) const;
 
     Index(std::shared_ptr<iseg::Dataset> config, const std::filesystem::path& data_relpath, std::shared_ptr<dataset::Lock> lock=nullptr);
 
@@ -216,7 +216,7 @@ public:
 class AIndex : public WIndex
 {
 public:
-    AIndex(std::shared_ptr<iseg::Dataset> config, std::shared_ptr<segment::Writer> segment, std::shared_ptr<dataset::AppendLock> lock);
+    AIndex(std::shared_ptr<iseg::Dataset> config, std::shared_ptr<segment::data::Writer> segment, std::shared_ptr<dataset::AppendLock> lock);
 };
 
 

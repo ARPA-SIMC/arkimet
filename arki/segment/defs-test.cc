@@ -1,5 +1,5 @@
-#include "arki/types/tests.h"
-#include "arki/metadata/collection.h"
+#include "arki/core/tests.h"
+#include "defs.h"
 
 namespace {
 using namespace std;
@@ -11,13 +11,11 @@ class Tests : public TestCase
 {
     using TestCase::TestCase;
     void register_tests() override;
-} test("arki_metadata_collection");
+} test("arki_segment_defs");
 
 void Tests::register_tests() {
 
-add_method("empty", []() noexcept {
-});
-
 }
 
 }
+

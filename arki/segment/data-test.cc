@@ -3,7 +3,7 @@
 #include "arki/types/source/blob.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/string.h"
-#include "segment.h"
+#include "segment/data.h"
 #include <algorithm>
 
 namespace {
@@ -55,11 +55,11 @@ add_method("auto_instantiate_existing", [] {
     make_samples();
 
     auto get_writer = [&](const char* format, const char* name) {
-        segment::WriterConfig writer_config;
-        return Segment::detect_writer(writer_config, format, ".", name, std::filesystem::weakly_canonical(name));
+        segment::data::WriterConfig writer_config;
+        return segment::Segment::detect_writer(writer_config, format, ".", name, std::filesystem::weakly_canonical(name));
     };
     auto get_checker = [&](const char* format, const char* name) {
-        return Segment::detect_checker(format, ".", name, std::filesystem::weakly_canonical(name));
+        return segment::Segment::detect_checker(format, ".", name, std::filesystem::weakly_canonical(name));
     };
 
     wassert(actual(get_writer("grib", "testfile.grib")->segment().type()) == "concat");

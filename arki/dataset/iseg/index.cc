@@ -273,7 +273,7 @@ void Index::add_joins_and_constraints(const Matcher& m, std::string& query) cons
         query += " WHERE " + str::join(" AND ", constraints.begin(), constraints.end());
 }
 
-void Index::build_md(Query& q, Metadata& md, std::shared_ptr<arki::segment::Reader> reader) const
+void Index::build_md(Query& q, Metadata& md, std::shared_ptr<arki::segment::data::Reader> reader) const
 {
     // Rebuild the Metadata
     md.set(Reftime::createPosition(core::Time::create_sql(q.fetchString(3))));
@@ -338,7 +338,7 @@ bool Index::query_data(const dataset::DataQuery& q, dataset::Session& session, m
     nag::debug("Running query %s", query.c_str());
 
     metadata::Collection mdbuf;
-    std::shared_ptr<arki::segment::Reader> reader;
+    std::shared_ptr<arki::segment::data::Reader> reader;
     if (q.with_data)
         reader = session.segment_reader(dataset->format, dataset->path, data_relpath, lock);
 
@@ -730,7 +730,7 @@ void WIndex::test_make_hole(unsigned hole_size, unsigned data_idx)
     });
 }
 
-AIndex::AIndex(std::shared_ptr<iseg::Dataset> config, std::shared_ptr<segment::Writer> segment, std::shared_ptr<dataset::AppendLock> lock)
+AIndex::AIndex(std::shared_ptr<iseg::Dataset> config, std::shared_ptr<segment::data::Writer> segment, std::shared_ptr<dataset::AppendLock> lock)
     : WIndex(config, segment->segment().relpath, lock)
 {
 }

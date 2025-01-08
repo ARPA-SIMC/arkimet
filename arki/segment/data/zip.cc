@@ -26,9 +26,7 @@ using namespace arki::core;
 using namespace arki::types;
 using namespace arki::utils;
 
-namespace arki {
-namespace segment {
-namespace zip {
+namespace arki::segment::data::zip {
 
 namespace {
 
@@ -100,7 +98,7 @@ struct CheckBackend : public AppendCheckBackend
     size_t actual_start(off_t offset, size_t size) const override { return offset - 1; }
     size_t actual_end(off_t offset, size_t size) const override { return offset; }
     size_t offset_end() const override { return max_sequence; }
-    size_t compute_unindexed_space(const std::vector<Span> indexed_spans) const override
+    size_t compute_unindexed_space(const std::vector<Span>& indexed_spans) const override
     {
         // When this is called, all elements found in the index have already
         // been removed from scanner. We can just then add up what's left of
@@ -119,17 +117,17 @@ struct CheckBackend : public AppendCheckBackend
             stringstream ss;
             ss << "expected file " << source.offset << " not found in the zip archive";
             reporter(ss.str());
-            return SEGMENT_CORRUPTED;
+            return State(SEGMENT_CORRUPTED);
         }
         if (source.size != si->second)
         {
             stringstream ss;
             ss << "expected file " << source.offset << " has size " << si->second << " instead of expected " << source.size;
             reporter(ss.str());
-            return SEGMENT_CORRUPTED;
+            return State(SEGMENT_CORRUPTED);
         }
         on_disk.erase(si);
-        return SEGMENT_OK;
+        return State(SEGMENT_OK);
     }
 
     State check()
@@ -217,7 +215,7 @@ struct CheckBackend : public AppendCheckBackend
             dirty = true;
         }
 
-        return dirty ? SEGMENT_DIRTY : SEGMENT_OK;
+        return State(dirty ? SEGMENT_DIRTY : SEGMENT_OK);
     }
 };
 
@@ -226,11 +224,11 @@ struct CheckBackend : public AppendCheckBackend
 const char* Segment::type() const { return "zip"; }
 bool Segment::single_file() const { return true; }
 time_t Segment::timestamp() const { return sys::timestamp(sys::with_suffix(abspath, ".zip")); }
-std::shared_ptr<segment::Reader> Segment::reader(std::shared_ptr<core::Lock> lock) const
+std::shared_ptr<data::Reader> Segment::reader(std::shared_ptr<core::Lock> lock) const
 {
     return make_shared<Reader>(format, root, relpath, abspath, lock);
 }
-std::shared_ptr<segment::Checker> Segment::checker() const
+std::shared_ptr<data::Checker> Segment::checker() const
 {
     return make_shared<Checker>(format, root, relpath, abspath);
 }
@@ -238,11 +236,11 @@ bool Segment::can_store(const std::string& format)
 {
     return true;
 }
-std::shared_ptr<segment::Checker> Segment::make_checker(const std::string& format, const std::filesystem::path& rootdir, const std::filesystem::path& relpath, const std::filesystem::path& abspath)
+std::shared_ptr<data::Checker> Segment::make_checker(const std::string& format, const std::filesystem::path& rootdir, const std::filesystem::path& relpath, const std::filesystem::path& abspath)
 {
     return make_shared<Checker>(format, rootdir, relpath, abspath);
 }
-std::shared_ptr<segment::Checker> Segment::create(const std::string& format, const std::filesystem::path& rootdir, const std::filesystem::path& relpath, const std::filesystem::path& abspath, metadata::Collection& mds, const RepackConfig& cfg)
+std::shared_ptr<data::Checker> Segment::create(const std::string& format, const std::filesystem::path& rootdir, const std::filesystem::path& relpath, const std::filesystem::path& abspath, metadata::Collection& mds, const RepackConfig& cfg)
 {
     Creator creator(rootdir, relpath, mds, sys::with_suffix(abspath, ".zip"));
     creator.create();
@@ -252,7 +250,7 @@ std::shared_ptr<segment::Checker> Segment::create(const std::string& format, con
 
 
 Reader::Reader(const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath, const std::filesystem::path& abspath, std::shared_ptr<core::Lock> lock)
-    : segment::BaseReader<Segment>(format, root, relpath, abspath, lock), zip(format, core::File(sys::with_suffix(abspath, ".zip"), O_RDONLY | O_CLOEXEC))
+    : data::BaseReader<Segment>(format, root, relpath, abspath, lock), zip(format, core::File(sys::with_suffix(abspath, ".zip"), O_RDONLY | O_CLOEXEC))
 {
 }
 
@@ -444,7 +442,5 @@ void Checker::test_corrupt(const metadata::Collection& mds, unsigned data_idx)
 }
 
 
-}
-}
 }
 #include "base.tcc"

@@ -40,7 +40,7 @@ Writer::~Writer()
 
 std::string Writer::type() const { return "outbound"; }
 
-void Writer::storeBlob(const segment::WriterConfig& writer_config, Metadata& md, const std::filesystem::path& reldest)
+void Writer::storeBlob(const segment::data::WriterConfig& writer_config, Metadata& md, const std::filesystem::path& reldest)
 {
     // Write using segment::Writer
     core::Time time = md.get<types::reftime::Position>()->get_Position();
@@ -61,7 +61,7 @@ WriterAcquireResult Writer::acquire(Metadata& md, const AcquireConfig& cfg)
 
     std::filesystem::create_directories(dest.parent_path());
 
-    segment::WriterConfig writer_config;
+    segment::data::WriterConfig writer_config;
     writer_config.drop_cached_data_on_commit = cfg.drop_cached_data_on_commit;
     writer_config.eatmydata = dataset().eatmydata;
 

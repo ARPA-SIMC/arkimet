@@ -1,5 +1,5 @@
 #include "tests.h"
-#include "arki/segment/tests.h"
+#include "arki/segment/data/tests.h"
 #include "segmented.h"
 #include "maintenance.h"
 #include "arki/exceptions.h"

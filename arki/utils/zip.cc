@@ -1,6 +1,6 @@
 #include "zip.h"
 #include "arki/utils/sys.h"
-#include "arki/segment.h"
+#include "arki/segment/data.h"
 #include <cctype>
 
 using namespace std::string_literals;

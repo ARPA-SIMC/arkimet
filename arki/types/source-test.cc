@@ -1,7 +1,7 @@
 #include "tests.h"
 #include "source.h"
 #include "source/blob.h"
-#include "arki/segment.h"
+#include "arki/segment/data.h"
 #include "arki/structured/json.h"
 #include "arki/structured/memory.h"
 #include "arki/structured/keys.h"
@@ -117,7 +117,7 @@ add_method("blob_pathnames_encode", [] {
 });
 
 add_method("blob_stream", [] {
-    auto reader = Segment::detect_reader("grib", "inbound", "test.grib1", "inbound/test.grib1", std::make_shared<core::lock::Null>());
+    auto reader = segment::Segment::detect_reader("grib", "inbound", "test.grib1", "inbound/test.grib1", std::make_shared<core::lock::Null>());
     unique_ptr<source::Blob> o = source::Blob::create("test", "inbound", "test.grib1", 7218, 34960, reader);
     std::filesystem::remove("test.grib");
     {

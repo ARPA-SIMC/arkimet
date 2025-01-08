@@ -17,7 +17,7 @@ class Session: public std::enable_shared_from_this<Session>
 protected:
     /// Map segment absolute paths to possibly reusable reader instances
     // TODO: use std::filesystem::path on newer GCC
-    std::unordered_map<std::string, std::weak_ptr<segment::Reader>> reader_pool;
+    std::unordered_map<std::string, std::weak_ptr<segment::data::Reader>> reader_pool;
 
     matcher::Parser matcher_parser;
 
@@ -29,9 +29,9 @@ public:
     Session& operator=(const Session&) = delete;
     Session& operator=(Session&&) = delete;
 
-    virtual std::shared_ptr<segment::Reader> segment_reader(const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath, std::shared_ptr<core::Lock> lock);
-    virtual std::shared_ptr<segment::Writer> segment_writer(const segment::WriterConfig& config, const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath);
-    virtual std::shared_ptr<segment::Checker> segment_checker(const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath);
+    virtual std::shared_ptr<segment::data::Reader> segment_reader(const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath, std::shared_ptr<core::Lock> lock);
+    virtual std::shared_ptr<segment::data::Writer> segment_writer(const segment::data::WriterConfig& config, const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath);
+    virtual std::shared_ptr<segment::data::Checker> segment_checker(const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath);
 
     /**
      * Instantiate a dataset give its configuration.
@@ -85,9 +85,9 @@ class DirSegmentsSession : public Session
 public:
     using Session::Session;
 
-    std::shared_ptr<segment::Reader> segment_reader(const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath, std::shared_ptr<core::Lock> lock) override;
-    std::shared_ptr<segment::Writer> segment_writer(const segment::WriterConfig& config, const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath) override;
-    std::shared_ptr<segment::Checker> segment_checker(const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath) override;
+    std::shared_ptr<segment::data::Reader> segment_reader(const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath, std::shared_ptr<core::Lock> lock) override;
+    std::shared_ptr<segment::data::Writer> segment_writer(const segment::data::WriterConfig& config, const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath) override;
+    std::shared_ptr<segment::data::Checker> segment_checker(const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath) override;
 
 };
 

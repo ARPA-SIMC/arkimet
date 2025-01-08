@@ -89,19 +89,19 @@ public:
     segmented::SegmentState scan(dataset::Reporter& reporter, bool quick=true) override
     {
         if (!segment->exists_on_disk())
-            return segmented::SegmentState(segment::SEGMENT_MISSING);
+            return segmented::SegmentState(segment::State(segment::SEGMENT_MISSING));
 
         if (!sys::stat(checker.dataset().path / sys::with_suffix(segment->segment().relpath, ".index")))
         {
             if (segment->is_empty())
             {
                 reporter.segment_info(checker.name(), segment->segment().relpath, "empty segment found on disk with no associated index data");
-                return segmented::SegmentState(segment::SEGMENT_DELETED);
+                return segmented::SegmentState(segment::State(segment::SEGMENT_DELETED));
             } else {
                 //bool untrusted_index = files::hasDontpackFlagfile(checker.dataset().path);
                 reporter.segment_info(checker.name(), segment->segment().relpath, "segment found on disk with no associated index data");
                 //return segmented::SegmentState(untrusted_index ? segment::SEGMENT_UNALIGNED : segment::SEGMENT_DELETED);
-                return segmented::SegmentState(segment::SEGMENT_UNALIGNED);
+                return segmented::SegmentState(segment::State(segment::SEGMENT_UNALIGNED));
             }
         }
 
@@ -122,19 +122,19 @@ public:
 
         metadata::Collection mds;
         idx().scan(mds.inserter_func(), "reftime, offset");
-        segment::State state = segment::SEGMENT_OK;
+        segment::State state(segment::SEGMENT_OK);
 
         // Compute the span of reftimes inside the segment
         core::Interval segment_interval;
         if (mds.empty())
         {
             reporter.segment_info(checker.name(), segment->segment().relpath, "index knows of this segment but contains no data for it");
-            state = segment::SEGMENT_DELETED;
+            state = segment::State(segment::SEGMENT_DELETED);
         } else {
             if (!mds.expand_date_range(segment_interval))
             {
                 reporter.segment_info(checker.name(), segment->segment().relpath, "index data for this segment has no reference time information");
-                state = segment::SEGMENT_CORRUPTED;
+                state = segment::State(segment::SEGMENT_CORRUPTED);
             } else {
                 // Ensure that the reftime span fits inside the segment step
                 core::Interval interval;
@@ -143,13 +143,13 @@ public:
                     if (segment_interval.begin < interval.begin || segment_interval.end > interval.end)
                     {
                         reporter.segment_info(checker.name(), segment->segment().relpath, "segment contents do not fit inside the step of this dataset");
-                        state = segment::SEGMENT_CORRUPTED;
+                        state = segment::State(segment::SEGMENT_CORRUPTED);
                     }
                     // Expand segment timespan to the full possible segment timespan
                     segment_interval = interval;
                 } else {
                     reporter.segment_info(checker.name(), segment->segment().relpath, "segment name does not fit the step of this dataset");
-                    state = segment::SEGMENT_CORRUPTED;
+                    state = segment::State(segment::SEGMENT_CORRUPTED);
                 }
             }
         }
@@ -332,7 +332,7 @@ public:
     {
         // Make a copy of the file with the right data in it, sorted by
         // reftime, and update the offsets in the index
-        segment::RepackConfig repack_config;
+        segment::data::RepackConfig repack_config;
         repack_config.gz_group_size = dataset().gz_group_size;
         repack_config.test_flags = test_flags;
         Pending p_repack = segment->repack(checker.dataset().path, mds, repack_config);
@@ -651,7 +651,7 @@ void Checker::remove(const metadata::Collection& mds)
         Time time = md->get<types::reftime::Position>()->get_Position();
         auto relpath = sys::with_suffix(dataset().step()(time), "."s + dataset().format);
 
-        if (!Segment::is_segment(dataset().path / relpath))
+        if (!segment::Segment::is_segment(dataset().path / relpath))
             continue;
 
         by_segment[relpath].push_back(source->offset);
@@ -660,7 +660,7 @@ void Checker::remove(const metadata::Collection& mds)
 
     for (const auto& i: by_segment)
     {
-        segment::WriterConfig writer_config;
+        segment::data::WriterConfig writer_config;
         writer_config.drop_cached_data_on_commit = false;
         writer_config.eatmydata = dataset().eatmydata;
 

@@ -76,7 +76,7 @@ size_t AppendCheckBackend::actual_end(off_t offset, size_t size) const
     return offset + size;
 }
 
-size_t AppendCheckBackend::compute_unindexed_space(const std::vector<Span> indexed_spans) const
+size_t AppendCheckBackend::compute_unindexed_space(const std::vector<Span>& indexed_spans) const
 {
     size_t res = offset_end();
     for (const auto& i: indexed_spans)
@@ -96,7 +96,7 @@ State AppendCheckBackend::check_source(const types::source::Blob& source)
 {
     if (source.filename != relpath)
         throw std::runtime_error("metadata to validate does not appear to be from this segment");
-    return SEGMENT_OK;
+    return State(SEGMENT_OK);
 }
 
 State AppendCheckBackend::check_contiguous()
@@ -134,7 +134,7 @@ State AppendCheckBackend::check_contiguous()
             stringstream out;
             out << "item at offset " << start << " overlaps with the previous items that ends at offset " << end_of_known_data;
             reporter(out.str());
-            return SEGMENT_CORRUPTED;
+            return State(SEGMENT_CORRUPTED);
         }
         else if (!dirty && start > end_of_known_data)
         {
@@ -163,7 +163,7 @@ State AppendCheckBackend::check_contiguous()
         stringstream ss;
         ss << "file looks truncated: data ends at offset " << end << " but it is supposed to extend until " << end_of_known_data << " bytes";
         reporter(ss.str());
-        return SEGMENT_CORRUPTED;
+        return State(SEGMENT_CORRUPTED);
     }
 
     if (!dirty && end > end_of_known_data)
@@ -172,13 +172,13 @@ State AppendCheckBackend::check_contiguous()
         dirty = true;
     }
 
-    return dirty ? SEGMENT_DIRTY : SEGMENT_OK;
+    return State(dirty ? SEGMENT_DIRTY : SEGMENT_OK);
 }
 
 State AppendCheckBackend::validate_data()
 {
     if (mds.empty())
-        return SEGMENT_OK;
+        return State(SEGMENT_OK);
 
     validator = &scan::Validator::by_format(mds[0].source().format);
     size_t end = offset_end();
@@ -190,7 +190,7 @@ State AppendCheckBackend::validate_data()
         if (actual_end(source.offset, source.size) > end)
         {
             reporter("data at offset " + std::to_string(source.offset) + " would continue past the end of the segment");
-            return SEGMENT_CORRUPTED;
+            return State(SEGMENT_CORRUPTED);
         }
 
         try {
@@ -199,11 +199,11 @@ State AppendCheckBackend::validate_data()
             stringstream out;
             out << "validation failed at " << md->source() << ": " << e.what();
             reporter(out.str());
-            return SEGMENT_CORRUPTED;
+            return State(SEGMENT_CORRUPTED);
         }
     }
 
-    return SEGMENT_OK;
+    return State(SEGMENT_OK);
 }
 
 State AppendCheckBackend::check()
@@ -219,7 +219,7 @@ State AppendCheckBackend::check()
     if (!state.is_ok())
         return state;
 
-    return SEGMENT_OK;
+    return State(SEGMENT_OK);
 }
 
 }

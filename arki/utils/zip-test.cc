@@ -3,7 +3,7 @@
 #include "arki/metadata/data.h"
 #include "arki/metadata/archive.h"
 #include "arki/metadata/collection.h"
-#include "arki/segment.h"
+#include "arki/segment/data.h"
 #include "arki/utils/sys.h"
 #include "zip.h"
 

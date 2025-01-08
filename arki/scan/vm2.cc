@@ -1,6 +1,6 @@
 #include "arki/scan/vm2.h"
 #include "arki/exceptions.h"
-#include "arki/segment.h"
+#include "arki/segment/data.h"
 #include "arki/core/time.h"
 #include "arki/types/source.h"
 #include "arki/metadata.h"
@@ -217,7 +217,7 @@ bool Vm2::scan_pipe(core::NamedFileDescriptor& in, metadata_dest_func dest)
     return true;
 }
 
-bool Vm2::scan_segment(std::shared_ptr<segment::Reader> reader, metadata_dest_func dest)
+bool Vm2::scan_segment(std::shared_ptr<segment::data::Reader> reader, metadata_dest_func dest)
 {
     vm2::Input input(reader->segment().abspath);
     while (true)

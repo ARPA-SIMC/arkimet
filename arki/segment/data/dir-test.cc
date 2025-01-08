@@ -31,23 +31,23 @@ class Tests : public SegmentTests<Segment, Data>
     void register_tests() override;
 };
 
-Tests<segment::dir::Segment, GRIBData> test1("arki_segment_dir_grib");
-Tests<segment::dir::Segment, BUFRData> test2("arki_segment_dir_bufr");
-Tests<segment::dir::Segment, ODIMData> test3("arki_segment_dir_odim");
-Tests<segment::dir::Segment, VM2Data>  test4("arki_segment_dir_vm2");
-Tests<segment::dir::Segment, NCData>  test5("arki_segment_dir_nc");
-Tests<segment::dir::Segment, JPEGData>  test6("arki_segment_dir_jpeg");
+Tests<segment::data::dir::Segment, GRIBData> test1("arki_segment_dir_grib");
+Tests<segment::data::dir::Segment, BUFRData> test2("arki_segment_dir_bufr");
+Tests<segment::data::dir::Segment, ODIMData> test3("arki_segment_dir_odim");
+Tests<segment::data::dir::Segment, VM2Data>  test4("arki_segment_dir_vm2");
+Tests<segment::data::dir::Segment, NCData>  test5("arki_segment_dir_nc");
+Tests<segment::data::dir::Segment, JPEGData>  test6("arki_segment_dir_jpeg");
 
 /**
  * Create a writer
  * return the data::Writer so that we manage the writer lifetime, but also
  * the underlying implementation so we can test it.
  */
-std::shared_ptr<segment::dir::Writer> make_w()
+std::shared_ptr<segment::data::dir::Writer> make_w()
 {
-    segment::WriterConfig writer_config;
+    segment::data::WriterConfig writer_config;
     string abspath = std::filesystem::weakly_canonical(relpath);
-    return std::shared_ptr<segment::dir::Writer>(new segment::dir::Writer(writer_config, "grib", std::filesystem::current_path(), relpath, abspath));
+    return std::shared_ptr<segment::data::dir::Writer>(new segment::data::dir::Writer(writer_config, "grib", std::filesystem::current_path(), relpath, abspath));
 }
 
 
@@ -56,12 +56,12 @@ void TestInternals::register_tests() {
 // Scan a well-known sample
 add_method("scanner", [] {
     std::filesystem::path path("inbound/fixture.odimh5");
-    segment::dir::Scanner scanner("odimh5", path);
+    segment::data::dir::Scanner scanner("odimh5", path);
     scanner.list_files();
     wassert(actual(scanner.on_disk.size()) == 3u);
     wassert(actual(scanner.max_sequence) == 2u);
 
-    auto reader = Segment::detect_reader("odimh5", std::filesystem::current_path(), path, std::filesystem::canonical(path), make_shared<core::lock::Null>());
+    auto reader = segment::Segment::detect_reader("odimh5", std::filesystem::current_path(), path, std::filesystem::canonical(path), make_shared<core::lock::Null>());
 
     metadata::Collection mds;
     scanner.scan(reader, mds.inserter_func());
@@ -79,7 +79,7 @@ void Tests<Segment, Data>::register_tests() {
 SegmentTests<Segment, Data>::register_tests();
 
 this->add_method("create_last_sequence", [](Fixture& f) {
-    std::shared_ptr<segment::Checker> checker = f.create();
+    std::shared_ptr<segment::data::Checker> checker = f.create();
     segment::SequenceFile seq(checker->segment().abspath);
     seq.open();
     wassert(actual(seq.read_sequence()) == 2u);

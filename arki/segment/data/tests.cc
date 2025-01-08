@@ -22,7 +22,7 @@ SegmentTest::~SegmentTest()
 {
 }
 
-std::shared_ptr<segment::Writer> SegmentTest::make_empty_writer()
+std::shared_ptr<segment::data::Writer> SegmentTest::make_empty_writer()
 {
     // Clear potentially existing segments
     system(("rm -rf " + abspath).c_str());
@@ -30,7 +30,7 @@ std::shared_ptr<segment::Writer> SegmentTest::make_empty_writer()
     return make_writer();
 }
 
-std::shared_ptr<segment::Checker> SegmentTest::make_empty_checker()
+std::shared_ptr<segment::data::Checker> SegmentTest::make_empty_checker()
 {
     // Clear potentially existing segments
     system(("rm -rf " + abspath).c_str());
@@ -38,7 +38,7 @@ std::shared_ptr<segment::Checker> SegmentTest::make_empty_checker()
     return make_checker();
 }
 
-std::shared_ptr<segment::Writer> SegmentTest::make_full_writer()
+std::shared_ptr<segment::data::Writer> SegmentTest::make_full_writer()
 {
     auto res(make_empty_writer());
     for (unsigned i = 0; i < mdc.size(); ++i)
@@ -47,7 +47,7 @@ std::shared_ptr<segment::Writer> SegmentTest::make_full_writer()
     return res;
 }
 
-std::shared_ptr<segment::Checker> SegmentTest::make_full_checker()
+std::shared_ptr<segment::data::Checker> SegmentTest::make_full_checker()
 {
     make_full_writer();
     return make_checker();
@@ -64,7 +64,7 @@ void SegmentCheckTest::run()
 
     // A simple segment freshly imported is ok
     state = segment->check(rep, mdc);
-    wassert(actual(state) == segment::SEGMENT_OK);
+    wassert(actual(state) == segment::State(segment::SEGMENT_OK));
 
     state = segment->check(rep, mdc, true);
     wassert(actual(state.is_ok()).istrue());
@@ -146,7 +146,7 @@ void SegmentRemoveTest::run()
 }
 
 
-void test_append_transaction_ok(segment::Writer* dw, Metadata& md, int append_amount_adjust)
+void test_append_transaction_ok(segment::data::Writer* dw, Metadata& md, int append_amount_adjust)
 {
     // Make a snapshot of everything before appending
     unique_ptr<Source> orig_source(md.source().clone());
@@ -172,7 +172,7 @@ void test_append_transaction_ok(segment::Writer* dw, Metadata& md, int append_am
     wassert(actual_type(md.source()).is_source_blob(md.source().format, std::filesystem::current_path(), dw->segment().relpath, orig_fsize, data_size));
 }
 
-void test_append_transaction_rollback(segment::Writer* dw, Metadata& md, int append_amount_adjust)
+void test_append_transaction_rollback(segment::data::Writer* dw, Metadata& md, int append_amount_adjust)
 {
     // Make a snapshot of everything before appending
     unique_ptr<Source> orig_source(md.source().clone());

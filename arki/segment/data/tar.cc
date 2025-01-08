@@ -25,9 +25,7 @@ using namespace arki::core;
 using namespace arki::types;
 using namespace arki::utils;
 
-namespace arki {
-namespace segment {
-namespace tar {
+namespace arki::segment::data::tar {
 
 namespace {
 
@@ -96,7 +94,7 @@ struct CheckBackend : public AppendCheckBackend
         if (!data.open_ifexists(O_RDONLY))
         {
             reporter(data.path().native() + " not found on disk");
-            return SEGMENT_DELETED;
+            return State(SEGMENT_DELETED);
         }
         data.fstat(st);
         return AppendCheckBackend::check();
@@ -108,11 +106,11 @@ struct CheckBackend : public AppendCheckBackend
 const char* Segment::type() const { return "tar"; }
 bool Segment::single_file() const { return true; }
 time_t Segment::timestamp() const { return sys::timestamp(sys::with_suffix(abspath, ".tar")); }
-std::shared_ptr<segment::Reader> Segment::reader(std::shared_ptr<core::Lock> lock) const
+std::shared_ptr<data::Reader> Segment::reader(std::shared_ptr<core::Lock> lock) const
 {
     return make_shared<Reader>(format, root, relpath, abspath, lock);
 }
-std::shared_ptr<segment::Checker> Segment::checker() const
+std::shared_ptr<data::Checker> Segment::checker() const
 {
     return make_shared<Checker>(format, root, relpath, abspath);
 }
@@ -120,11 +118,11 @@ bool Segment::can_store(const std::string& format)
 {
     return true;
 }
-std::shared_ptr<segment::Checker> Segment::make_checker(const std::string& format, const std::filesystem::path& rootdir, const std::filesystem::path& relpath, const std::filesystem::path& abspath)
+std::shared_ptr<data::Checker> Segment::make_checker(const std::string& format, const std::filesystem::path& rootdir, const std::filesystem::path& relpath, const std::filesystem::path& abspath)
 {
     return make_shared<Checker>(format, rootdir, relpath, abspath);
 }
-std::shared_ptr<segment::Checker> Segment::create(const std::string& format, const std::filesystem::path& rootdir, const std::filesystem::path& relpath, const std::filesystem::path& abspath, metadata::Collection& mds, const RepackConfig& cfg)
+std::shared_ptr<data::Checker> Segment::create(const std::string& format, const std::filesystem::path& rootdir, const std::filesystem::path& relpath, const std::filesystem::path& abspath, metadata::Collection& mds, const RepackConfig& cfg)
 {
     Creator creator(rootdir, relpath, mds, sys::with_suffix(abspath, ".tar"));
     creator.create();
@@ -134,7 +132,7 @@ std::shared_ptr<segment::Checker> Segment::create(const std::string& format, con
 
 
 Reader::Reader(const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath, const std::filesystem::path& abspath, std::shared_ptr<core::Lock> lock)
-    : segment::BaseReader<Segment>(format, root, relpath, abspath, lock), fd(sys::with_suffix(abspath, ".tar"), O_RDONLY
+    : data::BaseReader<Segment>(format, root, relpath, abspath, lock), fd(sys::with_suffix(abspath, ".tar"), O_RDONLY
 #ifdef linux
                 | O_CLOEXEC
 #endif
@@ -168,7 +166,7 @@ std::vector<uint8_t> Reader::read(const types::source::Blob& src)
 stream::SendResult Reader::stream(const types::source::Blob& src, StreamOutput& out)
 {
     if (src.format == "vm2")
-        return arki::segment::Reader::stream(src, out);
+        return data::Reader::stream(src, out);
 
     iotrace::trace_file(fd, src.offset, src.size, "streamed data");
     return out.send_file_segment(fd, src.offset, src.size);
@@ -176,7 +174,7 @@ stream::SendResult Reader::stream(const types::source::Blob& src, StreamOutput& 
 
 
 Checker::Checker(const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath, const std::filesystem::path& abspath)
-    : segment::BaseChecker<Segment>(format, root, relpath, abspath), tarabspath(sys::with_suffix(abspath, ".tar"))
+    : data::BaseChecker<Segment>(format, root, relpath, abspath), tarabspath(sys::with_suffix(abspath, ".tar"))
 {
 }
 
@@ -295,7 +293,5 @@ void Checker::test_corrupt(const metadata::Collection& mds, unsigned data_idx)
 }
 
 
-}
-}
 }
 #include "base.tcc"

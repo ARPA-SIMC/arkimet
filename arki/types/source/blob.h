@@ -60,7 +60,7 @@ zip file segment implementation.
      * The reader will keep a read lock on the file, to prevent it from being
      * modified while it can still potentially be read
      */
-    std::shared_ptr<segment::Reader> reader;
+    std::shared_ptr<segment::data::Reader> reader;
 
 
     Style style() const override;
@@ -102,7 +102,7 @@ zip file segment implementation.
     /**
      * Make sure this blob has a reader that keeps a read lock on the source file
      */
-    void lock(std::shared_ptr<segment::Reader> reader);
+    void lock(std::shared_ptr<segment::data::Reader> reader);
 
     /**
      * Make sure this blob is not holding a read lock on the source file
@@ -134,8 +134,8 @@ zip file segment implementation.
      */
     stream::SendResult stream_data(StreamOutput& out) const;
 
-    static std::unique_ptr<Blob> create(std::shared_ptr<segment::Reader> reader, uint64_t offset, uint64_t size);
-    static std::unique_ptr<Blob> create(const std::string& format, const std::filesystem::path& basedir, const std::filesystem::path& filename, uint64_t offset, uint64_t size, std::shared_ptr<segment::Reader> reader);
+    static std::unique_ptr<Blob> create(std::shared_ptr<segment::data::Reader> reader, uint64_t offset, uint64_t size);
+    static std::unique_ptr<Blob> create(const std::string& format, const std::filesystem::path& basedir, const std::filesystem::path& filename, uint64_t offset, uint64_t size, std::shared_ptr<segment::data::Reader> reader);
     static std::unique_ptr<Blob> create_unlocked(const std::string& format, const std::filesystem::path& basedir, const std::filesystem::path& filename, uint64_t offset, uint64_t size);
     static std::unique_ptr<Blob> decode_structure(const structured::Keys& keys, const structured::Reader& reader);
 };

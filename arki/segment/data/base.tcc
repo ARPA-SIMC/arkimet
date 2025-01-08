@@ -1,16 +1,15 @@
 #ifndef ARKI_SEGMENT_BASE_TCC
 #define ARKI_SEGMENT_BASE_TCC
 
-#include "arki/segment/base.h"
+#include "arki/segment/data/base.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/string.h"
 #include <sstream>
 
-namespace arki {
-namespace segment {
+namespace arki::segment::data {
 
 template<typename Segment>
-std::shared_ptr<Checker> BaseChecker<Segment>::move(const std::filesystem::path& new_root, const std::filesystem::path& new_relpath, const std::filesystem::path& new_abspath)
+std::shared_ptr<data::Checker> BaseChecker<Segment>::move(const std::filesystem::path& new_root, const std::filesystem::path& new_relpath, const std::filesystem::path& new_abspath)
 {
     using namespace arki::utils;
 
@@ -44,7 +43,5 @@ std::shared_ptr<Checker> BaseChecker<Segment>::move(const std::filesystem::path&
 }
 
 }
-}
 
 #endif
-

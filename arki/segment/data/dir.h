@@ -2,9 +2,9 @@
 #define ARKI_SEGMENT_DIR_H
 
 #include <arki/defs.h>
-#include <arki/segment.h>
-#include <arki/segment/base.h>
-#include <arki/segment/seqfile.h>
+#include <arki/segment/data.h>
+#include <arki/segment/data/base.h>
+#include <arki/segment/data/seqfile.h>
 #include <arki/core/file.h>
 #include <arki/utils/sys.h>
 #include <vector>
@@ -13,19 +13,18 @@
 namespace arki {
 class Metadata;
 
-namespace segment {
-namespace dir {
+namespace segment::data::dir {
 
-class Segment : public arki::Segment
+class Segment : public arki::segment::Segment
 {
 public:
-    using arki::Segment::Segment;
+    using arki::segment::Segment::Segment;
 
     const char* type() const override;
     bool single_file() const override;
     time_t timestamp() const override;
-    std::shared_ptr<segment::Reader> reader(std::shared_ptr<core::Lock> lock) const override;
-    std::shared_ptr<segment::Checker> checker() const override;
+    std::shared_ptr<segment::data::Reader> reader(std::shared_ptr<core::Lock> lock) const override;
+    std::shared_ptr<segment::data::Checker> checker() const override;
     static std::shared_ptr<Checker> make_checker(const std::string& format, const std::filesystem::path& rootdir, const std::filesystem::path& relpath, const std::filesystem::path& abspath);
     static std::shared_ptr<Checker> create(const std::string& format, const std::filesystem::path& rootdir, const std::filesystem::path& relpath, const std::filesystem::path& abspath, metadata::Collection& mds, const RepackConfig& cfg=RepackConfig());
     static bool can_store(const std::string& format);
@@ -41,7 +40,7 @@ public:
 };
 
 
-class Reader : public segment::BaseReader<Segment>
+class Reader : public data::BaseReader<Segment>
 {
 public:
     utils::sys::Path dirfd;
@@ -56,12 +55,12 @@ public:
 
 
 template<typename Segment>
-class BaseWriter : public segment::BaseWriter<Segment>
+class BaseWriter : public data::BaseWriter<Segment>
 {
 public:
     SequenceFile seqfile;
     std::vector<std::filesystem::path> written;
-    std::vector<segment::Writer::PendingMetadata> pending;
+    std::vector<data::Writer::PendingMetadata> pending;
     size_t current_pos;
 
     BaseWriter(const WriterConfig& config, const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath, const std::filesystem::path& abspath);
@@ -94,10 +93,10 @@ public:
 
 
 template<typename Segment>
-class BaseChecker : public segment::BaseChecker<Segment>
+class BaseChecker : public data::BaseChecker<Segment>
 {
 public:
-    using segment::BaseChecker<Segment>::BaseChecker;
+    using data::BaseChecker<Segment>::BaseChecker;
 
     /// Call f for each nnnnnn.format file in the directory segment, passing the file name
     void foreach_datafile(std::function<void(const char*)> f);
@@ -173,13 +172,12 @@ public:
     void list_files();
 
     /// Scan the data found in on_disk sending results to dest
-    bool scan(std::shared_ptr<segment::Reader> reader, metadata_dest_func dest);
+    bool scan(std::shared_ptr<data::Reader> reader, metadata_dest_func dest);
 
     /// Scan the data found in on_disk sending results to dest, reporting scanning errors to the reporter
-    bool scan(std::function<void(const std::string&)> reporter, std::shared_ptr<segment::Reader> reader, metadata_dest_func dest);
+    bool scan(std::function<void(const std::string&)> reporter, std::shared_ptr<data::Reader> reader, metadata_dest_func dest);
 };
 
-}
 }
 }
 #endif

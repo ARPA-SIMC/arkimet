@@ -1,7 +1,7 @@
 #ifndef ARKI_SEGMENT_BASE_H
 #define ARKI_SEGMENT_BASE_H
 
-#include <arki/segment.h>
+#include <arki/segment/data.h>
 #include <arki/types/fwd.h>
 #include <arki/metadata/fwd.h>
 #include <arki/scan/fwd.h>
@@ -9,18 +9,17 @@
 #include <vector>
 #include <functional>
 
-namespace arki {
-namespace segment {
+namespace arki::segment::data {
 
 template<typename Segment>
-struct BaseReader : public segment::Reader
+struct BaseReader : public data::Reader
 {
 protected:
     Segment m_segment;
 
 public:
     BaseReader(const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath, const std::filesystem::path& abspath, std::shared_ptr<core::Lock> lock)
-        : segment::Reader(lock), m_segment(format, root, relpath, abspath)
+        : data::Reader(lock), m_segment(format, root, relpath, abspath)
     {
     }
 
@@ -28,14 +27,14 @@ public:
 };
 
 template<typename Segment>
-struct BaseWriter : public segment::Writer
+struct BaseWriter : public data::Writer
 {
 protected:
     Segment m_segment;
 
 public:
-    BaseWriter(const WriterConfig& config, const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath, const std::filesystem::path& abspath)
-        : segment::Writer(config), m_segment(format, root, relpath, abspath)
+    BaseWriter(const data::WriterConfig& config, const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath, const std::filesystem::path& abspath)
+        : data::Writer(config), m_segment(format, root, relpath, abspath)
     {
     }
 
@@ -43,7 +42,7 @@ public:
 };
 
 template<typename Segment>
-struct BaseChecker : public segment::Checker
+struct BaseChecker : public data::Checker
 {
 protected:
     Segment m_segment;
@@ -55,12 +54,11 @@ public:
     }
 
     const Segment& segment() const override { return m_segment; }
-    // std::shared_ptr<segment::Checker> checker_moved(const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath) const override;
+    // std::shared_ptr<data::Checker> checker_moved(const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath) const override;
 
     std::shared_ptr<Checker> move(const std::filesystem::path& new_root, const std::filesystem::path& new_relpath, const std::filesystem::path& new_abspath) override;
 };
 
-}
 }
 
 #endif

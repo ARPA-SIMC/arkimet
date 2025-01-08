@@ -8,7 +8,7 @@
 #include "arki/utils/sys.h"
 #include "arki/scan/validator.h"
 #include "arki/scan/mock.h"
-#include "arki/segment.h"
+#include "arki/segment/data.h"
 #include <cstring>
 #include <unistd.h>
 
@@ -90,7 +90,7 @@ GribScanner::GribScanner()
     grib_multi_support_off(context);
 }
 
-void GribScanner::set_source_blob(grib_handle* gh, std::shared_ptr<segment::Reader> reader, FILE* in, Metadata& md)
+void GribScanner::set_source_blob(grib_handle* gh, std::shared_ptr<segment::data::Reader> reader, FILE* in, Metadata& md)
 {
     // Get the encoded GRIB buffer from the GRIB handle
     const uint8_t* vbuf;
@@ -136,7 +136,7 @@ std::shared_ptr<Metadata> GribScanner::scan_data(const std::vector<uint8_t>& dat
     return md;
 }
 
-bool GribScanner::scan_segment(std::shared_ptr<segment::Reader> reader, metadata_dest_func dest)
+bool GribScanner::scan_segment(std::shared_ptr<segment::data::Reader> reader, metadata_dest_func dest)
 {
     files::RAIIFILE in(reader->segment().abspath, "rb");
     while (true)
